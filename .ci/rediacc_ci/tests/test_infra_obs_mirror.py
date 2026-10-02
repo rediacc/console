@@ -30,8 +30,8 @@ import pytest
 from rediacc_ci.infra import obs_mirror as om
 from rediacc_ci.well_known import IMAGE_REGISTRY
 
-EVR = "19.2.3-lp160.2.97"
-OLD = "19.2.3-lp160.2.96"
+EVR = "19.2.3-lp160.2.98"
+OLD = "19.2.3-lp160.2.94"
 ORIGIN = om.OBS_ORIGIN
 
 needs_gpg = pytest.mark.skipif(
@@ -233,10 +233,10 @@ def test_newest_evr_and_an_absent_evr_is_refused() -> None:
     packages = om.parse_primary(primary_xml())
     assert (
         om.newest_evr(packages, "ceph-common") == EVR
-    )  # aarch64's 2.96 is not an arch renet takes
+    )  # aarch64's 2.94 is not an arch renet takes
     assert len(om.pinned_packages(packages, EVR)) == 2
     with pytest.raises(om.MirrorError, match="does not list ceph-common"):
-        om.pinned_packages(packages, OLD)  # cephadm 2.96 is listed, ceph-common 2.96 x86_64 is not
+        om.pinned_packages(packages, OLD)  # cephadm 2.94 is listed, ceph-common 2.94 x86_64 is not
 
 
 @pytest.mark.parametrize(
@@ -244,7 +244,7 @@ def test_newest_evr_and_an_absent_evr_is_refused() -> None:
     [
         ("2.97", "2.96", 1),
         ("2.100", "2.99", 1),
-        ("lp160.2.97", "lp160.2.97", 0),
+        ("lp160.2.98", "lp160.2.98", 0),
         ("1.0~rc1", "1.0", -1),
         ("1.a", "1.1", -1),
     ],
@@ -271,7 +271,7 @@ def test_the_intersection_excludes_leap_oss_packages() -> None:
 
 def test_parse_rpm_qa_spells_no_epoch_as_none() -> None:
     rows = om.parse_rpm_qa(
-        "ceph-common (none) 19.2.3 lp160.2.97 x86_64\nfoo 2 1.0 3 noarch\nshort line\n"
+        "ceph-common (none) 19.2.3 lp160.2.98 x86_64\nfoo 2 1.0 3 noarch\nshort line\n"
     )
     assert rows == [("ceph-common", EVR, "x86_64"), ("foo", "2:1.0-3", "noarch")]
 

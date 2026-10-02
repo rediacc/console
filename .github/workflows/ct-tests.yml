@@ -1035,8 +1035,10 @@ jobs:
         run: CGO_ENABLED=0 go build -o "$RUNNER_TEMP/renet" ./cmd/renet
       # EVENT_NAME is the CALLER's event (a reusable workflow inherits ci.yml's
       # github context). The zypper leg's upstream check (OBS origin primary vs
-      # the Leap pin) runs only on `schedule`, so an OBS rebuild reddens the
-      # nightly and never an unrelated PR; every other event prints a SKIP line.
+      # the Leap pin) can fail only on `schedule`, so an OBS rebuild reddens the
+      # nightly and never an unrelated PR. Under --obs-mirror every other event
+      # reports the move as a warning (installs come from the captured tree);
+      # without it every other event prints a SKIP line.
       # The Leap leg outside fork PRs adds --obs-mirror: it pulls the obs-mirror
       # tag for the pin and installs from it, and a missing tag is a FAIL naming
       # the pin and the ci-obs-mirror dispatch.

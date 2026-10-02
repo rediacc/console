@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: ja
-sourceHash: "334e3ab3d1d1cce9"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "960821a4fc0654eb"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # サーバーリファレンス
@@ -251,6 +251,16 @@ renet datastore unfork --image {image}                         # 依存関係の
 ```
 
 Ceph ノードは LUKS を一切開かないため(このバックエンドにはイメージごとの LUKS レイヤーがありません)、メモリ使用量は KDF の計算ではなく Ceph デーモンのチューニング(`osd_memory_target`)に従います。2番目のクライアントは同じ RBD イメージをローカルの copy-on-write オーバーレイ付きで読み取り専用にマップでき、これが読み取り主体のスケールアウト経路になります。
+
+#### openSUSE Leap での Ceph パッケージ
+
+openSUSE Leap 16.0 では、`renet ceph install` は OBS の `filesystems:ceph:squid` リポジトリから、`ceph-common` と `cephadm` の特定のビルドを 1 つだけインストールします。OBS は最新のビルドしか保持しないため、固定されたビルドは OBS が再ビルドするたびにそこから消えます。代わりにコピーからインストールするには、`/etc/rediacc/ceph-zypper-mirror` の 1 行目に URL を 1 つ書きます。
+
+```bash
+echo 'https://mirror.example.com/ceph-squid/16.0/' | sudo tee /etc/rediacc/ceph-zypper-mirror
+```
+
+ミラーは OBS リポジトリを改変せずに提供する必要があります。署名付きの `repodata/` はバイト単位で同一のまま、RPM は OBS と同じパスに置いてください。renet は署名検証を有効にしたまま、内蔵する OBS の鍵で検証するため、再署名または再生成されたリポジトリは拒否されます。使用できるスキームは `https`、`http`、`dir`、`file` です。環境変数 `REDIACC_CEPH_ZYPPER_MIRROR` はファイルの設定より優先されます。無効な値はログに記録されて無視され、インストールは OBS にフォールバックします。
 
 ### Kubernetes(renet kube)
 

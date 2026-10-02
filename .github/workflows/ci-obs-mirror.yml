@@ -31,7 +31,7 @@ on:
   workflow_dispatch:
     inputs:
       evr:
-        description: 'EVR to capture instead of the one OBS serves now (e.g. 19.2.3-lp160.2.97)'
+        description: 'EVR to capture instead of the one OBS serves now (e.g. 19.2.3-lp160.2.98)'
         required: false
         default: ''
 

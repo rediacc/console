@@ -230,7 +230,7 @@ Every host installs exactly `host-version` (19.2.3), and the cluster image stays
 | Risk | Where | Mitigation |
 |---|---|---|
 | The SIG c10s builds need newer libraries than OL10U1 or Rocky 10 provide | section 1, EL10 row | P0 stop condition; fallback is a joint move to 20.2.4 later |
-| OBS rebuild removes the 19.2.3 RPMs | filesystems:ceph:squid/16.0 | D2 mirror, nightly drift check |
+| OBS rebuild removes the 19.2.3 RPMs | filesystems:ceph:squid/16.0 | DONE (D2, agent/plans/_done/PLAN-renet-obs-mirror.md): CI installs the pin from the captured mirror `ghcr.io/rediacc/ci-vm-bake:obs-mirror-v1-opensuse-16.0-<EVR>` via /etc/rediacc/ceph-zypper-mirror; ci-obs-mirror captures every OBS build every 6 hours; the nightly upstream check reports an OBS move |
 | cephadm picks podman, so the pre-pull, `CleanupState` and the other hosts disagree on the engine | ceph container_engines.py line 111; private/renet/pkg/infra/ceph/provisioner.go:578 | weak dependencies off, podman refusal, Docker CE, `--docker` |
 | `updates`, the SIG or OBS pushes ceph past the pin | 2a | per-manager lock; matrix `upgrade --assumeno` check |
 | The apt node prep regresses while moving into renet | private/renet/pkg/infra/ceph/provisioner.go:515-561 | same bounds (private/renet/cmd/renet/pkg_install_retry.go:23-55); the ubuntu Ceph jobs unchanged in P6 |

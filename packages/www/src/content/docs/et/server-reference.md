@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: et
-sourceHash: "334e3ab3d1d1cce9"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "960821a4fc0654eb"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Serveri viide
@@ -251,6 +251,16 @@ renet datastore unfork --image {image}                         # lammuta kloon s
 ```
 
 Ceph-sõlmed ei ava kunagi LUKS-i (sellel taustasüsteemil pole pildipõhist LUKS-kihti), nii et nende mälujälg järgib Ceph-deemoni häälestust (`osd_memory_target`), mitte KDF-matemaatikat. Teine klient saab kaardistada sama RBD-pildi kirjutuskaitstult koos kohaliku copy-on-write ülekattega, mis on kirjutuskaitse-valdav horisontaalse skaleerumise tee.
+
+#### Cephi paketid openSUSE Leapil
+
+openSUSE Leap 16.0 puhul paigaldab `renet ceph install` täpselt ühe kindla `ceph-common` ja `cephadm` järgu OBS-i hoidlast `filesystems:ceph:squid`. OBS hoiab alles ainult viimase järgu, seega kaob fikseeritud järk sealt iga OBS-i uuesti ehitamise korral. Kui soovite paigaldada koopiast, kirjutage ühe URL-i faili `/etc/rediacc/ceph-zypper-mirror` esimesele reale:
+
+```bash
+echo 'https://mirror.example.com/ceph-squid/16.0/' | sudo tee /etc/rediacc/ceph-zypper-mirror
+```
+
+Peegel peab pakkuma OBS-i hoidlat muutmata kujul: allkirjastatud `repodata/` bait baidi haaval ning RPM-id nende OBS-i asukohtades. renet hoiab allkirjakontrolli sisse lülitatud ja kontrollib sellesse manustatud OBS-i võtme vastu, mistõttu uuesti allkirjastatud või uuesti genereeritud hoidla lükatakse tagasi. Lubatud skeemid on `https`, `http`, `dir` ja `file`. Keskkonnamuutuja `REDIACC_CEPH_ZYPPER_MIRROR` alistab faili. Kehtetu väärtus logitakse ja jäetakse arvestamata ning paigaldus langeb tagasi OBS-i peale.
 
 ### Kubernetes (renet kube)
 

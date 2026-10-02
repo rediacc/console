@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: ar
-sourceHash: "334e3ab3d1d1cce9"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "960821a4fc0654eb"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # مرجع الخادم
@@ -251,6 +251,16 @@ renet datastore unfork --image {image}                         # تفكيك اس
 ```
 
 لا تفتح عُقد Ceph أبداً LUKS (لا توجد طبقة LUKS لكل صورة في هذه الطبقة)، لذا يتبع بصمة ذاكرتها ضبط عملية Ceph الخلفية (`osd_memory_target`)، لا رياضيات KDF. يمكن لعميل ثانٍ تعيين نفس صورة RBD للقراءة فقط مع طبقة تراكب محلية للنسخ عند الكتابة، وهو مسار التوسع للقراءة الغالبة.
+
+#### Ceph على openSUSE Leap
+
+على openSUSE Leap 16.0 يثبّت الأمر `renet ceph install` إصدارًا محددًا بعينه من الحزمتين `ceph-common` و`cephadm` من مستودع OBS ‏`filesystems:ceph:squid`. يحتفظ OBS بآخر إصدار مبني فقط، لذا يختفي الإصدار المثبّت من هناك كلما أعاد OBS البناء. للتثبيت من نسخة بديلة، اكتب عنوان URL واحدًا في السطر الأول من الملف `/etc/rediacc/ceph-zypper-mirror`:
+
+```bash
+echo 'https://mirror.example.com/ceph-squid/16.0/' | sudo tee /etc/rediacc/ceph-zypper-mirror
+```
+
+يجب أن تقدّم النسخة المرآة مستودع OBS دون أي تعديل: أي ملفات `repodata/` الموقّعة بايتًا ببايت، إضافة إلى ملفات RPM في مساراتها نفسها على OBS. يُبقي renet فحوص التوقيع مفعّلة ويتحقق مقابل مفتاح OBS المضمَّن فيه، ولذلك يُرفض أي مستودع أُعيد توقيعه أو توليده. الصيغ المقبولة هي `https` و`http` و`dir` و`file`. يتجاوز متغير البيئة `REDIACC_CEPH_ZYPPER_MIRROR` قيمة الملف. تُسجَّل القيمة غير الصالحة ويتم تجاهلها، ثم يعود التثبيت إلى OBS.
 
 ### Kubernetes (renet kube)
 

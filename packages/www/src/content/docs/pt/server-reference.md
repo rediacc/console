@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: pt
-sourceHash: "334e3ab3d1d1cce9"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "960821a4fc0654eb"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Referência do Servidor
@@ -251,6 +251,16 @@ renet datastore unfork --image {image}                         # desmonta um clo
 ```
 
 Os nós Ceph nunca abrem LUKS (não há camada de LUKS por imagem neste backend), pelo que a sua utilização de memória segue a afinação do daemon Ceph (`osd_memory_target`), e não a matemática do KDF. Um segundo cliente pode mapear a mesma imagem RBD só de leitura com uma camada local copy-on-write, que é o caminho de escalonamento horizontal predominantemente de leitura.
+
+#### Pacotes Ceph no openSUSE Leap
+
+No openSUSE Leap 16.0, o `renet ceph install` instala uma build exata de `ceph-common` e `cephadm` do repositório OBS `filesystems:ceph:squid`. O OBS mantém apenas a build mais recente, então a build fixada desaparece de lá sempre que o OBS recompila. Para instalar a partir de uma cópia, escreva uma URL na primeira linha de `/etc/rediacc/ceph-zypper-mirror`:
+
+```bash
+echo 'https://mirror.example.com/ceph-squid/16.0/' | sudo tee /etc/rediacc/ceph-zypper-mirror
+```
+
+O mirror deve servir o repositório OBS sem modificações: o `repodata/` assinado byte a byte, mais os RPMs nos mesmos caminhos do OBS. O renet mantém a verificação de assinaturas ativada e valida com a chave do OBS que traz embutida, então um repositório reassinado ou regenerado é recusado. Os esquemas aceitos são `https`, `http`, `dir` e `file`. A variável de ambiente `REDIACC_CEPH_ZYPPER_MIRROR` tem prioridade sobre o arquivo. Um valor inválido é registrado no log e ignorado, e a instalação volta para o OBS.
 
 ### Kubernetes (renet kube)
 

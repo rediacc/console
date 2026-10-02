@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: zh
-sourceHash: "334e3ab3d1d1cce9"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "960821a4fc0654eb"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # 服务器参考
@@ -251,6 +251,16 @@ renet datastore unfork --image {image}                         # 按依赖顺序
 ```
 
 Ceph 节点从不打开 LUKS（此后端没有按镜像的 LUKS 层），因此它们的内存占用取决于 Ceph 守护进程的调优（`osd_memory_target`），而非 KDF 的计算。第二个客户端可以以只读方式映射同一个 RBD 镜像，并叠加一个本地写时复制覆盖层，这就是以读为主的横向扩展路径。
+
+#### openSUSE Leap 上的 Ceph 软件包
+
+在 openSUSE Leap 16.0 上，`renet ceph install` 会从 OBS 的 `filesystems:ceph:squid` 仓库安装 `ceph-common` 和 `cephadm` 的某一个确定构建。OBS 只保留最新构建，因此每当 OBS 重新构建，被固定的构建就会从那里消失。若要改从副本安装，请在 `/etc/rediacc/ceph-zypper-mirror` 的第一行写入一个 URL：
+
+```bash
+echo 'https://mirror.example.com/ceph-squid/16.0/' | sudo tee /etc/rediacc/ceph-zypper-mirror
+```
+
+镜像必须原样提供 OBS 仓库：已签名的 `repodata/` 要逐字节一致，RPM 也要位于与 OBS 相同的路径。renet 始终开启签名检查，并使用内置的 OBS 密钥进行验证，因此重新签名或重新生成的仓库会被拒绝。可接受的协议为 `https`、`http`、`dir` 和 `file`。环境变量 `REDIACC_CEPH_ZYPPER_MIRROR` 的优先级高于该文件。无效的值会被记入日志并忽略，安装随后回退到 OBS。
 
 ### Kubernetes（renet kube）
 
