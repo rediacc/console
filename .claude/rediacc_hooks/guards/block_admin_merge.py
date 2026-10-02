@@ -6,26 +6,29 @@
   2. --auto defers only the CI-green requirement (GitHub enforces that at
      merge time). Review hygiene is NOT a required check, so --auto still
      proves it NOW like an immediate merge does.
-  3. Review hygiene = zero unresolved review threads AND a substantive
-     reply to the newest finished review REPORT (issue-comment channel,
-     check-review-report-replies.sh). Required checks are per-commit: a
-     report posted after CI went green can never turn the check red, so
-     merge time is the only enforcement point, and ci.yml's review-gate only
-     re-evaluates on the next push.
+  3. Review hygiene = the per-commit review precondition AND zero unresolved
+     review threads. The precondition: every commit since the base has a
+     per-commit review record in agent/reviews/<branch>/ with no open finding
+     at or above block_at, and every record is committed
+     (`python3 .claude/hooks/stop/wl_review.py --check`). It is judged on the
+     PR's head branch (`headRefName`) by `wl_review.check_state`, locally and
+     with no network call, and it fails CLOSED when the reviewer module does
+     not import. Threads are human review threads; nothing posts bot threads
+     since the PR-level review was retired on 2026-10-02.
   4. An immediate merge (no --auto) must additionally prove CI green NOW.
      Console gets all checks; other rediacc repos get the hygiene checks
      (their thread state feeds console's Submodule Branches gate).
      Network paths are NOT covered by test-hooks.sh; verification
      failures fail CLOSED.
 
-PORT NOTE ON WHAT THE DIFFERENTIAL CAN AND CANNOT REACH. Under the harness's default `gh` stub (exit 1, nothing on stdout) every merge resolves to an empty `PRDATA`, so the corpus exercises arms 1 and 2 and stops at "could not resolve the PR". Arms 3 to 5 are ported line for line and are NOT covered here, and that is deliberate rather than an omission: reaching them means stubbing
-`gh` into answering AND letting `check-review-report-replies.sh` run, and that script makes its own live calls, so a stub deep enough to reach the branch would make this differential a network test -- the exact failure the harness's own header says the stub exists to prevent. The bash's line 20 already says those paths are not covered by test-hooks.sh either.
+PORT NOTE ON WHAT THE DIFFERENTIAL CAN AND CANNOT REACH. Under the harness's default `gh` stub (exit 1, nothing on stdout) every merge resolves to an empty `PRDATA`, so the corpus exercises arms 1 and 2 and stops at "could not resolve the PR". The review-record arm is covered instead by `tests/test_wl_review_check.py`, which drives `review_refusals` against a fixture branch; the thread
+arm needs a live `gh` answer and stays uncovered here.
 """
 
 import json
-import subprocess
+import pathlib
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import hookio, shellscan, syspath
 from rediacc_hooks.wellknown import ACCOUNT_REPO, GH_REPO, RENET_REPO
 
 CHAIN = "pre-bash"
@@ -54,16 +57,17 @@ NOT_GREEN_MESSAGE = (
     "or wait for the run."
 )
 
-REPORT_MESSAGE = (
-    "❌ BLOCKED: %s#%s has an unaddressed review REPORT (or the check could not run). "
-    "Required checks are per-commit, so a report posted after CI went green can only be "
-    "enforced here. Details:"
+REVIEWS_MESSAGE = (
+    "❌ BLOCKED: %s#%s (head branch %s) fails the per-commit review precondition: every "
+    "commit since the base has a per-commit review record in agent/reviews/<branch>/ with no "
+    "open finding at or above block_at, and every record is committed. Refused: %s. Settle "
+    "each line below, then re-check with 'python3 .claude/hooks/stop/wl_review.py --check'."
 )
 
 THREADS_MESSAGE = (
     "❌ BLOCKED: %s#%s has %s unresolved review thread(s). Reply substantively and resolve "
-    "them (GraphQL resolveReviewThread) before merging -- review threads are the blocking "
-    "channel of the Claude review flow."
+    "them (GraphQL resolveReviewThread) before merging -- an open review thread is a "
+    "reviewer's question the PR has not answered."
 )
 
 GRAPHQL = (
@@ -75,7 +79,10 @@ JQ_UNRESOLVED = (
     "[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)] | length"
 )
 
-# REST parity for the --admin ban. `gh api .../pulls/<n>/merge -X PUT` reaches the SAME GitHub merge mutation as `gh pr merge` and carries no `gh pr` verb, so it is invisible to gh_pr_at_command_pos below -- without this arm it merges over the --admin ban, the CI-green check and the review-thread/report-reply hygiene checks all at once. Endpoint and method are matched INDEPENDENTLY
+# The per-commit reviewer lives beside the Stop hook; the review arm imports it from here.
+STOP_DIR = pathlib.Path(__file__).resolve().parents[2] / "hooks" / "stop"
+
+# REST parity for the --admin ban. `gh api .../pulls/<n>/merge -X PUT` reaches the SAME GitHub merge mutation as `gh pr merge` and carries no `gh pr` verb, so it is invisible to gh_pr_at_command_pos below -- without this arm it merges over the --admin ban, the CI-green check, the per-commit review precondition and the review-thread check all at once. Endpoint and method are matched INDEPENDENTLY
 # because `gh api` flags are order-independent (the method flag may precede or follow the endpoint), reusing the split-on-shell-separators idiom block_raw_pr_body_edit.py:246-249 already uses for the sanctioned PATCH form, rather than a new shared shellscan helper for a three-line regex.
 API_VERB = hookio.rx(r"^[{S}]*gh[{S}]+api([{S}]|$)")
 API_MERGE_ENDPOINT = r"pulls/[0-9]+/merge"
@@ -83,8 +90,8 @@ API_PUT_METHOD = hookio.rx(r"(^|[{S}])(-X|--method)[{S}]+PUT([{S}]|$)")
 
 REST_MERGE_MESSAGE = (
     "❌ BLOCKED: 'gh api .../pulls/<n>/merge' is banned outright. It reaches the same "
-    "GitHub mutation as 'gh pr merge' but skips the --admin ban, the CI-green check "
-    "and the review-thread/report-reply hygiene entirely -- this guard has no way to "
+    "GitHub mutation as 'gh pr merge' but skips the --admin ban, the CI-green check, "
+    "the per-commit review precondition and the review-thread check entirely -- this guard has no way to "
     "verify any of that against a raw REST call. The sanctioned path: 'gh pr ready' "
     "once CI Complete is green, then 'gh pr merge --rebase --auto'."
 )
@@ -124,17 +131,19 @@ EDGE_CASES = [
 ]
 
 
-def _run_capture(argv, env=None):
-    """`OUT=$(cmd 2>&1)` with its status -- both streams, and `if !` on the rc."""
+def review_refusals(root, branch, repo):
+    """(reasons, lines) of the per-commit review precondition for the PR head `branch` of `repo`. Fails CLOSED: an import or runtime error is itself a refusal. No network call."""
     try:
-        proc = subprocess.run(
-            argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False, env=env
+        syspath.on_sys_path(STOP_DIR)
+        import wl_review  # noqa: PLC0415 -- loaded only for a merge, never for the rest of the chain
+
+        label = "console" if repo == GH_REPO else "private/" + repo.rsplit("/", 1)[-1]
+        return wl_review.check_state(pathlib.Path(root), branch, label=label)
+    except Exception as exc:  # noqa: BLE001 -- unverifiable is refused, never allowed
+        return (
+            ["unverifiable"],
+            ["the per-commit review check could not run (%s: %s)" % (type(exc).__name__, exc)],
         )
-    except OSError:
-        return "", 127
-    return shellscan._command_substitution(proc.stdout.decode("utf-8", "surrogateescape")), (
-        proc.returncode
-    )
 
 
 def _jq_number(text):
@@ -151,6 +160,16 @@ def _jq_number(text):
     if value is None or value is False:
         return ""
     return value if isinstance(value, str) else json.dumps(value, separators=(",", ":"))
+
+
+def _jq_head_ref(text):
+    """`.headRefName // empty` over PRDATA."""
+    try:
+        doc = json.loads(text) if text else None
+    except ValueError:
+        return ""
+    value = doc.get("headRefName") if isinstance(doc, dict) else None
+    return value if isinstance(value, str) else ""
 
 
 def _jq_conclusion(text):
@@ -233,7 +252,7 @@ def run(ev):
         view = ["timeout", "20", "gh", "pr", "view"]
         if sel != "":
             view.append(sel)
-        view += ["--repo", repo, "--json", "number,statusCheckRollup"]
+        view += ["--repo", repo, "--json", "number,statusCheckRollup,headRefName"]
         prdata = hookio.run_out(view)
         num = _jq_number(prdata)
         if num == "":
@@ -249,25 +268,12 @@ def run(ev):
                 )
                 return hookio.DENY
 
-        # Report-reply hygiene (both --auto and immediate): the newest finished review report must have a substantive id-referencing reply. Reuses the CI gate verbatim; fails CLOSED on script/network failure. The gate moved from `check-review-report-replies.sh` to its registered `.py` entry point when W7 P5 batch G1 retired the bash twin, which is why the frozen oracle beside
-        # this file still spells the old path.
-        token = hookio.run_out(["gh", "auth", "token"])
-        out, rc = _run_capture(
-            [
-                "timeout",
-                "30",
-                "env",
-                "GH_TOKEN=%s" % token,
-                "PR_NUMBER=%s" % num,
-                "GITHUB_REPOSITORY=%s" % repo,
-                "python3",
-                "%s/.ci/scripts/quality/check_review_report_replies.py" % root,
-            ]
-        )
-        if rc != 0:
-            ev.warn(REPORT_MESSAGE % (repo, num))
-            tail, _ = shellscan._records(shellscan._here_string(out))
-            ev.warn_raw("".join(line + "\n" for line in tail[-15:]))
+        # The per-commit review precondition (both --auto and immediate), judged on the PR's head branch from the local tree. An unreadable head branch or a reviewer module that does not import refuses: the precondition is unverifiable, and unverifiable never merges.
+        head = _jq_head_ref(prdata)
+        reasons, lines = review_refusals(root, head, repo)
+        if reasons:
+            ev.warn(REVIEWS_MESSAGE % (repo, num, head or "unknown", ", ".join(reasons)))
+            ev.warn_raw("".join("  %s\n" % line for line in lines))
             return hookio.DENY
 
         owner = repo.split("/", 1)[0]

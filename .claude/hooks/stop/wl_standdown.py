@@ -84,9 +84,7 @@ _CAP_WAIT_ONLY = frozenset(
 _FOCUS_ONLY = frozenset(
     {
         "ci-red",
-        "review-red",
         "ci-unreadable",
-        "review-unreadable",
         "pr-unreadable",
         "pr-stale",
         "diverged",

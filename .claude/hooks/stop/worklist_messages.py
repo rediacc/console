@@ -218,65 +218,6 @@ push the fix, or name the failing job in your stop message, or -- if it is not
 yours to fix -- file
     - [?] (%s) CI: <job> red, <one-line reason>  DEFAULT: <the ACTION you take alone -- 'hold' is not one>  WHY: <why it is not yours>  HOW: <who or what resolves it>"""
 
-V_REVIEW_RED = """CI IS GREEN ON PR #%s BUT "Review Complete" IS RED (head %s), AND NOTHING
-IS WATCHING IT. This is NOT a genuine CI failure -- CI_NONBLOCKING_CONTEXTS
-already keeps "Review Complete" out of the CI red/soft bucket for exactly
-that reason -- but it is a separate signal THIS session has the context to
-resolve (what it just pushed, what the review is about) and a remote job
-does not.
-
-Review Complete's own verdict, read from the check-run itself, not guessed:
-    Title: %s
-%s
-
-WHAT TO DO, BY SHAPE. The summary above already says which surface(s) are
-unanswered -- reply on THAT surface. An inline reply on a top-level comment
-(or vice versa) 404s; this session has made that mistake once already.
-
-  INLINE review-thread comments (have a path/line):
-      gh api repos/%s/%s/pulls/%s/comments --jq '.[] | select(.in_reply_to_id == null)'
-      gh api repos/%s/%s/pulls/%s/comments/<id>/replies -X POST -f body="<substantive reply>"
-
-  TOP-LEVEL review summary or report (posted by github-actions[bot], body
-  starting "## Review verdict" or "**Claude finished"; there is NO /replies
-  endpoint for an issue comment -- 404, verified):
-      gh api repos/%s/%s/issues/%s/comments -X POST -f body="<substantive reply>"
-
-  If the summary instead names an UNRESOLVED THREAD or an UNREVIEWED HEAD,
-  neither reply command above fixes it -- resolve the thread on GitHub, or
-  push a change, per check-resolved-threads.sh / the currency check in
-  review-status.sh.
-
-A reply must be SUBSTANTIVE: past 30 characters, not a stock "done"/"ack"/
-"thanks", posted by someone OTHER than the bot, and either cite the target
-comment's id or run past 200 characters -- the exact rule
-check-review-comments.sh and check-review-report-replies.sh already apply
-(cited here, not re-implemented).
-
-THEN RE-EVALUATE. Do NOT `gh run rerun <run-id> --failed` -- Review Status's
-own job always exits 0 (the verdict lives in the check-run body, not the job
-conclusion), so there is never a failed job for --failed to find. Nudge the
-same workflow_dispatch path review-status.yml already has for this:
-    gh workflow run review-status.yml --repo %s/%s --ref main -f pr_number=%s
-
-THIS CANNOT TRAP YOU: it blocks at most %d consecutive stop(s) per verdict
-(this is %d), then downgrades to a report for that verdict forever. To clear
-it now, post the reply(ies) and re-dispatch, or name "Review Complete" in
-your stop message, or -- if it is not yours to fix -- file
-    - [?] (%s) Review Complete red on PR #%s: <one-line reason>  DEFAULT: <the ACTION you take alone -- 'hold' is not one>  WHY: <why it is not yours>  HOW: <who or what resolves it>"""
-
-REVIEW_NOTE_DOWNGRADED = """CI on PR #%s: "Review Complete" is still red ("%s"), but this has
-already been reported %d time(s) and downgraded per the no-deadlock rule --
-this is a non-blocking reminder, not a new block. Same fix as before: reply
-on the right surface, then `gh workflow run review-status.yml --repo %s/%s
---ref main -f pr_number=%s`."""
-
-V_REVIEW_UNREADABLE = (
-    "THIS IS A HOOK BUG: the Review Complete check-run lookup failed (%s), so "
-    "that check is blind. It blocks rather than passing quietly, per "
-    "no-escape-hatch."
-)
-
 V_ADHOC_WATCH = (
     "A background task is watching CI BY HAND: %s\n"
     "    %s\n"
@@ -472,7 +413,7 @@ N_ROSTER_STALE = (
     "are done: python3 %s --reap %s <task-id>..."
 )
 
-# THE FINISH LINE OF A pr-babysit WAVE, rendered as the markdown checkboxes it already is. The four boxes are read off `.claude/commands/pr-babysit.md` ("The console PR rides as a draft until green; stops at green + Claude-reviewed + threads-resolved PRs; never merges") rather than invented here, and the two the hook cannot observe are backed by ticked worklist items, which is the
+# THE FINISH LINE OF A pr-babysit WAVE, rendered as the markdown checkboxes it already is. The four boxes are read off `.claude/commands/pr-babysit.md` (green, ready, per-commit reviews clean, human threads resolved; never merges) rather than invented here. The review box is read live off agent/reviews/<branch>/, and the one box the hook cannot observe (threads) is backed by a ticked worklist item, which is the
 # same evidence discipline every other tick carries.
 V_PR_FINISH = (
     "THE WAVE IS NOT FINISHED. A pr-babysit round log is live for this branch "
@@ -480,11 +421,15 @@ V_PR_FINISH = (
     ".claude/commands/pr-babysit.md. This is the mission; everything else the "
     "hook has to say is housekeeping around it.\n"
     "%s\n"
-    "The first two boxes are read live off the PR. The last two are ticked by "
-    "closing a worklist item that carries the token, with evidence -- the hook "
-    "cannot see a review marker or a resolved thread and will not pretend to:\n"
-    "    python3 %s --add %s pr:%s/reviewed  <what still needs reviewing>\n"
-    "    python3 %s --tick %s <id> <the review comment URL>\n"
+    "The first two boxes are read live off the PR. The third is read live off "
+    "agent/reviews/<branch>/: every commit since the base has a per-commit review "
+    "record with no open finding at or above block_at, and every record is "
+    "committed (python3 .claude/hooks/stop/wl_review.py --check names what is "
+    "unsettled). The last is ticked by closing a worklist item that carries the "
+    "token, with evidence -- the hook cannot see a resolved thread and will not "
+    "pretend to:\n"
+    "    python3 %s --add %s pr:%s/threads  <the threads still open>\n"
+    "    python3 %s --tick %s <id> <the resolved thread URL>\n"
     "Never merge, and never push main: that stays the operator's call."
 )
 

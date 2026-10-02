@@ -2139,12 +2139,10 @@ PRIORITY_LADDER = (
                 "cl-producing",
                 "cl-flip",
                 "cl-waves",
-                # The pr-babysit finish line, box by box (green / ready / reviewed / threads), and the red that keeps it unticked.
+                # The pr-babysit finish line, box by box (green / ready / per-commit reviews / threads), and the red that keeps it unticked.
                 "pr-finish",
                 "ci-red",
-                # Not a genuine CI failure (CI_NONBLOCKING_CONTEXTS keeps it out of "ci-red" on purpose) but the local session has context a remote job does not, so it joins ci-red's tier rather than sitting in hygiene where it could be starved by real work.
-                "review-red",
-                # An open per-commit review finding at or above `block_at` (agent/plans/PLAN-per-commit-review.md section 7): the review that replaced review-red, and the same tier for the same reason.
+                # An open per-commit review finding at or above `block_at` (agent/plans/PLAN-per-commit-review.md section 7): it protects the PR the way ci-red does, so it shares ci-red's tier rather than sitting in hygiene where it could be starved by real work.
                 "commit-review",
             }
         ),
@@ -2179,7 +2177,6 @@ PRIORITY_LADDER = (
                 "adhoc-watch-broken",
                 "ci-unreadable",
                 "ci-waiting",
-                "review-unreadable",
                 # A review file that does not parse or whose Body-Sig no longer matches: the reviewer's record cannot be trusted, which is an integrity question before it is a review question.
                 "commit-review-malformed",
                 "pr-unreadable",
@@ -3826,58 +3823,6 @@ def run_stop(event, event_ok, worklist, hook_file):
                 else "",
                 _txt,
             )
-    elif cistate == "ok":
-        # CI is genuinely clean. Separate from the hard/soft bucket above ON PURPOSE: "Review Complete" is deliberately excluded from ci_classify (CI_NONBLOCKING_CONTEXTS) so it can never read as a CI failure, but that exclusion also means a red "Review Complete" was previously INVISIBLE here -- identical to a fully clean head. This session has the context (what it just pushed,
-        # what the review is about) that a remote job does not, so it is the right place to surface it.
-        try:
-            rstate, rdetail = wl_ci.review_red(
-                root,
-                worklist,
-                session_id,
-                cidetail,
-                (last_msg or "") + "\n" + "\n".join(deferred),
-            )
-        except Exception as exc:  # noqa: BLE001 -- a broken check must SAY SO
-            rstate, rdetail = "unreadable", "%s: %s" % (type(exc).__name__, str(exc)[:120])
-        if rstate == "unreadable":
-            vadd("review-unreadable", True, M.V_REVIEW_UNREADABLE % rdetail)
-        elif rstate == "trouble":
-            vadd(
-                "review-red",
-                True,
-                M.V_REVIEW_RED
-                % (
-                    rdetail["pr"],
-                    rdetail["sha"],
-                    rdetail["title"],
-                    rdetail["summary"],
-                    rdetail["owner"],
-                    rdetail["name"],
-                    rdetail["pr"],
-                    rdetail["owner"],
-                    rdetail["name"],
-                    rdetail["pr"],
-                    rdetail["owner"],
-                    rdetail["name"],
-                    rdetail["pr"],
-                    rdetail["owner"],
-                    rdetail["name"],
-                    rdetail["pr"],
-                    wl_ci.REVIEW_MAX_BLOCKS,
-                    rdetail["n"],
-                    me8,
-                    rdetail["pr"],
-                ),
-            )
-        elif rstate == "downgraded":
-            ci_report = (ci_report + "\n\n" if ci_report else "") + M.REVIEW_NOTE_DOWNGRADED % (
-                rdetail["pr"],
-                rdetail["title"],
-                rdetail["n"],
-                rdetail["owner"],
-                rdetail["name"],
-                rdetail["pr"],
-            )
     # ---- v21: THE pr-babysit FINISH LINE, as the markdown checkboxes it is.
     #
     # THE OPERATOR'S OWN EXAMPLE for the priority ladder: "if there is an open-pr and if it's red we must continue to work until making it green. That should be determined by our markdown tasks. You know we already have empty/checked boxes."
@@ -3885,13 +3830,14 @@ def run_stop(event, event_ok, worklist, hook_file):
     # `ci-red` already blocks on the red -- but it has a HARD CEILING of CI_MAX_BLOCKS and then downgrades to a report, for good reasons that are about a red nobody here can fix. Nothing then held the WAVE open. A session could reach green, leave the PR sitting in draft with the review never requested and threads unresolved, and stop clean: every check on the board was satisfied
     # while the thing it was asked to do was unfinished. That is the state a mission tier exists to refuse.
     #
-    # THE FOUR BOXES ARE READ OFF `.claude/commands/pr-babysit.md`, not invented here -- "The console PR rides as a draft until green; stops at green + Claude-reviewed + threads-resolved PRs; never merges."
+    # THE FOUR BOXES ARE READ OFF `.claude/commands/pr-babysit.md`, not invented here: green, ready, per-commit reviews clean, human threads resolved; never merges.
     #
     # WHAT GATES IT, so it cannot become a tax on every session that happens to have a PR: a pr-babysit ROUND LOG must exist for this branch. That file is the wave's own artifact (wl_roundlog.roundlog_path, the path the skill already writes), so the check fires for a session running the loop and is structurally silent for one that is not.
     #
-    # THE LAST TWO BOXES ARE STORE-BACKED, and deliberately not guessed. The hook cannot see a `<!-- claude-reviewed: <sha> -->` marker or a resolved review thread without spending another GraphQL round trip, and a box that ticks itself on an unreliable read is worse than one the session ticks
-    # with evidence. So they are covered by a TICKED worklist item carrying
-    # `pr:<n>/reviewed` / `pr:<n>/threads` -- the same `cl:<slug>/<wN>` linkage agent/programs/<slug>/CHECKLIST.md already uses, and the same evidence discipline every other tick carries.
+    # THE REVIEW BOX IS READ LIVE from agent/reviews/<branch>/ through `_rv`, the branch_state computed above (local git, no network): `not wl_review.push_refusals(_rv)`, the same verdict `wl_review.py --check` prints. When `_rv` failed to compute the box stays unticked, never guessed clean.
+    # THE THREADS BOX IS STORE-BACKED, and deliberately not guessed. The hook cannot see a resolved review thread without spending another GraphQL round trip, and a box that ticks itself on an unreliable read is worse than one the session ticks
+    # with evidence. So it is covered by a TICKED worklist item carrying
+    # `pr:<n>/threads` -- the same `cl:<slug>/<wN>` linkage agent/programs/<slug>/CHECKLIST.md already uses, and the same evidence discipline every other tick carries.
     try:
         _prf_info = None
         if cistate in ("ok", "pending"):
@@ -3907,12 +3853,12 @@ def run_stop(event, event_ok, worklist, hook_file):
         if _prf_num and _prf_branch and _prf_log is not None and _prf_log.is_file():
             _prf_green = cistate == "ok"
             _prf_ready = not (_prf_info or {}).get("draft")
-            _prf_rev = _prf_covered(fold, "pr:%s/reviewed" % _prf_num)
+            _prf_rev = _rv is not None and not wl_review.push_refusals(_rv)
             _prf_thr = _prf_covered(fold, "pr:%s/threads" % _prf_num)
             _prf_boxes = [
                 (_prf_green, "green -- every check on PR #%s passing" % _prf_num),
                 (_prf_ready, "ready for review -- the console PR is out of draft"),
-                (_prf_rev, "Claude-reviewed (tick an item carrying pr:%s/reviewed)" % _prf_num),
+                (_prf_rev, "per-commit reviews clean (wl_review.py --check)"),
                 (_prf_thr, "threads resolved (tick an item carrying pr:%s/threads)" % _prf_num),
             ]
             if not all(done for done, _ in _prf_boxes):

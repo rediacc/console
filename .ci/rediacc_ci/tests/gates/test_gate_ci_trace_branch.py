@@ -634,7 +634,7 @@ def test_control_a_blind_caller_is_detected(gate, tmp_path):
 
 def test_green_draft_names_the_finish_sequence(gate):
     gate.log_test("GREEN on a still-draft PR must name the finish sequence")
-    # Green is not the finish line: the PR still has to be flipped ready, reviewed, and its threads resolved. Driven through the REAL _emit in four directions rather than grepping the source for the string, because a nudge that never renders is the failure here.
+    # Green is not the finish line: the PR still has to be flipped ready, its per-commit reviews clean, and its human threads resolved. Driven through the REAL _emit in four directions rather than grepping the source for the string, because a nudge that never renders is the failure here.
     require_subjects(gate)
     result = harness.run([sys.executable, "-c", NUDGE_PY, str(TRACE)])
     if result.rc != 0:
@@ -796,9 +796,11 @@ def test_control_without_the_ci_complete_rule_the_same_head_reads_green(gate, tm
     gate.log_pass("control fires: without CI Complete the fixture reads green")
 
 
-def test_ci_complete_green_with_review_red_and_verdict_in_flight_is_green(gate, tmp_path):
+def test_ci_complete_green_with_verdict_publisher_red_and_verdict_in_flight_is_green(
+    gate, tmp_path
+):
     gate.log_test(
-        "CI Complete success + Review Complete red + CI Verdict in flight -> GREEN, exit 0"
+        "CI Complete success + Publish CI Verdict red + CI Verdict in flight -> GREEN, exit 0"
     )
     require_subjects(gate)
     nodes = _pr_nodes(
@@ -807,7 +809,7 @@ def test_ci_complete_green_with_review_red_and_verdict_in_flight_is_green(gate, 
             [
                 _ctx("Quality / Code"),
                 _ctx("CI Complete", ident=2),
-                _ctx("Review Complete", "FAILURE", run=1, ident=3),
+                _ctx("Publish CI Verdict", "FAILURE", run=1, ident=3),
                 _ctx("CI Verdict", None, "IN_PROGRESS", run=2, ident=4),
             ]
         ),
@@ -816,9 +818,9 @@ def test_ci_complete_green_with_review_red_and_verdict_in_flight_is_green(gate, 
     bindir = make_fake_gh(tmp_path / "bin", nodes, "null", runs_json=CONSOLE_RUN)
     result = harness.run([sys.executable, str(TRACE), "--ref", PR_BRANCH], env=with_path(bindir))
     gate.assert_exit(0, result, "neither non-blocking context may hold or redden the head")
-    if "review: red" not in result.out:
-        gate.log_fail("the review gate must be named on its own line: %r" % result.out)
-    gate.log_pass("GREEN; the review gate is reported separately")
+    if "review:" in result.out:
+        gate.log_fail("the retired PR-level review line is printed again: %r" % result.out)
+    gate.log_pass("GREEN; neither non-blocking context holds or reddens the head")
 
 
 ATTRIB_GH = """#!/bin/bash

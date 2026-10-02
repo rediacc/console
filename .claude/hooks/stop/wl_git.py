@@ -847,8 +847,8 @@ def main(argv):
                 plan.cmd(["push", "--force-with-lease", "origin", branch], repo)
             plan.cmd(["push", "--force-with-lease", "origin", branch], root)
             plan.note(
-                "after this: CI re-runs, and the claude-reviewed marker no longer "
-                "matches the new head, so the PR needs a fresh review pass"
+                "after this: CI re-runs; per-commit review records carry over by Patch-Id, and "
+                "a commit whose patch changed shows up for wl_review.py --check to re-review"
             )
         elif sub == "rebase-preflight":
             # THE CONSOLE ROOT WAS NEVER COVERED. rebase-submodules rebases submodules; the deadlock on 2026-08-28 was in the parent, where this module planned nothing at all, so a session hit git's own bare refusal and had to work out the owner by hand.

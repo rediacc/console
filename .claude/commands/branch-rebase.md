@@ -247,9 +247,9 @@ runs them with the `!` prefix. Submodules first, same order as the rebase:
   ```
 
 Print the recorded pre-rebase SHAs alongside them, so the operator can undo. `--force-with-lease` (not `--force`) is what refuses to clobber someone else's push.
-- **An open PR on this branch will re-run CI** once the force-push lands, and a rebased
-  head **invalidates the Claude review marker** (`<!-- claude-reviewed: <sha> -->` no
-longer matches). Say so in the report: the PR needs a fresh review pass before `/pr-merge` will accept it. Do not flip anything ready here.
+- **An open PR on this branch will re-run CI** once the force-push lands. Per-commit review
+  records carry over by `Patch-Id:`: a rebased commit whose patch is unchanged still counts as reviewed.
+A commit whose patch changed (a conflict resolution, an amend) shows up as uncovered; `.claude/hooks/stop/worklist.py --review-run <me> <sha>` reviews it. Say so in the report, and name what `python3 .claude/hooks/stop/wl_review.py --check` prints, because `/pr-merge` requires it clean. Do not flip anything ready here.
 
 ### 6. Report
 
