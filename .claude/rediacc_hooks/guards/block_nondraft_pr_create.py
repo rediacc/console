@@ -23,7 +23,7 @@ HAS_DRAFT = hookio.rx(r"(^|[{S}])(--draft|-d)([{S}=]|$)")
 PUBLIC_MESSAGE = (
     "❌ BLOCKED: PRs on %s must be created as DRAFTS: add --draft to 'gh pr create'. The PR "
     "stays draft while CI runs and is flipped with 'gh pr ready' only once CI Complete is "
-    "green (that flip is what triggers the automated Claude review). If you are actually "
+    "green. If you are actually "
     "targeting a private submodule repo, say so explicitly with --repo "
     "rediacc/<renet|account|elite> (drafts are impossible there)."
 )

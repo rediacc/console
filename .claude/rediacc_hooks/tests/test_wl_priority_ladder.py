@@ -204,10 +204,10 @@ def test_232b_control_two_invariants_are_both_quoted_with_no_collapse_line(wl): 
 
 
 def test_233_the_pr_babysit_finish_line_blocks_a_green_but_unfinished_wave(wl):  # noqa: F811
-    """The operator's example, generalised: reaching green is not reaching the finish line. `.claude/commands/pr-babysit.md` states it, "The console PR rides as a draft until green; stops at green + Claude-reviewed + threads-resolved PRs", and before this change nothing held the wave open once ci-red went quiet.
+    """The operator's example, generalised: reaching green is not reaching the finish line. `.claude/commands/pr-babysit.md` states it (green, ready, per-commit reviews clean, human threads resolved), and before this change nothing held the wave open once ci-red went quiet.
 
-    233b is the CONTROL and 233c the evidence ladder; both continue on this world with no fresh setup, so they stay here. 233b is the gate that stops this becoming a tax on every session that happens to have a PR open: same PR, same green, no pr-babysit wave, not one word. 233c pins that the hook cannot see a review marker or a resolved thread and refuses to pretend it can: the
-    boxes are closed by ticking a worklist item carrying the token, which is the same linkage agent/programs/<slug>/CHECKLIST.md uses.
+    233b is the CONTROL and 233c the evidence ladder; both continue on this world with no fresh setup, so they stay here. 233b is the gate that stops this becoming a tax on every session that happens to have a PR open: same PR, same green, no pr-babysit wave, not one word. 233c pins that the hook cannot see a resolved thread and refuses to pretend it can: the
+    threads box is closed by ticking a worklist item carrying the token, while the per-commit review box is read live off agent/reviews/<branch>/ (this fixture has no branch commits past a base, so it reads clean), which is the same linkage agent/programs/<slug>/CHECKLIST.md uses.
 
     The bash quoted every markdown checkbox through `grep -qF --`, because a leading dash reads as an option bundle and dies with an error that looks exactly like a legitimate assertion failure. Python's `in` carries no such hazard, so the boxes below are quoted plainly.
     """
@@ -225,7 +225,8 @@ def test_233_the_pr_babysit_finish_line_blocks_a_green_but_unfinished_wave(wl): 
     unfinished = "233: the finish line did not hold a green-but-unfinished wave: %s" % got.out[:500]
     assert "THE WAVE IS NOT FINISHED" in got.out, unfinished
     assert "- [x] green" in got.out, unfinished
-    assert "pr:543/reviewed" in got.out, unfinished
+    assert "pr:543/threads" in got.out, unfinished
+    assert "- [x] per-commit reviews clean" in got.out, unfinished
 
     # 233b CONTROL: no round log for this branch, not one word.
     (wl.base / "projects" / "reports" / "pr-babysit-agenttest.md").unlink(missing_ok=True)
@@ -234,21 +235,18 @@ def test_233_the_pr_babysit_finish_line_blocks_a_green_but_unfinished_wave(wl): 
         "233b CONTROL: fired at a session running no wave at all: %s" % got.out[:400]
     )
 
-    # 233c: the last two boxes are TICKED BY EVIDENCE, and then it stops.
+    # 233c: the threads box is TICKED BY EVIDENCE, and then it stops.
     prf_log(wl, 4)
-    reviewed = wl.cli("--add", "deadbeef", "pr:543/reviewed request the Claude review")
     threads = wl.cli("--add", "deadbeef", "pr:543/threads resolve the review threads")
-    rid = re.search(r"#([0-9a-f]+)", reviewed.out).group(1)
     tid = re.search(r"#([0-9a-f]+)", threads.out).group(1)
-    # FOCUS=off, and the reason is worth stating: adding the two claim items makes `open-items` and the idle-stall gate outstanding too, and the focused block surfaces ONE rotating check per stop.
+    # FOCUS=off, and the reason is worth stating: adding the claim item makes `open-items` and the idle-stall gate outstanding too, and the focused block surfaces ONE rotating check per stop.
     # Asserting the finish line's text through a rotation would be asserting the rotation, not the box. This case is about what the finish line SAYS about an open claim, so it reads the dump-all block.
     focus_off = {"WORKLIST_FOCUS": "off"}
     got = prf_run(wl, extra_env=focus_off)
-    assert "- [ ] Claude-reviewed" in got.out, (
+    assert "- [ ] threads resolved" in got.out, (
         "233c: an open claim ticked the box: %s" % got.out[:400]
     )
 
-    wl.cli("--tick", "deadbeef", rid, "https://github.com/fake/repo/pull/543#pullrequestreview-1")
     wl.cli(
         "--tick", "deadbeef", tid, "https://github.com/fake/repo/pull/543#discussion_r1 resolved"
     )

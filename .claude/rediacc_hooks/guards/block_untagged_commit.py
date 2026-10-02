@@ -1,8 +1,8 @@
-"""Require a PR-TASK trailer naming a REAL epic, so a per-epic review finds its work.
+"""Require a PR-TASK trailer naming a REAL epic, so the PR body's epic block accounts for every commit.
 
-WHY. The review now runs once per epic, and it selects an epic's commits with
+WHY. The PR body's generated epic block (the pr-epics skill) groups the branch's commits by epic, and it selects an epic's commits with
 `git log --grep='^PR-TASK: <id>'`. A commit with no trailer belongs to no epic,
-so it is reviewed by nobody, silently. That is the same shape as the flat review's licence to leave areas unreviewed, moved one level down to where nothing reports it at all.
+so the block omits it silently. The ruleset requires only `CI Complete`; the trailer is not a merge check, it is what keeps the PR's account of its own work complete.
 
 ANCHORED TO LINE START, deliberately. The sibling guard block-commit-meta.sh states the rule this follows in its own header: a guard whose only failure mode is refusing CORRECT input teaches people to reword honest messages until it
 stops complaining. A commit whose prose merely mentions PR-TASK is not tagged;
@@ -15,7 +15,7 @@ Two of the three unreadable shapes were never unreadable:
   -F <file>             -> the file is on disk, and readable
 Only a piped stdin or a command-substituted message is genuinely opaque, and that case still ALLOWS rather than refusing a commit it cannot judge. A `-F <file>` that an earlier clause of the same command writes is NOT opaque in that sense: it becomes readable the moment the write runs as its own call, so it is refused with that instruction (`commit_policy.written_message_refusal`, shared with the three commit-policy guards) instead of being judged on an earlier command's bytes.
 
-A TYPO IS WORSE THAN A MISSING TRAILER, which is why shape is no longer enough. `PR-TASK: f2757831` (one character off) looks tagged, routes to an epic that does not exist, and no review pass ever reads it. The id is checked against agent/pr/<branch>.md -- the COMMITTED snapshot, not the worklist sidecar, because the sidecar lives in TMPDIR and was found empty on this very branch
+A TYPO IS WORSE THAN A MISSING TRAILER, which is why shape is no longer enough. `PR-TASK: f2757831` (one character off) looks tagged, routes to an epic that does not exist, and the epic block never lists it. The id is checked against agent/pr/<branch>.md -- the COMMITTED snapshot, not the worklist sidecar, because the sidecar lives in TMPDIR and was found empty on this very branch
 while 35 commits carried a live id.
 
 =============================================================================
@@ -56,9 +56,9 @@ TRAILER = re.compile(r"(?:^|\\n|\n)[ \t\n\v\f\r]*PR-TASK:[ \t\n\v\f\r]*([0-9a-f]
 
 MISSING_TRAILER = """BLOCKED: this commit carries no PR-TASK trailer.
 
-The review runs once per epic and selects an epic's commits with
-`git log --grep='^PR-TASK: <id>'`. An untagged commit belongs to no epic, so it
-is reviewed by nobody and nothing reports the gap.
+The PR body's epic block selects an epic's commits with
+`git log --grep='^PR-TASK: <id>'`. An untagged commit belongs to no epic, so the
+block omits it and nothing reports the gap.
 
 Add a trailer line naming the epic this change belongs to:
 
@@ -320,7 +320,7 @@ def run(ev):
             "\n"
             "This is worse than a missing trailer, which is why it is refused. The commit\n"
             "LOOKS tagged, so nothing downstream complains: `git log --grep` finds no epic\n"
-            "by that id, the per-epic review never selects the commit, and the gap is\n"
+            "by that id, the PR body's epic block never lists the commit, and the gap is\n"
             "reported by nobody. A single mistyped character does it.\n" % found
         )
         _epic_menu(ev, known, snap, branch_key, branch)

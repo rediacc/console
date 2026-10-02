@@ -1,20 +1,19 @@
 ---
 name: pr-epics
-description: How a PR carries the structure of its work here - epics, the generated body block, PR-TASK commit trailers, and the per-epic review. Use when starting a wave, committing into an open PR, or when a pr-epic-block or pr-task-trailers gate fails.
+description: How a PR carries the structure of its work here - epics, the generated body block and PR-TASK commit trailers. Use when starting a wave, committing into an open PR, or when a pr-epic-block or pr-task-trailers gate fails.
 user-invocable: false
 self-improving: true
 ---
 
 # pr-epics: the work must be attributable
 
-A big-bang PR is the norm here, so nothing about it can be flat. The worklist is the real record of a wave; an epic groups its items; the PR body is generated from that; each commit names its epic; and the review runs **once per epic** so no task is starved by being crowded out of one shared turn budget.
+A big-bang PR is the norm here, so nothing about it can be flat. The worklist is the real record of a wave; an epic groups its items; the PR body is generated from that; and each commit names its epic, so the body's epic block accounts for every commit. Review is per commit, not per PR: every commit gets a review record in `agent/reviews/<branch>/` (see `python3 .claude/hooks/stop/wl_review.py --check`).
 
 | you are doing | read |
 |---|---|
 | grouping a wave's items, publishing the snapshot | [epics.md](epics.md) |
 | committing, or a trailer gate is red | [trailers.md](trailers.md) |
 | the body block, or `check:ci-pr-epic-block` is red | [body.md](body.md) |
-| reviewing, or changing review cost | [review.md](review.md) |
 
 ## The chain, in order
 
@@ -24,7 +23,7 @@ A big-bang PR is the norm here, so nothing about it can be flat. The worklist is
     git commit -m "...\n\nPR-TASK: <eid>"      every commit names its epic
     .ci/scripts/pr/sync-epic-block.sh <pr> <branch>   body block from snapshot
 
-Break the chain anywhere and the symptom appears somewhere else: an unpublished snapshot fails the block gate, an untagged commit is reviewed by nobody at all.
+Break the chain anywhere and the symptom appears somewhere else: an unpublished snapshot fails the block gate, an untagged commit is missing from the PR body's epic block.
 
 ## Cadence: one verified unit, one commit, one tick
 
@@ -49,6 +48,4 @@ The rules around it (one epic per unit, the lead commits, a tick with no commit,
 - An item whose own text contains the body block's closing delimiter would
 truncate the PR body. `wl_epic.neutralize()` defangs it; do not bypass it.
 - A **typo'd** `PR-TASK` id is worse than a missing one: it looks tagged, so the
-commit routes to an epic that does not exist and no pass reads it. The gate validates ids against the snapshot, not merely their shape.
-- A matrix over zero epics **skips the review job entirely**. Discovery emits
-`[""]` so a PR with no epics still gets exactly one flat pass.
+commit routes to an epic that does not exist and the epic block never lists it. The gate validates ids against the snapshot, not merely their shape.

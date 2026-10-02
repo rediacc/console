@@ -612,8 +612,6 @@
     "WORKLIST_PUBLISH_ROOT": {
       "kind": "path",
       "defaults": [
-        "'$(git rev-parse --show-toplevel 2>/dev/null || echo .)'",
-        "''",
         "NONE"
       ]
     },
@@ -724,12 +722,6 @@
       "kind": "tuning",
       "defaults": [
         "str(16 * 1024 * 1024)"
-      ]
-    },
-    "WORKLIST_REVIEW_MAX_BLOCKS": {
-      "kind": "tuning",
-      "defaults": [
-        "'2'"
       ]
     },
     "WORKLIST_ROSTER_MAX": {

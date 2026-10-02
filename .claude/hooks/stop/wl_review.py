@@ -1269,6 +1269,30 @@ def push_refusals(st, console_push=True):
     return reasons
 
 
+CHECK_COMMAND = "python3 .claude/hooks/stop/wl_review.py --check"
+
+
+def check_state(root, branch, label="console", cfg=None):
+    """(reasons, lines) for the merge-and-ready precondition: every commit since the base has a review record in `agent/reviews/<branch>/` with no open finding at or above `block_at`, and every record is committed. Empty `reasons` means the branch is clean. Local only: no network call.
+
+    The coverage walk reads `merge-base(origin/main, HEAD)..HEAD`, so a console branch that is not the one checked out at `root` cannot be judged here, and that case refuses rather than judging the wrong commits. `label` names the repository whose commits are walked (the console, or a submodule whose review records live in the console's directory for the same branch).
+    """
+    if not branch:
+        return ["no-branch"], [
+            "no branch to judge: pass --branch, or check out the PR's head branch"
+        ]
+    if label == "console" and current_branch(root) != branch:
+        return (
+            ["not-checked-out"],
+            [
+                "the branch %s is not checked out at %s, so its commits cannot be walked here; check it out and re-run: %s --branch %s"
+                % (branch, root, CHECK_COMMAND, branch)
+            ],
+        )
+    st = branch_state(root, branch, cfg, repos={label})
+    return push_refusals(st), describe(st, limit=8)
+
+
 def stop_texts(st, limit=5):
     """(block, malformed, note) for the Stop hook: the `commit-review` block, the `commit-review-malformed` block and the advisory, each "" when there is nothing to say."""
     block = malformed = ""
@@ -1640,6 +1664,7 @@ def verb(name, me, args, root, items_loader, branch=None):
 USAGE = """usage:
   wl_review.py --run <sha> --branch <branch> [--repo <console|private/x>] [--root <console>]   review one commit now
   wl_review.py --status [--branch <branch>]                                                    print the branch's review state
+  wl_review.py --check [--branch <branch>]                                                     exit 1 while the branch has review refusals, 0 when clean
 """
 
 
@@ -1677,6 +1702,19 @@ def main(argv):
         )
         print(path or "nothing written")
         return 0
+    if argv[0] == "--check":
+        branch = _opt(argv, "--branch") or current_branch(root)
+        reasons, lines = check_state(root, branch)
+        print(
+            "per-commit reviews for %s: %s"
+            % (
+                branch or "<no branch>",
+                ("refused (%s)" % ", ".join(reasons)) if reasons else "clean",
+            )
+        )
+        for line in lines:
+            print("  " + line)
+        return 1 if reasons else 0
     if argv[0] == "--status":
         branch = _opt(argv, "--branch") or current_branch(root)
         lines = describe(branch_state(root, branch))

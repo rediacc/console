@@ -142,8 +142,8 @@ CI_READ_VERBS = [
         "match": r"^pr checks\b",
         "use": "%s" % CI_TRACE,
         "why": (
-            "`gh pr checks` lists every context flat: `Review Complete` reads as a failing job with a "
-            "/runs/ URL, a cancelled gate reads as a skip, and nothing says whether `CI Complete` exists "
+            "`gh pr checks` lists every context flat: the non-blocking `CI Verdict` reads as a job "
+            "with a /runs/ URL, a cancelled gate reads as a skip, and nothing says whether `CI Complete` exists "
             "yet. The tracer judges the head (add `--ref <branch>` for another branch, `--why` for a red)"
         ),
         "example": "gh pr checks 591 --repo o/r",
@@ -329,7 +329,7 @@ CI_READ_VERBS = [
         ),
         "use": "%s --json" % CI_TRACE,
         "why": (
-            "the commit's raw check-runs hold every context, including the non-blocking `Review Complete`, "
+            "the commit's raw check-runs hold every context, including the non-blocking "
             "`CI Verdict` and `Publish CI Verdict`; the tracer applies the GREEN rule, and its `--json` "
             "carries the published CI Verdict when one matches the run"
         ),

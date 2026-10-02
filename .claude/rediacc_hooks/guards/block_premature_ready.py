@@ -1,6 +1,6 @@
-"""Gate `gh pr ready` on green CI: a console PR may leave draft state ONLY when the single required check, "CI Complete", is SUCCESS on its current head. Flipping ready is what triggers the automated Claude review, and the review invariant is "non-draft AND green" -- this hook enforces the green half.
+"""Gate `gh pr ready` on green CI: a console PR may leave draft state ONLY when the single required check, "CI Complete", is SUCCESS on its current head. Ready means green: a non-draft PR is one that can merge, so the flip waits for the verdict.
 
-`gh pr ready --undo` (back to draft) is always allowed: it can never expose an unreviewed/red PR. Network paths here are NOT covered by test-hooks.sh (only the pattern paths are); verification failures fail CLOSED.
+`gh pr ready --undo` (back to draft) is always allowed: it can never expose a red PR as mergeable. Network paths here are NOT covered by test-hooks.sh (only the pattern paths are); verification failures fail CLOSED.
 
 PORT NOTE ON `${CONCLUSION:-verification failed}`. `:-` fires on an EMPTY value
 as well as an unset one, and empty is precisely what the network path yields when `gh` cannot answer -- so the fail-closed message reads "got: verification failed" rather than "got: ". The Python below therefore tests for the empty string, not for None; there is no unset case to distinguish.
@@ -28,8 +28,7 @@ MESSAGE = (
     "❌ BLOCKED: 'gh pr ready' requires CI Complete = SUCCESS on the PR's current head (got: "
     "%s). Read the current state with .ci/scripts/ci/ci-trace.py (exit 0 green, 1 red, 2 no "
     "verdict, 3 head moved); it names the failing job and step. A draft flips to ready only "
-    "when CI is green -- that flip triggers the automated Claude review, whose invariant is "
-    "non-draft AND green. Wait out the running CI (armed terminal-state watch), fix the red, "
+    "when CI is green. Wait out the running CI (armed terminal-state watch), fix the red, "
     "or if this was a gh/network hiccup, re-run the exact same command."
 )
 
@@ -42,8 +41,7 @@ READY_MUTATION = "markPullRequestReadyForReview"
 READY_GRAPHQL_MESSAGE = (
     "❌ BLOCKED: 'gh api graphql' carrying markPullRequestReadyForReview reaches the same "
     "mutation as 'gh pr ready' and skips its CI Complete = SUCCESS check entirely. Flip "
-    "through the CLI: 'gh pr ready' once CI Complete is green (that flip is what triggers "
-    "the automated Claude review)."
+    "through the CLI: 'gh pr ready' once CI Complete is green."
 )
 
 EDGE_CASES = [

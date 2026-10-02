@@ -187,7 +187,7 @@ def _trace_run(root, run_id, wait, timeout, as_json):
         read_failures = 0
 
         # SAME FILTER AS ci_classify, and this path needed it independently: `--run <id>` reads the run's OWN jobs endpoint directly rather than going through wl_ci.ci_classify's GraphQL contexts, so the CI_NONBLOCKING_CONTEXTS fix landed on the branch-tracing path (_snapshot below) and never touched this one -- proven live on PR #579 commit 9cbcf7d9's own rerun, which this trace
-        # called RED on a run GitHub itself scored "success" once "Review Complete" (a check-run whose own summary says it can never block Console CI) was excluded.
+        # called RED on a run GitHub itself scored "success" once a non-blocking check-run (then the retired PR-level review check, now `CI Verdict`) was excluded.
         jobs = [j for j in jobs if j.get("name") not in wl_ci.CI_NONBLOCKING_CONTEXTS]
         failed = [j["name"] for j in jobs if j.get("conclusion") == "failure"]
         live = [j["name"] for j in jobs if not j.get("conclusion")]
@@ -295,23 +295,22 @@ def _emit(payload, as_json):
         print("  why: %s --why" % D.TRACE_CMD)
     if payload.get("waiting"):
         print("  %d context(s) still running." % payload["waiting"])
-    # The review gate is NOT part of GREEN (it starts after green + ready), so it gets its own line rather than a say in the verdict.
-    if payload.get("review") and payload.get("pr"):
-        print("  review: %s (Review Complete; never part of the CI verdict)" % payload["review"])
 
     # THE FINISH SEQUENCE, NAMED AT THE MOMENT IT BECOMES POSSIBLE.
     #
-    # Green is not the finish line -- the PR still has to be flipped ready, reviewed, and its threads resolved. That step depends on the agent REMEMBERING it, and agents forget: the loop reports "CI is green", the turn ends, and the PR sits in draft with every check passing. This watch exits exactly when green lands and re-invokes the agent with its output in hand, so this is the
+    # Green is not the finish line -- the PR still has to be flipped ready, its per-commit reviews clean, and its human threads resolved. That step depends on the agent REMEMBERING it, and agents forget: the loop reports "CI is green", the turn ends, and the PR sits in draft with every check passing. This watch exits exactly when green lands and re-invokes the agent with its output in hand, so this is the
     # one place the reminder cannot be missed.
     #
-    # It PRINTS, it does not act. Flipping ready triggers a real Claude review that spends budget, several watches can be armed at once and would race each other, and a PR is sometimes held in draft deliberately. An observer that silently mutates PR state is a different tool with different risks.
+    # It PRINTS, it does not act. Flipping ready is a one-way PR state change, several watches can be armed at once and would race each other, and a PR is sometimes held in draft deliberately. An observer that silently mutates PR state is a different tool with different risks.
     if v == "green" and payload.get("pr") and payload.get("draft"):
         print()
         print("  NEXT: this PR is still a DRAFT. Green is not the finish line.")
         print(
             "    gh pr ready %s --repo %s/%s" % (payload["pr"], payload["owner"], payload["name"])
         )
-        print("  Then watch for the review, address its threads, and resolve them.")
+        print("  Then confirm the per-commit reviews are clean and every record is committed:")
+        print("    python3 .claude/hooks/stop/wl_review.py --check")
+        print("  and resolve any open human review threads.")
         print("  (block-premature-ready allows the flip only while CI Complete is")
         print("   green on this head, so it will refuse if this verdict goes stale.)")
     if payload.get("soft"):
@@ -514,7 +513,6 @@ def _snapshot(root, ref, cache, allow_branch=False, seen=None):
         "cause": cause,
         "ci_complete": gate["ci_complete"],
         "run": gate["run"],
-        "review": wl_ci.review_gate_row(info)[0] if info.get("source") != "branch" else "",
     }, None
 
 
@@ -1186,8 +1184,8 @@ def _red_is_final(payload, wait, until_final):
 def _selftest():
     """Controls for _trace_run's CI_NONBLOCKING_CONTEXTS filter.
 
-    Review-found live on PR #579: `--run <id>` reads a run's jobs endpoint DIRECTLY rather than through wl_ci.ci_classify's GraphQL contexts, so the filter fixing ci_classify (see wl_ci.py --selftest) never touched this path -- proven by ci-trace.py itself calling a run GitHub scored "success" RED, because "Review Complete" (a check-run that can never
-    block Console CI) showed up as conclusion=failure in the jobs list.
+    Review-found live on PR #579: `--run <id>` reads a run's jobs endpoint DIRECTLY rather than through wl_ci.ci_classify's GraphQL contexts, so the filter fixing ci_classify (see wl_ci.py --selftest) never touched this path -- proven by ci-trace.py itself calling a run GitHub scored "success" RED, because a non-blocking check-run (then the retired PR-level
+    review check; the controls below use `CI Verdict`, the one that remains) showed up as conclusion=failure in the jobs list.
     """
     ok = True
 
@@ -1199,7 +1197,7 @@ def _selftest():
             "  %s  %s%s" % ("PASS" if cond else "FAIL", label, "" if cond else "  <- %s" % detail)
         )
 
-    review_complete_job = {"name": "Review Complete", "conclusion": "failure"}
+    verdict_job = {"name": "CI Verdict", "conclusion": "failure"}
     real_failure_job = {"name": "Quality / Code", "conclusion": "failure"}
     pending_job = {"name": "Stage Artifacts", "conclusion": None}
 
@@ -1217,23 +1215,23 @@ def _selftest():
         finally:
             globals()["_run_snapshot"] = orig
 
-    rc, out = run_it([review_complete_job])
+    rc, out = run_it([verdict_job])
     check(
-        "THE REAL 2026-08-30 DEFECT: a run whose only failing job is "
-        "'Review Complete' reports GREEN, not RED",
+        "THE REAL 2026-08-30 DEFECT SHAPE: a run whose only failing job is "
+        "the non-blocking 'CI Verdict' reports GREEN, not RED",
         rc == EXIT_GREEN,
         "rc=%r out=%r" % (rc, out),
     )
 
-    rc, out = run_it([review_complete_job, real_failure_job])
+    rc, out = run_it([verdict_job, real_failure_job])
     check(
-        "REGRESSION CONTROL: a genuine failure beside Review Complete is "
+        "REGRESSION CONTROL: a genuine failure beside CI Verdict is "
         "still reported RED, naming the real job",
-        rc == EXIT_RED and "Quality / Code" in out and "Review Complete" not in out,
+        rc == EXIT_RED and "Quality / Code" in out and "CI Verdict" not in out,
         "rc=%r out=%r" % (rc, out),
     )
 
-    rc, out = run_it([review_complete_job, pending_job], status="in_progress")
+    rc, out = run_it([verdict_job, pending_job], status="in_progress")
     check(
         "CONTROL: the filter does not interfere with the in-flight path -- a "
         "run that is genuinely still running reports no-verdict, not GREEN, "
@@ -1332,14 +1330,14 @@ def _selftest():
         [
             ctx("Quality / Code"),
             ctx("CI Complete"),
-            ctx("Review Complete", "FAILURE", run=1),
+            ctx("Publish CI Verdict", "FAILURE", run=1),
             ctx("CI Verdict", None, "IN_PROGRESS", run=2),
         ],
         console_run,
     )
     check(
-        "CONTROL: CI Complete successful, Review Complete red and CI Verdict in flight -> GREEN, with a separate review: line",
-        p["verdict"] == "green" and "review: red" in out,
+        "CONTROL: CI Complete successful, Publish CI Verdict red and CI Verdict in flight -> GREEN, with no review: line",
+        p["verdict"] == "green" and "review:" not in out and "review" not in p,
         "payload=%r out=%r" % (p, out),
     )
     p, out = snap([ctx("Quality / Code"), ctx("CI Complete")], console_run, truncated=True)

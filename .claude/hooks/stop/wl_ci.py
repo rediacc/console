@@ -10,7 +10,6 @@ import pathlib
 import re
 import subprocess
 import sys
-import tempfile
 import time
 
 import wl_core as C
@@ -142,13 +141,9 @@ CI_RETRY_PATTERNS = [
 # PER-JOB conclusions that mean "this genuinely failed". CANCELLED, SKIPPED, NEUTRAL and STALE are deliberately absent: see the CANCELLED note above.
 CI_FAIL_CONCLUSIONS = {"FAILURE", "TIMED_OUT", "STARTUP_FAILURE", "ACTION_REQUIRED"}
 CI_LIVE_ROLLUP = {"PENDING", "EXPECTED"}
-# NEVER A FAILURE, regardless of conclusion. "Review Complete" is a check-run posted directly by .ci/scripts/review/review-status.sh from a workflow no CI job references -- its own `output.summary` says outright "this check ... can never block Console CI". It reports the review-currency state (has this head been reviewed yet), not a CI result, and its `conclusion` is `failure`
-# whenever a head is unreviewed, which is the common case right after a push. Documented as a trap (docs/agent-reference/TRAPS.md, "A cancelled run is not a passed run, and it is not a failed one either", its Residue line) since 2026-08-06 and never fixed here until a session actually walked into it on 2026-08-30: the remedy on file was "go read .output.summary by hand", which is a workaround repeated indefinitely rather than a fix.
-# Unlike CI_RETRY_PATTERNS this is not a name SUBSTRING match against a shifting set of flaky suites -- it is one fixed, permanently-non-blocking check name, so an exact match is correct and a substring match would risk swallowing a real job that merely contains "Review" in its name.
-CI_NONBLOCKING_CONTEXTS = {"Review Complete", "CI Verdict", "Publish CI Verdict"}
-# The two names beside it (PLAN-ci-verdict box D): "CI Verdict" is the neutral check-run .github/workflows/ci-verdict.yml posts on the head SHA AFTER Console CI completes, carrying the diagnosis (rediacc_ci.ci.ci_diagnose), and "Publish CI Verdict" is the job that posts it. Both arrive after the verdict they describe, so counting either as in flight would hold a finished head at RUNNING, and counting a crashed publisher as a failure would paint a green head red.
-# THE ONE CONTEXT review_gate_row() reads. It used to iterate CI_NONBLOCKING_CONTEXTS, which was the same set while the set had one member; with three members a "CI Verdict" row would have been read as the review gate.
-REVIEW_CONTEXT = "Review Complete"
+# NEVER A FAILURE, regardless of conclusion (PLAN-ci-verdict box D): "CI Verdict" is the neutral check-run .github/workflows/ci-verdict.yml posts on the head SHA AFTER Console CI completes, carrying the diagnosis (rediacc_ci.ci.ci_diagnose), and "Publish CI Verdict" is the job that posts it. Both arrive after the verdict they describe, so counting either as in flight would hold a finished head at RUNNING, and counting a crashed publisher as a failure would paint a green head red.
+# An exact name match, not a SUBSTRING match like CI_RETRY_PATTERNS: a substring would risk swallowing a real job that merely contains "Verdict" in its name.
+CI_NONBLOCKING_CONTEXTS = {"CI Verdict", "Publish CI Verdict"}
 # THE REQUIRED CHECK. Console CI's last job (`ci-complete` in .github/workflows/ci.yml, `if: always() && !cancelled()`), and the only context that proves the whole run reported. See ci_gate().
 CI_COMPLETE_CONTEXT = "CI Complete"
 CONSOLE_CI_WORKFLOW = "Console CI"
@@ -418,7 +413,7 @@ def _rollup_pages(root, owner, name, ref, build_query, extract, source, keep=Non
         "source": source,
         "pr": (pr or {}).get("number"),
         "url": (pr or {}).get("url") or "",
-        # Carried so a GREEN verdict can name the next action. A reader must not flip the PR itself -- several watches can be armed at once and the ready-flip spends real review budget -- but it CAN stop the finish sequence depending on the agent remembering it exists.
+        # Carried so a GREEN verdict can name the next action. A reader must not flip the PR itself -- several watches can be armed at once and the ready-flip is a one-way PR state change -- but it CAN stop the finish sequence depending on the agent remembering it exists.
         "draft": bool((pr or {}).get("isDraft")),
         "sha": (commit or {}).get("oid") or "",
         "rollup": rollup,
@@ -498,8 +493,8 @@ def ci_classify(info):
     rows, pending, blocking_seen = [], 0, 0
     for c in info.get("contexts") or []:
         # Skipped BEFORE branching on shape, and before the pending count too: this context can be a StatusContext OR a CheckRun depending on how it was posted, and it must never contribute to "live" either -- it can
-        # sit at conclusion=failure indefinitely (an unreviewed head is the
-        # NORMAL state right after a push), which would otherwise wedge the rollup as perpetually in-flight rather than genuinely final.
+        # sit at conclusion=failure indefinitely (a crashed verdict publisher
+        # never re-runs), which would otherwise wedge the rollup as perpetually in-flight rather than genuinely final.
         if (c.get("context") or c.get("name") or "?") in CI_NONBLOCKING_CONTEXTS:
             continue
         blocking_seen += 1
@@ -706,115 +701,6 @@ def ci_cancel_note(detail):
             " (run %s)" % run if run else "",
         )
     )
-
-
-def review_gate_row(info):
-    """(state, row) -- what does "Review Complete" say for THIS rollup.
-
-    state: absent | clean | red. `row` is the raw context dict, or None.
-
-    DELIBERATELY SEPARATE from ci_classify(). Folding this into hard/soft would be exactly the bug CI_NONBLOCKING_CONTEXTS exists to prevent -- this function's whole job is to look at the ONE context ci_classify() is told to ignore, using the same shape-matching ci_classify already proved handles both CheckRun.name and StatusContext.context (see its own selftest, "the filter
-    matches on EITHER shape").
-
-    `truncated` fails CLOSED to absent: a partial context page proves nothing about a context it never reached, so this function never asserts "clean" or "red" off a page that might not contain the row at all. It can only ever MISS a real red (silence), never invent one.
-    """
-    if info.get("truncated"):
-        return "absent", None
-    for c in info.get("contexts") or []:
-        name = c.get("context") or c.get("name") or ""
-        if name != REVIEW_CONTEXT:
-            continue
-        concl = (c.get("conclusion") or c.get("state") or "").upper()
-        if concl in CI_FAIL_CONCLUSIONS:
-            return "red", c
-        return "clean", c
-    return "absent", None
-
-
-def review_gate_detail(root, info, row):
-    """(title, summary, html_url) for the "Review Complete" check-run, read directly, not guessed. This IS review-status.sh's own posted verdict -- the same text a human reads in `gh pr checks` -- so there is no second definition of "what's wrong" to drift from the real gate."""
-    data, err = _gh_json(
-        root,
-        [
-            "api",
-            "repos/%s/%s/commits/%s/check-runs"
-            % (info.get("owner"), info.get("name"), info.get("sha")),
-            "-f",
-            "check_name=Review Complete",
-        ],
-        timeout=20,
-    )
-    if data is None:
-        return (
-            "",
-            "(could not re-fetch Review Complete's own summary: %s)" % err,
-            row.get("detailsUrl") or "",
-        )
-    runs = (data or {}).get("check_runs") or []
-    run = runs[-1] if runs else {}
-    out = run.get("output") or {}
-    return (
-        out.get("title") or "",
-        out.get("summary") or "",
-        run.get("html_url") or row.get("detailsUrl") or "",
-    )
-
-
-#: Independent from CI_MAX_BLOCKS on purpose: a Review Complete red is
-#: usually a quick reply-and-redispatch (the common case this check exists
-#: for), but occasionally a real review-pipeline failure or a "changes
-#: requested" review that needs actual work -- structurally closer to a CI
-#: red than a one-liner. No overnight sample justifies this default the way
-#: CI_MAX_BLOCKS's was tuned from observed runs; treat 2 as a starting
-#: guess, independently overridable.
-REVIEW_MAX_BLOCKS = int(os.environ.get("WORKLIST_REVIEW_MAX_BLOCKS", "2"))
-
-
-def reviewmark_path(worklist, session_id):
-    return worklist.with_suffix(".reviewmark-%s" % (session_id or "unknown")[:8])
-
-
-def review_red(root, worklist, session_id, cidetail, ack_text):
-    """(state, detail) -- is "Review Complete" red while the rest of this PR's CI is clean, and has this already been reported enough times.
-
-    state: clean | absent | trouble | downgraded | unreadable
-
-    Only ever called when the CALLER already has a clean ci_classify() verdict for this exact PR (see wl_checks.py), so this inherits ci_trouble's own branch/PR scoping for free -- no independent repo scan.
-    """
-    rstate, row = review_gate_row(cidetail)
-    if rstate != "red":
-        return rstate, None
-    try:
-        title, summary, url = review_gate_detail(root, cidetail, row)
-    except Exception as exc:  # noqa: BLE001 -- a broken check must SAY SO
-        return "unreadable", "%s: %s" % (type(exc).__name__, str(exc)[:120])
-    marker_p = reviewmark_path(worklist, session_id)
-    sig = hashlib.sha1(
-        ("%s|%s" % (cidetail.get("sha") or "", title)).encode("utf-8", "replace")
-    ).hexdigest()[:12]
-    try:
-        mark = json.loads(marker_p.read_text(encoding="utf-8"))
-    except (OSError, ValueError, TypeError):
-        mark = {}
-    blocks = int(mark.get("blocks") or 0) if mark.get("sig") == sig else 0
-    acked = "review complete" in (ack_text or "").lower()
-    detail = {
-        "row": row,
-        "title": title,
-        "summary": summary,
-        "url": url,
-        "pr": cidetail.get("pr"),
-        "owner": cidetail.get("owner"),
-        "name": cidetail.get("name"),
-        "sha": cidetail.get("sha"),
-        "n": blocks,
-    }
-    if acked or blocks >= REVIEW_MAX_BLOCKS:
-        return "downgraded", detail
-    with contextlib.suppress(OSError):
-        marker_p.write_text(json.dumps({"sig": sig, "blocks": blocks + 1}), encoding="utf-8")
-    detail["n"] = blocks + 1
-    return "trouble", detail
 
 
 # v12 (operator, 2026-07-30): "hook should detect that is current session sitting for CI pipeline? If so, it should FORCE current session to work on waiting items!!!" The shape of a CI watch, matched against a background task's command + description. Deliberately CONSERVATIVE: `gh run watch`, an Actions run URL/path, a run-id-sized number near "watch", or "CI" near "watch". A dev
@@ -1289,31 +1175,31 @@ def _selftest():
 
     check = wl_common.Checker()
 
-    review_complete_only = {
+    verdict_only = {
         "rollup": "SUCCESS",
         "contexts": [
             {
                 "status": "COMPLETED",
                 "conclusion": "FAILURE",
-                "name": "Review Complete",
+                "name": "CI Verdict",
                 "databaseId": 1,
                 "checkSuite": {"workflowRun": {"databaseId": 1}},
                 "detailsUrl": "https://example/1",
             }
         ],
     }
-    live, hard, soft = ci_classify(review_complete_only)
+    live, hard, soft = ci_classify(verdict_only)
     check(
-        "THE REAL 2026-08-30 DEFECT: a head whose ONLY context is a failing "
-        "'Review Complete' is not live and has no hard failures",
+        "THE REAL 2026-08-30 DEFECT SHAPE: a head whose ONLY context is a failing "
+        "non-blocking 'CI Verdict' is not live and has no hard failures",
         live is False and hard == [] and soft == [],
         "live=%r hard=%r soft=%r" % (live, hard, soft),
     )
 
-    review_complete_plus_real_failure = {
+    verdict_plus_real_failure = {
         "rollup": "SUCCESS",
         "contexts": [
-            review_complete_only["contexts"][0],
+            verdict_only["contexts"][0],
             {
                 "status": "COMPLETED",
                 "conclusion": "FAILURE",
@@ -1324,11 +1210,11 @@ def _selftest():
             },
         ],
     }
-    live, hard, soft = ci_classify(review_complete_plus_real_failure)
+    live, hard, soft = ci_classify(verdict_plus_real_failure)
     check(
-        "REGRESSION CONTROL: a genuine failure beside Review Complete is "
-        "still reported, and Review Complete is not swallowed into it",
-        hard == [] or all(r["name"] != "Review Complete" for r in hard),
+        "REGRESSION CONTROL: a genuine failure beside CI Verdict is "
+        "still reported, and CI Verdict is not swallowed into it",
+        hard == [] or all(r["name"] != "CI Verdict" for r in hard),
         "hard=%r" % (hard,),
     )
     check(
@@ -1337,33 +1223,33 @@ def _selftest():
         "hard=%r" % (hard,),
     )
 
-    review_complete_plus_pending = {
+    verdict_plus_pending = {
         "rollup": "SUCCESS",
         "contexts": [
-            review_complete_only["contexts"][0],
+            verdict_only["contexts"][0],
             {"status": "IN_PROGRESS", "conclusion": "", "name": "Stage Artifacts"},
         ],
     }
-    live, hard, soft = ci_classify(review_complete_plus_pending)
+    live, hard, soft = ci_classify(verdict_plus_pending)
     check(
-        "CONTROL: a genuinely in-flight job beside Review Complete still "
-        "reads as live, and Review Complete contributes nothing either way",
+        "CONTROL: a genuinely in-flight job beside CI Verdict still "
+        "reads as live, and CI Verdict contributes nothing either way",
         live is True and hard == [],
         "live=%r hard=%r" % (live, hard),
     )
 
-    status_context_review_complete = {
+    status_context_verdict = {
         "rollup": "SUCCESS",
         "contexts": [
             {
                 "__typename": "StatusContext",
                 "state": "FAILURE",
-                "context": "Review Complete",
+                "context": "CI Verdict",
                 "targetUrl": "https://example/3",
             }
         ],
     }
-    live, hard, soft = ci_classify(status_context_review_complete)
+    live, hard, soft = ci_classify(status_context_verdict)
     check(
         "CONTROL: the filter matches on EITHER shape (StatusContext.context "
         "or CheckRun.name), since GitHub can post it as either",
@@ -1371,92 +1257,25 @@ def _selftest():
         "live=%r hard=%r soft=%r" % (live, hard, soft),
     )
 
-    unrelated_review_named_job = {
+    unrelated_verdict_named_job = {
         "rollup": "SUCCESS",
         "contexts": [
             {
                 "status": "COMPLETED",
                 "conclusion": "FAILURE",
-                "name": "Review Gate",
+                "name": "Verdict Gate",
                 "databaseId": 4,
                 "checkSuite": {"workflowRun": {"databaseId": 4}},
                 "detailsUrl": "https://example/4",
             }
         ],
     }
-    live, hard, soft = ci_classify(unrelated_review_named_job)
+    live, hard, soft = ci_classify(unrelated_verdict_named_job)
     check(
         "CONTROL: an EXACT match only -- a differently-named job that merely "
-        "contains the word 'Review' is not swallowed by the filter",
-        [r["name"] for r in hard] == ["Review Gate"],
+        "contains the word 'Verdict' is not swallowed by the filter",
+        [r["name"] for r in hard] == ["Verdict Gate"],
         "hard=%r" % (hard,),
-    )
-
-    # ---- review_gate_row / review_red: the "CI green, Review Complete red" stop-hook check. Deliberately separate fixtures from ci_classify's above -- this is the signal ci_classify is told to IGNORE, so the two must never be tested (or wired) as if they were the same question.
-    review_complete_red_only = {
-        "rollup": "SUCCESS",
-        "truncated": False,
-        "contexts": [
-            {
-                "status": "COMPLETED",
-                "conclusion": "FAILURE",
-                "name": "Review Complete",
-                "databaseId": 1,
-                "checkSuite": {"workflowRun": {"databaseId": 1}},
-                "detailsUrl": "https://example/1",
-            }
-        ],
-    }
-    state, row = review_gate_row(review_complete_red_only)
-    check(
-        "FIRE: Review Complete conclusion=FAILURE reads as 'red'",
-        state == "red" and (row or {}).get("name") == "Review Complete",
-        "state=%r row=%r" % (state, row),
-    )
-
-    review_complete_clean = {
-        "rollup": "SUCCESS",
-        "truncated": False,
-        "contexts": [{"status": "COMPLETED", "conclusion": "SUCCESS", "name": "Review Complete"}],
-    }
-    check(
-        "CONTROL: Review Complete conclusion=SUCCESS reads as 'clean', never fires",
-        review_gate_row(review_complete_clean)[0] == "clean",
-    )
-
-    no_review_context = {"rollup": "SUCCESS", "truncated": False, "contexts": []}
-    check(
-        "CONTROL: no Review Complete context at all reads as 'absent', not 'red'",
-        review_gate_row(no_review_context)[0] == "absent",
-    )
-
-    truncated_page = {"rollup": "SUCCESS", "truncated": True, "contexts": []}
-    check(
-        "CONTROL: a truncated context page never asserts a verdict for a row "
-        "it might not have reached",
-        review_gate_row(truncated_page)[0] == "absent",
-    )
-
-    status_shape_red = {
-        "rollup": "SUCCESS",
-        "truncated": False,
-        "contexts": [
-            {"__typename": "StatusContext", "state": "FAILURE", "context": "Review Complete"}
-        ],
-    }
-    check(
-        "CONTROL: the row detector matches EITHER shape, same as ci_classify's own filter",
-        review_gate_row(status_shape_red)[0] == "red",
-    )
-
-    review_gate_unrelated = {
-        "rollup": "SUCCESS",
-        "truncated": False,
-        "contexts": [{"status": "COMPLETED", "conclusion": "FAILURE", "name": "Review Gate"}],
-    }
-    check(
-        "CONTROL: an unrelated job merely containing 'Review' is not read as the review-gate row",
-        review_gate_row(review_gate_unrelated)[0] == "absent",
     )
 
     # ---- ci_gate: the GREEN rule (PLAN-ci-verdict box A).
@@ -1496,23 +1315,16 @@ def _selftest():
         rollup="PENDING",
         contexts=[
             *full_ctx,
-            run_ctx("Review Complete", conclusion="FAILURE", run=1),
+            run_ctx("Publish CI Verdict", conclusion="FAILURE", run=1),
             run_ctx("CI Verdict", status="IN_PROGRESS", conclusion=None, run=2),
         ],
     )
     g = ci_gate(verdict_live)
     check(
-        "CONTROL: Review Complete failing and CI Verdict in flight (GitHub rollup PENDING) is "
+        "CONTROL: Publish CI Verdict failing and CI Verdict in flight (GitHub rollup PENDING) is "
         "still green -- neither is live, neither is hard",
         g["verdict"] == "green" and not g["live"] and not g["hard"],
         "gate=%r" % (g,),
-    )
-    check(
-        "CONTROL: a CI Verdict row is never read as the review gate",
-        review_gate_row(
-            {"truncated": False, "contexts": [run_ctx("CI Verdict", conclusion="FAILURE")]}
-        )[0]
-        == "absent",
     )
     cancelled = dict(
         full,
@@ -1536,61 +1348,6 @@ def _selftest():
             {"info": cancelled, "cause": {"kind": "watchdog-budget", "detail": "'x' ran 21m"}}
         ),
     )
-
-    # review_red's ceiling/ack: needs a real worklist path for its marker file, so a temp dir stands in (same pattern other marker-file controls in this suite use).
-    with tempfile.TemporaryDirectory() as _rr_tmp:
-        _rr_wl = pathlib.Path(_rr_tmp) / "worklist.md"
-        _rr_ci = {
-            "owner": "o",
-            "name": "n",
-            "pr": 1,
-            "sha": "abc123",
-            "contexts": review_complete_red_only["contexts"],
-            "truncated": False,
-        }
-        _orig_detail = review_gate_detail
-        globals()["review_gate_detail"] = lambda *_a, **_k: ("Title A", "Summary A", "http://x")
-        try:
-            s1, d1 = review_red(pathlib.Path("."), _rr_wl, "selftest", _rr_ci, "")
-            s2, d2 = review_red(pathlib.Path("."), _rr_wl, "selftest", _rr_ci, "")
-            s3, _d3 = review_red(pathlib.Path("."), _rr_wl, "selftest", _rr_ci, "")
-            check(
-                "FIRE: the ceiling arms at n=1, n=2, then downgrades on the 3rd "
-                "consecutive block of the SAME verdict",
-                s1 == "trouble"
-                and d1["n"] == 1
-                and s2 == "trouble"
-                and d2["n"] == 2
-                and s3 == "downgraded",
-                "s1=%r n1=%r s2=%r n2=%r s3=%r" % (s1, d1.get("n"), s2, d2.get("n"), s3),
-            )
-
-            _rr_wl2 = pathlib.Path(_rr_tmp) / "worklist2.md"
-            s4, d4 = review_red(
-                pathlib.Path("."), _rr_wl2, "selftest", _rr_ci, "yes, Review Complete is red"
-            )
-            check(
-                "CONTROL: naming 'Review Complete' in the ack text downgrades "
-                "immediately, on the FIRST call, without spending a block",
-                s4 == "downgraded",
-                "s4=%r d4=%r" % (s4, d4),
-            )
-
-            globals()["review_gate_detail"] = lambda *_a, **_k: ("Title B", "Summary B", "http://y")
-            _rr_wl3 = pathlib.Path(_rr_tmp) / "worklist3.md"
-            review_red(pathlib.Path("."), _rr_wl3, "selftest", _rr_ci, "")
-            s6, d6 = review_red(pathlib.Path("."), _rr_wl3, "selftest", _rr_ci, "")
-            globals()["review_gate_detail"] = lambda *_a, **_k: ("Title A", "Summary A", "http://x")
-            s7, d7 = review_red(pathlib.Path("."), _rr_wl3, "selftest", _rr_ci, "")
-            check(
-                "CONTROL: a DIFFERENT title on the same sha gets a fresh "
-                "signature and re-arms at n=1 -- a genuinely new failure "
-                "shape is worth interrupting for again",
-                s7 == "trouble" and d7["n"] == 1,
-                "s6=%r n6=%r s7=%r n7=%r" % (s6, d6.get("n"), s7, d7.get("n")),
-            )
-        finally:
-            globals()["review_gate_detail"] = _orig_detail
 
     return check.verdict("ci")
 

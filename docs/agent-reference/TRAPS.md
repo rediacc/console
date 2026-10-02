@@ -136,7 +136,7 @@ The trap is not the error. The trap is concluding from it that the package's lin
 ## A cancelled run is not a passed run, and it is not a failed one either
 Trap-Id: cancelled-run-not-passed
 Enforced-By: hook:cancelled-run-not-passed
-Residue: The flat checks-listing half was uncovered until 2026-10-02 and is now refused by `block_raw_ci_read`; `ci-trace.py` reads `Review Complete` as non-blocking and prints it on its own `review:` line. A check-runs read through a client other than `gh` (`curl`) is not judged.
+Residue: The flat checks-listing half was uncovered until 2026-10-02 and is now refused by `block_raw_ci_read`; `ci-trace.py` reads `CI Verdict` and `Publish CI Verdict` as non-blocking. A check-runs read through a client other than `gh` (`curl`) is not judged.
 
 The watchdog force-cancels a CI run on the first job failure. So a run that died on an unrelated red looks, through the usual filter, exactly like a run where everything you cared about passed:
 
@@ -157,7 +157,7 @@ gh api .../jobs --paginate --jq '.jobs[]|select(.name=="<your job>")|"job: \(.co
 
 Report the job's OWN conclusion, never the run's. Within one round of adding it, a run that read `cancelled` at run level reported `battery: success` — a real data point that would otherwise have been discarded.
 
-The same shape hid in the CLI's flat checks listing, refused since 2026-10-02: `Review Complete` appeared there as a failing job with a `/runs/` URL, but it is a check-run posted by a separate workflow. `.ci/scripts/ci/ci-trace.py` treats it (and `CI Verdict`, `Publish CI Verdict`) as non-blocking and prints the review gate on its own `review:` line.
+The same shape hid in the CLI's flat checks listing, refused since 2026-10-02: a non-blocking check-run appeared there as a failing job with a `/runs/` URL, but it is posted by a separate workflow. `.ci/scripts/ci/ci-trace.py` treats `CI Verdict` and `Publish CI Verdict` as non-blocking.
 
 
 ## `git diff <branch>` reads as DELETED for a file the worktree never tracked
@@ -466,12 +466,12 @@ So the build succeeding is NOT evidence that the build built what you wrote. The
 ## The review tooling comes from `main`, the workflow comes from the PR
 Trap-Id: review-scripts-come-from-main
 Enforced-By: JUDGMENT-ONLY
-Residue: The workflow comes from the PR and the review scripts from `main`, so a new arm is unusable until merged. Nothing compares a step's arm against main's copy of the script.
+Residue: Subject retired 2026-10-02 (the PR-level review workflow and its scripts were deleted). The workflow comes from the PR and the review scripts from `main`, so a new arm is unusable until merged. Nothing compares a step's arm against main's copy of the script.
 
-A workflow step may only call `claude-review-gate.sh` arms that **already exist on main**. `claude-review-reusable.yml` checks the review scripts out with `ref: main, path: .review-scripts`, deliberately, so PR-authored review scripts can never execute. The workflow file itself comes from the PR.
+A workflow step may only call review-gate script arms that **already exist on main**. The reusable PR-level review workflow checked the review scripts out with `ref: main, path: .review-scripts`, deliberately, so PR-authored review scripts can never execute. The workflow file itself came from the PR.
 
 Cost: run `30552035566`. A step called a `--record-invocation` arm added on the
-branch; `git show origin/main:...claude-review-gate.sh | grep -c record-invocation` returns 0, so the step failed instantly and took the review job red.
+branch; `git show origin/main:<the review gate script> | grep -c record-invocation` returned 0, so the step failed instantly and took the review job red.
 
 Corollary: a new script arm is unusable until merged. Inline it in the workflow
 (under `check-workflows.sh`'s 8-logic-line cap) or wait for the merge.
