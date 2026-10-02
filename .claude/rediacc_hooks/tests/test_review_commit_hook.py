@@ -119,6 +119,9 @@ class World:
         origin = self.tmp / ("origin-%s.git" % repo.name)
         subprocess.run(["git", "init", "-q", "--bare", str(origin)], check=True, env=self.env)
         self.git("init", "-q", "--initial-branch=main", repo=repo)
+        # A repo-local identity, not only the GIT_AUTHOR_* env of self.git: R.commit_reviews runs `git commit` in-process with the test runner's own environment, and a CI runner has no global identity ("Author identity unknown", run 37037695303).
+        self.git("config", "user.name", "Fixture", repo=repo)
+        self.git("config", "user.email", "fixture@example.invalid", repo=repo)
         (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
         self.git("add", "seed.txt", repo=repo)
         self.git("commit", "-q", "-m", "seed", repo=repo)
