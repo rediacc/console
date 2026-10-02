@@ -106,6 +106,7 @@ import os
 import pathlib
 import re
 import subprocess
+import sys
 import tempfile
 from typing import Any
 
@@ -1233,6 +1234,7 @@ def refresh_index(root, plan_records, plan_box_census):
     want = render_index(index_rows(root, recs)) + PI.render_census(
         PI.census_rows(root, plan_records=lambda _r: recs, plan_box_census=plan_box_census)
     )
+    _refresh_queue(root)
     path = pathlib.Path(root) / INDEX_REL
     try:
         got = path.read_text(encoding="utf-8")
@@ -1242,6 +1244,19 @@ def refresh_index(root, plan_records, plan_box_census):
         return False
     write_atomic(path, want)
     return True
+
+
+def _refresh_queue(root):
+    """The generated half of agent/plans/QUEUE.md, on the same verbs that refresh agent/INDEX.md: a plan write can change a Status or a Priority, and check:ci-plan-record fails while the section is stale. A failure here is printed, never raised: the plan write already landed, and the gate names the regenerate command."""
+    try:
+        import wl_planqueue  # noqa: PLC0415
+
+        wl_planqueue.refresh(root)
+    except Exception as exc:  # noqa: BLE001 -- a stale queue is the gate's finding, not a reason to fail the tick
+        sys.stderr.write(
+            "wl_planrec: %s was not refreshed (%s: %s); run `npm run check:ci-plan-record -- --update`\n"
+            % ("agent/plans/QUEUE.md", type(exc).__name__, exc)
+        )
 
 
 # --------------------------------------------------------------------------- P2.6 Pointer stamps: the same idiom, applied to the two OTHER things in this repo that replace a document with a smaller one.

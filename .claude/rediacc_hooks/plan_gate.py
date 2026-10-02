@@ -1,6 +1,6 @@
 """The plan gate (box L2 of agent/plans/PLAN-plan-per-pr-loop.md): a console PR merges when its one plan has every box ticked, or when its body says why it merges otherwise.
 
-THE LINK. A PR names its plan with one `Plan: agent/plans/PLAN-<slug>.md` line in its body. `.claude/hooks/post-bash/refresh_pr_body.py` writes that line from the head of the plan queue (`agent/plans/QUEUE.md`, read by `queue`) on the first push that finds the body without one, and never rewrites it after that: the link is set once and is then the PR's own, so a queue edit mid-PR cannot re-point a PR at another plan. A multi-plan PR, or a PR that
+THE LINK. A PR names its plan with one `Plan: agent/plans/PLAN-<slug>.md` line in its body. `.claude/hooks/post-bash/refresh_pr_body.py` writes that line from the head of the plan queue (`agent/plans/QUEUE.md`, read by `queue`: its hand-ordered `## Promoted` list first, then the `## Generated` one `wl_planqueue` renders) on the first push that finds the body without one, and never rewrites it after that: the link is set once and is then the PR's own, so a queue edit mid-PR cannot re-point a PR at another plan. A multi-plan PR, or a PR that
 merges with open boxes, carries an `Operational-Reason:` line instead, and that line alone admits it.
 
 THE ONE BOX PARSER. Boxes are counted by `wl_planfile.plan_boxes` (the Stop hook's parser, which `check_plan_boxes.py` and `.ci/config/plan-boxes.json` also use), cross-checked against `wl_planfile.raw_box_counts`, its dumber line count: the larger open count wins, so a parser that stops seeing a box cannot turn an open plan into a finished one. A plan with no
@@ -23,12 +23,6 @@ from rediacc_hooks import commit_policy, syspath
 
 QUEUE_REL = "agent/plans/QUEUE.md"
 
-# A queue entry: a numbered list item whose whole text is one plan path, optionally followed by ` -- <note>`. Prose lines naming a plan are not entries.
-QUEUE_ENTRY = re.compile(
-    r"^[ \t]*\d+[.)][ \t]+`?(agent/plans/PLAN-[A-Za-z0-9._-]+\.md)`?(?:[ \t]+--[ \t].*)?[ \t]*$",
-    re.MULTILINE,
-)
-
 # `Plan:` and `Operational-Reason:` at the start of a body line, tolerating list, quote and bold markup before or around the label.
 PLAN_LINE = re.compile(r"(?m)^[ \t>*_-]*Plan\*{0,2}:\*{0,2}[ \t]*(.*?)[ \t]*$")
 OPERATIONAL_REASON = re.compile(r"(?m)^[ \t>*_-]*Operational-Reason\*{0,2}:\*{0,2}[ \t]*\S")
@@ -44,16 +38,18 @@ STOP_DIR = pathlib.Path(__file__).resolve().parent.parent / "hooks" / "stop"
 
 
 def queue(root: str) -> list[str]:
-    """The queued plan paths, in order, first = the plan the live branch works. [] when the file is absent."""
+    """The queued plan paths, in order: the `## Promoted` entries first (hand-ordered, they win), then the `## Generated` ones. [] when the file is absent or the format module cannot load, which leaves a PR body without a `Plan:` line and the merge refused for it."""
     try:
         text = (pathlib.Path(root) / QUEUE_REL).read_text(encoding="utf-8")
-    except OSError:
+        syspath.on_sys_path(STOP_DIR)
+        import wl_planqueue  # noqa: PLC0415 -- the one reader of the queue's format
+    except (OSError, ImportError):
         return []
-    return [m.group(1) for m in QUEUE_ENTRY.finditer(text)]
+    return wl_planqueue.ordered(text)
 
 
 def queue_head(root: str) -> str:
-    """The first queued plan that exists in the working tree, "" when none does."""
+    """The first queued plan that exists in the working tree (the first Promoted one when any exists), "" when none does."""
     for rel in queue(root):
         if (pathlib.Path(root) / rel).is_file():
             return rel

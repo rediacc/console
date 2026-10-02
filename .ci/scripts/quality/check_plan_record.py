@@ -34,6 +34,8 @@ WHAT IS ASSERTED, one rule per planted control in `--selftest`:
       canonicalises status, pointer and the box table -- and deliberately NOT the
       prose, so a record stays editable.
   R8  `agent/INDEX.md` EQUALS THE RENDER. `--update` writes it.
+  RQ  `agent/plans/QUEUE.md`'s GENERATED SECTION EQUALS THE RENDER (`wl_planqueue`),
+      by R8's equality. `--update` rewrites that section and nothing else.
   R9  THE CROSS-REFERENCE HEADERS RESOLVE (W12 P3.4b). `Supersedes:`, `Extends:`
       and `Related:` were taught to PARSE by P3.4a -- `wl_planrec.HEADER_FIELD_KEYS`
       lists them so a `# PLAN: ...` heading is not read as a field -- and nothing
@@ -143,6 +145,7 @@ paths.on_sys_path(pathlib.Path(__file__).resolve().parent)
 try:
     import wl_checks as CK
     import wl_planindex as PI
+    import wl_planqueue as PQ
     import wl_planrec as R
     from check_plan_citations import citations as _citations
     from check_plan_citations import unresolved as _unresolved
@@ -1359,6 +1362,34 @@ def selftest():
         )
         (root / R.INDEX_REL).unlink()
 
+        # RQ: agent/plans/QUEUE.md's generated section EQUALS THE RENDER, red first. The Promoted list is the operator's and must survive the --update byte for byte.
+        queue_path = root / PQ.QUEUE_REL
+        ck("RQ: an absent agent/plans/QUEUE.md is reported", PQ.problems(root) != [])
+        promoted = PQ.SKELETON + "1. agent/plans/PLAN-hand-picked.md -- the operator's pick\n\n"
+        R.write_atomic(queue_path, promoted)
+        ck("RQ: a queue with no generated section is reported", PQ.problems(root) != [])
+        PQ.problems(root, update=True)
+        fresh = queue_path.read_text(encoding="utf-8")
+        ck(
+            "RQ CONTROL: --update keeps the Promoted list byte for byte",
+            fresh.startswith(promoted),
+            f"{fresh[:240]!r}",
+        )
+        ck(
+            "RQ CONTROL: the regenerated queue is silent",
+            PQ.problems(root) == [],
+            f"got {PQ.problems(root)}",
+        )
+        stale = fresh.replace(PQ.GEN_END, "99. agent/plans/PLAN-stale.md -- gone\n" + PQ.GEN_END, 1)
+        ck("RQ CONTROL: the perturbation actually changes the file", stale != fresh)
+        R.write_atomic(queue_path, stale)
+        ck(
+            "RQ: a stale generated section is reported",
+            PQ.problems(root) != [],
+            "a stale section was accepted",
+        )
+        queue_path.unlink()
+
         # THE ANTI-VACUITY CONTROL FOR THE WHOLE GATE: a plain plan is not a record and must produce NOTHING. Without this, a parse() that returned a record for every file would look identical to a clean tree.
         ck(
             "CONTROL: the gate says nothing about a file that is not a record",
@@ -1678,6 +1709,8 @@ def main(argv):
         PI.census_rows(ROOT, plan_records=lambda _r: recs, plan_box_census=CK.plan_box_census)
     )
     problems.extend(index_problems(ROOT, rows, census=census, update=update))
+    # RQ. agent/plans/QUEUE.md's generated section equals `wl_planqueue`'s render over the tracked plans; `--update` rewrites only that section.
+    problems.extend(PQ.problems(ROOT, update=update))
 
     # ---- THE ADVISORY CENSUS ------------------------------------------------- IT RUNS ON BOTH PATHS, red and green. A measurement window with a hole in it wherever some unrelated rule failed is a window nobody can reason about, and the candidates say nothing about R1..R8 either way.
     #
