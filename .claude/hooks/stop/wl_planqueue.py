@@ -5,7 +5,9 @@ knows the headings, the markers and the entry shape.
 
 THE RENDER REPLACES ONLY THE MARKED BLOCK. Every byte outside GEN_BEGIN..GEN_END is copied through unchanged, which is how the Promoted list and the header prose survive every regeneration. A file without the markers gets a `## Generated` section appended, never a rewrite of what is already there.
 
-THE ORDER IS `wl_planorder.plan_key`'s, over a tier split the ruling asked for: open plans, then `Status: held` plans, each tier sorted by (dependency-blocked, operator Priority, AI Priority), then by path. The path is the tie-break instead of the backlog's mtime because this file is compared for equality in a clean CI checkout, where every mtime is the checkout's.
+THE ORDER (operator rulings 2026-10-02). A plan with no open box is never queued: a fully ticked plan is closed, not worked, and a plan with no box has nothing to work yet, so both are named under `### Not queued` inside the block, which `entries` does not read. The rest are ordered by PROGRESS: in progress (a ticked box and an open one) before not started. `Status: held` does not move a plan; the entry note still shows it. A plan never precedes an unfinished plan it
+needs, directly or transitively: a `Depends-On:` edge (a task ref `PLAN-x.md#T3` counts as its plan, `wl_plandeps.Graph.resolve`), or a sub-plan, `PLAN-<parent>.<suffix>.md`, which its parent needs first (`parent_of`; no other module models the relation). A prerequisite inherits the best tier and the best rank (`wl_planconc.rank`, given the sub-plan edges too) of everything that needs it, so it is pulled ahead of unrelated plans. A dependency cycle is broken at its
+best-keyed member and named under `### Not queued`. Ties go to operator Priority, then AI Priority, then the path: this file is compared for equality in a clean CI checkout, where every mtime is the checkout's.
 
 THE SUBJECTS are live plans directly under agent/plans (Status not in `wl_planfile.FINISHED_STATES`, not `removed`, stubs excluded), TRACKED ONLY: the file is a committed render, so another session's untracked draft must not enter it (`wl_store.agent_plan_files(root, tracked_only=True)`, the rule 9100e89f0 set for agent/INDEX.md). The dependency graph drops the same untracked files, so a draft cannot move a tracked plan's rank either.
 
@@ -14,6 +16,7 @@ Reads no environment variable. Heavy imports are lazy so `plan_gate` can read th
 
 from __future__ import annotations
 
+import dataclasses
 import pathlib
 import re
 
@@ -22,8 +25,12 @@ PROMOTED_HEADING = "## Promoted"
 GENERATED_HEADING = "## Generated"
 GEN_BEGIN = "<!-- queue:generated:begin -->"
 GEN_END = "<!-- queue:generated:end -->"
-# The tier after the open plans (operator ruling: held plans are listed, after every open one).
-HELD_STATES = frozenset({"held"})
+# The list of live plans the render leaves out, inside the generated block. Its lines are bullets, never numbered entries, and `entries` stops reading at the heading.
+NOT_QUEUED_HEADING = "### Not queued"
+ALL_TICKED = "all boxes ticked: close it"
+NO_BOXES = "no boxes yet: add boxes"
+NOT_READ = "the plan file could not be read"
+CYCLE = "dependency cycle %s: broken at %s, queued ahead of the rest of the cycle; fix the Depends-On lines"
 
 # A queue entry: a numbered list item whose whole text is one plan path, optionally followed by ` -- <note>`. Prose lines naming a plan are not entries.
 ENTRY = re.compile(
@@ -55,7 +62,8 @@ def generated_text(text: str) -> str | None:
 def entries(text: str) -> tuple[list[str], list[str]]:
     """(promoted, generated) plan paths in file order. Numbered entries outside both sections are not read."""
     promoted = [m.group(1) for m in ENTRY.finditer(promoted_text(text))]
-    generated = [m.group(1) for m in ENTRY.finditer(generated_text(text) or "")]
+    block = (generated_text(text) or "").split(NOT_QUEUED_HEADING, 1)[0]
+    generated = [m.group(1) for m in ENTRY.finditer(block)]
     return promoted, generated
 
 
@@ -72,8 +80,95 @@ def ordered(text: str) -> list[str]:
 # ---------------------------------------------------------------- the render
 
 
-def live_plans(root) -> list[tuple[str, str, tuple[int, int, int]]]:
-    """[(rel, status, plan_key)] in queue order: open tier, then held tier, each by (blocked, op, ai, path)."""
+@dataclasses.dataclass(frozen=True)
+class Row:
+    """One queued plan: its path, Status, `(blocked, op, ai)` with the rank inherited from its dependents, and its box counts."""
+
+    rel: str
+    status: str
+    key: tuple[int, int, int]
+    done: int
+    opened: int
+
+
+@dataclasses.dataclass(frozen=True)
+class Queue:
+    """The render's input: `rows` in queue order, and `skipped`, the `### Not queued` lines as (plan path or "", reason)."""
+
+    rows: tuple[Row, ...] = ()
+    skipped: tuple[tuple[str, str], ...] = ()
+
+
+def box_counts(path: pathlib.Path) -> tuple[int, int] | None:
+    """(open, done) by `rediacc_hooks.plan_gate.open_boxes`' rule: the parser's count against the raw line count, the larger open count wins. None when the file cannot be read."""
+    import wl_planfile  # noqa: PLC0415
+
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    parsed_open, parsed_done = wl_planfile.plan_boxes(text)
+    raw_open, raw_done = wl_planfile.raw_box_counts(text)
+    return max(len(parsed_open), raw_open), max(len(parsed_done), raw_done)
+
+
+def parent_of(rel: str, graph) -> str | None:
+    """The live plan a sub-plan belongs to: `PLAN-<parent>.<suffix>.md` is a part of `PLAN-<parent>.md`, the longest such parent first. None for a plan that is no part."""
+    import wl_plandeps as D  # noqa: PLC0415
+
+    stem = rel.rsplit("/", 1)[-1][: -len(".md")]
+    while "." in stem:
+        stem = stem.rsplit(".", 1)[0]
+        target = graph.resolve(stem + ".md")
+        if target.state == D.LIVE and target.rel != rel:
+            return target.rel
+    return None
+
+
+def _reach(start: str, succ: dict[str, set[str]]) -> set[str]:
+    seen: set[str] = set()
+    stack = list(succ.get(start, ()))
+    while stack:
+        cur = stack.pop()
+        if cur not in seen:
+            seen.add(cur)
+            stack.extend(succ.get(cur, ()))
+    return seen
+
+
+def _cycle_path(start: str, succ: dict[str, set[str]]) -> list[str]:
+    """The shortest closed path start -> ... -> start over `succ`, ties broken by path order."""
+    queue = [[start]]
+    seen = {start}
+    while queue:
+        path = queue.pop(0)
+        for nxt in sorted(succ.get(path[-1], ())):
+            if nxt == start:
+                return [*path, start]
+            if nxt not in seen:
+                seen.add(nxt)
+                queue.append([*path, nxt])
+    return [start, start]
+
+
+def break_cycles(prereqs: dict[str, set[str]], key) -> list[tuple[list[str], str]]:
+    """Make `prereqs` acyclic IN PLACE. Each strongly connected group loses the in-group edges of its best-keyed member, which is then queued first; repeated until no cycle is left. Returns [(closed cycle path, the member it was broken at)]."""
+    broken: list[tuple[list[str], str]] = []
+    while True:
+        reach = {rel: _reach(rel, prereqs) for rel in prereqs}
+        cyclic = sorted((rel for rel in prereqs if rel in reach[rel]), key=key)
+        if not cyclic:
+            return broken
+        brk = cyclic[0]
+        group = {rel for rel in reach[brk] if brk in reach[rel]}
+        broken.append((_cycle_path(brk, prereqs), brk))
+        prereqs[brk] -= group
+
+
+def live_plans(root) -> Queue:
+    """The queue over the tracked live plans: no plan without an open box, a prerequisite before every plan that needs it, then (progress tier, op, ai, path)."""
+    import heapq  # noqa: PLC0415
+
     import wl_planconc as X  # noqa: PLC0415
     import wl_plandeps as D  # noqa: PLC0415 -- the graph is loaded only for a render
     import wl_planfile  # noqa: PLC0415
@@ -88,8 +183,8 @@ def live_plans(root) -> list[tuple[str, str, tuple[int, int, int]]]:
     graph = D.Graph(
         {r: t for r, t in full.texts.items() if r not in untracked}, full.index_text, root
     )
-    ctx = X.order_ctx(graph)
-    rows = []
+    found: dict[str, tuple[str, int, int]] = {}
+    skipped: list[tuple[str, str]] = []
     for rel, info in graph.plans.items():
         status = info.header.status
         if (
@@ -100,37 +195,104 @@ def live_plans(root) -> list[tuple[str, str, tuple[int, int, int]]]:
             or status == D.REMOVED_STATUS
         ):
             continue
-        rows.append((rel, status, ctx.plan_key(rel)))
-    rows.sort(key=lambda r: (r[1] in HELD_STATES, *r[2], r[0]))
-    return rows
+        counts = box_counts(root / rel)
+        if counts is None:
+            skipped.append((rel, NOT_READ))
+        elif counts[0] == 0:
+            skipped.append((rel, ALL_TICKED if counts[1] else NO_BOXES))
+        else:
+            found[rel] = (status, counts[1], counts[0])
+
+    # The edges: every Depends-On (a task ref `PLAN-x.md#T3` resolves to its plan, `wl_plandeps.Graph.resolve`) and every sub-plan, which its parent needs first.
+    rev = X._dependents(graph)
+    parents = {rel: parent_of(rel, graph) for rel in graph.plans if graph.is_required(rel)}
+    for sub, parent in parents.items():
+        if parent is not None and graph.is_required(parent):
+            rev.setdefault(sub, set()).add(parent)
+    prereqs: dict[str, set[str]] = {rel: set() for rel in found}
+    for prereq, dependents in rev.items():
+        for rel in dependents:
+            if rel in found and prereq in found:
+                prereqs[rel].add(prereq)
+
+    # A prerequisite inherits the best rank (`wl_planconc.rank`) and the best progress tier of everything that needs it.
+    def tier(rel: str) -> int:
+        return 0 if found[rel][1] else 1
+
+    keys: dict[str, tuple] = {}
+    for rel in found:
+        best = min([tier(rel)] + [tier(d) for d in _reach(rel, rev) if d in found])
+        keys[rel] = (best, *X.rank(rel, graph, rev), rel)
+    cycles = break_cycles(prereqs, keys.__getitem__)
+
+    needers: dict[str, set[str]] = {rel: set() for rel in found}
+    for rel, pres in prereqs.items():
+        for pre in pres:
+            needers[pre].add(rel)
+    waiting = {rel: set(pres) for rel, pres in prereqs.items()}
+    heap = [keys[rel] for rel in found if not waiting[rel]]
+    heapq.heapify(heap)
+    rows: list[Row] = []
+    while heap:
+        rel = heapq.heappop(heap)[-1]
+        status, done, opened = found[rel]
+        _tier, op, ai, _rel = keys[rel]
+        blocked = 1 if graph.roots(rel) or prereqs[rel] else 0
+        rows.append(Row(rel, status, (blocked, op, ai), done, opened))
+        for nxt in sorted(needers[rel]):
+            waiting[nxt].discard(rel)
+            if not waiting[nxt]:
+                heapq.heappush(heap, keys[nxt])
+    skipped.sort()
+    for path, brk in cycles:
+        names = " -> ".join(r.rsplit("/", 1)[-1] for r in path)
+        skipped.append(("", CYCLE % (names, brk.rsplit("/", 1)[-1])))
+    return Queue(tuple(rows), tuple(skipped))
 
 
-def note(status: str, key: tuple[int, int, int]) -> str:
-    """`P1 (operator), approved`, `P3, held`, `P- (no Priority), draft`, with `, dep-blocked` when a dependency is still open."""
-    blocked, op, ai = key
+def note(row: Row) -> str:
+    """`P1 (operator), approved, in progress (2 of 5 boxes ticked)`, `P3, held, not started`, with `, dep-blocked` while a dependency is still open."""
+    blocked, op, ai = row.key
     if op < 4:
         rank = "P%d (operator)" % op
     elif ai < 4:
         rank = "P%d" % ai
     else:
         rank = "P- (no Priority)"
-    return "%s, %s%s" % (rank, status or "no Status", ", dep-blocked" if blocked else "")
-
-
-def render_block(rows, exclude) -> str:
-    """The numbered lines between the markers, Promoted entries left out."""
-    keep = [r for r in rows if r[0] not in set(exclude)]
-    if not keep:
-        return "(no live plan outside Promoted)\n"
-    return "".join(
-        "%d. %s -- %s\n" % (i, rel, note(st, key)) for i, (rel, st, key) in enumerate(keep, 1)
+    progress = (
+        "in progress (%d of %d boxes ticked)" % (row.done, row.done + row.opened)
+        if row.done
+        else "not started"
+    )
+    return "%s, %s, %s%s" % (
+        rank,
+        row.status or "no Status",
+        progress,
+        ", dep-blocked" if blocked else "",
     )
 
 
-def render(text: str, rows) -> str:
-    """`text` with its generated block replaced by the render over `rows`. Every byte outside the block is kept."""
+def render_block(queue: Queue, exclude) -> str:
+    """The numbered lines between the markers, then the `### Not queued` list. Promoted entries are left out of both."""
+    skip = set(exclude)
+    keep = [r for r in queue.rows if r.rel not in skip]
+    out = "".join("%d. %s -- %s\n" % (i, r.rel, note(r)) for i, r in enumerate(keep, 1))
+    if not keep:
+        out = "(no live plan outside Promoted)\n"
+    lines = [
+        "- %s -- %s\n" % (rel, why) if rel else "- %s\n" % why
+        for rel, why in queue.skipped
+        if rel not in skip
+    ]
+    if lines:
+        out += "\n%s\n\n%s" % (NOT_QUEUED_HEADING, "".join(lines))
+    return out
+
+
+def render(text: str, queue: Queue) -> str:
+    """`text` with its generated block replaced by the render over `queue`. Every byte outside the block is kept."""
     promoted, _gen = entries(text)
-    block = "%s\n%s%s" % (GEN_BEGIN, render_block(rows, promoted), GEN_END)
+    block = "%s\n%s%s" % (GEN_BEGIN, render_block(queue, promoted), GEN_END)
     m = _BLOCK.search(text)
     if m:
         return text[: m.start()] + block + text[m.end() :]
