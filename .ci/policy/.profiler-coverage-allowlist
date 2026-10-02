@@ -87,9 +87,6 @@ ci.yml:smoke-test-preview
 ci.yml:stripe-sandbox
 ci.yml:validate-promote
 #
-# claude-mention.yml
-claude-mention.yml:claude
-#
 # cleanup-preview.yml
 cleanup-preview.yml:cleanup
 #
