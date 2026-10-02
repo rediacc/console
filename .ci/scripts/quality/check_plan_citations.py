@@ -865,6 +865,22 @@ def selftest(root):
         kinds == {"fileline", "plan", "gate", "object"},
         f"got {sorted(kinds)}",
     )
+    # A PARTIAL CLONE's omitted blobs: an abbreviation of exactly one resolves, an ambiguous or unknown one does not.
+    omitted = frozenset(
+        {"0f99ee0a60216b9bc55a825e1ba3d482f93a2a30", "0f99ee0b00000000000000000000000000000000"}
+    )
+    ck(
+        "an abbreviated blob that a partial clone omitted resolves through the omitted-object list",
+        R.prefix_names_one(omitted, "0f99ee0a6021"),
+    )
+    ck(
+        "CONTROL: an abbreviation two omitted ids share resolves nothing",
+        not R.prefix_names_one(omitted, "0f99ee0"),
+    )
+    ck(
+        "CONTROL: an abbreviation no omitted id carries resolves nothing",
+        not R.prefix_names_one(omitted, "deadbeef1234"),
+    )
     # And the two documented exemptions, both directions.
     ck(
         "an all-digit run id is NOT treated as an object",

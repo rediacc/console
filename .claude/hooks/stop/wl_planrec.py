@@ -335,6 +335,34 @@ def _trap_ids(root) -> set:
     return set(re.findall(r"^Trap-Id:[ \t]*(\S+)[ \t]*$", text, re.MULTILINE))
 
 
+_OMITTED: dict[str, frozenset[str]] = {}
+
+
+def omitted_objects(root):
+    """The full ids a PARTIAL clone knows of but never downloaded, once per root. Empty in a full clone.
+
+    WHY AN ABBREVIATED BLOB NEEDS THIS. CI's quality-branch checks out with `filter: blob:none`. git fetches a missing blob lazily by its FULL id, but cannot expand an ABBREVIATION it holds no object for: measured 2026-10-02 on a `--filter=blob:none` clone of 0930-1, `git cat-file -t 0f99ee0a6021` answers "Not a valid object name" while the 40-character id answers `blob`. check:ci-plan-citations advises citing the blob, so every abbreviated blob outside the checked-out tree passed locally and failed in CI (run 37035400559); `resolve` consults this list for a blob it cannot find, which covers that gate, check:ci-plan-implementation's pointers and the Stop hook alike. `git rev-list --objects --missing=print HEAD` lists each omitted object as `?<oid>` without fetching anything (0.6 s on this repository).
+    """
+    key = str(root)
+    if key not in _OMITTED:
+        r = subprocess.run(
+            ["git", "-C", key, "rev-list", "--objects", "--missing=print", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        _OMITTED[key] = frozenset(
+            line[1:].strip() for line in r.stdout.splitlines() if line.startswith("?")
+        )
+    return _OMITTED[key]
+
+
+def prefix_names_one(oids, token):
+    """True when exactly one id in `oids` starts with `token`. PURE, so the selftest drives it. An ambiguous prefix resolves nothing, as git's own abbreviation rule says."""
+    tok = token.lower()
+    return sum(1 for oid in oids if oid.startswith(tok)) == 1
+
+
 def resolve(root, kind, token):
     """(ok, detail) -- does this pointer name something that REALLY exists?
 
@@ -365,6 +393,8 @@ def resolve(root, kind, token):
         return False, "empty token"
     if kind == "blob":
         got = _git_out(root, "cat-file", "-t", token)
+        if got != "blob" and prefix_names_one(omitted_objects(root), token):
+            return True, "blob (omitted by this partial clone, named by the omitted-object list)"
         return (got == "blob"), (got or "no such object")
     if kind == "tree":
         got = _git_out(root, "cat-file", "-t", token)
