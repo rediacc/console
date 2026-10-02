@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 import time
+import urllib.parse
 
 import wl_core as C
 import wl_store as S
@@ -154,6 +155,15 @@ CI_CACHE_FINAL_S = int(os.environ.get("WORKLIST_CI_CACHE_FINAL_S", "900"))
 CI_MAX_BLOCKS = int(os.environ.get("WORKLIST_CI_MAX_BLOCKS", "2"))
 CI_MAX_PAGES = 3
 CI_STEP_LOOKUPS = 2
+
+
+def _bare_branch(ref):
+    """`origin/x`, `refs/heads/x` and `refs/remotes/origin/x` all name branch `x` for the runs API."""
+    ref = ref.strip()
+    for prefix in ("refs/remotes/origin/", "refs/heads/", "origin/"):
+        if ref.startswith(prefix):
+            return ref[len(prefix) :]
+    return ref
 
 
 def repo_slug(root):
@@ -879,7 +889,12 @@ def ci_queue_state(root, worklist, session_id):
     if owner:
         data, err = _gh_json(
             root,
-            ["api", "repos/%s/%s/actions/runs?branch=%s&per_page=10" % (owner, name, ref)],
+            # The runs API matches only the BARE branch name, URL-encoded: `origin/x` or `refs/heads/x` matched no run at all, the same class ci-trace's --runs had.
+            [
+                "api",
+                "repos/%s/%s/actions/runs?branch=%s&per_page=10"
+                % (owner, name, urllib.parse.quote(_bare_branch(ref), safe="/")),
+            ],
             timeout=20,
         )
         runs = (data or {}).get("workflow_runs") if isinstance(data, dict) else None

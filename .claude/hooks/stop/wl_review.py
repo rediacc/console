@@ -1595,12 +1595,32 @@ VERB_USAGE = """usage:
   worklist.py --review-mark <me> <finding-id> deferred #<item>         an open worklist item whose text names the finding id
   worklist.py --review-commit <me>                                     commit the finished, unrecorded review files of the branch
   worklist.py --review-run <me> [<sha> [--repo <console|private/x>]]   list unreviewed commits, or review one now in the foreground
+  worklist.py --prune-reviews <me> [--write]                           list (or, with --write, delete) agent/reviews/<branch>/ directories past retention
 """
+
+# The archival gate owns the retention rule (`--prune-reviews` there, PLAN-per-commit-review section 9); this verb only runs it, so the rule has one home.
+PRUNE_GATE = pathlib.Path(".ci") / "scripts" / "quality" / "check_agent_session_archival.py"
+
+
+def prune_reviews(root, args):
+    """(rc, text): the archival gate's `--prune-reviews [--write]`, run from `root`, its rc and its output passed through unchanged."""
+    if any(a != "--write" for a in args):
+        return 2, VERB_USAGE
+    cmd = [sys.executable, str(pathlib.Path(root) / PRUNE_GATE), "--prune-reviews", *args]
+    try:
+        res = subprocess.run(
+            cmd, capture_output=True, text=True, cwd=str(root), timeout=600, check=False
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return 1, "refused: could not run %s (%s)" % (PRUNE_GATE, exc)
+    return res.returncode, (res.stdout + res.stderr).rstrip("\n")
 
 
 def verb(name, me, args, root, items_loader, branch=None):
     """(rc, text) for one worklist review verb. `items_loader()` returns {item_id: (state, text)} from the worklist fold; it is called only when a deferral needs it."""
     root = pathlib.Path(root)
+    if name == "--prune-reviews":
+        return prune_reviews(root, args)
     branch = branch or current_branch(root)
     if name == "--review-mark":
         if not args:

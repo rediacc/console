@@ -530,6 +530,8 @@ def drive_l1(fix) -> L1Drive:
         ("--review-mark", "--review-mark @WHO@", "open per-commit review findings"),
         ("--review-commit", "--review-commit @WHO@", "no finished review file"),
         ("--review-run", "--review-run @WHO@", "unreviewed commits"),
+        # --prune-reviews runs the archival gate from the project root (PLAN-per-commit-review T5), so the fixture plants a stand-in gate there: the identity check is this table's subject, and the real gate needs a git work tree the fixture does not have.
+        ("--prune-reviews", "--prune-reviews @WHO@", "no agent/reviews/<branch>/ directory"),
         # The stop-hook retro brief (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.13). It WRITES: the first accepted run orders the band and adds the tracking item, so a foreign `<me>` must be refused before either.
         ("--retro-brief", "--retro-brief @WHO@ early", "STOP-HOOK RETRO for session"),
         # RETROACTIVE ONLY, so CONTROL A is driven for real against plant_backfill_target's fixture -- a genuine two-commit repo, the one row in this table where `fix.proj/.git` stops being a plain directory. Dry (no `--write`): the identity rule is the whole surface this table is about, and a dry run proves the CLI reached the SAME resolve-and-render path a --write run
@@ -541,6 +543,12 @@ def drive_l1(fix) -> L1Drive:
             "would backfill one investigation of",
         ),
     ]
+
+    stand_in = fix.proj / ".ci" / "scripts" / "quality" / "check_agent_session_archival.py"
+    stand_in.parent.mkdir(parents=True, exist_ok=True)
+    stand_in.write_text(
+        'print("no agent/reviews/<branch>/ directory is past its retention")\n', encoding="utf-8"
+    )
 
     for verb, template, needle in table:
         drive.covered.add(verb)

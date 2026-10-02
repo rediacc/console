@@ -32,6 +32,7 @@ import pathlib
 import subprocess
 import sys
 import time
+import urllib.parse
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 
@@ -772,11 +773,33 @@ def verb_why(root, run_id, attempt, ref, as_json):
     }.get(d["verdict"], EXIT_NO_VERDICT)
 
 
+def _branch_name(ref):
+    """The bare branch name the runs API filters on: `origin/main`, `refs/heads/main` and `refs/remotes/origin/main` all mean `main` there, and any other spelling matches no run at all."""
+    ref = ref.strip()
+    for prefix in ("refs/remotes/origin/", "refs/heads/", "origin/"):
+        if ref.startswith(prefix):
+            return ref[len(prefix) :]
+    return ref
+
+
 def verb_runs(root, ref, as_json):
-    data, err = _fetcher(root).json("actions/workflows/ci.yml/runs?branch=%s&per_page=10" % ref)
+    ref = _branch_name(ref)
+    data, err = _fetcher(root).json(
+        "actions/workflows/ci.yml/runs?branch=%s&per_page=10" % urllib.parse.quote(ref, safe="/")
+    )
     runs = (data or {}).get("workflow_runs") if isinstance(data, dict) else None
     if runs is None:
         print("no-verdict: %s" % (err or "no workflow_runs"), file=sys.stderr)
+        return EXIT_NO_VERDICT
+    # AN EMPTY LIST IS AN ANSWER, AND IT IS SAID OUT LOUD (#09a94592). It used to print the header with no rows at rc 0, which reads as "the rows went missing" and sends the next session to `gh run list` instead.
+    if not runs:
+        if as_json:
+            print("[]")
+        print(
+            "no-verdict: no %s run on branch %r (the API matches the exact branch name)"
+            % (wl_ci.CONSOLE_CI_WORKFLOW, ref),
+            file=sys.stderr,
+        )
         return EXIT_NO_VERDICT
     rows = [
         {
@@ -1383,6 +1406,63 @@ def _selftest():
         "CONTROL: --run with CI Complete successful is GREEN",
         rc == EXIT_GREEN,
         "rc=%r out=%r" % (rc, out),
+    )
+
+    # ---- #09a94592 (2026-10-02): `--runs --ref <r>` printed the header alone at rc 0, a shape that reads as "the rows went missing" rather than "the API matched no branch". Measured: `--ref origin/main` and `--ref refs/heads/main` both did it, because the runs API filters on the bare branch name. Driven through the REAL verb_runs with the fetcher stubbed.
+    def runs_it(ref, payload, as_json=False):
+        paths = []
+
+        class _Fetch:
+            def json(self, path):
+                paths.append(path)
+                return payload, ""
+
+        orig = globals()["_fetcher"]
+        globals()["_fetcher"] = lambda _root: _Fetch()
+        try:
+            buf_out, buf_err = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(buf_out), contextlib.redirect_stderr(buf_err):
+                rc = verb_runs(pathlib.Path("."), ref, as_json)
+            return rc, buf_out.getvalue(), buf_err.getvalue(), paths
+        finally:
+            globals()["_fetcher"] = orig
+
+    row = {
+        "id": 36974916837,
+        "run_attempt": 3,
+        "status": "completed",
+        "conclusion": "failure",
+        "head_sha": "0dfd4a04" + "0" * 32,
+        "event": "schedule",
+        "created_at": "2026-10-02T06:43:14Z",
+    }
+    rc, out, err, _paths = runs_it("main", {"workflow_runs": []})
+    check(
+        "#09a94592: an empty run list is no-verdict with the reason on stderr, never a bare header at rc 0",
+        rc == EXIT_NO_VERDICT and out == "" and "no Console CI run" in err,
+        "rc=%r out=%r err=%r" % (rc, out, err),
+    )
+    for spelling in ("origin/main", "refs/heads/main", "refs/remotes/origin/main"):
+        rc, out, err, paths = runs_it(spelling, {"workflow_runs": [row]})
+        check(
+            "#09a94592: --ref %s reads the runs of the branch named main" % spelling,
+            rc == 0 and len(paths) == 1 and "branch=main&" in paths[0] and "36974916837" in out,
+            "rc=%r paths=%r out=%r err=%r" % (rc, paths, out, err),
+        )
+    rc, out, err, _paths = runs_it("main", {"workflow_runs": [row]})
+    check(
+        "CONTROL: a populated list prints the header and one row per run at rc 0",
+        rc == 0
+        and len(out.strip().splitlines()) == 2
+        and "36974916837" in out
+        and "schedule" in out,
+        "rc=%r out=%r err=%r" % (rc, out, err),
+    )
+    rc, out, err, _paths = runs_it("main", {"workflow_runs": [row]}, as_json=True)
+    check(
+        "CONTROL: --json prints the same rows as a list at rc 0",
+        rc == 0 and [r["run_id"] for r in json.loads(out)] == [36974916837],
+        "rc=%r out=%r err=%r" % (rc, out, err),
     )
 
     print("  %s" % ("all ci-trace controls passed" if ok else "*** FAILURES ***"))

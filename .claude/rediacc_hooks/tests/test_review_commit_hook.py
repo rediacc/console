@@ -607,3 +607,66 @@ def test_a_finding_about_writing_is_capped_at_low_and_code_is_not():
         ("src/a.py", "high"),
         ("CLAUDE.md", "high"),
     ]
+
+
+# ---- T5 of PLAN-per-commit-review: `worklist.py --prune-reviews <me> [--write]` is a thin arm over the archival gate's own pruning, so the retention rule lives in one place.
+
+FAKE_GATE = r"""#!/usr/bin/env python3
+import json, os, sys
+print("FAKE-GATE " + json.dumps(sys.argv[1:]) + " cwd=" + os.path.realpath(os.getcwd()))
+sys.exit(int(os.environ.get("FAKE_GATE_RC", "3")))
+"""
+
+
+def _fake_root(tmp_path):
+    root = tmp_path / "fakeroot"
+    gate = root / ".ci" / "scripts" / "quality" / "check_agent_session_archival.py"
+    gate.parent.mkdir(parents=True)
+    gate.write_text(FAKE_GATE, encoding="utf-8")
+    return root
+
+
+@pytest.mark.parametrize(
+    ("args", "argv"),
+    [([], ["--prune-reviews"]), (["--write"], ["--prune-reviews", "--write"])],
+)
+def test_prune_reviews_reaches_the_archival_gate_and_returns_its_rc_and_output(
+    tmp_path, args, argv
+):
+    root = _fake_root(tmp_path)
+    rc, text = R.verb("--prune-reviews", "deadbeef", args, root, dict, branch=BRANCH)
+    assert rc == 3, text
+    assert "FAKE-GATE " + json.dumps(argv) in text
+    assert "cwd=" + os.path.realpath(root) in text
+
+
+def test_control_prune_reviews_passes_a_clean_gate_through_as_rc_0(tmp_path, monkeypatch):
+    root = _fake_root(tmp_path)
+    monkeypatch.setenv("FAKE_GATE_RC", "0")
+    rc, text = R.verb("--prune-reviews", "deadbeef", [], root, dict, branch=BRANCH)
+    assert (rc, "FAKE-GATE" in text) == (0, True), text
+
+
+def test_prune_reviews_refuses_an_unknown_argument_without_running_the_gate(tmp_path):
+    root = _fake_root(tmp_path)
+    rc, text = R.verb("--prune-reviews", "deadbeef", ["--force"], root, dict, branch=BRANCH)
+    assert rc == 2, text
+    assert "FAKE-GATE" not in text, text
+    assert "--prune-reviews" in text, text
+
+
+def test_worklist_dispatches_prune_reviews_to_the_review_arm(tmp_path):
+    """The dispatcher tuple names the verb: a bad prefix is refused by the review arm's own check, not by the unknown-verb refusal."""
+    script = pathlib.Path(__file__).resolve().parents[2] / "hooks" / "stop" / "worklist.py"
+    res = subprocess.run(
+        [sys.executable, str(script), "--prune-reviews", "NOT-A-PREFIX!"],
+        capture_output=True,
+        text=True,
+        stdin=subprocess.DEVNULL,
+        cwd=tmp_path,
+        timeout=60,
+        check=False,
+    )
+    assert res.returncode == 2
+    assert "bad prefix" in res.stderr, res.stderr
+    assert "unknown verb" not in res.stderr, res.stderr
