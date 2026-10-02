@@ -86,6 +86,19 @@ NEEDS_SCRIPT = (
     ("sync-media-to-r2.sh", "aws"),
     ("sync-media-from-r2.sh", "aws"),
     ("upload-to-r2.sh", "aws"),
+    # THE PYTHON PORTS, by module. `python3 -m <module>` runs the same aws calls its bash original did, and `_is_invoked` reads the module after `-m` as the command's target. The harness asserts every row above whose port exists has its module here.
+    ("rediacc_ci.release.assert_edge_tag_exists", "aws"),
+    ("rediacc_ci.deploy.write_release_sentinel", "aws"),
+    ("rediacc_ci.deploy.delete_r2_channel", "aws"),
+    ("rediacc_ci.deploy.promote_r2_to_stable", "aws"),
+    ("rediacc_ci.deploy.promote_r2_to_stable_hotfix", "aws"),
+    ("rediacc_ci.deploy.simulate_promotion", "aws"),
+    ("rediacc_ci.deploy.upload_repos_to_r2", "aws"),
+    ("rediacc_ci.housekeeping.cleanup_versions", "aws"),
+    ("rediacc_ci.deploy.sync_media_to_r2", "aws"),
+    ("rediacc_ci.deploy.sync_media_from_r2", "aws"),
+    ("rediacc_ci.deploy.upload_to_r2", "aws"),
+    ("rediacc_ci.ops.scrub_sentinel", "aws"),
 )
 
 # CREDENTIALS THAT LIVE IN A FILE, NOT IN YOUR SHELL. Measured 2026-08-28.
@@ -99,6 +112,9 @@ NEEDS_ENV = (
     ("sync-media-from-r2", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
     ("sync-media-to-r2", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
     ("--publish-www", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
+    # The Python ports of the two sync scripts, by module (see NEEDS_SCRIPT for how `python3 -m` is read).
+    ("rediacc_ci.deploy.sync_media_from_r2", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
+    ("rediacc_ci.deploy.sync_media_to_r2", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
 )
 
 # BARE INVOCATIONS. The table above matches only a GATE KEY (`check:ci-python-lint` in the command), so a session running the tool directly -- `ruff format <files>`, not `npm run check:ci-python-lint` -- was invisible to it. That gap is real independent of the npx incident above: this catches the correctly-shaped direct command too, when the host genuinely lacks the tool.
@@ -209,6 +225,10 @@ EDGE_CASES = [
     # The host-bound arm.
     ("a host-bound pipeline", "shfmt -w private/growth/video_pipeline/run.sh"),
     ("a host-bound submodule", "shellcheck private/account/scripts/rotation/rotate.sh"),
+    # The python -m arm: a port's module is its target, and the same key handed to pytest is a mention.
+    ("a python -m port", "PYTHONPATH=.ci python3 -m rediacc_ci.ops.scrub_sentinel v1.0.5"),
+    ("a python -m port by script path", "python3 .ci/rediacc_ci/deploy/upload_to_r2.py"),
+    ("a port named to pytest", "python3 -m pytest -k rediacc_ci.ops.scrub_sentinel"),
 ]
 
 
@@ -276,6 +296,14 @@ def _is_invoked(key, scan):
             return True
         opener = words[0]
         args = words[1:]
+        if _PYTHON.match(opener.rsplit("/", 1)[-1]):
+            # A PYTHON INTERPRETER RUNS ONE TARGET: the module after `-m`, or the first non-option word (a script path). Every later word is that target's argument, so `python3 -m pytest -k <key>` is a mention.
+            target = _python_target(args) or ""
+            # A script path names the module too: `.ci/rediacc_ci/ops/scrub_sentinel.py` holds `rediacc_ci.ops.scrub_sentinel`.
+            dotted = target[: -len(".py")].replace("/", ".") if target.endswith(".py") else ""
+            if target and (key in target or key in dotted):
+                return True
+            continue
         if opener == "npm" and args[:1] == ["run"]:
             args = args[1:]
         elif not (
@@ -293,6 +321,30 @@ _COMMAND_SPLIT = re.compile(r"[;&|()`\n]|\$\(")
 _ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 _PREFIX_WORDS = ("sudo", "env", "exec", "command", "time", "nohup")
 _INTERPRETERS = ("bash", "sh", "zsh", "source", ".", "npx")
+# `python`, `python3`, `python3.14`, by basename.
+_PYTHON = re.compile(r"^python[0-9.]*$")
+# Interpreter options that consume the next word as their value.
+_PYTHON_VALUE_OPTIONS = ("-W", "-X", "-Q")
+
+
+def _python_target(args):
+    """The module (`-m X` / `-mX`) or script a python command line runs; None for `-c`, `-` or no target."""
+    i = 0
+    while i < len(args):
+        word = args[i]
+        if word == "-m":
+            return args[i + 1] if i + 1 < len(args) else None
+        if word.startswith("-m"):
+            return word[2:]
+        if word in ("-c", "-") or word.startswith("-c"):
+            return None
+        if word in _PYTHON_VALUE_OPTIONS:
+            i += 2
+            continue
+        if not word.startswith("-"):
+            return word
+        i += 1
+    return None
 
 
 def _ci_seams():

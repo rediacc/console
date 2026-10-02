@@ -122,7 +122,7 @@ import sys
 import tempfile
 
 from rediacc_ci import gitx, paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, git_isolated
 from rediacc_ci.policy_paths import policy_rel
 
 # The environment seams, all of which the gate-test drives.
@@ -835,6 +835,7 @@ _GOOD_REASON = (
 )
 
 
+@git_isolated
 def selftest() -> int:
     """Both directions on every extractor, then the gate on real git trees."""
     ctl = Controls("plan-housekeeping", floor=26, verbose=True)

@@ -67,7 +67,7 @@ import sys
 import tempfile
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, git_isolated
 
 # The extensions that must always be text. Carried byte for byte from the twin's `TEXT_EXTENSIONS_RE`, including the anchor, because the twin's own comment says the bash ERE and Python's syntax agree for this pattern and it compiles the string as-is on both sides.
 TEXT_EXTENSIONS_RE = (
@@ -310,6 +310,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+@git_isolated
 def selftest() -> int:
     """Plant each violation, prove it is found; plant its mirror, prove it is not.
 

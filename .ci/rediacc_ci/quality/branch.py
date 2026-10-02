@@ -77,7 +77,7 @@ import sys
 import tempfile
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, git_isolated
 
 # The event this gate is about. Anything else is not a pull request and the gate says so and exits 0, which is a SKIP and not a pass: there is no branch to be behind when nothing is proposing a merge.
 PR_EVENT = "pull_request"
@@ -337,6 +337,7 @@ def _run(root: pathlib.Path, **env: str) -> int:
                 os.environ[key] = value
 
 
+@git_isolated
 def selftest() -> int:
     """Both directions for every arm, over real repositories built by construction.
 

@@ -158,6 +158,9 @@
       "RENET_TAG",
       "WEB_TAG"
     ],
+    ".ci/rediacc_ci/controls.py": [
+      "*name"
+    ],
     ".ci/rediacc_ci/core/account.py": [
       "CONSOLE_ROOT_DIR",
       "DATABASE_PATH",
@@ -1363,6 +1366,10 @@
     ".ci/rediacc_ci/tests/test_ci_scope_shadow.py": [
       "HOME",
       "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_controls.py": [
+      "GIT_DIR",
+      "GIT_INDEX_FILE"
     ],
     ".ci/rediacc_ci/tests/test_core_account.py": [
       "HOME"

@@ -21,7 +21,7 @@ const KNOWN_MODULES = [
   'workers', // workers/ (Cloudflare workers: preview + smoke surface)
   'tutorials', // .ci/tutorials scripts + the www tutorial docs that order them
   'devcontainer', // .devcontainer (built by build-docker-fast, no test surface)
-  // Quality-gate sources under scripts/, minus the two subsets a gated job actually EXECUTES (see scripts-drills and scripts-license-gen below). A ZERO-JOB module, like docs and devcontainer: no JOB_SURFACES entry names it, so it pulls nothing into scope. That is correct rather than lazy -- every consumer of these files is a quality lane, and quality lanes carry no run_* gate at
+  // Quality-gate sources under scripts/, minus the subsets a gated job actually EXECUTES (the carve-outs above the scripts-gates rule). A ZERO-JOB module, like docs and devcontainer: no JOB_SURFACES entry names it, so it pulls nothing into scope. That is correct rather than lazy -- every consumer of these files is a quality lane, and quality lanes carry no run_* gate at
   // all (ci-quality.yml contains zero `run_` references, so the engine cannot turn one off even if a rule tried). Deliberately NOT reusing `docs`: a future edit that gives docs a job surface must not silently drag the gate sources with it.
   'gates',
   // The tracked agent working-notes root: agent/<session-prefix>/STATE.md, agent/RULES.md, agent/PLAN-*.md, and the /handoff program suites under agent/programs/<slug>/. A ZERO-JOB module for the same reason as docs and gates: nothing in this tree is an input to any build, test or gate, so no JOB_SURFACES entry names it.
@@ -150,12 +150,9 @@ const RULES = [
   // THE OLD COMMENT HERE GAVE THE WRONG REASON, and a conservative rule defended by a wrong reason is one that gets removed for bad reasons later. It said quality lanes "must stay immune to scoping by construction" and concluded `full`. Gate immunity is real but the engine already guarantees it independently: ci-quality.yml contains ZERO `run_` references, so no quality lane is
   // among the 18 keys the engine can switch off. A scripts/ rule cannot scope out a gate because gates are not scopeable at all.
   //
-  // The load-bearing half was the second clause -- "these also feed hooks and dev flows whose surface is unmapped" -- so the surface was mapped (2026-08-06, tracing execution rather than reading names). Exactly two subsets are reachable from a gated job; they are carved out below and the rest becomes a zero-job module.
+  // The load-bearing half was the second clause -- "these also feed hooks and dev flows whose surface is unmapped" -- so the surface was mapped (2026-08-06, tracing execution rather than reading names). The subsets a gated job reaches are carved out below, and the rest becomes a zero-job module.
   //
-  // scripts/drills/*.sh are EXECUTED by the gated Drills job: ct-tests.yml:1730 -> ./run.sh drill universe|transfer|backup -> run.sh:1987,:1991 -> these files. Mapping them to a module would need `drills` in a surface, and that surface (cli, shared, account) would drag the whole VM matrix in anyway; full is both cheaper and honest.
-  { name: 'scripts-drills', match: matchPrefix('scripts/drills/'), full: 'harness' },
-
-  // scripts/ci/*.cjs are EXECUTED by gated jobs: ci-quality.yml runs `node scripts/ci/write-shard-receipt.cjs` on every sharded lane, and housekeeping.yml requires scripts/ci/report-budget-check.cjs. A delta touching only one of them changes what those jobs do, so it forces full CI like scripts-drills.
+  // scripts/ci/*.cjs are EXECUTED by gated jobs: ci-quality.yml runs `node scripts/ci/write-shard-receipt.cjs` on every sharded lane, and housekeeping.yml requires scripts/ci/report-budget-check.cjs. A delta touching only one of them changes what those jobs do, so it forces full CI like scripts-license-gen.
   { name: 'scripts-ci', match: matchExactOrPrefix('scripts/ci'), full: 'harness' },
 
   // The local gate runner is EXECUTED by a gated job: housekeeping.yml's gate-costs-capture runs `scripts/ci-runner/run.ts --quick --jobs 1 --sched slots --json` (8670cdc00), and its budget-check job reads scripts/ci-runner/gates.lock.json, so a delta touching only the runner changes what that job measures.
@@ -242,9 +239,7 @@ const JOB_SURFACES = {
   // package both it and the account server build against, and a live
   // `./run.sh account dev` gateway (`private/account`) the assertions log in to. `drill backup` additionally drives the chunk store through that same gateway, so it needs no module the other two do not already pull in.
   //
-  // The drills' OWN source (scripts/drills/*.sh) is not a module: `scripts/`
-  // hits the `scripts-harness` rule => full CI, so an edit to a drill always
-  // runs this leg. Same shape as license_enforcement's harness under `.ci/`.
+  // The drills' OWN source (.ci/rediacc_ci/drills/) is not a module: it lives under `.ci/`, which already forces full CI, so an edit to a drill always runs this leg. Same shape as license_enforcement's harness under `.ci/`.
   //
   // `www` is DELIBERATELY ABSENT even though `account_dev` starts the Astro dev server from packages/www and exits non-zero if it does not come up. A www change cannot change what these drills ASSERT (config isolation, per-config tokens, config-storage seed/offline/fail-closed): it can only break the harness. Carrying www here would run a ~15-minute leg on every marketing or i18n
   // PR, which is the single most common change shape in this repo. The accepted cost: a www change that breaks `astro dev` while still building clean would surface as a red drills leg on the NEXT cli/account PR. `renet` is here because of `drill backup`: the chunk engine, the restore path and the prune reclaim all live in private/renet, and the drill that exercises them was NOT

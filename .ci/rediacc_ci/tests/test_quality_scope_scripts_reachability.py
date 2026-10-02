@@ -37,7 +37,7 @@ MODULE = "scope_scripts_reachability"
 RUNSH = """#!/bin/bash
 case "$1" in
         drill)
-            bash scripts/drills/lib.sh
+            bash scripts/ci/drill-lib.sh
             ;;
 esac
 """
@@ -58,7 +58,7 @@ def build(tmp_path: pathlib.Path, extra: dict[str, str], *, runsh: bool = True) 
         ".ci/scripts/deploy",
         ".ci/rediacc_ci/quality",
         ".github/workflows",
-        "scripts/drills",
+        "scripts/ci",
         "scripts/gates",
     ):
         (root / rel).mkdir(parents=True, exist_ok=True)
@@ -85,7 +85,7 @@ def build(tmp_path: pathlib.Path, extra: dict[str, str], *, runsh: bool = True) 
     (root / "scripts/gates" / "check-embed-credits.ts").write_text(
         "// gate source\n", encoding="utf-8"
     )
-    (root / "scripts" / "drills" / "lib.sh").write_text("#!/bin/bash\n", encoding="utf-8")
+    (root / "scripts" / "ci" / "drill-lib.sh").write_text("#!/bin/bash\n", encoding="utf-8")
     workflow = "".join("bash .ci/scripts/deploy/step-%02d.sh\n" % i for i in range(1, 13))
     workflow += "./run.sh drill transfer\n"
     (root / ".github" / "workflows" / "ci.yml").write_text(workflow, encoding="utf-8")
@@ -126,9 +126,18 @@ def split_golden(text: str) -> tuple[int, str, str]:
     return int(exit_line.removeprefix("exit: ")), stdout, stderr
 
 
+DRILLS_REMEDY = ("mirroring 'scripts-drills'.", "mirroring 'scripts-license-gen'.")
+
+
 def compare(root: pathlib.Path, name: str) -> tuple[int, str, str]:
     """Byte equality on BOTH streams against the twin's recorded bytes."""
     want_exit, want_out, want_err = split_golden(frozen.read(SLUG, name))
+    if "Add a carve-out rule" in want_err:
+        # ONE DECLARED DELTA: the remedy names a carve-out that still exists. The twin named 'scripts-drills', a rule removed with scripts/drills/ itself, so the golden's line is mapped before the comparison, and the golden is asserted to carry it so the mapping cannot go vacuous.
+        assert DRILLS_REMEDY[0] in want_err, (
+            "%s: the golden no longer carries the mapped line" % name
+        )
+        want_err = want_err.replace(*DRILLS_REMEDY)
     returncode, stdout, stderr = run_port(root)
     stdout = frozen.mask_root(stdout, root)
     stderr = frozen.mask_root(stderr, root)
@@ -172,8 +181,8 @@ CASES = [
         "a-narrowable-path-reached-only-through-the-run-sh-dispatch-is-a-violation",
         {
             "run.sh": RUNSH.replace(
-                "bash scripts/drills/lib.sh",
-                "bash scripts/drills/lib.sh\n            npx tsx scripts/gates/check-embed-credits.ts",
+                "bash scripts/ci/drill-lib.sh",
+                "bash scripts/ci/drill-lib.sh\n            npx tsx scripts/gates/check-embed-credits.ts",
             )
         },
         True,

@@ -34,6 +34,9 @@ THE OUTPUT CONTRACT, pinned because a harness parses it:
 Every one of those strings is a byte-for-byte match for what the five files already print, so migrating one changes no observable output.
 """
 
+import contextlib
+import functools
+import os
 import re
 import sys
 
@@ -109,6 +112,67 @@ def controls_first(name: str, selftest) -> int:
         )
         return 2
     return 0
+
+
+# git's own list of the variables that point a command at ONE repository (`git rev-parse --local-env-vars`, git 2.43-2.55). A control that builds a fixture repo and inherits any of them operates on the CALLER's repository instead.
+GIT_REPO_ENV = (
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    "GIT_CONFIG",
+    "GIT_CONFIG_PARAMETERS",
+    "GIT_CONFIG_COUNT",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_IMPLICIT_WORK_TREE",
+    "GIT_GRAFT_FILE",
+    "GIT_INDEX_FILE",
+    "GIT_NO_REPLACE_OBJECTS",
+    "GIT_REPLACE_REF_BASE",
+    "GIT_PREFIX",
+    "GIT_SHALLOW_FILE",
+    "GIT_COMMON_DIR",
+)
+
+
+def fixture_git_env(base: dict[str, str] | None = None) -> dict[str, str]:
+    """The environment for a git command run against a control's OWN fixture repo: `base` (default `os.environ`) without `GIT_REPO_ENV`.
+
+    WHY. A caller committing through a scratch index exports GIT_INDEX_FILE, and every `git -C <fixture> init/add/ls-files` honoured it: check:ci-language-policy wrote `.ci/x.sh` and check:ci-python-env-registry wrote `has:colon.py` into a writer's scratch index, and both then read that index back as the fixture's tracked set. `-C` moves the working directory; it does not override an exported repository location.
+    Pass this ONLY to fixture calls. A gate reading the real tree should keep honouring GIT_INDEX_FILE, since that is what a commit through a scratch index is asking it to judge.
+    """
+    env = dict(os.environ if base is None else base)
+    for name in GIT_REPO_ENV:
+        env.pop(name, None)
+    return env
+
+
+@contextlib.contextmanager
+def isolated_git_env():
+    """Run a block with `GIT_REPO_ENV` removed from `os.environ`, restoring every value on exit.
+
+    For a selftest whose fixture repos are read back through the gate's OWN functions (`git ls-files` inside a production helper), where passing `fixture_git_env()` to each call is not possible without changing what the real-tree path honours. The real verdict runs after the block, with the caller's GIT_INDEX_FILE back in place.
+    """
+    saved = {name: os.environ.pop(name) for name in GIT_REPO_ENV if name in os.environ}
+    try:
+        yield
+    finally:
+        for name in GIT_REPO_ENV:
+            os.environ.pop(name, None)
+        os.environ.update(saved)
+
+
+def git_isolated(selftest):
+    """Decorate a gate's `selftest` so its fixture repos run under `isolated_git_env()`.
+
+    The decorator and not a per-call env, because most selftests read their fixture back through the gate's production helpers (`git ls-files -C <fixture>` inside the corpus enumerator), and those must keep honouring the caller's GIT_INDEX_FILE when they judge the real tree. Swept 2026-10-02: under a scratch GIT_INDEX_FILE, 19 quality gates' selftests wrote fixture paths into the caller's index or read their fixtures back from it, and seven of them returned a false verdict.
+    """
+
+    @functools.wraps(selftest)
+    def run(*args, **kwargs):
+        with isolated_git_env():
+            return selftest(*args, **kwargs)
+
+    return run
 
 
 class VacuousPlantError(AssertionError):

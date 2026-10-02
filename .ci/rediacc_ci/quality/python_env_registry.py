@@ -87,7 +87,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Checker, controls_first, plant
+from rediacc_ci.controls import Checker, controls_first, git_isolated, plant
 
 # The baseline, relative to the repository root. NOT reached through `policy_paths.policy_path()`: that seam resolves `.ci/policy/` only, and this file is deliberately not policy (see the docstring).
 BASELINE_REL = ".ci/config/python-env-registry.json"
@@ -672,6 +672,7 @@ def _refuses(root) -> bool:
     return False
 
 
+@git_isolated
 def selftest() -> bool:
     """True when a control failed, which is what `controls_first` expects."""
     import copy  # noqa: PLC0415

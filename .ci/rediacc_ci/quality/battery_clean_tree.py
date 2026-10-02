@@ -105,7 +105,7 @@ import sys
 import tempfile
 
 from rediacc_ci import paths, runtmp
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, git_isolated
 
 # The three extraction conditions, as three named patterns. Named rather than inlined because each one is a decision with a blast radius; see the port notes.
 DEFN_RE = re.compile(r"^def tree_state\(")
@@ -350,6 +350,7 @@ _LIVE_GUARD = (
 )
 
 
+@git_isolated
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 

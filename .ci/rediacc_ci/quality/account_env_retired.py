@@ -41,7 +41,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Checker, controls_first, plant
+from rediacc_ci.controls import Checker, controls_first, git_isolated, plant
 from rediacc_ci.quality import shrink_only
 
 BASELINE_REL = ".ci/config/account-env-retired-baseline.json"
@@ -320,6 +320,7 @@ def _findings(root, env=None) -> list[str]:
     return run(root, env or {"HOME": "/nonexistent-home"})[0]
 
 
+@git_isolated
 def selftest() -> bool:
     """True when a control failed, which is what `controls_first` expects."""
     import tempfile  # noqa: PLC0415

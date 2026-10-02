@@ -9,7 +9,7 @@ Status: **step 1 (GPU lease) implemented**, remainder sequenced in §9.
 ## 0. Verified on disk, and where the brief was wrong
 
 Confirmed: `packages/www/scripts/lib/ffmpeg-video.ts:53` gates NVENC behind
-`RDC_TUTORIAL_HWENC=1` (default software `libx264`); `run.sh:646 www_tutorials_video` calls `www_tutorial_audio_restore` before anything; `run.sh:740` has a bounded `wait -n` pool; `main.py:518 _localized_render` runs 4000 -> resync -> 6000 -> 8000 serially per lang, and `localize_slug` phase B loops langs serially, commented "one Qwen3-TTS model on the GPU at a time".
+`RDC_TUTORIAL_HWENC=1` (default software `libx264`); `www_tutorials_video` (`.ci/media/tutorials.sh`) calls `www_tutorial_audio_restore` before anything; `_tutorial_video_pool` (`.ci/media/pool.sh`) is a bounded `wait -n` pool; `main.py:518 _localized_render` runs 4000 -> resync -> 6000 -> 8000 serially per lang, and `localize_slug` phase B loops langs serially, commented "one Qwen3-TTS model on the GPU at a time".
 
 Measured live while writing this: RTX 3060 at **12099 / 12288 MiB, 89% util** for a single `tutorial_tts.cli --lang fr --subtitle --force` (RSS 11.8 GB), concurrently with two `agg` processes (433% and 278% CPU) and two `ffmpeg -c:v libx264`. Load 29 on 20 cores. So the one-GPU-job constraint is not a headroom argument: **a single VoxCPM job is already at 98.5% of the card.**
 

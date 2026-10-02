@@ -59,7 +59,7 @@ import tempfile
 import tokenize
 
 from rediacc_ci import gitx, log, paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, git_isolated
 from rediacc_ci.quality import shrink_only
 
 RULES_FILE = ".ci/config/prose-style-rules.json"
@@ -2206,6 +2206,7 @@ def _ids(findings):
     return sorted(f.rule for f in findings)
 
 
+@git_isolated
 def selftest():
     """Plant each violation and prove it reds; remove it and prove it greens.
 

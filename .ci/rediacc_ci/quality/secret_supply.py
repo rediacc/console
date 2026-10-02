@@ -119,7 +119,7 @@ import sys
 from typing import Any
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Checker, controls_first, plant
+from rediacc_ci.controls import Checker, controls_first, git_isolated, plant
 
 SPEC_REL = ".ci/config/secret-supply.json"
 MANIFEST_REL = ".ci/config/env-manifest.json"
@@ -817,6 +817,7 @@ def _findings(root) -> list[str]:
     return run(root)[0]
 
 
+@git_isolated
 def selftest() -> bool:
     """True when a control failed, which is what `controls_first` expects."""
     import copy  # noqa: PLC0415

@@ -152,7 +152,7 @@ import re
 import subprocess
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import controls_first
+from rediacc_ci.controls import controls_first, git_isolated
 
 BASELINE_REL = ".ci/config/plant-proof-baseline.json"
 KEY = "plants"
@@ -1287,6 +1287,7 @@ def _refuses(root):
     return ""
 
 
+@git_isolated
 def selftest():
     """True when a control FAILED, which is what `controls_first` expects."""
     import tempfile  # noqa: PLC0415

@@ -68,7 +68,7 @@ import sys
 import tempfile
 
 from rediacc_ci import paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, git_isolated
 
 # The em dash the twin's three CONTROL IS VACUOUS lines carry. Named by code point; see the port notes.
 DASH = "\u2014"
@@ -432,6 +432,7 @@ NOT_SUPPRESSED = (
 )
 
 
+@git_isolated
 def selftest() -> int:
     """Both directions for A and C, and both directions for every mutation.
 

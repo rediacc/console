@@ -73,7 +73,7 @@ import sys
 import tempfile
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, git_isolated
 
 # Where the closure definitions live, relative to the repository root.
 GREENLIGHT_CJS = ".ci/scripts/ci/greenlight.cjs"
@@ -296,6 +296,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+@git_isolated
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 

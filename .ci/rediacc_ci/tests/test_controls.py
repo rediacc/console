@@ -10,9 +10,19 @@ WHY THE FLOOR GETS THE MOST CASES. Three of the five files carry no floor at all
 it is reported.
 """
 
+import os
+import subprocess
+
 import pytest
 
-from rediacc_ci.controls import Controls, VacuousPlantError, plant, plant_re
+from rediacc_ci.controls import (
+    Controls,
+    VacuousPlantError,
+    fixture_git_env,
+    isolated_git_env,
+    plant,
+    plant_re,
+)
 
 
 def test_a_clean_run_is_ok():
@@ -321,3 +331,69 @@ def test_plant_re_refuses_a_match_that_changes_nothing():
     with pytest.raises(VacuousPlantError) as exc:
         plant_re("abc", r"b", "b")
     assert "byte-identical" in str(exc.value)
+
+
+def test_fixture_git_env_drops_every_repo_locating_variable(tmp_path, monkeypatch):
+    """A control's fixture repo must never write into the CALLER's repository. A caller committing through a scratch index exports GIT_INDEX_FILE, and `git -C <fixture> add` honoured it: check:ci-language-policy wrote `.ci/x.sh` into a writer's scratch index and returned a false verdict."""
+    scratch = tmp_path / "caller.idx"
+    for name in (
+        "GIT_INDEX_FILE",
+        "GIT_DIR",
+        "GIT_WORK_TREE",
+        "GIT_OBJECT_DIRECTORY",
+        "GIT_COMMON_DIR",
+    ):
+        monkeypatch.setenv(name, str(scratch))
+    monkeypatch.setenv("GIT_AUTHOR_NAME", "kept")
+    env = fixture_git_env()
+    for name in (
+        "GIT_INDEX_FILE",
+        "GIT_DIR",
+        "GIT_WORK_TREE",
+        "GIT_OBJECT_DIRECTORY",
+        "GIT_COMMON_DIR",
+    ):
+        assert name not in env, name
+    assert env["GIT_AUTHOR_NAME"] == "kept", "only the repo-locating variables go"
+    # The list is git's own: every name `git rev-parse --local-env-vars` prints is dropped.
+    local = subprocess.run(
+        ["git", "rev-parse", "--local-env-vars"],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=fixture_git_env(),
+    ).stdout.split()
+    assert local, "git printed no local env vars"
+    for name in local:
+        monkeypatch.setenv(name, "x")
+    assert not set(local) & set(fixture_git_env()), "a variable git calls repo-local survived"
+    # END TO END: a fixture repo built under a leaked GIT_INDEX_FILE leaves the caller's index untouched.
+    for name in local:
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("GIT_INDEX_FILE", str(scratch))
+    repo = tmp_path / "fixture"
+    repo.mkdir()
+    (repo / "a.py").write_text("x = 1\n", encoding="utf-8")
+    for args in (["init", "-q"], ["add", "-A"]):
+        subprocess.run(
+            ["git", "-C", str(repo), *args], check=True, capture_output=True, env=fixture_git_env()
+        )
+    assert not scratch.exists(), "the fixture wrote the caller's index"
+    listed = subprocess.run(
+        ["git", "-C", str(repo), "ls-files"],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=fixture_git_env(),
+    ).stdout
+    assert listed == "a.py\n"
+
+
+def test_isolated_git_env_hides_and_restores(monkeypatch):
+    monkeypatch.setenv("GIT_INDEX_FILE", "/caller.idx")
+    monkeypatch.delenv("GIT_DIR", raising=False)
+    with isolated_git_env():
+        assert "GIT_INDEX_FILE" not in os.environ
+        os.environ["GIT_DIR"] = "/set-inside"
+    assert os.environ["GIT_INDEX_FILE"] == "/caller.idx", "the caller's value comes back"
+    assert "GIT_DIR" not in os.environ, "a value set inside the block does not leak out"

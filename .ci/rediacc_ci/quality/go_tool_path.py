@@ -71,7 +71,7 @@ import sys
 import tempfile
 
 from rediacc_ci import paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, git_isolated
 
 # POSIX [[:space:]], written out. See the port notes for why `\s` is wrong here.
 SPACE = r"[ \t\n\v\f\r]"
@@ -290,6 +290,7 @@ _CONTROL_CASES = (
 )
 
 
+@git_isolated
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 

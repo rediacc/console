@@ -283,7 +283,40 @@ const oversizedRange = (): { dir: string; base: string; tip: string } => {
   return { dir, base, tip: git('rev-parse', 'HEAD') };
 };
 
+// git's own `git rev-parse --local-env-vars`: the variables that point a command at ONE repository. The selftest's scratch repositories must not inherit them, or a caller committing through a scratch GIT_INDEX_FILE hands every fixture `git commit` the CALLER's index, and the control dies on objects the fixture does not have (swept 2026-10-02, the same class as rediacc_ci.controls.git_isolated).
+const GIT_REPO_ENV = [
+  'GIT_ALTERNATE_OBJECT_DIRECTORIES',
+  'GIT_CONFIG',
+  'GIT_CONFIG_PARAMETERS',
+  'GIT_CONFIG_COUNT',
+  'GIT_OBJECT_DIRECTORY',
+  'GIT_DIR',
+  'GIT_WORK_TREE',
+  'GIT_IMPLICIT_WORK_TREE',
+  'GIT_GRAFT_FILE',
+  'GIT_INDEX_FILE',
+  'GIT_NO_REPLACE_OBJECTS',
+  'GIT_REPLACE_REF_BASE',
+  'GIT_PREFIX',
+  'GIT_SHALLOW_FILE',
+  'GIT_COMMON_DIR',
+];
+
 const selftest = (): number => {
+  const saved = new Map<string, string>();
+  for (const name of GIT_REPO_ENV) {
+    const value = process.env[name];
+    if (value !== undefined) saved.set(name, value);
+    delete process.env[name];
+  }
+  try {
+    return selftestBody();
+  } finally {
+    for (const [name, value] of saved) process.env[name] = value;
+  }
+};
+
+const selftestBody = (): number => {
   let fail = 0;
   const check = (name: string, ok: boolean): void => {
     if (!ok) fail += 1;
