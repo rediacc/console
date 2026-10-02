@@ -10,6 +10,14 @@ Priority: P2 -- seed: Status ready, 0 open box(es)
 Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
 Owns: private/growth/i18n_pipeline, ./run.sh
 
+## Tasks
+
+- [ ] Size every locale and slug pair with `./run.sh --plan-only --lang <l> --group pages.solutionPages.<slug>` before the paid run -- acceptance: the 108 plan-only runs exit 0 and none is REJECTED over `LARGE_DELTA_REJECT_UNITS`
+- [ ] Re-translate the nine `pages.solutionPages.<slug>` groups in the 12 locales through the i18n pipeline at its haiku default -- acceptance: the 108 `./run.sh --lang <l> --group pages.solutionPages.<slug>` runs exit 0, and the `de` failoverTesting `techDiff.description` no longer carries the btrfs explainer English dropped in `03b6259b6`
+- [ ] Spot-check 3 locales x 3 pages against English by hand before stamping anything -- acceptance: the nine comparisons are recorded in the commit body, with no invented fact
+- [ ] Lock the result with `npm run i18n:generate-hashes`, so the nine `techDiff.description` keys enter `.naturalized-hashes.json` -- acceptance: `npm run check:i18n` exits 0 end to end
+- [ ] `check:ci-i18n-locale-only` accepts the moved locale values on their merged English changes, with its findings read rather than bypassed by `--base`, and with no `--mark-done --all-stale` stamp -- acceptance: `npm run check:ci-i18n-locale-only` exits 0
+
 ## The defect
 
 Nine solution pages had their English `techDiff.description` rewritten in `03b6259b6` to drop a shared btrfs explainer that now lives once, in `solutions.mechanism.cow`. The twelve locale values were NOT updated, and they were already behind: they translate the pre-round-6, more technical English draft, so this is a register gap and not a missing clause.

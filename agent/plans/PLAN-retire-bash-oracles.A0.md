@@ -1,12 +1,23 @@
 <!-- A0 output (opus Plan agent, 2026-09-24) for PLAN-retire-bash-oracles.md task A0; saved verbatim by the lead. The fail-open bugs in section 1 are Rule T items for task A4. -->
 
 # A0 design: `test_bash_semantics.py`, the kept real-bash facts, and the live bugs they expose
+Status: executing -- its suite landed and is recorded in agent/plans/PLAN-retire-bash-oracles.md section 3 A0 (77 rows, 257 tests); open only until each box is ticked with that evidence
 Depends-On: no-dep -- appendix of PLAN-retire-bash-oracles.md; carries no work of its own
 Priority: P3 -- seed: Status unknown, 0 open box(es)
 Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
 Owns: .claude/rediacc_hooks/shellscan.py, .claude/rediacc_hooks/guards/*.py, private/renet, .claude/rediacc_hooks/hookio.py, .ci/rediacc_ci/core/bash_dialect.py, .claude/rediacc_hooks/tests/test_bash_semantics.py, .claude/hooks/profile/bash_env.sh, .ci/rediacc_ci/check_pytest.py, .claude/rediacc_hooks/proc.py
 
 Every probe below was checked against `/usr/bin/bash` 5.3.9 in this session, except where a row says otherwise. Nothing in the tree was modified.
+
+## Tasks
+
+- [ ] Write `.claude/rediacc_hooks/tests/test_bash_semantics.py` with one `Fact` row per section 3 probe, run against the resolved real interpreter under `--norc --noprofile` with the sandboxed env and the `zzrun`/`zzargv` stubs -- acceptance: `python3 -m pytest .claude/rediacc_hooks/tests/test_bash_semantics.py -q` exits 0
+- [ ] `test_reliance_resolves`: each row's `relies_on` function or constant still exists in its named file, checked by AST -- acceptance: the same pytest run with `-k test_reliance_resolves` exits 0
+- [ ] `test_scanner_agrees`: the in-process scanner verdicts equal what bash did, with `contradicted:*` rows held as `xfail(strict=True)` until A4 fixes them -- acceptance: the same pytest run with `-k test_scanner_agrees` exits 0
+- [ ] `test_the_suite_can_fail`: one row fed a wrong expectation makes the comparison fire -- acceptance: the same pytest run with `-k test_the_suite_can_fail` exits 0
+- [ ] Apply the section 4 rule and record the kept source list in section 3 A0 of agent/plans/PLAN-retire-bash-oracles.md before A3 deletes anything -- acceptance: that A0 record names the row count and where each row's source list lives
+- [?] L14: does an unquoted `x->f.sh` stay a documented policy choice in `NOT_ARROW`, or become a bug? DEFAULT: it stays a documented policy choice, as `NOT_ARROW` gives it up on purpose
+- [ ] Re-check the `MIN_TESTS` floor in `.ci/rediacc_ci/check_pytest.py` once the oracle deletion lowers the test count -- acceptance: `npm run check:ci-pytest` exits 0 with `.claude/oracles/` gone
 
 ## 1. Live bugs: things the Python assumes that bash does not do (listed first)
 

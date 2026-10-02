@@ -192,9 +192,14 @@
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 0,
+      "open": 4,
       "done": 0,
-      "open_sigs": [],
+      "open_sigs": [
+        "046222ae",
+        "452accb3",
+        "756e8906",
+        "ed896ebb"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-bump-k3s-upstream-1-36-4.md": {
@@ -328,9 +333,34 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 0,
+      "open": 24,
       "done": 0,
-      "open_sigs": [],
+      "open_sigs": [
+        "12d5282f",
+        "19629ae1",
+        "1a1afa96",
+        "1bd0956b",
+        "1ef4a84b",
+        "2099703b",
+        "25bbafd4",
+        "4d954b5b",
+        "4ebc4d0b",
+        "53cd4e9c",
+        "7d169d62",
+        "80437fa9",
+        "8122977d",
+        "950ed675",
+        "a10f8134",
+        "a87a73d6",
+        "b43c18d0",
+        "cc60cdbe",
+        "d9ee2442",
+        "e3150839",
+        "e5ff4d4a",
+        "ee3a2b7d",
+        "f11a5c8b",
+        "f60157da"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-cold-path.md": {
@@ -772,9 +802,15 @@
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 0,
+      "open": 5,
       "done": 0,
-      "open_sigs": [],
+      "open_sigs": [
+        "30748c4a",
+        "65129ad2",
+        "6ff2ef5d",
+        "9cad8dae",
+        "b903a441"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-localize-cheat-sheet-rendering.md": {
@@ -857,6 +893,26 @@
         "eeb654e8",
         "ff593758"
       ]
+    },
+    "agent/plans/PLAN-plan-preflight.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 9,
+      "done": 0,
+      "open_sigs": [
+        "03fcc46e",
+        "17e8f4cb",
+        "2cd6eb87",
+        "4fca6b8e",
+        "57a2bcc4",
+        "5e234a9d",
+        "60a18836",
+        "b74fa159",
+        "de1f8bfa"
+      ],
+      "done_sigs": []
     },
     "agent/plans/PLAN-plan-priority-concurrency.md": {
       "status": "held",
@@ -1057,19 +1113,42 @@
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 0,
+      "open": 13,
       "done": 0,
-      "open_sigs": [],
+      "open_sigs": [
+        "0c59d5cc",
+        "43e63a72",
+        "55c635d1",
+        "55d0352f",
+        "5b8f694f",
+        "605e573d",
+        "650f1204",
+        "6a4d0173",
+        "6b599b9b",
+        "a5692f6a",
+        "bd420ea4",
+        "e0a15728",
+        "ee4a3a4a"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-renet-fetch-hardening.md": {
-      "status": "parked",
+      "status": "draft",
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 0,
+      "open": 8,
       "done": 0,
-      "open_sigs": [],
+      "open_sigs": [
+        "0779dbe8",
+        "242b5564",
+        "305274ea",
+        "50eb2aa0",
+        "5975d923",
+        "8967ca6d",
+        "c0f953bd",
+        "c1087942"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-repair-prose-style-findings.md": {
@@ -1140,13 +1219,21 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-retire-bash-oracles.A0.md": {
-      "status": "UNKNOWN",
+      "status": "executing",
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 0,
+      "open": 7,
       "done": 0,
-      "open_sigs": [],
+      "open_sigs": [
+        "02f9e10c",
+        "095f8490",
+        "0aedd9a2",
+        "b06a1879",
+        "d570ec12",
+        "dd69ccb9",
+        "f200beed"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-retire-bash-oracles.md": {
@@ -1774,9 +1861,15 @@
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 0,
+      "open": 5,
       "done": 0,
-      "open_sigs": [],
+      "open_sigs": [
+        "38ef7043",
+        "5d984411",
+        "80bd0b71",
+        "8959a3b8",
+        "c7cf8d2c"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-uncommitted-work-exposure-check.md": {
