@@ -14,13 +14,19 @@ required-status-checks rule; the push output's own text, "Bypassed rule violatio
 The open PR for the branch then auto-flipped to MERGED, even though `ci.yml`'s last several runs on that branch were red: GitHub does that whenever a PR branch's commits land on the base branch by ANY means, push included, which is a second reason "check CI before push" is the wrong shape of fix here -- CI's colour was never consulted by GitHub either, once the commits were on
 `main`.
 
-WHY THIS IS UNCONDITIONAL, and why "block only when CI is red" was rejected. A pre-bash hook sees the command about to run, not GitHub's live state, so it cannot cheaply ask "is CI red" on every git command -- but it does not need to. No direct push to `main` should ever succeed from this tool, in any CI state, because normal landings go through a reviewed PR (`gh pr merge --rebase
---auto`, `.claude/commands/pr-merge.md`). A guard conditioned on CI colour would have let this exact incident through anyway: nothing here ever asked GitHub what colour CI was, the push simply ran. Blocking every direct push to `main` is strictly STRONGER than gating on CI colour and costs nothing legitimate: see the next paragraph for the one sanctioned exception, which is not for
-this tool at all.
+WHY "CHECK CI FIRST" WAS NOT THE FIX, and is still not the whole of it. A guard conditioned only on CI colour would have let this exact incident through: nothing asked GitHub what colour CI was, the push simply ran, from a script, with HEAD as its source. So the default stays a refusal of every direct push to `main`, in every spelling below, and normal landings go through `gh pr merge <n> --rebase --auto` (`.claude/commands/pr-merge.md`).
 
-THE ONE DOCUMENTED DIRECT PUSH TO MAIN, named here because this guard now sits in its path. `.claude/commands/pr-merge.md`'s pure-fast-forward fallback (step 3, when `gh pr merge --rebase` fails with "This branch can't be rebased" on an oversized PR) reads `git push origin origin/<branch>:main` -- and until this guard existed that line ran from whichever session was driving
-`/pr-merge`. It still can, exactly like `git worktree add` (`block_worktree_add.py`) and a force-push rewrite (`block_git_force_push.py`): the operator runs it directly with the `!` prefix, which bypasses PreToolUse hooks entirely. That is not a new restriction invented for this guard -- CLAUDE.md's own rule already reads "Never push to `main`... without explicit user
-authorization" -- it is this guard making the existing rule apply to the one place in this repo's own docs where an agent might otherwise have typed `git push` at `main` on its own.
+THE ONE ADMITTED DIRECT PUSH, box M2 of PLAN-plan-per-pr-loop (operator ruling 2026-10-02, worklist #7c70e8b9). When GitHub cannot rebase the open PR ("This branch can't be rebased"), `main` may move by a fast-forward to the live branch's pushed tip. Every condition below must hold, and any one that cannot be READ is a refusal:
+
+  (a) one `git push` in the command, to `origin`, with exactly one refspec `<src>:main` (or `:refs/heads/main`) and no flag but -q/-v: no --force, --force-with-lease, `+`, --delete, --tags, --follow-tags, --all or --mirror;
+  (b) `<src>` is the live branch (`<b>`, `origin/<b>`, their `refs/` spellings) or a commit sha, never `HEAD` (the incident's shape), and the checkout is the console's own, on its `MMDD-N` branch;
+  (c) the commit is exactly `origin/<b>`, the branch's pushed tip, and `origin/main` is its ancestor (`commit_policy.ff_fallback_refusal`, shared with the git-level `pre-push` hook);
+  (d) it is the head of the OPEN PR for `<b>` (`gh pr view`), and CI Complete is SUCCESS on it, read through `.ci/scripts/ci/ci-trace.py --json --ref <b>`, the sanctioned tracer, never a raw check read;
+  (e) the PR body carries an `Operational-Reason:` line. The plan's box ledger is not machine-linked to a PR yet (box L2 builds the queue), so this line is the only accepted proof today.
+
+The receipt rule (`block_unverified_push`, later in this chain) still applies to the push. GitHub's own rulesets (24351140: deletion, non_fast_forward, required_linear_history; 12344707: required CI Complete) back the same shape server-side.
+
+A DRY RUN IS EXEMPT ONLY WHEN EVERY PUSH IN THE COMMAND IS ONE. Until 2026-10-02 a `--dry-run` anywhere in the text exempted the whole command, so `git push --dry-run origin x; git push origin HEAD:main` passed.
 
 WHAT COUNTS AS "main", explicit or not:
   git push origin main                     bare destination name
@@ -36,12 +42,22 @@ WHAT COUNTS AS "main", explicit or not:
                                             side alias HEAD; this checkout's
                                             actual branch decides these three
 
+Each form is matched in the command text AND in the lexer's canonical spelling of every push (`commit_policy.push_texts`), so `git -C <dir> push ...`, `git -c k=v push ...` and `git --no-pager push ...` are judged like `git push ...`: measured 2026-10-02, `git -C . push origin HEAD:main` passed this guard at rc 0 because a word sat between `git` and `push`.
+
 A bare `--tags` push moves no branch ref at all and is let through even while sitting on `main`; `--follow-tags` is NOT exempted, because unlike `--tags` it also pushes the current branch.
 
 FAILS OPEN on the branch lookup for the three implicit forms (`git symbolic-ref` itself failing, a detached HEAD, no such repo): the same command would fail at the real `git` layer too, so refusing here buys nothing and an outage over a broken lookup is the wrong direction for a guard whose whole job is to stay out of the way of everything except main.
 """
 
-from rediacc_hooks import hookio, shellscan
+import json
+import os
+import pathlib
+import re
+import subprocess
+import sys
+
+from rediacc_hooks import commit_policy, hookio, shellscan
+from rediacc_hooks.wellknown import GH_REPO
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -63,8 +79,6 @@ ENVS = [
 GIT_AT_CMD = hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+")
 GIT_PUSH_AT_CMD = GIT_AT_CMD + hookio.rx(r"push([{S}]|$)")
 
-# A dry run publishes nothing and buys no protection to police.
-DRY_RUN = r"git push[^|;&]*--dry-run"
 
 # Explicit destination "main": a colon-qualified refspec (`<src>:main`, `<src>:refs/heads/main`, the empty-source delete form `:main`) or a BARE token naming it directly (`git push origin main`, `git push origin refs/heads/main`). Left boundary is a run's start, whitespace, or the refspec colon; right boundary is whitespace, a closing paren, or the end of the statement. `[^;&|)]*`
 # bounds the match to THIS invocation, the same convention `block_git_force_push.py` and `block_unverified_push.py` already use for "the rest of this command, not the rest of the line".
@@ -84,12 +98,22 @@ BARE_PUSH = hookio.rx(
 # `git push <remote> HEAD` (no colon) is git's documented alias for "the remote branch of the SAME NAME as the branch checked out here" -- the colon-less twin of the incident's own `HEAD:main`, just as blind to which branch that resolves to without reading this checkout.
 BARE_HEAD = hookio.rx(r"git push[^;&|)]*[{S}]HEAD([{S})]|$)")
 
+# One match per `git push` statement in the text, to compare against what the lexer placed.
+ANY_PUSH = hookio.rx(r"git push([{S};&|)]|$)")
+
+# The fast-forward fallback (box M2): the one tracer it reads CI through, the flags it tolerates, and the proof line it requires in the PR body.
+CI_TRACE = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "ci" / "ci-trace.py"
+FF_QUIET = frozenset(("-q", "--quiet", "-v", "--verbose"))
+MAIN_NAMES = ("main", "refs/heads/main")
+SHA = re.compile(r"^[0-9a-f]{7,40}$")
+OPERATIONAL_REASON = re.compile(r"(?m)^[ \t>*-]*Operational-Reason:[ \t]*\S")
+
 MESSAGE = (
-    "BLOCKED: this pushes straight to a PROTECTED branch (main). Direct pushes bypass code review and required status checks -- which is exactly what happened on 2026-09-22, when a script run through this tool's own Bash access (update-homebrew-tap.sh's update_submodule_pointer()) ran `git push origin HEAD:main` from the real working checkout. GitHub's own ruleset let it through as an admin bypass ('Bypassed rule violations... 2 of 2 required status checks are expected'), and the branch's open PR auto-flipped to MERGED with red CI on its last several runs. Nobody typed that push; a script three levels down did, and nothing inspected it before it ran.\n"
+    "BLOCKED: this pushes straight to a PROTECTED branch (main). Direct pushes bypass code review and required status checks -- which is exactly what happened on 2026-09-22, when a script run through this tool's own Bash access (update-homebrew-tap.sh's update_submodule_pointer()) ran `git push origin HEAD:main` from the real working checkout, GitHub let it through as an admin bypass, and the branch's open PR auto-flipped to MERGED with red CI on its last several runs.\n"
     "\n"
-    "The fix is not 'check CI first' -- a hook sees the command, not GitHub's live state, and GitHub itself never consulted CI colour before flipping the PR either. The fix is that NO direct push to main should ever succeed from this tool, in any spelling: explicit (`git push origin main`, `git push origin HEAD:main`, `git push origin refs/heads/main`, `git push origin :main`, `--delete main`, `--all`) or implicit (a bare `git push` / `git push origin` / `git push origin HEAD` while this checkout is ON main).\n"
+    "Refused in every spelling: explicit (`git push origin main`, `HEAD:main`, `refs/heads/main`, `:main`, `--delete main`, `--all`, with or without `-C`/`-c` before `push`) or implicit (a bare `git push` / `git push origin` / `git push origin HEAD` while this checkout is ON main).\n"
     "\n"
-    "Land through a reviewed PR instead (`gh pr merge --rebase --auto`, see .claude/commands/pr-merge.md). The one documented direct push to main -- that same file's pure-fast-forward fallback, `git push origin origin/<branch>:main` -- is the operator's call, not an agent's: run it directly with the `!` prefix, which bypasses this hook entirely. Do not ask through chat and then run it here."
+    "Land through the PR: `gh pr merge <n> --rebase --auto` (.claude/commands/pr-merge.md). The ONE admitted direct push (operator ruling 2026-10-02) is the fast-forward fallback for a PR GitHub cannot rebase: `git push origin origin/<live MMDD-N branch>:main` (or `<branch>:main`, or `<sha>:main`), one refspec, no force/lease/`+`/delete/tags, from the console checkout on that branch, where the commit is the branch's pushed tip AND the open PR's head, `origin/main` is its ancestor, CI Complete is SUCCESS on it (read through .ci/scripts/ci/ci-trace.py), and the PR body carries an `Operational-Reason:` line."
 )
 
 EDGE_CASES = [
@@ -117,7 +141,151 @@ EDGE_CASES = [
         "cd into a submodule pushing its own feature branch",
         "cd private/renet && git push origin 0914-1",
     ),
+    # Global options before `push` (measured rc 0 on 2026-10-02), and a dry run beside a real push.
+    ("-C before push, destination main", "git -C . push origin HEAD:main"),
+    ("-c before push, destination main", "git -c a=b push origin main"),
+    ("a dry run beside a real push", "git push --dry-run origin x; git push origin HEAD:main"),
+    # M2: the fallback's shape refused before any gh read (no PR world here, so every spelling refuses).
+    ("M2 the fallback shape with --force", "git push --force origin 0914-1:main"),
+    ("M2 the fallback shape with two refspecs", "git push origin 0914-1:main 0914-1"),
 ]
+
+
+def _count(pattern, text):
+    compiled = re.compile(pattern)
+    records, _ = hookio._records(text)
+    return sum(len(list(compiled.finditer(record))) for record in records)
+
+
+def _push_parts(run):
+    _, _, args = commit_policy.git_split(run.argv)
+    return [a for a in args if a.startswith("-")], [a for a in args if not a.startswith("-")]
+
+
+def _names_main(run):
+    _, positionals = _push_parts(run)
+    for raw in positionals[1:]:
+        src, colon, dst = raw.removeprefix("+").partition(":")
+        if (dst if colon else src) in MAIN_NAMES:
+            return True
+    return False
+
+
+def _dry_run_only(cmd, text_scan):
+    """Every push the command runs is a dry run, and the lexer placed every push its text shows."""
+    pushes = commit_policy.git_runs(cmd, "push")
+    if not pushes or len(pushes) < _count(ANY_PUSH, text_scan):
+        return False
+    return all("--dry-run" in _push_parts(run)[0] or "-n" in _push_parts(run)[0] for run in pushes)
+
+
+def _gh_pr(live):
+    """(pr dict, "") for the live branch's PR, or (None, why not)."""
+    try:
+        proc = subprocess.run(
+            ["gh", "pr", "view", live, "--repo", GH_REPO, "--json", "number,state,headRefOid,body"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return None, "`gh pr view %s` could not run (%s)" % (live, exc)
+    if proc.returncode != 0:
+        err = (proc.stderr or proc.stdout or "").strip().split("\n")[0][:160]
+        return None, "no PR for `%s` could be read (gh: %s)" % (live, err or proc.returncode)
+    try:
+        pr = json.loads(proc.stdout)
+    except ValueError:
+        return None, "`gh pr view %s` returned no JSON" % live
+    if not isinstance(pr, dict):
+        return None, "`gh pr view %s` returned no PR" % live
+    return pr, ""
+
+
+def _ci_green(live, number, sha):
+    """ "" when ci-trace reads CI Complete SUCCESS on `sha` as the head of PR `number`, else why not."""
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(CI_TRACE), "--json", "--ref", live],
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return "ci-trace could not run (%s)" % exc
+    try:
+        trace = json.loads(proc.stdout)
+    except ValueError:
+        err = (proc.stderr or "").strip().split("\n")[-1][:160]
+        return "ci-trace gave no verdict (rc %d: %s)" % (proc.returncode, err)
+    if not isinstance(trace, dict) or trace.get("source") != "pr" or trace.get("pr") != number:
+        return "ci-trace did not read the open PR #%s" % number
+    if trace.get("head") != sha:
+        return "ci-trace read head `%s`, not `%s`" % (str(trace.get("head"))[:12], sha[:12])
+    if proc.returncode != 0 or trace.get("verdict") != "green":
+        return "CI on `%s` is %s (%s)" % (sha[:12], trace.get("verdict"), trace.get("detail"))
+    if trace.get("ci_complete") != "success":
+        return "CI Complete on `%s` is %s, not success" % (sha[:12], trace.get("ci_complete"))
+    return ""
+
+
+def ff_fallback_refusal(ev, cmd, scan, text_scan):
+    """ "" when this push to main is the admitted fast-forward fallback (box M2), else why not."""
+    if hookio.grep_q(ALL_BRANCHES, scan):
+        return "`--all` pushes every branch"
+    mains = [r for r in commit_policy.git_runs(cmd, "push") if _names_main(r)]
+    shown = _count(DEST_MAIN, text_scan)
+    if len(mains) != 1 or shown > 1:
+        return "the fallback is ONE push to main, and this command shows %d" % max(
+            len(mains), shown
+        )
+    run = mains[0]
+    flags, positionals = _push_parts(run)
+    for flag in flags:
+        if flag not in FF_QUIET:
+            return "`%s` is not part of the fallback (one plain refspec, nothing forced)" % flag
+    if len(positionals) != 2:
+        return "the fallback names `origin` and exactly one refspec"
+    remote, refspec = positionals
+    if remote != "origin":
+        return "the remote is `%s`, not origin" % remote
+    src, colon, dst = refspec.partition(":")
+    if refspec.startswith("+") or not colon or not src or dst not in MAIN_NAMES:
+        return "the refspec `%s` is not `<live branch or sha>:main`" % refspec
+    root = ev.project_dir
+    repo = commit_policy.run_repo(run, ev.field("cwd") or root)
+    top = commit_policy.toplevel(root)
+    if not repo or not top or os.path.realpath(repo) != os.path.realpath(top):
+        return "only the console checkout's own main has the fallback"
+    live = commit_policy.current_branch(repo)
+    named = (live, "refs/heads/" + live, "origin/" + live, "refs/remotes/origin/" + live)
+    if src not in named and not SHA.match(src):
+        return "the source `%s` is not the live branch `%s`, its pushed tip or a sha" % (
+            src,
+            live or "(detached)",
+        )
+    sha = commit_policy.git(["rev-parse", "--verify", "-q", src + "^{commit}"], cwd=repo)
+    if not sha:
+        return "`%s` does not resolve to a commit" % src
+    local = commit_policy.ff_fallback_refusal(repo, "origin", live, sha, "refs/remotes/origin/main")
+    if local:
+        return local
+    pr, why = _gh_pr(live)
+    if pr is None:
+        return why
+    if pr.get("state") != "OPEN":
+        return "PR #%s for `%s` is %s, not open" % (pr.get("number"), live, pr.get("state"))
+    if pr.get("headRefOid") != sha:
+        return "`%s` is not the head of PR #%s (`%s`)" % (
+            sha[:12],
+            pr.get("number"),
+            str(pr.get("headRefOid"))[:12],
+        )
+    if not OPERATIONAL_REASON.search(pr.get("body") or ""):
+        return "PR #%s's body carries no `Operational-Reason:` line" % pr.get("number")
+    return _ci_green(live, pr.get("number"), sha)
 
 
 def run(ev):
@@ -125,15 +293,21 @@ def run(ev):
     if cmd in ("", "null"):
         return hookio.ALLOW
 
-    scan = shellscan._command_substitution(shellscan.scan_target(cmd))
+    text_scan = scan = shellscan._command_substitution(shellscan.scan_target(cmd))
     if not hookio.grep_q(GIT_PUSH_AT_CMD, scan):
         return hookio.ALLOW
+    canon = commit_policy.push_texts(cmd)
+    if canon:
+        scan = scan + "\n" + canon
 
-    if hookio.grep_q(DRY_RUN, cmd):
+    if _dry_run_only(cmd, text_scan):
         return hookio.ALLOW
 
     if hookio.grep_q(DEST_MAIN, scan) or hookio.grep_q(ALL_BRANCHES, scan):
-        ev.warn(MESSAGE)
+        reason = ff_fallback_refusal(ev, cmd, scan, text_scan)
+        if reason == "":
+            return hookio.ALLOW
+        ev.warn(MESSAGE + "\n\nNot the fast-forward fallback because: " + reason + ".")
         return hookio.DENY
 
     if hookio.grep_q(TAGS_ONLY, scan):

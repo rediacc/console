@@ -45,6 +45,9 @@ DEFAULTS: dict[str, typing.Any] = {
     "branch_shape": "^[0-9]{4}-[0-9]+$",
 }
 
+# The one live branch's name shape. `main` never matches it, which is what keeps every "the live branch only" exception (a lease, the fast-forward fallback) off `main` by construction.
+BRANCH_SHAPE = re.compile(DEFAULTS["branch_shape"])
+
 # `skip-checks: true` is GitHub's trailer form of the same skip, matched on a line of its own.
 SKIP_TRAILER = re.compile(r"(?im)^[ \t]*skip-checks[ \t]*:[ \t]*true[ \t]*$")
 
@@ -195,10 +198,16 @@ def _gone_upstream(repo_root: str, branch: str) -> bool:
     return (track or "").strip() == "[gone]"
 
 
+def remote_branch_present(repo_root: str, branch: str) -> bool:
+    """Whether any remote-tracking ref still names `branch` (`refs/remotes/<remote>/<branch>`)."""
+    out = git(["for-each-ref", "--format=%(refname:lstrip=3)", "refs/remotes/"], cwd=repo_root)
+    return branch in (out or "").split("\n")
+
+
 def live_branches(repo_root: str, gh: bool = True) -> list[str]:
     """The live non-`main` local branches.
 
-    A branch stops being live once its PR is MERGED or CLOSED and none is OPEN (`gh=True`, raising `GhUnavailableError` when gh cannot answer). With `gh=False`, the git-level reading, the only local signal is an upstream that is configured and gone (`[gone]` after a prune), which is what a merged-and-deleted PR head leaves behind.
+    A branch stops being live once its PR is MERGED or CLOSED, none is OPEN, AND its remote branch is gone (`gh=True`, raising `GhUnavailableError` when gh cannot answer). The last condition is box M6 of PLAN-plan-per-pr-loop (operator ruling 2026-10-02): the next `MMDD-N` is cut only after the previous PR merged and its branch was deleted, and "deleted" is read locally as no remote-tracking ref left for it (GitHub's delete-on-merge, then `git fetch --prune`). With `gh=False`, the git-level reading, the only local signal is an upstream that is configured and gone (`[gone]` after a prune), which is what a merged-and-deleted PR head leaves behind.
     """
     out = []
     for branch in local_branches(repo_root):
@@ -206,7 +215,7 @@ def live_branches(repo_root: str, gh: bool = True) -> list[str]:
             continue
         if gh:
             states = _gh_lines(repo_root, [*GH_PR_STATES[:3], branch, *GH_PR_STATES[3:]])
-            if states and "OPEN" not in states:
+            if states and "OPEN" not in states and not remote_branch_present(repo_root, branch):
                 continue
         elif _gone_upstream(repo_root, branch):
             continue
@@ -231,6 +240,35 @@ def next_branch_name(repo_root: str, today: str, gh: bool = True) -> str:
         if match:
             top = max(top, int(match.group(1)))
     return "%s-%d" % (today, top + 1)
+
+
+def ff_fallback_refusal(repo_root: str, remote: str, live: str, sha: str, base: str) -> str:
+    """ "" when pushing `sha` to `main` is the fast-forward fallback's local half, else why not.
+
+    Box M2 of PLAN-plan-per-pr-loop (operator ruling 2026-10-02): when GitHub cannot rebase the open PR, `main` may move by ONE direct push, and only as a fast-forward to the live branch's pushed tip. The local facts, shared by the pre-bash guard and the git-level `pre-push` hook: the checkout is on an `MMDD-N` branch, `sha` is exactly that branch's tip on `remote` (what the PR's head is, once pushed), and `base` (the remote's current `main`) is an ancestor of `sha`. The pre-bash guard adds the facts only `gh` holds: the open PR's head and CI Complete on it.
+    """
+    if not BRANCH_SHAPE.match(live or ""):
+        return "the checkout is on `%s`, not the live MMDD-N branch" % (live or "(detached)")
+    tip = git(
+        ["rev-parse", "--verify", "-q", "refs/remotes/%s/%s^{commit}" % (remote, live)],
+        cwd=repo_root,
+    )
+    if not tip:
+        return "`%s/%s` does not exist here, so the live branch's pushed tip is unknown" % (
+            remote,
+            live,
+        )
+    if tip != sha:
+        return "`%s` is not the pushed tip of `%s` (`%s/%s` is `%s`)" % (
+            sha[:12],
+            live,
+            remote,
+            live,
+            tip[:12],
+        )
+    if git(["merge-base", "--is-ancestor", base, sha], cwd=repo_root) is None:
+        return "`%s` is not a fast-forward of `main` (`%s` is not its ancestor)" % (sha[:12], base)
+    return ""
 
 
 # --------------------------------------------------------------------------- parsing git invocations ---------------------------------------------------------------------------
@@ -286,6 +324,18 @@ def run_dir(run, base: str) -> str:
 def git_runs(cmd: str, sub: str | None = None) -> list:
     """Every `git` invocation bash would run in `cmd` (optionally only subcommand `sub`), in order."""
     return [r for r in runs(cmd) if _base(r.name) == "git" and (sub is None or r.git_sub == sub)]
+
+
+def push_texts(cmd: str) -> str:
+    """Every `git push` bash would run in `cmd`, one per line, re-spelled as `git push <args>` with the global options dropped.
+
+    WHY. The push guards match `git push ...` as text, and `git -C <dir> push`, `git -c k=v push` and `git --no-pager push` put words between `git` and `push`: measured 2026-10-02, `git -C . push origin HEAD:main` and `git -c a=b push -f origin x` both passed the pre-bash chain at rc 0. Appending this canonical spelling to the text a guard scans closes that class for every pattern at once.
+    """
+    lines = []
+    for run in git_runs(cmd, "push"):
+        _, _, args = git_split(run.argv)
+        lines.append(" ".join(["git", "push", *args]))
+    return "\n".join(lines)
 
 
 def run_repo(run, base: str) -> str:

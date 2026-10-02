@@ -78,6 +78,23 @@ CONSOLE = make_repo("0923-1")
 make_repo("main", at=CONSOLE / "private" / "account")
 OUTSIDE = make_repo("main")
 
+# M6 OF PLAN-plan-per-pr-loop, THE MERGED-AND-DELETED TRANSITION (operator ruling 2026-10-02: one live branch, 24/7). `gh` answers per question: `--head <b>` gets the previous PR's state, the day's consumed-heads read gets `HEADS`. The previous branch `0923-1` stays local in every world, because whether its REMOTE branch is gone is the fact under test.
+GH_OPEN = stub_dir(
+    '#!/bin/sh\ncase "$*" in *--head*) echo OPEN;; *headRefName*) echo 0923-1;; esac\n'
+)
+GH_MERGED = stub_dir(
+    '#!/bin/sh\ncase "$*" in *--head*) echo MERGED;; *headRefName*) echo 0923-1;; esac\n'
+)
+# Today's first branch already merged and deleted: only `gh` still remembers the name (the 0826-1 double take).
+GH_MERGED_TODAY = stub_dir(
+    '#!/bin/sh\ncase "$*" in *--head*) echo MERGED;; *headRefName*) echo %s-1;; esac\n' % TODAY
+)
+# Merged, its remote branch still on origin (the remote-tracking ref is present): not yet deleted.
+MAIN_MERGED_PRESENT = make_repo("main", extra=("0923-1",))
+git(MAIN_MERGED_PRESENT, "update-ref", "refs/remotes/origin/0923-1", "0923-1")
+# Merged, its remote branch deleted and pruned: the local branch alone is no longer live.
+MAIN_MERGED_DELETED = make_repo("main", extra=("0923-1",))
+
 CASES = [
     # (name, command, root, gh-stub, expect_blocked) ---- fire ------------------------------
     ("checkout -b from a feature branch", "git checkout -b %s" % NEXT, FEATURE, GH_EMPTY, True),
@@ -158,6 +175,42 @@ CASES = [
         False,
     ),
     ("an existing name creates nothing", "git branch -f 0923-1 HEAD", MAIN_LIVE, GH_EMPTY, False),
+    # ---- M6: the merged-and-deleted transition ----------------------------------------------
+    (
+        "M6 previous PR merged, its branch deleted: today's next",
+        "git checkout -b %s" % NEXT,
+        MAIN_MERGED_DELETED,
+        GH_MERGED,
+        False,
+    ),
+    (
+        "M6 previous PR still open",
+        "git checkout -b %s" % NEXT,
+        MAIN_MERGED_DELETED,
+        GH_OPEN,
+        True,
+    ),
+    (
+        "M6 previous PR merged, its remote branch still present",
+        "git checkout -b %s" % NEXT,
+        MAIN_MERGED_PRESENT,
+        GH_MERGED,
+        True,
+    ),
+    (
+        "M6 same day: a merged head's name is consumed",
+        "git checkout -b %s-1" % TODAY,
+        MAIN_CLEAN,
+        GH_MERGED_TODAY,
+        True,
+    ),
+    (
+        "M6 same day: MAX+1 over the merged head",
+        "git checkout -b %s-2" % TODAY,
+        MAIN_CLEAN,
+        GH_MERGED_TODAY,
+        False,
+    ),
     ("an empty command", "", FEATURE, GH_EMPTY, False),
 ]
 
@@ -236,6 +289,56 @@ if flipped:
 else:
     print("*** FAIL *** DEFECT control: with %r planted, every fire case still refused" % (DEFECT,))
     fails += 1
+
+# ---- the git-level twin (.claude/rediacc_hooks/git/reference-transaction), local facts only ----
+# M6 at the git layer: a previous branch whose upstream is still on origin is live, so a new cut is refused; once the remote branch is deleted and pruned (`[gone]`) the cut is allowed. The layer has no `gh`, so it cannot see a merge; the remote branch's deletion is the one signal it reads.
+HOOKS = HERE.parent / "git"
+
+
+def git_level(repo, *args):
+    env = {k: v for k, v in GIT_ENV.items() if k != "COMMIT_POLICY_OK"}
+    proc = subprocess.run(
+        ["git", *args], cwd=str(repo), capture_output=True, text=True, check=False, env=env
+    )
+    return proc.returncode != 0 and "commit-policy:" in proc.stderr, proc.stderr
+
+
+def merged_world(deleted):
+    origin = pathlib.Path(tempfile.mkdtemp(prefix="origin-", dir=RUN_TMP))
+    git(origin, "init", "-q", "--bare", "--initial-branch=main")
+    repo = make_repo("main", extra=("0923-1",))
+    git(repo, "remote", "add", "origin", str(origin))
+    git(repo, "push", "-q", "-u", "origin", "0923-1")
+    if deleted:
+        git(repo, "push", "-q", "origin", "--delete", "0923-1")
+        git(repo, "fetch", "-q", "--prune", "origin")
+    git(repo, "config", "core.hooksPath", str(HOOKS))
+    return repo
+
+
+GIT_CASES = [
+    ("git-level M6: previous branch still on origin", False, True),
+    ("git-level M6: previous branch deleted and pruned", True, False),
+]
+print()
+for name, deleted, want in GIT_CASES:
+    got, err = git_level(merged_world(deleted), "switch", "-q", "-c", NEXT)
+    blocked += got
+    ok = got == want
+    fails += not ok
+    print(
+        "%-56s want=%-8s got=%-8s %s"
+        % (
+            name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if not ok and err:
+        print("    stderr: %s" % err.strip().splitlines()[:3])
+CASES = CASES + GIT_CASES
+
 if blocked == 0 or blocked == len(CASES):
     print("*** FAIL *** the guard answered the same way on every case")
     fails += 1
