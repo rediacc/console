@@ -1,9 +1,9 @@
 ---
-description: Drive the commit → coordinated PRs (submodule-first) → CI-all-green loop for the current tree. Default: run the loop IN THIS SESSION per .claude/agents/pr-babysitter.md (delegating bulky fix implementation to worker sub-agents). Pass `bg` as the first argument to instead spawn a background pr-babysitter teammate and supervise it. The console PR rides as a draft until green; stops at green + ready + per-commit-reviews-clean + threads-resolved PRs; never merges.
+description: Drive the commit → coordinated PRs (submodule-first) → CI-all-green loop for the current tree. Default: run the loop IN THIS SESSION per .claude/agents/pr-babysitter.md (delegating bulky fix implementation to worker sub-agents). Pass `bg` as the first argument to instead spawn a background pr-babysitter teammate and supervise it. The console PR rides as a draft until green. At the finish condition (every plan box ticked, CI Complete SUCCESS on the head, per-commit reviews clean, threads resolved) the loop invokes /pr-merge, which merges, cuts the next branch and starts the next queued plan.
 argument-hint: "[bg] [short summary of the change to seed intent/PR titles]"
-# Operator-authorised 2026-08-15: "I authorize you to enable model invocation."
-# Was `true`, which reserved this command for a human typing it. Flipping it back
-# restores that reservation, and it is the one line to change.
+# Model-invocable since 2026-08-15 (operator authorisation), and the per-PR loop's own entry
+# point since the operator ruling of 2026-10-02 (PLAN-plan-per-pr-loop M1): the AI starts it
+# for the next queued plan without being asked. `true` would reserve it for a human typing it.
 disable-model-invocation: false
 allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(gh pr list:*), Bash(date:*)
 ---
@@ -101,7 +101,7 @@ the babysitter, and do not go look.
 - Confirm debugging aids are off (e.g. a `no-auto-retry` label, a temporarily loosened gate) and files it was told to leave alone are still outside its commits.
 - End focus: `.claude/hooks/stop/worklist.py --focus <me> off`, at the finish line or on abandoning the wave. The Stop hook then prints one `FOCUS ENDED` line naming what it parked, and the full battery applies again. A merge or close of the PR ends focus by itself.
 - Distill the round log into a `pr-babysit-<branch>` memory file (the previous one demonstrably saved rounds on the next wave).
-- Report PR links + headline results. **Do NOT merge, do NOT push `main`**. `/pr-merge` is the user's call.
+- Report PR links + headline results, then the lead runs the merge step: `/pr-merge` once the finish condition holds (the agent file's loop step 9). The babysitter never merges in delegated mode; the lead does, and the lead never pushes `main` outside `/pr-merge`'s fast-forward fallback.
 
 ## Inline mode (default): run the loop here
 
@@ -113,5 +113,6 @@ contract, and the round-log format. Only the deltas that exist because the loop 
 - **AUTONOMOUS, never ask the user.** The agent file's in-context tier-3 rule applies as written: decide, log under DECISIONS (post-hoc review), keep the loop moving; irreversible-outside-the-PR actions stay forbidden outright.
 - **Drain residue: commit by path, by epic.** Under CLAUDE.md rule 1 verified work is already committed as it lands, so the tree should hold little. What remains when the loop starts, or appears while it runs, is committed in small batches, each one epic with its own `PR-TASK:` trailer, `git commit -F <msg> -- <paths>`, never one whole-tree commit. Re-check `git status` each round; when new uncommitted paths appear that are plainly part of the same wave, commit them rather than stepping around them. (This is the OPPOSITE of delegated mode's never-absorb-by-inference rule, on purpose: here the principal IS the person editing the tree.) Guard unchanged: never `git add` a non-submodule repo under `private/`, and leave `.claude/settings.local.json` alone.
 - **Fix work under focus.** A fix is tracked as a worklist item carrying the PR token, `worklist.py --add <me> "<what> pr:<n>/fix"`, and a worker spawned for it names the item with `focus-fix:#<id>` in its description or prompt; `block_focus_spawn` admits a writer only when that item is this session's, open or leased, and carries `pr:<n>`. Work that is not the PR's fix is parked for after the PR (`--lease <me> <id> +120 worker:queue`), not spawned.
-- **End focus at the finish line**, or on abandoning the wave: `.claude/hooks/stop/worklist.py --focus <me> off`.
+- **The loop does not stop at green.** Inline, this session is the one that merges: once the finish condition of the agent file's loop step 9 holds, it invokes `/pr-merge` itself, then cuts the next branch and starts the next plan from `agent/plans/QUEUE.md`. Nobody needs to ask for the merge (operator ruling 2026-10-02).
+- **End focus at the finish line**, or on abandoning the wave: `.claude/hooks/stop/worklist.py --focus <me> off`. `/pr-merge` switches its own `merge` focus on.
 - Scoping honesty: inline is the default because a delegated loop can die silently (see the Mode note above). The counter-risk is real too: the 0707 in-session babysitter died of context exhaustion mid-campaign. For a genuinely multi-day wave, `bg` is still the right call, but watch the round log yourself, because nothing else will.
