@@ -137,6 +137,8 @@ PATTERNS = {
             "python3 " + _P % "hooks/post-bash/refresh_pr_body.py",
             # PLAN-ci-verdict box G: a push of the live branch arms one detached ci-trace watcher per head, so the verdict reaches the session with the Stop hook disabled. Spawns and returns; never exits 2.
             {"command": "python3 " + _P % "hooks/post-bash/arm_ci_watch.py", "timeout": 30},
+            # agent/plans/PLAN-per-commit-review.md section 3.1: a commit starts a DETACHED haiku reviewer per uncovered commit (the child holds none of this runner's pipes), and every Bash call reports reviews that finished since the session last heard. A few git reads and a fork; never exits 2.
+            {"command": "python3 " + _P % "hooks/post-bash/review_commit.py", "timeout": 30},
             "python3 " + _P % "hooks/trapguard/dispatch.py" + " --posttool",
         ),
     },

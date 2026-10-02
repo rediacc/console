@@ -172,8 +172,10 @@ def agent_root(root):
 #
 # THREE NAMES WERE MISSING, ADDED 2026-09-21. `pr` and `legacy` have been directories under agent/ for some time and were never reserved, so `agent_session_dirs` has been reporting two peer sessions named "pr" and "legacy" that do not exist -- the exact silent failure the paragraph above describes, already live. `plans` is the new plan home
 # (check:ci-plan-folders) and would have been the third the day it was created. `ledgers` followed the same day, when the plan-record census moved out of the agent root. The set is what `check:ci-tree-shape` DERIVES its agent-directory classes from rather than copying, so a name missing here is also a stray file there.
+#
+# `reviews` ADDED 2026-10-02 with the per-commit reviewer (agent/plans/PLAN-per-commit-review.md H5): agent/reviews/<branch>/<sha40>.md is keyed by branch on purpose, and without this name every session would report a peer session called "reviews".
 AGENT_RESERVED_DIRS = frozenset(
-    {"archive", "programs", "worklist", "reggate", "plans", "ledgers", "pr", "legacy"}
+    {"archive", "programs", "worklist", "reggate", "plans", "ledgers", "pr", "legacy", "reviews"}
 )
 
 

@@ -40,6 +40,9 @@ ALWAYS_KEYS = frozenset(
         "ci-red",
         # "Review Complete" red while everything else is clean: silence here reads identically to a genuinely reviewed, unresolved-thread-free head, which is the exact ambiguity CI_NONBLOCKING_CONTEXTS created by design for ci_classify -- this check exists specifically to un-hide it, so it cannot itself be left to rotate away.
         "review-red",
+        # I3 -- per-commit reviews (agent/plans/PLAN-per-commit-review.md section 7): an open high finding and a hand-edited record are each a verdict whose silence would read as a reviewed, clean branch.
+        "commit-review",
+        "commit-review-malformed",
         "ladder-investigate",
         "ladder-gone",
         "ladder-idle",

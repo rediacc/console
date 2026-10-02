@@ -1721,6 +1721,13 @@
       "ACTIONS_ALLOWLIST_MIN",
       "ACTIONS_ALLOWLIST_ROOT"
     ],
+    ".ci/scripts/quality/check_agent_session_archival.py": [
+      "GH_TOKEN",
+      "GITHUB_ACTIONS",
+      "GITHUB_HEAD_REF",
+      "GITHUB_REPOSITORY",
+      "GITHUB_TOKEN"
+    ],
     ".ci/scripts/quality/check_bws_map.py": [
       "BWS_MAP_ROOT",
       "BWS_MIN_CALLERS",
@@ -1811,6 +1818,10 @@
     ],
     ".claude/hooks/context/test-context-bands.py": [
       "PATH"
+    ],
+    ".claude/hooks/post-bash/review_commit.py": [
+      "COMMIT_REVIEW_CHILD",
+      "STOPHOOK_CHILD"
     ],
     ".claude/hooks/profile/py/sitecustomize.py": [
       "TMPDIR",
@@ -2006,6 +2017,10 @@
       "TMPDIR",
       "WORKLIST_PROFILE"
     ],
+    ".claude/hooks/stop/wl_review.py": [
+      "COMMIT_REVIEW_CHILD",
+      "TMPDIR"
+    ],
     ".claude/hooks/stop/wl_rules.py": [
       "TMPDIR"
     ],
@@ -2068,6 +2083,9 @@
     ],
     ".claude/rediacc_hooks/guards/test-block_host_toolchain_run.py": [
       "PATH"
+    ],
+    ".claude/rediacc_hooks/guards/test-block_push_with_unrecorded_reviews.py": [
+      "TMPDIR"
     ],
     ".claude/rediacc_hooks/guards/test-block_second_branch.py": [
       "PATH"

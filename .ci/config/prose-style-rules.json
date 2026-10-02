@@ -95,6 +95,10 @@
         "reason": "BLOCKER: same shape as content-quality-allowlist.txt, a path-per-line data list rather than prose, exempted for the same reason before an edit happens to trip the same R19 false positive."
       },
       {
+        "glob": "agent/reviews/**",
+        "reason": "BLOCKER: machine-written per-commit review records (agent/plans/PLAN-per-commit-review.md section 9); each claim is haiku output quoted verbatim, not repository prose, and the renderer already normalises dashes and newlines. Exempt rather than excluded, so the files are still counted on every run."
+      },
+      {
         "glob": "agent/*/STATE.md",
         "reason": [
           "BLOCKER: live per-session coordination scratch, written continuously by running",
