@@ -99,7 +99,7 @@ def destinations(cmd):
 
 def main():
     payload = sys.stdin.read()
-    cmd = hookio.Event(payload).raw("tool_input", "command")
+    cmd = hookio.normalize_git_push(hookio.Event(payload).raw("tool_input", "command"))
     if not hookio.grep_q_line("git push", cmd):
         return 0
 
