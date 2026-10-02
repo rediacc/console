@@ -185,7 +185,7 @@ const EN_TRANSCRIPT =
  * needs to exist. The probes that need a name matching `e2e-test-naming-convention`
  * or scoped to an e2e-only rule build their filename as a template literal off
  * this constant rather than a whole quoted literal, which is also what keeps
- * `check:ci-paths-exist` from mistaking a probe filename for a checked-in path
+ * the dead-path detector (test_gate_paths_exist.py) from mistaking a probe filename for a checked-in path
  * (its own `NOISE_BODY` fixture documents the same `${}` exemption).
  */
 const E2E_TESTS_DIR = 'packages/e2e-tests/tests';

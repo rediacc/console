@@ -2280,7 +2280,7 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
   for (const [name, doc] of Object.entries(spec.registry ?? {})) {
     write(path.join('.fixture-registry', `${encodeURIComponent(name)}.json`), JSON.stringify(doc));
   }
-  // Local-only, NOT a submodule: must never be scanned, and its canned report would be a must-upgrade if it were. `GROWTH_DIR` (module scope, extension-less) plus a template literal here, rather than a whole quoted `private/growth/...` literal, keeps `check:ci-paths-exist` from reading this fixture path as a real one: on a machine where `private/growth` happens to be checked out (a separate, gitignored sibling repo -- see CLAUDE.md's worktree warning) the bare literal would otherwise resolve to Tier A and then dead-end at Tier B, since neither fixture file is real.
+  // Local-only, NOT a submodule: must never be scanned, and its canned report would be a must-upgrade if it were. `GROWTH_DIR` (module scope, extension-less) plus a template literal here, rather than a whole quoted `private/growth/...` literal, keeps the dead-path detector (`.ci/rediacc_ci/tests/gates/test_gate_paths_exist.py`, which replaced the retired `check:ci-paths-exist`) from reading this fixture path as a real one: on a machine where `private/growth` happens to be checked out (a separate, gitignored sibling repo -- see CLAUDE.md's worktree warning) the bare literal would otherwise resolve to Tier A and then dead-end at Tier B, since neither fixture file is real.
   write(`${GROWTH_DIR}/package.json`, '{}');
   write(
     `${GROWTH_DIR}/.fixture-outdated.json`,
