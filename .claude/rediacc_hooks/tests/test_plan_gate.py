@@ -22,9 +22,19 @@ QUEUE = """# Plan queue
 
 Prose naming agent/plans/PLAN-prose.md is not an entry.
 
+1. agent/plans/PLAN-outside.md -- a numbered line outside both sections is not read
+
+## Promoted
+
 1. agent/plans/PLAN-missing.md
 2. `agent/plans/PLAN-a.md` -- the live branch's plan
-3. agent/plans/PLAN-b.md
+
+## Generated
+
+<!-- queue:generated:begin -->
+1. agent/plans/PLAN-b.md -- P2, approved
+2. agent/plans/PLAN-a.md -- P2, approved
+<!-- queue:generated:end -->
 """
 
 
@@ -41,12 +51,27 @@ def root(tmp_path):
     return str(tmp_path)
 
 
-def test_queue_reads_numbered_entries_only(root):
+def test_queue_reads_promoted_then_generated(root):
     assert plan_gate.queue(root) == [
         "agent/plans/PLAN-missing.md",
         "agent/plans/PLAN-a.md",
         "agent/plans/PLAN-b.md",
     ]
+
+
+def test_queue_head_prefers_promoted_over_generated(tmp_path):
+    plans = tmp_path / "agent" / "plans"
+    plans.mkdir(parents=True)
+    for name in ("PLAN-a.md", "PLAN-b.md"):
+        (plans / name).write_text(OPEN, encoding="utf-8")
+    gen = "## Generated\n\n<!-- queue:generated:begin -->\n1. agent/plans/PLAN-a.md\n<!-- queue:generated:end -->\n"
+    (plans / "QUEUE.md").write_text(gen, encoding="utf-8")
+    assert plan_gate.queue_head(str(tmp_path)) == "agent/plans/PLAN-a.md"
+    # Promoted wins by section, not by position in the file.
+    (plans / "QUEUE.md").write_text(
+        gen + "\n## Promoted\n\n1. agent/plans/PLAN-b.md\n", encoding="utf-8"
+    )
+    assert plan_gate.queue_head(str(tmp_path)) == "agent/plans/PLAN-b.md"
 
 
 def test_queue_head_skips_a_plan_that_does_not_exist(root):
@@ -135,7 +160,9 @@ def _refresh(tmp_path, table, with_queue=True):
         plans = work / "repo" / "agent" / "plans"
         plans.mkdir(parents=True)
         (plans / "PLAN-a.md").write_text(OPEN, encoding="utf-8")
-        (plans / "QUEUE.md").write_text("1. agent/plans/PLAN-a.md\n", encoding="utf-8")
+        (plans / "QUEUE.md").write_text(
+            "## Promoted\n\n1. agent/plans/PLAN-a.md\n", encoding="utf-8"
+        )
     proc = subprocess.run(
         ["python3", str(pbd.SUBJECTS["refresh-pr-body"])],
         input=json.dumps({"tool_input": {"command": "git push"}}).encode(),
@@ -173,3 +200,119 @@ def test_refresh_leaves_a_foreign_repo_unlinked(tmp_path):
     body = _refresh(tmp_path, _patch_table("Plain.", repo="someone/other"))
     assert body is not None
     assert "Plan:" not in body, body
+
+
+# ---------------------------------------------------------------- the generated half (`wl_planqueue`, worklist #0f45b81d)
+
+
+def _pq():
+    from rediacc_hooks import syspath  # noqa: PLC0415 -- the stop dir joins sys.path first
+
+    syspath.on_sys_path(plan_gate.STOP_DIR)
+    import wl_planqueue  # noqa: PLC0415
+
+    return wl_planqueue
+
+
+def _plan(status, priority="P2", extra=""):
+    return (
+        "# PLAN\nStatus: %s\nPriority: %s -- seed\n%s\n## Boxes\n- [ ] A one open box sits here\n"
+        % (status, priority, extra)
+    )
+
+
+PROMOTED = "# Plan queue\n\nHand prose, kept   as typed.\n\n## Promoted\n\n1. agent/plans/PLAN-picked.md -- the operator's pick\n\n"
+
+
+@pytest.fixture
+def qroot(tmp_path):
+    """A git checkout: PLAN-untracked.md is left out of the index, every other plan is added."""
+    plans = tmp_path / "agent" / "plans"
+    (plans / "_done").mkdir(parents=True)
+    files = {
+        "PLAN-picked.md": _plan("approved", "P0"),
+        "PLAN-held-urgent.md": _plan("held", "P0"),
+        "PLAN-open-late.md": _plan("ready", "P3"),
+        "PLAN-open-early.md": _plan("approved", "P1"),
+        "PLAN-finished.md": _plan("done", "P0"),
+        "PLAN-untracked.md": _plan("approved", "P0"),
+        "_done/PLAN-old.md": _plan("done", "P0"),
+    }
+    for rel, text in files.items():
+        (plans / rel).write_text(text, encoding="utf-8")
+    (plans / "QUEUE.md").write_text(PROMOTED, encoding="utf-8")
+    env = {"PATH": "/usr/bin:/bin", "HOME": str(tmp_path), "GIT_CONFIG_NOSYSTEM": "1"}
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True, env=env)
+    tracked = [str(plans / r) for r in files if r != "PLAN-untracked.md"]
+    subprocess.run(["git", "-C", str(tmp_path), "add", "--", *tracked], check=True, env=env)
+    return tmp_path
+
+
+def _generated(root):
+    pq = _pq()
+    return pq.entries((root / pq.QUEUE_REL).read_text(encoding="utf-8"))[1]
+
+
+def test_regenerate_preserves_promoted_byte_for_byte(qroot):
+    pq = _pq()
+    assert pq.problems(qroot), "a queue with no generated section must be reported"
+    assert pq.refresh(qroot) is True
+    text = (qroot / pq.QUEUE_REL).read_text(encoding="utf-8")
+    assert text.startswith(PROMOTED), text
+    assert pq.refresh(qroot) is False
+    # A hand edit to Promoted survives the next regenerate untouched.
+    edited = text.replace("the operator's pick", "re-noted by hand")
+    (qroot / pq.QUEUE_REL).write_text(edited, encoding="utf-8")
+    pq.refresh(qroot)
+    assert (qroot / pq.QUEUE_REL).read_text(encoding="utf-8") == edited
+
+
+def test_generated_order_open_then_held_without_promoted_finished_or_untracked(qroot):
+    _pq().refresh(qroot)
+    assert _generated(qroot) == [
+        "agent/plans/PLAN-open-early.md",
+        "agent/plans/PLAN-open-late.md",
+        "agent/plans/PLAN-held-urgent.md",
+    ]
+
+
+def test_generated_lines_carry_priority_and_status(qroot):
+    pq = _pq()
+    pq.refresh(qroot)
+    text = (qroot / pq.QUEUE_REL).read_text(encoding="utf-8")
+    assert "1. agent/plans/PLAN-open-early.md -- P1, approved\n" in text
+    assert "3. agent/plans/PLAN-held-urgent.md -- P0, held\n" in text
+
+
+def test_stale_generated_section_is_refused_by_the_freshness_check(qroot):
+    pq = _pq()
+    pq.refresh(qroot)
+    assert pq.problems(qroot) == []
+    path = qroot / pq.QUEUE_REL
+    fresh = path.read_text(encoding="utf-8")
+    stale = fresh.replace("PLAN-open-late.md -- P3, ready", "PLAN-open-late.md -- P3, held")
+    assert stale != fresh
+    path.write_text(stale, encoding="utf-8")
+    assert pq.problems(qroot), "a hand-edited generated section must be refused"
+    assert pq.problems(qroot, update=True) == []
+    assert path.read_text(encoding="utf-8") == fresh
+
+
+def test_the_committed_queue_is_fresh_and_promotes_the_loop_plan():
+    repo = pathlib.Path(__file__).resolve().parents[3]
+    pq = _pq()
+    text = (repo / pq.QUEUE_REL).read_text(encoding="utf-8")
+    assert pq.entries(text)[0][0] == "agent/plans/PLAN-plan-per-pr-loop.md"
+    assert pq.problems(repo) == [], "run `npm run check:ci-plan-record -- --update`"
+
+
+def test_refresh_index_also_refreshes_the_queue(qroot):
+    """The `--plan-tick` path: `wl_planrec.refresh_index` leaves the queue fresh, so a tick that changes a plan's rank cannot leave check:ci-plan-record red."""
+    pq = _pq()
+    import wl_checks  # noqa: PLC0415 -- importable once _pq() put the stop dir on sys.path
+    import wl_planrec  # noqa: PLC0415
+
+    assert pq.problems(qroot)
+    wl_planrec.refresh_index(str(qroot), wl_checks.plan_records, wl_checks.plan_box_census)
+    assert pq.problems(qroot) == []
+    assert (qroot / pq.QUEUE_REL).read_text(encoding="utf-8").startswith(PROMOTED)
