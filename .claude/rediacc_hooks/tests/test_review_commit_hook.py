@@ -373,6 +373,18 @@ def test_a_commit_in_a_nested_repo_records_its_repo(world):
     assert R.parse(path.read_text()).repo == "sub"
 
 
+def test_a_commit_behind_an_unresolvable_dash_c_still_starts_its_review(world):
+    """#51e1c0cf: `git -C <dir>/$r commit` (a loop variable) is a path the lexer cannot expand; the commit's repository must still be reviewed, not skipped."""
+    sub = world.repo / "sub"
+    sub.mkdir()
+    world.init_repo(sub)
+    sha = world.commit("f.py", repo=sub)
+    rc, out, err, _t = world.hook('for r in sub; do git -C "$r" commit -m x -- f.py; done')
+    assert rc == 0, err
+    assert "started for sub %s" % sha[:8] in _context(out)
+    assert world.wait_for(world.review_file(sha))
+
+
 def test_a_commit_in_a_repository_outside_the_project_starts_nothing(world):
     """A scratch repository next to the project is not this branch's work; reviewing it would file a record about a commit no push of the project carries."""
     outside = world.tmp / "outside"

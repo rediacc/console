@@ -52,13 +52,31 @@ def commit_repos(cmd, cwd, root):
             continue
         where = base if run.git_dir in (None, "", ".") else base / run.git_dir
         top = R.git_out(where, "rev-parse", "--show-toplevel")
-        inside = top and (
-            os.path.realpath(top) == real_root
-            or os.path.realpath(top).startswith(real_root + os.sep)
-        )
-        if inside and top not in repos:
-            repos.append(top)
+        # AN UNRESOLVABLE `-C` IS NOT "NO REPOSITORY" (#51e1c0cf). `git -C <dir>/$r commit` in a loop names a directory the lexer cannot expand, so rev-parse fails; skipping it left account 654d186 unreviewed until the push guard refused the push. Every project repository is checked instead: uncovered() is cheap, and a covered repository starts nothing.
+        candidates = [top] if top else (_project_repos(root) if run.git_dir else [])
+        for cand in candidates:
+            inside = cand and (
+                os.path.realpath(cand) == real_root
+                or os.path.realpath(cand).startswith(real_root + os.sep)
+            )
+            if inside and cand not in repos:
+                repos.append(cand)
     return repos
+
+
+def _project_repos(root):
+    """The project and every repository directly inside it or under `private/` (its submodules), as top-level paths."""
+    root = pathlib.Path(root)
+    found = [str(root)]
+    for parent in (root, root / "private"):
+        if not parent.is_dir():
+            continue
+        found.extend(
+            str(child)
+            for child in sorted(parent.iterdir())
+            if child.is_dir() and (child / ".git").exists()
+        )
+    return found
 
 
 def trigger_lines(cmd, cwd, root, trigger=R.trigger):
