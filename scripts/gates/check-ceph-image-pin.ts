@@ -167,14 +167,14 @@ const HEALTHY_PIN = [
   'host.ubuntu=19.2.3-0ubuntu0.24.04.3',
   'host.fedora-43=19.2.3-8.fc43',
   'host.el10=2:19.2.3-1.el10s',
-  'host.opensuse-16.0=19.2.3-lp160.2.96',
+  'host.opensuse-16.0=19.2.3-lp160.2.98',
   'key-expiry.obs=2027-05-07',
 ].join('\n');
 const HEALTHY_GO = `var hostPins = map[string]string{
 	"ubuntu":        "19.2.3-0ubuntu0.24.04.3",
 	"fedora-43":     "19.2.3-8.fc43",
 	"el10":          "2:19.2.3-1.el10s",
-	"opensuse-16.0": "19.2.3-lp160.2.96",
+	"opensuse-16.0": "19.2.3-lp160.2.98",
 }`;
 const TODAY = new Date('2026-09-29T00:00:00Z');
 
@@ -256,7 +256,7 @@ function selftest(): boolean {
       ok:
         hostProblems(
           parsePin(HEALTHY_PIN),
-          goHostPins(HEALTHY_GO.replace('19.2.3-lp160.2.96', '19.2.6-lp160.1.1'))
+          goHostPins(HEALTHY_GO.replace('19.2.3-lp160.2.98', '19.2.6-lp160.1.1'))
         ).length === 1,
     },
     {

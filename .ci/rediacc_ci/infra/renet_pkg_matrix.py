@@ -32,7 +32,10 @@ WHAT `run` PROVES, per distro:
     host.opensuse-16.0 pin. OBS keeps only its latest build, so a mismatch means the pinned build is gone and
     customer Leap installs fail until the one-line pin bump ships. The check runs from the runner, not the
     container, and only when `--event schedule`: an OBS rebuild must never redden an unrelated pull request.
-    Every other event prints `[SKIP] ... skipped: nightly-only` instead of passing silently;
+    Without `--obs-mirror` every other event prints `[SKIP] ... skipped: nightly-only` instead of passing
+    silently. Under `--obs-mirror` the leg installs the pin from the captured tree whatever OBS serves, so
+    upstream is read on every event: a moved or unreadable upstream is still a FAIL on the nightly (plan Q5)
+    and a `::warning::` on a passing check on every other event;
   * `rpm -q ceph-common cephadm` equals the host.<target> pin in private/renet/.ceph-image-pin, and
     `rbd --version` reports its host-version;
   * the sqlite CLI answers `sqlite3 --version`, and podman is neither installed nor on PATH (cephadm prefers
@@ -361,7 +364,7 @@ def check_drift(
     )
 
 
-# The only event that runs check_upstream (plan section 5, Q5: red on the nightly only).
+# The only event on which check_upstream can fail (plan section 5, Q5: red on the nightly only).
 UPSTREAM_EVENT = "schedule"
 # The three places a Leap pin bump touches, all in the renet submodule.
 PIN_SITES = (
@@ -384,14 +387,18 @@ def obs_upstream_evr() -> str:
     return evr
 
 
-def check_upstream(pin: str, event: str, upstream: Callable[[], str]) -> Verdict:
+def check_upstream(
+    pin: str, event: str, upstream: Callable[[], str], *, mirrored: bool = False
+) -> Verdict:
     """OBS origin `primary` still serves the pinned build (zypper legs, scheduled runs only).
 
-    Off schedule it is an explicit skip, never a silent pass. A network, gpg or parse failure is a FAIL:
-    an unreadable upstream proves nothing about the pin.
+    On the nightly (`schedule`) a moved or unreadable upstream is a FAIL, with or without the mirror: OBS keeps only its latest build, so customers installing from OBS are broken until the pin moves, and an unreadable upstream proves nothing about the pin (plan Q5).
+
+    Off schedule without the mirror it is an explicit skip, never a silent pass, so an OBS rebuild never reddens an unrelated pull request. Off schedule with the mirror (`mirrored`) the leg installs the pin from the captured tree whatever OBS serves, so upstream is still read and the same findings are a warning on a passing verdict.
     """
     name = "upstream: OBS still serves the pin"
-    if event != UPSTREAM_EVENT:
+    nightly = event == UPSTREAM_EVENT
+    if not nightly and not mirrored:
         return Verdict(
             name,
             True,
@@ -401,21 +408,31 @@ def check_upstream(pin: str, event: str, upstream: Callable[[], str]) -> Verdict
     try:
         obs_evr = upstream()
     except (obs_mirror.MirrorError, OSError, ValueError, SyntaxError) as exc:
-        return Verdict(
-            name,
-            False,
+        finding = (
             f"could not read the OBS origin {obs_mirror.OBS_ORIGIN}, so the pin {pin} is unverified: "
-            f"{type(exc).__name__}: {exc}",
+            f"{type(exc).__name__}: {exc}"
         )
+        return _upstream_finding(name, finding, nightly)
     if evr_matches(pin, obs_evr):
         return Verdict(name, True, f"OBS serves {obs_evr}, equal to the pin")
-    return Verdict(
-        name,
-        False,
+    finding = (
         f"OBS REBUILT: {obs_mirror.OBS_ORIGIN} now serves ceph-common/cephadm {obs_evr}, the pin is {pin}. "
         "OBS keeps only its latest build, so `renet ceph install` on Leap fails (zypper 104) until the pin "
-        f"moves. The fix is a one-line pin bump to {obs_evr} in private/renet: "
-        + "; ".join(PIN_SITES),
+        f"moves. The fix is a one-line pin bump to {obs_evr} in private/renet (only to a captured EVR): "
+        + "; ".join(PIN_SITES)
+    )
+    return _upstream_finding(name, finding, nightly)
+
+
+def _upstream_finding(name: str, finding: str, nightly: bool) -> Verdict:
+    """A FAIL on the nightly; off schedule (reached only under the mirror) a warning on a passing verdict."""
+    if nightly:
+        return Verdict(name, False, finding)
+    return Verdict(
+        name,
+        True,
+        "the leg installs the pin from the OBS mirror; OBS upstream differs (see the warning)",
+        warning=finding,
     )
 
 
@@ -514,6 +531,8 @@ def run_checks(
     run: Callable[[Sequence[str]], Result],
     event: str = "",
     upstream: Callable[[], str] = obs_upstream_evr,
+    *,
+    mirrored: bool = False,
 ) -> list[Verdict]:
     pin = pins.hosts.get(d.target)
     if not pin:
@@ -525,7 +544,7 @@ def run_checks(
     ]
     out.append(check_drift(distro_name, d, pin, run))
     if d.manager == "zypper":
-        out.append(check_upstream(pin, event, upstream))
+        out.append(check_upstream(pin, event, upstream, mirrored=mirrored))
     out.extend(
         check_command(
             f"ceph install --profile {profile}",
@@ -661,6 +680,7 @@ def cmd_run(
     start: Callable[[Sequence[str]], int] = _docker,
     exec_factory: Callable[[str], Callable[[Sequence[str]], Result]] = docker_exec,
     stop: Callable[[str], None] = _docker_rm,
+    upstream: Callable[[], str] = obs_upstream_evr,
 ) -> int:
     d = DISTROS[args.distro]
     renet = pathlib.Path(args.renet).resolve()
@@ -695,7 +715,16 @@ def cmd_run(
             pre.append(configure_mirror(run))
             if not pre[-1].ok:
                 return report(args.distro, pre)
-        return report(args.distro, [*pre, *run_checks(args.distro, d, pins, run, event=args.event)])
+        verdicts = run_checks(
+            args.distro,
+            d,
+            pins,
+            run,
+            event=args.event,
+            upstream=upstream,
+            mirrored=mirror is not None,
+        )
+        return report(args.distro, [*pre, *verdicts])
     finally:
         stop(container)
 

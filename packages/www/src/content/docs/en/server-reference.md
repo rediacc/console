@@ -250,6 +250,16 @@ renet datastore unfork --image {image}                         # tear down a clo
 
 Ceph nodes never open LUKS (there is no per-image LUKS layer on this backend), so their memory footprint follows Ceph daemon tuning (`osd_memory_target`), not KDF math. A second client can map the same RBD image read-only with a local copy-on-write overlay, which is the read-mostly scale-out path.
 
+#### Ceph packages on openSUSE Leap
+
+On openSUSE Leap 16.0, `renet ceph install` installs one exact `ceph-common` and `cephadm` build from the OBS `filesystems:ceph:squid` repository. OBS keeps only its latest build, so the pinned build disappears there whenever OBS rebuilds. To install from a copy instead, write one URL on the first line of `/etc/rediacc/ceph-zypper-mirror`:
+
+```bash
+echo 'https://mirror.example.com/ceph-squid/16.0/' | sudo tee /etc/rediacc/ceph-zypper-mirror
+```
+
+The mirror must serve the OBS repository unmodified: the signed `repodata/` byte for byte, plus the RPMs at their OBS paths. renet keeps signature checks on and verifies against the OBS key it embeds, so a re-signed or regenerated repository is refused. Accepted schemes are `https`, `http`, `dir` and `file`. The `REDIACC_CEPH_ZYPPER_MIRROR` environment variable overrides the file. An invalid value is logged and ignored, and the install falls back to OBS.
+
 ### Kubernetes (renet kube)
 
 On a cluster node, renet wraps k3s the way it wraps Docker. `renet kube` is the compose-analog: it injects `KUBECONFIG` and applies manifests or Helm charts from a Rediaccfile's `up()`.

@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: tr
-sourceHash: "334e3ab3d1d1cce9"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "960821a4fc0654eb"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Sunucu Referansı
@@ -251,6 +251,16 @@ renet datastore unfork --image {image}                         # bir klonu bağ�
 ```
 
 Ceph düğümleri asla LUKS açmaz (bu arka uçta imaj başına LUKS katmanı yoktur), bu nedenle bellek kullanımları KDF matematiğini değil, Ceph daemon ayarlarını (`osd_memory_target`) takip eder. İkinci bir istemci, aynı RBD imajını salt okunur olarak yerel bir copy-on-write katmanıyla eşleyebilir; bu, ağırlıklı olarak okuma yapan yatay ölçekleme yoludur.
+
+#### openSUSE Leap'te Ceph paketleri
+
+openSUSE Leap 16.0'da `renet ceph install`, OBS'teki `filesystems:ceph:squid` deposundan `ceph-common` ve `cephadm` için tam olarak bir derlemeyi kurar. OBS yalnızca son derlemeyi tuttuğundan, sabitlenen derleme OBS her yeniden derleme yaptığında oradan kaybolur. Kurulumu bir kopyadan yapmak için `/etc/rediacc/ceph-zypper-mirror` dosyasının ilk satırına tek bir URL yazın:
+
+```bash
+echo 'https://mirror.example.com/ceph-squid/16.0/' | sudo tee /etc/rediacc/ceph-zypper-mirror
+```
+
+Yansı, OBS deposunu değiştirmeden sunmalıdır: imzalı `repodata/` bayt bayt aynı olmalı, RPM'ler de OBS yollarında durmalıdır. renet imza denetimlerini açık tutar ve içine gömülü OBS anahtarıyla doğrular; bu yüzden yeniden imzalanmış veya yeniden oluşturulmuş bir depo reddedilir. Kabul edilen şemalar `https`, `http`, `dir` ve `file`'dır. `REDIACC_CEPH_ZYPPER_MIRROR` ortam değişkeni dosyanın önüne geçer. Geçersiz bir değer günlüğe yazılır ve yok sayılır, kurulum da OBS'e geri döner.
 
 ### Kubernetes (renet kube)
 
