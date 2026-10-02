@@ -733,7 +733,8 @@ def main(argv: list[str]) -> int:
     test_dir = pathlib.Path(
         tempfile.mkdtemp(
             prefix=f"rediacc-sh-{os.getpid()}-install-methods-",
-            dir=os.environ.get("TMPDIR") or "/tmp",
+            # The twin's `${TMPDIR:-/tmp}`. A native Windows Python cannot resolve `/tmp` (it is an MSYS mount, and git-bash's TMPDIR is not exported to it): the Windows install validation died here with FileNotFoundError '/tmp\\rediacc-sh-...' (PR #591 CI, 2026-10-02). There the platform temp dir stands in.
+            dir=os.environ.get("TMPDIR") or ("/tmp" if os.name != "nt" else tempfile.gettempdir()),
         )
     )
     cfg.test_dir = test_dir
