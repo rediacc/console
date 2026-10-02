@@ -1624,7 +1624,8 @@ def main(argv):
         print("✓ selftest only; the real tree was not judged")
         return 0
 
-    recs = CK.plan_records(ROOT)
+    # TRACKED PLANS ONLY. `agent/INDEX.md` is compared for equality in a clean CI checkout, which holds only what git tracks, so another session's untracked draft must not reach the render (worklist #0b93d454: 180 written locally, 179 rendered in CI). `wl_store.agent_plan_files` carries the rule.
+    recs = CK.plan_records(ROOT, tracked_only=True)
     if len(recs) < MIN_PLAN_FILES:
         print(
             f"VACUOUS INPUT: found {len(recs)} plan file(s) under agent/, floor is "

@@ -84,6 +84,8 @@ def _seed(tmp_path: pathlib.Path, subject: str, age_days: int) -> tuple[pathlib.
     _git(root, "init", "-q", ".")
     _git(root, "config", "user.email", "fixture@example.invalid")
     _git(root, "config", "user.name", "fixture")
+    # The ledger render counts TRACKED plans only (#0b93d454), so the fixture's plans are staged before it.
+    _git(root, "add", "-A", "--", ".")
     seeded = _gate(root, update=True)
     if seeded.rc != 0:
         raise harness.GateAssertionError(
@@ -95,6 +97,7 @@ def _seed(tmp_path: pathlib.Path, subject: str, age_days: int) -> tuple[pathlib.
 
 
 def _regenerate_and_commit(root: pathlib.Path, message: str) -> None:
+    _git(root, "add", "-A", "--", ".")
     written = _gate(root, update=True)
     if written.rc != 0:
         raise harness.GateAssertionError(

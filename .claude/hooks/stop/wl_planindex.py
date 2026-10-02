@@ -96,7 +96,7 @@ def plan_dir(root) -> pathlib.Path:
     return S.agent_plan_dir(root)
 
 
-def plan_stats(root):
+def plan_stats(root, tracked_only=False):
     """[(rel, size, mtime)] for every plan on disk. The CHEAP half.
 
     This is the cheap half of the freshness check and it is also what restores the listing's ORDER: `wl_checks.plan_records` sorts newest-mtime-first and `plan_status_excerpt` then takes `live[0]` as "the newest live plan", so an index that dropped mtime would silently change which plan a compacted session gets excerpted. mtime is read here, from the same `stat` the size needs, and
@@ -106,7 +106,7 @@ def plan_stats(root):
     by a wide margin, and it is still a hundredth of what opening every plan costs.
     """
     out = []
-    for f in S.agent_plan_files(root):
+    for f in S.agent_plan_files(root, tracked_only=tracked_only):
         try:
             st = f.stat()
         except OSError:
@@ -119,8 +119,10 @@ def plan_stats(root):
     return out
 
 
-def census_rows(root, plan_records=None, plan_box_census=None):
+def census_rows(root, plan_records=None, plan_box_census=None, tracked_only=False):
     """[(rel, status, lines, open, ticked, size)] for every plan. THE SLOW PATH.
+
+    `tracked_only=True` is the committed render's call (see `wl_store.agent_plan_files`). It reaches the default `plan_records` and the size pass; an injected `plan_records` already decided its own set, so the caller that injects one passes the matching flag to its own read.
 
     This opens every plan, which is the cost the index exists to avoid. It has exactly two callers and both are correct: `check_plan_record.py --update`, which has to read them to write the index, and `plans_block`'s FALLBACK when the index is absent or stale.
 
@@ -137,9 +139,13 @@ def census_rows(root, plan_records=None, plan_box_census=None):
         # DEFERRED ON PURPOSE, and it is not a style slip. `wl_checks` imports THIS module, so a top-level `import wl_checks` here is a cycle that fails at hook-load time. Deferring also keeps the fast path honest: the fresh path never calls this function, so it never pays the import.
         import wl_checks  # noqa: PLC0415 -- wl_checks imports this module; top-level would cycle
 
-        plan_records = plan_records or wl_checks.plan_records
+        if plan_records is None:
+
+            def plan_records(r):
+                return wl_checks.plan_records(r, tracked_only=tracked_only)
+
         plan_box_census = plan_box_census or wl_checks.plan_box_census
-    sizes = {rel: size for rel, size, _mt in plan_stats(root)}
+    sizes = {rel: size for rel, size, _mt in plan_stats(root, tracked_only=tracked_only)}
     recs = plan_records(root)
     counts = plan_box_census(root, recs)[0]
     return [
@@ -226,14 +232,14 @@ def census_diff(rows, stats):
 def index_census(root, stats=None):
     """(rows, state, detail) -- the census, and whether it can be believed.
 
-    `stats` is the `plan_stats` result when the caller already has it. It is not an optimisation for its own sake: `plans_block` needs the same list to restore mtime order, and computing it twice would stat 83 files twice on the FAST path, which is the path this whole module exists to keep cheap.
+    `stats` is accepted for callers that already hold the LIVE `plan_stats` and is not used for the verdict: freshness is judged against the tracked set the census renders (#0b93d454).
 
     `rows` is [] for every state except CENSUS_FRESH; a caller must not use the rows of a stale index, because a stale row is a confident wrong number and the fallback is cheap enough to always be right. `detail` is the `census_diff` triple for CENSUS_STALE and () otherwise.
 
     A directory with NO plans at all answers ([], CENSUS_FRESH, ()): there is nothing to index, the empty census agrees with the empty directory, and forcing a project without plans onto the fallback would make it pay a directory walk to be told nothing. That is the one case where [] rows and CENSUS_FRESH travel together.
     """
-    if stats is None:
-        stats = plan_stats(root)
+    # FRESHNESS IS JUDGED AGAINST WHAT THE CENSUS RENDERS (#0b93d454): the committed census holds TRACKED plans only, so another session's untracked draft in a shared tree is not staleness. A caller that also wants drafts compares its own live `stats` with the rows (wl_checks.plans_block does).
+    stats = plan_stats(root, tracked_only=True)
     text, present = read_index(root)
     has_section = present and CENSUS_SECTION in text
     if not stats:
@@ -316,7 +322,8 @@ if __name__ == "__main__":  # pragma: no cover -- a human/test entry point only
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
     argv = sys.argv[1:]
     if argv[:1] == ["--render"]:
-        sys.stdout.write(render_census(census_rows(ROOT)))
+        # The committed render's set, so this prints what `check:ci-plan-record -- --update` would write.
+        sys.stdout.write(render_census(census_rows(ROOT, tracked_only=True)))
     elif argv[:1] == ["--check"]:
         rows, state, detail = index_census(ROOT)
         n = len(plan_stats(ROOT))
