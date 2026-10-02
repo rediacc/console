@@ -29,7 +29,8 @@ Owns: .claude/rediacc_hooks/guards/block_push_to_protected_branch.py, .claude/re
 
 ### Releases
 - [ ] R1 Find and fix the root cause of the scheduled Console CI on main failing every night since 2026-09-25 (trace each night's first real failure with ci-trace once PLAN-ci-verdict B lands; raw reads until then), so the nightly waiver can fire.
-- [ ] R2 Soak starvation: `check_soak_period` promotes the NEWEST edge release that is at least SOAK_DAYS old (walking back from the newest), not only the newest one; red-first test with three edges (1, 4, 9 days old -> the 9-day one promotes; 1 and 4 alone -> nothing).
+- [x] R2 Soak starvation: `check_soak_period` promotes the NEWEST edge release that is at least SOAK_DAYS old (walking back from the newest), not only the newest one; red-first test with three edges (1, 4, 9 days old -> the 9-day one promotes; 1 and 4 alone -> nothing).
+    (ticked) 2026-10-02T09:40:59Z by d778be9d: commit:bfaf3db8c check_soak_period promotes the newest soaked edge (walk-back), red-first test with 1/4/9-day edges; R2 channel-snapshot limit is #51ea3682
 - [ ] R3 Release on every merge that changes the product: skill and doc text stops suggesting a hand-applied `bump-none` (pr-merge, pr-babysitter, release-process.md, ci-gates.md). The bump is decided once at a green head by Console CI's `pr-labels` job from the per-commit reviews: `bump-major`/`bump-minor` from the highest verdict, no label for a patch, and `bump-none` only when every commit's review says `none` (operator rulings 2026-10-02, #e1e9edf7). Verify dispatch_release's fail-open path on a real merge (M7).
 
 ### Merge authorization and main protection
