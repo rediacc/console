@@ -8,7 +8,8 @@ THIS GATE DOES NOT RE-SCAN `agent/`, AND THAT IS THE WHOLE REASON IT CAN BE SMAL
 ledger. A second parser here would be a second opinion about what a box is, which is exactly what the ledger exists to prevent.
 
 THE ASYMMETRY WITH THE STOP HOOK IS DELIBERATE AND STATED. `wl_planenforce` knows WHO IS RUNNING and adjusts what it demands of that session: boxes owned by a peer this machine reads as live are subtracted, because demanding drainage of work somebody else is doing right now makes the ceiling unreachable by any action. CI has no liveness oracle and must not invent one, so P-A1
-compares the WHOLE in-scope count with no ownership term at all. A branch whose peers are all idle owes all of it.
+compares the WHOLE in-scope count with no ownership term at all. A branch whose peers are all idle owes all of it. What is in scope is the operator's ruling of 2026-10-02 ("Clock the PR's plan only", worklist #508defc2): the live PR's plan (the queue head) and the plans this
+branch ticked; plans queued for later PRs are reported as one informational line, never a finding (see clock_scope).
 
 FORWARD-ONLY, AND THE CUT IS ONE COMMITTED DATE. Measured corpus-wide before this was written: 13 `    (ticked) ` evidence lines across all four plan folders, all of them in ONE file, against 589 done boxes. About 2% of the boxes `--plan-tick` was written for went through it; the rest were flipped with the Edit tool and carry nothing to re-check, ever. So P-A2..P-A4 judge a box
 only when the commit that ticked it is dated STRICTLY AFTER `baseline_at`, the landing date in `.ci/config/plan-implementation.json`. On the landing commit that set is empty by construction and this gate is silent, which is the point: nobody is punished for a tick that predates the rule, and the very next day's ticks are bound. A control pins both sides of that cut, because a
@@ -116,7 +117,7 @@ def load_modules():
     return E, PF, R, boxes_gate
 
 
-# --------------------------------------------------------------------------- P-A1, the clock. Pure arithmetic over three numbers, so the control can assert it at three points rather than at the one that happens to hold today.
+# --------------------------------------------------------------------------- P-A1, the clock. No threshold (2026-09-26), scoped to the PR's plan and the plans this branch ticked (2026-10-02); each piece is a pure function, so the controls drive the same code main() runs.
 
 
 #: OPERATOR RULING 2026-09-26, TEMPORARY: "Let's define parked status until we make CI green as a temporary status for all other plans since we focus on time budgeting and CI fixes. So, plan-implementation check should give as a warning for now and that status will be removed after we complete all the plans." A plan whose Status is `held` (the ruling's "parked": `parked` already names a compacted record, wl_planrec.STATUS_PARKED, which stays on the clock) leaves the clock and is reported as a warning. P-A7 fails the gate once no plan is parked, so this exemption cannot outlive the ruling: that red is the order to delete PARKED_EXEMPT, parked_scope, P-A7 and the exempt parameter of in_scope.
@@ -162,18 +163,79 @@ def in_scope(ledger_plans, finished_states, exempt=frozenset()):
 
 
 def clock_findings(offenders):
-    """P-A1. [] when no plan outside the held set has an open box; one finding naming every plan that has.
+    """P-A1. [] when no plan on the clock has an open box; one finding naming every plan that has.
 
     OPERATOR RULING 2026-09-26: "each new plan should be implemented, there should be no threshold to tolerate. Remove that threshold number at plan-implementation check." The descending ceiling (a baseline minus a daily drain) is gone: a plan that is not held and not finished is either fully implemented or red. `offenders` is [(rel, open)].
+
+    OPERATOR RULING 2026-10-02 (worklist #508defc2, "Clock the PR's plan only"): the 2026-09-26 rule above holds unchanged, but only over the plans `clock_scope` puts on the clock, the live PR's plan and the plans this branch ticked. The caller filters `offenders` to that scope before calling here.
     """
     if not offenders:
         return []
     listed = ", ".join("%s (%d)" % (rel, n) for rel, n in offenders)
     return [
-        "P-A1 OPEN BOXES: %d plan(s) that are neither finished nor held carry open boxes: %s. There is no "
-        "threshold (operator ruling 2026-09-26): implement and tick every box, or finish the plan."
-        % (len(offenders), listed)
+        "P-A1 OPEN BOXES: %d plan(s) on this PR's clock (the queue head and the plans this branch ticked) "
+        "are neither finished nor held and carry open boxes: %s. There is no threshold (operator ruling "
+        "2026-09-26): implement and tick every box, or finish the plan." % (len(offenders), listed)
     ]
+
+
+#: Where the queue head is read. `rediacc_hooks.plan_gate.queue_head` is the merge gate's own reader of agent/plans/QUEUE.md, so the plan this clock judges is the plan the merge gate judges; a second QUEUE.md parser here could disagree with it.
+HOOK_PKG_PARENT = os.path.join(REPO_ROOT, ".claude")
+
+
+def load_plan_gate():
+    """(module, problem). `rediacc_hooks.plan_gate`, or None and the reason it could not be loaded. The caller FAILS CLOSED on a problem: without the queue head there is no way to tell the PR's plan from the queued ones, and judging nothing would read exactly like a finished plan."""
+    paths.on_sys_path(HOOK_PKG_PARENT)
+    try:
+        from rediacc_hooks import plan_gate  # noqa: PLC0415
+    except Exception as exc:  # noqa: BLE001
+        return None, "cannot import rediacc_hooks.plan_gate from %s (%s)" % (HOOK_PKG_PARENT, exc)
+    return plan_gate, ""
+
+
+def clock_scope(gate, root, base_plans, head_plans):
+    """(scope, notes, problem) for P-A1 under the operator ruling of 2026-10-02 ("Clock the PR's plan only", worklist #508defc2).
+
+    The plan-per-PR loop queues plans in agent/plans/QUEUE.md for FUTURE PRs, so judging every unfinished plan reds CI for ever. The clock is two sets instead:
+      (a) the live PR's plan, `gate.queue_head(root)`: the first queued plan that exists, which QUEUE.md's header names as the plan the live branch works;
+      (b) every plan in which this branch TICKED a box, read by `moved_to_done` (a sig open at the base and done at head, or a plan new on the branch with a done box).
+    `base_plans` None means no base is resolvable, so the scope is (a) only; a queue head of "" makes it (b) only. Both are said in `notes` rather than folded into silence.
+
+    `scope` is {rel: reason}. `problem` is non-empty when the queue head could not be read at all (`gate` None, no `queue_head`, or it raised): the caller fails closed on it.
+    """
+    notes: list[str] = []
+    if gate is None or not callable(getattr(gate, "queue_head", None)):
+        return (
+            {},
+            notes,
+            "rediacc_hooks.plan_gate.queue_head is not available, so the PR's plan cannot be told from the queued ones",
+        )
+    try:
+        head = str(gate.queue_head(root) or "").strip()
+    except Exception as exc:  # noqa: BLE001
+        return {}, notes, "rediacc_hooks.plan_gate.queue_head raised (%s)" % exc
+    scope: dict[str, str] = {}
+    if head:
+        scope[head] = "queue head"
+    else:
+        notes.append(
+            "no queue head (agent/plans/QUEUE.md has no entry that exists), so only plans this branch ticked are on the clock"
+        )
+    if base_plans is None:
+        notes.append(
+            "no base is resolvable, so ticks cannot be read and only the queue head is on the clock"
+        )
+    else:
+        for rel, _sig in moved_to_done(base_plans, head_plans):
+            scope.setdefault(rel, "ticked on this branch")
+    return scope, notes, ""
+
+
+def split_by_scope(offenders, scope):
+    """(on, off): `offenders` split by membership of the P-A1 scope. `off` is reported as one informational line, never a finding."""
+    on = [(rel, n) for rel, n in offenders if rel in scope]
+    off = [(rel, n) for rel, n in offenders if rel not in scope]
+    return on, off
 
 
 def open_offenders(ledger_plans, finished_states, exempt):
@@ -285,6 +347,18 @@ def key_of(finding):
 # --------------------------------------------------------------------------- P-A2/P-A3/P-A4, the forward-only proof. Every oracle is injected so the controls drive the same function the real run does.
 
 
+#: The plan folders a lifecycle move relocates between; a plan's identity is its basename under any of them.
+PLAN_FOLDERS = ("agent/plans/", "agent/plans/_done/", "agent/plans/_removed/")
+
+
+def _plan_identity(rel):
+    """The basename for a path under a plan folder, else the path itself (so an unrelated file never pairs)."""
+    for folder in sorted(PLAN_FOLDERS, key=len, reverse=True):
+        if rel.startswith(folder) and "/" not in rel[len(folder) :]:
+            return "plan:" + rel[len(folder) :]
+    return rel
+
+
 def moved_to_done(base_plans, head_plans):
     """[(rel, sig)] for every box this branch CLOSED. Two cases, and the second was a gap.
 
@@ -294,12 +368,20 @@ def moved_to_done(base_plans, head_plans):
     could write a plan, tick every box with no evidence and no investigation row, and P-A2 would see nothing.
 
     It is NOT a false-positive surface, because the date cut still applies downstream: a plan imported with boxes already ticked has `done_commit` dates at or before `baseline_at` and is exempt for the same reason every other pre-landing tick is. What is caught is the case that matters -- a box ticked on this branch AFTER the rule arrived.
+
+    A FOLDER MOVE IS NOT A NEW PLAN. `check:ci-plan-folders --move` relocates a finished plan into `_done/` (or `_removed/`) and leaves a stub at the old path, so the head row sits at a path the base never had while the base row for the same plan sits beside it. Measured on 0930-1 (3490aa3e3): PLAN-b2-emit-matrix had all 13 boxes ticked on main, and after its move 7 of them read as "closed on this branch" with no evidence, 14 false P-A2 findings. The base row is looked up under every plan folder by basename before the plan is treated as new.
     """
     out: list[Any] = []
+    by_name: dict[str, Any] = {}
+    for base_rel, base_val in sorted((base_plans or {}).items()):
+        if isinstance(base_val, dict):
+            by_name.setdefault(_plan_identity(base_rel), base_val)
     for rel, head_row in sorted((head_plans or {}).items()):
         if not isinstance(head_row, dict):
             continue
         base_row = (base_plans or {}).get(rel)
+        if not isinstance(base_row, dict):
+            base_row = by_name.get(_plan_identity(rel))
         head_done = sorted(set(head_row.get("done_sigs") or []))
         if not isinstance(base_row, dict):
             out.extend((rel, sig) for sig in head_done)
@@ -512,6 +594,74 @@ def controls_fired(enforce, planfile, planrec=None):
         not new_held_findings({min(HELD_PLANS): {"status": "held", "open": 1}}),
     )
 
+    # C12 -- THE PR'S PLAN ONLY (operator ruling 2026-10-02, worklist #508defc2). Each plant is driven through clock_scope + split_by_scope + clock_findings, the path main() takes; the queue head is injected through a stand-in for rediacc_hooks.plan_gate.
+    def queue_at(head):
+        return type("_Gate", (), {"queue_head": staticmethod(lambda _root: head)})
+
+    def pa1(gate, base, head_rows):
+        scope, notes, problem = clock_scope(gate, "/nonexistent", base, head_rows)
+        on, off = split_by_scope(
+            open_offenders(head_rows, planfile.FINISHED_STATES, PARKED_EXEMPT), scope
+        )
+        return clock_findings(on), off, notes, problem
+
+    queued = {
+        "h.md": {"status": "draft", "open": 2, "open_sigs": ["h1", "h2"], "done_sigs": []},
+        "q.md": {"status": "draft", "open": 3, "open_sigs": ["q1", "q2", "q3"], "done_sigs": []},
+    }
+    got, off, _notes, _problem = pa1(queue_at("h.md"), dict(queued), queued)
+    caught(
+        "C12a: the queue head plan with an open box was not reported P-A1",
+        "h.md (2)" in " ".join(got),
+    )
+    caught(
+        "C12b: a queued non-head plan the branch did not touch was judged; it must sit off the clock",
+        "q.md" not in " ".join(got) and off == [("q.md", 3)],
+    )
+    ticked_base = {
+        "t.md": {"status": "draft", "open": 2, "open_sigs": ["t1", "t2"], "done_sigs": []}
+    }
+    ticked_head = {"t.md": {"status": "draft", "open": 1, "open_sigs": ["t2"], "done_sigs": ["t1"]}}
+    got, _off, _notes, _problem = pa1(queue_at("h.md"), ticked_base, ticked_head)
+    caught(
+        "C12c: a non-head plan where the branch ticked one box and left another open was not reported P-A1",
+        "t.md (1)" in " ".join(got),
+    )
+    finished_head = {
+        "h.md": {"status": "draft", "open": 0, "open_sigs": [], "done_sigs": ["h1", "h2"]}
+    }
+    got, _off, _notes, problem = pa1(
+        queue_at("h.md"),
+        {"h.md": {"status": "draft", "open": 2, "open_sigs": ["h1", "h2"], "done_sigs": []}},
+        finished_head,
+    )
+    caught("C12d: CONTROL: a fully ticked queue head plan was reported", not got and not problem)
+    got, off, notes, problem = pa1(queue_at(""), dict(queued), queued)
+    caught(
+        "C12e: with no queue head and no ticks, P-A1 either fired or did not say why the clock is empty",
+        not got
+        and not problem
+        and off == [("h.md", 2), ("q.md", 3)]
+        and any("no queue head" in n for n in notes),
+    )
+    caught(
+        "C12f: an unloadable plan_gate gave a silent empty scope instead of a diagnostic",
+        bool(pa1(None, dict(queued), queued)[3]),
+    )
+
+    def raising(_root):
+        raise OSError("planted")
+
+    caught(
+        "C12g: a queue_head that raised gave a silent empty scope instead of a diagnostic",
+        "planted" in pa1(type("_Gate", (), {"queue_head": staticmethod(raising)}), None, queued)[3],
+    )
+    got, _off, notes, _problem = pa1(queue_at("h.md"), None, ticked_head)
+    caught(
+        "C12h: with no base, a plan was put on the clock as ticked, or the reduced scope was not said",
+        not got and any("no base" in n for n in notes),
+    )
+
     # C1 -- THE INVESTIGATION-LESS TICK, the CI third of it. A box that moved open -> done carrying evidence but NO row must red on P-A2.
     got = tick_findings(
         moved_to_done(healthy_base, healthy_head),
@@ -626,6 +776,23 @@ def controls_fired(enforce, planfile, planrec=None):
         "a box on a plan this branch ADDED and ticked was not judged, so a new plan is a way past P-A2",
         moved_to_done({}, {"new.md": {"open_sigs": [], "done_sigs": ["bbbbbbbb"]}})
         == [("new.md", "bbbbbbbb")],
+    )
+    # A FOLDER MOVE IS NOT A NEW PLAN (3490aa3e3: 14 false P-A2 findings on PLAN-b2-emit-matrix).
+    caught(
+        "a plan moved into _done/ had its boxes ticked at the base judged as closed on this branch",
+        moved_to_done(
+            {"agent/plans/PLAN-m.md": {"open_sigs": [], "done_sigs": ["cccccccc"]}},
+            {"agent/plans/_done/PLAN-m.md": {"open_sigs": [], "done_sigs": ["cccccccc"]}},
+        )
+        == [],
+    )
+    caught(
+        "a box open at the base and ticked in the same commit that moved its plan into _done/ was not judged",
+        moved_to_done(
+            {"agent/plans/PLAN-m.md": {"open_sigs": ["dddddddd"], "done_sigs": []}},
+            {"agent/plans/_done/PLAN-m.md": {"open_sigs": [], "done_sigs": ["dddddddd"]}},
+        )
+        == [("agent/plans/_done/PLAN-m.md", "dddddddd")],
     )
     caught(
         "a plan this branch added with a box still OPEN was judged as closed",
@@ -751,6 +918,34 @@ def controls_fired(enforce, planfile, planrec=None):
             "bbbbbbbb",
         )
         is None,
+    )
+    # RE-SPELLED CITATIONS (53ae662a4, box V3): a row keyed to the box's pre-rewrite sig still answers for it; a changed TASK does not, and neither does another plan's row.
+    v3_old = (
+        "V3 Stall removal: `Review Complete` leaves the ruleset's required checks (part of M4's single diff); "
+        "pr-merge.md:108 and pr-babysitter.md:16,110 drop the claude-reviewed marker and thread preconditions"
+    )
+    v3_new = v3_old.replace("pr-merge.md:108", ".claude/commands/pr-merge.md:111").replace(
+        "pr-babysitter.md:16,110", ".claude/agents/pr-babysitter.md:16,122"
+    )
+    v3_rows = [{"plan": "agent/plans/PLAN-v.md", "sig": "7a6762cd", "box": v3_old}]
+    caught(
+        "a ticked box whose citations were only re-spelled lost its investigation row",
+        row_under_any_path(v3_rows, "agent/plans/PLAN-v.md", "4d461643", (), v3_new) is v3_rows[0],
+    )
+    caught(
+        "a row was borrowed for a box whose TASK changed, not just its citation spelling",
+        row_under_any_path(
+            v3_rows,
+            "agent/plans/PLAN-v.md",
+            "4d461643",
+            (),
+            v3_new.replace("drop the claude-reviewed marker", "keep the claude-reviewed marker"),
+        )
+        is None,
+    )
+    caught(
+        "a citation-respelled row was borrowed from a different plan",
+        row_under_any_path(v3_rows, "agent/plans/PLAN-w.md", "4d461643", (), v3_new) is None,
     )
 
     # C11 -- FINDING KEYS. The box C1 plants (no investigation row) must be emitted as `::finding::P-A2:no-row:<rel>#<sig>`, through the real emitter; and the SAME finding judged against a different ticking commit, head and date must keep the same key, or a carried finding would read as new every time the tree moved.
@@ -914,23 +1109,9 @@ def main(argv=None) -> int:
     )
     findings.extend(vacuity_findings(raw_rows, total_boxes, raw_rows))
 
-    n_plans, n_open = in_scope(head_plans, planfile.FINISHED_STATES, PARKED_EXEMPT)
-    findings.extend(
-        clock_findings(open_offenders(head_plans, planfile.FINISHED_STATES, PARKED_EXEMPT))
-    )
-    findings.extend(new_held_findings(head_plans))
-    parked_plans, parked_open = parked_scope(head_plans)
-    if parked_plans == 0:
-        findings.append(
-            "P-A7 THE PARKED EXEMPTION HAS OUTLIVED ITS RULING: no plan is held any more. The operator's "
-            "2026-09-26 ruling made `parked` a temporary warning-only status until the focus plans closed; "
-            "remove PARKED_EXEMPT, parked_scope, P-A7 and in_scope's `exempt` parameter from this gate now."
-        )
-
-    # ---- P-A2/P-A3/P-A4: the forward-only proof over what this branch actually closed.
+    # The base ledger is read ONCE, here, because P-A1's scope (the plans this branch ticked) and the forward-only proof below both read it.
     base = boxes_gate.base_ref() or ""
-    judged = []
-    bound = []
+    base_plans = None
     skipped_reason = ""
     if not base:
         skipped_reason = "no merge-base is available (not a pull_request checkout)"
@@ -941,35 +1122,81 @@ def main(argv=None) -> int:
         elif not (base_doc.get("plans") or {}):
             skipped_reason = "the base predates the box ledger"
         else:
-            judged = moved_to_done(base_doc.get("plans") or {}, head_plans)
-            history = planrec.ledger_history(REPO_ROOT)
-            rows = planrec.read_investigations(REPO_ROOT)
-            bound = bound_by_the_rule(
+            base_plans = base_doc.get("plans") or {}
+
+    # ---- P-A1, scoped to the live PR's plan and the plans this branch ticked (operator ruling 2026-10-02). A plan_gate that cannot be read is a finding, never an empty scope.
+    n_plans, n_open = in_scope(head_plans, planfile.FINISHED_STATES, PARKED_EXEMPT)
+    gate, gate_problem = load_plan_gate()
+    scope, scope_notes, scope_problem = clock_scope(gate, REPO_ROOT, base_plans, head_plans)
+    scope_problem = gate_problem or scope_problem
+    on_clock, off_clock = split_by_scope(
+        open_offenders(head_plans, planfile.FINISHED_STATES, PARKED_EXEMPT), scope
+    )
+    if scope_problem:
+        findings.append(
+            "P-A1 NO SCOPE: %s. Refusing to judge nothing: restore .claude/rediacc_hooks/plan_gate.py "
+            "(queue_head) or agent/plans/QUEUE.md's reader before this gate can tell the PR's plan "
+            "from the queued ones." % scope_problem
+        )
+    else:
+        findings.extend(clock_findings(on_clock))
+    findings.extend(new_held_findings(head_plans))
+    parked_plans, parked_open = parked_scope(head_plans)
+    if parked_plans == 0:
+        findings.append(
+            "P-A7 THE PARKED EXEMPTION HAS OUTLIVED ITS RULING: no plan is held any more. The operator's "
+            "2026-09-26 ruling made `parked` a temporary warning-only status until the focus plans closed; "
+            "remove PARKED_EXEMPT, parked_scope, P-A7 and in_scope's `exempt` parameter from this gate now."
+        )
+
+    # ---- P-A2/P-A3/P-A4: the forward-only proof over what this branch actually closed.
+    judged = []
+    bound = []
+    if base_plans is not None:
+        judged = moved_to_done(base_plans, head_plans)
+        history = planrec.ledger_history(REPO_ROOT)
+        rows = planrec.read_investigations(REPO_ROOT)
+        bound = bound_by_the_rule(
+            judged,
+            lambda rel, sig: planrec.done_commit(history, rel, sig),
+            lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%cI", commit),
+            clock.get("baseline_at"),
+        )
+        findings.extend(
+            tick_findings(
                 judged,
+                lambda rel, sig: _evidence_line(REPO_ROOT, planrec, rel, sig),
+                lambda rel, sig: row_under_any_path(
+                    rows, rel, sig, follow_names(rel), _box_text(REPO_ROOT, planrec, rel, sig)
+                ),
+                lambda kind, token: resolve_here(
+                    planrec, kind, token, absent_submodules(REPO_ROOT)
+                ),
                 lambda rel, sig: planrec.done_commit(history, rel, sig),
                 lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%cI", commit),
+                lambda a, b: planrec._git_ok(REPO_ROOT, "merge-base", "--is-ancestor", a, b),
                 clock.get("baseline_at"),
             )
-            findings.extend(
-                tick_findings(
-                    judged,
-                    lambda rel, sig: _evidence_line(REPO_ROOT, planrec, rel, sig),
-                    lambda rel, sig: row_under_any_path(rows, rel, sig, follow_names(rel)),
-                    lambda kind, token: resolve_here(
-                        planrec, kind, token, absent_submodules(REPO_ROOT)
-                    ),
-                    lambda rel, sig: planrec.done_commit(history, rel, sig),
-                    lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%cI", commit),
-                    lambda a, b: planrec._git_ok(REPO_ROOT, "merge-base", "--is-ancestor", a, b),
-                    clock.get("baseline_at"),
-                )
-            )
+        )
 
     if parked_plans:
         print(
             f"  WARNING: {parked_open} open box(es) in {parked_plans} held plan(s) are off the clock "
             "(operator ruling 2026-09-26, temporary; P-A7 fails once none is held).",
             file=sys.stderr,
+        )
+    # P-A1's scope, printed on red and green alike so a collapsed scope is visible rather than read as a drained corpus.
+    if not scope_problem:
+        listed = ", ".join("%s (%s)" % (rel, why) for rel, why in sorted(scope.items())) or "none"
+        print(
+            f"  P-A1 clock (operator ruling 2026-10-02, the PR's plan only): {len(scope)} plan(s) on the "
+            f"clock: {listed}; {sum(n for _r, n in on_clock)} open box(es) among them"
+        )
+        for note in scope_notes:
+            print(f"  P-A1 scope: {note}")
+        print(
+            f"  INFO: {len(off_clock)} queued plan(s) with {sum(n for _r, n in off_clock)} open box(es) "
+            "wait off the clock for their own PR (not a finding)"
         )
     if findings:
         print(f"{RED}x{NC} plan implementation:", file=sys.stderr)
@@ -982,7 +1209,8 @@ def main(argv=None) -> int:
         return 1
 
     print(
-        f"{GREEN}v{NC} plan implementation: {n_open} in-scope open box(es) across {n_plans} plan(s), no threshold"
+        f"{GREEN}v{NC} plan implementation: no open box on the PR's clock; {n_open} open box(es) across "
+        f"{n_plans} unfinished, unheld plan(s) corpus-wide, no threshold"
     )
     print(
         f"  {raw_rows} plan(s) and {total_boxes} checkbox(es) in {LEDGER_REL}, "
@@ -1018,14 +1246,42 @@ def pre_move_paths(rel, follow_names=()):
     return out
 
 
-def row_under_any_path(rows, rel, sig, follow_names=()):
+#: A cited path's directory prefix and a citation's line suffix (`:12`, `:16,122`, `:353-394`).
+CITE_DIR_RE = re.compile(r"(?:[\w.@~-]+/)+([\w.@~-]+\.[A-Za-z0-9]{1,6})")
+CITE_LINE_RE = re.compile(r"(\.[A-Za-z0-9]{1,6}):\d+(?:[-,]\d+)*")
+
+
+def cite_key(text):
+    """The box text with every citation reduced to its basename: directory prefixes and line suffixes dropped, markdown emphasis removed, whitespace folded. PURE.
+
+    A box whose citations are only RE-SPELLED is the same task. Measured on 0930-1: 53ae662a4 rewrote `pr-merge.md:108` to `.claude/commands/pr-merge.md:111` inside the ticked box V3, which re-signed it (7a6762cd -> 4d461643). Its investigation row kept the old sig, `--plan-investigate` accepts only open boxes, so no verb could ever re-key it and P-A2 named it "closed with no row" for good.
+    """
+    t = re.sub(r"[*_`]+", "", str(text or ""))
+    t = CITE_LINE_RE.sub(r"\1", CITE_DIR_RE.sub(r"\1", t))
+    return " ".join(t.split()).lower()
+
+
+def row_under_any_path(rows, rel, sig, follow_names=(), box_text=""):
     """The LATEST investigation row for box `sig` under any path the plan has had, or None.
 
     LATEST across all of them, for the reason `wl_planrec.investigation_for` gives for taking the latest: an earlier row must not outrank a later one. The sig must match exactly, so a different plan's box can never be borrowed.
+
+    THE ONE FALLBACK: with no exact-sig row, a row of the SAME plan whose recorded box text equals this box's text up to citation spelling (`cite_key`) answers for it. Rows record the first 200 characters of the box, so the comparison is over the shorter of the two keys' common prefix length, never less than 80 characters.
     """
     paths = set(pre_move_paths(rel, follow_names))
     hits = [r for r in rows if r.get("sig") == sig and r.get("plan") in paths]
-    return hits[-1] if hits else None
+    if hits or not box_text:
+        return hits[-1] if hits else None
+    want = cite_key(box_text)
+    loose = []
+    for r in rows:
+        if r.get("plan") not in paths:
+            continue
+        got = cite_key(r.get("box") or "")
+        n = min(len(got), len(want))
+        if n >= 80 and got[:n] == want[:n]:
+            loose.append(r)
+    return loose[-1] if loose else None
 
 
 _FOLLOW: dict[str, tuple[str, ...]] = {}
@@ -1129,6 +1385,20 @@ def registration_findings(boxes_gate):
             "P-A5 check_plan_boxes._added_plans is gone, so G-A4 (new debt must name an Owner) cannot be running"
         )
     return out
+
+
+def _box_text(root, planrec, rel, sig):
+    """The text of the ticked box `sig` in the plan at `rel`, or ""."""
+    try:
+        with open(os.path.join(root, rel), encoding="utf-8", errors="replace") as fh:
+            lines = fh.read().splitlines()
+    except OSError:
+        return ""
+    for raw in lines:
+        m = planrec.BOX_LINE_RE.match(raw)
+        if m and planrec.box_sig(re.sub(r"[*_`]+", "", m.group(2)).strip()) == sig:
+            return m.group(2)
+    return ""
 
 
 def _evidence_line(root, planrec, rel, sig):
