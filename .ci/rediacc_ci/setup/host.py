@@ -213,7 +213,7 @@ def node_toolchain(ctx: Ctx) -> int:
             if ctx.which("npm"):
                 npm = ctx.run(["npm", "-v"], timeout=30).out.strip()
                 ctx.info("Node.js %s and npm %s already present" % (current, npm))
-                return 0
+                return _npm_to_pin(ctx, npm)
             ctx.warn("node %s is present but npm is NOT on PATH." % current)
         else:
             ctx.warn("Node.js %s is older than the required %s." % (current or "unknown", minimum))
@@ -270,6 +270,43 @@ def node_toolchain(ctx: Ctx) -> int:
         return 1
 
     return _node_install(ctx, major=major, os_name=os_name, arch=arch, minimum=minimum)
+
+
+def npm_pin(ctx: Ctx) -> str:
+    """The exact npm `.devcontainer/toolchain.env` pins, read through the one pins reader. Raises `toolchain.PinError`."""
+    return toolchain.pin_for("npm", toolchain.load_pins(toolchain.pins_file(ctx.root)))
+
+
+def _npm_to_pin(ctx: Ctx, have: str) -> int:
+    """Bring the active node's npm to the pinned version. 0 ok, 1 the caller must stop.
+
+    ANY npm USED TO PASS once node met the floor, so a host on 11.19.0 under a pin of 11.20.0 wrote lockfiles `check:ci-lockfile` then refused. The install is a global one into the prefix of the node on PATH, which is the user's own prefix whether that is the private Node setup installs or a manager's (nvm and the like); `--ignore-scripts` is the repo's supply-chain rule. The pin is chosen in-repo, so `.ci/config/release-age.json` (the window for dependencies pulled in from outside) does not apply. The version is re-read afterwards and a mismatch is an error, never a quiet success.
+    """
+    try:
+        want = npm_pin(ctx)
+    except toolchain.PinError as exc:
+        ctx.error(str(exc))
+        return 1
+    if have == want:
+        return 0
+    ctx.warn(
+        "npm %s is not the pinned %s; installing the pin into this node's prefix." % (have, want)
+    )
+    result = ctx.run(["npm", "install", "-g", "npm@%s" % want, "--ignore-scripts"], timeout=300)
+    if result.rc != 0:
+        ctx.error(
+            "npm install -g npm@%s failed (rc=%d): %s" % (want, result.rc, result.err.strip())
+        )
+        return 1
+    after = ctx.run(["npm", "-v"], timeout=30).out.strip()
+    if after != want:
+        ctx.error(
+            "npm is %s after installing npm@%s; the first npm on PATH is not the one the install wrote to."
+            % (after or "unknown", want)
+        )
+        return 1
+    ctx.info("npm %s installed (was %s)" % (want, have))
+    return 0
 
 
 def _os_unsupported(system: str) -> bool:

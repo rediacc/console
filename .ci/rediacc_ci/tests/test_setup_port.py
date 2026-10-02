@@ -326,3 +326,98 @@ def test_check_without_a_start_time_prints_no_suffix(
     ctx = _RecordingCtx(tmp_path)
     machine.check(ctx, {"DEVBOX_IMAGE": "img"})
     assert "checked in" not in ctx.lines[-1]
+
+
+class _NpmCtx(_RecordingCtx):
+    """node 24.21.0 and an npm that reports `npm_version`; an install moves it to `installed` when it succeeds."""
+
+    def __init__(
+        self, root: pathlib.Path, npm_version: str, *, install_rc: int = 0, installed: str = ""
+    ) -> None:
+        super().__init__(root)
+        self.env = {"NODE_VERSION_MIN": "24.11.0"}
+        self.npm_version = npm_version
+        self.install_rc = install_rc
+        self.installed = installed
+        self.calls: list[list[str]] = []
+        self.errors: list[str] = []
+
+    def error(self, message: str) -> None:
+        self.errors.append(message)
+
+    def which(self, name: str) -> str | None:
+        return "/usr/bin/" + name if name in {"node", "npm"} else None
+
+    def run(
+        self,
+        argv: list[str],
+        *,
+        timeout: int | None = None,
+        stdin_text: str | None = None,
+    ) -> Result:
+        del timeout, stdin_text
+        self.calls.append(argv)
+        if argv[0] == "node":
+            return Result(0, "v24.21.0\n", "")
+        if argv[:3] == ["npm", "install", "-g"]:
+            if self.install_rc == 0 and self.installed:
+                self.npm_version = self.installed
+            return Result(self.install_rc, "", "EACCES" if self.install_rc else "")
+        return Result(0, self.npm_version + "\n", "")
+
+
+def _pin_npm(root: pathlib.Path, version: str) -> None:
+    (root / ".devcontainer").mkdir()
+    (root / ".devcontainer" / "toolchain.env").write_text("NPM_VERSION=%s\n" % version)
+
+
+def test_check_reports_npm_drift_from_the_pin_as_pending(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    _pin_npm(tmp_path, "11.20.0")
+    monkeypatch.setattr(machine.bridge, "call", lambda *_a: 0)
+    monkeypatch.setattr(
+        machine,
+        "_devbox_facts",
+        lambda *_a: {"worktree": str(tmp_path), "image": "1", "running": "1"},
+    )
+    monkeypatch.setattr(machine, "_port_block_row", lambda *_a: "  port block  1-10")
+    monkeypatch.setattr(machine.githooks, "check_row", lambda _root: ("  git hooks   ok", 0))
+    monkeypatch.setattr(machine.host, "_git_global", lambda *_a: "dev@example.com")
+    ctx = _NpmCtx(tmp_path, "11.19.0")
+    machine.check(ctx, {"DEVBOX_IMAGE": "img", "NODE_VERSION_MIN": "24.11.0"})
+    assert "  npm         11.19.0 (pinned 11.20.0) STALE" in ctx.lines, ctx.lines
+    # gh and the compiler are MISSING (2); the stale npm is one more.
+    assert ctx.lines[-1].startswith("WARN 3 item(s)"), ctx.lines[-1]
+    assert not [c for c in ctx.calls if c[:2] == ["npm", "install"]], ctx.calls
+
+
+def test_setup_installs_the_pinned_npm_and_verifies_it(tmp_path: pathlib.Path) -> None:
+    _pin_npm(tmp_path, "11.20.0")
+    ctx = _NpmCtx(tmp_path, "11.19.0", installed="11.20.0")
+    assert host.node_toolchain(ctx) == 0
+    assert ["npm", "install", "-g", "npm@11.20.0", "--ignore-scripts"] in ctx.calls
+    assert ctx.npm_version == "11.20.0"
+
+
+def test_setup_leaves_an_npm_that_already_matches_the_pin(tmp_path: pathlib.Path) -> None:
+    _pin_npm(tmp_path, "11.20.0")
+    ctx = _NpmCtx(tmp_path, "11.20.0")
+    assert host.node_toolchain(ctx) == 0
+    assert not [c for c in ctx.calls if c[:2] == ["npm", "install"]], ctx.calls
+
+
+def test_setup_fails_loudly_when_the_npm_install_fails(tmp_path: pathlib.Path) -> None:
+    _pin_npm(tmp_path, "11.20.0")
+    ctx = _NpmCtx(tmp_path, "11.19.0", install_rc=1)
+    assert host.node_toolchain(ctx) == 1
+    assert any("failed" in e for e in ctx.errors), ctx.errors
+
+
+def test_setup_fails_loudly_when_npm_is_still_off_the_pin_after_installing(
+    tmp_path: pathlib.Path,
+) -> None:
+    _pin_npm(tmp_path, "11.20.0")
+    ctx = _NpmCtx(tmp_path, "11.19.0", installed="11.19.0")
+    assert host.node_toolchain(ctx) == 1
+    assert any("after installing" in e for e in ctx.errors), ctx.errors
