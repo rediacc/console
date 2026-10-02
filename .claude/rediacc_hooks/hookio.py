@@ -297,12 +297,24 @@ _GIT_GLOBAL_OPTS = (
 _GIT_PUSH_RE = re.compile(r"\bgit" + _GIT_GLOBAL_OPTS + r"\s+push\b")
 
 
+_QUOTED_SPAN_RE = re.compile(r"""(-c\s+)?("[^"]*"|'[^']*')""")
+_MENTIONS_PUSH_RE = re.compile(r"git\s+push")
+
+
 def normalize_git_push(cmd):
     """`git -C <dir> push ...` (and the other global-option spellings) rewritten to `git push ...`.
 
     The post-bash push hooks look for the literal `git push`, so `git -C /home/x/console push -q origin b` never matched: on 2026-10-02 a push spelled that way armed no CI watcher (arm_ci_watch.py) and cancelled no older run (cancel_old_ci.py). The `-C` directory does not need to survive: each hook judges the session's own checkout (arm_ci_watch then checks `origin/<branch> == HEAD`, so a push of another repo still arms nothing).
     """
-    return _GIT_PUSH_RE.sub("git push", cmd or "")
+    # Deferred: hookio is imported far more widely than this one function needs shellscan.
+    from rediacc_hooks import shellscan  # noqa: PLC0415
+
+    # Text that is not a command bash runs is not a push (#00ea15c1, 2026-10-02): a heredoc BODY (a commit message or a file written with `cat <<EOF`) and a quoted string that merely mentions `git push` (`git commit -m "... git push ..."`) both matched, so a commit could arm a watch or cancel a run. A quoted span after `-c` stays: `sh -c "git push"` runs it.
+    text = _GIT_PUSH_RE.sub("git push", shellscan._strip_heredocs(cmd or ""))
+    return _QUOTED_SPAN_RE.sub(
+        lambda m: m.group(0) if m.group(1) or not _MENTIONS_PUSH_RE.search(m.group(2)) else '""',
+        text,
+    )
 
 
 def grep_q_line(pattern, text, ignore_case=False, fixed=False):
