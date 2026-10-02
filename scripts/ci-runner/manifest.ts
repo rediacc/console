@@ -2129,6 +2129,9 @@ export const GATES: readonly GateSpec[] = [
     // NO `paths:` DELIBERATELY. Whether a directory is overdue is a property of the CALENDAR, not of any diff, so an entry without paths is always selected; a path table here would make `--changed` drop the gate on every PR that does not happen to touch agent/, which is the one condition under which it does not fire. Lane quality-branch for its neighbours' reason: that job
     // has no `- id: setup`, so per invariant 11 the step is hand-written rather than emitted into a gate-bind region.
     id: 'check:ci-agent-session-archival',
+    env: {
+      GH_TOKEN: '${{ github.token }}',
+    },
     run: 'npm run check:ci-agent-session-archival',
     gate: true,
     leaves: ['.ci/scripts/quality/check_agent_session_archival.py'],

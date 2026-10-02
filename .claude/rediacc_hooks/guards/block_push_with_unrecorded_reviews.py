@@ -96,6 +96,8 @@ def _branch_world(path, reviewed):
             text=True,
             env=env,
         ).stdout.strip()
+        if not sha:
+            raise RuntimeError("git rev-parse HEAD printed nothing in the fixture repo")
         review = rv.Review(
             sha=sha,
             subject="fix(x): y",

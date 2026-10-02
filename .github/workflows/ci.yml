@@ -1914,7 +1914,11 @@ jobs:
         with:
           sparse-checkout: |
             .ci/rediacc_ci
+            .github/actions
             agent/reviews
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-slim
       - name: Apply PR labels from the per-commit reviews
         env:
           GH_TOKEN: ${{ github.token }}

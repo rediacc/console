@@ -68,6 +68,7 @@ import _cipath  # noqa: F401
 from rediacc_ci import controls, gitx, paths
 from rediacc_ci.controls import plant
 from rediacc_ci.quality import agent_session_archival as ASA
+from rediacc_ci.well_known import GH_REPO
 
 CONTROL_FLOOR = 26
 
@@ -391,7 +392,7 @@ def _current_branch(root: pathlib.Path) -> str:
 
 def _gh_merged_at(branch: str) -> float | None:
     """When `branch`'s PR merged (the newest, when there are several), or None when none did. Raises CannotRunError when GitHub cannot be asked."""
-    repo = os.environ.get("GITHUB_REPOSITORY") or "rediacc/console"
+    repo = os.environ.get("GITHUB_REPOSITORY") or GH_REPO
     try:
         done = subprocess.run(
             [
