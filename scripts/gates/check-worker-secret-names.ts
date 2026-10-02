@@ -356,9 +356,7 @@ for (const { file, floor } of BUILDERS) {
   for (const k of keys) {
     if (!schema.has(k)) {
       const line =
-        text
-          .split('\n')
-          .findIndex((l) => new RegExp(`^\\s+(?:${k}:\\s*\\$|"${k}":)`).test(l)) + 1;
+        text.split('\n').findIndex((l) => new RegExp(`^\\s+(?:${k}:\\s*\\$|"${k}":)`).test(l)) + 1;
       problems.push(
         `    ${file}:${line}  pushes ${k}, which ${SCHEMA} does not declare — zod will STRIP it silently`
       );

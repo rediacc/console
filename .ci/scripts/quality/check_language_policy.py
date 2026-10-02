@@ -91,7 +91,8 @@ VALIDATOR = pathlib.Path(
 # WIDENED 2026-09-21 BY OPERATOR RULING, and a widening is its own wave rather than a drain. `scripts/ops/`, `scripts/drills/` and `scripts/dev/` hold 17 tracked bash files (7,244 lines) that source six libraries under `.ci/scripts/lib/`, `.ci/lib/` and `.ci/scripts/test/lib/`. While those callers sat outside the corpus the libraries they source could not retire: porting a
 # library whose only remaining consumers are un-scoped bash means either breaking them or granting the library a permanent exemption for a reason that is really "nothing scopes the caller". Naming the three directories here makes the callers debt, which is what a drain can reach. Their 17 files enter `.ci/config/language-policy-baseline.json` FROZEN in the same change, so this
 # widening refuses a NEW bash file under them from today while porting none of them.
-COVERED_ROOTS = (".ci", ".claude", "scripts/ops", "scripts/drills", "scripts/dev")
+# `scripts/drills` left with its last bash file (882658c69).
+COVERED_ROOTS = (".ci", ".claude", "scripts/ops", "scripts/dev")
 
 KEY = "bashFiles"
 

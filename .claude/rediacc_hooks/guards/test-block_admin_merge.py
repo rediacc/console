@@ -22,6 +22,16 @@ HERE = pathlib.Path(__file__).resolve()
 DISPATCH = str(HERE.parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_admin_merge"]
 
+# The well-known repo slugs, read from .ci/config/well-known.env by the CI reader, loaded by file like runtmp below (check:ci-literal-sources forbids spelling them).
+_WK = importlib.util.spec_from_file_location(
+    "well_known_for_suite", HERE.parents[3] / ".ci" / "rediacc_ci" / "well_known.py"
+)
+if _WK is None or _WK.loader is None:
+    raise SystemExit("%s: .ci/rediacc_ci/well_known.py is missing" % __file__)
+well_known = importlib.util.module_from_spec(_WK)
+_WK.loader.exec_module(well_known)
+GH_REPO, RENET_REPO = well_known.GH_REPO, well_known.RENET_REPO
+
 _RUNTMP = importlib.util.spec_from_file_location(
     "runtmp", HERE.parents[3] / ".ci" / "rediacc_ci" / "runtmp.py"
 )
@@ -101,7 +111,7 @@ STUB_DIR = pathlib.Path(tempfile.mkdtemp(prefix="stub-", dir=RUN_TMP))
 (STUB_DIR / "gh").write_text(GH_STUB, encoding="utf-8")
 (STUB_DIR / "gh").chmod(0o755)
 
-MERGE = "gh pr merge 7 --repo rediacc/console --rebase --auto"
+MERGE = "gh pr merge 7 --repo %s --rebase --auto" % GH_REPO
 
 CASES = [
     # (name, command, FX_BODY or None for an unreadable body, expected verdict)
@@ -130,9 +140,19 @@ CASES = [
     ),
     ("a Plan line naming no plan path", MERGE, "Plan: the one about merges", "plan"),
     ("a plan that does not exist", MERGE, "Plan: agent/plans/PLAN-fx-missing.md", "plan"),
-    ("an immediate merge is judged too", "gh pr merge 7 --repo rediacc/console --rebase", "Plan: %s" % PLAN_OPEN, "plan"),
+    (
+        "an immediate merge is judged too",
+        "gh pr merge 7 --repo %s --rebase" % GH_REPO,
+        "Plan: %s" % PLAN_OPEN,
+        "plan",
+    ),
     # A submodule PR names no plan; the gate is the console PR's.
-    ("a submodule PR is not plan-gated", "gh pr merge 7 --repo rediacc/renet --rebase --auto", "", "past"),
+    (
+        "a submodule PR is not plan-gated",
+        "gh pr merge 7 --repo %s --rebase --auto" % RENET_REPO,
+        "",
+        "past",
+    ),
 ]
 
 
@@ -175,7 +195,9 @@ for name, command, body, want in CASES:
 print()
 # ANTI-VACUITY: a gate that answered one way on every input compared against a constant.
 if len(verdicts) < 2:
-    print("*** FAIL *** every case got %s: the suite compared the guard against a constant" % verdicts)
+    print(
+        "*** FAIL *** every case got %s: the suite compared the guard against a constant" % verdicts
+    )
     fails += 1
 print("%d case(s)" % len(CASES))
 print("FAILURES: %d" % fails)

@@ -143,9 +143,7 @@ def test_check_refuses_a_branch_that_is_not_checked_out(tmp_path):
 
 
 def test_merge_arm_refuses_the_open_finding_and_passes_the_clean_branch(tmp_path):
-    reasons, lines = merge_guard.review_refusals(
-        _world(tmp_path / "a", "open"), BRANCH, GH_REPO
-    )
+    reasons, lines = merge_guard.review_refusals(_world(tmp_path / "a", "open"), BRANCH, GH_REPO)
     assert reasons == ["blocking"], (reasons, lines)
     assert any("OPEN [high]" in line for line in lines), lines
     reasons, lines = merge_guard.review_refusals(
@@ -161,9 +159,7 @@ def test_merge_arm_fails_closed_when_the_reviewer_does_not_import(tmp_path, monk
 
 
 def test_merge_arm_fails_closed_on_an_unreadable_head_branch(tmp_path):
-    reasons, _lines = merge_guard.review_refusals(
-        _world(tmp_path, "resolved"), "", GH_REPO
-    )
+    reasons, _lines = merge_guard.review_refusals(_world(tmp_path, "resolved"), "", GH_REPO)
     assert reasons, "an empty headRefName must refuse, never pass"
 
 
