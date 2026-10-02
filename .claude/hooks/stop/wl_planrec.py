@@ -1228,7 +1228,8 @@ def refresh_index(root, plan_records, plan_box_census):
     """
     import wl_planindex as PI  # noqa: PLC0415 -- wl_store imports wl_planindex lazily; keep this module's import light
 
-    recs = plan_records(root)
+    # tracked_only (#0b93d454): agent/INDEX.md is a COMMITTED render that a clean checkout compares for equality, so another session's untracked plan in a shared tree must not enter it.
+    recs = plan_records(root, tracked_only=True)
     want = render_index(index_rows(root, recs)) + PI.render_census(
         PI.census_rows(root, plan_records=lambda _r: recs, plan_box_census=plan_box_census)
     )

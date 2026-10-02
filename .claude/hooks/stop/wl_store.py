@@ -37,6 +37,7 @@ import os
 import pathlib
 import re
 import socket
+import subprocess
 import tempfile
 import time
 from typing import Any
@@ -285,16 +286,53 @@ def _flat_legacy_fallback(path):
     return ""
 
 
-def agent_plan_files(root):
+def _git_tracked_set(root):
+    """{relpath} git tracks under `agent/` at `root`, or None when `root` is not a checkout's top level.
+
+    `git ls-files` reads the INDEX, so a plan that has been `git add`ed but not yet committed is in the set: it is part of the next commit, and the committed render has to count it.
+
+    None, never an empty set, outside a checkout. A tmp-dir fixture and a fixture planted inside some other checkout have no tracked set of their own, and answering "nothing is tracked" there would empty every existing control's corpus. The caller falls back to the glob instead.
+    """
+    try:
+        top = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if (
+            top.returncode != 0
+            or pathlib.Path(top.stdout.strip()).resolve() != pathlib.Path(root).resolve()
+        ):
+            return None
+        out = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "-z", "--", "agent"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if out.returncode != 0:
+        return None
+    return {rel for rel in out.stdout.split("\0") if rel}
+
+
+def agent_plan_files(root, tracked_only=False):
     """Every plan file under `agent/`, name-sorted, STUBS EXCLUDED.
+
+    `tracked_only=True` IS FOR THE COMMITTED RENDERS (`agent/INDEX.md` and its census, `.ci/config/plan-boxes.json`) and nothing else. Those files are compared for equality in a clean CI checkout, which holds only what git tracks; a render that counted another session's untracked draft wrote 180 plans locally against 179 in CI and failed R8 there (measured three times on 2026-10-02, worklist #0b93d454). The Stop hook's live view keeps the default, because a plan a session is drafting is exactly what it should see. Outside a git checkout the glob answers both, for the reason `_git_tracked_set` gives.
 
     THE ONE ENUMERATION. `wl_checks.plan_records` and `wl_planindex.plan_stats` both call it, so the slow path that reads plans and the fast path that stats them have no way to glob different sets -- which would make the census permanently STALE, the failure `wl_planindex.plan_dir`'s docstring already names for a hardcoded second literal.
 
     Sorted by PATH rather than by folder so the order is stable across the migration: a plan that moves from `agent/` to `agent/plans/` changes position once, at the move, and never again.
     """
+    tracked = _git_tracked_set(root) if tracked_only else None
     seen = {}
     for directory in agent_plan_dirs(root):
         for path in directory.glob(PLAN_GLOB):
+            if tracked is not None and path.relative_to(root).as_posix() not in tracked:
+                continue
             if path.is_file() and not is_plan_stub(path):
                 seen[str(path)] = path
     return [seen[key] for key in sorted(seen)]

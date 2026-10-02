@@ -180,7 +180,8 @@ def scan(root: Path, prior: dict | None = None) -> dict:
     """{relpath: {status, owner, folder, moved_at, open, done, task_sigs}} per plan."""
     carried = prior_rows() if prior is None else prior
     out: dict[str, dict] = {}
-    for rel, status, _lines in CK.plan_records(root):
+    # TRACKED PLANS ONLY: the ledger is compared in a clean CI checkout, so another session's untracked draft must not become a row CI cannot see (worklist #0b93d454). `wl_store.agent_plan_files` carries the rule and its outside-a-checkout fallback.
+    for rel, status, _lines in CK.plan_records(root, tracked_only=True):
         text = (root / rel).read_text(encoding="utf-8", errors="replace")
         open_t, done_t = PF.plan_boxes(text)
         out[rel] = {
@@ -209,7 +210,7 @@ def raw_box_lines(root: Path) -> int:
     it counts the fenced sample and the prose too -- so it is only ever compared as `plainly non-zero`, never for equality.
     """
     n = 0
-    for rel, _s, _l in CK.plan_records(root):
+    for rel, _s, _l in CK.plan_records(root, tracked_only=True):
         for ln in (root / rel).read_text(encoding="utf-8", errors="replace").splitlines():
             if PF.OPEN_BOX_LINE.match(ln) or PF.DONE_BOX_LINE.match(ln):
                 n += 1

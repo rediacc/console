@@ -801,15 +801,17 @@ def plan_owner(root, rel):
     return hit.group(1) if hit else None
 
 
-def plan_records(root):
+def plan_records(root, tracked_only=False):
     """[(relpath, status, lines)] for every plan under agent/, folders included.
+
+    `tracked_only` is passed straight to `wl_store.agent_plan_files`: True for a committed render, the default for the Stop hook's live view. That function's docstring says why the two differ.
 
     status is the parsed value lowercased, or 'UNKNOWN' when no Status line sits in the first PLAN_HEADER_LINES lines. Newest mtime first. Empty list when the directory is absent, so callers never have to know whether this project uses the convention.
 
     THE GLOB IS `wl_store.agent_plan_files` AND NOT A LITERAL HERE. A plan lives in one of four folders since the tree-lifecycle change, and a pointer left behind by a move is dropped there rather than filtered here, so this function, the census and the box ledger cannot disagree about what the corpus is.
     """
     rows = []
-    for f in S.agent_plan_files(root):
+    for f in S.agent_plan_files(root, tracked_only=tracked_only):
         try:
             text = f.read_text(encoding="utf-8", errors="replace")
             mtime = f.stat().st_mtime
@@ -981,7 +983,8 @@ def plans_block(root):
     if not stats:
         return "", []
     rows, state, detail = PI.index_census(root, stats=stats)
-    if state != PI.CENSUS_FRESH:
+    # A fresh census omits untracked drafts by design (#0b93d454); the live listing still shows them, read the slow way, with no stale banner.
+    if state != PI.CENSUS_FRESH or {r[0] for r in rows} != {s[0] for s in stats}:
         rows = PI.census_rows(root, plan_records=plan_records, plan_box_census=plan_box_census)
     head = PI.banner(state, detail, len(stats))
     # NEWEST FIRST, restored from the `stat` pass rather than from the committed file. `plan_records` has always sorted this way and `plan_status_excerpt` takes `live[0]` as "the newest live plan", so an index that dropped mtime would silently change which plan a compacted session gets excerpted. The sort is stable, so the by-path order inside an mtime tie is the same order
