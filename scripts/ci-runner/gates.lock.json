@@ -2206,6 +2206,9 @@
   },
   {
     "id": "check:ci-agent-session-archival",
+    "env": {
+      "GH_TOKEN": "${{ github.token }}"
+    },
     "run": "npm run check:ci-agent-session-archival",
     "gate": true,
     "leaves": [

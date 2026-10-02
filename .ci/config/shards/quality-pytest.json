@@ -379,7 +379,8 @@
         "pytest:.ci/rediacc_ci/tests/test_testrun_linux_packages.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_start_account.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_license.py",
-        "pytest:.ci/rediacc_ci/tests/test_ci_diagnose.py"
+        "pytest:.ci/rediacc_ci/tests/test_ci_diagnose.py",
+        "pytest:.ci/rediacc_ci/tests/test_review_pr_labels.py"
       ]
     },
     {
@@ -568,7 +569,8 @@
         "pytest:.ci/rediacc_ci/tests/test_testrun_rdc_update.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_unit.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_bash_lib_migration_complete.py",
-        "pytest:.ci/rediacc_ci/tests/test_twin_goldens.py"
+        "pytest:.ci/rediacc_ci/tests/test_twin_goldens.py",
+        "pytest:.claude/rediacc_hooks/tests/test_review_commit_hook.py"
       ]
     }
   ]

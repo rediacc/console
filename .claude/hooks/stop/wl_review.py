@@ -310,7 +310,7 @@ class Review:
 
 
 def normalise_claim(text, cap=CLAIM_MAX):
-    text = str(text or "").replace("—", "--").replace("–", "--")
+    text = str(text or "").replace("\u2014", "--").replace("\u2013", "--")
     text = re.sub(r"\s+", " ", text).strip()
     return text[:cap]
 
@@ -940,13 +940,23 @@ def claude_reviewer(prompt, cfg, log=print):
         "--max-budget-usd",
         str(cfg["budget_usd"]),
     ]
+    import wl_judge  # noqa: PLC0415 -- same reason as wl_proc above
+
+    def _call():
+        return wl_proc.run(argv, timeout=int(cfg["timeout_s"]), env=env, cwd=str(workdir))
+
     why = ""
     for attempt in (1, 2):
         started = time.time()
-        proc = wl_proc.run(argv, timeout=int(cfg["timeout_s"]), env=env, cwd=str(workdir))
-        took = time.time() - started
+        proc = _call()
         if proc.timed_out:
             return None, "model call timed out after %ss" % cfg["timeout_s"]
+        if proc.returncode not in (0, wl_proc.SPAWN_FAILED_RC):
+            # A schema exhaustion (exit 1, `error_max_structured_output_retries`) is one sample failing, retried once by the shared helper every schema-constrained call site routes through (check:ci-schema-call-sites); any other non-zero exit is reported with the helper's explanation of it, as at the other sites.
+            proc, retry_why = wl_judge.retry_schema_exhaustion("commit review", proc, _call)
+            if proc is None:
+                return None, normalise_claim(retry_why, 300)
+        took = time.time() - started
         try:
             envelope = json.loads(proc.stdout or "")
         except ValueError:
