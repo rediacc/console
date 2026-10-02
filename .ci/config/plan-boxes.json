@@ -116,30 +116,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-b2-emit-matrix.md": {
-      "status": "partially",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "2026-09-21",
-      "open": 0,
-      "done": 13,
-      "open_sigs": [],
-      "done_sigs": [
-        "147d7736",
-        "1ac9f622",
-        "305684a3",
-        "38408011",
-        "3b4ee7c6",
-        "3c1835b5",
-        "58c11652",
-        "92a973ec",
-        "a43698e8",
-        "c0d7264c",
-        "d4905d66",
-        "ee72707e",
-        "f2c3441f"
-      ]
-    },
     "agent/plans/PLAN-backup-list-executor-fix.md": {
       "status": "compacted",
       "owner": "97604f47",
@@ -292,36 +268,6 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
-    },
-    "agent/plans/PLAN-ci-gate-write-taint-scanners.md": {
-      "status": "active",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 19,
-      "open_sigs": [],
-      "done_sigs": [
-        "18b13e64",
-        "1c25eaa3",
-        "2253739c",
-        "34d6cfda",
-        "389f9f5e",
-        "3e197056",
-        "54c044e5",
-        "5e723e11",
-        "5ea691d6",
-        "630e9afc",
-        "787910e8",
-        "82248a22",
-        "bb8f82e2",
-        "bd9985aa",
-        "c3a69a36",
-        "cb1088d8",
-        "d54d28ed",
-        "e0c269f4",
-        "ec86975c"
-      ]
     },
     "agent/plans/PLAN-ci-trace-no-pr-branch.md": {
       "status": "compacted",
@@ -860,45 +806,6 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
-    },
-    "agent/plans/PLAN-parallel-writer-roster.md": {
-      "status": "ready",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 28,
-      "open_sigs": [],
-      "done_sigs": [
-        "098e1f06",
-        "0f563652",
-        "1abdbc1e",
-        "1eba97fd",
-        "2d0a5faf",
-        "2dba3d29",
-        "36042f18",
-        "37c3a51d",
-        "57436fda",
-        "6594b374",
-        "68be51db",
-        "69fbc830",
-        "6a5511bb",
-        "71fb7723",
-        "85489441",
-        "86ed52a8",
-        "893aaa35",
-        "96204989",
-        "9d4a6a18",
-        "9da6913e",
-        "a17a8400",
-        "d0c74ee1",
-        "d7e248eb",
-        "df1a5955",
-        "eea83d0e",
-        "f818ed1e",
-        "fe1334a2",
-        "fe9599e6"
-      ]
     },
     "agent/plans/PLAN-plan-dependencies.md": {
       "status": "held",
@@ -1453,39 +1360,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-stop-hook-continuity.md": {
-      "status": "executing",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 22,
-      "open_sigs": [],
-      "done_sigs": [
-        "01767e01",
-        "02fb0d3e",
-        "06c523a4",
-        "0cadae94",
-        "2f786002",
-        "3805f479",
-        "40612819",
-        "4b9acaad",
-        "5df69695",
-        "637e15e6",
-        "713c4774",
-        "77b43ac2",
-        "7fab5d30",
-        "921ba40d",
-        "99c04585",
-        "a05ce080",
-        "bbdd6819",
-        "e65befae",
-        "ebf667ac",
-        "f2999444",
-        "f7701196",
-        "ffe447ad"
-      ]
-    },
     "agent/plans/PLAN-stop-hook-focus-mode.md": {
       "status": "held",
       "owner": "d778be9d",
@@ -1504,26 +1378,6 @@
         "ac377422",
         "cac06e80",
         "cc299bc2"
-      ]
-    },
-    "agent/plans/PLAN-stop-hook-overhaul.md": {
-      "status": "ready",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "2026-09-21",
-      "open": 0,
-      "done": 9,
-      "open_sigs": [],
-      "done_sigs": [
-        "071fec08",
-        "0a3321f6",
-        "18dd4873",
-        "6e5642b2",
-        "823d5963",
-        "909cdb2d",
-        "afcec761",
-        "bcc0098f",
-        "ea9dc74a"
       ]
     },
     "agent/plans/PLAN-stop-hook-refactor-enforcement.md": {
@@ -2097,6 +1951,30 @@
         "d301decb"
       ]
     },
+    "agent/plans/_done/PLAN-b2-emit-matrix.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-02",
+      "open": 0,
+      "done": 13,
+      "open_sigs": [],
+      "done_sigs": [
+        "147d7736",
+        "1ac9f622",
+        "305684a3",
+        "38408011",
+        "3b4ee7c6",
+        "3c1835b5",
+        "58c11652",
+        "92a973ec",
+        "a43698e8",
+        "c0d7264c",
+        "d4905d66",
+        "ee72707e",
+        "f2c3441f"
+      ]
+    },
     "agent/plans/_done/PLAN-bgsweep-orphan-shells.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -2177,6 +2055,36 @@
         "ad32ef87",
         "b3624895",
         "d87cd336"
+      ]
+    },
+    "agent/plans/_done/PLAN-ci-gate-write-taint-scanners.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-02",
+      "open": 0,
+      "done": 19,
+      "open_sigs": [],
+      "done_sigs": [
+        "18b13e64",
+        "1c25eaa3",
+        "2253739c",
+        "34d6cfda",
+        "389f9f5e",
+        "3e197056",
+        "54c044e5",
+        "5e723e11",
+        "5ea691d6",
+        "630e9afc",
+        "787910e8",
+        "82248a22",
+        "bb8f82e2",
+        "bd9985aa",
+        "c3a69a36",
+        "cb1088d8",
+        "d54d28ed",
+        "e0c269f4",
+        "ec86975c"
       ]
     },
     "agent/plans/_done/PLAN-ci-pr-head-ref-trigger-resolution.md": {
@@ -2878,6 +2786,45 @@
         "daf83f5c"
       ]
     },
+    "agent/plans/_done/PLAN-parallel-writer-roster.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-02",
+      "open": 0,
+      "done": 28,
+      "open_sigs": [],
+      "done_sigs": [
+        "098e1f06",
+        "0f563652",
+        "1abdbc1e",
+        "1eba97fd",
+        "2d0a5faf",
+        "2dba3d29",
+        "36042f18",
+        "37c3a51d",
+        "57436fda",
+        "6594b374",
+        "68be51db",
+        "69fbc830",
+        "6a5511bb",
+        "71fb7723",
+        "85489441",
+        "86ed52a8",
+        "893aaa35",
+        "96204989",
+        "9d4a6a18",
+        "9da6913e",
+        "a17a8400",
+        "d0c74ee1",
+        "d7e248eb",
+        "df1a5955",
+        "eea83d0e",
+        "f818ed1e",
+        "fe1334a2",
+        "fe9599e6"
+      ]
+    },
     "agent/plans/_done/PLAN-per-commit-review.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -3213,6 +3160,59 @@
       "open_sigs": [],
       "done_sigs": [
         "7433b50f"
+      ]
+    },
+    "agent/plans/_done/PLAN-stop-hook-continuity.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-02",
+      "open": 0,
+      "done": 22,
+      "open_sigs": [],
+      "done_sigs": [
+        "01767e01",
+        "02fb0d3e",
+        "06c523a4",
+        "0cadae94",
+        "2f786002",
+        "3805f479",
+        "40612819",
+        "4b9acaad",
+        "5df69695",
+        "637e15e6",
+        "713c4774",
+        "77b43ac2",
+        "7fab5d30",
+        "921ba40d",
+        "99c04585",
+        "a05ce080",
+        "bbdd6819",
+        "e65befae",
+        "ebf667ac",
+        "f2999444",
+        "f7701196",
+        "ffe447ad"
+      ]
+    },
+    "agent/plans/_done/PLAN-stop-hook-overhaul.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-02",
+      "open": 0,
+      "done": 9,
+      "open_sigs": [],
+      "done_sigs": [
+        "071fec08",
+        "0a3321f6",
+        "18dd4873",
+        "6e5642b2",
+        "823d5963",
+        "909cdb2d",
+        "afcec761",
+        "bcc0098f",
+        "ea9dc74a"
       ]
     },
     "agent/plans/_done/PLAN-stop-hook-plan-agent-check-declined.md": {
