@@ -974,8 +974,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 16,
-      "done": 0,
+      "open": 15,
+      "done": 1,
       "open_sigs": [
         "1feb206a",
         "2dd2429a",
@@ -991,10 +991,11 @@
         "b4445450",
         "c27e410c",
         "cf7a2303",
-        "eeb654e8",
         "ff593758"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "eeb654e8"
+      ]
     },
     "agent/plans/PLAN-plan-priority-concurrency.md": {
       "status": "held",

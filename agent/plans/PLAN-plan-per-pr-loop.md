@@ -47,7 +47,8 @@ Owns: .claude/rediacc_hooks/guards/block_push_to_protected_branch.py, .claude/re
 - [ ] L3 Finish condition evidence: the merge step prints the plan's box ledger, the CI Complete verdict and sha from ci-trace, and the release decision.
 
 ### Reviews
-- [ ] V1 Activate PLAN-per-commit-review (lift its hold for this ruling); implement its tasks T1-T13 with haiku as the reviewer model; the hook reviews each commit, records `agent/reviews/<branch>/<sha40>.md`.
+- [x] V1 Activate PLAN-per-commit-review (lift its hold for this ruling); implement its tasks T1-T13 with haiku as the reviewer model; the hook reviews each commit, records `agent/reviews/<branch>/<sha40>.md`.
+    (ticked) 2026-10-02T09:08:55Z by d778be9d: commit:ee607a003 per-commit haiku review live (post-bash trigger, wl_review, records, three guards); fixes d000fd7a0 86e660901; receipt 309/309 at 37233e6d8
 - [ ] V2 Retire PR-level Claude review: `claude-review.yml`/`claude-review-reusable.yml` disabled or removed (the app is uninstalled); `review-status.yml` either removed or repointed to the per-commit review records.
 - [ ] V3 Stall removal: `Review Complete` leaves the ruleset's required checks (part of M4's single diff); pr-merge.md:108 and pr-babysitter.md:16,110 drop the claude-reviewed marker and thread preconditions in favour of "every commit since the base has a per-commit review record with no open blocker"; `block_premature_ready` and `block_admin_merge` reviewed for review-only conditions. Show before/after of what each blocked.
 
