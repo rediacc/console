@@ -30,7 +30,7 @@ import pathlib
 import re
 import subprocess
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan
 
 CHAIN = "pre-bash"
 # Re-keyed from 39 to 40 on 2026-09-22 to make room for block_push_to_protected_branch.py at
@@ -44,7 +44,6 @@ PUSH_AT_COMMAND_POS = hookio.rx(
     r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+push([{S}]|$)"
 )
 
-DRY_RUN = r"git push[^|;&]*--dry-run"
 
 REFUSAL_TAIL = """
 The pre-push lane is 254 gates in ~33 seconds, and it exists because three of
@@ -252,6 +251,9 @@ EDGE_CASES = [
     ("a plain push", "git push origin 0831-1"),
     # A dry run publishes nothing and buys no CI round.
     ("a dry run", "git push --dry-run origin 0831-1"),
+    # #641e2fce: one dry run does not exempt a real push beside it.
+    ("a dry run beside a real push", "git push --dry-run origin x; git push origin 0831-1"),
+    ("a dry run behind a global option", "git -C . push --dry-run origin 0831-1"),
     ("prose about pushing", "echo 'remember to git push once green'"),
     ("git pull is not git push", "git pull --rebase"),
     # SUBMODULE PUSHES ARE OUT OF SCOPE, deliberately.
@@ -503,8 +505,9 @@ def run(ev):
     if not hookio.grep_q(PUSH_AT_COMMAND_POS, scan):
         return hookio.ALLOW
 
-    # A dry run publishes nothing and buys no CI round.
-    if hookio.grep_q(DRY_RUN, cmd):
+    # A dry run publishes nothing and buys no CI round, but only when EVERY push in the command is one (#641e2fce): the text match it replaced let `git push --dry-run x; git push origin y` skip the receipt. Judged per push on the lexer's canonical spelling, so `git -C . push --dry-run` counts too.
+    pushes = [line for line in commit_policy.push_texts(cmd).split("\n") if line]
+    if pushes and all("--dry-run" in line.split() for line in pushes):
         return hookio.ALLOW
 
     # A DELETE-ONLY PUSH publishes no tree either, so there is nothing for a gate run to have judged. Found 2026-09-24 refusing `git push origin --delete <merged-branch>` during a branch cleanup, which pointed the session at `npm run ci:quick` for a push that removes a ref and carries no commits. Judged PER PUSH SEGMENT, so `git push origin --delete x && git push origin y` is still refused on the second segment.

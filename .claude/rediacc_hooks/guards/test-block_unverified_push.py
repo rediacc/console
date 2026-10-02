@@ -195,6 +195,18 @@ cases.append((2, run(PUSH), "a RED receipt refuses, and names the failures"))
 put()
 cases.append((0, run("git status"), "CONTROL: a non-push is out of scope"))
 cases.append((0, run("git push --dry-run origin 0827-1"), "CONTROL: a dry run buys no CI round"))
+drop()
+cases.append(
+    (
+        2,
+        run("git push --dry-run origin x; git push origin 0827-1"),
+        "#641e2fce: with no receipt, a dry run beside a real push does not exempt it",
+    )
+)
+cases.append(
+    (0, run("git -C . push --dry-run origin 0827-1"), "CONTROL: a dry run behind -C is still one")
+)
+put()
 cases.append((0, run("echo 'remember to git push once green'"), "CONTROL: prose is not a push"))
 cases.append(
     (
