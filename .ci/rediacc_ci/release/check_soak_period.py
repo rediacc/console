@@ -4,6 +4,8 @@ Selects the edge release to promote to stable and says whether it can be promote
 
 THE WALK BACK (PLAN-plan-per-pr-loop R2). With a release on every merge the newest edge is almost always younger than `SOAK_DAYS`, so judging only the newest one starved stable from 2026-09-15 on. The candidates are the newest edge (`EDGE_VERSION`, dated by the manifest's `EDGE_DATE`) and every older release in `EDGE_RELEASES` (`list_edge_releases`' JSON) that is still newer than `STABLE_VERSION`; the selection is the NEWEST candidate that has soaked. `FORCE=true` selects the newest edge. With `PROMOTE_TRIGGER=workflow_run` the soak is waived for the newest candidate whose tagged commit `nightly_tested_edge` proves is contained in `NIGHTLY_HEAD_SHA`; every other outcome falls back to the soak rule.
 
+A NIGHTLY THAT CONCLUDED `failure` (`NIGHTLY_CONCLUSION`) reaches the waiver only when `nightly_tested_edge.nightly_failures_are_drift_only` accepts its jobs (read for `NIGHTLY_RUN_ID` in `GITHUB_REPOSITORY`); otherwise it decides `ready=false` with no soak fallback, exactly as the workflow's `if:` refused every red nightly before. Any other non-success conclusion is refused the same way.
+
 An older selection is NOT promotable today, and says so (`blocked=`): R2's `<dir>/edge/` channel trees carry the newest edge's signed metadata only, and the bucket holds no per-version snapshot of it. See the R2 note in `main`.
 
 DATE PARSING IS SHELLED OUT, NOT REIMPLEMENTED. The twin tries GNU `date -d` first, then BSD `date -j -f "%Y-%m-%dT%H:%M:%S"`, so it accepts a wider set of `EDGE_DATE` spellings than a hand-rolled `datetime.fromisoformat` would (GNU `date -d` parses far more than ISO-8601). Re-deriving that parser would be a second implementation of a contract the system `date` binary already owns,
@@ -26,6 +28,8 @@ import subprocess
 import sys
 from dataclasses import dataclass
 
+from rediacc_ci.core import ghx
+from rediacc_ci.release import nightly_tested_edge
 from rediacc_ci.release.list_edge_releases import semver
 from rediacc_ci.release.nightly_tested_edge import edge_tested_by_nightly
 
@@ -147,7 +151,14 @@ def main(argv: list[str]) -> int:
         selected, path = newest, "force"
     else:
         # The nightly waiver (operator ruling 2026-09-30): a green scheduled Console CI run releases edge to stable without the soak, but only for an edge whose tagged commit that run's head provably contains -- the newest such edge. Anything short of proof falls through to the soak rule below.
-        if os.environ.get("PROMOTE_TRIGGER", "") == "workflow_run":
+        nightly = os.environ.get("PROMOTE_TRIGGER", "") == "workflow_run"
+        if nightly:
+            tested, reason = _nightly_tested()
+            print(f"Nightly verdict: {reason}")
+            if not tested:
+                print("Decided by: the nightly did not pass its tests, not promoting")
+                _write(output_path, None, "nightly", blocked=False)
+                return 0
             head_sha = os.environ.get("NIGHTLY_HEAD_SHA", "")
             for edge in walk:
                 proven, reason = edge_tested_by_nightly(edge.version, head_sha)
@@ -184,6 +195,11 @@ def main(argv: list[str]) -> int:
             f"and no per-version channel snapshot of v{selected.version} exists"
         )
 
+    _write(output_path, selected, path, blocked=blocked)
+    return 0
+
+
+def _write(output_path: str, selected: Edge | None, path: str, *, blocked: bool) -> None:
     with open(output_path, "a", encoding="utf-8") as fh:
         fh.write("ready=%s\n" % ("true" if selected is not None and not blocked else "false"))
         fh.write(f"path={path}\n")
@@ -191,7 +207,29 @@ def main(argv: list[str]) -> int:
         fh.write("date=%s\n" % (selected.date if selected is not None else ""))
         if blocked:
             fh.write(f"blocked={R2_SNAPSHOT_BLOCK}\n")
-    return 0
+
+
+def _nightly_tested() -> tuple[bool, str]:
+    """Whether the triggering nightly counts as having passed its tests. `success` (or no conclusion given) does; `failure` does only when its failures are all drift gates; anything else, or a job list that cannot be read, does not."""
+    conclusion = os.environ.get("NIGHTLY_CONCLUSION", "")
+    if conclusion in ("", "success"):
+        return True, "the nightly concluded %s" % (
+            conclusion or "without a conclusion given, read as success"
+        )
+    if conclusion != "failure":
+        return False, f"the nightly concluded {conclusion}, which is not a pass"
+    run_id = os.environ.get("NIGHTLY_RUN_ID", "")
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
+    if not run_id.isdigit() or not repo:
+        return (
+            False,
+            f"the nightly failed and its jobs cannot be read (run id {run_id!r}, repository {repo!r})",
+        )
+    try:
+        jobs = nightly_tested_edge.fetch_run_jobs(repo, run_id)
+    except ghx.GhError as exc:
+        return False, f"the nightly failed and its jobs could not be read: {exc}"
+    return nightly_tested_edge.nightly_failures_are_drift_only(jobs)
 
 
 if __name__ == "__main__":
