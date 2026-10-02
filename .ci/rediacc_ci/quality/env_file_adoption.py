@@ -62,7 +62,7 @@ from rediacc_ci.controls import Controls, controls_first
 SHIM_REL = "scripts/lib/env-file.sh"
 
 # The sites that adopted the shim. Each must still call it; see CHECK B.
-# scripts/ops/deploy-bench.sh LEFT this list on 2026-09-24: it reads no env file at all now, re-executing itself under the `deploy-bench` Bitwarden profile (PLAN-account-env-to-bws T17/T18). CHECK A's `set -a` sweep still covers it.
+# The bench deploy LEFT this list on 2026-09-24: it reads no env file at all, re-executing itself under the `deploy-bench` Bitwarden profile (PLAN-account-env-to-bws T17/T18). It is the Python module `rediacc_ci.ops.deploy_bench` since PLAN-retire-bash-oracles B3.
 ADOPTED = (
     ".ci/lib/account.sh",
     "programs/backup-storage/start-local-plane.sh",

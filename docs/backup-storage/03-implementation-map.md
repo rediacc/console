@@ -27,7 +27,7 @@ concurrency heuristic, `REDIACC_COLD_BACKUP_CONCURRENCY`) with the new upload en
 - backupstate: the new agent becomes the writer (the old writer dies with sync
 push), keeping `renet list` BackupCoverage truthful.
 - Machine-to-server: plain HTTPS like `pkg/license/renew.go` (30s timeout, 1 MiB
-response cap, flock, jitter); session mint by presenting the license blob; all machine-facing URLs use ONE host value per run (the `drill_bridge_host` lesson: API-token IP binding keys on the Host header, `scripts/drills/lib.sh:648-690`).
+response cap, flock, jitter); session mint by presenting the license blob; all machine-facing URLs use ONE host value per run (the `drill_bridge_host` lesson: API-token IP binding keys on the Host header; the drills' harness is `rediacc_ci.drills.lib`).
 
 ## Writer B (wave 1): private/account, exclusive ownership
 
@@ -38,7 +38,7 @@ override) + `storageUsageAdjustment`; new tables: backup ledger (per-subscriptio
 (community 10 GB) + `PROGRESSIVE_LIMIT_KEYS` monotonicity test. Do NOT add the edge-doubling line for storage (deliberate).
 - Routes (new group `src/routes/backups.ts`, mounted in `routes/index.ts` AND in
 `src/routes/on-premise-index.ts:21-47`, which is a hand-curated subset where omission means silently absent on-prem): session mint (blob exchange), grant mint (local JWT signing with `actions`; parent R2 token as a worker secret + rotation slug), exists-batch (creates pins), manifest commit (idempotent by snapshot id; updates ledger, releases lease), usage, verify/scrub, GC.
-`responds()` DTOs in `src/dto/backup.dto.ts` + dto-conformance entries; the airlock strips undeclared fields silently, and the planted-strip control (license drill leg f, `scripts/drills/license.sh:996-1006`) is the proof pattern.
+`responds()` DTOs in `src/dto/backup.dto.ts` + dto-conformance entries; the airlock strips undeclared fields silently, and the planted-strip control (license drill leg f, `rediacc_ci.drills.license`) is the proof pattern.
 - Tunnel: any route in `createRoutes()` is automatically tunnel-reachable; no
 tunnel-side work.
 - Cron: revive the seam by adding `[triggers]` to the SEVEN

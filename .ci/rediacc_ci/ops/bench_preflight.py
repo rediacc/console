@@ -1,4 +1,4 @@
-"""Preflights for scripts/ops/deploy-bench.sh, run BEFORE its first remote write.
+"""Preflights for rediacc_ci.ops.deploy_bench, run BEFORE its first remote write.
 
 WHY THIS EXISTS. On 2026-09-24 a bench deploy applied 21 D1 migrations and THEN failed: wrangler.bench.toml binds R2 bucket rediacc-backups-bench, which nothing had created, so bench was left serving its old worker on a newer schema. The retry bundled from a drifted node_modules (packages/shared and workers/account resolving zod 3.25.76 against a lockfile pinning 4.x) and Cloudflare refused the worker at startup ("uuid is not a function"). Both are knowable before anything remote changes.
 

@@ -70,7 +70,7 @@
     },
     "AWS_SES_ACCESS_KEY_ID_BENCH": {
       "kind": "no-github-twin",
-      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local scripts/ops/deploy-bench.sh; bench is deliberately not deployed by any workflow."
+      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench; bench is deliberately not deployed by any workflow."
     },
     "AWS_SES_HOST": {
       "kind": "no-github-twin",
@@ -82,7 +82,7 @@
     },
     "AWS_SES_SECRET_ACCESS_KEY_BENCH": {
       "kind": "no-github-twin",
-      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local scripts/ops/deploy-bench.sh; bench is deliberately not deployed by any workflow."
+      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench; bench is deliberately not deployed by any workflow."
     },
     "CF_EMAIL": {
       "kind": "no-github-twin",
@@ -94,7 +94,7 @@
     },
     "CLOUDFLARE_TURNSTILE_SECRET_KEY_BENCH": {
       "kind": "no-github-twin",
-      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local scripts/ops/deploy-bench.sh; bench is deliberately not deployed by any workflow."
+      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench; bench is deliberately not deployed by any workflow."
     },
     "GITHUB_APP_CLIENT_SECRET": {
       "kind": "no-github-twin",
@@ -106,7 +106,7 @@
     },
     "OBS_OTLP_CREDENTIALS_BENCH": {
       "kind": "no-github-twin",
-      "reason": "The bench collector credential, JSON {user,pass}, seeded 2026-09-24 from the retired bench env file (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local scripts/ops/deploy-bench.sh, and written by `rotation rotate otlp-bench` through its bitwarden-sm consumer; no workflow deploys bench."
+      "reason": "The bench collector credential, JSON {user,pass}, seeded 2026-09-24 from the retired bench env file (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench, and written by `rotation rotate otlp-bench` through its bitwarden-sm consumer; no workflow deploys bench."
     },
     "OBS_OTLP_PASSWORD": {
       "kind": "no-github-twin",

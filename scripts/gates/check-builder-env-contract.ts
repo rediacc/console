@@ -69,10 +69,10 @@
  * spellings must be exported.
  *
  * NOT CHECKED, and said out loud rather than left to be discovered:
- *   - scripts/ops/deploy-bench.sh also builds a secret payload, but it reads a
- *     local `.env` file rather than a workflow `env:` block. That is a different
- *     contract with a different oracle; this gate does not look at it, and its
- *     names are covered by check:ci-worker-secret-names. (run.sh was named here
+ *   - .ci/rediacc_ci/ops/deploy_bench.py also builds a secret payload, but it reads
+ *     the `deploy-bench` Bitwarden profile rather than a workflow `env:` block. That
+ *     is a different contract with a different oracle; this gate does not look at
+ *     it, and its names are covered by check:ci-worker-secret-names. (run.sh was named here
  *     too until commit dd5dfba3c deleted its `pr` verb and the payload with it.)
  *   - VALUES. A name exported as `${{ secrets.TYPO }}` is present and empty.
  *     That is the builders' `_require_nonempty` guards and check_bws_map.py.
@@ -525,7 +525,7 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
     );
     process.exit(1);
   }
-  if (pythonPortModule('scripts/ops/deploy-bench.sh') !== null) {
+  if (pythonPortModule('scripts/ops/example-builder.sh') !== null) {
     console.error(
       'x instrument control: pythonPortModule() invented a module for a path outside .ci/scripts/. A builder with no port must be matched by path only.'
     );
@@ -777,7 +777,7 @@ console.log(
     '\n' +
     '  Blind spots, stated rather than left to be found: this proves the NAMES agree, not\n' +
     "  that a value is non-empty (that is the builders' _require_nonempty guards). It does\n" +
-    '  NOT cover scripts/ops/deploy-bench.sh, which builds the same payload from a\n' +
-    '  local .env file rather than a workflow env: block -- a different contract with a\n' +
+    '  NOT cover .ci/rediacc_ci/ops/deploy_bench.py, which builds the same payload from\n' +
+    '  a Bitwarden profile rather than a workflow env: block -- a different contract with a\n' +
     '  different oracle. Names read by a sourced library are invisible here too.'
 );

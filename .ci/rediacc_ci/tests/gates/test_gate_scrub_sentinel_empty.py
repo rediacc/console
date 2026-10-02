@@ -1,36 +1,33 @@
 """Port of `.ci/scripts/test/gates/test-scrub-sentinel-empty.sh`, retired in W7 P5.
 
-Subject: `scripts/ops/scrub-sentinel.sh`. Regression test for its empty-prefix hang.
+Subject: `rediacc_ci.ops.scrub_sentinel` (`.ci/rediacc_ci/ops/scrub_sentinel.py`), which replaced `scripts/ops/scrub-sentinel.sh` in PLAN-retire-bash-oracles B3. Regression test for the bash script's empty-prefix hang, restated for the port.
 
-Before commit 27e9a49ab the dry-run plan loop called `aws s3 ls --recursive`
+Before commit 27e9a49ab the bash dry-run plan loop called `aws s3 ls --recursive`
 inside `count="$(... | wc -l)"`. `aws s3 ls` returns exit 1 when the prefix is
 empty, and `set -eo pipefail` made the whole script abort right after `count=0`
-was assigned -- silently, with the operator seeing only the "sentinel: absent" line and no exit message. This pins the fix: a dry-run against a guaranteed-empty version must print the cli plan AND exit 0, regardless of whether the underlying R2 list call succeeds.
+was assigned -- silently, with the operator seeing only the "sentinel: absent" line and no exit message.
 
-THE TOOL-ABSENT BRANCH IS TRANSCRIBED, NOT IMPROVED, AND THAT IS DELIBERATE.
-`harness.require_tool` would refuse loudly on a machine with no `aws`, which is this directory's standing rule and is the RIGHT rule for a case that could otherwise be checked. It is the wrong rule HERE for one reason: the twin does not refuse, it reports NOT VERIFIED and exits 0, and `test_twin_parity.py` compares VERDICTS. A port that refused where the twin passes would diverge
-on every developer machine without `aws` and the divergence would say nothing about the subject.
+WHAT THE PORT PROMISES INSTEAD (its Rule T 1). A probe that cannot answer is not an answer: against an unreachable endpoint the plan prints `UNKNOWN` for what it could not establish, names the failure, and exits 1, dry-run included. So this pins the property the old bug broke, which is that the run TERMINATES AND SAYS WHY: the cli plan line, an `objects:` line, and the closing "could not be established" error, never a silent stop. It also pins the half the bash got wrong: an unreachable endpoint must not read as `objects: 0`.
 
-So the branch is copied exactly, including the half that matters most: under `CI` a missing `aws` is a FAILURE, because a missing tool there is a broken lane and a suite that quietly passes over it is the gate-that-cannot-fail shape this repo keeps paying for. Locally it is announced as NOT VERIFIED rather than skipped silently, which is what keeps the absence visible.
+THE TOOL-ABSENT BRANCH. Under `CI` a missing `aws` is a FAILURE, because a missing tool there is a broken lane and a suite that quietly passes over it is the gate-that-cannot-fail shape this repo keeps paying for. Locally it is announced as NOT VERIFIED rather than skipped silently, which is what keeps the absence visible. Without `aws` the port exits 1 with `Required command 'aws' is not available`, which would otherwise be indistinguishable from the property above failing.
 
-MEASURED 2026-08-27 by the twin, and reproduced here 2026-09-09: without `aws`, `scrub-sentinel.sh` exits 1 with `Required command 'aws' is not available` on stderr and prints nothing on stdout, and the suite reported "dry-run must succeed even with bad credentials: expected 0, got 1" -- indistinguishable from the pipefail bug coming back. Saying WHICH one it is is the whole point
-of the branch.
-
-NOT A REAL-TREE TWIN. `gate-test:scrub-sentinel-empty` carries no `tree:` claim in `gates.lock.json`, so `REAL_TREE_TWIN` is deliberately NOT set: `real_tree_admission` refuses an over-claim, because an opt-in that costs nothing to declare stops meaning anything. The subject is executed read-only against an unreachable endpoint and writes nothing.
+NOT A REAL-TREE TWIN. `gate-test:scrub-sentinel-empty` carries no `tree:` claim in `gates.lock.json`, so `REAL_TREE_TWIN` is deliberately NOT set. The subject is executed read-only against an unreachable endpoint and writes nothing.
 """
 
 import os
 import shutil
+import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 from rediacc_ci.well_known import RELEASES_BUCKET
 
 ROOT = paths.repo_root()
-SUBJECT = ROOT / "scripts" / "ops" / "scrub-sentinel.sh"
+SUBJECT = ROOT / ".ci" / "rediacc_ci" / "ops" / "scrub_sentinel.py"
+MODULE = "rediacc_ci.ops.scrub_sentinel"
 VERSION = "v9.99.99"
 
-# Credentials that cannot work, on an endpoint that cannot resolve. The point is an EMPTY/unreachable prefix, which is what the regression is about.
+# Credentials that cannot work, on an endpoint that cannot resolve. The point is an unreachable prefix, which is what the regression is about.
 BAD_CREDENTIALS = {
     "CLOUDFLARE_R2_ACCESS_KEY_ID": "invalid",
     "CLOUDFLARE_R2_SECRET_ACCESS_KEY": "invalid",
@@ -64,46 +61,57 @@ def tool_gate(gate) -> bool:
 
 
 def dry_run(gate) -> harness.RunResult:
-    """The subject's dry run, streams merged as the twin merges them."""
+    """The subject's dry run; the cases read the merged streams."""
     if not SUBJECT.is_file():
         gate.log_fail(
             "%s is gone; both cases below drive it and would then be asserting about "
             "nothing" % paths.relative_to_root(SUBJECT)
         )
-    bash = harness.require_tool("bash", "install bash; the subject is a shell script")
-    return harness.run([bash, str(SUBJECT), VERSION], env=dict(BAD_CREDENTIALS), timeout=600)
+    env = dict(BAD_CREDENTIALS)
+    env["PYTHONPATH"] = str(ROOT / ".ci")
+    return harness.run([sys.executable, "-m", MODULE, VERSION], cwd=ROOT, env=env, timeout=600)
 
 
 # ---------------------------------------------------------------------------
 
 
-def test_dry_run_completes_with_no_credentials(gate):
-    """No R2 credentials means `aws s3api list-objects-v2` errors, the helper returns 0, and the dry-run plan emits "objects: 0" for the cli product.
+def test_dry_run_terminates_and_says_why(gate):
+    """Unusable credentials: the probe and the listing cannot answer. The run must still print the cli plan line and end on its own error message, with exit 1.
 
-    CRITICALLY: the script must reach the "dry-run: pass --execute" final line. If pipefail kills it after the count assignment there is no exit message, and that silence is the whole bug.
+    The closing message is the whole point: the bash bug was a run that stopped after the count with nothing said.
     """
     if not tool_gate(gate):
         return
     result = dry_run(gate)
-    gate.assert_exit(0, result, "dry-run must succeed even with bad credentials")
+    gate.assert_exit(1, result, "an unanswerable plan exits 1, dry-run included")
     gate.assert_contains(
         result.combined, ("s3://" + RELEASES_BUCKET + "/cli/%s/") % VERSION, "cli plan line printed"
     )
     gate.assert_contains(
-        result.combined, "dry-run: pass --execute", "script reached its final exit message"
+        result.combined,
+        "the scrub plan could not be established; nothing was deleted",
+        "the run reached its closing message",
     )
-    gate.log_pass("empty-prefix dry-run completes without hanging")
+    gate.log_pass("unreachable-prefix dry-run terminates with a reason")
 
 
-def test_dry_run_emits_zero_object_count(gate):
-    """Cosmetic but important: the operator relies on the "objects: N" count to decide whether the scrub is safe. If the helper falls back to a malformed value (e.g. "None"), the count must still normalise to 0."""
+def test_an_unreachable_prefix_is_not_reported_as_empty(gate):
+    """The operator decides whether a scrub is safe from the "objects: N" line, so an unanswered listing must read UNKNOWN, never `objects: 0`."""
     if not tool_gate(gate):
         return
     result = dry_run(gate)
-    # One product (cli), one count line.
-    zero = len([line for line in result.combined.splitlines() if "objects: 0" in line])
-    gate.assert_eq(zero, 1, "objects: 0 emitted for the cli product")
-    gate.log_pass("object count normalises to 0 on empty/unreachable prefix")
+    lines = result.combined.splitlines()
+    gate.assert_eq(
+        len([line for line in lines if "objects: UNKNOWN" in line]),
+        1,
+        "objects: UNKNOWN emitted for the cli product",
+    )
+    gate.assert_eq(
+        len([line for line in lines if "objects: 0" in line]),
+        0,
+        "an unreachable prefix never reads as zero objects",
+    )
+    gate.log_pass("an unreachable prefix reads UNKNOWN, not 0")
 
 
 def test_the_tool_branch_is_announced_and_not_a_silent_skip(gate):

@@ -278,7 +278,7 @@ def assert_bijection(
             out.append("DRIFT %s: cli sentinel present, git tag missing" % version)
             out.append(
                 "  remediation: re-run CD to tag/release %s, or scrub the sentinel via "
-                "scripts/ops/scrub-sentinel.sh %s" % (version, version)
+                "PYTHONPATH=.ci python3 -m rediacc_ci.ops.scrub_sentinel %s" % (version, version)
             )
         else:
             out.append("DRIFT %s: git tag present, cli sentinel missing" % version)

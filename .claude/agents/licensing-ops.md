@@ -68,7 +68,7 @@ ancestry-verified and must be set in the OPERATOR's terminal before the session.
 - The CLI AUTO-CREATES the config named by `REDIACC_CONFIG` on startup of ANY command.
 Exporting REDIACC_CONFIG=<name> before an explicit `rdc config init <name>` makes init die with "already exists" (and the auto-created config gets the PRODUCTION server's E2E key synced in, because a bare config has no accountServer). Order: init first, export after; and any wrapper preflight that invokes the CLI (even `rdc ops status`) counts as "startup".
 - The live drill needs an ENFORCING renet with the dev key baked; the default dev
-build is nolicense (permit-all stub, vacuous drill). `scripts/drills/license.sh` exports `RDC_RENET_LICENSE=1` itself and proves the flavor pre-deploy (`verify_renet_flavor`: `go version -m bin/renet` must NOT show `-tags=nolicense` and MUST show `ProductionPublicKey=` in ldflags). A binary with neither marker is a foreign bare `go build` - enforcing but keyless, fails everything
+build is nolicense (permit-all stub, vacuous drill). `rediacc_ci.drills.license` sets `RDC_RENET_LICENSE=1` for the commands under test and proves the flavor pre-deploy (`verify_renet_flavor`: `go version -m bin/renet` must NOT show `-tags=nolicense` and MUST show `ProductionPublicKey=` in ldflags). A binary with neither marker is a foreign bare `go build` - enforcing but keyless, fails everything
 as "public key not configured". The build stamp fingerprints the artifact since 2026-08-04, so such an overwrite now triggers a rebuild.
 - `go test -tags nolicense ./...` is a distinct matrix leg: license-gate-fires tests
 must carry `//go:build !nolicense` or that leg is silently red (CI only BUILDS with the tag; test it locally).

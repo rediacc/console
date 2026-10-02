@@ -20,7 +20,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY:
 
 The empty stdout is exactly why the streams are captured apart: this gate puts its whole verdict, five lines of it, on stderr. A merged comparison would have compared the log lines and a stdout-only comparison of merged output would have compared nothing.
 
-DRIVEN RED AS WELL, which for this pair is the load-bearing half. Planted the 2026-08-05 defect itself into `scripts/drills/lib.sh`: the zero-assertion branch made to print `PASSED` where it must print `SKIPPED`. Both sides exit 1, both print an EMPTY stdout, and their stderr is byte-identical at 568 bytes -- the first of the four verdict assertions reds, the other three still
+DRIVEN RED AS WELL, which for this pair is the load-bearing half. Planted the 2026-08-05 defect itself into the bash drill harness (since retired; the gate now drives `rediacc_ci.drills.lib`): the zero-assertion branch made to print `PASSED` where it must print `SKIPPED`. Both sides exit 1, both print an EMPTY stdout, and their stderr is byte-identical at 568 bytes -- the first of the four verdict assertions reds, the other three still
 pass, so the gate is shown discriminating rather than collapsing. Reverted by its exact inverse and the file verified byte-identical to its pre-plant state, with the twin back at exit 0.
 
 INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-drill-verdicts.sh` was the differential twin, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.

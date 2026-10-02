@@ -90,9 +90,10 @@ SHFMT_OPTS = ("-i", "4", "-ci", "-d")
 
 # The vacuity floor's default. Measured 2026-09-04: 568 .sh files across the four scopes; re-measured 2026-09-21 at 306, after the bash-retirement campaign and batches M1 to M4; re-measured 2026-09-23 at 265 (`floor_count()` over the three roots), one of which is the `.ci/cache/` prune below and the rest further retirements, so the margin is 65 files and shrinking.
 # Re-measured 2026-10-01 at 187 (`floor_count()`) after the twin goldens retired more `.sh` files (PLAN-retire-bash-oracles B3); the floor was lowered to that measured count in the same change, so it holds no margin and each further retirement batch lowers it again.
+# Re-measured 2026-10-02 at 179: the last five ops and drill twins left with their callers switched to the Python ports (B3), and the three `.ci/scripts/review/*.sh` left with the PR-level review workflows.
 #
 # The floor stays well under the count, to catch a broken enumeration rather than today's file count, and is restated on each retirement batch so a closing margin is visible early.
-DEFAULT_MIN_FILES = "187"
+DEFAULT_MIN_FILES = "179"
 
 # The three roots the floor counts, in the twin's argv order (order is irrelevant to a count and is kept so the two reads match on inspection).
 FLOOR_ROOTS = (".ci", ".claude", "scripts")

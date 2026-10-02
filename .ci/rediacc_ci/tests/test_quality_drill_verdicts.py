@@ -1,21 +1,18 @@
 r"""`rediacc_ci.quality.drill_verdicts` against the harness it drives.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-drill-verdicts.observations.jsonl` drives the whole gate over five distinct trees, each carrying a differently-mutated `scripts/drills/lib.sh`. What a ledger row cannot isolate is the DRIVER: a `bash -c` subshell that sets eight variables, sources a library under `set +eu`, and hands back `<rc>|<stdout>`. If the driver
-stops working, EVERY assertion in this gate either fails loudly (good) or, in the shape this repo keeps finding, passes vacuously.
+WHAT IS WORTH TESTING HERE. The gate's selftest plants mutated harnesses in fixture roots. What it cannot isolate is the DRIVER: a child interpreter that loads `.ci/rediacc_ci/drills/lib.py` by file path, sets the counters on a `Drill` and hands back `<rc>|<stdout>`. If the driver stops working, EVERY assertion in this gate either fails loudly (good) or, in the shape this repo keeps finding, passes vacuously.
 
-So the cases below drive the REAL `scripts/drills/lib.sh` and assert on its real output, in both directions per verdict.
-
-THE UNREACHABLE PROBE IS ASSERTED AS UNREACHABLE, not quietly ignored. The twin
-checks `[[ "${probe%%|*}" == "97" ]]` against a capture that is EMPTY whenever
-the subshell exits 97, so the branch cannot fire. That is a defect in the twin, carried by the port, and pinned here so it stays a known dead branch rather than becoming a surprise.
+So the cases below drive the REAL `Drill.summary` and assert on its real output, in both directions per verdict.
 """
 
+import io
 import pathlib
 import re
+import time
 
 from rediacc_ci import paths
+from rediacc_ci.drills import lib as drills_lib
 from rediacc_ci.quality import drill_verdicts as dv
-from rediacc_ci.tests import differential as diff
 
 
 def test_the_harness_exists() -> None:
@@ -62,66 +59,39 @@ def test_a_selftest_that_did_not_fire_refuses() -> None:
     assert "SELFTEST DID NOT FIRE" in out, out
 
 
-def test_an_undrivable_harness_yields_an_empty_capture_not_97(tmp_path: pathlib.Path) -> None:
-    """THE TWIN'S DEAD BRANCH, pinned.
+def test_an_undrivable_harness_yields_an_empty_capture(tmp_path: pathlib.Path) -> None:
+    """A harness file with no `Drill.summary`: the child exits 97 before printing, so the capture is "" and `assert_verdict`'s empty-result guard names it."""
+    (tmp_path / dv.DRILL_LIB).parent.mkdir(parents=True)
+    (tmp_path / dv.DRILL_LIB).write_text("NOTHING_HERE = 1\n", encoding="utf-8")
+    assert dv.run_summary(tmp_path, "1", "0") == ""
 
-    `declare -F drill_summary || exit 97` leaves the subshell before its
-    `printf`, so the capture is "" and `${probe%%|*}` is "" -- never "97". The
-    guard that actually catches this is `assert_verdict`'s empty-result branch.
+
+def test_the_driver_runs_the_same_summary_as_an_in_process_drill() -> None:
+    """The child's output against `Drill.summary` called in this process, so the driver is shown to test the harness the drills use rather than something of its own.
+
+    THE ELAPSED SECONDS ARE MASKED, and only those: each side renders its own whole-second duration, and two runs straddling a second boundary differ by a clock tick.
     """
-    (tmp_path / "scripts" / "drills").mkdir(parents=True)
-    (tmp_path / dv.DRILL_LIB).write_text("#!/bin/bash\necho nothing\n", encoding="utf-8")
-    result = dv.run_summary(tmp_path, "1", "0")
-    assert result == "", result
-    assert result.partition("|")[0] != dv.UNDRIVABLE
-    assert dv.UNDRIVABLE == "97"
-
-
-def test_the_bash_subshell_agrees_with_the_twins() -> None:
-    """The port's runner against the twin's, over the same harness.
-
-    Not "does the Python compute the right answer" but "does the same shell code run": the subject here IS bash, and a driver that diverged would test a different harness than the one the drills use.
-    """
-    root = str(paths.repo_root())
-    twin = (
-        '( set +eu; source "%s" >/dev/null 2>&1; declare -F drill_summary >/dev/null || exit 97; '
-        'DRILL_NAME="gatecheck"; DRILL_STARTED_AT=$(date +%%s); DRILL_COUNT=0; '
-        "DRILL_FAILURES=0; DRILL_SELFTEST=0; DRILL_ROWS=(); "
-        'out="$(drill_summary 2>&1)"; rc=$?; printf \'%%s|%%s\' "$rc" "$out" )' % dv.DRILL_LIB
-    )
-    code, out, err = diff.bash_streams("source .ci/scripts/lib/common.sh; " + twin, cwd=root)
-    assert (code, err) == (0, ""), err
+    buf = io.StringIO()
+    drill = drills_lib.Drill("gatecheck", stdout=buf)
+    drill.started_at = int(time.time())
+    rc = drill.summary()
+    local = "%d|%s" % (rc, buf.getvalue().rstrip("\n"))
     port = dv.run_summary(paths.repo_root(), "0", "0")
-
-    # THE ELAPSED SECONDS ARE MASKED, and only those. Each side computes its own `now - DRILL_STARTED_AT` and renders it whole-seconds, so when the two runs straddle a second boundary the twin says `failed (1s)` and the port says `failed (0s)`. That is a clock tick, not a disagreement about behaviour. Observed in CI job 104616780062 after five clean runs, which is what a boundary
-    # race looks like.
-    #
-    # Masked rather than pinned because the duration is environmental: the claim this case makes is "the same shell code runs", and how long it took is no
-    # part of it. Same stance as the `cb=<digits>` cache-buster normalisation in
-    # test_deploy_verify_edge_endpoints.py -- neither side can be made to agree and neither is supposed to.
     elapsed = re.compile(r"\(\d+s\)")
-    assert elapsed.search(out), (
-        "the twin printed no elapsed time, so the mask below would hide a real "
-        "divergence rather than a clock tick: %r" % out
-    )
-    assert elapsed.search(port), "the port printed no elapsed time: %r" % port
-    assert elapsed.sub("(<elapsed>)", port) == elapsed.sub("(<elapsed>)", out)
+    assert elapsed.search(local), "the in-process summary printed no elapsed time: %r" % local
+    assert elapsed.search(port), "the driven summary printed no elapsed time: %r" % port
+    assert elapsed.sub("(<elapsed>)", port) == elapsed.sub("(<elapsed>)", local)
 
 
-def test_the_byte_tail_matches_the_twins_pipeline() -> None:
-    """`tr '\n' ' ' <<<"$out" | tail -c 200`, including the herestring's own trailing newline. Compared against the real tr and tail."""
+def test_the_byte_tail_flattens_and_keeps_the_last_200_bytes() -> None:
     text = "line one\nline two\n" + "z" * 250
-    # The text arrives through the ENVIRONMENT, not through the command string. An earlier version interpolated it and doubled its own `%%s`, so the comparison ran against the literal two characters `%s` and failed for a reason that had nothing to do with the tail.
-    code, out, err = diff.bash_streams(
-        "tr '\\n' ' ' <<<\"$T\" | tail -c 200",
-        env=diff.env_for(T=text),
-    )
-    assert (code, err) == (0, ""), err
-    assert dv.tail_summary(text) == out
+    tail = dv.tail_summary(text)
+    assert len(tail.encode()) == 200
+    assert tail == ("z" * 199) + " "
 
 
-def test_the_four_cases_are_the_twins_four() -> None:
-    """The decision TABLE, asserted as a table. A fifth row appearing here without appearing in the twin is a divergence nobody would notice from the output, because every row prints the same shape of line."""
+def test_the_four_cases() -> None:
+    """The decision TABLE, asserted as a table: every row prints the same shape of line, so a changed row is invisible from the output."""
     assert [(c.count, c.fails, c.selftest, c.want_rc, c.want, c.forbid) for c in dv.CASES] == [
         ("0", "0", "0", "0", "SKIPPED", "PASSED"),
         ("3", "0", "0", "0", "PASSED", ""),

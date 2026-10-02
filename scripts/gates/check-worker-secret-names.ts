@@ -2,12 +2,12 @@
  * check:ci-worker-secret-names — every name a deploy script pushes to a Worker
  * must be a name the Worker's env schema actually reads.
  *
- * THE DEFECT CLASS. Four scripts build a `wrangler secret bulk` payload by hand:
+ * THE DEFECT CLASS. Four builders hand-build a `wrangler secret bulk` payload:
  *
  *   .ci/scripts/deploy/set-account-worker-secrets.sh
  *   .ci/scripts/deploy/set-www-worker-secrets.sh
  *   .ci/scripts/deploy/set-preview-worker-secrets.sh
- *   scripts/ops/deploy-bench.sh
+ *   .ci/rediacc_ci/ops/deploy_bench.py    (a Python dict, `secrets_payload()`)
  *
  * It was five until 2026-09-22; see the note on BUILDERS for where the fifth went.
  *
@@ -37,7 +37,8 @@
  * loud.
  *
  * WHAT IS CHECKED. For each builder, every `KEY: $var` line inside its jq
- * payload must name a key declared in env.ts. Direction is one-way on purpose:
+ * payload (for deploy_bench.py, every `"KEY":` entry of the dict
+ * `secrets_payload()` returns) must name a key declared in env.ts. Direction is one-way on purpose:
  * env.ts legitimately declares far more than any one builder pushes (the
  * preview builder pushes 15 of 85), so "schema key nobody pushes" is not a
  * finding.
@@ -82,11 +83,37 @@ const BUILDERS: { file: string; floor: number }[] = [
   { file: '.ci/scripts/deploy/set-account-worker-secrets.sh', floor: 20 },
   { file: '.ci/scripts/deploy/set-www-worker-secrets.sh', floor: 15 },
   { file: '.ci/scripts/deploy/set-preview-worker-secrets.sh', floor: 10 },
-  { file: 'scripts/ops/deploy-bench.sh', floor: 20 },
+  { file: '.ci/rediacc_ci/ops/deploy_bench.py', floor: 20 },
 ];
 
 /** `        KEY: $var,` inside a `jq -n '{ ... }'` object — the payload shape. */
 const PUSHED_KEY = /^\s+([A-Z][A-Z0-9_]*):\s*\$/gm;
+
+/** `        "KEY": value,` inside the dict deploy_bench.py's `secrets_payload()` returns. */
+const PY_PUSHED_KEY = /^\s+"([A-Z][A-Z0-9_]*)":/gm;
+
+/**
+ * The keys of the dict `secrets_payload()` returns, and nothing else in the file.
+ *
+ * Sliced to that one `return {` ... `    }` block on purpose: the function first
+ * builds a `signing` dict of the same six names, and the module carries other
+ * quoted UPPERCASE strings, so a whole-file match would count keys twice or
+ * read names that are never pushed. No `def secrets_payload` or no return dict
+ * reads as zero keys, which the floor turns into a refusal.
+ */
+export function pythonPayloadKeys(text: string): string[] {
+  const def = text.indexOf('\ndef secrets_payload(');
+  if (def < 0) return [];
+  const start = text.indexOf('\n    return {\n', def);
+  if (start < 0) return [];
+  const end = text.indexOf('\n    }\n', start);
+  if (end < 0) return [];
+  return [...text.slice(start, end).matchAll(PY_PUSHED_KEY)].map((m) => m[1]);
+}
+
+function keysOf(file: string, text: string): string[] {
+  return file.endsWith('.py') ? pythonPayloadKeys(text) : pushedKeys(text);
+}
 
 /** `  KEY: z.` or `  KEY: boolFromEnv` — a declared schema key. */
 // `z$` matters: prettier wraps a long chain, leaving `MIN_CLI_VERSION: z` with the `.string()` on the NEXT line. Requiring `z.` on one line silently dropped that key, so the gate extracted 84 of 85 and the `size < 40` floor is far too low to notice. A one-key loss here is a latent FALSE POSITIVE: the day a builder pushes that name, the gate calls a correct push line undeclared.
@@ -170,6 +197,16 @@ export function looksLikeBuilder(text: string): boolean {
   if (pushedKeys('        RENAMED_KEY: $x,\n').length !== 1 || keys.has('RENAMED_KEY')) {
     console.error(
       '✗ instrument control did not fire: a pushed key absent from the schema was not detectable.'
+    );
+    process.exit(1);
+  }
+  // The Python extractor reads ONLY the returned dict: the `signing` dict before it and a module-level constant after it are decoys.
+  const py =
+    'HELP = {\n    "DECOY_TOP": 1,\n}\n\ndef secrets_payload() -> dict[str, str]:\n    signing = {\n        "SIGNING_DECOY": os.environ.get("X") or "",\n    }\n    return {\n        "API_KEY": signing["X"],\n        "ROOT_EMAIL": "",\n    }\n\nOTHER = {\n    "DECOY_AFTER": 2,\n}\n';
+  const pyGot = pythonPayloadKeys(py);
+  if (pyGot.join(',') !== 'API_KEY,ROOT_EMAIL') {
+    console.error(
+      `✗ instrument control: the Python payload extractor read ${JSON.stringify(pyGot)} from a fixture whose secrets_payload() returns API_KEY and ROOT_EMAIL (with a signing dict and two module dicts as decoys). Every verdict on deploy_bench.py would be meaningless.`
     );
     process.exit(1);
   }
@@ -279,7 +316,7 @@ const discovered = tracked.filter((f) => {
 if (discovered.length === 0) {
   console.error(
     `✗ swept ${tracked.length} tracked shell script(s) and found ZERO that build a \`wrangler secret bulk\` payload.\n` +
-      '  Four are known to exist, so the discovery predicate has stopped recognising the\n' +
+      '  Three are known to exist, so the discovery predicate has stopped recognising the\n' +
       '  shape it is looking for. Refusing a verdict rather than reporting a clean sweep.'
   );
   process.exit(1);
@@ -308,7 +345,7 @@ for (const { file, floor } of BUILDERS) {
     );
     continue;
   }
-  const keys = pushedKeys(text);
+  const keys = keysOf(file, text);
   if (keys.length < floor) {
     problems.push(
       `    ${file}: extracted only ${keys.length} pushed key(s), floor is ${floor} — the payload moved or the regex broke`
@@ -318,7 +355,10 @@ for (const { file, floor } of BUILDERS) {
   checked += keys.length;
   for (const k of keys) {
     if (!schema.has(k)) {
-      const line = text.split('\n').findIndex((l) => new RegExp(`^\\s+${k}:\\s*\\$`).test(l)) + 1;
+      const line =
+        text
+          .split('\n')
+          .findIndex((l) => new RegExp(`^\\s+(?:${k}:\\s*\\$|"${k}":)`).test(l)) + 1;
       problems.push(
         `    ${file}:${line}  pushes ${k}, which ${SCHEMA} does not declare — zod will STRIP it silently`
       );

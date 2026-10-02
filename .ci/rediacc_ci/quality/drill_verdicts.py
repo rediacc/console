@@ -1,11 +1,11 @@
-r"""`drill_summary`'s verdict logic, driven rather than read.
+r"""`Drill.summary`'s verdict logic, driven rather than read.
 
 Ported from `.ci/scripts/quality/check-drill-verdicts.sh`, retired in W7 P5;
 see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin.
 
 WHY THIS EXISTS, in the twin's own words, because the incident is the whole gate:
 
-    Behavioural gate for `drill_summary`'s verdict logic (scripts/drills/lib.sh).
+    Behavioural gate for `drill_summary`'s verdict logic (the bash drill harness this gate first drove).
 
     WHY THIS EXISTS. On 2026-08-05 a drill that ran ZERO assertions -- because
     its environment dependency was absent and declared -- printed:
@@ -33,28 +33,13 @@ WHY THIS EXISTS, in the twin's own words, because the incident is the whole gate
       4. --selftest with no failure -> refuses, because a planted failure that
                                   goes unnoticed means the accounting is broken
 
-THE SUBSHELL RUNS WITH `set +eu` AND THE REASON IS CARRIED: "these libraries are not written to be sourced under strict flags, and a half-loaded library would leave the function undefined -- which would make every assertion below pass VACUOUSLY, i.e. exactly the defect this gate exists to catch, committed by the gate itself."
+THE SUBJECT IS NOW `Drill.summary` IN `.ci/rediacc_ci/drills/lib.py`. The bash harness and its `drill_summary` function were retired with the drills' bash (PLAN-retire-bash-oracles B3); the Python harness is the one every drill runs, so it is the one this gate drives.
+
+THE DRIVER IS A CHILD PROCESS, NOT AN IMPORT. `run_summary` loads the harness from its FILE PATH in a fresh interpreter, sets the counters on a `Drill`, calls `summary()` and prints `<rc>|<stdout>`. A file-path load is what lets the selftest point the gate at a fixture root carrying a planted harness; a fresh interpreter is what keeps a planted module out of this process's import cache. The child exits 97 WITHOUT PRINTING when the file defines no `Drill` with a `summary`, so an undrivable harness yields an EMPTY capture and `assert_verdict`'s empty-result guard names it.
 
 THE HARNESS IS ASKED FOR BOTH HALVES: "Returns `<exit-code>|<stdout>` so callers can assert on BOTH. Asserting only on the exit code is what let the original defect through."
 
------------------------------------------------------------------------------
-PORT NOTES.
------------------------------------------------------------------------------
-
-THE PROBE'S `== "97"` BRANCH IS UNREACHABLE, IN BOTH IMPLEMENTATIONS, AND THAT
-IS A REPORTED TWIN DEFECT. `declare -F drill_summary >/dev/null || exit 97` leaves the subshell BEFORE its `printf`, so the command substitution captures
-the EMPTY STRING, not `97|`. `"${probe%%|*}"` on an empty string is the empty
-string, which is never equal to `97`, so the "Could not load drill_summary" message can never be printed. The condition that actually catches an undrivable harness is `assert_verdict`'s later `[[ -z "$result" ]]` guard, whose own comment says as much: "A gate whose probe failed must not be able to look like a gate whose probe returned nothing interesting."
-
-The port reproduces the dead branch rather than repairing it, because repairing it would emit two lines the twin never emits and the differential would score that as a mismatch. It is named here and in the final report instead.
-
-THE RUNNER IS BASH, AND IT HAS TO BE. The subject is a bash function in `scripts/drills/lib.sh` that reads eight shell variables and writes a formatted table; there is nothing to reimplement in Python and reimplementing it would mean this gate no longer tested the harness the drills actually use. So the port drives the same subshell through `bash -c` and does the ASSERTIONS in
-Python.
-
-THE COLOUR VARIABLES COME FROM common.sh IN BOTH, and the source is CONDITIONAL here for one reason: `drill_summary` interpolates `$RED`, `$GREEN`, `$YELLOW` and `$NC` through `printf %b`, and in the twin those are in scope because the gate itself sourced `common.sh` before defining `run_summary`. A `bash -c` child starts with none of them, and under `set +u` they would expand to
-empty, which is what a non-tty run produces anyway. Sourcing `common.sh` when it is present makes the two byte-identical on a terminal as well; making it conditional lets the selftest point the gate at a fixture root that has no `.ci` tree at all.
-
-`tr '\n' ' ' <<<"$out" | tail -c 200` IS A BYTE TAIL, and the herestring's own trailing newline becomes a trailing SPACE before the cut. Both details are reproduced: without the added space the 200-byte window lands one byte earlier and the two implementations print different text for the same failure.
+`tail_summary` is a 200-byte tail of the summary with newlines flattened to spaces (plus one trailing space), the window a failure message quotes.
 """
 
 import os
@@ -63,63 +48,63 @@ import subprocess
 import sys
 import tempfile
 
+import rediacc_ci
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls, plant
 
-# The harness under test, repo-relative. The twin `cd`s to the root and names it bare; this is the same fact with the cd removed.
-DRILL_LIB = "scripts/drills/lib.sh"
+# The harness under test, repo-relative.
+DRILL_LIB = ".ci/rediacc_ci/drills/lib.py"
 
-# The logger the drill library expects to be in scope, sourced when present.
-COMMON_LIB = ".ci/scripts/lib/common.sh"
+# The exit code the child uses to say "there is no Drill.summary to drive". It exits before printing, so the capture is empty.
+UNDRIVABLE = 97
 
-# The exit code the subshell uses to say "the function is not there". Kept as a named constant even though the branch that reads it is unreachable; see the port notes, and deleting the name would delete the evidence.
-UNDRIVABLE = "97"
+# The directory that holds the `rediacc_ci` package, put on the child's path so the real harness can import its siblings.
+PACKAGE_PARENT = str(pathlib.Path(rediacc_ci.__file__).resolve().parent.parent)
 
 # How many bytes of the captured summary a failure message shows.
 TAIL_BYTES = 200
 
-# The subshell, transliterated line for line from check-drill-verdicts.sh:62-79. `set +eu` is inside and `pipefail` is left alone, exactly as the twin has it.
+# The child. It loads the harness by file path, so a fixture root's planted harness is what runs.
 RUNNER = """
-set -euo pipefail
-if [ -f "$_DV_COMMON" ]; then
-    # shellcheck disable=SC1090
-    source "$_DV_COMMON"
-fi
-(
-    set +eu
-    # shellcheck disable=SC1090
-    source "$_DV_LIB" >/dev/null 2>&1
-    declare -F drill_summary >/dev/null || exit 97
-    DRILL_NAME="gatecheck"
-    DRILL_STARTED_AT=$(date +%s)
-    DRILL_COUNT="$_DV_COUNT"
-    DRILL_FAILURES="$_DV_FAILURES"
-    DRILL_SELFTEST="$_DV_SELFTEST"
-    DRILL_ROWS=()
-    out="$(drill_summary 2>&1)"
-    rc=$?
-    printf '%s|%s' "$rc" "$out"
-)
+import importlib.util, io, os, sys, time
+spec = importlib.util.spec_from_file_location("_dv_harness", os.environ["_DV_LIB"])
+module = importlib.util.module_from_spec(spec)
+try:
+    spec.loader.exec_module(module)
+except Exception:
+    sys.exit(97)
+drill_cls = getattr(module, "Drill", None)
+if drill_cls is None or not callable(getattr(drill_cls, "summary", None)):
+    sys.exit(97)
+buf = io.StringIO()
+drill = drill_cls("gatecheck", selftest=os.environ["_DV_SELFTEST"] == "1", stdout=buf)
+drill.started_at = int(time.time())
+drill.count = int(os.environ["_DV_COUNT"])
+drill.failures = int(os.environ["_DV_FAILURES"])
+drill.rows = []
+rc = drill.summary()
+sys.stdout.write("%d|%s" % (rc, buf.getvalue().rstrip("\\n")))
 """
 
 
 def run_summary(root: pathlib.Path, count: str, failures: str, selftest: str = "0") -> str:
-    """Drive `drill_summary` with the counters set directly. Returns `rc|stdout`.
+    """Drive `Drill.summary` with the counters set directly. Returns `rc|stdout`.
 
-    The EMPTY STRING is a real answer and means the subshell died before its printf, which is the only way a caller learns the harness could not be driven. See the port notes for why the `97` it exits with never reaches anybody.
+    The EMPTY STRING is a real answer and means the child exited before printing: the harness could not be loaded, or defines no `Drill.summary`.
     """
     env = dict(os.environ)
     env.update(
         {
-            "_DV_LIB": DRILL_LIB,
-            "_DV_COMMON": COMMON_LIB,
+            "_DV_LIB": str(root / DRILL_LIB),
             "_DV_COUNT": count,
             "_DV_FAILURES": failures,
             "_DV_SELFTEST": selftest,
+            "PYTHONPATH": PACKAGE_PARENT,
+            paths.ROOT_ENV: str(root),
         }
     )
     proc = subprocess.run(
-        ["bash", "-c", RUNNER],
+        [sys.executable, "-c", RUNNER],
         cwd=str(root),
         env=env,
         stdout=subprocess.PIPE,
@@ -130,10 +115,7 @@ def run_summary(root: pathlib.Path, count: str, failures: str, selftest: str = "
 
 
 def tail_summary(out: str) -> str:
-    """`tr '\\n' ' ' <<<"$out" | tail -c 200`, both details included.
-
-    The herestring appends a newline that `tr` turns into a trailing SPACE, so the 200-byte window is taken from a string one byte longer than `$out`. A port that dropped that space would print a different first character for every long failure.
-    """
+    """The last 200 bytes of the summary, newlines flattened to spaces, with one trailing space."""
     flattened = (out + "\n").replace("\n", " ")
     raw = flattened.encode("utf-8", "surrogateescape")
     return raw[-TAIL_BYTES:].decode("utf-8", "surrogateescape")
@@ -164,7 +146,7 @@ class Case:
         self.forbid = forbid
 
 
-# The four cases, in the twin's order, with its labels byte for byte.
+# The four cases.
 CASES: tuple[Case, ...] = (
     # 1. THE DEFECT: nothing asserted must not claim a pass (exit 0 is correct).
     Case("0 assertions reads as SKIPPED, never PASSED", "0", "0", "0", "0", "SKIPPED", "PASSED"),
@@ -188,19 +170,17 @@ CASES: tuple[Case, ...] = (
 def assert_verdict(root: pathlib.Path, case: Case) -> bool:
     """Drive one case and report. True when it held.
 
-    THE EMPTY-CAPTURE BRANCH COMES FIRST, and the twin's reason is carried: "An empty capture means the subshell died before its printf, i.e. the harness could not be driven at all. Say that, rather than letting it fall through to the rc comparison below and surface as the cryptic 'expected exit 0, got '. A gate whose probe failed must not be able to look like a gate whose probe
-    returned nothing interesting."
+    THE EMPTY-CAPTURE BRANCH COMES FIRST: an empty capture means the child exited before printing, so the harness could not be driven at all. Saying that beats falling through to the rc comparison as the cryptic 'expected exit 0, got '. A gate whose probe failed must not be able to look like a gate whose probe returned nothing interesting.
     """
     result = run_summary(root, case.count, case.fails, case.selftest)
     if result == "":
         log.error(
-            "%s: run_summary produced no output \u2014 drill_summary could not be driven."
+            "%s: run_summary produced no output \u2014 Drill.summary could not be driven."
             % case.label
         )
         return False
 
-    # `${result%%|*}` and `${result#*|}`: the FIRST pipe splits them, so a
-    # summary containing a pipe stays intact on the right-hand side.
+    # The FIRST pipe splits them, so a summary containing a pipe stays intact on the right-hand side.
     head, _, out = result.partition("|")
     rc = head
 
@@ -223,7 +203,7 @@ def assert_verdict(root: pathlib.Path, case: Case) -> bool:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 on an absent harness or any failed case.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin documents itself as taking no arguments ("Usage: check-drill-verdicts.sh") and ignores any it is given.
+    `--selftest` is intercepted BEFORE any real scan; any other argument is ignored.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -234,19 +214,15 @@ def main(argv: list[str] | None = None) -> int:
     log.step("Checking drill verdict logic in %s..." % DRILL_LIB)
 
     if not (root / DRILL_LIB).is_file():
-        # A HARNESS THAT VANISHED IS A FAILURE, NOT AN ABSTENTION. Two lines, because the twin prints two and the sentence runs across them.
+        # A HARNESS THAT VANISHED IS A FAILURE, NOT AN ABSTENTION.
         log.error("%s not found \u2014 this gate has nothing to check, which is a" % DRILL_LIB)
         log.error("failure, not a pass: a harness that vanished cannot be verified.")
         return 1
 
     # Prove the harness is reachable before trusting a single verdict.
-    #
-    # THIS BRANCH CANNOT FIRE. The subshell exits 97 without printing, so the capture is EMPTY and its head is the empty string, never "97". Carried
-    # from the twin unchanged and reported as a defect rather than repaired;
-    # `assert_verdict`'s empty-result guard is what actually catches an undrivable harness. See the port notes.
     probe = run_summary(root, "1", "0")
-    if probe.partition("|")[0] == UNDRIVABLE:
-        log.error("Could not load drill_summary from %s." % DRILL_LIB)
+    if probe == "":
+        log.error("Could not load Drill.summary from %s." % DRILL_LIB)
         log.error("Refusing to report on a harness this gate cannot actually drive.")
         return 1
 
@@ -265,37 +241,38 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# A minimal harness that satisfies all four cases. Small enough to read, and shaped like the real `drill_summary`: it branches on DRILL_SELFTEST first, then on DRILL_FAILURES, then on DRILL_COUNT, and returns the same codes.
-_GOOD_LIB = """#!/bin/bash
-drill_summary() {
-    printf '  %d assertions: %d passed, %d failed\\n' \\
-        "$DRILL_COUNT" "$((DRILL_COUNT - DRILL_FAILURES))" "$DRILL_FAILURES"
-    if [[ "$DRILL_SELFTEST" == "1" ]]; then
-        if [[ "$DRILL_FAILURES" -eq 0 ]]; then
-            printf '  SELFTEST DID NOT FIRE: a planted failure went unnoticed\\n'
+# A minimal harness that satisfies all four cases. Small enough to read, and shaped like the real `Drill.summary`: it branches on the selftest flag first, then on failures, then on the count, and returns the same codes.
+_GOOD_LIB = """class Drill:
+    def __init__(self, name, selftest=False, keep_work=None, stdout=None):
+        self.name = name
+        self.selftest = selftest
+        self.out = stdout
+        self.count = 0
+        self.failures = 0
+
+    def summary(self):
+        self.out.write("  %d assertions: %d passed, %d failed\\n" % (self.count, self.count - self.failures, self.failures))
+        if self.selftest:
+            if self.failures == 0:
+                self.out.write("  SELFTEST DID NOT FIRE: a planted failure went unnoticed\\n")
+                return 1
+            self.out.write("  selftest fired as designed\\n")
             return 1
-        fi
-        printf '  selftest fired as designed\\n'
-        return 1
-    fi
-    if [[ "$DRILL_FAILURES" -gt 0 ]]; then
-        printf '  drill %s FAILED\\n' "$DRILL_NAME"
-        return 1
-    fi
-    if [[ "$DRILL_COUNT" -eq 0 ]]; then
-        printf '  drill %s SKIPPED (0 assertions ran)\\n' "$DRILL_NAME"
+        if self.failures > 0:
+            self.out.write("  drill %s FAILED\\n" % self.name)
+            return 1
+        if self.count == 0:
+            self.out.write("  drill %s SKIPPED (0 assertions ran)\\n" % self.name)
+            return 0
+        self.out.write("  drill %s PASSED\\n" % self.name)
         return 0
-    fi
-    printf '  drill %s PASSED\\n' "$DRILL_NAME"
-    return 0
-}
 """
 
 # THE 2026-08-05 DEFECT ITSELF, as a fixture: a zero-assertion run that says PASSED. This is the mutant the gate exists to catch, and a suite without it is a suite that has never seen this gate fire.
 _VACUOUS_LIB = plant(
     _GOOD_LIB,
-    "        printf '  drill %s SKIPPED (0 assertions ran)\\n' \"$DRILL_NAME\"\n        return 0\n",
-    "        printf '  drill %s PASSED\\n' \"$DRILL_NAME\"\n        return 0\n",
+    '            self.out.write("  drill %s SKIPPED (0 assertions ran)\\n" % self.name)\n',
+    '            self.out.write("  drill %s PASSED\\n" % self.name)\n',
 )
 
 
@@ -315,7 +292,7 @@ def selftest() -> int:
     )
     ctl.check("helper: an empty summary flattens to one space", tail_summary(""), " ")
 
-    ctl.check("helper: the four cases are the twin's four", len(CASES), 4)
+    ctl.check("helper: the table has four cases", len(CASES), 4)
     ctl.check("helper: case 1 forbids the word a dashboard greps for", CASES[0].forbid, "PASSED")
     ctl.check(
         "helper: case 2 is the CONTROL and forbids nothing, or case 1 is vacuous",
@@ -325,8 +302,8 @@ def selftest() -> int:
 
     with tempfile.TemporaryDirectory() as tmp:
         root = pathlib.Path(tmp)
-        (root / "scripts" / "drills").mkdir(parents=True)
         lib = root / DRILL_LIB
+        lib.parent.mkdir(parents=True)
 
         def run(body: str | None) -> int:
             if body is None:
@@ -352,14 +329,14 @@ def selftest() -> int:
         # PLANT 1: the founding defect. 0 assertions printing PASSED.
         ctl.check("PLANT: a zero-assertion run that says PASSED is caught", run(_VACUOUS_LIB), 1)
 
-        # PLANT 2: a harness with no drill_summary at all. The subshell dies before its printf, so the capture is empty; this is the branch that actually catches an undrivable harness, the `97` probe having been unreachable since it was written.
+        # PLANT 2: a harness with no Drill.summary at all. The child exits 97 before printing, so the capture is empty.
         ctl.check(
-            "PLANT: a harness with no drill_summary is refused",
-            run("#!/bin/bash\necho nothing here\n"),
+            "PLANT: a harness with no Drill.summary is refused",
+            run("NOTHING_HERE = 1\n"),
             1,
         )
         ctl.check(
-            "PLANT: and the capture really is EMPTY, not '97|'",
+            "PLANT: and the capture really is EMPTY",
             run_summary(root, "1", "0"),
             "",
         )
@@ -370,8 +347,8 @@ def selftest() -> int:
             run(
                 plant(
                     _GOOD_LIB,
-                    "    printf '  drill %s PASSED\\n' \"$DRILL_NAME\"\n    return 0",
-                    "    printf '  drill %s SKIPPED\\n' \"$DRILL_NAME\"\n    return 0",
+                    '        self.out.write("  drill %s PASSED\\n" % self.name)\n        return 0',
+                    '        self.out.write("  drill %s SKIPPED\\n" % self.name)\n        return 0',
                 )
             ),
             1,
@@ -383,8 +360,8 @@ def selftest() -> int:
             run(
                 plant(
                     _GOOD_LIB,
-                    "        printf '  drill %s FAILED\\n' \"$DRILL_NAME\"\n        return 1",
-                    "        printf '  drill %s FAILED\\n' \"$DRILL_NAME\"\n        return 0",
+                    '            self.out.write("  drill %s FAILED\\n" % self.name)\n            return 1',
+                    '            self.out.write("  drill %s FAILED\\n" % self.name)\n            return 0',
                 )
             ),
             1,
@@ -396,9 +373,9 @@ def selftest() -> int:
             run(
                 plant(
                     _GOOD_LIB,
-                    "            printf '  SELFTEST DID NOT FIRE: a planted failure "
-                    "went unnoticed\\n'\n            return 1",
-                    "            printf '  all good\\n'\n            return 0",
+                    '                self.out.write("  SELFTEST DID NOT FIRE: a planted failure '
+                    'went unnoticed\\n")\n                return 1',
+                    '                self.out.write("  all good\\n")\n                return 0',
                 )
             ),
             1,

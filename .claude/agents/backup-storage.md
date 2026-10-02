@@ -37,7 +37,7 @@ parallel-GET its cells, write at offsets into a sparse file. RTO is bandwidth-bo
 | control plane | `private/account/src/routes/backups.ts`, `src/services/backup-chunk-store.ts`, `src/dto/backup.dto.ts` |
 | CLI | `packages/cli/src/commands/backup.ts`, `backup-ops.ts`, `backup-storage.ts`, `backup-strategy.ts` |
 | schedules | `packages/cli/src/services/backup/backup-schedule{,-execute,-reconcile,-unit-generator}.ts` |
-| drill | `scripts/drills/backup.sh` |
+| drill | `.ci/rediacc_ci/drills/backup.py` (`./run.sh drill backup`) |
 | wire gate | `scripts/gates/check-backup-protocol-conformance.ts` (`npm run check:ci-backup-protocol-conformance`) |
 
 Anchors live at `<datastore>/.chunk-anchors/<guid>` and the journal at `/var/lib/rediacc/backup-journal/<datastoreID>-<guid>.json`. The `.chunk-` prefix is load-bearing: three live `.backup-*` scanners exist and one of them DELETES matches, so `.backup-anchors` would be reaped on every `machine prune`.
@@ -85,8 +85,8 @@ shims.
 ## Running things
 
 ```bash
-scripts/drills/backup.sh --selftest        # the drill; --selftest plants ONE shared
-                                           # probe (scripts/drills/lib.sh) before any
+./run.sh drill backup --selftest          # the drill; --selftest plants ONE shared
+                                           # probe (rediacc_ci.drills.lib) before any
                                            # leg runs, not one per leg
 npm run check:ci-backup-protocol-conformance
 cd private/renet && go test -race ./pkg/chunkstore/... ./cmd/...
