@@ -2022,7 +2022,7 @@ interface Plant {
   want: (sites: Site[], r: GroupResult) => boolean;
 }
 
-// A product-source directory for the BOUNDARY plant below, extension-less so `check:ci-paths-exist` leaves the bare literal alone (Tier B only checks a literal that carries a known extension or ends in `/`); the plant's fixture filenames build the rest via template literal rather than a whole quoted `packages/.../w.ts` literal.
+// A product-source directory for the BOUNDARY plant below, extension-less so the dead-path detector (test_gate_paths_exist.py) leaves the bare literal alone (Tier B only checks a literal that carries a known extension or ends in `/`); the plant's fixture filenames build the rest via template literal rather than a whole quoted `packages/.../w.ts` literal.
 const PRODUCT_W_DIR = 'packages/cli/src';
 
 const PLANTS: Plant[] = [
@@ -2127,7 +2127,7 @@ const PLANTS: Plant[] = [
   {
     label: 'BOUNDARY: product source is not entered, and is counted',
     entry: 'g.ts',
-    // The fixture's own path has to look like real workspace product source (`isProduct` matches `(packages|private|workers)/<pkg>/src/...`), so the value itself cannot change. Built off `PRODUCT_W_DIR` (extension-less, so `check:ci-paths-exist` leaves it alone) via template literals instead of a whole quoted literal: this filename is never read from disk, only matched as text, so the exact spelling of the literal in this file's own source does not matter, only the string it evaluates to.
+    // The fixture's own path has to look like real workspace product source (`isProduct` matches `(packages|private|workers)/<pkg>/src/...`), so the value itself cannot change. Built off `PRODUCT_W_DIR` (extension-less, so the dead-path detector (test_gate_paths_exist.py) leaves it alone) via template literals instead of a whole quoted literal: this filename is never read from disk, only matched as text, so the exact spelling of the literal in this file's own source does not matter, only the string it evaluates to.
     files: {
       'g.ts': `import { w } from './${PRODUCT_W_DIR}/w.js';\nw();\n`,
       [`${PRODUCT_W_DIR}/w.ts`]:
