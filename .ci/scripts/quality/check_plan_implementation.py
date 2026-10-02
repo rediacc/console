@@ -43,6 +43,7 @@ from typing import Any
 
 import _cipath  # noqa: F401
 from rediacc_ci import log, paths
+from rediacc_ci.controls import plant
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 HOOK_DIR = os.path.join(REPO_ROOT, ".claude", "hooks", "stop")
@@ -924,8 +925,10 @@ def controls_fired(enforce, planfile, planrec=None):
         "V3 Stall removal: `Review Complete` leaves the ruleset's required checks (part of M4's single diff); "
         "pr-merge.md:108 and pr-babysitter.md:16,110 drop the claude-reviewed marker and thread preconditions"
     )
-    v3_new = v3_old.replace("pr-merge.md:108", ".claude/commands/pr-merge.md:111").replace(
-        "pr-babysitter.md:16,110", ".claude/agents/pr-babysitter.md:16,122"
+    v3_new = plant(
+        plant(v3_old, "pr-merge.md:108", ".claude/commands/pr-merge.md:111"),
+        "pr-babysitter.md:16,110",
+        ".claude/agents/pr-babysitter.md:16,122",
     )
     v3_rows = [{"plan": "agent/plans/PLAN-v.md", "sig": "7a6762cd", "box": v3_old}]
     caught(
@@ -939,7 +942,7 @@ def controls_fired(enforce, planfile, planrec=None):
             "agent/plans/PLAN-v.md",
             "4d461643",
             (),
-            v3_new.replace("drop the claude-reviewed marker", "keep the claude-reviewed marker"),
+            plant(v3_new, "drop the claude-reviewed marker", "keep the claude-reviewed marker"),
         )
         is None,
     )

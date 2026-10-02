@@ -1717,12 +1717,12 @@ def selftest():
     )
     rb(
         "RB CONTROL: a ticked box counts as a box",
-        "# t\nStatus: executing\n\n" + box.replace("[ ]", "[x]"),
+        "# t\nStatus: executing\n\n" + plant(box, "[ ]", "[x]"),
         "",
     )
     rb(
         "RB CONTROL: a `- [?]` box counts as a box",
-        "# t\nStatus: ready\n\n" + box.replace("[ ]", "[?]"),
+        "# t\nStatus: ready\n\n" + plant(box, "[ ]", "[?]"),
         "",
     )
     rb("RB: `Status: draft` with no box WARNS and does not refuse", "# t\nStatus: draft\n", "warn")
