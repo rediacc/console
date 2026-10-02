@@ -1727,7 +1727,7 @@ def main(argv):
         return 0
     if argv[0] == "--check":
         branch = _opt(argv, "--branch") or current_branch(root)
-        reasons, lines = check_state(root, branch, label=_opt(argv, "--repo"))
+        reasons, lines = check_state(root, branch, label=_opt(argv, "--repo", None))
         print(
             "per-commit reviews for %s: %s"
             % (
