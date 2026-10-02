@@ -111,7 +111,7 @@ import sys
 import tempfile
 
 from rediacc_ci import log
-from rediacc_ci.well_known import PKG_MAINTAINER_EMAIL, PKG_SIGNING_KEY_NAME, SITE_ORIGIN
+from rediacc_ci.well_known import PKG_MAINTAINER_EMAIL, SITE_ORIGIN
 
 # ---------------------------------------------------------------------------
 # `.ci/config/constants.sh:206-212`, RESTATED. See the module head for why, and `test_the_restated_constants_match_constants_sh` for the alarm that keeps them
@@ -550,8 +550,6 @@ def build(argv: list[str]) -> int:
     os.environ["PKG_MAINTAINER"] = PKG_MAINTAINER
     os.environ["PKG_DESCRIPTION"] = PKG_DESCRIPTION
     os.environ["PKG_HOMEPAGE"] = PKG_HOMEPAGE
-    # nfpm.yaml's apk `key_name` reads this. The twin inherits it from constants.sh, which sources and exports .ci/config/well-known.generated.sh; unset here, nfpm falls back to the maintainer address and every deployed /etc/apk/keys entry stops matching.
-    os.environ["WK_PKG_SIGNING_KEY_NAME"] = PKG_SIGNING_KEY_NAME
     os.environ["VERSION"] = version
     os.environ["NFPM_ARCH"] = nfpm_arch
 

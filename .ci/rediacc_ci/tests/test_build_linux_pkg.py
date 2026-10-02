@@ -111,8 +111,7 @@ if [[ -n "${FAKE_ENV_DUMP:-}" ]]; then
     for v in PKG_NAME PKG_BINARY_NAME PKG_SECTION PKG_PRIORITY PKG_MAINTAINER \\
              PKG_DESCRIPTION PKG_HOMEPAGE VERSION NFPM_ARCH BINARY_PATH \\
              NFPM_RPM_KEY_FILE NFPM_DEB_KEY_FILE NFPM_APK_KEY_FILE \\
-             NFPM_RPM_PASSPHRASE NFPM_DEB_PASSPHRASE CI_OS CI_ARCH CI_TEMP \\
-             WK_PKG_SIGNING_KEY_NAME; do
+             NFPM_RPM_PASSPHRASE NFPM_DEB_PASSPHRASE CI_OS CI_ARCH CI_TEMP; do
         printf '%s=' "$v"
         __mask "${!v-<unset>}"
         printf '\\n'
@@ -717,18 +716,16 @@ def test_the_environment_nfpm_receives_is_the_whole_package_definition(tmp_path)
     _agree(old_t, new_t, "nfpm-env")
 
 
-def test_both_sides_hand_nfpm_the_apk_signing_key_name(tmp_path) -> None:
-    """`.ci/config/nfpm.yaml` sets `apk.signature.key_name: "${WK_PKG_SIGNING_KEY_NAME}"`. The twin gets that variable from constants.sh, which sources and exports .ci/config/well-known.generated.sh; the port must export it itself. Empty, nfpm falls back to the MAINTAINER address, and APKv2 matches the public key by that FILENAME, so every deployed /etc/apk/keys entry stops verifying."""
-    root = fixture(tmp_path)
-    old_t, new_t = run_both(root, args=(*DEB, "--format", "apk", "--arch", "x86_64"))
-    assert old_t[0].returncode == 0, old_t[0].stderr
-    assert new_t[0].returncode == 0, new_t[0].stderr
-    for side, dump in (("twin", old_t[2]), ("port", new_t[2])):
-        seen = dict(line.split("=", 1) for line in dump.splitlines())
-        assert seen["WK_PKG_SIGNING_KEY_NAME"] == PKG_SIGNING_KEY_NAME, "%s handed nfpm %r" % (
-            side,
-            seen["WK_PKG_SIGNING_KEY_NAME"],
-        )
+def test_the_apk_signing_key_name_is_written_into_the_config() -> None:
+    """`.ci/config/nfpm.yaml` must carry the signing key name LITERALLY. nfpm does not expand environment variables in `apk.signature.key_name`, so a `${WK_PKG_SIGNING_KEY_NAME}` placeholder shipped verbatim as the signature member `.SIGN.RSA.${WK_PKG_SIGNING_KEY_NAME}.rsa.pub` (PR #591 CI, 2026-10-02). APKv2 matches the public key by that FILENAME, so a wrong name breaks every deployed /etc/apk/keys entry. check:ci-literal-sources holds the carried value equal to the registry; this case pins that it is a literal at all."""
+    text = (ROOT / ".ci" / "config" / "nfpm.yaml").read_text(encoding="utf-8")
+    names = re.findall(r'^\s*key_name:\s*"([^"]*)"', text, flags=re.MULTILINE)
+    assert len(names) == 1, (
+        "nfpm.yaml should set exactly one key_name (apk.signature), found %r" % names
+    )
+    key_name = names[0]
+    assert "$" not in key_name, "nfpm does not expand %r; write the value literally" % key_name
+    assert key_name == PKG_SIGNING_KEY_NAME
     assert PKG_SIGNING_KEY_NAME != PKG_MAINTAINER_EMAIL, "the pin only matters while the two differ"
 
 
