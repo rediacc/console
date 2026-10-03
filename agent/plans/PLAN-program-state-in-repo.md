@@ -35,7 +35,8 @@ D4. **A checklist owner that is not live is a question for the operator, once.**
 
 ## Tasks
 
-- [ ] PS1 /handoff seeds state in-repo (D1). Files: .claude/commands/handoff.md. Acceptance: `grep -c '~/.claude/projects' .claude/commands/handoff.md` prints 0 and `npm run check:ci-prose-style` exits 0.
+- [x] PS1 /handoff seeds state in-repo (D1). Files: .claude/commands/handoff.md. Acceptance: `grep -c '~/.claude/projects' .claude/commands/handoff.md` prints 0 and `npm run check:ci-prose-style` exits 0.
+    (ticked) 2026-10-03T21:05:41Z by d778be9d: commit:0343aed88 handoff.md seeds agent/programs/<slug>/state/; grep count 0; prose-style rc 0
 - [ ] PS2 Repoint the three checklists and copy clarity-round6's state (D2). Files: agent/programs/{www-simplification,www-round5,clarity-round6}/{CHECKLIST.md,README.md,state/**}. Acceptance: `wl_checklist._deliverable_rows` reports no missing deliverable for any of the three.
 - [ ] PS3 Derive the projects dir in the prose (D3). Files: .claude/agents/pr-babysitter.md, .claude/commands/pr-babysit.md. Acceptance: `git grep -n 'home-muhammed' -- .claude/agents .claude/commands` prints nothing.
 - [ ] PS4 Ask about a non-live checklist owner (D4). Files: .claude/hooks/stop/wl_checklist.py, .claude/hooks/stop/worklist_messages.py, the ladder and stand-down keep-lists if the key needs them. Acceptance: the tests below.
