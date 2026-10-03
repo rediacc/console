@@ -28,6 +28,7 @@ from collections.abc import Callable
 
 from rediacc_ci import log, paths
 from rediacc_ci.review.pr_labels import BUMP_LABEL, aggregate, branch_slug, read_verdict
+from rediacc_ci.well_known import GH_ORIGIN
 
 MARKER_PREFIX = "<!-- per-commit-reviews:"
 # GitHub refuses a comment body over 65,536 characters; the margin keeps the truncation notes inside it.
@@ -180,14 +181,14 @@ def _clip(text: str, cap: int) -> str:
 def record_url(ctx: Context, rec: Record) -> str:
     rel = "%s/%s/%s" % (REVIEWS_REL, branch_slug(ctx.branch), rec.file or rec.sha + ".md")
     if ctx.repo and ctx.head:
-        return "https://github.com/%s/blob/%s/%s" % (ctx.repo, ctx.head, rel)
+        return "%s/%s/blob/%s/%s" % (GH_ORIGIN, ctx.repo, ctx.head, rel)
     return rel
 
 
 def dir_url(ctx: Context) -> str:
     rel = "%s/%s" % (REVIEWS_REL, branch_slug(ctx.branch))
     if ctx.repo and ctx.head:
-        return "https://github.com/%s/tree/%s/%s" % (ctx.repo, ctx.head, rel)
+        return "%s/%s/tree/%s/%s" % (GH_ORIGIN, ctx.repo, ctx.head, rel)
     return rel
 
 
