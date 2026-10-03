@@ -15,11 +15,11 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2838,
+ "count": 2836,
  "files": 697,
  "by_rule": {
-  "R1": 1550,
-  "R11": 150,
+  "R1": 1549,
+  "R11": 149,
   "R14": 1,
   "R18": 13,
   "R19": 62,
@@ -1240,7 +1240,6 @@
    "R1": [
     "0928fa77826c4c34",
     "0affd2f61926bb0f",
-    "12ed2d465d6dc36a",
     "17d348f565c58f21",
     "1c2bcb2d30d20c27",
     "1d04460b279372d2",
@@ -1363,9 +1362,6 @@
     "ec33029790d0ed19",
     "ef97818e99ee649d",
     "f85781195413ef1e"
-   ],
-   "R11": [
-    "4687c1fca4297708"
    ],
    "R2": [
     "fd2e25a671e03898"

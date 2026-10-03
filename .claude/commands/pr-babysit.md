@@ -67,7 +67,7 @@ For each one found:
 You are the **team lead**. Your job is the four things only you can do: compose the briefing, hand over the tree, rule on escalations, verify the end. Your real work while it runs is *the remaining task list*. If you have nothing to do but watch CI, the wave was mis-scoped.
 
 ### 1. Compose the briefing
-Write it to `~/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babysit-<branch>-briefing.md`. Contents: the **wave-header slots as specced in the agent file's round-log section** (intent, renames/removals, sanctioned reds, frozen surfaces, baselines + their measurement commands, decision-boundary additions, memory pointers) plus two delegate-only slots: **escalation
+Write it to `<projects-dir>/reports/pr-babysit-<branch>-briefing.md` (`<projects-dir>` is what `wl_core.projects_dir` returns for this checkout; `.claude/agents/pr-babysitter.md` gives the one-line command that prints it). Contents: the **wave-header slots as specced in the agent file's round-log section** (intent, renames/removals, sanctioned reds, frozen surfaces, baselines + their measurement commands, decision-boundary additions, memory pointers) plus two delegate-only slots: **escalation
 routing** (domain → who answers; default: you) and **anything time-critical**. **Immutable once the babysitter is running**: supersede with a new file, never rewrite in place. (Briefing and round log stay two artifacts on purpose: the briefing is your immutable handoff; the round log is the babysitter's mutable state. Do not "simplify" them into one.)
 
 ### 2. Hand over the tree, register, spawn
