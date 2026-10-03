@@ -432,6 +432,143 @@ cases.append((2, run(PUSH), "CONTROL: a branch push with no receipt is still ref
 git("update-ref", "-d", "refs/remotes/origin/main")
 _rekey()
 
+# --- a live branch behind origin/main is refused before the push ---------------------------------- PR #592's first CI run (run 37110619739) went red only on Quality / Branch: main had moved three commits after 1003-1 was cut, and the push clone's origin/main was stale, so nothing local saw it. The guard fetches origin/main itself and refuses an MMDD-N push that does not contain it.
+# Fixtures are a bare "origin" and a second clone that advances it, all on local paths: no case here touches the network.
+REPO = pathlib.Path(__file__).resolve().parents[3]
+LIVE = "1003-1"
+
+
+def g(where, *a):
+    return subprocess.run(
+        ["git", "-C", str(where), *a], capture_output=True, text=True, check=True
+    ).stdout.strip()
+
+
+def ci_recipe(head):
+    """`rediacc_ci.quality.branch.recipe("main", head)`, the text CI prints, read in a child with `.ci` on PYTHONPATH (no sys.path hop in this file)."""
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import json, sys; from rediacc_ci.quality.branch import recipe;"
+                " print(json.dumps(recipe('main', sys.argv[1])))"
+            ),
+            head,
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=dict(os.environ, PYTHONPATH=str(REPO / ".ci")),
+    )
+    return "\n".join(json.loads(proc.stdout))
+
+
+bw = pathlib.Path(tempfile.mkdtemp(dir=RUN_TMP))
+origin = bw / "origin.git"
+work = bw / "work"
+mover = bw / "mover"
+subprocess.run(
+    ["git", "init", "-q", "--bare", "-b", "main", str(origin)], check=True, capture_output=True
+)
+subprocess.run(["git", "init", "-q", "-b", "main", str(work)], check=True, capture_output=True)
+g(work, "config", "user.email", "p@example.invalid")
+g(work, "config", "user.name", "p")
+g(work, "remote", "add", "origin", str(origin))
+(work / "base.txt").write_text("base\n", encoding="utf-8")
+g(work, "add", "-A")
+g(work, "commit", "-qm", "base")
+g(work, "push", "-q", "origin", "main")
+g(work, "fetch", "-q", "origin")
+g(work, "checkout", "-qb", LIVE)
+(work / "live.txt").write_text("live\n", encoding="utf-8")
+g(work, "add", "--", "live.txt")
+g(work, "commit", "-qm", "live work")
+# main moves on origin AFTER the branch was cut, through another clone, so work's own origin/main is STALE: only a fetch can see the three commits.
+subprocess.run(["git", "clone", "-q", str(origin), str(mover)], check=True, capture_output=True)
+g(mover, "config", "user.email", "p@example.invalid")
+g(mover, "config", "user.name", "p")
+for i in range(3):
+    (mover / ("main-%d.txt" % i)).write_text("m\n", encoding="utf-8")
+    g(mover, "add", "-A")
+    g(mover, "commit", "-qm", "main moves %d" % i)
+g(mover, "push", "-q", "origin", "main")
+
+
+def plant_green(where):
+    """A whole, green receipt for `where`'s HEAD^{tree}, so the receipt arm allows and the base check is the only thing left to judge."""
+    cache = pathlib.Path(where) / ".ci" / "cache"
+    cache.mkdir(parents=True, exist_ok=True)
+    (cache / "prepush-receipt.json").write_text(
+        json.dumps(
+            {"headTree": g(where, "rev-parse", "HEAD^{tree}"), "whole": True, "exitCode": 0}
+        ),
+        encoding="utf-8",
+    )
+
+
+def drive(where, cmd):
+    proc = subprocess.run(
+        GUARD_ARGV,
+        input=json.dumps({"tool_input": {"command": cmd}}),
+        capture_output=True,
+        text=True,
+        cwd=str(where),
+        env=dict(os.environ, CLAUDE_PROJECT_DIR=str(where)),
+        check=False,
+    )
+    return proc.returncode, proc.stderr
+
+
+plant_green(work)
+stale = g(work, "rev-parse", "refs/remotes/origin/main")
+rc, err = drive(work, "git push origin %s" % LIVE)
+cases.append((2, rc, "BEHIND: a live branch three commits behind origin/main is refused"))
+cases.append(
+    (True, ci_recipe(LIVE) in err, "BEHIND: the refusal prints CI's REBASE LOCALLY recipe verbatim")
+)
+cases.append(
+    (
+        True,
+        g(work, "rev-parse", "refs/remotes/origin/main") != stale,
+        "BEHIND: the guard fetched origin/main itself rather than trusting the stale ref",
+    )
+)
+rc, _err = drive(work, "git push --force-with-lease origin %s" % LIVE)
+cases.append((2, rc, "BEHIND: a --force-with-lease republish of the live branch is judged too"))
+rc, _err = drive(work, "git push -u origin HEAD")
+cases.append((2, rc, "BEHIND: HEAD pushed from the live branch is judged as the live branch"))
+
+# CONTROL: the same branch rebased onto origin/main is allowed.
+g(work, "rebase", "-q", "origin/main")
+plant_green(work)
+rc, err = drive(work, "git push --force-with-lease origin %s" % LIVE)
+cases.append((0, rc, "CONTROL: the live branch on top of origin/main is allowed"))
+cases.append((False, "REBASE LOCALLY" in err, "CONTROL: and prints no recipe"))
+
+# CONTROL: a branch that is not MMDD-N is not judged, however far behind.
+g(work, "checkout", "-qb", "feature", g(work, "rev-list", "--max-parents=0", "HEAD"))
+(work / "feature.txt").write_text("f\n", encoding="utf-8")
+g(work, "add", "--", "feature.txt")
+g(work, "commit", "-qm", "feature")
+plant_green(work)
+rc, err = drive(work, "git push origin feature")
+cases.append((0, rc, "CONTROL: a non-MMDD-N branch push is not judged against origin/main"))
+
+# CANNOT JUDGE: the live branch is behind again, but origin is unreachable, so the fetch fails. Warn, say so, and allow (fail open on a broken environment).
+g(work, "checkout", "-q", LIVE)
+g(work, "reset", "-q", "--hard", g(work, "rev-list", "--max-parents=0", "HEAD"))
+(work / "live.txt").write_text("live again\n", encoding="utf-8")
+g(work, "add", "--", "live.txt")
+g(work, "commit", "-qm", "live work, cut before main moved")
+plant_green(work)
+g(work, "update-ref", "refs/remotes/origin/main", g(work, "rev-parse", "HEAD~1"))
+g(work, "remote", "set-url", "origin", str(bw / "gone.git"))
+rc, err = drive(work, "git push origin %s" % LIVE)
+cases.append((0, rc, "CANNOT JUDGE: a failed fetch of origin/main allows"))
+cases.append((True, "cannot judge" in err, "CANNOT JUDGE: and the warning says so explicitly"))
+
+shutil.rmtree(bw, ignore_errors=True)
 shutil.rmtree(d, ignore_errors=True)
 
 bad = 0
