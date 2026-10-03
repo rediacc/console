@@ -557,9 +557,9 @@ RUN ARCH=$(dpkg --print-architecture) \
 # scripts/gates/check-devcontainer-pin-freshness.ts watches this pin and rewrites all
 # three ARGs together; the CLI lives in a MONOREPO, so that gate filters tags by
 # the `cli-v` prefix rather than trusting /releases/latest.
-ARG BW_VERSION=2026.9.0
-ARG BW_SHA256_AMD64=580c1deec8345b19dbac7f8b02babb6cc4fe250c69c567e29061f727f1e40768
-ARG BW_SHA256_ARM64=3f474cc34b701a1cebdd486009870038b034343afb83095607422cdad4c3653a
+ARG BW_VERSION=2026.9.1
+ARG BW_SHA256_AMD64=84289eaf59d691f04242605112f21b00e8dba65acdedbc60dde001a2860f2097
+ARG BW_SHA256_ARM64=c451c773378a6f1f041ea26568a897b285a8656bee16a16e4914ce9e40fb7c79
 RUN ARCH=$(dpkg --print-architecture) \
     && case "$ARCH" in \
     amd64) BW_ASSET="bw-linux-${BW_VERSION}.zip";       BW_SHA="${BW_SHA256_AMD64}" ;; \
