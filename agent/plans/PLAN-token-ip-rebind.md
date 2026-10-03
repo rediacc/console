@@ -23,15 +23,24 @@ There are two writers, and their Owns do not overlap:
 
 The submodule PR (A) merges first. The console PR (B, plus the pointer bump) follows it.
 
-- [ ] T0 [lead] Freeze the wire contract (section 3.1). Put the error codes, the 403 body shape and the rebind request/response types in `packages/shared/src/subscription/types.ts`. A and B both import them.
-- [ ] T1 [A] Migration `0054_api_token_ip_rebind.sql`, the schema columns, and `verifyCodeStep` in `utils/totp.ts` (sections 3.2 and 3.3).
-- [ ] T2 [A] Split the middleware into `resolveApiToken` plus the IP check. The 403 carries `code: TOKEN_IP_MISMATCH` and the `rebind` hint (section 3.4).
-- [ ] T3 [A] The rebind route, the service methods (atomic failure counter, compare-and-set bind), audit events and activity titles, and the DTO (sections 3.5-3.7).
-- [ ] T4 [A] Integration tests and mutation controls (section 6.1).
-- [ ] T5 [B] The central rebind in `accountServerFetch`: single-flight, retry once, the TTY and non-TTY paths, the `ipRebind: false` opt-out for background callers, and the spinner suspend (section 4).
-- [ ] T6 [B] Remove the one-off match in `config-remote-password.ts`, and delete the `passwordIpBound` key from all 13 locales (section 4.5).
-- [ ] T7 [B] CLI vitest and mutation controls (section 6.2).
-- [ ] T8 [B] CLI i18n in 13 locales. Update the www `account-security.md` in 13 locales and regenerate the translation hashes and search indexes (section 7).
+- [x] T0 [lead] Freeze the wire contract (section 3.1). Put the error codes, the 403 body shape and the rebind request/response types in `packages/shared/src/subscription/types.ts`. A and B both import them.
+    (ticked) 2026-10-03T09:40:58Z by d778be9d: bd0278084: packages/shared/src/subscription/types.ts TOKEN_IP_MISMATCH + rebind request/response types
+- [x] T1 [A] Migration `0054_api_token_ip_rebind.sql`, the schema columns, and `verifyCodeStep` in `utils/totp.ts` (sections 3.2 and 3.3).
+    (ticked) 2026-10-03T09:41:16Z by d778be9d: private/account a5c0a13: migration 0054, schema columns, totp.ts verifyCodeStep; console bump 49e61a1a5
+- [x] T2 [A] Split the middleware into `resolveApiToken` plus the IP check. The 403 carries `code: TOKEN_IP_MISMATCH` and the `rebind` hint (section 3.4).
+    (ticked) 2026-10-03T09:41:00Z by d778be9d: private/account a5c0a13: middleware/api-token.ts resolveApiToken + 403 TOKEN_IP_MISMATCH with rebind hint; console bump 49e61a1a5
+- [x] T3 [A] The rebind route, the service methods (atomic failure counter, compare-and-set bind), audit events and activity titles, and the DTO (sections 3.5-3.7).
+    (ticked) 2026-10-03T09:41:01Z by d778be9d: private/account a5c0a13: routes/api-token-ip.ts, api-token.service.ts counter + CAS bind, audit events, activity titles, DTO; console bump 49e61a1a5
+- [x] T4 [A] Integration tests and mutation controls (section 6.1).
+    (ticked) 2026-10-03T09:41:03Z by d778be9d: private/account a5c0a13: tests/integration/api-token-ip-rebind.test.ts 23 tests, 10 mutation controls recorded; console bump 49e61a1a5
+- [x] T5 [B] The central rebind in `accountServerFetch`: single-flight, retry once, the TTY and non-TTY paths, the `ipRebind: false` opt-out for background callers, and the spinner suspend (section 4).
+    (ticked) 2026-10-03T09:41:18Z by d778be9d: bd0278084: account-client.ts accountServerFetch rebind + services/account/token-ip-rebind.ts, ipRebind opt-out, spinner suspend
+- [x] T6 [B] Remove the one-off match in `config-remote-password.ts`, and delete the `passwordIpBound` key from all 13 locales (section 4.5).
+    (ticked) 2026-10-03T09:41:19Z by d778be9d: bd0278084: config-remote-password.ts text match replaced; passwordIpBound absent from packages/cli/src (13 locales)
+- [x] T7 [B] CLI vitest and mutation controls (section 6.2).
+    (ticked) 2026-10-03T09:41:20Z by d778be9d: bd0278084: account-client-ip-rebind.test.ts (16 tests) + config-remote-password.test.ts, mutation controls recorded
+- [x] T8 [B] CLI i18n in 13 locales. Update the www `account-security.md` in 13 locales and regenerate the translation hashes and search indexes (section 7).
+    (ticked) 2026-10-03T09:41:22Z by d778be9d: bd0278084: 11 CLI keys x13 locales + hashes, cli-contract regenerated, account-security.md x13, search indexes regenerated
 - [ ] T9 [lead] Closure:
   - The removal sweep in section 8 returns nothing.
   - Deploy the account server (eu) before the CLI release.

@@ -11,8 +11,10 @@ Owns: private/account/src/services/*.ts, private/account/src/routes/*.ts, privat
 
 Finding from the org-scoping writer (2026-09-24): orgService.resolveUserOrg falls back to the FIRST membership app-wide. Fixed at the root per the fix-in-session rule; ships as ONE PR and ONE deploy (server-only would strand two-org users with organization:null and no switcher).
 
-- [ ] T1 [A] Server + integration tests (section 6, Writer A).
-- [ ] T2 [B] Web + e2e (section 6, Writer B).
+- [x] T1 [A] Server + integration tests (section 6, Writer A).
+    (ticked) 2026-10-03T10:05:57Z by d778be9d: private/account 7545f78: selectUserOrg 409 org_selection_required, tests/integration/org-selection.test.ts + org-membership-edges.test.ts; bump 49e61a1a5
+- [x] T2 [B] Web + e2e (section 6, Writer B).
+    (ticked) 2026-10-03T10:05:58Z by d778be9d: private/account dd2b656: X-Org-Id header client, AuthContext/ProgramChooserModal, org-header + org-selection unit tests, e2e 16-03-two-org-selection; bump 49e61a1a5
 - [ ] T3 Lead: the e2e run, then deploy eu together with T1+T2.
 
 # Plan: when a request names no org, refuse instead of using the first membership

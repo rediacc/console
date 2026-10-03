@@ -11,11 +11,16 @@ Owns: packages/cli, packages/shared, packages/provisioning, packages/e2e-tests, 
 
 ## Tasks
 
-- [ ] Wire `packages/e2e-tests` (0 errors) into both `check:types` and `typecheck` in the root `package.json` -- acceptance: `npx tsc --noEmit -p packages/e2e-tests/tsconfig.json` exits 0, and `npm run check:ci-parity` and `npm run check:ci-gate-manifest` both agree
-- [ ] Put the `packages/provisioning` test into a project (a `tsconfig.test.json` beside the build config), fix its 2 errors, and wire it into both scripts -- acceptance: `npx tsc --noEmit -p packages/provisioning/tsconfig.test.json` exits 0
-- [ ] Declare `Window.plausible` and `Window.openRegionPicker` once in a `.d.ts` for `packages/www`, clearing its 32 TS2339 errors, and wire its typecheck into both scripts -- acceptance: `npm run typecheck --workspace packages/www` exits 0
-- [ ] Fix the `workers/www` module setting behind the 13 TS2823 errors from `private/account` i18n, then the worker's own errors, and wire its typecheck -- acceptance: `PYTHONPATH=.ci python3 -m rediacc_ci.quality.typecheck_workers` exits 0 over `workers/www`
-- [ ] Give `workers/mta-sts` and `workers/proxy` a tsconfig and typecheck them with the other workers -- acceptance: the same `typecheck_workers` run discovers both and exits 0
+- [x] Wire `packages/e2e-tests` (0 errors) into both `check:types` and `typecheck` in the root `package.json` -- acceptance: `npx tsc --noEmit -p packages/e2e-tests/tsconfig.json` exits 0, and `npm run check:ci-parity` and `npm run check:ci-gate-manifest` both agree
+    (ticked) 2026-10-03T10:08:02Z by d778be9d: c044d6099; 2026-10-03 tsc -p packages/e2e-tests rc=0, wired in check:types + typecheck, check:ci-parity rc=0, check:ci-gate-manifest rc=0
+- [x] Put the `packages/provisioning` test into a project (a `tsconfig.test.json` beside the build config), fix its 2 errors, and wire it into both scripts -- acceptance: `npx tsc --noEmit -p packages/provisioning/tsconfig.test.json` exits 0
+    (ticked) 2026-10-03T10:08:03Z by d778be9d: c044d6099; 2026-10-03 tsc -p packages/provisioning/tsconfig.test.json rc=0, wired in both scripts
+- [x] Declare `Window.plausible` and `Window.openRegionPicker` once in a `.d.ts` for `packages/www`, clearing its 32 TS2339 errors, and wire its typecheck into both scripts -- acceptance: `npm run typecheck --workspace packages/www` exits 0
+    (ticked) 2026-10-03T10:08:05Z by d778be9d: c044d6099: packages/www/src/types/globals.d.ts; 2026-10-03 npm run typecheck --workspace packages/www rc=0
+- [x] Fix the `workers/www` module setting behind the 13 TS2823 errors from `private/account` i18n, then the worker's own errors, and wire its typecheck -- acceptance: `PYTHONPATH=.ci python3 -m rediacc_ci.quality.typecheck_workers` exits 0 over `workers/www`
+    (ticked) 2026-10-03T10:08:06Z by d778be9d: c044d6099; 2026-10-03 typecheck_workers rc=0 over workers/www
+- [x] Give `workers/mta-sts` and `workers/proxy` a tsconfig and typecheck them with the other workers -- acceptance: the same `typecheck_workers` run discovers both and exits 0
+    (ticked) 2026-10-03T10:08:07Z by d778be9d: c044d6099; 2026-10-03 typecheck_workers discovers workers/mta-sts + workers/proxy, rc=0
 
 ## The two shapes, which need different fixes
 

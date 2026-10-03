@@ -29,38 +29,49 @@ Two writers at most. Their Owns are disjoint:
 
 B starts once A has frozen the T1/T2 API (`parse_x`, `order_key`, `live_plans`, `spawn_verdict`).
 
-- [ ] T1 [A] Grammar (section 1): extend `wl_plandeps.parse_header` with `Priority`, `Concurrency` and `Owns`. Add `X_HEADER_LINES = 12` and `set_x(text, fields)`, which appends at the end of the contiguous header block. Controls go in `.claude/hooks/stop/test-plandeps.py`.
-- [ ] T2 [A] New `.claude/hooks/stop/wl_planconc.py` (sealed, no env reads, stdlib at import):
+- [x] T1 [A] Grammar (section 1): extend `wl_plandeps.parse_header` with `Priority`, `Concurrency` and `Owns`. Add `X_HEADER_LINES = 12` and `set_x(text, fields)`, which appends at the end of the contiguous header block. Controls go in `.claude/hooks/stop/test-plandeps.py`.
+    (ticked) 2026-10-03T09:43:42Z by d778be9d: da9116b61: wl_plandeps parse_header X fields, X_HEADER_LINES=12, set_x (.claude/hooks/stop/wl_plandeps.py:545)
+- [x] T2 [A] New `.claude/hooks/stop/wl_planconc.py` (sealed, no env reads, stdlib at import):
   - `normalize_owns`, `owns_overlap(a, b) -> [(ga, gb, witness)]` (section 4);
   - `item_plan(rec)` and `spawn_plans(text, by_id)` (section 3);
   - `live_plans(cwd, session_id, fold)` (section 3);
   - `spawn_verdict(...)` (section 5);
   - `rank(rel, graph)` with dependency inheritance, and `order_key(rec, ctx)` (section 2).
-- [ ] T3 [A] Gate `check_plan_deps.py`:
+    (ticked) 2026-10-03T09:43:43Z by d778be9d: da9116b61: new wl_planconc.py with normalize_owns, owns_overlap, item_plan, spawn_plans, live_plans, spawn_verdict, rank, order_key
+- [x] T3 [A] Gate `check_plan_deps.py`:
   - findings D10-D17 with planted `--selftest` controls (section 6b);
   - the verbs `--overlaps` and `--migrate-x [--diff] [--save] [--apply <json> --write]` (section 7);
   - extend `test_gate_plan_deps.py`.
-- [ ] T4 [A] Pre-edit guard `block_plan_without_depends.py`: require the three fields on required plans, freeze operator values, and accept the operator-directed escape (section 6a). Extend `test-block_plan_without_depends.py`, `EDGE_CASES` and `DEFECT`.
-- [ ] T5 [A] New pre-agent guard `.claude/rediacc_hooks/guards/block_plan_concurrency.py`: `CHAIN = "pre-agent"`, `ORDER = 4`, `OWN_SUITE = True`, `DEFECT`, `EDGE_CASES`. Suite `test-block_plan_concurrency.py`, plus a row in `scripts/data/hook-inventory-baseline.json` (section 5).
-- [ ] T6 [A] `wl_planrec`: add `Priority`, `Concurrency` and `Owns` to `HEADER_FIELD_KEYS` (`.claude/hooks/stop/wl_planrec.py:171`). `render()` (:832) emits them AFTER `Record-Sig`, so the spine stays inside `HEADER_LINES = 10` (:146). `revive()` (:2567) carries them over, or refuses when they are missing.
-- [ ] T7 [B] The pickers order by `order_key` (section 2):
+    (ticked) 2026-10-03T09:43:45Z by d778be9d: da9116b61 (+ae8fcada0): check_plan_deps.py D10-D17 with selftest controls, --overlaps, --migrate-x
+- [x] T4 [A] Pre-edit guard `block_plan_without_depends.py`: require the three fields on required plans, freeze operator values, and accept the operator-directed escape (section 6a). Extend `test-block_plan_without_depends.py`, `EDGE_CASES` and `DEFECT`.
+    (ticked) 2026-10-03T09:43:46Z by d778be9d: da9116b61 + ae8fcada0: block_plan_without_depends.py X-field requirement, operator freeze and escape
+- [x] T5 [A] New pre-agent guard `.claude/rediacc_hooks/guards/block_plan_concurrency.py`: `CHAIN = "pre-agent"`, `ORDER = 4`, `OWN_SUITE = True`, `DEFECT`, `EDGE_CASES`. Suite `test-block_plan_concurrency.py`, plus a row in `scripts/data/hook-inventory-baseline.json` (section 5).
+    (ticked) 2026-10-03T09:43:47Z by d778be9d: da9116b61: guards/block_plan_concurrency.py + test-block_plan_concurrency.py + hook-inventory-baseline row
+- [x] T6 [A] `wl_planrec`: add `Priority`, `Concurrency` and `Owns` to `HEADER_FIELD_KEYS` (`.claude/hooks/stop/wl_planrec.py:171`). `render()` (:832) emits them AFTER `Record-Sig`, so the spine stays inside `HEADER_LINES = 10` (:146). `revive()` (:2567) carries them over, or refuses when they are missing.
+    (ticked) 2026-10-03T09:44:02Z by d778be9d: wl_planrec.py HEADER_FIELD_KEYS carries Priority/Concurrency/Owns after Record-Sig (.claude/hooks/stop/wl_planrec.py:187)
+- [x] T7 [B] The pickers order by `order_key` (section 2):
   - `guided_slice` sort and display (`.claude/hooks/stop/wl_checks.py:1482`, sort at :1601);
   - `open_items` order in `classify_items` (`.claude/hooks/stop/wl_store.py:1273`);
   - `wl_backlog.next_plan` (`.claude/hooks/stop/wl_backlog.py:190`) and its `render` WHY lines;
   - `wl_planenforce.evaluate`'s named box (`.claude/hooks/stop/wl_planenforce.py:425`).
-- [ ] T8 [B] Roster (section 5c):
+    (ticked) 2026-10-03T09:44:04Z by d778be9d: 2b0873b53: wl_planorder ranking in classify_items, guided slice, wl_backlog.next_plan, wl_planenforce named box
+- [x] T8 [B] Roster (section 5c):
   - `queue_start` orders by `order_key` and skips concurrency-held items (`.claude/hooks/stop/wl_roster.py:602-612`);
   - `V_QUEUE_SLOT` names what was held back (`.claude/hooks/stop/worklist_messages.py:2505`);
   - a `roster-concurrency` backstop key in `ROSTER_KEYS` (`.claude/hooks/stop/wl_roster.py:51`);
   - `cap_saturated_wait` (:90) also covers "every queued item is held".
-- [ ] T9 [B] `worklist.py`: `--lease ... worker:queue` is accepted with a free slot when the item's plan is concurrency-held (`.claude/hooks/stop/worklist.py:1136-1145`). `--list --open` shows priority through `guided_slice` (:920).
-- [ ] T10 [B] Tests and mutation controls (section 8): new `test_wl_plan_priority.py`, plus extensions to `test_wl_roster.py`, `test_wl_leases.py`, `test_wl_cap_wait.py` and `test-backlog.py`.
-- [ ] T11 [lead] Migration (section 7):
+    (ticked) 2026-10-03T09:44:05Z by d778be9d: 2b0873b53: wl_roster roster-concurrency key, queue ordered by item_key, concurrency-saturated wait; held queue-slot messages
+- [x] T9 [B] `worklist.py`: `--lease ... worker:queue` is accepted with a free slot when the item's plan is concurrency-held (`.claude/hooks/stop/worklist.py:1136-1145`). `--list --open` shows priority through `guided_slice` (:920).
+    (ticked) 2026-10-03T09:44:06Z by d778be9d: 2b0873b53: worklist.py worker:queue lease with HELD_BY when concurrency-held (.claude/hooks/stop/worklist.py:1303); --list --open rank (.claude/hooks/stop/worklist.py:1046)
+- [x] T10 [B] Tests and mutation controls (section 8): new `test_wl_plan_priority.py`, plus extensions to `test_wl_roster.py`, `test_wl_leases.py`, `test_wl_cap_wait.py` and `test-backlog.py`.
+    (ticked) 2026-10-03T09:44:08Z by d778be9d: 2b0873b53: test_wl_plan_priority.py + roster/leases/cap_wait/backlog extensions; test_wl_cap_wait passed in the 2026-10-03 run
+- [x] T11 [lead] Migration (section 7):
   - `check_plan_deps.py --migrate-x --save`;
   - review the AI proposals;
   - one approval table to the operator through AskUserQuestion;
   - `--apply ... --write`.
   It lands in the SAME commit as T3/T4, with the bulk-transform proof line.
+    (ticked) 2026-10-03T09:44:09Z by d778be9d: 7ad4a8c78: every required plan carries Priority/Concurrency/Owns (exclusive by operator ruling 2026-09-26), enforcement on; ae8fcada0 lax path removed
 - [ ] T12 [lead] Prose:
   - CLAUDE.md rule 4 (:131, "disjoint file ownership") and :37;
   - agent/README.md plan layout;
