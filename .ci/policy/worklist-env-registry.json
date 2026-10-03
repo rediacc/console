@@ -130,12 +130,6 @@
         "'168'"
       ]
     },
-    "WORKLIST_BACKLOG_MAX_PER_SESSION": {
-      "kind": "tuning",
-      "defaults": [
-        "'3'"
-      ]
-    },
     "WORKLIST_BGSWEEP_AGE_MIN": {
       "kind": "tuning",
       "defaults": [

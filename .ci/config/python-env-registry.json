@@ -1808,9 +1808,6 @@
       "WORKLIST_PROFILE",
       "_WL_SITEPROFILE"
     ],
-    ".claude/hooks/stop/test-backlog.py": [
-      "WORKLIST_STORE_DIR"
-    ],
     ".claude/hooks/stop/test-judge-schema.py": [
       "REDIACC_CI_ROOT",
       "SHAPE_PROBE_CACHE",
@@ -1828,9 +1825,6 @@
       "WORKLIST_AGENT_HINT_MIN_SCORE",
       "WORKLIST_AGENT_HINT_REFRESH_MIN",
       "WORKLIST_AGENT_PUSHBACK"
-    ],
-    ".claude/hooks/stop/wl_backlog.py": [
-      "WORKLIST_BACKLOG_MAX_PER_SESSION"
     ],
     ".claude/hooks/stop/wl_bgsweep.py": [
       "CLAUDE_PID",
