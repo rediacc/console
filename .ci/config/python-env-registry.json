@@ -1975,6 +1975,7 @@
     ],
     ".claude/hooks/stop/wl_report.py": [
       "CLAUDE_CONFIG_DIR",
+      "WORKLIST_DEAD_HOURS",
       "WORKLIST_REPORTS_DIR",
       "WORKLIST_REPORT_INDEX_READ_MAX_BYTES",
       "WORKLIST_REPORT_RETENTION_DAYS",
