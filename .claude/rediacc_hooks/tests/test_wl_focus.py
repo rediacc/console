@@ -516,13 +516,19 @@ def test_f13_profiles_keys_have_producers():
             if not re.search(r"""["']%s["']""" % re.escape(k), src):
                 missing.append("%s:%s" % (prof.name, k))
             line = '        "%s",\n' % k
-            if k != "pr-finish" and own.count(line) != 1:
+            # Two keys are kept by several profiles and named once through a constant instead: pr-finish (_PR_FINISH) and defer-expired (_DEFER_EXPIRED, whose one set-entry line is checked below).
+            if k not in ("pr-finish", "defer-expired") and own.count(line) != 1:
                 repeated.append("%s (x%d)" % (k, own.count(line)))
     assert not missing, "kept keys with no producer: %s" % missing
     assert not repeated, "key literals not exactly once in wl_standdown.py: %s" % sorted(
         set(repeated)
     )
+    assert own.count('_DEFER_EXPIRED = "defer-expired"\n') == 1
+    assert own.count("        _DEFER_EXPIRED,\n") == 1
     assert mod.FOCUS is not mod.CAP_WAIT
+    assert mod.PR_LOOP in mod.PROFILES
+    assert "defer-expired" in mod.PR_LOOP.keeps
+    assert "defer-expired" in mod.CAP_WAIT.keeps
     assert "pr-finish" in mod.FOCUS.keeps
     assert "pr-finish" in mod.CAP_WAIT.always_keeps
     assert "pr-finish" not in mod.CAP_WAIT.keeps

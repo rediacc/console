@@ -298,6 +298,10 @@ def mutated_hook(fix, filename: str, old: str, new: str) -> None:
     ci = hooks.parents[1] / ".ci"
     if not ci.exists():
         ci.symlink_to(wlfix.STOP_DIR.parents[2] / ".ci")
+    # wl_prscope reaches plan_gate and commit_policy at its copy's parents[2] / "rediacc_hooks"; link the real package there, or the loop state fails to resolve in the copy and every mutated stop runs off the loop.
+    pkg = hooks.parent / "rediacc_hooks"
+    if not pkg.exists():
+        pkg.symlink_to(wlfix.STOP_DIR.parents[1] / "rediacc_hooks")
 
 
 def test_m1_without_roster_dead_in_the_keep_list_a_dead_lease_stands_down(wl):  # noqa: F811
@@ -329,7 +333,7 @@ def test_m2_without_defer_expired_in_the_keep_list_an_expired_default_stands_dow
             )
             + "\n"
         )
-    mutated_hook(wl, "wl_standdown.py", '        "defer-expired",\n', "")
+    mutated_hook(wl, "wl_standdown.py", "        _DEFER_EXPIRED,\n", "")
     got = stop(wl)
     assert got.decision == "allow", (
         "m2: the c5 case does not depend on the keep-list entry: %s" % got.out[:400]

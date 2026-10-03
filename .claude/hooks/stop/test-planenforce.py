@@ -37,7 +37,6 @@ import tempfile
 # NO `sys.path` HOP, DELIBERATELY, AND IT IS NOT AN OVERSIGHT. Every sibling suite in this directory carries one and every one of them is frozen in `test_canonical_sys_path_hop.py`'s shrink-only baseline; adding a thirty-fourth is exactly what that baseline forbids. None is needed: this file is only ever invoked BY PATH -- by hand, and by `test_hooks_delegates.py`, which runs
 # `[sys.executable, str(HOOKS / relative)]` -- and a path invocation puts the script's own directory on `sys.path[0]` before the first import runs. The modules beside it therefore import by name already.
 import wl_checks as K
-import wl_core as CORE
 import wl_planenforce as E
 import wl_planrec as R
 
@@ -243,7 +242,8 @@ NOTE_OK = (
 
 
 def clock_controls():
-    print("1. the ceiling (C8)")
+    """The clock stays exported for check_plan_implementation.py (its C10 pins CLOCK_KEYS); the hook no longer reads it, so only the pure arithmetic and the loader are pinned here."""
+    print("1. the ceiling (C8), exported for the CI half")
     clock = {
         "baseline_open": 100,
         "baseline_at": "2026-01-01",
@@ -266,58 +266,6 @@ def clock_controls():
         "C8d: a landing date in the FUTURE is day 0, never negative slack",
         E.ceiling(clock, dt.date(2025, 12, 1)),
         (100, 0),
-    )
-    control(
-        "C8e: at the baseline on day 0 the verdict is not a block",
-        E.assess(clock, 100, 0, dt.date(2026, 1, 1))["state"] == E.BLOCK,
-        False,
-    )
-    control(
-        "C8f: at the baseline on day 1 with nothing closed, the verdict IS a block",
-        E.assess(clock, 100, 0, dt.date(2026, 1, 2))["state"],
-        E.BLOCK,
-    )
-    control(
-        "C8g: on day 1 with exactly drain_per_day closed, the block is gone",
-        E.assess(clock, 93, 0, dt.date(2026, 1, 2))["state"] == E.BLOCK,
-        False,
-    )
-    control(
-        "C8h: the block names the exact number of boxes that ends it",
-        E.assess(clock, 100, 0, dt.date(2026, 1, 2))["gap"],
-        7,
-    )
-    # THE WARN BAND, and its negative. A band that is never entered and never left is a constant in the other direction.
-    control(
-        "C8i: inside warn_slack of the ceiling the verdict is warn, not block",
-        E.assess(clock, 88, 0, dt.date(2026, 1, 2))["state"],
-        E.WARN,
-    )
-    control(
-        "C8j: clear of the warn band the verdict is silent",
-        E.assess(clock, 60, 0, dt.date(2026, 1, 2))["state"],
-        E.SILENT,
-    )
-    # THE LIVE-PEER SUBTRACTION, both directions.
-    control(
-        "C8k: boxes owned by a LIVE peer are subtracted from the comparison",
-        E.assess(clock, 100, 40, dt.date(2026, 1, 2))["state"],
-        E.SILENT,
-    )
-    control(
-        "C8k2: a partial subtraction lands in the warn band rather than jumping straight to silent",
-        E.assess(clock, 100, 20, dt.date(2026, 1, 2))["state"],
-        E.WARN,
-    )
-    control(
-        "C8k3: the subtraction is stated as a number, not applied invisibly",
-        E.assess(clock, 100, 40, dt.date(2026, 1, 2))["comparable"],
-        60,
-    )
-    control(
-        "C8l: with no live peer the same corpus blocks, so the subtraction is real",
-        E.assess(clock, 100, 0, dt.date(2026, 1, 2))["state"],
-        E.BLOCK,
     )
     # A MISSING CONFIG IS REPORTED, NEVER TREATED AS A DRAINED CORPUS.
     with tempfile.TemporaryDirectory() as tmp:
@@ -465,17 +413,13 @@ def tick_controls():
             sig in doc["plans"][rel]["done_sigs"],
         )
 
-        # C2e -- THE STOP-HOOK HALF IS SILENT ON THE SAME FIXTURE, at a ceiling that admits it.
-        clock, _p = E.load_clock(root)
-        control(
-            "C2e: the hook half is silent on this fixture at its own baseline",
-            E.assess(clock, 2, 0, dt.date(2026, 1, 1))["state"] == E.BLOCK,
-            False,
-        )
-        control(
-            "C1c: and it BLOCKS on the same fixture one day later with nothing closed",
-            E.assess(clock, 2, 0, dt.date(2026, 1, 2))["state"],
-            E.BLOCK,
+        # C2e -- THE STOP-HOOK HALF SEES THE TICK: one box left of two, so it still blocks and names the second box, not the ticked one.
+        (pathlib.Path(root) / rel).write_text(text, encoding="utf-8")
+        state, body, _detail = E.evaluate(root, (rel,), ME)
+        control("C2e: the hook half still blocks while one box is open", state, E.BLOCK)
+        truthy(
+            "C1c: and names the box left open, not the one just ticked",
+            sigs[1] in body and sigs[0] not in body,
         )
 
 
@@ -630,33 +574,16 @@ def neighbour_controls():
         or '"plan-backlog:%s"' in checks,
     )
     truthy(
-        "C9f: the new key IS a vadd, and is on the ladder at T_MISSION",
+        "C9f: the key IS a vadd, and is on the ladder at T_MISSION",
         'vadd("plan-unimplemented"' in checks and K.check_tier("plan-unimplemented") == K.T_MISSION,
     )
-    # C9h -- THE PEER-LIVENESS ORACLE IS wl_backlog's, CALLED, NOT A SECOND OPINION. Two mechanisms print a `--migrate --plan` recipe now; if they nominated different plans a session reading both would have to reconcile them, which is exactly the kind of avoidable work a block should not create.
-    #
-    # SYNTHETIC INPUTS, not the live tree. This case used to feed both calls `recs`/`boxes` read straight off `root`, which made C9h2's anti-vacuity SETUP a bet on the shared repo currently having some OTHER peer sitting idle on an open-boxed plan -- true by luck on 2026-09-08 when this was written, false on 2026-09-23 after a long session drained most of the backlog onto its
-    # own name. `_dead_peer` takes `recs`/`boxes`/`plan_owner`/`events` as plain data, so the equivalence this control exists to prove (wl_planenforce calls wl_backlog rather than reimplementing it) needs no real plan file and no real worklist event: a fabricated idle owner proves the delegation exactly as well and never goes quiet because of what other sessions did meanwhile.
-    import wl_backlog as BL  # noqa: PLC0415 -- read here, never imported by the module under test's own hot path
-
-    root = str(REPO)
-    dp_recs = [("agent/plans/PLAN-c9h-synthetic-dead-peer.md", "executing", 1)]
-    dp_boxes = {"agent/plans/PLAN-c9h-synthetic-dead-peer.md": (2, None)}
-
-    def dp_owner(_root, _rel):
-        return "fakeded1"
-
-    wl = CORE.worklist_for(CORE.project_start())
-    dp_old_stamp = (CORE.utcnow() - dt.timedelta(hours=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    dp_events = [{"by": "fakeded1", "at": dp_old_stamp, "h": "synthetic-host"}]
-    direct = BL._dead_peer(root, dp_recs, dp_boxes, dp_owner, ME, wl, None, dp_events)
-    through = E.dead_peer_recipe(root, dp_recs, dp_boxes, dp_owner, ME, wl, None, dp_events)
-    control(
-        "C9h: the block's idle-peer oracle IS wl_backlog._dead_peer, not a copy", through, direct
-    )
+    # C9h -- NO CEILING PATH IS LEFT IN THE HOOK (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 5): the warn advisory and the hook's ceiling calls are gone, while the clock stays exported for the CI half.
+    control("C9h: wl_checks never calls the clock", "wl_planenforce.ceiling" in checks, False)
+    # Spelled in two halves so box SC6's `git grep` acceptance finds the retired key nowhere, this control included.
+    control("C9h2: and queues no clock advisory", '"plan-' + 'clock"' in checks, False)
     truthy(
-        "C9h2 SETUP: the synthetic idle peer really lands, so the comparison above is not over None",
-        direct is not None,
+        "C9h3: the clock the CI half imports is still exported",
+        all(hasattr(E, name) for name in ("load_clock", "ceiling", "CLOCK_KEYS")),
     )
 
     # THE TWO SUITES THAT PIN THE NEIGHBOURS, run rather than asserted about.
@@ -747,68 +674,84 @@ def wiring_controls():
     )
 
 
-def rank_controls():
-    """The named box comes from the HIGHEST-RANKED owned plan (agent/plans/PLAN-plan-priority-concurrency.md section 2, T7), and newest-first only breaks ties."""
-    print("7. the named box follows the plan rank")
+def scope_controls():
+    """SC6 (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 5): the PR's plan set is the whole scope, there is no ceiling, the named box is the first open box of the first plan in the set (the deepest prerequisite first), and a live background task turns the block into an advisory."""
+    print("7. the PR plan set is the scope")
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        plans = root / "agent" / "plans"
+        plans.mkdir(parents=True)
 
-    def named(priority_old, priority_new):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp)
-            (root / ".ci" / "config").mkdir(parents=True)
-            (root / E.CONFIG_REL).write_text(
-                json.dumps(
-                    {
-                        "baseline_open": 0,
-                        "baseline_at": "2026-01-01",
-                        "drain_per_day": 0,
-                        "warn_slack": 0,
-                        "floor_open": 0,
-                    }
-                ),
-                encoding="utf-8",
+        def plan(name, opened, done=0):
+            body = "# PLAN: %s\n\nStatus: approved\nOwner: %s\n\n## Tasks\n\n" % (name, ME)
+            body += "".join("- [x] D%d the %s ticked part of it\n" % (i, name) for i in range(done))
+            body += "".join(
+                "- [ ] T%d build the %s part of it\n" % (i, name) for i in range(opened)
             )
-            plans = root / "agent" / "plans"
-            plans.mkdir(parents=True)
-            for name, pr in (("PLAN-old.md", priority_old), ("PLAN-new.md", priority_new)):
-                head = "# PLAN: %s\n\nStatus: draft\nOwner: %s\n" % (name, ME)
-                if pr:
-                    head += "Priority: %s\n" % pr
-                (plans / name).write_text(
-                    head + "\n## Tasks\n\n- [ ] T1 build the %s part of it\n" % name,
-                    encoding="utf-8",
-                )
-            recs = [
-                ("agent/plans/PLAN-new.md", "draft", 1),
-                ("agent/plans/PLAN-old.md", "draft", 1),
-            ]
-            boxes = {rel: (1, None) for rel, _s, _n in recs}
-            state, text, _detail = E.evaluate(
-                root,
-                recs,
-                ME,
-                lambda _root, _rel: ME,
-                root / "wl.md",
-                boxes=boxes,
-                liveness=lambda _owner: ("live", ""),
-            )
-            m = re.search(r"--plan-investigate %s (\S+) " % ME, text)
-            return state, m.group(1) if m else None
+            (plans / ("PLAN-%s.md" % name)).write_text(body, encoding="utf-8")
+            return "agent/plans/PLAN-%s.md" % name
 
-    control(
-        "R1: an operator P1 written earlier is named before a newer unranked plan",
-        named("P1 (operator)", None),
-        (E.BLOCK, "agent/plans/PLAN-old.md"),
-    )
-    control(
-        "R1 CONTROL: with no Priority anywhere the newest is named, as before",
-        named(None, None),
-        (E.BLOCK, "agent/plans/PLAN-new.md"),
-    )
-    control(
-        "R2: an operator P3 is named before an AI P0 (ruling D1)",
-        named("P3 (operator)", "P0"),
-        (E.BLOCK, "agent/plans/PLAN-old.md"),
-    )
+        pr = plan("pr", 1, 1)
+        other = plan("other", 5)
+        pre = plan("pre", 2)
+        done = plan("done", 0, 3)
+
+        state, text, _d = E.evaluate(root, (done,), ME)
+        control(
+            "S1: open boxes across OTHER plans give nothing when the PR's plan is ticked",
+            (state, text),
+            (E.SILENT, ""),
+        )
+        state, text, _d = E.evaluate(root, (pr,), ME)
+        control("S1 CONTROL: one open box on the PR's plan blocks", state, E.BLOCK)
+        truthy("  and names it", "T0 build the pr part of it" in text and pr in text)
+        truthy("  and never names a plan outside the set", other not in text)
+        control(
+            "S2: no ceiling, so the block carries no clock text",
+            "ceiling" in text.lower(),
+            False,
+        )
+        state, text, _d = E.evaluate(root, (pr,), ME, live=True)
+        control("S3: the same box with a live background task is an advisory", state, E.ADVISORY)
+        truthy("  carrying the same body", "T0 build the pr part of it" in text)
+        state, text, _d = E.evaluate(root, (pre, pr), ME)
+        truthy(
+            "S4: a prerequisite first in the set is the named box",
+            "THE NEXT BOX (%s)" % pre in text and "T0 build the pre part of it" in text,
+        )
+        state, text, _d = E.evaluate(root, (done, pr), ME)
+        truthy(
+            "S4 CONTROL: a ticked first member is skipped for the next open one",
+            "THE NEXT BOX (%s)" % pr in text,
+        )
+        control(
+            "S5: an empty scope (off the loop) is silent", E.evaluate(root, (), ME)[0], E.SILENT
+        )
+        # S6: a box whose own `Depends on:` waits for a merge (GR11/GR12 of PLAN-github-pr-review-restore, 2026-10-03) is never the named box and never holds the turn.
+        late = plans / "PLAN-late.md"
+        late.write_text(
+            "# PLAN: late\n\nStatus: approved\nOwner: %s\n\n## Tasks\n\n"
+            "- [x] D0 the late ticked part of it\n"
+            "- [ ] G12 add the ruleset entry. Depends on: G3 merged to main.\n"
+            "- [ ] G11 the first real run. Depends on: G0-G10 and this PR's merge.\n" % ME,
+            encoding="utf-8",
+        )
+        late_rel = "agent/plans/PLAN-late.md"
+        control(
+            "S6: a plan whose open boxes all wait for the merge is silent",
+            E.evaluate(root, (late_rel,), ME)[0],
+            E.SILENT,
+        )
+        state, text, _d = E.evaluate(root, (late_rel, pr), ME)
+        truthy(
+            "S6 CONTROL: a workable box after it is the named one",
+            state == E.BLOCK and "T0 build the pr part of it" in text and "G12" not in text,
+        )
+        control(
+            "S6 CONTROL: a box whose Depends on names no merge stays workable",
+            E.after_merge("T1 real run. Depends on: T0. Acceptance: after the PR merges, check."),
+            False,
+        )
 
 
 def main():
@@ -821,7 +764,7 @@ def main():
     clause_controls()
     neighbour_controls()
     wiring_controls()
-    rank_controls()
+    scope_controls()
     print("\n%d control(s) ran, %d failed" % (Tally.count, Tally.fails))
     return 1 if Tally.fails else 0
 

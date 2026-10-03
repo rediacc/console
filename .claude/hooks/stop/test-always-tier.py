@@ -31,6 +31,7 @@ ALWAYS_KEYS = frozenset(
         "adhoc-watch",
         "adhoc-watch-broken",
         "pr-finish",  # only its fail-closed arm; the ordinary finding rotates
+        "loop-next",  # only its fail-closed arm (a loop check that raised); the arms themselves rotate
         # I3 -- an evidence/liveness verdict whose silence would be read as a pass.
         "stuck",
         "idle-stall",
