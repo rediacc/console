@@ -1072,15 +1072,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 1,
+      "open": 3,
+      "done": 2,
       "open_sigs": [
-        "101046d0",
         "51be15ab",
         "76dee55e",
         "c9c68cef"
       ],
       "done_sigs": [
+        "101046d0",
         "b91cff49"
       ]
     },
