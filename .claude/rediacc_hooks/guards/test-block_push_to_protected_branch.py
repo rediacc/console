@@ -182,7 +182,7 @@ if a[:2] == ["api", "graphql"]:
         commit = {
             "oid": head,
             "statusCheckRollup": {
-                "state": "SUCCESS" if ci == "SUCCESS" and not extra else "FAILURE" if extra else "PENDING",
+                "state": "PENDING" if not done else "FAILURE" if (ci != "SUCCESS" or extra) else "SUCCESS",
                 "contexts": {
                     "totalCount": len(nodes),
                     "pageInfo": {"hasNextPage": False, "endCursor": None},
