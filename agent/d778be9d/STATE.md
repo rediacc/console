@@ -1,12 +1,12 @@
-## SESSION d778be9d 2026-10-02T12:29:10Z
+## SESSION d778be9d 2026-10-02T14:08:54Z
 
-# STATE d778be9d -- 2026-10-02T12:50Z
+# STATE d778be9d -- 2026-10-02T14:10Z
 ## Where
-- Branch 0930-1, PR #591. Receipt 304/304 at 4caaeb913 (clean clone). Pushing now: account 654d186, renet 7bf8dab, console; the bulk-proof guard needed a follow-up proof commit for 9708168ce, 045ce8437, 6566f46aa.
-- All writers landed today: per-commit review V1, bump labels at CI green, review teardown WP-1..3, M2/M3/M6 + L2 plan gate (4e22d6014), loop docs (d7fa7f51b), findings clusters (045ce8437, 53f46c46f), release snapshots and retention (9134c8d17, d99774c83), OBS mirror pin 2.98 + Q5 (9708168ce, renet 7bf8dab), judge rubric recalibrated 17/17 (87bb33443).
-- PLAN-plan-per-pr-loop open: R1 (closes when the nightly on main is green after merge), R3 (dispatch_release verified on the real merge), M7 (real merge). PLAN-per-commit-review open: the claude-mention [?] only. #591 needs `Operational-Reason:` in its body (carries 3 plans) to pass the plan gate.
-- Foreign uncommitted: .ci/policy/.host-toolchain-exceptions (+ the README.md row drift it causes), agent/plans/PLAN-ci-quick-cpu-scheduling.md.
+- Branch 0930-1, PR #591 (body has Plan + Operational-Reason). Pushed b74d2cca8 (account 654d186, renet 7bf8dab); CI watch item faef7700. Unpushed: 66335c02c (review trigger -C fix), f9a2fa7a8 (claude-mention removed), 348a2db99, c25d13b03, 4e42c9d7e (QUEUE.md Promoted+Generated), d5c8a9861 + 3490aa3e3 (7 finished plans closed to _done), 53ae662a4 (52 plan citations fixed), account 1020ae4 (SES capture-mode leak fix: TEST_MODE sent real mail to demo-*@example.com) -- console pointer for account not yet bumped.
+- Writer a2714a8079995923e on #340d8619: QUEUE.md generator by progress (in progress > not started), held ignored, zero-open-box plans in a Not-queued note, dependencies incl sub-plans/#T refs, prerequisites pulled ahead. Operator rulings 2026-10-02 recorded (#551658f5, #0f45b81d).
+- Open review finding 53ae662a.1 [low]: claims review record d5c8a986 header mismatches; it is the review file of commit d5c8a986 riding commit 53ae662a, so not-a-bug.
 ## Next action
-1. After push: watch CI with ci-trace (arm_ci_watch arms it); P-A1 should now only see PLAN-plan-per-pr-loop's R1/R3/M7 boxes, so CI stays red on P-A1 by design until M7. Diagnose anything else with ci-trace --why.
-2. P4 OBS rehearsal dispatch (OBS blocked) after CI on this head; record in the round log.
-3. Stripe 23 (#2ec4c835) not before 2026-10-03T00:00Z; then M7 merge via /pr-merge with an Operational-Reason line.
+1. Mark 53ae662a.1 not-a-bug (review file of d5c8a986 rides 53ae662a by design).
+2. On the queue writer's report: spot-check, re-run test_plan_gate + check:ci-plan-record, commit, tick #340d8619.
+3. Bump private/account pointer (1020ae4) in console, --review-commit, sync /home/developer/pushclone-0923, gen-docs + plan --update there, receipt, push account + console (git -C), ci-trace.
+4. Stripe 23 (#2ec4c835) after 2026-10-03T00:00Z; M7 merge #591 via /pr-merge.
