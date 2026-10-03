@@ -466,9 +466,9 @@ So the build succeeding is NOT evidence that the build built what you wrote. The
 ## The review tooling comes from `main`, the workflow comes from the PR
 Trap-Id: review-scripts-come-from-main
 Enforced-By: JUDGMENT-ONLY
-Residue: Subject retired 2026-10-02 (the PR-level review workflow and its scripts were deleted). The workflow comes from the PR and the review scripts from `main`, so a new arm is unusable until merged. Nothing compares a step's arm against main's copy of the script.
+Residue: Live again since the 2026-10-03 restore (agent/plans/PLAN-github-pr-review-restore.md): `claude-review.yml` comes from the PR and checks `rediacc_ci.review` out of `main` into `.review-scripts`, so a new arm or module is unusable until merged. Nothing compares a step's arm against main's copy of the package.
 
-A workflow step may only call review-gate script arms that **already exist on main**. The reusable PR-level review workflow checked the review scripts out with `ref: main, path: .review-scripts`, deliberately, so PR-authored review scripts can never execute. The workflow file itself came from the PR.
+A workflow step may only call review-gate arms that **already exist on main**. `claude-review.yml` checks the review package out with `ref: main, path: .review-scripts` and runs `PYTHONPATH=.review-scripts/.ci python3 -P -m rediacc_ci.review.claude_review_gate`, deliberately, so PR-authored review code can never execute. The workflow file itself comes from the PR. (The reusable workflow that carried this before its 2026-10-02 deletion did the same.)
 
 Cost: run `30552035566`. A step called a `--record-invocation` arm added on the
 branch; `git show origin/main:<the review gate script> | grep -c record-invocation` returned 0, so the step failed instantly and took the review job red.
