@@ -704,7 +704,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/policy/.ci-parity-exempt | 9 | # comment |
 | .ci/policy/.cli-i18n-orphan-allowlist | 6 | inline |
 | .ci/policy/.dead-bash-allowlist | 8 | # comment |
-| .ci/policy/.deps-upgrade-blocklist | 8 | inline |
+| .ci/policy/.deps-upgrade-blocklist | 6 | inline |
 | .ci/policy/.devcontainer-upgrade-blocklist | 1 | prose only (no live entry) |
 | .ci/policy/.e2e-coverage-allowlist | 3 | # comment |
 | .ci/policy/.embed-assets-upgrade-blocklist | 2 | # comment |
