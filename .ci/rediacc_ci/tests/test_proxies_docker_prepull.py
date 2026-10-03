@@ -19,11 +19,12 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import sys
 import typing
 
 import pytest
 
-from rediacc_ci import paths
+from rediacc_ci import paths, xdist_groups
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import frozen
 
@@ -40,6 +41,10 @@ CASE_KW: dict[str, dict[str, typing.Any]] = {
 }
 
 CASES = tuple(CASE_KW)
+
+# THE DAEMON IS SHARED STATE, and every docker-driven test here mutates the same piece of it. The proxy pulls `hello-world:latest` and, when the image was absent at its start, removes it again in its `finally`. Two of these tests on different xdist workers therefore race: one run's `docker image rm -f` lands between the other's pull and its presence check, and that run prints
+# "is absent after a run that exited 0" and exits 1. A developer's machine usually holds the image already, so the proxy never removes it and the race cannot fire; a fresh CI runner does not, so it fires there (PR #592, run 37122619755, job 111201995791). The repo-root conftest turns this attribute into `@pytest.mark.xdist_group`, which puts every test in this file on one worker.
+XDIST_GROUP = "docker-hello-world"
 
 
 def _docker_ready() -> bool:
@@ -89,13 +94,14 @@ def compare(name: str) -> tuple[int, str, str]:
     got = run(MODULE, name)
     labels = ("exit code", "stdout", "stderr")
     # `strict=True`: the tuple and the labels must stay the same length, and a silently truncated zip is how a comparison stops checking its last field.
-    for label, a, b in zip(labels, want, got, strict=True):
-        assert a == b, "%s: %s diverged:\n--- recorded ---\n%s\n--- port ---\n%s" % (
-            name,
-            label,
-            a,
-            b,
-        )
+    diverged = [label for label, a, b in zip(labels, want, got, strict=True) if a != b]
+    # THE WHOLE TUPLE ON A DIVERGENCE, not the first field that differs: an exit code alone says that the proxy failed and nothing about which check failed, which is the line in stdout. Job 111201995791 reported "exit code diverged" and the stdout that named the cause was never printed.
+    assert not diverged, "%s: %s diverged:\n--- recorded ---\n%s\n--- port ---\n%s" % (
+        name,
+        ", ".join(diverged),
+        render(*want),
+        render(*got),
+    )
     return got
 
 
@@ -108,6 +114,11 @@ def test_port_matches_the_twins_recorded_output(name: str) -> None:
 def test_every_case_has_a_golden_and_no_golden_is_orphaned() -> None:
     """ANTI-VACUITY on the corpus, and it runs with or without a daemon: a case whose golden vanished would pass by never being compared, and a golden nothing reads is a recording of a case that stopped running."""
     frozen.assert_corpus(SLUG, set(CASES))
+
+
+def test_the_docker_tests_share_one_worker() -> None:
+    """CONTROL on the `XDIST_GROUP` declaration above: deleting it would leave every test green on a machine that already holds `hello-world`, and red only on a fresh runner, under load, by timing."""
+    assert xdist_groups.group_for(sys.modules[__name__]) == "docker-hello-world"
 
 
 def test_no_recording_carries_a_path() -> None:
