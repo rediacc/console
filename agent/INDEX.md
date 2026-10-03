@@ -559,7 +559,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-always-tier.md` | compacted | 39 | 0 | 0 | 3145 |
 | `agent/plans/PLAN-stop-hook-cadence.md` | compacted | 38 | 0 | 0 | 2622 |
 | `agent/plans/PLAN-stop-hook-focus-mode.md` | held | 352 | 0 | 8 | 36061 |
-| `agent/plans/PLAN-stop-hook-one-plan-scope.md` | approved | 179 | 1 | 14 | 42930 |
+| `agent/plans/PLAN-stop-hook-one-plan-scope.md` | approved | 179 | 1 | 14 | 42868 |
 | `agent/plans/PLAN-stop-hook-refactor-enforcement.md` | held | 370 | 1 | 16 | 49937 |
 | `agent/plans/PLAN-stop-hook-retro-20260924.md` | held | 601 | 1 | 22 | 64263 |
 | `agent/plans/PLAN-stop-hook-retro-20260925.md` | held | 239 | 5 | 5 | 23104 |
