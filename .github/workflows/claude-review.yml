@@ -1,0 +1,382 @@
+name: Claude Review
+
+# The PR-level Claude review, one file (agent/plans/PLAN-github-pr-review-restore.md,
+# box GR3). It was a thin caller plus a reusable shared with the submodule repos;
+# the external callers are gone (.github/external-callers.yml is `callers: []`),
+# so the reusable's `review` job is folded in here. INVARIANT (operator ruling
+# 2026-07-22): a review fires ONLY for a non-draft PR whose CURRENT head has
+# green CI at decision time; the authoritative gating (same-SHA marker dedup,
+# pointer-bump skip, the review budget) lives in rediacc_ci.review.claude_review_gate.
+#
+# NO LABEL STEP, DELIBERATELY. The pr-labels job in ci.yml is the single bump
+# decision. The old label-applying step here wrote a second one, and on
+# 2026-10-03 it stripped bump-minor from #591, which then released as a patch.
+
+on:
+  workflow_run:
+    workflows: ["Console CI"]
+    types: [completed]
+  pull_request:
+    types: [ready_for_review]
+  # Manual escape hatch (found 2026-07-30, PR #546 run 30572143752): the
+  # workflow_run delivery above has been observed to silently not fire for a
+  # green PR-branch "Console CI" completion, with no run of any conclusion
+  # recorded. The gate re-checks that CI Complete is green on the CURRENT head
+  # before reviewing anything, so the same safety invariant applies here.
+  #
+  # `gh workflow run` MUST carry `--ref <branch>` while this trigger is
+  # unmerged: GitHub resolves whether a workflow ACCEPTS workflow_dispatch
+  # from the DEFAULT BRANCH's copy of this file, while the run itself executes
+  # the dispatched ref's copy. Without --ref the dispatch fails closed with a
+  # 422 ("Workflow does not have 'workflow_dispatch' trigger"), observed on
+  # PR #546 run 30588087212. See the dispatch section of
+  # docs/agent-reference/ci-gates.md.
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to manually re-review (use when workflow_run does not fire)'
+        required: true
+        type: string
+      model:
+        description: 'Model for this review round.'
+        required: false
+        type: choice
+        default: 'claude-sonnet-5'
+        options: ['claude-sonnet-5', 'claude-opus-5']
+
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
+
+# One review pipeline per head branch; a newer green push supersedes an
+# in-flight review of the old head. workflow_dispatch has no branch/ref in
+# its event payload, so it gets its own group keyed by the PR number instead
+# of colliding with (and cancelling) the automatic pipeline for that branch.
+concurrency:
+  group: claude-review-${{ github.event.workflow_run.head_branch || github.event.pull_request.head.ref || format('dispatch-{0}', inputs.pr_number) }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # Pre-filter only; the authoritative decision is the gate. Fork guard:
+    # workflow_run executes in base-repo context WITH secrets.
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'pull_request' &&
+       github.event.workflow_run.head_repository.full_name == github.repository) ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.draft == false &&
+       github.event.pull_request.head.repo.full_name == github.repository) ||
+      github.event_name == 'workflow_dispatch'
+    name: Claude Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # FORCED OFF, and this is a security control rather than a preference.
+      #
+      # With track_progress true the action takes its "tag" path, which runs its
+      # own `git fetch origin --depth=20 <branch>` inside the workspace. That
+      # fetch is what fails on a PRIVATE repo (renet #95: "could not read
+      # Username for 'https://github.com'"), and the tempting fix -- persisting
+      # credentials on the PR-head checkout -- is the one thing this job must not
+      # do. See the Checkout PR head step for why.
+      #
+      # With it false the action never fetches, so no credential is needed at
+      # all. This is not an untested path: it is the ONLY path that has worked.
+      #
+      # Cost, stated plainly: no live "Claude is working..." comment on the
+      # pull_request entry point. The `Post review report` step below covers
+      # that case; it is gated on TRACK_PROGRESS != 'true', which always holds.
+      TRACK_PROGRESS: 'false'
+      # ONE definition, TWO consumers: the claude_args actually sent, and the
+      # CLAUDE_ARGS_SENT line that claims what was sent.
+      REVIEW_MODEL: ${{ inputs.model || 'claude-sonnet-5' }}
+    permissions:
+      contents: read
+      pull-requests: write # inline review comments + summary comment
+      issues: write # marker comment upsert (issue-comment endpoint on PRs)
+      checks: read # required_check lookup on the pull_request path
+    steps:
+      # ORDER IS THE WHOLE FIX. The repository lands at the WORKSPACE ROOT
+      # FIRST, and the review tooling is fetched into a subdirectory AFTER it.
+      #
+      # `clean: false` only suppresses `git clean -ffdx` on an ALREADY-INITIALISED
+      # repo; when actions/checkout initialises a fresh clone into a non-empty
+      # directory it empties that directory regardless:
+      #
+      #     clean: false
+      #     Deleting the contents of '/home/runner/work/console/console'
+      #
+      # With the old order `.review-scripts` was destroyed on EVERY run, and on
+      # run 30317293249 the review of PR #541 ran on review logic taken from
+      # PR #541. Reversing the order removes the failure mode instead of
+      # guarding it: nothing runs after the .review-scripts checkout that could
+      # delete it.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Every Linux job carries this (check:ci-profiler-coverage). It is a LOCAL
+      # action, so it has to follow the checkout rather than lead the job. The
+      # old `github.repository` guard existed only for the cross-repo callers,
+      # which are gone.
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      # Review tooling always comes from this repository's main -- one copy, no
+      # drift, and never the reviewed PR's copy.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.repository }}
+          ref: main
+          path: .review-scripts
+          persist-credentials: false
+
+      # The action is taken from `.review-scripts` (main), not from the
+      # workspace root, so the credential fetch never runs PR-authored code.
+      # NO FALLBACK: an `|| secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` once stood
+      # at the consumer and was INERT (no repo or org defines that name);
+      # `check:ci-secret-scope` is what caught it.
+      - name: Fetch secrets from Bitwarden
+        uses: ./.review-scripts/.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN > BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
+
+      # Fail loudly if the tooling is not where it must be. This replaces a
+      # "bootstrap" fallback that copied the workspace's own scripts in when
+      # .review-scripts was missing -- which is precisely how the PR-reviews-
+      # itself hole above stayed invisible. A missing reviewer must stop the
+      # run, never be silently substituted.
+      - name: Assert review tooling came from main
+        run: |
+          test -f .review-scripts/.ci/rediacc_ci/review/claude_review_gate.py ||
+            { echo "::error::review tooling missing from the main checkout"; exit 1; }
+
+      # `python3 -P` here and in every arm below: `-m` would otherwise put the
+      # working directory first on sys.path, and the working directory is a
+      # checkout of the reviewed PR, so a top-level `rediacc_ci/` there would
+      # shadow the trusted package named by PYTHONPATH.
+      - name: Review gate
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          REQUIRED_CHECK: CI Complete
+          WR_EVENT: ${{ github.event.workflow_run.event }}
+          WR_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WR_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: PYTHONPATH=.review-scripts/.ci python3 -P -m rediacc_ci.review.claude_review_gate
+
+      # The anthropics action resets the workspace's UNTRACKED files while it
+      # runs, which deletes .review-scripts before the post-review steps —
+      # proven on run 30085984306: the gate step above used it, then
+      # "Post inline findings" hit ENOENT (exit 127) and the marker never
+      # posted. Stage the TRUSTED copy into $RUNNER_TEMP now (outside
+      # $GITHUB_WORKSPACE, untouched by any checkout or action) and run the
+      # post steps from there, so a PR's own tree can never substitute the
+      # marker/inline-posting logic.
+      - name: Stage review scripts outside the workspace
+        if: steps.gate.outputs.go == 'true'
+        run: |
+          rm -rf "${{ runner.temp }}/review-scripts"
+          mkdir -p "${{ runner.temp }}/review-scripts"
+          cp -r .review-scripts/.ci "${{ runner.temp }}/review-scripts/.ci"
+
+      # Full history so `git diff <last_reviewed>..<head>` works in follow-ups.
+      - name: Checkout PR head
+        if: steps.gate.outputs.go == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.gate.outputs.head_sha }}
+          fetch-depth: 0
+          # blob:none: the diff below opens only the changed files, which a partial
+          # clone fetches on demand. Downloading the whole history's blobs to
+          # read a PR diff was pure waste.
+          filter: blob:none
+          clean: false
+          # persist-credentials MUST stay false here. This checkout takes
+          # PR-AUTHORED content (`ref: head_sha`), and the model then runs over
+          # it with Read enabled and `Bash(gh pr comment:*)` / `Bash(gh api:*)`
+          # allowlisted, under `pull-requests: write` + `issues: write`.
+          #
+          # An earlier fix set this true to unblock the private-repo fetch. The
+          # justification was that the credential is this job's GITHUB_TOKEN,
+          # already present in the environment, so persisting it does not widen
+          # exposure. That conflates two different things. The token's
+          # CAPABILITIES are already exposed; persisting additionally writes the
+          # RAW BEARER STRING into $GITHUB_WORKSPACE/.git/config as
+          # `http.https://github.com/.extraheader`, in a directory the model can
+          # read, with two egress tools available. Capability-bounded-by-job
+          # becomes exfiltratable-credential. That is a genuine widening, on the
+          # one job whose entire purpose is to read attacker-authored text.
+          #
+          # The private-repo fetch is fixed at the source instead: TRACK_PROGRESS
+          # is forced false above, so the action never fetches and needs no
+          # credential. The assertion step below makes a silent re-introduction
+          # of this fail loudly.
+          persist-credentials: false
+
+      # github_token is passed explicitly: comments post as github-actions,
+      # whose events never trigger workflows (anti-recursion), and the run
+      # does not depend on the Claude GitHub App's repo selection.
+      # TRIPWIRE. The comment above is an argument; this is a test. If anyone
+      # re-introduces persisted credentials on the PR-head checkout, the job dies
+      # here instead of quietly handing a bearer token to a model that is reading
+      # attacker-authored files.
+      - name: Assert no credential was persisted into the workspace
+        if: steps.gate.outputs.go == 'true'
+        run: |
+          if git config --local --get-regexp '^http\..*\.extraheader' >/dev/null 2>&1; then
+            echo "::error::The PR-head checkout persisted a credential into .git/config."
+            echo "::error::This job reads PR-authored content with egress tools available."
+            echo "::error::Fix the fetch at its source (TRACK_PROGRESS) instead."
+            exit 1
+          fi
+          echo "No persisted credential in the workspace."
+
+      - name: Claude review
+        id: claude
+        if: steps.gate.outputs.go == 'true'
+        uses: anthropics/claude-code-action@fa7e2f0a29a126f0b81cdcf360561b36e44cf608 # v1.0.180
+        with:
+          claude_code_oauth_token: ${{ env.BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          # The prompt is what makes this a REVIEW rather than an @claude
+          # mention bot: without it the action auto-detects tag mode and skips
+          # every run that carries no mention ("No trigger was met for
+          # @claude").
+          prompt: ${{ steps.gate.outputs.prompt }}
+          track_progress: ${{ env.TRACK_PROGRESS }}
+          settings: |
+            {
+              "permissions": {
+                "allow": [
+                  "mcp__github_inline_comment__create_inline_comment",
+                  "Bash(gh pr view:*)",
+                  "Bash(gh pr diff:*)",
+                  "Bash(gh pr comment:*)",
+                  "Bash(gh api:*)",
+                  "Bash(git diff:*)",
+                  "Bash(git log:*)"
+                ]
+              }
+            }
+          # Turn budget from the gate, scaled to diff size.
+          # NO SUB-AGENTS, and this is a cost fix rather than a style rule.
+          # Observed on PR #543: the model spawned THREE background review
+          # agents, ran out of turns, and posted "Waiting on the three
+          # background review agents to finish before synthesizing findings"
+          # as its final report. Nothing joins those agents, so every token
+          # they spent was thrown away and the PR got a placeholder instead
+          # of a review. A review has a fixed turn budget and no join point,
+          # so the work must happen inline: delegation is only cheaper when
+          # something collects the result.
+          claude_args: |
+            --model ${{ env.REVIEW_MODEL }}
+            --max-turns ${{ steps.gate.outputs.review_turns }}
+            --disallowed-tools Task,Agent
+
+      # `always()`: what was asked for is most interesting on the round that
+      # FAILED, which is exactly when an implicit success() would skip it.
+      - name: Record the review invocation
+        if: always() && steps.gate.outputs.go == 'true'
+        env:
+          CLAUDE_ARGS_SENT: |
+            --model ${{ env.REVIEW_MODEL }}
+            --max-turns ${{ steps.gate.outputs.review_turns }}
+            --disallowed-tools Task,Agent
+        run: |
+          printf '%s\n' "$CLAUDE_ARGS_SENT"
+          { echo '### Review invocation (the action does not log claude_args itself)'; echo '```'; printf '%s\n' "$CLAUDE_ARGS_SENT"; echo '```'; } >>"$GITHUB_STEP_SUMMARY"
+
+      # THE PR HANDOFF, and it exists because SHA inference cannot work here.
+      # Review Status is a SECOND-ORDER workflow_run (Console CI -> Claude
+      # Review -> Review Status), and GitHub stamps a workflow_run-triggered
+      # run with the DEFAULT BRANCH tip, so the downstream reporter received
+      # main's SHA and found no PR for it. The gate already knows the answer,
+      # so hand it over instead of re-deriving it downstream.
+      #
+      # CONDITIONED ON pr_number, NOT ON go. A submodule-pointer-only push makes
+      # the gate emit go=false while still resolving the PR, and the head must
+      # still be judged: deciding whether to REVIEW and deciding whether the
+      # head is COVERED are different questions. A push to main has no PR and
+      # writes no artifact, so the reporter stays silent there while treating a
+      # PRESENT artifact it cannot honour as a hard error.
+      - name: Hand the resolved PR number to Review Status
+        if: always() && steps.gate.outputs.pr_number != ''
+        run: echo "${{ steps.gate.outputs.pr_number }}" > "${RUNNER_TEMP}/review-target.txt"
+
+      - name: Upload the review target
+        if: always() && steps.gate.outputs.pr_number != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: review-target
+          path: ${{ runner.temp }}/review-target.txt
+          if-no-files-found: error
+
+      # The execution file carries total_cost_usd, num_turns and the per-model
+      # `modelUsage` breakdown. 7 days because this is a debugging aid, not a
+      # record; `if-no-files-found: ignore` keeps a skipped or crashed review
+      # from failing the job over a missing artifact.
+      - name: Preserve the review execution file
+        if: always() && steps.gate.outputs.go == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: claude-review-execution-${{ steps.gate.outputs.head_sha }}
+          path: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # Without track_progress the action runs in AGENT mode, which creates no
+      # tracking comment at all -- the report exists only as the model's final
+      # text in the execution file. Ordering is load-bearing: this must precede
+      # --post-findings, which parses the findings fence out of it.
+      - name: Post review report
+        if: steps.gate.outputs.go == 'true' && env.TRACK_PROGRESS != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.gate.outputs.head_sha }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
+        run: PYTHONPATH="$RUNNER_TEMP/review-scripts/.ci" python3 -P -m rediacc_ci.review.claude_review_gate --post-report
+
+      # Line-anchored severity-badged comments, posted deterministically from
+      # the machine-readable findings block in the report. Advisory:
+      # per-comment failures are skipped, never fail the job.
+      - name: Post inline findings
+        if: steps.gate.outputs.go == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.gate.outputs.head_sha }}
+        run: PYTHONPATH="$RUNNER_TEMP/review-scripts/.ci" python3 -P -m rediacc_ci.review.claude_review_gate --post-findings
+
+      # `always()` HERE (operator decision 2026-07-30). This step is the
+      # ACCOUNTING RECORD, and it has to run precisely when the review failed,
+      # because that is the case it exists to charge for. Without it a spent
+      # pass counted as zero and the same SHA was re-reviewed at full price on
+      # every later green push (PR #546 run 30552035566). REVIEW_OUTCOME tells
+      # --mark which path to take; anything other than "success" records a
+      # SPENT ATTEMPT, which consumes budget without ever claiming the SHA was
+      # reviewed.
+      - name: Record reviewed SHA
+        if: always() && steps.gate.outputs.go == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.gate.outputs.head_sha }}
+          REVIEW_OUTCOME: ${{ steps.claude.outcome }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
+        run: PYTHONPATH="$RUNNER_TEMP/review-scripts/.ci" python3 -P -m rediacc_ci.review.claude_review_gate --mark
