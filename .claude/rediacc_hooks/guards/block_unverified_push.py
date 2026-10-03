@@ -9,6 +9,8 @@ WHY A RECEIPT AND NOT A RUN. This hook sits in the PreToolUse chain, which fires
 KEYED ON `HEAD^{tree}`. CI checks out the pushed commit, so the tree object is
 exactly what CI will judge. It is also invariant to the dozens of dirty paths this repo's tree normally carries from OTHER live sessions -- keying on the worktree would invalidate the receipt on someone else's keystroke and make it unobtainable, which is how a guard becomes a wall and then gets bypassed.
 
+A LIVE BRANCH BEHIND origin/main IS REFUSED TOO (operator finding 2026-10-03). PR #592's first CI run went red only on Quality / Branch because main had moved three commits after 1003-1 was cut, and the push clone's origin/main was stale. Once the receipt allows, `behind_base_refusal` fetches origin/main itself (a stale ref would pass the ancestry test vacuously) and refuses an MMDD-N push to origin that does not contain it, printing the REBASE LOCALLY recipe CI prints. A fetch that fails or times out cannot judge, says so and allows.
+
 =============================================================================
 PORT NOTES
 =============================================================================
@@ -444,6 +446,165 @@ def pushed_tree(root, pushes):
     return hookio.git_out(["-C", root, "rev-parse", "HEAD^{tree}"], want_rc=True)
 
 
+#: The base every live branch is judged against, and the remote it is fetched from.
+BASE = "main"
+BASE_REMOTE = "origin"
+#: Seconds the base fetch may take before the check reports that it cannot judge.
+FETCH_TIMEOUT = 20
+
+
+def rebase_recipe(base, head):
+    """The REBASE LOCALLY block `rediacc_ci.quality.branch.recipe(base, head)` prints, line for line.
+
+    REPRODUCED, NOT IMPORTED: a hook cannot import the rediacc_ci package. test-block_unverified_push.py pins this text equal to that function's in a child process, so the two cannot drift apart unnoticed.
+    """
+    suffix = " (branch: %s)" % head if head else ""
+    return [
+        "",
+        "==============================================",
+        "REBASE LOCALLY%s" % suffix,
+        "==============================================",
+        "",
+        "  /branch-rebase %s" % base,
+        "",
+        "    Rebases the console repo AND every submodule carrying a branch of the",
+        "    same name, resolving the gitlink conflicts that a plain 'git rebase'",
+        "    gets wrong. It rebases and verifies only; it lands nothing.",
+        "",
+        "  If the rebase halts on a conflict:",
+        "",
+        "    .claude/hooks/stop/worklist.py --git rebase-resolve",
+        "        reports where it stopped and stages the paths it can decide",
+        "        (gitlinks by ancestry, registry unions). All-or-nothing: if any",
+        "        path needs you, nothing is written.",
+        "    .claude/hooks/stop/worklist.py --git rebase-continue --execute",
+        "        continues the rebase once every conflicted path is staged.",
+        "",
+        "  Prove no commit was lost across the rebase:",
+        "",
+        "    .claude/hooks/stop/worklist.py --git snapshot > /tmp/pre.snap   # BEFORE",
+        "    .claude/hooks/stop/worklist.py --git verify-rebase /tmp/pre.snap origin/%s" % base,
+        "",
+        "==============================================",
+    ]
+
+
+def _push_remote(args):
+    """The remote a `git push <args>` names (its first positional), "" when it names none."""
+    k = 0
+    while k < len(args):
+        arg = args[k]
+        if arg == "--":
+            return args[k + 1] if k + 1 < len(args) else ""
+        if arg in commit_policy._PUSH_WITH_VALUE:
+            k += 2
+            continue
+        if not arg.startswith("-"):
+            return arg
+        k += 1
+    return ""
+
+
+def live_pushes(cmd, root):
+    """`[(sha, branch)]` for every push in `cmd` that publishes an MMDD-N branch to origin.
+
+    A push naming no refspec (`git push`, `git push origin`) and a `HEAD` destination send the checked-out branch. A source that does not resolve is skipped: git itself refuses that push, so there is no commit to judge. The remote must be spelled `origin` (or left out); a mirror or a URL is another guard's business.
+    """
+    current = hookio.git_out(["-C", root, "branch", "--show-current"], want_rc=True) or ""
+    out = []
+    for run in commit_policy.git_runs(cmd, "push"):
+        _, _, args = commit_policy.git_split(run.argv)
+        if _push_remote(args) not in ("", BASE_REMOTE):
+            continue
+        dests = commit_policy.push_destinations(args)
+        if not dests and not any(
+            a in ("--delete", "-d", "--all", "--mirror", "--tags") for a in args
+        ):
+            dests = [("HEAD", current)]
+        for src, named in dests:
+            dst = current if named == "HEAD" else named
+            if not commit_policy.BRANCH_SHAPE.match(dst or ""):
+                continue
+            sha = hookio.git_out(
+                ["-C", root, "rev-parse", "-q", "--verify", "%s^{commit}" % (src or "HEAD")],
+                want_rc=True,
+            )
+            if sha:
+                out.append((sha, dst))
+    return out
+
+
+def behind_base_refusal(ev, root, cmd):
+    """A refusal when a pushed live branch does not contain origin/main, else None.
+
+    WHY. PR #592's first CI run (run 37110619739) went red only on Quality / Branch, "Check whether the branch is behind its base": main had moved three commits after 1003-1 was cut, and the local ci:quick ran in a push clone whose origin/main was stale. The CI gate (.ci/rediacc_ci/quality/branch.py) fetches the base itself before judging, so this does too: a stale `refs/remotes/origin/main` would make the ancestry test pass vacuously.
+
+    A FAILED OR TIMED-OUT FETCH CANNOT JUDGE, and says so and allows: a base check must never become a push outage, the same fail-open-on-a-broken-environment line the receipt arm draws.
+    """
+    if hookio.git_out(["-C", root, "remote", "get-url", BASE_REMOTE], want_rc=True) is None:
+        return None
+    judged = live_pushes(cmd, root)
+    if not judged:
+        return None
+    base_ref = "%s/%s" % (BASE_REMOTE, BASE)
+    try:
+        fetched = subprocess.run(
+            [
+                "git",
+                "-C",
+                root,
+                "fetch",
+                BASE_REMOTE,
+                "+refs/heads/%s:refs/remotes/%s" % (BASE, base_ref),
+                "--quiet",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=FETCH_TIMEOUT,
+            check=False,
+            env=dict(os.environ, GIT_TERMINAL_PROMPT="0"),
+        )
+        failure = (
+            ""
+            if fetched.returncode == 0
+            else (fetched.stderr.strip() or "exit %d" % fetched.returncode)
+        )
+    except subprocess.TimeoutExpired:
+        failure = "timed out after %ds" % FETCH_TIMEOUT
+    except OSError as exc:
+        failure = str(exc)
+    if failure:
+        ev.warn("NOTE: cannot judge whether this push is behind %s: fetching it failed" % base_ref)
+        ev.warn("  (%s)." % failure.splitlines()[-1])
+        ev.warn(
+            "  Allowed. CI's Quality / Branch step still checks it, and a red there costs a round."
+        )
+        return None
+    for sha, branch in judged:
+        if (
+            hookio.git_out(["-C", root, "merge-base", "--is-ancestor", base_ref, sha], want_rc=True)
+            is not None
+        ):
+            continue
+        behind = hookio.git_out(["-C", root, "rev-list", "--count", "%s..%s" % (sha, base_ref)])
+        recent = hookio.git_out(["-C", root, "log", "--oneline", "-5", "%s..%s" % (sha, base_ref)])
+        return (
+            "%s (%s) is %s commit(s) behind %s, freshly fetched.\n"
+            "  CI's Quality / Branch step refuses exactly this, after a ~15-minute round.\n"
+            "  Recent commits on %s not in this branch:\n%s\n%s\n"
+            % (
+                branch,
+                sha[:12],
+                behind or "?",
+                base_ref,
+                BASE,
+                "\n".join("    %s" % line for line in recent.splitlines()),
+                "\n".join(rebase_recipe(BASE, branch)),
+            )
+        )
+    return None
+
+
 def carried_verdict(receipt, doc):
     """(refusal or None, note parts) for a RED receipt against carried-reds.json `doc` (parsed, from HEAD; None when absent). PURE: no git, no filesystem, so the tests and the push-clone proof drive exactly the function the guard runs.
 
@@ -626,6 +787,12 @@ def run(ev):
         return _refuse(
             ev, "that receipt came from a NARROWED run (--only/--skip), not the whole lane."
         )
+
+    # A LIVE BRANCH BEHIND origin/main IS REFUSED HERE, not by CI (operator finding 2026-10-03, PR #592). Judged once the receipt is whole and names the pushed tree, so a push the receipt already refuses never pays for a fetch, and the frozen goldens for refused pushes stay byte-identical. Run ci:quick after the rebase, not before it.
+    behind = behind_base_refusal(ev, root, cmd)
+    if behind is not None:
+        ev.warn_raw("BLOCKED: %s" % behind)
+        return hookio.DENY
 
     if r_exit != "0":
         # A RED RECEIPT MAY STILL AUTHORISE A PUSH, but only when every failure is named and justified in .ci/config/carried-reds.json. All-or-nothing is the shape that gets a guard routed around; naming the exception keeps the refusal informative and leaves the excuse in git where it can be reviewed.
