@@ -1072,16 +1072,16 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 2,
+      "open": 2,
+      "done": 3,
       "open_sigs": [
         "51be15ab",
-        "76dee55e",
-        "c9c68cef"
+        "76dee55e"
       ],
       "done_sigs": [
         "101046d0",
-        "b91cff49"
+        "b91cff49",
+        "c9c68cef"
       ]
     },
     "agent/plans/PLAN-promote-mutation-runner.md": {
