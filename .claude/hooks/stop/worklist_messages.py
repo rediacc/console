@@ -360,9 +360,14 @@ CLI_PUBLISH_WROTE = "wrote %s (%d byte(s), %d epic(s))\n"
 
 CLI_EPIC_USAGE = """usage: worklist.py --epic <me> <subcommand>
 
-  new <title...>              mint an epic, prints its id
-  add <epic-id> <item-id>...  attach worklist items to an epic
-  list                        show every epic and what it covers
+  new [--plan <rel>] <title...>  mint an epic, prints its id
+  add <epic-id> <item-id>...     attach worklist items to an epic
+  plan <epic-id> <rel>           set the plan whose PR the epic's items block
+  list                           show every epic, its plan and what it covers
+
+<rel> is an existing agent/plans/<name>.md. On a live PR the Stop hook
+blocks only on items in an epic whose plan is the PR's plan or one of its
+prerequisites; every other open item is queued.
 
 An epic is a LABEL OVER items, never an item itself: the items stay
 individually tracked and evidenced. It exists so a PR body can carry one
@@ -1414,6 +1419,7 @@ CLI_ITEM_USAGE = (
     "       --lease <my-prefix> <id>[,<id>...] <+minutes|until-ISO8601Z> worker:<bg-task-id|lead> [note...]\n"
     "       --relay <my-prefix> <old-worker> <new-worker>   move every lease on one worker to another\n"
     "       --update <my-prefix> <id> <what moved...>\n"
+    "       --reopen <my-prefix> <id> <note...>   move a [?] back to [ ] (refused from any other state)\n"
     "       --status <my-prefix> [<agent-id>|all]   read a worker's transcript; answers the roster's 20-minute ping\n"
     "       --list"
 )
@@ -1984,6 +1990,7 @@ inbox and is synced in, but the verbs are the first-class interface):
                                 waiting on those items: reported `waiting`,
                                 not open, until every blocker closes
   --update <me> <id> <text...>  record progress (resets the liveness ladder)
+  --reopen <me> <id> <note...>  move a [?] back to open work (from [?] only)
   --list                        render every item with ids and ages
   --list --open [<me>]          only the ACTIONABLE slice, with the exact
                                 verb per item (what the Stop hook emits)

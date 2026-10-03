@@ -1387,16 +1387,21 @@ def deferral_justification(rec):
 # ---- classification ---------------------------------------------------------
 
 
-def classify_items(fold, session_id, live_worker_ids=None, order_key=None):
-    """(open_items, others, deferred, in_flight) as display strings / recs, the v2-v9 state machine unchanged: open blocks, [?] is reported, fresh [>] is allowed-and-reported, an expired or invalid lease fails closed into an open item.
+def classify_items(fold, session_id, live_worker_ids=None, order_key=None, in_scope=None):
+    """(open_items, others, deferred, in_flight, queued) as display strings / recs, the v2-v9 state machine unchanged: open blocks, [?] is reported, fresh [>] is allowed-and-reported, an expired or invalid lease fails closed into an open item.
 
     v14 gap 4: an EXPIRED (never invalid) lease whose worker id appears in `live_worker_ids` (the OS-verified running background tasks) is tolerated as in-flight instead of failing closed, with `lease_tolerated` stamped on the rec so displays can say so. A long job outliving the lease cap while its watcher is demonstrably alive is supervision, not abandonment; the moment the
     worker disappears the item fails closed exactly as before.
 
-    `order_key(rec)` ranks the OPEN list (agent/plans/PLAN-plan-priority-concurrency.md section 2: `wl_planorder.item_key`, dependencies, then operator priority, then AI priority, then age), so open-items and idle-stall name the most urgent work first. Without it the open list keeps fold order. `others` and `deferred` always keep fold order: the oldest-first deferral checks rely on it."""
+    `order_key(rec)` ranks the OPEN list (agent/plans/PLAN-plan-priority-concurrency.md section 2: `wl_planorder.item_key`, dependencies, then operator priority, then AI priority, then age), so open-items and idle-stall name the most urgent work first. Without it the open list keeps fold order. `others` and `deferred` always keep fold order: the oldest-first deferral checks rely on it.
+
+    `in_scope(rec)` is the live PR's item scope (agent/plans/PLAN-stop-hook-one-plan-scope.md, Design 2): in production `rec["id"] in loop_state.epic_items`. A plain open `[ ]` of this session that fails it goes to `queued` (its records, ranked like the open list) instead of `open_items`, so every consumer of the open list is scoped by construction. Two shapes stay in
+    `open_items` whatever the predicate says, because a dead claim is a loop duty (ruling 1d): a fail-closed lease and a `worker:lead` item with nothing live. `[?]` and `[>]` are never queued either: an expired DEFAULT and a live lease are the loop's own business. `in_scope=None` puts everything in scope, which is today's behaviour and the `off-loop` state."""
     open_items, others, deferred, in_flight = [], {}, [], []
     # (rank, display) pairs for this session's open list, sorted once at the end.
     ranked: list[tuple[Any, str]] = []
+    # (rank, rec) pairs for this session's out-of-scope open items, same rank.
+    queued_ranked: list[tuple[Any, dict]] = []
 
     def add_open(rec, disp):
         ranked.append((order_key(rec) if order_key is not None else 0, disp))
@@ -1412,7 +1417,9 @@ def classify_items(fold, session_id, live_worker_ids=None, order_key=None):
             rec["waiting_on"] = LH.waiting_on(rec, by_id) if mine else []
             if mine and rec["waiting_on"]:
                 continue
-            if mine:
+            if mine and in_scope is not None and not in_scope(rec):
+                queued_ranked.append((order_key(rec) if order_key is not None else 0, rec))
+            elif mine:
                 add_open(rec, disp)
             else:
                 others.setdefault(owner, []).append(disp)
@@ -1457,7 +1464,9 @@ def classify_items(fold, session_id, live_worker_ids=None, order_key=None):
                 )
     ranked.sort(key=lambda pair: pair[0])
     open_items = [disp for _rank, disp in ranked]
-    return open_items, others, deferred, in_flight
+    queued_ranked.sort(key=lambda pair: pair[0])
+    queued = [rec for _rank, rec in queued_ranked]
+    return open_items, others, deferred, in_flight, queued
 
 
 # ---- dead-session cleanup (v4, extended to CLI items) -----------------------

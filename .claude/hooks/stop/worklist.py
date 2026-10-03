@@ -1181,6 +1181,15 @@ def _item_cli(argv, worklist):
             "its DEFAULT executes after %d min" % (item_id, S.DEFER_AUDIT_MIN, S.DEFER_WINDOW_MIN)
         )
         return
+    if mode == "--reopen":
+        # [?] -> [ ] ONLY (agent/plans/PLAN-stop-hook-one-plan-scope.md SC3). A deferral re-homed onto its owning plan's epic returns to the open list, where the PR scope queues it rather than blocking. Every other state is refused: a [x] reopened would erase a tick's evidence, a [>] has its own release (--lease <id> release), and a [ ] is already open.
+        if rec["state"] != "?":
+            die("#%s is [%s]; --reopen moves only a [?] back to [ ]" % (item_id, rec["state"]))
+        if not rest:
+            die("--reopen needs a note: why the deferral returns to the open list")
+        S.set_state(worklist, me, item_id, " ", rest)
+        print("reopened #%s (%s)" % (item_id, rest[:80]))
+        return
     if mode == "--update":
         if not rest:
             die("an empty update updates nothing: one line of what moved")
@@ -2148,12 +2157,37 @@ def main():
         sub = sys.argv[3]
         rest = sys.argv[4:]
         if sub == "new":
+            # `--plan <rel>` names the plan whose PR this epic's items block (agent/plans/PLAN-stop-hook-one-plan-scope.md, Design 3). Validated BEFORE the mint, so a refused rel writes nothing.
+            plan = None
+            if rest[:1] == ["--plan"]:
+                if len(rest) < 2:
+                    sys.stderr.write(M.CLI_EPIC_REFUSED % "--plan needs an agent/plans/<name>.md")
+                    sys.exit(2)
+                plan, rest = rest[1], rest[2:]
+                why = E.plan_rel_problem(plan)
+                if why:
+                    sys.stderr.write(M.CLI_EPIC_REFUSED % why)
+                    sys.exit(2)
             if not rest:
                 sys.stderr.write(M.CLI_EPIC_REFUSED % "an epic needs a title")
                 sys.exit(2)
             title = " ".join(rest)
-            eid = E.new_epic(me, title)
+            eid = E.new_epic(me, title, plan=plan)
             sys.stdout.write(M.CLI_EPIC_MADE % (eid, title))
+            sys.exit(0)
+        if sub == "plan":
+            if len(rest) != 2:
+                sys.stderr.write(M.CLI_EPIC_REFUSED % "usage: --epic <me> plan <epic-id> <rel>")
+                sys.exit(2)
+            eid, plan = rest[0].lstrip("#"), rest[1]
+            why = E.plan_rel_problem(plan)
+            if why:
+                sys.stderr.write(M.CLI_EPIC_REFUSED % why)
+                sys.exit(2)
+            if not E.set_plan(me, eid, plan):
+                sys.stderr.write(M.CLI_EPIC_REFUSED % ("no epic %r; run --epic <me> list" % eid))
+                sys.exit(2)
+            sys.stdout.write("epic #%s plan: %s\n" % (eid, plan))
             sys.exit(0)
         if sub == "add":
             if len(rest) < 2:
@@ -2173,8 +2207,13 @@ def main():
         if sub == "list":
             for eid, rec in E.load_epics().items():
                 sys.stdout.write(
-                    "#%s  %s  (%d item(s))\n"
-                    % (eid, rec.get("title") or "(untitled)", len(rec.get("covers") or []))
+                    "#%s  %s  (%d item(s))  plan: %s\n"
+                    % (
+                        eid,
+                        rec.get("title") or "(untitled)",
+                        len(rec.get("covers") or []),
+                        rec.get("plan") or "-",
+                    )
                 )
             sys.exit(0)
         sys.stderr.write(M.CLI_EPIC_REFUSED % ("unknown subcommand %r" % sub))
@@ -2501,6 +2540,7 @@ def main():
         "--lease",
         "--relay",
         "--update",
+        "--reopen",
         "--status",
         "--list",
     ):
