@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 181 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 182 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -512,6 +512,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-git-history-media-rewrite.md` | compacted | 37 | 0 | 0 | 2958 |
 | `agent/plans/PLAN-git-ignore-aware-discover.md` | compacted | 57 | 0 | 10 | 4730 |
 | `agent/plans/PLAN-github-actions-workflow-run-trigger-fix.md` | compacted | 54 | 0 | 0 | 3927 |
+| `agent/plans/PLAN-github-pr-review-restore.md` | approved | 110 | 12 | 0 | 32513 |
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | held | 249 | 9 | 11 | 30295 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
@@ -646,4 +647,4 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-wl-wait-duplicate-listener.md` | done | 203 | 0 | 15 | 29033 |
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 
-181 plan(s), 116 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+182 plan(s), 117 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
