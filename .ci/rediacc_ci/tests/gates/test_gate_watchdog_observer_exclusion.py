@@ -18,7 +18,15 @@ from rediacc_ci import paths
 WORKFLOW = paths.from_root(".github", "workflows", "watchdog-monitor.yml")
 
 # The names an observer check can carry. Each is a check that lands in the same check suite as the CI jobs and is NOT one of them.
-REQUIRED = ("Watchdog", "CI Complete", "CI Verdict")
+# `Review Complete`, `Review Status` and `Claude Review` are the advisory PR review's checks (operator ruling 2026-10-03, PLAN-github-pr-review-restore): observers of the run, never part of it.
+REQUIRED = (
+    "Watchdog",
+    "CI Complete",
+    "CI Verdict",
+    "Review Complete",
+    "Review Status",
+    "Claude Review",
+)
 
 EXCLUSIONS_RE = re.compile(r"WATCHDOG_EXCLUDE_PATTERNS: '(.*)'")
 
@@ -78,6 +86,26 @@ def test_ci_complete_is_excluded(gate):
 
 def test_ci_verdict_is_excluded(gate):
     require_member(gate, "CI Verdict")
+
+
+def test_review_complete_is_excluded(gate):
+    require_member(gate, "Review Complete")
+
+
+def test_review_status_is_excluded(gate):
+    require_member(gate, "Review Status")
+
+
+def test_claude_review_is_excluded(gate):
+    require_member(gate, "Claude Review")
+
+
+def test_control_review_gate_is_not_excluded(gate):
+    """The watchdog matches its patterns as SUBSTRINGS, so no pattern may hide inside `Review Gate`, a real Console CI job whose failure the watchdog must still see."""
+    hits = [p for p in exclusions_of(workflow_text(gate)).split(",") if p and p in "Review Gate"]
+    if hits:
+        gate.log_fail("WATCHDOG_EXCLUDE_PATTERNS swallows 'Review Gate' via %r" % hits)
+    gate.log_pass("no watchdog exclusion pattern matches 'Review Gate'")
 
 
 def require_member(gate, name: str) -> None:
