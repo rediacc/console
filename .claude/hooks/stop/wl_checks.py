@@ -4132,10 +4132,11 @@ def run_stop(event, event_ok, worklist, hook_file):
                 (_prf_thr, "threads resolved (tick an item carrying pr:%s/threads)" % _prf_num),
             ]
             # AN ARMED WATCH ON A HEAD WITH NO VERDICT YET IS THE WAKE-UP, the rule ci-red already follows (wl_ci.ci_watch_armed, test_126). While CI is still running, green cannot tick and ready cannot either (block-premature-ready needs CI Complete), so a block there demanded the one thing no work in this turn can produce; the session spun on it (2026-10-03, PR #592). Only that
-            # case stands down to a queued line: an unticked review or threads box, or no watch on this head, still blocks.
+            # case stands down to a queued line: an unticked threads box, a review box unticked for any reason but a reviewer still running (the same kind of wait, about a minute per commit), or no watch on this head, still blocks.
+            _prf_rev_wait = _rv is not None and set(wl_review.push_refusals(_rv)) <= {"in_flight"}
             _prf_waiting = (
                 cistate in ("pending", "watched")
-                and _prf_rev
+                and _prf_rev_wait
                 and _prf_thr
                 and wl_ci.ci_watch_armed(live_bg, [], (_prf_info or {}).get("sha") or "")
             )
@@ -4145,7 +4146,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                     session_id,
                     state_doc,
                     "ci-report:pr-finish-wait",
-                    "PR #%s: green and ready wait on the CI run a live watch covers; reviews and threads are settled."
+                    "PR #%s: green and ready wait on the CI run a live watch covers; threads are settled and reviews are clean or still running."
                     % _prf_num,
                     0,
                     refresh_min=0,
