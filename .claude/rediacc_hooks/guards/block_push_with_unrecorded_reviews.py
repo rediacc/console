@@ -12,6 +12,8 @@ WHAT REFUSES, in the order the message lists it:
   failed       a review failed once; the retry command is printed. A second failure stops blocking: a model outage is a broken environment, not a verdict, and the failed file still names the commit.
   unrecorded   a finished review file is untracked or modified (console pushes only): `worklist.py --review-commit <me>`.
 
+A push whose every source resolves to exactly `origin/main`'s commit passes: it sends commits main already holds, each reviewed on its own branch before the merge, so the checked-out branch's reviews say nothing about it. That is the GitLab mirror push of /pr-merge step 6b (operator ruling 2026-10-03, worklist #5ab0afb4), judged by the same `pushes_only_origin_main` that lets it past `block_unverified_push`.
+
 The scope is the PUSHED repository: `git -C private/account push` judges that repository's commits on the same branch, whose review files live in the console's `agent/reviews/<branch>/` like every other. A dry run and a delete-only push publish no commits and pass. A detached HEAD has no branch to judge and passes.
 
 FAILS OPEN ON A BROKEN ENVIRONMENT, never on a verdict: an unimportable reviewer module or a missing git warns and allows, the rule `block_unverified_push` states.
@@ -23,7 +25,8 @@ import os
 import pathlib
 import subprocess
 
-from rediacc_hooks import hookio, shellscan, syspath
+from rediacc_hooks import commit_policy, hookio, shellscan, syspath
+from rediacc_hooks.guards import block_unverified_push as PUSH
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -180,7 +183,13 @@ def run(ev):
     for push in pushes:
         where = base if push.git_dir in (None, "", ".") else base / push.git_dir
         top = rv.git_out(where, "rev-parse", "--show-toplevel")
-        if not top or top in seen:
+        if not top:
+            continue
+        # A push of exactly what origin/main already is carries no commit of the checked-out branch.
+        _, _, args = commit_policy.git_split(push.argv)
+        if PUSH.pushes_only_origin_main(top, [" ".join(["git", "push", *args])]):
+            continue
+        if top in seen:
             continue
         seen.add(top)
         # Only this project and the repositories inside it (its submodules): a scratch repository's push carries none of this branch's commits, and its reviews would never exist.

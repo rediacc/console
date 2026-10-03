@@ -187,6 +187,38 @@ CASES = [
     ("prose naming a push", world_unreviewed, "echo 'git push later'", None),
     ("not a push", world_unreviewed, "git status", None),
     ("a push of a repository outside the project", world_outside, "git -C {outside} push", None),
+    # A push whose every source is exactly origin/main's commit sends what main already holds, reviewed on its own branch before the merge: the GitLab mirror push (operator ruling 2026-10-03, worklist #5ab0afb4) is not judged by the checked-out branch.
+    (
+        "a mirror push of exactly origin/main",
+        world_unreviewed,
+        "GIT_TERMINAL_PROMPT=0 timeout 120 git push gitlab refs/heads/main:refs/heads/main --follow-tags",
+        None,
+    ),
+    ("a push of origin/main by name", world_unreviewed, "git push gitlab origin/main:main", None),
+    (
+        "the branch pushed to gitlab is judged",
+        world_unreviewed,
+        "git push gitlab 0930-1:main",
+        "UNREVIEWED console",
+    ),
+    (
+        "HEAD pushed to gitlab is judged",
+        world_unreviewed,
+        "git push gitlab HEAD:main",
+        "UNREVIEWED console",
+    ),
+    (
+        "a mirror push beside a branch push is judged",
+        world_unreviewed,
+        "git push gitlab main:main && git push origin 0930-1",
+        "UNREVIEWED console",
+    ),
+    (
+        "a plain branch push stays judged",
+        world_unreviewed,
+        "git push origin 0930-1",
+        "UNREVIEWED console",
+    ),
 ]
 
 
