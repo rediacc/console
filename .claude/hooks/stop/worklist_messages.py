@@ -436,6 +436,33 @@ V_PR_FINISH = (
     "fast-forward fallback."
 )
 
+# The PR-level Claude review on a green head (agent/plans/PLAN-github-pr-review-restore.md, box GR9). Review Complete is a required check (operator ruling 2026-10-03), and the Review Gate cancels the next push's run while a summary or a finding thread is unanswered, so the answer goes in before the push.
+V_PR_REVIEW_UNANSWERED = (
+    "PR #%(pr)s: THE CLAUDE REVIEW IS NOT ANSWERED. CI is green on head %(head)s, and the "
+    "Review Gate goes red on the next push while this stands: %(reason)s.\n"
+    "Answer it BEFORE pushing again:\n"
+    "    python3 .claude/hooks/stop/wl_prreview.py --draft --pr %(pr)s > <file>\n"
+    "    (one disposition per finding: fixed <sha40> | not-a-bug | <evidence> | deferred #<item>)\n"
+    "    python3 .claude/hooks/stop/wl_prreview.py --answer <file> --pr %(pr)s\n"
+    "`wl_prreview.py --check --pr %(pr)s` exits 0 once the summary is answered and every "
+    "finding thread is resolved."
+)
+
+V_PR_REVIEW_FAILED_RUN = (
+    "PR #%(pr)s: THE CLAUDE REVIEW RUN FAILED on head %(head)s (Review Complete title token "
+    "`failed-run`). Review Complete is a required check and only an LLM outage is excused, so "
+    "a failed run is a defect to investigate and fix, not to wait out. The Review Complete "
+    "title carries the reason; read the Claude Review run's log, fix the cause, then "
+    "re-dispatch:\n"
+    "    gh workflow run claude-review.yml -f pr_number=%(pr)s"
+)
+
+N_PR_REVIEW_UNREADABLE = (
+    "PR #%(pr)s: the Claude review state on head %(head)s could not be read "
+    "(wl_prreview.check_state: %(reason)s). Noted once per head; "
+    "`python3 .claude/hooks/stop/wl_prreview.py --check --pr %(pr)s` reads it by hand."
+)
+
 # ONE LINE PER INVARIANT that was not quoted in full. The tier's value is that it cannot be rotated away; it is NOT a licence to print five long blocks, because "a prompt that fires always is a prompt that gets skimmed" and a skimmed invariant is a rotated one with extra steps. So the excess is NAMED, never dropped: key plus its opening line, which is the line every one of these
 # messages puts its verdict on.
 R_ALWAYS_COLLAPSED = "ALSO BLOCKING, IN BRIEF (quoted in full on a later stop):\n%s"

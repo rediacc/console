@@ -254,3 +254,111 @@ def test_233_the_pr_babysit_finish_line_blocks_a_green_but_unfinished_wave(wl): 
     assert "THE WAVE IS NOT FINISHED" not in got.out, (
         "233c: still blocking after the wave finished: %s" % got.out[:400]
     )
+
+
+def _prr_state(rc: int, title: str = "", unresolved=()) -> dict:
+    """One wl_prreview.check_state() result, shaped as the real one is."""
+    return {
+        "rc": rc,
+        "pr": 543,
+        "head": "deadsha0000",
+        "summary": "991" if rc != 2 else "",
+        "verdict": {0: "answered", 1: "unanswered", 2: "unreadable"}[rc],
+        "unresolved": list(unresolved),
+        "review_token": title,
+        "reason": "summary 991 on PR #543 has no substantive reply" if rc == 1 else "gh down",
+    }
+
+
+def _prr_fake(result: dict):
+    calls: list = []
+
+    def check(pr, _runner=None):
+        calls.append(pr)
+        return dict(result)
+
+    return check, calls
+
+
+PRR_INFO = {"pr": 543, "sha": "deadsha00001234"}
+
+
+def test_234_the_pr_review_nudge_names_draft_and_answer_on_an_unanswered_summary():
+    """GR9 (agent/plans/PLAN-github-pr-review-restore.md): a green head whose review summary is unanswered blocks with the --draft/--answer line, bounded by wl_ci.CI_MAX_BLOCKS per signature, then rides the advisory queue. The read is memoised per head, so the second stop inside the TTL makes no gh call."""
+    checks = wlfix.import_wl("wl_checks")
+    wl_ci = wlfix.import_wl("wl_ci")
+    check, calls = _prr_fake(_prr_state(1))
+    doc: dict = {}
+    block, note, once = checks.prreview_nudge(doc, PRR_INFO, check, now=1000.0)
+    assert "wl_prreview.py --draft --pr 543" in block, block
+    assert "wl_prreview.py --answer <file> --pr 543" in block, block
+    assert "BEFORE pushing" in block, block
+    assert note == "", note
+    assert once == "", once
+    assert calls == [543], calls
+    # The ceiling: after CI_MAX_BLOCKS blocks the same signature downgrades to the recurring note.
+    for _ in range(wl_ci.CI_MAX_BLOCKS - 1):
+        block, note, once = checks.prreview_nudge(doc, PRR_INFO, check, now=1001.0)
+        assert block, "blocked fewer than CI_MAX_BLOCKS stops"
+    block, note, once = checks.prreview_nudge(doc, PRR_INFO, check, now=1002.0)
+    assert block == "", block
+    assert "wl_prreview.py --draft" in note, note
+    assert calls == [543], "the memo did not hold inside the TTL: %s" % calls
+    # Focus mode blocks too: `pr-review` is on wl_standdown._FOCUS_ONLY (Review Complete is required, operator ruling 2026-10-03).
+    block, note, _ = checks.prreview_nudge({}, PRR_INFO, check, focus=True, now=1000.0)
+    assert "wl_prreview.py --answer" in block, block
+    assert "pr-review" in wlfix.import_wl("wl_standdown")._FOCUS_ONLY
+
+
+def test_234b_a_failed_review_run_yields_the_investigate_line():
+    """Review Complete is a required check and only an LLM outage is excused, so `failed-run` is a defect to fix: the line names the investigation and the re-dispatch, even with the summary answered (rc 0)."""
+    checks = wlfix.import_wl("wl_checks")
+    check, _ = _prr_fake(_prr_state(0, title="failed-run"))
+    block, note, once = checks.prreview_nudge({}, PRR_INFO, check, now=1000.0)
+    assert "REVIEW RUN FAILED" in block, block
+    assert "gh workflow run claude-review.yml -f pr_number=543" in block, block
+    assert "wl_prreview.py --draft" not in block, block
+    assert note == "", note
+    assert once == "", once
+
+
+def test_234c_control_an_answered_review_and_an_outage_say_nothing():
+    """CONTROL: rc 0 with no token, and rc 0 with the excused `outage` token, are silent."""
+    checks = wlfix.import_wl("wl_checks")
+    for title in ("", "outage", "current"):
+        check, _ = _prr_fake(_prr_state(0, title=title))
+        got = checks.prreview_nudge({}, PRR_INFO, check, now=1000.0)
+        assert got == ("", "", ""), (title, got)
+    # No PR number or no head sha: no read at all.
+    check, calls = _prr_fake(_prr_state(1))
+    assert checks.prreview_nudge({}, {"pr": None, "sha": "x"}, check) == ("", "", "")
+    assert calls == []
+
+
+def test_234d_an_unreadable_review_is_noted_once_per_head():
+    """rc 2 is one note per head; a new head notes again, and a raising check reads as unreadable rather than escaping."""
+    checks = wlfix.import_wl("wl_checks")
+    check, _ = _prr_fake(_prr_state(2))
+    doc: dict = {}
+    first = checks.prreview_nudge(doc, PRR_INFO, check, now=1000.0)
+    assert first[:2] == ("", ""), first
+    assert "could not be read" in first[2], first
+    assert checks.prreview_nudge(doc, PRR_INFO, check, now=2000.0) == ("", "", "")
+    other = dict(PRR_INFO, sha="beefsha00009999")
+    assert "could not be read" in checks.prreview_nudge(doc, other, check, now=2001.0)[2]
+
+    def boom(_pr, _runner=None):
+        raise RuntimeError("no gh")
+
+    got = checks.prreview_nudge({}, PRR_INFO, boom, now=1000.0)
+    assert "RuntimeError: no gh" in got[2], got
+
+
+def test_234e_the_review_runner_is_bounded():
+    """The gh budget: a spent wall-clock budget answers rc 124 without running gh, so a hung API cannot hold the stop."""
+    checks = wlfix.import_wl("wl_checks")
+    run = checks.prreview_runner(".", budget_s=0)
+    rc, out, err = run(["api", "user"])
+    assert rc == 124, (rc, err)
+    assert out == "", out
+    assert "budget" in err, err

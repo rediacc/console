@@ -90,6 +90,8 @@ _FOCUS_ONLY = frozenset(
         "diverged",
         "bg-report",
         "focus-pr-items",
+        # Review Complete is a required check again (operator ruling 2026-10-03): an unanswered PR review or a failed review run holds the merge, so it blocks during a PR wind-down too.
+        "pr-review",
     }
 )
 
