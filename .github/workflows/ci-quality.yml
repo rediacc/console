@@ -538,7 +538,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          # This job needs commit topology, never a historical file's CONTENT.
+          # This job needs commit topology and a SMALL set of historical file
+          # contents: check:ci-plan-implementation reads the ledger's history,
+          # patch-ids and plan renames, and prefetches exactly those blobs in
+          # one request (prefetch_partial_clone), because one lazy fetch per
+          # read took the step to 9m22s on 2026-10-03. A commit-only query runs
+          # with GIT_NO_LAZY_FETCH (wl_core.commit_only_env), since an absent
+          # commit here is an orphan, never an ancestor.
           # A plain fetch-depth:0 downloads every blob in history and took 299s
           # here to run a 1-second script; blob:none fetches commits and trees
           # only -- measured 1.93s bare, 10.37s with a working tree -- and

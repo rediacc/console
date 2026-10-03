@@ -1437,6 +1437,94 @@ FINISHED_STATES = None
 MIN_CONTROLS = 15
 
 
+PREFETCH_PATHS = ("agent/plans", LEDGER_REL)
+
+
+def prefetch_partial_clone(root):
+    """In a partial clone, fetch every blob this gate will read in ONE request; elsewhere do nothing. Returns a one-line note, or "".
+
+    CI's quality-branch job checks out with `filter: blob:none`, so each historical blob this gate opens arrives by its own lazy fetch: 235 `show <sha>:.ci/config/plan-boxes.json` (the ledger history), 143 patch-id diffs and 16 `log --follow` walks took 187 s of a 193 s run in a blob-less clone (GIT_TRACE2, 2026-10-03) and, with the ancestry fetches, pushed Quality / Branch over its 12-minute
+    budget twice. The read set is every historical blob under PREFETCH_PATHS plus both sides of every branch commit's diff; `--missing=print` names the absent ones without fetching, and one `fetch --stdin` brings them. A failure here only costs speed, never the verdict: the reads still fall back to lazy fetches.
+    """
+
+    def out(*args):
+        r = subprocess.run(
+            ["git", "-C", str(root), *args], capture_output=True, text=True, check=False
+        )
+        return r.stdout if r.returncode == 0 else ""
+
+    if out("config", "--get", "remote.origin.promisor").strip() != "true":
+        return ""
+    env = {**os.environ, "GIT_NO_LAZY_FETCH": "1"}
+    listed = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(root),
+            "rev-list",
+            "--objects",
+            "--missing=print",
+            "HEAD",
+            "--",
+            *PREFETCH_PATHS,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+    missing: set[str] = {
+        ln[1:].split()[0] for ln in listed.stdout.splitlines() if ln.startswith("?")
+    }
+    base = out("merge-base", "origin/main", "HEAD").strip()
+    if base:
+        raw = out(
+            "log", "--no-renames", "--raw", "--no-abbrev", "--format=", "-m", "%s..HEAD" % base
+        )
+        for ln in raw.splitlines():
+            parts = ln.split()
+            # A gitlink (mode 160000) names a commit in a SUBMODULE's repository; asking this remote for it fails the whole batch.
+            if ln.startswith(":") and len(parts) >= 4 and "160000" not in parts[:2]:
+                missing.update(x for x in parts[2:4] if x.strip("0"))
+        have = subprocess.run(
+            ["git", "-C", str(root), "cat-file", "--batch-check"],
+            input="\n".join(sorted(missing)),
+            capture_output=True,
+            text=True,
+            check=False,
+            env=env,
+        ).stdout
+        present = {ln.split()[0] for ln in have.splitlines() if ln and not ln.endswith("missing")}
+        missing -= present
+    if not missing:
+        return "prefetch: partial clone, nothing missing"
+    r = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(root),
+            "-c",
+            "fetch.negotiationAlgorithm=noop",
+            "fetch",
+            "-q",
+            "--no-tags",
+            "--no-write-fetch-head",
+            "--recurse-submodules=no",
+            "--filter=blob:none",
+            "origin",
+            "--stdin",
+        ],
+        input="\n".join(sorted(missing)) + "\n",
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return "prefetch: partial clone, %d blob(s) fetched in one request (rc %d)" % (
+        len(missing),
+        r.returncode,
+    )
+
+
 def main(argv=None) -> int:
     global CLOCK_KEYS, FINISHED_STATES  # noqa: PLW0603 -- see C10: the two halves must share the OBJECT, not a copy
 
@@ -1461,6 +1549,10 @@ def main(argv=None) -> int:
         return 1
 
     enforce, planfile, planrec, boxes_gate = load_modules()
+    if not selftest_only:
+        _note = prefetch_partial_clone(REPO_ROOT)
+        if _note:
+            print("  " + _note)
     CLOCK_KEYS = enforce.CLOCK_KEYS
     FINISHED_STATES = planfile.FINISHED_STATES
 

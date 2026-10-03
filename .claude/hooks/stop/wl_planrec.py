@@ -297,6 +297,7 @@ def _git_ok(root, *args) -> bool:
             text=True,
             timeout=30,
             check=False,
+            env=C.commit_only_env(args),
         )
         return r.returncode == 0
     except (OSError, subprocess.SubprocessError):

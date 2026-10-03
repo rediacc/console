@@ -527,6 +527,7 @@ def commit_is_reachable(root, token) -> bool:
         capture_output=True,
         text=True,
         check=False,
+        env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
     )
     return r.returncode == 0
 

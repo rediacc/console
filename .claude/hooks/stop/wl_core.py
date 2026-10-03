@@ -372,6 +372,22 @@ def emit(obj):
     sys.exit(0)
 
 
+def commit_only_env(args):
+    """The environment for a git call, with lazy fetch OFF when the call reads only commits.
+
+    CI's quality-branch job checks out with `filter: blob:none`, which keeps every REACHABLE commit and fetches blobs lazily. A commit-only query (`merge-base`, `rev-parse --verify <x>^{commit}`) on a sha that is not in the clone is therefore asking about an orphaned commit, and the answer is already "not here, not an ancestor". With lazy fetch on, git asks GitHub for the object instead, one
+    round trip per sha: 112 such fetches from `merge-base --is-ancestor` took check:ci-plan-implementation from 22 s to 278 s in a blob-less clone (measured 2026-10-03, GIT_TRACE2), and twice pushed Quality / Branch over its 12-minute watchdog budget. `GIT_NO_LAZY_FETCH` (git 2.44+) makes the missing commit an instant no. Blob reads (`show`, `cat-file blob`, `log --follow`) keep fetching.
+    """
+    if args and (
+        args[0] == "merge-base"
+        or (args[0] == "rev-parse" and any(str(a).endswith("^{commit}") for a in args))
+    ):
+        env = dict(os.environ)
+        env["GIT_NO_LAZY_FETCH"] = "1"
+        return env
+    return None
+
+
 def _git(root, *args):
     try:
         r = subprocess.run(
@@ -380,6 +396,7 @@ def _git(root, *args):
             text=True,
             timeout=20,
             check=False,
+            env=commit_only_env(args),
         )
         return r.stdout.strip() if r.returncode == 0 else ""
     except (OSError, subprocess.SubprocessError):
