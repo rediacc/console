@@ -55,6 +55,8 @@ CORE = frozenset(
         "roster-silent",
         "roster-unleased",
         "roster-dead",
+        # A wait on background work with no wake-up timer (wl_wake): every profile stands the session down to WAIT, which is exactly when a hung task would never wake it.
+        "wake-timer",
         # Two live writers already breaking a plan mutex or sharing files (agent/plans/PLAN-plan-priority-concurrency.md section 5c): waiting does not resolve it.
         "roster-concurrency",
         "ladder-gone",

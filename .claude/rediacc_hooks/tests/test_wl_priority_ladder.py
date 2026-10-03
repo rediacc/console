@@ -63,7 +63,7 @@ def prf_run(fix, message: str = "work done", extra_env=None, bg=None):
             "cwd": str(fix.proj),
             "last_assistant_message": message,
             "session_crons": [],
-            "background_tasks": bg or [],
+            "background_tasks": wlfix.with_waker(bg or [], fix.waker),
         }
     )
     env = dict(fix.env)
