@@ -296,7 +296,7 @@ else
 fi
 ```
 
-**This push is the operator's.** `block_push_to_protected_branch` admits a push to `main` only as the step-3 fallback to `origin`, never to `gitlab`, and the git-level `pre-push` hook refuses it too, so the report hands the block above to the operator, who runs the push line with `!` and `COMMIT_POLICY_OK=1` in front of `git push`. The session probes the remote and reports; it does not retry the push another way.
+**The session runs this push itself** (operator ruling 2026-10-03, worklist #1cad85a1), with no `COMMIT_POLICY_OK` and no operator `!`. `block_push_to_protected_branch` and the git-level `pre-push` hook admit exactly this shape: one push to the remote named `gitlab`, the single refspec `refs/heads/main:refs/heads/main` (or `main:main`), no flag but `--follow-tags`, `-q` or `-v`, from the console checkout itself, where every URL of `gitlab` is `https://gitlab.rediacc.io/rediacc-org/github/console.git` and local `main` is exactly `origin/main`. Run step 6 first so local `main` matches GitHub's; a refusal naming `main` ahead or behind means that re-sync did not happen, and the fix is the re-sync, never another spelling of the push.
 
 Four things this must respect, in order of how likely they are to bite:
 
@@ -307,7 +307,7 @@ sign-in page. `GIT_TERMINAL_PROMPT=0` plus a timeout is what stops a non-interac
 - **Push the refspec explicitly. Never `--mirror` from a working checkout.** In a working tree
 `--mirror` also pushes `refs/remotes/*` and deletes anything on GitLab not present locally. The mirror form is correct only from a bare mirror clone during a deliberate history rewrite, which is an operator-run one-off, not this step.
 - **Never force.** Once both remotes share history this is always a fast-forward. If it is
-ever rejected as non-fast-forward, GitLab has diverged again: **report and stop**, do not reach for a force flag. A forced push from a stale local `main` would silently overwrite the mirror, and `.claude/hooks/pre-bash/block-git-force-push.sh` will refuse it anyway.
+ever rejected as non-fast-forward, GitLab has diverged again: **report and stop**, do not reach for a force flag. A forced push from a stale local `main` would silently overwrite the mirror, and `block_git_force_push`, `block_push_to_protected_branch` and the `pre-push` hook all refuse it anyway.
 
 Report the outcome in step 8 either way, including a skip. A mirror that quietly stops being written is indistinguishable from one that is up to date, which is how the first drift went unnoticed for months.
 

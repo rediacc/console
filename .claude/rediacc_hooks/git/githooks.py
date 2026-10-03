@@ -6,7 +6,7 @@ WHAT EACH HOOK REFUSES (the rules are `commit_policy`'s, shared with the pre-bas
 
   commit-msg              a CI skip token; a commit on `main` that is not a well-formed `[hotfix]`; `[hotfix]` off `main`; `[no-review]` on a non-writing path or on a `[hotfix]`.
   reference-transaction   in the `prepared` state, a new `refs/heads/*` (old oid all zeros) that breaks the one-branch rule: outside a submodule, only from `main`, with no other live branch and an `MMDD-N` name; in a submodule, only the console's current branch name. LOCAL FACTS ONLY: no `gh`, so a branch counts as live until its upstream is gone.
-  pre-push                a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02), a delete of `main` included; a push creating a remote branch that is not the current one.
+  pre-push                a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one.
 
 THE PRE-BASH LAYER STAYS AUTHORITATIVE FOR AGENTS; this is the backstop. It reads no `gh`, so it cannot compute today's next name or know a PR merged; it checks shape and local liveness only.
 
@@ -25,6 +25,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import urllib.parse
 
 HERE = pathlib.Path(__file__).resolve().parent
 CONSOLE_ROOT = HERE.parents[2]
@@ -183,11 +184,115 @@ def _main_push_refusal(
     return cp.ff_fallback_refusal(repo, remote, current, local_oid, remote_oid)
 
 
+# THE GITLAB MIRROR PUSH (operator ruling 2026-10-03, worklist #1cad85a1: "Allow the agent to push it"). Step 6b of .claude/commands/pr-merge.md copies GitHub's `main` to the self-hosted mirror after each merge with `git push gitlab refs/heads/main:refs/heads/main --follow-tags`. It moves no history GitHub does not already hold, so it is admitted here and in `block_push_to_protected_branch`, which loads these helpers from this file rather than keeping a second copy.
+#
+# THE URL IS PINNED HERE, not read from .ci/config/well-known.env: the registry holds no GitLab value, and the remote itself lives only in local `.git/config` (pr-merge.md says so), so the one thing that can say "this remote is the console mirror" is a literal both layers compare against. Only the https spelling is admitted; an `insteadOf` rewrite that sends the push elsewhere fails the comparison, because git hands this hook the rewritten location.
+MIRROR_REMOTE = "gitlab"
+MIRROR_HOST = "gitlab.rediacc.io"
+MIRROR_PATH = "/rediacc-org/github/console.git"
+
+
+def mirror_url_refusal(url: str) -> str:
+    """ "" when `url` is the console's GitLab mirror, else why not. Credentials in the URL are never echoed."""
+    try:
+        parts = urllib.parse.urlsplit(url or "")
+        port = parts.port
+        host = parts.hostname
+    except ValueError:
+        return "the `%s` URL cannot be parsed" % MIRROR_REMOTE
+    want = "https://%s%s" % (MIRROR_HOST, MIRROR_PATH)
+    if (
+        parts.scheme != "https"
+        or host != MIRROR_HOST
+        or port is not None
+        or parts.path != MIRROR_PATH
+        or parts.query
+        or parts.fragment
+    ):
+        shown = (
+            "%s://%s%s" % (parts.scheme, host or "", parts.path)
+            if parts.scheme
+            else "(a local path)"
+        )
+        return "`%s` points at %s, not the console mirror %s" % (MIRROR_REMOTE, shown, want)
+    return ""
+
+
+def mirror_main_refusal(repo: str, sha: str) -> str:
+    """ "" when `sha` is local `main` and local `main` is exactly `origin/main`, in the console checkout, else why not.
+
+    The mirror only ever copies what GitHub's `main` already has: a local `main` ahead of `origin/main` would publish commits no PR merged, and one behind would rewind nothing but still mirror a stale `main`.
+    """
+    if not repo:
+        return "the repository cannot be read"
+    if cp.superproject(repo):
+        return "this checkout is a submodule, and only the console's own `main` has a mirror"
+    local = cp.git(["rev-parse", "--verify", "-q", "refs/heads/main^{commit}"], cwd=repo)
+    origin = cp.git(["rev-parse", "--verify", "-q", "refs/remotes/origin/main^{commit}"], cwd=repo)
+    if not local or not origin:
+        return "local `main` or `origin/main` does not resolve here"
+    if local != origin:
+        ahead = cp.git(["merge-base", "--is-ancestor", origin, local], cwd=repo) is not None
+        return (
+            "local `main` (`%s`) is %s `origin/main` (`%s`); the mirror copies only what GitHub's `main` already has"
+            % (
+                local[:12],
+                "ahead of" if ahead else "behind or beside",
+                origin[:12],
+            )
+        )
+    if sha != local:
+        return "the pushed commit `%s` is not local `main` (`%s`)" % (sha[:12], local[:12])
+    return ""
+
+
+def _mirror_push_refusal(repo: str, url: str, lines: list[list[str]]) -> str:
+    """ "" when this push to `gitlab` is the mirror push of `main` (plus tags `--follow-tags` adds), else why not."""
+    why = mirror_url_refusal(url)
+    if why:
+        return why
+    heads = [line for line in lines if line[2].startswith("refs/heads/")]
+    if len(heads) != 1 or heads[0][0] != "refs/heads/main" or heads[0][2] != "refs/heads/main":
+        return "the mirror push is `refs/heads/main:refs/heads/main` and no other branch"
+    _local_ref, local_oid, _remote_ref, remote_oid = heads[0]
+    if local_oid == cp.ZERO_OID:
+        return "this deletes `main` on the mirror"
+    if remote_oid == cp.ZERO_OID:
+        return "`main` does not exist on `%s`, so this is no mirror update" % MIRROR_REMOTE
+    for local_ref, oid, remote_ref, old in lines:
+        if remote_ref.startswith("refs/heads/"):
+            continue
+        if not remote_ref.startswith("refs/tags/") or local_ref != remote_ref:
+            return "`%s` is not part of the mirror push (main, plus new tags)" % remote_ref
+        if oid == cp.ZERO_OID or old != cp.ZERO_OID:
+            return "the tag `%s` is deleted or moved, and the mirror only adds tags" % remote_ref
+    if cp.git(["merge-base", "--is-ancestor", remote_oid, local_oid], cwd=repo) is None:
+        return (
+            "the mirror's `main` (`%s`) is not an ancestor of `%s`: GitLab has diverged, report it and never force"
+            % (
+                remote_oid[:12],
+                local_oid[:12],
+            )
+        )
+    return mirror_main_refusal(repo, local_oid)
+
+
 def pre_push(argv: list[str], stdin: str) -> int:
     repo = _repo()
     current = cp.current_branch(repo) if repo else ""
     remote = argv[0] if argv else "origin"
     lines = [line.split() for line in stdin.split("\n") if len(line.split()) == 4]
+    if remote == MIRROR_REMOTE and any(line[2] == "refs/heads/main" for line in lines):
+        reason = _mirror_push_refusal(repo, argv[1] if len(argv) > 1 else "", lines)
+        if reason:
+            return _refuse(
+                "this pushes to `main` on `%s` and is not the mirror push (%s).\n"
+                "The one admitted shape (operator ruling 2026-10-03) is\n"
+                "`git push gitlab refs/heads/main:refs/heads/main --follow-tags` from the console checkout,\n"
+                "with local `main` exactly `origin/main` and `gitlab` the console mirror; nothing forced."
+                % (MIRROR_REMOTE, reason)
+            )
+        return 0
     for line in lines:
         _local_ref, local_oid, remote_ref, remote_oid = line
         if not remote_ref.startswith("refs/heads/"):
