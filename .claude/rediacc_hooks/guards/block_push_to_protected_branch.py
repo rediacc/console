@@ -112,14 +112,16 @@ BARE_HEAD = hookio.rx(r"git push[^;&|)]*[{S}]HEAD([{S})]|$)")
 ANY_PUSH = hookio.rx(r"git push([{S};&|)]|$)")
 
 # The fast-forward fallback (box M2): the one tracer it reads CI through, the flags it tolerates, and the proof line it requires in the PR body.
-CI_TRACE = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "ci" / "ci-trace.py"
+# Anchored on the rediacc_hooks package, not on this file: the differential suite runs a planted copy of a guard from a temporary directory, where `__file__`'s parents name nothing in the repository.
+HOOKS_PKG = pathlib.Path(hookio.__file__).resolve().parent
+CI_TRACE = HOOKS_PKG.parents[1] / ".ci" / "scripts" / "ci" / "ci-trace.py"
 FF_QUIET = frozenset(("-q", "--quiet", "-v", "--verbose"))
 MAIN_NAMES = ("main", "refs/heads/main")
 SHA = re.compile(r"^[0-9a-f]{7,40}$")
 # The GitLab mirror push (operator ruling 2026-10-03): its flags, and the git-level hook module whose URL pin and ref check it shares, loaded BY FILE like the hook shims load it.
 MIRROR_FLAGS = FF_QUIET | {"--follow-tags"}
 _GITHOOKS_SPEC = importlib.util.spec_from_file_location(
-    "rediacc_hooks._githooks", pathlib.Path(__file__).resolve().parents[1] / "git" / "githooks.py"
+    "rediacc_hooks._githooks", HOOKS_PKG / "git" / "githooks.py"
 )
 if _GITHOOKS_SPEC is None or _GITHOOKS_SPEC.loader is None:
     raise ImportError("block_push_to_protected_branch: git/githooks.py is missing")
