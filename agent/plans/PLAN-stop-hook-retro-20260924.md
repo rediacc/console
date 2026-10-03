@@ -3,7 +3,7 @@
 Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `ready`
 Depends-On: no-dep -- related, not ordered: PLAN-stop-hook-continuity.md is cited for what it already landed and for the P3.1 retro procedure
 First-Seen: 2026-09-24
-Owner: d778be9d (adopted from retro a2799d9c9d4c45615 2026-09-24)
+Owner: d778be9d (adoption handed back 2026-10-03: not the PR's plan and not in the operator's Promoted picks, so it is owned and advisory, not this session's mission)
 Updated: 2026-09-24
 Priority: P2 -- seed: Status ready, 1 open box(es)
 Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days

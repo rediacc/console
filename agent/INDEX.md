@@ -502,7 +502,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
-| `agent/plans/PLAN-env-to-bitwarden-v2.md` | held | 508 | 1 | 9 | 52441 |
+| `agent/plans/PLAN-env-to-bitwarden-v2.md` | held | 508 | 1 | 9 | 52557 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
 | `agent/plans/PLAN-fix-ci-contention-aware-timeouts.md` | compacted | 38 | 0 | 0 | 3425 |
 | `agent/plans/PLAN-fix-german-translation-artifacts.md` | compacted | 50 | 0 | 0 | 3117 |
@@ -560,8 +560,8 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-focus-mode.md` | held | 352 | 0 | 8 | 36061 |
 | `agent/plans/PLAN-stop-hook-one-plan-scope.md` | approved | 164 | 14 | 0 | 40456 |
 | `agent/plans/PLAN-stop-hook-refactor-enforcement.md` | held | 370 | 1 | 16 | 49937 |
-| `agent/plans/PLAN-stop-hook-retro-20260924.md` | held | 601 | 1 | 22 | 64162 |
-| `agent/plans/PLAN-stop-hook-retro-20260925.md` | held | 239 | 5 | 5 | 23001 |
+| `agent/plans/PLAN-stop-hook-retro-20260924.md` | held | 601 | 1 | 22 | 64263 |
+| `agent/plans/PLAN-stop-hook-retro-20260925.md` | held | 239 | 5 | 5 | 23104 |
 | `agent/plans/PLAN-stop-hook-rulings-campaign.md` | held | 103 | 16 | 1 | 9802 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
@@ -570,7 +570,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-test-advisor.md` | compacted | 39 | 0 | 0 | 2731 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-token-ip-rebind.md` | held | 416 | 1 | 9 | 38623 |
-| `agent/plans/PLAN-tooling-transformation.md` | held | 7501 | 3 | 151 | 751183 |
+| `agent/plans/PLAN-tooling-transformation.md` | held | 7501 | 3 | 151 | 751299 |
 | `agent/plans/PLAN-trap-enforcement.md` | held | 539 | 7 | 0 | 59469 |
 | `agent/plans/PLAN-typecheck-orphan-packages.md` | ready | 84 | 0 | 5 | 6958 |
 | `agent/plans/PLAN-uncommitted-work-exposure-check.md` | held | 98 | 7 | 0 | 15826 |

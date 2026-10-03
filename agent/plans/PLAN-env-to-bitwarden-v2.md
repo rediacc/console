@@ -1,7 +1,7 @@
 Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
 Depends-On: no-dep -- related, not ordered: PLAN-account-env-to-bws.md took over its boxes; PLAN-secret-namespace-migration.md is cited as history
 First-Seen: 2026-09-17
-Owner: d778be9d (adopted from 74de73ca 2026-09-22)
+Owner: d778be9d (adoption handed back 2026-10-03: not the PR's plan and not in the operator's Promoted picks, so it is owned and advisory, not this session's mission)
 Date: 2026-09-02
 Supersedes: the classification in `agent/archive/plans/PLAN-env-to-bitwarden.md` Part 1
 (archived byte-identical 2026-09-09; see `agent/plans/PLAN-completion-strategy.md` section 2). That plan's Parts 2-7 (consumer map, fetch helper, clone protocol, gate retargets, migration order) still stand except where Part 6 below amends them.
