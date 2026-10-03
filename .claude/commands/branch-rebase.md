@@ -232,21 +232,21 @@ A commit that is neither carried nor marked absorbed is MISSING, and that is the
 - **Build/test the result**, because a textually clean rebase can still be semantically
 broken (your branch and the base each edited around the other). At minimum `npx tsc --noEmit --project packages/cli/tsconfig.json` plus the suites covering the touched packages; `npm run ci` if the rebase pulled in wide changes.
 
-### 5. Publishing the rebased branch is the OPERATOR'S step
+### 5. Publishing the rebased branch
 
-A rebase rewrites history, so an already-pushed branch can only be updated with a force-push, and **`.claude/hooks/pre-bash/block-git-force-push.sh` refuses `--force`, `-f`, `--force-with-lease`, `--mirror` and `+refspec` from the assistant, unconditionally.** That is deliberate, not an obstacle to route around. Do not try variants; do not "temporarily" edit the hook.
+A rebase rewrites history, so an already-pushed branch can only be updated with a force-push. `.claude/rediacc_hooks/guards/block_git_force_push.py` refuses `--force`, `-f`, `--mirror` and `+refspec` unconditionally, and since the operator ruling of 2026-10-02 (PLAN-plan-per-pr-loop M3) it admits exactly one form: `git push --force-with-lease origin <branch>` on the repository's one live `MMDD-N` branch. `warn_remote_drift` lets that lease push through when every remote-only commit is patch-equivalent to a rebased local one, and refuses it, naming the commit, when the remote holds work the rebase never saw. Do not try other variants; do not "temporarily" edit either guard.
 
 - **Branch never pushed** → a plain `git push -u origin <branch>` is fine; do it and
 say so.
-- **Branch already pushed** → STOP and hand the exact commands to the operator, who
-runs them with the `!` prefix. Submodules first, same order as the rebase:
+- **Branch already pushed** → republish it with the lease push, or with the mediated verb
+`.claude/hooks/stop/worklist.py --git force-push <branch> --execute`. Submodules first, same order as the rebase:
 
   ```
-  ! git -C private/<sm> push --force-with-lease origin <branch>
-  ! git push --force-with-lease origin <branch>
+  git -C private/<sm> push --force-with-lease origin <branch>
+  git push --force-with-lease origin <branch>
   ```
 
-Print the recorded pre-rebase SHAs alongside them, so the operator can undo. `--force-with-lease` (not `--force`) is what refuses to clobber someone else's push.
+Print the recorded pre-rebase SHAs in the report, so the push can be undone. `--force-with-lease` (not `--force`) is what refuses to clobber someone else's push.
 - **An open PR on this branch will re-run CI** once the force-push lands. Per-commit review
   records carry over by `Patch-Id:`: a rebased commit whose patch is unchanged still counts as reviewed.
 A commit whose patch changed (a conflict resolution, an amend) shows up as uncovered; `.claude/hooks/stop/worklist.py --review-run <me> <sha>` reviews it. Say so in the report, and name what `python3 .claude/hooks/stop/wl_review.py --check` prints, because `/pr-merge` requires it clean. Do not flip anything ready here.
