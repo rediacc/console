@@ -249,9 +249,7 @@ def bump_line(records: list[Record], branch_verdicts: list[dict]) -> str:
         None,
     )
     label = BUMP_LABEL[bump] or "no bump label (patch, the release default)"
-    where = (
-        ", earned by `%s` (%s)" % (earner.sha8, _clip(earner.subject, 80)) if earner else ""
-    )
+    where = ", earned by `%s` (%s)" % (earner.sha8, _clip(earner.subject, 80)) if earner else ""
     kinds = [lab for lab in labels if not lab.startswith("bump-")]
     tail = "; kind: %s" % ", ".join(kinds) if kinds else ""
     return "Bump: **%s**%s%s." % (label, where, tail)
