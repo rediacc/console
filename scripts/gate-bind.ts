@@ -1195,6 +1195,13 @@ function selftest(endToEnd = false): number {
     b
   );
   ck(
+    'CONTROL: --recurse-submodules=no infers no submodules need (it asks for none)',
+    !bind(
+      '.ci/scripts/quality/check_a.py',
+      `${py}\nargs = ["git", "fetch", "--recurse-submodules=no", "origin"]`
+    )?.needs.includes('submodules') === true
+  );
+  ck(
     'an INFERRED need is unioned with the declared ones',
     bind(
       '.ci/scripts/quality/check_a.py',
