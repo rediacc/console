@@ -263,7 +263,9 @@ def test_233d_a_live_watch_on_a_head_with_no_verdict_stands_the_finish_line_down
     (wl.base / "projects" / "reports").mkdir(parents=True, exist_ok=True)
     prf_log(wl, 5)
     threads = wl.cli("--add", "deadbeef", "pr:543/threads resolve the review threads")
-    tid = re.search(r"#([0-9a-f]+)", threads.out).group(1)
+    found = re.search(r"#([0-9a-f]+)", threads.out)
+    assert found, threads.out
+    tid = found.group(1)
     wl.cli(
         "--tick", "deadbeef", tid, "https://github.com/fake/repo/pull/543#discussion_r1 resolved"
     )
