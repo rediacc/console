@@ -295,6 +295,7 @@ jobs:
             regions.json
             .ci/scripts
             .ci/rediacc_ci
+            .ci/config/well-known.env
           sparse-checkout-cone-mode: false
 
       - name: Verify stable endpoints
