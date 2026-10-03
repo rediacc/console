@@ -252,7 +252,7 @@ truthy(
 control("  and keeps no cap state key", _RETIRED_KEY in _wire_src, False)
 
 
-if Tally.count < 24:
+if Tally.count < 27:
     Tally.fails += 1
     print(
         "FAIL  only %d control(s) ran; the file is not being executed as written" % Tally.count,
