@@ -727,24 +727,25 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 13,
-      "done": 0,
+      "open": 3,
+      "done": 10,
       "open_sigs": [
+        "5186d28c",
+        "51be7b74",
+        "96f5fdb2"
+      ],
+      "done_sigs": [
         "42bdfd49",
         "48dbaea1",
         "4ef09e93",
-        "5186d28c",
-        "51be7b74",
         "590fc803",
         "8d9436da",
-        "96f5fdb2",
         "98ba7397",
         "b1a91451",
         "b2544ce3",
         "d742e01b",
         "f273a5bb"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-greenlight-verify-at-read.md": {
       "status": "compacted",
