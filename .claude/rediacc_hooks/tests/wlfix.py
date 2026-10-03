@@ -33,6 +33,8 @@ HOOK = STOP_DIR / "worklist.py"
 # The suite's own session, and the prefix every `<me>` argument uses.
 SID = "deadbeef-1111-2222-3333-444444444444"
 ME = "deadbeef"
+# The one fake GitHub origin the fixture repos are given, so a test that needs a remote names it from here instead of repeating the literal (check:ci-literal-sources R2b, 2026-10-03).
+FAKE_ORIGIN = "https://github.com/fake/repo.git"
 
 # A STATE.md fresh enough and well-shaped enough to satisfy the gate. Keeps the literal phrase "ci-overhaul session" (the PostCompact cases grep for it in the additionalContext) and carries the mandatory '## Next action' section.
 STATE_BODY = """You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2. Round 23 went red on a dead-shell finding, now fixed by running the stop-gate suite from test-hooks.sh. The rediacc-autopilot App already exists and is validated, so never report it as blocked on the operator.

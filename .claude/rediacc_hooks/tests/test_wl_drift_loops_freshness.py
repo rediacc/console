@@ -11,7 +11,7 @@ import os
 import stat
 import time
 
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
+from rediacc_hooks.tests.wlfix import FAKE_ORIGIN, wl  # noqa: F401
 
 B_BODY_44B = """Session B is holding the canary campaign: attempt 6 is in flight behind watch id 9be21c, five flags are flipped, and v1.2.24 is released. None of this is session A material and none of it may be silenced by session A writing.
 
@@ -202,7 +202,7 @@ def test_37_pr_freshness_a_push_after_the_last_body_edit_blocks(wl):  # noqa: F8
     wl.git("init", "-q")
     wl.git("config", "user.email", "t@t")
     wl.git("config", "user.name", "t")
-    wl.git("remote", "add", "origin", "https://github.com/fake/repo.git")
+    wl.git("remote", "add", "origin", FAKE_ORIGIN)
     (wl.proj / "a.txt").write_text("a\n", encoding="utf-8")
     wl.git("add", "-A")
     wl.git("commit", "-qm", "base")

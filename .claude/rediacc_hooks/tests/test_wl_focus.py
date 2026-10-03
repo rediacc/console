@@ -86,7 +86,7 @@ def world(fix, ci: bool = False, red: bool = False) -> None:
         fix.git("init", "-q", "-b", "main")
         fix.git("config", "user.email", "t@t")
         fix.git("config", "user.name", "t")
-        fix.git("remote", "add", "origin", "https://github.com/fake/repo.git")
+        fix.git("remote", "add", "origin", wlfix.FAKE_ORIGIN)
         (fix.proj / "a.txt").write_text("a\n", encoding="utf-8")
         fix.git("add", "-A")
         fix.git("commit", "-qm", "base")
