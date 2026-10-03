@@ -10,6 +10,8 @@ WHICH COPY OF THE PLAN. `rev` names the commit whose copy is judged (`git show <
 
 FAILS CLOSED. A body that could not be read, a plan that does not exist, a parser that does not import: each is a refusal with its reason, never an allow.
 
+THE PLAN SET. `pr_plan_set` closes the PR's plans over their unfinished prerequisites (operator ruling 7 of agent/plans/PLAN-stop-hook-one-plan-scope.md), and the merge gate, P-A1 and the Stop hook all read it, so the three count the same plans.
+
 Used by `block_admin_merge` (every `gh pr merge` on the console PR) and `block_push_to_protected_branch` (the fast-forward fallback's last condition).
 """
 
@@ -126,6 +128,91 @@ def open_boxes(root: str, rel: str, rev: str = "") -> tuple[int, int, str]:
     return opened, done, ""
 
 
+def _plandeps():
+    syspath.on_sys_path(STOP_DIR)
+    import wl_plandeps  # noqa: PLC0415 -- the one home of the Depends-On grammar and its graph
+
+    return wl_plandeps
+
+
+def pr_plan_set(root: str, body: str | None, rev: str = "") -> tuple[tuple[str, ...], list[str]]:
+    """(plans, problems): the plans a PR works (operator ruling 7 of agent/plans/PLAN-stop-hook-one-plan-scope.md, 2026-10-03).
+
+    The body's own `Plan:` plans (every one it names; a multi-plan body is admitted only with `Operational-Reason:`, which is `plan_merge_refusal`'s question), or `queue_head(root)` when the body names none or is None, closed over every UNFINISHED plan they depend on, transitively, through `Depends-On:` edges and task refs (`wl_plandeps.Graph`, resolved at plan level). A prerequisite is finished when its Status is finished (`Graph.is_complete`) or every box is ticked (`open_boxes` at `rev`); a held one is not finished, so it stays in. The tuple is ordered prerequisites first (a deepest-first walk), so its first member is the plan to work first.
+
+    `problems` names every cycle and every dependency that does not resolve to a live or finished plan (dangling, withdrawn, ambiguous), each with the depending plan's path, and the graph not loading at all. Each reader fails closed on a problem: the hook reports it, P-A1 and the merge gate refuse on it. The Stop hook (`wl_prscope.loop_state`), P-A1 (`check_plan_implementation.clock_scope`) and the merge gate (`plan_merge_refusal`) all call this, so the three count the same set.
+
+    The dependency graph is read from the working tree; box completeness is read at `rev`.
+    """
+    problems: list[str] = []
+    own: list[str] = []
+    for rel in body_plans(body) if isinstance(body, str) else []:
+        if not PLAN_PATH.match(rel) or os.path.isabs(rel) or ".." in rel.split("/"):
+            problems.append("the `Plan:` line names `%s`, not agent/plans/PLAN-<slug>.md" % rel)
+        elif rel not in own:
+            own.append(rel)
+    if not own and not problems:
+        head = queue_head(root)
+        if head:
+            own.append(head)
+    if not own:
+        return (), problems
+    try:
+        deps = _plandeps()
+        graph = deps.Graph.load(root)
+    except Exception as exc:  # noqa: BLE001 -- a graph that cannot load hides every prerequisite
+        problems.append(
+            "the plan dependency graph could not load (%s: %s)" % (type(exc).__name__, exc)
+        )
+        return tuple(own), problems
+
+    def walk_from(rel: str) -> str:
+        # A moved stub is walked from the plan it points at.
+        target = graph.resolve(rel.rsplit("/", 1)[-1])
+        if target.state in (deps.LIVE, deps.COMPLETE) and target.rel in graph.plans:
+            return target.rel
+        return rel
+
+    def finished(rel: str) -> bool:
+        opened, _done, why = open_boxes(root, rel, rev)
+        return not why and opened == 0
+
+    order: list[str] = []
+    done: set[str] = set()
+
+    def visit(rel: str, stack: list[str]) -> None:
+        node = walk_from(rel)
+        for edge in graph.edges(node):
+            target = graph.resolve(str(edge))
+            if target.state == deps.COMPLETE:
+                continue
+            if target.state != deps.LIVE:
+                problems.append(
+                    "`%s` depends on `%s`, which is %s: %s"
+                    % (node, edge, target.state, target.detail)
+                )
+                continue
+            if target.rel == node:
+                continue
+            if target.rel in stack:
+                # Reported even when a member is ticked: the headers themselves are circular.
+                loop = [*stack[stack.index(target.rel) :], target.rel]
+                problems.append("a dependency cycle: %s" % " -> ".join(loop))
+                continue
+            if finished(target.rel):
+                continue
+            if target.rel not in done:
+                visit(target.rel, [*stack, target.rel])
+        if node not in done:
+            done.add(node)
+            order.append(rel if rel in own else node)
+
+    for rel in own:
+        if walk_from(rel) not in done:
+            visit(rel, [walk_from(rel)])
+    return tuple(order), problems
+
+
 def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "") -> str:
     """ "" when the PR may merge on its plan, else the reason it may not.
 
@@ -161,6 +248,23 @@ def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "") -> str:
                 opened + done,
             )
         )
+    # Operator ruling 7 (2026-10-03): the PR's plan set holds every unfinished prerequisite, and a ticked plan whose prerequisite is open does not merge.
+    members, problems = pr_plan_set(root, pr_body, rev)
+    if problems:
+        return "the PR's plan set cannot be trusted: %s" % "; ".join(problems)
+    for member in members:
+        if member == rel:
+            continue
+        opened, done, why = open_boxes(root, member, rev)
+        if why:
+            return "`%s`, a prerequisite of `%s`: %s" % (member, rel, why)
+        if opened:
+            return "`%s` is a prerequisite of `%s` and has %d open box(es) of %d" % (
+                member,
+                rel,
+                opened,
+                opened + done,
+            )
     return ""
 
 
@@ -170,6 +274,7 @@ __all__ = [
     "has_operational_reason",
     "open_boxes",
     "plan_merge_refusal",
+    "pr_plan_set",
     "queue",
     "queue_head",
     "with_plan_line",

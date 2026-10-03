@@ -9,7 +9,7 @@ ledger. A second parser here would be a second opinion about what a box is, whic
 
 THE ASYMMETRY WITH THE STOP HOOK IS DELIBERATE AND STATED. `wl_planenforce` knows WHO IS RUNNING and adjusts what it demands of that session: boxes owned by a peer this machine reads as live are subtracted, because demanding drainage of work somebody else is doing right now makes the ceiling unreachable by any action. CI has no liveness oracle and must not invent one, so P-A1
 compares the WHOLE in-scope count with no ownership term at all. A branch whose peers are all idle owes all of it. What is in scope is the operator's ruling of 2026-10-02 ("Clock the PR's plan only", worklist #508defc2): the live PR's plan (the queue head) and the plans this
-branch ticked; plans queued for later PRs are reported as one informational line, never a finding (see clock_scope).
+branch ticked, plus every unfinished prerequisite of the PR's plans (ruling 7 of PLAN-stop-hook-one-plan-scope, 2026-10-03); plans queued for later PRs are reported as one informational line, never a finding (see clock_scope).
 
 FORWARD-ONLY, AND THE CUT IS ONE COMMITTED DATE. Measured corpus-wide before this was written: 13 `    (ticked) ` evidence lines across all four plan folders, all of them in ONE file, against 589 done boxes. About 2% of the boxes `--plan-tick` was written for went through it; the rest were flipped with the Edit tool and carry nothing to re-check, ever. So P-A2..P-A4 judge a box
 only when the commit that ticked it is dated STRICTLY AFTER `baseline_at`, the landing date in `.ci/config/plan-implementation.json`. On the landing commit that set is empty by construction and this gate is silent, which is the point: nobody is punished for a tick that predates the rule, and the very next day's ticks are bound. A control pins both sides of that cut, because a
@@ -224,7 +224,7 @@ def pr_admits_open_boxes(gate, body):
     return bool(check(body)) if callable(check) else False
 
 
-def clock_scope(gate, root, base_plans, head_plans):
+def clock_scope(gate, root, base_plans, head_plans, body=None):
     """(scope, notes, problem) for P-A1 under the operator ruling of 2026-10-02 ("Clock the PR's plan only", worklist #508defc2).
 
     The plan-per-PR loop queues plans in agent/plans/QUEUE.md for FUTURE PRs, so judging every unfinished plan reds CI for ever. The clock is two sets instead:
@@ -232,7 +232,9 @@ def clock_scope(gate, root, base_plans, head_plans):
       (b) every plan in which this branch TICKED a box, read by `moved_to_done` (a sig open at the base and done at head, or a plan new on the branch with a done box).
     `base_plans` None means no base is resolvable, so the scope is (a) only; a queue head of "" makes it (b) only. Both are said in `notes` rather than folded into silence.
 
-    `scope` is {rel: reason}. `problem` is non-empty when the queue head could not be read at all (`gate` None, no `queue_head`, or it raised): the caller fails closed on it.
+    OPERATOR RULING 7 OF PLAN-stop-hook-one-plan-scope (2026-10-03): the PR's plan set is `gate.pr_plan_set(root, body)`, the body's `Plan:` plans (the queue head when `body` names none, or is None outside a pull_request run) closed over every unfinished plan they depend on. Each member that is not the queue head joins the scope: a named plan as "the PR body's Plan: line", a prerequisite as "prerequisite of <plan>". The Stop hook and the merge gate count the same set, so none of the three can let a prerequisite through that another blocks on.
+
+    `scope` is {rel: reason}. `problem` is non-empty when the queue head or the plan set could not be read (`gate` None, no `queue_head` or `pr_plan_set`, either raised) or the set carries a problem (a dependency cycle, an unresolvable dependency): the caller fails closed on it.
     """
     notes: list[str] = []
     if gate is None or not callable(getattr(gate, "queue_head", None)):
@@ -245,6 +247,30 @@ def clock_scope(gate, root, base_plans, head_plans):
         head = str(gate.queue_head(root) or "").strip()
     except Exception as exc:  # noqa: BLE001
         return {}, notes, "rediacc_hooks.plan_gate.queue_head raised (%s)" % exc
+    plan_set = getattr(gate, "pr_plan_set", None)
+    if not callable(plan_set):
+        return (
+            {},
+            notes,
+            "rediacc_hooks.plan_gate.pr_plan_set is not available, so the PR's prerequisites cannot be counted",
+        )
+    try:
+        members, set_problems = plan_set(root, body)
+    except Exception as exc:  # noqa: BLE001
+        return {}, notes, "rediacc_hooks.plan_gate.pr_plan_set raised (%s)" % exc
+    if set_problems:
+        return (
+            {},
+            notes,
+            "the PR's plan set has %d problem(s): %s"
+            % (
+                len(set_problems),
+                "; ".join(set_problems),
+            ),
+        )
+    named_fn = getattr(gate, "body_plans", None)
+    named = [p for p in (named_fn(body) if callable(named_fn) and body else []) if p in members]
+    needers = named or ([head] if head else [])
     scope: dict[str, str] = {}
     if head:
         scope[head] = "queue head"
@@ -252,6 +278,11 @@ def clock_scope(gate, root, base_plans, head_plans):
         notes.append(
             "no queue head (agent/plans/QUEUE.md has no entry that exists), so only plans this branch ticked are on the clock"
         )
+    for rel in members:
+        if rel in needers:
+            scope.setdefault(rel, "the PR body's Plan: line")
+        else:
+            scope.setdefault(rel, "prerequisite of %s" % ", ".join(needers))
     if base_plans is None:
         notes.append(
             "no base is resolvable, so ticks cannot be read and only the queue head is on the clock"
@@ -721,7 +752,14 @@ def controls_fired(enforce, planfile, planrec=None):
 
     # C12 -- THE PR'S PLAN ONLY (operator ruling 2026-10-02, worklist #508defc2). Each plant is driven through clock_scope + split_by_scope + clock_findings, the path main() takes; the queue head is injected through a stand-in for rediacc_hooks.plan_gate.
     def queue_at(head):
-        return type("_Gate", (), {"queue_head": staticmethod(lambda _root: head)})
+        return type(
+            "_Gate",
+            (),
+            {
+                "queue_head": staticmethod(lambda _root: head),
+                "pr_plan_set": staticmethod(lambda _root, _body: ((head,) if head else (), [])),
+            },
+        )
 
     def pa1(gate, base, head_rows):
         scope, notes, problem = clock_scope(gate, "/nonexistent", base, head_rows)
@@ -785,6 +823,56 @@ def controls_fired(enforce, planfile, planrec=None):
     caught(
         "C12h: with no base, a plan was put on the clock as ticked, or the reduced scope was not said",
         not got and any("no base" in n for n in notes),
+    )
+
+    # C14 -- THE PR'S PLAN SET (operator ruling 7 of PLAN-stop-hook-one-plan-scope, 2026-10-03): an unfinished prerequisite of the PR's plan is on the clock, through the real rediacc_hooks.plan_gate.pr_plan_set on a planted plan tree; a finished one is not; a cycle is a diagnostic, never a silent scope; and with no Depends-On the scope is the queue head alone.
+    c14_gate, _c14_problem = load_plan_gate()
+
+    def c14_tree(tmp, plans):
+        folder = os.path.join(tmp, "agent", "plans")
+        os.makedirs(folder, exist_ok=True)
+        for name, (depends, boxes) in plans.items():
+            with open(os.path.join(folder, name), "w", encoding="utf-8") as fh:
+                fh.write(
+                    "# PLAN\nStatus: approved\nDepends-On: %s\nPriority: P2 -- seed\n\n## Boxes\n%s"
+                    % (depends or "no-dep -- a standalone plan in the C14 fixture", boxes)
+                )
+        with open(os.path.join(folder, "QUEUE.md"), "w", encoding="utf-8") as fh:
+            fh.write("# Plan queue\n\n## Promoted\n\n1. agent/plans/PLAN-h.md\n")
+        return tmp
+
+    open_box = "- [ ] O1 an open box sits here\n"
+    done_box = "- [x] D1 a ticked box sits here\n"
+    head_rel, pre_rel = "agent/plans/PLAN-h.md", "agent/plans/PLAN-p.md"
+    with tempfile.TemporaryDirectory() as tmp:
+        root14 = c14_tree(tmp, {"PLAN-h.md": ("PLAN-p.md", open_box), "PLAN-p.md": ("", open_box)})
+        scope14, _n, problem14 = clock_scope(c14_gate, root14, None, {})
+    caught(
+        "C14a: an open prerequisite of the PR's plan stayed off the P-A1 clock",
+        not problem14 and scope14.get(pre_rel) == "prerequisite of %s" % head_rel,
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        root14 = c14_tree(tmp, {"PLAN-h.md": ("PLAN-p.md", open_box), "PLAN-p.md": ("", done_box)})
+        scope14, _n, problem14 = clock_scope(c14_gate, root14, None, {})
+    caught(
+        "C14b: CONTROL: a finished prerequisite was put on the P-A1 clock",
+        not problem14 and pre_rel not in scope14 and head_rel in scope14,
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        root14 = c14_tree(
+            tmp, {"PLAN-h.md": ("PLAN-p.md", open_box), "PLAN-p.md": ("PLAN-h.md", open_box)}
+        )
+        scope14, _n, problem14 = clock_scope(c14_gate, root14, None, {})
+    caught(
+        "C14c: a dependency cycle through the PR's plan gave a scope instead of a named problem",
+        "cycle" in problem14 and not scope14,
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        root14 = c14_tree(tmp, {"PLAN-h.md": ("", open_box), "PLAN-p.md": ("", open_box)})
+        scope14, _n, problem14 = clock_scope(c14_gate, root14, None, {})
+    caught(
+        "C14d: CONTROL: with no Depends-On the scope was not the queue head alone",
+        not problem14 and scope14 == {head_rel: "queue head"},
     )
 
     # C13 -- THE OPERATIONAL-REASON ADMISSION (#591): plan_gate's own parser, fed through a real event payload file. A reason admits; a body without one, a reason inside a machine-written block, no payload, and no gate do not.
@@ -1429,7 +1517,9 @@ def main(argv=None) -> int:
     # ---- P-A1, scoped to the live PR's plan and the plans this branch ticked (operator ruling 2026-10-02). A plan_gate that cannot be read is a finding, never an empty scope.
     n_plans, n_open = in_scope(head_plans, planfile.FINISHED_STATES, PARKED_EXEMPT)
     gate, gate_problem = load_plan_gate()
-    scope, scope_notes, scope_problem = clock_scope(gate, REPO_ROOT, base_plans, head_plans)
+    scope, scope_notes, scope_problem = clock_scope(
+        gate, REPO_ROOT, base_plans, head_plans, pr_event_body()
+    )
     scope_problem = gate_problem or scope_problem
     on_clock, off_clock = split_by_scope(
         open_offenders(head_plans, planfile.FINISHED_STATES, PARKED_EXEMPT), scope
@@ -1437,8 +1527,9 @@ def main(argv=None) -> int:
     if scope_problem:
         findings.append(
             "P-A1 NO SCOPE: %s. Refusing to judge nothing: restore .claude/rediacc_hooks/plan_gate.py "
-            "(queue_head) or agent/plans/QUEUE.md's reader before this gate can tell the PR's plan "
-            "from the queued ones." % scope_problem
+            "(queue_head, pr_plan_set) or agent/plans/QUEUE.md's reader, or fix the named "
+            "Depends-On problem, before this gate can tell the PR's plans from the queued ones."
+            % scope_problem
         )
     elif on_clock and pr_admits_open_boxes(gate, pr_event_body()):
         print(

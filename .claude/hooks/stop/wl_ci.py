@@ -1047,48 +1047,78 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
     return "trouble", detail
 
 
-def focuspr_path(worklist, session_id):
-    return worklist.with_suffix(".focuspr-%s" % (session_id or "unknown")[:8])
+def prlink_path(worklist, session_id):
+    return worklist.with_suffix(".prlink-%s" % (session_id or "unknown")[:8])
+
+
+def pr_link(root, worklist, session_id, branch):
+    """(nodes, error): every PR whose head is `branch`, newest update first, each {number, state, body, mergedAt, closedAt}.
+
+    THE ONE PR READ of agent/plans/PLAN-stop-hook-one-plan-scope.md Design 1: a single GraphQL query over OPEN, MERGED and CLOSED, so the loop's scope (`wl_prscope.loop_state`) and focus mode's end (`focus_pr_end`) read the same node. Cached per branch for wl_standdown.FOCUS_PR_TTL_S in a `.prlink-<me8>` sidecar. A failed read returns ([], error) and is not cached, so the next stop asks again.
+    """
+    import wl_standdown  # noqa: PLC0415 -- sealed, stdlib only
+
+    branch = str(branch or "")
+    if not branch:
+        return [], "no branch to read a PR for"
+    cache_p = prlink_path(worklist, session_id)
+    cache = {}
+    with contextlib.suppress(OSError, ValueError, TypeError):
+        cache = json.loads(cache_p.read_text(encoding="utf-8"))
+    if not isinstance(cache, dict):
+        cache = {}
+    hit = cache.get(branch)
+    if isinstance(hit, dict):
+        with contextlib.suppress(TypeError, ValueError):
+            if time.time() - float(hit.get("t") or 0) <= wl_standdown.FOCUS_PR_TTL_S:
+                return list(hit.get("nodes") or []), ""
+    owner, name = repo_slug(root)
+    if not owner:
+        return [], "could not derive owner/name from remote.origin.url"
+    query = (
+        '{repository(owner:"%s",name:"%s"){pullRequests(headRefName:"%s",'
+        "states:[OPEN,MERGED,CLOSED],first:5,orderBy:{field:UPDATED_AT,direction:DESC})"
+        "{nodes{number state body mergedAt closedAt}}}}"
+    ) % (owner, name, branch)
+    data, err = _gh_json(root, ["api", "graphql", "-f", "query=" + query])
+    if err:
+        return [], err
+    try:
+        nodes = data["data"]["repository"]["pullRequests"]["nodes"] or []
+    except (KeyError, TypeError):
+        return [], "graphql response had no pullRequests.nodes"
+    nodes = [n for n in nodes if isinstance(n, dict)]
+    now = time.time()
+    # Entries past their TTL are dropped on write, so the sidecar holds the live branches only.
+    fresh = {}
+    with contextlib.suppress(TypeError, ValueError):
+        fresh = {
+            k: v
+            for k, v in cache.items()
+            if isinstance(v, dict) and now - float(v.get("t") or 0) <= wl_standdown.FOCUS_PR_TTL_S
+        }
+    fresh[branch] = {"t": now, "nodes": nodes}
+    with contextlib.suppress(OSError, TypeError):
+        cache_p.write_text(json.dumps(fresh), encoding="utf-8")
+    return nodes, ""
 
 
 def focus_pr_end(root, worklist, session_id, focus):
     """(reason, error): "merged", "closed" or "" -- has the focus's PR finished? (agent/plans/PLAN-stop-hook-focus-mode.md section 3.)
 
-    ONE small GraphQL read, cached for wl_standdown.FOCUS_PR_TTL_S in a `.focuspr-<me8>` sidecar, and only while focus is on. The node must be the focus's PR number, or, while that is unknown, the newest one closed AFTER the focus began, so a reused branch name cannot end it. A failed read returns ("", error): focus continues (the 24-hour cap bounds a permanently blind check) and the caller reports it.
+    Read through `pr_link`, the one PR read (cached per branch for wl_standdown.FOCUS_PR_TTL_S), and only while focus is on. Only MERGED and CLOSED nodes count. The node must be the focus's PR number, or, while that is unknown, the newest one closed AFTER the focus began, so a reused branch name cannot end it. A failed read returns ("", error): focus continues (the 24-hour cap bounds a permanently blind check) and the caller reports it.
     """
-    import wl_standdown  # noqa: PLC0415 -- sealed, stdlib only
-
     branch = str((focus or {}).get("branch") or "")
     if not branch:
         return "", ""
-    cache_p = focuspr_path(worklist, session_id)
-    key = "%s|%s|%s" % (branch, (focus or {}).get("pr"), (focus or {}).get("at"))
-    with contextlib.suppress(OSError, ValueError, TypeError):
-        c = json.loads(cache_p.read_text(encoding="utf-8"))
-        if c.get("key") == key and time.time() - float(c.get("t") or 0) <= (
-            wl_standdown.FOCUS_PR_TTL_S
-        ):
-            return str(c.get("reason") or ""), ""
-    owner, name = repo_slug(root)
-    if not owner:
-        return "", "could not derive owner/name from remote.origin.url"
-    query = (
-        '{repository(owner:"%s",name:"%s"){pullRequests(headRefName:"%s",'
-        "states:[MERGED,CLOSED],first:5,orderBy:{field:UPDATED_AT,direction:DESC})"
-        "{nodes{number state mergedAt closedAt}}}}"
-    ) % (owner, name, branch)
-    data, err = _gh_json(root, ["api", "graphql", "-f", "query=" + query])
+    nodes, err = pr_link(root, worklist, session_id, branch)
     if err:
         return "", err
-    try:
-        nodes = data["data"]["repository"]["pullRequests"]["nodes"] or []
-    except (KeyError, TypeError):
-        return "", "graphql response had no pullRequests.nodes"
     want = (focus or {}).get("pr")
     since = str((focus or {}).get("at") or "")
     hit = None
     for n in nodes:
-        if not isinstance(n, dict):
+        if str(n.get("state")).upper() not in ("MERGED", "CLOSED"):
             continue
         if want not in (None, "", 0):
             if str(n.get("number")) == str(want):
@@ -1100,12 +1130,9 @@ def focus_pr_end(root, worklist, session_id, focus):
         if closed and closed >= since:
             hit = n
             break
-    reason = ""
-    if hit is not None:
-        reason = "merged" if str(hit.get("state")).upper() == "MERGED" else "closed"
-    with contextlib.suppress(OSError, TypeError):
-        cache_p.write_text(json.dumps({"key": key, "t": time.time(), "reason": reason}))
-    return reason, ""
+    if hit is None:
+        return "", ""
+    return ("merged" if str(hit.get("state")).upper() == "MERGED" else "closed"), ""
 
 
 def _ci_cache_write(path, sha, state, info, steps, final):
