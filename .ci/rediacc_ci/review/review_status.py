@@ -52,7 +52,12 @@ import zipfile
 
 from rediacc_ci import log
 from rediacc_ci.core import common, ghx, review_budget
-from rediacc_ci.review.claude_review_gate import ATTEMPT_PREFIX, MARKER_PREFIX
+from rediacc_ci.review.claude_review_gate import (
+    ATTEMPT_PREFIX,
+    MARKER_PREFIX,
+    PR_NUMBER_RE,
+    SHA40_RE,
+)
 
 DEFAULT_CHECK_NAME = "Review Complete"
 
@@ -310,6 +315,9 @@ def artifact_pr(repo: str, run_id: str) -> str:
 
     ABSENT IS SILENT, PRESENT IS BINDING. A push to main runs this chain with no PR and writes no artifact, which is a clean exit. An artifact that exists but cannot be honoured is a reporter failure and is loud.
     """
+    if not PR_NUMBER_RE.fullmatch(run_id):
+        log.error("WR_RUN_ID must be a number, got %r" % run_id[:80])
+        raise ReporterError(1)
     runs_path = "repos/%s/actions/runs/%s/artifacts" % (repo, run_id)
     code, listing = _gh(
         ["api", runs_path, "--jq", '.artifacts[] | select(.name == "%s") | .id' % ARTIFACT_NAME],
@@ -318,6 +326,12 @@ def artifact_pr(repo: str, run_id: str) -> str:
     if code != 0 or not listing.strip():
         return ""
     art_id = listing.decode("utf-8", "replace").split()[0]
+    if not PR_NUMBER_RE.fullmatch(art_id):
+        log.error(
+            "run %s listed a review-target artifact id that is not a number: %r"
+            % (run_id, art_id[:80])
+        )
+        raise ReporterError(1)
 
     code, blob = _gh(["api", "repos/%s/actions/artifacts/%s/zip" % (repo, art_id)], quiet=True)
     if code != 0:
@@ -349,7 +363,7 @@ def _resolve_pr(repo: str, event: str) -> str:
         return artifact_pr(repo, common.require_var("WR_RUN_ID"))
     if event in EVENTS_WITH_PR_NUMBER:
         pr = common.require_var("PR_NUMBER")
-        if not pr.isdigit():
+        if not PR_NUMBER_RE.fullmatch(pr):
             log.error("PR_NUMBER must be a number, got %r" % pr)
             raise ReporterError(1)
         return pr
@@ -526,6 +540,11 @@ def run(hygiene_dir: pathlib.Path | None = None) -> int:
         return 0
     if not head_sha:
         log.error("PR #%s returned no head SHA; refusing to post a check-run with no anchor" % pr)
+        raise ReporterError(1)
+    if not SHA40_RE.fullmatch(head_sha):
+        log.error(
+            "PR #%s head %r is not a 40-hex commit SHA; refusing to use it" % (pr, head_sha[:80])
+        )
         raise ReporterError(1)
     log.info("PR #%s head %s" % (pr, head_sha))
 

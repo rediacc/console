@@ -225,6 +225,44 @@ def test_control_a_ready_pr_is_reviewed_on_workflow_run(env):
     assert (rc, out["go"], out["pr_number"], out["head_sha"]) == (0, "true", PR, HEAD)
 
 
+# Interpolated into `select(.headRefOid == "%s")` this reads `... == "a" or true or ""`, which selects a PR at ANY head and defeats the SHA pin.
+INJECTED_SHA = 'a" or true or "'
+
+
+@pytest.mark.parametrize("bad", [INJECTED_SHA, "A" * 40, "a" * 39, ""])
+def test_a_malformed_wr_head_sha_is_refused_before_any_gh_call(env, bad):
+    fake = FakeGh()
+    rc, out = gate_wr(env, fake, WR_HEAD_SHA=bad)
+    assert rc == 1
+    assert fake.calls == []
+    assert "go" not in out
+
+
+@pytest.mark.parametrize("bad", [INJECTED_SHA, "a" * 41])
+def test_a_malformed_pr_head_sha_is_refused_before_the_check_runs_read(env, bad):
+    fake = FakeGh()
+    rc, out = gate_pr(env, fake, PR_HEAD_SHA=bad)
+    assert rc == 1
+    assert not any("check-runs" in " ".join(c) for c in fake.calls)
+    assert "go" not in out
+
+
+@pytest.mark.parametrize("bad", ["42/../../x", "--repo=evil", "4 2"])
+def test_a_non_numeric_pr_number_is_refused_before_any_gh_call(env, bad):
+    fake = FakeGh()
+    rc, _out = gate_pr(env, fake, PR_NUMBER=bad)
+    assert rc == 1
+    assert fake.calls == []
+
+
+@pytest.mark.parametrize("arm", ["--post-report", "--post-findings", "--mark"])
+@pytest.mark.parametrize(("pr", "head"), [(PR, INJECTED_SHA), ("42/../x", HEAD)])
+def test_every_arm_refuses_a_malformed_pr_or_head_before_any_gh_call(env, arm, pr, head):
+    fake = FakeGh()
+    assert run(env, fake, [arm], PR_NUMBER=pr, HEAD_SHA=head, REVIEW_OUTCOME="failure") == 1
+    assert fake.calls == []
+
+
 def test_a_draft_pr_is_not_reviewed_on_dispatch(env):
     rc, out = gate_pr(env, FakeGh(draft=True), EVENT_NAME="workflow_dispatch")
     assert (rc, out["go"]) == (0, "false")

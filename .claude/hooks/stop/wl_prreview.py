@@ -670,6 +670,7 @@ def validate(
     """Every refusal, naming the finding. Empty means every finding has a valid disposition."""
     errors: list[str] = []
     fold: dict[str, tuple[str, str]] | None = None
+    unreadable = ""
     errors.extend(
         "F%d: the summary has no such finding (it has %d)" % (n, count)
         for n in sorted(set(dispositions) - set(range(1, count + 1)))
@@ -706,13 +707,15 @@ def validate(
         m = DEFERRED_RE.match(d)
         if m:
             item = m.group(1)
-            if fold is None:
+            if fold is None and not unreadable:
                 try:
                     fold = items()
                 except Exception as exc:  # noqa: BLE001 -- an unreadable worklist refuses the deferral, it does not crash the verb
-                    errors.append("F%d: the worklist cannot be read (%s)" % (n, exc))
-                    fold = {}
-                    continue
+                    unreadable = str(exc) or type(exc).__name__
+            if fold is None:
+                # Every deferral is refused for the read failure, not only the first: an empty stand-in fold would call the later items missing.
+                errors.append("F%d: the worklist cannot be read (%s)" % (n, unreadable))
+                continue
             rec = fold.get(item)
             if rec is None:
                 errors.append("F%d: worklist item #%s does not exist" % (n, item))
