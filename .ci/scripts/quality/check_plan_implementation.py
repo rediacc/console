@@ -544,6 +544,7 @@ def tick_findings(
     baseline_at,
     successor_of,
     authored_of,
+    fileline_at=None,
 ):
     """P-A2, P-A3 and P-A4 over one branch's newly-done boxes. [] when they hold.
 
@@ -593,6 +594,11 @@ def tick_findings(
                 # A successor that IS the token claims a sha that just failed to resolve is reachable; only a different, mapped commit re-resolves it.
                 succ = successor_of(token)
                 ok = bool(succ) and not str(succ).lower().startswith(str(token).strip().lower())
+            if not ok and kind == "fileline" and fileline_at is not None:
+                # A file:line that held when the box was investigated is not a dead pointer because a later commit moved or removed the line (2026-10-03: PLAN-plan-priority-concurrency's row cited wl_planenforce.py:428 before SC6 shrank the file). Judge it at the investigation's recorded head, mapped through a rebase when that head was rewritten.
+                rec_head = str(row.get("head") or "").strip()
+                at = (successor_of(rec_head) or rec_head) if rec_head else ""
+                ok = bool(at) and fileline_at(at, token)
             if not ok:
                 out.append(
                     Finding(
@@ -727,6 +733,31 @@ def controls_fired(enforce, planfile, planrec=None):
         die(f"CONTROL 0 FAILED: a fully-evidenced tick was reported: {healthy}")
     if vacuity_findings(120, 810, 120):
         die("CONTROL 0 FAILED: a healthy corpus tripped an anti-vacuity floor")
+
+    # C15 -- A FILE:LINE IS JUDGED WHERE IT WAS INVESTIGATED (2026-10-03). A pointer that no longer resolves in today's tree passes when it resolved at the row's recorded head; one that never existed there still fails.
+    def stale_fileline(at_head):
+        return tick_findings(
+            moved_to_done(healthy_base, healthy_head),
+            lambda _r, _s: "ran the gate, exit 0",
+            lambda _r, _s: healthy_row,
+            lambda k, _t: (k != "fileline", "ok" if k != "fileline" else "line gone today"),
+            lambda _r, _s: "C1",
+            lambda _c: "2026-01-05",
+            lambda _a, _b: True,
+            "2026-01-01",
+            lambda c: c,
+            lambda _c: "",
+            lambda commit, _token: at_head and commit == "H0",
+        )
+
+    caught(
+        "C15a: a file:line that held at the investigation's head was still reported",
+        not stale_fileline(True),
+    )
+    caught(
+        "C15b: CONTROL: a file:line that never held at that head was excused",
+        any("P-A3" in str(f) for f in stale_fileline(False)),
+    )
 
     # C8 -- NO THRESHOLD (operator ruling 2026-09-26). One open box in a plan that is neither finished nor held is red; a held or finished plan's boxes are not.
     rows = {
@@ -1590,6 +1621,7 @@ def main(argv=None) -> int:
                 clock.get("baseline_at"),
                 successor_of,
                 lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%aI", commit),
+                lambda commit, token: fileline_at_commit(REPO_ROOT, commit, token),
             )
         )
 
@@ -1842,6 +1874,24 @@ def absent_submodules(root):
         if not os.path.isdir(path) or not os.listdir(path):
             out.append(parts[1])
     return sorted(out)
+
+
+def fileline_at_commit(root, commit, token):
+    """True when `path:line` names an existing line of `path` as it was at `commit` (`git show <commit>:<path>`). False on any git failure or a malformed token."""
+    path, sep, line = str(token).rpartition(":")
+    if not sep or not path or not line.isdigit():
+        return False
+    try:
+        out = subprocess.run(
+            ["git", "show", "%s:%s" % (commit, path)],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return False
+    return out.returncode == 0 and 1 <= int(line) <= len(out.stdout.splitlines())
 
 
 def resolve_here(planrec, kind, token, absent):
