@@ -2065,6 +2065,97 @@ def _prf_covered(fold, token):
     )
 
 
+# The PR-level Claude review read (agent/plans/PLAN-github-pr-review-restore.md, box GR9). One check_state() makes up to five gh calls, so it is memoised per head for PRREVIEW_TTL_S and every call runs under a per-call timeout inside one wall-clock budget: a slow or hung gh costs this stop at most PRREVIEW_BUDGET_S, then reads as unreadable.
+PRREVIEW_TTL_S = 300
+PRREVIEW_CALL_TIMEOUT_S = 20
+PRREVIEW_BUDGET_S = 45
+
+
+def prreview_runner(root, budget_s=PRREVIEW_BUDGET_S, call_timeout_s=PRREVIEW_CALL_TIMEOUT_S):
+    """A wl_prreview runner bounded per call and in total. A spent budget or a timeout returns rc 124, which check_state reports as unreadable (rc 2)."""
+    deadline = time.monotonic() + budget_s
+
+    def run(argv):
+        left = deadline - time.monotonic()
+        if left <= 1:
+            return 124, "", "the Stop hook's %ds gh budget for the review read is spent" % budget_s
+        try:
+            done = subprocess.run(
+                ["gh", *argv],
+                capture_output=True,
+                text=True,
+                timeout=min(call_timeout_s, left),
+                check=False,
+                stdin=subprocess.DEVNULL,
+                cwd=str(root),
+            )
+        except subprocess.TimeoutExpired:
+            return 124, "", "gh timed out after %ds" % int(min(call_timeout_s, left))
+        except (OSError, subprocess.SubprocessError) as exc:
+            return 127, "", str(exc)
+        return done.returncode, done.stdout, done.stderr
+
+    return run
+
+
+def prreview_nudge(state_doc, info, check, runner=None, focus=False, now=None):
+    """(block_text, note_text, once_text) for the PR-level review on a head whose CI is GREEN. Each "" when there is nothing to say; `once_text` is a one-shot note (the unreadable one), the other note recurs while its condition stands.
+
+    `check` is wl_prreview.check_state (a fake in tests), called as `check(pr, runner)` and memoised in `state_doc["prreview"]` per head for PRREVIEW_TTL_S. rc 1 (an unanswered summary or an unresolved finding thread) yields V_PR_REVIEW_UNANSWERED; a `failed-run` Review Complete token yields V_PR_REVIEW_FAILED_RUN; both join into one text. rc 2 yields N_PR_REVIEW_UNREADABLE once per head and nothing else.
+
+    BOUNDED LIKE ci-red: the same finding blocks at most wl_ci.CI_MAX_BLOCKS stops per signature (head, rc, token, summary, unresolved threads), then rides the advisory queue on every stop. Focus mode keeps it blocking: `pr-review` is on wl_standdown._FOCUS_ONLY, because Review Complete is a required check and an unanswered review holds the merge (operator ruling 2026-10-03).
+    """
+    del focus  # kept for callers; focus mode blocks like any other stop (wl_standdown._FOCUS_ONLY)
+    pr, head = (info or {}).get("pr"), str((info or {}).get("sha") or "")
+    if not pr or not head:
+        return "", "", ""
+    now = time.time() if now is None else now
+    memo = state_doc.get("prreview")
+    if not isinstance(memo, dict) or memo.get("head") != head:
+        memo = {"head": head}
+    st = memo.get("state")
+    if not isinstance(st, dict) or now - float(memo.get("at") or 0) > PRREVIEW_TTL_S:
+        try:
+            got = check(int(pr), runner) if runner is not None else check(int(pr))
+        except Exception as exc:  # noqa: BLE001 -- check_state promises not to raise; a raise reads as unreadable
+            got = {"rc": 2, "reason": "%s: %s" % (type(exc).__name__, str(exc)[:160])}
+        st = {
+            "rc": int(got.get("rc", 2)),
+            "title": str(got.get("review_token") or ""),
+            "summary": str(got.get("summary") or ""),
+            "unresolved": [str(u) for u in got.get("unresolved") or []],
+            "reason": str(got.get("reason") or "")[:400],
+        }
+        memo["state"], memo["at"] = st, now
+    state_doc["prreview"] = memo
+    fields = {"pr": pr, "head": head[:12], "reason": st["reason"]}
+    if st["rc"] == 2:
+        if memo.get("unreadable_noted") == head:
+            return "", "", ""
+        memo["unreadable_noted"] = head
+        return "", "", M.N_PR_REVIEW_UNREADABLE % fields
+    parts = []
+    if st["rc"] == 1:
+        parts.append(M.V_PR_REVIEW_UNANSWERED % fields)
+    if st["title"] == "failed-run":
+        parts.append(M.V_PR_REVIEW_FAILED_RUN % fields)
+    if not parts:
+        return "", "", ""
+    text = "\n\n".join(parts)
+    sig = hashlib.sha1(
+        "|".join(
+            [head, str(st["rc"]), st["title"], st["summary"], ",".join(st["unresolved"])]
+        ).encode("utf-8", "replace")
+    ).hexdigest()[:12]
+    blocks = int(memo.get("blocks") or 0) if memo.get("sig") == sig else 0
+    memo["sig"] = sig
+    if blocks >= wl_ci.CI_MAX_BLOCKS:
+        memo["blocks"] = blocks
+        return "", text, ""
+    memo["blocks"] = blocks + 1
+    return text, "", ""
+
+
 def solo_grind_due(n_open, n_teammates, state_doc):
     """True when a long solo queue deserves ONE mention. Mutates state_doc.
 
@@ -2142,6 +2233,8 @@ PRIORITY_LADDER = (
                 # The pr-babysit finish line, box by box (green / ready / per-commit reviews / threads), and the red that keeps it unticked.
                 "pr-finish",
                 "ci-red",
+                # The PR-level Claude review on a green head (agent/plans/PLAN-github-pr-review-restore.md, GR9): Review Complete is a required check, so an unanswered summary or a failed review run holds the PR exactly as a red does, under ci-red's bounded ceiling.
+                "pr-review",
                 # An open per-commit review finding at or above `block_at` (agent/plans/PLAN-per-commit-review.md section 7): it protects the PR the way ci-red does, so it shares ci-red's tier rather than sitting in hygiene where it could be starved by real work.
                 "commit-review",
             }
@@ -3822,6 +3915,38 @@ def run_stop(event, event_ok, worklist, hook_file):
                 if cidetail["acked"]
                 else "",
                 _txt,
+            )
+    # ---- THE PR-LEVEL CLAUDE REVIEW ON A GREEN HEAD (agent/plans/PLAN-github-pr-review-restore.md, box GR9). Only once ci_trouble reads the head green: before that the review has not run, and a red head has its own block. Review Complete is a required check (operator ruling 2026-10-03), so an unanswered summary or a failed review run is work this loop owns; the
+    # bounded ceiling and the gh budget live in prreview_nudge and prreview_runner.
+    if cistate == "ok" and isinstance(cidetail, dict):
+        try:
+            import wl_prreview  # noqa: PLC0415 -- only a green-head stop needs it
+
+            _prr_block, _prr_note, _prr_once = prreview_nudge(
+                state_doc,
+                cidetail,
+                wl_prreview.check_state,
+                runner=prreview_runner(root),
+                focus=bool(_focus),
+            )
+            S.save_state(worklist, session_id, state_doc)
+        except Exception as exc:  # noqa: BLE001 -- a broken check must SAY SO
+            _prr_block = "THIS IS A HOOK BUG: the PR review read failed: %s: %s" % (
+                type(exc).__name__,
+                str(exc)[:160],
+            )
+            _prr_note = _prr_once = ""
+        if _prr_block:
+            vadd("pr-review", False, _prr_block)
+        if _prr_note:
+            # Under the `ci-report` base so focus mode releases it in full (wl_standdown.FOCUS_ADVISORY_KEYS); class 0 and refresh_min=0 because it is recomputed from the live PR on every stop.
+            outq_add(
+                worklist, session_id, state_doc, "ci-report:pr-review", _prr_note, 0, refresh_min=0
+            )
+        if _prr_once:
+            # Sticky: prreview_nudge returns it once per head, so the queue holds it until it is shown.
+            outq_add(
+                worklist, session_id, state_doc, "ci-report:pr-review", _prr_once, 1, sticky=True
             )
     # ---- v21: THE pr-babysit FINISH LINE, as the markdown checkboxes it is.
     #
