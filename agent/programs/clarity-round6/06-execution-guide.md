@@ -74,7 +74,7 @@ been observed touching `packages/cli`'s manifest and writing through into `priva
 
 ### Reports
 
-Every writing or planning sub-agent names its working report `reports/<phase>-<agent>.md` under `~/.claude/projects/-home-developer-console/programs/clarity-round6/`. The team lead reads reports AND artifacts, never bare summaries. `MANIFEST.md` updates at every phase boundary.
+Every writing or planning sub-agent names its working report `reports/<phase>-<agent>.md` under `agent/programs/clarity-round6/state/`. The team lead reads reports AND artifacts, never bare summaries. `MANIFEST.md` updates at every phase boundary.
 
 ## Gates
 

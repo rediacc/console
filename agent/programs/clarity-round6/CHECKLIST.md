@@ -3,7 +3,7 @@
 Status: done
 Owner: e580532b
 
-Source session `e580532b`, 2026-08-27, planned in `/home/developer/console` on branch `0827-1`. Program state: `~/.claude/projects/-home-developer-console/programs/clarity-round6/`
+Source session `e580532b`, 2026-08-27, planned in `/home/developer/console` on branch `0827-1`. Program state: `agent/programs/clarity-round6/state/`
 
 ## Deliverables
 - [x] d1 file:agent/programs/clarity-round6/README.md
@@ -14,7 +14,7 @@ Source session `e580532b`, 2026-08-27, planned in `/home/developer/console` on b
 - [x] d6 file:agent/programs/clarity-round6/05-toolchain-portability.md
 - [x] d7 file:agent/programs/clarity-round6/06-execution-guide.md
 - [x] d8 file:agent/programs/clarity-round6/PROMPT.md
-- [x] d9 file:~/.claude/projects/-home-developer-console/programs/clarity-round6/MANIFEST.md
+- [x] d9 file:agent/programs/clarity-round6/state/MANIFEST.md
 
 ## Waves
 - [x] w1 Wave 0: frozen-build measurement harness and the template contract (SERIAL, lead only)

@@ -2,7 +2,7 @@
 
 Reduce what a visitor has to process, on the pages and in the videos, and make the toolchain that produces both survive a machine rebuild.
 
-Planned in session `e580532b` on 2026-08-27, branch `0827-1`, in `/home/developer/console`. Program state, including reports and checkpoints: `~/.claude/projects/-home-developer-console/programs/clarity-round6/`. Memory pointer: `~/.claude/projects/-home-developer-console/memory/MEMORY.md`.
+Planned in session `e580532b` on 2026-08-27, branch `0827-1`, in `/home/developer/console`. Program state, including reports and checkpoints: `agent/programs/clarity-round6/state/`. Memory pointer: `~/.claude/projects/-home-developer-console/memory/MEMORY.md`.
 
 This is the next round after `agent/programs/www-simplification` (which fixed the homepage) and `agent/programs/www-round5`. Both are `Status: done`; their locked decisions bind this program and are collected in `02-inherited-decisions.md`.
 

@@ -18,7 +18,7 @@ At most **2 concurrent writers**, with disjoint file ownership stated verbatim i
 
 ## Program state
 
-    ~/.claude/projects/-home-muhammed-monorepo-console/programs/www-simplification/
+    agent/programs/www-simplification/state/
       MANIFEST.md      update at every wave boundary
       reports/         reports/<phase>-<agent>.md, one per writing or planning agent
       checkpoints/     an uncommitted-tree patch at every wave boundary

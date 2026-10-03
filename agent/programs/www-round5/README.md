@@ -6,7 +6,7 @@ makes the existing structure legible and adds gates so the regressions cannot co
 
 Planned by session `a68f3ab4` (`console-39`) on 2026-08-23, in `~/monorepo/console` before the repo moved to `~/console`. Every measurement in this suite was taken live against `http://localhost:4321` with `agent-browser`, not read off a file. Branch at handoff: `0823-1`.
 
-- Program state: `~/.claude/projects/-home-muhammed-console/programs/www-round5/`
+- Program state: `agent/programs/www-round5/state/`
 - Memory pointer: `project_www_round5.md`
 - Raw evidence: `evidence/` in this directory (four agent reports plus the session plan)
 

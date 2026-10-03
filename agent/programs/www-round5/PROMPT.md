@@ -17,7 +17,7 @@ freely. Spot-check every sub-agent report against the artifact before building o
 
 ## Program state
 
-`~/.claude/projects/-home-muhammed-console/programs/www-round5/`
+`agent/programs/www-round5/state/`
 
 `MANIFEST.md` (update at every phase boundary), `reports/` (every writing or planning sub-agent names its working report `reports/<phase>-<agent>.md`), `checkpoints/` (periodic uncommitted-tree patches).
 
