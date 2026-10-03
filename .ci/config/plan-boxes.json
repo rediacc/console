@@ -1067,6 +1067,22 @@
         "fe98f8bf"
       ]
     },
+    "agent/plans/PLAN-program-state-in-repo.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 5,
+      "done": 0,
+      "open_sigs": [
+        "101046d0",
+        "51be15ab",
+        "76dee55e",
+        "b91cff49",
+        "c9c68cef"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-promote-mutation-runner.md": {
       "status": "compacted",
       "owner": "99ccf057",

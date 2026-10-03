@@ -9,11 +9,12 @@ Entry format: `1. agent/plans/PLAN-<slug>.md`, optionally followed by ` -- <note
 ## Promoted
 
 1. agent/plans/PLAN-github-pr-review-restore.md -- operator 2026-10-03: the whole-PR review on GitHub returns (recovered from git), and the per-commit reviews show on the PR page
-2. agent/plans/PLAN-plan-priority-concurrency.md -- operator /ask 2026-10-03: X's last box, T12 prose
-3. agent/plans/PLAN-commit-as-you-go.md -- operator /ask 2026-10-03: T6 (the `nocommit:` tick arm Z depends on), with T0 and T9
-4. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: T9 (the enforced matrix in DESIGN-CONFIG-STORAGE.md) and T10 (live smoke)
-5. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: the 9 open boxes
-6. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: Step 12
+2. agent/plans/PLAN-program-state-in-repo.md -- operator /ask 2026-10-03: "Next PR, its own plan"; program state into the repo, derived projects dir, a non-live checklist owner is asked about
+3. agent/plans/PLAN-plan-priority-concurrency.md -- operator /ask 2026-10-03: X's last box, T12 prose
+4. agent/plans/PLAN-commit-as-you-go.md -- operator /ask 2026-10-03: T6 (the `nocommit:` tick arm Z depends on), with T0 and T9
+5. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: T9 (the enforced matrix in DESIGN-CONFIG-STORAGE.md) and T10 (live smoke)
+6. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: the 9 open boxes
+7. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: Step 12
 
 ## Generated
 
