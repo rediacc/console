@@ -583,7 +583,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/test-block_unpushed_submodule_pin.py | (none) | via .claude/rediacc_hooks/guards/block_unpushed_submodule_pin.py | py |
 | .claude/rediacc_hooks/guards/test-block_unsatisfiable_pid_wait.py | (none) | via .claude/rediacc_hooks/guards/block_unsatisfiable_pid_wait.py | py |
 | .claude/rediacc_hooks/guards/test-block_untagged_commit.py | (none) | (nothing) | py |
-| .claude/rediacc_hooks/guards/test-block_unverified_push.py | (none) | via .claude/rediacc_hooks/guards/test-block_unproven_bulk_transform.py | py |
+| .claude/rediacc_hooks/guards/test-block_unverified_push.py | (none) | via .claude/rediacc_hooks/guards/block_unverified_push.py | py |
 | .claude/rediacc_hooks/guards/test-warn_staged_shape_duplication.py | (none) | via .claude/rediacc_hooks/guards/warn_staged_shape_duplication.py | py |
 | .claude/rediacc_hooks/guards/warn_hook_change.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/warn_remote_drift.py | (none) | via dispatch.py (glob) | py |

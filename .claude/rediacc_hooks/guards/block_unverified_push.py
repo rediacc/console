@@ -511,6 +511,9 @@ def live_pushes(cmd, root):
     A push naming no refspec (`git push`, `git push origin`) and a `HEAD` destination send the checked-out branch. A source that does not resolve is skipped: git itself refuses that push, so there is no commit to judge. The remote must be spelled `origin` (or left out); a mirror or a URL is another guard's business.
     """
     current = hookio.git_out(["-C", root, "branch", "--show-current"], want_rc=True) or ""
+    # Detached prints nothing here, never the literal "HEAD" `rev-parse --abbrev-ref` would; a "HEAD" from any other path is no branch either, so it judges nothing.
+    if current == "HEAD":
+        current = ""
     out = []
     for run in commit_policy.git_runs(cmd, "push"):
         _, _, args = commit_policy.git_split(run.argv)
