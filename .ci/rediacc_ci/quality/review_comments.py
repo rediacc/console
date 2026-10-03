@@ -74,6 +74,13 @@ HOW THE SUMMARY IS IDENTIFIED, which is the part a reviewer must be able to chec
     review pass supersedes the previous summary, and re-litigating superseded
     verdicts would make a re-reviewed PR permanently unmergeable.
 
+AN EMPTY FINDINGS ARRAY NEEDS NO REPLY (operator ruling 2026-10-03, PLAN-github-pr-review-restore GR6):
+
+    A newest summary whose line-anchored ```json:review-findings fence parses to `[]` has nothing to answer, so demanding a reply to it only taught sessions to post filler. Every other shape keeps the reply rule: a fence with one finding, a fence that does not parse, an unclosed or unanchored fence and no fence at all still need an answer. Fail closed: the exemption is granted only on a
+    positive parse of an empty JSON array, so no finding loses its gate.
+
+    The reader takes the LAST opener, as the producer's scanner does, and stops at that block's FIRST closer. The producer's last-closer rule ran past a later `json:pr-labels` fence; a line holding only ``` cannot occur inside valid JSON, because a JSON string cannot carry a raw newline, so the first closer is the true end of the array.
+
 WHAT COUNTS AS A REPLY TO THE SUMMARY, all four clauses:
 
     (a) a DIFFERENT author from the reviewer. This is the load-bearing clause, not
@@ -179,6 +186,10 @@ TRAILING_PUNCT = re.compile(r"[.!?]*$")
 # The two summary keys. The fence is a PRODUCER CONSTANT; the heading is the weaker second key for a pass that produced no fence.
 FENCE_NEEDLE = "json:review-findings"
 VERDICT_HEADING = re.compile(r"^[ \t\n\r\f\v]*#{1,3}[ \t\n\r\f\v]*Review verdict", re.IGNORECASE)
+
+# The findings fence, line-anchored. `[ \t]*` rather than `\s*`, so the anchors never reach across a newline.
+FENCE_OPENER = re.compile(r"^[ \t]*```%s[ \t]*$" % re.escape(FENCE_NEEDLE))
+FENCE_CLOSER = re.compile(r"^[ \t]*```[ \t]*$")
 
 GH_ATTEMPTS = 3
 GH_SLEEP_FACTOR = 3
@@ -331,6 +342,52 @@ def newest_summary(comments: list[dict]) -> dict | None:
     return ordered[-1]
 
 
+def findings_fence_is_empty(body: str) -> bool:
+    """True only when the LAST line-anchored findings fence is closed and parses to `[]`.
+
+    Operator ruling 2026-10-03, PLAN-github-pr-review-restore GR6. FAIL CLOSED: an absent, unclosed, unparseable or non-empty fence, or one holding anything but a JSON array, answers False and the summary keeps its reply rule.
+    """
+    block: list[str] | None = None
+    capturing = False
+    buf: list[str] = []
+    for line in body.split("\n"):
+        if FENCE_OPENER.match(line):
+            # A new opener resets, which is what makes "last opener" true; an earlier closed block no longer counts.
+            capturing = True
+            buf = []
+            block = None
+            continue
+        if capturing:
+            if FENCE_CLOSER.match(line):
+                block = buf
+                capturing = False
+            else:
+                buf.append(line)
+    if block is None:
+        return False
+    try:
+        parsed = json.loads("\n".join(block))
+    except ValueError:
+        return False
+    return isinstance(parsed, list) and not parsed
+
+
+def summary_verdict(comments: list[dict]) -> tuple[str, dict | None, dict | None]:
+    """(verdict, summary, reply) for surface 2: "none", "empty", "answered" or "unanswered".
+
+    ONE DECISION FOR main() AND selftest(), so the controls exercise the rule the gate runs. "empty" is the GR6 exemption (operator ruling 2026-10-03) and is decided BEFORE the reply search, on the newest summary only.
+    """
+    summary = newest_summary(comments)
+    if summary is None:
+        return "none", None, None
+    if findings_fence_is_empty(summary.get("body") or ""):
+        return "empty", summary, None
+    reply = summary_reply(comments, summary)
+    if reply is not None:
+        return "answered", summary, reply
+    return "unanswered", summary, None
+
+
 def summary_reply(comments: list[dict], summary: dict) -> dict | None:
     """The first comment satisfying clauses (a) to (d) for the summary."""
     author = ((summary.get("user") or {}).get("login")) or ""
@@ -417,18 +474,22 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     issue_comments = json.loads(issue_body)
-    summary = newest_summary(issue_comments)
+    verdict, summary, reply = summary_verdict(issue_comments)
     summary_unaddressed = False
     summary_id = summary_author = summary_created = summary_head = ""
     if summary is None:
         print("No top-level review summary found - OK")
+    elif verdict == "empty":
+        print(
+            "Top-level review summary (comment %s) carries an empty findings array, nothing to answer - OK"
+            % summary.get("id")
+        )
     else:
         summary_id = str(summary.get("id"))
         summary_author = ((summary.get("user") or {}).get("login")) or ""
         summary_created = summary.get("created_at")
         # `jq -r '.body' | tr '\n' ' '` ADDS A TRAILING SPACE, because `jq -r` terminates its output with a newline and `tr` turns that newline into a space too. The excerpt therefore ends `... "` rather than `..."`, and a port that translated only the body's INTERNAL newlines produced a one-character difference on every summary. Found by the differential.
         summary_head = clip(((summary.get("body") or "") + "\n").replace("\n", " "), 120)
-        reply = summary_reply(issue_comments, summary)
         if reply is not None:
             print(
                 "Top-level review summary (comment %s) answered by comment %s - OK"
@@ -621,9 +682,34 @@ def selftest() -> int:
             None,
         ),
         ("no comments at all", [], None),
+        # THE PER-COMMIT MIRROR IS BOOKKEEPING (PLAN-github-pr-review-restore GR6). It may carry both summary keys and must still never be selected, or the per-commit records would demand a top-level answer of their own.
+        (
+            "a per-commit-reviews comment is NOT a summary",
+            [
+                {
+                    "id": 7,
+                    "user": bot,
+                    "created_at": "t1",
+                    "body": "<!-- per-commit-reviews: 1003-1 -->\n## Review verdict: records\n"
+                    "```json:review-findings\n[{\"body\": \"x\"}]\n```",
+                }
+            ],
+            None,
+        ),
     ]
 
-    floor = len(low_effort_cases) + len(summary_cases) + 9
+    # THE EMPTY-FINDINGS PAIR (operator ruling 2026-10-03, PLAN-github-pr-review-restore GR6), neither with a reply. Both directions, so a rule that exempted every summary, or none, reds one half.
+    empty_report = "## Review verdict: approve\n```json:review-findings\n[]\n```\n"
+    one_report = '## Review verdict: fix\n```json:review-findings\n[{"body": "off by one"}]\n```\n'
+    broken_report = "## Review verdict: approve\n```json:review-findings\n[\n```\n"
+    verdict_cases = [
+        ("an empty findings array, no reply: silent", empty_report, "empty"),
+        ("a one-entry findings array, no reply: red", one_report, "unanswered"),
+        ("an unparseable fence, no reply: red (fail closed)", broken_report, "unanswered"),
+        ("no fence at all, no reply: red", "## Review verdict: approve", "unanswered"),
+    ]
+
+    floor = len(low_effort_cases) + len(summary_cases) + len(verdict_cases) + 9
     ctl = Controls("review-comments", floor=floor)
 
     for label, (text, min_chars), want in low_effort_cases:
@@ -631,6 +717,9 @@ def selftest() -> int:
     for label, comments, want in summary_cases:
         found = newest_summary(comments)
         ctl.check("summary: %s" % label, None if found is None else found["id"], want)
+    for verdict_label, report, want_verdict in verdict_cases:
+        planted = [{"id": 20, "user": bot, "created_at": "2026-10-03T00:00:00Z", "body": report}]
+        ctl.check("verdict: %s" % verdict_label, summary_verdict(planted)[0], want_verdict)
 
     # NEWEST WINS on the summary too.
     older = {"id": 10, "user": bot, "created_at": "2026-08-01T00:00:00Z", "body": FENCE_NEEDLE}

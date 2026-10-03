@@ -317,3 +317,70 @@ def test_selftest_exits_zero_and_prints_a_count():
     assert code == 0, err
     assert "control(s) passed" in out
     assert int(out.split(" control(s)")[0].strip()) >= 24
+
+
+# THE EMPTY-FINDINGS RULE (operator ruling 2026-10-03, PLAN-github-pr-review-restore GR6). A summary whose line-anchored `json:review-findings` fence parses to `[]` has nothing to answer, so it needs no reply. Every other shape keeps the reply rule: one finding, an unparseable fence and an absent fence all still block. These cases run against the fixture rather than a golden, because the twin
+# never had the rule and so never recorded these bytes.
+EMPTY_FENCE = "## Review verdict: approve\n\nNo findings.\n\n```json:review-findings\n[]\n```\n"
+ONE_FENCE = (
+    "## Review verdict: fix one\n\n```json:review-findings\n"
+    '[{"path": "a.py", "line": 3, "severity": "major", "body": "off by one"}]\n```\n'
+)
+BROKEN_FENCE = "## Review verdict: approve\n\n```json:review-findings\n[\n```\n"
+PER_COMMIT = (
+    "<!-- per-commit-reviews: 1003-1 -->\n## Review verdict: per-commit records\n\n"
+    '```json:review-findings\n[{"path": "a.py", "line": 1, "body": "x"}]\n```\n'
+)
+
+
+@pytest.mark.parametrize(
+    ("label", "body", "want_exit", "want_line"),
+    [
+        (
+            "an-empty-findings-array-needs-no-reply",
+            EMPTY_FENCE,
+            0,
+            "carries an empty findings array, nothing to answer - OK",
+        ),
+        ("a-one-entry-findings-array-still-blocks", ONE_FENCE, 1, "UNANSWERED REVIEW SUMMARY (1):"),
+        (
+            "an-unparseable-fence-fails-closed",
+            BROKEN_FENCE,
+            1,
+            "UNANSWERED REVIEW SUMMARY (1):",
+        ),
+    ],
+)
+def test_the_empty_findings_rule_end_to_end(tmp_path, label, body, want_exit, want_line):
+    """The real module over the stubbed gh, with no reply posted in any case."""
+    root = build(tmp_path, [], [dict(SUMMARY, body=body)])
+    code, out, err = run_port(root)
+    assert code == want_exit, "%s: exit %d\n%s\n%s" % (label, code, out, err)
+    assert want_line in out, label
+
+
+def test_a_per_commit_reviews_comment_is_never_a_summary(tmp_path):
+    """The per-commit review mirror opens `<!-- per-commit-reviews:` and may carry both summary keys, yet it is bookkeeping, never a verdict awaiting an answer."""
+    comment = dict(SUMMARY, body=PER_COMMIT)
+    assert gate.newest_summary([comment]) is None
+    code, out, _err = run_port(build(tmp_path, [], [comment]))
+    assert code == 0
+    assert "No top-level review summary found - OK" in out
+
+
+def test_findings_fence_reader():
+    """`[]` is empty; one entry, an object, broken JSON, an unanchored or unclosed fence and no fence at all are not."""
+    assert gate.findings_fence_is_empty(EMPTY_FENCE) is True
+    assert gate.findings_fence_is_empty("```json:review-findings\n  [ ]\n```") is True
+    assert gate.findings_fence_is_empty(ONE_FENCE) is False
+    assert gate.findings_fence_is_empty(BROKEN_FENCE) is False
+    assert gate.findings_fence_is_empty("```json:review-findings\n{}\n```") is False
+    assert gate.findings_fence_is_empty("## Review verdict: approve") is False
+    # The legacy fixture body: opener not at line start, no closer. Fail closed, which is why the recorded goldens keep their verdicts.
+    assert gate.findings_fence_is_empty(FENCE) is False
+    assert gate.findings_fence_is_empty("```json:review-findings\n[]\n") is False
+    # A pr-labels fence after the findings fence does not leak into the findings array.
+    assert gate.findings_fence_is_empty(EMPTY_FENCE + '\n```json:pr-labels\n{"bump": "patch"}\n```\n')
+    # LAST opener wins, matching the producer's scanner.
+    assert gate.findings_fence_is_empty(ONE_FENCE + EMPTY_FENCE) is True
+    assert gate.findings_fence_is_empty(EMPTY_FENCE + ONE_FENCE) is False
