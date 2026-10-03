@@ -1072,16 +1072,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 0,
+      "open": 4,
+      "done": 1,
       "open_sigs": [
         "101046d0",
         "51be15ab",
         "76dee55e",
-        "b91cff49",
         "c9c68cef"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "b91cff49"
+      ]
     },
     "agent/plans/PLAN-promote-mutation-runner.md": {
       "status": "compacted",
