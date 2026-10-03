@@ -5,6 +5,7 @@ The two guards that call `plan_merge_refusal` have their own suites beside them 
 
 import json
 import pathlib
+import re
 import subprocess
 
 import pytest
@@ -299,11 +300,17 @@ def test_stale_generated_section_is_refused_by_the_freshness_check(qroot):
     assert path.read_text(encoding="utf-8") == fresh
 
 
-def test_the_committed_queue_is_fresh_and_promotes_the_loop_plan():
+def test_the_committed_queue_is_fresh_and_its_head_is_the_first_promoted_plan():
+    """The head is whatever the operator promoted first, never a pinned name: `## Promoted` is hand-ordered, so a test naming one plan went red the day PLAN-github-pr-review-restore was promoted ahead of the loop plan (2026-10-03)."""
     repo = pathlib.Path(__file__).resolve().parents[3]
     pq = _pq()
     text = (repo / pq.QUEUE_REL).read_text(encoding="utf-8")
-    assert pq.entries(text)[0][0] == "agent/plans/PLAN-plan-per-pr-loop.md"
+    promoted = text.split("\n## Promoted\n", 1)[1].split("\n## Generated\n", 1)[0]
+    first = re.search(r"^1\. (agent/plans/\S+\.md)", promoted, re.MULTILINE)
+    head = pq.entries(text)[0][0]
+    assert first
+    assert head == first.group(1)
+    assert (repo / head).is_file(), head
     assert pq.problems(repo) == [], "run `npm run check:ci-plan-record -- --update`"
 
 
