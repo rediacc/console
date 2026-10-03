@@ -9,3 +9,4 @@
 {"at":"2026-09-24T19:02:00Z","by":"d778be9d","id":"01c7d773","title":"Stop hook: stand down while every writer slot is live, and order a retro at compaction","covers":["064a3fd1"],"order":null}
 {"at":"2026-09-30T06:09:37Z","by":"d778be9d","id":"64766624","title":"Post-v1.4.0 drift: advisories, dependency freshness, Node-version goldens, ci-trace event filter","covers":[],"order":null}
 {"at":"2026-09-30T17:41:02Z","by":"d778be9d","id":"d272ed52","title":"www solution pages redesign and video theater overlay","covers":[],"order":null}
+{"at":"2026-10-03T07:58:51Z","by":"d778be9d","id":"76a0eaaf","title":"Whole-PR review restore, per-commit records on GitHub, review cost, push and mirror guards (PLAN-github-pr-review-restore)","covers":["5ab0afb4","6107e0c7","76a0eaaf"],"order":null}
