@@ -722,6 +722,29 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-github-pr-review-restore.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 12,
+      "done": 0,
+      "open_sigs": [
+        "42bdfd49",
+        "48dbaea1",
+        "4ef09e93",
+        "5186d28c",
+        "51be7b74",
+        "590fc803",
+        "8d9436da",
+        "98ba7397",
+        "b1a91451",
+        "b2544ce3",
+        "d742e01b",
+        "f273a5bb"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-greenlight-verify-at-read.md": {
       "status": "compacted",
       "owner": "unowned",
