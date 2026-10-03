@@ -26,11 +26,13 @@ SCHEMA = "ci-verdict/v1"
 GENERATOR = "rediacc_ci.ci.ci_diagnose"
 CHECK_NAME = "CI Verdict"
 PUBLISH_JOB_NAME = "Publish CI Verdict"
-# The advisory PR review's checks (operator ruling 2026-10-03, PLAN-github-pr-review-restore): "Claude Review" runs the review, "Review Status" posts the "Review Complete" check-run.
+# The PR review's checks (PLAN-github-pr-review-restore): "Claude Review" runs the review, "Review Status" posts the "Review Complete" check-run.
 REVIEW_CONTEXTS = ("Review Complete", "Review Status", "Claude Review")
-# Never a CI result, whatever their conclusion. "CI Verdict" is this module's own published diagnosis, "Publish CI Verdict" is the job that posts it, and REVIEW_CONTEXTS report review currency. Exact names, never substrings, so Console CI's own "Review Gate" stays blocking.
-NONBLOCKING_CONTEXTS = frozenset({CHECK_NAME, PUBLISH_JOB_NAME, *REVIEW_CONTEXTS})
-# The watchdog's own exclusions (WATCHDOG_EXCLUDE_PATTERNS in .github/workflows/watchdog-monitor.yml): aggregators and observers, never the first failure. Matched as substrings; none of REVIEW_CONTEXTS is a substring of "Review Gate".
+# The review's jobs, which report through Review Complete (a review error reaches the head as its failed-run token) and are never a result of their own. "Review Complete" itself is a required check on main again (operator ruling 2026-10-03), so it is blocking.
+REVIEW_JOB_CONTEXTS = ("Review Status", "Claude Review")
+# Never a CI result, whatever their conclusion. "CI Verdict" is this module's own published diagnosis, "Publish CI Verdict" is the job that posts it, and REVIEW_JOB_CONTEXTS report through Review Complete. Exact names, never substrings, so Console CI's own "Review Gate" stays blocking.
+NONBLOCKING_CONTEXTS = frozenset({CHECK_NAME, PUBLISH_JOB_NAME, *REVIEW_JOB_CONTEXTS})
+# The watchdog's own exclusions (WATCHDOG_EXCLUDE_PATTERNS in .github/workflows/watchdog-monitor.yml): aggregators and observers, never the first failure of a Console CI run. All of REVIEW_CONTEXTS stay here, Review Complete included: the review runs in its own workflows after CI, so it observes a Console CI run rather than belonging to it, and its required-check verdict is read by ci-trace and the Stop hook (wl_ci.py), not by the watchdog. Matched as substrings; none of REVIEW_CONTEXTS is a substring of "Review Gate".
 WATCHDOG_EXCLUDED = ("Watchdog", "CI Complete", *REVIEW_CONTEXTS)
 CAUSE_KINDS = (
     "watchdog-budget",

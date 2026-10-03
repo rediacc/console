@@ -151,9 +151,13 @@ jobs:
           # read it as a CI job (an observer deadlock was seen live 2026-07-31
           # on run 30660765759). The substring match also covers its
           # "Publish CI Verdict" job. "Review Complete", "Review Status" and
-          # "Claude Review" are the advisory PR review's observers (operator
-          # ruling 2026-10-03, PLAN-github-pr-review-restore); none of them is
-          # a substring of the blocking "Review Gate" job.
+          # "Claude Review" are the PR review's checks
+          # (PLAN-github-pr-review-restore), posted by their own workflows
+          # after Console CI: observers of the run, never part of it, so they
+          # must never start a cancel. Review Complete is a required check on
+          # main again (operator ruling 2026-10-03), and ci-trace and the Stop
+          # hook read that verdict, not the watchdog. None of the three is a
+          # substring of the blocking "Review Gate" job.
           WATCHDOG_EXCLUDE_PATTERNS: 'Watchdog,CI Complete,Review Complete,Review Status,Claude Review,CI Verdict'
           WATCHDOG_NO_RETRY_PATTERNS: 'Quality,Review Gate'
           # Per-platform legs only. The aggregator ("Install Methods Complete")

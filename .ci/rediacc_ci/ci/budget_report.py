@@ -466,7 +466,7 @@ def _alias_set(name: str) -> set[str]:
 
 
 # `CI Verdict` is not a job of `ci.yml` at all -- it is posted by the SEPARATE `ci-verdict.yml` workflow once the run completes, together with its `Publish CI Verdict` job -- yet `actions/runs/{id}/jobs` can return such an after-the-fact observer alongside ci.yml's own jobs, timestamped after the pipeline itself, and critical_path's plain "latest completed_at wins" sink rule would mistake it for the run's true finish line (measured on run 35128695736 with an earlier observer, 13+ hours late). `CI Complete` is NOT excluded here: it is a genuine ci.yml job and the plan's own section 1b ends its sample critical path there.
-# `Review Complete`, `Review Status` and `Claude Review` are the advisory PR review (operator ruling 2026-10-03, PLAN-github-pr-review-restore), posted by `claude-review.yml` and `review-status.yml` against the head SHA, finishing whenever the review does: observers of the same kind.
+# `Review Complete`, `Review Status` and `Claude Review` are the PR review (PLAN-github-pr-review-restore), posted by `claude-review.yml` and `review-status.yml` against the head SHA, finishing whenever the review does: observers of the same kind. Review Complete being a required check on main again (operator ruling 2026-10-03) puts it on the merge path, not on Console CI's critical path, which is what this list times.
 CRITICAL_PATH_EXCLUDE = (
     "CI Verdict",
     "Publish CI Verdict",

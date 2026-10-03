@@ -143,12 +143,12 @@ CI_RETRY_PATTERNS = [
 CI_FAIL_CONCLUSIONS = {"FAILURE", "TIMED_OUT", "STARTUP_FAILURE", "ACTION_REQUIRED"}
 CI_LIVE_ROLLUP = {"PENDING", "EXPECTED"}
 # NEVER A FAILURE, regardless of conclusion (PLAN-ci-verdict box D): "CI Verdict" is the neutral check-run .github/workflows/ci-verdict.yml posts on the head SHA AFTER Console CI completes, carrying the diagnosis (rediacc_ci.ci.ci_diagnose), and "Publish CI Verdict" is the job that posts it. Both arrive after the verdict they describe, so counting either as in flight would hold a finished head at RUNNING, and counting a crashed publisher as a failure would paint a green head red.
-# "Review Complete", "Review Status" and "Claude Review" are the advisory PR review (operator ruling 2026-10-03, PLAN-github-pr-review-restore): "Claude Review" is the review job, "Review Status" the job that posts the "Review Complete" check-run. None is a CI result, and an unreviewed head sits at an unfinished or failing review state right after every push.
+# "Review Status" and "Claude Review" are the PR review's jobs (PLAN-github-pr-review-restore): "Claude Review" runs the review and "Review Status" posts the "Review Complete" check-run. Neither is a result of its own, since a review error reaches the head through Review Complete's failed-run token.
+# "Review Complete" is deliberately NOT here: the operator ruled on 2026-10-03 that it is a required check on main again (errors are investigated and fixed, an LLM outage being the one exception), so it holds a head at RUNNING while in flight and paints it red when it fails.
 # An exact name match, not a SUBSTRING match like CI_RETRY_PATTERNS: a substring would risk swallowing a real job that merely contains "Verdict" or "Review" in its name, such as Console CI's own "Review Gate".
 CI_NONBLOCKING_CONTEXTS = {
     "CI Verdict",
     "Publish CI Verdict",
-    "Review Complete",
     "Review Status",
     "Claude Review",
 }
@@ -1348,20 +1348,44 @@ def _selftest():
         g["verdict"] == "green" and not g["live"] and not g["hard"],
         "gate=%r" % (g,),
     )
-    review_live = dict(
+    review_red = dict(
+        full,
+        contexts=[*full_ctx, run_ctx("Review Complete", conclusion="FAILURE", run=3)],
+    )
+    g = ci_gate(review_red)
+    check(
+        "operator ruling 2026-10-03: CI Complete green with Review Complete failing is red -- "
+        "Review Complete is a required check again, and it is the one hard failure",
+        g["verdict"] == "red" and [r["name"] for r in g["hard"]] == ["Review Complete"],
+        "gate=%r" % (g,),
+    )
+    review_pending = dict(
         full,
         rollup="PENDING",
         contexts=[
             *full_ctx,
-            run_ctx("Review Complete", conclusion="FAILURE", run=3),
+            run_ctx("Review Complete", status="IN_PROGRESS", conclusion=None, run=3),
+        ],
+    )
+    g = ci_gate(review_pending)
+    check(
+        "operator ruling 2026-10-03: CI Complete green with Review Complete in flight is running",
+        g["verdict"] == "running" and g["live"] and not g["hard"],
+        "gate=%r" % (g,),
+    )
+    review_jobs = dict(
+        full,
+        rollup="PENDING",
+        contexts=[
+            *full_ctx,
             run_ctx("Claude Review", status="IN_PROGRESS", conclusion=None, run=4),
             run_ctx("Review Status", conclusion="FAILURE", run=5),
         ],
     )
-    g = ci_gate(review_live)
+    g = ci_gate(review_jobs)
     check(
-        "PLAN-github-pr-review-restore GR4: CI Complete green with Review Complete failing, "
-        "Review Status failing and Claude Review in flight is green -- the review is advisory",
+        "CONTROL: CI Complete green with Review Status failing and Claude Review in flight is "
+        "green -- the review's jobs report through Review Complete, never on their own",
         g["verdict"] == "green" and not g["live"] and not g["hard"],
         "gate=%r" % (g,),
     )
