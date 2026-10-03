@@ -38,5 +38,3 @@ eslint  # BLOCKER: v10 requires typescript-eslint/import/react plugin majors tha
 # typescript v7 — the lint stack does not accept it yet (console and private/account alike)
 typescript  # BLOCKER: typescript-eslint 8.70.1, @typescript-eslint/parser 8.70.1 and @typescript-eslint/eslint-plugin 8.70.1 declare peer typescript ">=4.8.4 <6.1.0" and no release accepts 7 (newest tags 8.70.2-alpha.*); console and account both stay on ^6.0.3 so check:version agrees. Lift when typescript-eslint ships a TS 7 peer range (measured 2026-09-24).
 # private/account/web portal build majors (held 2026-09-26; surfaced when check:deps began judging sub-manifest majors)
-private/account:stripe  # BLOCKER: stripe 22 -> 23 is a payments API major (published 2026-10-01); the account server's checkout, webhook and subscription code must be migrated against the 23 changelog and proven by the stripe-sandbox CI job in its own change, not taken as a dependency bump
-private/account/e2e:stripe  # BLOCKER: the account e2e suite's stripe client moves together with the account server's stripe 23 migration, so both run against one API version
