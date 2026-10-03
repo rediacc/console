@@ -16,7 +16,7 @@ import shutil
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_checklists import cldeliver, clfile
-from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_setup
+from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_running, ci_setup
 from rediacc_hooks.tests.test_wl_ci_status import ci_rollup as ci_status_rollup
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
@@ -51,7 +51,7 @@ def prf_log(fix, round_no) -> None:
         )
 
 
-def prf_run(fix, message: str = "work done", extra_env=None):
+def prf_run(fix, message: str = "work done", extra_env=None, bg=None):
     """A Stop event with the CI check armed AND a projects dir.
 
     Local to this module: `ci_run` beside `ci_setup` serves the CI battery and carries no WORKLIST_PROJECTS_DIR, which is the one thing the finish-line cases need, and it takes no extra environment.
@@ -62,7 +62,7 @@ def prf_run(fix, message: str = "work done", extra_env=None):
             "cwd": str(fix.proj),
             "last_assistant_message": message,
             "session_crons": [],
-            "background_tasks": [],
+            "background_tasks": bg or [],
         }
     )
     env = dict(fix.env)
@@ -253,6 +253,41 @@ def test_233_the_pr_babysit_finish_line_blocks_a_green_but_unfinished_wave(wl): 
     got = prf_run(wl, extra_env=focus_off)
     assert "THE WAVE IS NOT FINISHED" not in got.out, (
         "233c: still blocking after the wave finished: %s" % got.out[:400]
+    )
+
+
+def test_233d_a_live_watch_on_a_head_with_no_verdict_stands_the_finish_line_down(wl):  # noqa: F811
+    """While CI is still running, green cannot tick and ready cannot either, so blocking there demanded what no work in the turn can produce (PR #592, 2026-10-03). A running ci-trace watch on this head is the wake-up, the rule ci-red already follows (test_126). The CONTROL is the same world without the watch: it must still block, or the stand-down is unconditional."""
+    ci_setup(wl)
+    (wl.base / "projects" / "reports").mkdir(parents=True, exist_ok=True)
+    prf_log(wl, 5)
+    threads = wl.cli("--add", "deadbeef", "pr:543/threads resolve the review threads")
+    tid = re.search(r"#([0-9a-f]+)", threads.out).group(1)
+    wl.cli(
+        "--tick", "deadbeef", tid, "https://github.com/fake/repo/pull/543#discussion_r1 resolved"
+    )
+    ci_status_rollup(
+        wl,
+        "PENDING",
+        "[%s,%s]" % (ci_job("Quality / Static", "SUCCESS"), ci_running("CI Complete")),
+    )
+    watch = [
+        {
+            "id": "w1",
+            "status": "running",
+            "description": "watch CI",
+            "command": ".ci/scripts/ci/ci-trace.py --wait --until-final",
+        }
+    ]
+    focus_off = {"WORKLIST_FOCUS": "off"}
+    got = prf_run(wl, extra_env=focus_off, bg=watch)
+    assert "THE WAVE IS NOT FINISHED" not in got.out, (
+        "233d: a live watch on a running head still blocked the finish line: %s" % got.out[:500]
+    )
+    # CONTROL: no watch, same world, still blocks.
+    got = prf_run(wl, extra_env=focus_off)
+    assert "THE WAVE IS NOT FINISHED" in got.out, (
+        "233d CONTROL: the finish line stood down with no watch armed: %s" % got.out[:500]
     )
 
 
