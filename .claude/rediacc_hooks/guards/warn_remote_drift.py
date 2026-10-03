@@ -19,11 +19,9 @@ guard's own header forbids.
 PORT NOTE ON THE HEREDOC. `cat >&2 <<EOF ... EOF` emits its body with the final newline included and nothing appended, so it is `ev.warn_raw`, not `ev.warn`. `warn` would add a second newline and the differential compares that byte.
 """
 
-import re
-import shlex
 import subprocess
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan
 
 CHAIN = "pre-bash"
 ORDER = 19
@@ -34,7 +32,6 @@ DEFECT = ("if _is_ancestor(remote, local, root):", "if False:")
 PUSH = hookio.rx(r"(^|[|;&{S}])git push([{S}]|$)")
 DRY_RUN = r"git push[^|;&]*--dry-run"
 # The argument text of the first `git push` in the command, up to the next shell operator.
-PUSH_ARGS = re.compile(r"(?:^|[|;&{\s])git push((?:[ \t][^|;&\n]*)?)")
 # Options whose value is the NEXT word, so that word is not mistaken for the remote or the refspec.
 PUSH_VALUE_OPTS = {"-o", "--push-option", "--repo", "--exec", "--receive-pack"}
 
@@ -181,6 +178,11 @@ EDGE_CASES = [
     ),
     ("a lease push of HEAD to the branch", "git push --force-with-lease origin HEAD:0831-1"),
     ("a lease push after &&", "npm run ci && git push --force-with-lease origin 0831-1"),
+    # The 2026-10-03 republish: a redirect and a pipe after the push are not positionals.
+    (
+        "a lease push with a redirect and a pipe",
+        "git push --force-with-lease origin 0831-1 2>&1 | tail -3",
+    ),
     # A plain push of a rebase must not slip through on the lease arm.
     ("a plain push of the branch", "git push origin 0831-1"),
     ("a lease push to another remote", "git push --force-with-lease upstream 0831-1"),
@@ -211,13 +213,11 @@ LEASE_JUDGED = (
 
 def _lease_push(cmd, branch):
     """True when the push carries `--force-with-lease` to `origin` and names the current branch."""
-    m = PUSH_ARGS.search(cmd)
-    if m is None:
+    # The lexer's argv, not a regex over the text: a regex up to the next `|` read `git push --force-with-lease origin <b> 2>&1 | tail -3` as three positionals (the redirect among them) and refused the admitted republish (2026-10-03).
+    runs = commit_policy.git_runs(cmd, "push")
+    if len(runs) != 1:
         return False
-    try:
-        words = shlex.split(m.group(1))
-    except ValueError:
-        return False
+    _, _, words = commit_policy.git_split(runs[0].argv)
     lease = False
     positional = []
     skip = False
