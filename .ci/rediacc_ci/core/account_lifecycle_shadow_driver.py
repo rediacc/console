@@ -62,6 +62,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 from typing import TYPE_CHECKING
 
 from rediacc_ci.core import account_lifecycle as lifecycle
@@ -1066,17 +1067,36 @@ GATE_VOCABULARY = (("cannot read", "cannot-read"),)
 PID = re.compile(r"\bpid \d+")
 
 
+# How long a signalled child may take to finish dying before it counts as having survived the cleanup. The `cleanup-kills-tree` child sleeps for 30 seconds and the cleanup never waits for it, so a missing kill still outlives the deadline by 25 seconds.
+CHILD_EXIT_DEADLINE = 5.0
+
+
+def _exited(pid: int) -> bool:
+    """Whether `pid` is gone, or only a zombie awaiting its reaper: a process that has died, though `kill -0` still answers for it."""
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return True
+    try:
+        stat = pathlib.Path("/proc/%d/stat" % pid).read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return stat.rpartition(")")[2].split()[:1] in (["Z"], ["X"])
+
+
 def child_alive(farm: Farm) -> str | None:
-    """Whether the real process a cleanup case handed over outlived the side, and kill it either way."""
+    """Whether the real process a cleanup case handed over outlived the side, and kill it either way.
+
+    POLLED UNTIL A DEADLINE, never read once. `kill()` returns before the signalled process has run, and the cleanup waits only for the pid it tracks: a grandchild in the group is still exiting, or a zombie its new parent has not reaped, when the side returns. A single `kill -0` then read `alive=1` for one twin and `alive=0` for the other on a loaded host (the 2026-10-03 nightly, run 37101760904).
+    """
     pid_file = farm.root / "child.pid"
     if not pid_file.is_file():
         return None
     pid = int(pid_file.read_text(encoding="utf-8").strip())
-    alive = True
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        alive = False
+    deadline = time.monotonic() + CHILD_EXIT_DEADLINE
+    while not (gone := _exited(pid)) and time.monotonic() < deadline:
+        time.sleep(0.02)
+    alive = not gone
     if alive:
         with contextlib.suppress(OSError):
             os.kill(pid, signal.SIGKILL)
