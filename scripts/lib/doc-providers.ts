@@ -354,6 +354,11 @@ const reachability = (root: string, wired: Set<string>, files: string[]): Map<st
       reached.set(rel, 'via dispatch.py (glob)');
     } else if (/\.claude\/rediacc_hooks\/tests\//.test(rel) && /^test_.*\.py$/.test(base)) {
       reached.set(rel, 'via pytest (testpaths)');
+    } else if (
+      // 3. THE STANDALONE SCRIPTS. test_hooks_delegates.py's _discover_tailed globs `test-*.py` under hooks/context, hooks/stop and rediacc_hooks/guards and runs each one. Before this seed a script was "reached" only through some other file's incidental mention of its name, so test-planenforce.py read as dead code on 2026-10-03 the moment wl_planenforce.py's docstring stopped naming it.
+      /\.claude\/(hooks\/(context|stop)|rediacc_hooks\/guards)\/test-[^/]*\.py$/.test(rel)
+    ) {
+      reached.set(rel, 'via test_hooks_delegates.py (glob)');
     }
   }
   let grew = true;
