@@ -380,6 +380,35 @@ cases.append((0, run(PUSH), "7 CONTROL: two keyed entries for one gate union the
 
 uncarry()
 
+# --- the PUSHED tree, not HEAD's ---------------------------------------------------------- `git push origin <src>:<dst>` sends <src>, so the receipt must have judged <src>'s tree. Measured on #591 (2026-10-03): an unpushed local commit on top of the green PR head refused the fast-forward fallback as "a different tree".
+_rekey()
+pushed_sha = git("rev-parse", "HEAD").stdout.strip()
+put(exitCode=0)  # the receipt judges the commit about to be pushed
+with open(os.path.join(d, "local-only.txt"), "w", encoding="utf-8") as fh:
+    fh.write("a change the push does not carry\n")
+git("add", "--", "local-only.txt")
+git(
+    "commit", "-q", "-m", "a local commit on top, never pushed"
+)  # a different tree, unlike --allow-empty
+cases.append(
+    (
+        0,
+        run("git push origin %s:refs/heads/x" % pushed_sha),
+        "an explicit <src>:<dst> push is judged by <src>'s tree, not HEAD's",
+    )
+)
+cases.append(
+    (
+        2,
+        run(PUSH),
+        "CONTROL: a push of the branch (HEAD's tree) is still refused against that receipt",
+    )
+)
+cases.append(
+    (2, run("git push origin HEAD:refs/heads/x"), "CONTROL: HEAD:<dst> is judged by HEAD's tree")
+)
+_rekey()
+
 shutil.rmtree(d, ignore_errors=True)
 
 bad = 0

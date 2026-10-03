@@ -396,6 +396,33 @@ def parse_carried(doc):
     return carried, None
 
 
+def push_source(push_line):
+    """The source of the one `<src>:<dst>` refspec in a canonical push line, or "" when it pushes HEAD, a bare ref, or several refspecs. A leading `+` is dropped; a delete (`:dst`) has no source."""
+    words = push_line.split()
+    try:
+        after = words[words.index("push") + 1 :]
+    except ValueError:
+        return ""
+    specs = [w for w in after if not w.startswith("-") and ":" in w and "://" not in w]
+    if len(specs) != 1:
+        return ""
+    src = specs[0].split(":", 1)[0].lstrip("+")
+    return "" if src in ("", "HEAD") or src.startswith("HEAD") else src
+
+
+def pushed_tree(root, pushes):
+    """The tree the push sends, which is the tree the receipt must have judged.
+
+    HEAD's tree unless every push names one and the same explicit source: `git push origin origin/<branch>:main`, the fast-forward fallback, sends the branch's pushed tip whatever the checkout's HEAD is. Measured 2026-10-03 on #591: with an unpushed local commit on top, the receipt for the pushed tip b47559569 was refused as "a different tree" because HEAD's was compared.
+    """
+    sources = {push_source(line) for line in pushes} if pushes else {""}
+    if len(sources) == 1 and "" not in sources:
+        got = hookio.git_out(["-C", root, "rev-parse", "%s^{tree}" % sources.pop()], want_rc=True)
+        if got:
+            return got
+    return hookio.git_out(["-C", root, "rev-parse", "HEAD^{tree}"], want_rc=True)
+
+
 def carried_verdict(receipt, doc):
     """(refusal or None, note parts) for a RED receipt against carried-reds.json `doc` (parsed, from HEAD; None when absent). PURE: no git, no filesystem, so the tests and the push-clone proof drive exactly the function the guard runs.
 
@@ -537,7 +564,7 @@ def run(ev):
         return hookio.ALLOW
 
     receipt_path = "%s/.ci/cache/prepush-receipt.json" % root
-    tree = hookio.git_out(["-C", root, "rev-parse", "HEAD^{tree}"], want_rc=True)
+    tree = pushed_tree(root, pushes)
     if tree is None or tree == "":
         return hookio.ALLOW
 
