@@ -403,6 +403,7 @@
     "check:ci-workflow-env-provision": ".ci/scripts/quality/check_workflow_env_provision.py",
     "check:ci-battery-clean-tree": ".ci/scripts/quality/check_battery_clean_tree.py",
     "check:ci-checkout-cone": ".ci/scripts/quality/check_checkout_cone.py",
+    "check:ci-durable-paths-tracked": ".ci/scripts/quality/check_durable_paths_tracked.py",
     "check:ci-proxy-linux-packages": "PYTHONPATH=.ci python3 -m rediacc_ci.proxies.linux_packages --selftest && PYTHONPATH=.ci python3 -m rediacc_ci.proxies.linux_packages",
     "check:ci-proxy-rdc-update": "PYTHONPATH=.ci python3 -m rediacc_ci.proxies.rdc_update --selftest && PYTHONPATH=.ci python3 -m rediacc_ci.proxies.rdc_update",
     "check:ci-proxy-license-e2e": "PYTHONPATH=.ci python3 -m rediacc_ci.proxies.license_e2e --selftest && PYTHONPATH=.ci python3 -m rediacc_ci.proxies.license_e2e",
