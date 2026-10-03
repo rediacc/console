@@ -832,8 +832,14 @@ def _record_attempt(repo: str, pr: str, head_sha: str, execution_file: str) -> i
 
     A pass that burned its budget still cost money; before 2026-07-30 it cost it for free, the cap never advanced and the same head was re-reviewed at full price on every green push. The attempt prefix keeps it invisible to the marker read while the budget counts it. An unreadable ledger writes NOTHING and exits 1: recording `attempts: 1` over an unknown count would reset the per-head ceiling.
     """
-    subtype = _result_record(execution_file).get("subtype")
-    why = subtype if isinstance(subtype, str) and subtype else "review step did not succeed"
+    record = _result_record(execution_file)
+    subtype = record.get("subtype")
+    status = record.get("api_error_status")
+    if record.get("is_error") and isinstance(status, (int, str)) and str(status).isdigit():
+        # An API failure is recorded by its HTTP status, `api_error_<status>`: review_status.OUTAGE_CLASSES excuses exactly the outage statuses (operator ruling 2026-10-03: an LLM outage is the one review failure that does not block the merge). The SDK's subtypes never say the service was down.
+        why = "api_error_%s" % status
+    else:
+        why = subtype if isinstance(subtype, str) and subtype else "review step did not succeed"
     rc, attempt_ids = gh_retry(
         "attempt_comment_id",
         [

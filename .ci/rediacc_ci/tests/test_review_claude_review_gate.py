@@ -405,12 +405,13 @@ def test_a_missing_template_leaves_no_prompt(env):
 FENCE = '```json:review-findings\n[{"path": "src/a.ts", "line": 3, "severity": "high", "title": "t", "body": "b"}]\n```'
 
 
-def execution(env, result=None, subtype=None):
+def execution(env, result=None, subtype=None, **extra):
     record = {"type": "result"}
     if result is not None:
         record["result"] = result
     if subtype is not None:
         record["subtype"] = subtype
+    record.update(extra)
     path = env["tmp"] / "execution.json"
     path.write_text(json.dumps([{"type": "system"}, record]), encoding="utf-8")
     return str(path)
@@ -604,6 +605,39 @@ def test_mark_records_a_spent_attempt_when_the_review_failed(env):
     assert G.marker_sha_from_bodies(body) == ""
     states = review_budget.parse_attempt_states(body)
     assert states == [review_budget.AttemptState(HEAD, 1, "error_max_turns")]
+
+
+def test_mark_records_an_api_failure_by_its_status(env):
+    """An LLM outage reaches the ledger as `api_error_<status>`, the class review_status.OUTAGE_CLASSES excuses (operator ruling 2026-10-03)."""
+    fake = FakeGh()
+    rc = run(
+        env,
+        fake,
+        ["--mark"],
+        PR_NUMBER=PR,
+        HEAD_SHA=HEAD,
+        REVIEW_OUTCOME="failure",
+        EXECUTION_FILE=execution(
+            env, subtype="error_during_execution", is_error=True, api_error_status=529
+        ),
+    )
+    assert rc == 0
+    assert "\nclass: api_error_529\n" in fake.bodies()[0]
+
+
+def test_control_an_error_without_an_api_status_keeps_its_subtype(env):
+    fake = FakeGh()
+    rc = run(
+        env,
+        fake,
+        ["--mark"],
+        PR_NUMBER=PR,
+        HEAD_SHA=HEAD,
+        REVIEW_OUTCOME="failure",
+        EXECUTION_FILE=execution(env, subtype="error_during_execution", is_error=True),
+    )
+    assert rc == 0
+    assert "\nclass: error_during_execution\n" in fake.bodies()[0]
 
 
 def test_mark_upserts_the_attempt_with_its_count(env):
