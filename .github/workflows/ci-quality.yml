@@ -337,6 +337,9 @@ jobs:
       - name: Drill verdict logic
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_drill_verdicts.py
+      - name: Durable paths are not gitignored
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_durable_paths_tracked.py
       - name: Env file adoption
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_env_file_adoption.py

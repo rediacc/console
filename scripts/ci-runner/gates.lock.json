@@ -2825,6 +2825,24 @@
     }
   },
   {
+    "id": "check:ci-durable-paths-tracked",
+    "run": "npm run check:ci-durable-paths-tracked",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_durable_paths_tracked.py"
+    ],
+    "paths": [
+      ".gitignore",
+      ".ci/scripts/quality/check_durable_paths_tracked.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Durable paths are not gitignored"
+    }
+  },
+  {
     "id": "check:ci-battery-clean-tree",
     "run": "npm run check:ci-battery-clean-tree",
     "gate": true,

@@ -2697,6 +2697,20 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-durable-paths-tracked',
+    // No .gitignore rule may swallow a durable record directory: a bare `reports/` silently dropped program state reports on 2026-10-03.
+    run: 'npm run check:ci-durable-paths-tracked',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_durable_paths_tracked.py'],
+    paths: ['.gitignore', '.ci/scripts/quality/check_durable_paths_tracked.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Durable paths are not gitignored',
+    },
+  },
+  {
     id: 'check:ci-battery-clean-tree',
     // The battery's tree snapshot must not abort on a clean checkout. It extracts the REAL tree_state() rather than copying it, and refuses if that function is gone.
     run: 'npm run check:ci-battery-clean-tree',
