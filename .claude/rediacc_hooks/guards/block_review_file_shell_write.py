@@ -21,8 +21,8 @@ ORDER = 53
 DEFECT = ("    if not word:\n        return False", "    if True:\n        return False")
 
 REVIEW_TEXT = "agent/reviews/"
-# A string literal that IS a review path (relative or absolute), as opposed to prose that mentions one: the quote is followed by path characters only.
-REVIEW_LITERAL = re.compile(r"['\"](?:[^'\"\s]*/)?agent/reviews/")
+# A string literal that IS a review path (relative or absolute), as opposed to prose that mentions one: the quote is followed by path characters only. A URL (`https://.../agent/reviews/...`) names a web page, not a file on disk, so a literal opening with a scheme is not one.
+REVIEW_LITERAL = re.compile(r"['\"](?![A-Za-z][A-Za-z0-9+.-]*://)(?:[^'\"\s]*/)?agent/reviews/")
 REVIEW_WORD = re.compile(r"(\A|/)agent/reviews(/|\Z)")
 SANCTIONED = ("wl_review.py", "worklist.py")
 COPIERS = ("cp", "mv", "install", "rsync", "ln")
@@ -78,6 +78,13 @@ EDGE_CASES = [
     ("the reviewer", "python3 .claude/hooks/stop/wl_review.py --run abc --branch 0930-1"),
     ("a copy OUT of the directory", "cp %s /tmp/x.md" % R),
     ("a python read", "python3 -c \"print(open('%s').read())\"" % R),
+    (
+        "python heredoc rewriting a URL that names the directory",
+        (
+            "python3 - <<'EOF'\nimport pathlib\np = pathlib.Path('t.py')\n"
+            "p.write_text(p.read_text().replace('\"https://github.com/o/r/blob/h/agent/reviews/b/x.md\"', 'U'))\nEOF"
+        ),
+    ),
     ("an unrelated redirect", "echo x > /tmp/out.txt"),
     ("a sibling directory", "echo x > agent/reviews-old/x.md"),
 ]

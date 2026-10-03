@@ -118,6 +118,20 @@ SHELL_CASES = [
         "cat > /tmp/f.py <<'EOF'\nx = 'agent/reviews/'\nEOF\npython3 /tmp/f.py",
         False,
     ),
+    # The false positive of 2026-10-03: a python heredoc rewriting a test whose GitHub link names the directory. A URL is a web page, not a file on disk.
+    (
+        "python rewriting a URL that names the path",
+        (
+            "python3 - <<'EOF'\nimport pathlib\np = pathlib.Path('t.py')\n"
+            "p.write_text(p.read_text().replace('\"https://github.com/o/r/blob/h/agent/reviews/b/x.md\"', 'U'))\nEOF"
+        ),
+        False,
+    ),
+    (
+        "python heredoc write to an absolute review path",
+        "python3 - <<'EOF'\nimport pathlib\npathlib.Path('/home/u/c/%s').write_text('x')\nEOF" % R,
+        True,
+    ),
     ("unrelated redirect", "echo x > /tmp/out.txt", False),
 ]
 
