@@ -342,6 +342,7 @@ ARITY = {
     # v21 priority ladder. V_PR_FINISH takes the branch, the PR number, the rendered boxes, then the hook path, the session prefix and the PR number for the --add exit, and the hook path and the session prefix for the --tick. R_ALWAYS_COLLAPSED takes
     # the rendered one-line-per-invariant block.
     "V_PR_FINISH": ("b", 543, "rows", "h", "me", 543, "h", "me"),
+    "V_WAKE_TIMER": (2, "watch, writer", "python3 .claude/hooks/stop/wl_wake.py me --minutes 30"),
     # The PR-level Claude review on a green head (agent/plans/PLAN-github-pr-review-restore.md, GR9): named fields, one dict renders all three.
     "V_PR_REVIEW_UNANSWERED": {"pr": 543, "head": "deadsha00000", "reason": "r"},
     "V_PR_REVIEW_FAILED_RUN": {"pr": 543, "head": "deadsha00000", "reason": "r"},

@@ -52,6 +52,7 @@ import wl_rules
 import wl_shapedup
 import wl_standdown
 import wl_store as S
+import wl_wake
 import worklist_messages as M
 
 # BEST-EFFORT, NOT A SIBLING: onboard.py lives one directory over, in .claude/hooks/context/, so a copy-the-stop-dir fixture (test_wl_cadence's hookcrash case) or any tree missing that directory leaves it unimportable.
@@ -2261,6 +2262,8 @@ PRIORITY_LADDER = (
         frozenset(
             {
                 "bg-report",
+                # A stop that waits on background work with no wake-up timer armed (wl_wake): if every task hangs, nothing re-invokes the session.
+                "wake-timer",
                 "unread-reports",
                 "agent-pushback",
                 "giveup-claim",
@@ -2774,6 +2777,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     lines = fold.lines()
     # v14 gap 4: computed HERE (it used to sit below) so classification can tolerate an expired lease whose worker the OS still shows RUNNING: a full CI battery legitimately outlives the 120-minute lease cap, and the v13 night cost three manual renewals for a watcher that was verifiably alive the whole time. A worker the OS cannot see keeps failing closed.
     live_bg = [b for b in (event.get("background_tasks") or []) if b.get("status") == "running"]
+    # THE WAKE-UP TIMER IS NOT WORK BEING WAITED ON (wl_wake). Split out before anything judges the wait, so a timer alone never reads as a pure wait or a worker to check in on; it is consulted only by the `wake-timer` check and as cover for worker:lead below.
+    live_bg, _wakers = wl_wake.split_wakers(live_bg)
     # v18: REAP A ROSTER THE SESSION CANNOT VERIFY. After a compaction, or an operator reopening the session, the harness still reports every teammate ever spawned as `running` -- measured: 20 claimed, exactly 1 transcript still growing. That roster drives real checks (_in_pure_wait, the 15-minute BG_REPORT_MIN obligation), so a permanently stale one means a
     # session is told it supervises twenty workers forever and confirms phantoms every fifteen minutes -- ritual without signal.
     _bg_dropped, _bg_unknown = [], 0
@@ -2785,7 +2790,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     _live_worker_ids = wl_liveness.live_worker_ids(event, live_bg, event.get("cwd"), session_id)
     # worker:lead (agent/plans/PLAN-stop-hook-continuity.md P2.1) is live exactly while something of this session is running to wake the lead.
     with contextlib.suppress(Exception):
-        if wl_leasehelp.lead_covered(live_bg, wl_liveness.verify_background(live_bg)):
+        if wl_leasehelp.lead_covered(
+            live_bg + _wakers, wl_liveness.verify_background(live_bg + _wakers)
+        ):
             _live_worker_ids.add(wl_leasehelp.LEAD_WORKER)
     # AUTO-LEASE FROM A LIVE TASK'S OWN WORDS (P2.2): an open item this session owns, named `#<id>` in a live agent's first prompt or a live shell's description, is leased to that task here, at stop time, against the live event. It replaces the hand `--lease` every spawn used to need, and it also closes the lease-time blindness to a just-spawned worker (PLAN-parallel-writer-roster F3).
     with contextlib.suppress(Exception):
@@ -3430,6 +3437,21 @@ def run_stop(event, event_ok, worklist, hook_file):
                 ),
             )
 
+    # ---- THE WAKE-UP TIMER (wl_wake; operator 2026-10-03: "the stop hook should check the final step which is 'is stop hook wait triggered in the background?'"). Any background work still running and no timer among the live tasks: the stop would wait on tasks that, if they all hang, never re-invoke the session. INVARIANT, because a rotating or pausable key is exactly how
+    # a session stops into that deadlock anyway, and in T_OWED beside bg-report: the work being waited on is the party owed a look.
+    if live_bg and not _wakers:
+        vadd(
+            "wake-timer",
+            True,
+            M.V_WAKE_TIMER
+            % (
+                len(live_bg),
+                ", ".join(
+                    str(b.get("description") or b.get("id") or "?")[:60] for b in live_bg[:4]
+                ),
+                wl_wake.arm_command(me8),
+            ),
+        )
     if bgwait_due:
         # A silent stream alone cannot distinguish "stuck" from "a poll loop that prints only at the end", so OS-verify before accusing: a worker whose process is confirmed alive is reported in those words. Fired live 2026-07-31 on a healthy `until ... completed` CI watch, 29 minutes silent by design.
         _bg_verd = bg_verdicts

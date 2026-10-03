@@ -56,6 +56,8 @@ ALWAYS_KEYS = frozenset(
         "roster-silent",
         "roster-unleased",
         "roster-dead",
+        # I3 -- a background wait with no wake-up timer (wl_wake): silence would read as "the wait will end", which is exactly the deadlock.
+        "wake-timer",
         # Split out of roster-dead by agent/plans/PLAN-stop-hook-retro-20260924.md R.5 and kept at its strength: queued writer work beside a free slot is the same roster verdict, and a rotating key would let the queue park work the cap allows.
         "queue-slot",
         # I3 -- the Stop-side backstop of block_plan_concurrency (agent/plans/PLAN-plan-priority-concurrency.md section 5c): two live writers of this session already serve plans that break a mutex or share files, so the pre-agent guard was bypassed or blind when one started. Same roster family as roster-cap/-silent/-unleased/-dead: a verdict about live workers whose silence would read as a pass, and a rotating key would let a crowded session skip past a mutex collision already in progress.

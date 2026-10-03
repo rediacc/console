@@ -36,6 +36,26 @@ ME = "deadbeef"
 # The one fake GitHub origin the fixture repos are given, so a test that needs a remote names it from here instead of repeating the literal (check:ci-literal-sources R2b, 2026-10-03).
 FAKE_ORIGIN = "https://github.com/fake/repo.git"
 
+# THE WAKE-UP TIMER A COMPLIANT SESSION RUNS (wl_wake). Since the `wake-timer` invariant, a stop waiting on background work with no timer blocks, so every fixture that plants running tasks would otherwise measure that block instead of the behaviour under test. `with_waker` adds one, mirroring the world the hook now requires; a case about the timer itself sets `fix.waker = False`.
+WAKER_TASK = {
+    "id": "wake0001",
+    "type": "shell",
+    "status": "running",
+    "description": "session wake-up timer",
+    "command": "python3 .claude/hooks/stop/wl_wake.py deadbeef --minutes 30",
+}
+
+
+def with_waker(tasks, waker: bool = True) -> list:
+    """`tasks` plus the session timer when any task is running and none is a timer yet."""
+    tasks = list(tasks or [])
+    running = [t for t in tasks if t.get("status") == "running"]
+    has = any("wl_wake.py" in str(t.get("command") or "") for t in tasks)
+    if waker and running and not has:
+        tasks.append(dict(WAKER_TASK))
+    return tasks
+
+
 # A STATE.md fresh enough and well-shaped enough to satisfy the gate. Keeps the literal phrase "ci-overhaul session" (the PostCompact cases grep for it in the additionalContext) and carries the mandatory '## Next action' section.
 STATE_BODY = """You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2. Round 23 went red on a dead-shell finding, now fixed by running the stop-gate suite from test-hooks.sh. The rediacc-autopilot App already exists and is validated, so never report it as blocked on the operator.
 
@@ -139,6 +159,7 @@ class Fixture:
         self.env: dict[str, str] = scrubbed_environ()
         self.env["WORKLIST_SESSION_ID"] = SID
         self.bg = "[]"
+        self.waker = True
         self.crons = json.dumps(DEFAULT_CRONS)
         self.judge_mode = "off"
         self.cadence = "off"
@@ -195,6 +216,7 @@ class Fixture:
     def setup(self) -> None:
         """Rebuild the fixture world and reset EVERY knob `run()` reads."""
         self.bg = "[]"
+        self.waker = True
         self.crons = json.dumps(DEFAULT_CRONS)
         self.judge_mode = "off"
         self.cadence = "off"
@@ -489,7 +511,7 @@ class Fixture:
                 "cwd": str(self.proj),
                 "transcript_path": str(self.transcript),
                 "session_crons": json.loads(self.crons),
-                "background_tasks": json.loads(self.bg),
+                "background_tasks": with_waker(json.loads(self.bg), self.waker),
             }
         )
 

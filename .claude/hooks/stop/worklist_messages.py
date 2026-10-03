@@ -421,6 +421,18 @@ N_ROSTER_STALE = (
 
 # THE FINISH LINE OF A pr-babysit WAVE, rendered as the markdown checkboxes it already is. The four boxes are read off `.claude/commands/pr-babysit.md` (green, ready, per-commit reviews clean, human threads resolved; never merges) rather than invented here. The review box is read live off agent/reviews/<branch>/, and the one box the hook cannot observe (threads) is backed by a ticked worklist item, which is the
 # same evidence discipline every other tick carries.
+# THE WAKE-UP TIMER (wl_wake; operator 2026-10-03). A stop that waits on background work is re-invoked only when a task EXITS, so a wait on tasks that all hang never ends. The timer is a task guaranteed to exit.
+V_WAKE_TIMER = (
+    "NO WAKE-UP TIMER: this stop waits on %d background task(s) (%s) and nothing guarantees the "
+    "session is woken if they all hang. The harness re-invokes a session only when a background task "
+    "exits, so arm the session's timer, one per session, as a BACKGROUND Bash call "
+    "(run_in_background: true):\n"
+    "    %s\n"
+    "It sleeps, then exits with the open worklist and the order to check each task, and that exit is "
+    "the wake-up. A second start while one is live prints ALREADY ARMED and exits, so arming twice is "
+    "harmless."
+)
+
 V_PR_FINISH = (
     "THE WAVE IS NOT FINISHED. A pr-babysit round log is live for this branch "
     "(%s) and PR #%s has not reached the finish line stated in "

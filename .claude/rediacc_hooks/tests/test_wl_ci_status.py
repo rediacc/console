@@ -124,7 +124,7 @@ def ci_run(fix, message: str = "work done", bg: str = "[]", ref: str = "pub") ->
             "cwd": str(fix.proj),
             "last_assistant_message": message,
             "session_crons": [],
-            "background_tasks": json.loads(bg),
+            "background_tasks": wlfix.with_waker(json.loads(bg), fix.waker),
         }
     )
     env = dict(fix.env)
