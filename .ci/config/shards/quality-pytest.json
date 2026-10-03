@@ -376,6 +376,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_state_document.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_stuck_and_blockers.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_tick_evidence_shapes.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_wake.py",
         "pytest:.ci/rediacc_ci/tests/test_core_run_verbs.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_apply_cf_redirect_rules.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_linode_cluster_validation.py",
