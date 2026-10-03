@@ -171,6 +171,20 @@ def _budget_headroom(env_out):
 
 # The CLI's own name for "the model could not produce an object matching the schema, and I gave up re-asking". It is a SAMPLE failing, not a transport or a configuration failing, which is why it is retried below rather than reported.
 SCHEMA_EXHAUSTION = "error_max_structured_output_retries"
+# The THIRD spelling of the same sample failure, measured 2026-10-03: "judge exited 1; subtype=success; stop_reason=stop_sequence; turns=2; cost=$0.0707 of budget $0.25". The model ended its turn in text and the CLI, finding no structured object, exited 1 while still calling the run a success. Three re-runs of the real call (same schema, model, budget, no tools) each
+# returned a valid verdict at $0.01-0.03, so it is a sample, not a broken gate, and it is retried like the other two.
+TURN_ENDED_WITHOUT_OBJECT = ("stop_sequence", "end_turn")
+
+
+def _sample_failed(env_out):
+    """True when a non-zero exit's envelope is a sample that produced no conforming object, the one failure a retry can cure."""
+    if env_out.get("subtype") == SCHEMA_EXHAUSTION:
+        return True
+    return (
+        env_out.get("subtype") == "success"
+        and not env_out.get("structured_output")
+        and env_out.get("stop_reason") in TURN_ENDED_WITHOUT_OBJECT
+    )
 
 
 def retry_schema_exhaustion(label, proc, call):
@@ -194,7 +208,7 @@ def retry_schema_exhaustion(label, proc, call):
         env_out = json.loads(proc.stdout or "")
     except ValueError:
         env_out = None
-    if not isinstance(env_out, dict) or env_out.get("subtype") != SCHEMA_EXHAUSTION:
+    if not isinstance(env_out, dict) or not _sample_failed(env_out):
         return None, first
     if not _budget_headroom(env_out):
         return None, first + "; not retried: the call had already spent its budget"
