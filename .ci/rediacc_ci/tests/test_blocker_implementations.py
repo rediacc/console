@@ -69,6 +69,8 @@ TS_CLIENT = "scripts/lib/blocker-validator.ts"
 SIBLING_LOW_EFFORT_REPLY_RULE: dict[str, str] = {
     ".ci/rediacc_ci/quality/review_comments.py": "port of check-review-comments.sh",
     ".ci/rediacc_ci/quality/submodule_branches.py": "port of check-submodule-branches.sh",
+    # A Stop hook has no path to the rediacc_ci package, so the reply tool copies review_comments' list by value; test_wl_prreview.py pins the two equal.
+    ".claude/hooks/stop/wl_prreview.py": "by-value copy of review_comments' low-effort reply rule",
 }
 
 # A file holding at least this many of the canonical phrases as QUOTED LITERALS is carrying a table, not mentioning the convention. Ten rather than forty: the vendored subset holds 44 and the sibling reply rule holds 13-14, so ten is below every real table AND below the siblings, which is what forces every sibling to be named above instead of cleared by a threshold nobody
@@ -192,8 +194,8 @@ def test_the_set_of_files_carrying_a_phrase_table_is_the_known_set():
         "delete its row here; a stale expectation makes this test assert less "
         "than it says. Full inventory: %s" % (gone, shape)
     )
-    # 6 since PLAN-retire-bash-oracles B3 deleted check-submodule-branches.sh, whose reply table its port still carries; 5 since review_report_replies.py was retired with the PR-level Claude review (2026-10-02).
-    assert len(found) == 5, "inventory shape changed: %s" % shape
+    # 6 since PLAN-retire-bash-oracles B3 deleted check-submodule-branches.sh, whose reply table its port still carries; 5 since review_report_replies.py was retired with the PR-level Claude review (2026-10-02); 6 again since wl_prreview.py restored that review's reply tool (2026-10-03).
+    assert len(found) == 6, "inventory shape changed: %s" % shape
 
 
 def test_the_inventory_detector_would_find_a_planted_table():
