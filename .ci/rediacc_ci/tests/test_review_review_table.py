@@ -8,6 +8,7 @@ import pathlib
 from rediacc_ci import paths
 from rediacc_ci.quality import review_comments
 from rediacc_ci.review import review_table as T
+from rediacc_ci.well_known import GH_ORIGIN, GH_REPO
 
 paths.on_sys_path(paths.hooks_stop_dir())
 import wl_review  # noqa: E402
@@ -110,14 +111,14 @@ def env(**extra):
         "PR_NUMBER": "7",
         "HEAD_REF": BRANCH,
         "HEAD_SHA": "f" * 40,
-        "GITHUB_REPOSITORY": "rediacc/console",
+        "GITHUB_REPOSITORY": GH_REPO,
     }
     base.update(extra)
     return base
 
 
 def render_dir(root, commits=None):
-    ctx = T.Context(branch=BRANCH, head="f" * 40, repo="rediacc/console", commits=commits)
+    ctx = T.Context(branch=BRANCH, head="f" * 40, repo=GH_REPO, commits=commits)
     return T.render(ctx, T.load_records(root, BRANCH), T.branch_verdicts(root, BRANCH))
 
 
@@ -235,15 +236,19 @@ def test_header_names_the_bump_and_the_commit_that_earned_it(tmp_path):
     body = render_dir(tmp_path)
     assert "Bump: **bump-minor**, earned by `%s` (feat: the minor one)" % sha(2)[:8] in body
     assert "enhancement" in body
-    link = "https://github.com/rediacc/console/blob/%s/agent/reviews/%s/%s.md" % (
-        "f" * 40,
-        BRANCH,
-        sha(1),
+    link = (
+        GH_ORIGIN
+        + "/"
+        + GH_REPO
+        + "/blob/%s/agent/reviews/%s/%s.md"
+        % (
+            "f" * 40,
+            BRANCH,
+            sha(1),
+        )
     )
     assert link in body
-    assert (
-        "https://github.com/rediacc/console/tree/%s/agent/reviews/%s" % ("f" * 40, BRANCH) in body
-    )
+    assert GH_ORIGIN + "/" + GH_REPO + "/tree/%s/agent/reviews/%s" % ("f" * 40, BRANCH) in body
 
 
 def test_details_clip_the_claim(tmp_path):
@@ -315,7 +320,7 @@ def test_upsert_patches_the_existing_marker_comment(tmp_path):
     assert T.publish(env(), tmp_path, gh=gh) == 0
     writes = gh.writes()
     assert len(writes) == 1
-    assert writes[0][:4] == ["api", "-X", "PATCH", "repos/rediacc/console/issues/comments/555"]
+    assert writes[0][:4] == ["api", "-X", "PATCH", "repos/" + GH_REPO + "/issues/comments/555"]
     assert gh.bodies[0].startswith("%s %s -->" % (T.MARKER_PREFIX, "f" * 40))
 
 
@@ -323,7 +328,7 @@ def test_upsert_posts_when_no_marker_comment_exists(tmp_path):
     plant(tmp_path, make(1))
     gh = FakeGh(commits=[(sha(1), "fix: commit 1")])
     T.publish(env(), tmp_path, gh=gh)
-    assert gh.writes()[0][:4] == ["api", "-X", "POST", "repos/rediacc/console/issues/7/comments"]
+    assert gh.writes()[0][:4] == ["api", "-X", "POST", "repos/" + GH_REPO + "/issues/7/comments"]
 
 
 def test_step_summary_gets_the_same_markdown(tmp_path):

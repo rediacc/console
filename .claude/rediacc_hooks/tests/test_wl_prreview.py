@@ -16,10 +16,11 @@ import pytest
 from rediacc_ci.quality import review_comments as RC
 
 from rediacc_hooks.tests import wlfix
+from rediacc_hooks.wellknown import GH_REPO
 
 P = wlfix.import_wl("wl_prreview")
 
-REPO = "rediacc/console"
+REPO = GH_REPO
 PR = 7
 HEAD = "c" * 40
 SUMMARY_ID = 5961212756
