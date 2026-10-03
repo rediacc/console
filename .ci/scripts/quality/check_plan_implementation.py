@@ -454,8 +454,65 @@ def bound_by_the_rule(judged, done_commit_of, date_of, baseline_at):
     ]
 
 
+def make_successor_of(records, branch_pids, reachable_fn, parent_fn):
+    """successor_of(sha) for a branch that was REBASED after its rows were written.
+
+    WHY. Every repository here merges by rebase, so the `head` an investigation row recorded and the `commit:<sha>` pointers it cites are rewritten the moment the branch is rebased onto a moved `main`: the old shas stay reachable from nothing on the branch locally and do not exist at all in CI's clone. The ledger is append-only, so the rows cannot be re-pointed. The per-commit
+    review records (`agent/reviews/<branch>/<sha40>.md`, written by `wl_review.py` at commit time and committed on the branch) are the surviving map: each one names its `Commit:`, its `Parent:` and its `Patch-Id:`, and the rebased commit carrying the same `git patch-id --stable` in `<base>..HEAD` is its successor -- the match `wl_review.uncovered` already makes.
+
+    `records` is [{commit, parent, patch}], `branch_pids` {patch_id: sha} over `<base>..HEAD`, `reachable_fn(sha)` answers the FULL sha when `merge-base --is-ancestor <sha> HEAD` holds and "" otherwise, and `parent_fn(sha)` the full sha of `<sha>^`. The answer is the sha's own full spelling when it was never rewritten (reachable from HEAD), its successor when a record maps it, and None when it was rewritten and nothing maps it. A
+    recorded head that is itself a commit with no record (a `chore(reviews)` commit is never reviewed) is mapped through a CHILD's record: a record whose `Parent:` is that head, whose successor's parent is then the head's successor.
+    """
+
+    def by_prefix(field, sha):
+        if len(sha) < 7:
+            return None
+        hits = [r for r in records if str(r.get(field) or "").startswith(sha)]
+        return hits[0] if len({r.get(field) for r in hits}) == 1 else None
+
+    def successor_of(sha):
+        sha = str(sha or "").strip().lower()
+        if not sha:
+            return None
+        here = reachable_fn(sha)
+        if here:
+            return here
+        own = by_prefix("commit", sha)
+        if own is not None and branch_pids.get(own.get("patch")):
+            return branch_pids[own["patch"]]
+        child = by_prefix("parent", sha)
+        if child is not None and branch_pids.get(child.get("patch")):
+            return parent_fn(branch_pids[child["patch"]]) or None
+        return None
+
+    return successor_of
+
+
+def written_before(at, authored):
+    """Is the row's `at` (ISO-8601, `Z`) at or before the commit's author date (`%aI`)? False whenever either is missing or unparseable, so the fallback never excuses what it could not read."""
+
+    def parse(text):
+        try:
+            got = dt.datetime.fromisoformat(str(text or "").strip())
+        except ValueError:
+            return None
+        return got if got.tzinfo else None
+
+    a, b = parse(at), parse(authored)
+    return bool(a and b and a <= b)
+
+
 def tick_findings(
-    judged, evidence_of, row_of, resolve_fn, done_commit_of, date_of, ancestor_fn, baseline_at
+    judged,
+    evidence_of,
+    row_of,
+    resolve_fn,
+    done_commit_of,
+    date_of,
+    ancestor_fn,
+    baseline_at,
+    successor_of,
+    authored_of,
 ):
     """P-A2, P-A3 and P-A4 over one branch's newly-done boxes. [] when they hold.
 
@@ -468,6 +525,9 @@ def tick_findings(
           exactly why the row's own answer is not read.
     P-A4 `merge-base --is-ancestor <row.head> <the commit that ticked the box>`.
           Clause 1 of the design, enforced where the full topology is available.
+
+    REBASE. `successor_of` (see make_successor_of) maps a sha the branch's rebase rewrote to the commit that replaced it. A P-A3 `commit:` pointer that does not resolve is re-resolved through it before it is a finding, and a P-A4 head that is not an ancestor of the ticking commit is judged by its successor when it was rewritten. A head that was NOT rewritten (still reachable from HEAD) is judged as recorded, so an investigation genuinely written after the tick still fails.
+          A rewritten head NO record maps (the branch tip at investigation time is usually a `chore(reviews)` commit, which is never itself reviewed, and the rebase leaves no child record behind it) falls back to time: the row's own `at` must precede the ticking commit's AUTHOR date, the one date a rebase preserves (`authored_of`). Neither readable is a finding.
 
     Every oracle is a parameter. That is not abstraction for its own sake: it is what lets the controls drive THIS function -- the one the real run calls -- against planted inputs, rather than a copy of it that could pass while the real one is broken.
     """
@@ -498,6 +558,10 @@ def tick_findings(
             continue
         for kind, token in row.get("pointers") or []:
             ok, why = resolve_fn(kind, token)
+            if not ok and kind == "commit":
+                # A successor that IS the token claims a sha that just failed to resolve is reachable; only a different, mapped commit re-resolves it.
+                succ = successor_of(token)
+                ok = bool(succ) and not str(succ).lower().startswith(str(token).strip().lower())
             if not ok:
                 out.append(
                     Finding(
@@ -510,6 +574,34 @@ def tick_findings(
                 )
         head = str(row.get("head") or "").strip()
         if head and commit and not ancestor_fn(head, commit):
+            succ = successor_of(head)
+            if succ is None and written_before(row.get("at"), authored_of(commit)):
+                continue
+            if succ is None:
+                out.append(
+                    Finding(
+                        "P-A4 %s box %s: the investigation recorded HEAD=%s, which was rewritten by a "
+                        "rebase (it is not reachable from HEAD), and no review record under agent/reviews/ "
+                        "maps to a commit on this branch by Patch-Id, so whether the investigation "
+                        "preceded the ticking commit (%s) cannot be judged."
+                        % (rel, sig, head[:12], commit[:12]),
+                        box_key("P-A4", rel, sig),
+                    )
+                )
+                continue
+            if succ != head:
+                if ancestor_fn(succ, commit):
+                    continue
+                out.append(
+                    Finding(
+                        "P-A4 %s box %s: the investigation recorded HEAD=%s, which was rewritten by a "
+                        "rebase to %s, and the commit that ticked the box (%s) is not a descendant of it, "
+                        "so the investigation was written after the implementation rather than "
+                        "before it." % (rel, sig, head[:12], succ[:12], commit[:12]),
+                        box_key("P-A4", rel, sig),
+                    )
+                )
+                continue
             out.append(
                 Finding(
                     "P-A4 %s box %s: the investigation recorded HEAD=%s and the commit that ticked "
@@ -597,6 +689,8 @@ def controls_fired(enforce, planfile, planrec=None):
         lambda _c: "2026-01-05",
         lambda _a, _b: True,
         "2026-01-01",
+        lambda c: c,
+        lambda _c: "",
     )
     if healthy:
         die(f"CONTROL 0 FAILED: a fully-evidenced tick was reported: {healthy}")
@@ -740,6 +834,8 @@ def controls_fired(enforce, planfile, planrec=None):
         lambda _c: "2026-01-05",
         lambda _a, _b: True,
         "2026-01-01",
+        lambda c: c,
+        lambda _c: "",
     )
     caught(
         "C1: a tick with no investigation row was not reported P-A2",
@@ -756,6 +852,8 @@ def controls_fired(enforce, planfile, planrec=None):
         lambda _c: "2026-01-05",
         lambda _a, _b: True,
         "2026-01-01",
+        lambda c: c,
+        lambda _c: "",
     )
     caught(
         "C1b: a tick with no evidence line in the plan was not reported P-A2",
@@ -774,6 +872,8 @@ def controls_fired(enforce, planfile, planrec=None):
         lambda _c: "2026-01-05",
         lambda _a, _b: True,
         "2026-01-01",
+        lambda c: c,
+        lambda _c: "",
     )
     caught(
         "P-A3: a pointer that fails to resolve in CI was not reported, or the row's own `resolved` field was trusted",
@@ -790,10 +890,99 @@ def controls_fired(enforce, planfile, planrec=None):
         lambda _c: "2026-01-05",
         lambda _a, _b: False,
         "2026-01-01",
+        lambda c: c,
+        lambda _c: "",
     )
     caught(
         "P-A4: an investigation row written after the implementation commit was not reported",
         any(f.startswith("P-A4") for f in got),
+    )
+
+    # REBASE -- every repository here merges by rebase, so a row's recorded head and its `commit:` pointers are rewritten after they were written. The review records' Patch-Id maps a rewritten sha to its successor; a head that was never rewritten is judged as recorded.
+    old_head, new_head, tick = "a1" * 20, "b1" * 20, "c1" * 20
+    old_ptr, new_ptr = "a2" * 20, "b2" * 20
+    late_head, reviews_head, new_child = "a3" * 20, "a4" * 20, "b4" * 20
+    rb_records = [
+        {"commit": old_head, "parent": "d1" * 20, "patch": "e1" * 20},
+        {"commit": old_ptr, "parent": "d2" * 20, "patch": "e2" * 20},
+        {"commit": "a5" * 20, "parent": reviews_head, "patch": "e4" * 20},
+    ]
+    rb_pids = {"e1" * 20: new_head, "e2" * 20: new_ptr, "e4" * 20: new_child}
+    rb_reachable = {new_head, new_ptr, new_child, tick, late_head}
+    rb_succ = make_successor_of(
+        rb_records,
+        rb_pids,
+        lambda c: c if c in rb_reachable else "",
+        lambda c: new_head if c == new_child else "",
+    )
+
+    def rebased(
+        head, pointers=(), records_succ=rb_succ, ancestors=((new_head, tick),), authored="", at=""
+    ):
+        return tick_findings(
+            moved_to_done(healthy_base, healthy_head),
+            lambda _r, _s: "ran the gate, exit 0",
+            lambda _r, _s: dict(healthy_row, head=head, pointers=list(pointers), at=at),
+            lambda _k, t: (t in rb_reachable, "no such commit"),
+            lambda _r, _s: tick,
+            lambda _c: "2026-01-05",
+            lambda a, b: (a, b) in ancestors,
+            "2026-01-01",
+            records_succ,
+            lambda _c: authored,
+        )
+
+    caught(
+        "REBASE: a head rewritten by rebase and mapped by its review record's Patch-Id was still reported P-A4",
+        not rebased(old_head),
+    )
+    caught(
+        "REBASE: a rewritten head with no review record of its own was not mapped through a child record's Parent",
+        not rebased(reviews_head),
+    )
+    unmapped = rebased(old_head, records_succ=make_successor_of([], {}, lambda _c: "", str))
+    caught(
+        "REBASE: a rewritten head with no review record was excused, or reported without saying it was rewritten",
+        any(f.startswith("P-A4") and "rewritten" in f for f in unmapped),
+    )
+    no_map = make_successor_of([], {}, lambda _c: "", str)
+    caught(
+        "REBASE: a rewritten, unmapped head whose row was written before the ticking commit was authored was still reported",
+        not rebased(
+            old_head,
+            records_succ=no_map,
+            authored="2026-01-05T12:00:00+02:00",
+            at="2026-01-05T09:00:00Z",
+        ),
+    )
+    caught(
+        "REBASE: CONTROL: a rewritten, unmapped head whose row was written AFTER the ticking commit was authored passed",
+        any(
+            f.startswith("P-A4") and "rewritten" in f
+            for f in rebased(
+                old_head,
+                records_succ=no_map,
+                authored="2026-01-05T12:00:00+02:00",
+                at="2026-01-05T10:00:01Z",
+            )
+        ),
+    )
+    caught(
+        "REBASE: a mapped successor that is not an ancestor of the ticking commit was excused",
+        any(f.startswith("P-A4") for f in rebased(old_head, ancestors=())),
+    )
+    caught(
+        "REBASE: a `commit:` pointer rewritten by rebase did not resolve through its review record",
+        not rebased(new_head, [["commit", old_ptr[:9]]]),
+    )
+    caught(
+        "REBASE: CONTROL: a `commit:` pointer no record maps was excused",
+        any(f.startswith("P-A3") for f in rebased(new_head, [["commit", "f9" * 20]])),
+    )
+    late = rebased(late_head)
+    caught(
+        "REBASE: CONTROL: an investigation written after the tick (head reachable, not rewritten) passed P-A4",
+        any(f.startswith("P-A4") and "rewritten" not in f for f in late),
     )
 
     # FORWARD-ONLY, BOTH SIDES. A date comparison that always answers "exempt" is a gate that cannot fail, so the cut is pinned in both directions.
@@ -806,6 +995,8 @@ def controls_fired(enforce, planfile, planrec=None):
         lambda _c: "2026-01-01",
         lambda _a, _b: True,
         "2026-01-01",
+        lambda c: c,
+        lambda _c: "",
     )
     caught(
         "FORWARD-ONLY: a box ticked ON the landing date was judged; the landing day is amnesty by design",
@@ -820,6 +1011,8 @@ def controls_fired(enforce, planfile, planrec=None):
         lambda _c: "2026-01-02",
         lambda _a, _b: True,
         "2026-01-01",
+        lambda c: c,
+        lambda _c: "",
     )
     caught(
         "FORWARD-ONLY: a box ticked the day AFTER the landing date was NOT judged, so the cut exempts everything",
@@ -1013,6 +1206,41 @@ def controls_fired(enforce, planfile, planrec=None):
         )
         is None,
     )
+    gr0_old = (
+        "GR0 Precondition: the CI-Complete-only push guard (72eb06b56, f8dcd7973) is on the branch "
+        "this plan ships on, and reachable from a remote ref before GR11. Files: none owned"
+    )
+    gr0_new = plant(plant(gr0_old, "72eb06b56", "28c1bb4dc"), "f8dcd7973", "2fea9d223")
+    gr0_rows = [{"plan": "agent/plans/PLAN-g.md", "sig": "5186d28c", "box": gr0_old}]
+    gr0_map = {
+        "72eb06b56": "28" * 20,
+        "28c1bb4dc": "28" * 20,
+        "f8dcd7973": "2f" * 20,
+        "2fea9d223": "2f" * 20,
+    }
+
+    def gr0_canon_full(token):
+        return gr0_map.get(token, "")
+
+    caught(
+        "a ticked box whose commit citations were re-spelled by a rebase lost its investigation row",
+        row_under_any_path(
+            gr0_rows, "agent/plans/PLAN-g.md", "6f6a5f0f", (), gr0_new, gr0_canon_full
+        )
+        is gr0_rows[0],
+    )
+    caught(
+        "CONTROL: a box citing a DIFFERENT commit (not the rebased successor) borrowed the row",
+        row_under_any_path(
+            gr0_rows,
+            "agent/plans/PLAN-g.md",
+            "6f6a5f0f",
+            (),
+            plant(gr0_new, "28c1bb4dc", "99c1bb4dc"),
+            gr0_canon_full,
+        )
+        is None,
+    )
     caught(
         "a citation-respelled row was borrowed from a different plan",
         row_under_any_path(v3_rows, "agent/plans/PLAN-w.md", "4d461643", (), v3_new) is None,
@@ -1032,6 +1260,8 @@ def controls_fired(enforce, planfile, planrec=None):
             lambda _c: when,
             lambda _a, _b: True,
             "2026-01-01",
+            lambda c: c,
+            lambda _c: "",
         )
         late = tick_findings(
             moved_to_done(base, head_plans),
@@ -1042,6 +1272,8 @@ def controls_fired(enforce, planfile, planrec=None):
             lambda _c: when,
             lambda _a, _b: False,
             "2026-01-01",
+            lambda c: c,
+            lambda _c: "",
         )
         return [key_of(f) for f in no_row + late]
 
@@ -1238,12 +1470,25 @@ def main(argv=None) -> int:
             lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%cI", commit),
             clock.get("baseline_at"),
         )
+        successor_of = lazy_successor_of(REPO_ROOT, base, planrec)
+        canon_memo: dict[str, str] = {}
+
+        def canon(token):
+            if token not in canon_memo:
+                canon_memo[token] = successor_of(token) or ""
+            return canon_memo[token]
+
         findings.extend(
             tick_findings(
                 judged,
                 lambda rel, sig: _evidence_line(REPO_ROOT, planrec, rel, sig),
                 lambda rel, sig: row_under_any_path(
-                    rows, rel, sig, follow_names(rel), _box_text(REPO_ROOT, planrec, rel, sig)
+                    rows,
+                    rel,
+                    sig,
+                    follow_names(rel),
+                    _box_text(REPO_ROOT, planrec, rel, sig),
+                    canon,
                 ),
                 lambda kind, token: resolve_here(
                     planrec, kind, token, absent_submodules(REPO_ROOT)
@@ -1252,6 +1497,8 @@ def main(argv=None) -> int:
                 lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%cI", commit),
                 lambda a, b: planrec._git_ok(REPO_ROOT, "merge-base", "--is-ancestor", a, b),
                 clock.get("baseline_at"),
+                successor_of,
+                lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%aI", commit),
             )
         )
 
@@ -1324,36 +1571,43 @@ def pre_move_paths(rel, follow_names=()):
 
 #: A cited path's directory prefix and a citation's line suffix (`:12`, `:16,122`, `:353-394`).
 CITE_DIR_RE = re.compile(r"(?:[\w.@~-]+/)+([\w.@~-]+\.[A-Za-z0-9]{1,6})")
+#: A sha-shaped word: 7 to 40 hex characters with at least one digit, so neither a line number (no letter is required, but `\b` plus 7 characters rules short ones out) nor a hex-lettered English word ("defaced") is sent to git.
+CITE_SHA_RE = re.compile(r"\b(?=[0-9a-f]*\d)[0-9a-f]{7,40}\b")
 CITE_LINE_RE = re.compile(r"(\.[A-Za-z0-9]{1,6}):\d+(?:[-,]\d+)*")
 
 
-def cite_key(text):
-    """The box text with every citation reduced to its basename: directory prefixes and line suffixes dropped, markdown emphasis removed, whitespace folded. PURE.
+def cite_key(text, canon=None):
+    """The box text with every citation reduced to its basename: directory prefixes and line suffixes dropped, markdown emphasis removed, whitespace folded. PURE when `canon` is None.
+
+    A COMMIT CITATION RE-SPELLED BY A REBASE is the same task too. Measured on 1003-1: 19c9bb919 replaced GR0's pre-rebase shas (72eb06b56, f8dcd7973) with their rebased successors (28c1bb4dc, 2fea9d223), which re-signed the box (5186d28c -> 6f6a5f0f) and left it "closed with no row". `canon(token)` answers a sha-shaped token's full successor (`successor_of`) or "" for a token it cannot map, and every mapped token is replaced by that spelling on BOTH sides, so only a rebase-equivalent commit compares equal.
 
     A box whose citations are only RE-SPELLED is the same task. Measured on 0930-1: 53ae662a4 rewrote `pr-merge.md:108` to `.claude/commands/pr-merge.md:111` inside the ticked box V3, which re-signed it (7a6762cd -> 4d461643). Its investigation row kept the old sig, `--plan-investigate` accepts only open boxes, so no verb could ever re-key it and P-A2 named it "closed with no row" for good.
     """
     t = re.sub(r"[*_`]+", "", str(text or ""))
     t = CITE_LINE_RE.sub(r"\1", CITE_DIR_RE.sub(r"\1", t))
-    return " ".join(t.split()).lower()
+    t = " ".join(t.split()).lower()
+    if canon is not None:
+        t = CITE_SHA_RE.sub(lambda m: canon(m.group(0)) or m.group(0), t)
+    return t
 
 
-def row_under_any_path(rows, rel, sig, follow_names=(), box_text=""):
+def row_under_any_path(rows, rel, sig, follow_names=(), box_text="", canon=None):
     """The LATEST investigation row for box `sig` under any path the plan has had, or None.
 
     LATEST across all of them, for the reason `wl_planrec.investigation_for` gives for taking the latest: an earlier row must not outrank a later one. The sig must match exactly, so a different plan's box can never be borrowed.
 
-    THE ONE FALLBACK: with no exact-sig row, a row of the SAME plan whose recorded box text equals this box's text up to citation spelling (`cite_key`) answers for it. Rows record the first 200 characters of the box, so the comparison is over the shorter of the two keys' common prefix length, never less than 80 characters.
+    THE ONE FALLBACK: with no exact-sig row, a row of the SAME plan whose recorded box text equals this box's text up to citation spelling (`cite_key`, commit citations canonicalised through `canon` when given) answers for it. Rows record the first 200 characters of the box, so the comparison is over the shorter of the two keys' common prefix length, never less than 80 characters.
     """
     paths = set(pre_move_paths(rel, follow_names))
     hits = [r for r in rows if r.get("sig") == sig and r.get("plan") in paths]
     if hits or not box_text:
         return hits[-1] if hits else None
-    want = cite_key(box_text)
+    want = cite_key(box_text, canon)
     loose = []
     for r in rows:
         if r.get("plan") not in paths:
             continue
-        got = cite_key(r.get("box") or "")
+        got = cite_key(r.get("box") or "", canon)
         n = min(len(got), len(want))
         if n >= 80 and got[:n] == want[:n]:
             loose.append(r)
@@ -1396,6 +1650,79 @@ def follow_names(rel):
         out = r.stdout.strip()
         _FOLLOW[rel] = tuple(sorted({ln.strip() for ln in out.splitlines() if ln.strip()} - {rel}))
     return _FOLLOW[rel]
+
+
+REVIEW_HEADERS = ("Commit", "Parent", "Patch-Id")
+
+
+def review_records(root):
+    """[{commit, parent, patch}] from the header block of every per-commit review record under agent/reviews/, every branch directory included: a record written on another branch name still maps its sha. Headers only, the same first-lines read `wl_review.review_index` makes."""
+    out: list[dict[str, str]] = []
+    top = os.path.join(root, "agent", "reviews")
+    if not os.path.isdir(top):
+        return out
+    sha40 = re.compile(r"^[0-9a-f]{40}$")
+    for branch in sorted(os.listdir(top)):
+        d = os.path.join(top, branch)
+        if not os.path.isdir(d):
+            continue
+        for name in sorted(os.listdir(d)):
+            if not name.endswith(".md") or not sha40.match(name[:-3]):
+                continue
+            got = {}
+            try:
+                with open(os.path.join(d, name), encoding="utf-8") as fh:
+                    for _ in range(12):
+                        key, sep, val = fh.readline().partition(": ")
+                        if sep and key in REVIEW_HEADERS:
+                            got[key] = val.strip()
+            except OSError:
+                continue
+            if sha40.match(got.get("Patch-Id", "")):
+                out.append(
+                    {
+                        "commit": got.get("Commit") or name[:-3],
+                        "parent": got.get("Parent", ""),
+                        "patch": got["Patch-Id"],
+                    }
+                )
+    return out
+
+
+def lazy_successor_of(root, base, planrec):
+    """The real `successor_of` for tick_findings, built on first use: a run whose heads were never rewritten pays no `git patch-id` at all.
+
+    THE PATCH-ID IS `wl_review.patch_id`, imported rather than restated, because the records' `Patch-Id:` lines were written by that function and a second spelling of the computation (a different diff command, a different flag) would map nothing and read as a rewritten head with no record.
+    """
+    built = {}
+
+    def build():
+        import wl_review  # noqa: PLC0415 -- the hook dir is on sys.path after load_modules
+
+        pids: dict[str, str] = {}
+        if base:
+            listing = planrec._git_out(root, "rev-list", "--no-merges", "%s..HEAD" % base)
+            for sha in listing.split():
+                pid = wl_review.patch_id(root, sha)
+                if pid:
+                    pids.setdefault(pid, sha)
+        return make_successor_of(
+            review_records(root),
+            pids,
+            lambda c: (
+                planrec._git_out(root, "rev-parse", "--verify", "--quiet", c + "^{commit}")
+                if planrec._git_ok(root, "merge-base", "--is-ancestor", c, "HEAD")
+                else ""
+            ),
+            lambda c: planrec._git_out(root, "rev-parse", "--verify", "--quiet", c + "^"),
+        )
+
+    def successor_of(sha):
+        if "fn" not in built:
+            built["fn"] = build()
+        return built["fn"](sha)
+
+    return successor_of
 
 
 def absent_submodules(root):
