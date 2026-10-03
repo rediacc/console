@@ -4,3 +4,7 @@
 # Each group MUST have a "# BLOCKER: <reason>" line in its comment block;
 # the audit gate (.ci/rediacc_ci/security/audit.py) enforces this strictly.
 
+
+# http-cache-semantics max-stale cross-user cache disclosure (GHSA-ch52-4w7c-c8xp), via packages/www -> astro@7.3.5.
+# BLOCKER: no patched http-cache-semantics exists (4.2.0, the newest release, is affected; npm's suggested "fix" is a downgrade to astro 2.10.9). astro imports it only in dist/assets/build/remote.js to cache remote images at BUILD time, and packages/www builds with output: 'static', so no server answers user requests through this cache. Lift when http-cache-semantics or astro ships a fixed release (measured 2026-10-03).
+1240991
