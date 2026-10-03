@@ -371,7 +371,8 @@ function stripProse(source: string): string {
 export function inferredNeeds(rawSource: string): string[] {
   const source = stripProse(rawSource);
   const out = new Set<string>();
-  if (/--recurse-submodules|private\/(renet|account|elite|homebrew-tap)\//.test(source)) {
+  // `--recurse-submodules=no` (and `--no-recurse-submodules`) says the OPPOSITE: check_plan_implementation's prefetch fetches with it so a submodule is never touched, and the bare match inferred a `submodules` need from it (2026-10-03).
+  if (/--recurse-submodules(?!=no\b)|private\/(renet|account|elite|homebrew-tap)\//.test(source)) {
     out.add('submodules');
   }
   if (/^\s*import\s+yaml\b|\byaml\.safe_load\b/m.test(source)) out.add('python-yaml');
