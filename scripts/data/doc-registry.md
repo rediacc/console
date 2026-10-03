@@ -700,7 +700,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/config/secret-supply.json | 2 | JSON value |
 | .ci/config/syncpack-source-exclusions.json | 8 | JSON value |
 | .ci/policy/.audit-allowlist | 1 | prose only (no live entry) |
-| .ci/policy/.audit-prod-allowlist | 1 | prose only (no live entry) |
+| .ci/policy/.audit-prod-allowlist | 2 | # comment |
 | .ci/policy/.ci-parity-exempt | 9 | # comment |
 | .ci/policy/.cli-i18n-orphan-allowlist | 6 | inline |
 | .ci/policy/.dead-bash-allowlist | 8 | # comment |
