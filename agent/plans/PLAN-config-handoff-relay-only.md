@@ -35,33 +35,42 @@ At most three writers, and their Owns do not overlap:
 
 T1 freezes the contract. The submodule PR (A and B) lands first, then the console PR (C, plus the pointer bump).
 
-- [ ] T1 [lead] Freeze the contract before anyone forks:
+- [x] T1 [lead] Freeze the contract before anyone forks:
   - the endpoint shapes in section 3.2;
   - the fragment URL grammar in section 4.1;
   - the sealed-plaintext field `handoffNonce`;
   - `handoffKeyHash()` and `handoffPairingCode()` in `packages/shared/src/config-crypto/handoff.ts`, with the known-answer vector (section 5).
+    (ticked) 2026-10-03T09:42:30Z by d778be9d: 15da8633f: shared handoff.ts handoffKeyHash/handoffPairingCode + known-answer test handoff-pairing.test.ts; handoffNonce sealed field
 
   Put these in the shared module first. B and C both import them.
-- [ ] T2 [A] Migration `0053_device_code_handoff.sql` plus the schema change (section 3.1).
-- [ ] T3 [A] The service and routes: create with purpose, `handoff-request`, the guarded `config-handoff`, atomic `claim`, `cancel`, the purpose fence on `approve` and GET poll, and the expired-row purge (sections 3.2 and 6). The DTOs change with them.
-- [ ] T4 [A] Integration tests and mutation controls (section 7.2).
-- [ ] T5 [B] Portal:
+- [x] T2 [A] Migration `0053_device_code_handoff.sql` plus the schema change (section 3.1).
+    (ticked) 2026-10-03T09:42:31Z by d778be9d: private/account 2abfde4: migration 0053_device_code_handoff.sql + schema.ts; console bump 49e61a1a5
+- [x] T3 [A] The service and routes: create with purpose, `handoff-request`, the guarded `config-handoff`, atomic `claim`, `cancel`, the purpose fence on `approve` and GET poll, and the expired-row purge (sections 3.2 and 6). The DTOs change with them.
+    (ticked) 2026-10-03T09:42:33Z by d778be9d: private/account 2abfde4: device-codes.ts purpose create, config-handoff, claim, cancel, approve fence; device-code.service.ts purgeExpired; DTOs; console bump 49e61a1a5
+- [x] T4 [A] Integration tests and mutation controls (section 7.2).
+    (ticked) 2026-10-03T09:42:34Z by d778be9d: private/account 2abfde4: tests/integration/device-code-handoff.test.ts + config-enable-requirements.test.ts; console bump 49e61a1a5
+- [x] T5 [B] Portal:
   - new `web/src/lib/cli-handoff-request.ts`;
   - a pairing-code step;
   - ConfigRemote and ConfigSetup post only to the relay;
   - delete `DeviceConfigSetup.tsx` and the `/account/device-config` route;
   - the router drops its `callback` branches;
   - ProtectedRoute keeps the URL hash (section 4.3).
-- [ ] T6 [B] Portal locales: 13 `configStorage.json` files plus `.translation-hashes.json` (section 8.2). Add the portal unit tests (section 7.3).
-- [ ] T7 [B] E2E: delete the helper `startCallbackServer`, add relay helpers, rewrite 20-11 (e) and (f), add (h) "tampered link", and repoint 20-03 (section 7.4).
-- [ ] T8 [C] CLI:
+    (ticked) 2026-10-03T09:42:36Z by d778be9d: private/account dd2b656: cli-handoff-request.ts, relay-only ConfigRemote/ConfigSetup, DeviceConfigSetup.tsx deleted, router + ProtectedRoute hash; console bump 49e61a1a5
+- [x] T6 [B] Portal locales: 13 `configStorage.json` files plus `.translation-hashes.json` (section 8.2). Add the portal unit tests (section 7.3).
+    (ticked) 2026-10-03T09:42:37Z by d778be9d: private/account dd2b656: 13 configStorage.json + hashes, portal unit tests (cli-handoff-request, config-remote, login-hash); console bump 49e61a1a5
+- [x] T7 [B] E2E: delete the helper `startCallbackServer`, add relay helpers, rewrite 20-11 (e) and (f), add (h) "tampered link", and repoint 20-03 (section 7.4).
+    (ticked) 2026-10-03T09:42:39Z by d778be9d: private/account dd2b656: 20-11 relay cases + (h) tampered link, 20-03 repointed, relay helpers, startCallbackServer gone; console bump 49e61a1a5
+- [x] T8 [C] CLI:
   - new `packages/cli/src/commands/config-remote-relay.ts`;
   - delete `startCallbackServer`, `enableBrowser` and `--headless`;
   - `rotateCek` uses the relay;
   - login is required;
   - print the pairing code;
   - deadline-based polling with backoff, and cancel on Ctrl+C (sections 4.2 and 6).
-- [ ] T9 [C] CLI tests and mutation controls (section 7.1). Add the shared known-answer test.
+    (ticked) 2026-10-03T09:42:40Z by d778be9d: 15da8633f: config-remote-relay.ts, startCallbackServer/enableBrowser/--headless removed, relay rotateCek, pairing code, backoff + Ctrl-C cancel
+- [x] T9 [C] CLI tests and mutation controls (section 7.1). Add the shared known-answer test.
+    (ticked) 2026-10-03T09:42:41Z by d778be9d: 15da8633f: config-remote-relay.test.ts, config-remote-prereq.test.ts, spinner-ctrl-c.test.ts; shared known-answer test handoff-pairing.test.ts
 - [ ] T10 [C] CLI i18n in 13 locales, `generate:cli-contract`, the www docs in 13 locales, the design docs and the skill doc (section 8).
 - [ ] T11 [lead] Closure: the removal sweep in section 9 returns nothing. Deploy the account server (eu) before the CLI release. Then do a live smoke of the operator's exact case: CLI in WSL, browser on Windows, `./rdc.sh config remote enable` for both a fresh store and an existing one, plus `config rotate-cek`.
 

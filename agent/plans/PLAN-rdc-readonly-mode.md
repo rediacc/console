@@ -171,7 +171,8 @@ Decision point for the operator: rows 2, 4, 5 and 7 are access sessions. They de
     (ticked) 2026-09-24T07:55:21Z by d778be9d: 13 installation.md files; translation-freshness and docs-structure-parity exit 0 (packages/www/src/content/docs/en/installation.md:216)
 - [x] 22. Help text: append "Read-only: never updates renet on the machine; warns when its version differs." to `commands.machine.status.description` in all 13 `packages/cli/src/i18n/locales/*/cli.json`, then `cd packages/cli && npm run generate:cli-contract && npm run generate:skill-reference`. The claim at `packages/cli/src/i18n/locales/en/cli.json:468` ("Read-only queries") and `packages/www/src/content/docs/en/ai-agents-claude-code.md:51` ("read-only status checks") become true and need no edit.
     (ticked) 2026-09-24T07:55:21Z by d778be9d: 13 locales, EN hash manifest updated, generate:cli-contract and skill reference regenerated; check:ci-cli-contract exit 0 (packages/cli/src/i18n/locales/en/cli.json:687)
-- [ ] 23. Commit with the `PR-TASK` trailer for worklist item `#f8ff8ede` (`agent/pr/0923-1.md` :74).
+- [x] 23. Commit with the `PR-TASK` trailer for worklist item `#f8ff8ede` (`agent/pr/0923-1.md` :74).
+    (ticked) 2026-10-03T10:08:29Z by d778be9d: 80bd43bf8 carries PR-TASK: f8ff8ede, on origin/main
 
 **Order:** 1-2 (provisioner), then 3-5 (entry point and table). tsc then lists every broken site, which drives 6-12. After that the tests (13-18), then env and docs (19-22).
 

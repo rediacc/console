@@ -9,10 +9,14 @@ Owns: .ci/config/language-policy-baseline.json
 
 ## Tasks
 
-- [ ] A0 Select the oracle cases whose value is real bash execution (bash's own parsing/quoting/heredoc/pipeline semantics and version-specific behaviour, the 2026-09-21 examples) and keep them as a small, justified real-bash semantics suite; everything else becomes goldens
-- [ ] A1 Freeze hook goldens from the oracles over the full corpus plus every EDGE_CASES entry; the current ports match 100 percent before anything is deleted
-- [ ] A2 Retarget the three hook differentials, guardcorpus/hookcases, the mention-anchoring gate, check_policy_inventory, doc-providers and the language-policy allowlist from the oracles to the goldens; add the regolden verb and the golden-drift control
-- [ ] A3 Delete .claude/oracles/ (bash, both Python forwarders, lib/sanctioned.py), every TWIN constant and the bash driver; consolidate pattern_for and the pgrep loop shared by the two running-script guards
+- [x] A0 Select the oracle cases whose value is real bash execution (bash's own parsing/quoting/heredoc/pipeline semantics and version-specific behaviour, the 2026-09-21 examples) and keep them as a small, justified real-bash semantics suite; everything else becomes goldens
+    (ticked) 2026-10-03T10:12:10Z by d778be9d: b9714c304: .claude/rediacc_hooks/tests/test_bash_semantics.py kept real-bash suite; 2026-10-03 run 257 passed rc=0
+- [x] A1 Freeze hook goldens from the oracles over the full corpus plus every EDGE_CASES entry; the current ports match 100 percent before anything is deleted
+    (ticked) 2026-10-03T10:12:11Z by d778be9d: b9714c304: guard goldens .claude/rediacc_hooks/tests/goldens/*.jsonl; test_guard_matches_golden passed 2026-10-03
+- [x] A2 Retarget the three hook differentials, guardcorpus/hookcases, the mention-anchoring gate, check_policy_inventory, doc-providers and the language-policy allowlist from the oracles to the goldens; add the regolden verb and the golden-drift control
+    (ticked) 2026-10-03T10:12:13Z by d778be9d: b9714c304 + c8f92eaa0: differentials and gates retargeted to goldens/live guards, regolden verb (goldenio), test_golden_drift.py control
+- [x] A3 Delete .claude/oracles/ (bash, both Python forwarders, lib/sanctioned.py), every TWIN constant and the bash driver; consolidate pattern_for and the pgrep loop shared by the two running-script guards
+    (ticked) 2026-10-03T10:12:14Z by d778be9d: d5d296dea: .claude/oracles/ deleted, TWIN constants gone, bash driver removed; pattern_for consolidated in .claude/rediacc_hooks/runningscript.py:25 (e2a4d3d25)
 - [ ] A4 Rule-T fixes on the hook side (block_ssh_file_write empty command and jq null, the shellscan.target_root tab defect, and every copied bug the 47 PORT NOTE re-read finds), each with an intentional golden delta and a failing-first test
 - [ ] A5 Phase A acceptance: full .claude hook suite, DEFECT control over all guards, language-policy, hook-integrity, docs-gen and dead-python gates, the live chain on real commands, wall time measured before and after
 - [ ] B0 Inventory every tracked .sh into agent/plans/PLAN-retire-bash-oracles.inventory.tsv; close the 15 unclassified C/D files, re-check group D DELETE verdicts against naming tests, re-judge the media/breakpoint/tutorials tree exemptions file by file

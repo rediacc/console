@@ -56,24 +56,33 @@ Order:
   - (a) Does PreToolUse fire for a sub-agent's Bash call? Does the payload carry `agent_id`/`agent_type`? Probe: a throwaway guard that logs the payload keys, driven by one Explore sub-agent.
   - (b) Does git 2.53's `reference-transaction` hook see `git branch -m` as one transaction (create plus delete)?
   - (c) Is `gh pr list --head <b> --state merged` readable offline? Record the result.
-- [ ] T1 [A] Build `.claude/rediacc_hooks/commit_policy.py` (section 5.1) and `.ci/config/commit-policy.json` (section 5.2). Freeze the API.
-- [ ] T2 [A] Build `block_second_branch.py` (pre-bash, ORDER 46) and move F1's parser into `commit_policy.branch_creations()`. Re-point `block_nonstandard_branch_name.py` at the parser, regenerate its golden with the intentional delta recorded, and add the F1 case.
-- [ ] T3 [A] Build `block_commit_on_main.py` (ORDER 45), which defines `[hotfix]` (section 4.1). In `block_untagged_commit.py`, exempt `main` + `[hotfix]` from the trailer requirement (F5) and regenerate its golden.
-- [ ] T4 [A] Build `block_ci_skip_token.py` (ORDER 47) (section 4.3).
-- [ ] T5 [A] Build `block_no_review_ineligible.py` (ORDER 48) (section 4.2).
+- [x] T1 [A] Build `.claude/rediacc_hooks/commit_policy.py` (section 5.1) and `.ci/config/commit-policy.json` (section 5.2). Freeze the API.
+    (ticked) 2026-10-03T09:57:11Z by d778be9d: c18ca3eca: commit_policy.py + .ci/config/commit-policy.json
+- [x] T2 [A] Build `block_second_branch.py` (pre-bash, ORDER 46) and move F1's parser into `commit_policy.branch_creations()`. Re-point `block_nonstandard_branch_name.py` at the parser, regenerate its golden with the intentional delta recorded, and add the F1 case.
+    (ticked) 2026-10-03T09:57:14Z by d778be9d: c18ca3eca: guards/block_second_branch.py ORDER 46; block_nonstandard_branch_name re-pointed at commit_policy.branch_creations
+- [x] T3 [A] Build `block_commit_on_main.py` (ORDER 45), which defines `[hotfix]` (section 4.1). In `block_untagged_commit.py`, exempt `main` + `[hotfix]` from the trailer requirement (F5) and regenerate its golden.
+    (ticked) 2026-10-03T09:57:39Z by d778be9d: c18ca3eca: guards/block_commit_on_main.py ORDER 45; block_untagged_commit.py F5 hotfix exemption
+- [x] T4 [A] Build `block_ci_skip_token.py` (ORDER 47) (section 4.3).
+    (ticked) 2026-10-03T09:57:17Z by d778be9d: c18ca3eca: guards/block_ci_skip_token.py ORDER 47 + suite
+- [x] T5 [A] Build `block_no_review_ineligible.py` (ORDER 48) (section 4.2).
+    (ticked) 2026-10-03T09:57:21Z by d778be9d: c18ca3eca: guards/block_no_review_ineligible.py ORDER 48 + suite
 - [ ] T6 [B] Worklist changes:
   - The tick arm requires `commit:<sha>` or `nocommit:<reason>` (section 3.4).
   - Re-scope PLAN-uncommitted-work-exposure-check.md's `V_UNCOMMITTED_RISK` from "informational" to a push to commit.
   - Add its key to Y's focus keep-list and to `wl_roster.CAP_WAIT_KEEPS`.
-- [ ] T7 [lead] Edit PLAN-per-commit-review.md:
+- [x] T7 [lead] Edit PLAN-per-commit-review.md:
   - Rewrite section 5 and the rule-1 decision in section 13, which no longer applies.
   - Handle `[no-review]` in `uncovered()`: write a `Verdict: skipped (no-review)` stub after re-checking eligibility in-process.
   - Extend `uncovered()` to `origin/main..HEAD` when the branch is `main` (F6).
   - Point it at `.ci/config/commit-policy.json` for the eligible globs.
-- [ ] T8 [A] Optional, depending on decision 2: git-level hooks (section 5.3) and `block_git_hook_bypass.py` (ORDER 49) for F3.
+    (ticked) 2026-10-03T09:57:41Z by d778be9d: ee607a003: wl_review.py [no-review] skipped stub with commit-policy re-check, origin/main..HEAD on main
+- [x] T8 [A] Optional, depending on decision 2: git-level hooks (section 5.3) and `block_git_hook_bypass.py` (ORDER 49) for F3.
+    (ticked) 2026-10-03T09:57:42Z by d778be9d: c18ca3eca: .claude/rediacc_hooks/git/ hooks, .ci/rediacc_ci/setup/githooks.py, guards/block_git_hook_bypass.py ORDER 49
 - [ ] T9 [lead] Update the docs (section 7), including F4. `block_second_open_pr.py` gets a new message and a regenerated golden.
-- [ ] T10 [A, B] Tests (section 6). Each writer owns the tests for its own files. Every guard gets a fire case, an inverse case and a DEFECT control.
-- [ ] T11 [lead] Add every new guard to `scripts/data/hook-inventory-baseline.json`, then run `check-hook-integrity`, `test_dispatch.py` (ORDER contiguity) and `test_guards_differential.py`.
+- [x] T10 [A, B] Tests (section 6). Each writer owns the tests for its own files. Every guard gets a fire case, an inverse case and a DEFECT control.
+    (ticked) 2026-10-03T09:57:44Z by d778be9d: c18ca3eca: five test-block_* suites with fire/inverse/DEFECT controls
+- [x] T11 [lead] Add every new guard to `scripts/data/hook-inventory-baseline.json`, then run `check-hook-integrity`, `test_dispatch.py` (ORDER contiguity) and `test_guards_differential.py`.
+    (ticked) 2026-10-03T09:57:46Z by d778be9d: c18ca3eca: five guards in hook-inventory-baseline.json; 2026-10-03 run of test_dispatch.py + test_guards_differential.py passed (6672 tests rc=0)
 - [ ] D0-D10 [lead] The one-time drain (section 8).
 
 ## 1. The new rule 1 (replaces CLAUDE.md:15-27 and .claude/output-styles/standing-orders.md:11-15)

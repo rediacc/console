@@ -85,13 +85,14 @@ Lead-verified before writing (2026-09-24): `passkeyCredentialId` is nullable (pr
 
 ## 3. Tasks
 
-- [ ] T1 [A] Server (owner: private/account `src/**`, `tests/integration/**`). Implement the rules in section 2:
+- [x] T1 [A] Server (owner: private/account `src/**`, `tests/integration/**`). Implement the rules in section 2:
   - `routes/configs.ts`: setup, store-info, slots, require-passkey, rotate-cek/complete, members/accept, passkey/verify.
   - `services/config.service.ts`, `services/passkey.service.ts`, `dto/config.dto.ts`.
   - `routes/test.ts` `/seed-config-store` passes the owner's X25519 key.
   - Update the config integration tests that assumed a separate identity insert.
   - Add `tests/integration/config-password-first.test.ts`. It covers password-only setup plus the owner in `listMembers`, 400 for a passkey slot without a registration, `prf_unsupported` with no store created, accept that no longer collides (it must fail on the pre-change code), 409 `passkey_not_bound`, password accept, 403 under the policy, the self-lockout 409, rotation under the policy, and registration with stale auth challenges present.
-- [ ] T2 [B] Portal (owner: private/account `web/src/**`, including the 13 `configStorage.json` and `console.json` locale files):
+    (ticked) 2026-10-03T09:38:50Z by d778be9d: private/account c443954 (server rules, config-password-first.test.ts); console pointer bump 49e61a1a5
+- [x] T2 [B] Portal (owner: private/account `web/src/**`, including the 13 `configStorage.json` and `console.json` locale files):
   - The three new modules, and the pages ConfigSetup, DeviceConfigSetup, ConfigRemote, ConfigMemberAccept, ConfigMembers, ConfigKeySlots and RotateCekWizard.
   - `api/config.ts` and `hooks/useConfigSession.ts`.
   - Unit tests for `registerConfigPasskey` (PRF true and false), the password branch of `buildSetupMaterial` (its handoff secret unwraps `wrappedCek`), and the extended `UnlockedCek`.
@@ -99,7 +100,8 @@ Lead-verified before writing (2026-09-24): `passkeyCredentialId` is nullable (pr
     - reword `setupChooseIntro` and `console.json:sessionErrorPrfUnsupported`;
     - delete `setupPasskeyAlways` and `rotatePrfUnavailable`;
     - add `setupPasskeyDesc`, `setupPrimaryRequired`, `setupProvidersHint`, `setupDoneSoleAdminWarning`, the `prfMissing*` family, `acceptChooseMethod`, `acceptWithPasskey`, `acceptWithPassword`, `keysAddPasskey`, `keysPasskeyAdded`, `rotateUnlockPrompt`, `rotateKeepPasskey`, `remoteChooseMethod`, `remotePasswordLabel`, `membersUnlockToAdd` and `requirePasskeySelfLockout`, in all 13 locales.
-- [ ] T3 [C] E2E, CI and docs (owner: private/account `e2e/**`, `.ci/scripts/test/run-account-e2e.sh`, `packages/www/src/content/docs/*/config-storage.md`). Order: the control first (PRF-less setup on today's code must fail), then helpers, then the matrix, then edits to existing specs, then the CI assertion.
+    (ticked) 2026-10-03T09:38:51Z by d778be9d: private/account 3ba7016 (portal modules, pages, unit tests, 13-locale i18n); console pointer bump 49e61a1a5
+- [x] T3 [C] E2E, CI and docs (owner: private/account `e2e/**`, `.ci/scripts/test/run-account-e2e.sh`, `packages/www/src/content/docs/*/config-storage.md`). Order: the control first (PRF-less setup on today's code must fail), then helpers, then the matrix, then edits to existing specs, then the CI assertion.
   - Helpers:
     - one `addVirtualAuthenticator(page, { prf })` in `webauthn-helpers.ts`;
     - `seedPasswordConfigStore` sends `x25519PublicKey`;
@@ -110,6 +112,7 @@ Lead-verified before writing (2026-09-24): `passkeyCredentialId` is nullable (pr
   - `run-account-e2e.sh` asserts from `reports/e2e/results.json` that at least N `@webauthn` chromium tests ran with status `expected` and none were skipped.
   - Docs: the Bitwarden row says to use a master password.
   - Check first whether `DeviceConfigSetup` sends `encryptedBlob` as an object while `private/account/src/routes/device-codes.ts:38-39` expects a string.
+    (ticked) 2026-10-03T09:38:53Z by d778be9d: private/account 1a5d9eb (PRF matrix spec, helpers, test:webauthn); console f3db2b125 runner assertion (ported to testrun/account_e2e.py); packages/www/src/content/docs/en/config-storage.md:62 Bitwarden row
 - [ ] T4 Lead: before deploy, run one production query: slot holders with no `config_user_identities` row. Then deploy eu and walk the operator's Bitwarden setup end to end.
 
 ## 4. CI wiring

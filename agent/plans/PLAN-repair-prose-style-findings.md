@@ -48,4 +48,5 @@ Two of the named files are owned by other live sessions in this shared checkout,
     (ticked) 2026-09-24T07:24:19Z by d778be9d: owned files only: R7 rewrites in wl_hints.py, wl_planindex.py, wl_planrec.py, wl_shapedup.py, wl_agents.py, test-judge-schema.py, test-planindex.py, check_agent_hint_liveness.py, core/secrets.py, TRAPS.md, 06-progress.md, manifest.ts; per-file check --json new=[] exit 0; reference.md R1 left (hash-locked CLI source)
 - [x] Drain the 144 no-longer-firing baseline entries in their own commit, and confirm the baseline only shrank.
     (ticked) 2026-09-24T07:24:19Z by d778be9d: drained .ci/config/prose-style-baseline.json by id removal only: 5570 -> 3277 ids, 1169 -> 811 files, added 0, removed 2293; full check now reports 0 no-longer-firing (exit 1 only on excluded new findings)
-- [ ] `npm run check:ci-prose-style` exits 0.
+- [x] `npm run check:ci-prose-style` exits 0.
+    (ticked) 2026-10-03T09:37:22Z by d778be9d: 2026-10-03 npm run check:ci-prose-style rc=0 (no new findings, 2839 baselined); repairs in 9fa918c9b, 2ee8e3ec9

@@ -29,18 +29,21 @@ Owns: .claude/hooks/stop/*.py, .ci/scripts/quality/check_plan_deps.py, .ci/redia
 Two writers at most. Writer A owns the grammar, the CI gate, the guard, the record and move verbs, and the wiring. Writer B owns the worklist verbs and the stop hook. The lead owns the migration review and the prose. Every task after T1 needs T1's API frozen first.
 
 - [ ] T1 [A] Create `.claude/hooks/stop/wl_plandeps.py`, the one home of the grammar (section 1). It holds `parse_header`, `resolve`, `is_complete`, `Graph.load(root)`, `cycles`, `roots(rel)`, `chain(rel, root)`, `linked_plan(item_text)`, `tracked_by(plan, fold)` (moved from `wl_backlog._claimed`, .claude/hooks/stop/wl_backlog.py:98) and `set_header(text, value)`. Use stdlib only at import time and import `wl_planfile` lazily inside `is_complete`. Controls go in `.claude/hooks/stop/test-plandeps.py` (section 5a).
-- [ ] T2 [A] Add the CI gate `.ci/scripts/quality/check_plan_deps.py`. It carries findings D1-D8, `--selftest` controls with a `CONTROL_FLOOR`, and the verbs `--check`, `--draft` and `--set <path> "<value>" [--write]`. Add the plant test `.ci/rediacc_ci/tests/gates/test_gate_plan_deps.py`.
-- [ ] T3 [A] Add the guard `.claude/rediacc_hooks/guards/block_plan_without_depends.py`. It sits in the pre-edit chain with `ORDER = 13` and `TWIN = None`, plus `EDGE_CASES`, a `DEFECT` tuple and its own suite `test-block_plan_without_depends.py`. The suite is required by .claude/rediacc_hooks/tests/test_guards_differential.py:596-620 for any guard with `TWIN = None`. Add the guard to `scripts/data/hook-inventory-baseline.json`.
+- [x] T2 [A] Add the CI gate `.ci/scripts/quality/check_plan_deps.py`. It carries findings D1-D8, `--selftest` controls with a `CONTROL_FLOOR`, and the verbs `--check`, `--draft` and `--set <path> "<value>" [--write]`. Add the plant test `.ci/rediacc_ci/tests/gates/test_gate_plan_deps.py`.
+    (ticked) 2026-10-03T09:45:17Z by d778be9d: c55b8a0a9: check_plan_deps.py D1-D8, CONTROL_FLOOR selftest, --draft/--set; test_gate_plan_deps.py
+- [x] T3 [A] Add the guard `.claude/rediacc_hooks/guards/block_plan_without_depends.py`. It sits in the pre-edit chain with `ORDER = 13` and `TWIN = None`, plus `EDGE_CASES`, a `DEFECT` tuple and its own suite `test-block_plan_without_depends.py`. The suite is required by .claude/rediacc_hooks/tests/test_guards_differential.py:596-620 for any guard with `TWIN = None`. Add the guard to `scripts/data/hook-inventory-baseline.json`.
+    (ticked) 2026-10-03T09:45:18Z by d778be9d: c55b8a0a9: guards/block_plan_without_depends.py ORDER 13 + own suite + hook-inventory row
 - [ ] T4 [A] Records and moves:
   - add `Depends-On` to `wl_planrec.HEADER_FIELD_KEYS` (.claude/hooks/stop/wl_planrec.py:171) and emit it in `render()` right after `Owner` (.claude/hooks/stop/wl_planrec.py:832);
   - make `revive()` (.claude/hooks/stop/wl_planrec.py:2567) carry the record's `Depends-On:` into the revived header, or refuse without one;
   - make `check_plan_folders.py --move` (:459) refuse a move into `_removed/` while any required plan still depends on the plan being moved, and print those dependents.
-- [ ] T5 [A] Wiring:
+- [x] T5 [A] Wiring:
   - `package.json` gets a `ci-plan-deps` gate entry next to :192;
   - `scripts/ci-runner/manifest.ts` gets an entry after the `check:ci-plan-folders` entry (:2023-2044);
   - `.github/workflows/ci-quality.yml` gets a "Plan dependencies" step after :614;
   - then run `npm run gen:gates-lock`, `npm run gate:bind` and `npm run gen:docs` (ci-gates.md, the plan-records.md header table, doc-registry.md);
   - add BASELINE rows in `test_canonical_sys_path_hop.py` for the new test files.
+    (ticked) 2026-10-03T09:45:20Z by d778be9d: c55b8a0a9: check:ci-plan-deps in package.json, manifest.ts, ci-quality.yml step, gates.lock.json
 - [ ] T6 [B] Make `wl_leasehelp.waiting_on` / `blocker_error` / `auto_lease_candidates` plan-aware (section 2c). Wire the per-stop `Graph` through `wl_store.classify_items` (.claude/hooks/stop/wl_store.py:1270-1290), including the fail-closed suffix for an untracked dependency.
 - [ ] T7 [B] Add the verb gates in `worklist.py`:
   - `--lease` (:1014) and `--tick` (:945) are refused on a dependency-blocked linked item;
