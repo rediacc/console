@@ -97,7 +97,8 @@ def release(me: str, pid: int | None = None) -> None:
 
 def split_wakers(live_bg):
     """(the background tasks that are not timers, the timers). The Stop hook judges the wait on the first and the coverage on the second."""
-    others, wakers = [], []
+    others: list = []
+    wakers: list = []
     for task in live_bg or []:
         blob = "%s %s" % (task.get("command") or "", task.get("description") or "")
         (wakers if WAKER_RE.search(blob) else others).append(task)
