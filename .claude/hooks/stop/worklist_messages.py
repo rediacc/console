@@ -871,19 +871,12 @@ V_PLAN_ADOPTED = (
     "does not close anything: its boxes stay on every clock."
 )
 
-# THE BODY IS BUILT BY `wl_planenforce.render`, NOT BY THIS STRING, and the split is deliberate rather than untidy. Every number in that body -- the ceiling, the day, the three ownership buckets, the one named box and its signature -- is arithmetic the module computed, and a format string with fourteen `%(...)s` holes is a place where the caller and the message drift out of step
-# silently. What lives here is the one sentence the ladder's own T_MISSION comment demands be said out loud, wrapped around that body.
+# THE BODY IS BUILT BY `wl_planenforce.render`, NOT BY THIS STRING: the PR plan set's open counts and the one named box with its signature are computed there. What lives here is the one sentence that says why the turn is held, wrapped around that body.
 V_PLAN_UNIMPLEMENTED = (
-    "PLANS ARE NOT IMPLEMENTED, and that is the thing this repo was asked to stop doing. "
-    "The operator's ruling was ALL, after seeing the census and the branch age; what it earned "
-    "is a CLOCK, not an exemption, and the clock is the only thing standing between this and a "
-    "gate that reds on the mere existence of an open box.\n\n"
-    "%(body)s\n\n"
-    "THIS BLOCK HAS NO FIRE CAP, because its exit is arithmetic and printed above: close the "
-    "named number of boxes, or move them through one of the five doors, and it goes quiet. "
-    "Three earlier checks in this hook blocked with no reachable exit and each one is now a "
-    "plan about the incident it caused; a cap is what an unreachable exit needs, and this exit "
-    "is reachable."
+    "THE PR'S PLAN IS NOT FINISHED. One plan per PR: its open boxes are the work this branch "
+    "exists for, so the turn is held while one is open and nothing of this session is running "
+    "for it.\n\n"
+    "%(body)s"
 )
 
 V_FOUND_NOT_FIXED = (
@@ -2583,6 +2576,77 @@ N_FOCUS_PR_UNREADABLE = (
     "focus: could not read whether PR #%s on %s merged (%s); focus continues until the PR reads "
     "merged, --focus off, or the %d-hour cap."
 )
+# THE ONE-PLAN-PER-PR LOOP (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4 and 7). N_PR_SCOPE is the one queued line every stop on the loop carries, on blocks and allows alike, because a reader with no memory of the ruling learns it from this line: who (one PR_SCOPE_WHO_* rendered), the queued item count, the other queued plan count, the next plan, the stood-down checks (PR_SCOPE_STOOD or ""), the session prefix.
+N_PR_SCOPE = (
+    "%(who)s One plan per PR: only this PR's plan, its prerequisites and the loop's duties block. "
+    "Queued, not blocking: %(items)d item(s), %(plans)d other plan(s); next: %(next)s.%(stood)s "
+    "See worklist.py --list --open %(me)s."
+)
+PR_SCOPE_WHO_LIVE = "PR #%(pr)s works %(plans)s."
+PR_SCOPE_WHO_UNREADABLE = "The PR read for %(branch)s failed; scoped to %(plans)s."
+PR_SCOPE_WHO_NO_PR = "Branch %(branch)s has no PR yet."
+PR_SCOPE_WHO_MERGED = "PR #%(pr)s on %(branch)s is merged."
+PR_SCOPE_WHO_ON_MAIN = "On main with no live branch."
+PR_SCOPE_STOOD = " Stood down: %s."
+PR_SCOPE_NO_NEXT = "none (QUEUE.md holds no plan with an open box)"
+# Advisory: wl_prscope.loop_state raised, so the stop ran the full battery off the loop.
+N_PR_SCOPE_BROKEN = (
+    "THIS IS A HOOK BUG: wl_prscope.loop_state failed (%s), so this stop ran off the "
+    "one-plan-per-PR loop with every check armed."
+)
+
+# loop-next (Design 7): the loop continues after a merge. Each names the exact next commands. Substitutions by name: pr, branch, next (plan path), next_branch, delete (LOOP_NEXT_DELETE or ""), stale (LOOP_NEXT_STALE or ""), box (the first open box), ahead, plans.
+V_LOOP_NEXT_MERGED = (
+    "LOOP NEXT: PR #%(pr)s on %(branch)s is merged and QUEUE.md holds %(next)s. Continue the loop "
+    "(pr-merge step 7), in order:\n"
+    "    git switch main && git pull --ff-only\n"
+    "%(delete)s"
+    "    git fetch origin --prune\n"
+    "    git branch -D %(branch)s\n"
+    "    git switch -c %(next_branch)s\n"
+    "%(stale)s"
+    "Then work %(next)s's first box: %(box)s"
+)
+V_LOOP_NEXT_ON_MAIN = (
+    "LOOP NEXT: on main with no live branch, and QUEUE.md holds %(next)s. Cut the next branch "
+    "(block_second_branch admits exactly this name):\n"
+    "    git switch -c %(next_branch)s\n"
+    "%(stale)s"
+    "Then work %(next)s's first box: %(box)s"
+)
+V_LOOP_NEXT_NO_PR_WORK = (
+    "LOOP NEXT: branch %(branch)s has no PR and no commit ahead of origin/main. Work %(next)s's "
+    "first box: %(box)s"
+)
+V_LOOP_NEXT_NO_PR_OPEN = (
+    "LOOP NEXT: branch %(branch)s carries %(ahead)d commit(s) ahead of origin/main and has no PR. "
+    "Open it:\n"
+    "    npm run ci:quick   (the receipt block_unverified_push reads)\n"
+    "    git push -u origin %(branch)s\n"
+    "    gh pr create --draft --base main --head %(branch)s\n"
+    "refresh_pr_body writes the Plan: line from the queue head on the first push."
+)
+V_LOOP_NEXT_MERGE = (
+    "LOOP NEXT: every box of PR #%(pr)s's plan set is ticked (%(plans)s). The finish condition is "
+    "the merge: run /pr-merge (CI Complete SUCCESS on the head, wl_review.py --check rc 0, the PR "
+    "review answered)."
+)
+# The bounded unreadable arm: the failing read, the branch twice, and the block budget (wl_ci.CI_MAX_BLOCKS).
+V_LOOP_NEXT_UNREADABLE = (
+    "LOOP NEXT: the loop state could not be read (%s), so the hook cannot tell whether the PR of "
+    "%s is live, merged or missing. Check gh (gh auth status; gh pr list --head %s --state all) "
+    "and stop again. Bounded: after %d stop(s) with this error it rides the advisory queue."
+)
+LOOP_NEXT_DELETE = "    git push origin --delete %s\n"
+LOOP_NEXT_STALE = (
+    "Then remove the finished Promoted entry %s from agent/plans/QUEUE.md: refresh_pr_body would "
+    "write it as the next PR's Plan: line.\n"
+)
+LOOP_NEXT_BRANCH_UNKNOWN = (
+    "<MMDD-(MAX+1)>   (gh could not list today's PR heads: compute MAX as pr-merge step 7 does)"
+)
+LOOP_NEXT_NO_BOX = "(no open box found in its text)"
+
 # The PostCompact line: a compacted session must know that writer spawns are refused.
 CTX_POSTCOMPACT_FOCUS = (
     "FOCUS MODE IS ON (%s PR #%s on %s since %s): finish, don't start. Writer spawns are refused "

@@ -669,6 +669,17 @@ control(
     "",
 )
 
+# --------------------------------------------------------------------------- 8b. ONE PLAN PER PR (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 5, box SC6). On the loop, plan-adopted and plan-tasks read only the PR's plan set; the hook-level fire and control cases live in .claude/rediacc_hooks/tests/test_wl_pr_scope_stop.py, and this pins the filter's place: after plan_rows, before both consumers.
+_checks_src = (pathlib.Path(__file__).resolve().parent / "wl_checks.py").read_text(encoding="utf-8")
+_filter = '_pf_rows = [r for r in _pf_rows if r["rel"] in _loop_plans]'
+truthy("SC6: the plan-row filter to the PR's plan set is in wl_checks", _filter in _checks_src)
+truthy(
+    "  between plan_rows and the plan-adopted / plan-tasks consumers",
+    0 <= _checks_src.find("wl_planfile.plan_rows(") < _checks_src.find(_filter)
+    and "M.V_PLAN_ADOPTED" in _checks_src[_checks_src.find(_filter) :]
+    and '"plan-tasks", _pf_text' in _checks_src[_checks_src.find(_filter) :],
+)
+
 # --------------------------------------------------------------------------- 9. THE CONTROL FOR THE CONTROLS. A green run over fixtures that produced no tasks proves nothing at all -- this is assertion 5 of test-always-tier.py in a different suit. ---------------------------------------------------------------------------
 control("the fixtures really do parse as tasks", len(P.plan_tasks(live)), 3)
 truthy(

@@ -90,6 +90,38 @@ ARITY = {
     # why, what (mode PR since), parked names, advisories held, refused spawns.
     "N_FOCUS_ENDED": ("merged", "babysit PR #543 since t", "plan-adopted x2", 1, 0),
     "N_FOCUS_COMPACTION": (),
+    # The one-plan-per-PR loop (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4 and 7). N_PR_SCOPE: who, queued items, other plans, next plan, stood-down phrase, session prefix; the PR_SCOPE_WHO_* fragments take pr, branch and the named plans by key.
+    "N_PR_SCOPE": {"who": "w", "items": 1, "plans": 2, "next": "n", "stood": "", "me": "m"},
+    "PR_SCOPE_WHO_LIVE": {"pr": 592, "branch": "b", "plans": "p"},
+    "PR_SCOPE_WHO_UNREADABLE": {"pr": 0, "branch": "b", "plans": "p"},
+    "PR_SCOPE_WHO_NO_PR": {"pr": 0, "branch": "b", "plans": "p"},
+    "PR_SCOPE_WHO_MERGED": {"pr": 592, "branch": "b", "plans": "p"},
+    "PR_SCOPE_WHO_ON_MAIN": {"pr": 0, "branch": "b", "plans": "p"},
+    "PR_SCOPE_STOOD": ("solo-grind x1",),
+    "PR_SCOPE_NO_NEXT": None,
+    "N_PR_SCOPE_BROKEN": ("RuntimeError: x",),
+    # loop-next: every arm renders from one field dict (pr, branch, next, next_branch, stale, box, plans, delete, ahead).
+    "V_LOOP_NEXT_MERGED": {
+        "pr": 1,
+        "branch": "b",
+        "next": "n",
+        "next_branch": "nb",
+        "stale": "",
+        "box": "x",
+        "plans": "p",
+        "delete": "",
+        "ahead": 0,
+    },
+    "V_LOOP_NEXT_ON_MAIN": {"next": "n", "next_branch": "nb", "stale": "", "box": "x"},
+    "V_LOOP_NEXT_NO_PR_WORK": {"branch": "b", "next": "n", "box": "x"},
+    "V_LOOP_NEXT_NO_PR_OPEN": {"branch": "b", "ahead": 2},
+    "V_LOOP_NEXT_MERGE": {"pr": 1, "plans": "p"},
+    # The bounded unreadable arm: the failing read, the branch twice, the block budget.
+    "V_LOOP_NEXT_UNREADABLE": ("gh down", "b", "b", 2),
+    "LOOP_NEXT_DELETE": ("b",),
+    "LOOP_NEXT_STALE": ("p",),
+    "LOOP_NEXT_BRANCH_UNKNOWN": None,
+    "LOOP_NEXT_NO_BOX": None,
     # wl_store.classify_items' fail-closed lease line (R20260925.5): display line, lease state, session prefix, item id.
     "N_LEASE_FAILED_CLOSED": ("- [>] x", "expired", "m", "abcd1234"),
     "N_FOCUS_PR_UNREADABLE": ("543", "branch", "gh failed", 24),
@@ -292,7 +324,7 @@ ARITY = {
     "REGGATE_PROMPT": {"fixset": "f", "keys": "k"},
     "FIXSET_GROUND_TRUTH": {"count": 1, "files": "f", "more": "", "how": "diff-tree"},
     "V_PLAN_ADOPTED": {"rel": "p", "n_open": 2, "n_gap": 1, "recipes": "r", "me": "m"},
-    # ONE HOLE, and deliberately one: every number in the plan-implementation block -- the ceiling, the day, the three ownership buckets, the named box -- is computed by `wl_planenforce.render`, so the catalogue string wraps a body rather than formatting fourteen fields a call site would have to keep in step.
+    # ONE HOLE, and deliberately one: the PR plan set's open counts and the named box are computed by `wl_planenforce.render`, so the catalogue string wraps a body rather than formatting fields a call site would have to keep in step.
     "V_PLAN_UNIMPLEMENTED": {"body": "b"},
     # v20 plan fidelity (wl_planfid.py). V_PLANFID takes the plan path, the umbrella rows, the untracked-task rows, the judge's instruction, and then the session prefix TWICE (once for the --add exit, once as the owner tag of the deferral line) before the planfid: token.
     "V_PLANFID": ("p", "u", "m", "i", "me", "me", "t"),

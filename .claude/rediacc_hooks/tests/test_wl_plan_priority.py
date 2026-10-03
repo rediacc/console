@@ -9,11 +9,9 @@ case is shown to depend on the rule it names rather than on fixture order.
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import subprocess
 import sys
-import time
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_roster import (
@@ -41,7 +39,7 @@ fold = S.load(wl, sync=True)
 ctx, problem = PO.context(root)
 openl = S.classify_items(fold, ev["session_id"], order_key=PO.item_key(ctx))[0]
 empty = type("Empty", (), {"items": []})()
-cand, reason, _stats = B.next_plan(root, K.plan_records(root), empty, ev["session_id"], K.plan_owner, wl, {})
+cand, reason, _stats = B.next_plan(root)
 live = X.live_plans(ev["cwd"], ev["session_id"], fold)
 mirror = PO.holders([], fold, ev["session_id"])
 print(json.dumps({
@@ -96,6 +94,10 @@ def mutated_stop(fix, filename: str, old: str, new: str):
         ci = hooks.parents[1] / ".ci"
         if not ci.exists():
             ci.symlink_to(wlfix.STOP_DIR.parents[2] / ".ci")
+        # wl_backlog reaches wl_prscope, which imports plan_gate and commit_policy from the copy's parents[2] / "rediacc_hooks"; link the real package, as test_wl_cap_wait's mutated_hook does.
+        pkg = hooks.parent / "rediacc_hooks"
+        if not pkg.exists():
+            pkg.symlink_to(wlfix.STOP_DIR.parents[1] / "rediacc_hooks")
     path = hooks / "stop" / filename
     src = path.read_text(encoding="utf-8")
     assert src.count(old) == 1, "MUTATION FIXTURE BROKEN: %r occurs %d times in %s" % (
@@ -268,34 +270,7 @@ def test_o5b_a_blocked_plan_is_tagged_and_an_unreadable_order_says_so(wl):  # no
     assert "plan priority order unavailable" not in out, out[:1500]
 
 
-# ---- the backlog nomination -----------------------------------------------------------------------
-
-
-def test_b1_the_backlog_nominates_by_rank_before_mtime(wl):  # noqa: F811
-    """The NEWEST plan used to win outright; an operator P1 written earlier now does, and the WHY line says so."""
-    older = write_plan(wl, "older", status="approved", priority="P1 (operator) -- the ruling")
-    newer = write_plan(wl, "newer", status="approved", priority="P3")
-    base = wl.proj / "agent" / "plans"
-    now = time.time()
-    os.utime(base / older, (now - 600, now - 600))
-    os.utime(base / newer, (now, now))
-    got = probe(wl)
-    assert got["next_plan"] == "agent/plans/%s" % older, got
-    assert got["why"][0].startswith("Priority P1 (operator) -- the ruling; then NEWEST first"), got[
-        "why"
-    ]
-
-
-def test_b1c_control_without_a_priority_the_newest_still_wins(wl):  # noqa: F811
-    older = write_plan(wl, "older", status="approved")
-    newer = write_plan(wl, "newer", status="approved")
-    base = wl.proj / "agent" / "plans"
-    now = time.time()
-    os.utime(base / older, (now - 600, now - 600))
-    os.utime(base / newer, (now, now))
-    got = probe(wl)
-    assert got["next_plan"] == "agent/plans/%s" % newer, got
-    assert "No `Priority:` yet" in got["why"][0], got["why"]
+# The backlog nomination is QUEUE.md's next plan now (SC7); its cases live in .claude/hooks/stop/test-backlog.py.
 
 
 # ---- the roster's live plans agree with the spawn guard's ------------------------------------------

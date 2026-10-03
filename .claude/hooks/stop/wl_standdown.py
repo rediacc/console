@@ -1,15 +1,17 @@
 """wl_standdown: the Stop hook's stand-down profiles, the keep-lists that decide which checks still block while the session is told to wait.
 
-TWO STATES STAND THE BATTERY DOWN, and both share one mechanism. A KEEP-list rather than a drop-list, deliberately: a check added later stands down by default, which is what "should not be invoked" means, and it matches `check_tier`'s rule that an unknown key is hygiene.
+THREE STATES STAND THE BATTERY DOWN, and all share one mechanism. A KEEP-list rather than a drop-list, deliberately: a check added later stands down by default, which is what "should not be invoked" means, and it matches `check_tier`'s rule that an unknown key is hygiene.
 
   CAP_WAIT  every writer slot is verified live and nothing this session could start (operator 2026-09-24: "the stop hook should not be invoked (or should skip the order) when writer slots are full! There could be exceptions like 2% compaction etc."; agent/plans/PLAN-stop-hook-cap-saturated-wait.md). `wl_roster.cap_saturated_wait` decides it, because it needs `WRITER_CAP`.
   FOCUS     the session declared a PR wind-down with `worklist.py --focus <me> babysit|merge` (operator 2026-09-25, spec Y: "Finish, don't start"; agent/plans/PLAN-stop-hook-focus-mode.md). What stays is what protects the PR: CI red, a dead watch, unread reports, STATE.md near compaction and hook integrity.
 
-When both hold, FOCUS governs: it is the operator's explicit declaration, and its judge skip already covers the cap wait's.
+  PR_LOOP   the checkout is on the one-plan-per-PR loop (`wl_prscope.loop_state`, kind other than off-loop; operator ruling 2026-10-03, agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4). The hook blocks only on the live PR's plan set, its CI and reviews, the items on that set's epics and the loop's own duties; every other check is parked and named in one queued line.
+
+FOCUS governs over CAP_WAIT, and both over PR_LOOP: each is a narrower declaration. FOCUS is the operator's explicit one, and its judge skip already covers the cap wait's.
 
 SEALED. `.ci/policy/worklist-env-registry.json` lists this file under `sealed_modules`: it reads no environment variable and imports only the standard library, and `FOCUS_BATCH_MIN` / `FOCUS_MAX_HOURS` are pinned as literals. A knob that retuned a keep-list would be exactly the escape hatch the roster rules out.
 
-EACH KEY LITERAL APPEARS EXACTLY ONCE IN THIS FILE, so every mutation control that removes one line (`mutated_hook` asserts the count is 1) is unambiguous, and the producer scan in test_wl_cap_wait.py c9 / test_wl_focus.py f13 stays meaningful. `pr-finish` is kept by both profiles in different tiers, so it is named once through `_PR_FINISH`.
+EACH KEY LITERAL APPEARS EXACTLY ONCE IN THIS FILE, so every mutation control that removes one line (`mutated_hook` asserts the count is 1) is unambiguous, and the producer scan in test_wl_cap_wait.py c9 / test_wl_focus.py f13 stays meaningful. `pr-finish` is kept by several profiles in different tiers, so it is named once through `_PR_FINISH`; `defer-expired` likewise through `_DEFER_EXPIRED`.
 """
 
 import datetime
@@ -72,11 +74,13 @@ COMPACTION_KEYS = frozenset(
     }
 )
 
+# An expired `[?]` DEFAULT is an order to execute it: both the cap wait and the PR loop keep it.
+_DEFER_EXPIRED = "defer-expired"
 # The cap wait's own additions: a queue lease with a free slot, and deferrals that must execute.
 _CAP_WAIT_ONLY = frozenset(
     {
         "queue-slot",
-        "defer-expired",
+        _DEFER_EXPIRED,
         "undefaulted",
     }
 )
@@ -95,11 +99,31 @@ _FOCUS_ONLY = frozenset(
     }
 )
 
+# The PR loop's own additions (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4): the scoped open list and the checks that read it, the PR plan's own pushes, and the post-merge continuation.
+_PR_LOOP_ONLY = frozenset(
+    {
+        "open-items",
+        "idle-stall",
+        "unblocked-claim",
+        "plan-unimplemented",
+        "plan-adopted",
+        "loop-next",
+    }
+) | {_DEFER_EXPIRED}
+
 CAP_WAIT = Profile(
     "cap-wait", CORE | _CAP_WAIT_ONLY, PREFIXES, frozenset({_PR_FINISH}), COMPACTION_KEYS
 )
 FOCUS = Profile("focus", CORE | _FOCUS_ONLY | {_PR_FINISH}, PREFIXES, frozenset(), COMPACTION_KEYS)
-PROFILES = (CAP_WAIT, FOCUS)
+# STATE.md freshness is a loop duty at every band (ruling 1d), so the compaction keys are full keeps here rather than late-band ones.
+PR_LOOP = Profile(
+    "pr-loop",
+    CORE | _FOCUS_ONLY | _PR_LOOP_ONLY | COMPACTION_KEYS | {_PR_FINISH},
+    PREFIXES,
+    frozenset(),
+    frozenset(),
+)
+PROFILES = (CAP_WAIT, FOCUS, PR_LOOP)
 
 
 def keeps(profile, key, always, compaction_due):
@@ -110,6 +134,16 @@ def keeps(profile, key, always, compaction_due):
     if always and key in profile.always_keeps:
         return True
     return bool(compaction_due) and key in profile.compaction_keys
+
+
+def parked_line(counts, cap=6):
+    """The parked keys in one phrase: the top `cap` by stops parked (`key xN`), then "+N more"; "nothing" when none. Shared by focus mode's end summary and the PR loop's queued line."""
+    counts = counts if isinstance(counts, dict) else {}
+    ranked = sorted(counts.items(), key=lambda kv: (-int(kv[1] or 0), kv[0]))
+    names = ", ".join("%s x%d" % (k, int(n or 0)) for k, n in ranked[:cap]) or "nothing"
+    if len(ranked) > cap:
+        names += " +%d more" % (len(ranked) - cap)
+    return names
 
 
 # ---- focus mode -------------------------------------------------------------

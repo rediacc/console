@@ -42,6 +42,7 @@ import wl_planfile
 import wl_planindex as PI
 import wl_planorder
 import wl_popup
+import wl_prscope
 import wl_reggate
 import wl_report
 import wl_roster
@@ -2234,8 +2235,10 @@ PRIORITY_LADDER = (
                 "focus-pr-items",
                 # A plan this session ADOPTED (its Owner line says so) with boxes nothing tracks: the adoption is the statement that it is being executed.
                 "plan-adopted",
-                # The same question widened from "adopted" to ALL, per the operator's own ruling, and bounded by a descending ceiling rather than by a fire cap. T_MISSION is the ladder's own argument rather than a promotion: "the thing this session was ASKED to do is not done ... everything else is housekeeping around work that has not landed". See wl_planenforce.
+                # The PR's plan set (its `Plan:` plans and their unfinished prerequisites) has an open box: the thing this branch exists for is not done (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 5). See wl_planenforce.
                 "plan-unimplemented",
+                # The loop after a merge: the next branch, plan and PR do not exist yet (Design 7).
+                "loop-next",
                 "defer-expired",
                 "undefaulted",
                 # agent/programs/<slug>/CHECKLIST.md -- deliverable and wave boxes, same four-state markdown the worklist uses.
@@ -2491,13 +2494,129 @@ def _focus_refused_count(worklist, me8, since):
     return n
 
 
+def loop_governs(state):
+    """True when the one-plan-per-PR loop scopes this stop (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4): any loop state but `off-loop` that has something to work, a PR plan set, a queue head or a next plan. A checkout with neither a PR plan nor anything in agent/plans/QUEUE.md has no loop to scope or continue (on main after the last queued plan merged, or a project that never queued one), so it keeps the full battery."""
+    if state is None or state.kind == wl_prscope.OFF_LOOP:
+        return False
+    return bool(state.plans or state.queue_head or state.next_plan)
+
+
+def _base(rel):
+    return str(rel).rsplit("/", 1)[-1]
+
+
+def pr_scope_line(state, root, me8, queued_n, stood):
+    """The one queued line (M.N_PR_SCOPE): who the loop is working, how many items and other plans are queued, the next plan, the checks this stop stood down (`stood`, {base: stops parked}), and where the full list is."""
+    if state.plans:
+        # The PR's own plan leads even when a prerequisite is worked first: the line says what the PR is.
+        own = [p for p in state.plans if p not in state.prereqs]
+        lead = own[0] if own else state.plans[0]
+        rest = [
+            "%s, a prerequisite" % _base(p) if p in state.prereqs else _base(p)
+            for p in state.plans
+            if p != lead
+        ]
+        named = _base(lead) + (" (+ %s)" % "; ".join(rest) if rest else "")
+    else:
+        named = "the queue head"
+    who = {
+        wl_prscope.LIVE: M.PR_SCOPE_WHO_LIVE,
+        wl_prscope.UNREADABLE: M.PR_SCOPE_WHO_UNREADABLE,
+        wl_prscope.NO_PR: M.PR_SCOPE_WHO_NO_PR,
+        wl_prscope.MERGED: M.PR_SCOPE_WHO_MERGED,
+        wl_prscope.ON_MAIN: M.PR_SCOPE_WHO_ON_MAIN,
+    }.get(state.kind, M.PR_SCOPE_WHO_ON_MAIN) % {
+        "pr": state.pr,
+        "branch": state.branch,
+        "plans": named,
+    }
+    return M.N_PR_SCOPE % {
+        "who": who,
+        "items": int(queued_n),
+        "plans": wl_backlog.other_plans(root, state.plans),
+        "next": _base(state.next_plan) if state.next_plan else M.PR_SCOPE_NO_NEXT,
+        "stood": M.PR_SCOPE_STOOD % wl_standdown.parked_line(stood, 6) if stood else "",
+        "me": me8,
+    }
+
+
+def ci_arming(root, session_id, focus_ref, state):
+    """(ref, owned) for the PR reads: focus's branch, else the explicit WORKLIST_PUBLISH_REF override, else the `live` loop state's branch (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4). `owned` is True for focus, and for the live branch when the PR's own plan names this session as Owner."""
+    if focus_ref:
+        return focus_ref, True
+    env_ref = os.environ.get("WORKLIST_PUBLISH_REF", "")
+    if env_ref:
+        return env_ref, False
+    if state is None or state.kind != wl_prscope.LIVE or not state.branch:
+        return None, False
+    own = [p for p in state.plans if p not in state.prereqs]
+    owned = any(C.owned_by_me(plan_owner(root, rel), session_id) for rel in own)
+    return state.branch, owned
+
+
+def _first_box_text(root, rel):
+    got = wl_planenforce.first_box(root, rel)
+    return "%s  %s" % (got[0], got[1][:120]) if got else M.LOOP_NEXT_NO_BOX
+
+
+def loop_next_text(state, root, state_doc, pr_finish_fired):
+    """(text, blocking): the loop-next message for this stop, or ("", False) (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7): merged / on-main / no-pr / live with every box ticked / unreadable. Never fires on an empty queue. The unreadable arm counts its stops per error signature in `state_doc["loopnext"]` and stops blocking after wl_ci.CI_MAX_BLOCKS of them (the text then rides the advisory queue); any other arm resets the count."""
+    kind, branch = state.kind, state.branch
+    if kind != wl_prscope.UNREADABLE:
+        state_doc.pop("loopnext", None)
+    stale = M.LOOP_NEXT_STALE % state.stale_promoted if state.stale_promoted else ""
+    nxt = state.next_plan
+    fields = {
+        "pr": state.pr,
+        "branch": branch,
+        "next": nxt,
+        "next_branch": state.next_branch or M.LOOP_NEXT_BRANCH_UNKNOWN,
+        "stale": stale,
+        "box": _first_box_text(root, nxt) if nxt else "",
+        "plans": ", ".join(_base(p) for p in state.plans),
+        "delete": "",
+        "ahead": 0,
+    }
+    if kind == wl_prscope.MERGED:
+        if not nxt:
+            return "", False
+        if C._git(root, "rev-parse", "--verify", "-q", "refs/remotes/origin/%s" % branch):
+            fields["delete"] = M.LOOP_NEXT_DELETE % branch
+        return M.V_LOOP_NEXT_MERGED % fields, True
+    if kind == wl_prscope.ON_MAIN:
+        return (M.V_LOOP_NEXT_ON_MAIN % fields, True) if nxt else ("", False)
+    if kind == wl_prscope.NO_PR:
+        ahead = C._git(root, "rev-list", "--count", "origin/main..HEAD")
+        fields["ahead"] = int(ahead) if str(ahead or "").strip().isdigit() else 0
+        if fields["ahead"] > 0:
+            return M.V_LOOP_NEXT_NO_PR_OPEN % fields, True
+        if not nxt:
+            return "", False
+        return M.V_LOOP_NEXT_NO_PR_WORK % fields, True
+    if kind == wl_prscope.LIVE:
+        if pr_finish_fired or not state.plans:
+            return "", False
+        if any(wl_planenforce.first_box(root, rel) for rel in state.plans):
+            return "", False
+        return M.V_LOOP_NEXT_MERGE % fields, True
+    if kind == wl_prscope.UNREADABLE:
+        sig = hashlib.sha1(str(state.reason).encode("utf-8", "replace")).hexdigest()[:12]
+        ln = state_doc.get("loopnext") if isinstance(state_doc.get("loopnext"), dict) else {}
+        n = int(ln.get("n") or 0) + 1 if ln.get("sig") == sig else 1
+        state_doc["loopnext"] = {"sig": sig, "n": n}
+        text = M.V_LOOP_NEXT_UNREADABLE % (
+            str(state.reason)[:200],
+            branch or "this checkout",
+            branch or "<branch>",
+            wl_ci.CI_MAX_BLOCKS,
+        )
+        return text, n <= wl_ci.CI_MAX_BLOCKS
+    return "", False
+
+
 def focus_ended_line(sd, why, refused):
-    """The one-line parked summary (M.N_FOCUS_ENDED): top 6 parked keys by stops parked, then "+N more", capped at 300 characters."""
-    parked = sd.get("parked") if isinstance(sd.get("parked"), dict) else {}
-    ranked = sorted(parked.items(), key=lambda kv: (-int(kv[1] or 0), kv[0]))
-    names = ", ".join("%s x%d" % (k, int(n or 0)) for k, n in ranked[:6]) or "nothing"
-    if len(ranked) > 6:
-        names += " +%d more" % (len(ranked) - 6)
+    """The one-line parked summary (M.N_FOCUS_ENDED): top 6 parked keys by stops parked, then "+N more" (wl_standdown.parked_line), capped at 300 characters."""
+    names = wl_standdown.parked_line(sd.get("parked"), 6)
     what = "%s PR #%s since %s" % (sd.get("mode") or "?", sd.get("pr") or "?", sd.get("focus_at"))
     return (M.N_FOCUS_ENDED % (why, what, names, int(sd.get("adv_held") or 0), refused))[:300]
 
@@ -2591,6 +2710,12 @@ def focus_resolve(root, worklist, session_id, me8, fold, state_doc):
         state_doc.pop("standdown", None)
         S.save_state(worklist, session_id, state_doc)
     return focus, ended
+
+
+def outq_drop(state_doc, key):
+    """Drop every queued entry under `key`: the state it described has moved on."""
+    q = _outq(state_doc)
+    q["items"] = [e for e in q["items"] if _outq_display_key(e) != key]
 
 
 def outq_forget(state_doc, key, text):
@@ -2694,9 +2819,19 @@ def run_stop(event, event_ok, worklist, hook_file):
     _order_key = None
     with contextlib.suppress(Exception):
         _order_key = wl_planorder.item_key(wl_planorder.context(root)[0])
-    # THE PR'S ITEM SCOPE (agent/plans/PLAN-stop-hook-one-plan-scope.md, Design 2). None puts every item in scope; the PR_LOOP profile sets it from loop_state's epic items, and the same predicate scopes the guide below.
+    # THE LOOP STATE (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 1), computed ONCE per stop: which PR, which plan set, which epic items, what comes next. A resolver that raises leaves the checkout off the loop (the full battery) and says so as a hook bug.
+    _loop, _loop_err = None, ""
+    try:
+        _loop = wl_prscope.loop_state(root, worklist, session_id)
+    except Exception as exc:  # noqa: BLE001 -- a broken resolver must SAY SO, never wedge a stop
+        _loop_err = "%s: %s" % (type(exc).__name__, str(exc)[:160])
+    _on_loop = loop_governs(_loop)
+    _scope_ids = _loop.epic_items if _loop is not None else frozenset()
+    # The PR's plan set while the loop governs, () otherwise: the scope of plan-adopted, plan-tasks and plan-unimplemented below.
+    _loop_plans: tuple[str, ...] = _loop.plans if _loop is not None and _on_loop else ()
+    # THE PR'S ITEM SCOPE (Design 2). On the loop an open item blocks only while it is on an epic of the PR's plan set; off the loop None puts every item in scope. The same predicate scopes the guide below.
     # Bound once with functools.partial so both classify calls below carry it and each call keeps the exact shape the order-key mutation control (test_wl_plan_priority m4) edits.
-    _in_scope = None
+    _in_scope = (lambda rec: rec["id"] in _scope_ids) if _on_loop else None
     _classify = functools.partial(S.classify_items, in_scope=_in_scope)
     open_items, _others, deferred_recs, in_flight_recs, _queued_recs = _classify(
         fold, session_id, live_worker_ids=_live_worker_ids, order_key=_order_key
@@ -3633,6 +3768,9 @@ def run_stop(event, event_ok, worklist, hook_file):
         _pf_rows, _pf_unread = wl_planfile.plan_rows(
             root, plan_records(root), fold, session_id, plan_owner
         )
+        # ON THE LOOP, ONLY THE PR'S PLAN SET (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 5): an adoption of a plan the PR does not work is queued with every other plan, counted in the N_PR_SCOPE line.
+        if _on_loop:
+            _pf_rows = [r for r in _pf_rows if r["rel"] in _loop_plans]
         if _pf_rows:
             # S2: up to PLAN_PLANS_SHOW plans, sharing ONE quote budget. `render_all` owns both the cap and the remainder line that `render`'s n_more_plans used to carry, so the call site no longer does that arithmetic. THE ORDER, distinct from the advisory below and keyed apart from it on purpose: `plan-tasks` must never become a `vadd` (test-planfile.py pins that), because a plan
             # a session merely OWNS can carry eighteen boxes and would wedge every turn. A plan the session ADOPTED is different in kind -- the adoption is a committed sentence saying it is being executed -- and it blocks only while boxes are untracked or stale, so tracking them (or deferring, or handing the plan back) ends it in one turn.
@@ -3674,59 +3812,43 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop
         pass
 
-    # ---- PLAN BACKLOG NOMINATION (wl_backlog). Answers the question `plan-tasks` above does not: which committed, undone design should THIS session implement next. The operator's own words: "we plan but don't implement". DESC by mtime (plan_records' own order), validated against a live worklist claim and a peer's liveness -- see wl_backlog's module docstring and
-    # agent/plans/PLAN-stop-hook-plan-backlog-nudge.md. ADVISORY, never a vadd, same tier and same reasoning as plan-tasks: a blocking nomination over a standing backlog nobody here created would wall every session behind work it did not cause.
-    # SKIPPED IN FOCUS MODE, not filtered: producing it spends `backlog_nominated` on a nomination nobody would see.
+    # ---- THE NEXT PLAN (wl_backlog), read off agent/plans/QUEUE.md: Promoted first, then Generated (operator ruling 3, 2026-10-03). The loop state already computed it with the reader the merge gate and P-A1 share; off the loop it is computed here. ADVISORY, never a vadd: the loop's own post-merge push is `loop-next`.
+    # SKIPPED IN FOCUS MODE: the wind-down spends nothing on what comes after the PR.
+    # ONE NEXT PLAN AT A TIME: a queued nomination of any other plan (an older stop's, or the retired per-session ranking's) is dropped before this stop's is added, so the queue never enumerates plans the loop is not starting next.
+    _bl_key = ""
     try:
-        _bl_candidate, _bl_reason, _bl_stats = (
-            (None, "", {})
-            if _focus
-            else wl_backlog.next_plan(
+        if not _focus:
+            _bl_candidate, _bl_reason, _bl_stats = wl_backlog.next_plan(
                 root,
-                plan_records(root),
-                fold,
-                session_id,
-                plan_owner,
-                worklist,
-                state_doc,
-                projects_dir,
+                nxt=_loop.next_plan if _loop is not None and _on_loop else None,
+                exclude=_loop.plans if _loop is not None else (),
             )
-        )
-        if _bl_candidate is not None:
-            _bl_text = wl_backlog.render(_bl_candidate, _bl_reason, _bl_stats, session_id)
-            _bl_added = outq_add(
-                worklist,
-                session_id,
-                state_doc,
-                "plan-backlog:%s" % _bl_candidate["rel"],
-                _bl_text,
-                2,
-            )
-            if _bl_added:
-                _bl_cap = state_doc.get("backlog_nominated")
-                if not isinstance(_bl_cap, dict):
-                    _bl_cap = {}
-                    state_doc["backlog_nominated"] = _bl_cap
-                _bl_cap[_bl_candidate["rel"]] = C.stamp_now()
-                S.save_state(worklist, session_id, state_doc)
+            _bl_text = wl_backlog.render(_bl_candidate, _bl_reason, _bl_stats)
+            if _bl_text:
+                _bl_key = "plan-backlog:%s" % (_bl_candidate or _bl_stats).get("rel")
+                outq_add(worklist, session_id, state_doc, _bl_key, _bl_text, 2)
     except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop
         pass
+    _blq = _outq(state_doc)
+    _blq["items"] = [
+        e
+        for e in _blq["items"]
+        if not str(e.get("key") or "").startswith("plan-backlog:") or e.get("key") == _bl_key
+    ]
 
-    # ---- PLANNED BUT NOT IMPLEMENTED (wl_planenforce). The third question in this neighbourhood and the only BLOCKING one: `plan-tasks` above asks whether a plan's boxes are TRACKED, `plan-backlog` asks which plan to start NEXT, and this asks whether the corpus is being DRAINED. The operator was offered three narrower scopes after seeing the census and chose ALL, so there is no
-    # status exemption here and NOT_STARTED_STATES is deliberately not honoured -- `draft` carries most of the debt in this tree, and exempting it would leave the block asserting almost nothing.
-    #
-    # BOUNDED BY A CEILING, NOT BY A FIRE CAP, which is the whole reason this is allowed to be a T_MISSION vadd at all. `wl_planfile`'s design note 1 and the `plan-adopted` call-site comment above both refuse exactly this widening, and they are right about the wedge: a block over 221 standing boxes with no reachable exit would be the fourth repeated-nag incident in this hook. The
-    # ceiling is the answer -- silent at or under it, and the block's own text prints the number of boxes that ends it.
-    #
-    # WARN RIDES THE QUEUE, BLOCK RIDES THE LADDER. Inside the warn band the same body goes out as a priority-2 advisory, where outq_add's content signature keeps it from repeating while nothing changes; over the ceiling it is a vadd. One renderer, two deliveries, so the two can never describe the tree differently.
+    # ---- THE PR'S PLAN SET IS NOT FINISHED (wl_planenforce). The only BLOCKING plan push: `plan-tasks` asks whether a plan's boxes are TRACKED, `plan-backlog` names what comes NEXT, and this asks whether the PR's own plans are DONE. Scoped to the loop state's set, prerequisites first, with no ceiling (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 5); off the loop the scope is empty and it is silent.
+    # A BACKGROUND TASK OF THIS SESSION TURNS IT INTO AN ADVISORY: a writer on the box or a `ci-trace --wait` is the work happening, and the box count of one plan is the exit.
     try:
         _pe_state, _pe_text, _pe_detail = wl_planenforce.evaluate(
-            root, plan_records(root), session_id, plan_owner, worklist, projects_dir
+            root, _loop_plans, session_id, live=bool(live_bg)
         )
         if _pe_state == wl_planenforce.BLOCK and _pe_text:
             vadd("plan-unimplemented", False, M.V_PLAN_UNIMPLEMENTED % {"body": _pe_text})
-        elif _pe_state == wl_planenforce.WARN and _pe_text and not _focus:
-            outq_add(worklist, session_id, state_doc, "plan-clock", _pe_text, 2)
+        elif _pe_state == wl_planenforce.ADVISORY and _pe_text and not _focus:
+            outq_add(worklist, session_id, state_doc, "plan-pr-open", _pe_text, 2)
+        if _pe_state != wl_planenforce.ADVISORY:
+            # The advisory copy describes a stop that had live work; once the verdict is a block or silence it is stale.
+            outq_drop(state_doc, "plan-pr-open")
     except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop
         pass
 
@@ -3780,7 +3902,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     queue_note = ""
     # FOCUS MODE ARMS BOTH PR READS from the focus's own branch: `--focus` declared the PR this session's (agent/plans/PLAN-stop-hook-focus-mode.md section 3).
     _focus_ref = str((_focus or {}).get("branch") or "") or None
-    fstate, fdetail = wl_ci.pr_body_freshness(root, ref=_focus_ref)
+    # THE LIVE PR ARMS THEM TOO (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4): on a `live` loop state the PR's branch is the ref when neither focus nor the explicit WORKLIST_PUBLISH_REF override names one. `owned` lifts ci_trouble's multi-session skip only when the PR's own plan names this session as Owner, so a peer's PR keeps the skip.
+    _ci_ref, _ci_owned = ci_arming(root, session_id, _focus_ref, _loop)
+    fstate, fdetail = wl_ci.pr_body_freshness(root, ref=_ci_ref)
     pr_stale_folded = False
     if fstate == "stale":
         if qstate == "saturated":
@@ -3816,9 +3940,7 @@ def run_stop(event, event_ok, worklist, hook_file):
 
     # The CI-published verdict (PLAN-ci-verdict box D). ABOVE ci_trouble and outside its multi-session skip on purpose: that skip keeps one session from being BLOCKED over a peer's red, and this blocks nothing -- it is the one diagnosis CI already made, shown once per session per (sha, run, attempt) so no session re-derives it by hand.
     # Sticky: wl_civerdict marks the key seen when it builds the note, so the queue must hold the note until it is shown.
-    _cv_note = wl_civerdict.note(
-        root, worklist, session_id, ref=_focus_ref or os.environ.get("WORKLIST_PUBLISH_REF", "")
-    )
+    _cv_note = wl_civerdict.note(root, worklist, session_id, ref=_ci_ref or "")
     if _cv_note:
         outq_add(worklist, session_id, state_doc, "ci-verdict", _cv_note, 1, sticky=True)
 
@@ -3856,8 +3978,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             session_id,
             live_bg,
             (last_msg or "") + "\n" + "\n".join(deferred),
-            ref=_focus_ref,
-            owned=bool(_focus_ref),
+            ref=_ci_ref,
+            owned=_ci_owned,
         )
     except Exception as exc:  # noqa: BLE001 -- a broken CI check must SAY SO, not vanish
         cistate, cidetail = "unreadable", "%s: %s" % (type(exc).__name__, str(exc)[:120])
@@ -4029,6 +4151,27 @@ def run_stop(event, event_ok, worklist, hook_file):
             "THIS IS A HOOK BUG: the pr-babysit finish-line check failed: %s: %s"
             % (type(exc).__name__, str(exc)[:120]),
         )
+    # ---- LOOP NEXT (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7, operator addition 2026-10-03): after the PR's plan is finished and the PR merged, the turn is held until the next branch, plan and PR exist. One arm per loop state, each naming the exact commands; silent on an empty queue. After the CI read, so `pr-finish` above already decided this stop.
+    # A BACKGROUND TASK OF THIS SESSION DOWNGRADES IT to an advisory (a pr-merge watch or a `ci-trace --wait` is the step being waited on), and the unreadable arm is bounded like ci-red.
+    if _on_loop:
+        try:
+            _ln_text, _ln_block = loop_next_text(
+                _loop, root, state_doc, any(k == "pr-finish" for k, _a, _t in violations)
+            )
+            if _ln_text and _ln_block and not live_bg:
+                vadd("loop-next", False, _ln_text)
+                outq_drop(state_doc, "loop-next")
+            elif _ln_text:
+                outq_add(worklist, session_id, state_doc, "loop-next", _ln_text, 0, refresh_min=0)
+            else:
+                outq_drop(state_doc, "loop-next")
+        except Exception as exc:  # noqa: BLE001 -- a blind loop must SAY SO
+            vadd(
+                "loop-next",
+                True,
+                "THIS IS A HOOK BUG: the loop-next check failed: %s: %s"
+                % (type(exc).__name__, str(exc)[:120]),
+            )
     if ci_report:
         # Class 0, volatile, refresh_min=0 for the same reason as the queue
         # note: ci_trouble recomputes this from the live run every stop, and a PR that is still red must keep saying so. Case 128 pins it: the downgraded note is what remains after the block budget is spent, so latching it would leave a red PR reported exactly once.
@@ -4544,7 +4687,17 @@ def run_stop(event, event_ok, worklist, hook_file):
             guide_empty = False
     # ---- THE STAND-DOWN, a stricter second pass after the HONEST one: the cap-saturated wait (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 6) or focus mode (agent/plans/PLAN-stop-hook-focus-mode.md section 4), whose keep-lists live in wl_standdown. FOCUS governs when both hold: it is the operator's declaration, and its judge skip covers the cap wait's. The STATE.md demand
     # survives only when compaction is imminent (the late band, ~2% before auto-compact) and the document is not current.
-    _profile = wl_standdown.FOCUS if _focus else wl_standdown.CAP_WAIT if _in_cap_wait else None
+    # THE PR LOOP (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4) is the third profile, applied when neither narrower declaration holds: the live PR's plan set, its CI and reviews, its epic's items and the loop's duties block; everything else is parked and named in the N_PR_SCOPE line.
+    _profile = (
+        wl_standdown.FOCUS
+        if _focus
+        else wl_standdown.CAP_WAIT
+        if _in_cap_wait
+        else wl_standdown.PR_LOOP
+        if _on_loop
+        else None
+    )
+    _pr_scope_stood: dict[str, int] = {}
     if _profile is not None:
         _compaction_due = astate in (
             "missing",
@@ -4573,7 +4726,17 @@ def run_stop(event, event_ok, worklist, hook_file):
             ]
         if bgwait_due and not any(k == "bg-report" for k, _a, _t in violations):
             bgwait_due = False  # stood down, not delivered
-        if _focus:
+        if _profile is wl_standdown.PR_LOOP:
+            state_doc.pop("capwait", None)
+            _ps = state_doc.get("prscope")
+            if not isinstance(_ps, dict) or not isinstance(_ps.get("parked"), dict):
+                _ps = {"parked": {}}
+            for _base_key in {str(k).split(":", 1)[0] for k in _dropped}:
+                _ps["parked"][_base_key] = int(_ps["parked"].get(_base_key) or 0) + 1
+                _pr_scope_stood[_base_key] = _ps["parked"][_base_key]
+            _ps["parked_now"] = len(_dropped)
+            state_doc["prscope"] = _ps
+        elif _focus:
             state_doc.pop("capwait", None)
             _sd = state_doc.get("standdown")
             if not isinstance(_sd, dict) or _sd.get("focus_at") != _focus.get("at"):
@@ -4625,6 +4788,22 @@ def run_stop(event, event_ok, worklist, hook_file):
                 guide_empty = False
     else:
         state_doc.pop("capwait", None)
+    # THE ONE QUEUED LINE (M.N_PR_SCOPE), on every stop on the loop: it rides the allow's guide and every block's extras, so a reader with no memory of the ruling learns it from the hook's own text.
+    _pr_scope_line = ""
+    if _loop is not None and _on_loop:
+        try:
+            _pr_scope_line = pr_scope_line(_loop, root, me8, len(_queued_recs), _pr_scope_stood)
+        except Exception as exc:  # noqa: BLE001 -- a broken line must SAY SO
+            _pr_scope_line = "THIS IS A HOOK BUG: the N_PR_SCOPE line failed: %s: %s" % (
+                type(exc).__name__,
+                str(exc)[:120],
+            )
+        guide = guide + "\n\n" + _pr_scope_line if guide else _pr_scope_line
+        guide_empty = False
+    elif _loop_err:
+        outq_add(
+            worklist, session_id, state_doc, "prscope-broken", M.N_PR_SCOPE_BROKEN % _loop_err, 1
+        )
     if bgwait_due:
         # Delivered for real (this stop emits it either way below), so the stamp the next check-in prints is banked here and saved eagerly:
         # the WORKLIST_FOCUS=off block path emits without saving.
@@ -4723,8 +4902,10 @@ def run_stop(event, event_ok, worklist, hook_file):
         sysmsg_tail = (
             "" if not reg_forgot else " [reggate marker was corrupt; settled verdicts forgotten]"
         )
-        extras = ("\n\n" + ci_report if ci_report else "") + (
-            "\n\n" + queue_note if queue_note else ""
+        extras = (
+            ("\n\n" + ci_report if ci_report else "")
+            + ("\n\n" + queue_note if queue_note else "")
+            + ("\n\n" + _pr_scope_line if _pr_scope_line else "")
         )
         # THE ADVISORY QUEUE WAS STARVED BY A PRODUCTIVE SESSION: `outq_drain` runs on the allow path only, and measured 2026-09-17, ten parsed plan boxes went unseen across roughly twenty consecutive blocked stops. The digest (operator ruling 2026-09-24, "One quoted + others named") names up to OUTQ_DIGEST_MAX sections on every block and delivers the one-line ones outright; a
         # multi-line body stays queued for a clean stop, so the focused violation above is never displaced by a wall. The two CI notes are skipped because they already ride `extras` in full.
