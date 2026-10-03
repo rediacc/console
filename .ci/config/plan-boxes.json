@@ -670,6 +670,25 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-gate-drop-receipt-verify.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 8,
+      "done": 0,
+      "open_sigs": [
+        "3054a1df",
+        "3124130f",
+        "49df9a96",
+        "8a268fb2",
+        "99f5e08e",
+        "bace249f",
+        "cb4c0152",
+        "fc15df5e"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-gh-swallow-gates-audit.md": {
       "status": "compacted",
       "owner": "f4da5c2e",
