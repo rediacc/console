@@ -47,6 +47,7 @@ import shutil
 import sys
 import tempfile
 from collections import deque
+from typing import Any
 
 import yaml
 
@@ -707,7 +708,7 @@ def selftest() -> int:
             repr(ix.data_paths("rediacc_ci.factory")),
         )
         st = Stats()
-        plant_job = {
+        plant_job: dict[str, Any] = {
             "steps": [
                 {
                     "uses": "actions/checkout@x",
@@ -736,7 +737,7 @@ def selftest() -> int:
             "CONTROL: the same cone WITH the data file is green",
             not job_findings("fx.yml", "fx-job", plant_job, ix, Stats(), tmp),
         )
-        clean_job = {
+        clean_job: dict[str, Any] = {
             "steps": [
                 {"uses": "actions/checkout@x", "with": {"sparse-checkout": ".ci/rediacc_ci"}},
                 {"name": "Clean", "run": "PYTHONPATH=.ci python3 -m rediacc_ci.clean"},

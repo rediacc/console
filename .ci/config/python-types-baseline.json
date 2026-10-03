@@ -1948,13 +1948,6 @@
       "message": "Incompatible types in assignment (expression has type \"str | None\", variable has type \"str\")"
     },
     {
-      "id": "944821c6096fbf25",
-      "file": ".ci/scripts/quality/check_checkout_cone.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 1 to \"join\" of \"str\" has incompatible type \"list[str] | None\"; expected \"Iterable[str]\""
-    },
-    {
       "id": "a3a936fb0c124599",
       "file": ".ci/scripts/quality/check_ci_gate_prerequisites.py",
       "code": "arg-type",
