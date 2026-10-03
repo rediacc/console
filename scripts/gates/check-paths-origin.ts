@@ -281,7 +281,7 @@ function selftest(): number {
         .filter(Boolean)
     );
     check(
-      `the real lock and tree carry zero findings today (saw ${real.length})`,
+      `the real lock and tree carry zero findings today (saw ${real.length}${real.length ? `: ${real.slice(0, 3).join('; ')}` : ''})`,
       real.length === 0
     );
   }

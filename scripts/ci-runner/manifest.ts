@@ -2703,6 +2703,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     leaves: ['.ci/scripts/quality/check_durable_paths_tracked.py'],
     paths: ['.gitignore', '.ci/scripts/quality/check_durable_paths_tracked.py'],
+    pathsOrigin: 'declared',
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

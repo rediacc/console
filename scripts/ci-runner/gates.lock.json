@@ -2835,6 +2835,7 @@
       ".gitignore",
       ".ci/scripts/quality/check_durable_paths_tracked.py"
     ],
+    "pathsOrigin": "declared",
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
