@@ -519,7 +519,7 @@ def test_sc10_the_plan_adopted_recipe_survives_a_quote_in_the_box_text(wl):  # n
     path.write_text(
         path.read_text(encoding="utf-8").replace(
             "- [ ] Rewrite the alpha subsystem onto the shared helper in one commit",
-            '- [ ] ("R1 A writer\'s paths stay subtracted while any item is leased',
+            "- [ ] (\"R1 A writer's paths stay subtracted while any item is leased",
         ),
         encoding="utf-8",
     )
@@ -528,6 +528,4 @@ def test_sc10_the_plan_adopted_recipe_survives_a_quote_in_the_box_text(wl):  # n
     lines = [ln for ln in reason(got).splitlines() if "worklist.py --add" in ln]
     assert lines, reason(got)[:1500]
     argvs = [shlex.split(ln) for ln in lines]
-    assert any(
-        a[-1].startswith('("R1 A writer\'s paths stay subtracted') for a in argvs
-    ), argvs
+    assert any(a[-1].startswith("(\"R1 A writer's paths stay subtracted") for a in argvs), argvs
