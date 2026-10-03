@@ -269,12 +269,12 @@ def test_regenerate_preserves_promoted_byte_for_byte(qroot):
 
 
 def test_generated_order_by_priority_without_promoted_finished_or_untracked(qroot):
-    """Every fixture plan is not started, so Priority decides; `held` moves nothing (operator ruling 2026-10-02)."""
+    """Every fixture plan is not started, so Priority decides among the unheld ones, and a held plan follows them (#93798daa, PLAN-stop-hook-one-plan-scope Design 6)."""
     _pq().refresh(qroot)
     assert _generated(qroot) == [
-        "agent/plans/PLAN-held-urgent.md",
         "agent/plans/PLAN-open-early.md",
         "agent/plans/PLAN-open-late.md",
+        "agent/plans/PLAN-held-urgent.md",
     ]
 
 
@@ -282,8 +282,8 @@ def test_generated_lines_carry_priority_and_status(qroot):
     pq = _pq()
     pq.refresh(qroot)
     text = (qroot / pq.QUEUE_REL).read_text(encoding="utf-8")
-    assert "2. agent/plans/PLAN-open-early.md -- P1, approved, not started\n" in text
-    assert "1. agent/plans/PLAN-held-urgent.md -- P0, held, not started\n" in text
+    assert "1. agent/plans/PLAN-open-early.md -- P1, approved, not started\n" in text
+    assert "3. agent/plans/PLAN-held-urgent.md -- P0, held, not started\n" in text
 
 
 def test_stale_generated_section_is_refused_by_the_freshness_check(qroot):
@@ -384,7 +384,7 @@ def test_in_progress_precedes_not_started_regardless_of_priority(tmp_path):
     assert _names(root) == ["PLAN-late-started.md", "PLAN-urgent-fresh.md"]
 
 
-def test_held_is_ignored_for_order_and_kept_in_the_note(tmp_path):
+def test_held_follows_unheld_and_is_kept_in_the_note(tmp_path):
     root = _queue_root(
         tmp_path,
         {
@@ -392,9 +392,9 @@ def test_held_is_ignored_for_order_and_kept_in_the_note(tmp_path):
             "PLAN-open.md": _box_plan(priority="P1"),
         },
     )
-    assert _names(root) == ["PLAN-held.md", "PLAN-open.md"]
+    assert _names(root) == ["PLAN-open.md", "PLAN-held.md"]
     text = (root / _pq().QUEUE_REL).read_text(encoding="utf-8")
-    assert "1. agent/plans/PLAN-held.md -- P0, held, not started\n" in text, text
+    assert "2. agent/plans/PLAN-held.md -- P0, held, not started\n" in text, text
 
 
 def test_a_plan_with_no_open_box_is_not_queued_and_is_named(tmp_path):
@@ -484,3 +484,120 @@ def test_a_dependency_cycle_is_broken_and_reported(tmp_path):
     note = _not_queued(root)
     assert "dependency cycle PLAN-a.md -> PLAN-b.md -> PLAN-a.md" in note, note
     assert _pq().problems(root) == []
+
+
+# ---------------------------------------------------------------- the PR's plan set (operator ruling 7 of PLAN-stop-hook-one-plan-scope, 2026-10-03)
+
+
+def _dep_root(tmp_path, plans: dict[str, str], queue: str = ""):
+    """A plan tree holding `plans` (basename -> text) and, when given, a QUEUE.md whose Promoted list names `queue`."""
+    folder = tmp_path / "agent" / "plans"
+    folder.mkdir(parents=True)
+    for name, text in plans.items():
+        (folder / name).write_text(text, encoding="utf-8")
+    if queue:
+        (folder / "QUEUE.md").write_text(
+            "# Plan queue\n\n## Promoted\n\n1. agent/plans/%s\n" % queue, encoding="utf-8"
+        )
+    return str(tmp_path)
+
+
+def _rel(name):
+    return "agent/plans/%s" % name
+
+
+def test_pr_plan_set_without_depends_equals_the_named_plan(root):
+    """Control: no `Depends-On:` anywhere, so the set is exactly the body's plan, or the queue head with no body."""
+    assert plan_gate.pr_plan_set(root, "Plan: agent/plans/PLAN-a.md") == ((_rel("PLAN-a.md"),), [])
+    assert plan_gate.pr_plan_set(root, None) == ((_rel("PLAN-a.md"),), [])
+    assert plan_gate.pr_plan_set(root, "Prose only.") == ((_rel("PLAN-a.md"),), [])
+
+
+def test_pr_plan_set_operational_reason_keeps_every_named_plan(root):
+    body = "Plan: agent/plans/PLAN-a.md, agent/plans/PLAN-b.md\nOperational-Reason: one PR"
+    plans, problems = plan_gate.pr_plan_set(root, body)
+    assert plans == (_rel("PLAN-a.md"), _rel("PLAN-b.md"))
+    assert problems == []
+
+
+def test_an_open_prerequisite_joins_the_set_first_and_refuses_the_merge(tmp_path):
+    root = _dep_root(
+        tmp_path,
+        {
+            "PLAN-a.md": _box_plan(opened=0, done=2, depends="PLAN-p.md"),
+            "PLAN-p.md": _box_plan(opened=1, done=1),
+        },
+    )
+    body = "Plan: agent/plans/PLAN-a.md"
+    assert plan_gate.pr_plan_set(root, body) == ((_rel("PLAN-p.md"), _rel("PLAN-a.md")), [])
+    got = plan_gate.plan_merge_refusal(root, body)
+    assert "PLAN-p.md" in got, got
+    assert "prerequisite" in got, got
+
+
+@pytest.mark.parametrize(
+    "prereq",
+    [_box_plan(opened=0, done=2), _box_plan(status="done", opened=1, done=1)],
+    ids=["every-box-ticked", "finished-status"],
+)
+def test_a_finished_prerequisite_is_not_in_the_set(tmp_path, prereq):
+    """Control: the same edge with the prerequisite finished, by its boxes or its Status."""
+    root = _dep_root(
+        tmp_path,
+        {"PLAN-a.md": _box_plan(opened=0, done=2, depends="PLAN-p.md"), "PLAN-p.md": prereq},
+    )
+    body = "Plan: agent/plans/PLAN-a.md"
+    assert plan_gate.pr_plan_set(root, body) == ((_rel("PLAN-a.md"),), [])
+    assert plan_gate.plan_merge_refusal(root, body) == ""
+
+
+def test_a_transitive_chain_orders_the_deepest_prerequisite_first(tmp_path):
+    root = _dep_root(
+        tmp_path,
+        {
+            "PLAN-a.md": _box_plan(depends="PLAN-b.md"),
+            "PLAN-b.md": _box_plan(depends="PLAN-c.md"),
+            "PLAN-c.md": _box_plan(),
+        },
+        queue="PLAN-a.md",
+    )
+    want = (_rel("PLAN-c.md"), _rel("PLAN-b.md"), _rel("PLAN-a.md"))
+    assert plan_gate.pr_plan_set(root, "Plan: agent/plans/PLAN-a.md") == (want, [])
+    # With no body the queue head is the PR's plan, closed the same way.
+    assert plan_gate.pr_plan_set(root, None) == (want, [])
+
+
+def test_a_held_prerequisite_stays_in_the_set(tmp_path):
+    root = _dep_root(
+        tmp_path,
+        {"PLAN-a.md": _box_plan(depends="PLAN-h.md"), "PLAN-h.md": _box_plan(status="held")},
+    )
+    plans, problems = plan_gate.pr_plan_set(root, "Plan: agent/plans/PLAN-a.md")
+    assert plans == (_rel("PLAN-h.md"), _rel("PLAN-a.md"))
+    assert problems == []
+
+
+def test_a_cycle_is_a_named_problem_and_fails_the_merge_closed(tmp_path):
+    root = _dep_root(
+        tmp_path,
+        {
+            "PLAN-a.md": _box_plan(opened=0, done=1, depends="PLAN-b.md"),
+            "PLAN-b.md": _box_plan(depends="PLAN-a.md"),
+        },
+    )
+    body = "Plan: agent/plans/PLAN-a.md"
+    plans, problems = plan_gate.pr_plan_set(root, body)
+    assert set(plans) == {_rel("PLAN-a.md"), _rel("PLAN-b.md")}
+    assert any(
+        "cycle" in p and _rel("PLAN-a.md") in p and _rel("PLAN-b.md") in p for p in problems
+    ), problems
+    assert "cycle" in plan_gate.plan_merge_refusal(root, body)
+
+
+def test_an_unresolvable_dependency_is_a_problem_naming_its_path(tmp_path):
+    root = _dep_root(tmp_path, {"PLAN-a.md": _box_plan(opened=0, done=1, depends="PLAN-zz.md")})
+    body = "Plan: agent/plans/PLAN-a.md"
+    plans, problems = plan_gate.pr_plan_set(root, body)
+    assert plans == (_rel("PLAN-a.md"),)
+    assert any("PLAN-zz.md" in p and _rel("PLAN-a.md") in p for p in problems), problems
+    assert "PLAN-zz.md" in plan_gate.plan_merge_refusal(root, body)

@@ -53,12 +53,12 @@ Depends-On: no-dep
 - [ ] Regenerate the beta baseline with the audited token
 """ % (PLAN_PAD * 3)
 
-# The gh shim: the merged/closed read (focus_pr_end) ahead of the rollup, both from files so a case can swap them.
+# The gh shim: the one PR read (wl_ci.pr_link, which focus_pr_end reads through) ahead of the rollup, both from files so a case can swap them.
 GH_SHIM = """#!/bin/bash
 for a in "$@"; do
     case "$a" in
         *lastEditedAt*) cat "%(base)s/ci-fresh.json"; exit 0 ;;
-        *'states:[MERGED'*) cat "%(base)s/ci-merged.json"; exit 0 ;;
+        *'states:[OPEN,MERGED,CLOSED]'*) cat "%(base)s/ci-merged.json"; exit 0 ;;
         query=*) cat "%(base)s/ci-rollup.json"; exit 0 ;;
     esac
 done
@@ -77,7 +77,7 @@ def stamp(minutes_ago: float = 0.0) -> str:
 def merged_nodes(fix, nodes: list[dict]) -> None:
     body = {"data": {"repository": {"pullRequests": {"nodes": nodes}}}}
     (fix.base / "ci-merged.json").write_text(json.dumps(body) + "\n", encoding="utf-8")
-    fix.stem(".focuspr-%s" % ME).unlink(missing_ok=True)
+    fix.stem(".prlink-%s" % ME).unlink(missing_ok=True)
 
 
 def world(fix, ci: bool = False, red: bool = False) -> None:
