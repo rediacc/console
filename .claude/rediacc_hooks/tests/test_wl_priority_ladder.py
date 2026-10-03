@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import time
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_checklists import cldeliver, clfile
@@ -288,6 +289,29 @@ def test_233d_a_live_watch_on_a_head_with_no_verdict_stands_the_finish_line_down
     got = prf_run(wl, extra_env=focus_off)
     assert "THE WAVE IS NOT FINISHED" in got.out, (
         "233d CONTROL: the finish line stood down with no watch armed: %s" % got.out[:500]
+    )
+
+    # 233e: a per-commit reviewer still running is the same kind of wait. One branch commit past origin/main whose reviewer lock is inside its spawn grace window reads `in_flight`; the CONTROL drops the lock, so the commit reads `uncovered` and the finish line blocks again.
+    base = wl.git("rev-parse", "HEAD").stdout.strip()
+    wl.git("update-ref", "refs/remotes/origin/main", base)
+    (wl.proj / "b.txt").write_text("b\n", encoding="utf-8")
+    wl.git("add", "b.txt")
+    wl.git("commit", "-qm", "branch work")
+    sha = wl.git("rev-parse", "HEAD").stdout.strip()
+    locks = wl.base / "tmp" / "claude-worklist" / "reviews" / "locks"
+    locks.mkdir(parents=True, exist_ok=True)
+    lock = locks / ("%s.lock" % sha)
+    lock.write_text(json.dumps({"pid": None, "start": time.time()}), encoding="utf-8")
+    got = prf_run(wl, extra_env=focus_off, bg=watch)
+    assert "THE WAVE IS NOT FINISHED" not in got.out, (
+        "233e: a running reviewer on a running head still blocked the finish line: %s"
+        % got.out[:500]
+    )
+    lock.unlink()
+    got = prf_run(wl, extra_env=focus_off, bg=watch)
+    assert "THE WAVE IS NOT FINISHED" in got.out, (
+        "233e CONTROL: an unreviewed commit with no reviewer running stood the finish line down: %s"
+        % got.out[:500]
     )
 
 
