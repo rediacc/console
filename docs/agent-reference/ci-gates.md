@@ -332,6 +332,23 @@ Console PRs are opened as **drafts** (`gh pr create --draft`) and stay draft unt
 allowed only when the required `CI Complete` check is SUCCESS on the PR's current head; `--undo` is always allowed), and `block-admin-merge` (`gh pr merge --admin` is banned outright). The sanctioned merge is `gh pr merge --rebase --auto`, which GitHub completes once required checks are green. `allow_squash_merge` is `false` on all five repos, so `--squash` fails outright; ask with
 `gh api repos/rediacc/<r> --jq .allow_squash_merge` rather than trusting this sentence.
 
+### Review Complete: the PR review is a required check
+
+`Review Complete` is a required check beside `CI Complete` (operator ruling 2026-10-03, agent/plans/PLAN-github-pr-review-restore.md Design 6). `claude-review.yml` runs the whole-PR Claude review after Console CI, and `review-status.yml` posts the `Review Complete` check-run on the head, its title starting with one fixed token:
+
+| Token | Conclusion | Meaning |
+|---|---|---|
+| `current` | success | the head is reviewed |
+| `capped` | success (warning) | the PR spent its review cap; the head's marker is stale and hygiene is clean |
+| `exhausted` | success (warning) | the head's infra-class review attempts hit their ceiling; hygiene is clean |
+| `outage` | success (warning) | the LLM was unavailable for the head's last attempt (`api_error_429/500/502/503/504/529`, recorded by `claude_review_gate --mark`) |
+| `draft` | neutral | the PR is a draft |
+| `stale` | failure | the head is not reviewed yet |
+| `failed-run` | failure | the head is unreviewed and the review run concluded `failure` or `timed_out` for a reason other than an outage; the summary starts "investigate and fix:" |
+| `hygiene` | failure | reviewed, and a hygiene script failed: an unanswered summary or an open finding thread |
+
+**The outage is the only excused failure.** A `failed-run` is a defect in the review run to investigate and fix, then re-dispatch with `gh workflow run claude-review.yml -f pr_number=<n>`; a `hygiene` is answered with `python3 .claude/hooks/stop/wl_prreview.py` (`--draft`, then `--answer` before the fix is pushed, because a push over an unanswered summary fails `Review Gate`). A timeout of `wl_prreview.py --wait` is never a pass, and nothing merges on it. `Review Complete` blocks the CI verdict in `wl_ci` and `ci_diagnose`; `Review Status` and `Claude Review` report through it and never block on their own, and all three stay out of the watchdog and the timing lists, since the review observes a Console CI run rather than belonging to it. `/pr-merge` step 3 carries the wait, triage and answer sequence. The ruleset context is added by box GR12 once both workflows are on `main`, because a required context no workflow posts would wedge every PR; until then `gh api repos/rediacc/console/rules/branches/main` lists `CI Complete` alone, and the loop treats `Review Complete` as required regardless.
+
 ### Pointer-bump fast path
 
 A push whose commits only move submodule gitlinks to tree-identical, on-submodule-`main` commits (the post-squash pointer bump), on top of a baseline commit that already has a successful `CI Complete`, is detected by `.ci/scripts/ci/detect-pointer-bump.sh`, which sets `pointer_bump_only=true` in the `initialize` job. Under that flag `ci.yml` skips `build-renet` (and everything
