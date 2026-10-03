@@ -11,7 +11,7 @@ Owner: e6500e92
 - [x] d4 file:agent/programs/www-simplification/03-bugs-and-gates.md
 - [x] d5 file:agent/programs/www-simplification/04-execution-guide.md
 - [x] d6 file:agent/programs/www-simplification/PROMPT.md
-- [x] d7 file:~/.claude/projects/-home-muhammed-monorepo-console/programs/www-simplification/MANIFEST.md
+- [x] d7 file:agent/programs/www-simplification/state/MANIFEST.md
 
 ## Waves
 

@@ -17,7 +17,7 @@ The i18n catalogs are a SERIALISED single-owner surface. Page agents PROPOSE spl
 
 ## Program state
 
-    ~/.claude/projects/-home-developer-console/programs/clarity-round6/
+    agent/programs/clarity-round6/state/
       MANIFEST.md      model policy, wave table, active agents, discovered bugs
       reports/         one per writing or planning sub-agent: <phase>-<agent>.md
       checkpoints/     a full tree patch at every wave boundary

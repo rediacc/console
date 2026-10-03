@@ -2,7 +2,7 @@
 
 Simplify `packages/www` against two references the operator named: **claude.com** for simple design generally, and **anthropic.com** for its homepage motion. Also fix every bug found on the way, and add the CI regression gates that stop all of it coming back.
 
-Produced by session `e6500e92` on 2026-08-17/18, from fourteen parallel specialists. Their evidence is in `research/` (17 documents). Program state lives at `~/.claude/projects/-home-muhammed-monorepo-console/programs/www-simplification/`. Memory pointer: `project_www_simplification.md`.
+Produced by session `e6500e92` on 2026-08-17/18, from fourteen parallel specialists. Their evidence is in `research/` (17 documents). Program state lives at `agent/programs/www-simplification/state/`. Memory pointer: `project_www_simplification.md`.
 
 **Nothing has been implemented.** `git status --porcelain packages/www/` returns zero lines, verified on `main` at 2026-08-18T05:13Z.
 

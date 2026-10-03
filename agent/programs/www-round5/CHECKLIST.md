@@ -15,7 +15,7 @@ Source session `a68f3ab4` (`console-39`), 2026-08-23, planned in `~/monorepo/con
 - [x] d6 file:agent/programs/www-round5/05-gates.md
 - [x] d7 file:agent/programs/www-round5/06-execution-guide.md
 - [x] d8 file:agent/programs/www-round5/PROMPT.md
-- [x] d9 file:~/.claude/projects/-home-muhammed-console/programs/www-round5/MANIFEST.md
+- [x] d9 file:agent/programs/www-round5/state/MANIFEST.md
 - [x] d10 file:agent/plans/PLAN-sentence-aware-wrapping.md
 
 ## Waves
