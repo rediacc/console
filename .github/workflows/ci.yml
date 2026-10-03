@@ -1912,6 +1912,13 @@ jobs:
           HEAD_REF: ${{ github.head_ref }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.review.pr_labels
+      - name: Show the per-commit reviews
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.review.review_table
 
   # ============================================================================
   # FINALIZE RELEASE SENTINEL
