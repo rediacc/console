@@ -692,6 +692,18 @@ N_CL_FOREIGN_WAVES = (
 )
 
 
+# A foreign checklist whose owner is NOT live (operator 2026-10-03: "it should be aware if the other session is alive or not. the ownership transfer should be asked to the user if the other session(s) are gone/dead"). One question, recorded by ticking an item carrying the token, instead of an advisory nobody can ever settle.
+V_CL_OWNER = (
+    "CHECKLIST OWNER NOT LIVE: %s is owned by session %s, which reads %s (%s). Its drift is "
+    "reported on every stop and only its owner may repair it, so ask the operator once, with "
+    "AskUserQuestion: adopt it (its 'Owner:' line becomes this session), mark it 'Status: "
+    "superseded', or leave it with %s. Then record the answer by ticking a worklist item that "
+    "carries %s:\n"
+    "    worklist.py --add <me> %s <the operator's answer>\n"
+    "    worklist.py --tick <me> <id> <checklist path>:<line> <what was done>\n"
+    "A ticked item silences this for good; the owner coming back to life does too."
+)
+
 N_CL_FOREIGN_DRIFT = (
     "Handoff checklist %s says 'Status: %s' but its artifacts disagree, and it "
     "is owned by session %s:\n%s\n"

@@ -2264,6 +2264,8 @@ PRIORITY_LADDER = (
                 "bg-report",
                 # A stop that waits on background work with no wake-up timer armed (wl_wake): if every task hangs, nothing re-invokes the session.
                 "wake-timer",
+                # A foreign checklist whose owner is not live: the operator is owed one ownership question (wl_checklist._owner_question).
+                "cl-owner",
                 "unread-reports",
                 "agent-pushback",
                 "giveup-claim",
@@ -4427,7 +4429,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     # ---- v20: the /handoff checklist gate (agent/programs/<slug>/CHECKLIST.md) -------- WHY: /handoff wrote a design suite and INSTRUCTED, in prose, that the next session seed the worklist. Prose gates nothing, so a handoff whose PROMPT.md was ignored or compacted away dropped program work silently and nobody found out. CHECKLIST.md is the machine-readable half of the same
     # handoff: deliverables are FILE-VERIFIED (the tick is bookkeeping, the file is the truth) and waves are store-linked through the `cl:<slug>/<wN>` token, so both ends of the handoff are checkable rather than promised. See wl_checklist for the adjudication.
     try:
-        _cl_v, _cl_a = wl_checklist.checklist_findings(root, fold, session_id, projects_dir)
+        _cl_v, _cl_a = wl_checklist.checklist_findings(
+            root, fold, session_id, projects_dir, worklist
+        )
         for _k, _always, _t in _cl_v:
             vadd(_k, _always, _t)
         for _k, _t, _p in _cl_a:
