@@ -1537,23 +1537,24 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 6,
+      "open": 1,
+      "done": 14,
       "open_sigs": [
+        "b1540084"
+      ],
+      "done_sigs": [
         "043c6522",
         "22a4803b",
         "3a346ad5",
-        "4b13eccd",
-        "8fb48cf0",
-        "9938f7c1",
-        "d546a1f6",
-        "e1e94827"
-      ],
-      "done_sigs": [
         "77889d41",
         "7c45c68e",
         "82ea4811",
+        "8fb48cf0",
+        "9938f7c1",
         "bc03011b",
+        "c7c90bde",
+        "d546a1f6",
+        "e1e94827",
         "f341b4f2",
         "fbbc4233"
       ]
