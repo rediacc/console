@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 182 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 183 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -558,6 +558,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-always-tier.md` | compacted | 39 | 0 | 0 | 3145 |
 | `agent/plans/PLAN-stop-hook-cadence.md` | compacted | 38 | 0 | 0 | 2622 |
 | `agent/plans/PLAN-stop-hook-focus-mode.md` | held | 351 | 1 | 7 | 35826 |
+| `agent/plans/PLAN-stop-hook-one-plan-scope.md` | approved | 153 | 13 | 0 | 35425 |
 | `agent/plans/PLAN-stop-hook-refactor-enforcement.md` | held | 370 | 1 | 16 | 49937 |
 | `agent/plans/PLAN-stop-hook-retro-20260924.md` | held | 601 | 1 | 22 | 64162 |
 | `agent/plans/PLAN-stop-hook-retro-20260925.md` | held | 239 | 5 | 5 | 23001 |
@@ -647,4 +648,4 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-wl-wait-duplicate-listener.md` | done | 203 | 0 | 15 | 29033 |
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 
-182 plan(s), 117 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+183 plan(s), 118 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.

@@ -40,18 +40,19 @@ Entry format: `1. agent/plans/PLAN-<slug>.md`, optionally followed by ` -- <note
 24. agent/plans/PLAN-config-team-scoping.md -- P1, held, not started, dep-blocked
 25. agent/plans/PLAN-plan-dependencies.md -- P1, held, not started
 26. agent/plans/PLAN-plan-priority-concurrency.md -- P1, held, not started, dep-blocked
-27. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, not started
-28. agent/plans/PLAN-locale-techdiff-resync.md -- P2, ready, not started
-29. agent/plans/PLAN-remove-cross-session-messaging.md -- P2, draft, not started
-30. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
-31. agent/plans/PLAN-retire-bash-oracles.md -- P2, held, not started, dep-blocked
-32. agent/plans/PLAN-typecheck-orphan-packages.md -- P2, ready, not started
-33. agent/plans/PLAN-breakpoint-secret-shape.md -- P3, design, not started
-34. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, held, not started
-35. agent/plans/PLAN-ci-watch-enforcement.md -- P3, held, not started
-36. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-37. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-38. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, held, not started
-39. agent/plans/PLAN-trap-enforcement.md -- P3, held, not started
-40. agent/plans/PLAN-uncommitted-work-exposure-check.md -- P3, held, not started
+27. agent/plans/PLAN-stop-hook-one-plan-scope.md -- P1, approved, not started
+28. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, not started
+29. agent/plans/PLAN-locale-techdiff-resync.md -- P2, ready, not started
+30. agent/plans/PLAN-remove-cross-session-messaging.md -- P2, draft, not started
+31. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
+32. agent/plans/PLAN-retire-bash-oracles.md -- P2, held, not started, dep-blocked
+33. agent/plans/PLAN-typecheck-orphan-packages.md -- P2, ready, not started
+34. agent/plans/PLAN-breakpoint-secret-shape.md -- P3, design, not started
+35. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, held, not started
+36. agent/plans/PLAN-ci-watch-enforcement.md -- P3, held, not started
+37. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
+38. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+39. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, held, not started
+40. agent/plans/PLAN-trap-enforcement.md -- P3, held, not started
+41. agent/plans/PLAN-uncommitted-work-exposure-check.md -- P3, held, not started
 <!-- queue:generated:end -->

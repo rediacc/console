@@ -1508,6 +1508,30 @@
         "cc299bc2"
       ]
     },
+    "agent/plans/PLAN-stop-hook-one-plan-scope.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 13,
+      "done": 0,
+      "open_sigs": [
+        "043c6522",
+        "22a4803b",
+        "3a346ad5",
+        "4b13eccd",
+        "77889d41",
+        "7c45c68e",
+        "82ea4811",
+        "8fb48cf0",
+        "9938f7c1",
+        "bc03011b",
+        "d546a1f6",
+        "e1e94827",
+        "fbbc4233"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-stop-hook-refactor-enforcement.md": {
       "status": "held",
       "owner": "d778be9d",
