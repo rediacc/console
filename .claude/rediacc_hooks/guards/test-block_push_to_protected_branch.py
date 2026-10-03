@@ -11,6 +11,8 @@ IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER, for the reason the P7 cutover e
 
 THE FAST-FORWARD FALLBACK (box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) needs a third kind of world: a console-shaped checkout on its live branch with a real bare `origin` (so `origin/<branch>` and `origin/main` are real refs), and a `gh` stub on PATH that answers both reads the guard makes, `gh pr view` and the GraphQL rollup `.ci/scripts/ci/ci-trace.py` sends. The stub's answers come from `FX_*` variables per case: the PR head, the CI Complete conclusion, the PR body, no PR, gh down. ci-trace itself runs for real; only GitHub is faked.
 
+THE GITLAB MIRROR PUSH (operator ruling 2026-10-03, worklist #1cad85a1) needs a fourth: a console-shaped checkout whose `origin/main` already holds the merged work, a `gitlab` remote at the pinned mirror URL, and local `main` equal to `origin/main` unless a case moves it. The guard only reads these refs and the remote's URL, so nothing is ever pushed to GitLab. The git-level half cannot reach GitLab either, so its admitted cases drive the real `pre-push` file with the stdin git would hand it, and one real push proves a redirected `gitlab` is refused.
+
 THE GIT-LEVEL TWIN is driven here too, with real `git push` into throwaway bare origins whose clones point `core.hooksPath` at `.claude/rediacc_hooks/git/`: the same fallback admitted, and every other push to `main` (a delete included) refused.
 """
 
@@ -135,6 +137,47 @@ LIVE = _make_live()
 LIVE_AHEAD = _make_live(unpushed=True)
 LIVE_BEHIND = _make_live(main_moved=True)
 LIVE_SHA = _tip(LIVE, "origin/0914-1")
+
+MIRROR_URL = "https://gitlab.rediacc.io/rediacc-org/github/console.git"
+
+
+def _make_mirror(on_main=True, url=MIRROR_URL, ahead=False, behind=False, hooks=False):
+    """A console-shaped checkout right after a merge: `origin/main` holds the work, local `main` equals it, and `gitlab` is a remote at `url`.
+
+    `ahead` adds a local commit on `main` origin never saw; `behind` lands a commit on origin's `main` after local `main` was set; `on_main` leaves the checkout on `main`, where step 6b of pr-merge.md runs.
+    """
+    d = _make_live()
+    bare = _git(d, "remote", "get-url", "origin").stdout.strip()
+    _git(d, "push", "-q", "origin", "0914-1:" + "m" + "ain")
+    _git(d, "fetch", "-q", "origin")
+    _git(d, "branch", "-f", "m" + "ain", "origin/" + "m" + "ain")
+    if on_main:
+        _git(d, "checkout", "-q", "m" + "ain")
+    if ahead:
+        _git(d, "checkout", "-q", "m" + "ain")
+        _git(d, "commit", "-q", "--allow-empty", "-m", "local only on main")
+        if not on_main:
+            _git(d, "checkout", "-q", "0914-1")
+    if behind:
+        other = pathlib.Path(tempfile.mkdtemp(prefix="other-", dir=RUN_TMP))
+        _git(other, "clone", "-q", "-b", "m" + "ain", bare, ".")
+        _git(other, "commit", "-q", "--allow-empty", "-m", "elsewhere")
+        _git(other, "push", "-q", "origin", "m" + "ain")
+        _git(d, "fetch", "-q", "origin")
+    if url is not None:
+        _git(d, "remote", "add", "gitlab", url)
+    if hooks:
+        _git(d, "config", "core.hooksPath", str(HOOKS))
+    return pathlib.Path(d)
+
+
+MIRROR = _make_mirror()
+MIRROR_FEATURE = _make_mirror(on_main=False)
+MIRROR_WRONG_URL = _make_mirror(url="https://gitlab.example.invalid/rediacc-org/github/console.git")
+MIRROR_WRONG_PATH = _make_mirror(url="https://gitlab.rediacc.io/someone/else.git")
+MIRROR_AHEAD = _make_mirror(ahead=True)
+MIRROR_BEHIND = _make_mirror(behind=True)
+MIRROR_NO_REMOTE = _make_mirror(url=None)
 
 # `gh` for the fallback's two reads: `gh pr view <b> --json ...` and ci-trace's `gh api graphql` rollup (the PR query names `pullRequests(`, the branch fallback names `ref(`). Every answer comes from an FX_* variable the case sets.
 GH_STUB = r"""#!/usr/bin/env python3
@@ -282,6 +325,13 @@ CASES = [
     ("M2 ff of the live branch", "git push origin 0914-1:%s" % MAIN, LIVE, False, fx()),
     ("M2 ff of origin/<live>", "git push origin origin/0914-1:%s" % MAIN, LIVE, False, fx()),
     ("M2 ff of the tip sha", "git push origin %s:%s" % (LIVE_SHA, MAIN), LIVE, False, fx()),
+    (
+        "M2 ff inside a timeout wrapper",
+        "timeout 120 git push origin 0914-1:%s" % MAIN,
+        LIVE,
+        False,
+        fx(),
+    ),
     (
         "M2 ff, refs spellings both sides",
         "git push origin refs/remotes/origin/0914-1:refs/heads/%s" % MAIN,
@@ -442,6 +492,110 @@ CASES = [
         True,
         fx(),
     ),
+    # ---- the GitLab mirror push (operator ruling 2026-10-03), admitted --------------------
+    (
+        "mirror: the pr-merge 6b spelling",
+        "git push gitlab refs/heads/%s:refs/heads/%s --follow-tags" % (MAIN, MAIN),
+        MIRROR,
+        False,
+    ),
+    (
+        "mirror: the 6b spelling inside its timeout wrapper",
+        "GIT_TERMINAL_PROMPT=0 timeout 120 git push gitlab refs/heads/%s:refs/heads/%s --follow-tags"
+        % (MAIN, MAIN),
+        MIRROR,
+        False,
+    ),
+    ("mirror: the short main:main spelling", "git push gitlab %s:%s" % (MAIN, MAIN), MIRROR, False),
+    ("mirror: -q and -v", "git push -q -v gitlab %s:%s" % (MAIN, MAIN), MIRROR, False),
+    (
+        "mirror: from a checkout on the live branch",
+        "git push gitlab %s:%s --follow-tags" % (MAIN, MAIN),
+        MIRROR_FEATURE,
+        False,
+    ),
+    # ---- the mirror push, refused one condition at a time ----------------------------------
+    ("mirror: --force", "git push --force gitlab %s:%s" % (MAIN, MAIN), MIRROR, True),
+    ("mirror: -f", "git push -f gitlab %s:%s" % (MAIN, MAIN), MIRROR, True),
+    (
+        "mirror: --force-with-lease",
+        "git push --force-with-lease gitlab %s:%s" % (MAIN, MAIN),
+        MIRROR,
+        True,
+    ),
+    ("mirror: a plus refspec", "git push gitlab +%s:%s" % (MAIN, MAIN), MIRROR, True),
+    (
+        "mirror: --mirror beside the refspec",
+        "git push --mirror gitlab %s:%s" % (MAIN, MAIN),
+        MIRROR,
+        True,
+    ),
+    ("mirror: a bare --mirror off main", "git push --mirror gitlab", MIRROR_FEATURE, True),
+    ("mirror: --all", "git push --all gitlab", MIRROR_FEATURE, True),
+    ("mirror: --tags beside it", "git push --tags gitlab %s:%s" % (MAIN, MAIN), MIRROR, True),
+    ("mirror: --delete", "git push gitlab --delete %s" % MAIN, MIRROR, True),
+    ("mirror: the empty-source delete", "git push gitlab :%s" % MAIN, MIRROR, True),
+    ("mirror: a second refspec", "git push gitlab %s:%s 0914-1" % (MAIN, MAIN), MIRROR, True),
+    ("mirror: a bare main with no colon", "git push gitlab %s" % MAIN, MIRROR_FEATURE, True),
+    ("mirror: HEAD as the source", "git push gitlab HEAD:%s" % MAIN, MIRROR, True),
+    ("mirror: another branch as the source", "git push gitlab 0914-1:%s" % MAIN, MIRROR, True),
+    ("mirror: a different remote", "git push upstream %s:%s" % (MAIN, MAIN), MIRROR, True),
+    (
+        "mirror: origin is the fallback, not the mirror",
+        "git push origin %s:%s" % (MAIN, MAIN),
+        MIRROR,
+        True,
+    ),
+    (
+        "mirror: gitlab at the wrong host",
+        "git push gitlab %s:%s" % (MAIN, MAIN),
+        MIRROR_WRONG_URL,
+        True,
+        None,
+        "not the console mirror",
+    ),
+    (
+        "mirror: gitlab at the wrong path",
+        "git push gitlab %s:%s" % (MAIN, MAIN),
+        MIRROR_WRONG_PATH,
+        True,
+        None,
+        "not the console mirror",
+    ),
+    (
+        "mirror: no gitlab remote at all",
+        "git push gitlab %s:%s" % (MAIN, MAIN),
+        MIRROR_NO_REMOTE,
+        True,
+    ),
+    (
+        "mirror: local main ahead of origin/main",
+        "git push gitlab %s:%s" % (MAIN, MAIN),
+        MIRROR_AHEAD,
+        True,
+        None,
+        "ahead of",
+    ),
+    (
+        "mirror: local main behind origin/main",
+        "git push gitlab %s:%s" % (MAIN, MAIN),
+        MIRROR_BEHIND,
+        True,
+        None,
+        "behind",
+    ),
+    (
+        "mirror: -C into another repository",
+        "git -C %s push gitlab %s:%s" % (MAIN_REPO, MAIN, MAIN),
+        MIRROR,
+        True,
+    ),
+    (
+        "mirror: two mirror pushes in one command",
+        "git push gitlab %s:%s && git push gitlab %s:%s" % (MAIN, MAIN, MAIN, MAIN),
+        MIRROR,
+        True,
+    ),
 ]
 
 
@@ -555,8 +709,196 @@ for name, kwargs, args, want in GIT_CASES:
     )
     if not ok and err:
         print("    stderr: %s" % err.strip().splitlines()[:3])
-# A count, not a concatenation: the two case lists carry different tuple shapes.
-TOTAL = len(CASES) + len(GIT_CASES)
+
+
+# ---- the git-level mirror push: the real pre-push file, fed what git hands it ------------
+def hook(repo, remote, url, lines):
+    proc = subprocess.run(
+        [sys.executable, str(HOOKS / "pre-push"), remote, url],
+        input="".join("%s\n" % " ".join(line) for line in lines),
+        cwd=str(repo),
+        capture_output=True,
+        text=True,
+        check=False,
+        env=_FIXTURE_ENV,
+    )
+    return proc.returncode != 0 and "commit-policy:" in proc.stderr, proc.stderr
+
+
+ZERO = "0" * 40
+HEADS_MAIN = "refs/heads/" + MAIN
+
+
+def _main_line(repo, old=None, local=None):
+    sha = local or _tip(repo, HEADS_MAIN)
+    return [HEADS_MAIN, sha, HEADS_MAIN, old or _tip(repo, sha + "~1")]
+
+
+def _tag(repo, name):
+    _git(repo, "tag", "-a", "-m", name, name, HEADS_MAIN)
+    return ["refs/tags/" + name, _tip(repo, "refs/tags/" + name), "refs/tags/" + name, ZERO]
+
+
+HOOK_MIRROR = _make_mirror()
+HOOK_AHEAD = _make_mirror(ahead=True)
+HOOK_BEHIND = _make_mirror(behind=True)
+TAG_LINE = _tag(HOOK_MIRROR, "v9.9.9")
+MIRROR_CASES = [
+    # (name, repo, remote, url, stdin lines, expect_refused)
+    ("git-level mirror: main", HOOK_MIRROR, "gitlab", MIRROR_URL, [_main_line(HOOK_MIRROR)], False),
+    (
+        "git-level mirror: main plus a new tag (--follow-tags)",
+        HOOK_MIRROR,
+        "gitlab",
+        MIRROR_URL,
+        [_main_line(HOOK_MIRROR), TAG_LINE],
+        False,
+    ),
+    (
+        "git-level mirror: the wrong URL",
+        HOOK_MIRROR,
+        "gitlab",
+        "https://gitlab.example.invalid/rediacc-org/github/console.git",
+        [_main_line(HOOK_MIRROR)],
+        True,
+    ),
+    (
+        "git-level mirror: a local path URL",
+        HOOK_MIRROR,
+        "gitlab",
+        "/tmp/x.git",
+        [_main_line(HOOK_MIRROR)],
+        True,
+    ),
+    (
+        "git-level mirror: the delete form",
+        HOOK_MIRROR,
+        "gitlab",
+        MIRROR_URL,
+        [["(delete)", ZERO, HEADS_MAIN, _tip(HOOK_MIRROR, HEADS_MAIN)]],
+        True,
+    ),
+    (
+        "git-level mirror: creating main on the mirror",
+        HOOK_MIRROR,
+        "gitlab",
+        MIRROR_URL,
+        [_main_line(HOOK_MIRROR, old=ZERO)],
+        True,
+    ),
+    (
+        "git-level mirror: a second branch",
+        HOOK_MIRROR,
+        "gitlab",
+        MIRROR_URL,
+        [
+            _main_line(HOOK_MIRROR),
+            ["refs/heads/0914-1", _tip(HOOK_MIRROR, "0914-1"), "refs/heads/0914-1", ZERO],
+        ],
+        True,
+    ),
+    (
+        "git-level mirror: a moved tag",
+        HOOK_MIRROR,
+        "gitlab",
+        MIRROR_URL,
+        [_main_line(HOOK_MIRROR), [*TAG_LINE[:3], _tip(HOOK_MIRROR, "0914-1~1")]],
+        True,
+    ),
+    (
+        "git-level mirror: a remote-tracking ref",
+        HOOK_MIRROR,
+        "gitlab",
+        MIRROR_URL,
+        [
+            _main_line(HOOK_MIRROR),
+            ["refs/remotes/origin/x", _tip(HOOK_MIRROR, "0914-1"), "refs/remotes/origin/x", ZERO],
+        ],
+        True,
+    ),
+    (
+        "git-level mirror: GitLab diverged (forced)",
+        HOOK_MIRROR,
+        "gitlab",
+        MIRROR_URL,
+        [_main_line(HOOK_MIRROR, old="1" * 40)],
+        True,
+    ),
+    (
+        "git-level mirror: local main ahead",
+        HOOK_AHEAD,
+        "gitlab",
+        MIRROR_URL,
+        [_main_line(HOOK_AHEAD)],
+        True,
+    ),
+    (
+        "git-level mirror: local main behind",
+        HOOK_BEHIND,
+        "gitlab",
+        MIRROR_URL,
+        [_main_line(HOOK_BEHIND)],
+        True,
+    ),
+]
+
+print()
+for name, repo, remote, url, lines, want in MIRROR_CASES:
+    got, err = hook(repo, remote, url, lines)
+    blocked += got
+    ok = got == want
+    fails += not ok
+    print(
+        "%-72s want=%-9s got=%-9s %s"
+        % (
+            name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if not ok and err:
+        print("    stderr: %s" % err.strip().splitlines()[:3])
+
+# Two REAL pushes through git: a `gitlab` remote at a local bare repository, and one at the pinned URL that an `insteadOf` rewrite redirects to that bare repository. Git hands the hook the location it really pushes to, so both are refused.
+REAL_MIRROR_CASES = []
+for label, pinned in (
+    ("a local bare repository", False),
+    ("the pinned URL redirected by insteadOf", True),
+):
+    repo = _make_mirror(url=None, hooks=True)
+    target = pathlib.Path(tempfile.mkdtemp(prefix="gitlab-", dir=RUN_TMP))
+    _git(target, "init", "-q", "--bare", "--initial-branch=" + MAIN)
+    _git(
+        repo,
+        "push",
+        "-q",
+        str(target),
+        "%s~1:%s" % (HEADS_MAIN, HEADS_MAIN),
+        env=dict(_FIXTURE_ENV, COMMIT_POLICY_OK="1"),
+    )
+    if pinned:
+        _git(repo, "remote", "add", "gitlab", MIRROR_URL)
+        _git(repo, "config", "url.%s.insteadOf" % target, MIRROR_URL)
+    else:
+        _git(repo, "remote", "add", "gitlab", str(target))
+    REAL_MIRROR_CASES.append(("git-level mirror, real push: " + label, repo))
+
+for name, repo in REAL_MIRROR_CASES:
+    got, err = pushed(repo, "gitlab", "%s:%s" % (HEADS_MAIN, HEADS_MAIN))
+    got = got and "commit-policy:" in err and "not the console mirror" in err
+    blocked += got
+    ok = got
+    fails += not ok
+    print(
+        "%-72s want=BLOCKED   got=%-9s %s"
+        % (name, "BLOCKED" if got else "allowed", "ok" if ok else "*** FAIL ***")
+    )
+    if not ok and err:
+        print("    stderr: %s" % err.strip().splitlines()[:3])
+
+# A count, not a concatenation: the case lists carry different tuple shapes.
+TOTAL = len(CASES) + len(GIT_CASES) + len(MIRROR_CASES) + len(REAL_MIRROR_CASES)
 
 print()
 # ANTI-VACUITY: see the sibling harness. This guard's only control is this file.

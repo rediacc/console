@@ -24,6 +24,12 @@ THE ONE ADMITTED DIRECT PUSH, box M2 of PLAN-plan-per-pr-loop (operator ruling 2
   (d) it is the head of the OPEN PR for `<b>` (`gh pr view`), and CI Complete is SUCCESS on it, read through `.ci/scripts/ci/ci-trace.py --json --ref <b>`, the sanctioned tracer, never a raw check read;
   (e) the plan gate (box L2, `plan_gate.plan_merge_refusal`, shared with `block_admin_merge`): the PR body's one `Plan: agent/plans/PLAN-<slug>.md` line names a plan whose boxes are all ticked in the commit being pushed, or the body carries an `Operational-Reason:` line. A body that cannot be read, or that names no plan and gives no reason, is refused.
 
+THE GITLAB MIRROR PUSH (operator ruling 2026-10-03, worklist #1cad85a1: "Allow the agent to push it"). Step 6b of `.claude/commands/pr-merge.md` copies GitHub's `main` to the self-hosted mirror after each merge. It is admitted only as:
+
+  (f) one `git push` to the remote named `gitlab`, with exactly one refspec `main:main` or `refs/heads/main:refs/heads/main` and no flag but `--follow-tags`, -q and -v: no --force, --force-with-lease, `+`, --delete, --tags, --all or --mirror;
+  (g) every fetch and push URL `git remote get-url --all [--push] gitlab` reports is the console mirror (`githooks.mirror_url_refusal`, the pin and why it is a literal are there);
+  (h) the push runs in the console checkout itself (not a submodule, not `-C` elsewhere), and local `main` is exactly `origin/main` (`githooks.mirror_main_refusal`, shared with the git-level `pre-push` hook): the mirror only ever copies what GitHub's `main` already has.
+
 The receipt rule (`block_unverified_push`, later in this chain) still applies to the push. GitHub's own rulesets (24351140: deletion, non_fast_forward, required_linear_history; 12344707: required CI Complete) back the same shape server-side.
 
 A DRY RUN IS EXEMPT ONLY WHEN EVERY PUSH IN THE COMMAND IS ONE. Until 2026-10-02 a `--dry-run` anywhere in the text exempted the whole command, so `git push --dry-run origin x; git push origin HEAD:main` passed.
@@ -36,6 +42,9 @@ WHAT COUNTS AS "main", explicit or not:
   git push origin :main                    the empty-source delete form
   git push origin --delete main            the flagged delete form
   git push --all origin                    every branch, main included
+  git push --mirror gitlab                 every ref, main included (until 2026-10-03 this
+                                            fell through to the implicit-branch check and
+                                            passed from any branch but main)
   git push                                 no refspec at all -- git's own
   git push origin                          fallback (push.default) is the
   git push origin HEAD                     CURRENT branch, or its remote-
@@ -49,6 +58,7 @@ A bare `--tags` push moves no branch ref at all and is let through even while si
 FAILS OPEN on the branch lookup for the three implicit forms (`git symbolic-ref` itself failing, a detached HEAD, no such repo): the same command would fail at the real `git` layer too, so refusing here buys nothing and an outage over a broken lookup is the wrong direction for a guard whose whole job is to stay out of the way of everything except main.
 """
 
+import importlib.util
 import json
 import os
 import pathlib
@@ -84,8 +94,8 @@ GIT_PUSH_AT_CMD = GIT_AT_CMD + hookio.rx(r"push([{S}]|$)")
 # bounds the match to THIS invocation, the same convention `block_git_force_push.py` and `block_unverified_push.py` already use for "the rest of this command, not the rest of the line".
 DEST_MAIN = hookio.rx(r"git push[^;&|)]*[{S}:](refs/heads/)?main([{S})]|$)")
 
-# `--all` pushes every branch, main included.
-ALL_BRANCHES = hookio.rx(r"git push[^;&|)]*[{S}]--all([{S})]|$)")
+# `--all` pushes every branch, main included, and `--mirror` every ref.
+ALL_BRANCHES = hookio.rx(r"git push[^;&|)]*[{S}]--(all|mirror)([{S})]|$)")
 
 # `--tags` pushes only tag refs -- no branch ref moves, so this is not this guard's business even while sitting on main. `--follow-tags` is deliberately NOT matched here: unlike `--tags` it also pushes the current branch, so it falls through to BARE_PUSH below instead.
 TAGS_ONLY = hookio.rx(r"git push[^;&|)]*[{S}]--tags([{S})]|$)")
@@ -106,6 +116,15 @@ CI_TRACE = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "ci
 FF_QUIET = frozenset(("-q", "--quiet", "-v", "--verbose"))
 MAIN_NAMES = ("main", "refs/heads/main")
 SHA = re.compile(r"^[0-9a-f]{7,40}$")
+# The GitLab mirror push (operator ruling 2026-10-03): its flags, and the git-level hook module whose URL pin and ref check it shares, loaded BY FILE like the hook shims load it.
+MIRROR_FLAGS = FF_QUIET | {"--follow-tags"}
+_GITHOOKS_SPEC = importlib.util.spec_from_file_location(
+    "rediacc_hooks._githooks", pathlib.Path(__file__).resolve().parents[1] / "git" / "githooks.py"
+)
+if _GITHOOKS_SPEC is None or _GITHOOKS_SPEC.loader is None:
+    raise ImportError("block_push_to_protected_branch: git/githooks.py is missing")
+githooks = importlib.util.module_from_spec(_GITHOOKS_SPEC)
+_GITHOOKS_SPEC.loader.exec_module(githooks)
 # Every field of the `gh pr view` answer the fallback reads. A missing one is refused by name (65f2a27e.2: it used to read "PR #None").
 PR_FIELDS = ("number", "state", "headRefOid", "body")
 
@@ -114,7 +133,7 @@ MESSAGE = (
     "\n"
     "Refused in every spelling: explicit (`git push origin main`, `HEAD:main`, `refs/heads/main`, `:main`, `--delete main`, `--all`, with or without `-C`/`-c` before `push`) or implicit (a bare `git push` / `git push origin` / `git push origin HEAD` while this checkout is ON main).\n"
     "\n"
-    "Land through the PR: `gh pr merge <n> --rebase --auto` (.claude/commands/pr-merge.md). The ONE admitted direct push (operator ruling 2026-10-02) is the fast-forward fallback for a PR GitHub cannot rebase: `git push origin origin/<live MMDD-N branch>:main` (or `<branch>:main`, or `<sha>:main`), one refspec, no force/lease/`+`/delete/tags, from the console checkout on that branch, where the commit is the branch's pushed tip AND the open PR's head, `origin/main` is its ancestor, CI Complete is SUCCESS on it (read through .ci/scripts/ci/ci-trace.py), and the PR body names its one plan (`Plan: agent/plans/PLAN-<slug>.md`) with every box ticked, or carries an `Operational-Reason:` line."
+    "Land through the PR: `gh pr merge <n> --rebase --auto` (.claude/commands/pr-merge.md). The GitLab mirror push of step 6b (operator ruling 2026-10-03) is admitted as `git push gitlab refs/heads/main:refs/heads/main --follow-tags` (or `main:main`), nothing forced, from the console checkout, where `gitlab` is the console mirror and local `main` is exactly `origin/main`. The ONE admitted direct push to GitHub (operator ruling 2026-10-02) is the fast-forward fallback for a PR GitHub cannot rebase: `git push origin origin/<live MMDD-N branch>:main` (or `<branch>:main`, or `<sha>:main`), one refspec, no force/lease/`+`/delete/tags, from the console checkout on that branch, where the commit is the branch's pushed tip AND the open PR's head, `origin/main` is its ancestor, CI Complete is SUCCESS on it (read through .ci/scripts/ci/ci-trace.py), and the PR body names its one plan (`Plan: agent/plans/PLAN-<slug>.md`) with every box ticked, or carries an `Operational-Reason:` line."
 )
 
 EDGE_CASES = [
@@ -149,12 +168,19 @@ EDGE_CASES = [
     # M2: the fallback's shape refused before any gh read (no PR world here, so every spelling refuses).
     ("M2 the fallback shape with --force", "git push --force origin 0914-1:main"),
     ("M2 the fallback shape with two refspecs", "git push origin 0914-1:main 0914-1"),
+    # The GitLab mirror push: no fixture here carries a `gitlab` remote, so every spelling refuses; the admitted worlds are in this guard's own suite.
+    ("mirror the 6b spelling", "git push gitlab refs/heads/main:refs/heads/main --follow-tags"),
+    ("mirror with --force", "git push --force gitlab main:main"),
+    ("mirror a bare --mirror push", "git push --mirror gitlab"),
 ]
 
 
-def _count(pattern, text):
+def _count(pattern, text, distinct=False):
     compiled = re.compile(pattern)
     records, _ = hookio._records(text)
+    if distinct:
+        # `shellscan.scan_target` appends a wrapper's payload as a record of its own, so `timeout 120 git push gitlab main:main` shows the same statement twice (measured 2026-10-03: the step-6b spelling inside pr-merge.md's own timeout wrapper was refused as "2 pushes"). The lexer's count of runs still catches two real pushes, identical or not.
+        return len({m.group(0) for record in records for m in compiled.finditer(record)})
     return sum(len(list(compiled.finditer(record))) for record in records)
 
 
@@ -243,18 +269,53 @@ def _ci_green(live, number, sha):
     return ""
 
 
+def mirror_refusal(ev, run, flags, positionals):
+    """ "" when this push is the GitLab mirror push of step 6b (conditions f-h of the header), else why not."""
+    for flag in flags:
+        if flag not in MIRROR_FLAGS:
+            return "`%s` is not part of the mirror push (one plain refspec, nothing forced)" % flag
+    if len(positionals) != 2:
+        return "the mirror push names `%s` and exactly one refspec" % githooks.MIRROR_REMOTE
+    src, colon, dst = positionals[1].partition(":")
+    if not colon or src not in MAIN_NAMES or dst not in MAIN_NAMES:
+        return "the refspec `%s` is not `refs/heads/main:refs/heads/main`" % positionals[1]
+    root = ev.project_dir
+    repo = commit_policy.run_repo(run, ev.field("cwd") or root)
+    top = commit_policy.toplevel(root)
+    if not repo or not top or os.path.realpath(repo) != os.path.realpath(top):
+        return "only the console checkout's own main has the mirror"
+    urls: list[str] = []
+    for extra in ([], ["--push"]):
+        out = commit_policy.git(
+            ["remote", "get-url", "--all", *extra, githooks.MIRROR_REMOTE], cwd=repo
+        )
+        if not out:
+            return "the `%s` remote's URL cannot be read here" % githooks.MIRROR_REMOTE
+        urls.extend(u for u in out.split("\n") if u)
+    for url in urls:
+        why = githooks.mirror_url_refusal(url)
+        if why:
+            return why
+    sha = commit_policy.git(["rev-parse", "--verify", "-q", "refs/heads/main^{commit}"], cwd=repo)
+    if not sha:
+        return "local `main` does not resolve to a commit"
+    return githooks.mirror_main_refusal(repo, sha)
+
+
 def ff_fallback_refusal(ev, cmd, scan, text_scan):
     """ "" when this push to main is the admitted fast-forward fallback (box M2), else why not."""
     if hookio.grep_q(ALL_BRANCHES, scan):
-        return "`--all` pushes every branch"
+        return "`--all` or `--mirror` pushes every branch"
     mains = [r for r in commit_policy.git_runs(cmd, "push") if _names_main(r)]
-    shown = _count(DEST_MAIN, text_scan)
+    shown = _count(DEST_MAIN, text_scan, distinct=True)
     if len(mains) != 1 or shown > 1:
         return "the fallback is ONE push to main, and this command shows %d" % max(
             len(mains), shown
         )
     run = mains[0]
     flags, positionals = _push_parts(run)
+    if positionals[:1] == [githooks.MIRROR_REMOTE]:
+        return mirror_refusal(ev, run, flags, positionals)
     for flag in flags:
         if flag not in FF_QUIET:
             return "`%s` is not part of the fallback (one plain refspec, nothing forced)" % flag
