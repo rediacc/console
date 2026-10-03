@@ -234,8 +234,7 @@ def _ci_green(live, number, sha):
         return "ci-trace did not read the open PR #%s" % number
     if trace.get("head") != sha:
         return "ci-trace read head `%s`, not `%s`" % (str(trace.get("head"))[:12], sha[:12])
-    if proc.returncode != 0 or trace.get("verdict") != "green":
-        return "CI on `%s` is %s (%s)" % (sha[:12], trace.get("verdict"), trace.get("detail"))
+    # CI COMPLETE, NOT THE TRACER'S WHOLE VERDICT (operator ruling 2026-10-03, for the unattended merge cycle). `main`'s ruleset requires CI Complete alone, and it aggregates the PR's own CI. The whole verdict also counted contexts no workflow on the head defines: on #591 the base branch's retired review-status.yml kept posting a failing "Review Complete", which refused this push while CI Complete was SUCCESS (run 37089591716).
     if trace.get("ci_complete") != "success":
         return "CI Complete on `%s` is %s, not success" % (sha[:12], trace.get("ci_complete"))
     return ""

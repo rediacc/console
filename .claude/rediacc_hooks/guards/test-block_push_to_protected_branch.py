@@ -174,14 +174,19 @@ if a[:2] == ["api", "graphql"]:
             "detailsUrl": "",
             "checkSuite": {"workflowRun": {"databaseId": 9}},
         }
+        nodes = [ctx]
+        extra = os.environ.get("FX_EXTRA", "")
+        if extra:
+            # A failing context no workflow on the head defines, as main's retired review-status.yml posted on #591.
+            nodes.append({"__typename": "StatusContext", "context": extra, "state": "FAILURE", "targetUrl": ""})
         commit = {
             "oid": head,
             "statusCheckRollup": {
-                "state": "SUCCESS" if ci == "SUCCESS" else "PENDING",
+                "state": "SUCCESS" if ci == "SUCCESS" and not extra else "FAILURE" if extra else "PENDING",
                 "contexts": {
-                    "totalCount": 1,
+                    "totalCount": len(nodes),
                     "pageInfo": {"hasNextPage": False, "endCursor": None},
-                    "nodes": [ctx],
+                    "nodes": nodes,
                 },
             },
         }
@@ -283,6 +288,14 @@ CASES = [
         LIVE,
         False,
         fx(),
+    ),
+    # Operator ruling 2026-10-03: CI Complete decides, not the tracer's whole verdict. A failing context beside a green CI Complete (main's retired "Review Complete" on #591) does not refuse.
+    (
+        "M2 ff admitted with CI Complete green beside a failing non-required context",
+        "git push origin 0914-1:%s" % MAIN,
+        LIVE,
+        False,
+        fx(extra="Review Complete"),
     ),
     # ---- M2: refused, one condition at a time --------------------------------------------
     ("M2 CI Complete failed", "git push origin 0914-1:%s" % MAIN, LIVE, True, fx(ci="FAILURE")),
