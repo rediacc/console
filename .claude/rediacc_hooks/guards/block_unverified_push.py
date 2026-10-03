@@ -410,6 +410,27 @@ def push_source(push_line):
     return "" if src in ("", "HEAD") or src.startswith("HEAD") else src
 
 
+def pushes_only_origin_main(root, pushes):
+    """True when every push in the command names an explicit source that resolves to exactly the commit `origin/main` names."""
+    if not pushes:
+        return False
+    sources = {push_source(line) for line in pushes}
+    if "" in sources:
+        return False
+    want = hookio.git_out(
+        ["-C", root, "rev-parse", "-q", "--verify", "origin/main^{commit}"], want_rc=True
+    )
+    if not want:
+        return False
+    for src in sources:
+        got = hookio.git_out(
+            ["-C", root, "rev-parse", "-q", "--verify", "%s^{commit}" % src], want_rc=True
+        )
+        if got != want:
+            return False
+    return True
+
+
 def pushed_tree(root, pushes):
     """The tree the push sends, which is the tree the receipt must have judged.
 
@@ -564,6 +585,9 @@ def run(ev):
         return hookio.ALLOW
 
     receipt_path = "%s/.ci/cache/prepush-receipt.json" % root
+    # A PUSH OF WHAT origin/main ALREADY IS needs no local receipt: GitHub's required CI judged that exact commit before main could move to it. That is the GitLab mirror push of /pr-merge step 6b (operator ruling 2026-10-03, worklist #1cad85a1), whose shape block_push_to_protected_branch admits.
+    if pushes_only_origin_main(root, pushes):
+        return hookio.ALLOW
     tree = pushed_tree(root, pushes)
     if tree is None or tree == "":
         return hookio.ALLOW
