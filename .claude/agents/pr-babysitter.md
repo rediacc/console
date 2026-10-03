@@ -165,7 +165,7 @@ affordable: a 27-round wave must not burn the main context on lockfile reconcili
 
 ## Round log - your durable state, your liveness artifact, and the principal's status channel
 
-Maintain `~/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babysit-<branch>.md`. **This file is how the principal knows what is happening** - an unwritten round is an invisible round. Update it **every round, before you push** - not at the end. In-context, it is also what survives context compaction: treat the round log as your real memory and the chat as scratch.
+Maintain `<projects-dir>/reports/pr-babysit-<branch>.md`, where `<projects-dir>` is the directory `wl_core.projects_dir` returns for this checkout (Claude Code's per-machine projects directory; `python3 -c 'import sys, pathlib; sys.path.insert(0, ".claude/hooks/stop"); import wl_core; print(wl_core.projects_dir(pathlib.Path.cwd()))'` prints it), never a path typed from memory: the hard-coded one named a machine this repo no longer runs on. **This file is how the principal knows what is happening** - an unwritten round is an invisible round. Update it **every round, before the push** - not at the end. In-context, it is also what survives context compaction: treat the round log as the loop's real memory and the chat as scratch.
 Three parts, in order:
 
 **1. Wave header** (written once, before the snapshot; **immutable** - supersede with a dated addendum, never rewrite): intent (a paragraph); deliberate renames/removals (a failing test or doc that references an old name must be read against this map, not "fixed" backwards); sanctioned reds, each with its reason (without this list, the first act of a babysit is to "fix" a
