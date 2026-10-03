@@ -240,7 +240,7 @@ for name, command, want, needle in WRITTEN:
     if not ok and err:
         print("    stderr: %s" % err.strip().splitlines()[:3])
 print()
-# NO SNAPSHOT: a branch with no agent/pr/<branch>.md is judged against agent/worklist/epics.jsonl, the ledger check:ci-pr-task-trailers reads. On 2026-10-03 the guard judged nothing there, and 40 commits on 1003-1 carrying a worklist item id passed until ci:quick refused them at push time. Runs last: it moves the fixture to a branch with no snapshot.
+# NO SNAPSHOT: a branch with no agent/pr/<branch>.md is judged against agent/worklist/epics.jsonl, the ledger check:ci-pr-task-trailers reads. On 2026-10-03 the guard judged nothing there, and 41 commits on 1003-1 carrying a worklist item id passed until ci:quick refused them at push time. Runs last: it moves the fixture to a branch with no snapshot.
 subprocess.run(
     ["git", "switch", "-q", "-c", "1003-1"],
     cwd=str(REPO),
