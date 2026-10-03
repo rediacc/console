@@ -33,6 +33,7 @@ directly rather than the engine being emulated.
 WHAT THIS GUARD USED TO INHERIT FROM `shellscan.target_root`. Its `-C` hint grep accepted a TAB, but the sed that stripped the flag demanded a literal space, so a TAB-separated `git -C<tab><path>` resolved to the empty root and this guard then judged the console tree instead of the named submodule. That was a defect in the bash, reproduced deliberately while the oracle was the spec. Rule T (PLAN-retire-bash-oracles A4) fixed it at its source: `target_root` now reads each git invocation's `-C` through the shared lexer, where a tab is a blank like any other (`tests/goldens/shellscan.jsonl`, case "-C with a tab", carries the intentional delta).
 """
 
+import json
 import os
 import pathlib
 import re
@@ -155,6 +156,25 @@ def _grep_qx(needle, haystack):
     pattern = re.compile(needle)
     records, _ = hookio._records(hookio._here_string(haystack))
     return any(pattern.fullmatch(record) for record in records)
+
+
+def _ledger_epic_ids(root):
+    """Every epic id in agent/worklist/epics.jsonl, the ledger check:ci-pr-task-trailers judges against. A torn line is skipped, the rule wl_epic.load_epics follows."""
+    try:
+        text = pathlib.Path(root or ".", "agent", "worklist", "epics.jsonl").read_text(
+            encoding="utf-8", errors="replace"
+        )
+    except OSError:
+        return []
+    ids = []
+    for line in text.splitlines():
+        try:
+            eid = str(json.loads(line).get("id") or "")
+        except (ValueError, AttributeError):
+            continue
+        if re.fullmatch(r"[0-9a-f]{6,32}", eid) and eid not in ids:
+            ids.append(eid)
+    return ids
 
 
 def _epic_menu(ev, known, snap, branch_key, branch):
@@ -295,6 +315,9 @@ def run(ev):
         for record in hookio.grep_lines(SNAPSHOT_ID, text):
             ids.extend(hookio.grep_o(r"[0-9a-f]{6,32}", record))
         known = hookio._command_substitution(hookio._grep_out(ids))
+    # NO SNAPSHOT FALLS BACK TO THE LEDGER, which is what check:ci-pr-task-trailers reads. Measured 2026-10-03: branch 1003-1 had no agent/pr/1003-1.md, so `known` stayed empty and 40 commits carrying `PR-TASK: 76a0eaaf`, a worklist item id rather than an epic id, were allowed, until ci:quick refused them all at push time. The ledger is repo-scoped and always lists every epic, so judging against it cannot block a new branch's first commit that names a real epic.
+    if not known:
+        known = hookio._command_substitution(hookio._grep_out(_ledger_epic_ids(root)))
 
     match = TRAILER.search(msg)
     found = match.group(1) if match else ""
@@ -312,7 +335,7 @@ def run(ev):
         _epic_menu(ev, known, snap, branch_key, branch)
         return hookio.DENY
 
-    # A trailer whose id names no epic is WORSE than no trailer: it looks tagged. Only judge when a snapshot exists -- with none, there is no set to judge against, and refusing would block the very first commit of a new branch.
+    # A trailer whose id names no epic is WORSE than no trailer: it looks tagged. With no snapshot the set is the ledger's (above); with neither there is no set to judge against, and the guard allows.
     if known and not _grep_qx(found, known):
         ev.warn_raw(split)
         ev.warn_raw(

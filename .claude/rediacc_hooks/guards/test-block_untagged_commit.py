@@ -239,6 +239,41 @@ for name, command, want, needle in WRITTEN:
     )
     if not ok and err:
         print("    stderr: %s" % err.strip().splitlines()[:3])
+print()
+# NO SNAPSHOT: a branch with no agent/pr/<branch>.md is judged against agent/worklist/epics.jsonl, the ledger check:ci-pr-task-trailers reads. On 2026-10-03 the guard judged nothing there, and 40 commits on 1003-1 carrying a worklist item id passed until ci:quick refused them at push time. Runs last: it moves the fixture to a branch with no snapshot.
+subprocess.run(
+    ["git", "switch", "-q", "-c", "1003-1"],
+    cwd=str(REPO),
+    check=True,
+    capture_output=True,
+    env=GIT_ENV,
+)
+LEDGER_CASES = [
+    ("no snapshot, no ledger: nothing to judge, allowed", "a1b2c3d4", False, False),
+    ("no snapshot: an id the ledger lacks is refused", "deadbeef", True, True),
+    ("CONTROL no snapshot: a ledger epic is allowed", "a1b2c3d4", True, False),
+]
+for name, epic, with_ledger, want in LEDGER_CASES:
+    ledger = REPO / "agent" / "worklist" / "epics.jsonl"
+    if with_ledger:
+        ledger.parent.mkdir(parents=True, exist_ok=True)
+        ledger.write_text(
+            '{"id":"a1b2c3d4","title":"Port the guards","covers":[]}\nnot json\n', encoding="utf-8"
+        )
+    got, err = run("git commit -F - -- a <<'EOF'\nfeat: x\n\nPR-TASK: %s\nEOF" % epic)
+    ok = got == want
+    fails += not ok
+    print(
+        "%-70s want=%-8s got=%-8s %s"
+        % (
+            "ledger: " + name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if not ok and err:
+        print("    stderr: %s" % err.strip().splitlines()[:2])
 if blocked == 0 or blocked == len(CASES):
     print("*** FAIL *** the guard answered the same way on every case")
     fails += 1
