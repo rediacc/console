@@ -564,6 +564,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_migrate.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_regression_gate.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_remaining_bank.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_report_scope.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_submodule_decision.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_triage_and_plans.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_lib.py",

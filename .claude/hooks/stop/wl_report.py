@@ -290,6 +290,8 @@ def unread(store, branch=None, reader=None):
             continue
         if branch is not None and str(ev.get("branch", "")) != branch:
             continue
+        if _foreign_and_stale(ev, reader):
+            continue
         if ev.get("interim"):
             base = str(ev["id"]).split("-", 1)[0]
             if any(str(e.get("id") or "").split("-", 1)[0] == base for e in entries[pos + 1 :]):
@@ -310,6 +312,21 @@ def unread(store, branch=None, reader=None):
                 continue
         out.append(ev)
     return out
+
+
+def _foreign_and_stale(entry, reader):
+    """True for a report another session spawned, captured longer ago than a session lives.
+
+    A SHARED BRANCH IS NOT A SHARED INBOX (2026-10-03). The branch filter keeps a restarted session's view of its predecessor's reports, which is the point of per-reader marks. On `main`, though, the branch is everyone's: after a merge left this checkout on `main`, 82 reports captured 2026-08-26..09-06 by seven other sessions blocked a stop as this session's unread duty. A report this session spawned, or one with no session recorded, always counts; a foreign one counts while it is younger than WORKLIST_DEAD_HOURS, the horizon this repo already uses for "that session could still be running or was just restarted".
+    """
+    owner = str(entry.get("session") or "")[:8]
+    me = str(reader or "")[:8]
+    if not owner or not me or owner == me:
+        return False
+    age = C.stamp_age_min(entry.get("at"))
+    if age is None:
+        return False
+    return age >= float(os.environ.get("WORKLIST_DEAD_HOURS", "24")) * 60
 
 
 def _still_waiting(entry):
