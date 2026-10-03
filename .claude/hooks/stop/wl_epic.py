@@ -16,6 +16,7 @@ IDS ARE NOT FIXED WIDTH. Worklist item ids are 8 hex from the CLI and 12 hex whe
 
 import json
 import os
+import pathlib
 
 import wl_core as C
 import wl_store as S
@@ -47,22 +48,44 @@ def _new_epic_id(existing):
     raise RuntimeError("could not mint a distinct epic id")
 
 
-def record_epic(me, epic_id, title, covers, order=None):
-    """Append one epic record. Append-only, like every sidecar here."""
-    S._append_lines(
-        epics_path(),
-        str(epics_path()) + ".lock",
-        [
-            {
-                "at": C.stamp_now(),
-                "by": (me or "")[:8],
-                "id": epic_id,
-                "title": (title or "")[:EPIC_MAX_CHARS],
-                "covers": sorted({c for c in (covers or []) if c})[:EPIC_MAX_COVERS],
-                "order": order,
-            }
-        ],
-    )
+PLAN_DIR = "agent/plans/"
+
+
+def plan_rel_problem(rel, root=None):
+    """Why `rel` cannot be an epic's plan, or "" when it can.
+
+    The plan is how the Stop hook scopes items to the live PR (agent/plans/PLAN-stop-hook-one-plan-scope.md, Design 3), so a typo here would silently attach an epic to no plan at all and queue every item under it. A rel must be a repo-relative `agent/plans/....md` that exists, and must not climb out of `agent/plans/`.
+    """
+    rel = str(rel or "")
+    if not rel.startswith(PLAN_DIR) or not rel.endswith(".md"):
+        return "a plan is a repo-relative %s<name>.md path, not %r" % (PLAN_DIR, rel)
+    if root is None:
+        root = C.project_root(C.project_start())
+    base = (pathlib.Path(root) / PLAN_DIR).resolve()
+    target = (pathlib.Path(root) / rel).resolve()
+    if base not in target.parents:
+        return "%r leaves %s" % (rel, PLAN_DIR)
+    if not target.is_file():
+        return "no plan file %s under %s" % (rel, root)
+    return ""
+
+
+def record_epic(me, epic_id, title, covers, order=None, plan=None):
+    """Append one epic record. Append-only, like every sidecar here.
+
+    `plan` is written only when given: `load_epics` merges non-None fields later-wins, so a record that omits it (a later `add`) keeps the plan an earlier record set.
+    """
+    rec = {
+        "at": C.stamp_now(),
+        "by": (me or "")[:8],
+        "id": epic_id,
+        "title": (title or "")[:EPIC_MAX_CHARS],
+        "covers": sorted({c for c in (covers or []) if c})[:EPIC_MAX_COVERS],
+        "order": order,
+    }
+    if plan:
+        rec["plan"] = str(plan)
+    S._append_lines(epics_path(), str(epics_path()) + ".lock", [rec])
 
 
 def load_epics():
@@ -104,11 +127,33 @@ def load_epics():
     return {r["id"]: r for r in ordered}
 
 
-def new_epic(me, title, order=None):
+def new_epic(me, title, order=None, plan=None):
     existing = set(load_epics())
     eid = _new_epic_id(existing)
-    record_epic(me, eid, title, [], order)
+    record_epic(me, eid, title, [], order, plan=plan)
     return eid
+
+
+def set_plan(me, epic_id, rel):
+    """Give an existing epic its plan (later-wins). Refuses an unknown epic by returning None; the caller validates `rel` first."""
+    epics = load_epics()
+    if epic_id not in epics:
+        return None
+    rec = epics[epic_id]
+    record_epic(me, epic_id, rec.get("title"), [], rec.get("order"), plan=rel)
+    return epic_id
+
+
+def plan_epics(rel):
+    """Every item id covered by an epic whose `plan` is `rel`.
+
+    Titles are NEVER parsed (clean break, Design 3): an epic whose title names a plan but which carries no `plan` field belongs to no plan until `--epic <me> plan` gives it one.
+    """
+    out: set[str] = set()
+    for rec in load_epics().values():
+        if rec.get("plan") == rel:
+            out.update(rec.get("covers") or [])
+    return out
 
 
 def add_to_epic(me, epic_id, item_ids):

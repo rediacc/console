@@ -5,6 +5,7 @@ This is the v5-v9 main() stop path, extracted, consuming the v10 store fold inst
 
 import contextlib
 import datetime
+import functools
 import hashlib
 import json
 import os
@@ -1514,7 +1515,9 @@ def queue_held_lines(verdict, fold, root):
     return "".join(out)
 
 
-def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False, live_plans=None):
+def guided_slice(
+    fold, session_id, verdicts=None, me=None, root=None, full=False, live_plans=None, in_scope=None
+):
     """The bounded, guided, store-derived instruction block.
 
     One line per actionable item: state, #id, age from the store's own stamps, the capped text, and the EXACT verb that moves it -- an open item gets --tick, a live lease gets --update, an undefaulted [?] gets --defer, an expired-window [?] gets its default-execution order. Sorted by priority (obligations first) so truncation drops the least urgent. `verdicts` (from
@@ -1528,6 +1531,8 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
 
     PLAN RANK INSIDE A BAND (agent/plans/PLAN-plan-priority-concurrency.md section 2, T7). Bands are obligations and stay first: a dead lease outranks any plan. Inside a band rows are ordered by `wl_planorder.item_key` (dependencies, operator priority, AI priority, then age), and a plan-linked row carries its rank tag, `#id [P1 op]`. `live_plans` (the roster's
     `plan_holders`, or `wl_planconc.live_plans` from the CLI) annotates an open or queued item whose writer the plan-concurrency spawn guard would refuse right now; None leaves the rows unannotated.
+
+    `in_scope` is the same predicate `wl_store.classify_items` takes (agent/plans/PLAN-stop-hook-one-plan-scope.md, Design 2): a plain open `[ ]` that fails it is left out of the rows, exactly the item classify_items queues, so the guide and the open list cannot disagree. `[?]`, `[>]` and waiting rows are never filtered. The caller appends the one queued line (N_PR_SCOPE). None lists everything.
     """
     import wl_planorder as PO  # noqa: PLC0415 -- the plan rank, shared with every other picker
 
@@ -1545,6 +1550,13 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
             continue
         st = rec["state"]
         if st == "x":
+            continue
+        if (
+            st == " "
+            and in_scope is not None
+            and not in_scope(rec)
+            and not wl_leasehelp.waiting_on(rec, by_id)
+        ):
             continue
         txt = S.brief_text(rec, GUIDE_TEXT_CHARS)
         upd = C.stamp_age_min(rec.get("upd", ""))
@@ -2682,7 +2694,11 @@ def run_stop(event, event_ok, worklist, hook_file):
     _order_key = None
     with contextlib.suppress(Exception):
         _order_key = wl_planorder.item_key(wl_planorder.context(root)[0])
-    open_items, _others, deferred_recs, in_flight_recs = S.classify_items(
+    # THE PR'S ITEM SCOPE (agent/plans/PLAN-stop-hook-one-plan-scope.md, Design 2). None puts every item in scope; the PR_LOOP profile sets it from loop_state's epic items, and the same predicate scopes the guide below.
+    # Bound once with functools.partial so both classify calls below carry it and each call keeps the exact shape the order-key mutation control (test_wl_plan_priority m4) edits.
+    _in_scope = None
+    _classify = functools.partial(S.classify_items, in_scope=_in_scope)
+    open_items, _others, deferred_recs, in_flight_recs, _queued_recs = _classify(
         fold, session_id, live_worker_ids=_live_worker_ids, order_key=_order_key
     )
     # THE HOOK RENEWS A COVERED LEAD LEASE (P2.1), so an item the lead drives inline across several background tasks needs no manual renewal; with nothing live it has already failed closed above.
@@ -2759,7 +2775,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                     _renewed += 1
             if _renewed:
                 fold = S.load(worklist, sync=False)
-                open_items, _others, deferred_recs, in_flight_recs = S.classify_items(
+                open_items, _others, deferred_recs, in_flight_recs, _queued_recs = _classify(
                     fold, session_id, live_worker_ids=_live_worker_ids, order_key=_order_key
                 )
                 _roster = wl_roster.roster(
@@ -3152,6 +3168,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             me8,
             root,
             live_plans=(_roster or {}).get("plan_holders"),
+            in_scope=_in_scope,
         )
     except Exception as exc:  # noqa: BLE001
         guide = (

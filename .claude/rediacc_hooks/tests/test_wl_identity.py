@@ -445,12 +445,30 @@ def drive_l1(fix) -> L1Drive:
     i_lease = mkitem("l1-lease-item")
     i_relay = mkitem("l1-relay-item")
     both(l1run(fix, "--lease", wlfix.ME, i_relay, "+30", "worker:l1old"))
+    # --reopen moves only a [?], so its fixture is deferred first.
+    i_reopen = mkitem("l1-reopen-item")
+    both(
+        l1run(
+            fix,
+            "--defer",
+            wlfix.ME,
+            i_reopen,
+            "q",
+            "DEFAULT:",
+            "do-it",
+            "WHY:",
+            "needs-an-operator-ruling",
+            "HOW:",
+            "operator-answers",
+        )
+    )
     mkitem("l1-list-item")  # the --list row asserts on the TEXT, not the id
     for name, value in (
         ("i_tick", i_tick),
         ("i_defer", i_defer),
         ("i_update", i_update),
         ("i_lease", i_lease),
+        ("i_reopen", i_reopen),
     ):
         assert value, "FIXTURE BROKEN: %s was never created, so its row proves nothing" % name
     inv_rel, inv_selector = plant_investigate_target(fix)
@@ -492,6 +510,7 @@ def drive_l1(fix) -> L1Drive:
             "deferred #",
         ),
         ("--update", "--update @WHO@ %s moved-a-bit" % i_update, "updated #"),
+        ("--reopen", "--reopen @WHO@ %s re-homed" % i_reopen, "reopened #"),
         ("--lease", "--lease @WHO@ %s +30 worker:l1bg" % i_lease, "leased #"),
         ("--relay", "--relay @WHO@ l1old l1new", "relayed 1 lease(s)"),
         ("--status", "--status @WHO@ all", "a9000000000000001 (general-purpose)"),
