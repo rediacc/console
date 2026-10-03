@@ -266,8 +266,8 @@ def test_a_failed_job_is_red_and_never_a_nonblocking_one():
     assert D.first_failure(jobs[:2]) is None
 
 
-def test_the_advisory_pr_review_is_never_the_first_failure():
-    # PLAN-github-pr-review-restore GR4: the PR review is advisory, so its three check names never become a red verdict's cause, while Review Gate (a Console CI job) still does.
+def test_the_pr_review_is_never_the_first_failure_of_a_console_ci_run():
+    # Operator ruling 2026-10-03: Review Complete is a required check again, so it counts toward the verdict, while Review Status and Claude Review report through it. All three run in their own workflows, so none is the root cause of a Console CI run, while Review Gate (a Console CI job) still is.
     jobs = [
         {
             "id": 1,
@@ -296,11 +296,14 @@ def test_the_advisory_pr_review_is_never_the_first_failure():
         "completed_at": "2026-01-01T00:00:03Z",
     }
     assert D.first_failure([*jobs, gate])["id"] == 4
-    for name in ("Review Complete", "Review Status", "Claude Review"):
+    assert D._blocking("Review Complete")
+    for name in ("Review Status", "Claude Review"):
         assert not D._blocking(name), name
+    for name in ("Review Complete", "Review Status", "Claude Review"):
         assert D._aggregator(name), name
     # The aggregator match is a substring match, so none of the three may hide inside Review Gate.
     assert not D._aggregator("Review Gate")
+    assert D._blocking("Review Gate")
 
 
 def test_green_run_has_no_next_and_unreadable_run_says_why():

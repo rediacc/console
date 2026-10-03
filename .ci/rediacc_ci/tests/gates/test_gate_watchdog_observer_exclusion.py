@@ -18,7 +18,7 @@ from rediacc_ci import paths
 WORKFLOW = paths.from_root(".github", "workflows", "watchdog-monitor.yml")
 
 # The names an observer check can carry. Each is a check that lands in the same check suite as the CI jobs and is NOT one of them.
-# `Review Complete`, `Review Status` and `Claude Review` are the advisory PR review's checks (operator ruling 2026-10-03, PLAN-github-pr-review-restore): observers of the run, never part of it.
+# `Review Complete`, `Review Status` and `Claude Review` are the PR review's checks (PLAN-github-pr-review-restore), posted by their own workflows after Console CI: observers of the run, never part of it. Review Complete is a required check on main again (operator ruling 2026-10-03), which ci-trace and the Stop hook enforce; the watchdog must still never cancel Console CI over it.
 REQUIRED = (
     "Watchdog",
     "CI Complete",

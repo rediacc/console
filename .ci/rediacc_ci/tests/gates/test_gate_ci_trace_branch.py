@@ -823,11 +823,9 @@ def test_ci_complete_green_with_verdict_publisher_red_and_verdict_in_flight_is_g
     gate.log_pass("GREEN; neither non-blocking context holds or reddens the head")
 
 
-def test_ci_complete_green_with_review_red_and_claude_review_in_flight_is_green(gate, tmp_path):
-    gate.log_test(
-        "CI Complete success + Review Complete red + Claude Review in flight -> GREEN, exit 0"
-    )
-    # PLAN-github-pr-review-restore GR4 (operator ruling 2026-10-03): the PR review is advisory, so none of its checks may hold or redden a head whose CI Complete is green.
+def test_ci_complete_green_with_review_complete_red_is_red(gate, tmp_path):
+    gate.log_test("CI Complete success + Review Complete red -> RED, exit 1")
+    # Operator ruling 2026-10-03: Review Complete is a required check on main again, so its failure reddens a head whose CI Complete is green.
     require_subjects(gate)
     nodes = _pr_nodes(
         "[%s]"
@@ -836,6 +834,32 @@ def test_ci_complete_green_with_review_red_and_claude_review_in_flight_is_green(
                 _ctx("Quality / Code"),
                 _ctx("CI Complete", ident=2),
                 _ctx("Review Complete", "FAILURE", run=1, ident=3),
+            ]
+        ),
+        state="FAILURE",
+    )
+    bindir = make_fake_gh(tmp_path / "bin", nodes, "null", runs_json=CONSOLE_RUN)
+    result = harness.run([sys.executable, str(TRACE), "--ref", PR_BRANCH], env=with_path(bindir))
+    gate.assert_exit(1, result, "a failing Review Complete (a required check) must read red")
+    if "Review Complete" not in result.out:
+        gate.log_fail("the red verdict must name Review Complete: %r" % result.out)
+    gate.log_pass("RED, naming Review Complete")
+
+
+def test_ci_complete_green_with_review_status_red_and_claude_review_in_flight_is_green(
+    gate, tmp_path
+):
+    gate.log_test(
+        "CI Complete success + Review Status red + Claude Review in flight -> GREEN, exit 0"
+    )
+    # The review's jobs report through Review Complete (its failed-run token), so neither holds nor reddens a head on its own.
+    require_subjects(gate)
+    nodes = _pr_nodes(
+        "[%s]"
+        % ",".join(
+            [
+                _ctx("Quality / Code"),
+                _ctx("CI Complete", ident=2),
                 _ctx("Review Status", "FAILURE", run=1, ident=4),
                 _ctx("Claude Review", None, "IN_PROGRESS", run=2, ident=5),
             ]
@@ -844,8 +868,8 @@ def test_ci_complete_green_with_review_red_and_claude_review_in_flight_is_green(
     )
     bindir = make_fake_gh(tmp_path / "bin", nodes, "null", runs_json=CONSOLE_RUN)
     result = harness.run([sys.executable, str(TRACE), "--ref", PR_BRANCH], env=with_path(bindir))
-    gate.assert_exit(0, result, "the advisory PR review may neither hold nor redden the head")
-    gate.log_pass("GREEN; the advisory PR review holds and reddens nothing")
+    gate.assert_exit(0, result, "the review's own jobs may neither hold nor redden the head")
+    gate.log_pass("GREEN; Review Status and Claude Review hold and redden nothing")
 
 
 def test_control_a_failing_review_gate_still_reads_red(gate, tmp_path):

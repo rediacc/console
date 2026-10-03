@@ -140,7 +140,7 @@ const budgetSectionFor = ({ context, usable, runId }) => {
       nowMs: updatedAt ? new Date(updatedAt).getTime() : Date.now(),
       jobBudgetMin: Number(process.env.NIGHTLY_JOB_BUDGET_MIN || '15'),
       runBudgetMin: Number(process.env.NIGHTLY_RUN_BUDGET_MIN || '20'),
-      // The advisory PR review's observers (operator ruling 2026-10-03, PLAN-github-pr-review-restore) sit beside CI Verdict.
+      // The PR review's checks (PLAN-github-pr-review-restore) run in their own workflows after Console CI and sit beside CI Verdict here. Review Complete is a required check on main again (operator ruling 2026-10-03), but that verdict is read by ci-trace and the Stop hook, not charged to a nightly run's budget.
       excludePatterns: (
         process.env.NIGHTLY_BUDGET_EXCLUDE_PATTERNS ||
         'Watchdog,CI Complete,Review Complete,Review Status,Claude Review,CI Verdict'
