@@ -29,8 +29,6 @@ ORDER = 19
 # Remote strictly behind local is a NORMAL push of new commits. Without this arm every push of anything ever is refused as drift, which makes the guard an outage rather than a check -- the exact failure its own header forbids.
 DEFECT = ("if _is_ancestor(remote, local, root):", "if False:")
 
-PUSH = hookio.rx(r"(^|[|;&{S}])git push([{S}]|$)")
-DRY_RUN = r"git push[^|;&]*--dry-run"
 # The argument text of the first `git push` in the command, up to the next shell operator.
 # Options whose value is the NEXT word, so that word is not mistaken for the remote or the refspec.
 PUSH_VALUE_OPTS = {"-o", "--push-option", "--repo", "--exec", "--receive-pack"}
@@ -178,6 +176,8 @@ EDGE_CASES = [
     ),
     ("a lease push of HEAD to the branch", "git push --force-with-lease origin HEAD:0831-1"),
     ("a lease push after &&", "npm run ci && git push --force-with-lease origin 0831-1"),
+    # The words inside a program's string are not a push (#a1ac21ce).
+    ("a python program naming a push", "python3 -c \"print('git push origin 0831-1')\""),
     # The 2026-10-03 republish: a redirect and a pipe after the push are not positionals.
     (
         "a lease push with a redirect and a pipe",
@@ -283,9 +283,8 @@ def _is_ancestor(remote, local, root):
 def run(ev):
     cmd = ev.raw("tool_input", "command")
 
-    if not hookio.grep_q_line(PUSH, cmd):
-        return hookio.ALLOW
-    if hookio.grep_q_line(DRY_RUN, cmd):
+    # The pushes bash would run, read by the lexer: the words inside a quoted string or a `python3 -c` program are not a push (2026-10-03, #a1ac21ce).
+    if not commit_policy.git_runs(cmd, "push"):
         return hookio.ALLOW
 
     root = ev.project_dir
@@ -297,6 +296,16 @@ def run(ev):
     if this_root == "":
         return hookio.ALLOW
     if shellscan.target_root(cmd, this_root, verb="push") != "":
+        return hookio.ALLOW
+    # Only the pushes that act on THIS checkout: a `git -C <dir> push` whose directory resolves to another repository, or to none (an unexpanded `$VAR`), is not this tree's drift. The lexer reaches pushes the old text match never saw (`eval`, `sh -c`, `git -C`), so the scope has to be explicit.
+    pushes = [
+        r
+        for r in commit_policy.git_runs(cmd, "push")
+        if commit_policy.run_repo(r, this_root) == this_root
+    ]
+    if not pushes:
+        return hookio.ALLOW
+    if any("--dry-run" in commit_policy.git_split(r.argv)[2] for r in pushes):
         return hookio.ALLOW
 
     branch = hookio.git_out(["symbolic-ref", "--short", "-q", "HEAD"], cwd=root, want_rc=True)
