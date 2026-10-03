@@ -17,11 +17,13 @@ A big-bang PR is the norm here, so nothing about it can be flat. The worklist is
 
 ## The chain, in order
 
-    worklist.py --epic <me> new "<title>"      mint an epic
+    worklist.py --epic <me> new --plan <rel> "<title>"   mint an epic for a plan
     worklist.py --epic <me> add <eid> <ids...> attach worklist items
     worklist.py --publish <me> <branch>        render agent/pr/<branch>.md
     git commit -m "...\n\nPR-TASK: <eid>"      every commit names its epic
     .ci/scripts/pr/sync-epic-block.sh <pr> <branch>   body block from snapshot
+
+An epic carries its plan (`agent/plans/PLAN-<slug>.md`, refused when the file does not exist). `--epic <me> new --plan <rel>` mints one for a plan as the plan starts, and `--epic <me> plan <epic-id> <rel>` gives an existing epic its plan; `list` prints it. Titles are never parsed, so an epic without `plan` belongs to no plan. The Stop hook blocks only on items under the epics of the live PR's plan set (its `Plan:` plans and their unfinished prerequisites); every other open item is one queued line. Work found mid-PR is therefore `--add`ed and then `--epic add`ed in the same step.
 
 Break the chain anywhere and the symptom appears somewhere else: an unpublished snapshot fails the block gate, an untagged commit is missing from the PR body's epic block.
 
