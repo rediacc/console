@@ -86,6 +86,7 @@ HEADER_KEYS = (
     "Patch-Id",
     "Reviewed-At",
     "Model",
+    "Cost",
     "Diff",
     "Unreviewed",
     "Verdict",
@@ -95,6 +96,10 @@ HEADER_KEYS = (
     "Body-Sig",
 )
 BRANCH_SLUG = re.compile(r"[^A-Za-z0-9._-]+")
+# Headers a record written before they existed lacks; parse() accepts their absence. `Cost` arrived 2026-10-03 (operator: each record carries the review model's cost), after 112 records on 0930-1 were already on main.
+OPTIONAL_HEADERS = ("Cost",)
+COST_NONE = "(none)"
+COST_RE = re.compile(r"^\$(\d+\.\d{4}) USD, (\d+) call\(s\), (\d+\.\d)s$")
 
 PROMPT = """You review ONE git commit of the rediacc console monorepo. You see only its message and diff. Report defects this commit INTRODUCES or EXPOSES, nothing else.
 Severity:
@@ -290,6 +295,8 @@ class Review:
     patch_id: str = "(none)"
     reviewed_at: str = ""
     model: str = ""
+    # The review model's spend: None when no model call was made (a skipped commit) or the CLI reported no cost; else {"usd": float, "calls": int, "seconds": float}.
+    cost: dict | None = None
     diff_bytes: int = 0
     diff_files: int = 0
     truncated: bool = False
@@ -347,6 +354,25 @@ def _parse_labels(text):
     return {"bump": m.group(1), "kind": kinds, "why": m.group(3)}
 
 
+def _cost_text(cost):
+    if not cost:
+        return COST_NONE
+    return "$%.4f USD, %d call(s), %.1fs" % (
+        float(cost.get("usd") or 0.0),
+        int(cost.get("calls") or 0),
+        float(cost.get("seconds") or 0.0),
+    )
+
+
+def _parse_cost(text):
+    if text in (None, COST_NONE):
+        return None
+    m = COST_RE.match(text)
+    if not m:
+        raise ValueError("Cost: is not `$<usd> USD, <n> call(s), <s>s` or `(none)`")
+    return {"usd": float(m.group(1)), "calls": int(m.group(2)), "seconds": float(m.group(3))}
+
+
 def render(review):
     """The canonical text of a review. `parse(render(r))` round-trips."""
     review.body_sig = body_sig(review.findings)
@@ -361,6 +387,7 @@ def render(review):
         "Patch-Id: %s" % review.patch_id,
         "Reviewed-At: %s" % review.reviewed_at,
         "Model: %s" % (review.model or "(none)"),
+        "Cost: %s" % _cost_text(review.cost),
         "Diff: %d bytes, %d files, truncated: %s"
         % (review.diff_bytes, review.diff_files, "yes" if review.truncated else "no"),
         "Unreviewed: %s" % (", ".join(review.unreviewed) or "(none)"),
@@ -413,7 +440,7 @@ def parse(text):
             raise MalformedReviewError("header %s appears twice" % key, i + 1)
         headers[key] = value
         i += 1
-    missing = [k for k in HEADER_KEYS if k not in headers]
+    missing = [k for k in HEADER_KEYS if k not in headers and k not in OPTIONAL_HEADERS]
     if missing:
         raise MalformedReviewError("missing header(s): %s" % ", ".join(missing))
     sha = headers["Commit"]
@@ -426,6 +453,7 @@ def parse(text):
         raise MalformedReviewError("Verdict: %r is not a known verdict" % headers["Verdict"])
     try:
         labels = _parse_labels(headers["Labels"])
+        cost = _parse_cost(headers.get("Cost"))
         attempt = int(headers["Attempt"])
         dropped = int(headers["Dropped"])
     except ValueError as exc:
@@ -439,6 +467,7 @@ def parse(text):
         patch_id=headers["Patch-Id"],
         reviewed_at=headers["Reviewed-At"],
         model=headers["Model"],
+        cost=cost,
         diff_bytes=int(diff.group(1)),
         diff_files=int(diff.group(2)),
         truncated=diff.group(3) == "yes",
@@ -913,7 +942,7 @@ def resolve_claude():
 
 
 def claude_reviewer(prompt, cfg, log=print):
-    """(structured_output, why) from one tool-less, schema-constrained haiku call. One retry when the answer carries no structured output."""
+    """(structured_output, why, cost) from one tool-less, schema-constrained haiku call. One retry when the answer carries no structured output. `cost` sums every call made ({"usd", "calls", "seconds"}), or is None when the CLI reported no cost; run_review writes it as the record's `Cost:` line."""
     import wl_proc  # noqa: PLC0415 -- only the child ever calls the model; the stop directory is sys.path[0] for the script and already on the path for every importer
 
     workdir = (
@@ -946,16 +975,25 @@ def claude_reviewer(prompt, cfg, log=print):
         return wl_proc.run(argv, timeout=int(cfg["timeout_s"]), env=env, cwd=str(workdir))
 
     why = ""
+    spent = {"usd": 0.0, "calls": 0, "seconds": 0.0, "known": False}
+
+    def _cost():
+        if not spent["calls"] or not spent["known"]:
+            return None
+        return {"usd": spent["usd"], "calls": spent["calls"], "seconds": round(spent["seconds"], 1)}
+
     for attempt in (1, 2):
         started = time.time()
         proc = _call()
         if proc.timed_out:
-            return None, "model call timed out after %ss" % cfg["timeout_s"]
+            spent["calls"] += 1
+            spent["seconds"] += time.time() - started
+            return None, "model call timed out after %ss" % cfg["timeout_s"], _cost()
         if proc.returncode not in (0, wl_proc.SPAWN_FAILED_RC):
             # A schema exhaustion (exit 1, `error_max_structured_output_retries`) is one sample failing, retried once by the shared helper every schema-constrained call site routes through (check:ci-schema-call-sites); any other non-zero exit is reported with the helper's explanation of it, as at the other sites.
             proc, retry_why = wl_judge.retry_schema_exhaustion("commit review", proc, _call)
             if proc is None:
-                return None, normalise_claim(retry_why, 300)
+                return None, normalise_claim(retry_why, 300), _cost()
         took = time.time() - started
         try:
             envelope = json.loads(proc.stdout or "")
@@ -963,8 +1001,13 @@ def claude_reviewer(prompt, cfg, log=print):
             envelope = None
         cost = envelope.get("total_cost_usd") if isinstance(envelope, dict) else None
         log("call %d: rc=%s %.1fs cost=%s" % (attempt, proc.returncode, took, cost))
+        spent["calls"] += 1
+        spent["seconds"] += took
+        if isinstance(cost, (int, float)) and not isinstance(cost, bool):
+            spent["usd"] += float(cost)
+            spent["known"] = True
         if isinstance(envelope, dict) and isinstance(envelope.get("structured_output"), dict):
-            return envelope["structured_output"], ""
+            return envelope["structured_output"], "", _cost()
         if isinstance(envelope, dict):
             why = "no structured output (rc=%s, subtype=%s)" % (
                 proc.returncode,
@@ -977,7 +1020,7 @@ def claude_reviewer(prompt, cfg, log=print):
             )
         if proc.returncode == wl_proc.SPAWN_FAILED_RC:
             break
-    return None, why
+    return None, why, _cost()
 
 
 def _load_commit_policy(root):
@@ -1090,7 +1133,10 @@ def run_review(
             if slot is None:
                 review.verdict = "failed (queue timeout)"
             else:
-                structured, why = (reviewer or claude_reviewer)(prompt, cfg, log)
+                # A reviewer returns (structured, why) or, as claude_reviewer does, (structured, why, cost).
+                answer = (reviewer or claude_reviewer)(prompt, cfg, log)
+                structured, why = answer[0], answer[1]
+                review.cost = answer[2] if len(answer) > 2 else None
                 if structured is None:
                     review.verdict = "failed (%s)" % normalise_claim(why, 180).replace(
                         "(", "["

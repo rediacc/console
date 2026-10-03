@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import time
@@ -43,7 +44,7 @@ if "COMMIT MESSAGE" not in prompt or "DIFF" not in prompt:
 time.sleep(float(os.environ.get("STUB_SLEEP", "0")))
 with open(os.environ["STUB_OUT"]) as fh:
     out = json.load(fh)
-print(json.dumps({"type": "result", "subtype": "success", "is_error": False, "total_cost_usd": 0.0, "structured_output": out}))
+print(json.dumps({"type": "result", "subtype": "success", "is_error": False, "total_cost_usd": float(os.environ.get("STUB_COST", "0.0")), "structured_output": out}))
 """
 
 
@@ -361,6 +362,39 @@ def test_a_rebased_copy_with_the_same_patch_id_writes_nothing_and_counts_as_cove
     assert new != sha
     assert R.uncovered(world.repo, world.repo, BRANCH) == []
     assert R.run_review(world.repo, "console", new, BRANCH, log=lambda _m: None) is None
+
+
+def test_a_record_carries_the_review_models_cost(world):
+    """Operator 2026-10-03: every record names what its review cost. The stub reports total_cost_usd; the record's Cost line carries it with the call count and duration."""
+    world.env["STUB_COST"] = "0.0696275"
+    sha = world.commit()
+    world.run_child(sha)
+    text = world.review_file(sha).read_text()
+    line = next(ln for ln in text.splitlines() if ln.startswith("Cost: "))
+    assert re.match(r"^Cost: \$0\.0696 USD, 1 call\(s\), \d+\.\ds$", line), line
+    assert R.parse(text).cost["usd"] == 0.0696
+
+
+def test_a_skipped_commit_records_no_cost():
+    review = R.Review(sha="a" * 40, subject="s", verdict="skipped (gitlink-only)", model="(none)")
+    text = R.render(review)
+    assert "\nCost: (none)\n" in text
+    assert R.parse(text).cost is None
+
+
+def test_a_record_written_before_the_cost_line_still_parses():
+    """112 records on 0930-1 (now on main) predate the Cost header; they stay readable."""
+    review = R.Review(sha="b" * 40, subject="s", cost={"usd": 0.01, "calls": 1, "seconds": 2.0})
+    text = R.render(review)
+    old = "\n".join(ln for ln in text.splitlines() if not ln.startswith("Cost: ")) + "\n"
+    assert R.parse(old).cost is None
+    assert R.parse(text).cost == {"usd": 0.01, "calls": 1, "seconds": 2.0}
+
+
+def test_a_malformed_cost_line_is_refused():
+    text = R.render(R.Review(sha="c" * 40, subject="s"))
+    with pytest.raises(R.MalformedReviewError, match="Cost:"):
+        R.parse(text.replace("Cost: (none)", "Cost: about a dime"))
 
 
 def test_a_commit_in_a_nested_repo_records_its_repo(world):
