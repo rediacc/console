@@ -185,6 +185,8 @@ def test_205_control_one_foreign_handoff_one_advisory_and_betas_needle_can_be_ab
     wl.brief_now()
     wl.hand_now()
     clfile(wl, "alpha", CL_ALPHA_PRODUCING_FOREIGN)
+    # cafe0000 is LIVE (a fresh .lastevent): since 2026-10-03 an owner nothing can see raises the cl-owner question instead of this advisory.
+    wl.stem(".lastevent-cafe0000.json").write_text('{"background_tasks":[]}\n', encoding="utf-8")
     got = wl.run()
     baseline = (
         "205 CONTROL: the single-checklist baseline is not what it claims: %s" % got.out[:400]
@@ -199,7 +201,11 @@ def test_205_two_foreign_advisories_two_keys_the_second_no_longer_eats_the_first
     wl.brief_now()
     wl.hand_now()
     clfile(wl, "alpha", CL_ALPHA_PRODUCING_FOREIGN)
+    # cafe0000 is LIVE (a fresh .lastevent): since 2026-10-03 an owner nothing can see raises the cl-owner question instead of this advisory.
+    wl.stem(".lastevent-cafe0000.json").write_text('{"background_tasks":[]}\n', encoding="utf-8")
     clfile(wl, "beta", CL_BETA_PRODUCING_FOREIGN)
+    # cafe0000 is LIVE (a fresh .lastevent): since 2026-10-03 an owner nothing can see raises the cl-owner question instead of this advisory.
+    wl.stem(".lastevent-cafe0000.json").write_text('{"background_tasks":[]}\n', encoding="utf-8")
     got = wl.run()
     replaced = "205: one foreign advisory replaced the other in the queue: %s" % got.out[:600]
     assert got.rc == 0, replaced
@@ -213,6 +219,8 @@ def test_206_a_foreign_drift_advisory_reports_it_and_issues_no_order(wl):  # noq
     wl.brief_now()
     wl.hand_now()
     clfile(wl, "demo", CL_DEMO_DRIFT_FOREIGN)
+    # cafe0000 is LIVE (a fresh .lastevent): since 2026-10-03 an owner nothing can see raises the cl-owner question instead of this advisory.
+    wl.stem(".lastevent-cafe0000.json").write_text('{"background_tasks":[]}\n', encoding="utf-8")
     got = wl.run()
     ordered = "206: the foreign drift advisory still issues the owner's order: rc=%d %s" % (
         got.rc,

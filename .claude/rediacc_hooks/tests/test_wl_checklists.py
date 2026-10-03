@@ -325,6 +325,9 @@ def test_195_a_foreign_producing_checklist_is_reported_never_blocked_on(wl):  # 
     wl.brief_now()
     wl.hand_now()
     clfile(wl, "demo", CL_PRODUCING_FOREIGN)
+    # The owner is LIVE by the one liveness definition (wl_store.session_liveness reads a fresh .lastevent first). Since 2026-10-03 an owner nothing can see is asked about (cl-owner), so "live" has to be planted, not assumed.
+    live = wl.stem(".lastevent-cafe0000.json")
+    live.write_text('{"background_tasks":[]}\n', encoding="utf-8")
     got = wl.run()
     misjudged = "195: a foreign producing checklist was mis-adjudicated: %s" % got.out[:400]
     assert got.rc == 0, misjudged
@@ -335,15 +338,33 @@ def test_195_a_foreign_producing_checklist_is_reported_never_blocked_on(wl):  # 
         "195 CONTROL: the adoption hint fired on a live owner: %s" % got.out[:400]
     )
 
+    # 195b: the owner is GONE (no .lastevent, its transcript 48 hours idle). The operator is now asked about ownership, once, instead of being handed an adoption hint nobody acts on (operator 2026-10-03).
+    live.unlink()
     dead = wl.base / "cafe0000-dead.jsonl"
     dead.write_text("", encoding="utf-8")
     old = time.time() - 48 * 3600
     os.utime(dead, (old, old))
     got = wl.run()
-    orphan = "195b: no adoption hint for an abandoned handoff: %s" % got.out[:500]
-    assert "adopt it by editing the 'Owner:' line" in got.out, orphan
+    orphan = "195b: no ownership question for an abandoned handoff: %s" % got.out[:500]
+    assert "CHECKLIST OWNER NOT LIVE" in got.out, orphan
     assert "agent/programs/demo/CHECKLIST.md" in got.out, orphan
     assert "superseded" in got.out, orphan
+
+    # 195c: the operator answered and the answer was recorded on a ticked item carrying the token. The question never comes back.
+    added = wl.cli("--add", "deadbeef", "cl-owner:demo operator: leave it with cafe0000")
+    tid = re.search(r"#([0-9a-f]+)", added.out)
+    assert tid, added.out
+    ticked = wl.cli(
+        "--tick",
+        "deadbeef",
+        tid.group(1),
+        "agent/programs/demo/CHECKLIST.md:1 asked 2026-10-03; left with its owner",
+    )
+    assert "ticked" in ticked.out, ticked.out + ticked.err
+    got = wl.run(extra_env={"WORKLIST_FOCUS": "off"})
+    assert "CHECKLIST OWNER NOT LIVE" not in got.out, (
+        "195c: a recorded answer did not silence the ownership question: %s" % got.out[:500]
+    )
 
 
 def test_196_a_ticked_box_does_not_save_a_deliverable_that_is_not_on_disk(wl):  # noqa: F811

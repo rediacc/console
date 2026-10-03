@@ -74,6 +74,7 @@ DYNAMIC_KEYS = frozenset(
         "giveup-claim",
         "cl-shape",
         "cl-flip",
+        "cl-owner",
         "cl-producing",
         "cl-waves",
     }
