@@ -27,7 +27,7 @@ terminal: an abandoned program is left alone, not revived.
 the live tree before it enters a doc (read-only; fan out Explore agents for sweeps). Stamp docs with the verification date and branch from Current state. Anything not re-verifiable is labeled a hypothesis. Never write a confident claim from memory; never trust a zero from an instrument without a planted control.
 
 3. **Write `agent/programs/<slug>/CHECKLIST.md` before any other file.** It is the first write
-of the invocation, not a wrap-up at the end. `Status: producing`; `Owner:` your 8-char session prefix (the same one you tag worklist items with); one `dN` line per deliverable you are about to write (README, `01-verified-context.md`, every `NN-topic.md`, the execution guide, PROMPT.md, and the program-state `MANIFEST.md` by its absolute `~` path); one `wN` line per wave in the
+of the invocation, not a wrap-up at the end. `Status: producing`; `Owner:` the session's 8-char prefix (the same one its worklist items are tagged with); one `dN` line per deliverable about to be written (README, `01-verified-context.md`, every `NN-topic.md`, the execution guide, PROMPT.md, and the program-state `agent/programs/<slug>/state/MANIFEST.md`); one `wN` line per wave in the
 README's `## Scope`, with ids in the README's wave order. The grammar, so a fresh session need not look it up:
 
    ```
@@ -38,7 +38,7 @@ README's `## Scope`, with ids in the README's wave order. The grammar, so a fres
    ## Deliverables
    - [ ] d1 file:agent/programs/<slug>/README.md
    - [ ] d2 file:agent/programs/<slug>/PROMPT.md
-   - [ ] d3 file:~/.claude/projects/-home-muhammed-monorepo-console/programs/<slug>/MANIFEST.md
+   - [ ] d3 file:agent/programs/<slug>/state/MANIFEST.md
 
    ## Waves
    - [ ] w1 Wave A: <one-line title>
@@ -70,7 +70,7 @@ the default for coding sub-agents. **Fable for the challenging pieces AND for pl
 which pieces are Fable-tier.
 
 7. **Seed durable program state** at
-`~/.claude/projects/-home-muhammed-monorepo-console/programs/<slug>/`: `MANIFEST.md` skeleton (model policy line; wave/status table; active-agents table with their `reports/` paths; discovered-bugs list; checkpoints notes) plus empty `reports/` and `checkpoints/` dirs. The execution guide instructs the implementing session: every writing/planning sub-agent prompt names its working
+`agent/programs/<slug>/state/`, inside the repo and committed like every other program file (state kept in Claude Code's per-machine projects directory was lost on the 2026-09 machine move, and a checklist that named it verified on one machine only): `MANIFEST.md` skeleton (model policy line; wave/status table; active-agents table with their `reports/` paths; discovered-bugs list; checkpoints notes) plus empty `reports/` and `checkpoints/` dirs. The execution guide instructs the implementing session: every writing/planning sub-agent prompt names its working
 report `reports/<phase>-<agent>.md` (and its brief `reports/<phase>-<agent>-brief.md` when one is used); the team-lead reads reports and artifacts, never bare summaries; MANIFEST.md updates at every phase boundary; periodic uncommitted-tree patches land in `checkpoints/` (a host reboot once destroyed a /tmp scratchpad; durable state exists because of that).
 
 8. **Wire in the worklist Stop hook** (fail-closed): the execution guide and
@@ -94,4 +94,4 @@ concise: mission sentence pointing at `agent/programs/<slug>/README.md` and its 
 
 ## Constraints
 
-This invocation writes ONLY under `agent/programs/<slug>/` (including `agent/programs/<slug>/CHECKLIST.md`, which is written first and is the one file this command must never skip), the `programs/<slug>/` state dir, and the single MEMORY.md pointer line. It never touches code and never commits. If it delegates verification sweeps, they are held as leased `- [>]` worklist items.
+This invocation writes ONLY under `agent/programs/<slug>/` (including `agent/programs/<slug>/CHECKLIST.md`, which is written first and is the one file this command must never skip), its `state/` dir among them, and the single MEMORY.md pointer line. It never touches code and never commits. If it delegates verification sweeps, they are held as leased `- [>]` worklist items.
