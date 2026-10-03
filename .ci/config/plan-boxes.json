@@ -274,6 +274,22 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-ci-quick-cpu-scheduling.md": {
+      "status": "active",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 5,
+      "done": 0,
+      "open_sigs": [
+        "7abf229b",
+        "8db61653",
+        "b9881aa7",
+        "d6b2b5e0",
+        "d90da415"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-ci-trace-no-pr-branch.md": {
       "status": "compacted",
       "owner": "854ac1c6",
