@@ -12,7 +12,8 @@ FOUR THINGS, each a pure function over parsed headers plus one reader of the liv
                                   session's fresh leases. None when it cannot tell (the caller fails open, loudly).
   spawn_verdict                   section 5: the mutex and overlap decision, shared by the pre-agent guard
                                   `block_plan_concurrency.py` and (T8/T9) the roster and the queue lease.
-  rank / order_key                section 2: dependencies, then operator priority, then AI priority, then age.
+  rank / held / order_key         section 2: dependencies, then held after unheld (prerequisites excepted), then operator
+                                  priority, then AI priority, then age.
 
 SEALED. Reads no environment variable and imports only the standard library and `wl_plandeps` at import time; `wl_roster`, `wl_leasehelp` and `wl_core` are imported inside `live_plans`, the one function that reads the live world. `.ci/policy/worklist-env-registry.json` lists this file under `sealed_modules`, so an environment read added here is CI red: a knob that retuned what counts as an overlap would be an escape hatch by another name.
 """
@@ -42,6 +43,8 @@ HEAD_BYTES = 16384
 UNLINKED_RANK = (4, 2)
 # The rank of a plan whose Priority is missing or malformed.
 UNRANKED = (4, 4)
+# The Status that sorts a plan after every unheld one (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 6, worklist #93798daa).
+HELD_STATUS = "held"
 
 PLAN_LINE_RE = re.compile(r"^Plan:[ \t]*(\S.*?)[ \t]*$", re.MULTILINE)
 PROMPT_OWNS_RE = re.compile(r"^Owns:[ \t]*(\S.*?)[ \t]*$", re.MULTILINE)
@@ -763,13 +766,33 @@ def rank(rel: str, graph: D.Graph, _rev: dict[str, set[str]] | None = None) -> t
     return best
 
 
+def held(rel: str, graph: D.Graph, _rev: dict[str, set[str]] | None = None) -> int:
+    """1 when the plan is `Status: held` and so is every live plan that depends on it, directly or transitively; else 0. A held prerequisite of an unheld plan takes the least-held value of what needs it (Design 6 of agent/plans/PLAN-stop-hook-one-plan-scope.md), the way `rank` inherits the most urgent rank. Cycle-safe."""
+    rev = _dependents(graph) if _rev is None else _rev
+    info = graph.plans.get(rel)
+    if info is None or info.header.status != HELD_STATUS:
+        return 0
+    seen = {rel}
+    stack = list(rev.get(rel, ()))
+    while stack:
+        cur = stack.pop()
+        if cur in seen:
+            continue
+        seen.add(cur)
+        if graph.plans[cur].header.status != HELD_STATUS:
+            return 0
+        stack.extend(rev.get(cur, ()))
+    return 1
+
+
 class OrderCtx:
     """Built once per stop: the graph, its reverse edges, and memoised ranks and blockers."""
 
     def __init__(self, graph: D.Graph):
         self.graph = graph
         self._rev = _dependents(graph)
-        self._ranks: dict[str, tuple[int, int]] = {}
+        # (held, op_rank, ai_rank): everything after the blocked term, each inherited from the plan's dependents.
+        self._ranks: dict[str, tuple[int, int, int]] = {}
         self._blocked: dict[str, int] = {}
 
     def rel_of(self, base: str | None) -> str | None:
@@ -779,10 +802,13 @@ class OrderCtx:
         t = self.graph.resolve(base)
         return t.rel if t.state == D.LIVE else None
 
-    def plan_key(self, rel: str) -> tuple[int, int, int]:
-        """(blocked, op_rank, ai_rank) for one live plan."""
+    def plan_key(self, rel: str) -> tuple[int, int, int, int]:
+        """(blocked, held, op_rank, ai_rank) for one live plan."""
         if rel not in self._ranks:
-            self._ranks[rel] = rank(rel, self.graph, self._rev)
+            self._ranks[rel] = (
+                held(rel, self.graph, self._rev),
+                *rank(rel, self.graph, self._rev),
+            )
             self._blocked[rel] = 1 if self.graph.roots(rel) else 0
         return (self._blocked[rel], *self._ranks[rel])
 
@@ -792,11 +818,11 @@ def order_ctx(graph: D.Graph) -> OrderCtx:
 
 
 def order_key(rec: dict, ctx: OrderCtx, age: Any = None) -> tuple:
-    """Section 2: (blocked, op_rank, ai_rank, age). `age` defaults to the item's `first` stamp (ascending, oldest first); a picker with its own age term (the queue's `lease_at`, the backlog's mtime) passes it. An unlinked item is an AI P2 (decision D3)."""
+    """Section 2: (blocked, held, op_rank, ai_rank, age). `age` defaults to the item's `first` stamp (ascending, oldest first); a picker with its own age term (the queue's `lease_at`, the backlog's mtime) passes it. An unlinked item is an unheld AI P2 (decision D3)."""
     age = str(rec.get("first") or "") if age is None else age
     rel = ctx.rel_of(item_plan(rec))
     if rel is None:
-        return (0, *UNLINKED_RANK, age)
+        return (0, 0, *UNLINKED_RANK, age)
     return (*ctx.plan_key(rel), age)
 
 
