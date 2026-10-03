@@ -6,7 +6,7 @@ guide, the open-items list, queue-slot, the backlog nomination and the plan-unim
   context(root)             the OrderCtx, built once per process and rebuilt only when a plan file changes (a stat signature)
   item_key(ctx, age)        a sort key over worklist records: `wl_planconc.order_key`, or the pre-plan age order without a ctx
   item_tag / plan_tag       the guide's `[P1 op]` display (`wl_planconc.rank_label`)
-  plan_key / plan_why       (blocked, op, ai) for one plan FILE, for the pickers that rank plans rather than items
+  plan_key / plan_why       (blocked, held, op, ai) for one plan FILE, for the pickers that rank plans rather than items
   holders(...)              {plan: [holder]} from the roster's AUTHORITATIVE live writers plus every session's fresh leases
   hold(rec, live, xinfo)    the verdict a writer spawn for this item would get, when it is a HOLD (a mutex or an overlap)
   conflicts(...)            live writers of this session whose plans already break the mutex or overlap (`roster-concurrency`)
@@ -82,14 +82,14 @@ def item_key(ctx: X.OrderCtx | None, age=None):
     def key(rec: dict) -> tuple:
         got = age(rec) if age is not None else None
         if ctx is None:
-            return (0, *X.UNLINKED_RANK, str(rec.get("first") or "") if got is None else got)
+            return (0, 0, *X.UNLINKED_RANK, str(rec.get("first") or "") if got is None else got)
         return X.order_key(rec, ctx, got)
 
     return key
 
 
-def _tag(key: tuple[int, int, int]) -> str:
-    blocked, op, ai = key
+def _tag(key: tuple[int, int, int, int]) -> str:
+    blocked, _held, op, ai = key
     label = X.rank_label(op, ai)
     return label[:-1] + ", dep-blocked]" if blocked else label
 
@@ -106,11 +106,11 @@ def _plan_rel(ctx: X.OrderCtx | None, rel: str) -> str | None:
     return ctx.rel_of(os.path.basename(str(rel or ""))) if ctx is not None else None
 
 
-def plan_key(ctx: X.OrderCtx | None, rel: str) -> tuple[int, int, int]:
-    """(blocked, op_rank, ai_rank) for one plan file; an unknown or unreadable plan is unranked and unblocked."""
+def plan_key(ctx: X.OrderCtx | None, rel: str) -> tuple[int, int, int, int]:
+    """(blocked, held, op_rank, ai_rank) for one plan file; an unknown or unreadable plan is unranked, unheld and unblocked."""
     live = _plan_rel(ctx, rel)
     if ctx is None or live is None:
-        return (0, *X.UNRANKED)
+        return (0, 0, *X.UNRANKED)
     return ctx.plan_key(live)
 
 
@@ -120,7 +120,7 @@ def plan_tag(ctx: X.OrderCtx | None, rel: str) -> str:
 
 def plan_why(ctx: X.OrderCtx | None, rel: str) -> str:
     """The backlog's first WHY line: the rank that put this plan first, then the mtime rule that breaks ties."""
-    blocked, op, ai = plan_key(ctx, rel)
+    blocked, held, op, ai = plan_key(ctx, rel)
     live = _plan_rel(ctx, rel)
     header = ctx.graph.plans[live].header if ctx is not None and live is not None else None
     pr = header.priority if header is not None else None
@@ -134,9 +134,10 @@ def plan_why(ctx: X.OrderCtx | None, rel: str) -> str:
         head += ", inherited from a plan that depends on it"
     elif pr is not None and pr.reason:
         head += " -- %s" % pr.reason
-    return "%s%s; then NEWEST first (DESC by file mtime)." % (
+    return "%s%s%s; then NEWEST first (DESC by file mtime)." % (
         head,
         " (a dependency is still open)" if blocked else "",
+        " (held, so after every unheld plan)" if held else "",
     )
 
 

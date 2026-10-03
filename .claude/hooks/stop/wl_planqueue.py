@@ -5,8 +5,8 @@ knows the headings, the markers and the entry shape.
 
 THE RENDER REPLACES ONLY THE MARKED BLOCK. Every byte outside GEN_BEGIN..GEN_END is copied through unchanged, which is how the Promoted list and the header prose survive every regeneration. A file without the markers gets a `## Generated` section appended, never a rewrite of what is already there.
 
-THE ORDER (operator rulings 2026-10-02). A plan with no open box is never queued: a fully ticked plan is closed, not worked, and a plan with no box has nothing to work yet, so both are named under `### Not queued` inside the block, which `entries` does not read. The rest are ordered by PROGRESS: in progress (a ticked box and an open one) before not started. `Status: held` does not move a plan; the entry note still shows it. A plan never precedes an unfinished plan it
-needs, directly or transitively: a `Depends-On:` edge (a task ref `PLAN-x.md#T3` counts as its plan, `wl_plandeps.Graph.resolve`), or a sub-plan, `PLAN-<parent>.<suffix>.md`, which its parent needs first (`parent_of`; no other module models the relation). A prerequisite inherits the best tier and the best rank (`wl_planconc.rank`, given the sub-plan edges too) of everything that needs it, so it is pulled ahead of unrelated plans. A dependency cycle is broken at its
+THE ORDER (operator rulings 2026-10-02). A plan with no open box is never queued: a fully ticked plan is closed, not worked, and a plan with no box has nothing to work yet, so both are named under `### Not queued` inside the block, which `entries` does not read. The rest are ordered HELD LAST (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 6, worklist #93798daa): a `Status: held` plan after every unheld one, then by PROGRESS: in progress (a ticked box and an open one) before not started. A plan never precedes an unfinished plan it
+needs, directly or transitively: a `Depends-On:` edge (a task ref `PLAN-x.md#T3` counts as its plan, `wl_plandeps.Graph.resolve`), or a sub-plan, `PLAN-<parent>.<suffix>.md`, which its parent needs first (`parent_of`; no other module models the relation). A prerequisite inherits the least-held value, the best tier and the best rank (`wl_planconc.rank`, given the sub-plan edges too) of everything that needs it, so it is pulled ahead of unrelated plans. A dependency cycle is broken at its
 best-keyed member and named under `### Not queued`. Ties go to operator Priority, then AI Priority, then the path: this file is compared for equality in a clean CI checkout, where every mtime is the checkout's.
 
 THE SUBJECTS are live plans directly under agent/plans (Status not in `wl_planfile.FINISHED_STATES`, not `removed`, stubs excluded), TRACKED ONLY: the file is a committed render, so another session's untracked draft must not enter it (`wl_store.agent_plan_files(root, tracked_only=True)`, the rule 9100e89f0 set for agent/INDEX.md). The dependency graph drops the same untracked files, so a draft cannot move a tracked plan's rank either.
@@ -82,11 +82,11 @@ def ordered(text: str) -> list[str]:
 
 @dataclasses.dataclass(frozen=True)
 class Row:
-    """One queued plan: its path, Status, `(blocked, op, ai)` with the rank inherited from its dependents, and its box counts."""
+    """One queued plan: its path, Status, `(blocked, held, op, ai)` with the held value and the rank inherited from its dependents, and its box counts."""
 
     rel: str
     status: str
-    key: tuple[int, int, int]
+    key: tuple[int, int, int, int]
     done: int
     opened: int
 
@@ -166,7 +166,7 @@ def break_cycles(prereqs: dict[str, set[str]], key) -> list[tuple[list[str], str
 
 
 def live_plans(root) -> Queue:
-    """The queue over the tracked live plans: no plan without an open box, a prerequisite before every plan that needs it, then (progress tier, op, ai, path)."""
+    """The queue over the tracked live plans: no plan without an open box, a prerequisite before every plan that needs it, then (held, progress tier, op, ai, path)."""
     import heapq  # noqa: PLC0415
 
     import wl_planconc as X  # noqa: PLC0415
@@ -215,14 +215,19 @@ def live_plans(root) -> Queue:
             if rel in found and prereq in found:
                 prereqs[rel].add(prereq)
 
-    # A prerequisite inherits the best rank (`wl_planconc.rank`) and the best progress tier of everything that needs it.
+    # A prerequisite inherits the least-held value, the best progress tier and the best rank (`wl_planconc.rank`) of everything that needs it, so a held prerequisite of an unheld plan is not pushed behind the unheld plans.
     def tier(rel: str) -> int:
         return 0 if found[rel][1] else 1
 
+    def held(rel: str) -> int:
+        return 1 if found[rel][0] == X.HELD_STATUS else 0
+
     keys: dict[str, tuple] = {}
     for rel in found:
-        best = min([tier(rel)] + [tier(d) for d in _reach(rel, rev) if d in found])
-        keys[rel] = (best, *X.rank(rel, graph, rev), rel)
+        needs_it = [d for d in _reach(rel, rev) if d in found]
+        least_held = min([held(rel)] + [held(d) for d in needs_it])
+        best = min([tier(rel)] + [tier(d) for d in needs_it])
+        keys[rel] = (least_held, best, *X.rank(rel, graph, rev), rel)
     cycles = break_cycles(prereqs, keys.__getitem__)
 
     needers: dict[str, set[str]] = {rel: set() for rel in found}
@@ -236,9 +241,9 @@ def live_plans(root) -> Queue:
     while heap:
         rel = heapq.heappop(heap)[-1]
         status, done, opened = found[rel]
-        _tier, op, ai, _rel = keys[rel]
+        is_held, _tier, op, ai, _rel = keys[rel]
         blocked = 1 if graph.roots(rel) or prereqs[rel] else 0
-        rows.append(Row(rel, status, (blocked, op, ai), done, opened))
+        rows.append(Row(rel, status, (blocked, is_held, op, ai), done, opened))
         for nxt in sorted(needers[rel]):
             waiting[nxt].discard(rel)
             if not waiting[nxt]:
@@ -252,7 +257,7 @@ def live_plans(root) -> Queue:
 
 def note(row: Row) -> str:
     """`P1 (operator), approved, in progress (2 of 5 boxes ticked)`, `P3, held, not started`, with `, dep-blocked` while a dependency is still open."""
-    blocked, op, ai = row.key
+    blocked, _held, op, ai = row.key
     if op < 4:
         rank = "P%d (operator)" % op
     elif ai < 4:

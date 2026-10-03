@@ -402,3 +402,70 @@ def test_m5_without_the_queues_rank_the_oldest_lease_leads_again(wl):  # noqa: F
     assert got["queue_start"] == ["d0000004", "d0000006"], (
         "m5: o4's queue case does not depend on the roster's rank: %s" % got["queue_start"]
     )
+
+
+# ---- h2: held plans after unheld ones, prerequisites excepted (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 6, worklist #93798daa) --
+
+# The queue render (`wl_planqueue.live_plans`) and the plan ranking (`wl_planorder.plan_key`, which the backlog and the plan-unimplemented picker sort by) over the fixture plan tree. A fixture project is no git checkout, so the tracked-only glob answers every plan.
+HELD_PROBE = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_core as C, wl_planorder as PO, wl_planqueue as Q
+ev = json.loads(sys.stdin.read())
+root = C.project_root(C.project_start(ev))
+ctx, problem = PO.context(root)
+rels = sorted(ctx.graph.plans)
+print(json.dumps({
+    "problem": problem,
+    "queue": [row.rel.rsplit("/", 1)[-1] for row in Q.live_plans(root).rows],
+    "ranked": [rel.rsplit("/", 1)[-1] for rel in sorted(rels, key=lambda r: PO.plan_key(ctx, r))],
+}))
+"""
+
+
+def held_probe(fix) -> dict:
+    proc = subprocess.run(
+        [sys.executable, "-c", HELD_PROBE, str(wlfix.STOP_DIR)],
+        input=fix.event(),
+        capture_output=True,
+        text=True,
+        env=fix.stop_env(),
+        check=False,
+    )
+    assert proc.returncode == 0, "the held probe failed: %s" % proc.stderr[-1200:]
+    got = json.loads(proc.stdout)
+    assert got["problem"] == "", got["problem"]
+    return got
+
+
+def test_h2_an_unheld_p2_sorts_before_a_held_p0(wl):  # noqa: F811
+    held = write_plan(wl, "heldp0", status="held", priority="P0")
+    free = write_plan(wl, "freep2", priority="P2")
+    plant_item(wl, "a1000001", linked(held, "ITEM_HELD"), age_min=50)
+    plant_item(wl, "a1000002", linked(free, "ITEM_FREE"), age_min=10)
+    got = held_probe(wl)
+    assert got["queue"] == [free, held], got
+    assert got["ranked"] == [free, held], got
+    openl = probe(wl)["open"]
+    assert order_of("\n".join(openl), ["ITEM_HELD", "ITEM_FREE"]) == ["ITEM_FREE", "ITEM_HELD"], (
+        openl
+    )
+
+
+def test_h2p_a_held_prerequisite_of_an_unheld_plan_sorts_before_it(wl):  # noqa: F811
+    """The prerequisite inherits the least-held value of what needs it, so it still leads its unheld dependent and an unrelated unheld plan of lower rank."""
+    pre = write_plan(wl, "heldpre", status="held", priority="P3")
+    need = write_plan(wl, "needer", priority="P1", dep=pre)
+    other = write_plan(wl, "other", priority="P2")
+    got = held_probe(wl)
+    assert got["queue"] == [pre, need, other], got
+    assert got["ranked"].index(pre) < got["ranked"].index(other), got
+
+
+def test_h2c_control_equal_held_keeps_op_then_ai_order(wl):  # noqa: F811
+    ai0 = write_plan(wl, "heldai0", status="held", priority="P0")
+    op3 = write_plan(wl, "heldop3", status="held", priority="P3 (operator)")
+    ai2 = write_plan(wl, "heldai2", status="held", priority="P2")
+    got = held_probe(wl)
+    assert got["queue"] == [op3, ai0, ai2], got
+    assert got["ranked"] == [op3, ai0, ai2], got

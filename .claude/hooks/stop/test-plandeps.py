@@ -805,8 +805,8 @@ check(
 )
 check(
     "order o1: the dependency is unblocked and inherits P0 op",
-    X.order_key(item("PLAN-y.md", "2"), CTX)[:3],
-    (0, 0, 4),
+    X.order_key(item("PLAN-y.md", "2"), CTX)[:4],
+    (0, 0, 0, 4),
 )
 check(
     "order o2: an operator P2 beats an AI P0",
@@ -818,7 +818,7 @@ check(
     X.order_key(item("PLAN-z.md", "1"), CTX) < X.order_key(item("PLAN-z.md", "2"), CTX),
     True,
 )
-check("order o4: an unlinked item is an AI P2", X.order_key(item("", "1"), CTX)[:3], (0, 4, 2))
+check("order o4: an unlinked item is an AI P2", X.order_key(item("", "1"), CTX)[:4], (0, 0, 4, 2))
 check(
     "order o4: between an AI P1 and an AI P3",
     X.order_key(item("PLAN-z.md", "9"), CTX)
@@ -826,7 +826,7 @@ check(
     < X.order_key({"text": "PLAN-bad.md [41f56150]", "first": "0"}, CTX),
     True,
 )
-check("order: a picker's own age term", X.order_key(item("", "1"), CTX, age=-5)[3], -5)
+check("order: a picker's own age term", X.order_key(item("", "1"), CTX, age=-5)[4], -5)
 check("label: operator", X.rank_label(1, 4), "[P1 op]")
 check("label: AI", X.rank_label(4, 3), "[P3]")
 check("label: unranked", X.rank_label(4, 4), "[P-]")
