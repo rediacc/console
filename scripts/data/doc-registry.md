@@ -246,7 +246,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-proxy-license-e2e | local-only | yes | yes | no |
 | check:ci-proxy-linux-packages | local-only | yes | no | no |
 | check:ci-proxy-ops-host-check | local-only | yes | no | no |
-| check:ci-proxy-rdc-update | local-only | yes | no | no |
+| check:ci-proxy-rdc-update | local-only | yes | yes | no |
 | check:ci-pytest | quality-pytest / Python package tests | yes | yes | no |
 | check:ci-python-control-plants | quality-static / Python control plants | yes | no | no |
 | check:ci-python-env-registry | quality-static / Python env registry | yes | yes | no |
