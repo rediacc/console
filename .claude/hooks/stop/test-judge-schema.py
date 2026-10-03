@@ -2235,6 +2235,27 @@ _garbage = _FakeProc(1, "Killed")
 _proc, _why = wl_judge.retry_schema_exhaustion("judge", _garbage, _counting)
 control("CONTROL: unparseable stdout is reported, not retried", (_proc, len(_calls)), (None, 0))
 
+# 6. The third spelling (2026-10-03): exit 1, subtype success, the turn ended in text with no structured object. Retried like the schema-exhausted sample.
+_calls.clear()
+_text_end = _FakeProc(
+    1, _exhaustion_envelope("success", 0.0707, stop_reason="stop_sequence", structured_output=None)
+)
+_proc, _why = wl_judge.retry_schema_exhaustion("judge", _text_end, _counting)
+control("a turn that ended without the object is retried", (_proc is _GOOD, len(_calls)), (True, 1))
+
+# 7. CONTROL: exit 1 with subtype success but the object PRESENT is something else (the CLI failed after answering), so it is reported, not retried.
+_calls.clear()
+_answered = _FakeProc(
+    1,
+    _exhaustion_envelope(
+        "success", 0.02, stop_reason="stop_sequence", structured_output={"verdict": "stop"}
+    ),
+)
+_proc, _why = wl_judge.retry_schema_exhaustion("judge", _answered, _counting)
+control(
+    "CONTROL: an exit 1 that carries the object is not retried", (_proc, len(_calls)), (None, 0)
+)
+
 
 # --------------------------------------------------------------------------- PART 5: the FIFTH schema-constrained call site, which the first sweep missed.
 #
