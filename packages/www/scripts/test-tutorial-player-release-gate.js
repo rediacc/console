@@ -131,7 +131,9 @@ function evalInPage(code) {
       return runAgent(['eval', code]).result;
     } catch (error) {
       if (attempt >= EVAL_RELOAD_RETRIES || !RELOADED_UNDER_EVAL.test(String(error))) throw error;
-      log(`→ the page reloaded under an eval (${RELOADED_UNDER_EVAL.exec(String(error))[0]}), evaluating again`);
+      log(
+        `→ the page reloaded under an eval (${RELOADED_UNDER_EVAL.exec(String(error))[0]}), evaluating again`
+      );
       wait(500);
     }
   }
