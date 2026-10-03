@@ -65,7 +65,7 @@ class World:
         self.worklist = tmp / "wl" / "repo.md"
         self.worklist.parent.mkdir()
         self.git("init", "-q", "-b", "main")
-        self.git("remote", "add", "origin", "https://github.com/fake/repo.git")
+        self.git("remote", "add", "origin", wlfix.FAKE_ORIGIN)
         (self.root / "README").write_text("r\n", encoding="utf-8")
         self.git("add", "-A")
         self.git("commit", "-qm", "base")
