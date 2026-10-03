@@ -200,7 +200,11 @@ def test_missing_record_beside_a_review_records_commit(tmp_path):
     ]
     body = render_dir(tmp_path, commits=commits)
     section = body.split("### PR commits with no record", 1)[1]
-    assert "`%s` chore(reviews): record reviews for 1111111: review records only, not reviewed by design" % sha(2)[:8] in section
+    assert (
+        "`%s` chore(reviews): record reviews for 1111111: review records only, not reviewed by design"
+        % sha(2)[:8]
+        in section
+    )
     assert "`%s` feat: never reviewed: no record" % sha(3)[:8] in section
 
 
@@ -231,9 +235,15 @@ def test_header_names_the_bump_and_the_commit_that_earned_it(tmp_path):
     body = render_dir(tmp_path)
     assert "Bump: **bump-minor**, earned by `%s` (feat: the minor one)" % sha(2)[:8] in body
     assert "enhancement" in body
-    link = "https://github.com/rediacc/console/blob/%s/agent/reviews/%s/%s.md" % ("f" * 40, BRANCH, sha(1))
+    link = "https://github.com/rediacc/console/blob/%s/agent/reviews/%s/%s.md" % (
+        "f" * 40,
+        BRANCH,
+        sha(1),
+    )
     assert link in body
-    assert "https://github.com/rediacc/console/tree/%s/agent/reviews/%s" % ("f" * 40, BRANCH) in body
+    assert (
+        "https://github.com/rediacc/console/tree/%s/agent/reviews/%s" % ("f" * 40, BRANCH) in body
+    )
 
 
 def test_details_clip_the_claim(tmp_path):
@@ -249,7 +259,9 @@ def test_details_clip_the_claim(tmp_path):
 def test_an_oversize_body_is_truncated_below_the_limit(tmp_path):
     reviews = []
     for n in range(1, 400):
-        rev = make(n, verdict="findings", findings=[("medium", "open")] * 6, subject="fix: " + "s" * 150)
+        rev = make(
+            n, verdict="findings", findings=[("medium", "open")] * 6, subject="fix: " + "s" * 150
+        )
         for f in rev.findings:
             f.claim = "c" * 590
         reviews.append(rev)
@@ -286,7 +298,11 @@ def test_the_body_is_invisible_to_the_review_gate(tmp_path):
     comment = {"user": {"login": "github-actions[bot]"}, "body": body, "created_at": "x"}
     assert review_comments.newest_summary([comment]) is None
     # Control: the same body without the marker line WOULD be selected once it carries the fence.
-    loud = {"user": {"login": "github-actions[bot]"}, "body": "json:review-findings\n", "created_at": "x"}
+    loud = {
+        "user": {"login": "github-actions[bot]"},
+        "body": "json:review-findings\n",
+        "created_at": "x",
+    }
     assert review_comments.newest_summary([loud]) is loud
 
 

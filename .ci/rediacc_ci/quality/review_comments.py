@@ -691,7 +691,7 @@ def selftest() -> int:
                     "user": bot,
                     "created_at": "t1",
                     "body": "<!-- per-commit-reviews: 1003-1 -->\n## Review verdict: records\n"
-                    "```json:review-findings\n[{\"body\": \"x\"}]\n```",
+                    '```json:review-findings\n[{"body": "x"}]\n```',
                 }
             ],
             None,

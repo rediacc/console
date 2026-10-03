@@ -380,7 +380,9 @@ def test_findings_fence_reader():
     assert gate.findings_fence_is_empty(FENCE) is False
     assert gate.findings_fence_is_empty("```json:review-findings\n[]\n") is False
     # A pr-labels fence after the findings fence does not leak into the findings array.
-    assert gate.findings_fence_is_empty(EMPTY_FENCE + '\n```json:pr-labels\n{"bump": "patch"}\n```\n')
+    assert gate.findings_fence_is_empty(
+        EMPTY_FENCE + '\n```json:pr-labels\n{"bump": "patch"}\n```\n'
+    )
     # LAST opener wins, matching the producer's scanner.
     assert gate.findings_fence_is_empty(ONE_FENCE + EMPTY_FENCE) is True
     assert gate.findings_fence_is_empty(EMPTY_FENCE + ONE_FENCE) is False
