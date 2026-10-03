@@ -329,7 +329,27 @@ def _ckey(prefix, slug):
     return "%s:%s" % (prefix, slug)
 
 
-def _adjudicate(root, path, fold, session_id, projects_dir):
+def _owner_question(fold, owner, slug, rel, worklist, projects_dir):
+    """The `cl-owner:<slug>` violation for a foreign checklist whose owner is not live, or None.
+
+    LIVENESS IS wl_store.session_liveness, the ONE definition /migrate's refusal and the handoff block already share (live, idle, remote, unknown), never the transcript-age guess `_adopt_hint` makes. `unknown` counts as not live here, deliberately and unlike the wave arm's "UNKNOWN counts as alive": that rule protects a live owner from being BLOCKED on its own handoff, while this one only ASKS the operator, which is safe to do about an owner nothing on this machine can see. No worklist path (an older caller) keeps today's advisory.
+    """
+    if worklist is None or not owner:
+        return None
+    verdict, evidence = S.session_liveness(worklist, owner, projects_dir)
+    if verdict == "live":
+        return None
+    token = "cl-owner:%s" % slug
+    if any(rec.get("state") == "x" for rec in _covering_items(fold, token)):
+        return None
+    return (
+        _ckey("cl-owner", slug),
+        False,
+        M.V_CL_OWNER % (rel, owner, verdict, evidence, owner, token, token),
+    )
+
+
+def _adjudicate(root, path, fold, session_id, projects_dir, worklist=None):
     """(violations, advisories) for ONE checklist. See checklist_findings."""
     v, a = [], []
     parsed = parse_checklist(root, path)
@@ -360,13 +380,17 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
                 )
             )
         else:
-            a.append(
-                (
-                    _ckey("cl-foreign", slug),
-                    M.N_CL_FOREIGN_DRIFT % (rel, "done", owner, "\n".join(rows)),
-                    2,
+            q = _owner_question(fold, owner, slug, rel, worklist, projects_dir)
+            if q:
+                v.append(q)
+            else:
+                a.append(
+                    (
+                        _ckey("cl-foreign", slug),
+                        M.N_CL_FOREIGN_DRIFT % (rel, "done", owner, "\n".join(rows)),
+                        2,
+                    )
                 )
-            )
         return v, a
 
     if status == "producing":
@@ -383,13 +407,17 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
             else:
                 v.append((_ckey("cl-producing", slug), False, M.V_CL_PRODUCING_DONE % (slug, rel)))
         else:
-            a.append(
-                (
-                    _ckey("cl-foreign", slug),
-                    M.N_CL_FOREIGN % (slug, owner, _adopt_hint(owner, projects_dir, rel)),
-                    2,
+            q = _owner_question(fold, owner, slug, rel, worklist, projects_dir)
+            if q:
+                v.append(q)
+            else:
+                a.append(
+                    (
+                        _ckey("cl-foreign", slug),
+                        M.N_CL_FOREIGN % (slug, owner, _adopt_hint(owner, projects_dir, rel)),
+                        2,
+                    )
                 )
-            )
         return v, a
 
     # executing: two INDEPENDENT checks, because a program can lose an artifact and drop a wave at the same time and each has its own exit.
@@ -404,13 +432,17 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
                 )
             )
         else:
-            a.append(
-                (
-                    _ckey("cl-foreign", slug),
-                    M.N_CL_FOREIGN_DRIFT % (rel, "executing", owner, "\n".join(drows)),
-                    2,
+            q = _owner_question(fold, owner, slug, rel, worklist, projects_dir)
+            if q:
+                v.append(q)
+            else:
+                a.append(
+                    (
+                        _ckey("cl-foreign", slug),
+                        M.N_CL_FOREIGN_DRIFT % (rel, "executing", owner, "\n".join(drows)),
+                        2,
+                    )
                 )
-            )
     _foreign_owner = bool(owner) and not C.owned_by_me(owner or None, session_id)
     wrows = _wave_rows(fold, parsed, session_id, actor=owner if _foreign_owner else None)
     if not wrows and not drows and all(w["ticked"] for w in parsed["waves"]):
@@ -456,7 +488,7 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
     return v, a
 
 
-def checklist_findings(root, fold, session_id, projects_dir):
+def checklist_findings(root, fold, session_id, projects_dir, worklist=None):
     """(violations, advisories) for every checklist in the repo.
 
     violations are (key, always, text) ready for run_stop's vadd; advisories are (key, text, prio) ready for outq_add.
@@ -471,7 +503,7 @@ def checklist_findings(root, fold, session_id, projects_dir):
         return [("cl-shape", True, M.V_CL_UNREADABLE % str(exc)[:160])], []
     for path in paths:
         try:
-            v, a = _adjudicate(root, path, fold, session_id, projects_dir)
+            v, a = _adjudicate(root, path, fold, session_id, projects_dir, worklist)
         except Exception as exc:  # noqa: BLE001 -- fail CLOSED, per file
             # Per FILE, so scoped like every other per-checklist finding. The slug is read off the path rather than out of the parse, because the parse is what just threw.
             slug = os.path.basename(os.path.dirname(str(path)))
