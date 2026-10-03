@@ -141,6 +141,8 @@ playwright_env/
 .playwright-mcp/
 packages/cli/reports/
 reports/
+# Program state is committed (agent/plans/PLAN-program-state-in-repo.md): the bare `reports/` above would silently drop every program's state/reports/.
+!agent/programs/*/state/reports/
 
 .ci/cache/
 
