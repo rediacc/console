@@ -823,6 +823,54 @@ def test_ci_complete_green_with_verdict_publisher_red_and_verdict_in_flight_is_g
     gate.log_pass("GREEN; neither non-blocking context holds or reddens the head")
 
 
+def test_ci_complete_green_with_review_red_and_claude_review_in_flight_is_green(gate, tmp_path):
+    gate.log_test(
+        "CI Complete success + Review Complete red + Claude Review in flight -> GREEN, exit 0"
+    )
+    # PLAN-github-pr-review-restore GR4 (operator ruling 2026-10-03): the PR review is advisory, so none of its checks may hold or redden a head whose CI Complete is green.
+    require_subjects(gate)
+    nodes = _pr_nodes(
+        "[%s]"
+        % ",".join(
+            [
+                _ctx("Quality / Code"),
+                _ctx("CI Complete", ident=2),
+                _ctx("Review Complete", "FAILURE", run=1, ident=3),
+                _ctx("Review Status", "FAILURE", run=1, ident=4),
+                _ctx("Claude Review", None, "IN_PROGRESS", run=2, ident=5),
+            ]
+        ),
+        state="PENDING",
+    )
+    bindir = make_fake_gh(tmp_path / "bin", nodes, "null", runs_json=CONSOLE_RUN)
+    result = harness.run([sys.executable, str(TRACE), "--ref", PR_BRANCH], env=with_path(bindir))
+    gate.assert_exit(0, result, "the advisory PR review may neither hold nor redden the head")
+    gate.log_pass("GREEN; the advisory PR review holds and reddens nothing")
+
+
+def test_control_a_failing_review_gate_still_reads_red(gate, tmp_path):
+    gate.log_test("CONTROL: CI Complete success + Review Gate red -> RED, exit 1")
+    # Review Gate is a Console CI job, not the advisory review: the exact-name list must not swallow it.
+    require_subjects(gate)
+    nodes = _pr_nodes(
+        "[%s]"
+        % ",".join(
+            [
+                _ctx("Quality / Code"),
+                _ctx("CI Complete", ident=2),
+                _ctx("Review Gate", "FAILURE", ident=3),
+            ]
+        ),
+        state="FAILURE",
+    )
+    bindir = make_fake_gh(tmp_path / "bin", nodes, "null", runs_json=CONSOLE_RUN)
+    result = harness.run([sys.executable, str(TRACE), "--ref", PR_BRANCH], env=with_path(bindir))
+    gate.assert_exit(1, result, "a failing Review Gate must read red")
+    if "Review Gate" not in result.out:
+        gate.log_fail("the red verdict must name Review Gate: %r" % result.out)
+    gate.log_pass("RED, naming Review Gate")
+
+
 ATTRIB_GH = """#!/bin/bash
 q="$*"
 F=%(fix)s

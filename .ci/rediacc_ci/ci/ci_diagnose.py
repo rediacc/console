@@ -26,10 +26,12 @@ SCHEMA = "ci-verdict/v1"
 GENERATOR = "rediacc_ci.ci.ci_diagnose"
 CHECK_NAME = "CI Verdict"
 PUBLISH_JOB_NAME = "Publish CI Verdict"
-# Never a CI result, whatever their conclusion. "CI Verdict" is this module's own published diagnosis, and "Publish CI Verdict" is the job that posts it. Exact names, never substrings.
-NONBLOCKING_CONTEXTS = frozenset({CHECK_NAME, PUBLISH_JOB_NAME})
-# The watchdog's own exclusions (WATCHDOG_EXCLUDE_PATTERNS in .github/workflows/watchdog-monitor.yml): aggregators and observers, never the first failure.
-WATCHDOG_EXCLUDED = ("Watchdog", "CI Complete")
+# The advisory PR review's checks (operator ruling 2026-10-03, PLAN-github-pr-review-restore): "Claude Review" runs the review, "Review Status" posts the "Review Complete" check-run.
+REVIEW_CONTEXTS = ("Review Complete", "Review Status", "Claude Review")
+# Never a CI result, whatever their conclusion. "CI Verdict" is this module's own published diagnosis, "Publish CI Verdict" is the job that posts it, and REVIEW_CONTEXTS report review currency. Exact names, never substrings, so Console CI's own "Review Gate" stays blocking.
+NONBLOCKING_CONTEXTS = frozenset({CHECK_NAME, PUBLISH_JOB_NAME, *REVIEW_CONTEXTS})
+# The watchdog's own exclusions (WATCHDOG_EXCLUDE_PATTERNS in .github/workflows/watchdog-monitor.yml): aggregators and observers, never the first failure. Matched as substrings; none of REVIEW_CONTEXTS is a substring of "Review Gate".
+WATCHDOG_EXCLUDED = ("Watchdog", "CI Complete", *REVIEW_CONTEXTS)
 CAUSE_KINDS = (
     "watchdog-budget",
     "watchdog-failure",

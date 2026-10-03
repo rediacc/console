@@ -466,7 +466,14 @@ def _alias_set(name: str) -> set[str]:
 
 
 # `CI Verdict` is not a job of `ci.yml` at all -- it is posted by the SEPARATE `ci-verdict.yml` workflow once the run completes, together with its `Publish CI Verdict` job -- yet `actions/runs/{id}/jobs` can return such an after-the-fact observer alongside ci.yml's own jobs, timestamped after the pipeline itself, and critical_path's plain "latest completed_at wins" sink rule would mistake it for the run's true finish line (measured on run 35128695736 with an earlier observer, 13+ hours late). `CI Complete` is NOT excluded here: it is a genuine ci.yml job and the plan's own section 1b ends its sample critical path there.
-CRITICAL_PATH_EXCLUDE = ("CI Verdict", "Publish CI Verdict")
+# `Review Complete`, `Review Status` and `Claude Review` are the advisory PR review (operator ruling 2026-10-03, PLAN-github-pr-review-restore), posted by `claude-review.yml` and `review-status.yml` against the head SHA, finishing whenever the review does: observers of the same kind.
+CRITICAL_PATH_EXCLUDE = (
+    "CI Verdict",
+    "Publish CI Verdict",
+    "Review Complete",
+    "Review Status",
+    "Claude Review",
+)
 
 
 def critical_path(graph: dict[str, set[str]], jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:

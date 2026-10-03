@@ -140,8 +140,10 @@ const budgetSectionFor = ({ context, usable, runId }) => {
       nowMs: updatedAt ? new Date(updatedAt).getTime() : Date.now(),
       jobBudgetMin: Number(process.env.NIGHTLY_JOB_BUDGET_MIN || '15'),
       runBudgetMin: Number(process.env.NIGHTLY_RUN_BUDGET_MIN || '20'),
+      // The advisory PR review's observers (operator ruling 2026-10-03, PLAN-github-pr-review-restore) sit beside CI Verdict.
       excludePatterns: (
-        process.env.NIGHTLY_BUDGET_EXCLUDE_PATTERNS || 'Watchdog,CI Complete,CI Verdict'
+        process.env.NIGHTLY_BUDGET_EXCLUDE_PATTERNS ||
+        'Watchdog,CI Complete,Review Complete,Review Status,Claude Review,CI Verdict'
       )
         .split(',')
         .map((s) => s.trim()),
