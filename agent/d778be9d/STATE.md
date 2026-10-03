@@ -1,12 +1,11 @@
-## SESSION d778be9d 2026-10-02T14:08:54Z
+## SESSION d778be9d 2026-10-03T05:21:23Z
 
-# STATE d778be9d -- 2026-10-02T14:10Z
 ## Where
-- Branch 0930-1, PR #591 (body has Plan + Operational-Reason). Pushed b74d2cca8 (account 654d186, renet 7bf8dab); CI watch item faef7700. Unpushed: 66335c02c (review trigger -C fix), f9a2fa7a8 (claude-mention removed), 348a2db99, c25d13b03, 4e42c9d7e (QUEUE.md Promoted+Generated), d5c8a9861 + 3490aa3e3 (7 finished plans closed to _done), 53ae662a4 (52 plan citations fixed), account 1020ae4 (SES capture-mode leak fix: TEST_MODE sent real mail to demo-*@example.com) -- console pointer for account not yet bumped.
-- Writer a2714a8079995923e on #340d8619: QUEUE.md generator by progress (in progress > not started), held ignored, zero-open-box plans in a Not-queued note, dependencies incl sub-plans/#T refs, prerequisites pulled ahead. Operator rulings 2026-10-02 recorded (#551658f5, #0f45b81d).
-- Open review finding 53ae662a.1 [low]: claims review record d5c8a986 header mismatches; it is the review file of commit d5c8a986 riding commit 53ae662a, so not-a-bug.
+- PR #591 (0930-1) MERGED 2026-10-03T05:03Z by fast-forward: main 0dfd4a046 -> b47559569 (gh pr merge --rebase refused "can't be rebased"; CI Complete green run 37089591716). renet#113 -> main a6e55c5, account#89 -> main 8c98a1d.
+- Local 0930-1 carries UNPUSHED commits not on main: 2effee583 + 9079b7e8f (ff fallback judged by CI Complete, rc 2/3 refused), 9651fbdee (block_unverified_push judges the pushed tree), plus review records. They ride the next branch (cherry-pick origin/0930-1..0930-1 onto the new MMDD-N cut from main).
+- agent/plans/PLAN-github-pr-review-restore.md written (untracked): operator 2026-10-03 asks (1) restore GitHub PR review from git (6566f46aa^/eb932d04d^, advisory Review Complete, no app needed), (3) per-commit review table on the PR. Commit it on the next branch as QUEUE.md Promoted #1 (PLAN-plan-per-pr-loop leaves Promoted; plan-preflight becomes #2).
+
 ## Next action
-1. Mark 53ae662a.1 not-a-bug (review file of d5c8a986 rides 53ae662a by design).
-2. On the queue writer's report: spot-check, re-run test_plan_gate + check:ci-plan-record, commit, tick #340d8619.
-3. Bump private/account pointer (1020ae4) in console, --review-commit, sync /home/developer/pushclone-0923, gen-docs + plan --update there, receipt, push account + console (git -C), ci-trace.
-4. Stripe 23 (#2ec4c835) after 2026-10-03T00:00Z; M7 merge #591 via /pr-merge.
+1. Cut the next branch from main (step 7: delete merged 0930-1 in console, private/renet, private/account; name MMDD-(max+1) from PR heads), cherry-pick the unpushed guard commits (2effee583 9651fbdee 9079b7e8f), commit PLAN-github-pr-review-restore.md as QUEUE.md Promoted #1, and start writers on GR1, GR4, GR5, GR6 (#76a0eaaf).
+2. Condition: main Console CI 37098557732 is in flight on worker bhz6qwaw2 (#6d16d69c); on green, trace the "Release to Edge" run by id (bump-minor); a main-only failure gets a [hotfix] commit on main for the operator to push.
+3. After the release: step 6 re-sync (fetch --prune, ff main, submodule update), step 6b hand the operator `! COMMIT_POLICY_OK=1 git push gitlab refs/heads/main:refs/heads/main --follow-tags`, step 8 report, `worklist.py --focus d778be9d off`.
