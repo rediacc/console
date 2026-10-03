@@ -461,6 +461,21 @@ def test_answer_refuses_bad_deferral(repo, capsys, item, needle):
     assert gh.posts() == []
 
 
+def test_an_unreadable_worklist_refuses_every_deferral_as_unreadable(repo):
+    calls = []
+
+    def broken() -> dict:
+        calls.append(1)
+        raise OSError("store locked")
+
+    errors = P.validate({1: "deferred #0badc0de", 2: "deferred #deadbe00"}, 2, repo["root"], broken)
+    assert errors == [
+        "F1: the worklist cannot be read (store locked)",
+        "F2: the worklist cannot be read (store locked)",
+    ]
+    assert calls == [1]
+
+
 def test_answer_refuses_stale_summary_id(repo, capsys):
     gh = FakeGh()
     lines = good_lines(repo["fix"])

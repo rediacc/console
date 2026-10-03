@@ -587,6 +587,36 @@ def test_a_non_numeric_pr_number_is_refused_before_any_api_call(
     assert world.calls() == []
 
 
+def test_a_non_ascii_digit_pr_number_is_refused_before_any_api_call(
+    world: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # `str.isdigit()` accepts these; a REST path must not.
+    monkeypatch.setenv("PR_NUMBER", "\uff14\uff12")
+    assert _run(world) == 1
+    assert world.calls() == []
+
+
+def test_a_non_numeric_run_id_is_refused_before_any_api_call(
+    world: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _workflow_run(monkeypatch, "success")
+    monkeypatch.setenv("WR_RUN_ID", "777/../../pulls/1")
+    world.write("run-artifacts", [9001])
+    world.write("review-target", "42\n")
+    assert _run(world) == 1
+    assert world.calls() == []
+
+
+def test_a_malformed_head_sha_is_refused_before_any_write(world: World) -> None:
+    world.write("pull", {"state": "open", "draft": False, "head": 'a" or true or "'})
+    assert _run(world) == 1
+    assert world.writes() == []
+    # Control: the well-formed head posts.
+    world.write("pull", {"state": "open", "draft": False, "head": NEW_SHA})
+    assert _run(world) == 0
+    assert len(world.writes()) == 1
+
+
 def test_an_unsupported_event_breaks_the_reporter(
     world: World, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -640,6 +670,14 @@ def _scenarios() -> list[tuple[str, str, Callable[[World, pytest.MonkeyPatch], N
         w.write("review-target", "42")
         w.write("comments", [])
 
+    def failed_run_with_hygiene(w: World, mp: pytest.MonkeyPatch) -> None:
+        timed_out(w, mp)
+        w.hygiene(1, 1)
+
+    def stale_with_hygiene(w: World, _mp: pytest.MonkeyPatch) -> None:
+        w.write("comments", [])
+        w.hygiene(1, 1)
+
     return [
         ("current", "success", current),
         ("stale", "failure", stale),
@@ -650,6 +688,9 @@ def _scenarios() -> list[tuple[str, str, Callable[[World, pytest.MonkeyPatch], N
         ("outage", "success", outage),
         ("draft", "neutral", draft),
         ("failed-run", "failure", timed_out),
+        # An unreviewed head outranks a hygiene failure: the token names the missing review, not the unanswered findings.
+        ("failed-run", "failure", failed_run_with_hygiene),
+        ("stale", "failure", stale_with_hygiene),
     ]
 
 
@@ -668,6 +709,27 @@ def test_each_scenario_posts_the_ruled_conclusion(
     assert _token(payload) == token
     assert payload["conclusion"] == conclusion
     assert (payload["conclusion"] == "failure") == (token in ("stale", "failed-run", "hygiene"))
+
+
+@pytest.mark.parametrize("failed_run", [False, True])
+@pytest.mark.parametrize("currency_ok", [False, True])
+@pytest.mark.parametrize("excuse", ["", "capped", "exhausted", "outage"])
+@pytest.mark.parametrize("hygiene_failed", [False, True])
+def test_select_token_follows_the_docstring_decision(
+    failed_run: bool, currency_ok: bool, excuse: str, hygiene_failed: bool
+) -> None:
+    token = rs.select_token(
+        failed_run=failed_run, currency_ok=currency_ok, excuse=excuse, hygiene_failed=hygiene_failed
+    )
+    if not currency_ok and not excuse:
+        expected = "failed-run" if failed_run else "stale"
+    elif hygiene_failed:
+        expected = "hygiene"
+    elif not currency_ok:
+        expected = excuse
+    else:
+        expected = "current"
+    assert token == expected
 
 
 def test_the_zip_reader_takes_only_ascii_digits() -> None:

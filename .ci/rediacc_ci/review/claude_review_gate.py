@@ -79,6 +79,9 @@ INLINE_COMMENT_CAP = 20
 SEVERITY_RANK = {"critical": 0, "high": 1, "medium": 2}
 
 MARKER_SHA_RE = re.compile(r".*claude-reviewed: ([0-9a-f]{40}).*")
+# Every SHA and PR number from the environment or a gh answer is held to these before it reaches a jq filter or a REST path, so a quote cannot rewrite the filter and a slash cannot walk the path.
+SHA40_RE = re.compile(r"[0-9a-f]{40}")
+PR_NUMBER_RE = re.compile(r"[0-9]+")
 _WS_CLASS = r"[ \t\r\f\v]*"
 _FENCE_OPENER = re.compile(r"^%s```%s%s$" % (_WS_CLASS, re.escape(FINDINGS_FENCE), _WS_CLASS))
 _FENCE_CLOSER = re.compile(r"^%s```%s$" % (_WS_CLASS, _WS_CLASS))
@@ -141,6 +144,26 @@ def gh_retry(what: str, args: list[str]) -> tuple[int, str]:
         sys.stderr.write("    %s\n" % line)
     sys.stderr.flush()
     return rc if rc != 0 else 1, ""
+
+
+def _checked_sha(name: str, value: str) -> str:
+    """`value` when it is a 40-hex lowercase commit SHA; otherwise a refusal (exit 1) naming `name`."""
+    if not SHA40_RE.fullmatch(value):
+        raise common.RefusalError("%s must be a 40-hex commit SHA, got %r" % (name, value[:80]))
+    return value
+
+
+def _require_pr() -> str:
+    """`$PR_NUMBER`, refused (exit 1) unless it is ASCII digits."""
+    pr = common.require_var("PR_NUMBER")
+    if not PR_NUMBER_RE.fullmatch(pr):
+        raise common.RefusalError("PR_NUMBER must be a number, got %r" % pr[:80])
+    return pr
+
+
+def _require_head() -> str:
+    """`$HEAD_SHA`, refused (exit 1) unless it is a 40-hex commit SHA."""
+    return _checked_sha("HEAD_SHA", common.require_var("HEAD_SHA"))
 
 
 def _repo() -> str:
@@ -422,7 +445,7 @@ def _resolve_workflow_run(output_path: str) -> tuple[str, str, str]:
     if os.environ.get("WR_CONCLUSION", "") != "success":
         emit(output_path, "false", "", "", "", "CI run not green")
     # PINNED TO THE RUN'S SHA: `headRefOid == WR_HEAD_SHA` is the "current head is green RIGHT NOW" invariant, so a late green run for a superseded commit never reviews stale code. `workflow_run.pull_requests[]` is unreliable, so the PR is resolved through the branch.
-    wr_head_sha = os.environ.get("WR_HEAD_SHA", "")
+    wr_head_sha = _checked_sha("WR_HEAD_SHA", os.environ.get("WR_HEAD_SHA", ""))
     head_ref = os.environ.get("WR_HEAD_BRANCH", "")
     rc, pr_json = _gh(
         [
@@ -456,7 +479,7 @@ def _resolve_workflow_run(output_path: str) -> tuple[str, str, str]:
 
 def _resolve_pull_request(output_path: str) -> tuple[str, str, str]:
     """(pr, head sha, head ref) for `pull_request: ready_for_review` or `workflow_dispatch`, or a go=false decision."""
-    pr = common.require_var("PR_NUMBER")
+    pr = _require_pr()
     rc, view = _gh(
         [
             "pr",
@@ -475,7 +498,9 @@ def _resolve_pull_request(output_path: str) -> tuple[str, str, str]:
         data = None
     if not isinstance(data, dict):
         emit(output_path, "false", pr, "", "", "cannot resolve PR head")
-    head_sha = os.environ.get("PR_HEAD_SHA", "") or str(data.get("headRefOid") or "")
+    head_sha = _checked_sha(
+        "the PR head SHA", os.environ.get("PR_HEAD_SHA", "") or str(data.get("headRefOid") or "")
+    )
     head_ref = str(data.get("headRefName") or "")
     if data.get("isDraft") is not False:
         emit(output_path, "false", pr, head_sha, "", "PR is a draft")
@@ -661,8 +686,8 @@ def run_post_report() -> int:
 
     On the `workflow_run` entry point the action runs in agent mode and posts no tracking comment, so the report exists only as the final text in the execution file; posting it here gives both entry points one shape of report. No report text is a warning and exit 0: `--mark` then refuses to stamp the head, so it stays retryable.
     """
-    pr = common.require_var("PR_NUMBER")
-    head_sha = common.require_var("HEAD_SHA")
+    pr = _require_pr()
+    head_sha = _require_head()
     execution_file = os.environ.get("EXECUTION_FILE", "")
     result = _result_record(execution_file).get("result")
     report = result if isinstance(result, str) else ""
@@ -713,8 +738,8 @@ def run_post_findings() -> int:
 
     ADVISORY: a comment GitHub rejects (a line outside the diff, a stale position) is logged and skipped, and the arm always exits 0, because a failure here would skip the `--mark` that follows.
     """
-    pr = common.require_var("PR_NUMBER")
-    head_sha = common.require_var("HEAD_SHA")
+    pr = _require_pr()
+    head_sha = _require_head()
     repo = _repo()
     rc, bodies = _gh(
         [
@@ -874,8 +899,8 @@ def run_mark() -> int:
 
     A marker is a CLAIM that a review happened, and step success alone once proved false: the reviewer "succeeded" with 36 permission denials and posted nothing, and the marker then suppressed the retry. So the marker needs github-actions output from the last hour: a non-bookkeeping issue comment (any body starting `<!--` is bookkeeping, this module's and `pr_labels`'s alike) or an inline comment.
     """
-    pr = common.require_var("PR_NUMBER")
-    head_sha = common.require_var("HEAD_SHA")
+    pr = _require_pr()
+    head_sha = _require_head()
     execution_file = os.environ.get("EXECUTION_FILE", "")
     repo = _repo()
 

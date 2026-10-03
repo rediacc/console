@@ -281,6 +281,17 @@ def test_an_oversize_body_is_truncated_below_the_limit(tmp_path):
     assert "Truncated" not in render_dir(small)
 
 
+def test_the_last_resort_cut_keeps_the_whole_marker_line():
+    marker = "%s %s -->" % (T.MARKER_PREFIX, sha(1))
+    ctx = T.Context(branch="b", head=sha(1), repo=GH_REPO, commits=None)
+    # A header alone over the budget forces the final `body[: BODY_LIMIT - 1]` cut, after every block and row is gone.
+    body = T._fit(ctx, [marker, "h" * (T.BODY_LIMIT + 10)], ["| row |"], ["", "### s"], ["block"])
+    assert len(body) == T.BODY_LIMIT - 1
+    assert body.split("\n", 1)[0] == marker
+    # Control: under the budget nothing is cut.
+    assert T._fit(ctx, [marker, "h"], [], [], []).split("\n", 1)[0] == marker
+
+
 def test_details_go_before_table_rows(tmp_path):
     reviews = []
     for n in range(1, 60):
