@@ -117,8 +117,24 @@ function open(url) {
   return runAgent(['open', url]);
 }
 
+/**
+ * A dev-server reload under an eval destroys its context (`Inspected target navigated or
+ * closed`, CI run 37131294077), and every eval here reads state or sets an idempotent value, so
+ * one that died that way runs again in the new document. Anything else still throws.
+ */
+const RELOADED_UNDER_EVAL = /navigated or closed|context was destroyed|Cannot find context/i;
+const EVAL_RELOAD_RETRIES = 2;
+
 function evalInPage(code) {
-  return runAgent(['eval', code]).result;
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return runAgent(['eval', code]).result;
+    } catch (error) {
+      if (attempt >= EVAL_RELOAD_RETRIES || !RELOADED_UNDER_EVAL.test(String(error))) throw error;
+      log(`→ the page reloaded under an eval (${RELOADED_UNDER_EVAL.exec(String(error))[0]}), evaluating again`);
+      wait(500);
+    }
+  }
 }
 
 function screenshot(name) {
@@ -247,12 +263,20 @@ function clickPlaybackButton() {
  * READY = the control exists, the media has its metadata, and the control has held the same
  * position for three consecutive samples, so no layout shift can move it under the click. The
  * poll runs inside the page (one round trip), bounded at 20 s.
+ *
+ * A RELOAD UNDER THE POLL IS RETRIED, NOT REPORTED. CI run 37131294077 (job 111227243538) died
+ * 0.2 s after the first navigation with `CDP error (Runtime.evaluate): Inspected target navigated
+ * or closed`: the dev server reloaded the page once while the poll was in flight (the shape of
+ * its first-visit dependency re-optimization for the lazily imported player), which destroys the
+ * evaluation context. The page is still loading, not broken, so the poll starts again in the new
+ * document. The deadline is fixed once, in this process, and baked into the polled code, so an
+ * attempt that evalInPage repeats after a reload still ends at the same moment: one 20 s budget.
  */
 function waitForPlayerReady() {
   try {
     const state = evalInPage(`(() => new Promise((resolve) => {
       const SELECTOR = '.tvp-root [data-plyr="play"]';
-      const deadline = Date.now() + 20000;
+      const deadline = ${Date.now() + 20000};
       let last = null;
       let stable = 0;
       const poll = () => {
