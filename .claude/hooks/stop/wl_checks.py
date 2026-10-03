@@ -12,6 +12,7 @@ import os
 import pathlib
 import random
 import re
+import shlex
 import subprocess
 import sys as _sys
 import time
@@ -3789,10 +3790,15 @@ def run_stop(event, event_ok, worklist, hook_file):
                         "n_open": _row["n_open"],
                         "n_gap": len(_gap),
                         "recipes": "\n".join(
-                            '    .claude/hooks/stop/worklist.py --add %s "%s"'
+                            # shlex.quote, not a hand-made "...": a box text opening with `("` broke the copied command on 2026-10-03, and a (text, sig) tuple printed its repr as the item text.
+                            "    .claude/hooks/stop/worklist.py --add %s %s"
                             % (
                                 session_id[:8],
-                                wl_planfile._quote(t if isinstance(t, str) else str(t)),
+                                shlex.quote(
+                                    wl_planfile._quote(
+                                        t if isinstance(t, str) else (t[0] if t else "")
+                                    )
+                                ),
                             )
                             for t in _gap[:3]
                         )
