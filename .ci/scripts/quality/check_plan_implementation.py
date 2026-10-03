@@ -703,6 +703,19 @@ def controls_fired(enforce, planfile, planrec=None):
         if not fired:
             missed.append(label)
 
+    # THE PREFETCH PARSER (raw_diff_blobs): a gitlink on EITHER side is dropped, a deleted side's null id is dropped, and a short line is skipped; a regular blob on both sides is kept. A gitlink that reached the batch made the whole fetch exit 128 (measured 2026-10-03).
+    _g = "a" * 40
+    _b1, _b2 = "b" * 40, "c" * 40
+    _raw = "\n".join(
+        [
+            ":160000 100644 %s %s T\tsub" % (_g, _b1),
+            ":100644 160000 %s %s T\tsub2" % (_b2, _g),
+            ":000000 100644 %s %s A\tnew" % ("0" * 40, _b1),
+            ":100644 100644 %s %s" % (_b1, _b2),
+        ]
+    )
+    caught("prefetch parser keeps gitlinks out of the batch", raw_diff_blobs(_raw) == {_b1, _b2})
+
     # CONTROL 0 -- HEALTHY. Every judge must be silent on clean input, or every red below means nothing.
     if clock_findings([]):
         die(
@@ -1437,6 +1450,22 @@ FINISHED_STATES = None
 MIN_CONTROLS = 15
 
 
+def raw_diff_blobs(raw):
+    """The blob ids both sides of a `git log --raw --no-abbrev` listing name, gitlinks and the null id excluded.
+
+    `:<oldmode> <newmode> <oldsha> <newsha> <status>\t<path>`. Each side is judged by its OWN mode: a gitlink (160000) names a commit in a SUBMODULE's repository, and asking this remote for it fails the whole prefetch batch. The old mode carries the leading colon.
+    """
+    out = set()
+    for ln in raw.splitlines():
+        parts = ln.split()
+        if not ln.startswith(":") or len(parts) < 5:
+            continue
+        for mode, sha in ((parts[0].lstrip(":"), parts[2]), (parts[1], parts[3])):
+            if mode != "160000" and sha.strip("0"):
+                out.add(sha)
+    return out
+
+
 PREFETCH_PATHS = ("agent/plans", LEDGER_REL)
 
 
@@ -1481,11 +1510,7 @@ def prefetch_partial_clone(root):
         raw = out(
             "log", "--no-renames", "--raw", "--no-abbrev", "--format=", "-m", "%s..HEAD" % base
         )
-        for ln in raw.splitlines():
-            parts = ln.split()
-            # A gitlink (mode 160000) names a commit in a SUBMODULE's repository; asking this remote for it fails the whole batch.
-            if ln.startswith(":") and len(parts) >= 4 and "160000" not in parts[:2]:
-                missing.update(x for x in parts[2:4] if x.strip("0"))
+        missing.update(raw_diff_blobs(raw))
         have = subprocess.run(
             ["git", "-C", str(root), "cat-file", "--batch-check"],
             input="\n".join(sorted(missing)),
