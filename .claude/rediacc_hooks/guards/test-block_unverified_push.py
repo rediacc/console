@@ -409,6 +409,29 @@ cases.append(
 )
 _rekey()
 
+# --- a push of exactly origin/main needs no receipt ------------------------------------------ The GitLab mirror push (pr-merge step 6b, operator ruling 2026-10-03) sends the commit GitHub's required CI already judged.
+mirror_sha = git("rev-parse", "HEAD").stdout.strip()
+git("update-ref", "refs/remotes/origin/main", mirror_sha)
+drop()
+cases.append(
+    (
+        0,
+        run("git push gitlab %s:refs/heads/main" % mirror_sha),
+        "a push of exactly origin/main's commit needs no receipt",
+    )
+)
+other = git("rev-parse", "HEAD~1").stdout.strip()
+cases.append(
+    (
+        2,
+        run("git push gitlab %s:refs/heads/main" % other),
+        "CONTROL: a push of any other commit still needs one",
+    )
+)
+cases.append((2, run(PUSH), "CONTROL: a branch push with no receipt is still refused"))
+git("update-ref", "-d", "refs/remotes/origin/main")
+_rekey()
+
 shutil.rmtree(d, ignore_errors=True)
 
 bad = 0
