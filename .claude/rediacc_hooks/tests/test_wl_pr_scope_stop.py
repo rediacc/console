@@ -507,3 +507,27 @@ def test_sc6_the_same_box_with_a_live_background_task_is_an_advisory(wl):  # noq
     )
     got = run_stop(wl)
     assert "plan-unimplemented" not in keys_of(wl, got), reason(got)[:1500]
+
+
+def test_sc10_the_plan_adopted_recipe_survives_a_quote_in_the_box_text(wl):  # noqa: F811
+    """The 2026-10-03 recipe broke the shell when copied: a box text opening with `("` sat inside a hand-made "..." quote. The printed --add line must parse back to the exact box text."""
+    import shlex  # noqa: PLC0415 -- local to the one test that needs it
+
+    loop_world(wl)
+    rel_ = adopted(wl, "quote-fixture")
+    path = wl.proj / rel_
+    path.write_text(
+        path.read_text(encoding="utf-8").replace(
+            "- [ ] Rewrite the alpha subsystem onto the shared helper in one commit",
+            '- [ ] ("R1 A writer\'s paths stay subtracted while any item is leased',
+        ),
+        encoding="utf-8",
+    )
+    F.merged_nodes(wl, [pr_node("OPEN", "Plan: %s\n" % rel_)])
+    got = run_stop(wl)
+    lines = [ln for ln in reason(got).splitlines() if "worklist.py --add" in ln]
+    assert lines, reason(got)[:1500]
+    argvs = [shlex.split(ln) for ln in lines]
+    assert any(
+        a[-1].startswith('("R1 A writer\'s paths stay subtracted') for a in argvs
+    ), argvs
