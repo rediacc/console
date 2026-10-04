@@ -1244,7 +1244,9 @@ class Housekeeping:
                                 "repos/%s/releases" % RELEASE_REPO,
                                 "--paginate",
                                 "--jq",
-                                '.[] | select(.tag_name == "%s") | .id' % tag,
+                                # The tag enters the filter as a JSON string literal, so a quote or backslash in it cannot break the jq syntax.
+                                ".[] | select(.tag_name == %s) | .id"
+                                % json.dumps(tag, ensure_ascii=False),
                             ]
                         )
                         for release_id in ids.split():
