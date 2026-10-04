@@ -1,0 +1,6 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 6, "source": "bash", "twin": ".ci/scripts/deploy/resolve-account-deploy-config.sh", "twin_blob": "c6bfa245d7940e4ef0261cf81e514ebf34e3532a"}}
+{"_silent": ["test_edge_target_selects_edge_worker_and_sandbox#78182d67ac7a6973", "test_stable_target_selects_stable_worker_and_no_sandbox#7ddcdf73f3a62090"]}
+{"_key": "test_edge_target_selects_edge_worker_and_sandbox#78182d67ac7a6973|file0", "err": "", "out": "region=eu\nworker=ew\ndomain=ed\nsandbox=--sandbox\n", "rc": "0"}
+{"_key": "test_missing_target_fails_the_same_way_reworded#195e758cfa96c12d", "err": ".ci/scripts/deploy/resolve-account-deploy-config.sh: line 48: TARGET: resolve-account-deploy-config.sh: TARGET must be set\n", "out": "", "rc": "1"}
+{"_key": "test_missing_target_fails_the_same_way_reworded#195e758cfa96c12d|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_stable_target_selects_stable_worker_and_no_sandbox#7ddcdf73f3a62090|file0", "err": "", "out": "region=us\nworker=w2\ndomain=d2\nsandbox=\n", "rc": "0"}

@@ -44,7 +44,8 @@ if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "deploy" / "write-release-sentinel.sh"
+TWIN_REL = ".ci/scripts/deploy/write-release-sentinel.sh"
+TWIN = ROOT / TWIN_REL
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "write_release_sentinel.py"
 MODULE = "rediacc_ci.deploy.write_release_sentinel"
 
@@ -149,10 +150,27 @@ def drive(
                 if port_file is not None
                 else "python3 -m %s %s" % (MODULE, quoted)
             )
-        rc, out, err = diff.bash_streams(command, env=env, timeout=60)
         uploaded = fixture_dir / "uploaded.json"
-        payload = uploaded.read_text(encoding="utf-8") if uploaded.exists() else None
-        runs.append(Run(rc, out, err, log.read_text(encoding="utf-8"), payload))
+
+        def live(command=command, env=env, uploaded=uploaded, log=log):
+            rc, out, err = diff.bash_streams(command, env=env, timeout=60)
+            payload = uploaded.read_text(encoding="utf-8") if uploaded.exists() else None
+            return rc, out, err, log.read_text(encoding="utf-8"), payload
+
+        if side == "old":
+            # The twin's streams, call log and uploaded sentinel come from its golden (PLAN-retire-bash-oracles B3).
+            runs.append(
+                Run(
+                    *diff.twin_tuple(
+                        TWIN_REL,
+                        [quoted, repr(sorted((env_extra or {}).items())), repr(creds)],
+                        live,
+                        work=(tmp_path,),
+                    )
+                )
+            )
+            continue
+        runs.append(Run(*live()))
     return runs[0], runs[1]
 
 
@@ -402,7 +420,12 @@ def test_a_missing_aws_refuses_identically(tmp_path: pathlib.Path) -> None:
             (lean / tool).symlink_to(found)
     env = diff.env_for(PATH=str(lean), **CREDS)
     quoted = " ".join("'%s'" % a for a in HAPPY)
-    old = diff.bash_streams("bash %s %s" % (TWIN, quoted), env=env, timeout=30)
+    old = diff.twin_call(
+        TWIN_REL,
+        ["no-aws"],
+        lambda: diff.bash_streams("bash %s %s" % (TWIN, quoted), env=env, timeout=30),
+        work=(tmp_path,),
+    )
     env_new = dict(env)
     env_new["PYTHONPATH"] = str(ROOT / ".ci")
     env_new["PYTHONDONTWRITEBYTECODE"] = "1"

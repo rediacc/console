@@ -23,16 +23,19 @@ import os
 import shutil
 import subprocess
 import sys
+import types
 import typing
 
 from rediacc_ci import paths
 from rediacc_ci.release import tag_submodules
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "release" / "tag-submodules.sh"
+TWIN_REL = ".ci/scripts/release/tag-submodules.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "release" / "tag_submodules.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -89,7 +92,47 @@ def _submodule(parent: pathlib.Path, *, commits: int = 1) -> pathlib.Path:
     return sub
 
 
+def _remote_rev(parent: pathlib.Path) -> str:
+    if not (parent / "private" / "renet-remote.git").is_dir():
+        return ""
+    return _git(
+        parent / "private" / "renet-remote.git", "rev-list", "-n1", "v" + VERSION, check=False
+    ).stdout
+
+
 def _run(subject: pathlib.Path, parent: pathlib.Path, **overrides: str):
+    """Run one side. The twin's side is answered from its golden (PLAN-retire-bash-oracles B3), and so are the remote's tags and the tag's commit after it ran: the twin MUTATES its bare remote, so the after-state is part of its answer and is recorded with the streams."""
+    if subject == TWIN:
+
+        def bash():
+            proc = _run_live(subject, parent, **overrides)
+            return (
+                proc.returncode,
+                proc.stdout,
+                proc.stderr,
+                _after_tags(parent),
+                _remote_rev(parent),
+            )
+
+        rc, out, err, tags, rev = diff.twin_tuple(
+            TWIN_REL, [repr(sorted(overrides.items()))], bash, work=(parent.parent,)
+        )
+        return types.SimpleNamespace(
+            returncode=rc, stdout=out, stderr=err, remote_tags=tags, remote_rev=rev
+        )
+    proc = _run_live(subject, parent, **overrides)
+    proc.remote_tags = _after_tags(parent)
+    return proc
+
+
+def _after_tags(parent: pathlib.Path) -> str:
+    """The bare remote's tags, or "" for a case that built no remote at all."""
+    if not (parent / "private" / "renet-remote.git").is_dir():
+        return ""
+    return _remote_tags(parent)
+
+
+def _run_live(subject: pathlib.Path, parent: pathlib.Path, **overrides: str):
     runner = [BASH] if subject.suffix == ".sh" else [sys.executable]
     env = dict(BASE_ENV)
     env.update(overrides)
@@ -157,12 +200,12 @@ def test_dot_git_as_a_file_is_initialized(tmp_path: pathlib.Path) -> None:
         _git(sub, "config", "core.worktree", "../renet")
         subject = TWIN if name == "old" else PORT
         results.append((parent, _run(subject, parent, VERSION=VERSION)))
-    (old_parent, old), (new_parent, new) = results
+    (_old_parent, old), (_new_parent, new) = results
     assert old.returncode == 0, f"twin failed on a pointer-file submodule: {old.stderr!r}"
     assert "Skipping" not in old.stdout
     _assert_agree(old, new, "dot-git-file")
-    assert _remote_tags(old_parent) == "v1.2.3\n"
-    assert _remote_tags(new_parent) == _remote_tags(old_parent)
+    assert old.remote_tags == "v1.2.3\n"
+    assert new.remote_tags == old.remote_tags
 
 
 def test_fresh_tag_is_created_and_pushed(tmp_path: pathlib.Path) -> None:
@@ -176,8 +219,8 @@ def test_fresh_tag_is_created_and_pushed(tmp_path: pathlib.Path) -> None:
     assert old.stdout == ""
     assert "[new tag]" in old.stderr, "the twin did not actually push; the case is vacuous"
     _assert_agree(old, new, "fresh-tag")
-    assert _remote_tags(old_parent) == "v1.2.3\n"
-    assert _remote_tags(new_parent) == _remote_tags(old_parent)
+    assert old.remote_tags == "v1.2.3\n"
+    assert new.remote_tags == old.remote_tags
 
 
 def test_tag_already_at_head_is_reused_and_the_push_is_idempotent(
@@ -216,11 +259,11 @@ def test_drift_is_a_hard_failure(tmp_path: pathlib.Path) -> None:
     assert "Drift must be resolved manually before this release can proceed." in old.stdout
     _assert_agree(old, new, "drift")
     # The refusal must also mean NOTHING WAS PUSHED past the existing tag.
-    old_remote = _git(parents[0] / "private" / "renet-remote.git", "rev-list", "-n1", "v1.2.3")
     sub_first = _git(
         parents[0] / "private" / "renet", "rev-list", "--max-parents=0", "HEAD"
     ).stdout.strip()
-    assert old_remote.stdout.strip() == sub_first, "the twin retagged despite the drift"
+    assert old.remote_rev.strip() == sub_first, "the twin retagged despite the drift"
+    assert _remote_rev(parents[1]).strip() == sub_first, "the port retagged despite the drift"
 
 
 def test_missing_version_refuses_on_both_sides(tmp_path: pathlib.Path) -> None:
@@ -236,8 +279,8 @@ def test_missing_version_refuses_on_both_sides(tmp_path: pathlib.Path) -> None:
     assert old.stdout == new.stdout == ""
     assert "VERSION must be set" in old.stderr
     assert "VERSION must be set" in new.stderr
-    assert _remote_tags(old_parent) == ""
-    assert _remote_tags(new_parent) == ""
+    assert old.remote_tags == ""
+    assert new.remote_tags == ""
 
 
 def test_empty_version_refuses_too(tmp_path: pathlib.Path) -> None:
@@ -252,8 +295,8 @@ def test_empty_version_refuses_too(tmp_path: pathlib.Path) -> None:
     assert new.returncode == 1
     assert "VERSION must be set" in old.stderr
     assert "VERSION must be set" in new.stderr
-    assert _remote_tags(old_parent) == ""
-    assert _remote_tags(new_parent) == ""
+    assert old.remote_tags == ""
+    assert new.remote_tags == ""
 
 
 def test_unborn_head_dies_with_gits_own_exit_code(tmp_path: pathlib.Path) -> None:

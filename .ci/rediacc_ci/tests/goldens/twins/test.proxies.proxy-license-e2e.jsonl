@@ -1,0 +1,4 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 2, "source": "bash", "twin": ".ci/scripts/test/proxies/proxy-license-e2e.sh", "twin_blob": "ccf3a2fc7b189fa5efa16849a902b5600ed13a80"}}
+{"_silent": []}
+{"_key": "test_selftest_is_byte_identical#39c1d27ced446a33", "err": "", "out": "PASS: selftest toolchain present -> 0 (exit 0)\nPASS: selftest toolchain removed from PATH -> 77 (exit 77)\nPASS: selftest zero checks -> 1, never 0 (exit 1)\nPASS: selftest zero declared requirements -> 2 (exit 2)\nproxy-lib selftest: 4 case(s) passed\n", "rc": "0"}
+{"_key": "test_selftest_is_byte_identical#39c1d27ced446a33|more", "err": "", "out": "[\"proc\"]", "rc": "0"}

@@ -1,0 +1,14 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 12, "source": "bash", "twin": ".ci/scripts/release/resolve-ci-run.sh", "twin_blob": "d154c1bb540c3a3046f77d76b89fa2840c9508ba"}}
+{"_silent": []}
+{"_key": "test_a_failed_run_lookup_falls_back_to_empty_object_on_both_sides#91c45b05654c7e59", "err": "", "out": "::error::ci_run_id 999 is on branch '', not 'main'.\n::error::ci_run_id 999 is workflow '', not 'Console CI'.\n::error::ci_run_id validation failed -- refusing to dispatch with invalid CI run.\n", "rc": "1"}
+{"_key": "test_a_failed_run_lookup_falls_back_to_empty_object_on_both_sides#91c45b05654c7e59|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_auto_derive_picks_the_latest_green_run_on_both_sides#e2e5adb51f818499", "err": "", "out": "::notice::Auto-derived ci_run_id=555 (latest green Console CI on main).\n", "rc": "0"}
+{"_key": "test_auto_derive_picks_the_latest_green_run_on_both_sides#e2e5adb51f818499|file0", "err": "", "out": "ci_run_id=555\nci_sha=abc123\n", "rc": "0"}
+{"_key": "test_auto_derive_with_no_green_run_fails_on_both_sides#e91589d4452fa370", "err": "", "out": "::error::No green Console CI run found on main. Cannot auto-derive ci_run_id; dispatch will not proceed.\n", "rc": "1"}
+{"_key": "test_auto_derive_with_no_green_run_fails_on_both_sides#e91589d4452fa370|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_explicit_run_id_completed_failure_allow_stale_proceeds_on_both_sides#943dc9a73ddabd03", "err": "", "out": "::warning::ci_run_id 42 completed with conclusion 'failure'; allow_stale_ci_run_id is set, proceeding anyway.\n", "rc": "0"}
+{"_key": "test_explicit_run_id_completed_failure_allow_stale_proceeds_on_both_sides#943dc9a73ddabd03|file0", "err": "", "out": "ci_run_id=42\nci_sha=deadbeef\n", "rc": "0"}
+{"_key": "test_explicit_run_id_on_the_wrong_branch_is_refused_on_both_sides#10cad1b784fb513f", "err": "", "out": "::error::ci_run_id 42 is on branch 'feature-x', not 'main'.\n::error::ci_run_id validation failed -- refusing to dispatch with invalid CI run.\n", "rc": "1"}
+{"_key": "test_explicit_run_id_on_the_wrong_branch_is_refused_on_both_sides#10cad1b784fb513f|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_missing_github_repository_fails_the_same_way_reworded#e3b0c44298fc1c14", "err": ".ci/scripts/release/resolve-ci-run.sh: line 43: GITHUB_REPOSITORY: resolve-ci-run.sh: GITHUB_REPOSITORY must be set\n", "out": "", "rc": "1"}
+{"_key": "test_missing_github_repository_fails_the_same_way_reworded#e3b0c44298fc1c14|file0", "err": "", "out": "\u0000absent", "rc": "0"}

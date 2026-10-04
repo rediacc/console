@@ -32,6 +32,8 @@ WHAT A PTY DOES TO THE BYTES, since it is the part that surprises people. A tty 
 stripped strings, which would also stop the comparison seeing a real trailing-whitespace change.
 """
 
+import base64
+import json
 import os
 import pathlib
 import pty
@@ -454,8 +456,10 @@ def case_key(parts: list[str], *, work: tuple[str, ...], label: str | None) -> s
         return goldenio.case_key(label, *[fold(p, work) for p in parts])
     name = _current_label()
     key = goldenio.case_key(name, *[fold(p, work) for p in parts])
-    seen = _OCCURRENCE.get((name, key), 0)
-    _OCCURRENCE[(name, key)] = seen + 1
+    # Counted per TEST NODE (file included), not per label: two modules can hold a test of the same name whose calls hash alike (the promote and promote-hotfix differentials do), and a shared count would give the second module's first call a `/1` that depends on collection order.
+    node = os.environ.get("PYTEST_CURRENT_TEST", "").rpartition(" ")[0]
+    seen = _OCCURRENCE.get((node, key), 0)
+    _OCCURRENCE[(node, key)] = seen + 1
     return key if seen == 0 else "%s/%d" % (key, seen)
 
 
@@ -585,6 +589,103 @@ def twin_call(
     """`twin_run` for the common case: `(rc, out, err)` and nothing else."""
     rc, out, err, _ = twin_run(twin, parts, bash, port=port, work=work, label=label)
     return rc, out, err
+
+
+def _to_json(value):
+    """A harness's observables as JSON, keeping what JSON alone would lose: `bytes` (a written binary artifact) and `tuple` (a field compared with `==` against the port's tuple)."""
+    if isinstance(value, bytes):
+        return {"__bytes__": base64.b64encode(value).decode("ascii")}
+    if isinstance(value, tuple):
+        return {"__tuple__": [_to_json(v) for v in value]}
+    if isinstance(value, list):
+        return [_to_json(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _to_json(v) for k, v in value.items()}
+    return value
+
+
+def _from_json(value):
+    if isinstance(value, list):
+        return [_from_json(v) for v in value]
+    if isinstance(value, dict):
+        if set(value) == {"__bytes__"}:
+            return base64.b64decode(value["__bytes__"])
+        if set(value) == {"__tuple__"}:
+            return tuple(_from_json(v) for v in value["__tuple__"])
+        return {k: _from_json(v) for k, v in value.items()}
+    return value
+
+
+def twin_tuple(
+    twin: str, parts: list[str], bash, *, files=(), work=(), label: str | None = None
+) -> tuple:
+    """`twin_run` for a harness whose bash side returns `(rc, out, err, *more)`.
+
+    Many differentials return more than the streams: a `gh` call log, the bytes of a written file, a list of pushed tags. `more` is recorded as ONE JSON record under `<key>|more` and decoded back on compare, so a list stays a list and a string stays a string, and the call site keeps its own tuple shape after the twin is deleted. `files` are paths the twin writes, handled as `twin_run` handles them.
+    """
+    box: dict[str, list] = {}
+
+    def run() -> Answer:
+        result = tuple(bash())
+        box["more"] = list(result[3:])
+        return int(result[0]), result[1] or "", result[2] or ""
+
+    rc, out, err, extra = twin_run(
+        twin,
+        parts,
+        run,
+        files=files,
+        extras={"more": lambda: json.dumps(_to_json(box["more"]), sort_keys=True)},
+        work=work,
+        label=label,
+    )
+    return (rc, out, err, *_from_json(json.loads(extra["more"])))
+
+
+_PYTEST_TMP_RE = re.compile(r"/[^\s:'\"]*?/pytest-\d+/(?:popen-gw\d+/)?[^/\s:'\"]+")
+
+
+def pytest_tmp_roots(*values: str) -> tuple[str, ...]:
+    """The per-test pytest `tmp_path` directories named anywhere in `values`, as fold roots: a harness that passes paths as plain strings (an `--out` file, an env value) still records a machine-independent golden."""
+    found: dict[str, None] = {}
+    for value in values:
+        for match in _PYTEST_TMP_RE.findall(str(value)):
+            found[match] = None
+    return tuple(found)
+
+
+def twin_work(args, kw) -> tuple[str, ...]:
+    """Every path-valued positional or keyword argument of a harness call: the scratch roots its answer may print, folded to stable tokens."""
+    found = [a for a in args if isinstance(a, pathlib.PurePath)]
+    found += [v for _k, v in sorted(kw.items()) if isinstance(v, pathlib.PurePath)]
+    return tuple(str(p) for p in found)
+
+
+def twin_result(twin: str, parts: list[str], fn, *, files=(), work=(), label: str | None = None):
+    """`twin_tuple` for a harness that returns a `CompletedProcess`, a `(CompletedProcess, *more)` tuple, a `(rc, out, err, *more)` tuple, or a dict of JSON-able observables; the same shape comes back in compare mode, so the call site does not change.
+
+    The usual conversion of a differential whose `_run(subject, ...)` drives both sides: rename it `_run_live`, and route the twin through this seam in a new `_run`.
+    """
+
+    def bash():
+        result = fn()
+        if isinstance(result, dict):
+            return (0, "", "", "dict", result)
+        if isinstance(result, subprocess.CompletedProcess):
+            return (result.returncode, result.stdout, result.stderr, "proc")
+        if result and isinstance(result[0], subprocess.CompletedProcess):
+            proc = result[0]
+            return (proc.returncode, proc.stdout, proc.stderr, "proc+", *result[1:])
+        return (*result[:3], "tuple", *result[3:])
+
+    rc, out, err, shape, *more = twin_tuple(twin, parts, bash, files=files, work=work, label=label)
+    if shape == "dict":
+        return more[0]
+    if shape == "proc":
+        return subprocess.CompletedProcess([], rc, out, err)
+    if shape == "proc+":
+        return (subprocess.CompletedProcess([], rc, out, err), *more)
+    return (rc, out, err, *more)
 
 
 def twin_streams(

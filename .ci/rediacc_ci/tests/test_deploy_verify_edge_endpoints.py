@@ -213,7 +213,8 @@ def drive(
             **{**BUDGET, **(env_extra or {})},
         )
         if side == "old":
-            script = twin or TWIN
+            base = twin or TWIN
+            script = base
             if tree is not None:
                 script = tree / ".ci" / "scripts" / "deploy" / script.name
             command = "bash %s" % script
@@ -224,6 +225,19 @@ def drive(
                 env["REDIACC_CI_ROOT"] = str(tree)
             target = port_file
             command = "python3 %s" % target if target is not None else "python3 -m %s" % module
+        if side == "old":
+            # The twin's answer and its curl log come from the golden (PLAN-retire-bash-oracles B3).
+            rc, out, err, curl_log = diff.twin_tuple(
+                str(base.relative_to(ROOT)),
+                [repr(sorted((env_extra or {}).items())), "tree=%s" % (tree is not None)],
+                lambda command=command, env=env, log=log: (
+                    *diff.bash_streams(command, env=env, timeout=60),
+                    log.read_text(encoding="utf-8"),
+                ),
+                work=(tmp_path,),
+            )
+            runs.append(Run(rc, out, err, curl_log))
+            continue
         rc, out, err = diff.bash_streams(command, env=env, timeout=60)
         runs.append(Run(rc, out, err, log.read_text(encoding="utf-8")))
     return runs[0], runs[1]
@@ -245,9 +259,10 @@ def fixture_tree(tmp_path: pathlib.Path, *, with_regions: bool) -> pathlib.Path:
     tree = tmp_path / "tree"
     (tree / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     (tree / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(TWIN, tree / ".ci" / "scripts" / "deploy" / TWIN.name)
-    shutil.copy2(STABLE_TWIN, tree / ".ci" / "scripts" / "deploy" / STABLE_TWIN.name)
-    shutil.copy2(COMMON_LIB, tree / ".ci" / "scripts" / "lib" / COMMON_LIB.name)
+    if diff.regolden_mode() == "bash":
+        shutil.copy2(TWIN, tree / ".ci" / "scripts" / "deploy" / TWIN.name)
+        shutil.copy2(STABLE_TWIN, tree / ".ci" / "scripts" / "deploy" / STABLE_TWIN.name)
+        shutil.copy2(COMMON_LIB, tree / ".ci" / "scripts" / "lib" / COMMON_LIB.name)
     (tree / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", tree / ".ci" / "config" / "well-known.env"

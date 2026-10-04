@@ -1,0 +1,9 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 7, "source": "bash", "twin": ".ci/scripts/release/check-edge-manifest.sh", "twin_blob": "9df67043410ea37a0b9395d7b5030e938a1ab4d7"}}
+{"_silent": []}
+{"_key": "test_a_manifest_missing_release_date_prints_jq_null_on_both_sides#c831d51c75cffd65", "err": "", "out": "Edge version: 9.9.9 (released: null)\n", "rc": "0"}
+{"_key": "test_a_manifest_missing_release_date_prints_jq_null_on_both_sides#c831d51c75cffd65|file0", "err": "", "out": "version=9.9.9\ndate=null\nskip=false\n", "rc": "0"}
+{"_key": "test_a_missing_manifest_skips_on_both_sides#c831d51c75cffd65", "err": "", "out": "No edge manifest found, skipping\n", "rc": "0"}
+{"_key": "test_a_missing_manifest_skips_on_both_sides#c831d51c75cffd65|file0", "err": "", "out": "skip=true\n", "rc": "0"}
+{"_key": "test_a_present_manifest_is_reported_identically#c831d51c75cffd65", "err": "", "out": "Edge version: 1.2.3 (released: 2026-09-01T00:00:00Z)\n", "rc": "0"}
+{"_key": "test_a_present_manifest_is_reported_identically#c831d51c75cffd65|file0", "err": "", "out": "version=1.2.3\ndate=2026-09-01T00:00:00Z\nskip=false\n", "rc": "0"}
+{"_key": "test_missing_github_output_fails_the_same_way_reworded#37d2b12d5d9abc2a", "err": ".ci/scripts/release/check-edge-manifest.sh: line 30: GITHUB_OUTPUT: check-edge-manifest.sh: GITHUB_OUTPUT must be set\n", "out": "", "rc": "1"}

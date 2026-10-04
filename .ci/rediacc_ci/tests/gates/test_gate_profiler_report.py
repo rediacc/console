@@ -31,7 +31,8 @@ from rediacc_ci.tests.gates import harness
 
 PANEL = paths.from_root(".ci", "rediacc_ci", "ci", "profiler_panel.py")
 REPORT_AWK = paths.from_root(".ci", "scripts", "ci", "profiler", "report.awk")
-SAMPLER = paths.from_root(".ci", "scripts", "ci", "profiler", "sampler-linux.sh")
+# The sampler CI runs: the port of the retired `sampler-linux.sh` (PLAN-retire-bash-oracles B3), standard-library only, so it runs by path under any python3.
+SAMPLER = paths.from_root(".ci", "rediacc_ci", "ci", "profiler_sampler_linux.py")
 
 T0_MS = 1700000000000
 CEIL_CPU = 1000
@@ -465,7 +466,7 @@ def test_sampler_rejects_host_leak(gate, tmp_path):
     (cgroup / "cpu.stat").write_text("usage_usec 100\n", encoding="utf-8")
     sample = tmp_path / "s.tsv"
     result = harness.run(
-        ["bash", str(SAMPLER), "--out", str(sample), "--interval", "1"],
+        ["python3", str(SAMPLER), "--out", str(sample), "--interval", "1"],
         env={"PROFILER_CGROUP_ROOT": str(cgroup), "PROFILER_RUNNER_LABEL": "ubuntu-slim"},
     )
     gate.assert_exit(3, result, "an unquota'd cgroup on a slim label must abort")
@@ -480,7 +481,7 @@ def test_sampler_rejects_host_leak(gate, tmp_path):
 
     # CONTROL: identical tree, non-slim label -> the leak check must not fire, because a 4-core VM legitimately reports 4 cores.
     control = harness.run(
-        ["bash", str(SAMPLER), "--out", str(tmp_path / "ok.tsv"), "--interval", "1"],
+        ["python3", str(SAMPLER), "--out", str(tmp_path / "ok.tsv"), "--interval", "1"],
         env={
             "PROFILER_CGROUP_ROOT": str(cgroup),
             "PROFILER_RUNNER_LABEL": "ubuntu-latest",
@@ -498,7 +499,7 @@ def test_sampler_produces_a_real_profile(gate, tmp_path):
         gate.log_fail("sampler not found at %s" % paths.relative_to_root(SAMPLER))
     sample = tmp_path / "s.tsv"
     run = harness.run(
-        ["bash", str(SAMPLER), "--out", str(sample), "--interval", "1"],
+        ["python3", str(SAMPLER), "--out", str(sample), "--interval", "1"],
         env={"PROFILER_RUNNER_LABEL": "selftest", "PROFILER_MAX_SECONDS": "6"},
         timeout=40,
     )
@@ -547,7 +548,7 @@ def test_sampler_reads_a_real_containers_ceiling(gate, tmp_path):
     if live_mem:
         native = tmp_path / "native.tsv"
         run = harness.run(
-            ["bash", str(SAMPLER), "--out", str(native), "--interval", "1"],
+            ["python3", str(SAMPLER), "--out", str(native), "--interval", "1"],
             env={"PROFILER_RUNNER_LABEL": "selftest", "PROFILER_MAX_SECONDS": "3"},
             timeout=40,
         )
@@ -589,9 +590,9 @@ def test_sampler_reads_a_real_containers_ceiling(gate, tmp_path):
         )
         return
     script = (
-        "apk add --no-cache bash coreutils >/dev/null 2>&1;\n"
+        "apk add --no-cache python3 coreutils >/dev/null 2>&1;\n"
         "PROFILER_RUNNER_LABEL=ubuntu-slim PROFILER_MAX_SECONDS=3 "
-        "bash /p/sampler-linux.sh --out /w/c.tsv --interval 1 2>&1;\n"
+        "python3 /p/profiler_sampler_linux.py --out /w/c.tsv --interval 1 2>&1;\n"
         "head -1 /w/c.tsv;\n"
         # The container runs as root, so without this `c.tsv` lands in `tmp_path` owned by root. Hand `/w` back to the invoking user so the file is as removable as the rest of the tree; `head` already printed what the parse below reads.
         'chown -R "$HOST_UID:$HOST_GID" /w'

@@ -21,6 +21,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.release import reprobe_r2_sentinel as port
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import pathmask
 from rediacc_ci.well_known import RELEASES_BUCKET as WK_RELEASES_BUCKET
 
@@ -28,7 +29,8 @@ if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "release" / "reprobe-r2-sentinel.sh"
+TWIN_REL = ".ci/scripts/release/reprobe-r2-sentinel.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "release" / "reprobe_r2_sentinel.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -121,7 +123,13 @@ def _run(
 
 
 def run_both(tmp_path: pathlib.Path, **kw) -> tuple[tuple, tuple]:
-    return _run(tmp_path, "old", **kw), _run(tmp_path, "new", **kw)
+    old = diff.twin_tuple(
+        TWIN_REL,
+        [repr(sorted(kw.items()))],
+        lambda: _run(tmp_path, "old", **kw),
+        work=(tmp_path,),
+    )
+    return old, _run(tmp_path, "new", **kw)
 
 
 def _demark(text: str) -> str:
@@ -166,7 +174,6 @@ def test_the_fake_aws_shadows_any_real_one(tmp_path: pathlib.Path) -> None:
 
 
 def test_both_subjects_exist() -> None:
-    assert TWIN.is_file(), "the bash twin moved: %s" % TWIN
     assert PORT.is_file(), "the port moved: %s" % PORT
 
 
@@ -342,13 +349,9 @@ def test_an_empty_variable_refuses_like_an_unset_one(tmp_path: pathlib.Path) -> 
 def test_the_product_list_is_still_one_element_on_both_sides() -> None:
     """`cli` is the only product with `.released` sentinels today.
 
-    Pinned on BOTH sides, so adding a product to one and not the other is a red test rather than a silently half-probed release.
+    The twin's `for product in cli; do` is frozen in its golden (the bash was retired by PLAN-retire-bash-oracles B3), so the port is now the only place a second product can be added, and this pin makes that a deliberate edit.
     """
     assert port.PRODUCTS == ("cli",)
-    text = TWIN.read_text(encoding="utf-8")
-    assert "for product in cli; do" in text, (
-        "the twin's product loop changed; re-derive PRODUCTS in the port"
-    )
 
 
 def test_the_harness_actually_compared_something(tmp_path: pathlib.Path) -> None:

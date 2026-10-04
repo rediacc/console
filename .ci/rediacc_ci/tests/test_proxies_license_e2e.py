@@ -17,6 +17,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.proxies import license_e2e
+from rediacc_ci.tests import differential as diff
 
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/test/proxies/proxy-license-e2e.sh"
@@ -37,8 +38,13 @@ def _real_tree_env() -> dict[str, str]:
 
 def test_selftest_is_byte_identical() -> None:
     kwargs = {"env": _real_tree_env(), "cwd": str(ROOT), "capture_output": True, "text": True}
-    old = subprocess.run(  # type: ignore[call-overload]
-        ["bash", str(TWIN), "--selftest"], timeout=180, check=False, **kwargs
+    old = diff.twin_result(
+        TWIN_REL,
+        [repr(["bash", str(TWIN), "--selftest"])],
+        lambda: subprocess.run(  # type: ignore[call-overload]
+            ["bash", str(TWIN), "--selftest"], timeout=180, check=False, **kwargs
+        ),
+        work=(),
     )
     new = subprocess.run(  # type: ignore[call-overload]
         ["python3", "-m", PORT_MODULE, "--selftest"], timeout=180, check=False, **kwargs
@@ -76,19 +82,15 @@ def test_selftest_is_byte_identical() -> None:
 REAL_TREE_TIMEOUT_S = 600
 
 
-def test_real_tree_agrees_byte_for_byte() -> None:
+def test_real_tree_passes_through_the_port() -> None:
     kwargs = {"env": _real_tree_env(), "cwd": str(ROOT), "capture_output": True, "text": True}
-    old = subprocess.run(  # type: ignore[call-overload]
-        ["bash", str(TWIN)], timeout=REAL_TREE_TIMEOUT_S, check=False, **kwargs
-    )
-    if old.returncode == 77:
-        pytest.skip(f"the twin reports cannot-run here: {old.stderr.strip()[:200]}")
     new = subprocess.run(  # type: ignore[call-overload]
         ["python3", "-m", PORT_MODULE], timeout=REAL_TREE_TIMEOUT_S, check=False, **kwargs
     )
-    assert old.returncode == 0, old.stderr
-    assert "5 check(s) passed, 6 requirement(s) present" in old.stdout
-    assert (new.returncode, new.stdout, new.stderr) == (old.returncode, old.stdout, old.stderr)
+    if new.returncode == 77:
+        pytest.skip(f"the port reports cannot-run here: {new.stderr.strip()[:200]}")
+    assert new.returncode == 0, new.stderr
+    assert "5 check(s) passed, 6 requirement(s) present" in new.stdout
 
 
 # --------------------------------------------------------------------------- The pure counting helper, against synthetic text -- no subprocess at all ---------------------------------------------------------------------------

@@ -1,0 +1,12 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 10, "source": "bash", "twin": ".ci/scripts/deploy/promote-r2-to-stable.sh", "twin_blob": "0915212d6c56a5d639bfe911e46e8cca39092cfd"}}
+{"_silent": []}
+{"_key": "test_a_missing_aws_refuses_before_the_variable_guards#90155f47f67166fa", "err": "\u2717 Required command 'aws' is not available\n", "out": "", "rc": "1"}
+{"_key": "test_a_missing_aws_refuses_before_the_variable_guards#90155f47f67166fa|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
+{"_key": "test_each_required_variable_refuses_as_the_twin_does[AWS_ACCESS_KEY_ID]#af1b20cffae8382f", "err": "<REPO>/.ci/scripts/deploy/promote-r2-to-stable.sh: line 58: AWS_ACCESS_KEY_ID: promote-r2-to-stable.sh: AWS_ACCESS_KEY_ID must be set\n", "out": "", "rc": "1"}
+{"_key": "test_each_required_variable_refuses_as_the_twin_does[AWS_ACCESS_KEY_ID]#af1b20cffae8382f|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
+{"_key": "test_each_required_variable_refuses_as_the_twin_does[AWS_SECRET_ACCESS_KEY]#7116246de12eac29", "err": "<REPO>/.ci/scripts/deploy/promote-r2-to-stable.sh: line 59: AWS_SECRET_ACCESS_KEY: promote-r2-to-stable.sh: AWS_SECRET_ACCESS_KEY must be set\n", "out": "", "rc": "1"}
+{"_key": "test_each_required_variable_refuses_as_the_twin_does[AWS_SECRET_ACCESS_KEY]#7116246de12eac29|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
+{"_key": "test_each_required_variable_refuses_as_the_twin_does[CLOUDFLARE_R2_ENDPOINT]#0bae7e6420c048a4", "err": "<REPO>/.ci/scripts/deploy/promote-r2-to-stable.sh: line 60: CLOUDFLARE_R2_ENDPOINT: promote-r2-to-stable.sh: CLOUDFLARE_R2_ENDPOINT must be set\n", "out": "", "rc": "1"}
+{"_key": "test_each_required_variable_refuses_as_the_twin_does[CLOUDFLARE_R2_ENDPOINT]#0bae7e6420c048a4|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
+{"_key": "test_each_required_variable_refuses_as_the_twin_does[EDGE_VERSION]#21baa1d4dfb244ab", "err": "<REPO>/.ci/scripts/deploy/promote-r2-to-stable.sh: line 61: EDGE_VERSION: promote-r2-to-stable.sh: EDGE_VERSION must be set\n", "out": "", "rc": "1"}
+{"_key": "test_each_required_variable_refuses_as_the_twin_does[EDGE_VERSION]#21baa1d4dfb244ab|more", "err": "", "out": "[\"proc\"]", "rc": "0"}

@@ -20,6 +20,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.proxies import linux_packages
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -102,8 +103,11 @@ def build_fixture(
     for rel in FIXTURE_FILES:
         dst = fixture / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
+        if not (ROOT / rel).exists():
+            continue  # the retired twin and its library: only a recording run copies them
         dst.write_bytes((ROOT / rel).read_bytes())
-    (fixture / TWIN_REL).chmod(0o755)
+    if (fixture / TWIN_REL).exists():
+        (fixture / TWIN_REL).chmod(0o755)
     if port_source is not None:
         (fixture / PORT_REL).write_text(port_source, encoding="utf-8")
     subj = fixture / ".ci" / "scripts" / "test" / "test-linux-packages.sh"
@@ -133,8 +137,13 @@ def run_both(
 ) -> tuple[subprocess.CompletedProcess[str], subprocess.CompletedProcess[str]]:
     env = _env(fixture, path)
     kwargs = {"env": env, "cwd": str(fixture), "capture_output": True, "text": True}
-    old = subprocess.run(  # type: ignore[call-overload]
-        ["bash", str(fixture / TWIN_REL), *args], timeout=300, check=False, **kwargs
+    old = diff.twin_result(
+        TWIN_REL,
+        [repr(["bash", str(fixture / TWIN_REL), *args])],
+        lambda: subprocess.run(  # type: ignore[call-overload]
+            ["bash", str(fixture / TWIN_REL), *args], timeout=300, check=False, **kwargs
+        ),
+        work=(fixture.parent,),
     )
     new = subprocess.run(  # type: ignore[call-overload]
         ["python3", "-m", PORT_MODULE, *args], timeout=300, check=False, **kwargs
@@ -204,8 +213,13 @@ def _real_tree_env() -> dict[str, str]:
 
 def test_selftest_is_byte_identical() -> None:
     kwargs = {"env": _real_tree_env(), "cwd": str(ROOT), "capture_output": True, "text": True}
-    old = subprocess.run(  # type: ignore[call-overload]
-        ["bash", str(TWIN), "--selftest"], timeout=180, check=False, **kwargs
+    old = diff.twin_result(
+        TWIN_REL,
+        [repr(["bash", str(TWIN), "--selftest"])],
+        lambda: subprocess.run(  # type: ignore[call-overload]
+            ["bash", str(TWIN), "--selftest"], timeout=180, check=False, **kwargs
+        ),
+        work=(),
     )
     new = subprocess.run(  # type: ignore[call-overload]
         ["python3", "-m", PORT_MODULE, "--selftest"], timeout=180, check=False, **kwargs
@@ -215,19 +229,15 @@ def test_selftest_is_byte_identical() -> None:
     assert (new.returncode, new.stdout, new.stderr) == (old.returncode, old.stdout, old.stderr)
 
 
-def test_real_tree_agrees_byte_for_byte() -> None:
-    """The only case that really builds packages, and it builds them twice."""
+def test_real_tree_passes_through_the_port() -> None:
+    """The only case that really builds packages. The bash twin it was compared with is retired (PLAN-retire-bash-oracles B3)."""
     kwargs = {"env": _real_tree_env(), "cwd": str(ROOT), "capture_output": True, "text": True}
-    old = subprocess.run(  # type: ignore[call-overload]
-        ["bash", str(TWIN)], timeout=600, check=False, **kwargs
-    )
     new = subprocess.run(  # type: ignore[call-overload]
         ["python3", "-m", PORT_MODULE], timeout=600, check=False, **kwargs
     )
-    assert old.returncode == 0, old.stderr
-    assert "4 check(s) passed, 6 requirement(s) present" in old.stdout
-    assert "subtests really executed" in old.stdout
-    assert (new.returncode, new.stdout, new.stderr) == (old.returncode, old.stdout, old.stderr)
+    assert new.returncode == 0, new.stderr
+    assert "4 check(s) passed, 6 requirement(s) present" in new.stdout
+    assert "subtests really executed" in new.stdout
 
 
 # --------------------------------------------------------------------------- Fixture cases: no packaging, no network ---------------------------------------------------------------------------

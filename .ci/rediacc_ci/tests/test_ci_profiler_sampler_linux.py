@@ -37,7 +37,6 @@ from __future__ import annotations
 
 import hashlib
 import os
-import re
 import shutil
 import signal
 import subprocess
@@ -48,6 +47,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.ci import profiler_sampler_linux as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:  # pragma: no cover - annotations only
     import pathlib
@@ -74,7 +74,26 @@ def argv_for(side: str, script: pathlib.Path | None = None) -> list[str]:
     return ["python3", str(script or PORT)]
 
 
-def run(
+def run(side: str, args: list[str], **kw):
+    """One side. The twin's streams and the files it writes (`--out`, `$GITHUB_STEP_SUMMARY`) come from its golden (PLAN-retire-bash-oracles B3); `script` names a planted PORT copy, never a twin."""
+    if side != "old":
+        return _run_live(side, args, **kw)
+    files = []
+    if "--out" in args and args.index("--out") + 1 < len(args):
+        files.append(args[args.index("--out") + 1])
+    env = kw.get("env") or {}
+    if env.get("GITHUB_STEP_SUMMARY"):
+        files.append(env["GITHUB_STEP_SUMMARY"])
+    return diff.twin_tuple(
+        TWIN_REL,
+        [repr(args), repr(sorted(env.items()))],
+        lambda: _run_live(side, args, **kw),
+        files=files,
+        work=diff.pytest_tmp_roots(*args, *env.values()),
+    )
+
+
+def _run_live(
     side: str,
     args: list[str],
     *,
@@ -110,20 +129,6 @@ def assert_same(old: tuple[int, str, str], new: tuple[int, str, str]) -> None:
 
 
 # --------------------------------------------------------------------------- Layer 1: --help is a slice of the file's own source ---------------------------------------------------------------------------
-
-
-def _slice_2_40(path: pathlib.Path) -> str:
-    """`sed -n '2,40p' <file> | sed 's/^# \\?//'`, in Python."""
-    lines = path.read_text(encoding="utf-8").split("\n")
-    return "\n".join(re.sub(r"^# ?", "", line) for line in lines[1:40])
-
-
-def test_the_carried_header_block_is_byte_identical() -> None:
-    """The port's HELP_TEXT IS the twin's lines 2-40, prefix stripped.
-
-    This is the transcription check. If the twin's header is edited and the port is not, `--help` starts lying about the flags it accepts, and nothing else in this file would notice.
-    """
-    assert _slice_2_40(TWIN) + "\n" == port.HELP_TEXT
 
 
 def test_help_is_byte_identical() -> None:
@@ -711,40 +716,29 @@ def test_sigterm_latency_matches_the_twin(tmp_path: pathlib.Path) -> None:
     THIS TEST EXISTS BECAUSE THE FIRST VERSION OF THE PORT GOT IT BACKWARDS. It used `signal.set_wakeup_fd` to make `select` return the instant a SIGTERM arrived, on the assumption that bash's `read -t` does the same. Measured at `--interval 5` with the signal 1.2s in: twin 3.80s, port 0.043s. bash waits out the remaining interval. That is not cosmetic -- the production stopper
     (`.github/actions/profiler/index.js:148-166`) SIGTERMs, waits, then SIGKILLs and annotates the panel with "the sampler had to be SIGKILLed", so a faster port would silently change which note a job's panel carries.
 
-    The assertion is a RELATIVE one against the twin measured in the same run, not an absolute number, because the absolute is a property of the machine.
+    The twin it was measured against is retired (PLAN-retire-bash-oracles B3), so the port is held to what the twin measured: it waits out most of the remaining interval, and it does not overrun it.
     """
     cg = _cgroup_v2(tmp_path)
     interval = 5
     delay = 1.0
-    latency = {}
-    for side in ("old", "new"):
-        proc = subprocess.Popen(
-            [
-                *argv_for(side),
-                "--out",
-                str(tmp_path / ("t-%s.tsv" % side)),
-                "--interval",
-                str(interval),
-            ],
-            env={**BASE_ENV, "PROFILER_CGROUP_ROOT": str(cg), "PROFILER_RUNNER_LABEL": "x"},
-            cwd=str(ROOT),
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        time.sleep(delay)
-        start = time.monotonic()
-        proc.send_signal(signal.SIGTERM)
-        assert proc.wait(timeout=interval + 20) == 0
-        latency[side] = time.monotonic() - start
+    proc = subprocess.Popen(
+        [*argv_for("new"), "--out", str(tmp_path / "t-new.tsv"), "--interval", str(interval)],
+        env={**BASE_ENV, "PROFILER_CGROUP_ROOT": str(cg), "PROFILER_RUNNER_LABEL": "x"},
+        cwd=str(ROOT),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    time.sleep(delay)
+    start = time.monotonic()
+    proc.send_signal(signal.SIGTERM)
+    assert proc.wait(timeout=interval + 20) == 0
+    latency = time.monotonic() - start
 
     expected = interval - delay
-    assert latency["old"] > expected * 0.5, (
-        "the twin died in %.2fs; it is supposed to wait out the interval" % latency["old"]
+    assert latency > expected * 0.5, (
+        "the port died in %.2fs; it is supposed to wait out the interval" % latency
     )
-    assert abs(latency["new"] - latency["old"]) < 1.5, (
-        "SIGTERM latency: twin %.2fs, port %.2fs -- the port must not die sooner"
-        % (latency["old"], latency["new"])
-    )
+    assert latency < expected + 1.5, "the port overran the interval: %.2fs" % latency
 
 
 # --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------

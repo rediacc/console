@@ -105,8 +105,11 @@ def build_fixture(
     for rel in FIXTURE_FILES:
         dst = fixture / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
+        if not (ROOT / rel).exists():
+            continue  # the retired twin and its library: only a recording run copies them
         dst.write_bytes((ROOT / rel).read_bytes())
-    (fixture / TWIN_REL).chmod(0o755)
+    if (fixture / TWIN_REL).exists():
+        (fixture / TWIN_REL).chmod(0o755)
     if port_source is not None:
         (fixture / ".ci/rediacc_ci/proxies/ensure_nfpm.py").write_text(
             port_source, encoding="utf-8"
@@ -140,8 +143,13 @@ def run_both(
 ) -> tuple[subprocess.CompletedProcess[str], subprocess.CompletedProcess[str]]:
     env = _env(fixture)
     kwargs = {"env": env, "cwd": str(fixture), "capture_output": True, "text": True}
-    old = subprocess.run(  # type: ignore[call-overload]
-        ["bash", str(fixture / TWIN_REL), *args], timeout=300, check=False, **kwargs
+    old = diff.twin_result(
+        TWIN_REL,
+        [repr(["bash", str(fixture / TWIN_REL), *args])],
+        lambda: subprocess.run(  # type: ignore[call-overload]
+            ["bash", str(fixture / TWIN_REL), *args], timeout=300, check=False, **kwargs
+        ),
+        work=(fixture.parent,),
     )
     # The subject caches into the FIXTURE root, so a second run would take the warm branch. Both sides must start from the same cold state.
     shutil.rmtree(fixture / ".ci" / "cache", ignore_errors=True)
@@ -177,8 +185,13 @@ def test_selftest_is_byte_identical() -> None:
         "PYTHONDONTWRITEBYTECODE": "1",
     }
     kwargs = {"env": env, "cwd": str(ROOT), "capture_output": True, "text": True}
-    old = subprocess.run(  # type: ignore[call-overload]
-        ["bash", str(TWIN), "--selftest"], timeout=180, check=False, **kwargs
+    old = diff.twin_result(
+        TWIN_REL,
+        [repr(["bash", str(TWIN), "--selftest"])],
+        lambda: subprocess.run(  # type: ignore[call-overload]
+            ["bash", str(TWIN), "--selftest"], timeout=180, check=False, **kwargs
+        ),
+        work=(),
     )
     new = subprocess.run(  # type: ignore[call-overload]
         ["python3", "-m", PORT_MODULE, "--selftest"], timeout=180, check=False, **kwargs
@@ -188,8 +201,8 @@ def test_selftest_is_byte_identical() -> None:
     assert (new.returncode, new.stdout, new.stderr) == (old.returncode, old.stdout, old.stderr)
 
 
-def test_real_tree_agrees_byte_for_byte() -> None:
-    """The only case that fetches the pinned tarball, and it fetches it twice.
+def test_real_tree_passes_through_the_port() -> None:
+    """The only case that fetches the pinned tarball. The bash twin it was compared with is retired (PLAN-retire-bash-oracles B3).
 
     Both sides build their own throwaway fixture root with a COLD cache, so neither can be satisfied by this checkout's warm `.ci/cache/bin/nfpm`.
     """
@@ -203,15 +216,11 @@ def test_real_tree_agrees_byte_for_byte() -> None:
         "PYTHONDONTWRITEBYTECODE": "1",
     }
     kwargs = {"env": env, "cwd": str(ROOT), "capture_output": True, "text": True}
-    old = subprocess.run(  # type: ignore[call-overload]
-        ["bash", str(TWIN)], timeout=300, check=False, **kwargs
-    )
     new = subprocess.run(  # type: ignore[call-overload]
         ["python3", "-m", PORT_MODULE], timeout=300, check=False, **kwargs
     )
-    assert old.returncode == 0, old.stderr
-    assert "9 check(s) passed, 7 requirement(s) present" in old.stdout
-    assert (new.returncode, new.stdout, new.stderr) == (old.returncode, old.stdout, old.stderr)
+    assert new.returncode == 0, new.stderr
+    assert "9 check(s) passed, 7 requirement(s) present" in new.stdout
 
 
 # --------------------------------------------------------------------------- The fixture cases, none of which touch the network ---------------------------------------------------------------------------
@@ -297,15 +306,6 @@ def test_the_set_e_toggle_really_enables_errexit() -> None:
     )
     assert without.returncode == 0
     assert without.stdout == "REACHED\n"
-
-
-def test_the_twin_still_carries_the_toggle_and_the_ungated_pipeline() -> None:
-    text = TWIN.read_text(encoding="utf-8")
-    assert "\nset -uo pipefail\n" in text
-    assert "\nset -e\n" not in text.split("set -uo pipefail")[0]
-    assert text.count("\nset +e\n") == 3
-    assert text.count("\nset -e\n") == 3
-    assert 'GOT_VERSION="$("$PRINTED_DIR/nfpm" --version 2>&1 | grep -oE' in text
 
 
 def test_a_version_with_no_semver_token_kills_both_sides(tmp_path: pathlib.Path) -> None:

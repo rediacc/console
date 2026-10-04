@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import ast
 import os
-import re
 import shutil
 import subprocess
 import typing
@@ -25,6 +24,7 @@ from rediacc_ci import paths
 from rediacc_ci.deploy import promote_r2_to_stable as port
 from rediacc_ci.deploy import r2_promote
 from rediacc_ci.quality import python_env_registry
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import r2_promote_fake as fake
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
@@ -32,7 +32,8 @@ if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "deploy" / "promote-r2-to-stable.sh"
+TWIN_REL = ".ci/scripts/deploy/promote-r2-to-stable.sh"
+TWIN = ROOT / TWIN_REL
 PURGE = ROOT / ".ci" / "scripts" / "deploy" / "cf-purge-urls.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "promote_r2_to_stable.py"
 MODULE = "rediacc_ci.deploy.promote_r2_to_stable"
@@ -442,7 +443,19 @@ def test_no_cloudflare_credential_warns_and_still_exits_zero(tmp_path) -> None:
     assert fake.curl_calls(records) == 0
 
 
-def _twin(root: pathlib.Path, drop_env: tuple[str, ...] = (), drop: str = "", **extra: str):
+def _twin(*args, **kw):
+    """One side. The twin's answer comes from its golden (PLAN-retire-bash-oracles B3); `_twin_live` is how it was recorded."""
+    if True:
+        return diff.twin_result(
+            TWIN_REL,
+            [repr(args), repr(sorted(kw.items()))],
+            lambda: _twin_live(*args, **kw),
+            work=diff.twin_work(args, kw),
+        )
+    return _twin_live(*args, **kw)
+
+
+def _twin_live(root: pathlib.Path, drop_env: tuple[str, ...] = (), drop: str = "", **extra: str):
     env = {"PATH": fake.stub_bin(root, drop=drop), "HOME": HOME, "LC_ALL": "C.UTF-8", **BASE_ENV}
     env["FAKE_CALL_LOG"] = str(root / "twin-calls.jsonl")
     env["FAKE_S3_ROOT"] = str(root / "s3")
@@ -530,15 +543,6 @@ def test_the_phase_one_excludes_are_the_twins_list_in_the_twins_order() -> None:
         "versions.json",
     ]
     assert set(port.META_EXCLUDES[0::2]) == {"--exclude"}
-
-
-def test_the_twins_phase_one_array_is_the_ports_list() -> None:
-    """The twin still runs for the refusal-parity cases, so its array must not keep the bare patterns the port fixed (#62a2846b)."""
-    text = TWIN.read_text(encoding="utf-8")
-    body = text.split("META_EXCLUDES=(", 1)[1].split("\n    )", 1)[0]
-    lines = [line.split("#", 1)[0] for line in body.splitlines()]
-    words = re.findall(r"(--exclude) '([^']*)'", "\n".join(lines))
-    assert tuple(w for pair in words for w in pair) == port.META_EXCLUDES
 
 
 def test_the_rewrite_table_names_the_four_pointers() -> None:

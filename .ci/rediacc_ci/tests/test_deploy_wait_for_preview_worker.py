@@ -107,7 +107,11 @@ def probe(mode: str, **env_extra: str) -> tuple[int, str, str]:
     try:
         url = f"http://127.0.0.1:{server.server_address[1]}"
         env = diff.env_for(PREVIEW_URL_OVERRIDE=url, **_BUDGET, **env_extra)
-        return diff.bash_streams("bash %s" % TWIN, env=env, timeout=30)
+        return diff.twin_call(
+            TWIN,
+            [mode, repr(sorted(env_extra.items()))],
+            lambda: diff.bash_streams("bash %s" % TWIN, env=env, timeout=30),
+        )
     finally:
         _stop_stub(server, thread)
 
@@ -177,7 +181,12 @@ def test_override_needs_no_pr_number(tmp_path: pathlib.Path) -> None:
     try:
         url = f"http://127.0.0.1:{server.server_address[1]}"
         old_env = diff.env_for(PREVIEW_URL_OVERRIDE=url, **_BUDGET, PR_NUMBER=None)
-        old = diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30)
+        old = diff.twin_call(
+            TWIN,
+            ["bash"],
+            lambda: diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30),
+            work=(),
+        )
     finally:
         _stop_stub(server, thread)
     server, thread = _start_stub("steady")
@@ -203,7 +212,12 @@ def test_pr_number_still_required_without_override_reworded() -> None:
     new_env = diff.env_for(
         PR_NUMBER=None, PREVIEW_URL_OVERRIDE=None, PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1"
     )
-    old = diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30)
+    old = diff.twin_call(
+        TWIN,
+        ["bash"],
+        lambda: diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30),
+        work=(),
+    )
     new = diff.bash_streams("python3 -m rediacc_ci.deploy.%s" % MODULE, env=new_env, timeout=30)
     assert old[0] == 1
     assert new[0] == 1
@@ -213,17 +227,12 @@ def test_pr_number_still_required_without_override_reworded() -> None:
 
 def test_ci_defaults_are_still_strict() -> None:
     """The knobs are test-only; if the DEFAULTS drift apart, CI silently changes behaviour and every case above would still pass because they all set their own values."""
-    twin_src = diff.repo()
-
-    bash_src = (pathlib.Path(twin_src) / TWIN).read_text(encoding="utf-8")
+    # The twin's defaults (`${REQUIRED_STREAK:-3}`, `${MAX_ATTEMPTS:-60}`, `${PROBE_INTERVAL_SECONDS:-2}`) were read off its source here until PLAN-retire-bash-oracles B3 retired it; the port is now the only copy, so its three defaults are pinned literally.
     py_src = (
-        pathlib.Path(twin_src) / ".ci" / "rediacc_ci" / "deploy" / "wait_for_preview_worker.py"
+        pathlib.Path(diff.repo()) / ".ci" / "rediacc_ci" / "deploy" / "wait_for_preview_worker.py"
     ).read_text(encoding="utf-8")
-    assert 'REQUIRED_STREAK="${REQUIRED_STREAK:-3}"' in bash_src
     assert 'REQUIRED_STREAK", "3"' in py_src
-    assert 'MAX_ATTEMPTS="${MAX_ATTEMPTS:-60}"' in bash_src
     assert 'MAX_ATTEMPTS", "60"' in py_src
-    assert 'PROBE_INTERVAL_SECONDS="${PROBE_INTERVAL_SECONDS:-2}"' in bash_src
     assert 'PROBE_INTERVAL_SECONDS", "2"' in py_src
 
 

@@ -1,0 +1,7 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 5, "source": "bash", "twin": ".ci/scripts/release/check-existing-release.sh", "twin_blob": "c1f2c456f05357e6a3e50ee718b8804af93d3b93"}}
+{"_silent": []}
+{"_key": "test_a_fetch_that_fails_exits_clean_on_both_sides#37d2b12d5d9abc2a", "err": "fatal: '<WORK0>/does-not-exist.git' does not appear to be a git repository\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.\n", "out": "", "rc": "128"}
+{"_key": "test_a_genuinely_new_version_is_available_on_both_sides#37d2b12d5d9abc2a", "err": "", "out": "Version v1.2.3 is available for publishing.\n", "rc": "0"}
+{"_key": "test_an_existing_github_release_is_refused_on_both_sides#37d2b12d5d9abc2a", "err": "", "out": "::error::Release v1.2.3 already exists. Aborting to prevent duplicate publish.\n", "rc": "1"}
+{"_key": "test_an_existing_tag_is_refused_on_both_sides#37d2b12d5d9abc2a", "err": "", "out": "::error::Git tag v1.2.3 already exists. Aborting to prevent duplicate publish.\n", "rc": "1"}
+{"_key": "test_missing_version_fails_the_same_way_reworded#37d2b12d5d9abc2a", "err": "<REPO>/.ci/scripts/release/check-existing-release.sh: line 32: VERSION: check-existing-release.sh: VERSION must be set\n", "out": "", "rc": "1"}

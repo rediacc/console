@@ -65,7 +65,7 @@ runs:
     # caller's `runs-on`, and there is no RUNNER_LABEL in the runner's
     # environment to fall back on. index.js resolves the absent input to
     # 'unknown', which records the tier and the sample series exactly as before
-    # and only leaves HOST_LEAK unarmed (sampler-linux.sh:251-254 arms it off a
+    # and only leaves HOST_LEAK unarmed (profiler_sampler_linux.py arms it off a
     # '*slim*' label). That is the honest trade for one line here instead of a
     # `runner-label:` threaded through 26 jobs, and on a cgroup tier the
     # enforced quota already substitutes for the label.

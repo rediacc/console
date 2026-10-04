@@ -1,5 +1,7 @@
 """Port of `.ci/scripts/test/gates/test-mark-production.sh`, retired in W7 P5.
 
+The subject is `rediacc_ci.release.mark_production`, the port of the retired `.ci/scripts/release/mark-production.sh` (PLAN-retire-bash-oracles B3); the bash's answers are frozen in `goldens/twins/release.mark-production.jsonl`.
+
 The production marker must refuse to lie about what is live.
 
 WHY THIS EXISTS. `production` is a moving tag and `--latest` is the badge a human reads as "what is in production". Both are claims about reality, so the script that writes them has exactly one job beyond writing: refusing when it cannot confirm the claim.
@@ -14,16 +16,17 @@ WHAT THIS CANNOT SEE: it does not prove promote-stable.yml actually RUNS the scr
 import os
 import pathlib
 import stat
+import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 from rediacc_ci.well_known import GH_REPO
 
-SUT = paths.from_root(".ci", "scripts", "release", "mark-production.sh")
+SUT = paths.from_root(".ci", "rediacc_ci", "release", "mark_production.py")
 
 # The two anchors the CONTROL cuts between. Named at module level because the control's whole value is that it fails LOUDLY when they move, rather than performing a no-op excision and reporting that the guard is not what refuses.
-GUARD_START = 'if ! out="$(gh release view'
-GUARD_END = 'log_info "mark-production: $VERSION is a published release"'
+GUARD_START = '    rc, text = _capture_merged(["release", "view", version, "--json", "tagName"])'
+GUARD_END = '    out.info("mark-production: %s is a published release" % version)'
 
 MALFORMED = ("", "1.3", "v1.3.1-rc1", "latest", "v1.3.1; rm -rf /")
 
@@ -78,10 +81,12 @@ def make_gh(workdir: pathlib.Path, mode: str) -> pathlib.Path:
 def run_sut(workdir: pathlib.Path, mode: str, version: str, script: pathlib.Path = SUT) -> int:
     bindir = make_gh(workdir, mode)
     return harness.run(
-        ["bash", str(script), version],
+        [sys.executable, str(script), version],
         env={
             "PATH": "%s:%s" % (bindir, os.environ.get("PATH", "")),
             "GITHUB_REPOSITORY": GH_REPO,
+            "PYTHONPATH": str(paths.from_root(".ci")),
+            "PYTHONDONTWRITEBYTECODE": "1",
         },
     ).rc
 
@@ -162,10 +167,10 @@ def test_control_the_guard_can_be_removed(gate, tmp_path):
         if anchor not in body:
             gate.log_fail(
                 "CONTROL could not plant its defect: the anchor %r is gone from "
-                "mark-production.sh, so nothing would be excised and the refusals "
+                "mark_production.py, so nothing would be excised and the refusals "
                 "above would not be shown to depend on the release check" % anchor
             )
-    mutant = tmp_path / "mut.sh"
+    mutant = tmp_path / "mut.py"
     mutant.write_text(
         body[: body.index(GUARD_START)] + body[body.index(GUARD_END) :], encoding="utf-8"
     )

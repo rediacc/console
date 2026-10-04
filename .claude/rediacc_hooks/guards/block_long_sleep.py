@@ -26,15 +26,7 @@ The duration is read the way `sleep` reads it: every operand is summed, each wit
 
 RE-CONFIRMED 2026-08-27. Nine sibling guards were routed through lib/command-scan.sh that day to stop them matching prose, and this one was routed with them. The suite case pinning the 2026-08-25 ruling turned red and reverted it: the shared scanner drops heredoc bodies, which is the option the ruling names as the most tempting and the worst. The pin worked as designed.
 
-PORT NOTE ON THE COMPARISON, and the transliteration OUTLIVED the bug it faithfully copied. `[[ "$SLEEP_VAL" -gt "$LIMIT" ]]` was bash ARITHMETIC, so a value with a leading zero was read as OCTAL: `024` was twenty, not twenty-four, and the command was allowed even though `sleep` itself waits twenty-four seconds. `08` and `09` are not valid octal at all, so bash printed `[[: 08:
-value too great for base` on stderr and the test evaluated false -- the guard both complained and permitted.
-
-This port reproduced all of that, correctly, because a port's job is to answer what its twin answers. THE TWIN WAS THEN FIXED (2026-09-06): it forces base ten
-with `10#`, so `024` now blocks and `08` is allowed silently. Faithfulness is to
-the twin as it IS, so `_arith` was changed with it, in the same breath. Keeping the octal reading here would have turned a shared bug into a divergence and the differential would have caught it -- which is the differential working.
-
-"AND NO CASE HERE PROVOKES IT" WAS THE WRONG ANSWER, corrected here after the divergence was found by hand rather than by the suite. A port that differs from its twin on an input the corpus never carries is a difference nothing reports, which is exactly the class this whole workstream is built against. So the input is DECLARED in `KNOWN_DIVERGENCES` below: the harness runs it,
-requires the exit code and stdout to match, and requires stderr to keep differing -- so the declaration cannot rot into an excuse for a match.
+A LEADING ZERO IS DECIMAL. `024` is twenty-four seconds, which is how `sleep` itself reads it, so it is judged against the cap as twenty-four. (The bash this guard replaced first read it as octal; PLAN-retire-bash-oracles A4 dropped the note that carried that history once no twin was left to agree with.)
 """
 
 import math
@@ -77,8 +69,8 @@ EDGE_CASES = [
         "a background sleep over the background cap",
         {"tool_input": {"command": "sleep 300", "run_in_background": True}},
     ),
-    # The leading zero the PORT NOTE is about: bash reads this as twenty.
-    ("a leading zero is read as octal", "sleep 024"),
+    # A leading zero is decimal: twenty-four seconds, as `sleep` reads it.
+    ("a leading zero is decimal, as sleep reads it", "sleep 024"),
     ("no sleep at all", "gh run view 123"),
     # A tab separates words for bash, so since the command-position reading this IS a 45-second sleep.
     ("a tab between sleep and its argument is a sleep", "sleep\t45"),
@@ -88,18 +80,9 @@ EDGE_CASES = [
     ("a heredoc body is still scanned", "git commit -F - <<'M'\nwhich sleep 600 s\nM"),
 ]
 
-# NO DECLARED DIVERGENCES, and the one that used to be here is worth recording as an absence. It was `sleep 08`: not valid octal, so the twin wrote a bash arithmetic error naming its own file and line number and then evaluated FALSE, permitting the command. The port agreed on the decision and said nothing, so the stderr difference was declared rather than faked -- emitting a path
-# and a line number belonging to the file being replaced is a fabrication, not a transliteration.
-#
-# The twin was fixed on 2026-09-06 to force base ten. It no longer errors, both sides now allow `08` silently, and the divergence dissolved rather than being waived. An empty list is the honest state; the harness still asserts it, so a new divergence cannot arrive unannounced.
-KNOWN_DIVERGENCES = []
-
 
 def _arith(value):
-    """The twin's `$(( 10#value ))`: base ten, leading zeros and all.
-
-    This used to emulate bash's OCTAL reading of a leading zero, because that is what the twin did. The twin was fixed on 2026-09-06 to force base ten, so this follows it. `08` and `09` are ordinary numbers now on both sides, and neither implementation writes an arithmetic error.
-    """
+    """An operand's whole number, read in base ten: leading zeros are decimal, as `sleep` reads them."""
     return int(value, 10)
 
 
