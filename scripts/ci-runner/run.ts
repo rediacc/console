@@ -2269,6 +2269,13 @@ async function main(): Promise<number> {
   const graph = buildGraph(specs, selection.ids);
   if (graph.length === 0) {
     process.stderr.write('ci-runner: Refusing to run: the selection matched zero gates.\n');
+    // `--quick` narrows first and `--only` narrows what is left, so `npm run ci:quick -- --only <slow gate>` matches nothing: the quick lane already deferred it (#1434d694).
+    const only = opts.only?.join(',') ?? '';
+    if (opts.quick && only !== '') {
+      process.stderr.write(
+        `ci-runner: --only narrows the --quick lane, which defers slow gates. To run ${only} on its own: npx tsx scripts/ci-runner/run.ts --only ${only}\n`
+      );
+    }
     return 1;
   }
 
