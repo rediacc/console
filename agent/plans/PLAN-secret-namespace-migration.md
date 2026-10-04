@@ -10,6 +10,7 @@ No live session owns this file (its driving session, a276391d, was tombstoned 20
 Priority: P1 -- seed: Status mostly, 3 open box(es)
 Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: private/growth, private/generative, private/generative/src/tutorial_tts/config.py, private/growth/video_pipeline/steps/step4000_voiceover.py, private/generative/src/tutorial_tts/gpu_lock.py, private/growth/video_pipeline/steps/step6000_render.py
+Writers: none -- the open boxes are commits in the private/growth and private/generative sibling repos, which ride no console PR and land on the operator's request
 
 The header said `done` until 2026-09-05, and that is why this file reds check:ci-plan-boxes rather than being exempted by it: a finished status switches the Stop hook's advisory off, so a plan claiming done while carrying open boxes hides them from the one mechanism that surfaces them. The boxes were always there; the header was the inaccurate half. What remains is not a step in
 it: three secrets whose two copies hold different VALUES, which only the operator can reconcile. That is recorded where it will be found without reading 2,600 lines — `.ci/config/shadow-expected-mismatches.json`, which carries each drift with the run that found it, its door, and a `$resolution` block naming the steps. Worklist `[?] #fbd35dba` was closed 2026-09-03 with

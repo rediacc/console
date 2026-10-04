@@ -692,6 +692,33 @@ def test_next_turbo_is_empty_with_turbo_off(tmp_path):
     assert plan_gate.next_turbo(root, (), 4) == []
 
 
+def test_next_turbo_skips_a_plan_with_no_open_box_a_writer_can_do(tmp_path):
+    """#faedaaf9: a turbo pick is a writer slot, so a plan whose open boxes are all the lead's or the operator's is no pick."""
+    lead = _xplan(opened=0) + "- [ ] T4 Lead: run the production query, then deploy eu\n"
+    oponly = _xplan(opened=0) + "- [ ] Revoke the backup credential (operator-only)\n"
+    header = _xplan().replace(
+        "Owner: d778be9d\n", "Owner: d778be9d\nWriters: none -- sibling repos\n"
+    )
+    mixed = lead + "- [ ] T5 a box a writer can do\n"
+    plans = {"l": lead, "o": oponly, "h": header, "m": mixed, "b": _xplan()}
+    root = _turbo_root(tmp_path, plans, ["l", "o", "h", "m", "b"])
+    assert plan_gate.next_turbo(root, (), 4) == [_t("m"), _t("b")]
+    # CONTROL: the same plans unmarked are all picked, so the markers and nothing else skip them
+    plain = {n: _xplan() for n in plans}
+    root2 = _turbo_root(tmp_path / "plain", plain, ["l", "o", "h", "m", "b"])
+    assert plan_gate.next_turbo(root2, (), 4)[:2] == [_t("l"), _t("o")]
+    assert plan_gate.writer_startable(plain["l"]) is True
+    assert plan_gate.writer_startable(lead) is False
+    assert plan_gate.writer_startable(oponly) is False
+    assert plan_gate.writer_startable(header) is False
+    assert plan_gate.writer_startable(mixed) is True
+    # a word merely containing "lead" is no marker
+    assert (
+        plan_gate.writer_startable(_xplan(opened=0) + "- [ ] T6 Leading zeros: parse them\n")
+        is True
+    )
+
+
 def test_next_turbo_skips_a_held_plan(tmp_path):
     root = _turbo_root(tmp_path, {"h": _xplan(status="held"), "b": _xplan()}, ["h", "b"])
     assert plan_gate.next_turbo(root, (), 4) == [_t("b")]

@@ -295,6 +295,23 @@ def _base(rel: str) -> str:
     return str(rel).rsplit("/", 1)[-1]
 
 
+# WRITER-STARTABLE (#faedaaf9). A box only the lead or the operator can do (a production query, a deploy, an operator's own walk, a commit in a sibling repo outside the console PR) names that in its first words, `T4 Lead: ...` / `Operator: ...`, or anywhere as `lead-only` / `operator-only`; a plan whose remaining work is all of that kind says so once in its header, `Writers: none -- <reason>`. A turbo pick is a writer slot, so a plan with no open box a writer can do is no pick.
+_LEAD_BOX = re.compile(
+    r"^\s*[-*+]\s+\[[ ?>]\]\s+(?:\*\*)?(?:\S+\s+)?(?:lead|operator):|\b(?:lead|operator)-only\b",
+    re.IGNORECASE,
+)
+_OPEN_BOX = re.compile(r"^\s*[-*+]\s+\[[ ?>]\]\s+\S")
+_NO_WRITERS = re.compile(r"^Writers:\s*none\b", re.IGNORECASE | re.MULTILINE)
+
+
+def writer_startable(text: str) -> bool:
+    """Whether a writer can do any open box of this plan text: False under a `Writers: none` header or when every open box is marked lead- or operator-only."""
+    if _NO_WRITERS.search(text or ""):
+        return False
+    opened = [ln for ln in (text or "").splitlines() if _OPEN_BOX.match(ln)]
+    return any(not _LEAD_BOX.search(ln) for ln in opened)
+
+
 def next_turbo(
     root: str,
     live_plans,
@@ -305,7 +322,7 @@ def next_turbo(
 ) -> list[str]:
     """The plans the turbo loop names to start now (agent/plans/PLAN-stop-hook-turbo.md D5), at most `open_slots` of them, [] when turbo is off at `rev`.
 
-    Walked in `queue` order (Promoted, then Generated). An entry is eligible when it exists, has an open box, is not held (`wl_planenforce.plan_held`, the rule P-A1 keeps off the clock), is not in `in_set` (the PR's plan set), is not served by a live writer already, and is not picked already. The pick is the entry's deepest unfinished prerequisite when it has one (the first member of its `pr_plan_set`, as `wl_prscope.next_queued` does), and an entry with a held prerequisite is skipped, since nothing of it can start. Each pick must pass `wl_planconc.spawn_verdict` against `live_plans` (the plans live writers serve, paths or basenames) plus the picks before it, so an exclusive plan is never paired with a live writer's plan and two picks never claim one file.
+    Walked in `queue` order (Promoted, then Generated). An entry is eligible when it exists, has an open box, is not held (`wl_planenforce.plan_held`, the rule P-A1 keeps off the clock), is not in `in_set` (the PR's plan set), is not served by a live writer already, is not picked already, and has an open box a writer can do (`writer_startable`). The pick is the entry's deepest unfinished prerequisite when it has one (the first member of its `pr_plan_set`, as `wl_prscope.next_queued` does), and an entry with a held prerequisite is skipped, since nothing of it can start. Each pick must pass `wl_planconc.spawn_verdict` against `live_plans` (the plans live writers serve, paths or basenames) plus the picks before it, so an exclusive plan is never paired with a live writer's plan and two picks never claim one file.
 
     A ` -- solo` entry (D11) is eligible only for an empty PR with no pick before it, and then it is the only pick; a PR whose plan set holds a solo plan takes no further plan."""
     slots = int(open_slots or 0)
@@ -364,6 +381,8 @@ def next_turbo(
         if not chain or any(held(m) for m in chain):
             continue
         pick = chain[0]
+        if not writer_startable(_read(root, pick, rev) or ""):
+            continue
         if _base(pick) in live:
             # A live writer already serves it: it is started, not a plan to start.
             continue
@@ -503,4 +522,5 @@ __all__ = [
     "settings_at",
     "turbo_named",
     "with_plan_line",
+    "writer_startable",
 ]
