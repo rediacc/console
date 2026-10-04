@@ -3737,6 +3737,8 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-no-otlp-creds',
     run: 'npm run check:ci-no-otlp-creds',
     gate: true,
+    // READS private/renet/bin/renet (`go version -m`), so it waits for the `renet-bin` writers: on 2026-10-04 ci:quick ran it while check:ci-renet-types rebuilt the binary, `go version -m` met a half-written file ("unrecognized file format"), and the gate reported a credential leak that did not exist.
+    mutex: ['renet-bin'],
     leaves: ['.ci/scripts/quality/check_no_otlp_creds.py'],
     ci: {
       kind: 'step',
@@ -5247,6 +5249,8 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-proxy-ops-host-check',
     run: 'npm run check:ci-proxy-ops-host-check',
     gate: true,
+    // EXECUTES private/renet/bin/renet, so it waits for the `renet-bin` writers for the same reason as check:ci-no-otlp-creds: a binary being rebuilt beside it is a half-written file.
+    mutex: ['renet-bin'],
     leaves: ['.ci/rediacc_ci/proxies/ops_host_check.py'],
     ci: {
       kind: 'local-only',

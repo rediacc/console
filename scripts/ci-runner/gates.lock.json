@@ -3982,6 +3982,9 @@
     "id": "check:ci-no-otlp-creds",
     "run": "npm run check:ci-no-otlp-creds",
     "gate": true,
+    "mutex": [
+      "renet-bin"
+    ],
     "leaves": [
       ".ci/scripts/quality/check_no_otlp_creds.py"
     ],
@@ -5532,6 +5535,9 @@
     "id": "check:ci-proxy-ops-host-check",
     "run": "npm run check:ci-proxy-ops-host-check",
     "gate": true,
+    "mutex": [
+      "renet-bin"
+    ],
     "leaves": [
       ".ci/rediacc_ci/proxies/ops_host_check.py"
     ],
