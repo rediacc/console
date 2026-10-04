@@ -106,6 +106,8 @@ Operator rulings 2026-10-02 (agent/plans/PLAN-plan-per-pr-loop.md, boxes L1 and 
 
 ## The loop
 
+**Spawned as a sub-agent (`/pr-babysit bg`), this loop does not commit.** `block_commit_on_main` refuses every sub-agent's `git commit` (operator ruling 2026-10-04, no exemption). Leave each verified change in the tree, list its paths in the report to the lead, and the lead commits and pushes. Inline, in the lead's own session, the loop commits as written below.
+
 1. **Survey + resume detection.** If PRs already exist for this branch, resume at CI/reviews; re-create nothing.
 2. **The one branch.** Each repo holds at most one live `MMDD-N` branch and one open PR, and there is no stacking: `block_second_branch` and `block_second_open_pr` refuse a second of either, which only the operator's own `!` command can create. If a live branch exists, the wave rides it. Only when the checkout is on `main` with no live branch left is a new one cut: `git fetch origin --prune` in each repo first (local refs are stale), then take MAX+1 over the names ALREADY CONSUMED, same N across all repos (the name `block_second_branch` computes and admits):
 `d=$(date +%m%d); gh pr list --state all --limit 100 --json headRefName --jq '.[].headRefName' | grep "^${d}-"`. **Not `git branch -r`.** `delete_branch_on_merge` is true on all five repos, so a merged PR's branch is gone and its name is invisible there while still being spent. That is precisely how `0826-1` was taken twice on 2026-08-26, hours after PR #576 merged it. This file is
