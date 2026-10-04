@@ -1013,6 +1013,16 @@ control(
     R.select_box(R.open_boxes((ROOT / _amb).read_text()), "eu region")[2],
     "rotate the account signing key in the eu region",
 )
+control(
+    "a selector quoting a backticked path matches the box, whose body is stored with backticks and underscores stripped",
+    R.select_box(
+        R.open_boxes(
+            "## Tasks\n- [ ] T4 `.claude/rediacc_hooks/plan_gate.py`: settings_at and next_turbo\n"
+        ),
+        "T4 `.claude/rediacc_hooks/plan_gate.py`",
+    )[2],
+    "T4 .claude/rediacchooks/plangate.py: settingsat and nextturbo",
+)
 raises(
     "a plan with NO open boxes says so rather than reporting no match",
     lambda: R.plan_tick(ROOT, "agent/PLAN-noopen.md", "x", "cited package.json:1", "deadbeef"),
