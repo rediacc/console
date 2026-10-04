@@ -1530,6 +1530,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Audit',
     },
   },
+  // >>> gen-manifest: region 13
   {
     id: 'check:ci-scope-scripts-reachability',
     run: 'npm run check:ci-scope-scripts-reachability',
@@ -1542,7 +1543,6 @@ export const GATES: readonly GateSpec[] = [
       step: 'Scope map, reachable scripts/ paths force full CI',
     },
   },
-  // >>> gen-manifest: region 13
   {
     id: 'check:ci-mutate-check',
     run: 'npm run check:ci-mutate-check',
