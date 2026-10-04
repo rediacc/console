@@ -143,6 +143,8 @@ packages/cli/reports/
 reports/
 # Program state is committed (agent/plans/PLAN-program-state-in-repo.md): the bare `reports/` above would silently drop every program's state/reports/.
 !agent/programs/*/state/reports/
+# Investigation reports are committed records (operator task 2026-10-04: "Write the result to agent/reports/consolidation-investigation-<date>.md and commit it by path"); the bare `reports/` above is meant for build output.
+!agent/reports/
 
 .ci/cache/
 
