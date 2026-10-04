@@ -81,6 +81,29 @@ def test_l1c_the_lead_holds_at_most_three(wl):  # noqa: F811
     assert "the cap is 3" in got.err, got.err[:300]
 
 
+def test_l1e_a_ticked_item_refuses_a_lease_and_stays_done(wl):  # noqa: F811
+    """2026-10-04: `--lease` accepted the ticked #54ee0b51 and folded it back to [>], so arm_ci_watch, which reuses its CI item only when a lease succeeds, re-leased a done item instead of adding one for the new head."""
+    item = add(wl, "(deadbeef) CI verdict for a branch")
+    ticked = wl.cli("--tick", wlfix.ME, item, "CI Complete GREEN on the head, ci-trace exit 0")
+    assert ticked.rc == 0, ticked.err[:300]
+    got = wl.cli("--lease", wlfix.ME, item, "+30", "worker:12345")
+    assert got.rc != 0, got.out
+    assert "is done [x]" in got.err, got.err[:300]
+    released = wl.cli("--lease", wlfix.ME, item, "release")
+    assert released.rc != 0, released.out[:300]
+    assert "is done [x]" in released.err, released.err[:300]
+    deferred = wl.cli(
+        "--defer", wlfix.ME, item, "re-check? DEFAULT: leave it WHY: a sibling verb HOW: the store"
+    )
+    assert deferred.rc != 0, deferred.out[:300]
+    assert "is done [x]" in deferred.err, deferred.err[:300]
+    listing = wl.cli("--list", "--open", wlfix.ME).out
+    assert "#%s" % item not in listing, listing[:600]
+    # CONTROL: the same lease on an open item is accepted.
+    other = add(wl, "(deadbeef) CI verdict for the next head")
+    assert wl.cli("--lease", wlfix.ME, other, "+30", "worker:12345").rc == 0
+
+
 def test_l1d_a_covered_lead_lease_is_renewed_by_the_hook(wl):  # noqa: F811
     ready(wl)
     item = add(wl, "(deadbeef) driven inline by the lead")
