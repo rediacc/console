@@ -6,9 +6,9 @@ CLAUDE.md's rule 4 names the summary; this carries the rest.
 
 Choose the model by the shape of the task, never by its language or its domain.
 
-**Haiku** for READ-ONLY work, and for very small, low-risk follow-ups. Two slices, and nothing else:
+**Haiku** for BOUNDED read-only work, and for very small, low-risk follow-ups. Two slices, and nothing else:
 
-1. **Read-only investigation.** Search and survey fan-out, "find every caller of X", "which files spell this convention", bounded classification over a fixed set of answers. The output is a report, not an artifact, and the contract is that every claim arrives as a `file:line` the caller can open.
+1. **Bounded read-only lookup.** Search fan-out, "find every caller of X", "which files spell this convention", classification over a fixed set of answers. The output is a report, not an artifact, every claim arrives as a `file:line` the caller can open, and no claim needs weighing evidence across files. An investigation whose verdict needs judgment goes to Sonnet (ruling 2).
 2. **A very small, low-risk follow-up.** A one-line correction to something that already exists and has already been read: a typo, a stale path in a comment, a single call site the sweep missed. Small enough that the caller reads the whole diff without leaving the summary.
 
 **Haiku is NOT routed general write or implementation work.** Not a port, not a translation of one file's logic into another's, not a mechanical sweep, not doc churn, not "it is only a rename". This holds even when a pre-existing oracle would decide correctness and being wrong would be loud, which is exactly the carve-out that used to license it.
@@ -16,7 +16,10 @@ The operator retired that carve-out on 2026-09-23; see `D-M1` in [agent/DECISION
 
 **Opus** when the artifact created IS the oracle. New guards, new gates, threat models, schema design, and multi-file planning have no pre-existing thing to be checked against; their correctness is "did the author think of the right cases," which no gate can ask. Also Opus for anything adversarial or closed-world ("every way an agent could spell this").
 
-**Sonnet is an escalation tier, not a default.** The one sanctioned use is `docs/i18n/CONVENTIONS.md` -- a named language whose Haiku naturalization reads awkward by the judge's `naturalness` score. Nothing else defaults to Sonnet.
+**Sonnet** for the middle of the range (ruling 2):
+- investigation that weighs evidence across files: a root cause, a consolidation survey, "is this change safe", "what reads this file and what breaks without it";
+- implementation writers whose oracle already exists: ports, sweeps, migrations, translations, wiring;
+- the i18n escalation in `docs/i18n/CONVENTIONS.md`, for a language whose Haiku naturalization reads awkward by the judge's `naturalness` score.
 
 **The i18n naturalization pipeline is a different mechanism and is unchanged.** Its `--model haiku` default is a flag on a script, not an `Agent` write dispatch, and it is governed by [docs/i18n/CONVENTIONS.md](../i18n/CONVENTIONS.md) and CLAUDE.md's i18n section. Ruling 1 is about sub-agent dispatch and does not reach it.
 
@@ -59,6 +62,15 @@ It is not evidence about sub-agent write dispatch, which is a different mechanis
 
 Read-only, and every citation resolves or it does not. Haiku. The `file:line`-only contract is house rule and safety net at once.
 
+**Investigation that needs judgment**, the Sonnet slice (ruling 2):
+
+    Agent(subagent_type="Explore", model="sonnet",
+          description="Map review-record consumers",
+          prompt="Map every reader of agent/reviews/<branch>/*.md, what each reads,
+                  and what breaks if a clean commit has no file. file:line evidence.")
+
+Still read-only, but the answer is a verdict built from several files ("this breaks pr_labels"), and a wrong one changes a plan. Sonnet. The caller still spot-checks the load-bearing claims.
+
 **A very small follow-up:**
 
     Agent(subagent_type="general-purpose", model="haiku",
@@ -90,13 +102,21 @@ Invented, not derived. The guard IS the oracle. `block_push_to_protected_branch.
 
 Numbered by this document. `agent/DECISIONS.md` cites them as `D-M<n>`, and `<n>` is the number here.
 
+### 2. Three tiers by challenge: Sonnet is a default for judgment work, not only an escalation (2026-10-04, operator)
+
+**The ruling, verbatim:** "Sonnet may be needed for a bit more advanced jobs. Let's update \"haiku\" related statements to also include \"sonnet\" & \"opus\" depending on challange." <!-- style-ok -->
+
+**The evidence it rests on.** On 2026-10-04 four Haiku Explore agents surveyed eight consolidation candidates (agent/reports/consolidation-investigation-2026-10-04.md). The lead re-measured every load-bearing claim, and three were wrong in the direction that changes a plan: a gate called live when it is offline, a verb said to write a ledger it never touches, and a fix-set said to omit test files it lists. Counting and locating were right; weighing was not.
+
+**What it changes.** CLAUDE.md rule 4's investigation default and this file's tiers: Haiku keeps bounded lookups and tiny follow-ups, Sonnet takes investigation that needs judgment and the oracle-backed implementation writers, Opus keeps everything whose artifact is the oracle. Ruling 1 still holds: Haiku writes nothing beyond a one-line follow-up.
+
 ### 1. Haiku is not routed general write or implementation work (2026-09-23, operator)
 
 **The ruling, verbatim:** "I give up about haiku write agents! They should only be used for read-only investigation and for very small follow-ups." <!-- style-ok -->
 
 **What it changes.** The three-condition carve-out that used to license a Haiku write dispatch -- derived, plus a pre-existing oracle, plus a loud failure -- is withdrawn. Those conditions no longer authorize anything on their own. Haiku keeps the two slices named at the top of this file and loses the rest.
 
-**What it does not change.** Read-only investigation and search fan-out, which CLAUDE.md rule 4 already defaults to Haiku. `.claude/agents/test-advisor.md`'s frontmatter default. The i18n naturalization pipeline's `--model haiku`. The Opus half of the rule. Sonnet as an escalation tier.
+**What it does not change.** `.claude/agents/test-advisor.md`'s frontmatter default. The i18n naturalization pipeline's `--model haiku`. The Opus half of the rule. (It also left read-only investigation on Haiku and Sonnet as an escalation tier; ruling 2 moved judgment-heavy investigation to Sonnet.)
 
 **The calibration batch this file used to carry is cancelled.** Its table was to hold five bash-to-pytest ports dispatched to Haiku workers, measured on correction rounds rather than on correctness, and its whole premise was the carve-out above. It was never run and it will not be.
 The design that proposed it is `agent/plans/PLAN-haiku-model-routing.md`, whose phase-2 boxes this ruling supersedes; the plan is kept rather than deleted, so the reasoning that led here stays readable.
