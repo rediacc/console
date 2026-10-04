@@ -4,7 +4,7 @@ WHY. The live hook runs straight from the working tree, so a writer's mid-edit N
 
 HOW.
   * snapshot()  at the end of every Stop that did not crash, hash the module set (worklist.py, worklist_messages.py, wl_*.py). A new digest is copied to
-                <TMPDIR>/claude-worklist/.lkg/<digest>/ and `current` points at it. One hash per stop, one copy per change.
+                <TMPDIR>/claude-worklist/.lkg/<digest>/.claude/hooks/stop/, beside a link to the live `.claude/rediacc_hooks`, and `current` points at it. One hash per stop, one copy per change.
   * fallback()  when the live tree crashes, re-run the SAME stop (the raw stdin bytes) against the snapshot, with WORKLIST_LKG_CHILD=1 as the recursion guard,
                 and hand back its verdict under one prefixed line naming the crash and the snapshot. It is the full battery, so it is not an escape hatch.
                 With no snapshot yet, `git archive HEAD .claude/hooks/stop` is the snapshot.
@@ -34,6 +34,8 @@ QUIET_EDIT_MIN = 10
 # The snapshot child runs the whole battery; bounded so a wedged child cannot wedge the stop.
 CHILD_TIMEOUT_S = 90
 STOP_REL = ".claude/hooks/stop"
+# The package the stop modules import beside themselves (`parents[2]` of their own file), carried by both snapshot forms.
+PKG_REL = ".claude/rediacc_hooks"
 
 
 def stop_dir():
@@ -68,11 +70,20 @@ def snapshot(d=None):
         dg = digest(d)
         root = lkg_root()
         target = root / dg
-        if not (target / "worklist.py").is_file():
+        if not (target / STOP_REL / "worklist.py").is_file():
             root.mkdir(parents=True, exist_ok=True)
             tmp = pathlib.Path(tempfile.mkdtemp(prefix=".tmp-", dir=str(root)))
+            stop = tmp / STOP_REL
+            stop.mkdir(parents=True)
             for p in module_set(d):
-                shutil.copy2(p, tmp / p.name)
+                shutil.copy2(p, stop / p.name)
+            # THE SIBLING PACKAGE. wl_prscope and wl_roster reach `.claude/rediacc_hooks` as `parents[2]` of their own file, so a flat copy sent that hop to `<TMPDIR>/claude-worklist/rediacc_hooks` and every snapshot stop reported `prscope-broken` (FileNotFoundError, 2026-10-04). The snapshot keeps the tree's shape and links the live package in.
+            live_pkg = d.resolve().parents[1] / "rediacc_hooks"
+            if live_pkg.is_dir():
+                with contextlib.suppress(OSError):
+                    (tmp / ".claude" / "rediacc_hooks").symlink_to(
+                        live_pkg, target_is_directory=True
+                    )
             with contextlib.suppress(OSError):
                 os.replace(tmp, target)
             if tmp.exists():
@@ -95,7 +106,7 @@ def current():
         dg = (root / "current").read_text(encoding="utf-8").strip()
     except OSError:
         return None
-    d = root / dg
+    d = root / dg / STOP_REL
     if not dg or not (d / "worklist.py").is_file():
         return None
     return d, dg, max(0.0, (time.time() - (root / "current").stat().st_mtime) / 60.0)
@@ -114,7 +125,7 @@ def _git_snapshot(live):
         if top.returncode != 0:
             return None
         blob = subprocess.run(
-            ["git", "-C", top.stdout.strip(), "archive", "HEAD", STOP_REL],
+            ["git", "-C", top.stdout.strip(), "archive", "HEAD", STOP_REL, PKG_REL],
             capture_output=True,
             timeout=30,
             check=False,

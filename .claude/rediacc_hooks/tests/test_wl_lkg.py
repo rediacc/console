@@ -70,10 +70,33 @@ def test_k1c_inverse_a_broken_snapshot_leaves_the_crash_block_unchanged(wl):  # 
     open_item_world(wl)
     wl.run()
     lkg = wl.base / "tmp" / "claude-worklist" / ".lkg"
-    snap = lkg / (lkg / "current").read_text(encoding="utf-8").strip()
+    snap = (
+        lkg / (lkg / "current").read_text(encoding="utf-8").strip() / ".claude" / "hooks" / "stop"
+    )
     plant_crash(snap)
     plant_crash(target)
     wl.newturn()
     wl.say("working")
     got = wl.run()
     assert "Stop hook CRASHED" in got.out, got.out[:600]
+
+
+def test_k1d_the_snapshot_keeps_the_sibling_package_reachable(tmp_path, monkeypatch):
+    """The stop modules reach `.claude/rediacc_hooks` as `parents[2]` of their own file. A flat snapshot sent that hop to `<TMPDIR>/claude-worklist/rediacc_hooks` (`prscope-broken`, 2026-10-04); the snapshot keeps the tree's shape and links the live package in."""
+    import wl_lkg as LKG  # noqa: PLC0415
+
+    tree = tmp_path / "proj" / ".claude"
+    stop = tree / "hooks" / "stop"
+    stop.mkdir(parents=True)
+    (tree / "rediacc_hooks").mkdir()
+    (tree / "rediacc_hooks" / "syspath.py").write_text("# hop\n", encoding="utf-8")
+    for name in ("worklist.py", "worklist_messages.py", "wl_prscope.py"):
+        (stop / name).write_text("# %s\n" % name, encoding="utf-8")
+    monkeypatch.setattr(LKG.tempfile, "gettempdir", lambda: str(tmp_path / "tmp"))
+    assert LKG.snapshot(stop)
+    d, _dg, _age = LKG.current()
+    hop = (d / "wl_prscope.py").resolve().parents[2] / "rediacc_hooks" / "syspath.py"
+    assert hop.is_file(), hop
+    # CONTROL: without the link the same hop misses, which is the failure this case pins.
+    (d.parents[1] / "rediacc_hooks").unlink()
+    assert not hop.is_file()
