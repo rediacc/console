@@ -1,11 +1,11 @@
 # PLAN: chunk-store browse, Stage 2 (encrypted TOC writer) and Stage 3 (remote `--at` browse)
 
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `proposed`
+Status: proposed -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Depends-On: no-dep -- cites only finished plans: PLAN-chunk-store-browse-DECISION.md, PLAN-chunk-store-browse-server.md, PLAN-backup-quota-delta-gc.md
 Owner: d778be9d
 Updated: 2026-09-23
 Priority: P3 -- seed: Status proposed, 11 open box(es)
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: private/renet/cmd/renet/backup_browse.go, private/account/src, private/account/src/routes/backups.ts, private/account/src/db/schema.ts, private/renet/pkg/repodiff/browse.go, packages/cli/src/commands/backup-storage.ts, packages/cli/src/commands/backup-storage-parser.ts, private/renet/pkg/functions/commands/backup.go, private/renet/pkg/chunkstore, private/renet/pkg/chunkstore/*.go, private/account/src/services/backup-storage.service.ts, private/account/src/services/backup-chunk-store.ts, private/renet/cmd/renet/backup_restore.go, packages/cli/src/commands/backup.ts, private/renet/cmd/renet/backup_pull.go, private/renet/pkg/credentials/keyfile.go, private/renet/pkg/luks/luks.go, packages/e2e-tests/tests/25-backup-chunk-store.test.ts
 
 ## Finding

@@ -1,4 +1,4 @@
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `mostly stale 2026-09-22 -- 5 of 9 open boxes were already done in the tree, via commits this file was never updated to reflect; verified and ticked 2026-09-22.`
+Status: mostly stale 2026-09-22 -- 5 of 9 open boxes were already done in the tree, via commits this file was never updated to reflect; verified and ticked 2026-09-22. -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Depends-On: no-dep -- cites only finished plans: PLAN-completion-strategy.md; the other three citations are archived records
 First-Seen: 2026-09-17
 Done: org secrets deleted, mc_migrate_claude replaced/rotated, OTLP row O3 closed.
@@ -8,7 +8,7 @@ The operator overrode the "delete nothing" default directly on 2026-09-05 (commi
 Execution finished by 2026-09-15 (commit 7343ae9dc). `.ci/config/shadow-expected-mismatches.json` and `.ci/config/github-secret-preimage.json`, both cited below, no longer exist -- deleted along with the shadow machinery once the migration completed.
 No live session owns this file (its driving session, a276391d, was tombstoned 2026-09-05); do not force an Owner: onto it.
 Priority: P1 -- seed: Status mostly, 3 open box(es)
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: private/growth, private/generative, private/generative/src/tutorial_tts/config.py, private/growth/video_pipeline/steps/step4000_voiceover.py, private/generative/src/tutorial_tts/gpu_lock.py, private/growth/video_pipeline/steps/step6000_render.py
 
 The header said `done` until 2026-09-05, and that is why this file reds check:ci-plan-boxes rather than being exempted by it: a finished status switches the Stop hook's advisory off, so a plan claiming done while carrying open boxes hides them from the one mechanism that surfaces them. The boxes were always there; the header was the inaccurate half. What remains is not a step in

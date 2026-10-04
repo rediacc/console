@@ -1,12 +1,12 @@
 # PLAN: Stop-hook retro, 2026-09-25 (band late, lead session d778be9d)
 
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `ready`
+Status: ready -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-25
 Owner: d778be9d (adoption handed back 2026-10-03: not the PR's plan and not in the operator's Promoted picks, so it is owned and advisory, not this session's mission)
 Updated: 2026-09-25
 Priority: P2 -- seed: Status ready, 7 open box(es)
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py, .claude/rediacc_hooks/tests/test_wl_roster.py, .claude/rediacc_hooks/tests/test_wl_leases.py, .claude/hooks/stop/test-planfile.py, .claude/hooks/context/test-context-bands.py
 
 **Scope.** This retro covers lead transcript bytes 236722957 to 238604947. That runs from 2026-09-24T19:38:07Z to 2026-09-25T13:32:09Z. The session was active until 20:59Z, then waited for the operator's AskUserQuestion answer, which came at 13:30:52Z.

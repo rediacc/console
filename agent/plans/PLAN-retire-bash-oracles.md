@@ -1,10 +1,10 @@
 # PLAN: retire the bash hook oracles, transform the remaining bash into Python
 
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `APPROVED 2026-09-24 by the operator (/ask): run as one big-bang; use sonnet for any sub-agent task it can handle; re-judge the three tree exemptions per file; reverse the 2026-09-21 ruling BUT keep the real-bash benefit for some cases (task A0). Worklist #52383b75.`
+Status: APPROVED 2026-09-24 by the operator (/ask): run as one big-bang; use sonnet for any sub-agent task it can handle; re-judge the three tree exemptions per file; reverse the 2026-09-21 ruling BUT keep the real-bash benefit for some cases (task A0). Worklist #52383b75. -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Depends-On: no-dep -- related, not ordered: its G1 closes box W1P6 of PLAN-tooling-transformation.md and supersedes that plan's 2026-09-21 oracle ruling
 Owner: d778be9d
 Priority: P2 -- seed: Status approved, 15 open box(es)
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .ci/config/language-policy-baseline.json
 
 ## Tasks

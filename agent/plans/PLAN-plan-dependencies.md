@@ -1,12 +1,12 @@
 # PLAN: plan dependencies. A plan does not start before the plans it needs are finished
 
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `approved`
+Status: approved -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Owner: d778be9d
 First-Seen: 2026-09-24
 Depends-On: PLAN-stop-hook-continuity.md
 Worklist: #9fb25f26
 Priority: P1 -- seed: Status approved, 12 open box(es), a recent operator order
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .claude/hooks/stop/*.py, .ci/scripts/quality/check_plan_deps.py, .ci/rediacc_ci/tests/gates/test_gate_plan_deps.py, .claude/rediacc_hooks/guards/block_plan_without_depends.py, .claude/rediacc_hooks/tests/test_guards_differential.py, scripts/data/hook-inventory-baseline.json, scripts/ci-runner/manifest.ts, .github/workflows/ci-quality.yml, agent/README.md, docs/agent-reference/plan-records.md, docs/agent-reference/suppressions.md
 
 **Operator order, 2026-09-24:** "we should not start implementing a plan before the required plan completes. It should be a mandatory field and should have at least explicit 'no-dep' if there is really no dependency. Maybe we can also align the stop hook system to benefit from it to push what's needed to go first."

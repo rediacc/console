@@ -4,7 +4,7 @@
 Status: executing -- its suite landed and is recorded in agent/plans/PLAN-retire-bash-oracles.md section 3 A0 (77 rows, 257 tests); open only until each box is ticked with that evidence
 Depends-On: no-dep -- appendix of PLAN-retire-bash-oracles.md; carries no work of its own
 Priority: P3 -- seed: Status unknown, 0 open box(es)
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .claude/rediacc_hooks/shellscan.py, .claude/rediacc_hooks/guards/*.py, private/renet, .claude/rediacc_hooks/hookio.py, .ci/rediacc_ci/core/bash_dialect.py, .claude/rediacc_hooks/tests/test_bash_semantics.py, .claude/hooks/profile/bash_env.sh, .ci/rediacc_ci/check_pytest.py, .claude/rediacc_hooks/proc.py
 
 Every probe below was checked against `/usr/bin/bash` 5.3.9 in this session, except where a row says otherwise. Nothing in the tree was modified.

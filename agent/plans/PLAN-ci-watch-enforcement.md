@@ -1,11 +1,11 @@
 # PLAN: CI-watch enforcement, from "the session remembered" to a ledger join
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
+Status: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-17
 Owner: unowned (drafted by 9d92d9b6, 2026-08-28)
 Updated: 2026-08-28
 Priority: P3 -- seed: Status draft, 6 open box(es)
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .ci/scripts/ci/ci-trace.py, .claude/hooks/post-bash/record_push.py, .claude/rediacc_hooks/lifecycle.py, scripts/data/hook-inventory-baseline.json, .claude/rediacc_hooks/tests/test_hooks_record_push.py, .claude/rediacc_hooks/tests/test_wl_ci_status.py, .ci/rediacc_ci/quality/ci_watch_recipe.py, .claude/agents/pr-babysitter.md, .claude/commands/pr-babysit.md, .claude/hooks/lib/sanctioned.py
 
 A session cannot stop while a head IT pushed has no terminal verdict on record and nothing running to produce one. The enforcement is a join between two local ledgers, costs no network, and cannot fire on a peer's push by construction.

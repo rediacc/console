@@ -1,11 +1,11 @@
 # PLAN: a CLI login token can be moved to a new IP after a TOTP check (`Token is bound to a different IP address`)
 
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
+Status: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: PLAN-config-handoff-relay-only.md -- shares config-remote*.ts, the cli.json locales and account-security.md; T5-T8 wait for the relay-only console commit, T1-T4 can start now
 Priority: P1 -- This is an operator ruling. The operator is blocked on every account-server command after each ISP address change, and re-login is the only way out today.
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: private/account/src/middleware/api-token.ts, private/account/src/routes/api-token-ip.ts (new), private/account/src/routes/index.ts (one mount line), private/account/src/services/api-token.service.ts, private/account/src/utils/totp.ts (verifyCodeStep only), private/account/src/errors.ts (new codes only), private/account/src/constants.ts (API_TOKEN_REBIND_* only), private/account/src/db/schema.ts (api_tokens block only), private/account/drizzle/0054_api_token_ip_rebind.sql, private/account/drizzle/meta/_journal.json, private/account/src/dto/api-token.dto.ts, private/account/src/routes/portal.ts (activity title/description maps only), private/account/src/routes/root.ts (admin activity title/description maps only), private/account/tests/integration/api-token-ip-rebind.test.ts (new), packages/shared/src/subscription/types.ts (rebind wire types only), packages/cli/src/services/account/account-client.ts, packages/cli/src/services/account/token-ip-rebind.ts (new), packages/cli/src/utils/prompt.ts (askInput only), packages/cli/src/utils/spinner.ts (suspend helper only), packages/cli/src/services/core/audit.ts (one option), packages/cli/src/services/telemetry/otlp-credentials.ts (one option), packages/cli/src/commands/config-remote-password.ts (describeEnrollForbidden only), packages/cli/src/commands/__tests__/config-remote-password.test.ts, packages/cli/src/services/__tests__/account-client-ip-rebind.test.ts (new), packages/cli/src/i18n/locales/*/cli.json, packages/www/src/content/docs/*/account-security.md
 Worklist: (the lead adds this with `worklist.py --add`)
 

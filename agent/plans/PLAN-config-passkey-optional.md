@@ -1,13 +1,13 @@
 # PLAN: config storage without a PRF passkey, and a virtual-authenticator E2E matrix
 
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `approved`
+Status: approved -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Owner: d778be9d
 First-Seen: 2026-09-24
 Depends-On: no-dep -- touches only private/account server, portal and e2e plus run-account-e2e.sh; no open plan edits those files
 Worklist: #4bbdca38, #fa5c407e
 
 Priority: P1 -- seed: Status approved, 4 open box(es), a recent operator order
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: private/account, .ci/scripts/test/run-account-e2e.sh, private/account/src/routes/device-codes.ts
 
 ## Status on 2026-09-26 (session d778be9d), before the plan was held

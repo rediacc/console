@@ -1,5 +1,5 @@
 # PLAN: private/account/.env to Bitwarden -- the store is the only source of truth
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
+Status: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Depends-On: no-dep -- split out of PLAN-env-to-bitwarden-v2.md, which keeps only the orthogonal v1:20-25 rotation boxes
 Owner: d778be9d
 First-Seen: 2026-09-24
@@ -7,7 +7,7 @@ Date: 2026-09-24
 Parent: agent/plans/PLAN-env-to-bitwarden-v2.md (subsumes its open boxes "Seed the 4 admin credentials" and "Everything in v1's task list from 'Write .ci/lib/bws-env.sh' onward", except v1's `__ROTATED_` clone-protocol boxes v1:20-25, which are orthogonal and stay with v2)
 Scope: design. Measured read-only 2026-09-24 against `private/account/.env` (47 assigned names) and live BWS `ci-shared` (78 secrets, one project). No value was printed; comparisons ran in-process and emitted MATCH/MISMATCH/ABSENT/EMPTY only.
 Priority: P2 -- seed: Status draft, 1 open box(es), a recent operator order
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .ci/lib/account.sh, .ci/rediacc_ci/core/account.py, private/account/src/entry/dev-gateway.ts, scripts/ops/secret-rename.py
 
 

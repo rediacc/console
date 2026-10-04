@@ -1,11 +1,11 @@
 # PLAN: Tooling Transformation
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `ready`
+Status: ready -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Depends-On: no-dep -- umbrella; its only live citation, PLAN-secret-namespace-migration.md, is a ticked redaction box
 First-Seen: 2026-09-21
 Owner: d778be9d (adoption handed back 2026-10-03: not the PR's plan and not in the operator's Promoted picks, so it is owned and advisory, not this session's mission)
 Updated: 2026-09-20
 Priority: P2 -- seed: Status ready, 3 open box(es)
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .ci/shadow/w7p5a-status.json, .github/workflows/*.yml, .ci/shadow, .ci/scripts/release, .ci/scripts/deploy, .ci/policy/.w7p5a-real-run-blocklist, .ci/rediacc_ci/quality/dead_python.py, .ci/rediacc_ci/deploy, .ci/rediacc_ci/release, .ci/rediacc_ci/tests, .ci/policy/.w7p5a-, .ci/scripts/ci, .ci/scripts/lib, .github/workflows, private/account/.env, .ci/policy/.w7p5a-real-run-leg-blocklist, .ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py, .ci/scripts/release/*.sh, .ci/scripts/deploy/verify-stable-endpoints.sh, .ci/scripts/deploy/verify-edge-endpoints.sh, .ci/rediacc_ci/release/check_existing_release.py, .ci/rediacc_ci/tests/test_release_check_existing_release.py, .ci/scripts, packages/cli/src, docs/agent-reference/TRAPS.md, .ci/scripts/test/run-all.sh, .ci/rediacc_ci/quality/trap_registry.py, .ci/config/language-policy-baseline.json, .ci/scripts/quality/check_language_policy.py, .ci/scripts/test/gates/test-run-all-parallel.sh, scripts/ci-runner/manifest.ts, .ci/rediacc_ci/tests/test_battery.py, private/account/package-lock.json, scripts/lib/release-age.ts, .ci/rediacc_ci/tests/gates/test_twin_parity.py, .ci/shadow/twin-parity.ledger.jsonl
 
 ONE plan, not two. Round 1 was drafted into `~/.claude/plans/` where nothing tracked it; Round 2 was then written as a SECOND document, which made it worse. Both are now here, in one tracked file: Round 2 is the live plan, Round 1 is kept below in full because its 83 ticked boxes are the only record of what was actually done and why.

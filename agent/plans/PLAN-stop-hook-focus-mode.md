@@ -1,12 +1,12 @@
 # PLAN: stop-hook focus mode, a wind-down stand-down for /pr-babysit and /pr-merge
 
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
+Status: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: PLAN-stop-hook-cap-saturated-wait.md
 Worklist: none yet (the lead adds one item per box on approval)
 Priority: P2 -- seed: Status draft, 2 open box(es), a recent operator order
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .claude/commands/pr-babysit.md, .claude/commands/pr-merge.md, .claude/agents/pr-babysitter.md, .ci/cache/toolchain/uv-tools/pytest/bin/python, .claude/rediacc_hooks/tests/*.py, .claude/hooks/stop/test-always-tier.py, .ci/scripts/quality/check_plan_boxes.py
 
 **Operator order, 2026-09-25 (spec section Y, verbatim):**

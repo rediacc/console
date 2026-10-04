@@ -5,7 +5,7 @@ Owner: d778be9d
 First-Seen: 2026-10-04
 Depends-On: no-dep -- builds only on shipped modules (wl_review, pr_labels, review_table, check_plan_implementation); agent/plans/_done/PLAN-per-commit-review.md is done
 Priority: P2 -- operator order 2026-10-04: every clean review adds a tracked file and a "ride the next commit" prompt although nothing is left to do; 188 of 277 records under agent/reviews/ are full-coverage clean
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .claude/hooks/stop/wl_review.py, .claude/hooks/post-bash/review_commit.py, .claude/hooks/stop/worklist_messages.py, .ci/rediacc_ci/review/{clean_ledger,pr_labels,review_table}.py, .ci/scripts/quality/{check_plan_implementation,check_durable_paths_tracked}.py, .ci/policy/tree-shape.json, .claude/rediacc_hooks/guards/{block_review_file_edit,block_review_file_shell_write,test-block_review_file_edit,test-block_review_file_shell_write,test-block_push_with_unrecorded_reviews}.py, .claude/rediacc_hooks/tests/{test_review_commit_hook,test_wl_review_check}.py, .ci/rediacc_ci/tests/{test_review_clean_ledger,test_review_pr_labels,test_review_review_table}.py, .ci/rediacc_ci/tests/gates/test_gate_agent_session_archival.py, .ci/config/shards/quality-pytest.json, agent/reviews/**, docs/agent-reference/ci-gates.md, .claude/agents/pr-babysitter.md, scripts/data/doc-registry.md, agent/plans/QUEUE.md
 Worklist: #80ea5d76
 

@@ -1,12 +1,12 @@
 # PLAN: stop-hook rulings campaign (sections 2-6 split from PLAN-stop-hook-overhaul.md)
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft -- sections 2+3 and 5 APPROVED by operator ruling on #373907ed (2026-09-23T14:31Z); section 4 declined and moved to PLAN-stop-hook-plan-agent-check-declined.md; section 6 not named in that ruling and stays a proposal. Not adopted by any session, so its boxes are advisory until one adopts it.`
+Status: draft -- sections 2+3 and 5 APPROVED by operator ruling on #373907ed (2026-09-23T14:31Z); section 4 declined and moved to PLAN-stop-hook-plan-agent-check-declined.md; section 6 not named in that ruling and stays a proposal. Not adopted by any session, so its boxes are advisory until one adopts it. -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Depends-On: no-dep -- split out of PLAN-stop-hook-overhaul.md, which keeps only section 1 and 7-9; neither waits on the other
 Correction, 2026-09-24: this header used to say #373907ed PARKED sections 2 to 6. That was the question's DEFAULT, not the answer. Not adopted by any session, so its boxes are an advisory, never a block.
 First-Seen: 2026-09-17
 Owner: d778be9d (the session holding the #373907ed answer)
 Date: 2026-09-24
 Priority: P3 -- seed: Status draft, 16 open box(es)
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .claude/hooks/stop/*.py, agent/RULES.md, .ci/scripts/quality/check_operator_rulings.py, .claude/rediacc_hooks/tests/*.py
 
 Split out byte-identical on 2026-09-24 from `agent/plans/PLAN-stop-hook-overhaul.md`, which keeps section 1 (the noise fixes the decision said to execute) and its sections 7 to 9. The split exists because an adopted plan makes every open box a blocking mission, so these parked boxes demanded fresh trackers on every stop; five add-and-tick rounds had not ended that.

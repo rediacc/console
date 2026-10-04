@@ -1,10 +1,10 @@
 # PLAN: read-only rdc verbs never provision renet
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `executing`
+Status: executing -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Depends-On: no-dep -- cites no other plan
 Owner: d778be9d
 Updated: 2026-09-24
 Priority: P1 -- seed: Status executing, 1 open box(es)
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: agent/pr/0923-1.md
 
 Lead's rulings: every recommendation accepted; sessions (rows 2, 4, 5, 7) are `'read-only'`; `REDIACC_ALLOW_DIRTY_RENET` is yes; box 23 (commit) belongs to the babysitter.
