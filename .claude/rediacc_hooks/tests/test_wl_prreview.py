@@ -23,6 +23,7 @@ P = wlfix.import_wl("wl_prreview")
 REPO = GH_REPO
 PR = 7
 HEAD = "c" * 40
+BRANCH = "1004-1"
 SUMMARY_ID = 5961212756
 BOT = {"login": "github-actions[bot]"}
 ME = {"login": "operator"}
@@ -98,7 +99,7 @@ class FakeGh:
         if argv[:2] == ["repo", "view"]:
             return 0, json.dumps({"nameWithOwner": REPO}), ""
         if argv[:2] == ["pr", "view"]:
-            return 0, json.dumps({"number": PR, "headRefOid": HEAD}), ""
+            return 0, json.dumps({"number": PR, "headRefOid": HEAD, "headRefName": BRANCH}), ""
         if argv[0] == "api" and argv[1] == "graphql":
             query = next(a for a in argv if a.startswith("query="))
             if "mutation" in query:
@@ -386,6 +387,105 @@ def test_wait_sees_a_review_that_lands_midway():
         gh.check_title = "current: done"
 
     assert P.cmd_wait(None, 600, gh, sleeper=sleeper, clock=clock) == 0
+
+
+# ---- --wait names the review-attempt class (agent/plans/PLAN-scheduled-red-detector.md, B3) ----
+
+
+def attempt_comment(attempts: int, cls: str, sha: str = HEAD) -> dict:
+    """The comment claude_review_gate.attempt_body writes, in the shape PR #594 carried."""
+    return {
+        "id": 77,
+        "user": BOT,
+        "body": "<!-- claude-review-attempt: %s -->\nattempts: %d\nclass: %s\n"
+        "A review pass was attempted on `%s` and produced no report (`%s`)."
+        % (sha, attempts, cls, sha[:7], cls),
+        "created_at": "2026-10-03T10:30:00Z",
+    }
+
+
+def test_wait_failed_run_names_the_attempt_class_and_the_rerun(capsys):
+    gh = FakeGh(None)
+    gh.issue.append(attempt_comment(1, "error_max_turns"))
+    gh.check_title = "failed-run: no report"
+    clock = Clock()
+    assert P.cmd_wait(None, 60, gh, sleeper=clock.sleep, clock=clock) == 4
+    err = capsys.readouterr().err
+    assert "review attempt (class error_max_turns)" in err
+    assert "gh workflow run claude-review.yml --ref %s -f pr_number=%d" % (BRANCH, PR) in err
+    # The generic investigation text stays beside it.
+    assert "investigate the Claude Review run" in err
+
+
+def test_wait_failed_run_without_an_attempt_comment_keeps_the_fallback(capsys):
+    gh = FakeGh(None)
+    gh.check_title = "failed-run: no report"
+    clock = Clock()
+    assert P.cmd_wait(None, 60, gh, sleeper=clock.sleep, clock=clock) == 4
+    err = capsys.readouterr().err
+    assert "review attempt" not in err
+    assert "investigate the Claude Review run" in err
+
+
+def test_wait_ignores_an_attempt_for_another_head(capsys):
+    """MUTATION CONTROL: the class is shown only for the PR head's own attempt."""
+    gh = FakeGh(None)
+    gh.issue.append(attempt_comment(1, "error_max_turns", sha="d" * 40))
+    gh.check_title = "failed-run: no report"
+    clock = Clock()
+    assert P.cmd_wait(None, 60, gh, sleeper=clock.sleep, clock=clock) == 4
+    assert "review attempt" not in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ("token", "attempts", "cls", "needle"),
+    [
+        ("exhausted", 3, "error_max_turns", "push a change"),
+        ("outage", 1, "api_error_529", "excused"),
+    ],
+)
+def test_wait_reviewed_with_a_warning_names_the_attempt(capsys, token, attempts, cls, needle):
+    gh = FakeGh(None)
+    gh.issue.append(attempt_comment(attempts, cls))
+    gh.check_title = "%s: passing with a warning" % token
+    clock = Clock()
+    assert P.cmd_wait(None, 60, gh, sleeper=clock.sleep, clock=clock) == 0
+    out = capsys.readouterr().out
+    assert "review attempt (class %s)" % cls in out
+    assert needle in out
+
+
+def test_wait_current_does_not_read_the_comments():
+    gh = FakeGh(None)
+    gh.issue.append(attempt_comment(1, "error_max_turns"))
+    gh.check_title = "current: reviewed"
+    clock = Clock()
+    assert P.cmd_wait(None, 60, gh, sleeper=clock.sleep, clock=clock) == 0
+    assert not any("/issues/" in " ".join(c) for c in gh.calls)
+
+
+def test_wait_stale_timeout_names_the_attempt(capsys):
+    gh = FakeGh(None)
+    gh.issue.append(attempt_comment(2, "error_during_execution"))
+    gh.check_title = "stale: the current head has not been reviewed"
+    clock = Clock()
+    assert P.cmd_wait(None, 100, gh, sleeper=clock.sleep, clock=clock) == 3
+    err = capsys.readouterr().err
+    assert "does not merge on a timeout" in err
+    assert "review attempt (class error_during_execution)" in err
+    assert "--ref %s" % BRANCH in err
+
+
+def test_wait_an_unreadable_comment_list_keeps_the_fallback(capsys):
+    gh = FakeGh(None)
+    gh.issue.append(attempt_comment(1, "error_max_turns"))
+    gh.fail = ["/issues/"]
+    gh.check_title = "failed-run: no report"
+    clock = Clock()
+    assert P.cmd_wait(None, 60, gh, sleeper=clock.sleep, clock=clock) == 4
+    err = capsys.readouterr().err
+    assert "review attempt" not in err
+    assert "investigate the Claude Review run" in err
 
 
 # ---- --draft ----

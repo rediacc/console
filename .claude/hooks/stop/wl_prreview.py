@@ -7,7 +7,8 @@ cancels a run on a Review Gate failure. Answering by hand is slow and easy to ge
 THE MODES.
 
   --status [--pr N]          the newest summary, its head, its findings, the inline finding threads and whether each is answered
-  --wait [--timeout S]       wait until Review Complete on the PR head carries a terminal title token; exit 0 reviewed, 4 failed-run, 3 timeout
+  --wait [--timeout S]       wait until Review Complete on the PR head carries a terminal title token; exit 0 reviewed, 4 failed-run, 3 timeout;
+                             on failed-run, exhausted, outage or a timeout it also names the head's review-attempt comment, its class and its action (wl_prsignals)
   --draft                    print a dispositions file, one line per finding
   --answer <file>            validate the dispositions, then post one top-level reply, an in-thread reply per inline finding, and resolve each thread
   --check                    0 no summary / answered / empty findings with every finding thread resolved, 1 unanswered or a thread unresolved, 2 the API cannot be read
@@ -536,6 +537,41 @@ def read_review_title(runner: Runner, repo: str, head: str) -> tuple[str, str]:
     return (m.group(1), title) if m and m.group(1) in TITLE_TOKENS else ("", title)
 
 
+def read_pr_branch(runner: Runner, number: int) -> str:
+    """The PR's head branch name, "" when gh does not say."""
+    data = _gh_json(runner, "pull request", ["pr", "view", str(number), "--json", "headRefName"])
+    name = data.get("headRefName") if isinstance(data, dict) else None
+    return name if isinstance(name, str) else ""
+
+
+# Tokens whose cause is usually written in an attempt comment rather than in the check title (agent/plans/PLAN-scheduled-red-detector.md, B3). On PR #594 the comment said `class: error_max_turns` and carried the re-run command, while the title said only that the review had not landed.
+ATTEMPT_TOKENS = frozenset({FAILED_RUN, "exhausted", "outage", "stale"})
+
+
+def attempt_note(runner: Runner, repo: str, number: int, head: str) -> str:
+    """Lines naming the newest review-attempt comment on `head` (its class and the action it asks for), or "" when there is none or it cannot be read. Never raises: the generic text is the fallback."""
+    try:
+        import wl_prsignals as S  # noqa: PLC0415 -- sibling, loaded only when a wait ends badly
+
+        comments = _gh_list(
+            runner, "issue comments", "repos/%s/issues/%d/comments" % (repo, number)
+        )
+        try:
+            branch = read_pr_branch(runner, number)
+        except UnreadableError:
+            branch = ""
+        sig = S.newest_attempt(S.classify(comments, head, number, branch))
+    except (UnreadableError, ImportError):
+        return ""
+    if sig is None:
+        return ""
+    return "  review attempt (class %s): %s\n  Next: %s" % (
+        sig.get("cls") or "none",
+        sig.get("text"),
+        sig.get("action"),
+    )
+
+
 def cmd_wait(
     pr: int | None,
     timeout_s: int,
@@ -545,6 +581,7 @@ def cmd_wait(
 ) -> int:
     deadline = clock() + max(0, timeout_s)
     last = ""
+    where: tuple[str, int, str] | None = None
     while True:
         try:
             repo = read_repo(runner)
@@ -554,25 +591,32 @@ def cmd_wait(
             last = "unreadable: %s" % exc
         else:
             last = "token %r on %s" % (token or "none", head[:12])
+            where = (repo, number, head)
             if token in REVIEWED_TOKENS:
                 print(
                     "PR #%d head %s reviewed: Review Complete says %s" % (number, head[:12], token)
                 )
+                note = attempt_note(runner, repo, number, head) if token in ATTEMPT_TOKENS else ""
+                if note:
+                    print(note)
                 return RC_OK
             if token == FAILED_RUN:
+                note = attempt_note(runner, repo, number, head)
                 print(
                     "wl_prreview --wait: the review run for PR #%d head %s failed: %s\n"
+                    "%s"
                     "  Next: investigate the Claude Review run (gh run list --workflow claude-review.yml), fix the cause,"
                     " then re-dispatch with `gh workflow run claude-review.yml -f pr_number=%d`."
-                    % (number, head[:12], title, number),
+                    % (number, head[:12], title, note + "\n" if note else "", number),
                     file=sys.stderr,
                 )
                 return RC_FAILED_RUN
         if clock() >= deadline:
+            note = attempt_note(runner, *where) if where else ""
             print(
                 "wl_prreview --wait: no terminal Review Complete within %ds (last: %s). Review Complete is required:"
-                " the PR does not merge on a timeout; report it and run --wait again."
-                % (timeout_s, last),
+                " the PR does not merge on a timeout; report it and run --wait again.%s"
+                % (timeout_s, last, "\n" + note if note else ""),
                 file=sys.stderr,
             )
             return RC_TIMEOUT

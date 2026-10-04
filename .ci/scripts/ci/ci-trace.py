@@ -63,6 +63,10 @@ _DG_SPEC.loader.exec_module(D)
 
 POLL_SECONDS = int(os.environ.get("CI_TRACE_POLL_S", "25"))
 MAX_READ_FAILURES = int(os.environ.get("CI_TRACE_MAX_READ_FAILURES", "5"))
+# How often a --wait re-reads the PR's bot comments. A review attempt or summary lands minutes apart, so a 25 s poll of the comments would spend reads for nothing.
+SIGNALS_POLL_S = int(os.environ.get("CI_TRACE_SIGNALS_POLL_S", "120"))
+# Ten pages of 100 comments is far past any PR this repo has carried; a bound keeps a runaway pagination from stalling a verdict.
+SIGNALS_MAX_PAGES = 10
 
 EXIT_GREEN = 0
 EXIT_RED = 1
@@ -314,11 +318,107 @@ def _emit(payload, as_json):
         print("  and resolve any open human review threads.")
         print("  (block-premature-ready allows the flip only while CI Complete is")
         print("   green on this head, so it will refuse if this verdict goes stale.)")
+    elif v == "green" and payload.get("pr"):
+        # Review Complete is a required check (operator ruling 2026-10-03), so a green CI on a ready PR still has one wait left before the merge.
+        print()
+        print("  NEXT: CI is green; Review Complete is the remaining required check.")
+        print("    python3 .claude/hooks/stop/wl_prreview.py --wait")
     if payload.get("soft"):
         print(
             "  %d failing job(s) are on the watchdog retry allowlist and may be"
             " retried; not actionable yet." % len(payload["soft"])
         )
+
+
+# ---- PR SIGNALS (agent/plans/PLAN-scheduled-red-detector.md, box B2) ----------
+#
+# The check rollup is not everything GitHub says about a head. On PR #594 the review workflow posted an attempt comment (`class: error_max_turns`, attempt 1 of 3, a re-run command) that no watch printed, so the one action that would have recovered the review was invisible to the session waiting on it. These helpers read the PR's bot comments and print them beside the
+# verdict. They never change an exit code: a comment is information, and an unreadable comment list says so rather than failing a green.
+
+
+def _pr_signals(root, payload):
+    """{"state": "ok" | "unreadable", "pr", "head", "signals", "error"} for the payload's PR, or None for a branch read. Never raises."""
+    pr = payload.get("pr")
+    if not pr:
+        return None
+    head = payload.get("head") or ""
+    out = {"state": "unreadable", "pr": pr, "head": head, "signals": [], "error": ""}
+    try:
+        import wl_prsignals  # noqa: PLC0415 -- the hook's own module, on sys.path above
+
+        fetch = _fetcher(root)
+        comments = []
+        for page in range(1, SIGNALS_MAX_PAGES + 1):
+            data, err = fetch.json("issues/%s/comments?per_page=100&page=%d" % (pr, page))
+            if not isinstance(data, list):
+                out["error"] = err or "the comments read returned no list"
+                return out
+            comments.extend(c for c in data if isinstance(c, dict))
+            if len(data) < 100:
+                break
+        head_date = ""
+        if head:
+            commit, _err = fetch.json("commits/%s" % head)
+            if isinstance(commit, dict):
+                head_date = str(
+                    ((commit.get("commit") or {}).get("committer") or {}).get("date") or ""
+                )
+        out["signals"] = wl_prsignals.classify(
+            comments, head, pr, payload.get("ref") or "", head_date
+        )
+        out["state"] = "ok"
+    except Exception as exc:  # noqa: BLE001 -- information, never a reason to lose the verdict
+        out["error"] = "%s: %s" % (type(exc).__name__, exc)
+    return out
+
+
+def _signals_text(state, signals=None):
+    """The PR SIGNALS block for `state`; `signals` narrows it to a subset (the in-wait news)."""
+    if state["state"] != "ok":
+        return "PR SIGNALS: unreadable (%s)" % (state.get("error") or "?")
+    import wl_prsignals  # noqa: PLC0415
+
+    return wl_prsignals.render(
+        state["signals"] if signals is None else signals, state["pr"], state["head"]
+    )
+
+
+def _attach_signals(root, payload, as_json):
+    """Read the PR SIGNALS for a verdict about to be emitted; with --json they ride the payload as `pr_signals`."""
+    state = _pr_signals(root, payload)
+    if state is not None and as_json:
+        payload["pr_signals"] = state
+    return state
+
+
+def _show_signals(state, as_json):
+    """Print the block after a text verdict, flushed so a watch's log carries it at once."""
+    if state is None or as_json:
+        return
+    print()
+    print(_signals_text(state), flush=True)
+
+
+def _signals_key(sig):
+    return (sig.get("id"), sig.get("updated_at"))
+
+
+def _signals_tick(root, payload, seen, memo):
+    """One throttled in-wait read: print only the signals not printed before, and an unreadable state once per change."""
+    state = _pr_signals(root, payload)
+    if state is None:
+        return
+    if state["state"] != "ok":
+        if memo.get("unreadable") != state.get("error"):
+            memo["unreadable"] = state.get("error")
+            print(_signals_text(state), flush=True)
+        return
+    memo.pop("unreadable", None)
+    fresh = [s for s in state["signals"] if _signals_key(s) not in seen]
+    if not fresh:
+        return
+    seen.update(_signals_key(s) for s in fresh)
+    print(_signals_text(state, fresh), flush=True)
 
 
 def _parse_iso(text):
@@ -531,6 +631,11 @@ def main(argv=None):
             "  4  no CI       no Console CI run exists for the head ([skip ci] or\n"
             "                 path-filtered), after a registration grace; for a branch\n"
             "                 head the nearest ancestor with checks is named and judged\n"
+            "  --scheduled    0 every scheduled workflow green, 1 any red, 2 unreadable,\n"
+            "                 no scheduled run, or an unknown --workflow\n"
+            "PR SIGNALS: every verdict on a PR also prints the PR's bot comments for the\n"
+            "head (review attempts, summaries) with their next action; they never change\n"
+            "the exit code.\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -607,6 +712,19 @@ def main(argv=None):
         help="with --job: the whole log (ANSI stripped, cached once complete)",
     )
     verbs.add_argument("--history", metavar="JOB_NAME", help="that job's last 5 completed runs")
+    verbs.add_argument(
+        "--scheduled",
+        action="store_true",
+        help=(
+            "every scheduled workflow's newest scheduled run on main, refreshing the shared cache"
+            " the Stop hook reads: 0 all green, 1 any red, 2 unreadable"
+        ),
+    )
+    verbs.add_argument(
+        "--workflow",
+        metavar="NAME",
+        help="with --scheduled: one workflow (stem, file or display name) and its newest 5 scheduled runs",
+    )
     ap.add_argument(
         "--worklist-item",
         metavar="ID",
@@ -631,6 +749,10 @@ def main(argv=None):
 
     root = REPO_ROOT
 
+    if args.workflow and not args.scheduled:
+        ap.error("--workflow needs --scheduled")
+    if args.scheduled:
+        return verb_scheduled(root, args.workflow, args.json)
     if args.job:
         mode = "log" if args.log else ("steps" if args.steps else "errors")
         return verb_job(root, args.job, mode, args.json)
@@ -661,6 +783,7 @@ def main(argv=None):
 
     cache, read_failures, pinned_head = {}, 0, None
     seen: dict[str, float] = {}
+    signals_at, signals_seen, signals_memo = 0.0, set(), {}
     deadline = time.time() + args.timeout
 
     while True:
@@ -689,7 +812,9 @@ def main(argv=None):
             return EXIT_HEAD_MOVED
 
         if payload["verdict"] == "red" and _red_is_final(payload, args.wait, args.until_final):
+            signals = _attach_signals(root, payload, args.json)
             _emit(payload, args.json)
+            _show_signals(signals, args.json)
             d = None
             if args.wait and payload.get("run"):
                 # A watch that ends red ends WITH the diagnosis, so the next turn starts from the cause instead of from a round of raw reads.
@@ -702,23 +827,26 @@ def main(argv=None):
                     root, ref, payload, "cancelled" if payload.get("cause") else "red", args, d
                 )
             return EXIT_RED
-        if payload["verdict"] == "green":
+        if payload["verdict"] in ("green", "no-ci"):
+            signals = _attach_signals(root, payload, args.json)
             _emit(payload, args.json)
+            _show_signals(signals, args.json)
             if args.wait:
-                _record_final(root, ref, payload, "green", args)
-            return EXIT_GREEN
-        if payload["verdict"] == "no-ci":
-            _emit(payload, args.json)
-            if args.wait:
-                _record_final(root, ref, payload, "no-ci", args)
-            return EXIT_NO_CI
+                _record_final(root, ref, payload, payload["verdict"], args)
+            return EXIT_GREEN if payload["verdict"] == "green" else EXIT_NO_CI
 
         if not args.wait:
+            signals = _attach_signals(root, payload, args.json)
             _emit(payload, args.json)
+            _show_signals(signals, args.json)
             return EXIT_NO_VERDICT
         if time.time() > deadline:
             print("no-verdict: still running after %ds" % args.timeout, file=sys.stderr)
             return EXIT_NO_VERDICT
+        # THE IN-WAIT READ, throttled and deduplicated: a review attempt that lands while CI runs is printed when it lands, once, not only at the verdict an hour later. Text mode only, because --json promises one document on stdout.
+        if not args.json and time.time() - signals_at >= SIGNALS_POLL_S:
+            signals_at = time.time()
+            _signals_tick(root, payload, signals_seen, signals_memo)
         time.sleep(POLL_SECONDS)
 
 
@@ -771,6 +899,169 @@ def verb_why(root, run_id, attempt, ref, as_json):
         "red": EXIT_RED,
         "cancelled": EXIT_RED,
     }.get(d["verdict"], EXIT_NO_VERDICT)
+
+
+# ---- --scheduled (agent/plans/PLAN-scheduled-red-detector.md, box A3) ----------
+#
+# Console CI nightly went red five nights running and Housekeeping four, and no agent saw either: this tracer listed only Console CI runs, and the raw runs list is refused at the guard. The reads, the verdict rule and the shared cache are wl_schedred's, reached through the same sys.path hop as wl_ci, so this verb and the Stop hook cannot disagree about which scheduled run is red.
+
+SCHED_JOBS_SHOWN = 6
+
+
+def _age(stamp, now=None):
+    t = _parse_iso(str(stamp or "").replace("Z", "+00:00"))
+    if t is None:
+        return "?"
+    s = max(0, int((time.time() if now is None else now) - t))
+    if s < 3600:
+        return "%dm ago" % (s // 60)
+    if s < 172800:
+        return "%dh ago" % (s // 3600)
+    return "%dd ago" % (s // 86400)
+
+
+def _is_red(row):
+    if "red" in row:
+        return bool(row.get("red"))
+    return (row.get("conclusion") or "") not in ("", "success")
+
+
+def _jobs_text(jobs):
+    jobs = list(jobs or [])
+    more = len(jobs) - SCHED_JOBS_SHOWN
+    return ", ".join(jobs[:SCHED_JOBS_SHOWN]) + (" (+%d more)" % more if more > 0 else "")
+
+
+def _sched_lines(w):
+    crons = ", ".join(w.get("crons") or []) or "?"
+    where = "%s (%s)  cron %s" % (w.get("name") or w.get("stem"), w.get("file") or "?", crons)
+    if not w.get("run_id"):
+        return ["  NONE   %s  no completed scheduled run" % where]
+    red = _is_red(w)
+    lines = [
+        "  %-6s %s  run %s attempt %s  %s  %s%s"
+        % (
+            "RED" if red else "GREEN",
+            where,
+            w.get("run_id"),
+            w.get("attempt") or "?",
+            w.get("conclusion") or "?",
+            _age(w.get("created_at")),
+            "  (a newer scheduled run is in flight)" if w.get("in_flight") else "",
+        )
+    ]
+    if red and w.get("failed_jobs"):
+        lines.append("         failed: %s" % _jobs_text(w["failed_jobs"]))
+    if red:
+        lines.append("         next: %s --run %s --why" % (D.TRACE_CMD, w.get("run_id")))
+    return lines
+
+
+def _resolve_workflow(known, name):
+    key = name.strip().lower()
+    keys = {key, pathlib.PurePath(key).name}
+    for w in known:
+        names = {
+            str(w.get("stem") or "").lower(),
+            str(w.get("file") or "").lower(),
+            pathlib.PurePath(str(w.get("file") or "")).name.lower(),
+            str(w.get("name") or "").lower(),
+        }
+        if keys & names:
+            return w
+    return None
+
+
+def _verb_scheduled_workflow(root, sched, name, as_json):
+    known = sched.scheduled_workflows(root) or []
+    w = _resolve_workflow(known, name)
+    if w is None:
+        print(
+            "no-verdict: %r is not a scheduled workflow; known: %s"
+            % (
+                name,
+                ", ".join(
+                    "%s (%s, %s)" % (k.get("stem"), k.get("file"), k.get("name")) for k in known
+                )
+                or "none",
+            ),
+            file=sys.stderr,
+        )
+        return EXIT_NO_VERDICT
+    runs, err = sched.recent_runs(root, w.get("stem"), limit=5)
+    runs = list(runs or [])
+    if as_json:
+        print(json.dumps({"workflow": w, "runs": runs, "error": err or ""}, indent=2, default=str))
+    # An in-flight run has no verdict yet (wl_schedred blanks its conclusion), so the newest COMPLETED run decides the exit code.
+    done = [r for r in runs if not r.get("in_flight")]
+    if not as_json and runs:
+        print(
+            "%s (%s), cron %s: newest %d scheduled run(s)"
+            % (w.get("name"), w.get("file"), ", ".join(w.get("crons") or []) or "?", len(runs))
+        )
+        for r in runs:
+            red = not r.get("in_flight") and _is_red(r)
+            label = "RUN" if r.get("in_flight") else ("RED" if red else "GREEN")
+            print(
+                "  %-6s run %s attempt %s  %s  %s"
+                % (
+                    label,
+                    r.get("run_id"),
+                    r.get("attempt") or "?",
+                    r.get("conclusion") or ("in flight" if r.get("in_flight") else "?"),
+                    _age(r.get("created_at")),
+                )
+            )
+            if red and r.get("failed_jobs"):
+                print("         failed: %s" % _jobs_text(r["failed_jobs"]))
+        if done and _is_red(done[0]):
+            print("  next: %s --run %s --why" % (D.TRACE_CMD, done[0].get("run_id")))
+    if not done:
+        print(
+            "no-verdict: no completed scheduled run of %s%s"
+            % (w.get("file"), " (%s)" % err if err else ""),
+            file=sys.stderr,
+        )
+        return EXIT_NO_VERDICT
+    return EXIT_RED if _is_red(done[0]) else EXIT_GREEN
+
+
+def verb_scheduled(root, workflow, as_json):
+    """--scheduled [--workflow X]: 0 all green, 1 any red, 2 unreadable, empty or unknown."""
+    try:
+        import wl_core  # noqa: PLC0415 -- the hook's own modules, on sys.path above
+        import wl_schedred  # noqa: PLC0415
+
+        if workflow:
+            return _verb_scheduled_workflow(root, wl_schedred, workflow, as_json)
+        data = wl_schedred.refresh(root, wl_core.worklist_for(root), force=True)
+    except Exception as exc:  # noqa: BLE001 -- a broken reader is no verdict, never a green
+        print(
+            "no-verdict: the scheduled-run reader failed: %s: %s" % (type(exc).__name__, exc),
+            file=sys.stderr,
+        )
+        return EXIT_NO_VERDICT
+    data = data if isinstance(data, dict) else {}
+    rows = list(data.get("workflows") or [])
+    if as_json:
+        print(json.dumps(data, indent=2, sort_keys=True, default=str))
+    state = data.get("state")
+    if state != "ok":
+        reason = {
+            "unset": "no GitHub origin is configured, so no scheduled run can be read",
+        }.get(state, data.get("error") or "state %r" % state)
+        print("no-verdict: scheduled runs unreadable: %s" % reason, file=sys.stderr)
+        return EXIT_NO_VERDICT
+    if not rows:
+        print("no-verdict: no scheduled workflow found under .github/workflows", file=sys.stderr)
+        return EXIT_NO_VERDICT
+    red = [w for w in rows if w.get("run_id") and _is_red(w)]
+    if not as_json:
+        print("Scheduled workflows on main: %d, %d red" % (len(rows), len(red)))
+        for w in rows:
+            for line in _sched_lines(w):
+                print(line)
+    return EXIT_RED if red else EXIT_GREEN
 
 
 def _branch_name(ref):
