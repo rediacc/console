@@ -196,8 +196,8 @@ def selftest() -> int:
         )
         check("CONTROL: runner built-ins are never flagged", not any("builtin" in x for x in f))
 
-    # CONTROL on the real tree: the script hop must resolve, or $RENET_BINARY (written to $GITHUB_ENV by the renet build) becomes nine false findings.
-    hop = ROOT / ".ci/scripts/infra/build-renet.sh"
+    # CONTROL on the real tree: the PATH form of the script hop must still resolve a real `$GITHUB_ENV` writer. build-renet.sh was that writer until it was retired behind its golden (2026-10-04, as the comment below predicted); simulate-promotion.sh is a live one (its `echo "PROMOTED=..." >>"$GITHUB_ENV"` line).
+    hop = ROOT / ".ci/scripts/deploy/simulate-promotion.sh"
     check(
         "CONTROL: the one-hop script resolver finds a real $GITHUB_ENV writer",
         hop.is_file() and bool(GHENV.findall(hop.read_text(encoding="utf-8"))),

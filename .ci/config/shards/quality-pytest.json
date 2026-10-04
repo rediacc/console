@@ -387,6 +387,8 @@
         "pytest:.ci/rediacc_ci/tests/test_ci_diagnose.py",
         "pytest:.ci/rediacc_ci/tests/test_review_pr_labels.py",
         "pytest:.ci/rediacc_ci/tests/test_review_clean_ledger.py",
+        "pytest:.ci/rediacc_ci/tests/test_ci_profiler_control.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py",
         "pytest:.claude/rediacc_hooks/tests/test_plan_gate.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_trace_pr_signals.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_trace_scheduled.py",

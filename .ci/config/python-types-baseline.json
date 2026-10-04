@@ -569,13 +569,6 @@
       "message": "Incompatible types in assignment (expression has type \"str\", variable has type \"Path\")"
     },
     {
-      "id": "ef4b145abcbdaab4",
-      "file": ".ci/rediacc_ci/tests/gates/test_gate_assert_edge_tag_exists.py",
-      "code": "operator",
-      "count": 1,
-      "message": "Unsupported operand types for + (\"None\" and \"int\")"
-    },
-    {
       "id": "dc75c1d71b6cdf4e",
       "file": ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_pins.py",
       "code": "operator",
@@ -821,27 +814,6 @@
       "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
     },
     {
-      "id": "c969763ccf5f218e",
-      "file": ".ci/rediacc_ci/tests/test_build_cli.py",
-      "code": "attr-defined",
-      "count": 2,
-      "message": "\"object\" has no attribute \"__iter__\"; maybe \"__dir__\" or \"__str__\"? (not iterable)"
-    },
-    {
-      "id": "0a2a64878cb92018",
-      "file": ".ci/rediacc_ci/tests/test_build_cli.py",
-      "code": "call-overload",
-      "count": 3,
-      "message": "No overload variant of \"sub\" of \"Pattern\" matches argument types \"str\", \"object\""
-    },
-    {
-      "id": "91bb244abf7cd1d3",
-      "file": ".ci/rediacc_ci/tests/test_build_cli.py",
-      "code": "operator",
-      "count": 5,
-      "message": "Unsupported right operand type for in (\"object\")"
-    },
-    {
       "id": "0cf1dd9d8202afac",
       "file": ".ci/rediacc_ci/tests/test_build_linux_packages.py",
       "code": "arg-type",
@@ -881,62 +853,6 @@
       "file": ".ci/rediacc_ci/tests/test_build_linux_packages.py",
       "code": "operator",
       "count": 2,
-      "message": "Unsupported right operand type for in (\"object\")"
-    },
-    {
-      "id": "208001e704cb13eb",
-      "file": ".ci/rediacc_ci/tests/test_build_pkg_repo.py",
-      "code": "attr-defined",
-      "count": 4,
-      "message": "\"object\" has no attribute \"__iter__\"; maybe \"__dir__\" or \"__str__\"? (not iterable)"
-    },
-    {
-      "id": "661c785b1b6545c0",
-      "file": ".ci/rediacc_ci/tests/test_build_pkg_repo.py",
-      "code": "attr-defined",
-      "count": 1,
-      "message": "\"object\" has no attribute \"get\""
-    },
-    {
-      "id": "1ec7290e45c32c82",
-      "file": ".ci/rediacc_ci/tests/test_build_pkg_repo.py",
-      "code": "attr-defined",
-      "count": 2,
-      "message": "\"object\" has no attribute \"startswith\""
-    },
-    {
-      "id": "21842a48e92c7ff9",
-      "file": ".ci/rediacc_ci/tests/test_build_pkg_repo.py",
-      "code": "call-overload",
-      "count": 2,
-      "message": "No overload variant of \"set\" matches argument type \"object\""
-    },
-    {
-      "id": "48522eeb02812064",
-      "file": ".ci/rediacc_ci/tests/test_build_pkg_repo.py",
-      "code": "call-overload",
-      "count": 3,
-      "message": "No overload variant of \"sorted\" matches argument type \"object\""
-    },
-    {
-      "id": "c6aada14e01c6994",
-      "file": ".ci/rediacc_ci/tests/test_build_pkg_repo.py",
-      "code": "call-overload",
-      "count": 2,
-      "message": "No overload variant of \"sub\" of \"Pattern\" matches argument types \"str\", \"object\""
-    },
-    {
-      "id": "8f336d153421ea43",
-      "file": ".ci/rediacc_ci/tests/test_build_pkg_repo.py",
-      "code": "index",
-      "count": 1,
-      "message": "Value of type \"object\" is not indexable"
-    },
-    {
-      "id": "342fb5c2c8153601",
-      "file": ".ci/rediacc_ci/tests/test_build_pkg_repo.py",
-      "code": "operator",
-      "count": 17,
       "message": "Unsupported right operand type for in (\"object\")"
     },
     {
@@ -1253,20 +1169,6 @@
       "code": "operator",
       "count": 1,
       "message": "Unsupported right operand type for in (\"str | None\")"
-    },
-    {
-      "id": "1dba4b5b195a9e4f",
-      "file": ".ci/rediacc_ci/tests/test_infra_build_renet.py",
-      "code": "index",
-      "count": 1,
-      "message": "Value of type \"object\" is not indexable"
-    },
-    {
-      "id": "abecb1b27aaacdaf",
-      "file": ".ci/rediacc_ci/tests/test_infra_build_renet.py",
-      "code": "operator",
-      "count": 5,
-      "message": "Unsupported right operand type for in (\"object\")"
     },
     {
       "id": "8813701d56a77d08",
@@ -1778,27 +1680,6 @@
       "code": "union-attr",
       "count": 1,
       "message": "Item \"None\" of \"ModuleSpec | None\" has no attribute \"loader\""
-    },
-    {
-      "id": "63c4b0a8a14bc230",
-      "file": ".ci/rediacc_ci/tests/test_release_assert_edge_tag_exists.py",
-      "code": "arg-type",
-      "count": 3,
-      "message": "Argument 4 to \"_run\" has incompatible type \"**dict[str, str]\"; expected \"bool\""
-    },
-    {
-      "id": "1b7163ba650ea4a7",
-      "file": ".ci/rediacc_ci/tests/test_release_assert_edge_tag_exists.py",
-      "code": "arg-type",
-      "count": 3,
-      "message": "Argument 4 to \"_run\" has incompatible type \"**dict[str, str]\"; expected \"tuple[str, ...]\""
-    },
-    {
-      "id": "8975fbd5cb8311ca",
-      "file": ".ci/rediacc_ci/tests/test_release_mark_production.py",
-      "code": "arg-type",
-      "count": 3,
-      "message": "Argument 4 to \"_run\" has incompatible type \"**dict[str, str]\"; expected \"bool\""
     },
     {
       "id": "e7c3bf2970dff6da",
@@ -3220,13 +3101,6 @@
       "code": "union-attr",
       "count": 1,
       "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"end\""
-    },
-    {
-      "id": "8dc7471bcb470521",
-      "file": ".claude/rediacc_hooks/guards/block_long_sleep.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"KNOWN_DIVERGENCES\" (hint: \"KNOWN_DIVERGENCES: list[<type>] = ...\")"
     },
     {
       "id": "e1f746ddd3d883e9",

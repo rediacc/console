@@ -557,7 +557,7 @@ def run_posttool():
         raw, over = read_bounded(sys.stdin.buffer)
     except Exception:  # noqa: BLE001 -- a warning layer must never break a turn
         return 0
-    event = {}
+    event: dict = {}
     if over:
         cmd = _command_from_truncated(raw)
         resp, out = None, ""
