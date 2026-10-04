@@ -232,6 +232,25 @@ put(droppedTouched=[DROP], droppedVerified=passed_at("0" * 40))
 cases.append((2, run(PUSH), "DROPPED: a passing run at ANOTHER tree does not clear it"))
 put(droppedTouched=[DROP], droppedVerified=passed_at(CURRENT["tree"], code=1))
 cases.append((2, run(PUSH), "DROPPED: a red --only run does not clear it"))
+put(
+    droppedTouched=[DROP],
+    droppedVerified=passed_at(CURRENT["tree"], code=1),
+    exitCode=1,
+    failed=[PLAN_RECORD],
+)
+cases.append((2, run(PUSH), "DROPPED: a red re-run listed in failed and NOT carried refuses"))
+carry(keyed("*", gate=PLAN_RECORD, reason=STAR_REASON))
+put(
+    droppedTouched=[DROP],
+    droppedVerified=passed_at(CURRENT["tree"], code=1),
+    exitCode=1,
+    failed=[PLAN_RECORD],
+    findings={PLAN_RECORD: None},
+)
+cases.append(
+    (0, run(PUSH), "DROPPED: a red re-run listed in failed and carried is judged by the carry")
+)
+uncarry()
 put(droppedTouched=[DROP], droppedVerified=passed_at(CURRENT["tree"], code=False))
 cases.append((2, run(PUSH), "DROPPED: an exitCode of false is not a pass"))
 put()
