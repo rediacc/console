@@ -69,17 +69,18 @@ judge: on
 18. agent/plans/PLAN-biome-only-lint.md -- P3, draft, in progress (10 of 29 boxes ticked)
 19. agent/plans/PLAN-env-to-bitwarden-v2.md -- P3, draft, in progress (9 of 10 boxes ticked)
 20. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (1 of 17 boxes ticked)
-21. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
-22. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-23. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-24. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, not started
-25. agent/plans/PLAN-locale-techdiff-resync.md -- P2, ready, not started
-26. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
-27. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
-28. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-29. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-30. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
-31. agent/plans/PLAN-uncommitted-work-exposure-check.md -- P3, proposed, not started
+21. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+22. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
+23. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+24. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
+25. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, not started
+26. agent/plans/PLAN-locale-techdiff-resync.md -- P2, ready, not started
+27. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
+28. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
+29. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
+30. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+31. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+32. agent/plans/PLAN-uncommitted-work-exposure-check.md -- P3, proposed, not started
 
 ### Not queued
 
