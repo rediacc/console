@@ -483,12 +483,12 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-chunk-store-browse-server.md` | compacted | 48 | 0 | 0 | 4897 |
 | `agent/plans/PLAN-chunk-store-browse-toc-and-remote.md` | held | 147 | 11 | 0 | 30845 |
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
-| `agent/plans/PLAN-ci-consolidation.md` | approved | 180 | 24 | 0 | 21476 |
+| `agent/plans/PLAN-ci-consolidation.md` | approved | 180 | 24 | 0 | 22403 |
 | `agent/plans/PLAN-ci-quick-cpu-scheduling.md` | active | 72 | 5 | 0 | 9390 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-ci-watch-enforcement.md` | held | 214 | 6 | 0 | 19704 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
-| `agent/plans/PLAN-clean-review-ledger.md` | approved | 191 | 18 | 0 | 20232 |
+| `agent/plans/PLAN-clean-review-ledger.md` | approved | 191 | 18 | 0 | 20954 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
 | `agent/plans/PLAN-cloudflare-proxy.md` | proposed | 344 | 24 | 0 | 42135 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
