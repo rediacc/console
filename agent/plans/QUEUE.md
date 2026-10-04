@@ -28,7 +28,7 @@ A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turb
 stop_hook: on -- re-enabled by the operator 2026-10-03 for the one-plan-per-PR loop
 turbo: on -- operator 2026-10-04: turbo on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
-plan_concurrency: 3 -- operator 2026-10-04: batch_size is the merge minimum; plan concurrency gets its own field
+plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
 writer_cap: 15 -- operator 2026-10-04: parallel limit 15
 cadence: on
 agent_hint: on
