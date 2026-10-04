@@ -52,7 +52,7 @@ Worklist: #5f84123a, #768e10e2
   3. If a peer holds the claim, this session gets an advisory, once per run id.
 - **Ending a tracked red.**
   - A later green scheduled run triggers `N_SCHEDULED_GREEN`, which carries the exact tick command.
-  - A tick's evidence must name either a green scheduled run newer than the red, or a commit sha that is an ancestor of `origin/main` (checked with local git). If it names neither while the newest run is still red, `V_SCHEDULED_RED_TICK` fires.
+  - A tick's evidence must name a green scheduled run newer than the red. Operator ruling 2026-10-04 ("Require a green run") removed the fix-on-origin/main alternative: only the next scheduled run proves a fix. A tick naming neither while the newest run is still red fires `V_SCHEDULED_RED_TICK`.
   - A newer red run id starts the cycle again.
 
 **A2. Stop wiring (`wl_checks.py`, after the CI block, before the PR-review block).**
