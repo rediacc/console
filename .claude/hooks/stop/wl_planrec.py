@@ -1947,7 +1947,9 @@ def select_box(boxes, selector, kind="OPEN"):
     if re.fullmatch(r"[0-9a-f]{4,8}", low):
         hits = [b for b in boxes if b[3].startswith(low)]
     if not hits:
-        hits = [b for b in boxes if low in b[2].lower()]
+        # The box body is stored with `*`, `_` and backticks stripped (`open_boxes`), so the selector is stripped the same way. A quoted `wl_planqueue.py` read as "wlplanqueue.py" in the box and never matched, and 14 of 22 text ticks failed on one plan (2026-10-04).
+        want = re.sub(r"[*_`]+", "", low)
+        hits = [b for b in boxes if want and want in b[2].lower()]
     if not hits:
         raise RecordError(
             "no %s box matches %r. The %s boxes are:\n%s"
