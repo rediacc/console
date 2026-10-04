@@ -991,16 +991,28 @@ def resolve_epic() -> tuple[str | None, str]:
         found = EPIC_RE.search(snapshot.read_text(encoding="utf-8", errors="replace"))
     except OSError:
         found = None
-    return (found.group(1) if found else None), relative
+    if found:
+        return found.group(1), relative
+    # NO SNAPSHOT: the guard falls back to agent/worklist/epics.jsonl (block_untagged_commit._ledger_epic_ids), so a real id comes from the same ledger. A placeholder id here failed three cases on any branch that had not published its snapshot yet (measured 2026-10-04 on 1004-1, before agent/pr/1004-1.md existed).
+    try:
+        for line in (
+            (pathlib.Path(root) / "agent" / "worklist" / "epics.jsonl")
+            .read_text(encoding="utf-8", errors="replace")
+            .splitlines()
+        ):
+            row = json.loads(line) if line.strip() else {}
+            if isinstance(row, dict) and row.get("id"):
+                return str(row["id"]), relative
+    except (OSError, ValueError):
+        pass
+    return None, relative
 
 
 @pytest.mark.xdist_group("hooks-fixtures")
 def test_block_untagged_commit_reads_the_message_it_is_given(tmp_path):
     block = hookblocks.Block("untagged-commit")
     epic, relative = resolve_epic()
-    # With no snapshot the guard has no set to judge against and ALLOWS any well-formed
-    # trailer -- its documented behaviour, not a bug. So the shape cases run either way;
-    # only the id-validation case needs a real epic, and it says so out loud rather than silently not running.
+    # With no snapshot the guard judges against the epic ledger instead, so resolve_epic draws a real id from it; only a tree with neither falls back to the placeholder, where the guard has no set and allows any well-formed trailer.
     identifier = epic or "f2757830"
     block.check(
         "check 0 guards/block_untagged_commit.py",
