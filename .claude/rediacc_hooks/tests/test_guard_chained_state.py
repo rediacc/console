@@ -172,7 +172,7 @@ def test_push_guard_names_the_commit_that_would_have_changed_head(tmp_path, monk
     """The 19:28:10 shape: the carry-file fix is committed by an EARLIER clause, the guard judges the pre-commit HEAD."""
     repo = PUSH._repo_with_receipt(
         tmp_path / "r",
-        {"whole": True, "exitCode": 1, "failed": ["check:ci-parity"]},
+        {"whole": True, "exitCode": 1, "failed": ["check:ci-parity"], "droppedTouched": []},
         carried={
             "version": 2,
             "carried": [
