@@ -497,8 +497,8 @@ V_SCHEDULED_RED = (
 V_SCHEDULED_RED_TICK = (
     "SCHEDULED RED TICKED WITHOUT EVIDENCE: #%(item)s closed the %(name)s (%(file)s) red, but "
     "the newest scheduled run %(run)s attempt %(attempt)s is still %(conclusion)s and the tick "
-    "names neither a green scheduled run newer than it nor a commit already on origin/main. "
-    "Reopen the tracking with a new item and land the fix:\n"
+    "names no green scheduled run newer than it (a fix commit is not evidence: only the next "
+    "scheduled run proves it, operator ruling 2026-10-04). Reopen the tracking with a new item:\n"
     "    .claude/hooks/stop/worklist.py --add %(me)s '%(add)s'\n"
     "    .ci/scripts/ci/ci-trace.py --run %(run)s --why"
 )

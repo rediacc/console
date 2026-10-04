@@ -22,7 +22,6 @@ import json
 import os
 import pathlib
 import re
-import subprocess
 import tempfile
 import time
 
@@ -41,7 +40,6 @@ WORKFLOW_DIR = pathlib.Path(".github") / "workflows"
 
 # The tracking vocabulary. A display name counts only beside one of these words, so "fix Console CI lint" (a PR red) never reads as tracking the nightly.
 _SCHED_WORDS = re.compile(r"\b(?:nightly|scheduled|schedule)\b", re.IGNORECASE)
-_SHA_TOKEN = re.compile(r"(?<![0-9a-fA-F])[0-9a-f]{7,40}(?![0-9a-fA-F])")
 _RUN_TOKEN = re.compile(r"(?<!\d)(\d{6,})(?!\d)")
 _OPEN_STATES = (" ", ">", "?")
 
@@ -430,21 +428,8 @@ def covering_ticks(items, row):
     return out
 
 
-def _is_main_ancestor(root, sha):
-    try:
-        ok = subprocess.run(
-            ["git", "-C", str(root), "merge-base", "--is-ancestor", sha, "origin/main"],
-            capture_output=True,
-            timeout=10,
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return False
-    return ok.returncode == 0
-
-
-def tick_evidence_ok(root, evidence, row, greens=()):
-    """THE TICK-EVIDENCE RULE. A tick ends a red only when its evidence names a green scheduled run newer than the red (from `greens`, run rows) or a commit that is an ancestor of origin/main (local git, no network)."""
+def tick_evidence_ok(evidence, row, greens=()):
+    """THE TICK-EVIDENCE RULE. A tick ends a red only when its evidence names a green scheduled run newer than the red (from `greens`, run rows). Operator ruling 2026-10-04 ("Require a green run"): a fix commit already on origin/main is NOT evidence, because only the next scheduled run proves the fix; the claimant waits for that run rather than closing on a hope. While the newest run is still red no newer green can exist, so a tick of a still-red workflow always fires."""
     evidence = str(evidence or "")
     red_id = row.get("run_id") or 0
     for g in greens or ():
@@ -457,7 +442,7 @@ def tick_evidence_ok(root, evidence, row, greens=()):
             and _mentions_run(evidence, gid)
         ):
             return True
-    return any(_is_main_ancestor(root, tok) for tok in _SHA_TOKEN.findall(evidence))
+    return False
 
 
 def _claim_stale(worklist, doc, run_id, now):
@@ -552,7 +537,7 @@ def fields(row, me8="<me>"):
     }
 
 
-def assess(root, worklist, items, session_id, doc, now=None):
+def assess(worklist, items, session_id, doc, now=None):
     """What this stop owes for scheduled runs, as {block: [rows], tick: [(row, item)], peer: [(row, holder or item owner)], green: [(row, item)]}.
 
     - block: untracked reds this session holds the claim on.
@@ -587,9 +572,7 @@ def assess(root, worklist, items, session_id, doc, now=None):
             continue
         ticks = covering_ticks(items, row)
         if ticks:
-            good = [
-                t for t in ticks if tick_evidence_ok(root, t.get("lastnote") or t.get("text"), row)
-            ]
+            good = [t for t in ticks if tick_evidence_ok(t.get("lastnote") or t.get("text"), row)]
             if good:
                 continue
             bad = ticks[-1]
