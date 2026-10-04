@@ -1,0 +1,8 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 8, "source": "bash", "twin": ".ci/scripts/release/check-stable-manifest.sh", "twin_blob": "90b6fd4b7a79d74aae945340e74a1d4d3e256964"}}
+{"_silent": ["test_differing_versions_report_not_same_on_both_sides#ad53daf1a04a25e8", "test_no_stable_manifest_yet_is_never_the_same_on_either_side#ad53daf1a04a25e8"]}
+{"_key": "test_differing_versions_report_not_same_on_both_sides#ad53daf1a04a25e8|file0", "err": "", "out": "version=1.2.2\nsame=false\n", "rc": "0"}
+{"_key": "test_matching_versions_report_same_on_both_sides#ad53daf1a04a25e8", "err": "", "out": "Edge and stable are the same version (1.2.3), skipping\n", "rc": "0"}
+{"_key": "test_matching_versions_report_same_on_both_sides#ad53daf1a04a25e8|file0", "err": "", "out": "version=1.2.3\nsame=true\n", "rc": "0"}
+{"_key": "test_missing_edge_version_fails_the_same_way_reworded#e3b0c44298fc1c14", "err": ".ci/scripts/release/check-stable-manifest.sh: line 34: EDGE_VERSION: check-stable-manifest.sh: EDGE_VERSION must be set\n", "out": "", "rc": "1"}
+{"_key": "test_missing_edge_version_fails_the_same_way_reworded#e3b0c44298fc1c14|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_no_stable_manifest_yet_is_never_the_same_on_either_side#ad53daf1a04a25e8|file0", "err": "", "out": "version=\nsame=false\n", "rc": "0"}

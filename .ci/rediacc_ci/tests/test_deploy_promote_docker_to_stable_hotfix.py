@@ -18,13 +18,15 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import promote_docker_to_stable_hotfix as port
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import IMAGE_REGISTRY
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "deploy" / "promote-docker-to-stable-hotfix.sh"
+TWIN_REL = ".ci/scripts/deploy/promote-docker-to-stable-hotfix.sh"
+TWIN = ROOT / TWIN_REL
 COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "promote_docker_to_stable_hotfix.py"
 BASH = shutil.which("bash") or "/bin/bash"
@@ -83,7 +85,8 @@ def fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "rediacc_ci" / "deploy").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
+    if diff.regolden_mode(TWIN_REL) == "bash":
+        shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
@@ -97,7 +100,19 @@ def fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     return root
 
 
-def _run(
+def _run(*args, **kw):
+    """One side. The twin's answer comes from its golden (PLAN-retire-bash-oracles B3); `_run_live` is how it was recorded."""
+    if args[1] == "old":
+        return diff.twin_result(
+            TWIN_REL,
+            [repr(args), repr(sorted(kw.items()))],
+            lambda: _run_live(*args, **kw),
+            work=diff.twin_work(args, kw),
+        )
+    return _run_live(*args, **kw)
+
+
+def _run_live(
     root: pathlib.Path,
     side: str,
     args: list[str],

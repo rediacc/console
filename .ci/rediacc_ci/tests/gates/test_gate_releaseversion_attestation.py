@@ -1,19 +1,20 @@
 """Port of `.ci/scripts/test/gates/test-releaseversion-attestation.sh`, retired in W7 P5.
 
-Both-ways test for `.ci/scripts/release/verify-artifact-attestation.sh`.
+Both-ways test for `rediacc_ci.release.verify_artifact_attestation`, the port of the retired `.ci/scripts/release/verify-artifact-attestation.sh` (PLAN-retire-bash-oracles B3: the bash is gone, so the gate now drives the code CD runs).
 
 WHAT IT IS FOR. cd-v2.yml runs it after downloading the release artifacts and before publishing them. It re-verifies the Sigstore build provenance that cd-stage.yml attached, proving the bytes CD is about to publish are the bytes CI produced.
 
 WHAT WAS BROKEN. Every `gh attestation verify` failure became a `::warning::` and the script had NO failing exit path at all -- it could not fail, for any input, ever. Its header called that a "transition period"; nothing recorded when the period ended, so it never would. Worse, `find` over two absent directories prints nothing, the loop body never runs, and it exited 0 having
 verified precisely zero artifacts, indistinguishable from a clean pass.
 
-The script resolves its repo root from its OWN path, so the test runs a copy inside a fixture tree. That keeps planted dist/ artifacts out of the real working tree, which other sessions are using.
+The module resolves its repo root from its OWN path, so the test runs a copy inside a fixture tree. That keeps planted dist/ artifacts out of the real working tree, which other sessions are using.
 """
 
 import os
 import pathlib
 import shutil
 import stat
+import sys
 
 import pytest
 
@@ -21,29 +22,20 @@ from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 from rediacc_ci.well_known import GH_REPO
 
-GATE_SRC = paths.from_root(".ci", "scripts", "release", "verify-artifact-attestation.sh")
-COMMON_SRC = paths.from_root(".ci", "scripts", "lib", "common.sh")
+GATE_SRC = paths.from_root(".ci", "rediacc_ci", "release", "verify_artifact_attestation.py")
 
 
 class Fixture:
-    """A minimal repo root holding the script under test, its lib, and artifacts."""
+    """A minimal repo root holding the module under test and artifacts.
+
+    The module is standard-library only and finds the root three directories above itself, so a copy at `.ci/rediacc_ci/release/` judges this fixture's `dist/`, never the shared working tree's.
+    """
 
     def __init__(self, root: pathlib.Path) -> None:
         self.root = root
-        (root / ".ci" / "scripts" / "release").mkdir(parents=True)
-        (root / ".ci" / "scripts" / "lib").mkdir(parents=True)
-        self.script = root / ".ci" / "scripts" / "release" / GATE_SRC.name
+        (root / ".ci" / "rediacc_ci" / "release").mkdir(parents=True)
+        self.script = root / ".ci" / "rediacc_ci" / "release" / GATE_SRC.name
         shutil.copy(GATE_SRC, self.script)
-        shutil.copy(COMMON_SRC, root / ".ci" / "scripts" / "lib" / COMMON_SRC.name)
-        (root / ".ci" / "config").mkdir(parents=True)
-        shutil.copy(
-            paths.from_root(".ci", "config", "well-known.env"),
-            root / ".ci" / "config" / "well-known.env",
-        )
-        shutil.copy(
-            paths.from_root(".ci", "config", "well-known.generated.sh"),
-            root / ".ci" / "config" / "well-known.generated.sh",
-        )
         self.output = ""
 
     def artifacts(self, *relatives: str) -> None:
@@ -73,7 +65,7 @@ class Fixture:
 
     def run_gate(self, bindir: pathlib.Path) -> int:
         result = harness.run(
-            [str(self.script)],
+            [sys.executable, str(self.script)],
             env={
                 "PATH": "%s:%s" % (bindir, os.environ.get("PATH", "")),
                 "GITHUB_REPOSITORY": GH_REPO,
@@ -131,16 +123,14 @@ def test_planted_warning_only_script_passes(gate, fixture):
     gate.log_test("control: with failures downgraded to warnings, the bad artifact passes")
     fixture.artifacts("dist/cli/rdc-linux-x64", "dist/packages/rdc.deb")
     body = fixture.script.read_text(encoding="utf-8")
-    anchor = "FAILED_COUNT=$((FAILED_COUNT + 1))"
+    anchor = "failed_list.append(f)"
     if anchor not in body:
         gate.log_fail(
             "CONTROL could not plant its defect: %r is gone from "
-            "verify-artifact-attestation.sh, so the mutation below is a no-op and "
+            "verify_artifact_attestation.py, so the mutation below is a no-op and "
             "test_one_unattested_fails proves nothing about the exit path" % anchor
         )
-    fixture.script.write_text(
-        body.replace(anchor, "FAILED_COUNT=$((FAILED_COUNT + 0))"), encoding="utf-8"
-    )
+    fixture.script.write_text(body.replace(anchor, "pass"), encoding="utf-8")
     rc = fixture.run_gate(fixture.fake_gh("rdc.deb"))
     gate.assert_eq(rc, 0, "planted warning-only script must pass (else the control proves nothing)")
     gate.log_pass("the check goes red only because failures are counted and acted on")

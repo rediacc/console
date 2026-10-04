@@ -1,0 +1,26 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 24, "source": "bash", "twin": ".ci/scripts/release/reprobe-r2-sentinel.sh", "twin_blob": "24713a8181c36463014b09307b2ca825480ce8a6"}}
+{"_silent": []}
+{"_key": "test_a_custom_bucket_is_honoured_by_both#afeaf09ad2d12cf1", "err": "", "out": "\u2713 cli/v1.1.2/.released present in R2\n", "rc": "0"}
+{"_key": "test_a_custom_bucket_is_honoured_by_both#afeaf09ad2d12cf1|more", "err": "", "out": "[[\"call: aws s3api head-object --bucket scratch-bucket --key cli/v1.1.2/.released --endpoint-url https://r2.example.invalid\"]]", "rc": "0"}
+{"_key": "test_absent_sentinel_annotates_and_exits_one#f6e21ea20ed955aa", "err": "", "out": "::error::cli/v1.1.2/.released NOT present after write\n", "rc": "1"}
+{"_key": "test_absent_sentinel_annotates_and_exits_one#f6e21ea20ed955aa|more", "err": "", "out": "[[\"call: aws s3api head-object --bucket rediacc-releases --key cli/v1.1.2/.released --endpoint-url https://r2.example.invalid\"]]", "rc": "0"}
+{"_key": "test_an_empty_variable_refuses_like_an_unset_one#367541884e64ae71", "err": "<REPO>/.ci/scripts/release/reprobe-r2-sentinel.sh: line 31: VERSION: reprobe-r2-sentinel.sh: VERSION must be set\n", "out": "", "rc": "1"}
+{"_key": "test_an_empty_variable_refuses_like_an_unset_one#367541884e64ae71|more", "err": "", "out": "[[]]", "rc": "0"}
+{"_key": "test_missing_access_key_refuses_on_both_sides#d8c6901a366b6321", "err": "<REPO>/.ci/scripts/release/reprobe-r2-sentinel.sh: line 32: CLOUDFLARE_R2_ACCESS_KEY_ID: reprobe-r2-sentinel.sh: CLOUDFLARE_R2_ACCESS_KEY_ID must be set\n", "out": "", "rc": "1"}
+{"_key": "test_missing_access_key_refuses_on_both_sides#d8c6901a366b6321|more", "err": "", "out": "[[]]", "rc": "0"}
+{"_key": "test_missing_aws_refuses_identically#4ee801843bb3f81b", "err": "\u2717 Required command 'aws' is not available\n", "out": "", "rc": "1"}
+{"_key": "test_missing_aws_refuses_identically#4ee801843bb3f81b|more", "err": "", "out": "[[]]", "rc": "0"}
+{"_key": "test_missing_endpoint_refuses_on_both_sides#cb991b020bbf624f", "err": "<REPO>/.ci/scripts/release/reprobe-r2-sentinel.sh: line 34: CLOUDFLARE_R2_ENDPOINT: reprobe-r2-sentinel.sh: CLOUDFLARE_R2_ENDPOINT must be set\n", "out": "", "rc": "1"}
+{"_key": "test_missing_endpoint_refuses_on_both_sides#cb991b020bbf624f|more", "err": "", "out": "[[]]", "rc": "0"}
+{"_key": "test_missing_secret_key_refuses_on_both_sides#36a995aa9732672c", "err": "<REPO>/.ci/scripts/release/reprobe-r2-sentinel.sh: line 33: CLOUDFLARE_R2_SECRET_ACCESS_KEY: reprobe-r2-sentinel.sh: CLOUDFLARE_R2_SECRET_ACCESS_KEY must be set\n", "out": "", "rc": "1"}
+{"_key": "test_missing_secret_key_refuses_on_both_sides#36a995aa9732672c|more", "err": "", "out": "[[]]", "rc": "0"}
+{"_key": "test_missing_version_refuses_on_both_sides#70fea2d0ce4b7f53", "err": "<REPO>/.ci/scripts/release/reprobe-r2-sentinel.sh: line 31: VERSION: reprobe-r2-sentinel.sh: VERSION must be set\n", "out": "", "rc": "1"}
+{"_key": "test_missing_version_refuses_on_both_sides#70fea2d0ce4b7f53|more", "err": "", "out": "[[]]", "rc": "0"}
+{"_key": "test_sealed_sentinel_reports_present_and_exits_zero#4db028c0d660a52b", "err": "", "out": "\u2713 cli/v1.1.2/.released present in R2\n", "rc": "0"}
+{"_key": "test_sealed_sentinel_reports_present_and_exits_zero#4db028c0d660a52b|more", "err": "", "out": "[[\"call: aws s3api head-object --bucket rediacc-releases --key cli/v1.1.2/.released --endpoint-url https://r2.example.invalid\"]]", "rc": "0"}
+{"_key": "test_the_harness_actually_compared_something#4db028c0d660a52b", "err": "", "out": "\u2713 cli/v1.1.2/.released present in R2\n", "rc": "0"}
+{"_key": "test_the_harness_actually_compared_something#4db028c0d660a52b|more", "err": "", "out": "[[\"call: aws s3api head-object --bucket rediacc-releases --key cli/v1.1.2/.released --endpoint-url https://r2.example.invalid\"]]", "rc": "0"}
+{"_key": "test_the_version_reaches_the_probe_key#a68c0b290851c9e6", "err": "", "out": "\u2713 cli/v9.9.9/.released present in R2\n", "rc": "0"}
+{"_key": "test_the_version_reaches_the_probe_key#a68c0b290851c9e6|more", "err": "", "out": "[[\"call: aws s3api head-object --bucket rediacc-releases --key cli/v9.9.9/.released --endpoint-url https://r2.example.invalid\"]]", "rc": "0"}
+{"_key": "test_unknown_probe_diverges_only_by_the_log_error_marker#99030d4b9ea37a64", "err": "\u2717 rsv_sentinel_exists: could not determine whether cli/v1.1.2/.released exists (exit 254); this is NOT evidence that it is missing\n    An error occurred (InvalidAccessKeyId) when calling the HeadObject operation: The Access Key Id you provided does not exist in our records.\n", "out": "::error::cli/v1.1.2/.released NOT present after write\n", "rc": "1"}
+{"_key": "test_unknown_probe_diverges_only_by_the_log_error_marker#99030d4b9ea37a64|more", "err": "", "out": "[[\"call: aws s3api head-object --bucket rediacc-releases --key cli/v1.1.2/.released --endpoint-url https://r2.example.invalid\"]]", "rc": "0"}

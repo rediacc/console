@@ -237,7 +237,7 @@ def drive(
     env = differential.env_for(PYTHONDONTWRITEBYTECODE="1")
     env["FAKE_LOG"] = str(log)
     env["FAKE_VERSION"] = FIXTURE_VERSION
-    # The fixture holds a handful of `.sh` files across the three floor roots, and the real floor (179) would refuse every case before it started.
+    # The fixture holds a handful of `.sh` files across the three floor roots, and the real floor (167) would refuse every case before it started.
     env["SHFMT_MIN_FILES"] = "4"
     if not subject_rel.endswith(".sh"):
         env["PYTHONPATH"] = str(fx / ".ci")
@@ -636,7 +636,7 @@ def test_the_scope_list_and_flags_are_the_twins() -> None:
     """The twin's literals are gone from the tree, so what is asserted is that the port still carries them and that the RECORDED argv agrees with the flags it claims."""
     assert port.SHFMT_OPTS == ("-i", "4", "-ci", "-d")
     assert port.OPTIONAL_SCOPES == ("scripts/dev", "scripts/ops", ".github")
-    assert port.DEFAULT_MIN_FILES == "179"
+    assert port.DEFAULT_MIN_FILES == "167"
     assert port.FLOOR_ROOTS == (".ci", ".claude", "scripts")
     first = recorded("a-clean-fixture")[3][0]
     assert first.startswith("FAKECALL shfmt %s " % " ".join(port.SHFMT_OPTS)), first

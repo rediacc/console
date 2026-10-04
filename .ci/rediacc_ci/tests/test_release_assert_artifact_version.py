@@ -99,7 +99,12 @@ def run_both(
         PYTHONPATH=".ci",
         PYTHONDONTWRITEBYTECODE="1",
     )
-    old = diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=60)
+    old = diff.twin_call(
+        TWIN,
+        ["bash"],
+        lambda: diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=60),
+        work=(tmp_path,),
+    )
     new = diff.bash_streams("python3 -m %s" % MODULE, env=new_env, timeout=60)
     return old, new
 
@@ -328,7 +333,12 @@ def test_missing_gh_binary_refuses_identically(tmp_path: pathlib.Path) -> None:
     env = _ok_env()
     old_env = diff.env_for(**env, PATH=nogh)
     new_env = diff.env_for(**env, PATH=nogh, PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1")
-    old = diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30)
+    old = diff.twin_call(
+        TWIN,
+        ["bash"],
+        lambda: diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30),
+        work=(tmp_path,),
+    )
     new = diff.bash_streams("python3 -m %s" % MODULE, env=new_env, timeout=30)
     assert old[0] == 1
     assert old[1] == ""
@@ -342,7 +352,12 @@ def test_missing_jq_binary_refuses_identically(tmp_path: pathlib.Path) -> None:
     env = _ok_env()
     old_env = diff.env_for(**env, PATH=nojq)
     new_env = diff.env_for(**env, PATH=nojq, PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1")
-    old = diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30)
+    old = diff.twin_call(
+        TWIN,
+        ["bash"],
+        lambda: diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30),
+        work=(tmp_path,),
+    )
     new = diff.bash_streams("python3 -m %s" % MODULE, env=new_env, timeout=30)
     assert old[0] == 1
     assert old[2] == "✗ Required command 'jq' is not available\n"

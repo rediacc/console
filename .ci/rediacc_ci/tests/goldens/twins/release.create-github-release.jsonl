@@ -1,0 +1,48 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 46, "source": "bash", "twin": ".ci/scripts/release/create-github-release.sh", "twin_blob": "60abc8e52475c007526ce63cc3fc21fdc9c0f420"}}
+{"_silent": []}
+{"_key": "test_a_directory_tree_with_no_files_refuses#603275492fc596b8", "err": "", "out": "::error::No release assets matched dist/{cli,packages}/**/*\n", "rc": "1"}
+{"_key": "test_a_directory_tree_with_no_files_refuses#603275492fc596b8|more", "err": "", "out": "[[]]", "rc": "0"}
+{"_key": "test_a_failing_gh_propagates_its_exit_code#23c2601314c62ef9", "err": "gh: HTTP 422 release already exists\n", "out": "", "rc": "1"}
+{"_key": "test_a_failing_gh_propagates_its_exit_code#23c2601314c62ef9|more", "err": "", "out": "[[\"call: gh release create v1.2.3 --title v1.2.3 --target 0123456789abcdef0123456789abcdef01234567 --generate-notes --latest=false --repo acme/widget dist/cli/rdc-linux-x64\"]]", "rc": "0"}
+{"_key": "test_a_gh_exit_other_than_one_is_propagated_verbatim#ea56318d7390dbc6", "err": "gh: HTTP 422 release already exists\n", "out": "", "rc": "7"}
+{"_key": "test_a_gh_exit_other_than_one_is_propagated_verbatim#ea56318d7390dbc6|more", "err": "", "out": "[[\"call: gh release create v1.2.3 --title v1.2.3 --target 0123456789abcdef0123456789abcdef01234567 --generate-notes --latest=false --repo acme/widget dist/cli/rdc-linux-x64\"]]", "rc": "0"}
+{"_key": "test_a_new_release_never_takes_latest#78813f4537a0ae64", "err": "", "out": "https://github.com/acme/widget/releases/tag/v1.2.3\n", "rc": "0"}
+{"_key": "test_a_new_release_never_takes_latest#78813f4537a0ae64|more", "err": "", "out": "[[\"call: gh release create v1.2.3 --title v1.2.3 --target 0123456789abcdef0123456789abcdef01234567 --generate-notes --latest=false --repo acme/widget dist/cli/rdc-linux-x64\"]]", "rc": "0"}
+{"_key": "test_a_symlink_to_a_directory_is_not_uploaded#b2bee1158e254eed", "err": "", "out": "https://github.com/acme/widget/releases/tag/v1.2.3\n", "rc": "0"}
+{"_key": "test_a_symlink_to_a_directory_is_not_uploaded#b2bee1158e254eed|more", "err": "", "out": "[[\"call: gh release create v1.2.3 --title v1.2.3 --target 0123456789abcdef0123456789abcdef01234567 --generate-notes --latest=false --repo acme/widget dist/cli/alias/a.bin dist/cli/v1/a.bin\"]]", "rc": "0"}
+{"_key": "test_a_symlink_to_a_file_is_uploaded#38669690e73ac0d1", "err": "", "out": "https://github.com/acme/widget/releases/tag/v1.2.3\n", "rc": "0"}
+{"_key": "test_a_symlink_to_a_file_is_uploaded#38669690e73ac0d1|more", "err": "", "out": "[[\"call: gh release create v1.2.3 --title v1.2.3 --target 0123456789abcdef0123456789abcdef01234567 --generate-notes --latest=false --repo acme/widget dist/cli/alias.bin dist/cli/real.bin\"]]", "rc": "0"}
+{"_key": "test_an_empty_version_refuses_like_an_unset_one#ecd9068f88ca9f86", "err": "<WORK0>/tree-old/.ci/scripts/release/create-github-release.sh: line 35: VERSION: create-github-release.sh: VERSION must be set\n", "out": "", "rc": "1"}
+{"_key": "test_an_empty_version_refuses_like_an_unset_one#ecd9068f88ca9f86|more", "err": "", "out": "[[]]", "rc": "0"}
+{"_key": "test_cli_assets_come_before_packages_assets#bc1621bb14649302", "err": "", "out": "https://github.com/acme/widget/releases/tag/v1.2.3\n", "rc": "0"}
+{"_key": "test_cli_assets_come_before_packages_assets#bc1621bb14649302|more", "err": "", "out": "[[\"call: gh release create v1.2.3 --title v1.2.3 --target 0123456789abcdef0123456789abcdef01234567 --generate-notes --latest=false --repo acme/widget dist/cli/zzz.bin dist/packages/aaa.deb\"]]", "rc": "0"}
+{"_key": "test_dotfiles_are_skipped_by_both#884e98f056be85aa", "err": "", "out": "https://github.com/acme/widget/releases/tag/v1.2.3\n", "rc": "0"}
+{"_key": "test_dotfiles_are_skipped_by_both#884e98f056be85aa|more", "err": "", "out": "[[\"call: gh release create v1.2.3 --title v1.2.3 --target 0123456789abcdef0123456789abcdef01234567 --generate-notes --latest=false --repo acme/widget dist/cli/visible.bin\"]]", "rc": "0"}
+{"_key": "test_empty_dist_directories_still_refuse#a9908cea27163fb4", "err": "", "out": "::error::No release assets matched dist/{cli,packages}/**/*\n", "rc": "1"}
+{"_key": "test_empty_dist_directories_still_refuse#a9908cea27163fb4|more", "err": "", "out": "[[]]", "rc": "0"}
+{"_key": "test_gh_is_required_before_version#c26d6bd33a351ef0", "err": "\u2717 Required command 'gh' is not available\n", "out": "", "rc": "1"}
+{"_key": "test_gh_is_required_before_version#c26d6bd33a351ef0|more", "err": "", "out": "[[]]", "rc": "0"}
+{"_key": "test_glob_order_is_bytewise_not_a_directory_walk#456c2a26d6443dfa", "err": "", "out": "https://github.com/acme/widget/releases/tag/v1.2.3\n", "rc": "0"}
+{"_key": "test_glob_order_is_bytewise_not_a_directory_walk#456c2a26d6443dfa|more", "err": "", "out": "[[\"call: gh release create v1.2.3 --title v1.2.3 --target 0123456789abcdef0123456789abcdef01234567 --generate-notes --latest=false --repo acme/widget dist/cli/v1-x dist/cli/v1.y dist/cli/v1/a.bin\"]]", "rc": "0"}
+{"_key": "test_missing_gh_refuses_identically#6cca68e134521fda", "err": "\u2717 Required command 'gh' is not available\n", "out": "", "rc": "1"}
+{"_key": "test_missing_gh_refuses_identically#6cca68e134521fda|more", "err": "", "out": "[[]]", "rc": "0"}
+{"_key": "test_missing_github_repository_refuses#ac25330507da51f4", "err": "<WORK0>/tree-old/.ci/scripts/release/create-github-release.sh: line 37: GITHUB_REPOSITORY: create-github-release.sh: GITHUB_REPOSITORY must be set\n", "out": "", "rc": "1"}
+{"_key": "test_missing_github_repository_refuses#ac25330507da51f4|more", "err": "", "out": "[[]]", "rc": "0"}
+{"_key": "test_missing_github_sha_refuses#4bd3c467aba61b2d", "err": "<WORK0>/tree-old/.ci/scripts/release/create-github-release.sh: line 36: GITHUB_SHA: create-github-release.sh: GITHUB_SHA must be set\n", "out": "", "rc": "1"}
+{"_key": "test_missing_github_sha_refuses#4bd3c467aba61b2d|more", "err": "", "out": "[[]]", "rc": "0"}
+{"_key": "test_missing_version_refuses#d38dbdf2c0355e37", "err": "<WORK0>/tree-old/.ci/scripts/release/create-github-release.sh: line 35: VERSION: create-github-release.sh: VERSION must be set\n", "out": "", "rc": "1"}
+{"_key": "test_missing_version_refuses#d38dbdf2c0355e37|more", "err": "", "out": "[[]]", "rc": "0"}
+{"_key": "test_nested_assets_are_uploaded_and_directories_are_not#25acb87a4bb2c4d1", "err": "", "out": "https://github.com/acme/widget/releases/tag/v1.2.3\n", "rc": "0"}
+{"_key": "test_nested_assets_are_uploaded_and_directories_are_not#25acb87a4bb2c4d1|more", "err": "", "out": "[[\"call: gh release create v1.2.3 --title v1.2.3 --target 0123456789abcdef0123456789abcdef01234567 --generate-notes --latest=false --repo acme/widget dist/cli/top.bin dist/cli/v1/a.bin dist/cli/v1/sub/b.bin dist/cli/v1/sub/z.bin dist/packages/deb/x.deb dist/packages/p.txt\"]]", "rc": "0"}
+{"_key": "test_no_assets_refuses_and_never_calls_gh#4f53cda18c2baa0c", "err": "", "out": "::error::No release assets matched dist/{cli,packages}/**/*\n", "rc": "1"}
+{"_key": "test_no_assets_refuses_and_never_calls_gh#4f53cda18c2baa0c|more", "err": "", "out": "[[]]", "rc": "0"}
+{"_key": "test_only_the_packages_pattern_matching_is_enough#5ece514241356220", "err": "", "out": "https://github.com/acme/widget/releases/tag/v1.2.3\n", "rc": "0"}
+{"_key": "test_only_the_packages_pattern_matching_is_enough#5ece514241356220|more", "err": "", "out": "[[\"call: gh release create v1.2.3 --title v1.2.3 --target 0123456789abcdef0123456789abcdef01234567 --generate-notes --latest=false --repo acme/widget dist/packages/rdc.rpm\"]]", "rc": "0"}
+{"_key": "test_the_asset_paths_are_relative_to_the_repo_root#9998d9d2e6a5e739", "err": "", "out": "https://github.com/acme/widget/releases/tag/v1.2.3\n", "rc": "0"}
+{"_key": "test_the_asset_paths_are_relative_to_the_repo_root#9998d9d2e6a5e739|more", "err": "", "out": "[[\"call: gh release create v1.2.3 --title v1.2.3 --target 0123456789abcdef0123456789abcdef01234567 --generate-notes --latest=false --repo acme/widget dist/cli/rdc-mac-arm64\"]]", "rc": "0"}
+{"_key": "test_the_full_invocation_is_byte_identical#39989fe1af5448a2", "err": "", "out": "https://github.com/acme/widget/releases/tag/v1.2.3\n", "rc": "0"}
+{"_key": "test_the_full_invocation_is_byte_identical#39989fe1af5448a2|more", "err": "", "out": "[[\"call: gh release create v1.2.3 --title v1.2.3 --target 0123456789abcdef0123456789abcdef01234567 --generate-notes --latest=false --repo acme/widget dist/cli/rdc-linux-x64 dist/packages/rdc.deb\"]]", "rc": "0"}
+{"_key": "test_the_harness_actually_compared_something#568b48a794e24bde", "err": "", "out": "https://github.com/acme/widget/releases/tag/v1.2.3\n", "rc": "0"}
+{"_key": "test_the_harness_actually_compared_something#568b48a794e24bde|more", "err": "", "out": "[[\"call: gh release create v1.2.3 --title v1.2.3 --target 0123456789abcdef0123456789abcdef01234567 --generate-notes --latest=false --repo acme/widget dist/cli/rdc\"]]", "rc": "0"}
+{"_key": "test_the_version_is_v_prefixed_exactly_once#7a3baf97c62b644b", "err": "", "out": "https://github.com/acme/widget/releases/tag/v1.2.3\n", "rc": "0"}
+{"_key": "test_the_version_is_v_prefixed_exactly_once#7a3baf97c62b644b|more", "err": "", "out": "[[\"call: gh release create v9.9.9 --title v9.9.9 --target 0123456789abcdef0123456789abcdef01234567 --generate-notes --latest=false --repo acme/widget dist/cli/rdc\"]]", "rc": "0"}

@@ -79,7 +79,14 @@ def run_both(
         PYTHONPATH=".ci",
         PYTHONDONTWRITEBYTECODE="1",
     )
-    old = diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30)
+    rc, out, err, _ = diff.twin_run(
+        TWIN,
+        sorted("%s=%s" % kv for kv in env_extra.items()),
+        lambda: diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30),
+        files=[out_old],
+        work=(tmp_path,),
+    )
+    old = (rc, out, err)
     new = diff.bash_streams("python3 -m rediacc_ci.release.%s" % MODULE, env=new_env, timeout=30)
     old_output = out_old.read_text(encoding="utf-8") if out_old.exists() else ""
     new_output = out_new.read_text(encoding="utf-8") if out_new.exists() else ""

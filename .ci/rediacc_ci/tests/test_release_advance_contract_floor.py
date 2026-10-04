@@ -25,12 +25,14 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.release import advance_contract_floor as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "release" / "advance-contract-floor.sh"
+TWIN_REL = ".ci/scripts/release/advance-contract-floor.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "release" / "advance_contract_floor.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -91,7 +93,9 @@ def _fixture(tmp_path: pathlib.Path, floor_text: str | None) -> pathlib.Path:
     (fix / ".ci" / "scripts" / "release").mkdir(parents=True, exist_ok=True)
     (fix / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
     (fix / ".ci" / "config").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(TWIN, fix / ".ci" / "scripts" / "release" / TWIN.name)
+    recording = diff.regolden_mode(TWIN_REL) == "bash"
+    if recording:
+        shutil.copy2(TWIN, fix / ".ci" / "scripts" / "release" / TWIN.name)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", fix / ".ci" / "config" / "well-known.env"
     )
@@ -99,7 +103,7 @@ def _fixture(tmp_path: pathlib.Path, floor_text: str | None) -> pathlib.Path:
         ROOT / ".ci" / "config" / "well-known.generated.sh",
         fix / ".ci" / "config" / "well-known.generated.sh",
     )
-    for lib in ("common.sh", "release-state-validator.sh"):
+    for lib in ("common.sh", "release-state-validator.sh") if recording else ():
         shutil.copy2(ROOT / ".ci" / "scripts" / "lib" / lib, fix / ".ci" / "scripts" / "lib" / lib)
     for rel in PACKAGE_FILES:
         dst = fix / ".ci" / "rediacc_ci" / rel
@@ -187,13 +191,31 @@ def _floor(fix: pathlib.Path) -> str | None:
     return p.read_text(encoding="utf-8") if p.exists() else None
 
 
+def _run_old(fix: pathlib.Path, tmp_path: pathlib.Path, **kw):
+    """The twin's answer, from its golden (PLAN-retire-bash-oracles B3): streams, `git`/`aws` call log and the floor file it leaves, which is written back so the caller reads it exactly as it did when bash ran."""
+
+    def bash():
+        proc, calls = _run(fix, tmp_path, "old", **kw)
+        return proc.returncode, proc.stdout, proc.stderr, calls, _floor(fix)
+
+    rc, out, err, calls, floor = diff.twin_tuple(
+        TWIN_REL, [repr(sorted(kw.items()))], bash, work=(tmp_path,)
+    )
+    path = fix / ".ci" / "config" / "release-contract-floor.txt"
+    if floor is None:
+        path.unlink(missing_ok=True)
+    else:
+        path.write_text(floor, encoding="utf-8")
+    return subprocess.CompletedProcess([], rc, out, err), calls
+
+
 def run_both(tmp_path: pathlib.Path, floor_text: str | None, **kw):
     """Drive both sides from the SAME input state and return both outcomes.
 
     The floor file is restored between the two runs because the twin mutates it on an advance; without the reset the port would be handed the twin's output as its input and every advance case would read as a divergence.
     """
     fix = _fixture(tmp_path, floor_text)
-    old, old_calls = _run(fix, tmp_path, "old", **kw)
+    old, old_calls = _run_old(fix, tmp_path, **kw)
     old_floor = _floor(fix)
 
     _fixture(tmp_path, floor_text)
@@ -398,7 +420,7 @@ def test_a_failed_push_is_fatal_too(tmp_path: pathlib.Path) -> None:
 
 def test_missing_aws_is_refused_before_missing_git(tmp_path: pathlib.Path) -> None:
     fix = _fixture(tmp_path, "v1.0.0\n")
-    old, old_calls = _run(fix, tmp_path, "old", tools=False)
+    old, old_calls = _run_old(fix, tmp_path, tools=False)
     new, new_calls = _run(fix, tmp_path, "new", tools=False)
     assert old.returncode == 1
     assert old.stderr == "✗ Required command 'aws' is not available\n"
@@ -411,7 +433,7 @@ def test_each_required_variable_is_demanded_in_order(tmp_path: pathlib.Path) -> 
     carrying the twin's path and line number; the port names itself instead. The stream, the exit code, the order and the absence of any aws or git call must all agree."""
     for name in port.REQUIRED_ENV:
         fix = _fixture(tmp_path, "v1.0.0\n")
-        old, old_calls = _run(fix, tmp_path, "old", drop_env=(name,))
+        old, old_calls = _run_old(fix, tmp_path, drop_env=(name,))
         new, new_calls = _run(fix, tmp_path, "new", drop_env=(name,))
         assert old.returncode == 1 == new.returncode, name
         assert old.stdout == "" == new.stdout, name
@@ -433,7 +455,7 @@ def test_an_empty_variable_is_refused_like_an_unset_one(tmp_path: pathlib.Path) 
     """`${VAR:?}` fires on set-but-EMPTY, which is what an unfilled workflow
     input actually looks like."""
     fix = _fixture(tmp_path, "v1.0.0\n")
-    old, old_calls = _run(fix, tmp_path, "old", GIT_BOT_EMAIL="")
+    old, old_calls = _run_old(fix, tmp_path, GIT_BOT_EMAIL="")
     new, new_calls = _run(fix, tmp_path, "new", GIT_BOT_EMAIL="")
     assert old.returncode == 1 == new.returncode
     assert "GIT_BOT_EMAIL" in old.stderr
@@ -442,24 +464,8 @@ def test_an_empty_variable_is_refused_like_an_unset_one(tmp_path: pathlib.Path) 
 
 
 def test_the_fixture_root_is_not_this_checkout(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY ON THE HARNESS ITSELF. Every case above asserts on a floor file and on git calls; if either subject resolved its root back to this checkout, those assertions would be about the real tree and the twin would have run `git push origin HEAD:main` against it. Both subjects are asked where they think the root is, out of band."""
+    """ANTI-VACUITY ON THE HARNESS ITSELF. Every case above asserts on a floor file and on git calls; if the port resolved its root back to this checkout, those assertions would be about the real tree and it would have run `git push origin HEAD:main` against it. The port is asked where it thinks the root is, out of band. (The twin's half of this check went with the twin: its answers are frozen in a golden that was recorded from this fixture.)"""
     fix = _fixture(tmp_path, "v1.0.0\n")
-    twin_copy = fix / ".ci" / "scripts" / "release" / TWIN.name
-
-    twin_root = subprocess.run(
-        [
-            BASH,
-            "-c",
-            'source "$(dirname "$1")/../lib/common.sh"; get_repo_root',
-            "_",
-            str(twin_copy),
-        ],
-        capture_output=True,
-        text=True,
-        check=True,
-        timeout=30,
-    ).stdout.strip()
-
     port_root = subprocess.run(
         [
             sys.executable,
@@ -478,9 +484,8 @@ def test_the_fixture_root_is_not_this_checkout(tmp_path: pathlib.Path) -> None:
         },
     ).stdout.strip()
 
-    assert twin_root == str(fix), f"the twin resolved to {twin_root}, not the fixture"
     assert port_root == str(fix), f"the port resolved to {port_root}, not the fixture"
-    assert twin_root != str(ROOT), "the twin would have committed to this checkout"
+    assert port_root != str(ROOT), "the port would have committed to this checkout"
 
 
 def test_pure_helpers() -> None:
@@ -539,7 +544,7 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     assert bad.returncode == 0, "the plant is invisible in the exit code, as intended"
 
     fix = _fixture(tmp_path, "v1.5.0\n")
-    old, old_calls = _run(fix, tmp_path, "old", FAKE_AWS_OUT=sentinels("v1.2.0"))
+    old, old_calls = _run_old(fix, tmp_path, FAKE_AWS_OUT=sentinels("v1.2.0"))
     assert _floor(fix) == "v1.5.0\n", "the TWIN advanced backwards; the plant is untested"
     assert old_calls == [LIST_CALL]
     assert bad.stdout != old.stdout

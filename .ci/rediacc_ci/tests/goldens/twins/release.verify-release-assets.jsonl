@@ -1,0 +1,6 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 4, "source": "bash", "twin": ".ci/scripts/release/verify-release-assets.sh", "twin_blob": "74e473fd58a3ee3ba56fec45063ad5e24e477ef8"}}
+{"_silent": []}
+{"_key": "test_a_missing_release_fails_on_both_sides#ea390656a51ea8cd", "err": "", "out": "::error::no GitHub Release found for v9.9.9\nrelease not found\n", "rc": "1"}
+{"_key": "test_a_release_with_a_cli_asset_passes_on_both_sides#1ebd8b82c3dc8edb", "err": "", "out": "\u2713 Release v1.2.3 has 1 rdc-* CLI asset(s)\n", "rc": "0"}
+{"_key": "test_a_release_with_no_cli_assets_fails_on_both_sides#1ebd8b82c3dc8edb", "err": "", "out": "::error::Release v1.2.3 has no rdc-* CLI assets\n::error::refusing to seal a version that was never built/published\n[\n  \"checksums.txt\",\n  \"notes.md\"\n]\n", "rc": "1"}
+{"_key": "test_missing_version_fails_the_same_way_reworded#cbbfefbc4790d610", "err": ".ci/scripts/release/verify-release-assets.sh: line 31: VERSION: verify-release-assets.sh: VERSION must be set\n", "out": "", "rc": "1"}

@@ -1,0 +1,26 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 24, "source": "bash", "twin": ".ci/scripts/release/tag-submodules.sh", "twin_blob": "9994d3a7b57d4cd65c9f8f5613e80661687955b7"}}
+{"_silent": []}
+{"_key": "test_directory_without_dot_git_is_skipped#544dfa258ff7de95", "err": "", "out": "::notice::Skipping private/renet (not initialized)\n", "rc": "0"}
+{"_key": "test_directory_without_dot_git_is_skipped#544dfa258ff7de95|more", "err": "", "out": "[\"\", \"\"]", "rc": "0"}
+{"_key": "test_dot_git_as_a_file_is_initialized#544dfa258ff7de95", "err": "To ../renet-remote.git\n * [new tag]         v1.2.3 -> v1.2.3\n", "out": "", "rc": "0"}
+{"_key": "test_dot_git_as_a_file_is_initialized#544dfa258ff7de95|more", "err": "", "out": "[\"v1.2.3\\n\", \"06bd30a442fa08810dacf64b9de8eeb9e90daaa2\\n\"]", "rc": "0"}
+{"_key": "test_drift_is_a_hard_failure#544dfa258ff7de95", "err": "", "out": "::error::Submodule private/renet tag v1.2.3 already points to 06bd30a442fa08810dacf64b9de8eeb9e90daaa2 but HEAD is 7266b687d96051c3d4222afffcb9c8e391669ac2. Drift must be resolved manually before this release can proceed.\n", "rc": "1"}
+{"_key": "test_drift_is_a_hard_failure#544dfa258ff7de95|more", "err": "", "out": "[\"v1.2.3\\n\", \"06bd30a442fa08810dacf64b9de8eeb9e90daaa2\\n\"]", "rc": "0"}
+{"_key": "test_empty_version_refuses_too#edce5936daa7b10e", "err": "<REPO>/.ci/scripts/release/tag-submodules.sh: line 36: VERSION: tag-submodules.sh: VERSION must be set\n", "out": "", "rc": "1"}
+{"_key": "test_empty_version_refuses_too#edce5936daa7b10e|more", "err": "", "out": "[\"\", \"\"]", "rc": "0"}
+{"_key": "test_fresh_tag_is_created_and_pushed#544dfa258ff7de95", "err": "To ../renet-remote.git\n * [new tag]         v1.2.3 -> v1.2.3\n", "out": "", "rc": "0"}
+{"_key": "test_fresh_tag_is_created_and_pushed#544dfa258ff7de95|more", "err": "", "out": "[\"v1.2.3\\n\", \"06bd30a442fa08810dacf64b9de8eeb9e90daaa2\\n\"]", "rc": "0"}
+{"_key": "test_missing_git_refuses_on_both_sides#bfa1167096e0d5b9", "err": "\u2717 Required command 'git' is not available\n", "out": "", "rc": "1"}
+{"_key": "test_missing_git_refuses_on_both_sides#bfa1167096e0d5b9|more", "err": "", "out": "[\"\", \"\"]", "rc": "0"}
+{"_key": "test_missing_version_refuses_on_both_sides#4f53cda18c2baa0c", "err": "<REPO>/.ci/scripts/release/tag-submodules.sh: line 36: VERSION: tag-submodules.sh: VERSION must be set\n", "out": "", "rc": "1"}
+{"_key": "test_missing_version_refuses_on_both_sides#4f53cda18c2baa0c|more", "err": "", "out": "[\"\", \"\"]", "rc": "0"}
+{"_key": "test_planted_defect_is_caught#544dfa258ff7de95", "err": "", "out": "::error::Submodule private/renet tag v1.2.3 already points to 06bd30a442fa08810dacf64b9de8eeb9e90daaa2 but HEAD is 7266b687d96051c3d4222afffcb9c8e391669ac2. Drift must be resolved manually before this release can proceed.\n", "rc": "1"}
+{"_key": "test_planted_defect_is_caught#544dfa258ff7de95|more", "err": "", "out": "[\"v1.2.3\\n\", \"06bd30a442fa08810dacf64b9de8eeb9e90daaa2\\n\"]", "rc": "0"}
+{"_key": "test_push_failure_propagates#544dfa258ff7de95", "err": "fatal: 'origin' does not appear to be a git repository\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.\n", "out": "", "rc": "128"}
+{"_key": "test_push_failure_propagates#544dfa258ff7de95|more", "err": "", "out": "[\"\", \"\"]", "rc": "0"}
+{"_key": "test_tag_already_at_head_is_reused_and_the_push_is_idempotent#544dfa258ff7de95", "err": "Everything up-to-date\n", "out": "::notice::Submodule private/renet tag v1.2.3 already at HEAD (06bd30a442fa08810dacf64b9de8eeb9e90daaa2); reusing\n", "rc": "0"}
+{"_key": "test_tag_already_at_head_is_reused_and_the_push_is_idempotent#544dfa258ff7de95|more", "err": "", "out": "[\"v1.2.3\\n\", \"06bd30a442fa08810dacf64b9de8eeb9e90daaa2\\n\"]", "rc": "0"}
+{"_key": "test_unborn_head_dies_with_gits_own_exit_code#544dfa258ff7de95", "err": "fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.\nUse '--' to separate paths from revisions, like this:\n'git <command> [<revision>...] -- [<file>...]'\n", "out": "", "rc": "128"}
+{"_key": "test_unborn_head_dies_with_gits_own_exit_code#544dfa258ff7de95|more", "err": "", "out": "[\"\", \"\"]", "rc": "0"}
+{"_key": "test_uninitialized_submodule_is_skipped#544dfa258ff7de95", "err": "", "out": "::notice::Skipping private/renet (not initialized)\n", "rc": "0"}
+{"_key": "test_uninitialized_submodule_is_skipped#544dfa258ff7de95|more", "err": "", "out": "[\"\", \"\"]", "rc": "0"}

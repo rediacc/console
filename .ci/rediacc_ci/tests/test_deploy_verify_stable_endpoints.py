@@ -362,7 +362,12 @@ def test_a_missing_curl_refuses_identically(tmp_path: pathlib.Path) -> None:
         if found:
             (lean / tool).symlink_to(found)
     env = diff.env_for(PATH=str(lean))
-    old = diff.bash_streams("bash %s" % TWIN, env=env, timeout=30)
+    old = diff.twin_call(
+        str(TWIN.relative_to(ROOT)),
+        ["no-curl"],
+        lambda: diff.bash_streams("bash %s" % TWIN, env=env, timeout=30),
+        work=(tmp_path,),
+    )
     env_new = dict(env)
     env_new["PYTHONPATH"] = str(ROOT / ".ci")
     env_new["PYTHONDONTWRITEBYTECODE"] = "1"

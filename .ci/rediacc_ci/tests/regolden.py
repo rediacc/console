@@ -30,7 +30,7 @@ import sys
 from rediacc_ci import paths
 
 HERE = pathlib.Path(__file__).resolve().parent
-SEAM_RE = re.compile(r"\btwin_(?:streams|call|run)\(")
+SEAM_RE = re.compile(r"\btwin_(?:streams|call|run|tuple|result)\(")
 ROOT = paths.repo_root()
 MODULE = "rediacc_ci.tests.regolden"
 

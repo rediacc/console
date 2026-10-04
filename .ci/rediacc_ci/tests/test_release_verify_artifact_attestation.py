@@ -44,8 +44,12 @@ def _build_scratch_tree(tmp_path: pathlib.Path) -> None:
     ci_scripts_lib = tmp_path / ".ci" / "scripts" / "lib"
     ci_scripts_release.mkdir(parents=True)
     ci_scripts_lib.mkdir(parents=True)
-    shutil.copy(os.path.join(root, TWIN_REL), ci_scripts_release / "verify-artifact-attestation.sh")
-    shutil.copy(os.path.join(root, ".ci/scripts/lib/common.sh"), ci_scripts_lib / "common.sh")
+    # The twin and the library it sources are only needed while a regolden records from bash; compare mode answers the bash side from the golden.
+    if diff.regolden_mode(TWIN_REL) == "bash":
+        shutil.copy(
+            os.path.join(root, TWIN_REL), ci_scripts_release / "verify-artifact-attestation.sh"
+        )
+        shutil.copy(os.path.join(root, ".ci/scripts/lib/common.sh"), ci_scripts_lib / "common.sh")
     (tmp_path / ".ci" / "config").mkdir(parents=True)
     shutil.copy(
         os.path.join(root, ".ci/config/well-known.env"),
@@ -94,7 +98,12 @@ def run_both(
         PYTHONPATH=ci_abs,
         PYTHONDONTWRITEBYTECODE="1",
     )
-    old = diff.bash_streams("bash %s" % twin_abs, env=old_env, cwd=str(tmp_path), timeout=30)
+    old = diff.twin_call(
+        TWIN_REL,
+        ["bash"],
+        lambda: diff.bash_streams("bash %s" % twin_abs, env=old_env, cwd=str(tmp_path), timeout=30),
+        work=(tmp_path,),
+    )
     new = diff.bash_streams(
         "python3 -m rediacc_ci.release.%s" % MODULE, env=new_env, cwd=str(tmp_path), timeout=30
     )
@@ -151,7 +160,12 @@ def test_missing_github_repository_fails_the_same_way_reworded(tmp_path: pathlib
     ci_abs = str(tmp_path / ".ci")
     old_env = diff.env_for(PATH=path_with_fake)
     new_env = diff.env_for(PATH=path_with_fake, PYTHONPATH=ci_abs, PYTHONDONTWRITEBYTECODE="1")
-    old = diff.bash_streams("bash %s" % twin_abs, env=old_env, cwd=str(tmp_path), timeout=30)
+    old = diff.twin_call(
+        TWIN_REL,
+        ["bash"],
+        lambda: diff.bash_streams("bash %s" % twin_abs, env=old_env, cwd=str(tmp_path), timeout=30),
+        work=(tmp_path,),
+    )
     new = diff.bash_streams(
         "python3 -m rediacc_ci.release.%s" % MODULE, env=new_env, cwd=str(tmp_path), timeout=30
     )

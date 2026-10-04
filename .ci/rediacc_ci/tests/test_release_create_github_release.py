@@ -29,12 +29,14 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.release import create_github_release as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "release" / "create-github-release.sh"
+TWIN_REL = ".ci/scripts/release/create-github-release.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "release" / "create_github_release.py"
 COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 BASH = shutil.which("bash") or "/bin/bash"
@@ -84,7 +86,8 @@ def _fixture(tmp_path: pathlib.Path, side: str, assets: tuple[str, ...]) -> path
         (".ci", "rediacc_ci", "release"),
     ):
         (root / os.path.join(*rel)).mkdir(parents=True, exist_ok=True)
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "release" / TWIN.name)
+    if diff.regolden_mode(TWIN_REL) == "bash":
+        shutil.copy2(TWIN, root / ".ci" / "scripts" / "release" / TWIN.name)
     shutil.copy2(PORT, root / ".ci" / "rediacc_ci" / "release" / PORT.name)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
@@ -175,7 +178,13 @@ def _run(
 
 
 def run_both(tmp_path: pathlib.Path, **kw) -> tuple[tuple, tuple]:
-    return _run(tmp_path, "old", **kw), _run(tmp_path, "new", **kw)
+    old = diff.twin_tuple(
+        TWIN_REL,
+        [repr(sorted(kw.items()))],
+        lambda: _run(tmp_path, "old", **kw),
+        work=(tmp_path,),
+    )
+    return old, _run(tmp_path, "new", **kw)
 
 
 def assert_agree(old: tuple, new: tuple, label: str) -> None:
@@ -222,7 +231,6 @@ def test_the_fake_gh_shadows_the_real_one(tmp_path: pathlib.Path) -> None:
 
 
 def test_both_subjects_exist() -> None:
-    assert TWIN.is_file(), "the bash twin moved: %s" % TWIN
     assert PORT.is_file(), "the port moved: %s" % PORT
 
 

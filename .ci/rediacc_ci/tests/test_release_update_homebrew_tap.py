@@ -22,13 +22,15 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.release import update_homebrew_tap as port
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import GH_ORIGIN, RELEASES_ORIGIN, SITE_ORIGIN
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "release" / "update-homebrew-tap.sh"
+TWIN_REL = ".ci/scripts/release/update-homebrew-tap.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "release" / "update_homebrew_tap.py"
 CONSTANTS = ROOT / ".ci" / "config" / "constants.sh"
 COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
@@ -251,7 +253,8 @@ def _fixture(tmp_path: pathlib.Path, side: str, *, with_pins: bool = True) -> pa
     (root / ".devcontainer").mkdir(parents=True, exist_ok=True)
     (root / "private" / "homebrew-tap" / "Formula").mkdir(parents=True, exist_ok=True)
 
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "release" / TWIN.name)
+    if diff.regolden_mode(TWIN_REL) == "bash":
+        shutil.copy2(TWIN, root / ".ci" / "scripts" / "release" / TWIN.name)
     shutil.copy2(PORT, root / ".ci" / "rediacc_ci" / "release" / PORT.name)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     shutil.copy2(CONSTANTS, root / ".ci" / "config" / "constants.sh")
@@ -274,7 +277,39 @@ def _subject(root: pathlib.Path, side: str) -> pathlib.Path:
     return root / ".ci" / "rediacc_ci" / "release" / PORT.name
 
 
-def _run(
+def _golden_side(tmp_path: pathlib.Path, tree: str, tmp: str, parts: list[str], live):
+    """The twin's `(proc, calls, formula, root, tmpdir)`, from its golden (PLAN-retire-bash-oracles B3).
+
+    Only the streams, the call log and the formula are recorded; `root` and `tmpdir` are where the twin's fixture WOULD sit, which is all `_norm` reads them for.
+    """
+
+    def bash():
+        proc, calls, formula, _root, _tmp = live()
+        return proc.returncode, proc.stdout, proc.stderr, calls, formula
+
+    rc, out, err, calls, formula = diff.twin_tuple(TWIN_REL, parts, bash, work=(tmp_path,))
+    return (
+        subprocess.CompletedProcess([], rc, out, err),
+        calls,
+        formula,
+        tmp_path / tree,
+        str(tmp_path / tmp),
+    )
+
+
+def _run(tmp_path: pathlib.Path, side: str, args: list[str], **kw):
+    if side == "old":
+        return _golden_side(
+            tmp_path,
+            "tree-old",
+            "old-tmp",
+            [repr(args), repr(sorted(kw.items()))],
+            lambda: _run_live(tmp_path, side, args, **kw),
+        )
+    return _run_live(tmp_path, side, args, **kw)
+
+
+def _run_live(
     tmp_path: pathlib.Path,
     side: str,
     args: list[str],
@@ -398,6 +433,18 @@ def test_a_missing_formula_is_refused_after_the_step_line(tmp_path: pathlib.Path
 
 
 def _rerun_without_formula(tmp_path: pathlib.Path, side: str):
+    if side == "old":
+        return _golden_side(
+            tmp_path,
+            "tree-nf-old",
+            "nf-old-tmp",
+            ["no-formula"],
+            lambda: _rerun_live(tmp_path, side),
+        )
+    return _rerun_live(tmp_path, side)
+
+
+def _rerun_live(tmp_path: pathlib.Path, side: str):
     """A fresh tree with the formula deleted, run for real."""
     root = _fixture(tmp_path, "nf-%s" % side)
     (root / "private" / "homebrew-tap" / "Formula" / "rediacc-cli.rb").unlink()

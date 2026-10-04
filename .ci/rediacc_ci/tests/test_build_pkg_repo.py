@@ -49,9 +49,10 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.build import build_pkg_repo
+from rediacc_ci.tests import differential as diff
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "build" / "build-pkg-repo.sh"
+TWIN = ROOT / ".ci/scripts/build/build-pkg-repo.sh"
 COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 CONSTANTS = ROOT / ".ci" / "config" / "constants.sh"
 TOOLCHAIN = ROOT / ".devcontainer" / "toolchain.env"
@@ -232,7 +233,8 @@ def _fixture(
     (root / ".devcontainer").mkdir(parents=True)
     (root / ".ci" / "rediacc_ci" / "build").mkdir(parents=True)
 
-    shutil.copy2(TWIN, root / TWIN_REL)
+    if diff.regolden_mode(str(TWIN_REL)) == "bash":
+        shutil.copy2(TWIN, root / TWIN_REL)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     shutil.copy2(CONSTANTS, root / ".ci" / "config" / "constants.sh")
     shutil.copy2(CONSTANTS.with_name("well-known.env"), root / ".ci" / "config" / "well-known.env")
@@ -337,7 +339,19 @@ def _artifacts(out: pathlib.Path, *, mask_date: bool) -> dict[str, object]:
     return result
 
 
-def _run(
+def _run(*args, **kw):
+    """One side. The twin's answer comes from its golden (PLAN-retire-bash-oracles B3); `_run_live` is how it was recorded."""
+    if str(args[0]).endswith(".sh"):
+        return diff.twin_result(
+            str(TWIN_REL),
+            [repr(args), repr(sorted(kw.items()))],
+            lambda: _run_live(*args, **kw),
+            work=diff.twin_work(args, kw),
+        )
+    return _run_live(*args, **kw)
+
+
+def _run_live(
     subject: pathlib.PurePosixPath,
     root: pathlib.Path,
     *,

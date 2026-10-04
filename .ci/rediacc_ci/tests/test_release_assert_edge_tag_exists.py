@@ -22,13 +22,15 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.release import assert_edge_tag_exists as port
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import GH_REPO
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "release" / "assert-edge-tag-exists.sh"
+TWIN_REL = ".ci/scripts/release/assert-edge-tag-exists.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "release" / "assert_edge_tag_exists.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -104,7 +106,19 @@ def _bin(tmp_path: pathlib.Path, name: str, *, tools: bool = True) -> str:
     return str(stub)
 
 
-def _run(
+def _run(subject, *args, **kw):
+    """One side. The twin's answer comes from its golden (PLAN-retire-bash-oracles B3); `_run_live` is how it was recorded."""
+    if subject == TWIN:
+        return diff.twin_result(
+            TWIN_REL,
+            [repr(args), repr(sorted(kw.items()))],
+            lambda: _run_live(subject, *args, **kw),
+            work=diff.twin_work(args, kw),
+        )
+    return _run_live(subject, *args, **kw)
+
+
+def _run_live(
     subject: pathlib.Path,
     tmp_path: pathlib.Path,
     args: list[str],
@@ -451,7 +465,10 @@ def test_the_r2_credentials_are_bridged_into_the_aws_names(tmp_path: pathlib.Pat
         )
         return log_file.read_text(encoding="utf-8")
 
-    assert "aws-creds\tAK-BRIDGED\tSK-BRIDGED\n" in drive(TWIN)
+    twin_log = diff.twin_call(TWIN_REL, ["creds"], lambda: (0, drive(TWIN), ""), work=(tmp_path,))[
+        1
+    ]
+    assert "aws-creds\tAK-BRIDGED\tSK-BRIDGED\n" in twin_log
     assert "aws-creds\tAK-BRIDGED\tSK-BRIDGED\n" in drive(PORT)
 
 

@@ -50,7 +50,14 @@ def run_both(
         PYTHONPATH=".ci",
         PYTHONDONTWRITEBYTECODE="1",
     )
-    old = diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30)
+    rc, out, err, _ = diff.twin_run(
+        TWIN,
+        ["bash", TWIN],
+        lambda: diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30),
+        files=[out_old],
+        work=(tmp_path,),
+    )
+    old = (rc, out, err)
     new = diff.bash_streams("python3 -m rediacc_ci.release.%s" % MODULE, env=new_env, timeout=30)
     old_output = out_old.read_text(encoding="utf-8") if out_old.exists() else ""
     new_output = out_new.read_text(encoding="utf-8") if out_new.exists() else ""
@@ -106,7 +113,12 @@ def test_missing_github_output_fails_the_same_way_reworded() -> None:
     """Exit codes agree; wording does not, and is not supposed to -- see the port's module docstring."""
     old_env = diff.env_for(GITHUB_OUTPUT=None)
     new_env = diff.env_for(GITHUB_OUTPUT=None, PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1")
-    old = diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30)
+    old = diff.twin_call(
+        TWIN,
+        ["bash"],
+        lambda: diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30),
+        work=(),
+    )
     new = diff.bash_streams("python3 -m rediacc_ci.release.%s" % MODULE, env=new_env, timeout=30)
     assert old[0] == 1
     assert new[0] == 1

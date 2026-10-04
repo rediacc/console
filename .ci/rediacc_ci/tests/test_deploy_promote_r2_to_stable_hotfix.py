@@ -24,6 +24,7 @@ from rediacc_ci import paths
 from rediacc_ci.deploy import promote_r2_to_stable as soak
 from rediacc_ci.deploy import promote_r2_to_stable_hotfix as port
 from rediacc_ci.quality import python_env_registry
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import r2_promote_fake as fake
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
@@ -31,7 +32,8 @@ if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "deploy" / "promote-r2-to-stable-hotfix.sh"
+TWIN_REL = ".ci/scripts/deploy/promote-r2-to-stable-hotfix.sh"
+TWIN = ROOT / TWIN_REL
 PURGE = ROOT / ".ci" / "scripts" / "deploy" / "cf-purge-urls.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "promote_r2_to_stable_hotfix.py"
 MODULE = "rediacc_ci.deploy.promote_r2_to_stable_hotfix"
@@ -406,7 +408,19 @@ def test_no_cloudflare_credential_warns_and_still_exits_zero(tmp_path) -> None:
     assert fake.curl_calls(records) == 0
 
 
-def _twin(root: pathlib.Path, drop_env: tuple[str, ...] = (), drop: str = ""):
+def _twin(*args, **kw):
+    """One side. The twin's answer comes from its golden (PLAN-retire-bash-oracles B3); `_twin_live` is how it was recorded."""
+    if True:
+        return diff.twin_result(
+            TWIN_REL,
+            [repr(args), repr(sorted(kw.items()))],
+            lambda: _twin_live(*args, **kw),
+            work=diff.twin_work(args, kw),
+        )
+    return _twin_live(*args, **kw)
+
+
+def _twin_live(root: pathlib.Path, drop_env: tuple[str, ...] = (), drop: str = ""):
     env = {"PATH": fake.stub_bin(root, drop=drop), "HOME": HOME, "LC_ALL": "C.UTF-8", **BASE_ENV}
     env["FAKE_CALL_LOG"] = str(root / "twin-calls.jsonl")
     env["FAKE_S3_ROOT"] = str(root / "s3")

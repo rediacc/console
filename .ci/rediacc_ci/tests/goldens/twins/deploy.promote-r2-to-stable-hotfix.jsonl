@@ -1,0 +1,10 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 8, "source": "bash", "twin": ".ci/scripts/deploy/promote-r2-to-stable-hotfix.sh", "twin_blob": "f4a3976c930729e641213cbbfafa351dc9fb66ab"}}
+{"_silent": []}
+{"_key": "test_a_missing_aws_refuses_before_the_variable_guards#458061e9d2863e8a", "err": "\u2717 Required command 'aws' is not available\n", "out": "", "rc": "1"}
+{"_key": "test_a_missing_aws_refuses_before_the_variable_guards#458061e9d2863e8a|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
+{"_key": "test_each_required_variable_refuses_as_the_twin_does[CLOUDFLARE_R2_ACCESS_KEY_ID]#550990caeab33fa1", "err": "<REPO>/.ci/scripts/deploy/promote-r2-to-stable-hotfix.sh: line 46: CLOUDFLARE_R2_ACCESS_KEY_ID: promote-r2-to-stable-hotfix.sh: CLOUDFLARE_R2_ACCESS_KEY_ID must be set\n", "out": "", "rc": "1"}
+{"_key": "test_each_required_variable_refuses_as_the_twin_does[CLOUDFLARE_R2_ACCESS_KEY_ID]#550990caeab33fa1|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
+{"_key": "test_each_required_variable_refuses_as_the_twin_does[CLOUDFLARE_R2_ENDPOINT]#0bae7e6420c048a4", "err": "<REPO>/.ci/scripts/deploy/promote-r2-to-stable-hotfix.sh: line 48: CLOUDFLARE_R2_ENDPOINT: promote-r2-to-stable-hotfix.sh: CLOUDFLARE_R2_ENDPOINT must be set\n", "out": "", "rc": "1"}
+{"_key": "test_each_required_variable_refuses_as_the_twin_does[CLOUDFLARE_R2_ENDPOINT]#0bae7e6420c048a4|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
+{"_key": "test_each_required_variable_refuses_as_the_twin_does[CLOUDFLARE_R2_SECRET_ACCESS_KEY]#6ce4af274e0bb1ba", "err": "<REPO>/.ci/scripts/deploy/promote-r2-to-stable-hotfix.sh: line 47: CLOUDFLARE_R2_SECRET_ACCESS_KEY: promote-r2-to-stable-hotfix.sh: CLOUDFLARE_R2_SECRET_ACCESS_KEY must be set\n", "out": "", "rc": "1"}
+{"_key": "test_each_required_variable_refuses_as_the_twin_does[CLOUDFLARE_R2_SECRET_ACCESS_KEY]#6ce4af274e0bb1ba|more", "err": "", "out": "[\"proc\"]", "rc": "0"}

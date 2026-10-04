@@ -85,7 +85,12 @@ def run_both(
         PYTHONPATH=_CI_ABS,
         PYTHONDONTWRITEBYTECODE="1",
     )
-    old = diff.bash_streams("bash %s" % _TWIN_ABS, env=old_env, cwd=str(repo), timeout=30)
+    old = diff.twin_call(
+        TWIN,
+        ["bash"],
+        lambda: diff.bash_streams("bash %s" % _TWIN_ABS, env=old_env, cwd=str(repo), timeout=30),
+        work=(repo.parent,),
+    )
     new = diff.bash_streams(
         "python3 -m rediacc_ci.release.%s" % MODULE, env=new_env, cwd=str(repo), timeout=30
     )
@@ -151,7 +156,12 @@ def test_missing_version_fails_the_same_way_reworded(tmp_path: pathlib.Path) -> 
         PYTHONPATH=_CI_ABS,
         PYTHONDONTWRITEBYTECODE="1",
     )
-    old = diff.bash_streams("bash %s" % _TWIN_ABS, env=old_env, cwd=str(repo), timeout=30)
+    old = diff.twin_call(
+        TWIN,
+        ["bash"],
+        lambda: diff.bash_streams("bash %s" % _TWIN_ABS, env=old_env, cwd=str(repo), timeout=30),
+        work=(repo.parent,),
+    )
     new = diff.bash_streams(
         "python3 -m rediacc_ci.release.%s" % MODULE, env=new_env, cwd=str(repo), timeout=30
     )

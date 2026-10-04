@@ -51,7 +51,8 @@ if typing.TYPE_CHECKING:
 pytestmark = pytest.mark.xdist_group("deploy-fixed-tmp")
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "deploy" / "simulate-promotion.sh"
+TWIN_REL = ".ci/scripts/deploy/simulate-promotion.sh"
+TWIN = ROOT / TWIN_REL
 PURGE = ROOT / ".ci" / "scripts" / "deploy" / "cf-purge-urls.sh"
 COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "simulate_promotion.py"
@@ -288,7 +289,9 @@ def fixture(tmp_path: pathlib.Path, bucket: dict[str, str] | None = None) -> pat
     root = tmp_path / "repo"
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
+    # The twin only while a regolden records from it; the purge script and its library stay, because the PORT still runs cf-purge-urls.sh.
+    if diff.regolden_mode(TWIN_REL) == "bash":
+        shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
     shutil.copy2(PURGE, root / ".ci" / "scripts" / "deploy" / PURGE.name)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
@@ -311,7 +314,23 @@ def fixture(tmp_path: pathlib.Path, bucket: dict[str, str] | None = None) -> pat
     return root
 
 
-def _run(
+def _run(root: pathlib.Path, side: str, **kw):
+    """One side. The twin's streams, call log, the `/tmp/config` it leaves and the GITHUB_ENV it writes come from its golden (PLAN-retire-bash-oracles B3)."""
+    if side != "old":
+        return _run_live(root, side, **kw)
+    files = [root / "old-scratch-left-behind"]
+    if "GITHUB_ENV" in kw:
+        files.append(type(root)(kw["GITHUB_ENV"]))
+    return diff.twin_result(
+        TWIN_REL,
+        [repr(sorted(kw.items()))],
+        lambda: _run_live(root, side, **kw),
+        files=files,
+        work=(root.parent,),
+    )
+
+
+def _run_live(
     root: pathlib.Path,
     side: str,
     *,
@@ -569,7 +588,6 @@ def test_fact_the_access_key_message_names_a_different_variable(tmp_path) -> Non
 def test_fact_the_secret_key_is_never_checked(tmp_path) -> None:
     """A RUN WITH NO SECRET GETS ALL THE WAY THROUGH under a fake aws, because nothing in the script tests it. Against a real endpoint it would fail at the first call, with aws's message rather than this script's."""
     assert port.THE_SECRET_KEY_IS_NEVER_CHECKED is True
-    assert "AWS_SECRET_ACCESS_KEY" in TWIN.read_text(encoding="utf-8"), "header claim is gone"
 
     _root, old, new = run_both(tmp_path, drop_env=("AWS_SECRET_ACCESS_KEY",))
     _agree(old, new, "no-secret-key")
@@ -907,17 +925,6 @@ def test_the_purge_script_is_still_the_bash_one_and_still_exists() -> None:
     assert port.PURGE_SCRIPT_RELATIVE == ".ci/scripts/deploy/cf-purge-urls.sh"
     assert PURGE.is_file()
     assert port.purge_argv("z")[-2:] == ["--zone", "z"]
-
-
-def test_the_twin_still_says_what_this_port_says_it_says() -> None:
-    """A STALENESS GUARD, quoting the twin."""
-    text = TWIN.read_text(encoding="utf-8")
-    assert "for dir in apt rpm apk archlinux; do" in text
-    assert "xargs -P 8 -I{} bash -c 'copy_one_object \"$@\"' _ {}" in text
-    assert 'log_error "CLOUDFLARE_R2_ACCESS_KEY_ID not set"' in text
-    assert '--zone "$CLOUDFLARE_ZONE_ID"' in text
-    assert "${CLOUDFLARE_ZONE_ID:-}" not in text
-    assert "aws configure set default.s3.max_concurrent_requests 3" in text
 
 
 def test_normalise_ignores_where_a_parallel_retry_sleep_lands() -> None:

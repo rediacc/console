@@ -26,13 +26,15 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.release import mark_production as port
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import GH_API_BASE
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "release" / "mark-production.sh"
+TWIN_REL = ".ci/scripts/release/mark-production.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "release" / "mark_production.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -125,7 +127,19 @@ def _bin(tmp_path: pathlib.Path, name: str, *, with_gh: bool = True) -> str:
     return str(stub)
 
 
-def _run(
+def _run(subject, *args, **kw):
+    """One side. The twin's answer comes from its golden (PLAN-retire-bash-oracles B3); `_run_live` is how it was recorded."""
+    if str(subject).endswith(".sh"):
+        return diff.twin_result(
+            TWIN_REL,
+            [repr(args), repr(sorted(kw.items()))],
+            lambda: _run_live(subject, *args, **kw),
+            work=diff.twin_work(args, kw),
+        )
+    return _run_live(subject, *args, **kw)
+
+
+def _run_live(
     subject: pathlib.Path,
     tmp_path: pathlib.Path,
     args: list[str],
@@ -408,7 +422,8 @@ def _fixture_tree(tmp_path: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path]:
     port_dir.mkdir(parents=True, exist_ok=True)
     twin_copy = twin_dir / TWIN.name
     port_copy = port_dir / PORT.name
-    shutil.copy2(TWIN, twin_copy)
+    if diff.regolden_mode(TWIN_REL) == "bash":
+        shutil.copy2(TWIN, twin_copy)
     shutil.copy2(PORT, port_copy)
     assert not (fix / ".ci" / "scripts" / "lib" / "common.sh").exists()
     return twin_copy, port_copy

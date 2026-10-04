@@ -19,6 +19,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.proxies import rdc_update
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -76,8 +77,11 @@ def build_fixture(
     for rel in FIXTURE_FILES:
         dst = fixture / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
+        if not (ROOT / rel).exists():
+            continue  # the retired twin and its library: only a recording run copies them
         dst.write_bytes((ROOT / rel).read_bytes())
-    (fixture / TWIN_REL).chmod(0o755)
+    if (fixture / TWIN_REL).exists():
+        (fixture / TWIN_REL).chmod(0o755)
     if port_source is not None:
         (fixture / PORT_REL).write_text(port_source, encoding="utf-8")
 
@@ -115,8 +119,13 @@ def run_both(
 ) -> tuple[subprocess.CompletedProcess[str], subprocess.CompletedProcess[str]]:
     env = _env(fixture, path)
     kwargs = {"env": env, "cwd": str(fixture), "capture_output": True, "text": True}
-    old = subprocess.run(  # type: ignore[call-overload]
-        ["bash", str(fixture / TWIN_REL), *args], timeout=300, check=False, **kwargs
+    old = diff.twin_result(
+        TWIN_REL,
+        [repr(["bash", str(fixture / TWIN_REL), *args])],
+        lambda: subprocess.run(  # type: ignore[call-overload]
+            ["bash", str(fixture / TWIN_REL), *args], timeout=300, check=False, **kwargs
+        ),
+        work=(fixture.parent,),
     )
     new = subprocess.run(  # type: ignore[call-overload]
         ["python3", "-m", PORT_MODULE, *args], timeout=300, check=False, **kwargs
@@ -185,8 +194,13 @@ def _real_tree_env() -> dict[str, str]:
 
 def test_selftest_is_byte_identical() -> None:
     kwargs = {"env": _real_tree_env(), "cwd": str(ROOT), "capture_output": True, "text": True}
-    old = subprocess.run(  # type: ignore[call-overload]
-        ["bash", str(TWIN), "--selftest"], timeout=180, check=False, **kwargs
+    old = diff.twin_result(
+        TWIN_REL,
+        [repr(["bash", str(TWIN), "--selftest"])],
+        lambda: subprocess.run(  # type: ignore[call-overload]
+            ["bash", str(TWIN), "--selftest"], timeout=180, check=False, **kwargs
+        ),
+        work=(),
     )
     new = subprocess.run(  # type: ignore[call-overload]
         ["python3", "-m", PORT_MODULE, "--selftest"], timeout=180, check=False, **kwargs
@@ -196,22 +210,18 @@ def test_selftest_is_byte_identical() -> None:
     assert (new.returncode, new.stdout, new.stderr) == (old.returncode, old.stdout, old.stderr)
 
 
-def test_real_tree_agrees_byte_for_byte() -> None:
-    """The only case that boots the real fixture server, and it boots it twice."""
+def test_real_tree_passes_through_the_port() -> None:
+    """The only case that boots the real fixture server. The bash twin it was compared with is retired (PLAN-retire-bash-oracles B3)."""
     kwargs = {"env": _real_tree_env(), "cwd": str(ROOT), "capture_output": True, "text": True}
-    old = subprocess.run(  # type: ignore[call-overload]
-        ["bash", str(TWIN)], timeout=600, check=False, **kwargs
-    )
-    if old.returncode == 77:
-        # Cannot-run is NOT a verdict, and 77 == 77 would prove nothing here.
-        pytest.skip(f"the twin reports cannot-run on this host: {old.stderr.strip()[:200]}")
     new = subprocess.run(  # type: ignore[call-overload]
         ["python3", "-m", PORT_MODULE], timeout=600, check=False, **kwargs
     )
-    assert old.returncode == 0, old.stderr
-    assert "3 check(s) passed, 5 requirement(s) present" in old.stdout
-    assert "NOT EXERCISED HERE: happy rollback" in old.stdout
-    assert (new.returncode, new.stdout, new.stderr) == (old.returncode, old.stdout, old.stderr)
+    if new.returncode == 77:
+        # Cannot-run is NOT a verdict, and 77 == 77 would prove nothing here.
+        pytest.skip(f"the port reports cannot-run on this host: {new.stderr.strip()[:200]}")
+    assert new.returncode == 0, new.stderr
+    assert "3 check(s) passed, 5 requirement(s) present" in new.stdout
+    assert "NOT EXERCISED HERE: happy rollback" in new.stdout
 
 
 # --------------------------------------------------------------------------- Fixture cases ---------------------------------------------------------------------------

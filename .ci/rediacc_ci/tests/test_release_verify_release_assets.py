@@ -59,7 +59,12 @@ def run_both(
     new_env = diff.env_for(
         **env_extra, PATH=path_with_fake, PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1"
     )
-    old = diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30)
+    old = diff.twin_call(
+        TWIN,
+        sorted("%s=%s" % kv for kv in env_extra.items()),
+        lambda: diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30),
+        work=(bindir.parent,),
+    )
     new = diff.bash_streams("python3 -m rediacc_ci.release.%s" % MODULE, env=new_env, timeout=30)
     return old, new
 

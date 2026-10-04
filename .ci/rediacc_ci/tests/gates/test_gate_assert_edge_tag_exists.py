@@ -1,5 +1,7 @@
 """Port of `.ci/scripts/test/gates/test-assert-edge-tag-exists.sh`, retired in W7 P5.
 
+The subject is `rediacc_ci.release.assert_edge_tag_exists`, the port of the retired `.ci/scripts/release/assert-edge-tag-exists.sh` (PLAN-retire-bash-oracles B3); the bash's answers are frozen in `goldens/twins/release.assert-edge-tag-exists.jsonl`.
+
 `promote-stable` must refuse to promote a version that does not fully exist -- and must refuse just as loudly when it CANNOT TELL whether it exists.
 
 WHY THIS EXISTS. `cli/edge/manifest.json` advertised 1.3.1 with no v1.3.1 tag, no GitHub Release and no `cli/v1.3.1/.released`. `promote-stable.yml` would have copied those bytes to stable and retagged Docker `:stable` FIRST and only then failed on `ref: v1.3.1` while checking out for the three regional deploys -- a half-applied production release. This drives the precondition that
@@ -17,12 +19,12 @@ WHAT IT ASSERTS, with a fake `gh` and a fake `aws` (no network, no promotion):
   7. ANTI-VACUITY: the passing case must have actually CALLED all three probes. A
      script returning 0 without probing would satisfy 4 alone.
 
-CONTROL-FIRST. The mutant is assembled BY CONSTRUCTION -- head, a literal replacement arm written here, tail, split on the subject's own `COULD_NOT_TELL_ARM_BEGIN` / `_END` anchors -- in which "could not tell" returns 0 instead of failing. Case 5 must go GREEN against it; if it does not, this module declares itself broken. The mutant is also proven LIVE (case 4 still 0, case 1
+CONTROL-FIRST. The mutant is assembled BY CONSTRUCTION -- head, a literal replacement arm written here, tail, split on the `judge()` arm that opens with `if is_unknown(state):` and ends before the `# UNREACHABLE` comment -- in which "could not tell" returns True instead of failing. Case 5 must go GREEN against it; if it does not, this module declares itself broken. The mutant is also proven LIVE (case 4 still 0, case 1
 still 1) so a mutant that merely crashes cannot masquerade as a firing control.
 
 NO PATTERN SUBSTITUTION OF A LIVE LINE, and that is the point of the anchors: a reworded arm cannot silently yield a "mutant" identical to the source. The port keeps both refusals the twin has -- anchors missing, and mutant identical to source -- because either one turns the control into decoration.
 
-WHY THE MUTANT NEEDS A SANDBOX. The subject resolves its library with `"$SCRIPT_DIR/../lib/common.sh"`, so a mutant dropped in a bare temp directory dies at its source line, and the liveness probe below would (correctly) refuse to accept that as a firing control. The sandbox mirrors the real layout with the library symlinked in.
+THE MUTANT NEEDS NO SANDBOX. The module imports `rediacc_ci` through PYTHONPATH and derives nothing from its own location, so a copy in a bare temp directory runs exactly as the original does; the liveness probe below still refuses a mutant that merely crashes.
 
 STATED BLIND SPOT, carried over verbatim: this cannot see whether `promote-stable.yml` actually RUNS the script, nor whether it runs BEFORE the first promotion write. A precondition wired after the promotion is worth nothing. That step-order assertion belongs to the workflow-invariant gate (plan T2), not here.
 
@@ -31,22 +33,22 @@ NO `xdist_group`. Every case builds its own fixture tree under pytest's `tmp_pat
 
 import os
 import stat
+import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 from rediacc_ci.well_known import GH_REPO, RELEASES_BUCKET
 
-TARGET = paths.from_root(".ci", "scripts", "release", "assert-edge-tag-exists.sh")
-LIB_DIR = paths.from_root(".ci", "scripts", "lib")
+TARGET = paths.from_root(".ci", "rediacc_ci", "release", "assert_edge_tag_exists.py")
 
-BEGIN_ANCHOR = "COULD_NOT_TELL_ARM_BEGIN"
-END_ANCHOR = "COULD_NOT_TELL_ARM_END"
+# The `judge()` arm the mutant replaces: from its first line (inclusive) to the comment that opens the next arm (exclusive).
+BEGIN_ANCHOR = "        if is_unknown(state):"
+END_ANCHOR = "        # UNREACHABLE from the three probes"
 
 # The arm the mutant carries INSTEAD of the real one: an unprovable probe read as a pass. Written here as a literal, never derived from the live text.
-MUTANT_ARM = """        unknown:*)
-            log_warn "MUTANT: treating an unprovable probe as a pass -- ${what}"
-            return 0
-            ;;
+MUTANT_ARM = """        if is_unknown(state):
+            log.info("MUTANT: treating an unprovable probe as a pass -- %s" % what)
+            return True
 """
 
 # TAG_STATE / REL_STATE drive the two gh probes independently:
@@ -121,11 +123,12 @@ class Fakes:
         """
         self.gh_log.write_text("", encoding="utf-8")
         self.aws_log.write_text("", encoding="utf-8")
-        bash = harness.require_tool("bash", "install bash; the subject is a bash script")
         result = harness.run(
-            [bash, str(script), "--version", "1.3.0"],
+            [sys.executable, str(script), "--version", "1.3.0"],
             env={
                 "PATH": "%s%s%s" % (self.bindir, os.pathsep, os.environ.get("PATH", "")),
+                "PYTHONPATH": str(paths.from_root(".ci")),
+                "PYTHONDONTWRITEBYTECODE": "1",
                 "TAG_STATE": tag,
                 "REL_STATE": rel,
                 "SENTINEL_STATE": sent,
@@ -146,7 +149,7 @@ class Fakes:
 
 def fakes(gate, tmp_path) -> Fakes:
     if not TARGET.is_file():
-        gate.log_fail("assert-edge-tag-exists.sh not found at %s" % paths.relative_to_root(TARGET))
+        gate.log_fail("assert_edge_tag_exists.py not found at %s" % paths.relative_to_root(TARGET))
     return Fakes(tmp_path)
 
 
@@ -278,9 +281,9 @@ def test_the_control_fires_against_a_planted_403_pass(gate, tmp_path):
     source = TARGET.read_text(encoding="utf-8").splitlines(keepends=True)
     begin = end = None
     for index, line in enumerate(source):
-        if BEGIN_ANCHOR in line and begin is None:
+        if line.startswith(BEGIN_ANCHOR) and begin is None:
             begin = index
-        if END_ANCHOR in line and end is None:
+        if line.startswith(END_ANCHOR) and end is None:
             end = index
     if begin is None or end is None or end <= begin:
         gate.log_fail(
@@ -288,27 +291,14 @@ def test_the_control_fires_against_a_planted_403_pass(gate, tmp_path):
             "(begin=%s end=%s)" % (paths.relative_to_root(TARGET), begin, end)
         )
 
-    sandbox = tmp_path / "sb" / ".ci" / "scripts"
-    (sandbox / "release").mkdir(parents=True)
-    (sandbox / "lib").mkdir(parents=True)
-    for item in sorted(LIB_DIR.iterdir()):
-        (sandbox / "lib" / item.name).symlink_to(item)
-    (sandbox.parent / "config").mkdir()
-    (sandbox.parent / "config" / "well-known.env").symlink_to(
-        paths.from_root(".ci", "config", "well-known.env")
-    )
-    (sandbox.parent / "config" / "well-known.generated.sh").symlink_to(
-        paths.from_root(".ci", "config", "well-known.generated.sh")
-    )
-    mutant = sandbox / "release" / "mutant-403-passes.sh"
+    mutant = tmp_path / "mutant_403_passes.py"
     mutant.write_text(
-        "".join(source[:begin]) + MUTANT_ARM + "".join(source[end + 1 :]), encoding="utf-8"
+        "".join(source[:begin]) + MUTANT_ARM + "".join(source[end:]), encoding="utf-8"
     )
-    mutant.chmod(mutant.stat().st_mode | stat.S_IXUSR)
 
     text = mutant.read_text(encoding="utf-8")
-    if BEGIN_ANCHOR in text:
-        gate.log_fail("CONTROL COULD NOT PLANT: anchor survived in the mutant")
+    if "COULD NOT TELL %s" in text:
+        gate.log_fail("CONTROL COULD NOT PLANT: the real could-not-tell arm survived in the mutant")
     if text == TARGET.read_text(encoding="utf-8"):
         gate.log_fail("CONTROL COULD NOT PLANT: mutant is identical to the source")
 

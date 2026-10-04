@@ -26,8 +26,7 @@ BLAST RADIUS, MEASURED BEFORE AND AFTER AND UNCHANGED BY THIS FIX: ZERO packages
     pkg/chunkstore  pkg/daemon  pkg/datastore  pkg/delta
     pkg/ebpf        pkg/kubecsi pkg/luks       pkg/repodiff
 
-would be excluded without it. That measurement is now a TEST rather than a sentence: `test_proxies_go_unit.py::test_the_fourth_alternative_removes_nothing_extra_on_ the_real_tree`. The drift itself cannot recur silently either: `::test_the_documented_predicate_matches_the_grep_character_for_character` reads the pattern out of the twin's grep, requires the twin's header to quote it
-verbatim, and requires `EXCLUDE_RE` below to equal it.
+would be excluded without it. That measurement is now a TEST rather than a sentence: `test_proxies_go_unit.py::test_the_fourth_alternative_removes_nothing_extra_on_ the_real_tree`. The drift itself cannot recur silently either: `::test_the_documented_predicate_matches_the_grep_character_for_character` requires this docstring to quote the predicate verbatim and `EXCLUDE_RE` below to equal it. The predicate: `Geteuid|RequireRoot|requireRoot|testutil\\.|Getuid`. (The twin's grep was the third copy until PLAN-retire-bash-oracles B3 retired it.)
 
 -----------------------------------------------------------------------------
 THE FIFTH ALTERNATIVE, ADDED 2026-09-10: A REAL GAP, FOUND UNDER CI=true

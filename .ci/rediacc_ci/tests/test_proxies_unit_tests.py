@@ -77,8 +77,11 @@ def build_fixture(
     for rel in FIXTURE_FILES:
         dst = fixture / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
+        if not (ROOT / rel).exists():
+            continue  # the retired twin and its library: only a recording run copies them
         dst.write_bytes((ROOT / rel).read_bytes())
-    (fixture / TWIN_REL).chmod(0o755)
+    if (fixture / TWIN_REL).exists():
+        (fixture / TWIN_REL).chmod(0o755)
     if port_source is not None:
         (fixture / PORT_REL).write_text(port_source, encoding="utf-8")
 
@@ -141,8 +144,13 @@ def run_both(
 ) -> tuple[subprocess.CompletedProcess[str], subprocess.CompletedProcess[str]]:
     env = _env(fixture, path)
     kwargs = {"env": env, "cwd": str(fixture), "capture_output": True, "text": True}
-    old = subprocess.run(  # type: ignore[call-overload]
-        ["bash", str(fixture / TWIN_REL), *args], timeout=300, check=False, **kwargs
+    old = diff.twin_result(
+        TWIN_REL,
+        [repr(["bash", str(fixture / TWIN_REL), *args])],
+        lambda: subprocess.run(  # type: ignore[call-overload]
+            ["bash", str(fixture / TWIN_REL), *args], timeout=300, check=False, **kwargs
+        ),
+        work=(fixture.parent,),
     )
     new = subprocess.run(  # type: ignore[call-overload]
         ["python3", "-m", PORT_MODULE, *args], timeout=300, check=False, **kwargs
@@ -222,8 +230,13 @@ def _real_tree_env(no_color: bool = True) -> dict[str, str]:
 
 def test_selftest_is_byte_identical() -> None:
     kwargs = {"env": _real_tree_env(), "cwd": str(ROOT), "capture_output": True, "text": True}
-    old = subprocess.run(  # type: ignore[call-overload]
-        ["bash", str(TWIN), "--selftest"], timeout=180, check=False, **kwargs
+    old = diff.twin_result(
+        TWIN_REL,
+        [repr(["bash", str(TWIN), "--selftest"])],
+        lambda: subprocess.run(  # type: ignore[call-overload]
+            ["bash", str(TWIN), "--selftest"], timeout=180, check=False, **kwargs
+        ),
+        work=(),
     )
     new = subprocess.run(  # type: ignore[call-overload]
         ["python3", "-m", PORT_MODULE, "--selftest"], timeout=180, check=False, **kwargs
@@ -240,19 +253,15 @@ def test_selftest_is_byte_identical() -> None:
         ("@rediacc/e2e-tests", "test:unit", "check:test-e2e-unit"),
     ],
 )
-def test_real_tree_agrees_byte_for_byte(workspace: str, key: str, gate: str) -> None:
+def test_real_tree_passes_through_the_port(workspace: str, key: str, gate: str) -> None:
     kwargs = {"env": _real_tree_env(), "cwd": str(ROOT), "capture_output": True, "text": True}
-    old = subprocess.run(  # type: ignore[call-overload]
-        ["bash", str(TWIN), workspace, key], timeout=600, check=False, **kwargs
-    )
-    if old.returncode == 77:
-        pytest.skip(f"{gate}: the twin reports cannot-run here: {old.stderr.strip()[:200]}")
     new = subprocess.run(  # type: ignore[call-overload]
         ["python3", "-m", PORT_MODULE, workspace, key], timeout=600, check=False, **kwargs
     )
-    assert old.returncode == 0, old.stderr
-    assert "4 check(s) passed, 4 requirement(s) present" in old.stdout
-    assert (new.returncode, new.stdout, new.stderr) == (old.returncode, old.stdout, old.stderr)
+    if new.returncode == 77:
+        pytest.skip(f"{gate}: the port reports cannot-run here: {new.stderr.strip()[:200]}")
+    assert new.returncode == 0, new.stderr
+    assert "4 check(s) passed, 4 requirement(s) present" in new.stdout
 
 
 def test_no_arguments_is_the_usage_refusal(tmp_path: pathlib.Path) -> None:
@@ -365,21 +374,17 @@ def test_the_summary_regex_cannot_see_a_coloured_vitest_line() -> None:
     coloured["GITHUB_ACTIONS"] = "true"
     coloured.pop("CLAUDECODE", None)
     kwargs = {"env": coloured, "cwd": str(ROOT), "capture_output": True, "text": True}
-    old = subprocess.run(  # type: ignore[call-overload]
-        ["bash", str(TWIN), "@rediacc/provisioning", "test"], timeout=600, check=False, **kwargs
-    )
-    if old.returncode == 77:
-        pytest.skip(f"the twin reports cannot-run here: {old.stderr.strip()[:200]}")
     new = subprocess.run(  # type: ignore[call-overload]
         ["python3", "-m", PORT_MODULE, "@rediacc/provisioning", "test"],
         timeout=600,
         check=False,
         **kwargs,
     )
-    assert old.returncode == 0, "the twin still reds on coloured output; re-triage this"
-    assert "npm run test -w @rediacc/provisioning exited 0" in old.stdout
-    assert "test(s) across" in old.stdout
-    assert (new.returncode, new.stdout, new.stderr) == (old.returncode, old.stdout, old.stderr)
+    if new.returncode == 77:
+        pytest.skip(f"the port reports cannot-run here: {new.stderr.strip()[:200]}")
+    assert new.returncode == 0, "the port reds on coloured output; re-triage this"
+    assert "npm run test -w @rediacc/provisioning exited 0" in new.stdout
+    assert "test(s) across" in new.stdout
 
 
 def test_the_escapes_really_sit_between_the_word_and_the_number() -> None:

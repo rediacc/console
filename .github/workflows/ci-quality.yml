@@ -2443,7 +2443,7 @@ jobs:
       - name: CLI bundle for the rdc-update differential
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         # ONE MORE SKIP, and it costs about five seconds to retire.
-        # `proxy-rdc-update.sh` falls back to `packages/cli/dist/cli-bundle.cjs`
+        # `rediacc_ci.proxies.rdc_update` falls back to `packages/cli/dist/cli-bundle.cjs`
         # when no RDC_BINARY is exported, and without it the proxy reports
         # CANNOT RUN (1 of 5 requirement(s) missing) and the differential skips.
         #
