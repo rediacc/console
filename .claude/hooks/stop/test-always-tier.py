@@ -66,6 +66,8 @@ ALWAYS_KEYS = frozenset(
         "unread-reports",
         # I2 -- a scheduled workflow red on main (wl_schedred): the release pipeline is the party blocked (promote-stable counts only green scheduled runs) and it cannot see this session stop, so a rotating key would let the red sit another night behind unrelated checks.
         "scheduled-red",
+        # I3 -- a trapguard rule raised and was skipped (wl_trapfires, PLAN-trap-enforcement.md section 4.3.4): the dispatcher fails open per rule, so a rotating key would let a silently dead guard read as a working one.
+        "trapguard-errors",
     }
 )
 

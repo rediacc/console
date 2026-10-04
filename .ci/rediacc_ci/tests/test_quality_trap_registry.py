@@ -138,3 +138,69 @@ def test_id_grammar() -> None:
     assert not mod.ID_RE.match("ab")
     assert not mod.ID_RE.match("Not_Kebab_Case")
     assert not mod.ID_RE.match("-abc")
+
+
+# --- W3-retire: the payload probe stays unregistered (PLAN-trap-enforcement.md section 7.1) ---
+
+
+def _probe_registry(tmp_path: pathlib.Path, lifecycle: str, settings: str) -> "mod.Registry":
+    """A registry over a clean fixture corpus whose only variable is what the two registration files say."""
+    files = tmp_path / "files"
+    (files / "sub").mkdir(parents=True)
+    (files / "sub" / "ctl-guard.sh").write_text("#!/bin/bash\necho real\n", encoding="utf-8")
+    (tmp_path / "manifest.ts").write_text(mod.CONTROL_MANIFEST, encoding="utf-8")
+    (tmp_path / "package.json").write_text(
+        '{ "scripts": { "check:ctl-live": "true", "check:ctl-dark": "true" } }\n', encoding="utf-8"
+    )
+    (tmp_path / "dispatch.py").write_text(mod.CONTROL_DISPATCH, encoding="utf-8")
+    (tmp_path / "test-hooks.sh").write_text(mod.CONTROL_SUITE, encoding="utf-8")
+    (tmp_path / "lifecycle.py").write_text(lifecycle, encoding="utf-8")
+    (tmp_path / "settings.json").write_text(settings, encoding="utf-8")
+    (tmp_path / "corpus.md").write_text(mod.fixture_corpus("", 5), encoding="utf-8")
+    return mod.Registry(
+        {
+            "TRAP_CORPUS": tmp_path / "corpus.md",
+            "TRAP_MANIFEST": tmp_path / "manifest.ts",
+            "TRAP_PACKAGE_JSON": tmp_path / "package.json",
+            "TRAP_DISPATCH": tmp_path / "dispatch.py",
+            "TRAP_HOOK_SUITE": tmp_path / "test-hooks.sh",
+            "TRAP_SETTINGS": tmp_path / "settings.json",
+            "TRAP_LIFECYCLE": tmp_path / "lifecycle.py",
+            "TRAP_FILE_ROOT": files,
+        }
+    )
+
+
+def _probe_findings(registry: "mod.Registry") -> list[str]:
+    found: list[str] = []
+    mod.scan(registry, 5, mod.Shape(), report=found.append)
+    return found
+
+
+def test_a_clean_registration_passes_the_probe_assertion(tmp_path: pathlib.Path) -> None:
+    reg = _probe_registry(tmp_path, mod.CONTROL_LIFECYCLE, '{ "hooks": {} }\n')
+    assert _probe_findings(reg) == []
+
+
+def test_the_probe_registered_in_lifecycle_reds(tmp_path: pathlib.Path) -> None:
+    reg = _probe_registry(tmp_path, mod.CONTROL_LIFECYCLE_PROBE, '{ "hooks": {} }\n')
+    found = _probe_findings(reg)
+    assert len(found) == 1, found
+    assert "registers the trapguard payload probe" in found[0]
+    assert "lifecycle.py" in found[0]
+
+
+def test_the_probe_registered_in_settings_reds(tmp_path: pathlib.Path) -> None:
+    reg = _probe_registry(tmp_path, mod.CONTROL_LIFECYCLE, mod.CONTROL_SETTINGS_PROBE)
+    found = _probe_findings(reg)
+    assert len(found) == 1, found
+    assert "settings.json" in found[0]
+
+
+def test_the_controls_include_the_probe_plant_and_pass(tmp_path: pathlib.Path) -> None:
+    """run_controls must carry the W3-retire plant and still behave; the real tree's registration files must be clean."""
+    assert mod.run_controls(tmp_path)
+    assert (tmp_path / "lifecycle-probe.py").is_file()
+    real = mod.Registry(mod.resolve_seams(mod.paths.repo_root(), env={}))
+    for reg in (real.settings, real.lifecycle):
+        assert mod.PROBE_FLAG not in mod.read_text(reg), reg

@@ -34,6 +34,7 @@
   ".claude/rediacc_hooks/guards/block_inline_workflow_run.py",
   ".claude/rediacc_hooks/guards/block_long_sleep.py",
   ".claude/rediacc_hooks/guards/block_merge_with_unpushed.py",
+  ".claude/rediacc_hooks/guards/block_missing_npm_script.py",
   ".claude/rediacc_hooks/guards/block_no_review_ineligible.py",
   ".claude/rediacc_hooks/guards/block_nondraft_pr_create.py",
   ".claude/rediacc_hooks/guards/block_nonstandard_branch_name.py",

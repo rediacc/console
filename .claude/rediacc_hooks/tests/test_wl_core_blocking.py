@@ -8,6 +8,7 @@ THE CONTROLS ARE THE POINT of several of these, and they are marked as such: a s
 from __future__ import annotations
 
 import json
+import pathlib
 import threading
 
 from rediacc_hooks.tests import wlfix
@@ -424,3 +425,37 @@ def test_v22_solo_grind_stays_due_until_shown_then_fires_once_per_episode():
     assert checks.solo_grind_due(11, 0, {}) is False, "below the floor it never speaks"
     assert checks.solo_grind_due(39, None, {}) is True, "a fact-gatherer that returns None"
     assert checks.solo_grind_due(None, 0, {}) is False, "crashed the whole hook once"
+
+
+# ---- trapguard rule errors (PLAN-trap-enforcement.md W2-contract) -------------------------------------------------------------------------------
+TG_ERRORS_NEEDLE = "TRAPGUARD RULE ERRORS"
+
+
+def test_a_trapguard_error_log_blocks_the_stop(wl):  # noqa: F811
+    """A rule that raised was skipped by the dispatcher; the planted log must turn an otherwise clean stop into a block naming the rule."""
+    wl.say("All finished.")
+    wl.brief_now()
+    wl.hand_now()
+    ledgers = pathlib.Path(wl.env["TRAPGUARD_DIR"])
+    ledgers.mkdir(parents=True, exist_ok=True)
+    (ledgers / "errors.jsonl").write_text(
+        json.dumps(
+            {"ts": "2026-10-04T00:00:00Z", "rule": "phantom-deletion-diff", "exc_type": "KeyError"}
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    got = wl.check("block", TG_ERRORS_NEEDLE, "a planted trapguard error log blocks")
+    assert "phantom-deletion-diff" in got.out, got.out[:800]
+    assert "KeyError" in got.out, got.out[:800]
+
+
+def test_an_empty_trapguard_error_log_is_silent(wl):  # noqa: F811
+    """CONTROL for the case above: the same clean world with an EMPTY log allows the stop and says nothing about trapguard."""
+    wl.say("All finished.")
+    wl.brief_now()
+    wl.hand_now()
+    ledgers = pathlib.Path(wl.env["TRAPGUARD_DIR"])
+    ledgers.mkdir(parents=True, exist_ok=True)
+    (ledgers / "errors.jsonl").write_text("", encoding="utf-8")
+    wl.check_absent("allow", TG_ERRORS_NEEDLE, "an empty trapguard error log is silent")

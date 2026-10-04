@@ -537,3 +537,4 @@ W2 status: blanket-git-add LANDED as `.claude/rediacc_hooks/guards/block_blanket
       CONTROL in `.claude/rediacc_hooks/tests/test_wl_idle_and_evidence.py`: "<an unregistered check: name> passed" fires and "check:ci-trap-registry passed" is silent.
 - [ ] W4-exit: record `grep -c '^Enforced-By: JUDGMENT-ONLY' docs/agent-reference/TRAPS.md` (47 on 2026-09-24) in this plan, and set Status to done when every remaining JUDGMENT-ONLY entry's Residue says why no instrument applies.
       CONTROL: the recorded count equals the command's output on the closing commit.
+      RECORDED 2026-10-04: 45. W2-A moved `manifest-id-is-not-an-npm-script` to a `file:` pointer (46 to 45), and the Residue of `bypass-actor-exposure-believed-nil` now says why no instrument applies, so every remaining JUDGMENT-ONLY Residue does. Status moves to done when the boxes are ticked.

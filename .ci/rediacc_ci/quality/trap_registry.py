@@ -156,8 +156,13 @@ SEAMS = {
     # records the formatter accident that separated the two and turned all five rules one-sided, so the shape is deliberate on both ends.
     "TRAP_HOOK_SUITE": (".claude", "rediacc_hooks", "tests", "test_hooks_trapguard.py"),
     "TRAP_SETTINGS": (".claude", "settings.json"),
+    # W3-retire (PLAN-trap-enforcement.md section 7.1): the payload probe was a one-wave diagnostic, and a diagnostic registered on every tool call is a standing cost. Registrations are spelled in settings.json AND expanded from this module since the 2026-09-21 collapse, so the probe's absence is asserted in both.
+    "TRAP_LIFECYCLE": (".claude", "rediacc_hooks", "lifecycle.py"),
     "TRAP_FILE_ROOT": (),
 }
+
+# The retired probe's flag. Its presence in a registration file means the diagnostic is back on every tool call.
+PROBE_FLAG = "--probe-payload"
 
 # THE RATCHET. A written number, moved by hand; see the header for why it is not derived and for the two occasions an unratcheted floor disarmed F1's control. Must equal the floor frozen in `goldens/twins/quality.check-trap-registry.jsonl` unless re-recorded with a reason.
 TRAP_FLOOR_DEFAULT = 98
@@ -252,6 +257,7 @@ class Registry:
         self.dispatch = seams["TRAP_DISPATCH"]
         self.hook_suite = seams["TRAP_HOOK_SUITE"]
         self.settings = seams["TRAP_SETTINGS"]
+        self.lifecycle = seams["TRAP_LIFECYCLE"]
         self.file_root = seams["TRAP_FILE_ROOT"]
         self._live_l1: list[pathlib.Path] | None = None
 
@@ -581,6 +587,16 @@ def scan(registry: Registry, floor: int, shape: Shape, report=None) -> int:
                     % (where, entry.trap_id, ptr)
                 )
 
+    # W3-retire: the payload probe stays unregistered. Read from both registration files, because a hook can be wired from either.
+    for reg in (registry.settings, registry.lifecycle):
+        if PROBE_FLAG in read_text(reg):
+            err(
+                "%s registers the trapguard payload probe (%s). It was a one-wave diagnostic "
+                "(PLAN-trap-enforcement.md section 7.1) and is retired: a probe on every tool "
+                "call is a standing cost. Re-run it by hand when a rule needs a new payload "
+                "field, then unregister it." % (reg, PROBE_FLAG)
+            )
+
     # F1 POPULATION FLOOR, last so a truncated corpus reports its content problems too.
     if shape.entries < floor:
         err(
@@ -656,6 +672,18 @@ check_inject fires "$(inject_json 'x' 'y')" \\
 """
 
 
+# The registration files the W3-retire control plants. The clean one carries the live posttool registration, so the plant differs from it by the flag alone.
+CONTROL_LIFECYCLE = """PATTERNS = [("PostToolUse", "Bash", "python3 .claude/hooks/trapguard/dispatch.py --posttool")]
+"""
+CONTROL_LIFECYCLE_PROBE = """PATTERNS = [("PostToolUse", "Bash", "python3 .claude/hooks/trapguard/dispatch.py --posttool"),
+            ("PostToolUse", "", "python3 .claude/hooks/trapguard/dispatch.py --probe-payload")]
+"""
+CONTROL_SETTINGS_PROBE = (
+    '{ "hooks": { "PostToolUse": [ { "hooks": [ { "type": "command", '
+    '"command": "python3 .claude/hooks/trapguard/dispatch.py --probe-payload" } ] } ] } }\n'
+)
+
+
 class Controls6:
     """F6's tally: reds that must red for the RIGHT reason, greens that must not."""
 
@@ -665,7 +693,12 @@ class Controls6:
         self.green = 0
 
 
-def _control_run(registry: Registry, corpus: pathlib.Path) -> tuple[int, list[str]]:
+def _control_run(
+    registry: Registry,
+    corpus: pathlib.Path,
+    lifecycle: pathlib.Path | None = None,
+    settings: pathlib.Path | None = None,
+) -> tuple[int, list[str]]:
     """Run `scan` against one fixture corpus, capturing its findings.
 
     A subshell in the twin, so the seams and the finding counter cannot leak between controls. A fresh Registry and a captured sink are the same isolation.
@@ -678,7 +711,8 @@ def _control_run(registry: Registry, corpus: pathlib.Path) -> tuple[int, list[st
             "TRAP_PACKAGE_JSON": registry.package_json,
             "TRAP_DISPATCH": registry.dispatch,
             "TRAP_HOOK_SUITE": registry.hook_suite,
-            "TRAP_SETTINGS": registry.settings,
+            "TRAP_SETTINGS": settings or registry.settings,
+            "TRAP_LIFECYCLE": lifecycle or registry.lifecycle,
             "TRAP_FILE_ROOT": registry.file_root,
         }
     )
@@ -705,6 +739,7 @@ def run_controls(control_dir: pathlib.Path) -> bool:
         encoding="utf-8",
     )
     (control_dir / "settings.json").write_text('{ "hooks": {} }\n', encoding="utf-8")
+    (control_dir / "lifecycle.py").write_text(CONTROL_LIFECYCLE, encoding="utf-8")
     (control_dir / "dispatch.py").write_text(CONTROL_DISPATCH, encoding="utf-8")
     (control_dir / "test-hooks.sh").write_text(CONTROL_SUITE, encoding="utf-8")
 
@@ -716,6 +751,7 @@ def run_controls(control_dir: pathlib.Path) -> bool:
             "TRAP_DISPATCH": control_dir / "dispatch.py",
             "TRAP_HOOK_SUITE": control_dir / "test-hooks.sh",
             "TRAP_SETTINGS": control_dir / "settings.json",
+            "TRAP_LIFECYCLE": control_dir / "lifecycle.py",
             "TRAP_FILE_ROOT": files,
         }
     )
@@ -725,9 +761,9 @@ def run_controls(control_dir: pathlib.Path) -> bool:
         path.write_text(fixture_corpus(extra, count), encoding="utf-8")
         return path
 
-    def expect_red(label: str, corpus: pathlib.Path, needle: str) -> None:
+    def expect_red(label: str, corpus: pathlib.Path, needle: str, **plants: pathlib.Path) -> None:
         tally.red += 1
-        count, findings = _control_run(scoped, corpus)
+        count, findings = _control_run(scoped, corpus, **plants)
         if count == 0:
             log.error(
                 "CONTROL FAILED (%s): the planted defect did not red the gate, so its "
@@ -945,6 +981,24 @@ def run_controls(control_dir: pathlib.Path) -> bool:
         ),
         "within two hops",
     )
+    # W3-retire: the probe registered in a fixture lifecycle, then in a fixture settings.json, over an otherwise clean corpus.
+    probed = control_dir / "lifecycle-probe.py"
+    probed.write_text(CONTROL_LIFECYCLE_PROBE, encoding="utf-8")
+    probed_settings = control_dir / "settings-probe.json"
+    probed_settings.write_text(CONTROL_SETTINGS_PROBE, encoding="utf-8")
+    probe_corpus = write("probe.md", "", 5)
+    expect_red(
+        "the retired payload probe registered in lifecycle.py reds (W3-retire)",
+        probe_corpus,
+        "registers the trapguard payload probe",
+        lifecycle=probed,
+    )
+    expect_red(
+        "the retired payload probe registered in settings.json reds (W3-retire)",
+        probe_corpus,
+        "registers the trapguard payload probe",
+        settings=probed_settings,
+    )
 
     if tally.failures > 0:
         log.error(
@@ -960,7 +1014,7 @@ def run_controls(control_dir: pathlib.Path) -> bool:
 
 
 def resolve_seams(root: pathlib.Path, env: dict[str, str] | None = None) -> dict[str, pathlib.Path]:
-    """The seven seams, each overridable by its own environment variable."""
+    """The eight seams, each overridable by its own environment variable."""
     environ = os.environ if env is None else env
     out: dict[str, pathlib.Path] = {}
     for name, parts in SEAMS.items():
@@ -1091,6 +1145,7 @@ def selftest() -> int:
             encoding="utf-8",
         )
         (base / "settings.json").write_text('{ "hooks": {} }\n', encoding="utf-8")
+        (base / "lifecycle.py").write_text(CONTROL_LIFECYCLE, encoding="utf-8")
         (base / "dispatch.py").write_text(CONTROL_DISPATCH, encoding="utf-8")
         (base / "test-hooks.sh").write_text(CONTROL_SUITE, encoding="utf-8")
         registry = Registry(
@@ -1101,6 +1156,7 @@ def selftest() -> int:
                 "TRAP_DISPATCH": base / "dispatch.py",
                 "TRAP_HOOK_SUITE": base / "test-hooks.sh",
                 "TRAP_SETTINGS": base / "settings.json",
+                "TRAP_LIFECYCLE": base / "lifecycle.py",
                 "TRAP_FILE_ROOT": files,
             }
         )

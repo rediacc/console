@@ -1600,8 +1600,8 @@ every box in `agent/plans/PLAN-tooling-transformation.md` had a stated premise t
 
 ## A manifest id is not an npm script, and the difference looks like a failing gate
 Trap-Id: manifest-id-is-not-an-npm-script
-Enforced-By: JUDGMENT-ONLY
-Residue: Nothing can tell a typo apart from a gate that failed for cause at the moment you run it, because both are `rc=1` with an empty stdout and an empty stderr. The only defence is checking `package.json` before believing a silent red, and no gate can require that of a human at a terminal.
+Enforced-By: file:.claude/rediacc_hooks/guards/block_missing_npm_script.py
+Residue: The guard refuses an agent's `npm run <name>` when the governing package.json has no such script, naming the file and the nearest real names. A human at a terminal runs no pre-bash hook, so there a typo and a gate that failed for cause are still both `rc=1` with an empty stdout and an empty stderr, and the only defence is checking `package.json` before believing a silent red.
 
 `npm run --silent <name>` for a name `package.json` does not define exits **1 with ZERO bytes on both streams**. That is byte-for-byte what a gate failing for cause looks like when its output is suppressed, so the reflex it triggers -- "this gate is red, go fix the tree" -- sends a session debugging something that never ran.
 
@@ -1766,7 +1766,7 @@ The check: when a gate accepts evidence, ask which of its branches answered. If 
 ## A plan's "exposure is believed nil" is a hypothesis about a live ruleset, and this one was wrong
 Trap-Id: bypass-actor-exposure-believed-nil
 Enforced-By: JUDGMENT-ONLY
-Residue: `rediacc-ci-cd`'s branch-protection bypass is unrestricted; `ci.yml` still gates on `is_bot`.
+Residue: `rediacc-ci-cd`'s branch-protection bypass is unrestricted, and `ci.yml` still gates on `is_bot`. No instrument applies from inside the repository: the ruleset is external GitHub configuration that no gate here reads, and narrowing the bypass is an operator-only change to the organization's settings.
 
 `agent/plans/PLAN-plan-file-lifecycle.md`'s own "cheat 13" section states the exposure from GitHub App `rediacc-ci-cd` (app_id 2772000) is "believed nil." An audit agent checked the live ruleset instead of the plan's belief: the app carries `bypass_mode: always` on the main branch ruleset's `pull_request` and `required_status_checks` rules, and `.github/workflows/ci-quality.yml` derives its bot skip from `head_commit.author.name == is_bot`.
 Put together: a push authored by this bot identity lands on `main` with no PR and no quality-gate run, which is exactly what the plan's belief said could not happen.
