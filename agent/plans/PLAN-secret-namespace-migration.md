@@ -1,4 +1,4 @@
-Status: mostly stale 2026-09-22 -- 5 of 9 open boxes were already done in the tree, via commits this file was never updated to reflect; verified and ticked 2026-09-22. -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
+Status: executing -- mostly stale 2026-09-22 -- 5 of 9 open boxes were already done in the tree, via commits this file was never updated to reflect; verified and ticked 2026-09-22. -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Depends-On: no-dep -- cites only finished plans: PLAN-completion-strategy.md; the other three citations are archived records
 First-Seen: 2026-09-17
 Done: org secrets deleted, mc_migrate_claude replaced/rotated, OTLP row O3 closed.

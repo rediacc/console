@@ -517,7 +517,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-github-actions-workflow-run-trigger-fix.md` | compacted | 54 | 0 | 0 | 3927 |
 | `agent/plans/PLAN-github-pr-review-restore.md` | approved | 128 | 0 | 13 | 35928 |
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
-| `agent/plans/PLAN-haiku-model-routing.md` | phase | 249 | 9 | 11 | 30313 |
+| `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30326 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
 | `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
 | `agent/plans/PLAN-lint-css-ci-wiring.md` | compacted | 54 | 0 | 0 | 4377 |
@@ -551,7 +551,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
 | `agent/plans/PLAN-scope-gate-sort-collation.md` | compacted | 38 | 0 | 0 | 2784 |
 | `agent/plans/PLAN-scope-gates-split.md` | compacted | 38 | 0 | 0 | 2608 |
-| `agent/plans/PLAN-secret-namespace-migration.md` | mostly | 1713 | 5 | 29 | 187659 |
+| `agent/plans/PLAN-secret-namespace-migration.md` | executing | 1713 | 5 | 29 | 187672 |
 | `agent/plans/PLAN-sentence-aware-wrapping.md` | compacted | 38 | 0 | 0 | 2804 |
 | `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
 | `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3311 |
@@ -576,7 +576,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-token-ip-rebind.md` | draft | 416 | 1 | 9 | 38641 |
 | `agent/plans/PLAN-tooling-transformation.md` | ready | 7501 | 3 | 151 | 751317 |
-| `agent/plans/PLAN-trap-enforcement.md` | w | 539 | 7 | 0 | 59487 |
+| `agent/plans/PLAN-trap-enforcement.md` | executing | 539 | 7 | 0 | 59500 |
 | `agent/plans/PLAN-typecheck-orphan-packages.md` | ready | 84 | 0 | 5 | 7005 |
 | `agent/plans/PLAN-uncommitted-work-exposure-check.md` | proposed | 98 | 7 | 0 | 15844 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
