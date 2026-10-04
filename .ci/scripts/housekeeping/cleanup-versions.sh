@@ -292,8 +292,10 @@ cleanup_releases() {
                     # survivor of both fails the run instead of being counted.
                     if gh release view "$tag" --repo "$RELEASE_REPO" >/dev/null 2>&1; then
                         log_warn "Release still present after delete: $tag; deleting it by id"
-                        local ids id
-                        ids="$(gh api "repos/$RELEASE_REPO/releases" --paginate --jq ".[] | select(.tag_name == \"$tag\") | .id" 2>/dev/null || true)"
+                        local ids id tag_lit
+                        # The tag enters the filter as a JSON string literal, so a quote or backslash in it cannot break the jq syntax.
+                        tag_lit="$(jq -rn --arg t "$tag" '$t | tojson')"
+                        ids="$(gh api "repos/$RELEASE_REPO/releases" --paginate --jq ".[] | select(.tag_name == $tag_lit) | .id" 2>/dev/null || true)"
                         for id in $ids; do
                             gh api -X DELETE "repos/$RELEASE_REPO/releases/$id" >/dev/null 2>&1 || true
                         done
