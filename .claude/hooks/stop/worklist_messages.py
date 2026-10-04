@@ -481,6 +481,51 @@ N_PR_REVIEW_UNREADABLE = (
     "`python3 .claude/hooks/stop/wl_prreview.py --check --pr %(pr)s` reads it by hand."
 )
 
+# SCHEDULED WORKFLOWS ON MAIN (agent/plans/PLAN-scheduled-red-detector.md, Part A; wl_schedred). Keyed, one dict per red row from `wl_schedred.fields`. The claimant's block carries the exact `--add` line, because the item IS the ownership record: once it exists, `open-items` holds this session and every peer goes quiet.
+V_SCHEDULED_RED = (
+    "SCHEDULED RED ON MAIN, UNTRACKED, and this session holds its claim: %(name)s (%(file)s) "
+    "run %(run)s attempt %(attempt)s concluded %(conclusion)s %(age)s ago.\n"
+    "    failed jobs: %(jobs)s\n"
+    "    it blocks: %(blocks)s\n"
+    "A nightly red is never caused by the commit being pushed, so no push or PR gate catches "
+    "it; one session owns each red and the claim makes it this one. Track it, then fix it:\n"
+    "    .claude/hooks/stop/worklist.py --add %(me)s '%(add)s'\n"
+    "    .ci/scripts/ci/ci-trace.py --run %(run)s --why\n"
+    "    .ci/scripts/ci/ci-trace.py --scheduled"
+)
+
+V_SCHEDULED_RED_TICK = (
+    "SCHEDULED RED TICKED WITHOUT EVIDENCE: #%(item)s closed the %(name)s (%(file)s) red, but "
+    "the newest scheduled run %(run)s attempt %(attempt)s is still %(conclusion)s and the tick "
+    "names neither a green scheduled run newer than it nor a commit already on origin/main. "
+    "Reopen the tracking with a new item and land the fix:\n"
+    "    .claude/hooks/stop/worklist.py --add %(me)s '%(add)s'\n"
+    "    .ci/scripts/ci/ci-trace.py --run %(run)s --why"
+)
+
+N_SCHEDULED_RED_PEER = (
+    "Scheduled red on main owned by session %(owner)s: %(name)s (%(file)s) run %(run)s "
+    "(%(conclusion)s, %(age)s ago). Nothing to do here; `.ci/scripts/ci/ci-trace.py "
+    "--scheduled` shows it."
+)
+
+N_SCHEDULED_UNREADABLE = (
+    "Scheduled workflow runs on main could not be read (%(error)s). Nothing blocks on it; "
+    "`.ci/scripts/ci/ci-trace.py --scheduled` reads them by hand."
+)
+
+N_SCHEDULED_GREEN = (
+    "SCHEDULED GREEN: %(name)s (%(file)s) ran green on main in scheduled run %(run)s, so #%(item)s "
+    "can close on that evidence:\n"
+    "    .claude/hooks/stop/worklist.py --tick %(me)s %(item)s 'green scheduled run %(run)s %(url)s'"
+)
+
+# The SessionStart line (wl_schedred.session_start_line), one per red, from the shared cache alone.
+CTX_SCHEDULED_RED_SESSION_START = (
+    "Scheduled red on main: %(name)s run %(run)s (%(conclusion)s, %(age)s) -- %(tracked)s%(stale)s; "
+    ".ci/scripts/ci/ci-trace.py --scheduled"
+)
+
 # ONE LINE PER INVARIANT that was not quoted in full. The tier's value is that it cannot be rotated away; it is NOT a licence to print five long blocks, because "a prompt that fires always is a prompt that gets skimmed" and a skimmed invariant is a rotated one with extra steps. So the excess is NAMED, never dropped: key plus its opening line, which is the line every one of these
 # messages puts its verdict on.
 R_ALWAYS_COLLAPSED = "ALSO BLOCKING, IN BRIEF (quoted in full on a later stop):\n%s"
