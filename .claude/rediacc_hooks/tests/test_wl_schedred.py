@@ -355,7 +355,7 @@ def test_a_missing_gh_fails_open(repo, tmp_path, monkeypatch):
     doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
     assert doc["state"] == "unreadable"
     assert SR.reds(doc) == []
-    assert SR.assess(repo, tmp_path / "wl.md", [], wlfix.SID, doc)["block"] == []
+    assert SR.assess(tmp_path / "wl.md", [], wlfix.SID, doc)["block"] == []
 
 
 def test_no_origin_means_unset_and_zero_calls(tmp_path, gh):
@@ -454,13 +454,13 @@ def test_one_session_claims_and_the_other_gets_an_advisory(tmp_path):
         "aaaaaaaa %s a\nbbbbbbbb %s b\n" % (stamp(), stamp()), encoding="utf-8"
     )
     doc = red_doc()
-    a = SR.assess(tmp_path, wlp, [], "aaaaaaaa-1", doc)
-    b = SR.assess(tmp_path, wlp, [], "bbbbbbbb-2", doc)
+    a = SR.assess(wlp, [], "aaaaaaaa-1", doc)
+    b = SR.assess(wlp, [], "bbbbbbbb-2", doc)
     assert [r["run_id"] for r in a["block"]] == [RED_RUN]
     assert b["block"] == []
     assert b["peer"][0][1] == "aaaaaaaa"
     # A newer red run id starts the cycle again: the old claim is stale, so whoever stops first claims.
-    b2 = SR.assess(tmp_path, wlp, [], "bbbbbbbb-2", red_doc(run_id=RED_RUN + 7))
+    b2 = SR.assess(wlp, [], "bbbbbbbb-2", red_doc(run_id=RED_RUN + 7))
     assert [r["run_id"] for r in b2["block"]] == [RED_RUN + 7]
 
 
@@ -485,15 +485,15 @@ def test_a_tracking_item_moves_ownership_to_its_owner(tmp_path):
         "owner": "aaaaaaaa",
         "text": "sched:ci run:%d" % RED_RUN,
     }
-    mine = SR.assess(tmp_path, wlp, [item], "aaaaaaaa-1", doc)
-    theirs = SR.assess(tmp_path, wlp, [item], "bbbbbbbb-2", doc)
+    mine = SR.assess(wlp, [item], "aaaaaaaa-1", doc)
+    theirs = SR.assess(wlp, [item], "bbbbbbbb-2", doc)
     assert mine == {"block": [], "tick": [], "peer": [], "green": []}, "open-items holds the owner"
     assert theirs["block"] == []
     assert theirs["peer"][0][1] == "aaaaaaaa"
     assert not SR.claim_path(wlp, "ci").exists(), "a tracked red never takes a claim"
     # Control: an item about a PR lint red does not track the nightly, so the red is claimed.
     lint = dict(item, text="fix Console CI lint")
-    assert SR.assess(tmp_path, wlp, [lint], "bbbbbbbb-2", doc)["block"]
+    assert SR.assess(wlp, [lint], "bbbbbbbb-2", doc)["block"]
 
 
 def test_green_owes_the_owner_the_tick_command(tmp_path):
@@ -505,19 +505,19 @@ def test_green_owes_the_owner_the_tick_command(tmp_path):
         "owner": "aaaaaaaa",
         "text": "sched:ci run:%d" % RED_RUN,
     }
-    got = SR.assess(tmp_path, wlp, [item], "aaaaaaaa-1", green)
+    got = SR.assess(wlp, [item], "aaaaaaaa-1", green)
     assert [(r["run_id"], it["id"]) for r, it in got["green"]] == [(GREEN_RUN, "c0ffee01")]
     text = M.N_SCHEDULED_GREEN % dict(SR.fields(got["green"][0][0], "aaaaaaaa"), item="c0ffee01")
     assert "worklist.py --tick aaaaaaaa c0ffee01 'green scheduled run %d" % GREEN_RUN in text
     assert got["block"] == []
     # Control: a peer's item is the peer's tick to make.
-    assert SR.assess(tmp_path, wlp, [item], "bbbbbbbb-2", green)["green"] == []
+    assert SR.assess(wlp, [item], "bbbbbbbb-2", green)["green"] == []
 
 
 # --------------------------------------------------------------------------- tick evidence
 
 
-def test_tick_evidence_needs_a_main_commit_or_a_newer_green(repo, tmp_path):
+def test_tick_evidence_needs_a_newer_green_scheduled_run(repo, tmp_path):
     wlp = tmp_path / "wl.md"
     doc = red_doc()
     on_main = git(repo, "rev-parse", "HEAD")
@@ -537,22 +537,20 @@ def test_tick_evidence_needs_a_main_commit_or_a_newer_green(repo, tmp_path):
             "upd": now,
         }
 
-    good = SR.assess(repo, wlp, [tick("fixed in %s" % on_main[:10])], "aaaaaaaa-1", doc)
-    assert good == {"block": [], "tick": [], "peer": [], "green": []}
-    bad = SR.assess(repo, wlp, [tick("done, should be fine")], "aaaaaaaa-1", doc)
+    # Operator ruling 2026-10-04 ("Require a green run"): a fix commit, even one already on origin/main, is not evidence; only a newer green scheduled run is.
+    on = SR.assess(wlp, [tick("fixed in %s" % on_main[:10])], "aaaaaaaa-1", doc)
+    assert [it["id"] for _r, it in on["tick"]] == ["c0ffee02"], "a fix on main does not end a red"
+    bad = SR.assess(wlp, [tick("done, should be fine")], "aaaaaaaa-1", doc)
     assert [it["id"] for _r, it in bad["tick"]] == ["c0ffee02"]
-    # Control: a real commit that is NOT on origin/main is not evidence either.
-    off = SR.assess(repo, wlp, [tick("fixed in %s" % off_main[:10])], "aaaaaaaa-1", doc)
+    off = SR.assess(wlp, [tick("fixed in %s" % off_main[:10])], "aaaaaaaa-1", doc)
     assert off["tick"], "an unmerged fix does not end a red"
     # A newer green scheduled run named in the evidence ends it.
     greens = [{"run_id": GREEN_RUN, "conclusion": "success", "red": False}]
-    assert SR.tick_evidence_ok(repo, "green run %d" % GREEN_RUN, doc["workflows"][0], greens)
-    assert not SR.tick_evidence_ok(
-        repo, "green run %d" % (RED_RUN - 1), doc["workflows"][0], greens
-    )
+    assert SR.tick_evidence_ok("green run %d" % GREEN_RUN, doc["workflows"][0], greens)
+    assert not SR.tick_evidence_ok("green run %d" % (RED_RUN - 1), doc["workflows"][0], greens)
 
 
-def test_an_older_cycles_tick_does_not_cover_a_newer_red(repo, tmp_path):
+def test_an_older_cycles_tick_does_not_cover_a_newer_red(tmp_path):
     wlp = tmp_path / "wl.md"
     old_tick = {
         "id": "c0ffee03",
@@ -562,7 +560,7 @@ def test_an_older_cycles_tick_does_not_cover_a_newer_red(repo, tmp_path):
         "lastnote": "fixed",
         "upd": "2026-09-01T00:00:00Z",
     }
-    got = SR.assess(repo, wlp, [old_tick], "aaaaaaaa-1", red_doc())
+    got = SR.assess(wlp, [old_tick], "aaaaaaaa-1", red_doc())
     assert got["tick"] == []
     assert [r["run_id"] for r in got["block"]] == [RED_RUN], "untracked again, so claimed"
 

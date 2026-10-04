@@ -4111,7 +4111,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 2,
                 refresh_min=60,
             )
-        _sr = wl_schedred.assess(root, worklist, fold.items, session_id, _sr_doc)
+        _sr = wl_schedred.assess(worklist, fold.items, session_id, _sr_doc)
         _sr_texts = [M.V_SCHEDULED_RED % wl_schedred.fields(_row, me8) for _row in _sr["block"]]
         _sr_texts += [
             M.V_SCHEDULED_RED_TICK % dict(wl_schedred.fields(_row, me8), item=_it.get("id"))
