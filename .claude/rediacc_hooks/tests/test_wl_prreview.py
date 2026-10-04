@@ -413,8 +413,9 @@ def test_wait_failed_run_names_the_attempt_class_and_the_rerun(capsys):
     err = capsys.readouterr().err
     assert "review attempt (class error_max_turns)" in err
     assert "gh workflow run claude-review.yml --ref %s -f pr_number=%d" % (BRANCH, PR) in err
-    # The generic investigation text stays beside it.
-    assert "investigate the Claude Review run" in err
+    # ONE "Next:" (review finding 3bc91573.1): the attempt's action replaces the generic investigation line.
+    assert err.count("Next:") == 1, err
+    assert "investigate the Claude Review run" not in err
 
 
 def test_wait_failed_run_without_an_attempt_comment_keeps_the_fallback(capsys):
