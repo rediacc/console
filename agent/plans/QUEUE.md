@@ -52,9 +52,9 @@ judge: on
 3. agent/plans/PLAN-config-handoff-relay-only.md -- P0, draft, in progress (9 of 11 boxes ticked), dep-blocked
 4. agent/plans/PLAN-token-ip-rebind.md -- P0, draft, in progress (9 of 10 boxes ticked), dep-blocked
 5. agent/plans/PLAN-config-sync-hardening.md -- P0, draft, in progress (18 of 19 boxes ticked), dep-blocked
-6. agent/plans/PLAN-haiku-model-routing.md -- P1, phase, in progress (11 of 20 boxes ticked)
+6. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
 7. agent/plans/PLAN-plan-per-pr-loop.md -- P1, approved, in progress (13 of 16 boxes ticked)
-8. agent/plans/PLAN-secret-namespace-migration.md -- P1, mostly, in progress (29 of 34 boxes ticked)
+8. agent/plans/PLAN-secret-namespace-migration.md -- P1, executing, in progress (29 of 34 boxes ticked)
 9. agent/plans/PLAN-stop-hook-one-plan-scope.md -- P1, approved, in progress (14 of 15 boxes ticked)
 10. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
 11. agent/plans/PLAN-stop-hook-turbo.md -- P1, approved, in progress (22 of 23 boxes ticked)
@@ -80,7 +80,7 @@ judge: on
 31. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
 32. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
 33. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
-34. agent/plans/PLAN-trap-enforcement.md -- P3, w, not started
+34. agent/plans/PLAN-trap-enforcement.md -- P3, executing, not started
 35. agent/plans/PLAN-uncommitted-work-exposure-check.md -- P3, proposed, not started
 
 ### Not queued

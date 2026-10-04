@@ -846,7 +846,7 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-haiku-model-routing.md": {
-      "status": "phase",
+      "status": "executing",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
@@ -1443,7 +1443,7 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-secret-namespace-migration.md": {
-      "status": "mostly",
+      "status": "executing",
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
@@ -2041,7 +2041,7 @@
       ]
     },
     "agent/plans/PLAN-trap-enforcement.md": {
-      "status": "w",
+      "status": "executing",
       "owner": "99ccf057",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",

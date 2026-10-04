@@ -1,6 +1,6 @@
 # PLAN: route the cheap-tier work to Haiku, by task shape
 
-Status: phase 0-1 done and standing as historical record; phase 2 and the flip it gated are SUPERSEDED 2026-09-23 by `D-M1` -- see section 9 -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
+Status: executing -- phase 0-1 done and standing as historical record; phase 2 and the flip it gated are SUPERSEDED 2026-09-23 by `D-M1` -- see section 9 -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Depends-On: no-dep -- cites only finished plans: PLAN-remove-autopilot.md
 Owner: d778be9d
 First-Seen: 2026-09-22
