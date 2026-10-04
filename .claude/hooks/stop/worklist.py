@@ -1139,7 +1139,7 @@ def _item_cli(argv, worklist):
             "#%s is owned by %s; never tick or edit another session's tracking"
             % (item_id, rec["owner"])
         )
-    # A DONE ITEM STAYS DONE. `--lease` (and its release), `--defer` and `--reopen` each moved an [x] to another state and erased the tick's standing; `--reopen` alone refused it. post-bash/arm_ci_watch reuses its CI item only when "a fresh `--lease` on it succeeds", so on 2026-10-04 a push re-leased the ticked #54ee0b51 to a new watcher instead of adding an item for the new head.
+    # A DONE ITEM STAYS DONE. `--lease` (and its release), `--defer` and `--reopen` each moved an [x] to another state and erased the tick's standing; `--reopen` alone refused it. the push hook that arms a CI watcher reuses its CI item only when "a fresh `--lease` on it succeeds", so on 2026-10-04 a push re-leased the ticked #54ee0b51 to a new watcher instead of adding an item for the new head.
     if rec["state"] == "x" and mode in ("--lease", "--defer"):
         die(
             "#%s is done [x]; %s cannot reopen a ticked item. New work on it is a new item "
