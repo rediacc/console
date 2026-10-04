@@ -32,6 +32,22 @@ def run_script(script, argv: list[str], env: dict, stdin: str = "") -> wlfix.Res
     return wlfix.Result(proc.stdout, proc.stderr, proc.returncode)
 
 
+# The keyed fields `wl_schedred.fields(row, me8)` returns, which every scheduled-red message renders from.
+SCHED_ROW = {
+    "name": "Console CI",
+    "stem": "ci",
+    "file": "ci.yml",
+    "run": 1,
+    "attempt": 1,
+    "conclusion": "failure",
+    "age": "3 h",
+    "jobs": "j",
+    "blocks": "b",
+    "me": "m",
+    "add": "a",
+    "url": "u",
+}
+
 # The arity of every catalogue constant at its call site in `worklist.py`. Six strings have no needle anywhere in this suite (V_DIVERGED, V_PR_UNREADABLE, V_EVENT_UNPARSEABLE, R_JUDGE_CONTINUE, CTX_SESSION_START_STALE, the exempt-overrun stuck detail), and this registry is their shape protection: every constant must exist and render with the EXACT argument
 # arity its call site uses, so a placeholder added or dropped in the catalogue cannot lurk in a branch no test drives. `None` means the constant is printed verbatim and the `%` check is skipped; it still has to be REGISTERED, which is what the gap check at the end of the test is for.
 ARITY = {
@@ -361,6 +377,13 @@ ARITY = {
     "V_PR_REVIEW_UNANSWERED": {"pr": 543, "head": "deadsha00000", "reason": "r"},
     "V_PR_REVIEW_FAILED_RUN": {"pr": 543, "head": "deadsha00000", "reason": "r"},
     "N_PR_REVIEW_UNREADABLE": {"pr": 543, "head": "deadsha00000", "reason": "r"},
+    # Scheduled workflows on main (agent/plans/PLAN-scheduled-red-detector.md, A1/A2/A5): every one renders from `wl_schedred.fields(row, me8)`, plus `item`, `owner`, `error` or `tracked`/`stale` where its call site adds them.
+    "V_SCHEDULED_RED": SCHED_ROW,
+    "V_SCHEDULED_RED_TICK": dict(SCHED_ROW, item="i"),
+    "N_SCHEDULED_RED_PEER": dict(SCHED_ROW, owner="o"),
+    "N_SCHEDULED_UNREADABLE": {"error": "e"},
+    "N_SCHEDULED_GREEN": dict(SCHED_ROW, item="i"),
+    "CTX_SCHEDULED_RED_SESSION_START": dict(SCHED_ROW, tracked="untracked", stale=""),
     "R_ALWAYS_COLLAPSED": ("rows",),
     "R_ROTATING_COLLAPSED": ("rows",),
     # v23 lineage. CLI_ADOPT_USAGE takes nothing (it is a static usage block). CLI_ADOPT_REFUSED takes the session prefix, the predecessor prefix and the reason the evidence failed; CLI_ADOPT_SELF takes the prefix that turned out to be the caller; and CLI_ADOPT_DONE takes the session prefix, the predecessor prefix, the rung that fired, the evidence basis, the boundary uuid, how
