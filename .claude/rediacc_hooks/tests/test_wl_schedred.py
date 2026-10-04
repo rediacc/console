@@ -545,9 +545,9 @@ def test_tick_evidence_needs_a_newer_green_scheduled_run(repo, tmp_path):
     off = SR.assess(wlp, [tick("fixed in %s" % off_main[:10])], "aaaaaaaa-1", doc)
     assert off["tick"], "an unmerged fix does not end a red"
     # A newer green scheduled run named in the evidence ends it.
-    greens = [{"run_id": GREEN_RUN, "conclusion": "success", "red": False}]
-    assert SR.tick_evidence_ok("green run %d" % GREEN_RUN, doc["workflows"][0], greens)
-    assert not SR.tick_evidence_ok("green run %d" % (RED_RUN - 1), doc["workflows"][0], greens)
+    # Even naming a green run id does not end a red whose newest scheduled run is still red: only that newer green run itself, which turns the row green, does.
+    named = SR.assess(wlp, [tick("green run %d" % GREEN_RUN)], "aaaaaaaa-1", doc)
+    assert named["tick"], "a still-red workflow is not closed by a tick"
 
 
 def test_an_older_cycles_tick_does_not_cover_a_newer_red(tmp_path):
