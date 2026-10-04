@@ -26,7 +26,7 @@ class FakeGh:
         self.head = state.get("head", HEAD)
         self.ref = state.get("ref", BRANCH)
         self.green = state.get("green", "1")
-        self.loc = state.get("loc", "100")
+        self.loc = state.get("loc", "100 3")
         self.reports = state.get("reports", 0)
         self.attempts = state.get("attempts", "")
         self.attempt_id = state.get("attempt_id", "")
@@ -69,7 +69,7 @@ class FakeGh:
                     {"headRefOid": self.head, "headRefName": self.ref, "isDraft": self.draft}
                 ),
             )
-        if args[:2] == ["pr", "view"] and "additions,deletions" in args:
+        if args[:2] == ["pr", "view"] and "additions,deletions,changedFiles" in args:
             return self._read("loc", self.loc)
         if "check-runs" in joined:
             return self._read("checks", self.green)
@@ -428,6 +428,26 @@ def test_turns_scale_with_the_diff_and_clamp():
         140,
         140,
     ]
+
+
+def test_turns_cover_the_breadth_of_a_many_file_diff():
+    """PR #594 (2026-10-04) died at the 50-turn floor on 1,050 lines over 49 files: density alone gave the floor. Breadth now earns TURNS_PER_FILE per file."""
+    assert G.turns_for(1050, 49) == 98
+    assert G.turns_for(1050, 3) == 50
+    assert G.turns_for(100000, 49) == G.MAX_TURNS
+    assert G.turns_for(0, 200) == G.MAX_TURNS
+
+
+def test_the_gate_reads_the_file_count_into_the_turn_budget(env):
+    rc, out = gate_wr(env, FakeGh(loc="1050 49"))
+    assert rc == 0
+    assert out["review_turns"] == "98"
+
+
+def test_an_unparseable_diff_size_takes_the_floor(env):
+    rc, out = gate_wr(env, FakeGh(loc="1050"))
+    assert rc == 0
+    assert out["review_turns"] == str(G.MIN_TURNS)
 
 
 def test_a_missing_template_leaves_no_prompt(env):
