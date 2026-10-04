@@ -129,6 +129,8 @@ LANE_DURATIONS_REL_PATH = ".ci/config/lane-durations.json"
 GATES_LOCK_REL_PATH = "scripts/ci-runner/gates.lock.json"
 PER_LEG_BUDGET_MINUTES = 12.0
 DRIFT_THRESHOLD = 0.25
+# A UNIT's drift counts only when the absolute move is at least this many milliseconds. Unit p90s are sampled from 10 runs, so a sub-second unit swings by hundreds of percent on runner noise alone: an hour after a refresh, check:ci-budget-freshness failed PR #594 (run 37190043363) on 16 -> 124.5 ms, 2119 -> 1566 ms and 5967 -> 7620 ms, none of which moves a leg's wall enough to matter. Job-level drift keeps the pure ratio. Same reasoning as gate_costs.MIN_DRIFT_CPU_S.
+MIN_UNIT_DRIFT_MS = 2000
 # D-W2/T3.4: the two direct (non-lane-sharded) ci.yml jobs job-timeout-baseline.json used to cover, now `job_max_seconds`' own baseline. See check_job_timeout_headroom.py.
 HEADROOM_JOBS = ("Validate Promotion", "Stage Artifacts")
 
@@ -1775,7 +1777,10 @@ def check_lane_durations(
 
     committed_units = committed.get("units") or {}
     for unit_id, ms in sorted(computed["units"].items()):
-        d = drift_finding("unit %r p90" % unit_id, committed_units.get(unit_id), ms)
+        was = committed_units.get(unit_id)
+        if was is not None and ms is not None and abs(ms - was) < MIN_UNIT_DRIFT_MS:
+            continue
+        d = drift_finding("unit %r p90" % unit_id, was, ms)
         if d:
             findings.append(d)
 
