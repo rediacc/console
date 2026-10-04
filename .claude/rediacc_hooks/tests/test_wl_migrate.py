@@ -511,7 +511,9 @@ def test_204_compaction_is_lossless(wl):  # noqa: F811
         found = re.search(r"#([0-9a-f]+)", wl.cli("--add", "deadbeef", label).out)
         assert found, "--add produced no id for %r" % label
         ids[label] = found.group(1)
-    wl.cli("--tick", "deadbeef", ids["a done item"], "closed at abc1234 with exit 0")
+    wl.cli(
+        "--tick", "deadbeef", ids["a done item"], "closed at abc1234 with exit 0 nocommit:research"
+    )
     wl.cli(
         "--defer",
         "deadbeef",
@@ -590,7 +592,11 @@ def spent_peer(fix, prefix, minutes=180):
     text = "an item this peer finished before it stopped"
     fix.cli("--add", prefix, text, env=as_session(fix, prefix))
     fix.cli(
-        "--tick", prefix, item_id(fix, text), "suite green, exit 0", env=as_session(fix, prefix)
+        "--tick",
+        prefix,
+        item_id(fix, text),
+        "suite green, exit 0 nocommit:research",
+        env=as_session(fix, prefix),
     )
     age_store(fix, prefix, minutes)
 

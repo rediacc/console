@@ -224,7 +224,7 @@ def test_160b_own_worklist_activity_resets_the_stuck_counter(wl):  # noqa: F811
         last = wl.run()
         fired = fired or "CONSECUTIVE STOPS" in last.out
         aid = added_id(wl.cli("--add", "deadbeef", "movement item %d" % index))
-        wl.cli("--tick", "deadbeef", aid, "done, exit 0")
+        wl.cli("--tick", "deadbeef", aid, "done, exit 0 nocommit:research")
     assert not fired, "160b: an active session still read as stuck: %s" % last.out[:250]
 
 

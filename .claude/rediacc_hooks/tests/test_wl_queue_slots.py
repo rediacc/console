@@ -101,7 +101,7 @@ def test_r5b_a_hold_for_an_open_item_holds_the_slot(wl):  # noqa: F811
 def test_r5b_inverse_a_hold_for_a_closed_item_or_a_second_hold_is_refused(wl):  # noqa: F811
     three_writers(wl)
     closed = added(wl, "(deadbeef) already done")
-    assert wl.cli("--tick", wlfix.ME, closed, "landed, exit 0").rc == 0
+    assert wl.cli("--tick", wlfix.ME, closed, "landed, exit 0 nocommit:research").rc == 0
     item = added(wl, "(deadbeef) writer work")
     got = wl.cli("--lease", wlfix.ME, item, "+30", "worker:queue", "HOLD_FOR:#%s" % closed)
     assert got.rc != 0, got.out[:300]

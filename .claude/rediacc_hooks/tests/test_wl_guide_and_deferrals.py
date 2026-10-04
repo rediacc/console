@@ -410,7 +410,7 @@ def test_149_the_centrepiece_sitting_on_a_ci_watch_forces_the_backlog(wl):  # no
     assert "NEXT:" in named.out, "no next verb in the CI-waiting block: %s" % named.out[:300]
 
     # ANTI-DEADLOCK: doing the demanded work reaches an allowed stop, with the same watch still running.
-    wl.cli("--tick", "deadbeef", "eeee1111", "backfilled, exit 0")
+    wl.cli("--tick", "deadbeef", "eeee1111", "backfilled, exit 0 nocommit:research")
     wl.newturn()
     wl.say(
         "executed the backfill default while the run finished\n\n## Remaining\n"
@@ -539,7 +539,7 @@ def test_150_the_judge_audits_sitting_justifications_and_do_now_reopens_the_item
     assert "REOPENED by the stop-gate judge" in listed, listed[:260]
 
     # ANTI-DEADLOCK: doing the reopened work reaches an allowed stop.
-    wl.cli("--tick", "deadbeef", "ffff1111", "quarantined, exit 0")
+    wl.cli("--tick", "deadbeef", "ffff1111", "quarantined, exit 0 nocommit:research")
     wl.newturn()
     wl.say("quarantined the leg as ordered\n\n## Remaining\nnothing")
     wl.checkj("allow", "", "ticking the reopened item with evidence reaches an allowed stop")

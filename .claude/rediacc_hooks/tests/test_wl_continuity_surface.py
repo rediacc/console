@@ -316,7 +316,7 @@ def test_p12_inverse_ticking_the_named_item_stales_it(wl):  # noqa: F811
     wl.say("working\n\n## Remaining\n- #%s open" % ident)
     wl.run()
     wl.age_state(wlfix.ME, 16)
-    ticked = wl.cli("--tick", wlfix.ME, ident, "done, suite exit code 0")
+    ticked = wl.cli("--tick", wlfix.ME, ident, "done, suite exit code 0 nocommit:research")
     assert ticked.rc == 0, ticked.err[:300]
     wl.newturn()
     wl.say("done\n\n## Remaining\n- #7 the next thing (pending)")

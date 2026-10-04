@@ -358,7 +358,7 @@ def test_195_a_foreign_producing_checklist_is_reported_never_blocked_on(wl):  # 
         "--tick",
         "deadbeef",
         tid.group(1),
-        "agent/programs/demo/CHECKLIST.md:1 asked 2026-10-03; left with its owner",
+        "agent/programs/demo/CHECKLIST.md:1 asked 2026-10-03; left with its owner nocommit:operator-deferred",
     )
     assert "ticked" in ticked.out, ticked.out + ticked.err
     got = wl.run(extra_env={"WORKLIST_FOCUS": "off"})
@@ -433,7 +433,7 @@ def test_198_done_but_unticked_the_store_settled_it_and_the_box_did_not(wl):  # 
     cldeliver(wl, "docs/demo/README.md", "the readme")
     clfile(wl, "demo", CL_EXECUTING)
     iid = additem(wl.cli("--add", "deadbeef", "cl:demo/w1 Wave A: wire the thing"))
-    wl.cli("--tick", "deadbeef", iid, "wave A landed, suite run green, exit 0")
+    wl.cli("--tick", "deadbeef", iid, "wave A landed, suite run green, exit 0 nocommit:research")
     got = wl.run()
     settled = "198: the settled wave did not demand its tick: %s" % got.out[:500]
     assert "w1 DONE-BUT-UNTICKED" in got.out, settled
@@ -473,7 +473,7 @@ def test_198d_control_the_same_wave_without_a_door_still_demands_its_tick(wl):  
     iid = additem(
         wl.cli("--add", "deadbeef", "cl:demo/w1 Wave A: set the production secrets and cut over")
     )
-    wl.cli("--tick", "deadbeef", iid, "cut over on host-1, verified, exit 0")
+    wl.cli("--tick", "deadbeef", iid, "cut over on host-1, verified, exit 0 nocommit:research")
     got = wl.run()
     assert "w1 DONE-BUT-UNTICKED" in got.out, (
         "198d: the door exemption swallowed a genuinely settled wave: %s" % got.out[:500]

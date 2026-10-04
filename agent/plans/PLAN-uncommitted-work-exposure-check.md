@@ -1,12 +1,25 @@
-# PLAN: a Stop-hook uncommitted-work exposure check (advisory-only, session-attributed)
+# PLAN: a Stop-hook uncommitted-work exposure check (a push to commit, session-attributed)
 
 Status: proposed -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Depends-On: no-dep -- cites only finished plans: PLAN-bgsweep-orphan-shells.md
 Owner: d778be9d
-Updated: 2026-09-23
+Updated: 2026-10-04
 Priority: P3 -- seed: Status proposed, 7 open box(es)
 Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .claude/hooks/stop/*.py, .claude/agents/pr-babysitter.md
+
+## Re-scope (2026-10-04, PLAN-commit-as-you-go.md box T6)
+
+The operator ruling of 2026-09-25 replaced "uncommitted until asked" with "verified work is committed as it lands, on the one branch" (CLAUDE.md rule 1). The premise below, that a check here may raise awareness but must never nudge toward committing, no longer holds. `V_UNCOMMITTED_RISK` is now a push to commit, not information:
+
+- It names this session's own still-dirty files (count, oldest age, capped list and remainder) and tells the session to commit each verified unit by path (`git add -- <new paths>`, then `git commit -F <msg> -- <paths>`), or to tick the item with `nocommit:<reason>` when the change is not to be committed.
+- It is a blocking check, not a rotated hygiene advisory: `vadd("uncommitted-risk", True, ...)`.
+- The key `uncommitted-risk` joins `wl_standdown.CORE`, the keep-list shared by the cap-saturated wait, focus mode and the PR loop (the former `wl_roster.CAP_WAIT_KEEPS` lives there since the focus-mode plan's T1). Committing is something the session can do while it waits on writers or winds a PR down, so no stand-down profile parks it.
+- The key enters `CORE` in the same change as its producer: `test_wl_cap_wait.py` c9 and `test_wl_focus.py` f13 refuse a kept key that no stop module produces.
+- Still never done by the check itself: it runs no `add`, `commit` or `stash`. The commit is the session's own act, for paths it owns, never a peer's (section 2 still holds).
+- `git stash create` drops out of the message: committing is the safety net now.
+
+Sections 3 and 4 below are read through this re-scope. Where they say "informational", "awareness alone" or "uncommitted until asked remains the default", the re-scope wins.
 
 ## Finding
 
@@ -77,8 +90,8 @@ Two independent triggers, either sufficient:
 ## Boxes
 
 - [ ] Add `wl_uncommitted.py` beside `wl_admit.py`/`wl_bgsweep.py`: the transcript-cursor reader (bounded catch-up per section 1), the `uc_files` union (write-once `first_seen_epoch` per path), the throttled `git status --porcelain` intersection (section 5), and the age/volume trigger evaluation (section 4).
-- [ ] Add `V_UNCOMMITTED_RISK` to `worklist_messages.py`: names the count and oldest age of this-session's-own still-dirty files (capped list + remainder count), states plainly this is informational and "uncommitted until asked" remains the default, and names `git stash create` as operator-only information per section 3.
-- [ ] Wire into `wl_checks.py` (after the `poll_fast_path` exit, alongside the other per-stop fact-gatherers near `docs_drift`'s call site) as `vadd("uncommitted-risk", False, ...)`, wrapped in the same `try/except Exception` every sibling detector uses.
+- [ ] Add `V_UNCOMMITTED_RISK` to `worklist_messages.py`: names the count and oldest age of this-session's-own still-dirty files (capped list + remainder count) and pushes the session to commit each verified unit by path, or to tick with `nocommit:<reason>` (Re-scope).
+- [ ] Wire into `wl_checks.py` (after the `poll_fast_path` exit, alongside the other per-stop fact-gatherers near `docs_drift`'s call site) as `vadd("uncommitted-risk", True, ...)`, wrapped in the same `try/except Exception` every sibling detector uses, and add `"uncommitted-risk"` to `wl_standdown.CORE` in the same change (Re-scope).
 - [ ] New env-tunable constants: `WORKLIST_UNCOMMITTED_AGE_MIN` (120), `WORKLIST_UNCOMMITTED_COUNT_MIN` (15), `WORKLIST_UNCOMMITTED_CHECK_MIN` (10).
 - [ ] Test file (`test-uncommitted.py`): synthetic transcript fixtures for the cursor; a fake `git status --porcelain` intersection test proving a peer's dirty file is never reported; the age/volume trigger boundary cases; the throttle (assert via a monkeypatched/counting `subprocess.run`); and a grep-based control asserting the new module's source contains none of `add\b|commit\b|stash\s+(push|pop|apply|...)|restore\b|checkout\s+--|clean\b|reset\b` as a live-executed `git` argument.
 - [ ] File, separately and out of this plan's scope, a narrow finding against `.claude/oracles/pre-bash/block-destructive-git-restore.sh`'s `STASH_VERB` regex: `git stash create` does not mutate the working tree or index and arguably should not share a blocklist entry with the mutating stash verbs.
@@ -91,8 +104,9 @@ Two independent triggers, either sufficient:
 - `.claude/hooks/stop/wl_core.py` (`transcript_tail`'s existing transcript-parsing idiom to extend)
 - `.claude/hooks/stop/wl_uncommitted.py` (new)
 - `.claude/hooks/stop/worklist_messages.py` (new `V_UNCOMMITTED_RISK`)
+- `.claude/hooks/stop/wl_standdown.py` (`uncommitted-risk` in `CORE`)
 - `.claude/oracles/pre-bash/block-destructive-git-restore.sh` (why `git stash create` cannot be instructed to the session; separate follow-up finding)
 - `.claude/agents/pr-babysitter.md` (why the snapshot mechanism is not reusable)
-- `CLAUDE.md` (Session Default 1, the constraint this design is scoped inside)
+- `CLAUDE.md` (Session Default 1, which since 2026-09-25 commits verified work as it lands)
 
 Design produced by a dispatched Plan agent (2026-09-23), grounded in live experiments on this session's own real tree and the repo's own pre-bash guard rather than hypothetical claims.

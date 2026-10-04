@@ -502,7 +502,11 @@ def drive_l1(fix) -> L1Drive:
     table = [
         ("--add", "--add @WHO@ l1-table-add", "added #"),
         ("--triage", "--triage @WHO@ l1-table-finding", "triaging #"),
-        ("--tick", "--tick @WHO@ %s https://ci.invalid/run/1" % i_tick, "ticked #"),
+        (
+            "--tick",
+            "--tick @WHO@ %s https://ci.invalid/run/1 nocommit:research" % i_tick,
+            "ticked #",
+        ),
         (
             "--defer",
             "--defer @WHO@ %s q DEFAULT: do-it WHY: needs-an-operator-ruling HOW: operator-answers"

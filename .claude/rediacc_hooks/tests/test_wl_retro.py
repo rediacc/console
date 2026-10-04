@@ -228,7 +228,7 @@ def test_r13_a_tick_with_the_plan_path_writes_the_saved_row(wl):  # noqa: F811
     plant_rows(wl, ordered("early", 0, 500))
     wl.cli("--retro-brief", "deadbeef", "early")
     item = next(r["item"] for r in ledger_rows(wl) if r["ev"] == "tracked")
-    ticked = wl.cli("--tick", "deadbeef", item, "%s:1" % RETRO_PLAN)
+    ticked = wl.cli("--tick", "deadbeef", item, "%s:1 nocommit:research" % RETRO_PLAN)
     assert ticked.rc == 0, ticked.err[:300]
     wl.brief_now()
     wl.hand_now()

@@ -112,7 +112,7 @@ def test_133_in_place_markdown_edits_are_honoured_and_cli_state_survives_md_chur
     wl.say("working\n\n## Remaining\n- the fixture item")
     wl.check("block", "wire the fixture", "a CLI-added item blocks like any open item")
 
-    wl.cli("--tick", "deadbeef", aid, "suite green, exit 0")
+    wl.cli("--tick", "deadbeef", aid, "suite green, exit 0 nocommit:research")
     wl.add_item("- [ ] (deadbeef) a fresh md item to churn the file")
     wl.newturn()
     wl.say("working\n\n## Remaining\n- the churn item")
@@ -205,7 +205,7 @@ def test_136_tick_refuses_a_completion_without_evidence(wl):  # noqa: F811
     assert "REFUSED" in refused.err, "the refusal was silent: %r" % refused.err[:160]
     assert '"ev":"state"' not in wl.wl_events(), "the refused tick leaked an event"
 
-    landed = wl.cli("--tick", "deadbeef", aid, "suite run green, exit 0")
+    landed = wl.cli("--tick", "deadbeef", aid, "suite run green, exit 0 nocommit:research")
     assert landed.rc == 0, "an evidenced tick was rejected: %r" % (landed.out + landed.err)[:200]
     assert "- [x]" in wl.cli("--list").out, "the evidenced tick did not land"
 

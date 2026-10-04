@@ -257,16 +257,16 @@ def test_169_tick_refuses_evidence_that_is_only_an_issue_reference(wl):  # noqa:
     assert '"ev":"state"' in wl.wl_events(), "the door-carrying tick closed nothing"
 
     second = added_id(wl.cli("--add", "deadbeef", "second finding"))
-    exit_code = wl.cli("--tick", "deadbeef", second, "ran the suite, exit 0")
+    exit_code = wl.cli("--tick", "deadbeef", second, "ran the suite, exit 0 nocommit:research")
     third = added_id(wl.cli("--add", "deadbeef", "third finding"))
     run_url = wl.cli(
         "--tick",
         "deadbeef",
         third,
-        (("green on " + GH_ORIGIN + "/") + GH_REPO + "/actions/runs/123456789"),
+        (("green on " + GH_ORIGIN + "/") + GH_REPO + "/actions/runs/123456789 nocommit:research"),
     )
     fourth = added_id(wl.cli("--add", "deadbeef", "fourth finding"))
-    verified_sha = wl.cli("--tick", "deadbeef", fourth, "fixed in %s" % head)
+    verified_sha = wl.cli("--tick", "deadbeef", fourth, "fixed in commit:%s" % head)
     assert (exit_code.rc, run_url.rc, verified_sha.rc) == (0, 0, 0), (
         "169 CONTROLS: the door gate is too wide (rc=%d/%d/%d): %s | %s | %s"
         % (

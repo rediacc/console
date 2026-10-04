@@ -196,7 +196,7 @@ def test_211c_control_closed_without_a_door_is_a_different_thing_entirely(wl):  
     cldeliver(wl, "docs/demo/README.md", "the readme")
     clfile(wl, "demo", CL_DEMO_WIRE)
     iid = additem(wl.cli("--add", "deadbeef", "cl:demo/w1 Wave A: wire the thing"))
-    wl.cli("--tick", "deadbeef", iid, "wired it, suite green, exit 0")
+    wl.cli("--tick", "deadbeef", iid, "wired it, suite green, exit 0 nocommit:research")
     got = wl.run()
     doorless = "211c CONTROL: %s" % got.out[:400]
     assert "DONE-BUT-UNTICKED" in got.out, doorless
