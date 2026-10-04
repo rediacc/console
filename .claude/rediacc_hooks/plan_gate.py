@@ -301,6 +301,7 @@ def next_turbo(
     open_slots: int,
     rev: str = "",
     in_set=(),
+    ceiling: bool = True,
 ) -> list[str]:
     """The plans the turbo loop names to start now (agent/plans/PLAN-stop-hook-turbo.md D5), at most `open_slots` of them, [] when turbo is off at `rev`.
 
@@ -328,10 +329,11 @@ def next_turbo(
         return []
     live = {_base(p) for p in live_plans or ()}
     # THE PARALLELISM CEILING (`plan_concurrency`): the PR's own unfinished plans and the plans live writers serve already count against it, so a free writer slot is not by itself a reason to open another plan.
-    inflight = {_base(p) for p in taken if open_boxes(root, p, rev)[0] > 0} | live
-    slots = min(slots, plan_concurrency(settings) - len(inflight))
-    if slots <= 0:
-        return []
+    if ceiling:
+        inflight = {_base(p) for p in taken if open_boxes(root, p, rev)[0] > 0} | live
+        slots = min(slots, plan_concurrency(settings) - len(inflight))
+        if slots <= 0:
+            return []
     picks: list[str] = []
 
     def held(rel: str) -> bool:
@@ -492,8 +494,8 @@ __all__ = [
     "has_operational_reason",
     "next_turbo",
     "open_boxes",
-    "plan_merge_refusal",
     "plan_concurrency",
+    "plan_merge_refusal",
     "pr_plan_set",
     "queue",
     "queue_head",
