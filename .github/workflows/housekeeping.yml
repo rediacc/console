@@ -239,8 +239,8 @@ jobs:
       # last five gate-costs-capture artifacts. Its findings are appended to the budget
       # summary so the ONE report step below posts both (report-budget-check.cjs dedupes
       # on the run id, so a second post from this run would be dropped). Exit 3 means
-      # .ci/config/gate-costs.json does not exist yet: gate_costs prints a ::notice that
-      # nothing was compared, and it is neither reported nor failed.
+      # .ci/config/gate-costs.json is missing: since 2026-10-04 the file is committed, so
+      # a missing baseline is reported and fails the job like any other finding.
       - name: Gate cost baseline check
         id: gate-costs-check
         run: |
