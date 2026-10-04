@@ -602,12 +602,15 @@ def cmd_wait(
                 return RC_OK
             if token == FAILED_RUN:
                 note = attempt_note(runner, repo, number, head)
-                print(
-                    "wl_prreview --wait: the review run for PR #%d head %s failed: %s\n"
-                    "%s"
+                # ONE "Next:". The attempt comment's action (re-run, excused, push) is the specific one, so it replaces the generic investigate line rather than printing beside it (review finding 3bc91573.1); the generic line stays the fallback when no attempt comment exists.
+                generic = (
                     "  Next: investigate the Claude Review run (gh run list --workflow claude-review.yml), fix the cause,"
                     " then re-dispatch with `gh workflow run claude-review.yml -f pr_number=%d`."
-                    % (number, head[:12], title, note + "\n" if note else "", number),
+                    % number
+                )
+                print(
+                    "wl_prreview --wait: the review run for PR #%d head %s failed: %s\n%s"
+                    % (number, head[:12], title, note or generic),
                     file=sys.stderr,
                 )
                 return RC_FAILED_RUN
