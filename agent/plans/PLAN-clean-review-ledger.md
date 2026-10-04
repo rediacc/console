@@ -33,19 +33,19 @@ Worklist: #80ea5d76
 - `check_plan_implementation.review_records` (`.ci/scripts/quality/check_plan_implementation.py:1898-1929`). It reads Commit, Parent and Patch-Id from every branch directory to map rebased commits.
 
 **Readers that go through `branch_state`.**
-- The push guard (`block_push_with_unrecorded_reviews.py:205-211`).
-- The merge guard, via `check_state` (`block_admin_merge.py:153-156`).
+- The push guard (`.claude/rediacc_hooks/guards/block_push_with_unrecorded_reviews.py:205-211`).
+- The merge guard, via `check_state` (`.claude/rediacc_hooks/guards/block_admin_merge.py:153-156`).
 - `wl_checks`: the SessionStart line at 1790 and the Stop path at 3992.
 - The `--review-run`, `--review-mark` and `--review-commit` verbs (1668-1728).
 
 **Readers that do not care.**
 - Retention: `--prune-reviews` → `agent_session_archival.review_branches` (`.ci/rediacc_ci/quality/agent_session_archival.py:318`) works per directory, so a ledger inside the directory is pruned with it.
 - The Review Gate and review_status read PR comments only.
-- `wl_prsignals.py:22` reads only the table comment's marker.
+- `.claude/hooks/stop/wl_prsignals.py:22` reads only the table comment's marker.
 - `scripts/gates` names no review path.
-- Edit protection already covers any file under `agent/reviews/` (`block_review_file_edit.py:22`, `block_review_file_shell_write.py:23-27`). Only `wl_review.py` and `worklist.py` are sanctioned shell writers.
+- Edit protection already covers any file under `agent/reviews/` (`.claude/rediacc_hooks/guards/block_review_file_edit.py:22`, `.claude/rediacc_hooks/guards/block_review_file_shell_write.py:23-27`). Only `.claude/hooks/stop/wl_review.py` and `.claude/hooks/stop/worklist.py` are sanctioned shell writers.
 
-**The CI constraint.** CI's `pr-labels` job checks out only `.ci/config/well-known.env`, `.ci/rediacc_ci`, `.github/actions` and `agent/reviews` (`.github/workflows/ci.yml:1903-1908`). The CI-side reader therefore cannot import wl_review. review_table already mirrors the grammar for this reason (`review_table.py:43`).
+**The CI constraint.** CI's `pr-labels` job checks out only `.ci/config/well-known.env`, `.ci/rediacc_ci`, `.github/actions` and `agent/reviews` (`.github/workflows/ci.yml:1903-1908`). The CI-side reader therefore cannot import wl_review. review_table already mirrors the grammar for this reason (`.ci/rediacc_ci/review/review_table.py:43`).
 
 **The prose that needs changing.**
 - CLAUDE.md rule 1 (`CLAUDE.md:20`) says only that review records ride the branch and that `--review-commit` commits them. It never says every commit gets a file, so it is NOT edited. `CLAUDE.md:75` stays true too: the ledger is a file.
@@ -53,8 +53,8 @@ Worklist: #80ea5d76
   - `docs/agent-reference/ci-gates.md:132`
   - `.claude/agents/pr-babysitter.md:123`
   - `.claude/hooks/post-bash/review_commit.py:95`
-  - `worklist_messages.py:2092`
-  - `tree-shape.json:147`
+  - `.claude/hooks/stop/worklist_messages.py:2092`
+  - `.ci/policy/tree-shape.json:147`
 
 ## Design
 
@@ -83,7 +83,7 @@ These stay `.md` files:
  "verdict":"clean"}
 ```
 
-- There is no `body_sig`. With no findings it is always the constant `e3b0c44298fc1c14`, and every one of the 216 clean records carries that value.
+- There is no `body_sig`. With no findings it is always the same empty-findings constant, and every one of the 216 clean records carries that value.
 - There are no truncated, unreviewed, dropped or findings keys. D1 makes them constant, so a line carrying one is malformed.
 - The name avoids "ledger" in code identifiers on the CI side, because `pr_labels.LEDGER_PREFIX` already means the label-comment ledger. The module is `clean_ledger`.
 
@@ -128,7 +128,7 @@ This covers two reviewer children (`max_concurrent` is 2) and two sessions shari
 - `check_plan_implementation.review_records` also reads every `<branch>/clean.jsonl` through `clean_ledger.read`.
 - The push guard, merge guard, `wl_checks`, `--check` and the verbs need no change: they read `branch_state`.
 
-**D5. The migration verb, `wl_review.py --ledger-migrate [--write]`.** It is one-shot and idempotent. Dry run is the default and prints per-branch counts. `wl_review.py` is a sanctioned shell writer, and the verb is not a worklist verb, so it adds no catalogue row.
+**D5. The migration verb, `wl_review.py --ledger-migrate [--write]`.** It is one-shot and idempotent. Dry run is the default and prints per-branch counts. `.claude/hooks/stop/wl_review.py` is a sanctioned shell writer, and the verb is not a worklist verb, so it adds no catalogue row.
 
 For every directory under `agent/reviews/`, it parses each `.md` with the strict `parse`. Every record that D1 makes eligible is turned into a line, and that line is parsed back with `read_ledger`. The field-by-field comparison with the `Review` must be equal on every field. Cost is null for the 0930-1 records written before `Cost:` existed (`OPTIONAL_HEADERS`, line 100).
 
@@ -148,30 +148,30 @@ The expected result at HEAD 64831cd0d is 194 lines (188 clean plus 6 skipped) an
 Also run `wl_review.py --check` on the checked-out branch. Every pair must be byte-identical.
 
 ## Tasks
-- [ ] T1 Register the plan: add it to `agent/plans/QUEUE.md` `## Promoted` at position 2, move ci-consolidation (`QUEUE.md:12`) and the entries after it down one, then run `npm run check:ci-plan-record -- --update`. Proof: `check:ci-plan-record` rc 0. Control: with the entry removed, the gate reports the plan as unqueued.
-- [ ] T2 `wl_review.py`: add the D1 predicate `ledger_eligible(review)`, `ledger_path`, the D2 line codec (`ledger_line`, `read_ledger`) and `append_clean` with flock and dedupe. Proof: new cases in `test_review_commit_hook.py`:
+- [ ] T1 Register the plan: add it to `agent/plans/QUEUE.md` `## Promoted` at position 2, move ci-consolidation (`agent/plans/QUEUE.md:12`) and the entries after it down one, then run `npm run check:ci-plan-record -- --update`. Proof: `check:ci-plan-record` rc 0. Control: with the entry removed, the gate reports the plan as unqueued.
+- [ ] T2 `.claude/hooks/stop/wl_review.py`: add the D1 predicate `ledger_eligible(review)`, `ledger_path`, the D2 line codec (`ledger_line`, `read_ledger`) and `append_clean` with flock and dedupe. Proof: new cases in `.claude/rediacc_hooks/tests/test_review_commit_hook.py`:
   - the codec round-trips every eligible verdict;
   - each D1 exclusion (truncated, unreviewed, dropped, findings, failed) is refused;
   - an unknown key is malformed with its line number.
   Control: dropping the `truncated` test from `ledger_eligible` makes the truncated case fail.
-- [ ] T3 `run_review` writes through `ledger_eligible`: append for an eligible verdict, `.md` for anything else, and unlink a `failed` `.md` when the retry is clean. Proof: in `test_review_commit_hook.py`, the existing `test_a_commit_starts_a_detached_reviewer...` and `test_a_gitlink_only_commit_is_skipped...` assert that the ledger holds one line and no `.md` exists; a new retry case asserts the failed `.md` is gone. Control: forcing the `.md` path reds both.
+- [ ] T3 `run_review` writes through `ledger_eligible`: append for an eligible verdict, `.md` for anything else, and unlink a `failed` `.md` when the retry is clean. Proof: in `.claude/rediacc_hooks/tests/test_review_commit_hook.py`, the existing `test_a_commit_starts_a_detached_reviewer...` and `test_a_gitlink_only_commit_is_skipped...` assert that the ledger holds one line and no `.md` exists; a new retry case asserts the failed `.md` is gone. Control: forcing the `.md` path reds both.
 - [ ] T4 Concurrency: a new case runs two processes that append 50 lines each to one ledger. It expects 100 parseable lines, no torn line, and a re-append of an existing sha that writes nothing. Control: replacing the single `os.write` with two writes (key half, value half) and removing the lock produces a torn line within the loop count.
-- [ ] T5 `review_index`, `uncovered`, `branch_state`, `recordable`, `commit_reviews`, `describe` and `stop_texts` read the ledger per D4. Proof: in `test_wl_review_check.py`, a ledger-only branch passes `--check`; a dirty ledger is refused as `uncommitted`; a garbled ledger line is refused as `malformed`; a rebased copy whose patch-id is in the ledger counts as covered. Control: making `review_index` skip the ledger turns the clean branch into `uncovered`.
+- [ ] T5 `review_index`, `uncovered`, `branch_state`, `recordable`, `commit_reviews`, `describe` and `stop_texts` read the ledger per D4. Proof: in `.claude/rediacc_hooks/tests/test_wl_review_check.py`, a ledger-only branch passes `--check`; a dirty ledger is refused as `uncommitted`; a garbled ledger line is refused as `malformed`; a rebased copy whose patch-id is in the ledger counts as covered. Control: making `review_index` skip the ledger turns the clean branch into `uncovered`.
 - [ ] T6 `--review-commit` with a dirty ledger and a deleted failed `.md` commits both (`git add -A`). Proof: extend `test_review_commit_records_only_finished_files_with_the_trailer`. Control: plain `git add` leaves the deletion unstaged and the case fails.
-- [ ] T7 Push and merge guards: add a ledger-covered world to `test-block_push_with_unrecorded_reviews.py`, and add the merge arm on that world in `test_wl_review_check.py`. Proof: the push is allowed and the merge passes; with the ledger line removed both refuse. Control: the guard's existing DEFECT row still flips the answer.
-- [ ] T8 `surface_new` prints one compact line for fresh clean entries, and `session_start_line` says "record(s)". Update `review_commit.py:95` ("lands in clean.jsonl or as `<sha>.md`") and `worklist_messages.py:2092`. Proof: `test_the_next_bash_call_surfaces_a_finished_review_exactly_once` is updated for a clean entry, and `test_wl_message_catalogue.py` passes. Control: keying seen by file mtime prints the line twice.
-- [ ] T9 `.ci/rediacc_ci/review/clean_ledger.py` (new). `pr_labels.verdicts` merges `.md` files with the ledger, dedupes by sha with `.md` winning, and gains `--verdicts-only`. Proof: new `.ci/rediacc_ci/tests/test_review_clean_ledger.py`, which holds the contract case (lines written by `wl_review.ledger_line` read back identically by `clean_ledger.read`), plus cases in `test_review_pr_labels.py`:
+- [ ] T7 Push and merge guards: add a ledger-covered world to `.claude/rediacc_hooks/guards/test-block_push_with_unrecorded_reviews.py`, and add the merge arm on that world in `.claude/rediacc_hooks/tests/test_wl_review_check.py`. Proof: the push is allowed and the merge passes; with the ledger line removed both refuse. Control: the guard's existing DEFECT row still flips the answer.
+- [ ] T8 `surface_new` prints one compact line for fresh clean entries, and `session_start_line` says "record(s)". Update `.claude/hooks/post-bash/review_commit.py:95` ("lands in clean.jsonl or as `<sha>.md`") and `.claude/hooks/stop/worklist_messages.py:2092`. Proof: `test_the_next_bash_call_surfaces_a_finished_review_exactly_once` is updated for a clean entry, and `.claude/rediacc_hooks/tests/test_wl_message_catalogue.py` passes. Control: keying seen by file mtime prints the line twice.
+- [ ] T9 `.ci/rediacc_ci/review/clean_ledger.py` (new). `pr_labels.verdicts` merges `.md` files with the ledger, dedupes by sha with `.md` winning, and gains `--verdicts-only`. Proof: new `.ci/rediacc_ci/tests/test_review_clean_ledger.py`, which holds the contract case (lines written by `wl_review.ledger_line` read back identically by `clean_ledger.read`), plus cases in `.ci/rediacc_ci/tests/test_review_pr_labels.py`:
   - a ledger-only `bump=minor` gives `bump-minor`;
   - all-`none` across `.md` files and the ledger gives `bump-none`;
   - a skipped line casts no vote.
   Control: making `verdicts` read only `*.md` reds the minor case.
-- [ ] T10 `review_table`: `load_records` and `record_url` use `clean.jsonl#L<n>`, and `branch_verdicts` delegates to `pr_labels.verdicts`. Proof: in `test_review_review_table.py`, the contract case covers a ledger line; a ledger row shows `full` coverage and a working `#L` link; a superseded ledger record is still listed. Control: dropping the ledger from `load_records` moves the commit to "PR commits with no record".
+- [ ] T10 `review_table`: `load_records` and `record_url` use `clean.jsonl#L<n>`, and `branch_verdicts` delegates to `pr_labels.verdicts`. Proof: in `.ci/rediacc_ci/tests/test_review_review_table.py`, the contract case covers a ledger line; a ledger row shows `full` coverage and a working `#L` link; a superseded ledger record is still listed. Control: dropping the ledger from `load_records` moves the commit to "PR commits with no record".
 - [ ] T11 `check_plan_implementation.review_records` reads every `clean.jsonl`. Proof: its `--selftest` gains a ledger fixture that maps a rebased sha, and `npm run check:ci-plan-implementation` stays rc 0. Control: with the ledger read removed, the fixture reports "no review record".
 - [ ] T12 Policy and probes:
-  - add a ledger probe `agent/reviews/zz-probe/clean.jsonl` to `check_durable_paths_tracked.py:37-40`;
-  - mention `clean.jsonl` in the `tree-shape.json:147` text;
-  - add a ledger-only directory case to `test_gate_agent_session_archival.py`, so `review_branches` still lists the directory;
-  - add `clean.jsonl` cases to `block_review_file_edit.py` and `block_review_file_shell_write.py` (edit and `>>` are refused).
+  - add a ledger probe `agent/reviews/zz-probe/clean.jsonl` to `.ci/scripts/quality/check_durable_paths_tracked.py:37-40`;
+  - mention `clean.jsonl` in the `.ci/policy/tree-shape.json:147` text;
+  - add a ledger-only directory case to `.ci/rediacc_ci/tests/gates/test_gate_agent_session_archival.py`, so `review_branches` still lists the directory;
+  - add `clean.jsonl` cases to `.claude/rediacc_hooks/guards/block_review_file_edit.py` and `.claude/rediacc_hooks/guards/block_review_file_shell_write.py` (edit and `>>` are refused).
   Proof: `check:ci-durable-paths-tracked` rc 0, plus the guard suites. Control: narrowing `REVIEW_PATH` to `\.md$` reds the new guard case.
 - [ ] T13 Implement `wl_review.py --ledger-migrate [--write]` per D5, with tests:
   - a dry run changes nothing;
@@ -183,8 +183,8 @@ Also run `wl_review.py --check` on the checked-out branch. Every pair must be by
 - [ ] T15 Shard placement: add `pytest:.ci/rediacc_ci/tests/test_review_clean_ledger.py` to one leg of `.ci/config/shards/quality-pytest.json`. Proof: `npm run check:ci-shard-manifest-coverage` rc 0. Control: the gate reds before the line is added.
 - [ ] T16 Docs:
   - `docs/agent-reference/ci-gates.md:132` and `.claude/agents/pr-babysitter.md:123`: a clean full-coverage verdict is a line in `agent/reviews/<branch>/clean.jsonl`, and everything else is `<sha>.md`;
-  - update the `pr_labels.py` and `review_table.py` module docstrings and the `wl_review.py` docstring (line 2);
-  - regenerate with `npx tsx scripts/gen/gen-docs.ts --write`; `doc-registry.md:803` counts the new `.py`;
+  - update the `.ci/rediacc_ci/review/pr_labels.py` and `.ci/rediacc_ci/review/review_table.py` module docstrings and the `.claude/hooks/stop/wl_review.py` docstring (line 2);
+  - regenerate with `npx tsx scripts/gen/gen-docs.ts --write`; `scripts/data/doc-registry.md:803` counts the new `.py`;
   - leave `CLAUDE.md` unchanged (see "What was true").
   gates.lock.json is unchanged because no gate is added or removed, so the CLAUDE.md gen-docs regions do not move. Proof: `npx tsx scripts/gen/gen-docs.ts` rc 0 and `check:ci-doc-region-parity` rc 0.
 - [ ] T17 Full suites: the hook pytest suite (`.claude/rediacc_hooks/tests`, `.claude/hooks/stop/test-*.py`, guard selftests) and the CI pytest suite (`.ci/rediacc_ci/tests`), then `npm run ci:quick`. Proof: rc 0, with counts quoted in the tick.
