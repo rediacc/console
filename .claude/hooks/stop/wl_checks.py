@@ -54,6 +54,7 @@ import wl_schedred
 import wl_shapedup
 import wl_standdown
 import wl_store as S
+import wl_trapfires
 import wl_wake
 import worklist_messages as M
 
@@ -2317,6 +2318,8 @@ PRIORITY_LADDER = (
                 "completion",
                 "unjustified",
                 "uncited",
+                # A pass claimed for a gate id neither the manifest nor package.json defines (wl_judge.phantom_gate_claims): an evidence claim the registry contradicts.
+                "phantom-gate",
                 "unstated",
                 "mislabelled",
                 "out-of-sync",
@@ -2330,6 +2333,8 @@ PRIORITY_LADDER = (
                 "queue-slot",
                 # The Stop-side backstop of block_plan_concurrency (agent/plans/PLAN-plan-priority-concurrency.md section 5c): two live writers already serving plans that break a mutex or share files, which the pre-agent guard missed or was bypassed for. Same roster family as roster-unleased/roster-dead above.
                 "roster-concurrency",
+                # A trapguard rule raised and was skipped (wl_trapfires, PLAN-trap-enforcement.md section 4.3.4): the dispatcher fails open per rule, and this is what keeps that from being silent.
+                "trapguard-errors",
             }
         ),
     ),
@@ -4753,6 +4758,11 @@ def run_stop(event, event_ok, worklist, hook_file):
     # not fixed\" is now a blocking phrase"). A gate that cannot survive being written about is too broad. A real list leads a line, optionally behind markdown emphasis or a heading marker; a mention sits mid-sentence or inside quotes or backticks, none of which match here.
     if uncited:
         vadd("uncited", False, M.V_UNCITED % "\n".join("    " + u for u in uncited))
+    # THE CITED-GATE PRE-CHECK (PLAN-trap-enforcement.md W4-cited-gate), beside the citation checks and with no model call: a pass claimed for a gate id no registry defines. See wl_judge.phantom_gate_claims.
+    with contextlib.suppress(Exception):  # a heuristic must never wedge a stop
+        _phantom = wl_judge.phantom_gate_claims(last_msg, root)
+        if _phantom:
+            vadd("phantom-gate", False, wl_judge.V_PHANTOM_GATE % ", ".join(_phantom))
     if re.search(
         r"^[ \t>*_#-]{0,6}found,?[ \t]+not[ \t]+fixed\b",
         last_msg or "",
@@ -4818,6 +4828,11 @@ def run_stop(event, event_ok, worklist, hook_file):
             False,
             M.V_OUT_OF_SYNC % (len(missing_ids), ", ".join("#" + i for i in missing_ids)),
         )
+    # ---- TRAPGUARD RULE ERRORS (PLAN-trap-enforcement.md section 4.3.4), in the ALWAYS tier: the PostToolUse dispatcher skips a rule that raised, so the rule went silent on that call, and a guard failing silently is the exact trap that surface exists for. Not gated on remaining work -- the log is machine-wide and the failure is real whatever this session is doing.
+    with contextlib.suppress(Exception):  # reading a ledger must never wedge a stop
+        _tg_errors = wl_trapfires.errors_violation()
+        if _tg_errors:
+            vadd("trapguard-errors", True, _tg_errors)
     if something_remains and not msg_readable:
         vadd(
             "hook-blind",
@@ -5926,6 +5941,19 @@ def run_stop(event, event_ok, worklist, hook_file):
                 M.N_HINT_PROPOSALS_PENDING % len(pending),
                 3,
                 refresh_min=wl_hints.PROPOSAL_REFRESH_MIN,
+            )
+    # TRAPGUARD RETIREMENT CANDIDATES (PLAN-trap-enforcement.md section 5, defence 3): a rule over wl_trapfires.RETIRE_FIRES fires with no confirmed true positive. Advisory only, never a block: many fires is also what a rule that is right every time looks like.
+    with contextlib.suppress(Exception):  # an advisory must never wedge a stop
+        _tg_retire = wl_trapfires.retire_note()
+        if _tg_retire:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "trapfires-retire",
+                _tg_retire,
+                3,
+                refresh_min=24 * 60,
             )
     # UP TO OUTQ_PER_STOP sections per stop, highest priority first and randomized inside a priority class. The "+N more" tail is MANDATORY for the reason spelled out at the guide's own truncation: a silent cap reads as "that is everything", and there is no knob left to widen it for one turn.
     # FOCUS MODE releases only the PR's own advisories in full; the rest is held and delivered one line each when the batch comes due (agent/plans/PLAN-stop-hook-focus-mode.md section 6).

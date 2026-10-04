@@ -267,3 +267,43 @@ def test_100_control_the_unmodified_hook_still_allows_a_clean_stop(wl):  # noqa:
     wl.say("all done")
     wl.crons = json.dumps([{"id": "c", "schedule": "17 * * * *"}])
     wl.check("allow", "", "a clean stop is still allowed")
+
+
+# ---- the cited-gate pre-check (PLAN-trap-enforcement.md W4-cited-gate) -----------------------------------------------------------------------
+PHANTOM_NEEDLE = "CLAIMED A GATE THAT DOES NOT EXIST"
+
+
+def _registry_world(fix) -> None:
+    """The fixture project with a one-entry gates lock, so the check has a registry to read; without one it says nothing by design."""
+    lock = fix.proj / "scripts" / "ci-runner" / "gates.lock.json"
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    lock.write_text(
+        json.dumps(
+            [
+                {
+                    "id": "check:ci-trap-registry",
+                    "run": "npm run check:ci-trap-registry",
+                    "gate": True,
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    fix.brief_now()
+    fix.hand_now()
+
+
+def test_a_pass_claimed_for_an_unregistered_gate_is_a_violation(wl):  # noqa: F811
+    _registry_world(wl)
+    wl.say("Ran check:ci-plan-lifecycle-nonexistent passed, rc=0.\n\n## Remaining\nnothing")
+    got = wl.run()
+    assert PHANTOM_NEEDLE in got.out, got.out[:800]
+    assert "check:ci-plan-lifecycle-nonexistent" in got.out, got.out[:800]
+
+
+def test_a_pass_claimed_for_a_registered_gate_is_silent(wl):  # noqa: F811
+    """CONTROL: the same message naming a gate the lock defines must not fire."""
+    _registry_world(wl)
+    wl.say("Ran check:ci-trap-registry passed, rc=0.\n\n## Remaining\nnothing")
+    got = wl.run()
+    assert PHANTOM_NEEDLE not in got.out, got.out[:800]

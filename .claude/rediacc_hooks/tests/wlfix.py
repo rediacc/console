@@ -255,6 +255,8 @@ class Fixture:
         # PINNED for the same reason: unset, the specialist-agent matcher scores every case against the operator's real .claude/agents, so a verdict would change whenever somebody edited an agent description.
         (self.base / "agents").mkdir(parents=True, exist_ok=True)
         self.env["WORKLIST_AGENTS_DIR"] = str(self.base / "agents")
+        # PINNED for the same reason: unset, the trapguard error and fire ledgers (wl_trapfires) are read from the operator's real ~/.claude/trapguard, so one live rule error would block every case in this suite.
+        self.env["TRAPGUARD_DIR"] = str(self.base / "trapguard")
 
         (self.proj / "agent" / ME).mkdir(parents=True, exist_ok=True)
         (self.proj / ".agent").mkdir(parents=True, exist_ok=True)

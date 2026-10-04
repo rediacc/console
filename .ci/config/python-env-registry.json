@@ -2035,6 +2035,8 @@
       "WORKLIST_PUBLISH_ROOT"
     ],
     ".claude/hooks/trapguard/dispatch.py": [
+      "TRAPGUARD_DIR",
+      "TRAPGUARD_FAULT",
       "TRAPGUARD_PROBE_PATH"
     ],
     ".claude/hooks/why-on-edit.py": [

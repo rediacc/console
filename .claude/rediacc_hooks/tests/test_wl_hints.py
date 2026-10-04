@@ -341,3 +341,63 @@ def test_hint_propose_cli_round_trip_via_worklist(wl):  # noqa: F811
     ledger = wl.proj / "agent" / "ledgers" / "hint-proposals.jsonl"
     assert ledger.is_file()
     assert "a session-proposed lesson" in ledger.read_text(encoding="utf-8")
+
+
+# ---- trapguard retirement report (wl_trapfires, PLAN-trap-enforcement.md W4-retire-report) ----------------------------------------------------
+
+
+def _trapfires():
+    return wlfix.import_wl("wl_trapfires")
+
+
+def _plant_fires(base: pathlib.Path, rule: str, n: int) -> None:
+    base.mkdir(parents=True, exist_ok=True)
+    with (base / "fires.jsonl").open("a", encoding="utf-8") as fh:
+        for i in range(n):
+            fh.write('{"rule": "%s", "session": "s%d", "ts": "2026-10-04T00:00:00Z"}\n' % (rule, i))
+
+
+def test_trapfires_41_unconfirmed_fires_produce_the_note(tmp_path):
+    t = _trapfires()
+    _plant_fires(tmp_path, "rebase-unverified", t.RETIRE_FIRES + 1)
+    note = t.retire_note(tmp_path)
+    assert "trapguard retirement candidates" in note, note
+    assert "rebase-unverified" in note, note
+    assert "41 fires" in note, note
+
+
+def test_trapfires_41_fires_with_one_confirmation_are_silent(tmp_path):
+    t = _trapfires()
+    _plant_fires(tmp_path, "rebase-unverified", t.RETIRE_FIRES + 1)
+    t.confirm("rebase-unverified", tmp_path)
+    assert t.retire_note(tmp_path) == ""
+
+
+def test_trapfires_exactly_40_fires_are_silent(tmp_path):
+    t = _trapfires()
+    _plant_fires(tmp_path, "rebase-unverified", t.RETIRE_FIRES)
+    assert t.retire_note(tmp_path) == ""
+
+
+def test_trapfires_a_confirmation_for_another_rule_does_not_silence_this_one(tmp_path):
+    t = _trapfires()
+    _plant_fires(tmp_path, "rebase-unverified", t.RETIRE_FIRES + 1)
+    t.confirm("bws-auth-failure", tmp_path)
+    assert "rebase-unverified" in t.retire_note(tmp_path)
+
+
+def test_trapfires_the_note_reaches_a_clean_stop(wl):  # noqa: F811
+    """The wiring, not just the arithmetic: a planted ledger under the fixture's TRAPGUARD_DIR must surface on an allowed stop."""
+    wl.say("All finished.")
+    wl.brief_now()
+    wl.hand_now()
+    _plant_fires(pathlib.Path(wl.env["TRAPGUARD_DIR"]), "rebase-unverified", 41)
+    wl.check("allow", "trapguard retirement candidates", "a retirement candidate is advised")
+
+
+def test_trapfires_no_candidate_leaves_a_clean_stop_quiet(wl):  # noqa: F811
+    wl.say("All finished.")
+    wl.brief_now()
+    wl.hand_now()
+    _plant_fires(pathlib.Path(wl.env["TRAPGUARD_DIR"]), "rebase-unverified", 40)
+    wl.check_absent("allow", "trapguard retirement candidates", "40 fires are not a candidate")

@@ -601,6 +601,64 @@ def apply_defer_audit(rows, batch):
     return "ok", valids, orders
 
 
+# ---- the cited-gate pre-check (PLAN-trap-enforcement.md W4-cited-gate) ----------------------------------------------------
+#
+# NOT A MODEL CALL, and it runs whether or not the judge does. A stop message that says `check:<x> passed` for an id no registry defines is reporting a gate that cannot have run: `npm run <missing>` exits 1, so the "pass" was read off something else (TRAPS.md, manifest-id-is-not-an-npm-script, met here a second time at a different layer). The judge already sees the session's
+# citations; this is the narrow deterministic slice of that review (plan section 5), a backstop to the pre-bash guard block_missing_npm_script rather than the mechanism.
+#
+# REGISTERED MEANS the ci-runner manifest (`scripts/ci-runner/gates.lock.json`, the projection of manifest.ts GATES that check:ci-gates-lock keeps faithful) OR a root package.json script: an aggregate like `check:i18n` is a real npm script with no manifest entry, and calling its pass a phantom would be the false positive that teaches sessions to skim this check. With neither file readable it says nothing.
+CLAIMED_GATE = re.compile(
+    r"(?<![\w:/-])((?:check|gate-test):[A-Za-z0-9][A-Za-z0-9:._-]*[A-Za-z0-9])`?"
+    r"[^\n]{0,40}?\b(pass(?:ed|es)?|green|rc\s*=?\s*0|exit(?:ed|s)?\s*(?:code\s*)?0)\b",
+    re.IGNORECASE,
+)
+
+V_PHANTOM_GATE = """CLAIMED A GATE THAT DOES NOT EXIST: %s
+
+This message reports a pass for a gate id that neither the ci-runner manifest
+(scripts/ci-runner/gates.lock.json) nor package.json defines. `npm run <missing>`
+exits 1, so that "pass" was read off something else. Find the real id, run it,
+and restate the result with its exit code:
+    grep -n "id: '<the-id>'" -A3 scripts/ci-runner/manifest.ts"""
+
+
+def registered_gate_ids(root):
+    """Every manifest id plus every root package.json script name, or None when neither can be read (no verdict)."""
+    ids = set()
+    readable = False
+    try:
+        with open(
+            os.path.join(str(root), "scripts", "ci-runner", "gates.lock.json"), encoding="utf-8"
+        ) as fh:
+            lock = json.load(fh)
+        ids |= {g["id"] for g in lock if isinstance(g, dict) and isinstance(g.get("id"), str)}
+        readable = True
+    except (OSError, ValueError, TypeError):
+        pass
+    try:
+        with open(os.path.join(str(root), "package.json"), encoding="utf-8") as fh:
+            ids |= set((json.load(fh) or {}).get("scripts") or {})
+        readable = True
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass
+    return ids if readable else None
+
+
+def phantom_gate_claims(message, root):
+    """Ids `message` claims passed that no registry defines, in first-seen order. [] when nothing is claimed or nothing can be read."""
+    claimed = []
+    for m in CLAIMED_GATE.finditer(message or ""):
+        gid = m.group(1).rstrip(".:")
+        if gid not in claimed:
+            claimed.append(gid)
+    if not claimed:
+        return []
+    known = registered_gate_ids(root)
+    if known is None:
+        return []
+    return [g for g in claimed if g not in known]
+
+
 def resolve_claude():
     return shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
 

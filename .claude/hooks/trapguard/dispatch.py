@@ -14,6 +14,10 @@ WHAT THE PROBE RECORDS, AND WHAT IT REFUSES TO. Key names, lengths and booleans 
 a standing cost.
 
 NEVER FAILS A TOOL CALL. PostToolUse runs after the tool has already executed, so nothing here can deny anything, and a hook that broke a session's turn because a log directory was read-only would be a self-inflicted outage. Every path exits 0.
+
+FAILS OPEN LOUDLY, NOT QUIETLY (plan section 4.3.4). A rule that raises is skipped and the next rule runs, but the failure is appended as `{ts, rule, exc_type}` to `errors.jsonl` under `state_dir()`, and the Stop hook (`wl_trapfires.errors_violation`) refuses the stop while that log is non-empty. A guard that fails silently is the trap this whole surface exists for. `TRAPGUARD_FAULT=<rule-id>` plants a raise in one rule, which is how the suite proves the boundary holds.
+
+THE LEDGERS, all under `state_dir()` (`~/.claude/trapguard`, or `TRAPGUARD_DIR`): `errors.jsonl` above; `skips.jsonl`, one line per payload over `MAX_PAYLOAD` naming the response-reading rules it skipped; `fires.jsonl`, `{rule, ts, session}` per note shown, the input to the retirement report in `wl_trapfires.py`; and `shown-<session>.json`, the rules already shown to a session, so each speaks once per session (section 4.3.7). None of them carries a byte of `tool_response` (section 4.3.2).
 """
 
 import datetime
@@ -460,34 +464,157 @@ RULES = (
     rule_bws_auth_failure,
 )
 
+# The rules that judge the COMMAND alone and never read `tool_response`. Over the payload bound only these run (plan section 4.3.1): the response was not read whole, so a rule keyed on it would be judging a truncated output.
+RESPONSE_FREE = frozenset((rule_history_rewrite_controls,))
+
+# Plan section 4.3.1. `tool_response` carries the whole tool output, and a `gh run view --log` can be megabytes on a hook that runs after every Bash call.
+MAX_PAYLOAD = 4 * 1024 * 1024
+_DRAIN_CHUNK = 1024 * 1024
+
+
+def rule_id(rule):
+    """`rule_cancelled_run_not_passed` -> `cancelled-run-not-passed`, the id TRAPS.md and the logs name."""
+    return rule.__name__.removeprefix("rule_").replace("_", "-")
+
+
+def state_dir():
+    """Where the error, fire and shown ledgers live. `TRAPGUARD_DIR` exists so a test never writes the real home."""
+    return pathlib.Path(
+        os.environ.get("TRAPGUARD_DIR") or (pathlib.Path.home() / ".claude" / "trapguard")
+    )
+
+
+def _now():
+    return datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _append(name, row):
+    """One JSON line onto a ledger. A ledger that cannot be written is dropped silently: this layer never breaks a turn."""
+    try:
+        path = state_dir() / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, sort_keys=True) + "\n")
+    except OSError:
+        pass
+
+
+def read_bounded(stream):
+    """(text, over) from a binary stream, reading at most MAX_PAYLOAD bytes and DRAINING the rest.
+
+    The drain is the point of the second half: a hook that stops reading leaves the harness writing into a full pipe, and a writer that sees EPIPE is a failure this layer would have caused.
+    """
+    head = stream.read(MAX_PAYLOAD + 1)
+    over = len(head) > MAX_PAYLOAD
+    if over:
+        while stream.read(_DRAIN_CHUNK):
+            pass
+        head = head[:MAX_PAYLOAD]
+    return head.decode("utf-8", "replace"), over
+
+
+_TOOL_INPUT = re.compile(r'"tool_input"\s*:\s*')
+
+
+def _command_from_truncated(raw):
+    """The command out of a payload cut at the bound, or "".
+
+    The harness writes `tool_input` before `tool_response`, so the object is usually intact in the head even when the response is not. raw_decode parses exactly one value and ignores what follows, which is the truncated tail.
+    """
+    m = _TOOL_INPUT.search(raw)
+    if not m:
+        return ""
+    try:
+        ti, _ = json.JSONDecoder().raw_decode(raw, m.end())
+    except ValueError:
+        return ""
+    return str(ti.get("command") or "") if isinstance(ti, dict) else ""
+
+
+def _shown_path(session):
+    return state_dir() / ("shown-%s.json" % re.sub(r"[^A-Za-z0-9_.-]", "_", session)[:80])
+
+
+def _load_shown(session):
+    try:
+        doc = json.loads(_shown_path(session).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    return {str(r) for r in doc} if isinstance(doc, list) else set()
+
+
+def _save_shown(session, shown):
+    try:
+        path = _shown_path(session)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(sorted(shown)), encoding="utf-8")
+    except OSError:
+        pass
+
 
 def run_posttool():
     try:
-        raw = sys.stdin.read()
-        event = json.loads(raw) if raw.strip() else {}
+        raw, over = read_bounded(sys.stdin.buffer)
     except Exception:  # noqa: BLE001 -- a warning layer must never break a turn
         return 0
-    if not isinstance(event, dict):
-        return 0
-    cmd = ""
-    ti = event.get("tool_input")
-    if isinstance(ti, dict):
-        cmd = str(ti.get("command") or "")
+    event = {}
+    if over:
+        cmd = _command_from_truncated(raw)
+        resp, out = None, ""
+        rules = [r for r in RULES if r in RESPONSE_FREE]
+        _append(
+            "skips.jsonl",
+            {
+                "ts": _now(),
+                "reason": "payload over MAX_PAYLOAD (%d bytes)" % MAX_PAYLOAD,
+                "skipped": [rule_id(r) for r in RULES if r not in RESPONSE_FREE],
+            },
+        )
+    else:
+        try:
+            event = json.loads(raw) if raw.strip() else {}
+        except ValueError:
+            return 0
+        if not isinstance(event, dict):
+            return 0
+        cmd = ""
+        ti = event.get("tool_input")
+        if isinstance(ti, dict):
+            cmd = str(ti.get("command") or "")
+        resp = event.get("tool_response")
+        out = _response_text(resp)
+        rules = list(RULES)
     if not cmd:
         return 0
-    resp = event.get("tool_response")
-    out = _response_text(resp)
     root = event.get("cwd") or os.getcwd()
+    session = str(event.get("session_id") or "")
+    fault = os.environ.get("TRAPGUARD_FAULT", "")
+    shown = _load_shown(session) if session else set()
     notes = []
-    for rule in RULES:
+    fired = []
+    for rule in rules:
+        rid = rule_id(rule)
         try:
+            if fault == rid:
+                raise RuntimeError("TRAPGUARD_FAULT planted in %s" % rid)
             note = rule(cmd, out, root, resp)
-        except Exception:  # noqa: BLE001 -- one broken rule must not silence the others
+        except Exception as exc:  # noqa: BLE001 -- one broken rule must not silence the others, and it must not be silent either
+            _append("errors.jsonl", {"ts": _now(), "rule": rid, "exc_type": type(exc).__name__})
             note = None
-        if note:
-            notes.append(note)
+        if not note:
+            continue
+        # Plan section 4.3.7: one note per (session, rule). Repetition is how an instrument teaches skimming. A payload with no session id cannot be deduplicated and always speaks.
+        if session and rid in shown:
+            continue
+        notes.append(note)
+        fired.append(rid)
     if not notes:
         return 0
+    for rid in fired:
+        # Plan section 4.3.2: the fire log carries the rule, the time and the session, and NOTHING from the response.
+        _append("fires.jsonl", {"rule": rid, "ts": _now(), "session": session})
+    if session:
+        _save_shown(session, shown | set(fired))
     print(
         json.dumps(
             {
@@ -507,7 +634,7 @@ def main():
     if "--probe-payload" not in sys.argv[1:]:
         return 0
     try:
-        raw = sys.stdin.read()
+        raw, _over = read_bounded(sys.stdin.buffer)
     except Exception:  # noqa: BLE001 -- a probe must never break a turn
         return 0
     try:

@@ -3,6 +3,8 @@
 The product is stdout, not the exit code. A rule that exits 0 silently and a rule that exits 0 having warned are indistinguishable without asserting on the text, so every case here is `fires` or `silent` plus, where the message is the point, the needle the message must carry.
 """
 
+import importlib.util
+import json
 import os
 import pathlib
 import re
@@ -19,15 +21,31 @@ inject_json = hookcases.inject_json
 inject_killed = hookcases.inject_killed
 
 
-def run_inject(payload: str) -> str:
+# The dispatcher's ledgers (errors, fires, shown, skips) for every case in this module, never the real `~/.claude/trapguard`: a suite that wrote the live error log would block every session's next stop.
+LEDGERS = pathlib.Path(tempfile.gettempdir()) / ("tg-ledgers-%d" % os.getpid())
+
+
+def run_dispatch(payload: bytes, ledgers: pathlib.Path = LEDGERS, **env: str):
+    """The dispatcher as the harness runs it: (rc, stdout, stderr), with its ledgers under `ledgers`."""
     done = subprocess.run(
         ["python3", str(TRAPGUARD), "--posttool"],
-        input=payload.encode(),
+        input=payload,
         capture_output=True,
         timeout=hookcases.GUARD_TIMEOUT_S,
         check=False,
+        env=dict(os.environ, TRAPGUARD_DIR=str(ledgers), **env),
     )
-    return done.stdout.decode("utf-8", "replace")
+    return done.returncode, done.stdout.decode("utf-8", "replace"), done.stderr.decode()
+
+
+def run_inject(payload: str) -> str:
+    return run_dispatch(payload.encode())[1]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _ledgers():
+    yield
+    shutil.rmtree(LEDGERS, ignore_errors=True)
 
 
 def inject(spec: tuple[str, str], payload: str, label: str) -> tuple:
@@ -380,6 +398,105 @@ def test_every_trapguard_rule_fires_and_stays_silent_where_it_should():
     for want, payload, label, needle in CASES:
         assert_inject(block, want, payload, label, needle)
     block.done()
+
+
+# --- the dispatcher contract (plan sections 4.3.1, 4.3.2, 4.3.4 and 4.3.7) ----- Plain asserts rather than `hookblocks`, so the label golden is untouched: these cases are about the dispatcher, not about any one rule's verdict.
+#
+# A payload two rules fire on: the cancelled-run rule, then (later in RULES) the rebase rule.
+TWO_RULES = hookcases._j(
+    {
+        "tool_name": "Bash",
+        "cwd": hookcases.TEST_REPO_ROOT,
+        "tool_input": {"command": "gh run view 1 --json jobs; git rebase origin/main"},
+        "tool_response": {
+            "stdout": '{"conclusion":"cancelled"}\nSuccessfully rebased and updated refs/heads/x.',
+            "stderr": "",
+        },
+    }
+)
+
+
+def _lines(path: pathlib.Path) -> list[str]:
+    return path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+
+
+def test_a_raising_rule_is_logged_and_the_next_rule_still_injects(tmp_path):
+    rc, out, err = run_dispatch(
+        TWO_RULES.encode(), tmp_path, TRAPGUARD_FAULT="cancelled-run-not-passed"
+    )
+    assert rc == 0
+    assert "Traceback" not in err
+    assert "rebase-unverified" in out, "a later rule must still inject past a raising one"
+    assert "cancelled-run-not-passed]" not in out
+    rows = [json.loads(line) for line in _lines(tmp_path / "errors.jsonl")]
+    assert rows == [
+        {"exc_type": "RuntimeError", "rule": "cancelled-run-not-passed", "ts": rows[0]["ts"]}
+    ]
+
+
+def test_without_a_fault_both_rules_inject_and_nothing_is_logged(tmp_path):
+    """The control for the case above: the same payload with no plant fires BOTH rules and logs no error, so the case above is measuring the plant."""
+    rc, out, _ = run_dispatch(TWO_RULES.encode(), tmp_path)
+    assert rc == 0
+    assert "cancelled-run-not-passed]" in out
+    assert "rebase-unverified" in out
+    assert not (tmp_path / "errors.jsonl").exists()
+
+
+def test_a_payload_over_the_bound_exits_clean_and_records_the_skip(tmp_path):
+    spec = importlib.util.spec_from_file_location("tg_dispatch", TRAPGUARD)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    body = json.dumps(
+        {
+            "tool_input": {"command": "gh run view 1 --log"},
+            "tool_response": {"stdout": "cancelled " + "x" * module.MAX_PAYLOAD},
+        }
+    ).encode()
+    payload = body[: module.MAX_PAYLOAD + 1]
+    assert len(payload) == module.MAX_PAYLOAD + 1
+    rc, out, err = run_dispatch(payload, tmp_path)
+    assert rc == 0
+    assert "Traceback" not in err
+    assert out == "", "a response-reading rule ran on a truncated response"
+    skips = [json.loads(line) for line in _lines(tmp_path / "skips.jsonl")]
+    assert len(skips) == 1
+    assert "cancelled-run-not-passed" in skips[0]["skipped"]
+    assert not (tmp_path / "errors.jsonl").exists()
+
+
+def _session_payload(session: str, nonce: str) -> bytes:
+    return hookcases._j(
+        {
+            "tool_name": "Bash",
+            "session_id": session,
+            "cwd": hookcases.TEST_REPO_ROOT,
+            "tool_input": {"command": "gh run view 1 --json jobs"},
+            "tool_response": {
+                "stdout": '{"conclusion":"cancelled","n":"%s"}' % nonce,
+                "stderr": "",
+            },
+        }
+    ).encode()
+
+
+def test_a_rule_speaks_once_per_session_and_logs_no_response_bytes(tmp_path):
+    nonce = "tgnonce%d" % os.getpid()
+    said = [run_dispatch(_session_payload("sess-a", nonce), tmp_path)[1] for _ in range(2)]
+    assert "cancelled-run-not-passed" in said[0]
+    assert said[1] == "", "the second identical payload in one session must be suppressed"
+    fires = [json.loads(line) for line in _lines(tmp_path / "fires.jsonl")]
+    assert [(f["rule"], f["session"]) for f in fires] == [("cancelled-run-not-passed", "sess-a")]
+    assert set(fires[0]) == {"rule", "ts", "session"}
+
+    fresh = run_dispatch(_session_payload("sess-b", nonce), tmp_path)[1]
+    assert "cancelled-run-not-passed" in fresh, "a fresh session must hear the rule again"
+    assert len(_lines(tmp_path / "fires.jsonl")) == 2
+
+    for ledger in tmp_path.iterdir():
+        text = ledger.read_text(encoding="utf-8")
+        assert nonce not in text, "%s carries tool_response bytes" % ledger.name
+        assert "conclusion" not in text, "%s carries tool_response bytes" % ledger.name
 
 
 # --- `--git rebase-status` against a REAL halted rebase, one per conflict kind ---- The selftest's classifier controls prove the ARITHMETIC over hand-written stage tables; only a real halt proves the verb reads what git actually writes into .git/rebase-merge and the index. The harness refuses to hand back a fixture that did not halt, which already caught a broken fixture of its
