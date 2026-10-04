@@ -26,7 +26,7 @@ A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turb
 
 ```stop-hook
 stop_hook: on -- re-enabled by the operator 2026-10-03 for the one-plan-per-PR loop
-turbo: on -- operator 2026-10-04: turbo on
+turbo: off -- operator 2026-10-04: turbo off; running writers finish, no new plans start
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
 writer_cap: 15 -- operator 2026-10-04: parallel limit 15
@@ -66,23 +66,21 @@ judge: on
 15. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
 16. agent/plans/PLAN-retire-bash-oracles.md -- P2, approved, in progress (4 of 15 boxes ticked), dep-blocked
 17. agent/plans/PLAN-stop-hook-retro-20260924.md -- P2, ready, in progress (22 of 23 boxes ticked)
-18. agent/plans/PLAN-stop-hook-retro-20260925.md -- P2, ready, in progress (5 of 10 boxes ticked)
-19. agent/plans/PLAN-biome-only-lint.md -- P3, draft, in progress (10 of 29 boxes ticked)
-20. agent/plans/PLAN-env-to-bitwarden-v2.md -- P3, draft, in progress (9 of 10 boxes ticked)
-21. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (1 of 17 boxes ticked)
-22. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
-23. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-24. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-25. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, not started
-26. agent/plans/PLAN-locale-techdiff-resync.md -- P2, ready, not started
-27. agent/plans/PLAN-breakpoint-secret-shape.md -- P3, design, not started
-28. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
-29. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
-30. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-31. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-32. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
-33. agent/plans/PLAN-trap-enforcement.md -- P3, executing, not started
-34. agent/plans/PLAN-uncommitted-work-exposure-check.md -- P3, proposed, not started
+18. agent/plans/PLAN-biome-only-lint.md -- P3, draft, in progress (10 of 29 boxes ticked)
+19. agent/plans/PLAN-env-to-bitwarden-v2.md -- P3, draft, in progress (9 of 10 boxes ticked)
+20. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (1 of 17 boxes ticked)
+21. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
+22. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+23. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
+24. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, not started
+25. agent/plans/PLAN-locale-techdiff-resync.md -- P2, ready, not started
+26. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
+27. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
+28. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
+29. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+30. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+31. agent/plans/PLAN-trap-enforcement.md -- P3, executing, not started
+32. agent/plans/PLAN-uncommitted-work-exposure-check.md -- P3, proposed, not started
 
 ### Not queued
 
@@ -91,6 +89,7 @@ judge: on
 - agent/plans/PLAN-rdc-readonly-mode.md -- all boxes ticked: close it
 - agent/plans/PLAN-repair-prose-style-findings.md -- all boxes ticked: close it
 - agent/plans/PLAN-stop-hook-focus-mode.md -- all boxes ticked: close it
+- agent/plans/PLAN-stop-hook-retro-20260925.md -- all boxes ticked: close it
 - agent/plans/PLAN-stop-hook-turbo.md -- all boxes ticked: close it
 - agent/plans/PLAN-typecheck-orphan-packages.md -- all boxes ticked: close it
 <!-- queue:generated:end -->

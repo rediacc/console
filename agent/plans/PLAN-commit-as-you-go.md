@@ -52,7 +52,7 @@ Order:
 - T1 freezes the `commit_policy` API before T2-T5 start.
 - The drain D0-D10 can run as soon as T0 is done. It needs none of the new guards, because it happens entirely on `0923-1`.
 
-- [ ] T0 [lead] Live probes, with the answers recorded in this plan:
+- [x] T0 [lead] Live probes, with the answers recorded in this plan:
   - (a) Does PreToolUse fire for a sub-agent's Bash call? Does the payload carry `agent_id`/`agent_type`? Probe: a throwaway guard that logs the payload keys, driven by one Explore sub-agent.
   - (b) Does git 2.53's `reference-transaction` hook see `git branch -m` as one transaction (create plus delete)?
   - (c) Is `gh pr list --head <b> --state merged` readable offline? Record the result.
@@ -60,6 +60,7 @@ Order:
     - (a) Yes. A sub-agent's long `timeout 1 sleep` call was refused by `block_long_sleep`, so pre-bash guards fire for sub-agent Bash calls. The payload carries `agent_id` and `agent_type` only for sub-agents (`.claude/hooks/trapguard/dispatch.py:10`). Section 3.2's arm is built: `block_commit_on_main` refuses a sub-agent's `git commit` on any branch, except `pr-babysitter`, which carries the lead's commit loop under `/pr-babysit bg`.
     - (b) No. On git 2.53, `git branch -m` reaches `reference-transaction` as an aborted empty transaction plus a delete of the old ref. The new name never appears as a creation (`.claude/rediacc_hooks/git/githooks.py:13`). `checkout -b` does show a creation with a zero old oid.
     - (c) No. With the proxy on a dead port, `gh pr list --head 1004-1 --state merged` printed `proxyconnect tcp: ... connection refused` (rc 1). Online it returned PR 594 MERGED. `commit_policy._gh_lines` raises GhUnavailableError, and `block_second_branch` refuses, failing closed.
+    (ticked) 2026-10-04T15:44:14Z by d778be9d: commit:f18b49010 T0 answers (a) yes (b) no (c) no recorded at agent/plans/PLAN-commit-as-you-go.md:59; block_commit_on_main sub-agent arm built and tested
 - [x] T1 [A] Build `.claude/rediacc_hooks/commit_policy.py` (section 5.1) and `.ci/config/commit-policy.json` (section 5.2). Freeze the API.
     (ticked) 2026-10-03T09:57:11Z by d778be9d: c18ca3eca: commit_policy.py + .ci/config/commit-policy.json
 - [x] T2 [A] Build `block_second_branch.py` (pre-bash, ORDER 46) and move F1's parser into `commit_policy.branch_creations()`. Re-point `block_nonstandard_branch_name.py` at the parser, regenerate its golden with the intentional delta recorded, and add the F1 case.
