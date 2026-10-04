@@ -569,7 +569,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-retro-20260924.md` | held | 601 | 1 | 22 | 64263 |
 | `agent/plans/PLAN-stop-hook-retro-20260925.md` | held | 239 | 5 | 5 | 23104 |
 | `agent/plans/PLAN-stop-hook-rulings-campaign.md` | held | 103 | 16 | 1 | 9802 |
-| `agent/plans/PLAN-stop-hook-turbo.md` | approved | 160 | 23 | 0 | 26623 |
+| `agent/plans/PLAN-stop-hook-turbo.md` | approved | 182 | 1 | 22 | 29713 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
 | `agent/plans/PLAN-submodule-branch-coordination-guard.md` | held | 109 | 8 | 0 | 18729 |
