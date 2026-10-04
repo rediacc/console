@@ -292,27 +292,11 @@ def test_sources_name_where_each_value_comes_from():
     assert set(got) == set(ALL_KEYS)
 
 
-def test_solo_marker():
-    text = block("turbo: on")
-    assert PQ.solo_plans(text) == {
-        "agent/plans/PLAN-b.md",
-        "agent/plans/PLAN-e.md",
-        "agent/plans/PLAN-g.md",
-    }
-    # `-- solo` mid-note and `-- soloish` are not the marker.
-    assert "agent/plans/PLAN-c.md" not in PQ.solo_plans(text)
-    assert "agent/plans/PLAN-d.md" not in PQ.solo_plans(text)
-    assert (
-        PQ.solo_plans(HEAD + TAIL.replace(" -- solo", "")) == set()
-    )  # CONTROL: the marker is the delta
-
-
-def test_the_live_queue_has_a_clean_block_and_marks_ci_consolidation_solo():
+def test_the_live_queue_has_a_clean_block():
     text = (REPO / PQ.QUEUE_REL).read_text(encoding="utf-8")
     got, problems = PQ.settings(text)
     assert problems == [], problems
     assert PQ.sources(text) == dict.fromkeys(ALL_KEYS, "QUEUE.md")
-    assert "agent/plans/PLAN-ci-consolidation.md" in PQ.solo_plans(text)
     assert "stop_hook: on" in text
     assert got.stop_hook is True
 
