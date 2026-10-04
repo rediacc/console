@@ -74,6 +74,28 @@ Everything in a config syncs except these device-local pointers: `/schemaVersion
 - **After a CEK rotation.** The other members' config tokens are revoked, and a device still holding the old key is told to re-enable (`rdc config remote enable`) rather than failing with a decryption error.
 - **Member removal.** The member's slots, identity, pending handoffs and config tokens are deleted, so the next request is refused. What the member already pulled stays on their device; a copy of the CEK they kept is neutralized only by a CEK rotation.
 
+### Team scoping
+
+Team scoping is server-side access control, not cryptographic isolation (operator ruling E1, 2026-09-25). One CEK encrypts every team's configs and every store member holds it, so the server refuses a member access to another team's configs on every request; the key does not.
+
+The server reads the caller's org role, the team and the team membership on every request, before any config lookup, and decides from the org, the user, the team and the token's scope alone:
+
+| Caller | Org-level config (`teamId` null) | Config of team T in the store's org | T archived | T in another org, or no such team |
+|---|---|---|---|---|
+| Org owner or admin | read, write, delete | read, write, delete | read only | 404 `team_not_found` |
+| Team admin of T | read, write | read, write, delete | 403 | 404 |
+| Member of T | read, write | read, write | 403 | 404 |
+| Org member outside T | read, write | 403 `team_forbidden` | 403 | 404 |
+
+- **Token scope.** A config token minted from a team-scoped credential carries `scope_team_id`: a team-scoped login token through password enroll, a team-scoped executor token, or a device token minted from a scoped chain. The scope narrows the table and never widens it. A scoped chain reaches its own team's configs and the org-level ones, and only while the membership rule still passes. Tokens from the portal handoff are unscoped.
+- **Revocation.** Membership is never cached into a token, so removal from a team takes effect on the next request with no token revocation. The CLI then purges its offline copy of that config, which does not recall plaintext already copied off the device.
+- **Refusals.** Config-token routes answer `403 { error, code: 'team_forbidden', newServerToken }`, because the presented token was already rotated; session routes answer the same code without a token. Each refusal is logged as `config.auth.team_forbidden`. A refusal depends only on what the request sent, so it reveals nothing about whether a config exists.
+- **Listing.** `GET /configs`, the executor grant's config list and the portal's `configCount` hold only the configs the caller may read.
+- **Push integrity.** A push must name a non-archived team of the store's org; a team id from another org is refused with 404 and nothing is stored.
+- **Store-wide by design.** CEK rotation, member management and key slots stay owner/admin operations over the whole store, since the rotating admin re-encrypts every team's config.
+
+**What this does not stop.** A member of team X holds the key that opens team Y's ciphertext, and decrypts it if it arrives some other way: a storage dump or leaked backup, a future authorization bug, or a compromised server. A member removed from a team keeps the key until a CEK rotation, and keeps whatever was already pulled. Isolation between teams, when a deployment needs it, takes one config store per team, each with its own CEK, slots and members. Per-team CEKs inside one store and per-team keys wrapped under the org CEK were rejected: the first costs the most for the same protection, and the second isolates nothing from members.
+
 ## Architecture
 
 ### Key Hierarchy
@@ -260,7 +282,7 @@ D1 stores only lightweight metadata — no encrypted blobs:
 **D1 handles** (without touching encrypted data):
 - Version conflict detection (`version` field)
 - Config identity verification (`configId`)
-- Team/org access control (`teamId`, `orgId`)
+- Team/org access control (`teamId`, `orgId`), per [Team scoping](#team-scoping)
 - Listing configs with metadata
 - R2 key lookup for blob retrieval
 
@@ -272,7 +294,7 @@ D1 stores only lightweight metadata — no encrypted blobs:
 **Server can** (without decrypting):
 - Check version for conflict detection (`push v42` vs stored `v43` → reject)
 - Verify config identity via `id`
-- Enforce team/org access control
+- Enforce team/org access control on every request ([Team scoping](#team-scoping))
 - List configs with metadata
 
 **Server cannot see**:
@@ -761,6 +783,8 @@ New routes under `/account/api/v1/configs/`:
 
 Responses only include what's needed for that operation. Crypto keys (`server_secret`, `sdk`) are only returned for encryption/decryption operations — not for listing or management calls.
 
+Every route that names a config, and the list, passes the [Team scoping](#team-scoping) check first.
+
 ```
 SETUP
   POST   /configs/setup                  Setup config store for org (elevated + 2FA)
@@ -806,6 +830,7 @@ All config operations are logged to the existing `event_log` table with a hash c
 | `config.auth.token_rotated` | userId, IP, timestamp | debug |
 | `config.auth.revoked_access` | userId, IP, timestamp, reason | warning |
 | `config.auth.ip_mismatch` | userId, expectedIP, actualIP, timestamp | critical |
+| `config.auth.team_forbidden` | userId, orgId, storeId, configId, teamId, scopeTeamId, action (a team check refused the request) | info |
 | `config.auth.sdk_denied` | userId, IP, timestamp (revoked member tried to get sdk_derived) | critical |
 | `config.hmac.failed` | userId, configId, timestamp (tamper detection triggered on pull) | critical |
 
