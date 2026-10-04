@@ -32,9 +32,9 @@
     {
       "gate": "check:ci-plan-implementation",
       "findings": [
-        "P-A1:e246019f3594"
+        "P-A1:cda8b9f190dd"
       ],
-      "reason": "1004-2 has no PR yet, so locally the P-A1 clock falls back to the queue head, PLAN-gate-drop-receipt-verify (8 open), which turbo is about to start on this PR. In CI the clock reads the PR body's Plan: line (PLAN-stop-hook-turbo, every box ticked) and passes. This entry is removed on the next push, when it goes stale."
+      "reason": "1004-2 has no PR yet. Turbo ran with the operator's go and then was switched off with four plans part-done: clean-review-ledger T17/T18, commit-as-you-go T6 and the drain, config-team-scoping T10 (live eu smoke needs a browser), and plan-per-pr-loop R1 (waits on a scheduled run). The PR body carries an Operational-Reason naming them, which admits P-A1 in CI; this entry carries the same finding for the push."
     }
   ]
 }
