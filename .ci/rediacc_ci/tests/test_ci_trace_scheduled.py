@@ -19,6 +19,8 @@ NOW_ISO = "2026-10-04T03:00:00Z"
 @pytest.fixture(scope="module")
 def ct():
     spec = importlib.util.spec_from_file_location("ci_trace_scheduled_under_test", TRACE)
+    assert spec is not None
+    assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -37,7 +39,7 @@ WORKFLOWS = [
 
 
 def row(stem, conclusion, run_id, red, jobs=()):
-    base = next(dict(w) for w in WORKFLOWS if w["stem"] == stem)
+    base: dict = next(dict(w) for w in WORKFLOWS if w["stem"] == stem)
     base.update(
         run_id=run_id,
         attempt=2,

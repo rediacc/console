@@ -1381,6 +1381,33 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-scheduled-red-detector.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 1,
+      "done": 14,
+      "open_sigs": [
+        "cc739d78"
+      ],
+      "done_sigs": [
+        "1b770238",
+        "3868fd1a",
+        "59cfeae7",
+        "5b8051ac",
+        "749edc05",
+        "7a229b69",
+        "86469470",
+        "97ab06a1",
+        "9a1cd094",
+        "cae97c9c",
+        "cca915f2",
+        "cd141739",
+        "dbc6918b",
+        "f726703c"
+      ]
+    },
     "agent/plans/PLAN-scope-gate-sort-collation.md": {
       "status": "compacted",
       "owner": "854ac1c6",

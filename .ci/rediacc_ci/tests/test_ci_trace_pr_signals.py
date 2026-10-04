@@ -32,6 +32,8 @@ RERUN = "gh workflow run claude-review.yml --ref 1004-1 -f pr_number=594"
 @pytest.fixture(scope="module")
 def ct():
     spec = importlib.util.spec_from_file_location("ci_trace_signals_under_test", TRACE)
+    assert spec is not None
+    assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -174,7 +176,7 @@ def test_a_new_signal_mid_wait_is_printed_when_it_lands(ct, drive, capsys, monke
                 fetch.comments = [ATTEMPT]
         return real_json(path)
 
-    fetch.json = json_hook
+    fetch.__dict__["json"] = json_hook
     assert drive([running, running, running, payload("green")], fetch, ["--wait"]) == 0
     out = capsys.readouterr().out.split("GREEN  PR #594")[0]
     assert out.count("error_max_turns") == 1

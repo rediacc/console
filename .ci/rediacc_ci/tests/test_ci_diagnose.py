@@ -92,7 +92,14 @@ def test_the_real_run_reads_cancelled_by_the_watchdog_budget(tmp_path):
     assert ff["step"] == "Run E2E Tests (Workers)"
     assert ff["category"] == "infra-likely"
     assert ff["signature"] == "slow-setup"
-    assert ff["p90_s"] == 540, "the job's recorded p90 (9.0m) must be quoted beside its 1069 s step"
+    # The p90 comes from the COMMITTED lane-durations.json, which check:ci-budget-freshness keeps current, so the expected value is read from the same table rather than pinned: the pinned 540 (9.0m) went stale on the 2026-10-04 refresh (8.6m), a true drift and not a regression.
+    recorded = D._p90_table().get(the_job()["name"])
+    assert isinstance(recorded, (int, float)), (
+        "the job must have a recorded p90 in lane-durations.json"
+    )
+    assert ff["p90_s"] == round(float(recorded) * 60), (
+        "the job's recorded p90 must be quoted beside its 1069 s step"
+    )
     assert any("(916s)" in ln for ln in ff["excerpt"]), ff["excerpt"]
     assert d["next"] == ".ci/scripts/ci/ci-trace.py --job %s --errors" % JOB
 

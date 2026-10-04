@@ -1688,6 +1688,7 @@
       "CI_TRACE_MAX_READ_FAILURES",
       "CI_TRACE_NOCI_GRACE_S",
       "CI_TRACE_POLL_S",
+      "CI_TRACE_SIGNALS_POLL_S",
       "CI_TRACE_TIMEOUT_S"
     ],
     ".ci/scripts/housekeeping/retire-shadowed-secrets.py": [
@@ -1997,6 +1998,9 @@
     ],
     ".claude/hooks/stop/wl_rules.py": [
       "TMPDIR"
+    ],
+    ".claude/hooks/stop/wl_schedred.py": [
+      "WORKLIST_SCHED_RED_TTL_S"
     ],
     ".claude/hooks/stop/wl_shapedup.py": [
       "SHAPE_PROBE_CACHE",
