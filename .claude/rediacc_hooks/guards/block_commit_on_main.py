@@ -14,6 +14,8 @@ OFF `main` THE TAG IS REFUSED, so the audit stays clean: a `[hotfix]` on a featu
 
 WHAT IS JUDGED. Every `git commit` bash would run in the command (a `sh -c` payload and an `eval` included), each against the branch of the repository it acts on: this checkout, or a submodule inside it through `cd`/`-C` (`git -C private/account commit` on account's `main` is refused like the console's). A repository outside this checkout (a `/tmp` fixture) is not this policy's business. The message is read in the three shapes `block_untagged_commit` established; one this guard cannot read on `main` is refused, because a hotfix it cannot see is not one it can admit. A `-F <file>` that an earlier clause of the same command writes is refused unread on any branch (`commit_policy.written_message_refusal`): its bytes on disk are an earlier command's, and reading them admitted a stale `[hotfix]` onto `main`.
 
+WRITERS NEVER COMMIT (section 3.2 of the commit-policy plan). The lead commits each writer's output once it has spot-checked it, so a `git commit` from a sub-agent is refused on any branch. T0(a) settled how a sub-agent is recognised: PreToolUse fires for a sub-agent's Bash call (probed live 2026-10-04 from a writer: a `timeout 1 sleep 600` was refused by `block_long_sleep`), and the payload carries `agent_id` and `agent_type` only for a sub-agent, never on a main-loop call (measured 2026-08-09, `.claude/hooks/trapguard/dispatch.py`). The one exemption is `pr-babysitter`, because `/pr-babysit bg` delegates the lead's commit loop to it.
+
 THE GIT-LEVEL TWIN. `.claude/rediacc_hooks/git/commit-msg` enforces the same rule on every commit in a checkout whose `core.hooksPath` points there, including the operator's own terminal; that layer honours `COMMIT_POLICY_OK=1`, this one never does.
 """
 
@@ -32,6 +34,20 @@ ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
 ]
 
 HOTFIX = 'git commit -m "fix(ci): x [hotfix]\n\nHotfix-Evidence: 12345678" -- a.ts'
+
+# The sub-agent types that may commit: the `/pr-babysit bg` loop carries the lead's commit duty. Every other sub-agent is a writer, and writers never commit.
+COMMITTING_AGENTS = ("pr-babysitter",)
+
+WRITER_COMMIT = (
+    "BLOCKED: a sub-agent (`%s`) is committing, and writers never commit.\n"
+    "\n"
+    "The lead commits each writer's output once it has spot-checked it (the\n"
+    "commit-policy plan, section 3.1): a writer committing its own work commits an\n"
+    "unchecked report, the no-amend rule makes undoing it a second commit, and\n"
+    "parallel writers race on index.lock and HEAD.\n"
+    "\n"
+    "Leave the change in the tree and list every path it touched in the report.\n"
+)
 
 EDGE_CASES = [
     ("a plain commit", 'git commit -m "feat(x): y" -- a.ts'),
@@ -113,11 +129,15 @@ def run(ev):
     base = ev.field("cwd") or root
     cfg = commit_policy.load_config(root)
     hints: dict[str, str] = {}
+    agent_type = ev.field("agent_type") or "unknown"
     for commit in commits:
         # A directory that resolves to no repository is one git itself will refuse; one outside this checkout is not this policy's business.
         repo = commit_policy.run_repo(commit, base)
         if not repo or not commit_policy.is_inside(repo, root):
             continue
+        if ev.field("agent_id") and agent_type not in COMMITTING_AGENTS:
+            ev.warn_raw(WRITER_COMMIT % agent_type)
+            return hookio.DENY
         # A `-F <file>` this same command writes first holds an earlier command's bytes: judging it admitted a stale `[hotfix]` onto `main` (#9888de00).
         written = commit_policy.written_message_refusal(cmd, commit, base, "`block_commit_on_main`")
         if written:
