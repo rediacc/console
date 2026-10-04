@@ -388,7 +388,8 @@
         "pytest:.ci/rediacc_ci/tests/test_review_pr_labels.py",
         "pytest:.claude/rediacc_hooks/tests/test_plan_gate.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_trace_pr_signals.py",
-        "pytest:.ci/rediacc_ci/tests/test_ci_trace_scheduled.py"
+        "pytest:.ci/rediacc_ci/tests/test_ci_trace_scheduled.py",
+        "pytest:.ci/rediacc_ci/tests/test_workflow_called_permissions.py"
       ]
     },
     {
