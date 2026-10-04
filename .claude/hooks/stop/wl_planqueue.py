@@ -97,7 +97,6 @@ SETTINGS_KEYS = (
 )
 NOTE_SEP = " -- "
 _FIELD_NOTE = re.compile(r"[ \t]--[ \t]")
-_SOLO = re.compile(r"[ \t]--[ \t]+solo[ \t]*$")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -325,17 +324,6 @@ def set_settings(text: str, updates: dict[str, str], note: str | None = None) ->
         if key in typed and key not in done
     )
     return text[: block[0]] + "".join(out) + text[block[1] :]
-
-
-def solo_plans(text: str) -> set[str]:
-    """The Promoted and Generated entries whose note ends with ` -- solo`: such a plan runs alone in its PR under turbo."""
-    block = (generated_text(text) or "").split(NOT_QUEUED_HEADING, 1)[0]
-    return {
-        m.group(1)
-        for body in (promoted_text(text), block)
-        for m in ENTRY.finditer(body)
-        if _SOLO.search(m.group(0))
-    }
 
 
 # ---------------------------------------------------------------- the render
