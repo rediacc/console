@@ -1487,6 +1487,30 @@ export const GATES: readonly GateSpec[] = [
   },
   // <<< gen-manifest: region 12
   {
+    // BOUND TO PR CI, 2026-10-04 (operator: "it should have been bound to CI!"). lane-durations.json drifted past the 25% limit for days while the only comparison ran in housekeeping's 03:00 budget-check, which went red four nights in a row and reached no session; gate-costs.json had never been written at all, so `gate_costs --check` exited NO_BASELINE (3) and housekeeping mapped that to a pass. Every PR now compares both committed files with the newest runs and captures, so drift fails the PR that is open when it appears and is refreshed there (`budget_report --refresh`, `gate_costs --refresh`). A missing gate-costs.json is a failure here, not a notice.
+    id: 'check:ci-budget-freshness',
+    env: {
+      GH_TOKEN: '${{ github.token }}',
+    },
+    run: 'npm run check:ci-budget-freshness',
+    slow: true, // network: reads ci.yml and housekeeping.yml runs and artifacts
+    gate: true,
+    leaves: ['.ci/rediacc_ci/ci/budget_report.py', '.ci/rediacc_ci/ci/gate_costs.py'],
+    paths: [
+      '.ci/config/lane-durations.json',
+      '.ci/config/gate-costs.json',
+      '.ci/rediacc_ci/ci/budget_report.py',
+      '.ci/rediacc_ci/ci/gate_costs.py',
+    ],
+    pathsOrigin: 'declared',
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'CI time budget freshness',
+    },
+  },
+  {
     id: 'check:ci-security-audit',
     env: {
       GH_TOKEN: '${{ github.token }}',

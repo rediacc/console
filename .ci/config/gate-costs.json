@@ -1,0 +1,2075 @@
+{
+  "$comment": [
+    "PLAN-ci-quick-cpu-scheduling 2.5: per-gate CPU baseline for ci:quick's scheduler.",
+    "Written ONLY by `PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_costs --refresh`, from the",
+    "medians of the last 5 `gate-costs-<sha>` artifacts of housekeeping.yml's gate-costs-capture",
+    "job (run.ts --quick --jobs 1, serial and uncontended). Checked nightly by `gate_costs --check`.",
+    "cpu_s/wall_s in seconds; eff_cores = cpu_s / wall_s; capped = eff_cores >= 0.9 x source.cores",
+    "(the gate filled the runner, so its width is not portable); rank 1 = the largest cpu_s.",
+    "Do not hand-edit: the next --refresh overwrites every figure."
+  ],
+  "refreshed_at": "2026-10-04T04:57:49Z",
+  "source": {
+    "runner": "ubuntu-latest",
+    "cores": 4,
+    "runs": [
+      {
+        "id": 37111522524,
+        "sha": "2c50613a76b553a8399b0849523617e22942e6aa",
+        "created_at": "2026-10-03T08:59:17Z"
+      }
+    ]
+  },
+  "gates": {
+    "build:cli": {
+      "cpu_s": 15.295,
+      "wall_s": 8.734,
+      "eff_cores": 1.75,
+      "capped": false,
+      "peak_rss_mb": 971,
+      "rank": 2
+    },
+    "build:packages": {
+      "cpu_s": 11.536,
+      "wall_s": 5.861,
+      "eff_cores": 1.97,
+      "capped": false,
+      "peak_rss_mb": 733,
+      "rank": 4
+    },
+    "check:actions": {
+      "cpu_s": 0.615,
+      "wall_s": 0.778,
+      "eff_cores": 0.79,
+      "capped": false,
+      "peak_rss_mb": 244,
+      "rank": 96
+    },
+    "check:ci-account-no-admin-role": {
+      "cpu_s": 0.125,
+      "wall_s": 0.109,
+      "eff_cores": 1.15,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 250
+    },
+    "check:ci-account-no-node-env-routes": {
+      "cpu_s": 0.131,
+      "wall_s": 0.117,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 249
+    },
+    "check:ci-account-probes": {
+      "cpu_s": 0.392,
+      "wall_s": 0.453,
+      "eff_cores": 0.87,
+      "capped": false,
+      "peak_rss_mb": 55,
+      "rank": 159
+    },
+    "check:ci-actionlint": {
+      "cpu_s": 7.185,
+      "wall_s": 3.175,
+      "eff_cores": 2.26,
+      "capped": false,
+      "peak_rss_mb": 185,
+      "rank": 8
+    },
+    "check:ci-actions-allowlist": {
+      "cpu_s": 0.193,
+      "wall_s": 0.176,
+      "eff_cores": 1.1,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 213
+    },
+    "check:ci-actions-vars": {
+      "cpu_s": 0.358,
+      "wall_s": 0.347,
+      "eff_cores": 1.03,
+      "capped": false,
+      "peak_rss_mb": 58,
+      "rank": 172
+    },
+    "check:ci-agent-browser-exit": {
+      "cpu_s": 0.271,
+      "wall_s": 0.254,
+      "eff_cores": 1.07,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 191
+    },
+    "check:ci-agent-hint-liveness": {
+      "cpu_s": 0.235,
+      "wall_s": 0.219,
+      "eff_cores": 1.07,
+      "capped": false,
+      "peak_rss_mb": 55,
+      "rank": 199
+    },
+    "check:ci-agent-model-roster": {
+      "cpu_s": 0.169,
+      "wall_s": 0.151,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 239
+    },
+    "check:ci-allowlist-key-matching": {
+      "cpu_s": 0.436,
+      "wall_s": 0.419,
+      "eff_cores": 1.04,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 144
+    },
+    "check:ci-app-admin-perm": {
+      "cpu_s": 0.172,
+      "wall_s": 0.154,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 233
+    },
+    "check:ci-audit-coverage": {
+      "cpu_s": 0.192,
+      "wall_s": 0.177,
+      "eff_cores": 1.08,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 214
+    },
+    "check:ci-aws-credential-bridge": {
+      "cpu_s": 0.383,
+      "wall_s": 0.336,
+      "eff_cores": 1.14,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 162
+    },
+    "check:ci-backup-bucket-conformance": {
+      "cpu_s": 0.367,
+      "wall_s": 0.331,
+      "eff_cores": 1.11,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 167
+    },
+    "check:ci-baseline-key-semantics": {
+      "cpu_s": 0.687,
+      "wall_s": 0.574,
+      "eff_cores": 1.2,
+      "capped": false,
+      "peak_rss_mb": 238,
+      "rank": 80
+    },
+    "check:ci-bash-lib-ported": {
+      "cpu_s": 0.169,
+      "wall_s": 0.153,
+      "eff_cores": 1.1,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 240
+    },
+    "check:ci-battery-clean-tree": {
+      "cpu_s": 0.318,
+      "wall_s": 0.298,
+      "eff_cores": 1.07,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 185
+    },
+    "check:ci-bootstrap-idempotency": {
+      "cpu_s": 0.575,
+      "wall_s": 0.506,
+      "eff_cores": 1.14,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 108
+    },
+    "check:ci-breakpoint-drift": {
+      "cpu_s": 0.256,
+      "wall_s": 0.201,
+      "eff_cores": 1.27,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 196
+    },
+    "check:ci-builder-env-contract": {
+      "cpu_s": 0.362,
+      "wall_s": 0.315,
+      "eff_cores": 1.15,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 170
+    },
+    "check:ci-bws-map": {
+      "cpu_s": 3.224,
+      "wall_s": 1.524,
+      "eff_cores": 2.12,
+      "capped": false,
+      "peak_rss_mb": 111,
+      "rank": 24
+    },
+    "check:ci-captcha-recovery": {
+      "cpu_s": 0.385,
+      "wall_s": 0.335,
+      "eff_cores": 1.15,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 161
+    },
+    "check:ci-changed-selection": {
+      "cpu_s": 4.8,
+      "wall_s": 4.004,
+      "eff_cores": 1.2,
+      "capped": false,
+      "peak_rss_mb": 468,
+      "rank": 14
+    },
+    "check:ci-checkout-cone": {
+      "cpu_s": 0.947,
+      "wall_s": 0.93,
+      "eff_cores": 1.02,
+      "capped": false,
+      "peak_rss_mb": 93,
+      "rank": 63
+    },
+    "check:ci-cli-contract": {
+      "cpu_s": 6.765,
+      "wall_s": 4.001,
+      "eff_cores": 1.69,
+      "capped": false,
+      "peak_rss_mb": 576,
+      "rank": 9
+    },
+    "check:ci-cli-doc-coverage": {
+      "cpu_s": 0.172,
+      "wall_s": 0.154,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 234
+    },
+    "check:ci-cli-proxy-safe-output": {
+      "cpu_s": 0.334,
+      "wall_s": 0.319,
+      "eff_cores": 1.05,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 183
+    },
+    "check:ci-client-i18n": {
+      "cpu_s": 0.741,
+      "wall_s": 0.656,
+      "eff_cores": 1.13,
+      "capped": false,
+      "peak_rss_mb": 203,
+      "rank": 75
+    },
+    "check:ci-command-planes": {
+      "cpu_s": 2.056,
+      "wall_s": 1.522,
+      "eff_cores": 1.35,
+      "capped": false,
+      "peak_rss_mb": 341,
+      "rank": 35
+    },
+    "check:ci-compose-env": {
+      "cpu_s": 0.169,
+      "wall_s": 0.152,
+      "eff_cores": 1.11,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 241
+    },
+    "check:ci-config-migrations": {
+      "cpu_s": 1.178,
+      "wall_s": 0.917,
+      "eff_cores": 1.28,
+      "capped": false,
+      "peak_rss_mb": 318,
+      "rank": 54
+    },
+    "check:ci-container-build-context": {
+      "cpu_s": 0.176,
+      "wall_s": 0.159,
+      "eff_cores": 1.11,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 229
+    },
+    "check:ci-content-quality": {
+      "cpu_s": 3.556,
+      "wall_s": 3.542,
+      "eff_cores": 1.0,
+      "capped": false,
+      "peak_rss_mb": 97,
+      "rank": 20
+    },
+    "check:ci-control-in-string": {
+      "cpu_s": 1.584,
+      "wall_s": 1.133,
+      "eff_cores": 1.4,
+      "capped": false,
+      "peak_rss_mb": 329,
+      "rank": 43
+    },
+    "check:ci-control-vacuity": {
+      "cpu_s": 0.352,
+      "wall_s": 0.335,
+      "eff_cores": 1.05,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 174
+    },
+    "check:ci-css-dom-refs": {
+      "cpu_s": 0.776,
+      "wall_s": 0.621,
+      "eff_cores": 1.25,
+      "capped": false,
+      "peak_rss_mb": 241,
+      "rank": 72
+    },
+    "check:ci-dead-case-arms": {
+      "cpu_s": 0.309,
+      "wall_s": 0.294,
+      "eff_cores": 1.05,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 186
+    },
+    "check:ci-dead-css": {
+      "cpu_s": 1.162,
+      "wall_s": 0.969,
+      "eff_cores": 1.2,
+      "capped": false,
+      "peak_rss_mb": 238,
+      "rank": 55
+    },
+    "check:ci-dead-python": {
+      "cpu_s": 5.672,
+      "wall_s": 5.665,
+      "eff_cores": 1.0,
+      "capped": false,
+      "peak_rss_mb": 237,
+      "rank": 10
+    },
+    "check:ci-dead-service-methods": {
+      "cpu_s": 0.483,
+      "wall_s": 0.409,
+      "eff_cores": 1.18,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 129
+    },
+    "check:ci-dead-translation-keys": {
+      "cpu_s": 0.711,
+      "wall_s": 0.627,
+      "eff_cores": 1.13,
+      "capped": false,
+      "peak_rss_mb": 258,
+      "rank": 79
+    },
+    "check:ci-decision-ids": {
+      "cpu_s": 0.616,
+      "wall_s": 0.597,
+      "eff_cores": 1.03,
+      "capped": false,
+      "peak_rss_mb": 116,
+      "rank": 95
+    },
+    "check:ci-design-tree": {
+      "cpu_s": 0.365,
+      "wall_s": 0.321,
+      "eff_cores": 1.14,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 168
+    },
+    "check:ci-devbox-exec": {
+      "cpu_s": 0.171,
+      "wall_s": 0.155,
+      "eff_cores": 1.1,
+      "capped": false,
+      "peak_rss_mb": 55,
+      "rank": 235
+    },
+    "check:ci-devcontainer-pins": {
+      "cpu_s": 0.906,
+      "wall_s": 4.012,
+      "eff_cores": 0.23,
+      "capped": false,
+      "peak_rss_mb": 273,
+      "rank": 67
+    },
+    "check:ci-devcontainer-scripts": {
+      "cpu_s": 0.401,
+      "wall_s": 0.367,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 55,
+      "rank": 154
+    },
+    "check:ci-doc-region-parity": {
+      "cpu_s": 8.188,
+      "wall_s": 7.726,
+      "eff_cores": 1.06,
+      "capped": false,
+      "peak_rss_mb": 381,
+      "rank": 5
+    },
+    "check:ci-docker-npm-pins": {
+      "cpu_s": 0.307,
+      "wall_s": 0.29,
+      "eff_cores": 1.06,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 187
+    },
+    "check:ci-dockerfile-mirror-resilience": {
+      "cpu_s": 0.215,
+      "wall_s": 0.202,
+      "eff_cores": 1.06,
+      "capped": false,
+      "peak_rss_mb": 55,
+      "rank": 204
+    },
+    "check:ci-docs-browse-invariants": {
+      "cpu_s": 0.553,
+      "wall_s": 0.49,
+      "eff_cores": 1.13,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 112
+    },
+    "check:ci-docs-copy-units": {
+      "cpu_s": 0.569,
+      "wall_s": 0.502,
+      "eff_cores": 1.13,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 109
+    },
+    "check:ci-docs-structure-parity": {
+      "cpu_s": 0.537,
+      "wall_s": 0.446,
+      "eff_cores": 1.2,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 117
+    },
+    "check:ci-docs-thumb-coverage": {
+      "cpu_s": 0.55,
+      "wall_s": 0.494,
+      "eff_cores": 1.11,
+      "capped": false,
+      "peak_rss_mb": 55,
+      "rank": 114
+    },
+    "check:ci-domain-partition": {
+      "cpu_s": 1.482,
+      "wall_s": 1.355,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 210,
+      "rank": 46
+    },
+    "check:ci-drill-verdicts": {
+      "cpu_s": 0.498,
+      "wall_s": 0.478,
+      "eff_cores": 1.04,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 126
+    },
+    "check:ci-e2e-case-blind": {
+      "cpu_s": 2.594,
+      "wall_s": 2.576,
+      "eff_cores": 1.01,
+      "capped": false,
+      "peak_rss_mb": 91,
+      "rank": 29
+    },
+    "check:ci-e2e-coverage": {
+      "cpu_s": 1.841,
+      "wall_s": 1.389,
+      "eff_cores": 1.33,
+      "capped": false,
+      "peak_rss_mb": 442,
+      "rank": 40
+    },
+    "check:ci-e2e-skip-hygiene": {
+      "cpu_s": 0.35,
+      "wall_s": 0.307,
+      "eff_cores": 1.14,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 176
+    },
+    "check:ci-em-dash-surfaces": {
+      "cpu_s": 0.949,
+      "wall_s": 0.792,
+      "eff_cores": 1.2,
+      "capped": false,
+      "peak_rss_mb": 269,
+      "rank": 62
+    },
+    "check:ci-embed-arch-parity": {
+      "cpu_s": 0.348,
+      "wall_s": 0.313,
+      "eff_cores": 1.11,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 178
+    },
+    "check:ci-embed-asset-versions": {
+      "cpu_s": 0.345,
+      "wall_s": 0.312,
+      "eff_cores": 1.11,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 180
+    },
+    "check:ci-embed-credits": {
+      "cpu_s": 0.359,
+      "wall_s": 0.316,
+      "eff_cores": 1.14,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 171
+    },
+    "check:ci-enumeration-vacuity": {
+      "cpu_s": 0.453,
+      "wall_s": 0.397,
+      "eff_cores": 1.14,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 138
+    },
+    "check:ci-env-file-adoption": {
+      "cpu_s": 0.418,
+      "wall_s": 0.402,
+      "eff_cores": 1.04,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 150
+    },
+    "check:ci-env-manifest": {
+      "cpu_s": 5.361,
+      "wall_s": 5.347,
+      "eff_cores": 1.0,
+      "capped": false,
+      "peak_rss_mb": 109,
+      "rank": 12
+    },
+    "check:ci-environment-names": {
+      "cpu_s": 0.165,
+      "wall_s": 0.15,
+      "eff_cores": 1.1,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 244
+    },
+    "check:ci-fetch-integrity": {
+      "cpu_s": 0.432,
+      "wall_s": 0.366,
+      "eff_cores": 1.18,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 145
+    },
+    "check:ci-fetch-retry": {
+      "cpu_s": 0.186,
+      "wall_s": 0.171,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 218
+    },
+    "check:ci-fixture-event-timestamps": {
+      "cpu_s": 0.523,
+      "wall_s": 0.46,
+      "eff_cores": 1.14,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 121
+    },
+    "check:ci-form-validation": {
+      "cpu_s": 0.407,
+      "wall_s": 0.36,
+      "eff_cores": 1.13,
+      "capped": false,
+      "peak_rss_mb": 55,
+      "rank": 152
+    },
+    "check:ci-format-scope": {
+      "cpu_s": 14.876,
+      "wall_s": 4.242,
+      "eff_cores": 3.51,
+      "capped": false,
+      "peak_rss_mb": 425,
+      "rank": 3
+    },
+    "check:ci-gate-bind": {
+      "cpu_s": 3.76,
+      "wall_s": 3.272,
+      "eff_cores": 1.15,
+      "capped": false,
+      "peak_rss_mb": 364,
+      "rank": 18
+    },
+    "check:ci-gate-cwd-independence": {
+      "cpu_s": 0.536,
+      "wall_s": 0.466,
+      "eff_cores": 1.15,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 118
+    },
+    "check:ci-gate-id-convention": {
+      "cpu_s": 0.171,
+      "wall_s": 0.156,
+      "eff_cores": 1.1,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 236
+    },
+    "check:ci-gate-manifest": {
+      "cpu_s": 0.644,
+      "wall_s": 0.572,
+      "eff_cores": 1.13,
+      "capped": false,
+      "peak_rss_mb": 205,
+      "rank": 88
+    },
+    "check:ci-gate-prerequisites": {
+      "cpu_s": 0.979,
+      "wall_s": 0.961,
+      "eff_cores": 1.02,
+      "capped": false,
+      "peak_rss_mb": 96,
+      "rank": 60
+    },
+    "check:ci-gate-reachability-coverage": {
+      "cpu_s": 0.582,
+      "wall_s": 0.564,
+      "eff_cores": 1.03,
+      "capped": false,
+      "peak_rss_mb": 97,
+      "rank": 104
+    },
+    "check:ci-gate-test-real-file-plants": {
+      "cpu_s": 4.879,
+      "wall_s": 4.861,
+      "eff_cores": 1.0,
+      "capped": false,
+      "peak_rss_mb": 102,
+      "rank": 13
+    },
+    "check:ci-gates-lock": {
+      "cpu_s": 0.595,
+      "wall_s": 0.531,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 101
+    },
+    "check:ci-gen-manifest": {
+      "cpu_s": 0.733,
+      "wall_s": 0.638,
+      "eff_cores": 1.15,
+      "capped": false,
+      "peak_rss_mb": 249,
+      "rank": 77
+    },
+    "check:ci-git-history-depth": {
+      "cpu_s": 0.947,
+      "wall_s": 0.933,
+      "eff_cores": 1.02,
+      "capped": false,
+      "peak_rss_mb": 94,
+      "rank": 64
+    },
+    "check:ci-git-op-conditionals": {
+      "cpu_s": 0.343,
+      "wall_s": 0.324,
+      "eff_cores": 1.06,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 181
+    },
+    "check:ci-git-tool-safety": {
+      "cpu_s": 0.577,
+      "wall_s": 0.508,
+      "eff_cores": 1.14,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 105
+    },
+    "check:ci-go-tool-path": {
+      "cpu_s": 0.227,
+      "wall_s": 0.208,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 202
+    },
+    "check:ci-greenlight-closures": {
+      "cpu_s": 0.419,
+      "wall_s": 0.397,
+      "eff_cores": 1.06,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 149
+    },
+    "check:ci-hint-corpus": {
+      "cpu_s": 0.259,
+      "wall_s": 0.244,
+      "eff_cores": 1.06,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 194
+    },
+    "check:ci-hook-cross-os": {
+      "cpu_s": 0.783,
+      "wall_s": 0.767,
+      "eff_cores": 1.02,
+      "capped": false,
+      "peak_rss_mb": 100,
+      "rank": 70
+    },
+    "check:ci-hook-exec-baseline": {
+      "cpu_s": 0.194,
+      "wall_s": 0.178,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 55,
+      "rank": 212
+    },
+    "check:ci-hook-integrity": {
+      "cpu_s": 0.192,
+      "wall_s": 0.176,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 55,
+      "rank": 215
+    },
+    "check:ci-hooks-resolvable": {
+      "cpu_s": 0.207,
+      "wall_s": 0.193,
+      "eff_cores": 1.07,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 208
+    },
+    "check:ci-host-toolchain-coverage": {
+      "cpu_s": 0.18,
+      "wall_s": 0.167,
+      "eff_cores": 1.08,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 227
+    },
+    "check:ci-hydration-clean": {
+      "cpu_s": 0.398,
+      "wall_s": 0.341,
+      "eff_cores": 1.17,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 156
+    },
+    "check:ci-i18n-cli-help-render": {
+      "cpu_s": 3.27,
+      "wall_s": 2.455,
+      "eff_cores": 1.33,
+      "capped": false,
+      "peak_rss_mb": 390,
+      "rank": 23
+    },
+    "check:ci-i18n-cli-key-usage": {
+      "cpu_s": 0.96,
+      "wall_s": 0.784,
+      "eff_cores": 1.22,
+      "capped": false,
+      "peak_rss_mb": 264,
+      "rank": 61
+    },
+    "check:ci-i18n-command-parity": {
+      "cpu_s": 2.41,
+      "wall_s": 1.688,
+      "eff_cores": 1.43,
+      "capped": false,
+      "peak_rss_mb": 331,
+      "rank": 30
+    },
+    "check:ci-i18n-cross-locale-core": {
+      "cpu_s": 1.651,
+      "wall_s": 1.511,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 280,
+      "rank": 42
+    },
+    "check:ci-i18n-docs-inline": {
+      "cpu_s": 1.419,
+      "wall_s": 1.208,
+      "eff_cores": 1.17,
+      "capped": false,
+      "peak_rss_mb": 280,
+      "rank": 47
+    },
+    "check:ci-i18n-docs-render-parity": {
+      "cpu_s": 4.103,
+      "wall_s": 3.346,
+      "eff_cores": 1.23,
+      "capped": false,
+      "peak_rss_mb": 414,
+      "rank": 17
+    },
+    "check:ci-i18n-docs-untranslated": {
+      "cpu_s": 1.955,
+      "wall_s": 1.786,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 258,
+      "rank": 38
+    },
+    "check:ci-i18n-hardcoded-strings": {
+      "cpu_s": 0.513,
+      "wall_s": 0.402,
+      "eff_cores": 1.28,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 123
+    },
+    "check:ci-i18n-ledger-growth": {
+      "cpu_s": 2.213,
+      "wall_s": 2.162,
+      "eff_cores": 1.02,
+      "capped": false,
+      "peak_rss_mb": 259,
+      "rank": 33
+    },
+    "check:ci-i18n-locale-only": {
+      "cpu_s": 0.737,
+      "wall_s": 0.622,
+      "eff_cores": 1.18,
+      "capped": false,
+      "peak_rss_mb": 283,
+      "rank": 76
+    },
+    "check:ci-i18n-media": {
+      "cpu_s": 1.195,
+      "wall_s": 1.009,
+      "eff_cores": 1.18,
+      "capped": false,
+      "peak_rss_mb": 218,
+      "rank": 52
+    },
+    "check:ci-i18n-naturalization": {
+      "cpu_s": 0.459,
+      "wall_s": 0.396,
+      "eff_cores": 1.16,
+      "capped": false,
+      "peak_rss_mb": 55,
+      "rank": 134
+    },
+    "check:ci-i18n-placeholders": {
+      "cpu_s": 0.77,
+      "wall_s": 0.62,
+      "eff_cores": 1.24,
+      "capped": false,
+      "peak_rss_mb": 282,
+      "rank": 74
+    },
+    "check:ci-i18n-untranslated": {
+      "cpu_s": 0.427,
+      "wall_s": 0.366,
+      "eff_cores": 1.17,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 148
+    },
+    "check:ci-i18n-value-types": {
+      "cpu_s": 0.444,
+      "wall_s": 0.43,
+      "eff_cores": 1.03,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 142
+    },
+    "check:ci-i18n-www-cli-docs": {
+      "cpu_s": 0.549,
+      "wall_s": 0.457,
+      "eff_cores": 1.2,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 115
+    },
+    "check:ci-i18n-www-comparison-refs": {
+      "cpu_s": 0.331,
+      "wall_s": 0.287,
+      "eff_cores": 1.15,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 184
+    },
+    "check:ci-i18n-www-content": {
+      "cpu_s": 0.621,
+      "wall_s": 0.484,
+      "eff_cores": 1.28,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 93
+    },
+    "check:ci-i18n-www-content-accuracy": {
+      "cpu_s": 0.774,
+      "wall_s": 0.603,
+      "eff_cores": 1.28,
+      "capped": false,
+      "peak_rss_mb": 250,
+      "rank": 73
+    },
+    "check:ci-i18n-www-docs-cli-usage": {
+      "cpu_s": 1.192,
+      "wall_s": 0.926,
+      "eff_cores": 1.29,
+      "capped": false,
+      "peak_rss_mb": 248,
+      "rank": 53
+    },
+    "check:ci-i18n-www-landing-cli-usage": {
+      "cpu_s": 0.479,
+      "wall_s": 0.405,
+      "eff_cores": 1.18,
+      "capped": false,
+      "peak_rss_mb": 55,
+      "rank": 131
+    },
+    "check:ci-i18n-www-translation-freshness": {
+      "cpu_s": 0.577,
+      "wall_s": 0.962,
+      "eff_cores": 0.6,
+      "capped": false,
+      "peak_rss_mb": 234,
+      "rank": 106
+    },
+    "check:ci-illustration-contract": {
+      "cpu_s": 0.346,
+      "wall_s": 0.302,
+      "eff_cores": 1.15,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 179
+    },
+    "check:ci-inner-timeout-reachable": {
+      "cpu_s": 0.208,
+      "wall_s": 0.191,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 206
+    },
+    "check:ci-install-sh-config": {
+      "cpu_s": 0.528,
+      "wall_s": 1.793,
+      "eff_cores": 0.29,
+      "capped": false,
+      "peak_rss_mb": 131,
+      "rank": 120
+    },
+    "check:ci-install-table": {
+      "cpu_s": 0.181,
+      "wall_s": 0.165,
+      "eff_cores": 1.1,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 225
+    },
+    "check:ci-job-aggregation": {
+      "cpu_s": 0.183,
+      "wall_s": 0.17,
+      "eff_cores": 1.08,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 222
+    },
+    "check:ci-jq-boolean-default": {
+      "cpu_s": 0.454,
+      "wall_s": 0.407,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 137
+    },
+    "check:ci-judged-rule-wiring": {
+      "cpu_s": 0.263,
+      "wall_s": 0.246,
+      "eff_cores": 1.07,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 193
+    },
+    "check:ci-knip-blockers": {
+      "cpu_s": 0.445,
+      "wall_s": 0.381,
+      "eff_cores": 1.17,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 141
+    },
+    "check:ci-label-refs": {
+      "cpu_s": 1.216,
+      "wall_s": 1.201,
+      "eff_cores": 1.01,
+      "capped": false,
+      "peak_rss_mb": 129,
+      "rank": 50
+    },
+    "check:ci-language-policy": {
+      "cpu_s": 0.931,
+      "wall_s": 0.914,
+      "eff_cores": 1.02,
+      "capped": false,
+      "peak_rss_mb": 106,
+      "rank": 66
+    },
+    "check:ci-layout-overflow": {
+      "cpu_s": 0.475,
+      "wall_s": 0.412,
+      "eff_cores": 1.15,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 133
+    },
+    "check:ci-literal-sources": {
+      "cpu_s": 2.967,
+      "wall_s": 1.449,
+      "eff_cores": 2.05,
+      "capped": false,
+      "peak_rss_mb": 111,
+      "rank": 26
+    },
+    "check:ci-locale-config-divergence": {
+      "cpu_s": 0.555,
+      "wall_s": 0.447,
+      "eff_cores": 1.24,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 111
+    },
+    "check:ci-locale-currency": {
+      "cpu_s": 0.784,
+      "wall_s": 0.66,
+      "eff_cores": 1.19,
+      "capped": false,
+      "peak_rss_mb": 191,
+      "rank": 69
+    },
+    "check:ci-locale-de-contamination": {
+      "cpu_s": 0.664,
+      "wall_s": 0.544,
+      "eff_cores": 1.22,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 84
+    },
+    "check:ci-locale-sources": {
+      "cpu_s": 0.603,
+      "wall_s": 0.524,
+      "eff_cores": 1.15,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 99
+    },
+    "check:ci-locale-tutorial-assets": {
+      "cpu_s": 0.407,
+      "wall_s": 0.358,
+      "eff_cores": 1.14,
+      "capped": false,
+      "peak_rss_mb": 55,
+      "rank": 153
+    },
+    "check:ci-merge-method-prose": {
+      "cpu_s": 0.658,
+      "wall_s": 0.579,
+      "eff_cores": 1.14,
+      "capped": false,
+      "peak_rss_mb": 240,
+      "rank": 85
+    },
+    "check:ci-mutate-check": {
+      "cpu_s": 0.478,
+      "wall_s": 0.447,
+      "eff_cores": 1.07,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 132
+    },
+    "check:ci-native-rebuild": {
+      "cpu_s": 0.586,
+      "wall_s": 0.521,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 103
+    },
+    "check:ci-naturalization-model-policy": {
+      "cpu_s": 0.35,
+      "wall_s": 0.312,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 177
+    },
+    "check:ci-nis2-quotes": {
+      "cpu_s": 0.623,
+      "wall_s": 0.516,
+      "eff_cores": 1.21,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 92
+    },
+    "check:ci-no-inline-python": {
+      "cpu_s": 0.457,
+      "wall_s": 0.439,
+      "eff_cores": 1.04,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 135
+    },
+    "check:ci-no-otlp-creds": {
+      "cpu_s": 0.167,
+      "wall_s": 0.152,
+      "eff_cores": 1.1,
+      "capped": false,
+      "peak_rss_mb": 55,
+      "rank": 243
+    },
+    "check:ci-npmrc": {
+      "cpu_s": 0.182,
+      "wall_s": 0.167,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 224
+    },
+    "check:ci-overrides-reasons": {
+      "cpu_s": 0.373,
+      "wall_s": 0.333,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 166
+    },
+    "check:ci-package-key-budget": {
+      "cpu_s": 0.351,
+      "wall_s": 0.314,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 175
+    },
+    "check:ci-page-locale-imports": {
+      "cpu_s": 0.43,
+      "wall_s": 0.345,
+      "eff_cores": 1.25,
+      "capped": false,
+      "peak_rss_mb": 55,
+      "rank": 146
+    },
+    "check:ci-parity": {
+      "cpu_s": 0.932,
+      "wall_s": 0.815,
+      "eff_cores": 1.14,
+      "capped": false,
+      "peak_rss_mb": 279,
+      "rank": 65
+    },
+    "check:ci-paths-origin": {
+      "cpu_s": 0.676,
+      "wall_s": 0.601,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 238,
+      "rank": 81
+    },
+    "check:ci-pathspec-scope": {
+      "cpu_s": 2.026,
+      "wall_s": 2.007,
+      "eff_cores": 1.01,
+      "capped": false,
+      "peak_rss_mb": 94,
+      "rank": 36
+    },
+    "check:ci-peer-deps": {
+      "cpu_s": 1.407,
+      "wall_s": 1.035,
+      "eff_cores": 1.36,
+      "capped": false,
+      "peak_rss_mb": 204,
+      "rank": 48
+    },
+    "check:ci-pipefail-grep-q": {
+      "cpu_s": 0.497,
+      "wall_s": 0.477,
+      "eff_cores": 1.04,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 127
+    },
+    "check:ci-plan-deps": {
+      "cpu_s": 0.496,
+      "wall_s": 0.467,
+      "eff_cores": 1.06,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 128
+    },
+    "check:ci-plant-proofs": {
+      "cpu_s": 2.839,
+      "wall_s": 2.826,
+      "eff_cores": 1.0,
+      "capped": false,
+      "peak_rss_mb": 101,
+      "rank": 27
+    },
+    "check:ci-policy-inventory": {
+      "cpu_s": 3.104,
+      "wall_s": 3.084,
+      "eff_cores": 1.01,
+      "capped": false,
+      "peak_rss_mb": 139,
+      "rank": 25
+    },
+    "check:ci-pool-writer-safety": {
+      "cpu_s": 0.197,
+      "wall_s": 0.181,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 211
+    },
+    "check:ci-portal-sitekey-guard": {
+      "cpu_s": 0.208,
+      "wall_s": 0.192,
+      "eff_cores": 1.08,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 207
+    },
+    "check:ci-pr-epic-block": {
+      "cpu_s": 0.576,
+      "wall_s": 0.502,
+      "eff_cores": 1.15,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 107
+    },
+    "check:ci-pr-head-ref-completeness": {
+      "cpu_s": 3.41,
+      "wall_s": 3.396,
+      "eff_cores": 1.0,
+      "capped": false,
+      "peak_rss_mb": 100,
+      "rank": 21
+    },
+    "check:ci-pricing-consistency": {
+      "cpu_s": 0.378,
+      "wall_s": 0.331,
+      "eff_cores": 1.14,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 164
+    },
+    "check:ci-probe-parity": {
+      "cpu_s": 0.17,
+      "wall_s": 0.152,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 237
+    },
+    "check:ci-profiler-coverage": {
+      "cpu_s": 0.457,
+      "wall_s": 0.442,
+      "eff_cores": 1.03,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 136
+    },
+    "check:ci-proxy-cli-manifest": {
+      "cpu_s": 0.675,
+      "wall_s": 0.654,
+      "eff_cores": 1.03,
+      "capped": false,
+      "peak_rss_mb": 104,
+      "rank": 83
+    },
+    "check:ci-proxy-ensure-nfpm": {
+      "cpu_s": 0.676,
+      "wall_s": 0.712,
+      "eff_cores": 0.95,
+      "capped": false,
+      "peak_rss_mb": 110,
+      "rank": 82
+    },
+    "check:ci-proxy-rdc-update": {
+      "cpu_s": 3.708,
+      "wall_s": 3.648,
+      "eff_cores": 1.02,
+      "capped": false,
+      "peak_rss_mb": 246,
+      "rank": 19
+    },
+    "check:ci-python-control-plants": {
+      "cpu_s": 3.393,
+      "wall_s": 3.376,
+      "eff_cores": 1.01,
+      "capped": false,
+      "peak_rss_mb": 143,
+      "rank": 22
+    },
+    "check:ci-python-gate-deps": {
+      "cpu_s": 1.55,
+      "wall_s": 1.533,
+      "eff_cores": 1.01,
+      "capped": false,
+      "peak_rss_mb": 99,
+      "rank": 45
+    },
+    "check:ci-quality-complete": {
+      "cpu_s": 0.782,
+      "wall_s": 0.643,
+      "eff_cores": 1.22,
+      "capped": false,
+      "peak_rss_mb": 236,
+      "rank": 71
+    },
+    "check:ci-rdc-native": {
+      "cpu_s": 1.85,
+      "wall_s": 1.829,
+      "eff_cores": 1.01,
+      "capped": false,
+      "peak_rss_mb": 113,
+      "rank": 39
+    },
+    "check:ci-rdc-sh-env": {
+      "cpu_s": 0.25,
+      "wall_s": 0.229,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 197
+    },
+    "check:ci-recovery-context": {
+      "cpu_s": 0.339,
+      "wall_s": 0.299,
+      "eff_cores": 1.13,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 182
+    },
+    "check:ci-regions-sync": {
+      "cpu_s": 0.17,
+      "wall_s": 0.157,
+      "eff_cores": 1.08,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 238
+    },
+    "check:ci-release-bump-skip": {
+      "cpu_s": 0.259,
+      "wall_s": 0.239,
+      "eff_cores": 1.08,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 195
+    },
+    "check:ci-release-key-canonical": {
+      "cpu_s": 0.269,
+      "wall_s": 5.584,
+      "eff_cores": 0.05,
+      "capped": false,
+      "peak_rss_mb": 100,
+      "rank": 192
+    },
+    "check:ci-release-signing-coverage": {
+      "cpu_s": 0.175,
+      "wall_s": 0.156,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 231
+    },
+    "check:ci-resprofile": {
+      "cpu_s": 0.28,
+      "wall_s": 4.035,
+      "eff_cores": 0.07,
+      "capped": false,
+      "peak_rss_mb": null,
+      "rank": 190
+    },
+    "check:ci-retired-commands": {
+      "cpu_s": 0.483,
+      "wall_s": 0.429,
+      "eff_cores": 1.13,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 130
+    },
+    "check:ci-rubric-calibration": {
+      "cpu_s": 0.176,
+      "wall_s": 0.159,
+      "eff_cores": 1.11,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 230
+    },
+    "check:ci-runner-advice": {
+      "cpu_s": 0.203,
+      "wall_s": 0.185,
+      "eff_cores": 1.1,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 210
+    },
+    "check:ci-runner-selftest": {
+      "cpu_s": 1.215,
+      "wall_s": 2.019,
+      "eff_cores": 0.6,
+      "capped": false,
+      "peak_rss_mb": 218,
+      "rank": 51
+    },
+    "check:ci-scans-tracked-paths": {
+      "cpu_s": 0.379,
+      "wall_s": 0.351,
+      "eff_cores": 1.08,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 163
+    },
+    "check:ci-schema-call-sites": {
+      "cpu_s": 0.446,
+      "wall_s": 0.428,
+      "eff_cores": 1.04,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 140
+    },
+    "check:ci-schema-coverage": {
+      "cpu_s": 0.647,
+      "wall_s": 0.472,
+      "eff_cores": 1.37,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 87
+    },
+    "check:ci-scope-scripts-reachability": {
+      "cpu_s": 4.77,
+      "wall_s": 4.583,
+      "eff_cores": 1.04,
+      "capped": false,
+      "peak_rss_mb": 136,
+      "rank": 15
+    },
+    "check:ci-script-exec-bit": {
+      "cpu_s": 2.086,
+      "wall_s": 2.064,
+      "eff_cores": 1.01,
+      "capped": false,
+      "peak_rss_mb": 104,
+      "rank": 34
+    },
+    "check:ci-search-index": {
+      "cpu_s": 1.706,
+      "wall_s": 1.438,
+      "eff_cores": 1.19,
+      "capped": false,
+      "peak_rss_mb": 455,
+      "rank": 41
+    },
+    "check:ci-secret-scope": {
+      "cpu_s": 0.354,
+      "wall_s": 0.317,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 173
+    },
+    "check:ci-secret-supply": {
+      "cpu_s": 0.553,
+      "wall_s": 0.539,
+      "eff_cores": 1.03,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 113
+    },
+    "check:ci-sentence-wrapping": {
+      "cpu_s": 0.641,
+      "wall_s": 0.567,
+      "eff_cores": 1.13,
+      "capped": false,
+      "peak_rss_mb": 246,
+      "rank": 89
+    },
+    "check:ci-setup-idempotency": {
+      "cpu_s": 1.965,
+      "wall_s": 2.071,
+      "eff_cores": 0.95,
+      "capped": false,
+      "peak_rss_mb": 144,
+      "rank": 37
+    },
+    "check:ci-setup-port-parity": {
+      "cpu_s": 0.184,
+      "wall_s": 0.167,
+      "eff_cores": 1.1,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 220
+    },
+    "check:ci-shape-duplication": {
+      "cpu_s": 2.397,
+      "wall_s": 1.66,
+      "eff_cores": 1.44,
+      "capped": false,
+      "peak_rss_mb": 261,
+      "rank": 31
+    },
+    "check:ci-shared-esm-resolvable": {
+      "cpu_s": 0.807,
+      "wall_s": 0.67,
+      "eff_cores": 1.2,
+      "capped": false,
+      "peak_rss_mb": 313,
+      "rank": 68
+    },
+    "check:ci-shell-commands": {
+      "cpu_s": 0.24,
+      "wall_s": 0.224,
+      "eff_cores": 1.07,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 198
+    },
+    "check:ci-shell-declared-commands": {
+      "cpu_s": 0.621,
+      "wall_s": 0.554,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 133,
+      "rank": 94
+    },
+    "check:ci-shell-format": {
+      "cpu_s": 0.428,
+      "wall_s": 0.844,
+      "eff_cores": 0.51,
+      "capped": false,
+      "peak_rss_mb": 109,
+      "rank": 147
+    },
+    "check:ci-shell-size": {
+      "cpu_s": 0.211,
+      "wall_s": 0.194,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 205
+    },
+    "check:ci-silent-failures": {
+      "cpu_s": 0.19,
+      "wall_s": 0.174,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 217
+    },
+    "check:ci-skill-size": {
+      "cpu_s": 0.544,
+      "wall_s": 0.491,
+      "eff_cores": 1.11,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 116
+    },
+    "check:ci-solution-video-engine": {
+      "cpu_s": 0.612,
+      "wall_s": 0.536,
+      "eff_cores": 1.14,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 98
+    },
+    "check:ci-solution-videos": {
+      "cpu_s": 0.603,
+      "wall_s": 0.535,
+      "eff_cores": 1.13,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 100
+    },
+    "check:ci-staging-tag-guard": {
+      "cpu_s": 0.443,
+      "wall_s": 0.426,
+      "eff_cores": 1.04,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 143
+    },
+    "check:ci-step-env-parity": {
+      "cpu_s": 0.615,
+      "wall_s": 0.541,
+      "eff_cores": 1.14,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 97
+    },
+    "check:ci-suppression-liveness": {
+      "cpu_s": 1.235,
+      "wall_s": 1.131,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 265,
+      "rank": 49
+    },
+    "check:ci-svg-theme-reach": {
+      "cpu_s": 0.73,
+      "wall_s": 0.606,
+      "eff_cores": 1.2,
+      "capped": false,
+      "peak_rss_mb": 242,
+      "rank": 78
+    },
+    "check:ci-swallowed-failures": {
+      "cpu_s": 0.183,
+      "wall_s": 0.166,
+      "eff_cores": 1.1,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 223
+    },
+    "check:ci-syncpack-reasons": {
+      "cpu_s": 0.374,
+      "wall_s": 0.332,
+      "eff_cores": 1.13,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 165
+    },
+    "check:ci-test-file-orphans": {
+      "cpu_s": 0.232,
+      "wall_s": 0.216,
+      "eff_cores": 1.07,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 200
+    },
+    "check:ci-test-gate-wiring": {
+      "cpu_s": 0.556,
+      "wall_s": 0.498,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 110
+    },
+    "check:ci-test-scripts-reachable": {
+      "cpu_s": 0.63,
+      "wall_s": 0.479,
+      "eff_cores": 1.32,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 91
+    },
+    "check:ci-timeout-headroom": {
+      "cpu_s": 0.205,
+      "wall_s": 0.191,
+      "eff_cores": 1.07,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 209
+    },
+    "check:ci-tmpfs-health": {
+      "cpu_s": 0.157,
+      "wall_s": 0.143,
+      "eff_cores": 1.1,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 246
+    },
+    "check:ci-toolchain-env-dockerfile-sync": {
+      "cpu_s": 0.175,
+      "wall_s": 0.157,
+      "eff_cores": 1.11,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 232
+    },
+    "check:ci-toolchain-pins": {
+      "cpu_s": 1.081,
+      "wall_s": 1.062,
+      "eff_cores": 1.02,
+      "capped": false,
+      "peak_rss_mb": 93,
+      "rank": 56
+    },
+    "check:ci-tracked-credentials": {
+      "cpu_s": 7.425,
+      "wall_s": 2.302,
+      "eff_cores": 3.23,
+      "capped": false,
+      "peak_rss_mb": 254,
+      "rank": 6
+    },
+    "check:ci-tracked-sidecars": {
+      "cpu_s": 0.219,
+      "wall_s": 0.2,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 203
+    },
+    "check:ci-trap-registry": {
+      "cpu_s": 0.304,
+      "wall_s": 0.29,
+      "eff_cores": 1.05,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 188
+    },
+    "check:ci-turnstile-drift": {
+      "cpu_s": 0.186,
+      "wall_s": 0.171,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 219
+    },
+    "check:ci-tutorial-caption-sync": {
+      "cpu_s": 0.994,
+      "wall_s": 0.972,
+      "eff_cores": 1.02,
+      "capped": false,
+      "peak_rss_mb": 265,
+      "rank": 59
+    },
+    "check:ci-tutorial-casts": {
+      "cpu_s": 0.39,
+      "wall_s": 0.315,
+      "eff_cores": 1.24,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 160
+    },
+    "check:ci-tutorial-cli-validity": {
+      "cpu_s": 0.181,
+      "wall_s": 0.165,
+      "eff_cores": 1.1,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 226
+    },
+    "check:ci-tutorial-commands": {
+      "cpu_s": 0.399,
+      "wall_s": 0.344,
+      "eff_cores": 1.16,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 155
+    },
+    "check:ci-tutorial-healthcheck-headroom": {
+      "cpu_s": 0.232,
+      "wall_s": 0.215,
+      "eff_cores": 1.08,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 201
+    },
+    "check:ci-tutorial-no-skips": {
+      "cpu_s": 0.163,
+      "wall_s": 0.145,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 245
+    },
+    "check:ci-tutorial-noninteractive": {
+      "cpu_s": 0.365,
+      "wall_s": 0.319,
+      "eff_cores": 1.14,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 169
+    },
+    "check:ci-tutorial-parity": {
+      "cpu_s": 0.412,
+      "wall_s": 0.35,
+      "eff_cores": 1.18,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 151
+    },
+    "check:ci-tutorial-render-queue": {
+      "cpu_s": 0.179,
+      "wall_s": 0.162,
+      "eff_cores": 1.1,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 228
+    },
+    "check:ci-unverified-downloads": {
+      "cpu_s": 0.448,
+      "wall_s": 0.399,
+      "eff_cores": 1.12,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 139
+    },
+    "check:ci-vendored-blocker-derivation": {
+      "cpu_s": 0.192,
+      "wall_s": 0.176,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 216
+    },
+    "check:ci-video-player-invariants": {
+      "cpu_s": 0.592,
+      "wall_s": 0.516,
+      "eff_cores": 1.15,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 102
+    },
+    "check:ci-viewport-unit-mixing": {
+      "cpu_s": 0.641,
+      "wall_s": 0.611,
+      "eff_cores": 1.05,
+      "capped": false,
+      "peak_rss_mb": 229,
+      "rank": 90
+    },
+    "check:ci-w7p5a-real-run-blockers": {
+      "cpu_s": 0.169,
+      "wall_s": 0.155,
+      "eff_cores": 1.09,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 242
+    },
+    "check:ci-watch-recipe": {
+      "cpu_s": 0.505,
+      "wall_s": 0.49,
+      "eff_cores": 1.03,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 125
+    },
+    "check:ci-workflow-env-provision": {
+      "cpu_s": 1.006,
+      "wall_s": 0.991,
+      "eff_cores": 1.02,
+      "capped": false,
+      "peak_rss_mb": 95,
+      "rank": 58
+    },
+    "check:ci-workflow-invariants": {
+      "cpu_s": 0.281,
+      "wall_s": 0.27,
+      "eff_cores": 1.04,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 189
+    },
+    "check:ci-workflow-orphan-step-keys": {
+      "cpu_s": 0.507,
+      "wall_s": 0.447,
+      "eff_cores": 1.13,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 124
+    },
+    "check:ci-workflow-submodule-deps": {
+      "cpu_s": 7.263,
+      "wall_s": 7.254,
+      "eff_cores": 1.0,
+      "capped": false,
+      "peak_rss_mb": 118,
+      "rank": 7
+    },
+    "check:ci-workflows": {
+      "cpu_s": 0.393,
+      "wall_s": 0.377,
+      "eff_cores": 1.04,
+      "capped": false,
+      "peak_rss_mb": 55,
+      "rank": 158
+    },
+    "check:ci-worklist-event-builders": {
+      "cpu_s": 0.521,
+      "wall_s": 0.456,
+      "eff_cores": 1.14,
+      "capped": false,
+      "peak_rss_mb": 57,
+      "rank": 122
+    },
+    "check:ci-worklist-path-resolution": {
+      "cpu_s": 0.535,
+      "wall_s": 0.467,
+      "eff_cores": 1.15,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 119
+    },
+    "check:ci-www-build-token": {
+      "cpu_s": 0.184,
+      "wall_s": 0.168,
+      "eff_cores": 1.1,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 221
+    },
+    "check:cli-docs": {
+      "cpu_s": 4.23,
+      "wall_s": 3.105,
+      "eff_cores": 1.36,
+      "capped": false,
+      "peak_rss_mb": 465,
+      "rank": 16
+    },
+    "check:format": {
+      "cpu_s": 5.479,
+      "wall_s": 1.616,
+      "eff_cores": 3.39,
+      "capped": false,
+      "peak_rss_mb": 411,
+      "rank": 11
+    },
+    "check:test-provisioning": {
+      "cpu_s": 1.581,
+      "wall_s": 1.161,
+      "eff_cores": 1.36,
+      "capped": false,
+      "peak_rss_mb": 395,
+      "rank": 44
+    },
+    "check:test-shared": {
+      "cpu_s": 15.62,
+      "wall_s": 5.561,
+      "eff_cores": 2.81,
+      "capped": false,
+      "peak_rss_mb": 713,
+      "rank": 1
+    },
+    "check:version": {
+      "cpu_s": 0.398,
+      "wall_s": 0.361,
+      "eff_cores": 1.1,
+      "capped": false,
+      "peak_rss_mb": 56,
+      "rank": 157
+    },
+    "gate-test:blocker-golden-corpus": {
+      "cpu_s": 2.75,
+      "wall_s": 2.487,
+      "eff_cores": 1.11,
+      "capped": false,
+      "peak_rss_mb": 42,
+      "rank": 28
+    },
+    "gate-test:media-r2": {
+      "cpu_s": 0.658,
+      "wall_s": 0.627,
+      "eff_cores": 1.05,
+      "capped": false,
+      "peak_rss_mb": 11,
+      "rank": 86
+    },
+    "gate-test:run-sh": {
+      "cpu_s": 1.035,
+      "wall_s": 1.115,
+      "eff_cores": 0.93,
+      "capped": false,
+      "peak_rss_mb": 28,
+      "rank": 57
+    },
+    "gate-test:runner-advice": {
+      "cpu_s": 2.354,
+      "wall_s": 2.329,
+      "eff_cores": 1.01,
+      "capped": false,
+      "peak_rss_mb": 26,
+      "rank": 32
+    },
+    "gate-test:toolchain": {
+      "cpu_s": 0.153,
+      "wall_s": 0.128,
+      "eff_cores": 1.2,
+      "capped": false,
+      "peak_rss_mb": 10,
+      "rank": 247
+    },
+    "test:install-script": {
+      "cpu_s": 0.15,
+      "wall_s": 0.172,
+      "eff_cores": 0.87,
+      "capped": false,
+      "peak_rss_mb": 19,
+      "rank": 248
+    },
+    "test:write-once-guard": {
+      "cpu_s": 0.086,
+      "wall_s": 0.09,
+      "eff_cores": 0.96,
+      "capped": false,
+      "peak_rss_mb": 18,
+      "rank": 251
+    }
+  },
+  "unmeasured": {
+    "check:ci-account-config-auth": "fail",
+    "check:ci-account-env-retired": "fail",
+    "check:ci-account-onboarding": "fail",
+    "check:ci-account-scope-audit": "fail",
+    "check:ci-agent-session-archival": "blocked",
+    "check:ci-backup-manifest-shape-parity": "fail",
+    "check:ci-backup-protocol-conformance": "fail",
+    "check:ci-bws-rotation-notice": "fail",
+    "check:ci-ceph-image-pin": "fail",
+    "check:ci-dkim-notify": "fail",
+    "check:ci-docker-image-freshness": "fail",
+    "check:ci-embed-asset-freshness": "fail",
+    "check:ci-go-deps": "fail",
+    "check:ci-go-module-sync": "fail",
+    "check:ci-i18n-account-email-templates": "fail",
+    "check:ci-i18n-completeness": "fail",
+    "check:ci-i18n-hashes": "fail",
+    "check:ci-label-inventory": "fail",
+    "check:ci-lint-rule-units": "fail",
+    "check:ci-no-client-key-composition": "fail",
+    "check:ci-plan-folders": "fail",
+    "check:ci-proxy-linux-packages": "blocked",
+    "check:ci-proxy-ops-host-check": "blocked",
+    "check:ci-python-lint": "blocked",
+    "check:ci-renet-tiers": "fail",
+    "check:ci-renet-types": "fail",
+    "check:ci-retention-knob-parity": "fail",
+    "check:ci-runtime-imports-are-deps": "fail",
+    "check:ci-scope-completeness": "fail",
+    "check:ci-secret-reachability": "fail",
+    "check:ci-shard-manifest-coverage": "fail",
+    "check:ci-shared-constant-duplication": "fail",
+    "check:ci-subscription-schema": "fail",
+    "check:ci-syncpack-sources": "fail",
+    "check:ci-tree-shape": "fail",
+    "check:ci-worker-secret-names": "fail",
+    "check:ci-workflow-gates": "fail",
+    "check:test-e2e-unit": "fail",
+    "check:test-www": "fail",
+    "check:types:incremental": "fail"
+  }
+}

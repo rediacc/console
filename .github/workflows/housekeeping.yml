@@ -247,7 +247,9 @@ jobs:
           set +e
           PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_costs --check --report-to /tmp/budget-check.txt
           rc=$?
-          if [ "$rc" -eq 3 ]; then rc=0; fi
+          # NO_BASELINE (3) is a failure since 2026-10-04: .ci/config/gate-costs.json
+          # is committed, and mapping 3 to a pass is how the check compared
+          # nothing for every night before that.
           echo "rc=$rc" >>"$GITHUB_OUTPUT"
           exit 0
         env:

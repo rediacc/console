@@ -302,7 +302,7 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 
 | Where it runs | Registered | `gate: true` | Slow | Is a gate test |
 |---|---|---|---|---|
-| (all lanes) | 362 | 349 | 68 | 5 |
+| (all lanes) | 363 | 350 | 69 | 5 |
 | local-only (CI never runs it) | 17 | 11 | 5 | 0 |
 | step / build-renet | 1 | 1 | 0 | 0 |
 | step / quality-branch | 9 | 9 | 4 | 0 |
@@ -313,7 +313,7 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 | step / quality-i18n | 40 | 38 | 4 | 0 |
 | step / quality-packages | 13 | 13 | 6 | 0 |
 | step / quality-pytest | 1 | 1 | 1 | 0 |
-| step / quality-security | 18 | 18 | 2 | 0 |
+| step / quality-security | 19 | 19 | 3 | 0 |
 | step / quality-static | 64 | 64 | 5 | 0 |
 | step / quality-wiring | 1 | 1 | 0 | 0 |
 | step / quality-www-build | 16 | 13 | 15 | 0 |
