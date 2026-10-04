@@ -98,18 +98,18 @@ def run(ev):
         "%s\n"
         "\n"
         "`delete_branch_on_merge` is true on all five repos here, so the merge removes\n"
-        "'%s' as soon as it lands. These commits are not on main, not on any other\n"
-        "branch, and not in any PR. They survive only in this machine's reflog, where no\n"
-        "later `git log` will find them.\n"
+        "the remote '%s' as soon as it lands. These commits are not on main and not in\n"
+        "any PR. The local branch holds them only until the post-merge switch to main\n"
+        "and the next branch cut; after that they live in this machine's reflog, where\n"
+        "no later `git log` will find them.\n"
         "\n"
         "This is not the same thing as an unclean tree, and it is not the drift that\n"
         "warn-remote-drift.sh checks: that one fires on `git push` when the REMOTE has\n"
         "moved ahead. This is local work the remote has never seen.\n"
         "\n"
-        "Pick one:\n"
-        "  1. Push them, let CI run, then merge:  git push origin %s\n"
-        "  2. If they genuinely do not belong in this PR, move them to their own branch\n"
-        "     FIRST (`git branch <name>`), so the merge cannot take them with it.\n"
-        % (ahead, branch, body, branch, branch)
+        "Push them, let CI run, then merge:  git push origin %s\n"
+        "There is no second branch to park them on: block_second_branch refuses one\n"
+        "while '%s' is live. Commits that must not ride this PR are the operator's call\n"
+        "(a `!` command).\n" % (ahead, branch, body, branch, branch, branch)
     )
     return hookio.DENY
