@@ -14,7 +14,7 @@ Owns: .github/workflows/breakpoint.yml
 - [x] Option 1: drop the three empty reads (`secrets.APP_PRIVATE_KEY`, `secrets.AWS_SES_ACCESS_KEY_ID_EU`, `secrets.AWS_SES_SECRET_ACCESS_KEY_EU`) from `.github/workflows/breakpoint.yml`, so neither the app-token checkout nor the email pretends to work -- acceptance: `npm run check:ci-secret-scope` exits 0 with no breakpoint read left frozen
     (ticked) 2026-10-04T15:52:02Z by d778be9d: already in the tree: breakpoint.yml has no secrets.APP_PRIVATE_KEY or AWS_SES_*_EU read, services != none fails closed at :269-273; npm run check:ci-secret-scope rc=0
 - [x] Restore part of what option 1 removes: option 2 (a `mint` job handing `session` a 1-hour installation token) or option 3 (an out-of-band notify with no long-lived credential on the box)? DEFAULT: neither; option 1 stands alone, the cheapest and honest option, since nothing is broken by leaving the capability gap
-    (decided) 2026-10-04 by d778be9d: the DEFAULT executed, so neither option 2 nor option 3 is built.
+    (ticked) 2026-10-04T16:05:00Z by d778be9d: nocommit:operator-deferred the DEFAULT "neither; option 1 stands alone" executed (worklist #a6ec6d6c), so neither option 2 nor option 3 is built.
 - [ ] Before building option 2, verify on a scratch branch whether a masked `actions/create-github-app-token` token survives as a job output or arrives EMPTY -- acceptance: a scratch-branch run whose downstream job prints a non-zero token length
 - [ ] Option 2, only when the question above picks it: a separate `mint` job with no shell holds the private key and passes `session` a short-lived installation token -- acceptance: a breakpoint run with `services` set checks out `private/elite` with the minted token
 
