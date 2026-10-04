@@ -594,6 +594,7 @@ DEADCODE_GUARDS = wlfix.STOP_DIR.parents[1] / "rediacc_hooks" / "guards"
 DEADCODE_CONSUMERS = (
     wlfix.STOP_DIR.parents[2] / ".ci" / "scripts" / "ci" / "ci-trace.py",
     wlfix.STOP_DIR.parent / "post-bash" / "review_commit.py",
+    wlfix.STOP_DIR.parents[1] / "rediacc_hooks" / "plan_gate.py",
 )
 
 
