@@ -78,6 +78,8 @@ def _isolated_store(tmp_path, monkeypatch):
         target = tmp_path / name.lower()
         target.mkdir()
         monkeypatch.setenv(name, str(target))
+    # NO LLM JUDGE. This file measures stdin handling, and the judge is a paid call that runs whenever the real working tree carries uncommitted fix-shaped changes (regression-gate signals): on 2026-10-04 two writers' uncommitted files sent the late-payload case into a judge call and past its 40 s budget, while the same test on a clean tree passed in 2 s.
+    monkeypatch.setenv("WORKLIST_JUDGE", "off")
 
 
 def drive(hook: str, mode: str, budget: float) -> str:
