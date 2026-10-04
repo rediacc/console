@@ -1,11 +1,11 @@
 # PLAN: submodule branch-name divergence -- diagnosis, immediate action, and a pre-commit guard
 
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `proposed`
+Status: proposed -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Depends-On: no-dep -- cites no other plan
 Owner: d778be9d
 Updated: 2026-09-23
 Priority: P3 -- seed: Status proposed, 8 open box(es)
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: private/renet, private/account, .claude/rediacc_hooks/guards/block_uncoordinated_submodule_pointer.py, .claude/rediacc_hooks/guards/block_prose_style_commit.py, .claude/rediacc_hooks/guards/test-block_uncoordinated_submodule_pointer.py, .claude/agents/pr-babysitter.md, .claude/commands/pr-babysit.md
 
 ## Immediate recommendation (read this first -- distinct from the guard design below)

@@ -5,7 +5,7 @@ Owner: d778be9d
 First-Seen: 2026-10-04
 Depends-On: no-dep -- builds only on shipped modules (plan_gate, wl_planqueue, wl_prscope, wl_checks, refresh_pr_body)
 Priority: P1 -- operator order 2026-10-04: turbo is enabled on this branch, and the next PRs carry a batch of plans instead of one
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .claude/hooks/stop/wl_planqueue.py, .claude/rediacc_hooks/plan_gate.py, .claude/hooks/post-bash/refresh_pr_body.py, .claude/hooks/stop/{wl_prscope,wl_checks,worklist_messages,worklist,wl_agents,wl_judge,wl_defersettle}.py, .claude/rediacc_hooks/guards/{block_admin_merge,block_push_to_protected_branch}.py, .ci/scripts/quality/{check_plan_implementation,check_plan_record}.py, .ci/config/stop-hook.json (deleted), .ci/policy/{worklist-env-registry.json,README.md}, .ci/rediacc_ci/quality/worklist_env_registry.py, .ci/config/{env-manifest,python-env-registry}.json, .ci/config/shards/quality-pytest.json, scripts/data/doc-registry.md, agent/plans/QUEUE.md, .claude/rediacc_hooks/tests/{test_wl_queue_settings,test_plan_gate,test_wl_prscope,test_wl_loop_next,test_wl_cadence,test_wl_leases,test_wl_message_catalogue,test_wl_roster,test_wl_advisories_rotation,test_wl_focus,wlfix}.py, .claude/hooks/stop/test-judge-schema.py, .claude/rediacc_hooks/guards/{test-block_admin_merge,test-block_push_to_protected_branch}.py, CLAUDE.md, docs/agent-reference/ci-gates.md, .claude/commands/pr-merge.md, .claude/agents/pr-babysitter.md
 Worklist: #a2621a70
 

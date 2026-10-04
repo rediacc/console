@@ -1,11 +1,11 @@
 # PLAN: repair the 171 committed prose-style findings that hold check:ci-prose-style red
 
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
+Status: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Depends-On: no-dep -- related, not ordered: PLAN-secret-namespace-migration.md and PLAN-ci-watch-enforcement.md are files holding findings it repairs
 Owner: d778be9d
 Updated: 2026-09-23
 Priority: P3 -- seed: Status draft, 1 open box(es)
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: agent/plans, .ci/config/prose-style-baseline.json, .ci/rediacc_ci/quality/prose_style.py, private/renet
 
 ## The finding

@@ -5,7 +5,7 @@ Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-17
 Owner decision required. Raised by session d1589e0b under operator ruling "Build the step-scoped fetch shape now" (/ask, 2026-09-05).
 Priority: P3 -- seed: Status design, 0 open box(es)
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .github/workflows/breakpoint.yml
 
 ## Tasks

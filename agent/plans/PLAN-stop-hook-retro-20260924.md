@@ -1,12 +1,12 @@
 # PLAN: Stop-hook retro, 2026-09-24 (first retro, lead session d778be9d)
 
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `ready`
+Status: ready -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Depends-On: no-dep -- related, not ordered: PLAN-stop-hook-continuity.md is cited for what it already landed and for the P3.1 retro procedure
 First-Seen: 2026-09-24
 Owner: d778be9d (adoption handed back 2026-10-03: not the PR's plan and not in the operator's Promoted picks, so it is owned and advisory, not this session's mission)
 Updated: 2026-09-24
 Priority: P2 -- seed: Status ready, 1 open box(es)
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .claude/hooks/stop/*.py, .claude/rediacc_hooks/tests/*.py, .claude/settings.json, .claude/rediacc_hooks/guards/*.py, .claude/hooks/context/band-notice.py, agent/ledgers/stop-hook-retros.jsonl, .claude/hooks/context/test-context-bands.py, .claude/hooks/context/ctx_budget.py, .ci/rediacc_ci, .claude/rediacc_hooks, private/account, agent/pr/0923-1.md, agent/pr/t-1.md, private/generative, private/growth, private/growth/corporate/legal-tax/maasikas.emta.ee, private/renet, .claude/rediacc_hooks/shellscan.py
 
 **Scope.** This retro covers the friction the Stop hook caused lead session d778be9d on 2026-09-24, from 03:50Z to 15:26Z. That window holds 118 blocked stops, 18 judge calls (10 `continue`, 8 `stop`) and 94 `--tick` calls. Where it helps to show a trend, counts across the whole 9-day transcript (2026-09-15 to 09-24) are given too. It also designs worklist #6e834f1a, the retro that runs at the moment before compaction.

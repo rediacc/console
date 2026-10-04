@@ -1,4 +1,4 @@
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
+Status: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Depends-On: no-dep -- related, not ordered: PLAN-account-env-to-bws.md took over its boxes; PLAN-secret-namespace-migration.md is cited as history
 First-Seen: 2026-09-17
 Owner: d778be9d (adoption handed back 2026-10-03: not the PR's plan and not in the operator's Promoted picks, so it is owned and advisory, not this session's mission)
@@ -8,7 +8,7 @@ Supersedes: the classification in `agent/archive/plans/PLAN-env-to-bitwarden.md`
 Scope: design. The two-way mapping in Part 2 was RUN (read-only, names only). Nothing was
 written to Bitwarden, AWS, Cloudflare or GitHub. No value of any secret was read or printed.
 Priority: P3 -- seed: Status draft, 1 open box(es)
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: private/account/scripts/rotation, .ci/rediacc_ci/core/bws_env.py
 
 # `.env` → Bitwarden, v2: classify on SHAREABILITY, not on secrecy

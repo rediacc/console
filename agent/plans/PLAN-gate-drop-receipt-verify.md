@@ -4,7 +4,7 @@ Depends-On: no-dep -- the runner, its receipt and the pre-push guard all exist t
 Owner: d778be9d
 Updated: 2026-10-03
 Priority: P1 -- a stale tracked render reached CI through a receipt that vouched for it
-Concurrency: exclusive -- it edits scripts/ci-runner/run.ts and manifest.ts, which PLAN-ci-quick-cpu-scheduling.md also owns
+Concurrency: parallel -- it edits scripts/ci-runner/run.ts and manifest.ts, which PLAN-ci-quick-cpu-scheduling.md also owns; Owns: keeps the two apart (block_plan_concurrency)
 Owns: scripts/ci-runner/run.ts, scripts/ci-runner/quick-select.ts, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json, .claude/rediacc_hooks/guards/block_unverified_push.py, .claude/rediacc_hooks/guards/test-block_unverified_push.py, .ci/scripts/quality/check_plan_record.py
 
 Worklist item: #74f48292. Queued behind PR #592's plan set (one plan per PR).

@@ -1,11 +1,11 @@
 # PLAN: commit as you go, one branch, one PR
 
-Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
+Status: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: no-dep -- none for T0-T3 or the drain D0-D10; T9 serialises with PLAN-stop-hook-focus-mode.md on .claude/commands/pr-*.md (see Concurrency); PLAN-per-commit-review.md waits on T6/T7
 Priority: P0 -- This is an operator ruling, and the tree holds 342 uncommitted console paths plus 86 in private/account.
-Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .claude/rediacc_hooks/commit_policy.py, .ci/config/commit-policy.json, .claude/rediacc_hooks/guards/block_commit_on_main.py, .claude/rediacc_hooks/guards/block_second_branch.py, .claude/rediacc_hooks/guards/block_ci_skip_token.py, .claude/rediacc_hooks/guards/block_no_review_ineligible.py, .claude/rediacc_hooks/guards/block_git_hook_bypass.py, .claude/rediacc_hooks/guards/test-block_{commit_on_main,second_branch,ci_skip_token,no_review_ineligible,git_hook_bypass}.py, .claude/rediacc_hooks/git/** (T8 only), CLAUDE.md (Session Defaults rule 1 and the "Never push to main" section), .claude/output-styles/standing-orders.md
 Worklist: the lead adds this with `worklist.py --add`.
 
