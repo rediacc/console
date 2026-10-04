@@ -445,7 +445,8 @@ def test_without_a_fault_both_rules_inject_and_nothing_is_logged(tmp_path):
 
 def test_a_payload_over_the_bound_exits_clean_and_records_the_skip(tmp_path):
     spec = importlib.util.spec_from_file_location("tg_dispatch", TRAPGUARD)
-    assert spec is not None and spec.loader is not None
+    assert spec is not None
+    assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     body = json.dumps(
