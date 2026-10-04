@@ -2,7 +2,7 @@
 
 THREE STATES STAND THE BATTERY DOWN, and all share one mechanism. A KEEP-list rather than a drop-list, deliberately: a check added later stands down by default, which is what "should not be invoked" means, and it matches `check_tier`'s rule that an unknown key is hygiene.
 
-  CAP_WAIT  every writer slot is verified live and nothing this session could start (operator 2026-09-24: "the stop hook should not be invoked (or should skip the order) when writer slots are full! There could be exceptions like 2% compaction etc."; agent/plans/PLAN-stop-hook-cap-saturated-wait.md). `wl_roster.cap_saturated_wait` decides it, because it needs `WRITER_CAP`.
+  CAP_WAIT  every writer slot is verified live and nothing this session could start (operator 2026-09-24: "the stop hook should not be invoked (or should skip the order) when writer slots are full! There could be exceptions like 2% compaction etc."; agent/plans/PLAN-stop-hook-cap-saturated-wait.md). `wl_roster.cap_saturated_wait` decides it, because it needs the writer cap (`wl_roster.writer_cap`, QUEUE.md `writer_cap:`).
   FOCUS     the session declared a PR wind-down with `worklist.py --focus <me> babysit|merge` (operator 2026-09-25, spec Y: "Finish, don't start"; agent/plans/PLAN-stop-hook-focus-mode.md). What stays is what protects the PR: CI red, a dead watch, unread reports, STATE.md near compaction and hook integrity.
 
   PR_LOOP   the checkout is on the one-plan-per-PR loop (`wl_prscope.loop_state`, kind other than off-loop; operator ruling 2026-10-03, agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4). The hook blocks only on the live PR's plan set, its CI and reviews, the items on that set's epics and the loop's own duties; every other check is parked and named in one queued line.

@@ -450,7 +450,7 @@ def _triage_cli(argv, worklist, me, die):
     context = CK.triage_context(root, worklist, me)
     degraded = ""
     verdict = None
-    if not J.JUDGE_DISABLED:
+    if not J.disabled(__import__("wl_planqueue").settings_for(root)[0]):
         verdict, err = J.run_triage(text, context)
         if err:
             degraded = "\n  THE TRIAGE JUDGE COULD NOT ANSWER: %s" % err
@@ -1315,8 +1315,9 @@ def _item_cli(argv, worklist):
                 wl_standdown.active_focus(fold.focus, lambda o: C.owned_by_me(o, _qsid)) is not None
             )
             busy = wl_roster.live_writers_estimate(os.getcwd(), me)
+            _writer_cap = wl_roster.writer_cap(C.project_root(C.project_start()))
             # HELD BY A LIVE PLAN (agent/plans/PLAN-plan-priority-concurrency.md section 5b, T9): the spawn guard refuses this item's writer while a live exclusive plan runs, or a live plan owns the same files, and its refusal text says to queue the work here. So a free slot does not refuse the lease then: the note is stamped HELD_BY:<plan>, and queue-slot names the item once the holder finishes.
-            if not _hold and not _focused and (busy is None or len(busy) < wl_roster.WRITER_CAP):
+            if not _hold and not _focused and (busy is None or len(busy) < _writer_cap):
                 _held_by, _held_why = _plan_hold(fold, item_id, _qsid)
                 if _held_by:
                     print(
@@ -1328,7 +1329,7 @@ def _item_cli(argv, worklist):
                 not _hold
                 and not _focused
                 and not _held_by
-                and (busy is None or len(busy) < wl_roster.WRITER_CAP)
+                and (busy is None or len(busy) < _writer_cap)
             ):
                 # A slot held for a writer about to be spawned is taken by SPAWNING that writer, or by the one bounded HOLD_FOR reservation above; an unmarked queue lease with a free slot is still refused.
                 die(
@@ -1339,7 +1340,7 @@ def _item_cli(argv, worklist):
                     % (
                         item_id,
                         "an unknown number" if busy is None else len(busy),
-                        wl_roster.WRITER_CAP,
+                        _writer_cap,
                     )
                 )
         if wm == "worker:" + LH.LEAD_WORKER:

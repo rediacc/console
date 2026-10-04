@@ -127,8 +127,9 @@ ARITY = {
         "plans": "p",
         "delete": "",
         "ahead": 0,
+        "turbo": "",
     },
-    "V_LOOP_NEXT_ON_MAIN": {"next": "n", "next_branch": "nb", "stale": "", "box": "x"},
+    "V_LOOP_NEXT_ON_MAIN": {"next": "n", "next_branch": "nb", "stale": "", "box": "x", "turbo": ""},
     "V_LOOP_NEXT_NO_PR_WORK": {"branch": "b", "next": "n", "box": "x"},
     "V_LOOP_NEXT_NO_PR_OPEN": {"branch": "b", "ahead": 2},
     "V_LOOP_NEXT_MERGE": {"pr": 1, "plans": "p"},
@@ -138,6 +139,10 @@ ARITY = {
     "LOOP_NEXT_STALE": ("p",),
     "LOOP_NEXT_BRANCH_UNKNOWN": None,
     "LOOP_NEXT_NO_BOX": None,
+    # turbo (agent/plans/PLAN-stop-hook-turbo.md T10): the post-merge picks line, the arm, and one pick line.
+    "LOOP_NEXT_TURBO": ("a, b",),
+    "V_TURBO_NEXT": {"pr": 594, "free": 2, "cap": 4, "picks": "p", "finished": 1, "batch": 2},
+    "TURBO_NEXT_PICK": ("agent/plans/PLAN-a.md", 1, 4, "x"),
     # wl_store.classify_items' fail-closed lease line (R20260925.5): display line, lease state, session prefix, item id.
     "N_LEASE_FAILED_CLOSED": ("- [>] x", "expired", "m", "abcd1234"),
     "N_FOCUS_PR_UNREADABLE": ("543", "branch", "gh failed", 24),

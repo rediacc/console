@@ -74,7 +74,6 @@ RESET_KNOBS = (
     "WORKLIST_PROJECTS_DIR",
     "WORKLIST_DEAD_HOURS",
     "WORKLIST_ARCHIVE_HOURS",
-    "WORKLIST_AGENT_HINT",
     "WORKLIST_AGENT_HINT_MAX_PER_SESSION",
     "WORKLIST_AGENT_HINT_MIN_SCORE",
     "WORKLIST_AGENT_HINT_MIN_MARGIN",
@@ -162,7 +161,6 @@ class Fixture:
         self.waker = True
         self.crons = json.dumps(DEFAULT_CRONS)
         self.judge_mode = "off"
-        self.cadence = "off"
         self.gha = ""
         self.wl = base / "placeholder.md"
 
@@ -187,6 +185,22 @@ class Fixture:
     @property
     def store_dir(self) -> pathlib.Path:
         return pathlib.Path(self.env.get("WORKLIST_STORE_DIR", str(self.base / "store")))
+
+    def settings(self, **kw) -> None:
+        """Write `kw` (`cadence=False`, `agent_hint="off"`, `writer_cap=2`, ...) into the fixture project's agent/plans/QUEUE.md settings block, through `wl_planqueue.set_settings`, the verb's own writer. A bool becomes on|off; anything else is stringified."""
+        if str(STOP_DIR) not in sys.path:
+            sys.path.insert(0, str(STOP_DIR))
+        import wl_planqueue  # noqa: PLC0415
+
+        path = self.proj / wl_planqueue.QUEUE_REL
+        path.parent.mkdir(parents=True, exist_ok=True)
+        text = (
+            path.read_text(encoding="utf-8") if path.is_file() else "# Plan queue\n\n## Promoted\n"
+        )
+        updates = {
+            k: (("on" if v else "off") if isinstance(v, bool) else str(v)) for k, v in kw.items()
+        }
+        path.write_text(wl_planqueue.set_settings(text, updates), encoding="utf-8")
 
     def stem(self, suffix: str) -> pathlib.Path:
         """A sibling of the worklist markdown, e.g. `.reggate-deadbeef`."""
@@ -219,7 +233,6 @@ class Fixture:
         self.waker = True
         self.crons = json.dumps(DEFAULT_CRONS)
         self.judge_mode = "off"
-        self.cadence = "off"
         # PINNED, NOT INHERITED. The hook no-ops when GITHUB_ACTIONS=true, so a suite that inherits the ambient value passes locally and silently no-ops in CI, where the empty output reads as a failure.
         self.gha = ""
         for knob in RESET_KNOBS:
@@ -250,6 +263,8 @@ class Fixture:
         slug = re.sub(r"[^A-Za-z0-9._-]", "_", str(self.proj)).lstrip("_")
         self.wl = self.base / "tmp" / "claude-worklist" / ("%s.md" % slug)
         self.wl.write_text("", encoding="utf-8")
+        # CADENCE OFF BY DEFAULT, through the same QUEUE.md switch the operator uses (see `run`).
+        self.settings(cadence="off")
 
         self.transcript.write_text(
             json.dumps({"type": "user", "message": {"content": "go"}}) + "\n", encoding="utf-8"
@@ -521,7 +536,6 @@ class Fixture:
         env["WORKLIST_TASKS_DIR"] = str(self.base / "tasks")
         env["WORKLIST_JUDGE"] = self.judge_mode
         env["GITHUB_ACTIONS"] = self.gha
-        env["WORKLIST_CADENCE"] = self.cadence
         if extra:
             env.update(extra)
         return env
@@ -529,7 +543,7 @@ class Fixture:
     def run(self, extra_env: dict | None = None, event: str | None = None) -> Result:
         """Feed the hook a Stop event and return its raw verdict.
 
-        CADENCE OFF BY DEFAULT, deliberately: the cadence stands the hook down for one turn after it demanded and the session answered, so any case shaped block, then a new say, then a block would see a pause instead of the second block. The dedicated cadence tests set it on explicitly.
+        CADENCE OFF BY DEFAULT, deliberately (`setup()` writes `cadence: off` into the fixture QUEUE.md): the cadence stands the hook down for one turn after it demanded and the session answered, so any case shaped block, then a new say, then a block would see a pause instead of the second block. The dedicated cadence tests set it on explicitly.
         """
         return self.python([], stdin=event or self.event(), env=self.stop_env(extra_env))
 

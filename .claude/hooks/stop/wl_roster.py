@@ -36,8 +36,20 @@ import wl_leasehelp as LH
 
 # ---- the sealed constants ---------------------------------------------------
 
-# The operator's number. A writer beyond it is refused at spawn (guards/block_agent_cap.py) and blocked at Stop (`roster-cap`).
-WRITER_CAP = 4
+# The operator's number, now the `writer_cap:` line of agent/plans/QUEUE.md (default 4 when the block is missing or malformed). A writer beyond it is refused at spawn (guards/block_agent_cap.py) and blocked at Stop (`roster-cap`).
+DEFAULT_WRITER_CAP = 4
+
+
+def writer_cap(root) -> int:
+    """The writer cap in force at `root`: QUEUE.md's `writer_cap:`, else 4. Any read trouble keeps the default."""
+    try:
+        import wl_planqueue  # noqa: PLC0415
+
+        return int(wl_planqueue.settings_for(root)[0].writer_cap)
+    except Exception:  # noqa: BLE001 -- the cap must never crash a stop or a spawn guard
+        return DEFAULT_WRITER_CAP
+
+
 # The operator's number. A leased worker whose newest evidence (a transcript write, a tool call in flight, a lease, a --status, its own SendMessage or SubagentStop) is this old is `roster-silent`. Evidence counts as status since 2026-09-24 (operator ruling "Evidence counts as status"), so the separate `roster-status` ping is merged into it.
 STATUS_PING_MIN = 20
 # A lease on `worker:queue` holds writer work the cap forbids starting. It is covered ONLY while every writer slot is taken; the moment one frees it is a defect naming the item to start, so it can never park work behind a cap that is not full.
@@ -59,7 +71,7 @@ ROSTER_KEYS = (
     "roster-concurrency",
 )
 
-# THE CAP-SATURATED WAIT (operator 2026-09-24; agent/plans/PLAN-stop-hook-cap-saturated-wait.md). Its keep-list lives in wl_standdown.CAP_WAIT beside the focus profile that generalises it; the predicate stays here because it needs WRITER_CAP.
+# THE CAP-SATURATED WAIT (operator 2026-09-24; agent/plans/PLAN-stop-hook-cap-saturated-wait.md). Its keep-list lives in wl_standdown.CAP_WAIT beside the focus profile that generalises it; the predicate stays here because it needs the writer cap.
 
 
 def cap_saturated_wait(verdict, open_items, actionable_tasks):
@@ -69,7 +81,8 @@ def cap_saturated_wait(verdict, open_items, actionable_tasks):
     """
     if not verdict or verdict.get("blind") or open_items or actionable_tasks:
         return False
-    return len(verdict.get("writers") or ()) >= WRITER_CAP or concurrency_saturated(verdict)
+    cap = verdict.get("writer_cap", DEFAULT_WRITER_CAP)
+    return len(verdict.get("writers") or ()) >= cap or concurrency_saturated(verdict)
 
 
 def concurrency_saturated(verdict):
@@ -586,6 +599,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     cwd = cwd or event.get("cwd") or ""
     start = C.project_start({"cwd": cwd})
     root = C.project_root(start)
+    cap = writer_cap(root)
     sub_dir = session_subagents_dir(cwd, session_id)
     blind = sub_dir is None
     metas = load_metas(sub_dir)
@@ -735,7 +749,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     queued = list(leases.get(QUEUE_WORKER, ()))
     pick = queue_pick(
         queued,
-        WRITER_CAP - len(writers),
+        cap - len(writers),
         by_id,
         session_id,
         order_key=order_key,
@@ -776,7 +790,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
 
     # A writer is leased when it, or any ancestor, holds one of the session's leases.
     unleased = [a for a in writers if not any(x in leases for x in [a, *ancestors(a, metas)])]
-    over_cap = writers[WRITER_CAP:] if len(writers) > WRITER_CAP else []
+    over_cap = writers[cap:] if len(writers) > cap else []
 
     # Status time, per leased worker, over its whole lineage.
     statuses = getattr(fold, "statuses", None) or {}
@@ -892,6 +906,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         "blind": blind,
         "rows": live,
         "writers": writers,
+        "writer_cap": cap,
         "readers": readers,
         "finished": sorted(finished),
         "unleased": unleased,
@@ -1578,7 +1593,7 @@ def explain_lastevent(prefix):
         % (
             v["state"],
             len(v["writers"]),
-            WRITER_CAP,
+            v["writer_cap"],
             len(v["readers"]),
             len(v["finished"]),
             len(v["open"]),

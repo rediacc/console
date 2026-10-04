@@ -42,6 +42,7 @@ import wl_planfid
 import wl_planfile
 import wl_planindex as PI
 import wl_planorder
+import wl_planqueue
 import wl_popup
 import wl_prscope
 import wl_reggate
@@ -1449,7 +1450,7 @@ def outq_digest(worklist, session_id, state_doc, n=OUTQ_DIGEST_MAX, skip=(), onl
     return M.N_OUTQ_DIGEST % (len(items), "\n".join(lines)), len(delivered)
 
 
-def agent_hint_queue(worklist, session_id, state_doc, haystack):
+def agent_hint_queue(worklist, session_id, state_doc, haystack, settings=None):
     """Queue the specialist-agent hint for this stop, if one is earned.
 
     ADVISORY, never a block. `vadd` (46 call sites) stops the session; blocking a session for not consulting a specialist is the fastest possible way to get this feature switched off, and it would compete for the single focused slot with real violations.
@@ -1472,7 +1473,9 @@ def agent_hint_queue(worklist, session_id, state_doc, haystack):
             3,
             refresh_min=A.REFRESH_MIN,
         )
-    if not A.ENABLED or not corpus:
+    if settings is None:
+        settings = wl_planqueue.settings_for(C.project_root(C.project_start()))[0]
+    if not A.enabled(settings) or not corpus:
         return None
     shown = state_doc.get("agent_hints")
     if not isinstance(shown, dict):
@@ -1926,7 +1929,7 @@ def handle_post_compact(event):
     # v21: the specialist-agent hint, and this is the highest-value delivery it has. Post-compaction is precisely when a session has forgotten that a specialist exists, and additionalContext is read rather than skimmed. ONCE PER COMPACTION BY CONSTRUCTION, so it needs no rate limiting and no ledger; the haystack is the document the session just got back plus its own open items.
     # Suppressed rather than guarded, because a compaction that cannot hand back the briefing is a far worse outcome than a missing hint.
     with contextlib.suppress(Exception):
-        if A.ENABLED:
+        if A.enabled(wl_planqueue.settings_for(root)[0]):
             items = []
             with contextlib.suppress(Exception):
                 wl = C.worklist_for(C.project_start(event))
@@ -2247,6 +2250,8 @@ PRIORITY_LADDER = (
                 "plan-unimplemented",
                 # The loop after a merge: the next branch, plan and PR do not exist yet (Design 7).
                 "loop-next",
+                # Turbo (agent/plans/PLAN-stop-hook-turbo.md D5): a free writer slot and an eligible queued plan on the live PR.
+                "turbo-next",
                 "defer-expired",
                 "undefaulted",
                 # agent/programs/<slug>/CHECKLIST.md -- deliverable and wave boxes, same four-state markdown the worklist uses.
@@ -2590,6 +2595,9 @@ def loop_next_text(state, root, state_doc, pr_finish_fired):
         "plans": ", ".join(_base(p) for p in state.plans),
         "delete": "",
         "ahead": 0,
+        "turbo": M.LOOP_NEXT_TURBO % ", ".join(_base(p) for p in state.turbo_picks)
+        if state.turbo and state.turbo_picks
+        else "",
     }
     if kind == wl_prscope.MERGED:
         if not nxt:
@@ -2612,6 +2620,9 @@ def loop_next_text(state, root, state_doc, pr_finish_fired):
             return "", False
         if any(wl_planenforce.first_box(root, rel) for rel in state.plans):
             return "", False
+        # Under turbo the merge waits for the batch (D8): `batch_size` plans finished, or nothing eligible left to take.
+        if not wl_prscope.batch_ready(state, True):
+            return "", False
         return M.V_LOOP_NEXT_MERGE % fields, True
     if kind == wl_prscope.UNREADABLE:
         sig = hashlib.sha1(str(state.reason).encode("utf-8", "replace")).hexdigest()[:12]
@@ -2626,6 +2637,32 @@ def loop_next_text(state, root, state_doc, pr_finish_fired):
         )
         return text, n <= wl_ci.CI_MAX_BLOCKS
     return "", False
+
+
+# The keys whose block outranks the turbo arm (agent/plans/PLAN-stop-hook-turbo.md D5: "bug, red-CI and hook-integrity blocks outrank the turbo arm, so fixes come first"). Any `always` violation outranks it too: that tier is the hook's integrity and evidence verdicts.
+# `pr-finish` and `loop-next` are the merge offer: once the batch is ready a new plan would reopen the set the merge waits on.
+TURBO_OUTRANKED_BY = frozenset({"ci-red", "pr-review", "commit-review", "pr-finish", "loop-next"})
+# The turbo arm blocks under the PR-loop profile; wl_standdown.PR_LOOP's keep-list predates it, so the keep is added here, beside the arm. The cap wait and focus mode still park it: with no free slot, or in a wind-down, nothing new starts.
+TURBO_KEEPS = frozenset({"turbo-next"})
+
+
+def turbo_next_text(state, root, writers):
+    """The turbo arm's text for this stop, "" when nothing is named (agent/plans/PLAN-stop-hook-turbo.md D8): turbo on, a live PR, and picks for free writer slots. Each pick is numbered by the slot it takes after the `writers` already live."""
+    if not state.turbo or state.kind != wl_prscope.LIVE or not state.turbo_picks:
+        return ""
+    cap = int(state.writer_cap)
+    lines = [
+        M.TURBO_NEXT_PICK % (rel, int(writers) + i + 1, cap, _first_box_text(root, rel))
+        for i, rel in enumerate(state.turbo_picks)
+    ]
+    return M.V_TURBO_NEXT % {
+        "pr": state.pr,
+        "free": max(0, cap - int(writers)),
+        "cap": cap,
+        "picks": "\n".join(lines),
+        "finished": state.finished,
+        "batch": state.batch_size,
+    }
 
 
 def focus_ended_line(sd, why, refused):
@@ -2750,6 +2787,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     # the cadence lands because the cadence's cap is the next thing to key off block streaks, and a shared counter would make the cap fire on a stranger's behaviour.
     counter = worklist.with_suffix(".blocks-%s" % me8)
     root = C.project_root(C.project_start(event))
+    # THE SWITCHBOARD (agent/plans/PLAN-stop-hook-turbo.md D3), read ONCE per stop from the event's own root, so a fixture project reads its own QUEUE.md and never the operator's: judge, cadence, agent hint, writer cap and turbo all come from here.
+    _cfg, _cfg_problems = wl_planqueue.settings_for(root)
+    _writer_cap = wl_roster.writer_cap(root)
 
     fold = S.load(worklist, sync=True)
     state_doc = S.load_state(worklist, session_id)
@@ -2901,9 +2941,9 @@ def run_stop(event, event_ok, worklist, hook_file):
         if (
             _roster
             and not _roster.get("blind")
-            and (len(_roster.get("writers") or ()) >= wl_roster.WRITER_CAP or _conc_held_ids)
+            and (len(_roster.get("writers") or ()) >= _writer_cap or _conc_held_ids)
         ):
-            _cap_full = len(_roster.get("writers") or ()) >= wl_roster.WRITER_CAP
+            _cap_full = len(_roster.get("writers") or ()) >= _writer_cap
             _renewed = 0
             for _r in fold.items:
                 if _r.get("state") != ">" or not C.owned_by_me(_r.get("owner"), session_id):
@@ -2934,6 +2974,18 @@ def run_stop(event, event_ok, worklist, hook_file):
                 _roster = wl_roster.roster(
                     event, fold, session_id, state_doc=state_doc, cwd=event.get("cwd")
                 )
+    # THE TURBO PICKS (agent/plans/PLAN-stop-hook-turbo.md D5), filled once the roster knows the live writers and the plans they serve. A roster that could not be computed, or is blind, names no plan: a pick that ignores a busy writer could start a plan the spawn guard then refuses. A pick read that raises says so as a hook bug in the turbo arm below.
+    _turbo_err = ""
+    if _loop is not None and _loop.turbo and _roster is not None and not _roster.get("blind"):
+        try:
+            _loop = wl_prscope.with_turbo(
+                _loop,
+                root,
+                sorted((_roster.get("plan_holders") or {}).keys()),
+                len(_roster.get("writers") or ()),
+            )
+        except Exception as exc:  # noqa: BLE001 -- a broken pick read must SAY SO, never wedge a stop
+            _turbo_err = "%s: %s" % (type(exc).__name__, str(exc)[:160])
     # brief_line, NOT r["line"] -- and this was a live regression worth naming.
     #
     # v14 introduced brief_text precisely because rec["text"] accumulates every update forever and "every block that mentioned it printed them all" (wl_store.brief_text docstring). classify_items duly renders OPEN items through brief_line... and then hands deferred and in-flight back as raw records, so these two call sites reached past the fix to the full text.
@@ -3390,7 +3442,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 M.V_ROSTER_CAP
                 % (
                     len(_roster["writers"]),
-                    wl_roster.WRITER_CAP,
+                    _writer_cap,
                     _rrows["cap"],
                     " ".join(_roster["over_cap"]),
                     me8,
@@ -4212,7 +4264,15 @@ def run_stop(event, event_ok, worklist, hook_file):
         # The branch is read LOCALLY. `agent_branch` is not bound until the unread-reports surface several hundred lines below, and referencing it here raised UnboundLocalError -- caught by the fail-closed arm, which turned the whole check into a HOOK BUG banner on the proving case. That is the arm working; it is not a reason to leave it reachable.
         _prf_branch = C.git_branch(root) or ""
         _prf_log = wl_roundlog.roundlog_path(projects_dir, _prf_branch) if projects_dir else None
-        if _prf_num and _prf_branch and _prf_log is not None and _prf_log.is_file():
+        # Under turbo the finish line is offered only once the batch is ready (agent/plans/PLAN-stop-hook-turbo.md D8): every plan of the set finished and `batch_size` of them done, or no queued plan left to take. Turbo off: always.
+        _prf_batch = (
+            _loop is None
+            or not _loop.turbo
+            or wl_prscope.batch_ready(
+                _loop, not any(wl_planenforce.first_box(root, rel) for rel in _loop.plans)
+            )
+        )
+        if _prf_batch and _prf_num and _prf_branch and _prf_log is not None and _prf_log.is_file():
             _prf_green = cistate == "ok"
             _prf_ready = not (_prf_info or {}).get("draft")
             _prf_rev = _rv is not None and not wl_review.push_refusals(_rv)
@@ -4290,6 +4350,33 @@ def run_stop(event, event_ok, worklist, hook_file):
                 "THIS IS A HOOK BUG: the loop-next check failed: %s: %s"
                 % (type(exc).__name__, str(exc)[:120]),
             )
+    # ---- TURBO NEXT (agent/plans/PLAN-stop-hook-turbo.md D5/D8): turbo on, a live PR, a free writer slot and an eligible queued plan. Names at most the free-slot count of plans, records them for refresh_pr_body (a plan joins the PR when the hook names it), and blocks; a bug, a red CI or a hook-integrity block outranks it, and then the text rides the advisory queue instead.
+    if _on_loop and _loop is not None and _loop.turbo:
+        try:
+            if _turbo_err:
+                raise RuntimeError(_turbo_err)
+            _tn_text = turbo_next_text(_loop, root, len((_roster or {}).get("writers") or ()))
+            _tn_outranked = any(
+                k in TURBO_OUTRANKED_BY or a or str(t).startswith("THIS IS A HOOK BUG")
+                for k, a, t in violations
+            )
+            if _tn_text:
+                wl_prscope.record_named(root, _loop)
+            if _tn_text and not _tn_outranked:
+                vadd("turbo-next", False, _tn_text)
+                outq_drop(state_doc, "turbo-next")
+            elif _tn_text:
+                outq_add(worklist, session_id, state_doc, "turbo-next", _tn_text, 0, refresh_min=0)
+            else:
+                outq_drop(state_doc, "turbo-next")
+        except Exception as exc:  # noqa: BLE001 -- a blind turbo arm must SAY SO
+            # Under the loop's own fail-closed key: the turbo arm is the live PR's half of the loop, and `loop-next` is the key the invariant tier pins for "a loop check raised" (.claude/hooks/stop/test-always-tier.py).
+            vadd(
+                "loop-next",
+                True,
+                "THIS IS A HOOK BUG: the turbo-next check failed: %s: %s"
+                % (type(exc).__name__, str(exc)[:120]),
+            )
     if ci_report:
         # Class 0, volatile, refresh_min=0 for the same reason as the queue
         # note: ci_trouble recomputes this from the live run every stop, and a PR that is still red must keep saying so. Case 128 pins it: the downgraded note is what remains after the block budget is spent, so latching it would leave a red PR reported exactly once.
@@ -4306,7 +4393,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     #
     # It is a BLOCK rather than an advisory, and that is the operator's own standard applied to their own request: "a document an agent can skip is not a control". The advisory tier already carries the topic hint, and the session this was built for had ALREADY been shown that file. One unskippable challenge per specialist is the smallest thing that could have changed the outcome.
     with contextlib.suppress(Exception):  # never wedge a stop on a prompt
-        _pb, _pb_errs = A.pushback_for((last_msg or "") + "\n" + "\n".join(remaining_lines))
+        _pb, _pb_errs = A.pushback_for(
+            (last_msg or "") + "\n" + "\n".join(remaining_lines), settings=_cfg
+        )
         _pb_claims, _pb_hit = _pb
         if _pb_hit:
             _pb_name, _pb_hits = _pb_hit
@@ -4711,7 +4800,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # ---- v20 PLAN FIDELITY. Cheap when there is no approved plan (one bounded transcript scan, incremental after the first stop), and it spends a model call only when a plan EXISTS and the tracked items look coarse against it. A degraded run is QUEUED rather than blocked or dropped: the queue survives the block stops this session is likely to be having, so the note lands on the
     # first clean one instead of vanishing. The trade is that a session which never reaches a clean stop is told late, the same trade the agent hint already makes and for the same reason.
     # Paid (a model call); its verdict would be stood down in a cap-saturated wait anyway, so it is not bought.
-    if not wl_judge.JUDGE_DISABLED and not _in_standdown:
+    if not wl_judge.disabled(_cfg) and not _in_standdown:
         _pf_note = ""
         try:
             _pf_note = planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
@@ -4798,7 +4887,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             # The allow carries the roster in place of a push, AHEAD of the guide, so the session can see what it is being trusted with and when the next status is owed.
             _honest = M.N_ROSTER_HONEST % (
                 len(_roster["writers"]),
-                wl_roster.WRITER_CAP,
+                _writer_cap,
                 len(_roster["readers"]),
                 wl_roster.next_status_due(_roster),
                 "\n".join(wl_roster.summary_lines(_roster)),
@@ -4828,16 +4917,14 @@ def run_stop(event, event_ok, worklist, hook_file):
             "waitled",
             "no-dir",
         ) and _ctx_late_band(session_id)
-        _dropped = sorted(
-            {
-                v[0]
-                for v in violations
-                if not wl_standdown.keeps(_profile, v[0], v[1], _compaction_due)
-            }
-        )
-        violations = [
-            v for v in violations if wl_standdown.keeps(_profile, v[0], v[1], _compaction_due)
-        ]
+
+        def _keeps(v):
+            if _profile is wl_standdown.PR_LOOP and v[0] in TURBO_KEEPS:
+                return True
+            return wl_standdown.keeps(_profile, v[0], v[1], _compaction_due)
+
+        _dropped = sorted({v[0] for v in violations if not _keeps(v)})
+        violations = [v for v in violations if _keeps(v)]
         if _compaction_due:
             _cnote = M.N_FOCUS_COMPACTION if _focus else M.N_CAP_WAIT_COMPACTION
             violations = [
@@ -4883,10 +4970,10 @@ def run_stop(event, event_ok, worklist, hook_file):
                 _rv = (
                     _roster or {}
                 )  # never empty here: cap_saturated_wait is False without a roster
-                if len(_rv.get("writers") or ()) >= wl_roster.WRITER_CAP:
+                if len(_rv.get("writers") or ()) >= _writer_cap:
                     _note = M.N_CAP_WAIT % (
                         len(_rv.get("writers") or ()),
-                        wl_roster.WRITER_CAP,
+                        _writer_cap,
                         ", ".join(str(w)[:8] for w in _rv.get("writers") or ()),
                         int(_rv.get("queued") or 0),
                         len(_dropped),
@@ -4896,7 +4983,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                     # THE CONCURRENCY-SATURATED WAIT (agent/plans/PLAN-plan-priority-concurrency.md section 5c): a slot is free, but every queued item is held by a live plan, so there is nothing to start.
                     _note = M.N_CAP_WAIT_CONC % (
                         len(_rv.get("writers") or ()),
-                        wl_roster.WRITER_CAP,
+                        _writer_cap,
                         ", ".join(str(w)[:8] for w in _rv.get("writers") or ()) or "none",
                         int(_rv.get("queued") or 0),
                         ", ".join(wl_roster.queue_holder_plans(_rv)) or "?",
@@ -4932,7 +5019,7 @@ def run_stop(event, event_ok, worklist, hook_file):
 
     # ---- THE CADENCE GATE. One report turn between hook demands. ----------- Sits immediately before the block so every check has already been computed: a paused stop still KNOWS everything, it just does not spend the operator's turn demanding it again.
     cad = state_doc.setdefault("cadence", {})
-    cad_off = os.environ.get("WORKLIST_CADENCE", "on").lower() in ("off", "0", "no")
+    cad_off = not _cfg.cadence
     always_now = any(a for _k, a, _t in violations)
     # (F) THE MISSION TIER DEFEATS THE PAUSE, exactly as the always tier does, and this is the operator's sentence made executable: "There should be list of 'has to show with this order' until we check all of them, we should not be able to say 'but this stop is YOURS'."
     #
@@ -5187,7 +5274,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         del audit_cache[k]  # its item is gone; a banked verdict for it is litter
     audit_batch = []
     # The deferral audit rides the judge call, which a cap-saturated wait and focus mode skip.
-    if not wl_judge.JUDGE_DISABLED and not _in_standdown:
+    if not wl_judge.disabled(_cfg) and not _in_standdown:
         for r in sorted(
             deferred_recs,
             key=lambda r: (-(C.stamp_age_min(r.get("upd", "")) or 0), r.get("id", "")),
@@ -5211,7 +5298,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     settle_batch = []
     with contextlib.suppress(Exception):
         settle_batch = wl_defersettle.build_batch(
-            root, state_doc, deferred_recs, disabled=wl_judge.JUDGE_DISABLED or _in_standdown
+            root, state_doc, deferred_recs, disabled=wl_judge.disabled(_cfg) or _in_standdown
         )
     # ADMISSION DETECTOR (wl_admit.py). The prefilter runs on every stop, above the block exit, and is measured at under 0.4 ms with zero tokens, firing on ~1% of real turns. It decides only whether to SPEND a model call; it is never the last word on a negative, because the regexes provably miss the euphemistic phrasings.
     #
@@ -5219,7 +5306,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # THE JUDGE-SKIPPED PATH. The main judge runs only when something remains or a fix signal fired. A stop with a clean board and an admission in its final message would otherwise be seen by nobody, and that is a likely shape: the session finished its work, and says on the way out that it broke something along the way.
     # A cap-saturated wait skips the main judge (below), so an admission then takes this path: an admission of breakage must never go unseen.
     if admit_hits and not (
-        (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED and not _in_standdown
+        (something_remains or reg_signals) and not wl_judge.disabled(_cfg) and not _in_standdown
     ):
         _ad, _aerr = wl_judge.run_admission(admit_text)
         if _aerr:
@@ -5254,7 +5341,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     judge_cached = False
     # THE JUDGE STANDS DOWN IN A CAP-SATURATED WAIT (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 7). Its orders ("Do the next action", SWEEP THE CLASS, PROOF OBLIGATION) cannot be acted on with every writer slot full; on 2026-09-24 it blocked twice with a reason that itself called the wait legitimate. Unsettled regression fix-sets are not lost: the marker advances
     # only when a fix-set settles, so the next unsaturated stop asks again.
-    if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED and not _in_standdown:
+    if (something_remains or reg_signals) and not wl_judge.disabled(_cfg) and not _in_standdown:
         streak = int(counter.read_text()) if counter.exists() else 0
         # THE JUDGE IS ASKED ABOUT ITS OWN HISTORY, not the battery's. `counter` counts every stop block from every check; the prompt calls the number "times this gate has already said continue" and tells the judge to distrust itself above 3. On 2026-09-04 it read 69 while the judge had spoken a handful of times. See wl_judge.continue_streak.
         judge_log = wl_judge.judge_log_path(worklist, me8)
@@ -5814,6 +5901,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 session_id,
                 state_doc,
                 (last_msg or "") + "\n" + "\n".join(remaining_lines),
+                settings=_cfg,
             )
     # THE BEHAVIORAL-HINT QUEUE PRODUCERS, matching agent_hint_queue's own placement exactly: BEFORE outq_drain, so anything queued here has the SAME chance to drain on THIS stop that every other producer gets, rather than only ever being seen on the next one -- a corpus error queued after the drain call would otherwise sit until a LATER, possibly genuinely-silent stop, and single-handedly break that stop's silence. These two are ordinary queue items and are NOT gated on other content already firing; only the hint LINE ITSELF, picked below, carries that gate.
     hint_entries, hint_errs = [], []

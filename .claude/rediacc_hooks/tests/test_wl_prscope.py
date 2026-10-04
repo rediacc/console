@@ -414,3 +414,84 @@ def test_epic_reader_without_plan_epics_is_empty(monkeypatch):
     wl_epic = wlfix.import_wl("wl_epic")
     monkeypatch.delattr(wl_epic, "plan_epics", raising=False)
     assert prscope.epic_items((rel("a"),)) == frozenset()
+
+
+# ---- T9 of agent/plans/PLAN-stop-hook-turbo.md: the turbo picks ------------------------------------
+
+TURBO = "\n## Settings\n\n```stop-hook\nturbo: %s\nbatch_size: 2\nwriter_cap: 4\n```\n"
+
+
+def _xplan(name, opened=1, done=0):
+    """A plan with the X fields the picks check (`wl_planconc.spawn_verdict` fails closed without `Owns:`)."""
+    return _plan(opened=opened, done=done).replace(
+        "Priority: P2 -- seed\n",
+        "Priority: P2 -- seed\nConcurrency: parallel\nOwns: docs/%s/**\n" % name,
+    )
+
+
+def turbo_live(world, turbo="on"):
+    world.plans(a=_xplan("a"), b=_xplan("b"), c=_xplan("c"), d=_xplan("d"))
+    world.queue("a", "b", "c", "d")
+    queue = world.root / "agent" / "plans" / "QUEUE.md"
+    queue.write_text(
+        queue.read_text(encoding="utf-8").replace(
+            "\n## Promoted", TURBO % turbo + "\n## Promoted", 1
+        ),
+        "utf-8",
+    )
+    world.branch("1003-1")
+    world.nodes([node(592, "OPEN", "Plan: agent/plans/PLAN-a.md\n\nBody.")])
+
+
+def turbo_state(world, live):
+    prscope = wlfix.import_wl("wl_prscope")
+    return prscope.loop_state(
+        world.root, world.worklist, ME, today="1003", epics=lambda _rel: set(), live=live
+    )
+
+
+def test_turbo_on_a_live_pr_with_two_free_slots_names_two_plans(world):
+    turbo_live(world)
+    got = turbo_state(world, ((), 2))
+    assert got.turbo is True
+    assert got.batch_size == 2
+    assert got.turbo_picks == (rel("b"), rel("c"))
+    assert got.turbo_more is True
+
+
+def test_turbo_with_no_free_slot_names_none(world):
+    turbo_live(world)
+    got = turbo_state(world, (("PLAN-d.md",), 4))
+    assert got.turbo_picks == ()
+    # Something is still eligible, so the batch is not declared exhausted.
+    assert got.turbo_more is True
+
+
+def test_turbo_picks_skip_the_pr_set_and_a_live_writers_plan_owner(world):
+    turbo_live(world)
+    got = turbo_state(world, (("PLAN-b.md",), 1))
+    assert rel("a") not in got.turbo_picks
+    assert got.turbo_picks == (rel("c"), rel("d"))
+
+
+def test_turbo_off_equals_today(world):
+    turbo_live(world, turbo="off")
+    got = turbo_state(world, ((), 0))
+    plain = state(world)
+    assert got == plain
+    assert got.turbo is False
+    assert got.turbo_picks == ()
+    assert got.batch_size == 1
+
+
+def test_batch_ready_waits_for_the_batch_or_an_empty_queue(world):
+    prscope = wlfix.import_wl("wl_prscope")
+    turbo_live(world)
+    got = turbo_state(world, ((), 2))
+    assert not prscope.batch_ready(got, True), "1 finished of 2 with eligible plans left"
+    import dataclasses  # noqa: PLC0415
+
+    assert prscope.batch_ready(dataclasses.replace(got, finished=2), True)
+    assert prscope.batch_ready(dataclasses.replace(got, turbo_more=False), True)
+    assert not prscope.batch_ready(dataclasses.replace(got, finished=2), False)
+    assert prscope.batch_ready(dataclasses.replace(got, turbo=False), False)

@@ -1,21 +1,21 @@
 {
   "$why": [
     "Every WORKLIST_* environment name this repository reads, in one place, so that a name nobody reads and a read nobody registered are both findings.",
-    "THE DEFECT: a typo'd name reads as UNSET. For a flag that defaults to `on` -- WORKLIST_AGENT_HINT, WORKLIST_AGENT_PUSHBACK, WORKLIST_CADENCE, WORKLIST_FOCUS -- that is the FAIL-OPEN direction: the author believes they switched something off and it is still running. Nothing in the tree said so before 2026-09-09.",
+    "THE DEFECT: a typo'd name reads as UNSET. For a flag that defaults to `on` -- WORKLIST_FOCUS today, and until 2026-10-04 WORKLIST_AGENT_HINT, WORKLIST_AGENT_PUSHBACK and WORKLIST_CADENCE, which moved to agent/plans/QUEUE.md -- that is the FAIL-OPEN direction: the author believes they switched something off and it is still running. Nothing in the tree said so before 2026-09-09.",
     "Measured 2026-09-09 against the bash corpus that has since been ported to pytest: 133 live names across 60 tracked files at 183 read sites. The plan box said 134, which is the GREP answer; one of those, WORKLIST_EMAIL, appeared only in a comment describing a name that no longer existed, which is why this scanner counts READS rather than greps.",
     "Enforced by check:ci-worklist-env-registry, both directions. Every field except `why` is DERIVED from the code by the gate and pinned here, so this file cannot drift into being a description of what somebody once intended."
   ],
   "$gate": ".ci/rediacc_ci/quality/worklist_env_registry.py",
   "sealed_modules": {
     ".claude/hooks/stop/wl_roster.py": {
-      "why": "the parallel-writer roster's limits are the operator's (4 writers, a 20-minute status ping, 2026-09-24, 'no escape hatches'), so no variable may retune them and a registered knob would be exactly the hatch that was ruled out",
+      "why": "the parallel-writer roster's limits are the operator's (4 writers by default and a `writer_cap:` line in agent/plans/QUEUE.md, a 20-minute status ping, 2026-09-24, 'no escape hatches'), so no variable may retune them and a registered knob would be exactly the hatch that was ruled out",
       "literals": {
-        "WRITER_CAP": 4,
+        "DEFAULT_WRITER_CAP": 4,
         "STATUS_PING_MIN": 20
       }
     },
     ".claude/rediacc_hooks/guards/block_agent_cap.py": {
-      "why": "the PreToolUse half of the same writer cap; it imports WRITER_CAP from wl_roster, and an environment read here would let a spawn bypass the cap the Stop hook enforces"
+      "why": "the PreToolUse half of the same writer cap; it calls `wl_roster.writer_cap`, and an environment read here would let a spawn bypass the cap the Stop hook enforces"
     },
     ".claude/hooks/stop/wl_standdown.py": {
       "literals": {
@@ -68,13 +68,6 @@
       ],
       "why": "The branch the worklist attributes work to, overriding the `git symbolic-ref` read in wl_core.py:573. A handle rather than a flag: unset is the normal state and means `ask git`. It is also the most-assigned name in the test corpus, which is why a typo here surfaces as a test that quietly reads the real branch."
     },
-    "WORKLIST_AGENT_HINT": {
-      "kind": "flag",
-      "defaults": [
-        "'on'"
-      ],
-      "why": "FAIL-OPEN ON A TYPO, and it is the reason this registry exists. Defaults to `on`; a misspelled name reads as unset, the default applies, and the agent-hint scorer keeps firing while the author believes they switched it off. wl_agents.py:45 reads it at import because every stop is a fresh process."
-    },
     "WORKLIST_AGENT_HINT_MAX_PER_SESSION": {
       "kind": "tuning",
       "defaults": [
@@ -98,13 +91,6 @@
       "defaults": [
         "'720'"
       ]
-    },
-    "WORKLIST_AGENT_PUSHBACK": {
-      "kind": "flag",
-      "defaults": [
-        "'on'"
-      ],
-      "why": "The one-shot per-agent-per-session challenge in wl_agents.py:570. Defaults to `on`, so a typo leaves it on. It is deliberately not a nag, which means a session that meant to silence it and misspelled the name gets exactly one confusing challenge and no clue why."
     },
     "WORKLIST_AGENT_STATE_MAX_CHARS": {
       "kind": "tuning",
@@ -189,13 +175,6 @@
       "defaults": [
         "'20'"
       ]
-    },
-    "WORKLIST_CADENCE": {
-      "kind": "flag",
-      "defaults": [
-        "'on'"
-      ],
-      "why": "The cadence gate in wl_checks.py:5333, one report turn between hook demands. Defaults to `on`. Off is the LOUDER setting here, not the quieter one, so a typo silently keeps the pause in place and a session waiting to be asked again is not asked."
     },
     "WORKLIST_CADENCE_MAX": {
       "kind": "tuning",
@@ -373,7 +352,7 @@
       "defaults": [
         "NONE"
       ],
-      "why": "`off` disables the judge entirely (wl_judge.py:55). Compared with `== \"off\"`, so anything else -- including a misspelled variable name -- leaves the judge ON and spending money. That is the fail-open direction for a paid call."
+      "why": "test seam only: standing on/off is agent/plans/QUEUE.md `judge:`, and env `on` or `off` overrides it (wl_judge.disabled). Any other value is ignored, so a misspelled value falls back to QUEUE.md rather than disabling a paid call."
     },
     "WORKLIST_JUDGE_BUDGET_USD": {
       "kind": "tuning",

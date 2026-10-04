@@ -685,7 +685,6 @@ def test_r6_no_environment_variable_moves_the_cap_or_the_ping(wl):  # noqa: F811
         "WORKLIST_STATUS_PING_MIN": "999",
         "WORKLIST_ROSTER": "off",
         "WORKLIST_FOCUS": "off",
-        "WORKLIST_CADENCE": "off",
         "WORKLIST_LADDER_PING_MIN": "9999",
         "WORKLIST_LADDER_INVESTIGATE_MIN": "9999",
         "WORKLIST_LADDER_RESOLVE_MIN": "9999",
@@ -699,6 +698,22 @@ def test_r6_no_environment_variable_moves_the_cap_or_the_ping(wl):  # noqa: F811
     assert len(v["status_due"]) == 5, v["status_due"]
 
 
+def test_r6c_writer_cap_is_the_queue_settings_line_and_defaults_to_four(wl):  # noqa: F811
+    """D12: `writer_cap:` in QUEUE.md moves the cap; with the block absent or the value bad it is 4. The env hatch stays inert."""
+    for i, aid in enumerate((W1, W2, W3)):
+        mk_sub(wl, aid, "general-purpose", 30 - i, last="text")
+        plant_lease(wl, "cap%d" % i, aid, lease_age_min=5)
+    assert verdict(wl)["writer_cap"] == 4
+    assert verdict(wl)["over_cap"] == []
+    wl.settings(writer_cap=2)
+    v = verdict(wl, {"WORKLIST_WRITER_CAP": "99"})
+    assert v["writer_cap"] == 2, v["writer_cap"]
+    assert v["over_cap"] == [W3], v["over_cap"]
+    queue = wl.proj / "agent" / "plans" / "QUEUE.md"
+    queue.write_text(queue.read_text(encoding="utf-8").replace("writer_cap: 2", "writer_cap: lots"))
+    assert verdict(wl)["writer_cap"] == 4
+
+
 def test_r6b_the_sealed_modules_read_no_environment_and_the_limits_are_literals():
     for path in (ROSTER_PY, GUARD_PY):
         src = path.read_text(encoding="utf-8")
@@ -710,7 +725,7 @@ def test_r6b_the_sealed_modules_read_no_environment_and_the_limits_are_literals(
     for stmt in ast.parse(ROSTER_PY.read_text(encoding="utf-8")).body:
         if isinstance(stmt, ast.Assign) and isinstance(stmt.targets[0], ast.Name):
             consts[stmt.targets[0].id] = stmt.value
-    for name, want in (("WRITER_CAP", 4), ("STATUS_PING_MIN", 20)):
+    for name, want in (("DEFAULT_WRITER_CAP", 4), ("STATUS_PING_MIN", 20)):
         node = consts.get(name)
         shown = ast.unparse(node) if node is not None else "absent"
         assert isinstance(node, ast.Constant), "%s is %s" % (name, shown)
@@ -798,7 +813,6 @@ def test_s2_five_writers_block_on_the_cap_and_no_variable_lifts_it(wl):  # noqa:
         "WORKLIST_STATUS_PING_MIN": "999",
         "WORKLIST_ROSTER": "off",
         "WORKLIST_FOCUS": "off",
-        "WORKLIST_CADENCE": "off",
         "WORKLIST_LADDER_PING_MIN": "9999",
         "WORKLIST_LADDER_INVESTIGATE_MIN": "9999",
         "WORKLIST_LADDER_RESOLVE_MIN": "9999",

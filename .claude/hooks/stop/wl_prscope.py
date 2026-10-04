@@ -6,6 +6,8 @@ ONE READER EACH. The PR is read once, through `wl_ci.pr_link` (the read focus mo
 
 KINDS. `live` (an MMDD-N branch with an OPEN PR), `no-pr` (such a branch, no PR yet, or only closed ones), `merged` (its newest PR MERGED, none open), `on-main` (main, no live branch), `off-loop` (any other branch, detached HEAD, a submodule, or not a git checkout), `unreadable` (the PR read failed; the plans fall back to the queue head's set, so item scope survives a gh outage).
 
+TURBO (agent/plans/PLAN-stop-hook-turbo.md D5/D8). With `turbo: on` in agent/plans/QUEUE.md `## Settings`, `turbo_picks` names the queued plans to start now on free writer slots (`plan_gate.next_turbo`: queue order, held, finished and in-set plans skipped, prerequisites first, concurrency-compatible with the live writers' plans, solo entries alone). The live writers are the caller's to supply (`live`, or `with_turbo` after the roster is known): without them no plan is named, since a pick that ignores a busy writer could start a plan the spawn guard then refuses. With turbo off every field below is what it was, byte for byte.
+
 `today` is the MMDD the next branch is named for. It defaults to LOCAL time, the clock `block_second_branch` names branches with, so the name printed here is the one that guard admits.
 
 Reads no environment variable of its own; gh is reached through `wl_ci` and `commit_policy`.
@@ -55,6 +57,12 @@ class LoopState:
     stale_promoted: str = ""
     next_branch: str = ""
     reason: str = ""
+    turbo: bool = False
+    batch_size: int = 1
+    writer_cap: int = 4
+    turbo_picks: tuple[str, ...] = ()
+    turbo_more: bool = False
+    finished: int = 0
 
 
 def _plan_epics(rel):
@@ -96,6 +104,40 @@ def next_queued(root, exclude=()):
     return "", ""
 
 
+def turbo_picks(root, state, live_plans, writers):
+    """(picks, more): the plans `state`'s turbo loop names now, `plan_gate.next_turbo` over `writer_cap - writers` free slots with the PR's plan set excluded, and whether any queued plan is eligible at all (for one slot when none is free), which is what decides that the batch has nothing left to take. ((), False) with turbo off or off the loop."""
+    if not state.turbo or state.kind == OFF_LOOP:
+        return (), False
+    slots = int(state.writer_cap) - int(writers or 0)
+    plan_gate, _cp = _hooks_pkg()
+    in_set = state.plans if state.kind in (LIVE, UNREADABLE) else ()
+    eligible = plan_gate.next_turbo(str(root), live_plans or (), max(slots, 1), in_set=in_set)
+    return (tuple(eligible) if slots > 0 else ()), bool(eligible)
+
+
+def with_turbo(state, root, live_plans, writers):
+    """`state` with its turbo picks filled from the live writers (`live_plans`: the plans they serve; `writers`: how many there are). `state` itself when turbo is off."""
+    if state is None or not state.turbo:
+        return state
+    picks, more = turbo_picks(root, state, live_plans, writers)
+    return dataclasses.replace(state, turbo_picks=picks, turbo_more=more)
+
+
+def record_named(root, state):
+    """Record `state`'s turbo picks as named for its branch (`plan_gate.record_turbo_named`), so the next push appends them to the PR's `Plan:` line."""
+    if state is None or not state.turbo or not state.turbo_picks or not state.branch:
+        return
+    plan_gate, _cp = _hooks_pkg()
+    plan_gate.record_turbo_named(str(root), state.branch, state.turbo_picks)
+
+
+def batch_ready(state, finished_all):
+    """True when the PR may be offered for merge as far as the batch goes (agent/plans/PLAN-stop-hook-turbo.md D8): always with turbo off; under turbo, every plan of the set finished (`finished_all`, the caller's box read) and either `batch_size` of them finished or no queued plan left to take."""
+    if state is None or not state.turbo:
+        return True
+    return bool(finished_all) and (state.finished >= state.batch_size or not state.turbo_more)
+
+
 def _console_top(commit_policy, root):
     top = commit_policy.toplevel(str(root))
     if not top or commit_policy.superproject(top):
@@ -103,14 +145,21 @@ def _console_top(commit_policy, root):
     return top
 
 
-def loop_state(root, worklist, session_id, today=None, epics=None, gh=True):
-    """The `LoopState` for the checkout at `root`. `today` (MMDD) and `epics` (rel -> item ids) are the test seams; `gh=False` skips the next-branch name's PR-head read."""
+def loop_state(
+    root, worklist, session_id, today=None, epics=None, gh=True, settings=None, live=None
+):
+    """The `LoopState` for the checkout at `root`. `today` (MMDD) and `epics` (rel -> item ids) are the test seams; `gh=False` skips the next-branch name's PR-head read. `settings` is the stop's `wl_planqueue.Settings` (read from `root` when None); `live` is `(live_plans, writers)` for the turbo picks, None leaving them empty for `with_turbo` to fill."""
     import wl_ci  # noqa: PLC0415 -- the one PR read
 
     plan_gate, commit_policy = _hooks_pkg()
     top = _console_top(commit_policy, root)
     if not top:
         return LoopState(OFF_LOOP, reason="not a console checkout")
+    if settings is None:
+        settings, _problems = plan_gate.settings_at(top)
+    turbo = bool(settings.turbo)
+    batch = plan_gate.batch_size(settings)
+    cap = int(settings.writer_cap)
     branch = commit_policy.current_branch(top)
     head = plan_gate.queue_head(top)
     stale = head if head and _open_count(plan_gate, top, head) == 0 else ""
@@ -120,15 +169,18 @@ def loop_state(root, worklist, session_id, today=None, epics=None, gh=True):
         plans: tuple[str, ...] = ()
         prereqs: tuple[str, ...] = ()
         notes = [reason] if reason else []
+        finished = 0
         if kind in (LIVE, UNREADABLE):
             plans, problems = plan_gate.pr_plan_set(top, body)
             notes.extend(problems)
             own = set(plan_gate.body_plans(body) if body else ()) or {head}
             prereqs = tuple(p for p in plans if p not in own)
+            if turbo:
+                finished = sum(1 for p in plans if p in own and _open_count(plan_gate, top, p) == 0)
         nxt, problem = next_queued(top, exclude=plans)
         if problem:
             notes.append("next plan %s: %s" % (nxt, problem))
-        return LoopState(
+        state = LoopState(
             kind,
             branch=branch,
             pr=pr,
@@ -140,7 +192,14 @@ def loop_state(root, worklist, session_id, today=None, epics=None, gh=True):
             stale_promoted=stale,
             next_branch=next_branch,
             reason="; ".join(notes),
+            turbo=turbo,
+            batch_size=batch,
+            writer_cap=cap,
+            finished=finished,
         )
+        if live is not None:
+            state = with_turbo(state, top, live[0], live[1])
+        return state
 
     def branch_name():
         try:
@@ -186,4 +245,14 @@ def loop_state(root, worklist, session_id, today=None, epics=None, gh=True):
     return done(NO_PR, reason="PR #%s was closed unmerged" % closed.get("number") if closed else "")
 
 
-__all__ = ["KINDS", "LoopState", "epic_items", "loop_state", "next_queued"]
+__all__ = [
+    "KINDS",
+    "LoopState",
+    "batch_ready",
+    "epic_items",
+    "loop_state",
+    "next_queued",
+    "record_named",
+    "turbo_picks",
+    "with_turbo",
+]

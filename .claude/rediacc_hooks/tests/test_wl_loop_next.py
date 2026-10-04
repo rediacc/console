@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import pathlib
 
 from rediacc_hooks.tests import test_wl_focus as F
 from rediacc_hooks.tests import wlfix
@@ -22,6 +23,7 @@ from rediacc_hooks.tests.test_wl_pr_scope_stop import (
     reason,
     write_queue,
 )
+from rediacc_hooks.tests.test_wl_roster import subagents_dir
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 LOOP_NEXT = "LOOP NEXT:"
@@ -227,4 +229,132 @@ def test_ln_m1_without_the_merged_arm_the_merged_case_allows(wl):  # noqa: F811
     got = stop(wl)
     assert "loop-next" not in keys_of(wl, got), (
         "m1: the merged case does not depend on its arm: %s" % reason(got)[:900]
+    )
+
+
+# ---- turbo-next (agent/plans/PLAN-stop-hook-turbo.md D5/D8, box T10) ----------------------------
+
+
+def turbo_plan(fix, name: str, opened: int = 1, done: int = 0) -> str:
+    """A queued plan carrying the Concurrency/Owns fields the turbo picks check (wl_planconc.spawn_verdict fails closed without them)."""
+    text = (
+        "# PLAN: %s fixture\n\nStatus: approved\nOwner: %s\nDepends-On: no-dep -- a fixture plan that stands alone\n"
+        "Concurrency: parallel\nOwns: docs/%s/**\n\n## Tasks\n\n" % (name, wlfix.ME, name)
+    )
+    text += "".join("- [x] D%d the ticked %s fixture box\n" % (i, name) for i in range(done))
+    text += "".join("- [ ] T%d the open %s fixture box\n" % (i, name) for i in range(opened))
+    folder = fix.proj / "agent" / "plans"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / ("PLAN-%s.md" % name)).write_text(text, encoding="utf-8")
+    return "agent/plans/PLAN-%s.md" % name
+
+
+def turbo_world(fix, turbo: bool = True, red: bool = False, own_open: int = 1, batch: int = 2):
+    """PR #543 OPEN on BRANCH working PLAN-pr-own.md, two more queued plans with X fields, and the settings block written after the queue."""
+    F.world(fix, ci=True, red=red)
+    head = fix.git("rev-parse", "HEAD").stdout.strip()
+    fix.git("update-ref", "refs/remotes/origin/main", head)
+    fix.git("switch", "-q", "-c", BRANCH)
+    if red:
+        fix.git("update-ref", "refs/remotes/origin/%s" % BRANCH, head)
+    own = turbo_plan(fix, "pr-own", opened=own_open, done=1)
+    one = turbo_plan(fix, "turbo-one", opened=2)
+    two = turbo_plan(fix, "turbo-two", opened=2)
+    write_queue(fix, own, one, two)
+    fix.settings(turbo=turbo, batch_size=batch, writer_cap=4)
+    # The session's project directory exists and holds no subagent: an honest zero writers, not a blind roster (a blind roster names no plan).
+    subagents_dir(fix).parent.parent.mkdir(parents=True, exist_ok=True)
+    fix.env["CLAUDE_CONFIG_DIR"] = str(fix.base / "claude")
+    F.merged_nodes(fix, [pr_node("OPEN", "Plan: %s\n" % own)])
+    return own, one, two
+
+
+def test_tn1_turbo_names_the_eligible_plans_to_start_on_writers(wl):  # noqa: F811
+    """The arm blocks on the first stop; its text is surfaced within the ladder's rotation over the T_MISSION keys that block beside it."""
+    _own, one, two = turbo_world(wl)
+    got = stop(wl)
+    assert "turbo-next" in keys_of(wl, got), reason(got)[:2000]
+    out = reason(got)
+    for _ in range(3):
+        # The quoted text, not the one-line name the rotating tail gives the arm on the other stops.
+        if "TURBO: start" in out:
+            break
+        wl.newturn()
+        out = reason(stop(wl))
+    assert "Start ONLY the plans named here" in out, out[:2000]
+    assert "TURBO: start %s on a writer (slot 1 of 4)" % one in out, out[:2000]
+    assert "TURBO: start %s on a writer (slot 2 of 4)" % two in out, out[:2000]
+    assert "T0 the open turbo-one fixture box" in out, out[:2000]
+
+
+def test_tn1_the_named_plans_are_recorded_for_the_pr_body(wl):  # noqa: F811
+    _own, one, two = turbo_world(wl)
+    stop(wl)
+    record = pathlib.Path(str(wl.wl)[: -len(".md")] + ".turbo-named.json")
+    assert record.is_file(), "the turbo picks were not recorded beside the store"
+    assert json.loads(record.read_text(encoding="utf-8")).get(BRANCH) == [one, two]
+
+
+def test_tn2_turbo_off_never_names_a_plan_and_keeps_the_loop_keys(wl):  # noqa: F811
+    turbo_world(wl, turbo=False)
+    got = stop(wl)
+    out = reason(got)
+    assert "turbo-next" not in keys_of(wl, got), out[:2000]
+    assert "TURBO" not in got.out, got.out[:2000]
+    assert not pathlib.Path(str(wl.wl)[: -len(".md")] + ".turbo-named.json").exists()
+
+
+def test_tn2_turbo_off_matches_a_queue_with_no_settings_block(wl):  # noqa: F811
+    """Turbo off is today's loop: the same keys as a QUEUE.md that has no `## Settings` at all."""
+    turbo_world(wl, turbo=False)
+    off = keys_of(wl, stop(wl))
+    queue = wl.proj / "agent" / "plans" / "QUEUE.md"
+    text = queue.read_text(encoding="utf-8")
+    queue.write_text(
+        text.split("## Settings", 1)[0] + "## Promoted" + text.split("## Promoted", 1)[1],
+        encoding="utf-8",
+    )
+    assert "## Settings" not in queue.read_text(encoding="utf-8")
+    wl.newturn()
+    bare = keys_of(wl, stop(wl))
+    assert off == bare, (off, bare)
+
+
+def test_tn3_a_red_ci_outranks_the_turbo_arm(wl):  # noqa: F811
+    turbo_world(wl, red=True)
+    got = stop(wl)
+    keys = keys_of(wl, got)
+    assert "ci-red" in keys, reason(got)[:2000]
+    assert "turbo-next" not in keys, reason(got)[:2000]
+
+
+def test_tn4_a_finished_set_short_of_the_batch_is_not_offered_for_merge(wl):  # noqa: F811
+    """D8: one plan finished of a batch of 2, and eligible plans remain, so the merge waits and the turbo arm names the next plans."""
+    turbo_world(wl, own_open=0, batch=2)
+    got = stop(wl)
+    out = reason(got)
+    assert "run /pr-merge" not in out, out[:2000]
+    assert "turbo-next" in keys_of(wl, got), out[:2000]
+
+
+def test_tn4_control_batch_one_offers_the_merge(wl):  # noqa: F811
+    turbo_world(wl, own_open=0, batch=1)
+    got = stop(wl)
+    out = reason(got)
+    assert "run /pr-merge" in out, out[:2000]
+    assert "turbo-next" not in keys_of(wl, got), out[:2000]
+
+
+def test_tn_m1_a_turbo_flag_read_as_always_on_fires_the_arm_with_turbo_off(wl):  # noqa: F811
+    """Mutation control: with the settings parser reading every `turbo:` as on, the turbo-off world names plans, so tn2 depends on the flag."""
+    turbo_world(wl, turbo=False)
+    mutated_hook(
+        wl,
+        "wl_planqueue.py",
+        '        return raw == "on"\n',
+        '        return True if key == "turbo" else raw == "on"\n',
+    )
+    got = stop(wl)
+    assert "turbo-next" in keys_of(wl, got), (
+        "m1: the turbo-off case does not depend on the flag: %s" % reason(got)[:900]
     )

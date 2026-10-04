@@ -233,7 +233,7 @@ def test_214_the_cadence_stands_down_for_one_turn_after_being_answered(wl):  # n
 
     What replaces it is a rotating violation with NOTHING actionable behind it: a reported-but-unfixed finding. That is the shape where a stand-down is still right, since the session has no work in hand and only a nag outstanding, so this case still pins the cadence itself. Case 214f is the other half, and it is the old fixture with the opposite expectation.
     """
-    wl.cadence = "on"
+    wl.settings(cadence="on")
     wl.say(CADENCE_ANSWER)
     wl.brief_now()
     wl.hand_now()
@@ -254,7 +254,7 @@ def test_214b_guard_b_an_unchanged_message_buys_nothing(wl):  # noqa: F811
     NO `newturn` BETWEEN THE STOPS, and that is the correction rather than a shortcut. The old fixture called `newturn` with no `say`, which does not leave the message byte-identical at all: it resets the transcript window, so the last message becomes EMPTY and its signature changes. That worked only because the violation was store-derived and survived an empty message; a
     message-derived one vanishes with the window, and the stop went clean. Running again on the same transcript is what an assistant saying nothing new actually looks like to the hook.
     """
-    wl.cadence = "on"
+    wl.settings(cadence="on")
     wl.say(CADENCE_ANSWER)
     wl.brief_now()
     wl.hand_now()
@@ -272,7 +272,7 @@ def test_214c_guard_a_the_always_tier_defeats_the_pause(wl):  # noqa: F811
     STDERR IS CAPTURED, NOT DISCARDED. This case failed once in CI with an EMPTY output and passed locally at 735/0, and a discarded stderr is precisely why that was undiagnosable: an empty stdout looks identical whether the hook decided to allow or died before deciding. A test that cannot say WHICH of those happened sends its reader guessing at a difference the machine already
     knew.
     """
-    wl.cadence = "on"
+    wl.settings(cadence="on")
     wl.say(CADENCE_ANSWER)
     wl.brief_now()
     wl.hand_now()
@@ -293,7 +293,7 @@ def test_214d_a_clean_stop_consumes_the_debt(wl):  # noqa: F811
 
     Non-actionable fixture, as 214. The debt is spent by DROPPING the finding line rather than by ticking an item, which is the same three-stop shape: violation, clean stop, violation again.
     """
-    wl.cadence = "on"
+    wl.settings(cadence="on")
     wl.say(CADENCE_ANSWER)
     wl.brief_now()
     wl.hand_now()
@@ -312,7 +312,7 @@ def test_214d_a_clean_stop_consumes_the_debt(wl):  # noqa: F811
 
 def test_214e_the_kill_switch_restores_the_old_behaviour_exactly(wl):  # noqa: F811
     """The kill switch has to work, or there is no way back if this proves wrong in daily use. Non-actionable fixture, as 214: with an open item this stop would block under guard (E) whatever the kill switch said, so the case could not tell the switch working from the switch being ignored."""
-    wl.cadence = "off"
+    wl.settings(cadence="off")
     wl.say(CADENCE_ANSWER)
     wl.brief_now()
     wl.hand_now()
@@ -330,7 +330,7 @@ def test_214f_guard_e_actionable_work_in_hand_refuses_the_pause(wl):  # noqa: F8
 
     ONE RUN, BOTH FACTS. The demand and the absence of the stand-down text have to be read off the SAME stop: a second `check` call is a second stop, and after a pause the next stop blocks anyway, so a split assertion would pass on a fixture that had just paused. It did, while this case was being written.
     """
-    wl.cadence = "on"
+    wl.settings(cadence="on")
     wl.bg = '[{"status":"running","description":"agent"}]'
     wl.say("answer\n\n## Remaining\n- stuff")
     wl.brief_now()
@@ -354,7 +354,7 @@ def test_214g_guard_f_an_unfinished_mission_refuses_the_pause(wl):  # noqa: F811
 
     ONE RUN, BOTH FACTS, for the reason 214f states: after a pause the NEXT stop blocks anyway, so a split assertion passes on a fixture that had just paused.
     """
-    wl.cadence = "on"
+    wl.settings(cadence="on")
     wl.brief_now()
     wl.hand_now()
     cldeliver(wl, "docs/demo/README.md", "the readme")
@@ -371,7 +371,7 @@ def test_214g_guard_f_an_unfinished_mission_refuses_the_pause(wl):  # noqa: F811
 
 def test_214h_control_the_same_fixture_with_the_mission_settled_still_pauses(wl):  # noqa: F811
     """Without this, 214g is satisfied by a hook that had simply stopped pausing. The wave is ticked and the checklist flipped done, so the only thing left is a rotating nag with nothing actionable behind it, which is 214's own shape."""
-    wl.cadence = "on"
+    wl.settings(cadence="on")
     wl.brief_now()
     wl.hand_now()
     wl.say(CADENCE_ANSWER)
@@ -488,7 +488,7 @@ def test_222f_the_cadence_cannot_pause_the_idle_stall_gate(wl):  # noqa: F811
     """The regression this whole gate exists for: an open item with NOBODY carrying it. Byte for byte case 214f's fixture, except no background worker, which is what moves the refusal from the rotating `open-items` check to the always-tier idle-stall gate, and that is exactly the needle below. This comment named case 214 until 2026-08-27; 214's fixture is non-actionable now, and
     214f inherited the open-item-plus-worker shape.
     """
-    wl.cadence = "on"
+    wl.settings(cadence="on")
     wl.say("answer\n\n## Remaining\n- stuff")
     wl.brief_now()
     wl.hand_now()

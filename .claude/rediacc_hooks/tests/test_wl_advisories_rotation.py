@@ -460,7 +460,7 @@ def test_209h_control_an_off_domain_briefing_still_arrives_without_a_hint(wl):  
 
 def test_209i_the_kill_switch_silences_the_hint_and_nothing_else(wl):  # noqa: F811
     """THE KILL SWITCH. Positive presence first, for the reason case 208 records."""
-    wl.env["WORKLIST_AGENT_HINT"] = "off"
+    wl.settings(agent_hint=False)
     wl.mk_agent("fixtureagent", HINT_DESC)
     hint_fixture(wl)
     # The positive-presence section, as in 209A's control.

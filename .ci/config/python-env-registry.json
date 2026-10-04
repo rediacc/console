@@ -1820,12 +1820,10 @@
     ],
     ".claude/hooks/stop/wl_agents.py": [
       "WORKLIST_AGENTS_DIR",
-      "WORKLIST_AGENT_HINT",
       "WORKLIST_AGENT_HINT_MAX_PER_SESSION",
       "WORKLIST_AGENT_HINT_MIN_MARGIN",
       "WORKLIST_AGENT_HINT_MIN_SCORE",
-      "WORKLIST_AGENT_HINT_REFRESH_MIN",
-      "WORKLIST_AGENT_PUSHBACK"
+      "WORKLIST_AGENT_HINT_REFRESH_MIN"
     ],
     ".claude/hooks/stop/wl_bgsweep.py": [
       "CLAUDE_PID",
@@ -1842,7 +1840,6 @@
     ".claude/hooks/stop/wl_checks.py": [
       "WORKLIST_ALWAYS_FULL_MAX",
       "WORKLIST_ARCHIVE_HOURS",
-      "WORKLIST_CADENCE",
       "WORKLIST_CADENCE_MAX",
       "WORKLIST_CI_FORCE_MIN_AGE",
       "WORKLIST_CI_FORCE_PER_STOP",
@@ -1900,8 +1897,7 @@
     ".claude/hooks/stop/wl_defersettle.py": [
       "WORKLIST_DEFER_SETTLE_BATCH",
       "WORKLIST_DEFER_SETTLE_CAP",
-      "WORKLIST_DEFER_SETTLE_MIN",
-      "WORKLIST_JUDGE"
+      "WORKLIST_DEFER_SETTLE_MIN"
     ],
     ".claude/hooks/stop/wl_hints.py": [
       "TMPDIR",

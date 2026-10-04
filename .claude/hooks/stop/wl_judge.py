@@ -33,7 +33,15 @@ JUDGE_BUDGET_USD = os.environ.get("WORKLIST_JUDGE_BUDGET_USD", "0.25")
 # this was 240, leaving under 60s for everything the hook does BEFORE the judge -- liveness, git, plan checks, report surfacing. Under load that preamble runs long, the harness SIGTERMs the whole hook mid-judge, and the failure surfaces as "judge exited 143" with empty stdout: a KILLED judge reported as an unreachable one. The diagnostic that message offers then points at the
 # model, which was healthy -- the real schema-constrained call answered in 2 turns for $0.0165 while 13 pytest workers were running. Outer raised to 900.
 JUDGE_TIMEOUT_S = int(os.environ.get("WORKLIST_JUDGE_TIMEOUT_S", "240"))
-JUDGE_DISABLED = os.environ.get("WORKLIST_JUDGE") == "off"
+
+
+def disabled(settings) -> bool:
+    """True when the judge is off. Env `WORKLIST_JUDGE` set to `on` or `off` overrides (the test seam); any other value is ignored and QUEUE.md `judge:` decides."""
+    env = os.environ.get("WORKLIST_JUDGE")
+    if env in ("on", "off"):
+        return env == "off"
+    return not settings.judge
+
 
 # v10 VERDICT CACHE. The judge is the dominant cost of a quiet-but-tracked stop (5-20s and $0.01-0.03, measured), and its question is a function of the WORLD and the MESSAGE. An identical world signature and an identical message within the TTL is the same question about the same facts, so a cached "stop" answers it for free -- the v9 fast-path argument, one level up. Fails toward
 # calling the judge: only clean "stop" verdicts with no regression signals are ever cached, and any mismatch or corruption is a miss.
