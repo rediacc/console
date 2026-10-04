@@ -77,6 +77,267 @@ def ordered(text: str) -> list[str]:
     return out
 
 
+# ------------------------------------------------------------ the settings block
+# agent/plans/PLAN-stop-hook-turbo.md D1/D2: `## Settings` above `## Promoted` holds ONE fenced block, info string `stop-hook`, of `key: value` lines with an optional ` -- <note>`. It is the single switchboard for the Stop hook; a reader that doubts anything falls back to the fail-safe value of the key (hook on, turbo off).
+
+SETTINGS_HEADING = "## Settings"
+SETTINGS_FENCE = "stop-hook"
+BOOL_KEYS = ("stop_hook", "turbo", "cadence", "agent_hint", "agent_pushback", "judge")
+INT_KEYS = ("batch_size", "writer_cap")
+# The render order of a new block.
+SETTINGS_KEYS = (
+    "stop_hook",
+    "turbo",
+    "batch_size",
+    "writer_cap",
+    "cadence",
+    "agent_hint",
+    "agent_pushback",
+    "judge",
+)
+NOTE_SEP = " -- "
+_FIELD_NOTE = re.compile(r"[ \t]--[ \t]")
+_SOLO = re.compile(r"[ \t]--[ \t]+solo[ \t]*$")
+
+
+@dataclasses.dataclass(frozen=True)
+class Settings:
+    """The effective switches. `notes` maps a key to the note after ` -- ` on its line."""
+
+    stop_hook: bool = True
+    turbo: bool = False
+    batch_size: int = 1
+    writer_cap: int = 4
+    cadence: bool = True
+    agent_hint: bool = True
+    agent_pushback: bool = True
+    judge: bool = True
+    notes: dict = dataclasses.field(default_factory=dict)
+
+
+_DEFAULTS = Settings()
+
+
+def _value(key: str, raw: str):
+    """The typed value of `raw` for `key`; ValueError names what was expected."""
+    raw = raw.strip()
+    if key in BOOL_KEYS:
+        if raw not in ("on", "off"):
+            raise ValueError("%s: expected on|off, got %r" % (key, raw))
+        return raw == "on"
+    if key in INT_KEYS:
+        if not re.fullmatch(r"[0-9]+", raw) or int(raw) < 1:
+            raise ValueError("%s: expected an integer >= 1, got %r" % (key, raw))
+        return int(raw)
+    raise ValueError("unknown key %r (known: %s)" % (key, ", ".join(SETTINGS_KEYS)))
+
+
+def _split_line(line: str) -> tuple[str, str, str | None] | None:
+    """(key, value, note) of one fence line; None for a blank line or a line without a colon."""
+    body = line.strip()
+    if not body:
+        return None
+    note = None
+    m = _FIELD_NOTE.search(body)
+    if m:
+        body, note = body[: m.start()], body[m.end() :].strip()
+    if ":" not in body:
+        return None
+    key, _sep, value = body.partition(":")
+    return key.strip(), value.strip(), note
+
+
+def _scan(text: str):
+    """(block, structural problems). `block` is (body_start, body_end) as character offsets of the lines between the fences of the one accepted `stop-hook` fence, or None; `body_start` of an absent section is None too.
+
+    Structural problems: the section below `## Promoted`, a second `stop-hook` fence anywhere, an unterminated fence, a section with no fence."""
+    problems: list[str] = []
+    head = re.search(r"(?m)^%s[ \t]*$" % re.escape(SETTINGS_HEADING), text)
+    prom = re.search(r"(?m)^%s[ \t]*$" % re.escape(PROMOTED_HEADING), text)
+    lo = hi = -1
+    if head:
+        if prom and head.start() > prom.start():
+            problems.append(
+                "`%s` sits below `%s`; move it above" % (SETTINGS_HEADING, PROMOTED_HEADING)
+            )
+        else:
+            rest = text[head.end() :]
+            stops = [
+                x.start()
+                for x in (_HEADING.search(rest), re.search(re.escape(GEN_BEGIN), rest))
+                if x
+            ]
+            lo, hi = head.end(), head.end() + (min(stops) if stops else len(rest))
+    blocks: list[
+        tuple[int, int, int]
+    ] = []  # (fence line start, body start, body end), in file order
+    pos = 0
+    opened: tuple[str, int, int] | None = None
+    for line in text.splitlines(keepends=True):
+        stripped = line.strip()
+        if opened is None and stripped.startswith("```"):
+            opened = (stripped[3:].strip(), pos, pos + len(line))
+        elif opened is not None and stripped == "```":
+            if opened[0] == SETTINGS_FENCE:
+                blocks.append((opened[1], opened[2], pos))
+            opened = None
+        pos += len(line)
+    if opened is not None and opened[0] == SETTINGS_FENCE:
+        problems.append("a `%s` fence is not closed" % SETTINGS_FENCE)
+    inside = [b for b in blocks if lo >= 0 and lo <= b[0] < hi]
+    outside = [b for b in blocks if b not in inside]
+    if outside:
+        problems.append(
+            "a `%s` fence outside `%s` is ignored; the block belongs in that section"
+            % (SETTINGS_FENCE, SETTINGS_HEADING)
+        )
+    if len(inside) > 1:
+        problems.append(
+            "a second `%s` fence in `%s` is ignored; one block only"
+            % (SETTINGS_FENCE, SETTINGS_HEADING)
+        )
+    if lo >= 0 and not inside:
+        problems.append("`%s` has no `%s` fence" % (SETTINGS_HEADING, SETTINGS_FENCE))
+    block = (inside[0][1], inside[0][2]) if inside else None
+    return block, problems
+
+
+def _parse(text: str) -> tuple[Settings, list[str], set[str]]:
+    """(settings, problems, the keys the block set validly)."""
+    block, problems = _scan(text)
+    problems = list(problems)
+    found: dict[str, list[tuple[str, str | None]]] = {}
+    if block:
+        for line in text[block[0] : block[1]].splitlines():
+            row = _split_line(line)
+            if row is None:
+                if line.strip():
+                    problems.append("not a `key: value` line: %r" % line.strip())
+                continue
+            found.setdefault(row[0], []).append((row[1], row[2]))
+    values: dict = {}
+    notes: dict = {}
+    for key, rows in found.items():
+        if key not in SETTINGS_KEYS:
+            problems.append("unknown key %r (known: %s)" % (key, ", ".join(SETTINGS_KEYS)))
+        elif len(rows) > 1:
+            problems.append("%s: set %d times; the default is used" % (key, len(rows)))
+        else:
+            try:
+                values[key] = _value(key, rows[0][0])
+            except ValueError as exc:
+                problems.append(str(exc))
+                continue
+            if rows[0][1]:
+                notes[key] = rows[0][1]
+    return dataclasses.replace(_DEFAULTS, notes=notes, **values), problems, set(values)
+
+
+def settings(text: str) -> tuple[Settings, list[str]]:
+    """The effective settings of a QUEUE.md text and the problems found. A missing section is all defaults and no problem; a bad key or value falls back to that key's default and the rest still parse."""
+    got, problems, _set = _parse(text)
+    return got, ["%s: %s" % (QUEUE_REL, p) for p in problems]
+
+
+def sources(text: str) -> dict[str, str]:
+    """Per key, `QUEUE.md` when the block sets it validly, else `default`."""
+    _got, _problems, present = _parse(text)
+    return {k: "QUEUE.md" if k in present else "default" for k in SETTINGS_KEYS}
+
+
+def settings_for(root, rev: str = "") -> tuple[Settings, list[str]]:
+    """`settings` over the working tree's QUEUE.md, or over `git show <rev>:agent/plans/QUEUE.md`. An absent working-tree file is all defaults (fixtures, other checkouts); an unreadable file or an unreadable rev is defaults and a problem."""
+    root = pathlib.Path(root)
+    if rev:
+        import subprocess  # noqa: PLC0415
+
+        try:
+            proc = subprocess.run(
+                ["git", "-C", str(root), "show", "%s:%s" % (rev, QUEUE_REL)],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=20,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            return _DEFAULTS, ["%s at %s is unreadable: %s" % (QUEUE_REL, rev, exc)]
+        if proc.returncode != 0:
+            return _DEFAULTS, [
+                "%s at %s is unreadable: %s" % (QUEUE_REL, rev, proc.stderr.strip()[:160])
+            ]
+        return settings(proc.stdout)
+    path = root / QUEUE_REL
+    if not path.exists():
+        return _DEFAULTS, []
+    try:
+        return settings(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError) as exc:
+        return _DEFAULTS, ["%s is unreadable: %s" % (QUEUE_REL, exc)]
+
+
+def _line(key: str, value, note: str | None) -> str:
+    shown = ("on" if value else "off") if key in BOOL_KEYS else str(value)
+    return "%s: %s%s" % (key, shown, (NOTE_SEP + note) if note else "")
+
+
+def set_settings(text: str, updates: dict[str, str], note: str | None = None) -> str:
+    """`text` with `updates` ({key: raw value}) written into the settings fence. Only the fence's lines change: an updated key's line is replaced (later duplicates of it dropped), a key the block lacks is appended, every other byte stays. An absent section is created above `## Promoted` with all eight keys in order.
+
+    `note` is attached to every updated key. Without it, an updated key keeps its note when its value is unchanged and loses it when the value changes (a stale reason is worse than none). ValueError, nothing written, for an unknown key, a bad value, a multi-line note, or a structurally broken block (section below Promoted, a second or unclosed fence)."""
+    typed = {k: _value(k, v) for k, v in updates.items()}
+    if note is not None:
+        note = note.strip()
+        if "\n" in note or "\r" in note:
+            raise ValueError("a note is one line")
+    block, structural = _scan(text)
+    if structural:
+        raise ValueError("; ".join(structural))
+    cur, _problems = settings(text)
+    notes = cur.notes
+
+    def note_for(key: str) -> str | None:
+        if note is not None:
+            return note
+        return notes.get(key) if typed[key] == getattr(cur, key) else None
+
+    if block is None:
+        merged = {k: typed.get(k, getattr(_DEFAULTS, k)) for k in SETTINGS_KEYS}
+        lines = [_line(k, merged[k], note_for(k) if k in typed else None) for k in SETTINGS_KEYS]
+        section = "%s\n\n```%s\n%s\n```\n\n" % (SETTINGS_HEADING, SETTINGS_FENCE, "\n".join(lines))
+        prom = re.search(r"(?m)^%s[ \t]*$" % re.escape(PROMOTED_HEADING), text)
+        if prom:
+            return text[: prom.start()] + section + text[prom.start() :]
+        sep = "" if not text or text.endswith("\n\n") else ("\n" if text.endswith("\n") else "\n\n")
+        return text + sep + section.rstrip("\n") + "\n"
+    out: list[str] = []
+    done: set[str] = set()
+    for line in text[block[0] : block[1]].splitlines(keepends=True):
+        row = _split_line(line)
+        if row is not None and row[0] in typed:
+            if row[0] not in done:
+                done.add(row[0])
+                out.append(_line(row[0], typed[row[0]], note_for(row[0])) + "\n")
+            continue
+        out.append(line)
+    out.extend(
+        _line(key, typed[key], note_for(key)) + "\n"
+        for key in SETTINGS_KEYS
+        if key in typed and key not in done
+    )
+    return text[: block[0]] + "".join(out) + text[block[1] :]
+
+
+def solo_plans(text: str) -> set[str]:
+    """The Promoted and Generated entries whose note ends with ` -- solo`: such a plan runs alone in its PR under turbo."""
+    block = (generated_text(text) or "").split(NOT_QUEUED_HEADING, 1)[0]
+    return {
+        m.group(1)
+        for body in (promoted_text(text), block)
+        for m in ENTRY.finditer(body)
+        if _SOLO.search(m.group(0))
+    }
+
+
 # ---------------------------------------------------------------- the render
 
 

@@ -635,6 +635,22 @@ CLI_ADOPT_DONE = (
     "    worklist.py --list --open %s\n"
 )
 
+# agent/plans/PLAN-stop-hook-turbo.md D4 and D9. N_STOP_HOOK_OFF: the free notice a stop carries while QUEUE.md says `stop_hook: off`, keyed note, broken (empty or "; broken sibling module(s): ..."), problems (empty or "; settings problem(s): ..."). The CLI_QUEUE_SET_* strings serve `--queue-set`: usage (static) and the refusal reason (one %s).
+N_STOP_HOOK_OFF = (
+    "Stop hook OFF (agent/plans/QUEUE.md stop_hook: off -- %(note)s)%(broken)s%(problems)s"
+)
+
+CLI_QUEUE_SET_USAGE = (
+    'usage: --queue-set <me> [key=value ...] [--note "<text>"]\n'
+    "Writes the `## Settings` block of agent/plans/QUEUE.md: stop_hook, turbo (on|off), "
+    "batch_size, writer_cap (integers >= 1), cadence, agent_hint, agent_pushback, judge "
+    "(on|off). Every pair is validated before the file is touched, the write is atomic, "
+    "and nothing is committed: the verb prints the `git add` line. With no pair it prints "
+    "the effective settings, where each value comes from, and any problems.\n"
+)
+
+CLI_QUEUE_SET_REFUSED = "REFUSED: %s. agent/plans/QUEUE.md is unchanged.\n"
+
 N_PHANTOM_IDENTITY = (
     "PHANTOM IDENTITY IN THE STORE (%d). These prefixes WRITE here and have "
     "never stopped -- no .lastevent-<prefix>.json exists for any of them, and "
@@ -2097,6 +2113,16 @@ Per-commit reviews (agent/reviews/<branch>/<sha40>.md):
   --review-run <me> [<sha>]     list unreviewed commits, or review one now
   --prune-reviews <me> [--write] list review directories past retention;
                                 --write deletes them
+
+Plan queue switchboard (agent/plans/QUEUE.md `## Settings`):
+  --queue-set <me> [key=value ...] [--note "<text>"]
+                                write stop_hook, turbo, batch_size, writer_cap,
+                                cadence, agent_hint, agent_pushback or judge;
+                                every pair is validated before the file is
+                                touched, the write is atomic, nothing is
+                                committed (it prints the git add line). Bare:
+                                print the effective settings, the source of
+                                each value, and any problems.
 
 Maintenance:
   --compact                     drop tombstones and fold the event log

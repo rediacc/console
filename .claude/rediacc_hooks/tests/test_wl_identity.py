@@ -545,6 +545,8 @@ def drive_l1(fix) -> L1Drive:
             "[verdict: present]",
         ),
         ("--hint-propose", "--hint-propose @WHO@ l1-table-hint", "proposed:"),
+        # Bare form: prints the effective settings and writes nothing; the write form runs the identical argv parse and _identity_or_die.
+        ("--queue-set", "--queue-set @WHO@", "stop_hook: on"),
         # The per-commit review verbs (agent/plans/PLAN-per-commit-review.md section 6), each driven in its no-argument mode: the fixture has no git repository, so HEAD is on no branch and each verb answers without touching a review file, after the same argv parse and _identity_or_die its write modes run.
         ("--review-mark", "--review-mark @WHO@", "open per-commit review findings"),
         ("--review-commit", "--review-commit @WHO@", "no finished review file"),

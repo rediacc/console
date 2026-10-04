@@ -580,7 +580,8 @@
         "pytest:.ci/rediacc_ci/tests/test_twin_goldens.py",
         "pytest:.claude/rediacc_hooks/tests/test_review_commit_hook.py",
         "pytest:.ci/rediacc_ci/tests/test_prsignals_pins.py",
-        "pytest:.claude/rediacc_hooks/tests/test_wl_schedred.py"
+        "pytest:.claude/rediacc_hooks/tests/test_wl_schedred.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_queue_settings.py"
       ]
     }
   ]
