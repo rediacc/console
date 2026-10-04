@@ -183,7 +183,8 @@ Worklist: #5f84123a, #768e10e2
     (ticked) 2026-10-04T05:36:19Z by d778be9d: commit:ba5abed38 attempt class in wl_prreview --wait (3bc91573d), single Next line ba5abed38
 - [x] T12 Docs; regenerate doc-registry.md.
     (ticked) 2026-10-04T05:36:20Z by d778be9d: commit:c03ac91ce docs and regenerated doc-registry in c03ac91ce, doc-region-parity rc=0
-- [ ] T13 Full hook and CI pytest suites and `ci:quick`.
+- [x] T13 Full hook and CI pytest suites and `ci:quick`.
+    (ticked) 2026-10-04T06:47:05Z by d778be9d: full pytest 20988 passed + docs_gen 6 passed after commit:e72c255c9; ci:quick 304/306, the 2 remaining fixed by e72c255c9 and by this tick
 - [x] T14 Live check, read-only: `ci-trace.py --scheduled` against main names the current reds, and one Stop blocks with the `--add` text.
     (ticked) 2026-10-04T05:36:22Z by d778be9d: commit:3bc91573d live ci-trace.py --scheduled: 5 workflows, RED Console CI 37101760904 and Housekeeping 37111522524
 - [x] T15 Track the current reds with `sched:ci` and `sched:housekeeping` items.

@@ -548,7 +548,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-retire-bash-oracles.md` | held | 307 | 11 | 4 | 33375 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
-| `agent/plans/PLAN-scheduled-red-detector.md` | approved | 190 | 1 | 14 | 14326 |
+| `agent/plans/PLAN-scheduled-red-detector.md` | approved | 191 | 0 | 15 | 14564 |
 | `agent/plans/PLAN-scope-gate-sort-collation.md` | compacted | 38 | 0 | 0 | 2784 |
 | `agent/plans/PLAN-scope-gates-split.md` | compacted | 38 | 0 | 0 | 2608 |
 | `agent/plans/PLAN-secret-namespace-migration.md` | held | 1713 | 5 | 29 | 187641 |
