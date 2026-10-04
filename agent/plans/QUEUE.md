@@ -55,7 +55,7 @@ judge: on
 4. agent/plans/PLAN-token-ip-rebind.md -- P0, draft, in progress (9 of 10 boxes ticked), dep-blocked
 5. agent/plans/PLAN-config-sync-hardening.md -- P0, draft, in progress (18 of 19 boxes ticked), dep-blocked
 6. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
-7. agent/plans/PLAN-plan-per-pr-loop.md -- P1, approved, in progress (13 of 16 boxes ticked)
+7. agent/plans/PLAN-plan-per-pr-loop.md -- P1, approved, in progress (15 of 16 boxes ticked)
 8. agent/plans/PLAN-secret-namespace-migration.md -- P1, executing, in progress (29 of 34 boxes ticked)
 9. agent/plans/PLAN-stop-hook-one-plan-scope.md -- P1, approved, in progress (14 of 15 boxes ticked)
 10. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)

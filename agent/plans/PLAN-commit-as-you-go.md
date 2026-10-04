@@ -83,7 +83,8 @@ Order:
     (ticked) 2026-10-03T09:57:41Z by d778be9d: ee607a003: wl_review.py [no-review] skipped stub with commit-policy re-check, origin/main..HEAD on main
 - [x] T8 [A] Optional, depending on decision 2: git-level hooks (section 5.3) and `block_git_hook_bypass.py` (ORDER 49) for F3.
     (ticked) 2026-10-03T09:57:42Z by d778be9d: c18ca3eca: .claude/rediacc_hooks/git/ hooks, .ci/rediacc_ci/setup/githooks.py, guards/block_git_hook_bypass.py ORDER 49
-- [ ] T9 [lead] Update the docs (section 7), including F4. `block_second_open_pr.py` gets a new message and a regenerated golden.
+- [x] T9 [lead] Update the docs (section 7), including F4. `block_second_open_pr.py` gets a new message and a regenerated golden.
+    (ticked) 2026-10-04T16:08:22Z by d778be9d: commit:6a1d15f76 block_second_open_pr says there is no agent path to a second PR; golden re-recorded; the old wording reds both new cases
 - [x] T10 [A, B] Tests (section 6). Each writer owns the tests for its own files. Every guard gets a fire case, an inverse case and a DEFECT control.
     (ticked) 2026-10-03T09:57:44Z by d778be9d: c18ca3eca: five test-block_* suites with fire/inverse/DEFECT controls
 - [x] T11 [lead] Add every new guard to `scripts/data/hook-inventory-baseline.json`, then run `check-hook-integrity`, `test_dispatch.py` (ORDER contiguity) and `test_guards_differential.py`.
