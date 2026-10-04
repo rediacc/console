@@ -115,7 +115,7 @@ def first_box(root, rel, reader=None):
     return sig, body
 
 
-# HELD PLANS ARE OFF THE CLOCK, the rule check:ci-plan-implementation's P-A1 applies (`PARKED_EXEMPT = frozenset({"held"})`, operator ruling 2026-09-26 that froze the held set). A held prerequisite stays in the PR's plan set, which the merge gate and P-A1 also list, but its boxes never hold the turn: before this, the Stop hook blocked every stop of PR #594 on 14 boxes of two held prerequisites while P-A1 read "no open box on the PR's clock" (2026-10-04).
+# HELD PLANS ARE OFF THE CLOCK HERE, and turbo never picks one. The gate's 2026-09-26 exemption is gone with the holds (2026-10-04), so check:ci-plan-implementation's P-A8 reds on any held plan; this keep-off only stops the hook and turbo from naming one in the meantime. A held prerequisite stays in the PR's plan set, which the merge gate and P-A1 also list, but its boxes never hold the turn: before this, the Stop hook blocked every stop of PR #594 on 14 boxes of two held prerequisites while P-A1 read "no open box on the PR's clock" (2026-10-04).
 OFF_THE_CLOCK = frozenset({"held"})
 _STATUS_RE = re.compile(r"^Status:\s*([A-Za-z-]+)", re.MULTILINE)
 

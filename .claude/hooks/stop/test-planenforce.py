@@ -546,7 +546,7 @@ def _why(root, rel, sig, evidence):
 
 
 def held_controls():
-    """H1: a HELD plan is off the clock, as P-A1's PARKED_EXEMPT keeps it; the same plan `approved` blocks (the CONTROL)."""
+    """H1: a HELD plan is off the hook's clock (the gate's P-A8 reds on it instead); the same plan `approved` blocks (the CONTROL)."""
     body = "# PLAN: x\nStatus: %s -- reason\nOwner: d778be9d\n\n## Tasks\n\n- [ ] A1 first box\n- [ ] A2 second box\n"
     held = E.plan_rows("/nonexistent", ("agent/plans/PLAN-x.md",), lambda _r, _rel: body % "held")
     control("H1: a held plan's open boxes produce no row", held, [])
