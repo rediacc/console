@@ -686,15 +686,23 @@ def _push_target(scan, cwd):
 
 
 def _pr_base(cmd, cwd):
-    """The PR's base branch: `--base <ref>` if given, else this repo's `main`."""
+    """The PR's base: the REMOTE branch `--base <ref>` names (default `main`), read as `origin/<ref>` when that ref exists.
+
+    A PR targets the branch on GitHub, never a local ref. A bare `main` here used to be taken literally, and a submodule's local `main` can sit far behind origin: renet's sat 135 commits back on 2026-10-04, so `main..HEAD` swept in an old, already-merged bulk commit and refused a one-commit PR. The local name is used only when no `origin/<ref>` exists.
+    """
+    ref = "main"
     tokens = cmd.split()
     for index, token in enumerate(tokens):
         if token in ("--base", "-B") and index + 1 < len(tokens):
-            return tokens[index + 1]
+            ref = tokens[index + 1]
+            break
         if token.startswith("--base="):
-            return token.split("=", 1)[1]
-    remote = hookio.git_out(["rev-parse", "--verify", "origin/main"], cwd=cwd, want_rc=True)
-    return "origin/main" if remote is not None else "main"
+            ref = token.split("=", 1)[1]
+            break
+    if ref.startswith("origin/"):
+        return ref
+    remote = hookio.git_out(["rev-parse", "--verify", "origin/%s" % ref], cwd=cwd, want_rc=True)
+    return "origin/%s" % ref if remote is not None else ref
 
 
 def run(ev):
