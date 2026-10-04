@@ -801,12 +801,12 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/proxies | 10 | .py 10 |
 | .ci/rediacc_ci/quality | 106 | .py 106 |
 | .ci/rediacc_ci/release | 28 | .py 28 |
-| .ci/rediacc_ci/review | 6 | .py 6 |
+| .ci/rediacc_ci/review | 7 | .py 7 |
 | .ci/rediacc_ci/review/prompts | 2 | .md 2 |
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 13 | .py 13 |
 | .ci/rediacc_ci/testrun | 11 | .py 11 |
-| .ci/rediacc_ci/tests | 333 | .py 333 |
+| .ci/rediacc_ci/tests | 334 | .py 334 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures/ci_diagnose | 11 | .json 6, .log 5 |
 | .ci/rediacc_ci/tests/gates | 174 | .py 173, .fixture 1 |
