@@ -320,11 +320,11 @@ AGENT_CASES = [
         True,
     ),
     (
-        "the pr-babysitter loop commits",
+        "the pr-babysitter loop commits (no exemption, operator 2026-10-04)",
         'git commit -m "feat: x" -- a.ts',
         FEATURE,
         "pr-babysitter",
-        False,
+        True,
     ),
     ("a writer reads the log", "git log -n 3", FEATURE, "general-purpose", False),
     (
@@ -336,7 +336,7 @@ AGENT_CASES = [
     ),
 ]
 # The planted defect removes the arm; every fire case on the feature branch must then flip to allowed.
-AGENT_DEFECT = ('if ev.field("agent_id") and', "if False and")
+AGENT_DEFECT = ('if ev.field("agent_id"):', "if False:")
 print()
 for name, command, root, agent, want in AGENT_CASES:
     got, err = run(command, root, agent=agent)

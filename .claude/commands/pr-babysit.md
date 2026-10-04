@@ -64,6 +64,8 @@ For each one found:
 
 ## Delegate mode (`bg` only): spawn and supervise
 
+**A delegated babysitter does not commit.** `block_commit_on_main` refuses every sub-agent's `git commit` (operator ruling 2026-10-04, no exemption for `pr-babysitter`). In `bg` mode the babysitter leaves each verified change in the tree, lists its paths in its report, and the lead commits and pushes them.
+
 You are the **team lead**. Your job is the four things only you can do: compose the briefing, hand over the tree, rule on escalations, verify the end. Your real work while it runs is *the remaining task list*. If you have nothing to do but watch CI, the wave was mis-scoped.
 
 ### 1. Compose the briefing
