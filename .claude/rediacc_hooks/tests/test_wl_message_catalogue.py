@@ -167,6 +167,10 @@ ARITY = {
     "CLI_LOOP_USAGE": (),
     "CLI_BRIEF_USAGE": (),
     "CLI_UNKNOWN_VERB": ("v",),
+    # agent/plans/PLAN-stop-hook-turbo.md D4 and D9. N_STOP_HOOK_OFF takes the note, the broken-sibling clause and the settings-problems clause by key; CLI_QUEUE_SET_USAGE is static; CLI_QUEUE_SET_REFUSED takes the reason.
+    "N_STOP_HOOK_OFF": {"note": "n", "broken": "", "problems": ""},
+    "CLI_QUEUE_SET_USAGE": None,
+    "CLI_QUEUE_SET_REFUSED": ("why",),
     "CLI_BRIEF_LOOKS_LIKE_ID": ("v",),
     "V_JUDGE_ORDER_REJECTED": ("v", "v"),
     "V_LADDER_INVESTIGATE_GONE": ("rows", "facts", "m", "m"),

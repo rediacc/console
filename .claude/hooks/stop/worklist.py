@@ -1880,14 +1880,111 @@ def _teammate_idle_cli():
         fh.write(json.dumps(rec, sort_keys=True) + "\n")
 
 
-def _stop_hook_disabled():
-    """True only when `.ci/config/stop-hook.json` exists, parses, and says `"enabled": false`."""
+def _queue_set_cli(argv):
+    """`--queue-set <me> [key=value ...] [--note "<text>"]`: the one writer of `agent/plans/QUEUE.md` `## Settings` (agent/plans/PLAN-stop-hook-turbo.md D9).
+
+    Every pair is validated BEFORE the file is touched, so one bad pair refuses the whole call and leaves the bytes as they were; the write is atomic; the verb never commits and ends by printing the `git add` line. With no pair it prints the effective settings, where each value came from, and the problems found.
+    """
+    if len(argv) < 2 or not C.PREFIX_RE.match(argv[1]):
+        sys.stderr.write(M.CLI_QUEUE_SET_USAGE)
+        sys.exit(2)
+    me = argv[1]
+    _identity_or_die(me, _die2)
+    import wl_planqueue as PQ  # noqa: PLC0415 -- sibling, probed not assumed
+    import wl_planrec as R  # noqa: PLC0415 -- the one atomic writer
+
+    pairs: dict[str, str] = {}
+    note = None
+    rest = list(argv[2:])
+    while rest:
+        arg = rest.pop(0)
+        if arg == "--note":
+            if not rest:
+                sys.stderr.write(M.CLI_QUEUE_SET_REFUSED % "--note needs its text")
+                sys.exit(2)
+            note = rest.pop(0)
+        elif "=" in arg and not arg.startswith("-"):
+            key, _eq, value = arg.partition("=")
+            if key in pairs:
+                sys.stderr.write(M.CLI_QUEUE_SET_REFUSED % ("%s is given twice" % key))
+                sys.exit(2)
+            pairs[key] = value
+        else:
+            sys.stderr.write(M.CLI_QUEUE_SET_REFUSED % ("%r is not key=value" % arg))
+            sys.exit(2)
+    root = pathlib.Path(C.project_root(C.project_start()) or os.getcwd())
+    path = root / PQ.QUEUE_REL
     try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        text = None
+        if pairs or path.exists():
+            sys.stderr.write(
+                M.CLI_QUEUE_SET_REFUSED % ("%s is unreadable: %s" % (PQ.QUEUE_REL, exc))
+            )
+            sys.exit(2)
+    if not pairs and note is None:
+        got, problems = PQ.settings_for(root)
+        src = PQ.sources(text or "")
+        for key in PQ.SETTINGS_KEYS:
+            shown = getattr(got, key)
+            shown = ("on" if shown else "off") if isinstance(shown, bool) else shown
+            extra = (" -- %s" % got.notes[key]) if key in got.notes else ""
+            print("%s: %s (%s)%s" % (key, shown, src[key], extra))
+        for problem in problems:
+            print("PROBLEM %s" % problem)
+        return
+    if not pairs:
+        sys.stderr.write(M.CLI_QUEUE_SET_REFUSED % "--note needs at least one key=value")
+        sys.exit(2)
+    try:
+        new = PQ.set_settings(text or "", pairs, note)
+    except ValueError as exc:
+        sys.stderr.write(M.CLI_QUEUE_SET_REFUSED % exc)
+        sys.exit(2)
+    if new != text:
+        R.write_atomic(path, new)
+    got, problems = PQ.settings_for(root)
+    for key in pairs:
+        shown = getattr(got, key)
+        shown = ("on" if shown else "off") if isinstance(shown, bool) else shown
+        print("%s: %s (QUEUE.md)" % (key, shown))
+    for problem in problems:
+        print("PROBLEM %s" % problem)
+    print("git add %s" % PQ.QUEUE_REL)
+
+
+def _stop_hook_off():
+    """(note, problems) when `agent/plans/QUEUE.md` `## Settings` says `stop_hook: off`, else None. Any doubt (an unusable wl_planqueue or wl_core, an unreadable file, a malformed or duplicated `stop_hook` line) keeps the hook ON: the switch only turns the hook off on purpose."""
+    try:
+        import wl_planqueue as PQ  # noqa: PLC0415 -- sibling, probed not assumed
+
         root = C.project_root(C.project_start()) or os.getcwd()
-        with open(os.path.join(root, ".ci", "config", "stop-hook.json"), encoding="utf-8") as fh:
-            return json.load(fh).get("enabled") is False
+        got, problems = PQ.settings_for(root)
+        if got.stop_hook:
+            return None
+        return got.notes.get("stop_hook", ""), problems
     except Exception:  # noqa: BLE001 -- any doubt keeps the hook on
-        return False
+        return None
+
+
+def _stop_hook_off_message(note, problems):
+    """The one free notice the OFF path emits: the switch and its note, the sibling modules that failed to import, the settings problems."""
+    broken = (
+        "; broken sibling module(s): %s"
+        % "; ".join("%s: %s" % (k, v) for k, v in sorted(_BROKEN.items()))
+        if _BROKEN
+        else ""
+    )
+    found = "; settings problem(s): %s" % " | ".join(problems) if problems else ""
+    fields = {"note": note or "no reason recorded", "broken": broken, "problems": found}
+    try:
+        return M.N_STOP_HOOK_OFF % fields
+    except Exception:  # noqa: BLE001 -- the notice must survive a broken catalogue
+        return (
+            "Stop hook OFF (agent/plans/QUEUE.md stop_hook: off -- %(note)s)%(broken)s%(problems)s"
+            % fields
+        )
 
 
 def main():
@@ -1895,9 +1992,11 @@ def main():
     if os.environ.get("STOPHOOK_CHILD"):
         sys.exit(0)
 
-    # OPERATOR SWITCH, the Stop path only (a bare invocation; every verb passes arguments). `.ci/config/stop-hook.json` `enabled: false` allows every stop without running a check. Committed and visible rather than an env var, so it survives restarts and a peer session sees the same state. Unreadable or missing config means ENABLED: the switch can only turn the hook off on purpose.
-    if len(sys.argv) == 1 and _stop_hook_disabled():
-        sys.exit(0)
+    # OPERATOR SWITCH, the Stop path only (a bare invocation; every verb passes arguments). `agent/plans/QUEUE.md` `## Settings` `stop_hook: off` allows every stop without running a check, and the stop carries one free notice naming the switch (agent/plans/PLAN-stop-hook-turbo.md D4). Committed and visible rather than an env var, so it survives restarts and a peer session sees the same state. Unreadable, missing or malformed means ON: the switch can only turn the hook off on purpose.
+    if len(sys.argv) == 1:
+        _off = _stop_hook_off()
+        if _off is not None:
+            _emit({"systemMessage": _stop_hook_off_message(*_off)})
 
     # BEFORE every other arm. Asking a tool how to use it must never reach the Stop-hook path, which reads stdin as JSON and, finding none, emits a block telling the caller they have a hook bug. That happened, and the answer to "how do I use this" was a wall of unrelated advice.
     if sys.argv[1:2] and sys.argv[1] in ("--help", "-h", "help"):
@@ -2537,6 +2636,9 @@ def main():
         return
     if sys.argv[1:2] == ["--retro-brief"]:
         _retro_brief_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--queue-set"]:
+        _queue_set_cli(sys.argv[1:])
         return
     if sys.argv[1:2] and sys.argv[1] in (
         "--add",

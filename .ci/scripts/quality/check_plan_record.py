@@ -36,6 +36,11 @@ WHAT IS ASSERTED, one rule per planted control in `--selftest`:
   R8  `agent/INDEX.md` EQUALS THE RENDER. `--update` writes it.
   RQ  `agent/plans/QUEUE.md`'s GENERATED SECTION EQUALS THE RENDER (`wl_planqueue`),
       by R8's equality. `--update` rewrites that section and nothing else.
+  RQ-SETTINGS  `agent/plans/QUEUE.md`'s `## Settings` BLOCK HAS NO PROBLEM
+      (`wl_planqueue.settings`): an unknown key, a bad value, a duplicate, a
+      second fence or the section below `## Promoted` is a finding, because
+      the reader silently falls back to the default of that key. A missing
+      section is all defaults and no finding. `--update` leaves the block alone.
   R9  THE CROSS-REFERENCE HEADERS RESOLVE (W12 P3.4b). `Supersedes:`, `Extends:`
       and `Related:` were taught to PARSE by P3.4a -- `wl_planrec.HEADER_FIELD_KEYS`
       lists them so a `# PLAN: ...` heading is not read as a field -- and nothing
@@ -1438,6 +1443,32 @@ def selftest():
             PQ.problems(root) != [],
             "a stale section was accepted",
         )
+        # RQ-SETTINGS: a clean block is silent, `turbo: onn` is a finding, and `--update` keeps the block byte for byte.
+        with_block = PQ.set_settings(fresh, {"turbo": "on"})
+        ck("RQ-SETTINGS CONTROL: a block is created above Promoted", "```stop-hook" in with_block)
+        R.write_atomic(queue_path, with_block)
+        ck(
+            "RQ-SETTINGS: a valid block is silent",
+            PQ.settings_for(root)[1] == [],
+            f"got {PQ.settings_for(root)[1]}",
+        )
+        bad_block = with_block.replace("turbo: on", "turbo: onn", 1)
+        ck(
+            "RQ-SETTINGS CONTROL: the perturbation actually changes the file",
+            bad_block != with_block,
+        )
+        R.write_atomic(queue_path, bad_block)
+        ck(
+            "RQ-SETTINGS: `turbo: onn` is reported",
+            PQ.settings_for(root)[1] != [],
+            "a malformed value was accepted",
+        )
+        PQ.problems(root, update=True)
+        ck(
+            "RQ-SETTINGS CONTROL: --update keeps the block byte for byte",
+            "turbo: onn" in queue_path.read_text(encoding="utf-8"),
+            f"{queue_path.read_text(encoding='utf-8')[:200]!r}",
+        )
         queue_path.unlink()
 
         # THE ANTI-VACUITY CONTROL FOR THE WHOLE GATE: a plain plan is not a record and must produce NOTHING. Without this, a parse() that returned a record for every file would look identical to a clean tree.
@@ -1838,6 +1869,8 @@ def main(argv):
     problems.extend(index_problems(ROOT, rows, census=census, update=update))
     # RQ. agent/plans/QUEUE.md's generated section equals `wl_planqueue`'s render over the tracked plans; `--update` rewrites only that section.
     problems.extend(PQ.problems(ROOT, update=update))
+    # RQ-SETTINGS. Every problem the settings reader found in the `## Settings` block is a finding; `--update` never rewrites the block, it is the operator's.
+    problems.extend("RQ-SETTINGS: %s" % p for p in PQ.settings_for(ROOT)[1])
 
     # ---- THE ADVISORY CENSUS ------------------------------------------------- IT RUNS ON BOTH PATHS, red and green. A measurement window with a hole in it wherever some unrelated rule failed is a window nobody can reason about, and the candidates say nothing about R1..R8 either way.
     #
