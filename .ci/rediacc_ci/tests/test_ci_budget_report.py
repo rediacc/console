@@ -671,6 +671,17 @@ def test_check_lane_durations_fails_on_26_percent_drift_not_24_percent(tmp_path)
     assert under == 0
 
 
+def test_unit_drift_below_the_absolute_floor_is_noise_not_a_finding(tmp_path):
+    """Run 37190043363: 16 -> 124.5 ms is 678% and 108 ms. Under MIN_UNIT_DRIFT_MS a unit never drifts; past it, the ratio rule still decides."""
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(_committed(units={"pytest:a.py": 16, "pytest:b.py": 10000})))
+    noise = _fake_compute(units={"pytest:a.py": 124.5, "pytest:b.py": 10000})
+    assert br.check_lane_durations(path, limit=10, compute=noise) == 0
+    # CONTROL: the same 26% ratio on a unit large enough to clear the floor is still a finding.
+    real = _fake_compute(units={"pytest:a.py": 16, "pytest:b.py": 12600})
+    assert br.check_lane_durations(path, limit=10, compute=real) == 1
+
+
 def test_check_lane_durations_reports_a_missing_artifact_lane_as_a_finding(tmp_path):
     path = tmp_path / "lane-durations.json"
     path.write_text(json.dumps(_committed()))
