@@ -172,7 +172,7 @@ def test_153b2_a_peers_item_does_not_stale_my_document_but_my_own_does(wl):  # n
     wl.check("allow", "", "153b2: a peer's item does NOT stale my recovery document")
 
     mine = added_id(wl.cli("--add", "deadbeef", "my own item, which IS a reason to rewrite"))
-    wl.cli("--tick", "deadbeef", mine, "landed, suite green, exit 0")
+    wl.cli("--tick", "deadbeef", mine, "landed, suite green, exit 0 nocommit:research")
     wl.newturn()
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
     got = wl.run()

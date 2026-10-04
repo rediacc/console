@@ -115,7 +115,12 @@ def test_r8_asked_passes_against_a_real_answer(wl):  # noqa: F811
     answered = time.strftime("%Y-%m-%dT%H:%M:40.000Z", time.gmtime(time.time() - 3600))
     plant_ask(wl, answered)
     item = added(wl)
-    got = wl.cli("--tick", wlfix.ME, item, "operator ruled: quarantine it, ASKED:%s" % minute)
+    got = wl.cli(
+        "--tick",
+        wlfix.ME,
+        item,
+        "operator ruled: quarantine it, nocommit:operator-deferred ASKED:%s" % minute,
+    )
     assert got.rc == 0, got.err[:400]
 
 
@@ -123,7 +128,12 @@ def test_r8_inverse_asked_without_an_answer_is_refused_and_logged(wl):  # noqa: 
     lead_transcript(wl).write_text("", encoding="utf-8")
     minute = time.strftime("%Y-%m-%dT%H:%MZ", time.gmtime(time.time() - 3600))
     item = added(wl)
-    got = wl.cli("--tick", wlfix.ME, item, "operator ruled: quarantine it, ASKED:%s" % minute)
+    got = wl.cli(
+        "--tick",
+        wlfix.ME,
+        item,
+        "operator ruled: quarantine it, nocommit:operator-deferred ASKED:%s" % minute,
+    )
     assert got.rc != 0, got.out[:300]
     log = wl.stem(".tick-refusals-deadbeef.jsonl")
     assert log.is_file(), "the refusal was not logged"

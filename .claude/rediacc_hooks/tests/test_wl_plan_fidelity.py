@@ -130,7 +130,7 @@ def tick_n(fix, count: int, plan: str, label: str = "work %d that outran the pla
     """
     for index in range(1, count + 1):
         ident = added_id(fix.cli("--add", wlfix.ME, "PLAN-%s.md %s" % (plan, label % index)))
-        fix.cli("--tick", wlfix.ME, ident, "landed, suite green, exit 0")
+        fix.cli("--tick", wlfix.ME, ident, "landed, suite green, exit 0 nocommit:research")
 
 
 def test_215_a_plan_the_work_has_moved_past_is_flagged(wl):  # noqa: F811
@@ -157,7 +157,7 @@ def test_215a_one_tick_is_not_a_plan_going_stale(wl):  # noqa: F811
     wl.hand_now()
     path = plan_file(wl, "thing", PLAN_EXECUTING, minutes_ago=120)
     ident = added_id(wl.cli("--add", wlfix.ME, "PLAN-thing.md one small thing"))
-    wl.cli("--tick", wlfix.ME, ident, "landed, exit 0")
+    wl.cli("--tick", wlfix.ME, ident, "landed, exit 0 nocommit:research")
     assert "PLAN-thing.md" not in wl.run().out, "215a CONTROL: one tick flagged the plan"
 
     # 215b CONTROL: the same plan, touched AFTER the work, is silent.
@@ -275,7 +275,7 @@ def test_217e_an_expired_intent_covering_only_closed_work_stays_quiet(wl):  # no
     wl.brief_now()
     wl.hand_now()
     ident = added_id(wl.cli("--add", wlfix.ME, "the work the intent covered"))
-    wl.cli("--tick", wlfix.ME, ident, "suite run green, exit 0")
+    wl.cli("--tick", wlfix.ME, ident, "suite run green, exit 0 nocommit:research")
     old = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - 90 * 60))
     wl.stem(".intents").write_text(
         json.dumps(

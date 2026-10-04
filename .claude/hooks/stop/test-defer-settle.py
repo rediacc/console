@@ -650,7 +650,7 @@ control(
 os.environ["WORKLIST_SESSION_ID"] = _saved_sid
 if _saved_cc is not None:
     os.environ["CLAUDE_CODE_SESSION_ID"] = _saved_cc
-code, _msg = cli("--tick", ME, rid4, "done, see package.json:1")
+code, _msg = cli("--tick", ME, rid4, "done, see package.json:1 nocommit:research")
 control("reserved control: an ordinary session id ticks", (code, state_of(rid4)), (0, "x"))
 
 # ---------------------------------------------------------------- STOP WIRING in wl_checks (structural: the call sites exist, in order)

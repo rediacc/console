@@ -157,7 +157,7 @@ def test_reopen_moves_a_deferral_back_to_open(wl):  # noqa: F811
 
 def test_reopen_is_refused_from_every_other_state(wl):  # noqa: F811
     done = add(wl, "(deadbeef) finished item")
-    assert wl.cli("--tick", wlfix.ME, done, "https://ci.invalid/run/1").rc == 0
+    assert wl.cli("--tick", wlfix.ME, done, "https://ci.invalid/run/1 nocommit:research").rc == 0
     got = wl.cli("--reopen", wlfix.ME, done, "try to reopen")
     assert got.rc != 0, (got.rc, got.err)
     assert "only a [?]" in got.err, (got.rc, got.err)

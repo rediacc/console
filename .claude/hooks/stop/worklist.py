@@ -1023,6 +1023,52 @@ def _log_tick_refusal(worklist, me, item_id, evidence, why):
         fh.write(json.dumps(row) + "\n")
 
 
+# THE COMMIT REF ON A TICK (agent/plans/PLAN-commit-as-you-go.md section 3.4, box T6). Verified work is committed before its item is ticked (CLAUDE.md rule 1), so a tick names the commit or says why there is none. Shape-only beside the door gate: whether the commit holds the work is the judge's question. The two message strings belong in worklist_messages.py; they sit here while another writer owns that file.
+COMMIT_REF_RE = re.compile(r"(?<![\w-])commit:([0-9a-fA-F]{7,40})(?![\w])")
+NOCOMMIT_RE = re.compile(r"(?<![\w-])nocommit:([\w-]+)")
+NOCOMMIT_REASONS = ("no-tracked-change", "research", "operator-deferred")
+CLI_TICK_NO_COMMIT_REF = (
+    "REFUSED: the tick of #%s names no commit. Verified work is committed before its item is "
+    "ticked (CLAUDE.md rule 1), so the evidence carries `commit:<sha>` (a commit reachable from "
+    "HEAD in the console or a submodule) or `nocommit:<reason>` with the reason one of "
+    "no-tracked-change, research, operator-deferred (a named last-resort door also stands in).%s\n"
+    "    .claude/hooks/stop/worklist.py --tick <me> %s 'commit:<sha> <evidence>'"
+)
+CLI_TICK_COMMIT_REF_DETAIL = {
+    "unresolved": " commit:%s is not a commit reachable from HEAD in the console or any submodule.",
+    "reason": " nocommit:%s is not one of the three reasons.",
+}
+
+
+def commit_ref_problem(root, text):
+    """None when `text` carries a valid commit ref, else (kind, token): ("missing", "") for no ref at all, or a CLI_TICK_COMMIT_REF_DETAIL key and the offending token.
+
+    `commit:<sha>` must name a commit that `merge-base --is-ancestor <sha> HEAD` accepts in `root` or one of its submodules, so a fabricated or foreign sha is refused. `nocommit:<reason>` must use a reason from NOCOMMIT_REASONS, and a named door (`door:operator-only` and its siblings) stands in for one. Every ref in the text must pass: one real sha beside a fabricated one is still a fabricated claim."""
+    import wl_git  # noqa: PLC0415 -- sibling, only for this verb
+
+    shas = [m.group(1).lower() for m in COMMIT_REF_RE.finditer(text or "")]
+    reasons = [m.group(1) for m in NOCOMMIT_RE.finditer(text or "")]
+    if not shas and not reasons:
+        # A named last-resort door (CK.DOOR_RE) already says why nothing was committed: the work was handed to the operator or lies outside this session's write access, and CLAUDE.md rule 2 closes such an item with the door alone.
+        return None if CK.DOOR_RE.search(text or "") else ("missing", "")
+    for reason in reasons:
+        if reason not in NOCOMMIT_REASONS:
+            return ("reason", reason)
+    repos = [str(root), *(os.path.join(str(root), p) for p, _b in wl_git.submodules(str(root)))]
+    for sha in shas:
+        found = False
+        for repo in repos:
+            rc, _out, _err = wl_git.run_git(
+                ["rev-parse", "--verify", "--quiet", "%s^{commit}" % sha], cwd=repo
+            )
+            if rc == 0 and wl_git.is_ancestor(repo, sha, "HEAD"):
+                found = True
+                break
+        if not found:
+            return ("unresolved", sha)
+    return None
+
+
 def _item_cli(argv, worklist):
     """--add / --triage / --tick / --defer / --lease / --update / --list: the v10 item verbs. Exits non-zero on misuse, so a rejected write cannot be mistaken for a delivered one."""
 
@@ -1156,6 +1202,12 @@ def _item_cli(argv, worklist):
         if CK.issue_only_evidence(root, rest):
             _log_tick_refusal(worklist, me, item_id, rest, "issue-without-door")
             die(M.CLI_TICK_ISSUE_DOOR % item_id)
+        bad = commit_ref_problem(root, rest)
+        if bad is not None:
+            _log_tick_refusal(worklist, me, item_id, rest, "no-commit-ref")
+            kind, token = bad
+            detail = CLI_TICK_COMMIT_REF_DETAIL[kind] % token if token else ""
+            die(CLI_TICK_NO_COMMIT_REF % (item_id, detail, item_id))
         S.set_state(worklist, me, item_id, "x", rest)
         print("ticked #%s (%s)" % (item_id, rest[:80]))
         return

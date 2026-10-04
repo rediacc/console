@@ -87,7 +87,9 @@ def test_l1c_the_lead_holds_at_most_three(wl):  # noqa: F811
 def test_l1e_a_ticked_item_refuses_a_lease_and_stays_done(wl):  # noqa: F811
     """2026-10-04: `--lease` accepted the ticked #54ee0b51 and folded it back to [>], so arm_ci_watch, which reuses its CI item only when a lease succeeds, re-leased a done item instead of adding one for the new head."""
     item = add(wl, "(deadbeef) CI verdict for a branch")
-    ticked = wl.cli("--tick", wlfix.ME, item, "CI Complete GREEN on the head, ci-trace exit 0")
+    ticked = wl.cli(
+        "--tick", wlfix.ME, item, "CI Complete GREEN on the head, ci-trace exit 0 nocommit:research"
+    )
     assert ticked.rc == 0, ticked.err[:300]
     got = wl.cli("--lease", wlfix.ME, item, "+30", "worker:12345")
     assert got.rc != 0, got.out
@@ -198,7 +200,7 @@ def test_l4_a_blocked_item_waits_and_reopens_when_its_blocker_closes(wl):  # noq
     assert "the root of the chain" in open_block, open_block
     assert "waits on the root" not in open_block, open_block
     assert "#%s waiting (#%s)" % (child, root) in reason, reason[-800:]
-    assert wl.cli("--tick", wlfix.ME, root, "done, exit code 0").rc == 0
+    assert wl.cli("--tick", wlfix.ME, root, "done, exit code 0 nocommit:research").rc == 0
     wl.newturn()
     wl.say("working\n\n## Remaining\n- #%s" % child)
     out = wl.run({"WORKLIST_FOCUS": "off"}).out
@@ -382,7 +384,12 @@ def test_l7d_an_expired_worker_lease_that_took_the_named_remedy_reads_as_waiting
     assert not any(waiter in line for line in after["open"]), after
     assert waiter in after["waiting"], after
     # NOT WAITING FOREVER: once the blocker closes, the dead lease has nothing left to wait on and fails closed into the open list again, so a crashed worker cannot hide behind a finished blocker.
-    ticked = wl.cli("--tick", wlfix.ME, blocker, "CI Complete GREEN on the head, ci-trace exit 0")
+    ticked = wl.cli(
+        "--tick",
+        wlfix.ME,
+        blocker,
+        "CI Complete GREEN on the head, ci-trace exit 0 nocommit:research",
+    )
     assert ticked.rc == 0, ticked.err[:300]
     done = classify()
     assert any(waiter in line and "lease expired" in line for line in done["open"]), done

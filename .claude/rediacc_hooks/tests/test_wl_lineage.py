@@ -178,7 +178,15 @@ def test_24_an_ancestors_items_are_invisible_then_adopted_then_survive_compactio
     )
     _, out = linrun(wl, lineage, NEXT, "--list", "--open", "cafe9911")
     assert "lin-a" in out, "FIRE: adopted, but the items are still invisible: %s" % out[:200]
-    rc, out = linrun(wl, lineage, NEXT, "--tick", "cafe9911", tickme, "https://ci.invalid/run/24")
+    rc, out = linrun(
+        wl,
+        lineage,
+        NEXT,
+        "--tick",
+        "cafe9911",
+        tickme,
+        "https://ci.invalid/run/24 nocommit:research",
+    )
     assert rc == 0, "FIRE: still refused after adoption (rc=%d): %s" % (
         rc,
         out[:200],

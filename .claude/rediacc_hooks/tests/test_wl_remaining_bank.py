@@ -46,7 +46,7 @@ def test_r4_a_task_flip_and_a_commit_do_not_redemand_the_report(wl):  # noqa: F8
 
 def test_r4_inverse_ticking_an_owned_item_redemands_the_report(wl):  # noqa: F811
     item = banked_world(wl)
-    ticked = wl.cli("--tick", "deadbeef", item, "landed, suite green, exit 0")
+    ticked = wl.cli("--tick", "deadbeef", item, "landed, suite green, exit 0 nocommit:research")
     assert ticked.rc == 0, ticked.err[:300]
     wl.newturn()
     wl.say("ticked it")

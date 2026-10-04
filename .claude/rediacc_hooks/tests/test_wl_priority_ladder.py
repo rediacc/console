@@ -249,7 +249,10 @@ def test_233_the_pr_babysit_finish_line_blocks_a_green_but_unfinished_wave(wl): 
     )
 
     wl.cli(
-        "--tick", "deadbeef", tid, "https://github.com/fake/repo/pull/543#discussion_r1 resolved"
+        "--tick",
+        "deadbeef",
+        tid,
+        "https://github.com/fake/repo/pull/543#discussion_r1 resolved nocommit:research",
     )
     got = prf_run(wl, extra_env=focus_off)
     assert "THE WAVE IS NOT FINISHED" not in got.out, (
@@ -267,7 +270,10 @@ def test_233d_a_live_watch_on_a_head_with_no_verdict_stands_the_finish_line_down
     assert found, threads.out
     tid = found.group(1)
     wl.cli(
-        "--tick", "deadbeef", tid, "https://github.com/fake/repo/pull/543#discussion_r1 resolved"
+        "--tick",
+        "deadbeef",
+        tid,
+        "https://github.com/fake/repo/pull/543#discussion_r1 resolved nocommit:research",
     )
     ci_status_rollup(
         wl,
