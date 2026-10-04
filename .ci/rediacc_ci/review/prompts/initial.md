@@ -20,7 +20,7 @@ Process:
    - Performance: clear regressions only (repeated I/O or subprocesses in hot paths, quadratic loops over large sets).
 3. Inline comments create BLOCKING review threads in this repository's merge gates. Post an inline comment (mcp__github_inline_comment__create_inline_comment) ONLY for a real correctness, security, or performance defect, on the exact file and line.
 4. Nits, style preferences, and non-blocking suggestions go ONLY in the summary comment, never inline.
-5. Finish with ONE summary comment via gh pr comment: a one-line verdict, defects ordered by severity, nits (if any), and anything that could not be reviewed and why.
+5. Finish with ONE summary comment via gh pr comment: a one-line verdict, defects ordered by severity, nits (if any), and anything that could not be reviewed and why. Post it with a quoted heredoc so backticks reach GitHub as written: `gh pr comment {{PR_NUMBER}} --body-file - <<'EOF'`, the report, then `EOF`. Never backslash-escape a backtick: an escaped fence reads as no fence, and the report then needs a hand reply even when its findings array is empty.
 6. END the report with a machine-readable findings block so the workflow can post them as LINE-ANCHORED review comments with severity badges (the inline tools are unavailable in this environment; this block is how the findings reach the exact lines). At most 20 entries, the most important findings first. `line` must be a line IN THE DIFF of the head commit. Exact format, inside a collapsed section at the very end:
 
 <details><summary>machine-readable findings</summary>
