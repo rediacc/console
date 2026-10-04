@@ -123,9 +123,9 @@ def _run(
 
 
 def run_both(
-    tmp_path: pathlib.Path, key_as: dict[str, str] | None = None, **kw
+    tmp_path: pathlib.Path, key_as: dict[str, str] | None = None, /, **kw
 ) -> tuple[tuple, tuple]:
-    """`key_as` overrides values in the CASE KEY only, never in the run: a value that differs per host (a masked PATH carries the host's own directory list and the mirror names of the one that held `aws`) would otherwise hash to a key no other host's golden has."""
+    """`key_as` (positional-only, so a `**kw` spread can never fill it) overrides values in the CASE KEY only, never in the run: a value that differs per host (a masked PATH carries the host's own directory list and the mirror names of the one that held `aws`) would otherwise hash to a key no other host's golden has."""
     old = diff.twin_tuple(
         TWIN_REL,
         [repr(sorted({**kw, **(key_as or {})}.items()))],
@@ -274,7 +274,7 @@ def test_missing_aws_refuses_identically(tmp_path: pathlib.Path) -> None:
     # Keyed on the ambient PATH: `masked` equals it on a host with no `aws` (where the golden was recorded) and differs from it on a host that has one.
     old, new = run_both(
         tmp_path,
-        key_as={"PATH": diff.BASE_ENV["PATH"]},
+        {"PATH": diff.BASE_ENV["PATH"]},
         mode="present",
         VERSION="v1.1.2",
         PATH=masked,
