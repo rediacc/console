@@ -20,3 +20,4 @@
 {"at":"2026-10-04T01:08:52Z","by":"d778be9d","id":"db1be6c2","title":"Plan priority and concurrency headers: T12, the prose that documents Priority/Concurrency/Owns (PLAN-plan-priority-concurrency)","covers":[],"order":null,"plan":"agent/plans/PLAN-plan-priority-concurrency.md"}
 {"at":"2026-10-04T07:30:46Z","by":"d778be9d","id":"fcbc40a8","title":"CI and tooling consolidation: registration verb, freshness registry, hook gh layer, plan verbs, pytest-aware probe","covers":[],"order":null,"plan":"agent/plans/PLAN-ci-consolidation.md"}
 {"at":"2026-10-04T08:53:40Z","by":"d778be9d","id":"dcbfb5d6","title":"Clean per-commit reviews append one ledger line instead of a file","covers":[],"order":null,"plan":"agent/plans/PLAN-clean-review-ledger.md"}
+{"at":"2026-10-04T11:40:55Z","by":"d778be9d","id":"bf937597","title":"Stop-hook turbo mode; QUEUE.md Settings as the single switchboard","covers":[],"order":null,"plan":"agent/plans/PLAN-stop-hook-turbo.md"}
