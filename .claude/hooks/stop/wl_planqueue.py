@@ -83,12 +83,13 @@ def ordered(text: str) -> list[str]:
 SETTINGS_HEADING = "## Settings"
 SETTINGS_FENCE = "stop-hook"
 BOOL_KEYS = ("stop_hook", "turbo", "cadence", "agent_hint", "agent_pushback", "judge")
-INT_KEYS = ("batch_size", "writer_cap")
+INT_KEYS = ("batch_size", "plan_concurrency", "writer_cap")
 # The render order of a new block.
 SETTINGS_KEYS = (
     "stop_hook",
     "turbo",
     "batch_size",
+    "plan_concurrency",
     "writer_cap",
     "cadence",
     "agent_hint",
@@ -107,6 +108,7 @@ class Settings:
     stop_hook: bool = True
     turbo: bool = False
     batch_size: int = 1
+    plan_concurrency: int = 1
     writer_cap: int = 4
     cadence: bool = True
     agent_hint: bool = True
@@ -281,7 +283,7 @@ def _line(key: str, value, note: str | None) -> str:
 
 
 def set_settings(text: str, updates: dict[str, str], note: str | None = None) -> str:
-    """`text` with `updates` ({key: raw value}) written into the settings fence. Only the fence's lines change: an updated key's line is replaced (later duplicates of it dropped), a key the block lacks is appended, every other byte stays. An absent section is created above `## Promoted` with all eight keys in order.
+    """`text` with `updates` ({key: raw value}) written into the settings fence. Only the fence's lines change: an updated key's line is replaced (later duplicates of it dropped), a key the block lacks is appended, every other byte stays. An absent section is created above `## Promoted` with every key of SETTINGS_KEYS in order.
 
     `note` is attached to every updated key. Without it, an updated key keeps its note when its value is unchanged and loses it when the value changes (a stale reason is worse than none). ValueError, nothing written, for an unknown key, a bad value, a multi-line note, or a structurally broken block (section below Promoted, a second or unclosed fence)."""
     typed = {k: _value(k, v) for k, v in updates.items()}

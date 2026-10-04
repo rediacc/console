@@ -605,7 +605,7 @@ def test_an_unresolvable_dependency_is_a_problem_naming_its_path(tmp_path):
 
 # ---------------------------------------------------------------- turbo (agent/plans/PLAN-stop-hook-turbo.md T4, T5, T7)
 
-TURBO_ON = "```stop-hook\nturbo: on\nbatch_size: 2\n```\n"
+TURBO_ON = "```stop-hook\nturbo: on\nbatch_size: 2\nplan_concurrency: 9\n```\n"
 TURBO_OFF = "```stop-hook\nturbo: off\n```\n"
 
 
@@ -664,6 +664,27 @@ def test_next_turbo_names_queue_order_up_to_the_open_slots(tmp_path):
     assert plan_gate.next_turbo(root, (), 2) == [_t("a"), _t("b")]
     assert plan_gate.next_turbo(root, (), 5) == [_t("a"), _t("b"), _t("c")]
     assert plan_gate.next_turbo(root, (), 0) == []
+
+
+def test_next_turbo_stops_at_plan_concurrency_counting_the_prs_unfinished_plans_and_live_writers(
+    tmp_path,
+):
+    """`plan_concurrency` is the parallelism ceiling (operator 2026-10-04), apart from `batch_size`: the PR's own unfinished plans and the plans live writers serve count against it."""
+    three = "```stop-hook\nturbo: on\nbatch_size: 2\nplan_concurrency: 3\n```\n"
+    plans = {n: _xplan() for n in "abcde"}
+    root = _turbo_root(tmp_path, plans, list("abcde"), three)
+    assert plan_gate.plan_concurrency(plan_gate.settings_at(root)[0]) == 3
+    assert plan_gate.next_turbo(root, (), 10) == [_t("a"), _t("b"), _t("c")]
+    # one unfinished plan in the PR and one live writer's plan leave a single place
+    assert plan_gate.next_turbo(root, ("PLAN-d.md",), 10, in_set=(_t("e"),)) == [_t("a")]
+    # a finished plan in the PR does not count
+    root2 = _turbo_root(
+        tmp_path / "f", {**plans, "e": _xplan(opened=0, done=1)}, list("abcde"), three
+    )
+    assert plan_gate.next_turbo(root2, (), 10, in_set=(_t("e"),)) == [_t("a"), _t("b"), _t("c")]
+    # CONTROL: without the key the default is 1, so an empty PR takes one plan
+    root3 = _turbo_root(tmp_path / "g", plans, list("abcde"), "```stop-hook\nturbo: on\n```\n")
+    assert plan_gate.next_turbo(root3, (), 10) == [_t("a")]
 
 
 def test_next_turbo_is_empty_with_turbo_off(tmp_path):

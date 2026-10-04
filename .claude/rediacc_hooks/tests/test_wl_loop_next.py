@@ -261,7 +261,7 @@ def turbo_world(fix, turbo: bool = True, red: bool = False, own_open: int = 1, b
     one = turbo_plan(fix, "turbo-one", opened=2)
     two = turbo_plan(fix, "turbo-two", opened=2)
     write_queue(fix, own, one, two)
-    fix.settings(turbo=turbo, batch_size=batch, writer_cap=4)
+    fix.settings(turbo=turbo, batch_size=batch, plan_concurrency=9, writer_cap=4)
     # The session's project directory exists and holds no subagent: an honest zero writers, not a blind roster (a blind roster names no plan).
     subagents_dir(fix).parent.parent.mkdir(parents=True, exist_ok=True)
     fix.env["CLAUDE_CONFIG_DIR"] = str(fix.base / "claude")

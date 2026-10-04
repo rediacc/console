@@ -418,7 +418,7 @@ def test_epic_reader_without_plan_epics_is_empty(monkeypatch):
 
 # ---- T9 of agent/plans/PLAN-stop-hook-turbo.md: the turbo picks ------------------------------------
 
-TURBO = "\n## Settings\n\n```stop-hook\nturbo: %s\nbatch_size: 2\nwriter_cap: 4\n```\n"
+TURBO = "\n## Settings\n\n```stop-hook\nturbo: %s\nbatch_size: 2\nplan_concurrency: 9\nwriter_cap: 4\n```\n"
 
 
 def _xplan(name, opened=1, done=0):

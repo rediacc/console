@@ -42,6 +42,7 @@ ALL_KEYS = (
     "stop_hook",
     "turbo",
     "batch_size",
+    "plan_concurrency",
     "writer_cap",
     "cadence",
     "agent_hint",
@@ -251,7 +252,7 @@ def test_set_settings_creates_the_section_above_promoted():
     assert new.endswith(TAIL)
     lo, hi = fence_span(new)
     keys = [line.split(":")[0] for line in new[lo:hi].splitlines()]
-    assert keys == list(ALL_KEYS)  # all eight, in the documented order
+    assert keys == list(ALL_KEYS)  # all nine, in the documented order
     got, problems = PQ.settings(new)
     assert problems == []
     assert (got.turbo, got.batch_size) == (True, 3)
