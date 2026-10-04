@@ -340,6 +340,12 @@ def test_l7d_an_expired_worker_lease_that_took_the_named_remedy_reads_as_waiting
     after = classify()
     assert not any(waiter in line for line in after["open"]), after
     assert waiter in after["waiting"], after
+    # NOT WAITING FOREVER: once the blocker closes, the dead lease has nothing left to wait on and fails closed into the open list again, so a crashed worker cannot hide behind a finished blocker.
+    ticked = wl.cli("--tick", wlfix.ME, blocker, "CI Complete GREEN on the head, ci-trace exit 0")
+    assert ticked.rc == 0, ticked.err[:300]
+    done = classify()
+    assert any(waiter in line and "lease expired" in line for line in done["open"]), done
+    assert waiter not in done["waiting"], done
 
 
 def test_l7c_the_queue_slot_block_names_blocked_by_as_the_remedy(wl):  # noqa: F811
