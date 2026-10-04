@@ -9,11 +9,12 @@ Entry format: `1. agent/plans/PLAN-<slug>.md`, optionally followed by ` -- <note
 ## Promoted
 
 1. agent/plans/PLAN-plan-priority-concurrency.md -- operator /ask 2026-10-03: X's last box, T12 prose
-2. agent/plans/PLAN-commit-as-you-go.md -- operator /ask 2026-10-03: T6 (the `nocommit:` tick arm Z depends on), with T0 and T9
-3. agent/plans/PLAN-gate-drop-receipt-verify.md -- operator /ask 2026-10-04: "After commit-as-you-go"; ci:quick skipped a touched slow gate twice on 2026-10-03 and the push guard never noticed (#74f48292)
-4. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: T9 (the enforced matrix in DESIGN-CONFIG-STORAGE.md) and T10 (live smoke)
-5. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: the 9 open boxes
-6. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: Step 12
+2. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; candidates 1, 3, 4, 6, 7 of agent/reports/consolidation-investigation-2026-10-04.md in one plan, one PR
+3. agent/plans/PLAN-commit-as-you-go.md -- operator /ask 2026-10-03: T6 (the `nocommit:` tick arm Z depends on), with T0 and T9
+4. agent/plans/PLAN-gate-drop-receipt-verify.md -- operator /ask 2026-10-04: "After commit-as-you-go"; ci:quick skipped a touched slow gate twice on 2026-10-03 and the push guard never noticed (#74f48292)
+5. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: T9 (the enforced matrix in DESIGN-CONFIG-STORAGE.md) and T10 (live smoke)
+6. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: the 9 open boxes
+7. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: Step 12
 
 ## Generated
 

@@ -275,6 +275,42 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-ci-consolidation.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 23,
+      "done": 1,
+      "open_sigs": [
+        "024f958e",
+        "0527c723",
+        "059adb2b",
+        "0ad9723a",
+        "1860fe23",
+        "2811c154",
+        "2c6332f8",
+        "2cc668cb",
+        "34375e81",
+        "3f4f127f",
+        "671566d6",
+        "7921044d",
+        "7c9b4f22",
+        "87015b59",
+        "91e369a0",
+        "a362a778",
+        "a6befbdf",
+        "ba6746e6",
+        "cb3b9a5f",
+        "d03d7256",
+        "dbee2b16",
+        "ec65e0bb",
+        "f46c503d"
+      ],
+      "done_sigs": [
+        "b167aa51"
+      ]
+    },
     "agent/plans/PLAN-ci-quick-cpu-scheduling.md": {
       "status": "active",
       "owner": "d778be9d",
