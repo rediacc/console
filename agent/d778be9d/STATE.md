@@ -1,18 +1,21 @@
-## SESSION d778be9d 2026-10-04T20:03:52Z
+## SESSION d778be9d 2026-10-04T21:51:06Z
 
 # STATE d778be9d
 
-## Where things are (2026-10-04 ~20:10Z)
+## Where things are (2026-10-04 ~21:45Z)
 
-- Branch 1004-2 was rebased onto origin/main (verify-rebase: 66 carried, 0 missing) and PUSHED at 3c9ca51e7. The PR is not created yet: `gh pr create --draft` is blocked by block_unproven_bulk_transform. Commit 69b1f2f145 (the 45-file lift of the 2026-09-26 holds) said "sampled in that diff"; the guard wants "sampled and read". A follow-up commit carrying that proof is being added, and it needs one more pre-push cycle before the PR.
-- PR body draft: scratchpad/pr-1004-2.md. It has the Plan: line (PLAN-stop-hook-turbo), an Operational-Reason naming the 5 part-done plans, and an empty worklist-epics block. After creation, run .ci/scripts/pr/sync-epic-block.sh <pr> 1004-2.
-- Turbo is off. QUEUE.md: batch_size 3, plan_concurrency 5, writer_cap 15. No writers are running.
-- Push guard: ci:quick plus `npx tsx scripts/ci-runner/run.ts --only <dropped ids> --receipt-out <abs>` at the exact head. Carried: P-A1:e2588e9ce034 and check:ci-pytest "*". Pre-push script: scratchpad/prepush.sh.
-- PLAN-deletion-budget is written and postponed (P3 operator). DB29 is filled in.
-- Operator answers: baseline drains count; no sub-agent commits (pr-babysitter exemption removed, 45346b1aa); keep door-as-reason; the session dispatches the release runs after merge (#ab92320e).
-- Findings open: #0d14e949 (flaky account test), #e1b778c0 (profiler usage text), #1434d694 (ci:quick --only), #3cf9a7d0, #faedaaf9, #972d7bf1.
+- PR #595 (branch 1004-2, draft) is open. Its remote head is 5965e4598, CI run 37233225451 RED: Quality / Pytest (3/3), 7 test_ci_profiler_sampler_linux host-tier cases. The golden for the retired bash sampler was recorded on a 24-core host, so CI's 4 cores give 4000 vs 24000.
+- Fixed locally, not pushed:
+  - 522bd7ad1: host readings are compared against this host (75 passed at 24 cores and under taskset -c 0-3).
+  - 9548df90d: lane-durations refresh for two drifted units.
+- The 4-core sweep of 205 golden modules found no other host value.
+- Pre-push for the current head is running as bpwq1r2g5 (scratchpad/prepush.sh: ci:quick, then `npx tsx scripts/ci-runner/run.ts --only <dropped>` into .ci/cache/prepush-receipt.json). Carried: P-A1:e2588e9ce034 (admitted by the PR body's Operational-Reason) and check:ci-pytest "*" (4 WSL/live-container skips).
+- PR body: Plan: PLAN-stop-hook-turbo, an Operational-Reason naming 5 part-done plans, the epic block synced (agent/pr/1004-2.md committed). The PR has to be created with --body inline, not --body-file.
+- Turbo is off. PLAN-deletion-budget is written and postponed (P3 operator), and DB29 is filled in.
+- After the merge, the session dispatches the release runs (#ab92320e): cd-v2 patch, promote-stable after the soak, backfill-release-sentinel dry_run.
+- Rebase lessons: after any rebase, run scratchpad/remap.py for plan citations, and remap agent/ledgers/plan-investigation.jsonl `["commit",sha]` and `["commit",true,full]` pointers by subject. CI's fresh checkout lacks rewritten objects (finding #ad75ce33).
 
 ## Next action
 
-1. Commit this STATE.md with the 69b1f2f145 proof message, run prepush.sh in the background, push 1004-2, then `gh pr create --draft ... --body-file scratchpad/pr-1004-2.md`, sync-epic-block and `ci-trace --wait --until-final`.
-2. If origin/main moves first: snapshot, rebase, verify-rebase, run scratchpad/remap.py for stale plan citations, commit, then re-run prepush.
+1. bpwq1r2g5 green (only check:ci-pytest red) and origin/main unmoved: `git push origin 1004-2`, then ci-trace --wait --until-final on #595. If main moved: snapshot, rebase, verify-rebase, remap citations and the ledger, commit, rerun prepush.
+2. CI green: `gh pr ready 595`, wl_prreview --wait and answer the review, then gh pr merge 595 --rebase --auto. Then dispatch #ab92320e.

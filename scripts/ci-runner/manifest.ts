@@ -1533,7 +1533,6 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-scope-scripts-reachability',
     run: 'npm run check:ci-scope-scripts-reachability',
-    slow: true, // 24.3s measured
     gate: true,
     leaves: ['.ci/scripts/quality/check_scope_scripts_reachability.py'],
     ci: {

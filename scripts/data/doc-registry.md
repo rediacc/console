@@ -280,7 +280,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-schema-call-sites | quality-static / Schema call sites | yes | no | no |
 | check:ci-schema-coverage | quality-code / Schema coverage | yes | no | no |
 | check:ci-scope-completeness | quality-security / Scope completeness | yes | no | no |
-| check:ci-scope-scripts-reachability | quality-security / Scope map, reachable scripts/ paths force full CI | yes | yes | no |
+| check:ci-scope-scripts-reachability | quality-security / Scope map, reachable scripts/ paths force full CI | yes | no | no |
 | check:ci-script-exec-bit | quality-code / Block non-executable invoked scripts | yes | no | no |
 | check:ci-search-index | quality-i18n / Search index | yes | no | no |
 | check:ci-secret-reachability | quality-security / Secret reachability | yes | no | no |
