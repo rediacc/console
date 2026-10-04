@@ -49,6 +49,7 @@ import wl_report
 import wl_roster
 import wl_roundlog
 import wl_rules
+import wl_schedred
 import wl_shapedup
 import wl_standdown
 import wl_store as S
@@ -1777,6 +1778,11 @@ def handle_session_start(event):
     if cv_line:
         blocks.append(cv_line)
         summary.append("a cached CI verdict")
+    # A FIFTH-BEFORE-REVIEWS block: a scheduled workflow red on main (agent/plans/PLAN-scheduled-red-detector.md, A5), from the shared `.schedred` cache only, zero network. A new session learns on its first turn that main is red overnight and whether some item already tracks it, instead of meeting it as a Stop block later.
+    sr_line = wl_schedred.session_start_line(C.worklist_for(root))
+    if sr_line:
+        blocks.append(sr_line)
+        summary.append("a scheduled red on main")
     # A FIFTH: the branch's per-commit review state (agent/plans/PLAN-per-commit-review.md). Disk and local git only, so it works with the Stop hook disabled; empty when every commit is reviewed, recorded and clear.
     try:
         import wl_review  # noqa: PLC0415 -- optional; the briefing must not need it
@@ -2278,6 +2284,8 @@ PRIORITY_LADDER = (
                 # The parallel-writer roster (wl_roster), placed here by the operator's own order: a writer over the cap, a worker owing its 20-minute status, and a worker gone silent are supervision owed while other agents edit the tree.
                 "roster-cap",
                 "roster-silent",
+                # A scheduled workflow red on main that this session claimed, or ticked without evidence (wl_schedred): the party owed is the release pipeline (promote-stable counts only green scheduled runs), which cannot see this session stop.
+                "scheduled-red",
             }
         ),
     ),
@@ -4086,6 +4094,65 @@ def run_stop(event, event_ok, worklist, hook_file):
                 else "",
                 _txt,
             )
+    # ---- SCHEDULED WORKFLOWS ON MAIN (agent/plans/PLAN-scheduled-red-detector.md, A2). A nightly red reached only a human for five nights while it held the stable promotion, because every CI read here is scoped to the PR head and a scheduled run is on no PR. So this check is NOT gated on the publish ref and NOT on being the sole live session: ownership is settled by wl_schedred
+    # instead (an item that tracks the red is its owner's, an O_EXCL claim picks one session when none exists), which is what lets every session look without two of them being blocked on one red. One shared cache under a TTL keeps the read cheap; no origin means zero calls, which keeps the fixtures offline.
+    #   block  the untracked red this session claimed, or a tick of this session that closed a still-red run without evidence. `scheduled-red` sits in T_OWED (the party owed is the release pipeline, which cannot see this session stop) and in the always tier under I2.
+    #   peer   a red somebody else owns: one line per run id (refresh 360 min, keyed by content so a new run id re-notifies).
+    #   green  this session's own tracking item whose workflow ran green: the exact tick command, at most once per six hours while the item stays open.
+    try:
+        _sr_doc = wl_schedred.refresh(root, worklist)
+        if _sr_doc.get("state") == "unreadable":
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "scheduled-unreadable",
+                M.N_SCHEDULED_UNREADABLE % {"error": _sr_doc.get("error") or "?"},
+                2,
+                refresh_min=60,
+            )
+        _sr = wl_schedred.assess(root, worklist, fold.items, session_id, _sr_doc)
+        _sr_texts = [M.V_SCHEDULED_RED % wl_schedred.fields(_row, me8) for _row in _sr["block"]]
+        _sr_texts += [
+            M.V_SCHEDULED_RED_TICK % dict(wl_schedred.fields(_row, me8), item=_it.get("id"))
+            for _row, _it in _sr["tick"]
+        ]
+        if _sr_texts:
+            vadd("scheduled-red", True, "\n\n".join(_sr_texts))
+        if _sr["peer"]:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "scheduled-red-peer",
+                "\n".join(
+                    M.N_SCHEDULED_RED_PEER % dict(wl_schedred.fields(_row), owner=_owner)
+                    for _row, _owner in _sr["peer"]
+                ),
+                2,
+                refresh_min=360,
+            )
+        for _row, _it in _sr["green"]:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "scheduled-green",
+                M.N_SCHEDULED_GREEN % dict(wl_schedred.fields(_row, me8), item=_it.get("id")),
+                1,
+                refresh_min=360,
+            )
+    except Exception as exc:  # noqa: BLE001 -- a broken check must SAY SO, and never block on its own failure
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "scheduled-red-bug",
+            "THIS IS A HOOK BUG: the scheduled-red check failed: %s: %s"
+            % (type(exc).__name__, str(exc)[:160]),
+            1,
+            refresh_min=60,
+        )
     # ---- THE PR-LEVEL CLAUDE REVIEW ON A GREEN HEAD (agent/plans/PLAN-github-pr-review-restore.md, box GR9). Only once ci_trouble reads the head green: before that the review has not run, and a red head has its own block. Review Complete is a required check (operator ruling 2026-10-03), so an unanswered summary or a failed review run is work this loop owns; the
     # bounded ceiling and the gh budget live in prreview_nudge and prreview_runner.
     if cistate == "ok" and isinstance(cidetail, dict):

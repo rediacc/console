@@ -64,6 +64,8 @@ ALWAYS_KEYS = frozenset(
         "roster-concurrency",
         # I2 -- somebody else is blocked and cannot see this session stand down.
         "unread-reports",
+        # I2 -- a scheduled workflow red on main (wl_schedred): the release pipeline is the party blocked (promote-stable counts only green scheduled runs) and it cannot see this session stop, so a rotating key would let the red sit another night behind unrelated checks.
+        "scheduled-red",
     }
 )
 
