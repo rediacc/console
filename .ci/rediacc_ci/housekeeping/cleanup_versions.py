@@ -1133,6 +1133,23 @@ class Housekeeping:
             return out
         return ""
 
+    def draft_is_stale(self, created_at: str) -> bool:
+        """`draft_is_stale <created_at>`: a DRAFT release older than a day is reaped whatever its index or the retention window.
+
+        A draft is a release step that never finished (v1.2.21, created 2026-08-08, sat unpublished for 57 days), and counting it among the newest KEEP_VERSIONS kept it alive. A draft under a day old is a release in flight. Same date chains as `should_retain` and `_cutoff_epoch`, in the twin's order.
+        """
+        created_epoch = date_epoch(created_at)
+        code, day_ago = capture_quiet(["date", "-d", "1 days ago", "+%s"])
+        if code != 0:
+            code, day_ago = capture_quiet(["date", "-v-1d", "+%s"])
+            if code != 0:
+                day_ago = ""
+        return (
+            not arith_cmp(created_epoch, "eq", 0)
+            and day_ago != ""
+            and arith_cmp(created_epoch, "lt", day_ago)
+        )
+
     def should_retain(self, created_at: str, index: int) -> bool:
         """`should_retain <created_at_iso> <index_from_newest>` (:206-233).
 
@@ -1186,7 +1203,10 @@ class Housekeeping:
             tag = jq_text(jq_get(release, "tagName"))
             created_at = jq_text(jq_get(release, "createdAt"))
 
-            if self.should_retain(created_at, index):
+            is_draft = jq_text(jq_get(release, "isDraft")) == "true"
+            if (not is_draft or not self.draft_is_stale(created_at)) and self.should_retain(
+                created_at, index
+            ):
                 log.debug("Keeping release: %s (index=%d)" % (tag, index))
             else:
                 if not self.deletes_budget_ok():
@@ -1203,9 +1223,6 @@ class Housekeeping:
                     ["gh", "release", "delete", tag, "--repo", RELEASE_REPO, "--yes"],
                     quiet=False,
                 ):
-                    log.debug("Deleted release: %s" % tag)
-                    deleted += 1
-                    self.record_delete()
                     # Best-effort tag cleanup (may already be gone).
                     run_quiet_err(
                         [
@@ -1216,6 +1233,41 @@ class Housekeeping:
                             "repos/%s/git/refs/tags/%s" % (RELEASE_REPO, tag),
                         ]
                     )
+                    # A delete that exits 0 is not a deleted release: draft v1.2.21 (a tag that never existed) survived 57 nightly "deleted 1 of 21" runs until 2026-10-04. So the release must be gone afterwards; if not, it is deleted by id, and a survivor of both fails the run instead of being counted.
+                    view = ["gh", "release", "view", tag, "--repo", RELEASE_REPO]
+                    if run_silent(view) == 0:
+                        log.warn("Release still present after delete: %s; deleting it by id" % tag)
+                        _code, ids = capture_quiet(
+                            [
+                                "gh",
+                                "api",
+                                "repos/%s/releases" % RELEASE_REPO,
+                                "--paginate",
+                                "--jq",
+                                # The tag enters the filter as a JSON string literal, so a quote or backslash in it cannot break the jq syntax.
+                                ".[] | select(.tag_name == %s) | .id"
+                                % json.dumps(tag, ensure_ascii=False),
+                            ]
+                        )
+                        for release_id in ids.split():
+                            run_silent(
+                                [
+                                    "gh",
+                                    "api",
+                                    "-X",
+                                    "DELETE",
+                                    "repos/%s/releases/%s" % (RELEASE_REPO, release_id),
+                                ]
+                            )
+                    if run_silent(view) == 0:
+                        self.housekeeping_fail(
+                            "Release delete failed",
+                            "Release %s survived deletion by tag and by id" % tag,
+                        )
+                    else:
+                        log.debug("Deleted release: %s" % tag)
+                        deleted += 1
+                        self.record_delete()
                 else:
                     log.warn("Failed to delete release: %s" % tag)
 

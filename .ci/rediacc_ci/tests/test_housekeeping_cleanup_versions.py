@@ -102,7 +102,12 @@ JOINED = " ".join(ARGV)
 
 
 def answer(bucket):
+    # `unless_logged`: the rule stops matching once an EARLIER call carrying that needle is in the log (this call's own line is the last one), which lets a fixture answer "still present" before a delete and "gone" after it.
+    with open(os.environ["FAKE_LOG"], encoding="utf-8") as fh:
+        earlier = "\\n".join(fh.read().splitlines()[:-1])
     for rule in FIXTURE.get(bucket, []):
+        if rule.get("unless_logged") and rule["unless_logged"] in earlier:
+            continue
         if all(needle in JOINED for needle in rule["match"]):
             return rule
     return FIXTURE.get(bucket + "_default", {"rc": 1})
@@ -312,9 +317,13 @@ def sides(
     return old
 
 
-def rule(*match: str, json_body=None, raw=None, rc: int = 0, stderr: str = "") -> dict:
-    """One fixture rule: every `match` substring must appear in the joined argv."""
+def rule(
+    *match: str, json_body=None, raw=None, rc: int = 0, stderr: str = "", unless_logged: str = ""
+) -> dict:
+    """One fixture rule: every `match` substring must appear in the joined argv; `unless_logged` retires it once an earlier call carried that needle."""
     out: dict = {"match": list(match), "rc": rc}
+    if unless_logged:
+        out["unless_logged"] = unless_logged
     if json_body is not None:
         out["json"] = json_body
     if raw is not None:
@@ -676,6 +685,106 @@ def test_phase_1_retries_three_times_with_visible_backoff_then_warns() -> None:
     assert "Failed to delete release: v1.0.0" in err
     assert [c for c in result[3] if c.startswith("sleep")] == ["sleep\t2", "sleep\t4"]
     assert b"Releases: deleted 0 of 1" in result[2]
+
+
+def test_phase_1_deletes_a_survivor_by_id_and_counts_it_only_once_gone() -> None:
+    """2026-10-04: draft v1.2.21 survived 57 nightly deletes that each exited 0. A release still present after `gh release delete` is deleted by id; it counts only once a view no longer finds it."""
+    fixture = _releases(("v1.2.21", ago(57.5)))
+    fixture["gh"] += [
+        rule("release", "view", "v1.2.21", unless_logged="releases/367236731"),
+        rule(
+            "api",
+            "repos/" + GH_REPO + "/releases",
+            "--paginate",
+            json_body=[
+                {"id": 367236731, "tag_name": "v1.2.21", "draft": True},
+                {"id": 1, "tag_name": "v9.9.9", "draft": False},
+            ],
+        ),
+        rule("-X", "DELETE", "releases/367236731"),
+    ]
+    result = sides("cleanup_releases", argv=("--versions", "0", "--days", "1"), fixture=fixture)
+    err = result[2].decode()
+    calls = calls_of(result[3], "gh")
+    assert "Release still present after delete: v1.2.21; deleting it by id" in err
+    assert ["api", "-X", "DELETE", "repos/" + GH_REPO + "/releases/367236731"] in calls
+    assert "Releases: deleted 1 of 1" in err
+    assert "survived deletion" not in err
+
+
+def test_phase_1_fails_the_run_on_a_release_that_survives_by_tag_and_by_id() -> None:
+    """The CONTROL for the by-id path: a release no delete removes is not counted, and the run is failed with the tag named."""
+    fixture = _releases(("v1.2.21", ago(57.5)))
+    fixture["gh"] += [
+        rule("release", "view", "v1.2.21"),
+        rule(
+            "api",
+            "repos/" + GH_REPO + "/releases",
+            "--paginate",
+            json_body=[
+                {"id": 367236731, "tag_name": "v1.2.21", "draft": True},
+                {"id": 1, "tag_name": "v9.9.9", "draft": False},
+            ],
+        ),
+        rule("-X", "DELETE", "releases/367236731"),
+    ]
+    result = sides("cleanup_releases", argv=("--versions", "0", "--days", "1"), fixture=fixture)
+    err = result[2].decode()
+    assert "Release v1.2.21 survived deletion by tag and by id" in err
+    assert "Releases: deleted 0 of 1" in err
+
+
+def test_phase_1_by_id_lookup_survives_a_quote_and_backslash_in_the_tag() -> None:
+    """Review finding 2cb3bdb0.1/.2: the tag entered the jq filter raw, so a quote in it broke the syntax and the by-id delete never ran. It now enters as a JSON string literal."""
+    tag = 'v1"q\\x'
+    fixture = _releases((tag, ago(57.5)))
+    fixture["gh"] += [
+        rule("release", "view", tag, unless_logged="releases/42"),
+        rule(
+            "api",
+            "repos/" + GH_REPO + "/releases",
+            "--paginate",
+            json_body=[
+                {"id": 42, "tag_name": tag, "draft": True},
+                {"id": 1, "tag_name": "v9.9.9", "draft": False},
+            ],
+        ),
+        rule("-X", "DELETE", "releases/42"),
+    ]
+    result = sides("cleanup_releases", argv=("--versions", "0", "--days", "1"), fixture=fixture)
+    calls = calls_of(result[3], "gh")
+    assert ["api", "-X", "DELETE", "repos/" + GH_REPO + "/releases/42"] in calls
+    assert ["api", "-X", "DELETE", "repos/" + GH_REPO + "/releases/1"] not in calls
+    assert "Releases: deleted 1 of 1" in result[2].decode()
+
+
+def _draft_release(age_days: float) -> dict:
+    return {
+        "gh": [
+            rule(
+                "release",
+                "list",
+                json_body=[
+                    {
+                        "tagName": "v1.2.21",
+                        "createdAt": ago(age_days),
+                        "isDraft": True,
+                        "isPrerelease": False,
+                    }
+                ],
+            ),
+            rule("release", "delete"),
+            rule("-X", "DELETE", "git/refs/tags"),
+        ]
+    }
+
+
+def test_phase_1_reaps_a_stale_draft_inside_the_keep_window() -> None:
+    """A draft older than a day is reaped even at index 0 with 20 versions kept; the CONTROL keeps a draft under a day old (a release in flight)."""
+    stale = sides("cleanup_releases", argv=("--dry-run",), fixture=_draft_release(2.5))
+    assert b"[DRY-RUN] Would delete release: v1.2.21" in stale[2]
+    fresh = sides("cleanup_releases", argv=("--dry-run",), fixture=_draft_release(0.1))
+    assert b"Would delete release: v1.2.21" not in fresh[2]
 
 
 def test_phase_1_stops_at_the_delete_budget_and_says_what_it_deferred() -> None:

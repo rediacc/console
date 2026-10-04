@@ -203,6 +203,18 @@ cf_api() {
 # Check if a version should be retained
 # Usage: should_retain <created_at_iso> <index_from_newest>
 # Returns 0 if should keep, 1 if can delete
+# A DRAFT release older than a day is reaped whatever its index or the retention
+# window: a draft is a release step that never finished (v1.2.21, created
+# 2026-08-08, sat unpublished for 57 days), and counting it among the newest
+# KEEP_VERSIONS kept it alive. A draft under a day old is a release in flight.
+draft_is_stale() {
+    local created_at="$1"
+    local created_epoch day_ago
+    created_epoch="$(date -d "$created_at" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "$created_at" +%s 2>/dev/null || echo 0)"
+    day_ago="$(date -d "1 days ago" +%s 2>/dev/null || date -v-1d +%s 2>/dev/null)"
+    [[ "$created_epoch" -ne 0 && -n "$day_ago" && "$created_epoch" -lt "$day_ago" ]]
+}
+
 should_retain() {
     local created_at="$1"
     local index="$2"
@@ -255,7 +267,9 @@ cleanup_releases() {
         tag="$(echo "$release" | jq -r '.tagName')"
         created_at="$(echo "$release" | jq -r '.createdAt')"
 
-        if should_retain "$created_at" "$index"; then
+        local is_draft
+        is_draft="$(echo "$release" | jq -r '.isDraft')"
+        if { [[ "$is_draft" != "true" ]] || ! draft_is_stale "$created_at"; } && should_retain "$created_at" "$index"; then
             log_debug "Keeping release: $tag (index=$index)"
         else
             if ! deletes_budget_ok; then
@@ -270,11 +284,29 @@ cleanup_releases() {
                 # which causes the entire command to fail even though the release
                 # was deleted, leading to "release not found" on retry.
                 if retry_with_backoff 3 2 gh release delete "$tag" --repo "$RELEASE_REPO" --yes; then
-                    log_debug "Deleted release: $tag"
-                    deleted=$((deleted + 1))
-                    record_delete
                     # Best-effort tag cleanup (may already be gone)
                     gh api -X DELETE "repos/$RELEASE_REPO/git/refs/tags/$tag" 2>/dev/null || true
+                    # A delete that exits 0 is not a deleted release: draft v1.2.21 (a tag that
+                    # never existed) survived 57 nightly "deleted 1 of 21" runs until 2026-10-04.
+                    # So the release must be gone afterwards; if not, it is deleted by id, and a
+                    # survivor of both fails the run instead of being counted.
+                    if gh release view "$tag" --repo "$RELEASE_REPO" >/dev/null 2>&1; then
+                        log_warn "Release still present after delete: $tag; deleting it by id"
+                        local ids id tag_lit
+                        # The tag enters the filter as a JSON string literal, so a quote or backslash in it cannot break the jq syntax.
+                        tag_lit="$(jq -rn --arg t "$tag" '$t | tojson')"
+                        ids="$(gh api "repos/$RELEASE_REPO/releases" --paginate --jq ".[] | select(.tag_name == $tag_lit) | .id" 2>/dev/null || true)"
+                        for id in $ids; do
+                            gh api -X DELETE "repos/$RELEASE_REPO/releases/$id" >/dev/null 2>&1 || true
+                        done
+                    fi
+                    if gh release view "$tag" --repo "$RELEASE_REPO" >/dev/null 2>&1; then
+                        housekeeping_fail "Release delete failed" "Release $tag survived deletion by tag and by id"
+                    else
+                        log_debug "Deleted release: $tag"
+                        deleted=$((deleted + 1))
+                        record_delete
+                    fi
                 else
                     log_warn "Failed to delete release: $tag"
                 fi

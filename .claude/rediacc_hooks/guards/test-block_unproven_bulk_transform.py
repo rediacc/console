@@ -429,6 +429,27 @@ case(
     False,
 )
 
+# A STALE LOCAL `main` IS NOT THE PR'S BASE (2026-10-04, private/renet). `--base main` names the REMOTE branch the PR targets. renet's local `main` sat 135 commits behind origin/main, so `main..HEAD` swept in an old, already-merged bulk commit and refused a one-commit PR. Shape: origin/main carries an unproven bulk commit, local `main` predates it, and the feature branch adds one small file on top of origin/main.
+stale_repo = scratch_repo()
+stale_remote = scratch_dir()
+git(stale_remote, "init", "-q", "--bare")
+git(stale_repo, "remote", "add", "origin", stale_remote)
+git(stale_repo, "push", "-q", "-u", "origin", "main")
+git(stale_repo, "checkout", "-q", "-b", "landed")
+stage_files(stale_repo, BULK, prefix="m")
+git(stale_repo, "commit", "-qm", "style: an old bulk rewrite, merged upstream long ago")
+git(stale_repo, "push", "-q", "origin", "landed:main")
+git(stale_repo, "fetch", "-q", "origin")
+git(stale_repo, "checkout", "-q", "-b", "feature", "origin/main")
+stage_files(stale_repo, 1, prefix="s")
+git(stale_repo, "commit", "-qm", "fix: one small change")
+case(
+    "gh pr create --base main judges the range from origin/main, not a stale local main",
+    "gh pr create --base main --title x --body y",
+    stale_repo,
+    False,
+)
+
 # ---- ONE RULE: the commit arm and the push arm agree on the same commit -------
 # 3a5f3a188 (2026-09-26, 28 files, no proof) was ALLOWED at commit and REFUSED at push. Its command was `node scripts/generate-search-index.js ...; git commit -F <msg> -- docs/design/06-cli-reshape.md packages/www 2>&1 | tail -1`: the guard runs before the first clause, so the 14 search indexes the generator had not yet written counted as unchanged, 14 < 20.
 # Each shape below drives BOTH arms through the dispatcher on one repo: the commit command as the guard sees it BEFORE it runs, then the same clauses really run, then `git push` over the commit they made. The two verdicts must match each other and the expected one.
