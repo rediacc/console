@@ -19,11 +19,11 @@ Entry format: `1. agent/plans/PLAN-<slug>.md`, optionally followed by ` -- <note
 
 <!-- queue:generated:begin -->
 1. agent/plans/PLAN-plan-per-pr-loop.md -- P1, approved, in progress (13 of 16 boxes ticked)
-2. agent/plans/PLAN-stop-hook-one-plan-scope.md -- P1, approved, in progress (14 of 15 boxes ticked)
-3. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
-4. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-5. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-6. agent/plans/PLAN-scheduled-red-detector.md -- P1, approved, not started
+2. agent/plans/PLAN-scheduled-red-detector.md -- P1, approved, in progress (14 of 15 boxes ticked)
+3. agent/plans/PLAN-stop-hook-one-plan-scope.md -- P1, approved, in progress (14 of 15 boxes ticked)
+4. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
+5. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+6. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
 7. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, not started
 8. agent/plans/PLAN-locale-techdiff-resync.md -- P2, ready, not started
 9. agent/plans/PLAN-breakpoint-secret-shape.md -- P3, design, not started
