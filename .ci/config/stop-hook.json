@@ -1,7 +1,0 @@
-{
-  "$comment": "Operator switch for the Stop hook (.claude/hooks/stop/worklist.py with no arguments). enabled:false makes every stop allow without running any check; the worklist verbs keep working. Off 2026-09-25 to 2026-10-03 (operator: too aggressive until the Y/X/W/Z programs landed); re-enabled by the operator on 2026-10-03 for the one-plan-per-PR loop.",
-  "enabled": true,
-  "since": "2026-10-03",
-  "reason": "operator 2026-10-03: re-enabled for the one-plan-per-PR loop; the hook pushes against idling",
-  "reenable": "n/a: enabled"
-}

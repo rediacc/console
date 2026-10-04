@@ -249,25 +249,66 @@ def test_l5_a_lease_names_exactly_one_worker(wl):  # noqa: F811
     assert wl.cli("--lease", wlfix.ME, item, "+60", "worker:abc123def", "note").rc == 0
 
 
-def test_l6_the_operator_switch_turns_the_stop_path_off_and_only_it(wl):  # noqa: F811
-    """Operator order 2026-09-25: `.ci/config/stop-hook.json` `enabled: false` allows every stop; verbs keep working; a missing or unreadable file keeps the hook on."""
+def queue_with(wl, block: str):  # noqa: F811
+    """Plant the fixture project's QUEUE.md with `block` as the body of its `stop-hook` fence."""
+    path = wl.proj / "agent" / "plans" / "QUEUE.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "# Plan queue\n\n## Settings\n\n```stop-hook\n%s\n```\n\n## Promoted\n\n" % block,
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_l6_the_queue_switch_turns_the_stop_path_off_and_only_it(wl):  # noqa: F811
+    """Operator order 2026-10-04: QUEUE.md `stop_hook: off` allows every stop with one free notice and no `decision`; verbs keep working; a malformed block keeps the hook on; a stray `.ci/config/stop-hook.json` disables nothing."""
     ready(wl)
     add(wl, "(deadbeef) open work that would block")
-    wl.say("working\\n\\n## Remaining\\n- the item")
+    wl.say("working\n\n## Remaining\n- the item")
     assert (
         "OPEN worklist item" in wl.run({"WORKLIST_FOCUS": "off"}).out
-    )  # CONTROL: no config, the hook blocks
+    )  # CONTROL: no settings, the hook blocks
+    # The retired switch: a file at the old path, even one saying enabled:false, is not read.
     cfg = wl.proj / ".ci" / "config" / "stop-hook.json"
     cfg.parent.mkdir(parents=True, exist_ok=True)
-    cfg.write_text("{not json", encoding="utf-8")
-    wl.newturn()
-    wl.say("working\\n\\n## Remaining\\n- the item")
-    assert "OPEN worklist item" in wl.run({"WORKLIST_FOCUS": "off"}).out  # unreadable -> still on
     cfg.write_text('{"enabled": false}', encoding="utf-8")
     wl.newturn()
-    wl.say("working\\n\\n## Remaining\\n- the item")
-    assert wl.run({"WORKLIST_FOCUS": "off"}).out.strip() == ""
+    wl.say("working\n\n## Remaining\n- the item")
+    assert "OPEN worklist item" in wl.run({"WORKLIST_FOCUS": "off"}).out
+    # A malformed block keeps the hook on, whichever way it is malformed.
+    for bad in (
+        "stop_hook: of",
+        "stop_hook: off\nstop_hook: off",
+        "stop_hook: off\nturbx: on",
+    ):
+        queue_with(wl, bad)
+        wl.newturn()
+        wl.say("working\n\n## Remaining\n- the item")
+        got = wl.run({"WORKLIST_FOCUS": "off"})
+        if "turbx" in bad:  # an unknown key is a problem for THAT key; stop_hook: off still holds
+            assert "decision" not in got.out, got.out[:300]
+        else:
+            assert "OPEN worklist item" in got.out, (bad, got.out[:300])
+    # Off: one systemMessage naming the switch and its note, no decision, rc 0.
+    queue_with(wl, "stop_hook: off -- operator test reason")
+    wl.newturn()
+    wl.say("working\n\n## Remaining\n- the item")
+    got = wl.run({"WORKLIST_FOCUS": "off"})
+    assert got.rc == 0, (got.rc, got.err[:300])
+    msg = json.loads(got.out)
+    assert "decision" not in msg, msg
+    assert (
+        "Stop hook OFF (agent/plans/QUEUE.md stop_hook: off -- operator test reason)"
+        in (msg["systemMessage"])
+    ), msg
+    assert "OPEN worklist item" not in got.out
     assert wl.cli("--list", "--open", wlfix.ME).rc == 0  # verbs unaffected
+    # The notice carries the settings problems too.
+    queue_with(wl, "stop_hook: off\nturbo: onn")
+    wl.newturn()
+    wl.say("working\n\n## Remaining\n- the item")
+    msg = json.loads(wl.run({"WORKLIST_FOCUS": "off"}).out)
+    assert "turbo: expected on|off" in msg["systemMessage"], msg
 
 
 # ---- R20260925.5: an expired queue lease on a waiting item reads as waiting ---------------------------
