@@ -45,11 +45,9 @@ def run() -> int:
     )
     # `need_file`, not `need_exec`, matching the twin's `proxy_need_file` (mere `-e` existence): `license-mint` is a Go SOURCE directory built on demand by the subject, not a prebuilt executable sitting on disk.
     #
-    # The path is built with the SAME unresolved `../..` the twin's `"$PROXY_DIR/../../private/license-mint"` carries (`:31`), not the clean equivalent -- both sides must print byte-identical missing-requirement text, and pathlib does not collapse `..` on its own the way a `cd` would.
+    # The clean path. The twin's unresolved `$PROXY_DIR/../../private/license-mint` only resolved while `.ci/scripts/test/proxies/` existed; that directory went with the twin (f473fdd6d), and the OS cannot walk `..` out of a directory that is gone.
     p.need_file(
-        str(
-            root / ".ci" / "scripts" / "test" / "proxies" / ".." / ".." / "private" / "license-mint"
-        ),
+        str(root / ".ci" / "scripts" / "private" / "license-mint"),
         "the license-mint helper the battery signs with is missing",
     )
     p.need_passwordless_sudo()
