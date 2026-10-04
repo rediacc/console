@@ -149,12 +149,22 @@ def main(argv) -> int:
         return 2
     me = args[0]
     minutes: float = WAKE_DEFAULT_MIN
-    if "--minutes" in args:
+    rest = args[1:]
+    # AN UNKNOWN ARGUMENT IS REFUSED. `wl_wake.py <me> --status` once armed a 30-minute timer instead of reporting one (2026-10-04), and a typo that arms a timer is a sleeper under the harness default timeout nobody asked for.
+    if rest[:1] == ["--minutes"]:
         try:
-            minutes = float(args[args.index("--minutes") + 1])
+            minutes = float(rest[1])
         except (IndexError, ValueError):
             print("--minutes needs a number", file=sys.stderr)
             return 2
+        rest = rest[2:]
+    if rest:
+        print(
+            "wl_wake.py: unknown argument %r; usage: wl_wake.py <session-prefix-8hex> [--minutes N]"
+            % rest[0],
+            file=sys.stderr,
+        )
+        return 2
     if not 0 < minutes <= WAKE_MAX_MIN:
         print("--minutes must be in (0, %d]" % WAKE_MAX_MIN, file=sys.stderr)
         return 2

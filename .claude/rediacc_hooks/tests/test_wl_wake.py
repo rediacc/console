@@ -153,3 +153,19 @@ def test_wk7_no_background_work_needs_no_timer_and_a_timer_alone_is_not_a_wait(w
     wl.say(SAID)
     got = wl.run()
     assert "NO WAKE-UP TIMER" not in got.out, got.out[:600]
+
+
+def test_wk9_an_unknown_argument_is_refused_and_arms_nothing(tmp_path):
+    """`wl_wake.py <me> --status` armed a 30-minute timer instead of refusing (2026-10-04)."""
+    for extra in (["--status"], ["--minutes", "1", "--oops"], ["stray"]):
+        got = subprocess.run(
+            [sys.executable, str(wlfix.HOOK.parent / "wl_wake.py"), ME, *extra],
+            capture_output=True,
+            text=True,
+            env={"TMPDIR": str(tmp_path), "PATH": "/usr/bin:/bin"},
+            timeout=30,
+            check=False,
+        )
+        assert got.returncode == 2, (extra, got.stdout, got.stderr)
+        assert "unknown argument" in got.stderr, (extra, got.stderr)
+        assert not list(tmp_path.rglob("%s.json" % ME)), "a refused call left a timer lock"
