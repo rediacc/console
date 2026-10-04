@@ -138,7 +138,7 @@ Reading and thinking parallelize well here; writing does not. Use them according
 
 - **Investigate with them by default.** Any question that means sweeping several files,
 packages, or naming conventions goes to `Explore` or `general-purpose` agents rather than into this session's own context. Read-only fan-out is cheap: run several at once.
-Ask each for conclusions with `file:line` evidence, never file dumps. This kind of dispatch defaults to `model: "haiku"`: the tree already holds the answer, and a citation that does not resolve is caught on sight.
+Ask each for conclusions with `file:line` evidence, never file dumps. Pick the model by the challenge: `haiku` for a bounded lookup (find the callers, list the files, classify into fixed answers), `sonnet` when the answer needs judgment across several files (does this design hold, why did this break, what would change), `opus` for adversarial or design questions (operator ruling 2026-10-04).
 - **Plan with them on anything non-trivial.** For a design with real trade-offs, run
 `Plan` agents (up to 3, different angles) and synthesize. Their plans are proposals, not findings: check the load-bearing claims directly before acting (see rule 3).
 - **Writing agents: at most 4 at a time, with disjoint file ownership.** The cap is enforced by the Stop hook roster (`wl_roster.WRITER_CAP`) and the pre-agent guard; lease every writer; read-only work goes to `Plan`/`Explore`, which do not count. State the exact
@@ -146,10 +146,9 @@ files each one owns and forbid it from touching any other. Two agents editing on
 Ownership is also declared per plan: each live plan's header carries `Owns:` (the globs it edits) and `Concurrency:` (`parallel`, or `exclusive -- <reason>`), and `block_plan_concurrency` refuses a writer spawn whose plan would overlap a live writer's files or break an `exclusive` plan.
 - **Spot-check every agent's output against the artifact.** Their reports are accurate
 about intent and quietly wrong about placement. Verify structure across the whole file set they touched, not just the keys or symbols they claimed to change.
-- **Model choice is by task SHAPE, never by language or domain.** Haiku for
-READ-ONLY work and for very small, low-risk follow-ups: investigation and search fan-out, surveys, bounded classification, and a one-line correction to something already read. Haiku is NOT routed general write or implementation work any more -- not a port, not a mechanical sweep, not doc churn -- even where a pre-existing oracle would decide correctness and being wrong would be
-loud. That carve-out was retired by the operator on 2026-09-23 (`D-M1`), so an oracle no longer buys a cheap tier the right to produce an artifact; the i18n naturalization pipeline is a script rather than an `Agent` dispatch and keeps its own `--model haiku` default.
-Opus when the artifact created IS the oracle: new guards, new gates, schema design, multi-file planning, anything adversarial. Sonnet is an escalation tier, not a default. **[docs/agent-reference/model-routing.md](docs/agent-reference/model-routing.md)** carries the full rule, the oracle caveat, and worked examples.
+- **Model choice is by task SHAPE and CHALLENGE, never by language or domain.** Three tiers (operator ruling 2026-10-04: "Sonnet may be needed for a bit more advanced jobs"):
+Haiku for bounded READ-ONLY lookups and very small, low-risk follow-ups: search fan-out, "find every caller", bounded classification, and a one-line correction to something already read. Haiku is NOT routed write or implementation work (`D-M1`, 2026-09-23), and not an investigation whose verdict needs judgment: on 2026-10-04 three Haiku investigators returned three refuted load-bearing claims.
+Sonnet for investigation that weighs evidence across files (root causes, consolidation surveys, "is this safe"), and for implementation writers whose oracle already exists (ports, sweeps, migrations, translations). Opus when the artifact created IS the oracle: new guards, new gates, schema design, multi-file planning, anything adversarial. The i18n naturalization pipeline is a script and keeps its own `--model haiku` default. **[docs/agent-reference/model-routing.md](docs/agent-reference/model-routing.md)** carries the full rule and worked examples.
 
 ## Architecture
 
