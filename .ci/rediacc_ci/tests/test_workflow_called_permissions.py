@@ -65,14 +65,16 @@ def shortfalls(workflows_dir: pathlib.Path) -> list[str]:
             for scope, level in (_perms(called.get("permissions")) or {}).items():
                 want[scope] = max(want.get(scope, 0), level)
             for scope, level in sorted(want.items()):
-                if scope != "*" and _grants(have, scope) < level:
+                # A wildcard request (read-all / write-all) is covered only by a wildcard grant at least as strong: no list of named scopes can be proven to cover "every scope" (review finding 3fd607bd.1).
+                granted = have.get("*", 0) if scope == "*" else _grants(have, scope)
+                if granted < level:
                     out.append(
                         "%s:%s grants %s=%s but %s requests %s"
                         % (
                             name,
                             job_id,
                             scope,
-                            {v: k for k, v in LEVEL.items()}[_grants(have, scope)],
+                            {v: k for k, v in LEVEL.items()}[granted],
                             uses.rsplit("/", 1)[-1],
                             {v: k for k, v in LEVEL.items()}[level],
                         )
@@ -102,6 +104,24 @@ def test_control_a_missing_grant_is_caught(tmp_path):
     (tmp_path / "caller.yml").write_text(
         "on: push\njobs:\n  q:\n    permissions:\n      contents: read\n      actions: read\n"
         "    uses: ./.github/workflows/called.yml\n",
+        encoding="utf-8",
+    )
+    assert shortfalls(tmp_path) == []
+
+
+def test_control_a_wildcard_request_needs_a_wildcard_grant(tmp_path):
+    (tmp_path / "caller.yml").write_text(
+        "on: push\njobs:\n  q:\n    permissions:\n      contents: read\n"
+        "    uses: ./.github/workflows/called.yml\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "called.yml").write_text(
+        "on: workflow_call\npermissions: read-all\njobs:\n  s:\n    runs-on: ubuntu-latest\n    steps: []\n",
+        encoding="utf-8",
+    )
+    assert shortfalls(tmp_path) == ["caller.yml:q grants *=none but called.yml requests read"]
+    (tmp_path / "caller.yml").write_text(
+        "on: push\njobs:\n  q:\n    permissions: read-all\n    uses: ./.github/workflows/called.yml\n",
         encoding="utf-8",
     )
     assert shortfalls(tmp_path) == []
