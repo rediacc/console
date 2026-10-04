@@ -497,12 +497,15 @@ jobs:
   quality:
     name: Quality
     # ci-quality.yml's quality-static and quality-code declare
-    # pull-requests: read for the pulls endpoints they hit on github.token.
-    # A called workflow can never exceed its caller, so the caller must carry
-    # it too or GitHub fails the run at startup with no job and no log.
+    # pull-requests: read for the pulls endpoints they hit on github.token,
+    # and quality-security declares actions: read for the CI time budget
+    # freshness step (runs, jobs and artifacts). A called workflow can never
+    # exceed its caller, so the caller must carry both or GitHub fails the run
+    # at startup with no job and no log (run 37184675916, 2026-10-04).
     permissions:
       contents: read
       pull-requests: read
+      actions: read
     needs: [initialize]
     if: needs.initialize.outputs.is_bot != 'true' && needs.initialize.outputs.full_suite == 'true'
     uses: ./.github/workflows/ci-quality.yml
