@@ -10,11 +10,24 @@ Entry format: `1. agent/plans/PLAN-<slug>.md`, optionally followed by ` -- <note
 
 The switchboard for the Stop hook, read by `.claude/hooks/stop/wl_planqueue.py` (`settings`). One fenced block, `key: value` per line, an optional ` -- <note>` carrying the operator's reason. A missing key or a bad value falls back to the fail-safe default (hook on, turbo off) and `npm run check:ci-plan-record` names the problem. Change it with `worklist.py --queue-set <me> key=value ... [--note "<text>"]`, then commit this file.
 
+What each key does (default in brackets):
+
+- `stop_hook` (on): the whole Stop hook. `off` allows every stop with one notice and runs no check.
+- `turbo` (off): `off` keeps one plan per PR. `on` hands each free writer slot the next eligible queued plan, which joins the live PR's `Plan:` line, and keeps going until turbo is switched off.
+- `batch_size` (1): under turbo, the minimum number of finished plans before the PR is offered for merge. The merge itself never refuses a shorter PR.
+- `writer_cap` (4): the most writer agents live at once. A spawn beyond it is refused (`block_agent_cap`), and the Stop hook blocks on a roster above it.
+- `cadence` (on): lets a stop through after a demand when the session has reported something new, so the hook does not demand on every stop. Always-tier checks still block.
+- `agent_hint` (on): names a specialist agent (`.claude/agents/*.md`) that matches the open work, including once after each compaction.
+- `agent_pushback` (on): blocks a stop that declares work out of reach ("cannot be done here"), once per claim, and names the specialist agent that fits it when one clears the hint's confidence floor.
+- `judge` (on): the LLM judge that reviews a stop when work remains. The env var `WORKLIST_JUDGE=on|off` overrides it, for tests.
+
+A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
+
 ```stop-hook
 stop_hook: on -- re-enabled by the operator 2026-10-03 for the one-plan-per-PR loop
-turbo: off
-batch_size: 1
-writer_cap: 4
+turbo: on -- operator 2026-10-04: turbo on
+batch_size: 2 -- operator 2026-10-04: turbo on
+writer_cap: 4 -- operator 2026-10-04: turbo on
 cadence: on
 agent_hint: on
 agent_pushback: on
