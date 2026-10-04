@@ -9,9 +9,11 @@
  *   3. package.json changed AND the gate's npm script text differs from the base, following `npm run <x>` references, which is how parity resolves a `run` to its leaves;
  *   4. the gate declares NO `paths` and the change set is not empty: the `--changed` contract (select.ts), fail open on scope. Leaves name the gate's CODE, not what it reads: a corpus gate (prose style, python types, lint, the dist checks) reads files no leaf imports, so on 2026-10-01 a push that deleted files check:ci-prose-style scans passed this lane as "deferred, untouched" and CI went red on the stale baseline it left. Rules 1-3 still run first, because their reason is the more specific one to print.
  *
- * WHAT "THE LAST PUSH" MEANS: the merge-base of HEAD with the first ref that resolves among `@{push}`, `@{upstream}`, `origin/<branch>`, then `origin/main` (a branch never pushed has everything since main unpushed). The change set is that merge-base against the WORKTREE plus untracked files, since the quick lane judges the worktree. When none resolves, no slow gate is selected and the run SAYS so with the refs it tried: the quick lane is still the whole fast lane, so refusing it outright would punish a fresh clone for a question the fast gates do not need answered.
+ * WHAT "THE LAST PUSH" MEANS: the merge-base of HEAD with the first ref that resolves among `@{push}`, `origin/<branch>`, `@{upstream}`, then `origin/main` (a branch never pushed has everything since main unpushed). `@{push}` and `@{upstream}` count only when they name THIS branch: on 2026-10-03 a push clone's branch tracked the already merged `origin/0930-1`, and the diff against that merge-base held 244 files. A tracking ref named for another branch is skipped and the skip is printed as a WARNING. The change set is that merge-base against the WORKTREE plus untracked files, since the quick lane judges the worktree. When none resolves, no slow gate is selected and the run SAYS so with the refs it tried: the quick lane is still the whole fast lane, so refusing it outright would punish a fresh clone for a question the fast gates do not need answered.
  *
- * THE TREE: a slow gate that declares a tree write (`writesTree`, or a `tree:` claim in `mutex`) is never admitted, and is named as dropped. The quick lane did not run tracked-file writers before this selection existed, and a pre-push check that appends to a tracked ledger in a shared worktree changes the tree it is judging.
+ * THE TREE: a slow gate that declares a tree write (`writesTree`, or a `tree:` claim in `mutex`) is not admitted in a shared checkout, and is named as dropped. The quick lane did not run tracked-file writers before this selection existed, and a pre-push check that appends to a tracked ledger in a shared worktree changes the tree it is judging. In a clean, disposable clone (a `--receipt-out` outside the checkout, and an empty `git status` at selection) nobody else reads that tree, so a writer is admitted inside the budget like any other gate.
+ *
+ * EVERY TOUCHED GATE THAT IS DROPPED reaches the push receipt as `droppedTouched`, each with its kind (`tree`, `budget`, `unpriced`) and the exact command that runs it. The push guard refuses while any of them lacks a passing entry in `droppedVerified`, which a `--only` run of that gate writes into the same receipt.
  *
  * THE BUDGET: projected wall = max(base p90 + sum(cpu_i) / C, max(wall_i)), where the base p90 is the nearest-rank p90 of recorded quick walls that selected no slow gate, C the core budget, and wall_i/cpu_i a candidate's cost including any slow prerequisite it pulls in. Candidates are admitted cheapest first while the projection stays at or under the budget; every candidate left out is NAMED with its cost and the command that runs it. A candidate with no duration sample cannot be priced, and is dropped by name with the command that prices it, never admitted on a guess and never dropped silently.
  */
@@ -224,9 +226,18 @@ export interface Cost {
   readonly source: string;
 }
 
+/** Why a touched candidate left the lane: refused at any price (`tree`), no duration sample (`unpriced`), or over the wall budget (`budget`). */
+export type DropKind = 'tree' | 'budget' | 'unpriced';
+
+export interface Dropped {
+  readonly id: string;
+  readonly reason: string;
+  readonly kind: DropKind;
+}
+
 export interface BudgetVerdict {
   readonly admitted: readonly string[];
-  readonly dropped: readonly { id: string; reason: string }[];
+  readonly dropped: readonly Dropped[];
   readonly projectedMs: number;
 }
 
@@ -257,12 +268,12 @@ export function admitWithinBudget(
   budgetMs: number = QUICK_BUDGET_MS,
   refuse: (id: string) => string | undefined = () => undefined
 ): BudgetVerdict {
-  const dropped: { id: string; reason: string }[] = [];
+  const dropped: Dropped[] = [];
   const priced: { id: string; cost: Cost; added: number }[] = [];
   for (const id of touched) {
     const refusal = refuse(id);
     if (refusal !== undefined) {
-      dropped.push({ id, reason: refusal });
+      dropped.push({ id, reason: refusal, kind: 'tree' });
       continue;
     }
     const cost = costOf(id);
@@ -270,6 +281,7 @@ export function admitWithinBudget(
       dropped.push({
         id,
         reason: `no duration sample to price it; measure once with \`npx tsx scripts/ci-runner/run.ts --only ${id}\``,
+        kind: 'unpriced',
       });
       continue;
     }
@@ -285,6 +297,7 @@ export function admitWithinBudget(
       dropped.push({
         id: p.id,
         reason: `projected wall ${s1(next)} with it exceeds the ${s1(budgetMs)} budget (its wall ${s1(p.cost.wallMs)}, cpu ${s1(p.cost.cpuMs)}, ${p.cost.source})`,
+        kind: 'budget',
       });
     }
   }
@@ -304,6 +317,14 @@ export interface BaseResolution {
   readonly via?: string;
   readonly mergeBase?: string;
   readonly tried: readonly string[];
+  /** Tracking refs skipped because they name another branch, one sentence each. Empty when none was skipped. */
+  readonly warnings: readonly string[];
+}
+
+/** `origin/0930-1` -> `0930-1`: the branch a tracking ref names, remote prefix stripped. */
+function branchOfRef(name: string): string {
+  const slash = name.indexOf('/');
+  return slash < 0 ? name : name.slice(slash + 1);
 }
 
 /** `git` answers stdout trimmed, or undefined on any failure. */
@@ -311,23 +332,33 @@ export function resolvePushBase(
   git: (args: readonly string[]) => string | undefined,
   branch: string | undefined
 ): BaseResolution {
-  const candidates: [string, string][] = [
-    ['@{push}', '@{push}'],
-    ['@{upstream}', '@{upstream}'],
-  ];
-  if (branch !== undefined && branch !== '')
-    candidates.push([`origin/${branch}`, 'origin/<branch>']);
+  const named = branch !== undefined && branch !== '';
+  const candidates: [string, string][] = [['@{push}', '@{push}']];
+  if (named) candidates.push([`origin/${branch}`, 'origin/<branch>']);
+  candidates.push(['@{upstream}', '@{upstream}']);
   candidates.push(['origin/main', 'origin/main (never pushed: everything since main)']);
   const tried: string[] = [];
+  // A tracking ref named for ANOTHER branch is not this branch's last push (2026-10-03: an upstream of origin/0930-1, already merged, widened the diff to 244 files). Judged up front, so the skip is reported even when origin/<branch> wins first.
+  const warnings: string[] = [];
+  const foreign = new Set<string>();
+  for (const ref of ['@{push}', '@{upstream}']) {
+    if (git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]) === undefined) continue;
+    const name = git(['rev-parse', '--abbrev-ref', ref]) ?? ref;
+    if (named && branchOfRef(name) === branch) continue;
+    foreign.add(ref);
+    if (!warnings.some((w) => w.includes(` is ${name},`)))
+      warnings.push(`${ref} is ${name}, not origin/${named ? branch : '<branch>'}; ignored`);
+  }
   for (const [ref, via] of candidates) {
     tried.push(ref);
+    if (foreign.has(ref)) continue;
     if (git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]) === undefined) continue;
+    const name = ref.startsWith('@') ? (git(['rev-parse', '--abbrev-ref', ref]) ?? ref) : ref;
     const mergeBase = git(['merge-base', 'HEAD', ref]);
     if (mergeBase === undefined || mergeBase === '') continue;
-    const name = ref.startsWith('@') ? (git(['rev-parse', '--abbrev-ref', ref]) ?? ref) : ref;
-    return { ref: name, via, mergeBase, tried };
+    return { ref: name, via, mergeBase, tried, warnings };
   }
-  return { tried };
+  return { tried, warnings };
 }
 
 export interface WallSample {
@@ -537,6 +568,17 @@ export function quickSelectSelftest(
       refused.admitted.length === 0 && refused.dropped[0]?.reason === 'writes the tracked tree',
       'a refused candidate must be dropped BY NAME with its reason even when it fits the budget'
     );
+    // THE KIND of each drop, all three, so a hard-coded kind fails two of them.
+    const kindOf = (id: string): string | undefined => v.dropped.find((d) => d.id === id)?.kind;
+    check(refused.dropped[0]?.kind === 'tree', 'a refused candidate must drop with kind tree');
+    check(
+      kindOf('dear') === 'budget' && kindOf('huge') === 'budget',
+      'a candidate over budget must drop with kind budget'
+    );
+    check(
+      kindOf('unpriced') === 'unpriced',
+      'a candidate with no cost must drop with kind unpriced'
+    );
     check(
       admitWithinBudget(['dear', 'cheap'], (id) => costs[id], 70_000, 10, 200_000).admitted
         .length === 2,
@@ -548,7 +590,8 @@ export function quickSelectSelftest(
       if (args[0] === 'rev-parse' && args[1] === '--verify')
         return ok[args[3].replace('^{commit}', '')];
       if (args[0] === 'merge-base') return ok[args[2]] === undefined ? undefined : `mb-${args[2]}`;
-      if (args[0] === 'rev-parse' && args[1] === '--abbrev-ref') return 'origin/b';
+      if (args[0] === 'rev-parse' && args[1] === '--abbrev-ref')
+        return ok[`name:${args[2]}`] ?? 'origin/b';
       return undefined;
     };
     check(
@@ -558,6 +601,38 @@ export function quickSelectSelftest(
     check(
       resolvePushBase(answers({ 'origin/main': 'y' }), 'b').mergeBase === 'mb-origin/main',
       'with no upstream the base must fall back to origin/main'
+    );
+    // AN UPSTREAM NAMED FOR ANOTHER BRANCH is skipped and said, whether origin/<branch> exists or only origin/main does.
+    const foreign = resolvePushBase(
+      answers({
+        '@{upstream}': 'x',
+        'name:@{upstream}': 'origin/0930-1',
+        'origin/b': 'z',
+        'origin/main': 'y',
+      }),
+      'b'
+    );
+    check(
+      foreign.via === 'origin/<branch>' &&
+        foreign.warnings.some((w) => w.includes('origin/0930-1')),
+      `an upstream named for another branch must lose to origin/<branch>, with a warning naming it; got ${foreign.via} ${foreign.warnings.join('; ')}`
+    );
+    const foreignOnly = resolvePushBase(
+      answers({ '@{upstream}': 'x', 'name:@{upstream}': 'origin/0930-1', 'origin/main': 'y' }),
+      'b'
+    );
+    check(
+      foreignOnly.ref === 'origin/main' &&
+        foreignOnly.warnings.some((w) => w.includes('origin/0930-1')),
+      `with no origin/<branch>, a foreign upstream must fall to origin/main with the same warning; got ${foreignOnly.ref}`
+    );
+    const own = resolvePushBase(
+      answers({ '@{upstream}': 'x', 'name:@{upstream}': 'origin/b', 'origin/main': 'y' }),
+      'b'
+    );
+    check(
+      own.via === '@{upstream}' && own.warnings.length === 0,
+      `CONTROL: an upstream named origin/<branch> must win with no warning; got ${own.via} ${own.warnings.join('; ')}`
     );
     const none = resolvePushBase(answers({}), 'b');
     check(

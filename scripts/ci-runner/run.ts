@@ -53,6 +53,7 @@ import {
   appendHistory,
   baseP90,
   type Cost,
+  type DropKind,
   percentile,
   QUICK_BUDGET_MS,
   quickSelectSelftest,
@@ -451,6 +452,42 @@ interface Selection {
   description?: string;
   /** Slow gates the `--quick` diff admitted, for the wall history; empty when none or not quick. */
   slowAdmitted?: string[];
+  /** Slow gates the diff touched and the lane still dropped, for the receipt; undefined when not quick. */
+  droppedTouched?: DroppedTouched[];
+  /** The base the `--quick` diff was taken against, for the receipt; undefined when not quick. */
+  pushBase?: PushBaseRecord;
+  /** Tree-writing slow gates admitted because this is a clean, disposable clone; named by the stable-tree warning. */
+  treeWritersAdmitted?: string[];
+}
+
+/**
+ * A slow gate the change set touched that the quick lane did not run. It is recorded in the receipt so the push guard can refuse until a `--only` run of it passes (`droppedVerified`): on 2026-10-03 a dropped `check:ci-plan-record` was printed, then lost, and CI run 37129843955 went red on exactly that gate.
+ */
+interface DroppedTouched {
+  id: string;
+  /** How the change set reached the gate (quick-select.ts `touchedSlow`). */
+  why: string;
+  /** Why the lane dropped it. */
+  reason: string;
+  kind: DropKind;
+  /** The exact command that runs it and records the result in this receipt. */
+  run: string;
+}
+
+/** One passing or failing `--only` run of a dropped gate, merged into the whole receipt of the same tree. */
+interface DroppedVerification {
+  exitCode: number;
+  headTree: string;
+  finishedAt: string;
+  judgedRoot: string;
+  stable: boolean;
+}
+
+interface PushBaseRecord {
+  ref: string | null;
+  via: string | null;
+  mergeBase: string | null;
+  warnings: string[];
 }
 
 const QUICK_HISTORY = path.join(REPO_ROOT, '.ci', 'cache', 'quick-walls.json');
@@ -474,6 +511,9 @@ interface PushDiff {
   files?: string[];
   label: string;
   scriptsBase?: Record<string, string>;
+  /** Tracking refs skipped because they name another branch (quick-select.ts `resolvePushBase`). */
+  warnings?: string[];
+  pushBase?: PushBaseRecord;
 }
 
 /**
@@ -482,8 +522,19 @@ interface PushDiff {
 function changedSinceLastPush(): PushDiff {
   const branch = gitTry(['branch', '--show-current']);
   const base = resolvePushBase(gitTry, branch);
+  const warned = base.warnings.length > 0 ? `; ${base.warnings.join('; ')}` : '';
+  const pushBase: PushBaseRecord = {
+    ref: base.ref ?? null,
+    via: base.via ?? null,
+    mergeBase: base.mergeBase ?? null,
+    warnings: [...base.warnings],
+  };
   if (base.mergeBase === undefined) {
-    return { label: `UNRESOLVED (tried ${base.tried.join(', ')})` };
+    return {
+      label: `UNRESOLVED (tried ${base.tried.join(', ')}${warned})`,
+      warnings: [...base.warnings],
+      pushBase,
+    };
   }
   const named = (gitTry(['diff', '--name-only', base.mergeBase]) ?? '').split('\n').filter(Boolean);
   const untracked = (gitTry(['ls-files', '--others', '--exclude-standard']) ?? '')
@@ -502,8 +553,10 @@ function changedSinceLastPush(): PushDiff {
   }
   return {
     files,
-    label: `${base.ref} via ${base.via}, merge-base ${base.mergeBase.slice(0, 9)}`,
+    label: `${base.ref} via ${base.via}, merge-base ${base.mergeBase.slice(0, 9)}${warned}`,
     scriptsBase,
+    warnings: [...base.warnings],
+    pushBase,
   };
 }
 
@@ -523,12 +576,28 @@ function ciStepP90(): Map<string, number> {
   return out;
 }
 
-/** Why the quick lane will not admit a gate at any price, or undefined. Only tree writers today; see quick-select.ts THE TREE. */
-function treeWriteRefusal(spec: GateSpec | undefined): string | undefined {
+/** The tree write a gate declares (`writesTree`, else its `tree:` mutex claim), or undefined. */
+function treeWriteOf(spec: GateSpec | undefined): string | undefined {
   if (spec === undefined) return undefined;
-  const claim = (spec.mutex ?? []).find((m) => m.startsWith('tree:'));
-  if (spec.writesTree === undefined && claim === undefined) return undefined;
-  return `it writes the shared tree (${spec.writesTree ?? claim}), which the quick lane does not do`;
+  return spec.writesTree ?? (spec.mutex ?? []).find((m) => m.startsWith('tree:'));
+}
+
+/** Why the quick lane will not admit a gate at any price, or undefined. Only tree writers today, and only outside a clean, disposable clone; see quick-select.ts THE TREE. */
+function treeWriteRefusal(spec: GateSpec | undefined, disposable = false): string | undefined {
+  const write = treeWriteOf(spec);
+  if (write === undefined || disposable) return undefined;
+  return `it writes the shared tree (${write}), which the quick lane does not do`;
+}
+
+/**
+ * A clean, disposable clone: the receipt goes OUTSIDE this checkout (`--receipt-out`, the push clone's shape) and `git status --porcelain` is empty, so no other session reads this tree and a tree writer may run in it.
+ */
+function isDisposableClone(opts: Options): boolean {
+  if (opts.receiptOut === undefined) return false;
+  const rel = path.relative(REPO_ROOT, path.resolve(opts.receiptOut));
+  if (!(rel.startsWith('..') || path.isAbsolute(rel))) return false;
+  const porcelain = gitTry(['status', '--porcelain']);
+  return porcelain === '';
 }
 
 /**
@@ -606,6 +675,9 @@ function select(
 ): Selection {
   const notes: string[] = [];
   let selectedSlow: string[] = [];
+  let droppedTouched: DroppedTouched[] | undefined;
+  let pushBase: PushBaseRecord | undefined;
+  let treeWritersAdmitted: string[] | undefined;
   // gate:false nodes are prerequisites, never selected on their own. They enter the run only through the needs-closure in buildGraph.
   let chosen = specs.filter((spec) => spec.gate);
 
@@ -642,8 +714,12 @@ function select(
       });
     // DIFF-SELECTED SLOW GATES (quick-select.ts). A slow gate the change set since the last push touches rejoins the lane, inside the p90 budget; every other slow gate stays deferred and is named as such.
     const slowCandidates = chosen.filter((spec) => slow.has(spec.id));
-    const admitted = quickDiffAdmit(slowCandidates, specs, slow, opts, warn, quickDeps);
+    const verdict = quickDiffAdmit(slowCandidates, specs, slow, opts, warn, quickDeps);
+    const admitted = verdict.admitted;
     selectedSlow = admitted;
+    droppedTouched = verdict.droppedTouched;
+    pushBase = verdict.pushBase;
+    treeWritersAdmitted = verdict.treeWritersAdmitted;
     const admittedSet = new Set(admitted);
     chosen = chosen.filter((spec) => !slow.has(spec.id) || admittedSet.has(spec.id));
     notes.push(
@@ -671,6 +747,9 @@ function select(
     ids,
     description: notes.length > 0 ? notes.join(' ') : undefined,
     slowAdmitted: selectedSlow.filter((id) => ids.has(id)),
+    droppedTouched,
+    pushBase,
+    treeWritersAdmitted: treeWritersAdmitted?.filter((id) => ids.has(id)),
   };
 }
 
@@ -682,6 +761,8 @@ interface QuickDiffDeps {
   history: () => ReturnType<typeof readHistory>;
   cores: number;
   scriptsNow: () => Record<string, string>;
+  /** A clean, disposable clone, where tree writers are admitted (`isDisposableClone`). */
+  disposable: () => boolean;
 }
 
 function realQuickDiffDeps(opts: Options): QuickDiffDeps {
@@ -697,6 +778,7 @@ function realQuickDiffDeps(opts: Options): QuickDiffDeps {
           scripts?: Record<string, string>;
         }
       ).scripts ?? {},
+    disposable: () => isDisposableClone(opts),
   };
 }
 
@@ -710,18 +792,28 @@ function quickDiffAdmit(
   opts: Options,
   warn: (text: string) => void,
   injected?: QuickDiffDeps
-): string[] {
+): {
+  admitted: string[];
+  droppedTouched: DroppedTouched[];
+  pushBase?: PushBaseRecord;
+  treeWritersAdmitted: string[];
+} {
   const deps = injected ?? realQuickDiffDeps(opts);
   const diff = deps.diff();
   const deferredLine = (ids: readonly string[]): string =>
     ids.length === 0 ? '' : `  deferred, untouched (${ids.length}): ${ids.join(', ')}\n`;
+  const warningLines = (diff.warnings ?? [])
+    .map((w) => `  WARNING: the push base skipped a tracking ref: ${w}\n`)
+    .join('');
   if (diff.files === undefined) {
     warn(
       `ci-runner: --quick could not find the last push: ${diff.label}. NO slow gate was diff-selected, so all ${candidates.length} stay deferred; push the branch, or fetch origin/main so the fallback resolves.\n` +
+        warningLines +
         deferredLine(candidates.map((c) => c.id))
     );
-    return [];
+    return { admitted: [], droppedTouched: [], pushBase: diff.pushBase, treeWritersAdmitted: [] };
   }
+  const disposable = deps.disposable();
   const touches = touchedSlow(candidates as readonly SlowCandidate[], {
     root: REPO_ROOT,
     changed: diff.files,
@@ -739,22 +831,48 @@ function quickDiffAdmit(
     base.ms,
     deps.cores,
     QUICK_BUDGET_MS,
-    (id) => treeWriteRefusal(byId.get(id))
+    (id) => treeWriteRefusal(byId.get(id), disposable)
   );
   const why = new Map(touches.map((t) => [t.id, t.why]));
   const touchedSet = new Set(touches.map((t) => t.id));
+  const receiptDest = receiptPathFor(opts);
+  const droppedTouched: DroppedTouched[] = verdict.dropped.map((d) => ({
+    id: d.id,
+    why: why.get(d.id) ?? '',
+    reason: d.reason,
+    kind: d.kind,
+    run: dropRerunCommand(d.id, opts.receiptOut),
+  }));
+  const treeWritersAdmitted = verdict.admitted.filter(
+    (id) => treeWriteOf(byId.get(id)) !== undefined
+  );
   const lines = [
     `ci-runner: --quick diff since the last push (${diff.label}): ${diff.files.length} file(s); slow gates ${candidates.length}: ${touches.length} touched, ${verdict.admitted.length} selected, ${verdict.dropped.length} dropped, ${candidates.length - touches.length} untouched\n`,
-    ...verdict.admitted.map((id) => `  + SELECTED ${id}: ${why.get(id)}\n`),
-    ...verdict.dropped.map(
+    warningLines,
+    ...verdict.admitted.map((id) =>
+      treeWriteOf(byId.get(id)) !== undefined
+        ? `  + SELECTED ${id} (tree writer; disposable clone, receipt -> ${receiptDest}): ${why.get(id)}\n`
+        : `  + SELECTED ${id}: ${why.get(id)}\n`
+    ),
+    ...droppedTouched.map(
       (d) =>
-        `  - DROPPED ${d.id} (touched: ${why.get(d.id)}): ${d.reason}. CI runs it; before pushing, \`npx tsx scripts/ci-runner/run.ts --only ${d.id}\`\n`
+        `  - DROPPED ${d.id} (touched: ${d.why}): ${d.reason}. CI runs it, and the push guard refuses until it passes here: \`${d.run}\`\n`
     ),
     `  projected p90 wall ${(verdict.projectedMs / 1000).toFixed(1)}s against the ${QUICK_BUDGET_MS / 1000}s budget (${base.note}, C ${deps.cores})\n`,
     deferredLine(candidates.filter((c) => !touchedSet.has(c.id)).map((c) => c.id)),
   ];
   warn(lines.join(''));
-  return [...verdict.admitted];
+  return {
+    admitted: [...verdict.admitted],
+    droppedTouched,
+    pushBase: diff.pushBase,
+    treeWritersAdmitted,
+  };
+}
+
+/** The command that runs one dropped gate and merges its result into the receipt this run writes: the same `--receipt-out` when this run had one. */
+function dropRerunCommand(id: string, receiptOut: string | undefined): string {
+  return `npx tsx scripts/ci-runner/run.ts --only ${id}${receiptOut === undefined ? '' : ` --receipt-out ${receiptOut}`}`;
 }
 
 /**
@@ -1582,7 +1700,11 @@ async function selftest(): Promise<number> {
       slowSpec('selftest:q-untouched', 'scripts/ci-runner/gate-spec.ts'),
     ];
     const rec = (ms: number): DurationRecord => ({ ewma: ms, recent: [ms], cpu: [ms] });
-    const deps = (files: string[] | undefined, touchedMs = 5_000): QuickDiffDeps => ({
+    const deps = (
+      files: string[] | undefined,
+      touchedMs = 5_000,
+      disposable = false
+    ): QuickDiffDeps => ({
       diff: () => ({ files, label: 'selftest-base' }),
       records: () =>
         new Map([
@@ -1593,6 +1715,7 @@ async function selftest(): Promise<number> {
       history: () => [],
       cores: 10,
       scriptsNow: () => ({}),
+      disposable: () => disposable,
     });
     let said = '';
     const capture = (t: string): void => {
@@ -1662,6 +1785,123 @@ async function selftest(): Promise<number> {
         /DROPPED selftest:q-touched.*writes the shared tree/.test(said),
       `a touched slow gate that writes the tree must be dropped BY NAME, said: ${said}`
     );
+    // THE DROP REACHES THE SELECTION, so the receipt can name it: kind tree, and the command that runs it.
+    const wDrop = wSel.droppedTouched ?? [];
+    require_(
+      wDrop.length === 1 &&
+        wDrop[0].id === 'selftest:q-touched' &&
+        wDrop[0].kind === 'tree' &&
+        wDrop[0].run.includes('--only selftest:q-touched') &&
+        wDrop[0].why.includes('quick-select.ts'),
+      `a dropped touched gate must reach sel.droppedTouched with kind tree and its --only command, got ${JSON.stringify(wDrop)}`
+    );
+    require_(
+      (
+        select([qSpecs[0], writer], quick, () => {}, deps(['scripts/ci-runner/gate-spec.ts']))
+          .droppedTouched ?? ['unset']
+      ).length === 0,
+      'CONTROL: the same writer with its leaf outside the diff must leave droppedTouched empty'
+    );
+    require_(
+      (select(
+        [qSpecs[0], writer],
+        { ...quick, receiptOut: '/snap/r.json' },
+        () => {},
+        deps(['scripts/ci-runner/quick-select.ts'])
+      ).droppedTouched ?? [])[0]?.run.endsWith('--receipt-out /snap/r.json') === true,
+      "a dropped gate's command must carry this run's --receipt-out, so its re-run lands in the same receipt"
+    );
+    // A CLEAN, DISPOSABLE CLONE admits the writer inside the budget; the shared checkout does not.
+    said = '';
+    const dSel = select(
+      [qSpecs[0], writer],
+      quick,
+      capture,
+      deps(['scripts/ci-runner/quick-select.ts'], 5_000, true)
+    );
+    require_(
+      dSel.ids.has('selftest:q-touched') &&
+        /SELECTED selftest:q-touched \(tree writer; disposable clone/.test(said) &&
+        (dSel.treeWritersAdmitted ?? []).includes('selftest:q-touched'),
+      `in a disposable clone a touched tree writer must be SELECTED and named as one, said: ${said}`
+    );
+    require_(
+      (dSel.droppedTouched ?? ['unset']).length === 0,
+      'CONTROL: a disposable clone that admitted the writer drops nothing'
+    );
+  }
+
+  // A `--only` RUN OF A DROPPED GATE MERGES INTO THE WHOLE RECEIPT OF THE SAME TREE, and nothing else does.
+  {
+    const whole = {
+      headTree: 't',
+      whole: true,
+      exitCode: 0,
+      failed: [] as string[],
+      findings: {},
+      droppedTouched: [{ id: 'x', why: 'w', reason: 'r', kind: 'tree', run: 'c' }],
+      droppedVerified: {},
+    };
+    const onlyRun = (tree: string, ids: string[], status: string): OnlyRun => ({
+      tree,
+      ids,
+      results: ids.map((id) => ({ id, status })),
+      findings: status === 'fail' ? Object.fromEntries(ids.map((id) => [id, ['k1']])) : {},
+      finishedAt: 'now',
+      judgedRoot: '/r',
+      stable: true,
+    });
+    const green = mergeDroppedVerified(whole, onlyRun('t', ['x'], 'ok')).merged;
+    require_(
+      green !== undefined &&
+        green.whole === true &&
+        green.droppedVerified.x?.exitCode === 0 &&
+        green.droppedVerified.x?.headTree === 't' &&
+        green.exitCode === 0 &&
+        green.failed.length === 0,
+      `a passing --only x at the receipt's tree must land in droppedVerified and keep whole, got ${JSON.stringify(green)}`
+    );
+    require_(
+      mergeDroppedVerified(whole, onlyRun('u', ['x'], 'ok')).merged === undefined,
+      'CONTROL: an --only run at another tree must not merge'
+    );
+    require_(
+      mergeDroppedVerified(whole, onlyRun('', ['x'], 'ok')).merged === undefined,
+      'CONTROL: an --only run whose HEAD moved (no tree) must not merge'
+    );
+    require_(
+      mergeDroppedVerified(whole, onlyRun('t', ['y'], 'ok')).merged === undefined,
+      'CONTROL: an --only run of a gate the receipt did not drop must not merge (it stays "kept")'
+    );
+    require_(
+      mergeDroppedVerified({ ...whole, whole: false }, onlyRun('t', ['x'], 'ok')).merged ===
+        undefined,
+      'CONTROL: a narrowed receipt is never merged into'
+    );
+    const red = mergeDroppedVerified(whole, onlyRun('t', ['x'], 'fail')).merged;
+    require_(
+      red?.failed.includes('x') === true &&
+        red.exitCode === 1 &&
+        red.droppedVerified.x?.exitCode === 1 &&
+        JSON.stringify(red.findings.x) === '["k1"]',
+      `a red --only x must land in failed with exitCode 1 and its findings, got ${JSON.stringify(red)}`
+    );
+    const healed = mergeDroppedVerified(red, onlyRun('t', ['x'], 'ok')).merged;
+    require_(
+      healed !== undefined &&
+        healed.failed.length === 0 &&
+        healed.exitCode === 0 &&
+        !('x' in healed.findings),
+      `a later passing --only x must clear the red an earlier merge recorded, got ${JSON.stringify(healed)}`
+    );
+    const wholeRed = mergeDroppedVerified(
+      { ...red, failed: ['check:a', 'x'], exitCode: 1 },
+      onlyRun('t', ['x'], 'ok')
+    ).merged;
+    require_(
+      wholeRed !== undefined && wholeRed.failed.join() === 'check:a' && wholeRed.exitCode === 1,
+      `CONTROL: a pass of x must keep the whole lane's own failures and exit code, got ${JSON.stringify(wholeRed)}`
+    );
   }
 
   if (failures.length > 0) {
@@ -1672,7 +1912,7 @@ async function selftest(): Promise<number> {
     return 1;
   }
   process.stdout.write(
-    `ci-runner: selftest ok (${9 + 1 + keyed.assertions + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2 + qs.assertions + 10} assertions)\n`
+    `ci-runner: selftest ok (${9 + 1 + keyed.assertions + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2 + qs.assertions + 10 + 5 + 9} assertions)\n`
   );
   return 0;
 }
@@ -1756,6 +1996,14 @@ interface Receipt {
   judgedRoot: string;
   /** Where the run's CPU went (report.ts Utilisation). Diagnostic; the push guard does not read it. */
   utilisation: Utilisation | null;
+  /**
+   * Slow gates the change set touched that this lane DROPPED (a tree writer, over budget, or unpriced), each with the command that runs it. Always written, `[]` when nothing dropped. The push guard refuses while any of them has no passing `droppedVerified` entry at this tree, and refuses a receipt with no such field at all.
+   */
+  droppedTouched: DroppedTouched[];
+  /** `--only` runs of dropped gates merged into this receipt (`mergeDroppedVerified`), by gate id. Starts `{}`. */
+  droppedVerified: Record<string, DroppedVerification>;
+  /** The base the quick diff was taken against, with any tracking ref it skipped. Diagnostic; the guard does not read it. */
+  pushBase: PushBaseRecord | null;
 }
 
 function gitOut(args: readonly string[]): string {
@@ -1827,6 +2075,71 @@ function narrowedWouldReplaceWhole(dest: string, whole: boolean): boolean {
   } catch {
     return false;
   }
+}
+
+/** What one `--only` run hands `mergeDroppedVerified`. */
+interface OnlyRun {
+  tree: string;
+  ids: readonly string[];
+  results: ReadonlyArray<{ id: string; status: string }>;
+  findings: Record<string, string[] | null>;
+  finishedAt: string;
+  judgedRoot: string;
+  stable: boolean;
+}
+
+/**
+ * A `--only` run of DROPPED gates merges into the whole receipt of the same tree, and nothing else does. `existing` must be `whole: true`, name `run.tree` (non-empty), and list every one of `run.ids` in its `droppedTouched`; anything else returns `merged: undefined` with the reason, and the caller keeps today's behaviour. Each id lands in `droppedVerified`; a failure joins `failed` and its findings, a pass leaves both, and `exitCode` is the worst of the whole lane and the dropped runs.
+ */
+function mergeDroppedVerified(existing: unknown, run: OnlyRun): { merged?: Receipt; why: string } {
+  if (existing === null || typeof existing !== 'object') return { why: 'no receipt to merge into' };
+  const prior = existing as Partial<Receipt>;
+  if (prior.whole !== true) return { why: 'the receipt on disk is not a whole-lane receipt' };
+  if (run.tree === '' || prior.headTree !== run.tree)
+    return {
+      why: `the receipt judged tree ${prior.headTree || '(none)'}, this run ${run.tree || '(none)'}`,
+    };
+  const dropped = new Set(
+    (Array.isArray(prior.droppedTouched) ? prior.droppedTouched : []).map((d) => d.id)
+  );
+  const outside = run.ids.filter((id) => !dropped.has(id));
+  if (run.ids.length === 0 || outside.length > 0)
+    return {
+      why: `not every selected gate was dropped by that receipt (${outside.join(', ') || 'none selected'})`,
+    };
+  const verified: Record<string, DroppedVerification> = { ...(prior.droppedVerified ?? {}) };
+  const priorFailedDrop = Object.values(verified).some((v) => v.exitCode !== 0);
+  // A dropped gate never ran in the whole lane, so any id of it in `failed` came from an earlier merge.
+  const wholeFailed = (prior.failed ?? []).filter(
+    (id) => !(id in verified) && !run.ids.includes(id)
+  );
+  const findings: Record<string, string[] | null> = { ...(prior.findings ?? {}) };
+  for (const id of run.ids) {
+    const status = run.results.find((r) => r.id === id)?.status;
+    verified[id] = {
+      exitCode: status === 'ok' ? 0 : 1,
+      headTree: run.tree,
+      finishedAt: run.finishedAt,
+      judgedRoot: run.judgedRoot,
+      stable: run.stable,
+    };
+    delete findings[id];
+    if (status === 'fail' && id in run.findings) findings[id] = run.findings[id];
+  }
+  const droppedFailed = Object.keys(verified).filter((id) => verified[id].exitCode !== 0);
+  const failed = [...wholeFailed, ...droppedFailed.filter((id) => !wholeFailed.includes(id))];
+  const priorExit = typeof prior.exitCode === 'number' ? prior.exitCode : 1;
+  const wholeExit = priorFailedDrop ? (wholeFailed.length > 0 ? priorExit : 0) : priorExit;
+  return {
+    merged: {
+      ...(prior as Receipt),
+      droppedVerified: verified,
+      failed,
+      findings,
+      exitCode: Math.max(wholeExit, droppedFailed.length > 0 ? 1 : 0),
+    },
+    why: 'merged',
+  };
 }
 
 function writeReceipt(receipt: Receipt, dest: string, warn: (text: string) => void): void {
@@ -2048,15 +2361,55 @@ async function main(): Promise<number> {
   // lane read a moving tree and said nothing.
   const dirtyAtEnd = dirtyDigest();
   if (dirtyAtEnd !== dirtyAtStart) {
+    const writers = selection.treeWritersAdmitted ?? [];
     humanOut(
       'WARNING: the working tree CHANGED while these gates ran, so they did not all judge\n' +
         '  the same tree and a failure here may belong to the churn rather than to the code.\n' +
-        '  Re-run on a still tree before believing a red. This worktree may be shared.'
+        '  Re-run on a still tree before believing a red. This worktree may be shared.' +
+        (writers.length > 0
+          ? `\n  This disposable clone admitted tree-writing gate(s) that may account for it: ${writers.join(', ')}.`
+          : '') +
+        '\n'
     );
   }
 
-  if (opts.quick && !opts.manifest) {
-    const narrowedBy = narrowingFlags(opts);
+  // A `--only` RUN OF DROPPED GATES MERGES into the whole receipt of the same tree, quick or not: the command a DROPPED line prints is exactly this, and before 2026-10-04 it wrote no receipt at all, so a dropped gate could not be proven run. Every other narrowed run keeps the "kept" behaviour below.
+  const narrowedBy = narrowingFlags(opts);
+  let merged = false;
+  if (!opts.manifest && narrowedBy.length === 1 && narrowedBy[0] === '--only') {
+    const dest = receiptPathFor(opts);
+    let existing: unknown;
+    try {
+      existing = JSON.parse(fs.readFileSync(dest, 'utf8'));
+    } catch {
+      existing = undefined;
+    }
+    const verdict = mergeDroppedVerified(existing, {
+      tree: receiptTree(headTreeAtStart, headTreeNow()),
+      ids: [...selection.ids],
+      results,
+      findings: receiptFindings(results, humanOut),
+      finishedAt: new Date().toISOString(),
+      judgedRoot: REPO_ROOT,
+      stable: dirtyAtEnd === dirtyAtStart,
+    });
+    if (verdict.merged !== undefined) {
+      try {
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        fs.writeFileSync(dest, `${JSON.stringify(verdict.merged, null, 2)}\n`);
+        humanOut(
+          `ci-runner: merged ${[...selection.ids].join(', ')} into the whole-lane receipt at ${dest} (droppedVerified)\n`
+        );
+        merged = true;
+      } catch (err) {
+        humanOut(`ci-runner: could not write the push receipt: ${(err as Error).message}\n`);
+      }
+    } else if (existing !== undefined && (existing as Partial<Receipt>).whole === true) {
+      humanOut(`ci-runner: this --only run did not merge into ${dest}: ${verdict.why}\n`);
+    }
+  }
+
+  if (opts.quick && !opts.manifest && !merged) {
     writeReceipt(
       {
         headTree: (() => {
@@ -2096,6 +2449,9 @@ async function main(): Promise<number> {
         finishedAt: new Date().toISOString(),
         judgedRoot: REPO_ROOT,
         utilisation: util ?? null,
+        droppedTouched: selection.droppedTouched ?? [],
+        droppedVerified: {},
+        pushBase: selection.pushBase ?? null,
       },
       receiptPathFor(opts),
       humanOut
