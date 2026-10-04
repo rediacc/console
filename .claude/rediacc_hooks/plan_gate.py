@@ -152,6 +152,7 @@ def _default_settings():
         stop_hook=True,
         turbo=False,
         batch_size=1,
+        plan_concurrency=1,
         writer_cap=4,
         cadence=True,
         agent_hint=True,
@@ -159,6 +160,11 @@ def _default_settings():
         judge=True,
         notes={},
     )
+
+
+def plan_concurrency(settings) -> int:
+    """How many unfinished plans may be in flight at once under turbo: QUEUE.md `plan_concurrency:` (operator 2026-10-04: "batch_size: 3 is for plan concurrency? Maybe we need a new field"), 1 with turbo off. `batch_size` stays the merge minimum; this is the parallelism ceiling `next_turbo` fills up to."""
+    return max(1, int(getattr(settings, "plan_concurrency", 1))) if settings.turbo else 1
 
 
 def batch_size(settings) -> int:
@@ -321,6 +327,11 @@ def next_turbo(
     if taken & solos:
         return []
     live = {_base(p) for p in live_plans or ()}
+    # THE PARALLELISM CEILING (`plan_concurrency`): the PR's own unfinished plans and the plans live writers serve already count against it, so a free writer slot is not by itself a reason to open another plan.
+    inflight = {_base(p) for p in taken if open_boxes(root, p, rev)[0] > 0} | live
+    slots = min(slots, plan_concurrency(settings) - len(inflight))
+    if slots <= 0:
+        return []
     picks: list[str] = []
 
     def held(rel: str) -> bool:
@@ -482,6 +493,7 @@ __all__ = [
     "next_turbo",
     "open_boxes",
     "plan_merge_refusal",
+    "plan_concurrency",
     "pr_plan_set",
     "queue",
     "queue_head",

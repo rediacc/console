@@ -15,6 +15,7 @@ What each key does (default in brackets):
 - `stop_hook` (on): the whole Stop hook. `off` allows every stop with one notice and runs no check.
 - `turbo` (off): `off` keeps one plan per PR. `on` hands each free writer slot the next eligible queued plan, which joins the live PR's `Plan:` line, and keeps going until turbo is switched off.
 - `batch_size` (1): under turbo, the minimum number of finished plans before the PR is offered for merge. The merge itself never refuses a shorter PR.
+- `plan_concurrency` (1): under turbo, the most unfinished plans in flight at once. The PR's own unfinished plans and the plans live writers serve count against it, so a free writer slot opens a new plan only below this ceiling.
 - `writer_cap` (4): the most writer agents live at once. A spawn beyond it is refused (`block_agent_cap`), and the Stop hook blocks on a roster above it.
 - `cadence` (on): lets a stop through after a demand when the session has reported something new, so the hook does not demand on every stop. Always-tier checks still block.
 - `agent_hint` (on): names a specialist agent (`.claude/agents/*.md`) that matches the open work, including once after each compaction.
@@ -27,6 +28,7 @@ A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turb
 stop_hook: on -- re-enabled by the operator 2026-10-03 for the one-plan-per-PR loop
 turbo: on -- operator 2026-10-04: turbo on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
+plan_concurrency: 3 -- operator 2026-10-04: batch_size is the merge minimum; plan concurrency gets its own field
 writer_cap: 10 -- operator 2026-10-04: go in parallel as much as possible
 cadence: on
 agent_hint: on

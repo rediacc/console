@@ -36,7 +36,14 @@ def world(writers=0, readers=0, finished=0, lastevent=None, custom_ro=False, age
     (BASE / "tmp").mkdir()
     if cap is not None:
         # The cap is the fixture QUEUE.md's `writer_cap:` line, written by the verb's own writer.
-        sys.path.insert(0, str(pathlib.Path(DISPATCH).resolve().parents[1] / "hooks" / "stop"))
+        import importlib.util  # noqa: PLC0415
+
+        spec = importlib.util.spec_from_file_location(
+            "rediacc_hooks_syspath", pathlib.Path(DISPATCH).resolve().parent / "syspath.py"
+        )
+        syspath = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
+        spec.loader.exec_module(syspath)  # type: ignore[union-attr]
+        syspath.on_sys_path(pathlib.Path(DISPATCH).resolve().parents[1] / "hooks" / "stop")
         import wl_planqueue  # noqa: PLC0415
 
         queue = proj / wl_planqueue.QUEUE_REL

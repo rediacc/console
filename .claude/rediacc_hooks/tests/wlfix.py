@@ -188,8 +188,7 @@ class Fixture:
 
     def settings(self, **kw) -> None:
         """Write `kw` (`cadence=False`, `agent_hint="off"`, `writer_cap=2`, ...) into the fixture project's agent/plans/QUEUE.md settings block, through `wl_planqueue.set_settings`, the verb's own writer. A bool becomes on|off; anything else is stringified."""
-        if str(STOP_DIR) not in sys.path:
-            sys.path.insert(0, str(STOP_DIR))
+        paths.on_sys_path(STOP_DIR)
         import wl_planqueue  # noqa: PLC0415
 
         path = self.proj / wl_planqueue.QUEUE_REL
