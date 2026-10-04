@@ -29,7 +29,7 @@ stop_hook: on -- re-enabled by the operator 2026-10-03 for the one-plan-per-PR l
 turbo: on -- operator 2026-10-04: turbo on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 3 -- operator 2026-10-04: batch_size is the merge minimum; plan concurrency gets its own field
-writer_cap: 10 -- operator 2026-10-04: go in parallel as much as possible
+writer_cap: 15 -- operator 2026-10-04: parallel limit 15
 cadence: on
 agent_hint: on
 agent_pushback: on
