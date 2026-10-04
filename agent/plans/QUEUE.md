@@ -36,14 +36,13 @@ judge: on
 
 ## Promoted
 
-1. agent/plans/PLAN-plan-priority-concurrency.md -- operator /ask 2026-10-03: X's last box, T12 prose
-2. agent/plans/PLAN-gate-drop-receipt-verify.md -- ci:quick skipped a touched slow gate twice on 2026-10-03 and the push guard never noticed (#74f48292); operator /ask 2026-10-04 09:55Z: "Move to Promoted 2" after two gate drops reached CI red today
-3. agent/plans/PLAN-clean-review-ledger.md -- operator /ask 2026-10-04: "Own plan, next PR"; a clean per-commit review appends one line to agent/reviews/<branch>/clean.jsonl instead of a file, and the 194 eligible records convert and delete
-4. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; candidates 1, 3, 4, 6, 7 of agent/reports/consolidation-investigation-2026-10-04.md in one plan, one PR -- solo
-5. agent/plans/PLAN-commit-as-you-go.md -- operator /ask 2026-10-03: T6 (the `nocommit:` tick arm Z depends on), with T0 and T9
-6. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: T9 (the enforced matrix in DESIGN-CONFIG-STORAGE.md) and T10 (live smoke)
-7. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: the 9 open boxes
-8. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: Step 12
+1. agent/plans/PLAN-gate-drop-receipt-verify.md -- ci:quick skipped a touched slow gate twice on 2026-10-03 and the push guard never noticed (#74f48292); operator /ask 2026-10-04 09:55Z: "Move to Promoted 2" after two gate drops reached CI red today
+2. agent/plans/PLAN-clean-review-ledger.md -- operator /ask 2026-10-04: "Own plan, next PR"; a clean per-commit review appends one line to agent/reviews/<branch>/clean.jsonl instead of a file, and the 194 eligible records convert and delete
+3. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; candidates 1, 3, 4, 6, 7 of agent/reports/consolidation-investigation-2026-10-04.md in one plan, one PR -- solo
+4. agent/plans/PLAN-commit-as-you-go.md -- operator /ask 2026-10-03: T6 (the `nocommit:` tick arm Z depends on), with T0 and T9
+5. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: T9 (the enforced matrix in DESIGN-CONFIG-STORAGE.md) and T10 (live smoke)
+6. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: the 9 open boxes
+7. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: Step 12
 
 ## Generated
 
@@ -67,13 +66,13 @@ judge: on
 17. agent/plans/PLAN-haiku-model-routing.md -- P1, held, in progress (11 of 20 boxes ticked)
 18. agent/plans/PLAN-secret-namespace-migration.md -- P1, held, in progress (29 of 34 boxes ticked)
 19. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, held, in progress (16 of 17 boxes ticked)
-20. agent/plans/PLAN-stop-hook-retro-20260925.md -- P1, held, in progress (5 of 10 boxes ticked)
-21. agent/plans/PLAN-tooling-transformation.md -- P1, held, in progress (151 of 154 boxes ticked)
-22. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, held, in progress (6 of 7 boxes ticked), dep-blocked
-23. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, held, in progress (7 of 9 boxes ticked)
-24. agent/plans/PLAN-account-env-to-bws.md -- P2, held, in progress (19 of 20 boxes ticked)
-25. agent/plans/PLAN-retire-bash-oracles.md -- P2, held, in progress (4 of 15 boxes ticked), dep-blocked
-26. agent/plans/PLAN-stop-hook-retro-20260924.md -- P2, held, in progress (22 of 23 boxes ticked)
+20. agent/plans/PLAN-tooling-transformation.md -- P1, held, in progress (151 of 154 boxes ticked)
+21. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, held, in progress (6 of 7 boxes ticked), dep-blocked
+22. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, held, in progress (7 of 9 boxes ticked)
+23. agent/plans/PLAN-account-env-to-bws.md -- P2, held, in progress (19 of 20 boxes ticked)
+24. agent/plans/PLAN-retire-bash-oracles.md -- P2, held, in progress (4 of 15 boxes ticked), dep-blocked
+25. agent/plans/PLAN-stop-hook-retro-20260924.md -- P2, held, in progress (22 of 23 boxes ticked)
+26. agent/plans/PLAN-stop-hook-retro-20260925.md -- P2, held, in progress (5 of 10 boxes ticked)
 27. agent/plans/PLAN-biome-only-lint.md -- P3, held, in progress (10 of 29 boxes ticked)
 28. agent/plans/PLAN-env-to-bitwarden-v2.md -- P3, held, in progress (9 of 10 boxes ticked)
 29. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, held, in progress (1 of 17 boxes ticked)
@@ -90,7 +89,6 @@ judge: on
 - agent/plans/PLAN-program-state-in-repo.md -- all boxes ticked: close it
 - agent/plans/PLAN-rdc-readonly-mode.md -- all boxes ticked: close it
 - agent/plans/PLAN-repair-prose-style-findings.md -- all boxes ticked: close it
-- agent/plans/PLAN-scheduled-red-detector.md -- all boxes ticked: close it
 - agent/plans/PLAN-stop-hook-focus-mode.md -- all boxes ticked: close it
 - agent/plans/PLAN-typecheck-orphan-packages.md -- all boxes ticked: close it
 <!-- queue:generated:end -->

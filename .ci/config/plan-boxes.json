@@ -1062,29 +1062,6 @@
       ],
       "done_sigs": []
     },
-    "agent/plans/PLAN-plan-priority-concurrency.md": {
-      "status": "held",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 12,
-      "open_sigs": [],
-      "done_sigs": [
-        "2245bc52",
-        "34d0dc5e",
-        "3da37da2",
-        "3dd11297",
-        "5f2f6103",
-        "663c28a2",
-        "7130379b",
-        "7b81a161",
-        "8c6768b8",
-        "bbcb36e3",
-        "cbf22d66",
-        "cef6fb0f"
-      ]
-    },
     "agent/plans/PLAN-printf-echo-pipefail-sweep.md": {
       "status": "compacted",
       "owner": "d778be9d",
@@ -1444,32 +1421,6 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
-    },
-    "agent/plans/PLAN-scheduled-red-detector.md": {
-      "status": "approved",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 15,
-      "open_sigs": [],
-      "done_sigs": [
-        "1b770238",
-        "3868fd1a",
-        "59cfeae7",
-        "5b8051ac",
-        "749edc05",
-        "7a229b69",
-        "86469470",
-        "97ab06a1",
-        "9a1cd094",
-        "cae97c9c",
-        "cc739d78",
-        "cca915f2",
-        "cd141739",
-        "dbc6918b",
-        "f726703c"
-      ]
     },
     "agent/plans/PLAN-scope-gate-sort-collation.md": {
       "status": "compacted",
@@ -3314,6 +3265,29 @@
         "f6ca72e2"
       ]
     },
+    "agent/plans/_done/PLAN-plan-priority-concurrency.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-04",
+      "open": 0,
+      "done": 12,
+      "open_sigs": [],
+      "done_sigs": [
+        "2245bc52",
+        "34d0dc5e",
+        "3da37da2",
+        "3dd11297",
+        "5f2f6103",
+        "663c28a2",
+        "7130379b",
+        "7b81a161",
+        "8c6768b8",
+        "bbcb36e3",
+        "cbf22d66",
+        "cef6fb0f"
+      ]
+    },
     "agent/plans/_done/PLAN-plyr-css-on-demand-loading.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -3441,6 +3415,32 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
+    },
+    "agent/plans/_done/PLAN-scheduled-red-detector.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-04",
+      "open": 0,
+      "done": 15,
+      "open_sigs": [],
+      "done_sigs": [
+        "1b770238",
+        "3868fd1a",
+        "59cfeae7",
+        "5b8051ac",
+        "749edc05",
+        "7a229b69",
+        "86469470",
+        "97ab06a1",
+        "9a1cd094",
+        "cae97c9c",
+        "cc739d78",
+        "cca915f2",
+        "cd141739",
+        "dbc6918b",
+        "f726703c"
+      ]
     },
     "agent/plans/_done/PLAN-session-onboarding-marker.md": {
       "status": "done",
