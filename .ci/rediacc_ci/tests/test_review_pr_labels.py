@@ -3,6 +3,7 @@
 No case touches the network: `apply` takes the `gh` runner as a seam, and a recording fake answers the reads and counts the writes. Review files are real files in the reviewer's format under a temporary `agent/reviews/<branch>/`.
 """
 
+import json
 import pathlib
 
 from rediacc_ci.review import pr_labels as L
@@ -143,3 +144,98 @@ def test_missing_inputs_apply_nothing_and_still_exit_zero(tmp_path):
 def test_the_whitelist_matches_the_declared_create_on_demand_rows():
     for row in L.CREATE_ON_DEMAND_LABELS:
         assert row.split("|", 1)[0] in L.MANAGED_LABELS
+
+
+# --------------------------------------------------------------------------- the clean ledger (agent/plans/PLAN-clean-review-ledger.md T9)
+
+
+def ledger_line(n, verdict="clean", bump="patch", kinds=("bug",)):
+    labels = None if verdict != "clean" else {"bump": bump, "kind": list(kinds), "why": "w"}
+    return (
+        json.dumps(
+            {
+                "attempt": 1,
+                "branch": BRANCH,
+                "cost": None,
+                "diff": {"bytes": 1, "files": 1},
+                "labels": labels,
+                "model": "m",
+                "parent": "(root)",
+                "patch_id": "(none)",
+                "repo": "console",
+                "reviewed_at": "2026-10-04T00:00:00Z",
+                "sha": "%040d" % (100 + n),
+                "subject": "s",
+                "v": 1,
+                "verdict": verdict,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        + "\n"
+    )
+
+
+def plant_ledger(root: pathlib.Path, *lines):
+    d = root / "agent" / "reviews" / BRANCH
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "clean.jsonl").write_text("".join(lines), encoding="utf-8")
+
+
+def test_a_ledger_only_minor_earns_bump_minor(tmp_path):
+    plant_ledger(tmp_path, ledger_line(1, bump="minor", kinds=("feature",)), ledger_line(2))
+    gh = run(tmp_path, FakeGh())
+    assert "bump-minor" in gh.applied()
+    assert "enhancement" in gh.applied()
+
+
+def test_all_none_across_files_and_the_ledger_is_bump_none(tmp_path):
+    plant(tmp_path, review(bump="none", kinds="docs"))
+    plant_ledger(tmp_path, ledger_line(1, bump="none", kinds=()))
+    assert len(L.verdicts(tmp_path, BRANCH)) == 2
+    gh = run(tmp_path, FakeGh())
+    assert "bump-none" in gh.applied()
+
+
+def test_control_one_ledger_patch_beside_none_files_is_not_bump_none(tmp_path):
+    """CONTROL: the ledger's vote is counted, so a patch line removes bump-none."""
+    plant(tmp_path, review(bump="none", kinds="docs"))
+    plant_ledger(tmp_path, ledger_line(1, bump="patch"))
+    gh = run(tmp_path, FakeGh())
+    assert "bump-none" not in gh.applied()
+
+
+def test_a_skipped_ledger_line_casts_no_vote(tmp_path):
+    plant_ledger(tmp_path, ledger_line(1, verdict="skipped (gitlink-only)"))
+    assert L.verdicts(tmp_path, BRANCH) == []
+
+
+def test_an_md_record_beats_the_ledger_line_for_its_sha(tmp_path):
+    d = tmp_path / "agent" / "reviews" / BRANCH
+    d.mkdir(parents=True)
+    (d / ("%040d.md" % 101)).write_text(review(bump="patch"), encoding="utf-8")
+    plant_ledger(tmp_path, ledger_line(1, bump="major"))
+    assert [v["bump"] for v in L.verdicts(tmp_path, BRANCH)] == ["patch"]
+
+
+def test_verdicts_only_prints_labels_note_and_count(tmp_path, monkeypatch, capsys):
+    plant_ledger(tmp_path, ledger_line(1, bump="minor", kinds=("feature",)))
+    monkeypatch.setattr(L.paths, "repo_root", lambda: tmp_path)
+    assert L.main(["--verdicts-only", "--branch", BRANCH]) == 0
+    assert json.loads(capsys.readouterr().out) == {
+        "labels": ["bump-minor", "enhancement"],
+        "n": 1,
+        "note": "",
+    }
+    assert L.main(["--verdicts-only"]) == 2
+
+
+def test_verdicts_merge_files_and_ledger_in_sha_order(tmp_path):
+    """Moving a record into the ledger must not reorder the kind labels: the merged list is in sha order, the order the `.md` files alone sorted in (the migration's byte-identity proof depends on it)."""
+    d = tmp_path / "agent" / "reviews" / BRANCH
+    d.mkdir(parents=True)
+    (d / ("%040d.md" % 900)).write_text(review(bump="patch", kinds="docs"), encoding="utf-8")
+    plant_ledger(tmp_path, ledger_line(1, bump="patch", kinds=("ci",)))
+    assert [v["kind"] for v in L.verdicts(tmp_path, BRANCH)] == [["ci"], ["docs"]]
+    labels, _note = L.aggregate(L.verdicts(tmp_path, BRANCH))
+    assert labels == ["ci", "documentation"]

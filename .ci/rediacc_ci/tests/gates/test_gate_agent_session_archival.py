@@ -398,13 +398,16 @@ print(json.dumps([{"mergedAt": stamps[head]}] if head in stamps else []))
 """
 
 
-def seed_reviews(tmp_path: pathlib.Path, branches) -> tuple[pathlib.Path, pathlib.Path]:
+def seed_reviews(
+    tmp_path: pathlib.Path, branches, record: str = "a" * 40 + ".md"
+) -> tuple[pathlib.Path, pathlib.Path]:
+    """`record` is the one file each branch directory holds: a `<sha40>.md` by default, or `clean.jsonl` for a directory whose every verdict was clean (agent/plans/PLAN-clean-review-ledger.md)."""
     root = seed(tmp_path)
     # S1's own abandoned directory goes, so the verdict below is S2's alone.
     shutil.rmtree(root / "agent" / "deadbeef")
     shutil.copy(REVIEW_CONFIG, root / ".ci" / "config" / "commit-review.json")
     for branch in branches:
-        _write(root, "agent/reviews/%s/%s.md" % (branch, "a" * 40), "# Review aaaaaaaa: x\n")
+        _write(root, "agent/reviews/%s/%s" % (branch, record), "# Review aaaaaaaa: x\n")
     _git(root, "add", "-A", "--", ".")
     _git(root, "commit", "-qm", "reviews")
     _git(root, "checkout", "-qb", "1002-1")
@@ -497,3 +500,19 @@ def test_a_citation_blocks_the_prune(gate, tmp_path):
     if not (root / "agent/reviews/0901-1").exists():
         gate.log_fail("the refused prune deleted the directory anyway")
     gate.log_pass("a tracked citation of a due review directory blocks --prune-reviews --write")
+
+
+def test_s2_lists_and_prunes_a_ledger_only_review_dir(gate, tmp_path):
+    """PLAN-clean-review-ledger T12: a branch whose every review was clean holds only `clean.jsonl`; `review_branches` still lists the directory, so retention still prunes it."""
+    root, bindir = seed_reviews(tmp_path, ["0901-1", "0920-1"], record="clean.jsonl")
+    merged = {"0901-1": _ago(15 * 86400), "0920-1": _ago(13 * 86400)}
+    result = _s2_gate(root, bindir, merged)
+    gate.assert_exit(1, result, "a ledger-only review directory past retention is not a finding")
+    gate.assert_contains(result.combined, "agent/reviews/0901-1/", "S2 named the wrong directory")
+    pruned = _s2_gate(root, bindir, merged, "--prune-reviews", "--write")
+    gate.assert_exit(0, pruned, "--prune-reviews --write refused a ledger-only prune")
+    if (root / "agent/reviews/0901-1").exists():
+        gate.log_fail("the due ledger-only directory survived --write")
+    if not (root / "agent/reviews/0920-1/clean.jsonl").exists():
+        gate.log_fail("--write deleted a ledger that was not due")
+    gate.log_pass("a ledger-only review directory is listed, judged and pruned like any other")

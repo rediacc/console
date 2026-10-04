@@ -63,7 +63,9 @@ def _world(tmp_path, record):
     _git(repo, "add", "f.py")
     _git(repo, "commit", "-q", "-m", "fix(x): first value")
     sha = _git(repo, "rev-parse", "HEAD")
-    if record is not None:
+    if record in ("ledger", "ledger-dirty", "ledger-garbled", "ledger-empty"):
+        _ledger_record(repo, sha, record)
+    elif record is not None:
         finding = R.Finding(
             id="%s.1" % sha[:8],
             severity="high",
@@ -89,6 +91,32 @@ def _world(tmp_path, record):
         _git(repo, "add", "--", str(target.relative_to(repo)))
         _git(repo, "commit", "-q", "-m", "chore(reviews): record")
     return repo
+
+
+def _ledger_record(repo, sha, record):
+    """The commit's clean verdict as ONE ledger line (PLAN-clean-review-ledger): committed (`ledger`), left uncommitted (`ledger-dirty`), committed beside a garbled line (`ledger-garbled`), or a committed ledger without this commit's line (`ledger-empty`)."""
+    review = R.Review(
+        sha=sha,
+        subject="fix(x): first value",
+        branch=BRANCH,
+        parent=_git(repo, "rev-parse", "HEAD^"),
+        patch_id=R.patch_id(repo, sha),
+        reviewed_at="2026-10-02T00:00:00Z",
+        model="m",
+        labels={"bump": "patch", "kind": ["bug"], "why": "x"},
+    )
+    path = R.ledger_path(repo, BRANCH)
+    if record == "ledger-empty":
+        other = R.Review(sha="e" * 40, subject="s", branch=BRANCH, model="m", reviewed_at="x")
+        R.append_clean(repo, BRANCH, other)
+    else:
+        assert R.append_clean(repo, BRANCH, review)
+    if record == "ledger-garbled":
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write('{"sha": "garbled"\n')
+    if record != "ledger-dirty":
+        _git(repo, "add", "--", str(path.relative_to(repo)))
+        _git(repo, "commit", "-q", "-m", "chore(reviews): record")
 
 
 def _check(repo, *extra):
@@ -208,3 +236,58 @@ def test_the_guard_end_to_end_reads_the_head_branch(tmp_path, record, denied):
         assert "head branch 0930-1" in got.stderr, got.stderr
     else:
         assert got.returncode == 0, got.stderr
+
+
+# --------------------------------------------------------------------------- the clean ledger (agent/plans/PLAN-clean-review-ledger.md T5, T7)
+
+
+def test_a_ledger_only_branch_passes_check(tmp_path):
+    repo = _world(tmp_path, "ledger")
+    assert not R.review_path(repo, BRANCH, _git(repo, "rev-parse", "HEAD^")).exists()
+    got = _check(repo)
+    assert got.returncode == 0, got.stdout + got.stderr
+    assert "clean" in got.stdout, got.stdout
+
+
+def test_control_without_the_ledger_line_the_same_branch_is_unreviewed(tmp_path):
+    """CONTROL: the committed ledger holds another sha only, so the pass above is the line's doing."""
+    got = _check(_world(tmp_path, "ledger-empty"))
+    assert got.returncode == 1, got.stdout
+    assert "UNREVIEWED console" in got.stdout, got.stdout
+
+
+def test_a_dirty_ledger_is_refused_as_uncommitted(tmp_path):
+    got = _check(_world(tmp_path, "ledger-dirty"))
+    assert got.returncode == 1, got.stdout
+    assert "refused (uncommitted)" in got.stdout, got.stdout
+
+
+def test_a_garbled_ledger_line_is_refused_as_malformed_with_its_line(tmp_path):
+    got = _check(_world(tmp_path, "ledger-garbled"))
+    assert got.returncode == 1, got.stdout
+    assert "malformed" in got.stdout, got.stdout
+    assert "MALFORMED clean.jsonl" in got.stdout, got.stdout
+    assert "(line 2)" in got.stdout, got.stdout
+
+
+def test_a_rebased_copy_whose_patch_id_is_in_the_ledger_counts_as_covered(tmp_path):
+    repo = _world(tmp_path, "ledger")
+    _git(repo, "checkout", "-q", "main")
+    (repo / "other.txt").write_text("o\n", encoding="utf-8")
+    _git(repo, "add", "other.txt")
+    _git(repo, "commit", "-q", "-m", "other")
+    _git(repo, "push", "-q", "origin", "main")
+    _git(repo, "checkout", "-q", BRANCH)
+    _git(repo, "rebase", "-q", "main")
+    assert R.uncovered(repo, repo, BRANCH) == []
+    got = _check(repo)
+    assert got.returncode == 0, got.stdout + got.stderr
+
+
+def test_merge_arm_passes_the_ledger_branch_and_refuses_it_without_the_line(tmp_path):
+    reasons, lines = merge_guard.review_refusals(_world(tmp_path / "a", "ledger"), BRANCH, GH_REPO)
+    assert reasons == [], (reasons, lines)
+    reasons, lines = merge_guard.review_refusals(
+        _world(tmp_path / "b", "ledger-empty"), BRANCH, GH_REPO
+    )
+    assert reasons == ["uncovered"], (reasons, lines)

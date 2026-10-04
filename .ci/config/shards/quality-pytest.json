@@ -386,6 +386,7 @@
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_license.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_diagnose.py",
         "pytest:.ci/rediacc_ci/tests/test_review_pr_labels.py",
+        "pytest:.ci/rediacc_ci/tests/test_review_clean_ledger.py",
         "pytest:.claude/rediacc_hooks/tests/test_plan_gate.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_trace_pr_signals.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_trace_scheduled.py",

@@ -51,6 +51,7 @@ R = "agent/reviews/0930-1/" + "a" * 40 + ".md"
 EDGE_CASES = [
     ("a redirect", "printf 'Resolution: fixed' > %s" % R),
     ("an append", "echo x >> %s" % R),
+    ("an append to the clean ledger", "echo '{}' >> agent/reviews/0930-1/clean.jsonl"),
     ("a cat heredoc", "cat > %s <<'EOF'\n# Review\nEOF" % R),
     ("tee", "echo x | tee %s" % R),
     ("tee -a", "echo x | tee -a %s >/dev/null" % R),

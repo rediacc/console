@@ -1,6 +1,6 @@
 """The per-commit review records, rendered as one table on the PR page (agent/plans/PLAN-github-pr-review-restore.md, "Showing the per-commit records on GitHub", box GR5).
 
-WHAT IT SHOWS. Every commit on a branch gets one review record under `agent/reviews/<branch-slug>/<sha40>.md`, written by `.claude/hooks/stop/wl_review.py`. Nothing put those records on the PR page, so a reader on GitHub saw neither the findings nor how each was resolved. This module renders them: a header with the bump label `pr_labels.aggregate` computes and the commit that earned it, one row per console commit of
+WHAT IT SHOWS. Every commit on a branch gets one review record under `agent/reviews/<branch-slug>/`, written by `.claude/hooks/stop/wl_review.py`: a line of `clean.jsonl` for a clean full-coverage verdict (read through `clean_ledger`, linked as `clean.jsonl#L<n>`), a `<sha40>.md` file for every other verdict, and the `.md` wins for one sha. Nothing put those records on the PR page, so a reader on GitHub saw neither the findings nor how each was resolved. This module renders them: a header with the bump label `pr_labels.aggregate` computes and the commit that earned it, one row per console commit of
 the PR, a section for submodule records, the PR commits with no record, the records whose commit is no longer in the PR (a rebase supersedes them), a collapsed details block per finding, and a link to the record directory at the head.
 
 WHERE IT RUNS. A second step of Console CI's `pr-labels` job, which already checks out `agent/reviews`, holds `pull-requests: write`, runs once per green head and is exempt from job aggregation. No model call: the records are committed, and this only reads them.
@@ -27,7 +27,8 @@ import tempfile
 from collections.abc import Callable
 
 from rediacc_ci import log, paths
-from rediacc_ci.review.pr_labels import BUMP_LABEL, aggregate, branch_slug, read_verdict
+from rediacc_ci.review import clean_ledger, pr_labels
+from rediacc_ci.review.pr_labels import BUMP_LABEL, aggregate, branch_slug
 from rediacc_ci.well_known import GH_ORIGIN
 
 MARKER_PREFIX = "<!-- per-commit-reviews:"
@@ -83,6 +84,8 @@ class Record:
     findings: list[Finding] = dataclasses.field(default_factory=list)
     file: str = ""
     problem: str = ""
+    # The 1-based line of `clean.jsonl` a ledger record came from; 0 for a `.md` record.
+    line: int = 0
 
     @property
     def sha8(self) -> str:
@@ -141,7 +144,28 @@ def parse_record(text: str, file: str = "") -> Record:
     return rec
 
 
+def ledger_record(doc: dict) -> Record:
+    """A `Record` from one `clean.jsonl` line. D1 makes it full coverage with no finding."""
+    labels = clean_ledger.labels_text(doc)
+    lm = LABELS_RE.match(labels)
+    diff = doc.get("diff")
+    files = diff.get("files") if isinstance(diff, dict) else None
+    return Record(
+        sha=doc["sha"],
+        subject=str(doc.get("subject") or ""),
+        repo=str(doc.get("repo") or "console"),
+        verdict=doc["verdict"],
+        reviewed_at=str(doc.get("reviewed_at") or ""),
+        diff_files=files if isinstance(files, int) else 0,
+        labels=labels,
+        bump=lm.group(1) if lm else "",
+        file=clean_ledger.NAME,
+        line=int(doc["line"]),
+    )
+
+
 def load_records(root: pathlib.Path, branch: str) -> list[Record]:
+    """Every `.md` record and each `clean.jsonl` line whose sha has no `.md` record, in sha order."""
     d = pathlib.Path(root) / REVIEWS_REL / branch_slug(branch)
     out: list[Record] = []
     for path in sorted(d.glob("*.md")) if d.is_dir() else []:
@@ -151,7 +175,14 @@ def load_records(root: pathlib.Path, branch: str) -> list[Record]:
             out.append(Record(sha=path.stem, file=path.name, problem="unreadable: %s" % exc))
             continue
         out.append(parse_record(text, path.name))
-    return out
+    md_shas = {r.sha for r in out} | {pathlib.Path(r.file).stem for r in out}
+    out.extend(
+        ledger_record(doc)
+        for doc in clean_ledger.read(d / clean_ledger.NAME)
+        if doc["sha"] not in md_shas
+    )
+    # The order the `.md` files alone sorted in (by name, which is the sha), so moving a record into the ledger never changes which commit a header names.
+    return sorted(out, key=lambda r: pathlib.Path(r.file).stem if r.file.endswith(".md") else r.sha)
 
 
 @dataclasses.dataclass
@@ -180,9 +211,10 @@ def _clip(text: str, cap: int) -> str:
 
 def record_url(ctx: Context, rec: Record) -> str:
     rel = "%s/%s/%s" % (REVIEWS_REL, branch_slug(ctx.branch), rec.file or rec.sha + ".md")
+    anchor = "#L%d" % rec.line if rec.line else ""
     if ctx.repo and ctx.head:
-        return "%s/%s/blob/%s/%s" % (GH_ORIGIN, ctx.repo, ctx.head, rel)
-    return rel
+        return "%s/%s/blob/%s/%s%s" % (GH_ORIGIN, ctx.repo, ctx.head, rel, anchor)
+    return rel + anchor
 
 
 def dir_url(ctx: Context) -> str:
@@ -567,17 +599,8 @@ def publish(env: dict[str, str], root: pathlib.Path, gh: Runner = _gh) -> int:
 
 
 def branch_verdicts(root: pathlib.Path, branch: str) -> list[dict]:
-    """Exactly what `pr_labels.verdicts` reads, so the header names the bump the applier applies."""
-    d = pathlib.Path(root) / REVIEWS_REL / branch_slug(branch)
-    out = []
-    for path in sorted(d.glob("*.md")) if d.is_dir() else []:
-        try:
-            got = read_verdict(path.read_text(encoding="utf-8"))
-        except OSError:
-            continue
-        if got is not None:
-            out.append(got)
-    return out
+    """`pr_labels.verdicts` itself, so the header names the bump the applier applies from one implementation."""
+    return pr_labels.verdicts(root, branch)
 
 
 def render_only(branch: str, root: pathlib.Path, git: Runner = _git) -> str:

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Per-commit review: every commit on the live branch gets a haiku review recorded at `agent/reviews/<branch>/<sha40>.md` (agent/plans/PLAN-per-commit-review.md).
+"""Per-commit review: every commit on the live branch gets a haiku review, recorded as one line of `agent/reviews/<branch>/clean.jsonl` when nothing is left to do and as `agent/reviews/<branch>/<sha40>.md` otherwise (agent/plans/PLAN-per-commit-review.md, agent/plans/PLAN-clean-review-ledger.md).
 
 WHY. The operator ruled on 2026-10-02 that a per-commit haiku review through a Claude Code hook replaces the PR-level Claude review: the Claude GitHub app is uninstalled, and a whole PR is too big to review in one pass. One commit is a diff a small model can read end to end.
 
 THE FLOW. A `git commit` (or rebase, cherry-pick, merge, revert, pull) in any Bash call fires the post-bash member `.claude/hooks/post-bash/review_commit.py`. It asks `uncovered()` which commits of the branch have no review, takes the per-sha lock for up to `max_spawn_per_trigger` of them and starts this file as a DETACHED child for each (`--run`). The child reads the
-commit from the object store, calls haiku with a JSON schema and no tools, validates every finding's anchor against the diff and writes the review file atomically. It never runs `git add`: the index is shared, and the file rides the session's next commit or `worklist.py --review-commit`.
+commit from the object store, calls haiku with a JSON schema and no tools, validates every finding's anchor against the diff and writes the review file atomically, or appends the ledger line for a verdict `ledger_eligible` accepts. It never runs `git add`: the index is shared, and the file rides the session's next commit or `worklist.py --review-commit`.
 
 NOTHING HERE DEPENDS ON THE STOP HOOK, which the operator disabled on 2026-10-02. Three readers enforce and surface the record without it: the pre-bash guard `block_push_with_unrecorded_reviews` refuses a push while a commit is unreviewed, a review is unrecorded or a `block_at` finding is open; the post-bash member reports each finished review on the session's next Bash call; and SessionStart prints `session_start_line()`. The Stop hook's `commit-review` keys
 read the same `branch_state()` when it is switched back on.
@@ -101,6 +101,31 @@ OPTIONAL_HEADERS = ("Cost",)
 COST_NONE = "(none)"
 COST_RE = re.compile(r"^\$(\d+\.\d{4}) USD, (\d+) call\(s\), (\d+\.\d)s$")
 
+# THE CLEAN LEDGER (agent/plans/PLAN-clean-review-ledger.md D1, D2). A verdict that leaves nothing to do (clean or skipped, no finding, the whole diff seen, nothing dropped) is one JSON line in `agent/reviews/<branch>/clean.jsonl` instead of a tracked file; every other verdict stays `<sha40>.md`, and for any sha a `.md` beats a ledger line.
+LEDGER_NAME = "clean.jsonl"
+LEDGER_V = 1
+LEDGER_VERDICTS = ("clean", "skipped (gitlink-only)", "skipped (no-review)")
+LEDGER_KEYS = frozenset(
+    (
+        "attempt",
+        "branch",
+        "cost",
+        "diff",
+        "labels",
+        "model",
+        "parent",
+        "patch_id",
+        "repo",
+        "reviewed_at",
+        "sha",
+        "subject",
+        "v",
+        "verdict",
+    )
+)
+# Keys D1 makes constant (false, empty, zero, none), so a line that carries one is malformed rather than ignored.
+LEDGER_CONSTANT_KEYS = ("body_sig", "dropped", "findings", "truncated", "unreviewed")
+
 PROMPT = """You review ONE git commit of the rediacc console monorepo. You see only its message and diff. Report defects this commit INTRODUCES or EXPOSES, nothing else.
 Severity:
 high = on the changed path it will produce wrong behaviour, data loss, a security hole, a broken build or a CI gate that can no longer fail;
@@ -192,6 +217,10 @@ def branch_dir(root, branch):
 
 def review_path(root, branch, sha):
     return branch_dir(root, branch) / ("%s.md" % sha)
+
+
+def ledger_path(root, branch):
+    return branch_dir(root, branch) / LEDGER_NAME
 
 
 def git(repo, *args, stdin=None, timeout=30):
@@ -416,9 +445,11 @@ def render(review):
 class MalformedReviewError(ValueError):
     """A review file that does not parse. `line` is the 1-based line the parser stopped at (0 when it is the file as a whole)."""
 
-    def __init__(self, msg, line=0):
+    def __init__(self, msg, line=0, sha=""):
         super().__init__(msg)
         self.line = line
+        # The sha a malformed ledger line names, when that much of it parses; "" otherwise.
+        self.sha = sha
 
 
 def parse(text):
@@ -555,6 +586,273 @@ def write_atomic(path, text):
     finally:
         with contextlib.suppress(OSError):
             os.unlink(tmp)
+
+
+# --------------------------------------------------------------------------- the clean ledger (PLAN-clean-review-ledger D1-D3)
+
+
+def ledger_eligible(review):
+    """D1: True when the verdict leaves nothing to do, so it is a ledger line rather than a file. A finding has a resolution to mark, a failure has an attempt counter, a truncated diff was not seen whole and a dropped finding may deserve a human look: each of those stays `<sha40>.md`."""
+    return (
+        review.verdict in LEDGER_VERDICTS
+        and not review.findings
+        and not review.truncated
+        and not review.unreviewed
+        and review.dropped == 0
+    )
+
+
+def _ledger_cost(cost):
+    """The cost as the `.md` record keeps it (4 decimals of USD, 1 of seconds), so a migrated line and its file agree."""
+    if not cost:
+        return None
+    return {
+        "calls": int(cost.get("calls") or 0),
+        "seconds": round(float(cost.get("seconds") or 0.0), 1),
+        "usd": round(float(cost.get("usd") or 0.0), 4),
+    }
+
+
+def _ledger_labels(labels):
+    """The labels as `_labels_text` then `_parse_labels` would return them: an empty `why` reads back as `-`."""
+    if not labels:
+        return None
+    return {
+        "bump": labels.get("bump", "none"),
+        "kind": list(labels.get("kind") or []),
+        "why": normalise_claim(labels.get("why", ""), WHY_MAX) or "-",
+    }
+
+
+def ledger_doc(review):
+    """The D2 object for one eligible review; ValueError for any other."""
+    if not ledger_eligible(review):
+        raise ValueError(
+            "review %s is not ledger-eligible (verdict %r, %d finding(s), truncated %s, %d unreviewed, %d dropped)"
+            % (
+                review.sha8,
+                review.verdict,
+                len(review.findings),
+                review.truncated,
+                len(review.unreviewed),
+                review.dropped,
+            )
+        )
+    return {
+        "attempt": int(review.attempt),
+        "branch": review.branch,
+        "cost": _ledger_cost(review.cost),
+        "diff": {"bytes": int(review.diff_bytes), "files": int(review.diff_files)},
+        "labels": _ledger_labels(review.labels),
+        "model": review.model or "(none)",
+        "parent": review.parent,
+        "patch_id": review.patch_id,
+        "repo": review.repo,
+        "reviewed_at": review.reviewed_at,
+        "sha": review.sha,
+        "subject": normalise_claim(review.subject, 160) or "(no subject)",
+        "v": LEDGER_V,
+        "verdict": review.verdict,
+    }
+
+
+def ledger_line(review):
+    """One ledger line, newline included: sorted keys, no spaces, UTF-8 kept."""
+    return (
+        json.dumps(ledger_doc(review), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        + "\n"
+    )
+
+
+def _is_int(value, low=0):
+    return isinstance(value, int) and not isinstance(value, bool) and value >= low
+
+
+def _is_num(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0
+
+
+def _ledger_review(doc, n):
+    """A `Review` from one parsed ledger object, or `MalformedReviewError(line=n)` carrying `.sha` when the line names one."""
+    named = doc.get("sha") if isinstance(doc, dict) else None
+
+    def bad(msg):
+        err = MalformedReviewError("%s line %d: %s" % (LEDGER_NAME, n, msg), n)
+        err.sha = named if isinstance(named, str) and SHA40.match(named) else ""
+        return err
+
+    if not isinstance(doc, dict):
+        raise bad("not a JSON object")
+    constant = sorted(k for k in doc if k in LEDGER_CONSTANT_KEYS)
+    if constant:
+        raise bad("carries %s, which only a `<sha40>.md` record may" % ", ".join(constant))
+    unknown = sorted(set(doc) - LEDGER_KEYS)
+    if unknown:
+        raise bad("unknown key(s): %s" % ", ".join(unknown))
+    missing = sorted(LEDGER_KEYS - set(doc))
+    if missing:
+        raise bad("missing key(s): %s" % ", ".join(missing))
+    if doc["v"] != LEDGER_V or isinstance(doc["v"], bool):
+        raise bad("v is %r, not %d" % (doc["v"], LEDGER_V))
+    if not isinstance(doc["sha"], str) or not SHA40.match(doc["sha"]):
+        raise bad("sha is not 40 hex characters")
+    if doc["verdict"] not in LEDGER_VERDICTS:
+        raise bad("verdict %r is not one of %s" % (doc["verdict"], ", ".join(LEDGER_VERDICTS)))
+    if not isinstance(doc["parent"], str) or not (
+        doc["parent"] == "(root)" or SHA40.match(doc["parent"])
+    ):
+        raise bad("parent is not a 40-hex sha or (root)")
+    if not isinstance(doc["patch_id"], str) or not (
+        doc["patch_id"] == "(none)" or SHA40.match(doc["patch_id"])
+    ):
+        raise bad("patch_id is not a 40-hex sha or (none)")
+    if not _is_int(doc["attempt"], 1):
+        raise bad("attempt is not an integer of at least 1")
+    for key in ("subject", "model", "repo", "branch", "reviewed_at"):
+        if not isinstance(doc[key], str):
+            raise bad("%s is not a string" % key)
+    diff = doc["diff"]
+    if not (
+        isinstance(diff, dict)
+        and set(diff) == {"bytes", "files"}
+        and _is_int(diff["bytes"])
+        and _is_int(diff["files"])
+    ):
+        raise bad("diff is not {bytes, files} of non-negative integers")
+    cost = doc["cost"]
+    if cost is not None and not (
+        isinstance(cost, dict)
+        and set(cost) == {"calls", "seconds", "usd"}
+        and _is_int(cost["calls"])
+        and _is_num(cost["seconds"])
+        and _is_num(cost["usd"])
+    ):
+        raise bad("cost is not null or {calls, seconds, usd}")
+    labels = doc["labels"]
+    if labels is not None and not (
+        isinstance(labels, dict)
+        and set(labels) == {"bump", "kind", "why"}
+        and labels["bump"] in BUMPS
+        and isinstance(labels["kind"], list)
+        and all(k in KINDS for k in labels["kind"])
+        and isinstance(labels["why"], str)
+    ):
+        raise bad("labels is not null or {bump, kind, why} with known values")
+    return Review(
+        sha=doc["sha"],
+        subject=doc["subject"],
+        repo=doc["repo"],
+        branch=doc["branch"],
+        parent=doc["parent"],
+        patch_id=doc["patch_id"],
+        reviewed_at=doc["reviewed_at"],
+        model=doc["model"],
+        cost=None if cost is None else dict(cost),
+        diff_bytes=diff["bytes"],
+        diff_files=diff["files"],
+        verdict=doc["verdict"],
+        attempt=doc["attempt"],
+        labels=None if labels is None else dict(labels, kind=list(labels["kind"])),
+        body_sig=body_sig([]),
+    )
+
+
+def parse_ledger(text):
+    """(reviews, errors) from ledger text. Strict: a line that is not JSON, or whose object `_ledger_review` refuses, is an error naming its line. A sha seen twice keeps its first line (two checkouts on one branch can both append it, and either line is the same verdict)."""
+    reviews, errors, seen = [], [], set()
+    lines = text.split("\n")
+    for n, line in enumerate(lines, start=1):
+        if not line.strip():
+            if n != len(lines):
+                errors.append(
+                    MalformedReviewError("%s line %d: an empty line" % (LEDGER_NAME, n), n)
+                )
+            continue
+        try:
+            doc = json.loads(line)
+        except ValueError:
+            err = MalformedReviewError("%s line %d: not JSON" % (LEDGER_NAME, n), n)
+            err.sha = ""
+            errors.append(err)
+            continue
+        try:
+            review = _ledger_review(doc, n)
+        except MalformedReviewError as exc:
+            errors.append(exc)
+            continue
+        if review.sha in seen:
+            continue
+        seen.add(review.sha)
+        reviews.append(review)
+    return reviews, errors
+
+
+def read_ledger(path):
+    """(reviews, errors) for one ledger file; ([], []) when it does not exist."""
+    try:
+        text = pathlib.Path(path).read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return [], []
+    except (OSError, UnicodeDecodeError) as exc:
+        err = MalformedReviewError("%s unreadable: %s" % (LEDGER_NAME, exc))
+        err.sha = ""
+        return [], [err]
+    return parse_ledger(text)
+
+
+def append_clean(root, branch, review, line=None):
+    """D3: append the review's ledger line under an exclusive flock, once per sha. True when a line was written, False when the sha already had one.
+
+    One `os.write` of the whole line on an `O_APPEND` descriptor, after re-reading the ledger under the lock, so two reviewer children (`max_concurrent`) and two sessions sharing the checkout neither tear a line nor write a sha twice. `line` overrides the codec, for the migration's round-trip test only.
+    """
+    import fcntl  # noqa: PLC0415 -- POSIX only, as _mark_lock
+
+    path = ledger_path(root, branch)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = (line if line is not None else ledger_line(review)).encode("utf-8")
+    fd = os.open(str(path), os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        try:
+            existing, _errors = read_ledger(path)
+            if any(r.sha == review.sha for r in existing):
+                return False
+            size = os.fstat(fd).st_size
+            if size:
+                with open(path, "rb") as fh:
+                    fh.seek(size - 1)
+                    if fh.read(1) != b"\n":
+                        data = b"\n" + data
+            os.write(fd, data)
+            os.fsync(fd)
+            return True
+        finally:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+    finally:
+        os.close(fd)
+
+
+def dir_records(d):
+    """([(path, review)], [(path, error)]) for one review directory: every `*.md`, then every ledger line whose sha has no `.md` (the stricter record wins). A ledger review's path is the ledger itself."""
+    d = pathlib.Path(d)
+    records: list[tuple[pathlib.Path, Review]] = []
+    malformed: list[tuple[pathlib.Path, MalformedReviewError]] = []
+    if not d.is_dir():
+        return records, malformed
+    md_shas = set()
+    for path in sorted(d.glob("*.md")):
+        md_shas.add(path.stem)
+        review, err = read_review(path)
+        if review is None:
+            malformed.append((path, err))
+            continue
+        md_shas.add(review.sha)
+        records.append((path, review))
+    lp = d / LEDGER_NAME
+    reviews, errors = read_ledger(lp)
+    malformed.extend((lp, err) for err in errors)
+    records.extend((lp, r) for r in reviews if r.sha not in md_shas)
+    return records, malformed
 
 
 # --------------------------------------------------------------------------- locks and slots (section 3.2)
@@ -704,13 +1002,13 @@ def before_epoch(author_date, cfg):
 
 
 def review_index(root, branch):
-    """{sha: path} and {patch_id: path} for the review files in the branch directory, read from headers only."""
+    """{sha: path} and {patch_id: sha} for the branch directory's records: the `.md` files, read from headers only, then the ledger lines (a ledger review's path is the ledger). A garbled ledger line covers nothing here; `branch_state` reports it as malformed."""
     by_sha: dict[str, pathlib.Path] = {}
-    by_patch: dict[str, pathlib.Path] = {}
+    by_patch: dict[str, str] = {}
     d = branch_dir(root, branch)
     if not d.is_dir():
         return by_sha, by_patch
-    for path in d.glob("*.md"):
+    for path in sorted(d.glob("*.md")):
         sha = path.stem
         if not SHA40.match(sha):
             continue
@@ -722,10 +1020,15 @@ def review_index(root, branch):
                     if line.startswith("Patch-Id: "):
                         pid = line[len("Patch-Id: ") :].strip()
                         if SHA40.match(pid):
-                            by_patch.setdefault(pid, path)
+                            by_patch.setdefault(pid, sha)
                         break
         except OSError:
             continue
+    lp = d / LEDGER_NAME
+    for review in read_ledger(lp)[0]:
+        by_sha.setdefault(review.sha, lp)
+        if SHA40.match(review.patch_id):
+            by_patch.setdefault(review.patch_id, review.sha)
     return by_sha, by_patch
 
 
@@ -738,7 +1041,7 @@ def patch_id(repo, sha):
 
 
 def uncovered(root, repo, branch, cfg=None):
-    """Commits of the branch, newest first, that have no review file (by sha or patch-id) and no live reviewer.
+    """Commits of the branch, newest first, that have no review record (a `.md` file or a ledger line, by sha or patch-id) and no live reviewer.
 
     Dropped before the question is asked: merge commits, commits that touch only `agent/reviews/` (no review of reviews), empty commits and commits authored before `review_epoch`.
     """
@@ -1076,7 +1379,7 @@ def run_review(
     now=None,
     log=print,
 ):
-    """Review one commit and write its file. Returns the path written, or None when nothing was owed (a live reviewer, a rebased copy, a reviews-only commit)."""
+    """Review one commit and record it: a ledger line for a `ledger_eligible` verdict, a `<sha40>.md` file for any other. Returns the path written (the ledger, or the file), or None when nothing was owed (a live reviewer, a rebased copy, a reviews-only commit)."""
     cfg = cfg or load_config(root)
     repo = repo_from_label(root, repo_label_text)
     full = git_out(repo, "rev-parse", "-q", "--verify", "%s^{commit}" % sha)
@@ -1098,8 +1401,8 @@ def run_review(
         pid = patch_id(repo, full)
         _by_sha, by_patch = review_index(root, branch)
         twin = by_patch.get(pid) if pid else None
-        if twin is not None and twin.stem != full:
-            log("rebased copy of %s (patch-id %s); nothing written" % (twin.stem, pid))
+        if twin is not None and twin != full:
+            log("rebased copy of %s (patch-id %s); nothing written" % (twin, pid))
             return None
         previous, _err = read_review(out_path) if out_path.exists() else (None, None)
         review = Review(
@@ -1146,6 +1449,14 @@ def run_review(
                         structured, paths, diff_text, full, is_writing=_writing_test(root)
                     )
         review.reviewed_at = now_iso(now)
+        # D3: a `.md` beats a ledger line. A verdict with nothing to do becomes a ledger line, unless a finished `.md` already stands for the sha (a findings record is never unlinked by a later clean result: the new verdict overwrites it, as any re-review does). A failed `.md` is replaced: the line goes in first, then the file goes.
+        if ledger_eligible(review) and (previous is None or not previous.finished()):
+            lp = ledger_path(root, branch)
+            wrote = append_clean(root, branch, review)
+            if out_path.exists():
+                out_path.unlink()
+            log("%s %s: %s" % ("appended to" if wrote else "already in", lp, review.verdict))
+            return lp
         write_atomic(out_path, render(review))
         log("wrote %s: %s, %d finding(s)" % (out_path, review.verdict, len(review.findings)))
         return out_path
@@ -1194,14 +1505,18 @@ def branch_state(root, branch, cfg=None, items=None, repos=None):
     }
     dirty = _untracked_or_modified(root, d) if d.is_dir() else set()
     seen_repos = {"console"}
-    for path in sorted(d.glob("*.md")) if d.is_dir() else []:
-        review, err = read_review(path)
-        if review is None:
-            st["malformed"].append((path, err))
-            continue
+    records, st["malformed"] = dir_records(d)
+    lp = d / LEDGER_NAME
+    if lp.resolve() in dirty:
+        st["uncommitted"].append(lp)
+    # A tracked `.md` that is gone from disk (a failed record a clean retry replaced with a ledger line) is a change to record too.
+    for gone in sorted(dirty):
+        if gone.suffix == ".md" and gone.parent == d.resolve() and not gone.exists():
+            st["uncommitted"].append(d / gone.name)
+    for path, review in records:
         st["reviews"].append((path, review))
         seen_repos.add(review.repo)
-        if path.resolve() in dirty:
+        if path.suffix == ".md" and path.resolve() in dirty:
             st["uncommitted"].append(path)
         if not review.finished():
             (st["failed_stuck"] if review.attempt >= FAIL_OPEN_AFTER else st["failed"]).append(
@@ -1292,9 +1607,18 @@ def describe(st, limit=5):
 
 
 def recordable(st):
-    """Review files that are finished (or failed past FAIL_OPEN_AFTER) and not committed: what `--review-commit` would record."""
-    done = {p for p, r in st["reviews"] if r.finished() or r.attempt >= FAIL_OPEN_AFTER}
-    return [p for p in st["uncommitted"] if p in done and not lock_live(p.stem)]
+    """What `--review-commit` would record: review files that are finished (or failed past FAIL_OPEN_AFTER) and not committed, a dirty ledger, and a deleted tracked `.md`. The ledger needs no lock test: a line is appended only once its verdict is final, before `release_lock` runs."""
+    done = {
+        p
+        for p, r in st["reviews"]
+        if p.suffix == ".md" and (r.finished() or r.attempt >= FAIL_OPEN_AFTER)
+    }
+    out = []
+    for p in st["uncommitted"]:
+        record_now = p.name == LEDGER_NAME or not p.exists()
+        if record_now or (p in done and not lock_live(p.stem)):
+            out.append(p)
+    return out
 
 
 def push_refusals(st, console_push=True):
@@ -1342,6 +1666,17 @@ def check_state(root, branch, label="console", cfg=None):
     return push_refusals(st), describe(st, limit=8)
 
 
+def _malformed_remedy(path, err, branch):
+    """The command that rewrites a malformed record. A `.md` names its sha in its file name; a ledger line names it in its own `sha` key, when that much of it parses."""
+    sha = path.stem if path.suffix == ".md" else getattr(err, "sha", "")
+    if sha:
+        return run_command("console", sha, branch)
+    return (
+        "the ledger is append-only: restore its committed text (git show HEAD:%s) and re-review the commit"
+        % (pathlib.Path(REVIEWS_REL, path.parent.name, path.name))
+    )
+
+
 def stop_texts(st, limit=5):
     """(block, malformed, note) for the Stop hook: the `commit-review` block, the `commit-review-malformed` block and the advisory, each "" when there is nothing to say."""
     block = malformed = ""
@@ -1356,7 +1691,7 @@ def stop_texts(st, limit=5):
                         p.name,
                         err,
                         " (line %d)" % err.line if getattr(err, "line", 0) else "",
-                        run_command("console", p.stem, st["branch"]),
+                        _malformed_remedy(p, err, st["branch"]),
                     )
                     for p, err in st["malformed"][:limit]
                 ),
@@ -1396,7 +1731,7 @@ def session_start_line(root, branch, cfg=None):
     lines = describe(st)
     if not lines:
         return ""
-    return "Per-commit reviews for %s (agent/reviews/%s/, %d file(s)):\n  %s" % (
+    return "Per-commit reviews for %s (agent/reviews/%s/, %d record(s)):\n  %s" % (
         branch,
         branch_slug(branch),
         len(st["reviews"]),
@@ -1405,7 +1740,7 @@ def session_start_line(root, branch, cfg=None):
 
 
 def surface_new(root, branch, session_id, cfg=None):
-    """Lines for review files that FINISHED since this session last heard of them (the next-turn channel while the Stop hook is off). Marks them seen."""
+    """Lines for review records that FINISHED since this session last heard of them (the next-turn channel while the Stop hook is off). Marks them seen: a `.md` by its mtime, a ledger line by `clean.jsonl:<sha>`, so one append never re-surfaces the lines before it. Every fresh ledger line shares ONE line of output."""
     d = branch_dir(root, branch)
     if not session_id or not d.is_dir():
         return []
@@ -1426,12 +1761,31 @@ def surface_new(root, branch, session_id, cfg=None):
             continue
         seen[path.name] = mtime
         fresh.append(path)
-    if not fresh:
+    fresh_clean = []
+    for review in read_ledger(d / LEDGER_NAME)[0]:
+        key = "%s:%s" % (LEDGER_NAME, review.sha)
+        if seen.get(key):
+            continue
+        seen[key] = True
+        fresh_clean.append(review)
+    if not fresh and not fresh_clean:
         return []
     write_atomic(seen_path, json.dumps(seen))
     cfg = cfg or load_config(root)
     block_rank = SEV_RANK[cfg["block_at"]]
     lines = []
+    if fresh_clean:
+        names = " ".join(r.sha8 for r in fresh_clean[:8])
+        more = len(fresh_clean) - 8
+        lines.append(
+            "%d clean review(s) appended to %s: %s%s"
+            % (
+                len(fresh_clean),
+                pathlib.Path(REVIEWS_REL, branch_slug(branch), LEDGER_NAME),
+                names,
+                " and %d more" % more if more > 0 else "",
+            )
+        )
     for path in fresh:
         review, err = read_review(path)
         if review is None:
@@ -1456,7 +1810,7 @@ def surface_new(root, branch, session_id, cfg=None):
             )
             lines.extend("    " + c for c in mark_commands(f.id))
     lines.append(
-        "Review files ride the next commit (`git commit -F <msg> -- <paths> %s/`) or `worklist.py --review-commit <me>`; a push waits until they are committed."
+        "Review records (the ledger and any `<sha>.md`) ride the next commit (`git commit -F <msg> -- <paths> %s/`) or `worklist.py --review-commit <me>`; a push waits until they are committed."
         % pathlib.Path(REVIEWS_REL, branch_slug(branch))
     )
     return lines
@@ -1590,15 +1944,29 @@ def _mark_lock(sha):
 TRAILER = re.compile(r"(?m)^PR-TASK:[ \t]*([0-9a-f]{6,32})[ \t]*$")
 
 
+def _new_ledger_shas(root, path):
+    """The shas the ledger names now and did not name at HEAD: the commits a `--review-commit` of it records."""
+    rel = str(pathlib.Path(path).relative_to(root))
+    rc, committed = git(root, "show", "HEAD:%s" % rel)
+    before = {r.sha for r in parse_ledger(committed)[0]} if rc == 0 else set()
+    return {r.sha for r in read_ledger(path)[0]} - before
+
+
 def commit_reviews(root, branch, run=subprocess.run):
-    """`git add` + `git commit -F <msg> -- <files>` for the finished, uncommitted review files of the branch. Returns (rc, text)."""
+    """`git add -A` + `git commit -F <msg> -- <paths>` for the branch's finished, uncommitted review records: `.md` files, the ledger and deleted `.md` files (`-A` stages a deletion). Returns (rc, text)."""
     st = branch_state(root, branch, repos=())
     files = recordable(st)
     if not files:
         return 0, "no finished review file is waiting to be committed in %s" % st["dir"]
-    shas = sorted({p.stem for p in files})
+    found: set[str] = set()
+    for p in files:
+        if p.name == LEDGER_NAME:
+            found |= _new_ledger_shas(root, p)
+        else:
+            found.add(p.stem)
+    shas = sorted(found)
     trailer = ""
-    for _p, r in sorted(st["reviews"], key=lambda pr: pr[0].stat().st_mtime, reverse=True):
+    for _p, r in sorted(st["reviews"], key=lambda pr: pr[1].reviewed_at, reverse=True):
         body = git_out(repo_from_label(root, r.repo), "show", "-s", "--format=%B", r.sha)
         m = TRAILER.search(body)
         if m:
@@ -1613,7 +1981,7 @@ def commit_reviews(root, branch, run=subprocess.run):
         fh.write(msg)
     try:
         add = run(
-            ["git", "-C", str(root), "add", "--", *rels],
+            ["git", "-C", str(root), "add", "-A", "--", *rels],
             capture_output=True,
             text=True,
             check=False,
@@ -1728,12 +2096,139 @@ def verb(name, me, args, root, items_loader, branch=None):
     return 2, VERB_USAGE
 
 
+# --------------------------------------------------------------------------- the one-shot migration (PLAN-clean-review-ledger D5)
+
+
+def migration_snapshot(root):
+    """{branch_dir_name: (by_sha keys, by_patch keys, {sha: (verdict, labels, repo, parent, patch_id)})} for every directory under agent/reviews/: what coverage and labels read, which the migration must leave unchanged."""
+    top = pathlib.Path(root) / REVIEWS_REL
+    snap = {}
+    for d in sorted(p for p in top.iterdir() if p.is_dir()) if top.is_dir() else []:
+        by_sha, by_patch = review_index(root, d.name)
+        records, _bad = dir_records(d)
+        recs = {
+            r.sha: (
+                r.verdict,
+                json.dumps(r.labels, sort_keys=True),
+                r.repo,
+                r.parent,
+                r.patch_id,
+            )
+            for _p, r in records
+        }
+        snap[d.name] = (sorted(by_sha), sorted(by_patch), recs)
+    return snap
+
+
+def _drop_ledger_lines(path, shas):
+    """Remove the lines naming `shas` from one ledger under its flock, keeping every other line byte for byte: the migration's undo, which must not lose a line a live reviewer appended meanwhile. An emptied ledger is deleted."""
+    import fcntl  # noqa: PLC0415 -- POSIX only, as append_clean
+
+    with open(path, "r+", encoding="utf-8") as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        try:
+            kept = []
+            for line in fh.read().splitlines(keepends=True):
+                try:
+                    sha = json.loads(line).get("sha")
+                except (ValueError, AttributeError):
+                    sha = None
+                if sha not in shas:
+                    kept.append(line)
+            fh.seek(0)
+            fh.truncate()
+            fh.write("".join(kept))
+            fh.flush()
+            os.fsync(fh.fileno())
+        finally:
+            fcntl.flock(fh, fcntl.LOCK_UN)
+    if not "".join(kept).strip():
+        pathlib.Path(path).unlink()
+
+
+def ledger_migrate(root, write=False, codec=None, snapshot=None, log=print):
+    """`--ledger-migrate [--write]`: turn every eligible `<sha40>.md` into a ledger line and delete the file. Returns an exit code.
+
+    Each eligible record's line is parsed back with `parse_ledger` and must equal the parsed `.md` field by field before anything is written. With `--write`, the coverage and label snapshot is taken before and after; a difference restores every file from memory and exits 1. A dry run (the default) changes nothing and prints the counts. A second run finds no eligible `.md` and is a no-op. `codec` and `snapshot` are seams for the tests.
+    """
+    codec = codec or ledger_line
+    snapshot = snapshot or migration_snapshot
+    root = pathlib.Path(root)
+    top = root / REVIEWS_REL
+    plan: dict[pathlib.Path, list] = {}
+    problems: list[str] = []
+    kept: dict[str, int] = {}
+    for d in sorted(p for p in top.iterdir() if p.is_dir()) if top.is_dir() else []:
+        for path in sorted(d.glob("*.md")):
+            review, _err = read_review(path)
+            if review is None or not ledger_eligible(review):
+                kept[d.name] = kept.get(d.name, 0) + 1
+                continue
+            line = codec(review)
+            back, errors = parse_ledger(line)
+            if errors or len(back) != 1:
+                problems.append("%s: the ledger line does not parse (%s)" % (path, errors[:1]))
+                continue
+            want, got = dataclasses.asdict(review), dataclasses.asdict(back[0])
+            diff = sorted(k for k in want if want[k] != got.get(k))
+            if diff:
+                problems.append(
+                    "%s: round-trip mismatch on %s (%s)"
+                    % (
+                        path,
+                        ", ".join(diff),
+                        "; ".join("%s %r != %r" % (k, want[k], got.get(k)) for k in diff),
+                    )
+                )
+                continue
+            plan.setdefault(d, []).append((path, review, line))
+    for d in sorted(set(plan) | {top / k for k in kept}):
+        log(
+            "%s: %d line(s) to append, %d file(s) to delete, %d .md kept"
+            % (d.name, len(plan.get(d, [])), len(plan.get(d, [])), kept.get(d.name, 0))
+        )
+    total = sum(len(v) for v in plan.values())
+    log("total: %d line(s), %d file(s) deleted, %d .md kept" % (total, total, sum(kept.values())))
+    if problems:
+        log("refused: %d record(s) do not round-trip, nothing written:" % len(problems))
+        for problem in problems:
+            log("  " + problem)
+        return 1
+    if not write or not total:
+        log("dry run: nothing written (pass --write)" if not write else "nothing to migrate")
+        return 0
+    before = snapshot(root)
+    saved = {path: path.read_bytes() for items in plan.values() for path, _r, _l in items}
+    appended: dict[pathlib.Path, set[str]] = {}
+    for d, items in plan.items():
+        for _path, review, line in sorted(items, key=lambda it: (it[1].reviewed_at, it[1].sha)):
+            if append_clean(root, d.name, review, line=line):
+                appended.setdefault(d / LEDGER_NAME, set()).add(review.sha)
+        for path, _review, _line in items:
+            path.unlink()
+    after = snapshot(root)
+    if after != before:
+        for path, data in saved.items():
+            path.write_bytes(data)
+        for lp, shas in appended.items():
+            _drop_ledger_lines(lp, shas)
+        changed = sorted(k for k in set(before) | set(after) if before.get(k) != after.get(k))
+        log(
+            "refused: the coverage or label snapshot changed in %s; every file was restored"
+            % ", ".join(changed)
+        )
+        return 1
+    log("migrated %d record(s); coverage and labels are unchanged" % total)
+    return 0
+
+
 # --------------------------------------------------------------------------- CLI
 
 USAGE = """usage:
   wl_review.py --run <sha> --branch <branch> [--repo <console|private/x>] [--root <console>]   review one commit now
   wl_review.py --status [--branch <branch>]                                                    print the branch's review state
   wl_review.py --check [--branch <branch>]                                                     exit 1 while the branch has review refusals, 0 when clean
+  wl_review.py --ledger-migrate [--write]                                                      move every eligible <sha40>.md into its branch's clean.jsonl (dry run by default)
 """
 
 
@@ -1784,6 +2279,8 @@ def main(argv):
         for line in lines:
             print("  " + line)
         return 1 if reasons else 0
+    if argv[0] == "--ledger-migrate":
+        return ledger_migrate(root, write="--write" in argv)
     if argv[0] == "--status":
         branch = _opt(argv, "--branch") or current_branch(root)
         lines = describe(branch_state(root, branch))

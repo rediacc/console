@@ -1,7 +1,7 @@
 """PR labels from the per-commit review records (agent/plans/PLAN-per-commit-review.md section 8; operator ruling 2026-10-02).
 
-WHY THIS MOVED. Labeling lived inside the PR-level Claude review job (`claude_review_gate.run_apply_labels`), and half its input was that job's model verdict. The operator retired the PR-level review on 2026-10-02 (the Claude GitHub app is uninstalled), so the verdict now comes from the per-commit reviewer: every review file under `agent/reviews/<branch>/` carries one `Labels:` line, and this
-module aggregates them for the PR. It runs ONCE PER GREEN HEAD, from Console CI's `pr-labels` job, which needs `ci-complete` and runs only when CI Complete succeeded (operator ruling 2026-10-02: the bump is decided at the end of the PR, not on every push, so a red head never carries a release decision).
+WHY THIS MOVED. Labeling lived inside the PR-level Claude review job (`claude_review_gate.run_apply_labels`), and half its input was that job's model verdict. The operator retired the PR-level review on 2026-10-02 (the Claude GitHub app is uninstalled), so the verdict now comes from the per-commit reviewer: every review record under `agent/reviews/<branch>/` carries its labels (a `<sha40>.md` file's `Labels:` line, or the `labels` key of a line in `clean.jsonl`, the ledger a clean full-coverage verdict is written to; `clean_ledger` reads it, and for one sha the `.md` wins), and
+this module aggregates them for the PR. It runs ONCE PER GREEN HEAD, from Console CI's `pr-labels` job, which needs `ci-complete` and runs only when CI Complete succeeded (operator ruling 2026-10-02: the bump is decided at the end of the PR, not on every push, so a red head never carries a release decision).
 
 TWO INPUTS, IN THIS ORDER OF TRUST, the same as before:
 
@@ -14,10 +14,12 @@ applier's labels instead of stranding them.
 ADVISORY END TO END. Every failure logs and returns 0: a label is never worth failing CI over, and a fork PR's read-only token must not red the job. The verdicts are complete at a green head: block_push_with_unrecorded_reviews refuses a push until every commit's review file is committed, and a review-only commit is not reviewed again. The release reads the labels on the main-branch CI run that the merge starts (dispatch_release.py in finalize-release-sentinel), which runs long after this job finishes, so an auto-merge landing the moment CI Complete turns green does not race it.
 
     PYTHONPATH=.ci python3 -m rediacc_ci.review.pr_labels      env: GH_TOKEN PR_NUMBER HEAD_REF HEAD_SHA GITHUB_REPOSITORY
+    PYTHONPATH=.ci python3 -m rediacc_ci.review.pr_labels --verdicts-only --branch <b>   prints {labels, note, n} as JSON from the local tree, no gh
 """
 
 from __future__ import annotations
 
+import json
 import os
 import pathlib
 import re
@@ -25,6 +27,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log, paths
+from rediacc_ci.review import clean_ledger
 
 LEDGER_PREFIX = "<!-- claude-labels:"
 # THE HARD WHITELIST. Adding a label the repo does not carry CREATES it, so an unfiltered name would appear on the repo and fail check:ci-label-inventory.
@@ -80,16 +83,32 @@ def read_verdict(text: str) -> dict | None:
 
 
 def verdicts(root: pathlib.Path, branch: str) -> list[dict]:
+    """Every labelled verdict of the branch, in sha order: the `.md` records, and each `clean.jsonl` line whose sha has no `.md` (the stricter record wins). Sha order is the order the `.md` files alone sorted in, so moving a record into the ledger never reorders the kind labels."""
     d = pathlib.Path(root) / REVIEWS_REL / branch_slug(branch)
-    out = []
+    keyed: list[tuple[str, dict]] = []
+    md_shas = set()
     for path in sorted(d.glob("*.md")) if d.is_dir() else []:
+        md_shas.add(path.stem)
         try:
             got = read_verdict(path.read_text(encoding="utf-8"))
         except OSError:
             continue
         if got is not None:
-            out.append(got)
-    return out
+            keyed.append((path.stem, got))
+    for doc in clean_ledger.read(d / clean_ledger.NAME):
+        if doc["sha"] in md_shas:
+            continue
+        got = clean_ledger.verdict_of(doc)
+        if got is not None:
+            keyed.append((doc["sha"], got))
+    return [v for _k, v in sorted(keyed, key=lambda kv: kv[0])]
+
+
+def verdicts_only(root: pathlib.Path, branch: str) -> str:
+    """`{labels, note, n}` as one JSON line: the labels the reviews alone earn (no changed-file floor), for an offline comparison of two trees."""
+    found = verdicts(root, branch)
+    labels, note = desired_labels([], found)
+    return json.dumps({"labels": labels, "note": note, "n": len(found)}, sort_keys=True)
 
 
 def mechanical(changed: list[str]) -> list[str]:
@@ -272,8 +291,23 @@ def apply(env: dict[str, str], root: pathlib.Path, gh=_gh) -> int:
     return 0
 
 
+def _opt(argv: list[str], name: str) -> str:
+    if name in argv:
+        i = argv.index(name)
+        if i + 1 < len(argv):
+            return argv[i + 1]
+    return ""
+
+
 def main(argv: list[str] | None = None) -> int:
-    del argv
+    argv = list(argv or [])
+    if "--verdicts-only" in argv:
+        branch = _opt(argv, "--branch")
+        if not branch:
+            sys.stderr.write("--verdicts-only needs --branch <branch>\n")
+            return 2
+        print(verdicts_only(paths.repo_root(), branch))
+        return 0
     try:
         return apply(dict(os.environ), paths.repo_root())
     except Exception as exc:  # noqa: BLE001 -- advisory: a label never fails CI

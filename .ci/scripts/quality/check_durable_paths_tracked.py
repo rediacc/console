@@ -38,6 +38,7 @@ DURABLE_PROBES = (
         "agent/reviews/<branch>/",
         "agent/reviews/zz-probe/0000000000000000000000000000000000000000.md",
     ),
+    ("agent/reviews/<branch>/clean.jsonl", "agent/reviews/zz-probe/clean.jsonl"),
     ("agent/worklist/", "agent/worklist/zz-probe.jsonl"),
     ("agent/plans/", "agent/plans/PLAN-zz-probe.md"),
     ("agent/ledgers/", "agent/ledgers/zz-probe.jsonl"),
