@@ -347,7 +347,7 @@ def _pr_signals(root, payload):
         import wl_prsignals  # noqa: PLC0415 -- the hook's own module, on sys.path above
 
         fetch = _fetcher(root)
-        comments = []
+        comments: list[dict] = []
         for page in range(1, SIGNALS_MAX_PAGES + 1):
             data, err = fetch.json("issues/%s/comments?per_page=100&page=%d" % (pr, page))
             if not isinstance(data, list):
@@ -783,7 +783,9 @@ def main(argv=None):
 
     cache, read_failures, pinned_head = {}, 0, None
     seen: dict[str, float] = {}
-    signals_at, signals_seen, signals_memo = 0.0, set(), {}
+    signals_at = 0.0
+    signals_seen: set[str] = set()
+    signals_memo: dict[str, object] = {}
     deadline = time.time() + args.timeout
 
     while True:
@@ -1047,9 +1049,10 @@ def verb_scheduled(root, workflow, as_json):
         print(json.dumps(data, indent=2, sort_keys=True, default=str))
     state = data.get("state")
     if state != "ok":
-        reason = {
+        known: dict[object, str] = {
             "unset": "no GitHub origin is configured, so no scheduled run can be read",
-        }.get(state, data.get("error") or "state %r" % state)
+        }
+        reason = known.get(state, data.get("error") or "state %r" % state)
         print("no-verdict: scheduled runs unreadable: %s" % reason, file=sys.stderr)
         return EXIT_NO_VERDICT
     if not rows:

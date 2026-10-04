@@ -65,7 +65,9 @@ def test_report_head_equals_wl_prreview_and_matches_the_gate_header():
     assert S.REPORT_HEAD.pattern == wl_prreview.REPORT_HEAD.pattern
     assert S.REPORT_HEAD.flags == wl_prreview.REPORT_HEAD.flags
     header = "%s the automated review of %s**" % (claude_review_gate.REPORT_HEADER, HEAD[:7])
-    assert S.REPORT_HEAD.search(header).group(1) == HEAD[:7]
+    found = S.REPORT_HEAD.search(header)
+    assert found is not None
+    assert found.group(1) == HEAD[:7]
 
 
 def test_budget_and_outage_classes_equal_their_sources():

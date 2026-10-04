@@ -333,6 +333,7 @@ def _fail(lines: list[str], report_to: Path | None) -> int:
     text = "\n".join(lines) + "\n"
     sys.stderr.write(text)
     if report_to is not None:
+        # tree-write: safe only with an explicit --report-to (housekeeping's /tmp summary), which check:ci-budget-freshness never passes
         with report_to.open("a", encoding="utf-8") as fh:
             fh.write("\n--- gate cost baseline (gate_costs --check) ---\n" + text)
     return 1
