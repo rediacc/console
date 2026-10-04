@@ -1797,6 +1797,40 @@
         "c63cd990"
       ]
     },
+    "agent/plans/PLAN-stop-hook-turbo.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 23,
+      "done": 0,
+      "open_sigs": [
+        "087dd443",
+        "0a127714",
+        "1452c1d6",
+        "162d80ab",
+        "1e4d8d33",
+        "297371be",
+        "3472a1e9",
+        "4796a50a",
+        "607b938f",
+        "6216ac0a",
+        "66361055",
+        "6750b760",
+        "69a7e90b",
+        "781d4fa7",
+        "808fe8ba",
+        "9dd25fc5",
+        "a3daf301",
+        "a7424f77",
+        "ac5cc36a",
+        "b44a3160",
+        "bf1dacc2",
+        "db9249f9",
+        "e1648399"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-stop-report-queue.md": {
       "status": "compacted",
       "owner": "unowned",

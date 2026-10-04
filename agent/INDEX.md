@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 189 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 190 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -569,6 +569,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-retro-20260924.md` | held | 601 | 1 | 22 | 64263 |
 | `agent/plans/PLAN-stop-hook-retro-20260925.md` | held | 239 | 5 | 5 | 23104 |
 | `agent/plans/PLAN-stop-hook-rulings-campaign.md` | held | 103 | 16 | 1 | 9802 |
+| `agent/plans/PLAN-stop-hook-turbo.md` | approved | 160 | 23 | 0 | 26623 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
 | `agent/plans/PLAN-submodule-branch-coordination-guard.md` | held | 109 | 8 | 0 | 18729 |
@@ -654,4 +655,4 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-wl-wait-duplicate-listener.md` | done | 203 | 0 | 15 | 29033 |
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 
-189 plan(s), 124 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+190 plan(s), 125 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
