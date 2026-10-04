@@ -7,8 +7,11 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
+import sys
 
 from rediacc_hooks.tests import wlfix
+from rediacc_hooks.tests.test_wl_pr_scope_stop import plant_dead_lease
 from rediacc_hooks.tests.test_wl_roster import (
     W1,
     linked,
@@ -298,6 +301,45 @@ def test_l7b_inverse_the_same_lease_without_the_token_fails_closed_and_names_the
     assert "lease expired; finish it" in out, out[:1200]
     assert "#q0000old LEASE DEAD" in out, out[:1600]
     assert "--update deadbeef q0000old 'BLOCKED_BY:#<blocker>'" in out, out[:1600]
+
+
+CLASSIFY_PROBE = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_core as C, wl_store as S
+ev = json.loads(sys.stdin.read())
+fold = S.load(C.worklist_for(C.project_start(ev)), sync=True)
+got = S.classify_items(fold, ev["session_id"])
+print(json.dumps({"open": got[0], "waiting": [r["id"] for r in fold.items if r.get("waiting_on")]}))
+"""
+
+
+def test_l7d_an_expired_worker_lease_that_took_the_named_remedy_reads_as_waiting(wl):  # noqa: F811
+    """2026-10-04: #6512e909's lease on a finished shell expired; the stop named `--update <id> 'BLOCKED_BY:#<blocker>'`, the session ran exactly that, and the next stop refused the same item word for word, because classify_items honoured BLOCKED_BY only on a `worker:queue` lease. Probed at classify_items itself: through the whole hook a live writer or an earlier block hides which bucket the item fell into."""
+    blocker = add(wl, "(deadbeef) CI verdict for the head")
+    waiter = "dead0001"
+    plant_dead_lease(wl, waiter, "bgone0001")
+
+    def classify() -> dict:
+        proc = subprocess.run(
+            [sys.executable, "-c", CLASSIFY_PROBE, str(wlfix.STOP_DIR)],
+            input=wl.event(),
+            capture_output=True,
+            text=True,
+            env=wl.stop_env(),
+            check=False,
+        )
+        assert proc.returncode == 0, proc.stderr[-1200:]
+        return json.loads(proc.stdout)
+
+    # CONTROL: without the token the dead lease fails closed into the open list.
+    before = classify()
+    assert any(waiter in line and "lease expired" in line for line in before["open"]), before
+    got = wl.cli("--update", wlfix.ME, waiter, "BLOCKED_BY:#%s -- follows CI" % blocker)
+    assert got.rc == 0, got.err[:300]
+    after = classify()
+    assert not any(waiter in line for line in after["open"]), after
+    assert waiter in after["waiting"], after
 
 
 def test_l7c_the_queue_slot_block_names_blocked_by_as_the_remedy(wl):  # noqa: F811
