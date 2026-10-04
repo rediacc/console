@@ -69,6 +69,8 @@ def put(**over):
         "failed": [],
         "wallMs": 1,
         "finishedAt": "now",
+        "droppedTouched": [],
+        "droppedVerified": {},
     }
     base.update(over)
     os.makedirs(os.path.dirname(RECEIPT), exist_ok=True)
@@ -190,6 +192,57 @@ cases.append((2, run(PUSH), "a NARROWED run (--only/--skip) cannot authorise a p
 
 put(exitCode=1, failed=["check:format", "check:ci-parity"])
 cases.append((2, run(PUSH), "a RED receipt refuses, and names the failures"))
+
+# --- a touched slow gate the lane DROPPED (PLAN-gate-drop-receipt-verify) ------ On 2026-10-03 ci:quick dropped check:ci-plan-record, a gate the diff touched; the receipt said nothing and CI run 37129843955 went red on it.
+PLAN_RECORD = "check:ci-plan-record"
+DROP = {
+    "id": PLAN_RECORD,
+    "why": "agent/INDEX.md matches its paths",
+    "reason": "it writes the shared tree (tree:repo), which the quick lane does not do",
+    "kind": "tree",
+    "run": "npx tsx scripts/ci-runner/run.ts --only %s" % PLAN_RECORD,
+}
+
+
+def passed_at(tree, code=0):
+    return {
+        PLAN_RECORD: {
+            "exitCode": code,
+            "headTree": tree,
+            "finishedAt": "now",
+            "judgedRoot": d,
+            "stable": True,
+        }
+    }
+
+
+put(droppedTouched=[DROP])
+cases.append((2, run(PUSH), "DROPPED: an outstanding touched-but-dropped gate refuses"))
+_err = run_err(PUSH)
+cases.append(
+    (
+        True,
+        PLAN_RECORD in _err and DROP["run"] in _err,
+        "DROPPED: the refusal names the gate and its --only command",
+    )
+)
+put(droppedTouched=[DROP], droppedVerified=passed_at(CURRENT["tree"]))
+cases.append((0, run(PUSH), "DROPPED CONTROL: a passing --only run at this tree clears it"))
+put(droppedTouched=[DROP], droppedVerified=passed_at("0" * 40))
+cases.append((2, run(PUSH), "DROPPED: a passing run at ANOTHER tree does not clear it"))
+put(droppedTouched=[DROP], droppedVerified=passed_at(CURRENT["tree"], code=1))
+cases.append((2, run(PUSH), "DROPPED: a red --only run does not clear it"))
+put(droppedTouched=[DROP], droppedVerified=passed_at(CURRENT["tree"], code=False))
+cases.append((2, run(PUSH), "DROPPED: an exitCode of false is not a pass"))
+put()
+with open(RECEIPT, encoding="utf-8") as _fh:
+    _body = json.load(_fh)
+del _body["droppedTouched"]
+with open(RECEIPT, "w", encoding="utf-8") as _fh:
+    json.dump(_body, _fh)
+cases.append((2, run(PUSH), "DROPPED: a receipt with NO droppedTouched field fails closed"))
+put(droppedTouched=[])
+cases.append((0, run(PUSH), "DROPPED CONTROL: an empty droppedTouched allows"))
 
 # --- the allow direction, which decides whether the guard is tolerable ------- A guard whose usual outcome is a false positive is one that gets bypassed.
 put()
@@ -501,7 +554,12 @@ def plant_green(where):
     cache.mkdir(parents=True, exist_ok=True)
     (cache / "prepush-receipt.json").write_text(
         json.dumps(
-            {"headTree": g(where, "rev-parse", "HEAD^{tree}"), "whole": True, "exitCode": 0}
+            {
+                "headTree": g(where, "rev-parse", "HEAD^{tree}"),
+                "whole": True,
+                "exitCode": 0,
+                "droppedTouched": [],
+            }
         ),
         encoding="utf-8",
     )

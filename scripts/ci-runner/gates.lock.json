@@ -2149,10 +2149,6 @@
     },
     "run": "npm run check:ci-plan-record",
     "gate": true,
-    "mutex": [
-      "tree:repo"
-    ],
-    "writesTree": "appends the daily census row to the tracked agent/ledgers/census-plan-record.jsonl",
     "paths": [
       "agent/plans/**",
       "agent/INDEX.md",

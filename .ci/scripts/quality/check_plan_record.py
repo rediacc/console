@@ -62,8 +62,8 @@ WHAT IS ASSERTED, one rule per planted control in `--selftest`:
 THE ADVISORY CENSUS (W12 P3.5), AND WHY IT REFUSES NOTHING. R1..R9 are the rules this gate ENFORCES; the file's docstring has promised R1..R10 since it was written, and the missing rungs are named in "WHAT IS DELIBERATELY NOT ASSERTED" below rather than in the list above -- they are rules that were considered and declined. Turning one on is a one-way door: the day it blocks, it
 blocks every open branch at once, and nobody knows today how many records it would refuse.
 
-So it is MEASURED first. Every real-tree run appends one row to `agent/ledgers/census-plan-record.jsonl` recording what each CANDIDATE rule WOULD have refused, per record, with a UTC timestamp. After two weeks of rows, `--census-report` answers "has the window elapsed, and what would have been refused across it" from the rows alone -- not from anyone's memory of how the tree
-looked. The candidates:
+So it is MEASURED first. A real-tree run under `--census` appends one row to `agent/ledgers/census-plan-record.jsonl` recording what each CANDIDATE rule WOULD have refused, per record, with a UTC timestamp. After two weeks of rows, `--census-report` answers "has the window elapsed, and what would have been refused across it" from the rows alone -- not from anyone's memory of how the tree
+looked. The append was unconditional until 2026-10-04, and that made this gate a tree writer: the quick lane drops tree writers in a shared checkout, so on 2026-10-03 ci:quick dropped this gate from a push whose `agent/INDEX.md` it judged, and CI went red on it. The two-week window had elapsed by then (376 rows over 26 days), so the append became opt-in; a plain run computes the row and checks floors 1-2, and writes nothing. The candidates:
 
   C9   HISTORY APPEND-ONLY. The `## History` bullets in the most recent
        COMMITTED version of this record must be a PREFIX of the ones on disk.
@@ -82,14 +82,15 @@ TWO PROPERTIES OF THE CENSUS, and they are not the same property.
   * A CANDIDATE FIRING NEVER CHANGES A VERDICT OR AN EXIT CODE. That is the
     whole point of an advisory rung. A tree where all three candidates fire on
     every record still exits 0 if R1..R8 hold.
-  * A CENSUS THAT RECORDED NOTHING IS AN INSTRUMENT FAILURE AND EXITS 2. An
+  * A CENSUS THAT MEASURED NOTHING IS AN INSTRUMENT FAILURE AND EXITS 2. An
     advisory check is the easiest thing in the world to make vacuous: delete its
     call site and it reports exactly what a clean tree reports, forever, and the
-    two-week clock never starts. So the row is written and then READ BACK, the
-    file must have grown, and the census's own count of plans and records must
-    AGREE with the verdict loop's -- two readings of the corpus, not one number
-    trusted twice. Any of those failing is exit 2, the same code a failed
-    `--selftest` uses, because it is the same kind of failure.
+    two-week clock never starts. So on EVERY run the census's own count of plans
+    and records must AGREE with the verdict loop's -- two readings of the corpus,
+    not one number trusted twice -- and the corpus must be non-empty. Under
+    `--census` the row is also written and then READ BACK, and the file must have
+    grown. Any of those failing is exit 2, the same code a failed `--selftest`
+    uses, because it is the same kind of failure.
 
 WHAT IS DELIBERATELY NOT ASSERTED, stated so a green is not read as more than it is.
 
@@ -845,10 +846,34 @@ def census_is_same_day_repeat(last, row):
     return all(last.get(k) == row.get(k) for k in CENSUS_PAYLOAD_KEYS)
 
 
-def census_append(root, row, expect_plans, expect_records):
-    """Record `row`, then READ IT BACK. (ok, message).
+def census_check(row, expect_plans, expect_records):
+    """Floors 1-2 of the census, PURE: (ok, message). Runs on every invocation, `--census` or not, so a plain run still proves the census reads the corpus the verdict reads. The floors are described on `census_append`, which runs floors 3-4 under `--census` only."""
+    if row["plans_examined"] != expect_plans or row["records_examined"] != expect_records:
+        return False, (
+            "CENSUS DISAGREES WITH THE VERDICT: the census read %d plan(s) and %d "
+            "record(s); the verdict loop read %d and %d. Two readings of one corpus "
+            "returned different sets, so one of them is reading something that is not "
+            "there -- and a census over the wrong corpus is worse than none, because "
+            "the two-week window would still elapse."
+            % (row["plans_examined"], row["records_examined"], expect_plans, expect_records)
+        )
+    if row["plans_examined"] == 0:
+        return False, (
+            "VACUOUS CENSUS: 0 plan file(s). A row recording nothing looks exactly like "
+            "a row recording a clean corpus, and the window would elapse on rows that "
+            "measured nothing."
+        )
+    return True, (
+        "✓ census: %d plan(s) and %d record(s) read, agreeing with the verdict; %d would be "
+        "refused by the candidate rules. No row recorded (pass --census to append one)."
+        % (row["plans_examined"], row["records_examined"], row["would_refuse"])
+    )
 
-    THE FLOORS ARE SET-BASED, and there are four, because an advisory check has no verdict of its own to notice when it stops working:
+
+def census_append(root, row, expect_plans, expect_records):
+    """Record `row`, then READ IT BACK. (ok, message). Called only under `--census`.
+
+    THE FLOORS ARE SET-BASED, and there are four, because an advisory check has no verdict of its own to notice when it stops working (1-2 live in `census_check`, which this calls first and which a plain run calls alone):
 
       1. The census's own plan and record counts must EQUAL the verdict loop's.
          Two readings of the corpus, not one number trusted twice. A glob that
@@ -869,21 +894,9 @@ def census_append(root, row, expect_plans, expect_records):
          acceptable while the thing that would have been written is provably
          already there.
     """
-    if row["plans_examined"] != expect_plans or row["records_examined"] != expect_records:
-        return False, (
-            "CENSUS DISAGREES WITH THE VERDICT: the census read %d plan(s) and %d "
-            "record(s); the verdict loop read %d and %d. Two readings of one corpus "
-            "returned different sets, so one of them is reading something that is not "
-            "there -- and a census over the wrong corpus is worse than none, because "
-            "the two-week window would still elapse."
-            % (row["plans_examined"], row["records_examined"], expect_plans, expect_records)
-        )
-    if row["plans_examined"] == 0:
-        return False, (
-            "VACUOUS CENSUS: 0 plan file(s). A row recording nothing looks exactly like "
-            "a row recording a clean corpus, and the window would elapse on rows that "
-            "measured nothing."
-        )
+    ok, msg = census_check(row, expect_plans, expect_records)
+    if not ok:
+        return ok, msg
 
     path = pathlib.Path(root) / CENSUS_REL
     have = census_rows(path)
@@ -1572,6 +1585,28 @@ def selftest():
             "CENSUS FLOOR: a row over ZERO plans REFUSES rather than recording nothing",
             census_append(root, census_row(root, []), 0, 0)[0] is False,
         )
+        # WITHOUT --census (the plain run): floors 1-2 still refuse, a clean count passes, and the ledger is untouched.
+        ledger = root / CENSUS_REL
+        ledger.parent.mkdir(parents=True, exist_ok=True)
+        ledger.write_text("", encoding="utf-8")
+        before_plain = ledger.read_bytes()
+        ck(
+            "CENSUS (plain): floor 1 refuses a count mismatch without --census",
+            census_check(row, 99, 1)[0] is False,
+        )
+        ck(
+            "CENSUS (plain): floor 2 refuses an empty corpus without --census",
+            census_check(census_row(root, []), 0, 0)[0] is False,
+        )
+        ck(
+            "CENSUS (plain) CONTROL: matching counts pass",
+            census_check(row, 1, 1)[0] is True,
+        )
+        ck(
+            "CENSUS (plain): the ledger stays byte-identical without --census",
+            ledger.read_bytes() == before_plain,
+        )
+        ledger.unlink()
         # FLOOR 3, the append and its read-back.
         ok_w, msg_w = census_append(root, row, 1, 1)
         n_after = len(census_rows(root / CENSUS_REL))
@@ -1874,8 +1909,14 @@ def main(argv):
 
     # ---- THE ADVISORY CENSUS ------------------------------------------------- IT RUNS ON BOTH PATHS, red and green. A measurement window with a hole in it wherever some unrelated rule failed is a window nobody can reason about, and the candidates say nothing about R1..R8 either way.
     #
-    # `census_row` is computed from its OWN re-read of every plan; the two counts handed to `census_append` come from the verdict loop above. That is the two-readings floor, and it is why the counts are passed rather than shared.
-    census_ok, census_msg = census_append(ROOT, census_row(ROOT, recs), len(recs), n_records)
+    # `census_row` is computed from its OWN re-read of every plan; the two counts handed to `census_check` come from the verdict loop above. That is the two-readings floor, and it is why the counts are passed rather than shared.
+    #
+    # THE APPEND IS OPT-IN (`--census`), so a plain run writes nothing and this gate is no tree writer: the quick lane drops tree writers in a shared checkout, and on 2026-10-03 that drop let an `agent/INDEX.md` this gate would have refused reach CI.
+    row = census_row(ROOT, recs)
+    if "--census" in argv:
+        census_ok, census_msg = census_append(ROOT, row, len(recs), n_records)
+    else:
+        census_ok, census_msg = census_check(row, len(recs), n_records)
 
     for w in rb_warnings:
         print(f"  WARNING {w}")

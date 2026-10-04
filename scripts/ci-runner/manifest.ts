@@ -2069,10 +2069,7 @@ export const GATES: readonly GateSpec[] = [
     },
     run: 'npm run check:ci-plan-record',
     gate: true,
-    // check:ci-gate-tree-writes V8: census_append adds a row to a TRACKED ledger (at most one per day).
-    mutex: ['tree:repo'],
-    writesTree:
-      'appends the daily census row to the tracked agent/ledgers/census-plan-record.jsonl',
+    // NO tree claim since 2026-10-04: the census append runs only under `--census`, which no registered invocation passes, so check:ci-gate-tree-writes reads it as MODE-GATED. As a tree writer the quick lane dropped it, and on 2026-10-03 that drop let a stale agent/INDEX.md reach CI.
     paths: [
       'agent/plans/**',
       // agent/INDEX.md joined the gate's subject on 2026-09-06 with W12 P1.7. It used to be excluded on the correct reasoning that no plan had been compacted, so the glob matched nothing and could only exclude. It now exists and carries the plan census that SessionStart reads instead of opening 83 files, and R8 compares it byte for byte, so a hand-edit must reach the only gate

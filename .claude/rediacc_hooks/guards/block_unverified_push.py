@@ -9,6 +9,8 @@ WHY A RECEIPT AND NOT A RUN. This hook sits in the PreToolUse chain, which fires
 KEYED ON `HEAD^{tree}`. CI checks out the pushed commit, so the tree object is
 exactly what CI will judge. It is also invariant to the dozens of dirty paths this repo's tree normally carries from OTHER live sessions -- keying on the worktree would invalidate the receipt on someone else's keystroke and make it unobtainable, which is how a guard becomes a wall and then gets bypassed.
 
+A TOUCHED SLOW GATE THE LANE DROPPED IS REFUSED until it has passed (agent/plans/PLAN-gate-drop-receipt-verify.md). On 2026-10-03 ci:quick dropped `check:ci-plan-record`, a gate the diff touched, because it wrote the tree; the drop was printed and then lost, this guard allowed the push, and CI run 37129843955 went red on exactly that gate. The runner now records each such gate in the receipt's `droppedTouched`, and a `run.ts --only <id>` run of it merges its result into `droppedVerified`. Every `droppedTouched` id needs a `droppedVerified` entry at the pushed tree with exit code 0, and a receipt with no `droppedTouched` list at all refuses, failing closed exactly as a missing `whole` does.
+
 A LIVE BRANCH BEHIND origin/main IS REFUSED TOO (operator finding 2026-10-03). PR #592's first CI run went red only on Quality / Branch because main had moved three commits after 1003-1 was cut, and the push clone's origin/main was stale. Once the receipt allows, `behind_base_refusal` fetches origin/main itself (a stale ref would pass the ancestry test vacuously) and refuses an MMDD-N push to origin that does not contain it, printing the REBASE LOCALLY recipe CI prints. A fetch that fails or times out cannot judge, says so and allows.
 
 =============================================================================
@@ -50,9 +52,11 @@ between them. Run it, fix what it names, then push:
 
   npm run ci:quick
 
-It is a PARTIAL run and says so: 58 slower gates are deferred to CI, and it
-names any it had to defer because a prerequisite was slow. `npm run ci` is
-still the whole set.
+It is a PARTIAL run and says so: slower gates the change did not touch are
+deferred to CI, and it names any it had to defer because a prerequisite was
+slow. A touched slow gate it DROPS (a tree writer, over budget, unpriced) is
+named with the `run.ts --only <id>` command that clears it, and the push waits
+for that run. `npm run ci` is still the whole set.
 
 If a gate it names is not yours -- another session's uncommitted file often
 reddens this shared tree -- do not work around it and do not fix their file.
@@ -119,22 +123,67 @@ def _repo_with_receipt(path, receipt, carried=None):
         )
         body = dict(receipt)
         body.setdefault("headTree", tree)
+        # A `droppedVerified` entry names the tree its `--only` run judged, which is only known after the commit, like `headTree` above.
+        verified = body.get("droppedVerified")
+        if isinstance(verified, dict):
+            body["droppedVerified"] = {
+                k: dict(v, headTree=tree) if v.get("headTree") == "{TREE}" else v
+                for k, v in verified.items()
+            }
         cache = path / ".ci" / "cache"
         cache.mkdir(parents=True)
         (cache / "prepush-receipt.json").write_text(json.dumps(body), encoding="utf-8")
     return path
 
 
+# The 2026-10-03 drop, as the runner records it (scripts/ci-runner/run.ts `DroppedTouched`).
+DROPPED_PLAN_RECORD = {
+    "id": "check:ci-plan-record",
+    "why": "agent/INDEX.md matches its paths",
+    "reason": "it writes the shared tree (tree:repo), which the quick lane does not do",
+    "kind": "tree",
+    "run": "npx tsx scripts/ci-runner/run.ts --only check:ci-plan-record",
+}
+
 # The receipt worlds this guard distinguishes. Without them the corpus sees whatever receipt this shared worktree happens to hold at the moment the test runs, which is BOTH undiscriminating and a race: another session running `ci:quick` between the bash pass and the Python pass would rewrite the file and the difference would be reported as a port defect.
 FIXTURES = {
     "push-no-receipt": lambda p: _repo_with_receipt(p, None),
-    "push-green": lambda p: _repo_with_receipt(p, {"whole": True, "exitCode": 0}),
+    "push-green": lambda p: _repo_with_receipt(
+        p, {"whole": True, "exitCode": 0, "droppedTouched": []}
+    ),
     "push-narrowed": lambda p: _repo_with_receipt(p, {"whole": False, "exitCode": 0}),
     "push-wrong-tree": lambda p: _repo_with_receipt(
         p, {"headTree": "0" * 40, "whole": True, "exitCode": 0}
     ),
     "push-red-unnamed": lambda p: _repo_with_receipt(
-        p, {"whole": True, "exitCode": 1, "failed": ["check:format", "check:ci-parity"]}
+        p,
+        {
+            "whole": True,
+            "exitCode": 1,
+            "failed": ["check:format", "check:ci-parity"],
+            "droppedTouched": [],
+        },
+    ),
+    # A TOUCHED SLOW GATE THE LANE DROPPED, before and after its `--only` run merged a pass into the receipt.
+    "push-dropped-unverified": lambda p: _repo_with_receipt(
+        p, {"whole": True, "exitCode": 0, "droppedTouched": [DROPPED_PLAN_RECORD]}
+    ),
+    "push-dropped-verified": lambda p: _repo_with_receipt(
+        p,
+        {
+            "whole": True,
+            "exitCode": 0,
+            "droppedTouched": [DROPPED_PLAN_RECORD],
+            "droppedVerified": {
+                "check:ci-plan-record": {
+                    "exitCode": 0,
+                    "headTree": "{TREE}",
+                    "finishedAt": "2026-10-04T00:00:00Z",
+                    "judgedRoot": "/fixture",
+                    "stable": True,
+                }
+            },
+        },
     ),
     # A whole-gate carry: `"*"` over a gate whose receipt entry is null (it emits no `::finding::` lines), with a reason past the stricter 160-character bar.
     "push-red-carried": lambda p: _repo_with_receipt(
@@ -145,6 +194,7 @@ FIXTURES = {
             "failed": ["check:format"],
             "findings": {"check:format": None},
             "blocked": ["check:ci-go-vet"],
+            "droppedTouched": [],
         },
         carried={
             "version": 2,
@@ -163,7 +213,7 @@ FIXTURES = {
     ),
     "push-red-stale": lambda p: _repo_with_receipt(
         p,
-        {"whole": True, "exitCode": 1, "failed": ["check:ci-parity"]},
+        {"whole": True, "exitCode": 1, "failed": ["check:ci-parity"], "droppedTouched": []},
         carried={
             "version": 2,
             "carried": [
@@ -192,6 +242,7 @@ FIXTURES = {
                     "P-A2:no-row:agent/plans/PLAN-b.md#4e5f6a7b",
                 ]
             },
+            "droppedTouched": [],
         },
         carried={
             "version": 2,
@@ -219,6 +270,7 @@ FIXTURES = {
                     "P-A2:no-row:agent/plans/PLAN-b.md#4e5f6a7b",
                 ]
             },
+            "droppedTouched": [],
         },
         carried={
             "version": 2,
@@ -608,6 +660,54 @@ def behind_base_refusal(ev, root, cmd):
     return None
 
 
+def dropped_verdict(receipt, tree):
+    """A refusal naming every touched-but-dropped gate with no passing run at `tree`, else None. PURE, like `carried_verdict`.
+
+    `droppedTouched` is the runner's list of slow gates the change set touched and the quick lane did not run; `droppedVerified[id]` is a `run.ts --only <id>` run merged into the same receipt. An id counts as proven only when that entry names `tree` and exit code 0. A failed re-run is also in `failed`, which `carried_verdict` judges. A receipt with no `droppedTouched` list (a runner older than the field) refuses: a guard that read absence as "nothing dropped" would fail open on exactly the receipts that cannot say.
+    """
+    dropped = receipt.get("droppedTouched") if isinstance(receipt, dict) else None
+    if not isinstance(dropped, list):
+        return (
+            "that receipt has no `droppedTouched` list, so it cannot say whether the lane\n"
+            "  dropped a slow gate the change touched. It predates the field; re-run npm run ci:quick."
+        )
+    verified = receipt.get("droppedVerified")
+    verified = verified if isinstance(verified, dict) else {}
+    outstanding = []
+    for entry in dropped:
+        gate = entry.get("id") if isinstance(entry, dict) else None
+        if not isinstance(gate, str) or not gate:
+            outstanding.append(
+                "    %s (malformed entry)" % json.dumps(entry, separators=(",", ":"))
+            )
+            continue
+        run_ = verified.get(gate)
+        code = run_.get("exitCode") if isinstance(run_, dict) else None
+        if (
+            isinstance(run_, dict)
+            and run_.get("headTree") == tree
+            and code == 0
+            and not isinstance(code, bool)
+        ):
+            continue
+        reason = entry.get("reason") if isinstance(entry.get("reason"), str) else "(no reason)"
+        command = (
+            entry.get("run")
+            if isinstance(entry.get("run"), str)
+            else "npx tsx scripts/ci-runner/run.ts --only %s" % gate
+        )
+        outstanding.append("    %s: %s\n      %s" % (gate, reason, command))
+    if not outstanding:
+        return None
+    return (
+        "the gate run DROPPED %d slow gate(s) the change touched that have not passed here since:\n"
+        "%s\n"
+        "  CI runs them for real. Run each command above; a pass merges into this receipt\n"
+        "  (droppedVerified) and clears it. On 2026-10-03 exactly such a drop went red in CI."
+        % (len(outstanding), "\n".join(outstanding))
+    )
+
+
 def carried_verdict(receipt, doc):
     """(refusal or None, note parts) for a RED receipt against carried-reds.json `doc` (parsed, from HEAD; None when absent). PURE: no git, no filesystem, so the tests and the push-clone proof drive exactly the function the guard runs.
 
@@ -790,6 +890,11 @@ def run(ev):
         return _refuse(
             ev, "that receipt came from a NARROWED run (--only/--skip), not the whole lane."
         )
+
+    # A TOUCHED SLOW GATE THE LANE DROPPED is refused until a `--only` run of it passed at this tree. After `whole`, so a narrowed receipt keeps its own message; before the base fetch, so a push refused here never pays for one.
+    dropped = dropped_verdict(receipt, tree)
+    if dropped is not None:
+        return _refuse(ev, dropped)
 
     # A LIVE BRANCH BEHIND origin/main IS REFUSED HERE, not by CI (operator finding 2026-10-03, PR #592). Judged once the receipt is whole and names the pushed tree, so a push the receipt already refuses never pays for a fetch, and the frozen goldens for refused pushes stay byte-identical. Run ci:quick after the rebase, not before it.
     behind = behind_base_refusal(ev, root, cmd)
