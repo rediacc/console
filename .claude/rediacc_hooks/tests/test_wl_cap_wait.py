@@ -374,7 +374,7 @@ def test_m5_with_an_unreachable_cap_the_saturated_case_is_judged_again(wl):  # n
     mutated_hook(
         wl,
         "wl_roster.py",
-        '    return len(verdict.get("writers") or ()) >= WRITER_CAP or concurrency_saturated(verdict)\n',
+        '    return len(verdict.get("writers") or ()) >= cap or concurrency_saturated(verdict)\n',
         '    return len(verdict.get("writers") or ()) >= 99 or concurrency_saturated(verdict)\n',
     )
     got = stop(wl)
@@ -437,8 +437,8 @@ def test_m6_without_the_concurrency_term_the_held_queue_is_judged_again(wl):  # 
     mutated_hook(
         wl,
         "wl_roster.py",
-        '    return len(verdict.get("writers") or ()) >= WRITER_CAP or concurrency_saturated(verdict)\n',
-        '    return len(verdict.get("writers") or ()) >= WRITER_CAP\n',
+        '    return len(verdict.get("writers") or ()) >= cap or concurrency_saturated(verdict)\n',
+        '    return len(verdict.get("writers") or ()) >= cap\n',
     )
     got = stop(wl)
     assert "CONCURRENCY-SATURATED WAIT" not in got.out, "m6: c11 does not depend on the term"

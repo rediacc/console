@@ -1,4 +1,4 @@
-"""Refuse a writer-class Agent spawn while WRITER_CAP writers are already live.
+"""Refuse a writer-class Agent spawn while `wl_roster.writer_cap(root)` writers are already live.
 
 THE ASK (operator, 2026-09-24): a hard limit of 4 parallel writers, with no escape hatches. Plan: agent/plans/PLAN-parallel-writer-roster.md, "Enforcing the cap".
 
@@ -91,15 +91,17 @@ def run(event):
     import wl_core as C  # noqa: PLC0415 -- loaded only for an Agent call, never for the other chains
     import wl_roster  # noqa: PLC0415
 
-    read_only = wl_roster.read_only_types(C.project_root(C.project_start({"cwd": cwd})))
+    root = C.project_root(C.project_start({"cwd": cwd}))
+    read_only = wl_roster.read_only_types(root)
     if kind in read_only:
         return hookio.ALLOW
     rows = wl_roster.live_writers_estimate(cwd, session_id)
     if rows is None:
         event.warn_raw(UNCOUNTABLE % (session_id, kind))
         return hookio.ALLOW
-    if len(rows) >= wl_roster.WRITER_CAP:
+    cap = wl_roster.writer_cap(root)
+    if len(rows) >= cap:
         listed = "\n".join("  %s (%s) %r" % (r["id"], r["type"], r["desc"]) for r in rows)
-        event.warn_raw(REFUSED % (len(rows), wl_roster.WRITER_CAP, kind, len(rows) + 1, listed))
+        event.warn_raw(REFUSED % (len(rows), cap, kind, len(rows) + 1, listed))
         return hookio.DENY
     return hookio.ALLOW

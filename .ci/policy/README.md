@@ -415,7 +415,7 @@ name set and an empty exclusion set rather than reporting zero findings.
 * **Its location is an implementation detail.** One reader, through
 `policy_path("worklist-env-registry.json")`.
 
-The defect it exists for: a typo'd name reads as UNSET. Four names default to `on` (`WORKLIST_AGENT_HINT`, `WORKLIST_AGENT_PUSHBACK`, `WORKLIST_CADENCE`, `WORKLIST_FOCUS`), so a misspelling leaves them running while the author believes they are off.
+The defect it exists for: a typo'd name reads as UNSET. `WORKLIST_FOCUS` defaults to `on`, so a misspelling leaves it running while the author believes it is off. The agent-hint, push-back and cadence switches were of the same shape until they moved into `agent/plans/QUEUE.md`, where a misspelled key is a reported problem instead of a silent default.
 
 ---
 

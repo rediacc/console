@@ -31,12 +31,13 @@ import re
 import wl_core as C
 
 # ---- knobs (WORKLIST_* convention, wl_checks.py:36-63) ----------------------- Read at import: every stop is a fresh process, and the CI gate wants the same defaults the hook runs with rather than a configuration nothing executes.
-ENABLED = os.environ.get("WORKLIST_AGENT_HINT", "on").strip().lower() not in (
-    "off",
-    "0",
-    "false",
-    "no",
-)
+
+
+def enabled(settings) -> bool:
+    """The agent-hint scorer's standing switch: QUEUE.md `agent_hint:` (a `wl_planqueue.Settings`)."""
+    return bool(settings.agent_hint)
+
+
 MIN_SCORE = float(os.environ.get("WORKLIST_AGENT_HINT_MIN_SCORE", "2"))
 # 1, not 2. Measured against five realistic composite haystacks (brief + open items + last message + paths, ~500 chars, the shape the stop path actually assembles): all four threshold settings gave IDENTICAL verdicts, because a real match pulls far away (top 20.0 against next 1.0). The one-line specimens in the CI gate are the sensitive case, which is why they are one-liners.
 MIN_MARGIN = float(os.environ.get("WORKLIST_AGENT_HINT_MIN_MARGIN", "1"))
@@ -389,13 +390,20 @@ _GIVEUP_PATTERNS = (
 )
 _GIVEUP_RES = tuple((label, re.compile(rx, re.IGNORECASE)) for label, rx in _GIVEUP_PATTERNS)
 
+
 # The push-back is a ONE-SHOT PER AGENT PER SESSION. Not a nag: the operator's own intervention was a single sentence, and a check that fires every stop until satisfied would be answered by writing around its regex rather than by running the probe. One challenge, then it is the session's call and the record shows what it chose.
-PUSHBACK_ENABLED = os.environ.get("WORKLIST_AGENT_PUSHBACK", "on").strip().lower() not in (
-    "off",
-    "0",
-    "false",
-    "no",
-)
+def _default_settings():
+    """All-defaults `Settings`, for a caller that passes none (the liveness gate): push-back on."""
+    import wl_planqueue  # noqa: PLC0415
+
+    return wl_planqueue.Settings()
+
+
+def pushback_enabled(settings) -> bool:
+    """The push-back's standing switch: QUEUE.md `agent_pushback:`."""
+    return bool(settings.agent_pushback)
+
+
 # PUSHBACK_MIN_SCORE/PUSHBACK_MIN_MARGIN (1/0.5, lower than the hint's own 2/1) were DELETED here (PLAN-stop-hook-overhaul.md section 1.1): the gap between the two floors is what let "verifi" and "yet" -- ordinary English words with no competitor -- name a specialist at a perfect but meaningless 1.0 score. `pushback_for` now reuses `MIN_SCORE`/`MIN_MARGIN` for the ROUTING
 # half and reports the CHALLENGE (the claim itself) unconditionally, which is what carries the precision this comment used to credit to the lower floor.
 
@@ -454,7 +462,7 @@ def giveup_claims(text):
     return found
 
 
-def pushback_for(haystack, agents_dir_path=None):
+def pushback_for(haystack, agents_dir_path=None, settings=None):
     """((claims, agent_or_None), [error]) -- the CHALLENGE and the ROUTING, decoupled.
 
     `claims` is [] or the give-up labels found (the CHALLENGE: something was declared out of reach, and CLAUDE.md rule 3 says that needs probing regardless of whether a specialist can be named for it). `agent_or_None` is `(name, hits)` when a specialist can be named ABOVE THE ORDINARY HINT'S OWN FLOOR (`MIN_SCORE`/`MIN_MARGIN`, the same numbers `best_hint` uses everywhere
@@ -463,7 +471,7 @@ def pushback_for(haystack, agents_dir_path=None):
 
     ORDER MATTERS FOR COST, not just for reading: the give-up scan is a handful of regexes over one message and answers "no" on nearly every stop, so it runs BEFORE the corpus is loaded. On a normal stop this function does not touch the disk.
     """
-    if not PUSHBACK_ENABLED:
+    if not pushback_enabled(settings if settings is not None else _default_settings()):
         return ([], None), []
     claims = giveup_claims(haystack)
     if not claims:

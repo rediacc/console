@@ -571,13 +571,15 @@ def classify_one(root, text, just):
 
     Advisory: the caller refuses the --defer only on a confident `settled` and treats every error as "create it as before".
     """
-    if os.environ.get("WORKLIST_JUDGE") == "off":
+    import wl_judge  # noqa: PLC0415 -- lazy: wl_judge imports this module
+    import wl_planqueue  # noqa: PLC0415
+
+    if wl_judge.disabled(wl_planqueue.settings_for(root)[0]):
         return None, "judge disabled"
     rec = {"id": "new", "text": text, "just": just if isinstance(just, dict) else {}}
     facts = gather_facts(root, rec)
     if not facts:
         return None, None
-    import wl_judge  # noqa: PLC0415 -- lazy: wl_judge imports this module
 
     def _extract(out):
         rows = out.get("defer_settle")

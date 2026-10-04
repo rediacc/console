@@ -27,13 +27,24 @@ def munged(path):
     return re.sub(r"[^A-Za-z0-9]", "-", str(path))
 
 
-def world(writers=0, readers=0, finished=0, lastevent=None, custom_ro=False, age_min=0):
+def world(writers=0, readers=0, finished=0, lastevent=None, custom_ro=False, age_min=0, cap=None):
     """A fresh fixture: `writers` live general-purpose agents, `readers` live Explore agents, `finished` general-purpose agents whose transcript ended its turn."""
     if BASE.exists():
         shutil.rmtree(BASE)
     proj = BASE / "proj"
     (proj / ".git").mkdir(parents=True)
     (BASE / "tmp").mkdir()
+    if cap is not None:
+        # The cap is the fixture QUEUE.md's `writer_cap:` line, written by the verb's own writer.
+        sys.path.insert(0, str(pathlib.Path(DISPATCH).resolve().parents[1] / "hooks" / "stop"))
+        import wl_planqueue  # noqa: PLC0415
+
+        queue = proj / wl_planqueue.QUEUE_REL
+        queue.parent.mkdir(parents=True)
+        queue.write_text(
+            wl_planqueue.set_settings("# Plan queue\n\n## Promoted\n", {"writer_cap": str(cap)}),
+            encoding="utf-8",
+        )
     sub = BASE / "claude" / "projects" / munged(proj.resolve()) / SID / "subagents"
     sub.mkdir(parents=True)
     if custom_ro:
@@ -160,6 +171,27 @@ CASES = [
         "a non-Agent payload is ignored",
         {"writers": 9},
         {"kind": "general-purpose", "tool": "Bash"},
+        0,
+        "",
+    ),
+    (
+        "writer_cap: 2 refuses the third writer",
+        {"writers": 2, "cap": 2},
+        {"kind": "general-purpose"},
+        2,
+        "cap is 2",
+    ),
+    (
+        "writer_cap: 2 allows the second writer",
+        {"writers": 1, "cap": 2},
+        {"kind": "general-purpose"},
+        0,
+        "",
+    ),
+    (
+        "writer_cap: 6 allows a fifth writer",
+        {"writers": 4, "cap": 6},
+        {"kind": "general-purpose"},
         0,
         "",
     ),

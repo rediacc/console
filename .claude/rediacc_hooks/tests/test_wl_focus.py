@@ -617,12 +617,14 @@ def test_m3_without_the_judge_skip_the_judge_runs(wl):  # noqa: F811
     deferral_world(wl)
     focus_on(wl)
     capturing_judge(wl, CONTINUE)
-    mutated_hook(
-        wl,
-        "wl_checks.py",
-        "    if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED and not _in_standdown:\n",
-        "    if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED:\n",
+    # The live `if` line is read from the source, so the pin follows however `wl_judge.disabled(...)` is spelled at the site.
+    live = next(
+        ln + "\n"
+        for ln in (wlfix.STOP_DIR / "wl_checks.py").read_text(encoding="utf-8").splitlines()
+        if ln.startswith("    if (something_remains or reg_signals) and not wl_judge.disabled(")
+        and ln.endswith(" and not _in_standdown:")
     )
+    mutated_hook(wl, "wl_checks.py", live, live.replace(" and not _in_standdown", ""))
     stop(wl, judge=True)
     assert (wl.base / "prompt.txt").exists(), "m3: f6 does not depend on the judge-site skip"
 
