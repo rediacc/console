@@ -64,7 +64,7 @@ judge: on
 13. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (7 of 9 boxes ticked)
 14. agent/plans/PLAN-account-env-to-bws.md -- P2, draft, in progress (19 of 20 boxes ticked)
 15. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
-16. agent/plans/PLAN-retire-bash-oracles.md -- P2, approved, in progress (4 of 15 boxes ticked), dep-blocked
+16. agent/plans/PLAN-retire-bash-oracles.md -- P2, approved, in progress (6 of 15 boxes ticked), dep-blocked
 17. agent/plans/PLAN-stop-hook-retro-20260924.md -- P2, ready, in progress (22 of 23 boxes ticked)
 18. agent/plans/PLAN-biome-only-lint.md -- P3, draft, in progress (10 of 29 boxes ticked)
 19. agent/plans/PLAN-env-to-bitwarden-v2.md -- P3, draft, in progress (9 of 10 boxes ticked)
@@ -79,8 +79,7 @@ judge: on
 28. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
 29. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
 30. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
-31. agent/plans/PLAN-trap-enforcement.md -- P3, executing, not started
-32. agent/plans/PLAN-uncommitted-work-exposure-check.md -- P3, proposed, not started
+31. agent/plans/PLAN-uncommitted-work-exposure-check.md -- P3, proposed, not started
 
 ### Not queued
 
