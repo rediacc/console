@@ -21,7 +21,7 @@ Body-Sig: b9c0863aa3c4c46e
 ### 2cb3bdb0.1 [medium] .ci/rediacc_ci/housekeeping/cleanup_versions.py:1245
 Anchor: in-diff
 Claim: Tag name is interpolated directly into jq filter without escaping (line 1245: '.[] | select(.tag_name == "%s") | .id' % tag). If a tag contains special characters like quotes or backslashes, this produces invalid jq syntax, causing the API call to fail and prevent deletion by ID, though the subsequent view check would still correctly fail the run.
-Resolution: open
+Resolution: deferred #c3e71337 | d778be9d 2026-10-04T02:36:34Z
 
 ### 2cb3bdb0.2 [medium] .ci/scripts/housekeeping/cleanup-versions.sh:295
 Anchor: in-diff
