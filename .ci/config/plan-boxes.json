@@ -370,6 +370,35 @@
         "911d45dd"
       ]
     },
+    "agent/plans/PLAN-clean-review-ledger.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 18,
+      "done": 0,
+      "open_sigs": [
+        "03a1b2f4",
+        "0bf65112",
+        "148b0d37",
+        "1742c481",
+        "38282a83",
+        "3a53b303",
+        "48413ff5",
+        "56927b17",
+        "5e367524",
+        "68b0a7d0",
+        "6b1943ef",
+        "72ddf8eb",
+        "7b18e1e4",
+        "9937d1f8",
+        "a9b88415",
+        "b5b77957",
+        "b9e49259",
+        "cbbeba99"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-cli-em-dash-lint-gate.md": {
       "status": "compacted",
       "owner": "e6500e92",
