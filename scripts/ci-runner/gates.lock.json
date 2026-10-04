@@ -3983,7 +3983,8 @@
     "run": "npm run check:ci-no-otlp-creds",
     "gate": true,
     "mutex": [
-      "renet-bin"
+      "renet-bin",
+      "build-artifacts"
     ],
     "leaves": [
       ".ci/scripts/quality/check_no_otlp_creds.py"
