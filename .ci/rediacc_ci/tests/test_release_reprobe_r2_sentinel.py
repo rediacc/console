@@ -122,10 +122,13 @@ def _run(
     return proc.returncode, proc.stdout, proc.stderr, calls
 
 
-def run_both(tmp_path: pathlib.Path, **kw) -> tuple[tuple, tuple]:
+def run_both(
+    tmp_path: pathlib.Path, key_as: dict[str, str] | None = None, **kw
+) -> tuple[tuple, tuple]:
+    """`key_as` overrides values in the CASE KEY only, never in the run: a value that differs per host (a masked PATH carries the host's own directory list and the mirror names of the one that held `aws`) would otherwise hash to a key no other host's golden has."""
     old = diff.twin_tuple(
         TWIN_REL,
-        [repr(sorted(kw.items()))],
+        [repr(sorted({**kw, **(key_as or {})}.items()))],
         lambda: _run(tmp_path, "old", **kw),
         work=(tmp_path,),
     )
@@ -268,7 +271,14 @@ def test_missing_aws_refuses_identically(tmp_path: pathlib.Path) -> None:
     """
     masked = pathmask.path_without("aws", tmp_path, base=os.environ.get("PATH", "/usr/bin:/bin"))
     pathmask.assert_absent("aws", masked)
-    old, new = run_both(tmp_path, mode="present", VERSION="v1.1.2", PATH=masked)
+    # Keyed on the ambient PATH: `masked` equals it on a host with no `aws` (where the golden was recorded) and differs from it on a host that has one.
+    old, new = run_both(
+        tmp_path,
+        key_as={"PATH": diff.BASE_ENV["PATH"]},
+        mode="present",
+        VERSION="v1.1.2",
+        PATH=masked,
+    )
     assert old[0] == 1
     assert old[2] == "✗ Required command 'aws' is not available\n"
     assert old[1] == ""
