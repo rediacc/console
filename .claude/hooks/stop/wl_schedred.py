@@ -428,23 +428,6 @@ def covering_ticks(items, row):
     return out
 
 
-def tick_evidence_ok(evidence, row, greens=()):
-    """THE TICK-EVIDENCE RULE. A tick ends a red only when its evidence names a green scheduled run newer than the red (from `greens`, run rows). Operator ruling 2026-10-04 ("Require a green run"): a fix commit already on origin/main is NOT evidence, because only the next scheduled run proves the fix; the claimant waits for that run rather than closing on a hope. While the newest run is still red no newer green can exist, so a tick of a still-red workflow always fires."""
-    evidence = str(evidence or "")
-    red_id = row.get("run_id") or 0
-    for g in greens or ():
-        gid = g.get("run_id")
-        if (
-            gid
-            and gid > red_id
-            and not g.get("red")
-            and g.get("conclusion") == "success"
-            and _mentions_run(evidence, gid)
-        ):
-            return True
-    return False
-
-
 def _claim_stale(worklist, doc, run_id, now):
     if not isinstance(doc, dict) or doc.get("run") != run_id or not doc.get("sid8"):
         return True
@@ -572,9 +555,7 @@ def assess(worklist, items, session_id, doc, now=None):
             continue
         ticks = covering_ticks(items, row)
         if ticks:
-            good = [t for t in ticks if tick_evidence_ok(t.get("lastnote") or t.get("text"), row)]
-            if good:
-                continue
+            # THE TICK RULE, operator ruling 2026-10-04 ("Require a green run"): only a newer green scheduled run ends a red, and that run would make this row green, so a tick of a workflow whose newest scheduled run is still red is never enough -- not even one citing a fix commit already on origin/main. Every such tick fires.
             bad = ticks[-1]
             if C.owned_by_me(bad.get("owner"), session_id):
                 out["tick"].append((row, bad))
