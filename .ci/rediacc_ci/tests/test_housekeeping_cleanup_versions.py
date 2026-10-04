@@ -734,6 +734,30 @@ def test_phase_1_fails_the_run_on_a_release_that_survives_by_tag_and_by_id() -> 
     assert "Releases: deleted 0 of 1" in err
 
 
+def test_phase_1_by_id_lookup_survives_a_quote_and_backslash_in_the_tag() -> None:
+    """Review finding 2cb3bdb0.1/.2: the tag entered the jq filter raw, so a quote in it broke the syntax and the by-id delete never ran. It now enters as a JSON string literal."""
+    tag = 'v1"q\\x'
+    fixture = _releases((tag, ago(57.5)))
+    fixture["gh"] += [
+        rule("release", "view", tag, unless_logged="releases/42"),
+        rule(
+            "api",
+            "repos/" + GH_REPO + "/releases",
+            "--paginate",
+            json_body=[
+                {"id": 42, "tag_name": tag, "draft": True},
+                {"id": 1, "tag_name": "v9.9.9", "draft": False},
+            ],
+        ),
+        rule("-X", "DELETE", "releases/42"),
+    ]
+    result = sides("cleanup_releases", argv=("--versions", "0", "--days", "1"), fixture=fixture)
+    calls = calls_of(result[3], "gh")
+    assert ["api", "-X", "DELETE", "repos/" + GH_REPO + "/releases/42"] in calls
+    assert ["api", "-X", "DELETE", "repos/" + GH_REPO + "/releases/1"] not in calls
+    assert "Releases: deleted 1 of 1" in result[2].decode()
+
+
 def _draft_release(age_days: float) -> dict:
     return {
         "gh": [
