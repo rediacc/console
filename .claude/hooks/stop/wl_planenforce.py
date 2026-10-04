@@ -115,11 +115,25 @@ def first_box(root, rel, reader=None):
     return sig, body
 
 
+# HELD PLANS ARE OFF THE CLOCK, the rule check:ci-plan-implementation's P-A1 applies (`PARKED_EXEMPT = frozenset({"held"})`, operator ruling 2026-09-26 that froze the held set). A held prerequisite stays in the PR's plan set, which the merge gate and P-A1 also list, but its boxes never hold the turn: before this, the Stop hook blocked every stop of PR #594 on 14 boxes of two held prerequisites while P-A1 read "no open box on the PR's clock" (2026-10-04).
+OFF_THE_CLOCK = frozenset({"held"})
+_STATUS_RE = re.compile(r"^Status:\s*([A-Za-z-]+)", re.MULTILINE)
+
+
+def plan_held(text):
+    """True when the plan's header `Status:` (first 12 lines) is one P-A1 keeps off the clock."""
+    head = "\n".join((text or "").splitlines()[:12])
+    found = _STATUS_RE.search(head)
+    return bool(found) and found.group(1).lower() in OFF_THE_CLOCK
+
+
 def plan_rows(root, scope, reader=None):
     """[(rel, open_count, first_box)] for each plan in `scope`, in scope order, keeping only plans with an open box that can be worked before the merge (`after_merge` boxes are left out of both the count and the choice). `first_box` is (sig, body) or None when the parser resolves none in the plan's own text."""
     out = []
     for rel in scope or ():
         text = (reader or _read_text)(root, rel)
+        if plan_held(text):
+            continue
         try:
             boxes = R.open_boxes(text) if text else []
         except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop

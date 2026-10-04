@@ -545,6 +545,21 @@ def _why(root, rel, sig, evidence):
 # --------------------------------------------------------------------------- 5. THE NEIGHBOURS (C9). A new blocking module that silently promoted a neighbouring advisory would be the exact conflation the brief forbids.
 
 
+def held_controls():
+    """H1: a HELD plan is off the clock, as P-A1's PARKED_EXEMPT keeps it; the same plan `approved` blocks (the CONTROL)."""
+    body = "# PLAN: x\nStatus: %s -- reason\nOwner: d778be9d\n\n## Tasks\n\n- [ ] A1 first box\n- [ ] A2 second box\n"
+    held = E.plan_rows("/nonexistent", ("agent/plans/PLAN-x.md",), lambda _r, _rel: body % "held")
+    control("H1: a held plan's open boxes produce no row", held, [])
+    live = E.plan_rows(
+        "/nonexistent", ("agent/plans/PLAN-x.md",), lambda _r, _rel: body % "approved"
+    )
+    control(
+        "H1 CONTROL: the same plan approved is counted",
+        [(r, n) for r, n, _f in live],
+        [("agent/plans/PLAN-x.md", 2)],
+    )
+
+
 def neighbour_controls():
     print("5. the neighbours stay advisory (C9)")
     src = (HERE / "wl_backlog.py").read_text(encoding="utf-8")
@@ -762,6 +777,7 @@ def main():
         verb_controls(root, rel, sigs, c0)
     tick_controls()
     clause_controls()
+    held_controls()
     neighbour_controls()
     wiring_controls()
     scope_controls()
