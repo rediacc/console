@@ -1541,6 +1541,32 @@
     }
   },
   {
+    "id": "check:ci-budget-freshness",
+    "env": {
+      "GH_TOKEN": "${{ github.token }}"
+    },
+    "run": "npm run check:ci-budget-freshness",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/ci/budget_report.py",
+      ".ci/rediacc_ci/ci/gate_costs.py"
+    ],
+    "paths": [
+      ".ci/config/lane-durations.json",
+      ".ci/config/gate-costs.json",
+      ".ci/rediacc_ci/ci/budget_report.py",
+      ".ci/rediacc_ci/ci/gate_costs.py"
+    ],
+    "pathsOrigin": "declared",
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "CI time budget freshness"
+    }
+  },
+  {
     "id": "check:ci-security-audit",
     "env": {
       "GH_TOKEN": "${{ github.token }}"
