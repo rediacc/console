@@ -284,7 +284,7 @@ CI_ROLLUP_BLIND_EVENTS = {"workflow_dispatch", "workflow_run", "repository_dispa
 def commit_ci_runs(root, owner, name, sha):
     """(runs, error) -- the Actions runs on `sha` that CAN report into its rollup.
 
-    Each run is (id, workflow name, event, status, attempt, created_at). An empty list with no error is the [skip ci] / path-filtered answer: nothing is coming.
+    Each run is (id, workflow name, event, status, attempt, created_at, conclusion). An empty list with no error is the [skip ci] / path-filtered answer: nothing is coming. The conclusion is "" while the run is in flight.
     """
     data, err = _gh_json(
         root,
@@ -303,6 +303,7 @@ def commit_ci_runs(root, owner, name, sha):
             r.get("status") or "?",
             r.get("run_attempt") or 1,
             r.get("created_at") or "",
+            r.get("conclusion") or "",
         )
         for r in runs
         if (r.get("event") or "") not in CI_ROLLUP_BLIND_EVENTS

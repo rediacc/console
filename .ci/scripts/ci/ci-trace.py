@@ -505,6 +505,19 @@ def _registering(root, info, seen, detail):
     console = [r for r in runs if r[1] == wl_ci.CONSOLE_CI_WORKFLOW]
     if console:
         r = console[0]
+        conclusion = r[6] if len(r) > 6 else ""
+        # A COMPLETED run whose CI Complete never reported is a verdict, not a wait. On 2026-10-04 run 37184675916 ended `startup_failure` with zero jobs (a called workflow asked for a permission its caller did not grant), so CI Complete could never report, and this branch read it as "running" and would have held `--wait` to its timeout.
+        if r[3] == "completed" and conclusion and conclusion != "success":
+            return "red", "%s; %s run %s completed `%s` (attempt %s) without CI Complete reporting: %s" % (
+                detail,
+                r[1],
+                r[0],
+                conclusion,
+                r[4],
+                "the workflow was rejected before any job ran; read it with --run %s --why" % r[0]
+                if conclusion == "startup_failure"
+                else "read it with --run %s --why" % r[0],
+            )
         return "running", "%s; %s run %s is %s (attempt %s)" % (detail, r[1], r[0], r[3], r[4])
     now = time.time()
     first_seen = seen.setdefault(sha, now) if seen is not None else now
@@ -1641,6 +1654,19 @@ def _selftest():
         and "CI Complete" in p["detail"]
         and "36953549081" in p["detail"]
         and "GREEN" not in out,
+        "payload=%r out=%r" % (p, out),
+    )
+    # THE 2026-10-04 STARTUP FAILURE: the same OBS-only rollup, but the Console CI run COMPLETED `startup_failure` (run 37184675916, zero jobs, a permission the caller did not grant). CI Complete can never report, so this is RED, not a wait; before, it read RUNNING and `--wait` sat to its timeout.
+    rejected = [
+        (37184675916, "Console CI", "pull_request", "completed", 1, "2026-10-04T07:20:00Z", "startup_failure")
+    ]
+    p, out = snap([ctx("OBS Mirror (opensuse-16.0)", run=37184675720)], rejected)
+    check(
+        "THE 2026-10-04 STARTUP FAILURE: a completed startup_failure Console CI run with no CI Complete -> RED naming the run and the rejection",
+        p["verdict"] == "red"
+        and "37184675916" in p["detail"]
+        and "startup_failure" in p["detail"]
+        and "RED" in out,
         "payload=%r out=%r" % (p, out),
     )
     p, out = snap(
