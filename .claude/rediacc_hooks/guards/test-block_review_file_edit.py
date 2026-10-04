@@ -25,6 +25,8 @@ _syspath = importlib.util.module_from_spec(_SYSPATH)
 _SYSPATH.loader.exec_module(_syspath)
 DISPATCH = str(HERE.parents[1] / "dispatch.py")
 R = "agent/reviews/0930-1/" + "a" * 40 + ".md"
+# The clean ledger (PLAN-clean-review-ledger): a clean verdict is a line of this file, protected exactly as a `.md` record is.
+L = "agent/reviews/0930-1/clean.jsonl"
 
 EDIT_CASES = [
     # (name, payload, refused?)
@@ -52,6 +54,19 @@ EDIT_CASES = [
         True,
     ),
     (
+        "Edit of the clean ledger",
+        {
+            "tool_name": "Edit",
+            "tool_input": {"file_path": L, "old_string": '"clean"', "new_string": '"x"'},
+        },
+        True,
+    ),
+    (
+        "Write over the clean ledger",
+        {"tool_name": "Write", "tool_input": {"file_path": "/r/" + L, "content": ""}},
+        True,
+    ),
+    (
         "a plan naming the directory",
         {
             "tool_name": "Write",
@@ -75,6 +90,10 @@ EDIT_CASES = [
 SHELL_CASES = [
     ("redirect", "printf 'Resolution: fixed' > %s" % R, True),
     ("append", "echo x >> %s" % R, True),
+    ("append to the clean ledger", "echo '{}' >> %s" % L, True),
+    ("sed -i on the clean ledger", "sed -i '1d' %s" % L, True),
+    ("python appending to the clean ledger", "python3 -c \"open('%s','a').write('x')\"" % L, True),
+    ("reading the clean ledger", "cat %s" % L, False),
     ("cat heredoc", "cat > %s <<'EOF'\n# Review\nEOF" % R, True),
     ("tee", "echo x | tee %s" % R, True),
     ("sed -i", "sed -i 's/high/low/' %s" % R, True),

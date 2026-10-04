@@ -396,3 +396,72 @@ def test_render_only_uses_the_local_commit_list(tmp_path):
         return 1, ""
 
     assert "Superseded" not in T.render_only(BRANCH, tmp_path, git=nogit)
+
+
+# --------------------------------------------------------------------------- the clean ledger (agent/plans/PLAN-clean-review-ledger.md T10)
+
+
+def plant_ledger(root: pathlib.Path, *reviews) -> None:
+    for rev in reviews:
+        assert wl_review.append_clean(root, BRANCH, rev)
+
+
+def test_contract_a_ledger_line_parses_to_the_same_record(tmp_path):
+    rev = make(1, bump="minor", kinds=("feature",))
+    plant_ledger(tmp_path, rev)
+    (rec,) = T.load_records(tmp_path, BRANCH)
+    md = T.parse_record(wl_review.render(rev), "%s.md" % rev.sha)
+    for field in ("sha", "subject", "repo", "verdict", "reviewed_at", "diff_files", "bump"):
+        assert getattr(rec, field) == getattr(md, field), field
+    assert (rec.file, rec.line, rec.findings, rec.problem) == ("clean.jsonl", 1, [], "")
+    assert T.labels_cell(rec) == T.labels_cell(md)
+
+
+def test_a_ledger_row_shows_full_coverage_and_links_its_line(tmp_path):
+    plant_ledger(tmp_path, make(1), make(2))
+    body = render_dir(tmp_path, commits=[T.Commit(sha(1), "fix: commit 1"), T.Commit(sha(2), "x")])
+    line = next(ln for ln in body.split("\n") if sha(2)[:8] + "`](" in ln)
+    assert line.endswith("| full |"), line
+    link = (
+        GH_ORIGIN + "/" + GH_REPO + "/blob/%s/agent/reviews/%s/clean.jsonl#L2" % ("f" * 40, BRANCH)
+    )
+    assert "(%s)" % link in line, line
+    assert "PR commits with no record" not in body
+
+
+def test_control_without_the_ledger_the_commit_has_no_record(tmp_path, monkeypatch):
+    """CONTROL: a `load_records` that skipped the ledger would move the commit to "PR commits with no record"."""
+    plant_ledger(tmp_path, make(1))
+    monkeypatch.setattr(T.clean_ledger, "read", lambda _p: [])
+    body = render_dir(tmp_path, commits=[T.Commit(sha(1), "fix: commit 1")])
+    assert "`%s` fix: commit 1: no record" % sha(1)[:8] in body
+
+
+def test_a_superseded_ledger_record_is_still_listed(tmp_path):
+    plant_ledger(tmp_path, make(1), make(4, subject="fix: before the rebase"))
+    body = render_dir(tmp_path, commits=[T.Commit(sha(1), "fix: commit 1")])
+    sup = body.split("### Superseded (rebased)", 1)[1]
+    assert "fix: before the rebase" in sup
+    assert "clean.jsonl#L2" in sup
+
+
+def test_an_md_record_wins_over_a_ledger_line_for_its_sha(tmp_path):
+    plant(tmp_path, make(1, verdict="findings", findings=[("low", "open")]))
+    plant_ledger(tmp_path, make(1))
+    records = T.load_records(tmp_path, BRANCH)
+    assert [(r.sha, r.verdict) for r in records] == [(sha(1), "findings")]
+
+
+def test_branch_verdicts_is_pr_labels_verdicts(tmp_path):
+    plant(tmp_path, make(1, bump="patch"))
+    plant_ledger(tmp_path, make(2, bump="minor", kinds=("feature",)))
+    assert T.branch_verdicts(tmp_path, BRANCH) == T.pr_labels.verdicts(tmp_path, BRANCH)
+    assert sorted(v["bump"] for v in T.branch_verdicts(tmp_path, BRANCH)) == ["minor", "patch"]
+
+
+def test_records_from_files_and_the_ledger_are_in_sha_order(tmp_path):
+    """The header names the first record, in sha order, that earned the bump: the same commit before and after a record moves into the ledger."""
+    plant(tmp_path, make(5, bump="minor", kinds=("feature",), subject="feat: the file"))
+    plant_ledger(tmp_path, make(2, bump="minor", kinds=("feature",), subject="feat: the line"))
+    assert [r.sha for r in T.load_records(tmp_path, BRANCH)] == [sha(2), sha(5)]
+    assert "earned by `%s` (feat: the line)" % sha(2)[:8] in render_dir(tmp_path)

@@ -45,6 +45,7 @@ from typing import Any
 import _cipath  # noqa: F401
 from rediacc_ci import log, paths
 from rediacc_ci.controls import plant
+from rediacc_ci.review import clean_ledger
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 HOOK_DIR = os.path.join(REPO_ROOT, ".claude", "hooks", "stop")
@@ -1101,6 +1102,46 @@ def controls_fired(enforce, planfile, planrec=None):
         any(f.startswith("P-A4") and "rewritten" not in f for f in late),
     )
 
+    # LEDGER (agent/plans/PLAN-clean-review-ledger.md T11). A clean verdict is a line of `agent/reviews/<branch>/clean.jsonl`, not a file, so `review_records` must read the ledger: a rewritten head whose only record is a ledger line is mapped through its Patch-Id, through the REAL reader over a real file.
+    ledger_old, ledger_new = "a6" * 20, "b6" * 20
+    with tempfile.TemporaryDirectory() as ledger_root:
+        ledger_dir = os.path.join(ledger_root, "agent", "reviews", "zz-ledger")
+        os.makedirs(ledger_dir)
+        with open(os.path.join(ledger_dir, "clean.jsonl"), "w", encoding="utf-8") as fh:
+            fh.write(
+                json.dumps(
+                    {
+                        "attempt": 1,
+                        "branch": "zz-ledger",
+                        "cost": None,
+                        "diff": {"bytes": 1, "files": 1},
+                        "labels": None,
+                        "model": "m",
+                        "parent": "d6" * 20,
+                        "patch_id": "e6" * 20,
+                        "repo": "console",
+                        "reviewed_at": "2026-01-05T00:00:00Z",
+                        "sha": ledger_old,
+                        "subject": "s",
+                        "v": 1,
+                        "verdict": "clean",
+                    },
+                    sort_keys=True,
+                )
+                + "\n"
+            )
+        ledger_records = review_records(ledger_root)
+    ledger_succ = make_successor_of(
+        ledger_records,
+        {"e6" * 20: ledger_new},
+        lambda c: c if c in {ledger_new, tick} else "",
+        lambda _c: "",
+    )
+    caught(
+        "LEDGER: a rewritten head whose only review record is a clean.jsonl line was reported (no review record maps it)",
+        not rebased(ledger_old, records_succ=ledger_succ, ancestors=((ledger_new, tick),)),
+    )
+
     # FORWARD-ONLY, BOTH SIDES. A date comparison that always answers "exempt" is a gate that cannot fail, so the cut is pinned in both directions.
     pre = tick_findings(
         moved_to_done(healthy_base, healthy_head),
@@ -1851,7 +1892,7 @@ REVIEW_HEADERS = ("Commit", "Parent", "Patch-Id")
 
 
 def review_records(root):
-    """[{commit, parent, patch}] from the header block of every per-commit review record under agent/reviews/, every branch directory included: a record written on another branch name still maps its sha. Headers only, the same first-lines read `wl_review.review_index` makes."""
+    """[{commit, parent, patch}] from the header block of every per-commit review record under agent/reviews/, every branch directory included: a record written on another branch name still maps its sha. Headers only, the same first-lines read `wl_review.review_index` makes, plus every line of each directory's `clean.jsonl` ledger (read through `clean_ledger`)."""
     out: list[dict[str, str]] = []
     top = os.path.join(root, "agent", "reviews")
     if not os.path.isdir(top):
@@ -1881,6 +1922,16 @@ def review_records(root):
                         "patch": got["Patch-Id"],
                     }
                 )
+        # A clean full-coverage verdict is a line of the branch's ledger, not a file (agent/plans/PLAN-clean-review-ledger.md).
+        out.extend(
+            {
+                "commit": doc["sha"],
+                "parent": str(doc.get("parent") or ""),
+                "patch": doc["patch_id"],
+            }
+            for doc in clean_ledger.read(os.path.join(d, clean_ledger.NAME))
+            if sha40.match(str(doc.get("patch_id") or ""))
+        )
     return out
 
 

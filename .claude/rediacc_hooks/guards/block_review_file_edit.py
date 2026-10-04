@@ -56,6 +56,17 @@ EDGE_CASES = [
         },
     ),
     (
+        "an Edit of the clean ledger",
+        {
+            "tool_name": "Edit",
+            "tool_input": {
+                "file_path": "agent/reviews/0930-1/clean.jsonl",
+                "old_string": "x",
+                "new_string": "y",
+            },
+        },
+    ),
+    (
         "a MultiEdit of a review file",
         {
             "tool_name": "MultiEdit",

@@ -132,9 +132,31 @@ def world_high_fixed(rv, repo, sha):
     fix = git(repo, "rev-parse", "HEAD")
     rv.run_review(repo, "console", fix, BRANCH, reviewer=fake([]), log=lambda _m: None)
     rv.mark(repo, BRANCH, "%s.1" % sha[:8], "fixed", [fix], "deadbeef")
+    # The fix's clean verdict is a ledger line (PLAN-clean-review-ledger), recorded beside the marked file.
     rels = [str(p.relative_to(repo)) for p in rv.branch_dir(repo, BRANCH).glob("*.md")]
+    rels.append(str(rv.ledger_path(repo, BRANCH).relative_to(repo)))
     git(repo, "add", "--", *rels)
     git(repo, "commit", "-q", "-m", "chore(reviews): record", "--", *rels)
+
+
+def world_ledger(rv, repo, sha):
+    """A clean verdict, which is one committed line of clean.jsonl and no `.md` file."""
+    rv.run_review(repo, "console", sha, BRANCH, reviewer=fake([]), log=lambda _m: None)
+    if rv.review_path(repo, BRANCH, sha).exists():
+        raise SystemExit("the clean verdict wrote a .md file, not a ledger line")
+    rel = str(rv.ledger_path(repo, BRANCH).relative_to(repo))
+    git(repo, "add", "--", rel)
+    git(repo, "commit", "-q", "-m", "chore(reviews): record", "--", rel)
+
+
+def world_ledger_line_removed(rv, repo, sha):
+    """The same world with the commit's line gone from the committed ledger: nothing covers the commit."""
+    world_ledger(rv, repo, sha)
+    path = rv.ledger_path(repo, BRANCH)
+    path.write_text("", encoding="utf-8")
+    rel = str(path.relative_to(repo))
+    git(repo, "add", "--", rel)
+    git(repo, "commit", "-q", "-m", "chore(reviews): record", "--", rel)
 
 
 def world_hand_edited(rv, repo, sha):
@@ -180,6 +202,8 @@ CASES = [
     ("a reviewer in flight", world_in_flight, "git push", "IN FLIGHT console"),
     ("a review that failed once", world_failed_once, "git push", "FAILED console"),
     ("reviewed, recorded, clear", world_clean, "git push", None),
+    ("a clean verdict recorded as a ledger line", world_ledger, "git push", None),
+    ("the ledger line removed", world_ledger_line_removed, "git push", "UNREVIEWED console"),
     ("a high finding marked fixed", world_high_fixed, "git push", None),
     ("a review that failed twice no longer blocks", world_failed_twice, "git push", None),
     ("a dry run publishes nothing", world_unreviewed, "git push --dry-run", None),

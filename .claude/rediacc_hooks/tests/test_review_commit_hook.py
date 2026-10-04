@@ -161,10 +161,26 @@ class World:
     def review_file(self, sha):
         return R.review_path(self.repo, BRANCH, sha)
 
+    def ledger(self):
+        return R.ledger_path(self.repo, BRANCH)
+
+    def ledger_shas(self):
+        reviews, errors = R.read_ledger(self.ledger())
+        assert errors == [], errors
+        return [r.sha for r in reviews]
+
     def wait_for(self, path, seconds=20):
         deadline = time.monotonic() + seconds
         while time.monotonic() < deadline:
             if path.exists():
+                return True
+            time.sleep(0.2)
+        return False
+
+    def wait_for_line(self, sha, seconds=20):
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            if self.ledger().exists() and sha in self.ledger_shas():
                 return True
             time.sleep(0.2)
         return False
@@ -229,6 +245,24 @@ def test_a_commit_starts_a_detached_reviewer_and_its_file_lands(world):
     ]
     assert review.labels == {"bump": "patch", "kind": ["bug"], "why": "fixes a crash"}
     assert len(review.patch_id) == 40
+    assert not world.ledger().exists(), "a findings verdict wrote a ledger line"
+
+
+def test_a_clean_commit_starts_a_detached_reviewer_and_its_ledger_line_lands(world):
+    """PLAN-clean-review-ledger T3: a clean full-coverage verdict is one line of clean.jsonl and no `.md` file."""
+    world.answer([])
+    world.env["STUB_SLEEP"] = "1"
+    sha = world.commit()
+    rc, _out, err, took = world.hook("git commit -m 'fix(x): y' -- f.py")
+    assert rc == 0, err
+    assert took < 1.5, "the hook waited %.1fs: the reviewer is holding its pipes (H3)" % took
+    assert world.wait_for_line(sha), "no ledger line within 20s"
+    assert world.ledger_shas() == [sha]
+    assert not world.review_file(sha).exists(), "a clean verdict also wrote a review file"
+    (review,) = R.read_ledger(world.ledger())[0]
+    assert (review.verdict, review.repo, review.branch) == ("clean", "console", BRANCH)
+    assert review.labels == {"bump": "patch", "kind": ["bug"], "why": "fixes a crash"}
+    assert len(review.patch_id) == 40
 
 
 def test_control_the_stub_really_sleeps_so_the_timing_case_can_fail(world):
@@ -287,7 +321,46 @@ def test_a_gitlink_only_commit_is_skipped_without_a_model_call(world):
         raise AssertionError("a pointer bump reached the model")
 
     path = R.run_review(world.repo, "console", sha, BRANCH, reviewer=no_model, log=lambda _m: None)
-    assert R.parse(path.read_text(encoding="utf-8")).verdict == "skipped (gitlink-only)"
+    assert path == world.ledger()
+    assert world.ledger_shas() == [sha]
+    assert not world.review_file(sha).exists(), "a gitlink-only verdict also wrote a review file"
+    assert R.read_ledger(path)[0][0].verdict == "skipped (gitlink-only)"
+
+
+def test_a_clean_retry_replaces_the_failed_file_with_a_ledger_line(world):
+    """T3: a retry that comes back clean appends the line and unlinks the failed `.md`; the attempt counter carries over."""
+    sha = world.commit()
+
+    def failing(*_a):
+        return None, "model unreachable"
+
+    def clean(*_a):
+        return {"verdict": "clean", "findings": [], "labels": None}, ""
+
+    path = R.run_review(world.repo, "console", sha, BRANCH, reviewer=failing, log=lambda _m: None)
+    assert path == world.review_file(sha)
+    assert R.parse(path.read_text()).verdict.startswith("failed")
+    assert R.run_review(
+        world.repo, "console", sha, BRANCH, reviewer=clean, log=lambda _m: None
+    ) == (world.ledger())
+    assert not world.review_file(sha).exists(), "the failed record survived a clean retry"
+    (review,) = R.read_ledger(world.ledger())[0]
+    assert (review.sha, review.verdict, review.attempt) == (sha, "clean", 2)
+
+
+def test_a_clean_result_never_unlinks_a_findings_file(world):
+    """T3: a findings `.md` is the stricter state, so a later clean verdict rewrites the file and writes no line."""
+    sha = world.commit()
+    world.run_child(sha)
+    assert R.parse(world.review_file(sha).read_text()).verdict == "findings"
+
+    def clean(*_a):
+        return {"verdict": "clean", "findings": [], "labels": None}, ""
+
+    path = R.run_review(world.repo, "console", sha, BRANCH, reviewer=clean, log=lambda _m: None)
+    assert path == world.review_file(sha)
+    assert R.parse(path.read_text()).verdict == "clean"
+    assert not world.ledger().exists()
 
 
 def test_the_same_sha_triggered_twice_starts_one_reviewer(world):
@@ -419,7 +492,7 @@ def test_check_without_a_repo_judges_the_submodule_reviews_too(world):
     sha = world.commit("f.py", repo=sub)
     rc, _out, err, _t = world.hook("git -C sub commit -m x -- f.py")
     assert rc == 0, err
-    assert world.wait_for(world.review_file(sha))
+    assert world.wait_for_line(sha)
     rc, text = R.commit_reviews(world.repo, BRANCH)
     assert rc == 0, text
     world.commit("g.py", repo=sub)  # a second submodule commit, never reviewed
@@ -501,6 +574,33 @@ def test_the_next_bash_call_surfaces_a_finished_review_exactly_once(world):
     assert _context(out2) == "", "an unchanged review was surfaced twice"
 
 
+def test_fresh_ledger_lines_share_one_surfaced_line_and_each_surfaces_once(world):
+    """T8: every fresh clean entry is named on ONE line, and a later append surfaces only the new sha (seen is keyed per `clean.jsonl:<sha>`, not by the ledger's mtime)."""
+    world.answer([])
+    first = world.commit()
+    world.run_child(first)
+    _rc, out, _e, _t = world.hook("ls")
+    text = _context(out)
+    assert (
+        "1 clean review(s) appended to agent/reviews/%s/clean.jsonl: %s"
+        % (
+            BRANCH,
+            first[:8],
+        )
+        in text
+    ), text
+    assert "review %s" % first[:8] not in text, "a clean entry got a per-record line"
+    _rc, out2, _e, _t = world.hook("ls")
+    assert _context(out2) == "", "an unchanged ledger was surfaced twice"
+    second = world.commit("g.py", body="x = 1\n")
+    world.run_child(second)
+    _rc, out3, _e, _t = world.hook("ls")
+    text3 = _context(out3)
+    assert "1 clean review(s) appended" in text3, text3
+    assert second[:8] in text3, text3
+    assert first[:8] not in text3, "the earlier ledger line was surfaced again"
+
+
 def test_session_start_names_the_open_high_finding(world):
     sha = world.commit()
     world.run_child(sha)
@@ -523,7 +623,8 @@ def test_session_start_says_nothing_on_a_clean_recorded_branch(world):
     world.answer([])
     sha = world.commit()
     world.run_child(sha)
-    rel = str(world.review_file(sha).relative_to(world.repo))
+    assert world.ledger_shas() == [sha]
+    rel = str(world.ledger().relative_to(world.repo))
     world.git("add", "--", rel)
     world.git("commit", "-q", "-m", "chore(reviews): record", "--", rel)
     assert R.session_start_line(world.repo, BRANCH) == ""
@@ -629,6 +730,36 @@ def test_review_commit_records_only_finished_files_with_the_trailer(world):
     assert "PR-TASK: a1b2c3d4" in head
     files = world.git("show", "--name-only", "--format=", "HEAD").stdout.split()
     assert files == [str(world.review_file(sha).relative_to(world.repo))]
+    assert R.branch_state(world.repo, BRANCH, repos=())["uncommitted"] == []
+    # T6: a failed record committed after its second failure, then a clean retry: one --review-commit records the ledger line AND the deletion (`git add -A`).
+    world.answer([])
+    second = world.commit("g.py", body="x = 1\n", msg="fix(x): z\n\nPR-TASK: a1b2c3d4")
+
+    def failing(*_a):
+        return None, "model unreachable"
+
+    for _ in range(2):
+        R.run_review(world.repo, "console", second, BRANCH, reviewer=failing, log=lambda _m: None)
+    rc, text = R.commit_reviews(world.repo, BRANCH)
+    assert rc == 0, text
+    failed_rel = str(world.review_file(second).relative_to(world.repo))
+    assert world.git("ls-files", "--", failed_rel).stdout.strip() == failed_rel
+    world.run_child(second)
+    assert not world.review_file(second).exists()
+    st = R.branch_state(world.repo, BRANCH, repos=())
+    assert sorted(p.name for p in R.recordable(st)) == sorted(
+        [R.LEDGER_NAME, world.review_file(second).name]
+    )
+    rc, text = R.commit_reviews(world.repo, BRANCH)
+    assert rc == 0, text
+    head = world.git("log", "-1", "--format=%B").stdout
+    assert head.startswith("chore(reviews): record reviews for %s" % second[:8]), head
+    assert "PR-TASK: a1b2c3d4" in head
+    status = world.git("show", "--name-status", "--format=", "HEAD").stdout.split("\n")
+    assert sorted(ln for ln in status if ln) == sorted(
+        ["A\t" + str(world.ledger().relative_to(world.repo)), "D\t" + failed_rel]
+    ), status
+    assert world.git("status", "--porcelain", "--", "agent").stdout == ""
     assert R.branch_state(world.repo, BRANCH, repos=())["uncommitted"] == []
 
 
@@ -741,3 +872,287 @@ def test_worklist_dispatches_prune_reviews_to_the_review_arm(tmp_path):
     assert res.returncode == 2
     assert "bad prefix" in res.stderr, res.stderr
     assert "unknown verb" not in res.stderr, res.stderr
+
+
+# --------------------------------------------------------------------------- 4. the clean ledger (agent/plans/PLAN-clean-review-ledger.md)
+
+
+def _eligible(verdict="clean", sha="a" * 40, **kw):
+    fields = {
+        "sha": sha,
+        "subject": "fix(x): y — été",
+        "branch": BRANCH,
+        "parent": "b" * 40,
+        "patch_id": ("c" * 39) + sha[0],
+        "reviewed_at": "2026-10-04T08:00:00Z",
+        "model": "m" if verdict == "clean" else "(none)",
+        "diff_bytes": 4210,
+        "diff_files": 3,
+        "verdict": verdict,
+        "labels": {"bump": "minor", "kind": ["feature", "ci"], "why": "adds a verb"}
+        if verdict == "clean"
+        else None,
+        "cost": {"usd": 0.0123, "calls": 1, "seconds": 12.3} if verdict == "clean" else None,
+    }
+    fields.update(kw)
+    return R.Review(**fields)
+
+
+@pytest.mark.parametrize("verdict", R.LEDGER_VERDICTS)
+def test_the_ledger_codec_round_trips_every_eligible_verdict(verdict):
+    """T2: the line `ledger_line` writes parses back, through the strict reader, to the same review the `.md` file would."""
+    review = _eligible(verdict)
+    line = R.ledger_line(review)
+    assert line.endswith("\n")
+    assert line.count("\n") == 1
+    doc = json.loads(line)
+    assert list(doc) == sorted(doc), "keys are not sorted"
+    assert '", "' not in line, "separators carry spaces"
+    assert '": ' not in line, "separators carry spaces"
+    back, errors = R.parse_ledger(line)
+    assert errors == []
+    via_md = R.parse(R.render(review))
+    assert back == [via_md], "the ledger and the .md read back differently"
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("truncated", True),
+        ("unreviewed", ["big.json"]),
+        ("dropped", 1),
+        (
+            "findings",
+            [
+                R.Finding(
+                    id="aaaaaaaa.1", severity="low", file="f", line=1, anchor="in-diff", claim="c"
+                )
+            ],
+        ),
+        ("verdict", "failed (model call timed out after 240s)"),
+        ("verdict", "findings"),
+    ],
+)
+def test_each_d1_exclusion_is_refused(field, value):
+    review = _eligible(**{field: value})
+    assert not R.ledger_eligible(review)
+    with pytest.raises(ValueError, match="not ledger-eligible"):
+        R.ledger_line(review)
+
+
+def test_control_the_eligible_review_is_accepted():
+    """CONTROL: the base review of the exclusion cases is eligible, so each refusal above is the changed field's doing."""
+    assert R.ledger_eligible(_eligible())
+
+
+@pytest.mark.parametrize(
+    ("mutate", "words"),
+    [
+        (lambda d: d.update(extra=1), "unknown key"),
+        (lambda d: d.pop("patch_id"), "missing key"),
+        (lambda d: d.update(truncated=False), "only a `<sha40>.md`"),
+        (lambda d: d.update(findings=[]), "only a `<sha40>.md`"),
+        (lambda d: d.update(verdict="findings"), "verdict"),
+        (lambda d: d.update(sha="abc"), "sha is not 40 hex"),
+        (lambda d: d.update(labels={"bump": "huge", "kind": [], "why": ""}), "labels"),
+        (lambda d: d.update(attempt=0), "attempt"),
+    ],
+)
+def test_a_bad_ledger_line_is_malformed_with_its_line_number(mutate, words):
+    good = R.ledger_line(_eligible(sha="1" * 40))
+    doc = json.loads(R.ledger_line(_eligible(sha="2" * 40)))
+    mutate(doc)
+    text = good + json.dumps(doc, sort_keys=True) + "\n"
+    reviews, errors = R.parse_ledger(text)
+    assert [r.sha for r in reviews] == ["1" * 40]
+    assert len(errors) == 1, errors
+    assert errors[0].line == 2, errors
+    assert words in str(errors[0]), errors[0]
+
+
+def test_garbage_and_a_blank_line_are_malformed_and_a_duplicate_sha_is_not():
+    good = R.ledger_line(_eligible(sha="1" * 40))
+    reviews, errors = R.parse_ledger(good + "{not json\n" + "\n" + good)
+    assert [r.sha for r in reviews] == ["1" * 40]
+    assert [(e.line, "not JSON" in str(e) or "empty line" in str(e)) for e in errors] == [
+        (2, True),
+        (3, True),
+    ]
+
+
+def test_append_clean_writes_once_per_sha(tmp_path):
+    review = _eligible()
+    assert R.append_clean(tmp_path, BRANCH, review) is True
+    assert R.append_clean(tmp_path, BRANCH, review) is False
+    path = R.ledger_path(tmp_path, BRANCH)
+    assert path.read_text(encoding="utf-8") == R.ledger_line(review)
+
+
+APPENDER = r"""
+import os, pathlib, sys, time
+sys.path.insert(0, sys.argv[1])
+if sys.argv[5] != "-":
+    import types
+    src = pathlib.Path(sys.argv[1], "wl_review.py").read_text(encoding="utf-8")
+    for old, new in __import__("json").loads(pathlib.Path(sys.argv[5]).read_text()):
+        assert old in src, old
+        src = src.replace(old, new)
+    R = types.ModuleType("wl_review")
+    R.__file__ = str(pathlib.Path(sys.argv[1], "wl_review.py"))
+    sys.modules["wl_review"] = R
+    exec(compile(src, R.__file__, "exec"), R.__dict__)
+else:
+    import wl_review as R
+root, tag, go = sys.argv[2], sys.argv[3], pathlib.Path(sys.argv[4])
+while not go.exists():
+    time.sleep(0.001)
+for n in range(50):
+    review = R.Review(sha="%s%039x" % (tag, n), subject="s" * 400, branch="0930-1", verdict="clean", model="m", reviewed_at="2026-10-04T08:00:00Z")
+    R.append_clean(root, "0930-1", review)
+R.append_clean(root, "0930-1", R.Review(sha="%s%039x" % (tag, 0), subject="dup", branch="0930-1", verdict="clean", model="m"))
+"""
+
+# The T4 control: the single write split in two (key half, value half) with a yield between them, and the lock gone.
+TEAR = [
+    ["fcntl.flock(fd, fcntl.LOCK_EX)", "pass"],
+    ["fcntl.flock(fd, fcntl.LOCK_UN)", "pass"],
+    [
+        "            os.write(fd, data)\n",
+        "            os.write(fd, data[: len(data) // 2])\n            time.sleep(0.0005)\n            os.write(fd, data[len(data) // 2 :])\n",
+    ],
+]
+
+
+def _race(tmp_path, mutation):
+    stop_dir = str(pathlib.Path(R.__file__).parent)
+    go = tmp_path / "go"
+    script = tmp_path / "appender.py"
+    script.write_text(APPENDER, encoding="utf-8")
+    plan = "-"
+    if mutation:
+        plan = str(tmp_path / "mutation.json")
+        pathlib.Path(plan).write_text(json.dumps(mutation), encoding="utf-8")
+    procs = [
+        subprocess.Popen(
+            [sys.executable, str(script), stop_dir, str(tmp_path), tag, str(go), plan],
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        for tag in ("a", "b")
+    ]
+    time.sleep(0.5)
+    go.write_text("go", encoding="utf-8")
+    for proc in procs:
+        _out, err = proc.communicate(timeout=120)
+        assert proc.returncode == 0, err
+    return R.ledger_path(tmp_path, BRANCH).read_text(encoding="utf-8")
+
+
+def test_two_processes_appending_fifty_lines_each_tear_nothing(tmp_path):
+    """T4: two writers, one ledger: 100 parseable lines, no torn line, and the re-append of an existing sha writes nothing."""
+    text = _race(tmp_path, None)
+    reviews, errors = R.parse_ledger(text)
+    assert errors == [], errors[:3]
+    assert len(reviews) == 100
+    assert text.count("\n") == 100, "a duplicate sha was written"
+
+
+def test_control_a_split_write_without_the_lock_tears_a_line(tmp_path):
+    """CONTROL for T4: with the lock removed and the write split, the same race produces a line that does not parse, so the case above can fail."""
+    text = _race(tmp_path, TEAR)
+    _reviews, errors = R.parse_ledger(text)
+    assert errors, (
+        "the unlocked split write tore nothing in 100 appends: the race case proves nothing"
+    )
+
+
+# ---- T13: `wl_review.py --ledger-migrate [--write]`
+
+
+def _fixture_tree(root):
+    """One directory holding every record kind D1 sorts: clean, gitlink, truncated-clean, dropped-clean, findings, failed."""
+    d = R.branch_dir(root, BRANCH)
+    d.mkdir(parents=True)
+    kinds = {
+        "1" * 40: _eligible(sha="1" * 40),
+        "2" * 40: _eligible("skipped (gitlink-only)", sha="2" * 40, diff_bytes=0, diff_files=0),
+        "3" * 40: _eligible(sha="3" * 40, truncated=True, unreviewed=["big.json"]),
+        "4" * 40: _eligible(sha="4" * 40, dropped=1),
+        "5" * 40: _eligible(
+            sha="5" * 40,
+            verdict="findings",
+            findings=[
+                R.Finding(
+                    id="55555555.1", severity="high", file="f", line=1, anchor="in-diff", claim="c"
+                )
+            ],
+        ),
+        "6" * 40: _eligible(sha="6" * 40, verdict="failed (queue timeout)", labels=None),
+        "7" * 40: _eligible(
+            sha="7" * 40, cost=None, labels={"bump": "none", "kind": [], "why": ""}
+        ),
+    }
+    for sha, review in kinds.items():
+        (d / ("%s.md" % sha)).write_text(R.render(review), encoding="utf-8")
+    return d
+
+
+def _tree_bytes(root):
+    top = root / R.REVIEWS_REL
+    return {str(p.relative_to(top)): p.read_bytes() for p in sorted(top.rglob("*")) if p.is_file()}
+
+
+def test_ledger_migrate_dry_run_changes_nothing(tmp_path):
+    _fixture_tree(tmp_path)
+    before = _tree_bytes(tmp_path)
+    out: list[str] = []
+    assert R.ledger_migrate(tmp_path, write=False, log=out.append) == 0
+    assert _tree_bytes(tmp_path) == before
+    assert any("3 line(s) to append, 3 file(s) to delete, 4 .md kept" in line for line in out), out
+
+
+def test_ledger_migrate_write_converts_exactly_the_eligible_records_and_reruns_as_a_no_op(tmp_path):
+    d = _fixture_tree(tmp_path)
+    before = R.migration_snapshot(tmp_path)
+    assert R.ledger_migrate(tmp_path, write=True, log=lambda _m: None) == 0
+    assert sorted(p.stem[0] for p in d.glob("*.md")) == ["3", "4", "5", "6"]
+    assert sorted(r.sha[0] for r in R.read_ledger(d / R.LEDGER_NAME)[0]) == ["1", "2", "7"]
+    assert R.migration_snapshot(tmp_path) == before
+    after_first = _tree_bytes(tmp_path)
+    out: list[str] = []
+    assert R.ledger_migrate(tmp_path, write=True, log=out.append) == 0
+    assert _tree_bytes(tmp_path) == after_first, "a second run changed the tree"
+    assert any("total: 0 line(s)" in line for line in out), out
+
+
+def test_ledger_migrate_restores_every_file_on_a_snapshot_mismatch(tmp_path):
+    _fixture_tree(tmp_path)
+    before = _tree_bytes(tmp_path)
+    calls = []
+
+    def lying_snapshot(root):
+        calls.append(root)
+        return {"call": len(calls)}
+
+    out: list[str] = []
+    assert R.ledger_migrate(tmp_path, write=True, snapshot=lying_snapshot, log=out.append) == 1
+    assert len(calls) == 2
+    assert _tree_bytes(tmp_path) == before, "a refused migration left the tree changed"
+    assert any("every file was restored" in line for line in out), out
+
+
+def test_ledger_migrate_refuses_a_codec_that_drops_the_labels_why(tmp_path):
+    """The round-trip comparison is what refuses a lossy codec, before anything is written."""
+    _fixture_tree(tmp_path)
+    before = _tree_bytes(tmp_path)
+
+    def lossy(review):
+        doc = json.loads(R.ledger_line(review))
+        if doc["labels"]:
+            doc["labels"]["why"] = "-"
+        return json.dumps(doc, sort_keys=True, separators=(",", ":")) + "\n"
+
+    out: list[str] = []
+    assert R.ledger_migrate(tmp_path, write=True, codec=lossy, log=out.append) == 1
+    assert any("round-trip mismatch on labels" in line for line in out), out
+    assert _tree_bytes(tmp_path) == before
