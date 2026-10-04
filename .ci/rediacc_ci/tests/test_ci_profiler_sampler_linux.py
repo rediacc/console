@@ -42,6 +42,7 @@ import shutil
 import signal
 import subprocess
 import time
+import typing
 
 import pytest
 
@@ -714,7 +715,16 @@ PROBE_VOLATILE = (
 
 
 # Probe lines that print THIS host's readings, whatever the tier: the twin's side is a frozen golden from a 24-core machine, so the text is folded on both sides and the PORT's value is checked against this host by `_assert_probe_host_readings`.
-PROBE_HOST = ("**nproc:**", "**/proc/meminfo MemTotal:**")
+PROBE_HOST = (
+    "**nproc:**",
+    "**/proc/meminfo MemTotal:**",
+    "**/.dockerenv:**",
+    "**/proc/1/cgroup:**",
+    "**/proc/1/comm:**",
+    "**awk:**",
+    "**node:**",
+    "**df:**",
+)
 
 
 def _probe_stable(text: str) -> str:
@@ -725,13 +735,37 @@ def _probe_stable(text: str) -> str:
     return "\n".join(out)
 
 
-def _assert_probe_host_readings(text: str, *, cores: int | None = None) -> None:
-    """The probe's `nproc` and `MemTotal` lines must report what this host reports."""
+def _host_first_field(path: str) -> str:
+    """The first whitespace-separated field of `path`, parsed here rather than through the port."""
+    try:
+        fields = pathlib.Path(path).read_text(encoding="utf-8").split()
+    except OSError:
+        return "(unreadable)"
+    return fields[0] if fields else "(unreadable)"
+
+
+def _assert_probe_host_readings(
+    text: str,
+    *,
+    cores: int | None = None,
+    mem_kib: int | None = None,
+    which: typing.Callable[[str], str | None] = shutil.which,
+) -> None:
+    """Every folded probe line must report what this host reports."""
     want_cores = host_cores() if cores is None else cores
+    want_kib = host_mem_total_bytes() // 1024 if mem_kib is None else mem_kib
     lines = text.split("\n")
     assert "**nproc:** %d" % want_cores in lines, "probe nproc is not this host's %d" % want_cores
     mem = next((x for x in lines if x.startswith("**/proc/meminfo MemTotal:**")), "")
-    assert mem.split()[2:4] == ["MemTotal:", str(host_mem_total_bytes() // 1024)], mem
+    assert mem.split()[2:4] == ["MemTotal:", str(want_kib)], mem
+    wants = {
+        "**/.dockerenv:** %s" % ("present" if os.path.exists("/.dockerenv") else "absent"),
+        "**/proc/1/cgroup:** %s" % _host_first_field("/proc/1/cgroup"),
+        "**/proc/1/comm:** %s" % _host_first_field("/proc/1/comm"),
+    }
+    wants |= {"**%s:** %s" % (t, which(t) or "(missing)") for t in ("awk", "node", "df")}
+    for want in sorted(wants):
+        assert want in lines, "probe line is not this host's reading: %s" % want
 
 
 def test_probe_agrees_on_everything_that_is_not_a_live_reading(
@@ -752,6 +786,52 @@ def test_probe_agrees_on_everything_that_is_not_a_live_reading(
     # Control: a wrong host value must fail the check.
     with pytest.raises(AssertionError):
         _assert_probe_host_readings(new[1], cores=host_cores() + 1)
+    with pytest.raises(AssertionError):
+        _assert_probe_host_readings(new[1], mem_kib=host_mem_total_bytes() // 1024 + 1)
+    with pytest.raises(AssertionError):
+        _assert_probe_host_readings(new[1], which=lambda _t: "/nowhere/tool")
+
+
+def _join_lines(lines: list[str]) -> str:
+    return "\n".join(lines)
+
+
+def test_probe_fold_ignores_the_goldens_host() -> None:
+    """A probe from a different machine (4 cores, other RAM, a container) folds to the same text."""
+    golden = _probe_stable(
+        _join_lines(
+            [
+                "**nproc:** 24",
+                "**/proc/meminfo MemTotal:**       59649664 kB",
+                "**/.dockerenv:** absent",
+                "**/proc/1/cgroup:** 0::/init.scope",
+                "**/proc/1/comm:** systemd",
+                "**awk:** /usr/bin/awk",
+                "**node:** /home/developer/.local/bin/node",
+                "**df:** /usr/bin/df",
+                "**Detected CPU ceiling:** 1000 millicores",
+            ]
+        )
+    )
+    ci = _probe_stable(
+        _join_lines(
+            [
+                "**nproc:** 4",
+                "**/proc/meminfo MemTotal:**       16380000 kB",
+                "**/.dockerenv:** present",
+                "**/proc/1/cgroup:** 0::/",
+                "**/proc/1/comm:** docker-init",
+                "**awk:** /usr/bin/gawk",
+                "**node:** /opt/hostedtoolcache/node",
+                "**df:** /bin/df",
+                "**Detected CPU ceiling:** 1000 millicores",
+            ]
+        )
+    )
+    assert golden == ci
+    assert _probe_stable("**Detected CPU ceiling:** 1000 millicores") != _probe_stable(
+        "**Detected CPU ceiling:** 4000 millicores"
+    )
 
 
 def test_probe_reports_the_host_leak_without_failing(tmp_path: pathlib.Path) -> None:
