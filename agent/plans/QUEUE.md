@@ -23,35 +23,36 @@ Entry format: `1. agent/plans/PLAN-<slug>.md`, optionally followed by ` -- <note
 3. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
 4. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
 5. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-6. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, not started
-7. agent/plans/PLAN-locale-techdiff-resync.md -- P2, ready, not started
-8. agent/plans/PLAN-breakpoint-secret-shape.md -- P3, design, not started
-9. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-10. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-11. agent/plans/PLAN-config-passkey-optional.md -- P0, held, in progress (3 of 4 boxes ticked)
-12. agent/plans/PLAN-app-wide-org-selection.md -- P0, held, in progress (2 of 3 boxes ticked), dep-blocked
-13. agent/plans/PLAN-config-handoff-relay-only.md -- P0, held, in progress (9 of 11 boxes ticked), dep-blocked
-14. agent/plans/PLAN-token-ip-rebind.md -- P0, held, in progress (9 of 10 boxes ticked), dep-blocked
-15. agent/plans/PLAN-config-sync-hardening.md -- P0, held, in progress (18 of 19 boxes ticked), dep-blocked
-16. agent/plans/PLAN-haiku-model-routing.md -- P1, held, in progress (11 of 20 boxes ticked)
-17. agent/plans/PLAN-secret-namespace-migration.md -- P1, held, in progress (29 of 34 boxes ticked)
-18. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, held, in progress (16 of 17 boxes ticked)
-19. agent/plans/PLAN-stop-hook-retro-20260925.md -- P1, held, in progress (5 of 10 boxes ticked)
-20. agent/plans/PLAN-tooling-transformation.md -- P1, held, in progress (151 of 154 boxes ticked)
-21. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, held, in progress (6 of 7 boxes ticked), dep-blocked
-22. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, held, in progress (7 of 9 boxes ticked)
-23. agent/plans/PLAN-account-env-to-bws.md -- P2, held, in progress (19 of 20 boxes ticked)
-24. agent/plans/PLAN-retire-bash-oracles.md -- P2, held, in progress (4 of 15 boxes ticked), dep-blocked
-25. agent/plans/PLAN-stop-hook-retro-20260924.md -- P2, held, in progress (22 of 23 boxes ticked)
-26. agent/plans/PLAN-biome-only-lint.md -- P3, held, in progress (10 of 29 boxes ticked)
-27. agent/plans/PLAN-env-to-bitwarden-v2.md -- P3, held, in progress (9 of 10 boxes ticked)
-28. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, held, in progress (1 of 17 boxes ticked)
-29. agent/plans/PLAN-config-networkid-sync.md -- P1, held, not started, dep-blocked
-30. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, held, not started
-31. agent/plans/PLAN-ci-watch-enforcement.md -- P3, held, not started
-32. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, held, not started
-33. agent/plans/PLAN-trap-enforcement.md -- P3, held, not started
-34. agent/plans/PLAN-uncommitted-work-exposure-check.md -- P3, held, not started
+6. agent/plans/PLAN-scheduled-red-detector.md -- P1, approved, not started
+7. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, not started
+8. agent/plans/PLAN-locale-techdiff-resync.md -- P2, ready, not started
+9. agent/plans/PLAN-breakpoint-secret-shape.md -- P3, design, not started
+10. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
+11. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+12. agent/plans/PLAN-config-passkey-optional.md -- P0, held, in progress (3 of 4 boxes ticked)
+13. agent/plans/PLAN-app-wide-org-selection.md -- P0, held, in progress (2 of 3 boxes ticked), dep-blocked
+14. agent/plans/PLAN-config-handoff-relay-only.md -- P0, held, in progress (9 of 11 boxes ticked), dep-blocked
+15. agent/plans/PLAN-token-ip-rebind.md -- P0, held, in progress (9 of 10 boxes ticked), dep-blocked
+16. agent/plans/PLAN-config-sync-hardening.md -- P0, held, in progress (18 of 19 boxes ticked), dep-blocked
+17. agent/plans/PLAN-haiku-model-routing.md -- P1, held, in progress (11 of 20 boxes ticked)
+18. agent/plans/PLAN-secret-namespace-migration.md -- P1, held, in progress (29 of 34 boxes ticked)
+19. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, held, in progress (16 of 17 boxes ticked)
+20. agent/plans/PLAN-stop-hook-retro-20260925.md -- P1, held, in progress (5 of 10 boxes ticked)
+21. agent/plans/PLAN-tooling-transformation.md -- P1, held, in progress (151 of 154 boxes ticked)
+22. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, held, in progress (6 of 7 boxes ticked), dep-blocked
+23. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, held, in progress (7 of 9 boxes ticked)
+24. agent/plans/PLAN-account-env-to-bws.md -- P2, held, in progress (19 of 20 boxes ticked)
+25. agent/plans/PLAN-retire-bash-oracles.md -- P2, held, in progress (4 of 15 boxes ticked), dep-blocked
+26. agent/plans/PLAN-stop-hook-retro-20260924.md -- P2, held, in progress (22 of 23 boxes ticked)
+27. agent/plans/PLAN-biome-only-lint.md -- P3, held, in progress (10 of 29 boxes ticked)
+28. agent/plans/PLAN-env-to-bitwarden-v2.md -- P3, held, in progress (9 of 10 boxes ticked)
+29. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, held, in progress (1 of 17 boxes ticked)
+30. agent/plans/PLAN-config-networkid-sync.md -- P1, held, not started, dep-blocked
+31. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, held, not started
+32. agent/plans/PLAN-ci-watch-enforcement.md -- P3, held, not started
+33. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, held, not started
+34. agent/plans/PLAN-trap-enforcement.md -- P3, held, not started
+35. agent/plans/PLAN-uncommitted-work-exposure-check.md -- P3, held, not started
 
 ### Not queued
 
