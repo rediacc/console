@@ -683,12 +683,16 @@ def dropped_verdict(receipt, tree):
             continue
         run_ = verified.get(gate)
         code = run_.get("exitCode") if isinstance(run_, dict) else None
-        if (
+        ran_here = (
             isinstance(run_, dict)
             and run_.get("headTree") == tree
-            and code == 0
+            and isinstance(code, int)
             and not isinstance(code, bool)
-        ):
+        )
+        if ran_here and code == 0:
+            continue
+        # A RED RE-RUN AT THIS TREE IS A KNOWN FAILURE, NOT AN UNKNOWN ONE, once the merge has also listed it in `failed`: from there `carried_verdict` judges it like any whole-lane failure, so it refuses unless carried-reds.json carries it with a reason. Without this a gate whose host cannot run every case (check:ci-pytest's WSL-only and live-container skips, 2026-10-04) had no path to a push at all.
+        if ran_here and gate in (receipt.get("failed") or []):
             continue
         reason = entry.get("reason") if isinstance(entry.get("reason"), str) else "(no reason)"
         command = (
