@@ -229,11 +229,14 @@ def _declared_defect():
 DEFECT = _declared_defect()
 
 
-def run(command, root, broken=False, mutant=False):
+def run(command, root, broken=False, mutant=False, agent=None, defect=None):
     env = dict(os.environ, CLAUDE_PROJECT_DIR=str(root))
-    payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
+    doc = {"tool_name": "Bash", "tool_input": {"command": command}}
+    if agent:
+        doc.update(agent_id="a0123456789abcdef", agent_type=agent)
+    payload = json.dumps(doc)
     if broken:
-        code = BROKEN_RUNNER % (str(HERE.parents[1]), str(GUARD), DEFECT, str(GUARD))
+        code = BROKEN_RUNNER % (str(HERE.parents[1]), str(GUARD), defect or DEFECT, str(GUARD))
         argv = [sys.executable, "-c", code]
     elif mutant:
         code = MUTANT_RUNNER % (str(HERE.parents[1]), str(GUARD), str(GUARD))
@@ -296,6 +299,77 @@ for name, command, root, want, needle in WRITTEN:
     )
     if not ok and err:
         print("    stderr: %s" % err.strip().splitlines()[:3])
+
+# WRITERS NEVER COMMIT (section 3.2): the same commands with a sub-agent payload. `agent_id` and `agent_type` arrive only on a sub-agent's call, so the main-loop CASES above are the inverse of every fire case here. (name, command, root, agent_type, expect_blocked)
+AGENT_NEEDLE = "writers never commit"
+AGENT_CASES = [
+    (
+        "a writer commits on the feature branch",
+        'git commit -m "feat: x" -- a.ts',
+        FEATURE,
+        "general-purpose",
+        True,
+    ),
+    ("a writer commits a valid hotfix on main", HOTFIX, MAIN, "sonnet-writer", True),
+    ("a fork commits", 'git commit -m "feat: x" -- a.ts', FEATURE, "fork", True),
+    (
+        "a writer commits through a wrapper",
+        "sh -c 'git commit -m \"feat: x\" -- a'",
+        FEATURE,
+        "general-purpose",
+        True,
+    ),
+    (
+        "the pr-babysitter loop commits",
+        'git commit -m "feat: x" -- a.ts',
+        FEATURE,
+        "pr-babysitter",
+        False,
+    ),
+    ("a writer reads the log", "git log -n 3", FEATURE, "general-purpose", False),
+    (
+        "a writer commits outside the checkout",
+        'git -C %s commit -m "feat: x" -- a' % OUTSIDE,
+        FEATURE,
+        "general-purpose",
+        False,
+    ),
+]
+# The planted defect removes the arm; every fire case on the feature branch must then flip to allowed.
+AGENT_DEFECT = ('if ev.field("agent_id") and', "if False and")
+print()
+for name, command, root, agent, want in AGENT_CASES:
+    got, err = run(command, root, agent=agent)
+    ok = got == want and (AGENT_NEEDLE in err) == want
+    fails += not ok
+    print(
+        "%-56s want=%-8s got=%-8s %s"
+        % (
+            "agent: " + name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if not ok and err:
+        print("    stderr: %s" % err.strip().splitlines()[:3])
+agent_flipped = [
+    n
+    for n, c, r, a, want in AGENT_CASES
+    if want and r == FEATURE and not run(c, r, broken=True, agent=a, defect=AGENT_DEFECT)[0]
+]
+agent_fire = [n for n, c, r, a, want in AGENT_CASES if want and r == FEATURE]
+if agent_flipped != agent_fire:
+    print(
+        "*** FAIL *** agent DEFECT control: with %r planted, only %r flipped"
+        % (AGENT_DEFECT, agent_flipped)
+    )
+    fails += 1
+else:
+    print(
+        "agent DEFECT control: planted %r; %d fire case(s) flipped"
+        % (AGENT_DEFECT[0], len(agent_flipped))
+    )
 
 # commit_message_text, driven directly (#64c3e990): a heredoc is a commit's message only when it feeds THAT commit's stdin -- attached to it, or on a `cat` piped into it -- and the commit reads stdin. Before the fix every heredoc in the command was read as the message, so a `python3 - <<EOF` edit chained first became part of it.
 (MAIN / "msgfile").write_text("feat: from the file\n", encoding="utf-8")
