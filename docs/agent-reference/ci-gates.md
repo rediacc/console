@@ -418,7 +418,7 @@ Operator ruling 2026-09-25 (the commit-policy plan under agent/plans): verified 
 - one `git push` to `origin` with one refspec and no flag but `-q`/`-v`: no `--force`, `--force-with-lease`, `+`, `--delete`, `--tags`, `--follow-tags`, `--all` or `--mirror`;
 - the checkout is the console's own, on its `MMDD-N` branch, and the commit is exactly `origin/<live branch>` with `origin/main` as its ancestor;
 - that commit is the head of the open PR for the branch, and `CI Complete` is SUCCESS on it, read through `.ci/scripts/ci/ci-trace.py --json --ref <live branch>`;
-- the PR body carries an `Operational-Reason:` line (the plan-box ledger becomes the alternative proof once the PR-to-plan link of box L2 lands).
+- the PR body carries an `Operational-Reason:` line, or its `Plan:` line names a plan whose boxes are all ticked at that commit; with `turbo: on` in `agent/plans/QUEUE.md` `## Settings` at that same commit, the line may name several plans and every one of them, with every unfinished prerequisite, must be ticked (`plan_gate.plan_merge_refusal`, agent/plans/PLAN-stop-hook-turbo.md D6).
 
 Anything unreadable is a refusal. The git-level `pre-push` hook admits the same push without the override: one ref equal to `origin/<live branch>`, with `main` as its ancestor. `block_git_force_push` admits `--force-with-lease` only to the single live `MMDD-N` branch, never `main` and never `--force`, `-f` or a `+refspec`. After a merge, once the merged branch is deleted on the remote and pruned locally, `block_second_branch` admits the next `MMDD-(MAX+1)` cut from `main`. GitHub's rulesets back the same shape server-side: 24351140 (deletion, non-fast-forward, linear history, no bypass) and 12344707 (rebase-only pull request, required `CI Complete`).
 

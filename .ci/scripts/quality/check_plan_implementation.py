@@ -224,6 +224,11 @@ def pr_admits_open_boxes(gate, body):
     return bool(check(body)) if callable(check) else False
 
 
+def default_plans(head):
+    """The plans on the clock when the PR body names none (no body, or no `pull_request` event): the queue head alone, [] when the queue has none (agent/plans/PLAN-stop-hook-turbo.md D7)."""
+    return [head] if head else []
+
+
 def clock_scope(gate, root, base_plans, head_plans, body=None):
     """(scope, notes, problem) for P-A1 under the operator ruling of 2026-10-02 ("Clock the PR's plan only", worklist #508defc2).
 
@@ -233,6 +238,8 @@ def clock_scope(gate, root, base_plans, head_plans, body=None):
     `base_plans` None means no base is resolvable, so the scope is (a) only; a queue head of "" makes it (b) only. Both are said in `notes` rather than folded into silence.
 
     OPERATOR RULING 7 OF PLAN-stop-hook-one-plan-scope (2026-10-03): the PR's plan set is `gate.pr_plan_set(root, body)`, the body's `Plan:` plans (the queue head when `body` names none, or is None outside a pull_request run) closed over every unfinished plan they depend on. Each member that is not the queue head joins the scope: a named plan as "the PR body's Plan: line", a prerequisite as "prerequisite of <plan>". The Stop hook and the merge gate count the same set, so none of the three can let a prerequisite through that another blocks on.
+
+    THE BODY'S PLANS REPLACE THE QUEUE HEAD (agent/plans/PLAN-stop-hook-turbo.md D7): when the body names plans, the scope is those plans and their closure, and the queue head is NOT added beside them: a turbo PR names several plans, and the head of the queue may be a plan for the next PR. Only with no body, or a body naming none, is the scope `default_plans` (the queue head) and its closure.
 
     `scope` is {rel: reason}. `problem` is non-empty when the queue head or the plan set could not be read (`gate` None, no `queue_head` or `pr_plan_set`, either raised) or the set carries a problem (a dependency cycle, an unresolvable dependency): the caller fails closed on it.
     """
@@ -270,14 +277,15 @@ def clock_scope(gate, root, base_plans, head_plans, body=None):
         )
     named_fn = getattr(gate, "body_plans", None)
     named = [p for p in (named_fn(body) if callable(named_fn) and body else []) if p in members]
-    needers = named or ([head] if head else [])
+    needers = named or default_plans(head)
     scope: dict[str, str] = {}
-    if head:
-        scope[head] = "queue head"
-    else:
-        notes.append(
-            "no queue head (agent/plans/QUEUE.md has no entry that exists), so only plans this branch ticked are on the clock"
-        )
+    if not named:
+        if head:
+            scope[head] = "queue head"
+        else:
+            notes.append(
+                "no queue head (agent/plans/QUEUE.md has no entry that exists), so only plans this branch ticked are on the clock"
+            )
     for rel in members:
         if rel in needers:
             scope.setdefault(rel, "the PR body's Plan: line")
@@ -917,6 +925,38 @@ def controls_fired(enforce, planfile, planrec=None):
     caught(
         "C14d: CONTROL: with no Depends-On the scope was not the queue head alone",
         not problem14 and scope14 == {head_rel: "queue head"},
+    )
+
+    # C15 -- THE BODY'S PLANS REPLACE THE QUEUE HEAD (agent/plans/PLAN-stop-hook-turbo.md D7, T8), through the real plan_gate on a planted tree whose queue head is a third plan: a two-plan turbo body clocks exactly its two plans, and with no body the clock is `default_plans`, the queue head alone.
+    def c15_tree(tmp):
+        folder = os.path.join(tmp, "agent", "plans")
+        os.makedirs(folder, exist_ok=True)
+        for name in ("PLAN-a.md", "PLAN-b.md", "PLAN-c.md"):
+            with open(os.path.join(folder, name), "w", encoding="utf-8") as fh:
+                fh.write(
+                    "# PLAN\nStatus: approved\nDepends-On: no-dep -- a standalone plan in the C15 fixture\nPriority: P2 -- seed\n\n## Boxes\n%s"
+                    % open_box
+                )
+        with open(os.path.join(folder, "QUEUE.md"), "w", encoding="utf-8") as fh:
+            fh.write(
+                "# Plan queue\n\n## Settings\n\n```stop-hook\nturbo: on\n```\n\n## Promoted\n\n1. agent/plans/PLAN-c.md\n"
+            )
+        return tmp
+
+    a15, b15, c15 = "agent/plans/PLAN-a.md", "agent/plans/PLAN-b.md", "agent/plans/PLAN-c.md"
+    with tempfile.TemporaryDirectory() as tmp:
+        root15 = c15_tree(tmp)
+        scope15, _n, problem15 = clock_scope(
+            c14_gate, root15, None, {}, body="Plan: %s, %s" % (a15, b15)
+        )
+        bare15, _n, bare_problem15 = clock_scope(c14_gate, root15, None, {}, body=None)
+    caught(
+        "C15a: a two-plan turbo body did not clock exactly its two plans (the queue head joined, or a named plan was missing)",
+        not problem15 and sorted(scope15) == [a15, b15],
+    )
+    caught(
+        "C15b: CONTROL: with no PR body the clock was not the queue head alone",
+        not bare_problem15 and bare15 == {c15: "queue head"},
     )
 
     # C13 -- THE OPERATIONAL-REASON ADMISSION (#591): plan_gate's own parser, fed through a real event payload file. A reason admits; a body without one, a reason inside a machine-written block, no payload, and no gate do not.

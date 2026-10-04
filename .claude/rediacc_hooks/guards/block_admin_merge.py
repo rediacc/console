@@ -17,10 +17,12 @@
      since the PR-level review was retired on 2026-10-02.
   4. The plan gate, console PR only (box L2 of PLAN-plan-per-pr-loop,
      `plan_gate.plan_merge_refusal`, shared with the fast-forward fallback in
-     block_push_to_protected_branch): the body's one `Plan:` line names a plan
-     whose boxes are all ticked at `origin/<head>`, or the body carries an
-     `Operational-Reason:` line. Both --auto and immediate merges; a body that
-     cannot be read is refused.
+     block_push_to_protected_branch): the body's `Plan:` line names one plan
+     whose boxes are all ticked at `origin/<head>`, or, with `turbo: on` in
+     agent/plans/QUEUE.md at that same head (agent/plans/PLAN-stop-hook-turbo.md
+     D6), any number of plans that are all ticked, every unfinished
+     prerequisite included; or the body carries an `Operational-Reason:` line.
+     Both --auto and immediate merges; a body that cannot be read is refused.
   5. An immediate merge (no --auto) must additionally prove CI green NOW.
      Console gets all checks; other rediacc repos get the hygiene checks
      (their thread state feeds console's Submodule Branches gate).
@@ -72,10 +74,11 @@ REVIEWS_MESSAGE = (
 
 PLAN_MESSAGE = (
     "❌ BLOCKED: console PR #%s fails the plan gate (box L2 of agent/plans/PLAN-plan-per-pr-loop.md): "
-    "%s. A console PR merges when its body names its one plan (`Plan: agent/plans/PLAN-<slug>.md`, "
+    "%s. A console PR merges when its body names its plan (`Plan: agent/plans/PLAN-<slug>.md`, "
     "written by the post-push PR-body refresh from agent/plans/QUEUE.md) and every box of that plan is "
-    "ticked, or when the body carries an `Operational-Reason:` line saying why it merges otherwise "
-    "(a multi-plan PR included). Tick the boxes with their commits, or add the reason with "
+    "ticked; with `turbo: on` in agent/plans/QUEUE.md at the PR head the line may name several plans, "
+    "and every box of each is ticked. Otherwise the body carries an `Operational-Reason:` line saying "
+    "why it merges anyway (a multi-plan PR without turbo included). Tick the boxes with their commits, or add the reason with "
     "`gh api repos/%s/pulls/%s -X PATCH -F body=@<file>`."
 )
 

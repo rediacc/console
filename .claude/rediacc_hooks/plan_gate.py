@@ -3,6 +3,8 @@
 THE LINK. A PR names its plan with one `Plan: agent/plans/PLAN-<slug>.md` line in its body. `.claude/hooks/post-bash/refresh_pr_body.py` writes that line from the head of the plan queue (`agent/plans/QUEUE.md`, read by `queue`: its hand-ordered `## Promoted` list first, then the `## Generated` one `wl_planqueue` renders) on the first push that finds the body without one, and never rewrites it after that: the link is set once and is then the PR's own, so a queue edit mid-PR cannot re-point a PR at another plan. A multi-plan PR, or a PR that
 merges with open boxes, carries an `Operational-Reason:` line instead, and that line alone admits it.
 
+TURBO (agent/plans/PLAN-stop-hook-turbo.md D5/D6). With `turbo: on` in agent/plans/QUEUE.md `## Settings` (read by `settings_at`, the one parser `wl_planqueue.settings`), the PR keeps taking plans: `next_turbo` names the queued plans to start on free writer slots, `record_turbo_named` keeps what the Stop hook named, and `refresh_pr_body` appends those to the existing `Plan:` line (`with_plan_line`'s append mode) without rewriting an entry. The merge gate then admits a body naming any number of plans when turbo is on at the merged rev and every named plan, and every unfinished prerequisite, is ticked. With turbo off every rule above holds byte for byte.
+
 THE ONE BOX PARSER. Boxes are counted by `wl_planfile.plan_boxes` (the Stop hook's parser, which `check_plan_boxes.py` and `.ci/config/plan-boxes.json` also use), cross-checked against `wl_planfile.raw_box_counts`, its dumber line count: the larger open count wins, so a parser that stops seeing a box cannot turn an open plan into a finished one. A plan with no
 boxes at all proves nothing and is refused rather than read as finished.
 
@@ -78,11 +80,38 @@ def has_operational_reason(body: str) -> bool:
     return bool(OPERATIONAL_REASON.search(own_text(body)))
 
 
-def with_plan_line(body: str, plan: str) -> str:
-    """`body` with `Plan: <plan>` as its first line, unchanged when it already names a plan or `plan` is ""."""
-    if not plan or body_plans(body):
+def with_plan_line(body: str, plan: str, append: tuple[str, ...] | list[str] = ()) -> str:
+    """`body` with `Plan: <plan>` as its first line, unchanged when it already names a plan or `plan` is "".
+
+    `append` is the turbo mode (agent/plans/PLAN-stop-hook-turbo.md D5): the plans the Stop hook named for this PR. A body that already names plans gains each missing one at the end of its first own `Plan:` line (a line inside a generated block is not the body's own); a body that names none is written `Plan: <plan>, <appended...>`. A plan the body names already is never written twice and an existing entry is never rewritten. An empty `append` is the write-once link, byte for byte."""
+    have = body_plans(body)
+    if not append:
+        if not plan or have:
+            return body
+        return "Plan: %s\n\n%s" % (plan, body) if body.strip() else "Plan: %s\n" % plan
+    if not have:
+        wanted = []
+        for rel in (plan, *append):
+            if rel and rel not in wanted:
+                wanted.append(rel)
+        if not wanted:
+            return body
+        line = "Plan: %s" % ", ".join(wanted)
+        return "%s\n\n%s" % (line, body) if body.strip() else "%s\n" % line
+    missing = []
+    for rel in append:
+        if rel and rel not in have and rel not in missing:
+            missing.append(rel)
+    if not missing:
         return body
-    return "Plan: %s\n\n%s" % (plan, body) if body.strip() else "Plan: %s\n" % plan
+    generated = [m.span() for m in GENERATED_BLOCK.finditer(body)]
+    for m in PLAN_LINE.finditer(body):
+        if any(lo <= m.start() < hi for lo, hi in generated):
+            continue
+        cut = m.end(1)
+        sep = ", " if m.group(1).strip() else ""
+        return body[:cut] + sep + ", ".join(missing) + body[cut:]
+    return body
 
 
 def _read(root: str, rel: str, rev: str) -> str | None:
@@ -92,6 +121,49 @@ def _read(root: str, rel: str, rev: str) -> str | None:
         return (pathlib.Path(root) / rel).read_text(encoding="utf-8")
     except OSError:
         return None
+
+
+def _planqueue():
+    syspath.on_sys_path(STOP_DIR)
+    import wl_planqueue  # noqa: PLC0415 -- the one reader of the queue's format and its settings block
+
+    return wl_planqueue
+
+
+def settings_at(root: str, rev: str = ""):
+    """(Settings, problems) of agent/plans/QUEUE.md's `## Settings` block at `rev` ("" = the working tree), parsed by `wl_planqueue.settings` (agent/plans/PLAN-stop-hook-turbo.md D2), so the hook, the guards and CI read one switchboard through one parser. A file that does not exist is all defaults; a rev that cannot be read is all defaults and a problem; a parser that will not import is all defaults and a problem. Every default is the fail-safe one: hook on, turbo off, batch 1."""
+    try:
+        pq = _planqueue()
+    except ImportError as exc:
+        return _default_settings(), ["wl_planqueue could not import (%s)" % exc]
+    text = _read(root, QUEUE_REL, rev)
+    if text is None:
+        if rev:
+            return pq.Settings(), ["%s at %s is unreadable" % (QUEUE_REL, rev)]
+        return pq.Settings(), []
+    return pq.settings(text)
+
+
+def _default_settings():
+    """A stand-in carrying the fail-safe values when wl_planqueue cannot import."""
+    import types  # noqa: PLC0415
+
+    return types.SimpleNamespace(
+        stop_hook=True,
+        turbo=False,
+        batch_size=1,
+        writer_cap=4,
+        cadence=True,
+        agent_hint=True,
+        agent_pushback=True,
+        judge=True,
+        notes={},
+    )
+
+
+def batch_size(settings) -> int:
+    """The effective batch size: `batch_size` under turbo, 1 otherwise (agent/plans/PLAN-stop-hook-turbo.md D2). The one place it is computed."""
+    return max(1, int(settings.batch_size)) if settings.turbo else 1
 
 
 def _plan_text(root: str, rel: str, rev: str) -> tuple[str | None, str]:
@@ -213,10 +285,139 @@ def pr_plan_set(root: str, body: str | None, rev: str = "") -> tuple[tuple[str, 
     return tuple(order), problems
 
 
-def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "") -> str:
-    """ "" when the PR may merge on its plan, else the reason it may not.
+def _base(rel: str) -> str:
+    return str(rel).rsplit("/", 1)[-1]
 
-    Admitted: the body carries an `Operational-Reason:` line, or it names exactly one plan (`Plan: agent/plans/PLAN-<slug>.md`) whose boxes are all ticked at `rev` ("" = the working tree under `root`).
+
+def next_turbo(
+    root: str,
+    live_plans,
+    open_slots: int,
+    rev: str = "",
+    in_set=(),
+) -> list[str]:
+    """The plans the turbo loop names to start now (agent/plans/PLAN-stop-hook-turbo.md D5), at most `open_slots` of them, [] when turbo is off at `rev`.
+
+    Walked in `queue` order (Promoted, then Generated). An entry is eligible when it exists, has an open box, is not held (`wl_planenforce.plan_held`, the rule P-A1 keeps off the clock), is not in `in_set` (the PR's plan set), is not served by a live writer already, and is not picked already. The pick is the entry's deepest unfinished prerequisite when it has one (the first member of its `pr_plan_set`, as `wl_prscope.next_queued` does), and an entry with a held prerequisite is skipped, since nothing of it can start. Each pick must pass `wl_planconc.spawn_verdict` against `live_plans` (the plans live writers serve, paths or basenames) plus the picks before it, so an exclusive plan is never paired with a live writer's plan and two picks never claim one file.
+
+    A ` -- solo` entry (D11) is eligible only for an empty PR with no pick before it, and then it is the only pick; a PR whose plan set holds a solo plan takes no further plan."""
+    slots = int(open_slots or 0)
+    if slots <= 0:
+        return []
+    settings, _problems = settings_at(root, rev)
+    if not settings.turbo:
+        return []
+    text = _read(root, QUEUE_REL, rev)
+    if text is None:
+        return []
+    try:
+        pq = _planqueue()
+        import wl_planconc  # noqa: PLC0415 -- the concurrency rules the spawn guard applies
+        import wl_planenforce  # noqa: PLC0415 -- the held rule P-A1 shares
+    except ImportError:
+        return []
+    solos = pq.solo_plans(text)
+    taken = {str(p) for p in in_set or ()}
+    if taken & solos:
+        return []
+    live = {_base(p) for p in live_plans or ()}
+    picks: list[str] = []
+
+    def held(rel: str) -> bool:
+        return wl_planenforce.plan_held(_read(root, rel, rev) or "")
+
+    def compatible(rel: str) -> bool:
+        busy = {b: ["live"] for b in live | {_base(p) for p in picks}}
+        try:
+            verdict = wl_planconc.spawn_verdict(
+                {_base(rel)}, busy, lambda b: wl_planconc.plan_x(root, b)
+            )
+        except Exception:  # noqa: BLE001 -- a verdict that cannot be reached is no pick
+            return False
+        return verdict.allow
+
+    for rel in pq.ordered(text):
+        if len(picks) >= slots:
+            break
+        if rel in taken or rel in picks or _read(root, rel, rev) is None:
+            continue
+        opened, _done, why = open_boxes(root, rel, rev)
+        if why or opened <= 0:
+            continue
+        members, problems = pr_plan_set(root, "Plan: %s" % rel, rev)
+        if problems:
+            continue
+        chain = [m for m in members if m not in taken and m not in picks]
+        if not chain or any(held(m) for m in chain):
+            continue
+        pick = chain[0]
+        if _base(pick) in live:
+            # A live writer already serves it: it is started, not a plan to start.
+            continue
+        solo = rel in solos or pick in solos
+        if solo and (taken or picks):
+            continue
+        if not compatible(pick):
+            continue
+        picks.append(pick)
+        if solo:
+            break
+    return picks
+
+
+TURBO_NAMED_SUFFIX = ".turbo-named.json"
+
+
+def _named_path(root: str) -> pathlib.Path:
+    """The record of the plans the Stop hook named under turbo, beside the worklist store (`wl_core.worklist_for`), so it is per checkout and never committed."""
+    syspath.on_sys_path(STOP_DIR)
+    import wl_core  # noqa: PLC0415 -- the store's own location rule
+
+    return wl_core.worklist_for(root).with_suffix(TURBO_NAMED_SUFFIX)
+
+
+def record_turbo_named(root: str, branch: str, plans) -> None:
+    """Add `plans` to the turbo names recorded for `branch` (D5: a plan joins the PR when the hook names it; `refresh_pr_body` appends the record to the body's `Plan:` line on the next push). Written atomically; a failure is silent, since the hook names the plan again on the next stop."""
+    import json  # noqa: PLC0415
+
+    if not branch or not plans:
+        return
+    try:
+        path = _named_path(root)
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            doc = {}
+        if not isinstance(doc, dict):
+            doc = {}
+        have = [p for p in doc.get(branch) or [] if isinstance(p, str)]
+        for rel in plans:
+            if rel and rel not in have:
+                have.append(rel)
+        doc[branch] = have
+        tmp = path.with_suffix(path.suffix + ".tmp")
+        tmp.write_text(json.dumps(doc, sort_keys=True) + "\n", encoding="utf-8")
+        os.replace(tmp, path)
+    except Exception:  # noqa: BLE001 -- a record that cannot be written is named again next stop
+        pass
+
+
+def turbo_named(root: str, branch: str) -> list[str]:
+    """The plans the Stop hook named under turbo for `branch`, in naming order; [] when none or unreadable."""
+    import json  # noqa: PLC0415
+
+    try:
+        doc = json.loads(_named_path(root).read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001 -- nothing recorded reads as nothing named
+        return []
+    got = doc.get(branch) if isinstance(doc, dict) else None
+    return [p for p in got or [] if isinstance(p, str) and PLAN_PATH.match(p)]
+
+
+def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "") -> str:
+    """ "" when the PR may merge on its plans, else the reason it may not (agent/plans/PLAN-stop-hook-turbo.md D6).
+
+    Admitted: the body carries an `Operational-Reason:` line; or it names exactly one plan (`Plan: agent/plans/PLAN-<slug>.md`) whose boxes are all ticked at `rev` ("" = the working tree under `root`); or, with `turbo: on` in agent/plans/QUEUE.md AT `rev` (the merge lands that copy, so a working-tree flip admits nothing), it names any number of plans and every one of them has its boxes ticked. Every unfinished prerequisite in the plan set's closure is checked too. No minimum batch is enforced here.
     """
     if not isinstance(pr_body, str):
         return "the PR body could not be read, so its plan cannot be checked"
@@ -226,42 +427,46 @@ def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "") -> str:
     if not plans:
         return "the PR body names no plan (`Plan: agent/plans/PLAN-<slug>.md`) and carries no `Operational-Reason:` line"
     if len(plans) > 1:
-        return (
-            "the PR body names %d plans (%s); a multi-plan PR records an `Operational-Reason:` line"
-            % (
-                len(plans),
-                ", ".join(plans),
+        settings, _problems = settings_at(root, rev)
+        if not settings.turbo:
+            return (
+                "the PR body names %d plans (%s); a multi-plan PR records an `Operational-Reason:` line"
+                % (
+                    len(plans),
+                    ", ".join(plans),
+                )
             )
-        )
-    rel = plans[0]
-    if not PLAN_PATH.match(rel) or os.path.isabs(rel) or ".." in rel.split("/"):
-        return "the `Plan:` line names `%s`, not agent/plans/PLAN-<slug>.md" % rel
-    opened, done, why = open_boxes(root, rel, rev)
-    if why:
-        return why
-    if opened:
-        return (
-            "`%s` has %d open box(es) of %d, and the PR body carries no `Operational-Reason:` line"
-            % (
-                rel,
-                opened,
-                opened + done,
+    for rel in plans:
+        if not PLAN_PATH.match(rel) or os.path.isabs(rel) or ".." in rel.split("/"):
+            return "the `Plan:` line names `%s`, not agent/plans/PLAN-<slug>.md" % rel
+    for rel in plans:
+        opened, done, why = open_boxes(root, rel, rev)
+        if why:
+            return why
+        if opened:
+            return (
+                "`%s` has %d open box(es) of %d, and the PR body carries no `Operational-Reason:` line"
+                % (
+                    rel,
+                    opened,
+                    opened + done,
+                )
             )
-        )
     # Operator ruling 7 (2026-10-03): the PR's plan set holds every unfinished prerequisite, and a ticked plan whose prerequisite is open does not merge.
+    owner = plans[0] if len(plans) == 1 else ", ".join(plans)
     members, problems = pr_plan_set(root, pr_body, rev)
     if problems:
         return "the PR's plan set cannot be trusted: %s" % "; ".join(problems)
     for member in members:
-        if member == rel:
+        if member in plans:
             continue
         opened, done, why = open_boxes(root, member, rev)
         if why:
-            return "`%s`, a prerequisite of `%s`: %s" % (member, rel, why)
+            return "`%s`, a prerequisite of `%s`: %s" % (member, owner, why)
         if opened:
             return "`%s` is a prerequisite of `%s` and has %d open box(es) of %d" % (
                 member,
-                rel,
+                owner,
                 opened,
                 opened + done,
             )
@@ -270,12 +475,18 @@ def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "") -> str:
 
 __all__ = [
     "QUEUE_REL",
+    "TURBO_NAMED_SUFFIX",
+    "batch_size",
     "body_plans",
     "has_operational_reason",
+    "next_turbo",
     "open_boxes",
     "plan_merge_refusal",
     "pr_plan_set",
     "queue",
     "queue_head",
+    "record_turbo_named",
+    "settings_at",
+    "turbo_named",
     "with_plan_line",
 ]

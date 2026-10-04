@@ -11,6 +11,8 @@ that only moved a timestamp would satisfy the gate while telling the reader noth
 THE PLAN LINK (box L2 of agent/plans/PLAN-plan-per-pr-loop.md). On the console PR, a body that names no plan gets `Plan: <head of agent/plans/QUEUE.md>` as its first line, which is what `rediacc_hooks.plan_gate.plan_merge_refusal` reads before a merge. The queue head is the source because it is the one place that already says which plan the live branch works; the PR-epic block
 names worklist epics, not plans. The line is written ONCE: a body that already names a plan keeps it, so a queue edit mid-PR never re-points a PR, and a multi-plan PR's hand-written lines and its `Operational-Reason:` survive every later push.
 
+TURBO (agent/plans/PLAN-stop-hook-turbo.md D5). With `turbo: on` in agent/plans/QUEUE.md `## Settings`, every plan the Stop hook named for the pushed branch (`plan_gate.turbo_named`, recorded when the hook names it) is appended to the body's existing `Plan:` line on the next push. An entry already there is never rewritten or repeated; with turbo off nothing is appended.
+
 PORTED FROM `.claude/hooks/post-bash/refresh-pr-body.sh` BY W7 P6. The bash original was kept as `.claude/oracles/post-bash/refresh-pr-body.sh` until PLAN-retire-bash-oracles A3 deleted it; `.claude/rediacc_hooks/tests/test_post_bash_differential.py` compared the two over the same scripted `git` and `gh` stubs, byte for byte, and froze the result as `tests/goldens/post-bash.jsonl` before the deletion. The same suite now runs this port against that golden.
 
 THE 10-SECOND STDIN DEADLINE HAS NO COUNTERPART HERE, for the reason its sibling `cancel_old_ci.py` records: since the 2026-09-21 collapse the member is spawned with the payload already on a closed pipe, so neither side's deadline can fire.
@@ -152,7 +154,9 @@ def main():
         # Strip any previous block, then append the current one. Whole-body rewrite is safe here: this is one PR description with one writer, not the shared worklist.
         stripped = strip_block(body)
         if gh_repo == GH_REPO:
-            stripped = plan_gate.with_plan_line(stripped, plan_gate.queue_head(root))
+            # TURBO (agent/plans/PLAN-stop-hook-turbo.md D5): the plans the Stop hook named for this branch join the `Plan:` line; turbo off appends nothing, which is the write-once link.
+            named = plan_gate.turbo_named(root, br) if plan_gate.settings_at(root)[0].turbo else []
+            stripped = plan_gate.with_plan_line(stripped, plan_gate.queue_head(root), append=named)
         # mktemp, NOT "$ROOT/.git/...". This repo uses git WORKTREES, where `.git` is a FILE containing a gitdir pointer, so writing under it fails with "Not a directory" -- which is exactly how the first version of this hook silently did nothing while still exiting 0.
         try:
             handle, tmp = tempfile.mkstemp()
