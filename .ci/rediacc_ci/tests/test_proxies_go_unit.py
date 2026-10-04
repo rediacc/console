@@ -171,7 +171,17 @@ def _mask(text: str) -> str:
     # A panic's goroutine trace carries pointer values and goroutine ids, which differ run to run exactly as the wall times do.
     text = re.sub(r"[0-9]+\.[0-9]+s", "<t>", text)
     text = re.sub(r"goroutine [0-9]+", "goroutine <g>", text)
-    return re.sub(r"0x[0-9a-f]+", "<p>", text)
+    text = re.sub(r"0x[0-9a-f]+", "<p>", text)
+    # The old side is a golden recorded on one Go release and the port runs live on whichever the host has. A panic's header and frames are the Go runtime's own words: 1.26 prints `[recovered, repanicked]` once, 1.24 prints `[recovered]` and a second `panic:` line, and the frames carry GOROOT paths and stdlib line numbers. The panic text and the failing package line stay compared.
+    text = re.sub(
+        r"(panic: [^\n]*?) \[recovered[^\]]*\]\n(?:\tpanic: [^\n]*\n)?", r"\1 [recovered]\n", text
+    )
+    return re.sub(
+        r"(goroutine <g> \[running\]:\n).*?(?=^FAIL\t)",
+        r"\1<frames>\n",
+        text,
+        flags=re.DOTALL | re.MULTILINE,
+    )
 
 
 def _bin_without(tmp_path: pathlib.Path, drop: str) -> str:
