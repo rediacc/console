@@ -474,6 +474,21 @@ def test_turbo_picks_skip_the_pr_set_and_a_live_writers_plan_owner(world):
     assert got.turbo_picks == (rel("c"), rel("d"))
 
 
+def test_a_full_plan_concurrency_ceiling_names_none_but_keeps_more(world):
+    """At the ceiling nothing new starts, yet the queue still holds eligible plans, so the batch is not declared exhausted (review 3619cbe0: `more` once came from the capped call)."""
+    turbo_live(world)
+    queue = world.root / "agent" / "plans" / "QUEUE.md"
+    queue.write_text(
+        queue.read_text(encoding="utf-8").replace("plan_concurrency: 9", "plan_concurrency: 2"),
+        "utf-8",
+    )
+    got = turbo_state(
+        world, (("PLAN-b.md",), 1)
+    )  # PR plan a plus live writer b fill the ceiling of 2
+    assert got.turbo_picks == ()
+    assert got.turbo_more is True
+
+
 def test_turbo_off_equals_today(world):
     turbo_live(world, turbo="off")
     got = turbo_state(world, ((), 0))

@@ -111,8 +111,14 @@ def turbo_picks(root, state, live_plans, writers):
     slots = int(state.writer_cap) - int(writers or 0)
     plan_gate, _cp = _hooks_pkg()
     in_set = state.plans if state.kind in (LIVE, UNREADABLE) else ()
-    eligible = plan_gate.next_turbo(str(root), live_plans or (), max(slots, 1), in_set=in_set)
-    return (tuple(eligible) if slots > 0 else ()), bool(eligible)
+    picks = (
+        plan_gate.next_turbo(str(root), live_plans or (), slots, in_set=in_set) if slots > 0 else []
+    )
+    # `more` asks whether the queue still holds an eligible plan, so it ignores the plan_concurrency ceiling: a full ceiling is a reason to wait, not proof that the batch has nothing left to take (review 3619cbe0).
+    more = bool(picks) or bool(
+        plan_gate.next_turbo(str(root), live_plans or (), 1, in_set=in_set, ceiling=False)
+    )
+    return tuple(picks), more
 
 
 def with_turbo(state, root, live_plans, writers):
