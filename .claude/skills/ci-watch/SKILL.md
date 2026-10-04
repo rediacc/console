@@ -39,6 +39,8 @@ Start with `--why`. Every verb is one read that exits, compact by default, `--js
 .ci/scripts/ci/ci-trace.py --why                         # the PR head's Console CI run: cause, failing step, category, silences
 .ci/scripts/ci/ci-trace.py --run <id> --why              # the same for one run
 .ci/scripts/ci/ci-trace.py --runs                        # the newest Console CI runs on the branch (--ref main after a merge)
+.ci/scripts/ci/ci-trace.py --scheduled                   # the newest scheduled run of every cron workflow on main (nightly, housekeeping, promote-stable), with failed jobs
+.ci/scripts/ci/ci-trace.py --scheduled --workflow housekeeping  # one scheduled workflow's last 5 runs
 .ci/scripts/ci/ci-trace.py --run <id> --jobs             # counts + every job that did not pass, durations against p90
 .ci/scripts/ci/ci-trace.py --run <id> --jobs --attempt 2 # one attempt of a watchdog-rerun run
 .ci/scripts/ci/ci-trace.py --job <id> --errors           # the failing step's excerpt, infra/code category, top silences
@@ -48,7 +50,9 @@ Start with `--why`. Every verb is one read that exits, compact by default, `--js
 .ci/scripts/ci/ci-trace.py --watchdog                    # the Watchdog Monitor runs for the head's run (or --watchdog <run>)
 ```
 
-A red or cancelled `--wait` exit already appends the `--why` render, so the first diagnosis is in the wake-up itself. An Actions job's check-run id is its job id, so the id in a check-run URL works with `--job`.
+A red or cancelled `--wait` exit already appends the `--why` render, so the first diagnosis is in the wake-up itself. Every verdict also prints a **PR SIGNALS** block: the PR's bot comments for this head (a Claude review attempt with its class and the exact re-run command, the review summary, the per-commit table, the labels ledger), and `--wait` prints a new one as soon as it appears. The Claude review starts only after Console CI completes, so its outcome is `python3 .claude/hooks/stop/wl_prreview.py --wait`, which names the attempt class on a failed run.
+
+**Scheduled runs are a Stop-hook blocker, not a human-only issue.** A red scheduled run on main (`--scheduled`) holds the session's stop under `scheduled-red` until an item tracks it (`sched:<stem> run:<id>` in its text), and a tick needs a fix sha on origin/main or a newer green scheduled run as evidence. A red nightly holds the stable promotion, which counts only green scheduled runs. An Actions job's check-run id is its job id, so the id in a check-run URL works with `--job`.
 
 **`cancelled` is never a pass, and it is never assumed superseded.** `--why` attributes a cancel with zero failed jobs from evidence, in this order: `watchdog-budget` (a Watchdog Monitor run recorded `CI BUDGET VIOLATION` for a job; run 36953549081 was this, a 20.1 m job against a 20 m budget), `watchdog-failure`, `superseded` (the PR head moved past the run, or a newer run exists on the same head), `timeout-kill`, `manual`, else `unknown`. Only `superseded` means trace the new head; every other cause is a red to diagnose.
 
