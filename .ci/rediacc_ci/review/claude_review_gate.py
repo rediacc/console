@@ -67,6 +67,8 @@ _UNRENDERED = re.compile(r"\{\{[A-Z_]+\}\}")
 
 # Turn budget, scaled to diff size by DENSITY: measured the same day by the same reviewer, PR #552 completed at 22.0 turns/KLOC and PR #553 died at 17.8, while file count did not discriminate. TURNS_PER_KLOC sits above the measured survivor because one survival is not a floor.
 TURNS_PER_KLOC = 25
+# Breadth needs turns of its own: PR #594 (2026-10-04, run 37175939967) died at the 50-turn floor on 1,050 lines spread over 49 files, about 1 turn per file before the review was written. A file costs at least a read and a look at its context, so the budget is the larger of the density figure and TURNS_PER_FILE per changed file.
+TURNS_PER_FILE = 2
 MAX_TURNS = 140
 MIN_TURNS = 50
 
@@ -213,10 +215,11 @@ def last_line(text: str) -> str:
     return text.rsplit("\n", 1)[-1] if text else ""
 
 
-def turns_for(changed_lines: int) -> int:
-    """Turn budget for a diff: `TURNS_PER_KLOC` per started thousand lines, clamped to [MIN_TURNS, MAX_TURNS]."""
+def turns_for(changed_lines: int, changed_files: int = 0) -> int:
+    """Turn budget for a diff: the larger of `TURNS_PER_KLOC` per started thousand lines and `TURNS_PER_FILE` per changed file, clamped to [MIN_TURNS, MAX_TURNS]."""
     kloc = (max(changed_lines, 0) + 999) // 1000
-    return min(max(kloc * TURNS_PER_KLOC, MIN_TURNS), MAX_TURNS)
+    breadth = max(changed_files, 0) * TURNS_PER_FILE
+    return min(max(kloc * TURNS_PER_KLOC, breadth, MIN_TURNS), MAX_TURNS)
 
 
 def render_prompt(template: pathlib.Path, fields: dict[str, str]) -> str:
@@ -394,8 +397,8 @@ def review_attempt_states(repo: str, pr: str) -> tuple[list[review_budget.Attemp
     return review_budget.parse_attempt_states(out), 0
 
 
-def pr_diff_loc(repo: str, pr: str) -> int:
-    """Additions plus deletions, or 0 (the smallest cap tier and the smallest turn budget) when unreadable or non-numeric."""
+def pr_diff_size(repo: str, pr: str) -> tuple[int, int]:
+    """(additions plus deletions, changed files), or (0, 0) -- the smallest cap tier and the smallest turn budget -- when unreadable or non-numeric."""
     rc, out = _gh(
         [
             "pr",
@@ -404,15 +407,16 @@ def pr_diff_loc(repo: str, pr: str) -> int:
             "--repo",
             repo,
             "--json",
-            "additions,deletions",
+            "additions,deletions,changedFiles",
             "--jq",
-            ".additions + .deletions",
+            '"\\(.additions + .deletions) \\(.changedFiles)"',
         ],
         quiet=True,
     )
-    if rc != 0 or not re.fullmatch(r"[0-9]+", out.strip()):
-        return review_budget.DIFF_LOC_FAILS_TO_ZERO
-    return int(out.strip())
+    found = re.fullmatch(r"([0-9]+) ([0-9]+)", out.strip())
+    if rc != 0 or found is None:
+        return review_budget.DIFF_LOC_FAILS_TO_ZERO, 0
+    return int(found.group(1)), int(found.group(2))
 
 
 # --------------------------------------------------------------------------- GATE MODE ---------------------------------------------------------------------------
@@ -583,7 +587,7 @@ def run_gate() -> int:
         )
 
     review_count = review_budget.spend_total(reports_posted, attempts_spent)
-    loc = pr_diff_loc(repo, pr)
+    loc, diff_files = pr_diff_size(repo, pr)
     max_reviews = review_budget.cap_for(loc)
     if review_count >= max_reviews:
         emit(
@@ -671,8 +675,8 @@ def run_gate() -> int:
     except ValueError as err:
         log.error("%s; $GITHUB_OUTPUT left without a prompt" % err)
         raise Done(1) from err
-    turns = turns_for(loc)
-    log.info("diff size %d lines -> review_turns=%d" % (loc, turns))
+    turns = turns_for(loc, diff_files)
+    log.info("diff size %d lines in %d files -> review_turns=%d" % (loc, diff_files, turns))
     _write_prompt(output_path, turns, prompt)
     emit(output_path, "true", pr, head_sha, last_sha, reason)
     return 0
