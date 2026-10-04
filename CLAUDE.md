@@ -143,6 +143,7 @@ Ask each for conclusions with `file:line` evidence, never file dumps. This kind 
 `Plan` agents (up to 3, different angles) and synthesize. Their plans are proposals, not findings: check the load-bearing claims directly before acting (see rule 3).
 - **Writing agents: at most 4 at a time, with disjoint file ownership.** The cap is enforced by the Stop hook roster (`wl_roster.WRITER_CAP`) and the pre-agent guard; lease every writer; read-only work goes to `Plan`/`Explore`, which do not count. State the exact
 files each one owns and forbid it from touching any other. Two agents editing one file, or one agent running a repo-wide regenerate script, corrupts the tree. Also forbid `git checkout/restore/stash` and any `sync`/`regenerate` script in their prompts, for the reasons in rule 1.
+Ownership is also declared per plan: each live plan's header carries `Owns:` (the globs it edits) and `Concurrency:` (`parallel`, or `exclusive -- <reason>`), and `block_plan_concurrency` refuses a writer spawn whose plan would overlap a live writer's files or break an `exclusive` plan.
 - **Spot-check every agent's output against the artifact.** Their reports are accurate
 about intent and quietly wrong about placement. Verify structure across the whole file set they touched, not just the keys or symbols they claimed to change.
 - **Model choice is by task SHAPE, never by language or domain.** Haiku for
