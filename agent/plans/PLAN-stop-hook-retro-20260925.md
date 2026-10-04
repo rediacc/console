@@ -202,25 +202,29 @@ Other rows in the window:
 
 ## Tasks
 
-- [ ] **R20260925.1** `wl_roster.edit_paths` also collects each writer's Bash-made writes:
+- [x] **R20260925.1** `wl_roster.edit_paths` also collects each writer's Bash-made writes:
   - redirect targets from `shellscan.write_targets`;
   - operands of `rm`, `git rm`, `git mv`, `mv`, `cp`, `sed -i`, `tee`, `truncate` and `install`;
   - repo-path literals in a Python heredoc that writes or unlinks.
+    (ticked) 2026-10-04T15:40:42Z by d778be9d: commit:4ae972e17 edit_paths passes Bash commands to bash_write_paths; test_wl_judge_fixset_scope.py 37 passed; the r25_1 mutation reds
 
   Paths are cd-joined, and a directory operand covers its subtree. Replay A3's commands at 18:16:01, 18:40:48, 18:41:43 and 18:43:26 as fixtures: all four are subtracted, and a lead-only file in the same directory still draws the questions. Test: .claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py.
-- [ ] **R20260925.2** A writer's paths stay subtracted while any item leased to it is un-ticked. A tick-based unit's fix-set is its lease workers' paths intersected with the dirty tree (provenance `item-writers`, text in `M.FIXSET_PROVENANCE`). Rewrite `test_r1_inverse_*` per Decision 1. Test: .claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py.
+- [x] **R20260925.2** A writer's paths stay subtracted while any item leased to it is un-ticked. A tick-based unit's fix-set is its lease workers' paths intersected with the dirty tree (provenance `item-writers`, text in `M.FIXSET_PROVENANCE`). Rewrite `test_r1_inverse_*` per Decision 1. Test: .claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py.
+    (ticked) 2026-10-04T15:40:42Z by d778be9d: commit:4ae972e17 a writer's paths stay subtracted while its item is un-ticked; per-tick item-writers map; the r25_2 mutations red
 - [x] **R20260925.3** Sweep discharge accepts a covering `find` glob with a shared path operand. The fixture is the 19:50:04 marker against the 19:50:12 command. The inverse is a narrower glob, or a glob with no shared path, which stays owed. Test: .claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py.
   Done 2026-09-25: .claude/hooks/stop/wl_classsweep.py:460 glob_covers, wired at :543; test_wl_judge_fixset_scope.py 29 passed (worklist #8e860847).
     (ticked) 2026-09-26T16:31:59Z by d778be9d: retroactive record: closed by c8f92eaa0 (2026-09-25) feat(gates): wire check:ci-gate-tree-writes, and the gate fixes of 202 -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] **R20260925.4** `shape_cluster_diff` gets a JSON key-path mode for `.json` files, with added, removed and type-changed keys per file, and exit 1 when a key is removed. A `shape_cluster_diff` run on `packages/cli/src/i18n/locales` discharges the locale proof demand. Test: .ci/rediacc_ci/tests/test_quality_shape_cluster_diff.py and .claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py.
   Done 2026-09-25: .ci/scripts/quality/shape_cluster_diff.py:125 json_key_diff; test_quality_shape_cluster_diff.py 11 passed, --selftest 21 controls (worklist #1c96c876).
     (ticked) 2026-09-26T16:31:59Z by d778be9d: retroactive record: closed by c8f92eaa0 (2026-09-25) feat(gates): wire check:ci-gate-tree-writes, and the gate fixes of 202 -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
-- [ ] **R20260925.5** `queue_start` skips queued items with open `BLOCKED_BY` blockers. An expired queue lease on such an item reads as `waiting`. `V_QUEUE_SLOT` and the expired-lease line name `BLOCKED_BY:#<id>`. Test: .claude/rediacc_hooks/tests/test_wl_roster.py and .claude/rediacc_hooks/tests/test_wl_leases.py.
+- [x] **R20260925.5** `queue_start` skips queued items with open `BLOCKED_BY` blockers. An expired queue lease on such an item reads as `waiting`. `V_QUEUE_SLOT` and the expired-lease line name `BLOCKED_BY:#<id>`. Test: .claude/rediacc_hooks/tests/test_wl_roster.py and .claude/rediacc_hooks/tests/test_wl_leases.py.
+    (ticked) 2026-10-04T15:40:43Z by d778be9d: commit:4ae972e17 queue_start skips blocked queued items; an expired lease reads as waiting; test_wl_roster 68 passed and test_wl_leases 24 passed; the r25_5 and l7 mutations red
 - [x] **R20260925.6** `wl_planfile.match_item` matches on the box id first, including the `+` and `-` shorthand. The fixture is the 4 grouped items of 19:51:08 against R20260924.16 to .23, where 0 of 8 may come out untracked. Test: .claude/hooks/stop/test-planfile.py.
     (ticked) 2026-09-30T14:40:36Z by d778be9d: verified by commit 4509739a0: test-planfile.py resolves all eight R20260924.16-.23 boxes to their grouped items; the id-first mutant turns it red
 - [x] **R20260925.7** The `worker:queue` refusal names "#<id> stays OPEN (not leased)", and `--add` warns "similar open item: #<id>" on an owned near-duplicate. The fixture is the #91224636 and #48bc48b4 texts. Test: .claude/rediacc_hooks/tests/test_wl_leases.py.
     (ticked) 2026-09-30T15:16:59Z by d778be9d: verified by commit 9da9832ab: test_wl_leases l8b, l9, l9b; both mutants red
-- [ ] **R20260925.8** Commit #b9d4dcb2 (`.claude/hooks/stop/wl_roster.py:1252-1261`, `.claude/rediacc_hooks/tests/test_wl_roster.py:1337`). Add a parity test showing that `roster()` writers equal the `live_writers_estimate` ids for the killed-agent, waiter and fresh-spawn fixtures. Test: .claude/rediacc_hooks/tests/test_wl_roster.py.
+- [x] **R20260925.8** Commit #b9d4dcb2 (`.claude/hooks/stop/wl_roster.py:1252-1261`, `.claude/rediacc_hooks/tests/test_wl_roster.py:1337`). Add a parity test showing that `roster()` writers equal the `live_writers_estimate` ids for the killed-agent, waiter and fresh-spawn fixtures. Test: .claude/rediacc_hooks/tests/test_wl_roster.py.
+    (ticked) 2026-10-04T15:40:44Z by d778be9d: commit:393dce9f5 the #b9d4dcb2 fix is committed; the parity tests at .claude/rediacc_hooks/tests/test_wl_roster.py:1343; the r25_8 mutation reds
 - [x] **R20260925.9** With no code change, discharge the on-disk markers through the existing path:
   - run verbatim `find .ci/config .ci/rediacc_ci -name '*-baseline.json' -type f`;
   - run `.ci/scripts/quality/shape_cluster_diff.py --rev <A3 base sha> .ci/config .claude/rediacc_hooks .ci/rediacc_ci/core` for A3's commit before it lands;
@@ -229,7 +233,23 @@ Other rows in the window:
 
   The locale proof clears with R20260925.4. Test: the marker files' contents, quoted in the tick.
   Done 2026-09-25: the sweep marker holds owed:null and a different demand; the proof demand expired past its 120-minute TTL (load_outstanding() is None); every owed command ran verbatim (worklist #fb1747dc).
-- [ ] **R20260925.10** After R20260925.1 to .8 land, re-count this retro's six frictions on the next session's `.blocklog`, alongside R20260924.15, and record the counts in this plan. Test: .claude/hooks/context/test-context-bands.py (retro window) plus the blocklog rows cited.
+- [x] **R20260925.10** After R20260925.1 to .8 land, re-count this retro's six frictions on the next session's `.blocklog`, alongside R20260924.15, and record the counts in this plan. Test: .claude/hooks/context/test-context-bands.py (retro window) plus the blocklog rows cited.
+    (ticked) 2026-10-04T15:40:44Z by d778be9d: counts recorded under '### R20260925.10 counts (2026-10-04)' from the d778be9d blocklog (102 rows); test-context-bands.py rc=0 and test-planfile.py rc=0
+
+### R20260925.10 counts (2026-10-04)
+
+Counted over `/tmp/claude-worklist/home_developer_console.blocklog-d778be9d.jsonl`: 102 rows from 2026-10-03T08:45Z to 2026-10-04T15:27Z, after R20260925.1-.8 had landed (4ae972e17, 393dce9f5).
+
+| Friction | Count |
+|---|---|
+| 1 judge fix-set | 6 judge-led blocks, 5 sweep demands, 0 proof demands. The blocklog does not record a demand's source files, so a writer's share cannot be traced. |
+| 2 missed discharge | 0 proof demands. Whether any of the 5 sweeps fired again cannot be read from the log. |
+| 3 queue slot | 0 led, 0 named |
+| 4 plan adopted | 3 led, 3 named |
+| 5 stopped writer holding a slot | roster-dead 5 led, 9 named. Spawn refusals are not logged here. |
+| 6 orphan item | not separable inside open-items (7 led) |
+
+Side note for a later look: the `blocklog-unknown.jsonl` sibling has 18 stops blocked by `event-unparseable` over the same two days.
 
 ### Critical Files for Implementation
 - /home/developer/console/.claude/hooks/stop/wl_roster.py

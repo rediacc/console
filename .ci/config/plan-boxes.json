@@ -188,21 +188,6 @@
         "f8911c29"
       ]
     },
-    "agent/plans/PLAN-breakpoint-secret-shape.md": {
-      "status": "design",
-      "owner": "unowned",
-      "folder": "agent/plans",
-      "moved_at": "2026-09-21",
-      "open": 4,
-      "done": 0,
-      "open_sigs": [
-        "046222ae",
-        "452accb3",
-        "756e8906",
-        "ed896ebb"
-      ],
-      "done_sigs": []
-    },
     "agent/plans/PLAN-bump-k3s-upstream-1-36-4.md": {
       "status": "compacted",
       "owner": "9d92d9b6",
@@ -459,12 +444,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 9,
+      "open": 3,
+      "done": 10,
       "open_sigs": [
         "83c2eaf9",
         "9f0b0075",
-        "d2b71cf1",
         "f86f9978"
       ],
       "done_sigs": [
@@ -476,7 +460,8 @@
         "9b63908f",
         "a273780b",
         "a70f79c8",
-        "a8a74c4b"
+        "a8a74c4b",
+        "d2b71cf1"
       ]
     },
     "agent/plans/PLAN-completion-strategy.md": {
@@ -1702,18 +1687,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 5,
-      "open_sigs": [
-        "15f901d8",
-        "2455ab0e",
-        "5abd062b",
-        "635422d7",
-        "6e6c3a0b"
-      ],
+      "open": 0,
+      "done": 10,
+      "open_sigs": [],
       "done_sigs": [
         "121dc28c",
+        "15f901d8",
+        "2455ab0e",
         "2a8b21c4",
+        "5abd062b",
+        "635422d7",
+        "6e6c3a0b",
         "759c2b51",
         "bec5a550",
         "bfc9b7cd"
@@ -2285,6 +2269,23 @@
         "cb244b5c",
         "d7f4bbdb"
       ]
+    },
+    "agent/plans/_done/PLAN-breakpoint-secret-shape.md": {
+      "status": "done",
+      "owner": "unowned",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-04",
+      "open": 2,
+      "done": 2,
+      "open_sigs": [
+        "452accb3",
+        "756e8906"
+      ],
+      "done_sigs": [
+        "046222ae",
+        "ed896ebb"
+      ],
+      "ruling": "#a6ec6d6c"
     },
     "agent/plans/_done/PLAN-bws-rotation-on-failure.md": {
       "status": "done",
