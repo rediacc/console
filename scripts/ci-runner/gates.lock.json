@@ -1591,7 +1591,6 @@
   {
     "id": "check:ci-scope-scripts-reachability",
     "run": "npm run check:ci-scope-scripts-reachability",
-    "slow": true,
     "gate": true,
     "leaves": [
       ".ci/scripts/quality/check_scope_scripts_reachability.py"
