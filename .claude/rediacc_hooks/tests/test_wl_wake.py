@@ -112,6 +112,13 @@ def test_wk5_split_wakers_separates_the_timer_from_the_work():
     assert [t["id"] for t in wakers] == ["wake0001"]
 
 
+def test_wk8_the_harness_timeout_outlasts_the_sleep_and_stays_under_the_ceiling():
+    wake = wlfix.import_wl("wl_wake")
+    assert wake.harness_timeout_ms() > wake.WAKE_DEFAULT_MIN * 60000
+    assert wake.harness_timeout_ms(wake.WAKE_MAX_MIN) <= 7200000
+    assert wake.harness_timeout_ms(wake.WAKE_MAX_MIN) > wake.WAKE_MAX_MIN * 60000
+
+
 def test_wk6_a_waiting_stop_without_a_timer_blocks_and_names_the_arm_command(wl):  # noqa: F811
     wl.setup()
     wl.brief_now()
@@ -122,6 +129,8 @@ def test_wk6_a_waiting_stop_without_a_timer_blocks_and_names_the_arm_command(wl)
     got = wl.run()
     assert "NO WAKE-UP TIMER" in got.out, got.out[:600]
     assert "wl_wake.py deadbeef --minutes 30" in got.out, got.out[:600]
+    # 2026-10-04: a 30-minute timer armed under the harness's 30-minute default timeout was killed before it fired, so the arm names a timeout above the sleep.
+    assert "timeout: 2400000" in got.out, got.out[:600]
     # CONTROL: the same wait with the timer armed is not refused for it.
     wl.waker = True
     wl.newturn()

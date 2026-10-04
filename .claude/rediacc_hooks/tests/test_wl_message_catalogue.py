@@ -351,7 +351,12 @@ ARITY = {
         "cl-owner:x",
         "cl-owner:x",
     ),
-    "V_WAKE_TIMER": (2, "watch, writer", "python3 .claude/hooks/stop/wl_wake.py me --minutes 30"),
+    "V_WAKE_TIMER": (
+        2,
+        "watch, writer",
+        2400000,
+        "python3 .claude/hooks/stop/wl_wake.py me --minutes 30",
+    ),
     # The PR-level Claude review on a green head (agent/plans/PLAN-github-pr-review-restore.md, GR9): named fields, one dict renders all three.
     "V_PR_REVIEW_UNANSWERED": {"pr": 543, "head": "deadsha00000", "reason": "r"},
     "V_PR_REVIEW_FAILED_RUN": {"pr": 543, "head": "deadsha00000", "reason": "r"},

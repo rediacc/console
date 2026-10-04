@@ -3451,6 +3451,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 ", ".join(
                     str(b.get("description") or b.get("id") or "?")[:60] for b in live_bg[:4]
                 ),
+                wl_wake.harness_timeout_ms(),
                 wl_wake.arm_command(me8),
             ),
         )
