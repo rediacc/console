@@ -360,15 +360,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 18,
-      "done": 0,
+      "open": 2,
+      "done": 16,
       "open_sigs": [
+        "3a53b303",
+        "a9b88415"
+      ],
+      "done_sigs": [
         "03a1b2f4",
         "148b0d37",
         "1742c481",
         "38282a83",
         "39103e83",
-        "3a53b303",
         "48413ff5",
         "5ddca5fb",
         "5e367524",
@@ -376,13 +379,11 @@
         "72ddf8eb",
         "7b18e1e4",
         "9937d1f8",
-        "a9b88415",
         "b5b77957",
         "bef13201",
         "cbbeba99",
         "eec0f539"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-cli-em-dash-lint-gate.md": {
       "status": "compacted",
@@ -444,11 +445,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 10,
+      "open": 2,
+      "done": 11,
       "open_sigs": [
         "83c2eaf9",
-        "9f0b0075",
         "f86f9978"
       ],
       "done_sigs": [
@@ -458,6 +458,7 @@
         "9883d9ac",
         "9a2c7936",
         "9b63908f",
+        "9f0b0075",
         "a273780b",
         "a70f79c8",
         "a8a74c4b",
@@ -568,11 +569,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 9,
+      "open": 1,
+      "done": 10,
       "open_sigs": [
-        "bca8a2e1",
-        "e8152c55"
+        "bca8a2e1"
       ],
       "done_sigs": [
         "50817698",
@@ -583,7 +583,8 @@
         "a1929226",
         "c607653c",
         "c70d11f1",
-        "e6fc8a05"
+        "e6fc8a05",
+        "e8152c55"
       ]
     },
     "agent/plans/PLAN-consolidation-pressure.md": {
@@ -724,9 +725,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 8,
+      "open_sigs": [],
+      "done_sigs": [
         "3054a1df",
         "3124130f",
         "49df9a96",
@@ -735,8 +737,7 @@
         "bace249f",
         "cb4c0152",
         "fc15df5e"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-gh-swallow-gates-audit.md": {
       "status": "compacted",
@@ -1004,20 +1005,20 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 13,
+      "open": 1,
+      "done": 15,
       "open_sigs": [
-        "1feb206a",
-        "4d91dd68",
-        "9660fb2f"
+        "4d91dd68"
       ],
       "done_sigs": [
+        "1feb206a",
         "2dd2429a",
         "4b8321e0",
         "4d461643",
         "5157363b",
         "6f4a1a63",
         "7fb23a48",
+        "9660fb2f",
         "97dc855e",
         "aa8ad1d6",
         "b4445450",
