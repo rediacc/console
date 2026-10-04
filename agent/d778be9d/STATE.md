@@ -1,16 +1,17 @@
-## SESSION d778be9d 2026-10-03T23:30:48Z
+## SESSION d778be9d 2026-10-04T01:16:23Z
 
 # STATE d778be9d
 
 ## Where things are (2026-10-04)
 
-- PR #592 (1003-1) MERGED 2026-10-03, released v1.5.0; main later re-synced and mirrored to GitLab.
-- PR #593 (1003-2), ready for review, AUTO-MERGE QUEUED at head 5c1671794 (`gh pr merge 593 --rebase --auto`). Both PLAN-program-state-in-repo (PS1-PS5) and PLAN-github-pr-review-restore (GR0-GR12) have every box ticked.
-- GR12 done outside git: ruleset 12344707 now requires CI Complete AND Review Complete on main (applied after GR11: Claude Review run 37160684294 posted Review Complete 'current' on PR #593).
-- CI watch on 5c1671794 is the background task in item #45c1fc79; the wake-up timer runs alongside it.
+- PR #593 MERGED 2026-10-04T00:05:16Z by auto-merge; released v1.6.0 (Release to Edge run 37165876330); main re-synced to bb0e9f682 and mirrored to GitLab; branch 1003-2 deleted.
+- main now REQUIRES both CI Complete and Review Complete (ruleset 12344707, GR12). A PR merges by `gh pr merge <n> --rebase --auto` once both are green; the review summary must be answered with wl_prreview.py first if it has findings.
+- Branch 1004-1 (cut from main), NO PR yet, 2 local commits: d501bce7f (QUEUE.md drops the merged plan; PLAN-plan-priority-concurrency heads the queue; epic db1be6c2) and e3cdea633 (T12: Priority/Concurrency/Owns documented in CLAUDE.md rule 4, agent/README.md, pr-babysitter.md).
+- Full hook test suite running in the background (item #83965a1d) as T12's last acceptance check.
 
 ## Next action
 
-1. Confirm PR #593 MERGED (`gh pr view 593 --json state,mergedAt`). If it is still open, read `.ci/scripts/ci/ci-trace.py` and `python3 .claude/hooks/stop/wl_prreview.py --status --pr 593`: a red CI or an unanswered review summary blocks the auto-merge; fix, commit, review-commit, sync /home/developer/pushclone-0923 (git fetch origin main first), ci:quick --receipt-out, push.
-2. After the merge (pr-merge steps 4-7): `git fetch origin main:main` then `git checkout main`; watch Console CI on main (`ci-trace.py --runs --ref main`, then `--wait --ref main`), then the Release to Edge run by `--run <id>` (bump-minor); `git merge --ff-only origin/main` for CD's two commits; push main to the gitlab remote with --follow-tags; delete local 1003-2; cut 1003-3 with `git switch -c`; drop PLAN-program-state-in-repo from QUEUE.md's Promoted list (entry 1) so PLAN-plan-priority-concurrency heads it; publish the epic snapshot, open the draft PR with the worklist-epics block in its body.
-3. End focus: `worklist.py --focus d778be9d off`.
+1. Read the hook suite result (scratchpad hooksuite.log or the task output). A failure in a guard that reads CLAUDE.md needs fixing first; a known load flake (test_settings_collapse under -n 16) is re-run alone.
+2. Tick T12: `worklist.py --plan-investigate d778be9d agent/plans/PLAN-plan-priority-concurrency.md T12 present commit:e3cdea633 fileline:agent/README.md:30 -- <note> --write`, then `--plan-tick ... T12 "<evidence>" --write`; commit the tick bundle (plan, plan-boxes.json, plan-investigation.jsonl, INDEX.md) with PR-TASK db1be6c2.
+3. `worklist.py --publish d778be9d 1004-1`, commit agent/pr/1004-1.md; review-commit; sync /home/developer/pushclone-0923 (`git fetch origin main` first, then fetch 1004-1 and reset), ci:quick --receipt-out; `git push -u origin 1004-1`.
+4. Open the draft PR with a body carrying `Plan: agent/plans/PLAN-plan-priority-concurrency.md` and the worklist-epics block (build it from agent/pr/1004-1.md between `<!-- worklist-epics:begin -->`/`end` markers); no attribution lines. Then CI watch, ready, review, auto-merge.

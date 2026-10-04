@@ -72,12 +72,13 @@ B starts once A has frozen the T1/T2 API (`parse_x`, `order_key`, `live_plans`, 
   - `--apply ... --write`.
   It lands in the SAME commit as T3/T4, with the bulk-transform proof line.
     (ticked) 2026-10-03T09:44:09Z by d778be9d: 7ad4a8c78: every required plan carries Priority/Concurrency/Owns (exclusive by operator ruling 2026-09-26), enforcement on; ae8fcada0 lax path removed
-- [ ] T12 [lead] Prose:
+- [x] T12 [lead] Prose:
   - CLAUDE.md rule 4 (:131, "disjoint file ownership") and :37;
   - agent/README.md plan layout;
   - docs/agent-reference/plan-records.md header table;
   - pr-babysitter.md :147;
   - `npm run gen:docs`; the full hook suite; the `ci-plan-*` family of gates.
+    (ticked) 2026-10-04T01:23:50Z by d778be9d: commit:e3cdea633 header lines documented in CLAUDE.md, agent/README.md, pr-babysitter.md; ci-plan-* rc 0; hook suite clean after 0252e61c3
 
 ## 0. Facts established
 
