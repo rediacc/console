@@ -2033,12 +2033,14 @@ def main(argv: list[str]) -> int:
 
     markdown = render_markdown(report)
     if args.markdown_out:
+        # tree-write: safe only with an explicit --markdown-out, which check:ci-budget-freshness never passes
         args.markdown_out.write_text(markdown, encoding="utf-8")
     else:
         print(markdown)
 
     payload = json.dumps(report, indent=2, sort_keys=True)
     if args.json_out:
+        # tree-write: safe only with an explicit --json-out, which check:ci-budget-freshness never passes
         args.json_out.write_text(payload, encoding="utf-8")
     else:
         print(payload)

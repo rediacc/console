@@ -88,7 +88,7 @@ def _parse_workflow(text):
 
 def scheduled_workflows(root):
     """Every workflow under `.github/workflows` with an uncommented `schedule:` and at least one cron: [{stem, file, name, crons}], sorted by file."""
-    out = []
+    out: list[dict] = []
     wdir = pathlib.Path(root) / WORKFLOW_DIR
     try:
         files = sorted(p for p in wdir.iterdir() if p.suffix in (".yml", ".yaml") and p.is_file())
@@ -225,7 +225,7 @@ def _fetch(root, owner, name, workflows, jobs_cache):
     )
     if err or not isinstance(data, dict):
         return [], err or "no runs document", jobs_cache
-    by_file = {}
+    by_file: dict[str, list[dict]] = {}
     for run in data.get("workflow_runs") or []:
         if run.get("event") not in (None, "schedule"):
             continue
@@ -529,7 +529,7 @@ def assess(worklist, items, session_id, doc, now=None):
     - green: this session's open items tracking a workflow whose newest scheduled run is now green; the tick command is owed.
     """
     me8 = (session_id or "")[:8]
-    out = {"block": [], "tick": [], "peer": [], "green": []}
+    out: dict[str, list] = {"block": [], "tick": [], "peer": [], "green": []}
     if not doc or doc.get("state") != "ok":
         return out
     for row in doc.get("workflows") or []:

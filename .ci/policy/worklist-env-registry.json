@@ -724,6 +724,13 @@
         "'6'"
       ]
     },
+    "WORKLIST_SCHED_RED_TTL_S": {
+      "kind": "tuning",
+      "defaults": [
+        "'900'"
+      ],
+      "why": "How long wl_schedred's shared scheduled-run cache stays fresh, wl_schedred.py:32. Fifteen minutes keeps a GitHub read to about four an hour across every session while a red still surfaces within one stop of the cache expiring."
+    },
     "WORKLIST_SESSION_ID": {
       "kind": "handle",
       "defaults": [
