@@ -1366,24 +1366,24 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 4,
+      "open": 9,
+      "done": 6,
       "open_sigs": [
         "11d978d4",
-        "149372c9",
         "4711b23b",
         "c14e269f",
         "c49d4542",
         "ca00e010",
         "d1884e0d",
-        "d6905e03",
         "da8d5503",
         "deedaf92",
         "e8e6ee5e"
       ],
       "done_sigs": [
+        "149372c9",
         "169ff148",
         "3d6bae40",
+        "d6905e03",
         "f16cdba4",
         "f2c1e8d4"
       ]
@@ -2023,24 +2023,6 @@
         "f81620de",
         "fde098b5"
       ]
-    },
-    "agent/plans/PLAN-trap-enforcement.md": {
-      "status": "executing",
-      "owner": "99ccf057",
-      "folder": "agent/plans",
-      "moved_at": "2026-09-21",
-      "open": 7,
-      "done": 0,
-      "open_sigs": [
-        "33c18d35",
-        "4da18b17",
-        "7717a198",
-        "a59805d9",
-        "d8dae661",
-        "dd8a45ec",
-        "ef0d8159"
-      ],
-      "done_sigs": []
     },
     "agent/plans/PLAN-typecheck-orphan-packages.md": {
       "status": "ready",
@@ -3699,6 +3681,24 @@
         "cb6f6b5d",
         "d3777ae7",
         "fc0d9cd3"
+      ]
+    },
+    "agent/plans/_done/PLAN-trap-enforcement.md": {
+      "status": "done",
+      "owner": "99ccf057",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-04",
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
+      "done_sigs": [
+        "33c18d35",
+        "4da18b17",
+        "7717a198",
+        "a59805d9",
+        "d8dae661",
+        "dd8a45ec",
+        "ef0d8159"
       ]
     },
     "agent/plans/_done/PLAN-w9p2-script-relocation.md": {

@@ -17,13 +17,15 @@ Owns: .ci/config/language-policy-baseline.json
     (ticked) 2026-10-03T10:12:13Z by d778be9d: b9714c304 + c8f92eaa0: differentials and gates retargeted to goldens/live guards, regolden verb (goldenio), test_golden_drift.py control
 - [x] A3 Delete .claude/oracles/ (bash, both Python forwarders, lib/sanctioned.py), every TWIN constant and the bash driver; consolidate pattern_for and the pgrep loop shared by the two running-script guards
     (ticked) 2026-10-03T10:12:14Z by d778be9d: d5d296dea: .claude/oracles/ deleted, TWIN constants gone, bash driver removed; pattern_for consolidated in .claude/rediacc_hooks/runningscript.py:25 (e2a4d3d25)
-- [ ] A4 Rule-T fixes on the hook side (block_ssh_file_write empty command and jq null, the shellscan.target_root tab defect, and every copied bug the 47 PORT NOTE re-read finds), each with an intentional golden delta and a failing-first test
+- [x] A4 Rule-T fixes on the hook side (block_ssh_file_write empty command and jq null, the shellscan.target_root tab defect, and every copied bug the 47 PORT NOTE re-read finds), each with an intentional golden delta and a failing-first test
+    (ticked) 2026-10-04T17:20:43Z by d778be9d: commit:f473fdd6d the named hook-side fixes were in the tree; block_long_sleep's octal note and dead KNOWN_DIVERGENCES are gone; regolden 0 changed; 575 tests pass
 - [ ] A5 Phase A acceptance: full .claude hook suite, DEFECT control over all guards, language-policy, hook-integrity, docs-gen and dead-python gates, the live chain on real commands, wall time measured before and after
 - [ ] B0 Inventory every tracked .sh into agent/plans/PLAN-retire-bash-oracles.inventory.tsv; close the 15 unclassified C/D files, re-check group D DELETE verdicts against naming tests, re-judge the media/breakpoint/tutorials tree exemptions file by file
 - [ ] B1 Cut over the CUTOVER-READY live twins (assert-job-succeeded, detect-pointer-bump, initialize, then lib/common.sh and its 181+ source sites); retire run-legacy.sh as its verb table empties
 - [ ] B2 Port groups C and D-port in dependency order under rule T, each with a differential for right behaviour and intentional deltas for wrong behaviour, wired in the same change
 - [ ] B3 Golden-then-delete every twinned bash file (groups A and B after cutover), draining its bashFiles line, with the same regolden verb as A2
-- [ ] B4 Rule-T fixes in the .ci ports: the 24 plan-named reproduced behaviours, the sweep's 8-13 bugs, and the promote retry gap #4175e786
+- [x] B4 Rule-T fixes in the .ci ports: the 24 plan-named reproduced behaviours, the sweep's 8-13 bugs, and the promote retry gap #4175e786
+    (ticked) 2026-10-04T17:20:45Z by d778be9d: commit:d2c44c127 landed in e07adce45 and d2c44c127; the full .ci suite re-covers those tests
 - [ ] B5 Port the out-of-policy scripts (drills, ops, worktree, eslint-heap, json generator, backup-storage); prove the drills with a live run on the ops VMs
 - [ ] G1 Empty and delete .ci/config/language-policy-baseline.json (closes PLAN-tooling-transformation W1P6, ed0c365d); every remaining allowlist entry carries a BLOCKER reason
 - [ ] G2 Fix check:ci-bash-lib-ported (add log.py to its module list, recognise class methods), port its 8 real gaps, retire it with the last library
