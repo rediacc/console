@@ -1447,12 +1447,8 @@ def classify_items(fold, session_id, live_worker_ids=None, order_key=None, in_sc
             elif ls == "expired" and rec.get("worker") and rec["worker"] in (live_worker_ids or ()):
                 rec["lease_tolerated"] = True
                 in_flight.append(rec)
-            elif (
-                ls == "expired"
-                and rec.get("worker") == LH.QUEUE_WORKER
-                and LH.waiting_on(rec, by_id)
-            ):
-                # A QUEUED ITEM WAITING ON ANOTHER is `waiting`, not open (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.5). Its queue lease expired while the item it declared BLOCKED_BY is still open, so there is nothing to start and nothing to renew; failing closed here cost a turn on 2026-09-24 (#bea10927, waiting on A3). Only the explicit token counts (Decision 4), and the blocker chain's root still blocks as an ordinary item.
+            elif ls == "expired" and LH.waiting_on(rec, by_id):
+                # AN EXPIRED LEASE WAITING ON ANOTHER ITEM is `waiting`, not open, whatever its worker (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.5, widened 2026-10-04). It once applied to `worker:queue` alone, while N_LEASE_FAILED_CLOSED named `BLOCKED_BY:#<blocker>` as the remedy for EVERY expired lease: on 2026-10-04 #6512e909 (a PR review that follows CI) took the named remedy and the next stop refused it word for word. The blocker is still open and still holds the turn, so nothing is hidden. Its lease expired while the item it declared BLOCKED_BY is still open, so there is nothing to start and nothing to renew; failing closed here cost a turn on 2026-09-24 (#bea10927, waiting on A3). Only the explicit token counts (Decision 4), and the blocker chain's root still blocks as an ordinary item.
                 rec["waiting_on"] = LH.waiting_on(rec, by_id)
             else:
                 # Fail closed: an expired or malformed lease is an open item. The line names BLOCKED_BY as the remedy for an item that is really waiting on another.
