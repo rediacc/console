@@ -60,7 +60,7 @@ Order:
     - (a) Yes. A sub-agent's long `timeout 1 sleep` call was refused by `block_long_sleep`, so pre-bash guards fire for sub-agent Bash calls. The payload carries `agent_id` and `agent_type` only for sub-agents (`.claude/hooks/trapguard/dispatch.py:10`). Section 3.2's arm is built: `block_commit_on_main` refuses a sub-agent's `git commit` on any branch, except `pr-babysitter`, which carries the lead's commit loop under `/pr-babysit bg`.
     - (b) No. On git 2.53, `git branch -m` reaches `reference-transaction` as an aborted empty transaction plus a delete of the old ref. The new name never appears as a creation (`.claude/rediacc_hooks/git/githooks.py:13`). `checkout -b` does show a creation with a zero old oid.
     - (c) No. With the proxy on a dead port, `gh pr list --head 1004-1 --state merged` printed `proxyconnect tcp: ... connection refused` (rc 1). Online it returned PR 594 MERGED. `commit_policy._gh_lines` raises GhUnavailableError, and `block_second_branch` refuses, failing closed.
-    (ticked) 2026-10-04T15:44:14Z by d778be9d: commit:f18b49010 T0 answers (a) yes (b) no (c) no recorded at agent/plans/PLAN-commit-as-you-go.md:59; block_commit_on_main sub-agent arm built and tested
+    (ticked) 2026-10-04T15:44:14Z by d778be9d: commit:a72c6991c T0 answers (a) yes (b) no (c) no recorded at agent/plans/PLAN-commit-as-you-go.md:59; block_commit_on_main sub-agent arm built and tested
 - [x] T1 [A] Build `.claude/rediacc_hooks/commit_policy.py` (section 5.1) and `.ci/config/commit-policy.json` (section 5.2). Freeze the API.
     (ticked) 2026-10-03T09:57:11Z by d778be9d: c18ca3eca: commit_policy.py + .ci/config/commit-policy.json
 - [x] T2 [A] Build `block_second_branch.py` (pre-bash, ORDER 46) and move F1's parser into `commit_policy.branch_creations()`. Re-point `block_nonstandard_branch_name.py` at the parser, regenerate its golden with the intentional delta recorded, and add the F1 case.
@@ -84,7 +84,7 @@ Order:
 - [x] T8 [A] Optional, depending on decision 2: git-level hooks (section 5.3) and `block_git_hook_bypass.py` (ORDER 49) for F3.
     (ticked) 2026-10-03T09:57:42Z by d778be9d: c18ca3eca: .claude/rediacc_hooks/git/ hooks, .ci/rediacc_ci/setup/githooks.py, guards/block_git_hook_bypass.py ORDER 49
 - [x] T9 [lead] Update the docs (section 7), including F4. `block_second_open_pr.py` gets a new message and a regenerated golden.
-    (ticked) 2026-10-04T16:08:22Z by d778be9d: commit:6a1d15f76 block_second_open_pr says there is no agent path to a second PR; golden re-recorded; the old wording reds both new cases
+    (ticked) 2026-10-04T16:08:22Z by d778be9d: commit:6c426ac4b block_second_open_pr says there is no agent path to a second PR; golden re-recorded; the old wording reds both new cases
 - [x] T10 [A, B] Tests (section 6). Each writer owns the tests for its own files. Every guard gets a fire case, an inverse case and a DEFECT control.
     (ticked) 2026-10-03T09:57:44Z by d778be9d: c18ca3eca: five test-block_* suites with fire/inverse/DEFECT controls
 - [x] T11 [lead] Add every new guard to `scripts/data/hook-inventory-baseline.json`, then run `check-hook-integrity`, `test_dispatch.py` (ORDER contiguity) and `test_guards_differential.py`.
