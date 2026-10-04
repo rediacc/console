@@ -3,7 +3,7 @@
 WHY THIS IS A HOOK AND NOT A LINE IN CLAUDE.md. The operator's ruling, and the incident behind it: a single session opened FOUR stacked PRs over one night, each one individually reasonable (new work arrived, it needed a base, the previous PR was not merged yet), and the result was four unmerged PRs waiting on one person. Nothing in CLAUDE.md or the pr-babysit command stopped it,
 because instructions only bind a session that reads them, remembers them, and applies them at the one second that matters. PreToolUse is the only surface that can DENY the command before it runs, which is the difference between a preference and a control.
 
-WHAT TO DO INSTEAD, and the message says so, because a block without a next step just gets worked around: push the new work onto the EXISTING PR's branch. That is almost always what was wanted anyway. A second PR is the right answer only when the work is genuinely independent and the operator has said so.
+WHAT TO DO INSTEAD, and the message says so, because a block without a next step just gets worked around: push the new work onto the EXISTING PR's branch. That is almost always what was wanted anyway. There is no agent path to a second PR: a second open PR is the operator's own `!` command (CLAUDE.md Session Defaults rule 1), so the message names no one to ask.
 
 FAILS CLOSED. If the open-PR list cannot be read, this refuses rather than waving the create through: `gh` being unreachable is not evidence that no PR exists, and creating a duplicate is the expensive direction of the error.
 
@@ -50,7 +50,8 @@ UNVERIFIABLE = (
     "   gh said: %s\n"
     "\n"
     "   An unreadable list is not evidence that the list is empty. Fix the gh\n"
-    "   problem and retry, or ask the operator to create the PR.\n"
+    "   problem and retry. There is no agent path around this check: a PR this\n"
+    "   guard cannot verify is the operator's own `!` command.\n"
 )
 
 ALREADY_OPEN = (
@@ -67,8 +68,9 @@ ALREADY_OPEN = (
     "   refresh its body. That is almost certainly what you wanted, and it keeps the\n"
     "   whole change reviewable as one thing.\n"
     "\n"
-    "   A genuinely independent second PR is the operator's call, not yours. Ask,\n"
-    "   and say why the work cannot ride the open one.\n"
+    "   There is no agent path to a second PR, and nothing to ask for: a second\n"
+    "   open PR is the operator's own `!` command (CLAUDE.md Session Defaults\n"
+    "   rule 1, one branch and one PR).\n"
 )
 
 EDGE_CASES = [

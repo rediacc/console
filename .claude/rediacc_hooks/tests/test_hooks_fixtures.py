@@ -733,6 +733,23 @@ def test_block_second_open_pr(tmp_path):
         "one-pr: an unreadable PR list blocks rather than assuming none",
         "cannot verify",
     )
+    # NO AGENT PATH TO A SECOND PR (CLAUDE.md rule 1): neither refusal may invite an ask. Both name the operator's own `!` command instead, which is the only way a second or unverifiable PR is created.
+    gh_case(
+        2,
+        one_open,
+        0,
+        "gh pr create --draft -t x -b y",
+        "one-pr: the second-PR refusal names the operator's own ! command, not an ask",
+        "no agent path to a second PR, and nothing to ask for",
+    )
+    gh_case(
+        2,
+        "gh: could not connect",
+        1,
+        "gh pr create --draft -t x -b y",
+        "one-pr: the unverifiable refusal names the operator's own ! command, not an ask",
+        "is the operator's own `!` command",
+    )
     # DIRECT CASES FOR THE SAME TWO DIRECTIONS, and they are not duplication of the five above. `hook_integrity.covmap` credits a helper-wrapped case by reading which single guard the helper's body names -- and since the W5 P7 cutover this guard is a Python module reached through the dispatcher, so no helper body names it that way and every one of those five became invisible to the
     # coverage assertion. The
     # guard then read block=0,allow=0: a fully covered guard reported as newly
