@@ -7,7 +7,7 @@ THE TIMER IS ONE MORE BACKGROUND TASK, one that is guaranteed to exit. Run in th
 
 ONE PER SESSION, enforced at the OS level and not by convention. The lock is `<tmp>/claude-worklist/wake/<me>.json`, created with O_CREAT|O_EXCL and holding the timer's pid. A second start while a live timer holds it prints ALREADY ARMED and exits at once, so the OS never carries two sleeping timers for one session. A lock whose pid is gone, or is not a wl_wake process, is stale and replaced.
 
-  python3 .claude/hooks/stop/wl_wake.py <me> [--minutes N]     (always with run_in_background)
+  python3 .claude/hooks/stop/wl_wake.py <me> [--minutes N]     (always with run_in_background, and a timeout of harness_timeout_ms(N))
 
 No environment reads: the session prefix is an argument, like every worklist verb, and the temp root comes from `tempfile`.
 """
@@ -28,6 +28,9 @@ import time
 WAKE_DEFAULT_MIN = 30
 # Inside the harness's own background-task ceiling (2 hours), so the harness never kills a timer before it fires.
 WAKE_MAX_MIN = 110
+# The harness kills a background task at its `timeout`, 30 minutes when the call passes none, which is exactly WAKE_DEFAULT_MIN: a timer armed without a timeout was killed before it fired (2026-10-04, task bsbrweq7v). So every arm passes a timeout this far above the sleep.
+TIMEOUT_MARGIN_MIN = 10
+HARNESS_MAX_MS = 7200000
 # A background task whose command runs this file is the session's timer, whatever arguments it carries.
 WAKER_RE = re.compile(r"\bwl_wake\.py\b")
 SESSION_RE = re.compile(r"^[0-9a-f]{8}$")
@@ -107,6 +110,11 @@ def split_wakers(live_bg):
 
 def arm_command(me: str, minutes: int = WAKE_DEFAULT_MIN) -> str:
     return "python3 .claude/hooks/stop/wl_wake.py %s --minutes %d" % (me, minutes)
+
+
+def harness_timeout_ms(minutes: int = WAKE_DEFAULT_MIN) -> int:
+    """The Bash `timeout` an arm must pass, so the harness lets the timer fire instead of killing it."""
+    return min((minutes + TIMEOUT_MARGIN_MIN) * 60000, HARNESS_MAX_MS)
 
 
 def _hhmm(epoch: float) -> str:
