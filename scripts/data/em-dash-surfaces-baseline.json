@@ -58,8 +58,6 @@
   ".ci/scripts/housekeeping/cleanup-versions.sh:9bd6de925750",
   ".ci/scripts/housekeeping/cleanup-versions.sh:cf266baed91e",
   ".ci/scripts/housekeeping/cleanup-versions.sh:e4e0aacd75ed",
-  ".ci/scripts/infra/build-renet.sh:5be5714f378c",
-  ".ci/scripts/infra/build-renet.sh:7cf85c9bf56c",
   ".ci/scripts/infra/ci-env.sh:09ff06ae7ca5",
   ".ci/scripts/infra/ci-env.sh:505a330d25ef",
   ".ci/scripts/lib/emit-advisory.sh:2395cedb30fb",

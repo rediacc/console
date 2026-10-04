@@ -130,6 +130,10 @@
     ".ci/rediacc_ci/ci/list_e2e_probe_files.py": [
       "GITHUB_OUTPUT"
     ],
+    ".ci/rediacc_ci/ci/profiler_control.py": [
+      "GITHUB_WORKSPACE",
+      "PROFILER_CONTROL_DIR"
+    ],
     ".ci/rediacc_ci/ci/profiler_panel.py": [
       "*name"
     ],
@@ -2023,6 +2027,9 @@
       "WORKLIST_LIVE_MIN",
       "WORKLIST_MIGRATE_PLAN_MIN_OPEN",
       "WORKLIST_STORE_DIR"
+    ],
+    ".claude/hooks/stop/wl_trapfires.py": [
+      "TRAPGUARD_DIR"
     ],
     ".claude/hooks/stop/worklist.py": [
       "CLAUDE_PROJECT_DIR",
