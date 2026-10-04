@@ -32,9 +32,14 @@
     {
       "gate": "check:ci-plan-implementation",
       "findings": [
-        "P-A1:cda8b9f190dd"
+        "P-A1:e2588e9ce034"
       ],
-      "reason": "1004-2 has no PR yet. Turbo ran with the operator's go and then was switched off with four plans part-done: clean-review-ledger T17/T18, commit-as-you-go T6 and the drain, config-team-scoping T10 (live eu smoke needs a browser), and plan-per-pr-loop R1 (waits on a scheduled run). The PR body carries an Operational-Reason naming them, which admits P-A1 in CI; this entry carries the same finding for the push."
+      "reason": "Turbo ran with the operator's go and was then switched off with five plans part-done: clean-review-ledger T17/T18, commit-as-you-go T6 keep-list and the drain, config-team-scoping T10 (live eu smoke needs a browser), plan-per-pr-loop R1 (waits on a scheduled run) and retire-bash-oracles (its M-live release ports wait for the operator's real runs). The PR body's Operational-Reason names them, which admits P-A1 in CI."
+    },
+    {
+      "gate": "check:ci-pytest",
+      "findings": "*",
+      "reason": "On this WSL host check:ci-pytest reports 21294 passed and 4 skipped: test_quality_python_lint's two EXE001/EXE002 cases (WSL disables those ruff rules natively) and test_core_account's two teardown cases, which refuse because a real account-config-rustfs dev container is running here. CI runs on Linux with no such container and passes all four. The gate emits no finding keys, so it is carried whole for this push only."
     }
   ]
 }
