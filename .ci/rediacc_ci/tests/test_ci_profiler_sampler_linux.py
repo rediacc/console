@@ -37,20 +37,17 @@ from __future__ import annotations
 
 import hashlib
 import os
+import pathlib
 import shutil
 import signal
 import subprocess
 import time
-import typing
 
 import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.ci import profiler_sampler_linux as port
 from rediacc_ci.tests import differential as diff
-
-if typing.TYPE_CHECKING:  # pragma: no cover - annotations only
-    import pathlib
 
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/ci/profiler/sampler-linux.sh"
@@ -296,11 +293,45 @@ SAMPLE_LIVE = {1, 4, 5, 6, 7}
 PROC_HOST_LIVE = SAMPLE_LIVE | {2, 3}
 
 
-def assert_meta_same(a: pathlib.Path, b: pathlib.Path) -> None:
+def host_cores() -> int:
+    """This host's core count, read independently of the port (`nproc` honours the affinity mask, so does this)."""
+    return max(1, len(os.sched_getaffinity(0)))
+
+
+def host_mem_total_bytes() -> int:
+    """`MemTotal` of THIS host, in bytes, parsed here rather than through the port."""
+    for line in pathlib.Path("/proc/meminfo").read_text(encoding="utf-8").split("\n"):
+        if line.startswith("MemTotal:"):
+            return int(line.split()[1]) * 1024
+    raise AssertionError("/proc/meminfo has no MemTotal")
+
+
+# #META fields that are HOST readings on the host tier: 2 is cpu_ceil_milli (cores x 1000), 3 is mem_ceil_bytes (MemTotal). The frozen golden recorded the twin's values on a 24-core developer machine, so a field in this set is checked on the PORT against THIS host and is never compared to the golden.
+META_HOST_CPU = 2
+META_HOST_MEM = 3
+
+
+def assert_meta_same(a: pathlib.Path, b: pathlib.Path, host: frozenset[int] = frozenset()) -> None:
     ma, mb = _meta(a), _meta(b)
     assert len(ma) == len(mb) == 11, "the #META record changed width: %s / %s" % (ma, mb)
+    expected_host = {
+        META_HOST_CPU: str(host_cores() * 1000),
+        META_HOST_MEM: str(host_mem_total_bytes()),
+    }
     for i, (x, y) in enumerate(zip(ma, mb, strict=True)):
         if i in META_LIVE:
+            continue
+        if i in host:
+            # Anti-vacuity: the twin's recorded value must still be a number, then the port must match this host.
+            assert x.isdigit(), "#META field %d: the twin's host reading %r is not a number" % (
+                i,
+                x,
+            )
+            assert y == expected_host[i], "#META field %d: port %r, this host reports %r" % (
+                i,
+                y,
+                expected_host[i],
+            )
             continue
         assert x == y, "#META field %d: twin %r, port %r" % (i, x, y)
 
@@ -319,6 +350,36 @@ def assert_rows_same(a: pathlib.Path, b: pathlib.Path, live: set[int] = SAMPLE_L
             if i in live:
                 continue
             assert x[i] == y[i], "row %d field %d: twin %r, port %r" % (n, i, x[i], y[i])
+
+
+def test_a_wrong_host_reading_still_fails_the_meta_comparison(tmp_path: pathlib.Path) -> None:
+    """Control: the host-tier #META check is not vacuous. A port value off by one core, or by a byte, is refused."""
+    cg = tmp_path / "cg-none"
+    cg.mkdir()
+    # The port alone: a golden-free case, so no twin answer is needed.
+    b = tmp_path / "port.tsv"
+    env = {
+        "PROFILER_CGROUP_ROOT": str(cg),
+        "PROFILER_MAX_SECONDS": "0",
+        "PROFILER_RUNNER_LABEL": "x",
+    }
+    assert run("new", ["--out", str(b), "--interval", "1"], env=env, timeout=45)[0] == 0
+    a = tmp_path / "ref.tsv"
+    ref = _meta(b)
+    ref[META_HOST_CPU], ref[META_HOST_MEM] = "24000", "61081255936"  # a 24-core recording
+    a.write_text("\t".join(ref) + "\n", encoding="utf-8")
+    both = frozenset({META_HOST_CPU, META_HOST_MEM})
+    assert_meta_same(a, b, host=both)
+    for field, wrong in (
+        (META_HOST_CPU, str(host_cores() * 1000 + 1000)),
+        (META_HOST_MEM, str(host_mem_total_bytes() + 1)),
+    ):
+        meta = _meta(b)
+        meta[field] = wrong
+        bad = tmp_path / ("bad-%d.tsv" % field)
+        bad.write_text("\t".join(meta) + "\n", encoding="utf-8")
+        with pytest.raises(AssertionError, match="this host reports"):
+            assert_meta_same(a, bad, host=both)
 
 
 def test_cgroup_v2_tier(tmp_path: pathlib.Path) -> None:
@@ -350,7 +411,7 @@ def test_proc_host_tier_when_the_cgroup_is_empty(tmp_path: pathlib.Path) -> None
     assert _meta(a)[1] == "PROC_HOST"
     assert _meta(a)[7] == "PROC_HOST", "cpu_src"
     assert _meta(a)[8] == "PROC_HOST", "mem_src"
-    assert_meta_same(a, b)
+    assert_meta_same(a, b, host=frozenset({META_HOST_CPU, META_HOST_MEM}))
     assert_rows_same(a, b, live=PROC_HOST_LIVE)
 
 
@@ -365,7 +426,7 @@ def test_cpu_max_without_a_quota_is_a_host_reading(tmp_path: pathlib.Path) -> No
     (cg / "cpu.stat").write_text("usage_usec 5\n", encoding="utf-8")
     _old, _new, a, b = _sample_both(tmp_path, cg)
     assert _meta(a)[7] == "PROC_HOST"
-    assert_meta_same(a, b)
+    assert_meta_same(a, b, host=frozenset({META_HOST_CPU, META_HOST_MEM}))
     assert_rows_same(a, b, live=PROC_HOST_LIVE)
 
 
@@ -379,7 +440,7 @@ def test_an_unterminated_cgroup_file_defeats_the_whole_branch(tmp_path: pathlib.
     (cg / "cpu.max").write_text("100000 100000", encoding="utf-8")  # no newline
     _old, _new, a, b = _sample_both(tmp_path, cg)
     assert _meta(a)[7] == "PROC_HOST", "the twin honoured an unterminated cpu.max"
-    assert_meta_same(a, b)
+    assert_meta_same(a, b, host=frozenset({META_HOST_CPU, META_HOST_MEM}))
     assert_rows_same(a, b, live=PROC_HOST_LIVE)
 
 
@@ -448,7 +509,7 @@ def test_the_missing_memory_current_diagnostic_is_the_twins_alone(
     )
     assert "memory.current" not in new[2], "the port started forging a bash diagnostic"
     assert old[0] == new[0] == 0
-    assert_meta_same(a, b)
+    assert_meta_same(a, b, host=frozenset({META_HOST_CPU}))
     assert_rows_same(a, b, live=PROC_HOST_LIVE)
 
 
@@ -652,12 +713,25 @@ PROBE_VOLATILE = (
 )
 
 
+# Probe lines that print THIS host's readings, whatever the tier: the twin's side is a frozen golden from a 24-core machine, so the text is folded on both sides and the PORT's value is checked against this host by `_assert_probe_host_readings`.
+PROBE_HOST = ("**nproc:**", "**/proc/meminfo MemTotal:**")
+
+
 def _probe_stable(text: str) -> str:
     out = []
     for line in text.split("\n"):
-        head = next((p for p in PROBE_VOLATILE if line.startswith(p)), None)
+        head = next((p for p in (*PROBE_VOLATILE, *PROBE_HOST) if line.startswith(p)), None)
         out.append(head or line)
     return "\n".join(out)
+
+
+def _assert_probe_host_readings(text: str, *, cores: int | None = None) -> None:
+    """The probe's `nproc` and `MemTotal` lines must report what this host reports."""
+    want_cores = host_cores() if cores is None else cores
+    lines = text.split("\n")
+    assert "**nproc:** %d" % want_cores in lines, "probe nproc is not this host's %d" % want_cores
+    mem = next((x for x in lines if x.startswith("**/proc/meminfo MemTotal:**")), "")
+    assert mem.split()[2:4] == ["MemTotal:", str(host_mem_total_bytes() // 1024)], mem
 
 
 def test_probe_agrees_on_everything_that_is_not_a_live_reading(
@@ -674,6 +748,10 @@ def test_probe_agrees_on_everything_that_is_not_a_live_reading(
     for marker in PROBE_VOLATILE:
         assert marker in old[1], "the twin no longer prints %s" % marker
     assert stable_old.count("\n") > 20, "the probe collapsed to a handful of lines"
+    _assert_probe_host_readings(new[1])
+    # Control: a wrong host value must fail the check.
+    with pytest.raises(AssertionError):
+        _assert_probe_host_readings(new[1], cores=host_cores() + 1)
 
 
 def test_probe_reports_the_host_leak_without_failing(tmp_path: pathlib.Path) -> None:
@@ -684,6 +762,7 @@ def test_probe_reports_the_host_leak_without_failing(tmp_path: pathlib.Path) -> 
     assert old[0] == new[0] == 0
     assert "**Host leak check:** WOULD FAIL - HOST_LEAK" in old[1]
     assert _probe_stable(old[1]) == _probe_stable(new[1])
+    _assert_probe_host_readings(new[1])
 
 
 def test_probe_tees_into_the_step_summary(tmp_path: pathlib.Path) -> None:
@@ -707,6 +786,9 @@ def test_probe_tees_into_the_step_summary(tmp_path: pathlib.Path) -> None:
         body = summary.read_text(encoding="utf-8")
         assert body.startswith("PRE-EXISTING\n"), "%s truncated the summary" % side
         results[side] = (_probe_stable(out), _probe_stable(body))
+        if side == "new":
+            _assert_probe_host_readings(out)
+            _assert_probe_host_readings(body)
     assert results["old"] == results["new"]
 
 
