@@ -124,7 +124,7 @@ def plan_held(text):
     """True when the plan's header `Status:` (first 12 lines) is one P-A1 keeps off the clock."""
     head = "\n".join((text or "").splitlines()[:12])
     found = _STATUS_RE.search(head)
-    return bool(found) and found.group(1).lower() in OFF_THE_CLOCK
+    return found is not None and found.group(1).lower() in OFF_THE_CLOCK
 
 
 def plan_rows(root, scope, reader=None):
