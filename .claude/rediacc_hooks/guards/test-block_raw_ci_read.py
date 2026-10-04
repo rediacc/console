@@ -50,6 +50,13 @@ CASES = [
         T + " --runs",
     ),
     ("run list -w ci.yml", G + " run list -w ci.yml", T + " --runs"),
+    # 2026-10-04: scheduled runs point at `--scheduled`, the verb that lists them (before, the refusal named `--runs`, which cannot show a nightly or housekeeping run).
+    ("run list --event schedule", G + " run list --event schedule --branch main", T + " --scheduled"),
+    (
+        "run list --event=schedule of housekeeping",
+        G + " run list --workflow housekeeping.yml --event=schedule",
+        T + " --scheduled",
+    ),
     ("run view --job --log", G + " run view --job 104569 --log", T + " --job 104569 --errors"),
     (
         "run view --log-failed",
