@@ -28,5 +28,13 @@
     "so carrying cannot become a second way to launder a partial lane."
   ],
   "version": 2,
-  "carried": []
+  "carried": [
+    {
+      "gate": "check:ci-plan-implementation",
+      "findings": [
+        "P-A1:016088fdccc0"
+      ],
+      "reason": "1004-2 has no PR yet, so locally the P-A1 clock falls back to the queue head, PLAN-gate-drop-receipt-verify (8 open), which turbo is about to start on this PR. In CI the clock reads the PR body's Plan: line (PLAN-stop-hook-turbo, every box ticked) and passes. This entry is removed on the next push, when it goes stale."
+    }
+  ]
 }
