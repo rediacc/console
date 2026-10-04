@@ -530,7 +530,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-plan-dependencies.md` | held | 376 | 9 | 3 | 34295 |
 | `agent/plans/PLAN-plan-per-pr-loop.md` | approved | 69 | 3 | 13 | 13930 |
 | `agent/plans/PLAN-plan-preflight.md` | approved | 127 | 9 | 0 | 23411 |
-| `agent/plans/PLAN-plan-priority-concurrency.md` | held | 472 | 0 | 12 | 40865 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
 | `agent/plans/PLAN-program-state-in-repo.md` | approved | 47 | 0 | 5 | 6984 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
@@ -550,7 +549,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-retire-bash-oracles.md` | held | 307 | 11 | 4 | 33375 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
-| `agent/plans/PLAN-scheduled-red-detector.md` | approved | 191 | 0 | 15 | 14564 |
 | `agent/plans/PLAN-scope-gate-sort-collation.md` | compacted | 38 | 0 | 0 | 2784 |
 | `agent/plans/PLAN-scope-gates-split.md` | compacted | 38 | 0 | 0 | 2608 |
 | `agent/plans/PLAN-secret-namespace-migration.md` | held | 1713 | 5 | 29 | 187641 |
@@ -633,6 +631,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-plan-file-lifecycle.md` | done | 360 | 1 | 12 | 33486 |
 | `agent/plans/_done/PLAN-plan-implementation-enforcement.md` | done | 565 | 0 | 16 | 65409 |
 | `agent/plans/_done/PLAN-plan-path-migration.md` | done | 152 | 0 | 9 | 22702 |
+| `agent/plans/_done/PLAN-plan-priority-concurrency.md` | done | 472 | 0 | 12 | 40745 |
 | `agent/plans/_done/PLAN-plyr-css-on-demand-loading.md` | done | 143 | 0 | 11 | 17544 |
 | `agent/plans/_done/PLAN-popup-reminder.md` | done | 30 | 0 | 2 | 2952 |
 | `agent/plans/_done/PLAN-prose-style-under-wrap.md` | done | 249 | 0 | 13 | 24886 |
@@ -640,6 +639,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-renet-ceph-gpu-non-apt.md` | closed | 252 | 1 | 7 | 30113 |
 | `agent/plans/_done/PLAN-renet-obs-mirror.md` | closed | 104 | 3 | 2 | 14962 |
 | `agent/plans/_done/PLAN-rotation-gh-removal.md` | done | 68 | 0 | 0 | 6832 |
+| `agent/plans/_done/PLAN-scheduled-red-detector.md` | done | 191 | 0 | 15 | 14544 |
 | `agent/plans/_done/PLAN-session-onboarding-marker.md` | done | 204 | 0 | 10 | 20644 |
 | `agent/plans/_done/PLAN-stop-hook-behavioral-hints.md` | done | 321 | 0 | 20 | 41672 |
 | `agent/plans/_done/PLAN-stop-hook-cap-saturated-wait.md` | done | 229 | 0 | 1 | 22823 |
