@@ -44,7 +44,7 @@ def run(ev):
     base = ev.field("cwd") or root
     cfg = commit_policy.load_config(root)
     for commit in commits:
-        repo = commit_policy.run_repo(commit, base)
+        repo = commit_policy.run_repo(commit, base, commit_policy.created_dirs(cmd, base))
         # A directory that resolves to no repository is one git itself will refuse; one outside this checkout is not this policy's business.
         if not repo or not commit_policy.is_inside(repo, root):
             continue

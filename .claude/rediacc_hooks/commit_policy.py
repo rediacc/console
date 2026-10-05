@@ -338,9 +338,37 @@ def push_texts(cmd: str) -> str:
     return "\n".join(lines)
 
 
-def run_repo(run, base: str) -> str:
-    """The toplevel of the repository a walked command acts on, "" when it resolves to none."""
-    return toplevel(run_dir(run, base))
+def effective_dir(run, base: str, created=frozenset()) -> str:
+    """The directory git really runs in for a walked command.
+
+    A `cd` bash cannot perform (its directory neither exists nor is created by the same command, `created` from `created_dirs`) leaves the shell in `base`, so the command's own `-C` flags are applied to `base` instead: after `cd /nonexistent; git commit` git commits in `base` (#5810a9f3 class sweep). A `-C` into a missing directory is different: git refuses to run at all, so that path is returned as is and resolves to no repository.
+    """
+    rel = run.cwd
+    cd_dir = (
+        base
+        if rel in (None, "", ".")
+        else os.path.normpath(rel if rel.startswith("/") else os.path.join(base, rel))
+    )
+    made = any(cd_dir == c or cd_dir.startswith(c.rstrip("/") + "/") for c in created)
+    if os.path.isdir(cd_dir) or made:
+        return run_dir(run, base)
+    if run.git_sub is None:
+        return base
+    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+
+    return os.path.normpath(shellscan._git_invocation(run.argv, base)[1])
+
+
+def run_repo(run, base: str, created=frozenset()) -> str:
+    """The toplevel of the repository a walked command acts on, "" when it resolves to none (see `effective_dir` for a failed `cd`)."""
+    return toplevel(effective_dir(run, base, created))
+
+
+def created_dirs(cmd: str, base: str) -> frozenset:
+    """The directories `cmd` creates before using them (shellscan._created_dirs), for `run_repo` and `scoped_repo`."""
+    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+
+    return frozenset(shellscan._created_dirs(runs(cmd), base))
 
 
 def scoped_repo(run, base: str, root: str, created=frozenset()) -> str:

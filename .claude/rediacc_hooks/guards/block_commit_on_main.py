@@ -130,7 +130,7 @@ def run(ev):
     agent_type = ev.field("agent_type") or "unknown"
     for commit in commits:
         # A directory that resolves to no repository is one git itself will refuse; one outside this checkout is not this policy's business.
-        repo = commit_policy.run_repo(commit, base)
+        repo = commit_policy.run_repo(commit, base, commit_policy.created_dirs(cmd, base))
         if not repo or not commit_policy.is_inside(repo, root):
             continue
         if ev.field("agent_id"):
