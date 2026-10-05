@@ -768,3 +768,29 @@ def test_no_arm_writes_the_label_ledger(env):
     assert len(writes) >= 4
     assert not any("claude-labels" in arg for write in writes for arg in write)
     assert not any("/labels" in arg for write in writes for arg in write)
+
+
+def _claude_review_job_timeout() -> int | None:
+    """`timeout-minutes` of the `Claude Review` job in .github/workflows/claude-review.yml, read from the job block that names it."""
+    text = (common.repo_root() / ".github" / "workflows" / "claude-review.yml").read_text("utf-8")
+    in_job = False
+    for line in text.splitlines():
+        if (
+            line == "    name: Claude Review"
+        ):  # the JOB's name, four spaces in; the workflow's own top-level name is the same text
+            in_job = True
+            continue
+        if in_job and line.strip().startswith("timeout-minutes:"):
+            return int(line.split(":", 1)[1].strip())
+        if in_job and line.startswith("  ") and not line.startswith("    ") and line.strip():
+            break
+    return None
+
+
+def test_the_job_timeout_covers_the_turn_budget_it_grants():
+    """A 140-turn review ran out the job's fixed 30 minutes at 1,782 s (run 37348162326); the workflow carries the derived value."""
+    assert G.review_job_timeout_minutes() * 60 >= G.MAX_TURNS * G.SECONDS_PER_TURN_WORST
+    assert _claude_review_job_timeout() == G.review_job_timeout_minutes(), (
+        "claude-review.yml's Claude Review timeout-minutes must equal review_job_timeout_minutes() (%d)"
+        % G.review_job_timeout_minutes()
+    )

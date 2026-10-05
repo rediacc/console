@@ -71,6 +71,10 @@ TURNS_PER_KLOC = 25
 TURNS_PER_FILE = 2
 MAX_TURNS = 140
 MIN_TURNS = 50
+# THE JOB'S TIMEOUT MUST COVER THE TURN BUDGET IT GRANTS. Measured on PR #595 (2026-10-05), every review at the MAX_TURNS cap: 65 turns in 341 s, 72 in 677 s and 103 in 1,471 s (run 37256126193, 14.3 s a turn). At that pace 140 turns take about 2,000 s, and the job's fixed `timeout-minutes: 30` killed run 37348162326 after 1,782 s with no report, which spent a review attempt on the head. The workflow's value is `review_job_timeout_minutes()`, pinned by test_review_claude_review_gate.py, so raising MAX_TURNS without the timeout is red.
+SECONDS_PER_TURN_WORST = 15
+#: Checkout, secrets, the gate and the post steps before and after the review step (about 25 s measured), with room to spare.
+REVIEW_JOB_SETUP_MINUTES = 5
 
 # GitHub rejects a comment body over 65,536 characters. The middle is dropped rather than the tail, because the tail carries the findings fence `--post-findings` parses.
 REPORT_LIMIT = 60000
@@ -213,6 +217,11 @@ def marker_sha_from_bodies(text: str) -> str:
 
 def last_line(text: str) -> str:
     return text.rsplit("\n", 1)[-1] if text else ""
+
+
+def review_job_timeout_minutes() -> int:
+    """The Claude Review job's `timeout-minutes`: MAX_TURNS at the worst measured pace, plus the setup around the review step."""
+    return math.ceil(MAX_TURNS * SECONDS_PER_TURN_WORST / 60) + REVIEW_JOB_SETUP_MINUTES
 
 
 def turns_for(changed_lines: int, changed_files: int = 0) -> int:
