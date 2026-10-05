@@ -57,6 +57,11 @@ OUTSIDE = make_repo("0923-1")
 CASES = [
     # (name, command, expect_blocked) ---- fire ----------------------------------------------
     ("[skip ci]", 'git commit -m "chore: x [skip ci]" -- a', True),
+    (
+        "[skip ci] behind a failed cd",
+        'cd /nonexistent-zz9; git commit -m "chore: x [skip ci]" -- a',
+        True,
+    ),
     ("[ci skip]", 'git commit -m "chore: x [ci skip]" -- a', True),
     ("[no ci]", 'git commit -m "chore: x [no ci]" -- a', True),
     ("[skip actions]", 'git commit -m "chore: x [skip actions]" -- a', True),

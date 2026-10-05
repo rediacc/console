@@ -98,6 +98,13 @@ CASES = [
     ("a heredoc message on main", "git commit -F - -- a <<'EOF'\nfeat: x\nEOF", MAIN, True),
     ("an unreadable message on main", "cat m | git commit -F - -- a", MAIN, True),
     ("a wrapper on main", "sh -c 'git commit -m \"feat: x\" -- a'", MAIN, True),
+    # A `cd` bash cannot perform leaves git in this checkout, so the commit lands on main (#5810a9f3 class sweep: run_repo answered "" and the guard skipped it).
+    (
+        "a failed cd still commits on main",
+        'cd /nonexistent-zz9; git commit -m "feat: x" -- a.ts',
+        MAIN,
+        True,
+    ),
     # #64c3e990: only the heredoc feeding the commit's own stdin is its message.
     (
         "a hotfix-shaped python heredoc before a plain commit",
