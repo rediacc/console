@@ -1,4 +1,4 @@
-"""`.ci/lib/devbox.sh`, ported function for function: all fifty-four of them.
+"""`.ci/lib/devbox.sh`, ported function for function: all fifty-five of them.
 
 PORTED FROM `.ci/lib/devbox.sh` (1606 lines, 54 functions).
 The twin still exists, is untouched by this file, and is still sourced at `.ci/legacy/run-legacy.sh:456`, `.ci/rediacc_ci/setup/bridge.py:35` (inside the bridged `bash -c` prelude), `.ci/rediacc_ci/setup/shadow_driver.py:136`, `.ci/rediacc_ci/dev/shadow_driver.py:140` and `.ci/lib/account.sh:1090`. Those five are the real `source` sites; nothing is cut over here.
@@ -12,7 +12,7 @@ EVERY FUNCTION THE TWIN DEFINES HAS A COUNTERPART, in two shapes.
   THE THREE PURE ONES are module-level functions, exactly as the first slice (2026-09-23) shipped them: `slugify` (`devbox_slugify:186`), `slug_drift` (`devbox_slug_drift:242`) and `route_label` (`devbox_route_label:902`). Their whole answer is computation over their own arguments, and they stay importable without constructing anything.
 
   THE OTHER FIFTY-ONE are methods of `Devbox`, one per function, named by the function's name minus its `devbox_` / `_devbox_` prefix: `Devbox.worktree` is `devbox_worktree`, `Devbox.bind_if_present` is `_devbox_bind_if_present`, `Devbox.exec` is `devbox_exec`.
-  `Devbox` also carries the three pure functions as printing methods, so a caller (and the differential driver) can reach all fifty-four through one surface, `Devbox.invoke("<bash name>", argv)`, which binds positional arguments the way bash does.
+  `Devbox` also carries the three pure functions as printing methods, so a caller (and the differential driver) can reach all fifty-five through one surface, `Devbox.invoke("<bash name>", argv)`, which binds positional arguments the way bash does.
 
 EACH METHOD TAKES ITS ARGUMENTS AS BASH DOES, as strings in `*argv`, and RETURNS AN EXIT STATUS. What the function prints goes to the instance's `stdout` and `stderr` streams, never to a return value, because every caller of the twin reads a function's answer by capturing what it PRINTED (`d="$(devbox_docker)"`) and its verdict by its STATUS (`devbox_container_running || ...`).
 A port that returned values instead would have to restate, at every call site, which of the two channels the twin's caller really read.
@@ -173,6 +173,8 @@ SCRIPT_BINDS = (
     "devbox-bws.sh:/etc/profile.d/zz-devbox-bws.sh",
 )
 
+# `DEVBOX_CORE_LEASE_DEST`, `.ci/lib/devbox.sh` (commit 606f7daac): where the host's core lease pool is bound inside the container.
+DEVBOX_CORE_LEASE_DEST = "/run/rediacc-cores"
 # `devbox_home_binds`, `.ci/lib/devbox.sh:478-490`: host files bound by NAME into the container user's home, "<path relative to $HOME>:<mode>" (mode empty for read-write). Credentials and agent config are named rather than the whole $HOME: ~/.ssh and cloud credentials stay out of the container.
 # .config/rediacc/bws-access-token is the console's own bootstrap credential. Its directory is the rdc CLI's READ-WRITE state, so the FILE is bound read-only on top of that directory bind (listed after it): a CLI or E2E run in the container can neither delete nor rewrite it.
 HOME_BINDS = (
@@ -1447,6 +1449,27 @@ class Devbox:
         self.write("".join(pair + "\n" for pair in HOME_BINDS))
         return 0
 
+    @staticmethod
+    def make_lease_dir(path: str) -> bool:
+        """`mkdir -m 700 <path>`: exactly the one directory, mode 700 whatever the umask; False when it cannot be made."""
+        try:
+            os.mkdir(path, 0o700)
+            os.chmod(path, 0o700)
+        except OSError:
+            return False
+        return True
+
+    def core_lease_src(self, *_argv: str) -> int:
+        """`devbox_core_lease_src`, `.ci/lib/devbox.sh` (commit 606f7daac): the host directory of the machine-wide core lease pool, `/run/user/<uid>/rediacc-cores`.
+
+        Printed only when `/run/user/<uid>` is a directory this user owns (a systemd host); nothing otherwise. Status 0 on every path.
+        """
+        runtime = "/run/user/%d" % os.geteuid()
+        with contextlib.suppress(OSError):
+            if os.path.isdir(runtime) and os.stat(runtime).st_uid == os.geteuid():
+                self.write(runtime + "/rediacc-cores\n")
+        return 0
+
     def missing_binds(self, *_argv: str) -> int:
         """`devbox_missing_binds`, `.ci/lib/devbox.sh:492-513`: each bind destination the existing container does NOT have mounted.
 
@@ -1476,6 +1499,10 @@ class Devbox:
             dest = DEVBOX_CONTAINER_HOME + "/" + relative
             if dest not in present:
                 self.write(dest + "\n")
+        status, lease_src = self.sub(self.core_lease_src)
+        self.checked(status)
+        if lease_src and DEVBOX_CORE_LEASE_DEST not in present:
+            self.write(DEVBOX_CORE_LEASE_DEST + "\n")
         return 0
 
     def service_process_alive(self, *argv: str) -> int:
@@ -1849,6 +1876,13 @@ class Devbox:
             )
             binds += [line for line in lines.split("\n") if line]
 
+        lease_env: list[str] = []
+        status, lease_src = self.sub(self.core_lease_src)
+        self.checked(status)
+        if lease_src and (os.path.isdir(lease_src) or self.make_lease_dir(lease_src)):
+            binds += ["-v", "%s:%s" % (lease_src, DEVBOX_CORE_LEASE_DEST)]
+            lease_env = ["-e", "REDIACC_CORE_LEASE_DIR=%s" % DEVBOX_CORE_LEASE_DEST]
+
         status, slug = self.sub(self.slug)
         self.checked(status)
         status, conflicts = self.sub(self.slug_conflicts, slug)
@@ -1955,6 +1989,7 @@ class Devbox:
             "REDIACC_DEV_BIND=0.0.0.0",
             "-e",
             "REDIACC_DEV_PORT_BASE=%d" % ACCOUNT_DEV_PORT,
+            *lease_env,
             "-w",
             workspace,
             "--entrypoint",
@@ -2271,7 +2306,7 @@ class Devbox:
             self.log("info", "devbox is usable: mount, identity and writability all verified")
         return status
 
-    # ------------------------------------------------------------------ one entry point for all fifty-four
+    # ------------------------------------------------------------------ one entry point for all fifty-five
 
     def invoke(self, name: str, argv: list[str] | tuple[str, ...] = ()) -> int:
         """`( set -e; <name> "$@" )`: call a twin function by its BASH name, and return the subshell's status.
@@ -2302,7 +2337,7 @@ def _pad(text: str, width: int) -> bytes:
     return data + b" " * max(0, width - len(data))
 
 
-# The fifty-four, bash name -> `Devbox` attribute. `test_core_devbox.py` asserts this is exactly the set the twin defines.
+# The fifty-five, bash name -> `Devbox` attribute. `test_core_devbox.py` asserts this is exactly the set the twin defines.
 BASH_NAMES = {
     "devbox_worktree": "worktree",
     "devbox_mount_root": "mount_root",
@@ -2345,6 +2380,7 @@ BASH_NAMES = {
     "_devbox_bind_if_present": "bind_if_present",
     "devbox_script_binds": "script_binds",
     "devbox_home_binds": "home_binds",
+    "devbox_core_lease_src": "core_lease_src",
     "devbox_missing_binds": "missing_binds",
     "devbox_up": "up",
     "devbox_route_label": "route_label",

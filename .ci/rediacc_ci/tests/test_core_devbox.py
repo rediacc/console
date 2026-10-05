@@ -1,10 +1,10 @@
-"""`rediacc_ci.core.devbox` against the live `.ci/lib/devbox.sh`: all fifty-four functions.
+"""`rediacc_ci.core.devbox` against the live `.ci/lib/devbox.sh`: all fifty-five functions.
 
 THE TWIN IS STILL HERE AND IS STILL SOURCED. `.ci/rediacc_ci/setup/bridge.py:35`, `.ci/rediacc_ci/setup/shadow_driver.py:136`, `.ci/rediacc_ci/dev/shadow_driver.py:140` and `.ci/lib/account.sh:1090` still source it (the deleted `.ci/legacy/run-legacy.sh` was a fifth), nothing is cut over, and this file drives the bash for real on every run: `rediacc_ci.core.devbox_shadow_driver` sources `devbox.sh` through the same prelude `bridge.py` uses and calls the twin's own functions, then does the same work through the port, and the two transcripts are compared byte for byte.
 
 WHAT IS COVERED is decided by the driver's twenty-three scenarios and stated in its module docstring rather than restated here. Seven are the first slice's pure-function scenarios; sixteen are the STUB-FARM scenarios, in which `docker`, `sudo`, `curl`, `sleep`, `getent`, `stat` and `ss` are stubs that record every call and answer from a scripted table, so a side-effecting function is compared on the calls it MADE as well as on what it printed.
 
-THE ANTI-VACUITY CLAIMS, because a differential that compared two empty transcripts would pass forever: every scenario must clear a floor of observations; every one of the fifty-four functions must be the subject of at least one step; the stub farm must really shadow the host's `docker`; and `test_a_planted_defect_is_caught` plants real defects into the port IN PROCESS and requires the live bash transcript to disagree with each.
+THE ANTI-VACUITY CLAIMS, because a differential that compared two empty transcripts would pass forever: every scenario must clear a floor of observations; every one of the fifty-five functions must be the subject of at least one step; the stub farm must really shadow the host's `docker`; and `test_a_planted_defect_is_caught` plants real defects into the port IN PROCESS and requires the live bash transcript to disagree with each.
 THE TWIN'S OWN DEFECTS are pinned against the LIVE TWIN's transcript, not against the port: `SCENARIO_CLAIMS` asserts each one inside the scenario's own comparison, so a twin that is later fixed fails here loudly rather than silently diverging from a port that still reproduces it.
 
 NO XDIST GROUP. Each scenario's comparison and its claims are ONE test, and each side of a scenario is driven once per pytest RUN: `drive` keeps the transcript in the run's shared directory under a `flock`, so a worker that needs a side another worker already drove reads it instead of driving it again. The driver's fixed work directory is serialised by its own `flock`, which is a lock the scheduler does not need to know about.
@@ -491,7 +491,7 @@ def stub_functions() -> set[str]:
 
 
 def test_every_function_is_driven_by_some_scenario() -> None:
-    """Every one of the fifty-four is the subject of a step, so none of them is licensed by a ledger that never called it."""
+    """Every one of the fifty-five is the subject of a step, so none of them is licensed by a ledger that never called it."""
     driven = stub_functions() | {"devbox_slugify", "devbox_slug_drift", "devbox_route_label"}
     assert driven == set(devbox.BASH_NAMES), sorted(set(devbox.BASH_NAMES) ^ driven)
 
@@ -700,7 +700,7 @@ def test_the_twin_defines_these_fifty_four_and_nothing_else() -> None:
     """Measured rather than remembered: a function added to the twin later cannot slip past unported."""
     text = twin_text()
     defined = set(re.findall(r"^([a-z_]+)\(\) *\{", text, re.MULTILINE))
-    assert len(devbox.BASH_NAMES) == 54
+    assert len(devbox.BASH_NAMES) == 55
     assert defined == set(devbox.BASH_NAMES), sorted(defined ^ set(devbox.BASH_NAMES))
 
 
