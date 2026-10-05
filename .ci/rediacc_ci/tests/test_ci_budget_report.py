@@ -587,6 +587,7 @@ def test_refresh_lane_durations_merges_and_preserves_untouched_fields(tmp_path):
         jobs={"test-e2e-workers": 5.5},
         units={"e2e-workers:a.spec.ts": 2000.0},
         job_max_seconds={"Validate Promotion": {"observed_max_seconds": 300, "samples": 3}},
+        unit_parallelism={"quality-pytest": 8},
     )
     rc = br.refresh_lane_durations(path, limit=10, compute=compute)
     assert rc == 0
@@ -596,10 +597,60 @@ def test_refresh_lane_durations_merges_and_preserves_untouched_fields(tmp_path):
     assert data["jobs"] == {"quality-code": 3.0, "test-e2e-workers": 5.5}
     assert data["units"] == {"pytest:x.py": 111.0, "e2e-workers:a.spec.ts": 2000.0}
     assert data["defaultUnitMs"] == {"quality-pytest": 5000}
-    assert data["unitParallelism"] == {"quality-pytest": 4}
+    # DERIVED, not preserved: the computed 8 replaces the prior hand-written 4.
+    assert data["unitParallelism"] == {"quality-pytest": 8}
     assert data["rebalanceConstraints"] == {"ops-tutorials": {"onLeg": [{"unit": "u", "leg": 3}]}}
     assert data["refreshed_at"] != "2026-01-01T00:00:00Z"
     assert data["job_max_seconds"]["jobs"]["Validate Promotion"]["observed_max_seconds"] == 300
+
+
+def test_refresh_lane_durations_keeps_the_prior_parallelism_when_nothing_is_derived(tmp_path, capsys):
+    """CONTROL for the derivation: a refresh that derives nothing must not drop the key (check-lane-budget.ts would price quality-pytest as serial) and must say it kept it."""
+    path = tmp_path / "lane-durations.json"
+    path.write_text(
+        json.dumps({"concurrency": 20, "jobs": {}, "units": {}, "unitParallelism": {"quality-pytest": 4}})
+    )
+    compute = _fake_compute(jobs={"quality-code": 1.0})
+    assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
+    assert json.loads(path.read_text())["unitParallelism"] == {"quality-pytest": 4}
+    assert "unitParallelism[quality-pytest] not derivable" in capsys.readouterr().err
+
+
+def _write_pytest_lane_workflows(tmp_path, runs_on):
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "ci.yml").write_text(_FIXTURE_CI_YML, encoding="utf-8")
+    (workflows / "ci-quality.yml").write_text(
+        "jobs:\n  quality-pytest:\n    name: Pytest (${{ matrix.shard }}/3)\n    runs-on: %s\n"
+        % runs_on,
+        encoding="utf-8",
+    )
+    (workflows / "ct-tests.yml").write_text(_FIXTURE_CT_TESTS_YML, encoding="utf-8")
+    return tmp_path
+
+
+def test_derive_unit_parallelism_reads_the_lane_runner_label(tmp_path):
+    root = _write_pytest_lane_workflows(tmp_path, "ubuntu-24.04")
+    assert br.lane_runner_labels(root, "ci.yml")["quality-pytest"] == "ubuntu-24.04"
+    assert br.derive_unit_parallelism(root, "ci.yml") == {"quality-pytest": 4}
+    # The count follows the table, not a literal in the derivation: a label the table sizes at 8 yields 8.
+    original = dict(br.RUNNER_VCPUS)
+    br.RUNNER_VCPUS["ubuntu-24.04"] = 8
+    try:
+        assert br.derive_unit_parallelism(root, "ci.yml") == {"quality-pytest": 8}
+    finally:
+        br.RUNNER_VCPUS.clear()
+        br.RUNNER_VCPUS.update(original)
+
+
+def test_derive_unit_parallelism_omits_a_lane_whose_label_has_no_known_vcpu_count(tmp_path):
+    root = _write_pytest_lane_workflows(tmp_path, "self-hosted-mystery")
+    assert br.derive_unit_parallelism(root, "ci.yml") == {}
+
+
+def test_derive_unit_parallelism_matches_the_real_workflow():
+    """The committed ci-quality.yml's quality-pytest label is one the table can size."""
+    assert br.derive_unit_parallelism(paths.repo_root()).get("quality-pytest") == 4
 
 
 def test_refresh_lane_durations_dry_run_never_writes(tmp_path):

@@ -59,7 +59,9 @@
  *
  * PARALLEL LANES (`unitParallelism`). quality-pytest runs `pytest -n <cores> --dist loadgroup`
  * per leg, `-n` sized from the leg machine's cores at launch (check_pytest.py `jobs()`, no static
- * width since 2026-10-05), which is 4 on the CI runner, so its per-file serial p90s are divided by the workers and floored at the largest
+ * width since 2026-10-05). `budget_report --refresh` DERIVES the value from the lane job's `runs-on`
+ * label and its documented vCPU count (4 on ubuntu-latest), keeping the prior value when it cannot;
+ * nothing hand-writes it. Its per-file serial p90s are divided by the workers and floored at the largest
  * xdist group (enumerator `mutex`, plus a module-level `XDIST_GROUP`). Serial arithmetic
  * put those legs at 30-41m against a measured 8-12m.
  *
