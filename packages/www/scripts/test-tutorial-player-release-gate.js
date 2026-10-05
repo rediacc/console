@@ -6,7 +6,11 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createDevServer, pickFreePort, resourceSnapshot } from './lib/dev-server-process.js';
-import { captureNavigationEvidence, pollRoutesReady } from './lib/tutorial-player-diagnostics.js';
+import {
+  captureNavigationEvidence,
+  pollRoutesReady,
+  reportInconclusiveCauses,
+} from './lib/tutorial-player-diagnostics.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -161,36 +165,6 @@ function assertCondition(condition, message, details = null) {
   if (!condition) fail(message, details);
 }
 
-/** Prints the "this may not be a real regression" context, most-specific cause first. */
-function reportInconclusiveCauses(resources) {
-  if (devServer.diedMidRun) {
-    process.stderr.write(
-      `\n⚠ THE DEV SERVER EXITED MID-RUN (code ${devServer.diedMidRun.code}) -- everything after ` +
-        `that point failed against a dead server, not a real player defect. Find why astro ` +
-        `died (OOM, an uncaught exception, a killed process) before treating these as product ` +
-        `bugs.\n`
-    );
-    return;
-  }
-  if (resources.pressureDetected) {
-    process.stderr.write(
-      `\n⚠ SYSTEM UNDER LOAD while this ran (load/core=${resources.loadPerCore.toFixed(2)}, ` +
-        `boot=${resources.bootMs}ms of a 180000ms budget) -- this may be resource contention, ` +
-        `not a real regression. Re-run on an idle machine before treating it as a product bug.\n`
-    );
-    return;
-  }
-  if (resources.slowBoot) {
-    // THE OPPOSITE READING, SAID OUT LOUD. A slow boot on an IDLE machine is the signature of something that never became ready, not of a busy runner, and the reader needs pushing toward the evidence rather than away from it.
-    process.stderr.write(
-      `\n⚠ THE SERVER TOOK ${resources.bootMs}ms TO BOOT, but the machine was IDLE ` +
-        `(load/core=${resources.loadPerCore.toFixed(2)}). That is NOT resource contention. ` +
-        `Read serverLog in summary.json: if it contains a ready banner, the server started ` +
-        `fine and the READINESS MATCHER failed to see it.\n`
-    );
-  }
-}
-
 function isPlaying(state) {
   return state.paused === false && state.ended === false;
 }
@@ -264,7 +238,8 @@ function clickPlaybackButton() {
  *
  * READY = the control exists, the media has its metadata, and the control has held the same
  * position for three consecutive samples, so no layout shift can move it under the click. The
- * poll runs inside the page (one round trip), bounded at 20 s.
+ * poll runs inside the page (one round trip), bounded at SCENARIO_READY_MS (20 s) for a scenario and
+ * WARMUP_READY_MS for the warm-up that pays the first visit's cost (`warmUpPlayer`).
  *
  * A RELOAD UNDER THE POLL IS RETRIED, NOT REPORTED. CI run 37131294077 (job 111227243538) died
  * 0.2 s after the first navigation with `CDP error (Runtime.evaluate): Inspected target navigated
@@ -274,11 +249,11 @@ function clickPlaybackButton() {
  * document. The deadline is fixed once, in this process, and baked into the polled code, so an
  * attempt that evalInPage repeats after a reload still ends at the same moment: one 20 s budget.
  */
-function waitForPlayerReady() {
+function waitForPlayerReady(budgetMs = SCENARIO_READY_MS) {
   try {
     const state = evalInPage(`(() => new Promise((resolve) => {
       const SELECTOR = '.tvp-root [data-plyr="play"]';
-      const deadline = ${Date.now() + 20000};
+      const deadline = ${Date.now() + budgetMs};
       let last = null;
       let stable = 0;
       const poll = () => {
@@ -349,9 +324,43 @@ function sampledStates(durationMs, tickMs) {
   }))()`);
 }
 
+const SCENARIO_READY_MS = 20000;
+const WARMUP_READY_MS = 120000;
+
+/**
+ * THE FIRST VISIT'S COST IS PAID HERE, ONCE, ON ITS OWN BUDGET (2026-10-05). On a dev server the
+ * player's modules compile on the first browser visit, not when the "ready" probe fetches the
+ * HTML, and a first-visit dependency re-optimization reloads the page once (see
+ * waitForPlayerReady). Both used to land inside the first scenario's 20 s. The one-pass pre-push
+ * on 2026-10-05 ran this gate beside pytest and sixty other gates: the docs page showed only its
+ * poster for the whole budget, and a reload later in the run left every remaining scenario
+ * reading a player that was gone (all fields null). The warm-up opens the page, waits up to
+ * WARMUP_READY_MS for the player, then reloads it and requires it ready again inside the
+ * scenarios' own budget, which shows compilation and re-optimization are both behind it before
+ * any scenario's clock starts.
+ */
+function warmUpPlayer() {
+  const url = `${baseUrl}/en/docs/tutorial-production-mode`;
+  const startedAt = Date.now();
+  openFirst(url);
+  const first = waitForPlayerReady(WARMUP_READY_MS);
+  assertCondition(first.ok, 'player never hydrated during the warm-up', first);
+  const firstMs = Date.now() - startedAt;
+  open(url);
+  const again = waitForPlayerReady();
+  assertCondition(
+    again.ok,
+    'player was not ready within the scenario budget after the warm-up reload',
+    again
+  );
+  log(
+    `→ warm-up ok (first hydration ${firstMs}ms, warm reload ${Date.now() - startedAt - firstMs}ms)`
+  );
+}
+
 function scenarioBasicPlayPauseResume() {
   log('→ scenario: basic play/pause/resume');
-  openFirst(`${baseUrl}/en/docs/tutorial-production-mode`);
+  open(`${baseUrl}/en/docs/tutorial-production-mode`);
   const ready = waitForPlayerReady();
   assertCondition(ready.ok, 'player never became ready on the docs page', ready);
   clearConsole();
@@ -625,6 +634,7 @@ async function main() {
     );
     wait(1500);
 
+    warmUpPlayer();
     scenarioBasicPlayPauseResume();
     scenarioBurstToggle();
     scenarioSeekNoSnapback();
@@ -644,7 +654,7 @@ async function main() {
     writeArtifact('summary.json', summary);
 
     if (failures.length > 0) {
-      reportInconclusiveCauses(resources);
+      reportInconclusiveCauses(devServer, resources);
       process.stderr.write(
         `\n✗ tutorial player release gate failed (${failures.length} failures)\n`
       );
@@ -663,7 +673,7 @@ async function main() {
     if (resources.bootMs === null) {
       resources = resourceSnapshot(Date.now() - bootStartedAt);
     }
-    reportInconclusiveCauses(resources);
+    reportInconclusiveCauses(devServer, resources);
     writeArtifact('summary.json', {
       status: 'crash',
       failures,

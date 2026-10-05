@@ -1,13 +1,15 @@
 /**
  * Readiness and failure-evidence helpers for the tutorial-player release gate.
  *
- * SPLIT OUT BECAUSE THE GATE HIT max-lines (532 against 512), not as architecture for its
- * own sake. These two are the natural seam: neither drives a scenario, both exist purely
+ * SPLIT OUT BECAUSE THE GATE HIT max-lines (532 against 512, and 533 again on 2026-10-05 when the
+ * warm-up landed), not as architecture for its own sake. These are the natural seam: neither drives a scenario, both exist purely
  * so a timeout arrives with evidence attached, and every dependency is passed in rather
  * than closed over, so they can be exercised without booting a dev server.
  */
+
 import fs from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
 
 /**
  * Poll each route over HTTP until it serves 200, bounded.
@@ -81,5 +83,35 @@ export function captureNavigationEvidence({ dir, runAgent, serverLog, log }) {
     fs.writeFileSync(path.join(dir, 'dev-server.log'), serverLog.join(''));
   } catch {
     log('→ could not write dev-server.log');
+  }
+}
+
+/** Prints the "this may not be a real regression" context, most-specific cause first. */
+export function reportInconclusiveCauses(devServer, resources) {
+  if (devServer.diedMidRun) {
+    process.stderr.write(
+      `\n⚠ THE DEV SERVER EXITED MID-RUN (code ${devServer.diedMidRun.code}) -- everything after ` +
+        `that point failed against a dead server, not a real player defect. Find why astro ` +
+        `died (OOM, an uncaught exception, a killed process) before treating these as product ` +
+        `bugs.\n`
+    );
+    return;
+  }
+  if (resources.pressureDetected) {
+    process.stderr.write(
+      `\n⚠ SYSTEM UNDER LOAD while this ran (load/core=${resources.loadPerCore.toFixed(2)}, ` +
+        `boot=${resources.bootMs}ms of a 180000ms budget) -- this may be resource contention, ` +
+        `not a real regression. Re-run on an idle machine before treating it as a product bug.\n`
+    );
+    return;
+  }
+  if (resources.slowBoot) {
+    // THE OPPOSITE READING, SAID OUT LOUD. A slow boot on an IDLE machine is the signature of something that never became ready, not of a busy runner, and the reader needs pushing toward the evidence rather than away from it.
+    process.stderr.write(
+      `\n⚠ THE SERVER TOOK ${resources.bootMs}ms TO BOOT, but the machine was IDLE ` +
+        `(load/core=${resources.loadPerCore.toFixed(2)}). That is NOT resource contention. ` +
+        `Read serverLog in summary.json: if it contains a ready banner, the server started ` +
+        `fine and the READINESS MATCHER failed to see it.\n`
+    );
   }
 }
