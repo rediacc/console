@@ -654,6 +654,15 @@ devbox_home_binds() {
         ".config/rediacc/bws-access-token:ro"
 }
 
+# The machine-wide core lease (.ci/rediacc_ci/core_lease.py) the devbox shares with the host. The pool's host directory is /run/user/<uid>/rediacc-cores, the same one a host process picks through XDG_RUNTIME_DIR; the container's own /tmp is a separate overlay, so without this bind a devbox run would take every core from a second, private pool. Printed only when /run/user/<uid> exists (a systemd host), which is the only place a host pool can live where both sides see it; empty otherwise, and core_lease falls back to a private pool in the container.
+DEVBOX_CORE_LEASE_DEST="/run/rediacc-cores"
+devbox_core_lease_src() {
+    local runtime
+    runtime="/run/user/$(id -u)"
+    [[ -d "$runtime" && -O "$runtime" ]] || return 0
+    printf '%s\n' "$runtime/rediacc-cores"
+}
+
 # Print each bind destination the existing container does NOT have mounted, one per line: every devbox_script_binds entry, plus every devbox_home_binds entry whose host source exists now (one created on the host after the container was, such as .config/rediacc/bws-access-token, is drift too). Empty when there is no container, or when docker cannot inspect it: an unanswerable probe must never be the reason a container is destroyed.
 devbox_missing_binds() {
     local d cid mounts pair dest
@@ -676,6 +685,9 @@ devbox_missing_binds() {
             printf '%s\n' "$dest"
         fi
     done < <(devbox_home_binds)
+    if [[ -n "$(devbox_core_lease_src)" ]] && ! grep -qxF -- "$DEVBOX_CORE_LEASE_DEST" <<<"$mounts"; then
+        printf '%s\n' "$DEVBOX_CORE_LEASE_DEST"
+    fi
 }
 
 # Re-run the service autostart inside a container that is ALREADY UP.
@@ -1008,6 +1020,15 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
         )
     done < <(devbox_home_binds)
 
+    # The core lease pool, shared with the host (devbox_core_lease_src says why). Created here with mode 700 so the container never finds it missing; core_lease refuses a directory another user owns.
+    local lease_src lease_env=()
+    lease_src="$(devbox_core_lease_src)"
+    # The parent /run/user/<uid> exists (devbox_core_lease_src checked), so a plain mkdir creates exactly the one directory, with mode 700.
+    if [[ -n "$lease_src" ]] && { [[ -d "$lease_src" ]] || mkdir -m 700 "$lease_src"; }; then
+        binds+=(-v "$lease_src:$DEVBOX_CORE_LEASE_DEST")
+        lease_env=(-e "REDIACC_CORE_LEASE_DIR=$DEVBOX_CORE_LEASE_DEST")
+    fi
+
     local slug conflicts line
     slug="$(devbox_slug)"
 
@@ -1107,6 +1128,7 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
         -e REDIACC_NPM_RUNTIME=devbox \
         -e REDIACC_DEV_BIND=0.0.0.0 \
         -e REDIACC_DEV_PORT_BASE=${WK_ACCOUNT_DEV_PORT} \
+        "${lease_env[@]}" \
         -w "$workspace" \
         --entrypoint /usr/local/bin/devbox-entrypoint.sh \
         "$run_image" >/dev/null || {
