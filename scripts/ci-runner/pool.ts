@@ -121,6 +121,8 @@ export interface GateResult {
   grantedCores?: number;
   /** The gate declared an elastic `cores` range, so `grantedCores` was sized by the area rule rather than rounded from a measured width. */
   elastic?: boolean;
+  /** Set only when the gate launched with more cores than the lease tokens it held: its bounded `lease` hold expired (or it was wider than the whole budget), so it ran past another run's tokens rather than wait without end. The footer names every one. */
+  overLease?: { granted: number; held: number };
 }
 
 /**
@@ -183,7 +185,27 @@ export interface PoolOptions {
   costs?: Map<string, GateCost>;
   /** The machine-wide core lease (lease-client.ts). Absent means the pool owns the whole budget, the same as a lease that degraded to the whole machine. */
   lease?: PoolLease;
+  /** How often a pool with a gate held by the lease re-reads it, ms (default LEASE_POLL_MS). The selftest shortens it. */
+  leasePollMs?: number;
 }
+
+/** What the lease reports before a pass. Every field is Infinity when nothing is leased. */
+export interface LeaseView {
+  /** Cores the pool may still start on beyond `inUse`: the broker's free tokens plus the slack of tokens this run already holds. */
+  free: number;
+  /** This run's fair share of the machine, ceil(total / live runs), live runs counting this one. */
+  share: number;
+  /** Tokens in the machine-wide pool. */
+  total: number;
+}
+
+/**
+ * WHY A WIDE GRANT WAITS 2 s AFTER THE RUN OPENS (B11, agent/plans/PLAN-prepush-full-cpu.md part 4). A run's share counts only the runs registered when it reads the lease, and two pre-pushes started together register a few hundred ms apart: the first would read itself alone and take every token. Two seconds covers a broker's spawn and handshake on a loaded machine, and costs a lone run of a 900 s pytest two seconds.
+ */
+export const SETTLE_MS = 2000;
+
+/** How often a pool with a lease-held gate re-reads the lease, since another run's release raises no event here. One second keeps a broker round trip per second at most, against gates that run minutes. */
+export const LEASE_POLL_MS = 1000;
 
 /**
  * What runPool needs of the machine-wide core lease, implemented by lease-client.ts. Kept as an interface here so the pool, the simulator and the selftest never spawn a broker.
@@ -191,8 +213,10 @@ export interface PoolOptions {
 export interface PoolLease {
   /** True when the grants are backed by a lease (a broker, or one this process inherited), so a child must not lease the same cores again (CI_CORE_LEASE_HELD). */
   readonly held: boolean;
-  /** Cores the pool may still start on beyond `inUse`: the broker's free tokens plus the slack of tokens it already holds. Infinity when nothing is leased. */
-  available(inUse: number): Promise<number>;
+  /** When the run registered with the lease, epoch ms, for the settle (SETTLE_MS). Absent when nothing is leased, which never settles. */
+  readonly openedAt?: number;
+  /** The lease's free cores, this run's share and the pool's total (LeaseView); every field Infinity when nothing is leased. */
+  available(inUse: number): Promise<LeaseView>;
   /** Hold exactly ceil(cores) tokens, acquiring or releasing the difference; returns the tokens held afterwards (Infinity when nothing is leased). A short acquire is not an error: the caller reads the count. */
   reconcile(cores: number): Promise<number>;
 }
@@ -229,6 +253,8 @@ export interface Candidate {
   elastic?: ElasticPlan;
   /** Set by admit() on every launched gate: the cores exported to its process. */
   grant?: number;
+  /** Set by admit() on a gate it launched past the lease: its bounded `lease` hold expired, or it is wider than the whole budget and the pool is empty. Only such a gate may start on more cores than the tokens it got (fitToLease). */
+  pastLease?: boolean;
 }
 
 export interface RunningGate {
@@ -246,6 +272,14 @@ export interface AdmitConfig {
   leaseFree?: number;
   /** Predicted CPU of every gate not yet launched (ready or waiting on `needs`), in core-ms, for the area term. Absent means 0. */
   backlogCpuMs?: number;
+  /** This run's share of the lease, ceil(total / live runs) (LeaseView.share). Caps every elastic grant and the area rule's C; fixed-width gates are not capped, so a run whose neighbour leaves cores idle can still fill them. Absent means unbounded. */
+  leaseShare?: number;
+  /** The lease's token total, for the settle's ceil(T / 2). */
+  leaseTotal?: number;
+  /** Epoch ms before which no elastic grant above ceil(leaseTotal / 2) is made (SETTLE_MS after the run registered). Absent means no settle. */
+  settleUntil?: number;
+  /** Epoch ms each gate was first held with `lease`, the start of its bounded hold. A gate absent here starts its bound now. */
+  leaseHeldSince?: ReadonlyMap<string, number>;
 }
 
 export interface Admission {
@@ -255,6 +289,8 @@ export interface Admission {
   held: [string, HoldReason][];
   /** The EASY reservation this pass made, if any: which gate, and its predicted start. */
   reservation?: { id: string; at: number };
+  /** The earliest moment a timed hold (a bounded `lease` hold, or the settle) ends; the pool re-reads the lease by then even when nothing of its own ends. */
+  wakeAt?: number;
 }
 
 // Float sums of fractional cores must not turn an exact fit into a refusal.
@@ -281,6 +317,16 @@ function elasticWall(el: ElasticPlan, estMs: number, k: number): number {
 }
 
 /**
+ * How long a gate the lease is short for may wait before it runs past the lease anyway: its wall at its fair share, work / (perCore x share) for a measured elastic gate, else its planning wall. A run that waited that long has lost no more than it would have by sharing from the start, and an unbounded wait would turn a neighbour that never releases into a hang.
+ */
+function fairWall(g: Candidate, share: number): number {
+  const el = g.elastic;
+  return el !== undefined && el.measured && el.workMs > 0
+    ? el.workMs / (el.perCore * Math.max(1, share))
+    : g.estMs;
+}
+
+/**
  * The grant an elastic candidate takes now: the area rule clamped to [min, min(max, free)], or undefined when fewer than `min` cores are free (the caller holds it and reserves its start). `free` is already the smaller of the core budget's room and the lease's.
  */
 function elasticGrant(
@@ -294,6 +340,28 @@ function elasticGrant(
   const ceiling = Math.min(el.max, Math.floor(free + FIT_TOLERANCE));
   if (ceiling < el.min) return undefined;
   return Math.max(el.min, Math.min(areaGrant(el, g.estMs, c, otherCpuMs), ceiling));
+}
+
+/**
+ * Fit an admitted gate to the tokens its launch actually got (`got`, from PoolLease.reconcile less what the running gates use). A gate that got its width runs as admitted; an elastic one short of it narrows to what it got when that still meets its `min`. Otherwise it is held (undefined) -- unless admit() launched it past the lease (`pastLease`), and then it runs at max(min, got) with the excess recorded, the one way a grant exceeds the tokens held. Shared with sim.ts so the simulator launches the way the pool does.
+ */
+export function fitToLease(
+  gate: Candidate,
+  got: number
+): { gate: Candidate; over?: { granted: number; held: number } } | undefined {
+  if (got + FIT_TOLERANCE >= gate.cores) return { gate };
+  const el = gate.elastic;
+  const k = Math.floor(got + FIT_TOLERANCE);
+  if (el !== undefined && k >= el.min) return { gate: sizedAt(gate, k) };
+  if (gate.pastLease !== true) return undefined;
+  const fitted = el !== undefined ? sizedAt(gate, Math.max(el.min, k)) : gate;
+  return {
+    gate: fitted,
+    over: {
+      granted: fitted.grant ?? Math.max(1, Math.round(fitted.cores)),
+      held: Math.max(0, Math.round(got * 100) / 100),
+    },
+  };
 }
 
 /** The candidate an elastic gate becomes at a grant of k: k cores and k slots budgeted, its wall re-predicted at k. */
@@ -313,6 +381,8 @@ function sizedAt(g: Candidate, k: number): Candidate {
  * Both rules end in the same progress guarantee: nothing running and nothing admitted means the head of the queue runs anyway, alone, whatever its size. A gate wider than the whole budget would otherwise hang the pool.
  *
  * ELASTIC GATES (a declared `cores: {min, max}`) are sized here, not before the run: `elasticGrant` applies the area rule against what is free at this moment, the granted candidate is what every later check and the running set budget, and `grant` on each launched candidate is the number exported to the gate's process. Under `cores` the lease (`leaseFree`) is a fourth dimension: a gate wider than what the machine-wide lease can still give is held with `lease`, and an elastic gate reserves its start at its `min`. On an empty pool an elastic head takes max(min, what is free).
+ *
+ * THE SHARE (B11, agent/plans/PLAN-prepush-full-cpu.md part 4). Counting free tokens alone is first-come-takes-all: two runs started a second apart measured 23 cores against one. So an elastic grant is capped at `leaseShare`, ceil(T / live runs), and the area rule splits that share rather than the whole budget; fixed-width gates take what is free, so a neighbour's idle cores still get used. An elastic gate the lease would cut below min(its own grant, ceil(share / 2)) is held with `lease` for at most its fair wall (fairWall) and then runs at max(min, what is free), past the lease if it must. The progress guarantee never bypasses such a hold before its bound, and before `settleUntil` no elastic grant exceeds ceil(T / 2), so two runs started together both register before either takes a wide grant. `wakeAt` tells the pool when the earliest of these holds ends.
  */
 export function admit(
   ready: readonly Candidate[],
@@ -346,6 +416,10 @@ export function admit(
   const launch: Candidate[] = [];
   const held: [string, HoldReason][] = [];
   let leaseLeft = cfg.leaseFree ?? Number.POSITIVE_INFINITY;
+  const share = cfg.leaseShare ?? Number.POSITIVE_INFINITY;
+  // Timed holds: gate id -> the moment its hold ends. The progress guarantee skips these, and the earliest is `wakeAt`.
+  const timed = new Map<string, number>();
+  const leaseSince = (id: string): number => cfg.leaseHeldSince?.get(id) ?? now;
   const go = (g: Candidate): void => {
     // A gate with no elastic range is told its budgeted width, rounded, never less than one core: a child tool sized by granted_cores() then sees the share the pool budgeted it.
     const launched = g.grant !== undefined ? g : { ...g, grant: Math.max(1, Math.round(g.cores)) };
@@ -430,24 +504,48 @@ export function admit(
       }
       let g = g0;
       if (g0.elastic !== undefined) {
-        const k = elasticGrant(g0, b.cores, otherCpu(g0), Math.min(cap - cores, leaseLeft));
-        if (k === undefined) {
-          // Fewer than `min` free: the budget's room when that is the shorter, else the lease's (another run on this machine holds the cores).
-          held.push([
-            g0.id,
-            cap - cores + FIT_TOLERANCE >= g0.elastic.min && leaseLeft < cap - cores
-              ? 'lease'
-              : 'cpu',
-          ]);
-          if (spare === undefined && b.reserve !== false) reserve(sizedAt(g0, g0.elastic.min));
+        const el = g0.elastic;
+        // The area rule splits this run's share, not the whole budget.
+        const c = Math.min(b.cores, share);
+        const other = otherCpu(g0);
+        // What the run's own budget and share allow, and what the lease allows on top of them.
+        const own = elasticGrant(g0, c, other, Math.min(cap - cores, share));
+        if (own === undefined) {
+          held.push([g0.id, 'cpu']);
+          if (spare === undefined && b.reserve !== false) reserve(sizedAt(g0, el.min));
           continue;
         }
-        g = sizedAt(g0, k);
+        const k = elasticGrant(g0, c, other, Math.min(cap - cores, share, leaseLeft));
+        if ((k ?? 0) < Math.min(own, Math.ceil(share / 2))) {
+          // Another run holds the tokens. Waiting for them beats starting at `min` (B11: one token against 23, a 6x wall), but only up to the fair wall.
+          const until = leaseSince(g0.id) + fairWall(g0, c);
+          if (now < until) {
+            held.push([g0.id, 'lease']);
+            timed.set(g0.id, until);
+            if (spare === undefined && b.reserve !== false) reserve(sizedAt(g0, el.min));
+            continue;
+          }
+          g = { ...sizedAt(g0, k ?? el.min), pastLease: true };
+        } else {
+          const width = k ?? el.min;
+          if (
+            cfg.settleUntil !== undefined &&
+            now < cfg.settleUntil &&
+            width > Math.ceil((cfg.leaseTotal ?? Number.POSITIVE_INFINITY) / 2)
+          ) {
+            // The settle (SETTLE_MS): a run that may not yet see its neighbour does not take more than half the machine.
+            held.push([g0.id, 'lease']);
+            timed.set(g0.id, cfg.settleUntil);
+            if (spare === undefined && b.reserve !== false) reserve(sizedAt(g0, el.min));
+            continue;
+          }
+          g = sizedAt(g0, width);
+        }
       }
       const over: HoldReason | undefined =
         cores + g.cores > cap + FIT_TOLERANCE
           ? 'cpu'
-          : g.cores > leaseLeft + FIT_TOLERANCE
+          : g.cores > leaseLeft + FIT_TOLERANCE && g.pastLease !== true
             ? 'lease'
             : live.length + 1 > b.maxProcs
               ? 'count'
@@ -483,9 +581,18 @@ export function admit(
   if (running.length === 0 && launch.length === 0) {
     // Nothing is in flight and nothing was admissible: the budget is smaller than the head of the queue. Admit it anyway rather than spin. No claim can be the blocker here, since nothing holds one -- but the predicate is still consulted rather than assumed, because "cannot happen" is how a stall turns into a silent over-admission that violates the very exclusion this branch is
     // bypassing.
-    const head = ready.find((g) => !blockedByClaim(g));
-    if (head?.elastic !== undefined) {
-      const c = cfg.sched === 'slots' ? cfg.jobs : (cfg.budget?.cores ?? cfg.jobs);
+    // A timed hold is not a stall: it ends by itself, and the pool re-reads the lease by then. Forcing it here is exactly the B11 defect, a gate started on one token beside a neighbour holding 23.
+    const head = ready.find((g) => !blockedByClaim(g) && !timed.has(g.id));
+    const leaseHeld =
+      head !== undefined && held.some(([id, why]) => id === head.id && why === 'lease');
+    // A fixed-width head the lease holds waits out its own planning wall the same way before it runs past the lease.
+    const until = head !== undefined && leaseHeld ? leaseSince(head.id) + head.estMs : now;
+    if (head !== undefined && now < until) timed.set(head.id, until);
+    else if (head?.elastic !== undefined) {
+      const c = Math.min(
+        cfg.sched === 'slots' ? cfg.jobs : (cfg.budget?.cores ?? cfg.jobs),
+        cfg.sched === 'slots' ? Number.POSITIVE_INFINITY : share
+      );
       const room =
         cfg.sched === 'slots'
           ? cfg.jobs
@@ -494,8 +601,8 @@ export function admit(
               cfg.leaseFree ?? Number.POSITIVE_INFINITY
             );
       const el = head.elastic;
-      go(
-        sizedAt(
+      go({
+        ...sizedAt(
           head,
           Math.max(
             el.min,
@@ -505,11 +612,13 @@ export function admit(
               Math.floor(room + FIT_TOLERANCE)
             )
           )
-        )
-      );
-    } else if (head !== undefined) go(head);
+        ),
+        pastLease: true,
+      });
+    } else if (head !== undefined) go({ ...head, pastLease: true });
   }
-  return { launch, held, reservation };
+  const wakeAt = timed.size > 0 ? Math.min(...timed.values()) : undefined;
+  return { launch, held, reservation, wakeAt };
 }
 
 /**
@@ -778,32 +887,36 @@ export async function runPool(
 
   const grants = new Map<string, number>();
   const lease = opts.lease;
+  const pollMs = opts.leasePollMs ?? LEASE_POLL_MS;
+  // When each gate was first held by the lease: the start of its bounded hold (admit's leaseHeldSince).
+  const leaseSince = new Map<string, number>();
+  const overLease = new Map<string, { granted: number; held: number }>();
+  const holdForLease = (id: string, at: number): void => {
+    blockedBy.set(id, 'lease');
+    if (!leaseSince.has(id)) leaseSince.set(id, at);
+  };
   const coresInUse = (): number => {
     let sum = 0;
     for (const r of inFlight.values()) sum += r.gate.cores;
     return sum;
   };
 
-  // `gate` is the candidate admit() launched, carrying its grant. The lease is drawn here, at launch: a short acquire narrows an elastic gate to what was actually got, and below its `min` the tokens go back and the gate waits with `lease` -- unless nothing is running, where the progress guarantee wins over a lease another run is holding.
+  // `gate` is the candidate admit() launched, carrying its grant. The lease is drawn here, at launch (fitToLease): a short acquire narrows an elastic gate to what was actually got, and below its `min` the tokens go back and the gate waits with `lease`, whether or not anything runs. Only a gate admit() launched past the lease starts on more than it got, and that is recorded.
   const launch = async (spec: GateSpec, admitted: Candidate): Promise<boolean> => {
     let gate = admitted;
     if (lease !== undefined && sched === 'cores') {
       const before = coresInUse();
       const held = await lease.reconcile(before + gate.cores);
-      const got = held - before;
-      const el = gate.elastic;
-      if (el !== undefined && got + 1e-9 < gate.cores) {
-        const k = Math.floor(got + 1e-9);
-        if (k >= el.min || inFlight.size === 0) {
-          const narrowed = Math.max(el.min, k);
-          gate = { ...gate, cores: narrowed, slots: narrowed, grant: narrowed };
-          await lease.reconcile(before + narrowed);
-        } else {
-          await lease.reconcile(before);
-          blockedBy.set(spec.id, 'lease');
-          return false;
-        }
+      const fit = fitToLease(gate, held - before);
+      if (fit === undefined) {
+        await lease.reconcile(before);
+        holdForLease(spec.id, Date.now());
+        return false;
       }
+      if (fit.gate.cores + FIT_TOLERANCE < gate.cores)
+        await lease.reconcile(before + fit.gate.cores);
+      gate = fit.gate;
+      if (fit.over !== undefined) overLease.set(spec.id, fit.over);
     }
     unstarted.delete(spec.id);
     const now = Date.now();
@@ -853,25 +966,49 @@ export async function runPool(
 
     let backlogCpuMs = 0;
     for (const id of unstarted) backlogCpuMs += candidate(id).cpuMs;
-    const leaseFree =
+    const view =
       lease !== undefined && sched === 'cores' && ready.length > 0
         ? await lease.available(coresInUse())
         : undefined;
+    const finite = (n: number | undefined): number | undefined =>
+      n === undefined || n === Number.POSITIVE_INFINITY ? undefined : n;
     const pass = admit(
       ready.map((spec) => candidate(spec.id)),
       [...inFlight.values()],
       {
         ...cfg,
         backlogCpuMs,
-        leaseFree: leaseFree === Number.POSITIVE_INFINITY ? undefined : leaseFree,
+        leaseFree: finite(view?.free),
+        leaseShare: finite(view?.share),
+        leaseTotal: finite(view?.total),
+        settleUntil:
+          view !== undefined && lease?.openedAt !== undefined
+            ? lease.openedAt + SETTLE_MS
+            : undefined,
+        leaseHeldSince: leaseSince,
       },
       now
     );
-    for (const [id, why] of pass.held) blockedBy.set(id, why);
-    for (const gate of pass.launch) await launch(mustGet(byId, gate.id), gate);
+    let leaseWait = false;
+    for (const [id, why] of pass.held) {
+      if (why === 'lease') {
+        holdForLease(id, now);
+        leaseWait = true;
+      } else blockedBy.set(id, why);
+    }
+    for (const gate of pass.launch)
+      if (!(await launch(mustGet(byId, gate.id), gate))) leaseWait = true;
+    // Another run's release raises no event in this process, so a pool with a gate the lease holds re-reads it on a timer: by the earliest timed hold's end, and at least every pollMs.
+    const nap = leaseWait
+      ? Math.max(1, Math.min(pollMs, (pass.wakeAt ?? Number.POSITIVE_INFINITY) - Date.now()))
+      : undefined;
 
     if (running.size === 0 && unstarted.size > 0 && ready.length > 0) {
-      // admit() already ran the progress guarantee, and launch() overrides the lease when nothing runs, so work outstanding with nothing in flight means no ready gate was admissible even alone.
+      if (nap !== undefined) {
+        await new Promise((resolve) => setTimeout(resolve, nap));
+        continue;
+      }
+      // admit() already ran the progress guarantee, and the lease holds nothing here, so work outstanding with nothing in flight means no ready gate was admissible even alone.
       throw new Error('ci-runner: internal error, pool stalled with work outstanding');
     }
     if (running.size === 0 && unstarted.size > 0) {
@@ -880,7 +1017,20 @@ export async function runPool(
 
     if (running.size === 0) continue;
 
-    const { id, outcome, endAt } = await Promise.race(running.values());
+    let timer: NodeJS.Timeout | undefined;
+    const settledOrTick = await Promise.race([
+      ...running.values(),
+      ...(nap === undefined
+        ? []
+        : [
+            new Promise<undefined>((resolve) => {
+              timer = setTimeout(() => resolve(undefined), nap);
+            }),
+          ]),
+    ]);
+    if (timer !== undefined) clearTimeout(timer);
+    if (settledOrTick === undefined) continue;
+    const { id, outcome, endAt } = settledOrTick;
     const spec = mustGet(byId, id);
     running.delete(id);
     const settled = inFlight.get(id);
@@ -907,6 +1057,7 @@ export async function runPool(
       blockedBy: blockedBy.get(id),
       grantedCores: grants.get(id),
       elastic: settled?.gate.elastic !== undefined ? true : undefined,
+      overLease: overLease.get(id),
     });
     if (failed && opts.failFast) stopped = true;
   }

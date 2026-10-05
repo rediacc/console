@@ -12,7 +12,17 @@
  */
 import { fileURLToPath } from 'node:url';
 import type { GateSpec } from './manifest';
-import { admit, type CoreBudget, type GateCost, planAdmission, type Sched } from './pool';
+import {
+  admit,
+  type Candidate,
+  type CoreBudget,
+  fitToLease,
+  type GateCost,
+  LEASE_POLL_MS,
+  planAdmission,
+  SETTLE_MS,
+  type Sched,
+} from './pool';
 
 interface SimGate {
   id: string;
@@ -24,6 +34,8 @@ interface SimGate {
   needs?: string[];
   /** Declared elastic range; `cores` x `wallMs` is then the gate's work, and its width is the grant. */
   elastic?: { min: number; max: number | 'all' };
+  /** An elastic gate's share of each granted core it keeps busy (GateCost.perCore), default 1: at a grant of k its wall is work / (perCore x k). */
+  perCore?: number;
   heavy?: boolean;
   mutex?: string[];
   /** Default true: the scheduler sees cpu = cores x wall, wall and memMb as measured. False: it sees nothing. */
@@ -41,6 +53,21 @@ interface SimConfig {
   capCheck?: number;
 }
 
+/** Several runs on one machine drawing from one token pool, the way core_lease.py's broker serves them. */
+interface RunsConfig extends SimConfig {
+  /** T: the lease's tokens. Each run reads free, share ceil(T / live runs) and total before every pass, and settles SETTLE_MS from its start. */
+  tokens: number;
+  /** How often a run with a lease-held gate re-reads the lease, ms (default LEASE_POLL_MS). */
+  pollMs?: number;
+}
+
+/** One run: the gates it schedules and when it registers with the lease. */
+interface SimRun {
+  id: string;
+  startMs: number;
+  gates: readonly SimGate[];
+}
+
 interface SimResult {
   makespanMs: number;
   idleCoreS: number;
@@ -50,6 +77,16 @@ interface SimResult {
   capViolations: number;
   /** The cores admit() granted each gate at launch. */
   grants: Map<string, number>;
+  /** Gates admit() ever held with `lease`. */
+  leaseHeld: Set<string>;
+  /** Gates that launched past the lease: granted cores and tokens held (GateResult.overLease). */
+  overLease: Map<string, { granted: number; held: number }>;
+}
+
+/** A run's result inside simulateRuns: its own gates, plus when it ended and the machine's idle core-seconds from t = 0 to that end. */
+interface RunResult extends SimResult {
+  endMs: number;
+  idleToEndCoreS: number;
 }
 
 const EPS_MS = 1e-6;
@@ -71,18 +108,19 @@ function specOf(g: SimGate): GateSpec {
   };
 }
 
-function simulate(gates: readonly SimGate[], cfg: SimConfig): SimResult {
-  const specs = gates.map(specOf);
-  const truth = new Map(gates.map((g) => [g.id, g]));
+/** One run's scheduler state, as runPool keeps it. */
+function runState(run: SimRun, cfg: SimConfig) {
+  const specs = run.gates.map(specOf);
+  const truth = new Map(run.gates.map((g) => [g.id, g]));
   const costs = new Map<string, GateCost>();
   const durations = new Map<string, number>();
-  for (const g of gates) {
+  for (const g of run.gates) {
     if (g.measured === false) continue;
     costs.set(g.id, {
       cpuMs: g.cores * g.wallMs,
       wallMs: g.wallMs,
       rssMb: g.memMb ?? 512,
-      perCore: g.elastic !== undefined ? 1 : undefined,
+      perCore: g.elastic !== undefined ? (g.perCore ?? 1) : undefined,
     });
     durations.set(g.id, g.wallMs);
   }
@@ -93,38 +131,88 @@ function simulate(gates: readonly SimGate[], cfg: SimConfig): SimResult {
     budget: cfg.budget,
     costs,
   });
-  const cand = (id: string) => {
+  const cand = (id: string): Candidate => {
     const c = byId.get(id);
     if (c === undefined) throw new Error(`sim: no candidate for ${id}`);
     return c;
   };
+  return {
+    run,
+    specs,
+    truth,
+    rank,
+    cand,
+    starts: new Map<string, number>(),
+    ends: new Map<string, number>(),
+    readyAt: new Map<string, number>(),
+    // Remaining work of each running gate, in ms of full-speed wall, and the candidate admit() launched it as (an elastic gate's carries its grant).
+    running: new Map<string, number>(),
+    launched: new Map<string, Candidate>(),
+    grants: new Map<string, number>(),
+    leaseHeld: new Set<string>(),
+    leaseSince: new Map<string, number>(),
+    overLease: new Map<string, { granted: number; held: number }>(),
+    /** Lease tokens this run holds. */
+    tokens: 0,
+    /** Next moment this run re-reads the lease on its own timer. */
+    wake: Number.POSITIVE_INFINITY,
+    dirty: true,
+    done: false,
+    endMs: 0,
+    busyAtEnd: 0,
+    capViolations: 0,
+  };
+}
+type RunState = ReturnType<typeof runState>;
 
-  const starts = new Map<string, number>();
-  const ends = new Map<string, number>();
-  const readyAt = new Map<string, number>();
-  // Remaining work of each running gate, in ms of full-speed wall, and the candidate admit() launched it as (an elastic gate's carries its grant).
-  const running = new Map<string, number>();
-  const launched = new Map<string, ReturnType<typeof cand>>();
-  const grants = new Map<string, number>();
-  // True width while running: the grant for an elastic gate, the declared d otherwise.
-  const width = (id: string): number =>
-    truth.get(id)?.elastic !== undefined ? (grants.get(id) ?? 1) : (truth.get(id)?.cores ?? 0);
+/**
+ * The engine under simulate() and simulateRuns(). Each run passes through admit() only at the moments runPool would: when it starts, when one of its own gates ends, and on its lease timer. Under a lease (`tokens`) a launch draws tokens the way PoolLease.reconcile does and is fitted by the pool's own fitToLease; without one the passes see no lease at all, as before the lease existed.
+ */
+function engine(
+  runs: readonly SimRun[],
+  cfg: SimConfig & { tokens?: number; pollMs?: number }
+): { makespanMs: number; idleCoreS: number; runs: Map<string, RunState> } {
+  const states = runs.map((r) => runState(r, cfg));
+  const pollMs = cfg.pollMs ?? LEASE_POLL_MS;
+  const leased = cfg.tokens !== undefined;
+  const total = cfg.tokens ?? Number.POSITIVE_INFINITY;
   let t = 0;
   let busy = 0;
-  let capViolations = 0;
+  const started = (s: RunState): boolean => s.run.startMs <= t + EPS_MS;
+  const freeTokens = (): number => total - states.reduce((sum, s) => sum + s.tokens, 0);
+  // True width while running: the grant for an elastic gate, the declared d otherwise.
+  const width = (s: RunState, id: string): number =>
+    s.truth.get(id)?.elastic !== undefined
+      ? (s.grants.get(id) ?? 1)
+      : (s.truth.get(id)?.cores ?? 0);
+  const inUse = (s: RunState): number => {
+    let sum = 0;
+    for (const id of s.running.keys()) sum += (s.launched.get(id) ?? s.cand(id)).cores;
+    return sum;
+  };
+  // lease-client.ts reconcile: hold ceil(cores) tokens, acquiring only what is free.
+  const reconcile = (s: RunState, cores: number): number => {
+    const want = Math.max(0, Math.ceil(cores - 1e-9));
+    if (s.tokens < want) s.tokens += Math.max(0, Math.min(want - s.tokens, freeTokens()));
+    else s.tokens = want;
+    return s.tokens;
+  };
 
-  while (ends.size < gates.length) {
-    const ready = specs
-      .filter((s) => !starts.has(s.id) && (s.needs ?? []).every((n) => ends.has(n)))
-      .sort(rank);
-    for (const s of ready) if (!readyAt.has(s.id)) readyAt.set(s.id, t);
+  const pass = (s: RunState): void => {
+    s.dirty = false;
+    s.wake = Number.POSITIVE_INFINITY;
+    const ready = s.specs
+      .filter((spec) => !s.starts.has(spec.id) && (spec.needs ?? []).every((n) => s.ends.has(n)))
+      .sort(s.rank);
+    for (const spec of ready) if (!s.readyAt.has(spec.id)) s.readyAt.set(spec.id, t);
     let backlogCpuMs = 0;
-    for (const s of specs) if (!starts.has(s.id)) backlogCpuMs += cand(s.id).cpuMs;
-    const pass = admit(
-      ready.map((s) => cand(s.id)),
-      [...running.keys()].map((id) => {
-        const g = launched.get(id) ?? cand(id);
-        return { gate: g, endsAt: (starts.get(id) ?? 0) + g.estMs };
+    for (const spec of s.specs) if (!s.starts.has(spec.id)) backlogCpuMs += s.cand(spec.id).cpuMs;
+    const live = states.filter((o) => started(o) && !o.done).length;
+    const result = admit(
+      ready.map((spec) => s.cand(spec.id)),
+      [...s.running.keys()].map((id) => {
+        const g = s.launched.get(id) ?? s.cand(id);
+        return { gate: g, endsAt: (s.starts.get(id) ?? 0) + g.estMs };
       }),
       {
         sched: cfg.sched,
@@ -132,52 +220,144 @@ function simulate(gates: readonly SimGate[], cfg: SimConfig): SimResult {
         heavyLimit: cfg.heavyLimit,
         budget: cfg.budget,
         backlogCpuMs,
+        ...(leased
+          ? {
+              leaseFree: freeTokens() + Math.max(0, s.tokens - inUse(s)),
+              leaseShare: Math.ceil(total / Math.max(1, live)),
+              leaseTotal: total,
+              settleUntil: s.run.startMs + SETTLE_MS,
+              leaseHeldSince: s.leaseSince,
+            }
+          : {}),
       },
       t
     );
-    for (const g of pass.launch) {
-      starts.set(g.id, t);
-      launched.set(g.id, g);
-      grants.set(g.id, g.grant ?? 1);
-      const tg = truth.get(g.id);
-      running.set(
+    let leaseWait = false;
+    const holdForLease = (id: string): void => {
+      leaseWait = true;
+      s.leaseHeld.add(id);
+      if (!s.leaseSince.has(id)) s.leaseSince.set(id, t);
+    };
+    for (const [id, why] of result.held) if (why === 'lease') holdForLease(id);
+    for (const admitted of result.launch) {
+      let g = admitted;
+      if (leased) {
+        const before = inUse(s);
+        const fit = fitToLease(g, reconcile(s, before + g.cores) - before);
+        if (fit === undefined) {
+          reconcile(s, before);
+          holdForLease(g.id);
+          continue;
+        }
+        g = fit.gate;
+        reconcile(s, before + g.cores);
+        if (fit.over !== undefined) s.overLease.set(g.id, fit.over);
+      }
+      s.starts.set(g.id, t);
+      s.launched.set(g.id, g);
+      s.grants.set(g.id, g.grant ?? 1);
+      const tg = s.truth.get(g.id);
+      s.running.set(
         g.id,
         tg?.elastic !== undefined
-          ? (tg.cores * tg.wallMs) / Math.max(1, g.grant ?? 1)
+          ? (tg.cores * tg.wallMs) / ((tg.perCore ?? 1) * Math.max(1, g.grant ?? 1))
           : (tg?.wallMs ?? 0)
       );
     }
-    if (cfg.sched === 'cores' && cfg.capCheck !== undefined && running.size > 1) {
+    if (leaseWait)
+      s.wake = t + Math.max(1, Math.min(pollMs, (result.wakeAt ?? Number.POSITIVE_INFINITY) - t));
+    if (cfg.sched === 'cores' && cfg.capCheck !== undefined && s.running.size > 1) {
       let budgeted = 0;
-      for (const id of running.keys()) budgeted += (launched.get(id) ?? cand(id)).cores;
-      if (budgeted > cfg.capCheck + 1e-9) capViolations += 1;
+      for (const id of s.running.keys()) budgeted += (s.launched.get(id) ?? s.cand(id)).cores;
+      if (budgeted > cfg.capCheck + 1e-9) s.capViolations += 1;
     }
-    if (running.size === 0) throw new Error(`sim: pool stalled at ${t} ms`);
+    if (s.running.size === 0 && s.wake === Number.POSITIVE_INFINITY)
+      throw new Error(`sim: run ${s.run.id} stalled at ${t} ms`);
+  };
+
+  t = Math.min(...states.map((s) => s.run.startMs));
+  while (states.some((s) => !s.done)) {
+    for (const s of states) if (!s.done && started(s) && (s.dirty || s.wake <= t + EPS_MS)) pass(s);
 
     let demand = 0;
-    for (const id of running.keys()) demand += width(id);
-    const rate = Math.min(1, cfg.machineCores / demand);
+    for (const s of states) for (const id of s.running.keys()) demand += width(s, id);
+    const rate = demand > 0 ? Math.min(1, cfg.machineCores / demand) : 1;
     let step = Number.POSITIVE_INFINITY;
-    for (const left of running.values()) step = Math.min(step, left / rate);
+    for (const s of states) {
+      for (const left of s.running.values()) step = Math.min(step, left / rate);
+      if (!started(s)) step = Math.min(step, s.run.startMs - t);
+      else if (!s.done) step = Math.min(step, s.wake - t);
+    }
+    if (!Number.isFinite(step)) throw new Error(`sim: every run stalled at ${t} ms`);
     t += step;
     busy += Math.min(cfg.machineCores, demand) * step;
-    for (const [id, left] of running) {
-      const rest = left - step * rate;
-      if (rest <= EPS_MS) {
-        running.delete(id);
-        ends.set(id, t);
-      } else running.set(id, rest);
+    for (const s of states) {
+      let ended = false;
+      for (const [id, left] of s.running) {
+        const rest = left - step * rate;
+        if (rest <= EPS_MS) {
+          s.running.delete(id);
+          s.ends.set(id, t);
+          ended = true;
+        } else s.running.set(id, rest);
+      }
+      if (ended) {
+        s.dirty = true;
+        if (leased) reconcile(s, inUse(s));
+      }
+      if (!s.done && s.ends.size === s.specs.length) {
+        // The run exits: its broker closes, its tokens and its registration go with it.
+        s.done = true;
+        s.tokens = 0;
+        s.endMs = t;
+        s.busyAtEnd = busy;
+      }
     }
   }
   return {
     makespanMs: t,
     idleCoreS: (cfg.machineCores * t - busy) / 1000,
-    starts,
-    ends,
-    readyAt,
-    capViolations,
-    grants,
+    runs: new Map(states.map((s) => [s.run.id, s])),
   };
+}
+
+function resultOf(s: RunState, makespanMs: number, idleCoreS: number): SimResult {
+  return {
+    makespanMs,
+    idleCoreS,
+    starts: s.starts,
+    ends: s.ends,
+    readyAt: s.readyAt,
+    capViolations: s.capViolations,
+    grants: s.grants,
+    leaseHeld: s.leaseHeld,
+    overLease: s.overLease,
+  };
+}
+
+function simulate(gates: readonly SimGate[], cfg: SimConfig): SimResult {
+  const out = engine([{ id: 'run', startMs: 0, gates }], cfg);
+  const s = out.runs.get('run');
+  if (s === undefined) throw new Error('sim: the single run vanished');
+  return resultOf(s, out.makespanMs, out.idleCoreS);
+}
+
+/**
+ * N runs sharing one token pool (agent/plans/PLAN-prepush-full-cpu.md part 4, B11), each scheduled by the same admit() as simulate(), all under one processor-sharing machine. Gate ids must be unique across runs.
+ */
+export function simulateRuns(
+  runs: readonly SimRun[],
+  cfg: RunsConfig
+): { makespanMs: number; idleCoreS: number; runs: Map<string, RunResult> } {
+  const out = engine(runs, cfg);
+  const results = new Map<string, RunResult>();
+  for (const [id, s] of out.runs)
+    results.set(id, {
+      ...resultOf(s, s.endMs - s.run.startMs, out.idleCoreS),
+      endMs: s.endMs,
+      idleToEndCoreS: (cfg.machineCores * s.endMs - s.busyAtEnd) / 1000,
+    });
+  return { makespanMs: out.makespanMs, idleCoreS: out.idleCoreS, runs: results };
 }
 
 /** A small deterministic generator, so every run of the selftest simulates the same mix. */
@@ -422,6 +602,159 @@ export function schedulerSelftest(): { failures: string[]; assertions: number; t
   check(
     (held.grants.get('wide') ?? 0) >= 6,
     `an elastic gate must never run below its min, granted ${held.grants.get('wide')}`
+  );
+
+  // RUNS SHARING ONE LEASE (B11, PLAN-prepush-full-cpu part 4): 24 tokens, C the lease total, a pytest of the measured shape (10,600 cpu-s at 0.85 per core, min 2, max all).
+  const leaseCfg: RunsConfig = {
+    machineCores: 24,
+    jobs: 22,
+    heavyLimit: 5,
+    budget: { cores: 24, epsilon: 0.1, maxProcs: 48, memMb: 29 * 1024 },
+    sched: 'cores',
+    tokens: 24,
+  };
+  const pyWork = 10_600_000;
+  const pyPerCore = 0.85;
+  const py = (id: string, needs?: string[], work = pyWork): SimGate => ({
+    id,
+    cores: 1,
+    wallMs: work,
+    perCore: pyPerCore,
+    elastic: { min: 2, max: 'all' },
+    needs,
+  });
+  // A run's wall at its fair share of two runs.
+  const fair2 = pyWork / (pyPerCore * 12);
+  const runOf = (out: ReturnType<typeof simulateRuns>, id: string): RunResult => {
+    const r = out.runs.get(id);
+    if (r === undefined) throw new Error(`sim: no run ${id}`);
+    return r;
+  };
+  const sinceRegistered = (r: RunResult, start: number, gate: string): number =>
+    (r.ends.get(gate) ?? Number.POSITIVE_INFINITY) - start;
+
+  // 9. TWO PYTESTS STARTED 0.8 s APART split the tokens: both grants <= 12, both walls (from registering) within 1.2x the fair wall.
+  const pair = simulateRuns(
+    [
+      { id: 'a', startMs: 0, gates: [py('a:pytest')] },
+      { id: 'b', startMs: 800, gates: [py('b:pytest')] },
+    ],
+    leaseCfg
+  );
+  const pa = runOf(pair, 'a');
+  const pb = runOf(pair, 'b');
+  table.push(
+    `two pytests 0.8 s apart: grants ${pa.grants.get('a:pytest')} and ${pb.grants.get('b:pytest')}, walls ${(sinceRegistered(pa, 0, 'a:pytest') / 1000).toFixed(0)} s and ${(sinceRegistered(pb, 800, 'b:pytest') / 1000).toFixed(0)} s (fair ${(fair2 / 1000).toFixed(0)} s)`
+  );
+  check(
+    (pa.grants.get('a:pytest') ?? 99) <= 12 && (pb.grants.get('b:pytest') ?? 99) <= 12,
+    `two pytests started together must each be granted <= 12 of 24, got ${pa.grants.get('a:pytest')} and ${pb.grants.get('b:pytest')}`
+  );
+  check(
+    sinceRegistered(pa, 0, 'a:pytest') <= 1.2 * fair2 &&
+      sinceRegistered(pb, 800, 'b:pytest') <= 1.2 * fair2,
+    `both pytests must finish within 1.2x the fair wall ${fair2.toFixed(0)} ms, got ${sinceRegistered(pa, 0, 'a:pytest').toFixed(0)} and ${sinceRegistered(pb, 800, 'b:pytest').toFixed(0)}`
+  );
+
+  // 10. THE LOST RACE: b registers after a launched wide, so it holds with `lease` (never starts at `min` on no tokens), starts when a releases, and finishes within 2x the fair wall of registering.
+  const race = simulateRuns(
+    [
+      { id: 'a', startMs: 0, gates: [py('a:pytest')] },
+      { id: 'b', startMs: 10_000, gates: [py('b:pytest')] },
+    ],
+    leaseCfg
+  );
+  const ra = runOf(race, 'a');
+  const rb = runOf(race, 'b');
+  table.push(
+    `lost race: a granted ${ra.grants.get('a:pytest')}, b held ${rb.leaseHeld.has('b:pytest')}, b started ${((rb.starts.get('b:pytest') ?? 0) / 1000).toFixed(0)} s at ${rb.grants.get('b:pytest')}, b wall ${(sinceRegistered(rb, 10_000, 'b:pytest') / 1000).toFixed(0)} s`
+  );
+  check(
+    (ra.grants.get('a:pytest') ?? 0) > 12 && rb.leaseHeld.has('b:pytest'),
+    `CONTROL: a lone run must launch wide and the late run must be held by the lease, got a ${ra.grants.get('a:pytest')}, b held ${rb.leaseHeld.has('b:pytest')}`
+  );
+  check(
+    (rb.starts.get('b:pytest') ?? 0) >= (ra.ends.get('a:pytest') ?? 0) - EPS_MS &&
+      sinceRegistered(rb, 10_000, 'b:pytest') <= 2 * fair2 &&
+      rb.overLease.size === 0,
+    `the late pytest must wait for the release and finish within 2x fair (${(2 * fair2).toFixed(0)} ms), started ${rb.starts.get('b:pytest')} at ${rb.grants.get('b:pytest')}, wall ${sinceRegistered(rb, 10_000, 'b:pytest').toFixed(0)} ms`
+  );
+
+  // 11. THE BOUND: a's holder takes every token and never ends; b's pytest still launches within its fair wall plus one poll, past the lease and recorded as such.
+  const bound = simulateRuns(
+    [
+      { id: 'a', startMs: 0, gates: [{ id: 'a:holder', cores: 24, wallMs: 1e9 }] },
+      { id: 'b', startMs: 1000, gates: [py('b:pytest')] },
+    ],
+    leaseCfg
+  );
+  const bb = runOf(bound, 'b');
+  const boundStart = (bb.starts.get('b:pytest') ?? Number.POSITIVE_INFINITY) - 1000;
+  table.push(
+    `bound: b launched ${(boundStart / 1000).toFixed(1)} s after registering beside a holder that never ends (fair ${(fair2 / 1000).toFixed(1)} s), over ${JSON.stringify(bb.overLease.get('b:pytest'))}`
+  );
+  check(
+    boundStart <= fair2 + LEASE_POLL_MS + EPS_MS && bb.overLease.has('b:pytest'),
+    `a lease hold must end within its fair wall plus one poll (${(fair2 + LEASE_POLL_MS).toFixed(0)} ms) and record the over-grant, launched after ${boundStart.toFixed(0)} ms, over ${JSON.stringify(bb.overLease.get('b:pytest'))}`
+  );
+
+  // 12. THE SURVIVOR GROWS: b (started first) and a split the tokens; once b exits, a's next elastic gate is granted the whole pool.
+  const grow = simulateRuns(
+    [
+      { id: 'b', startMs: 0, gates: [py('b:short', undefined, 2_000_000)] },
+      {
+        id: 'a',
+        startMs: 500,
+        gates: [py('a:first', undefined, 6_000_000), py('a:second', ['a:first'], 2_400_000)],
+      },
+    ],
+    leaseCfg
+  );
+  const ga = runOf(grow, 'a');
+  const gb = runOf(grow, 'b');
+  table.push(
+    `survivor: a:first ${ga.grants.get('a:first')}, b ${gb.grants.get('b:short')}, a:second after b exited ${ga.grants.get('a:second')}`
+  );
+  check(
+    (ga.grants.get('a:first') ?? 99) <= 12 &&
+      (gb.endMs ?? Number.POSITIVE_INFINITY) < (ga.starts.get('a:second') ?? 0),
+    `CONTROL: a's first gate must share with b, and b must exit before a's second gate, got ${ga.grants.get('a:first')}, b ended ${gb.endMs}`
+  );
+  check(
+    ga.grants.get('a:second') === 24,
+    `after its neighbour exits a run's next elastic gate must take the whole pool of 24, got ${ga.grants.get('a:second')}`
+  );
+
+  // 13. WORK CONSERVATION: b (passing first) holds two long one-core gates; a's 220 one-core gates are not capped at the share, so they fill the 22 tokens b leaves and the machine idles near zero while a runs.
+  const conserve = simulateRuns(
+    [
+      {
+        id: 'b',
+        startMs: 0,
+        gates: [
+          { id: 'b:long-0', cores: 1, wallMs: 400_000 },
+          { id: 'b:long-1', cores: 1, wallMs: 400_000 },
+        ],
+      },
+      {
+        id: 'a',
+        startMs: 0,
+        gates: Array.from({ length: 220 }, (_, i) => ({
+          id: `a:one-${i}`,
+          cores: 1,
+          wallMs: 5000,
+        })),
+      },
+    ],
+    leaseCfg
+  );
+  const ca = runOf(conserve, 'a');
+  table.push(
+    `work conservation: a ended ${(ca.endMs / 1000).toFixed(1)} s, machine idle to then ${ca.idleToEndCoreS.toFixed(1)} core-s`
+  );
+  check(
+    ca.idleToEndCoreS <= 0.05 * 24 * (ca.endMs / 1000),
+    `fixed-width gates must fill what a neighbour leaves: idle ${ca.idleToEndCoreS.toFixed(1)} core-s over a's ${(ca.endMs / 1000).toFixed(1)} s`
   );
 
   return { failures, assertions, table };
