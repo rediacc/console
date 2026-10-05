@@ -370,7 +370,8 @@ def resolve(root, kind, token):
     The kinds, and where each one's answer comes from:
 
       blob      `git cat-file -t` says `blob`. The durable pointer.
-      commit    `git rev-parse <t>^{commit}`.
+      commit    `git rev-parse <t>^{commit}` AND an ancestor of HEAD, so a commit
+                a rebase orphaned (still in the object store) is refused.
       tree      `git cat-file -t` says `tree`. Rare: a citation into a
                 `git filter-branch`/rewrite control that names a tree id
                 directly (`git read-tree`, `HEAD^{tree}`) rather than a file
@@ -402,7 +403,15 @@ def resolve(root, kind, token):
         return (got == "tree"), (got or "no such object")
     if kind == "commit":
         got = _git_out(root, "rev-parse", "--verify", "--quiet", token + "^{commit}")
-        return bool(got), (got[:40] or "no such commit")
+        if not got:
+            return False, "no such commit"
+        # PRESENCE IS THE WRONG QUESTION FOR A COMMIT (finding #27a05a50). A rebase leaves the rewritten commit in the local object store as an orphan, so `rev-parse` alone records a pointer a fresh checkout cannot resolve. Twin of check_plan_citations.commit_is_reachable (same rule, the read side, commit cfea06ead); restated here, not imported, because this directory must not import from `.ci/`.
+        if not _git_ok(root, "merge-base", "--is-ancestor", got, "HEAD"):
+            return False, (
+                "%s exists in this clone but is not an ancestor of HEAD (a rebase rewrote it), "
+                "so a fresh checkout will not have it" % got[:40]
+            )
+        return True, got[:40]
     if kind == "ancestor":
         got = _git_out(root, "rev-parse", "--verify", "--quiet", token + "^{commit}")
         if not got:

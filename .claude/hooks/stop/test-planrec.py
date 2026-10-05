@@ -331,6 +331,33 @@ try:
 except ValueError:
     pass
 
+# finding #27a05a50: a `commit` pointer must descend from HEAD. CONTROL first: the base commit resolves; then a commit orphaned by `reset --hard` (still in the object store) is refused, and the base still resolves.
+_orph = pathlib.Path(tempfile.mkdtemp())
+sh(_orph, "git", "init", "-q")
+sh(_orph, "git", "config", "user.email", "t@example.com")
+sh(_orph, "git", "config", "user.name", "t")
+sh(_orph, "git", "commit", "-q", "--allow-empty", "-m", "base")
+_base = git_out(_orph, "rev-parse", "HEAD")
+sh(_orph, "git", "commit", "-q", "--allow-empty", "-m", "to be orphaned")
+_orphan = git_out(_orph, "rev-parse", "HEAD")
+truthy(
+    "resolve commit (control): the not-yet-orphaned tip resolves",
+    R.resolve(_orph, "commit", _orphan)[0],
+)
+sh(_orph, "git", "reset", "-q", "--hard", _base)
+truthy("resolve commit: the base commit still resolves", R.resolve(_orph, "commit", _base)[0])
+_ok, _why = R.resolve(_orph, "commit", _orphan)
+falsy("resolve commit: a reset-orphaned commit is refused", _ok)
+truthy(
+    "resolve commit: the refusal names the sha and the ancestry",
+    _orphan[:40] in _why and "not an ancestor of HEAD" in _why,
+)
+falsy(
+    "resolve_pointers: an orphaned commit pointer fails",
+    R.resolve_pointers(_orph, [("commit", _orphan)])[0][1],
+)
+shutil.rmtree(_orph, ignore_errors=True)
+
 # --------------------------------------------------------------------------- 5. launder(). The model's prose is the only untrusted input this module takes. ---------------------------------------------------------------------------
 clean, replaced = R.launder(ROOT, "see package.json:1 and check:ci-plan-record and %s" % AFTER)
 control("launder leaves resolvable pointers alone", replaced, [])
