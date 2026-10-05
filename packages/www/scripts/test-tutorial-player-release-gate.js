@@ -119,7 +119,10 @@ function wait(ms) {
 }
 
 function open(url) {
-  return runAgent(['open', url]);
+  const out = runAgent(['open', url]);
+  // Stamp the document, so a later state that has lost its player says whether the page reloaded (stamp gone) or the player unmounted in place (stamp kept): dev-server noise against a product bug.
+  evalInPage('(() => { window.__tpgDoc = 1; })()');
+  return out;
 }
 
 /**
@@ -240,7 +243,9 @@ function currentState() {
       paused: video ? video.paused : null,
       ended: video ? video.ended : null,
       currentTime: video ? video.currentTime : null,
-      plyrPlaying: plyrRoot ? plyrRoot.classList.contains('plyr--playing') : null
+      plyrPlaying: plyrRoot ? plyrRoot.classList.contains('plyr--playing') : null,
+      sameDocument: window.__tpgDoc === 1,
+      players: document.querySelectorAll('.tvp-root video').length
     };
   })()`);
 }
@@ -258,7 +263,8 @@ function sampledStates(durationMs, tickMs) {
         // Tell a stalled fetch or a starved decoder (readyState below HAVE_FUTURE_DATA) from a play() race (data present, clock frozen).
         readyState: video ? video.readyState : null,
         networkState: video ? video.networkState : null,
-        bufferedEnd: video && video.buffered.length > 0 ? video.buffered.end(video.buffered.length - 1) : null
+        bufferedEnd: video && video.buffered.length > 0 ? video.buffered.end(video.buffered.length - 1) : null,
+        sameDocument: window.__tpgDoc === 1
       });
       if (Date.now() - start >= ${durationMs}) {
         resolve(rows);
