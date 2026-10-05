@@ -1093,17 +1093,22 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 29,
-      "done": 0,
+      "open": 6,
+      "done": 23,
       "open_sigs": [
-        "1a150999",
         "1c4a1af6",
+        "55b8bd2f",
+        "5951f55c",
+        "8e5a6152",
+        "9fc6699d",
+        "d275eb7a"
+      ],
+      "done_sigs": [
+        "1a150999",
         "214aa602",
         "2b6e60c0",
         "37b3c257",
         "45f7d297",
-        "55b8bd2f",
-        "5951f55c",
         "5ae56a17",
         "5beb9651",
         "67124883",
@@ -1111,9 +1116,7 @@
         "818a3f2a",
         "85b95d7c",
         "8bc9d915",
-        "8e5a6152",
         "9f8e3dcb",
-        "9fc6699d",
         "a2309393",
         "be8e3881",
         "beb1c906",
@@ -1121,12 +1124,10 @@
         "c7047617",
         "cc185dd6",
         "cd437ac3",
-        "d275eb7a",
         "dc9c8e85",
         "e72bec9a",
         "f6d864ca"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-printf-echo-pipefail-sweep.md": {
       "status": "compacted",

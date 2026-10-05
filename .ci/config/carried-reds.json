@@ -32,9 +32,9 @@
     {
       "gate": "check:ci-plan-implementation",
       "findings": [
-        "P-A1:177914db0e3c"
+        "P-A1:9e03ddeec630"
       ],
-      "reason": "Turbo ran with the operator's go and was then switched off with five plans part-done: clean-review-ledger T17/T18, commit-as-you-go T6 keep-list and the drain, config-team-scoping T10 (live eu smoke needs a browser), plan-per-pr-loop R1 (waits on a scheduled run) and retire-bash-oracles (its M-live release ports wait for the operator's real runs). The PR body's Operational-Reason names them, which admits P-A1 in CI. PLAN-ci-quick-cpu-scheduling.md joined the clock on 2026-10-05: PLAN-prepush-full-cpu PF0 ticked its shipped P0/P1, leaving P2-P4 open by design (P4's weight half is superseded by PF1)."
+      "reason": "Turbo ran with the operator's go and was then switched off with five plans part-done: clean-review-ledger T17/T18, commit-as-you-go T6 keep-list and the drain, config-team-scoping T10 (live eu smoke needs a browser), plan-per-pr-loop R1 (waits on a scheduled run) and retire-bash-oracles (its M-live release ports wait for the operator's real runs). The PR body's Operational-Reason names them, which admits P-A1 in CI. PLAN-ci-quick-cpu-scheduling.md joined the clock on 2026-10-05: PLAN-prepush-full-cpu PF0 ticked its shipped P0/P1, leaving P2-P4 open by design (P4's weight half is superseded by PF1). PLAN-prepush-full-cpu.md is this PR's own plan: 23 of 29 boxes ticked on 2026-10-05, the rest (PF6, PF12, PF13, PF18, PF27, PF-final) in progress here."
     },
     {
       "gate": "check:ci-pytest",

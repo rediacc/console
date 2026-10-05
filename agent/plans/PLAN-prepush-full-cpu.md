@@ -81,11 +81,16 @@ Filled by the lead from a parallel measurement on this host (24 logical cores, W
 
 **Weight follows the grant.** The candidate's `cores` for budgeting is the grant, not a hand number, and the measured d(g) of an elastic gate is stored per core (cpu / wall / grant), so a run at 20 workers does not teach the scheduler a gate is 20 wide forever.
 
-- [ ] PF1 `cores: {min, max}` replaces `weight` in gate-spec.ts and gen-manifest's HAND_ONLY list (scripts/gen/gen-manifest.ts:72); `weight` is refused by the manifest check, clean break
-- [ ] PF2 `admit()` grants elastic gates by the area rule, `lease` hold reason, `grantedCores` on GateResult and the receipt; exec.ts exports `CI_RUNNER_CORES` and `CI_CORE_LEASE_HELD`
-- [ ] PF3 `grantedCores()` in lease-client.ts; `scripts/ci-runner/typecheck-incremental.ts:795` reads it; sim.ts models elastic gates (processor sharing above C, as today)
-- [ ] PF4 check_pytest.py: `PYTEST_JOBS_CAP` deleted, `jobs()` = `PYTEST_JOBS` if set, else `granted_cores()`; the `-n 2` at :877 stays because it is a header-parse fixture that needs exactly two workers, and its comment says so
-- [ ] PF5 manifest: check:ci-pytest `cores: {min: 2, max: 'all'}`; each vitest gate passes `--maxWorkers=$CI_RUNNER_CORES` and declares `cores: {min: 1, max: 'all'}`; each biome gate likewise through its thread knob (hypothesis: `RAYON_NUM_THREADS`, verified before use); every remaining `weight: 2` is replaced by an elastic declaration or deleted in favour of measured d(g)
+- [x] PF1 `cores: {min, max}` replaces `weight` in gate-spec.ts and gen-manifest's HAND_ONLY list (scripts/gen/gen-manifest.ts:72); `weight` is refused by the manifest check, clean break
+    (ticked) 2026-10-05T11:55:32Z by d778be9d: commit:00fa66691 gate-spec carries cores {min,max}, a manifest still carrying weight is refused, gen-manifest lists cores
+- [x] PF2 `admit()` grants elastic gates by the area rule, `lease` hold reason, `grantedCores` on GateResult and the receipt; exec.ts exports `CI_RUNNER_CORES` and `CI_CORE_LEASE_HELD`
+    (ticked) 2026-10-05T11:55:33Z by d778be9d: commit:00fa66691 pool.ts admit grants elastic gates by the area rule with a lease hold reason, exec.ts exports CI_RUNNER_CORES and CI_CORE_LEASE_HELD
+- [x] PF3 `grantedCores()` in lease-client.ts; `scripts/ci-runner/typecheck-incremental.ts:795` reads it; sim.ts models elastic gates (processor sharing above C, as today)
+    (ticked) 2026-10-05T11:55:35Z by d778be9d: commit:00fa66691 grantedCores in lease-client.ts, read by typecheck-incremental.ts, sim.ts models elastic gates (case 7)
+- [x] PF4 check_pytest.py: `PYTEST_JOBS_CAP` deleted, `jobs()` = `PYTEST_JOBS` if set, else `granted_cores()`; the `-n 2` at :877 stays because it is a header-parse fixture that needs exactly two workers, and its comment says so
+    (ticked) 2026-10-05T11:55:36Z by d778be9d: commit:00fa66691 PYTEST_JOBS_CAP deleted; jobs() is PYTEST_JOBS else core_lease.granted_cores(); test_check_pytest_jobs plants the cap
+- [x] PF5 manifest: check:ci-pytest `cores: {min: 2, max: 'all'}`; each vitest gate passes `--maxWorkers=$CI_RUNNER_CORES` and declares `cores: {min: 1, max: 'all'}`; each biome gate likewise through its thread knob (hypothesis: `RAYON_NUM_THREADS`, verified before use); every remaining `weight: 2` is replaced by an elastic declaration or deleted in favour of measured d(g)
+    (ticked) 2026-10-05T11:55:37Z by d778be9d: commit:00fa66691 pytest cores {min 2, max all}; 7 vitest gates via VITEST_MAX_WORKERS; check:format via RAYON_NUM_THREADS; eslint gates cores {1,4} via eslint-heap --concurrency; no weight left
 - [ ] PF6 .ci/rediacc_ci/battery.py:450 and .ci/rediacc_ci/quality/literal_sources.py:533 read `granted_cores()`; lane-durations.json `unitParallelism` is derived from the runner's core count by budget_report rather than hand-authored, and scripts/gates/check-lane-budget.ts:60 reads the derived value
 
 ## 2. One scheduler pass
@@ -100,9 +105,12 @@ Filled by the lead from a parallel measurement on this host (24 logical cores, W
 
 **The receipt.** Field set unchanged. `droppedTouched` lists only gates this pass could not run (tree writers outside a disposable clone), so in the push clone it is `[]`. A touched slow gate that ran is in the run like any other gate: a failure lands in `failed`, `findings` and `exitCode`, and `carried_verdict` judges it (.claude/rediacc_hooks/guards/block_unverified_push.py:1049). A new diagnostic field `slowAdmitted` names the touched slow gates the pass ran (the guard does not read it).
 
-- [ ] PF7 one-pass `--quick`: budget deleted, every touched slow gate admitted, `slowAdmitted` in the receipt, `PUBLIC_VIDEO_CDN_BASE_URL` hypothesis verified and fixed at its root (a missing `env` on the prerequisite, or the gate's own declaration)
-- [ ] PF8 scripts/ci-runner/manifest.ts:5019 comment rewritten to cite the 2026-10-05 ruling and the elastic declaration; .ci/rediacc_ci/check_pytest.py:139-147 comment block rewritten to match
-- [ ] PF10 gate test (test_gate_ci_runner.py): a synthetic manifest with one slow gate whose leaf the diff touches; one `--quick --receipt-out` in a clean clone runs it, writes `droppedTouched: []` and the gate in `slowAdmitted`; a failing slow gate gives `exitCode: 1` and `failed` naming it; in a dirty shared checkout a touched tree writer still lands in `droppedTouched` with its `--only` command, and that `--only` run merges into `droppedVerified`. Control: restoring the 90 s budget makes the first case report the slow gate as dropped, and the test reds
+- [x] PF7 one-pass `--quick`: budget deleted, every touched slow gate admitted, `slowAdmitted` in the receipt, `PUBLIC_VIDEO_CDN_BASE_URL` hypothesis verified and fixed at its root (a missing `env` on the prerequisite, or the gate's own declaration)
+    (ticked) 2026-10-05T11:55:39Z by d778be9d: commit:00fa66691 the 90 s budget and its budget/unpriced drops are deleted; the first one-pass run admitted 63 slow gates and dropped none
+- [x] PF8 scripts/ci-runner/manifest.ts:5019 comment rewritten to cite the 2026-10-05 ruling and the elastic declaration; .ci/rediacc_ci/check_pytest.py:139-147 comment block rewritten to match
+    (ticked) 2026-10-05T11:55:40Z by d778be9d: commit:00fa66691 the STOP AT 2.08x comment and check_pytest's cap comment both cite the 2026-10-05 ruling
+- [x] PF10 gate test (test_gate_ci_runner.py): a synthetic manifest with one slow gate whose leaf the diff touches; one `--quick --receipt-out` in a clean clone runs it, writes `droppedTouched: []` and the gate in `slowAdmitted`; a failing slow gate gives `exitCode: 1` and `failed` naming it; in a dirty shared checkout a touched tree writer still lands in `droppedTouched` with its `--only` command, and that `--only` run merges into `droppedVerified`. Control: restoring the 90 s budget makes the first case report the slow gate as dropped, and the test reds
+    (ticked) 2026-10-05T11:55:41Z by d778be9d: commit:00fa66691 test_elastic_gate_is_told_its_grant and test_quick_is_one_pass, each with its plant red then green
 
 ## 3. Shrink the critical path
 
@@ -129,13 +137,18 @@ The pytest floor today is the 470 s `hooks-guards` group, then the 220.8 s singl
 - `pytest_collection_modifyitems` in conftest.py sorts items by measured duration, longest first, from the local junit and lane-durations `units` (per-file, .ci/config/lane-durations.json:105-917). `loadgroup` hands out pending items in that order, so the longest start first.
 - Target: no serial chain above about 60 s, so check:ci-pytest's wall approaches test-seconds / grant.
 
-- [ ] PF11 hooks-guards: the process-table cases move to test_guards_process_table.py with the group; test_guards_differential.py ungrouped
+- [x] PF11 hooks-guards: the process-table cases move to test_guards_process_table.py with the group; test_guards_differential.py ungrouped
+    (ticked) 2026-10-05T11:55:43Z by d778be9d: commit:00fa66691 the process-table cases moved out; the grouped half fell from about 460 s to 18 s
 - [ ] PF12 the guards world is built once per run under a lock and shared read-only; a read-only control proves no case writes into it
 - [ ] PF13 test_settings_collapse split so no item exceeds about 20 s; test_proxies_go_unit split per package
-- [ ] PF14 per-worker port slices; the `ports` group deleted from its four modules
-- [ ] PF15 shrink_only_composition, docs_gen and paths_exist plant into copies; the real-tree group has no member; the tree tripwire lands with a planted control
-- [ ] PF16 check:ci-pytest drops `tree:repo` and `writesTree`; pool_writer_safety's rule and docstring flipped; xdist_groups.py docstring and test_xdist_groups.py updated for an empty real-tree group
-- [ ] PF17 hooks-delegates and housekeeping-cleanup-versions groups resolved per worker, or kept with a measured reason in the module
+- [x] PF14 per-worker port slices; the `ports` group deleted from its four modules
+    (ticked) 2026-10-05T11:55:44Z by d778be9d: commit:00fa66691 worker_port_range and free_port_in_range give each worker a slice; the ports group is gone
+- [x] PF15 shrink_only_composition, docs_gen and paths_exist plant into copies; the real-tree group has no member; the tree tripwire lands with a planted control
+    (ticked) 2026-10-05T11:55:45Z by d778be9d: commit:00fa66691 the three plant into copies or verify-only; the session tripwire in conftest fails a run that changes a tracked path
+- [x] PF16 check:ci-pytest drops `tree:repo` and `writesTree`; pool_writer_safety's rule and docstring flipped; xdist_groups.py docstring and test_xdist_groups.py updated for an empty real-tree group
+    (ticked) 2026-10-05T11:55:47Z by d778be9d: commit:00fa66691 tree:repo and writesTree dropped; pool_writer_safety refuses any real-tree declaration; gate_tree_writes REAL control pins it
+- [x] PF17 hooks-delegates and housekeeping-cleanup-versions groups resolved per worker, or kept with a measured reason in the module
+    (ticked) 2026-10-05T11:55:48Z by d778be9d: commit:00fa66691 both groups removed: the floor test reads its cases by ast, hooks-delegates ran clean three times at -n 8
 - [ ] PF18 duration-ordered collection in conftest.py; .ci/config/shards/quality-pytest.json rebalanced for the split files
 
 ## 4. No self-contention
@@ -153,10 +166,14 @@ The pytest floor today is the 470 s `hooks-guards` group, then the 220.8 s singl
 - check_pytest.py run standalone (no `CI_RUNNER_CORES`) leases through the same module, so `npm run check:ci-pytest` from a session cannot take every core under a running pre-push.
 - Writer agents' test runs go through the same wrapper because it is the path they are told to use; their prompts name it.
 
-- [ ] PF19 core_lease.py: tokens, acquire, run, broker, status; `granted_cores()` helper (lands first: B and C import it)
-- [ ] PF20 lease-client.ts and the runner's use of it: `free` before each pass, acquire at launch, release at settle, the broker killed with the runner
-- [ ] PF21 bootstrap.sh writes the pytest wrapper in place of the symlink; check_pytest.py leases when run standalone; .claude/skills/testing/hooks.md names the wrapper
-- [ ] PF22 devbox lease-directory check (mount or recorded reason)
+- [x] PF19 core_lease.py: tokens, acquire, run, broker, status; `granted_cores()` helper (lands first: B and C import it)
+    (ticked) 2026-10-05T11:55:50Z by d778be9d: commit:7bee521ca flock tokens, acquire/run/pytest/broker/free/status, pool mutex; 21 tests and three plants red then green
+- [x] PF20 lease-client.ts and the runner's use of it: `free` before each pass, acquire at launch, release at settle, the broker killed with the runner
+    (ticked) 2026-10-05T11:55:51Z by d778be9d: commit:00fa66691 openLease reads free before each pass, takes and releases tokens per gate, falls back to the whole machine saying why
+- [x] PF21 bootstrap.sh writes the pytest wrapper in place of the symlink; check_pytest.py leases when run standalone; .claude/skills/testing/hooks.md names the wrapper
+    (ticked) 2026-10-05T11:55:52Z by d778be9d: commit:7bee521ca bootstrap writes the lease-aware pytest wrapper idempotently and doctor reports a lease row
+- [x] PF22 devbox lease-directory check (mount or recorded reason)
+    (ticked) 2026-10-05T11:55:54Z by d778be9d: commit:606f7daac the devbox binds /run/user/<uid>/rediacc-cores with REDIACC_CORE_LEASE_DIR, and devbox.py matches (d3508efb0)
 
 ## 5. No pointless restarts
 
@@ -176,15 +193,21 @@ The pytest floor today is the 470 s `hooks-guards` group, then the 220.8 s singl
 
 **The guard.** .claude/rediacc_hooks/guards/block_unverified_push.py:885 accepts `r_tree != tree` only when the receipt's `advances` form a chain from `headTree` to the pushed tree and, for every step, the guard recomputes `git diff --name-only from to` itself (never trusting `paths`), finds it inside the record set read from HEAD's copy of the policy, and finds every reader of the touched globs in `gates` at exit 0 or carried. `dropped_verdict` (:994) and the carried-reds read take the chain's end as the tree. The extra git call runs only on the branch that refuses today, so the common path stays one `rev-parse` and one file read. The existing refusal texts are unchanged, so the frozen golden (.claude/rediacc_hooks/tests/goldens/block_unverified_push.jsonl) keeps its rows and gains rows only for the new refusals.
 
-- [ ] PF23 record-paths.json and check:ci-record-paths with its planted-reader control, wired through package.json, the manifest and its CI step
-- [ ] PF24 the advance in run.ts: diff against the receipt tree, readers only, `advances` appended
-- [ ] PF25 the guard's chain rule with the diff recomputed, `dropped_verdict` and carried reds on the chain's end
-- [ ] PF26 guard gate tests (test-block_unverified_push.py): a reviews-only commit with its readers green in `advances` is allowed; a reviews-only commit with no advance is refused; a commit touching agent/reviews and one code file is refused; an advance whose `paths` claims only records while the real diff holds code is refused; two chained advances are allowed; a reader red in `advances` is refused unless carried. Control: replacing the confinement check with `True` (the guard's own DEFECT seam, .claude/rediacc_hooks/guards/block_unverified_push.py:46) makes the code-commit case pass, and the suite reds
+- [x] PF23 record-paths.json and check:ci-record-paths with its planted-reader control, wired through package.json, the manifest and its CI step
+    (ticked) 2026-10-05T11:55:55Z by d778be9d: commit:aedf9a278 record-paths.json with 62 readers and the control-first gate, wired in 00fa66691 and 633a458bf
+- [x] PF24 the advance in run.ts: diff against the receipt tree, readers only, `advances` appended
+    (ticked) 2026-10-05T11:55:56Z by d778be9d: commit:00fa66691 planAdvance/runAdvance re-run only the record readers and append an advances step, diffed with --no-renames
+- [x] PF25 the guard's chain rule with the diff recomputed, `dropped_verdict` and carried reds on the chain's end
+    (ticked) 2026-10-05T11:55:58Z by d778be9d: commit:aedf9a278 the guard follows advances, recomputes each diff with --no-renames, admits only record-only steps whose readers passed
+- [x] PF26 guard gate tests (test-block_unverified_push.py): a reviews-only commit with its readers green in `advances` is allowed; a reviews-only commit with no advance is refused; a commit touching agent/reviews and one code file is refused; an advance whose `paths` claims only records while the real diff holds code is refused; two chained advances are allowed; a reader red in `advances` is refused unless carried. Control: replacing the confinement check with `True` (the guard's own DEFECT seam, .claude/rediacc_hooks/guards/block_unverified_push.py:46) makes the code-commit case pass, and the suite reds
+    (ticked) 2026-10-05T11:55:59Z by d778be9d: commit:aedf9a278 16 advance worlds, 100 cases; the confinement plant through the DEFECT seam fails the 4 confinement cases
 
 ## 6. Records
 
-- [ ] PF0 PLAN-ci-quick-cpu-scheduling.md: P0 and P1 ticked with commits 0564f8067 and 0fdca103a, P2's shipped half named, P4's weight retirement marked superseded by this plan's PF1; QUEUE.md line corrected
-- [ ] PF9 the static-width sweep: every `-n`, `-j`, `-P`, `max_workers`, `maxWorkers`, `cpu_count()` and `availableParallelism()` in a gate's reach is either sized by the grant or listed in `.ci/policy/fixed-widths.json` as an I/O fan-out with its remote limit; check_record_paths.py's second mode reds on a new literal width outside the list (operator decision point: I/O widths are request concurrency, not cores; DEFAULT: they stay fixed and listed)
+- [x] PF0 PLAN-ci-quick-cpu-scheduling.md: P0 and P1 ticked with commits 0564f8067 and 0fdca103a, P2's shipped half named, P4's weight retirement marked superseded by this plan's PF1; QUEUE.md line corrected
+    (ticked) 2026-10-05T11:55:31Z by d778be9d: commit:8913d62ab P0 and P1 ticked with their commits, P2's shipped half named, P4's weight half marked superseded, QUEUE.md line corrected
+- [x] PF9 the static-width sweep: every `-n`, `-j`, `-P`, `max_workers`, `maxWorkers`, `cpu_count()` and `availableParallelism()` in a gate's reach is either sized by the grant or listed in `.ci/policy/fixed-widths.json` as an I/O fan-out with its remote limit; check_record_paths.py's second mode reds on a new literal width outside the list (operator decision point: I/O widths are request concurrency, not cores; DEFAULT: they stay fixed and listed)
+    (ticked) 2026-10-05T11:56:00Z by d778be9d: commit:aedf9a278 fixed-widths.json lists the network fan-outs (operator: keep fixed, listed); check:ci-record-paths refuses an unlisted width or a core cap; embed-asset probe now granted (00fa66691)
 - [ ] PF27 docs/agent-reference/ci-gates.md: the one-pass pre-push, `CI_RUNNER_CORES`, the lease, the record set
 
 ## Writer split

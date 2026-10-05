@@ -530,7 +530,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-plan-dependencies.md` | approved | 376 | 9 | 3 | 34313 |
 | `agent/plans/PLAN-plan-per-pr-loop.md` | approved | 71 | 1 | 15 | 14314 |
 | `agent/plans/PLAN-plan-preflight.md` | approved | 127 | 9 | 0 | 23411 |
-| `agent/plans/PLAN-prepush-full-cpu.md` | approved | 226 | 29 | 0 | 38747 |
+| `agent/plans/PLAN-prepush-full-cpu.md` | approved | 249 | 6 | 23 | 42846 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
 | `agent/plans/PLAN-program-state-in-repo.md` | approved | 47 | 0 | 5 | 6984 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
