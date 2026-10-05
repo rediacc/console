@@ -126,12 +126,17 @@ def _judge_local(ev, creation, console_top, console_branch, today):
             return _refuse(
                 ev,
                 "`%s` in the submodule %s. A submodule's branch carries the console's name "
-                "(`%s`), and it may hold no other live branch (live: %s)."
+                "(`%s`), and it may hold no other live branch (live: %s). A branch whose PR "
+                "merged stays live until its remote branch is deleted AND its tracking ref is "
+                "pruned: `git -C %s fetch --prune origin`, delete the remote branch if it is "
+                "still there, and `git -C %s branch -D <it>` once its tree equals origin/main."
                 % (
                     creation.name,
                     repo,
                     console_branch or "(detached)",
                     ", ".join(live) or "none",
+                    repo,
+                    repo,
                 ),
             )
         return hookio.ALLOW
