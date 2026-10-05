@@ -467,6 +467,31 @@ def test_a_payload_over_the_bound_exits_clean_and_records_the_skip(tmp_path):
     assert not (tmp_path / "errors.jsonl").exists()
 
 
+def test_a_payload_over_the_bound_keeps_its_cwd_and_session():
+    """PR #595 review F1: the over-bound path left `event` empty, so the response-free rules judged the hook's own directory and lost the per-session dedupe. The head carries both fields ahead of `tool_input`; a `cwd` inside the command's own input is not the event's."""
+    spec = importlib.util.spec_from_file_location("tg_dispatch", TRAPGUARD)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    body = json.dumps(
+        {
+            "session_id": "sess-f1",
+            "cwd": "/srv/checkout",
+            "tool_input": {"command": "git status", "cwd": "/not/the/event"},
+            "tool_response": {"stdout": "x" * module.MAX_PAYLOAD},
+        }
+    )
+    payload = body[: module.MAX_PAYLOAD + 1]
+    assert module._scalar_from_truncated(payload, "cwd") == "/srv/checkout"
+    assert module._scalar_from_truncated(payload, "session_id") == "sess-f1"
+    # CONTROL: with no top-level cwd in the head, the nested one is NOT taken.
+    nested = json.dumps(
+        {"tool_input": {"command": "git status", "cwd": "/not/the/event"}, "tool_response": {}}
+    )
+    assert module._scalar_from_truncated(nested, "cwd") == ""
+
+
 def _session_payload(session: str, nonce: str) -> bytes:
     return hookcases._j(
         {
