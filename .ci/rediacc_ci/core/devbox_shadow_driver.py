@@ -1028,7 +1028,7 @@ def status_curl(host: str, code: str, rc: int = 0, **kw) -> dict:
     )
 
 
-# Every destination a fully bound container reports: the repo, the four scripts, and the three home files the fixture HOME holds.
+# Every destination a fully bound container reports: the repo, the four scripts, and the three home files the fixture HOME holds, and the core lease pool (606f7daac; reported only where the host has /run/user/<uid>).
 ALL_MOUNTS = "".join(
     line + "\n"
     for line in (
@@ -1037,6 +1037,7 @@ ALL_MOUNTS = "".join(
         "/home/vscode/.gitconfig",
         "/home/vscode/.config/gh",
         "/home/vscode/.claude.json",
+        devbox.DEVBOX_CORE_LEASE_DEST,
     )
 )
 
@@ -1115,6 +1116,7 @@ def identity_steps() -> list[Step]:
         Step("docker-none", "devbox_docker", rules=[NO_DOCKER_GROUP, rule("sudo", rc=1)]),
         Step("script-binds", "devbox_script_binds"),
         Step("home-binds", "devbox_home_binds"),
+        Step("core-lease-src", "devbox_core_lease_src"),
         Step(
             "bind-ro",
             "_devbox_bind_if_present",
