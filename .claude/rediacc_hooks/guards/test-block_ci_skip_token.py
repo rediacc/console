@@ -156,7 +156,7 @@ BROKEN_RUNNER = (
     "cut = [n for n in ast.parse(src).body if isinstance(n, ast.Assign)"
     " and any(isinstance(t, ast.Name) and t.id == 'DEFECT' for t in n.targets)]\n"
     "outside = '\\n'.join(l for i, l in enumerate(src.split('\\n'), 1)"
-    " if not any(n.lineno <= i <= n.end_lineno for n in cut))\n"
+    " if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut))\n"
     "assert cut and old in outside, 'DEFECT no longer applies outside its own declaration'\n"
     "ns = {'__name__': 'broken', '__file__': %r}\n"
     "exec(compile(src.replace(old, new), 'broken', 'exec'), ns)\n"
