@@ -16,10 +16,14 @@ import signal
 import subprocess
 import sys
 import time
+from typing import TYPE_CHECKING
 
 import pytest
 
 from rediacc_ci import core_lease
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 MODULE = pathlib.Path(core_lease.__file__).resolve()
 TOKENS = 4
@@ -253,12 +257,108 @@ def scenario_probe_race(lease: Lease) -> list[str]:
     return []
 
 
+def broker_asker(
+    lease: Lease, label: str
+) -> Callable[[dict[str, object]], dict[str, object] | None]:
+    broker = lease.spawn("broker", "--label", label)
+
+    def ask(req: dict[str, object]) -> dict[str, object] | None:
+        assert broker.stdin is not None
+        broker.stdin.write(json.dumps(req) + "\n")
+        broker.stdin.flush()
+        line = readline(broker, ANSWER_S)
+        return None if line is None else json.loads(line)
+
+    ask.proc = broker  # type: ignore[attr-defined]
+    return ask
+
+
+def scenario_runs_registered(lease: Lease) -> list[str]:
+    """Two brokers each report runs 2; after kill -9 of one the survivor reports 1 and the dead marker is gone."""
+    first = broker_asker(lease, "first")
+    second = broker_asker(lease, "second")
+    fails = []
+    # A broker registers before it reads stdin, so one answered request apiece means both are registered.
+    for ask in (first, second):
+        ask({"op": "free"})
+    for name, ask in (("second", second), ("first", first)):
+        reply = ask({"op": "free"})
+        if not reply or reply.get("runs") != 2:
+            fails.append("%s broker's free reply is %r, want runs 2" % (name, reply))
+    kill9(first.proc)  # type: ignore[attr-defined]
+    reply = second({"op": "free"})
+    if not reply or reply.get("runs") != 1:
+        fails.append(
+            "after kill -9 of one broker the survivor's free reply is %r, want runs 1" % reply
+        )
+    left = sorted((lease.pool / "runs").glob("*.lock"))
+    if len(left) != 1:
+        fails.append("the dead run's marker must be unlinked; %d marker file(s) remain" % len(left))
+    return fails
+
+
+# Each child registers, counts at once and lets go, over and over, beside the others: a counter that sees another's half-made marker must not be able to void it.
+REGISTRAR = """
+import importlib.util, pathlib, sys
+spec = importlib.util.spec_from_file_location("registered", sys.argv[1])
+mod = importlib.util.module_from_spec(spec)
+sys.modules["registered"] = mod
+spec.loader.exec_module(mod)
+pool = mod.Pool(pathlib.Path(sys.argv[2]), 4)
+pool.ensure()
+zero = 0
+for _ in range(int(sys.argv[3])):
+    run = pool.register("race")
+    zero += pool.live_runs() < 1
+    run.close()
+print(zero)
+"""
+
+
+def scenario_register_and_count(lease: Lease) -> list[str]:
+    """Registering and counting at once, from several processes, never reads 0 for the run just registered."""
+    procs = [
+        subprocess.Popen(
+            [sys.executable, "-c", REGISTRAR, str(lease.module), str(lease.pool), "60"],
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        for _ in range(4)
+    ]
+    zeros = 0
+    for proc in procs:
+        out, _ = proc.communicate(timeout=ANSWER_S * 3)
+        if proc.returncode != 0 or not out.strip().isdigit():
+            return ["a registrar exited %s with output %r" % (proc.returncode, out)]
+        zeros += int(out)
+    return ["%d count(s) read 0 for a live, just-registered run" % zeros] if zeros else []
+
+
+def scenario_share_cap(lease: Lease) -> list[str]:
+    """With two live runs on a 4-token pool, the pytest verb asked for `-n auto` takes 2, not 4."""
+    other = broker_asker(lease, "other")
+    reply = other({"op": "free"})
+    if not reply or reply.get("runs") != 1:
+        return ["setup: the other broker's free reply is %r, want runs 1" % reply]
+    real = fake_pytest(lease.pool.parent)
+    out = lease.run("pytest", "--real", str(real), "--", "-n", "auto")
+    if out.returncode != 0:
+        return ["the pytest verb exited %d: %s" % (out.returncode, out.stderr)]
+    seen = json.loads(out.stdout)
+    if seen["cores"] != "2" or seen["argv"] != ["-n", "2"]:
+        return ["pytest -n auto beside 1 other run took %r, want 2 of 4" % seen]
+    return []
+
+
 SCENARIOS = {
     "over_grant": scenario_over_grant,
     "kill_frees": scenario_kill_frees,
     "short_without_wait": scenario_short_without_wait,
     "broker_eof": scenario_broker_eof,
     "probe_race": scenario_probe_race,
+    "runs_registered": scenario_runs_registered,
+    "register_and_count": scenario_register_and_count,
+    "share_cap": scenario_share_cap,
 }
 
 # The plant that each scenario must catch, per the plan's Writer split (C).
@@ -266,6 +366,9 @@ PLANTED = [
     ("sidecar-count", "kill_frees"),
     ("blocking-flock", "over_grant"),
     ("unguarded-scan", "probe_race"),
+    ("runs-file-count", "runs_registered"),
+    ("runs-no-mutex", "register_and_count"),
+    ("runs-no-cap", "share_cap"),
 ]
 
 
@@ -508,4 +611,24 @@ def test_module_form_runs_the_same_cli(tmp_path: pathlib.Path) -> None:
         check=False,
     )
     assert out.returncode == 0, out.stderr
-    assert json.loads(out.stdout) == {"free": TOKENS, "held": [], "total": TOKENS}
+    assert json.loads(out.stdout) == {"free": TOKENS, "held": [], "runs": 1, "total": TOKENS}
+
+
+def test_unusable_runs_dir_is_exit_69(tmp_path: pathlib.Path) -> None:
+    pool = tmp_path / "pool"
+    pool.mkdir(mode=0o700)
+    (pool / "runs").write_text("not a directory", encoding="utf-8")
+    out = Lease(MODULE, pool).run("free")
+    assert out.returncode == core_lease.EXIT_UNUSABLE, out.stderr
+    assert "run marker directory" in out.stderr
+
+
+def test_status_reports_the_live_run_count(tmp_path: pathlib.Path) -> None:
+    lease = Lease(MODULE, tmp_path / "pool")
+    try:
+        ask = broker_asker(lease, "counted")
+        assert ask({"op": "free"}) is not None
+        assert "1 live run(s)" in lease.run("status").stdout
+        assert json.loads(lease.run("status", "--json").stdout)["runs"] == 1
+    finally:
+        lease.close()
