@@ -65,8 +65,12 @@ Owns: scripts/ci-runner/pool.ts, scripts/ci-runner/exec.ts, scripts/ci-runner/ru
 
 ## Tasks
 
-- [ ] P0 measure only: the rusage wrapper, cpu/rss in the duration cache, the utilisation footer; collect 5 runs
-- [ ] P1 `--sched cores` behind a flag: admit(), sim.ts, the scheduler tests with controls, the A/B of section 4
+- [x] P0 measure only: the rusage wrapper, cpu/rss in the duration cache, the utilisation footer; collect 5 runs
+    (ticked) 2026-10-05T09:55:46Z by d778be9d: commit:0564f8067 the rusage wrapper, cpu/rss in the duration cache and the utilisation footer shipped; reconciled by PLAN-prepush-full-cpu PF0
+- [x] P1 `--sched cores` behind a flag: admit(), sim.ts, the scheduler tests with controls, the A/B of section 4
+    (ticked) 2026-10-05T09:55:48Z by d778be9d: commit:0fdca103a --sched cores with admit(), sim.ts and controls shipped, and is the default since 2026-09-30 (run.ts:32); reconciled by PLAN-prepush-full-cpu PF0
 - [ ] P2 default `cores`; parity leaves `slow`; `build:cli` and the empirical dist edges; the push recipe drops its pre-steps
+    (2026-10-05, PLAN-prepush-full-cpu PF0) SHIPPED HALF: `cores` is the default since 2026-09-30 (scripts/ci-runner/run.ts:32). Still open: parity leaving `slow`, the `build:cli` and dist edges, and the push recipe dropping its pre-steps.
 - [ ] P3 the nightly gate-costs capture, .ci/config/gate-costs.json from the first --refresh, gate_costs --check in housekeeping
 - [ ] P4 lanes.ts on baseline cost, then weight/heavy retired from measured gates
+    (2026-10-05, PLAN-prepush-full-cpu PF0) The `weight` half is SUPERSEDED by PLAN-prepush-full-cpu PF1, which replaces `weight` with elastic `cores: {min, max}` granted at admit; lanes.ts balancing without `weight` is that plan's writer F. `heavy` and the baseline-cost balancing stay here.
