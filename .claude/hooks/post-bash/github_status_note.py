@@ -114,7 +114,8 @@ def main(argv=None, stdin=None, stdout=None):
             if text:
                 stdout.write(render("SessionStart", text))
             return 0
-        tool_input = doc.get("tool_input") if isinstance(doc.get("tool_input"), dict) else {}
+        raw_input = doc.get("tool_input")
+        tool_input = raw_input if isinstance(raw_input, dict) else {}
         if not is_ci_command(str(tool_input.get("command") or "")):
             return 0
         text = note_line(session)

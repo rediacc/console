@@ -300,7 +300,8 @@ def advance_history(history: dict, data: dict, t: float) -> dict:
         hist["since"] = t
         hist["state"] = st.state
         if prev == "degraded" and st.state == "ok":
-            snap = hist.get("degraded") if isinstance(hist.get("degraded"), dict) else {}
+            raw_snap = hist.get("degraded")
+            snap = raw_snap if isinstance(raw_snap, dict) else {}
             hist["recovered"] = {
                 "at": t,
                 "gen": hist["gen"],
@@ -360,7 +361,7 @@ def _read(max_age_s, now, fetch, path, refresh) -> Status:
 
     if not refresh and good is not None and 0 <= t - good["fetched_at"] < max_age_s:
         return _status_from(good["data"], good["fetched_at"], t, False, None, hist)
-    if not refresh and _negative_fresh(failed, t):
+    if not refresh and failed is not None and _negative_fresh(failed, t):
         return _fallback(good, hist, t, str(failed.get("error") or "fetch failed"))
 
     try:
@@ -436,7 +437,7 @@ def read_cached(
         failed = doc.get("failed") if isinstance(doc.get("failed"), dict) else None
         if good is not None and 0 <= t - good["fetched_at"] < max_age_s:
             return _status_from(good["data"], good["fetched_at"], t, False, None, hist)
-        if _negative_fresh(failed, t):
+        if failed is not None and _negative_fresh(failed, t):
             return _fallback(good, hist, t, str(failed.get("error") or "fetch failed"))
         if _refresh_running(p.parent / LOCK_NAME):
             note = "background refresh in flight"
@@ -663,8 +664,8 @@ def wait_recovery(
 
 def transitions_text(samples: list[tuple[float, str, list[str]]]) -> str:
     """One line out of the (time, state, degraded component names) samples a long wait took, collapsing repeats and skipping `unknown`: `GitHub Actions: degraded 19:11Z -> operational 21:02Z during this wait`. "" when GitHub was never degraded during the wait."""
-    runs = []
-    names = []
+    runs: list[tuple[float, str]] = []
+    names: list[str] = []
     for t, state, comps in samples:
         if state not in ("ok", "degraded"):
             continue
