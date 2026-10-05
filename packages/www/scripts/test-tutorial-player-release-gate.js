@@ -10,6 +10,7 @@ import {
   captureNavigationEvidence,
   pollRoutesReady,
   reportInconclusiveCauses,
+  waitForPlayerReady as waitForPlayerReadyIn,
 } from './lib/tutorial-player-diagnostics.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -218,64 +219,9 @@ function clickPlaybackButton() {
   return clickWithRetry('.tvp-root [data-plyr="play"]');
 }
 
-/**
- * Wait until the player is READY TO TAKE A CLICK, not merely until its play control exists.
- *
- * WHY A FIXED SLEEP WAS REPLACED. The docs mounts build through an IntersectionObserver and a
- * dynamic `import()` of 122 KB of player, and on a dev server that import is unbundled:
- * measured on 2026-09-09, the first route of a run compiled in 18.4s and the first navigation
- * took 8.4s, after which `wait(1200)` was nowhere near enough. The click then ran against an
- * element that did not exist yet and the whole scenario reported failures one step out of phase.
- * Only the FIRST navigation of a run is slow enough to hit it, which is why a sleep survived.
- *
- * WHY THE CONTROL ALONE IS NOT ENOUGH EITHER. The control appears the moment Plyr builds its
- * DOM, while the media element is still at readyState 0 (measured: 0 on the first sample, 4
- * about 100 ms later on an idle machine) and the control sits below the fold (y=949 in a
- * 577 px viewport), so the click first has to scroll it into view. CI run 110606567114 died
- * this way: on a loaded runner the very first click was refused ("play button click failed at
- * start"), the player stayed paused at 0, and every later step ran one phase off -- the pause
- * click started it and the resume click paused it.
- *
- * READY = the control exists, the media has its metadata, and the control has held the same
- * position for three consecutive samples, so no layout shift can move it under the click. The
- * poll runs inside the page (one round trip), bounded at SCENARIO_READY_MS (20 s) for a scenario and
- * WARMUP_READY_MS for the warm-up that pays the first visit's cost (`warmUpPlayer`).
- *
- * A RELOAD UNDER THE POLL IS RETRIED, NOT REPORTED. CI run 37131294077 (job 111227243538) died
- * 0.2 s after the first navigation with `CDP error (Runtime.evaluate): Inspected target navigated
- * or closed`: the dev server reloaded the page once while the poll was in flight (the shape of
- * its first-visit dependency re-optimization for the lazily imported player), which destroys the
- * evaluation context. The page is still loading, not broken, so the poll starts again in the new
- * document. The deadline is fixed once, in this process, and baked into the polled code, so an
- * attempt that evalInPage repeats after a reload still ends at the same moment: one 20 s budget.
- */
+/** The readiness wait (lib/tutorial-player-diagnostics.js `waitForPlayerReady`), bound to this page and the scenario budget. */
 function waitForPlayerReady(budgetMs = SCENARIO_READY_MS) {
-  try {
-    const state = evalInPage(`(() => new Promise((resolve) => {
-      const SELECTOR = '.tvp-root [data-plyr="play"]';
-      const deadline = ${Date.now() + budgetMs};
-      let last = null;
-      let stable = 0;
-      const poll = () => {
-        const control = document.querySelector(SELECTOR);
-        const video = document.querySelector('.tvp-root video');
-        const rect = control ? control.getBoundingClientRect() : null;
-        const key = rect ? [rect.x, rect.y, rect.width, rect.height].join(',') : null;
-        const metadata = Boolean(video) && video.readyState >= 1;
-        stable = key !== null && key === last ? stable + 1 : 0;
-        last = key;
-        if (control && metadata && stable >= 2) return resolve({ ready: true });
-        if (Date.now() > deadline) {
-          return resolve({ ready: false, control: Boolean(control), metadata, stable });
-        }
-        setTimeout(poll, 100);
-      };
-      poll();
-    }))()`);
-    return state?.ready === true ? { ok: true } : { ok: false, reason: JSON.stringify(state) };
-  } catch (error) {
-    return { ok: false, reason: String(error) };
-  }
+  return waitForPlayerReadyIn(evalInPage, budgetMs, SCENARIO_READY_MS);
 }
 
 function burstPlaybackClicks(count, gapMs) {
@@ -326,6 +272,12 @@ function sampledStates(durationMs, tickMs) {
 
 const SCENARIO_READY_MS = 20000;
 const WARMUP_READY_MS = 120000;
+// Every route a scenario opens. The HTML probe and the warm-up both walk this one list: on 2026-10-05 the warm-up covered only the first, and the seek scenario's route reloaded under it (its samples went from no video element to a fresh player at 0). `eager` marks a docs route whose player mounts on load; the solution page mounts its player only after the poster is clicked (scenarioMountConsistency's own contract), so its warm-up opens it and waits for no player.
+const SCENARIO_ROUTES = [
+  { path: '/en/docs/tutorial-production-mode', eager: true },
+  { path: '/en/docs/tutorial-add-server', eager: true },
+  { path: '/en/solutions/rapid-recovery', eager: false },
+];
 
 /**
  * THE FIRST VISIT'S COST IS PAID HERE, ONCE, ON ITS OWN BUDGET (2026-10-05). On a dev server the
@@ -337,25 +289,33 @@ const WARMUP_READY_MS = 120000;
  * reading a player that was gone (all fields null). The warm-up opens the page, waits up to
  * WARMUP_READY_MS for the player, then reloads it and requires it ready again inside the
  * scenarios' own budget, which shows compilation and re-optimization are both behind it before
- * any scenario's clock starts.
+ * any scenario's clock starts. It does this for EVERY route in SCENARIO_ROUTES, because a route's
+ * first visit can re-optimize again.
  */
 function warmUpPlayer() {
-  const url = `${baseUrl}/en/docs/tutorial-production-mode`;
-  const startedAt = Date.now();
-  openFirst(url);
-  const first = waitForPlayerReady(WARMUP_READY_MS);
-  assertCondition(first.ok, 'player never hydrated during the warm-up', first);
-  const firstMs = Date.now() - startedAt;
-  open(url);
-  const again = waitForPlayerReady();
-  assertCondition(
-    again.ok,
-    'player was not ready within the scenario budget after the warm-up reload',
-    again
-  );
-  log(
-    `→ warm-up ok (first hydration ${firstMs}ms, warm reload ${Date.now() - startedAt - firstMs}ms)`
-  );
+  for (const [i, { path: route, eager }] of SCENARIO_ROUTES.entries()) {
+    const url = `${baseUrl}${route}`;
+    const startedAt = Date.now();
+    if (i === 0) openFirst(url);
+    else open(url);
+    if (!eager) {
+      log(`→ warm-up ${route} opened (${Date.now() - startedAt}ms; its player mounts on click)`);
+      continue;
+    }
+    const first = waitForPlayerReady(WARMUP_READY_MS);
+    assertCondition(first.ok, `player never hydrated during the warm-up of ${route}`, first);
+    const firstMs = Date.now() - startedAt;
+    open(url);
+    const again = waitForPlayerReady();
+    assertCondition(
+      again.ok,
+      `${route} was not ready within the scenario budget after its warm-up reload`,
+      again
+    );
+    log(
+      `→ warm-up ${route} ok (first hydration ${firstMs}ms, warm reload ${Date.now() - startedAt - firstMs}ms)`
+    );
+  }
 }
 
 function scenarioBasicPlayPauseResume() {
@@ -625,11 +585,7 @@ async function main() {
     resources = resourceSnapshot(Date.now() - bootStartedAt);
     await pollRoutesReady(
       baseUrl,
-      [
-        '/en/docs/tutorial-production-mode',
-        '/en/docs/tutorial-add-server',
-        '/en/solutions/rapid-recovery',
-      ],
+      SCENARIO_ROUTES.map((r) => r.path),
       log
     );
     wait(1500);
