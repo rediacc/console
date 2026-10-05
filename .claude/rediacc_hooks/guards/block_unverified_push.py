@@ -4,12 +4,16 @@ WHY. A CI round costs ~15 minutes. Measured on PR #579, three of the five reds t
 
 PROSE ALREADY TRIED. docs/agent-reference/ci-gates.md says "Run it before pushing to catch issues early" and CLAUDE.md points at it. Five rounds happened anyway. wl_git.py's own header states the principle this guard follows: prose is not a safety mechanism, and the recorded incidents show it failing.
 
-WHY A RECEIPT AND NOT A RUN. This hook sits in the PreToolUse chain, which fires on EVERY Bash call, so it must cost microseconds -- one `git rev-parse` and one file read. The expensive half (33 seconds, 254 gates) happens in an ordinary Bash call the session makes itself, where the runner's untruncated failure block is readable. Splitting them is the only shape that is both enforceable and cheap.
+WHY A RECEIPT AND NOT A RUN. This hook sits in the PreToolUse chain, which fires on EVERY Bash call, so it must cost microseconds -- one `git rev-parse` and one file read. The expensive half (the whole quick lane) happens in an ordinary Bash call the session makes itself, where the runner's untruncated failure block is readable. Splitting them is the only shape that is both enforceable and cheap.
 
 KEYED ON `HEAD^{tree}`. CI checks out the pushed commit, so the tree object is
 exactly what CI will judge. It is also invariant to the dozens of dirty paths this repo's tree normally carries from OTHER live sessions -- keying on the worktree would invalidate the receipt on someone else's keystroke and make it unobtainable, which is how a guard becomes a wall and then gets bypassed.
 
 A TOUCHED SLOW GATE THE LANE DROPPED IS REFUSED until it has passed (agent/plans/PLAN-gate-drop-receipt-verify.md). On 2026-10-03 ci:quick dropped `check:ci-plan-record`, a gate the diff touched, because it wrote the tree; the drop was printed and then lost, this guard allowed the push, and CI run 37129843955 went red on exactly that gate. The runner now records each such gate in the receipt's `droppedTouched`, and a `run.ts --only <id>` run of it merges its result into `droppedVerified`. Every `droppedTouched` id needs a `droppedVerified` entry at the pushed tree with exit code 0, and a receipt with no `droppedTouched` list at all refuses, failing closed exactly as a missing `whole` does.
+
+A RECORD-ONLY COMMIT ADVANCES THE RECEIPT INSTEAD OF VOIDING IT (agent/plans/PLAN-prepush-full-cpu.md part 5). `worklist.py --review-commit` commits agent/reviews/<branch>/ after every reviewed commit, and on 2026-10-05 nine receipts died that way with no code changed. A receipt for tree T now admits a pushed tree reachable from T through the receipt's `advances`: each step's
+diff is recomputed here with `git diff --no-renames`, never read from the step's own `paths`, must lie inside the record globs of .ci/policy/record-paths.json as committed in the pushed tree, and every reader gate of the touched globs must appear in the step's `gates` at exit 0, or red and listed in `failed` so the carry rule judges it. A path outside the set still voids the
+receipt. The extra git calls run only on the branch that refused before, so the common push stays one `rev-parse` and one file read.
 
 A LIVE BRANCH BEHIND origin/main IS REFUSED TOO (operator finding 2026-10-03). PR #592's first CI run went red only on Quality / Branch because main had moved three commits after 1003-1 was cut, and the push clone's origin/main was stale. Once the receipt allows, `behind_base_refusal` fetches origin/main itself (a stale ref would pass the ancestry test vacuously) and refuses an MMDD-N push to origin that does not contain it, printing the REBASE LOCALLY recipe CI prints. A fetch that fails or times out cannot judge, says so and allows.
 
@@ -37,8 +41,8 @@ CHAIN = "pre-bash"
 # Re-keyed from 39 to 40 on 2026-09-22 to make room for block_push_to_protected_branch.py at 39: "this branch may not be pushed to at all" is checked before "is this tree gate-verified".
 ORDER = 39
 
-# The tree comparison is the whole guard. Without it any receipt at all authorises any push, which is the state that let five CI rounds happen on PR #579.
-DEFECT = ("if r_tree != tree:", "if False:")
+# The confinement check is what keeps an advance from being a second way past the tree comparison: without it a step claiming "records only" over a code commit authorises that commit, which is a receipt for a tree no gate judged. The tree comparison itself is pinned by the frozen golden's push-wrong-tree rows.
+DEFECT = ("confined = not outside", "confined = True")
 
 PUSH_AT_COMMAND_POS = hookio.rx(
     r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+push([{S}]|$)"
@@ -46,17 +50,19 @@ PUSH_AT_COMMAND_POS = hookio.rx(
 
 
 REFUSAL_TAIL = """
-The pre-push lane is 254 gates in ~33 seconds, and it exists because three of
-the five CI reds on PR #579 were sub-2-second gates that cost ~45 minutes of CI
-between them. Run it, fix what it names, then push:
+The pre-push lane exists because three of the five CI reds on PR #579 were
+sub-2-second gates that cost ~45 minutes of CI between them. Run it, fix what
+it names, then push:
 
   npm run ci:quick
 
 It is a PARTIAL run and says so: slower gates the change did not touch are
 deferred to CI, and it names any it had to defer because a prerequisite was
-slow. A touched slow gate it DROPS (a tree writer, over budget, unpriced) is
-named with the `run.ts --only <id>` command that clears it, and the push waits
-for that run. `npm run ci` is still the whole set.
+slow. Every slow gate the change touches runs in the same pass; one it DROPS
+(a tree writer outside a disposable clone) is named with the `run.ts --only
+<id>` command that clears it, and the push waits for that run. After a commit
+confined to .ci/policy/record-paths.json it re-runs only those records'
+readers. `npm run ci` is still the whole set.
 
 If a gate it names is not yours -- another session's uncommitted file often
 reddens this shared tree -- do not work around it and do not fix their file.
@@ -136,6 +142,72 @@ def _repo_with_receipt(path, receipt, carried=None):
     return path
 
 
+def _repo_with_forged_advance(path):
+    """A receipt for the base tree, then a CODE commit behind an advance whose `paths` and `gates` claim a record-only step. The guard must recompute the diff and refuse; with DEFECT planted it admits, which is what lets test_guards_differential prove this guard's differential can fail."""
+    path.mkdir(parents=True)
+
+    def git(*args):
+        return (
+            subprocess.run(
+                ["git", *args], cwd=str(path), check=True, capture_output=True, env=_env()
+            )
+            .stdout.decode()
+            .strip()
+        )
+
+    git("init", "--initial-branch=main", "-q")
+    policy = path / ".ci" / "policy"
+    policy.mkdir(parents=True)
+    (policy / "record-paths.json").write_text(
+        json.dumps(
+            {
+                "version": RECORD_POLICY_VERSION,
+                "records": [
+                    {
+                        "glob": "agent/reviews/**",
+                        "except": [],
+                        "readers": [{"id": "check:fixture-reader", "evidence": "fixture:1"}],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (path / "seed.txt").write_text("seed\n", encoding="utf-8")
+    git("add", "-A")
+    git("commit", "-q", "-m", "seed")
+    base = git("rev-parse", "HEAD^{tree}")
+    if not base:
+        raise RuntimeError("the forged-advance fixture could not read its seed tree")
+    (path / "seed.txt").write_text("seed, and a code change no gate judged\n", encoding="utf-8")
+    git("add", "-A")
+    git("commit", "-q", "-m", "code")
+    head = git("rev-parse", "HEAD^{tree}")
+    cache = path / ".ci" / "cache"
+    cache.mkdir(parents=True)
+    (cache / "prepush-receipt.json").write_text(
+        json.dumps(
+            {
+                "headTree": base,
+                "whole": True,
+                "exitCode": 0,
+                "droppedTouched": [],
+                "advances": [
+                    {
+                        "from": base,
+                        "to": head,
+                        "paths": ["agent/reviews/main/clean.jsonl"],
+                        "gates": {"check:fixture-reader": 0},
+                        "finishedAt": "2026-10-05T00:00:00Z",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
 # The 2026-10-03 drop, as the runner records it (scripts/ci-runner/run.ts `DroppedTouched`).
 DROPPED_PLAN_RECORD = {
     "id": "check:ci-plan-record",
@@ -152,6 +224,8 @@ FIXTURES = {
         p, {"whole": True, "exitCode": 0, "droppedTouched": []}
     ),
     "push-narrowed": lambda p: _repo_with_receipt(p, {"whole": False, "exitCode": 0}),
+    # PF25: a forged record-only advance over a code commit. The one world the confinement DEFECT flips.
+    "push-advance-forged": _repo_with_forged_advance,
     "push-wrong-tree": lambda p: _repo_with_receipt(
         p, {"headTree": "0" * 40, "whole": True, "exitCode": 0}
     ),
@@ -660,11 +734,258 @@ def behind_base_refusal(ev, root, cmd):
     return None
 
 
-def dropped_verdict(receipt, tree):
+#: The record set: globs a commit may touch without voiding a receipt, each with the gates that read it. Read from the PUSHED tree, never the worktree, for the reason carried-reds.json is read from HEAD.
+RECORD_POLICY_REL = ".ci/policy/record-paths.json"
+RECORD_POLICY_VERSION = 1
+#: A tree object name, SHA-1 or SHA-256. Anything else in an advance is refused before git sees it, so an option-shaped value cannot become an argument to `git diff`.
+TREE_RE = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
+
+
+def record_glob_re(glob):
+    """`glob` as an anchored regex over a repo-relative path: `**` spans directories, `*` and `?` do not.
+
+    The same three rules .ci/scripts/quality/check_record_paths.py applies (`glob_re` there); .ci/rediacc_ci/tests/gates/test_gate_record_paths.py pins the two equal on one corpus, because a hook cannot import the rediacc_ci package and a gate should not import a hook.
+    """
+    out = []
+    i = 0
+    while i < len(glob):
+        if glob.startswith("**/", i):
+            out.append("(?:.*/)?")
+            i += 3
+        elif glob.startswith("**", i):
+            out.append(".*")
+            i += 2
+        elif glob[i] == "*":
+            out.append("[^/]*")
+            i += 1
+        elif glob[i] == "?":
+            out.append("[^/]")
+            i += 1
+        else:
+            out.append(re.escape(glob[i]))
+            i += 1
+    return re.compile("^%s$" % "".join(out))
+
+
+def record_of(path, records):
+    """The record entry whose glob covers `path` and none of whose `except` globs does, else None."""
+    for rec in records:
+        if not record_glob_re(rec["glob"]).match(path):
+            continue
+        if any(record_glob_re(x).match(path) for x in rec["except"]):
+            continue
+        return rec
+    return None
+
+
+def parse_record_policy(doc):
+    """record-paths.json -> ([{glob, except, readers}], schema_error or None). A malformed policy judges nothing, so it is an error, never an empty set.
+
+    The shape the runner's `parseRecordPolicy` (scripts/ci-runner/run.ts) reads too: `{"version": 1, "records": [{"glob", "except": [globs], "readers": [{"id", "evidence"}]}]}`. Other keys (`probes`, `notReaders`) are check:ci-record-paths' own.
+    """
+    if not isinstance(doc, dict) or doc.get("version") != RECORD_POLICY_VERSION:
+        return [], '%s is not `"version": %d`' % (RECORD_POLICY_REL, RECORD_POLICY_VERSION)
+    raw = doc.get("records")
+    if not isinstance(raw, list) or not raw:
+        return [], "%s has no `records` list" % RECORD_POLICY_REL
+    records = []
+    for i, rec in enumerate(raw):
+        glob = rec.get("glob") if isinstance(rec, dict) else None
+        excepted = rec.get("except", []) if isinstance(rec, dict) else None
+        readers = rec.get("readers") if isinstance(rec, dict) else None
+        if (
+            not isinstance(glob, str)
+            or not glob
+            or not isinstance(excepted, list)
+            or not all(isinstance(x, str) and x for x in excepted)
+            or not isinstance(readers, list)
+            or not all(
+                isinstance(r, dict) and isinstance(r.get("id"), str) and r["id"] for r in readers
+            )
+        ):
+            return (
+                [],
+                "%s record %d needs a `glob`, an `except` list and a `readers` list of {id}"
+                % (
+                    RECORD_POLICY_REL,
+                    i,
+                ),
+            )
+        records.append(
+            {"glob": glob, "except": excepted, "readers": sorted(r["id"] for r in readers)}
+        )
+    return records, None
+
+
+def _record_policy_at(root, tree):
+    """(records, error) for the record policy as committed in `tree`."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", root, "show", "%s:%s" % (tree, RECORD_POLICY_REL)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError as exc:
+        return [], "git could not read %s (%s)" % (RECORD_POLICY_REL, exc)
+    if proc.returncode != 0:
+        return [], "the pushed tree has no %s" % RECORD_POLICY_REL
+    try:
+        doc = json.loads(proc.stdout)
+    except ValueError:
+        return [], "%s in the pushed tree does not parse" % RECORD_POLICY_REL
+    return parse_record_policy(doc)
+
+
+def _diff_names(root, frm, to):
+    """Every path that differs between two trees, renames split into delete plus add (else a code file renamed into a record directory would list only its record-side name), or None when git cannot diff them."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", root, "diff", "--name-only", "--no-renames", "-z", frm, to],
+            capture_output=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if proc.returncode != 0:
+        return None
+    return [p for p in proc.stdout.decode("utf-8", "surrogateescape").split("\0") if p]
+
+
+#: The exit code the runner records for a reader that could not run (a missing toolchain), as opposed to one that ran and failed.
+COULD_NOT_RUN = 77
+
+
+def step_refusal(root, step, records, judged):
+    """Why one advance does not carry the receipt from its `from` to its `to`, else None.
+
+    The step's `paths` is never read: the diff is recomputed, so a runner (or a hand) that wrote "records only" over a code commit is caught here.
+
+    A READER THAT IS NOT GREEN AT THE STEP. An advance records exit codes only and never touches `failed`, `findings` or `blocked`, which still describe `headTree` (scripts/ci-runner/run.ts `runAdvance`). So a red reader is admitted only when it was already red at `headTree` (`judged["failed"]`) AND carried-reds.json at HEAD carries it whole (`"*"`): a keyed carry names findings this step never recorded, so it cannot vouch for them. A reader that could not run (exit 77) is admitted only when the receipt already lists it as `blocked`, the state the 2026-08-27 ruling warns on rather than refuses.
+    """
+    frm, to = step["from"], step["to"]
+    paths = _diff_names(root, frm, to)
+    if paths is None:
+        return "git cannot diff %s..%s here" % (frm[:12], to[:12])
+    matched = {p: record_of(p, records) for p in paths}
+    outside = sorted(p for p, rec in matched.items() if rec is None)
+    # THE CONFINEMENT CHECK. DEFECT plants `True` here, and the code-commit cases of test-block_unverified_push.py must then go green-for-the-wrong-reason and red the suite.
+    confined = not outside
+    if not confined:
+        return (
+            "its diff touches %d path(s) outside the record set (%s): %s%s.\n"
+            "  An advance covers record-only commits; anything else needs a new gate run."
+            % (
+                len(outside),
+                RECORD_POLICY_REL,
+                ", ".join(outside[:5]),
+                " and %d more" % (len(outside) - 5) if len(outside) > 5 else "",
+            )
+        )
+    readers = sorted({r for rec in matched.values() if rec is not None for r in rec["readers"]})
+    gates = step.get("gates")
+    gates = gates if isinstance(gates, dict) else {}
+    missing = []
+    unjudged = []
+    for reader in readers:
+        code = gates.get(reader)
+        if not isinstance(code, int) or isinstance(code, bool):
+            missing.append(reader)
+            continue
+        passed = code == 0
+        blocked_already = code == COULD_NOT_RUN and reader in judged["blocked"]
+        carried_whole = reader in judged["failed"] and reader in judged["star"]
+        if not (passed or blocked_already or carried_whole):
+            unjudged.append("%s (exit %d)" % (reader, code))
+    if missing:
+        return (
+            "the readers of the records it touched were not re-run at that tree: %s.\n"
+            "  A record's readers are the gates whose verdict depends on it (%s)."
+            % (", ".join(missing), RECORD_POLICY_REL)
+        )
+    if unjudged:
+        return (
+            "these readers did not pass at that tree: %s.\n"
+            "  An advance admits a red reader only when it was already red at the receipt's tree\n"
+            '  and .ci/config/carried-reds.json carries it whole ("*"), and a reader that could not\n'
+            "  run only when the receipt lists it as blocked. Fix it, or re-run npm run ci:quick."
+            % ", ".join(unjudged)
+        )
+    return None
+
+
+def advance_chain(root, receipt, start, end):
+    """(trees from `start` to `end` along verified advances, None) when the receipt's `advances` reach `end`; (None, refusal) when they do not; (None, None) when the receipt holds no advance at all, so the caller keeps its own unchanged refusal.
+
+    Steps are read in order and a step counts only when its `from` is a tree an earlier verified step (or the receipt itself) reached, which admits both a chain (T0 to T1 to T2) and repeated advances from the receipt tree (T0 to T1, T0 to T2).
+    """
+    steps = receipt.get("advances") if isinstance(receipt, dict) else None
+    if not isinstance(steps, list) or not steps:
+        return None, None
+    head = (
+        "the gate run judged tree %s; this push sends %s, and the receipt's advances do not reach it"
+        % (
+            start,
+            end,
+        )
+    )
+    records, error = _record_policy_at(root, end)
+    if error is not None:
+        return None, "%s: %s." % (head, error)
+    judged = {}
+    for key in ("failed", "blocked"):
+        listed = receipt.get(key)
+        judged[key] = (
+            {g for g in listed if isinstance(g, str)} if isinstance(listed, list) else set()
+        )
+    carried, _schema_error = parse_carried(_carried_at_head(root))
+    judged["star"] = {g for g, keys in carried.items() if keys == "*"}
+    parent: dict[str, str | None] = {start: None}
+    problems = []
+    for i, step in enumerate(steps):
+        frm = step.get("from") if isinstance(step, dict) else None
+        to = step.get("to") if isinstance(step, dict) else None
+        if not (
+            isinstance(frm, str)
+            and isinstance(to, str)
+            and TREE_RE.match(frm)
+            and TREE_RE.match(to)
+        ):
+            problems.append("advance %d does not name two tree hashes" % i)
+            continue
+        if frm not in parent:
+            problems.append(
+                "advance %d starts at %s, which no verified step reached" % (i, frm[:12])
+            )
+            continue
+        why = step_refusal(root, step, records, judged)
+        if why is not None:
+            problems.append("advance %d (%s..%s): %s" % (i, frm[:12], to[:12], why))
+            continue
+        parent.setdefault(to, frm)
+        if to == end:
+            break
+    if end not in parent:
+        return None, "%s:\n%s\n  Run npm run ci:quick at this HEAD." % (
+            head,
+            "\n".join("    %s" % p for p in problems) or "    no advance ends at the pushed tree",
+        )
+    trees = []
+    node = end
+    while node is not None:
+        trees.append(node)
+        node = parent[node]
+    return list(reversed(trees)), None
+
+
+def dropped_verdict(receipt, tree, trees=None):
     """A refusal naming every touched-but-dropped gate with no passing run at `tree`, else None. PURE, like `carried_verdict`.
 
     `droppedTouched` is the runner's list of slow gates the change set touched and the quick lane did not run; `droppedVerified[id]` is a `run.ts --only <id>` run merged into the same receipt. An id counts as proven only when that entry names `tree` and exit code 0. A failed re-run is also in `failed`, which `carried_verdict` judges. A receipt with no `droppedTouched` list (a runner older than the field) refuses: a guard that read absence as "nothing dropped" would fail open on exactly the receipts that cannot say.
+
+    `trees` is the verified advance chain ending at `tree` (`advance_chain`), when the push rides one. A run at any tree on it counts: every step is confined to the record set, so a gate that reads no record judged the same inputs, and a gate that does read one was re-run at that step or the chain would not exist.
     """
+    judged_at = set(trees) if trees else {tree}
     dropped = receipt.get("droppedTouched") if isinstance(receipt, dict) else None
     if not isinstance(dropped, list):
         return (
@@ -685,7 +1006,7 @@ def dropped_verdict(receipt, tree):
         code = run_.get("exitCode") if isinstance(run_, dict) else None
         ran_here = (
             isinstance(run_, dict)
-            and run_.get("headTree") == tree
+            and run_.get("headTree") in judged_at
             and isinstance(code, int)
             and not isinstance(code, bool)
         )
@@ -883,11 +1204,16 @@ def run(ev):
     )
     r_exit = r_exit if isinstance(r_exit, str) else json.dumps(r_exit, separators=(",", ":"))
 
+    chain = None
     if r_tree != tree:
-        return _refuse(
-            ev,
-            "the gate run judged a different tree (%s), not this one (%s)." % (r_tree, tree),
-        )
+        # A RECORD-ONLY COMMIT ADVANCES, it does not void (module docstring). Only this branch pays for the extra git calls, and a receipt with no `advances` keeps today's refusal byte for byte, so the frozen golden's rows do not move.
+        chain, why = advance_chain(root, receipt, r_tree, tree)
+        if chain is None:
+            return _refuse(
+                ev,
+                why
+                or "the gate run judged a different tree (%s), not this one (%s)." % (r_tree, tree),
+            )
 
     # A NARROWED RUN PROVES ALMOST NOTHING. `--quick --only <one-gate>` produces a receipt that is otherwise indistinguishable from all 254, so the runner records whether the lane ran WHOLE and this reads the flag rather than parsing the selection prose -- a guard that parses English fails open on a rewording.
     if r_whole != "true":
@@ -896,7 +1222,7 @@ def run(ev):
         )
 
     # A TOUCHED SLOW GATE THE LANE DROPPED is refused until a `--only` run of it passed at this tree. After `whole`, so a narrowed receipt keeps its own message; before the base fetch, so a push refused here never pays for one.
-    dropped = dropped_verdict(receipt, tree)
+    dropped = dropped_verdict(receipt, tree, chain)
     if dropped is not None:
         return _refuse(ev, dropped)
 

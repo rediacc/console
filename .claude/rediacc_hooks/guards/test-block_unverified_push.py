@@ -646,6 +646,325 @@ cases.append((0, rc, "CANNOT JUDGE: a failed fetch of origin/main allows"))
 cases.append((True, "cannot judge" in err, "CANNOT JUDGE: and the warning says so explicitly"))
 
 shutil.rmtree(bw, ignore_errors=True)
+
+# --- a record-only commit ADVANCES the receipt (PLAN-prepush-full-cpu part 5, PF25/PF26) ------------- `worklist.py --review-commit` commits agent/reviews/<branch>/ after every reviewed commit; nine receipts died that way on 2026-10-05 with no code changed. A receipt for tree T now admits a HEAD whose diff from T is confined to .ci/policy/record-paths.json, PROVIDED the readers of
+# the touched records were re-run at each step (`advances`). The guard recomputes every step's diff itself and never trusts the step's `paths`.
+GUARD = pathlib.Path(__file__).resolve().parent / "block_unverified_push.py"
+R_PLAN = "check:fixture-plan-implementation"
+R_ARCH = "check:fixture-session-archival"
+R_TREE = "check:fixture-tree-shape"
+ADV_POLICY = {
+    "version": 1,
+    "records": [
+        {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+                {"id": R_PLAN, "evidence": "fixture:1"},
+                {"id": R_ARCH, "evidence": "fixture:2"},
+            ],
+        },
+        {
+            "glob": "agent/worklist/*.jsonl",
+            "except": ["agent/worklist/epics.jsonl"],
+            "readers": [{"id": R_TREE, "evidence": "fixture:3"}],
+        },
+    ],
+}
+REVIEW = "agent/reviews/0827-1/clean.jsonl"
+WORKLIST = "agent/worklist/abcd1234.jsonl"
+BOTH_REVIEW_READERS = {R_PLAN: 0, R_ARCH: 0}
+
+
+def adv_world(name, carried_doc=None):
+    """A repo whose base commit carries the record policy (and optionally carried-reds.json); returns (root, base tree)."""
+    root = pathlib.Path(tempfile.mkdtemp(dir=RUN_TMP)) / name
+    root.mkdir()
+    g(root, "init", "-q", "-b", "0827-1")
+    g(root, "config", "user.email", "p@example.invalid")
+    g(root, "config", "user.name", "p")
+    (root / ".ci" / "policy").mkdir(parents=True)
+    (root / ".ci" / "policy" / "record-paths.json").write_text(
+        json.dumps(ADV_POLICY), encoding="utf-8"
+    )
+    (root / "code.txt").write_text("code\n", encoding="utf-8")
+    if carried_doc is not None:
+        (root / ".ci" / "config").mkdir(parents=True)
+        (root / ".ci" / "config" / "carried-reds.json").write_text(
+            json.dumps(carried_doc), encoding="utf-8"
+        )
+    g(root, "add", "-A")
+    g(root, "commit", "-qm", "base")
+    return root, g(root, "rev-parse", "HEAD^{tree}")
+
+
+def adv_commit(root, *rels):
+    """Commit a change to each repo-relative path and return the new HEAD^{tree}."""
+    for rel in rels:
+        target = root / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with open(target, "a", encoding="utf-8") as fh:
+            fh.write("one more line\n")
+    g(root, "add", "-A")
+    g(root, "commit", "-qm", "change %s" % ", ".join(rels))
+    return g(root, "rev-parse", "HEAD^{tree}")
+
+
+def adv_receipt(root, head_tree, advances, **over):
+    body = {
+        "headTree": head_tree,
+        "whole": True,
+        "exitCode": 0,
+        "failed": [],
+        "findings": {},
+        "droppedTouched": [],
+        "droppedVerified": {},
+    }
+    if advances is not None:
+        body["advances"] = advances
+    body.update(over)
+    cache = root / ".ci" / "cache"
+    cache.mkdir(parents=True, exist_ok=True)
+    (cache / "prepush-receipt.json").write_text(json.dumps(body), encoding="utf-8")
+
+
+def step(frm, to, gates, paths=(REVIEW,)):
+    """One `advances` entry as the runner writes it (PF24)."""
+    return {
+        "from": frm,
+        "to": to,
+        "paths": list(paths),
+        "gates": dict(gates),
+        "finishedAt": "2026-10-05T00:00:00Z",
+    }
+
+
+def drive_broken(where, cmd):
+    """The guard with its own declared DEFECT planted, in a child, exactly as test-block_second_branch.py drives its copy."""
+    namespace: dict[str, object] = {}
+    body = []
+    for line in GUARD.read_text(encoding="utf-8").split("\n"):
+        if line.startswith("DEFECT = "):
+            exec(line, namespace)  # noqa: S102 -- the guard's own one-line literal
+        else:
+            body.append(line)
+    # THE DECLARATION ITSELF CONTAINS THE TEXT IT PLANTS, so `old in src` alone stays true after the guarded line is deleted, and the plant then changes nothing but its own declaration. Measured 2026-10-05 with the line replaced by hand: the copy runner's assertion passed.
+    old_text = namespace["DEFECT"][0]  # type: ignore[index]
+    if old_text not in "\n".join(body):
+        # A FAILING RESULT, not an abort: the summary then still names every case the missing line broke.
+        print("  the guard's DEFECT %r no longer names a line of code" % old_text)
+        return -1, ""
+    runner = (
+        "import sys; sys.path.insert(0, %r)\n"
+        "from rediacc_hooks import hookio\n"
+        "src = open(%r, encoding='utf-8').read()\n"
+        "old, new = %r\n"
+        "assert old in src, 'DEFECT no longer applies'\n"
+        "ns = {'__name__': 'broken', '__file__': %r}\n"
+        "exec(compile(src.replace(old, new), 'broken', 'exec'), ns)\n"
+        "ev = hookio.Event(sys.stdin.read())\n"
+        "rc = ns['run'](ev)\n"
+        "sys.stderr.write(ev.result(rc)[2])\n"
+        "sys.exit(rc)\n"
+    ) % (str(GUARD.parents[2]), str(GUARD), namespace["DEFECT"], str(GUARD))
+    proc = subprocess.run(
+        [sys.executable, "-c", runner],
+        input=json.dumps({"tool_input": {"command": cmd}}),
+        capture_output=True,
+        text=True,
+        cwd=str(where),
+        env=dict(os.environ, CLAUDE_PROJECT_DIR=str(where)),
+        check=False,
+    )
+    if proc.returncode not in (0, 2):
+        raise SystemExit("broken-copy runner crashed: %s" % proc.stderr[-800:])
+    return proc.returncode, proc.stderr
+
+
+ADV_PUSH = "git push origin 0827-1"
+# Each world: (label, want, root). The confinement worlds are re-driven against the planted DEFECT below.
+ADV_WORLDS = []
+
+# 1. A record-only commit with both of its readers re-run green at HEAD is admitted.
+w, t0 = adv_world("records-readers-green")
+t1 = adv_commit(w, REVIEW)
+adv_receipt(w, t0, [step(t0, t1, BOTH_REVIEW_READERS)])
+ADV_WORLDS.append(("ADVANCE: a record-only commit with its readers re-run is admitted", 0, w))
+
+# 2. The same commit with one reader NOT re-run is refused, and the refusal names the reader.
+w, t0 = adv_world("records-reader-missing")
+t1 = adv_commit(w, REVIEW)
+adv_receipt(w, t0, [step(t0, t1, {R_PLAN: 0})])
+ADV_WORLDS.append(("ADVANCE: a record-only commit with a reader NOT re-run is refused", 2, w))
+cases.append(
+    (True, R_ARCH in drive(w, ADV_PUSH)[1], "ADVANCE: the missing-reader refusal names the reader")
+)
+
+# 3. Records plus ONE code file, behind an advance whose `paths` claims records only and whose readers are green: the recomputed diff holds code.
+w, t0 = adv_world("records-plus-code")
+t1 = adv_commit(w, REVIEW, "code.txt")
+adv_receipt(w, t0, [step(t0, t1, BOTH_REVIEW_READERS)])
+ADV_WORLDS.append(("ADVANCE: records plus one code file is refused", 2, w))
+cases.append(
+    (
+        True,
+        "code.txt" in drive(w, ADV_PUSH)[1],
+        "ADVANCE: the confinement refusal names the code path the step's `paths` hid",
+    )
+)
+
+# 4. A code-only commit, behind the same forged advance.
+w, t0 = adv_world("code-only")
+t1 = adv_commit(w, "code.txt")
+adv_receipt(w, t0, [step(t0, t1, BOTH_REVIEW_READERS)])
+ADV_WORLDS.append(("ADVANCE: a code-only commit is refused", 2, w))
+
+# 5. A record-only commit with NO advance at all keeps today's refusal, word for word (the frozen golden's text).
+w, t0 = adv_world("records-no-advance")
+t1 = adv_commit(w, REVIEW)
+adv_receipt(w, t0, None)
+ADV_WORLDS.append(("ADVANCE: a record-only commit with no advance is refused", 2, w))
+cases.append(
+    (
+        True,
+        "the gate run judged a different tree (%s), not this one (%s)." % (t0, t1)
+        in drive(w, ADV_PUSH)[1],
+        "ADVANCE: with no advance the refusal is today's text, unchanged",
+    )
+)
+
+# 6. Two chained advances (reviews, then a worklist file) are admitted.
+w, t0 = adv_world("two-chained")
+t1 = adv_commit(w, REVIEW)
+t2 = adv_commit(w, WORKLIST)
+adv_receipt(
+    w, t0, [step(t0, t1, BOTH_REVIEW_READERS), step(t1, t2, {R_TREE: 0}, paths=(WORKLIST,))]
+)
+ADV_WORLDS.append(("ADVANCE: two chained advances are admitted", 0, w))
+
+# 7. A step whose `from` no verified step reached does not chain.
+w, t0 = adv_world("broken-chain")
+t1 = adv_commit(w, REVIEW)
+t2 = adv_commit(w, WORKLIST)
+adv_receipt(
+    w, t0, [step(t0, t1, BOTH_REVIEW_READERS), step("1" * 40, t2, {R_TREE: 0}, paths=(WORKLIST,))]
+)
+ADV_WORLDS.append(("ADVANCE: a step starting off the chain does not reach HEAD", 2, w))
+
+# 8. An excluded record path (agent/worklist/epics.jsonl) is outside the set.
+w, t0 = adv_world("excluded-record")
+t1 = adv_commit(w, "agent/worklist/epics.jsonl")
+adv_receipt(w, t0, [step(t0, t1, {R_TREE: 0}, paths=("agent/worklist/epics.jsonl",))])
+ADV_WORLDS.append(("ADVANCE: an excluded path under a record glob is refused", 2, w))
+
+# 9. A reader RED at the step that the receipt's `failed` does not list is refused.
+w, t0 = adv_world("reader-red-unlisted")
+t1 = adv_commit(w, REVIEW)
+adv_receipt(w, t0, [step(t0, t1, {R_PLAN: 1, R_ARCH: 0})])
+ADV_WORLDS.append(("ADVANCE: a reader red at the step and not in `failed` is refused", 2, w))
+
+# 10. A reader RED at the step, listed in `failed` and NOT carried, is refused by the carry rule.
+w, t0 = adv_world("reader-red-uncarried")
+t1 = adv_commit(w, REVIEW)
+adv_receipt(
+    w,
+    t0,
+    [step(t0, t1, {R_PLAN: 1, R_ARCH: 0})],
+    exitCode=1,
+    failed=[R_PLAN],
+    findings={R_PLAN: None},
+)
+ADV_WORLDS.append(("ADVANCE: a reader red at the step and not carried is refused", 2, w))
+
+# 11. The same red, carried by name in carried-reds.json at HEAD, is admitted: the carry rule judges it.
+w, t0 = adv_world(
+    "reader-red-carried",
+    carried_doc={"version": 2, "carried": [keyed("*", gate=R_PLAN, reason=STAR_REASON)]},
+)
+t1 = adv_commit(w, REVIEW)
+adv_receipt(
+    w,
+    t0,
+    [step(t0, t1, {R_PLAN: 1, R_ARCH: 0})],
+    exitCode=1,
+    failed=[R_PLAN],
+    findings={R_PLAN: None},
+)
+ADV_WORLDS.append(("ADVANCE: a reader red at the step and carried is admitted", 0, w))
+
+# 11b. The same red under a KEYED carry is refused: the advance recorded no finding keys, so a keyed carry cannot vouch for the step.
+w, t0 = adv_world(
+    "reader-red-keyed-carry",
+    carried_doc={"version": 2, "carried": [keyed(K1, gate=R_PLAN)]},
+)
+t1 = adv_commit(w, REVIEW)
+adv_receipt(
+    w,
+    t0,
+    [step(t0, t1, {R_PLAN: 1, R_ARCH: 0})],
+    exitCode=1,
+    failed=[R_PLAN],
+    findings={R_PLAN: [K1]},
+)
+ADV_WORLDS.append(("ADVANCE: a reader red at the step under a keyed carry is refused", 2, w))
+
+# 11c. A reader that could not run (exit 77) is admitted only when the receipt already lists it as blocked.
+w, t0 = adv_world("reader-could-not-run-blocked")
+t1 = adv_commit(w, REVIEW)
+adv_receipt(w, t0, [step(t0, t1, {R_PLAN: 77, R_ARCH: 0})], blocked=[R_PLAN])
+ADV_WORLDS.append(("ADVANCE: a reader that could not run and is blocked is admitted", 0, w))
+w, t0 = adv_world("reader-could-not-run-unblocked")
+t1 = adv_commit(w, REVIEW)
+adv_receipt(w, t0, [step(t0, t1, {R_PLAN: 77, R_ARCH: 0})])
+ADV_WORLDS.append(("ADVANCE: a reader that could not run and is not blocked is refused", 2, w))
+
+# 12. A step whose `from` is not a tree hash is refused before git ever sees it (an option-shaped value would be an argument to `git diff`).
+w, t0 = adv_world("from-not-a-hash")
+t1 = adv_commit(w, REVIEW)
+adv_receipt(w, t0, [step(t0, t1, BOTH_REVIEW_READERS), step("--output=x", t1, {})])
+ADV_WORLDS.append(("ADVANCE: an option-shaped `from` is never passed to git", 0, w))
+cases.append(
+    (False, (w / "x").exists(), "ADVANCE: the option-shaped step wrote no file through git diff")
+)
+
+# 13. A record-only commit's advance makes a dropped gate's --only run at the receipt tree still count: a non-reader's verdict cannot change across a confined step.
+w, t0 = adv_world("dropped-verified-at-receipt-tree")
+t1 = adv_commit(w, REVIEW)
+adv_receipt(
+    w,
+    t0,
+    [step(t0, t1, BOTH_REVIEW_READERS)],
+    droppedTouched=[DROP],
+    droppedVerified=passed_at(t0),
+)
+ADV_WORLDS.append(("ADVANCE: a --only pass at the receipt tree carries along the chain", 0, w))
+
+for label, want, root in ADV_WORLDS:
+    cases.append((want, drive(root, ADV_PUSH)[0], label))
+
+# THE CONTROL: the guard's declared DEFECT replaces the confinement check with True. Both code worlds must flip to admitted (the suite's green depends on that line), and the reader worlds must NOT move (the plant is specific to confinement, not a guard that admits everything).
+DEFECT_FLIPS = {
+    "ADVANCE: records plus one code file is refused",
+    "ADVANCE: a code-only commit is refused",
+}
+DEFECT_HOLDS = {
+    "ADVANCE: a record-only commit with a reader NOT re-run is refused",
+    "ADVANCE: a record-only commit with no advance is refused",
+    "ADVANCE: a step starting off the chain does not reach HEAD",
+}
+for label, want, root in ADV_WORLDS:
+    if label in DEFECT_FLIPS:
+        cases.append((0, drive_broken(root, ADV_PUSH)[0], "DEFECT CONTROL flips: " + label))
+    elif label in DEFECT_HOLDS:
+        cases.append((want, drive_broken(root, ADV_PUSH)[0], "DEFECT CONTROL holds: " + label))
+cases.append(
+    (
+        True,
+        len([lab for lab, _, _ in ADV_WORLDS if lab in DEFECT_FLIPS | DEFECT_HOLDS]) == 5,
+        "DEFECT CONTROL: every named world exists, so the control cannot shrink to nothing",
+    )
+)
+
 shutil.rmtree(d, ignore_errors=True)
 
 bad = 0

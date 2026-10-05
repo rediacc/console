@@ -1,0 +1,315 @@
+{
+  "$comment": [
+    "THE RECORD SET (agent/plans/PLAN-prepush-full-cpu.md part 5). A commit confined to these globs ADVANCES a pre-push receipt instead of voiding it:",
+    "npm run ci:quick re-runs only the readers of the touched globs and appends an advances step, and block_unverified_push admits the pushed tree",
+    "only through a chain of such steps, recomputing each diff itself. A path outside every glob still voids the receipt.",
+    "readers are DERIVED by check:ci-record-paths from every gate's leaves and their imports (cite, root, glob and config tiers), and it reds when this",
+    "list differs from the derivation. The derivation over-counts on purpose: a false reader costs one gate at an advance, a missed one lets an",
+    "unjudged record change through. A flagged gate that reads nothing goes in notReaders with its reason, by name, and the gate prints it every run.",
+    "Globs use only ** and *: the gate, the guard and run.ts globToRegExp read those three alike and differ on ? and braces.",
+    "agent/worklist/epics.jsonl stays out: check:ci-pr-task-trailers reads it, and its verdict is a commit-range judgement."
+  ],
+  "version": 1,
+  "records": [
+    {
+      "glob": "agent/reviews/**",
+      "except": [],
+      "probes": [
+        "agent/reviews/1004-2/clean.jsonl",
+        "agent/reviews/1004-2/056a783a9655367ab0c7ed99697cc56facd6cb49.md"
+      ],
+      "readers": [
+        {
+          "id": "check:ci-account-env-retired",
+          "evidence": ".ci/rediacc_ci/quality/account_env_retired.py:57 (root) agent/"
+        },
+        {
+          "id": "check:ci-agent-hint-liveness",
+          "evidence": ".claude/hooks/stop/wl_agents.py:245 (glob) *.md"
+        },
+        {
+          "id": "check:ci-agent-session-archival",
+          "evidence": ".ci/rediacc_ci/quality/agent_session_archival.py:303 (cite) agent/reviews/<branch>/"
+        },
+        {
+          "id": "check:ci-checkout-cone",
+          "evidence": ".ci/scripts/quality/check_checkout_cone.py:16 (cite) agent/reviews"
+        },
+        {
+          "id": "check:ci-content-quality",
+          "evidence": ".ci/rediacc_ci/quality/content_quality.py:330 (glob) *.md"
+        },
+        {
+          "id": "check:ci-dead-python",
+          "evidence": ".ci/rediacc_ci/quality/dead_python.py:94 (root) agent/"
+        },
+        {
+          "id": "check:ci-decision-ids",
+          "evidence": ".claude/hooks/stop/wl_agents.py:245 (glob) *.md"
+        },
+        {
+          "id": "check:ci-doc-region-parity",
+          "evidence": "scripts/gates/check-doc-region-parity.ts:324 (glob) *.md"
+        },
+        {
+          "id": "check:ci-durable-paths-tracked",
+          "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:38 (cite) agent/reviews/<branch>/"
+        },
+        {
+          "id": "check:ci-gate-reachability-coverage",
+          "evidence": ".claude/hooks/stop/wl_agents.py:245 (glob) *.md"
+        },
+        {
+          "id": "check:ci-hint-corpus",
+          "evidence": ".claude/hooks/stop/wl_agents.py:245 (glob) *.md"
+        },
+        {
+          "id": "check:ci-i18n-cli-key-usage",
+          "evidence": "scripts/gates/check-cli-i18n-key-usage.ts:100 (glob) **/*.{md,mdx,astro,ts,tsx,json}"
+        },
+        {
+          "id": "check:ci-literal-sources",
+          "evidence": ".ci/rediacc_ci/quality/literal_sources.py:2081 (root) agent/"
+        },
+        {
+          "id": "check:ci-plan-boxes",
+          "evidence": ".ci/scripts/quality/check_plan_boxes.py:397 (root) agent/"
+        },
+        {
+          "id": "check:ci-plan-citations",
+          "evidence": ".claude/hooks/stop/wl_agents.py:245 (glob) *.md"
+        },
+        {
+          "id": "check:ci-plan-deps",
+          "evidence": ".claude/hooks/stop/wl_agents.py:245 (glob) *.md"
+        },
+        {
+          "id": "check:ci-plan-folders",
+          "evidence": ".ci/scripts/quality/check_plan_folders.py:133 (root) agent/"
+        },
+        {
+          "id": "check:ci-plan-implementation",
+          "evidence": ".ci/rediacc_ci/review/__init__.py:3 (cite) agent/reviews/<branch>/"
+        },
+        {
+          "id": "check:ci-plan-record",
+          "evidence": ".claude/hooks/stop/wl_agents.py:245 (glob) *.md"
+        },
+        {
+          "id": "check:ci-prose-style",
+          "evidence": ".ci/rediacc_ci/quality/prose_style.py:2168 (glob) *.md"
+        },
+        {
+          "id": "check:ci-resprofile",
+          "evidence": ".ci/scripts/quality/check_resprofile.py:236 (root) agent/"
+        },
+        {
+          "id": "check:ci-script-exec-bit",
+          "evidence": ".ci/rediacc_ci/quality/script_exec_bit.py:114 (glob) *.md"
+        },
+        {
+          "id": "check:ci-tree-shape",
+          "evidence": ".claude/hooks/stop/wl_agents.py:245 (glob) *.md"
+        },
+        {
+          "id": "check:ci-worklist-env-registry",
+          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:626 (root) agent/"
+        },
+        {
+          "id": "check:cli-examples",
+          "evidence": "scripts/gen/validate-cli-examples.ts:49 (glob) agent/**/*.{md,mdx}"
+        }
+      ],
+      "notReaders": [
+        {
+          "id": "check:ci-paths-origin",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are planAdvance selftest fixtures; the runner reads .ci/policy/record-paths.json, which is not a record path, and no file under agent/."
+        },
+        {
+          "id": "check:ci-runner-selftest",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are planAdvance selftest fixtures; the runner reads .ci/policy/record-paths.json, which is not a record path, and no file under agent/."
+        }
+      ]
+    },
+    {
+      "glob": "agent/worklist/*.jsonl",
+      "except": [
+        "agent/worklist/epics.jsonl"
+      ],
+      "probes": [
+        "agent/worklist/d778be9d.jsonl"
+      ],
+      "readers": [
+        {
+          "id": "check:ci-account-env-retired",
+          "evidence": ".ci/rediacc_ci/quality/account_env_retired.py:57 (root) agent/"
+        },
+        {
+          "id": "check:ci-agent-hint-liveness",
+          "evidence": ".claude/hooks/stop/wl_checks.py:192 (cite) agent/worklist/<prefix>.jsonl"
+        },
+        {
+          "id": "check:ci-agent-session-archival",
+          "evidence": ".claude/hooks/stop/wl_checks.py:192 (cite) agent/worklist/<prefix>.jsonl"
+        },
+        {
+          "id": "check:ci-dead-python",
+          "evidence": ".ci/rediacc_ci/quality/dead_python.py:94 (root) agent/"
+        },
+        {
+          "id": "check:ci-decision-ids",
+          "evidence": ".claude/hooks/stop/wl_checks.py:192 (cite) agent/worklist/<prefix>.jsonl"
+        },
+        {
+          "id": "check:ci-doc-region-parity",
+          "evidence": "scripts/lib/doc-providers.ts:572 (cite) agent/worklist/*.jsonl"
+        },
+        {
+          "id": "check:ci-durable-paths-tracked",
+          "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:42 (cite) agent/worklist/"
+        },
+        {
+          "id": "check:ci-gate-reachability-coverage",
+          "evidence": ".claude/hooks/stop/wl_checks.py:192 (cite) agent/worklist/<prefix>.jsonl"
+        },
+        {
+          "id": "check:ci-hint-corpus",
+          "evidence": ".claude/hooks/stop/wl_checks.py:192 (cite) agent/worklist/<prefix>.jsonl"
+        },
+        {
+          "id": "check:ci-literal-sources",
+          "evidence": ".ci/rediacc_ci/quality/literal_sources.py:2081 (root) agent/"
+        },
+        {
+          "id": "check:ci-plan-boxes",
+          "evidence": ".ci/scripts/quality/check_plan_boxes.py:726 (cite) agent/worklist"
+        },
+        {
+          "id": "check:ci-plan-citations",
+          "evidence": ".ci/scripts/quality/check_plan_citations.py:130 (cite) agent/worklist/*"
+        },
+        {
+          "id": "check:ci-plan-deps",
+          "evidence": ".claude/hooks/stop/wl_checks.py:192 (cite) agent/worklist/<prefix>.jsonl"
+        },
+        {
+          "id": "check:ci-plan-folders",
+          "evidence": ".ci/scripts/quality/check_plan_folders.py:133 (root) agent/"
+        },
+        {
+          "id": "check:ci-plan-implementation",
+          "evidence": ".ci/scripts/quality/check_plan_citations.py:130 (cite) agent/worklist/*"
+        },
+        {
+          "id": "check:ci-plan-record",
+          "evidence": ".ci/scripts/quality/check_plan_citations.py:130 (cite) agent/worklist/*"
+        },
+        {
+          "id": "check:ci-resprofile",
+          "evidence": ".ci/scripts/quality/check_resprofile.py:236 (root) agent/"
+        },
+        {
+          "id": "check:ci-tree-shape",
+          "evidence": ".ci/scripts/quality/check_tree_shape.py:71 (cite) agent/worklist/abcd1234.jsonl"
+        },
+        {
+          "id": "check:ci-worklist-env-registry",
+          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:626 (root) agent/"
+        }
+      ],
+      "notReaders": [
+        {
+          "id": "check:ci-paths-origin",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are planAdvance selftest fixtures; the runner reads .ci/policy/record-paths.json, which is not a record path, and no file under agent/."
+        },
+        {
+          "id": "check:ci-runner-selftest",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are planAdvance selftest fixtures; the runner reads .ci/policy/record-paths.json, which is not a record path, and no file under agent/."
+        }
+      ]
+    },
+    {
+      "glob": "agent/reggate/*.jsonl",
+      "except": [],
+      "probes": [
+        "agent/reggate/1004-2.jsonl",
+        "agent/reggate/1004-2.shapedup-wide.jsonl"
+      ],
+      "readers": [
+        {
+          "id": "check:ci-account-env-retired",
+          "evidence": ".ci/rediacc_ci/quality/account_env_retired.py:57 (root) agent/"
+        },
+        {
+          "id": "check:ci-agent-hint-liveness",
+          "evidence": ".claude/hooks/stop/wl_checks.py:1158 (glob) *.jsonl"
+        },
+        {
+          "id": "check:ci-agent-session-archival",
+          "evidence": ".claude/hooks/stop/wl_checks.py:1158 (glob) *.jsonl"
+        },
+        {
+          "id": "check:ci-dead-python",
+          "evidence": ".ci/rediacc_ci/quality/dead_python.py:94 (root) agent/"
+        },
+        {
+          "id": "check:ci-decision-ids",
+          "evidence": ".claude/hooks/stop/wl_checks.py:1158 (glob) *.jsonl"
+        },
+        {
+          "id": "check:ci-doc-region-parity",
+          "evidence": "scripts/lib/doc-providers.ts:1604 (root) agent/"
+        },
+        {
+          "id": "check:ci-gate-reachability-coverage",
+          "evidence": ".claude/hooks/stop/wl_checks.py:1158 (glob) *.jsonl"
+        },
+        {
+          "id": "check:ci-hint-corpus",
+          "evidence": ".claude/hooks/stop/wl_checks.py:1158 (glob) *.jsonl"
+        },
+        {
+          "id": "check:ci-literal-sources",
+          "evidence": ".ci/rediacc_ci/quality/literal_sources.py:2081 (root) agent/"
+        },
+        {
+          "id": "check:ci-plan-boxes",
+          "evidence": ".ci/scripts/quality/check_plan_boxes.py:397 (root) agent/"
+        },
+        {
+          "id": "check:ci-plan-citations",
+          "evidence": ".claude/hooks/stop/wl_checks.py:1158 (glob) *.jsonl"
+        },
+        {
+          "id": "check:ci-plan-deps",
+          "evidence": ".claude/hooks/stop/wl_checks.py:1158 (glob) *.jsonl"
+        },
+        {
+          "id": "check:ci-plan-folders",
+          "evidence": ".ci/scripts/quality/check_plan_folders.py:133 (root) agent/"
+        },
+        {
+          "id": "check:ci-plan-implementation",
+          "evidence": ".claude/hooks/stop/wl_checks.py:1158 (glob) *.jsonl"
+        },
+        {
+          "id": "check:ci-plan-record",
+          "evidence": ".ci/scripts/quality/check_plan_record.py:180 (cite) agent/reggate/<branch>.jsonl"
+        },
+        {
+          "id": "check:ci-resprofile",
+          "evidence": ".ci/scripts/quality/check_resprofile.py:236 (root) agent/"
+        },
+        {
+          "id": "check:ci-tree-shape",
+          "evidence": ".ci/scripts/quality/check_tree_shape.py:72 (cite) agent/reggate/main.jsonl"
+        },
+        {
+          "id": "check:ci-worklist-env-registry",
+          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:626 (root) agent/"
+        }
+      ],
+      "notReaders": []
+    }
+  ]
+}

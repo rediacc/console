@@ -1,0 +1,84 @@
+{
+  "$comment": [
+    "FIXED PARALLEL WIDTHS THAT NO GRANT SIZES (agent/plans/PLAN-prepush-full-cpu.md PF9). The 2026-10-05 ruling removed every static worker count:",
+    "a parallel tool sizes itself from the cores granted at launch (core_lease.granted_cores(), grantedCores()). What stays fixed is request",
+    "concurrency against a remote API, which is not a core count (operator decision point, DEFAULT taken: I/O widths stay fixed and listed), and a",
+    "test fixture that needs an exact count. check:ci-record-paths refuses an unlisted literal width, a listed one that is gone or renumbered, and",
+    "every core cap such as min(8, os.cpu_count()), which cannot be listed. An entry is keyed on its file and its source text, never a line number."
+  ],
+  "version": 1,
+  "widths": [
+    {
+      "file": ".ci/rediacc_ci/check_pytest.py",
+      "match": "[\"-p\", \"no:cacheprovider\", \"-n\", \"2\", \"--dist\", \"loadgroup\", str(d)]",
+      "width": 2,
+      "kind": "fixture",
+      "limit": "none; the selftest parses the header of exactly two xdist workers",
+      "reason": "A header-parse fixture, not a width: the selftest asserts the `2 workers [N items]` line pytest-xdist prints, which needs exactly two workers whatever the host has (PF4 keeps it, and its comment says so)."
+    },
+    {
+      "file": ".ci/rediacc_ci/ci/budget_report.py",
+      "match": "VARIANT_LOG_WORKERS = 8",
+      "width": 8,
+      "kind": "io",
+      "limit": "GitHub REST API job-log downloads, under GitHub's secondary rate limits on concurrent requests",
+      "reason": "Concurrent job-log downloads from the GitHub REST API for the lane-budget variant sample (about 440 logs); the width bounds requests in flight against GitHub, not local cores."
+    },
+    {
+      "file": ".ci/rediacc_ci/ci/budget_report.py",
+      "match": "ARTIFACT_DOWNLOAD_WORKERS = 8",
+      "width": 8,
+      "kind": "io",
+      "limit": "GitHub REST API artifact downloads, under GitHub's secondary rate limits on concurrent requests",
+      "reason": "Concurrent unit-duration artifact zip downloads from the GitHub REST API (several hundred per ten-run sample); it matches VARIANT_LOG_WORKERS and bounds requests in flight, not cores."
+    },
+    {
+      "file": ".ci/rediacc_ci/deploy/r2_promote.py",
+      "match": "COPY_WIDTH = 8",
+      "width": 8,
+      "kind": "io",
+      "limit": "Cloudflare R2 S3 API, server-side CopyObject requests",
+      "reason": "Parallel server-side CopyObject calls during the R2 release promote; the copies move no bytes through the runner, so the width bounds request concurrency against R2, not CPU or bandwidth."
+    },
+    {
+      "file": ".ci/rediacc_ci/deploy/simulate_promotion.py",
+      "match": "COPY_PARALLELISM = 16",
+      "width": 16,
+      "kind": "io",
+      "limit": "Cloudflare R2 S3 API, server-side CopyObject requests",
+      "reason": "The promotion simulation's parallel CopyObject calls (PLAN-ci-time-budget T2.5 widened it from the twin's 8): small server-side R2 requests, so the width is request concurrency against R2."
+    },
+    {
+      "file": ".ci/scripts/deploy/simulate-promotion.sh",
+      "match": "xargs -P 8 -I{} bash -c 'copy_one_object \"$@\"' _ {} <\"$KEYS\"",
+      "width": 8,
+      "kind": "io",
+      "limit": "Cloudflare R2 S3 API, server-side CopyObject requests",
+      "reason": "The bash twin of simulate_promotion.py: eight concurrent copy_one_object calls, each one aws s3api CopyObject request against R2, so the width bounds remote requests rather than local cores."
+    },
+    {
+      "file": ".ci/rediacc_ci/security/audit.py",
+      "match": "FETCH_PARALLELISM = 8",
+      "width": 8,
+      "kind": "io",
+      "limit": "GitHub REST API via gh api, under GitHub's secondary rate limits on concurrent requests",
+      "reason": "Eight concurrent `gh api` calls (the `xargs -P 8` of audit.sh:125): every worker waits on a GitHub API response, so the width bounds requests in flight against GitHub, not local cores."
+    },
+    {
+      "file": "packages/www/scripts/check-tutorial-caption-sync.ts",
+      "match": "const FETCH_CONCURRENCY = 16;",
+      "width": 16,
+      "kind": "io",
+      "limit": "the media CDN serving tutorial words.json files, about 180 fetches per run",
+      "reason": "Concurrent remote fetches of tutorial words.json files (about 180 per run, each retried on 5xx); the workers wait on the CDN, so the width bounds requests in flight, not local cores."
+    },
+    {
+      "file": "scripts/gates/check-external-links.ts",
+      "match": "const CONCURRENCY = 5;",
+      "width": 5,
+      "kind": "io",
+      "limit": "third-party web hosts named by external links, kept polite to avoid 429s",
+      "reason": "Concurrent HTTP probes of external links on third-party hosts with a 15 s timeout; the width keeps the gate polite to hosts that rate-limit, and no worker does CPU work of its own."
+    }
+  ]
+}
