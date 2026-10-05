@@ -249,8 +249,8 @@ case(
     False,
 )
 case(
-    "an unresolvable `-C` hint keeps guarding the ROOT (fail-safe, not fail-open)",
-    'git -C /no/such/path-xyz commit -m "style: reflow the tree"',
+    "an unresolvable `-C` hint INSIDE the root keeps guarding the ROOT (fail-safe, not fail-open); one outside it is a foreign directory (#5810a9f3)",
+    'git -C no/such/path-xyz commit -m "style: reflow the tree"',
     bulk_root,
     True,
 )

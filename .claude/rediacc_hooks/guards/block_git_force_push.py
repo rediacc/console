@@ -239,6 +239,9 @@ def lease_refusal(ev, cmd, scan, text_scan):
 
 def run(ev):
     cmd = ev.raw("tool_input", "command")
+    # SCOPE: this policy is about THIS checkout and its submodules. A push in a repository outside it (a `/tmp` fixture, even one the same command `git init`s) is not its business (finding #5810a9f3).
+    if commit_policy.foreign_only(ev, cmd, ("push",)):
+        return hookio.ALLOW
     text_scan = scan = shellscan._command_substitution(shellscan.scan_target(cmd))
     # `git -C <dir> push --force` put a word between `git` and `push` and matched nothing here until 2026-10-02; the lexer's canonical spelling of each push closes that (commit_policy.push_texts).
     canon = commit_policy.push_texts(cmd)

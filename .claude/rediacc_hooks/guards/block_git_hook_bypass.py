@@ -123,6 +123,9 @@ def run(ev):
     cmd = ev.raw("tool_input", "command")
     if cmd in ("", "null"):
         return hookio.ALLOW
+    # SCOPE: this policy is about THIS checkout and its submodules. A commit in a repository outside it (a `/tmp` fixture, even one the same command `git init`s) is not its business (finding #5810a9f3).
+    if commit_policy.foreign_only(ev, cmd):
+        return hookio.ALLOW
     name = _env_bypass(cmd)
     if name:
         return _refuse(ev, "this command sets `%s`." % name)

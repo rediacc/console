@@ -673,7 +673,7 @@ STATIC: list[Case] = [
     ),
     case(
         "check 2 guards/block_git_force_push.py",
-        bash_json("cd /tmp/mirror.git && git push --mirror origin"),
+        bash_json("cd private/account && git push --mirror origin"),
         "force-push: --mirror behind a cd is still caught",
     ),
     case(
@@ -855,6 +855,173 @@ STATIC: list[Case] = [
         "pathspecless-commit: ALLOW git -C into a scratch repo",
     ),
     case(
+        "check 0 guards/block_nonstandard_branch_name.py",
+        bash_json(
+            "git init -q /tmp/claude-1000/fx/r1 && git -C /tmp/claude-1000/fx/r1 branch feat"
+        ),
+        "branch-name scope: ALLOW a repository outside this checkout (#5810a9f3)",
+    ),
+    case(
+        "check 2 guards/block_nonstandard_branch_name.py",
+        bash_json("git branch feat"),
+        "branch-name scope CONTROL: the same command in the console is still refused",
+    ),
+    case(
+        "check 0 guards/block_nonstandard_branch_name.py",
+        bash_json(
+            "git init -q /tmp/claude-1000/fx/nb && cd /tmp/claude-1000/fx/nb && git branch feat"
+        ),
+        "branch-name scope: ALLOW a repository outside this checkout (#5810a9f3), created by the same command",
+    ),
+    case(
+        "check 0 guards/block_second_branch.py",
+        bash_json(
+            "git init -q /tmp/claude-1000/fx/nb && cd /tmp/claude-1000/fx/nb && git checkout -b feat"
+        ),
+        "second-branch scope: ALLOW a repository outside this checkout (#5810a9f3), created by the same command",
+    ),
+    case(
+        "check 2 guards/block_second_branch.py",
+        bash_json("git checkout -b feat"),
+        "second-branch scope CONTROL: the same command in the console is still refused",
+    ),
+    case(
+        "check 0 guards/block_untagged_commit.py",
+        bash_json(
+            "git init -q /tmp/claude-1000/fx/nb && cd /tmp/claude-1000/fx/nb && git commit -m x"
+        ),
+        "untagged-commit scope: ALLOW a repository outside this checkout (#5810a9f3), created by the same command",
+    ),
+    case(
+        "check 2 guards/block_untagged_commit.py",
+        bash_json("git commit -m x"),
+        "untagged-commit scope CONTROL: the same command in the console is still refused",
+    ),
+    case(
+        "check 0 guards/block_unlinked_commit_author.py",
+        bash_json(
+            'git init -q /tmp/claude-1000/fx/nb && cd /tmp/claude-1000/fx/nb && git commit --author="x <x@y.z>" -m x -- a'
+        ),
+        "commit-author scope: ALLOW a repository outside this checkout (#5810a9f3), created by the same command",
+    ),
+    case(
+        "check 2 guards/block_unlinked_commit_author.py",
+        bash_json('git commit --author="x <x@y.z>" -m x -- a'),
+        "commit-author scope CONTROL: the same command in the console is still refused",
+    ),
+    case(
+        "check 0 guards/block_git_amend.py",
+        bash_json(
+            "git init -q /tmp/claude-1000/fx/nb && cd /tmp/claude-1000/fx/nb && git commit --amend"
+        ),
+        "git-amend scope: ALLOW a repository outside this checkout (#5810a9f3), created by the same command",
+    ),
+    case(
+        "check 2 guards/block_git_amend.py",
+        bash_json("git commit --amend"),
+        "git-amend scope CONTROL: the same command in the console is still refused",
+    ),
+    case(
+        "check 0 guards/block_git_empty_commit.py",
+        bash_json(
+            "git init -q /tmp/claude-1000/fx/nb && cd /tmp/claude-1000/fx/nb && git commit --allow-empty -m x"
+        ),
+        "git-empty-commit scope: ALLOW a repository outside this checkout (#5810a9f3), created by the same command",
+    ),
+    case(
+        "check 2 guards/block_git_empty_commit.py",
+        bash_json("git commit --allow-empty -m x"),
+        "git-empty-commit scope CONTROL: the same command in the console is still refused",
+    ),
+    case(
+        "check 0 guards/block_git_hook_bypass.py",
+        bash_json(
+            "git init -q /tmp/claude-1000/fx/nb && cd /tmp/claude-1000/fx/nb && git commit --no-verify -m x"
+        ),
+        "git-hook-bypass scope: ALLOW a repository outside this checkout (#5810a9f3), created by the same command",
+    ),
+    case(
+        "check 2 guards/block_git_hook_bypass.py",
+        bash_json("git commit --no-verify -m x"),
+        "git-hook-bypass scope CONTROL: the same command in the console is still refused",
+    ),
+    case(
+        "check 0 guards/block_git_force_push.py",
+        bash_json(
+            "git init -q /tmp/claude-1000/fx/nb && cd /tmp/claude-1000/fx/nb && git push --force origin main"
+        ),
+        "git-force-push scope: ALLOW a repository outside this checkout (#5810a9f3), created by the same command",
+    ),
+    case(
+        "check 2 guards/block_git_force_push.py",
+        bash_json("git push --force origin main"),
+        "git-force-push scope CONTROL: the same command in the console is still refused",
+    ),
+    # A FAILED cd IS NOT FOREIGN (#5810a9f3 follow-up). After `cd <missing>;` git runs in THIS checkout, so a directory that neither exists nor is created by the same command must keep the guard judging the console. `;` and `||` are the shapes where the git command still runs.
+    case(
+        "check 2 guards/block_git_force_push.py",
+        bash_json("cd /nonexistent-zz9; git push --force origin main"),
+        "git-force-push scope: a cd that cannot happen leaves git in the console, still refused",
+    ),
+    case(
+        "check 2 guards/block_git_force_push.py",
+        bash_json("cd /nonexistent-zz9 || true; git push --force origin main"),
+        "git-force-push scope: a failed cd behind || is still refused",
+    ),
+    case(
+        "check 2 guards/block_git_amend.py",
+        bash_json("cd /nonexistent-zz9; git commit --amend --no-edit"),
+        "git-amend scope: a cd that cannot happen leaves git in the console, still refused",
+    ),
+    case(
+        "check 0 guards/block_push_to_protected_branch.py",
+        bash_json(
+            "git init -q /tmp/claude-1000/fx/nb && cd /tmp/claude-1000/fx/nb && git push origin main"
+        ),
+        "protected-branch scope: ALLOW a repository outside this checkout (#5810a9f3), created by the same command",
+    ),
+    case(
+        "check 2 guards/block_push_to_protected_branch.py",
+        bash_json("git push origin main"),
+        "protected-branch scope CONTROL: the same command in the console is still refused",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json(
+            "git init -q /tmp/claude-1000/fx/nb && cd /tmp/claude-1000/fx/nb && git checkout -- ."
+        ),
+        "destructive-git scope: ALLOW a repository outside this checkout (#5810a9f3), created by the same command",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git checkout -- ."),
+        "destructive-git scope CONTROL: the same command in the console is still refused",
+    ),
+    case(
+        "check 0 guards/block_commit_meta.py",
+        bash_json(
+            'git init -q /tmp/claude-1000/fx/nb && cd /tmp/claude-1000/fx/nb && git commit -m "fix: x\\n\\nCo-Authored-By: A <a@b.c>"'
+        ),
+        "commit-meta scope: ALLOW a repository outside this checkout (#5810a9f3), created by the same command",
+    ),
+    case(
+        "check 2 guards/block_commit_meta.py",
+        bash_json('git commit -m "fix: x\\n\\nCo-Authored-By: A <a@b.c>"'),
+        "commit-meta scope CONTROL: the same command in the console is still refused",
+    ),
+    case(
+        "check 0 guards/block_prose_style_commit.py",
+        bash_json(
+            'git init -q /tmp/claude-1000/fx/nb && cd /tmp/claude-1000/fx/nb && git commit -m "feat: you should see — this"'
+        ),
+        "prose-style-commit scope: ALLOW a repository outside this checkout (#5810a9f3), created by the same command",
+    ),
+    case(
+        "check 2 guards/block_prose_style_commit.py",
+        bash_json('git commit -m "feat: you should see — this"'),
+        "prose-style-commit scope CONTROL: the same command in the console is still refused",
+    ),
+    case(
         "check 2 guards/block_pathspecless_git_commit.py",
         bash_json("git commit -F /tmp/claude-1000/msg.txt"),
         "pathspecless-commit: a /tmp MESSAGE FILE is not a /tmp repo, so this is still blocked",
@@ -932,7 +1099,7 @@ STATIC: list[Case] = [
     ),
     case(
         "check 2 guards/block_blanket_git_add.py",
-        bash_json("cd /tmp && git add -A"),
+        bash_json("cd private/account && git add -A"),
         "blanket-git-add: after a command separator",
     ),
     case(
@@ -1429,8 +1596,8 @@ STATIC: list[Case] = [
     ),
     case(
         "check 2 guards/block_untagged_commit.py",
-        bash_json('git -C /nonexistent-path-xyz commit -m "chore: no trailer"'),
-        "target-root CONTROL: a -C that resolves to no repo is not an exemption",
+        bash_json('git -C nonexistent-subdir-xyz commit -m "chore: no trailer"'),
+        "target-root CONTROL: a -C under this checkout that resolves to no repo is not an exemption",
     ),
     # Even a command-position-looking mention inside a heredoc BODY is data, not a command, and must not fire (heredoc-body stripping, the FP that fired on a worklist write).
     case(

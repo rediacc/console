@@ -477,21 +477,48 @@ def target_root(scan, this_root, verb=None):
     gits = [r for r in runs if r.git_sub is not None]
     if verb is not None:
         gits = [r for r in gits if r.git_sub == verb] or gits
+    # `git init -q /tmp/x && cd /tmp/x && git checkout -- .`: the `init` acts on `/tmp/x` while its own directory reads as this root, so it disagreed with every later invocation and sent the whole line back to this checkout (finding #5810a9f3). An `init` or `clone` is the line's own setup, never the command being judged, unless nothing else runs.
+    gits = [r for r in gits if r.git_sub not in ("init", "clone")] or gits
     if gits:
         dirs = [r.git_dir for r in gits]
     elif runs:
         dirs = [runs[-1].cwd]
     else:
         dirs = []
+    created = _created_dirs(runs, this_root)
     roots = set()
     for directory in dict.fromkeys(dirs):
-        roots.add(_resolve_root(directory, this_root))
+        roots.add(_resolve_root(directory, this_root, created))
         if len(roots) > 1:
             return ""
     return roots.pop() if roots else ""
 
 
-def _resolve_root(directory, this_root):
+def _abs_dir(directory, this_root):
+    """`directory` made absolute against this root, the way _resolve_root reads a hint."""
+    return os.path.normpath(directory if directory.startswith("/") else this_root + "/" + directory)
+
+
+def _created_dirs(runs, this_root):
+    """The directories this same command creates before using them: the operand of `git init <dir>`, the destination of `git clone <url> <dir>`, and each `mkdir` operand, made absolute against the directory the creating command runs in."""
+    created = set()
+    for r in runs:
+        base = r.git_dir if r.git_sub else r.cwd
+        base = _abs_dir(base, this_root) if base else os.path.normpath(this_root)
+        args = [a for a in (r.argv or []) if not a.startswith("-")]
+        if r.git_sub in ("init", "clone"):
+            sub = r.git_sub
+            rest = args[args.index(sub) + 1 :] if sub in args else []
+            # `init <dir>` creates its one operand; `clone <url> <dir>` creates its last, and a bare `clone <url>` names no directory here.
+            if rest and (sub == "init" or len(rest) >= 2):
+                created.add(_abs_dir(rest[-1], base))
+        elif r.name == "mkdir":
+            for a in args:
+                created.add(_abs_dir(a, base))
+    return created
+
+
+def _resolve_root(directory, this_root, created=frozenset()):
     """The toplevel of the repository `directory` sits in, or "" when that is this root or nothing resolves.
 
     bash `case "$hint" in /*) ... ;; *) ...` -- a leading slash, nothing more elaborate. A `~` or a `$HOME` is NOT expanded here, so it never resolves.
@@ -501,6 +528,15 @@ def _resolve_root(directory, this_root):
     abs_path = directory if directory.startswith("/") else this_root + "/" + directory
     target = _git_stdout(["-C", abs_path, "rev-parse", "--show-toplevel"], want_rc=True)
     if target is None:
+        # A DIRECTORY OUTSIDE THIS CHECKOUT THAT IS NO REPOSITORY (YET) IS FOREIGN ONLY WHEN IT IS REAL. `git init -q /tmp/x && cd /tmp/x && git commit ...` is one command, so `/tmp/x` holds no repository when the hook runs; answering "" made every caller judge THIS checkout and refuse a fixture it has no business with (finding #5810a9f3). But a path that neither exists nor is created by this same command is a `cd` bash cannot perform, and after `cd /nonexistent; git push origin main` git runs in THIS checkout: treating that path as foreign would let the push past every guard. So it must exist on disk, or sit at or under a directory this command creates first. Anything else, and anything inside this root, keeps resolving to "".
+        norm = os.path.normpath(abs_path)
+        root_norm = os.path.normpath(this_root)
+        outside = this_root and not (
+            norm == root_norm or norm.startswith(root_norm.rstrip("/") + "/")
+        )
+        made = any(norm == c or norm.startswith(c.rstrip("/") + "/") for c in created)
+        if outside and (os.path.isdir(norm) or made):
+            return norm
         return ""
     target = _command_substitution(target)
     if target not in ("", this_root):
@@ -572,7 +608,11 @@ def repo_root_env():
 
     Not part of the bash lib -- each guard computes it itself -- but every caller of `target_root` needs the same answer, and a second spelling of it is exactly the drift `.ci/rediacc_ci/paths.py` was written to end.
     """
-    return os.environ.get("CLAUDE_PROJECT_DIR", "")
+    # The checkout's own toplevel stands in when the harness did not export the variable (a test, a hand run), so a scope test against "" cannot silently pass everything through.
+    return (
+        os.environ.get("CLAUDE_PROJECT_DIR")
+        or _git_stdout(["rev-parse", "--show-toplevel"]).strip()
+    )
 
 
 # =============================================================================

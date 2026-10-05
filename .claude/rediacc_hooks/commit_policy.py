@@ -343,6 +343,53 @@ def run_repo(run, base: str) -> str:
     return toplevel(run_dir(run, base))
 
 
+def scoped_repo(run, base: str, root: str, created=frozenset()) -> str:
+    """Where a walked command acts, for a guard that judges only this checkout and its submodules.
+
+    The toplevel when the directory is a repository; else the directory ITSELF when it lies outside `root`; else "" (a directory inside `root` that names no repository, which git refuses and a guard keeps judging as this checkout). WHY THE SECOND ARM: `git init -q /tmp/x && cd /tmp/x && git branch feat` is one command, so at hook time `/tmp/x` is no repository yet and `toplevel` answers "", which every caller read as "judge this checkout" and refused a fixture it has no business with (finding #5810a9f3). Callers test `is_inside(result, root)`, and a directory outside `root` fails it, so the fixture is let through.
+    """
+    directory = run_dir(run, base)
+    top = toplevel(directory)
+    if top:
+        return top
+    if is_inside(directory, root):
+        return ""
+    # An outside directory that does not exist and that this command does not create is a `cd` bash cannot perform: after `cd /nonexistent; git push --force origin main` git runs in THIS checkout, so it is judged as this checkout (shellscan._resolve_root keeps the same rule).
+    made = any(directory == c or directory.startswith(c.rstrip("/") + "/") for c in created)
+    return directory if (os.path.isdir(directory) or made) else ""
+
+
+def foreign_only(ev, cmd: str, subs: tuple[str, ...] | None = None) -> bool:
+    """Whether every `git` invocation in `cmd` (only those running a subcommand in `subs`, when given) acts on a directory OUTSIDE this checkout, so a guard that judges only the console and its submodules has nothing to say.
+
+    False when `cmd` holds no such invocation, and false as soon as ONE of them lands in this checkout, in a submodule of it, or in a directory inside it that names no repository (see `scoped_repo`). The directory is resolved per invocation from its own `cd` and `-C`, starting at the tool call's `cwd`. A submodule is a different toplevel and is NOT foreign: only the path test decides.
+    """
+    root = ev.env("CLAUDE_PROJECT_DIR") or git(["rev-parse", "--show-toplevel"]) or ""
+    if not root:
+        return False
+    base = ev.field("cwd") or root
+    picked = [r for r in git_runs(cmd) if subs is None or r.git_sub in subs]
+    # The line's own `git init <dir>` / `git clone` setup reads as this checkout's directory and is never what the guard judges, unless nothing else runs.
+    picked = [r for r in picked if r.git_sub not in ("init", "clone")] or picked
+    if not picked:
+        return False
+    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+
+    created = shellscan._created_dirs(runs(cmd), base)
+    for run in picked:
+        repo = scoped_repo(run, base, root, created)
+        if not repo or is_inside(repo, root):
+            return False
+    return True
+
+
+def foreign_git_only(ev, cmd: str) -> bool:
+    """`foreign_only` over every git invocation, and false when the command also runs `gh` (a PR or an API call names its repository by remote, not by directory)."""
+    if any(_base(r.name) == "gh" for r in runs(cmd)):
+        return False
+    return foreign_only(ev, cmd)
+
+
 _BRANCH_READS = frozenset(
     (
         "-d",
@@ -445,7 +492,7 @@ def push_destinations(args: list[str]) -> list[tuple[str, str]]:
     return out
 
 
-def _git_creations(run, start: str) -> list[Creation]:
+def _git_creations(run, start: str, root: str, created=frozenset()) -> list[Creation]:
     _, sub, args = git_split(run.argv)
     found: list[tuple[str, str]] = []
     if sub == "checkout":
@@ -465,7 +512,7 @@ def _git_creations(run, start: str) -> list[Creation]:
         if value:
             found.append((value, "worktree"))
     elif sub == "push":
-        repo = run_repo(run, start)
+        repo = scoped_repo(run, start, root, created)
         heads = set(local_branches(repo)) if repo else set()
         for src, dst in push_destinations(args):
             # `git push origin v1.2` pushes a TAG, and so does `v1.2:v1.2`: a destination is a branch being named only when its source is not a tag, and a bare refspec only when it IS a local branch (anything else is a tag, a sha, or a refspec git itself will refuse).
@@ -480,17 +527,19 @@ def _git_creations(run, start: str) -> list[Creation]:
         return [Creation(repo, name, kind) for name, kind in found]
     if not found:
         return []
-    repo = run_repo(run, start)
+    repo = scoped_repo(run, start, root, created)
     return [Creation(repo, name, kind) for name, kind in found]
 
 
-def _gh_creations(run, start: str) -> list[Creation]:
+def _gh_creations(run, start: str, root: str, created=frozenset()) -> list[Creation]:
     argv = run.argv
     if argv[:2] == ["pr", "create"]:
         value = _flag_value(argv[2:], ("--head", "-H"))
         if value:
             return [
-                Creation(toplevel(run_dir(run, start)), value.rsplit(":", 1)[-1], "gh-pr-create")
+                Creation(
+                    scoped_repo(run, start, root, created), value.rsplit(":", 1)[-1], "gh-pr-create"
+                )
             ]
         return []
     if argv[:1] == ["api"] and any("git/refs" in a for a in argv[1:]):
@@ -503,7 +552,7 @@ def _gh_creations(run, start: str) -> list[Creation]:
         if method.upper() == "POST" or (not method and fields):
             ref = next((f.split("=", 1)[1] for f in fields if f.startswith("ref=")), "")
             name = ref.removeprefix("refs/heads/")
-            return [Creation(toplevel(run_dir(run, start)), name, "gh-api-ref")]
+            return [Creation(scoped_repo(run, start, root, created), name, "gh-api-ref")]
     return []
 
 
@@ -513,13 +562,16 @@ def branch_creations(cmd: str, root: str, base: str | None = None) -> list[Creat
     `root` is this checkout; `base` is the directory the command starts in (the Bash tool's `cwd`), defaulting to `root`. A creation's `repo_root` is resolved from each invocation's own `cd`/`-C`, so the caller can exempt a repository outside `root` and apply the submodule rule inside it. A `rename` is reported too, so a name check still sees the new name; the one-branch rule lets it through, because the count stays at one.
     """
     start = base or root
+    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+
+    created = shellscan._created_dirs(runs(cmd), start)
     out: list[Creation] = []
     for run in runs(cmd):
         name = _base(run.name)
         if name == "git":
-            out.extend(_git_creations(run, start))
+            out.extend(_git_creations(run, start, root, created))
         elif name == "gh":
-            out.extend(_gh_creations(run, start))
+            out.extend(_gh_creations(run, start, root, created))
     return out
 
 
