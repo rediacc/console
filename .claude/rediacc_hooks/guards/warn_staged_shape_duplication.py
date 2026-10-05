@@ -58,6 +58,17 @@ ORDER = 42
 # THE WHOLE BUDGET, measured from the moment the command matches. The plan's ceiling is a 200 ms increment on a chain whose baseline is about 129 ms; everything this guard does after the match -- two git calls, a 200 KB index, and the probe -- lives inside this.
 DEADLINE_S = 0.3
 
+
+# GATE SEAM: SHAPE_PROBE_DEADLINE_S, read only by test-warn_staged_shape_duplication.py, which gives the cases that expect an ANSWER room to answer on a loaded machine (two full-suite runs at 24 pytest workers, 2026-10-05, blew 0.3 s and made the guard say, correctly, that the probe did not run). Never set by anything else; the deadline case keeps the product's 0.3 s.
+def _deadline_s():
+    raw = os.environ.get("SHAPE_PROBE_DEADLINE_S", "")
+    try:
+        value = float(raw)
+    except ValueError:
+        return DEADLINE_S
+    return value if value > 0 else DEADLINE_S
+
+
 # A commit with more corpus files than this is a wave rather than an increment, and hashing them all is exactly the cost the cached index exists to avoid. The number is the plan's; the notice is what keeps the skip visible.
 STAGED_CAP = 12
 
@@ -255,7 +266,7 @@ def _run_probe(root, probe, index_path, files, budget):
         except OSError:
             child.kill()
         child.communicate()
-        return None, "the probe did not answer within the %.1fs budget" % DEADLINE_S
+        return None, "the probe did not answer within the %.1fs budget" % _deadline_s()
     if child.returncode != 0:
         tail = (err or b"").decode("utf-8", "replace").strip()[-300:]
         return None, "the probe exited %d: %s" % (child.returncode, tail or "<no output>")
@@ -373,7 +384,7 @@ def run(ev):
     THE WHOLE BODY IS WRAPPED, and the reason is that this guard reads a cache, forks git twice and spawns node: every one of those has a failure mode, and an advisory that turned one of them into a crash would be reported by the dispatcher as a crashed guard rather than as the thing that actually broke. The exception NAMES ITSELF in the message for the same reason the staleness
     reasons do.
     """
-    deadline = time.monotonic() + DEADLINE_S
+    deadline = time.monotonic() + _deadline_s()
     try:
         return _probe_commit(ev, deadline)
     except Exception as exc:  # noqa: BLE001 -- an advisory may never fail a commit
