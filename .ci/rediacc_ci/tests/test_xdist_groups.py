@@ -337,3 +337,94 @@ def test_the_root_conftest_collects_the_longest_file_first() -> None:
     assert ids, proc.stdout + proc.stderr
     assert ids[0].startswith(long), ids[:3]
     assert ids[-1].startswith(short), ids[-3:]
+
+
+# THE GROUP LOCK IS MACHINE-WIDE. Two concurrent pytest runs each serialise a group inside themselves only, so `account-shadow-fixed-ports` ran twice at once on 2026-10-05 and failed on a taken port. These drive the lock from a second PROCESS, the way a concurrent run does.
+
+_HOLDER = """
+import sys, time
+sys.path.insert(0, %r)
+from rediacc_ci import xdist_groups
+lock = xdist_groups.MachineGroupLock(root=__import__("pathlib").Path(sys.argv[1]))
+lock.enter(sys.argv[2])
+print("held", flush=True)
+time.sleep(float(sys.argv[3]))
+"""
+
+
+def _hold(root, group: str, seconds: float) -> subprocess.Popen:
+    proc = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            _HOLDER % str(paths.from_root(".ci")),
+            str(root),
+            group,
+            str(seconds),
+        ],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    assert proc.stdout is not None
+    line = proc.stdout.readline().strip()
+    proc.stdout.close()
+    assert line == "held", "the holder process never took the lock (%r)" % line
+    return proc
+
+
+def test_a_group_held_by_another_run_waits_for_it(tmp_path) -> None:
+    holder = _hold(tmp_path, "shared-fixed-ports", 1.5)
+    try:
+        lock = xdist_groups.MachineGroupLock(root=tmp_path, wait_s=30)
+        started = __import__("time").monotonic()
+        lock.enter("shared-fixed-ports")
+        waited = __import__("time").monotonic() - started
+        lock.release()
+    finally:
+        holder.wait(timeout=30)
+    assert waited >= 1.0, "the second run entered a group another run held (waited %.2f s)" % waited
+
+
+def test_another_group_does_not_wait(tmp_path) -> None:
+    holder = _hold(tmp_path, "group-a", 5)
+    try:
+        lock = xdist_groups.MachineGroupLock(root=tmp_path, wait_s=1)
+        lock.enter("group-b")
+        lock.release()
+    finally:
+        holder.kill()
+        holder.wait()
+
+
+def test_a_dead_holder_frees_the_group(tmp_path) -> None:
+    holder = _hold(tmp_path, "shared-fixed-tmp", 60)
+    holder.kill()
+    holder.wait()
+    lock = xdist_groups.MachineGroupLock(root=tmp_path, wait_s=2)
+    lock.enter("shared-fixed-tmp")
+    lock.release()
+
+
+def test_a_hung_holder_is_named_after_the_bound(tmp_path) -> None:
+    holder = _hold(tmp_path, "stuck", 30)
+    try:
+        lock = xdist_groups.MachineGroupLock(root=tmp_path, wait_s=0.5)
+        with pytest.raises(
+            TimeoutError, match=r"held machine-wide by another run \(pid %d\)" % holder.pid
+        ):
+            lock.enter("stuck")
+    finally:
+        holder.kill()
+        holder.wait()
+
+
+def test_one_process_holds_at_most_one_group(tmp_path) -> None:
+    lock = xdist_groups.MachineGroupLock(root=tmp_path, wait_s=1)
+    lock.enter("first")
+    lock.enter("second")
+    assert lock.held == "second"
+    # "first" was let go when "second" was taken, so another process can enter it at once.
+    other = xdist_groups.MachineGroupLock(root=tmp_path, wait_s=0.5)
+    other.enter("first")
+    other.release()
+    lock.release()
