@@ -34,8 +34,9 @@ import os
 import pathlib
 import re
 import subprocess
+import sys
 
-from rediacc_hooks import commit_policy, hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan, syspath
 
 CHAIN = "pre-bash"
 # Re-keyed from 39 to 40 on 2026-09-22 to make room for block_push_to_protected_branch.py at 39: "this branch may not be pushed to at all" is checked before "is this tree gate-verified".
@@ -156,9 +157,9 @@ def _repo_with_forged_advance(path):
         )
 
     git("init", "--initial-branch=main", "-q")
-    policy = path / ".ci" / "policy"
-    policy.mkdir(parents=True)
-    (policy / "record-paths.json").write_text(
+    policy_file = path / RECORD_POLICY_REL
+    policy_file.parent.mkdir(parents=True)
+    policy_file.write_text(
         json.dumps(
             {
                 "version": RECORD_POLICY_VERSION,
@@ -735,7 +736,19 @@ def behind_base_refusal(ev, root, cmd):
 
 
 #: The record set: globs a commit may touch without voiding a receipt, each with the gates that read it. Read from the PUSHED tree, never the worktree, for the reason carried-reds.json is read from HEAD.
-RECORD_POLICY_REL = ".ci/policy/record-paths.json"
+def _policy_rel(name):
+    """`.ci/policy/<name>` through rediacc_ci.policy_paths, so the policy directory is written down once (check:ci-policy-inventory). A scoped, removed sys.path insert, the shape block_host_toolchain_run._ci_seams uses: a hook cannot import rediacc_ci at module level, and a permanent `.ci` entry would leak into every later guard the dispatcher runs."""
+    cipath = str(hookio.repo_root() / ".ci")
+    inserted = syspath.on_sys_path(cipath)
+    try:
+        from rediacc_ci.policy_paths import policy_rel  # noqa: PLC0415 - deliberately late
+    finally:
+        if inserted and cipath in sys.path:
+            sys.path.remove(cipath)
+    return policy_rel(name)
+
+
+RECORD_POLICY_REL = _policy_rel("record-paths.json")
 RECORD_POLICY_VERSION = 1
 #: A tree object name, SHA-1 or SHA-256. Anything else in an advance is refused before git sees it, so an option-shaped value cannot become an argument to `git diff`.
 TREE_RE = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")

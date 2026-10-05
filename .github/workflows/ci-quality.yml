@@ -426,6 +426,9 @@ jobs:
       - name: rdc.sh wrapper budget and --native arms
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_rdc_native.py
+      - name: Record paths and fixed widths
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_record_paths.py
       - name: Runner sizing advice
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_runner_advice.py
@@ -484,9 +487,6 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 .ci/rediacc_ci/deploy/write_once_guard_check.py
       # <<< gate-bind
-      - name: Record paths and fixed widths
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_record_paths.py
 
 
 
