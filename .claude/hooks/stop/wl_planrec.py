@@ -371,7 +371,7 @@ def resolve(root, kind, token):
 
       blob      `git cat-file -t` says `blob`. The durable pointer.
       commit    `git rev-parse <t>^{commit}` AND an ancestor of HEAD, so a commit
-                a rebase orphaned (still in the object store) is refused.
+                orphaned by a rebase (still in the object store) is refused.
       tree      `git cat-file -t` says `tree`. Rare: a citation into a
                 `git filter-branch`/rewrite control that names a tree id
                 directly (`git read-tree`, `HEAD^{tree}`) rather than a file
