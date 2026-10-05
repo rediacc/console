@@ -369,6 +369,9 @@ def run(ev):
         return hookio.ALLOW
     if not _is_target(command):
         return hookio.ALLOW
+    # SCOPE: this policy is about THIS checkout and its submodules. A commit in a repository outside it (a `/tmp` fixture, even one the same command `git init`s) is not its business (finding #5810a9f3).
+    if commit_policy.foreign_git_only(ev, command):
+        return hookio.ALLOW
 
     try:
         root = hookio.repo_root()

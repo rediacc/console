@@ -22,7 +22,7 @@ refuses, never what it catches.
 PORT NOTE ON WHERE `git rev-parse HEAD` RUNS. The bash does not `cd` anywhere, so HEAD is read from the hook process's own working directory and NOT from CLAUDE_PROJECT_DIR. That is carried across by leaving `cwd` unset on the call below; passing the project dir would be a fix, and this is a port.
 """
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan
 from rediacc_hooks.wellknown import GH_REPO
 
 CHAIN = "pre-bash"
@@ -94,6 +94,9 @@ EDGE_CASES = [
 
 def run(ev):
     cmd = ev.raw("tool_input", "command")
+    # SCOPE: this policy is about THIS checkout and its submodules. A commit in a repository outside it (a `/tmp` fixture, even one the same command `git init`s) is not its business (finding #5810a9f3).
+    if commit_policy.foreign_only(ev, cmd, ("commit",)):
+        return hookio.ALLOW
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
 
     if not hookio.grep_q(ALLOW_EMPTY, scan):

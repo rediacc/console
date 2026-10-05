@@ -53,7 +53,7 @@ BLOCK = [
     "git stash pop",
     "git clean -fd",
     "git clean -fdx packages/",
-    "cd /tmp && git checkout -- foo.txt",  # after a ;/&& chain
+    "cd no-such-subdir && git checkout -- foo.txt",  # after a ;/&& chain
     "echo hi; git restore src/",  # command position after ;
 ]
 

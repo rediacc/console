@@ -369,6 +369,12 @@ def run(ev):
     if cmd in ("", "null"):
         return hookio.ALLOW
 
+    # SCOPE: this policy is about THIS checkout and its submodules. A push in a repository outside it (a `/tmp` fixture, even one the same command `git init`s) is not its business (finding #5810a9f3).
+    # The GitLab mirror push (`git push gitlab main:main`) is the operator's own ruling about console clones, so a repository outside this checkout is judged for it (test-block_push_to_protected_branch.py, "mirror: -C into another repository").
+    if "gitlab" not in commit_policy.push_texts(cmd).split() and commit_policy.foreign_only(
+        ev, cmd, ("push",)
+    ):
+        return hookio.ALLOW
     text_scan = scan = shellscan._command_substitution(shellscan.scan_target(cmd))
     if not hookio.grep_q(GIT_PUSH_AT_CMD, scan):
         return hookio.ALLOW

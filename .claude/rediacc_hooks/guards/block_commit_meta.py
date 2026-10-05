@@ -276,6 +276,9 @@ def run(ev):
     cmd = ev.raw("tool_input", "command")
     if cmd == "":
         return hookio.ALLOW
+    # SCOPE: this policy is about THIS checkout and its submodules. A commit in a repository outside it (a `/tmp` fixture, even one the same command `git init`s) is not its business (finding #5810a9f3).
+    if commit_policy.foreign_git_only(ev, cmd):
+        return hookio.ALLOW
 
     # Bypass-resistant VERB detection (unwraps sh -c/eval payloads, strips heredocs+prose): worklist evidence or a python script's own argument text MENTIONING "git commit" or "gh pr create" must not trip this gate, only a real invocation.
     # TRAILER_OR_FOOTER below still reads the RAW cmd, because for a real commit the message body IS the command string and stripping it would hide the content this guard exists to check.

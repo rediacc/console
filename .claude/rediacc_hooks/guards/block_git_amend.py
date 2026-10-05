@@ -11,7 +11,7 @@ here, so the awk is ported rather than replaced, and the two live side by side e
 
 import re
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan
 
 CHAIN = "pre-bash"
 ORDER = 17
@@ -116,6 +116,9 @@ def _strip_cat_heredocs(text):
 
 def run(ev):
     cmd = ev.raw("tool_input", "command")
+    # SCOPE: this policy is about THIS checkout and its submodules. A commit in a repository outside it (a `/tmp` fixture, even one the same command `git init`s) is not its business (finding #5810a9f3).
+    if commit_policy.foreign_only(ev, cmd, ("commit",)):
+        return hookio.ALLOW
 
     # Drop the bodies of cat/tee heredocs before matching.
     scan = shellscan._command_substitution(_strip_cat_heredocs(cmd))
