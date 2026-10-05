@@ -812,7 +812,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 13 | .py 13 |
 | .ci/rediacc_ci/testrun | 11 | .py 11 |
-| .ci/rediacc_ci/tests | 339 | .py 339 |
+| .ci/rediacc_ci/tests | 340 | .py 340 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures/ci_diagnose | 11 | .json 6, .log 5 |
 | .ci/rediacc_ci/tests/gates | 175 | .py 174, .fixture 1 |
