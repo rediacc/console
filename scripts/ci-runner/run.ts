@@ -871,7 +871,10 @@ function median(xs: readonly number[]): number {
 /**
  * The cores rule's per-gate costs (PLAN-ci-quick-cpu-scheduling 2.2): the median of the recent cpu samples, the FLOOR of recent wall (the least-contended run, the same rule the tier oracle uses, since load only adds wall and would shrink d), the largest recent peak RSS, and an elastic gate's median per-core share. A gate the wrapper never measured has no cpu and is budgeted at one core.
  */
-function costsFrom(records: ReadonlyMap<string, DurationRecord>): Map<string, GateCost> {
+function costsFrom(
+  records: ReadonlyMap<string, DurationRecord>,
+  failed: ReadonlyMap<string, FailCost> = new Map()
+): Map<string, GateCost> {
   const costs = new Map<string, GateCost>();
   for (const [id, rec] of records) {
     const cost: GateCost = { wallMs: Math.min(...rec.recent) };
@@ -880,7 +883,81 @@ function costsFrom(records: ReadonlyMap<string, DurationRecord>): Map<string, Ga
     if (rec.perCore !== undefined && rec.perCore.length > 0) cost.perCore = median(rec.perCore);
     costs.set(id, cost);
   }
+  // A FAILED RUN'S COST FILLS ONLY WHAT NO PASSING RUN MEASURED. The largest failed cpu is a floor on the gate's real cost: a run that failed early did less work, never more. Without it a gate that has only ever failed in this checkout is planned as an unmeasured 5 s gate at its `min` width, which is how check:ci-pytest, the critical path, was granted 10 of 23 cores in the push clone on 2026-10-05 (pre-push wall 1096 s against a cpu floor of 675 s).
+  for (const [id, f] of failed) {
+    const cost: GateCost = costs.get(id) ?? {};
+    if (cost.cpuMs === undefined && f.cpu.length > 0) cost.cpuMs = Math.max(...f.cpu);
+    if (cost.wallMs === undefined && f.wallMs.length > 0) cost.wallMs = Math.max(...f.wallMs);
+    if (cost.perCore === undefined && f.perCore !== undefined && f.perCore.length > 0)
+      cost.perCore = median(f.perCore);
+    costs.set(id, cost);
+  }
   return costs;
+}
+
+/**
+ * The measured cost of FAILED runs, kept in a sibling of gate-durations.json and never in it: that file's `ewma` and `recent` are the tier oracle's wall, and saveDurations keeps failures out of them on purpose (a fail-fast run is cheap in wall and teaches the oracle nothing). The cores rule needs the other half: what a gate costs when nothing has passed yet. `costsFrom` uses these samples only where no passing sample exists.
+ */
+export interface FailCost {
+  /** CPU ms of the last RECENT_KEEP failed runs that reported one, oldest first. */
+  cpu: number[];
+  /** Their wall ms, same order. */
+  wallMs: number[];
+  /** An elastic gate's cpu / wall / grant over the same runs. */
+  perCore?: number[];
+}
+
+function failCostPath(cachePath: string): string {
+  return path.join(path.dirname(cachePath), 'gate-fail-costs.json');
+}
+
+function loadFailCosts(cachePath: string | undefined): Map<string, FailCost> {
+  const out = new Map<string, FailCost>();
+  if (cachePath === undefined) return out;
+  try {
+    const parsed: unknown = JSON.parse(fs.readFileSync(failCostPath(cachePath), 'utf-8'));
+    if (parsed === null || typeof parsed !== 'object') return out;
+    for (const [id, v] of Object.entries(parsed as Record<string, unknown>)) {
+      if (v === null || typeof v !== 'object') continue;
+      const { cpu, wallMs, perCore } = v as { cpu?: unknown; wallMs?: unknown; perCore?: unknown };
+      const cpuKept = numberList(cpu);
+      const wallKept = numberList(wallMs);
+      if (cpuKept === undefined || wallKept === undefined) continue;
+      const rec: FailCost = { cpu: cpuKept, wallMs: wallKept };
+      const perCoreKept = numberList(perCore);
+      if (perCoreKept !== undefined) rec.perCore = perCoreKept;
+      out.set(id, rec);
+    }
+  } catch {
+    // Same reasoning as loadDurationRecords: a cost hint is never load-bearing.
+  }
+  return out;
+}
+
+function saveFailCosts(cachePath: string | undefined, results: readonly GateResult[]): void {
+  if (cachePath === undefined) return;
+  try {
+    const next: Record<string, FailCost> = Object.fromEntries(loadFailCosts(cachePath));
+    for (const r of results) {
+      if (r.status !== 'fail' || r.cpuMs === undefined || r.ms <= 0) continue;
+      const had = next[r.id];
+      const rec: FailCost = {
+        cpu: [...(had?.cpu ?? []), r.cpuMs].slice(-RECENT_KEEP),
+        wallMs: [...(had?.wallMs ?? []), r.ms].slice(-RECENT_KEEP),
+      };
+      const share =
+        r.elastic === true && r.grantedCores !== undefined
+          ? r.cpuMs / (r.ms * r.grantedCores)
+          : undefined;
+      const perCore = share !== undefined ? [...(had?.perCore ?? []), share] : had?.perCore;
+      if (perCore !== undefined) rec.perCore = perCore.slice(-RECENT_KEEP);
+      next[r.id] = rec;
+    }
+    fs.mkdirSync(path.dirname(cachePath), { recursive: true });
+    fs.writeFileSync(failCostPath(cachePath), `${JSON.stringify(next, null, 2)}\n`);
+  } catch {
+    // A cache write is never load-bearing.
+  }
 }
 
 /** MB the kernel says can be allocated without swapping (MemAvailable), else os.freemem() off Linux. */
@@ -1574,6 +1651,46 @@ async function selftest(): Promise<number> {
   require_(
     cpuRecords.get('selftest:cpu-none')?.cpu === undefined,
     'CONTROL: a gate that reported no cpuMs must not gain a cpu field'
+  );
+
+  // A FAILED RUN'S COST IS KEPT APART AND FILLS ONLY WHAT NO PASS MEASURED (costsFrom). The wall oracle's file must not gain the failure; the cores rule must see it.
+  const failDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-fail-'));
+  const failCache = path.join(failDir, 'gate-durations.json');
+  const failed = (id: string, ms: number, cpuMs: number): GateResult => ({
+    ...durResult(id, 'fail', ms),
+    cpuMs,
+    elastic: true,
+    grantedCores: 10,
+  });
+  saveDurations(failCache, new Map(), [
+    failed('selftest:only-failed', 1_000_000, 9_000_000),
+    { ...durResult('selftest:passed-too', 'ok', 4000), cpuMs: 3000 },
+  ]);
+  saveFailCosts(failCache, [
+    failed('selftest:only-failed', 1_000_000, 9_000_000),
+    failed('selftest:passed-too', 500, 100),
+    durResult('selftest:fail-no-cpu', 'fail', 700),
+  ]);
+  const failCosts = costsFrom(loadDurationRecords(failCache), loadFailCosts(failCache));
+  const failRecords = loadDurationRecords(failCache);
+  const failFile = loadFailCosts(failCache);
+  fs.rmSync(failDir, { recursive: true, force: true });
+  const only = failCosts.get('selftest:only-failed');
+  require_(
+    only?.cpuMs === 9_000_000 && only?.wallMs === 1_000_000 && only?.perCore === 0.9,
+    `a gate that has only failed must be costed from its failed run, got ${JSON.stringify(only)}`
+  );
+  require_(
+    !failRecords.has('selftest:only-failed'),
+    "CONTROL: a failed run must not enter gate-durations.json, the tier oracle's wall"
+  );
+  require_(
+    failCosts.get('selftest:passed-too')?.cpuMs === 3000,
+    `CONTROL: a passing sample must win over a failed one, got ${JSON.stringify(failCosts.get('selftest:passed-too'))}`
+  );
+  require_(
+    !failFile.has('selftest:fail-no-cpu'),
+    'CONTROL: a failed run that reported no cpu must not be recorded'
   );
 
   // THE SAMPLER CROSS-CHECK: a capture that saw far more CPU than `times` flags undercount and wins; one within 20% leaves `times` alone. Only this run's lines count.
@@ -2475,7 +2592,10 @@ async function runGraph(
       durations: estimates,
       sched,
       budget,
-      costs: sched === 'cores' ? costsFrom(loadDurationRecords(cachePath)) : undefined,
+      costs:
+        sched === 'cores'
+          ? costsFrom(loadDurationRecords(cachePath), loadFailCosts(cachePath))
+          : undefined,
       lease,
       exec: (spec, grant: Grant) =>
         execGate(spec, { cwd: REPO_ROOT, mergeOutput: opts.mergeOutput, ...PROFILE_OPTS, grant }),
@@ -2502,6 +2622,7 @@ async function runGraph(
     meta.wallMs
   );
   saveDurations(cachePath, durations, results);
+  saveFailCosts(cachePath, results);
   const exitCode = reporter.footer(results, { ...meta, util });
   return { results, exitCode, wallMs: meta.wallMs, util };
 }
