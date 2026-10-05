@@ -108,14 +108,14 @@ if [[ -n "${TUTORIAL_SHARD:-}" ]]; then
     # `tutorial:<slug>` units, and every shard also pays about 4.1 min outside the
     # tutorials (runner setup, ops up, the second worker).
     # scripts/gates/check-lane-budget.ts prices the slices from exactly those numbers (`--table` shows them beside measured p90s), and `--rebalance ops-tutorials` searches every contiguous split.
-    # (7 2 6 1 2) over 5 shards is its best (worst leg 10.41 min): no 4-shard split fitted under 12, because the 4-shard best's last leg measured 13.2 min.
+    # (7 2 5 2 2) over 5 shards is its best on the 2026-10-05 captures (worst leg 9.43 min, against 10.51 for the earlier (7 2 6 1 2)); no 4-shard split fitted under 12 when last measured, the 4-shard best's last leg at 13.2 min.
     # Regenerate with `npx tsx scripts/gates/check-lane-budget.ts --rebalance ops-tutorials --write` rather than editing the sizes by hand.
     # The sizes apply only while the sequence has exactly the tutorial count they
     # sum to AND shard_of matches; anything else (a tutorial added, removed or
     # reordered by editing the docs, or a different TUTORIAL_SHARD width) falls
     # back to the ceil(total/N) equal-count split rather than silently mis-slicing
     # a changed sequence.
-    MEASURED_SHARD_SIZES=(7 2 6 1 2)
+    MEASURED_SHARD_SIZES=(7 2 5 2 2)
     measured_total=0
     for _sz in "${MEASURED_SHARD_SIZES[@]}"; do
         measured_total=$((measured_total + _sz))
