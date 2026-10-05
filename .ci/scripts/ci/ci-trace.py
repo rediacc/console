@@ -29,6 +29,7 @@ import io
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import time
@@ -50,6 +51,13 @@ _WK = importlib.util.module_from_spec(_WK_SPEC)
 sys.modules["well_known"] = _WK
 _WK_SPEC.loader.exec_module(_WK)
 GH_REPO = _WK.GH_REPO
+# `--repo OWNER/NAME` retargets every read of this process at another repository (a submodule's PR). It is set once by main() and read through _repo(); threading it through the ~20 verb/helper signatures would break the stubs the tests install on `_fetcher` and `_run_snapshot`. Unset, _repo() is GH_REPO and behaviour is unchanged.
+_REPO_OVERRIDE = None
+
+
+def _repo():
+    return _REPO_OVERRIDE or GH_REPO
+
 
 # The diagnosis verbs (--why, --job, --watchdog, ...) live in rediacc_ci.ci.ci_diagnose so the CI-side publisher answers from the same code. Loaded by file for the same reason as well_known above.
 _DG_SPEC = importlib.util.spec_from_file_location(
@@ -127,7 +135,7 @@ def _run_snapshot(root, run_id):
                 "view",
                 str(run_id),
                 "--repo",
-                GH_REPO,
+                _repo(),
                 "--json",
                 "status,conclusion,jobs,workflowName",
             ],
@@ -245,7 +253,7 @@ def _trace_run(root, run_id, wait, timeout, as_json):
 
 
 def _fetcher(root):
-    return D.GhFetcher(GH_REPO, cwd=root)
+    return D.GhFetcher(_repo(), cwd=root)
 
 
 def _cause_text(cause):
@@ -545,7 +553,7 @@ def _registering(root, info, seen, detail):
 
 def _snapshot(root, ref, cache, allow_branch=False, seen=None):
     """One read -> a payload dict, or None with a reason when unreadable."""
-    state, info = wl_ci.ci_rollup(root, ref, allow_branch=allow_branch)
+    state, info = wl_ci.ci_rollup(root, ref, allow_branch=allow_branch, repo=_REPO_OVERRIDE)
     if state == "no-pr":
         return None, "no open PR for ref %r" % ref
     if state == "no-ref":
@@ -606,6 +614,11 @@ def _snapshot(root, ref, cache, allow_branch=False, seen=None):
     # A BRANCH HEAD WITH NOTHING OF ITS OWN is either still registering or never going to run. PR heads are excluded: a PR's head always runs.
     if info.get("source") == "branch" and not info.get("contexts"):
         verdict, detail = _no_ci_check(root, ref, info, seen)
+    elif not info.get("contexts") and not info.get("truncated") and not hard:
+        # A PR head with ZERO contexts is not "0 contexts in flight". A repository with no workflows (rediacc/account) never registers one, and this read polled such a PR to the --wait timeout. The same registration grace as a branch head separates it from a just-pushed head, then it is NO-CI (exit 4).
+        verdict, detail = _no_ci_check(root, ref, info, seen)
+        if verdict == "no-ci":
+            detail = "zero check contexts on this head; " + detail
 
     # A branch read judges only the runs OF that branch (wl_ci.branch_owns_context). Saying how many contexts on the SHA were set aside keeps a foreign PR run's failures visible as a count rather than silently absent.
     if info.get("foreign"):
@@ -672,6 +685,16 @@ def main(argv=None):
         ),
     )
     ap.add_argument("--json", action="store_true", help="machine-readable output")
+    ap.add_argument(
+        "--repo",
+        metavar="OWNER/NAME",
+        default="",
+        help=(
+            "read this repository's CI instead of the console's (a submodule PR, e.g."
+            " rediacc/account). The branch comes from the git checkout in the current"
+            " directory, or --ref."
+        ),
+    )
     ap.add_argument(
         "--ref",
         default="",
@@ -766,6 +789,16 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     root = REPO_ROOT
+    if args.repo:
+        global _REPO_OVERRIDE  # noqa: PLW0603 -- set once, before any read; see _repo()
+        if not re.fullmatch(r"[\w.-]+/[\w.-]+", args.repo):
+            ap.error("--repo wants OWNER/NAME, got %r" % args.repo)
+        _REPO_OVERRIDE = args.repo
+        # The branch, ancestry and cache lookups run against the checkout the caller stands in.
+        top = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=False
+        ).stdout.strip()
+        root = pathlib.Path(top) if top else pathlib.Path.cwd()
 
     if args.workflow and not args.scheduled:
         ap.error("--workflow needs --scheduled")
@@ -884,7 +917,7 @@ def _out(data, text, as_json):
 
 def _head_run(root, ref):
     """(run_id, head_sha, error): the Console CI run on the current PR head (or --ref head)."""
-    state, info = wl_ci.ci_rollup(root, ref, allow_branch=True)
+    state, info = wl_ci.ci_rollup(root, ref, allow_branch=True, repo=_REPO_OVERRIDE)
     if state == "no-pr":
         return None, "", "no open PR for ref %r" % ref
     if state == "no-ref":
