@@ -985,11 +985,35 @@ def run_judge(
     if brave_extra and not fired:
         # ONE ORDER PER STOP. A live defect still in the tree outranks a parked decision, and two orders in one block is how a block stops being read. Skipping is safe here and would not be for the sweep: this rule's trigger is the `[?]` itself, which is still there next stop.
         kind, note = BD.apply_verdict(out)
+        fired = fired or kind == "fire"
         if kind == "degraded":
             out["reason"] = ("%s [brave-default not judged: %s]" % (out.get("reason", ""), note))[
                 :400
             ]
+    if not fired:
+        out = settle_wait_only_continue(out)
     return sanitize_next_action(out), None
+
+
+# A `continue` whose ONLY order is to wait contradicts itself: waiting on background work is what a legitimate stop does, and the harness wakes the session when that work exits. Seen 2026-10-05: verdict "continue", reason "Stop gate confirms pure background wait is legitimate; wake timer armed", next_action "Await worker output or timer expiry", which blocked a stop the judge's own reason allowed. Applied only when no rule placed an order this stop (a rule's order is real work and must survive), and only on the model's own next_action.
+_WAIT_ONLY = re.compile(
+    r"^\s*(?:await|wait(?:\s+for)?|keep\s+waiting|stand\s+by|idle|do\s+nothing|nothing)\b(?![^.;]*\b(?:then|and\s+then|after\s+that)\b)",
+    re.IGNORECASE,
+)
+
+
+def settle_wait_only_continue(out):
+    """`out` with a wait-only `continue` read as `stop`, the rewrite named in its reason; anything else unchanged."""
+    if out.get("verdict") != "continue" or not _WAIT_ONLY.search(out.get("next_action") or ""):
+        return out
+    out = dict(out)
+    out["verdict"] = "stop"
+    out["reason"] = (
+        "%s [read as stop: the judge said continue, but its only action was to wait (%s)]"
+        % (out.get("reason", ""), (out.get("next_action") or "")[:80])
+    )[:400]
+    out["next_action"] = ""
+    return out
 
 
 # The judge advises; it does not get to order the three acts with their own guarded paths (merging and moving main go through /pr-merge at a plan's finish line, operator ruling 2026-10-02; releasing goes through CD). On 2026-08-09 it read a session sitting on four green stacked PRs and returned next_action "merge PRs 563, 565 and 566". The session declined, which is the right outcome but the wrong MECHANISM: it survived on the model's judgment at the moment of reading, and the whole point of this program is
