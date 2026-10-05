@@ -691,8 +691,8 @@ def main(argv=None):
         default="",
         help=(
             "read this repository's CI instead of the console's (a submodule PR, e.g."
-            " rediacc/account). The branch comes from the git checkout in the current"
-            " directory, or --ref."
+            " %s). The branch comes from the git checkout in the current"
+            " directory, or --ref." % _WK.ACCOUNT_REPO
         ),
     )
     ap.add_argument(

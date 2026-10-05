@@ -2041,6 +2041,9 @@ def _orphan_commit_controls(planrec):
         base = git("rev-parse", "HEAD")
         git("commit", "-q", "--allow-empty", "-m", "orphan-to-be")
         orphan = git("rev-parse", "HEAD")
+        if not base or not orphan or base == orphan:
+            # A fixture that could not be built proves nothing: answer the shape that fails BOTH controls.
+            return True, False
         git("reset", "-q", "--hard", base)
         REPO_ROOT = tmp
         try:

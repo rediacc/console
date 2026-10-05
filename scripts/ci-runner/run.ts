@@ -1406,7 +1406,8 @@ async function selftest(): Promise<number> {
   );
   require_(receiptTree('', '') === '', 'CONTROL: an unreadable HEAD vouches for nothing either');
   require_(
-    parseStaleSubmodules(' 1844b07 s (heads/main)\n+a1f430b private/account (a1f430b)').join() === 'private/account',
+    parseStaleSubmodules(' 1844b07 s (heads/main)\n+a1f430b private/account (a1f430b)').join() ===
+      'private/account',
     'a submodule checked out off its gitlink (a + line) must void the receipt (#a423d9ab)'
   );
   require_(

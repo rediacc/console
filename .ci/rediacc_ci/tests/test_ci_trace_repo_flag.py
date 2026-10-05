@@ -6,6 +6,7 @@ import json
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.well_known import ACCOUNT_REPO
 
 TRACE = paths.from_root(".ci", "scripts", "ci", "ci-trace.py")
 
@@ -40,11 +41,11 @@ def _record_gh(ct, monkeypatch):
 def test_repo_flag_targets_run_view_and_fetcher(ct, monkeypatch, tmp_path):
     calls = _record_gh(ct, monkeypatch)
     monkeypatch.chdir(tmp_path)
-    ct.main(["--repo", "rediacc/account", "--run", "7"])
+    ct.main(["--repo", ACCOUNT_REPO, "--run", "7"])
     view = [c for c in calls if c[:3] == ["gh", "run", "view"]]
     assert view
-    assert view[0][view[0].index("--repo") + 1] == "rediacc/account"
-    assert ct._fetcher(tmp_path).repo == "rediacc/account"
+    assert view[0][view[0].index("--repo") + 1] == ACCOUNT_REPO
+    assert ct._fetcher(tmp_path).repo == ACCOUNT_REPO
 
 
 def test_repo_flag_reaches_the_rollup(ct, monkeypatch, tmp_path):
@@ -56,8 +57,8 @@ def test_repo_flag_reaches_the_rollup(ct, monkeypatch, tmp_path):
 
     monkeypatch.setattr(ct.wl_ci, "ci_rollup", fake_rollup)
     monkeypatch.chdir(tmp_path)
-    ct.main(["--repo", "rediacc/account", "--ref", "1004-2"])
-    assert seen["repo"] == "rediacc/account"
+    ct.main(["--repo", ACCOUNT_REPO, "--ref", "1004-2"])
+    assert seen["repo"] == ACCOUNT_REPO
 
 
 def test_default_is_the_console_repo(ct, monkeypatch, tmp_path):
@@ -67,7 +68,7 @@ def test_default_is_the_console_repo(ct, monkeypatch, tmp_path):
     view = [c for c in calls if c[:3] == ["gh", "run", "view"]]
     assert view[0][view[0].index("--repo") + 1] == ct.GH_REPO
     assert ct._fetcher(tmp_path).repo == ct.GH_REPO
-    assert ct.GH_REPO != "rediacc/account"
+    assert ct.GH_REPO != ACCOUNT_REPO
 
 
 def test_bad_repo_is_refused(ct):
