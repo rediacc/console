@@ -50,6 +50,18 @@
 # fails on the second one. Everything below reads UV_VERSION, PYTEST_VERSION and
 # UV_SHA256_<OS>_<ARCH> out of the pins file.
 #
+# THE SESSION PYTEST IS A WRAPPER, NOT uv's SYMLINK (agent/plans/PLAN-prepush-full-cpu.md
+# PF21). `$TOOL_BIN_DIR/pytest`, the path every session and writer agent is told
+# to run, is rewritten after every install into a small script that draws its
+# cores from the machine-wide lease in .ci/rediacc_ci/core_lease.py: `-n N` asks
+# for up to N tokens, `-n auto` for all of them, a serial run for one, and `-n`
+# is rewritten to the grant. Without it a session's `-n auto` beside a running
+# pre-push takes every core a second time. With CI_CORE_LEASE_HELD set (the
+# ci-runner, or a check_pytest.py that already leased) it execs the real binary
+# untouched, so nothing leases the same cores twice. uv owns the symlink and
+# recreates it on every `uv tool install`, so the wrapper is written LAST, and
+# removed first when uv is about to write the bin directory.
+#
 #   .ci/bootstrap.sh            install what is missing (idempotent)
 #   .ci/bootstrap.sh --check    report what is missing, change NOTHING
 #   .ci/bootstrap.sh doctor     print the resolved versions
@@ -92,6 +104,16 @@ fi
 UV_DIR="$ROOT/.ci/cache/toolchain/uv-${UV_VERSION}"
 TOOL_DIR="$ROOT/.ci/cache/toolchain/uv-tools"
 TOOL_BIN_DIR="$TOOL_DIR/bin"
+
+# The wrapper's inputs: uv's real pytest and the interpreter of the same tool
+# environment (the pinned Python, so core_lease.py runs on what pytest runs on),
+# and the lease module itself. Absolute, because a session runs the wrapper from
+# any directory. The marker line is how a wrapper is told from uv's symlink: only
+# a file carrying it is ever removed or overwritten here.
+REAL_PYTEST="$TOOL_DIR/pytest/bin/pytest"
+REAL_PYTHON="$TOOL_DIR/pytest/bin/python"
+LEASE_PY="$ROOT/.ci/rediacc_ci/core_lease.py"
+WRAPPER_MARK="# rediacc core-lease pytest wrapper"
 
 # The platform, derived. Same two-axis mapping .ci/scripts/lib/toolchain.sh uses
 # for shfmt and shellcheck, and for the same reason: hardcoding `linux` there
@@ -271,6 +293,7 @@ install_pytest() {
     # UV_TOOL_DIR/UV_TOOL_BIN_DIR keep this out of ~/.local: a bootstrap that
     # edits the developer's home directory is one that cannot be undone by
     # deleting the worktree.
+    unwrap_pytest || return 1
     UV_TOOL_DIR="$TOOL_DIR" UV_TOOL_BIN_DIR="$TOOL_BIN_DIR" \
         "$uv" tool install --quiet "pytest==${PYTEST_VERSION}" || {
         echo "${RED}bootstrap${NC}: uv tool install pytest failed" >&2
@@ -291,6 +314,7 @@ install_xdist() {
     # dropped: `--with` alone does not name the tool, and naming pytest without
     # its version would resolve the newest one and silently unpin the runner
     # this whole file exists to pin.
+    unwrap_pytest || return 1
     UV_TOOL_DIR="$TOOL_DIR" UV_TOOL_BIN_DIR="$TOOL_BIN_DIR" \
         "$uv" tool install --quiet --force \
         --with "pytest-xdist==${PYTEST_XDIST_VERSION}" "pytest==${PYTEST_VERSION}" || {
@@ -307,6 +331,78 @@ install_xdist() {
         return 1
     }
     printf '%s' "$TOOL_BIN_DIR/pytest"
+}
+
+# True when $1 is a wrapper this script wrote: a regular file (never uv's
+# symlink) carrying the marker line.
+is_lease_wrapper() {
+    [ -f "$1" ] && [ ! -L "$1" ] && grep -qF "$WRAPPER_MARK" "$1"
+}
+
+# Take the wrappers out of uv's way before `uv tool install` writes the bin
+# directory: without --force uv refuses an existing `pytest` it did not create.
+# Only a marked wrapper is removed; anything else there is left for uv to judge.
+unwrap_pytest() {
+    local name
+    for name in pytest py.test; do
+        if is_lease_wrapper "$TOOL_BIN_DIR/$name"; then
+            rm -f "$TOOL_BIN_DIR/$name" || return 1
+        fi
+    done
+}
+
+# The wrapper's text, on stdout. %q-quoted paths, so a checkout path with a
+# space or a quote stays one word.
+pytest_wrapper_text() {
+    local real python lease
+    printf -v real '%q' "$REAL_PYTEST"
+    printf -v python '%q' "$REAL_PYTHON"
+    printf -v lease '%q' "$LEASE_PY"
+    cat <<EOF
+#!/usr/bin/env bash
+$WRAPPER_MARK, written by .ci/bootstrap.sh; do not edit.
+# Every session-launched pytest draws its cores from the machine-wide lease
+# (.ci/rediacc_ci/core_lease.py, verb \`pytest\`), so a run started beside a
+# pre-push cannot take every core a second time. CI_CORE_LEASE_HELD means the
+# cores are already leased (the ci-runner or check_pytest.py), so it passes through.
+real=$real
+if [ ! -x "\$real" ]; then
+    echo "pytest wrapper: \$real is missing; run 'bash .ci/bootstrap.sh' to reinstall it" >&2
+    exit 127
+fi
+if [ -n "\${CI_CORE_LEASE_HELD:-}" ]; then
+    exec "\$real" "\$@"
+fi
+exec $python $lease pytest --real "\$real" -- "\$@"
+EOF
+}
+
+# Write the wrapper over uv's symlinks, atomically (a temp file renamed over the
+# link), and only when the text differs, so a rerun changes nothing. Refuses when
+# uv's real pytest is not there: a wrapper around nothing would turn every
+# session run into the wrapper's own 127.
+write_pytest_wrapper() {
+    local name target tmp
+    [ -x "$REAL_PYTEST" ] && [ -x "$REAL_PYTHON" ] || {
+        echo "${RED}bootstrap${NC}: $REAL_PYTEST or $REAL_PYTHON is missing, so there is nothing to wrap" >&2
+        return 1
+    }
+    [ -f "$LEASE_PY" ] || {
+        echo "${RED}bootstrap${NC}: $LEASE_PY is missing, so the wrapper would have no lease to draw from" >&2
+        return 1
+    }
+    for name in pytest py.test; do
+        target="$TOOL_BIN_DIR/$name"
+        if is_lease_wrapper "$target" && [ "$(cat "$target")" = "$(pytest_wrapper_text)" ]; then
+            continue
+        fi
+        tmp="$TOOL_BIN_DIR/.$name.wrapper.$$"
+        pytest_wrapper_text >"$tmp" && chmod 755 "$tmp" && mv -f "$tmp" "$target" || {
+            rm -f "$tmp"
+            echo "${RED}bootstrap${NC}: could not write the pytest wrapper at $target" >&2
+            return 1
+        }
+    done
 }
 
 # One row per tool. `want` is always printed next to `have`, because "pytest:
@@ -340,6 +436,17 @@ report() {
     else
         report_row xdist "$PYTEST_XDIST_VERSION" "${YELLOW}ABSENT${NC}"
         rc=1
+    fi
+    # ITS OWN ROW TOO: a repo-local pytest that is still uv's bare symlink runs
+    # outside the core lease. Judged only when that install exists; a missing
+    # install is the pytest row's finding, not this one's.
+    if [ -x "$REAL_PYTEST" ]; then
+        if is_lease_wrapper "$TOOL_BIN_DIR/pytest"; then
+            report_row lease "-" "$TOOL_BIN_DIR/pytest wraps core_lease.py"
+        else
+            report_row lease "-" "${YELLOW}ABSENT${NC} ($TOOL_BIN_DIR/pytest is not the lease wrapper)"
+            rc=1
+        fi
     fi
     report_row python3 "-" "$(command -v python3 || echo "${YELLOW}ABSENT${NC}")"
     return "$rc"
@@ -385,6 +492,13 @@ case "${1:-install}" in
         else
             xdist_in="$(install_xdist "$uv_bin")" || exit 1
             echo "${GREEN}ok${NC}   pytest-xdist ${PYTEST_XDIST_VERSION} installed into $xdist_in"
+        fi
+        # LAST, because every uv install above rewrites the bin directory. Only
+        # for the repo-local install: a PYTEST_BIN or PATH pytest is not ours to
+        # wrap, and the session entry point is this directory's.
+        if [ -x "$REAL_PYTEST" ]; then
+            write_pytest_wrapper || exit 1
+            echo "${GREEN}ok${NC}   $TOOL_BIN_DIR/pytest leases its cores through core_lease.py"
         fi
         exit 0
         ;;
