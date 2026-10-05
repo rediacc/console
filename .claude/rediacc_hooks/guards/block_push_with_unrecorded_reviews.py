@@ -182,6 +182,9 @@ def run(ev):
     seen = set()
     for push in pushes:
         where = base if push.git_dir in (None, "", ".") else base / push.git_dir
+        # A directory that does not exist is a `cd` bash could not perform: after `cd /nonexistent; git push` git pushes from the directory the command started in, so that is the repository judged (the #5810a9f3 failed-cd rule, as shellscan._resolve_root keeps it).
+        if not where.is_dir():
+            where = base
         top = rv.git_out(where, "rev-parse", "--show-toplevel")
         if not top:
             continue
