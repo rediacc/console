@@ -14,7 +14,9 @@ Worklist: (lead adds the epic and item ids when the plan enters the PR)
 - Target: pre-push wall time close to the longest single gate (the critical path), with near-zero idle core-seconds.
 - "Shortest possible pre-push cycle with full CPU utilization. A complete change, not easy fixes." <!-- style-ok -->
 
-## What is true today (HEAD e3005c26d, read for this plan)
+## What was true before this plan (HEAD e3005c26d, read for this plan)
+
+This section is the starting point as read at e3005c26d, kept as written; the boxes below record what changed and the After table what it measured.
 
 **The pre-push is two scheduler passes.** The session driver (scratchpad `prepush.sh`) syncs a push clone, runs `npm run ci:quick -- --receipt-out <R>`, reads `droppedTouched` out of the receipt, then runs `run.ts --only <ids> --receipt-out <R>` as a second pass. The first pass cannot start the slow gates because `quickDiffAdmit` (scripts/ci-runner/run.ts:710-784) admits a touched slow gate only inside `QUICK_BUDGET_MS = 90_000` (scripts/ci-runner/quick-select.ts:6). Everything over budget becomes a `droppedTouched` entry with an `--only` command (scripts/ci-runner/run.ts:753-759, 787-789). The second pass merges into `droppedVerified` (scripts/ci-runner/run.ts:2288-2339, `mergeDroppedVerified` at scripts/ci-runner/run.ts:2290).
 
@@ -91,7 +93,8 @@ Filled by the lead from a parallel measurement on this host (24 logical cores, W
     (ticked) 2026-10-05T11:55:36Z by d778be9d: commit:00fa66691 PYTEST_JOBS_CAP deleted; jobs() is PYTEST_JOBS else core_lease.granted_cores(); test_check_pytest_jobs plants the cap
 - [x] PF5 manifest: check:ci-pytest `cores: {min: 2, max: 'all'}`; each vitest gate passes `--maxWorkers=$CI_RUNNER_CORES` and declares `cores: {min: 1, max: 'all'}`; each biome gate likewise through its thread knob (hypothesis: `RAYON_NUM_THREADS`, verified before use); every remaining `weight: 2` is replaced by an elastic declaration or deleted in favour of measured d(g)
     (ticked) 2026-10-05T11:55:37Z by d778be9d: commit:00fa66691 pytest cores {min 2, max all}; 7 vitest gates via VITEST_MAX_WORKERS; check:format via RAYON_NUM_THREADS; eslint gates cores {1,4} via eslint-heap --concurrency; no weight left
-- [ ] PF6 .ci/rediacc_ci/battery.py:450 and .ci/rediacc_ci/quality/literal_sources.py:533 read `granted_cores()`; lane-durations.json `unitParallelism` is derived from the runner's core count by budget_report rather than hand-authored, and scripts/gates/check-lane-budget.ts:60 reads the derived value
+- [x] PF6 .ci/rediacc_ci/battery.py:450 and .ci/rediacc_ci/quality/literal_sources.py:533 read `granted_cores()`; lane-durations.json `unitParallelism` is derived from the runner's core count by budget_report rather than hand-authored, and scripts/gates/check-lane-budget.ts:60 reads the derived value
+    (ticked) 2026-10-05T12:27:02Z by d778be9d: commit:e791f7c6d battery and literal_sources read granted_cores (00fa66691); budget_report derives unitParallelism from the lane runner label, prior kept when underivable
 
 ## 2. One scheduler pass
 
@@ -139,8 +142,10 @@ The pytest floor today is the 470 s `hooks-guards` group, then the 220.8 s singl
 
 - [x] PF11 hooks-guards: the process-table cases move to test_guards_process_table.py with the group; test_guards_differential.py ungrouped
     (ticked) 2026-10-05T11:55:43Z by d778be9d: commit:00fa66691 the process-table cases moved out; the grouped half fell from about 460 s to 18 s
-- [ ] PF12 the guards world is built once per run under a lock and shared read-only; a read-only control proves no case writes into it
-- [ ] PF13 test_settings_collapse split so no item exceeds about 20 s; test_proxies_go_unit split per package
+- [x] PF12 the guards world: sharing one build across workers is measured before it is built, and kept per worker when the saving is under about 10 s of check:ci-pytest wall
+    (ticked) 2026-10-05T12:27:04Z by d778be9d: commit:00fa66691 measured 2026-10-05: 41 worlds in 1.27 s per worker, built in parallel, about 1.3 s of a 500 s wall; five worlds take warn_remote_drift FETCH_HEAD writes, so they stay per worker
+- [x] PF13 test_settings_collapse split so no item exceeds about 20 s; test_proxies_go_unit split per package
+    (ticked) 2026-10-05T12:27:13Z by d778be9d: commit:00fa66691 settings_collapse chunked with a partition control (slowest 17.0 s); go_unit slowest 23.0 s, go test already GOMAXPROCS wide
 - [x] PF14 per-worker port slices; the `ports` group deleted from its four modules
     (ticked) 2026-10-05T11:55:44Z by d778be9d: commit:00fa66691 worker_port_range and free_port_in_range give each worker a slice; the ports group is gone
 - [x] PF15 shrink_only_composition, docs_gen and paths_exist plant into copies; the real-tree group has no member; the tree tripwire lands with a planted control
@@ -149,7 +154,8 @@ The pytest floor today is the 470 s `hooks-guards` group, then the 220.8 s singl
     (ticked) 2026-10-05T11:55:47Z by d778be9d: commit:00fa66691 tree:repo and writesTree dropped; pool_writer_safety refuses any real-tree declaration; gate_tree_writes REAL control pins it
 - [x] PF17 hooks-delegates and housekeeping-cleanup-versions groups resolved per worker, or kept with a measured reason in the module
     (ticked) 2026-10-05T11:55:48Z by d778be9d: commit:00fa66691 both groups removed: the floor test reads its cases by ast, hooks-delegates ran clean three times at -n 8
-- [ ] PF18 duration-ordered collection in conftest.py; .ci/config/shards/quality-pytest.json rebalanced for the split files
+- [x] PF18 duration-ordered collection in conftest.py; .ci/config/shards/quality-pytest.json rebalanced for the split files
+    (ticked) 2026-10-05T12:27:05Z by d778be9d: commit:610f3b57c longest-first ordering from 00fa66691 with a silent fallback on malformed lane-durations; quality-pytest legs rebalanced, worst 10.09 to 9.21 min
 
 ## 4. No self-contention
 
@@ -208,7 +214,8 @@ The pytest floor today is the 470 s `hooks-guards` group, then the 220.8 s singl
     (ticked) 2026-10-05T11:55:31Z by d778be9d: commit:8913d62ab P0 and P1 ticked with their commits, P2's shipped half named, P4's weight half marked superseded, QUEUE.md line corrected
 - [x] PF9 the static-width sweep: every `-n`, `-j`, `-P`, `max_workers`, `maxWorkers`, `cpu_count()` and `availableParallelism()` in a gate's reach is either sized by the grant or listed in `.ci/policy/fixed-widths.json` as an I/O fan-out with its remote limit; check_record_paths.py's second mode reds on a new literal width outside the list (operator decision point: I/O widths are request concurrency, not cores; DEFAULT: they stay fixed and listed)
     (ticked) 2026-10-05T11:56:00Z by d778be9d: commit:aedf9a278 fixed-widths.json lists the network fan-outs (operator: keep fixed, listed); check:ci-record-paths refuses an unlisted width or a core cap; embed-asset probe now granted (00fa66691)
-- [ ] PF27 docs/agent-reference/ci-gates.md: the one-pass pre-push, `CI_RUNNER_CORES`, the lease, the record set
+- [x] PF27 docs/agent-reference/ci-gates.md: the one-pass pre-push, `CI_RUNNER_CORES`, the lease, the record set
+    (ticked) 2026-10-05T12:16:14Z by d778be9d: commit:2432a731a one-pass lane, CI_RUNNER_CORES, the lease and the record set documented
 
 ## Writer split
 

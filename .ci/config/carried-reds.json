@@ -34,7 +34,7 @@
       "findings": [
         "P-A1:9e03ddeec630"
       ],
-      "reason": "Turbo ran with the operator's go and was then switched off with five plans part-done: clean-review-ledger T17/T18, commit-as-you-go T6 keep-list and the drain, config-team-scoping T10 (live eu smoke needs a browser), plan-per-pr-loop R1 (waits on a scheduled run) and retire-bash-oracles (its M-live release ports wait for the operator's real runs). The PR body's Operational-Reason names them, which admits P-A1 in CI. PLAN-ci-quick-cpu-scheduling.md (P2-P4 open by design) and this PR's own PLAN-prepush-full-cpu.md (PF6, PF12, PF13, PF18, PF27, PF-final in progress) joined it on 2026-10-05."
+      "reason": "Turbo ran with the operator's go and was then switched off with five plans part-done: clean-review-ledger T17/T18, commit-as-you-go T6 keep-list and the drain, config-team-scoping T10 (live eu smoke needs a browser), plan-per-pr-loop R1 (waits on a scheduled run) and retire-bash-oracles (its M-live release ports wait for the operator's real runs). The PR body's Operational-Reason names them, which admits P-A1 in CI. PLAN-ci-quick-cpu-scheduling.md (P2-P4 open by design) and this PR's own PLAN-prepush-full-cpu.md (PF-final, the measured before/after table, in progress) joined the PR's plan clock on 2026-10-05."
     },
     {
       "gate": "check:ci-pytest",
