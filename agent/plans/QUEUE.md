@@ -52,7 +52,7 @@ judge: on
 1. agent/plans/PLAN-config-passkey-optional.md -- P0, approved, in progress (3 of 4 boxes ticked)
 2. agent/plans/PLAN-app-wide-org-selection.md -- P0, approved, in progress (2 of 3 boxes ticked), dep-blocked
 3. agent/plans/PLAN-config-handoff-relay-only.md -- P0, draft, in progress (9 of 11 boxes ticked), dep-blocked
-4. agent/plans/PLAN-prepush-full-cpu.md -- P0, approved, in progress (23 of 29 boxes ticked)
+4. agent/plans/PLAN-prepush-full-cpu.md -- P0, approved, in progress (28 of 29 boxes ticked)
 5. agent/plans/PLAN-token-ip-rebind.md -- P0, draft, in progress (9 of 10 boxes ticked), dep-blocked
 6. agent/plans/PLAN-config-sync-hardening.md -- P0, draft, in progress (18 of 19 boxes ticked), dep-blocked
 7. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
