@@ -11,7 +11,7 @@ Reads `agent/pr/<branch>.md` and rebuilds the block between
 
 ## Rebuilt, never appended
 
-The idiom is the one from `.ci/scripts/autopilot/submodule-prs.sh`, exact-line equality with the markers alone on their own lines:
+The idiom is the one from `.claude/hooks/post-bash/refresh_pr_body.py`, exact-line equality with the markers alone on their own lines:
 
     $0 == b { skip = 1; next }
     $0 == e { skip = 0; next }
@@ -21,8 +21,8 @@ Strip then append. Appending grows a duplicate block on every push instead of up
 
 ## The marker pair must stay distinct
 
-Three writers already append blocks at the end of a body: `refresh-pr-body.sh`'s `pushed-head`, `submodule-prs.sh`'s `autopilot-submodule-prs`, and humans. `submodule-prs.sh` warns in its own header that sharing markers with `refresh-pr-body.sh` is fatal, because that hook rewrites the **whole** body on every push. So the epic block must tolerate being relocated to the end, and
-must never reuse another writer's markers. Human prose between blocks survives all three; that is part of what the test asserts.
+Two writers already append blocks at the end of a body: `refresh_pr_body.py`'s `pushed-head`, and humans. Sharing markers with `refresh_pr_body.py` is fatal, because that hook rewrites the **whole** body on every push. So the epic block must tolerate being relocated to the end, and
+must never reuse another writer's markers. Human prose between blocks survives both; that is part of what the test asserts.
 
 ## Item text can break the block
 

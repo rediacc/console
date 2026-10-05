@@ -1711,7 +1711,7 @@ The original obligations still hold: cli-docs, skill reference, `validate-cli-ex
    Regen: `npm run export:command-tree -w @rediacc/cli`.
 
 2. **The generated CLI contract** (`packages/shared/src/cli-contract/data/`):
-`contract.generated.ts`, `contract.json`, and **`i18n/<lang>.json` for all 13 locales**. Gated by **`check:ci-cli-contract`**, which is a **regenerate-and-diff, not a hash** (`.ci/scripts/quality/check-cli-contract.sh`): ANY rename, move, added flag or changed help string turns it red. **This is the heaviest new obligation.** Every CLI i18n change re-emits 13 files, and the
+`contract.generated.ts`, `contract.json`, and **`i18n/<lang>.json` for all 13 locales**. Gated by **`check:ci-cli-contract`**, which is a **regenerate-and-diff, not a hash** (`.ci/scripts/quality/check_cli_contract.py`): ANY rename, move, added flag or changed help string turns it red. **This is the heaviest new obligation.** Every CLI i18n change re-emits 13 files, and the
 contract drives the web console, the `--proxy` thin client and the executor, so a stale contract means those three disagree with the CLI they are driving.
    Regen: `npm run generate:cli-contract -w @rediacc/cli`.
 

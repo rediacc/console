@@ -48,7 +48,7 @@ SOFT_REQUIRED=(
     CHECK_RELEASE_STATE E2E_DEPENDENCY_PROBE
 )
 
-# Pointer-bump fast path (see .ci/scripts/ci/detect-pointer-bump.sh): the PR
+# Pointer-bump fast path (see .ci/rediacc_ci/ci/detect_pointer_bump.py): the PR
 # head is content-identical to a commit that already passed full CI, and the
 # build jobs are DELIBERATELY skipped by ci.yml. Their skips must read as
 # green here; a genuine failure of any of them still blocks (soft tier only

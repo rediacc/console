@@ -70,7 +70,7 @@ SOFT_REQUIRED = (
     "E2E_DEPENDENCY_PROBE",
 )
 
-# The pointer-bump fast path (see `.ci/scripts/ci/detect-pointer-bump.sh`): the three build jobs are DELIBERATELY skipped by ci.yml, so their skips must read as green. Soft still blocks on "failure", so a genuine build failure is not forgiven. RUN_SH_TESTS is NOT skipped on that path, and unlike the twin this list judges it -- see the delta documented above.
+# The pointer-bump fast path (see `.ci/rediacc_ci/ci/detect_pointer_bump.py`): the three build jobs are DELIBERATELY skipped by ci.yml, so their skips must read as green. Soft still blocks on "failure", so a genuine build failure is not forgiven. RUN_SH_TESTS is NOT skipped on that path, and unlike the twin this list judges it -- see the delta documented above.
 POINTER_BUMP_HARD = ("INITIALIZE",)
 POINTER_BUMP_EXTRA_SOFT = (
     "BUILD_DOCKER",

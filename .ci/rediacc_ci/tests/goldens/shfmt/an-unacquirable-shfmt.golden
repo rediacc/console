@@ -3,7 +3,7 @@ exit: 77
 --- stdout ---
 info: Checking shell script formatting
 info: Every lane's toolchain: .ci/scripts/lib/toolchain.sh --report
-info: Or run the gate where it is pinned: ./run.sh devbox exec -- .ci/scripts/security/shfmt.sh
+info: Or run the gate where it is pinned: ./run.sh devbox exec -- npm run -s check:ci-shell-format
 --- stderr ---
 toolchain: go install shfmt@v9.99.0 failed
 toolchain: could not download shfmt from https://github.com/mvdan/sh/releases/download/v9.99.0/shfmt_v9.99.0_linux_amd64

@@ -64,7 +64,7 @@ def test_skipped_is_the_transitive_skip_signature_and_fails() -> None:
         "✗   Some job in housekeeping's needs chain skipped and GH Actions propagated\n"
         "✗   the skip through to housekeeping. Prefix the if: on the housekeeping job\n"
         "✗   with 'always() &&' so skips in its needs chain cannot silently disable it.\n"
-        "✗   The static audit .ci/scripts/security/check-workflow-gates.sh should also\n"
+        "✗   The static audit .ci/scripts/security/check_workflow_gates.py should also\n"
         "✗   have caught this; investigate why it did not.\n"
     )
 

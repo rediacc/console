@@ -133,6 +133,9 @@ def test_help_is_byte_identical() -> None:
     old, new = run_both(["--help"])
     assert old[0] == 0
     assert "PROFILER_CGROUP_ROOT" in old[1], "the usage text is empty; the slice is stale"
+    # One deliberate delta: the frozen twin text names the retired `sampler-linux.sh`, and the port's usage names the entry point that is live, the `sampler_linux.py` forwarder.
+    live = ".ci/scripts/ci/profiler/sampler_linux.py"
+    old = (old[0], old[1].replace(TWIN_REL, live), old[2])
     assert_same(old, new)
 
 

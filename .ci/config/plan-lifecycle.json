@@ -48,7 +48,7 @@
     "is the set of `Status:` words that mark a plan as a COMPACTION RECORD rather",
     "than a live plan. It is here and not inlined for one reason: the two",
     "housekeeping twins each hard-typed the alternation `compacted\\|parked` into",
-    "their own regex (`.ci/scripts/quality/check-plan-housekeeping.sh` and",
+    "their own regex (`.ci/scripts/quality/check_plan_housekeeping.py` and",
     "`.ci/rediacc_ci/quality/plan_housekeeping.py`), and a third copy sat in",
     "`.ci/rediacc_ci/tests/test_quality_plan_housekeeping.py`. Three copies of one",
     "vocabulary is the `254 fast gates` shape: adding a state means finding all",

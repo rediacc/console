@@ -34,7 +34,7 @@ SKIPPED_ADVICE = (
     "  Some job in {label}'s needs chain skipped and GH Actions propagated",
     "  the skip through to {label}. Prefix the if: on the {label} job",
     "  with 'always() &&' so skips in its needs chain cannot silently disable it.",
-    "  The static audit .ci/scripts/security/check-workflow-gates.sh should also",
+    "  The static audit .ci/scripts/security/check_workflow_gates.py should also",
     "  have caught this; investigate why it did not.",
 )
 

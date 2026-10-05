@@ -180,7 +180,7 @@ Searching the whole repo for bug numbers 67–85 in `docs/` returns exactly **`#
 `packages/cli/scripts/command-tree.json` is a **committed** artifact consumed by at least nine checkers: `check-design-tree.ts`, `check-cli-docs.ts`, `check-i18n-untranslated.ts`, `validate-cli-examples.ts`, `scripts/lib/positional-cli-detector.ts`, the two ESLint rules (`no-positional-cli-syntax`, `no-undefined-cli-flags`), and www's `validate-docs-cli-usage.js` /
 `generate-cli-docs.js` / `cli-reference-catalog.js`.
 
-**Nothing regenerates it and diffs it.** `export:command-tree` exists only as a package script (`packages/cli/package.json:12`); no `.ci/` script and no workflow invokes it. Contrast `contract.json`, which **is** regenerate-and-diffed by `.ci/scripts/quality/check-cli-contract.sh`.
+**Nothing regenerates it and diffs it.** `export:command-tree` exists only as a package script (`packages/cli/package.json:12`); no `.ci/` script and no workflow invokes it. Contrast `contract.json`, which **is** regenerate-and-diffed by `.ci/scripts/quality/check_cli_contract.py`.
 
 **I verified it is currently fresh** — I regenerated it from the live Commander tree and diffed byte-identical — so today's greens from those nine are meaningful. But the *gate* is absent. An author who changes the tree, is forced by `check:ci-cli-contract` to regenerate `contract.json`, and forgets `export:command-tree`, leaves all nine validators grading **the previous CLI** —
 silently, and greenly. That is exactly the shape this program has been bitten by seven times: a validator's blind spot is indistinguishable from a passing check.

@@ -2164,7 +2164,7 @@ jobs:
         with:
           # DEEP, because the suppression-liveness checks in this job read commit
           # TOPOLOGY. audit.py calls entry_age_days through rediacc_ci.core.age and
-          # check-go-deps.sh through .ci/scripts/lib/age-check.sh; both ask
+          # check_go_deps.py through rediacc_ci.core.age too; both ask
           # `git log --diff-filter=A` when a blocklist or
           # allowlist line was ADDED. On a depth-1 checkout every line is attributed to
           # the graft boundary, so measured 2026-09-03 the docker/docker blocklist entry
@@ -2456,7 +2456,7 @@ jobs:
 
       - name: Install ruff
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        # `resolve_ruff()` in .ci/scripts/quality/check-python-lint.sh is exactly
+        # `resolve_ruff()` in .ci/rediacc_ci/quality/python_lint.py is exactly
         # three branches -- $RUFF_BIN, a PATH binary AT THE PIN, then uvx -- and
         # its comment names this step as where CI gets it, deliberately, "so the
         # network is not on the critical path there".
@@ -2636,7 +2636,7 @@ jobs:
         with:
           # DEEP, because the suppression-liveness checks in this job read commit
           # TOPOLOGY. audit.py calls entry_age_days through rediacc_ci.core.age and
-          # check-go-deps.sh through .ci/scripts/lib/age-check.sh; both ask
+          # check_go_deps.py through rediacc_ci.core.age too; both ask
           # `git log --diff-filter=A` when a blocklist or
           # allowlist line was ADDED. On a depth-1 checkout every line is attributed to
           # the graft boundary, so measured 2026-09-03 the docker/docker blocklist entry

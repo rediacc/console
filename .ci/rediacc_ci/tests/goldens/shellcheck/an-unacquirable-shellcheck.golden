@@ -3,7 +3,7 @@ exit: 1
 --- stdout ---
 info: Checking shell script compatibility
 info: Every lane's toolchain: .ci/scripts/lib/toolchain.sh --report
-info: Or run the gate where it is pinned: ./run.sh devbox exec -- .ci/scripts/security/shellcheck.sh
+info: Or run the gate where it is pinned: ./run.sh devbox exec -- npm run -s check:ci-shell-lint
 --- stderr ---
 toolchain: could not download shellcheck from https://github.com/koalaman/shellcheck/releases/download/v9.99.0/shellcheck-v9.99.0.linux.<arch>.tar.xz
 [0;31merror: shellcheck is unusable for this gate[0m

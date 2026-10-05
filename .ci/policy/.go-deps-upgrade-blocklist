@@ -2,8 +2,8 @@
 #
 # Format: module/path  # BLOCKER: <substantive reason>
 #
-# The BLOCKER convention is enforced by .ci/scripts/quality/check-go-deps.sh
-# (see parse_blockered_list in .ci/scripts/lib/blocker-validator.sh): each
+# The BLOCKER convention is enforced by .ci/scripts/quality/check_go_deps.py
+# (see parse_blockered_list in .ci/rediacc_ci/core/blocker_validator.py): each
 # line needs a 30+ char reason that does not match the banned-phrase list.
 #
 # Minor/patch updates for non-blocked packages will fail CI. Major updates

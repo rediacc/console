@@ -246,7 +246,7 @@ def main(argv: list[str]) -> int:
         log_info("Every lane's toolchain: .ci/scripts/lib/toolchain.sh --report")
         log_info(
             "Or run the gate where it is pinned: "
-            "./run.sh devbox exec -- .ci/scripts/security/shfmt.sh"
+            "./run.sh devbox exec -- npm run -s check:ci-shell-format"
         )
         # 77 = CANNOT_RUN, the convention check-python-lint.sh:170 established.
         # The ci-runner classifies it as BLOCKED: counted, named, recorded in the push receipt and warned about, but never a claim about the code.
