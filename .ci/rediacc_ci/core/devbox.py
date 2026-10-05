@@ -1451,13 +1451,19 @@ class Devbox:
 
     @staticmethod
     def make_lease_dir(path: str) -> bool:
-        """`mkdir -m 700 <path>`: exactly the one directory, mode 700 whatever the umask; False when it cannot be made."""
+        """`mkdir -m 700 <path>`: exactly the one directory, mode 700 whatever the umask; False only when no directory exists afterwards.
+
+        The answer is whether the directory is THERE, never whether chmod succeeded: a created directory whose chmod failed (review d3508efb.1/.2) still holds a mode at most 0700 (a umask only removes bits), and refusing to mount it would silently drop the shared pool. A directory that already exists is an answer too.
+        """
         try:
             os.mkdir(path, 0o700)
-            os.chmod(path, 0o700)
+        except FileExistsError:
+            pass
         except OSError:
             return False
-        return True
+        with contextlib.suppress(OSError):
+            os.chmod(path, 0o700)
+        return os.path.isdir(path)
 
     def core_lease_src(self, *_argv: str) -> int:
         """`devbox_core_lease_src`, `.ci/lib/devbox.sh` (commit 606f7daac): the host directory of the machine-wide core lease pool, `/run/user/<uid>/rediacc-cores`.
