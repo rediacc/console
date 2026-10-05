@@ -30,7 +30,7 @@ DIST = paths.from_root("packages", "www", "dist")
 def real_dist_skip_reason():
     """Why the real-dist arms assert nothing in this run, or None when they run."""
     if os.environ.get("REDIACC_PYTEST_REAL_DIST") != "1":
-        return "REDIACC_PYTEST_REAL_DIST is not 1; check:ci-player-css-scope covers the real dist after build:www"
+        return "REDIACC_PYTEST_REAL_DIST is not 1 (check:ci-player-css-scope covers the real dist after build:www)"
     if not DIST.is_dir():
         return "%s absent" % paths.relative_to_root(DIST)
     return None
