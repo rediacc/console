@@ -219,7 +219,7 @@ def test_cli_line_and_exit_codes(cache, monkeypatch, capsys):
 def test_read_cached_never_fetches_and_spawns_one_refresh_when_old(cache):
     clock = Clock()
     gs.read(now=clock, fetch=Fetch(DEGRADED), path=cache)
-    spawned = []
+    spawned: list[object] = []
     st = gs.read_cached(now=clock, path=cache, spawn=spawned.append)
     assert st.state == "degraded"
     assert spawned == [], "a fresh cache started a refresh"
@@ -237,7 +237,7 @@ def test_read_cached_skips_the_spawn_while_a_refresh_holds_the_lock(cache):
     lock = cache.parent / gs.LOCK_NAME
     with lock.open("w") as fh:
         fcntl.flock(fh, fcntl.LOCK_EX)
-        spawned = []
+        spawned: list[object] = []
         st = gs.read_cached(now=Clock(), path=cache, spawn=spawned.append)
     assert spawned == []
     assert st.state == "unknown"
@@ -250,7 +250,7 @@ def test_read_cached_skips_the_spawn_while_a_refresh_holds_the_lock(cache):
 def test_read_cached_honours_the_negative_cache(cache):
     clock = Clock()
     gs.read(now=clock, fetch=Fetch(OSError("down")), path=cache)
-    spawned = []
+    spawned: list[object] = []
     gs.read_cached(now=clock, path=cache, spawn=spawned.append)
     assert spawned == []
 
@@ -349,7 +349,7 @@ def test_every_hook_surface_returns_in_under_200ms_with_a_30s_fetch(
         time.sleep(SLOW_S)
         return OK
 
-    spawned = []
+    spawned: list[object] = []
     monkeypatch.setattr(gs, "fetch_summary", slow)
     monkeypatch.setattr(gs, "spawn_refresh", spawned.append)
     for name, fn in _surfaces(note_hook, trace, wl_checks).items():
@@ -503,7 +503,7 @@ def test_stop_advisory_hands_over_to_the_recovery_note(cache, wl_checks):
 def test_wait_recovery_exits_0_on_recovery(cache):
     clock = Clock()
     fetch = Fetch(DEGRADED, DEGRADED, OK)
-    lines = []
+    lines: list[str] = []
 
     def sleep(s):
         clock.t += s
@@ -523,7 +523,7 @@ def test_wait_recovery_exits_0_on_recovery(cache):
 
 def test_control_wait_recovery_times_out_with_exit_2(cache):
     clock = Clock()
-    lines = []
+    lines: list[str] = []
 
     def sleep(s):
         clock.t += s
