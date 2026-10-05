@@ -678,8 +678,97 @@ def test_unit_drift_below_the_absolute_floor_is_noise_not_a_finding(tmp_path):
     noise = _fake_compute(units={"pytest:a.py": 124.5, "pytest:b.py": 10000})
     assert br.check_lane_durations(path, limit=10, compute=noise) == 0
     # CONTROL: the same 26% ratio on a unit large enough to clear the floor is still a finding.
-    real = _fake_compute(units={"pytest:a.py": 16, "pytest:b.py": 12600})
+    path.write_text(json.dumps(_committed(units={"pytest:a.py": 16, "pytest:b.py": 20000})))
+    real = _fake_compute(units={"pytest:a.py": 16, "pytest:b.py": 25200})
     assert br.check_lane_durations(path, limit=10, compute=real) == 1
+
+
+# The four 2026-10-04/05 refreshes on branch 1004-2 (#ce346f22): committed -> measured, each the open PR's own pushes replacing sampled runs. None of them may block.
+PR_NOISE_COMMITTED = {
+    "pytest:.claude/rediacc_hooks/tests/test_wl_hints.py": 5278.0,
+    "pytest:.ci/rediacc_ci/tests/test_review_standing_orders_brief.py": 9068.2,
+    "pytest:.claude/rediacc_hooks/tests/test_wl_loop_next.py": 9688.4,
+    "pytest:.ci/rediacc_ci/tests/test_shape_probe_agreement.py": 10066.8,
+    "e2e-workers:16-setup-installation-params.test.ts": 5967.4,
+    "pytest:.ci/rediacc_ci/tests/test_big.py": 300000.0,
+    "e2e-workers:10-backup-checkpoint.test.ts": 150598.0,
+}
+PR_NOISE_MEASURED = {
+    **PR_NOISE_COMMITTED,
+    "pytest:.claude/rediacc_hooks/tests/test_wl_hints.py": 7376.8,
+    "pytest:.ci/rediacc_ci/tests/test_review_standing_orders_brief.py": 6681.4,
+    "pytest:.claude/rediacc_hooks/tests/test_wl_loop_next.py": 13070.5,
+    "pytest:.ci/rediacc_ci/tests/test_shape_probe_agreement.py": 13002.5,
+    "e2e-workers:16-setup-installation-params.test.ts": 8335.0,
+}
+
+
+def test_pr_noise_shaped_unit_drift_passes(tmp_path):
+    """#ce346f22: every one of these 26-40% moves fired under the old 2 s floor and cost a refresh plus a 45-minute pre-push. Each is a 2.1-3.4 s move on a 5-15 s unit."""
+    moved = [u for u, was in PR_NOISE_COMMITTED.items() if PR_NOISE_MEASURED[u] != was]
+    assert len(moved) == 5
+    for unit_id in moved:
+        # Each move is over the 25% ratio and over the old 2 s floor: the old check fired on all five.
+        was, now = PR_NOISE_COMMITTED[unit_id], PR_NOISE_MEASURED[unit_id]
+        assert br.drift_finding("u", was, now) is not None
+        assert 2000 <= abs(now - was) < br.MIN_UNIT_DRIFT_MS
+    findings, lanes = br.unit_drift_findings(PR_NOISE_COMMITTED, PR_NOISE_MEASURED)
+    assert findings == []
+    assert lanes == 2
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(_committed(units=PR_NOISE_COMMITTED)))
+    assert (
+        br.check_lane_durations(path, limit=10, compute=_fake_compute(units=PR_NOISE_MEASURED)) == 0
+    )
+
+
+def test_planted_sustained_single_unit_drift_still_fails(tmp_path):
+    """CONTROL: the 2026-10-04 12-01-subscription-renewal move (22838 -> 38369 ms, 68%, and it kept climbing) on top of the PR noise above must still red the check, and must name the unit."""
+    committed = {**PR_NOISE_COMMITTED, "account-e2e:12-01-subscription-renewal.test.ts": 22837.8}
+    measured = {**PR_NOISE_MEASURED, "account-e2e:12-01-subscription-renewal.test.ts": 38368.6}
+    findings, _ = br.unit_drift_findings(committed, measured)
+    # It is the only account-e2e unit in this fixture, so its lane sum moves 68% too.
+    assert [f for f in findings if f.startswith("unit ")] == [
+        f for f in findings if "12-01-subscription-renewal" in f
+    ]
+    assert len(findings) == 2
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(_committed(units=committed)))
+    assert br.check_lane_durations(path, limit=10, compute=_fake_compute(units=measured)) == 1
+
+
+def test_planted_sustained_lane_wide_drift_of_sub_floor_units_still_fails(tmp_path):
+    """CONTROL: the floor must not hide a whole lane slowing down. 40 pytest units at 4 s each all grow 30% (1.2 s apiece, every one under the 5 s floor): no per-unit finding, but the lane sum moves 30% and 48 s, so the check reds and names the lane."""
+    committed = {"pytest:t%02d.py" % i: 4000.0 for i in range(40)}
+    measured = {k: v * 1.30 for k, v in committed.items()}
+    findings, lanes = br.unit_drift_findings(committed, measured)
+    assert lanes == 1
+    assert len(findings) == 1
+    assert "lane 'quality-pytest' summed unit p90" in findings[0]
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(_committed(units=committed)))
+    assert br.check_lane_durations(path, limit=10, compute=_fake_compute(units=measured)) == 1
+    # And the same lane growing 20% stays under the 25% ratio: not a finding.
+    under = {k: v * 1.20 for k, v in committed.items()}
+    assert br.unit_drift_findings(committed, under) == ([], 1)
+
+
+def test_a_tiny_lane_sum_cannot_drift_on_the_ratio_alone():
+    """battery's five units sum to about 8.5 s: a 30% move (2.6 s) is under the absolute floor and is noise, the same rule a single unit gets."""
+    committed = {"battery:a.sh": 3000.0, "battery:b.sh": 2500.0, "battery:c.sh": 3000.0}
+    measured = {k: v * 1.30 for k, v in committed.items()}
+    assert br.unit_drift_findings(committed, measured) == ([], 1)
+
+
+def test_unit_lane_maps_every_unit_id_family():
+    assert br.unit_lane("pytest:a.py") == "quality-pytest"
+    assert br.unit_lane("account-e2e:x.test.ts") == "test-account-e2e"
+    assert br.unit_lane("e2e-workers:x.test.ts") == "test-e2e-workers"
+    assert br.unit_lane("renet-integration:x.py") == "test-renet-integration"
+    assert br.unit_lane("github.com/rediacc/renet/pkg/x") == "test-renet-go"
+    assert br.unit_lane("battery:x.sh") == "quality-gate-tests"
+    assert br.unit_lane("tutorial:x") == "ops-tutorials"
+    assert br.unit_lane("newlane:x") == "newlane"
 
 
 def test_check_lane_durations_reports_a_missing_artifact_lane_as_a_finding(tmp_path):

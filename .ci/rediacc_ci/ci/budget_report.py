@@ -129,8 +129,9 @@ LANE_DURATIONS_REL_PATH = ".ci/config/lane-durations.json"
 GATES_LOCK_REL_PATH = "scripts/ci-runner/gates.lock.json"
 PER_LEG_BUDGET_MINUTES = 12.0
 DRIFT_THRESHOLD = 0.25
-# A UNIT's drift counts only when the absolute move is at least this many milliseconds. Unit p90s are sampled from 10 runs, so a sub-second unit swings by hundreds of percent on runner noise alone: an hour after a refresh, check:ci-budget-freshness failed PR #594 (run 37190043363) on 16 -> 124.5 ms, 2119 -> 1566 ms and 5967 -> 7620 ms, none of which moves a leg's wall enough to matter. Job-level drift keeps the pure ratio. Same reasoning as gate_costs.MIN_DRIFT_CPU_S.
-MIN_UNIT_DRIFT_MS = 2000
+# A UNIT's drift counts only when the absolute move is at least this many milliseconds. Unit p90s are sampled from 10 runs, so a small unit swings by large percentages on runner noise alone: an hour after a refresh, check:ci-budget-freshness failed PR #594 (run 37190043363) on 16 -> 124.5 ms, 2119 -> 1566 ms and 5967 -> 7620 ms, none of which moves a leg's wall enough to matter. Job-level drift keeps the pure ratio. Same reasoning as gate_costs.MIN_DRIFT_CPU_S.
+# WHY 5 s AND NOT 2 s (#ce346f22). The 10-run sample is repo-wide PR runs, so every push on the open PR replaces one sampled run, and 2 s still sat inside that churn: on 2026-10-04/05 branch 1004-2 refreshed lane-durations.json four times in a day for 5-15 s units moving 2.1-3.4 s (test_wl_hints 5278 -> 7377 ms, test_review_standing_orders_brief 9068 -> 6681, test_wl_loop_next 9688 -> 13070, test_shape_probe_agreement 10067 -> 13002, e2e 16-setup-installation-params 5967 -> 8335), each refresh a 45-minute pre-push plus a commit that fed the sample again. Replayed over the last 20 refreshes, 5 s clears every same-day move and still fires on each days-apart refresh that held real movement (account-e2e +21% on 2026-10-04: 55 units; 12-01-subscription-renewal 22838 -> 38369 ms, which kept climbing to 42544). Against a 12-minute leg, 5 s is under 0.7%.
+MIN_UNIT_DRIFT_MS = 5000
 # D-W2/T3.4: the two direct (non-lane-sharded) ci.yml jobs job-timeout-baseline.json used to cover, now `job_max_seconds`' own baseline. See check_job_timeout_headroom.py.
 HEADROOM_JOBS = ("Validate Promotion", "Stage Artifacts")
 
@@ -1583,6 +1584,51 @@ UNIT_PREFIX_MANIFEST = {
 }
 
 
+# Unit-id prefix -> lane, for `unit_drift_findings`' per-lane sum. UNIT_PREFIX_MANIFEST names only the lanes with a shard manifest; battery and tutorial units are priced too, so they are named here.
+UNIT_PREFIX_LANE = {"battery": "quality-gate-tests", "tutorial": "ops-tutorials"}
+
+
+def unit_lane(unit_id: str) -> str:
+    """The lane a unit id belongs to, from its prefix (a bare id is a Go import path of test-renet-go). An unknown prefix is its own group, never dropped."""
+    prefix = unit_id.split(":", 1)[0] if ":" in unit_id else ""
+    return UNIT_PREFIX_MANIFEST.get(prefix) or UNIT_PREFIX_LANE.get(prefix) or prefix
+
+
+def unit_drift_findings(
+    committed_units: Mapping[str, float], measured_units: Mapping[str, float]
+) -> tuple[list[str], int]:
+    """`(findings, lanes compared)` for T3.3's drift trigger on `units`, two ways, each needing BOTH the 25% ratio AND a `MIN_UNIT_DRIFT_MS` absolute move:
+
+    - PER UNIT: one unit whose p90 moved enough to unbalance its leg (a 160 s spec doubling).
+    - PER LANE: the SUM of a lane's units, over the ids both sides price. The backstop for the hole the floor opens: a lane-wide slowdown made of units that each move under 5 s passes unit by unit, and the sum still reds once it moves the lane by 25%. MEASURED 2026-10-05: units under 5 s are at most 10% of any lane's sum except battery's 9 s, so sub-floor noise cannot carry a lane past 25% on its own, and over the last 20 refreshes no same-day refresh moved a lane sum by more than 3.4%.
+
+    Pure, so the selftest-style tests drive it without the network.
+    """
+    findings: list[str] = []
+    committed_sum: dict[str, float] = {}
+    measured_sum: dict[str, float] = {}
+    for unit_id, ms in sorted(measured_units.items()):
+        was = committed_units.get(unit_id)
+        if was is None or ms is None:
+            continue
+        lane = unit_lane(unit_id)
+        committed_sum[lane] = committed_sum.get(lane, 0.0) + was
+        measured_sum[lane] = measured_sum.get(lane, 0.0) + ms
+        if abs(ms - was) < MIN_UNIT_DRIFT_MS:
+            continue
+        d = drift_finding("unit %r p90" % unit_id, was, ms)
+        if d:
+            findings.append(d)
+    for lane in sorted(committed_sum):
+        was, ms = committed_sum[lane], measured_sum[lane]
+        if abs(ms - was) < MIN_UNIT_DRIFT_MS:
+            continue
+        d = drift_finding("lane %r summed unit p90" % lane, was, ms)
+        if d:
+            findings.append(d)
+    return findings, len(committed_sum)
+
+
 def prune_units_to_manifests(units: dict[str, Any], root: Path) -> dict[str, Any]:
     """Drop a unit id its lane's committed manifest no longer names.
 
@@ -1775,14 +1821,8 @@ def check_lane_durations(
         if d:
             findings.append(d)
 
-    committed_units = committed.get("units") or {}
-    for unit_id, ms in sorted(computed["units"].items()):
-        was = committed_units.get(unit_id)
-        if was is not None and ms is not None and abs(ms - was) < MIN_UNIT_DRIFT_MS:
-            continue
-        d = drift_finding("unit %r p90" % unit_id, was, ms)
-        if d:
-            findings.append(d)
+    unit_findings, unit_lanes = unit_drift_findings(committed.get("units") or {}, computed["units"])
+    findings.extend(unit_findings)
 
     # DRIFT ONLY for job_max_seconds -- NOT leg_over_budget_finding's 12-minute ceiling. Validate Promotion/Stage Artifacts are the two jobs D-W2 keeps OUTSIDE the lane-budget gate precisely because they are not lane-sharded; their own ceiling is check_job_timeout_headroom.py's 1.5x-headroom-under-timeout-minutes rule, a different policy this check must not silently double up on.
     committed_headroom = (committed.get("job_max_seconds") or {}).get("jobs") or {}
@@ -1804,14 +1844,16 @@ def check_lane_durations(
             print("  - %s" % f, file=sys.stderr)
         return 1
     print(
-        "CI time budget check: %d job lane(s), %d unit(s), %d headroom job(s) sampled "
-        "from %d run(s), all within budget and within %.0f%% of committed."
+        "CI time budget check: %d job lane(s), %d unit(s) in %d unit lane sum(s), %d headroom job(s) sampled "
+        "from %d run(s), all within budget and within %.0f%% of committed (unit moves under %.0f s ignored)."
         % (
             len(computed["jobs"]),
             len(computed["units"]),
+            unit_lanes,
             len(computed["job_max_seconds"]),
             limit,
             DRIFT_THRESHOLD * 100,
+            MIN_UNIT_DRIFT_MS / 1000,
         )
     )
     return 0
