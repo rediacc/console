@@ -333,7 +333,11 @@ function sampledStates(durationMs, tickMs) {
       rows.push({
         t: Date.now() - start,
         paused: video ? video.paused : null,
-        currentTime: video ? video.currentTime : null
+        currentTime: video ? video.currentTime : null,
+        // Tell a stalled fetch or a starved decoder (readyState below HAVE_FUTURE_DATA) from a play() race (data present, clock frozen).
+        readyState: video ? video.readyState : null,
+        networkState: video ? video.networkState : null,
+        bufferedEnd: video && video.buffered.length > 0 ? video.buffered.end(video.buffered.length - 1) : null
       });
       if (Date.now() - start >= ${durationMs}) {
         resolve(rows);
