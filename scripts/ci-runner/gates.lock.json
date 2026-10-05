@@ -5328,9 +5328,6 @@
     "leaves": [
       ".ci/rediacc_ci/check_pytest.py"
     ],
-    "reads": [
-      "www-dist"
-    ],
     "paths": [
       ".ci/rediacc_ci/**",
       ".claude/rediacc_hooks/**",

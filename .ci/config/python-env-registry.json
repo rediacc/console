@@ -1250,6 +1250,9 @@
     ".ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py": [
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/gates/test_gate_client_bundle_budget.py": [
+      "REDIACC_PYTEST_REAL_DIST"
+    ],
     ".ci/rediacc_ci/tests/gates/test_gate_commit_identity.py": [
       "PATH"
     ],
@@ -1285,6 +1288,9 @@
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_paths_exist.py": [
       "GATE_PATHS_SCAN_FLOOR"
+    ],
+    ".ci/rediacc_ci/tests/gates/test_gate_player_css_scope.py": [
+      "REDIACC_PYTEST_REAL_DIST"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_releaseversion_attestation.py": [
       "PATH"

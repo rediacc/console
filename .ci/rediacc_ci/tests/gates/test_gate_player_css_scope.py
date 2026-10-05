@@ -15,6 +15,7 @@ A mutant that threw on import would exit non-zero for a reason that has nothing 
 NO `xdist_group`. Each case runs `tsx` in a subprocess against its own `tmp_path`, and the real-dist arm only reads.
 """
 
+import os
 import pathlib
 
 from rediacc_ci import paths
@@ -22,6 +23,18 @@ from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root("scripts", "gates", "check-player-css-scope.ts")
 DIST = paths.from_root("packages", "www", "dist")
+
+# THE REAL-DIST ARMS ARE OPT-IN, REDIACC_PYTEST_REAL_DIST=1 (2026-10-05, agent/plans/PLAN-prepush-full-cpu.md). They read every file under a dist that build:www empties before it rebuilds, so check:ci-pytest used to hold a shared `www-dist` claim, and in the one-pass pre-push build:www waited out the whole pytest wall (1022.9 s) before it ran in the tail. The real dist is check:ci-player-css-scope's own subject, scheduled with `needs: ['build:www']` so it scans a finished build, and CI's quality-pytest builds no site, so these arms only ever ran locally against whatever dist happened to be on disk.
+
+
+def real_dist_skip_reason():
+    """Why the real-dist arms assert nothing in this run, or None when they run."""
+    if os.environ.get("REDIACC_PYTEST_REAL_DIST") != "1":
+        return "REDIACC_PYTEST_REAL_DIST is not 1; check:ci-player-css-scope covers the real dist after build:www"
+    if not DIST.is_dir():
+        return "%s absent" % paths.relative_to_root(DIST)
+    return None
+
 
 # MUTANT 1. `.tvp-root` is the marker the gate's header records as MEASURED-AND-REJECTED: it appears in a non-player bundle too, so admitting it makes `a/other.css` a player stylesheet and `over.html` an offender. P4 is the plant that says it must not be.
 MARKERS_FIXED = "const MARKERS = ['.plyr__control', '.tvp-caption-word'];"
@@ -180,11 +193,9 @@ def test_the_real_dist_verdict_is_clean_and_not_vacuous(gate):
     A LOUD SKIP AND NOT A FAILURE when `dist` is absent, which is the one place this directory's "unknown is a failure" rule is deliberately not applied: the arm asks a question about a BUILD ARTIFACT, and a tree that has not been built has no answer rather than an unknown one. The gate itself refuses in that case (F1), which is the behaviour the case above already covers.
     """
     gate.log_test("the real build must report zero offenders over a corpus that is really there")
-    if not DIST.is_dir():
-        gate.log_pass(
-            "SKIP (loudly): %s absent, so the real-build arm asserted NOTHING"
-            % paths.relative_to_root(DIST)
-        )
+    reason = real_dist_skip_reason()
+    if reason is not None:
+        gate.log_pass("SKIP (loudly): %s, so the real-build arm asserted NOTHING" % reason)
         return
     result = run_tsx(gate, GATE)
     gate.assert_exit(0, result, "the tree is fixed, so the gate must be green over the real dist")
