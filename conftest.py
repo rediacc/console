@@ -77,6 +77,31 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
             item.add_marker(pytest.mark.xdist_group(group))
 
 
+_GROUP_LOCK = pytest.StashKey[xdist_groups.MachineGroupLock]()
+
+
+def _group_of(item: pytest.Item | None) -> str | None:
+    marker = item.get_closest_marker("xdist_group") if item is not None else None
+    if marker is None:
+        return None
+    name = marker.args[0] if marker.args else marker.kwargs.get("name")
+    return str(name) if name else None
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_protocol(item: pytest.Item, nextitem: pytest.Item | None):
+    """Hold the item's group machine-wide (xdist_groups.MachineGroupLock) from the group's first item to its last, so a concurrent run's same group waits instead of colliding on its fixed ports or paths. Released when the next item leaves the group, which also covers a module fixture torn down in the last item's teardown."""
+    group = _group_of(item)
+    lock = item.config.stash.setdefault(_GROUP_LOCK, xdist_groups.MachineGroupLock())
+    if group is not None:
+        lock.enter(group)
+    elif lock.held is not None:
+        lock.release()
+    yield
+    if group is not None and _group_of(nextitem) != group:
+        lock.release()
+
+
 def _order_longest_first(config: pytest.Config, items: list[pytest.Item]) -> None:
     """Reorder `items` so the longest-measured files start first (agent/plans/PLAN-prepush-full-cpu.md PF18).
 
