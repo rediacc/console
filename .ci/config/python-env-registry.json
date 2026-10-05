@@ -120,6 +120,9 @@
     ".ci/rediacc_ci/ci/generate_tag.py": [
       "GITHUB_OUTPUT"
     ],
+    ".ci/rediacc_ci/ci/github_status.py": [
+      "PYTEST_CURRENT_TEST"
+    ],
     ".ci/rediacc_ci/ci/initialize.py": [
       "COMMIT_AUTHOR",
       "GITHUB_EVENT_NAME",

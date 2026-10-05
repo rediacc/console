@@ -193,11 +193,13 @@ def _trace_run(root, run_id, wait, timeout, as_json):
             read_failures += 1
             err = jobs if isinstance(jobs, str) else "unreadable"
             if not wait or read_failures >= MAX_READ_FAILURES:
-                print("no-verdict: %s" % err, file=sys.stderr)
+                _no_verdict(err)
                 return EXIT_NO_VERDICT
             time.sleep(POLL_SECONDS)
             continue
         read_failures = 0
+        if wait:
+            _gh_tick(as_json)
 
         # SAME FILTER AS ci_classify, and this path needed it independently: `--run <id>` reads the run's OWN jobs endpoint directly rather than going through wl_ci.ci_classify's GraphQL contexts, so the CI_NONBLOCKING_CONTEXTS fix landed on the branch-tracing path (_snapshot below) and never touched this one -- proven live on PR #579 commit 9cbcf7d9's own rerun, which this trace
         # called RED on a run GitHub itself scored "success" once a non-blocking check-run (then the retired PR-level review check, now `CI Verdict`) was excluded.
@@ -233,16 +235,22 @@ def _trace_run(root, run_id, wait, timeout, as_json):
                     print("  %s" % gate["reason"], file=sys.stderr)
                 if gate["cancelled"] and not failed:
                     print("  %s" % _run_cause_line(root, run_id), file=sys.stderr)
+                note = _github_note()
+                if note:
+                    print("  %s" % note, file=sys.stderr)
+                if wait:
+                    _gh_transitions(as_json, sys.stderr)
                 return EXIT_RED
             print("GREEN  run %s -> %s" % (run_id, conclusion))
+            if wait:
+                _gh_transitions(as_json)
             return EXIT_GREEN
         if not wait:
-            print("no-verdict: run %s still %s" % (run_id, status), file=sys.stderr)
+            _no_verdict("run %s still %s" % (run_id, status))
             return EXIT_NO_VERDICT
         if time.time() > deadline:
-            print(
-                "no-verdict: run %s still %s after %ds" % (run_id, status, timeout), file=sys.stderr
-            )
+            _no_verdict("run %s still %s after %ds" % (run_id, status, timeout))
+            _gh_transitions(as_json, sys.stderr)
             return EXIT_NO_VERDICT
         if not as_json:
             print(
@@ -250,6 +258,83 @@ def _trace_run(root, run_id, wait, timeout, as_json):
                 % (run_id, status, len(live), (": " + ", ".join(live[:3])) if live else "")
             )
         time.sleep(POLL_SECONDS)
+
+
+# GITHUB'S OWN STATUS beside every non-green verdict (operator request 2026-10-05). "No runs yet" or "still queued" reads differently when githubstatus.com says Actions is degraded, and a session that cannot see that spends turns diagnosing a runner shortage as a broken workflow. CACHE-ONLY: `github_status.surface` and `read_cached` never wait on the network (they start a
+# detached refresh when the machine-wide cache is older than 15 minutes), so a `--wait` is never slowed by them. Loaded lazily and by file for the same reason as well_known above, and by name first so a suite that patches the module patches this caller too. `_GH_NOTE_OFF` keeps the selftest's expected output independent of GitHub's weather.
+#
+# A --wait ALSO RECORDS THE TRANSITIONS it lived through (`_gh_tick`, once per poll), and its final verdict names them: "GitHub Actions: degraded 19:11Z -> operational 21:02Z during this wait". The wait never exits on a status change; it exits on the CI verdict as before.
+_GH_STATUS_MODULE = "rediacc_ci.ci.github_status"
+_GH_NOTE_OFF = False
+_GH_MOD = None
+# The reader key for the once-only recovery note: the watcher's `--session` when it has one.
+_GH_SESSION = None
+_GH_SAMPLES: list = []
+
+
+def _gs():
+    global _GH_MOD  # noqa: PLW0603 -- loaded once per process
+    gs = sys.modules.get(_GH_STATUS_MODULE) or _GH_MOD
+    if gs is None:
+        spec = importlib.util.spec_from_file_location(
+            "github_status", REPO_ROOT / ".ci" / "rediacc_ci" / "ci" / "github_status.py"
+        )
+        if spec is None or spec.loader is None:
+            raise ImportError("cannot load .ci/rediacc_ci/ci/github_status.py")
+        gs = importlib.util.module_from_spec(spec)
+        # Registered BEFORE it runs: a dataclass resolves its module through sys.modules while the class is built.
+        sys.modules[spec.name] = gs
+        spec.loader.exec_module(gs)
+        _GH_MOD = gs
+    return gs
+
+
+def _github_note(green=False):
+    """GitHub's degraded line (not on a green verdict), or this reader's one-time recovery note, else "". Never raises."""
+    if _GH_NOTE_OFF:
+        return ""
+    try:
+        return _gs().surface(session=_GH_SESSION, green=green)
+    except Exception:  # noqa: BLE001 -- a status note never changes or breaks a verdict
+        return ""
+
+
+def _gh_tick(as_json):
+    """One --wait poll's status sample. Prints the degraded line (text mode) when the wait sees GitHub turn degraded, so a head still waiting for its runs is read against the outage, with the command that wakes a session on recovery."""
+    if _GH_NOTE_OFF:
+        return
+    try:
+        gs = _gs()
+        st = gs.read_cached()
+        if st.state not in ("ok", "degraded"):
+            return
+        prev = _GH_SAMPLES[-1][1] if _GH_SAMPLES else None
+        when = st.since if st.since is not None else time.time()
+        _GH_SAMPLES.append((when, st.state, [c["name"] for c in st.components]))
+        if st.state == "degraded" and prev != "degraded" and not as_json:
+            print("  %s" % gs.line(st))
+    except Exception:  # noqa: BLE001 -- a status sample never changes or breaks a wait
+        return
+
+
+def _gh_transitions(as_json, stream=None):
+    """The final verdict's transition line, text mode only (--json promises one document), on the verdict's own stream."""
+    if as_json or _GH_NOTE_OFF:
+        return
+    try:
+        text = _gs().transitions_text(_GH_SAMPLES)
+    except Exception:  # noqa: BLE001
+        return
+    if text:
+        print("  %s" % text, file=stream or sys.stdout)
+
+
+def _no_verdict(text):
+    """A no-verdict line on stderr, with GitHub's status under it when GitHub is degraded."""
+    print("no-verdict: %s" % text, file=sys.stderr)
+    note = _github_note()
+    if note:
+        print("  %s" % note, file=sys.stderr)
 
 
 def _fetcher(root):
@@ -283,6 +368,9 @@ def _emit(payload, as_json):
     if v == "no-ci":
         where = ("PR #%s" % pr) if pr else ("branch %s" % payload.get("ref", "?"))
         print("NO-CI  %s @ %s: %s" % (where, head, payload["detail"]))
+        note = _github_note()
+        if note:
+            print("  %s" % note)
         return
     # Two SOURCES, never one undifferentiated channel. A branch read and a PR read answer different questions, and a reader who cannot tell which one arrived will draw the wrong conclusion from an identical-looking line.
     if pr:
@@ -308,6 +396,9 @@ def _emit(payload, as_json):
         print("  why: %s --why" % D.TRACE_CMD)
     if payload.get("waiting"):
         print("  %d context(s) still running." % payload["waiting"])
+    note = _github_note(green=v == "green")
+    if note:
+        print("  %s" % note)
 
     # THE FINISH SEQUENCE, NAMED AT THE MOMENT IT BECOMES POSSIBLE.
     #
@@ -789,6 +880,8 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     root = REPO_ROOT
+    global _GH_SESSION  # noqa: PLW0603 -- set once, before any read; the recovery note's reader key
+    _GH_SESSION = args.session or None
     if args.repo:
         global _REPO_OVERRIDE  # noqa: PLW0603 -- set once, before any read; see _repo()
         if not re.fullmatch(r"[\w.-]+/[\w.-]+", args.repo):
@@ -846,11 +939,13 @@ def main(argv=None):
             # A read that cannot complete is NEVER green. Failure 4 was a `network is unreachable` blip; a bounded retry absorbs that without ever letting silence read as success.
             read_failures += 1
             if not args.wait or read_failures >= MAX_READ_FAILURES:
-                print("no-verdict: %s" % err, file=sys.stderr)
+                _no_verdict(err)
                 return EXIT_NO_VERDICT
             time.sleep(POLL_SECONDS)
             continue
         read_failures = 0
+        if args.wait:
+            _gh_tick(args.json)
 
         # FAILURE 3, made structural. Pin the head from the first good read; if the PR's head changes underneath us, a later push superseded what we were watching and the old verdict is meaningless.
         if pinned_head is None:
@@ -876,6 +971,7 @@ def main(argv=None):
                     print()
                     print(D.render(d))
             if args.wait:
+                _gh_transitions(args.json)
                 _record_final(
                     root, ref, payload, "cancelled" if payload.get("cause") else "red", args, d
                 )
@@ -885,6 +981,7 @@ def main(argv=None):
             _emit(payload, args.json)
             _show_signals(signals, args.json)
             if args.wait:
+                _gh_transitions(args.json)
                 _record_final(root, ref, payload, payload["verdict"], args)
             return EXIT_GREEN if payload["verdict"] == "green" else EXIT_NO_CI
 
@@ -894,7 +991,8 @@ def main(argv=None):
             _show_signals(signals, args.json)
             return EXIT_NO_VERDICT
         if time.time() > deadline:
-            print("no-verdict: still running after %ds" % args.timeout, file=sys.stderr)
+            _no_verdict("still running after %ds" % args.timeout)
+            _gh_transitions(args.json, sys.stderr)
             return EXIT_NO_VERDICT
         # THE IN-WAIT READ, throttled and deduplicated: a review attempt that lands while CI runs is printed when it lands, once, not only at the verdict an hour later. Text mode only, because --json promises one document on stdout.
         if not args.json and time.time() - signals_at >= SIGNALS_POLL_S:
@@ -1555,6 +1653,8 @@ def _selftest():
     Review-found live on PR #579: `--run <id>` reads a run's jobs endpoint DIRECTLY rather than through wl_ci.ci_classify's GraphQL contexts, so the filter fixing ci_classify (see wl_ci.py --selftest) never touched this path -- proven by ci-trace.py itself calling a run GitHub scored "success" RED, because a non-blocking check-run (then the retired PR-level
     review check; the controls below use `CI Verdict`, the one that remains) showed up as conclusion=failure in the jobs list.
     """
+    global _GH_NOTE_OFF  # noqa: PLW0603 -- the selftest's output must not depend on GitHub's weather
+    _GH_NOTE_OFF = True
     ok = True
 
     def check(label, cond, detail=""):

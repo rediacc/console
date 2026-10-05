@@ -2768,6 +2768,28 @@ def focus_resolve(root, worklist, session_id, me8, fold, state_doc):
     return focus, ended
 
 
+GITHUB_STATUS_MODULE = "rediacc_ci.ci.github_status"
+
+
+def github_status_line(session_id=""):
+    """The GitHub status line for the `github-status` advisory (or this session's one-time `GITHUB RECOVERED` note), or "" when GitHub is ok, the status is unknown, or anything fails. By name when `.ci` is importable (the suite patches that object), else by file; cache-only either way (`github_status.surface`)."""
+    import importlib  # noqa: PLC0415 -- only this advisory needs it
+    import importlib.util  # noqa: PLC0415
+
+    try:
+        gs = _sys.modules.get(GITHUB_STATUS_MODULE) or importlib.import_module(GITHUB_STATUS_MODULE)
+    except ImportError:
+        path = pathlib.Path(__file__).resolve().parents[3] / ".ci/rediacc_ci/ci/github_status.py"
+        spec = importlib.util.spec_from_file_location("github_status", path)
+        if spec is None or spec.loader is None:
+            return ""
+        gs = importlib.util.module_from_spec(spec)
+        # Registered BEFORE it runs: a dataclass resolves its module through sys.modules while the class is built.
+        _sys.modules[spec.name] = gs
+        spec.loader.exec_module(gs)
+    return gs.surface(session=session_id or None)
+
+
 def outq_drop(state_doc, key):
     """Drop every queued entry under `key`: the state it described has moved on."""
     q = _outq(state_doc)
@@ -4042,6 +4064,21 @@ def run_stop(event, event_ok, worklist, hook_file):
     _cv_note = wl_civerdict.note(root, worklist, session_id, ref=_ci_ref or "")
     if _cv_note:
         outq_add(worklist, session_id, state_doc, "ci-verdict", _cv_note, 1, sticky=True)
+
+    # GitHub's own service status (operator request 2026-10-05). SECONDARY to the post-bash note: an outq entry is released on the allow path as a systemMessage and named in a block's digest, so it rides stops that already speak and never turns an allowed stop into a block by itself. Cache-only: `github_status.surface` never waits on githubstatus.com, it starts a detached refresh when the
+    # cache is older than 15 minutes. `on_change=False` because the line carries the cache's age, which would otherwise re-enqueue it on every stop.
+    try:
+        _gh_line = github_status_line(session_id)
+        if _gh_line.startswith("GITHUB RECOVERED"):
+            # The degraded note is stale the moment GitHub recovers; the recovery itself is a one-shot, so sticky (held until shown, then gone).
+            outq_drop(state_doc, "github-status")
+            outq_add(worklist, session_id, state_doc, "github-recovered", _gh_line, 1, sticky=True)
+        elif _gh_line:
+            outq_add(worklist, session_id, state_doc, "github-status", _gh_line, 1, on_change=False)
+        else:
+            outq_drop(state_doc, "github-status")
+    except Exception:  # noqa: BLE001 -- a status read must never wedge a stop
+        pass
 
     # Per-commit reviews (agent/plans/PLAN-per-commit-review.md section 7). Computed once from agent/reviews/<branch>/ and local git, no network. An open finding at or above `block_at` blocks (`commit-review`), a file that fails to parse or whose Body-Sig no longer matches blocks (`commit-review-malformed`); everything else is one advisory. The push guard enforces the same
     # state when this hook is disabled, so nothing here is the only line of defence.
