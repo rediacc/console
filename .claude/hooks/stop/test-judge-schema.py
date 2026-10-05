@@ -3097,6 +3097,37 @@ control(
     8,
 )
 
+# -- 3k. A WAIT-ONLY CONTINUE IS A STOP (2026-10-05). The judge returned verdict "continue" with reason "pure background wait is legitimate" and next_action "Await worker output or timer expiry", blocking a stop its own reason allowed. Driven through the real run_judge, so the rule is wired, not just defined.
+_waited = judged(
+    "",
+    {
+        "verdict": "continue",
+        "reason": "Six background workers are live; pure background wait is legitimate.",
+        "next_action": "Await worker output or timer expiry; hook escalates findings every 15 minutes.",
+    },
+)
+control("a continue whose only order is to wait is read as stop", _waited["verdict"], "stop")
+control("the rewrite is named in the reason", "read as stop" in _waited["reason"], True)
+control("a settled wait carries no next_action", _waited["next_action"], "")
+_then = judged(
+    "",
+    {
+        "verdict": "continue",
+        "reason": "CI is green",
+        "next_action": "Wait for CI, then flip the PR ready",
+    },
+)
+control("CONTROL: a wait followed by a real act stays continue", _then["verdict"], "continue")
+_work = judged(
+    "",
+    {
+        "verdict": "continue",
+        "reason": "a test is red",
+        "next_action": "Fix the failing test in foo.py",
+    },
+)
+control("CONTROL: a work order stays continue", _work["verdict"], "continue")
+
 if Tally.fails:
     print(f"FAIL: {Tally.fails} of {Tally.count} control(s) failed", file=sys.stderr)
     sys.exit(1)
