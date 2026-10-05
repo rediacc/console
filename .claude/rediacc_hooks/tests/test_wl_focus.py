@@ -687,6 +687,27 @@ def test_m8_without_the_always_keep_the_cap_wait_hides_a_hook_bug(wl):  # noqa: 
     assert got.decision == "allow", got.out[:400]
 
 
+def _outside_defect(src: str, *names: str) -> str:
+    """`src` with every top-level `DEFECT` (or named) assignment removed, so a needle search cannot be satisfied by the declaration that names it.
+
+    `old in src` alone stays true after the guarded line is deleted, because the declaration itself contains the text it plants (measured 2026-10-05).
+    """
+    import ast  # noqa: PLC0415 -- only the planted-defect controls need it
+
+    wanted = names or ("DEFECT",)
+    cut = [
+        n
+        for n in ast.parse(src).body
+        if isinstance(n, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id in wanted for t in n.targets)
+    ]
+    return "\n".join(
+        line
+        for i, line in enumerate(src.split("\n"), 1)
+        if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut)
+    )
+
+
 def test_m5_the_guard_defect_accepts_an_unlinked_fix_label(wl):  # noqa: F811
     """block_focus_spawn's declared DEFECT, planted in a copy: f3's no-token `focus-fix` is then allowed."""
     world(wl)
@@ -705,7 +726,7 @@ def test_m5_the_guard_defect_accepts_an_unlinked_fix_label(wl):  # noqa: F811
         "exec(compile(src, 'g', 'exec'), ns)\n"
         "print(ns['run'](hookio.Event(sys.stdin.read())))\n"
     ) % (str(DISPATCH.parents[1]), str(guard), str(guard))
-    assert "if not wl_standdown.pr_linked(" in src
+    assert "if not wl_standdown.pr_linked(" in _outside_defect(src)
     env = dict(wl.env)
     env["CLAUDE_PROJECT_DIR"] = str(wl.proj)
     payload = json.dumps(
