@@ -52,26 +52,26 @@ judge: on
 1. agent/plans/PLAN-config-passkey-optional.md -- P0, approved, in progress (3 of 4 boxes ticked)
 2. agent/plans/PLAN-app-wide-org-selection.md -- P0, approved, in progress (2 of 3 boxes ticked), dep-blocked
 3. agent/plans/PLAN-config-handoff-relay-only.md -- P0, draft, in progress (9 of 11 boxes ticked), dep-blocked
-4. agent/plans/PLAN-token-ip-rebind.md -- P0, draft, in progress (9 of 10 boxes ticked), dep-blocked
-5. agent/plans/PLAN-config-sync-hardening.md -- P0, draft, in progress (18 of 19 boxes ticked), dep-blocked
-6. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
-7. agent/plans/PLAN-plan-per-pr-loop.md -- P1, approved, in progress (15 of 16 boxes ticked)
-8. agent/plans/PLAN-secret-namespace-migration.md -- P1, executing, in progress (29 of 34 boxes ticked)
-9. agent/plans/PLAN-stop-hook-one-plan-scope.md -- P1, approved, in progress (14 of 15 boxes ticked)
-10. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
-11. agent/plans/PLAN-tooling-transformation.md -- P1, ready, in progress (151 of 154 boxes ticked)
-12. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked), dep-blocked
-13. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (7 of 9 boxes ticked)
-14. agent/plans/PLAN-account-env-to-bws.md -- P2, draft, in progress (19 of 20 boxes ticked)
-15. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
-16. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
-17. agent/plans/PLAN-retire-bash-oracles.md -- P2, approved, in progress (6 of 15 boxes ticked), dep-blocked
-18. agent/plans/PLAN-stop-hook-retro-20260924.md -- P2, ready, in progress (22 of 23 boxes ticked)
-19. agent/plans/PLAN-biome-only-lint.md -- P3, draft, in progress (10 of 29 boxes ticked)
-20. agent/plans/PLAN-env-to-bitwarden-v2.md -- P3, draft, in progress (9 of 10 boxes ticked)
-21. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (1 of 17 boxes ticked)
-22. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-23. agent/plans/PLAN-prepush-full-cpu.md -- P0, approved, not started
+4. agent/plans/PLAN-prepush-full-cpu.md -- P0, approved, in progress (23 of 29 boxes ticked)
+5. agent/plans/PLAN-token-ip-rebind.md -- P0, draft, in progress (9 of 10 boxes ticked), dep-blocked
+6. agent/plans/PLAN-config-sync-hardening.md -- P0, draft, in progress (18 of 19 boxes ticked), dep-blocked
+7. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
+8. agent/plans/PLAN-plan-per-pr-loop.md -- P1, approved, in progress (15 of 16 boxes ticked)
+9. agent/plans/PLAN-secret-namespace-migration.md -- P1, executing, in progress (29 of 34 boxes ticked)
+10. agent/plans/PLAN-stop-hook-one-plan-scope.md -- P1, approved, in progress (14 of 15 boxes ticked)
+11. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
+12. agent/plans/PLAN-tooling-transformation.md -- P1, ready, in progress (151 of 154 boxes ticked)
+13. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked), dep-blocked
+14. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (7 of 9 boxes ticked)
+15. agent/plans/PLAN-account-env-to-bws.md -- P2, draft, in progress (19 of 20 boxes ticked)
+16. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
+17. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
+18. agent/plans/PLAN-retire-bash-oracles.md -- P2, approved, in progress (6 of 15 boxes ticked), dep-blocked
+19. agent/plans/PLAN-stop-hook-retro-20260924.md -- P2, ready, in progress (22 of 23 boxes ticked)
+20. agent/plans/PLAN-biome-only-lint.md -- P3, draft, in progress (10 of 29 boxes ticked)
+21. agent/plans/PLAN-env-to-bitwarden-v2.md -- P3, draft, in progress (9 of 10 boxes ticked)
+22. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (1 of 17 boxes ticked)
+23. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
 24. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
 25. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
 26. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
