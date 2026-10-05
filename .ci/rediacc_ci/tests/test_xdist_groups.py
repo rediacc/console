@@ -21,12 +21,14 @@ EVERY FIXTURE IS BUILT BY CONSTRUCTION, never by substituting into real source, 
 """
 
 import json
+import socket
 import subprocess
 import sys
 
 import pytest
 
 from rediacc_ci import paths, xdist_groups
+from rediacc_ci.quality import pool_writer_safety
 from rediacc_ci.tests import test_core_ports
 from rediacc_ci.tests.gates import test_twin_parity
 
@@ -125,12 +127,72 @@ def test_the_ported_corpus_agrees_with_the_parity_test_about_who_is_unsafe() -> 
     assert from_scheduler == from_parity
 
 
-def test_the_port_scan_module_still_declares_its_group() -> None:
-    """The one escape hatch in use, pinned by name.
+def test_the_port_scan_module_declares_no_group_any_more() -> None:
+    """INVERTED 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF14). `find_consecutive_free_ports(7, 20000, 30000)` returns the FIRST free run, so every worker used to pick 20000 and the module was pinned to one worker by `XDIST_GROUP = "ports"`. It now scans `worker_port_range()`, so the group is gone, and this stops it coming back as the easy fix."""
+    assert not hasattr(test_core_ports, "XDIST_GROUP")
 
-    `find_consecutive_free_ports(7, 20000, 30000)` returns the FIRST free run, so every worker picks 20000. No lock entry can express that -- the resource is the host's port space, not the tree -- so the declaration lives in the module and this is what stops it being tidied away.
-    """
-    assert test_core_ports.XDIST_GROUP == "ports"
+
+def test_no_test_module_declares_the_real_tree_group() -> None:
+    """The real-tree group has no DECLARED member since 2026-10-05 (PF15): every plant lives in a copy. `check:ci-pool-writer-safety` reds on a declaration; this holds the same line from the suite, over every testpath, by the gate's own reader."""
+    dirs = [paths.repo_root().joinpath(*rel) for rel in pool_writer_safety.PORT_SCAN_RELS]
+    assert sum(len(list(d.glob("test_*.py"))) for d in dirs) > 100, "the scan saw no corpus"
+    assert [name for d in dirs for name in pool_writer_safety.port_writers(d)] == []
+
+
+# --------------------------------------------------------------------------- Per-worker port slices ---------------------------------------------------------------------------
+
+
+def _worker(index: int, total: int) -> dict[str, str]:
+    return {xdist_groups.WORKER_ENV: "gw%d" % index, xdist_groups.WORKER_COUNT_ENV: str(total)}
+
+
+@pytest.mark.parametrize("total", [1, 2, 4, 7, 23, 24])
+def test_worker_slices_are_disjoint_and_cover_the_range(total: int) -> None:
+    """Sized from the worker count, never a constant: every port of the range is in exactly one worker's slice."""
+    low, high = xdist_groups.PORT_RANGE
+    slices = [xdist_groups.worker_port_range(environ=_worker(i, total)) for i in range(total)]
+    covered = [port for start, end in slices for port in range(start, end + 1)]
+    assert sorted(covered) == list(range(low, high + 1))
+    assert len(covered) == len(set(covered))
+
+
+def test_a_serial_run_gets_the_whole_range() -> None:
+    """CONTROL in the other direction: no xdist variables, or malformed ones, mean no slicing at all."""
+    whole = xdist_groups.PORT_RANGE
+    assert xdist_groups.worker_port_range(environ={}) == whole
+    assert xdist_groups.worker_port_range(environ=_worker(5, 4)) == whole
+    assert xdist_groups.worker_port_range(environ={xdist_groups.WORKER_ENV: "master"}) == whole
+
+
+def test_a_free_port_is_drawn_inside_the_slice_and_is_bindable() -> None:
+    env = _worker(2, 5)
+    start, end = xdist_groups.worker_port_range(environ=env)
+    for _ in range(5):
+        port = xdist_groups.free_port_in_range(environ=env)
+        assert start <= port <= end
+        with socket.socket() as sock:
+            sock.bind(("127.0.0.1", port))
+
+
+def test_a_held_port_is_never_handed_out() -> None:
+    """CONTROL. A two-port slice with one port held: every draw must return the other one, so the probe really reads the host rather than returning a slot by arithmetic."""
+    env = _worker(0, 1)
+    for base in range(29000, 29990, 2):
+        holder = socket.socket()
+        try:
+            holder.bind(("127.0.0.1", base))
+        except OSError:
+            holder.close()
+            continue
+        try:
+            if not xdist_groups._bindable(base + 1):
+                continue
+            picks = {xdist_groups.free_port_in_range(env, base, base + 1) for _ in range(20)}
+        finally:
+            holder.close()
+        assert picks == {base + 1}
+        return
+    pytest.fail("no free adjacent pair in 29000-29990 to plant the control with")
 
 
 # --------------------------------------------------------------------------- group_for: both directions ---------------------------------------------------------------------------
@@ -202,19 +264,20 @@ def _collected(proc: subprocess.CompletedProcess) -> int:
     return len([line for line in proc.stdout.splitlines() if "::" in line])
 
 
-PORTS_MODULE = ".ci/rediacc_ci/tests/test_core_ports.py"
+# A module that still declares a group: the guards differential's process-table half (`XDIST_GROUP = "hooks-guards"`). It was test_core_ports.py until that module's group was replaced by per-worker port slices on 2026-10-05.
+DECLARING_MODULE = ".claude/rediacc_hooks/tests/test_guards_process_table.py"
 UNGROUPED_MODULE = ".ci/rediacc_ci/tests/test_setup_tools.py"
 
 
 @pytest.mark.parametrize(
     ("target", "expr", "want_any"),
     [
-        (PORTS_MODULE, "xdist_group", True),
-        (PORTS_MODULE, "not xdist_group", False),
+        (DECLARING_MODULE, "xdist_group", True),
+        (DECLARING_MODULE, "not xdist_group", False),
         (UNGROUPED_MODULE, "xdist_group", False),
         (UNGROUPED_MODULE, "not xdist_group", True),
     ],
-    ids=["ports-marked", "ports-nothing-unmarked", "plain-unmarked", "plain-all-unmarked"],
+    ids=["declaring-marked", "declaring-nothing-unmarked", "plain-unmarked", "plain-all-unmarked"],
 )
 def test_the_root_conftest_marks_exactly_the_declaring_module(target, expr, want_any) -> None:
     """FOUR CELLS, so neither direction can be satisfied by an accident.
@@ -224,3 +287,53 @@ def test_the_root_conftest_marks_exactly_the_declaring_module(target, expr, want
     proc = _collect(target, expr)
     assert proc.returncode in (0, 5), proc.stdout + proc.stderr
     assert (_collected(proc) > 0) is want_any, proc.stdout + proc.stderr
+
+
+# --------------------------------------------------------------------------- Longest first (PF18) ---------------------------------------------------------------------------
+
+
+def test_order_is_longest_file_first_and_stable() -> None:
+    files = ["a.py", "b.py", "a.py", "c.py", "b.py"]
+    durations = {"a.py": 10.0, "b.py": 30.0}
+    order = xdist_groups.order_longest_first(files, durations, default=20.0)
+    assert [files[i] for i in order] == ["b.py", "b.py", "c.py", "a.py", "a.py"]
+    # Stable inside a file: the two b.py items keep their collection order.
+    assert order[:2] == [1, 4]
+
+
+def test_unit_durations_read_the_pytest_units_and_the_lane_default(tmp_path) -> None:
+    doc = {
+        "units": {"pytest:x/test_a.py": 5000.0, "vitest:y.ts": 9.0},
+        "defaultUnitMs": {"quality-pytest": 1234},
+    }
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    assert xdist_groups.unit_durations(path) == ({"x/test_a.py": 5000.0}, 1234.0)
+    assert xdist_groups.unit_durations(tmp_path / "absent.json") == ({}, 0.0)
+
+
+def test_the_real_lane_durations_price_the_pytest_corpus() -> None:
+    """ANTI-VACUITY: an empty table would leave collection order untouched and this whole ordering silently off."""
+    durations, default = xdist_groups.unit_durations()
+    assert len(durations) > 100
+    assert default > 0
+
+
+def test_the_root_conftest_collects_the_longest_file_first() -> None:
+    """END TO END through the repo-root conftest: named short file first on the command line, the long differential still comes out first."""
+    short = ".ci/rediacc_ci/tests/test_xdist_groups.py"
+    long = ".claude/rediacc_hooks/tests/test_settings_collapse.py"
+    durations, _ = xdist_groups.unit_durations()
+    assert durations.get(long, 0) > durations.get(short, 0), "the fixture premise no longer holds"
+    proc = subprocess.run(
+        [sys.executable, "-m", "pytest", "--collect-only", "-q", short, long],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=str(paths.repo_root()),
+        timeout=300,
+    )
+    ids = [line for line in proc.stdout.splitlines() if "::" in line]
+    assert ids, proc.stdout + proc.stderr
+    assert ids[0].startswith(long), ids[:3]
+    assert ids[-1].startswith(short), ids[-3:]

@@ -1,9 +1,11 @@
 /**
- * `--quick` diff selection: a slow gate joins the quick lane when the change set since the last push touches it, inside a p90 wall budget.
+ * `--quick` diff selection: a slow gate joins the quick lane when the change set since the last push touches it, and runs in the same pass as the fast gates.
  *
  * WHY. The quick lane deferred every `slow: true` gate unconditionally, so a slow gate whose own inputs had just changed was the one gate guaranteed not to judge them before the push. On 2026-10-01 that let a TS2322 reach CI through the deferred `check:types`.
  *
- * WHAT "TOUCHED" MEANS, in the inclusive direction on purpose (a false touch costs seconds and is bounded by the budget; a missed one is a deferral nobody sees):
+ * ONE PASS, NO BUDGET (agent/plans/PLAN-prepush-full-cpu.md part 2, operator ruling 2026-10-05). A 90 s p90 wall budget used to admit touched slow gates cheapest first and drop the rest as `budget` or `unpriced`, which made every pre-push two scheduler passes: the lane, then a `--only` run of each drop. The drops are gone; every touched slow gate is admitted, and the cores scheduler starts the long ones at t=0 so the fast gates fill around them.
+ *
+ * WHAT "TOUCHED" MEANS, in the inclusive direction on purpose (a false touch costs a gate's run; a missed one is a deferral nobody sees):
  *   1. any declared `paths` glob matches a changed file;
  *   2. a `leaves` entry that is a repo file changed, or any file it imports, followed transitively (TS/JS relative specifiers, Python `rediacc_ci.*` and relative imports). Command leaves (`tsc`, `biome`, `knip`) name no file and add nothing;
  *   3. package.json changed AND the gate's npm script text differs from the base, following `npm run <x>` references, which is how parity resolves a `run` to its leaves;
@@ -11,23 +13,12 @@
  *
  * WHAT "THE LAST PUSH" MEANS: the merge-base of HEAD with the first ref that resolves among `@{push}`, `origin/<branch>`, `@{upstream}`, then `origin/main` (a branch never pushed has everything since main unpushed). `@{push}` and `@{upstream}` count only when they name THIS branch: on 2026-10-03 a push clone's branch tracked the already merged `origin/0930-1`, and the diff against that merge-base held 244 files. A tracking ref named for another branch is skipped and the skip is printed as a WARNING. The change set is that merge-base against the WORKTREE plus untracked files, since the quick lane judges the worktree. When none resolves, no slow gate is selected and the run SAYS so with the refs it tried: the quick lane is still the whole fast lane, so refusing it outright would punish a fresh clone for a question the fast gates do not need answered.
  *
- * THE TREE: a slow gate that declares a tree write (`writesTree`, or a `tree:` claim in `mutex`) is not admitted in a shared checkout, and is named as dropped. The quick lane did not run tracked-file writers before this selection existed, and a pre-push check that appends to a tracked ledger in a shared worktree changes the tree it is judging. In a clean, disposable clone (a `--receipt-out` outside the checkout, and an empty `git status` at selection) nobody else reads that tree, so a writer is admitted inside the budget like any other gate.
+ * THE TREE, THE ONE DROP LEFT: a slow gate that declares a tree write (`writesTree`, or a `tree:` claim in `mutex`) is not admitted in a shared checkout, and is named as dropped. A pre-push check that appends to a tracked ledger in a shared worktree changes the tree it is judging. In a clean, disposable clone (a `--receipt-out` outside the checkout, and an empty `git status` at selection) nobody else reads that tree, so a writer is admitted like any other gate.
  *
- * EVERY TOUCHED GATE THAT IS DROPPED reaches the push receipt as `droppedTouched`, each with its kind (`tree`, `budget`, `unpriced`) and the exact command that runs it. The push guard refuses while any of them lacks a passing entry in `droppedVerified`, which a `--only` run of that gate writes into the same receipt.
- *
- * THE BUDGET: projected wall = max(base p90 + sum(cpu_i) / C, max(wall_i)), where the base p90 is the nearest-rank p90 of recorded quick walls that selected no slow gate, C the core budget, and wall_i/cpu_i a candidate's cost including any slow prerequisite it pulls in. Candidates are admitted cheapest first while the projection stays at or under the budget; every candidate left out is NAMED with its cost and the command that runs it. A candidate with no duration sample cannot be priced, and is dropped by name with the command that prices it, never admitted on a guess and never dropped silently.
+ * EVERY TOUCHED GATE THAT IS DROPPED reaches the push receipt as `droppedTouched`, with kind `tree` and the exact command that runs it. The push guard refuses while any of them lacks a passing entry in `droppedVerified`, which a `--only` run of that gate writes into the same receipt. In the push clone the list is `[]` by construction.
  */
 import fs from 'node:fs';
 import path from 'node:path';
-
-/** The quick lane's p90 wall ceiling, operator spec 2026-10-01. */
-export const QUICK_BUDGET_MS = 90_000;
-/** Assumed base p90 until enough base runs are recorded: the top of the 45-70 s range measured for ci:quick on 2026-10-01. */
-export const BASE_FALLBACK_MS = 70_000;
-/** Base runs needed before the recorded p90 replaces the fallback. */
-export const MIN_BASE_SAMPLES = 3;
-/** How many recent quick walls the history keeps. */
-export const HISTORY_KEEP = 30;
 
 export interface SlowCandidate {
   readonly id: string;
@@ -218,16 +209,8 @@ export function touchedSlow(candidates: readonly SlowCandidate[], input: TouchIn
   return touches;
 }
 
-export interface Cost {
-  /** Wall of the candidate including the slow prerequisites it pulls in. */
-  readonly wallMs: number;
-  /** CPU of the same set. */
-  readonly cpuMs: number;
-  readonly source: string;
-}
-
-/** Why a touched candidate left the lane: refused at any price (`tree`), no duration sample (`unpriced`), or over the wall budget (`budget`). */
-export type DropKind = 'tree' | 'budget' | 'unpriced';
+/** Why a touched candidate left the lane. One kind remains: a tree writer outside a disposable clone, refused at any price. */
+export type DropKind = 'tree';
 
 export interface Dropped {
   readonly id: string;
@@ -235,81 +218,26 @@ export interface Dropped {
   readonly kind: DropKind;
 }
 
-export interface BudgetVerdict {
+interface AdmitVerdict {
   readonly admitted: readonly string[];
   readonly dropped: readonly Dropped[];
-  readonly projectedMs: number;
 }
-
-/** Nearest-rank percentile. Undefined on no samples. */
-export function percentile(xs: readonly number[], p: number): number | undefined {
-  if (xs.length === 0) return undefined;
-  const sorted = [...xs].sort((a, b) => a - b);
-  const rank = Math.max(1, Math.ceil((p / 100) * sorted.length));
-  return sorted[rank - 1];
-}
-
-export function projectWall(baseMs: number, costs: readonly Cost[], cores: number): number {
-  const cpu = costs.reduce((s, c) => s + c.cpuMs, 0);
-  const longest = costs.reduce((m, c) => Math.max(m, c.wallMs), 0);
-  return Math.max(baseMs + cpu / Math.max(1, cores), longest);
-}
-
-const s1 = (ms: number): string => `${(ms / 1000).toFixed(1)}s`;
 
 /**
- * Cheapest first (by the wall it would add, then id), admitted while the projection stays within budget. `refuse` names a candidate the lane will not run at any price, with the reason; it is dropped by name before pricing.
+ * Every touched candidate is admitted unless `refuse` names a reason it cannot run here; a refused one is dropped BY NAME with that reason, in the order touched.
  */
-export function admitWithinBudget(
+export function admitTouched(
   touched: readonly string[],
-  costOf: (id: string) => Cost | undefined,
-  baseMs: number,
-  cores: number,
-  budgetMs: number = QUICK_BUDGET_MS,
-  refuse: (id: string) => string | undefined = () => undefined
-): BudgetVerdict {
+  refuse: (id: string) => string | undefined
+): AdmitVerdict {
+  const admitted: string[] = [];
   const dropped: Dropped[] = [];
-  const priced: { id: string; cost: Cost; added: number }[] = [];
   for (const id of touched) {
     const refusal = refuse(id);
-    if (refusal !== undefined) {
-      dropped.push({ id, reason: refusal, kind: 'tree' });
-      continue;
-    }
-    const cost = costOf(id);
-    if (cost === undefined) {
-      dropped.push({
-        id,
-        reason: `no duration sample to price it; measure once with \`npx tsx scripts/ci-runner/run.ts --only ${id}\``,
-        kind: 'unpriced',
-      });
-      continue;
-    }
-    priced.push({ id, cost, added: projectWall(baseMs, [cost], cores) - baseMs });
+    if (refusal === undefined) admitted.push(id);
+    else dropped.push({ id, reason: refusal, kind: 'tree' });
   }
-  priced.sort((a, b) => a.added - b.added || a.id.localeCompare(b.id));
-  const admitted: { id: string; cost: Cost }[] = [];
-  for (const p of priced) {
-    const next = projectWall(baseMs, [...admitted.map((a) => a.cost), p.cost], cores);
-    if (next <= budgetMs) {
-      admitted.push(p);
-    } else {
-      dropped.push({
-        id: p.id,
-        reason: `projected wall ${s1(next)} with it exceeds the ${s1(budgetMs)} budget (its wall ${s1(p.cost.wallMs)}, cpu ${s1(p.cost.cpuMs)}, ${p.cost.source})`,
-        kind: 'budget',
-      });
-    }
-  }
-  return {
-    admitted: admitted.map((a) => a.id),
-    dropped,
-    projectedMs: projectWall(
-      baseMs,
-      admitted.map((a) => a.cost),
-      cores
-    ),
-  };
+  return { admitted, dropped };
 }
 
 export interface BaseResolution {
@@ -359,69 +287,6 @@ export function resolvePushBase(
     return { ref: name, via, mergeBase, tried, warnings };
   }
   return { tried, warnings };
-}
-
-export interface WallSample {
-  readonly at: string;
-  readonly wallMs: number;
-  readonly slowAdmitted: readonly string[];
-}
-
-export function readHistory(file: string): WallSample[] {
-  try {
-    const parsed: unknown = JSON.parse(fs.readFileSync(file, 'utf-8'));
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (s): s is WallSample =>
-        s !== null &&
-        typeof s === 'object' &&
-        typeof (s as WallSample).wallMs === 'number' &&
-        Number.isFinite((s as WallSample).wallMs) &&
-        (s as WallSample).wallMs > 0 &&
-        Array.isArray((s as WallSample).slowAdmitted)
-    );
-  } catch {
-    return [];
-  }
-}
-
-export function appendHistory(file: string, sample: WallSample): void {
-  try {
-    const next = [...readHistory(file), sample].slice(-HISTORY_KEEP);
-    // tree-write: safe the caller passes .ci/cache/quick-walls.json, a gitignored runner cache beside gate-durations.json
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    // tree-write: safe the same gitignored .ci/cache file as the line above
-    fs.writeFileSync(file, `${JSON.stringify(next, null, 2)}\n`);
-  } catch {
-    // A scheduling statistic: a failed write costs accuracy on the next projection, never a verdict.
-  }
-}
-
-/**
- * The base p90: recorded quick walls that admitted no slow gate, when there are enough of them; else EVERY recorded quick wall, which over-states the base by whatever those runs admitted and so errs toward admitting less; else the assumed fallback. The middle rung is what stops a branch whose every run admits something from never earning a base.
- */
-export function baseP90(history: readonly WallSample[]): { ms: number; note: string } {
-  const recent = history.slice(-20);
-  const pure = recent.filter((s) => s.slowAdmitted.length === 0).map((s) => s.wallMs);
-  if (pure.length >= MIN_BASE_SAMPLES) {
-    const p = percentile(pure, 90) as number;
-    return {
-      ms: p,
-      note: `base p90 ${s1(p)} over ${pure.length} recorded run(s) with no slow gate`,
-    };
-  }
-  const all = recent.map((s) => s.wallMs);
-  if (all.length >= MIN_BASE_SAMPLES) {
-    const p = percentile(all, 90) as number;
-    return {
-      ms: p,
-      note: `base p90 ${s1(p)} over ALL ${all.length} recorded quick run(s), slow admissions included (only ${pure.length} without), so it over-states the base`,
-    };
-  }
-  return {
-    ms: BASE_FALLBACK_MS,
-    note: `base p90 ASSUMED ${s1(BASE_FALLBACK_MS)}: ${all.length} of ${MIN_BASE_SAMPLES} quick run(s) recorded`,
-  };
 }
 
 /** The selftest, run from `run.ts --selftest`. Fixtures only; nothing here reads the real tree except a temp directory it creates. */
@@ -532,57 +397,22 @@ export function quickSelectSelftest(
       'CONTROL: an empty change set must not select a gate without paths'
     );
 
-    // THE BUDGET. Base 70 s on 10 cores: +10 s fits, +15 s on top does not; the dropped one is named; a wall alone over budget and an unpriced gate are both dropped by name.
-    const costs: Record<string, Cost> = {
-      cheap: { wallMs: 20_000, cpuMs: 100_000, source: 'fixture' },
-      dear: { wallMs: 30_000, cpuMs: 150_000, source: 'fixture' },
-      huge: { wallMs: 120_000, cpuMs: 120_000, source: 'fixture' },
-    };
-    const v = admitWithinBudget(
-      ['dear', 'cheap', 'huge', 'unpriced'],
-      (id) => costs[id],
-      70_000,
-      10
+    // ONE PASS: every touched candidate is admitted whatever it would cost, and a refused one is dropped BY NAME with kind tree. The control admits the same set with no refusal, so the drop is about the refusal and not about the candidate.
+    const v = admitTouched(['dear', 'cheap', 'huge'], () => undefined);
+    check(
+      v.admitted.join() === 'dear,cheap,huge' && v.dropped.length === 0,
+      `every touched candidate must be admitted, admitted ${v.admitted.join()}, dropped ${v.dropped.map((d) => d.id).join()}`
+    );
+    const refused = admitTouched(['cheap', 'dear'], (id) =>
+      id === 'cheap' ? 'writes the tracked tree' : undefined
     );
     check(
-      v.admitted.join() === 'cheap',
-      `the budget must admit only the cheapest fit, admitted ${v.admitted.join()}`
-    );
-    check(
-      v.dropped
-        .map((d) => d.id)
-        .sort()
-        .join() === 'dear,huge,unpriced',
-      `every left-out candidate must be NAMED, got ${v.dropped.map((d) => d.id).join()}`
-    );
-    check(v.projectedMs === 80_000, `projected wall must be 80 s, got ${v.projectedMs}`);
-    const refused = admitWithinBudget(
-      ['cheap'],
-      (id) => costs[id],
-      70_000,
-      10,
-      200_000,
-      (id) => (id === 'cheap' ? 'writes the tracked tree' : undefined)
-    );
-    check(
-      refused.admitted.length === 0 && refused.dropped[0]?.reason === 'writes the tracked tree',
-      'a refused candidate must be dropped BY NAME with its reason even when it fits the budget'
-    );
-    // THE KIND of each drop, all three, so a hard-coded kind fails two of them.
-    const kindOf = (id: string): string | undefined => v.dropped.find((d) => d.id === id)?.kind;
-    check(refused.dropped[0]?.kind === 'tree', 'a refused candidate must drop with kind tree');
-    check(
-      kindOf('dear') === 'budget' && kindOf('huge') === 'budget',
-      'a candidate over budget must drop with kind budget'
-    );
-    check(
-      kindOf('unpriced') === 'unpriced',
-      'a candidate with no cost must drop with kind unpriced'
-    );
-    check(
-      admitWithinBudget(['dear', 'cheap'], (id) => costs[id], 70_000, 10, 200_000).admitted
-        .length === 2,
-      'CONTROL: a generous budget must admit both, or the drop above proves nothing about the budget'
+      refused.admitted.join() === 'dear' &&
+        refused.dropped.length === 1 &&
+        refused.dropped[0]?.id === 'cheap' &&
+        refused.dropped[0]?.reason === 'writes the tracked tree' &&
+        refused.dropped[0]?.kind === 'tree',
+      `a refused candidate must be dropped BY NAME with its reason and kind tree, got ${JSON.stringify(refused)}`
     );
 
     // THE BASE: ordered fallback, and unresolved names what it tried.
@@ -638,28 +468,6 @@ export function quickSelectSelftest(
     check(
       none.mergeBase === undefined && none.tried.length === 4,
       'with nothing resolvable the base must be undefined and name all four refs tried'
-    );
-    check(percentile([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 90) === 9, 'nearest-rank p90 of 1..10 is 9');
-    check(
-      baseP90([{ at: '', wallMs: 50_000, slowAdmitted: [] }]).ms === BASE_FALLBACK_MS,
-      'one base sample must fall back to the assumed base, not trust one run'
-    );
-    check(
-      baseP90([
-        { at: '', wallMs: 50_000, slowAdmitted: [] },
-        { at: '', wallMs: 60_000, slowAdmitted: [] },
-        { at: '', wallMs: 55_000, slowAdmitted: [] },
-        { at: '', wallMs: 200_000, slowAdmitted: ['x'] },
-      ]).ms === 60_000,
-      'a run that admitted a slow gate must not inflate the base p90'
-    );
-    check(
-      baseP90([
-        { at: '', wallMs: 50_000, slowAdmitted: ['x'] },
-        { at: '', wallMs: 60_000, slowAdmitted: ['x'] },
-        { at: '', wallMs: 80_000, slowAdmitted: ['x'] },
-      ]).ms === 80_000,
-      'with too few runs free of slow gates the base must fall back to ALL runs, conservatively, not to the assumed value'
     );
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

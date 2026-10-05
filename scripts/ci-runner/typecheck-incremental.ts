@@ -30,6 +30,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
+import { grantedCores } from './lease-client';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 /**
@@ -790,7 +791,8 @@ async function main(argv: readonly string[]): Promise<number> {
   }
 
   const started = Date.now();
-  const width = Math.max(1, Math.min(8, os.availableParallelism() - 1));
+  // The grant the ci-runner sized at launch (CI_RUNNER_CORES), else every core this process may run on; no cap of its own (agent/plans/PLAN-prepush-full-cpu.md PF3, operator ruling 2026-10-05).
+  const width = grantedCores();
   const results = await execute(tsc, plan, REPO_ROOT, width);
   const wall = Date.now() - started;
   const failed = results.filter((r) => r.code !== 0);

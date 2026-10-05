@@ -84,7 +84,7 @@ export const GATES: readonly GateSpec[] = [
     // alone. The identical baseline re-measured 225.6s forty minutes later, so the ratio is a range and never a threshold. The body and `leaves` stay BYTE-IDENTICAL so the 'Lint' step still resolves to both leaves for every shard (R3), and CI keeps one step. WHAT HOLDS THE SHARDS HONEST: .ci/scripts/quality/check_lint_scope_coverage.py follows the `npm run` links out of this key
     // and unions the roots it finds, so deleting a shard, or a root from a shard, reds on the files that stopped being linted. It deliberately does not hard-code the shard names, because a hard-coded list of four would silently stop counting a fifth.
     gate: false,
-    weight: 2,
+    // NO WIDTH DECLARED (agent/plans/PLAN-prepush-full-cpu.md PF5, 2026-10-05): the hand-typed `weight: 2` is retired, and the pool budgets this gate at its measured cpu/wall. eslint 9.39 runs single-threaded unless told `--concurrency <n>`, a knob this gate's script does not pass yet; biome, the one other tool here, honours RAYON_NUM_THREADS (measured: 101% CPU at 1, 1004% unset) and is about 1.5s of the run.
     heavy: true,
     // eslint no longer runs directly: check:lint calls scripts/eslint-heap.sh,
     // which clamps the heap downward only when the host cannot honour the requested size (never raises -- CI keeps its full request) and then
@@ -100,9 +100,11 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:lint:cli',
     run: 'npm run check:lint:cli',
+    // ELASTIC, up to 4: eslint-heap.sh passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
+    cores: { min: 1, max: 4 },
     slow: true, // 65.1s alone / 87.5s in the concurrent four
     gate: true,
-    weight: 2,
+    // NO WIDTH DECLARED (PF5, 2026-10-05): measured cpu/wall, for the reason on check:lint.
     heavy: true,
     leaves: ['scripts/eslint-heap.sh'],
     ci: {
@@ -115,9 +117,11 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:lint:web',
     run: 'npm run check:lint:web',
+    // ELASTIC, up to 4: eslint-heap.sh passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
+    cores: { min: 1, max: 4 },
     slow: true, // 60.8s alone / 83.2s in the concurrent four
     gate: true,
-    weight: 2,
+    // NO WIDTH DECLARED (PF5, 2026-10-05): measured cpu/wall, for the reason on check:lint.
     heavy: true,
     leaves: ['scripts/eslint-heap.sh'],
     ci: {
@@ -130,9 +134,11 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:lint:tooling',
     run: 'npm run check:lint:tooling',
+    // ELASTIC, up to 4: eslint-heap.sh passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
+    cores: { min: 1, max: 4 },
     slow: true, // measured in the concurrent four; retier from the reference worktree
     gate: true,
-    weight: 2,
+    // NO WIDTH DECLARED (PF5, 2026-10-05): measured cpu/wall, for the reason on check:lint.
     heavy: true,
     leaves: ['scripts/eslint-heap.sh'],
     ci: {
@@ -145,9 +151,11 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:lint:account',
     run: 'npm run check:lint:account',
+    // ELASTIC, up to 4: eslint-heap.sh passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
+    cores: { min: 1, max: 4 },
     slow: true, // measured in the concurrent four; retier from the reference worktree
     gate: true,
-    weight: 2,
+    // NO WIDTH DECLARED (PF5, 2026-10-05): measured cpu/wall, for the reason on check:lint.
     heavy: true,
     // TWO leaves, not one: this shard alone chains `biome lint private/account/` after
     // eslint. Landing it with the other three shards' single leaf reddened
@@ -191,8 +199,10 @@ export const GATES: readonly GateSpec[] = [
   // <<< gen-manifest: region 1
   {
     id: 'check:format',
-    run: 'npm run check:format',
+    run: 'RAYON_NUM_THREADS="$CI_RUNNER_CORES" npm run check:format',
     gate: true,
+    // ELASTIC (agent/plans/PLAN-prepush-full-cpu.md PF5, 2026-10-05). biome's thread knob is rayon's RAYON_NUM_THREADS, measured rather than assumed: `biome format .` ran at 1117% CPU unset and 101% at 1, and `BIOME_THREADS` (which biome documents for `biome ci` only) changed nothing for `lint`. Empty, in a CI step where no runner grants, rayon keeps its default of every core (measured 1156%).
+    cores: { min: 1, max: 'all' },
     leaves: ['biome'],
     ci: {
       kind: 'step',
@@ -705,7 +715,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-guard-mutations',
     slow: true, // 25.4s measured
     gate: true,
-    weight: 2,
+    // NO WIDTH DECLARED (PF5, 2026-10-05): `weight: 2` retired for the measured cpu/wall. Each mutant runs `vitest run` on ONE test file, so a worker knob would buy nothing.
     heavy: true,
     // check:ci-gate-tree-writes V11. The sandbox sits INSIDE packages/cli so its copies resolve the workspace's node_modules; a temp mirror with a node_modules link is the real fix.
     mutex: ['tree:repo'],
@@ -721,10 +731,11 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:test-cli',
-    run: 'npm run check:test-cli',
+    run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:test-cli',
     slow: true, // 38.3s measured
     gate: true,
-    weight: 2,
+    // ELASTIC (PF5, 2026-10-05): `weight: 2` retired. vitest takes every core by default, so the old budget of 2 understated it. VITEST_MAX_WORKERS is the knob (vitest 5.0.3 reads it after config resolution and it overrides `maxWorkers`), set from the pool's grant; it travels through npm and the Python proxies, which pass the environment on. Unset (a CI step, where no runner grants) it is empty, and vitest keeps its own default.
+    cores: { min: 1, max: 'all' },
     heavy: true,
     leaves: ['vitest'],
     ci: {
@@ -738,10 +749,11 @@ export const GATES: readonly GateSpec[] = [
   // because R1 only demands manifest membership for the latter.
   {
     id: 'check:test-shared',
-    run: 'npm run check:test-shared',
+    run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:test-shared',
     gate: true,
     needs: ['build:packages'],
-    weight: 2,
+    // ELASTIC (PF5, 2026-10-05): `weight: 2` retired. vitest takes every core by default, so the old budget of 2 understated it. VITEST_MAX_WORKERS is the knob (vitest 5.0.3 reads it after config resolution and it overrides `maxWorkers`), set from the pool's grant; it travels through npm and the Python proxies, which pass the environment on. Unset (a CI step, where no runner grants) it is empty, and vitest keeps its own default.
+    cores: { min: 1, max: 'all' },
     heavy: true,
     leaves: ['vitest'],
     ci: {
@@ -1653,6 +1665,21 @@ export const GATES: readonly GateSpec[] = [
       step: 'GitHub Actions variables',
     },
   },
+  // <<< gen-manifest: region 15
+  {
+    id: 'check:ci-record-paths',
+    // A receipt advances across a record-only commit only when every reader of those records is declared; a fixed parallel width must be a listed I/O fan-out (PLAN-prepush-full-cpu PF23, PF9).
+    run: 'npm run check:ci-record-paths',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_record_paths.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Record paths and fixed widths',
+    },
+  },
+  // >>> gen-manifest: region 16
   {
     id: 'check:ci-literal-sources',
     run: 'npm run check:ci-literal-sources',
@@ -1665,7 +1692,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Literal sources',
     },
   },
-  // <<< gen-manifest: region 15
+  // <<< gen-manifest: region 16
   {
     // agent/plans/PLAN-account-env-to-bws.md T19: the two account env files the Bitwarden move retired stay retired. Shrink-only baseline of the mentions that predate it, plus the dotenv-table ceiling and the token-path rule.
     id: 'check:ci-account-env-retired',
@@ -1869,7 +1896,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Python env registry',
     },
   },
-  // >>> gen-manifest: region 16
+  // >>> gen-manifest: region 17
   {
     id: 'check:ci-secret-supply',
     run: 'npm run check:ci-secret-supply',
@@ -1882,7 +1909,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Secret supply',
     },
   },
-  // <<< gen-manifest: region 16
+  // <<< gen-manifest: region 17
   {
     // D2. 133 WORKLIST_* names read at 181 sites with no registry and no schema. A typo'd name reads as UNSET, and for the four flags defaulting to `on` that is fail-open. Set equality both ways. Derived from the AST rather than grep, which is why it is 133 and not the grep answer of 134: WORKLIST_EMAIL is prose-only history, read nowhere.
     id: 'check:ci-worklist-env-registry',
@@ -2248,7 +2275,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'syncpack source coverage',
     },
   },
-  // >>> gen-manifest: region 17
+  // >>> gen-manifest: region 18
   {
     id: 'check:ci-secret-reachability',
     run: 'npm run check:ci-secret-reachability',
@@ -2345,7 +2372,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Hooks resolvable',
     },
   },
-  // <<< gen-manifest: region 17
+  // <<< gen-manifest: region 18
   {
     // An apt source rewritten to ONE mirror must carry a fallback to another. Born 2026-08-19, when azure.archive.ubuntu.com refused connections for ninety minutes and took down four consecutive CI attempts: every apt source had been rewritten to that single host, so the surrounding five-attempt retry loop hammered the same dead mirror five times. Existing checks counted retry
     // ATTEMPTS and never asked whether the attempts could reach a different SOURCE, which is why nothing caught it.
@@ -2360,7 +2387,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Dockerfile mirror resilience',
     },
   },
-  // >>> gen-manifest: region 18
+  // >>> gen-manifest: region 19
   {
     id: 'check:ci-workflow-submodule-deps',
     run: 'npm run check:ci-workflow-submodule-deps',
@@ -2517,7 +2544,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n value types match English',
     },
   },
-  // <<< gen-manifest: region 18
+  // <<< gen-manifest: region 19
   {
     id: 'check:ci-lint-rule-liveness',
     run: 'npm run check:ci-lint-rule-liveness',
@@ -2531,7 +2558,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Enabled lint rules can actually fire',
     },
   },
-  // >>> gen-manifest: region 19
+  // >>> gen-manifest: region 20
   {
     id: 'check:ci-agent-hint-liveness',
     run: 'npm run check:ci-agent-hint-liveness',
@@ -2661,7 +2688,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Agent model roster matches its documented reasons',
     },
   },
-  // <<< gen-manifest: region 19
+  // <<< gen-manifest: region 20
   {
     id: 'check:ci-lint-scope-coverage',
     run: 'npm run check:ci-lint-scope-coverage',
@@ -2757,7 +2784,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow env provision',
     },
   },
-  // >>> gen-manifest: region 20
+  // >>> gen-manifest: region 21
   {
     id: 'check:ci-shell-commands',
     run: 'npm run check:ci-shell-commands',
@@ -2794,7 +2821,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pool-registered tests do not write the real tree',
     },
   },
-  // <<< gen-manifest: region 20
+  // <<< gen-manifest: region 21
   {
     // The sibling of check:ci-pool-writer-safety: that gate holds GATE TESTS to "a real-tree writer holds an exclusive tree: claim"; this one holds the GATES themselves to it, through every Python/TS/JS/bash module their leaves reach (imports and cross-language spawns). agent/plans/PLAN-ci-gate-write-taint-scanners.md.
     id: 'check:ci-gate-tree-writes',
@@ -2822,7 +2849,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Gates that write the real tree declare it',
     },
   },
-  // >>> gen-manifest: region 21
+  // >>> gen-manifest: region 22
   {
     id: 'check:ci-gate-reachability-coverage',
     run: 'npm run check:ci-gate-reachability-coverage',
@@ -2835,7 +2862,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Gate-reachability probe agrees with registrations',
     },
   },
-  // <<< gen-manifest: region 21
+  // <<< gen-manifest: region 22
   {
     id: 'check:ci-gate-cwd-independence',
     run: 'npm run check:ci-gate-cwd-independence',
@@ -2900,7 +2927,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow banned patterns',
     },
   },
-  // >>> gen-manifest: region 22
+  // >>> gen-manifest: region 23
   {
     id: 'check:ci-greenlight-closures',
     run: 'npm run check:ci-greenlight-closures',
@@ -2913,7 +2940,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Greenlight closure paths',
     },
   },
-  // <<< gen-manifest: region 22
+  // <<< gen-manifest: region 23
   {
     id: 'check:ci-workflow-gates',
     run: 'npm run check:ci-workflow-gates',
@@ -2926,7 +2953,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow structural gates',
     },
   },
-  // >>> gen-manifest: region 23
+  // >>> gen-manifest: region 24
   {
     id: 'check:ci-actionlint',
     run: 'npm run check:ci-actionlint',
@@ -2939,7 +2966,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow lint (actionlint)',
     },
   },
-  // <<< gen-manifest: region 23
+  // <<< gen-manifest: region 24
   {
     id: 'check:ci-breakpoint-drift',
     run: 'npm run check:ci-breakpoint-drift',
@@ -2952,7 +2979,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Breakpoint drift',
     },
   },
-  // >>> gen-manifest: region 24
+  // >>> gen-manifest: region 25
   {
     id: 'check:ci-app-admin-perm',
     run: 'npm run check:ci-app-admin-perm',
@@ -2977,7 +3004,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Tracked runtime sidecars',
     },
   },
-  // <<< gen-manifest: region 24
+  // <<< gen-manifest: region 25
   {
     id: 'check:ci-scans-tracked-paths',
     run: 'npm run check:ci-scans-tracked-paths',
@@ -3003,7 +3030,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'agent-browser exit status',
     },
   },
-  // >>> gen-manifest: region 25
+  // >>> gen-manifest: region 26
   {
     id: 'check:ci-silent-failures',
     run: 'npm run check:ci-silent-failures',
@@ -3064,7 +3091,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check audit logging coverage for CLI operations',
     },
   },
-  // <<< gen-manifest: region 25
+  // <<< gen-manifest: region 26
   {
     id: 'check:ci-cli-contract',
     run: 'npm run check:ci-cli-contract',
@@ -3108,7 +3135,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Command planes',
     },
   },
-  // >>> gen-manifest: region 26
+  // >>> gen-manifest: region 27
   {
     id: 'check:ci-design-tree',
     run: 'npm run check:ci-design-tree',
@@ -3145,7 +3172,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n untranslated',
     },
   },
-  // <<< gen-manifest: region 26
+  // <<< gen-manifest: region 27
   {
     id: 'check:ci-i18n-cross-locale',
     run: 'npm run check:ci-i18n-cross-locale',
@@ -3163,7 +3190,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n cross-locale',
     },
   },
-  // >>> gen-manifest: region 27
+  // >>> gen-manifest: region 28
   {
     id: 'check:ci-i18n-cross-locale-core',
     run: 'npm run check:ci-i18n-cross-locale-core',
@@ -3214,7 +3241,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Locale sources',
     },
   },
-  // <<< gen-manifest: region 27
+  // <<< gen-manifest: region 28
   {
     id: 'check:ci-i18n-command-parity',
     run: 'npm run check:ci-i18n-command-parity',
@@ -3228,7 +3255,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n command parity',
     },
   },
-  // >>> gen-manifest: region 28
+  // >>> gen-manifest: region 29
   {
     id: 'check:ci-config-migrations',
     run: 'npm run check:ci-config-migrations',
@@ -3265,7 +3292,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Shared constant duplication',
     },
   },
-  // <<< gen-manifest: region 28
+  // <<< gen-manifest: region 29
   {
     id: 'check:ci-shared-esm-resolvable',
     run: 'npm run check:ci-shared-esm-resolvable',
@@ -3279,7 +3306,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Shared ESM resolvable',
     },
   },
-  // >>> gen-manifest: region 29
+  // >>> gen-manifest: region 30
   {
     id: 'check:ci-runtime-imports-are-deps',
     run: 'npm run check:ci-runtime-imports-are-deps',
@@ -3415,7 +3442,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Test suites are CI-reachable',
     },
   },
-  // <<< gen-manifest: region 29
+  // <<< gen-manifest: region 30
   {
     id: 'check:ci-editorconfig',
     run: 'npm run check:ci-editorconfig',
@@ -3462,11 +3489,12 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-account-server',
-    run: 'npm run check:ci-account-server',
+    run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:ci-account-server',
     slow: true, // 41.5s contended (submodule vitest suite)
     gate: true,
     mutex: ['account-vitest'],
-    weight: 2,
+    // ELASTIC (PF5, 2026-10-05): `weight: 2` retired. vitest takes every core by default, so the old budget of 2 understated it. VITEST_MAX_WORKERS is the knob (vitest 5.0.3 reads it after config resolution and it overrides `maxWorkers`), set from the pool's grant; it travels through npm and the Python proxies, which pass the environment on. Unset (a CI step, where no runner grants) it is empty, and vitest keeps its own default.
+    cores: { min: 1, max: 'all' },
     heavy: true,
     leaves: ['.ci/rediacc_ci/private/run_account.py'],
     ci: {
@@ -3528,10 +3556,11 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-account-scope-audit',
-    run: 'npm run check:ci-account-scope-audit',
+    run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:ci-account-scope-audit',
     gate: true,
     mutex: ['account-vitest'],
-    weight: 2,
+    // ELASTIC (PF5, 2026-10-05): `weight: 2` retired. vitest takes every core by default, so the old budget of 2 understated it. VITEST_MAX_WORKERS is the knob (vitest 5.0.3 reads it after config resolution and it overrides `maxWorkers`), set from the pool's grant; it travels through npm and the Python proxies, which pass the environment on. Unset (a CI step, where no runner grants) it is empty, and vitest keeps its own default.
+    cores: { min: 1, max: 'all' },
     heavy: true,
     leaves: ['vitest'],
     ci: {
@@ -3545,11 +3574,12 @@ export const GATES: readonly GateSpec[] = [
   // "Console contract coverage" would then be lying about 33 files.
   {
     id: 'check:ci-test-account-web',
-    run: 'npm run check:ci-test-account-web',
+    run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:ci-test-account-web',
     slow: true, // 32.6s measured
     gate: true,
     mutex: ['account-vitest'],
-    weight: 2,
+    // ELASTIC (PF5, 2026-10-05): `weight: 2` retired. vitest takes every core by default, so the old budget of 2 understated it. VITEST_MAX_WORKERS is the knob (vitest 5.0.3 reads it after config resolution and it overrides `maxWorkers`), set from the pool's grant; it travels through npm and the Python proxies, which pass the environment on. Unset (a CI step, where no runner grants) it is empty, and vitest keeps its own default.
+    cores: { min: 1, max: 'all' },
     heavy: true,
     leaves: ['vitest'],
     ci: {
@@ -3627,7 +3657,7 @@ export const GATES: readonly GateSpec[] = [
         'BLOCKER: no CI step invokes this script; the seven tier-map tests it drives already run in CI inside rediacc_ci.private.run_renet test (ct-tests.yml job test-renet, step "Run renet tests"), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes',
     },
   },
-  // >>> gen-manifest: region 30
+  // >>> gen-manifest: region 31
   {
     id: 'check:ci-embed-credits',
     run: 'npm run check:ci-embed-credits',
@@ -3652,7 +3682,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check embed arch parity',
     },
   },
-  // <<< gen-manifest: region 30
+  // <<< gen-manifest: region 31
   {
     id: 'check:ci-embed-asset-freshness',
     env: {
@@ -3672,7 +3702,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check embed-asset upstream freshness',
     },
   },
-  // >>> gen-manifest: region 31
+  // >>> gen-manifest: region 32
   {
     id: 'check:ci-unverified-downloads',
     run: 'npm run check:ci-unverified-downloads',
@@ -3701,7 +3731,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check devcontainer pin upstream freshness',
     },
   },
-  // <<< gen-manifest: region 31
+  // <<< gen-manifest: region 32
   {
     id: 'check:ci-embed-asset-versions',
     run: 'npm run check:ci-embed-asset-versions',
@@ -3715,7 +3745,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check embedded asset versions match their pins',
     },
   },
-  // >>> gen-manifest: region 32
+  // >>> gen-manifest: region 33
   {
     id: 'check:ci-recovery-context',
     run: 'npm run check:ci-recovery-context',
@@ -3728,7 +3758,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check recovery functions get an uncancellable context',
     },
   },
-  // <<< gen-manifest: region 32
+  // <<< gen-manifest: region 33
   {
     id: 'check:ci-no-otlp-creds',
     run: 'npm run check:ci-no-otlp-creds',
@@ -3743,7 +3773,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Assert no OTLP credentials baked into the built binaries',
     },
   },
-  // >>> gen-manifest: region 33
+  // >>> gen-manifest: region 34
   {
     id: 'check:ci-subscription-schema',
     run: 'npm run check:ci-subscription-schema',
@@ -3768,7 +3798,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pricing consistency',
     },
   },
-  // <<< gen-manifest: region 33
+  // <<< gen-manifest: region 34
   {
     id: 'check:ci-seo',
     run: 'npm run check:ci-seo',
@@ -3814,7 +3844,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   // Its cheap source-level complement: no build, so it lives in the i18n lane. It is a proxy (an inline English string is invisible to it) and cannot replace the gate above. >>> gen-manifest: region 31
-  // >>> gen-manifest: region 34
+  // >>> gen-manifest: region 35
   {
     id: 'check:ci-page-locale-imports',
     run: 'npm run check:ci-page-locale-imports',
@@ -3827,7 +3857,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Page locale imports',
     },
   },
-  // <<< gen-manifest: region 34
+  // <<< gen-manifest: region 35
   {
     id: 'check:ci-external-links',
     env: {
@@ -3860,7 +3890,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'DKIM notify DNS',
     },
   },
-  // >>> gen-manifest: region 35
+  // >>> gen-manifest: region 36
   {
     id: 'check:ci-css-dom-refs',
     run: 'npm run check:ci-css-dom-refs',
@@ -3909,7 +3939,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Dead CSS',
     },
   },
-  // <<< gen-manifest: region 35
+  // <<< gen-manifest: region 36
   {
     id: 'check:ci-illustration-contract',
     run: 'npm run check:ci-illustration-contract',
@@ -3969,7 +3999,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Browser smoke',
     },
   },
-  // >>> gen-manifest: region 36
+  // >>> gen-manifest: region 37
   {
     id: 'check:ci-captcha-recovery',
     run: 'npm run check:ci-captcha-recovery',
@@ -3982,7 +4012,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Captcha recovery',
     },
   },
-  // <<< gen-manifest: region 36
+  // <<< gen-manifest: region 37
   {
     id: 'check:ci-page-density',
     run: 'npm run check:ci-page-density',
@@ -4028,7 +4058,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'SSR locale',
     },
   },
-  // >>> gen-manifest: region 37
+  // >>> gen-manifest: region 38
   {
     id: 'check:ci-docker-image-freshness',
     env: {
@@ -4044,7 +4074,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Docker image freshness',
     },
   },
-  // <<< gen-manifest: region 37
+  // <<< gen-manifest: region 38
   {
     id: 'check:ci-baseline-key-semantics',
     run: 'npm run check:ci-baseline-key-semantics',
@@ -4152,7 +4182,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check prose style (the work, not the person)',
     },
   },
-  // >>> gen-manifest: region 38
+  // >>> gen-manifest: region 39
   {
     id: 'check:ci-nis2-quotes',
     run: 'npm run check:ci-nis2-quotes',
@@ -4165,7 +4195,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Verify NIS2 directive quotations match the official source',
     },
   },
-  // <<< gen-manifest: region 38
+  // <<< gen-manifest: region 39
   {
     id: 'check:cli-examples',
     run: 'npm run check:cli-examples',
@@ -4179,7 +4209,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'CLI examples',
     },
   },
-  // >>> gen-manifest: region 39
+  // >>> gen-manifest: region 40
   {
     id: 'check:ci-tutorial-commands',
     run: 'npm run check:ci-tutorial-commands',
@@ -4204,7 +4234,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Validate tutorial commands are non-interactive',
     },
   },
-  // <<< gen-manifest: region 39
+  // <<< gen-manifest: region 40
   {
     id: 'check:ci-tutorial-parity',
     run: 'npm run check:ci-tutorial-parity',
@@ -4304,7 +4334,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Validate published tutorial word-timing sync (real ASR alignment, not estimated)',
     },
   },
-  // >>> gen-manifest: region 40
+  // >>> gen-manifest: region 41
   {
     id: 'check:ci-account-onboarding',
     run: 'npm run check:ci-account-onboarding',
@@ -4341,7 +4371,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'BLOCKER validator — syncpack versionGroups',
     },
   },
-  // <<< gen-manifest: region 40
+  // <<< gen-manifest: region 41
   {
     id: 'check:ci-suppression-liveness',
     run: 'npm run check:ci-suppression-liveness',
@@ -4383,7 +4413,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Action freshness',
     },
   },
-  // >>> gen-manifest: region 41
+  // >>> gen-manifest: region 42
   {
     id: 'check:ci-jq-boolean-default',
     run: 'npm run check:ci-jq-boolean-default',
@@ -4396,7 +4426,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'jq boolean defaults',
     },
   },
-  // <<< gen-manifest: region 41
+  // <<< gen-manifest: region 42
   {
     id: 'check:ci-dead-case-arms',
     run: 'npm run check:ci-dead-case-arms',
@@ -4445,7 +4475,7 @@ export const GATES: readonly GateSpec[] = [
         'BLOCKER: test_gate_profiler_coverage.py:test_real_tree_seam_free runs the gate seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security) -- real workflows, real allowlist, real action.yml, real floors -- so the full job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction',
     },
   },
-  // >>> gen-manifest: region 42
+  // >>> gen-manifest: region 43
   {
     id: 'check:ci-go-module-sync',
     run: 'npm run check:ci-go-module-sync',
@@ -4458,7 +4488,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check Go module sync against the renet worktree',
     },
   },
-  // <<< gen-manifest: region 42
+  // <<< gen-manifest: region 43
   {
     // Structural, not semantic. "every declared env var must be referenced" was measured first and rejected: 290 of 849 step env vars have no textual reference, because gh and aws read theirs implicitly. This checks the one shape that is unambiguously a defect -- a step key after a step-boundary comment, left behind when the step itself was deleted.
     id: 'check:ci-workflow-orphan-step-keys',
@@ -4515,7 +4545,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
-  // >>> gen-manifest: region 43
+  // >>> gen-manifest: region 44
   {
     id: 'check:ci-em-dash-surfaces',
     run: 'npm run check:ci-em-dash-surfaces',
@@ -4552,7 +4582,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
-  // <<< gen-manifest: region 43
+  // <<< gen-manifest: region 44
   {
     id: 'check:ci-anchor-integrity',
     run: 'npm run check:ci-anchor-integrity',
@@ -4732,7 +4762,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Setup port parity',
     },
   },
-  // >>> gen-manifest: region 44
+  // >>> gen-manifest: region 45
   {
     id: 'check:ci-parity',
     run: 'npm run check:ci-parity',
@@ -4745,7 +4775,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Validate parity between the local gate set and the CI quality surface',
     },
   },
-  // <<< gen-manifest: region 44
+  // <<< gen-manifest: region 45
 
   // F3: two Quality/Static steps that ran in CI and nowhere else. The forward gate could not see them because its BARE_GATE pattern only covered
   // .ci/scripts/{quality,security}/check-*.sh; these live in .ci/scripts/test/
@@ -4979,28 +5009,23 @@ export const GATES: readonly GateSpec[] = [
   // RETIRED WITH ITS SUBJECT: gate-test:claude-hooks, the heaviest entry in this file at 537.4s, was a 40-line wrapper around `.claude/hooks/test-hooks.sh` and had no other work in it. The harness is gone, ported to pytest under `.claude/rediacc_hooks/tests/`, and its label multiset was compared run-against-run before the deletion rather than diff-against-diff. The ports are
   // collected by check:ci-pytest, whose `paths` already carry `.claude/hooks/**` and `.claude/rediacc_hooks/**`, so nothing lost selection when this entry left.
   //
-  // RETIRED, AND THE LAST TWO `mutex: ['tree:repo']` ENTRIES WENT WITH THEM: gate-test:gate-anti-vacuity and gate-test:generate-tag-inputs. Their pytest ports (test_gate_gate_anti_vacuity.py, test_gate_generate_tag_inputs.py) carry every case and still write the tracked tree, so the exclusive claim moved to check:ci-pytest, which is where they now run.
+  // RETIRED, AND THE LAST TWO `mutex: ['tree:repo']` ENTRIES WENT WITH THEM: gate-test:gate-anti-vacuity and gate-test:generate-tag-inputs. Their pytest ports carried the exclusive claim to check:ci-pytest for a while; since 2026-10-05 no pytest module writes the tracked tree, and check:ci-pytest holds no `tree:` claim (see its entry).
   {
     id: 'check:ci-pytest',
     run: 'npm run check:ci-pytest',
     gate: true,
-    // SLOW ON PURPOSE, and it gets slower with every port, which is the point. The tier oracle measured 367.9s (the FLOOR of the last five samples, per check-gate-manifest.ts:503, so not a contended one-off) and asked for this flag. It is not a regression to fix: the gate runs the WHOLE Python suite, 9165 tests, and W7 P3 adds roughly 200 more per batch as bash gate tests are
-    // ported to it. It is already parallel at `-n 8 --dist loadgroup` (823.93s to 396s, 2.08x, measured 2026-09-07), and the operator ruled STOP AT 2.08x rather than take the two further optimisations that were measured and costed. So the honest declaration is that this is a slow gate, not that it is a fast gate having a bad day.
+    // SLOW ON PURPOSE: the gate runs the WHOLE Python suite (21,449 tests and 7,866 test-seconds in the 2026-10-05 junit), and it grows with every port.
     slow: true,
-    // THE GATE NOW RUNS pytest UNDER `-n 8`, so it claims 8 scheduler slots rather than 1. pool.ts:242 caps effective weight at the pool size, so this reads as "the whole pool" on a 2-slot CI runner and as 8 of 22 locally. Declaring less than `-n` asks for would be an undeclared claim on the machine -- the same defect class as the missing `mutex` that let the CLAUDE.md-rewriting
-    // gate run alongside this one.
-    weight: 8,
-    leaves: ['.ci/rediacc_ci/check_pytest.py'],
-    // THIS GATE DRIVES REAL BASH TWINS AGAINST THE REAL TREE and declared no isolation while doing it, so pool.ts was free to schedule the `tree:repo` writers -- one of which rewrites CLAUDE.md -- alongside it. test_twin_parity.py:203-208 names this hazard in prose and cannot fix it
-    // from inside pytest, because the claim has to be made HERE.
+    // SIZED FROM THE CORES AT LAUNCH, NEVER A STATIC WORKER COUNT. Operator ruling 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md): no static worker counts in any local or CI lane; every parallel tool sizes itself from the cores actually available when it starts. That supersedes the 2026-09-07 "STOP AT 2.08x" ruling, which fixed this gate at `-n 8` (823.93s serial to 396s) with a matching `weight: 8`.
     //
-    // `mutex` AND NOT `reads` SINCE THE LAST TWO tree:repo GATE TESTS WERE RETIRED, and the upgrade is the whole reason those retirements are safe. `gate-test:gate-anti-vacuity` and `gate-test:generate-tag-inputs` each carried `mutex: ['tree:repo']` and each wrote the tracked tree; their pytest ports still do, and the ports run HERE. A shared claim releases this gate to run beside
-    // every other `tree:repo` reader, which is exactly the overlap that reddened gate-test:claude-hooks in 2026-08-17 with a bash syntax error in a file that parses clean. The exclusive claim is what `check:ci-pool-writer-safety` now checks for, so a downgrade back to `reads` is a red rather than a silent flake.
-    mutex: ['tree:repo'],
+    // ELASTIC: the pool grants this gate a core count inside the range at admission and exports it as CI_RUNNER_CORES, and check_pytest.py's `jobs()` passes that grant to `-n` through `core_lease.granted_cores()` (in a CI leg, with no runner, the affinity count of the leg's machine). `min: 2` because one worker is a serial run with xdist overhead on top. `-n` and the budget are one number by construction, which is what the old hand-kept `-n 8`/`weight: 8` pairing was for.
+    //
+    // WHAT USED TO MAKE MORE WORKERS POINTLESS WAS THE XDIST GROUPS, NOT THE COUNT: the guards differential pinned about 460s to one worker, and the 203.5s `test_settings_collapse[pre-bash]` item was indivisible. PF11-PF18 split those chains, so the wall now follows test-seconds / grant.
+    cores: { min: 2, max: 'all' },
+    leaves: ['.ci/rediacc_ci/check_pytest.py'],
+    // NO `tree:` CLAIM SINCE 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF16). From 2026-09-21 this gate held `mutex: ['tree:repo']` because pytest ports of retired gate tests planted into the tracked tree, and the claim excluded check:ci-guard-mutations, check:ci-renet-types, check:ci-search-index, check:test:tutorial-player, check:ci-security-audit and check:ci-proxy-image-smoke for the whole pytest wall. Every plant now lives in a copy (test_gate_shrink_only_composition.py, test_gate_docs_gen.py, test_gate_paths_exist.py), no module declares the real-tree xdist group, the repo-root conftest's session tripwire fails any run in which a test changes a tracked path under the testpaths or the gate scan roots, and check:ci-pool-writer-safety reds on both a declaration and a stale exclusive claim here.
     // A SHARED CLAIM ON THE BUILT SITE (#40adcff7). test_gate_player_css_scope.py and test_gate_client_bundle_budget.py read packages/www/dist when one exists, and build:www (`mutex: ['www-dist']`) empties it before repopulating it: one --only run paired them and the real-dist case scanned 719 of 1842 pages ("F2: ... floor 1000"). No `needs` edge, because CI's quality-pytest builds no www and those cases skip without a dist.
     reads: ['www-dist'],
-    writesTree:
-      'test_gate_gate_anti_vacuity.py and test_gate_generate_tag_inputs.py (the pytest ports in the real-tree xdist group) overwrite tracked files while they run',
     // The old set was ['.ci/rediacc_ci/**', 'pyproject.toml'] and could not see two things this gate actually runs: `.claude/rediacc_hooks/**` is a testpaths root, and `.ci/scripts/test/gates/**` holds the twins test_twin_parity drives. Under `--changed` an edit to either did not select this gate, which is a path filter reporting a pass over code it never looked at.
     //
     // WIDENED AGAIN WHEN gate-test:claude-hooks WAS RETIRED, and the widening is the whole reason that retirement does not open a selection hole. The four entries below carried the SUBJECTS of the harness this gate now collects: the guards and the chain head under `.claude/hooks/**`, the wiring the settings file declares, the git fixture the trapguard cases source, and the
@@ -5029,7 +5054,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Python package tests',
     },
   },
-  // >>> gen-manifest: region 45
+  // >>> gen-manifest: region 46
   {
     id: 'check:ci-pathspec-scope',
     run: 'npm run check:ci-pathspec-scope',
@@ -5042,7 +5067,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pathspec scope',
     },
   },
-  // <<< gen-manifest: region 45
+  // <<< gen-manifest: region 46
   {
     id: 'check:ci-package-key-budget',
     run: 'npm run check:ci-package-key-budget',
@@ -5292,9 +5317,10 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:test-provisioning',
-    run: 'npm run check:test-provisioning',
+    run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:test-provisioning',
     gate: true,
-    weight: 2,
+    // ELASTIC (PF5, 2026-10-05): `weight: 2` retired. vitest takes every core by default, so the old budget of 2 understated it. VITEST_MAX_WORKERS is the knob (vitest 5.0.3 reads it after config resolution and it overrides `maxWorkers`), set from the pool's grant; it travels through npm and the Python proxies, which pass the environment on. Unset (a CI step, where no runner grants) it is empty, and vitest keeps its own default.
+    cores: { min: 1, max: 'all' },
     leaves: ['.ci/rediacc_ci/proxies/unit_tests.py'],
     ci: {
       kind: 'step',
@@ -5305,10 +5331,11 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:test-e2e-unit',
-    run: 'npm run check:test-e2e-unit',
+    run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:test-e2e-unit',
     gate: true,
     needs: ['build:packages'],
-    weight: 2,
+    // ELASTIC (PF5, 2026-10-05): `weight: 2` retired. vitest takes every core by default, so the old budget of 2 understated it. VITEST_MAX_WORKERS is the knob (vitest 5.0.3 reads it after config resolution and it overrides `maxWorkers`), set from the pool's grant; it travels through npm and the Python proxies, which pass the environment on. Unset (a CI step, where no runner grants) it is empty, and vitest keeps its own default.
+    cores: { min: 1, max: 'all' },
     leaves: ['.ci/rediacc_ci/proxies/unit_tests.py'],
     ci: {
       kind: 'step',
@@ -5330,7 +5357,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Install table',
     },
   },
-  // >>> gen-manifest: region 46
+  // >>> gen-manifest: region 47
   {
     id: 'check:ci-gen-manifest',
     run: 'npm run check:ci-gen-manifest',
@@ -5379,7 +5406,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Container build context',
     },
   },
-  // <<< gen-manifest: region 46
+  // <<< gen-manifest: region 47
   // The executor image, built and booted: B1 (no token at boot) and B2 (no renet) shipped because nothing ever ran it. A full docker build of the CLI workspace, hence slow and local-only until a CI job that already builds images carries it.
   {
     id: 'check:ci-proxy-image-smoke',
@@ -5398,7 +5425,7 @@ export const GATES: readonly GateSpec[] = [
         'BLOCKER: a full docker build of the executor image (npm ci of the workspace plus the CLI bundle) that also needs a renet-linux-amd64 to stage; no CI job builds renet before the quality lanes, and wiring it into ci-build-docker is a workflow change outside the proxy writer file set (PLAN-cloudflare-proxy.md Writer A)',
     },
   },
-  // >>> gen-manifest: region 47
+  // >>> gen-manifest: region 48
   {
     id: 'check:ci-cli-proxy-safe-output',
     run: 'npm run check:ci-cli-proxy-safe-output',
@@ -5435,7 +5462,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Turnstile widget drift',
     },
   },
-  // <<< gen-manifest: region 47
+  // <<< gen-manifest: region 48
 ];
 
 /** The root workflow every CI run enters through. */

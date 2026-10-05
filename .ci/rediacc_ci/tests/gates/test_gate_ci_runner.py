@@ -57,6 +57,7 @@ Both are the same substitution and neither changes a claim.
 import json
 import os
 import re
+import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
@@ -146,9 +147,17 @@ def run_ci(gate, mf: str, *args: str, env: dict | None = None) -> Run:
     """`run_ci <manifest> [args...]` -- drive the REAL runner, streams apart.
 
     Never merged: case 2 asserts on the split, and a helper that merged them here would make that case unfalsifiable.
+
+    THE GRANT AND THE LEASE ARE PINNED, not inherited. Under `check:ci-pytest` this process carries the outer runner's `CI_RUNNER_CORES` and `CI_CORE_LEASE_HELD`; inherited, they would size the nested runner from the outer grant and hide an `exec.ts` that stopped exporting its own. So both are blanked, and a nested run that wants the machine-wide lease gets a private pool (`REDIACC_CORE_LEASE_DIR`) rather than the one a live pre-push is drawing from.
     """
     tsx = require_runner(gate)
-    overlay = {"CI_RUNNER_MANIFEST": mf}
+    overlay = {
+        "CI_RUNNER_MANIFEST": mf,
+        "CI_RUNNER_CORES": "",
+        "CI_CORE_LEASE_HELD": "",
+        "CI_PROFILE": "off",
+        "REDIACC_CORE_LEASE_DIR": os.path.join(os.path.dirname(mf), "core-lease"),
+    }
     overlay.update(env or {})
     return Run(
         harness.run(
@@ -534,7 +543,7 @@ def test_missing_duration_cache(gate):
             gate,
             work,
             "case8",
-            [spec("c1", "true"), {**spec("c2", "true"), "weight": 2}],
+            [spec("c1", "true"), {**spec("c2", "true"), "cores": {"min": 1, "max": 2}}],
         )
         r = run_ci(gate, mf, "--jobs", "2", env={"CI_RUNNER_CACHE": os.fspath(cache)})
         gate.assert_exit(0, r, "a missing duration cache must not fail the run")
@@ -723,4 +732,385 @@ def test_the_manifest_seam_is_honoured(gate):
         gate.log_pass(
             "the manifest seam is honoured: a 1-entry fixture scheduled 1 gate, not the "
             "%d registered in %s, so no case here can launch a real sweep" % (registered, LOCK_REL)
+        )
+
+
+# --------------------------------------------------------------------------- PLAN-prepush-full-cpu: the grant, the one pass, the advance. ---------------------------------------------------------------------------
+
+
+def test_elastic_gate_is_told_its_grant(gate):
+    """An elastic gate learns its width from `CI_RUNNER_CORES`, sized by the area rule at launch (agent/plans/PLAN-prepush-full-cpu.md part 1).
+
+    The fixture: one gate declaring `cores: {min: 2, max: 'all'}` beside four one-core gates, C pinned at 8 by `--jobs 8`, and a duration cache that measures the elastic gate at 40 cpu-s (perCore 1) and each one-core gate at 1 cpu-s. The area rule then gives floor(8 / (1 + 4 / 40)) = 7. Each gate writes the `CI_RUNNER_CORES` its own process saw into a file, so the number is read from the gate, not from the runner's bookkeeping.
+
+    PLANT: `exec.ts` without the export. `run_ci` blanks the variable, so the elastic gate's file then reads empty and this case reds on the first assertion.
+
+    `CI_CORE_LEASE_HELD=1` makes the run an inherited lease, so the case judges the area rule and not whatever another run on this machine is holding; the one-core gates prove the held flag is forwarded with the grant.
+    """
+    with harness.temp_dir() as work:
+        cache = work / "gate-durations.json"
+        cache.write_text(
+            json.dumps(
+                {
+                    "elastic": {"ewma": 5000, "recent": [5000], "cpu": [40000], "perCore": [1]},
+                    **{
+                        "one-%d" % n: {"ewma": 1000, "recent": [1000], "cpu": [1000]}
+                        for n in range(1, 5)
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        # `granted=`, not `cores=`: a `cores=` producer in CODE_DIRS revives the dead `*"cores=20"*` arm that check:ci-dead-case-arms keeps as its founding fixture.
+        probe = 'echo "granted=$CI_RUNNER_CORES held=$CI_CORE_LEASE_HELD" > @WORK@/%s.grant'
+        mf = manifest(
+            gate,
+            work,
+            "elastic",
+            [
+                spec("elastic", probe % "elastic", cores={"min": 2, "max": "all"}),
+                *[spec("one-%d" % n, probe % ("one-%d" % n)) for n in range(1, 5)],
+            ],
+        )
+        r = run_ci(
+            gate,
+            mf,
+            "--jobs",
+            "8",
+            "--sched",
+            "cores",
+            env={"CI_RUNNER_CACHE": os.fspath(cache), "CI_CORE_LEASE_HELD": "1"},
+        )
+        gate.assert_exit(0, r, "the elastic fixture passes")
+
+        def seen(gid: str) -> dict[str, str]:
+            path = work / (gid + ".grant")
+            if not path.is_file():
+                gate.log_fail("gate %s never wrote what it was told; it did not run" % gid)
+            return dict(f.split("=", 1) for f in path.read_text(encoding="utf-8").split())
+
+        told = seen("elastic").get("granted", "")
+        gate.assertions += 1
+        if not told.isdigit():
+            gate.log_fail(
+                "the elastic gate's process saw no CI_RUNNER_CORES (read %r): exec.ts did not "
+                "export the grant, so its tool would size itself to the whole machine" % told
+            )
+        grant = int(told)
+        gate.assertions += 1
+        if not 2 <= grant <= 8:
+            gate.log_fail("the grant %d is outside [min 2, C 8]" % grant)
+        gate.assert_eq(grant, 7, "the grant is the area rule's floor(8 / (1 + 4/40)) = 7")
+        for n in range(1, 5):
+            gate.assert_eq(
+                seen("one-%d" % n),
+                {"granted": "1", "held": "1"},
+                "a one-core gate is told 1 core and the held lease",
+            )
+        gate.assert_contains(
+            r.out, "elastic grants: elastic 7 core(s)", "the footer names the elastic grant"
+        )
+        gate.log_pass(
+            "the elastic gate's own process was told CI_RUNNER_CORES=7, the area rule's grant "
+            "on C 8, and every one-core gate was told 1 with the held lease"
+        )
+
+
+def _git(gate, repo, *args: str) -> str:
+    git = harness.require_tool("git", "install git")
+    r = harness.run(
+        [git, "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false", *args],
+        cwd=repo,
+        env={
+            "GIT_AUTHOR_NAME": "fixture",
+            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
+            "GIT_COMMITTER_NAME": "fixture",
+            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
+        },
+    )
+    if r.rc != 0:
+        gate.log_fail("git %s failed in the fixture repo: %s" % (" ".join(args), r.err))
+    return r.out.strip()
+
+
+def _slow(gid: str, leaf: str, run: str, **extra) -> dict:
+    """A slow gate whose only route into the diff is its leaf: it declares paths that match nothing, so rule 4 (no paths, any change) cannot select it."""
+    return spec(
+        gid,
+        run,
+        slow=True,
+        leaves=[leaf],
+        paths=["no-such-dir/**"],
+        pathsOrigin="declared",
+        **extra,
+    )
+
+
+def _fixture_repo(gate, work, gates: list[dict], extra_files: dict | None = None):
+    """A throwaway git repo carrying a COPY of the real runner and a synthetic manifest.ts, with a base commit that `origin/main` names and a topic commit touching every `lib/*.sh` leaf.
+
+    WHY A COPY AND NOT THE MANIFEST SEAM. The receipt is minted only for the real manifest of the checkout the runner sits in (`--quick` with no `--manifest`), and "the last push" is read from the git repo that checkout belongs to. Copying `scripts/ci-runner/` into a fresh repo gives the subject both with no seam added to it: its REPO_ROOT is the fixture, its manifest the fixture's, its diff the fixture's real git history.
+    """
+    repo = work / "repo"
+    runner_dir = repo / "scripts" / "ci-runner"
+    runner_dir.mkdir(parents=True)
+    for src in RUNNER.parent.glob("*.ts"):
+        shutil.copy(src, runner_dir / src.name)
+    (runner_dir / "manifest.ts").write_text(
+        "export type { CiCoverage, GateSpec } from './gate-spec.js';\n"
+        "export const GATES = %s;\n" % json.dumps(gates, indent=2),
+        encoding="utf-8",
+    )
+    # The runner reads the npm scripts for quick-select's rule 3; the fixture declares none.
+    (repo / "package.json").write_text('{"scripts": {}}\n', encoding="utf-8")
+    (repo / "lib").mkdir()
+    for leaf in ("slow_leaf.sh", "writer_leaf.sh", "untouched_leaf.sh"):
+        (repo / "lib" / leaf).write_text("echo base\n", encoding="utf-8")
+    for rel, text in (extra_files or {}).items():
+        path = repo / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    _git(gate, repo, "init", "-q", "-b", "main")
+    _git(gate, repo, "add", "-A")
+    _git(gate, repo, "commit", "-q", "-m", "base")
+    _git(gate, repo, "update-ref", "refs/remotes/origin/main", "HEAD")
+    _git(gate, repo, "checkout", "-q", "-b", "topic")
+    for leaf in ("slow_leaf.sh", "writer_leaf.sh"):
+        (repo / "lib" / leaf).write_text("echo changed\n", encoding="utf-8")
+    _git(gate, repo, "commit", "-q", "-am", "touch the slow leaves")
+    return repo
+
+
+def _quick(gate, repo, work, *args: str, extra_env: dict | None = None) -> Run:
+    """The fixture's own runner, from inside the fixture, under a pinned environment (nothing inherited can set a manifest, a grant or a cache)."""
+    tsx = require_runner(gate)
+    env = {
+        "PATH": os.environ.get("PATH", ""),
+        "HOME": os.environ.get("HOME", os.fspath(work)),
+        "TMPDIR": os.fspath(work),
+        "CI_PROFILE": "off",
+        "CI_RUNNER_CACHE": os.fspath(work / "gate-durations.json"),
+        "MARK": os.fspath(work / "ran.log"),
+    }
+    env.update(extra_env or {})
+    return Run(
+        harness.run(
+            [tsx, os.fspath(repo / RUNNER_REL), *args],
+            cwd=repo,
+            env=env,
+            env_replace=True,
+            timeout=300,
+        )
+    )
+
+
+def _receipt(gate, path) -> dict:
+    if not path.is_file():
+        gate.log_fail("the run wrote no receipt at %s" % path)
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+ONE_PASS_GATES = [
+    spec("fast:a", "true"),
+    _slow("slow:touched", "lib/slow_leaf.sh", 'echo slow-touched >> "$MARK"; [ -z "$PF10_FAIL" ]'),
+    _slow("slow:untouched", "lib/untouched_leaf.sh", 'echo slow-untouched >> "$MARK"'),
+    _slow(
+        "slow:writer",
+        "lib/writer_leaf.sh",
+        'echo slow-writer >> "$MARK"',
+        mutex=["tree:repo"],
+        writesTree="the fixture's stand-in for a tracked-ledger writer",
+    ),
+]
+
+
+def test_quick_is_one_pass(gate):
+    """`--quick` runs every touched slow gate in the same pass (agent/plans/PLAN-prepush-full-cpu.md PF10).
+
+    The touched slow gate is priced at 200 s in the duration cache, well over the 90 s budget that used to drop it, so a budget restored anywhere in the selection drops it here: PLANT, restore the budget, and the first case reports the gate as dropped and reds. The failing case proves a slow gate that ran is judged like any other; the dirty-checkout case proves the one drop left (a tree writer outside a disposable clone) still lands in `droppedTouched` with its `--only` command, and that command merges into `droppedVerified`.
+    """
+    with harness.temp_dir() as work:
+        (work / "gate-durations.json").write_text(
+            json.dumps({"slow:touched": {"ewma": 200000, "recent": [200000], "cpu": [200000]}}),
+            encoding="utf-8",
+        )
+        repo = _fixture_repo(gate, work, ONE_PASS_GATES)
+        receipt_path = work / "receipt.json"
+
+        # 1. A clean clone with the receipt outside it: one pass runs the touched slow gate and the writer, and drops nothing.
+        r = _quick(gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path))
+        gate.assert_exit(0, r, "the one-pass run passes")
+        rc = _receipt(gate, receipt_path)
+        gate.assert_eq(rc.get("droppedTouched"), [], "a clean clone drops nothing")
+        gate.assert_eq(
+            sorted(rc.get("slowAdmitted") or []),
+            ["slow:touched", "slow:writer"],
+            "slowAdmitted names every touched slow gate this pass ran",
+        )
+        gate.assert_eq(rc.get("whole"), True, "the one pass is the whole lane")
+        gate.assert_eq(rc.get("advances"), [], "a fresh whole run starts an empty advance chain")
+        ran = (work / "ran.log").read_text(encoding="utf-8").split()
+        gate.assert_eq(
+            sorted(ran),
+            ["slow-touched", "slow-writer"],
+            "the touched slow gates really executed, and the untouched one did not",
+        )
+        gate.assert_eq(
+            sorted(rc.get("grantedCores") or {}),
+            ["fast:a", "slow:touched", "slow:writer"],
+            "grantedCores names every gate that launched",
+        )
+        gate.assert_not_contains(r.out, "DROPPED", "nothing is reported dropped")
+
+        # 2. The same pass with the slow gate failing: judged like any other gate.
+        (work / "ran.log").unlink()
+        r = _quick(
+            gate,
+            repo,
+            work,
+            "--quick",
+            "--receipt-out",
+            os.fspath(receipt_path),
+            extra_env={"PF10_FAIL": "1"},
+        )
+        gate.assert_exit(1, r, "a failing touched slow gate fails the one pass")
+        rc = _receipt(gate, receipt_path)
+        gate.assert_eq(rc.get("exitCode"), 1, "the receipt records the failure")
+        gate.assert_eq(rc.get("failed"), ["slow:touched"], "failed names the slow gate")
+        gate.assert_eq(rc.get("droppedTouched"), [], "a failure is not a drop")
+
+        # 3. A dirty shared checkout: the writer is the one drop, and its --only command merges.
+        (repo / "scratch.txt").write_text("a peer session's edit\n", encoding="utf-8")
+        shared = work / "shared-receipt.json"
+        r = _quick(gate, repo, work, "--quick", "--receipt-out", os.fspath(shared))
+        gate.assert_exit(0, r, "the shared-checkout run passes")
+        rc = _receipt(gate, shared)
+        dropped = rc.get("droppedTouched") or []
+        gate.assert_eq(
+            [(d.get("id"), d.get("kind")) for d in dropped],
+            [("slow:writer", "tree")],
+            "in a dirty checkout the touched tree writer is the one drop, kind tree",
+        )
+        command = dropped[0].get("run", "")
+        gate.assert_contains(
+            command,
+            "--only slow:writer --receipt-out %s" % shared,
+            "the drop carries the command that runs it into the same receipt",
+        )
+        argv = command.split("run.ts", 1)[1].split()
+        r = _quick(gate, repo, work, *argv)
+        gate.assert_exit(0, r, "the dropped writer's --only run passes")
+        verified = _receipt(gate, shared).get("droppedVerified") or {}
+        gate.assert_eq(
+            verified.get("slow:writer", {}).get("exitCode"),
+            0,
+            "the --only run merged into droppedVerified at exit 0",
+        )
+        gate.log_pass(
+            "--quick is one pass: a touched slow gate priced over the old budget ran, a red one "
+            "failed the receipt, and only a tree writer in a dirty checkout was dropped, with an "
+            "--only command that merged"
+        )
+
+
+ADVANCE_POLICY = json.dumps(
+    {
+        "records": [
+            {
+                "glob": "agent/reviews/**",
+                "readers": [{"id": "fast:reader", "evidence": "fixture"}],
+            },
+            {"glob": "agent/quiet/**", "readers": []},
+        ]
+    }
+)
+
+
+def test_quick_advances_across_a_record_only_commit(gate):
+    """A commit touching only record paths carries the receipt forward instead of re-running the lane (agent/plans/PLAN-prepush-full-cpu.md PF24).
+
+    After a whole run, a commit to `agent/reviews/` makes `--quick` run that glob's one reader and append `{from, to, paths, gates}` to `advances`, leaving `headTree` alone; a second record-only commit chains from the first step's `to`. CONTROL: a commit touching one code path runs the whole lane again and writes a fresh receipt with an empty chain, so the advance is about the record set and not about any moved HEAD.
+    """
+    gates = [
+        spec("fast:reader", 'echo reader >> "$MARK"'),
+        spec("fast:other", 'echo other >> "$MARK"'),
+    ]
+    with harness.temp_dir() as work:
+        repo = _fixture_repo(
+            gate,
+            work,
+            gates,
+            {".ci/policy/record-paths.json": ADVANCE_POLICY, "agent/reviews/a.md": "a\n"},
+        )
+        receipt_path = work / "receipt.json"
+        r = _quick(gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path))
+        gate.assert_exit(0, r, "the whole run passes")
+        whole_tree = _receipt(gate, receipt_path).get("headTree")
+        gate.assertions += 1
+        if not whole_tree:
+            gate.log_fail("the whole run's receipt names no tree, so nothing can advance from it")
+
+        (repo / "agent" / "reviews" / "b.md").write_text("b\n", encoding="utf-8")
+        _git(gate, repo, "add", "-A")
+        _git(gate, repo, "commit", "-q", "-m", "chore(reviews): record")
+        (work / "ran.log").unlink()
+        r = _quick(gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path))
+        gate.assert_exit(0, r, "the advance passes")
+        gate.assert_contains(r.out, "ADVANCE", "the run says it advanced")
+        rc = _receipt(gate, receipt_path)
+        step = (rc.get("advances") or [{}])[0]
+        gate.assert_eq(rc.get("headTree"), whole_tree, "an advance leaves headTree alone")
+        gate.assert_eq(step.get("from"), whole_tree, "the step starts at the receipt's tree")
+        gate.assert_eq(
+            step.get("to"), _git(gate, repo, "rev-parse", "HEAD^{tree}"), "the step ends at HEAD"
+        )
+        gate.assert_eq(step.get("paths"), ["agent/reviews/b.md"], "the step names what moved")
+        gate.assert_eq(step.get("gates"), {"fast:reader": 0}, "the glob's reader ran and passed")
+        gate.assert_eq(
+            (work / "ran.log").read_text(encoding="utf-8").split(),
+            ["reader"],
+            "only the reader ran, not the lane",
+        )
+
+        (repo / "agent" / "quiet").mkdir()
+        (repo / "agent" / "quiet" / "c.md").write_text("c\n", encoding="utf-8")
+        _git(gate, repo, "add", "-A")
+        _git(gate, repo, "commit", "-q", "-m", "chore: quiet record")
+        r = _quick(gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path))
+        gate.assert_exit(0, r, "a reader-less advance passes")
+        chain = _receipt(gate, receipt_path).get("advances") or []
+        gate.assert_eq(len(chain), 2, "the second record-only commit chains a second step")
+        gate.assert_eq(chain[1].get("from"), chain[0].get("to"), "the chain is unbroken")
+        gate.assert_eq(chain[1].get("gates"), {}, "a glob with no reader advances with no gate")
+
+        # CONTROL: one code path in the commit and the whole lane runs again.
+        (repo / "lib" / "untouched_leaf.sh").write_text("echo code\n", encoding="utf-8")
+        _git(gate, repo, "commit", "-q", "-am", "fix: code")
+        r = _quick(gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path))
+        gate.assert_exit(0, r, "the whole re-run passes")
+        gate.assert_contains(
+            r.out, "outside the record set", "the run says why it was not an advance"
+        )
+        rc = _receipt(gate, receipt_path)
+        gate.assert_eq(rc.get("advances"), [], "a whole re-run starts a fresh chain")
+        gate.assert_eq(
+            rc.get("headTree"),
+            _git(gate, repo, "rev-parse", "HEAD^{tree}"),
+            "the whole re-run vouches for the new tree",
+        )
+
+        # A RENAME OUT OF CODE INTO THE RECORD SET is not record-only: without --no-renames the diff lists only the new `agent/reviews/` path and the commit advanced, which block_unverified_push (diffing with --no-renames) then refused.
+        _git(gate, repo, "mv", "lib/untouched_leaf.sh", "agent/reviews/moved.md")
+        _git(gate, repo, "commit", "-q", "-m", "chore: move a leaf into the records")
+        r = _quick(gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path))
+        gate.assert_exit(0, r, "the run after the rename passes")
+        gate.assert_contains(
+            r.out, "outside the record set", "a rename from code into the records is no advance"
+        )
+        gate.assert_eq(
+            _receipt(gate, receipt_path).get("advances"), [], "the rename ran the whole lane"
+        )
+        gate.log_pass(
+            "a record-only commit advanced the receipt through its reader alone, a second one "
+            "chained, and a code commit and a rename out of code each ran the whole lane again"
         )

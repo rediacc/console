@@ -280,6 +280,14 @@ export function createReporter(opts: ReporterOptions) {
         }
       }
 
+      // THE GRANTS (agent/plans/PLAN-prepush-full-cpu.md part 1): every elastic gate with the cores it was told, so a run that starved its widest gate says so in one line.
+      const elastic = results.filter((r) => r.elastic === true && r.grantedCores !== undefined);
+      if (elastic.length > 0) {
+        opts.out(
+          `elastic grants: ${elastic.map((r) => `${r.id} ${r.grantedCores} core(s)`).join(', ')}\n`
+        );
+      }
+
       const u = meta.util;
       if (u !== undefined) {
         const cs = (n: number): string => `${n.toFixed(1)} core-s`;

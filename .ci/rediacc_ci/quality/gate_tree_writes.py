@@ -879,11 +879,18 @@ def real_checks(res: Result, lock: list, check: object) -> None:
     buckets = [v.bucket for v in res.verdicts]
     _call(check, "REAL: at least one SAFE (TEMP) site", "SAFE" in buckets)
     _call(check, "REAL: at least one MODE-GATED site", "MODE-GATED" in buckets)
+    # The pairing still exists somewhere (check:ci-guard-mutations, check:ci-renet-types and others write the tree and claim it), so the rule this gate enforces is not vacuous on the live lock.
+    _call(
+        check,
+        "REAL: at least one gate carries both tree:repo and writesTree",
+        any(isinstance(e, dict) and exclusive_tree(e) and bool(e.get("writesTree")) for e in lock),
+    )
+    # check:ci-pytest stopped writing the tree (PLAN-prepush-full-cpu PF15/PF16: the writers plant into copies, a tripwire catches a new one), so it must claim NEITHER: a returned `tree:repo` would serialize the critical path against every other tree reader again.
     pytest = next((e for e in lock if isinstance(e, dict) and e.get("id") == "check:ci-pytest"), {})
     _call(
         check,
-        "REAL: check:ci-pytest carries both tree:repo and writesTree",
-        exclusive_tree(pytest) and bool(pytest.get("writesTree")),
+        "REAL: check:ci-pytest claims neither tree:repo nor writesTree",
+        bool(pytest) and not exclusive_tree(pytest) and not pytest.get("writesTree"),
     )
 
 

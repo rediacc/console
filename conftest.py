@@ -61,6 +61,7 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
     """
     if not config.pluginmanager.hasplugin("xdist"):
         return
+    _order_longest_first(config, items)
     unsafe = _real_tree_twins()
     # Memoised per module, because `group_for` is cheap but `item.module` is asked about nine thousand times and the answer cannot differ between two items of the same module.
     seen: dict[str, str | None] = {}
@@ -74,6 +75,25 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
         group = seen[name]
         if group:
             item.add_marker(pytest.mark.xdist_group(group))
+
+
+def _order_longest_first(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """Reorder `items` so the longest-measured files start first (agent/plans/PLAN-prepush-full-cpu.md PF18).
+
+    UNDER xdist ONLY, because a serial run's wall is the sum whatever the order. The measurement is `.ci/config/lane-durations.json`'s per-file `units` (see `xdist_groups.unit_durations` for why the tracked file and not the local junit), and the sort is stable, so items keep their order within a file.
+    """
+    durations, default = xdist_groups.unit_durations()
+    if not durations:
+        return
+    root = config.rootpath
+    files = []
+    for item in items:
+        try:
+            files.append(str(item.path.relative_to(root)))
+        except ValueError:
+            files.append(str(item.path))
+    order = xdist_groups.order_longest_first(files, durations, default)
+    items[:] = [items[i] for i in order]
 
 
 # --------------------------------------------------------------------------- The untracked-file snapshot, and the reason it is session-scoped and autouse.
@@ -148,3 +168,150 @@ def _tree_snapshot(request):
         "  Set %s=0 only for a suite deliberately driven against a dirty checkout."
         % (len(added), "\n".join("    %s" % path for path in added), last, SNAPSHOT_ENV)
     )
+
+
+# --------------------------------------------------------------------------- The session TRIPWIRE on tracked paths (agent/plans/PLAN-prepush-full-cpu.md PF15, 2026-10-05).
+#
+# WHY IT EXISTS. Three gate tests used to plant into the real tree, and the suite bought that off with the `real-tree` xdist group (one worker) and an exclusive `tree:repo` claim on check:ci-pytest, which held six other gates out of the pool for the whole pytest wall. The plants moved into copies and both serialisations were dropped. This is what keeps them dropped: a test that changes a tracked path, or leaves a new file, under the testpaths roots or the directories the gate tests scan fails the run that did it, naming the path. The `_tree_snapshot` fixture above watches a different place (strays at the root, in `agent/` and `.claude/hooks/stop`) and stays as it is.
+#
+# IN THE CONTROLLER ONLY, before collection and after the last report. Under xdist the workers start at different moments, so a per-worker pair would blame a file one worker wrote on every other worker; the controller's pair spans the whole run once. A serial run has no workers and the same two hooks run in-process.
+#
+# ON CONTENT, NOT ON THE STATUS LETTER. A file already modified before the run reads ` M` before and after however much a test rewrites it, so each listed path is keyed on its status AND a hash of its bytes.
+#
+# UNKNOWN IS A FAILURE. If git cannot answer at the start, nothing is being checked, and a green run would claim a tree it never looked at.
+#
+# IN A SHARED CHECKOUT a concurrent session's edit under these roots during the run reads as a difference too. The pre-push runs in its push clone, where the tree is still; set TREE_SNAPSHOT=0 (the switch the fixture above already honours) only for a suite deliberately driven against a tree others are editing.
+
+#: The directories the gate tests scan, beside the testpaths roots read from the ini.
+TRIPWIRE_SCAN_DIRS = ("scripts", ".ci/scripts", "packages/www/scripts")
+_TRIPWIRE_KEY = pytest.StashKey[dict[str, tuple[str, str]] | None]()
+_TRIPWIRE_LINES = pytest.StashKey[list[str]]()
+
+
+def tripwire_scope(config: pytest.Config) -> list[str]:
+    """The testpaths roots plus the gate tests' scan directories, as git pathspecs relative to the rootdir."""
+    return [*config.getini("testpaths"), *TRIPWIRE_SCAN_DIRS]
+
+
+def parse_porcelain(raw: str) -> list[tuple[str, str]]:
+    """`(status, path)` pairs from `git status --porcelain=v1 -z`. A rename or copy carries its source as a second NUL field, which names the old path and is skipped."""
+    out: list[tuple[str, str]] = []
+    fields = raw.split("\0")
+    i = 0
+    while i < len(fields):
+        entry = fields[i]
+        i += 1
+        if len(entry) < 4:
+            continue
+        status, path = entry[:2], entry[3:]
+        out.append((status, path))
+        if status[0] in "RC":
+            i += 1
+    return out
+
+
+def tree_state(root, scope: list[str]) -> dict[str, tuple[str, str]] | None:
+    """`{path: (status, sha256 of its bytes or "<absent>")}` for every changed or untracked path under `scope`, or None when git cannot answer."""
+    import hashlib  # noqa: PLC0415 -- only the tripwire needs it, and conftest is imported by every run
+
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(root),
+                "status",
+                "--porcelain=v1",
+                "-z",
+                "--untracked-files=all",
+                "--",
+                *scope,
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=120,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode != 0:
+        return None
+    state: dict[str, tuple[str, str]] = {}
+    for status, rel in parse_porcelain(result.stdout):
+        path = root / rel
+        try:
+            digest = hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else "<absent>"
+        except OSError:
+            digest = "<unreadable>"
+        state[rel] = (status, digest)
+    return state
+
+
+def tripwire_diff(
+    before: dict[str, tuple[str, str]], after: dict[str, tuple[str, str]]
+) -> list[str]:
+    """Every path whose status or bytes differ between the two states, sorted."""
+    return sorted(p for p in set(before) | set(after) if before.get(p) != after.get(p))
+
+
+def _tripwire_off(config: pytest.Config) -> bool:
+    return os.environ.get(SNAPSHOT_ENV) == "0" or hasattr(config, "workerinput")
+
+
+def pytest_sessionstart(session: pytest.Session) -> None:
+    config = session.config
+    if _tripwire_off(config):
+        return
+    config.stash[_TRIPWIRE_KEY] = tree_state(config.rootpath, tripwire_scope(config))
+
+
+def pytest_sessionfinish(session: pytest.Session) -> None:
+    config = session.config
+    if _tripwire_off(config) or _TRIPWIRE_KEY not in config.stash:
+        return
+    before = config.stash[_TRIPWIRE_KEY]
+    scope = tripwire_scope(config)
+    lines: list[str] = []
+    config.stash[_TRIPWIRE_LINES] = lines
+    say = lines.append
+
+    after = tree_state(config.rootpath, scope)
+    if before is None or after is None:
+        say(
+            "TREE TRIPWIRE UNCHECKED: `git status` could not be read in %s, so no test was shown not to "
+            "have changed a tracked path under %s. Unknown is not clean."
+            % (config.rootpath, ", ".join(scope))
+        )
+        session.exitstatus = pytest.ExitCode.TESTS_FAILED
+        return
+    changed = tripwire_diff(before, after)
+    if not changed:
+        # The shape, so a reader can see it ran and over what. Not under -q, which keeps the nested parity runs' output unchanged (see pytest_report_header).
+        if config.get_verbosity() >= 0:
+            say(
+                "tree tripwire: 0 of %d listed path(s) changed under %s"
+                % (len(after), ", ".join(scope))
+            )
+        return
+    say(
+        "TREE TRIPWIRE: %d path(s) under %s changed during this session:"
+        % (len(changed), ", ".join(scope))
+    )
+    for rel in changed:
+        say(
+            "    %s  %s -> %s"
+            % (rel, (before.get(rel) or ("--", ""))[0], (after.get(rel) or ("--", ""))[0])
+        )
+    say(
+        "  A test wrote the tracked tree. Plant into a copy instead (test_gate_gate_anti_vacuity.py's "
+        "empty_tree_fixture, test_gate_paths_exist.py's planted_fixture). In a checkout other sessions are "
+        "editing, a concurrent edit under these roots reads the same way; the pre-push runs in its push "
+        "clone, where the tree is still."
+    )
+    session.exitstatus = pytest.ExitCode.TESTS_FAILED
+
+
+def pytest_terminal_summary(terminalreporter, config: pytest.Config) -> None:
+    """The tripwire's verdict, printed in the summary: `pytest_sessionfinish` above runs inside the terminal reporter's own finish, before this section, and writing from there lands on the progress line."""
+    for line in config.stash.get(_TRIPWIRE_LINES, []):
+        terminalreporter.write_line(line)

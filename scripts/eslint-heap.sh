@@ -99,6 +99,34 @@ if [[ "$avail_mb" =~ ^[0-9]+$ ]] && ((avail_mb > 0)); then
     fi
 fi
 
+# WORKERS. eslint 9.39 lints on one thread unless given --concurrency, so a run
+# granted many cores used about 1.4 of them. No static count (operator ruling
+# 2026-10-05): the width is the runner's grant, CI_RUNNER_CORES, and with no
+# grant eslint keeps its own default (no flag). MEASURED 2026-10-05 on
+# packages/cli (24 cores, a loaded box): no flag 106s / 4.4GB peak RSS; 2 workers
+# 84s / 7.4GB; 4 workers 56s / 12GB; 8 workers 187s / 21GB and then an OOM kill
+# (137) on the retry. Each worker costs about 3GB, so the grant alone is not a
+# safe width: it is capped by what MemAvailable can back after the reserve.
+# ESLINT_WORKER_MB tunes that estimate. A caller that passes its own
+# --concurrency keeps it.
+conc_args=()
+have_conc=0
+for a in "$@"; do
+    [[ "$a" == --concurrency* ]] && have_conc=1
+done
+grant="${CI_RUNNER_CORES:-}"
+if ((have_conc == 0)) && [[ "$grant" =~ ^[0-9]+$ ]] && ((grant > 1)); then
+    workers="$grant"
+    if [[ "$avail_mb" =~ ^[0-9]+$ ]] && ((avail_mb > 0)); then
+        mem_workers=$(((avail_mb - RESERVE_MB) / ${ESLINT_WORKER_MB:-3000}))
+        if ((mem_workers < workers)); then
+            echo "eslint-heap: ${avail_mb}MB available; capping eslint workers from the granted ${grant} to $((mem_workers > 1 ? mem_workers : 1)) (about ${ESLINT_WORKER_MB:-3000}MB each)." >&2
+            workers=$mem_workers
+        fi
+    fi
+    ((workers > 1)) && conc_args=("--concurrency=${workers}")
+fi
+
 # `exec` so eslint's own exit code is this script's, with no wrapper in between
 # to swallow a 137 the way the original pipeline did.
-exec env NODE_OPTIONS="--max-old-space-size=${heap}" npx eslint "$@"
+exec env NODE_OPTIONS="--max-old-space-size=${heap}" npx eslint ${conc_args[@]+"${conc_args[@]}"} "$@"

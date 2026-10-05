@@ -44,10 +44,9 @@ import ast
 import hashlib
 import pathlib
 
-from rediacc_ci import gitx, paths, xdist_groups
+from rediacc_ci import gitx, paths
 
-# The scan lists the working tree (`git ls-files --cached --others`), which real-tree writers plant probes into and remove mid-suite: on 2026-10-01 a `-n 16` run failed here on test_gate_shrink_only_composition.py's `quality/zz_composition_string_probe_port_*.py`, listed and gone before it was read. Same group, so the two never run side by side.
-XDIST_GROUP = xdist_groups.REAL_TREE_GROUP
+# NO XDIST GROUP SINCE 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF15). The scan lists the working tree (`git ls-files --cached --others`), and on 2026-10-01 a `-n 16` run failed here on test_gate_shrink_only_composition.py's `quality/zz_composition_string_probe_port_*.py`, listed and gone before it was read, so this reader joined the real-tree group. Every such plant now lives in a scratch copy, so nothing in the suite plants into the listed tree, and the session tripwire (`test_tree_tripwire.py`) fails a run in which a test changes one.
 
 #: relpath -> why this hop is correct forever. Each reason is checked for liveness
 #: below, and each is PRINTED on every run: a quiet exemption is how a control stops

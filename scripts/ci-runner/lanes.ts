@@ -272,8 +272,8 @@ export interface ShardInput {
   mutex?: string[];
   /** Ordering edges. An edge INSIDE the lane is a co-location constraint. */
   needs?: string[];
-  /** Scheduler slots. Default 1, the same default pool.ts uses. */
-  weight?: number;
+  /** Declared elastic width (gate-spec `cores`). Its `min` prices a gate in the count currency below; the lock no longer carries a `weight`. */
+  cores?: { min: number; max: number | 'all' };
   heavy?: boolean;
   slow?: boolean;
   ci: { kind: string; job?: string; step?: string };
@@ -319,6 +319,7 @@ export interface ShardPlan {
 interface Unit {
   key: string;
   ids: string[];
+  /** Count-currency cost: the sum of each member's declared `cores.min` (default 1). Used only for ids with no measured duration and no `durations` map to price them from. */
   weight: number;
   slow: number;
   heavy: number;
@@ -577,6 +578,38 @@ function unitCost(unit: Unit, durations: Readonly<Record<string, number>> | unde
   return unit.weight;
 }
 
+/**
+ * THE CURRENCY, after the lock lost `weight` (operator ruling 2026-10-05). Two currencies never mix in one lane: milliseconds when a `durations` map prices the lane, otherwise a count (one per gate, or its declared `cores.min`). `withMeasuredFallback` is what keeps them apart. A map that prices SOME of a lane's units used to leave the rest at a count of 1 beside the others' 10,000 ms, so an unmeasured gate weighed nothing and LPT stacked them all in one shard; an unmeasured member now costs the MEDIAN measured member of the lane, a neutral guess in the same unit. A lane the map prices not at all (no id matches) stays in counts, byte-identical to no map.
+ */
+function withMeasuredFallback(
+  entries: readonly ShardInput[],
+  durations: Readonly<Record<string, number>> | undefined
+): Readonly<Record<string, number>> | undefined {
+  if (durations === undefined) return undefined;
+  const measured = entries
+    .map((e) => durations[e.id])
+    .filter((ms): ms is number => typeof ms === 'number' && Number.isFinite(ms) && ms > 0)
+    .sort((a, b) => a - b);
+  if (measured.length === 0) return durations;
+  const median = measured[Math.floor(measured.length / 2)] as number;
+  const out: Record<string, number> = { ...durations };
+  for (const e of entries) if (out[e.id] === undefined) out[e.id] = median;
+  return out;
+}
+
+/**
+ * The measured CI step p90 of each gate, in milliseconds, from a parsed `.ci/config/lane-durations.json` (`gate_step_p90_seconds`), as `shardPlan`'s `durations` argument. A shard plan priced by count put 21 s and 216 s of measured step time into two `quality-code` legs of equal count (PLAN-prepush-full-cpu, writer F), so every planner of the committed legs prices by this map: gate-bind's emitter, check-quality-complete's verifier, and the runner's own scheduling fallback. Absent, malformed or non-positive entries are left out, and `shardPlan` then costs those gates at the lane's median.
+ */
+export function stepDurationsMs(laneDurations: unknown): Record<string, number> {
+  const out: Record<string, number> = {};
+  const raw = (laneDurations as { gate_step_p90_seconds?: Record<string, unknown> } | null)
+    ?.gate_step_p90_seconds;
+  for (const [id, s] of Object.entries(raw ?? {})) {
+    if (typeof s === 'number' && Number.isFinite(s) && s > 0) out[id] = s * 1000;
+  }
+  return out;
+}
+
 export function shardPlan(
   lock: readonly ShardInput[],
   caps: ReadonlyMap<string, LaneCapabilities>,
@@ -697,7 +730,7 @@ export function shardPlan(
         reasons: [],
       };
       unit.ids.push(e.id);
-      unit.weight += e.weight ?? 1;
+      unit.weight += Math.max(1, e.cores?.min ?? 1);
       unit.slow += e.slow ? 1 : 0;
       unit.heavy += e.heavy ? 1 : 0;
       units.set(root, unit);
@@ -749,12 +782,13 @@ export function shardPlan(
       };
     }
 
-    // BALANCE. Longest-processing-time first: the achievable floor is the heaviest single unit, so it has to be placed while every shard is still empty. `slow` breaks a cost tie because a slow gate is the one whose real cost `weight` (the fallback currency) is least likely to describe.
+    // BALANCE. Longest-processing-time first: the achievable floor is the heaviest single unit, so it has to be placed while every shard is still empty. `slow` breaks a cost tie because a slow gate is the one whose real cost the count currency is least likely to describe.
     //
     // T2.9: the currency is `unitCost` (measured p90 milliseconds when every member id of the unit has one, else `weight`), not `weight` directly. For every lane measured so far (`durations` absent, or present with no entries matching this lane's ids -- true of `quality-code` until T3.2 runs) `unitCost` returns exactly `unit.weight` for every unit, so this ordering and the packing below stay unchanged.
+    const priced = withMeasuredFallback(entries, durations);
     const ordered = [...unitList].sort((a, b) => {
-      const costB = unitCost(b, durations);
-      const costA = unitCost(a, durations);
+      const costB = unitCost(b, priced);
+      const costA = unitCost(a, priced);
       if (costB !== costA) return costB - costA;
       if (b.slow !== a.slow) return b.slow - a.slow;
       if (b.ids.length !== a.ids.length) return b.ids.length - a.ids.length;
@@ -768,7 +802,7 @@ export function shardPlan(
       // PEAK, NOT RAW COUNT. A mutex- or step-merged unit's `heavy` field is a sum over ids that never run at once (one mutex group, one `run:` block), so packing and the shard's own receipt must use `concurrentHeavy(unit)` here, the same peak the refusal above is computed against -- using the raw sum would both refuse a bin for a unit that only ever holds one heavy process and
       // report a shard's `heavy` count higher than what can ever be resident.
       const peak = concurrentHeavy(unit);
-      const cost = unitCost(unit, durations);
+      const cost = unitCost(unit, priced);
       let pick = -1;
       for (let i = 0; i < want; i += 1) {
         if (peak > 0 && binHeavy[i] > 0) continue;

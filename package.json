@@ -166,6 +166,7 @@
     "check:ci-bws-map": ".ci/scripts/quality/check_bws_map.py",
     "check:ci-actions-vars": ".ci/scripts/quality/check_actions_vars.py",
     "check:ci-literal-sources": ".ci/scripts/quality/check_literal_sources.py",
+    "check:ci-record-paths": ".ci/scripts/quality/check_record_paths.py",
     "check:ci-account-env-retired": ".ci/scripts/quality/check_account_env_retired.py",
     "check:ci-bws-rotation-notice": ".ci/scripts/quality/check_bws_rotation_notice.py",
     "check:ci-actions-allowlist": ".ci/scripts/quality/check_actions_allowlist.py",

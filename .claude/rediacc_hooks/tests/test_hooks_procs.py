@@ -5,7 +5,7 @@ Editing a shell script a process is RUNNING corrupts the running interpreter: ba
 THESE NEED A GENUINELY LIVE PROCESS, not a stubbed pgrep. Each guard's whole claim is that it reads the process table, and a stub would prove the arithmetic while leaving that claim untested. So the fixtures spawn real ones, and every block also carries the LIVENESS control -- the same payload once the process is gone -- because without it the guard could be keyed on the filename
 and every case would still pass.
 
-WHY THEY SHARE test_guards_differential's XDIST GROUP, and not one of their own. A group pins its own tests to ONE worker; it does NOT stop a DIFFERENT group running beside it on another. These fixtures are visible to every process on the machine, and `test_guards_differential` asks the process table the same question about the same two guards. Measured 2026-09-09: run
+WHY THEY SHARE test_guards_process_table's XDIST GROUP, and not one of their own. (That file holds the guards differential's process-table cases since 2026-10-05, agent/plans/PLAN-prepush-full-cpu.md PF11; the rest of `test_guards_differential` no longer carries the group, because only these guards read the process table.) A group pins its own tests to ONE worker; it does NOT stop a DIFFERENT group running beside it on another. These fixtures are visible to every process on the machine, and the differential's process-table cases ask the process table the same question about the same guards. Measured 2026-09-09: run
 concurrently, its anti-vacuity controls both went red --
 
     these guards answered identically on every case, so comparing them proves
@@ -22,7 +22,7 @@ import time
 
 import pytest
 
-from rediacc_hooks.tests import hookblocks, hookcases, test_guards_differential
+from rediacc_hooks.tests import hookblocks, hookcases, test_guards_process_table
 
 # The fixtures spawn `sleep 8` and the case must be asked while it is alive. 0.3s is what the shell suite waited for the process to appear in the table.
 SPAWN_SETTLE_S = 0.3
@@ -37,7 +37,7 @@ def path_json(path) -> str:
     return hookcases.path_json(str(path))
 
 
-@pytest.mark.xdist_group(test_guards_differential.XDIST_GROUP)
+@pytest.mark.xdist_group(test_guards_process_table.XDIST_GROUP)
 def test_a_self_matching_pgrep_wait_really_does_hang():
     """THE PREMISE, MEASURED RATHER THAN ASSERTED.
 
@@ -90,7 +90,7 @@ def test_a_self_matching_pgrep_wait_really_does_hang():
     block.done()
 
 
-@pytest.mark.xdist_group(test_guards_differential.XDIST_GROUP)
+@pytest.mark.xdist_group(test_guards_process_table.XDIST_GROUP)
 def test_block_edit_of_running_script(tmp_path):
     block = hookblocks.Block("running-script")
     fixture = tmp_path / "running-fixture.sh"
@@ -187,7 +187,7 @@ def test_block_edit_of_running_script(tmp_path):
     block.done()
 
 
-@pytest.mark.xdist_group(test_guards_differential.XDIST_GROUP)
+@pytest.mark.xdist_group(test_guards_process_table.XDIST_GROUP)
 def test_block_bash_write_to_running_script(tmp_path):
     """block_bash_write_to_running_script shipped 2026-08-27 with ZERO cases in either direction -- the only guard in the tree in that state, and the reason check:ci-hook-integrity was red."""
     block = hookblocks.Block("bash-write")

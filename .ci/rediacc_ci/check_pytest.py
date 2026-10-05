@@ -62,7 +62,7 @@ import tomllib
 # is on sys.path. Everything after this line goes through rediacc_ci.paths.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-from rediacc_ci import paths, proc
+from rediacc_ci import core_lease, paths, proc
 from rediacc_ci.controls import Controls
 
 # See the module docstring for why this is a constant and floor 2 is not.
@@ -107,7 +107,7 @@ def shard_min_tests(of: int) -> int:
 #
 # THIS NUMBER BOUNDS ONE LEG, NOT THE CORPUS. The 1800 -> 600 paragraph above said the unsharded invocation "inherits whatever the corpus measures on the day it is run". It did not: until 2026-09-30 the whole-corpus path read this same constant, so `npm run check:ci-pytest` with no `--shard` gave the ENTIRE corpus a one-leg budget.
 # Measured 2026-09-30 on this 24-core host at `-n 8 --dist loadgroup`, load average 7-27 from concurrent sessions: 19,487 items, 7,335 test-seconds, 1014.06s wall, 90% of the progress bar at 775s. 7,335 / 8 workers is 917s of pure work, so no packing fits 840s: two runs that day ended "did not finish within 840s" with no verdict.
-# The floor is throughput, not one pinned fixture: the 294.65s guards fixture `PYTEST_JOBS_CAP` below cites is 233s of test time now, and the largest module is test_core_devbox.py at 1,006 test-seconds spread over all eight workers (its stub farm starts a Python interpreter per stubbed call).
+# The floor is throughput, not one pinned fixture: the 294.65s guards fixture the old `-n 8` cap cited is 233s of test time now, and the largest module is test_core_devbox.py at 1,006 test-seconds spread over all eight workers (its stub farm starts a Python interpreter per stubbed call).
 # So the whole-corpus run gets `whole_corpus_timeout_s()` instead: this leg budget times the committed manifest's leg count. The legs are balanced by measured duration, so N legs' budget is the model of the whole, and it moves with this constant rather than drifting from it. 840 x 3 = 2520s, 2.5x the measured 1014s, with room for a host capping `-n` below 8.
 # CI never takes that path (ci-quality.yml passes `--shard` on every leg), which is why the whole-corpus bound is a derivation and not a second declared timer: `check:ci-inner-timeout-reachable` compares declared timers against the job ceiling, and no job ceiling applies to a run CI does not make.
 RUN_TIMEOUT_S = int(os.environ.get("PYTEST_RUN_TIMEOUT_S") or 840)
@@ -124,35 +124,35 @@ def whole_corpus_timeout_s() -> int:
     return RUN_TIMEOUT_S * WHOLE_CORPUS_LEGS
 
 
-# T1.6 (PLAN-ci-time-budget): per-test durations, so budget_report.py --refresh (T3.2) has a real per-unit p90 for this lane instead of falling back to `weight`. `reports/` is gitignored at the repo root, and `ci-quality.yml`'s `quality-pytest` job uploads this exact directory as `unit-durations-quality-pytest-<sha>`, `if: always()` so a red run's partial durations are captured too -- T3.2 only reads GREEN runs, but a red run is not this constant's business to guess at.
-JUNIT_XML_RELPATH = pathlib.PurePosixPath("reports/quality-pytest/junit.xml")
+# T1.6 (PLAN-ci-time-budget): per-test durations, so budget_report.py --refresh (T3.2) has a real per-unit p90 for this lane instead of falling back to `weight`. `.ci/cache/` is the scratch root (gitignored, and the one place check:ci-gate-tree-writes files as SCRATCH: since PLAN-prepush-full-cpu PF16 this gate claims no `tree:repo`, so its report may not land in the tree), and `ci-quality.yml`'s `quality-pytest` job uploads this exact directory, with include-hidden-files because `.ci` is a dot directory, as `unit-durations-quality-pytest-<sha>`, `if: always()` so a red run's partial durations are captured too -- T3.2 only reads GREEN runs, but a red run is not this constant's business to guess at.
+JUNIT_XML_RELPATH = pathlib.PurePosixPath(".ci/cache/quality-pytest/junit.xml")
 
 
 def junit_xml_path(root: pathlib.Path, shard_index: int | None = None) -> pathlib.Path:
     """Where `--junitxml` writes, given the repo root. A pure function, so the selftest checks it without a pytest run: it moves with `root` rather than being hard-coded absolute, which is the property that keeps this gate runnable from a worktree other than the one it was written in.
 
     `shard_index` NONE (the default) is the unsharded path, byte-identical to before shard support existed. A leg gets its own `junit-shard-<N>.xml` sibling rather than sharing the bare name: each CI leg is its own job on its own runner, so this is not about avoiding a CI collision, it is about `npm run ci -- --lane quality-pytest --shard i/N` staying safe when a developer reproduces two legs locally, one after another or (accidentally) at once, against the same checkout. `budget_report.parse_unit_duration_artifact` matches any member ending `.xml` inside the uploaded zip, so the extra path segment changes nothing about how a leg's own artifact is read."""
-    if shard_index is None:
-        return root / JUNIT_XML_RELPATH
-    return root / "reports" / "quality-pytest" / ("junit-shard-%d.xml" % shard_index)
+    name = "junit.xml" if shard_index is None else "junit-shard-%d.xml" % shard_index
+    return root / ".ci" / "cache" / "quality-pytest" / name
 
 
-# HOW MANY WORKERS, and it is not `auto`. `-n auto` takes every core (24 here) and oversubscribes against the ci-runner's own 22-slot pool, which is already running 356 other gates. The shape and the reason are copied from `battery._default_jobs` rather than re-derived.
+# HOW MANY WORKERS: the cores granted at launch, never a constant. Operator ruling 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md): no static worker counts in any local or CI lane; every parallel tool sizes itself from the cores actually available when it starts. This supersedes the "STOP AT 2.08x" ruling that fixed this lane at `-n 8` (`PYTEST_JOBS_CAP = 8`) with a matching `weight: 8` in the manifest.
 #
-# `-n` AND `weight` MOVE TOGETHER. `pool.ts:242` caps effective weight at the pool size, so `weight: 8` reads as "the whole pool" on a 2-slot CI runner and as 8 of 22 locally. An `-n` larger than the declared weight is an undeclared claim on the machine, which is how a parallel gate makes a lane SLOWER.
+# `core_lease.granted_cores()` is the one answer: the ci-runner's grant (`CI_RUNNER_CORES`, exported when the scheduler admits this gate with its elastic `cores: {min: 2, max: 'all'}` declaration), else the CPUs this process may run on (`os.sched_getaffinity`, so a container or taskset mask is honoured where `os.cpu_count()` would claim the whole host). CI runs each leg as its own step, so a leg sizes to its runner with no setting.
 #
-# WHY 8 AND NOT MORE, measured on the full corpus: serial 823.93s; `-n 8` with working groups 381.41s (2.16x); `-n 16` 377.18s. Sixteen buys nothing, because the floor is now the 294.65s guards fixture pinned to a single worker. Raising this number is pointless until that driver is parallelised internally.
+# `-n` AND THE GRANT ARE THE SAME NUMBER BY CONSTRUCTION, which is what the old `-n`/`weight` pairing was hand-keeping: an `-n` wider than the scheduler's budget is an undeclared claim on the machine, and reading the grant cannot drift from it.
 #
-# THAT FLOOR IS GONE as of 2026-09-30: the guards differential is 233s of test time, and the whole corpus is 7,335 test-seconds for 1014.06s wall (see RUN_TIMEOUT_S). The run is now throughput-bound, so more workers would shorten it, but `-n` still moves only with the lock's `weight: 8` for the reason above, and that trade is the ci-runner pool's to make, not this constant's.
-PYTEST_JOBS_CAP = 8
+# THE OLD FLOOR WAS THE GROUPS, NOT THE COUNT. `-n 16` bought nothing over `-n 8` on 2026-09-07 because a single xdist group (the guards differential) pinned about 460 s to one worker. PF11-PF18 of the plan break those serial chains up, which is what lets a wider grant shorten the wall.
+#
+# `PYTEST_JOBS` stays as the caller's own override (1 is serial). The `-n 2` in the selftest below is not a width: it is a header-parse fixture that needs exactly two real workers.
 
 
 def jobs() -> int:
-    """Worker count for the parallel run. PYTEST_JOBS overrides; 1 is serial."""
+    """Worker count for the parallel run: PYTEST_JOBS when set to a positive integer (1 is serial), else the cores granted at launch."""
     override = os.environ.get("PYTEST_JOBS")
     if override and override.isdigit() and int(override) > 0:
         return int(override)
-    return max(1, min(PYTEST_JOBS_CAP, os.cpu_count() or 1))
+    return core_lease.granted_cores()
 
 
 # Mirrors `python_files` in the root pyproject.toml. Pinned to one form there so the corpus count below and pytest's own collection cannot disagree about which files are in scope.
@@ -501,9 +501,9 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
 
     # -- T1.6: junit_xml_path, pure and root-relative
     c.check(
-        "junit_xml_path resolves under reports/quality-pytest, the path ci-quality.yml's quality-pytest job uploads as unit-durations-quality-pytest-<sha>",
+        "junit_xml_path resolves under .ci/cache/quality-pytest, the path ci-quality.yml's quality-pytest job uploads as unit-durations-quality-pytest-<sha>",
         junit_xml_path(pathlib.Path("/x")),
-        pathlib.Path("/x/reports/quality-pytest/junit.xml"),
+        pathlib.Path("/x/.ci/cache/quality-pytest/junit.xml"),
     )
     c.check(
         "CONTROL: junit_xml_path moves with root rather than being hard-coded absolute -- two different roots must not collide on one file",
@@ -513,7 +513,7 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
     c.check(
         "T2.10: a shard leg gets its own junit-shard-<N>.xml sibling, not the bare unsharded name",
         junit_xml_path(pathlib.Path("/x"), shard_index=2),
-        pathlib.Path("/x/reports/quality-pytest/junit-shard-2.xml"),
+        pathlib.Path("/x/.ci/cache/quality-pytest/junit-shard-2.xml"),
     )
     c.check(
         "CONTROL: two different legs of the same root do not collide with each other either",
@@ -871,6 +871,7 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
         # -- AND THE SAME FIXTURE UNDER -n, AGAINST THE REAL PLUGIN.
         #
         # The six string controls above prove the union matches bytes THIS FILE types. They cannot prove it matches bytes pytest EMITS, and those are the ones the gate reads. An xdist release rewording its header would leave every fixture green and the real gate blind, which is the whole shape this repo keeps paying for. So the header is parsed here out of a genuine two-worker run.
+        # `-n 2` IS A FIXTURE, NOT A WIDTH, and is the one literal worker count the 2026-10-05 no-static-widths ruling leaves standing: the header being parsed is the multi-worker form ("2 workers [N items]"), so the fixture needs exactly two real workers on any host, and sizing it from the grant would change the bytes under test.
         rc, out = run_pytest(
             pytest_bin,
             d,
@@ -1223,7 +1224,8 @@ def main(argv: list[str]) -> int:
             % (index, of, len(files), corpus, leg_min_tests)
         )
         junit_path = junit_xml_path(root, shard_index=index)
-        junit_path.parent.mkdir(parents=True, exist_ok=True)
+        # A literal join, so check:ci-gate-tree-writes resolves it to the `.ci/cache` scratch root; junit_xml_path's selftest pins junit_path under this same directory.
+        (root / ".ci" / "cache" / "quality-pytest").mkdir(parents=True, exist_ok=True)
         returncode, out = run_pytest(
             pytest_bin,
             root,
@@ -1280,7 +1282,8 @@ def main(argv: list[str]) -> int:
 
     # T1.6: the parent directory is created here rather than left to pytest's junitxml plugin -- some releases refuse to write into a missing directory, and a gate that will not `mkdir -p` its own output path is a worse failure mode than the run it is judging.
     junit_path = junit_xml_path(root)
-    junit_path.parent.mkdir(parents=True, exist_ok=True)
+    # A literal join, so check:ci-gate-tree-writes resolves it to the `.ci/cache` scratch root; junit_xml_path's selftest pins junit_path under this same directory.
+    (root / ".ci" / "cache" / "quality-pytest").mkdir(parents=True, exist_ok=True)
     returncode, out = run_pytest(
         pytest_bin,
         root,

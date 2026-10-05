@@ -145,6 +145,12 @@ LOCK_REL = ("scripts", "ci-runner", "gates.lock.json")
 # THE THIRD SEAM, ADDED 2026-09-21 WITH THE PYTHON-SIDE CORPUS. Same shape as the two above, and for the same reason: a fixture-driven control that cannot move the ports directory would have to plant inside the real one.
 PORTS_DIR_ENV = "POOL_SAFETY_PORTS_DIR"
 PORTS_DIR_REL = (".ci", "rediacc_ci", "tests", "gates")
+# Every pytest testpath (pyproject.toml), because the 2026-10-05 rule is about ANY module declaring the real-tree group, and `test_canonical_sys_path_hop.py` sat in `.ci/rediacc_ci/tests`, outside the gates directory this gate used to read.
+PORT_SCAN_RELS = (
+    (".ci", "rediacc_ci", "tests"),
+    PORTS_DIR_REL,
+    (".claude", "rediacc_hooks", "tests"),
+)
 
 # A lock entry is a gate test when its `run` names a script under this prefix. `run` is a command line in the general case, so the WORD that starts with the prefix is taken rather than the whole string.
 GATES_RUN_PREFIX = ".ci/scripts/test/gates/"
@@ -416,13 +422,11 @@ def registered_writers(lock_text: str) -> list[str]:
 
 
 def port_writers(ports_dir: pathlib.Path) -> list[str]:
-    """Ported gate tests that declare themselves into the real-tree xdist group.
+    """Test modules that declare themselves into the real-tree xdist group. The answer must be EMPTY.
 
-    WHY THIS CORPUS EXISTS AT ALL, and it is the 2026-09-21 retarget. The two bash gate tests that carried `mutex: ["tree:repo"]` are retired: their pytest ports (`test_gate_gate_anti_vacuity.py`, `test_gate_generate_tag_inputs.py`) carry every case and still overwrite tracked files while they run. So the real-tree WRITERS did not go away with the twins, they changed language, and
-    a gate that kept reading only the bash half would have gone on reporting a clean battery while the writers it exists for ran somewhere it no longer looked.
+    FLIPPED 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF15/PF16). Until then a module declaring `XDIST_GROUP = xdist_groups.REAL_TREE_GROUP` was the admitted way for a pytest port to write the tracked tree, and this gate demanded that the pytest lane hold an exclusive `tree:` claim in exchange. That claim excluded six other gates for the whole pytest wall, and the group pinned its members to one worker. The three live writers (`test_gate_shrink_only_composition.py`, `test_gate_docs_gen.py`, `test_gate_paths_exist.py`) now plant into copies of the directories they scan, the two readers left the group with them, and the session tripwire in the repo-root conftest (`test_tree_tripwire.py`) fails any run in which a test changed a tracked path. So a declaration is now a finding: it means a module has gone back to writing the real tree.
 
-    A DECLARATION, NOT A SCAN, and the asymmetry with the bash half is deliberate rather than an omission. The awk-transliterated scanner below decides taint from shell redirect syntax; Python writes through `pathlib.Path.write_text`, `shutil.copy2` and `os.replace`, which carry no such shape, and a detector guessing at them is the cry-wolf machine the twin's header already
-    rejected twice. What the ports DO have is the thing bash gate tests never had: a module-level declaration the scheduler itself reads (`rediacc_ci.xdist_groups.group_for`). Reading the same declaration the scheduler schedules by is the property that made the 2026-09-09 lock retarget right, applied again.
+    A DECLARATION, NOT A SCAN, and the asymmetry with the bash half is deliberate rather than an omission. The awk-transliterated scanner below decides taint from shell redirect syntax; Python writes through `pathlib.Path.write_text`, `shutil.copy2` and `os.replace`, which carry no such shape, and a detector guessing at them is the cry-wolf machine the twin's header already rejected twice. What a write the declaration does not catch DOES leave is a changed `git status`, which is the tripwire's half.
 
     SORTED, for the same reason the bash glob is.
     """
@@ -436,9 +440,9 @@ def port_writers(ports_dir: pathlib.Path) -> list[str]:
 
 
 def lane_claims_tree_exclusively(lock_text: str, lane_id: str) -> bool:
-    """Does `lane_id`'s lock entry declare an EXCLUSIVE `tree:` resource?
+    """Does `lane_id`'s lock entry declare an EXCLUSIVE `tree:` resource? For the pytest lane the answer must now be NO (see `port_writers`).
 
-    `reads` is refused here for the same reason it is refused of a gate test: a shared claim releases the lane to run beside every other reader of the tree, and the ports inside it write that tree. `check:ci-pytest` carried `reads: ["tree:repo"]` until the two writers moved into it, which was correct while it only drove twins that read.
+    History: `check:ci-pytest` carried `reads: ["tree:repo"]` while it only drove twins that read, then `mutex: ["tree:repo"]` from 2026-09-21 while pytest ports wrote the tree, and drops the claim on 2026-10-05 once none does. A stale claim is not harmless caution: it holds check:ci-guard-mutations, check:ci-renet-types, check:ci-search-index and three more out of the pool for the whole pytest wall.
     """
     try:
         entries = json.loads(lock_text)
@@ -515,7 +519,6 @@ def main(argv: list[str] | None = None) -> int:
 
     repo_root = get_repo_root()
     gates_dir = pathlib.Path(os.environ.get(GATES_DIR_ENV) or repo_root.joinpath(*GATES_DIR_REL))
-    ports_dir = pathlib.Path(os.environ.get(PORTS_DIR_ENV) or repo_root.joinpath(*PORTS_DIR_REL))
     lock = pathlib.Path(os.environ.get(LOCK_ENV) or repo_root.joinpath(*LOCK_REL))
 
     with tempfile.TemporaryDirectory() as control_name:
@@ -548,27 +551,46 @@ def main(argv: list[str] | None = None) -> int:
 
     lock_text = lock.read_text(encoding="utf-8", errors="replace")
     registered = registered_writers(lock_text)
-    ports = port_writers(ports_dir)
-    # THE ANTI-VACUITY REFUSAL, WIDENED WITH THE CORPUS RATHER THAN RELAXED. It used to read "no bash gate test declares a mutex tree: resource", which was the whole population of real-tree writers while they were all bash. Both halves must now be empty before it fires, because a tree with zero bash writers and two Python ones is a tree this gate still has a real verdict about.
-    if not registered and not ports:
+    port_dirs = (
+        [pathlib.Path(os.environ[PORTS_DIR_ENV])]
+        if os.environ.get(PORTS_DIR_ENV)
+        else [repo_root.joinpath(*rel) for rel in PORT_SCAN_RELS]
+    )
+    scanned = sum(len(list(d.glob("test_*.py"))) for d in port_dirs if d.is_dir())
+    ports = [name for d in port_dirs for name in port_writers(d)]
+    # THE ANTI-VACUITY REFUSALS. The bash half must still see its registered writers, and the Python half must have scanned real modules: an empty corpus would make "no module declares the group" true of nothing.
+    if not registered:
         return _log_fail(
-            "check-pool-writer-safety: parsed ZERO mutex tree: writers out of %s AND found no "
-            "port under %s declaring the %r xdist group; both declaration shapes changed and "
-            "this gate would pass everything" % (lock, ports_dir, REAL_TREE_GROUP)
+            "check-pool-writer-safety: parsed ZERO mutex tree: writers out of %s; the "
+            "declaration shape changed and this gate would pass everything" % lock
         )
-    if ports and not lane_claims_tree_exclusively(lock_text, PYTEST_LANE_ID):
+    if scanned == 0:
         return _log_fail(
-            "check-pool-writer-safety: %d port(s) declare the %r xdist group and therefore write "
-            "the tracked tree (%s), but %s declares no EXCLUSIVE mutex tree: resource in %s. "
-            "That group serialises those ports against each other INSIDE pytest and says nothing "
-            "to pool.ts, so the lane is released to run beside every other reader of the same "
-            "tree. Declare mutex: ['tree:repo'] on %s in scripts/ci-runner/manifest.ts."
+            "check-pool-writer-safety: found no test_*.py module under %s; the gate is not "
+            "seeing the pytest corpus, so 'no module declares the %r group' would mean nothing"
+            % (", ".join(str(d) for d in port_dirs), REAL_TREE_GROUP)
+        )
+    if ports:
+        return _log_fail(
+            "check-pool-writer-safety: %d test module(s) declare the %r xdist group, which "
+            "means they write the tracked tree while they run: %s. Zero modules may (operator "
+            "ruling 2026-10-05, agent/plans/PLAN-prepush-full-cpu.md PF15): plant into a copy of "
+            "the directories the gate scans, the way test_gate_gate_anti_vacuity.py's "
+            "empty_tree_fixture does, and delete the declaration. The session tripwire "
+            "(test_tree_tripwire.py) fails any run that changes a tracked path."
+            % (len(ports), REAL_TREE_GROUP, ", ".join(ports))
+        )
+    if lane_claims_tree_exclusively(lock_text, PYTEST_LANE_ID):
+        return _log_fail(
+            "check-pool-writer-safety: %s declares an EXCLUSIVE tree: resource in %s, but no "
+            "pytest module writes the tracked tree any more (zero declare the %r group, and the "
+            "session tripwire enforces it). The claim holds every other tree: gate out of the "
+            "pool for the whole pytest wall. Drop mutex: ['tree:repo'] and writesTree from %s "
+            "in scripts/ci-runner/manifest.ts and regenerate the lock."
             % (
-                len(ports),
-                REAL_TREE_GROUP,
-                ", ".join(ports),
                 PYTEST_LANE_ID,
                 _strip_root(str(lock), str(repo_root)),
+                REAL_TREE_GROUP,
                 PYTEST_LANE_ID,
             )
         )
@@ -613,9 +635,9 @@ def main(argv: list[str] | None = None) -> int:
 
     log.info(
         "every real-tree writer among %d gate tests declares a mutex tree: resource (%d declared "
-        "in the lock, %d port(s) in the %r group behind %s's exclusive claim, controls fired in "
-        "both directions, so this verdict is real)"
-        % (len(gate_files), len(registered), len(ports), REAL_TREE_GROUP, PYTEST_LANE_ID)
+        "in the lock); 0 of %d test modules declare the %r group and %s holds no exclusive tree: "
+        "claim; controls fired in both directions, so this verdict is real"
+        % (len(gate_files), len(registered), scanned, REAL_TREE_GROUP, PYTEST_LANE_ID)
     )
     return 0
 
@@ -896,15 +918,21 @@ def selftest() -> int:
     live_lock = (paths.repo_root() / "scripts" / "ci-runner" / "gates.lock.json").read_text(
         encoding="utf-8"
     )
+    live_dirs = [paths.repo_root().joinpath(*rel) for rel in PORT_SCAN_RELS]
     ctl.check(
-        "REAL: the live ports directory declares at least one real-tree writer",
-        bool(port_writers(paths.repo_root().joinpath(*PORTS_DIR_REL))),
+        "REAL: the live testpaths hold test modules to scan",
+        sum(len(list(d.glob("test_*.py"))) for d in live_dirs) > 0,
         True,
     )
     ctl.check(
-        "REAL: the live lock gives the pytest lane an exclusive tree: claim",
+        "REAL: no live test module declares the real-tree group",
+        [name for d in live_dirs for name in port_writers(d)],
+        [],
+    )
+    ctl.check(
+        "REAL: the live lock gives the pytest lane NO exclusive tree: claim",
         lane_claims_tree_exclusively(live_lock, PYTEST_LANE_ID),
-        True,
+        False,
     )
 
     # -- THE WHOLE GATE, over fixture trees reached through the three seams --- Planted rather than argued, because the two refusals above are the ones a retarget can silently turn off: an anti-vacuity guard nobody has watched fire is indistinguishable from one that cannot.
@@ -917,6 +945,8 @@ def selftest() -> int:
         (gates / "test-quiet.sh").write_text(
             '#!/bin/bash\nT="$(mktemp -d)"\nprintf x >"$T/f"\n', encoding="utf-8"
         )
+        # A quiet module, so the corpus is never empty: without it every "no port" case below would red on the scanned-zero refusal and a control would pass for the wrong reason (caught on the first run of these plants).
+        (ports / "test_quiet_module.py").write_text("import os\n", encoding="utf-8")
 
         def run(lock_body: str, with_port: bool) -> int:
             lock_file = root / "lock.json"
@@ -941,11 +971,22 @@ def selftest() -> int:
                     else:
                         os.environ[name] = value
 
-        exclusive = '[{"id": "check:ci-pytest", "mutex": ["tree:repo"]}]'
-        shared = '[{"id": "check:ci-pytest", "reads": ["tree:repo"]}]'
-        ctl.check("PLANT: a port plus an exclusive lane claim passes", run(exclusive, True), 0)
-        ctl.check("PLANT: the same port behind a SHARED lane claim reds", run(shared, True), 1)
-        ctl.check("VACUITY: no bash writer and no port reds", run(shared, False), 1)
+        writer = '{"id": "gate-test:w", "run": ".ci/scripts/test/gates/test-quiet.sh", "mutex": ["tree:repo"]}'
+        clean = '[%s, {"id": "check:ci-pytest", "reads": ["www-dist"]}]' % writer
+        exclusive = '[%s, {"id": "check:ci-pytest", "mutex": ["tree:repo"]}]' % writer
+        ctl.check("PLANT: no port and no exclusive lane claim passes", run(clean, False), 0)
+        ctl.check("PLANT: a module declaring the real-tree group reds", run(clean, True), 1)
+        ctl.check(
+            "PLANT: the old shape, a port behind an exclusive lane claim, reds",
+            run(exclusive, True),
+            1,
+        )
+        ctl.check("PLANT: a stale exclusive lane claim with no port reds", run(exclusive, False), 1)
+        ctl.check(
+            "VACUITY: no registered bash writer reds",
+            run('[{"id": "check:ci-pytest", "reads": ["www-dist"]}]', False),
+            1,
+        )
 
     ctl.check("VACUITY: an empty file yields no hits", scan_text("", "t.sh"), [])
     ctl.check(

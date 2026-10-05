@@ -9,8 +9,9 @@
  * `agent/plans/PLAN-tooling-transformation.md`'s C1 box:
  *
  *   1. No hand-only field. `qualityGateTest`, `paths`, `reads`, `heavy`, `mutex`,
- *      `weight`, `noProfile` -- the last of which the box's own list omits, and
- *      two entries carry it.
+ *      `writesTree`, `cores`, `noProfile` -- the last of which the box's own list
+ *      omits, and two entries carry it. `cores` (the elastic width range) replaced
+ *      `weight` on 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF1).
  *   2. Exactly one leaf, and it is a real file. A bare tool name (`biome`, `tsc`,
  *      `knip`) is a CORRECT leaf per `scripts/ci-runner/gate-spec.ts:106-110` --
  *      "Leaf COMMANDS this gate ultimately executes" -- and has no header to
@@ -69,7 +70,7 @@ const HAND_ONLY = [
   'heavy',
   'mutex',
   'writesTree',
-  'weight',
+  'cores',
   'noProfile',
 ] as const;
 

@@ -65,7 +65,7 @@ import tempfile
 import time
 from typing import Any
 
-from rediacc_ci import log, paths, well_known
+from rediacc_ci import core_lease, log, paths, well_known
 from rediacc_ci.controls import Checker, controls_first
 
 POLICY_REL = "scripts/data/literal-sources.json"
@@ -528,13 +528,18 @@ def classify_file(job: tuple[str, str, list[tuple[int, int]]]) -> tuple[str, lis
 _POOL_FROM = 64
 
 
+def pool_width() -> int:
+    """The lexing pool's width: the cores granted at launch (operator ruling 2026-10-05, no static worker counts). It used to be `min(8, os.cpu_count())`."""
+    return core_lease.granted_cores()
+
+
 def classify_all(
     jobs: list[tuple[str, str, list[tuple[int, int]]]],
 ) -> list[tuple[str, list[bool] | None]]:
     """Lexing is the one CPU-bound phase (about 1.5 s serial on the full tree), and files are independent. Fork, so no worker re-imports anything."""
     if len(jobs) < _POOL_FROM or not hasattr(os, "fork"):
         return [classify_file(j) for j in jobs]
-    workers = max(1, min(8, os.cpu_count() or 1))
+    workers = pool_width()
     with concurrent.futures.ProcessPoolExecutor(
         workers, mp_context=multiprocessing.get_context("fork")
     ) as pool:

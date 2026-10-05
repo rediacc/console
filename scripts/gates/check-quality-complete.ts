@@ -100,13 +100,30 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 
-import { laneCapabilities, SHARD_COUNTS, type Shard, shardPlan } from '../ci-runner/lanes.js';
+import {
+  laneCapabilities,
+  SHARD_COUNTS,
+  type Shard,
+  shardPlan,
+  stepDurationsMs,
+} from '../ci-runner/lanes.js';
 import { laneCanEmit, rewriteStrategyRegions } from '../gate-bind.js';
 import { GREEN, NC, RED } from '../lib/console.js';
 import { summarizeControls } from '../lib/controls.js';
 import { envRoot } from '../lib/repo-root.js';
 
 const ROOT = envRoot('QUALITY_COMPLETE_ROOT');
+
+/** The measured step p90s the committed shard legs were planned by (gate-bind.ts prices them the same way); {} when the file cannot be read. */
+function measuredStepDurations(): Record<string, number> {
+  try {
+    return stepDurationsMs(
+      JSON.parse(readFileSync(path.join(ROOT, '.ci', 'config', 'lane-durations.json'), 'utf-8'))
+    );
+  } catch {
+    return {};
+  }
+}
 const LOCK = 'scripts/ci-runner/gates.lock.json';
 const WORKFLOW = '.github/workflows/ci-quality.yml';
 
@@ -710,7 +727,7 @@ function main(argv: readonly string[]): number {
   const sharded = Object.keys(SHARD_COUNTS).sort();
   let declared: Shard[] = [];
   if (sharded.length > 0) {
-    const plan = shardPlan(lock, caps, SHARD_COUNTS);
+    const plan = shardPlan(lock, caps, SHARD_COUNTS, measuredStepDurations());
     if ('error' in plan) {
       console.error(`${RED}✗${NC} SHARD_COUNTS is not realisable: ${plan.error}`);
       console.error('  The matrix emitter reads the same constant and would refuse the same way.');
@@ -1313,7 +1330,7 @@ function selftest(): number {
           id: string;
           ci: { kind: string; job?: string; step?: string };
         }[];
-        const plan = shardPlan(live, laneCapabilities(text), SHARD_COUNTS);
+        const plan = shardPlan(live, laneCapabilities(text), SHARD_COUNTS, measuredStepDurations());
         if ('error' in plan) return false;
         const out = conjunctableShards(
           plan.lanes.flatMap((l) => l.shards),

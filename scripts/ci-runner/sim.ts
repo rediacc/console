@@ -4,7 +4,9 @@
  * It drives the SAME admit() and planAdmission() runPool drives, so a finding here is a finding about the pool, not about a model of it. Each simulated gate has a true width d (cores it keeps busy) and a true uncontended wall; the machine has P cores, and when the running gates ask for more than P each one progresses at P / sum(d) of its full speed (processor sharing). Idle
  * core-seconds are P x makespan minus the busy integral, the same quantity the footer reads off /proc/stat.
  *
- * The estimates the scheduler sees are the truth by default (a measured gate) or nothing at all (an unmeasured one, which then falls back to its hand-written weight), so the tests below judge the admission rule rather than the quality of a cache.
+ * An ELASTIC gate (`elastic: {min, max}`, agent/plans/PLAN-prepush-full-cpu.md part 1) has a fixed amount of work, d x wall core-ms, and runs at whatever width admit() grants it: its true width is the grant and its true wall work / grant, under the same processor sharing above P.
+ *
+ * The estimates the scheduler sees are the truth by default (a measured gate) or nothing at all (an unmeasured one, budgeted at one core, or at its `min` when elastic), so the tests below judge the admission rule rather than the quality of a cache.
  *
  * Run directly for the comparison table: `npx tsx scripts/ci-runner/sim.ts`.
  */
@@ -20,7 +22,8 @@ interface SimGate {
   wallMs: number;
   memMb?: number;
   needs?: string[];
-  weight?: number;
+  /** Declared elastic range; `cores` x `wallMs` is then the gate's work, and its width is the grant. */
+  elastic?: { min: number; max: number | 'all' };
   heavy?: boolean;
   mutex?: string[];
   /** Default true: the scheduler sees cpu = cores x wall, wall and memMb as measured. False: it sees nothing. */
@@ -45,6 +48,8 @@ interface SimResult {
   ends: Map<string, number>;
   readyAt: Map<string, number>;
   capViolations: number;
+  /** The cores admit() granted each gate at launch. */
+  grants: Map<string, number>;
 }
 
 const EPS_MS = 1e-6;
@@ -56,7 +61,7 @@ function specOf(g: SimGate): GateSpec {
     gate: true,
     needs: g.needs,
     leaves: [],
-    weight: g.weight,
+    cores: g.elastic,
     heavy: g.heavy,
     mutex: g.mutex,
     ci: {
@@ -73,7 +78,12 @@ function simulate(gates: readonly SimGate[], cfg: SimConfig): SimResult {
   const durations = new Map<string, number>();
   for (const g of gates) {
     if (g.measured === false) continue;
-    costs.set(g.id, { cpuMs: g.cores * g.wallMs, wallMs: g.wallMs, rssMb: g.memMb ?? 512 });
+    costs.set(g.id, {
+      cpuMs: g.cores * g.wallMs,
+      wallMs: g.wallMs,
+      rssMb: g.memMb ?? 512,
+      perCore: g.elastic !== undefined ? 1 : undefined,
+    });
     durations.set(g.id, g.wallMs);
   }
   const { byId, rank } = planAdmission(specs, {
@@ -92,8 +102,13 @@ function simulate(gates: readonly SimGate[], cfg: SimConfig): SimResult {
   const starts = new Map<string, number>();
   const ends = new Map<string, number>();
   const readyAt = new Map<string, number>();
-  // Remaining work of each running gate, in ms of full-speed wall.
+  // Remaining work of each running gate, in ms of full-speed wall, and the candidate admit() launched it as (an elastic gate's carries its grant).
   const running = new Map<string, number>();
+  const launched = new Map<string, ReturnType<typeof cand>>();
+  const grants = new Map<string, number>();
+  // True width while running: the grant for an elastic gate, the declared d otherwise.
+  const width = (id: string): number =>
+    truth.get(id)?.elastic !== undefined ? (grants.get(id) ?? 1) : (truth.get(id)?.cores ?? 0);
   let t = 0;
   let busy = 0;
   let capViolations = 0;
@@ -103,28 +118,44 @@ function simulate(gates: readonly SimGate[], cfg: SimConfig): SimResult {
       .filter((s) => !starts.has(s.id) && (s.needs ?? []).every((n) => ends.has(n)))
       .sort(rank);
     for (const s of ready) if (!readyAt.has(s.id)) readyAt.set(s.id, t);
+    let backlogCpuMs = 0;
+    for (const s of specs) if (!starts.has(s.id)) backlogCpuMs += cand(s.id).cpuMs;
     const pass = admit(
       ready.map((s) => cand(s.id)),
-      [...running.keys()].map((id) => ({
-        gate: cand(id),
-        endsAt: (starts.get(id) ?? 0) + cand(id).estMs,
-      })),
-      { sched: cfg.sched, jobs: cfg.jobs, heavyLimit: cfg.heavyLimit, budget: cfg.budget },
+      [...running.keys()].map((id) => {
+        const g = launched.get(id) ?? cand(id);
+        return { gate: g, endsAt: (starts.get(id) ?? 0) + g.estMs };
+      }),
+      {
+        sched: cfg.sched,
+        jobs: cfg.jobs,
+        heavyLimit: cfg.heavyLimit,
+        budget: cfg.budget,
+        backlogCpuMs,
+      },
       t
     );
     for (const g of pass.launch) {
       starts.set(g.id, t);
-      running.set(g.id, truth.get(g.id)?.wallMs ?? 0);
+      launched.set(g.id, g);
+      grants.set(g.id, g.grant ?? 1);
+      const tg = truth.get(g.id);
+      running.set(
+        g.id,
+        tg?.elastic !== undefined
+          ? (tg.cores * tg.wallMs) / Math.max(1, g.grant ?? 1)
+          : (tg?.wallMs ?? 0)
+      );
     }
     if (cfg.sched === 'cores' && cfg.capCheck !== undefined && running.size > 1) {
       let budgeted = 0;
-      for (const id of running.keys()) budgeted += cand(id).cores;
+      for (const id of running.keys()) budgeted += (launched.get(id) ?? cand(id)).cores;
       if (budgeted > cfg.capCheck + 1e-9) capViolations += 1;
     }
     if (running.size === 0) throw new Error(`sim: pool stalled at ${t} ms`);
 
     let demand = 0;
-    for (const id of running.keys()) demand += truth.get(id)?.cores ?? 0;
+    for (const id of running.keys()) demand += width(id);
     const rate = Math.min(1, cfg.machineCores / demand);
     let step = Number.POSITIVE_INFINITY;
     for (const left of running.values()) step = Math.min(step, left / rate);
@@ -145,6 +176,7 @@ function simulate(gates: readonly SimGate[], cfg: SimConfig): SimResult {
     ends,
     readyAt,
     capViolations,
+    grants,
   };
 }
 
@@ -296,7 +328,7 @@ export function schedulerSelftest(): { failures: string[]; assertions: number; t
     `CONTROL: without reservations the d-8 gate must starve behind the stream, waited only ${waited(unreserved).toFixed(0)} ms`
   );
 
-  // 5. d > C STILL RUNS ON AN IDLE POOL: a weight-8 unmeasured gate on a 5-core machine (C 4) is admitted alone and the pool finishes.
+  // 5. d > C STILL RUNS ON AN IDLE POOL: an unmeasured gate whose declared `min` is 8, on a 5-core machine (C 4), is admitted alone and the pool finishes.
   const small = {
     machineCores: 5,
     jobs: 3,
@@ -305,7 +337,7 @@ export function schedulerSelftest(): { failures: string[]; assertions: number; t
   };
   const huge = simulate(
     [
-      { id: 'huge', cores: 8, wallMs: 4000, weight: 8, measured: false },
+      { id: 'huge', cores: 8, wallMs: 4000, elastic: { min: 8, max: 8 }, measured: false },
       ...Array.from({ length: 10 }, (_, i) => ({ id: `h-${i}`, cores: 1, wallMs: 1000 })),
     ],
     { ...small, sched: 'cores' }
@@ -335,6 +367,61 @@ export function schedulerSelftest(): { failures: string[]; assertions: number; t
   check(
     overlap(m64),
     'CONTROL: two 20 GB gates must overlap under M = 64 GB, or the check cannot see one'
+  );
+
+  // 7. THE AREA RULE ON THE PLAN'S NUMBERS (PLAN-prepush-full-cpu part 1): a pytest of 7,866 cpu-s beside 818 cpu-s of one-core gates on C 23. It starts at t=0 with the area rule's 20 cores, never over-admits, and the pass beats the same work held at the old static `-n 8` (the control, a range of exactly 8) on makespan and on idle core-seconds.
+  const fast: SimGate[] = Array.from({ length: 160 }, (_, i) => ({
+    id: `f-${i}`,
+    cores: 1,
+    wallMs: 818_000 / 160,
+  }));
+  const pytest = (range: { min: number; max: number | 'all' }): SimGate => ({
+    id: 'pytest',
+    cores: 1,
+    wallMs: 7_866_000,
+    elastic: range,
+  });
+  const elastic = simulate([pytest({ min: 2, max: 'all' }), ...fast], {
+    ...P24,
+    sched: 'cores',
+    capCheck: cap,
+  });
+  const fixed8 = simulate([pytest({ min: 8, max: 8 }), ...fast], { ...P24, sched: 'cores' });
+  line('pytest elastic, cores', elastic);
+  line('pytest fixed 8, cores', fixed8);
+  table.push(
+    `pytest grant at t=${elastic.starts.get('pytest')} ms: ${elastic.grants.get('pytest')}`
+  );
+  check(
+    elastic.starts.get('pytest') === 0 && elastic.grants.get('pytest') === 20,
+    `pytest must start at t=0 with the area rule's 20 cores of C 23, got ${elastic.grants.get('pytest')} at ${elastic.starts.get('pytest')} ms`
+  );
+  check(
+    elastic.capViolations === 0,
+    `the elastic pass over-admitted ${elastic.capViolations} time(s)`
+  );
+  check(
+    elastic.makespanMs < 0.6 * fixed8.makespanMs && elastic.idleCoreS < fixed8.idleCoreS,
+    `CONTROL: the elastic grant must beat a static 8 workers: elastic ${(elastic.makespanMs / 1000).toFixed(0)} s, fixed ${(fixed8.makespanMs / 1000).toFixed(0)} s`
+  );
+  // 8. A `min` WIDER THAN WHAT IS FREE HOLDS THE GATE, never shrinks below it: a min-6 gate behind five running one-core gates on C 8 waits for cores and then runs at >= 6.
+  const held = simulate(
+    [
+      ...Array.from({ length: 5 }, (_, i) => ({ id: `b-${i}`, cores: 1, wallMs: 10_000 })),
+      { id: 'late', cores: 1, wallMs: 1000, needs: ['b-0'] },
+      { id: 'wide', cores: 6, wallMs: 3000, elastic: { min: 6, max: 'all' as const } },
+    ],
+    {
+      machineCores: 9,
+      jobs: 8,
+      heavyLimit: 2,
+      budget: { cores: 8, epsilon: 0, maxProcs: 16, memMb: 32768 },
+      sched: 'cores',
+    }
+  );
+  check(
+    (held.grants.get('wide') ?? 0) >= 6,
+    `an elastic gate must never run below its min, granted ${held.grants.get('wide')}`
   );
 
   return { failures, assertions, table };

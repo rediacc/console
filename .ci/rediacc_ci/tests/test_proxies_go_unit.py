@@ -252,7 +252,10 @@ def test_selftest_is_byte_identical() -> None:
 
 
 def test_real_tree_passes_through_the_port() -> None:
-    """The only case that compiles the real renet packages. The bash twin it was compared with is retired (PLAN-retire-bash-oracles B3), so the port is asserted on its own."""
+    """The only case that compiles the real renet packages. The bash twin it was compared with is retired (PLAN-retire-bash-oracles B3), so the port is asserted on its own.
+
+    NOT SPLIT PER PACKAGE, ON A MEASUREMENT (agent/plans/PLAN-prepush-full-cpu.md PF13, 2026-10-05). The plan proposed one item per Go package on the hypothesis that this is one serial `go test` over every package. It is one `go test`, but not a serial one: `go test` builds and runs packages `-p GOMAXPROCS` wide, and this module measured 648% CPU over a 95 s serial pytest run on the 24-core host, this item 24.6 s of it with a warm build cache (the 68.4 s in the 2026-10-03 junit was taken under `-n 8` contention). The assertion is the port's own whole-run verdict ("3 check(s) passed"), which a per-package item could only reproduce through a per-package mode in `rediacc_ci.proxies.go_unit`, and each item would pay `go list` and the link step again. The module declares no xdist group, so its items already spread.
+    """
     kwargs = {"env": _real_tree_env(), "cwd": str(ROOT), "capture_output": True, "text": True}
     new = subprocess.run(  # type: ignore[call-overload]
         ["python3", "-m", PORT_MODULE], timeout=1800, check=False, **kwargs

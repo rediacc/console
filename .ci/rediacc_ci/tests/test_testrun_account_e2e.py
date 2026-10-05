@@ -12,18 +12,17 @@ import json
 import os
 import pathlib
 import shutil
-import socket
 import subprocess
 import typing
 
 import pytest
 
+from rediacc_ci import xdist_groups
 from rediacc_ci.testrun import account_e2e
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import testrun_support as ts
 
-# THE HOST'S PORT SPACE IS SHARED: free_port() releases the port before the server binds it, so two xdist workers can draw the same one (a 1-in-4 flake under load on 2026-10-01). Same group as test_core_ports.py and test_core_account.py.
-XDIST_GROUP = "ports"
+# THE HOST'S PORT SPACE IS SLICED PER WORKER (agent/plans/PLAN-prepush-full-cpu.md PF14, 2026-10-05). free_port() used to `bind(0)` and release the port before the server bound it, so two xdist workers could draw the same one (a 1-in-4 flake under load on 2026-10-01), and this module joined the `ports` group for it. It now draws from `xdist_groups.free_port_in_range()`, this worker's disjoint slice of 20000-30000, below the kernel's ephemeral range, so no other worker and no `bind(0)` can be handed it.
 
 STUB = pathlib.Path(__file__).with_name("testrun_stub_server.py")
 SCRIPT_REL = ".ci/scripts/test/run-account-e2e.sh"
@@ -70,9 +69,7 @@ def webauthn_fixture(counts: dict[str, int]) -> dict:
 
 
 def free_port() -> int:
-    with socket.socket() as sock:
-        sock.bind(("127.0.0.1", 0))
-        return sock.getsockname()[1]
+    return xdist_groups.free_port_in_range()
 
 
 def fixture(directory: pathlib.Path, report: bool = True) -> pathlib.Path:

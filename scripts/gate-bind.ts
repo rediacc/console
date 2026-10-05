@@ -41,6 +41,7 @@ import {
   type ShardInput,
   satisfies,
   shardPlan,
+  stepDurationsMs,
 } from './ci-runner/lanes.js';
 import {
   buildShardManifest,
@@ -502,7 +503,8 @@ export function shardAssignment(
 ): { legs: Map<string, number>; replicated: string[] } | { error: string } | null {
   const want = counts[job];
   if (want === undefined) return null;
-  const plan = shardPlan(lock, caps, { [job]: want });
+  // Priced by measured step time, not by count: equal-count legs held 21 s and 216 s of measured work (PLAN-prepush-full-cpu, writer F).
+  const plan = shardPlan(lock, caps, { [job]: want }, measuredStepDurations());
   if ('error' in plan) return { error: plan.error };
   const legs = new Map<string, number>();
   for (const lane of plan.lanes) {
@@ -599,6 +601,18 @@ export function jobLockIdMap(
 }
 
 /** A YAML single-quoted scalar holding JSON text, so a bare `[...]` cannot parse as a flow sequence. An embedded quote is doubled, YAML's own escape inside such a scalar. */
+
+/** `.ci/config/lane-durations.json`'s measured step p90s, in ms, for shardPlan; {} when the file cannot be read, which prices every lane by count as before. */
+function measuredStepDurations(): Record<string, number> {
+  try {
+    return stepDurationsMs(
+      JSON.parse(fs.readFileSync(path.join(ROOT, '.ci', 'config', 'lane-durations.json'), 'utf-8'))
+    );
+  } catch {
+    return {};
+  }
+}
+
 function jsonEnvValue(value: unknown): string {
   return `'${JSON.stringify(value).replace(/'/g, "''")}'`;
 }
@@ -2125,10 +2139,26 @@ function selftest(endToEnd = false): number {
       ],
     ]);
     const fixtureLock: ShardInput[] = [
-      { id: 'check:a', weight: 1, ci: { kind: 'step', job: 'quality-code', step: 'a' } },
-      { id: 'check:b', weight: 2, ci: { kind: 'step', job: 'quality-code', step: 'b' } },
-      { id: 'check:c', weight: 1, ci: { kind: 'step', job: 'quality-code', step: 'c' } },
-      { id: 'check:d', weight: 1, ci: { kind: 'step', job: 'quality-code', step: 'd' } },
+      {
+        id: 'check:a',
+        cores: { min: 1, max: 1 },
+        ci: { kind: 'step', job: 'quality-code', step: 'a' },
+      },
+      {
+        id: 'check:b',
+        cores: { min: 2, max: 2 },
+        ci: { kind: 'step', job: 'quality-code', step: 'b' },
+      },
+      {
+        id: 'check:c',
+        cores: { min: 1, max: 1 },
+        ci: { kind: 'step', job: 'quality-code', step: 'c' },
+      },
+      {
+        id: 'check:d',
+        cores: { min: 1, max: 1 },
+        ci: { kind: 'step', job: 'quality-code', step: 'd' },
+      },
     ];
     const fixtureCounts = { 'quality-code': 2 };
     const withoutDurations = shardPlan(fixtureLock, fixtureCaps, fixtureCounts);
@@ -2161,9 +2191,21 @@ function selftest(endToEnd = false): number {
       ],
     ]);
     const durLock: ShardInput[] = [
-      { id: 'dur:a', weight: 1, ci: { kind: 'step', job: 'quality-code', step: 'a' } },
-      { id: 'dur:b', weight: 1, ci: { kind: 'step', job: 'quality-code', step: 'b' } },
-      { id: 'dur:c', weight: 1, ci: { kind: 'step', job: 'quality-code', step: 'c' } },
+      {
+        id: 'dur:a',
+        cores: { min: 1, max: 1 },
+        ci: { kind: 'step', job: 'quality-code', step: 'a' },
+      },
+      {
+        id: 'dur:b',
+        cores: { min: 1, max: 1 },
+        ci: { kind: 'step', job: 'quality-code', step: 'b' },
+      },
+      {
+        id: 'dur:c',
+        cores: { min: 1, max: 1 },
+        ci: { kind: 'step', job: 'quality-code', step: 'c' },
+      },
     ];
     // A lane with FEWER shards than units, so a duration-driven reorder is visible: durations put `dur:c` (cost 10) alone in its own shard, while `weight` would have tied all three at 1 and packed by lock rank instead.
     const byDurationTwoShards = shardPlan(

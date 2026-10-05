@@ -29,8 +29,7 @@ WHAT IS DELIBERATELY NOT ASSERTED: that the live sets still equal the snapshot. 
 
 THE TWIN IS FLAT -- it declares no `test_*()` functions -- so `test_twin_parity.py` has no case set to compare and falls back to the twin's runtime `PASS:` count as the floor on this port's recorded controls. The five cases below are therefore split so that each of the twin's six PASS lines has a control of its own, plus the two the port adds.
 
-WHY THIS MODULE STILL OPTS IN TO THE REAL-TREE GROUP EVEN THOUGH CASE B NO LONGER WRITES ANYTHING. Case C runs `--write`, which rewrites every discovered region in every `.md` file
-in the repository -- `CLAUDE.md` among them -- and cases A, D and E all exercise the real generator against the real tree. `XDIST_GROUP = xdist_groups.REAL_TREE_GROUP` buys the serialisation. It used to be `REAL_TREE_TWIN = True`, which `xdist_groups.group_for` honours only while the retired twin's basename is in the lock's `tree:` set; after the retirement it serialised nothing, and CI caught case C reading the doc-registry.md case B had just perturbed (Quality / Pytest on e4d4e4cae: "--write changed a file that verify had just called clean").
+NO XDIST GROUP SINCE 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF15). This module declared `XDIST_GROUP = xdist_groups.REAL_TREE_GROUP` because case C runs `--write`, which may rewrite every discovered region in every `.md` file in the repository (`CLAUDE.md` among them), and CI once caught case C reading the doc-registry.md case B was perturbing in place (Quality / Pytest on e4d4e4cae). Case B has not written the tree since (below). Case C cannot be pointed at a copy: `gen-docs.ts` derives its ROOT from its own location (`scripts/gen/gen-docs.ts:74`) and enumerates targets with `git ls-files` against it, so there is no seam short of a mirrored repository. What it does have is a narrow write path: `--write` writes only a target whose render differs from its bytes on disk (`main()`, the `r.next === r.current` branch). So case C now proves its own precondition instead of trusting case A to have run first on the same worker, which ungrouping no longer guarantees: it runs verify itself, refuses to run `--write` unless verify is green, and requires that neither write printed a `wrote` line and that no target's digest moved. A `--write` run that way changes no byte, and the session tripwire (`test_tree_tripwire.py`) is the backstop if it ever does.
 
 CASE B NO LONGER WRITES THE REAL TREE AT ALL, which is the fix for the incident above rather than a second layer on top of the group. It used to overwrite the tracked `scripts/data/doc-registry.md` in place and restore it in a `finally` -- safe against a killed process only in theory, and still a real write another reader could observe mid-flight even with the group serialising the
 battery's OWN gate tests against it (an operator running `git status`, or a gate outside this repo's pytest battery entirely, would still see a dirty tree for the run's duration). `gen-docs.ts` has no seam for pointing its whole ROOT at a fixture -- `targets()` and every provider shell out to `git ls-files` against it, so a fixture would mean cloning the repository just to fake one
@@ -46,11 +45,8 @@ import hashlib
 import json
 import pathlib
 
-from rediacc_ci import paths, xdist_groups
+from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-# Case B perturbs a tracked file and case C runs `--write`. See the docstring.
-XDIST_GROUP = xdist_groups.REAL_TREE_GROUP
 
 ROOT = paths.repo_root()
 GEN = ROOT / "scripts" / "gen" / "gen-docs.ts"
@@ -219,9 +215,16 @@ def test_a_perturbed_row_is_reported_as_drift(gate):
 def test_two_write_runs_are_byte_identical(gate):
     """C. Determinism AND idempotence, in one measurement.
 
-    `test_verify_accepts_the_tree_as_it_stands` has already established that the render equals the file, so BOTH writes must be no-ops. Anything else is either a non-deterministic provider or a verify that lied.
+    THE PRECONDITION IS PROVED HERE, NOT BORROWED FROM CASE A. A green verify means the render equals every file, so BOTH writes must be no-ops; anything else is either a non-deterministic provider or a verify that lied. Until 2026-10-05 this leaned on case A having run first on the same worker (the module's xdist group guaranteed it); with no group, case A may run elsewhere or later, and a `--write` over a drifted tree would rewrite real files. So verify runs first in this test, and `--write` is never run unless it is green.
     """
     require_inputs(gate)
+    pre = gen()
+    if pre.rc != 0:
+        gate.log_error(pre.err.strip())
+        gate.log_fail(
+            "verify is red, so --write would rewrite real files; refusing to run it. Run: "
+            "npx tsx scripts/gen/gen-docs.ts --write"
+        )
     with assert_targets_unchanged(gate, "--write") as targets:
         before = digest(TARGET)
         first = gen("--write")
@@ -231,6 +234,9 @@ def test_two_write_runs_are_byte_identical(gate):
         second = gen("--write")
         if second.rc != 0:
             gate.log_fail("second --write failed: %s" % second.err.strip())
+        wrote = [line for run in (first, second) for line in run.out.split("\n") if "wrote" in line]
+        if wrote:
+            gate.log_fail("--write after a green verify rewrote a file: %s" % "; ".join(wrote))
         two = digest(TARGET)
         gate.assert_eq(one, two, "two --write runs disagree -- the render is not deterministic")
         gate.assert_eq(one, before, "--write changed a file that verify had just called clean")
