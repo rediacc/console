@@ -17,6 +17,7 @@ import os
 import pathlib
 import re
 import subprocess
+import tomllib
 
 import wl_common
 import wl_core as C
@@ -104,7 +105,11 @@ CHECK_SCRIPT_GLOBS = (
     ".ci/rediacc_ci/tests/gates/test_gate_*.py",
     ".claude/hooks/stop/test-*.sh",
     ".claude/hooks/test-*.sh",
+    # The pytest roots in pyproject.toml `testpaths` that the globs above do not reach, and the hook suites' python spelling. Without them an edit to a file here was invisible to the probe.
+    ".claude/rediacc_hooks/tests/test_*.py",
+    ".claude/hooks/stop/test-*.py",
 )
+PYTEST_GATE_KEY = "check:ci-pytest"
 # UPGRADE GUARD (v10). Tick identity is the hash of the RENDERED line, and the v10 store rewrite changed rendering, so the first stop after an upgrade can see every historical [x] as "new" (791 in the live store). A flood of ticks is bookkeeping drift, not 791 simultaneous fixes: absorb silently with one systemMessage line instead of asking the judge about ancient history.
 TICK_FLOOD = int(os.environ.get("WORKLIST_REGGATE_TICK_FLOOD", "20"))
 
@@ -630,6 +635,27 @@ def prove_named_artifact(root, artifact):
     return True, "named artifact %s was written or changed this session" % rel
 
 
+def pytest_collects(rel, root):
+    """True when pytest, as pyproject.toml configures it, collects the repo-relative `rel`.
+
+    No package.json script TEXT names a file pytest collects through `[tool.pytest.ini_options] testpaths`, so the text search read every such file as "no check:* key runs it". The roots and the `python_files` patterns are read from pyproject.toml (never hardcoded here); a non-test helper under a root does not match the patterns and is not claimed. Any read or parse failure answers False, which leaves the old text search to decide.
+    """
+    try:
+        with open(os.path.join(str(root), "pyproject.toml"), "rb") as fh:
+            ini = tomllib.load(fh).get("tool", {}).get("pytest", {}).get("ini_options", {})
+    except (OSError, tomllib.TOMLDecodeError):
+        return False
+    roots = ini.get("testpaths")
+    if not isinstance(roots, list):
+        return False
+    patterns = ini.get("python_files", ["test_*.py", "*_test.py"])
+    if isinstance(patterns, str):
+        patterns = patterns.split()
+    if not any(isinstance(t, str) and rel.startswith(t.rstrip("/") + "/") for t in roots):
+        return False
+    return any(fnmatch.fnmatch(os.path.basename(rel), pat) for pat in patterns)
+
+
 def prove_new_gate(root, scripts, state):
     """(proven, notes). A claimed gate must leave ARTIFACTS, each verified: a NEW or CHANGED check script (content hash vs the marker), a check:* key whose command runs it, reachability from `npm run ci` (transitive, see gate_reachable), and a bounded green run. Runs are cached by content hash so a red gate is not re-run every stop and a green one is not re-paid. A green run of
     a control-first gate IS the planted-defect proof, because such a gate self-fails when its own control cannot fire -- the check-i18n-cross-locale.ts --selftest that NOTHING invoked is the exact failure this rule exists for, and check-gate-reachability.ts exists because a gate can be defined yet never run."""
@@ -671,6 +697,22 @@ def prove_new_gate(root, scripts, state):
                 (k for k in sorted(scripts) if k.startswith("check:") and rel in scripts[k]),
                 "",
             )
+            if not key and PYTEST_GATE_KEY in scripts and pytest_collects(rel, root):
+                # Collected through pyproject.toml testpaths. The whole suite exceeds REGGATE_TIMEOUT_S, so like the other suites it is accepted on change once the key is shown reachable from `npm run ci`.
+                if not gate_reachable(scripts, PYTEST_GATE_KEY, root):
+                    state["gate_runs"][rel] = {"hash": digest, "exit": -2, "at": stamp}
+                    notes.append(
+                        "%s: %s is defined but NOT reachable from `npm run ci`"
+                        % (rel, PYTEST_GATE_KEY)
+                    )
+                    continue
+                state["gate_runs"][rel] = {"hash": digest, "exit": 0, "at": stamp}
+                notes.append(
+                    "%s: collected by `npm run %s` (pyproject.toml testpaths); accepted on change, "
+                    "verify locally with pytest -q" % (rel, PYTEST_GATE_KEY)
+                )
+                proven = True
+                continue
             if not key:
                 state["gate_runs"][rel] = {"hash": digest, "exit": -1, "at": stamp}
                 notes.append("%s: no check:* key runs it" % rel)
