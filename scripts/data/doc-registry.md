@@ -259,7 +259,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-quality-gates | quality-gate-tests / Quality-gate unit tests | no | no | no |
 | check:ci-rdc-native | quality-static / rdc.sh wrapper budget and --native arms | yes | no | no |
 | check:ci-rdc-sh-env | quality-static / rdc.sh env tests | yes | no | no |
-| check:ci-record-paths | quality-static / Record paths and fixed widths | yes | no | no |
+| check:ci-record-paths | quality-static / Record paths and fixed widths | yes | yes | no |
 | check:ci-recovery-context | quality-go / Check recovery functions get an uncancellable context | yes | no | no |
 | check:ci-redirect-integrity | quality-www-build / Redirects | yes | yes | no |
 | check:ci-redirects | quality-www-build / Redirects | no | yes | no |

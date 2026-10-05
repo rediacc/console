@@ -1670,6 +1670,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-record-paths',
     // A receipt advances across a record-only commit only when every reader of those records is declared; a fixed parallel width must be a listed I/O fan-out (PLAN-prepush-full-cpu PF23, PF9).
     run: 'npm run check:ci-record-paths',
+    slow: true, // its CI step measured 40.5 s (lane-durations, 2026-10-05); memoised import closures cut it from 27 s to 13 s locally, still over the 10 s pre-push budget
     gate: true,
     leaves: ['.ci/scripts/quality/check_record_paths.py'],
     ci: {
