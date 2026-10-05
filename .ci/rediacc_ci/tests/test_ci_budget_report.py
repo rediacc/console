@@ -604,11 +604,15 @@ def test_refresh_lane_durations_merges_and_preserves_untouched_fields(tmp_path):
     assert data["job_max_seconds"]["jobs"]["Validate Promotion"]["observed_max_seconds"] == 300
 
 
-def test_refresh_lane_durations_keeps_the_prior_parallelism_when_nothing_is_derived(tmp_path, capsys):
+def test_refresh_lane_durations_keeps_the_prior_parallelism_when_nothing_is_derived(
+    tmp_path, capsys
+):
     """CONTROL for the derivation: a refresh that derives nothing must not drop the key (check-lane-budget.ts would price quality-pytest as serial) and must say it kept it."""
     path = tmp_path / "lane-durations.json"
     path.write_text(
-        json.dumps({"concurrency": 20, "jobs": {}, "units": {}, "unitParallelism": {"quality-pytest": 4}})
+        json.dumps(
+            {"concurrency": 20, "jobs": {}, "units": {}, "unitParallelism": {"quality-pytest": 4}}
+        )
     )
     compute = _fake_compute(jobs={"quality-code": 1.0})
     assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
