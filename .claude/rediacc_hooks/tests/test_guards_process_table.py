@@ -5,7 +5,7 @@ WHY THIS FILE EXISTS (agent/plans/PLAN-prepush-full-cpu.md PF11). Until 2026-10-
   * three guards read the REAL process table (`PROCESS_TABLE_READERS` in the
     differential): `block_self_matching_pgrep`, `block_bash_write_to_running_script`
     and `block_edit_of_running_script`;
-  * `test_hooks_procs.py` spawns real `sleep 8` processes visible to that same
+  * `test_hooks_procs.py` spawns real long-sleep processes visible to that same
     table, and two workers building the fixed-path running-script world killed
     each other's shells (#af1d1d05).
 
