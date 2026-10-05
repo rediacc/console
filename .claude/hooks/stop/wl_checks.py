@@ -3884,6 +3884,9 @@ def run_stop(event, event_ok, worklist, hook_file):
         # ON THE LOOP, ONLY THE PR'S PLAN SET (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 5): an adoption of a plan the PR does not work is queued with every other plan, counted in the N_PR_SCOPE line.
         if _on_loop:
             _pf_rows = [r for r in _pf_rows if r["rel"] in _loop_plans]
+        if not _pf_rows:
+            # A finished plan has no row at all, so the empty-text drop below never ran for exactly the plan that had just closed; eaf8611a9 put it there and the stale "29 open box(es), 0 ticked" kept being delivered.
+            outq_drop(state_doc, "plan-tasks")
         if _pf_rows:
             # S2: up to PLAN_PLANS_SHOW plans, sharing ONE quote budget. `render_all` owns both the cap and the remainder line that `render`'s n_more_plans used to carry, so the call site no longer does that arithmetic. THE ORDER, distinct from the advisory below and keyed apart from it on purpose: `plan-tasks` must never become a `vadd` (test-planfile.py pins that), because a plan
             # a session merely OWNS can carry eighteen boxes and would wedge every turn. A plan the session ADOPTED is different in kind -- the adoption is a committed sentence saying it is being executed -- and it blocks only while boxes are untracked or stale, so tracking them (or deferring, or handing the plan back) ends it in one turn.

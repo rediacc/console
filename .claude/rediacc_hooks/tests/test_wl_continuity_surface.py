@@ -97,7 +97,9 @@ def outq_entry(key: str, text: str, prio: int, seq: int, sticky: bool = False) -
 
 
 def test_p02_a_blocked_stop_carries_the_advisory_digest(wl):  # noqa: F811
-    """CONTROL: before P0.2 the block said only "N advisory section(s) are queued and CANNOT be shown"."""
+    """The multi-line advisory uses a key no check re-validates: `plan-tasks` is dropped as stale when no plan has rows (wl_checks' plan-tasks drop), which this fixture's plan-less world always is.
+
+    CONTROL: before P0.2 the block said only "N advisory section(s) are queued and CANNOT be shown"."""
     three_rotating(wl)
     wl.run()  # first stop builds the state document
     plant_outq(
@@ -111,7 +113,10 @@ def test_p02_a_blocked_stop_carries_the_advisory_digest(wl):  # noqa: F811
                 True,
             ),
             outq_entry(
-                "plan-tasks", "PLAN TASKS: 3 open box(es)\n  - [ ] box one\n  - [ ] box two", 2, 2
+                "sample-advisory",
+                "PLAN TASKS: 3 open box(es)\n  - [ ] box one\n  - [ ] box two",
+                2,
+                2,
             ),
         ],
     )
@@ -121,7 +126,7 @@ def test_p02_a_blocked_stop_carries_the_advisory_digest(wl):  # noqa: F811
     reason = json.loads(got.out)["reason"]
     assert "QUEUED ADVISORIES" in reason, reason[-800:]
     assert "CLAIM CHECK: #abcd1234" in reason, reason[-800:]
-    assert "plan-tasks: PLAN TASKS: 3 open box(es)" in reason, reason[-800:]
+    assert "sample-advisory: PLAN TASKS: 3 open box(es)" in reason, reason[-800:]
     assert "claim-check: CLAIM CHECK" in reason, (
         "the sticky key's :sig suffix leaked: %s" % reason[-800:]
     )
@@ -142,20 +147,20 @@ def test_p02_a_one_line_advisory_is_delivered_and_a_body_stays_queued(wl):  # no
                 1,
                 True,
             ),
-            outq_entry("plan-tasks", "PLAN TASKS: 3 open box(es)\n  - [ ] box one", 2, 2),
+            outq_entry("sample-advisory", "PLAN TASKS: 3 open box(es)\n  - [ ] box one", 2, 2),
         ],
     )
     wl.newturn()
     wl.say("answer with no remaining section")
     wl.run()
     keys = [e["key"] for e in load_state(wl)["outq"]["items"]]
-    assert "plan-tasks" in keys, keys
+    assert "sample-advisory" in keys, keys
     assert not any(k.startswith("claim-check") for k in keys), keys
     wl.newturn()
     wl.say("answer with no remaining section")
     third = json.loads(wl.run().out)["reason"]
     assert "CLAIM CHECK" not in third, "the delivered one-liner was shown twice: %s" % third[-600:]
-    assert "plan-tasks: PLAN TASKS" in third, third[-600:]
+    assert "sample-advisory: PLAN TASKS" in third, third[-600:]
 
 
 def test_p02_the_digest_is_capped_at_six_lines(wl):  # noqa: F811
