@@ -465,6 +465,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ci_derive_image_tag.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_dispatch_watchdog.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_gate_costs.py",
+        "pytest:.ci/rediacc_ci/tests/test_ci_github_status.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_profiler_control.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_scope_reconcile_shadow.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_scope_shadow.py",

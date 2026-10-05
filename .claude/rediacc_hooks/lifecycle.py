@@ -139,6 +139,8 @@ PATTERNS = {
             {"command": "python3 " + _P % "hooks/post-bash/arm_ci_watch.py", "timeout": 30},
             # agent/plans/PLAN-per-commit-review.md section 3.1: a commit starts a DETACHED haiku reviewer per uncovered commit (the child holds none of this runner's pipes), and every Bash call reports reviews that finished since the session last heard. A few git reads and a fork; never exits 2.
             {"command": "python3 " + _P % "hooks/post-bash/review_commit.py", "timeout": 30},
+            # GitHub's own service status, beside the CI command it qualifies (operator ruling 2026-10-05: PostToolUse is the primary channel). Reads the machine-wide cache only and starts a detached refresh when it is old, so it never waits on githubstatus.com; silent unless GitHub is degraded, and never exits non-zero.
+            {"command": "python3 " + _P % "hooks/post-bash/github_status_note.py", "timeout": 10},
             "python3 " + _P % "hooks/trapguard/dispatch.py" + " --posttool",
         ),
     },
@@ -209,6 +211,13 @@ PATTERNS = {
             "python3 " + _P % "hooks/stop/worklist.py" + " --session-start",
             "python3 " + _P % "hooks/stop/wl_report.py" + " --session-start",
             "python3 " + _P % "hooks/context/onboard.py" + " --arm",
+            # The same GitHub status note at session start, cache-only like its post-bash twin: a session opening while GitHub is degraded learns it before its first CI read.
+            {
+                "command": "python3 "
+                + _P % "hooks/post-bash/github_status_note.py"
+                + " --session-start",
+                "timeout": 10,
+            },
         ),
     },
 }

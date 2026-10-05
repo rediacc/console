@@ -50,7 +50,7 @@
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/chain-head.sh\" post-bash",
-            "timeout": 360
+            "timeout": 370
           }
         ]
       },
@@ -123,7 +123,7 @@
           {
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/rediacc_hooks/lifecycle.py\" session-start",
-            "timeout": 180
+            "timeout": 190
           }
         ]
       }
