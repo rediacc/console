@@ -271,14 +271,35 @@ def via_dispatch(repo, cmd):
     return p.returncode, p.stdout + p.stderr
 
 
+def _outside_defect(src: str, *names: str) -> str:
+    """`src` with every top-level `DEFECT` (or named) assignment removed, so a needle search cannot be satisfied by the declaration that names it.
+
+    `old in src` alone stays true after the guarded line is deleted, because the declaration itself contains the text it plants (measured 2026-10-05).
+    """
+    import ast  # noqa: PLC0415 -- only the planted-defect controls need it
+
+    wanted = names or ("DEFECT",)
+    cut = [
+        n
+        for n in ast.parse(src).body
+        if isinstance(n, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id in wanted for t in n.targets)
+    ]
+    return "\n".join(
+        line
+        for i, line in enumerate(src.split("\n"), 1)
+        if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut)
+    )
+
+
 def defect_runner():
     _syspath.on_sys_path(str(HERE.parents[2]))
     hookio = importlib.import_module("rediacc_hooks.hookio")
     good = importlib.import_module("rediacc_hooks.guards." + STEM)
     old, new = good.DEFECT
     src = pathlib.Path(str(good.__file__)).read_text(encoding="utf-8")
-    if old not in src:
-        raise SystemExit("the DEFECT no longer applies to the guard")
+    if old not in _outside_defect(src):
+        raise SystemExit("the DEFECT no longer applies to the guard outside its own declaration")
     ns: dict[str, typing.Any] = {"__name__": "broken_" + STEM, "__file__": good.__file__}
     exec(compile(src.replace(old, new), str(good.__file__), "exec"), ns)  # noqa: S102
 

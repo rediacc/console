@@ -89,6 +89,27 @@ INDEX = (
 )
 
 
+def _outside_defect(src: str, *names: str) -> str:
+    """`src` with every top-level `DEFECT` (or named) assignment removed, so a needle search cannot be satisfied by the declaration that names it.
+
+    `old in src` alone stays true after the guarded line is deleted, because the declaration itself contains the text it plants (measured 2026-10-05).
+    """
+    import ast  # noqa: PLC0415 -- only the planted-defect controls need it
+
+    wanted = names or ("DEFECT",)
+    cut = [
+        n
+        for n in ast.parse(src).body
+        if isinstance(n, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id in wanted for t in n.targets)
+    ]
+    return "\n".join(
+        line
+        for i, line in enumerate(src.split("\n"), 1)
+        if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut)
+    )
+
+
 def tree():
     """A fresh fixture tree: a conforming chain y -> z, a plan lacking the field, a _done and a _removed plan."""
     if BASE.exists():
@@ -462,8 +483,11 @@ def main():
     exec(compile(SOURCE, str(GUARD), "exec"), _good_ns)  # noqa: S102
     for label in ("DEFECT", "VERDICT_DEFECT"):
         old, new = _good_ns[label]
-        if old not in SOURCE:
-            print("*** FAIL *** the declared %s no longer applies to the guard: %r" % (label, old))
+        if old not in _outside_defect(SOURCE, "DEFECT", "VERDICT_DEFECT"):
+            print(
+                "*** FAIL *** the declared %s no longer applies to the guard outside its declaration: %r"
+                % (label, old)
+            )
             fails += 1
             continue
         _bad_ns: dict = {"__name__": "broken_guard", "__file__": str(GUARD)}
