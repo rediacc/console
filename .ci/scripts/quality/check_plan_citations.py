@@ -760,10 +760,11 @@ def selftest(root):
             unresolved(root, "object", orphan)[0],
             unresolved(root, "object", orphan)[1],
         )
+        # PRESENCE IS ASKED OF GIT DIRECTLY: wl_planrec.resolve also demands ancestry since c3cd6da14 (#27a05a50), so it answers False for exactly this orphan and can no longer stand in for "the object exists".
         ck(
             "CONTROL: and the orphan really IS present, so the finding is about "
             "REACHABILITY and not about a missing object",
-            R.resolve(root, "commit", orphan)[0],
+            _git("cat-file", "-t", orphan).strip() == "commit",
         )
     else:
         ck("the ancestry control could build an orphan to test with", False)

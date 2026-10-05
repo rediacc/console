@@ -29,6 +29,8 @@ Raw CI **reads** are refused too, by the pre-bash guard `block_raw_ci_read`: `gh
 
 **Poll the head before arming**: `gh api .../pulls/<n> --jq .head.sha` lagged a push by 30-60s repeatedly on 2026-09-01, and a watch armed early traces the stale head.
 
+**A submodule PR needs `--repo OWNER/NAME`**, run from inside its checkout: `.ci/scripts/ci/ci-trace.py --repo rediacc/account` traces that repo's open PR for the checkout's branch. Without the flag every read targets the console. A PR head with no check contexts at all (account has no workflows) reads `NO-CI` and exits 4 once the 180 s grace has passed.
+
 **A dispatched run needs `--run <id>`.** A branch's `statusCheckRollup` does NOT contain a `workflow_dispatch` run's checks: `--wait --ref main` reported GREEN while a Release run was still tagging.
 
 ## Diagnosing
