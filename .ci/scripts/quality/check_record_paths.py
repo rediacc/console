@@ -38,10 +38,11 @@ from typing import Any
 import _cipath  # noqa: F401
 from rediacc_ci import controls, paths
 from rediacc_ci.controls import plant
+from rediacc_ci.policy_paths import policy_rel
 
-POLICY_REL = ".ci/policy/record-paths.json"
+POLICY_REL = policy_rel("record-paths.json")
 SELF_REL = ".ci/scripts/quality/check_record_paths.py"
-WIDTHS_REL = ".ci/policy/fixed-widths.json"
+WIDTHS_REL = policy_rel("fixed-widths.json")
 LOCK_REL = "scripts/ci-runner/gates.lock.json"
 POLICY_VERSION = 1
 CONTROL_FLOOR = 40

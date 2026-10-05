@@ -101,6 +101,9 @@ const POLICY_FILES = Object.freeze([
   'deps-major-exceptions.json',
   // 2026-09-21. A TABLE of permitted root and agent/ classes, one row per class with its own reason, which a name-per-line dotfile could not carry. Read only by .ci/rediacc_ci/quality/tree_shape.py.
   'tree-shape.json',
+  // 2026-10-05, PLAN-prepush-full-cpu PF23/PF9. Two tables, each row with its own reason, which a name-per-line dotfile could not carry: the record paths a commit may touch without voiding a pre-push receipt (with the gates that read them), and the fixed parallel widths that stay fixed (network fan-outs, operator /ask 2026-10-05T07:23Z). Read by .ci/scripts/quality/check_record_paths.py and .claude/rediacc_hooks/guards/block_unverified_push.py.
+  'record-paths.json',
+  'fixed-widths.json',
 ] as const);
 
 type PolicyFileName = (typeof POLICY_FILES)[number];
