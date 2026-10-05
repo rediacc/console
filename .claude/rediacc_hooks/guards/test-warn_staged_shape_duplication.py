@@ -120,6 +120,8 @@ def run_guard(command, root, env_extra=None, path=None):
     """(rc, stdout, stderr, elapsed) for one command, through the dispatcher."""
     env = dict(os.environ)
     env["CLAUDE_PROJECT_DIR"] = str(root)
+    # Room to answer on a loaded machine (the guard's SHAPE_PROBE_DEADLINE_S seam); the deadline case passes the product's 0.3 s back explicitly.
+    env.setdefault("SHAPE_PROBE_DEADLINE_S", "30")
     if path is not None:
         env["PATH"] = path
     env.update(env_extra or {})
@@ -263,6 +265,7 @@ slow = case(
     ROOT,
     loud("did not answer"),
     path="%s:%s" % (STUBS, os.environ.get("PATH", "")),
+    env_extra={"SHAPE_PROBE_DEADLINE_S": "0.3"},
 )
 if slow > 2.0:
     print(
