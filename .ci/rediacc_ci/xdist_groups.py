@@ -28,17 +28,22 @@ ONE GROUP FOR ALL REAL-TREE TWINS, NOT ONE PER CLAIM
 Splitting `mutex` and `reads` into two group names would look more precise and would be WRONG, because two different groups may run concurrently on two different workers. A reader overlapping a writer is exactly the collision being prevented, so the two claims must share one name. `loadgroup` gives no finer-grained instrument than "same worker", and this uses the whole of it.
 
 --------------------------------------------------------------------------
-THE ESCAPE HATCH, AND THE ONE THING THAT USES IT
+THE ESCAPE HATCH, AND WHY IT IS FOR GENUINE SHARING ONLY
 --------------------------------------------------------------------------
-A module may set `XDIST_GROUP = "<name>"` to declare a shared resource no
-registry knows about. There is exactly one today and it is a genuine one, not a convenience: `.ci/rediacc_ci/tests/test_core_ports.py` calls `find_consecutive_free_ports(n, 20000, 30000)`, which returns the FIRST free run in that range. Two workers asking at the same moment both get 20000, both bind it, and one of them fails on a race that has nothing to do with the code under
-test. No lock entry can express that, because the resource is the host's port space rather than the tree.
+A module may set `XDIST_GROUP = "<name>"` to declare a shared resource no registry knows about. `XDIST_GROUP` takes precedence over the lock join, so a module can name its own resource without having to also be a real-tree twin.
 
-`XDIST_GROUP` takes precedence over the lock join, so a module can name its own resource without having to also be a real-tree twin.
+A GROUP IS A SERIAL CHAIN, so it is the last resort, not the first (agent/plans/PLAN-prepush-full-cpu.md, operator ruling 2026-10-05: no static worker counts, wall close to the critical path). Every group pins its members to one worker, and on 2026-10-03 the five largest groups were the floor of check:ci-pytest at any core count. Before declaring one, isolate the resource per worker:
+
+  * THE HOST'S PORT SPACE. `worker_port_range()` below hands each xdist worker a disjoint slice of a range, sized from the worker count at startup, and `free_port_in_range()` draws a free port inside it. The `ports` group (`test_core_ports.py`, `test_testrun_start_account.py`, `test_testrun_account_e2e.py`) was deleted for this: `find_consecutive_free_ports(n, 20000, 30000)` returns the FIRST free run, so two workers asking at once both got 20000, and an ephemeral `bind(0)` released before the server bound it could be drawn twice. Disjoint slices cannot collide.
+  * THE REAL TREE. The real-tree group has NO declared member since 2026-10-05: every test that planted into the tracked tree plants into a copy, and `check:ci-pool-writer-safety` reds on a new declaration. The derivation from the lock still applies to a ported twin whose lock entry claims `tree:` (a reader such as `test_gate_runner_advice.py`), which is a group of one.
+
+What remains in a group is a resource that is machine-wide by construction and cannot be sliced from the test side (a driver that pins constant ports or a fixed tmp path in a transcript, a docker daemon); each such module says so where it declares it.
 """
 
 import os
 import pathlib
+import random
+import socket
 
 from rediacc_ci import battery, paths
 
@@ -89,3 +94,99 @@ def group_for(module: object, unsafe: set[str] | None = None) -> str | None:
         if os.path.basename(twin) in known:
             return REAL_TREE_GROUP
     return None
+
+
+# --------------------------------------------------------------------------- Per-worker port slices ---------------------------------------------------------------------------
+
+#: The range the slices are cut from: below Linux's default ephemeral range (32768-60999), so no `bind(0)` anywhere in the suite can be handed a port inside a slice.
+PORT_RANGE = (20000, 30000)
+
+#: The environment xdist sets in each worker: its id (`gw<N>`) and the total worker count.
+WORKER_ENV = "PYTEST_XDIST_WORKER"
+WORKER_COUNT_ENV = "PYTEST_XDIST_WORKER_COUNT"
+
+
+def worker_port_range(
+    low: int = PORT_RANGE[0], high: int = PORT_RANGE[1], environ: dict[str, str] | None = None
+) -> tuple[int, int]:
+    """This worker's own inclusive slice of `[low, high]`, disjoint from every other worker's.
+
+    Sized from the worker count xdist reports at startup, never from a constant, so 4 workers get 2,500 ports each and 23 get 434. A serial run (no xdist variables, or malformed ones) gets the whole range, which is exactly what it had before slicing existed.
+    """
+    env = os.environ if environ is None else environ
+    worker = env.get(WORKER_ENV, "")
+    count = env.get(WORKER_COUNT_ENV, "")
+    if not (worker.startswith("gw") and worker[2:].isdigit() and count.isdigit()):
+        return low, high
+    index, total = int(worker[2:]), int(count)
+    if total <= 0 or index >= total:
+        return low, high
+    width = (high - low + 1) // total
+    start = low + index * width
+    end = high if index == total - 1 else start + width - 1
+    return start, end
+
+
+def _bindable(port: int) -> bool:
+    with socket.socket() as sock:
+        try:
+            sock.bind(("127.0.0.1", port))
+        except OSError:
+            return False
+    return True
+
+
+def free_port_in_range(
+    environ: dict[str, str] | None = None, low: int = PORT_RANGE[0], high: int = PORT_RANGE[1]
+) -> int:
+    """A port that is free right now, inside this worker's slice.
+
+    A RANDOM START inside the slice rather than the first free port, so two pytest SESSIONS on one machine (whose `gw0` workers share a slice) do not walk the same sequence; within one session the slices are disjoint, which is the collision that used to need the `ports` group.
+    """
+    start, end = worker_port_range(low, high, environ)
+    span = end - start + 1
+    offset = random.randrange(span)  # noqa: S311 -- spreading probes, not security
+    for step in range(span):
+        port = start + (offset + step) % span
+        if _bindable(port):
+            return port
+    msg = "no free port in this worker's slice %d-%d" % (start, end)
+    raise OSError(msg)
+
+
+# --------------------------------------------------------------------------- Longest first ---------------------------------------------------------------------------
+
+#: Per-file measured durations (ms) for the pytest lane, refreshed from CI by `budget_report.py --refresh`.
+LANE_DURATIONS_SUBDIR = (".ci", "config", "lane-durations.json")
+UNIT_PREFIX = "pytest:"
+LANE_ID = "quality-pytest"
+
+
+def unit_durations(path: pathlib.Path | None = None) -> tuple[dict[str, float], float]:
+    """`({repo-relative test file: measured ms}, default ms for a file with no entry)`, or `({}, 0.0)` when the file cannot be read.
+
+    THE TRACKED FILE, NOT THE LOCAL JUNIT, and that is a correctness choice. Every xdist worker collects on its own and the controller refuses a run whose workers collected different orders; a junit another session rewrites mid-collection would hand two workers two orders. A tracked file read at collection is the same bytes for every worker.
+    """
+    source = path if path is not None else paths.from_root(*LANE_DURATIONS_SUBDIR)
+    try:
+        import json  # noqa: PLC0415 -- read once per collection, by the conftest only
+
+        data = json.loads(source.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}, 0.0
+    units = data.get("units") if isinstance(data, dict) else None
+    durations = {
+        key[len(UNIT_PREFIX) :]: float(value)
+        for key, value in (units or {}).items()
+        if key.startswith(UNIT_PREFIX) and isinstance(value, (int, float))
+    }
+    default = (data.get("defaultUnitMs") or {}).get(LANE_ID, 0.0) if isinstance(data, dict) else 0.0
+    return durations, float(default or 0.0)
+
+
+def order_longest_first(files: list[str], durations: dict[str, float], default: float) -> list[int]:
+    """The indices of `files` (one per collected item, repo-relative) sorted by their file's measured duration, longest first.
+
+    STABLE, so items keep their collection order inside a file and between equal files: a module whose cases rely on running in file order still does. `loadgroup` hands pending scopes out in collection order, so this is longest-processing-time-first scheduling, which keeps the longest files from being started last and finishing alone.
+    """
+    return sorted(range(len(files)), key=lambda i: -durations.get(files[i], default))

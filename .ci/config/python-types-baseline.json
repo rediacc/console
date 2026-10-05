@@ -3299,13 +3299,6 @@
       "message": "Need type annotation for \"own\" (hint: \"own: dict[<type>, <type>] = ...\")"
     },
     {
-      "id": "95f59b734c70f71d",
-      "file": ".claude/rediacc_hooks/tests/test_guards_differential.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"seen\" (hint: \"seen: dict[<type>, <type>] = ...\")"
-    },
-    {
       "id": "60c1bcc3d55f4e66",
       "file": ".claude/rediacc_hooks/tests/test_hooks_fixtures.py",
       "code": "list-item",

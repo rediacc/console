@@ -15,7 +15,7 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2835,
+ "count": 2834,
  "files": 697,
  "by_rule": {
   "R1": 1548,
@@ -24,7 +24,7 @@
   "R18": 13,
   "R19": 62,
   "R2": 608,
-  "R7": 454
+  "R7": 453
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -5897,9 +5897,6 @@
   "scripts/ci-runner/pool.ts": {
    "R2": [
     "34193fa253d068d0"
-   ],
-   "R7": [
-    "abeca6374415a746"
    ]
   },
   "scripts/ci-runner/report.ts": {

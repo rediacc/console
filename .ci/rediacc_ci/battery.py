@@ -72,7 +72,7 @@ import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-from rediacc_ci import paths
+from rediacc_ci import core_lease, paths
 from rediacc_ci import proc as ci_proc
 from rediacc_ci.controls import Controls
 
@@ -446,8 +446,8 @@ def run_battery(
 
 
 def _default_jobs() -> int:
-    # 4 on ubuntu-latest. Capped at 8 locally so a bare run on a 20-core box does not fork-bomb node: several of these tests shell out to npx/tsx, and 20 concurrent node startups cost more in contention than they buy.
-    return min(8, os.cpu_count() or 4)
+    # The cores granted at launch, never a constant (operator ruling 2026-10-05, agent/plans/PLAN-prepush-full-cpu.md PF6). This used to be `min(8, os.cpu_count())`, a cap against twenty concurrent node startups on a bare local run; under the ci-runner the grant (`CI_RUNNER_CORES`) is what bounds that contention now, because the scheduler budgets the rest of the pass around exactly this many cores. Run standalone it is the affinity count, which is what a CI leg's own runner has.
+    return core_lease.granted_cores()
 
 
 def write_unit_durations_summary(report: Report, path: pathlib.Path) -> None:

@@ -146,21 +146,20 @@ def test_a_lock_that_declares_nothing_parses_empty() -> None:
     assert gate.registered_writers("{}") == []
 
 
-def test_the_live_declarations_still_name_a_serialised_real_tree_writer() -> None:
+def test_the_live_declarations_name_no_real_tree_writer_and_no_lane_claim() -> None:
     """Every fixture above is synthetic. This one reads the REAL declarations.
 
-    A parser that agreed with all of them while reading the live files as empty would look perfect here and refuse on every real run, and a retarget is exactly the change that could cause it.
-
-    THE SUBJECT MOVED LANGUAGES ON 2026-09-21 AND THIS CASE MOVED WITH IT. It used to name `test-gate-anti-vacuity.sh` and `test-generate-tag-inputs.sh`, the last two lock entries carrying `mutex: ["tree:repo"]`. Both are retired; their pytest ports still overwrite tracked files, so the writers are the ports and the exclusive claim belongs to the lane that runs them. Asserting
-    the pair together is what makes this more than a spelling change: a port group with no exclusive lane claim behind it is the unserialised writer the whole gate exists to refuse.
+    FLIPPED 2026-10-05 with the gate (agent/plans/PLAN-prepush-full-cpu.md PF15/PF16): the three pytest modules that wrote the tracked tree plant into copies now, so no module may declare the real-tree group and the pytest lane holds no exclusive `tree:` claim. A parser that read the live files as empty would also find no declaration, so the scan is first proven to have modules to read.
     """
-    live = pathlib.Path(diff.repo()) / "scripts" / "ci-runner" / "gates.lock.json"
-    lock_text = live.read_text(encoding="utf-8")
-    ports = gate.port_writers(pathlib.Path(diff.repo()).joinpath(*gate.PORTS_DIR_REL))
-    assert ports, "no port declares the real-tree xdist group, so the corpus collapsed"
-    assert gate.lane_claims_tree_exclusively(lock_text, gate.PYTEST_LANE_ID), (
-        "%s declares no exclusive tree: resource, so those ports run beside every other "
-        "reader of the same tree" % gate.PYTEST_LANE_ID
+    root = pathlib.Path(diff.repo())
+    live_dirs = [root.joinpath(*rel) for rel in gate.PORT_SCAN_RELS]
+    assert sum(len(list(d.glob("test_*.py"))) for d in live_dirs) > 0, (
+        "the live testpaths hold no test modules, so an empty answer below would prove nothing"
+    )
+    assert [name for d in live_dirs for name in gate.port_writers(d)] == []
+    lock_text = (root / "scripts" / "ci-runner" / "gates.lock.json").read_text(encoding="utf-8")
+    assert not gate.lane_claims_tree_exclusively(lock_text, gate.PYTEST_LANE_ID), (
+        "%s claims the tree exclusively again, serialising the critical path" % gate.PYTEST_LANE_ID
     )
 
 

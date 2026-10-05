@@ -66,9 +66,39 @@ function signalFromStatus(code: number): string | undefined {
   return name ?? `signal ${n}`;
 }
 
+/**
+ * The cores the pool granted one gate at launch (pool.ts admit). THE CONTRACT of agent/plans/PLAN-prepush-full-cpu.md part 1: `CI_RUNNER_CORES=<cores>` reaches the gate's process, and `CI_CORE_LEASE_HELD=1` beside it when the grant is backed by the machine-wide lease, so a child sizing itself through `granted_cores()` (.ci/rediacc_ci/core_lease.py) or `grantedCores()` (lease-client.ts) uses the grant and never leases the same cores a second time.
+ */
+export interface Grant {
+  cores: number;
+  leaseHeld: boolean;
+}
+
+/** The env names of the grant contract, shared with lease-client.ts and core_lease.py. */
+export const CORES_ENV = 'CI_RUNNER_CORES';
+export const LEASE_HELD_ENV = 'CI_CORE_LEASE_HELD';
+
+/**
+ * The child environment for one gate: this process's env, the gate's declared env, then the grant, last so no declaration can contradict the number the pool budgeted. Without a grant (a direct execGate call outside the pool) the env passes through unchanged. A lease this process does not hold is never claimed: when `leaseHeld` is false an inherited CI_CORE_LEASE_HELD is removed rather than forwarded.
+ */
+export function gateEnv(
+  spec: Pick<GateSpec, 'env'>,
+  grant: Grant | undefined,
+  base: NodeJS.ProcessEnv = process.env
+): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = spec.env ? { ...base, ...localEnv(spec.env) } : { ...base };
+  if (grant === undefined) return env;
+  env[CORES_ENV] = String(Math.max(1, Math.floor(grant.cores)));
+  if (grant.leaseHeld) env[LEASE_HELD_ENV] = '1';
+  else delete env[LEASE_HELD_ENV];
+  return env;
+}
+
 export interface ExecOptions {
   cwd: string;
   mergeOutput: boolean;
+  /** The pool's grant for this launch; see `Grant`. */
+  grant?: Grant;
   /**
    * When set, a forkless /proc tree sampler is attached to every gate spawn and
    * writes `<profileDir>/<gate-id>.jsonl`. This is the ONLY place a CI gate's
@@ -118,7 +148,7 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
     const err: string[] = [];
 
     // bash, not sh: several gate bodies use bashisms, and npm runs scripts through a shell anyway. stdin is closed so a gate that waits on input fails instead of hanging the whole pool.
-    // The gate's declared `env` (the same values its CI step sets) goes into the child. Without it the local run was not the CI run: tutorial-player's PUBLIC_VIDEO_CDN_BASE_URL was declared here and never applied, so the gate failed in every clean clone and passed in CI (2026-09-26).
+    // The gate's declared `env` (the same values its CI step sets) goes into the child. Without it the local run was not the CI run: tutorial-player's PUBLIC_VIDEO_CDN_BASE_URL was declared here and never applied, so the gate failed in every clean clone and passed in CI (2026-09-26). The pool's grant goes in last (`gateEnv`).
     // Windows-native (Git Bash) keeps the bare spawn and reports wall time only: its `times` reports nothing useful for native children.
     const wrapped = process.platform !== 'win32';
     const child = spawn(
@@ -126,7 +156,7 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
       wrapped ? ['-c', RUSAGE_WRAPPER, 'bash', spec.run] : ['-c', spec.run],
       {
         cwd: opts.cwd,
-        env: spec.env ? { ...process.env, ...localEnv(spec.env) } : process.env,
+        env: gateEnv(spec, opts.grant),
         // fd 3 is opened on every platform so the spawn has one shape; unwrapped, nothing writes to it.
         stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
       }

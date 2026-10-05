@@ -214,7 +214,6 @@ def _folded(relative: str, tail: list[str], counter, floor: int, name: str, unit
     _assert_no_leak(name, leftovers)
 
 
-@pytest.mark.xdist_group("hooks-delegates")
 @pytest.mark.parametrize(
     ("relative", "tail", "counter", "floor", "name", "unit"),
     COUNTED,
@@ -224,7 +223,6 @@ def test_a_counted_selftest_is_folded_with_a_floor(relative, tail, counter, floo
     _folded(relative, tail, counter, floor, name, unit)
 
 
-@pytest.mark.xdist_group("hooks-delegates")
 @pytest.mark.parametrize("relative", TAILED)
 def test_an_orphan_control_suite_runs_and_says_something(relative):
     path = HOOKS / relative

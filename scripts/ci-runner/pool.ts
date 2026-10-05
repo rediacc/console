@@ -59,7 +59,7 @@
  * See agent/plans/PLAN-npm-ci-parallel-parity.md sections 3 and 4.2.
  */
 
-import type { ExecOutcome } from './exec';
+import type { ExecOutcome, Grant } from './exec';
 import type { GateSpec } from './manifest';
 
 /**
@@ -117,17 +117,29 @@ export interface GateResult {
   endAt?: number;
   /** The last admission check that held a ready gate back before it launched (see HoldReason). Absent when it launched on first sight. */
   blockedBy?: HoldReason;
+  /** The cores the pool granted this gate at launch, exported to its process as CI_RUNNER_CORES (exec.ts). Absent on a gate that never launched. */
+  grantedCores?: number;
+  /** The gate declared an elastic `cores` range, so `grantedCores` was sized by the area rule rather than rounded from a measured width. */
+  elastic?: boolean;
 }
 
 /**
- * Which admission rule the pool runs (agent/plans/PLAN-ci-quick-cpu-scheduling.md 2.2). `slots` is the rule the pool has always had: `jobs` slots, one per gate unless it declares `weight`, longest wall first. `cores` packs against a core budget from each gate's measured CPU, and is kept beside `slots` for A/B and rollback.
+ * Which admission rule the pool runs (agent/plans/PLAN-ci-quick-cpu-scheduling.md 2.2). `slots` is the rule the pool has always had: `jobs` slots, one per gate (an elastic gate takes its grant's worth), longest wall first. `cores` packs against a core budget from each gate's measured CPU, and is kept beside `slots` for A/B and rollback.
  */
 export type Sched = 'slots' | 'cores';
 
 /**
- * Why a ready gate was held back. `slot` and `heavy` are the slots rule's; `cpu`, `mem` and `count` are the core budget's three dimensions; `reservation` is a gate that would fit now but would delay the reserved start of a wider gate ahead of it (EASY backfill); `claim` is the isolation contract, the same in both.
+ * Why a ready gate was held back. `slot` and `heavy` are the slots rule's; `cpu`, `mem` and `count` are the core budget's three dimensions; `reservation` is a gate that would fit now but would delay the reserved start of a wider gate ahead of it (EASY backfill); `claim` is the isolation contract, the same in both; `lease` is the machine-wide core lease (lease-client.ts) holding fewer free cores than the gate needs, so another run on this machine has them.
  */
-export type HoldReason = 'slot' | 'heavy' | 'claim' | 'cpu' | 'mem' | 'count' | 'reservation';
+export type HoldReason =
+  | 'slot'
+  | 'heavy'
+  | 'claim'
+  | 'cpu'
+  | 'mem'
+  | 'count'
+  | 'reservation'
+  | 'lease';
 
 /** What the duration cache measured for one gate (run.ts DurationRecord, reduced). */
 export interface GateCost {
@@ -137,6 +149,8 @@ export interface GateCost {
   wallMs?: number;
   /** The largest recent peak RSS, MB. */
   rssMb?: number;
+  /** An elastic gate's median cpu / wall / grant: the share of each granted core it keeps busy. Stored per core so one run at 20 workers does not teach the scheduler the gate is 20 wide. */
+  perCore?: number;
 }
 
 /** The `cores` rule's budget. */
@@ -159,13 +173,40 @@ export interface PoolOptions {
   failFast: boolean;
   /** Expected ms per id, for longest-first ordering. Missing ids fall back. */
   durations: Map<string, number>;
-  exec: (spec: GateSpec) => Promise<ExecOutcome>;
+  /** Spawn one gate with the grant the pool sized for it (exec.ts `execGate`). */
+  exec: (spec: GateSpec, grant: Grant) => Promise<ExecOutcome>;
   onStart?: (spec: GateSpec) => void;
   onFinish?: (result: GateResult) => void;
-  /** Default `slots`. `cores` needs `budget`; `costs` feeds it, and a gate missing from it is scheduled on its hand-written `weight`. */
+  /** Default `slots`. `cores` needs `budget`; `costs` feeds it, and a gate missing from it is budgeted at one core. */
   sched?: Sched;
   budget?: CoreBudget;
   costs?: Map<string, GateCost>;
+  /** The machine-wide core lease (lease-client.ts). Absent means the pool owns the whole budget, the same as a lease that degraded to the whole machine. */
+  lease?: PoolLease;
+}
+
+/**
+ * What runPool needs of the machine-wide core lease, implemented by lease-client.ts. Kept as an interface here so the pool, the simulator and the selftest never spawn a broker.
+ */
+export interface PoolLease {
+  /** True when the grants are backed by a lease (a broker, or one this process inherited), so a child must not lease the same cores again (CI_CORE_LEASE_HELD). */
+  readonly held: boolean;
+  /** Cores the pool may still start on beyond `inUse`: the broker's free tokens plus the slack of tokens it already holds. Infinity when nothing is leased. */
+  available(inUse: number): Promise<number>;
+  /** Hold exactly ceil(cores) tokens, acquiring or releasing the difference; returns the tokens held afterwards (Infinity when nothing is leased). A short acquire is not an error: the caller reads the count. */
+  reconcile(cores: number): Promise<number>;
+}
+
+/** An elastic declaration as admit() sees it: `max` resolved (`'all'` is Infinity), and what it knows of the gate's work. */
+interface ElasticPlan {
+  min: number;
+  max: number;
+  /** Predicted CPU work in core-ms, roughly the same at any width. */
+  workMs: number;
+  /** Share of each granted core the gate keeps busy (GateCost.perCore), 1 when unmeasured. */
+  perCore: number;
+  /** True when workMs is measured; false means the wall is unknown at any width, and the gate's estMs is used as is. */
+  measured: boolean;
 }
 
 /** A gate as the admission step sees it: every number it budgets, already derived. */
@@ -182,6 +223,12 @@ export interface Candidate {
   heavy: boolean;
   mutex: readonly string[];
   reads: readonly string[];
+  /** Predicted CPU in core-ms, for the area term of every elastic grant (`elasticGrant`). */
+  cpuMs: number;
+  /** Set on a gate declaring `cores: {min, max}`; its `cores`, `slots` and `estMs` are then decided at admission. */
+  elastic?: ElasticPlan;
+  /** Set by admit() on every launched gate: the cores exported to its process. */
+  grant?: number;
 }
 
 export interface RunningGate {
@@ -195,6 +242,10 @@ export interface AdmitConfig {
   jobs: number;
   heavyLimit: number;
   budget?: CoreBudget;
+  /** Cores the machine-wide lease can still give this pool (PoolLease.available, read before the pass). Absent means unbounded. Honoured by `cores` only; `slots` is the rollback rule and keeps its fixed width. */
+  leaseFree?: number;
+  /** Predicted CPU of every gate not yet launched (ready or waiting on `needs`), in core-ms, for the area term. Absent means 0. */
+  backlogCpuMs?: number;
 }
 
 export interface Admission {
@@ -210,6 +261,49 @@ export interface Admission {
 const FIT_TOLERANCE = 1e-9;
 
 /**
+ * THE AREA RULE (agent/plans/PLAN-prepush-full-cpu.md part 1): the widest grant k an elastic gate may take while leaving the rest of the pass the cores it needs. The rest needs `other` core-ms (every other gate still unstarted or running), spread over the elastic gate's predicted wall at k; so k <= C - other / wall(k).
+ *
+ * With a measured gate, wall(k) = work / (perCore x k), which makes the bound linear in k: k = floor(C / (1 + other x perCore / work)). An unmeasured gate has no wall model at any width, so its planning wall stands in: k = floor(C - other / estMs). Either can fall below 1, and the caller clamps to the declared `min`.
+ *
+ * Worked against the plan's numbers: C 23, a pytest of about 7,866 cpu-s at perCore 1 beside 818 cpu-s of fast gates gives floor(23 / 1.104) = 20, so pytest starts near 20 workers and the fast gates fill the rest.
+ */
+function areaGrant(el: ElasticPlan, estMs: number, c: number, otherCpuMs: number): number {
+  const raw =
+    el.measured && el.workMs > 0
+      ? c / (1 + (Math.max(0, otherCpuMs) * el.perCore) / el.workMs)
+      : c - Math.max(0, otherCpuMs) / Math.max(1, estMs);
+  return Math.floor(raw + FIT_TOLERANCE);
+}
+
+/** An elastic gate's predicted wall at a grant of k: the work model when measured, else its planning wall unchanged. */
+function elasticWall(el: ElasticPlan, estMs: number, k: number): number {
+  return el.measured && el.workMs > 0 ? el.workMs / (el.perCore * Math.max(1, k)) : estMs;
+}
+
+/**
+ * The grant an elastic candidate takes now: the area rule clamped to [min, min(max, free)], or undefined when fewer than `min` cores are free (the caller holds it and reserves its start). `free` is already the smaller of the core budget's room and the lease's.
+ */
+function elasticGrant(
+  g: Candidate,
+  c: number,
+  otherCpuMs: number,
+  free: number
+): number | undefined {
+  const el = g.elastic;
+  if (el === undefined) return undefined;
+  const ceiling = Math.min(el.max, Math.floor(free + FIT_TOLERANCE));
+  if (ceiling < el.min) return undefined;
+  return Math.max(el.min, Math.min(areaGrant(el, g.estMs, c, otherCpuMs), ceiling));
+}
+
+/** The candidate an elastic gate becomes at a grant of k: k cores and k slots budgeted, its wall re-predicted at k. */
+function sizedAt(g: Candidate, k: number): Candidate {
+  const el = g.elastic;
+  if (el === undefined) return g;
+  return { ...g, cores: k, slots: k, estMs: elasticWall(el, g.estMs, k), grant: k };
+}
+
+/**
  * ONE ADMISSION PASS, pure, shared by runPool and scripts/ci-runner/sim.ts so the simulator tests the rule the pool runs rather than a copy of it. `ready` must already be in priority order; `running` includes nothing launched by this pass.
  *
  * `slots` is the pool's original loop moved here verbatim: slot budget, then heavyLimit, then claims, in that order, every gate in rank order.
@@ -217,6 +311,8 @@ const FIT_TOLERANCE = 1e-9;
  * `cores` admits g when its claims pass, heavyLimit passes (unmeasured heavy gates only), sum(d) + d(g) <= C(1+epsilon), running < K, sum(m) + m(g) <= M, and no reservation is delayed. The first gate that fails a budget check reserves the moment enough running gates are predicted to end for it to fit; a later gate may then run only if it is predicted to finish before that moment or fits inside what the reserved gate leaves spare at it. Without the reservation a d-8 gate behind a stream of one-core gates never sees 8 free cores at once.
  *
  * Both rules end in the same progress guarantee: nothing running and nothing admitted means the head of the queue runs anyway, alone, whatever its size. A gate wider than the whole budget would otherwise hang the pool.
+ *
+ * ELASTIC GATES (a declared `cores: {min, max}`) are sized here, not before the run: `elasticGrant` applies the area rule against what is free at this moment, the granted candidate is what every later check and the running set budget, and `grant` on each launched candidate is the number exported to the gate's process. Under `cores` the lease (`leaseFree`) is a fourth dimension: a gate wider than what the machine-wide lease can still give is held with `lease`, and an elastic gate reserves its start at its `min`. On an empty pool an elastic head takes max(min, what is free).
  */
 export function admit(
   ready: readonly Candidate[],
@@ -249,14 +345,32 @@ export function admit(
 
   const launch: Candidate[] = [];
   const held: [string, HoldReason][] = [];
+  let leaseLeft = cfg.leaseFree ?? Number.POSITIVE_INFINITY;
   const go = (g: Candidate): void => {
-    occupy({ gate: g, endsAt: now + g.estMs });
-    launch.push(g);
+    // A gate with no elastic range is told its budgeted width, rounded, never less than one core: a child tool sized by granted_cores() then sees the share the pool budgeted it.
+    const launched = g.grant !== undefined ? g : { ...g, grant: Math.max(1, Math.round(g.cores)) };
+    occupy({ gate: launched, endsAt: now + launched.estMs });
+    leaseLeft -= launched.cores;
+    launch.push(launched);
   };
   let reservation: Admission['reservation'];
+  // The area term's "everyone else": the backlog (which still counts every gate this pass launches, since they were unstarted when it was summed) less the candidate itself, plus what the gates already running are predicted to burn before they end.
+  let runningLeftMs = 0;
+  for (const r of running) runningLeftMs += r.gate.cores * Math.max(0, r.endsAt - now);
+  const otherCpu = (g: Candidate): number =>
+    Math.max(0, (cfg.backlogCpuMs ?? 0) - g.cpuMs) + runningLeftMs;
 
   if (cfg.sched === 'slots') {
-    for (const g of ready) {
+    for (const g0 of ready) {
+      let g = g0;
+      if (g0.elastic !== undefined) {
+        const k = elasticGrant(g0, cfg.jobs, otherCpu(g0), cfg.jobs - slots);
+        if (k === undefined) {
+          held.push([g0.id, 'slot']);
+          continue;
+        }
+        g = sizedAt(g0, k);
+      }
       if (slots + g.slots > cfg.jobs) {
         held.push([g.id, 'slot']);
         continue;
@@ -305,30 +419,55 @@ export function admit(
       reservation = { id: g.id, at };
     };
 
-    for (const g of ready) {
-      if (blockedByClaim(g)) {
-        held.push([g.id, 'claim']);
+    for (const g0 of ready) {
+      if (blockedByClaim(g0)) {
+        held.push([g0.id, 'claim']);
         continue;
       }
-      if (g.heavy && heavy >= cfg.heavyLimit) {
-        held.push([g.id, 'heavy']);
+      if (g0.heavy && heavy >= cfg.heavyLimit) {
+        held.push([g0.id, 'heavy']);
         continue;
+      }
+      let g = g0;
+      if (g0.elastic !== undefined) {
+        const k = elasticGrant(g0, b.cores, otherCpu(g0), Math.min(cap - cores, leaseLeft));
+        if (k === undefined) {
+          // Fewer than `min` free: the budget's room when that is the shorter, else the lease's (another run on this machine holds the cores).
+          held.push([
+            g0.id,
+            cap - cores + FIT_TOLERANCE >= g0.elastic.min && leaseLeft < cap - cores
+              ? 'lease'
+              : 'cpu',
+          ]);
+          if (spare === undefined && b.reserve !== false) reserve(sizedAt(g0, g0.elastic.min));
+          continue;
+        }
+        g = sizedAt(g0, k);
       }
       const over: HoldReason | undefined =
         cores + g.cores > cap + FIT_TOLERANCE
           ? 'cpu'
-          : live.length + 1 > b.maxProcs
-            ? 'count'
-            : mem + g.memMb > b.memMb
-              ? 'mem'
-              : undefined;
+          : g.cores > leaseLeft + FIT_TOLERANCE
+            ? 'lease'
+            : live.length + 1 > b.maxProcs
+              ? 'count'
+              : mem + g.memMb > b.memMb
+                ? 'mem'
+                : undefined;
       if (over !== undefined) {
         held.push([g.id, over]);
         if (spare === undefined && b.reserve !== false) reserve(g);
         continue;
       }
       if (spare !== undefined && now + g.estMs > spare.at) {
-        // Runs past the reserved start, so it must fit inside what the reserved gate leaves spare there.
+        // Runs past the reserved start, so it must fit inside what the reserved gate leaves spare there. An elastic gate first narrows to what is spare, when that still meets its `min`.
+        const narrow = Math.floor(spare.cores + FIT_TOLERANCE);
+        if (
+          g0.elastic !== undefined &&
+          g.cores > spare.cores + FIT_TOLERANCE &&
+          narrow >= g0.elastic.min
+        )
+          g = sizedAt(g0, narrow);
         if (g.cores > spare.cores + FIT_TOLERANCE || g.memMb > spare.mem || spare.procs < 1) {
           held.push([g.id, 'reservation']);
           continue;
@@ -345,7 +484,30 @@ export function admit(
     // Nothing is in flight and nothing was admissible: the budget is smaller than the head of the queue. Admit it anyway rather than spin. No claim can be the blocker here, since nothing holds one -- but the predicate is still consulted rather than assumed, because "cannot happen" is how a stall turns into a silent over-admission that violates the very exclusion this branch is
     // bypassing.
     const head = ready.find((g) => !blockedByClaim(g));
-    if (head !== undefined) go(head);
+    if (head?.elastic !== undefined) {
+      const c = cfg.sched === 'slots' ? cfg.jobs : (cfg.budget?.cores ?? cfg.jobs);
+      const room =
+        cfg.sched === 'slots'
+          ? cfg.jobs
+          : Math.min(
+              c * (1 + (cfg.budget?.epsilon ?? 0)),
+              cfg.leaseFree ?? Number.POSITIVE_INFINITY
+            );
+      const el = head.elastic;
+      go(
+        sizedAt(
+          head,
+          Math.max(
+            el.min,
+            Math.min(
+              areaGrant(el, head.estMs, c, otherCpu(head)),
+              el.max,
+              Math.floor(room + FIT_TOLERANCE)
+            )
+          )
+        )
+      );
+    } else if (head !== undefined) go(head);
   }
   return { launch, held, reservation };
 }
@@ -353,9 +515,9 @@ export function admit(
 /**
  * Derive every gate's Candidate and the priority order, for either rule. Shared with sim.ts for the same reason as admit().
  *
- * `slots`: longest expected wall first, as it always was; weight clamped to [1, jobs].
+ * `slots`: longest expected wall first, as it always was; one slot per gate, and an elastic gate's slots decided at admission.
  *
- * `cores`: d(g) = clamp(median cpu / least-contended wall, 0.25, C) for a measured gate; `weight ?? 1` unclamped for an unmeasured one (a weight above C is still admitted, alone, by the progress guarantee). Memory is the largest measured peak RSS, else 4 GB for `heavy` and 0.5 GB otherwise. Priority is max(bottom level over `needs`, cpu), both in ms: with one-core gates and no edges it reduces to the slots rule's longest-first, and a wide gate like check:test-shared (33.6 cpu-s over 4.8 s) moves to the first wave instead of starting last.
+ * `cores`: d(g) = clamp(median cpu / least-contended wall, 0.25, C) for a measured gate; one core for an unmeasured one. An elastic gate (`cores: {min, max}`) carries an ElasticPlan instead, and its width is decided at admission by the area rule; its planning `cores` is its `min` until then. Memory is the largest measured peak RSS, else 4 GB for `heavy` and 0.5 GB otherwise. Priority is max(bottom level over `needs`, cpu), both in ms: with one-core gates and no edges it reduces to the slots rule's longest-first, and a wide gate like check:test-shared (33.6 cpu-s over 4.8 s) moves to the first wave instead of starting last.
  */
 export function planAdmission(
   specs: readonly GateSpec[],
@@ -363,26 +525,45 @@ export function planAdmission(
 ): { byId: Map<string, Candidate>; rank: (a: GateSpec, b: GateSpec) => number } {
   const position = new Map(specs.map((spec, i) => [spec.id, i]));
   // A missing or corrupt duration cache must never fail the run, so an unknown gate is simply assumed cheap-ish and sorts late.
-  const expected = (spec: GateSpec): number =>
-    opts.durations.get(spec.id) ?? (spec.weight ?? 1) * 5000;
-  // Clamped: a gate declaring more weight than the whole budget would never be admissible and would hang the pool at --jobs 1.
-  const effWeight = (spec: GateSpec): number =>
-    Math.min(Math.max(1, spec.weight ?? 1), Math.max(1, opts.jobs));
+  const expected = (spec: GateSpec): number => opts.durations.get(spec.id) ?? 5000;
+  // An elastic gate's planning width is its floor, clamped so a `min` above the whole budget cannot make it inadmissible at --jobs 1.
+  const effWidth = (spec: GateSpec): number =>
+    Math.min(Math.max(1, spec.cores?.min ?? 1), Math.max(1, opts.jobs));
+  const elasticOf = (
+    spec: GateSpec,
+    estMs: number,
+    cost: GateCost | undefined
+  ): ElasticPlan | undefined => {
+    if (spec.cores === undefined) return undefined;
+    const measured = cost?.cpuMs !== undefined && cost.cpuMs > 0;
+    return {
+      min: Math.max(1, spec.cores.min),
+      max: spec.cores.max === 'all' ? Number.POSITIVE_INFINITY : spec.cores.max,
+      workMs: measured ? (cost?.cpuMs ?? 0) : effWidth(spec) * estMs,
+      // A per-core share above 1 is a tool that oversubscribes its grant, below 0.05 a measurement of nothing; either would steer the area term on noise.
+      perCore: Math.min(1.5, Math.max(0.05, cost?.perCore ?? 1)),
+      measured,
+    };
+  };
   const byPosition = (a: GateSpec, b: GateSpec): number =>
     (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0);
   const byId = new Map<string, Candidate>();
 
   if ((opts.sched ?? 'slots') === 'slots') {
     for (const spec of specs) {
+      const estMs = expected(spec);
+      const elastic = elasticOf(spec, estMs, opts.costs?.get(spec.id));
       byId.set(spec.id, {
         id: spec.id,
-        slots: effWeight(spec),
-        cores: effWeight(spec),
+        slots: effWidth(spec),
+        cores: effWidth(spec),
         memMb: 0,
-        estMs: expected(spec),
+        estMs,
         heavy: spec.heavy === true,
         mutex: spec.mutex ?? [],
         reads: sharedClaims(spec),
+        cpuMs: elastic?.workMs ?? effWidth(spec) * estMs,
+        elastic,
       });
     }
     return {
@@ -396,20 +577,28 @@ export function planAdmission(
   for (const spec of specs) {
     const cost = opts.costs?.get(spec.id);
     const measured = cost?.cpuMs !== undefined && cost.wallMs !== undefined && cost.wallMs > 0;
-    const d = measured
-      ? Math.min(Math.max((cost.cpuMs ?? 0) / (cost.wallMs ?? 1), 0.25), c)
-      : Math.max(0.25, spec.weight ?? 1);
-    const estMs = opts.durations.get(spec.id) ?? cost?.wallMs ?? (spec.weight ?? 1) * 5000;
-    cpuMs.set(spec.id, measured ? (cost.cpuMs ?? 0) : d * estMs);
+    const estMs = opts.durations.get(spec.id) ?? cost?.wallMs ?? 5000;
+    const elastic = elasticOf(spec, estMs, cost);
+    // An elastic gate's measured cpu/wall is the width of whatever grant it last ran at, so it is not its d: its planning width is its floor until admit() sizes it.
+    const d =
+      elastic !== undefined
+        ? effWidth(spec)
+        : measured
+          ? Math.min(Math.max((cost.cpuMs ?? 0) / (cost.wallMs ?? 1), 0.25), c)
+          : 1;
+    const work = elastic?.workMs ?? (measured ? (cost.cpuMs ?? 0) : d * estMs);
+    cpuMs.set(spec.id, work);
     byId.set(spec.id, {
       id: spec.id,
-      slots: effWeight(spec),
+      slots: effWidth(spec),
       cores: d,
       memMb: cost?.rssMb ?? (spec.heavy === true ? 4096 : 512),
       estMs,
       heavy: spec.heavy === true && !measured,
       mutex: spec.mutex ?? [],
       reads: sharedClaims(spec),
+      cpuMs: work,
+      elastic,
     });
   }
 
@@ -587,17 +776,49 @@ export async function runPool(
     reason,
   });
 
-  const launch = (spec: GateSpec): void => {
+  const grants = new Map<string, number>();
+  const lease = opts.lease;
+  const coresInUse = (): number => {
+    let sum = 0;
+    for (const r of inFlight.values()) sum += r.gate.cores;
+    return sum;
+  };
+
+  // `gate` is the candidate admit() launched, carrying its grant. The lease is drawn here, at launch: a short acquire narrows an elastic gate to what was actually got, and below its `min` the tokens go back and the gate waits with `lease` -- unless nothing is running, where the progress guarantee wins over a lease another run is holding.
+  const launch = async (spec: GateSpec, admitted: Candidate): Promise<boolean> => {
+    let gate = admitted;
+    if (lease !== undefined && sched === 'cores') {
+      const before = coresInUse();
+      const held = await lease.reconcile(before + gate.cores);
+      const got = held - before;
+      const el = gate.elastic;
+      if (el !== undefined && got + 1e-9 < gate.cores) {
+        const k = Math.floor(got + 1e-9);
+        if (k >= el.min || inFlight.size === 0) {
+          const narrowed = Math.max(el.min, k);
+          gate = { ...gate, cores: narrowed, slots: narrowed, grant: narrowed };
+          await lease.reconcile(before + narrowed);
+        } else {
+          await lease.reconcile(before);
+          blockedBy.set(spec.id, 'lease');
+          return false;
+        }
+      }
+    }
     unstarted.delete(spec.id);
     const now = Date.now();
-    const gate = candidate(spec.id);
     inFlight.set(spec.id, { gate, endsAt: now + gate.estMs });
     startAt.set(spec.id, now);
+    const grant = gate.grant ?? Math.max(1, Math.round(gate.cores));
+    grants.set(spec.id, grant);
     opts.onStart?.(spec);
     running.set(
       spec.id,
-      opts.exec(spec).then((outcome) => ({ id: spec.id, outcome, endAt: Date.now() }))
+      opts
+        .exec(spec, { cores: grant, leaseHeld: lease?.held === true })
+        .then((outcome) => ({ id: spec.id, outcome, endAt: Date.now() }))
     );
+    return true;
   };
 
   while (unstarted.size > 0 || running.size > 0) {
@@ -630,18 +851,31 @@ export async function runPool(
     const now = Date.now();
     for (const spec of ready) if (!readyAt.has(spec.id)) readyAt.set(spec.id, now);
 
+    let backlogCpuMs = 0;
+    for (const id of unstarted) backlogCpuMs += candidate(id).cpuMs;
+    const leaseFree =
+      lease !== undefined && sched === 'cores' && ready.length > 0
+        ? await lease.available(coresInUse())
+        : undefined;
     const pass = admit(
       ready.map((spec) => candidate(spec.id)),
       [...inFlight.values()],
-      cfg,
+      {
+        ...cfg,
+        backlogCpuMs,
+        leaseFree: leaseFree === Number.POSITIVE_INFINITY ? undefined : leaseFree,
+      },
       now
     );
     for (const [id, why] of pass.held) blockedBy.set(id, why);
-    for (const gate of pass.launch) launch(mustGet(byId, gate.id));
+    for (const gate of pass.launch) await launch(mustGet(byId, gate.id), gate);
 
-    if (running.size === 0 && unstarted.size > 0) {
-      // admit() already ran the progress guarantee, so work outstanding with nothing in flight means no ready gate was admissible even alone.
+    if (running.size === 0 && unstarted.size > 0 && ready.length > 0) {
+      // admit() already ran the progress guarantee, and launch() overrides the lease when nothing runs, so work outstanding with nothing in flight means no ready gate was admissible even alone.
       throw new Error('ci-runner: internal error, pool stalled with work outstanding');
+    }
+    if (running.size === 0 && unstarted.size > 0) {
+      throw new Error('ci-runner: internal error, pool stalled: nothing ready, nothing running');
     }
 
     if (running.size === 0) continue;
@@ -649,7 +883,9 @@ export async function runPool(
     const { id, outcome, endAt } = await Promise.race(running.values());
     const spec = mustGet(byId, id);
     running.delete(id);
+    const settled = inFlight.get(id);
     inFlight.delete(id);
+    if (lease !== undefined && sched === 'cores') await lease.reconcile(coresInUse());
 
     // A vacuity finding always means `fail`, even at CANNOT_RUN: a gate that claims it cannot run AND trips the anti-vacuity oracle is not a machine missing a tool, it is a gate lying about what it did.
     const cannotRun = outcome.code === CANNOT_RUN && outcome.vacuity === undefined;
@@ -669,6 +905,8 @@ export async function runPool(
       startAt: startAt.get(id),
       endAt,
       blockedBy: blockedBy.get(id),
+      grantedCores: grants.get(id),
+      elastic: settled?.gate.elastic !== undefined ? true : undefined,
     });
     if (failed && opts.failFast) stopped = true;
   }

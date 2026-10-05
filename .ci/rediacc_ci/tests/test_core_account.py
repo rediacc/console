@@ -7,8 +7,7 @@ ALL TWENTY-TWO OF THE TWIN'S FUNCTIONS HAVE A PYTHON PORT, split across two modu
   * REAL RUNS for `account_stop`, `account_rotation` and `account_bws_exec`, against a real tracked process, a real Docker daemon and the real credential-free `rotation` subcommands (the "stop and rotation" section).
 The twin's four `.env` writers are deleted from BOTH sides (`agent/plans/PLAN-account-env-to-bws.md`), so they appear in neither tuple below; the CI-only `mint-dev-keys` verb that replaced one of their uses has no twin and is tested directly at the end of this file.
 
-WHY `XDIST_GROUP` IS DECLARED. The driver pins FIXED port numbers on both sides, because the two sides run as two processes and an ephemeral port would differ between them and land in a message text.
-Two workers running two scenarios at once would contend for those ports, which is the same host-port-space resource `test_core_ports.py` declares, so this joins the same group and is serialised against it.
+WHY SOME ITEMS CARRY AN XDIST GROUP. The driver pins FIXED port numbers on both sides, because the two sides run as two processes and an ephemeral port would differ between them and land in a message text, and the lifecycle driver runs at a fixed tmp path under a machine-wide lock. Only the items that run one of those drivers are grouped (see SHADOW_PORTS_GROUP below); the module as a whole is not, since 2026-10-05.
 
 THE ANTI-VACUITY CLAIMS, because a differential that compared two empty transcripts would pass forever: every scenario must produce a floor of observations, the tools the scenarios really use must be installed, and `test_the_differential_can_fail` mutates one side and demands a mismatch in each of the four places a mutation can hide.
 """
@@ -31,8 +30,14 @@ from rediacc_ci.core import account, account_lifecycle, shadow_driver, stubfarm
 from rediacc_ci.core import account_lifecycle_shadow_driver as lifecycle_driver
 from rediacc_ci.well_known import ACCOUNT_DEV_PORT
 
-# The host port space, the same resource `test_core_ports.py` names. See the header.
-XDIST_GROUP = "ports"
+# NO MODULE-LEVEL GROUP SINCE 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF14). The module used to declare `XDIST_GROUP = "ports"`, which put all 107 items (183 s of test time on 2026-10-03) and three other modules on one worker. Two resources here really are machine-wide, both fixed by the drivers rather than by these tests, so only the items that touch one carry a group, each named for its resource:
+#
+# * `shadow_driver` pins CONSTANT ports (45210-45300, `rediacc_ci/core/shadow_driver.py` "Every port below is therefore a CONSTANT") because an ephemeral port would differ between the two sides and land in a message text. Every item that runs it (`drive()`) shares SHADOW_PORTS_GROUP. These ports are above the 20000-30000 the per-worker slices are cut from, so the group serialises these items only against each other.
+# * `account_lifecycle_shadow_driver` builds its sandbox at a FIXED tmp path and takes a machine-wide `flock` around every run (`locked()`), so its items serialise however they are scheduled. LIFECYCLE_GROUP keeps them on one worker instead of leaving several workers blocked on the lock.
+#
+# Everything else in the file distributes per item.
+SHADOW_PORTS_GROUP = "account-shadow-fixed-ports"
+LIFECYCLE_GROUP = "account-lifecycle-fixed-tmp"
 
 TWIN = ".ci/lib/account.sh"
 PORT = ".ci/rediacc_ci/core/account.py"
@@ -101,6 +106,7 @@ def drive(side: str, scenario: str) -> tuple[int, str, str]:
     return _CACHE[key]
 
 
+@pytest.mark.xdist_group(SHADOW_PORTS_GROUP)
 @pytest.mark.parametrize("scenario", SCENARIOS)
 def test_the_port_matches_the_live_twin(scenario: str) -> None:
     """The whole claim of this file, once per scenario."""
@@ -113,6 +119,7 @@ def test_the_port_matches_the_live_twin(scenario: str) -> None:
     )
 
 
+@pytest.mark.xdist_group(SHADOW_PORTS_GROUP)
 @pytest.mark.parametrize("scenario", SCENARIOS)
 def test_each_scenario_observed_something(scenario: str) -> None:
     """ANTI-VACUITY. A transcript that collapsed to nothing would compare equal.
@@ -136,6 +143,7 @@ def test_the_corpus_is_not_empty() -> None:
     )
 
 
+@pytest.mark.xdist_group(SHADOW_PORTS_GROUP)
 def test_the_differential_can_fail() -> None:
     """A CONTROL ON THE COMPARISON, in the four places a mutation can hide.
 
@@ -1158,6 +1166,7 @@ def drive_lifecycle(side: str, scenario: str) -> tuple[int, str, str]:
     return _LIFECYCLE_CACHE[key]
 
 
+@pytest.mark.xdist_group(LIFECYCLE_GROUP)
 @pytest.mark.parametrize("scenario", LIFECYCLE_SCENARIOS)
 def test_the_lifecycle_port_matches_the_live_twin(scenario: str) -> None:
     old_rc, old_out, old_err = drive_lifecycle("old", scenario)
@@ -1171,6 +1180,7 @@ def test_the_lifecycle_port_matches_the_live_twin(scenario: str) -> None:
         pytest.fail("scenario %s diverged:\n%s" % (scenario, "\n".join(diverged[:40])))
 
 
+@pytest.mark.xdist_group(LIFECYCLE_GROUP)
 @pytest.mark.parametrize("scenario", LIFECYCLE_SCENARIOS)
 def test_each_lifecycle_scenario_reached_its_subject(scenario: str) -> None:
     """ANTI-VACUITY. A transcript that collapsed to nothing would compare equal, and so would two sides that both failed to load the twin."""
@@ -1185,6 +1195,7 @@ def test_each_lifecycle_scenario_reached_its_subject(scenario: str) -> None:
     ), "a stub or a twin function was missing on PATH"
 
 
+@pytest.mark.xdist_group(LIFECYCLE_GROUP)
 @pytest.mark.parametrize("side", ["old", "new"])
 def test_account_dev_signals_only_the_pids_this_writer_recorded(side: str) -> None:
     """The live differential compares the sides with each other, so both refusing nothing would still agree. This pins the outcome on each side: a real process named in a state file stamped by this writer is ended, one stamped by another host or container, or not stamped, survives."""
@@ -1216,6 +1227,7 @@ def test_the_lifecycle_corpus_covers_every_side_effecting_function() -> None:
     assert set(lifecycle_driver.FN) == set(lifecycle_driver.INNER)
 
 
+@pytest.mark.xdist_group(LIFECYCLE_GROUP)
 def test_the_lifecycle_transcripts_carry_what_the_comparison_needs() -> None:
     """A CONTROL ON THE COMPARISON: each of these is a line a wrong port would change, and each is really in the transcript."""
     _, dev_out, _ = drive_lifecycle("old", "dev")
@@ -1280,6 +1292,7 @@ def _planted_repo(
     return fake
 
 
+@pytest.mark.xdist_group(LIFECYCLE_GROUP)
 @pytest.mark.parametrize(
     ("scenario", "case_name", "old", "new"), LIFECYCLE_PLANTS, ids=[p[1] for p in LIFECYCLE_PLANTS]
 )
@@ -1313,6 +1326,7 @@ UNGROUPED = {
 }
 
 
+@pytest.mark.xdist_group(LIFECYCLE_GROUP)
 @pytest.mark.parametrize("side", sorted(UNGROUPED))
 def test_cleanup_without_the_group_kill_orphans_the_child(tmp_path, side) -> None:
     """THE DIFFERENTIAL CASE THAT FAILS WITHOUT THE FIX, driven on each side separately."""
@@ -1328,6 +1342,7 @@ def test_cleanup_without_the_group_kill_orphans_the_child(tmp_path, side) -> Non
     )
 
 
+@pytest.mark.xdist_group(LIFECYCLE_GROUP)
 def test_the_lifecycle_stub_farm_really_shadows_the_programs() -> None:
     """ANTI-VACUITY for the harness: the stubs are FIRST on PATH, so the twin cannot be reaching a real docker or curl."""
     case = lifecycle_driver.SCENARIOS["dev"][0]
@@ -1589,6 +1604,7 @@ def test_delta_l7_pids_are_written_comma_separated() -> None:
     assert account.state_pids("pids=101,202\n").replace(",", " ").split() == ["101", "202"]
 
 
+@pytest.mark.xdist_group(SHADOW_PORTS_GROUP)
 @pytest.mark.parametrize("scenario", sorted(DELTA_LINES))
 def test_every_account_delta_line_still_diverges(scenario: str) -> None:
     """A delta that stopped diverging is a stale exclusion hiding a comparison, so each one must still differ between the sides."""
@@ -1600,6 +1616,7 @@ def test_every_account_delta_line_still_diverges(scenario: str) -> None:
         assert old != new, "the delta %r no longer diverges: remove it from DELTA_LINES" % prefix
 
 
+@pytest.mark.xdist_group(LIFECYCLE_GROUP)
 @pytest.mark.parametrize("scenario", sorted(LIFECYCLE_DELTA_CASES))
 def test_every_lifecycle_delta_case_still_diverges(scenario: str) -> None:
     _, old_out, _ = drive_lifecycle("old", scenario)
@@ -1611,6 +1628,7 @@ def test_every_lifecycle_delta_case_still_diverges(scenario: str) -> None:
         assert old != new, "the delta case %s no longer diverges: remove it from the set" % name
 
 
+@pytest.mark.xdist_group(LIFECYCLE_GROUP)
 def test_the_pids_normaliser_is_still_needed() -> None:
     """L7: both sides write a `state pids=` line, and they differ only in the separator."""
     _, old_out, _ = drive_lifecycle("old", "dev")

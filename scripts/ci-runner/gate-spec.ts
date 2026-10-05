@@ -64,8 +64,12 @@ export interface GateSpec {
    * THE PAIR IS THE WEAK FIX. The claim serialises this gate only against the other declared `tree:` claimants; the hundreds of scanners that read the tree declare nothing and still overlap it, and no claim helps with what a hard kill leaves behind. Writing to a temp copy is the real fix; this field is for the writers that cannot. Hand-only (`gen-manifest.ts` HAND_ONLY), because the claim it justifies lives here.
    */
   writesTree?: string;
-  /** Scheduler slots. Default 1. */
-  weight?: number;
+  /**
+   * ELASTIC WIDTH (agent/plans/PLAN-prepush-full-cpu.md part 1, operator ruling 2026-10-05: no static worker counts). A gate whose tool has a width knob declares the range here and passes `$CI_RUNNER_CORES` to that knob in its `run`; the pool grants a core count inside the range at the moment it admits the gate (pool.ts `elasticGrant`) and exports it to the gate's process. `min` is the floor below which parallelism is pointless, `max` a ceiling, `'all'` none. A gate with no knob declares nothing: the pool then budgets its measured cpu/wall, and still exports a grant, rounded, so a child tool sized by `granted_cores()` sees a number.
+   *
+   * It replaced `weight?: number`, a hand-typed slot count, which is refused on sight (`retiredFieldFindings` below): a weight said how wide a gate was believed to be, and the believed width was wrong in both directions (pytest fixed at 8 on a 24-core host, vitest gates budgeted at 2 while their tool took every core).
+   */
+  cores?: { min: number; max: number | 'all' };
   /** Memory-hungry (>=4 GB heap). Bounded by --heavy-limit. */
   heavy?: boolean;
   /**
@@ -130,6 +134,43 @@ export interface GateSpec {
   leaves: string[];
   /** How CI runs this gate. See section 6 for every variant and its rules. */
   ci: CiCoverage;
+}
+
+/**
+ * Fields a spec may no longer carry, each with the replacement to name in the refusal. Clean break: there is no reading of a retired field, so a manifest still carrying one would be scheduled on a number the pool ignores.
+ */
+const RETIRED: Readonly<Record<string, string>> = {
+  weight:
+    "declare `cores: { min, max }` when the gate's tool has a width knob it is told through $CI_RUNNER_CORES, else nothing (the pool budgets its measured cpu/wall)",
+};
+
+/**
+ * Every retired field and malformed `cores` range in a spec set, one sentence each naming the gate, the field and the fix. Empty when the set is clean. The runner refuses a manifest with any finding before it schedules anything (run.ts `main`), which is what makes the `weight` retirement a clean break for JSON manifests that no type checker reads.
+ */
+export function retiredFieldFindings(specs: readonly unknown[]): string[] {
+  const out: string[] = [];
+  for (const raw of specs) {
+    if (raw === null || typeof raw !== 'object') continue;
+    const spec = raw as Record<string, unknown>;
+    const id = typeof spec.id === 'string' ? spec.id : '(no id)';
+    for (const [field, fix] of Object.entries(RETIRED)) {
+      if (field in spec) out.push(`${id}: \`${field}\` is retired; ${fix}`);
+    }
+    if (!('cores' in spec)) continue;
+    const c = spec.cores as { min?: unknown; max?: unknown } | null;
+    const min = c?.min;
+    const max = c?.max;
+    const minOk = typeof min === 'number' && Number.isInteger(min) && min >= 1;
+    const maxOk = max === 'all' || (typeof max === 'number' && Number.isInteger(max) && max >= 1);
+    if (!minOk || !maxOk) {
+      out.push(
+        `${id}: \`cores\` must be { min: <integer >= 1>, max: <integer >= 1> | 'all' }, got ${JSON.stringify(spec.cores)}`
+      );
+    } else if (typeof max === 'number' && max < (min as number)) {
+      out.push(`${id}: \`cores.max\` ${max} is below \`cores.min\` ${min as number}`);
+    }
+  }
+  return out;
 }
 
 export type CiCoverage =

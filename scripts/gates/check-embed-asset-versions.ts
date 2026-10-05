@@ -42,6 +42,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { grantedCores } from '../ci-runner/lease-client.js';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -272,15 +273,14 @@ async function probeAsset(
 }
 
 /**
- * Probe every staged asset, a few at a time. Each probe is independent (its own
+ * Probe every staged asset, as many at a time as the core grant allows. Each probe is independent (its own
  * temp file, its own subprocesses) and zstd decompression is single-threaded,
  * so serial probing left the gate waiting on one core for about 4 seconds.
- * Bounded, because this gate shares the machine with the whole ci:quick pool
- * and a decompressed k3s or zot is 70-230 MB on disk. Results keep the staged
+ * Sized by grantedCores(), never a constant (operator ruling 2026-10-05): the
+ * runner's grant bounds it while the gate shares the machine with the whole
+ * ci:quick pool, and a decompressed k3s or zot is 70-230 MB on disk. Results keep the staged
  * order, so the report reads the same however the probes interleave.
  */
-const PROBE_CONCURRENCY = 4;
-
 async function probeAll(
   staged: Array<{ zst: string; arch: string; pin: string; name: string }>,
   tmpDir: string
@@ -294,7 +294,7 @@ async function probeAll(
       results[i] = await probeAsset(s.name, s.zst, s.arch, s.pin, tmpDir);
     }
   };
-  const width = Math.min(PROBE_CONCURRENCY, staged.length);
+  const width = Math.min(grantedCores(), staged.length);
   await Promise.all(Array.from({ length: width }, () => worker()));
   return results;
 }

@@ -12,10 +12,7 @@ A reseed that drains thirty findings and absorbs one satisfies the first, violat
 STRUCTURAL PLUS BEHAVIOURAL, and the split is deliberate. Driving every gate's drain flag for real would mean rewriting live suppression files, and four of the gates do not even accept a `--baseline` override to redirect the write. So the structural half asserts that every CLI offering the flag consumes the shared guard, and the behavioural half proves the guard really refuses, end
 to end, on the one gate that CAN be pointed at a copy.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP, AND WHY THAT TAKES AN EXPLICIT `XDIST_GROUP` RATHER THAN JUST `REAL_TREE_TWIN`. The scan enumerates the working tree through `git ls-files --cached --others`, and four control cases PLANT a probe file inside `scripts/` and `.ci/scripts/quality/` and remove it again, so a battery step reading either directory mid-plant is the flake this
-module cannot afford. There is no `BASH_TWIN` here -- see the module's opening paragraph -- so `rediacc_ci.xdist_groups.group_for` never even reads `REAL_TREE_TWIN`: that attribute only feeds the lock join a `BASH_TWIN` triggers, and a lock entry keyed on a shell script that was never written cannot exist. `REAL_TREE_TWIN = True` alone was therefore a promise the scheduler was
-not honouring, caught 2026-09-27 by four `zz_composition_*_probe` control cases failing with `FileNotFoundError` under `-n`: two of THIS module's own tests, scheduled onto different workers with no group in common, ran their plant-and-scan windows at the same time, and one read the other's probe path between its `all_offerers()` listing and its `py_parse` re-read of the same
-file. `XDIST_GROUP = xdist_groups.REAL_TREE_GROUP` is the escape hatch `xdist_groups.py` documents for exactly this shape: a module that shares the real tree with the lock-declared twins without being one itself, taking the same group name so a reader in one is never scheduled beside a writer in the other.
+THE CONTROLS PLANT INTO A COPY, NOT INTO THE REAL TREE (agent/plans/PLAN-prepush-full-cpu.md PF15, 2026-10-05). Until then four control cases planted a probe inside the real `scripts/` and `.ci/scripts/quality/` and removed it again, so this module declared `XDIST_GROUP = xdist_groups.REAL_TREE_GROUP` to keep any reader of those directories off other workers mid-plant, and check:ci-pytest held an exclusive `tree:repo` claim for the whole pytest wall because of it (the 2026-09-27 `zz_composition_*_probe` `FileNotFoundError`s under `-n` were two of this module's own plants racing each other's scans). Every scan function now takes the repository it enumerates, and each control plants into `scan_copy()`: a scratch git repository carrying every tracked `.gitignore` of this one, so `git ls-files --cached --others --exclude-standard` applies the same rules to the probe that it would in the real tree. What a control proves is membership of the probe in the enumeration and the classification, and both depend only on the probe's path, its bytes and those ignore rules. The real-tree scans (`test_every_gate_consumes_the_guard` and its siblings) only read, so no group is needed.
 
 THE PROBES ARE PID-KEYED, which the twin's are not. The twin uses fixed names, so two concurrent invocations plant the same path and each cleanup deletes the OTHER run's fixture -- the failure the battery's schedule records for the `.gate-paths-exist` pair. Adding the pid costs nothing and removes a way for this port and its own twin to collide when both are driven from one
 parity run.
@@ -33,11 +30,8 @@ import os
 import pathlib
 import re
 
-from rediacc_ci import paths, xdist_groups
+from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-# Four control cases plant a probe inside the scanned tree. See the docstring: this module has no BASH_TWIN, so only the explicit group serialises it; REAL_TREE_TWIN never did anything here and was removed.
-XDIST_GROUP = xdist_groups.REAL_TREE_GROUP
 
 ROOT = paths.repo_root()
 
@@ -148,7 +142,7 @@ def git_bin() -> str:
     return harness.require_tool("git", "install git; the corpus comes from `git ls-files`")
 
 
-def all_offerers() -> list[str]:
+def all_offerers(root: pathlib.Path = ROOT) -> list[str]:
     """Every tracked-or-untracked source file whose text names the flag, sorted.
 
     ENUMERATED FROM `git ls-files` RATHER THAN FROM A ROOT LIST, which is what makes the coverage permanent: a directory created next month is in the corpus the day it exists. The extension filter is a git PATHSPEC rather than a glob applied afterwards, so a filename can never be read as an option.
@@ -169,7 +163,7 @@ def all_offerers() -> list[str]:
             "*.js",
             "*.py",
         ],
-        cwd=ROOT,
+        cwd=root,
         timeout=300,
     )
     if proc.rc != 0:
@@ -182,7 +176,7 @@ def all_offerers() -> list[str]:
         if not rel:
             continue
         try:
-            text = (ROOT / rel).read_text(encoding="utf-8", errors="replace")
+            text = (root / rel).read_text(encoding="utf-8", errors="replace")
         except OSError:
             # A corpus file can VANISH mid-run: this very detector plants and removes probes inside the scanned tree, and so does its twin. An unreadable neighbour is not this gate's finding.
             continue
@@ -191,70 +185,105 @@ def all_offerers() -> list[str]:
     return sorted(found)
 
 
-def offerers() -> list[str]:
-    return [f for f in all_offerers() if f.endswith((".ts", ".js"))]
+def offerers(root: pathlib.Path = ROOT) -> list[str]:
+    return [f for f in all_offerers(root) if f.endswith((".ts", ".js"))]
 
 
-def offerers_py() -> list[str]:
-    return [f for f in all_offerers() if f.endswith(".py")]
+def offerers_py(root: pathlib.Path = ROOT) -> list[str]:
+    return [f for f in all_offerers(root) if f.endswith(".py")]
 
 
-def py_parse(rel: str):
+def py_parse(rel: str, root: pathlib.Path = ROOT):
     """The module's AST, or None when it does not parse. A file that cannot be read as Python cannot be shown to be guarded, so the caller treats None as an offender rather than skipping it."""
-    text = (ROOT / rel).read_text(encoding="utf-8", errors="replace")
+    text = (root / rel).read_text(encoding="utf-8", errors="replace")
     try:
         return ast.parse(text, filename=rel)
     except SyntaxError:
         return None
 
 
-def py_is_writer(rel: str) -> bool:
+def py_is_writer(rel: str, root: pathlib.Path = ROOT) -> bool:
     """A Python file in the text corpus that really OFFERS the flag. Unparseable counts as a writer, so a syntax error cannot hide one."""
-    tree = py_parse(rel)
+    tree = py_parse(rel, root)
     return tree is None or py_offers_flag(tree)
 
 
-def py_reaches_guard(rel: str) -> bool:
+def py_reaches_guard(rel: str, root: pathlib.Path = ROOT) -> bool:
     """All three conditions, or the Python writer is unguarded."""
-    tree = py_parse(rel)
+    tree = py_parse(rel, root)
     return tree is not None and py_guard_calls(tree) == set(PY_GUARD_FUNCS)
 
 
-def unguarded_py() -> list[str]:
+def unguarded_py(root: pathlib.Path = ROOT) -> list[str]:
     return [
         f
-        for f in offerers_py()
-        if f not in PY_EXEMPT and py_is_writer(f) and not py_reaches_guard(f)
+        for f in offerers_py(root)
+        if f not in PY_EXEMPT and py_is_writer(f, root) and not py_reaches_guard(f, root)
     ]
 
 
-def unguarded() -> list[str]:
+def unguarded(root: pathlib.Path = ROOT) -> list[str]:
     """Files that offer the flag, are not exempt, and reach the guard by no route."""
     out = []
-    for rel in offerers():
+    for rel in offerers(root):
         if rel in EXEMPT:
             continue
-        text = (ROOT / rel).read_text(encoding="utf-8", errors="replace")
+        text = (root / rel).read_text(encoding="utf-8", errors="replace")
         if not any(pattern.search(text) for pattern in IMPORT_RE.values()):
             out.append(rel)
     return out
 
 
 @contextlib.contextmanager
-def probe(rel_dir: str, stem: str, suffix: str, body: str):
-    """Plant one probe inside the SCANNED tree, yield its repo-relative path, and remove it whatever happens.
+def scan_copy():
+    """A scratch git repository the enumerator sees exactly as it sees this one, for a probe to be planted in. Removed on the way out.
 
-    NOT A TEMP DIR. The corpus is `git ls-files` over this repository, so a probe outside it is invisible and the control silently stops firing -- which is the failure a plant-based control exists to rule out, not to reproduce. The removal is in a `finally` so a killed run cannot leave a synthetic offerer in a tracked directory, where the next reader would investigate a finding
-    nobody introduced.
+    WHY A COPY OF THE IGNORE RULES AND NOT OF THE TREE. Each control asks whether a probe at a given path, with given bytes, is in the enumeration and how it is classified. `git ls-files --cached --others --exclude-standard` decides the first from the path and the `.gitignore` files above it, so those are what is copied, every tracked one; a probe the real tree would ignore is ignored here too, and the control still fails for the reason it would have failed in place. The second depends only on the probe's bytes. Copying the whole tree would add tens of thousands of files and no evidence.
+
+    NOT THE REAL TREE (PF15): a probe there is visible, for its lifetime, to every concurrent reader of `scripts/` and `.ci/scripts/`, which is what this module's xdist group and the pytest lane's `tree:repo` claim used to buy off.
+    """
+    git = git_bin()
+    listed = harness.run(
+        [git, "ls-files", "-z", "--", ".gitignore", ":(glob)**/.gitignore"], cwd=ROOT, timeout=120
+    )
+    if listed.rc != 0:
+        raise harness.GateAssertionError(
+            "`git ls-files` could not list the ignore files (rc=%d): %s"
+            % (listed.rc, listed.err.strip())
+        )
+    ignores = [rel for rel in listed.out.split("\0") if rel]
+    if ".gitignore" not in ignores:
+        raise harness.GateAssertionError(
+            "the root .gitignore is not tracked, so the copy would enumerate a different set"
+        )
+    with harness.temp_dir() as tmp:
+        root = tmp / "repo"
+        root.mkdir()
+        init = harness.run([git, "init", "-q", str(root)], cwd=tmp, timeout=60)
+        if init.rc != 0:
+            raise harness.GateAssertionError("git init failed (rc=%d): %s" % (init.rc, init.err))
+        for rel in ignores:
+            (root / rel).parent.mkdir(parents=True, exist_ok=True)
+            (root / rel).write_bytes((ROOT / rel).read_bytes())
+        yield root
+
+
+@contextlib.contextmanager
+def probe(rel_dir: str, stem: str, suffix: str, body: str):
+    """Plant one probe in a `scan_copy()` repository, yield `(root, repo-relative path)`, and remove both whatever happens.
+
+    The copy is a git repository the enumerator really runs in, so a probe outside its scope is still invisible and the control still fails, which is the property a plant-based control exists for. The probe name is still pid-keyed, which costs nothing.
     """
     name = "%s_%d%s" % (stem, os.getpid(), suffix)
     rel = "%s/%s" % (rel_dir, name)
-    path = ROOT / rel
-    path.write_text(body, encoding="utf-8")
-    try:
-        yield rel
-    finally:
-        path.unlink(missing_ok=True)
+    with scan_copy() as root:
+        path = root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(body, encoding="utf-8")
+        try:
+            yield root, rel
+        finally:
+            path.unlink(missing_ok=True)
 
 
 # EVERY PROBE BODY IS RENDERED THROUGH `%s`, for the reason FLAG is split: a body written out would make this module a corpus member and an offender in its own scan. The probes still carry the real flag on DISK, which is the only place it has to appear for the controls to mean anything.
@@ -472,10 +501,10 @@ def test_control_unguarded_python_reseed_is_detected(gate):
     """CONTROL. Plant an unguarded PYTHON writer where the OLD enumerator could not look -- under `.ci/`, with a `.py` suffix -- and require detection. Run against the previous enumerator it detects nothing at all, because neither the extension nor the directory was in scope."""
     with probe(
         ".ci/scripts/quality", "zz_composition_control_probe_port", ".py", UNGUARDED_PY_BODY
-    ) as rel:
-        seen = rel in offerers_py()
-        detected = rel in unguarded_py()
-    if (ROOT / rel).exists():
+    ) as (root, rel):
+        seen = rel in offerers_py(root)
+        detected = rel in unguarded_py(root)
+    if (root / rel).exists():
         gate.log_fail("python control probe was not removed")
     if not seen:
         gate.log_fail(
@@ -493,11 +522,11 @@ def test_control_python_mention_is_not_a_guard(gate):
     """CONTROL, the other direction. A Python file that only MENTIONS the ported guard in prose must NOT count as guarded, and one that genuinely consumes it MUST. Both answers come from the same scanner on the same run."""
     with probe(
         ".ci/scripts/quality", "zz_composition_mention_probe_port", ".py", MENTION_PY_BODY
-    ) as rel:
-        mentioned = rel in unguarded_py()
-        (ROOT / rel).write_text(GUARDED_PY_BODY, encoding="utf-8")
-        guarded = rel not in unguarded_py()
-    if (ROOT / rel).exists():
+    ) as (root, rel):
+        mentioned = rel in unguarded_py(root)
+        (root / rel).write_text(GUARDED_PY_BODY, encoding="utf-8")
+        guarded = rel not in unguarded_py(root)
+    if (root / rel).exists():
         gate.log_fail("python mention probe was not removed")
     if not mentioned:
         gate.log_fail(
@@ -515,12 +544,12 @@ def test_control_python_module_style_guard_is_recognised(gate):
     """CONTROL. A writer that consumes `shrink_only` through a MODULE ALIAS (`SO.write_verdict(`) is guarded, and one that only IMPORTS the module and reseeds unconditionally is not. Without the first half this check flags correct work, which is what reddened `check_tree_shape.py` until 2026-09-25; without the second an import alone would pass."""
     with probe(
         ".ci/scripts/quality", "zz_composition_module_probe_port", ".py", GUARDED_MODULE_PY_BODY
-    ) as rel:
-        writer = py_is_writer(rel)
-        guarded = rel not in unguarded_py()
-        (ROOT / rel).write_text(IMPORT_ONLY_PY_BODY, encoding="utf-8")
-        import_only_caught = rel in unguarded_py()
-    if (ROOT / rel).exists():
+    ) as (root, rel):
+        writer = py_is_writer(rel, root)
+        guarded = rel not in unguarded_py(root)
+        (root / rel).write_text(IMPORT_ONLY_PY_BODY, encoding="utf-8")
+        import_only_caught = rel in unguarded_py(root)
+    if (root / rel).exists():
         gate.log_fail("python module-style probe was not removed")
     if not writer:
         gate.log_fail(
@@ -544,11 +573,11 @@ def test_control_python_string_mention_is_not_a_writer(gate):
     """CONTROL. A test-shaped file that names the flag in a docstring, a subprocess argument and an assertion message parses no argv, so it is NOT a writer and is not reported. The corpus still SEES it, which keeps this a statement about the writer reading rather than about the enumerator."""
     with probe(
         ".ci/scripts/quality", "zz_composition_string_probe_port", ".py", STRING_ONLY_PY_BODY
-    ) as rel:
-        seen = rel in offerers_py()
-        writer = py_is_writer(rel)
-        reported = rel in unguarded_py()
-    if (ROOT / rel).exists():
+    ) as (root, rel):
+        seen = rel in offerers_py(root)
+        writer = py_is_writer(rel, root)
+        reported = rel in unguarded_py(root)
+    if (root / rel).exists():
         gate.log_fail("python string-mention probe was not removed")
     if not seen:
         gate.log_fail("CONTROL FAILED: the string-mention probe was not even in the corpus")
@@ -577,9 +606,12 @@ def test_control_python_exemption_is_the_definition_site(gate):
 
 def test_control_unguarded_reseed_is_detected(gate):
     """CONTROL. Plant a file with the OLD unconditional shape and require detection. Without this, `unguarded()` returning nothing proves nothing about the scanner."""
-    with probe("scripts", "zz-composition-control-probe-port", ".ts", UNGUARDED_TS_BODY) as rel:
-        detected = rel in unguarded()
-    if (ROOT / rel).exists():
+    with probe("scripts", "zz-composition-control-probe-port", ".ts", UNGUARDED_TS_BODY) as (
+        root,
+        rel,
+    ):
+        detected = rel in unguarded(root)
+    if (root / rel).exists():
         gate.log_fail("control probe was not removed")
     if not detected:
         gate.log_fail(
@@ -590,9 +622,12 @@ def test_control_unguarded_reseed_is_detected(gate):
 
 def test_control_mention_is_not_an_import(gate):
     """CONTROL. A file that only MENTIONS the choke point in prose must NOT count as guarded. Without this, the transitive route above is a substring match masquerading as a check."""
-    with probe("scripts", "zz-composition-mention-probe-port", ".ts", MENTION_TS_BODY) as rel:
-        detected = rel in unguarded()
-    if (ROOT / rel).exists():
+    with probe("scripts", "zz-composition-mention-probe-port", ".ts", MENTION_TS_BODY) as (
+        root,
+        rel,
+    ):
+        detected = rel in unguarded(root)
+    if (root / rel).exists():
         gate.log_fail("mention probe was not removed")
     if not detected:
         gate.log_fail("CONTROL FAILED: a prose mention was accepted as a guard route")

@@ -627,18 +627,18 @@ CASES, HARVEST_STATS, POOL = build_cases()
 
 # --------------------------------------------------------------------------- The two sides ---------------------------------------------------------------------------
 
-# STILL SHARED WITH `test_hooks_procs.py`, and that is the whole reason this survives PLAN-retire-bash-oracles A3. Before A3 the comment here was about the bash driver's own cost (forking `env -i bash` once per case across roughly 6,000 cases); that reasoning left with the driver. What did NOT leave is that two of these guards (`block_self_matching_pgrep`,
-# `block_bash_write_to_running_script`) read the REAL process table, and `test_hooks_procs.py` spawns real processes visible to that same table to prove its own guards' hazards. Measured 2026-09-09: run on two different xdist workers at once, this file's anti-vacuity controls went red for reasons that had nothing to do with either port -- a `sleep 8` fixture from one file was
-# visible, at the wrong moment, to a case built by the other. Sharing this group serialises the two files onto one worker, which is what stops that; `test_hooks_procs.py` imports the name directly rather than each file hand-typing the same string.
+# THE PROCESS-TABLE READERS, AND WHY ONLY THEIR CASES ARE GROUPED. Three guards read the REAL process table, and `test_hooks_procs.py` spawns real processes visible to that same table to prove its own guards' hazards. Measured 2026-09-09: run on two different xdist workers at once, this file's anti-vacuity controls went red for reasons that had nothing to do with either port -- a `sleep 8` fixture from one file was visible, at the wrong
+# moment, to a case built by the other -- and on 2026-09-30 two workers each built the fixed-path running-script world and the second killed the first's shells (#af1d1d05).
 #
-# UNTIL 2026-09-30 ONLY `test_hooks_procs.py` WORE THE MARK, and this file's half of the claim above was never true (#af1d1d05). `check_pytest.py` runs `-n 8 --dist loadgroup`, so the group is live, and every test here that builds a process world or reads the process table now carries it: the two anti-vacuity controls, and the golden cases of `PROCESS_TABLE_READERS`. Left ungrouped, two workers each built the
-# fixed-path running-script world and the second killed the first's shells.
-XDIST_GROUP = "hooks-guards"
+# THIS FILE NO LONGER DECLARES A GROUP (agent/plans/PLAN-prepush-full-cpu.md PF11, 2026-10-05). The repo-root conftest groups whole MODULES, so the old module-level `XDIST_GROUP = "hooks-guards"` pinned every one of this file's roughly 6,900 items (461 s of test time) to one worker, which was check:ci-pytest's floor at any core count. The cases that actually need the group -- these three guards' golden cases, their two anti-vacuity controls, and the dead-world control -- moved to `test_guards_process_table.py`, which declares `XDIST_GROUP = "hooks-guards"` beside `test_hooks_procs.py`'s marked cases. Everything left here distributes per item. `SPREAD_STEMS` below and that file's `READER_STEMS` partition `guards.stems()`, and its `test_the_partition_covers_every_guard` proves it.
 PROCESS_TABLE_READERS = {
     "block_self_matching_pgrep",
     "block_bash_write_to_running_script",
     "block_edit_of_running_script",
 }
+
+# Every other guard: their cases read no process table, so they distribute freely.
+SPREAD_STEMS = [stem for stem in guards.stems() if stem not in PROCESS_TABLE_READERS]
 
 
 def python_fields(stem, payload, extra, stubs, work):
@@ -790,6 +790,8 @@ def fixture_work(tmp_path_factory):
     """A tmp root for `FIXTURE_BUILDERS` (git-ahead, this-worktree-snapshot, ...).
 
     Every control in this file that needs a real git world (a `git-ahead` case, the synthetic `this-worktree` checkout) shares this one session-scoped directory, so each world is built once per pytest session rather than once per case.
+
+    ONCE PER WORKER, NOT ONCE PER RUN, ON A MEASUREMENT (agent/plans/PLAN-prepush-full-cpu.md PF12, 2026-10-05). The plan proposed building the worlds once per run behind a lock and sharing them read-only across xdist workers, on the hypothesis that no case writes into them. Its read-only control refuted that: with every world built and then `chmod -R a-w`, 45 of 6,862 golden cases failed, every one of them `warn_remote_drift` in its `behind` world, because that guard runs a real `git fetch` into its fixture (FETCH_HEAD, new objects, a moved `refs/remotes/origin/*`). Shared worlds would race those fetches between workers. And the saving is small: all 45 worlds build in 1.4 s and hold about 2,600 inodes per worker, so per-worker worlds stay.
     """
     return tmp_path_factory.mktemp("guard-golden-fixtures")
 
@@ -906,25 +908,6 @@ def test_the_case_environment_names_no_host(fixture_work):
         os.environ.update(saved)
 
 
-@pytest.mark.xdist_group(XDIST_GROUP)
-def test_a_dead_process_world_is_rebuilt(fixture_work):
-    """A running-script world whose shells died comes back before the next case (#af1d1d05)."""
-    stem = "block_bash_write_to_running_script"
-    module = guards.load(stem)
-    extra = {label: env for label, env, _ in environments(module)}["running"]
-    case_env(stem, extra, {}, fixture_work)
-    assert module._CHILDREN, "the world spawned no shells, so there is nothing to revive"
-    assert not _revive_process_world(stem), "a live world was rebuilt for no reason"
-    module._reap()
-    for child in module._CHILDREN:
-        child.wait(timeout=10)
-    case_env(stem, extra, {}, fixture_work)
-    assert module._CHILDREN
-    assert all(c.poll() is None for c in module._CHILDREN)
-    payload = edge_payload(module, "echo x > %s" % module.LIVE_SCRIPT)
-    assert python_fields(stem, payload, extra, {}, fixture_work)["rc"] == "2"
-
-
 def test_the_frozen_clock_reaches_the_guard_and_straddles(fixture_work):
     """The freeze is real, honours TZ, and makes the two clocks disagree on every run.
 
@@ -960,12 +943,18 @@ def test_the_frozen_clock_reaches_the_guard_and_straddles(fixture_work):
             c[4],
             c[5],
             id="%s|%s" % (c[0], c[1]),
-            marks=[pytest.mark.xdist_group(XDIST_GROUP)] if c[0] in PROCESS_TABLE_READERS else [],
         )
         for c in GOLDEN_CASES
+        if c[0] not in PROCESS_TABLE_READERS
     ],
 )
 def test_guard_matches_golden(fixture_work, stem, label, payload, extra, stubs):
+    """One case against its frozen golden. The process-table readers' cases run the same assertion in `test_guards_process_table.py`."""
+    assert_matches_golden(fixture_work, stem, label, payload, extra, stubs)
+
+
+def assert_matches_golden(fixture_work, stem, label, payload, extra, stubs):
+    """The golden comparison, shared with `test_guards_process_table.py` so both halves assert the identical thing."""
     header, silent, records = golden_for(stem)
     assert header is not None, (
         "%s has no golden recorded -- run regolden.py %s --reason '<why>'" % (stem, stem)
@@ -991,87 +980,120 @@ def test_guard_matches_golden(fixture_work, stem, label, payload, extra, stubs):
     assert not diffs, render(diffs, stem, label, payload)
 
 
-@pytest.mark.xdist_group(XDIST_GROUP)
-def test_every_guard_discriminates(fixture_work):
-    """No guard may answer the same way on every case it was given.
+@pytest.mark.parametrize("stem", SPREAD_STEMS)
+def test_every_guard_discriminates(fixture_work, stem):
+    """No guard may answer the same way on every case it was given (one item per guard; the process-table readers' items are in `test_guards_process_table.py`).
 
     A guard that returns 0 on all of its inputs has been compared against a constant, which is the failure `test_shellscan_differential` found in its own field set: "the target_root field evaluated against an absent root was empty on all 385 cases -- a comparison that could not have failed".
 
     Exit code alone is not the test, because the four `warn-*` guards exit 0 by design and speak on stderr. The predicate is that SOMETHING varies. Runs every guard's own Python answer, golden-backed or `OWN_SUITE`: before PLAN-retire-bash-oracles A3 this read the bash driver's records for the golden-backed half and called `python_fields` directly for the rest, a split that
     existed only because the bash driver read `bash_results["records"][i]` back by POSITION (see `build_cases`'s docstring). There is no driver left to disagree with, so one pass over `CASES` covers every guard the same way.
     """
-    seen = {}
-    for stem, _, payload, _, extra, stubs in CASES:
+    assert_discriminates(fixture_work, stem)
+
+
+def assert_discriminates(fixture_work, stem):
+    """`stem` answers differently on at least two of its cases.
+
+    PER GUARD SINCE 2026-10-05 (PF11): this was one loop over every guard's cases, 188 s as a single item. A guard's verdict depends only on its own cases, so one item per guard asks the same question and lets the items spread across workers.
+    """
+    seen = set()
+    for cstem, _, payload, _, extra, stubs in CASES:
+        if cstem != stem:
+            continue
         fields = python_fields(stem, payload, extra, stubs, fixture_work)
-        seen.setdefault(stem, set()).add((fields["rc"], fields["out"], fields["err"]))
-    flat = sorted(stem for stem, values in seen.items() if len(values) < 2)
-    assert not flat, (
-        "these guards answered identically on every case, so comparing them proves "
-        "nothing: %s" % flat
+        seen.add((fields["rc"], fields["out"], fields["err"]))
+    assert len(seen) >= 2, (
+        "%s answered identically on every case, so comparing it proves nothing" % stem
     )
 
 
-@pytest.mark.xdist_group(XDIST_GROUP)
-def test_the_differential_can_fail(tmp_path, fixture_work):
-    """Every port declares one defect, and the comparison must catch it.
+@pytest.mark.parametrize("stem", SPREAD_STEMS)
+def test_the_differential_can_fail(tmp_path, fixture_work, stem):
+    """Every port declares one defect, and the comparison must catch it (one item per guard; the process-table readers' items are in `test_guards_process_table.py`).
 
     A differential that has never failed is not evidence. This plants each port's own declared defect -- a single source substitution naming the line its twin's comments say cost the most -- and requires the ported guard to answer differently on at least one case it was given.
     """
+    assert_defect_is_caught(tmp_path, fixture_work, stem)
+
+
+def _outside_defect(src: str, *names: str) -> str:
+    """`src` with every top-level `DEFECT` (or named) assignment removed, so a needle search cannot be satisfied by the declaration that names it.
+
+    `old in src` alone stays true after the guarded line is deleted, because the declaration itself contains the text it plants (measured 2026-10-05).
+    """
+    import ast  # noqa: PLC0415 -- only the planted-defect controls need it
+
+    wanted = names or ("DEFECT",)
+    cut = [
+        n
+        for n in ast.parse(src).body
+        if isinstance(n, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id in wanted for t in n.targets)
+    ]
+    return "\n".join(
+        line
+        for i, line in enumerate(src.split("\n"), 1)
+        if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut)
+    )
+
+
+def assert_defect_is_caught(tmp_path, fixture_work, stem):
+    """`stem`'s declared DEFECT changes its answer on at least one of its cases. Per guard since 2026-10-05 (PF11), for the reason `assert_discriminates` gives."""
     work = fixture_work
-    unproven = []
     # THIS CONTROL COMPARES THE PORT AGAINST ITSELF-WITH-A-BUG and never needed
     # a golden or a bash process, which is what makes it work identically for an `OWN_SUITE` guard -- and an `OWN_SUITE` guard needs it MORE, being the one with no golden.
     all_cases = CASES
-    for stem in guards.stems():
-        module = guards.load(stem)
-        defect = getattr(module, "DEFECT", None)
-        assert defect, "%s declares no DEFECT, so nothing proves its differential can fail" % stem
-        old, new = defect
-        source = pathlib.Path(module.__file__).read_text(encoding="utf-8")
-        assert old in source, "%s's declared DEFECT no longer applies to the port: %r" % (stem, old)
-        broken_src = source.replace(old, new)
-        assert broken_src != source
-        broken_path = tmp_path / ("broken_%s.py" % stem)
-        broken_path.write_text(broken_src, encoding="utf-8")
-        namespace: dict[str, typing.Any] = {
-            "__name__": "broken_%s" % stem,
-            "__file__": str(broken_path),
-        }
-        exec(compile(broken_src, str(broken_path), "exec"), namespace)  # noqa: S102
-        # The broken copy reads the SAME frozen clock as the good one, or a clock-reading port would "change its answer" on today's date rather than on its planted defect, and this control would pass for the wrong reason.
-        if stem in CLOCK_READERS:
-            namespace["datetime"] = FROZEN_DATETIME
-        # And the SAME host world, for the same reason: a defect judged against this machine's PATH and tree would be judged against a different world from the good side's.
-        shim = host_hookio(stem, work)
-        if shim is not None:
-            namespace["hookio"] = shim
-        broken_run = namespace["run"]
-        changed = False
-        for cstem, _, payload, _, extra, stubs in all_cases:
-            if cstem != stem:
-                continue
-            good = python_fields(stem, payload, extra, stubs, work)
-            env = case_env(stem, extra, stubs, work)
-            saved = dict(os.environ)
+    module = guards.load(stem)
+    defect = getattr(module, "DEFECT", None)
+    assert defect, "%s declares no DEFECT, so nothing proves its differential can fail" % stem
+    old, new = defect
+    source = pathlib.Path(module.__file__).read_text(encoding="utf-8")
+    assert old in _outside_defect(source), (
+        "%s's declared DEFECT no longer applies to the port outside its own declaration: %r"
+        % (stem, old)
+    )
+    broken_src = source.replace(old, new)
+    assert broken_src != source
+    broken_path = tmp_path / ("broken_%s.py" % stem)
+    broken_path.write_text(broken_src, encoding="utf-8")
+    namespace: dict[str, typing.Any] = {
+        "__name__": "broken_%s" % stem,
+        "__file__": str(broken_path),
+    }
+    exec(compile(broken_src, str(broken_path), "exec"), namespace)  # noqa: S102
+    # The broken copy reads the SAME frozen clock as the good one, or a clock-reading port would "change its answer" on today's date rather than on its planted defect, and this control would pass for the wrong reason.
+    if stem in CLOCK_READERS:
+        namespace["datetime"] = FROZEN_DATETIME
+    # And the SAME host world, for the same reason: a defect judged against this machine's PATH and tree would be judged against a different world from the good side's.
+    shim = host_hookio(stem, work)
+    if shim is not None:
+        namespace["hookio"] = shim
+    broken_run = namespace["run"]
+    changed = False
+    for cstem, _, payload, _, extra, stubs in all_cases:
+        if cstem != stem:
+            continue
+        good = python_fields(stem, payload, extra, stubs, work)
+        env = case_env(stem, extra, stubs, work)
+        saved = dict(os.environ)
+        os.environ.clear()
+        os.environ.update(env)
+        # `python_fields` re-reads TZ for the good side; without the same call here the broken side answered in the RUNNER's zone, so under a `tz-far-*` variant the two differed on the clock alone and the planted defect was never what this control saw.
+        time.tzset()
+        try:
+            event = hookio.Event(rehome(payload), cwd=case_cwd(stem, work), env=env)
+            rc = broken_run(event)
+            bad = dict(zip(("rc", "out", "err"), event.result(rc), strict=True))
+            bad["rc"] = str(bad["rc"])
+        finally:
             os.environ.clear()
-            os.environ.update(env)
-            # `python_fields` re-reads TZ for the good side; without the same call here the broken side answered in the RUNNER's zone, so under a `tz-far-*` variant the two differed on the clock alone and the planted defect was never what this control saw.
+            os.environ.update(saved)
             time.tzset()
-            try:
-                event = hookio.Event(rehome(payload), cwd=case_cwd(stem, work), env=env)
-                rc = broken_run(event)
-                bad = dict(zip(("rc", "out", "err"), event.result(rc), strict=True))
-                bad["rc"] = str(bad["rc"])
-            finally:
-                os.environ.clear()
-                os.environ.update(saved)
-                time.tzset()
-            if bad != good:
-                changed = True
-                break
-        if not changed:
-            unproven.append(stem)
-    assert not unproven, (
-        "these ports answered identically with their declared defect planted, so this "
-        "file's green does not depend on that branch being right: %s" % unproven
+        if bad != good:
+            changed = True
+            break
+    assert changed, (
+        "%s answered identically with its declared defect planted, so this "
+        "file's green does not depend on that branch being right" % stem
     )

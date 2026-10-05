@@ -283,6 +283,10 @@
       "HOME",
       "PATH"
     ],
+    ".ci/rediacc_ci/core_lease.py": [
+      "CI_CORE_LEASE_HELD",
+      "PYTEST_ADDOPTS"
+    ],
     ".ci/rediacc_ci/deploy/deploy_account.py": [
       "CLOUDFLARE_API_TOKEN"
     ],
@@ -1239,6 +1243,10 @@
       "HOME",
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/gates/test_gate_ci_runner.py": [
+      "HOME",
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py": [
       "PATH"
     ],
@@ -2081,6 +2089,9 @@
     ],
     ".claude/rediacc_hooks/guards/test-warn_staged_shape_duplication.py": [
       "PATH"
+    ],
+    ".claude/rediacc_hooks/guards/warn_staged_shape_duplication.py": [
+      "SHAPE_PROBE_DEADLINE_S"
     ],
     ".claude/rediacc_hooks/hookio.py": [
       "PATH"

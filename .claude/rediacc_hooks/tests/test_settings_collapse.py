@@ -275,13 +275,38 @@ def test_the_corpus_is_large_enough_to_mean_something():
     )
 
 
-@pytest.mark.parametrize("chain", DRIVEN)
-def test_verdict_set_is_unchanged(chain):
-    """The whole corpus, through the members separately and through the one collapsed command."""
+# PAYLOADS PER ITEM (agent/plans/PLAN-prepush-full-cpu.md PF13, 2026-10-05). `test_verdict_set_is_unchanged[pre-bash]` was ONE item of 311 payloads, 203.5 s in the 2026-10-05 junit and the longest single item in check:ci-pytest: no worker count splits one item. Each payload costs about 0.65 s (two runs of the chain), so 20 per item keeps every item near 13 s uncontended (23 s was measured for a 24-payload chunk on a loaded host) and lets the chunks spread across workers. A granularity, not a worker count: the number of chunks follows the corpus, and `test_the_verdict_chunks_partition_the_corpus` proves every payload is in exactly one.
+VERDICT_CHUNK = 20
+
+
+def verdict_chunks(chain):
+    """The `(payload, label)` slices `test_verdict_set_is_unchanged` runs for `chain`, in sorted order. At least one, so an empty chain still reaches the test and fails there."""
+    items = sorted(CORPUS.get(chain, {}).items())
+    return [items[i : i + VERDICT_CHUNK] for i in range(0, len(items), VERDICT_CHUNK)] or [[]]
+
+
+def test_the_verdict_chunks_partition_the_corpus():
+    """CONTROL for the split: the chunks together are the whole pool, each payload once, so splitting the item dropped nothing."""
+    for chain in DRIVEN:
+        flat = [item for chunk in verdict_chunks(chain) for item in chunk]
+        assert flat == sorted(CORPUS[chain].items()), chain
+        assert all(len(chunk) <= VERDICT_CHUNK for chunk in verdict_chunks(chain))
+
+
+@pytest.mark.parametrize(
+    ("chain", "chunk"),
+    [
+        pytest.param(chain, i, id="%s-%02d" % (chain, i))
+        for chain in DRIVEN
+        for i in range(len(verdict_chunks(chain)))
+    ],
+)
+def test_verdict_set_is_unchanged(chain, chunk):
+    """The whole corpus, through the members separately and through the one collapsed command (one chunk of the chain's pool per item)."""
     env = hook_env()
     members = lifecycle.flat_commands(chain)
     wrong = []
-    pool = CORPUS[chain]
+    pool = dict(verdict_chunks(chain)[chunk])
     for payload, label in sorted(pool.items()):
         old = run_separately(members, payload, env)
         new = run_collapsed(chain, payload, env)

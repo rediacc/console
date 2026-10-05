@@ -34,7 +34,6 @@
     "run": "npm run check:lint",
     "slow": true,
     "gate": false,
-    "weight": 2,
     "heavy": true,
     "leaves": [
       "scripts/eslint-heap.sh",
@@ -50,9 +49,12 @@
   {
     "id": "check:lint:cli",
     "run": "npm run check:lint:cli",
+    "cores": {
+      "min": 1,
+      "max": 4
+    },
     "slow": true,
     "gate": true,
-    "weight": 2,
     "heavy": true,
     "leaves": [
       "scripts/eslint-heap.sh"
@@ -67,9 +69,12 @@
   {
     "id": "check:lint:web",
     "run": "npm run check:lint:web",
+    "cores": {
+      "min": 1,
+      "max": 4
+    },
     "slow": true,
     "gate": true,
-    "weight": 2,
     "heavy": true,
     "leaves": [
       "scripts/eslint-heap.sh"
@@ -84,9 +89,12 @@
   {
     "id": "check:lint:tooling",
     "run": "npm run check:lint:tooling",
+    "cores": {
+      "min": 1,
+      "max": 4
+    },
     "slow": true,
     "gate": true,
-    "weight": 2,
     "heavy": true,
     "leaves": [
       "scripts/eslint-heap.sh"
@@ -101,9 +109,12 @@
   {
     "id": "check:lint:account",
     "run": "npm run check:lint:account",
+    "cores": {
+      "min": 1,
+      "max": 4
+    },
     "slow": true,
     "gate": true,
-    "weight": 2,
     "heavy": true,
     "leaves": [
       "biome",
@@ -149,8 +160,12 @@
   },
   {
     "id": "check:format",
-    "run": "npm run check:format",
+    "run": "RAYON_NUM_THREADS=\"$CI_RUNNER_CORES\" npm run check:format",
     "gate": true,
+    "cores": {
+      "min": 1,
+      "max": "all"
+    },
     "leaves": [
       "biome"
     ],
@@ -709,7 +724,6 @@
     "run": "npm run check:ci-guard-mutations",
     "slow": true,
     "gate": true,
-    "weight": 2,
     "heavy": true,
     "mutex": [
       "tree:repo"
@@ -727,10 +741,13 @@
   },
   {
     "id": "check:test-cli",
-    "run": "npm run check:test-cli",
+    "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:test-cli",
     "slow": true,
     "gate": true,
-    "weight": 2,
+    "cores": {
+      "min": 1,
+      "max": "all"
+    },
     "heavy": true,
     "leaves": [
       "vitest"
@@ -744,12 +761,15 @@
   },
   {
     "id": "check:test-shared",
-    "run": "npm run check:test-shared",
+    "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:test-shared",
     "gate": true,
     "needs": [
       "build:packages"
     ],
-    "weight": 2,
+    "cores": {
+      "min": 1,
+      "max": "all"
+    },
     "heavy": true,
     "leaves": [
       "vitest"
@@ -1725,6 +1745,20 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-security",
       "step": "GitHub Actions variables"
+    }
+  },
+  {
+    "id": "check:ci-record-paths",
+    "run": "npm run check:ci-record-paths",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_record_paths.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Record paths and fixed widths"
     }
   },
   {
@@ -3677,13 +3711,16 @@
   },
   {
     "id": "check:ci-account-server",
-    "run": "npm run check:ci-account-server",
+    "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:ci-account-server",
     "slow": true,
     "gate": true,
     "mutex": [
       "account-vitest"
     ],
-    "weight": 2,
+    "cores": {
+      "min": 1,
+      "max": "all"
+    },
     "heavy": true,
     "leaves": [
       ".ci/rediacc_ci/private/run_account.py"
@@ -3757,12 +3794,15 @@
   },
   {
     "id": "check:ci-account-scope-audit",
-    "run": "npm run check:ci-account-scope-audit",
+    "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:ci-account-scope-audit",
     "gate": true,
     "mutex": [
       "account-vitest"
     ],
-    "weight": 2,
+    "cores": {
+      "min": 1,
+      "max": "all"
+    },
     "heavy": true,
     "leaves": [
       "vitest"
@@ -3776,13 +3816,16 @@
   },
   {
     "id": "check:ci-test-account-web",
-    "run": "npm run check:ci-test-account-web",
+    "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:ci-test-account-web",
     "slow": true,
     "gate": true,
     "mutex": [
       "account-vitest"
     ],
-    "weight": 2,
+    "cores": {
+      "min": 1,
+      "max": "all"
+    },
     "heavy": true,
     "leaves": [
       "vitest"
@@ -5278,17 +5321,16 @@
     "run": "npm run check:ci-pytest",
     "gate": true,
     "slow": true,
-    "weight": 8,
+    "cores": {
+      "min": 2,
+      "max": "all"
+    },
     "leaves": [
       ".ci/rediacc_ci/check_pytest.py"
-    ],
-    "mutex": [
-      "tree:repo"
     ],
     "reads": [
       "www-dist"
     ],
-    "writesTree": "test_gate_gate_anti_vacuity.py and test_gate_generate_tag_inputs.py (the pytest ports in the real-tree xdist group) overwrite tracked files while they run",
     "paths": [
       ".ci/rediacc_ci/**",
       ".claude/rediacc_hooks/**",
@@ -5584,9 +5626,12 @@
   },
   {
     "id": "check:test-provisioning",
-    "run": "npm run check:test-provisioning",
+    "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:test-provisioning",
     "gate": true,
-    "weight": 2,
+    "cores": {
+      "min": 1,
+      "max": "all"
+    },
     "leaves": [
       ".ci/rediacc_ci/proxies/unit_tests.py"
     ],
@@ -5599,12 +5644,15 @@
   },
   {
     "id": "check:test-e2e-unit",
-    "run": "npm run check:test-e2e-unit",
+    "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:test-e2e-unit",
     "gate": true,
     "needs": [
       "build:packages"
     ],
-    "weight": 2,
+    "cores": {
+      "min": 1,
+      "max": "all"
+    },
     "leaves": [
       ".ci/rediacc_ci/proxies/unit_tests.py"
     ],

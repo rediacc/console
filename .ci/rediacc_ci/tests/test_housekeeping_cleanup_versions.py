@@ -21,6 +21,7 @@ disposable scratch git repository outside this checkout.
 
 from __future__ import annotations
 
+import ast
 import datetime
 import json
 import os
@@ -67,11 +68,7 @@ PHASES = (
     "cleanup_actions_cache",
 )
 
-# `_EXERCISED` is a module global that the differential helper fills in and the floor test at the bottom of this file reads. That is a cross-test dependency, and the repo-root conftest distributes UNGROUPED tests across xdist workers individually, so the floor test would read only the phases that happened to land in ITS worker. Measured on this file: green at `-n 1` and `-n 2`, RED
-# at `-n 4`, `-n 8` (the gate's `PYTEST_JOBS_CAP`) and `-n 12` -- so the gate's own invocation always failed it, and the pass at low worker counts was luck, not health. Naming a group pins all 121 tests to one worker, which is what makes the accumulator mean anything. Costs ~127s serial on that worker.
-XDIST_GROUP = "housekeeping-cleanup-versions"
-
-_EXERCISED: set[str] = set()
+# NO MODULE-LEVEL GROUP SINCE 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF17). The module used to declare `XDIST_GROUP = "housekeeping-cleanup-versions"`, pinning all of its tests (about 127 s) to one worker, because the floor test read a module-global accumulator that the cases filled in, and a worker only sees the cases that landed on it (it was red at `-n 4` and above). The floor test now reads this file's own source instead, so it does not depend on which worker ran what, and every item distributes freely.
 
 
 # --------------------------------------------------------------------------- The recording fakes ---------------------------------------------------------------------------
@@ -283,7 +280,6 @@ def sides(
 
     Returns the (shared) result so a case can go on to assert what the shared behaviour actually was -- which is the half that stops two identically wrong implementations from passing.
     """
-    _EXERCISED.add(phase)
     fixture = fixture or {}
     results = []
     with tempfile.TemporaryDirectory() as td:
@@ -2760,14 +2756,56 @@ def test_an_unset_gh_token_refuses_before_any_phase_runs() -> None:
 # --------------------------------------------------------------------------- COVERAGE CONTROL ---------------------------------------------------------------------------
 
 
+def _phases_with_a_case() -> set[str]:
+    """Every phase name this file hands to `sides(...)`, read from the source rather than from a runtime accumulator.
+
+    A literal first argument counts, and so does a name bound by a `for` over a literal tuple (the Cloudflare skip case). A `sides` call whose phase cannot be resolved either way is itself a failure, so the scan cannot quietly under-count.
+    """
+    tree = ast.parse(pathlib.Path(__file__).read_text(encoding="utf-8"))
+    parents: dict[ast.AST, ast.AST] = {}
+    for node in ast.walk(tree):
+        for child in ast.iter_child_nodes(node):
+            parents[child] = node
+    found: set[str] = set()
+    unresolved: list[int] = []
+    for node in ast.walk(tree):
+        if not (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "sides"
+        ):
+            continue
+        first = node.args[0] if node.args else None
+        if isinstance(first, ast.Constant) and isinstance(first.value, str):
+            found.add(first.value)
+            continue
+        resolved = False
+        if isinstance(first, ast.Name):
+            up = parents.get(node)
+            while up is not None and not isinstance(up, ast.For):
+                up = parents.get(up)
+            if isinstance(up, ast.For):
+                for sub in ast.walk(up.iter):
+                    if isinstance(sub, ast.Constant) and isinstance(sub.value, str):
+                        found.add(sub.value)
+                        resolved = True
+        if not resolved:
+            unresolved.append(node.lineno)
+    assert not unresolved, (
+        "sides() called with a phase this scan cannot resolve, at line(s) %s" % unresolved
+    )
+    return found
+
+
 def test_every_phase_was_driven_by_at_least_one_case() -> None:
     """ZERO CASES FOR A PHASE IS A FAILURE, not a pass.
 
-    A file of 14 phases where a rename or a refactor quietly left one undriven would still be all-green, and the green would mean nothing for that phase. Runs last by name, and reads the set the harness accumulated.
+    A file of 14 phases where a rename or a refactor quietly left one undriven would still be all-green, and the green would mean nothing for that phase. Reads the file's own source, so the answer is the same on every xdist worker.
     """
-    missing = sorted(set(PHASES) - _EXERCISED)
+    driven = _phases_with_a_case()
+    missing = sorted(set(PHASES) - driven)
     assert not missing, (
         "no differential case drives: %s. A phase with no case is not verified, "
         "and this file's green would be a claim it has not earned." % ", ".join(missing)
     )
-    assert len(_EXERCISED) >= len(PHASES)
+    assert len(driven & set(PHASES)) >= len(PHASES)

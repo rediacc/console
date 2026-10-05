@@ -232,41 +232,36 @@ const TESTPATHS_RE = /testpaths\s*=\s*\[([^\]]*)\]/;
  * HAND-DERIVED, NOT RE-COMPUTED HERE, and that is a deliberate choice, not a shortcut
  * skipped for time: the real derivation imports every module and asks `xdist_groups
  * .group_for()`, which needs a working Python/pytest environment this enumerator's own
- * docstring says NOT to assume. So the three groups below are the ones with more than
- * one file, found by grepping the FULL corpus for every `XDIST_GROUP = "..."`, `XDIST_GROUP
- * = xdist_groups.REAL_TREE_GROUP` and `pytest.mark.xdist_group(...)` declaration
- * (2026-09-27; `.ci/rediacc_ci/xdist_groups.py`, `.ci/scripts/quality/check_pool_writer_safety.py`
- * carry the mechanism). Every OTHER declared group in the corpus is confined to a single
- * file already, so it needs no cross-file placement care and is not listed. If a new
- * group grows a second file, this table is the one to update -- the same "raise it when
- * the suite grows" discipline `check_pytest.py`'s own `MIN_TESTS` documents.
+ * docstring says NOT to assume. So the groups below are the ones with more than one
+ * FILE, found by grepping the corpus for every module-level `XDIST_GROUP = ...` and
+ * `pytest.mark.xdist_group(...)` declaration (re-derived 2026-10-05, PLAN-prepush-full-cpu
+ * PF14-PF17; `.ci/rediacc_ci/xdist_groups.py` carries the mechanism). Every OTHER declared
+ * group is confined to a single file, so it needs no cross-file placement care and is not
+ * listed. The retired groups are gone on purpose: `ports` (test_core_account.py now marks
+ * only its own items, each group named for its resource and confined to that file),
+ * `housekeeping-cleanup-versions` and `hooks-delegates` (PF17: the floor test reads its
+ * own source, and each suite runs under a private TMPDIR). If a group grows a second
+ * file, this table is the one to update.
  *
- *   "ports"        test_core_account.py, test_core_ports.py (both declare
- *                  XDIST_GROUP = "ports": a deterministic port-range scan racing itself)
- *   "real-tree"    test_gate_docs_gen.py, test_gate_gate_anti_vacuity.py,
- *                  test_gate_paths_exist.py, test_gate_shrink_only_composition.py (each
- *                  XDIST_GROUP = xdist_groups.REAL_TREE_GROUP) plus test_gate_runner_advice.py,
- *                  whose BASH_TWIN ("test-runner-advice.sh") resolves into the same group
- *                  through gates.lock.json's `tree:` declarations (xdist_groups.real_tree_twins)
- *   "hooks-guards" test_guards_differential.py (XDIST_GROUP = "hooks-guards") and
+ *   "real-tree"    test_gate_runner_advice.py only, a reader: its BASH_TWIN
+ *                  ("test-runner-advice.sh") resolves into the group through gates.lock.json's
+ *                  `tree:` declarations (xdist_groups.real_tree_twins). The four writers
+ *                  plant into copies now and declare nothing.
+ *   "hooks-guards" test_guards_process_table.py (XDIST_GROUP = "hooks-guards") and
  *                  test_hooks_procs.py, which marks three of its own items with that
- *                  module's XDIST_GROUP via `@pytest.mark.xdist_group(test_guards_differential.XDIST_GROUP)`
+ *                  module's XDIST_GROUP via `@pytest.mark.xdist_group(test_guards_process_table.XDIST_GROUP)`
+ *   "hooks-fixtures" test_hooks_fixtures.py and test_pr_body_guards_repo_scope.py, which
+ *                  both mark items `@pytest.mark.xdist_group("hooks-fixtures")`
  */
 const PYTEST_XDIST_MUTEX_GROUPS: Readonly<Record<string, readonly string[]>> = {
-  'quality-pytest-ports': [
-    '.ci/rediacc_ci/tests/test_core_account.py',
-    '.ci/rediacc_ci/tests/test_core_ports.py',
-  ],
-  'quality-pytest-real-tree': [
-    '.ci/rediacc_ci/tests/gates/test_gate_docs_gen.py',
-    '.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py',
-    '.ci/rediacc_ci/tests/gates/test_gate_paths_exist.py',
-    '.ci/rediacc_ci/tests/gates/test_gate_shrink_only_composition.py',
-    '.ci/rediacc_ci/tests/gates/test_gate_runner_advice.py',
-  ],
+  'quality-pytest-real-tree': ['.ci/rediacc_ci/tests/gates/test_gate_runner_advice.py'],
   'quality-pytest-hooks-guards': [
-    '.claude/rediacc_hooks/tests/test_guards_differential.py',
+    '.claude/rediacc_hooks/tests/test_guards_process_table.py',
     '.claude/rediacc_hooks/tests/test_hooks_procs.py',
+  ],
+  'quality-pytest-hooks-fixtures': [
+    '.claude/rediacc_hooks/tests/test_hooks_fixtures.py',
+    '.claude/rediacc_hooks/tests/test_pr_body_guards_repo_scope.py',
   ],
 };
 

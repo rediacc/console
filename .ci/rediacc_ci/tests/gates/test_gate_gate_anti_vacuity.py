@@ -23,20 +23,15 @@ TWO REGISTRIES WERE TWO ANSWERS TO ONE QUESTION while both files existed, and `t
 NONE OF THE FOUR CASES THAT PLANT A PROBE WRITES THE REAL TREE ANY MORE. Each builds its own COPY of `scripts/` and `.ci/scripts/` (`empty_tree_fixture`, the tree-building half of `run_against_empty_tree` split out so it can be reused before anything runs), writes the probe into THAT copy, and runs against it -- the real, tracked `scripts/` and `.ci/scripts/` are opened only for
 reading, by `shutil.copytree`. This also retires the PID-keying the fixtures used to need: a name collision between two concurrent sessions was a real, measured failure (the `.gate-paths-exist` pair's "each cleanup deleting the other's file"), and a plant that lives in its OWN temp directory cannot collide with anything, in this battery or another session's.
 
-WHY THIS MODULE IS STILL SERIALISED, given that nothing here writes any more. Every case -- the four plants and every registry entry -- reads the real `scripts/` and/or `.ci/scripts/` wholesale through `shutil.copytree`, and that read is not instantaneous: a REAL-tree WRITER elsewhere in the battery (`test_gate_docs_gen.py`'s `--write` case, `test_gate_paths_exist.py`'s and
-`test_gate_shrink_only_composition.py`'s own plants) can still land mid-copy and hand this module a half-written file, which is the `cp: cannot stat` / truncated-read flake this group exists to prevent. `XDIST_GROUP` is the documented escape hatch for a resource no registry knows about; while the twin existed the same protection came from `REAL_TREE_TWIN = True`, honoured only through
-a basename lookup keyed on the twin's now-deleted lock entry, so it bought nothing after the retirement and has been removed.
+NO XDIST GROUP SINCE 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF15). This module stayed in the real-tree group as a READER after its own plants moved into copies: every case reads the real `scripts/` and `.ci/scripts/` wholesale through `shutil.copytree`, and a real-tree WRITER elsewhere in the battery (`test_gate_docs_gen.py`'s `--write` case, `test_gate_paths_exist.py`'s and `test_gate_shrink_only_composition.py`'s plants) could land mid-copy and hand it a half-written file. Those writers now plant into copies too, so there is no writer left for a reader to be serialised against, and the session tripwire (`test_tree_tripwire.py`) fails any run in which a test changes a tracked path.
 """
 
 import contextlib
 import pathlib
 import shutil
 
-from rediacc_ci import paths, xdist_groups
+from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-# Every case reads the real scripts/ and .ci/scripts/ wholesale via shutil.copytree, racing any real-tree writer elsewhere in the battery. See the module docstring.
-XDIST_GROUP = xdist_groups.REAL_TREE_GROUP
 
 ROOT = paths.repo_root()
 
