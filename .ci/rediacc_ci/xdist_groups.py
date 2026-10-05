@@ -175,13 +175,15 @@ def unit_durations(path: pathlib.Path | None = None) -> tuple[dict[str, float], 
     except (OSError, ValueError):
         return {}, 0.0
     units = data.get("units") if isinstance(data, dict) else None
+    units = units if isinstance(units, dict) else {}
     durations = {
         key[len(UNIT_PREFIX) :]: float(value)
-        for key, value in (units or {}).items()
+        for key, value in units.items()
         if key.startswith(UNIT_PREFIX) and isinstance(value, (int, float))
     }
-    default = (data.get("defaultUnitMs") or {}).get(LANE_ID, 0.0) if isinstance(data, dict) else 0.0
-    return durations, float(default or 0.0)
+    defaults = data.get("defaultUnitMs") if isinstance(data, dict) else None
+    default = defaults.get(LANE_ID, 0.0) if isinstance(defaults, dict) else 0.0
+    return durations, float(default) if isinstance(default, (int, float)) else 0.0
 
 
 def order_longest_first(files: list[str], durations: dict[str, float], default: float) -> list[int]:
