@@ -1306,6 +1306,11 @@ def controls_fired(enforce, planfile, planrec=None):
             "resolve_here excused a dead fileline outside every absent submodule",
             not resolve_here(planrec, "fileline", "no/such/file-zz.py:1", ["private/zz-absent"])[0],
         )
+    # ORPHAN COMMIT POINTER (#ad75ce33): a commit that exists locally but is not an ancestor of HEAD must FAIL P-A3's resolver, an ancestor must pass. Driven against a throwaway repo, through the real resolve_here.
+    if planrec is not None:
+        orphan_ok, anc_ok = _orphan_commit_controls(planrec)
+        caught("resolve_here passed a commit that is not an ancestor of HEAD", not orphan_ok)
+        caught("resolve_here refused a commit that is an ancestor of HEAD", anc_ok)
     # MOVED PLAN: a row written under the plan's pre-move path must still be found once the plan sits in _done/, and a same-sig row from a DIFFERENT plan must not be.
     moved_rows = [{"plan": "agent/plans/PLAN-m.md", "sig": "bbbbbbbb", "head": "H0"}]
     caught(
@@ -2017,11 +2022,53 @@ def fileline_at_commit(root, commit, token):
     return out.returncode == 0 and 1 <= int(line) <= len(out.stdout.splitlines())
 
 
+def _orphan_commit_controls(planrec):
+    """(orphan_resolves, ancestor_resolves) through resolve_here, against a tmp repo holding one ancestor commit and one orphan (commit, then `reset --hard` back: the object stays, ancestry is gone)."""
+    global REPO_ROOT  # noqa: PLW0603 -- resolve_here reads the module root; restored below
+    saved = REPO_ROOT
+    with tempfile.TemporaryDirectory() as tmp:
+
+        def git(*args):
+            return subprocess.run(
+                ["git", "-C", tmp, "-c", "user.name=c", "-c", "user.email=c@c", *args],
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
+
+        git("init", "-q")
+        git("commit", "-q", "--allow-empty", "-m", "base")
+        base = git("rev-parse", "HEAD")
+        git("commit", "-q", "--allow-empty", "-m", "orphan-to-be")
+        orphan = git("rev-parse", "HEAD")
+        git("reset", "-q", "--hard", base)
+        REPO_ROOT = tmp
+        try:
+            return (
+                resolve_here(planrec, "commit", orphan, [])[0],
+                resolve_here(planrec, "commit", base, [])[0],
+            )
+        finally:
+            REPO_ROOT = saved
+
+
 def resolve_here(planrec, kind, token, absent):
     """(ok, why) for one investigation pointer. A `fileline` into a submodule this checkout did not populate is SKIPPED, never failed: it is a pointer this lane chose not to fetch, not a dead one. Every other pointer goes to the shared resolver unchanged."""
     if kind == "fileline" and any(token.startswith(sub + "/") for sub in absent):
         return True, "skipped: %s is not populated in this checkout" % token.split(":", 1)[0]
-    return planrec.resolve(REPO_ROOT, kind, token)
+    ok, why = planrec.resolve(REPO_ROOT, kind, token)
+    if ok and kind == "commit":
+        # PRESENCE IS THE WRONG QUESTION FOR A COMMIT (finding #ad75ce33, PR #595 run 37230695132). A rebase leaves the pre-rewrite commit in the local object store, so `rev-parse` passes here and fails in CI's fresh checkout. check_plan_citations.commit_is_reachable is the ancestry test that gate already uses; a commit must be an ancestor of HEAD. A rewritten one then falls to the caller's successor_of re-resolution.
+        from check_plan_citations import (  # noqa: PLC0415 -- lazy: pulls in the wl_* resolvers
+            commit_is_reachable,
+        )
+
+        if not commit_is_reachable(REPO_ROOT, token):
+            return False, (
+                "%s exists in this clone but is not an ancestor of HEAD (a rebase rewrote it), "
+                "so a fresh checkout will not have it" % why
+            )
+    return ok, why
 
 
 def registration_findings(boxes_gate):
