@@ -24,8 +24,11 @@ import pytest
 
 from rediacc_hooks.tests import hookblocks, hookcases, test_guards_process_table
 
-# The fixtures spawn `sleep 8` and the case must be asked while it is alive. 0.3s is what the shell suite waited for the process to appear in the table.
+# The fixtures spawn a long sleep and each case must be asked while it is alive. 0.3s is what the shell suite waited for the process to appear in the table.
 SPAWN_SETTLE_S = 0.3
+
+# HOW LONG A FIXTURE LIVES: until the test kills it, never a fixed few seconds. Every fixture below is killed in a `finally`, so the lifetime costs nothing, while a short one is a race against the load: the bash-write test asks 19 cases, each spawning a guard process, and under a full pre-push (2026-10-05, check:ci-pytest beside 60 other gates) `sleep 8` ended before case [2] was asked, so the guard rightly allowed a write to a script that had stopped running and the case read as a miss.
+FIXTURE_SLEEP_S = 600
 
 # GNU `timeout` is the whole point of the two blocks below -- they prove a hang is REALLY bounded by watching for its exit-124 convention, not by trusting a comment -- so it is shelled out to for real rather than reimplemented with
 # `subprocess.run(timeout=...)`, which raises instead of returning 124. That
@@ -94,7 +97,7 @@ def test_a_self_matching_pgrep_wait_really_does_hang():
 def test_block_edit_of_running_script(tmp_path):
     block = hookblocks.Block("running-script")
     fixture = tmp_path / "running-fixture.sh"
-    fixture.write_text("#!/usr/bin/env bash\nsleep 8\n", encoding="utf-8")
+    fixture.write_text("#!/usr/bin/env bash\nsleep %d\n" % FIXTURE_SLEEP_S, encoding="utf-8")
     live = subprocess.Popen(
         ["bash", str(fixture)],
         stdout=subprocess.DEVNULL,
@@ -133,7 +136,7 @@ def test_block_edit_of_running_script(tmp_path):
         # comm=sleep and the fixture name genuinely in argv.
         nonshell_name = "rs-nonshell-fixture-%d.sh" % os.getpid()
         nonshell = subprocess.Popen(
-            ["bash", "-c", 'exec -a "$1" sleep 8', "--", nonshell_name],
+            ["bash", "-c", 'exec -a "$1" sleep %d' % FIXTURE_SLEEP_S, "--", nonshell_name],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             stdin=subprocess.DEVNULL,
@@ -193,10 +196,10 @@ def test_block_bash_write_to_running_script(tmp_path):
     block = hookblocks.Block("bash-write")
     bash_json = hookcases.bash_json
     fixture = tmp_path / "bw-fixture.sh"
-    fixture.write_text("#!/usr/bin/env bash\nsleep 8\n", encoding="utf-8")
+    fixture.write_text("#!/usr/bin/env bash\nsleep %d\n" % FIXTURE_SLEEP_S, encoding="utf-8")
     # A decoy whose NAME CONTAINS the live fixture's, never run. Without it, nothing distinguishes "matches this process" from "appears in this process's name".
     (tmp_path / "myLongbw-fixture.sh").write_text(
-        "#!/usr/bin/env bash\nsleep 8\n", encoding="utf-8"
+        "#!/usr/bin/env bash\nsleep %d\n" % FIXTURE_SLEEP_S, encoding="utf-8"
     )
     (tmp_path / "b.sh").write_text("", encoding="utf-8")
     live = subprocess.Popen(
@@ -315,7 +318,12 @@ def test_block_bash_write_to_running_script(tmp_path):
         )
         # And the expensive one: `pgrep -af` matched a PEER SESSION whose long prompt merely contained a filename, so the guard reported a script as executing when no interpreter had it open. Only a SHELL running it counts.
         argv_only = subprocess.Popen(
-            ["python3", "-c", "import sys,time; time.sleep(45)", str(tmp_path / "argv-only.sh")],
+            [
+                "python3",
+                "-c",
+                "import sys,time; time.sleep(%d)" % FIXTURE_SLEEP_S,
+                str(tmp_path / "argv-only.sh"),
+            ],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             stdin=subprocess.DEVNULL,
