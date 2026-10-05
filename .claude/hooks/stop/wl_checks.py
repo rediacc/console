@@ -3905,6 +3905,9 @@ def run_stop(event, event_ok, worklist, hook_file):
             # Not produced in focus mode: plan boxes park until the PR is done.
             if _pf_text and not _focus:
                 outq_add(worklist, session_id, state_doc, "plan-tasks", _pf_text, 2)
+            elif not _pf_text:
+                # The state it described has moved on. Without this a queued "29 open box(es), 0 ticked" kept being delivered stops after every box of that plan was ticked (2026-10-05), the way plan-pr-open and loop-next already drop theirs.
+                outq_drop(state_doc, "plan-tasks")
     except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop
         pass
 
