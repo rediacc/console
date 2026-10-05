@@ -20,6 +20,8 @@ A lease directory owned by another user is refused (exit 69), never shared: its 
 
 THE POOL SIZE is `$REDIACC_CORE_LEASE_TOKENS` when set to a positive integer (the tests use 4), else `available_cores()`.
 
+RUN REGISTRATION (plan part 4, B11). Counting free tokens tells a run nothing about the other runs: two runs started together both read every token free and the first took them all. So each run also holds a marker, `runs/<pid>-<monotonic_ns>-<hex>.lock` under the lease directory, flock'd for the run's lifetime (`Pool.register`; created O_CREAT|O_EXCL and locked inside the pool mutex, so no counter can see an unlocked new marker and mistake it for a dead one). `Pool.live_runs` probes every marker under the mutex with a fresh open: a lock it can take means the owner is dead, and the marker is unlinked; a held one is live. A run's share of the pool is ceil(total / live_runs); `run` and `pytest` cap their `--max` at it (never below `--min`, never below 1), and the broker reports the count in its `free` reply for the scheduler to do the same. An unusable `runs/` is the same exit 69 as an unusable token directory.
+
 CLI (`python3 .ci/rediacc_ci/core_lease.py <verb> ...`). `--max` takes a positive integer or `all` (the pool size); `--min` defaults to 1 and `--max` to `all`.
 
   acquire --min M --max N [--wait] [--timeout S] [--label L]
@@ -29,8 +31,8 @@ CLI (`python3 .ci/rediacc_ci/core_lease.py <verb> ...`). `--max` takes a positiv
   pytest --real PYTEST [-- ARGS...]
       The session pytest wrapper's verb (.ci/bootstrap.sh writes the wrapper). With `CI_CORE_LEASE_HELD` set, or for --version/-V/-VV/--help/-h, execs PYTEST untouched. Otherwise reads xdist's `-n` from ARGS and `PYTEST_ADDOPTS` (`-n N` asks for up to N tokens, `-n auto` and `-n logical` for the whole pool, no `-n` or `-n 0` for one), waits for at least one token, rewrites `-n` to the grant k, and execs PYTEST like `run`.
   broker [--label L]
-      For a parent process (scripts/ci-runner/lease-client.ts). JSON lines on stdin, exactly one JSON line answered on stdout per request:
-        {"op":"free"}                                   -> {"free":F,"total":T,"held":[ids this broker holds]}
+      For a parent process (scripts/ci-runner/lease-client.ts). Registers a run marker at spawn and holds it for its lifetime. JSON lines on stdin, exactly one JSON line answered on stdout per request:
+        {"op":"free"}                                   -> {"free":F,"total":T,"held":[ids this broker holds],"runs":R}   (R = live registered runs, this broker's own included, at least 1)
         {"op":"acquire","min":M,"max":N,"label":"g"}    -> {"k":K,"ids":[...]}  (M may be 0: whatever is free, possibly ids []; K is 0 and ids [] when fewer than M were free, and nothing is kept then; "max" may be "all"; "label" is optional)
         {"op":"release","ids":[...]}                    -> {"released":[...],"unknown":[ids this broker did not hold]}
         anything malformed                              -> {"error":"..."}
@@ -38,7 +40,7 @@ CLI (`python3 .ci/rediacc_ci/core_lease.py <verb> ...`). `--max` takes a positiv
   free
       Prints the number of free tokens, exit 0.
   status [--json]
-      One line per held token: its holder, label, age, and `IDLE` when the holder's process tree has used no CPU for 10 minutes (a report, never a kill). Exit 0.
+      The live run count, then one line per held token: its holder, label, age, and `IDLE` when the holder's process tree has used no CPU for 10 minutes (a report, never a kill). Exit 0.
   selftest   (also the no-argument form)
       In-process controls over a temp pool. Exit 0 green, 1 red.
 
@@ -54,6 +56,7 @@ import fcntl
 import json
 import os
 import pathlib
+import secrets
 import shlex
 import sys
 import tempfile
@@ -81,6 +84,7 @@ LOCK_FLAGS = fcntl.LOCK_EX | fcntl.LOCK_NB
 
 # The pool mutex: every scan of the tokens (an acquire, a `free` count, a `status`) holds it, so a probe that takes a token's lock for a microsecond can never be what a concurrent acquirer finds busy. Without it a runner polling `free` before each admit pass made a session's `--max 3` over 4 free tokens come back with 2 (test_core_lease.py `test_probes_never_short_a_concurrent_acquire`, and its planted `unguarded-scan`). Held only for the scan, never across a sidecar write or a wait; taken with LOCK_NB and a spin, so a process stopped mid-scan is reported after MUTEX_TIMEOUT_S rather than hanging every caller.
 MUTEX_NAME = "pool.mutex"
+RUNS_DIR = "runs"
 MUTEX_TIMEOUT_S = 10.0
 MUTEX_SPIN_S = 0.001
 
@@ -107,6 +111,21 @@ DEFECTS: dict[str, tuple[str, str]] = {
     "unguarded-scan": (
         "        with self._scan():\n            return sum(",
         "        with contextlib.nullcontext():\n            return sum(",
+    ),
+    # Run markers are counted as files: a run killed by -9 leaves its marker, so it is counted live forever and the survivors' share stays too small.
+    "runs-file-count": (
+        "                with contextlib.suppress(OSError):\n                    marker.unlink()\n",
+        "                live += 1\n",
+    ),
+    # A new marker is created and locked outside the pool mutex, with a pause between the two steps: a concurrent count finds the unlocked marker, takes it for a dead run's, unlinks it, and the new run counts 0 for itself.
+    "runs-no-mutex": (
+        "        with self._scan():\n            fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC, 0o600)\n",
+        "        with contextlib.nullcontext():\n            fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC, 0o600)\n            time.sleep(0.005)\n",
+    ),
+    # The CLI verbs ignore the share and take whatever is free: first come takes all.
+    "runs-no-cap": (
+        "    return max(minimum, 1, min(maximum, -(-pool.size // max(1, runs))))\n",
+        "    return maximum\n",
     ),
     # Acquire without LOCK_NB: the second acquirer blocks in the kernel on the first held token.
     "blocking-flock": (
@@ -236,6 +255,19 @@ def tree_cpu_ticks(pid: int) -> int | None:
 
 
 @dataclass(frozen=True)
+class Run:
+    """One registered run: its marker file and the descriptor whose flock says the run is alive."""
+
+    path: pathlib.Path
+    fd: int
+
+    def close(self) -> None:
+        """Release the marker's lock; the file is left for the next `live_runs` to sweep."""
+        with contextlib.suppress(OSError):
+            os.close(self.fd)
+
+
+@dataclass(frozen=True)
 class Token:
     """One held token: its index and the descriptor whose flock holds it."""
 
@@ -295,6 +327,36 @@ class Pool:
                 )
             )
             raise LeaseError(msg)
+        self._ensure_runs()
+
+    @property
+    def runs_dir(self) -> pathlib.Path:
+        """Where the run markers live."""
+        return self.directory / RUNS_DIR
+
+    def _ensure_runs(self) -> None:
+        try:
+            self.runs_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+            usable = self.runs_dir.is_dir() and os.access(self.runs_dir, os.W_OK | os.X_OK)
+        except OSError as exc:
+            msg = (
+                "cannot create the run marker directory %s (%s); set %s to a directory this user owns"
+                % (
+                    self.runs_dir,
+                    exc,
+                    DIR_ENV,
+                )
+            )
+            raise LeaseError(msg) from exc
+        if not usable:
+            msg = (
+                "the run marker directory %s is not a usable directory; remove it or set %s to a directory this user owns"
+                % (
+                    self.runs_dir,
+                    DIR_ENV,
+                )
+            )
+            raise LeaseError(msg)
 
     def lock_path(self, index: int) -> pathlib.Path:
         """The file whose flock is token `index`."""
@@ -329,6 +391,43 @@ class Pool:
             yield
         finally:
             os.close(fd)
+
+    def register(self, label: str = "") -> Run:
+        """Register this run: a new marker, created and flock'd inside the pool mutex, held until the handle closes or the process dies."""
+        self._ensure_runs()
+        name = "%d-%d-%s.lock" % (os.getpid(), time.monotonic_ns(), secrets.token_hex(4))
+        path = self.runs_dir / name
+        with self._scan():
+            fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC, 0o600)
+            try:
+                fcntl.flock(fd, LOCK_FLAGS)
+            except BaseException:
+                os.close(fd)
+                raise
+        with contextlib.suppress(OSError):
+            os.write(fd, (json.dumps({"pid": os.getpid(), "label": label}) + "\n").encode())
+        return Run(path, fd)
+
+    def live_runs(self) -> int:
+        """Registered runs alive right now. Under the pool mutex each marker is probed with a fresh open (flock is per open file description, so a marker this process holds reads as held): a lock that can be taken means its owner is dead, and the marker is unlinked."""
+        self._ensure_runs()
+        live = 0
+        with self._scan():
+            for marker in sorted(self.runs_dir.glob("*.lock")):
+                try:
+                    fd = os.open(marker, os.O_RDWR | os.O_CLOEXEC)
+                except OSError:
+                    continue
+                try:
+                    fcntl.flock(fd, LOCK_FLAGS)
+                except BlockingIOError:
+                    live += 1
+                    continue
+                finally:
+                    os.close(fd)
+                with contextlib.suppress(OSError):
+                    marker.unlink()
+        return live
 
     def _claim(self, index: int) -> int | None:
         """Token `index`'s locked descriptor, or None when someone holds it. Never blocks. Callers hold `_scan()`."""
@@ -463,6 +562,7 @@ class Pool:
             "dir": str(self.directory),
             "total": self.size,
             "free": self.size - len(held),
+            "runs": self.live_runs(),
             "held": held,
         }
 
@@ -545,6 +645,11 @@ def _bounds(pool: Pool, minimum: int, maximum: int | str, floor: int = 1) -> tup
     return minimum, top
 
 
+def _share_cap(pool: Pool, minimum: int, maximum: int, runs: int) -> int:
+    """`maximum` capped at this run's share of the pool, ceil(total / runs), and never below `minimum` or 1."""
+    return max(minimum, 1, min(maximum, -(-pool.size // max(1, runs))))
+
+
 def _err(message: str) -> None:
     print("core_lease: %s" % message, file=sys.stderr, flush=True)
 
@@ -559,18 +664,28 @@ def _waiting_notice(pool: Pool, minimum: int) -> Callable[[], None]:
     return notice
 
 
-def _exec_holding(tokens: Sequence[Token], cmd: Sequence[str], extra_env: Mapping[str, str]) -> int:
+def _exec_holding(
+    tokens: Sequence[Token],
+    cmd: Sequence[str],
+    extra_env: Mapping[str, str],
+    run: Run | None = None,
+) -> int:
     env = dict(os.environ)
     env.update(extra_env)
     env[ENV] = str(len(tokens))
     env[HELD_ENV] = "1"
     for token in tokens:
         os.set_inheritable(token.fd, True)
+    if run is not None:
+        # The marker's lock lives as long as the command's process tree, like the tokens.
+        os.set_inheritable(run.fd, True)
     try:
         os.execvpe(cmd[0], list(cmd), env)  # noqa: S606 -- the whole point of `run`: become the command, keeping the lock descriptors
     except OSError as exc:
         _err("cannot execute %s: %s" % (cmd[0], exc))
         Pool.release(tokens)
+        if run is not None:
+            run.close()
         return EXIT_NOEXEC
     return EXIT_NOEXEC  # pragma: no cover -- execvpe returns only by raising
 
@@ -606,18 +721,22 @@ def _cmd_run(pool: Pool, ns: argparse.Namespace) -> int:
         _err("run needs a command after --")
         return EXIT_USAGE
     minimum, maximum = _bounds(pool, ns.min, ns.max)
+    label = ns.label or " ".join(cmd)
+    marker = pool.register(label)
+    maximum = _share_cap(pool, minimum, maximum, pool.live_runs())
     tokens = pool.acquire(
         minimum,
         maximum,
         wait=ns.wait,
         timeout=ns.timeout,
-        label=ns.label or " ".join(cmd),
+        label=label,
         on_wait=_waiting_notice(pool, minimum),
     )
     if not tokens:
+        marker.close()
         _err("fewer than %d core token(s) free in %s" % (minimum, pool.directory))
         return EXIT_SHORT
-    return _exec_holding(tokens, cmd, {})
+    return _exec_holding(tokens, cmd, {}, marker)
 
 
 def _cmd_pytest(ns: argparse.Namespace) -> int:
@@ -640,9 +759,10 @@ def _cmd_pytest(ns: argparse.Namespace) -> int:
     pool = Pool.from_env()
     addopts = shlex.split(os.environ.get("PYTEST_ADDOPTS", ""))
     want = requested_workers([*addopts, *args], pool.size)
+    marker = pool.register("pytest " + " ".join(args))
     tokens = pool.acquire(
         1,
-        min(want or 1, pool.size),
+        _share_cap(pool, 1, min(want or 1, pool.size), pool.live_runs()),
         wait=True,
         label="pytest " + " ".join(args),
         on_wait=_waiting_notice(pool, 1),
@@ -652,18 +772,24 @@ def _cmd_pytest(ns: argparse.Namespace) -> int:
         args = rewrite_workers(args, len(tokens))
         if list(_n_options(addopts)):
             extra["PYTEST_ADDOPTS"] = shlex.join(rewrite_workers(addopts, len(tokens)))
-    return _exec_holding(tokens, [real, *args], extra)
+    return _exec_holding(tokens, [real, *args], extra, marker)
 
 
 def _cmd_broker(pool: Pool, ns: argparse.Namespace) -> int:
     held: dict[int, Token] = {}
+    marker = pool.register(ns.label or "broker")
 
     def answer(req: object) -> dict[str, object]:
         if not isinstance(req, dict):
             return {"error": "a request is a JSON object"}
         op = req.get("op")
         if op == "free":
-            return {"free": pool.free_count(), "total": pool.size, "held": sorted(held)}
+            return {
+                "free": pool.free_count(),
+                "total": pool.size,
+                "held": sorted(held),
+                "runs": max(1, pool.live_runs()),
+            }
         if op == "acquire":
             minimum, maximum = req.get("min", 1), req.get("max", "all")
             if (
@@ -717,6 +843,7 @@ def _cmd_broker(pool: Pool, ns: argparse.Namespace) -> int:
         pass
     finally:
         pool.release(list(held.values()))
+        marker.close()
     return EXIT_OK
 
 
@@ -728,7 +855,8 @@ def _cmd_status(pool: Pool, ns: argparse.Namespace) -> int:
     held = report["held"]
     assert isinstance(held, list)  # noqa: S101 -- narrowing for the type checker
     print(
-        "core lease %s: %s of %s token(s) free" % (report["dir"], report["free"], report["total"])
+        "core lease %s: %s of %s token(s) free, %s live run(s)"
+        % (report["dir"], report["free"], report["total"], report["runs"])
     )
     for row in held:
         who = "pid %s" % row.get("pid", "?")
