@@ -211,6 +211,13 @@ CASES = [
     ("prose naming a push", world_unreviewed, "echo 'git push later'", None),
     ("not a push", world_unreviewed, "git status", None),
     ("a push of a repository outside the project", world_outside, "git -C {outside} push", None),
+    # A `cd` bash cannot perform leaves git in the project, so the push is judged there (#5810a9f3 sibling): skipping it let an unreviewed commit out.
+    (
+        "a failed cd leaves the push in the project",
+        world_unreviewed,
+        "cd /nonexistent-zz9; git push",
+        "UNREVIEWED console",
+    ),
     # A push whose every source is exactly origin/main's commit sends what main already holds, reviewed on its own branch before the merge: the GitLab mirror push (operator ruling 2026-10-03, worklist #5ab0afb4) is not judged by the checked-out branch.
     (
         "a mirror push of exactly origin/main",
