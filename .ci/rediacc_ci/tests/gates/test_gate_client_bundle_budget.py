@@ -23,6 +23,7 @@ NO `xdist_group`. Each case runs `tsx` in a subprocess against its own `tmp_path
 the real-dist arm only reads. Nothing is bound and no module global is mutated.
 """
 
+import os
 import pathlib
 import re
 
@@ -31,6 +32,18 @@ from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root("scripts", "gates", "check-client-bundle-budget.ts")
 DIST = paths.from_root("packages", "www", "dist")
+
+# THE REAL-DIST ARMS ARE OPT-IN, REDIACC_PYTEST_REAL_DIST=1 (2026-10-05, agent/plans/PLAN-prepush-full-cpu.md). They read every file under a dist that build:www empties before it rebuilds, so check:ci-pytest used to hold a shared `www-dist` claim, and in the one-pass pre-push build:www waited out the whole pytest wall (1022.9 s) before it ran in the tail. The real dist is check:ci-client-bundle-budget's own subject, scheduled with `needs: ['build:www']` so it scans a finished build, and CI's quality-pytest builds no site, so these arms only ever ran locally against whatever dist happened to be on disk.
+
+
+def real_dist_skip_reason():
+    """Why the real-dist arms assert nothing in this run, or None when they run."""
+    if os.environ.get("REDIACC_PYTEST_REAL_DIST") != "1":
+        return "REDIACC_PYTEST_REAL_DIST is not 1; check:ci-client-bundle-budget covers the real dist after build:www"
+    if not DIST.is_dir():
+        return "%s absent" % paths.relative_to_root(DIST)
+    return None
+
 
 # The one character the mutant takes back: `\s*` to `\s+` in the side-effect
 # import matcher. `\bimport\s*\(` on the line above is a DIFFERENT matcher (the
@@ -124,11 +137,9 @@ def test_real_dist_has_the_shape(gate):
     49 no-space edges across 20 files in the dist as measured on 2026-09-03, and 49 again on 2026-09-07. A floor of ONE is anti-vacuous and goes red the instant the regex regresses; an absent dist is a LOUD skip, never a silent pass.
     """
     gate.log_test("the real build must still emit the shape the fix exists for")
-    if not DIST.is_dir():
-        gate.log_pass(
-            "SKIP (loudly): %s absent, so the real-build arm asserted NOTHING"
-            % paths.relative_to_root(DIST)
-        )
+    reason = real_dist_skip_reason()
+    if reason is not None:
+        gate.log_pass("SKIP (loudly): %s, so the real-build arm asserted NOTHING" % reason)
         return
     found = count_no_space_edges()
     if found < 1:
@@ -150,8 +161,9 @@ def test_the_reimplemented_count_agrees_with_grep(gate):
     newlines mistake) would satisfy the floor and be wrong.
     """
     gate.log_test("the Python count and the twin's grep must answer the same number")
-    if not DIST.is_dir():
-        gate.log_pass("SKIP (loudly): no dist, so there was nothing to compare the two on")
+    reason = real_dist_skip_reason()
+    if reason is not None:
+        gate.log_pass("SKIP (loudly): %s, so there was nothing to compare the two on" % reason)
         return
     grep = harness.require_tool("grep", "install grep; the twin's spelling is the reference")
     reference = 0
