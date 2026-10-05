@@ -11,7 +11,7 @@ import os
 
 import pytest
 
-from rediacc_ci import battery, check_pytest, core_lease
+from rediacc_ci import battery, check_pytest, core_lease, log
 from rediacc_ci.quality import literal_sources
 
 #: Larger than the old cap of 8 on purpose, so a cap restored anywhere in the chain is visible as a smaller number.
@@ -83,3 +83,33 @@ def test_literal_sources_pool_width_is_the_grant(wide_host) -> None:
     assert literal_sources.pool_width() == 12
     wide_host.delenv(core_lease.ENV)
     assert literal_sources.pool_width() == WIDE
+
+
+_JUNIT = """<?xml version="1.0" encoding="utf-8"?>
+<testsuites><testsuite name="pytest" tests="5">
+<testcase classname=".ci.rediacc_ci.tests.test_a" name="test_ok" time="0.1"/>
+<testcase classname=".ci.rediacc_ci.tests.test_a" name="test_broken[db]@some-group" time="0.1"><failure message="boom"/></testcase>
+<testcase classname=".ci.rediacc_ci.tests.test_a" name="test_erred" time="0.1"><error message="setup"/></testcase>
+<testcase classname=".ci.rediacc_ci.tests.test_b" name="test_host_only[x y]" time="0"><skipped message="ruff disables EXE001 under WSL"/></testcase>
+<testcase classname=".ci.rediacc_ci.tests.test_b" name="test_proxy" time="0"><skipped message="proxy p: CANNOT RUN (1 of 2 requirement(s) missing)"/></testcase>
+</testsuite></testsuites>
+"""
+
+
+def test_a_red_run_keys_each_failure_and_each_uncontracted_skip(tmp_path):
+    """check:ci-pytest emitted no finding keys, so its carry had to be `*`, and the wildcard carried seven real failures through a push (2026-10-05)."""
+    junit = tmp_path / "junit.xml"
+    junit.write_text(_JUNIT, encoding="utf-8")
+    assert check_pytest.junit_finding_keys(junit) == [
+        "pytest-fail:.ci.rediacc_ci.tests.test_a::test_broken#db#",
+        "pytest-fail:.ci.rediacc_ci.tests.test_a::test_erred",
+        "pytest-skip:.ci.rediacc_ci.tests.test_b::test_host_only#x#y#",
+    ]
+
+
+def test_every_key_is_in_the_finding_alphabet_and_an_unreadable_junit_keys_nothing(tmp_path):
+    junit = tmp_path / "junit.xml"
+    junit.write_text(_JUNIT.replace("test_erred", "test_" + "x" * 300), encoding="utf-8")
+    keys = check_pytest.junit_finding_keys(junit)
+    assert all(log.FINDING_KEY_RE.match(k) for k in keys), keys
+    assert check_pytest.junit_finding_keys(tmp_path / "absent.xml") == []

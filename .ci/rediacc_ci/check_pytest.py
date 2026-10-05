@@ -62,7 +62,7 @@ import tomllib
 # is on sys.path. Everything after this line goes through rediacc_ci.paths.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-from rediacc_ci import core_lease, paths, proc
+from rediacc_ci import core_lease, log, paths, proc
 from rediacc_ci.controls import Controls
 
 # See the module docstring for why this is a constant and floor 2 is not.
@@ -317,6 +317,45 @@ def parse_contract_skips(text: str) -> int:
     while five tests behind one subject produce one line reading `[5]`.
     """
     return sum(int(m.group(1)) for m in CONTRACT_SKIP_RE.finditer(text or ""))
+
+
+_KEY_UNSAFE_RE = re.compile(r"[^A-Za-z0-9._:/@#-]")
+
+
+def junit_finding_keys(junit: pathlib.Path) -> list[str]:
+    """One `::finding::` key per test the verdict can blame, from the run's junit: `pytest-fail:<node>` for a failure or an error, `pytest-skip:<node>` for a skip outside the CANNOT RUN contract.
+
+    WHY THIS GATE KEYS ITS FINDINGS (2026-10-05). It used to emit none, so the only way to carry its four host-specific skips was `findings: "*"`, and that wildcard also carried seven real failures through a push. With a key per test the carry names exactly what it excuses, and a new failure is a new key the push guard refuses. The node is `<classname>::<name>`, with the xdist `@group` suffix dropped so a serial and a parallel run agree, and characters outside the key alphabet written as `#`.
+    """
+    import xml.etree.ElementTree as ET  # noqa: PLC0415 -- only a red run reads its junit
+
+    try:
+        root = ET.parse(junit).getroot()  # noqa: S314 -- this run's own junit, written by pytest a moment ago
+    except (OSError, ET.ParseError):
+        return []
+    keys: set[str] = set()
+    for case in root.iter("testcase"):
+        name = (case.get("name") or "").split("@", 1)[0]
+        node = "%s::%s" % (case.get("classname") or "", name)
+        kind = None
+        if case.find("failure") is not None or case.find("error") is not None:
+            kind = "pytest-fail"
+        else:
+            skipped = case.find("skipped")
+            if skipped is not None and "CANNOT RUN (" not in (skipped.get("message") or ""):
+                kind = "pytest-skip"
+        if kind is None:
+            continue
+        key = "%s:%s" % (kind, _KEY_UNSAFE_RE.sub("#", node))
+        if len(key) > 200:
+            key = key[:180] + "#" + log.finding_key("n", node).split(":", 1)[1]
+        keys.add(key)
+    return sorted(keys)
+
+
+def emit_junit_findings(junit: pathlib.Path) -> None:
+    for key in junit_finding_keys(junit):
+        log.emit_finding(key)
 
 
 def verdict(
@@ -1249,6 +1288,7 @@ def main(argv: list[str]) -> int:
         if problem:
             print(out, file=sys.stderr)
             print("\n%s✗%s %s" % (RED, NC, problem), file=sys.stderr)
+            emit_junit_findings(junit_path)
             return EXIT_FAIL
         print(
             "%s✓%s %d test(s) collected and passed (shard %d/%d, corpus %d, floor %d)"
@@ -1308,6 +1348,7 @@ def main(argv: list[str]) -> int:
     if problem:
         print(out, file=sys.stderr)
         print("\n%s✗%s %s" % (RED, NC, problem), file=sys.stderr)
+        emit_junit_findings(junit_path)
         return EXIT_FAIL
 
     print(

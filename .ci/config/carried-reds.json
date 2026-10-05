@@ -38,8 +38,13 @@
     },
     {
       "gate": "check:ci-pytest",
-      "findings": "*",
-      "reason": "On this WSL host check:ci-pytest reports 21294 passed and 4 skipped: test_quality_python_lint's two EXE001/EXE002 cases (WSL disables those ruff rules natively) and test_core_account's two teardown cases, which refuse because a real account-config-rustfs dev container is running here. CI runs on Linux with no such container and passes all four. The gate emits no finding keys, so it is carried whole for this push only."
+      "findings": [
+        "pytest-skip:.ci.rediacc_ci.tests.test_core_account::test_stop_real_run_kills_a_real_tracked_pid_and_a_real_port_occupant",
+        "pytest-skip:.ci.rediacc_ci.tests.test_core_account::test_stop_real_run_matches_the_twin_on_the_same_kind_of_real_target",
+        "pytest-skip:.ci.rediacc_ci.tests.test_quality_python_lint::test_port_matches_the_twins_recorded_output#a#shebang#with#git#mode#100644#is#EXE001#",
+        "pytest-skip:.ci.rediacc_ci.tests.test_quality_python_lint::test_port_matches_the_twins_recorded_output#no#shebang#with#git#mode#100755#is#EXE002#"
+      ],
+      "reason": "On this WSL host check:ci-pytest reports 21294 passed and 4 skipped: test_quality_python_lint's two EXE001/EXE002 cases (WSL disables those ruff rules natively) and test_core_account's two teardown cases, which refuse because a real account-config-rustfs dev container is running here. CI runs on Linux with no such container and passes all four. Since 2026-10-05 the gate keys each failure and each skip outside the CANNOT RUN contract, so these four are carried by name and any other red is refused."
     }
   ]
 }
