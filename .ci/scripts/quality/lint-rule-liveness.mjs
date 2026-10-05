@@ -655,6 +655,8 @@ async function probeBiomePlugins(gritPlugins) {
   const mirrorRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'biome-plugin-liveness-'));
   try {
     await fs.promises.copyFile(path.join(ROOT, 'biome.json'), path.join(mirrorRoot, 'biome.json'));
+    // The verbatim config turns on `vcs.useIgnoreFile` (biome then reads only what git does not ignore, the files CI judges), and biome refuses to run that config outside a repository, so the mirror is one. Nothing in it is ignored, so every planted fixture is still linted.
+    execFileSync('git', ['init', '-q'], { cwd: mirrorRoot, stdio: 'ignore' });
     await fs.promises.mkdir(path.join(mirrorRoot, 'biome-plugins'), { recursive: true });
     for (const plugin of gritPlugins) {
       await fs.promises.copyFile(
