@@ -5285,6 +5285,9 @@
     "mutex": [
       "tree:repo"
     ],
+    "reads": [
+      "www-dist"
+    ],
     "writesTree": "test_gate_gate_anti_vacuity.py and test_gate_generate_tag_inputs.py (the pytest ports in the real-tree xdist group) overwrite tracked files while they run",
     "paths": [
       ".ci/rediacc_ci/**",
