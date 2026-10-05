@@ -8,6 +8,7 @@ THE CONTROLS ARE THE POINT of several of these, and they are marked as such: a d
 from __future__ import annotations
 
 import json
+import pathlib
 import re
 
 from rediacc_hooks.tests import wlfix
@@ -546,3 +547,45 @@ def test_p27_inverse_a_stop_verdict_adds_nothing(wl):  # noqa: F811
     out = wl.runj().out
     assert "HALLUCINATED" in out, out[:600]
     assert "ALSO OWED ON THIS FIX-SET" not in out, out[-900:]
+
+
+def _pytest_fixture(tmp_path):
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.pytest.ini_options]\ntestpaths = ["suite", "other/tests"]\npython_files = ["test_*.py"]\n',
+        encoding="utf-8",
+    )
+    return tmp_path
+
+
+def test_97_a_pytest_file_under_a_testpath_maps_to_check_ci_pytest(tmp_path):
+    reggate = wlfix.import_wl("wl_reggate")
+    root = _pytest_fixture(tmp_path)
+    assert reggate.pytest_collects("suite/gates/test_x.py", root)
+    assert reggate.pytest_collects("other/tests/test_y.py", root)
+
+
+def test_98_a_non_matching_helper_under_a_testpath_is_not_claimed(tmp_path):
+    reggate = wlfix.import_wl("wl_reggate")
+    root = _pytest_fixture(tmp_path)
+    assert not reggate.pytest_collects("suite/helper.py", root)
+    assert not reggate.pytest_collects("suite/x_test.py", root)
+
+
+def test_99_control_a_file_outside_every_testpath_reads_no_check_key(tmp_path):
+    reggate = wlfix.import_wl("wl_reggate")
+    root = _pytest_fixture(tmp_path)
+    assert not reggate.pytest_collects("elsewhere/test_z.py", root)
+    assert not reggate.pytest_collects("suite2/test_z.py", root)
+    (root / "pyproject.toml").unlink()
+    assert not reggate.pytest_collects("suite/test_x.py", root)
+
+
+def test_100_reachability_and_the_live_testpaths_cover_the_misreported_file(tmp_path):
+    reggate = wlfix.import_wl("wl_reggate")
+    scripts = {"ci": "tsx scripts/ci-runner/run.ts", "check:ci-pytest": "x"}
+    assert reggate.gate_reachable(scripts, "check:ci-pytest", tmp_path) is False
+    scripts["ci"] = "npm run check:ci-pytest"
+    assert reggate.gate_reachable(scripts, "check:ci-pytest", tmp_path) is True
+    live = pathlib.Path(__file__).resolve().parents[3]
+    assert reggate.pytest_collects(".ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py", live)
+    assert reggate.pytest_collects(".claude/rediacc_hooks/tests/test_wl_regression_gate.py", live)
