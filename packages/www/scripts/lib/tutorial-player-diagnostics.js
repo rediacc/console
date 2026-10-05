@@ -115,3 +115,74 @@ export function reportInconclusiveCauses(devServer, resources) {
     );
   }
 }
+
+/**
+ * Wait until the player is READY TO TAKE A CLICK, not merely until its play control exists.
+ *
+ * WHY A FIXED SLEEP WAS REPLACED. The docs mounts build through an IntersectionObserver and a
+ * dynamic `import()` of 122 KB of player, and on a dev server that import is unbundled:
+ * measured on 2026-09-09, the first route of a run compiled in 18.4s and the first navigation
+ * took 8.4s, after which `wait(1200)` was nowhere near enough. The click then ran against an
+ * element that did not exist yet and the whole scenario reported failures one step out of phase.
+ * Only the FIRST navigation of a run is slow enough to hit it, which is why a sleep survived.
+ *
+ * WHY THE CONTROL ALONE IS NOT ENOUGH EITHER. The control appears the moment Plyr builds its
+ * DOM, while the media element is still at readyState 0 (measured: 0 on the first sample, 4
+ * about 100 ms later on an idle machine) and the control sits below the fold (y=949 in a
+ * 577 px viewport), so the click first has to scroll it into view. CI run 110606567114 died
+ * this way: on a loaded runner the very first click was refused ("play button click failed at
+ * start"), the player stayed paused at 0, and every later step ran one phase off -- the pause
+ * click started it and the resume click paused it.
+ *
+ * READY = the control exists, the media has its metadata, and the control has held the same
+ * position for three consecutive samples, so no layout shift can move it under the click. The
+ * poll runs inside the page (one round trip), bounded at SCENARIO_READY_MS (20 s) for a scenario and
+ * WARMUP_READY_MS for the warm-up that pays the first visit's cost (`warmUpPlayer`).
+ *
+ * A RELOAD UNDER THE POLL IS RETRIED, NOT REPORTED. CI run 37131294077 (job 111227243538) died
+ * 0.2 s after the first navigation with `CDP error (Runtime.evaluate): Inspected target navigated
+ * or closed`: the dev server reloaded the page once while the poll was in flight (the shape of
+ * its first-visit dependency re-optimization for the lazily imported player), which destroys the
+ * evaluation context. The page is still loading, not broken, so the poll starts again in the new
+ * document. The deadline is fixed once, in this process, and baked into the polled code, so an
+ * attempt that evalInPage repeats after a reload still ends at the same moment: one 20 s budget.
+ */
+export function waitForPlayerReady(evalInPage, budgetMs, pollMs) {
+  // ONE EVAL CANNOT OUTLIVE agent-browser's CDP timeout (a 120 s poll died with "CDP command timed out: Runtime.evaluate", 2026-10-05), so a budget longer than one poll is spent as a series of polls of at most `pollMs`.
+  const deadline = Date.now() + budgetMs;
+  let last = { ok: false, reason: 'no poll ran' };
+  while (Date.now() < deadline) {
+    last = pollPlayerReady(evalInPage, Math.min(pollMs, deadline - Date.now()));
+    if (last.ok) return last;
+  }
+  return last;
+}
+
+function pollPlayerReady(evalInPage, budgetMs) {
+  try {
+    const state = evalInPage(`(() => new Promise((resolve) => {
+      const SELECTOR = '.tvp-root [data-plyr="play"]';
+      const deadline = ${Date.now() + budgetMs};
+      let last = null;
+      let stable = 0;
+      const poll = () => {
+        const control = document.querySelector(SELECTOR);
+        const video = document.querySelector('.tvp-root video');
+        const rect = control ? control.getBoundingClientRect() : null;
+        const key = rect ? [rect.x, rect.y, rect.width, rect.height].join(',') : null;
+        const metadata = Boolean(video) && video.readyState >= 1;
+        stable = key !== null && key === last ? stable + 1 : 0;
+        last = key;
+        if (control && metadata && stable >= 2) return resolve({ ready: true });
+        if (Date.now() > deadline) {
+          return resolve({ ready: false, control: Boolean(control), metadata, stable });
+        }
+        setTimeout(poll, 100);
+      };
+      poll();
+    }))()`);
+    return state?.ready === true ? { ok: true } : { ok: false, reason: JSON.stringify(state) };
+  } catch (error) {
+    return { ok: false, reason: String(error) };
+  }
+}
