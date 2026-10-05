@@ -213,7 +213,7 @@ def ci_query(owner, name, ref, cursor):
     """The ONE read. statusCheckRollup rather than checkSuites.checkRuns on purpose: the rollup exposes the LATEST check run per context, so a watchdog rerun replaces the failed attempt rather than appearing beside it. That is what makes a rerun-in-flight read as IN_PROGRESS here, and this check go quiet by itself while the watchdog works."""
     after = ',after:"%s"' % cursor if cursor else ""
     return (
-        '{repository(owner:"%s",name:"%s"){pullRequests(headRefName:"%s",states:OPEN,first:1)'
+        '{repository(owner:"%s",name:"%s"){pushedAt pullRequests(headRefName:"%s",states:OPEN,first:1)'
         "{nodes{number url isDraft commits(last:1){nodes{commit{oid statusCheckRollup{state "
         "contexts(first:100%s){totalCount pageInfo{hasNextPage endCursor} nodes{__typename "
         "... on CheckRun{name status conclusion databaseId detailsUrl "
@@ -372,14 +372,15 @@ def _branch_rollup_state(contexts):
     return "SUCCESS"
 
 
-def ci_rollup(root, ref, allow_branch=False):
+def ci_rollup(root, ref, allow_branch=False, repo=None):
     """(state, info) -- one paged read of the check rollup for `ref`.
 
     state is ok | no-pr | no-ref | unreadable. `unreadable` is a real verdict, in the V_PR_UNREADABLE style: a check that cannot see must SAY SO.
 
     allow_branch DEFAULTS TO FALSE AND MUST STAY THAT WAY. The Stop hook reads `no-pr` as a meaningful answer -- "this branch has no PR to be current with" -- so silently substituting a branch read would CHANGE that check's meaning rather than extend it. Only a caller that explicitly named a ref opts in.
     """
-    owner, name = repo_slug(root)
+    # `repo` ("owner/name") overrides the slug read from root's origin, so a caller tracing another repository (ci-trace --repo) names it instead of relying on the remote.
+    owner, name = repo.split("/", 1) if repo and "/" in repo else repo_slug(root)
     if not owner:
         return "unreadable", "could not derive owner/name from remote.origin.url"
     state, info = _rollup_pr(root, owner, name, ref)
@@ -446,9 +447,12 @@ def _rollup_pages(root, owner, name, ref, build_query, extract, source, keep=Non
 
 
 def _rollup_pr(root, owner, name, ref):
+    meta = {}
+
     def extract(data):
         try:
             nodes = data["data"]["repository"]["pullRequests"]["nodes"]
+            meta["pushed_at"] = data["data"]["repository"].get("pushedAt")
         except (KeyError, TypeError):
             return "unreadable", "graphql response had no pullRequests.nodes", None
         if not nodes:
@@ -464,9 +468,13 @@ def _rollup_pr(root, owner, name, ref):
             )
 
     # `extract` returns its unreadable reason in the commit slot, which _rollup_pages passes straight through as `info`.
-    return _rollup_pages(
+    state, info = _rollup_pages(
         root, owner, name, ref, lambda c: ci_query(owner, name, ref, c), extract, "pr"
     )
+    if state == "ok":
+        # The repository's last push bounds the head's age from below, so a zero-context head can be told from a just-pushed one (ci-trace's _noci_settled).
+        info["pushed_at"] = meta.get("pushed_at") or ""
+    return state, info
 
 
 def _rollup_branch(root, owner, name, ref):
