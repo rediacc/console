@@ -159,7 +159,7 @@ jobs:
       # pointer_bump_only: PR head provably identical in content to a commit
       # that already passed full CI, differing only in submodule pointers that
       # moved to tree-identical commits on the submodules' main (post-squash
-      # bump). Gates the expensive jobs; see .ci/scripts/ci/detect-pointer-bump.sh.
+      # bump). Gates the expensive jobs; see .ci/rediacc_ci/ci/detect_pointer_bump.py.
       pointer_bump_only: ${{ steps.init.outputs.pointer_bump_only }}
       # ---- Scope engine, LIVE ------------------------------------------------
       # The scope step emits ONLY `run_<key>=false` for keys it has decided are
@@ -1791,7 +1791,7 @@ jobs:
     name: CI Complete
     runs-on: ubuntu-slim
     # check-release-state is aggregated here because it was a live FALSE-GREEN
-    # path, found by .ci/scripts/quality/check-ci-job-aggregation.sh. It is not
+    # path, found by .ci/scripts/quality/check_ci_job_aggregation.py. It is not
     # merely unobserved: stage-artifacts requires
     # `check-release-state.result == 'success' || == 'skipped'`, so a FAILURE
     # makes stage-artifacts SKIP, `skipped` is forgiven by the soft tier, and

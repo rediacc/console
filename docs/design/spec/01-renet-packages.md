@@ -141,7 +141,7 @@ node-lifecycle shutdown unit (02 §3) is NEW daemon work (`pkg/daemon/node_lifec
 
 ### 1.6 `pkg/functions/commands` — bridge registry
 
-Mechanism (verified): `RegisterWithSchema(&FunctionDef{...}, builder)` in per-family `init()` (`registry.go:82`); `renet functions generate-types` emits `packages/shared/src/renet-contract/data/functions.generated.ts`; `.ci/scripts/quality/check-e2e-coverage.sh` greps packages/e2e-tests for every generated name (raw `resource_verb` or spaced `resource verb`), with a BLOCKER
+Mechanism (verified): `RegisterWithSchema(&FunctionDef{...}, builder)` in per-family `init()` (`registry.go:82`); `renet functions generate-types` emits `packages/shared/src/renet-contract/data/functions.generated.ts`; `.ci/scripts/quality/check_e2e_coverage.py` greps packages/e2e-tests for every generated name (raw `resource_verb` or spaced `resource verb`), with a BLOCKER
 allowlist. 152 functions registered today (counted per family: repository 33, ceph 34, system 19, kube 18, daemon 15, container 12, datastore 10, backup+checkpoint 9, kube_registry 2).
 
 Changes: full diff in §4 (reworked to the gate C2 ruling — spec 02 §3.3's unified

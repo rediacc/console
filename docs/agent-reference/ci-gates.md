@@ -355,7 +355,7 @@ allowed only when the required `CI Complete` check is SUCCESS on the PR's curren
 
 ### Pointer-bump fast path
 
-A push whose commits only move submodule gitlinks to tree-identical, on-submodule-`main` commits (the post-squash pointer bump), on top of a baseline commit that already has a successful `CI Complete`, is detected by `.ci/scripts/ci/detect-pointer-bump.sh`, which sets `pointer_bump_only=true` in the `initialize` job. Under that flag `ci.yml` skips `build-renet` (and everything
+A push whose commits only move submodule gitlinks to tree-identical, on-submodule-`main` commits (the post-squash pointer bump), on top of a baseline commit that already has a successful `CI Complete`, is detected by `.ci/rediacc_ci/ci/detect_pointer_bump.py`, which sets `pointer_bump_only=true` in the `initialize` job. Under that flag `ci.yml` skips `build-renet` (and everything
 cascading from it: the other builds, tests, install-matrix, preview) plus `stripe-sandbox`, `package-tests`, and `ops-tests` (`tests` carries `Migration Test`, which skips itself under the flag); only `quality`, `review-gate`, and `ci-complete` still run. `assert-ci-complete.sh` accepts those skipped builds as green **only** under this flag, so the aggregated `CI Complete` still
 goes green, in minutes. This is why `/pr-merge` now WAITS for the fast-path run to go green and merges with `--rebase --auto`, instead of admin-merging over a pending run (which used to leave the merged PR with a permanent red `Quality / Branch`, a wall of cancelled jobs, and no `CI Complete`). A pointer-bump-only delta is also deliberately not re-reviewed by Claude.
 
@@ -370,7 +370,7 @@ run `30317293249`, where a PR reviewed itself with its own review logic), `ci.ym
 - Adding a `workflow_dispatch:` trigger costs **one** merge, once per workflow — never one per
 change. Until it lands on `main`, `gh workflow run <file> -f …` fails closed with a 422, *"Workflow does not have 'workflow_dispatch' trigger"*. Observed on PR #546, run `30588087212` (the PR-level review workflow, retired 2026-10-02).
 - The same resolution applies to the FILENAME, so a brand-new workflow cannot be dispatched
-from any ref at all: `.ci/scripts/ci/dispatch-watchdog.sh:126-138` fails open on exactly that bootstrap condition, observed as an HTTP 404 on both the head-ref and default-branch attempts in run `29936730679`.
+from any ref at all: `.ci/rediacc_ci/ci/dispatch_watchdog.py` fails open on exactly that bootstrap condition, observed as an HTTP 404 on both the head-ref and default-branch attempts in run `29936730679`.
 
 **Which copy then EXECUTES is the dispatched ref's, and one rule explains every trigger.** This is not stated in one sentence anywhere, which is why two places in this tree used to disagree about it (the PR-level review workflow, retired 2026-10-02, said the default branch's copy defines the job; `agent/PLAN-branch-aware-workflows.md` said the ref's). It is the conjunction of two pages, both re-verified
 2026-09-02:

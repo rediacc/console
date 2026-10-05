@@ -59,7 +59,7 @@ license-tiers.generated.ts. Regen: build renet, then `bin/renet functions genera
 - The CLI derives licensed-function knowledge ONLY from LICENSE_TIERS
 (renet-license-contract.ts accessors). `isRepoProvisioningFunction` = repository_ prefix AND tier create MINUS metadata-only verbs (repository_commit_meta). Never hand-list function names again.
 - `npm run ci` is a manifest-driven parallel runner: a new gate needs the npm script
-AND a GateSpec in scripts/ci-runner/manifest.ts or check-ci-parity fails; register fail-closed validators in .ci/scripts/test/gates/test-gate-anti-vacuity.sh.
+AND a GateSpec in scripts/ci-runner/manifest.ts or check-ci-parity fails; register fail-closed validators in the REGISTRY in .ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py.
 
 ## Guardrails and traps that cost real time
 

@@ -44,7 +44,7 @@ not as a description of the code today.
 | `.e2e-coverage-allowlist` | `scripts/gates/check-e2e-coverage.ts` `E2E_COV_ALLOWLIST` | env seam over root join |
 | `.embed-assets-upgrade-blocklist` | `scripts/gates/check-embed-asset-freshness.ts` `EMBED_BLOCKLIST_FILE` | env seam over root join |
 | `.go-deps-upgrade-blocklist` | `.ci/rediacc_ci/quality/go_deps.py` `BLOCKLIST_REL` | `policy_rel`, over what was a root join in the deleted `check-go-deps.sh` |
-| `.plan-housekeeping-allowlist` | `.ci/scripts/quality/check-plan-housekeeping.sh` `ALLOWLIST` | env seam (`PLAN_HK_ALLOWLIST`) over root join |
+| `.plan-housekeeping-allowlist` | `.ci/rediacc_ci/quality/plan_housekeeping.py` `ALLOWLIST` | env seam (`PLAN_HK_ALLOWLIST`) over root join |
 | `.profiler-coverage-allowlist` | `.ci/rediacc_ci/quality/profiler_coverage.py` `DEFAULT_ALLOWLIST` | `policy_rel`, over what was a bare relative name in the deleted `check-profiler-coverage.sh` |
 | `.runner-advice-allowlist` | `.ci/scripts/quality/check_runner_advice.py` `allowlist_path` | flag, then env (`RUNNER_ADVICE_ALLOWLIST`), then root join |
 | `.unverified-download-allowlist` | `scripts/gates/check-unverified-downloads.ts` `UNVERIFIED_DOWNLOAD_ALLOWLIST` | env seam over root join |

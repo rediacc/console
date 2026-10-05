@@ -353,7 +353,7 @@ def main(argv: list[str]) -> int:
         log_info("Every lane's toolchain: .ci/scripts/lib/toolchain.sh --report")
         log_info(
             "Or run the gate where it is pinned: "
-            "./run.sh devbox exec -- .ci/scripts/security/shellcheck.sh"
+            "./run.sh devbox exec -- npm run -s check:ci-shell-lint"
         )
         return 1
 

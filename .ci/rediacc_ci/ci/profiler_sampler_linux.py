@@ -239,8 +239,8 @@ exception: `df` is an external command, so it is sampled on a decimated
 cadence (about once a minute) rather than every tick.
 
 Usage:
-  .ci/scripts/ci/profiler/sampler-linux.sh --out <file> [--interval <sec>]
-  .ci/scripts/ci/profiler/sampler-linux.sh --probe
+  .ci/scripts/ci/profiler/sampler_linux.py --out <file> [--interval <sec>]
+  .ci/scripts/ci/profiler/sampler_linux.py --probe
 
 Optional env (flags win):
   PROFILER_INTERVAL      seconds between samples (default 10)
@@ -252,8 +252,8 @@ Optional env (flags win):
   PROFILER_CGROUP_ROOT   cgroup mount to read (default /sys/fs/cgroup; test seam)
 
 Run locally:
-  .ci/scripts/ci/profiler/sampler-linux.sh --probe
-  PROFILER_RUNNER_LABEL=self .ci/scripts/ci/profiler/sampler-linux.sh \
+  .ci/scripts/ci/profiler/sampler_linux.py --probe
+  PROFILER_RUNNER_LABEL=self .ci/scripts/ci/profiler/sampler_linux.py \
 """
 
 

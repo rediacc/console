@@ -15,7 +15,7 @@
 #   pipx     -           ABSENT
 #
 # That is not an unusual host; it is a distro Python with no ensurepip. The
-# advice block in .ci/scripts/quality/check-python-lint.sh already records the
+# advice block in .ci/rediacc_ci/quality/python_lint.py already records the
 # same measurement and the same conclusion, and it cost a ~10-minute CI round to
 # learn: an instruction that begins "pip install" is a DEAD END here, so the
 # repo has to carry its own way in. This is it.
@@ -37,7 +37,7 @@
 # report still read `ok`.
 #
 # THE RESOLVER IS A SIBLING, NOT A NEW IDEA. Rungs and their order are lifted
-# from resolve_ruff in .ci/scripts/quality/check-python-lint.sh:
+# from resolve_ruff in .ci/rediacc_ci/quality/python_lint.py:
 #   1. an explicitly provided binary (UV_BIN / PYTEST_BIN)
 #   2. a PATH binary AT THE PIN -- at the pin, never merely present, which is
 #      the rule .ci/scripts/lib/toolchain.sh exists to enforce and which was

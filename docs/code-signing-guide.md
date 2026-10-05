@@ -86,7 +86,6 @@
 | `.ci/scripts/build/build-linux-pkg.sh` | Unified Linux package builder — deb, rpm, apk, archlinux (**nfpm-based, GPG signed**) |
 | `.ci/scripts/build/build-pkg-repo.sh` | APT/RPM repo builder (**GPG signed**) |
 | `.ci/scripts/build/build-cli-executables.sh` | CLI SEA builder (ad-hoc macOS signing only) |
-| `.ci/scripts/build/build-desktop.sh` | Desktop builder (no code signing) |
 | `.ci/keys/gpg-public.asc` | GPG public key for package repos |
 | `packages/desktop/electron-builder.yml` | Desktop build config (signing not configured) |
 | `packages/desktop/resources/entitlements.mac.plist` | macOS entitlements (needs fix for Electron 39) |

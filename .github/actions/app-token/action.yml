@@ -63,7 +63,7 @@ runs:
           # PR-triggered jobs, and this App bypasses the main-branch ruleset.
           # `push` existed solely so ci-quality.yml's `quality-branch` could
           # rebase and republish the PR branch; that job now only REPORTS that a
-          # rebase is needed (.ci/scripts/quality/check-branch.sh) and runs on
+          # rebase is needed (.ci/scripts/quality/check_branch.py) and runs on
           # the default contents:read token. `preset: ci` and `preset: push` now
           # fail loudly here rather than silently over-scoping.
           cd)

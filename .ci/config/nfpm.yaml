@@ -80,7 +80,7 @@ archlinux:
   #    A keyring rollout has to land FIRST (Arch Linux ARM and Chaotic-AUR both do it
   #    that way).
   #
-  # Tracked as a declared exemption in .ci/scripts/quality/check-release-signing-coverage.sh,
+  # Tracked as a declared exemption in .ci/scripts/quality/check_release_signing_coverage.py,
   # which refuses an exemption for a format that IS guarded, so this cannot rot.
   pkgbase: "${PKG_NAME}"
   packager: "${PKG_MAINTAINER}"
