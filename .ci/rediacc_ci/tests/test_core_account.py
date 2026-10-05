@@ -32,7 +32,7 @@ from rediacc_ci.well_known import ACCOUNT_DEV_PORT
 
 # NO MODULE-LEVEL GROUP SINCE 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF14). The module used to declare `XDIST_GROUP = "ports"`, which put all 107 items (183 s of test time on 2026-10-03) and three other modules on one worker. Two resources here really are machine-wide, both fixed by the drivers rather than by these tests, so only the items that touch one carry a group, each named for its resource:
 #
-# * `shadow_driver` pins CONSTANT ports (45210-45300, `rediacc_ci/core/shadow_driver.py` "Every port below is therefore a CONSTANT") because an ephemeral port would differ between the two sides and land in a message text. Every item that runs it (`drive()`) shares SHADOW_PORTS_GROUP. These ports are above the 20000-30000 the per-worker slices are cut from, so the group serialises these items only against each other.
+# * `shadow_driver` pins CONSTANT ports (31210-31340, below the kernel's ephemeral range, `rediacc_ci/core/shadow_driver.py` "Every port below is therefore a CONSTANT") because an ephemeral port would differ between the two sides and land in a message text. Every item that runs it (`drive()`) shares SHADOW_PORTS_GROUP. These ports are above the 20000-30000 the per-worker slices are cut from, so the group serialises these items only against each other.
 # * `account_lifecycle_shadow_driver` builds its sandbox at a FIXED tmp path and takes a machine-wide `flock` around every run (`locked()`), so its items serialise however they are scheduled. LIFECYCLE_GROUP keeps them on one worker instead of leaving several workers blocked on the lock.
 #
 # Everything else in the file distributes per item.
@@ -415,8 +415,8 @@ def test_a_missing_curl_degrades_on_both_sides_instead_of_raising(tmp_path) -> N
             'source "$W/.ci/lib/local-common.sh"\n'
             'source "$W/.ci/lib/account.sh"\n'
             "set +e\n"
-            "( set -e; account_rustfs_alive 45211 )\n"
-            "exit $?\n" % root
+            "( set -e; account_rustfs_alive %d )\n"
+            "exit $?\n" % (root, shadow_driver.DEAD_PORT)
         )
         env = {
             "PATH": str(farm),
@@ -433,7 +433,8 @@ def test_a_missing_curl_degrades_on_both_sides_instead_of_raising(tmp_path) -> N
             [
                 sys.executable,
                 "-c",
-                "from rediacc_ci.core import account\nraise SystemExit(0 if account.rustfs_alive(45211) else 1)",
+                "from rediacc_ci.core import account\nraise SystemExit(0 if account.rustfs_alive(%d) else 1)"
+                % shadow_driver.DEAD_PORT,
             ],
             cwd=str(paths.repo_root()),
             env={**env, "PYTHONPATH": ".ci"},
@@ -1636,3 +1637,28 @@ def test_the_pids_normaliser_is_still_needed() -> None:
     assert "state pids=N N" in old_out
     assert "state pids=N,N" in new_out
     assert "state pids=N,N" not in old_out
+
+
+def test_the_pinned_ports_sit_below_the_default_ephemeral_range():
+    """A pinned port inside 32768-60999 can be held by any outbound connection's source port (45331, 2026-10-05)."""
+    low, high = shadow_driver.PINNED_SPAN
+    assert high < 32768, "the pinned ports %d..%d reach into Linux's default ephemeral range" % (
+        low,
+        high,
+    )
+    assert low > 30000, (
+        "the pinned ports %d..%d overlap xdist_groups' worker slices (20000-30000)" % (low, high)
+    )
+
+
+def test_an_overlapping_ephemeral_range_is_a_refusal(tmp_path):
+    overlapping = tmp_path / "range"
+    overlapping.write_text("31000\t60999\n", encoding="utf-8")
+    with pytest.raises(
+        shadow_driver.RefusalError, match=r"overlap this kernel's ephemeral range 31000\.\.60999"
+    ):
+        shadow_driver.ports_outside_ephemeral(overlapping)
+    clear = tmp_path / "clear"
+    clear.write_text("32768\t60999\n", encoding="utf-8")
+    shadow_driver.ports_outside_ephemeral(clear)
+    shadow_driver.ports_outside_ephemeral(tmp_path / "absent")

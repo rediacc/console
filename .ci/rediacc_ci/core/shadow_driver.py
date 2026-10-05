@@ -93,13 +93,18 @@ OBS = "obs"
 EXIT_CANNOT_RUN = 77
 
 # The fixed ports. See the header for why none of them is ephemeral.
-LIVE_PORT = 45210
-DEAD_PORT = 45211
-FREE_BASE = 45220
-PINNED_BASE = 45230
-DEVBOX_STUDIO_PORT = 45300
+#
+# BELOW THE KERNEL'S EPHEMERAL RANGE, AND ABOVE xdist_groups' WORKER SLICES (20000-30000). Until 2026-10-05 these sat at 45210-45340, inside Linux's default ip_local_port_range (32768-60999): in a one-pass pre-push beside sixty gates making outbound connections, an ephemeral SOURCE port took 45331, which no bind could then claim and no LISTEN probe saw, so `occupy` refused ("needs every port in 45300..45340 busy and these stayed free: 45331") and seven cases failed. `ports_outside_ephemeral` refuses, with the reason, on a kernel whose range reaches down to these.
+LIVE_PORT = 31210
+DEAD_PORT = 31211
+FREE_BASE = 31220
+PINNED_BASE = 31230
+DEVBOX_STUDIO_PORT = 31300
 # `account_db` scans `preferred .. preferred+40`, so a window is 41 ports wide.
 SCAN_WINDOW = account.DB_BROWSER_SCAN_SPAN + 1
+#: Every port this driver pins, low and high, for the ephemeral-range check.
+PINNED_SPAN = (LIVE_PORT, DEVBOX_STUDIO_PORT + SCAN_WINDOW - 1)
+EPHEMERAL_RANGE_FILE = pathlib.Path("/proc/sys/net/ipv4/ip_local_port_range")
 
 # What the sandbox symlinks. `.devcontainer` carries the toolchain pins `constants.sh` refuses to load without; `scripts` is here because `account.sh` sources `scripts/lib/env-file.sh` through `$CI_LIB_DIR/../..`; `.ci/scripts` because the prelude sources `toolchain.sh` and, through `local-common.sh`, `common.sh`.
 SANDBOX_LINKS = (
@@ -247,11 +252,25 @@ def require_free(base: int, count: int, why: str) -> None:
         )
 
 
+def ports_outside_ephemeral(range_file: pathlib.Path = EPHEMERAL_RANGE_FILE) -> None:
+    """Refuse when the kernel's ephemeral range overlaps PINNED_SPAN: an outbound connection's source port could then hold a pinned port that no bind can take and no LISTEN probe sees. An unreadable range file (no procfs) is not this check's to judge."""
+    try:
+        low, high = (int(x) for x in range_file.read_text(encoding="utf-8").split()[:2])
+    except (OSError, ValueError):
+        return
+    if low <= PINNED_SPAN[1] and PINNED_SPAN[0] <= high:
+        raise RefusalError(
+            "the pinned ports %d..%d overlap this kernel's ephemeral range %d..%d (%s), so a concurrent "
+            "outbound connection can hold one of them" % (*PINNED_SPAN, low, high, range_file)
+        )
+
+
 def occupy(base: int, count: int, why: str) -> list[socket.socket]:
     """Make `count` ports from `base` busy, and prove every one of them is.
 
     A port already held by something else counts, which is why this verifies rather than trusting its own binds: the scenarios using it are ABOUT the no-free-port branch, and one free port in the window silently measures the opposite thing.
     """
+    ports_outside_ephemeral()
     held: list[socket.socket] = []
     for offset in range(count):
         sock = socket.socket()
