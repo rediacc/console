@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+
 /**
  * Which quality job a gate can run in, DERIVED from the workflow rather than typed here.
  *
@@ -598,7 +601,7 @@ function withMeasuredFallback(
 }
 
 /**
- * The measured CI step p90 of each gate, in milliseconds, from a parsed `.ci/config/lane-durations.json` (`gate_step_p90_seconds`), as `shardPlan`'s `durations` argument. A shard plan priced by count put 21 s and 216 s of measured step time into two `quality-code` legs of equal count (PLAN-prepush-full-cpu, writer F), so every planner of the committed legs prices by this map: gate-bind's emitter, check-quality-complete's verifier, and the runner's own scheduling fallback. Absent, malformed or non-positive entries are left out, and `shardPlan` then costs those gates at the lane's median.
+ * The measured CI step p90 of each gate, in milliseconds, from a parsed `.ci/config/lane-durations.json` (`gate_step_p90_seconds`), as `shardPlan`'s `durations` argument. A shard plan priced by count put 21 s and 216 s of measured step time into two `quality-code` legs of equal count (PLAN-prepush-full-cpu, writer F), so every planner of the committed legs prices by this map: gate-bind's emitter, check-quality-complete's verifier, check-lane-budget's committed-plan control and the runner's own scheduling fallback. The three file readers share `measuredStepDurations` below, because a planner that priced by count beside one that priced by this map could never agree (check-lane-budget's control did exactly that from 00fa66691 until it moved here). Absent, malformed or non-positive entries are left out, and `shardPlan` then costs those gates at the lane's median.
  */
 export function stepDurationsMs(laneDurations: unknown): Record<string, number> {
   const out: Record<string, number> = {};
@@ -608,6 +611,17 @@ export function stepDurationsMs(laneDurations: unknown): Record<string, number> 
     if (typeof s === 'number' && Number.isFinite(s) && s > 0) out[id] = s * 1000;
   }
   return out;
+}
+
+/** `stepDurationsMs` over `<root>/.ci/config/lane-durations.json`; {} when the file cannot be read, which prices every lane by count. */
+export function measuredStepDurations(root: string): Record<string, number> {
+  try {
+    return stepDurationsMs(
+      JSON.parse(readFileSync(path.join(root, '.ci', 'config', 'lane-durations.json'), 'utf-8'))
+    );
+  } catch {
+    return {};
+  }
 }
 
 export function shardPlan(

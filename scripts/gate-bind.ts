@@ -35,13 +35,13 @@ import { fileURLToPath } from 'node:url';
 import {
   type LaneCapabilities,
   laneCapabilities,
+  measuredStepDurations,
   placeGate,
   SHARD_COUNTS,
   SHARD_REPLICATED_MAX,
   type ShardInput,
   satisfies,
   shardPlan,
-  stepDurationsMs,
 } from './ci-runner/lanes.js';
 import {
   buildShardManifest,
@@ -504,7 +504,7 @@ export function shardAssignment(
   const want = counts[job];
   if (want === undefined) return null;
   // Priced by measured step time, not by count: equal-count legs held 21 s and 216 s of measured work (PLAN-prepush-full-cpu, writer F).
-  const plan = shardPlan(lock, caps, { [job]: want }, measuredStepDurations());
+  const plan = shardPlan(lock, caps, { [job]: want }, measuredStepDurations(ROOT));
   if ('error' in plan) return { error: plan.error };
   const legs = new Map<string, number>();
   for (const lane of plan.lanes) {
@@ -601,17 +601,6 @@ export function jobLockIdMap(
 }
 
 /** A YAML single-quoted scalar holding JSON text, so a bare `[...]` cannot parse as a flow sequence. An embedded quote is doubled, YAML's own escape inside such a scalar. */
-
-/** `.ci/config/lane-durations.json`'s measured step p90s, in ms, for shardPlan; {} when the file cannot be read, which prices every lane by count as before. */
-function measuredStepDurations(): Record<string, number> {
-  try {
-    return stepDurationsMs(
-      JSON.parse(fs.readFileSync(path.join(ROOT, '.ci', 'config', 'lane-durations.json'), 'utf-8'))
-    );
-  } catch {
-    return {};
-  }
-}
 
 function jsonEnvValue(value: unknown): string {
   return `'${JSON.stringify(value).replace(/'/g, "''")}'`;

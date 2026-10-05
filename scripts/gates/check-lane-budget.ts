@@ -109,6 +109,7 @@ import process from 'node:process';
 
 import {
   laneCapabilities,
+  measuredStepDurations,
   mergeLaneCapabilities,
   SHARD_COUNTS,
   type ShardInput,
@@ -2929,7 +2930,12 @@ async function selftest(): Promise<number> {
         const manifest = parseShardManifest(readFileSync(manifestFile, 'utf-8'), 'quality-code');
         const workflowText = readFileSync(path.join(ROOT, QUALITY_WORKFLOW), 'utf-8');
         const live = JSON.parse(readFileSync(path.join(ROOT, LOCK_PATH), 'utf-8')) as ShardInput[];
-        const plan = shardPlan(live, laneCapabilities(workflowText), SHARD_COUNTS);
+        const plan = shardPlan(
+          live,
+          laneCapabilities(workflowText),
+          SHARD_COUNTS,
+          measuredStepDurations(ROOT)
+        );
         if ('error' in plan) return false;
         const fresh = plan.lanes.find((l) => l.lane === 'quality-code');
         if (fresh === undefined) return false;
