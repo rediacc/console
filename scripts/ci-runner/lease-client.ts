@@ -6,10 +6,12 @@
  * THE LEASE. Two runs on one machine (a pre-push in a push clone and a session's pytest, or two worktrees) each used to assume every core was theirs. core_lease.py owns one token per core, held by flock, released by the kernel when the holder dies. The runner speaks to it through one `broker` process per run, JSON lines on stdin and stdout, and ends it by closing stdin. The interface this client ASSUMES, written here because the module grows in parallel with this file:
  *
  *   spawn   python3 -m rediacc_ci.core_lease broker      (cwd = repo root, PYTHONPATH gains <root>/.ci)
- *   request {"op":"free"}                                -> {"free": <int tokens free machine-wide>}
+ *   request {"op":"free"}                                -> {"free": <int tokens free>, "total": <int tokens>, "held": [...], "runs": <int live registered runs, this one included>}
  *   request {"op":"acquire","min":<a>,"max":<b>}         -> {"ids": [<int token id>, ...]}   (0..b ids, non-blocking; fewer than a is a short grant, never a wait)
  *   request {"op":"release","ids":[...]}                 -> any JSON object without an "error" key
  *   any reply {"error": "..."} is a refusal; EOF on stdin releases everything the broker holds.
+ *
+ * The broker registers this run from spawn to exit, which is what `runs` counts; available() turns it into the run's share, ceil(total / runs) (B11: a run that counted free tokens alone took 23 of 24 from a neighbour started a second later). A `free` reply without integer `free`, `total` and `runs` is malformed: at the handshake the run degrades to the whole machine, mid-run it degrades loudly, the same as any other bad reply.
  *
  * DEGRADES, LOUDLY, TO "THE RUN OWNS THE WHOLE MACHINE". No module, no `broker` verb (today's core_lease.py answers any argv with its selftest), a reply that is not that JSON, or a broker that dies mid-run: the run continues on its own core budget, the reason is printed in the header, and gates are not told the lease is held. That is exactly the behaviour before the lease existed, so a missing lease costs contention, never a verdict. A runner launched under a held lease (`CI_CORE_LEASE_HELD=1`, e.g. a nested run inside a gate) does not lease again: its grant is its budget.
  */
@@ -18,7 +20,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { CORES_ENV, LEASE_HELD_ENV } from './exec';
-import type { PoolLease } from './pool';
+import type { LeaseView, PoolLease } from './pool';
 
 /** The CPUs this process may run on, at least 1. node's availableParallelism honours the affinity mask, as core_lease.py's sched_getaffinity does. */
 function availableCores(): number {
@@ -47,19 +49,39 @@ export interface RunnerLease extends PoolLease {
   readonly kind: 'broker' | 'inherited' | 'whole-machine';
   /** One line for the run header, naming the lease and, when degraded, why. */
   readonly note: string;
+  /** The broker's token total at the handshake, which is the run's core budget C (run.ts coreBudget). Absent when nothing is leased. */
+  readonly total?: number;
   /** Release everything and end the broker. Idempotent. */
   close(): void;
 }
 
+const UNBOUNDED: LeaseView = {
+  free: Number.POSITIVE_INFINITY,
+  share: Number.POSITIVE_INFINITY,
+  total: Number.POSITIVE_INFINITY,
+};
+
+/** No lease: the run's share is its whole budget, so every field is unbounded and the pool's own budget is the only limit. */
 function unleased(kind: 'inherited' | 'whole-machine', note: string): RunnerLease {
   return {
     kind,
     note,
     held: kind === 'inherited',
-    available: async () => Number.POSITIVE_INFINITY,
+    available: async () => UNBOUNDED,
     reconcile: async () => Number.POSITIVE_INFINITY,
     close: () => {},
   };
+}
+
+/** The broker's `free` reply, or a thrown reason when any of its three integers is missing or out of range. */
+function parseFree(reply: Record<string, unknown>): { free: number; total: number; runs: number } {
+  const int = (v: unknown, least: number): v is number =>
+    typeof v === 'number' && Number.isInteger(v) && v >= least;
+  if (!int(reply.free, 0) || !int(reply.total, 1) || !int(reply.runs, 1))
+    throw new Error(
+      `its reply to {"op":"free"} needs integer "free" >= 0, "total" >= 1 and "runs" >= 1: ${JSON.stringify(reply)}`
+    );
+  return { free: reply.free, total: reply.total, runs: reply.runs };
 }
 
 /** One JSON-lines conversation with the broker, strictly one request in flight at a time. */
@@ -183,6 +205,8 @@ export async function openLease(opts: OpenLeaseOptions): Promise<RunnerLease> {
     );
   }
   const argv = opts.command ?? ['python3', '-m', 'rediacc_ci.core_lease', 'broker'];
+  // The broker registers the run when it starts, so the settle counts from the spawn.
+  const openedAt = Date.now();
   let child: ChildProcessWithoutNullStreams;
   try {
     child = spawn(argv[0], argv.slice(1), {
@@ -202,14 +226,9 @@ export async function openLease(opts: OpenLeaseOptions): Promise<RunnerLease> {
     );
   }
   const link = new BrokerLink(child);
-  let free: number;
+  let first: { free: number; total: number; runs: number };
   try {
-    const reply = await link.request({ op: 'free' }, opts.handshakeMs ?? 3000);
-    if (typeof reply.free !== 'number' || !Number.isInteger(reply.free) || reply.free < 0)
-      throw new Error(
-        `its reply to {"op":"free"} carried no integer "free": ${JSON.stringify(reply)}`
-      );
-    free = reply.free;
+    first = parseFree(await link.request({ op: 'free' }, opts.handshakeMs ?? 3000));
   } catch (e) {
     link.close();
     return unleased(
@@ -232,21 +251,24 @@ export async function openLease(opts: OpenLeaseOptions): Promise<RunnerLease> {
   };
   return {
     kind: 'broker',
-    note: `core lease: machine-wide broker, ${free} token(s) free at start`,
+    note: `core lease: machine-wide broker, ${first.free} of ${first.total} token(s) free at start, ${first.runs} run(s) registered`,
+    total: first.total,
+    openedAt,
     get held(): boolean {
       return degraded === undefined;
     },
-    available: async (inUse: number): Promise<number> => {
-      if (degraded !== undefined) return Number.POSITIVE_INFINITY;
+    available: async (inUse: number): Promise<LeaseView> => {
+      if (degraded !== undefined) return UNBOUNDED;
       try {
-        const reply = await link.request({ op: 'free' }, requestMs);
-        const n = typeof reply.free === 'number' ? reply.free : Number.NaN;
-        if (!Number.isFinite(n) || n < 0)
-          throw new Error(`bad free reply ${JSON.stringify(reply)}`);
-        return n + Math.max(0, tokens.length - inUse);
+        const { free, total, runs } = parseFree(await link.request({ op: 'free' }, requestMs));
+        return {
+          free: free + Math.max(0, tokens.length - inUse),
+          share: Math.ceil(total / runs),
+          total,
+        };
       } catch (e) {
         degrade((e as Error).message);
-        return Number.POSITIVE_INFINITY;
+        return UNBOUNDED;
       }
     },
     reconcile: async (cores: number): Promise<number> => {
@@ -315,7 +337,7 @@ export async function leaseClientSelftest(
         'free = set(range(4))',
         'for line in sys.stdin:',
         '    req = json.loads(line); log.write(line); log.flush()',
-        '    if req["op"] == "free": out = {"free": len(free)}',
+        '    if req["op"] == "free": out = {"free": len(free), "total": 4, "held": [], "runs": 3}',
         '    elif req["op"] == "acquire":',
         '        ids = sorted(free)[: req["max"]]; free.difference_update(ids); out = {"ids": ids}',
         '    elif req["op"] == "release": free.update(req["ids"]); out = {"ok": True}',
@@ -330,10 +352,19 @@ export async function leaseClientSelftest(
       real.kind === 'broker' && real.held,
       `a broker that speaks the protocol must be used, got ${real.kind}: ${real.note}`
     );
-    check((await real.available(0)) === 4, "available() must report the broker's free tokens");
+    check(real.total === 4, `the handshake must carry the token total 4, got ${real.total}`);
+    const view0 = await real.available(0);
+    check(
+      view0.free === 4 && view0.total === 4,
+      `available() must report the broker's free tokens and total, got ${JSON.stringify(view0)}`
+    );
+    check(
+      view0.share === 2,
+      `the share of 4 tokens over 3 runs must be ceil(4 / 3) = 2, got ${view0.share}`
+    );
     check((await real.reconcile(2.5)) === 3, 'reconcile(2.5 cores) must hold ceil(2.5) = 3 tokens');
     check(
-      (await real.available(2.5)) === 1.5,
+      (await real.available(2.5)).free === 1.5,
       'available() holding 3 tokens for 2.5 cores must be the broker free 1 plus the 0.5 slack'
     );
     check(
@@ -360,9 +391,26 @@ export async function leaseClientSelftest(
         /not a usable broker/.test(notBroker.note),
       `a module that answers with its selftest must degrade by name, got ${notBroker.kind}: ${notBroker.note}`
     );
+    const unbounded = await notBroker.available(0);
     check(
-      (await notBroker.available(0)) === Number.POSITIVE_INFINITY,
+      unbounded.free === Number.POSITIVE_INFINITY && unbounded.share === Number.POSITIVE_INFINITY,
       'CONTROL: a degraded lease bounds nothing'
+    );
+    // A broker that predates run registration (no "runs") is malformed, never read as one run.
+    const noRuns = path.join(dir, 'noruns.py');
+    fs.writeFileSync(
+      noRuns,
+      'import json, sys\nfor line in sys.stdin:\n    sys.stdout.write(json.dumps({"free": 4, "total": 4, "held": []}) + "\\n"); sys.stdout.flush()\n'
+    );
+    const oldBroker = await openLease({
+      root: dir,
+      env,
+      command: ['python3', noRuns],
+      handshakeMs: 2000,
+    });
+    check(
+      oldBroker.kind === 'whole-machine' && /"runs" >= 1/.test(oldBroker.note),
+      `a free reply without "runs" must degrade by name, got ${oldBroker.kind}: ${oldBroker.note}`
     );
     const absent = await openLease({ root: dir, env });
     check(
@@ -380,7 +428,7 @@ export async function leaseClientSelftest(
     const dying = path.join(dir, 'dying.py');
     fs.writeFileSync(
       dying,
-      'import json, sys\nline = sys.stdin.readline()\nsys.stdout.write(json.dumps({"free": 4}) + "\\n"); sys.stdout.flush()\n'
+      'import json, sys\nline = sys.stdin.readline()\nsys.stdout.write(json.dumps({"free": 4, "total": 4, "held": [], "runs": 1}) + "\\n"); sys.stdout.flush()\n'
     );
     const warned: string[] = [];
     const mid = await openLease({

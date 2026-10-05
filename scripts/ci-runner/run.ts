@@ -972,10 +972,10 @@ function memAvailableMb(): number {
 }
 
 /**
- * C = --jobs when given, else the grant this run was itself launched with (CI_RUNNER_CORES, a runner nested inside a gate), else availableParallelism() - 1; epsilon 10%, K = 2C, M = 0.75 x MemAvailable now.
+ * C = --jobs when given, else the grant this run was itself launched with (CI_RUNNER_CORES, a runner nested inside a gate), else the broker lease's token total, else availableParallelism() - 1; epsilon 10%, K = 2C, M = 0.75 x MemAvailable now. The lease total wins over the core count less one because the lease, not a reserved core, is what keeps the machine responsive now: B11 measured a lone run using 23 of 24 tokens.
  */
-function coreBudget(jobs: number | undefined): CoreBudget {
-  const cores = jobs ?? grantFromEnv() ?? Math.max(1, os.availableParallelism() - 1);
+function coreBudget(jobs: number | undefined, leaseTotal: number | undefined): CoreBudget {
+  const cores = jobs ?? grantFromEnv() ?? leaseTotal ?? Math.max(1, os.availableParallelism() - 1);
   return {
     cores,
     epsilon: 0.1,
@@ -2014,7 +2014,7 @@ async function selftest(): Promise<number> {
     let held1 = 0;
     const fakeLease: PoolLease = {
       held: true,
-      available: async (inUse) => Math.max(0, 2 - inUse),
+      available: async (inUse) => ({ free: Math.max(0, 2 - inUse), share: 2, total: 2 }),
       reconcile: async (c) => {
         held1 = Math.min(2, Math.ceil(c - 1e-9));
         return held1;
@@ -2049,6 +2049,55 @@ async function selftest(): Promise<number> {
       `a lease with fewer free cores than min must hold the elastic gate with 'lease' until it frees, got ${order.join()} blockedBy ${leased.find((r) => r.id === 'selftest:lease-wide')?.blockedBy}`
     );
     require_(held1 === 0, `every token must be released when the pool drains, ${held1} still held`);
+
+    // B11: ONE FREE TOKEN AND NOTHING RUNNING HOLDS, never launches at `min` on one token. The fake lease has 4 tokens, 3 held by another run until 150 ms; the gate's fair wall (60 cpu-s over a share of 4) is 15 s, far past the release, so it must wait for it and then start on tokens it holds.
+    const t0 = Date.now();
+    let mine = 0;
+    const othersHold = (): number => (Date.now() - t0 < 150 ? 3 : 0);
+    const lone: { at: number; cores: number }[] = [];
+    const loneLease: PoolLease = {
+      held: true,
+      available: async (inUse) => ({
+        free: Math.max(0, 4 - othersHold() - mine) + Math.max(0, mine - inUse),
+        share: 4,
+        total: 4,
+      }),
+      reconcile: async (c) => {
+        mine = Math.min(Math.ceil(c - 1e-9), 4 - othersHold());
+        return mine;
+      },
+    };
+    const alone = await runPool(
+      [{ ...syntheticSpec('selftest:lease-alone', 'true'), cores: { min: 2, max: 'all' } }],
+      {
+        jobs: 8,
+        heavyLimit: 1,
+        failFast: false,
+        durations: new Map(),
+        sched: 'cores',
+        budget: { cores: 8, epsilon: 0, maxProcs: 16, memMb: 64 * 1024 },
+        costs: new Map([['selftest:lease-alone', { cpuMs: 60_000, wallMs: 30_000, perCore: 1 }]]),
+        lease: loneLease,
+        leasePollMs: 20,
+        exec: async (_spec, grant) => {
+          lone.push({ at: Date.now() - t0, cores: grant.cores });
+          return { code: 0, stdout: '', stderr: '', ms: 1 };
+        },
+      }
+    );
+    const aloneResult = alone.find((r) => r.id === 'selftest:lease-alone');
+    require_(
+      lone.length === 1 &&
+        lone[0].at >= 150 &&
+        lone[0].cores === 4 &&
+        aloneResult?.blockedBy === 'lease' &&
+        aloneResult.overLease === undefined,
+      `a lease with 1 free token and nothing running must hold the elastic gate until the tokens free, then run on 4 it holds, got ${JSON.stringify(lone)} blockedBy ${aloneResult?.blockedBy} overLease ${JSON.stringify(aloneResult?.overLease)}`
+    );
+    require_(
+      mine === 0,
+      `the lone gate's tokens must be released when the pool drains, ${mine} held`
+    );
   }
 
   // A RETIRED FIELD IS REFUSED BY NAME; a well-formed range is not. 4 assertions.
@@ -2560,9 +2609,9 @@ async function runGraph(
     opts.manifest === undefined ? new Map([...ciStepP90(), ...durations]) : durations;
   const sched: Sched = opts.sched ?? 'cores';
   // Under `cores`, --jobs names C, the core budget, rather than a slot count.
-  const budget = sched === 'cores' ? coreBudget(opts.jobs) : undefined;
   const lease: RunnerLease | undefined =
     sched === 'cores' ? await openLease({ root: REPO_ROOT, warn: humanOut }) : undefined;
+  const budget = sched === 'cores' ? coreBudget(opts.jobs, lease?.total) : undefined;
 
   const reporter = createReporter({
     idWidth: Math.min(46, Math.max(...graph.map((spec) => spec.id.length))),
@@ -2624,6 +2673,12 @@ async function runGraph(
   saveDurations(cachePath, durations, results);
   saveFailCosts(cachePath, results);
   const exitCode = reporter.footer(results, { ...meta, util });
+  // A grant above the tokens held is the bounded lease hold expiring, never routine; each one is named so a run that oversubscribed the machine says so.
+  for (const r of results)
+    if (r.overLease !== undefined)
+      humanOut(
+        `ci-runner: ${r.id} ran on ${r.overLease.granted} core(s) holding ${r.overLease.held} lease token(s): its lease hold reached its bound\n`
+      );
   return { results, exitCode, wallMs: meta.wallMs, util };
 }
 
