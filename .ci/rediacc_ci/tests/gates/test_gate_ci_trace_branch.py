@@ -648,7 +648,9 @@ def test_green_draft_names_the_finish_sequence(gate):
 def test_default_signature_is_false(gate):
     gate.log_test("the signature default itself must remain False")
     require_subjects(gate)
-    if "def ci_rollup(root, ref, allow_branch=False, repo=None):" not in WL_CI.read_text(encoding="utf-8"):
+    if "def ci_rollup(root, ref, allow_branch=False, repo=None):" not in WL_CI.read_text(
+        encoding="utf-8"
+    ):
         gate.log_fail("ci_rollup's allow_branch default is no longer False")
     gate.log_pass("signature default is False")
 
