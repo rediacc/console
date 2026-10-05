@@ -61,9 +61,9 @@ Filled by the lead from a parallel measurement on this host (24 logical cores, W
 | B6 | Idle core-seconds and busy % over the whole pre-push | receipt `utilisation` (both passes) | pass 1: 676.7 idle core-s, 69.7% busy (320.3, 88.2% on 2026-10-04); pass 2 (two-gate run): 12,788.7 idle core-s, 43.8% busy |
 | B7 | check:ci-pytest wall at today's `-n 8` | `--only check:ci-pytest` footer | 1085.6 s in the e3005c26d pre-push (972-1328 s across tonight's six); the manifest's 396 s (scripts/ci-runner/manifest.ts:5019) was measured on 2026-09-07 |
 | B8 | pytest test-seconds, largest xdist group, longest item | junit.xml | 21,449 tests, 7,865.9 test-seconds, wall 1,070.0 s (junit 2026-10-05T08:16); longest item test_settings_collapse::test_verdict_set_is_unchanged[pre-bash] 203.5 s, then test_guards_differential::test_every_guard_discriminates 187.9 s; heaviest files test_guards_differential 458.4 s, test_hooks_delegates 358.3 s, test_housekeeping_cleanup_versions 312.5 s, test_settings_collapse 253.6 s. Ideal at 23 cores: 7,865.9 / 23 = 342 s |
-| B9 | check:ci-pytest wall at `-n 23`, groups unchanged | `PYTEST_JOBS=23` | TBD-baseline |
+| B9 | check:ci-pytest wall at `-n 23`, groups unchanged | `PYTEST_JOBS=23` | 589 s (old code, before PF11-PF18 broke the groups up) |
 | B10 | Receipts voided by a record-only commit, last 10 pushes | git log of agent/reviews commits between receipt and push | 9 restarts on 2026-10-05; every restart's HEAD was a fresh chore(reviews) commit from --review-commit before the clone sync, and 3 more were voided by a review ruling committed mid-run |
-| B11 | Concurrent pytest from another session during a pre-push: both walls | two runs started together | TBD-baseline |
+| B11 | Concurrent pytest from another session during a pre-push: both walls | two runs started together | not measured: no lease existed, each run took a fixed `-n 8` whatever the other did |
 
 ## 1. Dynamic sizing
 
@@ -181,6 +181,14 @@ The pytest floor today is the 470 s `hooks-guards` group, then the 220.8 s singl
 - [x] PF22 devbox lease-directory check (mount or recorded reason)
     (ticked) 2026-10-05T11:55:54Z by d778be9d: commit:606f7daac the devbox binds /run/user/<uid>/rediacc-cores with REDIACC_CORE_LEASE_DIR, and devbox.py matches (d3508efb0)
 
+**B11 FOUND FIRST-COME-TAKES-ALL (measured 2026-10-05).** Two `run.ts --only check:ci-pytest` started within a second, one per checkout, both read 24 free tokens. The first was granted 23 cores (946 s); the second launched `pytest -n 2` on one token, about 6,200 s projected, because a run counts only free tokens and knows no other run exists, and `launch()` narrows a gate to `max(el.min, k)` whenever nothing is in flight even past what the lease covered (scripts/ci-runner/pool.ts:797). C was also `availableParallelism() - 1`, so a lone run used 23 of 24 tokens (scripts/ci-runner/run.ts:978).
+- Run registration: each run holds a flock'd marker under the lease directory's `runs/` from spawn to exit; `live_runs()` probes the markers under the pool mutex; the broker's `free` reply carries `runs`; the CLI verbs cap `--max` at ceil(T / runs).
+- Admission: an elastic grant is capped at the run's share ceil(T / runs), and the area rule splits that share; fixed-width gates still take what is free. A gate the lease would hold below half its share waits (`lease`) for at most its fair wall instead of launching at `min`; a grant never exceeds the tokens held; the first wide grant waits until the run's marker is 2 s old, so two runs started together both register first. C comes from the lease total when a broker exists.
+- [x] PF28 core_lease.py run registration (`runs/` markers, live_runs under the mutex, `runs` in the broker's free reply, the CLI verbs' share cap) with test_core_lease.py cases: two brokers give runs 2 and a kill -9 gives 1, and a concurrent register-and-count never reads 0
+    (ticked) 2026-10-05T15:36:00Z by d778be9d: commit:b68a9457a runs/ markers under the mutex, runs in the broker free reply, the CLI share cap; 29 tests with three plants red
+- [x] PF29 the share in admission: lease-client share, the elastic cap, the bounded hold, no grant above the tokens held, the 2 s settle, C from the lease total; sim.ts simulateRuns cases for two simultaneous pytests, a lost race, the bound, a survivor that grows and work conservation; B11 re-measured
+    (ticked) 2026-10-05T15:36:02Z by d778be9d: commit:843c38195 share cap, bounded lease hold, no grant above tokens held, 2 s settle, C from the lease total; B11 re-measured at 12 and 12 cores
+
 ## 5. No pointless restarts
 
 **The record set.** .ci/policy/record-paths.json lists the globs a commit may touch without voiding a receipt, each with its `readers`: the gate ids whose verdict depends on those files, with file:line evidence. Starting set from the reads found above:
@@ -241,16 +249,17 @@ Same rows as the baseline, from the same commands after the last writer lands.
 
 | # | Metric | Source | After |
 |---|---|---|---|
-| B1 | Pre-push end to end | `ci:quick --receipt-out` wall | TBD-after |
-| B2 | The one pass's wall | receipt `wallMs` | TBD-after |
-| B3 | Second pass | none by construction | TBD-after |
-| B4 | Critical path gate and wall | report.ts footer | TBD-after |
-| B5 | Floor and wall / floor | report.ts footer | TBD-after |
-| B6 | Idle core-seconds and busy % | receipt `utilisation` | TBD-after |
-| B7 | check:ci-pytest wall at its grant (grant recorded) | receipt `grantedCores` | TBD-after |
-| B8 | pytest test-seconds, largest group, longest item | junit.xml | TBD-after |
-| B9 | check:ci-pytest wall standalone at full grant | `npm run check:ci-pytest` | TBD-after |
-| B10 | Receipts voided by a record-only commit | the advance count in receipts | TBD-after |
-| B11 | Concurrent session pytest during a pre-push: both walls and the grants | two runs started together | TBD-after |
+| B1 | Pre-push end to end | `ci:quick --receipt-out` wall | 897 s, one pass (prepush.sh, 2026-10-05 run 3 at b7c098167); runs 1 and 2 on the way there: 1,255 s and 984 s, each red on a defect fixed before the next |
+| B2 | The one pass's wall | receipt `wallMs` | 885 s (run 3); 1,096 s and 950 s (runs 1 and 2) |
+| B3 | Second pass | none by construction | none: `dropped none`, 63 slow gates admitted in the one pass, every run |
+| B4 | Critical path gate and wall | report.ts footer | check:ci-pytest 826.5 s (run 3); 1,022.9 s and 895.8 s (runs 1 and 2) |
+| B5 | Floor and wall / floor | report.ts footer | floor max(CP 826.5 s, cpu 679.3 s) = 826.5 s, wall 1.07x (run 3) |
+| B6 | Idle core-seconds and busy % | receipt `utilisation` | 3,515 idle core-s, 83.4% busy (run 3); run 1, before the fail-cost and claim fixes: 8,564 idle core-s, 67.3% busy |
+| B7 | check:ci-pytest wall at its grant (grant recorded) | receipt `grantedCores` | 826.5 s at 14 cores (run 3); run 1 granted 10 cores (1,022.9 s) because the push clone had never recorded pytest's cost, fixed by 2e7d2ca7f |
+| B8 | pytest test-seconds, largest group, longest item | junit.xml | 21,744 tests, 10,935.8 test-seconds at 14 workers beside 60 gates (junit 2026-10-05T15:57); largest xdist group env-manifest 217.3 s over 12 items (the 2026-10-03 baseline's hooks-guards held 461.0 s); longest item test_quality_prose_style::test_reflow_comments_preserves_the_ast_of_every_tracked_python_file 119.1 s; heaviest modules test_guards_differential 747.0 s, test_settings_collapse 473.2 s, test_core_devbox 420.9 s |
+| B9 | check:ci-pytest wall standalone at full grant | `npm run check:ci-pytest` | 548 s at 23 cores (`run.ts --only check:ci-pytest` in the push clone, 2026-10-05), against 589 s for the old code at `-n 23` and 1,085.6 s at the old `-n 8` |
+| B10 | Receipts voided by a record-only commit | the advance count in receipts | 0: the record-only commit 686ad0bd5 (agent/worklist/d778be9d.jsonl) advanced the receipt 8b9732c2f -> ca84a0173 by running that path's 19 readers in 61 s instead of the 885 s lane, and block_unverified_push admitted the push (`git push --dry-run`) |
+| B11 | Concurrent session pytest during a pre-push: both walls and the grants | two runs started together | before PF28/PF29: grants 23 and 2 (`pytest -n 2` on one token), walls 946 s and about 6,200 s projected (stopped); after: 12 and 12 cores, walls 998.6 s and 940.7 s, `core_lease status` 0 of 24 free with 2 live runs. That pair also exposed xdist groups colliding across runs (port 45210 taken in account-shadow-fixed-ports), fixed by a machine-wide group lock in a7707854c |
 
-- [ ] PF-final: the before/after table is filled from real runs
+- [x] PF-final: the before/after table is filled from real runs
+    (ticked) 2026-10-05T15:36:10Z by d778be9d: commit:a7707854c the before/after table filled from real runs: pre-push 897 s one pass (baseline at least 18 min over two passes), busy 83.4% (43.8-69.7%), B10 advance 61 s, B11 fair 12/12
