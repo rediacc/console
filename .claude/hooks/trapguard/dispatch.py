@@ -531,6 +531,25 @@ def _command_from_truncated(raw):
     return str(ti.get("command") or "") if isinstance(ti, dict) else ""
 
 
+def _scalar_from_truncated(raw, key):
+    """A top-level string field (`cwd`, `session_id`) out of a payload cut at the bound, or "".
+
+    The harness writes these ahead of `tool_input`, so they sit in the intact head. Only a match BEFORE `tool_input` is taken: a key of the same name inside the command's own input or its response is not the event's.
+    """
+    head = raw
+    m = _TOOL_INPUT.search(raw)
+    if m:
+        head = raw[: m.start()]
+    k = re.search(r'"%s"\s*:\s*' % re.escape(key), head)
+    if not k:
+        return ""
+    try:
+        value, _ = json.JSONDecoder().raw_decode(raw, k.end())
+    except ValueError:
+        return ""
+    return value if isinstance(value, str) else ""
+
+
 def _shown_path(session):
     return state_dir() / ("shown-%s.json" % re.sub(r"[^A-Za-z0-9_.-]", "_", session)[:80])
 
@@ -560,6 +579,8 @@ def run_posttool():
     event: dict = {}
     if over:
         cmd = _command_from_truncated(raw)
+        # The cwd and session id survive truncation in the head; without them the response-free rules judged the hook's own directory and lost the one-note-per-session dedupe (PR #595 review F1).
+        event = {k: v for k in ("cwd", "session_id") if (v := _scalar_from_truncated(raw, k))}
         resp, out = None, ""
         rules = [r for r in RULES if r in RESPONSE_FREE]
         _append(
