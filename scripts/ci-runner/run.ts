@@ -1405,6 +1405,14 @@ async function selftest(): Promise<number> {
     'a HEAD that moved mid-run must vouch for NO tree -- the end tree was never judged'
   );
   require_(receiptTree('', '') === '', 'CONTROL: an unreadable HEAD vouches for nothing either');
+  require_(
+    parseStaleSubmodules(' 1844b07 s (heads/main)\n+a1f430b private/account (a1f430b)').join() === 'private/account',
+    'a submodule checked out off its gitlink (a + line) must void the receipt (#a423d9ab)'
+  );
+  require_(
+    parseStaleSubmodules(' 1844b07 s (heads/main)\n-5c82fec private/elite').length === 0,
+    'CONTROL: an in-step or uninitialised submodule is not reported as off its gitlink'
+  );
 
   // --receipt-out: a snapshot clone's run lands where the pushing checkout's guard reads, and nowhere else.
   require_(
@@ -2051,13 +2059,45 @@ function receiptTree(atStart: string, atEnd: string): string {
   return atStart !== '' && atStart === atEnd ? atStart : '';
 }
 
-/** `git rev-parse HEAD^{tree}`, or '' when git cannot answer. */
+/**
+ * `git rev-parse HEAD^{tree}`, or '' when git cannot answer or a submodule checkout disagrees with its gitlink.
+ *
+ * HEAD^{tree} names each submodule by its gitlink, so a checkout left at another commit (a `+` line in `git submodule status`) means the gates judged code the tree does not contain. Found 2026-10-05 (#a423d9ab): a push clone reset with `git reset --hard` kept private/account at c5cc76f against gitlink 050e15c, and check:deps and every account gate passed judgement on the old account. Such a run vouches for no tree, the same rule as a mid-run HEAD move.
+ */
 function headTreeNow(): string {
+  let tree: string;
   try {
-    return gitOut(['rev-parse', 'HEAD^{tree}']);
+    tree = gitOut(['rev-parse', 'HEAD^{tree}']);
   } catch {
     return '';
   }
+  const stale = staleSubmodules();
+  if (stale.length > 0) {
+    process.stderr.write(
+      `ci-runner: the receipt vouches for no tree: submodule checkout(s) disagree with their gitlinks (${stale.join(', ')}). Run \`git submodule update --init\` and re-run.\n`
+    );
+    return '';
+  }
+  return tree;
+}
+
+/** Submodule paths whose checkout is at another commit than the gitlink (`git submodule status` `+` lines); [] when git cannot answer. */
+function staleSubmodules(): string[] {
+  let out: string;
+  try {
+    out = gitOut(['submodule', 'status']);
+  } catch {
+    return [];
+  }
+  return parseStaleSubmodules(out);
+}
+
+/** The paths on `git submodule status` lines that start with `+` (checked out off the gitlink). */
+function parseStaleSubmodules(status: string): string[] {
+  return status
+    .split('\n')
+    .filter((line) => line.startsWith('+'))
+    .map((line) => line.slice(1).trim().split(/\s+/)[1] ?? line);
 }
 
 /** The receipt's destination: `--receipt-out` when given, else this checkout's own cache. */
