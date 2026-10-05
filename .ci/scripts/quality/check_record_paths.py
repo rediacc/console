@@ -27,6 +27,7 @@ why: A receipt advances across a record-only commit only when every reader of th
 from __future__ import annotations
 
 import ast
+import functools
 import json
 import pathlib
 import re
@@ -196,7 +197,28 @@ def parse_policy(doc: object) -> list[dict]:
 # ---------------------------------------------------------------- closure
 
 
+def _stat_key(path: pathlib.Path) -> tuple[int, int]:
+    """(mtime_ns, size), so a memoised read of a file is dropped the moment the file changes, as a control that plants into a file and re-derives needs."""
+    try:
+        st = path.stat()
+    except OSError:
+        return (-1, -1)
+    return (st.st_mtime_ns, st.st_size)
+
+
 def _py_imports(path: pathlib.Path, root: pathlib.Path) -> list[pathlib.Path]:
+    """Local files `path` imports. MEMOISED on the file's stat: derive_readers takes every gate's closure once per record glob, which re-parsed the same modules 1,793 times and made this gate measure 40.5 s as a CI step (27 s locally, 2026-10-05)."""
+    return list(_py_imports_cached(path, root, _stat_key(path)))
+
+
+@functools.cache
+def _py_imports_cached(
+    path: pathlib.Path, root: pathlib.Path, _key: tuple[int, int]
+) -> tuple[pathlib.Path, ...]:
+    return tuple(_py_imports_uncached(path, root))
+
+
+def _py_imports_uncached(path: pathlib.Path, root: pathlib.Path) -> list[pathlib.Path]:
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
     except (OSError, SyntaxError, ValueError):
@@ -225,6 +247,16 @@ def _py_imports(path: pathlib.Path, root: pathlib.Path) -> list[pathlib.Path]:
 
 
 def _ts_imports(path: pathlib.Path) -> list[pathlib.Path]:
+    """Local files a TS/JS file imports, memoised on its stat like `_py_imports`."""
+    return list(_ts_imports_cached(path, _stat_key(path)))
+
+
+@functools.cache
+def _ts_imports_cached(path: pathlib.Path, _key: tuple[int, int]) -> tuple[pathlib.Path, ...]:
+    return tuple(_ts_imports_uncached(path))
+
+
+def _ts_imports_uncached(path: pathlib.Path) -> list[pathlib.Path]:
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
@@ -278,6 +310,21 @@ def _rel(path: pathlib.Path, root: pathlib.Path) -> str:
         return str(path)
 
 
+@functools.lru_cache(maxsize=4096)
+def _quoted(text: str) -> tuple[tuple[int, str], ...]:
+    """(offset, string) of every quoted string in `text`, once per text: each record's tiers scan the same files, and re-tokenising them per record was most of this gate's remaining time."""
+    return tuple((m.start(), m.group(2)) for m in QUOTED_RE.finditer(text))
+
+
+@functools.lru_cache(maxsize=4096)
+def _joined(text: str) -> tuple[tuple[int, str], ...]:
+    """(offset, token) of every path built by joining literal segments, once per text (see `_quoted`)."""
+    return tuple(
+        (m.start(), "/".join([m.group(2), *(s.group(2) for s in SEGMENT_RE.finditer(m.group(3)))]))
+        for m in JOINED_RE.finditer(text)
+    )
+
+
 def cite_hits(text: str, record: dict) -> list[tuple[int, str]]:
     """(offset, token) for every citation of the record's literal prefix that is not wholly an excluded path."""
     stem = literal_prefix(record["glob"])
@@ -287,10 +334,9 @@ def cite_hits(text: str, record: dict) -> list[tuple[int, str]]:
             r"(?<![\w-])%s(?![\w-])(?:/[^\s'\"`),;:\]}]*)?" % re.escape(stem), text
         )
     ]
-    for m in JOINED_RE.finditer(text):
-        token = "/".join([m.group(2), *(s.group(2) for s in SEGMENT_RE.finditer(m.group(3)))])
+    for off, token in _joined(text):
         if token == stem or token.startswith(stem + "/"):
-            hits.append((m.start(), token))
+            hits.append((off, token))
     return [
         (off, tok)
         for off, tok in hits
@@ -304,7 +350,7 @@ def root_hits(text: str, record: dict) -> list[tuple[int, str]]:
     parts = stem.split("/")
     # A glob under an ancestor (`agent/**/*.md`) is the glob tier's to judge against the probes; this tier is the bare directory, which reads everything below it.
     roots = {"/".join(parts[:n]) + "/" for n in range(1, len(parts))}
-    return [(m.start(), m.group(2)) for m in QUOTED_RE.finditer(text) if m.group(2) in roots]
+    return [(off, q) for off, q in _quoted(text) if q in roots]
 
 
 def is_path_glob(s: str) -> bool:
@@ -341,14 +387,13 @@ def _json_globs(doc: object) -> list[str]:
 def glob_hits(text: str, record: dict) -> list[tuple[int, str]]:
     """(offset, glob) for every quoted file glob in code that reaches one of the record's probes: `git ls-files '*.md'` scans review records as surely as a config file does."""
     hits = []
-    for m in QUOTED_RE.finditer(text):
-        s = m.group(2)
+    for off, s in _quoted(text):
         if not is_path_glob(s) or s.endswith("/"):
             continue
         if any(
             config_glob_matches(p, probe) for p in expand_braces(s) for probe in record["probes"]
         ):
-            hits.append((m.start(), s))
+            hits.append((off, s))
     return hits
 
 

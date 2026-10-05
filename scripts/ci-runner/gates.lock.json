@@ -1750,6 +1750,7 @@
   {
     "id": "check:ci-record-paths",
     "run": "npm run check:ci-record-paths",
+    "slow": true,
     "gate": true,
     "leaves": [
       ".ci/scripts/quality/check_record_paths.py"
