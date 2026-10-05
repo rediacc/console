@@ -44,7 +44,7 @@ T3.2/T3.3/T3.4 (PLAN-ci-time-budget spec W): `.ci/config/lane-durations.json`'s 
       "jobs": {"<lane id>": <fixed-cost p90, MINUTES>},
       "units": {"<unit id>": <p90, MILLISECONDS>},
       "defaultUnitMs": {"<lane id>": <ms>},  # optional, hand-authored, --refresh preserves it
-      "unitParallelism": {"<lane id>": <workers>},  # optional, hand-authored, --refresh preserves it
+      "unitParallelism": {"<lane id>": <workers>},  # optional, DERIVED by --refresh (see UNIT PARALLELISM below)
       "job_p90_minutes": {"<job DISPLAY name>": <p90, MINUTES>},  # T3.1; see below
       "gate_step_p90_seconds": {"<gate id>": <p90, SECONDS>},  # CI-representative tiers; see below
       "job_max_seconds": {
@@ -59,6 +59,8 @@ T3.2/T3.3/T3.4 (PLAN-ci-time-budget spec W): `.ci/config/lane-durations.json`'s 
 A "unit id" is keyed exactly as `scripts/ci-runner/unit-enumerators.ts`'s `LANE_ENUMERATORS` name it (`e2e-workers:<file>`, `account-e2e:<file>`, a bare Go import path, `renet-integration:<file>`, `pytest:<file>`, `battery:<name>`, `tutorial:<slug>`) -- read-only there too.
 
 `gate_step_p90_seconds` is CI-representative timing for `scripts/gates/check-gate-manifest.ts`'s slow/pre-push tier verdict, keyed by a `scripts/ci-runner/gates.lock.json` gate `id`, SECONDS not minutes. A gate the lock marks `"ci": {"kind": "step", ...}` runs as its own named workflow step (`ci.job` a YAML job key, `ci.step` that job's own step `name`), and `--refresh` times it the same way `job_p90_minutes` times a whole job: success-only, over the SAME PR-full sample `jobs`/`units`/`job_p90_minutes` already walk (`load_gate_ci_steps` reads the lock, `lane_display_patterns` -- already general over every job inside a reusable workflow, not only the seven test lanes -- maps `ci.job` to the display-name pattern its own job matches, and the step is found by exact-name match inside that job's `steps` array, already present in `fetch_jobs`'s payload with no extra network call). A gate whose `ci.kind` is not `"step"` (`local-only`, a gate a `test` drives) carries no entry, matching WHY `units` stays scoped above: this is a different instrument for a different set of gates, not a gap. Nor does a gate whose step is a COMPOSITE shared with other gates (`ci-quality.yml`'s `i18n` step alone chains 27 gates' npm scripts into one hand-written `npm run check:i18n`): its wall time is their SUM, not any one gate's own cost, so `_exclusive_ci_steps` excludes every id sharing a `(job, step)` pair with another rather than mis-attributing the whole step's time to each. This is what lets `check-gate-manifest.ts` judge a gate's tier from CI's own timing instead of the local, checkout-dependent `.ci/cache/gate-durations.json` (large gitignored assets present in one checkout and not another used to give the identical gate contradictory verdicts, since CI itself keeps no such cache and never judged a tier at all).
+
+UNIT PARALLELISM (`unitParallelism`) IS DERIVED, NOT HAND-AUTHORED. quality-pytest's legs run `pytest -n <granted cores> --dist loadgroup` (check_pytest.py `jobs()`), so the worker count is the leg runner's core count. The measured source would be pytest-xdist's `N workers [M items]` header, but a PASSING leg never prints it (check_pytest.py echoes pytest's output only on a failure) and the junit artifact carries no per-worker field, so no measured source is reachable from the job payloads, step lists or artifacts this refresh already reads. `--refresh` therefore derives the count from the lane job's `runs-on` label (`lane_runner_labels`) and the label's documented vCPU count (`RUNNER_VCPUS`: GitHub-hosted standard runners of a public repository). A lane whose label is not in that table, or a refresh that finds no such lane, measures nothing and KEEPS the prior value, named on stderr: dropping the key would make check-lane-budget.ts price the lane as serial.
 
 WHY `units` STAYS SCOPED TO THE SEVEN T2.7/T2.8 TEST LANES, NOT `quality-code`'s OWN CHECK IDS. T1.6, whose artifacts feed `units` here, names exactly five sources -- Playwright JSON, pytest junit, gotestsum junit, the battery's own per-test timings, and an OPS tutorial JSON summary -- and every one of them is a TEST-RUNNER'S OWN report. `quality-code` has no such report: its "units" are individual `npm run check:*` invocations, each its OWN named workflow step, and T2.9's existing control
 ("`shardPlan(durations: {})` is byte-identical to `shardPlan()` with no durations
@@ -356,6 +358,7 @@ def fetch_jobs(repo: str, run_id: int) -> list[dict[str, Any]]:
 
 _JOB_HEADER_RE = re.compile(r"^  ([A-Za-z0-9_.-]+):\s*$")
 _FIELD_NAME_RE = re.compile(r"^    name:\s*(.+?)\s*$")
+_FIELD_RUNS_ON_RE = re.compile(r"^    runs-on:\s*(.+?)\s*$")
 _FIELD_USES_RE = re.compile(r"^    uses:\s*(\./\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml)")
 _FIELD_NEEDS_INLINE_RE = re.compile(r"^    needs:\s*\[(.*)\]\s*$")
 _FIELD_NEEDS_SCALAR_RE = re.compile(r"^    needs:\s*([A-Za-z0-9_.-]+)\s*$")
@@ -370,7 +373,7 @@ _MATRIX_RE = re.compile(r"^      matrix:\s*$")
 
 
 def parse_workflow_jobs(text: str) -> dict[str, dict[str, Any]]:
-    """`{job_id: {"name", "needs": [job_id...], "uses", "has_matrix"}}` for one workflow file's TOP-LEVEL `jobs:` mapping.
+    """`{job_id: {"name", "needs": [job_id...], "uses", "has_matrix", "runs_on"}}` for one workflow file's TOP-LEVEL `jobs:` mapping.
 
     Regex, not `yaml.safe_load` -- see the module docstring. Best-effort: a line shape this does not recognise is simply skipped, which thins the graph rather than raising, because a partial critical path is still more informative than none for a REPORT.
     """
@@ -390,7 +393,13 @@ def parse_workflow_jobs(text: str) -> dict[str, dict[str, Any]]:
         header = _JOB_HEADER_RE.match(line)
         if header:
             current = header.group(1)
-            jobs[current] = {"name": current, "needs": [], "uses": None, "has_matrix": False}
+            jobs[current] = {
+                "name": current,
+                "needs": [],
+                "uses": None,
+                "has_matrix": False,
+                "runs_on": None,
+            }
             collecting_needs_list = False
             in_strategy_block = False
             continue
@@ -413,6 +422,10 @@ def parse_workflow_jobs(text: str) -> dict[str, dict[str, Any]]:
         name_m = _FIELD_NAME_RE.match(line)
         if name_m:
             jobs[current]["name"] = name_m.group(1).strip("\"'")
+            continue
+        runs_on_m = _FIELD_RUNS_ON_RE.match(line)
+        if runs_on_m:
+            jobs[current]["runs_on"] = runs_on_m.group(1).strip("\"'")
             continue
         uses_m = _FIELD_USES_RE.match(line)
         if uses_m:
@@ -567,6 +580,44 @@ def lane_display_patterns(
             base = "%s / %s" % (caller_display, callee_rec["name"])
             patterns[callee_id] = _display_name_pattern(base, callee_rec["has_matrix"])
     return patterns
+
+
+# vCPUs of a GitHub-hosted standard runner in a PUBLIC repository (docs.github.com "GitHub-hosted runners": ubuntu-latest, ubuntu-24.04, ubuntu-22.04 are 4 vCPU / 16 GB; a private repository gets 2). The repo is public (`gh repo view --json isPrivate`, 2026-10-05). A label absent here has no derivable count.
+RUNNER_VCPUS: dict[str, int] = {"ubuntu-latest": 4, "ubuntu-24.04": 4, "ubuntu-22.04": 4}
+# Lanes whose legs run `pytest -n <granted cores>`: their `unitParallelism` is the runner's core count.
+CORE_SIZED_LANES: tuple[str, ...] = ("quality-pytest",)
+
+
+def lane_runner_labels(root: Path, workflow: str = DEFAULT_WORKFLOW) -> dict[str, str]:
+    """`{lane id: its job's `runs-on` label}` for every callee job of `workflow` that declares a literal one, read the way `lane_display_patterns` reads the same files."""
+    ci_jobs = parse_workflow_jobs((root / ".github" / "workflows" / workflow).read_text("utf-8"))
+    labels: dict[str, str] = {}
+    for rec in ci_jobs.values():
+        callee = rec["uses"]
+        if not callee:
+            continue
+        callee_path = root / callee.removeprefix("./")
+        if not callee_path.is_file():
+            continue
+        for callee_id, callee_rec in parse_workflow_jobs(
+            callee_path.read_text(encoding="utf-8")
+        ).items():
+            if callee_rec["runs_on"]:
+                labels[callee_id] = callee_rec["runs_on"]
+    return labels
+
+
+def derive_unit_parallelism(root: Path, workflow: str = DEFAULT_WORKFLOW) -> dict[str, int]:
+    """`{lane id: workers}` for each `CORE_SIZED_LANES` lane whose `runs-on` label has a documented vCPU count; a lane with no such label is absent (the caller keeps the prior value). See the module docstring's UNIT PARALLELISM."""
+    try:
+        labels = lane_runner_labels(root, workflow)
+    except OSError:
+        return {}
+    return {
+        lane: RUNNER_VCPUS[labels[lane]]
+        for lane in CORE_SIZED_LANES
+        if labels.get(lane) in RUNNER_VCPUS
+    }
 
 
 # T3.2: the "runner step" a lane's fixed cost is measured UP TO -- see the module docstring's "SETUP STEPS UP TO THE RUNNER STEP" phrase from the plan itself. Best-effort and hand-verified against the real step names in ct-tests.yml/ci-quality.yml/ci-ops-test.yml as of 2026-09-27 (see the per-entry comment); a lane absent here, or whose real step gets renamed, simply keeps no fixed-cost estimate rather than a wrong one -- the same "thinner rather than wrong" choice the needs-graph parser makes.
@@ -1421,7 +1472,7 @@ def compute_lane_durations(
     fetch_log: Callable[[str, int], str] = fetch_job_log,
     log_cache_dir: Path | None = None,
 ) -> dict[str, Any]:
-    """The FRESH numbers `--refresh` writes and `--check` compares against: `{"jobs", "units", "job_max_seconds", "job_p90_minutes", "gate_step_p90_seconds", "variant_costs", "variant_legs", "missing_artifact_lanes"}`. `fetch_log`/`log_cache_dir` feed `collect_variant_costs` (the cache defaults to `VARIANT_LOG_CACHE_REL_PATH` under the repo root). Never touches `refreshed_at` or `concurrency` -- the caller's job, since `--check` must compute this WITHOUT stamping anything."""
+    """The FRESH numbers `--refresh` writes and `--check` compares against: `{"jobs", "units", "job_max_seconds", "job_p90_minutes", "gate_step_p90_seconds", "variant_costs", "variant_legs", "unit_parallelism", "missing_artifact_lanes"}`. `fetch_log`/`log_cache_dir` feed `collect_variant_costs` (the cache defaults to `VARIANT_LOG_CACHE_REL_PATH` under the repo root). Never touches `refreshed_at` or `concurrency` -- the caller's job, since `--check` must compute this WITHOUT stamping anything."""
     tree_root = root if root is not None else paths.repo_root()
 
     # THE PR SAMPLE HONOURS `--branch`, AS THE REPORT'S DOES SINCE 34ac34c13. `--refresh --branch 0923-1` still sampled PR runs with NO branch filter, so the durations it wrote came from whichever branches' runs the listing served, not the branch named. `class_branch_filter` keeps a default-branch refresh repo-wide.
@@ -1533,6 +1584,8 @@ def compute_lane_durations(
         "variant_costs": variant_costs,
         "variant_legs": variant_legs,
         "missing_artifact_lanes": missing_lanes,
+        # Derived from the runner label, not sampled; see derive_unit_parallelism.
+        "unit_parallelism": derive_unit_parallelism(tree_root, workflow),
         # T3.1: the PR sample's own age findings, carried out so `--refresh` can REFUSE to stamp a fresh `refreshed_at` on them (see refresh_lane_durations).
         "stale_sample": stale_sample_findings(pr_runs),
         # Which PR runs the numbers came from, so a refresh names its sample rather than only its size.
@@ -1661,7 +1714,7 @@ def refresh_lane_durations(
     dry_run: bool = False,
     compute: Callable[..., dict[str, Any]] = compute_lane_durations,
 ) -> int:
-    """T3.2: rewrite `path` from `limit` completed PR-full runs (success-only jobs; see REFRESH_PR_STATUS). `concurrency`, `$comment` and `defaultUnitMs` are PRESERVED verbatim -- this never guesses the operator's D-W1 ruling or hand-authored fallbacks; only `jobs`, `units`, `variantCosts` (measured from job logs, merged so an unmeasured entry keeps its prior value, named on stderr), `job_max_seconds`, `job_p90_minutes`, `gate_step_p90_seconds` and `refreshed_at` move. `--dry-run` computes and prints without writing, the one network call this box's own instructions permit running for real."""
+    """T3.2: rewrite `path` from `limit` completed PR-full runs (success-only jobs; see REFRESH_PR_STATUS). `concurrency`, `$comment` and `defaultUnitMs` are PRESERVED verbatim -- this never guesses the operator's D-W1 ruling or hand-authored fallbacks; only `jobs`, `units`, `variantCosts` (measured from job logs, merged so an unmeasured entry keeps its prior value, named on stderr), `job_max_seconds`, `job_p90_minutes`, `gate_step_p90_seconds`, `unitParallelism` (derived from the runner label, prior value kept when underivable) and `refreshed_at` move. `--dry-run` computes and prints without writing, the one network call this box's own instructions permit running for real."""
     try:
         existing = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -1720,9 +1773,23 @@ def refresh_lane_durations(
     )
     if "defaultUnitMs" in existing:
         updated["defaultUnitMs"] = existing["defaultUnitMs"]
-    # T3.1: how many units a lane's leg runs at once (quality-pytest's `-n`), hand-authored beside defaultUnitMs and preserved the same way; dropping it would silently turn a parallel lane back into a serial estimate.
-    if "unitParallelism" in existing:
-        updated["unitParallelism"] = existing["unitParallelism"]
+    # How many units a lane's leg runs at once (quality-pytest's `-n`) is DERIVED from the runner label (see the module docstring's UNIT PARALLELISM). A lane this refresh could not derive keeps its prior value and is named: dropping it would silently turn a parallel lane back into a serial estimate.
+    parallelism = dict(existing.get("unitParallelism") or {})
+    derived_parallelism = computed.get("unit_parallelism") or {}
+    for lane, workers in sorted(derived_parallelism.items()):
+        print(
+            "budget_report --refresh: unitParallelism[%s] = %d derived from the runner label's vCPU count"
+            % (lane, workers),
+            file=sys.stderr,
+        )
+    parallelism.update(derived_parallelism)
+    for lane in sorted(set(parallelism) - set(derived_parallelism)):
+        log.warn(
+            "budget_report --refresh: unitParallelism[%s] not derivable from the runner label; KEPT %r from the prior file"
+            % (lane, parallelism[lane])
+        )
+    if parallelism:
+        updated["unitParallelism"] = parallelism
     # The declared placement rules `check-lane-budget.ts --rebalance` honours (18/19 on one leg, backup-restore on OPS shard 3), hand-authored and preserved the same way; dropping them would let a rebalance write a plan the runner cannot run.
     if "rebalanceConstraints" in existing:
         updated["rebalanceConstraints"] = existing["rebalanceConstraints"]
