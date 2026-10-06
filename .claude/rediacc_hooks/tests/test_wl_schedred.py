@@ -954,3 +954,22 @@ def test_planted_unit_without_the_push_read_nothing_blocks(repo, tmp_path, gh, m
     assert doc["push"] is None
     assert SR.assess(tmp_path / "wl.md", [], "aaaaaaaa-1", doc)["block"] == []
     assert gh.calls("runs?event=push") == []
+
+
+@pytest.mark.usefixtures("no_log_cache")
+def test_a_green_noop_duplicate_never_masks_the_original_on_the_same_sha(repo, tmp_path, gh):
+    """2026-10-06: one push to main can start two Console CI runs on one SHA, and the later one is a no-op that ends green in about a minute. The original's red must stay the verdict, and while the original still runs, the no-op's green must not be read as main's verdict."""
+    noop = push_run(
+        rid=MAIN_RUN + 1, conclusion="success", attempt=1, created="2026-10-06T00:33:45Z"
+    )
+    serve_main_red(gh, push=[noop, push_run()])
+    doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
+    assert (doc["push"]["run_id"], doc["push"]["red"]) == (MAIN_RUN, True), (
+        "the failed original wins"
+    )
+
+    running = push_run(conclusion=None, status="in_progress", attempt=1)
+    serve(gh, [run(GREEN_RUN, conclusion="success")], push=[noop, running])
+    doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
+    assert doc["push"]["in_flight"] is True
+    assert doc["push"]["run_id"] != MAIN_RUN + 1, "the no-op's green is not main's verdict"
