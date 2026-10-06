@@ -32,9 +32,9 @@
     {
       "gate": "check:ci-plan-implementation",
       "findings": [
-        "P-A1:112304fdab4d"
+        "P-A1:179633a798a4"
       ],
-      "reason": "1006-2 carries the operator's 2026-10-06 follow-ups (epic 97672f9f: regeneration guard, ci-trace root causes and the main-red check, scheduler utilization, package retention, GitHub 5xx retry, the duplicate-run no-op and sibling release gate, the QUEUE.md In flight section) and works no queued plan. P-A1 names the queue head, agent/plans/PLAN-ci-consolidation.md (revised the same day: Parts A, B and C), whose open boxes belong to the next branch. The PR body carries an Operational-Reason saying so, which admits P-A1 in CI."
+      "reason": "1006-2 carries the operator's 2026-10-06 follow-ups (epic 97672f9f: regeneration guard, ci-trace root causes and the main-red check, scheduler utilization, package retention, GitHub 5xx retry, the duplicate-run no-op and sibling release gate, the QUEUE.md In flight section) and works no queued plan. P-A1 names the queue head, agent/plans/PLAN-ci-consolidation.md (revised the same day: Parts A, B and C), whose open boxes belong to the next branch. The PR body carries an Operational-Reason saying so, which admits P-A1 in CI. Re-keyed 2026-10-06: the clock now also counts agent/plans/PLAN-fast-loop.md's one open box, F10, the live proof that ticks only after the push it proves (operator /ask: PLAN-fast-loop rides this PR)."
     },
     {
       "gate": "check:ci-pytest",
