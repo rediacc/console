@@ -5485,6 +5485,26 @@
     }
   },
   {
+    "id": "check:ci-gh-retry-reads",
+    "run": "npm run check:ci-gh-retry-reads",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_gh_retry_reads.py"
+    ],
+    "paths": [
+      ".ci/rediacc_ci/**",
+      ".ci/scripts/**",
+      ".ci/config/gh-retry-reads-baseline.json"
+    ],
+    "pathsOrigin": "declared",
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "GitHub reads retry transient faults"
+    }
+  },
+  {
     "id": "check:ci-allowlist-key-matching",
     "run": "npm run check:ci-allowlist-key-matching",
     "gate": true,

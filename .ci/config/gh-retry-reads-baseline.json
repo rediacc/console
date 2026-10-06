@@ -1,0 +1,425 @@
+{
+  "format": 1,
+  "entries": [
+    {
+      "id": "d0a6bb57dc6d",
+      "site": ".ci/rediacc_ci/ci/scope_reconcile_shadow.py :: main.download_plan via main.download_plan :: gh gh run download ? --repo ? -n ci-skip-plan -D ?",
+      "count": 1
+    },
+    {
+      "id": "64dec644fb14",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_github_deployments.py :: main via _gh_capture :: gh gh api ? --paginate --jq .[].id",
+      "count": 1
+    },
+    {
+      "id": "350d19a2b5be",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_pr_environments.py :: main via _gh_capture :: gh gh api ? --jq length",
+      "count": 1
+    },
+    {
+      "id": "84999f2a9ac0",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_pr_environments.py :: main via _gh_capture :: gh gh api ? --paginate --jq .environments[]?.name",
+      "count": 1
+    },
+    {
+      "id": "0766377d9f19",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_actions_cache via Housekeeping.cleanup_actions_cache :: gh gh api --paginate repos/%s/actions/caches?per_page=100&sort=last_accessed_at&direction=asc --jq .actions_caches[] | {id: .id, key: .key, ref: .ref, size: .size_in_bytes, last_accessed_at: .last_accessed_at}",
+      "count": 1
+    },
+    {
+      "id": "fc51401c29fe",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_deployments via Housekeeping.cleanup_deployments :: gh gh api repos/%s/deployments?per_page=100 --paginate --jq [.[] | {id: .id, environment: .environment, created_at: .created_at}]",
+      "count": 1
+    },
+    {
+      "id": "29aee7c330a4",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_deployments via Housekeeping.cleanup_deployments :: gh gh pr list --repo ? --state open --limit 200 --json number --jq .[].number",
+      "count": 1
+    },
+    {
+      "id": "019be9004843",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_environments via Housekeeping.cleanup_environments :: gh gh api repos/%s/environments --jq [.environments[] | {name: .name, created: .created_at, updated: .updated_at}]",
+      "count": 1
+    },
+    {
+      "id": "f1ecff660338",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_packages via Housekeeping.cleanup_packages :: gh gh api orgs/%s/packages/container/%s/versions?per_page=100&page=%d",
+      "count": 1
+    },
+    {
+      "id": "1d48fe5d09a9",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_preview_workers via Housekeeping.cleanup_preview_workers :: gh gh pr list --repo ? --state open --limit 200 --json number --jq .[].number",
+      "count": 1
+    },
+    {
+      "id": "5b493cb0c016",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_r2 via Housekeeping.cleanup_r2 :: gh gh api repos/%s/tags --paginate --jq .[].name",
+      "count": 1
+    },
+    {
+      "id": "7d97c40ff45b",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_releases via Housekeeping.cleanup_releases :: gh gh api repos/%s/releases --paginate --jq .[] | select(.tag_name == %s) | .id",
+      "count": 1
+    },
+    {
+      "id": "889d3bbfad0b",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_releases via Housekeeping.cleanup_releases :: gh gh release list --repo ? --limit 200 --json tagName,createdAt,isDraft,isPrerelease --jq sort_by(.createdAt) | reverse",
+      "count": 1
+    },
+    {
+      "id": "492d1b9738d6",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_releases via Housekeeping.cleanup_releases :: gh gh release view ? --repo ?",
+      "count": 2
+    },
+    {
+      "id": "44d7a5a4a4e2",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_stale_branches via Housekeeping.cleanup_stale_branches :: gh gh api repos/%s/branches/%s --jq .commit.commit.committer.date",
+      "count": 1
+    },
+    {
+      "id": "b45f546bb9da",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_stale_branches via Housekeeping.cleanup_stale_branches :: gh gh api repos/%s/branches?per_page=100 --paginate --jq .[].name",
+      "count": 1
+    },
+    {
+      "id": "24b9304c716e",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_tags via Housekeeping.cleanup_tags :: gh gh api repos/%s/git/commits/%s --jq .committer.date",
+      "count": 1
+    },
+    {
+      "id": "5b5db2525fbf",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_tags via Housekeeping.cleanup_tags :: gh gh api repos/%s/git/ref/tags/%s",
+      "count": 1
+    },
+    {
+      "id": "05ce00e597be",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_tags via Housekeeping.cleanup_tags :: gh gh api repos/%s/git/tags/%s --jq .object.sha",
+      "count": 1
+    },
+    {
+      "id": "1930243aa77a",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_tags via Housekeeping.cleanup_tags :: gh gh api repos/%s/git/tags/%s --jq .tagger.date",
+      "count": 1
+    },
+    {
+      "id": "ef7f01acdc20",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_tags via Housekeeping.cleanup_tags :: gh gh api repos/%s/tags --paginate --jq .[].name",
+      "count": 1
+    },
+    {
+      "id": "b10c9f1e03c4",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_workflow_artifacts via Housekeeping.cleanup_workflow_artifacts :: gh gh api repos/%s/actions/artifacts?per_page=100&page=%d --jq [.artifacts[] | {id: .id, created_at: .created_at, expired: .expired, size: .size_in_bytes}]",
+      "count": 1
+    },
+    {
+      "id": "eaaa179178da",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_workflow_runs via Housekeeping.cleanup_workflow_runs :: gh gh api repos/%s/actions/workflows/%s/runs?status=completed&per_page=100&page=%d --jq [.workflow_runs[] | {id: .id, created_at: .created_at, conclusion: .conclusion}]",
+      "count": 1
+    },
+    {
+      "id": "8272b889486b",
+      "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_workflow_runs via Housekeeping.cleanup_workflow_runs :: gh gh api repos/%s/actions/workflows?per_page=100 --jq [.workflows[] | select(.state == \"active\") | {id: .id, name: .name, path: .path}]",
+      "count": 1
+    },
+    {
+      "id": "23b3901c2b53",
+      "site": ".ci/rediacc_ci/ops/derive_shadow_pass_list.py :: emit_delete_commands via secret_names :: gh gh api ? --paginate --slurp",
+      "count": 1
+    },
+    {
+      "id": "96d75dde0394",
+      "site": ".ci/rediacc_ci/ops/derive_shadow_pass_list.py :: emit_delete_commands via secret_names :: gh gh api orgs/rediacc/actions/secrets --paginate --slurp",
+      "count": 1
+    },
+    {
+      "id": "65f4977e8798",
+      "site": ".ci/rediacc_ci/ops/derive_shadow_pass_list.py :: main via _gh :: gh gh run list --workflow=%s --branch ? --limit ? --json databaseId -q .[].databaseId",
+      "count": 1
+    },
+    {
+      "id": "9c19c890f7d3",
+      "site": ".ci/rediacc_ci/ops/derive_shadow_pass_list.py :: main via _gh :: gh gh run view ? --json jobs -q [.jobs[]|select(.conclusion==\"success\")|.name]|length",
+      "count": 1
+    },
+    {
+      "id": "f14b299142fc",
+      "site": ".ci/rediacc_ci/ops/derive_shadow_pass_list.py :: main via _gh :: gh gh run view ? --log",
+      "count": 1
+    },
+    {
+      "id": "fcd51dfe9c8a",
+      "site": ".ci/rediacc_ci/pr/sync_epic_block.py :: main via main :: gh gh pr view ? --json body --jq .body // \"\"",
+      "count": 1
+    },
+    {
+      "id": "0eb4ab03d7e5",
+      "site": ".ci/rediacc_ci/quality/claude_attribution.py :: main via gh_retry :: gh gh api repos/%s/compare/%s...%s?per_page=100 --paginate --jq .commits[] | {sha: .sha, message: .commit.message, name: .commit.author.name, email: .commit.author.email}",
+      "count": 1
+    },
+    {
+      "id": "930e68b5cfc6",
+      "site": ".ci/rediacc_ci/quality/claude_attribution.py :: main via gh_retry :: gh gh api repos/%s/pulls/%s --jq \"\\(.base.sha) \\(.head.sha) \\(.commits)\"",
+      "count": 1
+    },
+    {
+      "id": "4aedebd6fbc3",
+      "site": ".ci/rediacc_ci/quality/claude_attribution.py :: main via gh_retry :: gh gh api repos/%s/pulls/%s --jq .body // \"\"",
+      "count": 1
+    },
+    {
+      "id": "cb295cbb3a5c",
+      "site": ".ci/rediacc_ci/quality/commit_identity.py :: judge_pr via gh_retry :: gh gh api repos/%s/compare/%s...%s?per_page=100 --paginate --jq .commits[] | {sha: .sha, author: .author.login, committer: .committer.login, email: .commit.author.email, name: .commit.author.name}",
+      "count": 1
+    },
+    {
+      "id": "da8d2ab765f4",
+      "site": ".ci/rediacc_ci/quality/commit_identity.py :: judge_pr via gh_retry :: gh gh api repos/%s/pulls/%s --jq \"\\(.base.sha) \\(.head.sha) \\(.commits)\"",
+      "count": 1
+    },
+    {
+      "id": "cce163182bfb",
+      "site": ".ci/rediacc_ci/quality/commit_identity.py :: refresh_identity via gh_plain :: gh gh api repos/%s/commits?per_page=100 --paginate --jq .[] | select(.author.login == \"%s\") | .commit.author.email",
+      "count": 1
+    },
+    {
+      "id": "942d4a5edb9d",
+      "site": ".ci/rediacc_ci/quality/commit_identity.py :: refresh_identity via gh_plain :: gh gh api user --jq {login,id}",
+      "count": 1
+    },
+    {
+      "id": "7159fb6f256c",
+      "site": ".ci/rediacc_ci/quality/commit_identity.py :: refresh_identity via gh_plain :: gh gh api user/emails --jq .[].email",
+      "count": 1
+    },
+    {
+      "id": "c9370c0a5e79",
+      "site": ".ci/rediacc_ci/quality/submodule_branches.py :: console_pr_body via gh_probe :: gh gh pr view ? --json body --jq .body // empty",
+      "count": 1
+    },
+    {
+      "id": "8adb909a7e5b",
+      "site": ".ci/rediacc_ci/quality/submodule_branches.py :: main via get_pr_for_branch :: gh gh pr list --repo ? --head ? --state open --json number,url",
+      "count": 1
+    },
+    {
+      "id": "bc68afeb3ccb",
+      "site": ".ci/rediacc_ci/quality/submodule_branches.py :: main via gh_probe :: gh gh pr list --repo ? --head ? --state merged --json number",
+      "count": 1
+    },
+    {
+      "id": "60c150a9c513",
+      "site": ".ci/rediacc_ci/quality/submodule_branches.py :: unreplied_review_comments via gh_probe :: gh gh api repos/%s/pulls/%s/comments --paginate",
+      "count": 1
+    },
+    {
+      "id": "8f6ece179bf1",
+      "site": ".ci/rediacc_ci/release/check_existing_release.py :: main via main :: gh gh release view ? --repo ?",
+      "count": 1
+    },
+    {
+      "id": "cf88832c45f1",
+      "site": ".ci/rediacc_ci/release/list_edge_releases.py :: main via main :: gh gh release list --exclude-drafts --exclude-pre-releases --limit 100 --json tagName,publishedAt --repo ?",
+      "count": 1
+    },
+    {
+      "id": "d2f1270558b2",
+      "site": ".ci/rediacc_ci/release/mark_production.py :: main via _capture_merged :: gh gh api ? --jq .object.sha",
+      "count": 2
+    },
+    {
+      "id": "e3f42ed49b7e",
+      "site": ".ci/rediacc_ci/release/mark_production.py :: main via _capture_merged :: gh gh api ? --jq .object.type",
+      "count": 1
+    },
+    {
+      "id": "5520ed67aa0f",
+      "site": ".ci/rediacc_ci/release/mark_production.py :: main via _capture_merged :: gh gh release view ? --json tagName",
+      "count": 1
+    },
+    {
+      "id": "2ad703571e09",
+      "site": ".ci/rediacc_ci/release/mark_production.py :: main via _quiet :: gh gh api ?",
+      "count": 1
+    },
+    {
+      "id": "3463cc5d4738",
+      "site": ".ci/rediacc_ci/release/nightly_tested_edge.py :: fetch_run_jobs via fetch_run_jobs :: gh gh api ?",
+      "count": 1
+    },
+    {
+      "id": "1f1fa42f702f",
+      "site": ".ci/rediacc_ci/release/verify_artifact_attestation.py :: main via main :: gh gh attestation verify ? --repo ?",
+      "count": 1
+    },
+    {
+      "id": "a7f0873bc726",
+      "site": ".ci/rediacc_ci/release/verify_release_assets.py :: main via main :: gh gh release view ? --repo ? --json tagName,assets",
+      "count": 1
+    },
+    {
+      "id": "af67cbf0e17a",
+      "site": ".ci/rediacc_ci/review/claude_review_gate.py :: _record_attempt via _gh_call :: gh gh api repos/%s/issues/%s/comments --paginate --jq .[] | select(.body | startswith(\"%s\")) | select(.body | contains(\"%s\")) | .id",
+      "count": 1
+    },
+    {
+      "id": "e093d607b4c4",
+      "site": ".ci/rediacc_ci/review/claude_review_gate.py :: _resolve_pull_request via _gh_call :: gh gh api -X GET repos/%s/commits/%s/check-runs -f check_name=%s --jq [.check_runs[] | select(.conclusion == \"success\")] | length",
+      "count": 1
+    },
+    {
+      "id": "375793ade704",
+      "site": ".ci/rediacc_ci/review/claude_review_gate.py :: _resolve_pull_request via _gh_call :: gh gh pr view ? --repo ? --json headRefOid,headRefName,isDraft",
+      "count": 1
+    },
+    {
+      "id": "bee0702f73df",
+      "site": ".ci/rediacc_ci/review/claude_review_gate.py :: _resolve_workflow_run via _gh_call :: gh gh pr list --repo ? --head ? --state open --json number,headRefOid,isDraft --jq [.[] | select(.headRefOid == \"%s\")] | first // empty",
+      "count": 1
+    },
+    {
+      "id": "be6bb907ccff",
+      "site": ".ci/rediacc_ci/review/claude_review_gate.py :: last_marker_id via _gh_call :: gh gh api repos/%s/issues/%s/comments --paginate --jq .[] | select(.body | startswith(\"%s\")) | .id",
+      "count": 1
+    },
+    {
+      "id": "276d8ba6a807",
+      "site": ".ci/rediacc_ci/review/claude_review_gate.py :: last_marker_sha via _gh_call :: gh gh api repos/%s/issues/%s/comments --paginate --jq .[] | select(.body | startswith(\"%s\")) | .body",
+      "count": 1
+    },
+    {
+      "id": "398df9e94503",
+      "site": ".ci/rediacc_ci/review/claude_review_gate.py :: review_attempt_states via _gh_call :: gh gh api repos/%s/issues/%s/comments --paginate --jq .[] | select(.body | startswith(\"%s\")) | .body, \"%s\"",
+      "count": 1
+    },
+    {
+      "id": "89acb3d88afd",
+      "site": ".ci/rediacc_ci/review/claude_review_gate.py :: review_report_count via _gh_call :: gh gh api repos/%s/issues/%s/comments --paginate --jq .[] | select(.user.login | contains(\"%s\")) | select(.body | startswith(\"%s\")) | .id",
+      "count": 1
+    },
+    {
+      "id": "20fe80338802",
+      "site": ".ci/rediacc_ci/review/claude_review_gate.py :: run_gate via _gh_call :: gh gh api repos/%s/compare/%s...%s --jq [.files[]?.filename]",
+      "count": 1
+    },
+    {
+      "id": "22dbe1ed05b6",
+      "site": ".ci/rediacc_ci/review/claude_review_gate.py :: run_gate via _gh_call :: gh gh pr view ? --repo ? --json additions,deletions,changedFiles --jq \"\\(.additions + .deletions) \\(.changedFiles)\"",
+      "count": 1
+    },
+    {
+      "id": "083c565f45cb",
+      "site": ".ci/rediacc_ci/review/claude_review_gate.py :: run_mark via _gh_call :: gh gh api repos/%s/%s/%s/comments --paginate --jq ?",
+      "count": 1
+    },
+    {
+      "id": "f83b87750b59",
+      "site": ".ci/rediacc_ci/review/claude_review_gate.py :: run_post_findings via _gh_call :: gh gh api repos/%s/issues/%s/comments --paginate --jq .[] | select(.user.login | contains(\"github-actions\")) | select(.body | contains(\"%s\")) | .body",
+      "count": 1
+    },
+    {
+      "id": "ff9d8e6b74e0",
+      "site": ".ci/rediacc_ci/review/pr_labels.py :: apply via _gh :: gh gh api repos/%s/issues/%s/comments --paginate --jq .[] | select(.body | startswith(\"%s\")) | \"\\(.id) \\(.body)\"",
+      "count": 1
+    },
+    {
+      "id": "0f74e073e6de",
+      "site": ".ci/rediacc_ci/review/pr_labels.py :: apply via _gh :: gh gh api repos/%s/labels/%s",
+      "count": 1
+    },
+    {
+      "id": "bd4c40dd345b",
+      "site": ".ci/rediacc_ci/review/pr_labels.py :: apply via _gh :: gh gh api repos/%s/pulls/%s/files --paginate --jq .[].filename",
+      "count": 1
+    },
+    {
+      "id": "afd2cfa4b6f3",
+      "site": ".ci/rediacc_ci/review/review_status.py :: _currency via _gh :: gh gh api repos/%s/compare/%s...%s --jq [.files[]?.filename]",
+      "count": 1
+    },
+    {
+      "id": "380b74e13670",
+      "site": ".ci/rediacc_ci/review/review_status.py :: _read_pr via _gh :: gh gh api repos/%s/pulls/%s --jq {state: .state, draft: .draft, head: .head.sha}",
+      "count": 1
+    },
+    {
+      "id": "d0cae0f0bf32",
+      "site": ".ci/rediacc_ci/review/review_status.py :: artifact_pr via _gh :: gh gh api ? --jq .artifacts[] | select(.name == \"%s\") | .id",
+      "count": 1
+    },
+    {
+      "id": "44c47fc70b70",
+      "site": ".ci/rediacc_ci/review/review_status.py :: artifact_pr via _gh :: gh gh api repos/%s/actions/artifacts/%s/zip",
+      "count": 1
+    },
+    {
+      "id": "833feaab22a1",
+      "site": ".ci/rediacc_ci/review/review_status.py :: last_marker_sha via _gh :: gh gh api repos/%s/issues/%s/comments --paginate",
+      "count": 1
+    },
+    {
+      "id": "1840d0a94fc1",
+      "site": ".ci/rediacc_ci/review/review_status.py :: post_check via _gh :: gh gh api -X GET repos/%s/commits/%s/check-runs -f check_name=%s --jq [.check_runs[]? | select(.app.slug == \"github-actions\")] | last | .id // empty",
+      "count": 1
+    },
+    {
+      "id": "3636080283e5",
+      "site": ".ci/rediacc_ci/review/review_table.py :: pr_commits via _gh :: gh gh api repos/%s/pulls/%s/commits --paginate --jq .[] | \"\\(.sha) \\(.commit.message | split(\"\\n\")[0])\"",
+      "count": 1
+    },
+    {
+      "id": "00261cb87103",
+      "site": ".ci/rediacc_ci/review/review_table.py :: upsert via _gh :: gh gh api repos/%s/issues/%s/comments --paginate --jq .[] | select(.body | startswith(\"%s\")) | .id",
+      "count": 1
+    },
+    {
+      "id": "9f0ada5ad126",
+      "site": ".ci/scripts/quality/check_actions_allowlist.py :: refresh via refresh :: gh gh api /repos/%s/actions/permissions/selected-actions",
+      "count": 1
+    },
+    {
+      "id": "18113881baf7",
+      "site": ".ci/scripts/quality/check_agent_session_archival.py :: _review_dirs via _gh_merged_at :: gh gh pr list --repo ? --state merged --head ? --json mergedAt",
+      "count": 1
+    },
+    {
+      "id": "c8014531cfd0",
+      "site": ".ci/scripts/quality/check_job_timeout_headroom.py :: refresh via refresh :: gh gh api ? --jq .jobs[]|select(.conclusion==\"success\")|\"\\(.name)\\t\\(.started_at)\\t\\(.completed_at)\"",
+      "count": 1
+    },
+    {
+      "id": "b3784a5e704b",
+      "site": ".ci/scripts/quality/check_job_timeout_headroom.py :: refresh via refresh :: gh gh run list --repo ? --branch main --workflow Console CI --event push --limit ? --json databaseId --jq .[].databaseId",
+      "count": 1
+    },
+    {
+      "id": "a9c511db8a5b",
+      "site": ".ci/scripts/quality/check_runner_advice.py :: harvest via gh_json :: gh gh api repos/%s/actions/runs/%s/jobs?per_page=100 --jq .jobs[].id",
+      "count": 1
+    },
+    {
+      "id": "df6fb4ef82d6",
+      "site": ".ci/scripts/quality/check_runner_advice.py :: harvest via gh_json :: gh gh api repos/%s/check-runs/%s/annotations --jq .[].message",
+      "count": 1
+    },
+    {
+      "id": "19ba721aae93",
+      "site": ".ci/scripts/quality/check_runner_advice.py :: main via gh_json :: gh gh run list --repo ? --branch ? --limit ? --json databaseId --jq .[].databaseId",
+      "count": 1
+    },
+    {
+      "id": "333761f51c9c",
+      "site": ".ci/scripts/quality/check_secret_reachability.py :: refresh via refresh.gh :: gh gh api orgs/rediacc/actions/secrets --paginate --jq .secrets[]|[.name,.visibility]|@tsv",
+      "count": 1
+    },
+    {
+      "id": "b19f1f2f1bd2",
+      "site": ".ci/scripts/quality/check_secret_reachability.py :: refresh via refresh.gh :: gh gh api orgs/rediacc/actions/secrets/%s/repositories --paginate --jq .repositories[].name",
+      "count": 1
+    },
+    {
+      "id": "0b0452f78f1e",
+      "site": ".ci/scripts/quality/check_secret_reachability.py :: refresh via refresh.gh :: gh gh api repos/%s/actions/secrets --paginate --jq .secrets[].name",
+      "count": 1
+    }
+  ]
+}
