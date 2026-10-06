@@ -10,6 +10,7 @@ Every case drives the real hook (or the real `run_judge`) through `wlfix`, with 
 from __future__ import annotations
 
 import hashlib
+import importlib
 import json
 import os
 import stat
@@ -1009,3 +1010,53 @@ def test_r25_2_inverse_an_item_that_never_had_a_worker_keeps_the_status_arm(wl):
     assert "packages/x/a.ts" in listed, listed
     assert "packages/x/b.ts" in listed, listed
     assert "narrowed to the files those writers changed" not in prompt, listed
+
+
+# ---- the stop's own In-flight refresh is not the session's work -------------------------------
+
+
+def _queue_repo(tmp_path, head_text):
+    wlfix.paths.on_sys_path(wlfix.STOP_DIR)
+    pq = importlib.import_module("wl_planqueue")
+    rg = importlib.import_module("wl_reggate")
+
+    rel = pq.QUEUE_REL
+    (tmp_path / rel).parent.mkdir(parents=True)
+    (tmp_path / rel).write_text(head_text, encoding="utf-8")
+    for args in (
+        ["init", "-q"],
+        ["add", "-A"],
+        ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "seed"],
+    ):
+        subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True)
+    return pq, rg, tmp_path / rel
+
+
+def test_inflight_only_refresh_of_queue_md_is_not_fixset_work(tmp_path):
+    """A stop that only rewrote the `## In flight` block (or added the section to a HEAD without it) asks nothing about QUEUE.md."""
+    pq, rg, path = _queue_repo(tmp_path, "# Queue\n\n## Promoted\n\n- a\n")
+    path.write_text(
+        pq.with_inflight(path.read_text(encoding="utf-8"), "- Mode: x\n"), encoding="utf-8"
+    )
+    assert rg._hook_refresh_only(str(tmp_path), pq.QUEUE_REL)
+    subprocess.run(["git", "add", "-A"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "s2"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    path.write_text(
+        pq.with_inflight(path.read_text(encoding="utf-8"), "- Mode: y\n"), encoding="utf-8"
+    )
+    assert rg._hook_refresh_only(str(tmp_path), pq.QUEUE_REL)
+    assert rg.fixset_files(str(tmp_path), [])[0] == []
+
+
+def test_real_queue_md_edit_outside_the_block_still_counts(tmp_path):
+    """PLANTED RED: an edit outside the markers, with or without a refreshed block, stays in the fix-set."""
+    pq, rg, path = _queue_repo(tmp_path, "# Queue\n\n## Promoted\n\n- a\n")
+    text = pq.with_inflight(path.read_text(encoding="utf-8"), "- Mode: x\n")
+    path.write_text(text.replace("- a\n", "- a\n- b\n"), encoding="utf-8")
+    assert not rg._hook_refresh_only(str(tmp_path), pq.QUEUE_REL)
+    assert pq.QUEUE_REL in rg.fixset_files(str(tmp_path), [])[0]

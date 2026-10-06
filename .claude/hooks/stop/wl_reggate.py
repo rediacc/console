@@ -396,6 +396,7 @@ def fixset_files(root, ids, live_paths=None):
         return sorted(files), "diff-tree"
     status = C._git(root, "status", "--porcelain") or ""
     dirty = {_porcelain_path(ln) for ln in status.splitlines() if ln.strip()}
+    dirty = {rel for rel in dirty if not _hook_refresh_only(root, rel)}
     files.update(dirty)
     files.update(_expand_gitlinks(root, _gitlink_moves_status(root, sorted(dirty))))
     # A TICK ANSWERS FOR ITS OWN WRITERS (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.2). An item that had agent lease workers is asked about exactly the dirty files those workers changed, not the whole tree: at 19:47:31 on 2026-09-24 the judge picked a "class" out of another writer's uncommitted rewrites. An item that never had a worker lease keeps the status arm below.
@@ -409,6 +410,27 @@ def fixset_files(root, ids, live_paths=None):
         if kept != files:
             return sorted(kept), "status-minus-live-writers"
     return sorted(files), "status-fallback"
+
+
+QUEUE_REL = "agent/plans/QUEUE.md"
+
+
+def _hook_refresh_only(root, rel):
+    """True when the dirty `rel` is agent/plans/QUEUE.md and its only difference from HEAD lies inside the `## In flight` markers, which the Stop hook itself rewrites on every stop (wl_planqueue.refresh_inflight, 94e9221b0). That rewrite is the hook's runtime state, not the session's work, and counting it put the proof and sweep questions on every stop (test_r1_a_live_writers_edit_asks_no_sweep_or_proof). Any other change to the file keeps it in the fix-set."""
+    if rel != QUEUE_REL:
+        return False
+    import wl_planqueue as Q  # noqa: PLC0415 -- stdlib-only sibling, imported where needed
+
+    try:
+        now = (pathlib.Path(root) / rel).read_text(encoding="utf-8")
+    except OSError:
+        return False
+    head = C._git(root, "show", "HEAD:%s" % rel)
+    if head is None:
+        return False
+
+    # Both sides get the same placeholder body: a HEAD that predates the section gains `## In flight` and its intro from `with_inflight`, exactly as the refresh did.
+    return Q.with_inflight(now, "").rstrip("\n") == Q.with_inflight(head, "").rstrip("\n")
 
 
 def _covers(paths, rel):
