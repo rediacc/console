@@ -132,7 +132,7 @@ DEFECTS: dict[str, tuple[str, str]] = {
     ),
     # A waiter that wakes takes the tokens free at that instant and does not settle: a holder whose tokens are freed one by one leaves it a partial grant.
     "no-settle": (
-        "            if got and told and len(got) < maximum:\n",
+        "            if got and blocked and len(got) < maximum:\n",
         "            if False:\n",
     ),
     # Acquire without LOCK_NB: the second acquirer blocks in the kernel on the first held token.
@@ -480,14 +480,17 @@ class Pool:
         """`try_acquire`, and with `wait` retried whole until it succeeds or `timeout` seconds pass."""
         deadline = None if timeout is None else time.monotonic() + timeout
         told = False
+        blocked = False
         while True:
             got = self.try_acquire(minimum, maximum, label)
-            if got and told and len(got) < maximum:
+            if got and blocked and len(got) < maximum:
                 got = self._settle(got, maximum, label)
             if got or not wait:
                 return got
             if deadline is not None and time.monotonic() >= deadline:
                 return []
+            # Settling keys on having BLOCKED, not on having announced it: a caller with no on_wait blocks just the same.
+            blocked = True
             if not told and on_wait is not None:
                 on_wait()
                 told = True
