@@ -168,8 +168,7 @@ def _record_world(_unused):
     """One compacted record and one ordinary plan, at fixed paths."""
     os.makedirs(os.path.join(WORLD, "agent"), exist_ok=True)
     for path, text in ((RECORD, RECORD_TEXT), (PLAIN, PLAIN_TEXT)):
-        with open(path, "w", encoding="utf-8") as handle:
-            handle.write(text)
+        hookio.write_world_file(path, text)
     return WORLD
 
 

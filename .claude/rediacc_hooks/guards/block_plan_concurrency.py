@@ -54,13 +54,11 @@ def _conc_world(_unused):
     plans = tree / "agent" / "plans"
     plans.mkdir(parents=True, exist_ok=True)
     (tree / ".git").mkdir(exist_ok=True)
-    (plans / "PLAN-e.md").write_text(
+    hookio.write_world_file(
+        plans / "PLAN-e.md",
         _PLAN % ("e", _PEER, "exclusive -- regenerates every golden file", "docs/e/**"),
-        encoding="utf-8",
     )
-    (plans / "PLAN-f.md").write_text(
-        _PLAN % ("f", _SID[:8], "parallel", "docs/f/**"), encoding="utf-8"
-    )
+    hookio.write_world_file(plans / "PLAN-f.md", _PLAN % ("f", _SID[:8], "parallel", "docs/f/**"))
     store = pathlib.Path(WORLD) / "store"
     store.mkdir(parents=True, exist_ok=True)
     (pathlib.Path(WORLD) / "tmp").mkdir(parents=True, exist_ok=True)
@@ -72,8 +70,8 @@ def _conc_world(_unused):
         {"ev": "lease", "id": "e0e0e0e0", "at": at, "by": _PEER, "until": until, "worker": "a9e9e9e9e9", "note": "", "worker_verified": True},
         {"ev": "add", "id": "f0f0f0f0", "at": at, "by": _SID[:8], "s": " ", "o": _SID[:8], "t": "(%s) edit docs PLAN-f.md [f1f1f1f1]" % _SID[:8]},
     ]  # fmt: skip
-    (store / ("%s.jsonl" % _PEER)).write_text(
-        "".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8"
+    hookio.write_world_file(
+        store / ("%s.jsonl" % _PEER), "".join(json.dumps(r) + "\n" for r in rows)
     )
     return WORLD
 
