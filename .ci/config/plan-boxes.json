@@ -730,25 +730,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-gate-drop-receipt-verify.md": {
-      "status": "draft",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 8,
-      "open_sigs": [],
-      "done_sigs": [
-        "3054a1df",
-        "3124130f",
-        "49df9a96",
-        "8a268fb2",
-        "99f5e08e",
-        "bace249f",
-        "cb4c0152",
-        "fc15df5e"
-      ]
-    },
     "agent/plans/PLAN-gh-swallow-gates-audit.md": {
       "status": "compacted",
       "owner": "f4da5c2e",
@@ -2961,6 +2942,25 @@
         "0c17f780",
         "1ccee8c9",
         "3fa927dc"
+      ]
+    },
+    "agent/plans/_done/PLAN-gate-drop-receipt-verify.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-06",
+      "open": 0,
+      "done": 8,
+      "open_sigs": [],
+      "done_sigs": [
+        "3054a1df",
+        "3124130f",
+        "49df9a96",
+        "8a268fb2",
+        "99f5e08e",
+        "bace249f",
+        "cb4c0152",
+        "fc15df5e"
       ]
     },
     "agent/plans/_done/PLAN-github-actions-to-bitwarden.md": {
