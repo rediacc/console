@@ -1,4 +1,4 @@
-{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 10, "source": "bash", "twin": ".ci/scripts/deploy/promote-r2-to-stable.sh", "twin_blob": "0915212d6c56a5d639bfe911e46e8cca39092cfd"}}
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 10, "source": "bash", "twin": ".ci/scripts/deploy/promote-r2-to-stable.sh", "twin_blob": "b824827a113723aa00c33a3c07ca1409799aed2f"}}
 {"_silent": []}
 {"_key": "test_a_missing_aws_refuses_before_the_variable_guards#90155f47f67166fa", "err": "\u2717 Required command 'aws' is not available\n", "out": "", "rc": "1"}
 {"_key": "test_a_missing_aws_refuses_before_the_variable_guards#90155f47f67166fa|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
