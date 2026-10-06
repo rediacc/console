@@ -689,7 +689,7 @@ N_STOP_HOOK_OFF = (
 CLI_QUEUE_SET_USAGE = (
     'usage: --queue-set <me> [key=value ...] [--note "<text>"]\n'
     "Writes the `## Settings` block of agent/plans/QUEUE.md: stop_hook, turbo (on|off), "
-    "batch_size, writer_cap (integers >= 1), cadence, agent_hint, agent_pushback, judge "
+    "batch_size, writer_cap, commit_remind_min (integers >= 1), cadence, agent_hint, agent_pushback, judge "
     "(on|off). Every pair is validated before the file is touched, the write is atomic, "
     "and nothing is committed: the verb prints the `git add` line. With no pair it prints "
     "the effective settings, where each value comes from, and any problems.\n"
@@ -2163,6 +2163,7 @@ Per-commit reviews (agent/reviews/<branch>/: clean.jsonl, plus <sha40>.md per ot
 Plan queue switchboard (agent/plans/QUEUE.md `## Settings`):
   --queue-set <me> [key=value ...] [--note "<text>"]
                                 write stop_hook, turbo, batch_size, writer_cap,
+                                commit_remind_min,
                                 cadence, agent_hint, agent_pushback or judge;
                                 every pair is validated before the file is
                                 touched, the write is atomic, nothing is
