@@ -227,6 +227,7 @@ def test_missing_github_repository_fails_the_same_way_reworded(tmp_path: pathlib
 
 # --- port-only: the deliberate difference. The twin cannot answer these. ---
 
+
 def run_port(tmp_path: pathlib.Path, env_extra: dict[str, str]) -> tuple[int, str, str, str]:
     bindir = _make_fake_gh(tmp_path)
     out_file = tmp_path / "port-output.txt"
@@ -324,7 +325,9 @@ def test_auto_derive_with_no_staged_candidate_gives_a_clear_error(
         },
     )
     assert rc == 1
-    assert "::error::None of the 2 newest green push Console CI runs on main staged artifacts" in out
+    assert (
+        "::error::None of the 2 newest green push Console CI runs on main staged artifacts" in out
+    )
     assert "Cannot auto-derive ci_run_id" in out
     assert written == ""
 
