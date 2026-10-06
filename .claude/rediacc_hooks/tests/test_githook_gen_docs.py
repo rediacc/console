@@ -374,10 +374,12 @@ def test_a_committed_generator_without_affected_is_skipped_loudly(tmp_path):
 
     Measured then: `ERR_MODULE_NOT_FOUND ... sel/scripts/lib/doc-providers.js`, an UNCHECKED refusal of a commit the hook had no declarations to judge by. Now: allowed, with a notice, and node never started (the notice is printed before node is looked up).
     """
-    head_generator = _git(REPO_ROOT, "show", "84cfe4e55:" + GEN).stdout
-    assert "'--affected'" not in head_generator, (
-        "control setup: that commit's generator is the pre-hook one"
+    # THE PRE-HOOK SHAPE, INLINE. This read `git show 84cfe4e55:<generator>`, and CI's checkout does not reach that commit ("fatal: invalid object name", PR #597 run 37474435204). The two properties that matter are spelled out: no `--affected` mode, and a `.js` import plain node cannot resolve.
+    head_generator = (
+        "import { providers } from '../lib/doc-providers.js';\n"
+        "for (const p of providers) p.render(process.argv.includes('--write'));\n"
     )
+    assert "'--affected'" not in head_generator, "control setup: the pre-hook generator"
     proc = _commit_a(_tiny_repo(tmp_path, head_generator), tmp_path)
     assert proc.returncode == 0, proc.stderr
     assert "has no --affected mode yet; not checked" in proc.stderr
