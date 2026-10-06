@@ -68,6 +68,14 @@ if argv[:2] == ["run", "download"]:
     sys.exit(0)
 
 if argv[:1] == ["api"]:
+    flaky = int(os.environ.get("FAKE_GH_JOBS_502_FIRST", "0"))
+    counter = os.environ.get("FAKE_GH_JOBS_ATTEMPT_FILE")
+    if flaky and counter:
+        seen = int(open(counter).read() or "0") if os.path.exists(counter) else 0
+        open(counter, "w").write(str(seen + 1))
+        if seen < flaky:
+            sys.stderr.write("gh: Server Error (HTTP 502)\\n")
+            sys.exit(1)
     rc = int(os.environ.get("FAKE_GH_JOBS_RC", "0"))
     if rc != 0:
         sys.stderr.write("gh: fake api failure\\n")
@@ -151,6 +159,8 @@ def _base_env(
         "GITHUB_STEP_SUMMARY": str(summary),
         "SCOPE_SHADOW_OUT": str(out_dir),
         "SCOPE_SHADOW_TIMEOUT": "2",
+        # The subject imports rediacc_ci.core.gh_retry for its retry policy; the copy in the fixture tree reaches the real package, as `PYTHONPATH=.ci` does in ci.yml.
+        "PYTHONPATH": str(ROOT / ".ci"),
         **extra,
     }
     return env, summary
@@ -230,6 +240,46 @@ def test_jobs_api_failure_is_a_gap(tmp_path: pathlib.Path) -> None:
     result, _ = run_port(root, tmp_path, "jobs-fail", FAKE_GH_JOBS_RC="2")
     assert result.returncode == 0
     assert "could not read the jobs API" in result.stdout
+
+
+def test_a_transient_502_is_retried_with_backoff_and_then_reconciles(
+    tmp_path: pathlib.Path,
+) -> None:
+    """PR #597's run 37507913738 attempt 2: one `gh: Server Error (HTTP 502)` failed CI Complete under SCOPE_MODE=reduced. Two 502s now clear on the third attempt."""
+    root = _fixture(tmp_path)
+    counter = tmp_path / "jobs-attempts"
+    result, _ = run_port(
+        root,
+        tmp_path,
+        "jobs-502",
+        SCOPE_MODE="reduced",
+        FAKE_GH_JOBS_502_FIRST="2",
+        FAKE_GH_JOBS_ATTEMPT_FILE=str(counter),
+        SCOPE_SHADOW_RETRY_DELAY="0",
+    )
+    assert result.returncode == 0, result.stdout
+    assert counter.read_text() == "3"
+    assert "retry 1 of 2" in result.stdout
+    assert "retry 2 of 2" in result.stdout
+    assert "could not read the jobs API" not in result.stdout
+
+
+def test_a_non_transient_jobs_error_is_not_retried(tmp_path: pathlib.Path) -> None:
+    root = _fixture(tmp_path)
+    log = tmp_path / "gh.log"
+    result, _ = run_port(
+        root,
+        tmp_path,
+        "jobs-4xx",
+        FAKE_GH_JOBS_RC="2",
+        FAKE_GH_LOG=str(log),
+        SCOPE_SHADOW_RETRY_DELAY="0",
+    )
+    assert "could not read the jobs API" in result.stdout
+    assert "retry" not in result.stdout
+    assert sum(1 for line in log.read_text().splitlines() if line.startswith("api\t")) == 1, (
+        log.read_text()
+    )
 
 
 def test_jobs_pages_merge_into_one_document(tmp_path: pathlib.Path) -> None:
@@ -340,6 +390,7 @@ def test_summary_unset_duplicates_the_whole_output(tmp_path: pathlib.Path) -> No
     fake_bin = _fake_gh_bin(tmp_path / "fakebin-summary-unset")
     env = {
         "PATH": f"{fake_bin}:{os.environ.get('PATH', '')}",
+        "PYTHONPATH": str(ROOT / ".ci"),
         "GITHUB_REPOSITORY": GH_REPO,
         "GITHUB_RUN_ID": "12345",
         "SCOPE_SHADOW_OUT": str(tmp_path / "out-summary-unset"),
@@ -396,6 +447,7 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     fake_bin = _fake_gh_bin(tmp_path / "fakebin-plant")
     env = {
         "PATH": f"{fake_bin}:{os.environ.get('PATH', '')}",
+        "PYTHONPATH": str(ROOT / ".ci"),
         "GITHUB_REPOSITORY": GH_REPO,
         "GITHUB_RUN_ID": "12345",
         "GITHUB_STEP_SUMMARY": str(tmp_path / "summary-plant.md"),
