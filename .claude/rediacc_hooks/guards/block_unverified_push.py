@@ -314,6 +314,8 @@ def _repo_v2_carried(path, variant, origin_verdict="ok"):
     git("add", "-A")
     git("commit", "-q", "-m", "A")
     tree_a = git("rev-parse", "HEAD^{tree}")
+    if not tree_a:
+        raise RuntimeError("fixture: rev-parse HEAD^{tree} printed nothing")
     lines = v2_input_lines(
         v2_ls_tree(str(path), tree_a), V2_FX_INPUTS["globs"], V2_FX_INPUTS["files"]
     )
@@ -353,6 +355,8 @@ def _repo_v2_carried(path, variant, origin_verdict="ok"):
     git("add", "-A")
     git("commit", "-q", "-m", "B")
     tree_b = git("rev-parse", "HEAD^{tree}")
+    if not tree_b:
+        raise RuntimeError("fixture: rev-parse HEAD^{tree} printed nothing")
     carried = dict(fx, carriedFrom={"headTree": tree_a, "finishedAt": "2026-10-06T00:00:00Z"})
     failed = [V2_FX] if origin_verdict == "fail" else []
     if variant == "red-dropped":
