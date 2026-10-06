@@ -26,6 +26,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_gate_lanes.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_gate_skip_announcer.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_generate_tag_inputs.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_gh_retry_reads.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_go_module_sync.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_installmethods_linuxpkg_idiom.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_label_guide_comment.py",
