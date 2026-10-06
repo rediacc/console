@@ -65,7 +65,7 @@ def remind(doc, now=None):
 
     session = str(doc.get("session_id") or "")
     root = C.project_root(C.project_start(doc))
-    worklist = C.worklist_for(root)
+    worklist = C.worklist_for(C.project_start(doc))
     sidecar = worklist.with_suffix(".commitremind-%s" % (session or "unknown")[:8])
     if throttled(sidecar, now):
         return ""
