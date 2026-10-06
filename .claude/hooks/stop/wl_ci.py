@@ -698,7 +698,10 @@ def ci_cancel_cause(root, info, gate):
     diag = _load_diagnose()
     if diag is None or not run_id or not info.get("owner"):
         return unknown
-    fetch = diag.GhFetcher("%s/%s" % (info["owner"], info["name"]), cwd=root, timeout=20)
+    # The Stop hook's budget: at most two reads and one 2 s pause on a transient 5xx (PLAN-gh-retry G8).
+    fetch = diag.GhFetcher(
+        "%s/%s" % (info["owner"], info["name"]), cwd=root, timeout=20, attempts=2, pause=2
+    )
     run, _err = diag.run_info(fetch, run_id)
     if run is None:
         return unknown

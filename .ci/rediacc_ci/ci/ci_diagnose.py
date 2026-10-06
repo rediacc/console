@@ -4,7 +4,7 @@
 WHY THIS EXISTS. On 2026-10-02 Console CI run 36953549081 (PR #591, head a7f30558) was cancelled with 104 jobs green, 33 skipped, 29 cancelled and nothing failed. The cause lived on a DIFFERENT run: Watchdog Monitor run 36956399799 annotated `CI BUDGET VIOLATION: 'Tests + Infra / E2E Workers (fedora-43, 1/8)' ran 20.1m (budget 20m)`, and the job's own log showed why: renet's `essentials`
 setup phase took 416 s and 916 s on two VMs and logged nothing meanwhile. Reconstructing that took dozens of hand-written `gh api` calls. Every step of that reconstruction is a function here, so the tracer (`.ci/scripts/ci/ci-trace.py`) and the CI-side publisher (`rediacc_ci.ci.publish_ci_verdict`) answer from ONE implementation.
 
-STDLIB ONLY, NO rediacc_ci IMPORTS. ci-trace.py loads this file by path (it has no `.ci` hop), and the Stop hook's wl_ci.py loads it lazily for cancel attribution, so an import of the package would break both.
+STDLIB ONLY AT IMPORT TIME, NO rediacc_ci IMPORTS. The one exception is `_gh_retry()`, which reaches `rediacc_ci.core.gh_retry` lazily, on the first retried read, so the retry policy has a single home. ci-trace.py loads this file by path (it has no `.ci` hop), and the Stop hook's wl_ci.py loads it lazily for cancel attribution, so an import of the package would break both.
 
 THE FETCH IS INJECTED. Every network-reading function takes a fetcher as its first argument: `GhFetcher` shells out to `gh api` on a workstation, `HttpFetcher` speaks REST with a token on a runner, and the tests pass a dict-backed fake. Nothing in here reaches the network on its own.
 
@@ -19,6 +19,7 @@ import os
 import pathlib
 import re
 import subprocess
+import time
 import urllib.error
 import urllib.request
 
@@ -217,15 +218,39 @@ def _full(repo, path):
     return "repos/%s/%s" % (repo, path)
 
 
-class GhFetcher:
-    """Reads through the local `gh` CLI. Never raises: every error comes back as a string."""
+def _gh_retry():
+    """`rediacc_ci.core.gh_retry`, imported on first use. This module is loaded by path (no `.ci` on sys.path), so `.ci` is put there through the canonical resolver, `rediacc_ci.paths.on_sys_path`, itself loaded by file: importing it by name would already need the hop (test_canonical_sys_path_hop)."""
+    import importlib.util  # noqa: PLC0415 - only this lookup needs it
 
-    def __init__(self, repo, cwd=None, timeout=60):
+    ci_root = pathlib.Path(__file__).resolve().parents[2]
+    spec = importlib.util.spec_from_file_location(
+        "_rediacc_ci_paths", ci_root / "rediacc_ci" / "paths.py"
+    )
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load %s" % (ci_root / "rediacc_ci" / "paths.py"))
+    paths_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(paths_mod)
+    paths_mod.on_sys_path(ci_root)
+    from rediacc_ci.core import gh_retry  # noqa: PLC0415
+
+    return gh_retry
+
+
+class GhFetcher:
+    """Reads through the local `gh` CLI. Never raises: every error comes back as a string.
+
+    A TRANSIENT fault (a 5xx or a dropped connection, per gh_retry.is_transient) is retried; a 4xx, a timeout and any other failure come back at once. `attempts` and `pause` bound the wait: the defaults are gh_retry's policy (three attempts, 5 s then 15 s), and the Stop hook passes `attempts=2, pause=2` so a blip costs it two seconds, not twenty. Live: `ci-trace.py --run 37507913738` read "HTTP 502" twice on 2026-10-06 and gave up on the first.
+    """
+
+    def __init__(self, repo, cwd=None, timeout=60, attempts=None, pause=None, sleep=None):
         self.repo = repo
         self.cwd = str(cwd) if cwd else None
         self.timeout = timeout
+        self.attempts = attempts
+        self.pause = pause
+        self.sleep = sleep
 
-    def _run(self, args):
+    def _once(self, args):
         try:
             out = subprocess.run(
                 ["gh", "api", *args],
@@ -242,6 +267,16 @@ class GhFetcher:
                 (out.stderr or out.stdout or "").strip() or "gh exited %d" % out.returncode
             )[-200:]
         return out.stdout, ""
+
+    def _run(self, args):
+        retry = _gh_retry()
+        nap = self.sleep or time.sleep
+        return retry.retry_transient(
+            lambda: self._once(args),
+            lambda r: None if r[0] is not None else (r[1] or "failed"),
+            attempts=self.attempts or retry.ATTEMPTS,
+            sleep=(lambda _scheduled: nap(self.pause)) if self.pause is not None else nap,
+        )
 
     def json(self, path):
         raw, err = self._run([_full(self.repo, path)])
