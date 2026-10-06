@@ -27,7 +27,10 @@ import subprocess
 import sys
 import typing
 
+import pytest
+
 from rediacc_ci import paths
+from rediacc_ci.core import ghx
 from rediacc_ci.version import detect_bump_type as port
 
 if typing.TYPE_CHECKING:
@@ -552,3 +555,64 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     assert PORT.read_text(encoding="utf-8") == original, (
         "port source must be restored byte-identical"
     )
+
+
+# --- gh_retry seam (PLAN-gh-retry G2): in-process, ghx.gh faked, backoff not slept. ---
+
+_502 = "gh: Server Error (HTTP 502)"
+
+
+def _scan(
+    monkeypatch: pytest.MonkeyPatch, answers: dict[str, list[ghx.GhResult]], shas: list[str]
+) -> tuple[str, dict[str, int]]:
+    counts: dict[str, int] = {}
+
+    def fake(args: list[str], **_kw: object) -> ghx.GhResult:
+        sha = args[1].split("/commits/")[1].split("/")[0]
+        counts[sha] = counts.get(sha, 0) + 1
+        queue = answers[sha]
+        return queue.pop(0) if len(queue) > 1 else queue[0]
+
+    monkeypatch.setattr(ghx, "gh", fake)
+    monkeypatch.setattr("time.sleep", lambda _s: None)
+    monkeypatch.setenv("GITHUB_REPOSITORY", "acme/widget")
+    return port.Detector(verbose=False).scan(shas, "test-range"), counts
+
+
+def test_a_502_then_success_on_a_commit_read_still_finds_the_label(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ok = ghx.GhResult(["gh"], 0, "7 bump-major\n", "")
+    verdict, counts = _scan(monkeypatch, {"aaa": [ghx.GhResult(["gh"], 1, "", _502), ok]}, ["aaa"])
+    assert verdict == "major"
+    assert counts == {"aaa": 2}
+
+
+def test_a_persistent_502_fails_the_decision_instead_of_skipping_the_commit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    bad = ghx.GhResult(["gh"], 1, "", _502)
+    answers = {"aaa": [bad], "bbb": [ghx.GhResult(["gh"], 0, "", "")]}
+    with pytest.raises(port.UnreadableCommitError, match="HTTP 502"):
+        _scan(monkeypatch, answers, ["aaa", "bbb"])
+
+
+def test_main_exits_1_with_no_verdict_on_an_unreadable_commit(
+    monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    def boom(_self: object) -> str:
+        raise port.UnreadableCommitError("abcdef0123", _502)
+
+    monkeypatch.setattr(port.Detector, "run", boom)
+    assert port.main([]) == 1
+    captured = capfd.readouterr()
+    assert captured.out == ""
+    assert "HTTP 502" in captured.err
+
+
+def test_a_404_commit_read_keeps_the_skip_meaning(monkeypatch: pytest.MonkeyPatch) -> None:
+    notfound = ghx.GhResult(["gh"], 1, "", "gh: Not Found (HTTP 404)")
+    ok = ghx.GhResult(["gh"], 0, "8 bump-minor\n", "")
+    verdict, counts = _scan(monkeypatch, {"aaa": [notfound], "bbb": [ok]}, ["aaa", "bbb"])
+    assert verdict == "minor"
+    assert counts == {"aaa": 1, "bbb": 1}

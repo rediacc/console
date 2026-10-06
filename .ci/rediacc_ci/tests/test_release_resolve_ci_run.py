@@ -15,11 +15,15 @@ import stat
 import sys
 from typing import TYPE_CHECKING
 
+from rediacc_ci.core import ghx
+from rediacc_ci.release import resolve_ci_run
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import GH_REPO
 
 if TYPE_CHECKING:
     import pathlib
+
+    import pytest
 
 TWIN = ".ci/scripts/release/resolve-ci-run.sh"
 MODULE = "resolve_ci_run"
@@ -362,3 +366,112 @@ def test_explicit_no_op_run_id_proceeds_under_allow_stale(tmp_path: pathlib.Path
     rc, _out, err, written = run_port(tmp_path, _explicit_env("{}", ALLOW_STALE="true"))
     assert (rc, err) == (0, "")
     assert written == "ci_run_id=42\nci_sha=cafe\n"
+
+
+# --- gh_retry seam (PLAN-gh-retry G1): in-process, ghx.gh faked, backoff not slept. ---
+
+_502 = "gh: Server Error (HTTP 502)"
+
+
+def _ok(out: str) -> ghx.GhResult:
+    return ghx.GhResult(["gh"], 0, out, "")
+
+
+def _bad(err: str, rc: int = 1) -> ghx.GhResult:
+    return ghx.GhResult(["gh"], rc, "", err)
+
+
+def _drive(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: pathlib.Path,
+    answers: dict[str, list[ghx.GhResult]],
+    env: dict[str, str],
+) -> tuple[int, str, str]:
+    """Run main() with ghx.gh answering by URL substring from per-key queues (the last answer repeats)."""
+    calls: list[str] = []
+
+    def fake(args: list[str], **_kw: object) -> ghx.GhResult:
+        url = args[1]
+        calls.append(url)
+        for key, queue in answers.items():
+            if key in url:
+                return queue.pop(0) if len(queue) > 1 else queue[0]
+        raise AssertionError("unexpected gh call %s" % url)
+
+    monkeypatch.setattr(ghx, "gh", fake)
+    monkeypatch.setattr("time.sleep", lambda _s: None)
+    out = tmp_path / "out.txt"
+    for k, v in {"GITHUB_REPOSITORY": GH_REPO, "GITHUB_OUTPUT": str(out), **env}.items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.delenv("GITHUB_SHA", raising=False)
+    monkeypatch.delenv("INPUT_CI_RUN_ID", raising=False)
+    monkeypatch.delenv("ALLOW_STALE", raising=False)
+    for k, v in env.items():
+        monkeypatch.setenv(k, v)
+    rc = resolve_ci_run.main([])
+    return rc, out.read_text() if out.exists() else "", "\n".join(calls)
+
+
+def test_a_502_then_success_on_the_head_sha_read_succeeds(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    def fake_runs(sha: list[ghx.GhResult]) -> dict[str, list[ghx.GhResult]]:
+        return {"/jobs": [_ok("success\n")], "actions/runs/42": sha}
+
+    body = '{"head_branch":"main","name":"Console CI","status":"completed","conclusion":"success"}'
+    # lookup, then sha: the 502 lands on the first sha attempt only.
+    seq = [_ok(body), _bad(_502), _ok("cafe\n")]
+    rc, written, _ = _drive(monkeypatch, tmp_path, fake_runs(seq), {"INPUT_CI_RUN_ID": "42"})
+    assert rc == 0
+    assert written == "ci_run_id=42\nci_sha=cafe\n"
+
+
+def test_a_persistent_502_on_the_head_sha_refuses_without_the_github_sha_fallback(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path, capfd: pytest.CaptureFixture[str]
+) -> None:
+    body = '{"head_branch":"main","name":"Console CI","status":"completed","conclusion":"success"}'
+    answers = {"/jobs": [_ok("success\n")], "actions/runs/42": [_ok(body), _bad(_502)]}
+    rc, written, _ = _drive(
+        monkeypatch,
+        tmp_path,
+        answers,
+        {"INPUT_CI_RUN_ID": "42", "GITHUB_SHA": "wrongsha"},
+    )
+    assert rc == 1
+    assert written == ""
+    assert "HTTP 502" in capfd.readouterr().err
+
+
+def test_a_persistent_502_on_the_stage_jobs_read_is_not_read_as_not_staged(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path, capfd: pytest.CaptureFixture[str]
+) -> None:
+    body = '{"head_branch":"main","name":"Console CI","status":"completed","conclusion":"success"}'
+    answers = {"/jobs": [_bad(_502)], "actions/runs/42": [_ok(body)]}
+    rc, written, _calls = _drive(monkeypatch, tmp_path, answers, {"INPUT_CI_RUN_ID": "42"})
+    assert rc == 1
+    assert written == ""
+    captured = capfd.readouterr()
+    assert "did not stage artifacts" not in captured.out
+    assert "could not be read" in captured.err
+
+
+def test_a_persistent_502_on_the_listing_is_not_no_green_run(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path, capfd: pytest.CaptureFixture[str]
+) -> None:
+    rc, _written, _calls = _drive(
+        monkeypatch, tmp_path, {"workflows/ci.yml/runs": [_bad(_502)]}, {}
+    )
+    assert rc == 1
+    captured = capfd.readouterr()
+    assert "No green Console CI run found" not in captured.out
+    assert "could not be read" in captured.err
+
+
+def test_a_404_on_the_stage_jobs_read_keeps_its_not_staged_meaning(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path, capfd: pytest.CaptureFixture[str]
+) -> None:
+    body = '{"head_branch":"main","name":"Console CI","status":"completed","conclusion":"success"}'
+    answers = {"/jobs": [_bad("gh: Not Found (HTTP 404)")], "actions/runs/42": [_ok(body)]}
+    rc, _written, _calls = _drive(monkeypatch, tmp_path, answers, {"INPUT_CI_RUN_ID": "42"})
+    assert rc == 1
+    assert "did not stage artifacts" in capfd.readouterr().out
