@@ -63,7 +63,7 @@ def repo(tmp_path):
     git(root, "init", "-q", "-b", "topic")
     git(root, "config", "user.email", "t@example.invalid")
     git(root, "config", "user.name", "t")
-    commit(root, L.RECORD_POLICY_REL, json.dumps(POLICY))
+    commit(root, L.record_policy_rel(), json.dumps(POLICY))
     base = commit(root, "src/a.py")
     git(root, "remote", "add", "origin", str(origin))
     git(root, "push", "-q", "origin", "topic")
@@ -134,7 +134,7 @@ def test_missing_garbled_or_unknown_receipts_are_silent(repo):
 
 def test_an_unreadable_record_policy_judges_nothing(repo):
     root, _ = repo
-    commit(root, L.RECORD_POLICY_REL, "{ not json")
+    commit(root, L.record_policy_rel(), "{ not json")
     commit(root, "src/b.py")
     assert L.receipt_behind(root) is None
 
@@ -144,7 +144,7 @@ def test_the_mirrored_record_rules_equal_the_guards_on_the_real_policy():
     guard = importlib.import_module("rediacc_hooks.guards.block_unverified_push")
 
     doc = json.loads((REPO / guard.RECORD_POLICY_REL).read_text(encoding="utf-8"))
-    assert guard.RECORD_POLICY_REL == L.RECORD_POLICY_REL
+    assert L.record_policy_rel() == guard.RECORD_POLICY_REL
     theirs, err = guard.parse_record_policy(doc)
     mine, merr = L.parse_record_policy(doc)
     assert err is None
@@ -380,7 +380,7 @@ def test_a_full_stop_run_carries_receipt_behind_and_still_allows(tmp_path):
     git(proj, "init", "-q", "-b", "topic")
     git(proj, "config", "user.email", "t@example.invalid")
     git(proj, "config", "user.name", "t")
-    commit(proj, L.RECORD_POLICY_REL, json.dumps(POLICY))
+    commit(proj, L.record_policy_rel(), json.dumps(POLICY))
     base = commit(proj, "src/a.py")
     git(proj, "remote", "add", "origin", str(origin))
     git(proj, "push", "-q", "origin", "topic")

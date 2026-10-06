@@ -17,15 +17,22 @@ import subprocess
 RECEIPT_REL = ".ci/cache/prepush-receipt.json"
 
 
-def _record_policy_rel():
-    """`.ci/policy/record-paths.json` through rediacc_ci.policy_paths (check:ci-policy-inventory): wl_proc puts `.ci` on sys.path when it imports, the seam every Stop module already uses to reach rediacc_ci."""
-    import wl_proc  # noqa: F401, PLC0415 -- its import puts .ci on sys.path
-    from rediacc_ci.policy_paths import policy_rel  # noqa: PLC0415
-
-    return policy_rel("record-paths.json")
+_RECORD_POLICY_REL: list[str] = []
 
 
-RECORD_POLICY_REL = _record_policy_rel()
+def record_policy_rel():
+    """`.ci/policy/record-paths.json` through rediacc_ci.policy_paths (check:ci-policy-inventory), resolved on first use and cached: wl_proc puts `.ci` on sys.path when it imports, the seam every Stop module already uses to reach rediacc_ci.
+
+    LAZY, NOT AT IMPORT. A module-level call made `import wl_checks` fail wherever `.ci` is absent, and the Stop-hook tests that copy .claude/hooks/stop into a scratch tree (test_wl_lkg, test_wl_cadence 222j, test_wl_retro r16, test_stop_hook_edit_check) then saw the whole hook as broken. ImportError propagates to the one caller, which answers "unknown".
+    """
+    if not _RECORD_POLICY_REL:
+        import wl_proc  # noqa: F401, PLC0415 -- its import puts .ci on sys.path
+        from rediacc_ci.policy_paths import policy_rel  # noqa: PLC0415
+
+        _RECORD_POLICY_REL.append(policy_rel("record-paths.json"))
+    return _RECORD_POLICY_REL[0]
+
+
 RECORD_POLICY_VERSION = 1
 GIT_TIMEOUT_S = 20
 
@@ -102,7 +109,11 @@ def parse_record_policy(doc):
 
 
 def _records_at_head(root):
-    text = _git(root, "show", "HEAD:%s" % RECORD_POLICY_REL)
+    try:
+        rel = record_policy_rel()
+    except ImportError:
+        return None
+    text = _git(root, "show", "HEAD:%s" % rel)
     if text is None:
         return None
     try:
