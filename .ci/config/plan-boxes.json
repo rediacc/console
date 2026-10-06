@@ -1043,9 +1043,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
+      "open": 3,
       "done": 0,
       "open_sigs": [
+        "050ca424",
         "7921044d",
         "d03d7256"
       ],

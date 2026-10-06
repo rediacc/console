@@ -528,7 +528,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-plan-dependencies.md` | approved | 376 | 9 | 3 | 34313 |
 | `agent/plans/PLAN-plan-per-pr-loop.md` | approved | 71 | 1 | 15 | 14314 |
 | `agent/plans/PLAN-plan-preflight.md` | approved | 127 | 9 | 0 | 23411 |
-| `agent/plans/PLAN-plan-verbs.md` | draft | 33 | 2 | 0 | 3437 |
+| `agent/plans/PLAN-plan-verbs.md` | draft | 34 | 3 | 0 | 3707 |
 | `agent/plans/PLAN-prepush-full-cpu.md` | approved | 265 | 0 | 31 | 48426 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
 | `agent/plans/PLAN-program-state-in-repo.md` | approved | 47 | 0 | 5 | 6984 |
