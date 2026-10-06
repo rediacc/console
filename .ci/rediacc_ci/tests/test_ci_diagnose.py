@@ -883,3 +883,66 @@ def test_a_nightly_run_on_the_same_head_does_not_supersede_a_push_run(tmp_path):
     )
     d = D.diagnose(FakeFetch(routes), MAIN_RUN, cache_dir=tmp_path)
     assert d["cause"]["kind"] == "superseded", d["cause"]
+
+
+# ---- GhFetcher transient retry (PLAN-gh-retry G8) ----------------------------------
+
+
+class _Proc:
+    def __init__(self, rc, out="", err=""):
+        self.returncode, self.stdout, self.stderr = rc, out, err
+
+
+def _fetcher_with(monkeypatch, replies, **kw):
+    calls: list = []
+    naps: list = []
+
+    def fake_run(argv, **_kw):
+        calls.append(argv)
+        return replies[min(len(calls), len(replies)) - 1]
+
+    monkeypatch.setattr(D.subprocess, "run", fake_run)
+    return D.GhFetcher("o/r", sleep=naps.append, **kw), calls, naps
+
+
+def test_ghfetcher_retries_a_502_once_then_succeeds(monkeypatch):
+    f, calls, naps = _fetcher_with(
+        monkeypatch, [_Proc(1, err="gh: Server Error (HTTP 502)"), _Proc(0, out='{"a": 1}')]
+    )
+    assert f.json("actions/runs/1/jobs") == ({"a": 1}, "")
+    assert len(calls) == 2
+    assert naps == [5.0]
+
+
+def test_ghfetcher_bounded_policy_pauses_the_short_interval(monkeypatch):
+    f, _calls, naps = _fetcher_with(
+        monkeypatch,
+        [_Proc(1, err="HTTP 503"), _Proc(0, out="{}")],
+        attempts=2,
+        pause=2,
+    )
+    assert f.json("x")[1] == ""
+    assert naps == [2]
+
+
+def test_ghfetcher_persistent_502_reads_unreadable_after_the_retries(monkeypatch):
+    f, calls, naps = _fetcher_with(monkeypatch, [_Proc(1, err="gh: Server Error (HTTP 502)")])
+    data, err = f.json("x")
+    assert data is None
+    assert "502" in err
+    assert len(calls) == 3
+    assert naps == [5.0, 15.0]
+
+
+def test_ghfetcher_bounded_persistent_502_makes_two_calls_one_pause(monkeypatch):
+    f, calls, naps = _fetcher_with(monkeypatch, [_Proc(1, err="HTTP 502")], attempts=2, pause=2)
+    assert f.json("x")[0] is None
+    assert len(calls) == 2
+    assert naps == [2]
+
+
+def test_ghfetcher_404_is_one_call_and_no_pause(monkeypatch):
+    f, calls, naps = _fetcher_with(monkeypatch, [_Proc(1, err="gh: Not Found (HTTP 404)")])
+    assert f.json("x")[0] is None
+    assert len(calls) == 1
+    assert naps == []

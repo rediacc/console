@@ -69,6 +69,9 @@ D = importlib.util.module_from_spec(_DG_SPEC)
 sys.modules["ci_diagnose"] = D
 _DG_SPEC.loader.exec_module(D)
 
+# gh_retry through ci_diagnose's accessor, which reaches `.ci` via the canonical resolver; a hop here would be a second, hand-written copy (test_canonical_sys_path_hop).
+_GH_RETRY = D._gh_retry()
+
 POLL_SECONDS = int(os.environ.get("CI_TRACE_POLL_S", "25"))
 MAX_READ_FAILURES = int(os.environ.get("CI_TRACE_MAX_READ_FAILURES", "5"))
 # How often a --wait re-reads the PR's bot comments. A review attempt or summary lands minutes apart, so a 25 s poll of the comments would spend reads for nothing.
@@ -127,8 +130,9 @@ def _run_snapshot(root, run_id):
 
     Reads per-JOB conclusions, not the run-level conclusion alone: a run whose status is `completed` can still carry a failed job, and the run-level field is the same coarse signal ci_classify refuses to treat as a verdict.
     """
-    try:
-        out = subprocess.run(
+
+    def _view():
+        return subprocess.run(
             [
                 "gh",
                 "run",
@@ -144,6 +148,12 @@ def _run_snapshot(root, run_id):
             timeout=60,
             check=False,
             cwd=str(root),
+        )
+
+    try:
+        # A 5xx or dropped connection is retried with gh_retry's backoff; a 4xx or a timeout reads unreadable at once (live 2026-10-06: run 37507913738 gave "HTTP 502" twice).
+        out = _GH_RETRY.retry_transient(
+            _view, lambda r: None if r.returncode == 0 else (r.stderr or "failed")
         )
     except (OSError, subprocess.SubprocessError) as exc:
         return None, None, "could not read run %s: %s" % (run_id, exc), ""
