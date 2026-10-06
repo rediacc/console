@@ -97,12 +97,12 @@ import os
 import pathlib
 import re
 import shutil
-import subprocess
 import sys
 import time
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
+from rediacc_ci.core import gh_retry as gh_retry_core
 from rediacc_ci.well_known import GH_REPO, OPERATOR_EMAIL
 
 # The default repository, matching `${GITHUB_REPOSITORY:-rediacc/console}`.
@@ -126,8 +126,8 @@ PROJECTION = (
 # The PR metadata read: the compare range's two ends, plus the PR's own commit count. Three values in one line because the twin reads them with `read -r`, and one call rather than three keeps the two implementations comparable.
 PR_META_JQ = '"\\(.base.sha) \\(.head.sha) \\(.commits)"'
 
-# The retry schedule from `common.sh`'s `_gh_probe`: three attempts, 3 then 6 seconds apart.
-GH_ATTEMPTS = 3
+# Per-call timeout: a paginated compare read is slower than ghx's 30 s default.
+GH_TIMEOUT_S = 120.0
 
 # The `$comment` written into the generated cache. It is the only thing telling the next reader not to hand-edit a derived file, and it names the entry point that actually regenerates it (the bash twin it once named was retired in W7 P5).
 CACHE_COMMENT = (
@@ -153,43 +153,25 @@ def gh_retry(what: str, args: list[str]) -> tuple[bool, str]:
 
     The exit status is ALWAYS checked. A caller that substituted a default here would reintroduce the defect this helper exists to end.
     """
-    rc = 0
-    stderr = ""
-    for attempt in range(1, GH_ATTEMPTS + 1):
-        try:
-            proc = subprocess.run(["gh", *args], capture_output=True, check=False)
-            rc = proc.returncode
-            stdout = proc.stdout.decode("utf-8", "replace")
-            stderr = proc.stderr.decode("utf-8", "replace")
-        except OSError:
-            rc, stdout, stderr = 127, "", ""
-        if rc == 0:
-            return True, re.sub(r"\n+$", "", stdout)
-        if attempt < GH_ATTEMPTS:
-            log.warn(
-                "%s: gh call failed or returned unusable output (attempt %d/%d), retrying..."
-                % (what, attempt, GH_ATTEMPTS)
-            )
-            time.sleep(attempt * 3)
-    log.error("%s: gh failed after %d attempts (last exit %d)." % (what, GH_ATTEMPTS, rc))
-    if stderr != "":
-        for line in stderr.rstrip("\n").split("\n"):
+    result = gh_retry_core.gh(args, timeout=GH_TIMEOUT_S)
+    if result.ok:
+        return True, re.sub(r"\n+$", "", result.stdout_raw)
+    log.error(
+        "%s: gh failed after retrying transient faults (exit %d)." % (what, result.returncode)
+    )
+    if result.stderr != "":
+        for line in result.stderr.rstrip("\n").split("\n"):
             print("    %s" % line, file=sys.stderr)
     return False, ""
 
 
 def gh_plain(args: list[str]) -> tuple[int, str]:
-    """A single `gh` call with stderr DISCARDED, for the `--refresh` probes.
+    """`gh` for the `--refresh` probes: transient 5xx/connection faults are retried, any other failure (the 404 of `user/emails` included) is answered at once and stderr is dropped.
 
-    Separate from `gh_retry` because `refresh_identity` deliberately does NOT retry: it is an interactive command, and its two calls each have their own handling for the failure.
+    Separate from `gh_retry` because each of the two probes has its own handling for the failure, and the 404 body on stdout is read by the shape filter.
     """
-    try:
-        proc = subprocess.run(
-            ["gh", *args], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False
-        )
-    except OSError:
-        return 127, ""
-    return proc.returncode, proc.stdout.decode("utf-8", "replace")
+    result = gh_retry_core.gh(args, timeout=GH_TIMEOUT_S)
+    return result.returncode, result.stdout_raw
 
 
 def valid_emails(text: str) -> list[str]:

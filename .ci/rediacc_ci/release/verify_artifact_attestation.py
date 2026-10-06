@@ -11,8 +11,9 @@ sorting only makes this port's own output deterministic across runs, it does not
 from __future__ import annotations
 
 import os
-import subprocess
 import sys
+
+from rediacc_ci.core import gh_retry
 
 SELF = "verify-artifact-attestation.py"
 DIST_DIRS = ("dist/cli", "dist/packages")
@@ -55,17 +56,14 @@ def main(argv: list[str]) -> int:
 
     for f in files:
         checked += 1
-        proc = subprocess.run(
-            ["gh", "attestation", "verify", f, "--repo", github_repository],
-            capture_output=True,
-            text=True,
-            check=False,
-            cwd=repo_root,
+        proc = gh_retry.gh(
+            ["attestation", "verify", os.path.join(repo_root, f), "--repo", github_repository],
+            timeout=120,
         )
-        if proc.returncode == 0:
+        if proc.ok:
             continue
         print(f"::error::Build attestation verification FAILED for {f}")
-        combined = proc.stdout + proc.stderr
+        combined = proc.stdout_raw + proc.stderr
         sys.stderr.write(combined)
         failed_list.append(f)
 

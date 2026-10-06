@@ -30,6 +30,9 @@ import os
 import sys
 
 target = sys.argv[3] if len(sys.argv) > 3 else ""
+# The port passes an absolute path (gh_retry has no cwd); the twin a relative one. Normalise so both sides name the same file.
+if os.path.isabs(target):
+    target = os.path.relpath(target, os.getcwd())
 fail_list = os.environ.get("FAKE_GH_FAIL_FILES", "").split(",")
 if target in fail_list and target != "":
     sys.stderr.write("gh attestation verify: no matching attestations for " + target + "\\n")
@@ -70,6 +73,13 @@ def _build_scratch_tree(tmp_path: pathlib.Path) -> None:
     shutil.copy(
         os.path.join(root, ".ci/rediacc_ci/release/verify_artifact_attestation.py"),
         release_pkg / "verify_artifact_attestation.py",
+    )
+    # gh_retry (and what it imports) now sits between the port and `gh`.
+    shutil.copy(os.path.join(root, ".ci/rediacc_ci/proc.py"), rediacc_ci / "proc.py")
+    shutil.copytree(
+        os.path.join(root, ".ci/rediacc_ci/core"),
+        rediacc_ci / "core",
+        ignore=shutil.ignore_patterns("__pycache__"),
     )
 
 
@@ -173,3 +183,51 @@ def test_missing_github_repository_fails_the_same_way_reworded(tmp_path: pathlib
     assert new[0] == 1
     assert "GITHUB_REPOSITORY" in old[2]
     assert "GITHUB_REPOSITORY" in new[2]
+
+
+# --- PLAN-gh-retry G12: a transient fault on the verify read is retried ---------------------
+
+
+def _run_port_in_process(monkeypatch, tmp_path, results, capsys):
+    import importlib
+
+    from rediacc_ci.core import gh_retry, ghx
+
+    mod = importlib.import_module("rediacc_ci.release.verify_artifact_attestation")
+    root = tmp_path / "root"
+    (root / "dist" / "cli").mkdir(parents=True)
+    (root / "dist" / "cli" / "a.tgz").write_text("x", encoding="utf-8")
+    monkeypatch.setattr(mod, "_ROOT", str(root))
+    monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
+    queue = list(results)
+    calls: list[list[str]] = []
+
+    def fake(args, **_kw):
+        calls.append(list(args))
+        rc, out, err = queue.pop(0)
+        return ghx.GhResult(["gh", *args], rc, out, err)
+
+    monkeypatch.setattr(gh_retry.ghx, "gh", fake)
+    monkeypatch.setattr(gh_retry.time, "sleep", lambda _s: None)
+    rc = mod.main([])
+    return rc, calls, capsys.readouterr()
+
+
+def test_transient_fault_is_retried_and_then_passes(monkeypatch, tmp_path, capsys) -> None:
+    rc, calls, _ = _run_port_in_process(
+        monkeypatch,
+        tmp_path,
+        [(1, "", "gh: Server Error (HTTP 502)"), (0, "ok", "")],
+        capsys,
+    )
+    assert rc == 0
+    assert len(calls) == 2
+
+
+def test_missing_attestation_is_not_retried_and_fails(monkeypatch, tmp_path, capsys) -> None:
+    rc, calls, cap = _run_port_in_process(
+        monkeypatch, tmp_path, [(1, "", "no matching attestations")], capsys
+    )
+    assert rc == 1
+    assert len(calls) == 1
+    assert "no matching attestations" in cap.err
