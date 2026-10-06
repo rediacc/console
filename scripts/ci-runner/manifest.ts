@@ -64,7 +64,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:deps',
     run: 'npm run check:deps',
-    slow: true, // 17.8s measured
+    slow: true, // ~33 s measured 2026-10-06 (17.8 s before 0a65fb00e; 86-155 s until the changelog lookups shared the packument cache)
     gate: true,
     leaves: ['scripts/gates/check-deps.ts'],
     ci: {
