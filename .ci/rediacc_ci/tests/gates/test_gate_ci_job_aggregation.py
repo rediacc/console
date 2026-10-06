@@ -23,7 +23,7 @@ GATE = paths.from_root(".ci", "scripts", "quality", "check_ci_job_aggregation.py
 GATE_MODULE = paths.from_root(".ci", "rediacc_ci", "quality", "ci_job_aggregation.py")
 REAL_WORKFLOW = paths.from_root(".github", "workflows", "ci.yml")
 
-# The six jobs the gate exempts. A fixture must declare them, because the gate refuses an exemption that names no job (its liveness check). `pr-labels` joined in 83a41dbc9 (the release bump decided after CI Complete).
+# The seven jobs the gate exempts. A fixture must declare them, because the gate refuses an exemption that names no job (its liveness check). `pr-labels` joined in 83a41dbc9 (the release bump decided after CI Complete); `duplicate-run` joined with the duplicate-run skip (rediacc_ci.ci.sibling_runs).
 EXEMPT_JOBS = [
     "ci-complete",
     "finalize-release-sentinel",
@@ -31,6 +31,7 @@ EXEMPT_JOBS = [
     "cancel-watchdog",
     "build-renet",
     "pr-labels",
+    "duplicate-run",
 ]
 # Ordinary jobs. Enough of them, with the exempt five, to clear the gate's 10-job anti-vacuity floor.
 PLAIN_JOBS = [

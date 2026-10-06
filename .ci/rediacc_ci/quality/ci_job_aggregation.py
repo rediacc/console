@@ -110,6 +110,9 @@ cancel-watchdog
 
 # BLOCKER: its failure already reaches the aggregator, but only INDIRECTLY and by accident. build-docker, build-docker-fast and build-cli each gate on needs.build-renet.result == 'success', so a red build-renet skips all three, and all three are HARD_REQUIRED where a skip is red. ops-tests runs under always() and then dies fetching the missing renet artifact, which is a second, equally accidental path. The outcome is correct today and nothing pins it: dropping the build-renet clause from any of those four ifs, or moving one job to the soft tier, silently makes a red build-renet read as green. Aggregate it directly when the pointer-bump tier logic is next touched, and delete this entry.
 build-renet
+
+# BLOCKER: it is UPSTREAM of initialize and has no verdict to aggregate; initialize runs on !cancelled(), so a red or crashed duplicate check means full CI rather than a skip, and the only thing it decides (duplicate_of, which skips initialize and ci-complete together) is read by ci-complete's if: through needs, not judged by a tier; rediacc_ci.ci.sibling_runs and its tests own the decision
+duplicate-run
 """
 
 
