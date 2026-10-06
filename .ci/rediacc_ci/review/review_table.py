@@ -616,7 +616,12 @@ def _opt(argv: list[str], name: str) -> str:
     return ""
 
 
-USAGE = "\n".join(line.strip() for line in (__doc__ or "").splitlines() if line.startswith("    PYTHONPATH=")) + "\n"
+USAGE = (
+    "\n".join(
+        line.strip() for line in (__doc__ or "").splitlines() if line.startswith("    PYTHONPATH=")
+    )
+    + "\n"
+)
 FLAGS = {"--render-only", "--branch"}
 
 
@@ -625,7 +630,8 @@ def main(argv: list[str] | None = None) -> int:
     if "--help" in argv or "-h" in argv:
         sys.stdout.write(USAGE)
         return 0
-    unknown = [a for i, a in enumerate(argv) if a.startswith("-") and a not in FLAGS and not (i and argv[i - 1] == "--branch")]
+    # A branch name never starts with "-" (git refuses one), so every such argument outside FLAGS is unknown, `--branch`'s value included.
+    unknown = [a for a in argv if a.startswith("-") and a not in FLAGS]
     if unknown:
         sys.stderr.write("review_table: unknown option %s\n%s" % (", ".join(unknown), USAGE))
         return 2

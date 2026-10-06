@@ -91,7 +91,9 @@ PR_NUMBER_RE = re.compile(r"[0-9]+")
 _WS_CLASS = r"[ \t\r\f\v]*"
 # A fence's backticks may arrive backslash-escaped (PR #595 comment 6004950311), so each tick takes an optional backslash.
 _FENCE_TICKS = r"(?:\\?`){3}"
-_FENCE_OPENER = re.compile(r"^%s%s%s%s$" % (_WS_CLASS, _FENCE_TICKS, re.escape(FINDINGS_FENCE), _WS_CLASS))
+_FENCE_OPENER = re.compile(
+    r"^%s%s%s%s$" % (_WS_CLASS, _FENCE_TICKS, re.escape(FINDINGS_FENCE), _WS_CLASS)
+)
 _FENCE_CLOSER = re.compile(r"^%s%s%s$" % (_WS_CLASS, _FENCE_TICKS, _WS_CLASS))
 
 
