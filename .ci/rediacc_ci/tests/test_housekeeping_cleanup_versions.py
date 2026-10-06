@@ -2163,10 +2163,8 @@ def test_phase_9_keeps_a_branch_with_an_open_pr_and_one_it_cannot_date() -> None
     assert "Branches (console): would delete 0, kept 2" in err
 
 
-def test_phase_9_coerces_a_non_numeric_open_pr_count_to_zero() -> None:
-    """A 403 makes gh print a JSON BODY to stdout and exit non-zero, and `|| echo
-    0` only catches the status. The `=~ ^[0-9]+$` guard is what stops the later
-    `-gt` from blowing up in a tight loop."""
+def test_delta_phase_9_keeps_a_branch_whose_open_pr_check_is_unreadable() -> None:
+    """INTENTIONAL DELTA (PLAN-gh-retry G10). A 403 makes gh print a JSON BODY to stdout and exit non-zero. The twin coerced that (and any failed call) to zero open PRs and deleted the stale branch, open PR or not. The port keeps the branch, names it and counts it."""
     fixture = _branches_fixture(
         "stale",
         pulls=rule("pulls?head=", rc=1, raw='{"message":"Must have admin rights"}'),
@@ -2174,9 +2172,12 @@ def test_phase_9_coerces_a_non_numeric_open_pr_count_to_zero() -> None:
             "branches/stale", json_body={"commit": {"commit": {"committer": {"date": ago(90.5)}}}}
         ),
     )
-    result = sides("cleanup_stale_branches", argv=("--dry-run",), fixture=fixture)
-    assert b"[DRY-RUN] Would delete stale (90 days old, no open PR)" in result[2]
-    assert b"Branches (console): would delete 1, kept 0" in result[2]
+    old, new = _twin_and_port("cleanup_stale_branches", ("--dry-run",), fixture)
+    assert b"[DRY-RUN] Would delete stale (90 days old, no open PR)" in old[2], "twin moved"
+    new_err = new[2].decode()
+    assert "Would delete stale" not in new_err
+    assert "KEEP branch stale: open-PR check unreadable (gh api exited 1" in new_err
+    assert "Branches (console): would delete 0, kept 1" in new_err
 
 
 def test_phase_9_dry_run_has_its_own_counter() -> None:
@@ -2778,3 +2779,107 @@ def test_every_phase_was_driven_by_at_least_one_case() -> None:
         "and this file's green would be a claim it has not earned." % ", ".join(missing)
     )
     assert len(driven & set(PHASES)) >= len(PHASES)
+
+
+# --------------------------------------------------------------------------- PLAN-gh-retry G10: AN UNREADABLE PR STATE KEEPS THE RESOURCE ---------------------------------------------------------------------------
+
+# `gh pr view` for a number GitHub cannot resolve. A PR number is never reused or removed, so this is an unreadable read, never a closed PR. It is not transient, so the port does not sleep on it.
+PR_NOT_FOUND = rule(
+    "pr",
+    "view",
+    rc=1,
+    stderr="GraphQL: Could not resolve to a PullRequest with the number of 3. (HTTP 404)\n",
+)
+
+
+def _kept_unreadable(twin: tuple, port: tuple, *, deleted: str, keep_line: str) -> None:
+    twin_err, port_err = twin[2].decode(), port[2].decode()
+    assert deleted in twin_err, "the twin's delete-on-UNKNOWN moved"
+    assert deleted not in port_err
+    assert keep_line in port_err
+    assert port[0] == 0
+
+
+def test_delta_phase_6_keeps_an_environment_whose_pr_state_is_unreadable() -> None:
+    """INTENTIONAL DELTA. The twin took `UNKNOWN` for not-OPEN and deleted the environment of a PR it could not read."""
+    old, new = _twin_and_port(
+        "cleanup_environments",
+        ("--dry-run",),
+        {
+            "gh": [
+                PR_NOT_FOUND,
+                rule(
+                    "environments",
+                    json_body={
+                        "environments": [
+                            {"name": "pr-3", "created_at": ago(9.5), "updated_at": ago(9.5)}
+                        ]
+                    },
+                ),
+            ]
+        },
+    )
+    _kept_unreadable(
+        old,
+        new,
+        deleted="Would delete environment: pr-3 (PR #3 state: UNKNOWN)",
+        keep_line="KEEP environment pr-3: PR #3 state unreadable",
+    )
+
+
+def test_delta_phase_7_keeps_a_database_whose_pr_state_is_unreadable() -> None:
+    fixture = {
+        "gh": [PR_NOT_FOUND],
+        "curl": [
+            rule(
+                "d1/database?per_page=100",
+                json_body={
+                    "success": True,
+                    "result": [{"name": "account-db-pr-3", "uuid": "uuid-3"}],
+                },
+            )
+        ],
+    }
+    old, new = _twin_and_port("cleanup_d1_databases", ("--dry-run",), fixture, cf_env())
+    _kept_unreadable(
+        old,
+        new,
+        deleted="Would delete D1 database: account-db-pr-3 (PR #3 state: UNKNOWN)",
+        keep_line="KEEP D1 database account-db-pr-3: PR #3 state unreadable",
+    )
+    assert "D1 databases: would delete 0 of 1 (1 open PRs, skipped)" in new[2].decode()
+
+
+def test_delta_phase_7b_keeps_a_widget_whose_pr_state_is_unreadable() -> None:
+    fixture = {
+        "gh": [PR_NOT_FOUND],
+        "curl": [
+            rule(
+                "challenges/widgets?per_page=100",
+                json_body=_widgets(("rediacc-console-pr-3", ago(90.5))),
+            )
+        ],
+    }
+    old, new = _twin_and_port("cleanup_orphan_turnstile_widgets", ("--dry-run",), fixture, cf_env())
+    _kept_unreadable(
+        old,
+        new,
+        deleted="Would delete Turnstile widget: rediacc-console-pr-3 (PR #3 state: UNKNOWN)",
+        keep_line="KEEP Turnstile widget rediacc-console-pr-3: PR #3 state unreadable",
+    )
+
+
+def test_delta_phase_8b_keeps_a_prefix_whose_pr_state_is_unreadable() -> None:
+    fixture = r2_fixture(
+        rule(("ls s3://" + RELEASES_BUCKET + "/apt/ "), raw=pre_line("pr-3/")),
+        rule("--prefix apt/pr-3/", raw="%s\n" % ago(1.5)),
+        gh=[PR_NOT_FOUND, rule("tags", raw="")],
+    )
+    old, new = _twin_and_port("cleanup_r2", (), fixture, R2_ENV)
+    _kept_unreadable(
+        old,
+        new,
+        deleted=("Deleted s3://" + RELEASES_BUCKET + "/apt/pr-3/ (PR #3 UNKNOWN)"),
+        keep_line="KEEP R2 prefix apt/pr-3/: PR #3 state unreadable",
+    )
+    assert "8b: deleted 0 PR channel prefix(es)" in new[2].decode()
