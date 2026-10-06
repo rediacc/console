@@ -1,0 +1,15 @@
+{
+ "conclusion": "cancelled",
+ "created_at": "2026-10-06T00:33:44Z",
+ "display_title": "chore(reviews): record reviews for f288a0d4",
+ "event": "push",
+ "head_branch": "main",
+ "head_sha": "e6fc817f6696f56511d73223d4be30b3c64d0ab1",
+ "id": 37394654719,
+ "name": "Console CI",
+ "path": ".github/workflows/ci.yml",
+ "run_attempt": 1,
+ "run_started_at": "2026-10-06T00:33:44Z",
+ "status": "completed",
+ "updated_at": "2026-10-06T01:22:13Z"
+}

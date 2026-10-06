@@ -1,0 +1,1235 @@
+{
+ "jobs": [
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "success",
+   "id": 112061614403,
+   "name": "Initialize",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:33:47Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T01:24:18Z",
+   "conclusion": "skipped",
+   "id": 112061614584,
+   "name": "Quality",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:18Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061614803,
+   "name": "Build (Devcontainer) / JSON",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:18Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:54Z",
+   "conclusion": "success",
+   "id": 112061614869,
+   "name": "CI Watchdog",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:34:41Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:38:31Z",
+   "conclusion": "success",
+   "id": 112061614901,
+   "name": "Build (Renet) / Renet (cross-compile smoke)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:34:41Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:35:16Z",
+   "conclusion": "success",
+   "id": 112061614958,
+   "name": "Entry Point (run.sh)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:34:57Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061614964,
+   "name": "Build (Devcontainer) / CLI Docker (cached)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:18Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061614998,
+   "name": "Tests + Infra / E2E K8s Multinode",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:18Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:41:25Z",
+   "conclusion": "success",
+   "id": 112061615000,
+   "name": "Build (Devcontainer) / Devcontainer (amd64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:34:41Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615003,
+   "name": "Breakpoint Lifecycle",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:18Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615011,
+   "name": "Tests + Infra / Unit",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:18Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615027,
+   "name": "Tests + Infra / E2E Ceph",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:18Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T01:24:18Z",
+   "conclusion": "skipped",
+   "id": 112061615033,
+   "name": "E2E Dependency Probe",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:18Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615034,
+   "name": "Build (Devcontainer) / WWW",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:18Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615035,
+   "name": "Tests + Infra / Concurrent Fork Isolation",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:18Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615050,
+   "name": "Tests + Infra / License Enforcement",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:18Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615129,
+   "name": "Tests + Infra / E2E K8s Ceph",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:18Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:37:15Z",
+   "conclusion": "success",
+   "id": 112061615131,
+   "name": "Tests + Infra / Migration Test",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:34:41Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615132,
+   "name": "Tests + Infra / E2E K8s",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:18Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615133,
+   "name": "Build (Renet) / Renet (cached, linux)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:18Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615135,
+   "name": "Build (Devcontainer) / CLI Docker",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:18Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:36:04Z",
+   "conclusion": "success",
+   "id": 112061615168,
+   "name": "Build (Renet) / Procwalk (windows-latest)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:34:42Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615178,
+   "name": "Tests + Infra / Renet pkg scope",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615223,
+   "name": "Tests + Infra / Account E2E (${{ matrix.shard }}/4)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615465,
+   "name": "Build (Devcontainer) / Server Docker (cached)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615498,
+   "name": "Tests + Infra / E2E Ceph Workers",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615500,
+   "name": "Tests + Infra / Renet (go, ${{ matrix.shard }}/2)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:40:55Z",
+   "conclusion": "success",
+   "id": 112061615501,
+   "name": "Build (Devcontainer) / Devcontainer (arm64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:34:44Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615513,
+   "name": "Tests + Infra / Drills",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615641,
+   "name": "Tests + Infra / Renet (integration, ${{ matrix.shard }}/3)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615688,
+   "name": "Review Gate",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061615833,
+   "name": "Tests + Infra / E2E Migrate",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061616160,
+   "name": "Tests + Infra / Linux Packages",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061616317,
+   "name": "Build (Renet) / Renet (cached)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061616684,
+   "name": "Tests + Infra / Renet pkg matrix (${{ matrix.distro }})",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061616761,
+   "name": "Build (Devcontainer) / Server Docker (${{ matrix.variant }} arm64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061616954,
+   "name": "Stripe Sandbox",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061617197,
+   "name": "Build (Devcontainer) / Server Docker (${{ matrix.variant }} amd64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061617219,
+   "name": "Tests + Infra / E2E Ceph Workers non-apt (${{ matrix.os-image }})",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:41:47Z",
+   "conclusion": "success",
+   "id": 112061617249,
+   "name": "Build (Devcontainer) / Devcontainer Manifest",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:41:29Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061617290,
+   "name": "Build (Devcontainer) / Server Docker Manifest (${{ matrix.variant }})",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:40:26Z",
+   "conclusion": "success",
+   "id": 112061617636,
+   "name": "Build (CLI) / CLI (linux-x64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:38:55Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:38:52Z",
+   "conclusion": "skipped",
+   "id": 112061617947,
+   "name": "Build (Docker Fast) / JSON",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T01:24:19Z",
+   "conclusion": "skipped",
+   "id": 112061617979,
+   "name": "OPS Tests",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:38:52Z",
+   "conclusion": "skipped",
+   "id": 112061618052,
+   "name": "Build (Docker Fast) / Devcontainer (arm64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:38:52Z",
+   "conclusion": "skipped",
+   "id": 112061618062,
+   "name": "Build (Docker Fast) / Renet (cached)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:38:52Z",
+   "conclusion": "skipped",
+   "id": 112061618136,
+   "name": "Build (Docker Fast) / CLI Docker (cached)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:38:52Z",
+   "conclusion": "skipped",
+   "id": 112061618178,
+   "name": "Build (Docker Fast) / Server Docker (cached)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:42:03Z",
+   "conclusion": "success",
+   "id": 112061618195,
+   "name": "Build (Docker Fast) / CLI",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:38:56Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:40:11Z",
+   "conclusion": "success",
+   "id": 112061618293,
+   "name": "Build (CLI) / CLI (linux-arm64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:38:57Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:38:52Z",
+   "conclusion": "skipped",
+   "id": 112061618310,
+   "name": "Build (Docker Fast) / CLI Docker",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:38:52Z",
+   "conclusion": "skipped",
+   "id": 112061618339,
+   "name": "Build (Docker Fast) / Devcontainer (amd64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:40:24Z",
+   "conclusion": "success",
+   "id": 112061618497,
+   "name": "Build (Docker Fast) / WWW",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:38:54Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:42:37Z",
+   "conclusion": "success",
+   "id": 112061618517,
+   "name": "Build (Docker Fast) / Renet Docker",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:38:56Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:41:56Z",
+   "conclusion": "success",
+   "id": 112061618584,
+   "name": "Build (CLI) / CLI (win-x64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:38:56Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:48:47Z",
+   "conclusion": "success",
+   "id": 112061618651,
+   "name": "Build (CLI) / CLI (win-arm64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:38:55Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:41:34Z",
+   "conclusion": "success",
+   "id": 112061618687,
+   "name": "Build (CLI) / CLI (mac-arm64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:39:01Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:42:39Z",
+   "conclusion": "success",
+   "id": 112061618737,
+   "name": "Build (CLI) / CLI (mac-x64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:38:56Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:40:28Z",
+   "conclusion": "success",
+   "id": 112061619223,
+   "name": "Build (CLI) / CLI (linux-musl-x64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:38:54Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:40:36Z",
+   "conclusion": "success",
+   "id": 112061619480,
+   "name": "Build (CLI) / CLI (linux-musl-arm64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:38:57Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:38:52Z",
+   "conclusion": "skipped",
+   "id": 112061619514,
+   "name": "Build (Docker Fast) / Devcontainer Manifest",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:45:48Z",
+   "conclusion": "success",
+   "id": 112061619776,
+   "name": "Build (Docker Fast) / Server Docker (onprem amd64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:42:06Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:42:04Z",
+   "conclusion": "skipped",
+   "id": 112061619813,
+   "name": "Build (Docker Fast) / Server Docker (${{ matrix.variant }} arm64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:20Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:45:49Z",
+   "conclusion": "skipped",
+   "id": 112061620236,
+   "name": "Build (Docker Fast) / Server Docker Manifest (${{ matrix.variant }})",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:20Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:51:24Z",
+   "conclusion": "success",
+   "id": 112061620320,
+   "name": "Build (Docker) / CLI Docker",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:48:50Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T01:24:19Z",
+   "conclusion": "skipped",
+   "id": 112061620414,
+   "name": "Tests + Infra / Update Flow",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:20Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:50:11Z",
+   "conclusion": "success",
+   "id": 112061620568,
+   "name": "Build (Docker) / JSON",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:48:54Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:51:17Z",
+   "conclusion": "success",
+   "id": 112061620719,
+   "name": "Build (Docker) / CLI",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:48:51Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:55:06Z",
+   "conclusion": "success",
+   "id": 112061620739,
+   "name": "Build (Docker) / Renet Docker",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:48:50Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:48:48Z",
+   "conclusion": "skipped",
+   "id": 112061620860,
+   "name": "Build (Docker) / Server Docker (cached)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:20Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:50:02Z",
+   "conclusion": "success",
+   "id": 112061620963,
+   "name": "Build (Docker) / WWW",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:48:50Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:48:48Z",
+   "conclusion": "skipped",
+   "id": 112061621149,
+   "name": "Build (Docker) / CLI Docker (cached)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:20Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:48:48Z",
+   "conclusion": "skipped",
+   "id": 112061621482,
+   "name": "Build (Docker) / Devcontainer (arm64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:20Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:48:48Z",
+   "conclusion": "skipped",
+   "id": 112061621549,
+   "name": "Build (Docker) / Renet (cached)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:20Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:48:48Z",
+   "conclusion": "skipped",
+   "id": 112061621553,
+   "name": "Build (Docker) / Devcontainer (amd64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:20Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:45:49Z",
+   "conclusion": "skipped",
+   "id": 112061621581,
+   "name": "Elite Run",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:20Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:54:40Z",
+   "conclusion": "success",
+   "id": 112061622476,
+   "name": "Build (Docker) / Server Docker (onprem amd64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:51:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:54:42Z",
+   "conclusion": "success",
+   "id": 112061622489,
+   "name": "Build (Docker) / Server Docker (onprem arm64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:51:21Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:48:48Z",
+   "conclusion": "skipped",
+   "id": 112061623219,
+   "name": "Build (Docker) / Devcontainer Manifest",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:20Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:55:11Z",
+   "conclusion": "success",
+   "id": 112061623726,
+   "name": "Build (Docker) / Server Docker Manifest (onprem)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:54:45Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T01:05:44Z",
+   "conclusion": "success",
+   "id": 112061625398,
+   "name": "Stage Artifacts / Stage Artifacts",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:55:14Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T01:40:08Z",
+   "conclusion": "cancelled",
+   "id": 112061625885,
+   "name": "Validate Promotion",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:24Z",
+   "status": "completed",
+   "steps": [
+    {
+     "completed_at": "2026-10-06T01:24:26Z",
+     "conclusion": "success",
+     "name": "Set up job",
+     "number": 1,
+     "started_at": "2026-10-06T01:24:26Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:24:35Z",
+     "conclusion": "success",
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "number": 2,
+     "started_at": "2026-10-06T01:24:26Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:24:35Z",
+     "conclusion": "success",
+     "name": "Load well-known",
+     "number": 3,
+     "started_at": "2026-10-06T01:24:35Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:24:37Z",
+     "conclusion": "success",
+     "name": "Fetch secrets from Bitwarden",
+     "number": 4,
+     "started_at": "2026-10-06T01:24:35Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:35:34Z",
+     "conclusion": "success",
+     "name": "Simulate promotion (copy + sed-fix)",
+     "number": 5,
+     "started_at": "2026-10-06T01:24:37Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:36:56Z",
+     "conclusion": "success",
+     "name": "Test APT install from promoted channel",
+     "number": 6,
+     "started_at": "2026-10-06T01:35:34Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:38:06Z",
+     "conclusion": "success",
+     "name": "Test DNF install from promoted channel",
+     "number": 7,
+     "started_at": "2026-10-06T01:36:56Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:38:22Z",
+     "conclusion": "success",
+     "name": "Test APK install from promoted channel",
+     "number": 8,
+     "started_at": "2026-10-06T01:38:06Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:38:47Z",
+     "conclusion": "success",
+     "name": "Test Pacman install from promoted channel",
+     "number": 9,
+     "started_at": "2026-10-06T01:38:22Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:40:05Z",
+     "conclusion": "success",
+     "name": "Cleanup promoted channel",
+     "number": 10,
+     "started_at": "2026-10-06T01:38:47Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:40:06Z",
+     "conclusion": "success",
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "number": 20,
+     "started_at": "2026-10-06T01:40:05Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:40:06Z",
+     "conclusion": "success",
+     "name": "Complete job",
+     "number": 21,
+     "started_at": "2026-10-06T01:40:06Z",
+     "status": "completed"
+    }
+   ]
+  },
+  {
+   "completed_at": "2026-10-06T01:07:35Z",
+   "conclusion": "success",
+   "id": 112061626961,
+   "name": "Validate Install Methods / Linux (arm64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:05:49Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T01:06:22Z",
+   "conclusion": "success",
+   "id": 112061627352,
+   "name": "Validate Install Methods / macOS (ARM64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:05:53Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T01:05:45Z",
+   "conclusion": "skipped",
+   "id": 112061627359,
+   "name": "Deploy Preview",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:21Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T01:06:32Z",
+   "conclusion": "success",
+   "id": 112061627374,
+   "name": "Validate Install Methods / Windows (x64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:05:48Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T01:10:27Z",
+   "conclusion": "success",
+   "id": 112061627718,
+   "name": "Validate Install Methods / Linux (x64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:05:47Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T01:06:29Z",
+   "conclusion": "success",
+   "id": 112061627720,
+   "name": "Validate Install Methods / macOS (x64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:05:47Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T01:05:45Z",
+   "conclusion": "skipped",
+   "id": 112061627912,
+   "name": "Smoke Test Preview",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:21Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T01:06:55Z",
+   "conclusion": "success",
+   "id": 112061628084,
+   "name": "Validate Install Methods / Windows (arm64)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:05:47Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T01:10:41Z",
+   "conclusion": "success",
+   "id": 112061629423,
+   "name": "Validate Install Methods / Install Methods Complete",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:10:31Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061637505,
+   "name": "Build (Renet) / Renet (cached, cross-compile)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:23Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:38:52Z",
+   "conclusion": "success",
+   "id": 112061641367,
+   "name": "Build (Renet) / Renet (Full)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:34:41Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:35:52Z",
+   "conclusion": "success",
+   "id": 112061643715,
+   "name": "Build (Renet) / Procwalk (macos-latest)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:34:48Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061644851,
+   "name": "Build (Devcontainer) / Renet (cached)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:25Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:35:12Z",
+   "conclusion": "success",
+   "id": 112061648716,
+   "name": "Check Release State",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T00:34:41Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061649471,
+   "name": "Build (Devcontainer) / CLI",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:26Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061651272,
+   "name": "Label Guide",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:27Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061651553,
+   "name": "Tests + Infra / E2E Workers (${{ matrix.os-image }}, ${{ matrix.shard }}/8)",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:27Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T00:34:39Z",
+   "conclusion": "skipped",
+   "id": 112061656630,
+   "name": "Build (Devcontainer) / Renet Docker",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:24:28Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T01:40:18Z",
+   "conclusion": "failure",
+   "id": 112065832113,
+   "name": "CI Complete",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:40:11Z",
+   "status": "completed",
+   "steps": [
+    {
+     "completed_at": "2026-10-06T01:40:13Z",
+     "conclusion": "success",
+     "name": "Set up job",
+     "number": 1,
+     "started_at": "2026-10-06T01:40:12Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:40:17Z",
+     "conclusion": "success",
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "number": 2,
+     "started_at": "2026-10-06T01:40:13Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:40:17Z",
+     "conclusion": "failure",
+     "name": "Check all jobs passed",
+     "number": 3,
+     "started_at": "2026-10-06T01:40:17Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:40:17Z",
+     "conclusion": "skipped",
+     "name": "Skip-plan reconciliation (shadow, fails nothing)",
+     "number": 4,
+     "started_at": "2026-10-06T01:40:17Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:40:17Z",
+     "conclusion": "success",
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "number": 8,
+     "started_at": "2026-10-06T01:40:17Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:40:17Z",
+     "conclusion": "success",
+     "name": "Complete job",
+     "number": 9,
+     "started_at": "2026-10-06T01:40:17Z",
+     "status": "completed"
+    }
+   ]
+  },
+  {
+   "completed_at": "2026-10-06T01:40:31Z",
+   "conclusion": "failure",
+   "id": 112065879532,
+   "name": "Pipeline Sentinel",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:40:22Z",
+   "status": "completed",
+   "steps": [
+    {
+     "completed_at": "2026-10-06T01:40:25Z",
+     "conclusion": "success",
+     "name": "Set up job",
+     "number": 1,
+     "started_at": "2026-10-06T01:40:23Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:40:30Z",
+     "conclusion": "success",
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "number": 2,
+     "started_at": "2026-10-06T01:40:25Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:40:30Z",
+     "conclusion": "failure",
+     "name": "Check finalize-release-sentinel conclusion (release channels only)",
+     "number": 3,
+     "started_at": "2026-10-06T01:40:30Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:40:30Z",
+     "conclusion": "success",
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "number": 6,
+     "started_at": "2026-10-06T01:40:30Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-06T01:40:30Z",
+     "conclusion": "success",
+     "name": "Complete job",
+     "number": 7,
+     "started_at": "2026-10-06T01:40:30Z",
+     "status": "completed"
+    }
+   ]
+  },
+  {
+   "completed_at": "2026-10-06T01:40:18Z",
+   "conclusion": "skipped",
+   "id": 112065880173,
+   "name": "PR Labels",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:40:19Z",
+   "status": "completed"
+  },
+  {
+   "completed_at": "2026-10-06T01:40:18Z",
+   "conclusion": "skipped",
+   "id": 112065880233,
+   "name": "Finalize Release Sentinel",
+   "run_attempt": 2,
+   "run_id": 37394654719,
+   "started_at": "2026-10-06T01:40:19Z",
+   "status": "completed"
+  }
+ ],
+ "total_count": 104
+}
