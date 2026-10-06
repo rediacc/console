@@ -14,7 +14,8 @@ import pathlib
 from rediacc_hooks.tests import test_wl_focus as F
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_cap_wait import mutated_hook
-from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_rollup, ci_running, write_exec
+from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_running, write_exec
+from rediacc_hooks.tests.test_wl_ci_status import ci_rollup as ci_status_rollup
 from rediacc_hooks.tests.test_wl_pr_scope_stop import (
     BRANCH,
     keys_of,
@@ -177,7 +178,7 @@ def test_ln5b_a_pending_run_on_the_head_turns_the_merge_order_into_an_advisory(w
     live_world(wl, own_open=0)
     head = wl.git("rev-parse", "HEAD").stdout.strip()
     wl.git("update-ref", "refs/remotes/origin/%s" % BRANCH, head)
-    ci_rollup(
+    ci_status_rollup(
         wl,
         "PENDING",
         "[%s,%s]" % (ci_job("Quality / Static", "SUCCESS"), ci_running("CI Complete")),
