@@ -2266,6 +2266,27 @@ async function selftest(): Promise<number> {
       chained.kind === 'advance' && chained.from === 'T1' && chained.to === 'T2',
       `a second advance must start where the chain ends, got ${JSON.stringify(chained)}`
     );
+    // F11: a red reader's finding keys ride the step beside its exit code; a passing reader has none.
+    const outcome = advanceOutcome(
+      ['g:plan', 'g:tree'],
+      [
+        {
+          id: 'g:plan',
+          status: 'fail',
+          exitCode: 1,
+          stdout: '::finding::P-A1:179633a798a4\n',
+          stderr: '',
+        },
+        { id: 'g:tree', status: 'ok', exitCode: 0, stdout: '', stderr: '' },
+      ],
+      () => {}
+    );
+    require_(
+      outcome.gates['g:plan'] === 1 &&
+        outcome.gates['g:tree'] === 0 &&
+        JSON.stringify(outcome.findings) === '{"g:plan":["P-A1:179633a798a4"]}',
+      `an advance must record a red reader's findings and none for a green one, got ${JSON.stringify(outcome)}`
+    );
     require_(
       typeof parseRecordPolicy('{"records":[{"glob":"a/**","readers":["bare-string"]}]}') ===
         'string' && typeof parseRecordPolicy('not json') === 'string',
@@ -2285,7 +2306,7 @@ async function selftest(): Promise<number> {
     return 1;
   }
   process.stdout.write(
-    `ci-runner: selftest ok (${9 + 1 + keyed.assertions + 3 + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2 + qs.assertions + 10 + 5 + 9 + 10 + 4 + leaseCheck.assertions + 11 + inc.assertions} assertions)\n`
+    `ci-runner: selftest ok (${9 + 1 + keyed.assertions + 3 + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2 + qs.assertions + 10 + 5 + 9 + 10 + 4 + leaseCheck.assertions + 12 + inc.assertions} assertions)\n`
   );
   return 0;
 }
@@ -3217,6 +3238,8 @@ interface Advance {
   paths: string[];
   /** Every reader of every touched glob, with its exit code: 0 passed, 77 could not run, anything else failed. `{}` when the touched globs have no reader. */
   gates: Record<string, number>;
+  /** The finding keys each RED reader printed (`::finding::<key>`, scripts/ci-runner/findings.ts), as the main run records them in the receipt's `findings`; `null` when it printed none parsable. Absent for a reader that passed, and on a step an older runner wrote: the push guard then treats the red reader as recording none. */
+  findings?: Record<string, string[] | null>;
   finishedAt: string;
 }
 
@@ -3282,6 +3305,28 @@ function recordPolicyAtHead(): RecordGlob[] | string | undefined {
 }
 
 /**
+ * What an advance records per reader: the exit code (0 passed, 77 could not run, else failed) and, for each FAILED reader, the finding keys it printed, parsed exactly as the main run does for the receipt's `findings`. The push guard (`step_refusal`) admits a red reader under a keyed carry only from these keys. Pure, so the selftest drives it.
+ */
+function advanceOutcome(
+  readers: readonly string[],
+  results: ReadonlyArray<{
+    id: string;
+    status: string;
+    exitCode: number | null;
+    stdout: string;
+    stderr: string;
+  }>,
+  warn: (text: string) => void
+): { gates: Record<string, number>; findings: Record<string, string[] | null> } {
+  const gates: Record<string, number> = {};
+  for (const id of readers) {
+    const r = results.find((x) => x.id === id);
+    gates[id] = r === undefined ? 1 : r.status === 'ok' ? 0 : (r.exitCode ?? 1) || 1;
+  }
+  return { gates, findings: receiptFindings(results, warn) };
+}
+
+/**
  * Run an advance: the readers of the touched globs (none when they have no reader), then append the step to the receipt. The step is written only when HEAD held still, for the same reason a receipt vouches for no tree after a mid-run commit.
  */
 async function runAdvance(
@@ -3299,7 +3344,8 @@ async function runAdvance(
         ? `running their ${plan.readers.length} reader(s) instead of the lane: ${plan.readers.join(', ')}\n`
         : 'no gate reads them, so nothing runs\n')
   );
-  const gates: Record<string, number> = {};
+  let gates: Record<string, number> = {};
+  let findings: Record<string, string[] | null> = {};
   let exitCode = 0;
   if (plan.readers.length > 0) {
     const ran = await runGraph(
@@ -3309,10 +3355,7 @@ async function runAdvance(
       humanOut
     );
     exitCode = ran.exitCode;
-    for (const id of plan.readers) {
-      const r = ran.results.find((x) => x.id === id);
-      gates[id] = r === undefined ? 1 : r.status === 'ok' ? 0 : (r.exitCode ?? 1) || 1;
-    }
+    ({ gates, findings } = advanceOutcome(plan.readers, ran.results, humanOut));
   }
   if (receiptTree(plan.to, headTreeNow()) === '') {
     humanOut(
@@ -3325,6 +3368,7 @@ async function runAdvance(
     to: plan.to,
     paths: plan.paths,
     gates,
+    findings,
     finishedAt: new Date().toISOString(),
   };
   try {
