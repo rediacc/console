@@ -60,11 +60,10 @@ from __future__ import annotations
 
 import os
 import re
-import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, gh_retry
 
 # `MAX_ATTEMPTS="${MAX_ATTEMPTS:-2}"` (twin :32).
 DEFAULT_MAX_ATTEMPTS = "2"
@@ -126,20 +125,21 @@ def require_env(name: str, message: str, line: int) -> str:
 
 
 def gh_run_attempt(repo: str, run_id: str) -> str:
-    """`gh api "repos/<repo>/actions/runs/<id>" --jq '.run_attempt'`.
+    """`gh api "repos/<repo>/actions/runs/<id>" --jq '.run_attempt'`, retried on a transient fault (gh_retry: 5 s, then 15 s).
 
-    STDERR IS NOT REDIRECTED by the twin, so it is inherited here. A non-zero status is fatal under `set -e`, and -- this is the observable part -- `::endgroup::` is therefore NEVER printed on that path, leaving the GitHub log with an unclosed group. Reproduced by raising before the print.
+    A failure that survives the retries is FATAL, as under the twin's `set -e`, with gh's own stderr surfaced. The caller closes the `::group::` before this exit is taken (see `main`), so the log no longer ends with an unclosed group; the exit status is gh's.
     """
-    proc = subprocess.run(
-        ["gh", "api", "repos/%s/actions/runs/%s" % (repo, run_id), "--jq", ".run_attempt"],
-        stdout=subprocess.PIPE,
-        text=True,
-        check=False,
+    result = gh_retry.gh(
+        ["api", "repos/%s/actions/runs/%s" % (repo, run_id), "--jq", ".run_attempt"]
     )
-    if proc.returncode != 0:
-        raise SystemExit(proc.returncode)
+    # The twin inherited gh's stderr, success or failure.
+    if result.stderr:
+        sys.stderr.write(result.stderr if result.stderr.endswith("\n") else result.stderr + "\n")
+        sys.stderr.flush()
+    if not result.ok:
+        raise SystemExit(result.returncode or 1)
     # Command substitution strips trailing newlines.
-    return proc.stdout.rstrip("\n")
+    return result.stdout_raw.rstrip("\n")
 
 
 def main(argv: list[str]) -> int:
@@ -158,7 +158,11 @@ def main(argv: list[str]) -> int:
 
     print("::group::Fetching run details", flush=True)
     log.info("Run ID: %s" % run_id)
-    attempt = gh_run_attempt(gh_repo, run_id)
+    try:
+        attempt = gh_run_attempt(gh_repo, run_id)
+    except SystemExit:
+        print("::endgroup::", flush=True)
+        raise
     log.info("Current run attempt: %s" % attempt)
     print("::endgroup::", flush=True)
 

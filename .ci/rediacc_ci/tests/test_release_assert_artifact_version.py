@@ -20,6 +20,8 @@ import os
 import stat
 from typing import TYPE_CHECKING
 
+from rediacc_ci.core import ghx
+from rediacc_ci.release import assert_artifact_version as port
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import GH_REPO
 
@@ -362,3 +364,84 @@ def test_missing_jq_binary_refuses_identically(tmp_path: pathlib.Path) -> None:
     assert old[0] == 1
     assert old[2] == "✗ Required command 'jq' is not available\n"
     assert new == old
+
+
+# --- PLAN-gh-retry G4/G5: reads go through gh_retry (in-process, fake ghx.gh, no sleeping) ---
+
+SERVER_ERROR = "gh: Server Error (HTTP 502)"
+
+
+class _FakeGh:
+    """A `ghx.gh` stand-in: each call returns the next outcome `(rc, stdout, stderr)`, the last one repeating."""
+
+    def __init__(self, *outcomes, on_ok=None):
+        self.outcomes = list(outcomes)
+        self.on_ok = on_ok
+        self.calls = []
+
+    def __call__(self, args, **kw):
+        self.calls.append((args, kw))
+        rc, out, err = self.outcomes[min(len(self.calls), len(self.outcomes)) - 1]
+        if rc == 0 and self.on_ok:
+            self.on_ok(args)
+        return ghx.GhResult(["gh", *args], rc, out, err)
+
+
+def _patch(monkeypatch, fake):
+    slept: list[float] = []
+    monkeypatch.setattr(ghx, "gh", fake)
+    monkeypatch.setattr("time.sleep", slept.append)
+    return slept
+
+
+def _artifact_env(monkeypatch, tmp_path):
+    check = tmp_path / "check"
+    monkeypatch.setattr(port, "CHECK_DIR", str(check))
+    for key, value in {"VERSION": "1.2.3", "CI_RUN_ID": "9", "GITHUB_REPOSITORY": GH_REPO}.items():
+        monkeypatch.setenv(key, value)
+
+    def write_manifest(_args):
+        (check / "manifest.json").write_text('{"version": "1.2.3"}', encoding="utf-8")
+
+    return write_manifest
+
+
+def test_a_502_then_success_download_passes_with_a_download_sized_timeout(
+    monkeypatch, tmp_path, capsys
+) -> None:
+    fake = _FakeGh((1, "", SERVER_ERROR), (0, "", ""), on_ok=_artifact_env(monkeypatch, tmp_path))
+    slept = _patch(monkeypatch, fake)
+    assert port.main([]) == 0
+    assert len(fake.calls) == 2
+    assert slept == [5.0]
+    assert all(kw["timeout"] >= 300 for _a, kw in fake.calls)
+    assert "matches promotion target" in capsys.readouterr().out
+
+
+def test_a_persistent_5xx_is_not_reported_as_a_missing_artifact(
+    monkeypatch, tmp_path, capsys
+) -> None:
+    _artifact_env(monkeypatch, tmp_path)
+    fake = _FakeGh((1, "", SERVER_ERROR))
+    slept = _patch(monkeypatch, fake)
+    assert port.main([]) == 1
+    out = capsys.readouterr().out
+    assert len(fake.calls) == 3
+    assert slept == [5.0, 15.0]
+    assert "failed transiently" in out
+    assert "HTTP 502" in out
+    assert "not found" not in out
+
+
+def test_a_404_still_means_the_artifact_is_not_found_after_one_call(
+    monkeypatch, tmp_path, capsys
+) -> None:
+    _artifact_env(monkeypatch, tmp_path)
+    fake = _FakeGh((1, "", "no valid artifacts found to download"))
+    slept = _patch(monkeypatch, fake)
+    assert port.main([]) == 1
+    out = capsys.readouterr().out
+    assert len(fake.calls) == 1
+    assert slept == []
+    assert "cli-manifest artifact not found on CI run 9" in out
+    assert "failed transiently" not in out

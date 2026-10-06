@@ -18,7 +18,10 @@ import stat
 import sys
 from typing import TYPE_CHECKING
 
+import pytest
+
 from rediacc_ci.ci import check_rerun_attempt as port
+from rediacc_ci.core import ghx
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import GH_REPO
 
@@ -195,14 +198,14 @@ def test_defect_b_a_null_attempt_fails_closed_with_an_unreadable_message(
     assert files["envfile"] == "", "it dies before writing WATCHDOG_SKIP_RERUN"
 
 
-def test_a_failing_gh_propagates_its_status_and_leaves_the_group_unclosed(
+def test_a_failing_gh_propagates_its_status_and_closes_the_group(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`::endgroup::` is never printed on this path, which is observable output."""
+    """The twin left the `::group::` unclosed on this path; the port closes it (PLAN-gh-retry G5), so a failed read no longer swallows the rest of the job log into the group. The exit status is still gh's."""
     result, _ = run_port(tmp_path, env_extra={"RUN_ID": "5", "GH_REPO": "a/b", "FAKE_GH_RC": "4"})
     assert result[0] == 4
-    assert result[1] == "::group::Fetching run details\n"
-    assert "::endgroup::" not in result[1]
+    assert result[1] == "::group::Fetching run details\n::endgroup::\n"
+    assert "simulated failure" in result[2]
 
 
 def test_a_missing_run_id_is_the_pinned_diagnostic(tmp_path: pathlib.Path) -> None:
@@ -286,3 +289,77 @@ def test_the_group_directives_are_on_stdout_and_the_log_lines_on_stderr(
     assert result[1].splitlines() == ["::group::Fetching run details", "::endgroup::"]
     assert "::group::" not in result[2]
     assert "Run ID: 5" not in result[1]
+
+
+# --- PLAN-gh-retry G4/G5: reads go through gh_retry (in-process, fake ghx.gh, no sleeping) ---
+
+SERVER_ERROR = "gh: Server Error (HTTP 502)"
+
+
+class _FakeGh:
+    """A `ghx.gh` stand-in: each call returns the next outcome `(rc, stdout, stderr)`, the last one repeating."""
+
+    def __init__(self, *outcomes, on_ok=None):
+        self.outcomes = list(outcomes)
+        self.on_ok = on_ok
+        self.calls = []
+
+    def __call__(self, args, **kw):
+        self.calls.append((args, kw))
+        rc, out, err = self.outcomes[min(len(self.calls), len(self.outcomes)) - 1]
+        if rc == 0 and self.on_ok:
+            self.on_ok(args)
+        return ghx.GhResult(["gh", *args], rc, out, err)
+
+
+def _patch(monkeypatch, fake):
+    slept: list[float] = []
+    monkeypatch.setattr(ghx, "gh", fake)
+    monkeypatch.setattr("time.sleep", slept.append)
+    return slept
+
+
+def _rerun_env(monkeypatch, tmp_path):
+    envfile = tmp_path / "github-env"
+    envfile.write_text("", encoding="utf-8")
+    monkeypatch.setenv("GITHUB_ENV", str(envfile))
+    monkeypatch.setenv("RUN_ID", "5")
+    monkeypatch.setenv("GH_REPO", "a/b")
+    monkeypatch.delenv("MAX_ATTEMPTS", raising=False)
+    return envfile
+
+
+def test_a_502_then_success_attempt_read_proceeds(monkeypatch, tmp_path) -> None:
+    envfile = _rerun_env(monkeypatch, tmp_path)
+    fake = _FakeGh((1, "", SERVER_ERROR), (0, "1\n", ""))
+    slept = _patch(monkeypatch, fake)
+    assert port.main([]) == 0
+    assert len(fake.calls) == 2
+    assert slept == [5.0]
+    assert envfile.read_text(encoding="utf-8") == "WATCHDOG_SKIP_RERUN=false\n"
+
+
+def test_a_persistent_5xx_fails_with_gh_status_and_a_closed_group(
+    monkeypatch, tmp_path, capsys
+) -> None:
+    _rerun_env(monkeypatch, tmp_path)
+    fake = _FakeGh((4, "", SERVER_ERROR))
+    slept = _patch(monkeypatch, fake)
+    with pytest.raises(SystemExit) as exc:
+        port.main([])
+    assert exc.value.code == 4
+    captured = capsys.readouterr()
+    assert captured.out == "::group::Fetching run details\n::endgroup::\n"
+    assert "HTTP 502" in captured.err
+    assert len(fake.calls) == 3
+    assert slept == [5.0, 15.0]
+
+
+def test_a_non_transient_failure_is_not_retried(monkeypatch, tmp_path) -> None:
+    _rerun_env(monkeypatch, tmp_path)
+    fake = _FakeGh((1, "", "gh: Not Found (HTTP 404)"))
+    slept = _patch(monkeypatch, fake)
+    with pytest.raises(SystemExit):
+        port.main([])
+    assert len(fake.calls) == 1
+    assert slept == []

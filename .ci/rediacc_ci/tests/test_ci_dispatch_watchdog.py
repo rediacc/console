@@ -36,6 +36,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from rediacc_ci.ci import dispatch_watchdog as port
+from rediacc_ci.core import ghx
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import frozen
 from rediacc_ci.well_known import GH_REPO
@@ -741,3 +742,116 @@ def test_a_planted_widening_of_the_bootstrap_404_is_caught(
     compare(name, bindir, nogh)
     with open(source, encoding="utf-8") as fh:
         assert fh.read() == original
+
+
+# --- PLAN-gh-retry G4/G5: reads go through gh_retry (in-process, fake ghx.gh, no sleeping) ---
+
+SERVER_ERROR = "gh: Server Error (HTTP 502)"
+
+
+class _FakeGh:
+    """A `ghx.gh` stand-in: each call returns the next outcome `(rc, stdout, stderr)`, the last one repeating."""
+
+    def __init__(self, *outcomes, on_ok=None):
+        self.outcomes = list(outcomes)
+        self.on_ok = on_ok
+        self.calls = []
+
+    def __call__(self, args, **kw):
+        self.calls.append((args, kw))
+        rc, out, err = self.outcomes[min(len(self.calls), len(self.outcomes)) - 1]
+        if rc == 0 and self.on_ok:
+            self.on_ok(args)
+        return ghx.GhResult(["gh", *args], rc, out, err)
+
+
+def _patch(monkeypatch, fake):
+    slept: list[float] = []
+    monkeypatch.setattr(ghx, "gh", fake)
+    monkeypatch.setattr("time.sleep", slept.append)
+    return slept
+
+
+class _FakeDispatch:
+    """Stands in for `subprocess.run` inside the module, which only the one-shot dispatch still uses."""
+
+    def __init__(self, rc=1, out="boom"):
+        self.rc, self.out, self.calls = rc, out, []
+
+    def __call__(self, argv, **_kw):
+        self.calls.append(argv)
+
+        class _Proc:
+            returncode = self.rc
+            stdout = self.out
+
+        return _Proc()
+
+
+def _watchdog_env(monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", GH_REPO)
+    monkeypatch.setattr(port.common, "require_cmd", lambda _name: None)
+
+
+def test_a_502_then_success_read_resolves_the_head_ref(monkeypatch) -> None:
+    _watchdog_env(monkeypatch)
+    fake = _FakeGh((1, "", SERVER_ERROR), (0, "topic\n", ""))
+    slept = _patch(monkeypatch, fake)
+    dispatch = _FakeDispatch(rc=0, out="")
+    monkeypatch.setattr(port.subprocess, "run", dispatch)
+    argv = ["--run-id", "1", "--generation", "1", "--pr-number", "7"]
+    assert port.main(argv) == 0
+    assert len(fake.calls) == 2
+    assert slept == [5.0]
+    assert len(dispatch.calls) == 1
+    assert dispatch.calls[0][dispatch.calls[0].index("--ref") + 1] == "topic"
+
+
+def test_a_persistent_5xx_read_fails_loudly_and_nothing_is_dispatched(monkeypatch, capsys) -> None:
+    _watchdog_env(monkeypatch)
+    fake = _FakeGh((1, "", SERVER_ERROR))
+    slept = _patch(monkeypatch, fake)
+    dispatch = _FakeDispatch()
+    monkeypatch.setattr(port.subprocess, "run", dispatch)
+    assert port.main(["--run-id", "1", "--generation", "1"]) == 1
+    assert "Could not read the head branch of run 1" in capsys.readouterr().err
+    assert len(fake.calls) == 3
+    assert slept == [5.0, 15.0]
+    assert dispatch.calls == []
+
+
+def test_a_non_transient_read_failure_is_not_retried(monkeypatch) -> None:
+    _watchdog_env(monkeypatch)
+    fake = _FakeGh((1, "", "gh: Not Found (HTTP 404)"))
+    slept = _patch(monkeypatch, fake)
+    assert port.main(["--run-id", "1", "--generation", "1"]) == 1
+    assert len(fake.calls) == 1
+    assert slept == []
+
+
+def test_a_failing_dispatch_is_one_shot_never_retried(monkeypatch) -> None:
+    """The dispatch is a write: a 502 on it must not be retried (a lost response would start a duplicate generation). The module's own head-ref-then-default-branch fallback is two DIFFERENT refs, each tried once."""
+    _watchdog_env(monkeypatch)
+    fake = _FakeGh((0, "main\n", ""))
+    slept = _patch(monkeypatch, fake)
+    dispatch = _FakeDispatch(rc=1, out=SERVER_ERROR)
+    monkeypatch.setattr(port.subprocess, "run", dispatch)
+    argv = ["--run-id", "1", "--generation", "1", "--head-ref", "topic", "--pr-number", "7"]
+    assert port.main(argv) == 1
+    refs = [call[call.index("--ref") + 1] for call in dispatch.calls]
+    assert refs == ["topic", "main"]
+    assert slept == []
+    one = _FakeDispatch(rc=1, out=SERVER_ERROR)
+    monkeypatch.setattr(port.subprocess, "run", one)
+    port.dispatch(
+        "topic",
+        {
+            "run_id": "1",
+            "generation": "1",
+            "pr_number": "",
+            "head_ref": "",
+            "pending_rerun": "false",
+        },
+        GH_REPO,
+    )
+    assert len(one.calls) == 1

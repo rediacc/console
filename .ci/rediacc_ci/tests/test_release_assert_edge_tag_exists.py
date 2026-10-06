@@ -21,6 +21,7 @@ import sys
 import typing
 
 from rediacc_ci import paths
+from rediacc_ci.core import ghx
 from rediacc_ci.release import assert_edge_tag_exists as port
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import GH_REPO
@@ -165,6 +166,34 @@ def _run_live(
 def run_both(tmp_path: pathlib.Path, args: list[str], **kw):
     old, old_calls = _run(TWIN, tmp_path, args, **kw)
     new, new_calls = _run(PORT, tmp_path, args, **kw)
+    return old, new, old_calls, new_calls
+
+
+_TRANSIENT_TO_PLAIN = (
+    ("HTTP 500: boom", "HTTP 403: boom"),
+    ("HTTP 502: bad gateway", "HTTP 403: forbidden"),
+)
+
+
+def run_both_retry_free(tmp_path: pathlib.Path, args: list[str], **kw):
+    """`run_both` for a probe error the twin sees as a 5xx. The port RETRIES a 5xx (gh_retry: 3 calls, 20 s of backoff, which a subprocess cannot skip), so its side is driven with the same text spelled as a 403 and its output mapped back before the comparison. The 5xx retry itself is pinned in-process by the tests at the end of this file."""
+    old, old_calls = _run(TWIN, tmp_path, args, **kw)
+    plain = dict(kw)
+    for key, original in kw.items():
+        text = original
+        for transient, replacement in _TRANSIENT_TO_PLAIN:
+            text = text.replace(transient, replacement)
+        plain[key] = text
+    new, new_calls = _run(PORT, tmp_path, args, **plain)
+
+    def restore(text: str) -> str:
+        for transient, replacement in _TRANSIENT_TO_PLAIN:
+            text = text.replace(replacement, transient)
+        return text
+
+    new = subprocess.CompletedProcess(
+        new.args, new.returncode, restore(new.stdout), restore(new.stderr)
+    )
     return old, new, old_calls, new_calls
 
 
@@ -321,7 +350,7 @@ def test_nocredentials_from_aws_gets_the_aws_specific_hint(tmp_path: pathlib.Pat
 
 def test_the_could_not_tell_detail_keeps_its_trailing_space(tmp_path: pathlib.Path) -> None:
     """`one_line`'s here-string appends a newline that becomes a SPACE, and nothing later removes it. Asserted on the raw bytes because it is exactly the kind of thing a port tidies away without noticing."""
-    old, new, old_calls, new_calls = run_both(
+    old, new, old_calls, new_calls = run_both_retry_free(
         tmp_path,
         ["1.3.0"],
         FAKE_GH_API_RC="1",
@@ -381,7 +410,7 @@ def test_a_mixture_of_absent_and_unknown_takes_the_could_not_tell_advice(
     tmp_path: pathlib.Path,
 ) -> None:
     """When BOTH states are present the could-not-tell block wins, because an unknown means nothing can be concluded about the release at all -- so the "cut the release" advice would be unsound even though something really is missing."""
-    old, new, old_calls, new_calls = run_both(
+    old, new, old_calls, new_calls = run_both_retry_free(
         tmp_path,
         ["1.3.0"],
         FAKE_GH_API_RC="1",
@@ -545,7 +574,7 @@ def test_divergence_common_sh_interprets_backslash_escapes_in_probe_text(
     """A DELIBERATE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE
     "FIXED" BY ACCIDENT. common.sh's loggers use `echo -e`, which interprets backslash escapes IN THE MESSAGE, and the COULD NOT TELL line interpolates the probe's own output into that message. `rediacc_ci.log` formats the message as data (see its module docstring), so a literal backslash-n in an API error becomes a newline through the twin and stays two characters here.
     """
-    old, new, _oc, _nc = run_both(
+    old, new, _oc, _nc = run_both_retry_free(
         tmp_path,
         ["1.3.0"],
         FAKE_GH_API_RC="1",
@@ -634,3 +663,61 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     assert PORT.read_text(encoding="utf-8") == original, (
         "port source must be restored byte-identical"
     )
+
+
+# --- PLAN-gh-retry G4/G5: reads go through gh_retry (in-process, fake ghx.gh, no sleeping) ---
+
+SERVER_ERROR = "gh: Server Error (HTTP 502)"
+
+
+class _FakeGh:
+    """A `ghx.gh` stand-in: each call returns the next outcome `(rc, stdout, stderr)`, the last one repeating."""
+
+    def __init__(self, *outcomes, on_ok=None):
+        self.outcomes = list(outcomes)
+        self.on_ok = on_ok
+        self.calls = []
+
+    def __call__(self, args, **kw):
+        self.calls.append((args, kw))
+        rc, out, err = self.outcomes[min(len(self.calls), len(self.outcomes)) - 1]
+        if rc == 0 and self.on_ok:
+            self.on_ok(args)
+        return ghx.GhResult(["gh", *args], rc, out, err)
+
+
+def _patch(monkeypatch, fake):
+    slept: list[float] = []
+    monkeypatch.setattr(ghx, "gh", fake)
+    monkeypatch.setattr("time.sleep", slept.append)
+    return slept
+
+
+def test_a_502_then_success_probe_reads_present(monkeypatch) -> None:
+    fake = _FakeGh((1, "", SERVER_ERROR), (0, "{}", ""))
+    slept = _patch(monkeypatch, fake)
+    assert port.probe_gh_api("repos/a/b/git/ref/tags/v1.0.0") == port.PRESENT
+    assert len(fake.calls) == 2
+    assert slept == [5.0]
+
+
+def test_a_persistent_5xx_is_could_not_tell_not_absent(monkeypatch) -> None:
+    fake = _FakeGh((1, "", SERVER_ERROR))
+    slept = _patch(monkeypatch, fake)
+    verdict = port.probe_gh_release("v1.0.0")
+    assert port.is_unknown(verdict)
+    assert "HTTP 502" in verdict
+    assert len(fake.calls) == 3
+    assert slept == [5.0, 15.0]
+
+
+def test_a_404_is_still_absent_after_one_call_on_either_stream(monkeypatch) -> None:
+    fake = _FakeGh((1, "", "gh: Not Found (HTTP 404)"))
+    slept = _patch(monkeypatch, fake)
+    assert port.probe_gh_api("repos/a/b/git/ref/tags/v1.0.0") == port.ABSENT
+    assert len(fake.calls) == 1
+    assert slept == []
+    fake_out = _FakeGh((1, "release not found", ""))
+    _patch(monkeypatch, fake_out)
+    assert port.probe_gh_release("v1.0.0") == port.ABSENT
+    assert len(fake_out.calls) == 1

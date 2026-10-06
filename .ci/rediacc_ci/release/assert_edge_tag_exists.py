@@ -70,6 +70,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.core import gh_retry
 from rediacc_ci.well_known import GH_REPO, RELEASES_BUCKET
 
 SELF = "assert-edge-tag-exists.py"
@@ -142,9 +143,16 @@ def _capture_merged(argv: list[str]) -> tuple[int, str]:
     return proc.returncode, proc.stdout.rstrip("\n")
 
 
+def _capture_gh(args: list[str]) -> tuple[int, str]:
+    """`out="$(gh ... 2>&1)"` through gh_retry: a 5xx or connection fault is retried before it is allowed to become `unknown:`. Both streams are folded into one string (stderr first, where gh prints its `HTTP 404`), so the 404 match sees what it always saw. A missing gh yields the shell's 127."""
+    result = gh_retry.gh(args)
+    out = "\n".join(part for part in (result.stderr, result.stdout_raw) if part)
+    return result.returncode, out.rstrip("\n")
+
+
 def probe_gh_api(path: str) -> str:
     """`probe_gh_api` (:101-113). present | absent | unknown:<detail>."""
-    rc, out = _capture_merged(["gh", "api", path])
+    rc, out = _capture_gh(["api", path])
     if rc == 0:
         return PRESENT
     if GH_API_ABSENT.search(out):
@@ -154,7 +162,7 @@ def probe_gh_api(path: str) -> str:
 
 def probe_gh_release(tag: str) -> str:
     """`probe_gh_release` (:115-127)."""
-    rc, out = _capture_merged(["gh", "release", "view", tag, "--json", "tagName"])
+    rc, out = _capture_gh(["release", "view", tag, "--json", "tagName"])
     if rc == 0:
         return PRESENT
     if GH_RELEASE_ABSENT.search(out):
