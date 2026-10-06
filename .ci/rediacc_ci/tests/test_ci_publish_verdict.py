@@ -14,7 +14,7 @@ import types
 import pytest
 
 from rediacc_ci import paths
-from rediacc_ci.ci import budget_report
+from rediacc_ci.ci import budget_report, gh_retry
 from rediacc_ci.ci import publish_ci_verdict as pub
 from rediacc_ci.core import ghx
 from rediacc_ci.well_known import GH_REPO
@@ -435,3 +435,29 @@ def test_an_over_budget_verdict_job_never_violates_and_the_note_names_the_live_s
     assert got["names"] == [JOB]
     assert got["notes"][2] == " -- in step 'Run E2E' for 6.7m"
     assert got["notes"][0] == ""
+
+
+def test_github_get_retries_a_transient_5xx_and_not_a_4xx(monkeypatch):
+    """The verdict publisher's reads ride gh_retry (sweep of f92f55e63): a 502 is retried, a 404 fails at once."""
+    calls: list[list[str]] = []
+    answers = [(1, "", "gh: Server Error (HTTP 502)"), (0, '{"ok": true}', "")]
+
+    def runner(args, **_kw):
+        calls.append(list(args))
+        rc, out, err = answers.pop(0)
+        return ghx.GhResult(["gh", *args], rc, out, err)
+
+    monkeypatch.setattr(gh_retry.ghx, "gh", runner)
+    monkeypatch.setattr(gh_retry.time, "sleep", lambda _s: None)
+    assert pub.GitHub("a/b").get("repos/a/b/x") == {"ok": True}
+    assert len(calls) == 2
+
+    calls.clear()
+    answers[:] = [(1, "", "gh: Not Found (HTTP 404)")]
+    try:
+        pub.GitHub("a/b").get("repos/a/b/missing")
+    except ghx.GhError:
+        pass
+    else:
+        raise AssertionError("a 404 must raise")
+    assert len(calls) == 1

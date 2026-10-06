@@ -32,6 +32,7 @@ import sys
 from typing import TYPE_CHECKING, Any
 
 from rediacc_ci import log
+from rediacc_ci.ci import gh_retry
 from rediacc_ci.core import ghx
 from rediacc_ci.well_known import GH_REPO
 
@@ -219,7 +220,8 @@ class GitHub:
         self.repo = repo
 
     def get(self, path: str) -> Any:
-        return ghx.api_json(path, attempts=3)
+        # Transient 5xx and connection faults only, with a backoff that outlasts a GitHub 502 window; a 4xx fails at once (gh_retry; f92f55e63 for budget_report).
+        return gh_retry.api_json(path)
 
     def write(self, method: str, path: str, payload: dict) -> int:
         try:
