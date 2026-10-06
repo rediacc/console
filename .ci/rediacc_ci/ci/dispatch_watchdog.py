@@ -84,7 +84,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, gh_retry
 
 # `MAX_GENERATIONS=22` (twin :85). ~3 hours at ~8-minute generations, matching
 # watchdog-monitor.yml's own maxRuntime.
@@ -162,20 +162,17 @@ def parse_args(argv: list[str]) -> dict[str, str]:
 
 
 def gh_api(endpoint: str, jq: str) -> tuple[int, str]:
-    """`gh api <endpoint> --jq <filter>`. Returns (status, stdout, trimmed).
+    """`gh api <endpoint> --jq <filter>`, retried on a transient fault (gh_retry). Returns (status, stdout, trimmed).
 
-    stderr is NOT captured: the twin lets it through to its own stderr for both of these lookups, and only the DISPATCH merges the two streams.
+    A read only: the DISPATCH below stays one-shot, because a retry after a lost response would start a second watchdog generation. gh's stderr is passed to this process's own stderr, as the twin let it through.
     """
-    try:
-        proc = subprocess.run(
-            ["gh", "api", endpoint, "--jq", jq],
-            stdout=subprocess.PIPE,
-            text=True,
-            check=False,
-        )
-    except FileNotFoundError:
-        return 127, ""
-    return proc.returncode, proc.stdout.rstrip("\n")
+    result = gh_retry.gh(["api", endpoint, "--jq", jq])
+    if result.stderr:
+        sys.stderr.write(result.stderr if result.stderr.endswith("\n") else result.stderr + "\n")
+        sys.stderr.flush()
+    if not result.ok:
+        return result.returncode or 1, ""
+    return 0, result.stdout_raw.rstrip("\n")
 
 
 def dispatch(ref: str, args: dict[str, str], repository: str) -> tuple[int, str]:

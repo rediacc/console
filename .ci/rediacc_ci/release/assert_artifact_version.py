@@ -59,13 +59,16 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, gh_retry
 
 SELF = "assert-artifact-version.py"
 
 # `.ci/scripts/release/assert-artifact-version.sh:48`, verbatim. A constant rather than a parameter because the twin has no override hook either, and inventing one here would be a behaviour the bash side cannot match.
 CHECK_DIR = "/tmp/cd-artifact-check"
 ARTIFACT_NAME = "cli-manifest"
+
+# `gh run download` goes through the shared 30 s `ghx` bound by default, which is the budget of an API read, not of a blob-store download: the artifact is a zip fetched from a separate storage host. 300 s covers a slow storage response several times over while still failing a hung connection well inside the CD job's own timeout.
+DOWNLOAD_TIMEOUT_S = 300.0
 
 
 def _require_cmd(name: str) -> int | None:
@@ -101,10 +104,9 @@ def main(argv: list[str]) -> int:
     check_dir = pathlib.Path(CHECK_DIR)
     check_dir.mkdir(parents=True, exist_ok=True)
 
-    # `2>/dev/null` on gh ONLY. gh's stdout is left alone, exactly as the twin leaves it, so a chatty download still reaches the CD log.
-    download = subprocess.run(
+    # Read through gh_retry: a 5xx or connection fault is retried (5 s, then 15 s). A refusal that is NOT transient is the twin's "artifact not found", and gh's stderr stays swallowed for it exactly as `2>/dev/null` swallowed it; only a failure that persisted through the retries names itself, because "not found" would then be a lie about a run whose artifact may be fine.
+    download = gh_retry.gh(
         [
-            "gh",
             "run",
             "download",
             ci_run_id,
@@ -115,10 +117,22 @@ def main(argv: list[str]) -> int:
             "--dir",
             CHECK_DIR,
         ],
-        stderr=subprocess.DEVNULL,
-        check=False,
+        timeout=DOWNLOAD_TIMEOUT_S,
     )
-    if download.returncode != 0:
+    # gh's stdout is left alone, as the twin leaves it, so a chatty download still reaches the CD log.
+    if download.stdout_raw:
+        sys.stdout.write(download.stdout_raw)
+        sys.stdout.flush()
+    if not download.ok:
+        if download.timed_out or gh_retry.is_transient(download.stderr):
+            print(
+                "::error::Could not download the cli-manifest artifact of CI run %s: GitHub "
+                "failed transiently and the retries were exhausted (%s). This says nothing "
+                "about whether the artifact exists, so the artifact version CANNOT be compared."
+                % (ci_run_id, " ".join((download.stderr or "timed out").split()))
+            )
+            print("::error::Refusing to publish on an unverified version. Re-run this job.")
+            return 1
         print(
             "::error::cli-manifest artifact not found on CI run %s, so the artifact "
             "version CANNOT be compared." % ci_run_id
