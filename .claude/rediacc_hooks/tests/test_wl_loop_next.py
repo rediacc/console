@@ -14,7 +14,7 @@ import pathlib
 from rediacc_hooks.tests import test_wl_focus as F
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_cap_wait import mutated_hook
-from rediacc_hooks.tests.test_wl_ci_status import write_exec
+from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_rollup, ci_running, write_exec
 from rediacc_hooks.tests.test_wl_pr_scope_stop import (
     BRANCH,
     keys_of,
@@ -170,6 +170,20 @@ def test_ln5_a_live_pr_with_every_box_ticked_names_pr_merge(wl):  # noqa: F811
     out = reason(got)
     assert "loop-next" in keys_of(wl, got), out[:1500]
     assert "run /pr-merge" in out, out[:1500]
+
+
+def test_ln5b_a_pending_run_on_the_head_turns_the_merge_order_into_an_advisory(wl):  # noqa: F811
+    """PR #597, 2026-10-06: every box ticked and CI running. /pr-merge needs CI Complete SUCCESS, so the merge order blocked each stop of the wait with nothing to do; the push hook's detached watch is not a background task of the session. ln5 (green CI) is the control: it still blocks."""
+    live_world(wl, own_open=0)
+    head = wl.git("rev-parse", "HEAD").stdout.strip()
+    wl.git("update-ref", "refs/remotes/origin/%s" % BRANCH, head)
+    ci_rollup(
+        wl,
+        "PENDING",
+        "[%s,%s]" % (ci_job("Quality / Static", "SUCCESS"), ci_running("CI Complete")),
+    )
+    got = stop(wl)
+    assert "loop-next" not in keys_of(wl, got), reason(got)[:1500]
 
 
 def test_ln6_a_ticked_pr_plan_with_an_open_prerequisite_never_gets_pr_merge(wl):  # noqa: F811

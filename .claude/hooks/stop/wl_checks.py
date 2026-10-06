@@ -4466,12 +4466,13 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
     # ---- LOOP NEXT (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7, operator addition 2026-10-03): after the PR's plan is finished and the PR merged, the turn is held until the next branch, plan and PR exist. One arm per loop state, each naming the exact commands; silent on an empty queue. After the CI read, so `pr-finish` above already decided this stop.
     # A BACKGROUND TASK OF THIS SESSION DOWNGRADES IT to an advisory (a pr-merge watch or a `ci-trace --wait` is the step being waited on), and the unreadable arm is bounded like ci-red.
+    # SO DOES A PENDING RUN ON THE HEAD: /pr-merge needs CI Complete SUCCESS, so while the run is in progress there is nothing to merge yet, and blocking every stop only forces a no-op. Found 2026-10-06 on PR #597: the push hook's detached `ci-trace --wait --until-final` watch is not a background task of this session, so `live_bg` stayed false and the merge order blocked each stop of the wait.
     if _on_loop:
         try:
             _ln_text, _ln_block = loop_next_text(
                 _loop, root, state_doc, any(k == "pr-finish" for k, _a, _t in violations)
             )
-            if _ln_text and _ln_block and not live_bg:
+            if _ln_text and _ln_block and not live_bg and cistate != "pending":
                 vadd("loop-next", False, _ln_text)
                 outq_drop(state_doc, "loop-next")
             elif _ln_text:
