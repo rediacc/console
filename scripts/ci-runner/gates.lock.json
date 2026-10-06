@@ -1175,7 +1175,8 @@
       ".ci/scripts/**",
       ".ci/**/*.sh",
       ".ci/config/constants.sh",
-      "run.sh"
+      "run.sh",
+      ".ci/rediacc_ci/quality/*.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
@@ -1195,7 +1196,9 @@
     "paths": [
       ".devcontainer/toolchain.env",
       ".devcontainer/Dockerfile",
-      ".ci/scripts/quality/check_toolchain_env_dockerfile_sync.py"
+      ".ci/scripts/quality/check_toolchain_env_dockerfile_sync.py",
+      "package.json",
+      "packages/cli/package.json"
     ],
     "pathsOrigin": "declared",
     "leaves": [
@@ -1235,7 +1238,8 @@
     "paths": [
       ".claude/hooks/**/*.sh",
       ".ci/scripts/quality/*.py",
-      ".ci/rediacc_ci/quality/git_op_conditionals.py"
+      ".ci/rediacc_ci/quality/git_op_conditionals.py",
+      ".claude/rediacc_hooks/**/*.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
@@ -1276,7 +1280,9 @@
       "package.json",
       "packages/*/package.json",
       "workers/*/package.json",
-      ".ci/scripts/quality/**"
+      ".ci/scripts/quality/**",
+      "scripts/**",
+      ".ci/**"
     ],
     "pathsOrigin": "declared",
     "leaves": [
@@ -1405,7 +1411,8 @@
       "scripts/data/hook-inventory-baseline.json",
       "scripts/data/hook-coverage-baseline.json",
       ".ci/scripts/quality/check_hook_integrity.py",
-      "scripts/data/hook-audit-scope.json"
+      "scripts/data/hook-audit-scope.json",
+      ".claude/rediacc_hooks/**"
     ],
     "pathsOrigin": "declared",
     "leaves": [
@@ -1451,7 +1458,10 @@
       ".claude/agents/**",
       ".claude/hooks/**",
       "docs/agent-reference/**",
-      ".ci/scripts/quality/check_ci_watch_recipe.py"
+      ".ci/scripts/quality/check_ci_watch_recipe.py",
+      ".claude/**",
+      ".ci/scripts/ci/**",
+      ".ci/scripts/quality/lib/**"
     ],
     "pathsOrigin": "declared",
     "leaves": [
@@ -2298,7 +2308,8 @@
     "paths": [
       "scripts/ci-runner/manifest.ts",
       "scripts/ci-runner/gates.lock.json",
-      "scripts/gen/gen-gates-lock.ts"
+      "scripts/gen/gen-gates-lock.ts",
+      "packages/cli/scripts/command-tree.json"
     ],
     "pathsOrigin": "declared",
     "leaves": [
@@ -2357,7 +2368,8 @@
       ".syncpackrc.json",
       ".ci/config/syncpack-source-exclusions.json",
       ".ci/scripts/quality/check_syncpack_sources.py",
-      "**/package.json"
+      "**/package.json",
+      "private/account"
     ],
     "pathsOrigin": "declared",
     "leaves": [
@@ -2847,7 +2859,9 @@
       "package.json",
       "eslint.config.js",
       "biome.json",
-      ".ci/scripts/quality/check_lint_scope_coverage.py"
+      ".ci/scripts/quality/check_lint_scope_coverage.py",
+      ".gitignore",
+      "tsconfig.json"
     ],
     "pathsOrigin": "declared",
     "leaves": [
@@ -2997,7 +3011,10 @@
       ".claude/hooks/**",
       "package.json",
       "scripts/ci-runner/gates.lock.json",
-      ".ci/config/tree-write-mutators.json"
+      ".ci/config/tree-write-mutators.json",
+      "**/.gitignore",
+      "packages/*/src/**",
+      "packages/shared/**"
     ],
     "pathsOrigin": "declared",
     "leaves": [
@@ -4412,7 +4429,9 @@
       "scripts/data/hook-coverage-baseline.json",
       "scripts/data/css-dom-refs-baseline.json",
       "scripts/data/hook-inventory-baseline.json",
-      ".ci/scripts/quality/runner-sizing-baseline.json"
+      ".ci/scripts/quality/runner-sizing-baseline.json",
+      "scripts/data/*-baseline.json",
+      ".ci/scripts/quality/*-baseline.json"
     ],
     "pathsOrigin": "declared",
     "leaves": [

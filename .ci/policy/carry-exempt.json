@@ -28,6 +28,26 @@
     {
       "id": "check:ci-lockfile",
       "reason": "Runs npm ci --dry-run and npm install --package-lock-only under the pinned npm, which resolve against the live registry (including release-age windows), so a package published or yanked flips the verdict with no tracked input changed."
+    },
+    {
+      "id": "check:ci-setup-idempotency",
+      "reason": "Runs ./run.sh setup --check against the live host (docker, node, port block) and diffs git status over the whole working tree, so its verdict tracks machine state, not declared inputs."
+    },
+    {
+      "id": "check:ci-guard-mention-anchoring",
+      "reason": "Executes every hook guard live with cwd at the repo root, and guards read repo, worklist and git state, so the verdict can move while the declared guard files stay byte-identical."
+    },
+    {
+      "id": "check:ci-account-portal",
+      "reason": "Runs npm ci, tsc, biome and vite build in the private/account submodule against untracked node_modules and the live npm registry, so the verdict is not a function of tracked inputs."
+    },
+    {
+      "id": "check:ci-paths-origin",
+      "reason": "Checks every gate's globs against git ls-files over the whole tracked tree and runs derived: commands, so adding or deleting an unrelated file can flip it with its own inputs unchanged."
+    },
+    {
+      "id": "check:ci-renet",
+      "reason": "Delegates to private/renet/.ci/ci.sh quality, which runs Go with GOTOOLCHAIN=auto and can fetch toolchains and modules, so the result can move without any tracked input changing."
     }
   ]
 }
