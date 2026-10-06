@@ -109,6 +109,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
 
 from rediacc_ci import log, paths
+from rediacc_ci.ci import gh_retry
 from rediacc_ci.core import ghx
 from rediacc_ci.well_known import GH_REPO
 
@@ -122,7 +123,7 @@ REFRESH_PR_STATUS = "completed"
 # T3.2: how many completed PR-full runs `--refresh`/`--check` sample (see REFRESH_PR_STATUS). Separate from DEFAULT_LIMIT (15, the read-only report's own default) because the plan's box names 10 explicitly, and the two commands have different costs -- --refresh/--check also list and download artifacts per run, which --limit 15's report path never does.
 DEFAULT_REFRESH_LIMIT = 10
 
-# EVERY READ HERE RETRIES, because one report makes dozens of calls and a single transient failure used to abort all of them: on 2026-09-27 a `--refresh --dry-run` died on `stream error: stream ID 1; CANCEL; received from peer` for one run's jobs, and the identical rerun succeeded. `ghx.gh` defaults to one attempt on purpose (an auth failure should not cost backoff); a report over many runs is the caller that wants three.
+# EVERY READ HERE RETRIES, because one report makes dozens of calls and a single transient failure used to abort all of them: on 2026-09-27 a `--refresh --dry-run` died on `stream error: stream ID 1; CANCEL; received from peer` for one run's jobs, and the identical rerun succeeded. `ghx.gh` defaults to one attempt on purpose (an auth failure should not cost backoff); a report over many runs is the caller that wants three, and wants them only for a TRANSIENT failure: every read goes through `gh_retry`, which retries a 5xx or a connection fault with a 5 s / 15 s backoff and raises a 4xx at once (2026-10-06: CI job 112158906504 died on a `gh: Server Error (HTTP 502)` that the old immediate 2 s / 4 s retries all landed inside).
 GH_ATTEMPTS = 3
 
 # How many times `fetch_runs` reads the run list before sampling the union of what came back (see there).
@@ -147,7 +148,7 @@ HEADROOM_JOBS = ("Validate Promotion", "Stage Artifacts")
 # T3.1: a sampled run older than this no longer describes today's CI -- the same "the same call once returned August runs and, a minute later, September ones" defect this guards against, and the same 14-day figure check-lane-budget.ts's own check 5 (MAX_STALENESS_DAYS) applies to the OUTPUT file, applied here to the INPUT sample.
 SAMPLE_MAX_AGE_DAYS = 14
 
-# Actions API pagination: one page at a time, `per_page` capped at the API's own 100 maximum. `fetch_jobs`/`fetch_artifacts` walk pages explicitly with this cap rather than `ghx.api_json(..., paginate=True)`: `--paginate` without `--jq` only auto-merges a response whose BODY IS a bare top-level JSON array (MEASURED: `repos/.../labels` does); `.../runs/{id}/jobs` and `.../runs/{id}/artifacts` are both a JSON OBJECT with one array field inside (`{"total_count", "jobs": [...]}`), and gh's own `--paginate` help text says a multi-page object response is printed as one JSON document PER PAGE, not merged -- MEASURED live (run 36358238015, 158 jobs, two pages): `gh api --paginate` printed two back-to-back `{"total_count":158,"jobs":[...]}` objects, and `ghx.api_json`'s `.json()` (a plain `json.loads`) raised `GhBadOutputError` ("Extra data") on the concatenation. `--slurp` would wrap those into an array of page-objects, still needing this module to merge their `jobs` arrays itself, so a manual `page=` loop is no more code and stays inside `ghx.api_json`'s existing, already-tested single-document contract.
+# Actions API pagination: one page at a time, `per_page` capped at the API's own 100 maximum. `fetch_jobs`/`fetch_artifacts` walk pages explicitly with this cap rather than `gh_retry.api_json(..., paginate=True)`: `--paginate` without `--jq` only auto-merges a response whose BODY IS a bare top-level JSON array (MEASURED: `repos/.../labels` does); `.../runs/{id}/jobs` and `.../runs/{id}/artifacts` are both a JSON OBJECT with one array field inside (`{"total_count", "jobs": [...]}`), and gh's own `--paginate` help text says a multi-page object response is printed as one JSON document PER PAGE, not merged -- MEASURED live (run 36358238015, 158 jobs, two pages): `gh api --paginate` printed two back-to-back `{"total_count":158,"jobs":[...]}` objects, and `ghx.api_json`'s `.json()` (a plain `json.loads`) raised `GhBadOutputError` ("Extra data") on the concatenation. `--slurp` would wrap those into an array of page-objects, still needing this module to merge their `jobs` arrays itself, so a manual `page=` loop is no more code and stays inside `ghx.api_json`'s existing, already-tested single-document contract.
 _PAGE_SIZE = 100
 
 # One entry per run class this report covers (plan section 1's four samples collapse to three LIVE classes: sample A is main-push, B/B1 is pr-full, and the schedule runs inside B become their own class here rather than being folded into pr-full, since D-W5 treats the nightly as a separate ceiling).
@@ -309,7 +310,7 @@ def fetch_runs(
     by_id: dict[Any, dict[str, Any]] = {}
     page_ids: list[tuple[Any, ...]] = []
     for _ in range(RUN_LIST_READS):
-        data = ghx.api_json(path, attempts=GH_ATTEMPTS)
+        data = gh_retry.api_json(path, attempts=GH_ATTEMPTS)
         if not isinstance(data, dict):
             raise ghx.GhBadOutputError(
                 [], 0, "expected a JSON object from the workflow-runs endpoint", ghx.FAILURE_FAILED
@@ -337,12 +338,12 @@ def fetch_runs(
 def fetch_jobs(repo: str, run_id: int) -> list[dict[str, Any]]:
     """Every job of one run, across every page the Actions API needs.
 
-    MEASURED 2026-09-27: run 36358238015 alone carries 158 jobs, and a single `per_page=100` page silently dropped the last 58 -- not "every measured run tops out at 80" as this function's own comment used to claim. Paged explicitly with `page=`; see `_PAGE_SIZE`'s own comment for why not `ghx.api_json(..., paginate=True)`.
+    MEASURED 2026-09-27: run 36358238015 alone carries 158 jobs, and a single `per_page=100` page silently dropped the last 58 -- not "every measured run tops out at 80" as this function's own comment used to claim. Paged explicitly with `page=`; see `_PAGE_SIZE`'s own comment for why not `gh_retry.api_json(..., paginate=True)`.
     """
     jobs: list[dict[str, Any]] = []
     page = 1
     while True:
-        data = ghx.api_json(
+        data = gh_retry.api_json(
             "repos/%s/actions/runs/%s/jobs?per_page=%d&page=%d" % (repo, run_id, _PAGE_SIZE, page),
             attempts=GH_ATTEMPTS,
         )
@@ -893,11 +894,11 @@ def parse_unit_duration_artifact(
 
 
 def fetch_artifacts(repo: str, run_id: int) -> list[dict[str, Any]]:
-    """Every artifact of one run (id, name, ...), across every page -- paged exactly like `fetch_jobs`; see `_PAGE_SIZE`'s own comment for why a manual `page=` loop and not `ghx.api_json(..., paginate=True)`."""
+    """Every artifact of one run (id, name, ...), across every page -- paged exactly like `fetch_jobs`; see `_PAGE_SIZE`'s own comment for why a manual `page=` loop and not `gh_retry.api_json(..., paginate=True)`."""
     artifacts: list[dict[str, Any]] = []
     page = 1
     while True:
-        data = ghx.api_json(
+        data = gh_retry.api_json(
             "repos/%s/actions/runs/%s/artifacts?per_page=%d&page=%d"
             % (repo, run_id, _PAGE_SIZE, page),
             attempts=GH_ATTEMPTS,
@@ -920,12 +921,12 @@ def fetch_artifacts(repo: str, run_id: int) -> list[dict[str, Any]]:
 def download_artifact_zip(repo: str, artifact_id: Any) -> bytes:
     """One artifact's raw zip bytes. Raises `ghx.GhBadOutputError` on a non-zero exit, the same failure class every other call in this module raises -- TRAP 1 stays closed even off the `ghx.gh()` path."""
     argv = ["gh", "api", "repos/%s/actions/artifacts/%s/zip" % (repo, artifact_id)]
-    result = subprocess.run(argv, capture_output=True, check=False, timeout=60)
-    for attempt in range(1, GH_ATTEMPTS):
-        if result.returncode == 0:
-            break
-        time.sleep(2**attempt)
-        result = subprocess.run(argv, capture_output=True, check=False, timeout=60)
+    result = gh_retry.retry_transient(
+        lambda: subprocess.run(argv, capture_output=True, check=False, timeout=60),
+        lambda r: None if r.returncode == 0 else r.stderr.decode("utf-8", "replace") or "failed",
+        attempts=GH_ATTEMPTS,
+        sleep=time.sleep,
+    )
     if result.returncode != 0:
         raise ghx.GhBadOutputError(
             argv, result.returncode, result.stderr.decode("utf-8", "replace"), ghx.FAILURE_FAILED
@@ -1276,7 +1277,7 @@ def aggregate_variant_costs(
 
 def fetch_job_log(repo: str, job_id: int) -> str:
     """One job's raw log text through `ghx.gh` (a failed call raises on `.stdout`). `--allow-escape-sequences`: gh 2.98 REFUSES a response carrying terminal escapes without it ("the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway", measured 2026-09-28 on job 108948938590), and every E2E log carries colour codes."""
-    return ghx.gh(
+    return gh_retry.gh(
         ["api", "--allow-escape-sequences", "repos/%s/actions/jobs/%s/logs" % (repo, job_id)],
         attempts=GH_ATTEMPTS,
     ).stdout

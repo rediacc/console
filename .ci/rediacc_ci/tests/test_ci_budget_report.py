@@ -992,7 +992,7 @@ def test_every_read_asks_ghx_for_the_retrying_attempt_count(monkeypatch):
         seen.append(kw.get("attempts"))
         return {"workflow_runs": [], "jobs": [], "artifacts": []}
 
-    monkeypatch.setattr(br.ghx, "api_json", fake_api_json)
+    monkeypatch.setattr(br.gh_retry, "api_json", fake_api_json)
     br.fetch_runs("o/r", "ci.yml", "pull_request", None, "completed", 1)
     br.fetch_jobs("o/r", 1)
     br.fetch_artifacts("o/r", 1)
@@ -1002,7 +1002,7 @@ def test_every_read_asks_ghx_for_the_retrying_attempt_count(monkeypatch):
 
 class _Proc:
     def __init__(self, rc, out=b""):
-        self.returncode, self.stdout, self.stderr = rc, out, b"stream error"
+        self.returncode, self.stdout, self.stderr = rc, out, b"gh: Server Error (HTTP 502)"
 
 
 def test_artifact_download_retries_a_transient_failure(monkeypatch):
@@ -1043,7 +1043,7 @@ def test_fetch_jobs_paginates_beyond_the_first_page(monkeypatch):
             return {"total_count": 158, "jobs": page2}
         raise AssertionError("unexpected page in %r" % path)
 
-    monkeypatch.setattr(br.ghx, "api_json", fake_api_json)
+    monkeypatch.setattr(br.gh_retry, "api_json", fake_api_json)
     jobs = br.fetch_jobs("o/r", 1)
     assert [j["id"] for j in jobs] == list(range(158))
 
@@ -1056,7 +1056,7 @@ def test_fetch_jobs_stops_at_a_short_page_even_with_no_total_count(monkeypatch):
         calls.append(path)
         return {"jobs": [{"id": 1}, {"id": 2}]}
 
-    monkeypatch.setattr(br.ghx, "api_json", fake_api_json)
+    monkeypatch.setattr(br.gh_retry, "api_json", fake_api_json)
     assert br.fetch_jobs("o/r", 1) == [{"id": 1}, {"id": 2}]
     assert len(calls) == 1
 
@@ -1072,7 +1072,7 @@ def test_fetch_jobs_stops_once_total_count_is_reached(monkeypatch):
             return {"total_count": 100, "jobs": [{"id": i} for i in range(100)]}
         raise AssertionError("should not fetch a second page once total_count is met")
 
-    monkeypatch.setattr(br.ghx, "api_json", fake_api_json)
+    monkeypatch.setattr(br.gh_retry, "api_json", fake_api_json)
     jobs = br.fetch_jobs("o/r", 1)
     assert len(jobs) == 100
     assert len(calls) == 1
@@ -1090,7 +1090,7 @@ def test_fetch_artifacts_paginates_beyond_the_first_page(monkeypatch):
             return {"total_count": 130, "artifacts": page2}
         raise AssertionError("unexpected page in %r" % path)
 
-    monkeypatch.setattr(br.ghx, "api_json", fake_api_json)
+    monkeypatch.setattr(br.gh_retry, "api_json", fake_api_json)
     artifacts = br.fetch_artifacts("o/r", 1)
     assert len(artifacts) == 130
 
@@ -1099,7 +1099,7 @@ def test_fetch_artifacts_stops_at_a_short_page(monkeypatch):
     def fake_api_json(_path, **_kw):
         return {"artifacts": [{"id": 1}]}
 
-    monkeypatch.setattr(br.ghx, "api_json", fake_api_json)
+    monkeypatch.setattr(br.gh_retry, "api_json", fake_api_json)
     assert br.fetch_artifacts("o/r", 1) == [{"id": 1}]
 
 
@@ -1113,7 +1113,7 @@ def test_fetch_runs_sorts_by_created_at_descending_explicitly(monkeypatch):
         {"id": 2, "created_at": "2026-09-20T00:00:00Z"},
         {"id": 3, "created_at": "2026-09-10T00:00:00Z"},
     ]
-    monkeypatch.setattr(br.ghx, "api_json", lambda *_a, **_k: {"workflow_runs": runs})
+    monkeypatch.setattr(br.gh_retry, "api_json", lambda *_a, **_k: {"workflow_runs": runs})
     result = br.fetch_runs("o/r", "ci.yml", "pull_request", None, "completed", 2)
     assert [r["id"] for r in result] == [2, 3]
 
@@ -1139,7 +1139,7 @@ def test_stale_sample_findings_ignores_a_run_with_no_created_at():
 
 def test_fetch_runs_warns_loudly_on_a_stale_sample(monkeypatch, capsys):
     old_run = {"id": 9, "created_at": "2026-01-01T00:00:00Z"}
-    monkeypatch.setattr(br.ghx, "api_json", lambda *_a, **_k: {"workflow_runs": [old_run]})
+    monkeypatch.setattr(br.gh_retry, "api_json", lambda *_a, **_k: {"workflow_runs": [old_run]})
     br.fetch_runs("o/r", "ci.yml", "pull_request", None, "completed", 1)
     err = capsys.readouterr().err
     assert "over the 14-day sample limit" in err
@@ -1147,7 +1147,7 @@ def test_fetch_runs_warns_loudly_on_a_stale_sample(monkeypatch, capsys):
 
 def test_fetch_runs_silent_on_a_fresh_sample(monkeypatch, capsys):
     fresh_run = {"id": 9, "created_at": "2026-09-27T00:00:00Z"}
-    monkeypatch.setattr(br.ghx, "api_json", lambda *_a, **_k: {"workflow_runs": [fresh_run]})
+    monkeypatch.setattr(br.gh_retry, "api_json", lambda *_a, **_k: {"workflow_runs": [fresh_run]})
     br.fetch_runs("o/r", "ci.yml", "pull_request", None, "completed", 1)
     assert capsys.readouterr().err == ""
 
@@ -1168,7 +1168,7 @@ def test_fetch_runs_puts_the_date_window_into_the_request(monkeypatch):
         seen.append(path)
         return {"workflow_runs": []}
 
-    monkeypatch.setattr(br.ghx, "api_json", fake_api_json)
+    monkeypatch.setattr(br.gh_retry, "api_json", fake_api_json)
     now = br._iso_to_epoch("2026-09-28T12:00:00Z")
     br.fetch_runs("o/r", "ci.yml", "pull_request", "0923-1", "completed", 10, now=now)
     assert len(seen) == br.RUN_LIST_READS
@@ -1238,7 +1238,7 @@ def test_fetch_runs_merges_reads_so_one_stale_page_cannot_hide_fresh_runs(monkey
         ]
     }
     pages = iter([stale, fresh, fresh])
-    monkeypatch.setattr(br.ghx, "api_json", lambda *_a, **_k: next(pages))
+    monkeypatch.setattr(br.gh_retry, "api_json", lambda *_a, **_k: next(pages))
     now = br._iso_to_epoch("2026-09-28T15:00:00Z")
     result = br.fetch_runs("o/r", "ci.yml", "pull_request", "0923-1", "completed", 2, now=now)
     assert [r["id"] for r in result] == [3, 2]
@@ -1248,7 +1248,7 @@ def test_fetch_runs_merges_reads_so_one_stale_page_cannot_hide_fresh_runs(monkey
 def test_fetch_runs_is_silent_when_every_read_agrees(monkeypatch, capsys):
     """CONTROL: identical pages give the same sample and no disagreement warning."""
     page = {"workflow_runs": [{"id": 3, "created_at": "2026-09-28T13:19:13Z"}]}
-    monkeypatch.setattr(br.ghx, "api_json", lambda *_a, **_k: page)
+    monkeypatch.setattr(br.gh_retry, "api_json", lambda *_a, **_k: page)
     now = br._iso_to_epoch("2026-09-28T15:00:00Z")
     result = br.fetch_runs("o/r", "ci.yml", "pull_request", "0923-1", "completed", 10, now=now)
     assert [r["id"] for r in result] == [3]
