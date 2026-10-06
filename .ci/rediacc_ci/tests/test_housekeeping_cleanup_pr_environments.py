@@ -560,3 +560,43 @@ def test_the_open_pr_count_retries_a_5xx_and_keeps_when_unreadable(pr_runner) ->
     install((0, '{"message":"x"}\n', ""))
     assert reader.open_pr_count("acme/widget", "feat", "branch feat", "acme") is None
     assert reader.unreadable == 2
+
+
+def test_the_listing_and_deployment_count_reads_retry_a_5xx(pr_runner) -> None:
+    install, sleeps = pr_runner
+    runner = install(HTTP_502, (0, "pr-5\n", ""))
+    assert port._gh_capture(["api", "x"]).stdout == "pr-5\n"
+    assert sleeps == [5.0]
+    assert runner.calls == 2
+
+
+def test_a_4xx_on_a_read_is_not_retried(pr_runner) -> None:
+    install, sleeps = pr_runner
+    runner = install((1, "", "gh: Not Found (HTTP 404)"))
+    done = port._gh_capture(["api", "x"])
+    assert (done.returncode, done.stdout) == (1, "")
+    assert runner.calls == 1 and sleeps == []
+
+
+def test_a_persistent_5xx_on_the_listing_exits_without_deleting(pr_runner, monkeypatch) -> None:
+    install, sleeps = pr_runner
+    runner = install(HTTP_502)
+    deletes: list[list[str]] = []
+    monkeypatch.setattr(port, "_gh_silent", lambda a: deletes.append(a) or 0)
+    monkeypatch.setattr(port.common, "require_cmd", lambda _c: None)
+    assert port.main(REPO) != 0
+    assert runner.calls == 3 and sleeps == [5.0, 15.0]
+    assert deletes == []
+
+
+def test_a_persistent_5xx_on_the_deployment_count_skips_the_environment(
+    pr_runner, monkeypatch, capsys
+) -> None:
+    install, _sleeps = pr_runner
+    install((0, "pr-5\n", ""), (0, "CLOSED\n", ""), HTTP_502)
+    deletes: list[list[str]] = []
+    monkeypatch.setattr(port, "_gh_silent", lambda a: deletes.append(a) or 0)
+    monkeypatch.setattr(port.common, "require_cmd", lambda _c: None)
+    assert port.main(REPO) == 0
+    assert "SKIP pr-5: still holds unknown deployment record(s)" in capsys.readouterr().err
+    assert deletes == []

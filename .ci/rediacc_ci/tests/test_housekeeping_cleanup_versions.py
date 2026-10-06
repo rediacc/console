@@ -730,6 +730,22 @@ def test_phase_1_fails_the_run_on_a_release_that_survives_by_tag_and_by_id() -> 
     assert "Releases: deleted 0 of 1" in err
 
 
+def test_delta_phase_1_an_unreadable_read_back_is_neither_counted_nor_a_survivor() -> None:
+    """INTENTIONAL DELTA (PLAN-gh-retry G12, release_state): a 5xx that outlasts the retries on the read-back after a delete used to count the release as deleted. It is now "unknown": not counted, and the run is failed naming the tag."""
+    fixture = _releases(("v1.2.21", ago(57.5)))
+    fixture["gh"] += [
+        rule("release", "view", "v1.2.21", rc=1, stderr="gh: HTTP 502\n"),
+        rule("api", "repos/" + GH_REPO + "/releases", "--paginate", json_body=[]),
+    ]
+    _old, new = _twin_and_port(
+        "cleanup_releases", ("--versions", "0", "--days", "1"), fixture
+    )
+    err = new[2].decode()
+    assert "Release v1.2.21: GitHub kept failing the read-back" in err
+    assert "Releases: deleted 0 of 1" in err
+    assert "survived deletion" not in err
+
+
 def test_phase_1_by_id_lookup_survives_a_quote_and_backslash_in_the_tag() -> None:
     """Review finding 2cb3bdb0.1/.2: the tag entered the jq filter raw, so a quote in it broke the syntax and the by-id delete never ran. It now enters as a JSON string literal."""
     tag = 'v1"q\\x'
@@ -797,14 +813,40 @@ def test_phase_1_stops_at_the_delete_budget_and_says_what_it_deferred() -> None:
 
 
 def test_phase_1_reads_an_api_failure_as_an_empty_account() -> None:
-    """HAZARD 1, pinned. A gh that fails is `[]`, and the phase reports a clean sweep of nothing rather than saying it could not look."""
+    """HAZARD 1, pinned for a NON-transient failure (a 403): gh fails once, is not retried, and the phase reports a clean sweep of nothing. Both sides agree byte for byte."""
     result = sides(
         "cleanup_releases",
         argv=("--dry-run",),
-        fixture={"gh": [rule("release", "list", rc=1, stderr="gh: HTTP 503\n")]},
+        fixture={"gh": [rule("release", "list", rc=1, stderr="gh: HTTP 403\n")]},
     )
     assert b"Releases: would delete 0 of 0" in result[2]
     assert result[0] == 0
+    assert len([c for c in result[3] if "release\tlist" in c]) == 1
+
+
+def test_delta_phase_1_retries_a_5xx_listing_and_names_the_exhausted_read() -> None:
+    """INTENTIONAL DELTA (PLAN-gh-retry G12). The twin read a 503 once and called it an empty account. The port retries the read three times (the pause runs in the stubbed `sleep`), then keeps everything and says the read never succeeded."""
+    fixture = {"gh": [rule("release", "list", rc=1, stderr="gh: HTTP 503\n")]}
+    old, new = _twin_and_port("cleanup_releases", ("--dry-run",), fixture)
+    assert len([c for c in old[3] if "release\tlist" in c]) == 1, "twin moved"
+    assert len([c for c in new[3] if "release\tlist" in c]) == 3
+    new_err = new[2].decode()
+    assert "still failing after 3 attempts (gh: HTTP 503)" in new_err
+    assert "Releases: would delete 0 of 0" in new_err
+    assert not [c for c in new[3] if "delete" in c.lower() and "-X" in c]
+    assert new[0] == 0
+
+
+def test_delta_phase_1_a_5xx_then_a_listing_recovers_and_is_used() -> None:
+    """INTENTIONAL DELTA (PLAN-gh-retry G12): the twin took the first 503 as an empty account; the port's second attempt answers and the listing is used."""
+    fixture = _releases(("v2.0.0", ago(1.5)))
+    fixture["gh"].insert(
+        0, rule("release", "list", rc=1, stderr="gh: HTTP 502\n", unless_logged="release\tlist")
+    )
+    old, new = _twin_and_port("cleanup_releases", ("--dry-run", "--versions", "5"), fixture)
+    assert b"Releases: would delete 0 of 0" in old[2], "twin moved"
+    assert len([c for c in new[3] if "release\tlist" in c]) == 2
+    assert b"would delete 0 of 1" in new[2]
 
 
 def test_phase_1_retains_an_item_whose_date_cannot_be_parsed_and_says_so() -> None:
@@ -2684,7 +2726,13 @@ def test_run_all_phases_exits_1_once_at_the_end_when_a_phase_latched() -> None:
     result = sides(
         "run_all_phases",
         fixture={
-            "gh": [rule("actions/caches", raw=_caches()), rule("", rc=1)],
+            # A READABLE tag list that lacks v9.0.0: drift. (An unreadable one keeps everything, see the delta test below.)
+            "gh": [
+                rule("actions/caches", raw=_caches()),
+                rule("git/ref/tags", json_body={"object": {"type": "commit", "sha": "abc"}}),
+                rule("/tags", json_body=[{"name": "v1.0.0"}]),
+                rule("", rc=1),
+            ],
             "curl": [rule("", rc=1)],
             "aws": [
                 rule(("ls s3://" + RELEASES_BUCKET + "/cli/ "), raw=pre_line("v9.0.0/")),
@@ -2702,6 +2750,28 @@ def test_run_all_phases_exits_1_once_at_the_end_when_a_phase_latched() -> None:
     assert "Housekeeping FAILED: see the ::error annotations above." in err
     assert "Phase 12:" in err, "every later phase still ran"
     assert "Housekeeping complete" in err
+
+
+def test_delta_phase_8d_an_unreadable_tag_list_is_not_an_empty_one() -> None:
+    """INTENTIONAL DELTA (PLAN-gh-retry G12). The twin read a failed tag listing as no tags, so a sentinel-less prefix looked like an orphan and a sentinel looked like drift. The port retries the read, then skips the orphan sweep and the drift check for the run and says so."""
+    fixture = {
+        "gh": [rule("actions/caches", raw=_caches()), rule("", rc=1, stderr="gh: HTTP 502\n")],
+        "curl": [rule("", rc=1)],
+        "aws": [
+            rule(("ls s3://" + RELEASES_BUCKET + "/cli/ "), raw=pre_line("v9.0.0/")),
+            rule("list-objects-v2", "ends_with(Key", raw="cli/v9.0.0/.released\n"),
+            rule("list-objects-v2", "Contents[0].LastModified", raw="None\n"),
+            rule("list-multipart-uploads", raw="null\n"),
+            rule("", rc=1),
+        ],
+    }
+    old, new = _twin_and_port("run_all_phases", (), fixture, dict(R2_ENV, GITHUB_ACTIONS="true"))
+    assert "drift: cli/v9.0.0/.released exists" in old[2].decode(), "twin moved"
+    new_err = new[2].decode()
+    assert "8d: could not list git tags; skipping orphan deletion and drift checks" in new_err
+    assert "drift:" not in new_err
+    assert not [c for c in new[3] if "s3\trm" in c or "\trm\t" in c]
+    assert len([c for c in new[3] if "repos/rediacc/console/tags" in c]) >= 3
 
 
 def test_the_guards_refuse_in_the_twins_order() -> None:
@@ -2883,3 +2953,52 @@ def test_delta_phase_8b_keeps_a_prefix_whose_pr_state_is_unreadable() -> None:
         keep_line="KEEP R2 prefix apt/pr-3/: PR #3 state unreadable",
     )
     assert "8b: deleted 0 PR channel prefix(es)" in new[2].decode()
+
+
+class _GhScript:
+    """A fake one-attempt `gh` for `gh_retry.gh`: answers in order, the last answer repeating."""
+
+    def __init__(self, *answers: tuple[int, str, str]) -> None:
+        self.answers = list(answers)
+        self.calls = 0
+
+    def __call__(self, args, **_kw):
+        from rediacc_ci.core import ghx
+
+        self.calls += 1
+        rc, out, err = self.answers.pop(0) if len(self.answers) > 1 else self.answers[0]
+        return ghx.GhResult(["gh", *args], rc, out, err)
+
+
+def test_gh_read_retries_a_5xx_then_returns_the_answer(monkeypatch) -> None:
+    from rediacc_ci.core import ghx
+
+    naps: list[list[str]] = []
+    monkeypatch.setattr(cv, "run_silent", lambda argv: naps.append(argv) or 0)
+    script = _GhScript((1, "", "gh: Server Error (HTTP 502)"), (0, "v1\nv2\n", ""))
+    monkeypatch.setattr(ghx, "gh", script)
+    assert cv.gh_read(["api", "x"]) == (0, "v1\nv2")
+    assert script.calls == 2
+    assert naps == [["sleep", "5"]]
+
+
+def test_gh_read_gives_up_after_three_attempts_and_names_the_read(monkeypatch, capsys) -> None:
+    from rediacc_ci.core import ghx
+
+    monkeypatch.setattr(cv, "run_silent", lambda _argv: 0)
+    script = _GhScript((1, "", "gh: Server Error (HTTP 503)"))
+    monkeypatch.setattr(ghx, "gh", script)
+    code, out = cv.gh_read(["api", "repos/a/b/tags"])
+    assert (code, out) == (1, "")
+    assert script.calls == 3
+    assert "still failing after 3 attempts (gh: Server Error (HTTP 503))" in capsys.readouterr().err
+
+
+def test_gh_read_does_not_retry_a_4xx(monkeypatch, capsys) -> None:
+    from rediacc_ci.core import ghx
+
+    script = _GhScript((1, "", "gh: Not Found (HTTP 404)"))
+    monkeypatch.setattr(ghx, "gh", script)
+    assert cv.gh_read(["api", "x"])[0] == 1
+    assert script.calls == 1
+    assert "still failing" not in capsys.readouterr().err

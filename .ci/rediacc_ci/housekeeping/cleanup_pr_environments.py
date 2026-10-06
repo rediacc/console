@@ -159,10 +159,9 @@ def pipeline_status(gh_rc: int, matched: int) -> int:
 
 
 def _gh_capture(args: list[str]) -> subprocess.CompletedProcess[str]:
-    """stdout captured, stderr DISCARDED -- every `gh` here carries `2>/dev/null`."""
-    return subprocess.run(
-        ["gh", *args], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, check=False
-    )
+    """A READ: stdout captured, stderr DISCARDED (every `gh` here carries `2>/dev/null`), retried on a transient fault through `gh_retry.gh` (PLAN-gh-retry G12). A read that still fails keeps its non-zero code, so both callers fail safe: the listing exits, an unknown deployment count skips."""
+    result = gh_retry.gh(args)
+    return subprocess.CompletedProcess(args, result.returncode, stdout=result.stdout_raw, stderr="")
 
 
 def _gh_silent(args: list[str]) -> int:
