@@ -63,6 +63,35 @@ export interface Utilisation {
 
 const STRIP_MS = 5000;
 
+/** One gate's place in the run, in ms from the run's start: when its `needs` were met, when it launched, when it settled, and the cores it was granted. */
+export interface GateTiming {
+  ready?: number;
+  start: number;
+  end: number;
+  cores?: number;
+}
+
+/**
+ * THE TIMELINE (2026-10-06): every launched gate's start and end relative to the run's start, so a slow run's tail can be read rather than inferred. The diagnosis that motivated it reconstructed start times from end minus duration and placed check:ci-account-server at about 280 s; the profile captures showed it at 0.6 s, one core wide, with check:ci-test-account-web queued behind it on their shared `account-vitest` mutex. Gates that never launched (skipped) have no entry. Keys in manifest order, so the block is stable across identical runs.
+ */
+export function timelineOf(
+  results: readonly GateResult[],
+  startedAt: number
+): Record<string, GateTiming> {
+  const out: Record<string, GateTiming> = {};
+  for (const r of results) {
+    if (r.startAt === undefined || r.endAt === undefined) continue;
+    const t: GateTiming = { start: r.startAt - startedAt, end: r.endAt - startedAt };
+    if (r.readyAt !== undefined) t.ready = r.readyAt - startedAt;
+    if (r.grantedCores !== undefined) t.cores = r.grantedCores;
+    out[r.id] = t;
+  }
+  return out;
+}
+
+/** How many of the last gates to finish the footer names with their timing. */
+const TAIL_ROWS = 12;
+
 /** Longest path over `needs`, weighting each gate by its measured ms; a gate that did not run weighs 0. */
 export function criticalPath(
   specs: readonly GateSpec[],
@@ -180,6 +209,8 @@ export interface RunMeta {
   util?: Utilisation;
   /** The core budget, stated in the header under `--sched cores`; absent under `slots`, whose header is unchanged. */
   sched?: string;
+  /** Epoch ms the run started, for the footer's tail timeline. Absent prints no timeline. */
+  startedAt?: number;
 }
 
 const RULE = '='.repeat(64);
@@ -286,6 +317,23 @@ export function createReporter(opts: ReporterOptions) {
         opts.out(
           `elastic grants: ${elastic.map((r) => `${r.id} ${r.grantedCores} core(s)`).join(', ')}\n`
         );
+      }
+
+      // THE TAIL, with times: the last gates to finish, each with when it was ready, launched and ended (s from the run's start) and its cores. The full timeline is in the receipt (`timeline`) and in --json's per-gate startAt/endAt.
+      if (meta.startedAt !== undefined) {
+        const timeline = timelineOf(results, meta.startedAt);
+        const tail = Object.entries(timeline)
+          .sort((a, b) => b[1].end - a[1].end)
+          .slice(0, TAIL_ROWS);
+        if (tail.length > 0) {
+          opts.out('last to finish (ready / start -> end, s from run start; cores):\n');
+          for (const [id, t] of tail) {
+            const ready = t.ready === undefined ? '     -' : secs(t.ready).padStart(6);
+            opts.out(
+              `  ${ready} / ${secs(t.start).padStart(6)} -> ${secs(t.end).padStart(6)}  ${String(t.cores ?? '-').padStart(2)}  ${id}\n`
+            );
+          }
+        }
       }
 
       const u = meta.util;
