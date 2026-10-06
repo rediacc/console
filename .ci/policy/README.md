@@ -79,7 +79,7 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 |---|---|---|---|---|
 | `.actions-upgrade-blocklist` | name per line | 0 | 0 | both |
 | `.audit-allowlist` | name per line | 0 | 1 | both |
-| `.audit-prod-allowlist` | name per line | 1 | 2 | both |
+| `.audit-prod-allowlist` | name per line | 2 | 3 | both |
 | `.ci-parity-exempt` | name per line | 8 | 9 | both |
 | `.cli-i18n-orphan-allowlist` | name per line | 5 | 6 | both |
 | `.dead-bash-allowlist` | name per line | 7 | 8 | both |
