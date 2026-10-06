@@ -529,3 +529,117 @@ def test_sc10_the_plan_adopted_recipe_survives_a_quote_in_the_box_text(wl):  # n
     assert lines, reason(got)[:1500]
     argvs = [shlex.split(ln) for ln in lines]
     assert any(a[-1].startswith("(\"R1 A writer's paths stay subtracted") for a in argvs), argvs
+
+
+# ---- the in-flight block of agent/plans/QUEUE.md (operator order 2026-10-06) -------------------------------------
+# `wl_checks.run_stop` refreshes it through `wl_planqueue.refresh_inflight` from the stop's own loop state, fold and roster. Each case drives the REAL Stop hook over a fixture checkout and reads the block back from the fixture's QUEUE.md; the mode line is checked against the settings block with the same reading the unit suite uses (test_wl_queue_settings.py), and the mutation control flips one switch in a private copy of the renderer.
+
+PQ = wlfix.import_wl("wl_planqueue")
+
+
+def inflight_of(fix) -> str:
+    text = (fix.proj / PQ.QUEUE_REL).read_text(encoding="utf-8")
+    body = PQ.inflight_text(text)
+    assert body is not None, "the stop wrote no in-flight block:\n%s" % text
+    return body
+
+
+def mode_ok(fix) -> bool:
+    """True when the block's mode line equals the settings block of the same file."""
+    text = (fix.proj / PQ.QUEUE_REL).read_text(encoding="utf-8")
+    want = {}
+    settings = PQ.settings(text)[0]
+    for key in PQ.SETTINGS_KEYS:
+        value = getattr(settings, key)
+        want[key] = ("on" if value else "off") if isinstance(value, bool) else str(value)
+    return PQ.inflight_mode(text) == want
+
+
+def test_inflight_a_live_pr_with_a_plan_line_shows_the_pr_and_its_plan(wl):  # noqa: F811
+    own = loop_world(wl)
+    run_stop(wl)
+    body = inflight_of(wl)
+    assert "- Branch: %s, PR #543 open." % BRANCH in body, body
+    assert "  - %s -- 1 of 2 boxes ticked, the PR body's `Plan:` line" % own in body, body
+    assert (
+        "- Next plan: agent/plans/PLAN-queued-next.md, Promoted entry 2; starts on the next branch after PR #543 merges."
+        in body
+    ), body
+    assert "- Focus: off." in body
+    assert mode_ok(wl), body
+
+
+def test_inflight_turbo_on_shows_turbo_and_the_named_picks(wl):  # noqa: F811
+    # test_wl_loop_next imports this module, so it is imported here, not at the top.
+    from rediacc_hooks.tests import test_wl_loop_next as LN  # noqa: PLC0415
+
+    _own, one, two = LN.turbo_world(wl)
+    LN.stop(wl)
+    body = inflight_of(wl)
+    assert "turbo on; batch_size 2; plan_concurrency 9; writer_cap 4" in body, body
+    assert mode_ok(wl), body
+    for rel in (one, two):
+        assert "  - %s -- 0 of 2 boxes ticked, a turbo pick named by the Stop hook" % rel in body, (
+            body
+        )
+    assert "- Writers: 0 live of writer_cap 4" in body, body
+
+
+def test_inflight_focus_on_is_shown_and_off_again_after_focus_off(wl):  # noqa: F811
+    loop_world(wl)
+    F.focus_on(wl, mode="merge")
+    body = inflight_of(wl)
+    assert "- Focus: merge on PR #543 (branch pub, session %s" % wlfix.ME[:8] in body, body
+    run_stop(wl)
+    assert "- Focus: merge on PR #543" in inflight_of(wl)
+    F.focus_off(wl)
+    assert "- Focus: off." in inflight_of(wl)
+
+
+def test_inflight_no_pr_names_the_queue_head_the_first_push_binds(wl):  # noqa: F811
+    own = loop_world(wl)
+    F.merged_nodes(wl, [])
+    run_stop(wl)
+    body = inflight_of(wl)
+    assert "- Branch: %s, no PR yet." % BRANCH in body, body
+    assert "writes the queue head, %s, as its `Plan:` line" % own in body, body
+    assert mode_ok(wl), body
+
+
+def test_inflight_a_branch_with_only_planless_epics_lists_the_epic(wl):  # noqa: F811
+    from rediacc_hooks.tests import test_wl_loop_next as LN  # noqa: PLC0415
+
+    LN.base_world(wl)
+    wl.git("switch", "-q", "-c", BRANCH)
+    got = wl.cli("--epic", wlfix.ME, "new", "Operator follow-ups with no plan")
+    assert got.rc == 0, got.err
+    found = re.search(r"epic #([0-9a-f]+)", got.out)
+    assert found, got.out
+    eid = found.group(1)
+    (wl.proj / "b.txt").write_text("b\n", encoding="utf-8")
+    wl.git("add", "b.txt")
+    wl.git("commit", "-qm", "fix: one\n\nPR-TASK: %s" % eid)
+    write_queue(wl, loop_plan(wl, "queued-next", opened=2, done=0))
+    run_stop(wl)
+    body = inflight_of(wl)
+    assert "- Plans on the PR: none yet." in body, body
+    assert (
+        "  - epic %s, no plan, 1 commit(s) on the branch, 0 open item(s): Operator follow-ups with no plan"
+        % eid
+        in body
+    ), body
+
+
+def test_inflight_m1_a_renderer_that_flips_a_switch_fails_the_mode_check(wl):  # noqa: F811
+    """CONTROL: the same live world through a private copy whose mode line inverts every on/off must fail the reading the cases above rely on."""
+    mutated_hook(
+        wl,
+        "wl_planqueue.py",
+        "_onoff(value) if isinstance(value, bool) else value",
+        "_onoff(not value) if isinstance(value, bool) else value",
+    )
+    loop_world(wl)
+    run_stop(wl)
+    body = inflight_of(wl)
+    assert "stop_hook off; turbo on" in body, body
+    assert not mode_ok(wl), body

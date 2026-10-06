@@ -616,3 +616,415 @@ def problems(root, update: bool = False) -> list[str]:
         "      npm run check:ci-plan-record -- --update\n"
         "      git add %s" % (QUEUE_REL, what, QUEUE_REL)
     ]
+
+
+# ------------------------------------------------------------ the in-flight block
+# Operator order 2026-10-06: "agent/plans/QUEUE.md should show the plans for the current 'working on it' ... valid for focus, turbo and other modes as well." `## In flight` sits between `## Settings` and `## Promoted` and answers what the loop is doing NOW: the effective switches, every active focus, the live branch and its PR, the PR's plan set with box progress and how
+# each plan got there, the branch's work that belongs to no plan in that set, live writers and leased items, and the next plan with the reason it is next.
+#
+# RUNTIME STATE, NOT A LEDGER. Its inputs (the PR, the focus events, the roster, the leases) live outside the tracked tree, so a clean CI checkout cannot reproduce it, and it is never compared: `render` copies every byte outside the generated block, so `problems` and `--update` neither read nor rewrite this one (`test_inflight_block_is_never_compared_by_the_queue_gate` in .claude/rediacc_hooks/tests/test_wl_queue_settings.py proves both). `refresh_inflight` is its only writer: the Stop hook
+# (`wl_checks.run_stop`) and the verbs that change a mode (`worklist.py --queue-set`, `--focus`) call it, and a merge or a branch cut is picked up by the stop that follows it. The block carries no clock, so a stop that changed nothing writes nothing. A stop renders its own session's writers; leases and focus events are read for every session.
+
+INFLIGHT_HEADING = "## In flight"
+INF_BEGIN = "<!-- queue:inflight:begin -->"
+INF_END = "<!-- queue:inflight:end -->"
+_INF_BLOCK = re.compile(
+    r"(?ms)^%s[ \t]*$\n?(.*?)^%s[ \t]*$" % (re.escape(INF_BEGIN), re.escape(INF_END))
+)
+INFLIGHT_INTRO = (
+    "What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--focus`. "
+    "It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit."
+)
+# The labels the mode line is read back by (`inflight_mode`).
+MODE_LABEL = "- Mode: "
+FOCUS_LABEL = "- Focus: "
+_LIST_MAX = 12
+
+
+@dataclasses.dataclass(frozen=True)
+class PlanLine:
+    """A plan the live PR works: its path, how it joined the set, and its box counts (`total` is -1 when the plan could not be read)."""
+
+    rel: str
+    source: str
+    done: int = 0
+    total: int = 0
+
+
+@dataclasses.dataclass(frozen=True)
+class EpicLine:
+    """An epic with work on this branch outside the PR's plan set. `plan` is "" when the epic names none."""
+
+    id: str
+    title: str
+    plan: str = ""
+    commits: int = 0
+    open_items: int = 0
+
+
+@dataclasses.dataclass(frozen=True)
+class FocusLine:
+    owner: str
+    mode: str
+    pr: str
+    branch: str
+    at: str
+    expired: bool = False
+
+
+@dataclasses.dataclass(frozen=True)
+class InFlight:
+    """Everything the block shows. `writers` is None when the live writers could not be counted."""
+
+    settings: Settings = dataclasses.field(default_factory=Settings)
+    focus: tuple[FocusLine, ...] = ()
+    kind: str = ""
+    branch: str = ""
+    pr: int = 0
+    reason: str = ""
+    queue_head: str = ""
+    plans: tuple[PlanLine, ...] = ()
+    epics: tuple[EpicLine, ...] = ()
+    session: str = ""
+    writers: tuple[str, ...] | None = None
+    leases: tuple[tuple[str, str, str], ...] = ()
+    next_plan: str = ""
+    next_why: str = ""
+    next_when: str = ""
+
+
+def inflight_text(text: str) -> str | None:
+    """The text between the in-flight markers, None when the block is absent."""
+    m = _INF_BLOCK.search(text)
+    return m.group(1) if m else None
+
+
+def _onoff(value: bool) -> str:
+    return "on" if value else "off"
+
+
+def mode_line(settings: Settings) -> str:
+    """`- Mode: stop_hook on; turbo off; batch_size 3; ...`, every key of `SETTINGS_KEYS` in order."""
+    parts = []
+    for key in SETTINGS_KEYS:
+        value = getattr(settings, key)
+        parts.append("%s %s" % (key, _onoff(value) if isinstance(value, bool) else value))
+    return MODE_LABEL + "; ".join(parts) + "."
+
+
+def inflight_mode(text: str) -> dict[str, str]:
+    """The mode line of a rendered block read back as {key: value}, {} when there is none. Lets a reader (or a test) check the block against the settings it claims."""
+    body = inflight_text(text) or ""
+    for line in body.splitlines():
+        if line.startswith(MODE_LABEL):
+            out = {}
+            for part in line[len(MODE_LABEL) :].rstrip(".").split(";"):
+                key, _sp, value = part.strip().partition(" ")
+                if key:
+                    out[key] = value.strip()
+            return out
+    return {}
+
+
+def _more(items: list[str], limit: int = _LIST_MAX) -> str:
+    shown = ", ".join(items[:limit])
+    return shown + (", and %d more" % (len(items) - limit) if len(items) > limit else "")
+
+
+def render_inflight(inf: InFlight) -> str:
+    """The lines between the in-flight markers."""
+    out = [mode_line(inf.settings)]
+    if inf.focus:
+        out.append(
+            FOCUS_LABEL
+            + "; ".join(
+                "%s on PR #%s (branch %s, session %s, since %s%s)"
+                % (
+                    f.mode,
+                    f.pr or "?",
+                    f.branch or "?",
+                    f.owner,
+                    f.at or "?",
+                    ", past its 24-hour limit" if f.expired else "",
+                )
+                for f in inf.focus
+            )
+            + "."
+        )
+    else:
+        out.append(FOCUS_LABEL + "off.")
+    import wl_prscope as P  # noqa: PLC0415 -- the loop kinds
+
+    if inf.kind == P.LIVE:
+        out.append("- Branch: %s, PR #%d open." % (inf.branch, inf.pr))
+    elif inf.kind == P.NO_PR:
+        out.append("- Branch: %s, no PR yet." % inf.branch)
+    elif inf.kind == P.MERGED:
+        out.append(
+            "- Branch: %s, PR #%d merged; the next branch is not cut yet." % (inf.branch, inf.pr)
+        )
+    elif inf.kind == P.ON_MAIN:
+        out.append("- Branch: main, no live branch.")
+    elif inf.kind == P.UNREADABLE:
+        out.append("- Branch: %s, PR state unreadable." % (inf.branch or "?"))
+    else:
+        out.append("- Branch: %s, off the loop." % (inf.branch or "none"))
+    if inf.reason:
+        out.append("- Loop note: %s." % inf.reason.rstrip("."))
+    if inf.plans:
+        out.append("- Plans on the PR (%d):" % len(inf.plans))
+        for p in inf.plans:
+            boxes = "unreadable" if p.total < 0 else "%d of %d boxes ticked" % (p.done, p.total)
+            out.append("  - %s -- %s, %s" % (p.rel, boxes, p.source))
+    elif inf.kind == P.NO_PR and inf.queue_head:
+        out.append(
+            "- Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, %s, as its `Plan:` line unless the body names a plan first."
+            % inf.queue_head
+        )
+    else:
+        out.append("- Plans on the PR: none.")
+    if inf.epics:
+        out.append("- Work outside the PR's plans (%d epic(s)):" % len(inf.epics))
+        for e in inf.epics:
+            where = "plan %s, outside the set" % e.plan if e.plan else "no plan"
+            out.append(
+                "  - epic %s, %s, %d commit(s) on the branch, %d open item(s): %s"
+                % (e.id, where, e.commits, e.open_items, e.title or "(untitled)")
+            )
+    else:
+        out.append("- Work outside the PR's plans: none.")
+    if inf.writers is None:
+        out.append("- Writers: not counted at this refresh.")
+    else:
+        ids = ["worker:%s" % w for w in inf.writers]
+        out.append(
+            "- Writers: %d live of writer_cap %d (session %s)%s"
+            % (
+                len(ids),
+                inf.settings.writer_cap,
+                inf.session or "?",
+                ": %s." % _more(ids) if ids else ".",
+            )
+        )
+    leases = ["#%s (worker:%s, %s)" % lease for lease in inf.leases]
+    out.append("- Leased items: %d%s" % (len(leases), ": %s." % _more(leases) if leases else "."))
+    if inf.next_plan:
+        out.append(
+            "- Next plan: %s, %s%s."
+            % (inf.next_plan, inf.next_why, "; %s" % inf.next_when if inf.next_when else "")
+        )
+    else:
+        out.append("- Next plan: none; the queue holds no plan with an open box.")
+    return "\n".join(out) + "\n"
+
+
+def with_inflight(text: str, body: str) -> str:
+    """`text` with its in-flight block holding `body`. A file without the block gains `## In flight` before `## Promoted` (else before `## Generated`, else at the end); every other byte is kept."""
+    block = "%s\n%s%s" % (INF_BEGIN, body, INF_END)
+    m = _INF_BLOCK.search(text)
+    if m:
+        return text[: m.start()] + block + text[m.end() :]
+    section = "%s\n\n%s\n\n%s\n\n" % (INFLIGHT_HEADING, INFLIGHT_INTRO, block)
+    for heading in (PROMOTED_HEADING, GENERATED_HEADING):
+        h = re.search(r"(?m)^%s[ \t]*$" % re.escape(heading), text)
+        if h:
+            return text[: h.start()] + section + text[h.start() :]
+    sep = "" if text.endswith("\n\n") or not text else ("\n" if text.endswith("\n") else "\n\n")
+    return text + sep + section.rstrip("\n") + "\n"
+
+
+def _plan_source(rel, loop, body, named) -> str:
+    """How `rel` joined the live PR's plan set: the `Plan:` line, a turbo batch claim, an `Operational-Reason:` addition, a prerequisite, or the queue head standing in for a body with no `Plan:` line."""
+    import wl_prscope as P  # noqa: PLC0415
+
+    plan_gate, _cp = P._hooks_pkg()
+    listed = plan_gate.body_plans(body) if isinstance(body, str) else []
+    if rel in loop.prereqs:
+        return "a prerequisite pulled in (an unfinished `Depends-On:` of the set)"
+    if not listed:
+        if loop.kind == P.UNREADABLE:
+            return "the queue head, standing in while the PR read fails"
+        return "the queue head, standing in while the PR body names no `Plan:` line"
+    if rel == listed[0]:
+        return "the PR body's `Plan:` line"
+    if rel in named:
+        return "a turbo batch claim on the `Plan:` line"
+    if plan_gate.has_operational_reason(body):
+        return "added to the `Plan:` line under `Operational-Reason:`"
+    return "the PR body's `Plan:` line"
+
+
+def _branch_epic_commits(root, kind) -> dict[str, int]:
+    """{epic id: commits} from the `PR-TASK:` trailers of the commits this branch adds over origin/main; {} on main, off the loop, or without git."""
+    import wl_prscope as P  # noqa: PLC0415
+
+    if kind not in (P.LIVE, P.NO_PR, P.MERGED, P.UNREADABLE):
+        return {}
+    _pg, commit_policy = P._hooks_pkg()
+    base = commit_policy.git(["merge-base", "origin/main", "HEAD"], cwd=str(root))
+    if not base:
+        return {}
+    log = commit_policy.git(
+        [
+            "log",
+            "--format=%(trailers:key=PR-TASK,valueonly,separator=%x2C)",
+            "%s..HEAD" % base.strip(),
+        ],
+        cwd=str(root),
+    )
+    counts: dict[str, int] = {}
+    for line in (log or "").splitlines():
+        for raw in line.split(","):
+            eid = raw.strip()
+            if re.fullmatch(r"[0-9a-f]{6,32}", eid):
+                counts[eid] = counts.get(eid, 0) + 1
+    return counts
+
+
+def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=None) -> InFlight:
+    """The `InFlight` for the checkout at `root`, from the same readers the Stop hook acts on: `wl_prscope.loop_state` (the PR, its plan set via `plan_gate.pr_plan_set`, the next plan), `plan_gate.turbo_named` and the PR body for each plan's source, the focus events and leases of the store's fold, `wl_epic.load_epics` with the branch's `PR-TASK:` trailers.
+    `fold` and `loop` are the stop's own when it has them; `writers` is the live writer ids, None when not counted."""
+    import wl_ci  # noqa: PLC0415
+    import wl_epic  # noqa: PLC0415
+    import wl_prscope as P  # noqa: PLC0415
+    import wl_standdown  # noqa: PLC0415
+    import wl_store as S  # noqa: PLC0415
+
+    root = pathlib.Path(root)
+    plan_gate, _cp = P._hooks_pkg()
+    settings, _problems = settings_for(root)
+    if fold is None:
+        fold = S.load(worklist, sync=False)
+    if loop is None:
+        loop = P.loop_state(root, worklist, session_id, settings=settings)
+    focus = []
+    for owner, ev in sorted((fold.focus or {}).items()):
+        if not isinstance(ev, dict) or ev.get("mode") not in wl_standdown.FOCUS_MODES:
+            continue
+        focus.append(
+            FocusLine(
+                str(owner)[:8],
+                str(ev.get("mode")),
+                str(ev.get("pr") or ""),
+                str(ev.get("branch") or ""),
+                str(ev.get("at") or ""),
+                bool(wl_standdown.expired(ev)),
+            )
+        )
+    body = None
+    if loop.kind == P.LIVE and loop.branch:
+        nodes, err = wl_ci.pr_link(str(root), worklist, session_id, loop.branch)
+        if not err:
+            body = next(
+                (
+                    str(n.get("body") or "")
+                    for n in nodes
+                    if str(n.get("state") or "").upper() == "OPEN"
+                ),
+                None,
+            )
+    named = plan_gate.turbo_named(str(root), loop.branch) if loop.branch else []
+
+    def plan_line(rel, source):
+        opened, done, why = plan_gate.open_boxes(str(root), rel)
+        return PlanLine(rel, source, done, -1 if why else opened + done)
+
+    lines = [plan_line(rel, _plan_source(rel, loop, body, named)) for rel in loop.plans]
+    if loop.kind in (P.LIVE, P.UNREADABLE):
+        for rel in [*named, *loop.turbo_picks]:
+            if rel not in loop.plans and all(p.rel != rel for p in lines):
+                lines.append(
+                    plan_line(
+                        rel,
+                        "a turbo pick named by the Stop hook, joining the `Plan:` line on the next push",
+                    )
+                )
+    in_set = {p.rel for p in lines}
+    # An epic is in flight on this branch when a commit here carries its `PR-TASK:` trailer or one of its items is leased; an epic whose only open items wait unleased is queued work, not this branch's.
+    open_ids = {r["id"] for r in fold.items if r.get("state") in (" ", ">", "?")}
+    leased_ids = {r["id"] for r in fold.items if r.get("state") == ">"}
+    commits = _branch_epic_commits(root, loop.kind)
+    epics = []
+    for eid, rec in wl_epic.load_epics().items():
+        plan = str(rec.get("plan") or "")
+        covers = set(rec.get("covers") or ())
+        if plan in in_set or (eid not in commits and not covers & leased_ids):
+            continue
+        n_open = len(open_ids & covers)
+        title = " ".join(str(rec.get("title") or "").split())
+        epics.append(EpicLine(eid, title, plan, commits.get(eid, 0), n_open))
+    leases = tuple(
+        sorted(
+            (str(r["id"]), str(r.get("worker") or "?"), str(r.get("owner") or "?")[:8])
+            for r in fold.items
+            if r.get("state") == ">"
+        )
+    )
+    nxt, why, when = loop.next_plan, "", ""
+    if nxt:
+        text = (
+            (root / QUEUE_REL).read_text(encoding="utf-8") if (root / QUEUE_REL).is_file() else ""
+        )
+        promoted, generated = entries(text)
+        if nxt in promoted:
+            why = "Promoted entry %d%s" % (
+                promoted.index(nxt) + 1,
+                " (solo)" if nxt in solo_plans(text) else "",
+            )
+        elif nxt in generated:
+            why = "Generated entry %d (no Promoted entry ahead of it has an open box)" % (
+                generated.index(nxt) + 1
+            )
+        else:
+            why = "the deepest unfinished prerequisite of the first open queue entry"
+        if loop.kind == P.LIVE:
+            when = (
+                "a turbo pick joins this PR when a writer slot frees under plan_concurrency %d"
+                % settings.plan_concurrency
+                if settings.turbo
+                else "starts on the next branch after PR #%d merges" % loop.pr
+            )
+        elif loop.kind == P.NO_PR:
+            when = (
+                "starts when this branch's PR binds it on its first push"
+                if nxt == loop.queue_head
+                else "starts after this branch's PR merges"
+            )
+        elif loop.kind in (P.MERGED, P.ON_MAIN):
+            when = "starts on branch %s" % (loop.next_branch or "<next MMDD-N>")
+    return InFlight(
+        settings=settings,
+        focus=tuple(focus),
+        kind=loop.kind,
+        branch=loop.branch,
+        pr=loop.pr,
+        reason=loop.reason,
+        queue_head=loop.queue_head,
+        plans=tuple(lines),
+        epics=tuple(epics),
+        session=str(session_id or "")[:8],
+        writers=None if writers is None else tuple(str(w) for w in writers),
+        leases=leases,
+        next_plan=nxt,
+        next_why=why,
+        next_when=when,
+    )
+
+
+def refresh_inflight(root, worklist, session_id, fold=None, loop=None, writers=None) -> bool:
+    """Rewrite the in-flight block of an EXISTING queue file when its content changed; True when it wrote. A root with no queue file is left without one. The write re-reads the file just before replacing it and starts over (once) when another writer changed it in between, so a concurrent `--update` of the generated block is not undone by a stale copy."""
+    path = pathlib.Path(root) / QUEUE_REL
+    if not path.is_file():
+        return False
+    body = render_inflight(gather_inflight(root, worklist, session_id, fold, loop, writers))
+    import wl_planrec as R  # noqa: PLC0415 -- the one atomic writer
+
+    for _attempt in range(2):
+        got = path.read_text(encoding="utf-8")
+        new = with_inflight(got, body)
+        if new == got:
+            return False
+        if path.read_text(encoding="utf-8") == got:
+            R.write_atomic(path, new)
+            return True
+    return False

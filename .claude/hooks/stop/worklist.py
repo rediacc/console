@@ -217,6 +217,28 @@ def _plan_hold(fold, item_id, session_id):
     return PO.held_by(got) or ["a live plan"], PO.reason(got)
 
 
+def _refresh_inflight(sid):
+    """Re-render agent/plans/QUEUE.md's in-flight block after a verb changed a mode (`--queue-set`, `--focus`). The writers are the PreToolUse guard's estimate, since a verb has no Stop event. Runtime state only: a failure is one stderr line, never the verb's exit code."""
+    try:
+        import wl_planqueue as PQ  # noqa: PLC0415
+        import wl_roster  # noqa: PLC0415
+
+        start = C.project_start()
+        root = C.project_root(start)
+        rows = wl_roster.live_writers_estimate(str(root), sid)
+        PQ.refresh_inflight(
+            root,
+            C.worklist_for(start),
+            sid,
+            writers=None if rows is None else [r["id"] for r in rows],
+        )
+    except Exception as exc:  # noqa: BLE001 -- runtime state must never fail a verb
+        sys.stderr.write(
+            "in-flight block of agent/plans/QUEUE.md not refreshed: %s: %s\n"
+            % (type(exc).__name__, exc)
+        )
+
+
 def _focus_cli(argv):
     """`worklist.py --focus <me> babysit|merge|off [--pr <n>] [--branch <b>]`, or `--focus <me>` for the state (agent/plans/PLAN-stop-hook-focus-mode.md section 1)."""
     import wl_standdown  # noqa: PLC0415
@@ -249,6 +271,7 @@ def _focus_cli(argv):
             return
         S.focus_event(wl, me, me, "off", branch=cur.get("branch"), pr=cur.get("pr"), why="operator")
         print(M.CLI_FOCUS_OFF % (me, cur.get("mode"), cur.get("pr") or "?", cur.get("at")))
+        _refresh_inflight(sid)
         return
     if mode not in wl_standdown.FOCUS_MODES:
         _die2(M.CLI_FOCUS_USAGE)
@@ -286,6 +309,7 @@ def _focus_cli(argv):
     if note:
         print(note)
     print(M.CLI_FOCUS_ON % (me, mode, pr or "?", branch, pr or "<n>", me))
+    _refresh_inflight(sid)
 
 
 # Bounded wait for the Stop payload. Long enough for a slow writer, short enough that a missing payload fails the hook instead of stalling the session.
@@ -1997,6 +2021,7 @@ def _queue_set_cli(argv):
         sys.exit(2)
     if new != text:
         R.write_atomic(path, new)
+        _refresh_inflight(C.resolve_session_id() or me)
     got, problems = PQ.settings_for(root)
     for key in pairs:
         shown = getattr(got, key)
