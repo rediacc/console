@@ -47,12 +47,14 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 <!-- queue:inflight:begin -->
 - Mode: stop_hook on; turbo off; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; cadence on; agent_hint on; agent_pushback on; judge on.
 - Focus: off.
-- Branch: main, no live branch.
-- Plans on the PR: none.
-- Work outside the PR's plans: none.
-- Writers: 0 live of writer_cap 15 (session d778be9d).
-- Leased items: 1: #cff623f2 (worker:b3z0xowbd, d778be9d).
-- Next plan: agent/plans/PLAN-ci-consolidation.md, Promoted entry 1 (solo); starts on branch 1006-3.
+- Branch: 1006-3, no PR yet.
+- Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-gh-retry.md, as its `Plan:` line unless the body names a plan first.
+- Work outside the PR's plans (2 epic(s)):
+  - epic 97672f9f, no plan, 1 commit(s) on the branch, 0 open item(s): Operator 2026-10-06 follow-ups: regeneration guard, ci-trace root causes and main-red alert, ci:quick scheduler utilization, package retention, budget 5xx retry
+  - epic b320552c, plan agent/plans/PLAN-gh-retry.md, outside the set, 7 commit(s) on the branch, 2 open item(s): GitHub reads survive one 5xx: CI, release and gate reads through core/gh_retry (PLAN-gh-retry)
+- Writers: 1 live of writer_cap 15 (session d778be9d): worker:aef8c442c5816b26a.
+- Leased items: 1: #ef3c4147 (worker:aef8c442c5816b26a, d778be9d).
+- Next plan: agent/plans/PLAN-gh-retry.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
