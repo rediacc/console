@@ -669,9 +669,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 15,
-      "done": 3,
+      "open": 1,
+      "done": 17,
       "open_sigs": [
+        "642d3f4e"
+      ],
+      "done_sigs": [
         "0374ed48",
         "0f306e63",
         "1e6e864d",
@@ -679,19 +682,16 @@
         "32584cc7",
         "3f2db5f2",
         "5eadb655",
-        "642d3f4e",
+        "6276783b",
         "6a209b0b",
         "8e1e6542",
         "b9327adf",
+        "bcc59ac4",
         "c0b71397",
         "c2935ef5",
+        "d3f328ad",
         "ef82dbf2",
         "f86f9978"
-      ],
-      "done_sigs": [
-        "6276783b",
-        "bcc59ac4",
-        "d3f328ad"
       ]
     },
     "agent/plans/PLAN-fix-ci-contention-aware-timeouts.md": {
