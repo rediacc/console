@@ -28,6 +28,9 @@ WHAT CHANGED AGAINST THE TWIN, BY NAME
   2. The `VACUOUS:` floor runs on the edge listing BEFORE anything is copied (the twin counted after uploading).
   3. There is no fixed `/tmp/promote-<dir>` stage any more, so nothing a failed run leaves behind can be promoted by the next one. The pointer stage is a fresh `mkdtemp` per run, removed on exit.
   4. The purge order is the edge listing's key order, not `find`'s directory order.
+  5. STABLE HOLDS ONLY WHAT THIS RUN PROMOTED (operator ruling 2026-10-06, "Current version only"). After a package tree (`apt`, `rpm`, `apk`, `archlinux`) is copied, its pointers written and its stable listing has shown every promoted key, every other `<dir>/stable/` object is deleted (`r2_promote.prune_tree`): older releases' packages and the content-hashed rpm `repodata/` files no
+     `repomd.xml` names any more. Copy first, delete second, so the stable index never names a missing file. `cli/stable/` is not pruned. `STABLE_PACKAGE_TREES_ARE_PRUNED_TO_THE_PROMOTE`.
+  6. A SNAPSHOT PROMOTE COPIES THE SELECTED VERSION'S PACKAGES ONLY. Edge keeps the packages of every promotion candidate (`upload_repos_to_r2`'s prune), so `<dir>/edge/` can hold several versions; phase 1 copies only the package files the snapshot's marker names for the tree (`Sources.only`), and the prune then leaves stable holding exactly that version. `SNAPSHOT_BYTES_ARE_THE_MARKERS_PACKAGES`.
 
 `$EP` IS UNQUOTED IN THE TWIN, so bash word-splits it into `--endpoint-url` and the endpoint; `r2_promote.endpoint_args` reproduces the split.
 
@@ -49,6 +52,7 @@ NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST: `.ci/rediacc_ci/tests/test_depl
 
 from __future__ import annotations
 
+import dataclasses
 import os
 import shutil
 import subprocess
@@ -143,16 +147,17 @@ PHASE_TWO: dict[str, tuple[tuple[str, ...], ...]] = {
         ),
     ),
     # 2a: primary / filelists / other (hashed by 2b's repomd). 2b: repomd.xml + signatures + rediacc.repo (the channel pointer).
+    # THE `repodata/*<name>*` FORMS (2026-10-06): createrepo names these files `<sha256>-primary.xml.gz` (listed in rpm/edge/repodata/ 2026-10-06), so the bare `repodata/primary*` matched none of them and the soak-gated promote never copied them: stable's new repomd.xml named files that only an earlier run had left behind. With stable now pruned to what the promote copies, that would have broken `dnf` on stable.
     "rpm": (
         (
             "--exclude",
             "*",
             "--include",
-            "repodata/primary*",
+            "repodata/*primary*",
             "--include",
-            "repodata/filelists*",
+            "repodata/*filelists*",
             "--include",
-            "repodata/other*",
+            "repodata/*other*",
         ),
         ("--exclude", "*", "--include", "repodata/repomd.xml*", "--include", "*.repo"),
     ),
@@ -216,6 +221,8 @@ REQUIRED_ENV: tuple[tuple[str, str], ...] = (
 
 # The named facts in the module docstring, as constants so a test can assert each by name.
 PHASE_FILTERED_FILES_ARE_NEVER_PROMOTED = True
+STABLE_PACKAGE_TREES_ARE_PRUNED_TO_THE_PROMOTE = r2_promote.PRUNE_IS_COPY_THEN_DELETE
+SNAPSHOT_BYTES_ARE_THE_MARKERS_PACKAGES = True
 PURGE_LIST_IS_BUILT_FROM_THE_STABLE_LISTING = True
 BULK_IS_SERVER_SIDE = r2_promote.BULK_IS_SERVER_SIDE
 
@@ -304,8 +311,10 @@ def _run(argv: list[str], **kwargs) -> int:
     return subprocess.run(argv, check=False, **kwargs).returncode
 
 
-def verify_snapshot(version: str, run: r2_promote.Transfers, stage_root: str) -> int | None:
-    """The snapshot of `version`, verified per the module docstring. Returns its metadata count, or None when the version has no snapshot at all. Raises `channel_snapshot.SnapshotError` for a partial or stale one."""
+def verify_snapshot(
+    version: str, run: r2_promote.Transfers, stage_root: str
+) -> tuple[int, dict[str, int]] | None:
+    """The snapshot of `version`, verified per the module docstring. Returns its metadata count and the marker's packages (channel-relative key -> size), or None when the version has no snapshot at all. Raises `channel_snapshot.SnapshotError` for a partial or stale one."""
     root = channel_snapshot.prefix(version)
     listed = {obj.rel for obj in run.list_tree(root)}
     if not listed:
@@ -341,7 +350,13 @@ def verify_snapshot(version: str, run: r2_promote.Transfers, stage_root: str) ->
                 "(pruned by retention, or rewritten since): %s"
                 % (len(gone), version, r2_promote.tree(dir_name, "edge"), ", ".join(gone[:10]))
             )
-    return len(metadata)
+    return len(metadata), packages
+
+
+def snapshot_packages(packages: dict[str, int], dir_name: str) -> frozenset[str]:
+    """The rels under `<dir_name>/` the snapshot marker names as packages: the bytes a snapshot promote copies for that tree."""
+    head = dir_name + "/"
+    return frozenset(key[len(head) :] for key in packages if key.startswith(head))
 
 
 def _promote_dirs(endpoint: str, version: str = "") -> list[str]:
@@ -350,19 +365,24 @@ def _promote_dirs(endpoint: str, version: str = "") -> list[str]:
     stage_root = tempfile.mkdtemp(prefix="promote-pointers-")
     urls: list[str] = []
     try:
-        count = verify_snapshot(version, run, stage_root) if version else None
-        if count is not None:
+        verified = verify_snapshot(version, run, stage_root) if version else None
+        if verified is not None:
             print(
                 "Channel snapshot: %s (%d metadata object(s), packages verified in the edge trees)"
-                % (channel_snapshot.prefix(version), count)
+                % (channel_snapshot.prefix(version), verified[0])
             )
         for dir_name in CHANNEL_DIRS:
-            if count is None:
+            if verified is None:
                 print("Promoting %s/edge/ -> %s/stable/ (2-phase)" % (dir_name, dir_name))
                 _flush()
                 urls += r2_promote.promote_tree(dir_name, phases(dir_name), stage_root, run)
                 continue
             sources = channel_snapshot.sources(version, dir_name)
+            if dir_name in r2_promote.PACKAGE_TREES:
+                # The selected version's packages only; see SNAPSHOT_BYTES_ARE_THE_MARKERS_PACKAGES.
+                sources = dataclasses.replace(
+                    sources, only=snapshot_packages(verified[1], dir_name)
+                )
             print(
                 "Promoting %s v%s (bytes %s, metadata %s) -> %s/stable/ (2-phase)"
                 % (dir_name, version, sources.bytes_prefix, sources.metadata_prefix, dir_name)

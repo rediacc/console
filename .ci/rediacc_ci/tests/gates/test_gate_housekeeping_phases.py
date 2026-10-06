@@ -321,7 +321,7 @@ def test_drift_does_not_skip_phase_8f(gate, tmp_path):
     gate.assert_exit(1, world, "the run still fails")
     gate.assert_contains(
         world.out,
-        "8f: channel artifact retention",
+        "8f: npm tarball retention",
         "but Phase 8f ran anyway -- the drift finding must not disable package retention",
     )
     gate.assert_contains(world.out, "8e: ", "and so did Phase 8e")
@@ -334,7 +334,7 @@ def test_drift_does_not_skip_phase_8f(gate, tmp_path):
     world.run()
     gate.assert_contains(
         world.out,
-        "8f: channel artifact retention",
+        "8f: npm tarball retention",
         "CONTROL: the no-drift run reaches 8f too, so the marker tracks the phase",
     )
     gate.log_pass("drift no longer eats Phase 8f (control: 8f present on the clean run too)")

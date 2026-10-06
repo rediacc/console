@@ -86,7 +86,7 @@ def _snapshots(text: str) -> frozenset[str]:
 
 
 def in_walk(version: str, stable_version: str) -> bool:
-    """The walk's stable bound: whether `version` can still be selected for promotion, because it is newer than `stable_version` or because either one is not a plain release version (no stable manifest yet, an unreadable one, a `null` version). Edge retention keeps every version this answers True for (`cleanup_versions` 8f, `upload_to_r2`'s tracker), so it can never prune what this module may select."""
+    """The walk's stable bound: whether `version` can still be selected for promotion, because it is newer than `stable_version` or because either one is not a plain release version (no stable manifest yet, an unreadable one, a `null` version). Edge retention keeps every version this answers True for (`upload_repos_to_r2`'s package-tree keep set, `upload_to_r2`'s tracker), so it can never prune what this module may select."""
     key, stable_key = semver(version), semver(stable_version)
     return key is None or stable_key is None or key > stable_key
 

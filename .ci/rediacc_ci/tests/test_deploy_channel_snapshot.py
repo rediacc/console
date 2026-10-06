@@ -15,7 +15,7 @@ import subprocess
 import sys
 import typing
 
-from rediacc_ci.deploy import channel_snapshot
+from rediacc_ci.deploy import channel_snapshot, r2_promote
 from rediacc_ci.deploy import promote_r2_to_stable as promote
 from rediacc_ci.release import list_channel_snapshots
 from rediacc_ci.tests import r2_promote_fake as fake
@@ -161,6 +161,40 @@ def test_an_older_selection_promotes_from_its_snapshot(tmp_path) -> None:
     )
     assert "Channel snapshot: snapshots/v1.2.2/" in proc.stdout
     assert "R2 promotion complete: edge v1.2.2 -> stable" in proc.stdout
+
+
+def _snapshot_stable_problems(root) -> list[str]:
+    """After promoting v1.2.2 from its snapshot, each stable package tree holds exactly v1.2.2's packages (the marker's) plus the snapshot's metadata for that tree: no v1.2.3 package edge still carries, and nothing older."""
+    keys = fake.bucket_keys(root, B)
+    problems = []
+    for dir_name in r2_promote.PACKAGE_TREES:
+        head = B + dir_name + "/stable/"
+        held = {k[len(head) :] for k in keys if k.startswith(head)}
+        want = {k[len(dir_name) + 1 :] for k in SNAP_PACKAGES if k.startswith(dir_name + "/")}
+        want |= {k[len(dir_name) + 1 :] for k in SNAP_META if k.startswith(dir_name + "/")}
+        if held != want:
+            problems.append(
+                "%s: extra %s missing %s" % (head, sorted(held - want), sorted(want - held))
+            )
+    return problems
+
+
+def test_a_snapshot_promote_leaves_stable_holding_only_the_selected_version(tmp_path) -> None:
+    assert promote.SNAPSHOT_BYTES_ARE_THE_MARKERS_PACKAGES is True
+    objects = {**snapshot_bucket(), "rpm/stable/repodata/old-primary.xml.gz": "primary 1.2.0\n"}
+    root, proc, _records = promote_run(tmp_path, objects)
+    assert proc.returncode == 0, proc.stderr
+    assert _snapshot_stable_problems(root) == []
+
+
+def test_mutation_control_a_snapshot_promote_copying_every_edge_package_is_caught(tmp_path) -> None:
+    """PLANT: drop `Sources.only`, so phase 1 copies every package `<dir>/edge/` holds (v1.2.3's too) and the prune keeps them as promoted."""
+    planted = fake.plant(tmp_path, "            and (only is None or obj.rel in only)\n", "")
+    root = tmp_path / "fx"
+    fake.make_bucket(root, snapshot_bucket())
+    proc, _records = fake.run_port(root, MODULE, PROMOTE_ENV, HOME, plant=planted)
+    assert proc.returncode == 0, proc.stderr
+    assert len(_snapshot_stable_problems(root)) == 4
 
 
 def test_snapshot_metadata_is_copied_even_when_stable_looks_unchanged(tmp_path) -> None:
@@ -362,7 +396,14 @@ def test_without_snapshot_version_no_snapshot_is_written(tmp_path) -> None:
     _root, _s3, proc, records = repos_run(tmp_path)
     assert proc.returncode == 0, proc.stderr
     assert not any("snapshots/" in k for k, _c in puts(records))
-    assert not any("list-objects-v2" in r.get("argv", []) for r in records)
+    # No seal: the snapshot of a version is never listed. The prune's read of `snapshots/` (other versions' markers, `upload_repos_to_r2`'s KEEP SET) is not a snapshot write.
+    sealed = [
+        r["argv"]
+        for r in records
+        if "list-objects-v2" in r.get("argv", [])
+        and r["argv"][r["argv"].index("--prefix") + 1].startswith("snapshots/v")
+    ]
+    assert sealed == []
 
 
 def test_a_snapshot_missing_its_cli_part_gets_no_marker(tmp_path) -> None:

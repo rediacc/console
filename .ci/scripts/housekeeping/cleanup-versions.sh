@@ -66,16 +66,12 @@ R2_ORPHAN_VERSION_AGE_DAYS=14
 # A new push on the PR regenerates artifacts via CI, so this only affects
 # stale open PRs that nobody touches.
 R2_PR_MAX_AGE_DAYS=3
-# Package-manager channel retention (apt/, rpm/, apk/, archlinux/).
-# Each aws s3 sync during release adds new rediacc-cli-<semver>.<ext> without
-# deleting predecessors -- without retention the channel dir grows unbounded.
-# Retention is top-N by semver ONLY, by design -- see the rationale in Phase 8f
-# (promote-stable re-uploads every file, so LastModified is not a usable age
-# signal on the stable channel). A vestigial R2_PACKAGE_KEEP_DAYS=7 used to sit
-# here, and two comments claimed retention was "rank OR age", but no code path
-# ever read it. Constant and claims removed; the rank-only behaviour they
-# misdescribed is the intended one and is unchanged.
-R2_PACKAGE_KEEP_VERSIONS=20
+# npm tarball retention (npm/<channel>/rediacc-cli-<semver>.tgz), Phase 8f.
+# Top-N by semver ONLY -- see the rationale in Phase 8f. The package trees
+# (apt/, rpm/, apk/, archlinux/) are not 8f's: every publish prunes them to
+# what their index lists (upload_repos_to_r2, r2_promote.prune_tree; operator
+# ruling 2026-10-06, "Current version only").
+R2_NPM_KEEP_VERSIONS=20
 
 # Phase 10: Workflow runs. Keep N newest per workflow -- a global top-N
 # would starve rarely-fired workflows like Release while letting high-frequency
@@ -1445,85 +1441,58 @@ cleanup_r2() {
             "8d: ${drift_count} release-state drift finding(s); housekeeping refuses to auto-heal. See the drift lines above for per-version remediation."
     fi
 
-    # 8f. Channel artifact retention ----------------------------------------
-    # Every release appends to <fmt>/<channel>/ without ever removing the
-    # previous file (aws s3 sync runs without --delete). Accumulating
-    # filename patterns:
-    #   apt/<channel>/     -> rediacc-cli_<ver>_<arch>.deb (underscore sep)
-    #   rpm/<channel>/     -> rediacc-cli-<ver>.<arch>.rpm
-    #   apk/<channel>/     -> rediacc-cli-<ver>.apk
-    #   archlinux/<ch>/    -> rediacc-cli-<ver>-<arch>.pkg.tar.zst
-    #   npm/<channel>/     -> rediacc-cli-<ver>.tgz
-    # Retention: keep the top R2_PACKAGE_KEEP_VERSIONS semvers. Rank only;
+    # 8f. npm tarball retention ---------------------------------------------
+    # npm/<channel>/ only, where every release adds rediacc-cli-<ver>.tgz and
+    # nothing else removes the previous one.
+    # Retention: keep the top R2_NPM_KEEP_VERSIONS semvers. Rank only;
     # the "no age grace" rationale is three lines below.
     # Special case: rediacc-cli-0.0.0-dev-* are PR CI pollution from
     # before the version-injection fix; always delete.
-    # Metadata (Packages.gz, Release*, InRelease, APKINDEX.tar.gz, repodata/,
-    # *.db.tar.gz, latest-*.yml, manifest.json, gpg.key, rediacc-cli-latest.tgz)
-    # is left alone; next release rewrites it.
-    # Retention is PER-SEMVER, strict top-N. No age grace because
-    # promote-stable.yml resets LastModified on every file at promotion, so
-    # an age rule keeps everything on stable forever.
-    # 0.0.0-dev files are always deleted (pre-version-injection pollution).
-    log_step "  8f: channel artifact retention (keep top ${R2_PACKAGE_KEEP_VERSIONS} semvers; zap 0.0.0-dev)"
+    # Retention is PER-SEMVER, strict top-N. No age grace because a re-upload
+    # resets LastModified, so an age rule could keep a file forever.
+    # apt/, rpm/, apk/ and archlinux/ are pruned on every publish to exactly
+    # what their index lists (rpm's content-hashed repodata/ has no semver, so
+    # no window here could), which is why 8f no longer reaches them.
+    log_step "  8f: npm tarball retention (keep top ${R2_NPM_KEEP_VERSIONS} semvers; zap 0.0.0-dev)"
     local pkg_deleted=0
-    for fmt in apt rpm apk archlinux npm; do
-        for channel in stable edge; do
-            local channel_root="${fmt}/${channel}/"
-            [[ -z "$(r2_ls_prefix "$channel_root")" ]] && continue
-            local listing
-            # Guard against the `aws s3 ls --recursive` pipefail race: if the
-            # prefix gets emptied between the r2_ls_prefix check above and the
-            # call below, aws exits 1 and (under set -eo pipefail at script top)
-            # the whole housekeeping run aborts silently. Falling back to "" on
-            # any pipeline failure keeps the retention sweep going for the
-            # other (fmt, channel) combinations.
-            listing="$(aws s3 ls "s3://${R2_BUCKET}/${channel_root}" --recursive \
-                --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null |
-                awk '{
-                    n = split($4, p, "/"); fname = p[n];
-                    if (fname !~ /^rediacc-cli[-_]/) next
-                    rest = fname; sub(/^rediacc-cli[-_]/, "", rest);
-                    if (match(rest, /^[0-9]+\.[0-9]+\.[0-9]+/)) {
-                        semver = substr(rest, 1, RLENGTH);
-                        after = substr(rest, RLENGTH + 1);
-                        is_dev = (semver == "0.0.0" && after ~ /^-dev/) ? 1 : 0;
-                        print $1"T"$2"Z""|"semver"|"is_dev"|"$4
-                    }
-                }' || echo)"
-            [[ -z "$listing" ]] && continue
-            # Top-N non-dev semvers (per-semver rank, not per-file).
-            local top_versions
-            top_versions="$(echo "$listing" | awk -F'|' '$3 == 0 {print $2}' | sort -u -V -r | head -n "$R2_PACKAGE_KEEP_VERSIONS")"
-            while IFS='|' read -r ts semver is_dev key; do
-                [[ -z "$key" ]] && continue
-                if ! deletes_budget_ok; then
-                    log_warn "  Phase 8f: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining R2 stale package files deferred to next run"
-                    break 3
-                fi
-                local ts_epoch
-                ts_epoch="$(date -u -d "$ts" +%s 2>/dev/null || echo 0)"
-                local age=$((now_epoch - ts_epoch))
-                if [[ "$is_dev" == "1" ]]; then
-                    local tag="0.0.0-dev pollution, $((age / 86400))d"
-                    if [[ "$DRY_RUN" == "true" ]]; then
-                        log_warn "  [DRY-RUN] Would delete s3://${R2_BUCKET}/${key} (${tag})"
-                    else
-                        aws s3 rm "s3://${R2_BUCKET}/${key}" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet 2>/dev/null || true
-                        record_delete
-                        log_info "  Deleted ${key} (${tag})"
-                    fi
-                    pkg_deleted=$((pkg_deleted + 1))
-                    continue
-                fi
-                # Keep if semver is in top-N. Herestring avoids the
-                # `echo | grep -q` pipe: grep -q exits on the first match,
-                # SIGPIPE-ing echo and leaking "write error: Broken pipe"
-                # to stderr once per kept version (~6/run on this codebase).
-                if grep -qxF "$semver" <<<"$top_versions"; then
-                    continue
-                fi
-                local tag="v${semver}, outside top-${R2_PACKAGE_KEEP_VERSIONS}"
+    for channel in stable edge; do
+        local channel_root="npm/${channel}/"
+        [[ -z "$(r2_ls_prefix "$channel_root")" ]] && continue
+        local listing
+        # Guard against the `aws s3 ls --recursive` pipefail race: if the
+        # prefix gets emptied between the r2_ls_prefix check above and the
+        # call below, aws exits 1 and (under set -eo pipefail at script top)
+        # the whole housekeeping run aborts silently. Falling back to "" on
+        # any pipeline failure keeps the retention sweep going for the
+        # other channel.
+        listing="$(aws s3 ls "s3://${R2_BUCKET}/${channel_root}" --recursive \
+            --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" 2>/dev/null |
+            awk '{
+                n = split($4, p, "/"); fname = p[n];
+                if (fname !~ /^rediacc-cli[-_]/) next
+                rest = fname; sub(/^rediacc-cli[-_]/, "", rest);
+                if (match(rest, /^[0-9]+\.[0-9]+\.[0-9]+/)) {
+                    semver = substr(rest, 1, RLENGTH);
+                    after = substr(rest, RLENGTH + 1);
+                    is_dev = (semver == "0.0.0" && after ~ /^-dev/) ? 1 : 0;
+                    print $1"T"$2"Z""|"semver"|"is_dev"|"$4
+                }
+            }' || echo)"
+        [[ -z "$listing" ]] && continue
+        # Top-N non-dev semvers (per-semver rank, not per-file).
+        local top_versions
+        top_versions="$(echo "$listing" | awk -F'|' '$3 == 0 {print $2}' | sort -u -V -r | head -n "$R2_NPM_KEEP_VERSIONS")"
+        while IFS='|' read -r ts semver is_dev key; do
+            [[ -z "$key" ]] && continue
+            if ! deletes_budget_ok; then
+                log_warn "  Phase 8f: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining R2 stale package files deferred to next run"
+                break 2
+            fi
+            local ts_epoch
+            ts_epoch="$(date -u -d "$ts" +%s 2>/dev/null || echo 0)"
+            local age=$((now_epoch - ts_epoch))
+            if [[ "$is_dev" == "1" ]]; then
+                local tag="0.0.0-dev pollution, $((age / 86400))d"
                 if [[ "$DRY_RUN" == "true" ]]; then
                     log_warn "  [DRY-RUN] Would delete s3://${R2_BUCKET}/${key} (${tag})"
                 else
@@ -1532,10 +1501,27 @@ cleanup_r2() {
                     log_info "  Deleted ${key} (${tag})"
                 fi
                 pkg_deleted=$((pkg_deleted + 1))
-            done <<<"$listing"
-        done
+                continue
+            fi
+            # Keep if semver is in top-N. Herestring avoids the
+            # `echo | grep -q` pipe: grep -q exits on the first match,
+            # SIGPIPE-ing echo and leaking "write error: Broken pipe"
+            # to stderr once per kept version (~6/run on this codebase).
+            if grep -qxF "$semver" <<<"$top_versions"; then
+                continue
+            fi
+            local tag="v${semver}, outside top-${R2_NPM_KEEP_VERSIONS}"
+            if [[ "$DRY_RUN" == "true" ]]; then
+                log_warn "  [DRY-RUN] Would delete s3://${R2_BUCKET}/${key} (${tag})"
+            else
+                aws s3 rm "s3://${R2_BUCKET}/${key}" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet 2>/dev/null || true
+                record_delete
+                log_info "  Deleted ${key} (${tag})"
+            fi
+            pkg_deleted=$((pkg_deleted + 1))
+        done <<<"$listing"
     done
-    log_info "  8f: deleted $pkg_deleted stale artifact(s) across apt/rpm/apk/archlinux/npm"
+    log_info "  8f: deleted $pkg_deleted stale npm tarball(s)"
 
     # 8e. Abort abandoned multipart uploads ---------------------------------
     # Successful multiparts complete in minutes; anything older than 24h is

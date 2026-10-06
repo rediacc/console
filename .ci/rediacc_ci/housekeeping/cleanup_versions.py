@@ -118,7 +118,6 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common
 from rediacc_ci.core import release_state_validator as rsv
-from rediacc_ci.release import check_soak_period, check_stable_manifest
 from rediacc_ci.well_known import CF_API_BASE, GH_REPO, RELEASES_BUCKET
 
 # =============================================================================
@@ -150,9 +149,8 @@ R2_RETENTION_DAYS = 7
 R2_FORMAT_DIRS = ("cli", "npm", "apt", "rpm", "apk", "archlinux")
 R2_ORPHAN_VERSION_AGE_DAYS = 14
 R2_PR_MAX_AGE_DAYS = 3
-R2_PACKAGE_KEEP_VERSIONS = 20
-# The stable CLI manifest, whose version bounds 8f's edge retention (`edge_version_kept`).
-R2_STABLE_MANIFEST_KEY = "cli/stable/manifest.json"
+# 8f's window: the npm tarballs kept per channel (`npm/<channel>/rediacc-cli-<semver>.tgz`). The four package trees are not 8f's any more: each publish prunes them to what its index lists (`upload_repos_to_r2`, `r2_promote.prune_tree`; operator ruling 2026-10-06, "Current version only").
+R2_NPM_KEEP_VERSIONS = 20
 
 GH_RUNS_KEEP_PER_WORKFLOW = 100
 GH_RUNS_RETENTION_DAYS = 30
@@ -1055,9 +1053,6 @@ class Housekeeping:
         # :142 and :147.
         self.deletes_this_run = 0
         self.housekeeping_failed = 0
-        # 8f's edge retention bound; see `edge_version_kept`.
-        self._stable_version: str | None = None
-        self._kept_logged: set[tuple[str, str]] = set()
 
     # -- shared helpers -----------------------------------------------------
 
@@ -2572,72 +2567,66 @@ class Housekeeping:
                 "auto-heal. See the drift lines above for per-version remediation." % drift_count,
             )
 
-        # -- 8f. Channel artifact retention ---------------------------------
+        # -- 8f. npm tarball retention -------------------------------------
+        # npm/<channel>/ only. apt/, rpm/, apk/ and archlinux/ are pruned on every publish to exactly what their index lists, which a semver window cannot express (rpm's content-hashed repodata has no semver), so 8f no longer reaches them.
         log.step(
-            "  8f: channel artifact retention (keep top %d semvers; zap 0.0.0-dev)"
-            % R2_PACKAGE_KEEP_VERSIONS
+            "  8f: npm tarball retention (keep top %d semvers; zap 0.0.0-dev)"
+            % R2_NPM_KEEP_VERSIONS
         )
         pkg_deleted = 0
         budget_out = False
-        for fmt in ("apt", "rpm", "apk", "archlinux", "npm"):
-            if budget_out:
-                break
-            for channel in ("stable", "edge"):
-                channel_root = "%s/%s/" % (fmt, channel)
-                if self.r2_ls_prefix(channel_root).rstrip("\n") == "":
+        for channel in ("stable", "edge"):
+            channel_root = "npm/%s/" % channel
+            if self.r2_ls_prefix(channel_root).rstrip("\n") == "":
+                continue
+            code, raw = _capture_raw(
+                [
+                    "aws",
+                    "s3",
+                    "ls",
+                    "s3://%s/%s" % (self.r2_bucket, channel_root),
+                    "--recursive",
+                    "--endpoint-url",
+                    os.environ.get("CLOUDFLARE_R2_ENDPOINT", ""),
+                ]
+            )
+            # Same discard as `r2_ls_prefix`: the twin pipes `aws ... 2>/dev/null` straight into awk and never looks at the status.
+            listing = _awk_channel_listing(raw)
+            if listing == "":
+                continue
+            top_versions = _top_versions(listing, R2_NPM_KEEP_VERSIONS)
+            for record in records(listing):
+                fields = record.split("|")
+                # `IFS='|' read -r ts semver is_dev key`: a key containing a
+                # `|` would land in `key` whole, because read assigns the REMAINDER to the last name.
+                ts = fields[0] if len(fields) > 0 else ""
+                semver = fields[1] if len(fields) > 1 else ""
+                is_dev = fields[2] if len(fields) > 2 else ""
+                key = "|".join(fields[3:]) if len(fields) > 3 else ""
+                if key == "":
                     continue
-                code, raw = _capture_raw(
-                    [
-                        "aws",
-                        "s3",
-                        "ls",
-                        "s3://%s/%s" % (self.r2_bucket, channel_root),
-                        "--recursive",
-                        "--endpoint-url",
-                        os.environ.get("CLOUDFLARE_R2_ENDPOINT", ""),
-                    ]
-                )
-                # Same discard as `r2_ls_prefix`: the twin pipes `aws ... 2>/dev/null` straight into awk and never looks at the status.
-                listing = _awk_channel_listing(raw)
-                if listing == "":
-                    continue
-                top_versions = _top_versions(listing, R2_PACKAGE_KEEP_VERSIONS)
-                for record in records(listing):
-                    fields = record.split("|")
-                    # `IFS='|' read -r ts semver is_dev key`: a key containing a
-                    # `|` would land in `key` whole, because read assigns the REMAINDER to the last name.
-                    ts = fields[0] if len(fields) > 0 else ""
-                    semver = fields[1] if len(fields) > 1 else ""
-                    is_dev = fields[2] if len(fields) > 2 else ""
-                    key = "|".join(fields[3:]) if len(fields) > 3 else ""
-                    if key == "":
-                        continue
-                    if not self.deletes_budget_ok():
-                        log.warn(
-                            "  Phase 8f: hit MAX_DELETES_PER_RUN=%s; remaining R2 "
-                            "stale package files deferred to next run" % self.max_deletes
-                        )
-                        budget_out = True
-                        break
-                    ts_epoch = arith(date_epoch_utc(ts))
-                    age = now_epoch - ts_epoch
-                    if is_dev == "1":
-                        tag = "0.0.0-dev pollution, %dd" % bash_div(age, 86400)
-                        self._r2_rm_object(key, tag)
-                        pkg_deleted += 1
-                        continue
-                    if semver in records(top_versions):
-                        continue
-                    if channel == "edge" and self.edge_version_kept(channel_root, semver):
-                        continue
-                    tag = "v%s, outside top-%d" % (semver, R2_PACKAGE_KEEP_VERSIONS)
+                if not self.deletes_budget_ok():
+                    log.warn(
+                        "  Phase 8f: hit MAX_DELETES_PER_RUN=%s; remaining R2 "
+                        "stale package files deferred to next run" % self.max_deletes
+                    )
+                    budget_out = True
+                    break
+                ts_epoch = arith(date_epoch_utc(ts))
+                age = now_epoch - ts_epoch
+                if is_dev == "1":
+                    tag = "0.0.0-dev pollution, %dd" % bash_div(age, 86400)
                     self._r2_rm_object(key, tag)
                     pkg_deleted += 1
-                if budget_out:
-                    break
-        log.info(
-            "  8f: deleted %d stale artifact(s) across apt/rpm/apk/archlinux/npm" % pkg_deleted
-        )
+                    continue
+                if semver in records(top_versions):
+                    continue
+                tag = "v%s, outside top-%d" % (semver, R2_NPM_KEEP_VERSIONS)
+                self._r2_rm_object(key, tag)
+                pkg_deleted += 1
+            if budget_out:
+                break
+        log.info("  8f: deleted %d stale npm tarball(s)" % pkg_deleted)
 
         # -- 8e. Abort abandoned multipart uploads --------------------------
         log.step("  8e: abort multipart uploads older than 24h")
@@ -2716,46 +2705,6 @@ class Housekeeping:
                 "  8e: aborted %d of %s (held %d under 24h grace)"
                 % (mpu_aborted, mpu_count, arith(mpu_count) - mpu_aborted)
             )
-
-    def stable_version(self) -> str:
-        """The version `cli/stable/manifest.json` names, read from R2 once per run. "" when it cannot be read or parsed, which `check_soak_period.in_walk` reads as "stable is unknown"."""
-        if self._stable_version is None:
-            code, text = capture_quiet(
-                [
-                    "aws",
-                    "s3",
-                    "cp",
-                    "s3://%s/%s" % (self.r2_bucket, R2_STABLE_MANIFEST_KEY),
-                    "-",
-                    "--endpoint-url",
-                    os.environ.get("CLOUDFLARE_R2_ENDPOINT", ""),
-                ]
-            )
-            try:
-                version = check_stable_manifest.manifest_version(text) if code == 0 else ""
-            except (ValueError, AttributeError):
-                version = ""
-            self._stable_version = version
-        return self._stable_version
-
-    def edge_version_kept(self, channel_root: str, semver: str) -> bool:
-        """NOT IN THE TWIN (#62a2846b). An edge version outside the top-N window is kept while `check_soak_period` may still select it for promotion (`in_walk`: newer than stable, or stable unknown). Pruning it starved stable: the promote refuses a version whose channel snapshot names packages edge no longer holds. Logged once per tree and version. Read only when a deletion is in question, so a run that prunes nothing from edge makes the twin's calls."""
-        stable = self.stable_version()
-        if not check_soak_period.in_walk(semver, stable):
-            return False
-        if (channel_root, semver) not in self._kept_logged:
-            self._kept_logged.add((channel_root, semver))
-            why = (
-                "newer than stable v%s, a promotion candidate" % stable
-                if check_soak_period.semver(stable) is not None
-                else "the stable version is unknown (%s unreadable), so every edge version is a "
-                "promotion candidate" % R2_STABLE_MANIFEST_KEY
-            )
-            log.info(
-                "  8f: keeping %s v%s outside top-%d: %s"
-                % (channel_root, semver, R2_PACKAGE_KEEP_VERSIONS, why)
-            )
-        return True
 
     def _r2_rm_object(self, key: str, tag: str) -> None:
         """The single-object delete 8f uses twice, identically. Not a twin

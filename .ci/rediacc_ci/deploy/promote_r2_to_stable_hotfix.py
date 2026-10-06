@@ -20,6 +20,7 @@ WHAT ELSE CHANGED AGAINST THE TWIN
   * The `VACUOUS:` floor runs on the edge listing BEFORE anything is copied (the twin counted after uploading).
   * No fixed `/tmp/promote-<dir>`, `/tmp/config` or `/tmp/script`: nothing a failed run leaves behind can be promoted by the next one. The pointer stage is a fresh `mkdtemp`, removed on exit.
   * An object whose stable copy already has the same size and is not older is not copied again (`aws s3 sync`'s rule); the twin's `cp --recursive` re-sent every byte of history on every run.
+  * STABLE ENDS EQUAL TO EDGE (operator ruling 2026-10-06, "Current version only"). After each package tree (`apt`, `rpm`, `apk`, `archlinux`) is copied and its stable listing shows every promoted key, every `<dir>/stable/` object edge does not hold is deleted (`r2_promote.prune_tree`). Copy first, delete second. `cli/stable/` is not pruned.
 
 `$EP` IS UNQUOTED IN THE TWIN, so bash word-splits it into `--endpoint-url` and the endpoint; `r2_promote.endpoint_args` reproduces the split.
 
