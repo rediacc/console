@@ -118,6 +118,7 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common
 from rediacc_ci.core import release_state_validator as rsv
+from rediacc_ci.housekeeping.cleanup_pr_environments import PrStateReader
 from rediacc_ci.well_known import CF_API_BASE, GH_REPO, RELEASES_BUCKET
 
 # =============================================================================
@@ -665,9 +666,6 @@ _TURNSTILE_NAME_RE = re.compile(r"^rediacc-console-pr-[0-9]+$")
 # `grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$'` (Phase 8d) and the `=~` beside it.
 _STRICT_SEMVER_RE = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
 
-# `[[ "$open_prs" =~ ^[0-9]+$ ]]` (Phase 9).
-_DIGITS_RE = re.compile(r"^[0-9]+$")
-
 # A word `arith` will read as a plain decimal, used to keep a `null` size out of the arithmetic in Phase 12. See `arith` for why a bare identifier is not one.
 _INT_RE = re.compile(r"^[+-]?[0-9]+$")
 
@@ -1053,6 +1051,8 @@ class Housekeeping:
         # :142 and :147.
         self.deletes_this_run = 0
         self.housekeeping_failed = 0
+        # Every PR-state read goes through this one fail-safe reader (PLAN-gh-retry G10).
+        self.pr_states = PrStateReader()
 
     # -- shared helpers -----------------------------------------------------
 
@@ -1952,22 +1952,10 @@ class Housekeeping:
                 # `sed 's/^pr-//'`.
                 pr_number = env_name.removeprefix("pr-")
 
-                code, pr_state = capture_quiet(
-                    [
-                        "gh",
-                        "pr",
-                        "view",
-                        pr_number,
-                        "--repo",
-                        full_repo,
-                        "--json",
-                        "state",
-                        "--jq",
-                        ".state",
-                    ]
-                )
-                if code != 0:
-                    pr_state = "UNKNOWN"
+                pr_state = self.pr_states.read(full_repo, pr_number, "environment " + env_name)
+
+                if pr_state is None:
+                    continue
 
                 if pr_state == "OPEN":
                     log.debug("  Keeping environment: %s (PR #%s is open)" % (env_name, pr_number))
@@ -2068,22 +2056,10 @@ class Housekeeping:
             prefix = "account-db-pr-"
             pr_number = db_name.removeprefix(prefix)
 
-            code, pr_state = capture_quiet(
-                [
-                    "gh",
-                    "pr",
-                    "view",
-                    pr_number,
-                    "--repo",
-                    RELEASE_REPO,
-                    "--json",
-                    "state",
-                    "--jq",
-                    ".state",
-                ]
-            )
-            if code != 0:
-                pr_state = "UNKNOWN"
+            pr_state = self.pr_states.read(RELEASE_REPO, pr_number, "D1 database " + db_name)
+            if pr_state is None:
+                skipped += 1
+                continue
 
             if pr_state == "OPEN":
                 log.debug("  Keeping D1 database: %s (PR #%s is open)" % (db_name, pr_number))
@@ -2181,22 +2157,12 @@ class Housekeeping:
             prefix = "rediacc-console-pr-"
             pr_number = widget_name.removeprefix(prefix)
 
-            code, pr_state = capture_quiet(
-                [
-                    "gh",
-                    "pr",
-                    "view",
-                    pr_number,
-                    "--repo",
-                    RELEASE_REPO,
-                    "--json",
-                    "state",
-                    "--jq",
-                    ".state",
-                ]
+            pr_state = self.pr_states.read(
+                RELEASE_REPO, pr_number, "Turnstile widget " + widget_name
             )
-            if code != 0:
-                pr_state = "UNKNOWN"
+            if pr_state is None:
+                skipped += 1
+                continue
 
             if pr_state == "OPEN":
                 log.debug(
@@ -2425,23 +2391,8 @@ class Housekeeping:
                 if age > pr_age_max:
                     reason = "stale %dd" % bash_div(age, 86400)
                 else:
-                    code, state = capture_quiet(
-                        [
-                            "gh",
-                            "pr",
-                            "view",
-                            pr_num,
-                            "--repo",
-                            RELEASE_REPO,
-                            "--json",
-                            "state",
-                            "--jq",
-                            ".state",
-                        ]
-                    )
-                    if code != 0:
-                        state = "UNKNOWN"
-                    if state != "OPEN":
+                    state = self.pr_states.read(RELEASE_REPO, pr_num, "R2 prefix " + prefix)
+                    if self.pr_states.is_gone(state):
                         reason = "PR #%s %s" % (pr_num, state)
                 if reason != "":
                     self.r2_rm_recursive(prefix, reason)
@@ -2782,24 +2733,14 @@ class Housekeeping:
                 if branch == "main":
                     continue
 
-                code, open_prs = capture_quiet(
-                    [
-                        "gh",
-                        "api",
-                        "repos/%s/pulls?head=%s:%s&state=open&per_page=1"
-                        % (full_repo, GITHUB_ORG, branch),
-                        "--jq",
-                        "length",
-                    ]
+                open_prs = self.pr_states.open_pr_count(
+                    full_repo, branch, "branch " + branch, GITHUB_ORG
                 )
-                if code != 0:
-                    open_prs = "0"
-                # `[[ "$open_prs" =~ ^[0-9]+$ ]] || open_prs=0` -- a 403 body
-                # leaks to stdout even though gh exits non-zero, and the `-gt` below would blow up on it in a tight loop.
-                if not _DIGITS_RE.match(open_prs):
-                    open_prs = "0"
+                if open_prs is None:
+                    kept += 1
+                    continue
 
-                if arith_cmp(open_prs, "gt", 0):
+                if open_prs > 0:
                     log.debug("    Keeping %s (has open PR)" % branch)
                     kept += 1
                     continue
@@ -3369,6 +3310,8 @@ class Housekeeping:
 
         _blank()
         log.info("Total deletes this run: %d / %s" % (self.deletes_this_run, self.max_deletes))
+        if self.pr_states.unreadable:
+            log.warn("PR state reads: %s" % self.pr_states.summary())
         log.info("Housekeeping complete")
 
         if self.housekeeping_failed:

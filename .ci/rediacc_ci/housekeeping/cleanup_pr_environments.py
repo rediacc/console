@@ -47,7 +47,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, gh_retry
 
 USAGE = "Usage: cleanup-pr-environments.sh --repo <owner/repo> [--dry-run]"
 
@@ -56,6 +56,70 @@ DRY_RUN_ON = "true"
 
 # `grep -E '^pr-[0-9]+$'`, the first of the three refusals: `edge`, `stable` and `production-eu` live in the same listing and must never be touched.
 PR_ENV_RE = re.compile(r"^pr-[0-9]+$")
+
+
+# The only PR states a delete may act on. `gh pr view` never reports "not found" as a state: a PR number is never reused or removed on GitHub, so an unresolvable number (404) is an unreadable read, not a closed PR, and keeps the resource.
+GONE_STATES = ("CLOSED", "MERGED")
+KNOWN_STATES = ("OPEN", *GONE_STATES)
+
+
+class PrStateReader:
+    """Reads a PR's state through `gh_retry.gh` (3 attempts on a 5xx or connection fault) and FAILS SAFE.
+
+    `read` returns the state only when GitHub explicitly answered OPEN, CLOSED or MERGED. Anything else (a persistent 5xx, a 404, an auth failure, a timeout, empty or unrecognised output) returns None after one log line naming the PR and the reason, and is counted in `unreadable`. The caller keeps the resource on None and deletes only when `is_gone(state)`. This is the one decision used at every site in both housekeeping modules (PLAN-gh-retry G10): the old `UNKNOWN`-is-not-OPEN reading deleted a live PR's environment, database, widget or R2 prefix on a single 5xx.
+    """
+
+    def __init__(self) -> None:
+        self.unreadable = 0
+
+    def read(self, repo: str, number: str, label: str) -> str | None:
+        result = gh_retry.gh(
+            ["pr", "view", number, "--repo", repo, "--json", "state", "--jq", ".state"]
+        )
+        if not result.ok:
+            lines = (result.stderr or "").strip().splitlines()
+            reason = "gh pr view exited %d%s" % (
+                result.returncode,
+                ": " + lines[-1] if lines else "",
+            )
+        else:
+            state = result.stdout_raw.strip()
+            if state in KNOWN_STATES:
+                return state
+            reason = "unrecognised state %r" % state
+        self.unreadable += 1
+        log.warn("KEEP %s: PR #%s state unreadable (%s)" % (label, number, reason))
+        return None
+
+    def open_pr_count(self, repo: str, branch: str, label: str, owner: str) -> int | None:
+        """How many open PRs have `branch` as head, or None (kept, counted, logged) when GitHub could not say. A failed read is never "zero": that deleted a branch with an open PR."""
+        result = gh_retry.gh(
+            [
+                "api",
+                "repos/%s/pulls?head=%s:%s&state=open&per_page=1" % (repo, owner, branch),
+                "--jq",
+                "length",
+            ]
+        )
+        text = result.stdout_raw.strip() if result.ok else ""
+        if result.ok and text.isascii() and text.isdigit():
+            return int(text)
+        lines = (result.stderr or "").strip().splitlines()
+        reason = (
+            "gh api exited %d%s" % (result.returncode, ": " + lines[-1] if lines else "")
+            if not result.ok
+            else "unrecognised count %r" % text
+        )
+        self.unreadable += 1
+        log.warn("KEEP %s: open-PR check unreadable (%s)" % (label, reason))
+        return None
+
+    @staticmethod
+    def is_gone(state: str | None) -> bool:
+        return state in GONE_STATES
+
+    def summary(self) -> str:
+        return "kept: %d unreadable" % self.unreadable
 
 
 def environments_path(repo: str) -> str:
@@ -158,6 +222,7 @@ def main(argv: list[str]) -> int:
         # DEFECT 1: `set -e` on the failed assignment. No message, and the `if [[ -z "$envs" ]]` branch below the twin's pipeline is dead code.
         return status
 
+    reader = PrStateReader()
     deleted = 0
     skipped = 0
     total = 0
@@ -165,10 +230,10 @@ def main(argv: list[str]) -> int:
         total += 1
         num = env[len("pr-") :]
 
-        state = _substitution(
-            _gh_capture(["pr", "view", num, "--repo", repo, "--json", "state", "--jq", ".state"]),
-            "UNKNOWN",
-        )
+        state = reader.read(repo, num, env)
+        if state is None:
+            skipped += 1
+            continue
         if state == "OPEN":
             log.warn("SKIP %s: PR #%s is still OPEN" % (env, num))
             skipped += 1
@@ -203,6 +268,8 @@ def main(argv: list[str]) -> int:
         log.info("Would delete %d of %d pr-N environment(s)" % (total - skipped, total))
     else:
         log.info("Deleted %d of %d pr-N environment(s); %d skipped" % (deleted, total, skipped))
+    if reader.unreadable:
+        log.warn("%s" % reader.summary())
     return 0
 
 
