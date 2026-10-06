@@ -198,7 +198,7 @@ def _gh_list(org: str, package: str) -> str:
         # A 5xx that outlived the retries is NOT "package not found": say so, then let the same non-array path (which deletes nothing) run.
         log.warn(
             "GHCR package-version list for %s/%s kept failing with a server fault after retries: %s"
-            % (org, package, proc.stdout.strip().splitlines()[-1])
+            % (org, package, (proc.stdout.strip().splitlines() or ["(no output)"])[-1])
         )
     return proc.stdout.rstrip("\n")
 
