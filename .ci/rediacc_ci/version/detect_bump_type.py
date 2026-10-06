@@ -8,7 +8,9 @@ Usage: detect_bump_type.py [--verbose] Environment: GITHUB_REPOSITORY, GH_TOKEN,
 THE CLASS OF BUG THIS SCRIPT IS THE FIX FOR, and therefore the class this port must not reintroduce: the previous implementation grepped `(#123)` out of the HEAD commit TITLE, a shape that only a squash merge produces. This repo rebase-merges, so 0 of the last 60 commits carried it, every release silently took the "no PR numbers found" path, and `bump-major`/`bump-minor` were
 declared, documented and INERT. A wrong answer here is invisible: `patch` is also what a working lookup usually returns. That is why the differential compares the fake `gh` CALL LOG and not only the printed word -- a `patch` from a fallback and a `patch` from a lookup are different verdicts.
 
-FAIL OPEN AND SMALL, PRESERVED EXACTLY. Every error path prints `patch` and exits 0: a missed minor is a version number, an invented major is a statement to every consumer of the version stream. Nine distinct fallback reasons exist and all nine are reproduced, including their `--verbose` text, because the reason is the only way to tell a real `patch` from a degraded one.
+UNREADABLE IS NOT A FALLBACK (PLAN-gh-retry G2). Per-commit reads go through `gh_retry.gh`. A 5xx or connection fault that outlasts the retries makes this exit 1 with no verdict on stdout, because skipping that commit could turn a major or minor into `patch`. A non-transient failure (a 404, a forced failure in the differential) keeps the skip below.
+
+FAIL OPEN AND SMALL, PRESERVED EXACTLY (for every failure that is not a retried-out transient one). Every error path prints `patch` and exits 0: a missed minor is a version number, an invented major is a statement to every consumer of the version stream. Nine distinct fallback reasons exist and all nine are reproduced, including their `--verbose` text, because the reason is the only way to tell a real `patch` from a degraded one.
 
 GIT IS SHELLED OUT TO, NOT REIMPLEMENTED -- `git tag -l 'v*' --sort=-v:refname`,
 `git merge-base --is-ancestor`, `git log --format=%H`, `git rev-parse HEAD`,
@@ -46,6 +48,7 @@ import sys
 import typing
 
 from rediacc_ci import log
+from rediacc_ci.core import gh_retry
 
 PREFIX = "[detect-bump]"
 
@@ -102,6 +105,15 @@ def _git(args: list[str]) -> subprocess.CompletedProcess[str]:
         )
     except FileNotFoundError:
         return subprocess.CompletedProcess(["git", *args], 127, stdout="", stderr="")
+
+
+class UnreadableCommitError(Exception):
+    """A commit's PR labels could not be read after gh_retry's backoff (a 5xx or connection fault). Unlike every fallback above this is NOT answered with `patch`: the decision is unknown."""
+
+    def __init__(self, sha: str, stderr: str) -> None:
+        super().__init__(
+            "commits/%s/pulls unreadable after retries: %s" % (sha[:7], stderr.strip())
+        )
 
 
 class Detector:
@@ -171,18 +183,15 @@ class Detector:
         for sha in commits:
             if not sha:
                 continue
-            proc = subprocess.run(
-                ["gh", "api", pulls_path(repo, sha), "--jq", PULLS_JQ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                stdin=subprocess.DEVNULL,
-                text=True,
-                check=False,
-            )
-            rows = proc.stdout.rstrip("\n")
-            if proc.returncode != 0:
-                self.verbose_log("commits/%s/pulls failed, skipping. Error: %s" % (sha[:7], rows))
+            result = gh_retry.gh(["api", pulls_path(repo, sha), "--jq", PULLS_JQ])
+            if not result.ok:
+                if gh_retry.is_transient(result.stderr):
+                    # Still a 5xx after the retries: this commit's labels were never read, and skipping it could turn a major or minor into a patch.
+                    raise UnreadableCommitError(sha, result.stderr)
+                error = (result.stdout_raw + result.stderr).rstrip("\n")
+                self.verbose_log("commits/%s/pulls failed, skipping. Error: %s" % (sha[:7], error))
                 continue
+            rows = result.stdout_raw.rstrip("\n")
             api_ok = True
             for row in rows.split("\n"):
                 if not row:
@@ -236,7 +245,12 @@ class Detector:
 def main(argv: list[str]) -> int:
     # The twin's `for arg in "$@"` recognises `--verbose` and silently ignores everything else, including an unknown flag. Reproduced: refusing here would turn a typo into a failed release step.
     verbose = "--verbose" in argv
-    print(Detector(verbose).run())
+    try:
+        verdict = Detector(verbose).run()
+    except UnreadableCommitError as exc:
+        log.error("%s %s; refusing to decide the bump from a partial scan" % (PREFIX, exc))
+        return 1
+    print(verdict)
     return 0
 
 

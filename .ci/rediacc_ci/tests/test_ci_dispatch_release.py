@@ -31,6 +31,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from rediacc_ci.ci import dispatch_release as port
+from rediacc_ci.core import ghx
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import GH_REPO
 
@@ -753,3 +754,55 @@ def test_the_module_runs_as_python_m(bindir: pathlib.Path) -> None:
     assert code == 0
     assert out == "decision: release\n"
     assert "Traceback" not in err
+
+
+# --- gh_retry seam (PLAN-gh-retry G3): in-process, ghx.gh faked, backoff not slept. ---
+
+_502 = "gh: Server Error (HTTP 502)"
+
+
+def _fake_lookup(monkeypatch: pytest.MonkeyPatch, answers: list[ghx.GhResult]) -> list[list[str]]:
+    calls: list[list[str]] = []
+
+    def fake(args: list[str], **_kw: object) -> ghx.GhResult:
+        calls.append(args)
+        return answers.pop(0) if len(answers) > 1 else answers[0]
+
+    monkeypatch.setattr(ghx, "gh", fake)
+    monkeypatch.setattr("time.sleep", lambda _s: None)
+    monkeypatch.setenv("GITHUB_REPOSITORY", GH_REPO)
+    monkeypatch.setenv("GITHUB_SHA", "abcdef1234567890")
+    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+    return calls
+
+
+def test_a_502_then_success_on_the_pr_lookup_reads_the_labels(
+    monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    calls = _fake_lookup(
+        monkeypatch,
+        [ghx.GhResult(["gh"], 1, "", _502), ghx.GhResult(["gh"], 0, "570 bump-none\n", "")],
+    )
+    assert port.main(["--decide-only"]) == 0
+    assert "decision: skip" in capfd.readouterr().out
+    assert len(calls) == 2
+
+
+def test_a_persistent_502_on_the_pr_lookup_refuses_instead_of_releasing(
+    monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    _fake_lookup(monkeypatch, [ghx.GhResult(["gh"], 1, "", _502)])
+    assert port.main(["--decide-only"]) == 1
+    captured = capfd.readouterr()
+    assert "decision:" not in captured.out
+    assert "HTTP 502" in captured.err
+    assert "refusing" in captured.err
+
+
+def test_a_404_on_the_pr_lookup_keeps_the_fail_open_release(
+    monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    calls = _fake_lookup(monkeypatch, [ghx.GhResult(["gh"], 1, "", "gh: Not Found (HTTP 404)")])
+    assert port.main(["--decide-only"]) == 0
+    assert "decision: release" in capfd.readouterr().out
+    assert len(calls) == 1
