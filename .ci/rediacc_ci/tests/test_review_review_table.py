@@ -485,3 +485,81 @@ def test_records_from_files_and_the_ledger_are_in_sha_order(tmp_path):
     plant_ledger(tmp_path, make(2, bump="minor", kinds=("feature",), subject="feat: the line"))
     assert [r.sha for r in T.load_records(tmp_path, BRANCH)] == [sha(2), sha(5)]
     assert "earned by `%s` (feat: the line)" % sha(2)[:8] in render_dir(tmp_path)
+
+
+# --------------------------------------------------------------------------- transient read retry (PLAN-gh-retry G12) ---------------------------------------------------------------------------
+
+
+class FlakyCommits(FakeGh):
+    """The commit-list READ fails `failures` times with `text` before the FakeGh answer."""
+
+    def __init__(self, failures, text, **kw):
+        super().__init__(**kw)
+        self.left = failures
+        self.text = text
+
+    def __call__(self, args):
+        if "pulls/" in " ".join(args) and "/commits" in " ".join(args) and self.left > 0:
+            self.left -= 1
+            self.calls.append(list(args))
+            return 1, self.text
+        return super().__call__(args)
+
+
+def test_a_502_on_the_commit_list_is_retried(monkeypatch):
+    slept: list[float] = []
+    monkeypatch.setattr(T, "_sleep", slept.append)
+    gh = FlakyCommits(1, "gh: Server Error (HTTP 502)", commits=[(sha(1), "fix: commit 1")])
+    commits = T.pr_commits(GH_REPO, "7", gh)
+    assert commits is not None
+    assert len(commits) == 1
+    assert slept == [5.0]
+
+
+def test_a_persistent_5xx_on_the_commit_list_is_none(monkeypatch):
+    slept: list[float] = []
+    monkeypatch.setattr(T, "_sleep", slept.append)
+    gh = FlakyCommits(9, "gh: Server Error (HTTP 503)")
+    assert T.pr_commits(GH_REPO, "7", gh) is None
+    assert slept == [5.0, 15.0]
+
+
+def test_a_404_on_the_commit_list_is_not_retried(monkeypatch):
+    slept: list[float] = []
+    monkeypatch.setattr(T, "_sleep", slept.append)
+    gh = FlakyCommits(9, "gh: Not Found (HTTP 404)")
+    assert T.pr_commits(GH_REPO, "7", gh) is None
+    assert slept == []
+    assert len(gh.calls) == 1
+
+
+class FlakyList(FakeGh):
+    def __init__(self, failures, text, **kw):
+        super().__init__(**kw)
+        self.left = failures
+        self.text = text
+
+    def __call__(self, args):
+        if "startswith" in " ".join(args) and self.left > 0:
+            self.left -= 1
+            self.calls.append(list(args))
+            return 1, self.text
+        return super().__call__(args)
+
+
+def test_a_502_on_the_marker_lookup_is_retried_then_patches(monkeypatch):
+    slept: list[float] = []
+    monkeypatch.setattr(T, "_sleep", slept.append)
+    gh = FlakyList(1, "gh: Server Error (HTTP 502)", existing=["555"])
+    assert T.upsert(GH_REPO, "7", "body", gh) is True
+    assert slept == [5.0]
+    assert gh.writes()[0][:3] == ["api", "-X", "PATCH"]
+
+
+def test_a_persistent_5xx_on_the_marker_lookup_posts_nothing(monkeypatch):
+    slept: list[float] = []
+    monkeypatch.setattr(T, "_sleep", slept.append)
+    gh = FlakyList(9, "gh: Server Error (HTTP 503)")
+    assert T.upsert(GH_REPO, "7", "body", gh) is False
+    assert gh.writes() == []
+    assert slept == [5.0, 15.0]

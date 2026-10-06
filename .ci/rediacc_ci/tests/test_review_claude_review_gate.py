@@ -337,8 +337,9 @@ def test_a_failed_marker_read_does_not_re_review(env, capsys):
     rc, out = gate_wr(env, fake)
     assert (rc, out["go"], out["prompt"]) == (0, "false", None)
     marker_reads = [c for c in fake.calls if G.MARKER_PREFIX in " ".join(c)]
-    assert len(marker_reads) == 3
-    assert env["slept"] == [3, 6]
+    # A 403 rate limit is not transient (PLAN-gh-retry G12): one read, no backoff, and the gate still refuses.
+    assert len(marker_reads) == 1
+    assert env["slept"] == []
     err = capsys.readouterr()
     assert "could not be read" in err.out + err.err
     assert "API rate limit exceeded" in err.err
@@ -808,3 +809,74 @@ def test_extract_findings_fence_accepts_backslash_escaped_backticks():
     assert G.extract_findings_fence(ESCAPED_EMPTY_BODY) == "[]"
     one = ESCAPED_EMPTY_BODY.replace("[]", '[{"path": "a.py"}]')
     assert json.loads(G.extract_findings_fence(one)) == [{"path": "a.py"}]
+
+
+# --------------------------------------------------------------------------- transient read retry (PLAN-gh-retry G12) ---------------------------------------------------------------------------
+
+
+def _flaky(inner, failures, text):
+    """`inner` behind `failures` leading failures of `text` on every READ (writes pass straight through)."""
+    state = {"left": failures}
+
+    def call(args):
+        if args[:3] not in (["api", "-X", "POST"], ["api", "-X", "PATCH"]) and state["left"] > 0:
+            state["left"] -= 1
+            return 1, "", text
+        return inner(args)
+
+    return call
+
+
+def test_a_read_that_502s_once_is_retried_and_the_gate_still_decides(env):
+    fake = FakeGh(marker_sha=OLD)
+    rc, out = gate_pr(env, _flaky(fake, 1, "gh: Server Error (HTTP 502)\n"), HEAD_SHA=HEAD)
+    assert env["slept"] == [5.0]
+    assert rc == 0
+    assert out.get("go") in ("true", "false")
+
+
+def test_a_persistent_5xx_read_exhausts_the_ladder_and_fails_the_read(env):
+    calls = []
+
+    def always(args):
+        calls.append(args)
+        return 1, "", "gh: Server Error (HTTP 503)\n"
+
+    env["mp"].setattr(G, "_gh_call", always)
+    rc, out = G.gh_retry("last_marker_sha", ["api", "x"])
+    assert rc != 0
+    assert out == ""
+    assert len(calls) == 3
+    assert env["slept"] == [5.0, 15.0]
+
+
+def test_a_non_transient_read_failure_is_not_retried(env):
+    calls = []
+
+    def forbidden(args):
+        calls.append(args)
+        return 1, "", "gh: Not Found (HTTP 404)\n"
+
+    env["mp"].setattr(G, "_gh_call", forbidden)
+    rc, _out = G._gh_read(["api", "x"], quiet=True)
+    assert rc == 1
+    assert len(calls) == 1
+    assert env["slept"] == []
+    rc, out = G.gh_retry("last_marker_sha", ["api", "x"])
+    assert rc == 1
+    assert out == ""
+    assert len(calls) == 2
+    assert env["slept"] == []
+
+
+def test_a_write_is_never_retried(env):
+    calls = []
+
+    def boom(args):
+        calls.append(args)
+        return 1, "", "gh: Server Error (HTTP 502)\n"
+
+    env["mp"].setattr(G, "_gh_call", boom)
+    rc, _out = G._gh(["api", "-X", "POST", "repos/o/r/issues/1/comments"], quiet=True)
+    assert rc == 1
+    assert len(calls) == 1

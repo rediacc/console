@@ -48,10 +48,12 @@ import pathlib
 import re
 import subprocess
 import sys
+import time
 import zipfile
 
 from rediacc_ci import log
 from rediacc_ci.core import common, ghx, review_budget
+from rediacc_ci.core.gh_retry import retry_transient
 from rediacc_ci.review.claude_review_gate import (
     ATTEMPT_PREFIX,
     MARKER_PREFIX,
@@ -167,19 +169,38 @@ def title_for(token: str) -> str:
     return "%s: %s" % (token, TOKEN_TEXT[token])
 
 
-def _gh(args: list[str], *, quiet: bool = False) -> tuple[int, bytes]:
-    """One `gh` call, stdout captured; stderr is discarded when `quiet`, inherited otherwise."""
+_sleep = time.sleep
+
+
+def _backoff(secs: float) -> None:
+    _sleep(secs)
+
+
+def _gh_once(args: list[str]) -> tuple[int, bytes, bytes]:
+    """One `gh` call: (exit code, stdout, stderr), both captured."""
     try:
         proc = subprocess.run(
             ["gh", *args],
             stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL if quiet else None,
+            capture_output=True,
             check=False,
         )
     except OSError:
-        return 127, b""
-    return proc.returncode, proc.stdout or b""
+        return 127, b"", b""
+    return proc.returncode, proc.stdout or b"", proc.stderr or b""
+
+
+def _gh(args: list[str], *, quiet: bool = False) -> tuple[int, bytes]:
+    """A READ through `gh`, stdout captured. A 5xx or connection fault is retried 5 s then 15 s; a read that still fails returns its nonzero code, and every caller keeps its own failure direction. gh's stderr is replayed unless `quiet`. Writes go through `_gh_input`, which is never retried."""
+    code, out, err = retry_transient(
+        lambda: _gh_once(args),
+        lambda r: None if r[0] == 0 else (r[2].decode("utf-8", "replace") or "failed"),
+        sleep=_backoff,
+    )
+    if err and not quiet:
+        sys.stderr.write(err.decode("utf-8", "replace"))
+        sys.stderr.flush()
+    return code, out
 
 
 def _gh_input(args: list[str], payload: bytes) -> int:

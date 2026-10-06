@@ -738,3 +738,51 @@ def test_the_zip_reader_takes_only_ascii_digits() -> None:
         archive.writestr(rs.ARTIFACT_MEMBER, "pr=\u0664 42\n")
     assert rs._read_member_digits(buf.getvalue()) == "42"
     assert rs._read_member_digits(b"not a zip") == ""
+
+
+# --------------------------------------------------------------------------- transient read retry (PLAN-gh-retry G12) ---------------------------------------------------------------------------
+
+
+def _script_gh(monkeypatch: pytest.MonkeyPatch, answers: list[tuple[int, bytes, bytes]]):
+    calls: list[list[str]] = []
+    slept: list[float] = []
+
+    def once(args: list[str]) -> tuple[int, bytes, bytes]:
+        calls.append(list(args))
+        return answers[min(len(calls), len(answers)) - 1]
+
+    monkeypatch.setattr(rs, "_gh_once", once)
+    monkeypatch.setattr(rs, "_sleep", slept.append)
+    return calls, slept
+
+
+def test_a_502_read_is_retried_then_answers(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls, slept = _script_gh(
+        monkeypatch, [(1, b"", b"gh: Server Error (HTTP 502)\n"), (0, b"[]", b"")]
+    )
+    assert rs._gh(["api", "x"], quiet=True) == (0, b"[]")
+    assert len(calls) == 2
+    assert slept == [5.0]
+
+
+def test_a_persistent_5xx_read_fails_after_the_ladder_and_last_marker_is_unreviewed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls, slept = _script_gh(monkeypatch, [(1, b"", b"gh: Server Error (HTTP 503)\n")])
+    assert rs.last_marker_sha(REPO, PR, claude_review_gate.MARKER_PREFIX) == ""
+    assert len(calls) == 3
+    assert slept == [5.0, 15.0]
+
+
+def test_a_404_read_is_not_retried(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls, slept = _script_gh(monkeypatch, [(1, b"", b"gh: Not Found (HTTP 404)\n")])
+    assert rs._gh(["api", "x"], quiet=True)[0] == 1
+    assert len(calls) == 1
+    assert slept == []
+
+
+def test_a_pr_read_that_still_5xxs_is_a_reporter_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    _calls, slept = _script_gh(monkeypatch, [(1, b"", b"gh: Server Error (HTTP 502)\n")])
+    with pytest.raises(rs.ReporterError):
+        rs._read_pr(REPO, PR)
+    assert slept == [5.0, 15.0]

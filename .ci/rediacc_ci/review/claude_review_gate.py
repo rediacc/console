@@ -45,6 +45,7 @@ from typing import NoReturn
 
 from rediacc_ci import log
 from rediacc_ci.core import common, review_budget
+from rediacc_ci.core.gh_retry import retry_transient
 from rediacc_ci.review import pr_labels
 
 # --- the frozen API: review_status, the workflow and wl_prreview read these --------------------
@@ -138,18 +139,34 @@ def _gh(args: list[str], *, quiet: bool = False) -> tuple[int, str]:
     return rc, out.rstrip("\n")
 
 
+def _backoff(secs: float) -> None:
+    _sleep(secs)
+
+
+def _read_call(args: list[str]) -> tuple[int, str, str]:
+    """`_gh_call` for a READ: a 5xx or connection fault is retried 5 s then 15 s; a 4xx, an auth failure or any other failure returns at once. Writes never come through here."""
+    return retry_transient(
+        lambda: _gh_call(args),
+        lambda r: None if r[0] == 0 else (r[2] or "failed"),
+        sleep=_backoff,
+    )
+
+
+def _gh_read(args: list[str], *, quiet: bool = False) -> tuple[int, str]:
+    """`_gh` for a READ: the same (exit code, stdout) shape, transient faults retried. A read that still fails returns its nonzero code, so every caller keeps its own failure direction."""
+    rc, out, err = _read_call(args)
+    if err and not quiet:
+        sys.stderr.write(err if err.endswith("\n") else err + "\n")
+        sys.stderr.flush()
+    return rc, out.rstrip("\n")
+
+
 def gh_retry(what: str, args: list[str]) -> tuple[int, str]:
-    """Up to three attempts, `attempt*3` seconds apart; on total failure a named error, gh's stderr indented, and a nonzero code."""
-    rc = 0
-    err = ""
-    for attempt in (1, 2, 3):
-        rc, out, err = _gh_call(args)
-        if rc == 0:
-            return 0, out.rstrip("\n")
-        if attempt < 3:
-            log.warn("%s: gh call failed (attempt %d/3), retrying..." % (what, attempt))
-            _sleep(attempt * 3)
-    log.error("%s: gh failed after 3 attempts (last exit %d)." % (what, rc))
+    """A READ retried on a transient fault (see `_read_call`); on total failure a named error, gh's stderr indented, and a nonzero code."""
+    rc, out, err = _read_call(args)
+    if rc == 0:
+        return 0, out.rstrip("\n")
+    log.error("%s: gh read failed (exit %d)." % (what, rc))
     for line in err.rstrip("\n").split("\n") if err else []:
         sys.stderr.write("    %s\n" % line)
     sys.stderr.flush()
@@ -412,7 +429,7 @@ def review_attempt_states(repo: str, pr: str) -> tuple[list[review_budget.Attemp
 
 def pr_diff_size(repo: str, pr: str) -> tuple[int, int]:
     """(additions plus deletions, changed files), or (0, 0) -- the smallest cap tier and the smallest turn budget -- when unreadable or non-numeric."""
-    rc, out = _gh(
+    rc, out = _gh_read(
         [
             "pr",
             "view",
@@ -464,7 +481,7 @@ def _resolve_workflow_run(output_path: str) -> tuple[str, str, str]:
     # PINNED TO THE RUN'S SHA: `headRefOid == WR_HEAD_SHA` is the "current head is green RIGHT NOW" invariant, so a late green run for a superseded commit never reviews stale code. `workflow_run.pull_requests[]` is unreliable, so the PR is resolved through the branch.
     wr_head_sha = _checked_sha("WR_HEAD_SHA", os.environ.get("WR_HEAD_SHA", ""))
     head_ref = os.environ.get("WR_HEAD_BRANCH", "")
-    rc, pr_json = _gh(
+    rc, pr_json = _gh_read(
         [
             "pr",
             "list",
@@ -497,7 +514,7 @@ def _resolve_workflow_run(output_path: str) -> tuple[str, str, str]:
 def _resolve_pull_request(output_path: str) -> tuple[str, str, str]:
     """(pr, head sha, head ref) for `pull_request: ready_for_review` or `workflow_dispatch`, or a go=false decision."""
     pr = _require_pr()
-    rc, view = _gh(
+    rc, view = _gh_read(
         [
             "pr",
             "view",
@@ -523,7 +540,7 @@ def _resolve_pull_request(output_path: str) -> tuple[str, str, str]:
         emit(output_path, "false", pr, head_sha, "", "PR is a draft")
     required_check = os.environ.get("REQUIRED_CHECK", "")
     if required_check:
-        rc, green = _gh(
+        rc, green = _gh_read(
             [
                 "api",
                 "-X",
@@ -642,7 +659,7 @@ def run_gate() -> int:
         if last_sha == head_sha:
             emit(output_path, "false", pr, head_sha, last_sha, "head already reviewed")
         # Delta since the last ACTUALLY reviewed SHA (markers never advance on skips). A failed compare fails OPEN into an incremental review. `files[]` caps at 300 entries, which cannot mask an all-gitlink diff.
-        rc, files_json = _gh(
+        rc, files_json = _gh_read(
             [
                 "api",
                 "repos/%s/compare/%s...%s" % (repo, last_sha, head_sha),
@@ -758,7 +775,7 @@ def run_post_findings() -> int:
     pr = _require_pr()
     head_sha = _require_head()
     repo = _repo()
-    rc, bodies = _gh(
+    rc, bodies = _gh_read(
         [
             "api",
             "repos/%s/issues/%s/comments" % (repo, pr),
@@ -929,7 +946,7 @@ def run_mark() -> int:
         ("issues", '.[] | select(.body | startswith("<!--") | not) | '),
         ("pulls", ".[] | "),
     ):
-        rc, ids = _gh(
+        rc, ids = _gh_read(
             [
                 "api",
                 "repos/%s/%s/%s/comments" % (repo, endpoint, pr),

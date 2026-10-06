@@ -239,3 +239,46 @@ def test_verdicts_merge_files_and_ledger_in_sha_order(tmp_path):
     assert [v["kind"] for v in L.verdicts(tmp_path, BRANCH)] == [["ci"], ["docs"]]
     labels, _note = L.aggregate(L.verdicts(tmp_path, BRANCH))
     assert labels == ["ci", "documentation"]
+
+
+# --------------------------------------------------------------------------- transient read retry (PLAN-gh-retry G12) ---------------------------------------------------------------------------
+
+
+def _flaky_files(failures, text):
+    """A FakeGh whose changed-file READ fails `failures` times with `text` first."""
+
+    class Flaky(FakeGh):
+        left = failures
+
+        def __call__(self, args):
+            if "/files" in " ".join(args) and self.left > 0:
+                self.left -= 1
+                self.calls.append(args)
+                return 1, text
+            return super().__call__(args)
+
+    return Flaky()
+
+
+def test_a_502_on_the_changed_file_list_is_retried(tmp_path, monkeypatch):
+    slept: list[float] = []
+    monkeypatch.setattr(L, "_sleep", slept.append)
+    gh = run(tmp_path, _flaky_files(1, "gh: Server Error (HTTP 502)"))
+    assert slept == [5.0]
+    assert sum("/files" in " ".join(a) for a in gh.calls) == 2
+
+
+def test_a_persistent_5xx_leaves_the_changed_list_empty_and_still_returns_0(tmp_path, monkeypatch):
+    slept: list[float] = []
+    monkeypatch.setattr(L, "_sleep", slept.append)
+    gh = run(tmp_path, _flaky_files(9, "gh: Server Error (HTTP 503)"))
+    assert slept == [5.0, 15.0]
+    assert sum("/files" in " ".join(a) for a in gh.calls) == 3
+
+
+def test_a_404_on_the_changed_file_list_is_not_retried(tmp_path, monkeypatch):
+    slept: list[float] = []
+    monkeypatch.setattr(L, "_sleep", slept.append)
+    gh = run(tmp_path, _flaky_files(9, "gh: Not Found (HTTP 404)"))
+    assert slept == []
+    assert sum("/files" in " ".join(a) for a in gh.calls) == 1
