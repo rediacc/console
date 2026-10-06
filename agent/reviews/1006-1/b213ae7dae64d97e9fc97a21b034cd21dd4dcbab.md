@@ -21,4 +21,4 @@ Body-Sig: 4e53df88980681e1
 ### b213ae7d.1 [low] scripts/ci-runner/manifest.ts:791
 Anchor: in-diff
 Claim: Comment states the gate finished in '120 s' when run alone, but the commit message states '121 s', creating a factual inconsistency in the documented measurements.
-Resolution: open
+Resolution: fixed 39e9e01f7c523afa95a07bdf62db4114672dd652 | d778be9d 2026-10-06T06:13:06Z
