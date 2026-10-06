@@ -28,12 +28,12 @@ import datetime as dt
 import json
 import os
 import re
-import subprocess
 import sys
 from pathlib import Path
 
 import _cipath  # noqa: F401
 from rediacc_ci import controls
+from rediacc_ci.core import gh_retry
 from rediacc_ci.well_known import GH_REPO
 
 ROOT = Path(os.environ.get("ACTIONS_ALLOWLIST_ROOT") or Path(__file__).resolve().parents[3])
@@ -90,13 +90,8 @@ def permitted(ref: str, record: dict) -> bool:
 
 def refresh(record_path: Path) -> int:
     repo = GH_REPO
-    proc = subprocess.run(
-        ["gh", "api", f"/repos/{repo}/actions/permissions/selected-actions"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if proc.returncode != 0:
+    proc = gh_retry.gh(["api", f"/repos/{repo}/actions/permissions/selected-actions"])
+    if not proc.ok:
         print(f"✗ could not read the allowlist for {repo}: {proc.stderr.strip()}", file=sys.stderr)
         return 1
     live = json.loads(proc.stdout)

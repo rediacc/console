@@ -27,10 +27,11 @@ import datetime as dt
 import json
 import pathlib
 import re
-import subprocess
 import sys
 
+import _cipath  # noqa: F401
 import yaml
+from rediacc_ci.core import gh_retry
 
 # Refresh cadence. An allowlist can change without any commit touching this repo, so a stale record is a failure rather than a warning.
 MAX_BASELINE_AGE_DAYS = 45
@@ -143,10 +144,8 @@ def refresh(root, baseline_path):
     """Rewrite the record from the GitHub API. The network lives HERE only."""
 
     def gh(args):
-        out = subprocess.run(
-            ["gh", *args], capture_output=True, text=True, cwd=str(root), check=False
-        )
-        return out.stdout if out.returncode == 0 else None
+        out = gh_retry.gh(list(args))
+        return out.stdout_raw if out.ok else None
 
     listing = gh(
         [
@@ -184,7 +183,10 @@ def refresh(root, baseline_path):
                 ".repositories[].name",
             ]
         )
-        scoped[name] = set((repos or "").split())
+        if repos is None:
+            print("refresh: cannot read the repositories of org secret %s" % name, file=sys.stderr)
+            return 1
+        scoped[name] = set(repos.split())
 
     recorded: dict[str, dict] = {}
     data = {
@@ -204,7 +206,10 @@ def refresh(root, baseline_path):
         repo_own = gh(
             ["api", f"repos/{gh_repo}/actions/secrets", "--paginate", "--jq", ".secrets[].name"]
         )
-        own = set((repo_own or "").split())
+        if repo_own is None:
+            print("refresh: cannot read the secrets of %s" % gh_repo, file=sys.stderr)
+            return 1
+        own = set(repo_own.split())
         entry = {}
         for n in sorted(names):
             if n in own:

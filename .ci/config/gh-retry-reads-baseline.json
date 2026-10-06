@@ -110,56 +110,6 @@
       "id": "8272b889486b",
       "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_workflow_runs via Housekeeping.cleanup_workflow_runs :: gh gh api repos/%s/actions/workflows?per_page=100 --jq [.workflows[] | select(.state == \"active\") | {id: .id, name: .name, path: .path}]",
       "count": 1
-    },
-    {
-      "id": "9f0ada5ad126",
-      "site": ".ci/scripts/quality/check_actions_allowlist.py :: refresh via refresh :: gh gh api /repos/%s/actions/permissions/selected-actions",
-      "count": 1
-    },
-    {
-      "id": "18113881baf7",
-      "site": ".ci/scripts/quality/check_agent_session_archival.py :: _review_dirs via _gh_merged_at :: gh gh pr list --repo ? --state merged --head ? --json mergedAt",
-      "count": 1
-    },
-    {
-      "id": "c8014531cfd0",
-      "site": ".ci/scripts/quality/check_job_timeout_headroom.py :: refresh via refresh :: gh gh api ? --jq .jobs[]|select(.conclusion==\"success\")|\"\\(.name)\\t\\(.started_at)\\t\\(.completed_at)\"",
-      "count": 1
-    },
-    {
-      "id": "b3784a5e704b",
-      "site": ".ci/scripts/quality/check_job_timeout_headroom.py :: refresh via refresh :: gh gh run list --repo ? --branch main --workflow Console CI --event push --limit ? --json databaseId --jq .[].databaseId",
-      "count": 1
-    },
-    {
-      "id": "a9c511db8a5b",
-      "site": ".ci/scripts/quality/check_runner_advice.py :: harvest via gh_json :: gh gh api repos/%s/actions/runs/%s/jobs?per_page=100 --jq .jobs[].id",
-      "count": 1
-    },
-    {
-      "id": "df6fb4ef82d6",
-      "site": ".ci/scripts/quality/check_runner_advice.py :: harvest via gh_json :: gh gh api repos/%s/check-runs/%s/annotations --jq .[].message",
-      "count": 1
-    },
-    {
-      "id": "19ba721aae93",
-      "site": ".ci/scripts/quality/check_runner_advice.py :: main via gh_json :: gh gh run list --repo ? --branch ? --limit ? --json databaseId --jq .[].databaseId",
-      "count": 1
-    },
-    {
-      "id": "333761f51c9c",
-      "site": ".ci/scripts/quality/check_secret_reachability.py :: refresh via refresh.gh :: gh gh api orgs/rediacc/actions/secrets --paginate --jq .secrets[]|[.name,.visibility]|@tsv",
-      "count": 1
-    },
-    {
-      "id": "b19f1f2f1bd2",
-      "site": ".ci/scripts/quality/check_secret_reachability.py :: refresh via refresh.gh :: gh gh api orgs/rediacc/actions/secrets/%s/repositories --paginate --jq .repositories[].name",
-      "count": 1
-    },
-    {
-      "id": "0b0452f78f1e",
-      "site": ".ci/scripts/quality/check_secret_reachability.py :: refresh via refresh.gh :: gh gh api repos/%s/actions/secrets --paginate --jq .secrets[].name",
-      "count": 1
     }
   ]
 }
