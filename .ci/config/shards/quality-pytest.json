@@ -571,6 +571,7 @@
         "pytest:.ci/rediacc_ci/tests/test_xdist_groups.py",
         "pytest:.claude/rediacc_hooks/tests/test_bash_semantics.py",
         "pytest:.claude/rediacc_hooks/tests/test_dispatch.py",
+        "pytest:.claude/rediacc_hooks/tests/test_githook_gen_docs.py",
         "pytest:.claude/rediacc_hooks/tests/test_guards_differential.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_static.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_trapguard.py",

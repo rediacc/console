@@ -915,6 +915,7 @@
       "ENABLE_HTTPS",
       "FULL_INTEGRATION",
       "GATEWAY_PORT",
+      "GEN_DOCS_PRECOMMIT_VERBOSE",
       "GIT_DIR",
       "GIT_INDEX_FILE",
       "GROUP_B_BRIDGE",
