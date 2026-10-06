@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { createDevServer, pickFreePort, resourceSnapshot } from './lib/dev-server-process.js';
 import {
   captureNavigationEvidence,
+  makeReloadPlant,
   pollRoutesReady,
   reportInconclusiveCauses,
   runScenarioRetryingReload,
@@ -35,8 +36,8 @@ let exitCode = 0;
 let navigationRetries = 0;
 let scenarioReloadRetries = 0;
 
-// TEST SEAM, off by default: TUTORIAL_PLAYER_GATE_PLANT_RELOADS=N makes the seek scenario call location.reload() N times right after its seek write, to prove the reload retry absorbs one reload and fails on two.
-let plantedReloads = Number(process.env.TUTORIAL_PLAYER_GATE_PLANT_RELOADS ?? 0);
+// TEST SEAM, off by default: TUTORIAL_PLAYER_GATE_PLANT_RELOADS=N makes the seek scenario reload the page N times right after its seek write (see makeReloadPlant).
+const plantReload = makeReloadPlant({ evalInPage, wait, log });
 
 function log(message) {
   process.stdout.write(`${message}\n`);
@@ -409,12 +410,7 @@ function scenarioSeekNoSnapback() {
     const v = document.querySelector('.tvp-root video');
     v.currentTime = ${seekTarget};
   })()`);
-  if (plantedReloads > 0) {
-    plantedReloads -= 1;
-    log('→ PLANTED reload (TUTORIAL_PLAYER_GATE_PLANT_RELOADS) in the seek scenario');
-    evalInPage('(() => { setTimeout(() => location.reload(), 0); })()');
-    wait(1500);
-  }
+  plantReload();
 
   const rows = sampledStates(9000, 700);
   writeArtifact('scenario-seek-states.json', rows);
