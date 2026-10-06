@@ -1990,98 +1990,67 @@ def test_phase_8d_grandfathers_a_version_below_the_pre_contract_floor() -> None:
     assert "found 0 drift finding(s)" in err
 
 
-def test_phase_8f_keeps_the_top_semvers_and_always_zaps_the_dev_pollution() -> None:
-    listing = "".join(
-        "%s       12 apt/stable/rediacc-cli_%s_amd64.deb\n" % (s3_ago(10.5), v)
-        for v in ("1.0.%d" % i for i in range(25))
-    ) + "%s       12 apt/stable/rediacc-cli-0.0.0-dev-abc.deb\n" % s3_ago(10.5)
+def _npm_listing(channel: str, count: int) -> str:
+    return "".join(
+        "%s       12 npm/%s/rediacc-cli-%s.tgz\n" % (s3_ago(10.5), channel, v)
+        for v in ("1.0.%d" % i for i in range(count))
+    ) + "%s       12 npm/%s/rediacc-cli-0.0.0-dev-abc.tgz\n" % (s3_ago(10.5), channel)
+
+
+def _tree_fixture(root: str, listing: str, *extra: dict) -> dict:
+    return r2_fixture(
+        *extra,
+        rule(("ls s3://" + RELEASES_BUCKET + "/" + root + " --recursive"), raw=listing),
+        rule(("ls s3://" + RELEASES_BUCKET + "/" + root + " "), raw=listing),
+    )
+
+
+def test_phase_8f_keeps_the_top_npm_semvers_and_always_zaps_the_dev_pollution() -> None:
     result = sides(
-        "cleanup_r2",
-        fixture=r2_fixture(
-            rule(("ls s3://" + RELEASES_BUCKET + "/apt/stable/ --recursive"), raw=listing),
-            rule(("ls s3://" + RELEASES_BUCKET + "/apt/stable/ "), raw=listing),
-        ),
-        env=R2_ENV,
+        "cleanup_r2", fixture=_tree_fixture("npm/stable/", _npm_listing("stable", 25)), env=R2_ENV
     )
     err = result[2].decode()
     # 25 semvers, keep the top 20 -> 1.0.0 .. 1.0.4 go, plus the dev file.
-    assert "Deleted apt/stable/rediacc-cli_1.0.0_amd64.deb (v1.0.0, outside top-20)" in err
-    assert "Deleted apt/stable/rediacc-cli_1.0.4_amd64.deb (v1.0.4, outside top-20)" in err
-    assert "rediacc-cli_1.0.5_amd64.deb (v1.0.5" not in err
-    assert "Deleted apt/stable/rediacc-cli-0.0.0-dev-abc.deb (0.0.0-dev pollution, 10d)" in err
-    assert "8f: deleted 6 stale artifact(s) across apt/rpm/apk/archlinux/npm" in err
+    assert "8f: npm tarball retention (keep top 20 semvers; zap 0.0.0-dev)" in err
+    assert "Deleted npm/stable/rediacc-cli-1.0.0.tgz (v1.0.0, outside top-20)" in err
+    assert "Deleted npm/stable/rediacc-cli-1.0.4.tgz (v1.0.4, outside top-20)" in err
+    assert "rediacc-cli-1.0.5.tgz (v1.0.5" not in err
+    assert "Deleted npm/stable/rediacc-cli-0.0.0-dev-abc.tgz (0.0.0-dev pollution, 10d)" in err
+    assert "8f: deleted 6 stale npm tarball(s)" in err
+    assert cv.R2_NPM_KEEP_VERSIONS == 20
 
 
-def test_phase_8f_leaves_channel_metadata_alone() -> None:
-    listing = (
-        "%s       12 apt/edge/Packages.gz\n" % s3_ago(10.5)
-        + "%s       12 apt/edge/InRelease\n" % s3_ago(10.5)
-        + "%s       12 apt/edge/rediacc-cli_1.0.0_amd64.deb\n" % s3_ago(10.5)
-    )
+def test_phase_8f_applies_the_same_window_to_npm_edge() -> None:
+    """No promotion-candidate exception on npm/edge/: the npm tarballs are not promoted from edge, so the window is the whole rule on both channels, as in the twin."""
     result = sides(
         "cleanup_r2",
         argv=("--dry-run",),
-        fixture=r2_fixture(
-            rule(("ls s3://" + RELEASES_BUCKET + "/apt/edge/ --recursive"), raw=listing),
-            rule(("ls s3://" + RELEASES_BUCKET + "/apt/edge/ "), raw=listing),
-        ),
+        fixture=_tree_fixture("npm/edge/", _npm_listing("edge", 25)),
         env=R2_ENV,
     )
     err = result[2].decode()
-    assert "Packages.gz" not in err
-    assert "InRelease" not in err
-    assert "8f: deleted 0 stale artifact(s)" in err, "one semver is inside top-20"
+    assert "Would delete s3://" + RELEASES_BUCKET + "/npm/edge/rediacc-cli-1.0.4.tgz" in err
+    assert "cli/stable/manifest.json" not in " ".join(
+        " ".join(c) for c in calls_of(result[3], "aws")
+    )
 
 
-def _edge_listing(count: int) -> str:
-    return "".join(
+def test_phase_8f_never_reaches_a_package_tree() -> None:
+    """THE PACKAGE TREES ARE NOT 8f's (operator ruling 2026-10-06): each publish prunes `apt/`, `rpm/`, `apk/`, `archlinux/` to what its index lists. 25 old apt semvers are listed and 8f neither lists nor deletes any of them."""
+    listing = "".join(
         "%s       12 apt/edge/rediacc-cli_%s_amd64.deb\n" % (s3_ago(10.5), v)
-        for v in ("1.0.%d" % i for i in range(count))
-    ) + "%s       12 apt/edge/rediacc-cli-0.0.0-dev-abc.deb\n" % s3_ago(10.5)
-
-
-def _edge_fixture(listing: str, *stable: dict) -> dict:
-    return r2_fixture(
-        *stable,
-        rule(("ls s3://" + RELEASES_BUCKET + "/apt/edge/ --recursive"), raw=listing),
-        rule(("ls s3://" + RELEASES_BUCKET + "/apt/edge/ "), raw=listing),
+        for v in ("1.0.%d" % i for i in range(25))
     )
-
-
-def test_delta_phase_8f_never_prunes_an_edge_version_newer_than_stable() -> None:
-    """INTENTIONAL DELTA (#62a2846b). Edge retention kept the top 20 semvers, so with a release on every merge it pruned the packages of a version still waiting out its soak, and the promote refused it (its channel snapshot names packages edge no longer holds): stable starved. An edge version newer than stable is one `check_soak_period` may still select (`in_walk`), so it is kept outside the top 20. The twin is the control: it deletes v1.0.3 and v1.0.4."""
-    manifest = rule("cli/stable/manifest.json", raw='{"version":"1.0.2"}\n')
-    old, new = _twin_and_port(
-        "cleanup_r2", ("--dry-run",), _edge_fixture(_edge_listing(25), manifest), R2_ENV
-    )
-    old_err, new_err = old[2].decode(), new[2].decode()
-    assert "apt/edge/rediacc-cli_1.0.4_amd64.deb (v1.0.4, outside top-20)" in old_err
-    assert "apt/edge/rediacc-cli_1.0.2_amd64.deb (v1.0.2, outside top-20)" in new_err
-    assert "apt/edge/rediacc-cli_1.0.0_amd64.deb (v1.0.0, outside top-20)" in new_err
-    assert "rediacc-cli_1.0.3_amd64.deb (v1.0.3" not in new_err
-    assert "rediacc-cli_1.0.4_amd64.deb (v1.0.4" not in new_err
-    assert "8f: keeping apt/edge/ v1.0.3 outside top-20: newer than stable v1.0.2" in new_err
-    assert "0.0.0-dev pollution" in new_err, "the dev pollution still goes"
-    reads = [c for c in calls_of(new[3], "aws") if "cli/stable/manifest.json" in " ".join(c)]
-    assert len(reads) == 1, "the stable manifest is read once per run, not per key"
-    assert new[0] == 0
-
-
-def test_delta_phase_8f_keeps_every_edge_version_when_stable_is_unreadable() -> None:
-    """No stable version means every edge version is a candidate (`in_walk`), so nothing outside the top 20 is pruned from edge, and the run says why."""
-    _old, new = _twin_and_port(
-        "cleanup_r2", ("--dry-run",), _edge_fixture(_edge_listing(25)), R2_ENV
-    )
-    new_err = new[2].decode()
-    assert "outside top-20)" not in new_err
-    assert "8f: keeping apt/edge/ v1.0.0 outside top-20: the stable version is unknown" in new_err
-    assert "0.0.0-dev pollution" in new_err
-    assert new[0] == 0
-
-
-def test_phase_8f_reads_no_stable_manifest_when_edge_is_inside_the_window() -> None:
-    """The delta costs nothing on a run that prunes nothing from edge: both sides make the same calls."""
-    sides("cleanup_r2", argv=("--dry-run",), fixture=_edge_fixture(_edge_listing(20)), env=R2_ENV)
+    result = sides("cleanup_r2", fixture=_tree_fixture("apt/edge/", listing), env=R2_ENV)
+    err = result[2].decode()
+    assert "rediacc-cli_1.0.0_amd64.deb" not in err
+    assert "8f: deleted 0 stale npm tarball(s)" in err
+    for fmt in ("apt", "rpm", "apk", "archlinux"):
+        for channel in ("stable", "edge"):
+            listed = "s3://%s/%s/%s/" % (RELEASES_BUCKET, fmt, channel)
+            assert not any(
+                listed in c and "--recursive" in c for c in calls_of(result[3], "aws")
+            ), listed
 
 
 def test_phase_8e_reads_a_null_upload_query_as_no_uploads() -> None:

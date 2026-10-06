@@ -128,11 +128,12 @@ for dir in cli apt rpm apk archlinux; do
                 --include 'InRelease' --include '*/InRelease'
             ;;
         rpm)
-            # 2a: primary / filelists / other (hashed in 2b repomd).
+            # 2a: primary / filelists / other (hashed in 2b repomd). createrepo
+            # names them <sha256>-primary.xml.gz, hence the leading '*'.
             aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --only-show-errors \
                 --cache-control "$CC_MUTABLE" \
-                --exclude '*' --include 'repodata/primary*' \
-                --include 'repodata/filelists*' --include 'repodata/other*'
+                --exclude '*' --include 'repodata/*primary*' \
+                --include 'repodata/*filelists*' --include 'repodata/*other*'
             # 2b: repomd.xml + signatures + rediacc.repo (config).
             aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --only-show-errors \
                 --cache-control "$CC_MUTABLE" \

@@ -23,10 +23,12 @@ import re
 import shutil
 import subprocess
 import sys
+import typing
 
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.deploy import channel_snapshot, r2_promote
 from rediacc_ci.deploy import upload_repos_to_r2 as port
 from rediacc_ci.tests.wkloader import copy_loader
 from rediacc_ci.well_known import CF_API_BASE, RELEASES_BUCKET, RELEASES_ORIGIN
@@ -59,14 +61,16 @@ DEFAULT_TREE = {
 }
 
 FAKE_AWS = """#!/usr/bin/python3
+import json
 import os
+import shutil
 import sys
 
 argv = sys.argv[1:]
 log = os.environ["FAKE_CALL_LOG"]
 with open(log, "a") as fh:
     fh.write("aws\\t" + "\\t".join(argv) + "\\n")
-    if len(argv) > 2 and argv[1] == "cp":
+    if len(argv) > 2 and argv[1] == "cp" and not argv[2].startswith("s3://"):
         with open(argv[2]) as src:
             fh.write("CONTENT<<<" + src.read() + ">>>\\n")
 
@@ -74,6 +78,63 @@ rc = int(os.environ.get("FAKE_AWS_RC", "0"))
 if rc:
     sys.stderr.write("upload failed: the bucket said no\\n")
     sys.exit(rc)
+
+# THE BUCKET MODEL (the prune delta): `FAKE_S3_ROOT/<bucket>/<key>`. A sync and a cp land there, a listing and a read come from there, and a delete removes from there. The twin's calls behave exactly as before; only the port's prune reads anything back.
+root = os.environ.get("FAKE_S3_ROOT", "")
+
+
+def opt(name):
+    return argv[argv.index(name) + 1] if name in argv else None
+
+
+if root and argv[:2] == ["s3", "sync"]:
+    src, dst = argv[2], argv[3][5:]
+    drop = os.environ.get("FAKE_AWS_DROP_SYNC_MATCH", "")
+    for dirpath, _d, files in os.walk(src):
+        for name in files:
+            full = os.path.join(dirpath, name)
+            if drop and drop in full:
+                continue
+            target = os.path.join(root, dst, os.path.relpath(full, src))
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            shutil.copyfile(full, target)
+elif root and argv[:2] == ["s3", "cp"] and argv[2].startswith("s3://"):
+    path = os.path.join(root, argv[2][5:])
+    if not os.path.isfile(path):
+        sys.stderr.write("fatal error: An error occurred (404) when calling the HeadObject operation: Key not found\\n")
+        sys.exit(1)
+    sys.stdout.write(open(path).read())
+elif root and argv[:2] == ["s3", "cp"]:
+    target = os.path.join(root, argv[3][5:])
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    shutil.copyfile(argv[2], target)
+elif argv[:2] == ["s3api", "list-objects-v2"]:
+    bucket, prefix = opt("--bucket"), opt("--prefix")
+    base = os.path.join(root, bucket) if root else ""
+    contents = []
+    for dirpath, _d, files in (os.walk(base) if base else ()):
+        for name in files:
+            full = os.path.join(dirpath, name)
+            key = os.path.relpath(full, base)
+            if key.startswith(prefix):
+                contents.append({"Key": key, "Size": os.path.getsize(full), "LastModified": "2026-10-06T00:00:00.000Z"})
+    contents.sort(key=lambda c: c["Key"])
+    print(json.dumps({"Contents": contents} if contents else {"Prefix": prefix}))
+elif argv[:2] == ["s3api", "delete-objects"]:
+    bucket = opt("--bucket")
+    refuse = os.environ.get("FAKE_AWS_DELETE_ERROR_MATCH", "")
+    errors = []
+    with open(log, "a") as fh:
+        for item in json.loads(opt("--delete"))["Objects"]:
+            if refuse and refuse in item["Key"]:
+                errors.append({"Key": item["Key"], "Code": "AccessDenied", "Message": "Access Denied"})
+                continue
+            path = os.path.join(root, bucket, item["Key"])
+            if os.path.isfile(path):
+                os.remove(path)
+            fh.write("DELETE\\t" + item["Key"] + "\\n")
+    if errors:
+        print(json.dumps({"Errors": errors}))
 """
 
 FAKE_CURL = """#!/usr/bin/python3
@@ -112,6 +173,26 @@ TMP_RE = re.compile(r"/\S*/tmp\.[A-Za-z0-9]{10}")
 def _mask(calls: str) -> str:
     """The one masked field: `mktemp` cannot answer the same twice."""
     return TMP_RE.sub("<tmp>", calls)
+
+
+# THE PRUNE DELTA'S CALLS, which the twin never makes: a listing, a read of one object to stdout, a batched delete, and the fake's own `DELETE` records. `_without_prune` removes exactly these from the port's call log, and `_without_prune_lines` the port's `Pruned`/`Prune keeps` lines from its stdout, so every differential case still compares the twin's behaviour byte for byte. The delta itself is pinned by the `test_prune_*` cases.
+_PRUNE_CALL_RE = re.compile(
+    r"^(aws\ts3api\tlist-objects-v2\t.*|aws\ts3api\tdelete-objects\t.*"
+    r"|aws\ts3\tcp\ts3://\S+\t-\t--endpoint-url\t.*|DELETE\t.*)\n",
+    re.MULTILINE,
+)
+
+
+def _without_prune(calls: str) -> str:
+    return _PRUNE_CALL_RE.sub("", calls)
+
+
+def _without_prune_lines(stdout: str) -> str:
+    return "".join(
+        line
+        for line in stdout.splitlines(keepends=True)
+        if not line.startswith(("Pruned ", "Prune keeps "))
+    )
 
 
 def _bin(root: pathlib.Path, *, drop: str = "", aws_body: str = FAKE_AWS) -> str:
@@ -180,7 +261,9 @@ def _run(
 ):
     call_log = root / f"{side}-calls.log"
     call_log.write_text("", encoding="utf-8")
+    (root / f"{side}-s3").mkdir(exist_ok=True)
     env = {
+        "FAKE_S3_ROOT": str(root / f"{side}-s3"),
         "PATH": _bin(root, drop=drop, aws_body=aws_body),
         "HOME": os.environ.get("HOME", "/tmp"),
         "LC_ALL": "C.UTF-8",
@@ -254,14 +337,15 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
     )
-    assert new.stdout == old.stdout, (
-        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new.stdout!r}"
+    new_stdout = _without_prune_lines(new.stdout)
+    assert new_stdout == old.stdout, (
+        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new_stdout!r}"
     )
     assert new.stderr == old.stderr, (
         f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
     )
     if old_calls is not None:
-        assert new_calls == old_calls, (
+        assert _without_prune(new_calls) == old_calls, (
             f"{label}: the call sequence diverged:\nold: {old_calls}\nnew: {new_calls}"
         )
 
@@ -529,22 +613,29 @@ def test_the_r2_credentials_are_bridged_into_the_aws_names(tmp_path: pathlib.Pat
     """`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_DEFAULT_REGION=auto`
     are EXPORTED for the child, not passed as arguments. Asserted through a fake that reports the three variables it was HANDED, because a port that set them on itself without exporting would look identical from the outside, and the twin's sibling `delete-r2-channel.sh` records that a missing R2 -> AWS bridge surfaces as an unhelpful credentials error rather than as a missing
     variable."""
-    reporter = (
-        "#!/usr/bin/python3\n"
-        "import os\n"
+    reporter = FAKE_AWS.replace(
+        "argv = sys.argv[1:]\n",
+        "argv = sys.argv[1:]\n"
         'with open(os.environ["FAKE_CALL_LOG"], "a") as fh:\n'
         '    fh.write("env\\t%s\\t%s\\t%s\\n" % (\n'
         '        os.environ.get("AWS_ACCESS_KEY_ID", "-"),\n'
         '        os.environ.get("AWS_SECRET_ACCESS_KEY", "-"),\n'
         '        os.environ.get("AWS_DEFAULT_REGION", "-"),\n'
-        "    ))\n"
+        "    ))\n",
+        1,
     )
+    assert reporter != FAKE_AWS, "the reporter plant did not apply"
     root = fixture(tmp_path)
     for side in ("old", "new"):
         proc, calls = _run(root, side, aws_body=reporter)
         assert proc.returncode == 0, calls
         assert "env\tr2-key-fixture\tr2-secret-fixture\tauto\n" in calls, side
-        assert calls.count("env\t") == 4, "one report per aws call: two syncs and two cps"
+        reports = calls.count("env\t")
+        assert reports == calls.count("aws\t"), "one report per aws call"
+        assert calls.count("env\tr2-key-fixture\tr2-secret-fixture\tauto\n") == reports, side
+        assert _without_prune(calls).count("aws\t") == 4, (
+            "two syncs and two cps, plus the prune's own calls"
+        )
 
 
 def test_pure_helpers() -> None:
@@ -631,14 +722,14 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     assert bad.returncode == old.returncode == 0, (
         "the plant is invisible in the exit code, which is why the calls are compared"
     )
-    assert bad.stdout == old.stdout, "the plant is invisible on stdout"
+    assert _without_prune_lines(bad.stdout) == old.stdout, "the plant is invisible on stdout"
     assert bad.stderr == old.stderr, "the plant is invisible on stderr too"
     assert "--cache-control\timmutable" in bad_calls
-    assert bad_calls != old_calls, "the mutant's calls matched the twin's"
+    assert _without_prune(bad_calls) != old_calls, "the mutant's calls matched the twin's"
 
     good_root = fixture(tmp_path / "good")
     _good, good_calls = _run(good_root, "new")
-    assert good_calls == old_calls, "restored port no longer agrees with the twin"
+    assert _without_prune(good_calls) == old_calls, "restored port no longer agrees with the twin"
     assert PORT.read_text(encoding="utf-8") == original, (
         "port source must be restored byte-identical"
     )
@@ -693,6 +784,8 @@ def _drive_port_in_process(
     monkeypatch.setattr(port, "repo_root", lambda: str(root))
     monkeypatch.setattr(port, "PURGE_SCRIPT", str(purge))
     monkeypatch.setattr(port, "RETRY_DELAY_S", 0.0)
+    # These cases are about the transfer retry; FLAKY_AWS models no bucket, so the prune (pinned by the `test_prune_*` cases) is switched off here rather than fed a fake listing.
+    monkeypatch.setattr(port, "_prune_trees", lambda *_args: None)
     for name, value in {
         **BASE_ENV,
         "PATH": str(stub),
@@ -760,3 +853,296 @@ def test_delta_a_refusal_is_never_retried(
     assert len([c for c in calls if c.startswith("aws\ts3\tsync")]) == 1
     assert "retrying (" not in err
     assert refusal in err
+
+
+# --------------------------------------------------------------------------- The prune delta: each package tree keeps only what its index lists (operator ruling 2026-10-06) ---------------------------------------------------------------------------
+
+
+# A build of v1.2.0: apt and rpm, rpm with its content-hashed repodata. `repomd.xml` names `ccc-primary.xml.gz`.
+PRUNE_TREE = {
+    "dist/repos/apt/pool/main/rdc_1.2.0_amd64.deb": "deb 1.2.0\n",
+    "dist/repos/apt/dists/stable/InRelease": "inrelease 1.2.0\n",
+    "dist/repos/apt/gpg.key": "key\n",
+    "dist/repos/rpm/rdc-1.2.0-1.x86_64.rpm": "rpm 1.2.0\n",
+    "dist/repos/rpm/repodata/ccc-primary.xml.gz": "primary 1.2.0\n",
+    "dist/repos/rpm/repodata/repomd.xml": "repomd naming ccc-primary.xml.gz\n",
+    "dist/repos/rpm/rediacc.repo": "[rediacc]\n",
+    "dist/pages/install.sh": '#!/bin/sh\n: "${REDIACC_CHANNEL:-stable}"\n',
+}
+
+# What a previous release left in the bucket: the old version's packages, stale rpm repodata, and trees the prune must never touch.
+PRUNE_SEED = {
+    "apt/edge/pool/main/rdc_1.0.0_amd64.deb": "deb 1.0.0\n",
+    "apt/edge/pool/main/rdc_1.1.0_amd64.deb": "deb 1.1.0\n",
+    "apt/edge/dists/stable/InRelease": "inrelease 1.1.0\n",
+    "rpm/edge/rdc-1.1.0-1.x86_64.rpm": "rpm 1.1.0\n",
+    "rpm/edge/repodata/aaa-primary.xml.gz": "primary 1.0.0\n",
+    "rpm/edge/repodata/bbb-primary.xml.gz": "primary 1.1.0\n",
+    # Never touched: other channels, cli/, npm/, an un-built format, and the snapshots.
+    "apt/stable/pool/main/rdc_0.9.0_amd64.deb": "deb 0.9.0\n",
+    "apt/edge-promoted/pool/main/rdc_1.1.0_amd64.deb": "deb 1.1.0\n",
+    "apt/edgeX/old.deb": "other channel sharing a prefix\n",
+    "apk/edge/rdc-1.1.0.apk": "apk 1.1.0\n",
+    "cli/edge/rdc-linux-x64": "rdc\n",
+    "cli/v1.1.0/rdc-linux-x64": "rdc 1.1.0\n",
+    "npm/edge/rediacc-cli-1.1.0.tgz": "tgz\n",
+}
+
+UNTOUCHED = (
+    "apt/stable/pool/main/rdc_0.9.0_amd64.deb",
+    "apt/edge-promoted/pool/main/rdc_1.1.0_amd64.deb",
+    "apt/edgeX/old.deb",
+    "apk/edge/rdc-1.1.0.apk",
+    "cli/edge/rdc-linux-x64",
+    "cli/v1.1.0/rdc-linux-x64",
+    "npm/edge/rediacc-cli-1.1.0.tgz",
+)
+
+PRUNE_REMOVE = (
+    "apt/edge/pool/main/rdc_1.0.0_amd64.deb",
+    "apt/edge/pool/main/rdc_1.1.0_amd64.deb",
+    "rpm/edge/rdc-1.1.0-1.x86_64.rpm",
+    "rpm/edge/repodata/aaa-primary.xml.gz",
+    "rpm/edge/repodata/bbb-primary.xml.gz",
+)
+
+PLANT_NO_PRUNE = (
+    "        _prune_trees(channel, endpoint, snapshot_version)\n",
+    "        pass\n",
+)
+PLANT_PRUNE_BEFORE_THE_UPLOAD = (
+    "        purge_urls = _upload_repos(channel, endpoint)\n",
+    (
+        "        _prune_trees(channel, endpoint, snapshot_version)\n"
+        "        purge_urls = _upload_repos(channel, endpoint)\n"
+    ),
+)
+PLANT_NO_CANDIDATES = (
+    "            r2_promote.prune_tree(fmt, channel, built[fmt] | extra.get(fmt, set()), listed, run)\n",
+    "            r2_promote.prune_tree(fmt, channel, built[fmt], listed, run)\n",
+)
+
+
+def _marker(version: str, packages: dict[str, int]) -> str:
+    return channel_snapshot.marker_body(version, ["apt/dists/stable/InRelease"], packages)
+
+
+def _prune_run(
+    tmp_path: pathlib.Path,
+    *,
+    tree: dict[str, str] | None = None,
+    seed: dict[str, str] | None = None,
+    plant: tuple[str, str] | None = None,
+    **extra: typing.Any,
+):
+    root = fixture(tmp_path, PRUNE_TREE if tree is None else tree)
+    for key, body in (PRUNE_SEED if seed is None else seed).items():
+        target = root / "new-s3" / RELEASES_BUCKET / key
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(body, encoding="utf-8")
+    if plant is not None:
+        port_copy = root / ".ci" / "rediacc_ci" / "deploy" / PORT.name
+        source = port_copy.read_text(encoding="utf-8")
+        assert source.count(plant[0]) == 1, "the plant did not apply; the control is broken"
+        port_copy.write_text(source.replace(plant[0], plant[1], 1), encoding="utf-8")
+    proc, calls = _run(root, "new", **extra)
+    base = root / "new-s3" / RELEASES_BUCKET
+    keys = {str(path.relative_to(base)) for path in base.rglob("*") if path.is_file()}
+    return proc, calls, keys
+
+
+def _prune_problems(keys: set[str]) -> list[str]:
+    """The contract, as sentences; empty when it holds: the build is all there, every stale package and repodata file is gone, and nothing outside apt/edge/ and rpm/edge/ moved."""
+    problems = []
+    for rel in PRUNE_TREE:
+        if rel.startswith("dist/repos/"):
+            fmt, _, tail = rel[len("dist/repos/") :].partition("/")
+            if "%s/edge/%s" % (fmt, tail) not in keys:
+                problems.append("current file missing: %s/edge/%s" % (fmt, tail))
+    problems += ["stale file kept: %s" % key for key in PRUNE_REMOVE if key in keys]
+    problems += ["outside the tree, deleted: %s" % key for key in UNTOUCHED if key not in keys]
+    return problems
+
+
+def test_prune_deletes_the_old_versions_and_stale_repodata_and_keeps_the_build(
+    tmp_path: pathlib.Path,
+) -> None:
+    proc, _calls, keys = _prune_run(tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    assert _prune_problems(keys) == []
+    # The files repomd.xml names are kept; the hashes of earlier builds are not.
+    assert "rpm/edge/repodata/ccc-primary.xml.gz" in keys
+    assert "rpm/edge/repodata/repomd.xml" in keys
+    assert "Pruned apt/edge/: 2 stale object(s) deleted, 3 kept\n" in proc.stdout
+    assert "Pruned rpm/edge/: 3 stale object(s) deleted, 4 kept\n" in proc.stdout
+    assert port.KEEPS_ONLY_WHAT_THE_INDEX_LISTS is True
+
+
+def test_mutation_control_the_old_sync_without_a_prune_is_caught(tmp_path: pathlib.Path) -> None:
+    """PLANT THE OLD BEHAVIOUR: no prune, as the twin's `aws s3 sync` without `--delete` ran. The contract test must see every stale file."""
+    proc, _calls, keys = _prune_run(tmp_path, plant=PLANT_NO_PRUNE)
+    assert proc.returncode == 0, proc.stderr
+    assert sorted(_prune_problems(keys)) == sorted("stale file kept: %s" % k for k in PRUNE_REMOVE)
+
+
+def test_prune_runs_after_every_upload_and_the_purge(tmp_path: pathlib.Path) -> None:
+    """UPLOAD FIRST, DELETE SECOND: every delete in the call log comes after the last sync, the last cp and the purge."""
+    proc, calls, _keys = _prune_run(tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    lines = calls.splitlines()
+    deletes = [i for i, line in enumerate(lines) if line.startswith("aws\ts3api\tdelete-objects")]
+    writes = [
+        i
+        for i, line in enumerate(lines)
+        if line.startswith(("aws\ts3\tsync", "aws\ts3\tcp\t<tmp>", "curl\t"))
+    ]
+    assert deletes
+    assert writes
+    assert min(deletes) > max(writes), calls
+
+
+def test_mutation_control_a_prune_before_the_upload_deletes_nothing(tmp_path: pathlib.Path) -> None:
+    """PLANT a prune that runs BEFORE the upload: the listing does not yet hold the build, so the INCOMPLETE floor refuses with nothing deleted. That is the floor that keeps a delete from ever racing the upload it depends on."""
+    proc, calls, keys = _prune_run(tmp_path, plant=PLANT_PRUNE_BEFORE_THE_UPLOAD)
+    assert proc.returncode == 1
+    assert "INCOMPLETE: " in proc.stderr
+    assert "delete-objects" not in calls
+    assert all(key in keys for key in PRUNE_REMOVE)
+
+
+def test_prune_refuses_when_the_listing_lacks_a_file_it_just_uploaded(
+    tmp_path: pathlib.Path,
+) -> None:
+    proc, calls, keys = _prune_run(tmp_path, FAKE_AWS_DROP_SYNC_MATCH="ccc-primary")
+    assert proc.returncode == 1
+    assert (
+        "INCOMPLETE: 1 file(s) of dist/repos/rpm are not listed under rpm/edge/ after the upload"
+        in proc.stderr
+    )
+    assert "rpm/edge/repodata/aaa-primary.xml.gz" in keys
+    assert not any(line.startswith("DELETE\trpm/") for line in calls.splitlines())
+
+
+def test_prune_keeps_the_packages_of_a_promotion_candidate(tmp_path: pathlib.Path) -> None:
+    """Stable is at v1.0.0 and v1.1.0 has a sealed snapshot, so `check_soak_period` may still select v1.1.0 and its promote copies its packages from apt/edge/: they stay. v1.0.0's do not (not newer than stable), and v1.1.0's metadata is not kept (the snapshot holds its own copy)."""
+    seed = {
+        **PRUNE_SEED,
+        "cli/stable/manifest.json": '{"version":"1.0.0"}\n',
+        "snapshots/v1.1.0/.complete": _marker(
+            "1.1.0",
+            {"apt/pool/main/rdc_1.1.0_amd64.deb": 10, "rpm/rdc-1.1.0-1.x86_64.rpm": 10},
+        ),
+        "snapshots/v1.0.0/.complete": _marker("1.0.0", {"apt/pool/main/rdc_1.0.0_amd64.deb": 10}),
+    }
+    proc, _calls, keys = _prune_run(tmp_path, seed=seed)
+    assert proc.returncode == 0, proc.stderr
+    assert "apt/edge/pool/main/rdc_1.1.0_amd64.deb" in keys
+    assert "rpm/edge/rdc-1.1.0-1.x86_64.rpm" in keys
+    assert "apt/edge/pool/main/rdc_1.0.0_amd64.deb" not in keys
+    assert "rpm/edge/repodata/bbb-primary.xml.gz" not in keys
+    assert (
+        "Prune keeps v1.1.0's packages: a promotion candidate, newer than stable v1.0.0\n"
+        in proc.stdout
+    )
+    assert "v1.0.0's packages" not in proc.stdout
+
+
+def test_mutation_control_a_keep_set_without_candidates_is_caught(tmp_path: pathlib.Path) -> None:
+    seed = {
+        **PRUNE_SEED,
+        "cli/stable/manifest.json": '{"version":"1.0.0"}\n',
+        "snapshots/v1.1.0/.complete": _marker("1.1.0", {"apt/pool/main/rdc_1.1.0_amd64.deb": 10}),
+    }
+    proc, _calls, keys = _prune_run(tmp_path, seed=seed, plant=PLANT_NO_CANDIDATES)
+    assert proc.returncode == 0, proc.stderr
+    assert "apt/edge/pool/main/rdc_1.1.0_amd64.deb" not in keys, "the candidate's package went"
+
+
+def test_prune_keeps_every_candidate_when_the_stable_manifest_is_unreadable(
+    tmp_path: pathlib.Path,
+) -> None:
+    seed = {
+        **PRUNE_SEED,
+        "snapshots/v1.0.0/.complete": _marker("1.0.0", {"apt/pool/main/rdc_1.0.0_amd64.deb": 10}),
+    }
+    proc, _calls, keys = _prune_run(tmp_path, seed=seed)
+    assert proc.returncode == 0, proc.stderr
+    assert "apt/edge/pool/main/rdc_1.0.0_amd64.deb" in keys
+    assert "the stable version is unknown (cli/stable/manifest.json unreadable)" in proc.stdout
+
+
+def test_prune_refuses_when_a_candidates_marker_cannot_be_read(tmp_path: pathlib.Path) -> None:
+    seed = {
+        **PRUNE_SEED,
+        "cli/stable/manifest.json": '{"version":"1.0.0"}\n',
+        "snapshots/v1.1.0/.complete": "not json\n",
+    }
+    proc, calls, keys = _prune_run(tmp_path, seed=seed)
+    assert proc.returncode == 1
+    assert "prune refused, nothing deleted" in proc.stderr
+    assert "delete-objects" not in calls
+    assert all(key in keys for key in PRUNE_REMOVE)
+
+
+def test_prune_ignores_snapshots_on_a_pr_channel(tmp_path: pathlib.Path) -> None:
+    seed = {
+        "apt/pr-7/pool/main/rdc_1.1.0_amd64.deb": "deb 1.1.0\n",
+        "snapshots/v1.1.0/.complete": _marker("1.1.0", {"apt/pool/main/rdc_1.1.0_amd64.deb": 10}),
+    }
+    proc, calls, keys = _prune_run(tmp_path, seed=seed, CHANNEL="pr-7")
+    assert proc.returncode == 0, proc.stderr
+    assert "apt/pr-7/pool/main/rdc_1.1.0_amd64.deb" not in keys
+    assert "--prefix\tsnapshots/" not in calls
+
+
+def test_prune_deletes_nothing_for_an_empty_build_directory(tmp_path: pathlib.Path) -> None:
+    """THE FLOOR: `dist/repos/apt` exists and holds nothing. The upload's own VACUOUS guard refuses before any write, so nothing is listed and nothing deleted."""
+    root = fixture(tmp_path, {"dist/pages/install.sh": "x\n"})
+    (root / "dist" / "repos" / "apt").mkdir(parents=True)
+    target = root / "new-s3" / RELEASES_BUCKET / "apt" / "edge" / "old.deb"
+    target.parent.mkdir(parents=True)
+    target.write_text("old\n", encoding="utf-8")
+    proc, calls = _run(root, "new")
+    assert proc.returncode == 1
+    assert "VACUOUS: dist/repos/apt exists but holds 0 file(s)" in proc.stderr
+    assert "list-objects-v2" not in calls
+    assert "delete-objects" not in calls
+    assert target.is_file()
+
+
+def test_prune_deletes_nothing_for_a_format_that_was_not_built(tmp_path: pathlib.Path) -> None:
+    proc, calls, keys = _prune_run(
+        tmp_path, tree={"dist/pages/install.sh": "x\n"}, seed={"apt/edge/old.deb": "old\n"}
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "apt/edge/old.deb" in keys
+    assert "list-objects-v2" not in calls
+    assert "delete-objects" not in calls
+
+
+def test_prune_fails_the_run_on_a_per_key_delete_error(tmp_path: pathlib.Path) -> None:
+    """`delete-objects` exits 0 when a key fails; the reply's `Errors` are read and fail the run."""
+    proc, _calls, _keys = _prune_run(tmp_path, FAKE_AWS_DELETE_ERROR_MATCH="rdc_1.0.0")
+    assert proc.returncode == 1
+    assert "delete failed: apt/edge/pool/main/rdc_1.0.0_amd64.deb: AccessDenied" in proc.stderr
+
+
+def test_prune_tree_refuses_anything_outside_a_package_tree() -> None:
+    run = r2_promote.Transfers("t", "https://e", 0.0)
+    for dir_name, channel in (("cli", "edge"), ("npm", "edge"), ("apt", "edge/x"), ("apt", "")):
+        with pytest.raises(r2_promote.PromoteError):
+            r2_promote.prune_tree(dir_name, channel, {"a"}, [], run)
+    with pytest.raises(r2_promote.PromoteError):
+        r2_promote.prune_tree("apt", "edge", set(), [], run)
+
+
+def test_delete_argv_batches_stay_under_the_single_argument_limit() -> None:
+    keys = ["rpm/edge/repodata/%s-filelists.sqlite.bz2" % ("f" * 64)] * r2_promote.DELETE_BATCH
+    argv = r2_promote.delete_argv(keys, "https://e")
+    assert argv[:3] == ["aws", "s3api", "delete-objects"]
+    assert max(len(a.encode()) for a in argv) < 128 * 1024
+    assert json.loads(argv[argv.index("--delete") + 1])["Quiet"] is True
+    assert r2_promote.delete_errors("") == []
+    assert r2_promote.delete_errors('{"Errors":[{"Key":"k","Code":"C","Message":"m"}]}') == [
+        "k: C m"
+    ]

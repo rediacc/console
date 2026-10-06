@@ -23,6 +23,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import promote_r2_to_stable as soak
 from rediacc_ci.deploy import promote_r2_to_stable_hotfix as port
+from rediacc_ci.deploy import r2_promote
 from rediacc_ci.quality import python_env_registry
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import r2_promote_fake as fake
@@ -131,7 +132,15 @@ def _pointer_problems(records) -> list[str]:
 def test_happy_path_prints_the_twins_lines_and_purges_once(tmp_path) -> None:
     _root, proc, records = run(tmp_path)
     assert proc.returncode == 0, proc.stderr
-    assert proc.stdout.splitlines()[:6] == [
+    pruned = [line for line in proc.stdout.splitlines() if line.startswith("Pruned ")]
+    assert pruned == [
+        "Pruned apt/stable/: 1 stale object(s) deleted, 3 kept",
+        "Pruned rpm/stable/: 0 stale object(s) deleted, 4 kept",
+        "Pruned apk/stable/: 0 stale object(s) deleted, 2 kept",
+        "Pruned archlinux/stable/: 0 stale object(s) deleted, 3 kept",
+    ], proc.stdout
+    twin_lines = [line for line in proc.stdout.splitlines() if not line.startswith("Pruned ")]
+    assert twin_lines[:6] == [
         "Promoting cli/edge/ -> cli/stable/",
         "Promoting apt/edge/ -> apt/stable/",
         "Promoting rpm/edge/ -> rpm/stable/",
@@ -176,7 +185,8 @@ def test_every_edge_object_lands_in_stable_with_its_bytes(tmp_path) -> None:
         assert stable_of(key) in stable, key
         if "%s/%s" % (fake.BUCKET, key) not in fake.EDGE_POINTERS:
             assert stable[stable_of(key)] == DEFAULT_BUCKET[key], key
-    assert stable[(RELEASES_BUCKET + "/apt/stable/history-0.0.1.deb")] == "old release bytes\n"
+    # Stable ends equal to edge: the history edge does not hold is pruned.
+    assert (RELEASES_BUCKET + "/apt/stable/history-0.0.1.deb") not in stable
 
 
 def _phase_order_problems(records) -> list[str]:
@@ -501,3 +511,70 @@ def test_every_variable_is_read_with_a_literal_os_environ_get() -> None:
         {},
     )
     assert derived == names, f"the gate would derive {sorted(derived)}, not {sorted(names)}"
+
+
+# --------------------------------------------------------------------------- Stable ends equal to edge (operator ruling 2026-10-06) ---------------------------------------------------------------------------
+
+STALE_STABLE = {
+    "apt/stable/pool/rdc_0.9.0.deb": "old deb\n",
+    "rpm/stable/rdc-0.9.0.rpm": "old rpm\n",
+    "rpm/stable/repodata/0ld-primary.xml.gz": "old primary\n",
+    "apk/stable/rdc-0.9.0.apk": "old apk\n",
+    "archlinux/stable/rdc-0.9.0.pkg.tar.zst": "old pkg\n",
+    "cli/stable/rdc-0.9.0-extra": "cli history\n",
+}
+
+
+def _equal_problems(root) -> list[str]:
+    """Each stable package tree holds exactly the edge tree's keys, and `cli/stable/` history is untouched."""
+    keys = fake.bucket_keys(root, "")
+    problems = []
+    for dir_name in r2_promote.PACKAGE_TREES:
+        edge = {
+            k.split("/edge/", 1)[1]
+            for k in keys
+            if k.startswith("%s/%s/edge/" % (fake.BUCKET, dir_name))
+        }
+        stable = {
+            k.split("/stable/", 1)[1]
+            for k in keys
+            if k.startswith("%s/%s/stable/" % (fake.BUCKET, dir_name))
+        }
+        if edge != stable:
+            problems.append(
+                "%s: extra %s missing %s" % (dir_name, sorted(stable - edge), sorted(edge - stable))
+            )
+    if "%s/cli/stable/rdc-0.9.0-extra" % fake.BUCKET not in keys:
+        problems.append("cli/stable/ history deleted")
+    return problems
+
+
+def test_stable_ends_equal_to_edge_in_every_package_tree(tmp_path) -> None:
+    root, proc, records = run(tmp_path, {**DEFAULT_BUCKET, **STALE_STABLE})
+    assert proc.returncode == 0, proc.stderr
+    assert _equal_problems(root) == []
+    order = [r for r in records if r.get("op") in ("COPY", "PUT", "DELETE")]
+    for dir_name in r2_promote.PACKAGE_TREES:
+        head = "%s/%s/stable/" % (fake.BUCKET, dir_name)
+        ops = [r["op"] for r in order if r["key"].startswith(head)]
+        assert "DELETE" in ops, dir_name
+        assert ops.index("DELETE") > max(i for i, op in enumerate(ops) if op != "DELETE"), ops
+
+
+def test_mutation_control_a_hotfix_without_the_prune_is_caught(tmp_path) -> None:
+    planted = fake.plant(tmp_path, *fake.PLANT_NO_PRUNE)
+    root, proc, _records = run(tmp_path, {**DEFAULT_BUCKET, **STALE_STABLE}, plant=planted)
+    assert proc.returncode == 0, proc.stderr
+    assert len(_equal_problems(root)) == 4
+
+
+def test_an_empty_edge_tree_deletes_nothing_from_stable(tmp_path) -> None:
+    """The VACUOUS floor fires on the empty edge listing before any copy, so no prune runs: stable keeps what it had."""
+    bucket = {
+        k: v for k, v in {**DEFAULT_BUCKET, **STALE_STABLE}.items() if not k.startswith("apt/edge/")
+    }
+    root, proc, records = run(tmp_path, bucket)
+    assert proc.returncode == 1
+    assert "VACUOUS: apt/edge/ lists 0 object(s)" in proc.stderr
+    assert fake.ops(records, "DELETE") == []
+    assert "%s/apt/stable/pool/rdc_0.9.0.deb" % fake.BUCKET in fake.bucket_keys(root, "")

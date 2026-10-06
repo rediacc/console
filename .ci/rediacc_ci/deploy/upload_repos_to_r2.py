@@ -81,6 +81,24 @@ With `SNAPSHOT_VERSION` set (on the `edge` channel only; another channel is refu
 
 A snapshot that cannot be completed fails the run with the reason. Unset, the run is the twin's, byte for byte.
 
+-----------------------------------------------------------------------------
+DELTA: EACH PACKAGE TREE KEEPS ONLY WHAT ITS INDEX LISTS (operator ruling 2026-10-06, "Current version only")
+-----------------------------------------------------------------------------
+The twin's `aws s3 sync` never deletes, so every release left its packages and, for rpm, its six content-hashed `repodata/` files behind: on 2026-10-06 `edge` held 21 versions (about 61 GB nobody's index named) and 924 stale repodata files. After the upload, the purge and the snapshot seal, each `<fmt>/<channel>/` this run built is PRUNED (`_prune_trees`, after `r2_promote.prune_tree`):
+
+  1. UPLOAD FIRST. The prune runs only after every sync and copy above has returned 0.
+  2. LIST, AND REQUIRE THE NEW BUILD. `<fmt>/<channel>/` is listed, and every file of `dist/repos/<fmt>` must be in that listing. One missing file refuses the prune with nothing deleted (`INCOMPLETE:`), so the index can never point at a package that a delete removed or an upload never landed.
+  3. DELETE SECOND. Every listed key outside the keep set is deleted (`delete-objects`, batched, its per-key `Errors` read back).
+
+THE KEEP SET is the build (`dist/repos/<fmt>`, every file of it), plus, on `edge` only, the package files named by the `.complete` marker of every OTHER version's channel snapshot that `check_soak_period` may still select (`in_walk`: newer than the version `cli/stable/manifest.json` names, or every snapshot when that manifest cannot be read). The promote of an older soaked version copies its packages from `<fmt>/edge/` and refuses when they are gone (`promote_r2_to_stable.verify_snapshot`), so deleting a candidate's packages would starve stable. Its METADATA is not kept: the snapshot holds its own copy under `snapshots/v<ver>/`. A candidate marker that cannot be read refuses the prune.
+
+WHY NOT `aws s3 sync --delete`: see `r2_promote`'s docstring. It deletes in the same pass as the uploads, with no order between them, and it knows nothing of the candidate keep set.
+
+THE FLOORS. A format whose `dist/repos/<fmt>` is missing is not pruned (and is skipped by the upload, as before); one that exists empty is already refused by the `VACUOUS:` guard before any write. Only `apt`, `rpm`, `apk` and `archlinux` under a one-segment channel are ever pruned: never `cli/`, `npm/`, the install scripts, `snapshots/` or another channel. `KEEPS_ONLY_WHAT_THE_INDEX_LISTS` names the delta.
+A prune that fails after the upload and purge have succeeded fails the run with the reason; the next release prunes what this one could not.
+
+The twin is unchanged: the differential strips this delta's calls and its `Pruned`/`Prune` lines from the port's side (`test_deploy_upload_repos_to_r2.py`, `_without_prune`) and pins the delta in its own `test_prune_*` cases.
+
 K=5 LEDGER: `.ci/shadow/w7p6-upload-repos-to-r2.observations.jsonl`.
 """
 
@@ -94,6 +112,7 @@ import tempfile
 from rediacc_ci.core import common
 from rediacc_ci.deploy import channel_snapshot, r2_promote, transfer_retry
 from rediacc_ci.deploy.promote_r2_to_stable import META_EXCLUDES
+from rediacc_ci.release import check_soak_period, check_stable_manifest
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
 # The twin's own name, printed in its five guard messages and its one non-release-channel notice. A literal, because the bytes must survive the port.
@@ -139,6 +158,12 @@ RELEASE_CHANNELS = ("stable", "edge")
 
 # Vacuity fact 2 in the module docstring, as a constant so a test can assert the defect by name instead of restating the sentence.
 AN_EMPTY_DIST_REPORTS_SUCCESS = True
+
+# The prune delta in the module docstring, by name.
+KEEPS_ONLY_WHAT_THE_INDEX_LISTS = r2_promote.PRUNE_IS_COPY_THEN_DELETE
+
+# The stable CLI manifest, whose version bounds which edge snapshots are still promotion candidates.
+STABLE_MANIFEST_KEY = "cli/stable/manifest.json"
 
 
 class MissingEnvError(Exception):
@@ -561,6 +586,108 @@ def _purge(urls: list[str], zone: str) -> None:
         raise BashExitError(status)
 
 
+def get_argv(key: str, endpoint: str) -> list[str]:
+    """`aws s3 cp s3://<bucket>/<key> -`: one small object to stdout."""
+    return ["aws", "s3", "cp", "s3://%s/%s" % (BUCKET, key), "-", "--endpoint-url", endpoint]
+
+
+def _read_object(key: str, endpoint: str) -> str | None:
+    """One small object's text, or None when it cannot be read. aws's stderr is captured, not shown: the caller decides what an unreadable object means."""
+    _flush()
+    proc = subprocess.run(get_argv(key, endpoint), check=False, capture_output=True)
+    if proc.returncode:
+        return None
+    return proc.stdout.decode("utf-8", "replace")
+
+
+def built_rels(fmt: str) -> set[str]:
+    """Every file of `dist/repos/<fmt>`, relative to it: the new index and everything it names."""
+    directory = "dist/repos/%s" % fmt
+    found: set[str] = set()
+    for dirpath, _dirs, files in os.walk(directory):
+        for name in files:
+            found.add(os.path.relpath(os.path.join(dirpath, name), directory).replace(os.sep, "/"))
+    return found
+
+
+def candidate_packages(
+    channel: str, endpoint: str, run: r2_promote.Transfers, current: str
+) -> dict[str, set[str]]:
+    """Per format, the package rels the edge snapshots of OTHER promotion candidates name (the module docstring's KEEP SET). Empty on any channel but `edge`. Raises `r2_promote.PromoteError` when a candidate's marker cannot be read."""
+    if channel != "edge":
+        return {}
+    root = channel_snapshot.SNAPSHOT_ROOT + "/"
+    marked = []
+    for obj in run.list_tree(root):
+        head, _, rest = obj.rel.partition("/")
+        if rest == channel_snapshot.MARKER and head.startswith("v") and head[1:] != current:
+            marked.append(head[1:])
+    if not marked:
+        return {}
+    text = _read_object(STABLE_MANIFEST_KEY, endpoint)
+    try:
+        stable = check_stable_manifest.manifest_version(text) if text is not None else ""
+    except (ValueError, AttributeError):
+        stable = ""
+    keep: dict[str, set[str]] = {}
+    for version in sorted(marked):
+        if not check_soak_period.in_walk(version, stable):
+            continue
+        marker = _read_object(channel_snapshot.marker_key(version), endpoint)
+        try:
+            if marker is None:
+                raise channel_snapshot.SnapshotError(
+                    "%s could not be read" % channel_snapshot.marker_key(version)
+                )
+            _metadata, packages = channel_snapshot.parse_marker(marker, version)
+        except channel_snapshot.SnapshotError as exc:
+            print(
+                "%s: prune refused, nothing deleted: %s, so the packages promotion candidate v%s "
+                "still needs are unknown" % (SELF, exc, version),
+                file=sys.stderr,
+            )
+            raise r2_promote.PromoteError(1) from exc
+        for key in packages:
+            fmt, _, rel = key.partition("/")
+            keep.setdefault(fmt, set()).add(rel)
+        why = (
+            "newer than stable v%s" % stable
+            if check_soak_period.semver(stable) is not None
+            else "the stable version is unknown (%s unreadable)" % STABLE_MANIFEST_KEY
+        )
+        print("Prune keeps v%s's packages: a promotion candidate, %s" % (version, why))
+    return keep
+
+
+def _prune_trees(channel: str, endpoint: str, current: str) -> None:
+    """The prune delta in the module docstring, for every format this run built."""
+    run = r2_promote.Transfers(SELF, endpoint, RETRY_DELAY_S)
+    built = {fmt: built_rels(fmt) for fmt in r2_promote.PACKAGE_TREES}
+    built = {fmt: rels for fmt, rels in built.items() if rels}
+    if not built:
+        return
+    try:
+        extra = candidate_packages(channel, endpoint, run, current)
+        for fmt in r2_promote.PACKAGE_TREES:
+            if fmt not in built:
+                continue
+            prefix = r2_promote.tree(fmt, channel)
+            listed = run.list_tree(prefix)
+            present = {obj.rel for obj in listed}
+            missing = sorted(built[fmt] - present)
+            if missing:
+                print(
+                    "INCOMPLETE: %d file(s) of dist/repos/%s are not listed under %s after the "
+                    "upload, so nothing is pruned: %s"
+                    % (len(missing), fmt, prefix, ", ".join(missing[:10])),
+                    file=sys.stderr,
+                )
+                raise r2_promote.PromoteError(1)
+            r2_promote.prune_tree(fmt, channel, built[fmt] | extra.get(fmt, set()), listed, run)
+    except r2_promote.PromoteError as exc:
+        raise BashExitError(exc.status) from exc
+
+
 def main(argv: list[str]) -> int:
     del argv  # the twin takes no argv, and says so at :62
 
@@ -625,6 +752,12 @@ def main(argv: list[str]) -> int:
             _purge(purge_urls, values["CLOUDFLARE_ZONE_ID"])
         except BashExitError as exc:
             return exc.code
+
+    # The prune delta: everything above is written, so the stale files go now.
+    try:
+        _prune_trees(channel, endpoint, snapshot_version)
+    except BashExitError as exc:
+        return exc.code
     return 0
 
 

@@ -527,7 +527,7 @@ def test_an_unreadable_snapshot_list_is_refused_not_read_as_none(tmp_path: pathl
 
 
 def test_in_walk_is_the_bound_edge_retention_reuses() -> None:
-    """`cleanup_versions` 8f and `upload_to_r2`'s tracker keep every version this answers True for (#62a2846b)."""
+    """`upload_repos_to_r2`'s package-tree keep set and `upload_to_r2`'s tracker keep every version this answers True for (#62a2846b, #59c93891)."""
     assert check_soak_period.in_walk("1.3.13", "1.3.12")
     assert not check_soak_period.in_walk("1.3.12", "1.3.12")
     assert not check_soak_period.in_walk("1.3.2", "1.3.12")

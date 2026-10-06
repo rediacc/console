@@ -68,6 +68,15 @@ A green scheduled nightly (`Console CI` on `main`) also triggers it through `wor
 
 Both R2 promotes (this one and the `publish_stable` hotfix lane) copy `<dir>/edge/` to `<dir>/stable/` server-side with one `aws s3api copy-object` per object, so no release bytes pass through the runner; only the four channel pointers (`cli/install.sh`, `cli/install.ps1`, `rpm/rediacc.repo`, `archlinux/rediacc.conf`) are fetched, stamped for stable and uploaded after the rest of their tree. `.ci/rediacc_ci/deploy/r2_promote.py` carries the plan and R2's copy limits.
 
+## Package tree retention
+
+Each Linux package tree (`apt/<channel>/`, `rpm/<channel>/`, `apk/<channel>/`, `archlinux/<channel>/`) keeps only what its index lists (operator ruling 2026-10-06), on `edge`, `stable` and every `pr-N` channel. Pinned old versions stay installable from the immutable `cli/v<semver>/`, which nothing here touches.
+
+- **Upload** (`rediacc_ci.deploy.upload_repos_to_r2`): after every sync, install-script upload, snapshot seal and cache purge, each built tree is listed, the listing must hold every file of `dist/repos/<fmt>`, and then every other object in `<fmt>/<channel>/` is deleted. On `edge` the keep set also holds the package files named by the sealed snapshot of any other version `check_soak_period` may still select (newer than stable), because the soak-gated promote copies those packages from `<fmt>/edge/`.
+- **Promote** (both lanes, `r2_promote.promote_tree`): after a tree is copied, its pointers are written and the stable listing shows every promoted key, every other `<fmt>/stable/` object is deleted. A snapshot promote copies only the selected version's packages, so stable ends holding exactly that version.
+- **Order and floors**: upload or copy first, list, delete second, so an index never names a missing file. Nothing is deleted when the listing lacks a file the run wrote, when a candidate snapshot's marker cannot be read, or when a tree was not built (a missing `dist/repos/<fmt>`; an empty one is refused before any write). Only those four trees, under a one-segment channel, are ever pruned: never `cli/`, `npm/`, `snapshots/` or another channel. The deletes are batched `delete-objects` calls whose per-key `Errors` fail the run.
+- **Housekeeping** Phase 8f keeps the top `R2_NPM_KEEP_VERSIONS` (20) semvers of `npm/<channel>/` only; the package trees are not its concern.
+
 ## Why this is a separate file
 
 `CLAUDE.md`'s own rule is to stay under budget by cutting what already has a home elsewhere (`agent/plans/PLAN-tooling-transformation.md`, box W11 P5b). `release_mode`'s semantics, the three less-visible dispatch inputs and the soak-skip behavior did not exist in any `docs/` file before this one -- deleting them from `CLAUDE.md` without first writing them somewhere would have

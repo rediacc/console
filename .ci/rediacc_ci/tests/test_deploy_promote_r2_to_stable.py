@@ -63,6 +63,8 @@ DEFAULT_BUCKET = {
     "apt/edge/Packages.gz": "packages body\n",
     "rpm/edge/rdc.rpm": "rpm bytes\n",
     "rpm/edge/repodata/primary.xml.gz": "primary body\n",
+    # createrepo's real name for it: a content hash, then the type (rpm/edge/repodata/ listed 2026-10-06).
+    "rpm/edge/repodata/31cd3dfa-primary.xml.gz": "hashed primary body\n",
     "rpm/edge/repodata/repomd.xml": "repomd body\n",
     "rpm/edge/repodata/comps.xml": "comps body\n",
     "rpm/edge/rediacc.repo": ("[rediacc]\nbaseurl=" + RELEASES_ORIGIN + "/rpm/edge/\n"),
@@ -96,7 +98,15 @@ def stable_of(edge_key: str) -> str:
 def test_happy_path_prints_the_twins_lines_and_purges_once(tmp_path) -> None:
     _root, proc, records = run(tmp_path)
     assert proc.returncode == 0, proc.stderr
-    assert proc.stdout.splitlines()[:6] == [
+    pruned = [line for line in proc.stdout.splitlines() if line.startswith("Pruned ")]
+    assert pruned == [
+        "Pruned apt/stable/: 1 stale object(s) deleted, 3 kept",
+        "Pruned rpm/stable/: 1 stale object(s) deleted, 5 kept",
+        "Pruned apk/stable/: 1 stale object(s) deleted, 2 kept",
+        "Pruned archlinux/stable/: 1 stale object(s) deleted, 3 kept",
+    ], proc.stdout
+    twin_lines = [line for line in proc.stdout.splitlines() if not line.startswith("Pruned ")]
+    assert twin_lines[:6] == [
         "Promoting cli/edge/ -> cli/stable/ (2-phase)",
         "Promoting apt/edge/ -> apt/stable/ (2-phase)",
         "Promoting rpm/edge/ -> rpm/stable/ (2-phase)",
@@ -162,8 +172,10 @@ def test_every_selected_edge_object_lands_in_stable_with_its_bytes(tmp_path) -> 
     assert port.PHASE_FILTERED_FILES_ARE_NEVER_PROMOTED is True
     for key in PHASE_FILTERED:
         assert stable_of(key) not in stable, key
-    # Stable history that edge does not name is untouched.
-    assert stable[(RELEASES_BUCKET + "/apt/stable/history-0.0.1.pkg")] == "old release bytes\n"
+    # FACT 5: stable history in a package tree is pruned; `cli/stable/` is outside the rule and keeps it.
+    for dir_name in r2_promote.PACKAGE_TREES:
+        assert (RELEASES_BUCKET + "/%s/stable/history-0.0.1.pkg" % dir_name) not in stable
+    assert stable[(RELEASES_BUCKET + "/cli/stable/history-0.0.1.pkg")] == "old release bytes\n"
 
 
 def _phase_order_problems(records) -> list[str]:
@@ -173,6 +185,11 @@ def _phase_order_problems(records) -> list[str]:
     chains = (
         [("apt", "pool/rdc.deb"), ("apt", "Packages.gz"), ("apt", "InRelease")],
         [("rpm", "rdc.rpm"), ("rpm", "repodata/primary.xml.gz"), ("rpm", "repodata/repomd.xml")],
+        [
+            ("rpm", "rdc.rpm"),
+            ("rpm", "repodata/31cd3dfa-primary.xml.gz"),
+            ("rpm", "repodata/repomd.xml"),
+        ],
         [("apk", "rdc.apk"), ("apk", "APKINDEX.tar.gz")],
         [("archlinux", "rdc.pkg.tar.zst"), ("archlinux", "rediacc.db.tar.gz")],
         [("cli", "rdc-linux-x64"), ("cli", "latest.json")],
@@ -340,6 +357,7 @@ def test_a_copy_that_did_not_land_refuses_and_purges_nothing(tmp_path) -> None:
     assert "INCOMPLETE: 1 promoted object(s)" in proc.stderr, proc.stderr
     assert "pool/rdc.deb" in proc.stderr, proc.stderr
     assert fake.curl_calls(records) == 0
+    assert fake.ops(records, "DELETE") == [], "nothing is pruned when the copy did not land"
 
 
 def test_mutation_control_a_purge_list_that_skips_the_stable_listing_is_caught(tmp_path) -> None:
@@ -381,6 +399,7 @@ def test_an_empty_edge_tree_is_refused_before_anything_moves(tmp_path) -> None:
     assert proc.returncode == 1
     assert proc.stderr.startswith("VACUOUS: cli/edge/ lists 0 object(s)"), proc.stderr
     assert proc.stdout == "Promoting cli/edge/ -> cli/stable/ (2-phase)\n"
+    assert fake.ops(records, "DELETE") == []
     # Two listings and nothing else: the channel-snapshot probe for the selected version (none here), then cli/edge/.
     assert [argv[5] for argv in fake.aws_calls(records)] == ["snapshots/v1.2.3/", "cli/edge/"]
     assert [argv[:2] for argv in fake.aws_calls(records)] == [["s3api", "list-objects-v2"]] * 2
@@ -615,3 +634,125 @@ def test_the_metadata_filters_reach_the_real_nested_layout() -> None:
     assert r2_promote.keep("dists/stable/main/binary-amd64/Packages", packages_arm)
     assert not r2_promote.keep("dists/stable/InRelease", packages_arm)
     assert r2_promote.keep("dists/stable/InRelease", release_arm)
+
+
+# --------------------------------------------------------------------------- Stable keeps only what the promote copied (operator ruling 2026-10-06) ---------------------------------------------------------------------------
+
+# Stale stable content production holds: an older release's packages and the content-hashed rpm repodata of earlier builds. And `cli/stable/` history, which is outside the rule.
+STALE_STABLE = {
+    "apt/stable/pool/rdc_0.9.0.deb": "old deb\n",
+    "rpm/stable/rdc-0.9.0.rpm": "old rpm\n",
+    "rpm/stable/repodata/0ld-primary.xml.gz": "old primary\n",
+    "rpm/stable/repodata/0ld-filelists.sqlite.bz2": "old filelists\n",
+    "apk/stable/rdc-0.9.0.apk": "old apk\n",
+    "archlinux/stable/rdc-0.9.0.pkg.tar.zst": "old pkg\n",
+    "cli/stable/rdc-0.9.0-extra": "cli history\n",
+    "npm/stable/rediacc-cli-0.9.0.tgz": "npm history\n",
+}
+
+
+def _stable_trees(root) -> dict[str, set[str]]:
+    keys = fake.bucket_keys(root, "")
+    out: dict[str, set[str]] = {}
+    for dir_name in r2_promote.PACKAGE_TREES:
+        head = "%s/%s/stable/" % (fake.BUCKET, dir_name)
+        out[dir_name] = {k[len(head) :] for k in keys if k.startswith(head)}
+    return out
+
+
+def _equal_problems(root) -> list[str]:
+    """Each package tree in stable holds exactly the edge keys the soak-gated phases promote (every edge key but the phase-filtered ones), and `cli/`, `npm/` history is untouched."""
+    problems = []
+    for dir_name, rels in _stable_trees(root).items():
+        head = "%s/edge/" % dir_name
+        want = {k[len(head) :] for k in PROMOTED_EDGE_KEYS if k.startswith(head)}
+        if rels != want:
+            problems.append(
+                "%s/stable/ extra %s missing %s"
+                % (dir_name, sorted(rels - want), sorted(want - rels))
+            )
+    keys = fake.bucket_keys(root, "")
+    problems.extend(
+        "outside the rule, deleted: %s" % key
+        for key in ("cli/stable/rdc-0.9.0-extra", "npm/stable/rediacc-cli-0.9.0.tgz")
+        if "%s/%s" % (fake.BUCKET, key) not in keys
+    )
+    return problems
+
+
+def test_each_stable_package_tree_ends_holding_exactly_what_was_promoted(tmp_path) -> None:
+    assert port.STABLE_PACKAGE_TREES_ARE_PRUNED_TO_THE_PROMOTE is True
+    root, proc, records = run(tmp_path, {**DEFAULT_BUCKET, **STALE_STABLE})
+    assert proc.returncode == 0, proc.stderr
+    assert _equal_problems(root) == []
+    assert "rpm/stable/repodata/0ld-primary.xml.gz" not in str(fake.bucket_keys(root, ""))
+    assert fake.curl_calls(records) == 1
+
+
+def test_mutation_control_a_promote_without_the_prune_is_caught(tmp_path) -> None:
+    """PLANT THE OLD BEHAVIOUR: copy, never delete. Stable keeps every older release and every stale repodata file."""
+    planted = fake.plant(tmp_path, *fake.PLANT_NO_PRUNE)
+    root, proc, _records = run(tmp_path, {**DEFAULT_BUCKET, **STALE_STABLE}, plant=planted)
+    assert proc.returncode == 0, proc.stderr
+    assert len(_equal_problems(root)) == 4
+
+
+def _delete_order_problems(records) -> list[str]:
+    """Per package tree, every DELETE in `<dir>/stable/` lands after every COPY and PUT into it."""
+    problems = []
+    for dir_name in r2_promote.PACKAGE_TREES:
+        head = "%s/%s/stable/" % (fake.BUCKET, dir_name)
+        writes = [
+            i
+            for i, r in enumerate(records)
+            if r.get("op") in ("COPY", "PUT") and r["key"].startswith(head)
+        ]
+        deletes = [
+            i
+            for i, r in enumerate(records)
+            if r.get("op") == "DELETE" and r["key"].startswith(head)
+        ]
+        if not deletes:
+            problems.append("%s: nothing deleted" % head)
+        elif writes and min(deletes) < max(writes):
+            problems.append("%s: a delete before a write" % head)
+    return problems
+
+
+def test_the_prune_runs_after_the_copy_and_the_pointers(tmp_path) -> None:
+    _root, proc, records = run(tmp_path, {**DEFAULT_BUCKET, **STALE_STABLE})
+    assert proc.returncode == 0, proc.stderr
+    assert _delete_order_problems(records) == []
+
+
+def test_mutation_control_a_prune_before_the_copy_is_caught(tmp_path) -> None:
+    planted = fake.plant(tmp_path, *fake.PLANT_PRUNE_BEFORE_THE_COPY)
+    _root, proc, records = run(tmp_path, {**DEFAULT_BUCKET, **STALE_STABLE}, plant=planted)
+    assert proc.returncode == 0, proc.stderr
+    assert _delete_order_problems(records) != []
+
+
+def test_a_failed_delete_fails_the_run_and_purges_nothing_after_it(tmp_path) -> None:
+    """`delete-objects` exits 0 with a per-key error; the reply is read and the run fails."""
+    _root, proc, records = run(
+        tmp_path,
+        {**DEFAULT_BUCKET, **STALE_STABLE},
+        extra={"FAKE_AWS_DELETE_ERROR_MATCH": "apt/stable/pool/rdc_0.9.0.deb"},
+    )
+    assert proc.returncode == 1
+    assert "delete failed: apt/stable/pool/rdc_0.9.0.deb: AccessDenied" in proc.stderr
+    assert fake.curl_calls(records) == 0
+
+
+def test_mutation_control_the_bare_rpm_repodata_patterns_are_caught(tmp_path) -> None:
+    """PLANT the pre-2026-10-06 `repodata/primary*`: the hashed primary is never promoted, so stable's repomd.xml would name a file stable lacks."""
+    source = PORT_FILE.read_text(encoding="utf-8")
+    assert source.count('"repodata/*primary*",') == 1
+    planted = tmp_path / "planted_port.py"
+    planted.write_text(
+        source.replace('"repodata/*primary*",', '"repodata/primary*",', 1), encoding="utf-8"
+    )
+    # A planted port resolves its purge script beside the plant (`r2_promote_fake.DRIVER`), so only the transfers of this run mean anything.
+    root, _proc, records = run(tmp_path, plant_port=str(planted))
+    assert stable_of("rpm/edge/repodata/31cd3dfa-primary.xml.gz") not in fake.bucket_keys(root, "")
+    assert _phase_order_problems(records) != []

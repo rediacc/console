@@ -1,10 +1,10 @@
 """A recording fake bucket for the two server-side release promotes (`deploy/r2_promote.py`).
 
-NOTHING HERE REACHES R2 OR CLOUDFLARE. `aws` and `curl` are fakes first on a scratch PATH, every run pins a fixture endpoint and credential, and the bucket is a directory tree. The fake models the four aws calls the promotes make (`s3api list-objects-v2`, `s3api copy-object`, `s3 cp` of one object in either direction) and REFUSES a high-level s3-to-s3 `aws s3 cp/sync` the way R2 does (`NotImplemented` on `x-amz-tagging-directive`), so a regression to that form fails here as it would in production.
+NOTHING HERE REACHES R2 OR CLOUDFLARE. `aws` and `curl` are fakes first on a scratch PATH, every run pins a fixture endpoint and credential, and the bucket is a directory tree. The fake models the five aws calls the promotes make (`s3api list-objects-v2`, `s3api copy-object`, `s3api delete-objects`, `s3 cp` of one object in either direction) and REFUSES a high-level s3-to-s3 `aws s3 cp/sync` the way R2 does (`NotImplemented` on `x-amz-tagging-directive`), so a regression to that form fails here as it would in production.
 
-EVERY EFFECT IS ONE JSON LINE in the call log, written with one `write()` so parallel copies cannot interleave inside a record: `{"argv": [...]}` per invocation, then `{"op": "GET"|"PUT"|"COPY", "key": ..., "src": ..., "content": ...}` per object moved. Records land in COMPLETION order, which is what the phase and pointer ordering assertions read.
+EVERY EFFECT IS ONE JSON LINE in the call log, written with one `write()` so parallel copies cannot interleave inside a record: `{"argv": [...]}` per invocation, then `{"op": "GET"|"PUT"|"COPY"|"DELETE", "key": ..., "src": ..., "content": ...}` per object moved. Records land in COMPLETION order, which is what the phase and pointer ordering assertions read.
 
-Knobs (environment of the run): `FAKE_AWS_RC` fails every call with `FAKE_AWS_STDERR` (default AccessDenied); `FAKE_AWS_DENY_MATCH` fails with AccessDenied any call naming that substring; `FAKE_AWS_FLAKY_MATCH` fails transiently the first `FAKE_AWS_FLAKY_TIMES` calls naming it; `FAKE_AWS_DROP_COPY_MATCH` makes a matching copy-object report success without writing; `FAKE_AWS_SIZE_OVERRIDE` (`key=bytes`) lies about one object's listed size.
+Knobs (environment of the run): `FAKE_AWS_RC` fails every call with `FAKE_AWS_STDERR` (default AccessDenied); `FAKE_AWS_DENY_MATCH` fails with AccessDenied any call naming that substring; `FAKE_AWS_FLAKY_MATCH` fails transiently the first `FAKE_AWS_FLAKY_TIMES` calls naming it; `FAKE_AWS_DROP_COPY_MATCH` makes a matching copy-object report success without writing; `FAKE_AWS_SIZE_OVERRIDE` (`key=bytes`) lies about one object's listed size; `FAKE_AWS_DELETE_ERROR_MATCH` makes delete-objects exit 0 but report every matching key in `Errors`, as S3 does for a per-key failure.
 
 The port runs through `DRIVER`, which can substitute a PLANTED copy of `r2_promote.py` for the real one: that is how the mutation controls prove the contract tests can fail.
 """
@@ -145,6 +145,24 @@ if service == "s3api" and verb == "copy-object":
           "cache_control": opt("--cache-control"), "content_type": opt("--content-type"),
           "directive": opt("--metadata-directive")})
     print(json.dumps({"CopyObjectResult": {"ETag": "\"fake\""}}))
+    sys.exit(0)
+
+if service == "s3api" and verb == "delete-objects":
+    bucket = opt("--bucket")
+    request = json.loads(opt("--delete"))
+    refuse = env.get("FAKE_AWS_DELETE_ERROR_MATCH", "")
+    errors = []
+    for item in request["Objects"]:
+        key = item["Key"]
+        if refuse and refuse in key:
+            errors.append({"Key": key, "Code": "AccessDenied", "Message": "Access Denied"})
+            continue
+        target = path_of(bucket + "/" + key)
+        if os.path.isfile(target):
+            os.remove(target)
+        emit({"op": "DELETE", "key": bucket + "/" + key})
+    if errors:
+        print(json.dumps({"Errors": errors}))
     sys.exit(0)
 
 if service == "s3" and verb in ("cp", "sync", "mv"):
@@ -408,4 +426,18 @@ PLANT_PURGE_FROM_LOCAL_FILES = (
 PLANT_PURGE_WITHOUT_THE_STABLE_LISTING = (
     "    missing = [rel for rel in promoted if rel not in landed]\n",
     "    missing: list[str] = []\n",
+)
+
+PLANT_NO_PRUNE = (
+    '        prune_tree(dir_name, "stable", set(promoted), after, run)\n',
+    "        pass\n",
+)
+PLANT_PRUNE_BEFORE_THE_COPY = (
+    "    excluded = set(pointers(dir_name))\n",
+    (
+        "    excluded = set(pointers(dir_name))\n"
+        "    if dir_name in PACKAGE_TREES:\n"
+        '        _early = run.list_tree(tree(dir_name, "stable"))\n'
+        '        prune_tree(dir_name, "stable", {o.rel for o in edge}, _early, run)\n'
+    ),
 )
