@@ -25,3 +25,9 @@
 {"at":"2026-10-06T01:46:21Z","by":"d778be9d","id":"6bcda063","title":"Clean review ledger: T17 full suites and T18 live check","covers":["79f238a0"],"order":null}
 {"at":"2026-10-06T02:06:18Z","by":"d778be9d","id":"22409811","title":"Dependency upkeep: required patch and minor bumps (check:deps)","covers":[],"order":null}
 {"at":"2026-10-06T08:45:13Z","by":"d778be9d","id":"97672f9f","title":"Operator 2026-10-06 follow-ups: regeneration guard, ci-trace root causes and main-red alert, ci:quick scheduler utilization, package retention, budget 5xx retry","covers":[],"order":null}
+{"at":"2026-10-06T21:57:35Z","by":"d778be9d","id":"b320552c","title":"GitHub reads survive one 5xx: CI, release and gate reads through core/gh_retry (PLAN-gh-retry)","covers":[],"order":null,"plan":"agent/plans/PLAN-gh-retry.md"}
+{"at":"2026-10-06T21:57:44Z","by":"d778be9d","id":"b320552c","title":"GitHub reads survive one 5xx: CI, release and gate reads through core/gh_retry (PLAN-gh-retry)","covers":["76be82f6","79c0d85a","995a5507","ab285785","e995a3c5","ef3c4147"],"order":null}
+{"at":"2026-10-06T22:18:08Z","by":"d778be9d","id":"b320552c","title":"GitHub reads survive one 5xx: CI, release and gate reads through core/gh_retry (PLAN-gh-retry)","covers":["655d414b"],"order":null}
+{"at":"2026-10-06T22:18:10Z","by":"d778be9d","id":"b320552c","title":"GitHub reads survive one 5xx: CI, release and gate reads through core/gh_retry (PLAN-gh-retry)","covers":["c1e99d0d"],"order":null}
+{"at":"2026-10-06T22:18:11Z","by":"d778be9d","id":"b320552c","title":"GitHub reads survive one 5xx: CI, release and gate reads through core/gh_retry (PLAN-gh-retry)","covers":["b6dc69f8"],"order":null}
+{"at":"2026-10-06T22:43:20Z","by":"d778be9d","id":"b320552c","title":"GitHub reads survive one 5xx: CI, release and gate reads through core/gh_retry (PLAN-gh-retry)","covers":["a2609c61"],"order":null}
