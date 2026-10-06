@@ -35,6 +35,17 @@ Today `scripts/ci-runner/run.ts` writes `.ci/cache/prepush-receipt.json` (Receip
 - Guard v2: every `gate:true` non-slow id has an entry; each carried entry's defHash and filesHash are recomputed at the pushed tree and must match, and the archived origin receipt must agree; the fail set must equal `failed`. A v1 receipt is refused (clean break, operator constraint).
 - Measured ceiling: 45 of 351 gates declare `paths` (2324 of 6325 gate-seconds), so most gates still re-run; the gain grows as gates declare inputs.
 
+## Hash contract (frozen 2026-10-06; TS in input-hash.ts and Python in the guard implement exactly this)
+
+- `canon(x)`: JSON with object keys sorted at every depth, separators `,` and `:` with no spaces, non-ASCII left as UTF-8 (TS `JSON.stringify` of a key-sorted copy; Python `json.dumps(x, sort_keys=True, separators=(",", ":"), ensure_ascii=False)`). Lock entries hold only strings, booleans, integers, arrays and objects; a float in a lock entry makes the gate non-carriable.
+- `sha(s)`: lowercase hex sha256 of the UTF-8 bytes.
+- `defHash = sha("def\n" + canon(lockEntry) + "\n" + canon(scripts))`, where `scripts` maps each npm script name in the gate's script closure to its text in the root package.json at the judged tree. The receipt records the names in `inputs.scripts`.
+- Input files: every tracked path at the judged tree (from `git ls-tree -r --full-tree <tree>`, so gitlinks appear as `160000 commit <oid>`) that matches one of `inputs.globs` or equals one of `inputs.files`. `inputs.globs` is the gate's `paths` plus the global inputs; `inputs.files` is the leaf closure, resolved by the runner. Glob grammar: `**` matches any run of characters including `/`, `*` matches any run without `/`, every other character is literal; a lock `paths` entry containing `?`, `[` or `{` makes the gate non-carriable. A glob naming a directory that is a gitlink matches that gitlink entry.
+- `filesHash = sha("files\n" + join(sorted lines))`, each line `"<mode> <oid>\t<path>\n"`, sorted by path bytes.
+- `saltHash = sha("salt\n" + node --version + "\n" + python3 --version + "\n" + platform + "\n" + arch + "\n" + <bytes of .devcontainer/toolchain.env at the judged tree>)`; carrying needs the prior receipt's saltHash equal.
+- `inputHash = sha("input\n" + defHash + "\n" + filesHash + "\n" + saltHash + "\n" + join(sorted needs inputHashes, "\n"))`; null when the gate is not carriable (no `paths`, an `env` entry, listed in `.ci/policy/carry-exempt.json`, a null `needs` hash, a leaf closure at its cap, or a forbidden glob character).
+- Global inputs: `**/package-lock.json`, `**/uv.lock`, `.devcontainer/toolchain.env`, `pyproject.toml`, `scripts/ci-runner/**`.
+
 ## Parts 2-4: advisories, never blocks
 
 - Part 2, commit reminder: when this session has uncommitted edits in its own paths (Part 2 engine: the transcript cursor below) and no commit for `commit_remind_min` minutes (QUEUE.md `## Settings`, default 15), the Stop hook and a PostToolUse member say to commit the verified unit.
