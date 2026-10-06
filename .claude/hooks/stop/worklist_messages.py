@@ -520,6 +520,52 @@ N_SCHEDULED_GREEN = (
     "    .claude/hooks/stop/worklist.py --tick %(me)s %(item)s 'green scheduled run %(run)s %(url)s'"
 )
 
+# CONSOLE CI'S PUSH RUN ON MAIN (wl_schedred, `doc["push"]`). Run 37394654719 went red twice after PR #595 merged and no stop said so: the hook read only PR heads and scheduled runs. Same claim, same ownership rule, but the block names the ROOT CAUSE job and its category, because the failed-job list of a main red leads with aggregators (CI Complete, Pipeline Sentinel) that only report it.
+V_MAIN_PUSH_RED = (
+    "MAIN IS RED, UNTRACKED, and this session holds its claim: %(name)s push run %(run)s "
+    "attempt %(attempt)s on main @ %(sha)s concluded %(conclusion)s %(age)s ago.\n"
+    "    root cause: %(root)s\n"
+    "    cause: %(cause)s\n"
+    "    failed jobs: %(jobs)s\n"
+    "    it blocks: %(blocks)s\n"
+    "A merge was verified on its PR head; this run is the one that releases it, and a red here "
+    "reaches no PR watch. Track it, then fix it (a re-run is a fix only for a proven flake):\n"
+    "    .claude/hooks/stop/worklist.py --add %(me)s '%(add)s'\n"
+    "    .ci/scripts/ci/ci-trace.py --run %(run)s --why"
+)
+
+V_MAIN_PUSH_RED_TICK = (
+    "MAIN RED TICKED WITHOUT EVIDENCE: #%(item)s closed the %(name)s push red on main, but the "
+    "newest push run %(run)s attempt %(attempt)s @ %(sha)s is still %(conclusion)s (root cause: "
+    "%(root)s). Only a green push run on main ends it: a fix merged, or a green re-run attempt. "
+    "Reopen the tracking with a new item:\n"
+    "    .claude/hooks/stop/worklist.py --add %(me)s '%(add)s'\n"
+    "    .ci/scripts/ci/ci-trace.py --run %(run)s --why"
+)
+
+N_MAIN_PUSH_RED_PEER = (
+    "Main is red, owned by session %(owner)s: %(name)s push run %(run)s @ %(sha)s "
+    "(%(conclusion)s, %(age)s ago; root cause %(root)s). Nothing to do here; "
+    "`.ci/scripts/ci/ci-trace.py --run %(run)s --why` shows it."
+)
+
+N_MAIN_PUSH_GREEN = (
+    "MAIN GREEN: %(name)s push run %(run)s on main @ %(sha)s is green, so #%(item)s can close "
+    "on that evidence:\n"
+    "    .claude/hooks/stop/worklist.py --tick %(me)s %(item)s 'green push run %(run)s %(url)s'"
+)
+
+N_MAIN_PUSH_UNREADABLE = (
+    "Console CI's push runs on main could not be read (%(error)s), so a red main after a merge "
+    "would not be seen this stop. Nothing blocks on it; `.ci/scripts/ci/ci-trace.py --runs --ref "
+    "main` reads them by hand."
+)
+
+CTX_MAIN_PUSH_RED_SESSION_START = (
+    "Main is red: %(name)s push run %(run)s @ %(sha)s (%(conclusion)s, %(age)s), root cause "
+    "%(root)s -- %(tracked)s%(stale)s; .ci/scripts/ci/ci-trace.py --run %(run)s --why"
+)
+
 # The SessionStart line (wl_schedred.session_start_line), one per red, from the shared cache alone.
 CTX_SCHEDULED_RED_SESSION_START = (
     "Scheduled red on main: %(name)s run %(run)s (%(conclusion)s, %(age)s) -- %(tracked)s%(stale)s; "

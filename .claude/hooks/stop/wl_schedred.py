@@ -14,6 +14,10 @@ THE CACHE IS SHARED. `<worklist>.schedred` beside the worklist, written atomical
 OWNERSHIP, without a message bus. An open `[ ]`/`[>]`/`[?]` item that `tracks()` the red belongs to its owner, and the `open-items` blocker already holds that owner. With no such item, a claim file (`<worklist>.schedred-claim-<stem>`, created with O_EXCL) picks ONE session to be blocked; every other session gets a once-per-run advisory. A claim goes stale when its run id is not the current red's, or when its claimant's session brief is older than SESSION_BRIEF_STALE_MIN, so a dead claimant hands the red on after 90 minutes.
 
 Never raises into the Stop hook: every read failure is an `unreadable` answer, because a GitHub outage is not a reason to wedge a stop.
+
+CONSOLE CI'S NEWEST PUSH RUN ON MAIN IS WATCHED THE SAME WAY (`doc["push"]`). PR #595 merged as e6fc817f6 on 2026-10-06 and Console CI on main (run 37394654719) then went red twice: Validate Promotion stopped at its 15 min budget, CI Complete and Pipeline Sentinel failing behind it. The merging session's only record was a release item that named the run id beside "then Release to Edge", nothing at the Stop hook read
+main's push runs, and the operator found the reds by opening GitHub. Every CI read in the hook is scoped to a PR head, and main after a merge is on no PR, so the push run is read here with the scheduled ones: one `actions/workflows/ci.yml/runs?event=push&branch=main` call under the same TTL, the same claim, the same block. A red row carries its ROOT CAUSE from `ci_diagnose.diagnose` (the job to read, its
+cancel cause and category, read once per run attempt and cached), so the block names Validate Promotion and `timeout-cancel`, never the sentinel. Its tracking token is `push:ci` or `run:<id>`; a BARE run id does not track it, because the release item that named run 37394654719 in passing would otherwise have silenced exactly the red it was blind to.
 """
 
 import contextlib
@@ -48,6 +52,16 @@ _BLOCKS = {
     "ci": "the stable promotion (promote-stable counts only green scheduled Console CI runs)"
 }
 _BLOCKS_DEFAULT = "main hygiene (this workflow's scheduled job is not running clean)"
+
+# Console CI's push runs on main: the run every merge starts, which the release (CD) waits on.
+PUSH_FILE = "ci.yml"
+PUSH_STEM = "ci-push"
+PUSH_MARK = "push:ci"
+PUSH_PAGE = 5
+_BLOCKS_PUSH = (
+    "the release of the merged commit (CD promotes only after Console CI on main is green), "
+    "and every later merge lands on a red main"
+)
 
 
 # --------------------------------------------------------------------------- discovery
@@ -277,6 +291,102 @@ def _fetch(root, owner, name, workflows, jobs_cache):
     return rows, "", new_jobs
 
 
+def push_workflow(root):
+    """The watched push workflow (Console CI, `.github/workflows/ci.yml`) as a row skeleton, or None when the file is absent (every Stop fixture without workflows, so it makes no call)."""
+    path = pathlib.Path(root) / WORKFLOW_DIR / PUSH_FILE
+    if not path.is_file():
+        return None
+    try:
+        name, _crons = _parse_workflow(path.read_text(encoding="utf-8", errors="replace"))
+    except OSError:
+        return None
+    return {
+        "stem": PUSH_STEM,
+        "file": PUSH_FILE,
+        "name": name or "Console CI",
+        "crons": [],
+        "event": "push",
+    }
+
+
+def _diagnosis(root, owner, name, run_id):
+    """({root, root_job, root_conclusion, category, cause, ordered failed_jobs}, ok) for a red push run, through ci_diagnose: the same answer `ci-trace.py --run <id> --why` prints. ok is False when the diagnosis could not be read, so it is not cached."""
+    diag = wl_ci._load_diagnose()
+    if diag is None:
+        return {}, False
+    try:
+        fetch = diag.GhFetcher("%s/%s" % (owner, name), cwd=str(root), timeout=20)
+        d = diag.diagnose(fetch, run_id)
+    except Exception:  # noqa: BLE001 -- a diagnosis is detail; the red stands without it
+        return {}, False
+    if d.get("verdict") in (None, "unknown"):
+        return {}, False
+    ff = d.get("first_failure") or {}
+    cause = d.get("cause") or {}
+    out = {
+        "root": ff.get("name") or "",
+        "root_job": ff.get("job_id"),
+        "root_conclusion": ff.get("conclusion") or "",
+        "category": ff.get("category") or "",
+        "cause": "%s: %s" % (cause.get("kind"), cause.get("detail"))
+        if cause and cause.get("kind") != "unknown"
+        else "",
+        "verdict": d.get("verdict") or "",
+    }
+    return out, True
+
+
+def _fetch_push(root, owner, name, wf, diag_cache):
+    """(row or None, error, diag_cache) for Console CI's newest COMPLETED push run on main. One runs call; a red row adds one jobs call and one diagnosis, both cached per (run, attempt)."""
+    data, err = wl_ci._gh_json(
+        root,
+        [
+            "api",
+            "repos/%s/%s/actions/workflows/%s/runs?event=push&branch=main&per_page=%d"
+            % (owner, name, wf["file"], PUSH_PAGE),
+        ],
+    )
+    if err or not isinstance(data, dict):
+        return None, err or "no runs document", diag_cache
+    runs = [r for r in data.get("workflow_runs") or [] if r.get("event") in (None, "push")]
+    done = [r for r in runs if r.get("status") == "completed"]
+    newest = _newest(done) if done else None
+    in_flight = any(
+        r.get("status") != "completed"
+        and (
+            newest is None or str(r.get("created_at") or "") >= str(newest.get("created_at") or "")
+        )
+        for r in runs
+    )
+    if newest is None and not runs:
+        return None, "", {}
+    row = _run_row(wf, newest, in_flight)
+    row["sha"] = str((newest or {}).get("head_sha") or "")[:8]
+    new_cache = {}
+    if row["red"] and row["run_id"]:
+        key = "%s:%s" % (row["run_id"], row["attempt"])
+        hit = diag_cache.get(key) if isinstance(diag_cache, dict) else None
+        if isinstance(hit, dict):
+            row.update(hit)
+            new_cache[key] = hit
+        else:
+            failed, _jerr = _failed_jobs(root, owner, name, row["run_id"])
+            found, ok = _diagnosis(root, owner, name, row["run_id"])
+            found["failed_jobs"] = _roots_first(failed)
+            row.update(found)
+            if ok:
+                new_cache[key] = found
+    return row, "", new_cache
+
+
+def _roots_first(names):
+    """Failed job names with aggregators (CI Complete, the sentinels) after the jobs they report on."""
+    diag = wl_ci._load_diagnose()
+    if diag is None:
+        return list(names or [])
+    return sorted(names or [], key=lambda n: bool(diag._aggregator(n)))
+
+
 def refresh(root, worklist, force=False, now=None):
     """The scheduled-run verdict, from the shared cache inside its TTL, else from GitHub (and the cache rewritten). `force` bypasses the TTL. Never raises."""
     now = time.time() if now is None else now
@@ -287,7 +397,8 @@ def refresh(root, worklist, force=False, now=None):
             return {"state": "unset", "error": "", "at": now, "workflows": []}
         # Nothing scheduled, nothing to read: a tree with no scheduled workflow (every Stop fixture that has an origin but no `.github/workflows`) costs zero calls, so the CI checks' own zero-call opt-out stays true for it.
         workflows = scheduled_workflows(root)
-        if not workflows:
+        pushwf = push_workflow(root)
+        if not workflows and not pushwf:
             return {"state": "ok", "error": "", "at": now, "workflows": []}
         cached = read_cache(worklist)
         if cached and not force:
@@ -297,7 +408,9 @@ def refresh(root, worklist, force=False, now=None):
         jobs_cache = (cached or {}).get("jobs") or {}
         if not isinstance(jobs_cache, dict):
             jobs_cache = {}
-        rows, err, jobs = _fetch(root, owner, name, workflows, jobs_cache)
+        rows, err, jobs = (
+            _fetch(root, owner, name, workflows, jobs_cache) if workflows else ([], "", {})
+        )
         if err:
             doc = {
                 "state": "unreadable",
@@ -309,6 +422,18 @@ def refresh(root, worklist, force=False, now=None):
             }
         else:
             doc = {"state": "ok", "error": "", "at": now, "workflows": rows, "jobs": jobs}
+        # The push read is independent of the scheduled one: either can be unreadable while the other answers.
+        doc["push"], doc["push_error"], doc["push_diag"] = None, "", {}
+        if pushwf:
+            prow, perr, pdiag = _fetch_push(
+                root, owner, name, pushwf, (cached or {}).get("push_diag") or {}
+            )
+            if perr:
+                doc["push"] = (cached or {}).get("push")
+                doc["push_error"] = str(perr)[:200]
+                doc["push_diag"] = (cached or {}).get("push_diag") or {}
+            else:
+                doc["push"], doc["push_diag"] = prow, pdiag
         _write_json(cache_path(worklist), doc)
         return doc
     except Exception as exc:  # noqa: BLE001 -- information and a bounded block, never a crash
@@ -366,7 +491,19 @@ def reds(doc):
 
 
 def _mentions_stem(text, stem):
+    if stem == PUSH_STEM:
+        return re.search(r"(?<![\w-])%s(?![\w-])" % re.escape(PUSH_MARK), text) is not None
     return re.search(r"(?<![\w-])sched:%s(?![\w-])" % re.escape(stem), text) is not None
+
+
+def _mentions_run_token(text, run_id):
+    return (
+        run_id is not None and re.search(r"(?<![\w-])run:%d(?!\d)" % int(run_id), text) is not None
+    )
+
+
+def is_push(row):
+    return (row or {}).get("event") == "push"
 
 
 def _mentions_run(text, run_id):
@@ -385,6 +522,9 @@ def _mentions_name(text, name):
 def tracks(text, row):
     """THE TRACKING MATCH. True when `text` carries the whole token `sched:<stem>`, the red run's id (bare or `run:<id>`), or the workflow's display name together with nightly/scheduled/schedule. A bare "Console CI" never counts."""
     text = str(text or "")
+    if is_push(row):
+        # Only the explicit tokens: a bare run id in a release or watch item is a mention, not ownership of the red (module docstring).
+        return _mentions_stem(text, PUSH_STEM) or _mentions_run_token(text, row.get("run_id"))
     return (
         _mentions_stem(text, row.get("stem") or "")
         or _mentions_run(text, row.get("run_id"))
@@ -418,7 +558,7 @@ def covering_ticks(items, row):
         if r.get("state") != "x":
             continue
         text = str(r.get("text") or "")
-        if _mentions_run(text, row.get("run_id")):
+        if (_mentions_run_token if is_push(row) else _mentions_run)(text, row.get("run_id")):
             out.append(r)
             continue
         if _mentions_stem(text, row.get("stem") or ""):
@@ -489,9 +629,27 @@ def jobs_text(row):
     return shown
 
 
+def root_text(row):
+    """`<job> (<conclusion>, <category>)` for a push red's root cause, or the failed-job list when no diagnosis was read."""
+    if row.get("root"):
+        bits = [b for b in (row.get("root_conclusion"), row.get("category")) if b]
+        return "%s%s" % (row["root"], " (%s)" % ", ".join(bits) if bits else "")
+    return jobs_text(row)
+
+
 def add_text(row):
     """The worklist line that tracks `row`, single-quote safe for the shell recipe."""
     date = str(row.get("created_at") or "?")[:10]
+    if is_push(row):
+        text = "%s run:%s -- %s red on main @ %s since %s; root cause: %s" % (
+            PUSH_MARK,
+            row.get("run_id"),
+            row.get("name"),
+            row.get("sha") or "?",
+            date,
+            root_text(row),
+        )
+        return text.replace("'", "")
     text = "sched:%s run:%s -- %s red on main since %s; failed: %s" % (
         row.get("stem"),
         row.get("run_id"),
@@ -513,10 +671,15 @@ def fields(row, me8="<me>"):
         "conclusion": row.get("conclusion") or "?",
         "age": _age_text(row),
         "jobs": jobs_text(row),
-        "blocks": _BLOCKS.get(row.get("stem") or "", _BLOCKS_DEFAULT),
+        "blocks": _BLOCKS_PUSH
+        if is_push(row)
+        else _BLOCKS.get(row.get("stem") or "", _BLOCKS_DEFAULT),
         "me": me8,
         "add": add_text(row),
         "url": row.get("url") or "",
+        "sha": row.get("sha") or "?",
+        "root": root_text(row),
+        "cause": row.get("cause") or "not attributed; --why reads it",
     }
 
 
@@ -530,9 +693,13 @@ def assess(worklist, items, session_id, doc, now=None):
     """
     me8 = (session_id or "")[:8]
     out: dict[str, list] = {"block": [], "tick": [], "peer": [], "green": []}
-    if not doc or doc.get("state") != "ok":
+    if not doc:
         return out
-    for row in doc.get("workflows") or []:
+    rows = list(doc.get("workflows") or []) if doc.get("state") == "ok" else []
+    # The push row is judged on its own read: a scheduled-runs outage does not hide a red main, and an unreadable push read blocks nothing.
+    if isinstance(doc.get("push"), dict) and not doc.get("push_error"):
+        rows.append(doc["push"])
+    for row in rows:
         if not row.get("run_id"):
             continue
         if not row.get("red"):
@@ -543,7 +710,10 @@ def assess(worklist, items, session_id, doc, now=None):
                         and C.owned_by_me(it.get("owner"), session_id)
                         and (
                             _mentions_stem(str(it.get("text") or ""), row.get("stem") or "")
-                            or _mentions_name(str(it.get("text") or ""), row.get("name") or "")
+                            or (
+                                not is_push(row)
+                                and _mentions_name(str(it.get("text") or ""), row.get("name") or "")
+                            )
                         )
                     ):
                         out["green"].append((row, it))
@@ -580,6 +750,9 @@ def session_start_line(worklist):
         if not doc:
             return ""
         rows = [w for w in doc.get("workflows") or [] if w.get("red") and w.get("run_id")]
+        push = doc.get("push")
+        if isinstance(push, dict) and push.get("red") and push.get("run_id"):
+            rows.append(push)
         if not rows:
             return ""
         try:
@@ -598,7 +771,11 @@ def session_start_line(worklist):
         for row in rows:
             tracked = tracking_items(items, row)
             lines.append(
-                M.CTX_SCHEDULED_RED_SESSION_START
+                (
+                    M.CTX_MAIN_PUSH_RED_SESSION_START
+                    if is_push(row)
+                    else M.CTX_SCHEDULED_RED_SESSION_START
+                )
                 % dict(
                     fields(row),
                     tracked="tracked by #%s" % tracked[0]["id"] if tracked else "untracked",

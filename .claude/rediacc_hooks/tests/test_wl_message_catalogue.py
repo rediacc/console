@@ -47,6 +47,7 @@ SCHED_ROW = {
     "add": "a",
     "url": "u",
 }
+PUSH_ROW = dict(SCHED_ROW, stem="ci-push", sha="e6fc817f", root="Validate Promotion", cause="c")
 
 # The arity of every catalogue constant at its call site in `worklist.py`. Six strings have no needle anywhere in this suite (V_DIVERGED, V_PR_UNREADABLE, V_EVENT_UNPARSEABLE, R_JUDGE_CONTINUE, CTX_SESSION_START_STALE, the exempt-overrun stuck detail), and this registry is their shape protection: every constant must exist and render with the EXACT argument
 # arity its call site uses, so a placeholder added or dropped in the catalogue cannot lurk in a branch no test drives. `None` means the constant is printed verbatim and the `%` check is skipped; it still has to be REGISTERED, which is what the gap check at the end of the test is for.
@@ -393,6 +394,13 @@ ARITY = {
     "N_SCHEDULED_UNREADABLE": {"error": "e"},
     "N_SCHEDULED_GREEN": dict(SCHED_ROW, item="i"),
     "CTX_SCHEDULED_RED_SESSION_START": dict(SCHED_ROW, tracked="untracked", stale=""),
+    # Console CI's push run on main (wl_schedred `doc["push"]`): the same fields plus the push row's sha, root and cause.
+    "V_MAIN_PUSH_RED": PUSH_ROW,
+    "V_MAIN_PUSH_RED_TICK": dict(PUSH_ROW, item="i"),
+    "N_MAIN_PUSH_RED_PEER": dict(PUSH_ROW, owner="o"),
+    "N_MAIN_PUSH_GREEN": dict(PUSH_ROW, item="i"),
+    "N_MAIN_PUSH_UNREADABLE": {"error": "e"},
+    "CTX_MAIN_PUSH_RED_SESSION_START": dict(PUSH_ROW, tracked="untracked", stale=""),
     "R_ALWAYS_COLLAPSED": ("rows",),
     "R_ROTATING_COLLAPSED": ("rows",),
     # v23 lineage. CLI_ADOPT_USAGE takes nothing (it is a static usage block). CLI_ADOPT_REFUSED takes the session prefix, the predecessor prefix and the reason the evidence failed; CLI_ADOPT_SELF takes the prefix that turned out to be the caller; and CLI_ADOPT_DONE takes the session prefix, the predecessor prefix, the rung that fired, the evidence basis, the boundary uuid, how
