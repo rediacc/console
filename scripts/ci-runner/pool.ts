@@ -167,6 +167,8 @@ export interface CoreBudget {
   memMb: number;
   /** EASY-backfill reservations; on unless a simulator control turns them off to show the starvation they prevent. */
   reserve?: boolean;
+  /** The critical-path floor on elastic grants (`needWidth`); on unless a simulator control turns it off to show the one-wide critical gate it prevents. */
+  floor?: boolean;
 }
 
 export interface PoolOptions {
@@ -255,6 +257,12 @@ export interface Candidate {
   grant?: number;
   /** Set by admit() on a gate it launched past the lease: its bounded `lease` hold expired, or it is wider than the whole budget and the pool is empty. Only such a gate may start on more cores than the tokens it got (fitToLease). */
   pastLease?: boolean;
+  /** Under `cores`: the core-ms of budget the gate occupies at any width, work / perCore for a measured elastic gate and cpuMs otherwise. The horizon's area term (`horizonMs`). */
+  areaMs?: number;
+  /** Under `cores`: its predicted wall at the widest grant it can get, min(max, C) for a measured elastic gate and estMs otherwise. The irreducible part of any chain through it. */
+  minWallMs?: number;
+  /** Under `cores`: the longest chain of `needs` dependents behind it, by their minWallMs. */
+  tailMs?: number;
 }
 
 export interface RunningGate {
@@ -270,8 +278,8 @@ export interface AdmitConfig {
   budget?: CoreBudget;
   /** Cores the machine-wide lease can still give this pool (PoolLease.available, read before the pass). Absent means unbounded. Honoured by `cores` only; `slots` is the rollback rule and keeps its fixed width. */
   leaseFree?: number;
-  /** Predicted CPU of every gate not yet launched (ready or waiting on `needs`), in core-ms, for the area term. Absent means 0. */
-  backlogCpuMs?: number;
+  /** Every gate not yet launched, ready or waiting on `needs`: the area term's backlog (their summed cpuMs) and the horizon the critical-path floor sizes against (`horizonMs`). Absent means an empty backlog and no floor. */
+  pending?: readonly Candidate[];
   /** This run's share of the lease, ceil(total / live runs) (LeaseView.share). Caps every elastic grant and the area rule's C; fixed-width gates are not capped, so a run whose neighbour leaves cores idle can still fill them. Absent means unbounded. */
   leaseShare?: number;
   /** The lease's token total, for the settle's ceil(T / 2). */
@@ -321,7 +329,7 @@ function elasticWall(el: ElasticPlan, estMs: number, k: number): number {
  */
 function fairWall(g: Candidate, share: number): number {
   const el = g.elastic;
-  return el !== undefined && el.measured && el.workMs > 0
+  return el?.measured === true && el.workMs > 0
     ? el.workMs / (el.perCore * Math.max(1, share))
     : g.estMs;
 }
@@ -333,13 +341,103 @@ function elasticGrant(
   g: Candidate,
   c: number,
   otherCpuMs: number,
-  free: number
+  free: number,
+  need?: number
 ): number | undefined {
   const el = g.elastic;
   if (el === undefined) return undefined;
   const ceiling = Math.min(el.max, Math.floor(free + FIT_TOLERANCE));
   if (ceiling < el.min) return undefined;
-  return Math.max(el.min, Math.min(areaGrant(el, g.estMs, c, otherCpuMs), ceiling));
+  return Math.max(
+    el.min,
+    Math.min(Math.max(areaGrant(el, g.estMs, c, otherCpuMs), need ?? 0), ceiling)
+  );
+}
+
+/**
+ * How far past the horizon a gate may run before the floor widens it. The horizon is a lower bound the pool never reaches exactly (integer widths, median costs, gates idling between phases), so a gate predicted within 10% of it is not what decides the makespan; without the slack the floor's ceil() overshoots the area rule on every pass, taking the last core a fixed-width gate needed (C 8, a 40 cpu-s gate beside four 1 s gates: 8 cores and a 6 s makespan against the area rule's 7 and 5.7 s).
+ */
+const FLOOR_SLACK = 0.1;
+
+/**
+ * The per-core share below which a gate's wall model is not trusted: work / (perCore x k) assumes the gate gets faster with every core it is granted, and a gate that kept less than half of each granted core busy has shown it does not. check:types:incremental's one sample, 0.07 at a wide grant, models a 558 s wall at three cores for a gate measured at 8-41 s. Such a gate is planned at its measured wall and gets no floor, so the floor never widens a gate more cores cannot speed up.
+ */
+const SCALES_PER_CORE = 0.5;
+
+/** True when an elastic plan's wall model (elasticWall) can be trusted for planning: measured work and a per-core share of at least SCALES_PER_CORE. */
+function scales(el: ElasticPlan | undefined): el is ElasticPlan {
+  return el?.measured === true && el.workMs > 0 && el.perCore >= SCALES_PER_CORE;
+}
+
+/**
+ * THE HORIZON (agent/plans/PLAN-prepush-full-cpu.md, the 2026-10-06 tail fix): a lower bound on when the work still outstanding can finish on `c` cores, the larger of
+ *
+ *   area   (sum of every pending gate's areaMs + every running gate's cores x predicted time left) / c, and
+ *   chain  the longest of: a pending gate's minWallMs + tailMs, a running gate's time left + tailMs, and, per EXCLUSIVE resource, the minWallMs of every pending holder plus the time left of the running one, since gates sharing a `mutex` run one after another.
+ *
+ * The exclusive-resource term is the one the 2026-10-06 run proved: check:ci-account-server, check:ci-test-account-web and check:ci-account-scope-audit share `mutex: ['account-vitest']`, about 1,160 core-s between them, and ran one after another at one core each for 924 s of a 979 s run while every other gate had finished by 460 s. Neither the area rule nor the `needs` bottom level could see that chain.
+ */
+function horizonMs(
+  pending: readonly Candidate[],
+  running: readonly RunningGate[],
+  now: number,
+  c: number
+): number {
+  let area = 0;
+  let chain = 0;
+  const serial = new Map<string, number>();
+  const onResources = (mutex: readonly string[], ms: number): void => {
+    for (const r of mutex) serial.set(r, (serial.get(r) ?? 0) + ms);
+  };
+  for (const g of pending) {
+    const wall = g.minWallMs ?? g.estMs;
+    area += g.areaMs ?? g.cpuMs;
+    chain = Math.max(chain, wall + (g.tailMs ?? 0));
+    onResources(g.mutex, wall);
+  }
+  for (const r of running) {
+    const left = Math.max(0, r.endsAt - now);
+    area += r.gate.cores * left;
+    chain = Math.max(chain, left + (r.gate.tailMs ?? 0));
+    onResources(r.gate.mutex, left);
+  }
+  for (const ms of serial.values()) chain = Math.max(chain, ms);
+  return Math.max(area / Math.max(1, c), chain);
+}
+
+/**
+ * THE CRITICAL-PATH FLOOR: the fewest cores that bring a measured elastic gate, and the gates it must run in series with, inside the horizon. The area rule alone is a proportional share, k = C x area(g) / area(everything), and floors to one core for every mid-size gate beside a large backlog; a gate the rest of the run waits on must not be one of them.
+ *
+ *   need = ceil(A / (H x (1 + FLOOR_SLACK) - F - tail)), clamped to [min, min(max, C)]
+ *
+ * A is the areaMs of this gate plus every pending measured elastic gate sharing one of its exclusive resources (they run one after another, and each takes this same width when its turn comes); F is the wall of the fixed-width (or unmeasured) gates in that group plus the time left of the one running; tail is its `needs` chain. A gate with no exclusive resource and no tail reduces to ceil(area(g) / H'), the width that fits it under the horizon. An unmeasured gate has no wall model, so it gets no floor (undefined), and neither does a gate the slots rule sizes.
+ */
+function needWidth(
+  g: Candidate,
+  pending: readonly Candidate[],
+  running: readonly RunningGate[],
+  now: number,
+  horizon: number,
+  c: number
+): number | undefined {
+  const el = g.elastic;
+  if (!scales(el)) return undefined;
+  const widest = Math.max(el.min, Math.min(el.max, Math.floor(c + FIT_TOLERANCE)));
+  let area = el.workMs / el.perCore;
+  let fixed = 0;
+  if (g.mutex.length > 0) {
+    const shares = (o: Candidate): boolean => o.mutex.some((r) => g.mutex.includes(r));
+    for (const o of pending) {
+      if (o.id === g.id || !shares(o)) continue;
+      const oel = o.elastic;
+      if (scales(oel)) area += oel.workMs / oel.perCore;
+      else fixed += o.estMs;
+    }
+    for (const r of running) if (shares(r.gate)) fixed += Math.max(0, r.endsAt - now);
+  }
+  const room = horizon * (1 + FLOOR_SLACK) - fixed - (g.tailMs ?? 0);
+  if (room <= 0) return widest;
+  return Math.max(el.min, Math.min(widest, Math.ceil(area / room - FIT_TOLERANCE)));
 }
 
 /**
@@ -431,8 +529,24 @@ export function admit(
   // The area term's "everyone else": the backlog (which still counts every gate this pass launches, since they were unstarted when it was summed) less the candidate itself, plus what the gates already running are predicted to burn before they end.
   let runningLeftMs = 0;
   for (const r of running) runningLeftMs += r.gate.cores * Math.max(0, r.endsAt - now);
-  const otherCpu = (g: Candidate): number =>
-    Math.max(0, (cfg.backlogCpuMs ?? 0) - g.cpuMs) + runningLeftMs;
+  const pending = cfg.pending ?? [];
+  let backlogCpuMs = 0;
+  for (const g of pending) backlogCpuMs += g.cpuMs;
+  const otherCpu = (g: Candidate): number => Math.max(0, backlogCpuMs - g.cpuMs) + runningLeftMs;
+  // The floor's C is the area rule's: this run's share of the lease, never the whole machine, so two runs split it the way B11 does. One horizon per pass, from the state the pass started in.
+  const floorC = Math.min(cfg.budget?.cores ?? cfg.jobs, share);
+  const horizon =
+    cfg.sched === 'cores' && cfg.budget?.floor !== false && pending.length > 0
+      ? horizonMs(pending, running, now, floorC)
+      : undefined;
+  const needOf = (g: Candidate): number | undefined =>
+    horizon === undefined ? undefined : needWidth(g, pending, running, now, horizon, floorC);
+  // WHETHER ANOTHER RUN HOLDS LEASE TOKENS: total - free - this run's own in use (free already counts the slack of tokens this run holds). Without one, a lease short of a gate's width is this run's own gates holding the tokens, which is the core budget's business, not a neighbour's: before 2026-10-06 the bounded B11 hold fired on it, and a lone run's pytest waited 209 s for
+  // tokens its own one-core gates held (the budget's 10% epsilon admits 26.4 cores against 24 tokens, so the lease always reads short of what the budget allows).
+  const neighbour =
+    cfg.leaseFree !== undefined &&
+    cfg.leaseTotal !== undefined &&
+    cfg.leaseTotal - cfg.leaseFree - cores >= 1 - FIT_TOLERANCE;
 
   if (cfg.sched === 'slots') {
     for (const g0 of ready) {
@@ -463,10 +577,13 @@ export function admit(
     const b = cfg.budget;
     if (b === undefined)
       throw new Error('ci-runner: internal error, --sched cores without a budget');
-    const cap = b.cores * (1 + b.epsilon);
+    // A run can never hold more lease tokens than the lease has, so under a lease the epsilon stops at its total: before 2026-10-06 the budget admitted 26.4 cores against 24 tokens, and every pass read the lease as short of what the budget allowed.
+    const budgetCap = b.cores * (1 + b.epsilon);
+    const cap = Math.min(budgetCap, cfg.leaseTotal ?? Number.POSITIVE_INFINITY);
     // What the reserved gate leaves spare at its predicted start, in all three dimensions.
     let spare: { at: number; cores: number; mem: number; procs: number } | undefined;
-    const reserve = (g: Candidate): void => {
+    // When g would fit, releasing the running gates' predicted ends in order, and what would be free then. Pure, so the floor can price a wait before deciding to take one.
+    const whenFits = (g: Candidate): { at: number; cores: number; mem: number; procs: number } => {
       const ends = live
         .map((r) => ({ at: Math.max(r.endsAt, now), gate: r.gate }))
         .sort((x, y) => x.at - y.at);
@@ -484,13 +601,17 @@ export function admit(
         freeMem += e.gate.memMb;
         freeProcs += 1;
       }
+      return { at, cores: freeCores, mem: freeMem, procs: freeProcs };
+    };
+    const reserve = (g: Candidate): void => {
+      const f = whenFits(g);
       spare = {
-        at,
-        cores: freeCores - g.cores,
-        mem: freeMem - g.memMb,
-        procs: freeProcs - 1,
+        at: f.at,
+        cores: f.cores - g.cores,
+        mem: f.mem - g.memMb,
+        procs: f.procs - 1,
       };
-      reservation = { id: g.id, at };
+      reservation = { id: g.id, at: f.at };
     };
 
     for (const g0 of ready) {
@@ -506,16 +627,36 @@ export function admit(
       if (g0.elastic !== undefined) {
         const el = g0.elastic;
         // The area rule splits this run's share, not the whole budget.
-        const c = Math.min(b.cores, share);
+        const c = floorC;
         const other = otherCpu(g0);
-        // What the run's own budget and share allow, and what the lease allows on top of them.
-        const own = elasticGrant(g0, c, other, Math.min(cap - cores, share));
+        const need = needOf(g0);
+        // What the run's own budget and share allow. With no neighbour on the lease, its tokens are this run's own budget too (see `neighbour`).
+        const budgetRoom = Math.min(cap - cores, share);
+        const ownRoom = neighbour ? budgetRoom : Math.min(budgetRoom, leaseLeft);
+        // Named for what binds: the lease (its free tokens, or its total under the budget's epsilon) or the core budget itself.
+        const short: HoldReason =
+          ownRoom + FIT_TOLERANCE < Math.min(budgetCap - cores, share) ? 'lease' : 'cpu';
+        const own = elasticGrant(g0, c, other, ownRoom, need);
         if (own === undefined) {
-          held.push([g0.id, 'cpu']);
-          if (spare === undefined && b.reserve !== false) reserve(sizedAt(g0, el.min));
+          held.push([g0.id, short]);
+          if (spare === undefined && b.reserve !== false)
+            reserve(sizedAt(g0, Math.max(el.min, Math.min(need ?? el.min, Math.floor(c)))));
           continue;
         }
-        const k = elasticGrant(g0, c, other, Math.min(cap - cores, share, leaseLeft));
+        if (need !== undefined && own < need) {
+          // THE FLOOR WAITS ONLY WHEN WAITING ENDS SOONER. Started now the gate runs at `own`; held, it starts at its reserved moment at `need`. Whichever predicted end is earlier wins, so a critical gate is never parked behind a long one-core gate to save a core.
+          const wide = sizedAt(g0, need);
+          const narrow = sizedAt(g0, own);
+          if (b.reserve !== false && whenFits(wide).at + wide.estMs < now + narrow.estMs) {
+            held.push([g0.id, short]);
+            if (spare === undefined) reserve(wide);
+            continue;
+          }
+        }
+        // Only a neighbour's tokens can make the lease shorter than `own` here; without one, k is own.
+        const k = neighbour
+          ? elasticGrant(g0, c, other, Math.min(budgetRoom, leaseLeft), need)
+          : own;
         if ((k ?? 0) < Math.min(own, Math.ceil(share / 2))) {
           // Another run holds the tokens. Waiting for them beats starting at `min` (B11: one token against 23, a 6x wall), but only up to the fair wall.
           const until = leaseSince(g0.id) + fairWall(g0, c);
@@ -533,10 +674,10 @@ export function admit(
             now < cfg.settleUntil &&
             width > Math.ceil((cfg.leaseTotal ?? Number.POSITIVE_INFINITY) / 2)
           ) {
-            // The settle (SETTLE_MS): a run that may not yet see its neighbour does not take more than half the machine.
+            // The settle (SETTLE_MS): a run that may not yet see its neighbour does not take more than half the machine. The reservation is at the width it is waiting to take, not its `min`: reserved at `min`, the rest of the first wave took every other core inside the settle's 2 s, and the widest gate of the run started late or narrow.
             held.push([g0.id, 'lease']);
             timed.set(g0.id, cfg.settleUntil);
-            if (spare === undefined && b.reserve !== false) reserve(sizedAt(g0, el.min));
+            if (spare === undefined && b.reserve !== false) reserve(sizedAt(g0, width));
             continue;
           }
           g = sizedAt(g0, width);
@@ -607,7 +748,7 @@ export function admit(
           Math.max(
             el.min,
             Math.min(
-              areaGrant(el, head.estMs, c, otherCpu(head)),
+              Math.max(areaGrant(el, head.estMs, c, otherCpu(head)), needOf(head) ?? 0),
               el.max,
               Math.floor(room + FIT_TOLERANCE)
             )
@@ -733,8 +874,60 @@ export function planAdmission(
     bottom.set(id, own);
     return own;
   };
+  // THE PLAN FIELDS the horizon reads (horizonMs): each gate's area, its wall at the widest grant it can get, and the `needs` chain behind it at those walls.
+  const all = [...byId.values()];
+  for (const g of all) {
+    const el = g.elastic;
+    g.areaMs = scales(el) ? el.workMs / el.perCore : g.cpuMs;
+    g.minWallMs = scales(el)
+      ? elasticWall(el, g.estMs, Math.max(el.min, Math.min(el.max, c)))
+      : g.estMs;
+  }
+  const tails = new Map<string, number>();
+  const tailOf = (id: string): number => {
+    const hit = tails.get(id);
+    if (hit !== undefined) return hit;
+    if (visiting.has(id)) throw new Error(`ci-runner: dependency cycle through ${id}`);
+    visiting.add(id);
+    let tail = 0;
+    for (const dep of dependents.get(id) ?? [])
+      tail = Math.max(tail, (byId.get(dep)?.minWallMs ?? 0) + tailOf(dep));
+    visiting.delete(id);
+    tails.set(id, tail);
+    return tail;
+  };
+  for (const g of all) g.tailMs = tailOf(g.id);
+  // RANK BY THE WALL A GATE WILL HAVE, NOT THE ONE IT LAST HAD. A measured elastic gate's planning wall is its wall at the width the pool plans to give it (the area rule, floored by needWidth against the whole run's horizon), not the duration cache's ewma, which is the wall of whatever grant it last ran at: check:ci-account-server's 173 s ewma was learned running wide, and at the one core the area
+  // rule then gave it, it took 667 s.
+  let totalCpu = 0;
+  for (const g of all) totalCpu += g.cpuMs;
+  const horizon0 = horizonMs(all, [], 0, c);
+  for (const g of all) {
+    const el = g.elastic;
+    if (!scales(el)) continue;
+    const widest = Math.max(el.min, Math.min(el.max, Math.floor(c + FIT_TOLERANCE)));
+    const planned = Math.max(
+      el.min,
+      Math.min(
+        widest,
+        Math.max(
+          areaGrant(el, g.estMs, c, totalCpu - g.cpuMs),
+          opts.budget?.floor === false ? 0 : (needWidth(g, all, [], 0, horizon0, c) ?? 0)
+        )
+      )
+    );
+    g.estMs = elasticWall(el, g.estMs, planned);
+  }
+  // A gate sharing an EXCLUSIVE resource is on a chain as long as every holder's wall together, whichever of them starts first, so each ranks at least that high.
+  const serial = new Map<string, number>();
+  for (const g of all) for (const r of g.mutex) serial.set(r, (serial.get(r) ?? 0) + g.estMs);
   const priority = new Map(
-    specs.map((spec) => [spec.id, Math.max(level(spec.id), cpuMs.get(spec.id) ?? 0)])
+    specs.map((spec) => {
+      const g = byId.get(spec.id);
+      let group = 0;
+      for (const r of g?.mutex ?? []) group = Math.max(group, serial.get(r) ?? 0);
+      return [spec.id, Math.max(level(spec.id), group, cpuMs.get(spec.id) ?? 0)];
+    })
   );
   return {
     byId,
@@ -964,8 +1157,7 @@ export async function runPool(
     const now = Date.now();
     for (const spec of ready) if (!readyAt.has(spec.id)) readyAt.set(spec.id, now);
 
-    let backlogCpuMs = 0;
-    for (const id of unstarted) backlogCpuMs += candidate(id).cpuMs;
+    const pending = [...unstarted].map(candidate);
     const view =
       lease !== undefined && sched === 'cores' && ready.length > 0
         ? await lease.available(coresInUse())
@@ -977,7 +1169,7 @@ export async function runPool(
       [...inFlight.values()],
       {
         ...cfg,
-        backlogCpuMs,
+        pending,
         leaseFree: finite(view?.free),
         leaseShare: finite(view?.share),
         leaseTotal: finite(view?.total),

@@ -44,8 +44,8 @@ import { fileURLToPath } from 'node:url';
 import { CORES_ENV, execGate, type Grant, gateEnv, LEASE_HELD_ENV } from './exec';
 import { findingsSelftest, receiptFindings } from './findings';
 import { retiredFieldFindings } from './gate-spec';
-import { grantFromEnv, leaseClientSelftest, openLease, type RunnerLease } from './lease-client';
 import { stepDurationsMs } from './lanes';
+import { grantFromEnv, leaseClientSelftest, openLease, type RunnerLease } from './lease-client';
 import { GATES, type GateSpec } from './manifest';
 import {
   buildGraph,
@@ -68,6 +68,8 @@ import {
   type CpuTick,
   createReporter,
   criticalPath,
+  type GateTiming,
+  timelineOf,
   type Utilisation,
   utilisation,
 } from './report';
@@ -1239,6 +1241,36 @@ async function selftest(): Promise<number> {
   const keyed = findingsSelftest();
   for (const f of keyed.failures) require_(false, f);
 
+  // THE TIMELINE (report.ts timelineOf): every launched gate has a start and an end relative to the run's start, a skipped one has none, and the footer prints the tail with them. The footer above had no startedAt, which is the control: it must print no timeline.
+  {
+    const t0 = Math.min(...results.flatMap((r) => (r.readyAt === undefined ? [] : [r.readyAt])));
+    const tl = timelineOf(results, t0);
+    const pass = tl['selftest:pass'];
+    require_(
+      pass !== undefined &&
+        pass.start >= 0 &&
+        pass.end >= pass.start &&
+        pass.ready !== undefined &&
+        tl['selftest:fail'] !== undefined &&
+        tl['selftest:dependent'] === undefined,
+      `the timeline must time every launched gate from the run's start and omit a skipped one, got ${JSON.stringify(tl)}`
+    );
+    const timed: string[] = [];
+    createReporter({ idWidth: 20, out: (t) => timed.push(t) }).footer(results, {
+      ...meta,
+      startedAt: t0,
+    });
+    const tail = timed.join('');
+    require_(
+      /last to finish/.test(tail) && /-> +\d+\.\d+s +1 {2}selftest:pass/.test(tail),
+      `the footer must print the tail with start, end and cores, got:\n${tail}`
+    );
+    require_(
+      !text.includes('last to finish'),
+      'CONTROL: a footer with no startedAt must print no timeline'
+    );
+  }
+
   // A GATE'S DECLARED ENV REACHES ITS PROCESS, as its CI step's `env:` does. execGate spawned without it, so tutorial-player's PUBLIC_VIDEO_CDN_BASE_URL never applied locally and the gate failed in every clean clone while passing in CI (2026-09-26). The control spec fails unless the variable arrives.
   const envSpec = {
     ...syntheticSpec('selftest:env', '[ "$CI_RUNNER_SELFTEST_ENV" = arrived ]'),
@@ -2234,7 +2266,7 @@ async function selftest(): Promise<number> {
     return 1;
   }
   process.stdout.write(
-    `ci-runner: selftest ok (${9 + 1 + keyed.assertions + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2 + qs.assertions + 10 + 5 + 9 + 10 + 4 + leaseCheck.assertions + 11} assertions)\n`
+    `ci-runner: selftest ok (${9 + 1 + keyed.assertions + 3 + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2 + qs.assertions + 10 + 5 + 9 + 10 + 4 + leaseCheck.assertions + 11} assertions)\n`
   );
   return 0;
 }
@@ -2330,6 +2362,8 @@ interface Receipt {
   slowAdmitted: string[];
   /** `{gate id: cores}` the pool granted each gate it launched, the CI_RUNNER_CORES its process saw. Diagnostic. Always written. */
   grantedCores: Record<string, number>;
+  /** `{gate id: {ready, start, end, cores}}` in ms from the run's start, every launched gate (report.ts timelineOf). Diagnostic; the guard does not read it. Always written on a fresh run; absent on a receipt written before 2026-10-06. */
+  timeline?: Record<string, GateTiming>;
   /**
    * Record-only steps this receipt was carried across, oldest first, each starting where the previous one (or `headTree`) ended (`runAdvance`). `[]` on a fresh whole run. The push guard accepts a pushed tree other than `headTree` only through this chain, recomputing every step's diff itself.
    */
@@ -2596,7 +2630,13 @@ async function runGraph(
   opts: Options,
   description: string | undefined,
   humanOut: (text: string) => void
-): Promise<{ results: GateResult[]; exitCode: number; wallMs: number; util?: Utilisation }> {
+): Promise<{
+  results: GateResult[];
+  exitCode: number;
+  wallMs: number;
+  util?: Utilisation;
+  startedAt: number;
+}> {
   // A runner nested inside a gate sizes itself from the grant it was launched with, never from the whole machine.
   const jobs = opts.jobs ?? grantFromEnv() ?? Math.max(1, os.availableParallelism() - 2);
   const heavyLimit = opts.heavyLimit ?? Math.max(2, Math.floor(jobs / 4));
@@ -2672,14 +2712,14 @@ async function runGraph(
   );
   saveDurations(cachePath, durations, results);
   saveFailCosts(cachePath, results);
-  const exitCode = reporter.footer(results, { ...meta, util });
+  const exitCode = reporter.footer(results, { ...meta, util, startedAt: started });
   // A grant above the tokens held is the bounded lease hold expiring, never routine; each one is named so a run that oversubscribed the machine says so.
   for (const r of results)
     if (r.overLease !== undefined)
       humanOut(
         `ci-runner: ${r.id} ran on ${r.overLease.granted} core(s) holding ${r.overLease.held} lease token(s): its lease hold reached its bound\n`
       );
-  return { results, exitCode, wallMs: meta.wallMs, util };
+  return { results, exitCode, wallMs: meta.wallMs, util, startedAt: started };
 }
 
 /**
@@ -2953,7 +2993,7 @@ async function main(): Promise<number> {
   // BEFORE runPool, not after: manifest.ts:2817 records a gate that writes a temp .ts into packages/cli and breaks check:format, and check-python-lint plants an untracked probe. A digest taken afterwards would record the gates' own leavings and drift from the tree the session actually has.
   const dirtyAtStart = dirtyDigest();
   const headTreeAtStart = headTreeNow();
-  const { results, exitCode, wallMs, util } = await runGraph(
+  const { results, exitCode, wallMs, util, startedAt } = await runGraph(
     graph,
     opts,
     selection.description,
@@ -3062,6 +3102,7 @@ async function main(): Promise<number> {
         pushBase: selection.pushBase ?? null,
         slowAdmitted: selection.slowAdmitted ?? [],
         grantedCores: grantsOf(results),
+        timeline: timelineOf(results, startedAt),
         advances: [],
       },
       receiptPathFor(opts),

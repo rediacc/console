@@ -20,8 +20,8 @@ import {
   type GateCost,
   LEASE_POLL_MS,
   planAdmission,
-  SETTLE_MS,
   type Sched,
+  SETTLE_MS,
 } from './pool';
 
 interface SimGate {
@@ -38,6 +38,11 @@ interface SimGate {
   perCore?: number;
   heavy?: boolean;
   mutex?: string[];
+  reads?: string[];
+  /**
+   * What the scheduler is TOLD, when it differs from the truth: the duration cache's planning wall (`estMs`, the ewma), its least-contended wall, CPU and per-core share. Absent fields fall back to the truth. This is the seam that models a stale cache: an elastic gate whose ewma was learned at a width it no longer gets.
+   */
+  est?: { estMs?: number; wallMs?: number; cpuMs?: number; perCore?: number };
   /** Default true: the scheduler sees cpu = cores x wall, wall and memMb as measured. False: it sees nothing. */
   measured?: boolean;
 }
@@ -101,6 +106,7 @@ function specOf(g: SimGate): GateSpec {
     cores: g.elastic,
     heavy: g.heavy,
     mutex: g.mutex,
+    reads: g.reads,
     ci: {
       kind: 'local-only',
       blocker: 'BLOCKER: synthetic scheduler-simulator fixture, never part of the real gate set',
@@ -115,14 +121,19 @@ function runState(run: SimRun, cfg: SimConfig) {
   const costs = new Map<string, GateCost>();
   const durations = new Map<string, number>();
   for (const g of run.gates) {
-    if (g.measured === false) continue;
+    if (g.measured === false) {
+      // Unmeasured: no CPU, but the runner still has whatever wall the cache holds for it (`est`), as run.ts's costsFrom does for a gate with a duration record and no cpu sample.
+      if (g.est?.estMs !== undefined) durations.set(g.id, g.est.estMs);
+      if (g.est?.wallMs !== undefined) costs.set(g.id, { wallMs: g.est.wallMs });
+      continue;
+    }
     costs.set(g.id, {
-      cpuMs: g.cores * g.wallMs,
-      wallMs: g.wallMs,
+      cpuMs: g.est?.cpuMs ?? g.cores * g.wallMs,
+      wallMs: g.est?.wallMs ?? g.wallMs,
       rssMb: g.memMb ?? 512,
-      perCore: g.elastic !== undefined ? (g.perCore ?? 1) : undefined,
+      perCore: g.elastic !== undefined ? (g.est?.perCore ?? g.perCore ?? 1) : undefined,
     });
-    durations.set(g.id, g.wallMs);
+    durations.set(g.id, g.est?.estMs ?? g.wallMs);
   }
   const { byId, rank } = planAdmission(specs, {
     jobs: cfg.jobs,
@@ -205,8 +216,7 @@ function engine(
       .filter((spec) => !s.starts.has(spec.id) && (spec.needs ?? []).every((n) => s.ends.has(n)))
       .sort(s.rank);
     for (const spec of ready) if (!s.readyAt.has(spec.id)) s.readyAt.set(spec.id, t);
-    let backlogCpuMs = 0;
-    for (const spec of s.specs) if (!s.starts.has(spec.id)) backlogCpuMs += s.cand(spec.id).cpuMs;
+    const pending = s.specs.filter((spec) => !s.starts.has(spec.id)).map((spec) => s.cand(spec.id));
     const live = states.filter((o) => started(o) && !o.done).length;
     const result = admit(
       ready.map((spec) => s.cand(spec.id)),
@@ -219,7 +229,7 @@ function engine(
         jobs: cfg.jobs,
         heavyLimit: cfg.heavyLimit,
         budget: cfg.budget,
-        backlogCpuMs,
+        pending,
         ...(leased
           ? {
               leaseFree: freeTokens() + Math.max(0, s.tokens - inUse(s)),
@@ -755,6 +765,127 @@ export function schedulerSelftest(): { failures: string[]; assertions: number; t
   check(
     ca.idleToEndCoreS <= 0.05 * 24 * (ca.endMs / 1000),
     `fixed-width gates must fill what a neighbour leaves: idle ${ca.idleToEndCoreS.toFixed(1)} core-s over a's ${(ca.endMs / 1000).toFixed(1)} s`
+  );
+
+  // 14. THE MUTEX CHAIN (the 2026-10-06 tail): a pytest-shaped gate, three elastic vitest suites sharing one exclusive resource (865, 283 and 5 cpu-s, the first with a stale 173 s cache wall learned when it ran wide), and 150 one-core gates. The area rule gave each suite one core, so the three ran one after another for 1,153 s while everything else had finished. The floor must size the chain under the horizon; the control plants the
+  // old one-wide grant (the floor off) and must fail the same checks, or they prove nothing.
+  const chainMix = (): SimGate[] => [
+    { id: 'big', cores: 1, wallMs: 7_000_000, elastic: { min: 2, max: 'all' } },
+    {
+      id: 'acct-server',
+      cores: 1,
+      wallMs: 865_000,
+      elastic: { min: 1, max: 'all' },
+      mutex: ['vitest'],
+      est: { estMs: 173_000 },
+    },
+    {
+      id: 'acct-web',
+      cores: 1,
+      wallMs: 283_000,
+      elastic: { min: 1, max: 'all' },
+      mutex: ['vitest'],
+    },
+    {
+      id: 'acct-audit',
+      cores: 1,
+      wallMs: 5_000,
+      elastic: { min: 1, max: 'all' },
+      mutex: ['vitest'],
+    },
+    ...Array.from({ length: 150 }, (_, i) => ({ id: `c-${i}`, cores: 1, wallMs: 20_000 })),
+  ];
+  // The bound no schedule beats: all the work over the machine's cores.
+  const chainBound = (7_000_000 + 1_153_000 + 3_000_000) / P24.machineCores;
+  const floored = simulate(chainMix(), { ...P24, sched: 'cores', capCheck: cap });
+  const unfloored = simulate(chainMix(), {
+    ...P24,
+    sched: 'cores',
+    budget: { ...P24.budget, floor: false },
+  });
+  line('mutex chain, floor', floored);
+  line('mutex chain, no floor (ctl)', unfloored);
+  const chainEnd = (r: SimResult): number =>
+    Math.max(...['acct-server', 'acct-web', 'acct-audit'].map((id) => r.ends.get(id) ?? 0));
+  table.push(
+    `mutex chain: acct-server granted ${floored.grants.get('acct-server')} at ${((floored.starts.get('acct-server') ?? 0) / 1000).toFixed(0)} s, chain ends ${(chainEnd(floored) / 1000).toFixed(0)} s; floor off: ${unfloored.grants.get('acct-server')}, ${(chainEnd(unfloored) / 1000).toFixed(0)} s (bound ${(chainBound / 1000).toFixed(0)} s)`
+  );
+  const chainHolds = (r: SimResult): boolean =>
+    (r.grants.get('acct-server') ?? 0) >= 2 &&
+    (r.starts.get('acct-server') ?? Number.POSITIVE_INFINITY) === 0 &&
+    r.makespanMs <= 1.15 * chainBound;
+  check(
+    chainHolds(floored) && floored.capViolations === 0,
+    `a critical mutex chain must start at t=0 at least two wide and the run end within 1.15x the work bound ${(chainBound / 1000).toFixed(0)} s: acct-server ${floored.grants.get('acct-server')} at ${floored.starts.get('acct-server')} ms, makespan ${(floored.makespanMs / 1000).toFixed(0)} s, cap violations ${floored.capViolations}`
+  );
+  check(
+    !chainHolds(unfloored) && unfloored.grants.get('acct-server') === 1,
+    `CONTROL: with the floor off the critical chain must be planted one wide and fail the same check, got ${unfloored.grants.get('acct-server')} wide, makespan ${(unfloored.makespanMs / 1000).toFixed(0)} s`
+  );
+
+  // 15. A LONE RUN IS NEVER HELD BY ITS OWN TOKENS: one run on a 24-token lease, a pytest-shaped gate beside 300 one-core gates. Before 2026-10-06 the settle reserved only `min`, the first wave took the rest, and the bounded B11 hold then treated this run's own one-core gates as a neighbour: pytest waited 209 s in the live run. It must start the moment the settle ends (the settle's own 2 s hold is the only wait), at least half the machine
+  // wide. The control adds a real neighbour holding 20 tokens for 60 s, and the same gate must then miss its settle end, so the check can see a lease hold.
+  const lonePy: SimGate = {
+    id: 'solo:pytest',
+    cores: 1,
+    wallMs: 8_000_000,
+    perCore: 0.8,
+    elastic: { min: 2, max: 'all' },
+  };
+  const loneOnes = Array.from({ length: 300 }, (_, i) => ({
+    id: `solo:one-${i}`,
+    cores: 1,
+    wallMs: 10_000,
+  }));
+  const solo = runOf(
+    simulateRuns([{ id: 'solo', startMs: 0, gates: [lonePy, ...loneOnes] }], leaseCfg),
+    'solo'
+  );
+  const crowded = runOf(
+    simulateRuns(
+      [
+        { id: 'other', startMs: 0, gates: [{ id: 'other:holder', cores: 20, wallMs: 60_000 }] },
+        { id: 'solo', startMs: 1000, gates: [lonePy, ...loneOnes] },
+      ],
+      leaseCfg
+    ),
+    'solo'
+  );
+  // Start relative to the run's own registration (the crowded run registers at 1 s).
+  const settled = (r: RunResult, registered: number): boolean =>
+    (r.starts.get('solo:pytest') ?? Number.POSITIVE_INFINITY) - registered <= SETTLE_MS + EPS_MS &&
+    (r.grants.get('solo:pytest') ?? 0) >= 12;
+  table.push(
+    `lone run on a lease: pytest started ${((solo.starts.get('solo:pytest') ?? 0) / 1000).toFixed(1)} s at ${solo.grants.get('solo:pytest')}; beside a 20-token neighbour: ${(((crowded.starts.get('solo:pytest') ?? 0) - 1000) / 1000).toFixed(1)} s after registering at ${crowded.grants.get('solo:pytest')}`
+  );
+  check(
+    settled(solo, 0),
+    `a lone run's widest gate must start by the settle's end (${SETTLE_MS} ms) at >= 12 of 24, not wait on its own gates' tokens: started ${solo.starts.get('solo:pytest')} ms at ${solo.grants.get('solo:pytest')}`
+  );
+  check(
+    !settled(crowded, 1000) && crowded.leaseHeld.has('solo:pytest'),
+    `CONTROL: beside a neighbour holding 20 of 24 tokens the same gate must be held with \`lease\` past its settle, started ${crowded.starts.get('solo:pytest')} ms at ${crowded.grants.get('solo:pytest')}`
+  );
+
+  // 16. A GATE THAT DOES NOT SCALE GETS NO FLOOR AND KEEPS ITS MEASURED WALL: check:types:incremental's one per-core sample was 0.07, which models 558 s at three cores for a gate measured at 8-41 s. Planned at a 0.07 share, its planning wall must stay the cache's; the control at a 0.9 share must be re-planned from the work model, or the check cannot tell the two apart.
+  const planned = (perCore: number): number => {
+    const spec = specOf({ id: 'lazy', cores: 1, wallMs: 1, elastic: { min: 1, max: 'all' } });
+    const plan = planAdmission([spec], {
+      jobs: 22,
+      durations: new Map([['lazy', 23_000]]),
+      sched: 'cores',
+      budget: P24.budget,
+      costs: new Map([['lazy', { cpuMs: 120_000, wallMs: 8_000, perCore }]]),
+    });
+    return plan.byId.get('lazy')?.estMs ?? Number.NaN;
+  };
+  check(
+    planned(0.07) === 23_000,
+    `an elastic gate keeping 7% of each core busy must keep its cached 23 s planning wall, got ${planned(0.07)} ms`
+  );
+  check(
+    planned(0.9) !== 23_000,
+    `CONTROL: at a 0.9 share the planning wall must come from the work model, got ${planned(0.9)} ms`
   );
 
   return { failures, assertions, table };
