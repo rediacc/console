@@ -3013,6 +3013,19 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
         except Exception as exc:  # noqa: BLE001 -- a broken pick read must SAY SO, never wedge a stop
             _turbo_err = "%s: %s" % (type(exc).__name__, str(exc)[:160])
+    # THE IN-FLIGHT BLOCK of agent/plans/QUEUE.md (operator order 2026-10-06), refreshed from this stop's own loop state, fold and roster once the turbo picks are known. Runtime state, written only when it changed and never compared by a gate; a failure must never wedge a stop.
+    with contextlib.suppress(Exception):
+        if _loop is not None:
+            wl_planqueue.refresh_inflight(
+                root,
+                worklist,
+                session_id,
+                fold=fold,
+                loop=_loop,
+                writers=None
+                if _roster is None or _roster.get("blind")
+                else [str(w) for w in _roster.get("writers") or ()],
+            )
     # brief_line, NOT r["line"] -- and this was a live regression worth naming.
     #
     # v14 introduced brief_text precisely because rec["text"] accumulates every update forever and "every block that mentioned it printed them all" (wl_store.brief_text docstring). classify_items duly renders OPEN items through brief_line... and then hands deferred and in-flight back as raw records, so these two call sites reached past the fix to the full text.
