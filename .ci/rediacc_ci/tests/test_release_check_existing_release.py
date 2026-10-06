@@ -12,6 +12,7 @@ import stat
 import subprocess
 import sys
 
+from rediacc_ci.release import check_existing_release
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import GH_REPO
 
@@ -169,3 +170,77 @@ def test_missing_version_fails_the_same_way_reworded(tmp_path: pathlib.Path) -> 
     assert new[0] == 1
     assert "VERSION" in old[2]
     assert "VERSION" in new[2]
+
+
+# --- gh_retry (PLAN-gh-retry G12): a transient read fault is retried, a non-transient one is not ---
+
+
+class _FakeGh:
+    """Scripted `gh` outcomes (rc, stdout, stderr), one per attempt, the last repeating. Patched in as the `runner` and `sleep` of `gh_retry.gh`, so nothing touches the network or the clock."""
+
+    def __init__(self, *outcomes):
+        self.outcomes = list(outcomes)
+        self.calls = []
+        self.slept = []
+
+    def install(self, monkeypatch, module):
+        real = module.gh_retry.gh
+        fake = self
+
+        def runner(args, **_kw):
+            fake.calls.append(list(args))
+            rc, out, err = fake.outcomes[min(len(fake.calls), len(fake.outcomes)) - 1]
+            return module.gh_retry.ghx.GhResult(["gh", *args], rc, out, err)
+
+        monkeypatch.setattr(
+            module.gh_retry,
+            "gh",
+            lambda args, **kw: real(args, runner=runner, **{**kw, "sleep": fake.slept.append}),
+        )
+        return self
+
+
+def _in_process(monkeypatch, fake):
+    mod = check_existing_release
+
+    fake.install(monkeypatch, mod)
+    real_run = mod.subprocess.run
+
+    def git_only(args, **kw):
+        if args[:2] == ["git", "fetch"]:
+            return subprocess.CompletedProcess(args, 0, "", "")
+        if args[:2] == ["git", "tag"]:
+            return subprocess.CompletedProcess(args, 0, "", "")
+        return real_run(args, **kw)
+
+    monkeypatch.setattr(mod.subprocess, "run", git_only)
+    monkeypatch.setenv("VERSION", "9.9.9")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
+    return mod
+
+
+def test_a_502_then_not_found_is_available(monkeypatch, capsys) -> None:
+    fake = _FakeGh((1, "", "gh: Server Error (HTTP 502)"), (1, "", "release not found (HTTP 404)"))
+    mod = _in_process(monkeypatch, fake)
+    assert mod.main([]) == 0
+    assert len(fake.calls) == 2
+    assert fake.slept == [5.0]
+    assert "is available for publishing" in capsys.readouterr().out
+
+
+def test_persistent_5xx_refuses_instead_of_calling_the_version_free(monkeypatch, capsys) -> None:
+    fake = _FakeGh((1, "", "gh: Server Error (HTTP 502)"))
+    mod = _in_process(monkeypatch, fake)
+    assert mod.main([]) == 1
+    out = capsys.readouterr().out
+    assert "Could not tell" in out
+    assert "available" not in out
+    assert len(fake.calls) == 3
+
+
+def test_a_404_is_not_retried(monkeypatch) -> None:
+    fake = _FakeGh((1, "", "release not found (HTTP 404)"))
+    mod = _in_process(monkeypatch, fake)
+    assert mod.main([]) == 0
+    assert len(fake.calls) == 1
+    assert fake.slept == []

@@ -460,7 +460,7 @@ def test_list_edge_releases_fails_loudly_when_gh_fails(tmp_path: pathlib.Path) -
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     fake = bin_dir / "gh"
-    fake.write_text("#!/usr/bin/env bash\necho 'HTTP 503' >&2\nexit 1\n")
+    fake.write_text("#!/usr/bin/env bash\necho 'HTTP 404' >&2\nexit 1\n")
     fake.chmod(0o755)
     out = tmp_path / "output.txt"
     env = diff.env_for(
@@ -473,7 +473,7 @@ def test_list_edge_releases_fails_loudly_when_gh_fails(tmp_path: pathlib.Path) -
         "python3 -m rediacc_ci.release.list_edge_releases", env=env, timeout=30
     )
     assert exit_code == 1
-    assert "HTTP 503" in err
+    assert "HTTP 404" in err
     assert not out.exists()
 
 
@@ -533,3 +533,68 @@ def test_in_walk_is_the_bound_edge_retention_reuses() -> None:
     assert not check_soak_period.in_walk("1.3.2", "1.3.12")
     assert check_soak_period.in_walk("1.0.0", "")
     assert check_soak_period.in_walk("1.0.0", "null")
+
+
+# --- gh_retry (PLAN-gh-retry G12): a transient read fault is retried, a non-transient one is not ---
+
+
+class _FakeGh:
+    """Scripted `gh` outcomes (rc, stdout, stderr), one per attempt, the last repeating. Patched in as the `runner` and `sleep` of `gh_retry.gh`, so nothing touches the network or the clock."""
+
+    def __init__(self, *outcomes):
+        self.outcomes = list(outcomes)
+        self.calls = []
+        self.slept = []
+
+    def install(self, monkeypatch, module):
+        real = module.gh_retry.gh
+        fake = self
+
+        def runner(args, **_kw):
+            fake.calls.append(list(args))
+            rc, out, err = fake.outcomes[min(len(fake.calls), len(fake.outcomes)) - 1]
+            return module.gh_retry.ghx.GhResult(["gh", *args], rc, out, err)
+
+        monkeypatch.setattr(
+            module.gh_retry,
+            "gh",
+            lambda args, **kw: real(args, runner=runner, **{**kw, "sleep": fake.slept.append}),
+        )
+        return self
+
+
+def _list_edge(monkeypatch, tmp_path, fake):
+    fake.install(monkeypatch, list_edge_releases)
+    out = tmp_path / "output.txt"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(out))
+    monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
+    return out
+
+
+def test_list_edge_releases_retries_a_502(monkeypatch, tmp_path) -> None:
+    body = '[{"tagName":"v1.3.12","publishedAt":"2026-09-07T02:54:33Z"}]'
+    fake = _FakeGh((1, "", "gh: Server Error (HTTP 502)"), (0, body, ""))
+    out = _list_edge(monkeypatch, tmp_path, fake)
+    assert list_edge_releases.main([]) == 0
+    assert len(fake.calls) == 2
+    assert fake.slept == [5.0]
+    assert out.read_text() == 'releases=[{"version":"1.3.12","date":"2026-09-07T02:54:33Z"}]\n'
+
+
+def test_list_edge_releases_persistent_5xx_is_loud_and_writes_nothing(
+    monkeypatch, tmp_path, capsys
+) -> None:
+    fake = _FakeGh((1, "", "gh: Server Error (HTTP 503)"))
+    out = _list_edge(monkeypatch, tmp_path, fake)
+    assert list_edge_releases.main([]) == 1
+    assert "HTTP 503" in capsys.readouterr().err
+    assert len(fake.calls) == 3
+    assert not out.exists()
+
+
+def test_list_edge_releases_404_is_not_retried(monkeypatch, tmp_path) -> None:
+    fake = _FakeGh((1, "", "gh: Not Found (HTTP 404)"))
+    _list_edge(monkeypatch, tmp_path, fake)
+    assert list_edge_releases.main([]) == 1
+    assert len(fake.calls) == 1
+    assert fake.slept == []

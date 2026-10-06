@@ -14,6 +14,8 @@ import os
 import subprocess
 import sys
 
+from rediacc_ci.core import gh_retry
+
 SELF = "check-existing-release.py"
 
 
@@ -48,14 +50,16 @@ def main(argv: list[str]) -> int:
         print(f"::error::Git tag {tag} already exists. Aborting to prevent duplicate publish.")
         return 1
 
-    view = subprocess.run(
-        ["gh", "release", "view", tag, "--repo", github_repository],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if view.returncode == 0:
+    # A 5xx or connection fault is retried; a 404 ("release not found") is the expected answer and is not. A read that still fails TRANSIENTLY after the retries is NOT "no such release": the guard would wave a duplicate publish through on a GitHub outage, so it refuses loudly instead.
+    view = gh_retry.gh(["release", "view", tag, "--repo", github_repository])
+    if view.ok:
         print(f"::error::Release {tag} already exists. Aborting to prevent duplicate publish.")
+        return 1
+    if gh_retry.is_transient(view.stderr):
+        print(
+            f"::error::Could not tell whether Release {tag} exists, so the duplicate-publish "
+            f"check did NOT run: {view.stderr.strip()}"
+        )
         return 1
 
     print(f"Version {tag} is available for publishing.")

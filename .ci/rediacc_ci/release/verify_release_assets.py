@@ -14,6 +14,8 @@ import os
 import subprocess
 import sys
 
+from rediacc_ci.core import gh_retry
+
 SELF = "verify-release-assets.py"
 
 
@@ -30,19 +32,17 @@ def main(argv: list[str]) -> int:
     version = _require("VERSION")
     github_repository = _require("GITHUB_REPOSITORY")
 
-    view = subprocess.run(
-        ["gh", "release", "view", version, "--repo", github_repository, "--json", "tagName,assets"],
-        capture_output=True,
-        text=True,
-        check=False,
+    # 5xx and connection faults are retried; a failure that survives (or a 404) still refuses to seal the version.
+    view = gh_retry.gh(
+        ["release", "view", version, "--repo", github_repository, "--json", "tagName,assets"]
     )
-    if view.returncode != 0:
+    if not view.ok:
         print(f"::error::no GitHub Release found for {version}")
         # `cat /tmp/release.err` in the twin, unredirected: goes to STDOUT.
         sys.stdout.write(view.stderr)
         return 1
 
-    release_json = view.stdout
+    release_json = view.stdout_raw
     count_out = subprocess.run(
         ["jq", '[.assets[] | select(.name | startswith("rdc-"))] | length'],
         input=release_json,
