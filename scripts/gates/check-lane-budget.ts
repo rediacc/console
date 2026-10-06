@@ -198,6 +198,13 @@ export interface JobCap {
 }
 export const JOB_BUDGET_CAPS: readonly JobCap[] = [
   {
+    job: 'validate-promote',
+    p90Minutes: 15,
+    timeoutMinutes: 20,
+    ruling:
+      '#641f4f0e (2026-10-06, deferral DEFAULT executed): main promotes the whole edge channel (1,123 objects, growing), main measured 11.2-14.6 min for a month and 15.7 twice (run 37394654719); timeout 20',
+  },
+  {
     job: 'test-e2e-k8s-ceph',
     p90Minutes: 20,
     timeoutMinutes: 25,
