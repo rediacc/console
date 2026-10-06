@@ -116,7 +116,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, gh_retry
 from rediacc_ci.core import release_state_validator as rsv
 from rediacc_ci.housekeeping.cleanup_pr_environments import PrStateReader
 from rediacc_ci.well_known import CF_API_BASE, GH_REPO, RELEASES_BUCKET
@@ -325,6 +325,48 @@ def capture_quiet(argv: list[str]) -> tuple[int, str]:
     """`$(cmd 2>/dev/null)` -- the shape almost every `gh api` here uses."""
     with open(os.devnull, "wb") as null:
         return _capture(argv, stderr=null.fileno())
+
+
+# A paginated listing can legitimately outlast ghx's 30 s default.
+GH_READ_TIMEOUT_S = 120.0
+
+
+def _nap(seconds: float) -> None:
+    """The retry's pause, spent in the `sleep` BINARY resolved through PATH, as `retry_with_backoff` does, so the differential's one stub answers for both sides and no test pays real seconds."""
+    run_silent(["sleep", str(int(seconds))])
+
+
+def gh_read(args: list[str]) -> tuple[int, str]:
+    """`$(gh <args> 2>/dev/null)` for a READ, retried on a transient fault through `gh_retry.gh` (PLAN-gh-retry G12): 3 attempts, 5 s then 15 s, a 5xx or connection fault only.
+
+    `args` EXCLUDES the leading `gh`. The shape is `capture_quiet`'s, so a call site keeps its `if code != 0:` arm, and every one of those arms keeps the resource (an unreadable listing is an empty one, which deletes nothing; a PR-state read goes through `PrStateReader`). A read that still fails after retrying a transient fault is named on stderr (a plain failure stays silent, as the twin's `2>/dev/null` was), since the stderr of the call itself is discarded.
+    """
+    sys.stdout.flush()
+    sys.stderr.flush()
+    result = gh_retry.gh(args, timeout=GH_READ_TIMEOUT_S, sleep=_nap)
+    if not result.ok and gh_retry.is_transient(result.stderr):
+        # The call's own stderr is discarded, so the one fact an operator needs is said here: GitHub kept failing, and the caller below keeps the resource.
+        lines = result.stderr.strip().splitlines()
+        log.warn(
+            "gh %s still failing after %d attempts (%s); the caller keeps what it could not read"
+            % (" ".join(args[:3]), gh_retry.ATTEMPTS, lines[-1] if lines else "no output")
+        )
+    return result.returncode, result.stdout_raw.rstrip("\n")
+
+
+def release_state(view: list[str]) -> str:
+    """Read a release back after its delete: "present", "gone", or "unknown".
+
+    Only a failure that is NOT transient (gh's "release not found") means gone. A 5xx that outlasts `gh_read`'s retries is "unknown", so the delete is neither counted nor taken for a survivor.
+    """
+    sys.stdout.flush()
+    sys.stderr.flush()
+    result = gh_retry.gh(view, timeout=GH_READ_TIMEOUT_S, sleep=_nap)
+    if result.ok:
+        return "present"
+    if gh_retry.is_transient(result.stderr):
+        return "unknown"
+    return "gone"
 
 
 def capture_merged(argv: list[str]) -> tuple[int, str]:
@@ -773,7 +815,7 @@ def _pipe_grep(argv: list[str], pattern) -> tuple[int, str]:
 
     The `|| true` is what keeps grep's exit-1-on-no-match from tripping `pipefail`, and it is also what hides a failure of `cmd`. Both are the twin's, so both are here.
     """
-    code, out = capture_quiet(argv)
+    code, out = gh_read(argv)
     kept = [line for line in _stream_lines(out + "\n") if pattern.search(line)]
     return code, "\n".join(kept)
 
@@ -1169,9 +1211,8 @@ class Housekeeping:
         """
         log.step("Phase 1: Cleaning up GitHub releases (%s)" % RELEASE_REPO)
 
-        code, releases = capture_quiet(
+        code, releases = gh_read(
             [
-                "gh",
                 "release",
                 "list",
                 "--repo",
@@ -1229,12 +1270,11 @@ class Housekeeping:
                         ]
                     )
                     # A delete that exits 0 is not a deleted release: draft v1.2.21 (a tag that never existed) survived 57 nightly "deleted 1 of 21" runs until 2026-10-04. So the release must be gone afterwards; if not, it is deleted by id, and a survivor of both fails the run instead of being counted.
-                    view = ["gh", "release", "view", tag, "--repo", RELEASE_REPO]
-                    if run_silent(view) == 0:
+                    view = ["release", "view", tag, "--repo", RELEASE_REPO]
+                    if release_state(view) != "gone":
                         log.warn("Release still present after delete: %s; deleting it by id" % tag)
-                        _code, ids = capture_quiet(
+                        _code, ids = gh_read(
                             [
-                                "gh",
                                 "api",
                                 "repos/%s/releases" % RELEASE_REPO,
                                 "--paginate",
@@ -1254,7 +1294,13 @@ class Housekeeping:
                                     "repos/%s/releases/%s" % (RELEASE_REPO, release_id),
                                 ]
                             )
-                    if run_silent(view) == 0:
+                    state = release_state(view)
+                    if state == "unknown":
+                        self.housekeeping_fail(
+                            "Release delete unverified",
+                            "Release %s: GitHub kept failing the read-back, so the delete is not counted" % tag,
+                        )
+                    elif state == "present":
                         self.housekeeping_fail(
                             "Release delete failed",
                             "Release %s survived deletion by tag and by id" % tag,
@@ -1286,8 +1332,8 @@ class Housekeeping:
             full_repo = "%s/%s" % (GITHUB_ORG, repo)
             log.step("  Processing tags for %s" % full_repo)
 
-            code, tags = capture_quiet(
-                ["gh", "api", "repos/%s/tags" % full_repo, "--paginate", "--jq", ".[].name"]
+            code, tags = gh_read(
+                ["api", "repos/%s/tags" % full_repo, "--paginate", "--jq", ".[].name"]
             )
             if code != 0:
                 tags = ""
@@ -1301,8 +1347,8 @@ class Housekeeping:
                 if tag_name == "":
                     continue
 
-                code, ref_data = capture_quiet(
-                    ["gh", "api", "repos/%s/git/ref/tags/%s" % (full_repo, tag_name)]
+                code, ref_data = gh_read(
+                    ["api", "repos/%s/git/ref/tags/%s" % (full_repo, tag_name)]
                 )
                 if code != 0:
                     ref_data = ""
@@ -1316,9 +1362,8 @@ class Housekeeping:
 
                 tag_date = ""
                 if obj_type == "tag":
-                    code, tag_date = capture_quiet(
+                    code, tag_date = gh_read(
                         [
-                            "gh",
                             "api",
                             "repos/%s/git/tags/%s" % (full_repo, obj_sha),
                             "--jq",
@@ -1331,9 +1376,8 @@ class Housekeeping:
                 if tag_date == "":
                     commit_sha = obj_sha
                     if obj_type == "tag":
-                        code, out = capture_quiet(
+                        code, out = gh_read(
                             [
-                                "gh",
                                 "api",
                                 "repos/%s/git/tags/%s" % (full_repo, obj_sha),
                                 "--jq",
@@ -1341,9 +1385,8 @@ class Housekeeping:
                             ]
                         )
                         commit_sha = out if code == 0 else obj_sha
-                    code, tag_date = capture_quiet(
+                    code, tag_date = gh_read(
                         [
-                            "gh",
                             "api",
                             "repos/%s/git/commits/%s" % (full_repo, commit_sha),
                             "--jq",
@@ -1420,9 +1463,8 @@ class Housekeeping:
             page = 1
             page_ok = True
             while True:
-                code, raw_page = capture_quiet(
+                code, raw_page = gh_read(
                     [
-                        "gh",
                         "api",
                         "orgs/%s/packages/container/%s/versions?per_page=100&page=%d"
                         % (GITHUB_ORG, encoded_package, page),
@@ -1557,9 +1599,8 @@ class Housekeeping:
             log.step("  Processing deployments for %s" % full_repo)
 
             open_prs_ok = True
-            code, open_prs = capture_quiet(
+            code, open_prs = gh_read(
                 [
-                    "gh",
                     "pr",
                     "list",
                     "--repo",
@@ -1581,9 +1622,8 @@ class Housekeeping:
                     % keep_per_env
                 )
 
-            code, deployments_blob = capture_quiet(
+            code, deployments_blob = gh_read(
                 [
-                    "gh",
                     "api",
                     "repos/%s/deployments?per_page=100" % full_repo,
                     "--paginate",
@@ -1822,9 +1862,8 @@ class Housekeeping:
             )
             return
 
-        code, open_prs = capture_quiet(
+        code, open_prs = gh_read(
             [
-                "gh",
                 "pr",
                 "list",
                 "--repo",
@@ -1917,9 +1956,8 @@ class Housekeeping:
             full_repo = "%s/%s" % (GITHUB_ORG, repo)
             log.step("  Processing environments for %s" % full_repo)
 
-            code, environments_blob = capture_quiet(
+            code, environments_blob = gh_read(
                 [
-                    "gh",
                     "api",
                     "repos/%s/environments" % full_repo,
                     "--jq",
@@ -2413,7 +2451,6 @@ class Housekeeping:
         orphan_ver_deleted = 0
         code, tags_text = _pipe_grep(
             [
-                "gh",
                 "api",
                 "repos/%s/tags" % RELEASE_REPO,
                 "--paginate",
@@ -2423,6 +2460,10 @@ class Housekeeping:
             _STRICT_SEMVER_RE,
         )
         tag_set = {t for t in records(tags_text) if t != ""}
+        # An unreadable tag list is not an empty one: with no tags every sentinel-less prefix reads as an orphan, and every sentinel as drift. Keep them all this run (PLAN-gh-retry G12).
+        tags_unreadable = code != 0
+        if tags_unreadable:
+            log.warn("  8d: could not list git tags; skipping orphan deletion and drift checks")
 
         cli_sentinels_list = rsv.list_sentinels("cli")
         pre_contract_floor = rsv.pre_contract_floor(cli_sentinels_list)
@@ -2458,6 +2499,9 @@ class Housekeeping:
             # In-flight short-circuit, BEFORE any classification.
             in_flight = os.environ.get("IN_FLIGHT_VERSION", "")
             if in_flight != "" and ver == in_flight:
+                continue
+
+            if tags_unreadable:
                 continue
 
             has_sentinel = ver in sentinel_set
@@ -2706,9 +2750,8 @@ class Housekeeping:
 
             log.step("  Processing branches for %s" % full_repo)
 
-            code, branches = capture_quiet(
+            code, branches = gh_read(
                 [
-                    "gh",
                     "api",
                     "repos/%s/branches?per_page=100" % full_repo,
                     "--paginate",
@@ -2745,9 +2788,8 @@ class Housekeeping:
                     kept += 1
                     continue
 
-                code, last_commit_date = capture_quiet(
+                code, last_commit_date = gh_read(
                     [
-                        "gh",
                         "api",
                         "repos/%s/branches/%s" % (full_repo, branch),
                         "--jq",
@@ -2832,9 +2874,8 @@ class Housekeeping:
         """
         log.step("Phase 10: Cleaning up completed workflow runs")
 
-        code, workflows_blob = capture_quiet(
+        code, workflows_blob = gh_read(
             [
-                "gh",
                 "api",
                 "repos/%s/actions/workflows?per_page=100" % RELEASE_REPO,
                 "--jq",
@@ -2881,9 +2922,8 @@ class Housekeeping:
             consecutive_failures = 0
 
             while page <= GH_RUNS_MAX_PAGES_PER_WORKFLOW:
-                code, runs_blob = capture_quiet(
+                code, runs_blob = gh_read(
                     [
-                        "gh",
                         "api",
                         "repos/%s/actions/workflows/%s/runs?status=completed&per_page=100&page=%d"
                         % (RELEASE_REPO, wf_id, page),
@@ -3025,9 +3065,8 @@ class Housekeeping:
         consecutive_failures = 0
 
         while page <= GH_ARTIFACTS_MAX_PAGES:
-            code, artifacts_blob = capture_quiet(
+            code, artifacts_blob = gh_read(
                 [
-                    "gh",
                     "api",
                     "repos/%s/actions/artifacts?per_page=100&page=%d" % (RELEASE_REPO, page),
                     "--jq",
@@ -3127,9 +3166,8 @@ class Housekeeping:
         """
         log.step("Phase 12: Cleaning up Actions cache (target <= %d GB)" % GH_CACHE_KEEP_GB)
 
-        code, caches_blob = capture_quiet(
+        code, caches_blob = gh_read(
             [
-                "gh",
                 "api",
                 "--paginate",
                 "repos/%s/actions/caches?per_page=100&sort=last_accessed_at&direction=asc"
