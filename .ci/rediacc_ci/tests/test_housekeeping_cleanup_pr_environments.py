@@ -23,6 +23,7 @@ import typing
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.core import ghx
 from rediacc_ci.housekeeping import cleanup_pr_environments as port
 from rediacc_ci.tests import frozen
 
@@ -188,6 +189,10 @@ CASE_KW: dict[str, tuple[list[str], dict[str, object]]] = {
 
 CASES = tuple(CASE_KW)
 
+# INTENTIONAL DELTAS (PLAN-gh-retry G10): the twin read an unreadable PR state as UNKNOWN and, since UNKNOWN is not OPEN, deleted the environment. The port now KEEPS it. The goldens stay as the twin's recorded evidence of the old behaviour and are asserted below rather than compared.
+DELTA_CASES = ("a-failed-pr-view", "a-partial-pr-view")
+COMPARED_CASES = tuple(c for c in CASES if c not in DELTA_CASES)
+
 
 def render(proc, calls: list[str]) -> str:
     body = frozen.render(proc.returncode, proc.stdout, proc.stderr)
@@ -224,7 +229,7 @@ def compare(tmp_path: pathlib.Path, name: str, *, subject: pathlib.Path | None =
     return proc, calls
 
 
-@pytest.mark.parametrize("name", CASES)
+@pytest.mark.parametrize("name", COMPARED_CASES)
 def test_port_matches_the_twins_recorded_output(tmp_path: pathlib.Path, name: str) -> None:
     compare(tmp_path, name)
 
@@ -321,17 +326,126 @@ def test_an_unknown_deployment_count_is_also_a_skip() -> None:
     assert not any("DELETE" in c for c in calls)
 
 
-def test_a_failed_pr_view_becomes_unknown_and_still_deletes() -> None:
-    """`|| echo UNKNOWN`, and UNKNOWN is not OPEN, so the environment IS deleted and the state is carried into the message verbatim."""
-    returncode, _, stderr, calls = recorded("a-failed-pr-view")
-    assert returncode == 0
-    assert "✓ Deleted pr-5 (PR #5 UNKNOWN)" in stderr
-    assert _delete("pr-5") in calls
-
-
-def test_a_partial_pr_view_concatenates_before_unknown() -> None:
-    """`$(cmd || echo UNKNOWN)` captured BOTH the failed command's stdout and the fallback, then stripped trailing newlines. A port that returned only the fallback would print `PR #5 UNKNOWN` where the twin printed two lines."""
+def test_delta_the_twin_deleted_on_an_unreadable_pr_state_the_port_keeps(
+    tmp_path: pathlib.Path,
+) -> None:
+    """INTENTIONAL DELTA. The twin's `|| echo UNKNOWN` made a failed `gh pr view` count as not-OPEN, so a single GitHub error deleted a live PR's environment. The first half is the control (the recorded twin still deletes); the port keeps it, names the PR and counts it."""
+    _, _, twin_err, twin_calls = recorded("a-failed-pr-view")
+    assert "✓ Deleted pr-5 (PR #5 UNKNOWN)" in twin_err
+    assert _delete("pr-5") in twin_calls
     assert "HALF\nUNKNOWN" in recorded("a-partial-pr-view")[2]
+
+    for name in DELTA_CASES:
+        proc, calls = drive(tmp_path / name, name)
+        assert proc.returncode == 0
+        assert "KEEP pr-5: PR #5 state unreadable (gh pr view exited 1" in proc.stderr
+        assert "kept: 1 unreadable" in proc.stderr
+        assert "Deleted pr-5" not in proc.stderr
+        assert not any("DELETE" in c for c in calls), f"{name}: deleted on an unreadable read"
+        # The deployment count is never even asked once the state is unreadable.
+        assert calls == [LIST_CALL, _pr_view("5")]
+
+
+class _Runner:
+    """A fake one-attempt `gh` for `gh_retry.gh`: answers from a script, records calls."""
+
+    def __init__(self, *answers: tuple[int, str, str]) -> None:
+        self.answers = list(answers)
+        self.calls = 0
+
+    def __call__(self, args, **_kw):
+        self.calls += 1
+        rc, out, err = self.answers.pop(0) if len(self.answers) > 1 else self.answers[0]
+        return ghx.GhResult(["gh", *args], rc, out, err)
+
+
+@pytest.fixture
+def pr_runner(monkeypatch: pytest.MonkeyPatch):
+    """Patches the runner `gh_retry.gh` defaults to and its sleep, so no test spends real time or reaches the network. Returns (install, sleeps)."""
+    sleeps: list[float] = []
+    monkeypatch.setattr("rediacc_ci.core.gh_retry.time.sleep", sleeps.append)
+
+    def install(*answers: tuple[int, str, str]) -> _Runner:
+        runner = _Runner(*answers)
+        monkeypatch.setattr(ghx, "gh", runner)
+        return runner
+
+    return install, sleeps
+
+
+HTTP_502 = (1, "", "gh: Server Error (HTTP 502)")
+NOT_FOUND = (
+    1,
+    "",
+    "GraphQL: Could not resolve to a PullRequest with the number of 5. (repository.pullRequest)",
+)
+
+
+def test_a_5xx_then_closed_is_retried_and_may_delete(pr_runner) -> None:
+    install, sleeps = pr_runner
+    runner = install(HTTP_502, (0, "CLOSED\n", ""))
+    reader = port.PrStateReader()
+    state = reader.read("acme/widget", "5", "pr-5")
+    assert state == "CLOSED"
+    assert reader.is_gone(state)
+    assert runner.calls == 2
+    assert sleeps == [5.0]
+    assert reader.unreadable == 0
+
+
+def test_a_persistent_5xx_keeps_and_is_counted(pr_runner, capsys) -> None:
+    install, sleeps = pr_runner
+    runner = install(HTTP_502)
+    reader = port.PrStateReader()
+    state = reader.read("acme/widget", "5", "pr-5")
+    assert state is None
+    assert not reader.is_gone(state)
+    assert runner.calls == 3
+    assert sleeps == [5.0, 15.0]
+    assert reader.unreadable == 1
+    assert reader.summary() == "kept: 1 unreadable"
+    assert (
+        "KEEP pr-5: PR #5 state unreadable (gh pr view exited 1: gh: Server Error (HTTP 502))"
+        in (capsys.readouterr().err)
+    )
+
+
+def test_an_open_pr_is_read_and_is_not_gone(pr_runner) -> None:
+    install, _ = pr_runner
+    install((0, "OPEN\n", ""))
+    reader = port.PrStateReader()
+    state = reader.read("acme/widget", "5", "pr-5")
+    assert state == "OPEN"
+    assert not reader.is_gone(state)
+    assert reader.unreadable == 0
+
+
+def test_a_not_found_pr_is_kept_not_treated_as_closed(pr_runner) -> None:
+    """A PR number is never reused or removed on GitHub, so `Could not resolve to a PullRequest` means the lookup is wrong (a mistyped environment name, a token without access), never that the PR is closed. It is not retried and it keeps."""
+    install, sleeps = pr_runner
+    runner = install(NOT_FOUND)
+    reader = port.PrStateReader()
+    assert reader.read("acme/widget", "5", "pr-5") is None
+    assert runner.calls == 1
+    assert sleeps == []
+    assert reader.unreadable == 1
+
+
+@pytest.mark.parametrize("state", ["CLOSED", "MERGED"])
+def test_closed_and_merged_may_delete(pr_runner, state: str) -> None:
+    install, _ = pr_runner
+    install((0, state + "\n", ""))
+    reader = port.PrStateReader()
+    assert reader.is_gone(reader.read("acme/widget", "5", "pr-5"))
+
+
+@pytest.mark.parametrize("out", ["", "UNKNOWN\n", "null\n", "closed\n"])
+def test_empty_or_unrecognised_output_keeps(pr_runner, out: str) -> None:
+    install, _ = pr_runner
+    install((0, out, ""))
+    reader = port.PrStateReader()
+    assert reader.read("acme/widget", "5", "pr-5") is None
+    assert reader.unreadable == 1
 
 
 def test_a_failed_deletion_warns_and_counts_as_skipped() -> None:
@@ -432,3 +546,17 @@ def test_a_planted_numeric_sort_without_the_tie_break_is_caught(tmp_path: pathli
         compare(tmp_path / "bad", "the-filter-and-the-sort-order", subject=mutant)
     compare(tmp_path / "good", "the-filter-and-the-sort-order")
     assert PORT.read_text(encoding="utf-8") == original
+
+
+def test_the_open_pr_count_retries_a_5xx_and_keeps_when_unreadable(pr_runner) -> None:
+    install, sleeps = pr_runner
+    install(HTTP_502, (0, "2\n", ""))
+    reader = port.PrStateReader()
+    assert reader.open_pr_count("acme/widget", "feat", "branch feat", "acme") == 2
+    assert sleeps == [5.0]
+
+    install(HTTP_502)
+    assert reader.open_pr_count("acme/widget", "feat", "branch feat", "acme") is None
+    install((0, '{"message":"x"}\n', ""))
+    assert reader.open_pr_count("acme/widget", "feat", "branch feat", "acme") is None
+    assert reader.unreadable == 2
