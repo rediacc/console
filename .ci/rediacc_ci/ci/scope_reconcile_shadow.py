@@ -178,8 +178,12 @@ def main(argv: list[str]) -> int:
     run_id = os.environ.get("GITHUB_RUN_ID", "")
     repository = os.environ.get("GITHUB_REPOSITORY", "")
 
+    # TRANSIENT FAULTS ARE RETRIED WITH BACKOFF for both reads below: see read_jobs.
+    retry_delay = float(os.environ.get("SCOPE_SHADOW_RETRY_DELAY", str(gh_retry.DELAY_S)))
+
     def download_plan() -> bool:
-        for attempt in (1, 2):
+        delay = retry_delay
+        for attempt in range(1, gh_retry.ATTEMPTS + 1):
             plan_dl = out_dir / "plan-dl"
             shutil.rmtree(plan_dl, ignore_errors=True)
             err_path = out_dir / "plan-dl.err"
@@ -202,13 +206,19 @@ def main(argv: list[str]) -> int:
                 )
             if result.returncode == 0:
                 return True
-            if attempt == 1:
-                emit("_(the plan download failed; retrying once)_")
+            err_text = err_path.read_text(encoding="utf-8", errors="replace")
+            transient = result.returncode == 124 or gh_retry.is_transient(err_text)
+            if attempt == gh_retry.ATTEMPTS or not transient:
+                break
+            emit(
+                "_(the plan download failed transiently; retry %d of %d in %gs)_"
+                % (attempt, gh_retry.ATTEMPTS - 1, delay)
+            )
+            time.sleep(delay)
+            delay *= gh_retry.FACTOR
         return False
 
     # TRANSIENT FAULTS ARE RETRIED WITH BACKOFF, the core/gh_retry policy (3 attempts, 5 s then 15 s, only a 5xx, a connection fault or a timeout). PR #597's run 37507913738 attempt 2 (2026-10-06) failed CI Complete here on one `gh: Server Error (HTTP 502)`: the old loop retried once with no pause, and under SCOPE_MODE=reduced an unreadable Jobs API is a hard failure. A 4xx or any other error still fails at once.
-    retry_delay = float(os.environ.get("SCOPE_SHADOW_RETRY_DELAY", str(gh_retry.DELAY_S)))
-
     def read_jobs() -> bool:
         delay = retry_delay
         for attempt in range(1, gh_retry.ATTEMPTS + 1):

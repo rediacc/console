@@ -22,7 +22,9 @@ pipeline rather than by reimplementing it.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
+import io
 import json
 import os
 import re
@@ -34,6 +36,8 @@ import typing
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.core import gh_retry
+from rediacc_ci.ops import derive_shadow_pass_list as module
 from rediacc_ci.tests import frozen
 
 if typing.TYPE_CHECKING:
@@ -49,6 +53,10 @@ PORT_REL = ".ci/rediacc_ci/ops/derive_shadow_pass_list.py"
 VENDORED = (
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/well_known.py",
+    ".ci/rediacc_ci/proc.py",
+    ".ci/rediacc_ci/core/__init__.py",
+    ".ci/rediacc_ci/core/ghx.py",
+    ".ci/rediacc_ci/core/gh_retry.py",
     ".ci/config/well-known.env",
     ".ci/rediacc_ci/ops/__init__.py",
 )
@@ -535,7 +543,7 @@ def test_the_recorded_bytes_are_not_a_hash_of_themselves() -> None:
 def test_a_planted_run_conclusion_filter_is_caught(tmp_path: pathlib.Path) -> None:
     """Trust a run whose jobs all failed. The twin's own comment says this exact relaxation must never happen, and only one case can see it."""
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
-    anchor = '            if successful_job_count(run_id) in ("", "0"):\n                continue\n'
+    anchor = '                if successful_job_count(run_id) in ("", "0"):\n                    continue\n'
     assert source.count(anchor) == 1, "the plant's anchor moved"
     planted = source.replace(anchor, "")
     root, args, kw = build(
@@ -569,3 +577,86 @@ def test_the_fixture_org_list_really_is_json() -> None:
         {"secrets": [{"name": "GAMMA"}, {"name": "GAMMA_OTHER"}]},
     ], "the org answer must span two pages, or the page merge goes undriven"
     assert json.loads(REPO_JSON) == [{"secrets": [{"name": "GAMMA"}]}]
+
+
+# ---------------------------------------------------------------------------
+# A read that fails goes through core/gh_retry and never reads as an empty answer
+# ---------------------------------------------------------------------------
+
+# Prepended to FAKE_GH: the `run view --log` read answers `FAKE_LOG_ERR` (rc 1) the first `FAKE_LOG_FAILS` times it is asked, counted in `$FAKE_LOG_COUNT`.
+FLAKY_LOG_PREAMBLE = """#!/bin/bash
+if [[ "$1" == "run" && "$2" == "view" && "$4" == "--log" && -n "$FAKE_LOG_FAILS" ]]; then
+    seen=$(cat "$FAKE_LOG_COUNT" 2>/dev/null || echo 0)
+    echo $((seen + 1)) >"$FAKE_LOG_COUNT"
+    if (( seen < FAKE_LOG_FAILS )); then
+        echo "$FAKE_LOG_ERR" >&2
+        exit 1
+    fi
+fi
+"""
+
+
+def drive_flaky_log(
+    tmp_path: pathlib.Path, *, fails: int, err: str, monkeypatch: pytest.MonkeyPatch
+) -> tuple[int, str, str, int]:
+    """The port, in-process (so the backoff sleep can be patched out), against a log read that fails `fails` times."""
+    root, args, _ = build(tmp_path, "a-clean-pass-over-four-names")
+    bin_dir = scratch_bin(root)
+    fake = root / "fixture-bin" / "gh"
+    fake.write_text(FLAKY_LOG_PREAMBLE + FAKE_GH.removeprefix("#!/bin/bash\n"), encoding="utf-8")
+    count = root / "log-count"
+    for key, value in {
+        "PATH": bin_dir,
+        "FAKE_CALL_LOG": str(root / "calls.log"),
+        "FIXTURE_GH": str(root / "gh"),
+        "BRANCH": "shadow-branch",
+        "FAKE_LOG_FAILS": str(fails),
+        "FAKE_LOG_ERR": err,
+        "FAKE_LOG_COUNT": str(count),
+    }.items():
+        monkeypatch.setenv(key, value)
+    (root / "calls.log").write_text("", encoding="utf-8")
+    monkeypatch.chdir(root)
+    monkeypatch.setattr(gh_retry.time, "sleep", lambda _s: None)
+
+    out, err_buf = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err_buf):
+        rc = module.main(args)
+    attempts = int(count.read_text()) if count.exists() else 0
+    return rc, out.getvalue(), err_buf.getvalue(), attempts
+
+
+def test_a_502_on_a_log_read_is_retried_and_the_list_is_still_derived(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    rc, stdout, _, attempts = drive_flaky_log(
+        tmp_path, fails=1, err="gh: Server Error (HTTP 502)", monkeypatch=monkeypatch
+    )
+    assert rc == 0
+    assert attempts == 2
+    assert "gh secret delete ALPHA --org rediacc" in stdout
+
+
+def test_a_persistent_5xx_refuses_naming_the_run_instead_of_printing_a_list(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    rc, stdout, stderr, attempts = drive_flaky_log(
+        tmp_path, fails=99, err="gh: Server Error (HTTP 503)", monkeypatch=monkeypatch
+    )
+    assert rc == 1
+    assert attempts == 3
+    assert stdout == ""
+    assert "REFUSING" in stderr
+    assert "run view 101 --log" in stderr
+
+
+def test_a_non_transient_log_error_is_read_once_and_refuses(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    rc, stdout, stderr, attempts = drive_flaky_log(
+        tmp_path, fails=99, err="gh: HTTP 404: Not Found", monkeypatch=monkeypatch
+    )
+    assert rc == 1
+    assert attempts == 1
+    assert stdout == ""
+    assert "run view 101 --log" in stderr
