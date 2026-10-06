@@ -410,31 +410,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-commit-as-you-go.md": {
-      "status": "draft",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 2,
-      "done": 11,
-      "open_sigs": [
-        "83c2eaf9",
-        "f86f9978"
-      ],
-      "done_sigs": [
-        "34d60b8a",
-        "605e3a20",
-        "6c92e542",
-        "9883d9ac",
-        "9a2c7936",
-        "9b63908f",
-        "9f0b0075",
-        "a273780b",
-        "a70f79c8",
-        "a8a74c4b",
-        "d2b71cf1"
-      ]
-    },
     "agent/plans/PLAN-completion-strategy.md": {
       "status": "compacted",
       "owner": "f4da5c2e",
@@ -687,6 +662,35 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-fast-loop.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 18,
+      "done": 0,
+      "open_sigs": [
+        "0374ed48",
+        "0f306e63",
+        "1e6e864d",
+        "319fe5ff",
+        "32584cc7",
+        "3f2db5f2",
+        "5eadb655",
+        "6276783b",
+        "642d3f4e",
+        "6a209b0b",
+        "8e1e6542",
+        "b9327adf",
+        "bcc59ac4",
+        "c0b71397",
+        "c2935ef5",
+        "d3f328ad",
+        "ef82dbf2",
+        "f86f9978"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-fix-ci-contention-aware-timeouts.md": {
@@ -2086,24 +2090,6 @@
         "c7cf8d2c"
       ]
     },
-    "agent/plans/PLAN-uncommitted-work-exposure-check.md": {
-      "status": "proposed",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 7,
-      "done": 0,
-      "open_sigs": [
-        "0374ed48",
-        "319fe5ff",
-        "32584cc7",
-        "3f2db5f2",
-        "5eadb655",
-        "8e1e6542",
-        "b9327adf"
-      ],
-      "done_sigs": []
-    },
     "agent/plans/PLAN-unify-trap-corpus.md": {
       "status": "compacted",
       "owner": "99ccf057",
@@ -2608,6 +2594,29 @@
         "2fdf188d",
         "3a5a72bd",
         "9d43dc05"
+      ]
+    },
+    "agent/plans/_done/PLAN-commit-as-you-go.md": {
+      "status": "superseded",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-06",
+      "open": 0,
+      "done": 12,
+      "open_sigs": [],
+      "done_sigs": [
+        "34d60b8a",
+        "605e3a20",
+        "6c92e542",
+        "83c2eaf9",
+        "9883d9ac",
+        "9a2c7936",
+        "9b63908f",
+        "9f0b0075",
+        "a273780b",
+        "a70f79c8",
+        "a8a74c4b",
+        "d2b71cf1"
       ]
     },
     "agent/plans/_done/PLAN-commit-author-identity.md": {
@@ -3847,6 +3856,16 @@
       "owner": "e580532b",
       "folder": "agent/plans/_done",
       "moved_at": "",
+      "open": 0,
+      "done": 0,
+      "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/_removed/PLAN-uncommitted-work-exposure-check.md": {
+      "status": "removed",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_removed",
+      "moved_at": "2026-10-06",
       "open": 0,
       "done": 0,
       "open_sigs": [],
