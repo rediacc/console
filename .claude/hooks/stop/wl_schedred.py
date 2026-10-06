@@ -328,7 +328,10 @@ def _diagnosis(root, owner, name, run_id):
     if diag is None:
         return {}, False
     try:
-        fetch = diag.GhFetcher("%s/%s" % (owner, name), cwd=str(root), timeout=20)
+        # The Stop hook's budget: at most two reads and one 2 s pause on a transient 5xx (PLAN-gh-retry G8).
+        fetch = diag.GhFetcher(
+            "%s/%s" % (owner, name), cwd=str(root), timeout=20, attempts=2, pause=2
+        )
         d = diag.diagnose(fetch, run_id)
     except Exception:  # noqa: BLE001 -- a diagnosis is detail; the red stands without it
         return {}, False

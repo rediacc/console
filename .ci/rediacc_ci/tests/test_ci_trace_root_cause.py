@@ -13,6 +13,7 @@ import contextlib
 import datetime
 import importlib.util
 import io
+import json
 import re
 import time
 
@@ -349,3 +350,51 @@ def test_run_still_queued_names_its_progress_in_the_gh_run_view_shape(ct, monkey
     )
     assert re.search(r"Stage Artifacts 5m(?:0\d|1\d)s", err), err
     assert "1 not started" in err
+
+
+# ---- _run_snapshot transient retry (PLAN-gh-retry G8) --------------------------------
+
+
+class _P:
+    def __init__(self, rc, out="", err=""):
+        self.returncode, self.stdout, self.stderr = rc, out, err
+
+
+def _snapshot(ct, monkeypatch, replies):
+    calls: list = []
+    naps: list = []
+
+    def fake_run(argv, **_kw):
+        calls.append(argv)
+        return replies[min(len(calls), len(replies)) - 1]
+
+    monkeypatch.setattr(ct.subprocess, "run", fake_run)
+    monkeypatch.setattr(ct._GH_RETRY.time, "sleep", naps.append)
+    return ct._run_snapshot(ct.REPO_ROOT, 1), calls, naps
+
+
+def test_run_snapshot_retries_a_502_then_reads_the_run(ct, monkeypatch):
+    ok = json.dumps(
+        {"status": "completed", "conclusion": "success", "jobs": [], "workflowName": "W"}
+    )
+    snap, calls, naps = _snapshot(
+        ct, monkeypatch, [_P(1, err="HTTP 502: Server Error"), _P(0, out=ok)]
+    )
+    assert snap[0] == "completed"
+    assert len(calls) == 2
+    assert naps == [5.0]
+
+
+def test_run_snapshot_persistent_502_is_still_unreadable(ct, monkeypatch):
+    snap, calls, naps = _snapshot(ct, monkeypatch, [_P(1, err="HTTP 502: Server Error")])
+    assert snap[0] is None
+    assert "HTTP 502" in snap[2]
+    assert len(calls) == 3
+    assert naps == [5.0, 15.0]
+
+
+def test_run_snapshot_404_is_one_call_and_no_pause(ct, monkeypatch):
+    snap, calls, naps = _snapshot(ct, monkeypatch, [_P(1, err="HTTP 404: Not Found")])
+    assert snap[0] is None
+    assert len(calls) == 1
+    assert naps == []
