@@ -59,7 +59,7 @@ import sys
 import time
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, gh_retry
 
 # `TIMEOUT="${ARG_TIMEOUT:-60}"` and friends (twin :33-35). Names and defaults.
 DEFAULT_TIMEOUT = "60"
@@ -240,10 +240,14 @@ def main(argv: list[str]) -> int:
 
     log.step("Checking for older in-progress CI runs...")
 
-    rc, run_info = gh_capture(
-        ["api", "repos/%s/actions/runs/%s" % (repository, current_run_id)],
-        merge_stderr=True,
-        line=RUN_LOOKUP_LINE,
+    # The one read that decides whether anything is cancelled at all: a transient 5xx or connection fault is retried (5 s, 15 s) before the existing skip-with-warning, which still names the final failure. The polling reads below stay as they are (the loop is its own retry).
+    rc, run_info = gh_retry.retry_transient(
+        lambda: gh_capture(
+            ["api", "repos/%s/actions/runs/%s" % (repository, current_run_id)],
+            merge_stderr=True,
+            line=RUN_LOOKUP_LINE,
+        ),
+        lambda r: None if r[0] == 0 else (r[1] or "failed"),
     )
     if rc != 0:
         log.warn("Failed to fetch current run info: %s" % run_info)

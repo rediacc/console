@@ -28,6 +28,8 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.ci import detect_pointer_bump as port
+from rediacc_ci.core import gh_retry as _gh_retry
+from rediacc_ci.core import ghx as _ghx
 from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
@@ -904,3 +906,53 @@ def test_the_helpers_the_selftest_leans_on_are_exported() -> None:
         "repo_slug",
     ):
         assert inspect.isfunction(getattr(port, name)), name
+
+
+# ---- PLAN-gh-retry G6/G7: the read rides core/gh_retry (transient faults only) ----
+
+SERVER_ERROR = "gh: Server Error (HTTP 502)"
+NOT_FOUND = "gh: Not Found (HTTP 404)"
+
+
+class _ScriptedGh:
+    """Stands in for ghx.gh: answers the scripted (rc, stdout, stderr) in order, repeating the last."""
+
+    def __init__(self, *outcomes):
+        self.outcomes = list(outcomes)
+        self.calls = []
+
+    def __call__(self, args, **kw):
+        self.calls.append((list(args), kw))
+        rc, out, err = self.outcomes[min(len(self.calls), len(self.outcomes)) - 1]
+        return _ghx.GhResult(["gh", *args], rc, out, err)
+
+
+def _script(monkeypatch, *outcomes):
+    scripted = _ScriptedGh(*outcomes)
+    naps: list[float] = []
+    monkeypatch.setattr(_ghx, "gh", scripted)
+    monkeypatch.setattr(_gh_retry.time, "sleep", naps.append)
+    return scripted, naps
+
+
+def test_gh_api_retries_a_502_and_passes_the_token(monkeypatch):
+    scripted, naps = _script(monkeypatch, (1, "", SERVER_ERROR), (0, "7\n", ""))
+    assert port.gh_api(["repos/o/r/x"], "tok") == (0, "7")
+    assert len(scripted.calls) == 2
+    assert {kw["env"].get("GH_TOKEN") for _a, kw in scripted.calls} == {"tok"}
+    assert naps == [5.0]
+
+
+def test_gh_api_persistent_502_keeps_the_refusing_direction_and_says_why(monkeypatch, capsys):
+    scripted, _naps = _script(monkeypatch, (1, "", SERVER_ERROR))
+    assert port.gh_api(["repos/o/r/x"], "tok") == (1, "")
+    assert len(scripted.calls) == 3
+    assert "HTTP 502" in capsys.readouterr().err
+
+
+def test_gh_api_404_is_not_retried_and_stays_silent(monkeypatch, capsys):
+    scripted, naps = _script(monkeypatch, (1, "", NOT_FOUND))
+    assert port.gh_api(["repos/o/r/x"], "tok") == (1, "")
+    assert len(scripted.calls) == 1
+    assert naps == []
+    assert capsys.readouterr().err == ""

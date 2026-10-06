@@ -115,7 +115,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, gh_retry
 
 # `WALK_CAP=5` (twin :44). The deepen asks for WALK_CAP + 1 because the walk
 # needs each commit's PARENT as well as the commit.
@@ -222,14 +222,11 @@ def gh_api(args: list[str], token: str) -> tuple[int, str]:
     _flush()
     env = dict(os.environ)
     env["GH_TOKEN"] = token
-    proc = subprocess.run(
-        ["gh", "api", *args],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        env=env,
-        check=False,
-    )
-    return proc.returncode, proc.stdout.decode("utf-8", "surrogateescape").rstrip("\n")
+    # Transient faults (5xx, connection) are retried 5 s then 15 s: a single 502 used to read as "not a pointer bump" and cost the full CI. After the retries the failure keeps its direction (non-zero, empty body, so the caller refuses the fast path) and stderr names the reason, which `2>/dev/null` used to discard.
+    result = gh_retry.gh(["api", *args], env=env)
+    if not result.ok and gh_retry.is_transient(result.stderr):
+        sys.stderr.write("gh api failed after retries: %s\n" % result.stderr.strip())
+    return result.returncode, result.stdout_raw.rstrip("\n")
 
 
 def has_non_gitlink(raw: str) -> bool:
