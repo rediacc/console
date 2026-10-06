@@ -12,6 +12,8 @@ degrades to an EMPTY OBJECT rather than aborting -- every subsequent `jq -r '.fi
 matches that: a failed `gh api` call is caught and treated as `{}`, never
 raised.
 
+READS RETRY, AND AN UNREADABLE ONE REFUSES (PLAN-gh-retry G1). Every `gh` read goes through `gh_retry.gh`: a 5xx or connection fault is retried (5 s, 15 s). One that outlasts the retries exits 1 with gh's stderr, never an empty answer: a listing is not "no green run", `_staged` is not "not staged", and the head sha has NO `GITHUB_SHA` fallback (that was the wrong build). A non-transient failure (404, bad id) keeps the meaning above. The twin keeps its fallbacks; the differential never injects a 5xx.
+
 THE ONE DELIBERATE DIFFERENCE FROM THE TWIN: A RUN MUST HAVE STAGED ARTIFACTS. The twin takes `per_page=1` of the newest green Console CI run on main. Since a second push CI run on an already-green sha became a no-op (`duplicate-run` in ci.yml skips `initialize` and every job downstream, concluding `success` with nothing staged), and a scheduled nightly always stages nothing, the newest green run can be one that has no artifacts to release. So this port, and the twin does not:
   - auto-derive lists 20 green `event=push` runs and takes the newest whose `Stage Artifacts / Stage Artifacts` job (the `stage-artifacts` caller job of cd-stage.yml in ci.yml) concluded `success`; none qualifying is an `::error::`;
   - an explicit `ci_run_id` gets the same check after the branch/workflow/conclusion checks pass, and `ALLOW_STALE=true` skips it (stale means the operator chose this run knowingly, ideal or not).
@@ -22,8 +24,9 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 import sys
+
+from rediacc_ci.core import gh_retry, ghx
 
 SELF = "resolve-ci-run.py"
 
@@ -40,30 +43,49 @@ def _require(name: str) -> str:
     return value
 
 
-def _gh_api(
-    url: str, *, jq_filter: str | None = None, paginate: bool = False
-) -> subprocess.CompletedProcess[str]:
-    args = ["gh", "api", url]
+class UnreadableError(Exception):
+    """A GitHub read that still failed with a server or connection fault after gh_retry's backoff."""
+
+    def __init__(self, result: ghx.GhResult) -> None:
+        super().__init__(result.stderr.strip() or "gh failed")
+        self.result = result
+
+
+def _gh_api(url: str, *, jq_filter: str | None = None, paginate: bool = False) -> ghx.GhResult:
+    """One `gh api` READ through gh_retry. A transient fault that outlasts the retries raises UnreadableError: it is "could not read", never an empty answer. A non-transient failure (a 404, a bad id) is returned as-is, with its old meaning."""
+    args = ["api", url]
     if paginate:
         args.append("--paginate")
     if jq_filter is not None:
         args += ["--jq", jq_filter]
-    return subprocess.run(args, capture_output=True, text=True, check=False)
+    result = gh_retry.gh(args)
+    if not result.ok and gh_retry.is_transient(result.stderr):
+        raise UnreadableError(result)
+    return result
 
 
 def _staged(repo: str, run_id: str) -> bool:
-    """True when the run's Stage Artifacts job concluded `success`. A failed lookup is "not staged"."""
+    """True when the run's Stage Artifacts job concluded `success`. "No such job" and a non-transient failure are "not staged"; a read that could not be made raises UnreadableError."""
     result = _gh_api(
         f"repos/{repo}/actions/runs/{run_id}/jobs?per_page=100",
         jq_filter=f'.jobs[] | select(.name == "{STAGE_JOB_NAME}") | .conclusion',
         paginate=True,
     )
-    if result.returncode != 0:
+    if not result.ok:
         return False
     return "success" in result.stdout.split()
 
 
 def main(argv: list[str]) -> int:
+    try:
+        return _resolve(argv)
+    except UnreadableError as exc:
+        print(f"::error::{SELF}: GitHub could not be read after retries: {exc}")
+        print(f"{SELF}: GitHub could not be read after retries: {exc}", file=sys.stderr)
+        return 1
+
+
+def _resolve(argv: list[str]) -> int:
     del argv
     github_repository = _require("GITHUB_REPOSITORY")
     output_path = _require("GITHUB_OUTPUT")
@@ -77,7 +99,7 @@ def main(argv: list[str]) -> int:
             f"?branch=main&status=success&event=push&per_page={CANDIDATE_PAGE}",
             jq_filter='.workflow_runs[] | select(.event == "push") | .id',
         )
-        candidates = listing.stdout.split() if listing.returncode == 0 else []
+        candidates = listing.stdout.split() if listing.ok else []
         if not candidates:
             print(
                 "::error::No green Console CI run found on main. Cannot auto-derive "
@@ -97,7 +119,7 @@ def main(argv: list[str]) -> int:
     else:
         ci_run_id = input_ci_run_id
         lookup = _gh_api(f"repos/{github_repository}/actions/runs/{ci_run_id}")
-        if lookup.returncode != 0:
+        if not lookup.ok:
             run_json: dict[str, object] = {}
         else:
             try:
@@ -144,11 +166,9 @@ def main(argv: list[str]) -> int:
     sha_lookup = _gh_api(
         f"repos/{github_repository}/actions/runs/{ci_run_id}", jq_filter=".head_sha"
     )
-    ci_sha = (
-        sha_lookup.stdout.strip()
-        if sha_lookup.returncode == 0
-        else os.environ.get("GITHUB_SHA", "")
-    )
+    if not sha_lookup.ok:
+        raise UnreadableError(sha_lookup)
+    ci_sha = sha_lookup.stdout.strip()
 
     with open(output_path, "a", encoding="utf-8") as fh:
         fh.write(f"ci_run_id={ci_run_id}\n")

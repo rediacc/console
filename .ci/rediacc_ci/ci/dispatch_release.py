@@ -57,7 +57,9 @@ DIVERGENCES, BOTH IN TEXT ONLY A HUMAN READS
     and `set -e` turns that into exit 1, with bash naming its own line. This
     port prints `<path>: <strerror>` and returns 1. Same stream, same exit.
 
-Exit: 0 whether it dispatched or skipped, 1 on a missing required variable, 2 on an unrecognised argument. Anything else is `gh workflow run`'s own status propagated by `set -e`.
+UNREADABLE PR IS A REFUSAL (PLAN-gh-retry G3). The lookup goes through `gh_retry.gh`. A 5xx or connection fault that survives the retries exits 1 instead of taking the fail-open release below, because the labels (`bump-none`, `release`) were never read. The `gh workflow run` dispatch stays ONE-SHOT: it is not idempotent.
+
+Exit: 0 whether it dispatched or skipped, 1 on a missing required variable or an unreadable PR, 2 on an unrecognised argument. Anything else is `gh workflow run`'s own status propagated by `set -e`.
 """
 
 from __future__ import annotations
@@ -67,6 +69,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.core import gh_retry
 
 # `SKIP_LABEL='bump-none'` (twin :86). The label's meaning lives in
 # `.github/labels.yml` and the reviewer's pr-labels vocabulary.
@@ -145,28 +148,26 @@ def has_stable_label(labels: str) -> bool:
     return has_label(labels, STABLE_LABEL)
 
 
+class UnreadablePullError(Exception):
+    """The PR lookup still failed with a 5xx or connection fault after gh_retry's backoff, so the label set is UNKNOWN."""
+
+
 def run_gh_pulls(repository: str, sha: str) -> tuple[int, str]:
-    """The lookup, with stderr MERGED into stdout exactly as the twin merges it.
+    """The lookup, through gh_retry, with stderr still folded into the captured text (Defect A).
 
-    Returns `(exit status, captured text)`. The merge is Defect A and is the whole reason this function does not take a `capture_stderr` argument: an option here would be an invitation to fix the twin's behaviour by accident.
+    Returns `(exit status, captured text)`. The twin merges stderr into stdout with `2>&1`; gh_retry keeps the streams apart, so the text is stderr followed by stdout, which is the order the differential's fake writes them in. A real gh interleaves by time; the order only matters for the phantom row of Defect A, which is reproduced, not repaired.
 
-    `</dev/null` is reproduced too. Without it `gh` can consume the caller's stdin, and the twin's callers are workflow steps whose stdin is the job's.
+    A 5xx or connection fault that outlasts the retries raises UnreadablePullError (PLAN-gh-retry G3): an unreadable PR is not an empty label set, and releasing on it could release a `bump-none` PR or withhold a stable label. Any other failure (a 403, a 404) keeps the twin's fail-open meaning.
 
     Trailing newlines are stripped because `$(...)` strips them, and the all-whitespace test below would otherwise never fire.
     """
-    try:
-        proc = subprocess.run(
-            ["gh", "api", pulls_url(repository, sha), "--jq", PULLS_JQ],
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            check=False,
-        )
-    except FileNotFoundError:
+    result = gh_retry.gh(["api", pulls_url(repository, sha), "--jq", PULLS_JQ])
+    if not result.ok and gh_retry.is_transient(result.stderr):
+        raise UnreadablePullError(result.stderr.strip())
+    if result.returncode == 127:
         # Divergence 1. bash reaches the same branch with its own wording.
         return 127, GH_NOT_FOUND
-    return proc.returncode, proc.stdout.rstrip("\n")
+    return result.returncode, (result.stderr + result.stdout_raw).rstrip("\n")
 
 
 def decide(repository: str, sha: str) -> tuple[bool, str]:
@@ -309,7 +310,14 @@ def main(argv: list[str]) -> int:
     skip_release = False
     stable_prs = ""
     if mode != "dispatch":
-        release, stable_prs = decide(repository, sha)
+        try:
+            release, stable_prs = decide(repository, sha)
+        except UnreadablePullError as exc:
+            log.error(
+                "PR lookup for %s still failing after retries (%s); refusing to decide the "
+                "release on an unknown label set" % (short_sha(sha), exc)
+            )
+            return 1
         skip_release = not release
 
     if mode == "decide":

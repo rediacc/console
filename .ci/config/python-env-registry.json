@@ -1081,7 +1081,6 @@
     ".ci/rediacc_ci/release/resolve_ci_run.py": [
       "*name",
       "ALLOW_STALE",
-      "GITHUB_SHA",
       "INPUT_CI_RUN_ID"
     ],
     ".ci/rediacc_ci/release/tag_submodules.py": [
