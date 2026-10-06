@@ -6,6 +6,7 @@ HERMETIC BY CONSTRUCTION. Every case runs against a scratch repo with its own CL
 The refusal arms need a receipt planted at a specific tree sha, which is why they live here rather than in test-hooks.sh: that suite's `check` helper drives a guard against the live tree with no env or cwd control.
 """
 
+import hashlib
 import importlib.util
 import json
 import os
@@ -14,12 +15,24 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from typing import Any
 
 # THIS HARNESS SITS BESIDE ITS GUARD, which is what .ci/scripts/quality/check-hook-integrity.sh means by a dedicated test file: `test-<stem>.py` next to `<stem>.py` credits the guard with BOTH directions, and it is the only credit these four have because their block direction needs fixture work `test-hooks.sh`'s one-line `check` helper cannot express.
 #
 # THE GUARD IS A PYTHON MODULE NOW. W5 P7 ported it from a bash original that PLAN-retire-bash-oracles A3 later deleted, once the differential compared the two byte for byte and froze the result as a golden (tests/goldens/<stem>.jsonl). This harness drives the LIVE guard, which is the dispatcher, for the reason the cutover exists at all: a suite that kept driving the retired file would keep passing while the thing that actually runs went unchecked.
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_unverified_push"]
+
+# THE GUARD MODULE ITSELF, for the v2 fixtures and the helper unit tests. `rediacc_hooks.syspath` is loaded BY FILE for the reason its docstring gives (a script outside the package cannot import it by name before `.claude` is on the path).
+_SYSPATH = importlib.util.spec_from_file_location(
+    "syspath", pathlib.Path(__file__).resolve().parents[1] / "syspath.py"
+)
+if _SYSPATH is None or _SYSPATH.loader is None:
+    raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
+syspath = importlib.util.module_from_spec(_SYSPATH)
+_SYSPATH.loader.exec_module(syspath)
+syspath.on_sys_path(syspath.CLAUDE_DIR)
+GM = importlib.import_module("rediacc_hooks.guards.block_unverified_push")
 
 # `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop (test_canonical_sys_path_hop.py freezes those): a pid-stamped run directory, removed at exit and swept by the next run when this one was killed before `atexit` could fire, which is how /tmp hit its inode cap on 2026-09-24.
 _RUNTMP = importlib.util.spec_from_file_location(
@@ -48,6 +61,7 @@ git("config", "user.email", "p@example.invalid")
 git("config", "user.name", "p")
 with open(os.path.join(d, "f.txt"), "w", encoding="utf-8") as fh:
     fh.write("x\n")
+GM._write_fixture_lock(pathlib.Path(d))
 git("add", "-A")
 git("commit", "-qm", "base")
 TREE = git("rev-parse", "HEAD^{tree}").stdout.strip()
@@ -73,6 +87,7 @@ def put(**over):
         "droppedVerified": {},
     }
     base.update(over)
+    base = GM._v2_body(base)
     os.makedirs(os.path.dirname(RECEIPT), exist_ok=True)
     with open(RECEIPT, "w", encoding="utf-8") as fh:
         json.dump(base, fh)
@@ -159,7 +174,7 @@ def run(cmd):
 
 
 PUSH = "git push origin 0827-1"
-cases = []
+cases: list[tuple[Any, Any, str]] = []
 
 
 def run_err(cmd):
@@ -548,6 +563,7 @@ g(work, "config", "user.email", "p@example.invalid")
 g(work, "config", "user.name", "p")
 g(work, "remote", "add", "origin", str(origin))
 (work / "base.txt").write_text("base\n", encoding="utf-8")
+GM._write_fixture_lock(work)
 g(work, "add", "-A")
 g(work, "commit", "-qm", "base")
 g(work, "push", "-q", "origin", "main")
@@ -573,12 +589,15 @@ def plant_green(where):
     cache.mkdir(parents=True, exist_ok=True)
     (cache / "prepush-receipt.json").write_text(
         json.dumps(
-            {
-                "headTree": g(where, "rev-parse", "HEAD^{tree}"),
-                "whole": True,
-                "exitCode": 0,
-                "droppedTouched": [],
-            }
+            GM._v2_body(
+                {
+                    "headTree": g(where, "rev-parse", "HEAD^{tree}"),
+                    "whole": True,
+                    "exitCode": 0,
+                    "failed": [],
+                    "droppedTouched": [],
+                }
+            )
         ),
         encoding="utf-8",
     )
@@ -688,6 +707,7 @@ def adv_world(name, carried_doc=None):
         json.dumps(ADV_POLICY), encoding="utf-8"
     )
     (root / "code.txt").write_text("code\n", encoding="utf-8")
+    GM._write_fixture_lock(root)
     if carried_doc is not None:
         (root / ".ci" / "config").mkdir(parents=True)
         (root / ".ci" / "config" / "carried-reds.json").write_text(
@@ -723,6 +743,7 @@ def adv_receipt(root, head_tree, advances, **over):
     if advances is not None:
         body["advances"] = advances
     body.update(over)
+    body = GM._v2_body(body)
     cache = root / ".ci" / "cache"
     cache.mkdir(parents=True, exist_ok=True)
     (cache / "prepush-receipt.json").write_text(json.dumps(body), encoding="utf-8")
@@ -964,6 +985,187 @@ cases.append(
         "DEFECT CONTROL: every named world exists, so the control cannot shrink to nothing",
     )
 )
+
+# --- receipt v2: carried gates, recomputed at the pushed tree (PLAN-fast-loop F3) ---------------
+V2_PUSH = "git push origin main"
+
+
+def v2_world(name, variant, origin_verdict="ok"):
+    root = pathlib.Path(tempfile.mkdtemp(dir=RUN_TMP)) / name
+    GM._repo_v2_carried(root, variant, origin_verdict)
+    return root
+
+
+def drive_v2_off(where, cmd):
+    """The guard with v2_verdict forced to accept, in a child: the planted DEFECT the v2 worlds must notice."""
+    runner = (
+        "import sys; sys.path.insert(0, %r)\n"
+        "from rediacc_hooks import hookio\n"
+        "src = open(%r, encoding='utf-8').read()\n"
+        "ns = {'__name__': 'broken', '__file__': %r}\n"
+        "exec(compile(src, 'broken', 'exec'), ns)\n"
+        "ns['v2_verdict'] = lambda *a, **k: ''\n"
+        "ev = hookio.Event(sys.stdin.read())\n"
+        "sys.exit(ns['run'](ev))\n"
+    ) % (str(GUARD.parents[2]), str(GUARD), str(GUARD))
+    proc = subprocess.run(
+        [sys.executable, "-c", runner],
+        input=json.dumps({"tool_input": {"command": cmd}}),
+        capture_output=True,
+        text=True,
+        cwd=str(where),
+        env=dict(os.environ, CLAUDE_PROJECT_DIR=str(where)),
+        check=False,
+    )
+    return proc.returncode, proc.stderr
+
+
+def test_v2_carried_hash_match_allows():
+    w = v2_world("v2-ok", "ok")
+    cases.append(
+        (0, drive(w, V2_PUSH)[0], "V2: a carried gate whose hashes still match is allowed")
+    )
+
+
+def test_v2_planted_input_change_refuses():
+    w = v2_world("v2-stale", "stale-input")
+    rc, err = drive(w, V2_PUSH)
+    cases.append((2, rc, "V2: an input changed after the carry is refused"))
+    cases.append(
+        (
+            True,
+            "check:fx" in err and "filesHash" in err,
+            "V2: and the refusal names the gate and filesHash",
+        )
+    )
+    # THE DEFECT CONTROL: with v2_verdict forced to accept, the same world is admitted, so the refusal above is that function's work.
+    cases.append(
+        (
+            0,
+            drive_v2_off(w, V2_PUSH)[0],
+            "V2 DEFECT CONTROL: v2_verdict forced to accept admits the stale input",
+        )
+    )
+    ok = v2_world("v2-ok-control", "ok")
+    cases.append(
+        (
+            0,
+            drive_v2_off(ok, V2_PUSH)[0],
+            "V2 DEFECT CONTROL holds: the matching world stays allowed",
+        )
+    )
+
+
+def test_v2_carried_red_never_green():
+    dropped = v2_world("v2-red-dropped", "red-dropped", "fail")
+    rc, err = drive(dropped, V2_PUSH)
+    cases.append((2, rc, "V2: a carried fail missing from `failed` is refused"))
+    cases.append(
+        (True, "failed" in err and "check:fx" in err, "V2: and the refusal names the mismatch")
+    )
+    flipped = v2_world("v2-red-flipped", "verdict-flipped", "fail")
+    rc, err = drive(flipped, V2_PUSH)
+    cases.append((2, rc, "V2: a carried verdict flipped to ok against its origin is refused"))
+    cases.append((True, "verdict" in err or "failed" in err, "V2: and the refusal names a field"))
+    honest = v2_world("v2-red-honest", "ok", "fail")
+    cases.append(
+        (2, drive(honest, V2_PUSH)[0], "V2: a carried red stays red (no carried-reds entry)")
+    )
+    gone = v2_world("v2-no-origin", "no-origin")
+    rc, err = drive(gone, V2_PUSH)
+    cases.append((2, rc, "V2: a carry with no archived origin receipt is refused"))
+    cases.append(
+        (
+            0,
+            drive_v2_off(dropped, V2_PUSH)[0],
+            "V2 DEFECT CONTROL: the dropped red passes with v2_verdict off",
+        )
+    )
+
+
+def test_v1_receipt_refused():
+    w = pathlib.Path(tempfile.mkdtemp(dir=RUN_TMP)) / "v1"
+    GM.FIXTURES["push-v1-receipt"](w)
+    rc, err = drive(w, V2_PUSH)
+    cases.append((2, rc, "V2: a receipt without schema 2 is refused"))
+    cases.append(
+        (
+            True,
+            "npm run ci:quick" in err and "schema" in err,
+            "V2: and names the command that writes a v2 receipt",
+        )
+    )
+
+
+def test_v2_helpers():
+    cases.append((True, GM.v2_match_glob("src/**", "src/a/b.ts"), "GLOB: ** crosses /"))
+    cases.append((False, GM.v2_match_glob("src/*", "src/a/b.ts"), "GLOB: * does not cross /"))
+    cases.append((True, GM.v2_match_glob("src/*", "src/a.ts"), "GLOB: * matches within a segment"))
+    cases.append((True, GM.v2_match_glob("a?", "a?"), "GLOB: ? is literal"))
+    cases.append((False, GM.v2_match_glob("a?", "ab"), "GLOB: ? is not a wildcard"))
+    cases.append((False, GM.v2_match_glob("**/*.ts", "x.ts"), "GLOB: **/ needs a slash"))
+    cases.append(
+        (
+            True,
+            GM.v2_match_glob("a.b", "a.b") and not GM.v2_match_glob("a.b", "axb"),
+            "GLOB: . is literal",
+        )
+    )
+    entries = [
+        ("100644", "blob", "b" * 40, "src/z.ts"),
+        ("160000", "commit", "c" * 40, "private/x"),
+        ("100644", "blob", "a" * 40, "src/a.ts"),
+        ("100644", "blob", "d" * 40, "other.txt"),
+    ]
+    lines = GM.v2_input_lines(entries, ["src/**", "private/x"], [])
+    want = [
+        "100644 %s\tsrc/a.ts" % ("a" * 40),
+        "100644 %s\tsrc/z.ts" % ("b" * 40),
+        "160000 %s\tprivate/x" % ("c" * 40),
+    ]
+    cases.append(
+        (
+            sorted(want, key=lambda x: x.split("\t")[1]),
+            lines,
+            "FILES: lines are `<mode> <oid>\\t<path>`, sorted by path, gitlink by name",
+        )
+    )
+    manual = hashlib.sha256(("files\n" + "".join(x + "\n" for x in lines)).encode()).hexdigest()
+    cases.append(
+        (
+            manual,
+            GM.v2_files_hash(lines),
+            "FILES: filesHash is sha256('files\\n' + lines each ending in newline)",
+        )
+    )
+    cases.append(
+        (
+            GM.v2_files_hash(lines),
+            GM.v2_files_hash(list(reversed(lines))),
+            "FILES: the hash does not depend on input order",
+        )
+    )
+    cases.append(
+        (
+            '{"a":[1,"é"],"b":{"c":true,"d":null}}',
+            GM.v2_canon({"b": {"d": None, "c": True}, "a": [1, "é"]}),
+            "CANON: sorted keys, no spaces, UTF-8",
+        )
+    )
+    cases.append(
+        (
+            hashlib.sha256(b"def\n{}\n{}").hexdigest(),
+            GM.v2_def_hash({}, {}),
+            "DEF: defHash = sha('def\\n' + canon(entry) + '\\n' + canon(scripts))",
+        )
+    )
+
+
+test_v2_carried_hash_match_allows()
+test_v2_planted_input_change_refuses()
+test_v2_carried_red_never_green()
+test_v1_receipt_refused()
+test_v2_helpers()
 
 shutil.rmtree(d, ignore_errors=True)
 

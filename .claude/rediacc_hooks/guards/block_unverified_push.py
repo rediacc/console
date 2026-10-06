@@ -89,6 +89,67 @@ def _env():
     )
 
 
+# The gate set every fixture tree carries as scripts/ci-runner/gates.lock.json: one required gate, one slow one, one ciOnly one. Receipts built by _v2_body judge exactly these.
+FIXTURE_LOCK = [
+    {"id": "check:fixture-ok", "run": "npm run check:fixture-ok", "gate": True, "leaves": []},
+    {
+        "id": "check:fixture-slow",
+        "run": "npm run check:fixture-slow",
+        "gate": True,
+        "slow": True,
+        "leaves": [],
+    },
+    {
+        "id": "check:fixture-cionly",
+        "run": "npm run check:fixture-cionly",
+        "gate": True,
+        "slow": True,
+        "ciOnly": "fixture: CI runs it in its own step",
+        "leaves": [],
+    },
+]
+
+
+def _gate_entry(verdict, **over):
+    entry = {
+        "inputHash": None,
+        "defHash": None,
+        "filesHash": None,
+        "inputs": None,
+        "verdict": verdict,
+        "exitCode": 1 if verdict == "fail" else 0,
+        "findings": None,
+        "judgedTree": None,
+        "carriedFrom": None,
+    }
+    entry.update(over)
+    return entry
+
+
+def _v2_body(receipt):
+    """`receipt` as a v2 receipt: schema 2 and a `gates` map consistent with its `failed` and `blocked` lists, unless the fixture already says otherwise."""
+    body = dict(receipt)
+    body.setdefault("schema", 2)
+    body.setdefault("failed", [])
+    if "gates" not in body:
+        gates = {
+            "check:fixture-ok": _gate_entry("ok"),
+            "check:fixture-cionly": _gate_entry("ciOnly"),
+        }
+        for gid in body.get("failed") or []:
+            gates[gid] = _gate_entry("fail")
+        for gid in body.get("blocked") or []:
+            gates[gid] = _gate_entry("blocked")
+        body["gates"] = gates
+    return body
+
+
+def _write_fixture_lock(path, lock=None):
+    target = path / "scripts" / "ci-runner" / "gates.lock.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(FIXTURE_LOCK if lock is None else lock), encoding="utf-8")
+
+
 def _repo_with_receipt(path, receipt, carried=None):
     """A checkout whose `.ci/cache/prepush-receipt.json` says what we want.
 
@@ -103,6 +164,7 @@ def _repo_with_receipt(path, receipt, carried=None):
         env=_env(),
     )
     (path / "seed.txt").write_text("seed\n", encoding="utf-8")
+    _write_fixture_lock(path)
     # carried-reds.json is COMMITTED, because the guard reads it from HEAD. Committed and on disk are then the same bytes, so the bash oracle (which reads the worktree) and this port still see one file and the differential compares like with like.
     if carried is not None:
         config = path / ".ci" / "config"
@@ -128,7 +190,7 @@ def _repo_with_receipt(path, receipt, carried=None):
             .stdout.decode()
             .strip()
         )
-        body = dict(receipt)
+        body = _v2_body(receipt)
         body.setdefault("headTree", tree)
         # A `droppedVerified` entry names the tree its `--only` run judged, which is only known after the commit, like `headTree` above.
         verified = body.get("droppedVerified")
@@ -175,6 +237,7 @@ def _repo_with_forged_advance(path):
         encoding="utf-8",
     )
     (path / "seed.txt").write_text("seed\n", encoding="utf-8")
+    _write_fixture_lock(path)
     git("add", "-A")
     git("commit", "-q", "-m", "seed")
     base = git("rev-parse", "HEAD^{tree}")
@@ -188,24 +251,129 @@ def _repo_with_forged_advance(path):
     cache.mkdir(parents=True)
     (cache / "prepush-receipt.json").write_text(
         json.dumps(
-            {
-                "headTree": base,
-                "whole": True,
-                "exitCode": 0,
-                "droppedTouched": [],
-                "advances": [
-                    {
-                        "from": base,
-                        "to": head,
-                        "paths": ["agent/reviews/main/clean.jsonl"],
-                        "gates": {"check:fixture-reader": 0},
-                        "finishedAt": "2026-10-05T00:00:00Z",
-                    }
-                ],
-            }
+            _v2_body(
+                {
+                    "headTree": base,
+                    "whole": True,
+                    "exitCode": 0,
+                    "droppedTouched": [],
+                    "advances": [
+                        {
+                            "from": base,
+                            "to": head,
+                            "paths": ["agent/reviews/main/clean.jsonl"],
+                            "gates": {"check:fixture-reader": 0},
+                            "finishedAt": "2026-10-05T00:00:00Z",
+                        }
+                    ],
+                }
+            )
         ),
         encoding="utf-8",
     )
+    return path
+
+
+# A CARRIED GATE, as the incremental runner records it. Commit A judges check:fx (reads src/**) and archives its receipt; commit B is the pushed tree and its receipt CARRIES check:fx from A. `variant` plants what the guard must catch.
+V2_FX = "check:fx"
+V2_FX_INPUTS: dict[str, list[str]] = {"globs": ["src/**"], "files": [], "scripts": ["check:fx"]}
+V2_LOCK = [
+    *FIXTURE_LOCK,
+    {
+        "id": V2_FX,
+        "run": "npm run check:fx",
+        "gate": True,
+        "leaves": [],
+        "paths": ["src/**"],
+    },
+]
+V2_FX_SCRIPT = "echo fx"
+V2_PKG = {"name": "fixture", "scripts": {"check:fx": V2_FX_SCRIPT, "check:other": "echo other"}}
+
+
+def _repo_v2_carried(path, variant, origin_verdict="ok"):
+    """variant: `ok` (B touches only docs/), `stale-input` (B edits src/a.txt after the carry), `red-dropped` (a carried fail missing from `failed`), `verdict-flipped` (origin said fail, the carried entry says ok), `no-origin` (no archived origin receipt)."""
+    path.mkdir(parents=True)
+
+    def git(*args):
+        return (
+            subprocess.run(
+                ["git", *args], cwd=str(path), check=True, capture_output=True, env=_env()
+            )
+            .stdout.decode()
+            .strip()
+        )
+
+    git("init", "--initial-branch=main", "-q")
+    (path / "src").mkdir()
+    (path / "src" / "a.txt").write_text("a\n", encoding="utf-8")
+    (path / "docs").mkdir()
+    (path / "docs" / "n.txt").write_text("n\n", encoding="utf-8")
+    (path / "package.json").write_text(json.dumps(V2_PKG), encoding="utf-8")
+    _write_fixture_lock(path, V2_LOCK)
+    git("add", "-A")
+    git("commit", "-q", "-m", "A")
+    tree_a = git("rev-parse", "HEAD^{tree}")
+    lines = v2_input_lines(
+        v2_ls_tree(str(path), tree_a), V2_FX_INPUTS["globs"], V2_FX_INPUTS["files"]
+    )
+    def_hash = v2_def_hash(V2_LOCK[-1], {"check:fx": V2_FX_SCRIPT})
+    files_hash = v2_files_hash(lines)
+    input_hash = v2_sha("input\n%s\n%s\nfixture-salt\n" % (def_hash, files_hash))
+    findings = ["fx:finding-1"] if origin_verdict == "fail" else None
+    fx = _gate_entry(
+        origin_verdict,
+        inputHash=input_hash,
+        defHash=def_hash,
+        filesHash=files_hash,
+        inputs=V2_FX_INPUTS,
+        findings=findings,
+        judgedTree=tree_a,
+    )
+    origin = _v2_body(
+        {
+            "headTree": tree_a,
+            "whole": True,
+            "exitCode": 1 if origin_verdict == "fail" else 0,
+            "failed": [V2_FX] if origin_verdict == "fail" else [],
+            "droppedTouched": [],
+            "gates": {
+                "check:fixture-ok": _gate_entry("ok"),
+                "check:fixture-cionly": _gate_entry("ciOnly"),
+                V2_FX: fx,
+            },
+        }
+    )
+    cache = path / ".ci" / "cache"
+    (cache / "receipts").mkdir(parents=True)
+    if variant != "no-origin":
+        (cache / "receipts" / (tree_a + ".json")).write_text(json.dumps(origin), encoding="utf-8")
+    target = path / ("src/a.txt" if variant == "stale-input" else "docs/n.txt")
+    target.write_text("changed after A\n", encoding="utf-8")
+    git("add", "-A")
+    git("commit", "-q", "-m", "B")
+    tree_b = git("rev-parse", "HEAD^{tree}")
+    carried = dict(fx, carriedFrom={"headTree": tree_a, "finishedAt": "2026-10-06T00:00:00Z"})
+    failed = [V2_FX] if origin_verdict == "fail" else []
+    if variant == "red-dropped":
+        failed = []
+    if variant == "verdict-flipped":
+        carried["verdict"] = "ok"
+    body = _v2_body(
+        {
+            "headTree": tree_b,
+            "whole": True,
+            "exitCode": 1 if failed else 0,
+            "failed": failed,
+            "droppedTouched": [],
+            "gates": {
+                "check:fixture-ok": _gate_entry("ok"),
+                "check:fixture-cionly": _gate_entry("ciOnly"),
+                V2_FX: carried,
+            },
+        }
+    )
+    (cache / "prepush-receipt.json").write_text(json.dumps(body), encoding="utf-8")
     return path
 
 
@@ -221,6 +389,17 @@ DROPPED_PLAN_RECORD = {
 # The receipt worlds this guard distinguishes. Without them the corpus sees whatever receipt this shared worktree happens to hold at the moment the test runs, which is BOTH undiscriminating and a race: another session running `ci:quick` between the bash pass and the Python pass would rewrite the file and the difference would be reported as a port defect.
 FIXTURES = {
     "push-no-receipt": lambda p: _repo_with_receipt(p, None),
+    # RECEIPT v2 (PLAN-fast-loop F3): a carried gate is honoured only while the hashes recomputed at the pushed tree equal the recorded ones.
+    "push-v1-receipt": lambda p: _repo_with_receipt(
+        p, {"schema": None, "whole": True, "exitCode": 0, "droppedTouched": []}
+    ),
+    "push-v2-carried-ok": lambda p: _repo_v2_carried(p, "ok"),
+    "push-v2-carried-stale-input": lambda p: _repo_v2_carried(p, "stale-input"),
+    "push-v2-carried-red": lambda p: _repo_v2_carried(p, "red-dropped", origin_verdict="fail"),
+    "push-v2-carried-red-flipped": lambda p: _repo_v2_carried(
+        p, "verdict-flipped", origin_verdict="fail"
+    ),
+    "push-v2-carried-red-honest": lambda p: _repo_v2_carried(p, "ok", origin_verdict="fail"),
     "push-green": lambda p: _repo_with_receipt(
         p, {"whole": True, "exitCode": 0, "droppedTouched": []}
     ),
@@ -1120,6 +1299,216 @@ def carried_verdict(receipt, doc):
     return None, notes
 
 
+# --- receipt v2 (PLAN-fast-loop Part 1, F3) ---------------------------------------------
+# A v2 receipt records, per gate, a verdict and (for a gate the runner CARRIED instead of re-running) the hashes of what the gate reads. The functions below implement the plan's frozen "Hash contract" byte for byte; scripts/ci-runner/input-hash.ts implements the same text, and the parity test compares the two on one corpus. v2_verdict recomputes a carried gate's hashes at the PUSHED tree, so a carry the runner mis-judged, or a hand-edited receipt, is refused here rather than judged by CI.
+RECEIPT_SCHEMA = 2
+LOCK_REL = "scripts/ci-runner/gates.lock.json"
+CARRY_EXEMPT_REL = _policy_rel("carry-exempt.json")
+V2_VERDICTS = ("ok", "fail", "blocked")
+V2_REGEN = "npm run ci:quick"
+
+
+def v2_canon(x):
+    """JSON with keys sorted at every depth, no spaces, non-ASCII kept as UTF-8."""
+    return json.dumps(x, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def v2_sha(s):
+    """Lowercase hex sha256 of the UTF-8 bytes."""
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()
+
+
+def v2_def_hash(entry, scripts):
+    """The gate's lock entry plus the npm script texts it runs: a changed gate re-runs."""
+    return v2_sha("def\n" + v2_canon(entry) + "\n" + v2_canon(scripts))
+
+
+_GLOB_RES: dict[str, re.Pattern[str]] = {}
+
+
+def v2_match_glob(glob, path):
+    """`**` matches any run of characters including `/`, `*` any run without `/`, every other character (`?` included) is literal."""
+    rx = _GLOB_RES.get(glob)
+    if rx is None:
+        out = []
+        i = 0
+        while i < len(glob):
+            if glob.startswith("**", i):
+                out.append(".*")
+                i += 2
+            elif glob[i] == "*":
+                out.append("[^/]*")
+                i += 1
+            else:
+                out.append(re.escape(glob[i]))
+                i += 1
+        rx = _GLOB_RES[glob] = re.compile("".join(out), re.DOTALL)
+    return rx.fullmatch(path) is not None
+
+
+def v2_ls_tree(root, tree):
+    """`git ls-tree -r --full-tree` of one tree as (mode, type, oid, path); a gitlink is `160000 commit <oid>`. Empty when git cannot answer."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", root, "ls-tree", "-r", "-z", "--full-tree", tree],
+            capture_output=True,
+            check=False,
+        )
+    except OSError:
+        return []
+    if proc.returncode != 0:
+        return []
+    out = []
+    for rec in proc.stdout.decode("utf-8", "surrogateescape").split("\0"):
+        meta, sep, path = rec.partition("\t")
+        parts = meta.split(" ")
+        if sep and len(parts) == 3:
+            out.append((parts[0], parts[1], parts[2], path))
+    return out
+
+
+def v2_input_lines(entries, globs, files):
+    """`<mode> <oid>\\t<path>` (no newline) for every entry a glob matches or `files` names, sorted by path bytes."""
+    named = set(files)
+    picked = [e for e in entries if e[3] in named or any(v2_match_glob(gl, e[3]) for gl in globs)]
+    picked.sort(key=lambda e: e[3].encode("utf-8", "surrogateescape"))
+    return ["%s %s\t%s" % (e[0], e[2], e[3]) for e in picked]
+
+
+def _line_path(line):
+    return line.partition("\t")[2].encode("utf-8", "surrogateescape")
+
+
+def v2_files_hash(lines):
+    return v2_sha("files\n" + "".join(line + "\n" for line in sorted(lines, key=_line_path)))
+
+
+def _show_at(root, tree, rel):
+    """`git show <tree>:<rel>` as text, or None when the tree has no such file."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", root, "show", "%s:%s" % (tree, rel)], capture_output=True, check=False
+        )
+    except OSError:
+        return None
+    return proc.stdout.decode("utf-8") if proc.returncode == 0 else None
+
+
+def _exempt_ids(doc):
+    """Ids named by .ci/policy/carry-exempt.json, `{"schema": 1, "exempt": [{"id", "reason"}]}`. Any other shape is an error (ValueError), never an empty set."""
+    items = doc.get("exempt") if isinstance(doc, dict) else None
+    if (
+        not isinstance(doc, dict)
+        or doc.get("schema") != 1
+        or not isinstance(items, list)
+        or not all(isinstance(i, dict) and isinstance(i.get("id"), str) for i in items)
+    ):
+        raise ValueError("carry-exempt.json is not {schema: 1, exempt: [{id, reason}]}")
+    return {i["id"] for i in items}
+
+
+def _carried_refusal(root, tree, gid, entry, lock_entry, entries, exempt):
+    """Why one carried entry is not honoured, or ''. Names the gate and the field."""
+    carried = entry.get("carriedFrom")
+    inputs = entry.get("inputs")
+    if not isinstance(inputs, dict) or not isinstance(carried, dict):
+        return "%s is carried but records no inputs/carriedFrom (field inputs)" % gid
+    if gid in exempt:
+        return "%s is listed in %s and may never be carried (field carriedFrom)" % (
+            gid,
+            CARRY_EXEMPT_REL,
+        )
+    names = inputs.get("scripts") or []
+    pkg = _show_at(root, tree, "package.json")
+    try:
+        texts = json.loads(pkg).get("scripts", {}) if pkg else {}
+    except (ValueError, AttributeError):
+        texts = {}
+    if not isinstance(names, list) or any(n not in texts for n in names):
+        return "%s: a script in inputs.scripts is absent from package.json (field defHash)" % gid
+    def_hash = v2_def_hash(lock_entry, {n: texts[n] for n in names})
+    if def_hash != entry.get("defHash"):
+        return "%s: defHash differs at the pushed tree (the gate or its scripts changed)" % gid
+    lines = v2_input_lines(entries, inputs.get("globs") or [], inputs.get("files") or [])
+    if v2_files_hash(lines) != entry.get("filesHash"):
+        return "%s: filesHash differs at the pushed tree (an input changed after the carry)" % gid
+    origin = carried.get("headTree")
+    if not isinstance(origin, str) or not TREE_RE.match(origin):
+        return "%s: carriedFrom.headTree is not a tree hash (field carriedFrom)" % gid
+    origin_doc = _read_json("%s/.ci/cache/receipts/%s.json" % (root, origin))
+    base = (origin_doc.get("gates") if isinstance(origin_doc, dict) else None) or {}
+    was = base.get(gid) if isinstance(base, dict) else None
+    if not isinstance(was, dict):
+        return "%s: the archived origin receipt for %s is missing or lacks it (carriedFrom)" % (
+            gid,
+            origin,
+        )
+    for field in ("inputHash", "verdict", "findings"):
+        if was.get(field) != entry.get(field):
+            return "%s: %s differs from the archived origin receipt %s" % (gid, field, origin)
+    return ""
+
+
+def v2_verdict(root, tree, receipt):
+    """The v2 acceptance of a receipt for the pushed `tree`: '' accepts, anything else is the refusal text."""
+    if not isinstance(receipt, dict) or receipt.get("schema") != RECEIPT_SCHEMA:
+        return (
+            "that receipt is not schema %d (an older runner wrote it). `%s` writes a v2 receipt."
+            % (RECEIPT_SCHEMA, V2_REGEN)
+        )
+    gates = receipt.get("gates")
+    if not isinstance(gates, dict):
+        return "the receipt has no per-gate `gates` map. `%s` writes it." % V2_REGEN
+    text = _show_at(root, tree, LOCK_REL)
+    try:
+        lock = json.loads(text) if text else None
+    except ValueError:
+        lock = None
+    if not isinstance(lock, list):
+        return "%s is unreadable at the pushed tree, so no gate set can be required." % LOCK_REL
+    by_id = {g["id"]: g for g in lock if isinstance(g, dict) and isinstance(g.get("id"), str)}
+    for gid, g in sorted(by_id.items()):
+        if g.get("gate") is not True or g.get("ciOnly"):
+            continue
+        entry = gates.get(gid)
+        verdicts = V2_VERDICTS + (("deferred",) if g.get("slow") else ())
+        if entry is None and g.get("slow"):
+            continue
+        if not isinstance(entry, dict) or entry.get("verdict") not in verdicts:
+            return "the receipt has no judged verdict for %s. Re-run `%s`." % (gid, V2_REGEN)
+    for gid, g in sorted(by_id.items()):
+        entry = gates.get(gid)
+        if g.get("ciOnly") and isinstance(entry, dict) and entry.get("verdict") != "ciOnly":
+            return "%s is ciOnly, so its receipt verdict must be ciOnly (field verdict)." % gid
+    carried = sorted(
+        gid for gid, e in gates.items() if isinstance(e, dict) and e.get("carriedFrom") is not None
+    )
+    if carried:
+        entries = v2_ls_tree(root, tree)
+        exempt_text = _show_at(root, tree, CARRY_EXEMPT_REL)
+        try:
+            exempt = _exempt_ids(json.loads(exempt_text)) if exempt_text else set()
+        except ValueError as exc:
+            return "%s is unreadable at the pushed tree: %s." % (CARRY_EXEMPT_REL, exc)
+        for gid in carried:
+            if gid not in by_id:
+                return "%s is carried but is not in %s (field defHash)" % (gid, LOCK_REL)
+            why = _carried_refusal(root, tree, gid, gates[gid], by_id[gid], entries, exempt)
+            if why:
+                return "a carried verdict is not valid here: %s. Re-run `%s`." % (why, V2_REGEN)
+    failed = receipt.get("failed")
+    red = {gid for gid, e in gates.items() if isinstance(e, dict) and e.get("verdict") == "fail"}
+    if not isinstance(failed, list) or red != set(failed):
+        return (
+            "the receipt's `failed` list (%s) is not the set of gates with verdict fail (%s)."
+            % (_jq_join(failed), ", ".join(sorted(red)))
+        )
+    want = 1 if red else 0
+    if receipt.get("exitCode") != want or isinstance(receipt.get("exitCode"), bool):
+        return "the receipt's exitCode must be %d for %d failed gate(s)." % (want, len(red))
+    return ""
+
+
 def every_push_deletes_only(scan):
     """True when every `git ... push` segment in the command only deletes remote refs.
 
@@ -1217,6 +1606,10 @@ def run(ev):
     )
     r_exit = r_exit if isinstance(r_exit, str) else json.dumps(r_exit, separators=(",", ":"))
 
+    # A RECEIPT WITHOUT `schema: 2` IS REFUSED, with the command that writes one (clean break: there is no v1 reading path). Before the tree comparison, so an old receipt is told it is old rather than that it judged another tree.
+    if not isinstance(receipt, dict) or receipt.get("schema") != RECEIPT_SCHEMA:
+        return _refuse(ev, v2_verdict(root, tree, receipt))
+
     chain = None
     if r_tree != tree:
         # A RECORD-ONLY COMMIT ADVANCES, it does not void (module docstring). Only this branch pays for the extra git calls, and a receipt with no `advances` keeps today's refusal byte for byte, so the frozen golden's rows do not move.
@@ -1233,6 +1626,11 @@ def run(ev):
         return _refuse(
             ev, "that receipt came from a NARROWED run (--only/--skip), not the whole lane."
         )
+
+    # THE PER-GATE VERDICTS, and every carried one recomputed at the pushed tree (v2_verdict). After `whole` so a narrowed receipt keeps its own message.
+    v2 = v2_verdict(root, tree, receipt)
+    if v2:
+        return _refuse(ev, v2)
 
     # A TOUCHED SLOW GATE THE LANE DROPPED is refused until a `--only` run of it passed at this tree. After `whole`, so a narrowed receipt keeps its own message; before the base fetch, so a push refused here never pays for one.
     dropped = dropped_verdict(receipt, tree, chain)
