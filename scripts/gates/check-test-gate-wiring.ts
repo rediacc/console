@@ -62,9 +62,9 @@ function findUnwired(
     const inManifest = mentionIdx !== -1;
     let wiredToCiQuality = false;
     if (inManifest) {
-      // Scan forward from the mention to the entry's closing brace (next top-level
-      // `},\n  {` boundary or `ci: {` block) for the workflow this entry targets.
-      const slice = manifestSource.slice(mentionIdx, mentionIdx + 2000);
+      // Scan forward from the mention to the entry's own closing `\n  },` (entries sit at two-space indent). A fixed 2000-char window missed check:test:tutorial-player's `workflow:` once a long comment grew its entry (2026-10-06), and could read the NEXT entry's workflow for a short one.
+      const end = manifestSource.indexOf('\n  },', mentionIdx);
+      const slice = manifestSource.slice(mentionIdx, end === -1 ? undefined : end);
       wiredToCiQuality = /workflow:\s*'\.github\/workflows\/ci-quality\.yml'/.test(slice);
     }
     results.push({ key, inManifest, wiredToCiQuality });
@@ -94,10 +94,26 @@ function selftest(): number {
     run: 'npm run check:test:wrong-workflow',
     ci: { kind: 'step', workflow: '.github/workflows/ci.yml', job: 'x', step: 'y' },
   },
+  {
+    id: 'check:test:long-entry',
+    // ${'x'.repeat(2500)}
+    run: 'npm run check:test:long-entry',
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'x', step: 'y' },
+  },
+  {
+    id: 'check:test:no-workflow',
+    run: 'npm run check:test:no-workflow',
+  },
+  {
+    id: 'check:test:after-no-workflow',
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'x', step: 'y' },
+  },
   `;
   const fakeScripts = {
     'check:test:wired': 'x',
     'check:test:wrong-workflow': 'x',
+    'check:test:long-entry': 'x',
+    'check:test:no-workflow': 'x',
     'check:test:missing': 'x',
     'check:test-dashform': 'x',
     'check:other-thing': 'x', // must NOT be picked up: not a check:test* key
@@ -117,6 +133,14 @@ function selftest(): number {
     'a fully wired key passes both checks',
     found.find((f) => f.key === 'check:test:wired')?.inManifest === true &&
       found.find((f) => f.key === 'check:test:wired')?.wiredToCiQuality === true
+  );
+  check(
+    'an entry whose workflow line sits more than 2000 characters past its id is still wired',
+    found.find((f) => f.key === 'check:test:long-entry')?.wiredToCiQuality === true
+  );
+  check(
+    "an entry with no workflow of its own does not borrow the next entry's",
+    found.find((f) => f.key === 'check:test:no-workflow')?.wiredToCiQuality === false
   );
   check(
     'the dash-form namespace (check:test-x) is scanned too, not only the colon form',
