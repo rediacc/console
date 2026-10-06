@@ -30,13 +30,6 @@
   "version": 2,
   "carried": [
     {
-      "gate": "check:ci-plan-implementation",
-      "findings": [
-        "P-A1:177914db0e3c"
-      ],
-      "reason": "Turbo ran with the operator's go and was then switched off with five plans part-done: clean-review-ledger T17/T18, commit-as-you-go T6 keep-list and the drain, config-team-scoping T10 (live eu smoke needs a browser), plan-per-pr-loop R1 (waits on a scheduled run) and retire-bash-oracles (its M-live release ports wait for the operator's real runs). The PR body's Operational-Reason names them, which admits P-A1 in CI. PLAN-ci-quick-cpu-scheduling.md joined the PR's plan clock on 2026-10-05 with P2-P4 open by design; this PR's own PLAN-prepush-full-cpu.md has every box ticked."
-    },
-    {
       "gate": "check:ci-pytest",
       "findings": [
         "pytest-skip:.ci.rediacc_ci.tests.test_core_account::test_stop_real_run_kills_a_real_tracked_pid_and_a_real_port_occupant",
