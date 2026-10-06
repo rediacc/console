@@ -24,11 +24,13 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 from collections.abc import Callable
 
 from rediacc_ci import log, paths
+from rediacc_ci.core.gh_retry import retry_transient
 from rediacc_ci.review import clean_ledger, pr_labels
-from rediacc_ci.review.pr_labels import BUMP_LABEL, aggregate, branch_slug
+from rediacc_ci.review.pr_labels import BUMP_LABEL, aggregate, branch_slug, read_failure
 from rediacc_ci.well_known import GH_ORIGIN
 
 MARKER_PREFIX = "<!-- per-commit-reviews:"
@@ -451,6 +453,7 @@ def _fit(
 
 
 def _gh(args: list[str]) -> tuple[int, str]:
+    """One gh call; (exit code, stdout without trailing newlines). On a nonzero exit the text is gh's stderr instead, which is what `read_failure` classifies and what a failed read's caller ignores."""
     try:
         proc = subprocess.run(
             ["gh", *args],
@@ -462,7 +465,16 @@ def _gh(args: list[str]) -> tuple[int, str]:
         )
     except (OSError, subprocess.SubprocessError):
         return 127, ""
-    return proc.returncode, (proc.stdout or "").rstrip("\n")
+    if proc.returncode != 0:
+        return proc.returncode, (proc.stderr or "").rstrip("\n") or "failed"
+    return 0, (proc.stdout or "").rstrip("\n")
+
+
+_sleep = time.sleep
+
+
+def _backoff(secs: float) -> None:
+    _sleep(secs)
 
 
 def _git(args: list[str]) -> tuple[int, str]:
@@ -491,14 +503,18 @@ def parse_commit_lines(text: str) -> list[Commit]:
 
 
 def pr_commits(repo: str, pr: str, gh: Runner) -> list[Commit] | None:
-    rc, text = gh(
-        [
-            "api",
-            "repos/%s/pulls/%s/commits" % (repo, pr),
-            "--paginate",
-            "--jq",
-            '.[] | "\\(.sha) \\(.commit.message | split("\\n")[0])"',
-        ]
+    rc, text = retry_transient(
+        lambda: gh(
+            [
+                "api",
+                "repos/%s/pulls/%s/commits" % (repo, pr),
+                "--paginate",
+                "--jq",
+                '.[] | "\\(.sha) \\(.commit.message | split("\\n")[0])"',
+            ]
+        ),
+        read_failure,
+        sleep=_backoff,
     )
     if rc != 0:
         return None
@@ -517,14 +533,18 @@ def local_commits(branch: str, git: Runner = _git) -> list[Commit] | None:
 
 def upsert(repo: str, pr: str, body: str, gh: Runner) -> bool:
     """PATCH the comment carrying the marker, or POST a new one. True when the write succeeded."""
-    rc, ids = gh(
-        [
-            "api",
-            "repos/%s/issues/%s/comments" % (repo, pr),
-            "--paginate",
-            "--jq",
-            '.[] | select(.body | startswith("%s")) | .id' % MARKER_PREFIX,
-        ]
+    rc, ids = retry_transient(
+        lambda: gh(
+            [
+                "api",
+                "repos/%s/issues/%s/comments" % (repo, pr),
+                "--paginate",
+                "--jq",
+                '.[] | select(.body | startswith("%s")) | .id' % MARKER_PREFIX,
+            ]
+        ),
+        read_failure,
+        sleep=_backoff,
     )
     if rc != 0:
         log.warn("review_table: could not list the PR comments; not posting")

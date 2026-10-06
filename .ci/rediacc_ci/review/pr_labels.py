@@ -25,9 +25,15 @@ import pathlib
 import re
 import subprocess
 import sys
+import time
+from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
+from rediacc_ci.core.gh_retry import retry_transient
 from rediacc_ci.review import clean_ledger
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 LEDGER_PREFIX = "<!-- claude-labels:"
 # THE HARD WHITELIST. Adding a label the repo does not carry CREATES it, so an unfiltered name would appear on the repo and fail check:ci-label-inventory.
@@ -166,6 +172,7 @@ def stale_labels(prev_applied: str, desired: list[str]) -> list[str]:
 
 
 def _gh(args: list[str]) -> tuple[int, str]:
+    """One gh call; (exit code, stdout without trailing newlines). On a nonzero exit the text is gh's stderr instead, which is what `read_failure` classifies and what a failed read's caller ignores."""
     try:
         proc = subprocess.run(
             ["gh", *args],
@@ -177,7 +184,33 @@ def _gh(args: list[str]) -> tuple[int, str]:
         )
     except (OSError, subprocess.SubprocessError):
         return 127, ""
-    return proc.returncode, (proc.stdout or "").rstrip("\n")
+    if proc.returncode != 0:
+        return proc.returncode, (proc.stderr or "").rstrip("\n") or "failed"
+    return 0, (proc.stdout or "").rstrip("\n")
+
+
+_sleep = time.sleep
+
+
+def read_failure(result: tuple[int, str]) -> str | None:
+    """`retry_transient`'s failure text for a `(rc, text)` runner result: None on success, the stderr text otherwise."""
+    return None if result[0] == 0 else (result[1] or "failed")
+
+
+def _backoff(secs: float) -> None:
+    _sleep(secs)
+
+
+def _label_exists(gh: Callable[[list[str]], tuple[int, str]], repo: str, name: str) -> bool:
+    """READ: does the repo already carry `name`? A 5xx is retried; a read that still fails answers False, which tries to create the label (a duplicate create is refused by GitHub, never a wrong label set)."""
+    return (
+        retry_transient(
+            lambda: gh(["api", "repos/%s/labels/%s" % (repo, name)]),
+            read_failure,
+            sleep=_backoff,
+        )[0]
+        == 0
+    )
 
 
 def apply(env: dict[str, str], root: pathlib.Path, gh=_gh) -> int:
@@ -191,8 +224,13 @@ def apply(env: dict[str, str], root: pathlib.Path, gh=_gh) -> int:
             "pr_labels: PR_NUMBER, HEAD_REF and GITHUB_REPOSITORY are required; nothing applied"
         )
         return 0
-    rc, changed_text = gh(
-        ["api", "repos/%s/pulls/%s/files" % (repo, pr), "--paginate", "--jq", ".[].filename"]
+    # A READ: a 5xx is retried; one that still fails leaves `changed` empty, which warns and skips the mechanical labels (labels are advisory here, never a gate).
+    rc, changed_text = retry_transient(
+        lambda: gh(
+            ["api", "repos/%s/pulls/%s/files" % (repo, pr), "--paginate", "--jq", ".[].filename"]
+        ),
+        read_failure,
+        sleep=_backoff,
     )
     changed = [p for p in changed_text.split("\n") if p] if rc == 0 else []
     if not changed:
@@ -204,14 +242,18 @@ def apply(env: dict[str, str], root: pathlib.Path, gh=_gh) -> int:
     desired, note = desired_labels(changed, found)
     if note:
         log.warn(note)
-    rc, ledgers = gh(
-        [
-            "api",
-            "repos/%s/issues/%s/comments" % (repo, pr),
-            "--paginate",
-            "--jq",
-            '.[] | select(.body | startswith("%s")) | "\\(.id) \\(.body)"' % LEDGER_PREFIX,
-        ]
+    rc, ledgers = retry_transient(
+        lambda: gh(
+            [
+                "api",
+                "repos/%s/issues/%s/comments" % (repo, pr),
+                "--paginate",
+                "--jq",
+                '.[] | select(.body | startswith("%s")) | "\\(.id) \\(.body)"' % LEDGER_PREFIX,
+            ]
+        ),
+        read_failure,
+        sleep=_backoff,
     )
     prev, ledger_id = "", ""
     if rc == 0:
@@ -227,7 +269,7 @@ def apply(env: dict[str, str], root: pathlib.Path, gh=_gh) -> int:
             log.warn("could not remove the stale label '%s'" % stale)
     for label in desired:
         row = next((r for r in CREATE_ON_DEMAND_LABELS if r.split("|", 1)[0] == label), "")
-        if row and gh(["api", "repos/%s/labels/%s" % (repo, label)])[0] != 0:
+        if row and not _label_exists(gh, repo, label):
             _name, color, desc = row.split("|", 2)
             if (
                 gh(
