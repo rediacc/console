@@ -28,7 +28,7 @@ GATE_SRC = paths.from_root(".ci", "rediacc_ci", "release", "verify_artifact_atte
 class Fixture:
     """A minimal repo root holding the module under test and artifacts.
 
-    The module is standard-library only and finds the root three directories above itself, so a copy at `.ci/rediacc_ci/release/` judges this fixture's `dist/`, never the shared working tree's.
+    The module finds the root three directories above itself, so a copy at `.ci/rediacc_ci/release/` judges this fixture's `dist/`, never the shared working tree's.
     """
 
     def __init__(self, root: pathlib.Path) -> None:
@@ -70,6 +70,8 @@ class Fixture:
                 "PATH": "%s:%s" % (bindir, os.environ.get("PATH", "")),
                 "GITHUB_REPOSITORY": GH_REPO,
                 "GH_TOKEN": "fake",  # a literal the fake gh never reads
+                # The copy imports `rediacc_ci.core.gh_retry`, which the fixture tree does not hold; the real package is on the path, the copy still judges the fixture's dist/.
+                "PYTHONPATH": str(paths.from_root(".ci")),
             },
         )
         self.output = result.combined

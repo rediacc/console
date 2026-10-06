@@ -10,12 +10,14 @@ everything to ONE stream (stderr) to avoid asserting an interleaving order this 
 
 from __future__ import annotations
 
+import importlib
 import os
 import shutil
 import stat
 import sys
 from typing import TYPE_CHECKING
 
+from rediacc_ci.core import gh_retry, ghx
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import GH_REPO
 
@@ -189,10 +191,6 @@ def test_missing_github_repository_fails_the_same_way_reworded(tmp_path: pathlib
 
 
 def _run_port_in_process(monkeypatch, tmp_path, results, capsys):
-    import importlib
-
-    from rediacc_ci.core import gh_retry, ghx
-
     mod = importlib.import_module("rediacc_ci.release.verify_artifact_attestation")
     root = tmp_path / "root"
     (root / "dist" / "cli").mkdir(parents=True)

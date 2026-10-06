@@ -1298,7 +1298,8 @@ class Housekeeping:
                     if state == "unknown":
                         self.housekeeping_fail(
                             "Release delete unverified",
-                            "Release %s: GitHub kept failing the read-back, so the delete is not counted" % tag,
+                            "Release %s: GitHub kept failing the read-back, so the delete is not counted"
+                            % tag,
                         )
                     elif state == "present":
                         self.housekeeping_fail(

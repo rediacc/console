@@ -20,14 +20,16 @@ QUALITY = paths.from_root(".ci/scripts/quality")
 
 
 def _load(name: str):
-    sys.path.insert(0, str(QUALITY))
+    hop = paths.on_sys_path(QUALITY)
     try:
         spec = importlib.util.spec_from_file_location(name, QUALITY / f"{name}.py")
+        assert spec is not None
+        assert spec.loader is not None
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         return mod
     finally:
-        sys.path.remove(str(QUALITY))
+        sys.path.remove(hop)
 
 
 def _fake(monkeypatch, mod, results):
