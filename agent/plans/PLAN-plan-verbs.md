@@ -31,3 +31,4 @@ Owns: .claude/hooks/stop/worklist.py, .claude/hooks/stop/wl_planrec.py, .claude/
 ## Tasks
 - [ ] T14 `--plan-new`. Proof: `test_wl_plan_verbs.py` in a tmp git repo checks that the ledger row equals `ledger_row`, that INDEX lists the plan, and that the QUEUE generated section lists it. Controls: skip the `git add` and INDEX omits the plan (the test fails); a missing Owns header is refused with nothing written.
 - [ ] T15 `--plan-tick ... --investigate present ...`. Proof: one call in `test_wl_plan_verbs.py` writes the jsonl row and ticks the box. Controls: `--investigate partial` is refused; an unresolvable pointer is refused; in both cases plan, ledger and jsonl stay byte-identical.
+- [ ] T16 Docs. `docs/agent-reference/plan-records.md` documents `--plan-new` and `--plan-tick --investigate present` (the half of PLAN-ci-consolidation T20 that moved here with Part D on 2026-10-06). Proof: `check:ci-prose-style` and `check:ci-doc-region-parity` rc 0.
