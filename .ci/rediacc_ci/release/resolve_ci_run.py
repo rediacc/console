@@ -14,7 +14,7 @@ raised.
 
 THE ONE DELIBERATE DIFFERENCE FROM THE TWIN: A RUN MUST HAVE STAGED ARTIFACTS. The twin takes `per_page=1` of the newest green Console CI run on main. Since a second push CI run on an already-green sha became a no-op (`duplicate-run` in ci.yml skips `initialize` and every job downstream, concluding `success` with nothing staged), and a scheduled nightly always stages nothing, the newest green run can be one that has no artifacts to release. So this port, and the twin does not:
   - auto-derive lists 20 green `event=push` runs and takes the newest whose `Stage Artifacts / Stage Artifacts` job (the `stage-artifacts` caller job of cd-stage.yml in ci.yml) concluded `success`; none qualifying is an `::error::`;
-  - an explicit `ci_run_id` gets the same check after the branch/workflow/conclusion checks pass, and `ALLOW_STALE=true` skips it (stale means "I know this run is not the ideal one").
+  - an explicit `ci_run_id` gets the same check after the branch/workflow/conclusion checks pass, and `ALLOW_STALE=true` skips it (stale means the operator chose this run knowingly, ideal or not).
 Every other path stays byte-compatible. The golden `release.resolve-ci-run.jsonl` stays the twin's frozen answer and nothing re-records it: the cases that still match the twin (empty listing, explicit-id refusals, `allow_stale`, failed lookup, missing env) remain differentials in test_release_resolve_ci_run.py, and the one auto-derive success case runs against the twin's golden with the port given a listing that qualifies. The new behaviour is covered by port-only tests there, because the twin cannot answer them: the differential no longer covers the "newest green run did not stage" auto-derive path.
 """
 
