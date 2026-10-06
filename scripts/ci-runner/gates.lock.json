@@ -689,6 +689,10 @@
   {
     "id": "check:types:incremental",
     "run": "npm run check:types:incremental",
+    "cores": {
+      "min": 1,
+      "max": "all"
+    },
     "gate": true,
     "needs": [
       "build:cli"
@@ -1765,6 +1769,10 @@
   {
     "id": "check:ci-literal-sources",
     "run": "npm run check:ci-literal-sources",
+    "cores": {
+      "min": 1,
+      "max": "all"
+    },
     "gate": true,
     "leaves": [
       ".ci/scripts/quality/check_literal_sources.py"
@@ -2902,6 +2910,10 @@
   {
     "id": "check:ci-battery-clean-tree",
     "run": "npm run check:ci-battery-clean-tree",
+    "cores": {
+      "min": 1,
+      "max": "all"
+    },
     "gate": true,
     "leaves": [
       ".ci/scripts/quality/check_battery_clean_tree.py"
@@ -3992,6 +4004,10 @@
   {
     "id": "check:ci-embed-asset-versions",
     "run": "npm run check:ci-embed-asset-versions",
+    "cores": {
+      "min": 1,
+      "max": "all"
+    },
     "gate": true,
     "leaves": [
       "scripts/gates/check-embed-asset-versions.ts"
@@ -5250,6 +5266,10 @@
   {
     "id": "check:ci-quality-gates",
     "run": "npm run check:ci-quality-gates",
+    "cores": {
+      "min": 1,
+      "max": "all"
+    },
     "gate": false,
     "leaves": [
       ".ci/rediacc_ci/battery.py"
