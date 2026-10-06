@@ -44,6 +44,20 @@ import { fileURLToPath } from 'node:url';
 import { CORES_ENV, execGate, type Grant, gateEnv, LEASE_HELD_ENV } from './exec';
 import { findingsSelftest, receiptFindings } from './findings';
 import { retiredFieldFindings } from './gate-spec';
+import {
+  CARRY_EXEMPT_REL,
+  computeGateHashes,
+  exemptIdsOf,
+  type GateHash,
+  inputHashSelftest,
+  type LockEntry,
+  type PriorGate,
+  type PriorReceipt,
+  planCarry,
+  SCHEMA,
+  saltHash,
+  scriptsMapOf,
+} from './input-hash';
 import { stepDurationsMs } from './lanes';
 import { grantFromEnv, leaseClientSelftest, openLease, type RunnerLease } from './lease-client';
 import { GATES, type GateSpec } from './manifest';
@@ -59,6 +73,7 @@ import {
 import {
   admitTouched,
   type DropKind,
+  leafClosure,
   quickSelectSelftest,
   resolvePushBase,
   type SlowCandidate,
@@ -1767,6 +1782,10 @@ async function selftest(): Promise<number> {
   }
   require_(badSched, "CONTROL: --sched core (a typo) must be refused, not read as 'slots'");
 
+  // THE INCREMENTAL RECEIPT (input-hash.ts and the carry in this file): INCREMENTAL-PROOF-1..3 and their controls.
+  const inc = incrementalSelftest(os.tmpdir());
+  for (const f of inc.failures) require_(false, `incremental: ${f}`);
+
   // --quick DIFF SELECTION (quick-select.ts). The pure half: touch, import closure, npm script change, the mutant matcher, the budget, the base fallback.
   const qs = quickSelectSelftest(os.tmpdir(), matchesAny);
   for (const f of qs.failures) require_(false, `quick-select: ${f}`);
@@ -2178,7 +2197,7 @@ async function selftest(): Promise<number> {
       })
     );
     const known = new Set(['g:plan', 'g:tree']);
-    const whole = { whole: true, headTree: 'T0', advances: [] as Advance[] };
+    const whole = { schema: SCHEMA, whole: true, headTree: 'T0', advances: [] as Advance[] };
     const at =
       (paths: string[]) =>
       (from: string, to: string): string[] | undefined =>
@@ -2266,7 +2285,7 @@ async function selftest(): Promise<number> {
     return 1;
   }
   process.stdout.write(
-    `ci-runner: selftest ok (${9 + 1 + keyed.assertions + 3 + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2 + qs.assertions + 10 + 5 + 9 + 10 + 4 + leaseCheck.assertions + 11} assertions)\n`
+    `ci-runner: selftest ok (${9 + 1 + keyed.assertions + 3 + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2 + qs.assertions + 10 + 5 + 9 + 10 + 4 + leaseCheck.assertions + 11 + inc.assertions} assertions)\n`
   );
   return 0;
 }
@@ -2290,6 +2309,12 @@ async function selftest(): Promise<number> {
  * warns (naming files) when it has moved while the tree object has not.
  */
 interface Receipt {
+  /** Receipt schema (input-hash.ts SCHEMA). The push guard reads only this version. */
+  schema: number;
+  /** Node, python, platform and toolchain.env digest; a carried verdict needs an equal salt (input-hash.ts saltHash). */
+  saltHash: string;
+  /** One entry per gate the run knows about: ran, carried, deferred or CI-only (`receiptGates`). */
+  gates: Record<string, ReceiptGate>;
   headTree: string;
   head: string;
   branch: string;
@@ -2368,6 +2393,14 @@ interface Receipt {
    * Record-only steps this receipt was carried across, oldest first, each starting where the previous one (or `headTree`) ended (`runAdvance`). `[]` on a fresh whole run. The push guard accepts a pushed tree other than `headTree` only through this chain, recomputing every step's diff itself.
    */
   advances: Advance[];
+}
+
+/** One gate's line in a v2 receipt; PriorGate (input-hash.ts) is the subset the carry reads back. */
+interface ReceiptGate extends PriorGate {
+  defHash: string;
+  filesHash: string;
+  inputs: { globs: string[]; files: string[]; scripts: string[] };
+  verdict: 'ok' | 'fail' | 'blocked' | 'deferred' | 'ciOnly';
 }
 
 function gitOut(args: readonly string[]): string {
@@ -2538,6 +2571,413 @@ function mergeDroppedVerified(existing: unknown, run: OnlyRun): { merged?: Recei
   };
 }
 
+/** How many archived receipts (`receipts/<headTree>.json`) a destination keeps. */
+const RECEIPT_ARCHIVE_KEEP = 50;
+
+/** Writes `receipt` to `<dirname(dest)>/receipts/<headTree>.json`, where the guard looks up a carried entry's origin, and drops all but the newest RECEIPT_ARCHIVE_KEEP by mtime. */
+function archiveReceipt(receipt: Receipt, dest: string): void {
+  if (receipt.headTree === '') return;
+  const dir = path.join(path.dirname(dest), 'receipts');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, `${receipt.headTree}.json`),
+    `${JSON.stringify(receipt, null, 2)}\n`
+  );
+  const aged = fs
+    .readdirSync(dir)
+    .filter((name) => name.endsWith('.json'))
+    .map((name) => ({ name, mtime: fs.statSync(path.join(dir, name)).mtimeMs }))
+    .sort((a, b) => b.mtime - a.mtime || (a.name < b.name ? 1 : -1));
+  for (const old of aged.slice(RECEIPT_ARCHIVE_KEEP)) fs.rmSync(path.join(dir, old.name));
+}
+
+/** What the incremental step needs, so the runtime and the selftest feed `incrementalPlan` the same shape. */
+interface IncrementalInput {
+  root: string;
+  /** The judged tree: HEAD^{tree} of a clean disposable clone. */
+  tree: string;
+  /** The gate lock keyed by id (gates.lock.json at `tree`). */
+  lock: Record<string, LockEntry>;
+  /** Root package.json `scripts` at `tree`. */
+  scripts: Record<string, string>;
+  /** carry-exempt.json's text at `tree`, or null. */
+  exemptText: string | null;
+  /** The receipt at the destination before this run replaces it. */
+  prior: PriorReceipt | null;
+  disposable: boolean;
+  /** The gate ids the run selected. */
+  selected: string[];
+}
+
+/**
+ * The carry decision, pure. Only a disposable clone carries (the tree is then the bytes the gates read); anywhere else every selected gate runs.
+ */
+function decideCarry(input: {
+  disposable: boolean;
+  prior: PriorReceipt | null;
+  hashes: Map<string, GateHash>;
+  selected: string[];
+  salt: string;
+}): { carry: Map<string, PriorGate>; run: string[] } {
+  if (!input.disposable) return { carry: new Map(), run: [...input.selected] };
+  return planCarry(input.prior, input.hashes, input.selected, input.salt);
+}
+
+/** Hashes every gate at the judged tree, then decides which selected gates keep the prior verdict. */
+function incrementalPlan(input: IncrementalInput): {
+  carry: Map<string, PriorGate>;
+  run: string[];
+  hashes: Map<string, GateHash>;
+  salt: string;
+} {
+  const salt = saltHash(input.root, input.tree);
+  const hashes = computeGateHashes(input.root, input.tree, input.lock, {
+    exempt: exemptIdsOf(input.exemptText),
+    scriptsOf: (id) => scriptsMapOf(String(input.lock[id]?.run ?? ''), input.scripts),
+    leafFilesOf: (id) => {
+      const leaves = input.lock[id]?.leaves;
+      const closure = leafClosure(input.root, Array.isArray(leaves) ? (leaves as string[]) : []);
+      return { files: [...closure.files], capped: closure.capped };
+    },
+  });
+  return { ...decideCarry({ ...input, hashes, salt }), hashes, salt };
+}
+
+/** The incremental inputs a real run reads from git at `tree`; undefined when the lock or package.json cannot be read. */
+function incrementalInputOf(
+  tree: string,
+  prior: PriorReceipt | null,
+  disposable: boolean,
+  selected: string[]
+): IncrementalInput | undefined {
+  const lockText = gitTry(['show', `${tree}:scripts/ci-runner/gates.lock.json`]);
+  const pkgText = gitTry(['show', `${tree}:package.json`]);
+  if (lockText === undefined || pkgText === undefined) return undefined;
+  const lock: Record<string, LockEntry> = {};
+  for (const entry of JSON.parse(lockText) as LockEntry[]) lock[entry.id] = entry;
+  return {
+    root: REPO_ROOT,
+    tree,
+    lock,
+    scripts: (JSON.parse(pkgText) as { scripts?: Record<string, string> }).scripts ?? {},
+    exemptText: gitTry(['show', `${tree}:${CARRY_EXEMPT_REL}`]) ?? null,
+    prior,
+    disposable,
+    selected,
+  };
+}
+
+/** `failed`, `findings` and `exitCode` over fresh AND carried verdicts, so a carried red stays red and still clears carried-reds.json by exact key. */
+function mergeVerdicts(
+  results: ReadonlyArray<{ id: string; status: string }>,
+  freshExit: number,
+  freshFindings: Record<string, string[] | null>,
+  carry: ReadonlyMap<string, PriorGate>
+): { failed: string[]; findings: Record<string, string[] | null>; exitCode: number } {
+  const failed = results.filter((r) => r.status === 'fail').map((r) => r.id);
+  const findings: Record<string, string[] | null> = { ...freshFindings };
+  for (const [id, pg] of carry) {
+    if (pg.verdict !== 'fail') continue;
+    failed.push(id);
+    findings[id] = pg.findings;
+  }
+  const sorted: Record<string, string[] | null> = {};
+  for (const id of Object.keys(findings).sort()) sorted[id] = findings[id];
+  return {
+    failed,
+    findings: sorted,
+    exitCode: failed.length > 0 ? Math.max(freshExit, 1) : freshExit,
+  };
+}
+
+/** Every gate the run knows about gets an entry: ran, carried, deferred (slow, not selected) or ciOnly. */
+function receiptGates(input: {
+  specs: readonly GateSpec[];
+  results: ReadonlyArray<{ id: string; status: string; exitCode: number | null }>;
+  carry: ReadonlyMap<string, PriorGate>;
+  hashes: ReadonlyMap<string, GateHash>;
+  findings: Record<string, string[] | null>;
+  tree: string;
+  /** Only a disposable clone's hashes are a statement about the judged bytes; elsewhere inputHash is null. */
+  disposable: boolean;
+}): Record<string, ReceiptGate> {
+  const out: Record<string, ReceiptGate> = {};
+  const byResult = new Map(input.results.map((r) => [r.id, r]));
+  for (const spec of input.specs) {
+    const h = input.hashes.get(spec.id);
+    const base = {
+      inputHash: input.disposable ? (h?.inputHash ?? null) : null,
+      defHash: h?.defHash ?? '',
+      filesHash: h?.filesHash ?? '',
+      inputs: h?.inputs ?? { globs: [], files: [], scripts: [] },
+    };
+    const carried = input.carry.get(spec.id);
+    const ran = byResult.get(spec.id);
+    if (carried !== undefined) {
+      out[spec.id] = {
+        ...base,
+        verdict: carried.verdict as ReceiptGate['verdict'],
+        exitCode: carried.exitCode,
+        findings: carried.findings,
+        judgedTree: carried.judgedTree,
+        carriedFrom: carried.carriedFrom,
+      };
+    } else if (ran !== undefined) {
+      const verdict = ran.status === 'ok' ? 'ok' : ran.status === 'fail' ? 'fail' : 'blocked';
+      out[spec.id] = {
+        ...base,
+        verdict,
+        exitCode: ran.exitCode,
+        findings: verdict === 'fail' ? (input.findings[spec.id] ?? null) : null,
+        judgedTree: input.tree,
+        carriedFrom: null,
+      };
+    } else if (spec.gate) {
+      out[spec.id] = {
+        ...base,
+        verdict: spec.ciOnly !== undefined ? 'ciOnly' : 'deferred',
+        exitCode: null,
+        findings: null,
+        judgedTree: input.tree,
+        carriedFrom: null,
+      };
+    }
+  }
+  return out;
+}
+
+/**
+ * The incremental receipt end to end over a scratch repo, through the same `incrementalPlan` / `receiptGates` / `mergeVerdicts` the runtime uses. Three named proofs and the controls that keep them honest.
+ */
+function incrementalSelftest(tmpDir: string): { failures: string[]; assertions: number } {
+  const failures: string[] = [];
+  let assertions = 0;
+  const check = (cond: boolean, message: string): void => {
+    assertions++;
+    if (!cond) failures.push(message);
+  };
+  try {
+    inputHashSelftest(tmpDir);
+    assertions++;
+  } catch (err) {
+    failures.push((err as Error).message);
+  }
+  const root = fs.mkdtempSync(path.join(tmpDir, 'incremental-'));
+  try {
+    const git = (...args: string[]): string =>
+      execFileSync('git', args, { cwd: root, encoding: 'utf-8' }).trim();
+    git('init', '-q');
+    git('config', 'user.email', 't@example.invalid');
+    git('config', 'user.name', 't');
+    git('config', 'commit.gpgsign', 'false');
+    const write = (rel: string, text: string): void => {
+      fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+      fs.writeFileSync(path.join(root, rel), text);
+    };
+    const commit = (message: string): string => {
+      git('add', '-A');
+      git('commit', '-q', '-m', message);
+      return git('rev-parse', 'HEAD^{tree}');
+    };
+    write('a/x.txt', 'x1\n');
+    write('b/y.txt', 'y1\n');
+    write('.devcontainer/toolchain.env', 'NODE=1\n');
+    const lockOf = (runB: string): Record<string, LockEntry> => ({
+      'g:a': { id: 'g:a', run: 'true', paths: ['a/**'] },
+      'g:b': { id: 'g:b', run: runB, paths: ['b/**'] },
+      'g:none': { id: 'g:none', run: 'true' },
+    });
+    const ids = ['g:a', 'g:b', 'g:none'];
+    const specs = ids.map((id) => syntheticSpec(id, 'true'));
+    const plan = (
+      tree: string,
+      prior: PriorReceipt | null,
+      opts: { lock?: Record<string, LockEntry>; disposable?: boolean } = {}
+    ) =>
+      incrementalPlan({
+        root,
+        tree,
+        lock: opts.lock ?? lockOf('true'),
+        scripts: {},
+        exemptText: null,
+        prior,
+        disposable: opts.disposable ?? true,
+        selected: ids,
+      });
+    /** A whole receipt over `tree`, as the runtime would write it, from `status` per fresh gate. */
+    const receiptOf = (
+      tree: string,
+      p: ReturnType<typeof plan>,
+      status: Record<string, 'ok' | 'fail'>
+    ): PriorReceipt => {
+      const results = p.run.map((id) => ({
+        id,
+        status: status[id] ?? 'ok',
+        exitCode: (status[id] ?? 'ok') === 'ok' ? 0 : 1,
+      }));
+      const findings = Object.fromEntries(
+        results.filter((r) => r.status === 'fail').map((r) => [r.id, [`${r.id}:key`]])
+      );
+      return {
+        schema: SCHEMA,
+        whole: true,
+        headTree: tree,
+        head: 'h',
+        finishedAt: 'now',
+        saltHash: p.salt,
+        gates: receiptGates({
+          specs,
+          results,
+          carry: p.carry,
+          hashes: p.hashes,
+          findings,
+          tree,
+          disposable: true,
+        }),
+      };
+    };
+
+    const t1 = commit('one');
+    const first = plan(t1, null);
+    check(
+      first.carry.size === 0 && first.run.length === 3,
+      'with no prior receipt every gate runs'
+    );
+    const r1 = receiptOf(t1, first, {});
+
+    // INCREMENTAL-PROOF-1: a one-file change re-runs only the gate whose paths reach it.
+    write('a/x.txt', 'x2\n');
+    const t2 = commit('touch a');
+    const second = plan(t2, r1);
+    check(
+      [...second.carry.keys()].join() === 'g:b' && second.run.includes('g:a'),
+      `INCREMENTAL-PROOF-1: a change under a/ must re-run g:a and carry g:b, carried ${[...second.carry.keys()].join()} ran ${second.run.join()}`
+    );
+    check(
+      second.carry.get('g:b')?.carriedFrom?.headTree === t1,
+      'INCREMENTAL-PROOF-1: a carried entry names the tree that originally judged it'
+    );
+    check(
+      second.run.includes('g:none'),
+      'CONTROL: a gate declaring no paths always runs, even when nothing it could read changed'
+    );
+    const r2 = receiptOf(t2, second, {});
+    check(
+      r2.gates['g:b']?.carriedFrom?.headTree === t1 && r2.gates['g:b'].judgedTree === t1,
+      'a carried receipt entry keeps its origin tree and judgedTree'
+    );
+
+    // INCREMENTAL-PROOF-2: a planted change to a carried gate's input forces its re-run.
+    write('b/y.txt', 'y2\n');
+    const t3 = commit('touch b');
+    const third = plan(t3, r2);
+    check(
+      third.run.includes('g:b') && !third.carry.has('g:b'),
+      'INCREMENTAL-PROOF-2: a change to b/y.txt must re-run the gate carried on the previous receipt'
+    );
+    check(
+      third.carry.has('g:a'),
+      'CONTROL: the untouched gate stays carried when only the other input moves'
+    );
+
+    // INCREMENTAL-PROOF-3: a planted red stays red when carried.
+    const redFirst = plan(t3, null);
+    const rRed = receiptOf(t3, redFirst, { 'g:b': 'fail' });
+    const sameTree = plan(t3, rRed);
+    const carriedRed = sameTree.carry.get('g:b');
+    check(
+      carriedRed?.verdict === 'fail',
+      'INCREMENTAL-PROOF-3: an unchanged failing gate is carried as fail, never as ok'
+    );
+    const merged = mergeVerdicts([], 0, {}, sameTree.carry);
+    check(
+      merged.failed.join() === 'g:b' && merged.exitCode === 1,
+      `INCREMENTAL-PROOF-3: a carried fail must stay in failed with exitCode 1, got ${JSON.stringify(merged)}`
+    );
+    check(
+      merged.findings['g:b']?.join() === 'g:b:key',
+      'INCREMENTAL-PROOF-3: a carried fail keeps its findings, so carried-reds.json can still match it by key'
+    );
+    check(
+      mergeVerdicts([], 0, {}, new Map()).exitCode === 0,
+      'CONTROL: with nothing failed, fresh or carried, the exit code is 0'
+    );
+
+    // CONTROLS.
+    check(
+      plan(t3, rRed, { lock: lockOf('echo changed') }).run.includes('g:b'),
+      'a changed `run` command must re-run its gate'
+    );
+    check(
+      plan(t3, { ...rRed, saltHash: 'other-toolchain' }).carry.size === 0,
+      'a salt mismatch must run every gate'
+    );
+    check(
+      plan(t3, rRed, { disposable: false }).carry.size === 0,
+      'a non-disposable checkout must run every gate'
+    );
+    check(
+      plan(t3, { ...rRed, whole: false }).carry.size === 0,
+      'a narrowed prior receipt must carry nothing'
+    );
+    check(
+      plan(t3, { ...rRed, schema: 1 }).carry.size === 0,
+      'a schema 1 prior receipt must carry nothing'
+    );
+    check(
+      planAdvance({
+        receipt: { ...rRed, schema: 1, advances: [] },
+        headTree: 'T9',
+        policy: undefined,
+        diff: () => [],
+        known: new Set(),
+      }).kind === 'full',
+      'a schema 1 receipt must never be advanced'
+    );
+
+    // Entries: every spec appears, deferred and ciOnly are named, non-disposable hashes are null.
+    const mixed = receiptGates({
+      specs: [
+        { ...syntheticSpec('s:slow', 'true'), slow: true },
+        { ...syntheticSpec('s:ci', 'true'), slow: true, ciOnly: 'CI runs it' },
+        syntheticSpec('s:ran', 'true'),
+      ],
+      results: [{ id: 's:ran', status: 'skipped', exitCode: null }],
+      carry: new Map(),
+      hashes: new Map(),
+      findings: {},
+      tree: 'T',
+      disposable: false,
+    });
+    check(
+      mixed['s:slow']?.verdict === 'deferred' &&
+        mixed['s:ci']?.verdict === 'ciOnly' &&
+        mixed['s:ran']?.verdict === 'blocked' &&
+        mixed['s:ran'].inputHash === null,
+      `receiptGates must name deferred, ciOnly and blocked (a skipped gate), got ${JSON.stringify(mixed)}`
+    );
+
+    // The archive keeps the newest RECEIPT_ARCHIVE_KEEP, and the one just written.
+    const dest = path.join(root, 'out', 'receipt.json');
+    for (let i = 0; i < RECEIPT_ARCHIVE_KEEP + 3; i++) {
+      archiveReceipt({ ...(rRed as unknown as Receipt), headTree: `tree${i}` }, dest);
+      const stamp = new Date(Date.now() - (RECEIPT_ARCHIVE_KEEP + 10 - i) * 60_000);
+      fs.utimesSync(path.join(path.dirname(dest), 'receipts', `tree${i}.json`), stamp, stamp);
+    }
+    archiveReceipt({ ...(rRed as unknown as Receipt), headTree: 'newest' }, dest);
+    const kept = fs.readdirSync(path.join(path.dirname(dest), 'receipts'));
+    check(
+      kept.length === RECEIPT_ARCHIVE_KEEP &&
+        kept.includes('newest.json') &&
+        !kept.includes('tree0.json'),
+      `the archive must keep ${RECEIPT_ARCHIVE_KEEP} receipts, newest first, got ${kept.length}`
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+  return { failures, assertions };
+}
+
 function writeReceipt(receipt: Receipt, dest: string, warn: (text: string) => void): void {
   if (narrowedWouldReplaceWhole(dest, receipt.whole)) {
     warn(
@@ -2548,6 +2988,7 @@ function writeReceipt(receipt: Receipt, dest: string, warn: (text: string) => vo
   try {
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.writeFileSync(dest, `${JSON.stringify(receipt, null, 2)}\n`);
+    if (receipt.whole) archiveReceipt(receipt, dest);
   } catch (err) {
     // LOUD, unlike the duration cache. That cache is an optimisation and is deliberately non-load-bearing; this authorises a push, so a silent failure to write it would present as "you never ran the gates".
     warn(`ci-runner: could not write the push receipt: ${(err as Error).message}\n`);
@@ -2796,6 +3237,8 @@ function planAdvance(input: {
   const r = input.receipt as Partial<Receipt> | null | undefined;
   if (r === null || typeof r !== 'object' || r.whole !== true)
     return { kind: 'full', why: 'no whole-lane receipt to advance' };
+  if (r.schema !== SCHEMA)
+    return { kind: 'full', why: `the receipt is not schema ${SCHEMA}; a whole run writes one` };
   if (typeof r.headTree !== 'string' || r.headTree === '')
     return { kind: 'full', why: 'the receipt vouches for no tree' };
   const chain = Array.isArray(r.advances) ? r.advances : [];
@@ -2977,8 +3420,59 @@ async function main(): Promise<number> {
     return 0;
   }
 
-  const graph = buildGraph(specs, selection.ids);
-  if (graph.length === 0) {
+  // BEFORE runPool, not after: manifest.ts:2817 records a gate that writes a temp .ts into packages/cli and breaks check:format, and check-python-lint plants an untracked probe. A digest taken afterwards would record the gates' own leavings and drift from the tree the session actually has.
+  const dirtyAtStart = dirtyDigest();
+  const headTreeAtStart = headTreeNow();
+
+  // THE INCREMENTAL RECEIPT (agent/plans/PLAN-fast-loop.md Part 1). A whole `--quick` run in a clean disposable clone keeps the prior receipt's verdict for every gate whose inputs hash the same, and removes it from the graph before the pool sees it. Carried ids leave `needs` too, or buildGraph would pull them back in as prerequisites.
+  const recording = opts.quick && !opts.manifest && opts.lane === undefined;
+  const disposable = recording && isDisposableClone(opts);
+  let carry = new Map<string, PriorGate>();
+  let hashes = new Map<string, GateHash>();
+  let salt = '';
+  if (recording && headTreeAtStart !== '') {
+    let prior: PriorReceipt | null = null;
+    try {
+      prior = JSON.parse(fs.readFileSync(receiptPathFor(opts), 'utf8')) as PriorReceipt;
+    } catch {
+      prior = null;
+    }
+    const input = incrementalInputOf(
+      headTreeAtStart,
+      narrowingFlags(opts).length === 0 ? prior : null,
+      disposable,
+      [...selection.ids]
+    );
+    if (input === undefined) {
+      humanOut('incremental: off (gates.lock.json or package.json unreadable at HEAD)\n');
+    } else {
+      const plan = incrementalPlan(input);
+      carry = plan.carry;
+      hashes = plan.hashes;
+      salt = plan.salt;
+      if (disposable) {
+        const noInputs = plan.run.filter((id) => hashes.get(id)?.reason === 'no-paths').length;
+        humanOut(
+          `incremental: ${carry.size} carried, ${plan.run.length} run (${noInputs} with no declared inputs)\n`
+        );
+        const named = [...carry.keys()].slice(0, 10);
+        if (named.length > 0)
+          humanOut(
+            `  carried: ${named.join(', ')}${carry.size > named.length ? `, +${carry.size - named.length} more` : ''}\n`
+          );
+      } else {
+        humanOut('incremental: off (not a clean disposable clone), every selected gate runs\n');
+      }
+    }
+  }
+  const runIds = new Set([...selection.ids].filter((id) => !carry.has(id)));
+  const graph = buildGraph(
+    carry.size === 0
+      ? specs
+      : specs.map((spec) => ({ ...spec, needs: spec.needs?.filter((n) => !carry.has(n)) })),
+    runIds
+  );
+  if (graph.length === 0 && carry.size === 0) {
     process.stderr.write('ci-runner: Refusing to run: the selection matched zero gates.\n');
     // `--quick` narrows first and `--only` narrows what is left, so `npm run ci:quick -- --only <slow gate>` matches nothing: the quick lane already deferred it (#1434d694).
     const only = opts.only?.join(',') ?? '';
@@ -2990,15 +3484,16 @@ async function main(): Promise<number> {
     return 1;
   }
 
-  // BEFORE runPool, not after: manifest.ts:2817 records a gate that writes a temp .ts into packages/cli and breaks check:format, and check-python-lint plants an untracked probe. A digest taken afterwards would record the gates' own leavings and drift from the tree the session actually has.
-  const dirtyAtStart = dirtyDigest();
-  const headTreeAtStart = headTreeNow();
-  const { results, exitCode, wallMs, util, startedAt } = await runGraph(
-    graph,
-    opts,
-    selection.description,
-    humanOut
-  );
+  const { results, exitCode, wallMs, util, startedAt } =
+    graph.length === 0
+      ? {
+          results: [] as GateResult[],
+          exitCode: 0,
+          wallMs: 0,
+          util: undefined,
+          startedAt: Date.now(),
+        }
+      : await runGraph(graph, opts, selection.description, humanOut);
 
   // THE RECEIPT IS MINTED ONLY BY A RUNNER THAT PROVED IT CAN FAIL.
   //
@@ -3058,10 +3553,24 @@ async function main(): Promise<number> {
   }
 
   if (opts.quick && !opts.manifest && !merged) {
+    const freshFindings = receiptFindings(results, humanOut);
+    const verdicts = mergeVerdicts(results, exitCode, freshFindings, carry);
+    const receiptTreeNow = receiptTree(headTreeAtStart, headTreeNow());
     writeReceipt(
       {
+        schema: SCHEMA,
+        saltHash: salt,
+        gates: receiptGates({
+          specs,
+          results,
+          carry,
+          hashes,
+          findings: freshFindings,
+          tree: headTreeAtStart,
+          disposable,
+        }),
         headTree: (() => {
-          const tree = receiptTree(headTreeAtStart, headTreeNow());
+          const tree = receiptTreeNow;
           if (tree === '' && headTreeAtStart !== '') {
             humanOut(
               'WARNING: HEAD moved while these gates ran, so this receipt vouches for no tree and\n' +
@@ -3089,9 +3598,9 @@ async function main(): Promise<number> {
         selection: selection.description ?? null,
         whole: narrowedBy.length === 0,
         narrowedBy,
-        exitCode,
-        failed: results.filter((r) => r.status === 'fail').map((r) => r.id),
-        findings: receiptFindings(results, humanOut),
+        exitCode: verdicts.exitCode,
+        failed: verdicts.failed,
+        findings: verdicts.findings,
         blocked: results.filter((r) => r.status === 'blocked').map((r) => r.id),
         wallMs,
         finishedAt: new Date().toISOString(),
@@ -3109,7 +3618,7 @@ async function main(): Promise<number> {
       humanOut
     );
   }
-  return exitCode;
+  return mergeVerdicts(results, exitCode, {}, carry).exitCode;
 }
 
 main()
