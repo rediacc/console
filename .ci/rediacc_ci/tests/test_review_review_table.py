@@ -389,9 +389,13 @@ def test_help_prints_usage_and_never_publishes(monkeypatch, capsys):
 
 
 def test_an_unknown_option_is_refused_not_published(monkeypatch, capsys):
-    monkeypatch.setattr(T, "publish", lambda *_a, **_k: pytest.fail("an unknown option must not publish"))
+    monkeypatch.setattr(
+        T, "publish", lambda *_a, **_k: pytest.fail("an unknown option must not publish")
+    )
     assert T.main(["--render"]) == 2
     assert "unknown option --render" in capsys.readouterr().err
+    assert T.main(["--branch", "--invalid-flag"]) == 2
+    assert "unknown option --invalid-flag" in capsys.readouterr().err
 
 
 def test_render_only_uses_the_local_commit_list(tmp_path):
