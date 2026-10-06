@@ -112,6 +112,7 @@ import {
   measuredStepDurations,
   mergeLaneCapabilities,
   SHARD_COUNTS,
+  SHARD_LEG_CAP_MIN,
   type ShardInput,
   shardPlan,
   TEST_LANE_WORKFLOWS,
@@ -136,7 +137,8 @@ const LOCK_PATH = 'scripts/ci-runner/gates.lock.json';
 const QUALITY_WORKFLOW = '.github/workflows/ci-quality.yml';
 const CI_WORKFLOW = '.github/workflows/ci.yml';
 
-export const PER_LEG_BUDGET_MIN = 12;
+/** The one per-leg ceiling: gate-bind's re-plan hysteresis (`stickyShardPlan`) holds a committed shard leg to the same number. */
+export const PER_LEG_BUDGET_MIN = SHARD_LEG_CAP_MIN;
 /** D-W1 as revised 2026-09-25 (Operator rulings): GitHub Free, 20 concurrent jobs, a pipeline target of about 35 minutes, not 20. */
 export const PIPELINE_BUDGET_MIN = 35;
 export const MAX_STALENESS_DAYS = 14;
