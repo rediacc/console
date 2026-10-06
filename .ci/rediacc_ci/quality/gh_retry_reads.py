@@ -3,19 +3,21 @@
 WHY THIS EXISTS. On 2026-10-06 one `gh: Server Error (HTTP 502)` failed CI Complete on PR #597 (run 37507913738), and a read-only audit the same day found 20 modules under `.ci/rediacc_ci` reading GitHub through a bare one-shot `subprocess.run(["gh", ...])`. Three of them were silently WRONG on a single 5xx rather than merely red: `release/resolve_ci_run` fell back to GITHUB_SHA and released the wrong
 build, `version/detect_bump_type` read a major label as a patch, `ci/dispatch_release` released a skip-labelled PR (agent/plans/PLAN-gh-retry.md, boxes G0-G8). The fix moved each read onto `rediacc_ci.core.gh_retry`. This gate is box G9: it keeps the next one-shot read from arriving unnoticed.
 
-THE INVARIANT. Every non-test `gh` call site under `.ci/rediacc_ci` and `.ci/scripts` is classified READ, WRITE or LOCAL. A READ must be RETRIED, which here means exactly one of:
+THE INVARIANT. Every non-test `gh` call site under `.ci/rediacc_ci`, `.ci/scripts`, `.claude/hooks` and `.claude/rediacc_hooks` is classified READ, WRITE or LOCAL. A READ must be RETRIED, which here means exactly one of:
   * a call to `gh_retry.gh(...)` / `gh_retry.api_json(...)`;
   * a call to a `ghx` read helper with a constant `attempts=` of 2 or more;
   * a raw spawn that sits inside the retry machinery: lexically inside a lambda handed to `retry_transient(...)`, inside a function whose NAME is handed to `retry_transient(...)`, or inside a `for`/`while` loop that itself consults `is_transient` (the hand loop `ci/scope_reconcile_shadow.read_jobs` keeps);
   * any of the above one level up, through a WRAPPER: a function that spawns `["gh", *param]` is resolved at its in-module call sites, with the caller's argument substituted, to a fixpoint.
 Anything else that reads is a FINDING, unless its `<path>::<qualname>` is in `ALLOWED` below with a `BLOCKER:` reason. A WRITE is reported as information and never retried, by design: a retried POST after a lost response creates a second release, run or comment.
 
-DETECTION IS STRUCTURAL, NOT A GREP. The argv is read out of the AST: a list or tuple literal whose first element is `"gh"`, a name assigned one in an enclosing scope (with its `+=` extensions), a `[binary, *argv]` whose `binary` parameter defaults to `"gh"`, or a `list + list`. The CALLEE is deliberately not restricted to `subprocess.*`, because the tree spawns `gh` through `bounded(...)`, `ctx.run(...)`, `_run(...)` and
+DETECTION IS STRUCTURAL, NOT A GREP. The argv is read out of the AST: a list or tuple literal whose first element is `"gh"`, a name assigned one in an enclosing scope (with its `+=` extensions), a `[binary, *argv]` whose `binary` parameter defaults to `"gh"`, or a `list + list`. A leading `timeout [opts] <duration>` launcher is seen through: the `.claude` guards spawn `["timeout", "20", "gh", "pr", "view", ...]`, and until 2026-10-07 that head hid both of block_admin_merge's reads and block_premature_ready's one. The CALLEE is deliberately not restricted to `subprocess.*`, because the tree spawns `gh` through `bounded(...)`, `ctx.run(...)`, `_run(...)` and
 `proc.run(...)` as well; instead the handful of calls that merely CONSUME an argv (`" ".join`, an exception constructor, a logger) are excluded by name in `_NOT_A_SPAWN`.
 
 READ OR WRITE, from the argv:
   gh api            write when `-X/--method` is POST|PATCH|PUT|DELETE, or when no method is given and `-f/-F/--field/--raw-field/--input` is (gh then defaults to POST);
-                    `gh api graphql` is a write only when a token names a `mutation`.
+                    `gh api graphql` is a write only when a token names a `mutation`, including a `"query=%s" % CONST` whose CONST is a module string
+                    (wl_prreview's `RESOLVE_MUTATION`, read as a READ until 2026-10-07 because only the template `query=%s` was kept). The resolved text
+                    is used to CLASSIFY only; the argv text, and so the baseline id, stays the template.
   gh workflow       run|enable|disable are writes.
   gh release        create|delete|delete-asset|upload|edit are writes.
   gh run            rerun|cancel|delete are writes.
@@ -27,10 +29,11 @@ READ OR WRITE, from the argv:
 
 BLIND SPOTS, stated so a green is not read as more than it is:
   * Wrappers are followed within ONE module. A wrapper called from another module is reported at its own spawn as UNRESOLVED, which over-reports rather than hides.
-  * `gh` spawned from bash under `.ci/scripts`, and the `.claude` hooks, are out of scope; the language policy ports the first, and the hooks carry their own budget.
+  * `gh` spawned from bash under `.ci/scripts` is out of scope; the language policy ports it. The `.claude` Python hooks joined the scan on 2026-10-07 (PLAN-gh-retry G13); a hook's retry is bounded to its own time budget (attempts=2, a 2 s pause), never gh_retry's 20 s default.
+  * Standalone `test-*.py` scripts (`.claude/hooks/stop`, `.claude/rediacc_hooks/guards`) are tests, excluded beside `tests/` and `test_*.py`.
   * A retried call is recognised by its SHAPE; whether its failure is then handled correctly is the module's own gate test's business.
 
-ANTI-VACUITY. Zero modules scanned, zero `gh` call sites, zero reads routed through `gh_retry`, or zero writes FAILS: each is the signature of a detector that stopped seeing the tree. Controls run first (`controls_first`), and the real run then plants two defects into REAL module text in memory -- a `gh_retry.gh(` read demoted to a one-shot `ghx.gh(` read, and a guarded raw spawn with its `retry_transient` unhooked -- and refuses
+ANTI-VACUITY. Zero modules scanned, zero `gh` call sites, zero reads routed through `gh_retry`, or zero writes FAILS: each is the signature of a detector that stopped seeing the tree. So does a SCAN ROOT that contributes zero modules (`root_problems`): a renamed `.claude/hooks` would otherwise drop out of the corpus while the other roots kept the totals looking healthy. Controls run first (`controls_first`), and the real run then plants three defects into REAL module text in memory -- a `gh_retry.gh(` read demoted to a one-shot `ghx.gh(` read, a guarded raw spawn with its `retry_transient` unhooked, and a one-shot read appended to a real `.claude` module -- and refuses
 a green unless each plant adds a finding.
 
 ALLOWLIST LIVENESS, in-gate on the `.runner-advice-allowlist` precedent (docs/agent-reference/suppressions.md): an `ALLOWED` entry that excuses no unretried read on the tree is STALE and fails, telling the author to delete it; the oracle IS the comparison this gate already makes. Every excused site is printed on every run, so the exemption cannot be forgotten.
@@ -49,6 +52,7 @@ import json
 import pathlib
 import re
 import sys
+from typing import Self
 
 from rediacc_ci import paths
 from rediacc_ci.controls import Checker, controls_first, plant
@@ -56,7 +60,9 @@ from rediacc_ci.core import allowlist
 from rediacc_ci.quality import shrink_only
 
 NAME = "gh retry reads"
-SCAN_ROOTS = (".ci/rediacc_ci", ".ci/scripts")
+SCAN_ROOTS = (".ci/rediacc_ci", ".ci/scripts", ".claude/hooks", ".claude/rediacc_hooks")
+# The roots a real-tree plant must reach, beyond the `.ci` ones the two original plants already prove: a widened root that is never planted into is a root nobody has seen fail.
+CLAUDE_ROOTS = (".claude/hooks", ".claude/rediacc_hooks")
 # THE POLICY ITSELF. gh_retry.gh calls ghx.gh with attempts=1 on purpose (each attempt is one call), and ghx IS the one-shot primitive; scanning them would report the retry as its own violation.
 IMPLEMENTATION = frozenset({".ci/rediacc_ci/core/gh_retry.py", ".ci/rediacc_ci/core/ghx.py"})
 # This gate's own fixtures are string literals, never AST lists, so it cannot report itself; listing it anyway keeps a future fixture refactor from turning the gate on its own source.
@@ -163,6 +169,16 @@ ALLOWED: dict[str, str] = {
     # Local operator tooling, never invoked by a workflow (grep of .github and package.json, 2026-10-06).
     ".ci/rediacc_ci/dev/worktree.py::pr_merged_at_tip": "BLOCKER: a local worktree tool no workflow runs; a failed read returns False (not merged), which keeps the worktree, and the only other prune reason is a git-only no-commits check",
     ".ci/rediacc_ci/setup/host.py::_try_gh_credential": "BLOCKER: interactive host setup run by the operator, never in CI; a failed `gh auth status` falls through to the stored-token path, which asks the operator, so nothing is decided wrongly on a 5xx",
+    # THE .claude GUARDS (PLAN-gh-retry G13, verified against the code 2026-10-07). Each is a PreToolUse refusal whose read can only turn an unreadable answer into a DENY, so a 5xx costs the agent one re-run of its command and can never let a merge, a ready flip, a push to main, a second PR, a second branch or an empty commit through. A retry would buy convenience, not safety, at the price of importing `.ci` into a guard the dispatcher runs in-process beside every other one.
+    ".claude/rediacc_hooks/guards/block_admin_merge.py::run": "BLOCKER: fails closed: an unreadable `gh pr view` leaves num empty and DENYs with UNRESOLVABLE_MESSAGE, and an unreadable thread count is 'unverifiable' and DENYs with THREADS_MESSAGE, so a 5xx can only refuse a merge",
+    ".claude/rediacc_hooks/guards/block_premature_ready.py::run": "BLOCKER: fails closed: any CI Complete conclusion other than SUCCESS, an unreadable one included ('verification failed'), DENYs the ready flip, so a 5xx can only keep a PR in draft",
+    ".claude/rediacc_hooks/guards/block_second_open_pr.py::run": "BLOCKER: fails closed: a non-zero `gh pr list` DENYs with UNVERIFIABLE before the count is read, so a 5xx can only refuse a `gh pr create`, never admit a second open PR",
+    ".claude/rediacc_hooks/guards/block_git_empty_commit.py::run": "BLOCKER: fails closed: an unreadable check-runs count sets the reason 'I could not check is not there is no run' and DENYs, so a 5xx can only refuse the empty commit the no-run claim asked for",
+    ".claude/rediacc_hooks/guards/block_push_to_protected_branch.py::_gh_pr": "BLOCKER: fails closed: an unreadable PR returns (None, why), ff_fallback_refusal returns that why, and run() DENYs any non-empty reason, so a 5xx can only refuse the fast-forward push to main",
+    ".claude/rediacc_hooks/guards/block_raw_pr_body_edit.py::_live_body": "BLOCKER: fails closed: an unreadable live body (want_rc=True gives None) makes _would_drop report every missing marker, so the whole-body PATCH stays refused, the guard's verdict without the network",
+    ".claude/rediacc_hooks/commit_policy.py::_gh_lines": "BLOCKER: fails closed: an unreadable answer raises GhUnavailableError, block_second_branch turns it into a refusal (_gh_down), and wl_prscope reads it as UNREADABLE or as no suggested name, so a 5xx can never admit a second branch",
+    # The runner is a CLOSURE handed to another module, so this detector cannot follow it (BLIND SPOTS, one module). Its every read is retried by the consumer: wl_prreview._gh_json wraps the runner in retry_transient, and its writes call it once, as they must.
+    ".claude/hooks/stop/wl_checks.py::prreview_runner.run": "BLOCKER: the runner is injected into wl_prreview.check_state, whose one read path _gh_json wraps it in gh_retry.retry_transient (attempts=2, 2 s pause); retrying inside the runner too would also retry the reply POSTs",
 }
 
 # ---------------------------------------------------------------------------
@@ -202,9 +218,42 @@ class _Star:
         return "*?"
 
 
+class Template(str):
+    """A `"<template>" % CONST` token. Its str value IS the template, so the argv text and every baseline id are unchanged; `resolved` is the formatted text, read only by the classifier (a graphql `mutation` held in a module constant)."""
+
+    __slots__ = ("resolved",)
+    resolved: str
+
+    def __new__(cls, text: str, resolved: str) -> Self:
+        obj = super().__new__(cls, text)
+        obj.resolved = resolved
+        return obj
+
+
+def _text(tok: object) -> str:
+    """The text a classifier should read: a Template's resolved form, else the string itself."""
+    return tok.resolved if isinstance(tok, Template) else str(tok)
+
+
 DYN = _Dyn()
 STAR = _Star()
 Token = str | Param | Choice | _Dyn | _Star
+
+# `timeout [opts] <duration> gh ...`: the launcher is dropped so the gh argv underneath is judged. These options take a separate value.
+_TIMEOUT_VALUED = frozenset({"-k", "--kill-after", "-s", "--signal"})
+
+
+def strip_launcher(tokens: list[Token]) -> list[Token]:
+    """`tokens` without a leading `timeout [opts] <duration>`; unchanged when there is none. Pure, so the selftest drives it."""
+    if not tokens or tokens[0] != "timeout":
+        return tokens
+    i = 1
+    while i < len(tokens):
+        tok = tokens[i]
+        if not (isinstance(tok, str) and tok.startswith("-")):
+            break
+        i += 2 if tok in _TIMEOUT_VALUED else 1
+    return tokens[i + 1 :]
 
 
 @dataclasses.dataclass
@@ -276,7 +325,7 @@ def classify(tokens: list[Token]) -> tuple[str, str]:
 def _classify_api(rest: list[Token]) -> tuple[str, str]:
     endpoint = next((t for t in rest if isinstance(t, str) and not t.startswith("-")), None)
     if endpoint == "graphql":
-        mutation = any(isinstance(t, str) and "mutation" in t for t in rest)
+        mutation = any(isinstance(t, str) and "mutation" in _text(t) for t in rest)
         return ("write", "api graphql mutation") if mutation else ("read", "api graphql")
     method: str | None = None
     method_unknown = False
@@ -569,7 +618,7 @@ class _Module:
             and isinstance(elt.left, ast.Constant)
             and isinstance(elt.left.value, str)
         ):
-            return elt.left.value
+            return self._template(elt.left.value, elt.right, at)
         if isinstance(elt, ast.JoinedStr):
             return "".join(
                 v.value if isinstance(v, ast.Constant) and isinstance(v.value, str) else "%s"
@@ -597,6 +646,19 @@ class _Module:
                     return Choice(frozenset(consts))
         return DYN
 
+    def _template(self, left: str, right: ast.expr, at: ast.AST) -> str:
+        """`left % right` as a Template when every value `right` names is a constant string, else the bare template."""
+        parts = right.elts if isinstance(right, ast.Tuple) else [right]
+        values = [self._scalar(x, at) if isinstance(x, ast.Name) else None for x in parts]
+        if not values or not all(type(v) is str for v in values):
+            return left
+        try:
+            return Template(
+                left, left % (tuple(values) if isinstance(right, ast.Tuple) else values[0])
+            )
+        except (TypeError, ValueError):
+            return left
+
     def _param_token(self, expr: ast.AST, at: ast.AST, *, star: bool) -> Param | None:
         if not isinstance(expr, ast.Name):
             return None
@@ -613,6 +675,8 @@ class _Module:
         cands = list(call.args) + [k.value for k in call.keywords if k.arg in _ARGV_KEYWORDS]
         for c in cands:
             toks = self.tokens(c, call)
+            if toks:
+                toks = strip_launcher(toks)
             if toks and _head(toks) == "gh":
                 return toks
         return None
@@ -884,7 +948,7 @@ def is_test_path(rel: str) -> bool:
     return (
         "tests" in parts[:-1]
         or "test" in parts[:-1]
-        or name.startswith("test_")
+        or name.startswith(("test_", "test-"))
         or name.endswith("_test.py")
         or name == "conftest.py"
     )
@@ -907,6 +971,21 @@ def corpus(root: pathlib.Path) -> dict[str, str]:
                 continue
             out[rel] = p.read_text(encoding="utf-8", errors="replace")
     return out
+
+
+def root_of(rel: str) -> str | None:
+    return next((r for r in SCAN_ROOTS if rel == r or rel.startswith(r + "/")), None)
+
+
+def root_problems(files: dict[str, str], roots: tuple[str, ...] = SCAN_ROOTS) -> list[str]:
+    """A scan root that contributes zero modules is VACUOUS for that root, whatever the totals say: the other roots would keep the shape line looking healthy while a renamed `.claude/hooks` silently left the corpus."""
+    seen = {root_of(rel) for rel in files}
+    return [
+        "VACUOUS: scan root %s contributed zero modules; the gate is not seeing that part of the tree."
+        % r
+        for r in roots
+        if r not in seen
+    ]
 
 
 def load_baseline(path: pathlib.Path) -> dict[str, dict]:
@@ -1132,6 +1211,33 @@ def comments(pr):
 """
 
 
+# The `.claude` guards' shape: a `timeout` launcher in front of gh, and a graphql mutation held in a module constant (wl_prreview.RESOLVE_MUTATION).
+_FIX_CLAUDE = """import subprocess
+RESOLVE = "mutation($id:ID!){resolveReviewThread(input:{threadId:$id}){thread{isResolved}}}"
+THREADS = "query($n:Int!){repository{pullRequest(number:$n){id}}}"
+
+
+def view(n):
+    return subprocess.run(["timeout", "20", "gh", "pr", "view", n, "--json", "body"], check=False)
+
+
+def merge(n):
+    return subprocess.run(["timeout", "-k", "5", "20", "gh", "pr", "merge", n], check=False)
+
+
+def listing():
+    return subprocess.run(["timeout", "20", "ls", "-l"], check=False)
+
+
+def resolve(tid):
+    return subprocess.run(["gh", "api", "graphql", "-f", "query=%s" % RESOLVE, "-f", "id=%s" % tid], check=False)
+
+
+def threads(n):
+    return subprocess.run(["gh", "api", "graphql", "-f", "query=%s" % THREADS, "-F", "n=%s" % n], check=False)
+"""
+
+
 def _routes(sites: list[Site]) -> list[tuple[str, str, str]]:
     return [(s.qualname, s.kind, s.route) for s in sites]
 
@@ -1217,6 +1323,60 @@ def selftest() -> bool:
     check(
         'CONTROL: a `[binary, *argv]` spawn with binary defaulting to "gh" is seen',
         _routes(binary) == [("comments", "read", "one-shot")],
+    )
+
+    claude_rel = ".claude/rediacc_hooks/guards/fixture.py"
+    hooks = scan_source(claude_rel, _FIX_CLAUDE)
+    check(
+        "LAUNCHER: `timeout 20 gh pr view` is seen as a gh read",
+        ("view", "read", "one-shot") in _routes(hooks),
+    )
+    check(
+        "LAUNCHER: `timeout -k 5 20 gh pr merge` is seen as a gh write",
+        ("merge", "write", "one-shot") in _routes(hooks),
+    )
+    check(
+        "LAUNCHER: `timeout 20 ls` is not a gh call",
+        "listing" not in [x.qualname for x in hooks],
+    )
+    check(
+        "TEMPLATE: a graphql `query=%s` % <module mutation constant> is a write",
+        ("resolve", "write", "one-shot") in _routes(hooks),
+    )
+    check(
+        "TEMPLATE: the same shape holding a module QUERY constant stays a read",
+        ("threads", "read", "one-shot") in _routes(hooks),
+    )
+    check(
+        "TEMPLATE: the argv text (so the baseline id) keeps the template, not the constant",
+        [x.argv for x in hooks if x.qualname == "resolve"]
+        == ["gh api graphql -f query=%s -f id=%s"],
+    )
+    unlaunched = plant(
+        _FIX_CLAUDE, '["timeout", "20", "gh", "pr", "view"', '["timeout", "20", "hg", "pr", "view"'
+    )
+    check(
+        "LAUNCHER: the same launcher in front of a non-gh binary is not a gh call",
+        "view" not in [x.qualname for x in scan_source(claude_rel, unlaunched)],
+    )
+    check(
+        "TESTS: a standalone `test-*.py` script is a test and leaves the corpus",
+        is_test_path(".claude/hooks/stop/test-block_x.py"),
+    )
+    check(
+        "TESTS: a hook module beside it is not a test",
+        not is_test_path(".claude/hooks/stop/wl_ci.py"),
+    )
+    check(
+        "ROOTS: a scan root with zero modules is a VACUOUS problem naming the root",
+        any(
+            ".claude/hooks contributed zero" in p
+            for p in root_problems({".ci/rediacc_ci/x.py": "", ".claude/rediacc_hooks/y.py": ""})
+        ),
+    )
+    check(
+        "ROOTS: one module under every root is no problem",
+        root_problems({"%s/m.py" % r: "" for r in SCAN_ROOTS}) == [],
     )
 
     check(
@@ -1377,6 +1537,15 @@ def real_tree_plants(
         ),
         None,
     )
+    # A one-shot read APPENDED to a real `.claude` module: the widened roots (G13) are scanned only if this reds. Appended rather than substituted, so it needs no particular shape in the hook's own text beyond `import subprocess`.
+    claude = next(
+        (
+            r
+            for r, s in sorted(files.items())
+            if r.startswith(CLAUDE_ROOTS) and "\nimport subprocess\n" in s
+        ),
+        None,
+    )
     for label, rel, old, new in (
         # A raw spawn and not `ghx.gh(`: a module that never imports ghx would leave `ghx.gh` unresolvable (and a NameError at run time), so that plant fails to fire for a reason that has nothing to do with the gate. Measured 2026-10-06 on ci/detect_pointer_bump.py.
         (
@@ -1390,6 +1559,15 @@ def real_tree_plants(
             guarded,
             "gh_retry.retry_transient(\n        lambda: subprocess.run(",
             "run_once(\n        lambda: subprocess.run(",
+        ),
+        (
+            "a one-shot gh read appended to a .claude module",
+            claude,
+            "\nimport subprocess\n",
+            (
+                "\nimport subprocess\n\n\ndef _gh_retry_reads_plant():\n"
+                '    return subprocess.run(["gh", "api", "repos/o/r/pulls"], check=False)\n'
+            ),
         ),
     ):
         if rel is None:
@@ -1408,6 +1586,27 @@ def real_tree_plants(
         else:
             print("  plant fired: %s in %s (%d -> %d new findings)" % (label, rel, clean_new, got))
     return failures
+
+
+def _per_root(v: Verdict, files: dict[str, str]) -> str:
+    mods: dict[str | None, int] = {}
+    for rel in files:
+        mods[root_of(rel)] = mods.get(root_of(rel), 0) + 1
+    out = []
+    for r in SCAN_ROOTS:
+        rs = [s for s in v.sites if root_of(s.path) == r]
+        out.append(
+            "%s %d module(s) %d site(s) %d new %d baselined %d allowlisted"
+            % (
+                r,
+                mods.get(r, 0),
+                len(rs),
+                sum(1 for s in v.new if root_of(s.path) == r),
+                sum(1 for s in v.debt if root_of(s.path) == r),
+                sum(1 for s in v.excused if root_of(s.path) == r),
+            )
+        )
+    return "; ".join(out)
 
 
 def _shape(v: Verdict) -> str:
@@ -1476,6 +1675,7 @@ def main(argv: list[str]) -> int:
         )
         return 1
     v = judge(files, ALLOWED, baseline)
+    v.problems.extend(root_problems(files))
 
     if files and v.sites:
         plant_failures = real_tree_plants(files, ALLOWED, baseline, len(v.new))
@@ -1514,6 +1714,7 @@ def main(argv: list[str]) -> int:
     for p in v.problems:
         print("✗ %s" % p, file=sys.stderr)
     shape = _shape(v)
+    print("  roots: %s" % _per_root(v, files))
     if v.new or v.drained or v.problems:
         print("✗ %s" % shape, file=sys.stderr)
         return 1

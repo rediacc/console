@@ -20,6 +20,13 @@ from rediacc_hooks.wellknown import GH_REPO
 
 P = wlfix.import_wl("wl_prreview")
 
+
+@pytest.fixture(autouse=True)
+def _no_retry_pause(monkeypatch):
+    """FakeGh's failure text is `HTTP 502`, a transient fault, so every failing READ is retried once (PLAN-gh-retry G13); the pause is zeroed so the suite does not sleep 2 s per failing read."""
+    monkeypatch.setattr(P, "GH_READ_PAUSE_S", 0)
+
+
 REPO = GH_REPO
 PR = 7
 HEAD = "c" * 40
@@ -300,6 +307,55 @@ def test_check_state_carries_review_token():
     state = P.check_state(None, gh)
     assert state["review_token"] in P.TITLE_TOKENS
     assert state["review_token"].startswith("hyg")
+
+
+# ---- G13: reads retry a transient fault, writes never do ----
+
+
+class FlakyGh(FakeGh):
+    """FakeGh whose calls matching `flaky` fail ONCE each with `stderr`, then answer."""
+
+    def __init__(self, flaky: str, stderr: str):
+        super().__init__()
+        self.flaky = flaky
+        self.stderr = stderr
+        self.failed: set[str] = set()
+
+    def __call__(self, argv: list[str]) -> tuple[int, str, str]:
+        joined = " ".join(argv)
+        if self.flaky in joined and joined not in self.failed:
+            self.calls.append(list(argv))
+            self.failed.add(joined)
+            return 1, "", self.stderr
+        return super().__call__(argv)
+
+
+def test_a_read_retries_one_502_and_then_answers():
+    gh = FlakyGh("repo view", "gh: Server Error (HTTP 502)")
+    assert P.cmd_status(None, gh) == 0
+    assert sum(1 for c in gh.calls if c[:2] == ["repo", "view"]) == 2
+
+
+def test_a_read_does_not_retry_a_404():
+    gh = FlakyGh("repo view", "gh: Not Found (HTTP 404)")
+    assert P.cmd_status(None, gh) == 2
+    assert sum(1 for c in gh.calls if c[:2] == ["repo", "view"]) == 1
+
+
+def test_a_persistent_502_read_is_bounded_to_two_attempts():
+    gh = FakeGh()
+    gh.fail = ["repo view"]
+    assert P.cmd_status(None, gh) == 2
+    assert sum(1 for c in gh.calls if c[:2] == ["repo", "view"]) == P.GH_READ_ATTEMPTS == 2
+
+
+def test_the_retry_pause_is_the_hook_bound_not_gh_retrys_default(monkeypatch):
+    naps: list[float] = []
+    monkeypatch.setattr(P, "GH_READ_PAUSE_S", 2)
+    monkeypatch.setattr(P.time, "sleep", naps.append)
+    gh = FlakyGh("repo view", "HTTP 503: Service Unavailable")
+    assert P.cmd_status(None, gh) == 0
+    assert naps == [2]
 
 
 def test_check_unreadable_rc2():
@@ -643,6 +699,10 @@ def test_answer_partial_api_failure_is_rc2(repo):
     gh = FakeGh()
     gh.fail = ["/replies"]
     assert answer(repo, gh, good_lines(repo["fix"])) == 2
+    # A WRITE is never retried, even on a transient 502: a retried POST after a lost response is a second comment.
+    replies = [c for c in gh.calls if any("/replies" in a for a in c)]
+    assert replies
+    assert len(replies) == len({tuple(c) for c in replies})
 
 
 def test_help_rc0(capsys):

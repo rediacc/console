@@ -450,7 +450,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_bravedefault.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_checklist.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
 | .claude/hooks/stop/wl_checks.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
-| .claude/hooks/stop/wl_ci.py | (none) | via .claude/hooks/post-bash/loop_speed_note.py | py |
+| .claude/hooks/stop/wl_ci.py | (none) | via .claude/hooks/post-bash/cancel_old_ci.py | py |
 | .claude/hooks/stop/wl_civerdict.py | (none) | via .claude/hooks/post-bash/arm_ci_watch.py | py |
 | .claude/hooks/stop/wl_claimcheck.py | (none) | via .claude/hooks/stop/test-completion-evidence.py | py |
 | .claude/hooks/stop/wl_classsweep.py | (none) | via .claude/hooks/stop/test-completion-evidence.py | py |

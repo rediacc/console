@@ -18,6 +18,7 @@ from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 SR = wlfix.import_wl("wl_schedred")
+CI = wlfix.import_wl("wl_ci")
 M = wlfix.import_wl("worklist_messages")
 S = wlfix.import_wl("wl_store")
 
@@ -51,6 +52,12 @@ on:
   pull_request:
 jobs: {}
 """
+
+
+@pytest.fixture(autouse=True)
+def _no_retry_pause(monkeypatch):
+    """wl_ci._gh_json retries a transient (5xx) read once (PLAN-gh-retry G13); the pause is zeroed so a planted 502 does not sleep 2 s."""
+    monkeypatch.setattr(CI, "GH_READ_PAUSE_S", 0)
 
 
 def run(rid, file="ci.yml", conclusion="failure", attempt=1, created="2026-10-03T06:02:45Z", **kw):
@@ -329,11 +336,13 @@ def test_an_unreadable_answer_is_cached_for_the_error_ttl(repo, tmp_path, gh):
     doc = SR.refresh(repo, wlp, now=now)
     assert doc["state"] == "unreadable"
     assert "502" in doc["error"]
+    # A persistent 502 costs one bounded retry (wl_ci.GH_READ_ATTEMPTS), then the unreadable answer is cached.
+    assert len(gh.calls("actions/runs")) == CI.GH_READ_ATTEMPTS == 2
     SR.refresh(repo, wlp, now=now + SR.ERROR_TTL_S - 5)
-    assert len(gh.calls("actions/runs")) == 1
+    assert len(gh.calls("actions/runs")) == CI.GH_READ_ATTEMPTS
     # Control: past the error TTL (still well inside the ok TTL) it asks again.
     SR.refresh(repo, wlp, now=now + SR.ERROR_TTL_S + 5)
-    assert len(gh.calls("actions/runs")) == 2
+    assert len(gh.calls("actions/runs")) == 2 * CI.GH_READ_ATTEMPTS
 
 
 def test_a_corrupt_cache_is_refetched(repo, tmp_path, gh):
