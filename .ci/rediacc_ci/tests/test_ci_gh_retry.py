@@ -114,3 +114,13 @@ def test_artifact_download_does_not_retry_a_404(monkeypatch):
     with pytest.raises(ghx.GhBadOutputError):
         br.download_artifact_zip("o/r", 7)
     assert len(n) == 1
+
+
+def test_repo_and_timeout_reach_gh_on_every_attempt_only_when_set():
+    """PLAN-gh-retry G0: a call site resolving `{owner}/{repo}` names the repo, and an artifact download needs more than ghx's 30 s; unset, neither is passed, so an older runner still fits."""
+    runner = _Runner((1, "", SERVER_ERROR), (0, "{}", ""))
+    gh_retry.gh(["api", "x"], repo="o/r", timeout=120, runner=runner, sleep=lambda _s: None)
+    assert [(kw["repo"], kw["timeout"]) for _a, kw in runner.calls] == [("o/r", 120), ("o/r", 120)]
+    bare = _Runner((0, "{}", ""))
+    gh_retry.gh(["api", "x"], runner=bare, sleep=lambda _s: None)
+    assert bare.calls[0][1] == {"env": None, "attempts": 1}
