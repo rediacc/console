@@ -8,3 +8,7 @@
 # http-cache-semantics max-stale cross-user cache disclosure (GHSA-ch52-4w7c-c8xp), via packages/www -> astro@7.3.5.
 # BLOCKER: no patched http-cache-semantics exists (4.2.0, the newest release, is affected; npm's suggested "fix" is a downgrade to astro 2.10.9). astro imports it only in dist/assets/build/remote.js to cache remote images at BUILD time, and packages/www builds with output: 'static', so no server answers user requests through this cache. Lift when http-cache-semantics or astro ships a fixed release (measured 2026-10-03).
 1240991
+
+# sprintf-js unbounded precision specifier denial of service (GHSA-hp3w-g68c-fv3c), via packages/www -> gray-matter@4.0.3 -> js-yaml@3.15.2 -> argparse@1.0.10 -> sprintf-js@1.0.3.
+# BLOCKER: every published sprintf-js (1.1.3, the newest, included) is inside the advisory range <=1.1.3, and npm's suggested "fix" is a downgrade to gray-matter 2.0.1 (4.0.3 is the latest). argparse is required only by js-yaml's bin/js-yaml.js CLI; the library entry (index.js) that gray-matter calls never loads argparse or sprintf-js, and the www scripts call only matter(raw) on repository markdown at build and validation time, so no format string reaches sprintf-js. Lift when argparse 1.x or js-yaml 3.x drops sprintf-js, or gray-matter moves off js-yaml 3 (measured 2026-10-06).
+1241202
