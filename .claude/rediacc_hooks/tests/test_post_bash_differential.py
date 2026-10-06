@@ -524,3 +524,61 @@ def test_a_planted_defect_is_caught(subject):
 def test_python3_is_available():
     """The control on the harness itself: the port side may not be skipped into a green."""
     assert shutil.which("python3"), "python3 is missing, so the port never ran"
+
+
+# ---- G13: the hooks' READS retry a transient fault, bounded to the hook (agent/plans/PLAN-gh-retry.md) ----
+
+# A `gh` that fails its first call with `stderr`, counts every call, and answers `ok` afterwards. Driven through the module's own `_gh_read`, the one read path both hooks use, so the real subprocess, the real gh_retry import and the real `.ci` hop all run.
+FLAKY_GH = r"""#!/usr/bin/env python3
+import pathlib, sys
+count = pathlib.Path(__file__).with_name("calls")
+n = int(count.read_text()) + 1 if count.exists() else 1
+count.write_text(str(n))
+if n == 1:
+    sys.stderr.write(%r + "\n")
+    sys.exit(1)
+print("ok")
+"""
+
+
+def _hook_module(subject):
+    import importlib.util  # noqa: PLC0415 - only these tests load a hook as a module
+
+    spec = importlib.util.spec_from_file_location(
+        "hook_" + subject.replace("-", "_"), SUBJECTS[subject]
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _flaky_gh(tmp_path, monkeypatch, stderr):
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    gh = bindir / "gh"
+    gh.write_text(FLAKY_GH % stderr, encoding="utf-8")
+    gh.chmod(0o755)
+    monkeypatch.setenv("PATH", "%s%s%s" % (bindir, os.pathsep, os.environ.get("PATH", "")))
+    return bindir / "calls"
+
+
+@pytest.mark.parametrize("subject", sorted(SUBJECTS))
+def test_a_read_retries_one_502_then_answers(subject, tmp_path, monkeypatch):
+    calls = _flaky_gh(tmp_path, monkeypatch, "gh: Server Error (HTTP 502)")
+    hook = _hook_module(subject)
+    naps: list[float] = []
+    monkeypatch.setattr(hook.time, "sleep", naps.append)
+    assert hook._gh_read("repo", "view") == (0, "ok")
+    assert calls.read_text() == "2"
+    assert naps == [hook.GH_READ_PAUSE_S] == [2], "the hook's own bound, not gh_retry's 5 s"
+
+
+@pytest.mark.parametrize("subject", sorted(SUBJECTS))
+def test_a_read_does_not_retry_a_404(subject, tmp_path, monkeypatch):
+    calls = _flaky_gh(tmp_path, monkeypatch, "gh: Not Found (HTTP 404)")
+    hook = _hook_module(subject)
+    monkeypatch.setattr(hook.time, "sleep", lambda _s: pytest.fail("a 404 must not be retried"))
+    assert hook._gh_read("repo", "view")[0] == 1
+    assert calls.read_text() == "1"

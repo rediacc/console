@@ -230,6 +230,21 @@ def make_fake_gh(
     return directory
 
 
+def copy_hooks(tmp_path: pathlib.Path) -> pathlib.Path:
+    """`.claude/hooks/stop` copied to `<tmp>/mutant/.claude/hooks/stop`, beside SYMLINKS to the real `.claude/rediacc_hooks` and `.ci`.
+
+    THE LAYOUT IS THE POINT. wl_ci reaches its code dependencies by its own location (`gh_retry_module`: `rediacc_hooks/syspath.py` and `.ci` from `parents[2]`, PLAN-gh-retry G13), so a flat copy cut the mutant off from the retry policy and every read answered "unreadable", and both ownership controls below went red for a reason that had nothing to do with ownership (measured 2026-10-07). The mutant still differs from the real module only by its appended override.
+    """
+    top = tmp_path / "mutant"
+    moddir = top / ".claude" / "hooks" / "stop"
+    moddir.mkdir(parents=True)
+    for module in sorted(HOOKS_DIR.glob("*.py")):
+        (moddir / module.name).write_text(module.read_text(encoding="utf-8"), encoding="utf-8")
+    (top / ".claude" / "rediacc_hooks").symlink_to(paths.from_root(".claude", "rediacc_hooks"))
+    (top / ".ci").symlink_to(paths.from_root(".ci"))
+    return moddir
+
+
 def with_path(directory: pathlib.Path) -> dict:
     return {"PATH": "%s:%s" % (directory, os.environ.get("PATH", ""))}
 
@@ -280,10 +295,7 @@ def test_control_default_flipped_is_caught(gate, tmp_path):
     gate.log_test("CONTROL: flip the default and the first assertion must go red")
     # Built by CONSTRUCTION -- a copied module plus an APPENDED override. A pattern substitution could silently no-op if the signature were reworded, and the control would then pass against unmutated source.
     require_subjects(gate)
-    moddir = tmp_path / "mutant"
-    moddir.mkdir(parents=True)
-    for module in sorted(HOOKS_DIR.glob("*.py")):
-        (moddir / module.name).write_text(module.read_text(encoding="utf-8"), encoding="utf-8")
+    moddir = copy_hooks(tmp_path)
     mutant = moddir / "wl_ci.py"
     with open(mutant, "a", encoding="utf-8") as handle:
         handle.write(
@@ -324,10 +336,7 @@ def test_control_old_logic_reports_the_foreign_red(gate, tmp_path):
     gate.log_test("CONTROL: without the ownership filter, the same fixture reads RED")
     # By CONSTRUCTION: a copied module with an APPENDED override that owns every context, which is the pre-fix behaviour. If this stops reading red, the fixture no longer reproduces the defect and the test above proves nothing.
     require_subjects(gate)
-    moddir = tmp_path / "mutant"
-    moddir.mkdir(parents=True)
-    for module in sorted(HOOKS_DIR.glob("*.py")):
-        (moddir / module.name).write_text(module.read_text(encoding="utf-8"), encoding="utf-8")
+    moddir = copy_hooks(tmp_path)
     mutant = moddir / "wl_ci.py"
     with open(mutant, "a", encoding="utf-8") as handle:
         handle.write(
@@ -775,10 +784,7 @@ def test_control_without_the_ci_complete_rule_the_same_head_reads_green(gate, tm
     gate.log_test("CONTROL: a ci_gate that ignores CI Complete reads the same fixture GREEN")
     # By CONSTRUCTION, like the controls above: a copied module with an APPENDED override. If this stops reading green, the fixture no longer reproduces the defect.
     require_subjects(gate)
-    moddir = tmp_path / "mutant"
-    moddir.mkdir(parents=True)
-    for module in sorted(HOOKS_DIR.glob("*.py")):
-        (moddir / module.name).write_text(module.read_text(encoding="utf-8"), encoding="utf-8")
+    moddir = copy_hooks(tmp_path)
     with open(moddir / "wl_ci.py", "a", encoding="utf-8") as handle:
         handle.write(
             "\n\n_orig_ci_gate = ci_gate\n\n\n"

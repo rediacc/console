@@ -21,11 +21,15 @@ summary this tool calls answered while the gate calls it unanswered is the exact
 THE DISPOSITION GRAMMAR IS THE PER-COMMIT ONE (`.claude/hooks/stop/wl_review.py`, `mark`): `fixed <sha40>` an ancestor of local HEAD, `not-a-bug | <evidence>` with at least 20 characters that pass `wl_review._citation_ok`, `deferred #<item>` an open, `[?]` or `[>]` worklist item. Every line is checked before anything is posted, so a refused file posts nothing.
 
 SEALED. No environment variable is read. `gh` is the only external tool, called through one injectable runner (`run_gh`), and the reply posts under the session's own gh identity, which is a different author from github-actions[bot]. Ancestry and citations are checked with wl_review's git helpers against the local checkout.
+
+EVERY READ RETRIES A TRANSIENT FAULT, NO WRITE DOES (agent/plans/PLAN-gh-retry.md G13). `_gh_json` is the one read path, and it wraps the runner in `rediacc_ci.core.gh_retry.retry_transient`, bounded to GH_READ_ATTEMPTS and GH_READ_PAUSE_S because the Stop hook calls this inside its own budget (wl_checks.prreview_runner). The comment POSTs and the resolveReviewThread mutation call the runner directly, once: a retried POST after a lost response is a second comment.
 """
 
 from __future__ import annotations
 
 import argparse
+import functools
+import importlib.util
 import json
 import pathlib
 import re
@@ -156,8 +160,46 @@ def run_gh(argv: list[str]) -> tuple[int, str, str]:
     return done.returncode, done.stdout, done.stderr
 
 
+# Two attempts and one 2 s pause, the bound the Stop hook's other reads use (wl_ci.GH_READ_ATTEMPTS), never gh_retry's default 5 s then 15 s. Read at call time, so a test can zero the pause.
+GH_READ_ATTEMPTS = 2
+GH_READ_PAUSE_S = 2
+
+
+@functools.cache
+def gh_retry_module() -> Any:
+    """`rediacc_ci.core.gh_retry`, imported on first use, with `.ci` put on sys.path through the canonical `.claude` hop (rediacc_hooks/syspath.py, loaded by file) and taken off again in `finally`. The same accessor as wl_ci.gh_retry_module, repeated rather than imported because wl_ci pulls in the worklist store and this tool is sealed."""
+    claude = HERE.parents[1]
+    spec = importlib.util.spec_from_file_location(
+        "_rediacc_syspath", claude / "rediacc_hooks" / "syspath.py"
+    )
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load %s" % (claude / "rediacc_hooks" / "syspath.py"))
+    syspath = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(syspath)
+    cipath = str(CONSOLE_ROOT / ".ci")
+    inserted = syspath.on_sys_path(cipath)
+    try:
+        from rediacc_ci.core import gh_retry  # noqa: PLC0415 - deliberately late, see above
+    finally:
+        if inserted and cipath in sys.path:
+            sys.path.remove(cipath)
+    return gh_retry
+
+
 def _gh_json(runner: Runner, what: str, argv: list[str]) -> Any:
-    rc, out, err = runner(argv)
+    """The parsed JSON of the READ `gh <argv>`, a transient fault retried; UnreadableError otherwise. Reads only: a write goes through `runner` once."""
+    try:
+        retry = gh_retry_module()
+    except (ImportError, OSError) as exc:
+        raise UnreadableError(
+            "%s: rediacc_ci.core.gh_retry could not be imported: %s" % (what, exc)
+        ) from exc
+    rc, out, err = retry.retry_transient(
+        lambda: runner(argv),
+        lambda r: None if r[0] == 0 else (r[2] or r[1] or "failed"),
+        attempts=GH_READ_ATTEMPTS,
+        sleep=lambda _scheduled: time.sleep(GH_READ_PAUSE_S),
+    )
     if rc != 0:
         raise UnreadableError("%s: gh exited %d: %s" % (what, rc, (err or out).strip()[:300]))
     try:

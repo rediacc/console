@@ -25,11 +25,14 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
-from rediacc_hooks import hookio, plan_gate
+from rediacc_hooks import hookio, plan_gate, syspath
 from rediacc_hooks.wellknown import GH_REPO
+
+NAME = "refresh_pr_body"
 
 BEGIN = "<!-- pushed-head:begin -->"
 END = "<!-- pushed-head:end -->"
@@ -42,6 +45,47 @@ def _run(argv):
     except OSError:
         return 127, ""
     return proc.returncode, proc.stdout.rstrip("\n")
+
+
+# A HOOK'S RETRY IS BOUNDED TO ITS BUDGET (agent/plans/PLAN-gh-retry.md G13): two attempts and one 2 s pause, the bound the Stop hook's reads use (wl_ci.GH_READ_ATTEMPTS), never gh_retry's default 5 s then 15 s. Only READS go through `_gh_read`; a write stays one-shot.
+GH_READ_ATTEMPTS = 2
+GH_READ_PAUSE_S = 2
+
+
+def _gh_retry():
+    """`rediacc_ci.core.gh_retry`, the one transient-retry policy, with `.ci` put on sys.path through the canonical `.claude` hop (`rediacc_hooks.syspath`) and taken off again in `finally`, the scoped shape block_unverified_push._policy_rel uses."""
+    cipath = str(syspath.CLAUDE_DIR.parent / ".ci")
+    inserted = syspath.on_sys_path(cipath)
+    try:
+        from rediacc_ci.core import gh_retry  # noqa: PLC0415 - deliberately late, see above
+    finally:
+        if inserted and cipath in sys.path:
+            sys.path.remove(cipath)
+    return gh_retry
+
+
+def _gh_read(*args):
+    """(rc, stdout with trailing newlines stripped) of the READ `gh <args>`, a TRANSIENT failure (gh_retry.is_transient on its stderr) retried within GH_READ_ATTEMPTS. A 4xx or any other failure comes back at once. rc 127 when gh cannot run or gh_retry cannot be imported, which is said on stderr rather than read as an answer."""
+    try:
+        retry = _gh_retry()
+    except ImportError as exc:
+        sys.stderr.write("%s: rediacc_ci.core.gh_retry could not be imported (%s)\n" % (NAME, exc))
+        return 127, ""
+
+    def once():
+        try:
+            proc = subprocess.run(["gh", *args], capture_output=True, text=True, check=False)
+        except OSError as exc:
+            return 127, "", str(exc)
+        return proc.returncode, proc.stdout.rstrip("\n"), proc.stderr
+
+    rc, out, _err = retry.retry_transient(
+        once,
+        lambda r: None if r[0] == 0 else (r[2] or "failed"),
+        attempts=GH_READ_ATTEMPTS,
+        sleep=lambda _scheduled: time.sleep(GH_READ_PAUSE_S),
+    )
+    return rc, out
 
 
 def destinations(cmd):
@@ -112,29 +156,27 @@ def main():
         return 0
 
     # Derived ONCE. It used to be computed inline inside the loop for `gh pr list` only, so the REST call added later had no repo to name -- a break this script would have shipped had its own reference not been checked.
-    gh_repo = _run(["gh", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"])[1]
+    # The three READS below retry a transient fault (`_gh_read`): a single 5xx used to skip the refresh silently, which is the stale-body CI failure this hook exists to prevent. The PATCH further down stays one-shot.
+    gh_repo = _gh_read("repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner")[1]
     if gh_repo == "":
         return 0
 
     for br in _sort_u([branch, *destinations(cmd)]):
         if br in ("", "main"):
             continue
-        rc, pr = _run(
-            [
-                "gh",
-                "pr",
-                "list",
-                "--repo",
-                gh_repo,
-                "--head",
-                br,
-                "--state",
-                "open",
-                "--json",
-                "number",
-                "--jq",
-                ".[0].number",
-            ]
+        rc, pr = _gh_read(
+            "pr",
+            "list",
+            "--repo",
+            gh_repo,
+            "--head",
+            br,
+            "--state",
+            "open",
+            "--json",
+            "number",
+            "--jq",
+            ".[0].number",
         )
         if rc != 0:
             continue
@@ -148,7 +190,7 @@ def main():
         if log == "":
             continue
 
-        rc, body = _run(["gh", "pr", "view", pr, "--json", "body", "--jq", ".body"])
+        rc, body = _gh_read("pr", "view", pr, "--json", "body", "--jq", ".body")
         if rc != 0:
             continue
         # Strip any previous block, then append the current one. Whole-body rewrite is safe here: this is one PR description with one writer, not the shared worklist.

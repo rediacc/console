@@ -2,6 +2,7 @@
 
 import contextlib
 import datetime
+import functools
 import hashlib
 import importlib.util
 import json
@@ -73,21 +74,11 @@ def pr_body_freshness(root, ref=None):
         'headRefName:"%s",states:OPEN,first:1){nodes{number lastEditedAt updatedAt}}}}'
         % (m.group(1), m.group(2), target)
     )
+    raw, err = gh_read(root, ["api", "graphql", "-f", "query=" + query], timeout=25)
+    if raw is None:
+        return "unreadable", err[-120:]
     try:
-        out = subprocess.run(
-            ["gh", "api", "graphql", "-f", "query=" + query],
-            capture_output=True,
-            text=True,
-            timeout=25,
-            cwd=str(root),
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        return "unreadable", str(exc)[:120]
-    if out.returncode != 0:
-        return "unreadable", (out.stderr or "")[-120:]
-    try:
-        rows = json.loads(out.stdout)["data"]["repository"]["pullRequests"]["nodes"]
+        rows = json.loads(raw)["data"]["repository"]["pullRequests"]["nodes"]
     except (ValueError, KeyError, TypeError):
         return "unreadable", "graphql response had no pullRequests.nodes"
     if not rows:
@@ -180,8 +171,36 @@ def repo_slug(root):
     return (m.group(1), m.group(2)) if m else (None, None)
 
 
-def _gh_json(root, args, timeout=25):
-    """(data, error) from `gh <args>`. Never raises; an error is a STRING, so every caller can report blindness instead of guessing."""
+# A HOOK'S RETRY IS BOUNDED TO ITS BUDGET (agent/plans/PLAN-gh-retry.md G13): two attempts and one 2 s pause, the policy ci_cancel_cause builds GhFetcher with, so a 5xx costs this Stop hook two seconds rather than gh_retry's default 5 s then 15 s. A 4xx, a timeout and any other failure still come back at once.
+GH_READ_ATTEMPTS = 2
+GH_READ_PAUSE_S = 2
+
+
+@functools.cache
+def gh_retry_module():
+    """`rediacc_ci.core.gh_retry`, the one transient-retry policy, imported on first use.
+
+    ANCHORED ON THIS FILE, because the policy is a CODE dependency of the hook, like an import, not a property of whichever repository `root` names (test_wl_schedred drives it against a scratch repo). A copy of this module run outside the tree must therefore carry the tree's layout with it (test_gate_ci_trace_branch.copy_hooks). `.ci` goes on sys.path through the canonical `.claude` hop (rediacc_hooks/syspath.py, loaded BY FILE because this module lives outside that package, the wl_prscope shape) and comes OFF again in `finally`, the scoped shape block_unverified_push._policy_rel uses: a permanent `.ci` entry would put its `config` and `scripts` directories on every later import in the Stop hook's process. Once imported, the module stays in sys.modules.
+    """
+    claude = pathlib.Path(__file__).resolve().parents[2]
+    hop = claude / "rediacc_hooks" / "syspath.py"
+    spec = importlib.util.spec_from_file_location("_rediacc_syspath", hop)
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load %s" % hop)
+    syspath = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(syspath)
+    cipath = str(claude.parent / ".ci")
+    inserted = syspath.on_sys_path(cipath)
+    try:
+        from rediacc_ci.core import gh_retry  # noqa: PLC0415 - deliberately late, see above
+    finally:
+        if inserted and cipath in sys.path:
+            sys.path.remove(cipath)
+    return gh_retry
+
+
+def _gh_once(root, args, timeout):
+    """(stdout, "") from one `gh <args>`, or (None, why not). Never raises."""
     try:
         out = subprocess.run(
             ["gh", *args],
@@ -195,10 +214,33 @@ def _gh_json(root, args, timeout=25):
         return None, str(exc)[:160]
     if out.returncode != 0:
         return None, (out.stderr or out.stdout or "gh exited %d" % out.returncode)[-160:]
+    return out.stdout, ""
+
+
+def gh_read(root, args, timeout=25, sleep=None):
+    """(stdout, "") from the READ `gh <args>`, or (None, why not), retrying a TRANSIENT failure within GH_READ_ATTEMPTS and GH_READ_PAUSE_S. Never raises: a gh_retry that cannot be imported is reported as blindness, never folded into a one-shot read."""
     try:
-        data = json.loads(out.stdout)
+        retry = gh_retry_module()
+    except (ImportError, OSError) as exc:
+        return None, "rediacc_ci.core.gh_retry could not be imported: %s" % str(exc)[:120]
+    nap = sleep or time.sleep
+    return retry.retry_transient(
+        lambda: _gh_once(root, args, timeout),
+        lambda r: None if r[0] is not None else (r[1] or "failed"),
+        attempts=GH_READ_ATTEMPTS,
+        sleep=lambda _scheduled: nap(GH_READ_PAUSE_S),
+    )
+
+
+def _gh_json(root, args, timeout=25):
+    """(data, error) from the READ `gh <args>`, retried on a transient fault (`gh_read`). Never raises; an error is a STRING, so every caller can report blindness instead of guessing."""
+    raw, err = gh_read(root, args, timeout=timeout)
+    if raw is None:
+        return None, err
+    try:
+        data = json.loads(raw)
     except ValueError:
-        return None, "non-JSON from `gh %s`: %r" % (" ".join(args[:2]), out.stdout[:80])
+        return None, "non-JSON from `gh %s`: %r" % (" ".join(args[:2]), raw[:80])
     # GraphQL reports field errors with exit 0 and an `errors` array.
     if (
         isinstance(data, dict)

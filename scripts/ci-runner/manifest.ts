@@ -5171,12 +5171,18 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     // PLAN-gh-retry G9. One HTTP 502 failed CI Complete on PR #597 (run 37507913738), and a 2026-10-06 audit found one-shot `gh` reads that released the wrong build, bump or label set on a single 5xx. Every non-test GitHub read under .ci must go through core/gh_retry (or ghx with attempts>=2, or a spawn inside retry_transient); the ~90 one-shot reads found outside the plan's twenty modules are frozen shrink-only in .ci/config/gh-retry-reads-baseline.json.
-    // `paths` is COMPLETE, not a cost cut: the gate reads only the Python under these two trees (its own module and every helper it imports included) and its baseline, so no change it judges can escape --changed.
+    // `paths` is COMPLETE, not a cost cut: the gate reads only the Python under its four scan roots (G13 added .claude/hooks and .claude/rediacc_hooks; its own module and every helper it imports sit under .ci/rediacc_ci) and its baseline, so no change it judges can escape --changed.
     id: 'check:ci-gh-retry-reads',
     run: 'npm run check:ci-gh-retry-reads',
     gate: true,
     leaves: ['.ci/scripts/quality/check_gh_retry_reads.py'],
-    paths: ['.ci/rediacc_ci/**', '.ci/scripts/**', '.ci/config/gh-retry-reads-baseline.json'],
+    paths: [
+      '.ci/rediacc_ci/**',
+      '.ci/scripts/**',
+      '.claude/hooks/**',
+      '.claude/rediacc_hooks/**',
+      '.ci/config/gh-retry-reads-baseline.json',
+    ],
     pathsOrigin: 'declared',
     ci: {
       kind: 'step',
