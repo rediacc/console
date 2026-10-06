@@ -42,8 +42,10 @@ OUTAGE_CLASSES = (
 # ---- end of the copy ----
 
 FENCE_NEEDLE = "json:review-findings"
+FENCE_TICKS = r"(?:\\?`){3}"  # backslash-escaped backticks count (PR #595 comment 6004950311)
 FENCE_RE = re.compile(
-    r"^[ \t]*```json:review-findings[ \t]*\n(.*?)^[ \t]*```[ \t]*$", re.MULTILINE | re.DOTALL
+    r"^[ \t]*%s%s[ \t]*\n(.*?)^[ \t]*%s[ \t]*$" % (FENCE_TICKS, re.escape(FENCE_NEEDLE), FENCE_TICKS),
+    re.MULTILINE | re.DOTALL,
 )
 SHA_IN_MARKER = re.compile(r"^\s*([0-9a-f]{7,40})\b")
 ATTEMPTS_LINE = re.compile(r"^attempts:[ \t]*([0-9]+)", re.MULTILINE)

@@ -794,3 +794,17 @@ def test_the_job_timeout_covers_the_turn_budget_it_grants():
         "claude-review.yml's Claude Review timeout-minutes must equal review_job_timeout_minutes() (%d)"
         % G.review_job_timeout_minutes()
     )
+
+
+# The recorded body of PR #595 comment 6004950311: the backticks of both fence lines carry a literal backslash.
+ESCAPED_EMPTY_BODY = (
+    "**Claude finished the automated review of 4d3b950**\n\n---\n\n## Review verdict: approve\n\n"
+    "<details>\n<summary>Machine-readable findings</summary>\n\n"
+    "\\`\\`\\`json:review-findings\n[]\n\\`\\`\\`\n\n</details>"
+)
+
+
+def test_extract_findings_fence_accepts_backslash_escaped_backticks():
+    assert G.extract_findings_fence(ESCAPED_EMPTY_BODY) == "[]"
+    one = ESCAPED_EMPTY_BODY.replace("[]", '[{"path": "a.py"}]')
+    assert json.loads(G.extract_findings_fence(one)) == [{"path": "a.py"}]
