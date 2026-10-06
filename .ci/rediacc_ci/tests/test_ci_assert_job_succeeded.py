@@ -172,3 +172,41 @@ def test_no_color_suppresses_colour_on_both_sides_on_a_terminal() -> None:
     old, new = run_both("housekeeping", "skipped", tty="stderr", env_extra={"NO_COLOR": "1"})
     assert diff.escape_bytes(old[2]) == 0
     assert new[2] == old[2]
+
+
+def run_port(*args: str) -> tuple[int, str, str]:
+    """The port alone: the frozen twin knows no third argument, so these cases have no golden."""
+    quoted = " ".join(shlex.quote(a) for a in args)
+    env = diff.env_for(PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1")
+    return diff.bash_streams("python3 -m %s %s" % (MODULE, quoted), env=env, tty=None, timeout=30)
+
+
+def test_skipped_with_a_red_ci_complete_verdict_passes_naming_the_verdict() -> None:
+    for verdict in ("failure", "cancelled", "skipped"):
+        rc, _, err = run_port("finalize-release-sentinel", "skipped", verdict)
+        assert rc == 0, err
+        assert (
+            "skipped because CI Complete was %s; the root failure is reported by CI Complete."
+            % verdict
+            in err
+        )
+        assert "finding J" not in err
+
+
+def test_skipped_with_a_success_ci_complete_verdict_is_still_finding_j() -> None:
+    rc, _, err = run_port("finalize-release-sentinel", "skipped", "success")
+    assert rc == 1
+    assert "finding J" in err
+    assert "Prefix the if:" in err
+
+
+def test_skipped_with_no_verdict_is_still_finding_j() -> None:
+    rc, _, err = run_port("finalize-release-sentinel", "skipped")
+    assert rc == 1
+    assert "finding J" in err
+
+
+def test_success_passes_with_any_verdict() -> None:
+    for verdict in ("success", "failure"):
+        rc, _, _ = run_port("finalize-release-sentinel", "success", verdict)
+        assert rc == 0

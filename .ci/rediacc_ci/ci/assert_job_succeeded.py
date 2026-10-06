@@ -6,11 +6,11 @@ When a job in the needs chain skips, downstream jobs without `always()` quietly 
 THE STATE TABLE (this module owns it since the bash original, `.ci/scripts/ci/assert-job-succeeded.sh`, was retired under PLAN-retire-bash-oracles B3; its answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/ci.assert-job-succeeded.jsonl`, whose header names the blob):
 
     success              pass
-    skipped              FAIL: the bug is back; fix the upstream `if:`
+    skipped              FAIL: the bug is back; fix the upstream `if:` -- unless the optional third argument, CI Complete's verdict, is present and not "success": then the job skipped by design (its `if:` requires ci-complete to succeed), so pass with a warning naming the verdict; CI Complete reports the root failure
     cancelled, failure   pass. cancelled is externally imposed (CI watchdog force-cancel, concurrent-push auto-cancel, manual cancel); failure is already surfaced by the upstream job itself. Neither is the class of bug this sentinel guards against.
     anything else        FAIL, see below
 
-LIVE. `.github/workflows/ci.yml` runs `python3 -m rediacc_ci.ci.assert_job_succeeded <label> <result>` for the finalize-release sentinel.
+LIVE. `.github/workflows/ci.yml` runs `python3 -m rediacc_ci.ci.assert_job_succeeded <label> <result> <ci-complete-verdict>` for the finalize-release sentinel. With no verdict argument the table above applies unchanged.
 
 Ledger: `.ci/shadow/w7p6-assert-job-succeeded.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-job-succeeded --assert --k 5`).
 
@@ -48,6 +48,7 @@ EXTERNAL_ADVICE = (
 def main(argv: list[str]) -> int:
     job_label = argv[0] if len(argv) >= 1 else ""
     result = argv[1] if len(argv) >= 2 else ""
+    verdict = argv[2] if len(argv) >= 3 else ""
 
     if not job_label:
         log.error("Usage: %s <job_label> <result>" % sys.argv[0])
@@ -56,6 +57,13 @@ def main(argv: list[str]) -> int:
     log.info("%s result: %s" % (job_label, result))
 
     if result == "success":
+        return 0
+
+    if result == "skipped" and verdict not in ("", "success"):
+        log.warn(
+            "%s skipped because CI Complete was %s; the root failure is reported by CI Complete."
+            % (job_label, verdict)
+        )
         return 0
 
     if result == "skipped":
