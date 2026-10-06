@@ -188,8 +188,10 @@ FENCE_NEEDLE = "json:review-findings"
 VERDICT_HEADING = re.compile(r"^[ \t\n\r\f\v]*#{1,3}[ \t\n\r\f\v]*Review verdict", re.IGNORECASE)
 
 # The findings fence, line-anchored. `[ \t]*` rather than `\s*`, so the anchors never reach across a newline.
-FENCE_OPENER = re.compile(r"^[ \t]*```%s[ \t]*$" % re.escape(FENCE_NEEDLE))
-FENCE_CLOSER = re.compile(r"^[ \t]*```[ \t]*$")
+# A fence's backticks may arrive backslash-escaped (PR #595 comment 6004950311), so each tick takes an optional backslash.
+FENCE_TICKS = r"(?:\\?`){3}"
+FENCE_OPENER = re.compile(r"^[ \t]*%s%s[ \t]*$" % (FENCE_TICKS, re.escape(FENCE_NEEDLE)))
+FENCE_CLOSER = re.compile(r"^[ \t]*%s[ \t]*$" % FENCE_TICKS)
 
 GH_ATTEMPTS = 3
 GH_SLEEP_FACTOR = 3

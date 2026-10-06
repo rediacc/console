@@ -78,8 +78,9 @@ SUMMARY_LONGFORM_CHARS = 200
 TRAILING_PUNCT = re.compile(r"[.!?]*$")
 FENCE_NEEDLE = "json:review-findings"
 VERDICT_HEADING = re.compile(r"^[ \t\n\r\f\v]*#{1,3}[ \t\n\r\f\v]*Review verdict", re.IGNORECASE)
-FENCE_OPENER = re.compile(r"^[ \t]*```%s[ \t]*$" % re.escape(FENCE_NEEDLE))
-FENCE_CLOSER = re.compile(r"^[ \t]*```[ \t]*$")
+FENCE_TICKS = r"(?:\\?`){3}"
+FENCE_OPENER = re.compile(r"^[ \t]*%s%s[ \t]*$" % (FENCE_TICKS, re.escape(FENCE_NEEDLE)))
+FENCE_CLOSER = re.compile(r"^[ \t]*%s[ \t]*$" % FENCE_TICKS)
 # ---- end of the copy ----
 
 # The report header claude_review_gate.REPORT_HEADER writes, and the sha7 it names.

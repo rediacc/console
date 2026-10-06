@@ -35,6 +35,17 @@ FINDINGS = [
 ]
 
 
+# The recorded body of PR #595 comment 6004950311: the backticks of both fence lines carry a literal backslash.
+ESCAPED_EMPTY_BODY = (
+    "**Claude finished the automated review of 4d3b950**\n\n---\n\n## Review verdict: approve\n\n"
+    "**New findings:** none.\n\n<details>\n<summary>Machine-readable findings</summary>\n\n"
+    "\\`\\`\\`json:review-findings\n[]\n\\`\\`\\`\n\n</details>"
+)
+ESCAPED_ONE_BODY = ESCAPED_EMPTY_BODY.replace(
+    "[]", '[{"path": "a.py", "line": 2, "severity": "high", "title": "guard it", "body": "x"}]'
+)
+
+
 def summary_body(findings: list) -> str:
     return (
         "**Claude finished the automated review of %s**\n\n---\n\n## Review verdict: findings\n\n"
@@ -639,3 +650,37 @@ def test_help_rc0(capsys):
         P.main(["--help"])
     assert exc.value.code == 0
     assert "--answer" in capsys.readouterr().out
+
+
+# ---- a backslash-escaped fence (PR #595 comment 6004950311) ----
+
+
+def gh_with_summary_body(body: str) -> FakeGh:
+    gh = FakeGh(findings=[])
+    gh.issue[-1]["body"] = body
+    return gh
+
+
+def test_escaped_fence_empty_is_empty():
+    assert "\\`\\`\\`json:review-findings" in ESCAPED_EMPTY_BODY
+    assert P.findings_fence_is_empty(ESCAPED_EMPTY_BODY) is True
+    assert P.parse_findings(ESCAPED_EMPTY_BODY) == []
+    assert P.findings_fence_is_empty(ESCAPED_ONE_BODY) is False
+    assert P.findings_fence_is_empty(ESCAPED_EMPTY_BODY.replace("[]", "[")) is False
+
+
+def test_escaped_fence_check_and_draft(capsys):
+    gh = gh_with_summary_body(ESCAPED_EMPTY_BODY)
+    assert P.cmd_draft(None, gh) == 0
+    captured = capsys.readouterr()
+    assert "no finding to answer (empty)" in captured.err
+    assert captured.out == ""
+    gh = gh_with_summary_body(ESCAPED_ONE_BODY)
+    assert P.cmd_draft(None, gh) == 0
+    out = capsys.readouterr().out
+    assert [ln for ln in out.splitlines() if ln and not ln.startswith("#")] == ["F1 TODO"]
+
+
+def test_escaped_fence_pattern_equals_review_comments():
+    assert P.FENCE_OPENER.pattern == RC.FENCE_OPENER.pattern
+    assert RC.findings_fence_is_empty(ESCAPED_EMPTY_BODY) is True

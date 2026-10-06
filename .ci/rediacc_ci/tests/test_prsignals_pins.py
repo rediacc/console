@@ -176,3 +176,17 @@ def test_module_reads_no_environment_and_makes_no_call():
     src = pathlib.Path(S.__file__).read_text(encoding="utf-8")
     for needle in ("os.environ", "getenv", "subprocess", "urllib"):
         assert needle not in src
+
+
+# The recorded body of PR #595 comment 6004950311: the backticks of both fence lines carry a literal backslash.
+ESCAPED_EMPTY_BODY = (
+    "**Claude finished the automated review of 4d3b950**\n\n---\n\n## Review verdict: approve\n\n"
+    "<details>\n<summary>Machine-readable findings</summary>\n\n"
+    "\\`\\`\\`json:review-findings\n[]\n\\`\\`\\`\n\n</details>"
+)
+
+
+def test_findings_count_reads_a_backslash_escaped_fence():
+    assert S._findings_count(ESCAPED_EMPTY_BODY) == 0
+    assert S._findings_count(ESCAPED_EMPTY_BODY.replace("[]", '[{"path": "a.py"}]')) == 1
+    assert S._findings_count(ESCAPED_EMPTY_BODY.replace("[]", "[")) is None
