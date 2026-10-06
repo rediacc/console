@@ -46,12 +46,15 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, gh_retry
 
 USAGE = "Usage: cleanup-github-deployments.sh --repo <owner/repo> --environment <name> [--dry-run]"
 
 # `true`, exactly. common.sh's parse_args stores strings, and the twin compares against this one literal -- `--dry-run false` therefore means NOT dry run.
 DRY_RUN_ON = "true"
+
+# A paginated listing can take longer than ghx's 30 s default.
+LIST_TIMEOUT_S = 120.0
 
 
 def list_path(repo: str, environment: str) -> str:
@@ -71,9 +74,9 @@ def delete_path(repo: str, deployment_id: str) -> str:
     return "repos/%s/deployments/%s" % (repo, deployment_id)
 
 
-def _gh_capture(args: list[str]) -> subprocess.CompletedProcess[str]:
-    """stdout captured, stderr INHERITED -- `$(gh ...)` with no redirect."""
-    return subprocess.run(["gh", *args], stdout=subprocess.PIPE, text=True, check=False)
+def _gh_list(args: list[str]) -> gh_retry.ghx.GhResult:
+    """The deployment listing, retried on a 5xx or connection fault. The listing DECIDES the deletions, so it fails safe: a listing still unreadable after the retries returns its failed result and the caller deletes nothing."""
+    return gh_retry.gh(args, timeout=LIST_TIMEOUT_S)
 
 
 def _gh_silent(args: list[str]) -> int:
@@ -109,7 +112,7 @@ def main(argv: list[str]) -> int:
     if dry_run == DRY_RUN_ON:
         log.warn("DRY-RUN mode: no deletions will be performed")
 
-    listing = _gh_capture(
+    listing = _gh_list(
         [
             "api",
             list_path(repo, environment),
@@ -118,10 +121,12 @@ def main(argv: list[str]) -> int:
             ".[].id",
         ]
     )
-    if listing.returncode != 0:
-        # `set -e` on a failed command substitution. gh has already written its own diagnostic to the inherited stderr; nothing is fabricated here.
+    if not listing.ok:
+        # `set -e` on a failed command substitution: nothing is listed, so nothing is deleted. gh's own diagnostic is passed on to stderr.
+        if listing.stderr:
+            print(listing.stderr.rstrip("\n"), file=sys.stderr)
         return listing.returncode
-    ids = listing.stdout.rstrip("\n")
+    ids = listing.stdout_raw.rstrip("\n")
 
     if not ids:
         log.info("No deployments found for %s" % environment)

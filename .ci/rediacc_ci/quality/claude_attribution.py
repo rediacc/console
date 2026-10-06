@@ -56,12 +56,11 @@ THE PATTERN'S LITERALS ARE ASSEMBLED FROM NAMED PARTS, and that is not obfuscati
 import json
 import os
 import re
-import subprocess
 import sys
-import time
 
 from rediacc_ci import log
 from rediacc_ci.controls import Controls
+from rediacc_ci.core import gh_retry as gh_retry_core
 from rediacc_ci.well_known import CLAUDE_CODE_URL, GH_ORIGIN, GH_REPO
 
 # The default repository, matching the twin's `${GITHUB_REPOSITORY:-rediacc/console}`.
@@ -86,8 +85,8 @@ CLAUDE_PATTERN = re.compile(
 # The author check is deliberately broader than the attribution pattern: any author whose NAME or EMAIL mentions either brand is an attribution regardless of how the message is worded.
 AUTHOR_PATTERN = re.compile("(claude|anthropic)", re.IGNORECASE)
 
-# The retry schedule, from common.sh's `_gh_probe`. Three attempts, backing off 3 then 6 seconds. See the port notes: dropping the sleeps stops it being a retry past a rate limit.
-GH_ATTEMPTS = 3
+# Per-call timeout: a paginated compare read is slower than ghx's 30 s default.
+GH_TIMEOUT_S = 120.0
 
 
 def gh_retry(what: str, args: list[str]) -> tuple[bool, str]:
@@ -97,28 +96,14 @@ def gh_retry(what: str, args: list[str]) -> tuple[bool, str]:
 
     Trailing newlines are stripped because the twin captures this through `$( )`, and every downstream test in the gate is written against the stripped value.
     """
-    rc = 0
-    stderr = ""
-    for attempt in range(1, GH_ATTEMPTS + 1):
-        try:
-            proc = subprocess.run(["gh", *args], capture_output=True, check=False)
-            rc = proc.returncode
-            stdout = proc.stdout.decode("utf-8", "replace")
-            stderr = proc.stderr.decode("utf-8", "replace")
-        except OSError:
-            # No gh on PATH. `command -v` would have caught it in a gate that probed; this one does not, so the spawn failure is the answer and 127 is the shell's own status for it.
-            rc, stdout, stderr = 127, "", ""
-        if rc == 0:
-            return True, re.sub(r"\n+$", "", stdout)
-        if attempt < GH_ATTEMPTS:
-            log.warn(
-                "%s: gh call failed or returned unusable output (attempt %d/%d), retrying..."
-                % (what, attempt, GH_ATTEMPTS)
-            )
-            time.sleep(attempt * 3)
-    log.error("%s: gh failed after %d attempts (last exit %d)." % (what, GH_ATTEMPTS, rc))
-    if stderr != "":
-        for line in stderr.rstrip("\n").split("\n"):
+    result = gh_retry_core.gh(args, timeout=GH_TIMEOUT_S)
+    if result.ok:
+        return True, re.sub(r"\n+$", "", result.stdout_raw)
+    log.error(
+        "%s: gh failed after retrying transient faults (exit %d)." % (what, result.returncode)
+    )
+    if result.stderr != "":
+        for line in result.stderr.rstrip("\n").split("\n"):
             print("    %s" % line, file=sys.stderr)
     return False, ""
 

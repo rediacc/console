@@ -106,6 +106,9 @@ def _run(
 ) -> tuple[subprocess.CompletedProcess[str], list[str]]:
     runner = ["bash"] if subject.suffix == ".sh" else ["python3"]
     env = dict(os.environ)
+    # The port imports `rediacc_ci.core.gh_retry`, so a script-path run needs the package root.
+    env["PYTHONPATH"] = str(ROOT / ".ci")
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
     log = cwd.parent / f"ghlog-{subject.name}.txt"
     log.write_text("", encoding="utf-8")
     if gh_env is not None:
@@ -304,3 +307,62 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     assert PORT.read_text(encoding="utf-8") == original, (
         "port source must be restored byte-identical"
     )
+
+
+# --- PLAN-gh-retry G12: the `pr view` read retries a transient fault ----------------------
+
+
+def _inprocess_view(monkeypatch, tmp_path, results):
+    import importlib
+
+    from rediacc_ci.core import gh_retry, ghx
+
+    mod = importlib.import_module("rediacc_ci.pr.sync_epic_block")
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    (repo / "agent" / "pr").mkdir(parents=True)
+    (repo / "agent" / "pr" / "b1.md").write_text("## Epic\n\nitems\n", encoding="utf-8")
+    monkeypatch.chdir(repo)
+    queue = list(results)
+    calls: list[list[str]] = []
+
+    def fake(args, **_kw):
+        calls.append(list(args))
+        rc, out, err = queue.pop(0)
+        return ghx.GhResult(["gh", *args], rc, out, err)
+
+    monkeypatch.setattr(gh_retry.ghx, "gh", fake)
+    monkeypatch.setattr(gh_retry.time, "sleep", lambda _s: None)
+    edits: list[list[str]] = []
+    real_run = subprocess.run
+
+    def run(argv, *a, **kw):
+        if argv[:3] == ["gh", "pr", "edit"]:
+            edits.append(argv)
+            return subprocess.CompletedProcess(argv, 0)
+        return real_run(argv, *a, **kw)
+
+    monkeypatch.setattr(mod.subprocess, "run", run)
+    return mod, calls, edits
+
+
+def test_pr_view_transient_fault_is_retried_then_synced(monkeypatch, tmp_path) -> None:
+    mod, calls, edits = _inprocess_view(
+        monkeypatch,
+        tmp_path,
+        [(1, "", "gh: Server Error (HTTP 502)"), (0, "old body\n", "")],
+    )
+    assert mod.main(["5", "b1"]) == 0
+    assert len(calls) == 2
+    assert len(edits) == 1
+
+
+def test_pr_view_4xx_fails_at_once_with_gh_stderr(monkeypatch, tmp_path, capsys) -> None:
+    mod, calls, edits = _inprocess_view(
+        monkeypatch, tmp_path, [(1, "", "gh: Not Found (HTTP 404)\n")]
+    )
+    assert mod.main(["5", "b1"]) == 1
+    assert len(calls) == 1
+    assert edits == []
+    assert "HTTP 404" in capsys.readouterr().err

@@ -46,6 +46,8 @@ import subprocess
 import sys
 import tempfile
 
+from rediacc_ci.core import gh_retry
+
 BEGIN = "<!-- worklist-epics:begin -->"
 END = "<!-- worklist-epics:end -->"
 
@@ -125,16 +127,11 @@ def main(argv: list[str]) -> int:
         if dry == "--dry-run":
             body_old = ""
         else:
-            view = subprocess.run(
-                ["gh", "pr", "view", pr, "--json", "body", "--jq", '.body // ""'],
-                stdout=subprocess.PIPE,
-                stderr=None,
-                text=True,
-                check=False,
-            )
-            if view.returncode != 0:
-                return view.returncode
-            body_old = view.stdout
+            view = gh_retry.gh(["pr", "view", pr, "--json", "body", "--jq", '.body // ""'])
+            if not view.ok:
+                sys.stderr.write(view.stderr)
+                return view.returncode or 1
+            body_old = view.stdout_raw
 
         body_stripped = _strip_existing_block(body_old)
 
