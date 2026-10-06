@@ -588,8 +588,8 @@ def selftest() -> int:
 
     # -- the exempt set, both directions ------------------------------------
     exempt = exempt_entries()
-    # Six since 83a41dbc9: `pr-labels` runs after the aggregator by design (the release bump decided at CI green).
-    ctl.check("the exempt set has exactly six entries", len(exempt), 6)
+    # Seven since 62794367e: `pr-labels` (83a41dbc9) runs after the aggregator by design (the release bump decided at CI green), and `duplicate-run` runs before initialize with no verdict to aggregate.
+    ctl.check("the exempt set has exactly seven entries", len(exempt), 7)
     ctl.truthy("the aggregator itself is exempt", AGGREGATOR in exempt)
     ctl.check(
         "every exempt entry carries a BLOCKER reason",

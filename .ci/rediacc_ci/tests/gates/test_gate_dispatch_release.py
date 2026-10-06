@@ -459,10 +459,11 @@ def polarity_violations(job: str) -> list[str]:
             "%d guard(s) use == 'true'; a cancelled or OOM-killed decide step would then "
             "skip BOTH the seal and the dispatch on a green job" % wrong
         )
-    if inverted != 2:
+    # Three since 62794367e: the sibling-run refusal, the seal and the dispatch. The refusal sits before the seal so a refused release leaves R2 unsealed, and it shares their guard so a bump-none merge skips all three.
+    if inverted != 3:
         found.append(
-            "expected exactly 2 steps guarded with != 'true' (the seal and the dispatch), "
-            "found %d" % inverted
+            "expected exactly 3 steps guarded with != 'true' (the sibling-run refusal, the seal "
+            "and the dispatch), found %d" % inverted
         )
     return found
 

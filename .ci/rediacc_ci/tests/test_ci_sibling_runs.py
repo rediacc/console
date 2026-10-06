@@ -13,12 +13,13 @@ import pytest
 
 from rediacc_ci.ci import sibling_runs as sr
 from rediacc_ci.core import ghx
+from rediacc_ci.well_known import GH_ORIGIN, GH_REPO
 
 if TYPE_CHECKING:
     import pathlib
 
 SHA = "00db8bed" + "0" * 32
-REPO = "rediacc/console"
+REPO = GH_REPO
 FIRST = 37437281526
 SECOND = 37437282770
 SERVER_ERROR = "gh: Server Error (HTTP 502)"
@@ -32,7 +33,7 @@ def run(rid: int, status: str = "completed", conclusion: str | None = "success",
         "conclusion": conclusion,
         "event": kw.get("event", "push"),
         "head_sha": kw.get("sha", SHA),
-        "html_url": "https://github.com/%s/actions/runs/%d" % (REPO, rid),
+        "html_url": "%s/%s/actions/runs/%d" % (GH_ORIGIN, REPO, rid),
     }
 
 

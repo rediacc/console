@@ -119,6 +119,10 @@ jobs:
           sparse-checkout: |
             .ci/config
             .ci/rediacc_ci
+            .github/actions
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-slim
       - name: Look for an earlier run on this commit
         id: dedupe
         env:

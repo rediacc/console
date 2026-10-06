@@ -175,16 +175,17 @@ def test_result_var_for_matches_tr() -> None:
 
 
 def test_the_exempt_set_matches_the_twins_block_entry_for_entry() -> None:
-    """The exempt job names and their reasons: the twin's five pinned against its frozen text, plus the one declared addition (pr-labels).
+    """The exempt job names and their reasons: the twin's five pinned against its frozen text, plus the declared additions (pr-labels, duplicate-run).
 
     A port that dropped one would silently widen the gate by one job. A port that ADDED one would silently narrow it, which is worse, so the comparison is a set equality against the twin rather than a floor.
     """
     twin_pairs = allowlist.pairs(allowlist.parse_text(TWIN_EXEMPT_BLOCK))
     assert len(twin_pairs) == 5
-    # One DECLARED addition after the twin retired: pr-labels (83a41dbc9), downstream of the aggregator by design. Any other difference, an addition or a reworded reason, still fails.
+    # DECLARED additions after the twin retired: pr-labels (83a41dbc9), downstream of the aggregator by design, and duplicate-run (62794367e), upstream of initialize with no verdict to aggregate. Any other difference, an addition or a reworded reason, still fails.
+    declared = {"pr-labels", "duplicate-run"}
     port = ja.exempt_entries()
-    assert {k: v for k, v in port.items() if k != "pr-labels"} == twin_pairs
-    assert set(port) - set(twin_pairs) == {"pr-labels"}
+    assert {k: v for k, v in port.items() if k not in declared} == twin_pairs
+    assert set(port) - set(twin_pairs) == declared
 
 
 def test_selftest_runs_and_meets_its_floor() -> None:
