@@ -37,10 +37,10 @@ import datetime as dt
 import json
 import pathlib
 import re
-import subprocess
 import sys
 
 import _cipath  # noqa: F401
+from rediacc_ci.core import gh_retry
 from rediacc_ci.well_known import GH_REPO
 
 # A job must be allowed to take at least this multiple of its observed worst
@@ -213,14 +213,13 @@ def controls(timeouts):
     return None
 
 
-def refresh(root, lane_durations_path, limit):
+def refresh(lane_durations_path, limit):
     """Rewrite `job_max_seconds.jobs[*].observed_max_seconds` from the Actions API. Network lives HERE.
 
     Reads and rewrites the WHOLE `.ci/config/lane-durations.json`, but touches only its `job_max_seconds` section -- `budget_report.py --refresh`'s own `jobs`/`units`/`concurrency`/`$comment`/`defaultUnitMs` pass through unchanged, and `job_max_seconds` keeps its OWN `refreshed_at` rather than the file's top-level one (see the module docstring's "RETIRED INTO" section for why the two must stay independent).
     """
-    runs = subprocess.run(
+    runs = gh_retry.gh(
         [
-            "gh",
             "run",
             "list",
             "--repo",
@@ -237,12 +236,11 @@ def refresh(root, lane_durations_path, limit):
             "databaseId",
             "--jq",
             ".[].databaseId",
-        ],
-        capture_output=True,
-        text=True,
-        cwd=str(root),
-        check=False,
+        ]
     )
+    if not runs.ok:
+        print("refresh could not list main push runs: %s" % runs.stderr.strip(), file=sys.stderr)
+        return 1
     ids = [x for x in runs.stdout.split() if x.isdigit()]
     if not ids:
         print("refresh found no main push runs; baseline untouched", file=sys.stderr)
@@ -256,19 +254,20 @@ def refresh(root, lane_durations_path, limit):
         baseline_jobs = {}
     seen = {}
     for run_id in ids:
-        out = subprocess.run(
+        out = gh_retry.gh(
             [
-                "gh",
                 "api",
                 ("repos/" + GH_REPO + "/actions/runs/%s/jobs?per_page=100") % run_id,
                 "--jq",
                 '.jobs[]|select(.conclusion=="success")|"\\(.name)\\t\\(.started_at)\\t\\(.completed_at)"',
-            ],
-            capture_output=True,
-            text=True,
-            cwd=str(root),
-            check=False,
+            ]
         )
+        if not out.ok:
+            print(
+                "refresh could not read the jobs of run %s: %s" % (run_id, out.stderr.strip()),
+                file=sys.stderr,
+            )
+            return 1
         for line in out.stdout.splitlines():
             parts = line.split("\t")
             if len(parts) != 3:
@@ -337,7 +336,7 @@ def main(argv=None):
         return 1
 
     if args.refresh:
-        return refresh(root, lane_durations_path, args.runs)
+        return refresh(lane_durations_path, args.runs)
 
     lane_durations = json.loads(lane_durations_path.read_text(encoding="utf-8"))
     section = lane_durations.get("job_max_seconds")

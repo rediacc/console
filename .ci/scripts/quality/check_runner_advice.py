@@ -51,11 +51,10 @@ import json
 import os
 import pathlib
 import re
-import subprocess
 import sys
 
 import _cipath  # noqa: F401
-from rediacc_ci.core import allowlist
+from rediacc_ci.core import allowlist, gh_retry
 from rediacc_ci.policy_paths import policy_path
 from rediacc_ci.well_known import GH_REPO
 
@@ -536,16 +535,9 @@ def parse_allowlist(path):
     return allowlist.pairs(allowlist.parse_file(path, missing_ok=True))
 
 
-def gh_json(args, root):
+def gh_json(args):
     """One `gh` call returning parsed lines. Network lives only in --refresh."""
-    out = subprocess.run(
-        ["gh", *args],
-        capture_output=True,
-        text=True,
-        cwd=str(root),
-        check=False,
-    )
-    return out.stdout.splitlines()
+    return gh_retry.gh(list(args)).stdout.splitlines()
 
 
 def parse_row(message):
@@ -643,7 +635,7 @@ def merge_rows(rows, where):
     return merged, contributing, warnings
 
 
-def harvest(root, branch, event, limit):
+def harvest(branch, event, limit):
     """Every usable PROFILER_BASELINE_V1 row from the last `limit` runs on `branch`."""
     args = [
         "run",
@@ -661,7 +653,7 @@ def harvest(root, branch, event, limit):
     ]
     if event:
         args[6:6] = ["--event", event]
-    run_ids = [x for x in gh_json(args, root) if x.isdigit()]
+    run_ids = [x for x in gh_json(args) if x.isdigit()]
     if not run_ids:
         return None, []
 
@@ -674,8 +666,7 @@ def harvest(root, branch, event, limit):
                 "repos/%s/actions/runs/%s/jobs?per_page=100" % (REPO, run_id),
                 "--jq",
                 ".jobs[].id",
-            ],
-            root,
+            ]
         )
         for check_id in job_ids:
             if not check_id.isdigit():
@@ -686,8 +677,7 @@ def harvest(root, branch, event, limit):
                     "repos/%s/check-runs/%s/annotations" % (REPO, check_id),
                     "--jq",
                     ".[].message",
-                ],
-                root,
+                ]
             ):
                 fields = parse_row(message)
                 if fields:
@@ -695,7 +685,7 @@ def harvest(root, branch, event, limit):
     return run_ids, rows
 
 
-def refresh(root, baseline_path, workflow_dir, branch, event, limit):
+def refresh(root, baseline_path, workflow_dir, branch, event, limit):  # noqa: ARG001 -- `root` is the call shape the gate tests drive
     """Rewrite the baseline from harvested annotations. Network lives HERE."""
     # BEFORE the network, and before anything is written: a file whose format this gate cannot read is a file it must not merge into either.
     try:
@@ -716,7 +706,7 @@ def refresh(root, baseline_path, workflow_dir, branch, event, limit):
     for workflow, job in pairs:
         where.setdefault(job, set()).add(workflow)
 
-    run_ids, rows = harvest(root, branch, event, limit)
+    run_ids, rows = harvest(branch, event, limit)
     if run_ids is None:
         print("refresh found no runs on branch %r; baseline untouched" % branch, file=sys.stderr)
         return 1
