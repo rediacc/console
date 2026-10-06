@@ -10,6 +10,7 @@ import {
   captureNavigationEvidence,
   pollRoutesReady,
   reportInconclusiveCauses,
+  runScenarioRetryingReload,
   waitForPlayerReady as waitForPlayerReadyIn,
 } from './lib/tutorial-player-diagnostics.js';
 
@@ -32,6 +33,10 @@ fs.mkdirSync(runDir, { recursive: true });
 const failures = [];
 let exitCode = 0;
 let navigationRetries = 0;
+let scenarioReloadRetries = 0;
+
+// TEST SEAM, off by default: TUTORIAL_PLAYER_GATE_PLANT_RELOADS=N makes the seek scenario call location.reload() N times right after its seek write, to prove the reload retry absorbs one reload and fails on two.
+let plantedReloads = Number(process.env.TUTORIAL_PLAYER_GATE_PLANT_RELOADS ?? 0);
 
 function log(message) {
   process.stdout.write(`${message}\n`);
@@ -404,6 +409,12 @@ function scenarioSeekNoSnapback() {
     const v = document.querySelector('.tvp-root video');
     v.currentTime = ${seekTarget};
   })()`);
+  if (plantedReloads > 0) {
+    plantedReloads -= 1;
+    log('→ PLANTED reload (TUTORIAL_PLAYER_GATE_PLANT_RELOADS) in the seek scenario');
+    evalInPage('(() => { setTimeout(() => location.reload(), 0); })()');
+    wait(1500);
+  }
 
   const rows = sampledStates(9000, 700);
   writeArtifact('scenario-seek-states.json', rows);
@@ -597,11 +608,15 @@ async function main() {
     wait(1500);
 
     warmUpPlayer();
-    scenarioBasicPlayPauseResume();
-    scenarioBurstToggle();
-    scenarioSeekNoSnapback();
-    scenarioFullscreenAndLayering();
-    scenarioMountConsistency();
+    for (const [name, run] of [
+      ['basic play/pause/resume', scenarioBasicPlayPauseResume],
+      ['burst toggle resilience', scenarioBurstToggle],
+      ['seek no snapback', scenarioSeekNoSnapback],
+      ['fullscreen and layering', scenarioFullscreenAndLayering],
+      ['docs/solution-page mount consistency', scenarioMountConsistency],
+    ]) {
+      scenarioReloadRetries += runScenarioRetryingReload({ name, run, failures, log });
+    }
 
     const summary = {
       status: failures.length === 0 ? 'pass' : 'fail',
@@ -611,6 +626,7 @@ async function main() {
       baseUrl,
       resources,
       navigationRetries,
+      scenarioReloadRetries,
       serverDiedMidRun: devServer.diedMidRun,
     };
     writeArtifact('summary.json', summary);
