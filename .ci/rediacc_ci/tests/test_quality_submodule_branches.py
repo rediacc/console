@@ -11,6 +11,7 @@ import subprocess
 
 import pytest
 
+from rediacc_ci.core import gh_retry, ghx
 from rediacc_ci.quality import submodule_branches as mod
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import ACCOUNT_REPO, GH_ORIGIN, RENET_REPO
@@ -148,8 +149,6 @@ def test_console_pr_body_reports_a_genuinely_empty_description_as_ok(
 
 
 def _fake_runner(results):
-    from rediacc_ci.core import ghx
-
     calls: list[list[str]] = []
     queue = list(results)
 
@@ -163,9 +162,7 @@ def _fake_runner(results):
 
 def test_gh_probe_retries_a_transient_fault_then_succeeds() -> None:
     naps: list[float] = []
-    run, calls = _fake_runner(
-        [(1, "", "gh: Server Error (HTTP 502)"), (0, '[{"number": 3}]', "")]
-    )
+    run, calls = _fake_runner([(1, "", "gh: Server Error (HTTP 502)"), (0, '[{"number": 3}]', "")])
     ok, out = mod.gh_probe(True, "t", ["pr", "list"], runner=run, sleep=naps.append)
     assert ok is True
     assert out == '[{"number": 3}]'
@@ -189,13 +186,11 @@ def test_gh_probe_exhausted_transient_is_a_failure_not_an_empty_answer() -> None
 
 
 def test_get_pr_for_branch_reads_through_gh_retry(monkeypatch: pytest.MonkeyPatch) -> None:
-    from rediacc_ci.core import gh_retry
-
     run, calls = _fake_runner(
         [(1, "", "gh: Bad Gateway (HTTP 502)"), (0, '[{"number": 7, "url": "u"}]', "")]
     )
     monkeypatch.setattr(mod, "have_gh", lambda: True)
-    monkeypatch.setattr(gh_retry.ghx, "gh", lambda args, **kw: run(args, **kw))
+    monkeypatch.setattr(gh_retry.ghx, "gh", run)
     monkeypatch.setattr(gh_retry.time, "sleep", lambda _s: None)
     assert mod.get_pr_for_branch("o/r", "b") == "7|u"
     assert len(calls) == 2

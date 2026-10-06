@@ -34,7 +34,7 @@ import tempfile
 import pytest
 
 from rediacc_ci import paths
-from rediacc_ci.core import bash_dialect
+from rediacc_ci.core import bash_dialect, ghx
 from rediacc_ci.housekeeping import cleanup_versions as cv
 from rediacc_ci.well_known import CF_API_BASE, GH_REPO, RELEASES_BUCKET, RENET_REPO
 
@@ -737,9 +737,7 @@ def test_delta_phase_1_an_unreadable_read_back_is_neither_counted_nor_a_survivor
         rule("release", "view", "v1.2.21", rc=1, stderr="gh: HTTP 502\n"),
         rule("api", "repos/" + GH_REPO + "/releases", "--paginate", json_body=[]),
     ]
-    _old, new = _twin_and_port(
-        "cleanup_releases", ("--versions", "0", "--days", "1"), fixture
-    )
+    _old, new = _twin_and_port("cleanup_releases", ("--versions", "0", "--days", "1"), fixture)
     err = new[2].decode()
     assert "Release v1.2.21: GitHub kept failing the read-back" in err
     assert "Releases: deleted 0 of 1" in err
@@ -2771,7 +2769,7 @@ def test_delta_phase_8d_an_unreadable_tag_list_is_not_an_empty_one() -> None:
     assert "8d: could not list git tags; skipping orphan deletion and drift checks" in new_err
     assert "drift:" not in new_err
     assert not [c for c in new[3] if "s3\trm" in c or "\trm\t" in c]
-    assert len([c for c in new[3] if "repos/rediacc/console/tags" in c]) >= 3
+    assert len([c for c in new[3] if f"repos/{GH_REPO}/tags" in c]) >= 3
 
 
 def test_the_guards_refuse_in_the_twins_order() -> None:
@@ -2963,18 +2961,19 @@ class _GhScript:
         self.calls = 0
 
     def __call__(self, args, **_kw):
-        from rediacc_ci.core import ghx
-
         self.calls += 1
         rc, out, err = self.answers.pop(0) if len(self.answers) > 1 else self.answers[0]
         return ghx.GhResult(["gh", *args], rc, out, err)
 
 
 def test_gh_read_retries_a_5xx_then_returns_the_answer(monkeypatch) -> None:
-    from rediacc_ci.core import ghx
-
     naps: list[list[str]] = []
-    monkeypatch.setattr(cv, "run_silent", lambda argv: naps.append(argv) or 0)
+
+    def record_nap(argv: list[str]) -> int:
+        naps.append(argv)
+        return 0
+
+    monkeypatch.setattr(cv, "run_silent", record_nap)
     script = _GhScript((1, "", "gh: Server Error (HTTP 502)"), (0, "v1\nv2\n", ""))
     monkeypatch.setattr(ghx, "gh", script)
     assert cv.gh_read(["api", "x"]) == (0, "v1\nv2")
@@ -2983,8 +2982,6 @@ def test_gh_read_retries_a_5xx_then_returns_the_answer(monkeypatch) -> None:
 
 
 def test_gh_read_gives_up_after_three_attempts_and_names_the_read(monkeypatch, capsys) -> None:
-    from rediacc_ci.core import ghx
-
     monkeypatch.setattr(cv, "run_silent", lambda _argv: 0)
     script = _GhScript((1, "", "gh: Server Error (HTTP 503)"))
     monkeypatch.setattr(ghx, "gh", script)
@@ -2995,8 +2992,6 @@ def test_gh_read_gives_up_after_three_attempts_and_names_the_read(monkeypatch, c
 
 
 def test_gh_read_does_not_retry_a_4xx(monkeypatch, capsys) -> None:
-    from rediacc_ci.core import ghx
-
     script = _GhScript((1, "", "gh: Not Found (HTTP 404)"))
     monkeypatch.setattr(ghx, "gh", script)
     assert cv.gh_read(["api", "x"])[0] == 1

@@ -122,8 +122,8 @@ import tempfile
 import time
 
 from rediacc_ci import gitx, log, paths
-from rediacc_ci.core import gh_retry
 from rediacc_ci.controls import Controls, git_isolated
+from rediacc_ci.core import gh_retry
 from rediacc_ci.well_known import ACCOUNT_REPO, ELITE_REPO, GH_ORIGIN, HOMEBREW_TAP_REPO, RENET_REPO
 
 GH_HOST = GH_ORIGIN.removeprefix("https://")

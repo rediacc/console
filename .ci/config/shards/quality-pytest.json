@@ -329,6 +329,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_e2e_coverage.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_gate_id_convention.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_gate_tree_writes.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_gh_reads_check_scripts.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_git_op_conditionals.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_go_deps.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_go_tool_path.py",

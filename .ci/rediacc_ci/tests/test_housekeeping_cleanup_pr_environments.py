@@ -575,17 +575,24 @@ def test_a_4xx_on_a_read_is_not_retried(pr_runner) -> None:
     runner = install((1, "", "gh: Not Found (HTTP 404)"))
     done = port._gh_capture(["api", "x"])
     assert (done.returncode, done.stdout) == (1, "")
-    assert runner.calls == 1 and sleeps == []
+    assert runner.calls == 1
+    assert sleeps == []
 
 
 def test_a_persistent_5xx_on_the_listing_exits_without_deleting(pr_runner, monkeypatch) -> None:
     install, sleeps = pr_runner
     runner = install(HTTP_502)
     deletes: list[list[str]] = []
-    monkeypatch.setattr(port, "_gh_silent", lambda a: deletes.append(a) or 0)
+
+    def record_delete(args: list[str]) -> int:
+        deletes.append(args)
+        return 0
+
+    monkeypatch.setattr(port, "_gh_silent", record_delete)
     monkeypatch.setattr(port.common, "require_cmd", lambda _c: None)
     assert port.main(REPO) != 0
-    assert runner.calls == 3 and sleeps == [5.0, 15.0]
+    assert runner.calls == 3
+    assert sleeps == [5.0, 15.0]
     assert deletes == []
 
 
@@ -595,7 +602,12 @@ def test_a_persistent_5xx_on_the_deployment_count_skips_the_environment(
     install, _sleeps = pr_runner
     install((0, "pr-5\n", ""), (0, "CLOSED\n", ""), HTTP_502)
     deletes: list[list[str]] = []
-    monkeypatch.setattr(port, "_gh_silent", lambda a: deletes.append(a) or 0)
+
+    def record_delete(args: list[str]) -> int:
+        deletes.append(args)
+        return 0
+
+    monkeypatch.setattr(port, "_gh_silent", record_delete)
     monkeypatch.setattr(port.common, "require_cmd", lambda _c: None)
     assert port.main(REPO) == 0
     assert "SKIP pr-5: still holds unknown deployment record(s)" in capsys.readouterr().err

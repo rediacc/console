@@ -12,12 +12,14 @@ K=5 LEDGER: `.ci/shadow/w7p6-sync-epic-block.observations.jsonl`.
 
 from __future__ import annotations
 
+import importlib
 import os
 import pathlib
 import subprocess
 import tempfile
 
 from rediacc_ci import paths
+from rediacc_ci.core import gh_retry, ghx
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "pr" / "sync-epic-block.sh"
@@ -313,10 +315,6 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
 
 
 def _inprocess_view(monkeypatch, tmp_path, results):
-    import importlib
-
-    from rediacc_ci.core import gh_retry, ghx
-
     mod = importlib.import_module("rediacc_ci.pr.sync_epic_block")
     repo = tmp_path / "repo"
     repo.mkdir()
