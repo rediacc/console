@@ -64,7 +64,70 @@ export interface Provider {
   rows(root: string): ProviderRow[];
   /** Paths the index claims but the worktree does not have. Reported, never thrown on. */
   missing?(root: string): string[];
+  /**
+   * What this provider reads, so a commit can tell cheaply whether it could move a row. See `InputDecl`.
+   *
+   * Optional only so a test double can omit it. A provider WITHOUT one counts as reading every path (`providersReading`), so every commit pays the full verify, and `gen-docs.ts --selftest` refuses any registered provider that lacks one.
+   */
+  inputs?: InputDecl;
 }
+
+/**
+ * The committed text of a repo-relative file, or null when that tree has no such file.
+ *
+ * Three providers configure their own scope in a seam (the policy directory, the test roots, the
+ * media directories), so their `scope` needs to read one. The pre-commit hook answers from the
+ * commit's index and the selftest trace from the working tree, which is why it is a parameter.
+ */
+export type SeamReader = (rel: string) => string | null;
+
+/** One staged path, as the pre-commit hook sees it. A rename arrives as a delete plus an add. */
+export interface InputChange {
+  path: string;
+  /** `A`dded, `D`eleted, `M`odified, or `T`ype changed, as `git diff-index --no-renames` spells it. */
+  status: string;
+  /** The base tree's text, or null when the path was absent there. Read lazily. */
+  before(): string | null;
+  /** The committed tree's text, or null when the commit deletes the path. Read lazily. */
+  after(): string | null;
+}
+
+/**
+ * WHAT A PROVIDER READS, DECLARED, AND WHY A DECLARATION RATHER THAN A RECORDING.
+ *
+ * The pre-commit hook in `.claude/rediacc_hooks/git/githooks.py` refuses a commit that stages a
+ * provider input and leaves a region drifted. Verify costs about 8 s with the checkout of the
+ * commit's tree, so the hook has to answer "could this commit move any row?" without running a
+ * provider, and that answer is only as good as this declaration. Both halves of the commit that
+ * asked for the hook (1fb9eefe7 and 7f2ece4c1) staged an input and reached pre-push 17 minutes
+ * later as four red gates.
+ *
+ * `scope` is every path whose content or membership the provider can read. It CANNOT GO STALE
+ * SILENTLY: `gen-docs.ts --selftest` runs every provider under a trace of `fs` and `git ls-files`
+ * and fails on any path read or listed outside `scope`, and the hook re-runs that trace at commit
+ * time whenever the generator's own modules are staged. A new seam therefore cannot land without
+ * its declaration.
+ *
+ * `moves` narrows `scope` for one change, and returns false only when the change provably cannot
+ * move a row. Two providers need it, because they read nearly every tracked file: without it
+ * every commit touching code would pay the full verify. Each `moves` is built from the same
+ * helper the provider's `rows` calls, and `gen-docs.ts --check-inputs` plants neutral edits that
+ * `moves` calls inert and proves the rows do not change. Absent means every change in scope counts.
+ */
+export interface InputDecl {
+  scope(rel: string, read: SeamReader): boolean;
+  moves?(c: InputChange, read: SeamReader): boolean;
+}
+
+/** A path appeared, disappeared or changed type: the only changes a listing-only provider can see. */
+const membershipChanged = (c: InputChange): boolean => c.status !== 'M';
+
+/** A provider that reads exactly these files, as content. */
+const filesInput = (...files: string[]): InputDecl => ({ scope: (rel) => files.includes(rel) });
+
+/** True when `rel` sits under one of `dirs` (each repo-relative, without a trailing slash). */
+const underAny = (rel: string, dirs: readonly string[]): boolean =>
+  dirs.some((d) => d !== '' && rel.startsWith(`${d}/`));
 
 /**
  * Tracked paths under `paths`, with SUBMODULE GITLINKS dropped.
@@ -208,6 +271,7 @@ export const gatesProvider: Provider = {
       }))
       .sort((a, b) => byCodePoint(a.key, b.key)),
   missing: (root) => (fs.existsSync(path.join(root, GATES_LOCK)) ? [] : [GATES_LOCK]),
+  inputs: filesInput(GATES_LOCK),
 };
 
 /**
@@ -266,6 +330,7 @@ export const gatesSummaryProvider: Provider = {
       }));
   },
   missing: (root) => (fs.existsSync(path.join(root, GATES_LOCK)) ? [] : [GATES_LOCK]),
+  inputs: filesInput(GATES_LOCK),
 };
 
 /* ------------------------------------------------------------- hook guards */
@@ -285,8 +350,26 @@ interface WiredHook {
  * guards sat outside the inventory and could have been deleted with no gate noticing. Reading
  * the wiring means a new chain, or a new event, appears here the moment settings.json wires it.
  */
+const HOOK_SETTINGS = '.claude/settings.json';
+/** The two hook trees both hook providers enumerate. */
+const HOOK_TREES = ['.claude/hooks', '.claude/rediacc_hooks'] as const;
+
+/**
+ * A tracked file the hook providers count as a hook: a script, and not per-session litter.
+ *
+ * ONE PREDICATE FOR BOTH PROVIDERS AND THEIR `moves`. State snapshots and byte-compiled caches would make this record differ between two machines looking at the same commit, and the summary and the reference must exclude identically or they disagree about the same tree. The pre-commit hook asks the same question of a staged path, so it is asked in one place.
+ */
+const isHookMember = (f: string): boolean =>
+  /\.(sh|py)$/.test(f) && !f.includes('/state/') && !f.includes('__pycache__');
+
+/** A hook file's content can move a `Reached` cell anywhere in the closure, so any member change counts. */
+const hookInputs: InputDecl = {
+  scope: (rel) => rel === HOOK_SETTINGS || underAny(rel, HOOK_TREES),
+  moves: (c) => c.path === HOOK_SETTINGS || isHookMember(c.path),
+};
+
 const wiredHooks = (root: string): WiredHook[] => {
-  const settings = path.join(root, '.claude', 'settings.json');
+  const settings = path.join(root, HOOK_SETTINGS);
   if (!fs.existsSync(settings)) return [];
   const parsed = JSON.parse(fs.readFileSync(settings, 'utf-8')) as {
     hooks?: Record<string, Array<{ matcher?: string; hooks?: Array<{ command?: string }> }>>;
@@ -404,11 +487,9 @@ export const hookGuardsProvider: Provider = {
     // this generator against itself: both sides were equally blind and the document was wrong while the gate was green.
     //
     // `.claude/oracles` used to be excluded here on purpose, for the bash twins the Python guards were differentially compared against (`test_guards_differential`). PLAN-retire-bash-oracles A3 deleted that tree and the differential's bash side with it: every guard is now judged against a frozen golden instead of a live bash process, so there is no twin tree left to exclude.
-    const { present } = presentFiles(root, lsFiles(root, '.claude/hooks', '.claude/rediacc_hooks'));
-    const members = present
-      .filter((f) => /\.(sh|py)$/.test(f))
-      // State snapshots and byte-compiled caches are not hooks. Both are per-session litter that would make this record differ between two machines looking at the same commit.
-      .filter((f) => !f.includes('/state/') && !f.includes('__pycache__'));
+    const { present } = presentFiles(root, lsFiles(root, ...HOOK_TREES));
+    // State snapshots and byte-compiled caches are not hooks; `isHookMember` says why.
+    const members = present.filter(isHookMember);
 
     const reached = reachability(root, new Set(events.keys()), members);
     const keys = new Set([...members, ...events.keys()]);
@@ -423,8 +504,8 @@ export const hookGuardsProvider: Provider = {
       ],
     }));
   },
-  missing: (root) =>
-    presentFiles(root, lsFiles(root, '.claude/hooks', '.claude/rediacc_hooks')).missing,
+  missing: (root) => presentFiles(root, lsFiles(root, ...HOOK_TREES)).missing,
+  inputs: hookInputs,
 };
 
 /**
@@ -462,11 +543,9 @@ export const hookSummaryProvider: Provider = {
     }
 
     // Same two trees as hook-guards, for the same reason its comment gives: this row set and that one must describe the same tree, or the summary and the reference disagree. Before 2026-09-07 both were scoped to `.claude/hooks`, so the residue count below counted the unreached files of ONE tree while calling itself "tracked hook files nothing reaches".
-    const { present } = presentFiles(root, lsFiles(root, '.claude/hooks', '.claude/rediacc_hooks'));
-    const members = present
-      .filter((f) => /\.(sh|py)$/.test(f))
-      // Identical exclusions to hook-guards, and they must stay identical: state snapshots and byte-compiled caches are per-session litter, so counting them here and not there would make the summary and the reference disagree about the same tree.
-      .filter((f) => !f.includes('/state/') && !f.includes('__pycache__'));
+    const { present } = presentFiles(root, lsFiles(root, ...HOOK_TREES));
+    // Identical exclusions to hook-guards, through the same predicate, so the summary and the reference cannot disagree about the same tree.
+    const members = present.filter(isHookMember);
     const reached = reachability(root, new Set(wired.map((w) => w.file)), members);
     const unreached = members.filter((f) => !reached.has(f)).length;
 
@@ -490,8 +569,8 @@ export const hookSummaryProvider: Provider = {
     });
     return rows;
   },
-  missing: (root) =>
-    presentFiles(root, lsFiles(root, '.claude/hooks', '.claude/rediacc_hooks')).missing,
+  missing: (root) => presentFiles(root, lsFiles(root, ...HOOK_TREES)).missing,
+  inputs: hookInputs,
 };
 
 /* ------------------------------------------------------------ suppressions */
@@ -558,6 +637,26 @@ const commentForm = (rel: string, text: string): string => {
   return 'prose only (no live entry)';
 };
 
+/** Whether a tracked path can be a suppression mechanism at all, decided before its content is read. */
+const isMechanismCandidate = (f: string): boolean => {
+  // A FROZEN TEST CORPUS IS NOT A SUPPRESSION MECHANISM. Goldens under a tests directory are byte copies of real allow/block lists, recorded so a port can be proved to agree with the reader it replaces, and they carry BLOCKER: for the same reason the originals do. The predicate below is "carries BLOCKER: and is not source or prose", which cannot tell a recording from the thing
+  // recorded: when W1 P3's allowlist goldens landed on 2026-09-06 this census went 24 rows to 39, and all 15 additions were copies of lists already counted once. A census that double-counts its own fixtures overstates the escape hatches in the tree, which is the one number this table exists to keep honest.
+  if (/(^|\/)tests\/goldens\//.test(f)) return false;
+  // THE WORKLIST EVENT LOGS ARE PROSE THAT GROWS ON EVERY VERB. `agent/worklist/*.jsonl` carries session notes, and a note that quotes `BLOCKER:` made this census list the log and then change its row on the next unrelated `--tick`, so the region could not be committed in a state a clean checkout reproduces.
+  if (f.startsWith('agent/worklist/')) return false;
+  return !NOT_A_MECHANISM.has(path.extname(f));
+};
+
+/** A candidate's row cells after the path, or null when its text makes no row. Shared by `rows` and `moves`. */
+const mechanismCells = (f: string, text: string | null): string[] | null => {
+  if (text === null) return null;
+  // A NUL byte means binary; `BLOCKER:` inside one is a coincidence, not a convention.
+  if (text.includes('\0')) return null;
+  const n = text.split('\n').filter((l) => l.includes('BLOCKER:')).length;
+  if (n === 0) return null;
+  return [String(n), commentForm(f, text)];
+};
+
 export const suppressionsProvider: Provider = {
   id: 'suppressions',
   scans: 'every tracked non-source, non-prose file carrying a `BLOCKER:` line',
@@ -566,27 +665,27 @@ export const suppressionsProvider: Provider = {
     const { present } = presentFiles(root, lsFiles(root, '.'));
     const rows: ProviderRow[] = [];
     for (const f of present) {
-      // A FROZEN TEST CORPUS IS NOT A SUPPRESSION MECHANISM. Goldens under a tests directory are byte copies of real allow/block lists, recorded so a port can be proved to agree with the reader it replaces, and they carry BLOCKER: for the same reason the originals do. The predicate below is "carries BLOCKER: and is not source or prose", which cannot tell a recording from the thing
-      // recorded: when W1 P3's allowlist goldens landed on 2026-09-06 this census went 24 rows to 39, and all 15 additions were copies of lists already counted once. A census that double-counts its own fixtures overstates the escape hatches in the tree, which is the one number this table exists to keep honest.
-      if (/(^|\/)tests\/goldens\//.test(f)) continue;
-      // THE WORKLIST EVENT LOGS ARE PROSE THAT GROWS ON EVERY VERB. `agent/worklist/*.jsonl` carries session notes, and a note that quotes `BLOCKER:` made this census list the log and then change its row on the next unrelated `--tick`, so the region could not be committed in a state a clean checkout reproduces.
-      if (f.startsWith('agent/worklist/')) continue;
-      if (NOT_A_MECHANISM.has(path.extname(f))) continue;
+      if (!isMechanismCandidate(f)) continue;
       let text: string;
       try {
         text = fs.readFileSync(path.join(root, f), 'utf-8');
       } catch {
         continue;
       }
-      // A NUL byte means binary; `BLOCKER:` inside one is a coincidence, not a convention.
-      if (text.includes('\0')) continue;
-      const n = text.split('\n').filter((l) => l.includes('BLOCKER:')).length;
-      if (n === 0) continue;
-      rows.push({ key: f, cells: [f, String(n), commentForm(f, text)] });
+      const cells = mechanismCells(f, text);
+      if (cells !== null) rows.push({ key: f, cells: [f, ...cells] });
     }
     return rows.sort((a, b) => byCodePoint(a.key, b.key));
   },
   missing: (root) => presentFiles(root, lsFiles(root, '.')).missing,
+  // The whole index is listed, so the scope is everything; a change moves a row only when the file's own row differs, which is the one fact this provider derives from it.
+  inputs: {
+    scope: () => true,
+    moves: (c) =>
+      isMechanismCandidate(c.path) &&
+      JSON.stringify(mechanismCells(c.path, c.before())) !==
+        JSON.stringify(mechanismCells(c.path, c.after())),
+  },
 };
 
 /* ----------------------------------------------------------------- ci tree */
@@ -621,6 +720,8 @@ export const ciTreeProvider: Provider = {
       });
   },
   missing: (root) => presentFiles(root, lsFiles(root, '.ci')).missing,
+  // Paths and extensions only: no content is read, so only an add, a delete or a type change can move a count.
+  inputs: { scope: (rel) => underAny(rel, ['.ci']), moves: membershipChanged },
 };
 
 /** Every provider, keyed by the id a marker region names. */
@@ -639,10 +740,11 @@ const PY_POLICY_SEAM = '.ci/rediacc_ci/policy_paths.py';
  * other honest option; a regex over the constant is cheaper and keeps this
  * provider a pure read, which is what every other provider here is.
  */
-const tsPolicyDir = (root: string): string => {
-  const text = fs.readFileSync(path.join(root, TS_POLICY_SEAM), 'utf-8');
-  return /const\s+POLICY_DIR\s*=\s*'([^']*)'/.exec(text)?.[1] ?? '';
-};
+const policyDirOf = (text: string | null): string =>
+  /const\s+POLICY_DIR\s*=\s*'([^']*)'/.exec(text ?? '')?.[1] ?? '';
+
+const tsPolicyDir = (root: string): string =>
+  policyDirOf(fs.readFileSync(path.join(root, TS_POLICY_SEAM), 'utf-8'));
 
 const tsPolicyNames = (root: string): string[] => {
   const text = fs.readFileSync(path.join(root, TS_POLICY_SEAM), 'utf-8');
@@ -742,6 +844,19 @@ export const policyProvider: Provider = {
     });
   },
   missing: (root) => presentFiles(root, lsFiles(root, tsPolicyDir(root))).missing,
+  // The directory is listed recursively, but only its top-level files other than the README are read, so a nested file or the README moves nothing (the README is a gen-docs target in its own right).
+  inputs: {
+    scope: (rel, read) =>
+      rel === TS_POLICY_SEAM ||
+      rel === PY_POLICY_SEAM ||
+      underAny(rel, [policyDirOf(read(TS_POLICY_SEAM))]),
+    moves: (c, read) => {
+      if (c.path === TS_POLICY_SEAM || c.path === PY_POLICY_SEAM) return true;
+      const dir = policyDirOf(read(TS_POLICY_SEAM));
+      const name = c.path.slice(dir.length + 1);
+      return name !== POLICY_README && !name.includes('/');
+    },
+  },
 };
 
 /* ------------------------------------------------------------ test-split */
@@ -754,17 +869,21 @@ const PYPROJECT = 'pyproject.toml';
 /** `test-<x>.sh` / `test_<x>.py`: the orphan gate's own NAME_RE, in its own spelling. */
 const TEST_NAME_RE = /^test[-_].*\.(py|sh|ts)$/;
 
-const searchDirs = (root: string): string[] => {
-  const text = fs.readFileSync(path.join(root, ORPHAN_GATE), 'utf-8');
-  const block = /SEARCH_DIRS\s*=\s*\(\n([\s\S]*?)\n\)/.exec(text)?.[1] ?? '';
+const searchDirsOf = (text: string | null): string[] => {
+  const block = /SEARCH_DIRS\s*=\s*\(\n([\s\S]*?)\n\)/.exec(text ?? '')?.[1] ?? '';
   return [...block.matchAll(/"([^"]+)"/g)].map((m) => m[1] as string);
 };
 
-const pytestRoots = (root: string): string[] => {
-  const text = fs.readFileSync(path.join(root, PYPROJECT), 'utf-8');
-  const block = /testpaths\s*=\s*\[([^\]]*)\]/.exec(text)?.[1] ?? '';
+const pytestRootsOf = (text: string | null): string[] => {
+  const block = /testpaths\s*=\s*\[([^\]]*)\]/.exec(text ?? '')?.[1] ?? '';
   return [...block.matchAll(/"([^"]+)"/g)].map((m) => (m[1] as string).replace(/\/$/, ''));
 };
+
+const searchDirs = (root: string): string[] =>
+  searchDirsOf(fs.readFileSync(path.join(root, ORPHAN_GATE), 'utf-8'));
+
+const pytestRoots = (root: string): string[] =>
+  pytestRootsOf(fs.readFileSync(path.join(root, PYPROJECT), 'utf-8'));
 
 /**
  * Every string anywhere in the gates lock, flattened.
@@ -847,6 +966,15 @@ export const testSplitProvider: Provider = {
     [...new Set([...searchDirs(root), ...pytestRoots(root)])]
       .sort(byCodePoint)
       .flatMap((d) => presentFiles(root, lsFiles(root, d)).missing),
+  // Each root is listed whole, but a file is only ever counted by NAME, so editing one moves nothing: only a test-named file arriving or leaving does. The three seams decide which roots exist and which files the registry knows.
+  inputs: {
+    scope: (rel, read) =>
+      [ORPHAN_GATE, PYPROJECT, GATES_LOCK].includes(rel) ||
+      underAny(rel, [...searchDirsOf(read(ORPHAN_GATE)), ...pytestRootsOf(read(PYPROJECT))]),
+    moves: (c) =>
+      [ORPHAN_GATE, PYPROJECT, GATES_LOCK].includes(c.path) ||
+      (TEST_NAME_RE.test(path.basename(c.path)) && membershipChanged(c)),
+  },
 };
 
 /* ------------------------------------------------------- entry points (W11 P5a) */
@@ -1030,6 +1158,7 @@ export const bootstrapProvider: Provider = {
     }
     return rows;
   },
+  inputs: filesInput(ROUTER_SEAM, VERBS_SEAM, BOOTSTRAP_SEAM, TOOLCHAIN_SEAM),
 };
 
 /* ------------------------------------------------------------ the job graph */
@@ -1216,6 +1345,8 @@ export const jobGraphProvider: Provider = {
   },
   missing: (root) =>
     presentFiles(root, lsFiles(root, `${WORKFLOW_DIR}/*.yml`, `${WORKFLOW_DIR}/*.yaml`)).missing,
+  // A git pathspec `*` crosses `/`, so the listing reaches nested workflow files too, and so does this scope.
+  inputs: { scope: (rel) => underAny(rel, [WORKFLOW_DIR]) && /\.ya?ml$/.test(rel) },
 };
 
 /* ---------------------------------------------------------------- the media */
@@ -1251,6 +1382,15 @@ export function ignoredMediaDirs(source: string): string[] {
   return out.sort(byCodePoint);
 }
 
+/** The media directories the table has one row for: the union of what either script syncs and what `.gitignore` excludes. */
+const mediaKeys = (
+  push: Map<string, string>,
+  pull: Map<string, string>,
+  ignored: string[]
+): string[] => [...new Set([...push.keys(), ...pull.keys(), ...ignored])].sort(byCodePoint);
+
+const MEDIA_SEAMS = [MEDIA_PUSH_SEAM, MEDIA_PULL_SEAM, WWW_GITIGNORE];
+
 export const mediaProvider: Provider = {
   id: 'media',
   scans:
@@ -1281,7 +1421,7 @@ export const mediaProvider: Provider = {
     // untracked with the rest in #512 and never went to R2. Rendering only what the sync
     // scripts name would make that the one directory the table cannot see, which is the
     // same as not documenting it at all.
-    const keys = [...new Set([...push.keys(), ...pull.keys(), ...ignored])].sort(byCodePoint);
+    const keys = mediaKeys(push, pull, ignored);
 
     // A DIRECTORY INSIDE A SYNCED ONE IS SYNCED, and saying otherwise is the false alarm
     // this table would otherwise open with: `.gitignore` excludes
@@ -1315,6 +1455,20 @@ export const mediaProvider: Provider = {
         ],
       };
     });
+  },
+  // The seams' content, plus a COUNT of the tracked files under each media directory: inside one, only an add or a delete moves a cell.
+  inputs: {
+    scope: (rel, read) =>
+      MEDIA_SEAMS.includes(rel) ||
+      underAny(
+        rel,
+        mediaKeys(
+          mediaPairs(read(MEDIA_PUSH_SEAM) ?? '', true),
+          mediaPairs(read(MEDIA_PULL_SEAM) ?? '', false),
+          ignoredMediaDirs(read(WWW_GITIGNORE) ?? '')
+        )
+      ),
+    moves: (c) => MEDIA_SEAMS.includes(c.path) || membershipChanged(c),
   },
 };
 
@@ -1465,10 +1619,7 @@ export const planRecordGrammarProvider: Provider = {
     }
     for (const k of parserKeys.slice().sort(byCodePoint)) {
       if (seen.has(k)) continue;
-      // TRAILER-AWARE, because "never written" was wrong about two of these. `Compacted-By`
-      // and `Compacted-At` ARE written by `render()`, in the `## Record` trailer rather than
-      // in the header block, and a row saying otherwise sends a reader looking for a bug in
-      // the renderer. The parser accepting them in the header is a real second position.
+      // TRAILER-AWARE, because "never written" was wrong about two of these. `Compacted-By` and `Compacted-At` ARE written by `render()`, in the `## Record` trailer rather than in the header block, and a row saying otherwise sends a reader looking for a bug in the renderer. The parser accepting them in the header is a real second position.
       add(
         'header',
         k,
@@ -1528,6 +1679,7 @@ export const planRecordGrammarProvider: Provider = {
     }
     return rows;
   },
+  inputs: filesInput(PLANREC_SEAM),
 };
 
 /* ------------------------------------------------------- the .json inventory */
@@ -1562,7 +1714,7 @@ export const planRecordGrammarProvider: Provider = {
  * `scripts/data/nis2-directive-2022-2555-*.manifest.json` files as `(convention)`, i.e. as
  * KEEP-WHERE-THEY-ARE, when `scripts/gates/check-directive-quotes.ts:90` builds their names with a
  * template literal. A false `(convention)` is the reading that tells a human "no reader will
- * break if you move this", so `*`, `${...}`, `%s` and `{}` inside a `.json`-shaped token are
+ * break if this moves", so `*`, `${...}`, `%s` and `{}` inside a `.json`-shaped token are
  * matched as wildcards rather than as literal characters.
  *
  * ONE NAMER, NOT THE SET, AND THAT IS A PAID-FOR CHOICE. `suppressionsProvider` above records
@@ -1693,6 +1845,27 @@ const jsonTokens = (text: string): RegExp[] => {
   return out;
 };
 
+/** A path that can name a `.json` file for this table: declarative or code, outside prose and the data homes. */
+const isNamerCandidate = (f: string): boolean => {
+  if (NOT_A_DISCOVERER.some((d) => f.startsWith(d))) return false;
+  if (GENERATED_PROJECTIONS.includes(f)) return false;
+  const ext = path.extname(f);
+  return WIRING_EXT.includes(ext) || f.startsWith('.vscode/') || CODE_EXT.includes(ext);
+};
+
+/** Whether `f` is a member of one of the four homes. ROOT MEANS DEPTH ONE: see `rows`. */
+const isJsonMember = (f: string): boolean =>
+  (f.endsWith('.json') || f.endsWith('.jsonc')) &&
+  JSON_HOMES.some(({ dir }) => (dir === '.' ? !f.includes('/') : path.dirname(f) === dir));
+
+/** Everything a namer contributes to this table: its token patterns, in order. */
+const namerTokens = (text: string | null): string =>
+  text === null
+    ? ''
+    : jsonTokens(text)
+        .map((re) => re.source)
+        .join('\n');
+
 export const jsonInventoryProvider: Provider = {
   id: 'json-inventory',
   scans:
@@ -1707,11 +1880,8 @@ export const jsonInventoryProvider: Provider = {
     const wiring: { file: string; tokens: RegExp[] }[] = [];
     const code: { file: string; tokens: RegExp[] }[] = [];
     for (const f of present) {
-      if (NOT_A_DISCOVERER.some((d) => f.startsWith(d))) continue;
-      if (GENERATED_PROJECTIONS.includes(f)) continue;
-      const ext = path.extname(f);
-      const isWiring = WIRING_EXT.includes(ext) || f.startsWith('.vscode/');
-      if (!isWiring && !CODE_EXT.includes(ext)) continue;
+      if (!isNamerCandidate(f)) continue;
+      const isWiring = WIRING_EXT.includes(path.extname(f)) || f.startsWith('.vscode/');
       let text = '';
       try {
         text = fs.readFileSync(path.join(root, f), 'utf-8');
@@ -1735,16 +1905,11 @@ export const jsonInventoryProvider: Provider = {
     const rows: ProviderRow[] = [];
     for (const { home, dir } of JSON_HOMES) {
       const listed = lsFiles(root, ...(dir === '.' ? ['*.json', '*.jsonc'] : [dir]));
-      const members = presentFiles(root, listed).present.filter((f) => {
-        if (!f.endsWith('.json') && !f.endsWith('.jsonc')) return false;
-        // ROOT MEANS DEPTH ONE. `git ls-files -- '*.json'` matches at every depth, and a
-        // pathspec that quietly swept `packages/**` into the root bucket would report a
-        // predicate violation for every workspace manifest in the repository.
-        return dir === '.' ? !f.includes('/') : path.dirname(f) === dir;
-      });
-      // ANTI-VACUITY PER HOME, NOT JUST IN TOTAL. Three of these four could empty out without
-      // the total reaching zero, and this table's whole claim is about WHERE files live: a
-      // home that silently stopped being scanned reads as a home that has been cleaned up.
+      // ROOT MEANS DEPTH ONE. `git ls-files -- '*.json'` matches at every depth, and a pathspec that quietly swept `packages/**` into the root bucket would report a predicate violation for every workspace manifest in the repository.
+      const members = presentFiles(root, listed).present.filter(
+        (f) => isJsonMember(f) && (dir === '.' ? !f.includes('/') : path.dirname(f) === dir)
+      );
+      // ANTI-VACUITY PER HOME, NOT JUST IN TOTAL. Three of these four could empty out without the total reaching zero, and this table's whole claim is about WHERE files live: a home that silently stopped being scanned reads as a home that has been cleaned up.
       if (members.length === 0) {
         throw new Error(
           `json-inventory: the ${home} home matched no .json file. Either it moved or the ` +
@@ -1791,6 +1956,13 @@ export const jsonInventoryProvider: Provider = {
       ({ dir }) =>
         presentFiles(root, lsFiles(root, ...(dir === '.' ? ['*.json', '*.jsonc'] : [dir]))).missing
     ).sort(byCodePoint),
+  // The corpus is the whole index, so the scope is everything. A namer moves a row only when its token patterns change, and a member only when it arrives or leaves; member CONTENT matters only as a namer, which the first clause already covers.
+  inputs: {
+    scope: () => true,
+    moves: (c) =>
+      (isJsonMember(c.path) && membershipChanged(c)) ||
+      (isNamerCandidate(c.path) && namerTokens(c.before()) !== namerTokens(c.after())),
+  },
 };
 
 /* ----------------------------------------------------------- env manifest */
@@ -1982,6 +2154,7 @@ export const envManifestProvider: Provider = {
     }
     return rows.sort((a, b) => byCodePoint(a.key, b.key));
   },
+  inputs: filesInput(ENV_MANIFEST),
 };
 
 const PROSE_RULES = '.ci/config/prose-style-rules.json';
@@ -2043,6 +2216,7 @@ export const proseStyleProvider: Provider = {
     });
   },
   missing: (root) => (fs.existsSync(path.join(root, PROSE_RULES)) ? [] : [PROSE_RULES]),
+  inputs: filesInput(PROSE_RULES),
 };
 
 export const PROVIDERS: readonly Provider[] = [
@@ -2065,3 +2239,23 @@ export const PROVIDERS: readonly Provider[] = [
 
 export const providerById = (id: string): Provider | undefined =>
   PROVIDERS.find((p) => p.id === id);
+
+/**
+ * The ids of every provider whose rows `c` could move, by each one's declared `inputs`.
+ *
+ * The question the pre-commit hook asks about every staged path. An empty answer is the
+ * hook's fast path, so this must over-approximate: a false positive costs one verify, while a
+ * false negative lets a drifted region into a commit, which is the defect the hook exists for.
+ */
+export const providersReading = (
+  c: InputChange,
+  read: SeamReader,
+  providers: readonly Provider[] = PROVIDERS
+): string[] =>
+  providers
+    .filter(
+      (p) =>
+        p.inputs === undefined ||
+        (p.inputs.scope(c.path, read) && (p.inputs.moves?.(c, read) ?? true))
+    )
+    .map((p) => p.id);
