@@ -125,6 +125,10 @@ export interface GateSpec {
    * quietly shrinks.
    */
   slow?: true;
+  /**
+   * CI-ONLY: never run by the local pre-push lane, even when the change set touches it, and so never recorded as `droppedTouched` for the push guard. CI still runs it in its own workflow step. The value is the reason, which must say why the gate cannot run reliably beside the rest of ci:quick and where CI runs it. Requires `slow`. Operator ruling 2026-10-06 (/ask) for check:test:tutorial-player.
+   */
+  ciOnly?: string;
   /** Set on the 62 entries flattened out of .ci/scripts/test/gates/. Their set
    *  must equal the on-disk glob; see assertion 7 in section 6.3. */
   qualityGateTest?: boolean;
