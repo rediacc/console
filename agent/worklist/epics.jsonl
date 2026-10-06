@@ -21,3 +21,6 @@
 {"at":"2026-10-04T07:30:46Z","by":"d778be9d","id":"fcbc40a8","title":"CI and tooling consolidation: registration verb, freshness registry, hook gh layer, plan verbs, pytest-aware probe","covers":[],"order":null,"plan":"agent/plans/PLAN-ci-consolidation.md"}
 {"at":"2026-10-04T08:53:40Z","by":"d778be9d","id":"dcbfb5d6","title":"Clean per-commit reviews append one ledger line instead of a file","covers":[],"order":null,"plan":"agent/plans/PLAN-clean-review-ledger.md"}
 {"at":"2026-10-04T11:40:55Z","by":"d778be9d","id":"bf937597","title":"Stop-hook turbo mode; QUEUE.md Settings as the single switchboard","covers":[],"order":null,"plan":"agent/plans/PLAN-stop-hook-turbo.md"}
+{"at":"2026-10-06T01:46:09Z","by":"d778be9d","id":"6bcda063","title":"Clean review ledger: T17 full suites and T18 live check","covers":[],"order":null,"plan":"agent/plans/PLAN-clean-review-ledger.md"}
+{"at":"2026-10-06T01:46:21Z","by":"d778be9d","id":"6bcda063","title":"Clean review ledger: T17 full suites and T18 live check","covers":["79f238a0"],"order":null}
+{"at":"2026-10-06T02:06:18Z","by":"d778be9d","id":"22409811","title":"Dependency upkeep: required patch and minor bumps (check:deps)","covers":[],"order":null}
