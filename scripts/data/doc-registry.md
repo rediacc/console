@@ -792,9 +792,9 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/prompts | 1 | .md 1 |
 | .ci/rediacc_ci | 17 | .py 17 |
 | .ci/rediacc_ci/build | 18 | .py 18 |
-| .ci/rediacc_ci/ci | 27 | .py 27 |
+| .ci/rediacc_ci/ci | 26 | .py 26 |
 | .ci/rediacc_ci/ci_signal | 2 | .py 2 |
-| .ci/rediacc_ci/core | 34 | .py 34 |
+| .ci/rediacc_ci/core | 35 | .py 35 |
 | .ci/rediacc_ci/deploy | 34 | .py 34 |
 | .ci/rediacc_ci/dev | 4 | .py 4 |
 | .ci/rediacc_ci/diagnostics | 3 | .py 3 |

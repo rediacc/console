@@ -60,14 +60,15 @@ def retry_transient[T](
 def gh(
     args: list[str],
     *,
+    env: dict[str, str] | None = None,
     attempts: int = ATTEMPTS,
     sleep: Callable[[float], None] | None = None,
     runner: Callable[..., ghx.GhResult] | None = None,
 ) -> ghx.GhResult:
-    """`gh <args>` with transient retry. Never raises for a non-zero exit; read `.stdout`/`.json()`."""
+    """`gh <args>` with transient retry. Never raises for a non-zero exit; read `.stdout`/`.json()`. `env` reaches gh unchanged (review_budget passes a token)."""
     run = runner or ghx.gh
     return retry_transient(
-        lambda: run(args, attempts=1),
+        lambda: run(args, env=env, attempts=1),
         lambda r: None if r.ok else (r.stderr or "failed"),
         attempts=attempts,
         sleep=sleep,
