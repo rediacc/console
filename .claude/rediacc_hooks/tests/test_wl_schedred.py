@@ -515,6 +515,24 @@ def test_green_owes_the_owner_the_tick_command(tmp_path):
     assert SR.assess(wlp, [item], "bbbbbbbb-2", green)["green"] == []
 
 
+def test_a_green_older_than_the_items_red_is_never_offered(tmp_path):
+    """2026-10-06 13:48Z: GitHub answered housekeeping.yml's newest completed scheduled run with 29228880755, a green of 2026-07-13, and the hook offered it as the tick evidence for #5f43e8c8 (run:37111522524). Only a NEWER green ends a red."""
+    wlp = tmp_path / "wl.md"
+    stale = red_doc(run_id=RED_RUN - 7872880149, conclusion="success")
+    item = {
+        "id": "c0ffee01",
+        "state": " ",
+        "owner": "aaaaaaaa",
+        "text": "sched:ci run:%d" % RED_RUN,
+    }
+    assert SR.assess(wlp, [item], "aaaaaaaa-1", stale)["green"] == []
+    # Control: the same item with no run named still hears about a green.
+    bare = dict(item, text="sched:ci nightly red")
+    assert [it["id"] for _r, it in SR.assess(wlp, [bare], "aaaaaaaa-1", stale)["green"]] == [
+        "c0ffee01"
+    ]
+
+
 # --------------------------------------------------------------------------- tick evidence
 
 
