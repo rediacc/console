@@ -460,6 +460,10 @@ def pre_commit(_argv: list[str]) -> int:
             "`node` is not on PATH; install Node 24 (.devcontainer/toolchain.env pins it) or commit from the devbox"
         )
     git_dir = _git(["rev-parse", "--absolute-git-dir"])
+    if not git_dir:
+        return _unchecked(
+            "`git rev-parse --absolute-git-dir` answered nothing, so there is no scratch tree to verify in"
+        )
     scratch = scratch_for(git_dir)
     sel = os.path.join(scratch, "sel")
     tree = os.path.join(scratch, "tree")
