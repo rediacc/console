@@ -34,16 +34,38 @@ REVIEW_JOB_CONTEXTS = ("Review Status", "Claude Review")
 NONBLOCKING_CONTEXTS = frozenset({CHECK_NAME, PUBLISH_JOB_NAME, *REVIEW_JOB_CONTEXTS})
 # The watchdog's own exclusions (WATCHDOG_EXCLUDE_PATTERNS in .github/workflows/watchdog-monitor.yml): aggregators and observers, never the first failure of a Console CI run. All of REVIEW_CONTEXTS stay here, Review Complete included: the review runs in its own workflows after CI, so it observes a Console CI run rather than belonging to it, and its required-check verdict is read by ci-trace and the Stop hook (wl_ci.py), not by the watchdog. Matched as substrings; none of REVIEW_CONTEXTS is a substring of "Review Gate".
 WATCHDOG_EXCLUDED = ("Watchdog", "CI Complete", *REVIEW_CONTEXTS)
+# DOWNSTREAM OF A VERDICT, never the cause of one. Console CI jobs that read another job's result and fail BECAUSE it failed: every job whose `needs:` holds `ci-complete` in .github/workflows/ci.yml (Pipeline Sentinel, Finalize Release Sentinel, PR Labels) and the install legs' own roll-up. Main push run 37394654719 attempt 2 (2026-10-06) had exactly two failures, CI Complete and Pipeline Sentinel, both reporting a
+# Validate Promotion that hit its 15 min timeout, and `--why` named Pipeline Sentinel as the first failure. test_ci_diagnose pins this list against ci.yml's `needs:` graph, so a new downstream job cannot slip in as a root cause. Matched as substrings, like WATCHDOG_EXCLUDED.
+DOWNSTREAM_JOBS = (
+    "Pipeline Sentinel",
+    "Finalize Release Sentinel",
+    "PR Labels",
+    "Install Methods Complete",
+)
+AGGREGATORS = (*WATCHDOG_EXCLUDED, *DOWNSTREAM_JOBS)
 CAUSE_KINDS = (
     "watchdog-budget",
     "watchdog-failure",
     "superseded",
     "timeout-kill",
+    "runner-not-acquired",
     "manual",
     "unknown",
 )
-CATEGORIES = ("infra-likely", "code-likely", "unknown")
+# `watchdog-cancel` and `timeout-cancel` name a job that was STOPPED rather than one that failed: the Watchdog Monitor's enforced budget (its `CI BUDGET VIOLATION: '<job>' ran <m>m (budget <b>m)` annotation) or GitHub's own `timeout-minutes` kill (`The job has exceeded the maximum execution time`). They are read from cancel_cause's evidence, and only when the job's log carries no infra or code signature of
+# its own, since a log that says WHY the job ran long (a slow renet setup phase) is the deeper answer.
+CATEGORIES = ("infra-likely", "code-likely", "watchdog-cancel", "timeout-cancel", "unknown")
+CANCEL_CATEGORIES = {
+    "watchdog-budget": "watchdog-cancel",
+    "timeout-kill": "timeout-cancel",
+    # GitHub never gave the job a runner (PR run 37361706365 on 2026-10-05, during an Actions incident): nothing in the code ran, so it is infrastructure.
+    "runner-not-acquired": "infra-likely",
+}
 FAIL_CONCLUSIONS = ("failure", "timed_out", "startup_failure")
+# A root cause may be a job that was stopped: a cancelled job is never green, and on a main push run it is often the only non-aggregator that did not pass.
+ROOT_CONCLUSIONS = (*FAIL_CONCLUSIONS, "cancelled")
+# Earlier attempts summarised beside a re-run's verdict; a bound keeps the reads finite.
+MAX_ATTEMPTS_SUMMARISED = 4
 TRACE_CMD = ".ci/scripts/ci/ci-trace.py"
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
@@ -54,6 +76,7 @@ BUDGET_RE = re.compile(r"CI BUDGET VIOLATION: '(.+?)' ran ([\d.]+)m \(budget (\d
 WATCHDOG_TITLE_RE = "Watchdog: run %s ("
 TIMEOUT_RE = re.compile(r"has exceeded the maximum execution time(?: of (\S+))?")
 FORCED_RE = re.compile(r"canceled forcefully by @([\w-]+(?:\[bot\])?)")
+NOT_ACQUIRED_RE = re.compile(r"was not acquired by Runner")
 ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 TS_RE = re.compile(r"^\ufeff?(\d{4}-\d\d-\d\dT(\d\d:\d\d:\d\d))(\.\d+)?Z ?")
 STREAM_RE = re.compile(r"\bvm=(\S+)\s*$")
@@ -85,6 +108,17 @@ SIGNATURES = (
             r"|hosted runner encountered an error"
         ),
         "the runner went away",
+        0,
+    ),
+    # GitHub's own API answered 5xx to a `gh` call. Quality / Security job 112158906504 (run 37429940875) failed on `budget_report: gh api ... exited 1 [failed]: gh: Server Error (HTTP 502)` and read `category: unknown`. Not the Bitwarden row: that one needs `bws-secrets`/Received error message in the line.
+    (
+        "github-api-5xx",
+        "infra",
+        re.compile(
+            r"\bServer Error \(HTTP 5\d\d\)|\bgh: .*\(HTTP 5\d\d\)"
+            r"|\bgh: (?:Bad Gateway|Service Unavailable|Gateway Timeout)\b"
+        ),
+        "GitHub's API answered 5xx to a gh call",
         0,
     ),
     (
@@ -126,6 +160,25 @@ SIGNATURES = (
         "code",
         re.compile(r"(?<![\w\]])Error: (?!Process completed with exit code)"),
         "an error was raised",
+        0,
+    ),
+    # A step's OWN `##[error]` message, not the runner's exit line or its cancel notice. Quality / Security on nightly run 36827121342 printed `##[error]Production vulnerabilities: 1 critical, ...` and `--why` still said `category: unknown`.
+    (
+        "step-error",
+        "code",
+        re.compile(
+            r"##\[error\](?!Process completed with exit code|The operation was canceled"
+            r"|The job has exceeded the maximum execution time)\S"
+        ),
+        "the step reported an error",
+        0,
+    ),
+    # This repo's checks end on an upper-case FAILED verdict line (Quality / Content on nightly run 37273046804: `Dependency check FAILED: 2 must upgrade, ...`), which no other row matched.
+    (
+        "check-failed",
+        "code",
+        re.compile(r"\b[A-Za-z][\w-]* FAILED\b"),
+        "a repo check reported FAILED",
         0,
     ),
 )
@@ -311,8 +364,8 @@ def _blocking(name):
 
 
 def _aggregator(name):
-    """Whether a job only aggregates or observes others (CI Complete, the watchdog), so it is never a ROOT cause."""
-    return any(p in str(name or "") for p in WATCHDOG_EXCLUDED)
+    """Whether a job only aggregates, observes or reports on others (CI Complete, the watchdog, the sentinels downstream of CI Complete), so it is never a ROOT cause."""
+    return any(p in str(name or "") for p in AGGREGATORS)
 
 
 def _strip_ts(line):
@@ -381,6 +434,64 @@ def first_failure(jobs):
     )
 
 
+def root_cause(jobs):
+    """The earliest-finishing blocking, non-aggregator job that failed OR was cancelled, or None.
+
+    An aggregator's failure is a report of another job's result, so it never outranks the job it reports: on main push run 37394654719 attempt 2 CI Complete and Pipeline Sentinel failed because Validate Promotion was cancelled at its timeout, and the cancelled job is the one to read.
+    """
+    roots = [
+        j
+        for j in jobs or []
+        if (j.get("conclusion") or "") in ROOT_CONCLUSIONS
+        and _blocking(j.get("name"))
+        and not _aggregator(j.get("name"))
+    ]
+    if not roots:
+        return None
+    return min(
+        roots, key=lambda j: (_epoch(j.get("completed_at")) or float("inf"), j.get("id") or 0)
+    )
+
+
+def job_counts(jobs):
+    """{conclusion: n} over the blocking jobs that did not pass, aggregators included: the honest count beside GitHub's single run-level conclusion."""
+    out: dict[str, int] = {}
+    for j in jobs or []:
+        c = j.get("conclusion") or ""
+        if c and c not in ("success", "skipped", "neutral") and _blocking(j.get("name")):
+            out[c] = out.get(c, 0) + 1
+    return out
+
+
+def attempts_summary(fetch, run_id, current, latest):
+    """[{attempt, conclusion, root, root_conclusion}] for every attempt of the run except `current`, newest first, at most MAX_ATTEMPTS_SUMMARISED.
+
+    A re-run's verdict used to describe its own attempt only, so a job cancelled in BOTH attempts of run 37394654719 read as a one-off. One run read and one jobs read per attempt.
+    """
+    out: list[dict] = []
+    try:
+        current, latest = int(current or 0), int(latest or 0)
+    except (TypeError, ValueError):
+        return out
+    for n in range(latest, 0, -1):
+        if n == current:
+            continue
+        if len(out) >= MAX_ATTEMPTS_SUMMARISED:
+            break
+        run, _err = run_info(fetch, run_id, n)
+        jobs, _jerr = run_jobs(fetch, run_id, n)
+        root = root_cause(jobs)
+        out.append(
+            {
+                "attempt": n,
+                "conclusion": (run or {}).get("conclusion") or "unreadable",
+                "root": (root or {}).get("name"),
+                "root_conclusion": (root or {}).get("conclusion"),
+            }
+        )
+    return out
+
+
 def _annotations(fetch, check_run_id):
     data, _err = fetch.json("check-runs/%s/annotations?per_page=100" % check_run_id)
     return data if isinstance(data, list) else []
@@ -437,8 +548,8 @@ def _watchdog_evidence(fetch, run, runs):
     return None, {}
 
 
-def cancel_cause(fetch, run, pr_head=None, jobs=None):
-    """Why a run with nothing failed was cancelled. See CAUSE_KINDS for the order of the evidence."""
+def cancel_cause(fetch, run, pr_head=None, jobs=None, focus=None):
+    """Why a run (or its root-cause job `focus`) was cancelled. See CAUSE_KINDS for the order of the evidence; `focus`'s own annotations are read before the longest-running cancelled jobs', because the job that stopped first is rarely the one that ran longest (run 37361706365: Quality / Pytest (2/3) was never given a runner at 25 min, while the E2E legs cancelled behind it ran 55)."""
     cause = {
         "kind": "unknown",
         "detail": "cause unknown; not proven superseded",
@@ -470,6 +581,8 @@ def cancel_cause(fetch, run, pr_head=None, jobs=None):
         if (
             r.get("id") != run.get("id")
             and r.get("name") == run.get("name")
+            # SAME EVENT ONLY: a nightly `schedule` run on the same head does not supersede a `push` run (live on 37394654719, 2026-10-06: "superseded by run 37428263878", the 07:12 nightly, while the push run's own job had hit its timeout-minutes).
+            and r.get("event") == run.get("event")
             and (_epoch(r.get("created_at")) or 0) > created
         ):
             cause.update(
@@ -482,10 +595,21 @@ def cancel_cause(fetch, run, pr_head=None, jobs=None):
     cancelled.sort(
         key=lambda j: _span(j.get("started_at"), j.get("completed_at")) or 0, reverse=True
     )
+    candidates = cancelled[:3]
+    if focus is not None and focus.get("conclusion") == "cancelled":
+        candidates = [focus, *(j for j in candidates if j.get("id") != focus.get("id"))]
     actor = None
-    for job in cancelled[:3]:
+    for job in candidates:
         for a in _annotations(fetch, job.get("id")):
             msg = str(a.get("message") or "")
+            if NOT_ACQUIRED_RE.search(msg):
+                cause.update(
+                    kind="runner-not-acquired",
+                    detail="'%s' was never given a runner (GitHub: %s)"
+                    % (job.get("name"), _clip(sanitize(msg), 120)),
+                    job=job.get("name"),
+                )
+                return cause
             m = TIMEOUT_RE.search(msg)
             if m:
                 span = _span(job.get("started_at"), job.get("completed_at"))
@@ -737,82 +861,183 @@ def _blank(run_id, attempt, now):
         "verdict": "unknown",
         "cause": None,
         "first_failure": None,
+        "jobs": {},
+        "also_failed": [],
+        "attempts": [],
         "gaps": [],
         "next": "",
     }
 
 
-def _focus(fetch, job, cache_dir=None):
-    """The first_failure block (minus category defaults) and gaps for one job."""
+def evidence(log, job):
+    """(step, lines, widened): the failing step's log lines, or the whole log up to that step's end when the step itself holds no evidence.
+
+    A step that only RE-RAISES an earlier step's outcome carries nothing but the runner's exit line: Housekeeping run 37294996911 failed in `Fail the job when the budget check failed` (0 s) while the check itself ran, and logged, under `continue-on-error` in an earlier step. Widening to the log before the step's end lets that earlier output be classified and excerpted, and `widened` says so.
+    """
+    step, lines = failing_step_slice(log, job)
+    if any(_sig_hit(ln) for ln in lines) or any(
+        "##[error]" in ln and "##[error]Process completed with exit code" not in ln for ln in lines
+    ):
+        return step, lines, False
+    whole = (log or "").splitlines()
+    if not lines or len(lines) >= len(whole):
+        return step, lines, False
+    end = whole.index(lines[-1]) if lines[-1] in whole else len(whole) - 1
+    return step, whole[: end + 1], True
+
+
+def _focus(fetch, job, cache_dir=None, cause=None):
+    """The first_failure block and gaps for one job. A cancelled job whose log names no signature takes its category from the cancel `cause` (watchdog-cancel, timeout-cancel)."""
     jid = job.get("id")
     dur = durations(job)
     block = {
         "job_id": jid,
         "name": job.get("name") or "",
+        "conclusion": job.get("conclusion") or job.get("status") or "",
         "step": dur["step"],
         "step_s": dur["step_s"],
+        "job_s": dur["job_s"],
         "p90_s": dur["p90_s"],
         "category": "unknown",
         "signature": "",
         "excerpt": [],
+        "widened": False,
     }
     log, _err = job_log(fetch, jid, completed=job.get("status") == "completed", cache_dir=cache_dir)
     gaps = []
     if log:
-        step, lines = failing_step_slice(log, job)
+        step, lines, widened = evidence(log, job)
         block["step"] = step or block["step"]
         block["category"], block["signature"] = classify(lines)
         block["excerpt"] = excerpt(lines)
+        block["widened"] = widened
         gaps = log_gaps(log)
+    block["category"] = cancel_category(job, cause, block["category"])
     return block, gaps
 
 
+def cancel_category(job, cause, category):
+    """`category` unless it is `unknown` and `job` was cancelled by a cause that names it (or names no job, for a timeout kill read off that job)."""
+    if category != "unknown" or (job or {}).get("conclusion") != "cancelled" or not cause:
+        return category
+    mapped = CANCEL_CATEGORIES.get(cause.get("kind") or "")
+    named = cause.get("job")
+    if mapped and (not named or named == (job or {}).get("name")):
+        return mapped
+    return category
+
+
 def diagnose(fetch, run_id, attempt=None, pr_head=None, now=None, cache_dir=None):
-    """The ci-verdict/v1 dict for one run attempt. Never raises on a read failure: the verdict is `unknown` and `next` says why."""
+    """The ci-verdict/v1 dict for one run attempt. Never raises on a read failure: the verdict is `unknown` and `next` says why.
+
+    THE VERDICT AND THE ROOT CAUSE ARE SEPARATE QUESTIONS. The verdict is red when any blocking job failed, aggregators included (a red CI Complete IS a red run, whatever GitHub's run-level conclusion says: run 37394654719 concluded `cancelled` with CI Complete failed). The job the reader is sent to is the root cause: the earliest non-aggregator job that failed or was cancelled (`root_cause`), so a sentinel reporting a
+    cancelled job never stands in for it. A cancelled root is attributed through cancel_cause on a red verdict too.
+    """
     d = _blank(run_id, attempt, now)
     run, err = run_info(fetch, run_id, attempt)
     if run is None:
         d["next"] = "could not read run %s: %s" % (run_id, err)
         return d
+    this_attempt = run.get("run_attempt") or attempt
     d.update(
         head_sha=run.get("head_sha") or "",
-        attempt=run.get("run_attempt") or attempt,
+        attempt=this_attempt,
         workflow=run.get("name") or "",
         conclusion=run.get("conclusion") or run.get("status") or "",
     )
-    jobs, err = run_jobs(fetch, run_id, attempt or run.get("run_attempt"))
+    jobs, err = run_jobs(fetch, run_id, this_attempt)
     if not jobs and err:
         d["next"] = "could not read the jobs of run %s: %s" % (run_id, err)
         return d
-    blocking = [j for j in jobs if _blocking(j.get("name")) and not _aggregator(j.get("name"))]
-    failed = first_failure(blocking)
-    cancelled = [j for j in blocking if j.get("conclusion") == "cancelled"]
+    d["jobs"] = job_counts(jobs)
+    blocking = [j for j in jobs if _blocking(j.get("name"))]
+    any_failed = [j for j in blocking if (j.get("conclusion") or "") in FAIL_CONCLUSIONS]
+    roots = [j for j in blocking if not _aggregator(j.get("name"))]
+    cancelled = [j for j in roots if j.get("conclusion") == "cancelled"]
+    root = root_cause(jobs)
     completed = run.get("status") == "completed"
     focus = None
-    if failed:
+    if any_failed:
         d["verdict"] = "red"
-        focus = failed
+        focus = (
+            root
+            or first_failure(any_failed)
+            or min(any_failed, key=lambda j: _epoch(j.get("completed_at")) or float("inf"))
+        )
     elif run.get("conclusion") == "cancelled" or (completed and cancelled):
         d["verdict"] = "cancelled"
-        d["cause"] = cancel_cause(fetch, run, pr_head, jobs)
-        named = (d["cause"] or {}).get("job")
-        focus = next((j for j in jobs if j.get("name") == named), None)
-        if focus is None and cancelled:
-            focus = max(
-                cancelled, key=lambda j: _span(j.get("started_at"), j.get("completed_at")) or 0
-            )
     elif not completed:
         d["verdict"] = "running"
     elif run.get("conclusion") in ("success", "skipped", "neutral"):
         d["verdict"] = "green"
     else:
         d["verdict"] = "red"
+    if d["verdict"] == "cancelled" or (
+        focus is not None and focus.get("conclusion") == "cancelled"
+    ):
+        d["cause"] = cancel_cause(fetch, run, pr_head, jobs, focus=root)
+        named = (d["cause"] or {}).get("job")
+        pick = next((j for j in roots if j.get("name") == named), None)
+        if d["verdict"] == "cancelled":
+            focus = pick
+            if focus is None and cancelled:
+                focus = max(
+                    cancelled,
+                    key=lambda j: _span(j.get("started_at"), j.get("completed_at")) or 0,
+                )
+        elif pick is not None and pick.get("conclusion") == "cancelled":
+            focus = pick
     if focus is not None:
-        d["first_failure"], d["gaps"] = _focus(fetch, focus, cache_dir=cache_dir)
+        d["first_failure"], d["gaps"] = _focus(fetch, focus, cache_dir=cache_dir, cause=d["cause"])
         d["next"] = _job_cmd(focus.get("id"))
+        d["also_failed"] = [
+            j.get("name") or "?"
+            for j in roots
+            if j is not focus and (j.get("conclusion") or "") in FAIL_CONCLUSIONS
+        ]
     elif d["verdict"] in ("red", "running"):
         d["next"] = "%s --run %s --jobs" % (TRACE_CMD, run_id)
+    if d["verdict"] not in ("green", "running"):
+        latest = run.get("run_attempt")
+        if attempt:
+            # An explicit attempt may not be the newest; the run without an attempt says how many there are.
+            newest, _err = run_info(fetch, run_id)
+            latest = (newest or {}).get("run_attempt") or latest
+        if (latest or 0) > 1:
+            d["attempts"] = attempts_summary(fetch, run_id, this_attempt, latest)
     return d
+
+
+def _conclusion_text(d):
+    """GitHub's run-level conclusion, beside the job counts whenever they say something it does not: run 37394654719 concluded `cancelled` with two jobs failed."""
+    concl = d.get("conclusion") or "?"
+    counts = d.get("jobs") or {}
+    if not counts or set(counts) == {concl}:
+        return concl
+    parts = ", ".join(
+        "%d %s" % (n, k) for k, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    )
+    return "run %s; jobs: %s" % (concl, parts)
+
+
+def _attempts_text(d):
+    """One line over every other attempt, ending with whether the root-cause job is the same in all of them (a repeat is not a flake)."""
+    rows = d.get("attempts") or []
+    bits = [
+        "a%s %s%s"
+        % (
+            r.get("attempt"),
+            r.get("conclusion"),
+            " (%s %s)" % (r.get("root"), r.get("root_conclusion")) if r.get("root") else "",
+        )
+        for r in rows
+    ]
+    mine = (d.get("first_failure") or {}).get("name")
+    same = bool(mine) and all(r.get("root") == mine for r in rows)
+    return "  other attempts: %s%s" % (
+        "; ".join(bits),
+        " -- the same job in every attempt, so not a one-off" if same else "",
+    )
 
 
 def render(d, budget_lines=12):
@@ -824,7 +1049,7 @@ def render(d, budget_lines=12):
         d.get("run_id"),
         d.get("attempt") or "?",
         (d.get("head_sha") or "?")[:8],
-        d.get("conclusion") or "?",
+        _conclusion_text(d),
     )
     fixed = [head]
     cause = d.get("cause") or {}
@@ -833,11 +1058,20 @@ def render(d, budget_lines=12):
         fixed.append("  cause: %s: %s%s" % (cause.get("kind"), cause.get("detail"), extra))
     ff = d.get("first_failure") or {}
     if ff:
-        bits = ["  job: %s (%s)" % (ff.get("name"), ff.get("job_id"))]
+        concl = ff.get("conclusion")
+        bits = [
+            "  job: %s (%s)%s" % (ff.get("name"), ff.get("job_id"), " %s" % concl if concl else "")
+        ]
         if ff.get("step"):
-            bits.append("step %r" % ff["step"])
+            bits.append(
+                "step %r%s"
+                % (ff["step"], " (evidence from earlier steps)" if ff.get("widened") else "")
+            )
         if ff.get("step_s") is not None:
             bits.append("%ss" % ff["step_s"])
+        elif ff.get("job_s") is not None:
+            # No step failed or was cancelled (GitHub's timeout kill on job 112061625885 landed after every step had passed): the job's own run time is the number that matters.
+            bits.append("no step failed; job lasted %ss" % ff["job_s"])
         if ff.get("p90_s") is not None:
             bits.append("(job p90 %ss)" % ff["p90_s"])
         fixed.append(" ".join(bits))
@@ -849,6 +1083,14 @@ def render(d, budget_lines=12):
                 " (%s: %s)" % (sig, signature_label(sig)) if sig else "",
             )
         )
+    if d.get("also_failed"):
+        also = d["also_failed"]
+        fixed.append(
+            "  also failed: %s%s"
+            % (", ".join(also[:4]), " (+%d more)" % (len(also) - 4) if len(also) > 4 else "")
+        )
+    if d.get("attempts"):
+        fixed.append(_attempts_text(d))
     tail = [
         "  gap: %ss silent%s after %s %r"
         % (

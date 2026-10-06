@@ -1,0 +1,60 @@
+{
+ "total_count": 5,
+ "workflow_runs": [
+  {
+   "conclusion": null,
+   "created_at": "2026-10-06T08:36:50Z",
+   "event": "push",
+   "head_branch": "main",
+   "head_sha": "00db8bede0000000000000000000000000000000",
+   "id": 37437282770,
+   "name": "Console CI",
+   "run_attempt": 1,
+   "status": "pending"
+  },
+  {
+   "conclusion": null,
+   "created_at": "2026-10-06T08:36:49Z",
+   "event": "push",
+   "head_branch": "main",
+   "head_sha": "00db8bede0000000000000000000000000000000",
+   "id": 37437281526,
+   "name": "Console CI",
+   "run_attempt": 1,
+   "status": "in_progress"
+  },
+  {
+   "conclusion": "failure",
+   "created_at": "2026-10-06T07:12:48Z",
+   "event": "schedule",
+   "head_branch": "main",
+   "head_sha": "e6fc817f6696f56511d73223d4be30b3c64d0ab1",
+   "id": 37428263878,
+   "name": "Console CI",
+   "run_attempt": 1,
+   "status": "completed"
+  },
+  {
+   "conclusion": "cancelled",
+   "created_at": "2026-10-06T00:33:44Z",
+   "event": "push",
+   "head_branch": "main",
+   "head_sha": "e6fc817f6696f56511d73223d4be30b3c64d0ab1",
+   "id": 37394654719,
+   "name": "Console CI",
+   "run_attempt": 2,
+   "status": "completed"
+  },
+  {
+   "conclusion": "failure",
+   "created_at": "2026-10-05T06:33:46Z",
+   "event": "schedule",
+   "head_branch": "main",
+   "head_sha": "c277f2ab00000000000000000000000000000000",
+   "id": 37273046804,
+   "name": "Console CI",
+   "run_attempt": 1,
+   "status": "completed"
+  }
+ ]
+}

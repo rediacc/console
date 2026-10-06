@@ -382,6 +382,10 @@ SIG_CASES = {
         "The runner has received a shutdown signal. This can happen when ...",
         "Runner shutdown hooks registered",
     ),
+    "github-api-5xx": (
+        "budget_report: gh api repos/o/r/actions/runs/1/jobs exited 1 [failed]: gh: Server Error (HTTP 502)",
+        "gh: Not Found (HTTP 404)",
+    ),
     "pkg-mirror": (
         "Curl error (28): Timeout was reached for https://mirror/repodata/repomd.xml",
         "Metadata cache created.",
@@ -410,6 +414,14 @@ SIG_CASES = {
     ),
     "panic": ("panic: runtime error: index out of range", "panicked=false; no panics recorded"),
     "error": ("Error: Cannot find module 'x'", "##[error]Process completed with exit code 1."),
+    "step-error": (
+        "##[error]Production vulnerabilities: 1 critical, 0 high, 4 total",
+        "##[error]The operation was canceled.",
+    ),
+    "check-failed": (
+        "Dependency check FAILED: 2 must upgrade, 0 major(s) awaiting a decision",
+        "0 FAILED, 12 passed",
+    ),
 }
 
 
@@ -485,6 +497,9 @@ def test_schema_keys_are_the_contract():
         "verdict",
         "cause",
         "first_failure",
+        "jobs",
+        "also_failed",
+        "attempts",
         "gaps",
         "next",
     }
@@ -526,3 +541,345 @@ def test_history_says_when_a_run_could_not_be_read():
         FakeFetch({"actions/workflows/ci.yml/runs": runs, "actions/runs/2/jobs": jobs}), "J"
     )
     assert [r["conclusion"] for r in rows] == ["unreadable", "success"]
+
+
+# ---- main push run 37394654719 (2026-10-06): the root cause, not the sentinel -----------
+#
+# PR #595 merged as e6fc817f6 on a green PR run; Console CI on main then stopped Validate Promotion twice. Attempt 1: the Watchdog Monitor (gen 6, run 37398501382) cancelled the pipeline on `CI BUDGET VIOLATION: 'Validate Promotion' ran 15.0m (budget 15m)`. Attempt 2 (the failed jobs re-run): GitHub's own `timeout-minutes: 15` killed the job after every step had passed, then CI Complete and Pipeline Sentinel
+# failed reporting it. `--why` named Pipeline Sentinel, said `-> cancelled`, `category: unknown`, and never mentioned attempt 1. The fixtures are those answers, trimmed to the fields read (steps kept only for the jobs that did not pass).
+
+MAIN_RUN = 37394654719
+MAIN_HEAD = "e6fc817f6696f56511d73223d4be30b3c64d0ab1"
+VP_A1, VP_A2 = 112056552771, 112061625885
+
+
+def main_routes(**over):
+    routes = {
+        "actions/runs/%s" % MAIN_RUN: _load("run_37394654719_attempt2.json"),
+        "actions/runs/%s/attempts/1" % MAIN_RUN: _load("run_37394654719_attempt1.json"),
+        "actions/runs/%s/attempts/2" % MAIN_RUN: _load("run_37394654719_attempt2.json"),
+        "actions/runs/%s/attempts/1/jobs" % MAIN_RUN: _load("jobs_37394654719_attempt1.json"),
+        "actions/runs/%s/attempts/2/jobs" % MAIN_RUN: _load("jobs_37394654719_attempt2.json"),
+        "actions/runs": _load("runs_head_e6fc817f.json"),
+        "actions/runs/37398501382/jobs": _load("watchdog_jobs_37398501382.json"),
+        "check-runs/112060087586/annotations": _load("annotations_112060087586.json"),
+        "check-runs/%s/annotations" % VP_A1: _load("annotations_112056552771.json"),
+        "check-runs/%s/annotations" % VP_A2: _load("annotations_112061625885.json"),
+    }
+    routes.update(over)
+    return routes
+
+
+def test_main_run_attempt_2_names_the_cancelled_root_cause_not_the_sentinel(tmp_path):
+    d = D.diagnose(FakeFetch(main_routes()), MAIN_RUN, cache_dir=tmp_path)
+    assert d["verdict"] == "red", (
+        "CI Complete failed, so the run is red whatever GitHub's run conclusion"
+    )
+    assert d["conclusion"] == "cancelled"
+    ff = d["first_failure"]
+    assert (ff["name"], ff["job_id"], ff["conclusion"]) == (
+        "Validate Promotion",
+        VP_A2,
+        "cancelled",
+    )
+    assert d["cause"]["kind"] == "timeout-kill", d["cause"]
+    assert d["cause"]["job"] == "Validate Promotion"
+    assert ff["category"] == "timeout-cancel"
+    assert d["jobs"] == {"failure": 2, "cancelled": 1}
+    assert d["also_failed"] == [], (
+        "CI Complete and Pipeline Sentinel report the root; they are not more of it"
+    )
+    assert d["next"] == ".ci/scripts/ci/ci-trace.py --job %s --errors" % VP_A2
+    text = D.render(d)
+    head = text.splitlines()[0]
+    assert head.startswith("RED  Console CI run %s attempt 2 @ e6fc817f -> " % MAIN_RUN), head
+    assert "run cancelled; jobs: 2 failure, 1 cancelled" in head
+    assert "Pipeline Sentinel" not in text
+    assert "category: timeout-cancel" in text
+    assert "hit its timeout-minutes (15m0s)" in text
+
+
+def test_main_run_attempt_2_summarises_attempt_1_and_the_repeat(tmp_path):
+    d = D.diagnose(FakeFetch(main_routes()), MAIN_RUN, cache_dir=tmp_path)
+    assert d["attempts"] == [
+        {
+            "attempt": 1,
+            "conclusion": "cancelled",
+            "root": "Validate Promotion",
+            "root_conclusion": "cancelled",
+        }
+    ]
+    assert (
+        "other attempts: a1 cancelled (Validate Promotion cancelled) -- the same job in every attempt"
+        in D.render(d)
+    )
+    # Control: a single-attempt run makes no attempt reads and prints no attempts line.
+    one = dict(_load("run_37394654719_attempt2.json"), run_attempt=1)
+    routes = main_routes(**{"actions/runs/%s" % MAIN_RUN: one})
+    routes["actions/runs/%s/attempts/1/jobs" % MAIN_RUN] = _load("jobs_37394654719_attempt2.json")
+    fetch = FakeFetch(routes)
+    d1 = D.diagnose(fetch, MAIN_RUN, cache_dir=tmp_path)
+    assert d1["attempts"] == []
+    assert "other attempts" not in D.render(d1)
+    assert not any(c.startswith("actions/runs/%s/attempts/2" % MAIN_RUN) for c in fetch.calls)
+
+
+def test_main_run_attempt_1_is_the_watchdog_budget_and_names_attempt_2(tmp_path):
+    d = D.diagnose(FakeFetch(main_routes()), MAIN_RUN, attempt=1, cache_dir=tmp_path)
+    assert d["verdict"] == "cancelled", (
+        "nothing failed in attempt 1: the watchdog stopped the run first"
+    )
+    assert d["cause"]["kind"] == "watchdog-budget"
+    assert d["cause"]["watchdog_run"] == 37398501382
+    assert d["first_failure"]["job_id"] == VP_A1
+    assert d["first_failure"]["category"] == "watchdog-cancel"
+    assert [a["attempt"] for a in d["attempts"]] == [2], (
+        "an explicit older attempt still names the newer one"
+    )
+
+
+def test_planted_old_aggregator_list_makes_the_sentinel_the_root(tmp_path, monkeypatch):
+    """PLANTED RED for fix (a): with the pre-fix aggregator list and the failure-only root rule, the same fixtures name Pipeline Sentinel again, so the assertion above is load-bearing."""
+    monkeypatch.setattr(D, "AGGREGATORS", D.WATCHDOG_EXCLUDED)
+    monkeypatch.setattr(D, "ROOT_CONCLUSIONS", D.FAIL_CONCLUSIONS)
+    d = D.diagnose(FakeFetch(main_routes()), MAIN_RUN, cache_dir=tmp_path)
+    assert d["first_failure"]["name"] == "Pipeline Sentinel"
+
+
+def test_planted_no_cancel_category_reads_unknown(tmp_path, monkeypatch):
+    """PLANTED RED for fix (c): without the cancel-cause mapping the stopped job reads `unknown`, the pre-fix answer."""
+    monkeypatch.setattr(D, "CANCEL_CATEGORIES", {})
+    d = D.diagnose(FakeFetch(main_routes()), MAIN_RUN, cache_dir=tmp_path)
+    assert d["first_failure"]["category"] == "unknown"
+
+
+def test_cancel_category_never_overrides_a_log_signature_or_another_jobs_cause():
+    job = {"name": "Validate Promotion", "conclusion": "cancelled"}
+    budget = {"kind": "watchdog-budget", "job": "Validate Promotion"}
+    assert D.cancel_category(job, budget, "unknown") == "watchdog-cancel"
+    # The log said why the job ran long (run 36953549081's slow renet setup): that deeper answer stays.
+    assert D.cancel_category(job, budget, "infra-likely") == "infra-likely"
+    # A budget violation of a DIFFERENT job does not explain this one.
+    assert D.cancel_category(job, dict(budget, job="Other"), "unknown") == "unknown"
+    # A failed job is not a stopped one.
+    assert D.cancel_category(dict(job, conclusion="failure"), budget, "unknown") == "unknown"
+    assert D.cancel_category(job, {"kind": "superseded", "job": None}, "unknown") == "unknown"
+
+
+def test_conclusion_text_adds_counts_only_when_they_disagree():
+    assert D._conclusion_text({"conclusion": "failure", "jobs": {"failure": 3}}) == "failure"
+    assert D._conclusion_text({"conclusion": "success", "jobs": {}}) == "success"
+    assert (
+        D._conclusion_text({"conclusion": "cancelled", "jobs": {"failure": 2, "cancelled": 1}})
+        == "run cancelled; jobs: 2 failure, 1 cancelled"
+    )
+
+
+def test_a_red_run_names_every_other_failed_root():
+    """Nightly run 37273046804 failed Quality / Content and Quality / Security; `--why` named the first and hid the second."""
+    jobs = [
+        {
+            "id": 1,
+            "name": "Quality / Content",
+            "conclusion": "failure",
+            "completed_at": "2026-10-05T06:36:15Z",
+        },
+        {
+            "id": 2,
+            "name": "Quality / Security",
+            "conclusion": "failure",
+            "completed_at": "2026-10-05T06:37:00Z",
+        },
+        {
+            "id": 3,
+            "name": "CI Complete",
+            "conclusion": "failure",
+            "completed_at": "2026-10-05T07:00:00Z",
+        },
+    ]
+    run = {
+        "id": 9,
+        "name": "Console CI",
+        "status": "completed",
+        "conclusion": "failure",
+        "run_attempt": 1,
+        "head_sha": "c" * 40,
+    }
+    fetch = FakeFetch({"actions/runs/9": run, "actions/runs/9/attempts/1/jobs": {"jobs": jobs}})
+    d = D.diagnose(fetch, 9)
+    assert d["first_failure"]["name"] == "Quality / Content"
+    assert d["also_failed"] == ["Quality / Security"]
+    assert "  also failed: Quality / Security" in D.render(d)
+
+
+def test_a_reraising_step_widens_the_evidence_to_earlier_steps():
+    """Housekeeping run 37294996911: the failing step only re-raised an earlier `continue-on-error` step, so its own slice held the exit line alone."""
+    job = {
+        "steps": [
+            {
+                "name": "Check",
+                "conclusion": "success",
+                "started_at": "2026-10-05T10:11:00Z",
+                "completed_at": "2026-10-05T10:16:20Z",
+            },
+            {
+                "name": "Fail the job when the check failed",
+                "conclusion": "failure",
+                "started_at": "2026-10-05T10:16:29Z",
+                "completed_at": "2026-10-05T10:16:29Z",
+            },
+        ]
+    }
+    log = (
+        "2026-10-05T10:16:17.0Z ##[error]budget check: 3 units over their limit\n"
+        "2026-10-05T10:16:29.6Z ##[error]Process completed with exit code 1.\n"
+        "2026-10-05T10:16:32.0Z Post job cleanup.\n"
+    )
+    step, lines, widened = D.evidence(log, job)
+    assert step == "Fail the job when the check failed"
+    assert widened is True
+    assert D.classify(lines) == ("code-likely", "step-error")
+    assert lines[-1].endswith("exit code 1."), "never past the failing step's own end"
+    # Control: a step whose own slice carries evidence is not widened.
+    own = log.replace("10:16:17.0Z ##[error]budget", "10:16:29.1Z ##[error]budget")
+    _step, _lines, widened = D.evidence(own, job)
+    assert widened is False
+
+
+def test_aggregators_cover_every_job_downstream_of_ci_complete():
+    """THE PIN. Every Console CI job whose `needs:` holds ci-complete reports CI Complete's result, so it can never be a root cause; a new one must join DOWNSTREAM_JOBS or this fails."""
+    from rediacc_ci import workflows  # noqa: PLC0415 -- the repo's yaml.safe_load stand-in
+
+    ci = workflows.parse(
+        (D.REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    )
+    downstream = []
+    for key, job in (ci.get("jobs") or {}).items():
+        needs = job.get("needs") or []
+        needs = [needs] if isinstance(needs, str) else needs
+        if "ci-complete" in needs or key == "ci-complete":
+            downstream.append(job.get("name") or key)
+    assert {"CI Complete", "Pipeline Sentinel", "Finalize Release Sentinel", "PR Labels"} <= set(
+        downstream
+    )
+    for name in downstream:
+        assert D._aggregator(name), name
+    # Control: the jobs CI Complete aggregates stay root-cause candidates.
+    for name in ("Validate Promotion", "Review Gate", "Quality / Code"):
+        assert not D._aggregator(name), name
+
+
+def test_a_root_never_given_a_runner_is_attributed_from_its_own_annotation():
+    """PR run 37361706365 (2026-10-05, an Actions incident): Quality / Pytest (2/3) was cancelled at 25 min with `The job was not acquired by Runner of type hosted even after multiple attempts`, before any failure; the cause read `unknown` because only the three LONGEST cancelled jobs' annotations were read, and those were E2E legs cancelled behind it."""
+    pytest_job = {
+        "id": 11,
+        "name": "Quality / Pytest (2/3)",
+        "conclusion": "cancelled",
+        "started_at": "2026-10-05T19:15:33Z",
+        "completed_at": "2026-10-05T19:40:50Z",
+    }
+    e2e = [
+        {
+            "id": 20 + i,
+            "name": "Tests + Infra / E2E Workers (x, %d/8)" % i,
+            "conclusion": "cancelled",
+            "started_at": "2026-10-05T19:15:34Z",
+            "completed_at": "2026-10-05T20:11:0%dZ" % i,
+        }
+        for i in range(3)
+    ]
+    late_fail = {
+        "id": 30,
+        "name": "OPS Tests / OPS Check (windows-amd64)",
+        "conclusion": "failure",
+        "started_at": "2026-10-05T19:43:51Z",
+        "completed_at": "2026-10-05T19:45:10Z",
+    }
+    jobs = [late_fail, *e2e, pytest_job]
+    run = {
+        "id": 8,
+        "name": "Console CI",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "run_attempt": 1,
+        "head_sha": "d" * 40,
+    }
+    note = [
+        {
+            "title": "",
+            "message": "The job was not acquired by Runner of type hosted even after multiple attempts",
+        }
+    ]
+    routes = {
+        "actions/runs/8": run,
+        "actions/runs/8/attempts/1/jobs": {"jobs": jobs},
+        "actions/runs": {"workflow_runs": []},
+        "check-runs/11/annotations": note,
+    }
+    d = D.diagnose(FakeFetch(routes), 8)
+    assert d["verdict"] == "red"
+    assert d["first_failure"]["name"] == "Quality / Pytest (2/3)", "it stopped first"
+    assert d["cause"]["kind"] == "runner-not-acquired", d["cause"]
+    assert d["first_failure"]["category"] == "infra-likely"
+    assert d["also_failed"] == ["OPS Tests / OPS Check (windows-amd64)"]
+    # PLANTED: without `focus`, the pre-fix read of the three longest cancelled jobs finds nothing.
+    assert D.cancel_cause(FakeFetch(routes), run, jobs=jobs)["kind"] == "unknown"
+
+
+# ---- github-api-5xx: job 112158906504 (run 37429940875) ----------------------------
+
+
+def _budget_freshness_job():
+    return {
+        "id": 112158906504,
+        "name": "Quality / Security",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-10-06T07:50:00Z",
+        "completed_at": "2026-10-06T07:55:33Z",
+        "steps": [
+            {
+                "name": "CI time budget freshness",
+                "status": "completed",
+                "conclusion": "failure",
+                "started_at": "2026-10-06T07:53:28Z",
+                "completed_at": "2026-10-06T07:55:29Z",
+            }
+        ],
+    }
+
+
+def test_github_api_5xx_is_an_infra_category_on_the_real_job(tmp_path):
+    """The recorded log (read through `--job 112158906504 --log`, trimmed to the failing step) ends on `gh: Server Error (HTTP 502)`; it read `category: unknown`."""
+    log = (FIX / "job_112158906504_budget_freshness.log").read_text(encoding="utf-8")
+    assert "gh: Server Error (HTTP 502)" in log
+    job = _budget_freshness_job()
+    fetch = FakeFetch({}, {"actions/jobs/112158906504/logs": log})
+    block, _gaps = D._focus(fetch, job, cache_dir=tmp_path)
+    assert block["category"] == "infra-likely", block
+    assert block["signature"] == "github-api-5xx", block
+    assert D.signature_label("github-api-5xx")
+
+
+def test_a_nightly_run_on_the_same_head_does_not_supersede_a_push_run(tmp_path):
+    """Live on 2026-10-06 `--run 37394654719 --why` read `superseded by run 37428263878`: the 07:12 nightly (event `schedule`) on the same head e6fc817f. The recorded head listing predates it, so it is added here."""
+    runs = _load("runs_head_e6fc817f.json")
+    nightly = {
+        "id": 37428263878,
+        "name": "Console CI",
+        "event": "schedule",
+        "created_at": "2026-10-06T07:12:48Z",
+        "run_attempt": 1,
+    }
+    routes = main_routes(
+        **{"actions/runs": dict(runs, workflow_runs=[nightly, *runs["workflow_runs"]])}
+    )
+    d = D.diagnose(FakeFetch(routes), MAIN_RUN, cache_dir=tmp_path)
+    assert d["cause"]["kind"] == "timeout-kill", d["cause"]
+    # Control: a newer PUSH run of the same workflow on the head still supersedes.
+    newer = dict(nightly, event="push")
+    routes = main_routes(
+        **{"actions/runs": dict(runs, workflow_runs=[newer, *runs["workflow_runs"]])}
+    )
+    d = D.diagnose(FakeFetch(routes), MAIN_RUN, cache_dir=tmp_path)
+    assert d["cause"]["kind"] == "superseded", d["cause"]

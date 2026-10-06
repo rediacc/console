@@ -71,7 +71,13 @@ def test_connection_resets_and_other_5xx_are_transient(text):
 
 @pytest.mark.parametrize(
     "text",
-    ["gh: Not Found (HTTP 404)", "gh: Forbidden (HTTP 403)", "HTTP 401: Bad credentials", "gh: API rate limit exceeded", ""],
+    [
+        "gh: Not Found (HTTP 404)",
+        "gh: Forbidden (HTTP 403)",
+        "HTTP 401: Bad credentials",
+        "gh: API rate limit exceeded",
+        "",
+    ],
 )
 def test_client_errors_and_rate_limits_are_not_transient(text):
     assert not gh_retry.is_transient(text)

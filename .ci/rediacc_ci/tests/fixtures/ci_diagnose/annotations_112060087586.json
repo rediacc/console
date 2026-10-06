@@ -1,0 +1,22 @@
+[
+ {
+  "annotation_level": "warning",
+  "message": "Retention days cannot be greater than the maximum allowed retention set within the repository. Using 3 instead.",
+  "title": ""
+ },
+ {
+  "annotation_level": "notice",
+  "message": "Pipeline cancelled by the watchdog: CI BUDGET VIOLATION: 'Validate Promotion' ran 15.0m (budget 15m) -- in step 'Test APT install from promoted channel' for 0.3m",
+  "title": "Watchdog: pipeline-cancelled"
+ },
+ {
+  "annotation_level": "failure",
+  "message": "CI BUDGET VIOLATION: 'Validate Promotion' ran 15.0m (budget 15m) -- in step 'Test APT install from promoted channel' for 0.3m",
+  "title": ""
+ },
+ {
+  "annotation_level": "warning",
+  "message": "CI BUDGET VIOLATION (report-only): 'whole pipeline' at 45.2m, budget 35m",
+  "title": ""
+ }
+]

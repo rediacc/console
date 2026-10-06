@@ -182,6 +182,87 @@ def _jobs_as_contexts(jobs):
     ]
 
 
+def _not_passed(jobs):
+    """[(conclusion, name)] for every completed job that neither succeeded nor was skipped, non-aggregators first, each group in API order."""
+    rows = [
+        (j.get("conclusion"), j.get("name") or "?")
+        for j in jobs
+        if j.get("conclusion") and j.get("conclusion") not in ("success", "skipped", "neutral")
+    ]
+    return sorted(rows, key=lambda r: D._aggregator(r[1]))
+
+
+def _root_cause_lines(root, run_id):
+    """`--why`'s rendering for one run, indented under a --run verdict; one line saying so when the diagnosis cannot be read. Never raises."""
+    try:
+        d = D.diagnose(_fetcher(root), run_id)
+    except Exception as exc:  # noqa: BLE001 -- a broken diagnosis never changes the verdict
+        return ["  why: unreadable (%s: %s)" % (type(exc).__name__, exc)]
+    return [
+        "  why: " + ln.strip() if i == 0 else ln for i, ln in enumerate(D.render(d).splitlines())
+    ]
+
+
+def run_progress(run_id, jobs, p90=None, now=None):
+    """{run, total, done, running:[{name, s, p90_s}]} for one run's jobs: the numbers a RUNNING verdict names.
+
+    `done` counts every job with a conclusion (skipped included), so total - done is what is still queued or in flight; `running` lists the in-flight jobs longest first, each with its elapsed seconds and recorded p90.
+    """
+    p90 = D._p90_table() if p90 is None else p90
+    now = time.time() if now is None else now
+    running = []
+    for j in jobs or []:
+        if j.get("conclusion") or j.get("status") != "in_progress":
+            continue
+        began = D._epoch(j.get("started_at"))
+        pv = p90.get(j.get("name") or "")
+        running.append(
+            {
+                "name": j.get("name") or "?",
+                "s": round(now - began) if began is not None else None,
+                "p90_s": round(float(pv) * 60) if isinstance(pv, (int, float)) else None,
+            }
+        )
+    running.sort(key=lambda r: r["s"] or 0, reverse=True)
+    return {
+        "run": run_id,
+        "total": len(jobs or []),
+        "done": sum(1 for j in jobs or [] if j.get("conclusion")),
+        "running": running,
+    }
+
+
+def progress_text(progress):
+    """`run <id>: <done> of <total> job(s) done; still running: <job> <elapsed> (p90 <p90>)`, for the RUNNING verdict."""
+    rows = progress["running"]
+    shown = ", ".join(
+        "%s %s%s"
+        % (r["name"], _mins(r["s"]), " (p90 %s)" % _mins(r["p90_s"]) if r["p90_s"] else "")
+        for r in rows[:3]
+    )
+    if len(rows) > 3:
+        shown += " (+%d more)" % (len(rows) - 3)
+    queued = progress["total"] - progress["done"] - len(rows)
+    return "run %s: %d of %d job(s) done%s%s" % (
+        progress["run"],
+        progress["done"],
+        progress["total"],
+        "; still running: %s" % shown if rows else "",
+        "; %d not started" % queued if queued > 0 else "",
+    )
+
+
+def _read_progress(root, run_id):
+    """run_progress for a run read through the jobs endpoint, or None when it cannot be read. Never raises: the wait line is an extra."""
+    if not run_id:
+        return None
+    try:
+        jobs, _err = D.run_jobs(_fetcher(root), run_id)
+    except Exception:  # noqa: BLE001
+        return None
+    return run_progress(run_id, jobs) if jobs else None
+
+
 def _trace_run(root, run_id, wait, timeout, as_json):
     """Trace one run id to a terminal state. Mirrors the branch reader's codes."""
     deadline = time.time() + timeout
@@ -204,7 +285,8 @@ def _trace_run(root, run_id, wait, timeout, as_json):
         # SAME FILTER AS ci_classify, and this path needed it independently: `--run <id>` reads the run's OWN jobs endpoint directly rather than going through wl_ci.ci_classify's GraphQL contexts, so the CI_NONBLOCKING_CONTEXTS fix landed on the branch-tracing path (_snapshot below) and never touched this one -- proven live on PR #579 commit 9cbcf7d9's own rerun, which this trace
         # called RED on a run GitHub itself scored "success" once a non-blocking check-run (then the retired PR-level review check, now `CI Verdict`) was excluded.
         jobs = [j for j in jobs if j.get("name") not in wl_ci.CI_NONBLOCKING_CONTEXTS]
-        failed = [j["name"] for j in jobs if j.get("conclusion") == "failure"]
+        # EVERY JOB THAT DID NOT PASS, root causes before aggregators. This listed `conclusion == "failure"` only, so on main run 37394654719 attempt 2 it printed CI Complete and Pipeline Sentinel and never the cancelled Validate Promotion both of them were reporting.
+        failed = _not_passed(jobs)
         live = [j["name"] for j in jobs if not j.get("conclusion")]
         # THE SAME GREEN RULE AS THE BRANCH READ: a Console CI run is green only once CI Complete reported success. A run of another workflow (the Release dispatch) has no such job, so it is judged on its jobs alone.
         gate = wl_ci.ci_gate(
@@ -228,18 +310,24 @@ def _trace_run(root, run_id, wait, timeout, as_json):
             )
         if status == "completed":
             if failed or conclusion not in ("success", "skipped") or gate["verdict"] != "green":
-                print("RED  run %s -> %s" % (run_id, conclusion or "?"), file=sys.stderr)
-                for n in failed:
-                    print("  failed: %s" % n, file=sys.stderr)
+                # THE VERDICT IS STDOUT, like GREEN below. RED went to stderr while the poll lines went to stdout, so a reader of stdout alone saw progress and no verdict, and a merged capture printed the verdict ABOVE the progress that preceded it (the watch of main run 37394654719, 2026-10-06).
+                print("RED  run %s -> %s" % (run_id, conclusion or "?"))
+                for concl, name in failed:
+                    print(
+                        "  %-9s %s%s"
+                        % (concl, name, "  [aggregator]" if D._aggregator(name) else "")
+                    )
                 if not failed and gate["verdict"] != "green":
-                    print("  %s" % gate["reason"], file=sys.stderr)
-                if gate["cancelled"] and not failed:
-                    print("  %s" % _run_cause_line(root, run_id), file=sys.stderr)
+                    print("  %s" % gate["reason"])
+                if not as_json:
+                    # THE ROOT CAUSE, from the same diagnosis `--why` prints: the job to read, why it was stopped, its category and the other attempts.
+                    for line in _root_cause_lines(root, run_id):
+                        print(line)
                 note = _github_note()
                 if note:
-                    print("  %s" % note, file=sys.stderr)
+                    print("  %s" % note)
                 if wait:
-                    _gh_transitions(as_json, sys.stderr)
+                    _gh_transitions(as_json)
                 return EXIT_RED
             print("GREEN  run %s -> %s" % (run_id, conclusion))
             if wait:
@@ -348,16 +436,6 @@ def _cause_text(cause):
     return "cause: %s: %s%s" % (cause.get("kind"), cause.get("detail"), extra)
 
 
-def _run_cause_line(root, run_id):
-    """`cause: <kind>: <detail>` for a cancelled run, read through ci_diagnose (three to five reads)."""
-    fetch = _fetcher(root)
-    run, err = D.run_info(fetch, run_id)
-    if run is None:
-        return "cause: unreadable (%s)" % err
-    jobs, _err = D.run_jobs(fetch, run_id, run.get("run_attempt"))
-    return _cause_text(D.cancel_cause(fetch, run, jobs=jobs))
-
-
 def _emit(payload, as_json):
     if as_json:
         print(json.dumps(payload, indent=2, sort_keys=True))
@@ -393,8 +471,12 @@ def _emit(payload, as_json):
             print("      %s" % row["url"])
     if payload.get("cause"):
         print("  %s" % _cause_text(payload["cause"]))
-        print("  why: %s --why" % D.TRACE_CMD)
-    if payload.get("waiting"):
+        # BY RUN ID: a bare `--why` reads the CURRENT branch's PR, so on a `--ref main` read it pointed at the wrong run (or at no PR at all).
+        print(
+            "  why: %s%s --why"
+            % (D.TRACE_CMD, " --run %s" % payload["run"] if payload.get("run") else "")
+        )
+    if payload.get("waiting") and not payload.get("progress"):
         print("  %d context(s) still running." % payload["waiting"])
     note = _github_note(green=v == "green")
     if note:
@@ -666,6 +748,7 @@ def _snapshot(root, ref, cache, allow_branch=False, seen=None):
         elif (c.get("status") or "").upper() != "COMPLETED":
             waiting += 1
     cause = None
+    progress = None
 
     # CANCELLED IS NOT A PASS, and the two shapes mean different things. A cancelled context beside a real failure is the watchdog killing the run for that failure. Cancelled with nothing failing is a gate that did NOT report: a newer push is the usual cause, but it is NOT proof of one -- on 2026-09-05 a032863c7 had a cancelled Review Status while being the branch head itself.
     # Confirm a newer head exists before concluding one does.
@@ -677,13 +760,28 @@ def _snapshot(root, ref, cache, allow_branch=False, seen=None):
 
     if hard:
         verdict, detail = "red", "%d job(s) failed" % len(hard)
-        if cancelled:
+        # ROOT CAUSES FIRST. An aggregator (CI Complete, Pipeline Sentinel) fails because another job did not pass, so it is listed after the jobs that can be the reason.
+        hard = sorted(hard, key=lambda r: D._aggregator(r.get("name")))
+        roots_failed = [r for r in hard if not D._aggregator(r.get("name"))]
+        stopped = [n for n in cancelled if not D._aggregator(n)]
+        if stopped and not roots_failed:
+            # EVERY FAILURE IS AN AGGREGATOR, so the cancelled job is the cause and not collateral. Main run 37394654719 attempt 2 read "2 job(s) failed; 1 cancelled alongside (watchdog killed the run for the failure above, not an independent problem)": the failures were CI Complete and Pipeline Sentinel, both reporting the cancelled Validate Promotion.
             detail += (
-                "; %d cancelled alongside (watchdog killed the run for the failure"
-                " above, not an independent problem)" % len(cancelled)
+                "; every failed job is an aggregator reporting another job, and %d job(s) were"
+                " CANCELLED: %s -- the cancellation is the cause"
+                % (len(stopped), ", ".join(stopped[:3]))
+            )
+            cause = wl_ci.ci_cancel_cause(root, info, gate)
+        elif cancelled:
+            detail += (
+                "; %d cancelled alongside (usually the watchdog stopping the run after the"
+                " failure above; --why attributes it)" % len(cancelled)
             )
     elif live:
         verdict, detail = "running", "%d context(s) still in flight" % waiting
+        progress = _read_progress(root, gate.get("run"))
+        if progress:
+            detail = progress_text(progress)
         if soft:
             detail += "; %d retryable failure(s) pending a watchdog rerun" % len(soft)
     elif gate["verdict"] == "red" and gate["cancelled"]:
@@ -734,6 +832,7 @@ def _snapshot(root, ref, cache, allow_branch=False, seen=None):
         "truncated": info.get("truncated"),
         "foreign": info.get("foreign") or 0,
         "cause": cause,
+        "progress": progress,
         "ci_complete": gate["ci_complete"],
         "run": gate["run"],
     }, None
@@ -753,8 +852,8 @@ def main(argv=None):
             "  4  no CI       no Console CI run exists for the head ([skip ci] or\n"
             "                 path-filtered), after a registration grace; for a branch\n"
             "                 head the nearest ancestor with checks is named and judged\n"
-            "  --scheduled    0 every scheduled workflow green, 1 any red, 2 unreadable,\n"
-            "                 no scheduled run, or an unknown --workflow\n"
+            "  --scheduled    0 every scheduled workflow and main's newest push run green,\n"
+            "                 1 any red, 2 unreadable, no scheduled run, or an unknown --workflow\n"
             "PR SIGNALS: every verdict on a PR also prints the PR's bot comments for the\n"
             "head (review attempts, summaries) with their next action; they never change\n"
             "the exit code.\n"
@@ -848,8 +947,9 @@ def main(argv=None):
         "--scheduled",
         action="store_true",
         help=(
-            "every scheduled workflow's newest scheduled run on main, refreshing the shared cache"
-            " the Stop hook reads: 0 all green, 1 any red, 2 unreadable"
+            "every scheduled workflow's newest scheduled run on main, and Console CI's newest push"
+            " run on main, refreshing the shared cache the Stop hook reads: 0 all green, 1 any red,"
+            " 2 unreadable"
         ),
     )
     verbs.add_argument(
@@ -1208,12 +1308,43 @@ def verb_scheduled(root, workflow, as_json):
         print("no-verdict: no scheduled workflow found under .github/workflows", file=sys.stderr)
         return EXIT_NO_VERDICT
     red = [w for w in rows if w.get("run_id") and _is_red(w)]
+    # CONSOLE CI'S NEWEST PUSH RUN ON MAIN, from the same document the Stop hook blocks on (wl_schedred `push`), so this verb and the hook agree about a red main after a merge (run 37394654719, 2026-10-06).
+    push = data.get("push") if isinstance(data.get("push"), dict) else None
+    push_red = bool(push and push.get("run_id") and _is_red(push) and not data.get("push_error"))
     if not as_json:
         print("Scheduled workflows on main: %d, %d red" % (len(rows), len(red)))
         for w in rows:
             for line in _sched_lines(w):
                 print(line)
-    return EXIT_RED if red else EXIT_GREEN
+        if data.get("push_error"):
+            print("  ?      Console CI push runs on main unreadable: %s" % data["push_error"])
+        elif push and push.get("run_id"):
+            print(
+                "  %-6s Console CI push to main  run %s attempt %s @ %s  %s  %s%s"
+                % (
+                    "RED" if push_red else "GREEN",
+                    push.get("run_id"),
+                    push.get("attempt") or "?",
+                    push.get("sha") or "?",
+                    push.get("conclusion") or "?",
+                    _age(push.get("created_at")),
+                    "  (a newer push run is in flight)" if push.get("in_flight") else "",
+                )
+            )
+            if push_red:
+                if push.get("root"):
+                    print(
+                        "         root cause: %s (%s)%s"
+                        % (
+                            push["root"],
+                            ", ".join(
+                                b for b in (push.get("root_conclusion"), push.get("category")) if b
+                            ),
+                            "; %s" % push["cause"] if push.get("cause") else "",
+                        )
+                    )
+                print("         next: %s --run %s --why" % (D.TRACE_CMD, push.get("run_id")))
+    return EXIT_RED if red or push_red else EXIT_GREEN
 
 
 def _branch_name(ref):
@@ -1359,6 +1490,15 @@ def _job(root, job_id):
     return data, ""
 
 
+def _job_cancel_cause(fetch, job):
+    """ci_diagnose.cancel_cause for the run attempt a cancelled job belongs to, or None when that run cannot be read."""
+    run, _err = D.run_info(fetch, job.get("run_id"), job.get("run_attempt"))
+    if run is None:
+        return None
+    jobs, _err = D.run_jobs(fetch, job.get("run_id"), job.get("run_attempt"))
+    return D.cancel_cause(fetch, run, jobs=jobs or [job])
+
+
 def verb_job(root, job_id, mode, as_json):
     job, err = _job(root, job_id)
     if job is None:
@@ -1398,8 +1538,13 @@ def verb_job(root, job_id, mode, as_json):
     if mode == "log":
         sys.stdout.write(log if log.endswith("\n") else log + "\n")
         return 0
-    step, lines = D.failing_step_slice(log, job)
+    step, lines, widened = D.evidence(log, job)
     category, sig = D.classify(lines)
+    cause = None
+    if category == "unknown" and job.get("conclusion") == "cancelled":
+        # A cancelled job's log rarely says who stopped it; the cancel evidence does (the watchdog's budget annotation, GitHub's timeout annotation). Job 112061625885 read `category: unknown` here while `--why` on its run could name the timeout.
+        cause = _job_cancel_cause(fetch, job)
+        category = D.cancel_category(job, cause, category)
     ex = D.excerpt(lines)
     gaps = D.log_gaps(log)
     dur = D.durations(job)
@@ -1415,6 +1560,8 @@ def verb_job(root, job_id, mode, as_json):
         "p90_s": dur["p90_s"],
         "category": category,
         "signature": sig,
+        "cause": cause,
+        "widened": widened,
         "excerpt": ex,
         "gaps": gaps,
     }
@@ -1427,15 +1574,23 @@ def verb_job(root, job_id, mode, as_json):
             job.get("run_id"),
             job.get("run_attempt"),
         ),
-        "  step: %r %s (job %s%s)"
+        "  step: %s %s (job %s%s)"
         % (
-            step or "?",
+            (
+                "%r (evidence from earlier steps)" % step
+                if widened
+                else repr(step)
+                if step
+                else "none failed or was cancelled"
+            ),
             _mins(dur["step_s"]),
             _mins(dur["job_s"]),
             "; p90 %s" % _mins(dur["p90_s"]) if dur["p90_s"] else "",
         ),
         "  category: %s%s" % (category, " (%s: %s)" % (sig, D.signature_label(sig)) if sig else ""),
     ]
+    if cause and cause.get("kind") != "unknown":
+        out.insert(2, "  " + _cause_text(cause))
     out += ["    " + ln for ln in ex] or [
         "    (no error line or known signature in the failing step)"
     ]
@@ -1673,15 +1828,17 @@ def _selftest():
         def fake_snapshot(_root, _run_id):
             return status, run_conclusion, jobs, workflow
 
-        orig = globals()["_run_snapshot"]
+        orig = globals()["_run_snapshot"], globals()["_root_cause_lines"]
         globals()["_run_snapshot"] = fake_snapshot
+        # The diagnosis under a RED is network; the controls here are about the verdict, so it is stubbed to a marker the RED cases can see.
+        globals()["_root_cause_lines"] = lambda _root, _run_id: ["  why: (stubbed)"]
         try:
             buf_out, buf_err = io.StringIO(), io.StringIO()
             with contextlib.redirect_stdout(buf_out), contextlib.redirect_stderr(buf_err):
                 rc = _trace_run(pathlib.Path("."), 1, wait=False, timeout=1, as_json=False)
             return rc, buf_out.getvalue() + buf_err.getvalue()
         finally:
-            globals()["_run_snapshot"] = orig
+            globals()["_run_snapshot"], globals()["_root_cause_lines"] = orig
 
     rc, out = run_it([verdict_job])
     check(

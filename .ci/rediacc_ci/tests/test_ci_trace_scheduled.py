@@ -252,3 +252,48 @@ def test_workflow_without_scheduled_is_a_usage_error(ct):
     with pytest.raises(SystemExit) as exc:
         ct.main(["--workflow", "ci"])
     assert exc.value.code == 2
+
+
+# ---- Console CI's newest push run on main (wl_schedred `push`) -------------------------
+#
+# Run 37394654719 (PR #595's merge, 2026-10-06) went red twice on main while every scheduled workflow was the same colour as before; neither this verb nor the Stop hook read push runs. The verb now prints the push row from the same document and counts it in the exit code.
+
+MAIN_RED = {
+    "stem": "ci-push",
+    "file": "ci.yml",
+    "name": "Console CI",
+    "event": "push",
+    "run_id": 37394654719,
+    "attempt": 2,
+    "conclusion": "cancelled",
+    "created_at": NOW_ISO,
+    "sha": "e6fc817f",
+    "red": True,
+    "in_flight": False,
+    "root": "Validate Promotion",
+    "root_conclusion": "cancelled",
+    "category": "timeout-cancel",
+    "cause": "timeout-kill: 'Validate Promotion' hit its timeout-minutes (15m0s)",
+}
+
+
+def test_a_red_main_push_run_is_rc1_and_names_its_root_cause(ct, install, capsys):
+    install(FakeSchedred(dict(ALL_GREEN, push=MAIN_RED, push_error="")))
+    assert ct.main(["--scheduled"]) == 1
+    out = capsys.readouterr().out
+    assert "RED    Console CI push to main  run 37394654719 attempt 2 @ e6fc817f  cancelled" in out
+    assert "root cause: Validate Promotion (cancelled, timeout-cancel); timeout-kill" in out
+    assert "next: .ci/scripts/ci/ci-trace.py --run 37394654719 --why" in out
+
+
+def test_a_green_main_push_run_keeps_rc0_and_an_unreadable_one_is_said(ct, install, capsys):
+    install(
+        FakeSchedred(
+            dict(ALL_GREEN, push=dict(MAIN_RED, conclusion="success", red=False), push_error="")
+        )
+    )
+    assert ct.main(["--scheduled"]) == 0
+    assert "GREEN  Console CI push to main" in capsys.readouterr().out
+    install(FakeSchedred(dict(ALL_GREEN, push=MAIN_RED, push_error="HTTP 502")))
+    assert ct.main(["--scheduled"]) == 0, "an unreadable push read is no verdict, never a red"
+    assert "push runs on main unreadable: HTTP 502" in capsys.readouterr().out
