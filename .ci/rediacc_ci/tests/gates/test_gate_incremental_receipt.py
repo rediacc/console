@@ -4,16 +4,16 @@ PLAN-fast-loop box F4. The runner (TypeScript) writes a v2 receipt whose carried
 """
 
 import json
-import pathlib
 import shutil
 import subprocess
-import sys
 
 import pytest
 
-ROOT = pathlib.Path(__file__).resolve().parents[4]
+from rediacc_ci import paths
+
+ROOT = paths.repo_root()
 # `pythonpath` in pyproject.toml carries `.ci` only; the guard lives under `.claude`.
-sys.path.insert(0, str(ROOT / ".claude"))
+paths.on_sys_path(ROOT / ".claude")
 
 from rediacc_hooks.guards import block_unverified_push as G  # noqa: E402
 
