@@ -241,3 +241,31 @@ def test_no_repo_anywhere_is_a_named_error(monkeypatch):
     with pytest.raises(ValueError, match="GITHUB_REPOSITORY"):
         rb.report_count(42)
     assert rb._repo_slug(None, {"GITHUB_REPOSITORY": "x/y"}) == "x/y"
+
+
+class SequenceGh:
+    """A gh stand-in answering each call with the next (rc, stdout, stderr) in turn."""
+
+    def __init__(self, *answers):
+        self.answers = list(answers)
+        self.calls = []
+
+    def __call__(self, args, **kwargs):
+        self.calls.append((list(args), kwargs))
+        rc, out, err = self.answers.pop(0)
+        return ghx.GhResult(["gh", *args], rc, out, err)
+
+
+def test_report_count_retries_a_transient_502_and_not_a_404(monkeypatch):
+    """The reads behind Review Complete ride core.gh_retry (f09fca116): a GitHub 502 is retried with backoff instead of failing the required check, and a 404 fails at once instead of paying the retries. Against the pre-fix `ghx.gh(..., attempts=3)` the 502 case raises on its first answer."""
+    monkeypatch.setattr(rb.gh_retry.time, "sleep", lambda _s: None)
+    flaky = SequenceGh((1, "", "gh: Server Error (HTTP 502)"), (0, COMMENTS, ""))
+    monkeypatch.setattr(rb.ghx, "gh", flaky)
+    assert rb.report_count(42, repo="o/r") == 1
+    assert len(flaky.calls) == 2
+
+    missing = SequenceGh((1, "", "gh: Not Found (HTTP 404)"))
+    monkeypatch.setattr(rb.ghx, "gh", missing)
+    with pytest.raises(ghx.GhError):
+        rb.report_count(42, repo="o/r")
+    assert len(missing.calls) == 1
