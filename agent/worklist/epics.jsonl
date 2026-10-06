@@ -24,3 +24,4 @@
 {"at":"2026-10-06T01:46:09Z","by":"d778be9d","id":"6bcda063","title":"Clean review ledger: T17 full suites and T18 live check","covers":[],"order":null,"plan":"agent/plans/PLAN-clean-review-ledger.md"}
 {"at":"2026-10-06T01:46:21Z","by":"d778be9d","id":"6bcda063","title":"Clean review ledger: T17 full suites and T18 live check","covers":["79f238a0"],"order":null}
 {"at":"2026-10-06T02:06:18Z","by":"d778be9d","id":"22409811","title":"Dependency upkeep: required patch and minor bumps (check:deps)","covers":[],"order":null}
+{"at":"2026-10-06T08:45:13Z","by":"d778be9d","id":"97672f9f","title":"Operator 2026-10-06 follow-ups: regeneration guard, ci-trace root causes and main-red alert, ci:quick scheduler utilization, package retention, budget 5xx retry","covers":[],"order":null}
