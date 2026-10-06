@@ -43,6 +43,8 @@ import typing
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.core import gh_retry as _gh_retry
+from rediacc_ci.core import ghx as _ghx
 from rediacc_ci.core import toolchain
 from rediacc_ci.security import audit as port
 from rediacc_ci.tests import differential
@@ -1387,3 +1389,63 @@ def test_npm_range_spellings_narrow_the_ghsa(npm_range: str, expected: str | Non
         assert got == ">= 3.0.0, < 3.0.9 (patched in 3.0.9); < 1.1.21 (patched in 1.1.21)"
     else:
         assert got == expected
+
+
+# ---- PLAN-gh-retry G6/G7: the read rides core/gh_retry (transient faults only) ----
+
+SERVER_ERROR = "gh: Server Error (HTTP 502)"
+NOT_FOUND = "gh: Not Found (HTTP 404)"
+
+
+class _ScriptedGh:
+    """Stands in for ghx.gh: answers the scripted (rc, stdout, stderr) in order, repeating the last."""
+
+    def __init__(self, *outcomes):
+        self.outcomes = list(outcomes)
+        self.calls = []
+
+    def __call__(self, args, **kw):
+        self.calls.append((list(args), kw))
+        rc, out, err = self.outcomes[min(len(self.calls), len(self.outcomes)) - 1]
+        return _ghx.GhResult(["gh", *args], rc, out, err)
+
+
+def _script(monkeypatch, *outcomes):
+    scripted = _ScriptedGh(*outcomes)
+    naps: list[float] = []
+    monkeypatch.setattr(_ghx, "gh", scripted)
+    monkeypatch.setattr(_gh_retry.time, "sleep", naps.append)
+    return scripted, naps
+
+
+def _fetch(monkeypatch, tmp_path, slug, *outcomes):
+    scripted, naps = _script(monkeypatch, *outcomes)
+    monkeypatch.setattr(port, "ADVISORY_CACHE_DIR", str(tmp_path))
+    port.Audit._fetch_one(typing.cast("port.Audit", object()), slug)
+    return scripted, naps, (tmp_path / ("%s.json" % slug)).read_text(encoding="utf-8")
+
+
+def test_advisory_read_retries_a_502_then_keeps_the_body(monkeypatch, tmp_path):
+    scripted, naps, body = _fetch(
+        monkeypatch, tmp_path, "GHSA-x", (1, "", SERVER_ERROR), (0, '{"a": 1}\n', "")
+    )
+    assert body == '{"a": 1}\n'
+    assert len(scripted.calls) == 2
+    assert naps == [5.0]
+
+
+def test_advisory_read_persistent_502_takes_the_slug_fallback_and_says_why(
+    monkeypatch, tmp_path, capsys
+):
+    scripted, _naps, body = _fetch(monkeypatch, tmp_path, "GHSA-x", (1, "", SERVER_ERROR))
+    assert body == "GHSA-x\n"
+    assert len(scripted.calls) == 3
+    assert "HTTP 502" in capsys.readouterr().err
+
+
+def test_advisory_read_404_is_not_retried(monkeypatch, tmp_path, capsys):
+    scripted, naps, body = _fetch(monkeypatch, tmp_path, "GHSA-x", (1, "", NOT_FOUND))
+    assert body == "GHSA-x\n"
+    assert len(scripted.calls) == 1
+    assert naps == []
+    assert "HTTP 404" in capsys.readouterr().err

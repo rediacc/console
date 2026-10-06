@@ -19,6 +19,8 @@ import shutil
 
 import pytest
 
+from rediacc_ci.core import gh_retry as _gh_retry
+from rediacc_ci.core import ghx as _ghx
 from rediacc_ci.quality import label_inventory as gate
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import frozen
@@ -59,6 +61,14 @@ def build(tmp_path: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
         (root / rel).mkdir(parents=True, exist_ok=True)
     for name in ("__init__.py", "log.py", "paths.py", "well_known.py", "controls.py"):
         shutil.copy2(src / ".ci" / "rediacc_ci" / name, root / ".ci" / "rediacc_ci" / name)
+    # gh_retry (and what it imports) is on the module's import path since PLAN-gh-retry G6.
+    (root / ".ci" / "rediacc_ci" / "core").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src / ".ci" / "rediacc_ci" / "proc.py", root / ".ci" / "rediacc_ci" / "proc.py")
+    for name in ("__init__.py", "ghx.py", "gh_retry.py"):
+        shutil.copy2(
+            src / ".ci" / "rediacc_ci" / "core" / name,
+            root / ".ci" / "rediacc_ci" / "core" / name,
+        )
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         src / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
@@ -376,3 +386,68 @@ def test_selftest_exits_zero_and_prints_a_count():
     assert code == 0, err
     assert "control(s) passed" in out
     assert int(out.split(" control(s)")[0].strip()) >= 24
+
+
+# ---- PLAN-gh-retry G6/G7: the read rides core/gh_retry (transient faults only) ----
+
+SERVER_ERROR = "gh: Server Error (HTTP 502)"
+NOT_FOUND = "gh: Not Found (HTTP 404)"
+
+
+class _ScriptedGh:
+    """Stands in for ghx.gh: answers the scripted (rc, stdout, stderr) in order, repeating the last."""
+
+    def __init__(self, *outcomes):
+        self.outcomes = list(outcomes)
+        self.calls = []
+
+    def __call__(self, args, **kw):
+        self.calls.append((list(args), kw))
+        rc, out, err = self.outcomes[min(len(self.calls), len(self.outcomes)) - 1]
+        return _ghx.GhResult(["gh", *args], rc, out, err)
+
+
+def _script(monkeypatch, *outcomes):
+    scripted = _ScriptedGh(*outcomes)
+    naps: list[float] = []
+    monkeypatch.setattr(_ghx, "gh", scripted)
+    monkeypatch.setattr(_gh_retry.time, "sleep", naps.append)
+    return scripted, naps
+
+
+def _probe(monkeypatch, *outcomes):
+    scripted, naps = _script(monkeypatch, *outcomes)
+    monkeypatch.setattr(gate, "_which", lambda _name: "/usr/bin/gh")
+    return scripted, naps
+
+
+def test_probe_label_retries_a_502_then_finds_the_label(monkeypatch):
+    scripted, naps = _probe(monkeypatch, (1, "", SERVER_ERROR), (0, "{}", ""))
+    assert gate.probe_label("alpha", {}) == 0
+    assert len(scripted.calls) == 2
+    assert naps == [5.0]
+
+
+def test_probe_label_after_persistent_502_is_could_not_probe_not_absent(monkeypatch):
+    scripted, _naps = _probe(monkeypatch, (1, "", SERVER_ERROR))
+    assert gate.probe_label("alpha", {}) == 2
+    assert len(scripted.calls) == 3
+
+
+def test_probe_label_404_is_absent_without_retry(monkeypatch):
+    scripted, naps = _probe(monkeypatch, (1, "", NOT_FOUND))
+    assert gate.probe_label("alpha", {}) == 1
+    assert len(scripted.calls) == 1
+    assert naps == []
+
+
+def test_live_name_read_after_persistent_502_refuses_naming_the_fault(monkeypatch, capsys):
+    scripted, _naps = _probe(monkeypatch, (1, "", SERVER_ERROR))
+    monkeypatch.delenv(gate.LIVE_FILE_ENV, raising=False)
+    monkeypatch.delenv(gate.LIVE_JSON_FILE_ENV, raising=False)
+    monkeypatch.chdir(diff.repo())
+    assert gate.main([]) == 1
+    assert len(scripted.calls) == 3
+    err = capsys.readouterr()
+    assert "HTTP 502" in err.out + err.err
+    assert "refuses to pass blind" in err.out + err.err

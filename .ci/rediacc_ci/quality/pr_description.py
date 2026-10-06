@@ -77,6 +77,7 @@ import sys
 
 from rediacc_ci import log
 from rediacc_ci.controls import Controls
+from rediacc_ci.core import gh_retry
 from rediacc_ci.well_known import GH_ORIGIN
 
 # Configuration, carried with the twin's own inline comments.
@@ -116,6 +117,16 @@ def _run(argv: list[str], *, quiet_stderr: bool = True) -> tuple[int, str]:
     if not quiet_stderr and proc.stderr:
         sys.stderr.write(proc.stderr)
     return proc.returncode, proc.stdout.rstrip("\n")
+
+
+def _gh_read(args: list[str]) -> tuple[int, str, str]:
+    """`gh <args>` through `gh_retry` (a 5xx or connection fault is retried 5 s then 15 s; a 4xx is not): (status, stdout with trailing newlines stripped, stderr). The stderr is returned so a read that still fails can say why instead of reading as an empty PR."""
+    result = gh_retry.gh(args)
+    return result.returncode, result.stdout_raw.rstrip("\n"), (result.stderr or "").strip()
+
+
+def _why(err: str) -> str:
+    return " (gh said: %s)" % err.splitlines()[-1] if err else ""
 
 
 def to_epoch(timestamp: str) -> str:
@@ -211,9 +222,8 @@ def main(argv: list[str] | None = None) -> int:
     # printed "within 30m - OK" on every single run. This gate had stopped being able to fail, which is worse than failing: it was reporting.
     #
     # The REST PR object carries `.commits` as a true integer count and `.head.sha` as the actual tip, neither of which is paginated at all.
-    code, pr_data = _run(
+    code, pr_data, pr_err = _gh_read(
         [
-            "gh",
             "api",
             "repos/%s/pulls/%s" % (repository, pr_number),
             "--jq",
@@ -224,7 +234,7 @@ def main(argv: list[str] | None = None) -> int:
         pr_data = "{}"
 
     if pr_data == "{}":
-        log.error("Could not fetch PR data")
+        log.error("Could not fetch PR data%s" % _why(pr_err))
         return 1
 
     # `jq '.commits'` -- now an INTEGER from the REST object, not the length of a capped array. An unparseable body is the divergence named in the port notes: jq exits 5 and pipefail kills the script, so the status is reproduced and jq's wording is not.
@@ -242,9 +252,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     # The PR's HEAD is its latest commit by construction, so this needs no sort over a list that might not be whole.
-    code, latest_commit_time = _run(
+    code, latest_commit_time, commit_err = _gh_read(
         [
-            "gh",
             "api",
             "repos/%s/commits/%s" % (repository, head_sha),
             "--jq",
@@ -256,7 +265,7 @@ def main(argv: list[str] | None = None) -> int:
     if not latest_commit_time:
         log.error(
             "Could not fetch the latest commit time for PR #%s (gh call failed or returned "
-            "nothing); cannot verify description freshness" % pr_number
+            "nothing); cannot verify description freshness%s" % (pr_number, _why(commit_err))
         )
         return 1
 
@@ -264,9 +273,8 @@ def main(argv: list[str] | None = None) -> int:
     repo = repository.rsplit("/", 1)[-1]
 
     # THE UNGUARDED PIPELINE. See the module docstring: a failing `gh` here kills the twin outright, so the port exits with the same status and says nothing, rather than reaching the handler three lines down that was written for it.
-    code, raw = _run(
+    code, raw, graphql_err = _gh_read(
         [
-            "gh",
             "api",
             "graphql",
             "-F",
@@ -280,6 +288,8 @@ def main(argv: list[str] | None = None) -> int:
         ]
     )
     if code != 0:
+        if graphql_err:
+            sys.stderr.write("%s\n" % graphql_err)
         return 1
     try:
         payload = json.loads(raw) if raw else None

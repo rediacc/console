@@ -26,6 +26,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.core import gh_retry
 from rediacc_ci.well_known import IMAGE_REGISTRY
 
 # --------------------------------------------------------------------------- The twin's constants ---------------------------------------------------------------------------
@@ -175,17 +176,30 @@ def _gh_list(org: str, package: str) -> str:
     captured buffers puts every stderr byte after every stdout byte, while `2>&1` hands the child ONE descriptor and preserves the interleaving. A gh that prints a warning before its JSON would parse under one and not the other.
     """
     argv = ["gh", "api", versions_path(org, package), "--paginate"]
-    try:
-        proc = subprocess.run(
+
+    def _once() -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
             argv,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
             check=False,
         )
+
+    try:
+        # A transient fault (5xx, connection) is retried 5 s then 15 s; the merged stream is the failure text, so a 404 is not retried.
+        proc = gh_retry.retry_transient(
+            _once, lambda p: None if p.returncode == 0 else (p.stdout or "failed")
+        )
     except (FileNotFoundError, PermissionError) as exc:
         # bash writes `<script>: line N: gh: <reason>` INTO the captured value, not to the terminal, because `2>&1` is inside the substitution. The exact text is unobservable (it is only ever fed to jq, which rejects it), so the shape is reproduced and the outcome is identical.
         return "%s: gh: %s" % (sys.argv[0], exc.strerror)
+    if proc.returncode != 0 and gh_retry.is_transient(proc.stdout):
+        # A 5xx that outlived the retries is NOT "package not found": say so, then let the same non-array path (which deletes nothing) run.
+        log.warn(
+            "GHCR package-version list for %s/%s kept failing with a server fault after retries: %s"
+            % (org, package, proc.stdout.strip().splitlines()[-1])
+        )
     return proc.stdout.rstrip("\n")
 
 

@@ -38,6 +38,7 @@ import typing
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.core import gh_retry as _gh_retry
 from rediacc_ci.docker import cleanup_staging as port
 from rediacc_ci.tests import frozen
 from rediacc_ci.well_known import IMAGE_REGISTRY
@@ -571,3 +572,48 @@ def test_a_planted_wrong_package_is_caught_only_by_the_call_log(tmp_path: pathli
 
     compare(tmp_path / "good", name)
     assert PORT.read_text(encoding="utf-8") == original
+
+
+# ---- PLAN-gh-retry G7: the list read retries a transient fault and a 5xx is not "not found" ----
+
+
+def _list_with(monkeypatch, *outcomes):
+    calls: list[list[str]] = []
+    naps: list[float] = []
+
+    def fake_run(argv, **_kw):
+        calls.append(list(argv))
+        rc, out = outcomes[min(len(calls), len(outcomes)) - 1]
+        return subprocess.CompletedProcess(argv, rc, out, None)
+
+    monkeypatch.setattr(port.subprocess, "run", fake_run)
+    monkeypatch.setattr(_gh_retry.time, "sleep", naps.append)
+    return calls, naps
+
+
+def test_list_read_retries_a_502_then_returns_the_array(monkeypatch):
+    calls, naps = _list_with(
+        monkeypatch, (1, "gh: Server Error (HTTP 502)\n"), (0, '[{"id": 1}]\n')
+    )
+    assert port._gh_list("o", "pkg") == '[{"id": 1}]'
+    assert len(calls) == 2
+    assert naps == [5.0]
+
+
+def test_list_read_persistent_502_warns_it_is_a_server_fault_not_missing(monkeypatch, capsys):
+    calls, _naps = _list_with(monkeypatch, (1, "gh: Server Error (HTTP 502)\n"))
+    value = port._gh_list("o", "pkg")
+    assert len(calls) == 3
+    assert not port.looks_like_json_array(value)
+    err = capsys.readouterr()
+    assert "server fault" in err.out + err.err
+    assert "HTTP 502" in err.out + err.err
+
+
+def test_list_read_404_is_not_retried_and_is_not_called_a_server_fault(monkeypatch, capsys):
+    calls, naps = _list_with(monkeypatch, (1, "gh: Not Found (HTTP 404)\n"))
+    port._gh_list("o", "pkg")
+    assert len(calls) == 1
+    assert naps == []
+    err = capsys.readouterr()
+    assert "server fault" not in err.out + err.err

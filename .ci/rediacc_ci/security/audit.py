@@ -145,7 +145,7 @@ import subprocess
 import sys
 
 from rediacc_ci import paths
-from rediacc_ci.core import advisory, age, blocker_validator, release_age, toolchain
+from rediacc_ci.core import advisory, age, blocker_validator, gh_retry, release_age, toolchain
 from rediacc_ci.policy_paths import policy_rel
 
 # THE EM DASH IS BUILT, NEVER TYPED. Nine of the twin's messages carry U+2014 and byte equality is the whole claim of this file, but the repo's house rule bans the literal character from authored text and `check:ci-em-dash-surfaces` scans `.ci/**/*.py`. `core/allowlist.py:180` already resolves the same conflict the same way; this is that decision, not a new one.
@@ -852,7 +852,7 @@ class Audit:
     def _fetch_one(self, slug: str) -> None:
         """One `xargs` worker: `gh api /advisories/<slug>`, `{}` on any failure.
 
-        BOTH STREAMS ARE REDIRECTED at the twin's call site, so a missing `gh` binary is silent and lands in the same fallback as an HTTP 404 or a rate limit. That is the shape the gate header's BLOCKER is about: without GH_TOKEN the anonymous 60/hr limit turns most of these into the fallback.
+        THE TWIN REDIRECTED BOTH STREAMS, so a missing `gh` binary was silent and landed in the same fallback as an HTTP 404 or a rate limit; this port retries a transient fault and writes the failing read's last stderr line to stderr, then takes the same fallback. That is the shape the gate header's BLOCKER is about: without GH_TOKEN the anonymous 60/hr limit turns most of these into the fallback.
 
         THE FALLBACK WRITES THE SLUG, NOT `{}`, AND THAT IS NOT A TYPO HERE. It
         is DEFECT 6: `xargs -I {}` rewrites the `{}` inside the worker script's
@@ -862,15 +862,18 @@ class Audit:
         this port pass where the live gate fails.
         """
         out = os.path.join(ADVISORY_CACHE_DIR, "%s.json" % slug)
+        # Through gh_retry: a 5xx or connection fault is retried (5 s, 15 s) before the slug fallback, and the reason a read still failed goes to stderr instead of the void. A 404 or rate limit is not retried.
         try:
-            with open(out, "w", encoding="utf-8") as handle:
-                proc = subprocess.run(
-                    ["gh", "api", "/advisories/%s" % slug],
-                    check=False,
-                    stdout=handle,
-                    stderr=subprocess.DEVNULL,
+            result = gh_retry.gh(["api", "/advisories/%s" % slug])
+            failed = not result.ok
+            if failed:
+                reason = (result.stderr or "").strip().splitlines()
+                sys.stderr.write(
+                    "advisory read for %s failed (rc=%s): %s\n"
+                    % (slug, result.returncode, reason[-1] if reason else "no output")
                 )
-            failed = proc.returncode != 0
+            else:
+                pathlib.Path(out).write_text(result.stdout_raw, encoding="utf-8")
         except OSError:
             failed = True
         if failed:
