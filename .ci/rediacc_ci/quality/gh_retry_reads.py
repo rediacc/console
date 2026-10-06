@@ -53,6 +53,7 @@ import sys
 from rediacc_ci import paths
 from rediacc_ci.controls import Checker, controls_first, plant
 from rediacc_ci.core import allowlist
+from rediacc_ci.quality import shrink_only
 
 NAME = "gh retry reads"
 SCAN_ROOTS = (".ci/rediacc_ci", ".ci/scripts")
@@ -1331,7 +1332,7 @@ def selftest() -> bool:
     check(
         "BASELINE: --write-baseline refuses an addition",
         bool(
-            baseline_additions(
+            grown_rows(
                 frozen,
                 baseline_of(
                     judge({rel: grown}, {}, frozen).new + judge({rel: grown}, {}, frozen).debt
@@ -1346,14 +1347,20 @@ def selftest() -> bool:
     return not check.ok
 
 
-def baseline_additions(old: dict[str, dict], new: dict[str, dict]) -> list[str]:
-    """Rows in `new` that `old` does not cover. A drain must leave this EMPTY: a shrinking total says nothing about composition, and a fresh violation enshrined by a drain that also removed thirty old ones still prints a smaller number."""
-    out = []
-    for k, v in sorted(new.items()):
-        before = old.get(k, {}).get("count", 0)
-        if v["count"] > before:
-            out.append("%s (%s): %d -> %d" % (v["site"], k, before, v["count"]))
-    return out
+def _site_ids(rows: dict[str, dict]) -> list[str]:
+    """One id per frozen SITE (`<row>#<n>`), so the shared guard's set comparison sees a row whose count grew."""
+    return ["%s#%d" % (k, n) for k, v in sorted(rows.items()) for n in range(int(v["count"]))]
+
+
+def grown_rows(old: dict[str, dict], new: dict[str, dict]) -> list[str]:
+    """Rows in `new` that `old` does not cover, through the shared composition guard (rediacc_ci.quality.shrink_only.baseline_additions). A drain must leave this EMPTY: a shrinking total says nothing about composition, and a fresh violation enshrined by a drain that also removed thirty old ones still prints a smaller number."""
+    added = {
+        i.rsplit("#", 1)[0] for i in shrink_only.baseline_additions(_site_ids(old), _site_ids(new))
+    }
+    return [
+        "%s (%s): %d -> %d" % (new[k]["site"], k, old.get(k, {}).get("count", 0), new[k]["count"])
+        for k in sorted(added)
+    ]
 
 
 def real_tree_plants(
@@ -1535,17 +1542,22 @@ def _write_baseline(files: dict[str, str], path: pathlib.Path, *, init: bool) ->
         print("✗ refusing to write a baseline over a tree with problems", file=sys.stderr)
         return 1
     new = baseline_of(v.new + v.debt)
-    if not init:
-        added = baseline_additions(old, new)
-        if added:
-            for a in added:
-                print("✗ ADDED %s" % a, file=sys.stderr)
-            print(
-                "✗ refusing: a drain may only REMOVE rows. Fix the %d read(s) above (route them through gh_retry); "
-                "do not add them to the baseline." % len(added),
-                file=sys.stderr,
-            )
-            return 1
+    added = [] if init else grown_rows(old, new)
+    verdict = shrink_only.write_verdict(
+        baseline_exists=path.exists(), first_seed=init, additions=added
+    )
+    if verdict == "missing-baseline":
+        print("✗ %s is missing; --init-baseline seeds it once." % path, file=sys.stderr)
+        return 1
+    if verdict == "would-grow":
+        for a in added:
+            print("✗ ADDED %s" % a, file=sys.stderr)
+        print(
+            "✗ refusing: a drain may only REMOVE rows. Fix the %d read(s) above (route them through gh_retry); "
+            "do not add them to the baseline." % len(added),
+            file=sys.stderr,
+        )
+        return 1
     removed = sorted(set(old) - set(new)) + sorted(
         k for k in new if k in old and new[k]["count"] < old[k]["count"]
     )
