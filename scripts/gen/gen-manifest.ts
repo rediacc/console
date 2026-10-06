@@ -71,6 +71,7 @@ const HAND_ONLY = [
   'mutex',
   'writesTree',
   'cores',
+  'ciOnly',
   'noProfile',
 ] as const;
 
