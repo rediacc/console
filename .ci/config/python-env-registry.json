@@ -146,6 +146,7 @@
       "GITHUB_STEP_SUMMARY",
       "SCOPE_MODE",
       "SCOPE_SHADOW_OUT",
+      "SCOPE_SHADOW_RETRY_DELAY",
       "SCOPE_SHADOW_TIMEOUT"
     ],
     ".ci/rediacc_ci/ci/scope_shadow.py": [
