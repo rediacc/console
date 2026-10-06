@@ -5,6 +5,8 @@ No case touches the network: `publish` takes the `gh` runner as a seam, and a re
 
 import pathlib
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.quality import review_comments
 from rediacc_ci.review import review_table as T
@@ -376,6 +378,20 @@ def test_main_swallows_a_crash(monkeypatch):
 
     monkeypatch.setattr(T, "publish", boom)
     assert T.main([]) == 0
+
+
+def test_help_prints_usage_and_never_publishes(monkeypatch, capsys):
+    monkeypatch.setattr(T, "publish", lambda *_a, **_k: pytest.fail("--help must not publish"))
+    assert T.main(["--help"]) == 0
+    out = capsys.readouterr().out
+    assert "--render-only --branch <b>" in out
+    assert "GH_TOKEN" in out
+
+
+def test_an_unknown_option_is_refused_not_published(monkeypatch, capsys):
+    monkeypatch.setattr(T, "publish", lambda *_a, **_k: pytest.fail("an unknown option must not publish"))
+    assert T.main(["--render"]) == 2
+    assert "unknown option --render" in capsys.readouterr().err
 
 
 def test_render_only_uses_the_local_commit_list(tmp_path):
