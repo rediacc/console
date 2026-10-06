@@ -47,20 +47,18 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 <!-- queue:inflight:begin -->
 - Mode: stop_hook on; turbo off; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; cadence on; agent_hint on; agent_pushback on; judge on.
 - Focus: off.
-- Branch: 1006-2, PR #597 open.
-- Plans on the PR (1):
-  - agent/plans/PLAN-fast-loop.md -- 19 of 19 boxes ticked, the PR body's `Plan:` line
-- Work outside the PR's plans (1 epic(s)):
-  - epic 97672f9f, no plan, 95 commit(s) on the branch, 0 open item(s): Operator 2026-10-06 follow-ups: regeneration guard, ci-trace root causes and main-red alert, ci:quick scheduler utilization, package retention, budget 5xx retry
+- Branch: main, no live branch.
+- Plans on the PR: none.
+- Work outside the PR's plans: none.
 - Writers: 0 live of writer_cap 15 (session d778be9d).
-- Leased items: 4: #c5fe5295 (worker:684272, d778be9d), #de0d355c (worker:b5hugmupy, d778be9d), #eaf3d3f1 (worker:a3b301a2444ae6615, d778be9d), #f28caf3f (worker:b5hugmupy, d778be9d).
-- Next plan: agent/plans/PLAN-ci-consolidation.md, Promoted entry 1 (solo); starts on the next branch after PR #597 merges.
+- Leased items: 1: #cff623f2 (worker:b3z0xowbd, d778be9d).
+- Next plan: agent/plans/PLAN-ci-consolidation.md, Promoted entry 1 (solo); starts on branch 1006-3.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
-1. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; candidates 1, 3, 4, 6, 7 of agent/reports/consolidation-investigation-2026-10-04.md in one plan, one PR -- solo
-2. agent/plans/PLAN-commit-as-you-go.md -- operator /ask 2026-10-03: T6 (the `nocommit:` tick arm Z depends on), with T0 and T9
+1. agent/plans/PLAN-gh-retry.md -- found 2026-10-06 on PR #597 (one GitHub 502 failed CI Complete); G0-G9 written and lead-verified before the merge, G10 is a P1 (cleanup_versions can delete a still-open PR's resources on one 5xx). #5d8cfea6's default: the next branch after #597, ahead of PLAN-ci-consolidation
+2. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; candidates 1, 3, 4, 6, 7 of agent/reports/consolidation-investigation-2026-10-04.md in one plan, one PR -- solo
 3. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: T9 (the enforced matrix in DESIGN-CONFIG-STORAGE.md) and T10 (live smoke)
 4. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: the 9 open boxes
 5. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: Step 12
