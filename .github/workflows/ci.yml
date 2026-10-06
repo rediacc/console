@@ -1683,7 +1683,13 @@ jobs:
     # 15-minute ceiling supersedes the 1.5x headroom rule for this budgeted
     # job. If it nears 15 again, the install steps after the copy are the
     # suspect, not the copy.
-    timeout-minutes: 15
+    #
+    # 15 -> 20 (2026-10-06). It neared 15 on the copy after all: main promotes
+    # the whole edge channel (1,123 objects, growing with each release) and ran
+    # 15.0 and 15.7 min on run 37394654719, where a PR copies only its own ~69.
+    # The watchdog and check-lane-budget.ts carry the same 20 (JOB_BUDGET_CAPS);
+    # test_gate_watchdog_budget pins all three copies to each other.
+    timeout-minutes: 20 # budget cap, operator ruling #641f4f0e (main measured 15.7)
     # THIRD INSTANCE OF THE EMPTY-CHANNEL CLASS, and the gate is copied verbatim
     # from how cd-stage.yml already solved it (see its "Build package
     # repositories" step). `initialize` derives channel="" for anything that is

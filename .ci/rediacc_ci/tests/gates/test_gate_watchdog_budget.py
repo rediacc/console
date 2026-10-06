@@ -491,16 +491,30 @@ def test_watchdog_caps_agree_with_the_lane_budget_gate(gate):
     # A job's display name is the `name:` line directly under its two-space-indented id, in whichever workflow defines it (build-renet lives in ci-build-renet.yml; no YAML parser in the gate-test interpreter).
     workflow_texts = [p.read_text(encoding="utf-8") for p in sorted(CT_TESTS.parent.glob("*.yml"))]
     gate_caps = {}
+    job_timeouts = {}
     for job_id, minutes in pairs:
         pattern = re.compile(r"^  %s:\n    name: (.+)$" % re.escape(job_id), re.MULTILINE)
         match = next((m for m in (pattern.search(t) for t in workflow_texts) if m), None)
         if match is None:
             gate.log_fail("check-lane-budget.ts caps job %s, which no workflow defines" % job_id)
             continue
+        # The THIRD copy: the job's own `timeout-minutes:`. GitHub ends the job there whatever the watchdog allows, so 86580a281 raised validate-promote's cap to 20 in the two tables while ci.yml still killed it at 15.
+        timeout = re.search(
+            r"^  %s:\n(?:    .*\n|\s*\n)*?    timeout-minutes: (\d+)(?:[ \t]*#.*)?$"
+            % re.escape(job_id),
+            next(t for t in workflow_texts if pattern.search(t)),
+            re.MULTILINE,
+        )
+        job_timeouts[job_id] = int(timeout.group(1)) if timeout else None
         # The watchdog keys a matrix job by its base name, so only a " (${{ matrix.x }})" suffix is dropped; a literal one such as "Renet (Full)" is part of the name.
         gate_caps[re.sub(r" \([^()]*\$\{\{[^()]*\)$", "", match.group(1).strip())] = int(minutes)
     gate.assert_eq(
         watchdog_caps, gate_caps, "the watchdog caps equal the lane gate's ruled timeouts"
+    )
+    gate.assert_eq(
+        job_timeouts,
+        {job_id: int(minutes) for job_id, minutes in pairs},
+        "each capped job's workflow timeout-minutes equals its ruled cap",
     )
     gate.log_pass("watchdog JOB_BUDGET_CAPS agree with check-lane-budget.ts (%s)" % gate_caps)
 
