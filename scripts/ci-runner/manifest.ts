@@ -788,8 +788,8 @@ export const GATES: readonly GateSpec[] = [
     slow: true, // spins up a real astro dev server; measured ~90s+ cold
     // heavy: an astro dev server plus headless Chrome, timing-sensitive. Scheduled beside every other gate in a full `npm run ci` (12x parallel), its clicks timed out ("play button click failed at start") on 2026-09-27 while the same tree passed alone and in CI.
     heavy: true,
-    // FOUR CORES RESERVED (2026-10-06). Under ci:quick the astro dev boot hit the gate's 180 s budget in 2 of 3 runs (boot=180092ms, 180109ms; 172171ms on the third) at load 1.9/core, while the same gate alone booted its first route in 12 s and finished in 120 s. Measured under load it used ~180 s cpu over ~250 s wall, so the pool priced it at 0.7 of a core and reserved one token: a starved gate measures itself as cheap and stays starved. The tool does not read the grant; the range reserves headroom beside it.
-    cores: { min: 4, max: 4 },
+    ciOnly:
+      'operator ruling 2026-10-06 (/ask): an astro dev server plus headless Chrome is timing-sensitive, and beside ci:quick (load 1.7-1.9 per core) it failed 3 of 4 runs (dev boot 171-180 s of its 180 s budget, then click and fullscreen timeouts) while passing alone in 121 s; reserving 4 cores (b213ae7da) did not help, because the rest of the lane oversubscribes the CPU. CI runs it in its own ci-quality.yml step.',
     gate: true,
     // check:ci-gate-tree-writes V10: the run directory is repo-relative.
     mutex: ['tree:repo'],

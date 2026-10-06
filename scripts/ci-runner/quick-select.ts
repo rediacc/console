@@ -25,6 +25,8 @@ export interface SlowCandidate {
   readonly run: string;
   readonly paths?: readonly string[];
   readonly leaves: readonly string[];
+  /** CI-only (GateSpec.ciOnly): never touched, so never admitted to the quick lane and never recorded as dropped. */
+  readonly ciOnly?: string;
 }
 
 export interface Touch {
@@ -165,6 +167,7 @@ export function touchedSlow(candidates: readonly SlowCandidate[], input: TouchIn
   const pkgChanged = changed.has('package.json');
   const touches: Touch[] = [];
   for (const c of candidates) {
+    if (c.ciOnly !== undefined) continue;
     if (c.paths !== undefined) {
       const hit = input.changed.find((f) => input.matches(f, c.paths ?? []));
       if (hit !== undefined) {
@@ -349,6 +352,21 @@ export function quickSelectSelftest(
 
     // A TOUCHED slow gate is selected and an UNTOUCHED one stays deferred.
     const direct = pick(['g/touched.ts']);
+    // A CI-only gate is never touched, even when its own leaf changed, so the quick lane neither runs it nor records it as dropped.
+    const ciOnlyPick = touchedSlow(
+      [{ ...cands[0], id: 'slow:ci-only', ciOnly: 'fixture: CI runs it in its own job' }],
+      {
+        root,
+        changed: ['g/touched.ts', 'src/a.ts'],
+        matches,
+        scriptsNow: scripts,
+        scriptsBase: scripts,
+      }
+    );
+    check(
+      ciOnlyPick.length === 0,
+      'a ciOnly slow gate must never be touched, even by its own leaf'
+    );
     check(direct.includes('slow:touched'), 'a slow gate whose leaf changed must be selected');
     check(!direct.includes('slow:untouched'), 'a slow gate nothing touched must stay deferred');
     // Through an import, and through a Python module named in `from pkg import module`.

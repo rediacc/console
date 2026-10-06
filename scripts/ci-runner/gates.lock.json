@@ -807,10 +807,7 @@
     "run": "npm run check:test:tutorial-player",
     "slow": true,
     "heavy": true,
-    "cores": {
-      "min": 4,
-      "max": 4
-    },
+    "ciOnly": "operator ruling 2026-10-06 (/ask): an astro dev server plus headless Chrome is timing-sensitive, and beside ci:quick (load 1.7-1.9 per core) it failed 3 of 4 runs (dev boot 171-180 s of its 180 s budget, then click and fullscreen timeouts) while passing alone in 121 s; reserving 4 cores (b213ae7da) did not help, because the rest of the lane oversubscribes the CPU. CI runs it in its own ci-quality.yml step.",
     "gate": true,
     "mutex": [
       "tree:repo"
