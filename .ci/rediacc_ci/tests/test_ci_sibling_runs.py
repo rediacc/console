@@ -40,9 +40,15 @@ def run(rid: int, status: str = "completed", conclusion: str | None = "success",
 class FakeApi:
     """A `gh` one-attempt runner answering from a table: runs on the sha, and per-run Initialize conclusions. A missing jobs entry is a 404; `runs=None` makes the listing a 502 on every attempt."""
 
-    def __init__(self, runs: list[dict] | None, initialize: dict[int, str] | None = None) -> None:
+    def __init__(
+        self,
+        runs: list[dict] | None,
+        initialize: dict[int, str] | None = None,
+        jobs: dict[int, list[dict]] | None = None,
+    ) -> None:
         self.runs = runs
         self.initialize = initialize or {}
+        self.jobs = jobs or {}
         self.calls: list[str] = []
 
     def __call__(self, args: list[str], **_kw) -> ghx.GhResult:
@@ -55,6 +61,8 @@ class FakeApi:
         match = re.search(r"/runs/(\d+)/jobs", path)
         assert match, path
         rid = int(match.group(1))
+        if rid in self.jobs:
+            return ghx.GhResult(["gh", *args], 0, json.dumps({"jobs": self.jobs[rid]}), "")
         if rid not in self.initialize:
             return ghx.GhResult(["gh", *args], 1, "", NOT_FOUND)
         body = {"jobs": [{"name": "Build CLI", "conclusion": "success"}]}
@@ -63,7 +71,12 @@ class FakeApi:
 
 
 def drive(
-    command: str, fake: FakeApi, own: int, tmp_path: pathlib.Path, event: str = "push"
+    command: str,
+    fake: FakeApi,
+    own: int,
+    tmp_path: pathlib.Path,
+    event: str = "push",
+    attempt: int | None = None,
 ) -> tuple[int, str, str]:
     out, summary = tmp_path / "out", tmp_path / "summary"
     out.write_text("")
@@ -71,6 +84,8 @@ def drive(
     api = sr.Api(REPO, "ci.yml", runner=fake, sleep=lambda _s: None)
     argv = [command, "--repo", REPO, "--sha", SHA, "--run-id", str(own), "--event", event]
     argv += ["--output", str(out), "--summary", str(summary)]
+    if attempt is not None:
+        argv += ["--run-attempt", str(attempt)]
     rc = sr.main(argv, api)
     return rc, out.read_text(), summary.read_text()
 
@@ -191,9 +206,63 @@ def test_release_proceeds_with_a_sibling_queued_behind_the_concurrency_group(tmp
     assert drive("release-gate", fake, FIRST, tmp_path)[0] == 0
 
 
-def test_a_cancelled_sibling_does_not_block_its_retry_from_releasing(tmp_path):
+# ---- rule 3: an earlier cancelled run blocks unless this run is its clean retry (operator ruling 2026-10-06) ------
+
+CLEAN_JOBS: list[dict] = [
+    {"name": "Initialize", "conclusion": "success"},
+    {"name": "Build CLI", "conclusion": "success"},
+    {"name": "Preview", "conclusion": "skipped"},
+    {"name": "Finalize Release Sentinel", "status": "in_progress", "conclusion": None},
+]
+
+
+def _cancelled_then(jobs: list[dict] | None = None) -> FakeApi:
+    return FakeApi(
+        [run(SECOND, "in_progress", None), run(FIRST, conclusion="cancelled")],
+        jobs={SECOND: CLEAN_JOBS if jobs is None else jobs},
+    )
+
+
+def test_a_clean_first_attempt_retry_of_a_cancelled_run_releases(tmp_path, capsys):
+    assert drive("release-gate", _cancelled_then(), SECOND, tmp_path, attempt=1)[0] == 0
+    assert "clean retry" in capsys.readouterr().err
+
+
+def test_a_retry_on_its_second_attempt_does_not_release(tmp_path, capsys):
+    rc, *_ = drive("release-gate", _cancelled_then(), SECOND, tmp_path, attempt=2)
+    err = capsys.readouterr().err
+    assert rc == 1
+    assert "this is attempt 2" in err
+    assert str(FIRST) in err
+
+
+@pytest.mark.parametrize("conclusion", ["failure", "cancelled", "timed_out"])
+def test_a_retry_with_an_unclean_job_does_not_release(tmp_path, capsys, conclusion):
+    jobs = [*CLEAN_JOBS, {"name": "E2E Ceph", "conclusion": conclusion}]
+    rc, *_ = drive("release-gate", _cancelled_then(jobs), SECOND, tmp_path, attempt=1)
+    err = capsys.readouterr().err
+    assert rc == 1
+    assert "E2E Ceph (%s)" % conclusion in err
+
+
+def test_a_missing_run_attempt_does_not_release_after_a_cancel(tmp_path, capsys):
+    """The workflow passes `$GITHUB_RUN_ATTEMPT`; without it the run cannot show it is a first attempt."""
+    rc, *_ = drive("release-gate", _cancelled_then(), SECOND, tmp_path)
+    assert rc == 1
+    assert "run attempt was not passed" in capsys.readouterr().err
+
+
+def test_a_later_cancelled_sibling_never_blocks(tmp_path):
+    """A duplicate queued behind this run and then cancelled says nothing about this run."""
+    fake = FakeApi([run(SECOND, conclusion="cancelled"), run(FIRST, "in_progress", None)])
+    assert drive("release-gate", fake, FIRST, tmp_path, attempt=2)[0] == 0
+
+
+def test_unreadable_own_jobs_fail_open_after_a_cancel(tmp_path, capsys):
     fake = FakeApi([run(SECOND, "in_progress", None), run(FIRST, conclusion="cancelled")])
-    assert drive("release-gate", fake, SECOND, tmp_path)[0] == 0
+    rc, *_ = drive("release-gate", fake, SECOND, tmp_path, attempt=1)
+    assert rc == 0
+    assert "fail-open" in capsys.readouterr().err
 
 
 def test_the_release_gate_ignores_its_own_failed_earlier_attempt(tmp_path):
