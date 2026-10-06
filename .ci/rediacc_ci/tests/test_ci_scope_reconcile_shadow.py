@@ -55,11 +55,11 @@ if argv[:2] == ["run", "download"]:
     if os.environ.get("FAKE_GH_DOWNLOAD_FAIL_FIRST") == "1" and attempt_file:
         if not os.path.exists(attempt_file):
             open(attempt_file, "w", encoding="utf-8").close()
-            sys.stderr.write("gh: fake transient failure\\n")
+            sys.stderr.write("gh: Server Error (HTTP 502)\\n")
             sys.exit(1)
     rc = int(os.environ.get("FAKE_GH_DOWNLOAD_RC", "0"))
     if rc != 0:
-        sys.stderr.write("gh: fake download failure\\n")
+        sys.stderr.write(os.environ.get("FAKE_GH_DOWNLOAD_ERR", "gh: fake download failure") + "\\n")
         sys.exit(rc)
     d = argv[argv.index("-D") + 1]
     os.makedirs(d, exist_ok=True)
@@ -222,7 +222,7 @@ def test_download_failure_is_hard_when_reduced(tmp_path: pathlib.Path) -> None:
     assert "RECONCILIATION FAILED" in result.stdout
 
 
-def test_download_retries_once_then_succeeds(tmp_path: pathlib.Path) -> None:
+def test_download_retries_a_502_then_succeeds(tmp_path: pathlib.Path) -> None:
     root = _fixture(tmp_path)
     result, _ = run_port(
         root,
@@ -230,9 +230,48 @@ def test_download_retries_once_then_succeeds(tmp_path: pathlib.Path) -> None:
         "dl-retry",
         FAKE_GH_DOWNLOAD_FAIL_FIRST="1",
         FAKE_GH_DOWNLOAD_ATTEMPT_FILE=str(tmp_path / "attempt"),
+        SCOPE_SHADOW_RETRY_DELAY="0",
     )
     assert result.returncode == 0
-    assert "the plan download failed; retrying once" in result.stdout
+    assert "the plan download failed transiently; retry 1 of 2" in result.stdout
+    assert "no attested plan" not in result.stdout
+
+
+def test_a_persistent_5xx_download_exhausts_the_attempts_and_is_hard_when_reduced(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = _fixture(tmp_path)
+    log = tmp_path / "gh-dl-5xx.log"
+    result, _ = run_port(
+        root,
+        tmp_path,
+        "dl-5xx",
+        FAKE_GH_DOWNLOAD_RC="1",
+        FAKE_GH_DOWNLOAD_ERR="gh: Server Error (HTTP 502)",
+        FAKE_GH_LOG=str(log),
+        SCOPE_MODE="reduced",
+        SCOPE_SHADOW_RETRY_DELAY="0",
+    )
+    assert result.returncode == 1
+    assert "RECONCILIATION FAILED" in result.stdout
+    assert "retry 2 of 2" in result.stdout
+    assert sum(1 for ln in log.read_text().splitlines() if ln.startswith("run\tdownload")) == 3
+
+
+def test_a_non_transient_download_error_is_read_once(tmp_path: pathlib.Path) -> None:
+    root = _fixture(tmp_path)
+    log = tmp_path / "gh-dl-4xx.log"
+    result, _ = run_port(
+        root,
+        tmp_path,
+        "dl-4xx",
+        FAKE_GH_DOWNLOAD_RC="1",
+        FAKE_GH_LOG=str(log),
+        SCOPE_SHADOW_RETRY_DELAY="0",
+    )
+    assert "no attested plan for this run" in result.stdout
+    assert "retry" not in result.stdout
+    assert sum(1 for ln in log.read_text().splitlines() if ln.startswith("run\tdownload")) == 1
 
 
 def test_jobs_api_failure_is_a_gap(tmp_path: pathlib.Path) -> None:

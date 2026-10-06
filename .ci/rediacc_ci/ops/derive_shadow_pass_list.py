@@ -39,6 +39,7 @@ import shutil
 import subprocess
 import sys
 
+from rediacc_ci.core import gh_retry
 from rediacc_ci.well_known import GH_REPO
 
 WORKFLOW_GLOB = ".github/workflows/*.yml"
@@ -94,14 +95,27 @@ def shadow_carrying_workflows() -> list[str]:
     return [line for line in xargs.stdout.splitlines() if line]
 
 
-def _gh(args: list[str]) -> tuple[int, str]:
-    """One `gh` call whose stderr the twin sent to /dev/null."""
-    proc = subprocess.run(["gh", *args], capture_output=True, text=True, check=False)
-    return proc.returncode, proc.stdout
+class ReadFailedError(RuntimeError):
+    """A `gh` read that never answered, after the transient retries."""
+
+
+def _gh(args: list[str]) -> str:
+    """One `gh` read through core/gh_retry (3 attempts, 5 s then 15 s, a 5xx or connection fault only).
+
+    THE TWIN DROPPED A FAILED READ AS AN EMPTY ANSWER, and here that is the dangerous direction: a run whose verdicts could not be read contributes nothing, so a name it would have disqualified (a MISMATCH) looks clean and lands in the `gh secret delete` list. A read that fails after its retries raises, and `main` refuses naming it.
+    """
+    result = gh_retry.gh(args, timeout=120)
+    if not result.ok:
+        detail = (result.stderr or "").strip().splitlines()
+        raise ReadFailedError(
+            "`gh %s` exited %d: %s"
+            % (" ".join(args), result.returncode, detail[0] if detail else "no stderr")
+        )
+    return result.stdout_raw
 
 
 def run_ids(workflow: str, branch: str, runs: str) -> list[str]:
-    _, out = _gh(
+    out = _gh(
         [
             "run",
             "list",
@@ -120,8 +134,8 @@ def run_ids(workflow: str, branch: str, runs: str) -> list[str]:
 
 
 def successful_job_count(run_id: str) -> str:
-    """`gh run view --json jobs -q ... || echo 0`, with the substitution's trailing-newline strip."""
-    rc, out = _gh(
+    """`gh run view --json jobs -q ...` with the substitution's trailing-newline strip. A failed read raises: the twin's `|| echo 0` made it a skipped run, which silently dropped that run's verdicts."""
+    out = _gh(
         [
             "run",
             "view",
@@ -132,14 +146,12 @@ def successful_job_count(run_id: str) -> str:
             '[.jobs[]|select(.conclusion=="success")|.name]|length',
         ]
     )
-    if rc != 0:
-        return "0"
     return out.rstrip("\n")
 
 
 def verdicts_in_log(run_id: str) -> list[str]:
     """`gh run view <id> --log | grep -oE '<verdict>' || true`, run as that pipeline."""
-    _, log = _gh(["run", "view", run_id, "--log"])
+    log = _gh(["run", "view", run_id, "--log"])
     grep = subprocess.run(
         ["grep", "-oE", VERDICT_RE],
         input=log,
@@ -167,13 +179,13 @@ def github_names_by_shadow() -> dict[str, set[str]]:
 
 def secret_names(endpoint: str) -> set[str]:
     # --slurp, not -q: the secrets endpoint answers an OBJECT, so `--paginate -q` prints one array per page and json.loads fails "Extra data" past the first page.
-    proc = subprocess.run(
-        ["gh", "api", endpoint, "--paginate", "--slurp"],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    return {secret["name"] for page in json.loads(proc.stdout) for secret in page["secrets"]}
+    args = ["api", endpoint, "--paginate", "--slurp"]
+    result = gh_retry.gh(args, timeout=120)
+    if not result.ok:
+        raise subprocess.CalledProcessError(
+            result.returncode, ["gh", *args], output=result.stdout_raw, stderr=result.stderr
+        )
+    return {secret["name"] for page in json.loads(result.stdout_raw) for secret in page["secrets"]}
 
 
 def emit_delete_commands(passed: set[str]) -> None:
@@ -245,13 +257,20 @@ def main(argv: list[str]) -> int:
 
     # JOB conclusion, not RUN conclusion: see the module docstring.
     verdicts: set[str] = set()
-    for workflow in workflows:
-        for run_id in run_ids(workflow, branch, runs):
-            if not run_id:
-                continue
-            if successful_job_count(run_id) in ("", "0"):
-                continue
-            verdicts.update(verdicts_in_log(run_id))
+    try:
+        for workflow in workflows:
+            for run_id in run_ids(workflow, branch, runs):
+                if not run_id:
+                    continue
+                if successful_job_count(run_id) in ("", "0"):
+                    continue
+                verdicts.update(verdicts_in_log(run_id))
+    except ReadFailedError as exc:
+        _err(
+            "REFUSING: a run's verdicts could not be read, so a MISMATCH may be missing "
+            "from the derivation: %s" % exc
+        )
+        return 1
 
     pairs = {
         (parts[1], parts[2]) for parts in (line.split() for line in verdicts) if len(parts) > 2
