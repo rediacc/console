@@ -740,9 +740,9 @@
       "folder": "agent/plans",
       "moved_at": "",
       "open": 1,
-      "done": 12,
+      "done": 13,
       "open_sigs": [
-        "690f1514"
+        "6dad6b22"
       ],
       "done_sigs": [
         "0d24bad2",
@@ -751,6 +751,7 @@
         "538d0373",
         "632e39f6",
         "681fb37a",
+        "690f1514",
         "914403c7",
         "b539b124",
         "cbdbcbc3",
