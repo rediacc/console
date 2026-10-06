@@ -856,6 +856,11 @@ def _fixture_repo(gate, work, gates: list[dict], extra_files: dict | None = None
     runner_dir.mkdir(parents=True)
     for src in RUNNER.parent.glob("*.ts"):
         shutil.copy(src, runner_dir / src.name)
+    # input-hash.ts reaches the policy directory through scripts/lib/policy-paths.ts (check:ci-policy-inventory), a sibling the runner copy needs; it imports only node built-ins.
+    (repo / "scripts" / "lib").mkdir(parents=True)
+    shutil.copy(
+        RUNNER.parents[1] / "lib" / "policy-paths.ts", repo / "scripts" / "lib" / "policy-paths.ts"
+    )
     (runner_dir / "manifest.ts").write_text(
         "export type { CiCoverage, GateSpec } from './gate-spec.js';\n"
         "export const GATES = %s;\n" % json.dumps(gates, indent=2),
