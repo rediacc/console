@@ -100,7 +100,8 @@ Today `scripts/ci-runner/run.ts` writes `.ci/cache/prepush-receipt.json` (Receip
 - [x] F9 Docs: .claude/commands/pr-merge.md, .claude/agents/pr-babysitter.md, docs/agent-reference/ci-gates.md; `npx tsx scripts/gen/gen-docs.ts --write`.
     (ticked) 2026-10-06T15:07:10Z by d778be9d: commit:bb047b33a prose and citation gates rc 0
 - [ ] F10 Live proof on 1006-2: after one one-file commit, the receipt re-runs only the gates whose inputs that file reaches, and `git push` passes block_unverified_push on carried entries.
-- [ ] F11 An advance across a record-only commit admits a reader that is red with exactly the receipt's carried finding keys: `runAdvance` records each reader's findings beside its exit code, and `step_refusal` admits a red reader when its findings equal the receipt's findings for that gate and carried-reds.json carries every one of them by key. Found 2026-10-06: a review-record commit after a receipt voided the push because check:ci-plan-implementation (a reader of agent/reviews) is red with a by-key carry, and only a whole (`"*"`) carry could advance.
+- [x] F11 An advance across a record-only commit admits a reader that is red with exactly the receipt's carried finding keys: `runAdvance` records each reader's findings beside its exit code, and `step_refusal` admits a red reader when its findings equal the receipt's findings for that gate and carried-reds.json carries every one of them by key. Found 2026-10-06: a review-record commit after a receipt voided the push because check:ci-plan-implementation (a reader of agent/reviews) is red with a by-key carry, and only a whole (`"*"`) carry could advance.
+    (ticked) 2026-10-06T16:35:03Z by d778be9d: commit:cb482725c selftest 207 assertions ok; test-block_unverified_push.py 131 cases rc 0
 
 
 ## Writers (sonnet, at most 4, disjoint)
