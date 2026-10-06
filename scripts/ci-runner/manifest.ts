@@ -1685,7 +1685,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-literal-sources',
     run: 'npm run check:ci-literal-sources',
-    // ELASTIC (2026-10-06): its tool sizes itself from the grant (core_lease.granted_cores / lease-client grantedCores). Without a declared range the pool exports a grant rounded from the gate's own measured cpu/wall, about 1, so the tool ran one-wide; check:types:incremental measured 24.4 s at cpu = wall after PLAN-prepush-full-cpu PF3/PF6.
+    // ELASTIC (2026-10-06): its tool sizes itself from the grant (core_lease.granted_cores / lease-client grantedCores). Without a declared range the pool exports a grant rounded from the gate's own measured cpu/wall, about 1, and the tool runs one-wide; check:types:incremental's entry records the measurement.
     cores: { min: 1, max: 'all' },
     gate: true,
     leaves: ['.ci/scripts/quality/check_literal_sources.py'],
@@ -2765,7 +2765,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-battery-clean-tree',
     // The battery's tree snapshot must not abort on a clean checkout. It extracts the REAL tree_state() rather than copying it, and refuses if that function is gone.
     run: 'npm run check:ci-battery-clean-tree',
-    // ELASTIC (2026-10-06): its tool sizes itself from the grant (core_lease.granted_cores / lease-client grantedCores). Without a declared range the pool exports a grant rounded from the gate's own measured cpu/wall, about 1, so the tool ran one-wide; check:types:incremental measured 24.4 s at cpu = wall after PLAN-prepush-full-cpu PF3/PF6.
+    // ELASTIC (2026-10-06): its tool sizes itself from the grant (core_lease.granted_cores / lease-client grantedCores). Without a declared range the pool exports a grant rounded from the gate's own measured cpu/wall, about 1, and the tool runs one-wide; check:types:incremental's entry records the measurement.
     cores: { min: 1, max: 'all' },
     gate: true,
     leaves: ['.ci/scripts/quality/check_battery_clean_tree.py'],
@@ -3740,7 +3740,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-embed-asset-versions',
     run: 'npm run check:ci-embed-asset-versions',
-    // ELASTIC (2026-10-06): its tool sizes itself from the grant (core_lease.granted_cores / lease-client grantedCores). Without a declared range the pool exports a grant rounded from the gate's own measured cpu/wall, about 1, so the tool ran one-wide; check:types:incremental measured 24.4 s at cpu = wall after PLAN-prepush-full-cpu PF3/PF6.
+    // ELASTIC (2026-10-06): its tool sizes itself from the grant (core_lease.granted_cores / lease-client grantedCores). Without a declared range the pool exports a grant rounded from the gate's own measured cpu/wall, about 1, and the tool runs one-wide; check:types:incremental's entry records the measurement.
     cores: { min: 1, max: 'all' },
     gate: true,
     // About 3 s idle since 2026-09-30 (was 24 s idle, 46-52 s under ci:quick load, the run's critical path). The cost was a char-by-char strings(1) emulation over ~900 MB of decompressed binaries; it is now a native Buffer.indexOf with whole-run boundary checks, and the 14 probes decompress four at a time.
@@ -4908,7 +4908,7 @@ export const GATES: readonly GateSpec[] = [
     // NO `env:`. The PR_HEAD_REF this carried was empty on push, schedule and the nightly dispatch, and nothing under `.ci/rediacc_ci/` reads it from the ambient environment -- the battery's tests scrub it or pin their own.
     id: 'check:ci-quality-gates',
     run: 'npm run check:ci-quality-gates',
-    // ELASTIC (2026-10-06): its tool sizes itself from the grant (core_lease.granted_cores / lease-client grantedCores). Without a declared range the pool exports a grant rounded from the gate's own measured cpu/wall, about 1, so the tool ran one-wide; check:types:incremental measured 24.4 s at cpu = wall after PLAN-prepush-full-cpu PF3/PF6.
+    // ELASTIC (2026-10-06): its tool sizes itself from the grant (core_lease.granted_cores / lease-client grantedCores). Without a declared range the pool exports a grant rounded from the gate's own measured cpu/wall, about 1, and the tool runs one-wide; check:types:incremental's entry records the measurement.
     cores: { min: 1, max: 'all' },
     gate: false,
     leaves: ['.ci/rediacc_ci/battery.py'],
