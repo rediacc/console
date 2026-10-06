@@ -31,10 +31,15 @@ CLI: `PYTHONPATH=.ci python3 -m rediacc_ci.ci.github_status [--json] [--refresh]
   --json           the whole Status as JSON.
   --refresh        ignore the cache (positive and negative) and fetch now.
   --wait-recovery  block until every relevant component is operational, then print one
-                   `GITHUB RECOVERED` line and exit 0; exit 2 after --timeout minutes
+                   line and exit: 0 when GitHub is fully ok (`GITHUB RECOVERED`), 4 when
+                   the components are back but an incident is still open (state
+                   `recovering`; the line names it), 2 after --timeout minutes
                    (default 240). Polls the shared cache every 30 s and refetches only
                    when it is older than 150 s.
-Exit 0 ok, 1 degraded, 3 unknown.
+Exit 0 ok, 1 degraded, 3 unknown, 4 recovering (every counted component operational, an incident
+still unresolved: informational, never a reason to wait or to block).
+
+THE `recovering` STATE (2026-10-05 ~22:00Z: every counted component was operational and "Actions is operating normally" while the incident sat open in status "investigating", yet the line still said degraded and suggested --wait-recovery, whose waiter then ran until GitHub closed the incident). `recovering` is every counted component operational plus an unresolved incident touching one. Its line names the incident and suggests no waiting; `--wait-recovery` exits on it; no surface blocks on it.
 """
 
 from __future__ import annotations
@@ -85,6 +90,8 @@ EXIT_OK = 0
 EXIT_DEGRADED = 1
 EXIT_WAIT_TIMEOUT = 2
 EXIT_UNKNOWN = 3
+# Components are back but an incident is still open: `--wait-recovery` and the plain CLI both return it. Informational, not a failure.
+EXIT_RECOVERING = 4
 
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s")
 _UPDATE_MAX = 200
@@ -92,7 +99,7 @@ _UPDATE_MAX = 200
 
 @dataclasses.dataclass
 class Status:
-    state: str  # "ok" | "degraded" | "unknown"
+    state: str  # "ok" | "degraded" | "recovering" | "unknown"
     indicator: str | None = None
     description: str | None = None
     components: list[dict] = dataclasses.field(default_factory=list)
@@ -228,8 +235,15 @@ def _status_from(
         if isinstance(i, dict) and _touches_relevant(i)
     ]
     hist = history if isinstance(history, dict) else {}
+    if bad:
+        state = "degraded"
+    elif incidents:
+        # Every counted component is operational but an incident is still unresolved.
+        state = "recovering"
+    else:
+        state = "ok"
     return Status(
-        state="degraded" if (bad or incidents) else "ok",
+        state=state,
         indicator=data.get("indicator"),
         description=data.get("description"),
         components=bad,
@@ -299,7 +313,7 @@ def advance_history(history: dict, data: dict, t: float) -> dict:
         hist["gen"] = int(hist.get("gen") or 0) + 1
         hist["since"] = t
         hist["state"] = st.state
-        if prev == "degraded" and st.state == "ok":
+        if prev in ("degraded", "recovering") and st.state == "ok":
             raw_snap = hist.get("degraded")
             snap = raw_snap if isinstance(raw_snap, dict) else {}
             hist["recovered"] = {
@@ -313,6 +327,14 @@ def advance_history(history: dict, data: dict, t: float) -> dict:
     if st.state == "degraded":
         hist["degraded"] = {
             "components": [c["name"] for c in st.components],
+            "incidents": [i["name"] for i in st.incidents],
+        }
+    elif st.state == "recovering":
+        # Keep the components the degraded snapshot named; only the incidents are current.
+        prior = hist.get("degraded")
+        kept = prior.get("components") if isinstance(prior, dict) else None
+        hist["degraded"] = {
+            "components": list(kept or []),
             "incidents": [i["name"] for i in st.incidents],
         }
     return hist
@@ -499,11 +521,13 @@ def _age_text(age_s: float | None) -> str:
 
 
 def line(st: Status) -> str:
-    """The ONE line for a status that is not ok, or "" when it is. A degraded line ends with the command that wakes a session on recovery: a background task re-invokes the session only by exiting, and `--wait-recovery` exits exactly then."""
+    """The ONE line for a status that is not ok, or "" when it is. A `recovering` line names the open incident and suggests no wait. A degraded line ends with the command that wakes a session on recovery: a background task re-invokes the session only by exiting, and `--wait-recovery` exits exactly then."""
     if st.state == "ok":
         return ""
     if st.state == "unknown":
         return "GITHUB: status unknown -- githubstatus.com unreadable: %s" % (st.error or "?")
+    if st.state == "recovering":
+        return _recovering_line(st)
     parts = []
     if st.components:
         parts.append(", ".join("%s %s" % (c["name"], c["status"]) for c in st.components))
@@ -523,6 +547,23 @@ def line(st: Status) -> str:
         where,
         WAIT_CMD,
     )
+
+
+def _recovering_line(st: Status) -> str:
+    """`GITHUB: components operational again, incident 'X' still open (investigating): update (githubstatus.com, 3m old)`. No wait command: nothing here is worth waiting for."""
+    incs = "; ".join(
+        "incident '%s' still open (%s)%s"
+        % (
+            i["name"],
+            i.get("status") or "unresolved",
+            ": %s" % i["update"] if i.get("update") else "",
+        )
+        for i in st.incidents
+    )
+    where = "githubstatus.com, %s old" % _age_text(st.age_s)
+    if st.stale:
+        where += ", STALE: %s" % (st.error or "?")
+    return "GITHUB: components operational again, %s (%s)" % (incs, where)
 
 
 def recovered_text(rec: dict) -> str:
@@ -590,7 +631,7 @@ def surface(
     try:
         t = (now or time.time)()
         st = read_cached(now=lambda: t, path=path, spawn=spawn)
-        if st.state == "degraded":
+        if st.state in ("degraded", "recovering"):
             return "" if green else line(st)
         rec = st.recovered
         if st.state != "ok" or not rec or not isinstance(rec.get("at"), (int, float)):
@@ -606,8 +647,8 @@ def surface(
 
 
 def surface_line(st: Status) -> str:
-    """The degraded line alone, for a caller holding a Status (no recovery bookkeeping)."""
-    return line(st) if st.state == "degraded" else ""
+    """The degraded or recovering line alone, for a caller holding a Status (no recovery bookkeeping)."""
+    return line(st) if st.state in ("degraded", "recovering") else ""
 
 
 def wait_recovery(
@@ -618,7 +659,9 @@ def wait_recovery(
     path: pathlib.Path | str | None = None,
     out: Callable[[str], None] | None = None,
 ) -> int:
-    """Block until every relevant component is operational, then print one line and exit 0; on timeout print the state and exit 2.
+    """Block until every relevant component is operational, then print one line and exit; on timeout print the state and exit 2.
+
+    EXIT CODES: `EXIT_OK` (0) GitHub is fully ok; `EXIT_RECOVERING` (4) the components are back but an incident is still open (the line names it); `EXIT_WAIT_TIMEOUT` (2) still degraded at the deadline.
 
     MEANT FOR run_in_background: the harness re-invokes a session only when a background task exits, so this exits on recovery and nothing else. It reads the shared cache every `WAIT_POLL_S` and lets `read` refetch only once the cache is older than `WAIT_REFRESH_S` (150 s), so a machine full of waiters still asks githubstatus.com at most once per 2.5 minutes between them. A failed fetch is not recovery: an `unknown` keeps waiting.
     """
@@ -631,6 +674,12 @@ def wait_recovery(
     while True:
         if st.state == "degraded":
             last_degraded = st
+        elif st.state == "recovering":
+            out(
+                "GITHUB: components recovered, incident still open -- %s"
+                % line(st).removeprefix("GITHUB: ")
+            )
+            return EXIT_RECOVERING
         elif st.state == "ok":
             if last_degraded is None:
                 out(
@@ -667,33 +716,38 @@ def transitions_text(samples: list[tuple[float, str, list[str]]]) -> str:
     runs: list[tuple[float, str]] = []
     names: list[str] = []
     for t, state, comps in samples:
-        if state not in ("ok", "degraded"):
+        if state not in ("ok", "degraded", "recovering"):
             continue
         for c in comps:
             if c not in names:
                 names.append(c)
         if not runs or runs[-1][1] != state:
             runs.append((t, state))
-    if not any(state == "degraded" for _, state in runs):
+    if not any(state != "ok" for _, state in runs):
         return ""
     label = "GitHub %s" % ", ".join(names) if names else "GitHub"
     seq = " -> ".join(
-        "%s %s" % ("operational" if state == "ok" else "degraded", _hhmm(t)) for t, state in runs
+        "%s %s"
+        % ({"ok": "operational", "recovering": "recovering"}.get(state, "degraded"), _hhmm(t))
+        for t, state in runs
     )
     if len(runs) == 1:
-        return "%s: degraded throughout this wait (seen %s)" % (label, _hhmm(runs[0][0]))
+        word = "recovering (incident still open)" if runs[0][1] == "recovering" else "degraded"
+        return "%s: %s throughout this wait (seen %s)" % (label, word, _hhmm(runs[0][0]))
     return "%s: %s during this wait" % (label, seq)
 
 
 def exit_code(st: Status) -> int:
-    return {"ok": EXIT_OK, "degraded": EXIT_DEGRADED}.get(st.state, EXIT_UNKNOWN)
+    return {"ok": EXIT_OK, "degraded": EXIT_DEGRADED, "recovering": EXIT_RECOVERING}.get(
+        st.state, EXIT_UNKNOWN
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog="python3 -m rediacc_ci.ci.github_status",
         description="GitHub service status for the components this repo depends on (cached 15 min per machine).",
-        epilog="Exit 0 ok, 1 degraded, 3 unknown. --wait-recovery: 0 recovered, 2 timed out.",
+        epilog="Exit 0 ok, 1 degraded, 3 unknown, 4 recovering. --wait-recovery: 0 recovered, 4 recovered with an incident still open, 2 timed out.",
     )
     ap.add_argument("--json", action="store_true", help="print the whole status as JSON")
     ap.add_argument("--refresh", action="store_true", help="ignore the cache and fetch now")

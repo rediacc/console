@@ -83,7 +83,7 @@ def is_ci_command(cmd):
 
 
 def note_line(session, gs=None):
-    """The degraded line, the one-time recovery note for this session, or "" (ok, unknown, already told, or any failure)."""
+    """The degraded or recovering line, the one-time recovery note for this session, or "" (ok, unknown, already told, or any failure)."""
     try:
         gs = gs or load_github_status()
         return gs.surface(session=session or None)

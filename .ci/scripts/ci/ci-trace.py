@@ -306,12 +306,12 @@ def _gh_tick(as_json):
     try:
         gs = _gs()
         st = gs.read_cached()
-        if st.state not in ("ok", "degraded"):
+        if st.state not in ("ok", "degraded", "recovering"):
             return
         prev = _GH_SAMPLES[-1][1] if _GH_SAMPLES else None
         when = st.since if st.since is not None else time.time()
         _GH_SAMPLES.append((when, st.state, [c["name"] for c in st.components]))
-        if st.state == "degraded" and prev != "degraded" and not as_json:
+        if st.state in ("degraded", "recovering") and prev != st.state and not as_json:
             print("  %s" % gs.line(st))
     except Exception:  # noqa: BLE001 -- a status sample never changes or breaks a wait
         return

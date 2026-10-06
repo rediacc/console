@@ -67,6 +67,8 @@ COPILOT_ONLY = summary(
     ],
     indicator="major",
 )
+# 2026-10-05 ~22:00Z: every component back to operational, the incident still open.
+RECOVERING = summary(incidents=[ACTIONS_INCIDENT], indicator="minor")
 MALFORMED = "<html>captive portal</html>"
 
 
@@ -591,4 +593,93 @@ def test_the_hook_runs_as_a_real_process_loading_the_module_by_file(tmp_path):
     assert done.returncode == 0, done.stderr
     assert json.loads(done.stdout)["hookSpecificOutput"]["additionalContext"].startswith(
         "GITHUB: Actions degraded"
+    )
+
+
+# ---------------------------------------------------------------------------- recovering
+
+
+def test_operational_components_with_an_open_incident_read_recovering(cache):
+    st = gs.read(now=Clock(), fetch=Fetch(RECOVERING), path=cache)
+    assert st.state == "recovering"
+    assert st.components == []
+    assert gs.exit_code(st) == gs.EXIT_RECOVERING
+
+
+def test_recovering_line_names_the_incident_and_suggests_no_wait(cache):
+    st = gs.read(now=Clock(), fetch=Fetch(RECOVERING), path=cache)
+    text = gs.line(st)
+    assert text == (
+        "GITHUB: components operational again, incident 'Incident with Actions' still open "
+        "(investigating): We are investigating delays in assigning GitHub-hosted runners. "
+        "(githubstatus.com, 0m old)"
+    )
+    assert "--wait-recovery" not in text
+
+
+@pytest.mark.usefixtures("cache")
+def test_recovering_cli_prints_the_line_and_exits_4(monkeypatch, capsys):
+    monkeypatch.setattr(gs, "fetch_summary", Fetch(RECOVERING))
+    assert gs.main(["--line"]) == gs.EXIT_RECOVERING == 4
+    assert capsys.readouterr().out.startswith("GITHUB: components operational again")
+
+
+def test_wait_recovery_exits_4_on_component_recovery_with_the_incident_open(cache):
+    clock = Clock()
+    lines: list[str] = []
+
+    def sleep(s):
+        clock.t += s
+
+    rc = gs.wait_recovery(
+        3600,
+        now=clock,
+        sleep=sleep,
+        fetch=Fetch(DEGRADED, RECOVERING),
+        path=cache,
+        out=lines.append,
+    )
+    assert rc == gs.EXIT_RECOVERING
+    assert len(lines) == 1
+    assert lines[0].startswith("GITHUB: components recovered, incident still open -- ")
+    assert "'Incident with Actions' still open (investigating)" in lines[0]
+    assert clock.t - T0 == gs.WAIT_REFRESH_S, "it must not wait for the incident to close"
+
+
+def test_recovering_then_closed_announces_the_recovery_once(cache):
+    clock = Clock()
+    gs.read(now=clock, fetch=Fetch(DEGRADED), path=cache)
+    clock.t += gs.MAX_AGE_S
+    gs.read(now=clock, fetch=Fetch(RECOVERING), path=cache)
+    clock.t += gs.MAX_AGE_S
+    gs.read(now=clock, fetch=Fetch(OK), path=cache)
+    note = gs.surface(session="s", now=clock, path=cache)
+    assert note.startswith("GITHUB RECOVERED: Actions operational again")
+    assert "'Incident with Actions' resolved" in note
+    assert gs.surface(session="s", now=clock, path=cache) == ""
+
+
+def test_recovering_surfaces_print_the_softer_line_and_never_block(
+    cache, note_hook, trace, wl_checks
+):
+    gs.read(fetch=Fetch(RECOVERING), path=cache)
+    want = "GITHUB: components operational again, incident 'Incident with Actions' still open"
+    rc, out = _run_hook(note_hook, [], _post("python3 .ci/scripts/ci/ci-trace.py --wait"))
+    assert rc == 0
+    assert json.loads(out)["hookSpecificOutput"]["additionalContext"].startswith(want)
+    rc, out = _run_hook(note_hook, ["--session-start"], _post(""))
+    assert rc == 0
+    assert json.loads(out)["hookSpecificOutput"]["hookEventName"] == "SessionStart"
+    assert trace._github_note().startswith(want)
+    assert trace._github_note(green=True) == ""
+    assert wl_checks.github_status_line("s1").startswith(want)
+
+
+def test_ci_trace_wait_records_a_recovering_sample(cache, trace, monkeypatch, capsys):
+    gs.read(fetch=Fetch(RECOVERING), path=cache)
+    monkeypatch.setattr(trace, "_GH_SAMPLES", [])
+    trace._gh_tick(as_json=False)
+    assert "GITHUB: components operational again" in capsys.readouterr().out
+    assert "recovering (incident still open) throughout this wait" in gs.transitions_text(
+        trace._GH_SAMPLES
     )
