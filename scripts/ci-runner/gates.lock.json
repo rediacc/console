@@ -5494,6 +5494,8 @@
     "paths": [
       ".ci/rediacc_ci/**",
       ".ci/scripts/**",
+      ".claude/hooks/**",
+      ".claude/rediacc_hooks/**",
       ".ci/config/gh-retry-reads-baseline.json"
     ],
     "pathsOrigin": "declared",

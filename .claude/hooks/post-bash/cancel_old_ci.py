@@ -20,13 +20,15 @@ THE TRAILING SPACE IN `BRANCHES` IS REAL AND IS PRINTED. The twin ends the pipel
 import pathlib
 import subprocess
 import sys
+import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
-from rediacc_hooks import hookio
+from rediacc_hooks import hookio, syspath
 from rediacc_hooks.wellknown import GH_REPO
 
 REPO = GH_REPO
+NAME = "cancel_old_ci"
 
 CANCELLED = (
     "⚡ Auto-cancelled %d old CI run(s) across: %s. The new push triggers a fresh CI run. "
@@ -54,6 +56,47 @@ def _capture(argv):
     except OSError:
         return ""
     return proc.stdout.rstrip("\n")
+
+
+# A HOOK'S RETRY IS BOUNDED TO ITS BUDGET (agent/plans/PLAN-gh-retry.md G13): two attempts and one 2 s pause, the bound the Stop hook's reads use (wl_ci.GH_READ_ATTEMPTS), never gh_retry's default 5 s then 15 s. Only READS go through `_gh_read`; a write stays one-shot.
+GH_READ_ATTEMPTS = 2
+GH_READ_PAUSE_S = 2
+
+
+def _gh_retry():
+    """`rediacc_ci.core.gh_retry`, the one transient-retry policy, with `.ci` put on sys.path through the canonical `.claude` hop (`rediacc_hooks.syspath`) and taken off again in `finally`, the scoped shape block_unverified_push._policy_rel uses."""
+    cipath = str(syspath.CLAUDE_DIR.parent / ".ci")
+    inserted = syspath.on_sys_path(cipath)
+    try:
+        from rediacc_ci.core import gh_retry  # noqa: PLC0415 - deliberately late, see above
+    finally:
+        if inserted and cipath in sys.path:
+            sys.path.remove(cipath)
+    return gh_retry
+
+
+def _gh_read(*args):
+    """(rc, stdout with trailing newlines stripped) of the READ `gh <args>`, a TRANSIENT failure (gh_retry.is_transient on its stderr) retried within GH_READ_ATTEMPTS. A 4xx or any other failure comes back at once. rc 127 when gh cannot run or gh_retry cannot be imported, which is said on stderr rather than read as an answer."""
+    try:
+        retry = _gh_retry()
+    except ImportError as exc:
+        sys.stderr.write("%s: rediacc_ci.core.gh_retry could not be imported (%s)\n" % (NAME, exc))
+        return 127, ""
+
+    def once():
+        try:
+            proc = subprocess.run(["gh", *args], capture_output=True, text=True, check=False)
+        except OSError as exc:
+            return 127, "", str(exc)
+        return proc.returncode, proc.stdout.rstrip("\n"), proc.stderr
+
+    rc, out, _err = retry.retry_transient(
+        once,
+        lambda r: None if r[0] == 0 else (r[2] or "failed"),
+        attempts=GH_READ_ATTEMPTS,
+        sleep=lambda _scheduled: time.sleep(GH_READ_PAUSE_S),
+    )
+    return rc, out
 
 
 def _sort_u(lines):
@@ -130,22 +173,20 @@ def main():
         if tip == "":
             continue
         # NOTE: `gh ... --jq` does NOT accept jq's `--arg`, so the tip is interpolated into the filter. The tip is a hex sha from rev-parse, so there is nothing to quote-escape.
-        runs = _capture(
-            [
-                "gh",
-                "run",
-                "list",
-                "--repo",
-                REPO,
-                "--branch",
-                name,
-                "--json",
-                "databaseId,status,headSha",
-                "--jq",
-                '.[] | select(.status == "in_progress" or .status == "queued") '
-                '| select(.headSha != "%s") | .databaseId' % tip,
-            ]
-        )
+        # A READ, retried on a transient fault: a 5xx here used to leave every superseded run burning a runner until it finished. A failed read is still "nothing to cancel", which can only leave a run running, never cancel a live one.
+        runs = _gh_read(
+            "run",
+            "list",
+            "--repo",
+            REPO,
+            "--branch",
+            name,
+            "--json",
+            "databaseId,status,headSha",
+            "--jq",
+            '.[] | select(.status == "in_progress" or .status == "queued") '
+            '| select(.headSha != "%s") | .databaseId' % tip,
+        )[1]
         if runs == "":
             continue
         for rid in runs.split():
