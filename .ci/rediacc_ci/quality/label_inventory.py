@@ -185,6 +185,7 @@ import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
+from rediacc_ci.core import gh_retry
 
 LABELS_FILE_ENV = "LABEL_INVENTORY_LABELS_FILE"
 LIVE_FILE_ENV = "LABEL_INVENTORY_LIVE_FILE"
@@ -348,15 +349,10 @@ def probe_label(name: str, env: dict[str, str] | None = None) -> int:
         return 2
     if _which("gh") is None:
         return 2
-    proc = subprocess.run(
-        ["gh", "api", "repos/{owner}/{repo}/labels/%s" % url_encode(name)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if proc.returncode == 0:
+    result = gh_retry.gh(["api", "repos/{owner}/{repo}/labels/%s" % url_encode(name)])
+    if result.ok:
         return 0
-    combined = proc.stdout + proc.stderr
+    combined = result.stdout_raw + result.stderr
     if "HTTP 404" in combined or "Not Found" in combined:
         return 1
     return 2
@@ -443,24 +439,19 @@ def main(argv: list[str] | None = None) -> int:
                 "nothing and refuses to pass blind."
             )
             return 1
-        proc = subprocess.run(
-            ["gh", "api", "repos/{owner}/{repo}/labels", "--paginate", "--jq", ".[].name"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if proc.returncode != 0:
+        proc = gh_retry.gh(["api", "repos/{owner}/{repo}/labels", "--paginate", "--jq", ".[].name"])
+        if not proc.ok:
             # `2>&1` in the twin: the error text becomes the value.
             log.error(
                 "could not read the live label list from GitHub: %s"
-                % (proc.stdout + proc.stderr).rstrip("\n")
+                % (proc.stdout_raw + proc.stderr).rstrip("\n")
             )
             log.error(
                 "This gate refuses to pass blind. Authenticate (gh auth login / GH_TOKEN) "
                 "and re-run."
             )
             return 1
-        live = [TRAILING_SPACE.sub("", line) for line in proc.stdout.split("\n")]
+        live = [TRAILING_SPACE.sub("", line) for line in proc.stdout_raw.split("\n")]
         live = [name for name in live if name != ""]
         live_source = "GitHub API"
 
@@ -557,23 +548,18 @@ def main(argv: list[str] | None = None) -> int:
         except OSError:
             live_json = ""
     elif live_source == "GitHub API":
-        proc = subprocess.run(
-            ["gh", "api", "repos/{owner}/{repo}/labels", "--paginate"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if proc.returncode != 0:
+        proc = gh_retry.gh(["api", "repos/{owner}/{repo}/labels", "--paginate"])
+        if not proc.ok:
             log.error(
                 "could not read the live label list (with descriptions/colours) from GitHub: %s"
-                % (proc.stdout + proc.stderr).rstrip("\n")
+                % (proc.stdout_raw + proc.stderr).rstrip("\n")
             )
             log.error(
                 "This gate refuses to pass blind on the drift comparison. Authenticate "
                 "(gh auth login / GH_TOKEN) and re-run."
             )
             return 1
-        live_json = proc.stdout
+        live_json = proc.stdout_raw
 
     if live_json and labels_file == DEFAULT_LABELS_FILE:
         try:

@@ -35,6 +35,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from rediacc_ci.ci import cancel_older_runs as port
+from rediacc_ci.core import gh_retry as _gh_retry
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import frozen
 from rediacc_ci.well_known import GH_REPO
@@ -713,3 +714,46 @@ def test_a_planted_widening_of_the_select_is_caught(tmp_path: pathlib.Path) -> N
     compare(tmp_path / "good", name)
     with open(source, encoding="utf-8") as fh:
         assert fh.read() == original
+
+
+# ---- PLAN-gh-retry G7: the first read (the current run) retries a transient fault ----
+
+
+def _first_read(monkeypatch, *outcomes):
+    calls: list[list[str]] = []
+    naps: list[float] = []
+
+    def fake_capture(args, **_kw):
+        calls.append(list(args))
+        return outcomes[min(len(calls), len(outcomes)) - 1]
+
+    monkeypatch.setattr(port, "gh_capture", fake_capture)
+    monkeypatch.setattr(_gh_retry.time, "sleep", naps.append)
+    monkeypatch.setenv("GITHUB_RUN_ID", "1")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
+    monkeypatch.setenv("GH_TOKEN", "t")
+    return calls, naps
+
+
+def test_first_read_retries_a_502_then_proceeds(monkeypatch, capsys):
+    calls, naps = _first_read(monkeypatch, (1, "gh: Server Error (HTTP 502)"), (0, "{}"))
+    assert port.main([]) == 0
+    assert len(calls) == 2
+    assert naps == [5.0]
+    err = capsys.readouterr()
+    assert "Could not parse run info" in err.out + err.err
+
+
+def test_first_read_persistent_502_still_skips_but_names_the_fault(monkeypatch, capsys):
+    calls, _naps = _first_read(monkeypatch, (1, "gh: Server Error (HTTP 502)"))
+    assert port.main([]) == 0
+    assert len(calls) == 3
+    err = capsys.readouterr()
+    assert "Failed to fetch current run info: gh: Server Error (HTTP 502)" in err.out + err.err
+
+
+def test_first_read_404_is_not_retried(monkeypatch):
+    calls, naps = _first_read(monkeypatch, (1, "gh: Not Found (HTTP 404)"))
+    assert port.main([]) == 0
+    assert len(calls) == 1
+    assert naps == []

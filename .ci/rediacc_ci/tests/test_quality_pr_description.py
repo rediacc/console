@@ -11,6 +11,8 @@ THE 100-COMMIT REGRESSION GUARD BELOW IS NOT A DIFFERENTIAL and stays: it reads 
 
 import pathlib
 
+from rediacc_ci.core import gh_retry as _gh_retry
+from rediacc_ci.core import ghx as _ghx
 from rediacc_ci.quality import pr_description as gate
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import GH_REPO
@@ -69,3 +71,59 @@ def test_selftest_exits_zero_and_prints_a_count():
     assert code == 0, err
     assert "control(s) passed" in out
     assert int(out.split(" control(s)")[0].strip()) >= 14
+
+
+# ---- PLAN-gh-retry G6/G7: the read rides core/gh_retry (transient faults only) ----
+
+SERVER_ERROR = "gh: Server Error (HTTP 502)"
+NOT_FOUND = "gh: Not Found (HTTP 404)"
+
+
+class _ScriptedGh:
+    """Stands in for ghx.gh: answers the scripted (rc, stdout, stderr) in order, repeating the last."""
+
+    def __init__(self, *outcomes):
+        self.outcomes = list(outcomes)
+        self.calls = []
+
+    def __call__(self, args, **kw):
+        self.calls.append((list(args), kw))
+        rc, out, err = self.outcomes[min(len(self.calls), len(self.outcomes)) - 1]
+        return _ghx.GhResult(["gh", *args], rc, out, err)
+
+
+def _script(monkeypatch, *outcomes):
+    scripted = _ScriptedGh(*outcomes)
+    naps: list[float] = []
+    monkeypatch.setattr(_ghx, "gh", scripted)
+    monkeypatch.setattr(_gh_retry.time, "sleep", naps.append)
+    return scripted, naps
+
+
+def test_gh_read_retries_a_502_then_succeeds(monkeypatch):
+    scripted, naps = _script(monkeypatch, (1, "", SERVER_ERROR), (0, "body\n", ""))
+    assert gate._gh_read(["api", "x"]) == (0, "body", "")
+    assert len(scripted.calls) == 2
+    assert naps == [5.0]
+
+
+def test_a_persistent_502_still_fails_the_gate_and_says_why(monkeypatch, capsys):
+    scripted, _naps = _script(monkeypatch, (1, "", SERVER_ERROR))
+    monkeypatch.setenv("PR_NUMBER", "7")
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
+    assert gate.main([]) == 1
+    assert len(scripted.calls) == 3
+    captured = capsys.readouterr()
+    assert "Could not fetch PR data" in captured.out + captured.err
+    assert "HTTP 502" in captured.out + captured.err
+
+
+def test_a_404_is_not_retried_and_keeps_its_verdict(monkeypatch):
+    scripted, naps = _script(monkeypatch, (1, "", NOT_FOUND))
+    monkeypatch.setenv("PR_NUMBER", "7")
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
+    assert gate.main([]) == 1
+    assert len(scripted.calls) == 1
+    assert naps == []
