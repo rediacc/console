@@ -504,7 +504,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
 | `agent/plans/PLAN-env-to-bitwarden-v2.md` | draft | 508 | 1 | 9 | 52575 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
-| `agent/plans/PLAN-fast-loop.md` | approved | 108 | 1 | 17 | 16481 |
+| `agent/plans/PLAN-fast-loop.md` | approved | 110 | 2 | 17 | 17042 |
 | `agent/plans/PLAN-fix-ci-contention-aware-timeouts.md` | compacted | 38 | 0 | 0 | 3425 |
 | `agent/plans/PLAN-fix-german-translation-artifacts.md` | compacted | 50 | 0 | 0 | 3117 |
 | `agent/plans/PLAN-fix-in-session-rule.md` | compacted | 55 | 0 | 0 | 3577 |

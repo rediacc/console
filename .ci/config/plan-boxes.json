@@ -669,10 +669,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
+      "open": 2,
       "done": 17,
       "open_sigs": [
-        "642d3f4e"
+        "642d3f4e",
+        "c022e384"
       ],
       "done_sigs": [
         "0374ed48",
