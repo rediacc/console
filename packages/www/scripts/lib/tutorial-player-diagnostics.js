@@ -193,7 +193,7 @@ function pollPlayerReady(evalInPage, budgetMs) {
  * dev-server noise; `true` means the document survived, so a missing or wrong player is a
  * product defect. Returns whether any `false` and any `true` were seen.
  */
-export function documentStampEvidence(details) {
+function documentStampEvidence(details) {
   const seen = { reloaded: false, sameDocument: false };
   const walk = (node) => {
     if (node === null || typeof node !== 'object') return;
@@ -231,4 +231,22 @@ export function runScenarioRetryingReload({ name, run, failures, log }) {
     log(`⚠ RETRY of scenario "${name}" passed after one reload retry`);
   }
   return 1;
+}
+
+/**
+ * The test seam behind TUTORIAL_PLAYER_GATE_PLANT_RELOADS=N (off by default): each call reloads the
+ * page while N plants remain, so a run proves the reload retry absorbs one reload and fails on two.
+ */
+export function makeReloadPlant(
+  { evalInPage, wait, log },
+  count = Number(process.env.TUTORIAL_PLAYER_GATE_PLANT_RELOADS ?? 0)
+) {
+  let left = count;
+  return () => {
+    if (left <= 0) return;
+    left -= 1;
+    log('→ PLANTED reload (TUTORIAL_PLAYER_GATE_PLANT_RELOADS) in the seek scenario');
+    evalInPage('(() => { setTimeout(() => location.reload(), 0); })()');
+    wait(1500);
+  };
 }
