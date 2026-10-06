@@ -12,6 +12,7 @@ import json
 import re
 import shutil
 import subprocess
+import time
 
 import pytest
 from rediacc_ci import paths
@@ -188,12 +189,12 @@ GREEN = [
 ]
 
 
-def plant_cistate(worklist, session, contexts, sha="a" * 40):
+def plant_cistate(worklist, session, contexts, sha="a" * 40, at=None):
     wl_ci.cistate_path(worklist, session).write_text(
         json.dumps(
             {
                 "sha": sha,
-                "at": 1.0,
+                "at": time.time() if at is None else at,
                 "state": "ok",
                 "info": {"contexts": contexts, "sha": sha, "pr": 5},
                 "steps": {},
@@ -228,6 +229,16 @@ def test_ci_hold_is_silent_on_red_green_and_no_local_commits(held):
     plant_cistate(worklist, session, RUNNING)
     git(root, "push", "-q", "origin", "topic")
     assert L.ci_hold(root, worklist, session) is None, "no local commit, nothing to hold"
+
+
+def test_ci_hold_ignores_a_cache_older_than_its_ceiling(held):
+    """2026-10-06: with the Stop hook off the cache was never rewritten, and a push note read "Console CI in progress on 3f9e33bb" for a run that had finished red hours earlier."""
+    root, worklist, session = held
+    plant_cistate(worklist, session, RUNNING, at=time.time() - L.CI_CACHE_MAX_AGE_S - 60)
+    assert L.ci_hold(root, worklist, session) is None
+    # Control: the same read inside the ceiling still holds.
+    plant_cistate(worklist, session, RUNNING, at=time.time() - 60)
+    assert L.ci_hold(root, worklist, session) == ("aaaaaaaa", 1)
 
 
 def test_ci_hold_is_silent_without_a_cache_or_on_a_damaged_one(held):

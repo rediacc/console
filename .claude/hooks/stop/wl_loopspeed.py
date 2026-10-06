@@ -13,6 +13,7 @@ import json
 import pathlib
 import re
 import subprocess
+import time
 
 RECEIPT_REL = ".ci/cache/prepush-receipt.json"
 
@@ -181,8 +182,12 @@ def ci_hold(root, worklist, session_id):
     return state, ahead
 
 
-def pending_run(worklist, session_id):
-    """The cached head's short sha when its run is in progress and not red, else None. No git and no network."""
+#: How old the cached PR CI read may be before the hold note ignores it. The Stop hook rewrites the cache every stop; with the hook off (or a long quiet stretch) it goes stale, and on 2026-10-06 a push note read "Console CI in progress on 3f9e33bb" for a run that had finished red hours earlier.
+CI_CACHE_MAX_AGE_S = 20 * 60
+
+
+def pending_run(worklist, session_id, now=None):
+    """The cached head's short sha when its run is in progress and not red, and the read is younger than CI_CACHE_MAX_AGE_S; else None. No git and no network."""
     import wl_ci  # noqa: PLC0415 -- the Stop modules are importable only from the hook's own directory
 
     try:
@@ -190,6 +195,10 @@ def pending_run(worklist, session_id):
     except (OSError, ValueError):
         return None
     if not isinstance(cache, dict) or cache.get("state") != "ok":
+        return None
+    at = cache.get("at")
+    now = time.time() if now is None else now
+    if not isinstance(at, (int, float)) or now - at > CI_CACHE_MAX_AGE_S:
         return None
     info, sha = cache.get("info"), cache.get("sha")
     if not isinstance(info, dict) or not isinstance(sha, str):
