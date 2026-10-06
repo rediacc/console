@@ -214,7 +214,8 @@ def run_progress(run_id, jobs, p90=None, now=None):
     for j in jobs or []:
         if j.get("conclusion") or j.get("status") != "in_progress":
             continue
-        began = D._epoch(j.get("started_at"))
+        # BOTH SPELLINGS: the REST jobs endpoint says `started_at`, `gh run view --json jobs` (the `--run` path) says `startedAt`, and reading one left every elapsed time on that path `-`.
+        began = D._epoch(j.get("started_at") or j.get("startedAt"))
         pv = p90.get(j.get("name") or "")
         running.append(
             {
@@ -334,7 +335,12 @@ def _trace_run(root, run_id, wait, timeout, as_json):
                 _gh_transitions(as_json)
             return EXIT_GREEN
         if not wait:
-            _no_verdict("run %s still %s" % (run_id, status))
+            # THE PROGRESS RIDES THE NO-VERDICT LINE. GitHub keeps a run `queued` while any job waits for a runner, so on PR #597's run 37465283674 (2026-10-06) this printed "still queued" with 52 jobs passed and 19 running, which reads as a run that never started.
+            _no_verdict(
+                "run %s still %s; %s" % (run_id, status, progress_text(run_progress(run_id, jobs)))
+                if jobs
+                else "run %s still %s" % (run_id, status)
+            )
             return EXIT_NO_VERDICT
         if time.time() > deadline:
             _no_verdict("run %s still %s after %ds" % (run_id, status, timeout))

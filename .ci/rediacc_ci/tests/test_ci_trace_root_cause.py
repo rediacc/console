@@ -323,3 +323,29 @@ def test_running_verdict_without_readable_jobs_keeps_the_context_count(ct, monke
     assert payload["verdict"] == "running"
     assert "context(s) still in flight" in payload["detail"]
     assert "context(s) still running" in out
+
+
+def test_run_still_queued_names_its_progress_in_the_gh_run_view_shape(ct, monkeypatch):
+    """GitHub keeps a run `queued` while a job waits for a runner. `--run` read PR #597's run 37465283674 as "still queued" with 52 jobs passed and 19 running, and `gh run view` spells the start `startedAt`, which left every elapsed time `-`."""
+    began = datetime.datetime.fromtimestamp(time.time() - 305, datetime.UTC).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+    jobs = [
+        {"name": "Quality / Code", "status": "completed", "conclusion": "success"},
+        {"name": "Stage Artifacts", "status": "in_progress", "conclusion": "", "startedAt": began},
+        {"name": "CI Complete", "status": "queued", "conclusion": ""},
+    ]
+    monkeypatch.setattr(ct, "_run_snapshot", lambda _root, _rid: ("queued", "", jobs, "Console CI"))
+    rc, out, err = _capture(ct._trace_run, ct.REPO_ROOT, MAIN_RUN, False, 1, False)
+    assert rc == ct.EXIT_NO_VERDICT
+    assert out == ""
+    assert (
+        "run %s still queued; run %s: 1 of 3 job(s) done; still running: "
+        % (
+            MAIN_RUN,
+            MAIN_RUN,
+        )
+        in err
+    )
+    assert re.search(r"Stage Artifacts 5m(?:0\d|1\d)s", err), err
+    assert "1 not started" in err
