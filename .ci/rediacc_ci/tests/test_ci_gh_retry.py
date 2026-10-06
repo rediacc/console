@@ -5,8 +5,7 @@ from __future__ import annotations
 import pytest
 
 from rediacc_ci.ci import budget_report as br
-from rediacc_ci.ci import gh_retry
-from rediacc_ci.core import ghx
+from rediacc_ci.core import gh_retry, ghx
 
 SERVER_ERROR = "gh: Server Error (HTTP 502)"
 NOT_FOUND = "gh: Not Found (HTTP 404)"
@@ -35,7 +34,15 @@ def test_a_502_then_success_passes_with_one_backoff():
     assert result == {"jobs": []}
     assert len(runner.calls) == 2
     assert slept == [gh_retry.DELAY_S]
-    assert all(kw == {"attempts": 1} for _a, kw in runner.calls)
+    assert all(kw == {"env": None, "attempts": 1} for _a, kw in runner.calls)
+
+
+def test_env_reaches_gh_unchanged_on_every_attempt():
+    """review_budget passes a token through `env`; each retried call must carry it."""
+    runner = _Runner((1, "", SERVER_ERROR), (0, "{}", ""))
+    env = {"GH_TOKEN": "t"}
+    gh_retry.gh(["api", "x"], env=env, runner=runner, sleep=lambda _s: None)
+    assert [kw["env"] for _a, kw in runner.calls] == [env, env]
 
 
 def test_three_502s_fail_naming_the_error():

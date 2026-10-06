@@ -196,7 +196,8 @@ def test_report_count_counts_github_actions_reports_only(monkeypatch):
     assert rb.report_count(42, repo="o/r") == 1
     args, kwargs = fake.calls[0]
     assert args == ["api", "repos/o/r/issues/42/comments", "--paginate"]
-    assert kwargs["attempts"] == 3
+    # core.gh_retry owns the retry (5xx and connection faults only) and calls ghx once per attempt.
+    assert kwargs["attempts"] == 1
 
 
 def test_attempt_states_and_spent_count(monkeypatch):

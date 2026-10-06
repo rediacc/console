@@ -14,9 +14,9 @@ import types
 import pytest
 
 from rediacc_ci import paths
-from rediacc_ci.ci import budget_report, gh_retry
+from rediacc_ci.ci import budget_report
 from rediacc_ci.ci import publish_ci_verdict as pub
-from rediacc_ci.core import ghx
+from rediacc_ci.core import gh_retry, ghx
 from rediacc_ci.well_known import GH_REPO
 
 # Built at runtime so the file itself holds no token-shaped string (check:ci-tracked-credentials scans tracked text).

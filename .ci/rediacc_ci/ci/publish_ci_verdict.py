@@ -32,8 +32,7 @@ import sys
 from typing import TYPE_CHECKING, Any
 
 from rediacc_ci import log
-from rediacc_ci.ci import gh_retry
-from rediacc_ci.core import ghx
+from rediacc_ci.core import gh_retry, ghx
 from rediacc_ci.well_known import GH_REPO
 
 if TYPE_CHECKING:

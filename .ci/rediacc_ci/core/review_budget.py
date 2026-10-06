@@ -9,7 +9,7 @@ THE NUMBERS, pinned as numbers by `test_core_review_budget.py`:
   * an unreadable or non-numeric line count is 0, the smallest bucket. That is the conservative direction for the DENOMINATOR: it spends fewer passes, never more.
   * a head may be attempted at most 3 times; an infrastructure-class death (`error_max_turns`, `error_during_execution`) earns 2 free re-attempts before it is charged.
 
-THE NUMERATOR NEVER FAILS TO ZERO. A rate-limited read of the posted reports or the attempt ledger that answered 0 would mean "the cap was never reached", and the gate would dispatch another full review at full price. `report_count`, `attempt_states` and `spent_attempt_count` therefore raise `core.ghx.GhError` after three attempts; only `diff_loc` offers a fallback, and only when the
+THE NUMERATOR NEVER FAILS TO ZERO. A rate-limited read of the posted reports or the attempt ledger that answered 0 would mean "the cap was never reached", and the gate would dispatch another full review at full price. `report_count`, `attempt_states` and `spent_attempt_count` therefore raise `core.ghx.GhError` once `core.gh_retry` gives up (a 5xx or connection fault is retried three times on a 5 s and 15 s backoff; a rate limit or any other 4xx raises at once); only `diff_loc` offers a fallback, and only when the
 caller passes `on_error=DIFF_LOC_FAILS_TO_ZERO` visibly at its call site.
 
 THE ATTEMPT LEDGER. A review pass that produced no report still spent turns and tokens, so `--mark` records it as an attempt comment on the PR: `<!-- claude-review-attempt: <sha40> -->`, then `attempts: <n>` and `class: <subtype>` lines. One comment per head, upserted with its count. `parse_attempt_states` reads the bodies back:
@@ -27,7 +27,7 @@ from __future__ import annotations
 import os
 import re
 
-from rediacc_ci.core import ghx
+from rediacc_ci.core import gh_retry, ghx
 
 # (upper bound inclusive, passes). `None` is the catch-all top tier. Order is the contract: the first tier whose bound the value fits wins.
 CAP_TIERS: tuple[tuple[int | None, int], ...] = ((10000, 3), (50000, 5), (None, 7))
@@ -188,10 +188,9 @@ def _strip_ws_int(value: str | int) -> int:
 def report_count(pr: str | int, *, repo: str | None = None, env: dict | None = None) -> int:
     """Finished review reports on the PR: github-actions comments whose body starts with `REPORT_NEEDLE`. Raises `ghx.GhError` when the comments cannot be read."""
     slug = _repo_slug(repo, env)
-    comments = ghx.gh(
+    comments = gh_retry.gh(
         ["api", "repos/%s/issues/%s/comments" % (slug, pr), "--paginate"],
         env=env,
-        attempts=3,
     ).json_list()
     count = 0
     for comment in comments:
@@ -209,10 +208,9 @@ def attempt_states(
 ) -> list[AttemptState]:
     """The attempt ledger: every comment whose body starts with `prefix`, parsed by `parse_attempt_states`. Raises `ghx.GhError` when unreadable."""
     slug = _repo_slug(repo, env)
-    comments = ghx.gh(
+    comments = gh_retry.gh(
         ["api", "repos/%s/issues/%s/comments" % (slug, pr), "--paginate"],
         env=env,
-        attempts=3,
     ).json_list()
     chunks: list[str] = []
     for comment in comments:
@@ -245,7 +243,7 @@ def diff_loc(
     """
     slug = _repo_slug(repo, env)
     try:
-        raw = ghx.gh(
+        raw = gh_retry.gh(
             [
                 "pr",
                 "view",
@@ -258,7 +256,6 @@ def diff_loc(
                 ".additions + .deletions",
             ],
             env=env,
-            attempts=3,
         ).value("PR diff size")
     except ghx.GhError:
         if on_error is None:

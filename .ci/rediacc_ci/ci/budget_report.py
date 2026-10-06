@@ -109,8 +109,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
 
 from rediacc_ci import log, paths
-from rediacc_ci.ci import gh_retry
-from rediacc_ci.core import ghx
+from rediacc_ci.core import gh_retry, ghx
 from rediacc_ci.well_known import GH_REPO
 
 DEFAULT_REPO = GH_REPO
