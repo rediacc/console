@@ -386,3 +386,20 @@ def test_findings_fence_reader():
     # LAST opener wins, matching the producer's scanner.
     assert gate.findings_fence_is_empty(ONE_FENCE + EMPTY_FENCE) is True
     assert gate.findings_fence_is_empty(EMPTY_FENCE + ONE_FENCE) is False
+
+
+# The recorded body of PR #595 comment 6004950311: the backticks of both fence lines carry a literal backslash.
+ESCAPED_EMPTY_BODY = (
+    "**Claude finished the automated review of 4d3b950**\n\n---\n\n## Review verdict: approve\n\n"
+    "**New findings:** none.\n\n<details>\n<summary>Machine-readable findings</summary>\n\n"
+    "\\`\\`\\`json:review-findings\n[]\n\\`\\`\\`\n\n</details>"
+)
+
+
+def test_findings_fence_reader_accepts_backslash_escaped_backticks():
+    assert "\\`\\`\\`json:review-findings" in ESCAPED_EMPTY_BODY
+    assert gate.findings_fence_is_empty(ESCAPED_EMPTY_BODY) is True
+    assert gate.findings_fence_is_empty(ESCAPED_EMPTY_BODY.replace("[]", "[1]")) is False
+    assert gate.findings_fence_is_empty(ESCAPED_EMPTY_BODY.replace("[]", "[")) is False
+    comment = {"id": 9, "user": BOT, "created_at": "t", "body": ESCAPED_EMPTY_BODY}
+    assert gate.summary_verdict([comment])[0] == "empty"
