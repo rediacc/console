@@ -32,12 +32,13 @@
  * ---- end gate ----
  */
 
-import { execSync, spawnSync } from 'node:child_process';
+import { exec, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import https from 'node:https';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { WK_GH_ORIGIN } from '../../packages/shared/src/config/well-known.generated.js';
 import {
   parseBlockeredList,
@@ -415,6 +416,8 @@ function normalizeOutdated(
  */
 class DepsProbeError extends Error {}
 
+const execAsync = promisify(exec);
+
 /**
  * Run `npm outdated --json` and return its parsed report, or THROW.
  *
@@ -437,7 +440,10 @@ class DepsProbeError extends Error {}
  * one when something is, so the exit code alone never decides anything here.
  * Anything else -- no stdout, unparseable stdout, a non-object -- throws.
  */
-function runNpmOutdated(cwd: string, extraArgs = ''): Record<string, OutdatedPackageInfo> {
+async function runNpmOutdated(
+  cwd: string,
+  extraArgs = ''
+): Promise<Record<string, OutdatedPackageInfo>> {
   const command = `npm outdated --json${extraArgs ? ` ${extraArgs}` : ''}`;
   let stdout = '';
   let stderr = '';
@@ -456,13 +462,14 @@ function runNpmOutdated(cwd: string, extraArgs = ''): Record<string, OutdatedPac
       });
       throw new Error('simulated npm failure');
     }
-    stdout = forced
-      ? execSync('sh -c \'echo "simulated probe failure" >&2; exit 1\'', {
-          cwd,
-          encoding: 'utf-8',
-          stdio: ['pipe', 'pipe', 'pipe'],
-        })
-      : execSync(command, { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+    // Async so the four manifests' probes (each about a second or three of npm talking to the registry) overlap instead of queueing; the failure contract is unchanged, a rejected exec carries the same stdout and stderr as the thrown execSync did.
+    stdout = (
+      await execAsync(forced ? 'sh -c \'echo "simulated probe failure" >&2; exit 1\'' : command, {
+        cwd,
+        encoding: 'utf-8',
+        maxBuffer: 64 * 1024 * 1024,
+      })
+    ).stdout;
   } catch (error) {
     const execError = error as { stdout?: string; stderr?: string };
     if (!forcedErrorJson) {
@@ -669,7 +676,7 @@ async function judgeBlindEdge(
  * The root is always installed where the gate runs (CI's setup-workspace restores or installs it, and tsx itself comes from it), so an uninstalled root dependency is a tree that was never set up and is refused by the caller. A private manifest is NOT installed in CI (quality-content runs setup-workspace without `account: 'true'`), so its uninstalled dependencies are judged here from the lockfile and the registry instead, which is what makes CI and a developer's installed tree reach the same verdict.
  */
 async function probeManifest(dir: string, isPrivate: boolean): Promise<ManifestResult> {
-  const raw = runNpmOutdated(dir) as RawOutdated;
+  const raw = (await runNpmOutdated(dir)) as RawOutdated;
   const lock = readLockPackages(dir);
   const { entries, unknown } = normalizeOutdated(raw, dir, lock);
   const name = isPrivate ? path.relative(CONSOLE_ROOT, dir).split(path.sep).join('/') : '';
@@ -717,56 +724,26 @@ async function fetchChangelogUrl(packageName: string): Promise<string | null> {
     return changelogCache.get(packageName) ?? null;
   }
 
-  return new Promise((resolve) => {
-    const url = `https://registry.npmjs.org/${encodeURIComponent(packageName)}`;
+  // The same registry document the release-age and clock reads already fetched: one download per package per run, shared through packumentCache.
+  const doc = await fetchPackument(packageName);
+  const repo = doc?.repository;
+  const repoUrl = (typeof repo === 'string' ? repo : repo?.url) ?? '';
 
-    const req = https.get(url, { timeout: 5000 }, (res) => {
-      let data = '';
-
-      res.on('data', (chunk: Buffer) => {
-        data += chunk.toString();
-      });
-
-      res.on('end', () => {
-        try {
-          const json = JSON.parse(data) as { repository?: { url?: string } };
-          const repoUrl = json.repository?.url ?? '';
-
-          // Transform git URL to GitHub releases URL Examples: git+https://github.com/owner/repo.git -> https://github.com/owner/repo/releases git://github.com/owner/repo.git -> https://github.com/owner/repo/releases https://github.com/owner/repo.git -> https://github.com/owner/repo/releases
-          let changelogUrl: string | null = null;
-
-          if (repoUrl.includes('github.com')) {
-            const match = repoUrl.match(/github\.com[/:]([\w.-]+)\/([\w.-]+?)(\.git)?$/);
-            if (match) {
-              changelogUrl = `${WK_GH_ORIGIN}/${match[1]}/${match[2]}/releases`;
-            }
-          } else if (repoUrl.includes('gitlab.com')) {
-            const match = repoUrl.match(/gitlab\.com[/:]([\w.-]+)\/([\w.-]+?)(\.git)?$/);
-            if (match) {
-              changelogUrl = `https://gitlab.com/${match[1]}/${match[2]}/-/releases`;
-            }
-          }
-
-          changelogCache.set(packageName, changelogUrl);
-          resolve(changelogUrl);
-        } catch {
-          changelogCache.set(packageName, null);
-          resolve(null);
-        }
-      });
-    });
-
-    req.on('error', () => {
-      changelogCache.set(packageName, null);
-      resolve(null);
-    });
-
-    req.on('timeout', () => {
-      req.destroy();
-      changelogCache.set(packageName, null);
-      resolve(null);
-    });
-  });
+  // Transform git URL to GitHub releases URL Examples: git+https://github.com/owner/repo.git -> https://github.com/owner/repo/releases git://github.com/owner/repo.git -> https://github.com/owner/repo/releases https://github.com/owner/repo.git -> https://github.com/owner/repo/releases
+  let changelogUrl: string | null = null;
+  if (repoUrl.includes('github.com')) {
+    const match = repoUrl.match(/github\.com[/:]([\w.-]+)\/([\w.-]+?)(\.git)?$/);
+    if (match) {
+      changelogUrl = `${WK_GH_ORIGIN}/${match[1]}/${match[2]}/releases`;
+    }
+  } else if (repoUrl.includes('gitlab.com')) {
+    const match = repoUrl.match(/gitlab\.com[/:]([\w.-]+)\/([\w.-]+?)(\.git)?$/);
+    if (match) {
+      changelogUrl = `https://gitlab.com/${match[1]}/${match[2]}/-/releases`;
+    }
+  }
+  changelogCache.set(packageName, changelogUrl);
+  return changelogUrl;
 }
 
 /**
@@ -792,6 +769,7 @@ interface Packument {
     { deprecated?: unknown; peerDependencies?: Record<string, string> } | undefined
   >;
   time?: Record<string, string>;
+  repository?: { url?: string } | string;
 }
 
 // One registry document per package, cached as the PROMISE so parallel callers share one fetch.
@@ -800,37 +778,65 @@ const packumentCache = new Map<string, Promise<Packument | null>>();
 /**
  * The registry document of `name`, or null on any failure. Under CHECK_DEPS_ROOT it is read from `<root>/.fixture-registry/<encodeURIComponent(name)>.json` and the network is never touched; a missing fixture document is null, exactly like an unreachable registry. Callers decide what null means: the freshness window reads it as too new, the held-major clock as CANNOT DATE.
  */
+/** At most this many registry documents in flight at once. Unbounded fan-out stalls every transfer behind the slowest and trips the idle timeout, which reads as a null document and refuses the run. */
+const REGISTRY_POOL_SIZE = 8;
+let registryInFlight = 0;
+const registryWaiters: Array<() => void> = [];
+
+async function withRegistrySlot<T>(task: () => Promise<T>): Promise<T> {
+  if (registryInFlight >= REGISTRY_POOL_SIZE) {
+    await new Promise<void>((resolve) => registryWaiters.push(resolve));
+  } else {
+    registryInFlight++;
+  }
+  try {
+    return await task();
+  } finally {
+    // Hand the slot straight to the next waiter, or free it.
+    const next = registryWaiters.shift();
+    if (next) next();
+    else registryInFlight--;
+  }
+}
+
 function fetchPackument(name: string): Promise<Packument | null> {
   const cached = packumentCache.get(name);
   if (cached) return cached;
   const loaded = FIXTURE_ROOT
-    ? Promise.resolve(readFixturePackument(name))
-    : new Promise<Packument | null>((resolve) => {
-        const url = `https://registry.npmjs.org/${encodeURIComponent(name)}`;
-        const req = https.get(url, { timeout: 5000 }, (res) => {
-          const chunks: Buffer[] = [];
-          res.on('data', (chunk: Buffer) => {
-            chunks.push(chunk);
-          });
-          res.on('end', () => {
-            try {
-              const json = JSON.parse(Buffer.concat(chunks).toString('utf-8')) as unknown;
-              resolve(
-                typeof json === 'object' && json !== null && !Array.isArray(json)
-                  ? (json as Packument)
-                  : null
-              );
-            } catch {
+    ? withRegistrySlot(async () => {
+        // A fixture still goes through the pool, with a tick of latency, so the selftest drives the same concurrency path a real run does.
+        await new Promise((r) => setTimeout(r, 2));
+        return readFixturePackument(name);
+      })
+    : withRegistrySlot(
+        () =>
+          new Promise<Packument | null>((resolve) => {
+            const url = `https://registry.npmjs.org/${encodeURIComponent(name)}`;
+            const req = https.get(url, { timeout: 5000 }, (res) => {
+              const chunks: Buffer[] = [];
+              res.on('data', (chunk: Buffer) => {
+                chunks.push(chunk);
+              });
+              res.on('end', () => {
+                try {
+                  const json = JSON.parse(Buffer.concat(chunks).toString('utf-8')) as unknown;
+                  resolve(
+                    typeof json === 'object' && json !== null && !Array.isArray(json)
+                      ? (json as Packument)
+                      : null
+                  );
+                } catch {
+                  resolve(null);
+                }
+              });
+            });
+            req.on('error', () => resolve(null));
+            req.on('timeout', () => {
+              req.destroy();
               resolve(null);
-            }
-          });
-        });
-        req.on('error', () => resolve(null));
-        req.on('timeout', () => {
-          req.destroy();
-          resolve(null);
-        });
-      });
+            });
+          })
+      );
   packumentCache.set(name, loaded);
   return loaded;
 }
@@ -1981,8 +1987,11 @@ async function checkDependencies(): Promise<void> {
     console.log(`${YELLOW}Not checked out, so not judged here (CI judges them): ${list}${NC}\n`);
   }
 
-  const manifests: ManifestResult[] = [await probeManifest(CONSOLE_ROOT, false)];
-  for (const dir of scan.dirs) manifests.push(await probeManifest(dir, true));
+  // The probes are independent (each reads its own tree and lockfile), so they run together; Promise.all keeps the manifest order and rejects on the first failed probe, which is the same refusal the serial loop gave.
+  const manifests: ManifestResult[] = await Promise.all([
+    probeManifest(CONSOLE_ROOT, false),
+    ...scan.dirs.map((dir) => probeManifest(dir, true)),
+  ]);
 
   // An uninstalled dependency is unjudged, never current. Refused here, before anything is categorised, so no verdict below (above all the clock's "excuses nothing ... Delete the entry") is ever reached from a manifest npm could not see.
   const uninstalledRoot = manifests.flatMap((m) => m.uninstalled);
@@ -2031,9 +2040,18 @@ async function checkDependencies(): Promise<void> {
   const allowUsed = new Set<string>();
   const heldBlocked: HeldBlocked[] = [];
   let judged = 0;
-  for (const m of manifests) {
-    judged += Object.keys(m.entries).length;
+  // Registry reads start here for every manifest at once (bounded by the pool in fetchPackument), so the release-age partitions overlap instead of queueing manifest after manifest.
+  const partitions = manifests.map((m) => {
     const cat = categorizePackages(m.entries, blocklist, m.name || undefined, allow);
+    return {
+      cat,
+      must: partitionByReleaseAge(cat.mustUpgrade, minReleaseAgeMs, nowMs),
+      held: partitionByReleaseAge(cat.heldMajor, minReleaseAgeMs, nowMs),
+    };
+  });
+  for (const [mi, m] of manifests.entries()) {
+    judged += Object.keys(m.entries).length;
+    const cat = partitions[mi].cat;
     for (const k of cat.allowUsed) allowUsed.add(k);
     // The blocked branch runs BEFORE the breaking-bump test in categorizePackages, so a blocklisted major lands here and never in heldMajor. The clock below is what stops that line excusing it forever; minor holds (playwright) are outside it.
     for (const p of cat.blocked) {
@@ -2041,8 +2059,8 @@ async function checkDependencies(): Promise<void> {
         heldBlocked.push({ pkg: p, manifest: m.name, dir: m.dir });
     }
     // Defer versions still inside the freshness window (aged < 24h, rounded up to the next UTC day): too fresh to be a real "must upgrade" or a real decision. This auto-resolves as a daily batch once the version ages out.
-    const must = await partitionByReleaseAge(cat.mustUpgrade, minReleaseAgeMs, nowMs);
-    const held = await partitionByReleaseAge(cat.heldMajor, minReleaseAgeMs, nowMs);
+    const must = await partitions[mi].must;
+    const held = await partitions[mi].held;
     groups.push({
       dir: m.dir,
       name: m.name,
@@ -3564,6 +3582,47 @@ function selftest(): void {
       !noRegistry.output.includes('excuses nothing') &&
       !noRegistry.output.includes('up-to-date'),
     noRegistry.detail
+  );
+  // The registry reads run through a bounded concurrent pool (REGISTRY_POOL_SIZE = 8). Twelve uninstalled devDependencies overflow it; eleven have a document and one does not. The one failed lookup must still refuse the run, not be swallowed by the pool or lost among the eleven that answered.
+  const poolNames = Array.from({ length: 12 }, (_, i) => `pooled-dep-${i}`);
+  const poolMissing = poolNames[7];
+  const poolDoc = doc('1.0.0', { '1.0.0': { daysAgo: 200 } });
+  const poolCase = (missing: string | null): FixtureSpec =>
+    devCase({
+      manifests: {
+        'private/account/web': {
+          devDependencies: Object.fromEntries(poolNames.map((n) => [n, '^1.0.0'])),
+        },
+      },
+      locks: {
+        '': {},
+        'private/account': {},
+        'private/account/web': Object.fromEntries(
+          poolNames.map((n) => [`node_modules/${n}`, { version: '1.0.0' }])
+        ),
+      },
+      blocklist: '# fixture blocklist\n',
+      exceptions: {},
+      registry: Object.fromEntries(poolNames.filter((n) => n !== missing).map((n) => [n, poolDoc])),
+    });
+  const poolOneFails = run(poolCase(poolMissing));
+  expect(
+    'pool: one failed registry lookup among twelve concurrent ones still refuses the run and names it',
+    poolOneFails.status === 1 &&
+      poolOneFails.output.includes(
+        `${poolMissing} (private/account/web): not installed, so npm outdated skips it, and the registry returned no document`
+      ) &&
+      !poolOneFails.output.includes('up-to-date'),
+    poolOneFails.detail
+  );
+  const poolAllAnswer = run(poolCase(null));
+  expect(
+    'pool: CONTROL: the same twelve with every lookup answered pass',
+    poolAllAnswer.status === 0 &&
+      poolAllAnswer.output.includes(
+        '12 uninstalled dependency(ies) judged from lockfile and registry'
+      ),
+    poolAllAnswer.detail
   );
   const rootUninstalled = run(
     devCase({
