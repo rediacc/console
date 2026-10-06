@@ -749,15 +749,18 @@ def adv_receipt(root, head_tree, advances, **over):
     (cache / "prepush-receipt.json").write_text(json.dumps(body), encoding="utf-8")
 
 
-def step(frm, to, gates, paths=(REVIEW,)):
-    """One `advances` entry as the runner writes it (PF24)."""
-    return {
+def step(frm, to, gates, paths=(REVIEW,), findings=None):
+    """One `advances` entry as the runner writes it (PF24); `findings` is the per-reader keys `runAdvance` records beside the exit codes (F11)."""
+    body = {
         "from": frm,
         "to": to,
         "paths": list(paths),
         "gates": dict(gates),
         "finishedAt": "2026-10-05T00:00:00Z",
     }
+    if findings is not None:
+        body["findings"] = findings
+    return body
 
 
 def drive_broken(where, cmd):
@@ -929,6 +932,56 @@ adv_receipt(
 )
 ADV_WORLDS.append(("ADVANCE: a reader red at the step under a keyed carry is refused", 2, w))
 
+# 11d. F11: the same red under a KEYED carry IS admitted when the step recorded findings that equal the receipt's and the carry names every key.
+w, t0 = adv_world(
+    "reader-red-keyed-carry-recorded",
+    carried_doc={"version": 2, "carried": [keyed(K1, gate=R_PLAN)]},
+)
+t1 = adv_commit(w, REVIEW)
+adv_receipt(
+    w,
+    t0,
+    [step(t0, t1, {R_PLAN: 1, R_ARCH: 0}, findings={R_PLAN: [K1]})],
+    exitCode=1,
+    failed=[R_PLAN],
+    findings={R_PLAN: [K1]},
+)
+ADV_WORLDS.append(
+    ("ADVANCE: a red reader whose recorded findings match a keyed carry is admitted", 0, w)
+)
+
+# 11e. The step recorded a key the receipt (and the carry) never had: a NEW finding, refused.
+w, t0 = adv_world(
+    "reader-red-keyed-carry-extra-key",
+    carried_doc={"version": 2, "carried": [keyed(K1, gate=R_PLAN)]},
+)
+t1 = adv_commit(w, REVIEW)
+adv_receipt(
+    w,
+    t0,
+    [step(t0, t1, {R_PLAN: 1, R_ARCH: 0}, findings={R_PLAN: [K1, K2]})],
+    exitCode=1,
+    failed=[R_PLAN],
+    findings={R_PLAN: [K1]},
+)
+ADV_WORLDS.append(("ADVANCE: a red reader with an uncarried new key is refused", 2, w))
+
+# 11f. The step recorded `null` (nothing parsable) for the red reader: refused under a keyed carry.
+w, t0 = adv_world(
+    "reader-red-keyed-carry-null",
+    carried_doc={"version": 2, "carried": [keyed(K1, gate=R_PLAN)]},
+)
+t1 = adv_commit(w, REVIEW)
+adv_receipt(
+    w,
+    t0,
+    [step(t0, t1, {R_PLAN: 1, R_ARCH: 0}, findings={R_PLAN: None})],
+    exitCode=1,
+    failed=[R_PLAN],
+    findings={R_PLAN: [K1]},
+)
+ADV_WORLDS.append(("ADVANCE: a red reader that recorded no parsable findings is refused", 2, w))
+
 # 11c. A reader that could not run (exit 77) is admitted only when the receipt already lists it as blocked.
 w, t0 = adv_world("reader-could-not-run-blocked")
 t1 = adv_commit(w, REVIEW)
@@ -985,6 +1038,37 @@ cases.append(
         "DEFECT CONTROL: every named world exists, so the control cannot shrink to nothing",
     )
 )
+
+
+# F11 DEFECT CONTROL: with `keyed_carry_vouches` forced True, the new-key world is admitted, so its refusal above is that function's equality check at work.
+def drive_keyed_off(where, cmd):
+    runner = (
+        "import sys; sys.path.insert(0, %r)\n"
+        "from rediacc_hooks import hookio\n"
+        "src = open(%r, encoding='utf-8').read()\n"
+        "ns = {'__name__': 'broken', '__file__': %r}\n"
+        "exec(compile(src, 'broken', 'exec'), ns)\n"
+        "ns['keyed_carry_vouches'] = lambda *a, **k: True\n"
+        "ev = hookio.Event(sys.stdin.read())\n"
+        "sys.exit(ns['run'](ev))\n"
+    ) % (str(GUARD.parents[2]), str(GUARD), str(GUARD))
+    proc = subprocess.run(
+        [sys.executable, "-c", runner],
+        input=json.dumps({"tool_input": {"command": cmd}}),
+        capture_output=True,
+        text=True,
+        cwd=str(where),
+        env=dict(os.environ, CLAUDE_PROJECT_DIR=str(where)),
+        check=False,
+    )
+    return proc.returncode
+
+
+for label, _want, root in ADV_WORLDS:
+    if label == "ADVANCE: a red reader with an uncarried new key is refused":
+        cases.append((0, drive_keyed_off(root, ADV_PUSH), "F11 DEFECT CONTROL flips: " + label))
+    elif label == "ADVANCE: a red reader whose recorded findings match a keyed carry is admitted":
+        cases.append((0, drive_keyed_off(root, ADV_PUSH), "F11 DEFECT CONTROL holds: " + label))
 
 # --- receipt v2: carried gates, recomputed at the pushed tree (PLAN-fast-loop F3) ---------------
 V2_PUSH = "git push origin main"

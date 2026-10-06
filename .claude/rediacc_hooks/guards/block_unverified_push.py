@@ -35,6 +35,7 @@ import pathlib
 import re
 import subprocess
 import sys
+from typing import Any
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
 
@@ -1052,12 +1053,27 @@ def _diff_names(root, frm, to):
 COULD_NOT_RUN = 77
 
 
+def keyed_carry_vouches(reader, step, judged):
+    """True when a red `reader` at an advance step is exactly the receipt's carried-by-key red: the step recorded findings for it, they equal (as a set) the receipt's findings for that gate, and carried-reds.json at HEAD carries every key. PURE. DEFECT-style plants in test-block_unverified_push.py force this to True."""
+    recorded = step.get("findings")
+    recorded = recorded.get(reader) if isinstance(recorded, dict) else None
+    receipt_keys = judged["findings"].get(reader)
+    carried = judged["carried"].get(reader)
+    if not (isinstance(recorded, list) and isinstance(receipt_keys, list) and recorded):
+        return False
+    if not all(isinstance(k, str) for k in recorded + receipt_keys):
+        return False
+    if set(recorded) != set(receipt_keys):
+        return False
+    return isinstance(carried, set) and set(recorded) <= carried
+
+
 def step_refusal(root, step, records, judged):
     """Why one advance does not carry the receipt from its `from` to its `to`, else None.
 
     The step's `paths` is never read: the diff is recomputed, so a runner (or a hand) that wrote "records only" over a code commit is caught here.
 
-    A READER THAT IS NOT GREEN AT THE STEP. An advance records exit codes only and never touches `failed`, `findings` or `blocked`, which still describe `headTree` (scripts/ci-runner/run.ts `runAdvance`). So a red reader is admitted only when it was already red at `headTree` (`judged["failed"]`) AND carried-reds.json at HEAD carries it whole (`"*"`): a keyed carry names findings this step never recorded, so it cannot vouch for them. A reader that could not run (exit 77) is admitted only when the receipt already lists it as `blocked`, the state the 2026-08-27 ruling warns on rather than refuses.
+    A READER THAT IS NOT GREEN AT THE STEP. An advance never touches the receipt's `failed`, `findings` or `blocked`, which still describe `headTree`; it records each reader's exit code in `gates` and the finding keys the reader printed in `findings` (scripts/ci-runner/run.ts `runAdvance`). A red reader is admitted when it was already red at `headTree` (`judged["failed"]`) AND either carried-reds.json at HEAD carries it whole (`"*"`), or the step recorded its findings, they equal as a set the receipt's own findings for that gate, and carried-reds.json at HEAD carries every one of those keys (`keyed_carry_vouches`). A reader red with a key the receipt never had, or one whose findings the step did not record (an older runner), is refused. A reader that could not run (exit 77) is admitted only when the receipt already lists it as `blocked`, the state the 2026-08-27 ruling warns on rather than refuses.
     """
     frm, to = step["from"], step["to"]
     paths = _diff_names(root, frm, to)
@@ -1090,8 +1106,10 @@ def step_refusal(root, step, records, judged):
             continue
         passed = code == 0
         blocked_already = code == COULD_NOT_RUN and reader in judged["blocked"]
-        carried_whole = reader in judged["failed"] and reader in judged["star"]
-        if not (passed or blocked_already or carried_whole):
+        red_at_receipt = reader in judged["failed"]
+        carried_whole = red_at_receipt and reader in judged["star"]
+        carried_keys = red_at_receipt and keyed_carry_vouches(reader, step, judged)
+        if not (passed or blocked_already or carried_whole or carried_keys):
             unjudged.append("%s (exit %d)" % (reader, code))
     if missing:
         return (
@@ -1103,9 +1121,10 @@ def step_refusal(root, step, records, judged):
         return (
             "these readers did not pass at that tree: %s.\n"
             "  An advance admits a red reader only when it was already red at the receipt's tree\n"
-            '  and .ci/config/carried-reds.json carries it whole ("*"), and a reader that could not\n'
-            "  run only when the receipt lists it as blocked. Fix it, or re-run npm run ci:quick."
-            % ", ".join(unjudged)
+            '  and .ci/config/carried-reds.json carries it whole ("*"), or carries by key exactly the\n'
+            "  findings the step recorded for it, which must equal the receipt's own. A reader that\n"
+            "  could not run is admitted only when the receipt lists it as blocked.\n"
+            "  Fix it, or re-run npm run ci:quick." % ", ".join(unjudged)
         )
     return None
 
@@ -1128,7 +1147,7 @@ def advance_chain(root, receipt, start, end):
     records, error = _record_policy_at(root, end)
     if error is not None:
         return None, "%s: %s." % (head, error)
-    judged = {}
+    judged: dict[str, Any] = {}
     for key in ("failed", "blocked"):
         listed = receipt.get(key)
         judged[key] = (
@@ -1136,6 +1155,9 @@ def advance_chain(root, receipt, start, end):
         )
     carried, _schema_error = parse_carried(_carried_at_head(root))
     judged["star"] = {g for g, keys in carried.items() if keys == "*"}
+    judged["carried"] = {g: keys for g, keys in carried.items() if isinstance(keys, set)}
+    rf = receipt.get("findings")
+    judged["findings"] = rf if isinstance(rf, dict) else {}
     parent: dict[str, str | None] = {start: None}
     problems = []
     for i, step in enumerate(steps):
