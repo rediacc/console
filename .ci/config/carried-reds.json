@@ -32,9 +32,9 @@
     {
       "gate": "check:ci-plan-implementation",
       "findings": [
-        "P-A1:112304fdab4d"
+        "P-A1:51f8991c75bf"
       ],
-      "reason": "1006-2 carries the operator's 2026-10-06 follow-ups (epic 97672f9f: regeneration guard, ci-trace root causes and the main-red check, scheduler utilization, package retention, GitHub 5xx retry, the duplicate-run no-op and sibling release gate, the QUEUE.md In flight section) and works no queued plan. P-A1 names the queue head, agent/plans/PLAN-ci-consolidation.md (revised the same day: Parts A, B and C), whose open boxes belong to the next branch. The PR body carries an Operational-Reason saying so, which admits P-A1 in CI. PLAN-fast-loop.md, which also rides this PR (operator /ask 2026-10-06), is fully ticked, so the key names the queue head alone again."
+      "reason": "1006-3 works agent/plans/PLAN-gh-retry.md. Its box G12 drains the 48 one-shot GitHub reads still frozen in .ci/config/gh-retry-reads-baseline.json, module by module on this PR, and stays open until the last one is drained. The carry names this exact key."
     },
     {
       "gate": "check:ci-pytest",
