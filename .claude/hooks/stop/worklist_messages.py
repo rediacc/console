@@ -1418,6 +1418,36 @@ N_CI_QUEUE = (
 
 N_CI_QUEUE_PR_STALE_LINE = " (Also: the PR body is stale; fold the refresh into that next push.)"
 
+# Advisory lines of agent/plans/PLAN-fast-loop.md Parts 2-4. None of them blocks a stop or a push.
+N_COMMIT_REMIND = (
+    "COMMIT REMINDER: %d file(s) edited by this session are still uncommitted (oldest %d min) "
+    "and the last commit is %d min old (threshold %d min, QUEUE.md commit_remind_min). "
+    "Commit the verified unit now, as one small commit by path:\n%s\n"
+    "Form: `git add -- <new paths>`, then `git commit -F <msg> -- <paths>`. "
+    "A unit that is not verified yet stays uncommitted; tick its item with `nocommit:<reason>` "
+    "when it is not meant to be committed."
+)
+
+N_RECEIPT_BEHIND = (
+    "The pre-push receipt is %d code commit(s) behind HEAD (receipt head %s); "
+    "one receipt per push: build it when a push is due, not before."
+)
+
+N_CI_HOLD = (
+    "Console CI is running on %s; hold these %d local commit(s) until it settles. "
+    "A red with a fix in hand pushes at once."
+)
+
+N_CI_HOLD_PUSHED = (
+    "A push just ran while the cached read shows Console CI in progress on %s. "
+    "Further commits wait until that run settles; a red with a fix in hand pushes at once."
+)
+
+N_RECEIPT_EARLY = (
+    "A pre-push receipt is worth building only when a push is due: an epic milestone, "
+    "a fix for a red, or a stop with unpushed commits. Commits in between need no receipt."
+)
+
 V_BG_REPORT = (
     "PURE BACKGROUND WAIT check-in. Last delivered: %s. Next one no earlier "
     "than %s (a %d-minute latch, and the two stamps are here so you can check "

@@ -37,6 +37,7 @@ import wl_histfirst
 import wl_judge
 import wl_leasehelp
 import wl_liveness
+import wl_loopspeed
 import wl_planenforce
 import wl_planfid
 import wl_planfile
@@ -55,6 +56,7 @@ import wl_shapedup
 import wl_standdown
 import wl_store as S
 import wl_trapfires
+import wl_uncommitted
 import wl_wake
 import worklist_messages as M
 
@@ -4207,6 +4209,59 @@ def run_stop(event, event_ok, worklist, hook_file):
                 else "",
                 _txt,
             )
+    # ---- THE LOOP-SPEED ADVISORIES (agent/plans/PLAN-fast-loop.md Parts 2-4; operator 2026-10-06: every one is ADVISORY, never a block). Each rides `outq_add` (the allow-report queue), so none can hold a stop, and each sits in `wl_standdown.FOCUS_ADVISORY_KEYS` so focus mode releases it. The facts come from state this stop already read (the session's own transcript, local git, and the CI state read above): no new GitHub call. Each is wrapped like every sibling detector, so a broken read is silence.
+    #   commit-remind   this session's own still-dirty files and no commit for `commit_remind_min` minutes.
+    #   receipt-behind  the pre-push receipt is N code commits behind HEAD while commits are unpushed.
+    #   ci-hold         the PR's run on the pushed head is in progress and not red, and commits are local only.
+    try:
+        _uc_facts = wl_uncommitted.evaluate(
+            root,
+            event.get("transcript_path"),
+            state_doc,
+            minutes=int(_cfg.commit_remind_min),
+        )
+        S.save_state(worklist, session_id, state_doc)
+        if _uc_facts:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "commit-remind",
+                wl_uncommitted.render(_uc_facts),
+                1,
+                refresh_min=15,
+                on_change=False,
+            )
+    except Exception:  # noqa: BLE001 -- advisory: a broken reminder read is silence, never a failed stop
+        pass
+    try:
+        _rb = wl_loopspeed.receipt_behind(root)
+        if _rb:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "receipt-behind",
+                M.N_RECEIPT_BEHIND % _rb,
+                2,
+                refresh_min=30,
+                on_change=False,
+            )
+        _hold_sha = (cidetail or {}).get("sha") if cistate == "pending" else None
+        _hold_n = wl_loopspeed.unpushed(root) if _hold_sha else None
+        if _hold_sha and _hold_n:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "ci-hold",
+                M.N_CI_HOLD % (str(_hold_sha)[:8], _hold_n),
+                1,
+                refresh_min=15,
+                on_change=False,
+            )
+    except Exception:  # noqa: BLE001 -- advisory: a broken read is silence
+        pass
     # ---- SCHEDULED WORKFLOWS ON MAIN (agent/plans/PLAN-scheduled-red-detector.md, A2). A nightly red reached only a human for five nights while it held the stable promotion, because every CI read here is scoped to the PR head and a scheduled run is on no PR. So this check is NOT gated on the publish ref and NOT on being the sole live session: ownership is settled by wl_schedred
     # instead (an item that tracks the red is its owner's, an O_EXCL claim picks one session when none exists), which is what lets every session look without two of them being blocked on one red. One shared cache under a TTL keeps the read cheap; no origin means zero calls, which keeps the fixtures offline.
     #   block  the untracked red this session claimed, or a tick of this session that closed a still-red run without evidence. `scheduled-red` sits in T_OWED (the party owed is the release pipeline, which cannot see this session stop) and in the always tier under I2.
