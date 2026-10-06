@@ -38,13 +38,11 @@ judge: on
 
 ## Promoted
 
-1. agent/plans/PLAN-gate-drop-receipt-verify.md -- ci:quick skipped a touched slow gate twice on 2026-10-03 and the push guard never noticed (#74f48292); operator /ask 2026-10-04 09:55Z: "Move to Promoted 2" after two gate drops reached CI red today
-2. agent/plans/PLAN-clean-review-ledger.md -- operator /ask 2026-10-04: "Own plan, next PR"; a clean per-commit review appends one line to agent/reviews/<branch>/clean.jsonl instead of a file, and the 194 eligible records convert and delete
-3. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; candidates 1, 3, 4, 6, 7 of agent/reports/consolidation-investigation-2026-10-04.md in one plan, one PR -- solo
-4. agent/plans/PLAN-commit-as-you-go.md -- operator /ask 2026-10-03: T6 (the `nocommit:` tick arm Z depends on), with T0 and T9
-5. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: T9 (the enforced matrix in DESIGN-CONFIG-STORAGE.md) and T10 (live smoke)
-6. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: the 9 open boxes
-7. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: Step 12
+1. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; candidates 1, 3, 4, 6, 7 of agent/reports/consolidation-investigation-2026-10-04.md in one plan, one PR -- solo
+2. agent/plans/PLAN-commit-as-you-go.md -- operator /ask 2026-10-03: T6 (the `nocommit:` tick arm Z depends on), with T0 and T9
+3. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: T9 (the enforced matrix in DESIGN-CONFIG-STORAGE.md) and T10 (live smoke)
+4. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: the 9 open boxes
+5. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: Step 12
 
 ## Generated
 
