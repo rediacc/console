@@ -38,6 +38,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.core import gh_retry
 from rediacc_ci.well_known import GH_REPO
 
 # `^v[0-9]+\.[0-9]+\.[0-9]+$`: a malformed version must NOT become a tag, because `production` is the thing humans will trust.
@@ -124,18 +125,10 @@ def refs_path(repo: str) -> str:
 
 
 def _capture_merged(args: list[str]) -> tuple[int, str]:
-    """`out="$(cmd 2>&1)"`: both streams into one string, trailing newlines gone."""
-    proc = subprocess.run(
-        ["gh", *args], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, check=False
-    )
-    return proc.returncode, proc.stdout.rstrip("\n")
-
-
-def _quiet(args: list[str]) -> int:
-    """`cmd >/dev/null 2>&1`."""
-    return subprocess.run(
-        ["gh", *args], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False
-    ).returncode
+    """`out="$(cmd 2>&1)"` as a READ with transient retry: a 5xx or connection fault is retried (5 s, 15 s), a 404 or auth failure is not. On success the text is stdout; on failure it is both streams, so the caller's message carries gh's own diagnostic. Trailing newlines gone."""
+    result = gh_retry.gh(args)
+    text = result.stdout_raw if result.ok else result.stdout_raw + result.stderr
+    return result.returncode, text.rstrip("\n")
 
 
 def _stdout_devnull(args: list[str]) -> int:
@@ -203,7 +196,15 @@ def main(argv: list[str]) -> int:
             )
             return 1
 
-    if _quiet(["api", production_ref_path(repo)]) == 0:
+    probe = gh_retry.gh(["api", production_ref_path(repo)])
+    if not probe.ok and gh_retry.is_transient(probe.stderr):
+        # A probe that failed TRANSIENTLY did not say the tag is absent. Falling to POST would try to create a ref that exists (422) or, worse, act on a wrong picture; the twin's one-shot `||` branch did exactly that. Refuse and let the run retry.
+        out.error(
+            "mark-production: could not tell whether the 'production' tag exists, so it was "
+            "NOT moved: %s" % probe.stderr.strip()
+        )
+        return 1
+    if probe.ok:
         rc = _stdout_devnull(
             [
                 "api",

@@ -16,7 +16,7 @@ import subprocess
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
-from rediacc_ci.core import ghx
+from rediacc_ci.core import gh_retry
 
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 VERSION_RE = re.compile(r"^v?[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$")
@@ -132,8 +132,22 @@ def nightly_failures_are_drift_only(jobs: Sequence[Mapping[str, Any]]) -> tuple[
     return True, "the only failures are drift gates: " + ", ".join(drift)
 
 
-def fetch_run_jobs(repo: str, run_id: str, api: ApiJson = ghx.api_json) -> list[dict[str, Any]]:
-    """Every job (with its steps) of the latest attempt of `run_id`, across all pages. Raises `ghx.GhError` on a failed read."""
+def _api_json(
+    path: str,
+    *,
+    paginate: bool = False,
+    attempts: int = gh_retry.ATTEMPTS,
+    sleep: Callable[[float], None] | None = None,
+) -> object:
+    """`gh api <path>` (paged into one list of pages with `paginate`), retried on a 5xx or connection fault only; 4xx raises at once."""
+    args = ["api", path]
+    if paginate:
+        args += ["--paginate", "--slurp"]
+    return gh_retry.gh(args, attempts=attempts, sleep=sleep).json()
+
+
+def fetch_run_jobs(repo: str, run_id: str, api: ApiJson = _api_json) -> list[dict[str, Any]]:
+    """Every job (with its steps) of the latest attempt of `run_id`, across all pages. Raises `ghx.GhError` on a failed read, after the transient retries."""
     pages = api(
         f"repos/{repo}/actions/runs/{run_id}/jobs?filter=latest&per_page=100",
         paginate=True,
