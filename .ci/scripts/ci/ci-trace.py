@@ -1362,15 +1362,33 @@ def _branch_name(ref):
     return ref
 
 
+#: The listing is read once plainly and once per event, and the answers are merged. MEASURED 2026-10-06, three times: GitHub served `ci.yml/runs?branch=<b>&per_page=10` from a stale copy (main: 25 runs ending 2026-10-01 while 36 existed; 1006-2: none while run 37499788949 was running) while the event-filtered spellings of the same query were current. A run counts when any read lists it.
+RUNS_EVENTS = ("", "push", "pull_request", "schedule", "workflow_dispatch")
+
+
 def verb_runs(root, ref, as_json):
     ref = _branch_name(ref)
-    data, err = _fetcher(root).json(
-        "actions/workflows/ci.yml/runs?branch=%s&per_page=10" % urllib.parse.quote(ref, safe="/")
-    )
-    runs = (data or {}).get("workflow_runs") if isinstance(data, dict) else None
-    if runs is None:
-        print("no-verdict: %s" % (err or "no workflow_runs"), file=sys.stderr)
+    fetch = _fetcher(root)
+    base = "actions/workflows/ci.yml/runs?branch=%s&per_page=10" % urllib.parse.quote(ref, safe="/")
+    merged: dict = {}
+    errors = []
+    for event in RUNS_EVENTS:
+        data, err = fetch.json(base + ("&event=%s" % event if event else ""))
+        got = (data or {}).get("workflow_runs") if isinstance(data, dict) else None
+        if got is None:
+            errors.append(err or "no workflow_runs")
+            continue
+        for r in got:
+            if isinstance(r, dict) and r.get("id") is not None:
+                merged.setdefault(r.get("id"), r)
+    if len(errors) == len(RUNS_EVENTS):
+        print("no-verdict: %s" % errors[0], file=sys.stderr)
         return EXIT_NO_VERDICT
+    runs = sorted(
+        merged.values(),
+        key=lambda r: (str(r.get("created_at") or ""), r.get("id") or 0),
+        reverse=True,
+    )[:10]
     # AN EMPTY LIST IS AN ANSWER, AND IT IS SAID OUT LOUD (#09a94592). It used to print the header with no rows at rc 0, which reads as "the rows went missing" and sends the next session to `gh run list` instead.
     if not runs:
         if as_json:
@@ -2044,7 +2062,7 @@ def _selftest():
         class _Fetch:
             def json(self, path):
                 paths.append(path)
-                return payload, ""
+                return (payload(path) if callable(payload) else payload), ""
 
         orig = globals()["_fetcher"]
         globals()["_fetcher"] = lambda _root: _Fetch()
@@ -2075,7 +2093,10 @@ def _selftest():
         rc, out, err, paths = runs_it(spelling, {"workflow_runs": [row]})
         check(
             "#09a94592: --ref %s reads the runs of the branch named main" % spelling,
-            rc == 0 and len(paths) == 1 and "branch=main&" in paths[0] and "36974916837" in out,
+            rc == 0
+            and len(paths) == len(RUNS_EVENTS)
+            and all("branch=main&" in p for p in paths)
+            and "36974916837" in out,
             "rc=%r paths=%r out=%r err=%r" % (rc, paths, out, err),
         )
     rc, out, err, _paths = runs_it("main", {"workflow_runs": [row]})
@@ -2085,6 +2106,13 @@ def _selftest():
         and len(out.strip().splitlines()) == 2
         and "36974916837" in out
         and "schedule" in out,
+        "rc=%r out=%r err=%r" % (rc, out, err),
+    )
+    stale = lambda path: {"workflow_runs": [row] if "event=schedule" in path else []}  # noqa: E731
+    rc, out, err, _paths = runs_it("main", stale)
+    check(
+        "a stale plain listing (empty) is answered by the event-filtered read that lists the run",
+        rc == 0 and "36974916837" in out and len(out.strip().splitlines()) == 2,
         "rc=%r out=%r err=%r" % (rc, out, err),
     )
     rc, out, err, _paths = runs_it("main", {"workflow_runs": [row]}, as_json=True)
