@@ -815,6 +815,93 @@ def test_a_tiny_lane_sum_cannot_drift_on_the_ratio_alone():
     assert br.unit_drift_findings(committed, measured) == ([], 1)
 
 
+# #d901ba82: the samples behind the four 2026-10-05/06 check:ci-budget-freshness reds, in seconds. Each unit's typical run did not move; one or two slow runners (or a step change still rolling through the 10-run window) moved the p90 alone.
+SPREAD_NOISE = {
+    # committed p90 s, measured samples s
+    "tutorial:branching": (65.0, [56.0, 58.0, 60.0, 62.0, 67.0, 99.0, 101.0]),
+    "tutorial:installation": (12.6, [6.0, 8.0, 8.0, 9.0, 10.0, 15.0, 22.0]),
+    "pytest:.ci/rediacc_ci/tests/gates/test_gate_doc_region_parity.py": (
+        119.95,
+        [71.7, 77.3, 91.8, 94.0, 99.2, 99.8, 146.3, 167.0],
+    ),
+    # A real 105 -> 57 s step change mid-roll: one old run left in the window holds the max.
+    "pytest:.ci/rediacc_ci/tests/test_ci_profiler_sampler_linux.py": (
+        105.27,
+        [56.6, 56.8, 56.9, 57.2, 57.3, 59.2, 105.3],
+    ),
+    "pytest:.ci/rediacc_ci/tests/test_deploy_simulate_promotion.py": (
+        25.36,
+        [8.9, 10.5, 10.9, 11.2, 11.4, 11.5, 25.4],
+    ),
+    # The rest of each lane, steady: the live ops-tutorials sum is about 18 units and quality-pytest's about 570, so a lane sum carries far more than the five units above.
+    "tutorial:rest-of-lane": (600.0, [600.0] * 7),
+    "pytest:rest-of-lane.py": (3000.0, [3000.0] * 7),
+}
+
+
+def _spread(table):
+    committed, measured, unit_stats = {}, {}, {}
+    for unit_id, (was_s, samples_s) in table.items():
+        st = br.stats([x * 1000 for x in samples_s])
+        committed[unit_id] = was_s * 1000
+        measured[unit_id] = st["p90"]
+        unit_stats[unit_id] = st
+    return committed, measured, unit_stats
+
+
+def test_outlier_shaped_unit_moves_pass_on_the_sample_spread(tmp_path):
+    """#d901ba82: every one of these fired on the p90-only rule (proved by the `measured_stats=None` call, which IS that rule), and none may fire once the committed p90 is held against the median (slower) and the max (faster)."""
+    committed, measured, unit_stats = _spread(SPREAD_NOISE)
+    old_rule, _ = br.unit_drift_findings(committed, measured)
+    assert sorted(f.split("'")[1] for f in old_rule if f.startswith("unit ")) == sorted(
+        u for u in SPREAD_NOISE if "rest-of-lane" not in u
+    )
+    assert br.unit_drift_findings(committed, measured, unit_stats) == ([], 2)
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(_committed(units=committed)))
+    compute = _fake_compute(units=measured, unit_stats=unit_stats)
+    assert br.check_lane_durations(path, limit=10, compute=compute) == 0
+    # The same file and sample WITHOUT the spread is the p90-only rule, and it reds.
+    assert br.check_lane_durations(path, limit=10, compute=_fake_compute(units=measured)) == 1
+
+
+def test_planted_unit_doubling_still_fails_on_the_sample_spread(tmp_path):
+    """CONTROL: test_settings_collapse.py went 118 -> 278 s after 00fa66691; every sample of a unit doubling moves its median 2x, so the slower side reds and says which statistic did it."""
+    base = [110.0, 112.0, 115.0, 116.0, 117.0, 118.0, 120.0]
+    was = br.stats([x * 1000 for x in base])["p90"]
+    doubled = br.stats([x * 2000 for x in base])
+    unit = "pytest:.claude/rediacc_hooks/tests/test_settings_collapse.py"
+    findings, _ = br.unit_drift_findings({unit: was}, {unit: doubled["p90"]}, {unit: doubled})
+    unit_findings = [f for f in findings if f.startswith("unit ")]
+    assert len(unit_findings) == 1
+    assert "measured median of 7 sample(s)" in unit_findings[0]
+    assert "slower" in unit_findings[0]
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(_committed(units={unit: was})))
+    compute = _fake_compute(units={unit: doubled["p90"]}, unit_stats={unit: doubled})
+    assert br.check_lane_durations(path, limit=10, compute=compute) == 1
+
+
+def test_planted_step_change_reds_once_the_window_agrees():
+    """CONTROL: the 105 -> 57 s speedup reds once no old run is left in the window (max under 75% of the committed p90), and a slowdown reds once half the window carries it (the median)."""
+    unit = "pytest:.ci/rediacc_ci/tests/test_ci_profiler_sampler_linux.py"
+    rolled = br.stats([x * 1000 for x in [56.6, 56.8, 56.9, 57.2, 57.3, 57.5, 59.2]])
+    findings, _ = br.unit_drift_findings({unit: 105266.0}, {unit: rolled["p90"]}, {unit: rolled})
+    assert len([f for f in findings if f.startswith("unit ") and "faster" in f]) == 1
+    half_slow = br.stats([x * 1000 for x in [60, 61, 62, 130, 131, 132, 133]])
+    findings, _ = br.unit_drift_findings(
+        {unit: 62000.0}, {unit: half_slow["p90"]}, {unit: half_slow}
+    )
+    assert len([f for f in findings if f.startswith("unit ") and "slower" in f]) == 1
+
+
+def test_a_median_move_under_the_absolute_floor_is_still_noise():
+    """The floor applies to the judged statistic: a 10 s unit whose median moves 40% (4 s) is not a finding."""
+    unit = "pytest:small.py"
+    st = br.stats([14000.0] * 7)
+    assert br.unit_drift_findings({unit: 10000.0}, {unit: st["p90"]}, {unit: st})[0] == []
+
+
 def test_unit_lane_maps_every_unit_id_family():
     assert br.unit_lane("pytest:a.py") == "quality-pytest"
     assert br.unit_lane("account-e2e:x.test.ts") == "test-account-e2e"

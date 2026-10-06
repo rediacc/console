@@ -134,6 +134,13 @@ DRIFT_THRESHOLD = 0.25
 # A UNIT's drift counts only when the absolute move is at least this many milliseconds. Unit p90s are sampled from 10 runs, so a small unit swings by large percentages on runner noise alone: an hour after a refresh, check:ci-budget-freshness failed PR #594 (run 37190043363) on 16 -> 124.5 ms, 2119 -> 1566 ms and 5967 -> 7620 ms, none of which moves a leg's wall enough to matter. Job-level drift keeps the pure ratio. Same reasoning as gate_costs.MIN_DRIFT_CPU_S.
 # WHY 5 s AND NOT 2 s (#ce346f22). The 10-run sample is repo-wide PR runs, so every push on the open PR replaces one sampled run, and 2 s still sat inside that churn: on 2026-10-04/05 branch 1004-2 refreshed lane-durations.json four times in a day for 5-15 s units moving 2.1-3.4 s (test_wl_hints 5278 -> 7377 ms, test_review_standing_orders_brief 9068 -> 6681, test_wl_loop_next 9688 -> 13070, test_shape_probe_agreement 10067 -> 13002, e2e 16-setup-installation-params 5967 -> 8335), each refresh a 45-minute pre-push plus a commit that fed the sample again. Replayed over the last 20 refreshes, 5 s clears every same-day move and still fires on each days-apart refresh that held real movement (account-e2e +21% on 2026-10-04: 55 units; 12-01-subscription-renewal 22838 -> 38369 ms, which kept climbing to 42544). Against a 12-minute leg, 5 s is under 0.7%.
 MIN_UNIT_DRIFT_MS = 5000
+# WHICH STATISTIC A UNIT IS JUDGED ON (#d901ba82). A unit's measured p90 over the ~7 samples a 10-run window gives it is the 2nd-slowest sample or the slowest, so ONE slow runner moves it past 25% while the unit's typical run never moved: on 2026-10-05/06 check:ci-budget-freshness went red four times on tutorial:branching 65 -> 83 s (samples 56 58 60 62 67 99 101 s: five runs unchanged, two outliers), tutorial:installation 13 -> 18.5 s (median 9 s), test_gate_doc_region_parity 120 -> 152 s (+27%, median 96 s) and a 105 -> 78 s pytest p90 that was a real 105 -> 57 s step change still rolling through the window, one red per refresh. Each red cost a ~1,600-line rewrite of lane-durations.json and a 16-minute pre-push.
+# So the committed p90 is held against the measured sample's own spread instead of against its p90 alone:
+#   - SLOWER: the measured MEDIAN must clear the committed p90 by 25% (and MIN_UNIT_DRIFT_MS). Outliers cannot move a median, a real doubling moves it 2x (any unit whose committed p90 sits under 1.6x its median, which the 2026-10-06 sample showed for over 90% of units at 10 s and up), and a step change reds once, when half the window carries it, not once per refresh.
+#   - FASTER: the measured MAX, the slowest sample of the window, must fall 25% under the committed p90. A stale over-estimate only over-provisions a leg, so it reds once the WHOLE window agrees, never mid-roll.
+# Without per-unit stats (an old caller) both sides fall back to the p90 and the rule is the plain 25% ratio it always was. The per-lane sum below stays on p90: summing averages the outliers away (no same-day refresh moved a lane sum past 3.4%) and it is the backstop for a lane-wide slowdown.
+UNIT_SLOWER_STAT = "median"
+UNIT_FASTER_STAT = "max"
 # D-W2/T3.4: the two direct (non-lane-sharded) ci.yml jobs job-timeout-baseline.json used to cover, now `job_max_seconds`' own baseline. See check_job_timeout_headroom.py.
 HEADROOM_JOBS = ("Validate Promotion", "Stage Artifacts")
 
@@ -1542,11 +1549,13 @@ def compute_lane_durations(
         else tree_root / VARIANT_LOG_CACHE_REL_PATH,
     )
     units_ms: dict[str, float] = {}
+    unit_stats: dict[str, dict[str, float]] = {}
     for per_unit in unit_samples.values():
         for unit_id, ms_list in per_unit.items():
             s = stats(ms_list)
             if s is not None:
                 units_ms[unit_id] = s["p90"]
+                unit_stats[unit_id] = s
 
     # THE HEADROOM SAMPLE IS ALWAYS THE DEFAULT BRANCH: `ci.yml` runs on `push` to `main` only, so a `--branch` naming a PR branch would sample zero push runs and leave `job_max_seconds` unmeasured.
     main_runs = fetch_runs(repo, workflow, "push", DEFAULT_BRANCH, DEFAULT_STATUS, limit)
@@ -1576,6 +1585,8 @@ def compute_lane_durations(
     return {
         "jobs": jobs_minutes,
         "units": units_ms,
+        # The spread behind each unit's p90 (median/max/n), read by `--check` only and never written: see `UNIT_SLOWER_STAT`.
+        "unit_stats": unit_stats,
         "job_max_seconds": job_max_seconds,
         "job_p90_minutes": job_p90_minutes,
         # CI-representative gate-step timing for check-gate-manifest.ts's tier verdict; see gate_step_seconds.
@@ -1648,18 +1659,21 @@ def unit_lane(unit_id: str) -> str:
 
 
 def unit_drift_findings(
-    committed_units: Mapping[str, float], measured_units: Mapping[str, float]
+    committed_units: Mapping[str, float],
+    measured_units: Mapping[str, float],
+    measured_stats: Mapping[str, Mapping[str, float]] | None = None,
 ) -> tuple[list[str], int]:
     """`(findings, lanes compared)` for T3.3's drift trigger on `units`, two ways, each needing BOTH the 25% ratio AND a `MIN_UNIT_DRIFT_MS` absolute move:
 
-    - PER UNIT: one unit whose p90 moved enough to unbalance its leg (a 160 s spec doubling).
-    - PER LANE: the SUM of a lane's units, over the ids both sides price. The backstop for the hole the floor opens: a lane-wide slowdown made of units that each move under 5 s passes unit by unit, and the sum still reds once it moves the lane by 25%. MEASURED 2026-10-05: units under 5 s are at most 10% of any lane's sum except battery's 9 s, so sub-floor noise cannot carry a lane past 25% on its own, and over the last 20 refreshes no same-day refresh moved a lane sum by more than 3.4%.
+    - PER UNIT: one unit whose typical run moved enough to unbalance its leg (a 160 s spec doubling). Judged on the measured sample's spread, not its p90 alone: slower needs the MEDIAN past the committed p90, faster needs the MAX under it (see `UNIT_SLOWER_STAT`). `measured_stats` maps a unit id to `stats()`' dict; a unit with none is judged on its p90 both ways.
+    - PER LANE: the SUM of a lane's unit p90s, over the ids both sides price. The backstop for the hole the floor opens: a lane-wide slowdown made of units that each move under 5 s passes unit by unit, and the sum still reds once it moves the lane by 25%. MEASURED 2026-10-05: units under 5 s are at most 10% of any lane's sum except battery's 9 s, so sub-floor noise cannot carry a lane past 25% on its own, and over the last 20 refreshes no same-day refresh moved a lane sum by more than 3.4%.
 
     Pure, so the selftest-style tests drive it without the network.
     """
     findings: list[str] = []
     committed_sum: dict[str, float] = {}
     measured_sum: dict[str, float] = {}
+    stats_by_unit = measured_stats or {}
     for unit_id, ms in sorted(measured_units.items()):
         was = committed_units.get(unit_id)
         if was is None or ms is None:
@@ -1667,11 +1681,9 @@ def unit_drift_findings(
         lane = unit_lane(unit_id)
         committed_sum[lane] = committed_sum.get(lane, 0.0) + was
         measured_sum[lane] = measured_sum.get(lane, 0.0) + ms
-        if abs(ms - was) < MIN_UNIT_DRIFT_MS:
-            continue
-        d = drift_finding("unit %r p90" % unit_id, was, ms)
-        if d:
-            findings.append(d)
+        f = _unit_spread_finding(unit_id, was, ms, stats_by_unit.get(unit_id) or {})
+        if f:
+            findings.append(f)
     for lane in sorted(committed_sum):
         was, ms = committed_sum[lane], measured_sum[lane]
         if abs(ms - was) < MIN_UNIT_DRIFT_MS:
@@ -1680,6 +1692,48 @@ def unit_drift_findings(
         if d:
             findings.append(d)
     return findings, len(committed_sum)
+
+
+def _unit_spread_finding(
+    unit_id: str, was: float, p90: float, unit_stats: Mapping[str, float]
+) -> str | None:
+    """One unit's drift under `UNIT_SLOWER_STAT`/`UNIT_FASTER_STAT`, or None."""
+    label = "unit %r p90" % unit_id
+    if was == 0:
+        return drift_finding(label, was, p90) if abs(p90) >= MIN_UNIT_DRIFT_MS else None
+    typical = unit_stats.get(UNIT_SLOWER_STAT, p90)
+    slowest = unit_stats.get(UNIT_FASTER_STAT, p90)
+    n = unit_stats.get("n")
+    sample = "" if n is None else " of %d sample(s)" % n
+    if typical - was >= MIN_UNIT_DRIFT_MS and (typical - was) / was > DRIFT_THRESHOLD:
+        return (
+            "%s: committed %.4g, and the measured %s%s is %.4g, %.0f%% slower (over the %.0f%% limit; measured p90 %.4g)."
+            % (
+                label,
+                was,
+                UNIT_SLOWER_STAT,
+                sample,
+                typical,
+                (typical - was) / was * 100,
+                DRIFT_THRESHOLD * 100,
+                p90,
+            )
+        )
+    if was - slowest >= MIN_UNIT_DRIFT_MS and (was - slowest) / was > DRIFT_THRESHOLD:
+        return (
+            "%s: committed %.4g, and the measured %s%s is %.4g, %.0f%% faster (over the %.0f%% limit; measured p90 %.4g)."
+            % (
+                label,
+                was,
+                UNIT_FASTER_STAT,
+                sample,
+                slowest,
+                (was - slowest) / was * 100,
+                DRIFT_THRESHOLD * 100,
+                p90,
+            )
+        )
+    return None
 
 
 def prune_units_to_manifests(units: dict[str, Any], root: Path) -> dict[str, Any]:
@@ -1888,7 +1942,9 @@ def check_lane_durations(
         if d:
             findings.append(d)
 
-    unit_findings, unit_lanes = unit_drift_findings(committed.get("units") or {}, computed["units"])
+    unit_findings, unit_lanes = unit_drift_findings(
+        committed.get("units") or {}, computed["units"], computed.get("unit_stats")
+    )
     findings.extend(unit_findings)
 
     # DRIFT ONLY for job_max_seconds -- NOT leg_over_budget_finding's 12-minute ceiling. Validate Promotion/Stage Artifacts are the two jobs D-W2 keeps OUTSIDE the lane-budget gate precisely because they are not lane-sharded; their own ceiling is check_job_timeout_headroom.py's 1.5x-headroom-under-timeout-minutes rule, a different policy this check must not silently double up on.
@@ -1912,7 +1968,7 @@ def check_lane_durations(
         return 1
     print(
         "CI time budget check: %d job lane(s), %d unit(s) in %d unit lane sum(s), %d headroom job(s) sampled "
-        "from %d run(s), all within budget and within %.0f%% of committed (unit moves under %.0f s ignored)."
+        "from %d run(s), all within budget and within %.0f%% of committed (unit moves under %.0f s ignored; a unit reds slower on its %s, faster on its %s)."
         % (
             len(computed["jobs"]),
             len(computed["units"]),
@@ -1921,6 +1977,8 @@ def check_lane_durations(
             limit,
             DRIFT_THRESHOLD * 100,
             MIN_UNIT_DRIFT_MS / 1000,
+            UNIT_SLOWER_STAT,
+            UNIT_FASTER_STAT,
         )
     )
     return 0

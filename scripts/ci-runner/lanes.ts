@@ -339,7 +339,7 @@ function laneJobOf(entry: ShardInput): string | null {
  * dependency into a module whose whole point is that it has none.
  */
 class Merge {
-  private parent = new Map<string, string>();
+  private readonly parent = new Map<string, string>();
   find(x: string): string {
     let root = this.parent.get(x) ?? x;
     if (!this.parent.has(x)) this.parent.set(x, x);
@@ -613,8 +613,8 @@ export function stepDurationsMs(laneDurations: unknown): Record<string, number> 
   return out;
 }
 
-/** `stepDurationsMs` over `<root>/.ci/config/lane-durations.json`; {} when the file cannot be read, which prices every lane by count. */
-export function measuredStepDurations(root: string): Record<string, number> {
+/** `stepDurationsMs` over `<root>/.ci/config/lane-durations.json`, the LIVE measurement and nothing else; {} when the file cannot be read, which prices every lane by count. Only gate-bind's re-plan decision reads this directly; every other planner reads `measuredStepDurations`. */
+export function liveStepDurations(root: string): Record<string, number> {
   try {
     return stepDurationsMs(
       JSON.parse(readFileSync(path.join(root, '.ci', 'config', 'lane-durations.json'), 'utf-8'))
@@ -622,6 +622,242 @@ export function measuredStepDurations(root: string): Record<string, number> {
   } catch {
     return {};
   }
+}
+
+/**
+ * The prices every planner of the COMMITTED legs uses: `liveStepDurations`, with each sharded lane's ids priced instead at the snapshot its committed manifest recorded (`pricedMs`, see `stickyShardPlan`). gate-bind keeps a committed plan whose re-plan would gain under `RESHARD_MIN_GAIN_MS`, and the plan it keeps was priced by an older `lane-durations.json`; a verifier that re-planned at today's prices would then disagree with the legs CI really ran. Planning at the snapshot reproduces the committed legs exactly, because a lane's plan reads the prices of that lane's ids and nothing else. A lane whose manifest has no snapshot keeps the live prices.
+ */
+export function measuredStepDurations(root: string): Record<string, number> {
+  const snapshots: Readonly<Record<string, number | null>>[] = [];
+  for (const lane of Object.keys(SHARD_COUNTS)) {
+    const priced = readPricedSnapshot(root, lane);
+    if (priced !== undefined) snapshots.push(priced);
+  }
+  return overlayPricing(liveStepDurations(root), snapshots);
+}
+
+/** The `pricedMs` snapshot of `<root>/.ci/config/shards/<lane>.json`, or undefined when the file, or the field, is absent or malformed. */
+function readPricedSnapshot(
+  root: string,
+  lane: string
+): Readonly<Record<string, number | null>> | undefined {
+  try {
+    const file = JSON.parse(
+      readFileSync(path.join(root, '.ci', 'config', 'shards', `${lane}.json`), 'utf-8')
+    ) as { pricedMs?: unknown };
+    return pricedSnapshotOf(file.pricedMs);
+  } catch {
+    return undefined;
+  }
+}
+
+/** A manifest's `pricedMs` field as a snapshot, or undefined when it is not an object of positive numbers and nulls. */
+export function pricedSnapshotOf(raw: unknown): Record<string, number | null> | undefined {
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const out: Record<string, number | null> = {};
+  for (const [id, ms] of Object.entries(raw as Record<string, unknown>)) {
+    if (ms === null) out[id] = null;
+    else if (typeof ms === 'number' && Number.isFinite(ms) && ms > 0) out[id] = ms;
+    else return undefined;
+  }
+  return out;
+}
+
+/** `live` with every id a snapshot names priced at the snapshot's value instead; a null there means "unpriced when the plan was made", so the id is left out and `shardPlan` costs it at the lane median, exactly as it did then. Pure. */
+export function overlayPricing(
+  live: Readonly<Record<string, number>>,
+  snapshots: readonly Readonly<Record<string, number | null>>[]
+): Record<string, number> {
+  const out: Record<string, number> = { ...live };
+  for (const snapshot of snapshots) {
+    for (const [id, ms] of Object.entries(snapshot)) {
+      if (ms === null) delete out[id];
+      else out[id] = ms;
+    }
+  }
+  return out;
+}
+
+/**
+ * THE RE-PLAN HYSTERESIS (#d901ba82). gate-bind replaces a sharded lane's committed legs only when the fresh plan's WORST leg is at least this much cheaper than the committed plan's worst leg, both priced at today's measurement. Below it, the committed plan stays byte for byte.
+ *
+ * MEASURED 2026-10-06 over every commit that rewrote `.ci/config/shards/quality-code.json`: the four lane-durations refreshes of 2026-10-05/06 (7fe78ca13, ca285d61d, f288a0d4e, 6fe24d1cb) each reshuffled the legs (112-130 manifest lines, 74-92 ci-quality.yml lines) for a worst-leg gain of 0.0, 0.0, 0.0 and 0.7 s against a 121 s worst leg, while the one re-plan that mattered, 00fa66691, cut the worst leg from 221 s to 121 s. 15 s sits two orders of magnitude above the churn and well under the real gain, and is 12% of today's worst leg. Same spirit as check-lane-budget's `REBALANCE_ADVISORY_MIN` (30 s, advisory, other lanes); its own constant, because this one decides a write.
+ */
+export const RESHARD_MIN_GAIN_MS = 15_000;
+
+/** The per-leg ceiling, in minutes, a committed leg is held to. check-lane-budget's `PER_LEG_BUDGET_MIN` is this constant; a sharded lane's leg is also held to its job's `timeout-minutes` when that is lower. */
+export const SHARD_LEG_CAP_MIN = 12;
+
+/** A committed plan, as `stickyShardPlan` reads it: the manifest's legs and its pricing snapshot. */
+export interface ShardAnchor {
+  legs: readonly { index: number; ids: readonly string[] }[];
+  pricedMs?: Readonly<Record<string, number | null>>;
+}
+
+/** Each leg's cost in the planner's own currency (`withMeasuredFallback`'s milliseconds, else count) at `durations`. An id outside the lane costs nothing here; `committedPlanFindings` is what names it. Pure. */
+export function legCostsMs(
+  lane: string,
+  lock: readonly ShardInput[],
+  legs: readonly { ids: readonly string[] }[],
+  durations: Readonly<Record<string, number>> | undefined
+): number[] {
+  const entries = lock.filter((e) => laneJobOf(e) === lane);
+  const byId = new Map(entries.map((e) => [e.id, e]));
+  const priced = withMeasuredFallback(entries, durations);
+  return legs.map((leg) =>
+    leg.ids.reduce((sum, id) => {
+      const entry = byId.get(id);
+      if (entry === undefined) return sum;
+      return sum + (priced?.[id] ?? Math.max(1, entry.cores?.min ?? 1));
+    }, 0)
+  );
+}
+
+/** Everything structurally wrong with a committed plan for `lane` at `want` legs: a leg count or index that is off, an empty leg, a lane gate in no leg, a gate in two legs, an id the lane does not hold. Empty means the shape is sound; `stickyShardPlan` still replays it through the planner for the rules this cannot see (mutex, needs, heavy). Pure. */
+export function committedPlanFindings(
+  lane: string,
+  lock: readonly ShardInput[],
+  anchor: ShardAnchor,
+  want: number
+): string[] {
+  const findings: string[] = [];
+  if (anchor.legs.length !== want) {
+    findings.push(
+      `${lane}: committed plan has ${anchor.legs.length} leg(s), the lane asks for ${want}`
+    );
+  }
+  const indexes = anchor.legs.map((l) => l.index).sort((a, b) => a - b);
+  if (indexes.some((index, i) => index !== i + 1)) {
+    findings.push(
+      `${lane}: committed leg indexes are ${indexes.join(', ')}, not 1..${anchor.legs.length}`
+    );
+  }
+  const laneIds = new Set(lock.filter((e) => laneJobOf(e) === lane).map((e) => e.id));
+  const legOf = new Map<string, number>();
+  for (const leg of anchor.legs) {
+    if (leg.ids.length === 0) findings.push(`${lane}: committed leg ${leg.index} is EMPTY`);
+    for (const id of leg.ids) {
+      const prior = legOf.get(id);
+      if (prior !== undefined) {
+        findings.push(`${lane}: ${id} is in committed legs ${prior} and ${leg.index}`);
+      } else {
+        legOf.set(id, leg.index);
+      }
+      if (!laneIds.has(id)) {
+        findings.push(`${lane}: committed leg ${leg.index} holds ${id}, which the lane does not`);
+      }
+    }
+  }
+  for (const id of [...laneIds].sort()) {
+    if (!legOf.has(id)) findings.push(`${lane}: ${id} is in no committed leg`);
+  }
+  return findings;
+}
+
+/** `stickyShardPlan`'s answer: the shards to emit, the pricing snapshot to record beside them, and why. */
+export interface StickyShardPlan {
+  shards: Shard[];
+  pricedMs: Record<string, number | null>;
+  kept: boolean;
+  /** One line naming why the committed plan was kept or replaced. */
+  reason: string;
+  /** What made the committed plan unusable, when that is why it was replaced. */
+  findings: string[];
+  /** Committed worst leg minus fresh worst leg at live prices; null with no usable committed plan. */
+  gainMs: number | null;
+}
+
+/**
+ * The plan gate-bind emits for one sharded lane: the COMMITTED plan unless it is unusable or a fresh plan beats its worst leg by `minGainMs`.
+ *
+ * Unusable means any of: no committed plan or no `pricedMs` snapshot; a `committedPlanFindings` finding (a gate missing, a gate in two legs, a leg count off); the planner, re-run at the snapshot's prices, no longer producing exactly these legs (the lock changed a gate, a mutex, a `needs` edge or a heavy flag); a leg over `legCapMs` at live prices. A fresh plan records the live prices of the lane's ids as its snapshot; a kept plan keeps its own. Pure.
+ */
+export function stickyShardPlan(
+  lock: readonly ShardInput[],
+  caps: ReadonlyMap<string, LaneCapabilities>,
+  lane: string,
+  want: number,
+  live: Readonly<Record<string, number>>,
+  anchor: ShardAnchor | undefined,
+  minGainMs: number = RESHARD_MIN_GAIN_MS,
+  legCapMs: number = SHARD_LEG_CAP_MIN * 60_000
+): StickyShardPlan | { error: string } {
+  const freshPlan = shardPlan(lock, caps, { [lane]: want }, live);
+  if ('error' in freshPlan) return { error: freshPlan.error };
+  const fresh = (freshPlan.lanes[0] as LaneShards).shards;
+  const laneIds = lock.filter((e) => laneJobOf(e) === lane).map((e) => e.id);
+  const livePriced: Record<string, number | null> = {};
+  for (const id of [...laneIds].sort()) livePriced[id] = live[id] ?? null;
+  const replan = (reason: string, findings: string[] = [], gainMs: number | null = null) => ({
+    shards: fresh,
+    pricedMs: livePriced,
+    kept: false,
+    reason,
+    findings,
+    gainMs,
+  });
+  if (anchor === undefined) return replan('no committed plan');
+  const findings = committedPlanFindings(lane, lock, anchor, want);
+  if (anchor.pricedMs === undefined) {
+    findings.push(`${lane}: committed plan records no pricing snapshot (pricedMs)`);
+  }
+  if (findings.length > 0) return replan('the committed plan is unusable', findings);
+  const replayPlan = shardPlan(
+    lock,
+    caps,
+    { [lane]: want },
+    overlayPricing(live, [anchor.pricedMs ?? {}])
+  );
+  if ('error' in replayPlan) {
+    return replan('the committed plan is unusable', [
+      `${lane}: replay refused: ${replayPlan.error}`,
+    ]);
+  }
+  const replay = (replayPlan.lanes[0] as LaneShards).shards;
+  const sameLegs =
+    replay.length === anchor.legs.length &&
+    replay.every(
+      (s) =>
+        JSON.stringify(anchor.legs.find((l) => l.index === s.index)?.ids ?? null) ===
+        JSON.stringify(s.ids)
+    );
+  if (!sameLegs) {
+    return replan('the committed plan is unusable', [
+      `${lane}: the planner no longer produces the committed legs at their own recorded prices, so the lock changed under them`,
+    ]);
+  }
+  const cap = caps.get(lane)?.timeoutMinutes;
+  const capMs = Math.min(legCapMs, cap === null || cap === undefined ? Infinity : cap * 60_000);
+  const committedCosts = legCostsMs(lane, lock, anchor.legs, live);
+  const over = committedCosts
+    .map((ms, i) => ({ ms, index: anchor.legs[i]?.index }))
+    .filter((leg) => leg.ms > capMs);
+  if (over.length > 0) {
+    return replan(
+      'the committed plan is unusable',
+      over.map(
+        (leg) =>
+          `${lane}: committed leg ${leg.index} costs ${(leg.ms / 1000).toFixed(1)} s, over its ${(capMs / 1000).toFixed(0)} s cap`
+      )
+    );
+  }
+  const freshWorst = Math.max(...legCostsMs(lane, lock, fresh, live));
+  const gainMs = Math.max(...committedCosts) - freshWorst;
+  if (gainMs >= minGainMs) {
+    return replan(
+      `a fresh plan cuts the worst leg by ${(gainMs / 1000).toFixed(1)} s (threshold ${(minGainMs / 1000).toFixed(0)} s)`,
+      [],
+      gainMs
+    );
+  }
+  return {
+    shards: replay,
+    pricedMs: { ...(anchor.pricedMs ?? {}) },
+    kept: true,
+    reason: `kept: a fresh plan would cut the worst leg by ${(gainMs / 1000).toFixed(1)} s, under the ${(minGainMs / 1000).toFixed(0)} s threshold`,
+    findings: [],
+    gainMs,
+  };
 }
 
 export function shardPlan(

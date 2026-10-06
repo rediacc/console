@@ -35,13 +35,19 @@ import { fileURLToPath } from 'node:url';
 import {
   type LaneCapabilities,
   laneCapabilities,
-  measuredStepDurations,
+  liveStepDurations,
+  overlayPricing,
   placeGate,
+  pricedSnapshotOf,
+  RESHARD_MIN_GAIN_MS,
   SHARD_COUNTS,
   SHARD_REPLICATED_MAX,
+  type ShardAnchor,
   type ShardInput,
+  type StickyShardPlan,
   satisfies,
   shardPlan,
+  stickyShardPlan,
 } from './ci-runner/lanes.js';
 import {
   buildShardManifest,
@@ -499,18 +505,21 @@ export function shardAssignment(
   caps: Parameters<typeof shardPlan>[1],
   emitting: readonly Emitting[],
   counts: Readonly<Record<string, number>> = SHARD_COUNTS,
-  ceilings: Readonly<Record<string, number>> = SHARD_REPLICATED_MAX
-): { legs: Map<string, number>; replicated: string[] } | { error: string } | null {
+  ceilings: Readonly<Record<string, number>> = SHARD_REPLICATED_MAX,
+  anchor: ShardAnchor | undefined = undefined,
+  live: Readonly<Record<string, number>> = liveStepDurations(ROOT)
+):
+  | { legs: Map<string, number>; replicated: string[]; sticky: StickyShardPlan }
+  | { error: string }
+  | null {
   const want = counts[job];
   if (want === undefined) return null;
-  // Priced by measured step time, not by count: equal-count legs held 21 s and 216 s of measured work (PLAN-prepush-full-cpu, writer F).
-  const plan = shardPlan(lock, caps, { [job]: want }, measuredStepDurations(ROOT));
-  if ('error' in plan) return { error: plan.error };
+  // Priced by measured step time, not by count: equal-count legs held 21 s and 216 s of measured work (PLAN-prepush-full-cpu, writer F). And STICKY (#d901ba82): `anchor` is the committed plan, kept unless it is unusable or a fresh plan gains RESHARD_MIN_GAIN_MS on the worst leg, so a lane-durations refresh no longer reshuffles the legs for nothing.
+  const sticky = stickyShardPlan(lock, caps, job, want, live, anchor);
+  if ('error' in sticky) return { error: sticky.error };
   const legs = new Map<string, number>();
-  for (const lane of plan.lanes) {
-    for (const shard of lane.shards) {
-      for (const id of shard.ids) legs.set(id, shard.index);
-    }
+  for (const shard of sticky.shards) {
+    for (const id of shard.ids) legs.set(id, shard.index);
   }
   const emittedSteps = new Set(emitting.map((e) => e.step));
   const laneEntries = lock.filter((e) => e.ci.kind === 'step' && e.ci.job === job);
@@ -537,7 +546,20 @@ export function shardAssignment(
         'gate-bind can emit them, or drop the lane from SHARD_COUNTS.',
     };
   }
-  return { legs, replicated };
+  return { legs, replicated, sticky };
+}
+
+/** The committed manifest at `file` as a `stickyShardPlan` anchor, or undefined when it is absent or does not parse (a re-plan then writes a fresh one). */
+export function readShardAnchor(file: string, lane: string): ShardAnchor | undefined {
+  if (!fs.existsSync(file)) return undefined;
+  try {
+    const text = fs.readFileSync(file, 'utf8');
+    const committed = parseShardManifest(text, lane);
+    const pricedMs = pricedSnapshotOf((JSON.parse(text) as { pricedMs?: unknown }).pricedMs);
+    return pricedMs === undefined ? { legs: committed.legs } : { legs: committed.legs, pricedMs };
+  } catch {
+    return undefined;
+  }
 }
 
 /**
@@ -1890,7 +1912,7 @@ function selftest(endToEnd = false): number {
     '        run: echo hi',
     '',
   ].join('\n');
-  const SS_JOB_WITH_REGION = (shards: string) =>
+  const ssJobWithRegion = (shards: string) =>
     [
       '  quality-code:',
       '    name: Code',
@@ -1924,18 +1946,18 @@ function selftest(endToEnd = false): number {
   );
   ck(
     'a region for a lane not in SHARD_COUNTS refuses as a drain',
-    rewriteStrategyRegions(SS_JOB_WITH_REGION('1, 2, 3, 4'), {})[0]?.includes(
+    rewriteStrategyRegions(ssJobWithRegion('1, 2, 3, 4'), {})[0]?.includes(
       'is a drain, not a no-op'
     ) === true
   );
   ck(
     'a region agreeing with SHARD_COUNTS is silent',
-    rewriteStrategyRegions(SS_JOB_WITH_REGION('1, 2, 3, 4'), { 'quality-code': 4 }).length === 0
+    rewriteStrategyRegions(ssJobWithRegion('1, 2, 3, 4'), { 'quality-code': 4 }).length === 0
   );
   ck(
     'a region whose shard list disagrees with SHARD_COUNTS refuses, naming both',
     (() => {
-      const f = rewriteStrategyRegions(SS_JOB_WITH_REGION('1, 2'), { 'quality-code': 4 });
+      const f = rewriteStrategyRegions(ssJobWithRegion('1, 2'), { 'quality-code': 4 });
       return (
         f.length === 1 && f[0]?.includes('lists [1, 2]') && f[0]?.includes('expected [1, 2, 3, 4]')
       );
@@ -2213,6 +2235,134 @@ function selftest(endToEnd = false): number {
         (byDurationTwoShards as { lanes: { shards: { ids: string[] }[] }[] }).lanes[0]?.shards.some(
           (s) => s.ids.length === 1 && s.ids[0] === 'dur:c'
         ) === true
+    );
+  }
+
+  // #d901ba82: the re-plan hysteresis. A refresh that would reshuffle the legs for a negligible gain keeps the committed plan; a real gain, or a committed plan that is broken, re-plans.
+  {
+    const stCaps = new Map<string, LaneCapabilities>([
+      [
+        'quality-code',
+        {
+          job: 'quality-code',
+          runsOn: 'ubuntu-latest',
+          timeoutMinutes: 15,
+          submodules: [],
+          node: true,
+          tools: [],
+        },
+      ],
+    ]);
+    const stLock: ShardInput[] = ['a', 'b', 'c', 'd', 'e', 'f'].map((x) => ({
+      id: `st:${x}`,
+      cores: { min: 1, max: 1 },
+      ci: { kind: 'step', job: 'quality-code', step: x },
+    }));
+    const s = (o: Record<string, number>): Record<string, number> =>
+      Object.fromEntries(Object.entries(o).map(([k, v]) => [`st:${k}`, v * 1000]));
+    const legsOf = (p: StickyShardPlan | { error: string }): string =>
+      'error' in p ? p.error : JSON.stringify(p.shards.map((x) => x.ids));
+    const asAnchor = (p: StickyShardPlan | { error: string }): ShardAnchor | undefined =>
+      'error' in p
+        ? undefined
+        : { legs: p.shards.map((x) => ({ index: x.index, ids: x.ids })), pricedMs: p.pricedMs };
+    const priorLive = s({ a: 100, b: 90, c: 80, d: 70, e: 60, f: 50 });
+    const first = stickyShardPlan(stLock, stCaps, 'quality-code', 2, priorLive, undefined);
+    const committed = asAnchor(first);
+    // Noise: a and b trade 10 s, enough that a fresh plan comes out with different legs, and the worst leg is 230 s either way.
+    const noisyLive = s({ a: 90, b: 100, c: 80, d: 70, e: 60, f: 50 });
+    const freshNoisy = stickyShardPlan(stLock, stCaps, 'quality-code', 2, noisyLive, undefined);
+    const keptNoisy = stickyShardPlan(stLock, stCaps, 'quality-code', 2, noisyLive, committed);
+    ck(
+      'CONTROL: the noise fixture really does move a fresh plan, so the next check is not vacuous',
+      legsOf(freshNoisy) !== legsOf(first),
+      [legsOf(first), legsOf(freshNoisy)]
+    );
+    ck(
+      `a refresh whose re-plan gains under RESHARD_MIN_GAIN_MS (${RESHARD_MIN_GAIN_MS} ms) keeps the committed legs and their pricing`,
+      !('error' in keptNoisy) &&
+        keptNoisy.kept &&
+        legsOf(keptNoisy) === legsOf(first) &&
+        JSON.stringify(keptNoisy.pricedMs) === JSON.stringify(committed?.pricedMs),
+      'error' in keptNoisy ? keptNoisy : [keptNoisy.reason, legsOf(keptNoisy)]
+    );
+    ck(
+      'every other planner, pricing at the committed snapshot over the live map, re-derives the kept legs exactly',
+      (() => {
+        const replay = shardPlan(
+          stLock,
+          stCaps,
+          { 'quality-code': 2 },
+          overlayPricing(noisyLive, [committed?.pricedMs ?? {}])
+        );
+        return (
+          !('error' in replay) &&
+          JSON.stringify(replay.lanes[0]?.shards.map((x) => x.ids)) === legsOf(first)
+        );
+      })()
+    );
+    // A real shift: c and f, which the committed plan put on one leg, triple; a fresh plan cuts the worst leg by 100 s.
+    const shiftedLive = s({ a: 100, b: 90, c: 240, d: 70, e: 60, f: 150 });
+    const replanned = stickyShardPlan(stLock, stCaps, 'quality-code', 2, shiftedLive, committed);
+    ck(
+      'a fresh plan that gains at least RESHARD_MIN_GAIN_MS on the worst leg replaces the committed one and records live prices',
+      !('error' in replanned) &&
+        !replanned.kept &&
+        (replanned.gainMs ?? 0) >= RESHARD_MIN_GAIN_MS &&
+        replanned.pricedMs['st:c'] === 240_000,
+      'error' in replanned ? replanned : [replanned.reason, replanned.gainMs]
+    );
+    const broken = (legs: string[][]): StickyShardPlan | { error: string } =>
+      stickyShardPlan(stLock, stCaps, 'quality-code', 2, noisyLive, {
+        legs: legs.map((ids, i) => ({ index: i + 1, ids: ids.map((x) => `st:${x}`) })),
+        pricedMs: committed?.pricedMs,
+      });
+    const missing = broken([
+      ['a', 'd', 'e'],
+      ['b', 'c'],
+    ]);
+    const twice = broken([
+      ['a', 'd', 'e', 'f'],
+      ['b', 'c', 'f'],
+    ]);
+    ck(
+      'CONTROL: a committed plan missing a gate is replaced, and the finding names the gate',
+      !('error' in missing) &&
+        !missing.kept &&
+        missing.findings.some((f) => f.includes('st:f is in no committed leg')),
+      'error' in missing ? missing : missing.findings
+    );
+    ck(
+      'CONTROL: a committed plan holding a gate in two legs is replaced, and the finding names both legs',
+      !('error' in twice) &&
+        !twice.kept &&
+        twice.findings.some((f) => f.includes('st:f is in committed legs 1 and 2')),
+      'error' in twice ? twice : twice.findings
+    );
+    const overCap = stickyShardPlan(
+      stLock,
+      stCaps,
+      'quality-code',
+      2,
+      noisyLive,
+      committed,
+      RESHARD_MIN_GAIN_MS,
+      100_000
+    );
+    ck(
+      'CONTROL: a committed leg over its cap is replaced even when a re-plan gains nothing',
+      !('error' in overCap) &&
+        !overCap.kept &&
+        overCap.findings.some((f) => f.includes('over its 100 s cap')),
+      'error' in overCap ? overCap : overCap.findings
+    );
+    const noSnapshot = stickyShardPlan(stLock, stCaps, 'quality-code', 2, noisyLive, {
+      legs: committed?.legs ?? [],
+    });
+    ck(
+      'CONTROL: a committed plan with no pricing snapshot is replaced, since no other planner could re-derive it',
+      !('error' in noSnapshot) && !noSnapshot.kept,
+      'error' in noSnapshot ? noSnapshot : noSnapshot.reason
     );
   }
 
@@ -2656,7 +2806,16 @@ function main(argv: string[]): void {
     const shardMap = new Map<string, ReadonlyMap<string, number>>();
     const peerMap = new Map<string, ReadonlyMap<string, readonly string[]>>();
     for (const job of Object.keys(SHARD_COUNTS)) {
-      const assigned = shardAssignment(job, lockEntries, caps, byLane.get(job) ?? []);
+      const manifestPath = path.join(genRoot, shardManifestPath(job));
+      const assigned = shardAssignment(
+        job,
+        lockEntries,
+        caps,
+        byLane.get(job) ?? [],
+        SHARD_COUNTS,
+        SHARD_REPLICATED_MAX,
+        readShardAnchor(manifestPath, job)
+      );
       if (assigned === null) continue;
       if ('error' in assigned) {
         console.error(`✗ ${job}: ${assigned.error}`);
@@ -2671,21 +2830,29 @@ function main(argv: string[]): void {
         for (const id of assigned.replicated) console.log(`    ${id}`);
       }
       shardMap.set(job, assigned.legs);
+      // WHY THE LEGS ARE WHAT THEY ARE, every run: kept (and by how little a re-plan would gain) or replaced (and what was wrong with the committed plan).
+      // The findings go to stderr, so `--check` (which runs this as a child with stdout ignored) names what broke the committed plan, not just the file.
+      console.log(`shard plan ${job}: ${assigned.sticky.reason}`);
+      for (const f of assigned.sticky.findings) console.error(`  shard plan: ${f}`);
       // T2.10. THE COMMITTED MANIFEST A CI LEG AND `npm run ci -- --lane/--shard` BOTH READ, written from the SAME `assigned.legs` the `matrix.shard` conjunct above comes from, so the two can never name different plans. `--dry-run` reports what would change without writing, same as the workflow rewrite below.
-      const manifestPath = path.join(genRoot, shardManifestPath(job));
       const freshLegs = legsFromAssignment(assigned.legs, SHARD_COUNTS[job] as number);
+      // The pricing snapshot rides the manifest, so every other planner (`measuredStepDurations`) re-derives exactly these legs.
+      const withPricing = (at: string | undefined) => ({
+        ...buildShardManifest(job, freshLegs, at),
+        pricedMs: assigned.sticky.pricedMs,
+      });
       // AN UNCHANGED PLAN KEEPS ITS TIMESTAMP. Stamping `now` on every `--write` rewrote the committed manifest with a new `generatedAt` and nothing else, so every regenerate left a one-line diff that reviewed as a plan change (2026-09-27, quality-code.json). The stamp moves only when the legs do.
       let keptAt: string | undefined;
       if (fs.existsSync(manifestPath)) {
         try {
           const committed = parseShardManifest(fs.readFileSync(manifestPath, 'utf8'), job);
-          const probe = buildShardManifest(job, freshLegs, committed.generatedAt);
+          const probe = withPricing(committed.generatedAt);
           if (JSON.stringify(probe) === JSON.stringify(committed)) keptAt = committed.generatedAt;
         } catch {
           keptAt = undefined;
         }
       }
-      const manifestFile = buildShardManifest(job, freshLegs, keptAt);
+      const manifestFile = withPricing(keptAt);
       const manifestText = `${JSON.stringify(manifestFile, null, 2)}\n`;
       if (dryRun) {
         const onDisk = fs.existsSync(manifestPath)
