@@ -186,3 +186,49 @@ function pollPlayerReady(evalInPage, budgetMs) {
     return { ok: false, reason: String(error) };
   }
 }
+
+/**
+ * Walks a failure's structured details for the document stamp (`sameDocument`, set per document
+ * by the gate's open()). `false` means the page reloaded after the scenario opened it, which is
+ * dev-server noise; `true` means the document survived, so a missing or wrong player is a
+ * product defect. Returns whether any `false` and any `true` were seen.
+ */
+export function documentStampEvidence(details) {
+  const seen = { reloaded: false, sameDocument: false };
+  const walk = (node) => {
+    if (node === null || typeof node !== 'object') return;
+    if (node.sameDocument === false) seen.reloaded = true;
+    if (node.sameDocument === true) seen.sameDocument = true;
+    for (const value of Object.values(node)) walk(value);
+  };
+  walk(details);
+  return seen;
+}
+
+/**
+ * Runs a scenario; when it fails ONLY with evidence that the page reloaded under it, runs it once
+ * more on a fresh load and says so loudly. A second failure, a failure with no reload evidence,
+ * or any failure whose evidence shows the document survived (`sameDocument: true`) is kept as is:
+ * a real player failure is never retried. Returns the scenario's reload retries (0 or 1).
+ */
+export function runScenarioRetryingReload({ name, run, failures, log }) {
+  const before = failures.length;
+  run();
+  const fresh = failures.slice(before);
+  if (fresh.length === 0) return 0;
+  const evidence = fresh.map((f) => documentStampEvidence(f.details));
+  if (!evidence.some((e) => e.reloaded) || evidence.some((e) => e.sameDocument)) return 0;
+  log(
+    `⚠ RETRY: scenario "${name}" failed with sameDocument=false (the page reloaded mid-scenario, ` +
+      `a test-environment event, not a player verdict); discarding ${fresh.length} failure(s) and ` +
+      `re-running it ONCE on a fresh load: ${fresh.map((f) => f.message).join(' | ')}`
+  );
+  failures.length = before;
+  run();
+  if (failures.length > before) {
+    log(`⚠ RETRY of scenario "${name}" failed too; the failure stands`);
+  } else {
+    log(`⚠ RETRY of scenario "${name}" passed after one reload retry`);
+  }
+  return 1;
+}
