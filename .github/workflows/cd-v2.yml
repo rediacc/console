@@ -107,7 +107,7 @@ jobs:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      # Auto-derives from the latest green Console CI on main when ci_run_id is
+      # Auto-derives from the latest green Console CI PUSH run on main that staged artifacts (a no-op duplicate or a nightly stages nothing) when ci_run_id is
       # empty; otherwise validates the supplied run. See the script header for
       # why "is this the latest green run" is deliberately NOT one of the checks.
       - name: Resolve CI run context
