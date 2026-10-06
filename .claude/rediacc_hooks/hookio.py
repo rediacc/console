@@ -492,3 +492,19 @@ def repo_root():
             return candidate
     msg = "no repository root above %s (looked for a directory holding .claude and .ci)" % __file__
     raise RuntimeError(msg)
+
+
+def write_world_file(path, text):
+    """Write a differential fixture file at a FIXED path without a torn read.
+
+    Several guards build their world at one `tempfile.gettempdir()` path, because the goldens quote that path literally. Every pytest process on the host shares it: xdist workers, and a second checkout's pre-push. `open(path, "w")` truncates first, so a guard run by one process between another's truncate and write read an empty record and admitted the edit (rc 0 against golden rc 2, block_compacted_plan_edit, 1006-2 pre-push 2026-10-06). Equal bytes are left alone; anything else lands whole through `os.replace`.
+    """
+    path = pathlib.Path(path)
+    try:
+        if path.read_text(encoding="utf-8") == text:
+            return
+    except OSError:
+        pass
+    tmp = path.with_name(".%s.%d.tmp" % (path.name, os.getpid()))
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)

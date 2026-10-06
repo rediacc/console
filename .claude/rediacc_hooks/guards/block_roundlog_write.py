@@ -76,9 +76,9 @@ def _round_log_world(_unused):
     reports = os.path.join(WORLD, "reports")
     os.makedirs(reports, exist_ok=True)
     for path in (EXISTING_LOG, EXISTING_BRIEFING):
-        if not os.path.exists(path):
-            with open(path, "w", encoding="utf-8") as handle:
-                handle.write("# wave header\n\n## STATUS (round 1, 2026-08-19T00:00:00Z)\n\nx\n")
+        hookio.write_world_file(
+            path, "# wave header\n\n## STATUS (round 1, 2026-08-19T00:00:00Z)\n\nx\n"
+        )
     return WORLD
 
 

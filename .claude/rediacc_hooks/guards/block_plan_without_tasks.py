@@ -173,8 +173,7 @@ def _plan_world(_unused):
     """The two plan files the on-disk branches need. Idempotent by design."""
     os.makedirs(os.path.join(WORLD, "agent"), exist_ok=True)
     for path, text in ((LEGACY_PLAN, PROSE_PLAN), (TASKED_PLAN, TASKED_PLAN_TEXT)):
-        with open(path, "w", encoding="utf-8") as handle:
-            handle.write(text)
+        hookio.write_world_file(path, text)
     return WORLD
 
 

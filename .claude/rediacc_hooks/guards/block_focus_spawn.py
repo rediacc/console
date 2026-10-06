@@ -56,9 +56,7 @@ def _focus_world(_unused):
         {"ev": "add", "id": "f3c3f3c3", "at": now, "by": _PEER, "s": " ", "o": _PEER, "t": "(%s) a peer's fix pr:543/fix" % _PEER},
         {"ev": "focus", "at": now, "by": me8, "o": me8, "mode": "babysit", "branch": "0925-1", "pr": 543, "why": "operator"},
     ]  # fmt: skip
-    (store / ("%s.jsonl" % me8)).write_text(
-        "".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8"
-    )
+    hookio.write_world_file(store / ("%s.jsonl" % me8), "".join(json.dumps(r) + "\n" for r in rows))
     return WORLD
 
 
