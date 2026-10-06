@@ -91,6 +91,9 @@ MUTEX_SPIN_S = 0.001
 # How long `--wait` sleeps between whole-grant attempts.
 WAIT_POLL_SECONDS = 0.2
 
+# A `--wait` grant that came after blocking is topped up until one pause of this length adds nothing. A holder's tokens are freed one descriptor at a time as the kernel tears the process down, so a waiter that wakes mid-teardown sees only some of them (measured 2026-10-06 under load: killing a 3-token holder showed 1 or 2 tokens free to a tight poller in 43 of 100 kills); taking that partial grant would shortchange the waiter for the whole life of its command.
+SETTLE_SECONDS = 0.1
+
 # A live holder whose process tree has used no CPU for this long is reported as IDLE by `status`.
 IDLE_REPORT_SECONDS = 600
 
@@ -126,6 +129,11 @@ DEFECTS: dict[str, tuple[str, str]] = {
     "runs-no-cap": (
         "    return max(minimum, 1, min(maximum, -(-pool.size // max(1, runs))))\n",
         "    return maximum\n",
+    ),
+    # A waiter that wakes takes the tokens free at that instant and does not settle: a holder whose tokens are freed one by one leaves it a partial grant.
+    "no-settle": (
+        "            if got and told and len(got) < maximum:\n",
+        "            if False:\n",
     ),
     # Acquire without LOCK_NB: the second acquirer blocks in the kernel on the first held token.
     "blocking-flock": (
@@ -474,6 +482,8 @@ class Pool:
         told = False
         while True:
             got = self.try_acquire(minimum, maximum, label)
+            if got and told and len(got) < maximum:
+                got = self._settle(got, maximum, label)
             if got or not wait:
                 return got
             if deadline is not None and time.monotonic() >= deadline:
@@ -482,6 +492,16 @@ class Pool:
                 on_wait()
                 told = True
             time.sleep(WAIT_POLL_SECONDS)
+
+    def _settle(self, held: list[Token], maximum: int, label: str) -> list[Token]:
+        """`held`, plus whatever else frees up while the grant settles: a pause, then a top-up, until a pause adds nothing or `maximum` is reached."""
+        while len(held) < maximum:
+            time.sleep(SETTLE_SECONDS)
+            more = self.try_acquire(0, maximum - len(held), label)
+            if not more:
+                break
+            held = [*held, *more]
+        return held
 
     @staticmethod
     def release(tokens: Sequence[Token]) -> None:

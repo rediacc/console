@@ -15,6 +15,7 @@ import selectors
 import signal
 import subprocess
 import sys
+import threading
 import time
 from typing import TYPE_CHECKING
 
@@ -135,10 +136,54 @@ def scenario_kill_frees(lease: Lease) -> list[str]:
     early = readline(waiter, BLOCKED_S)
     if early is not None:
         return ["the waiter answered %r with every token held; it must block" % early]
-    kill9(first)
+    # The waiter is stopped across the kill: the kernel frees a dying holder's tokens one descriptor at a time, and a waiter polling mid-teardown legitimately sees a part of them (scenario_partial_release covers that). Stopped, its first look is after the holder is fully reaped, so the answer is 3 however loaded the machine is.
+    os.kill(waiter.pid, signal.SIGSTOP)
+    try:
+        kill9(first)
+    finally:
+        os.kill(waiter.pid, signal.SIGCONT)
     got = readline(waiter, ANSWER_S)
     if got != "3":
         return ["after kill -9 of the 3-token holder the waiter printed %r, want '3'" % got]
+    return []
+
+
+PARTIAL_POLL_S = 0.002
+PARTIAL_GAP_S = 0.015
+
+
+def scenario_partial_release(lease: Lease) -> list[str]:
+    """A waiter that wakes while a holder's 3 tokens are freed one at a time, polling much faster than they are freed, still ends with all 3."""
+    mod = load_module(lease.module)
+    mod.WAIT_POLL_SECONDS = PARTIAL_POLL_S  # type: ignore[attr-defined]
+    pool = mod.Pool(lease.pool, TOKENS)  # type: ignore[attr-defined]
+    pool.ensure()
+    holder = pool.try_acquire(3, 3)
+    other = pool.try_acquire(1, 1)
+    if len(holder) != 3 or len(other) != 1:
+        return ["setup: holder got %d and other %d, want 3 and 1" % (len(holder), len(other))]
+    waiting = threading.Event()
+    got: list[object] = []
+
+    def wait_for_tokens() -> None:
+        got.extend(pool.acquire(1, 3, wait=True, timeout=ANSWER_S, on_wait=waiting.set))
+
+    def free_one_by_one() -> None:
+        for token in holder:
+            time.sleep(PARTIAL_GAP_S)
+            pool.release([token])
+
+    waiter = threading.Thread(target=wait_for_tokens)
+    waiter.start()
+    if not waiting.wait(ANSWER_S):
+        return ["the waiter never started waiting"]
+    freer = threading.Thread(target=free_one_by_one)
+    freer.start()
+    freer.join(ANSWER_S)
+    waiter.join(ANSWER_S * 2)
+    pool.release([*got, *other])  # type: ignore[arg-type]
+    if len(got) != 3:
+        return ["a waiter woken by tokens freed one by one took %d, want 3" % len(got)]
     return []
 
 
@@ -353,6 +398,7 @@ def scenario_share_cap(lease: Lease) -> list[str]:
 SCENARIOS = {
     "over_grant": scenario_over_grant,
     "kill_frees": scenario_kill_frees,
+    "partial_release": scenario_partial_release,
     "short_without_wait": scenario_short_without_wait,
     "broker_eof": scenario_broker_eof,
     "probe_race": scenario_probe_race,
@@ -364,6 +410,7 @@ SCENARIOS = {
 # The plant that each scenario must catch, per the plan's Writer split (C).
 PLANTED = [
     ("sidecar-count", "kill_frees"),
+    ("no-settle", "partial_release"),
     ("blocking-flock", "over_grant"),
     ("unguarded-scan", "probe_race"),
     ("runs-file-count", "runs_registered"),
