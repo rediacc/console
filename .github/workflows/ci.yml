@@ -2078,7 +2078,10 @@ jobs:
       # FAILED (the 2026-10-06 pair, 37437281526 / 37437282770) is a red
       # verdict on this exact commit, so the release stops and names it. A
       # sibling still queued behind ci-main is fine: duplicate-run makes it a
-      # no-op. Fails open on an unreadable API, as dispatch_release does.
+      # no-op. An EARLIER sibling cancelled as a whole refuses too, unless
+      # this run is its clean retry: attempt 1 with every job passed
+      # (operator ruling 2026-10-06). Fails open on an unreadable API, as
+      # dispatch_release does.
       - name: Refuse when a sibling run on this commit failed
         if: needs.initialize.outputs.skip_release != 'true'
         env:
@@ -2086,6 +2089,7 @@ jobs:
         run: >-
           PYTHONPATH=.ci python3 -m rediacc_ci.ci.sibling_runs release-gate
           --repo "$GITHUB_REPOSITORY" --sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID"
+          --run-attempt "$GITHUB_RUN_ATTEMPT"
       - name: Write release sentinels
         if: needs.initialize.outputs.skip_release != 'true'
         env:

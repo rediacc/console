@@ -8,7 +8,7 @@ TWO DECISIONS, ONE READ.
 
 A sibling is an original only when its own `Initialize` job did not SKIP. A run whose Initialize skipped did no work (it was itself a duplicate, or a bot push), and a green no-op is not evidence that the sha passed CI: without this, a chain (run 1 in progress, run 2 a duplicate of it, run 1 then fails, run 3 arrives) would let run 3 skip on run 2's empty green. The jobs read is only made for a candidate original; a candidate whose jobs cannot be read is not counted.
 
-`release-gate` (a step in `finalize-release-sentinel`, BEFORE the sentinel is sealed). Refuse to release when any OTHER Console CI push run on the same sha concluded `failure`, `timed_out` or `startup_failure`, naming each one. A job killed by its `timeout-minutes` ends `cancelled`, which CI Complete's soft tier rejects, so the run itself concludes `failure` and is caught here. A run-level `cancelled` (a person or the watchdog cancelled the whole run) does NOT refuse: `dedupe` treats it as grounds for a legitimate retry, and refusing the retry's release would leave that path with no way to ship. A sibling still queued behind `ci-main` is fine, because `dedupe` makes it a no-op.
+`release-gate` (a step in `finalize-release-sentinel`, BEFORE the sentinel is sealed). Refuse to release when any OTHER Console CI push run on the same sha concluded `failure`, `timed_out` or `startup_failure`, naming each one. A job killed by its `timeout-minutes` ends `cancelled`, which CI Complete's soft tier rejects, so the run itself concludes `failure` and is caught here. A run-level `cancelled` on an EARLIER sibling (a person or the watchdog cancelled the whole run) refuses too, unless this run is the clean retry: its first attempt (`--run-attempt 1`) with no job of its own concluded failure, cancelled, timed_out or startup_failure (operator ruling 2026-10-06, /ask: "Block unless retry is clean"). A cancelled run says nothing about the commit, so a retry that passed outright is the evidence; a retry that needed a re-attempt, or carried a failed job, is not. A later cancelled sibling (a duplicate no-op cancelled behind this run) never counts. A sibling still queued behind `ci-main` is fine, because `dedupe` makes it a no-op.
 
 FAILURE DIRECTIONS. Both decisions FAIL OPEN, deliberately and in the same direction as the rest of the release path:
   - `dedupe` that cannot read the API PROCEEDS (full CI). It never skips without a positively read original, so an unreadable API costs one redundant run, never a missing one.
@@ -36,6 +36,7 @@ INITIALIZE_JOB = "Initialize"
 OUTPUT_KEY = "duplicate_of"
 ACTIVE_STATUSES = frozenset({"queued", "in_progress", "waiting", "requested", "pending"})
 FAILED_CONCLUSIONS = frozenset({"failure", "timed_out", "startup_failure"})
+UNCLEAN_JOB_CONCLUSIONS = FAILED_CONCLUSIONS | {"cancelled"}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -97,6 +98,14 @@ class Api:
             )
         return [Run.from_api(r) for r in rows if isinstance(r, dict)]
 
+    def latest_jobs(self, run_id: int) -> list[dict[str, Any]]:
+        """Every job of that run's latest attempt."""
+        data = self._get(
+            "repos/%s/actions/runs/%d/jobs?filter=latest&per_page=100" % (self.repo, run_id)
+        )
+        jobs = data.get("jobs") if isinstance(data, dict) else None
+        return [j for j in jobs if isinstance(j, dict)] if isinstance(jobs, list) else []
+
     def initialize_conclusion(self, run_id: int) -> str:
         """The Initialize job's conclusion in that run's latest attempt, its status when it has none yet, or "" when the job is not listed."""
         data = self._get(
@@ -151,6 +160,19 @@ def find_original(
 
 def failed_siblings(runs: Iterable[Run], own_id: int, sha: str) -> list[Run]:
     return [r for r in siblings(runs, own_id, sha) if r.conclusion in FAILED_CONCLUSIONS]
+
+
+def cancelled_earlier(runs: Iterable[Run], own_id: int, sha: str) -> list[Run]:
+    return [r for r in siblings(runs, own_id, sha) if r.id < own_id and r.conclusion == "cancelled"]
+
+
+def unclean_jobs(jobs: Iterable[dict[str, Any]]) -> list[str]:
+    """`<name> (<conclusion>)` for every job that ended failed, cancelled or timed out."""
+    return [
+        "%s (%s)" % (j.get("name") or "?", j.get("conclusion"))
+        for j in jobs
+        if j.get("conclusion") in UNCLEAN_JOB_CONCLUSIONS
+    ]
 
 
 # ---------------------------------------------------------------------------- commands
@@ -219,10 +241,51 @@ def release_gate(args: argparse.Namespace, api: Api) -> int:
             "Investigate it first. A re-run of that run's failed jobs replaces its conclusion."
         )
         return 1
+    cancelled = cancelled_earlier(runs, args.run_id, args.sha)
+    if cancelled:
+        refusal = _retry_refusal(args, api)
+        if refusal:
+            log.error(
+                "Refusing to release %s: an earlier Console CI push run on the same commit was "
+                "cancelled, and this run is not a clean retry (%s)." % (args.sha, refusal)
+            )
+            for run in cancelled:
+                log.error("  " + run.label())
+            log.error(
+                "A cancelled run proves nothing about the commit, so only a retry that passed "
+                "every job on its first attempt releases. Push a new commit, or dispatch the "
+                "release by hand once the commit is known good."
+            )
+            return 1
+        log.info(
+            "An earlier run on %s was cancelled; this run is its clean retry (attempt 1, every "
+            "job passed), so the release may proceed." % args.sha
+        )
+        return 0
     log.info(
         "No other Console CI push run on %s concluded failure; release may proceed." % args.sha
     )
     return 0
+
+
+def _retry_refusal(args: argparse.Namespace, api: Api) -> str:
+    """ "" when this run is a clean retry, else why it is not. An unreadable jobs list fails open, like every read here."""
+    if args.run_attempt != 1:
+        return (
+            "this is attempt %d" % args.run_attempt
+            if args.run_attempt
+            else "the run attempt was not passed"
+        )
+    try:
+        jobs = api.latest_jobs(args.run_id)
+    except ghx.GhError as exc:
+        log.warn(
+            "Could not read this run's own jobs (%s); treating it as a clean retry "
+            "(fail-open, as dispatch_release is)." % exc
+        )
+        return ""
+    bad = unclean_jobs(jobs)
+    return "its job(s) %s did not pass" % ", ".join(bad) if bad else ""
 
 
 def parse(argv: list[str]) -> argparse.Namespace:
@@ -232,6 +295,7 @@ def parse(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--sha", required=True)
     parser.add_argument("--run-id", required=True, type=int)
     parser.add_argument("--event", default="push")
+    parser.add_argument("--run-attempt", default=0, type=int)
     parser.add_argument("--workflow", default="ci.yml")
     parser.add_argument("--output", default="")
     parser.add_argument("--summary", default="")
