@@ -265,8 +265,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 24,
-      "done": 0,
+      "open": 19,
+      "done": 3,
       "open_sigs": [
         "024f958e",
         "059adb2b",
@@ -278,22 +278,21 @@
         "34375e81",
         "3f4f127f",
         "4378e48d",
-        "7921044d",
         "91e369a0",
         "9997f9a7",
         "a362a778",
         "a6befbdf",
         "b167aa51",
-        "ba647a63",
         "ba6746e6",
-        "cb3b9a5f",
-        "d03d7256",
         "d9a7e542",
         "dbee2b16",
-        "ec65e0bb",
-        "f62c3986"
+        "ec65e0bb"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "ba647a63",
+        "cb3b9a5f",
+        "f62c3986"
+      ]
     },
     "agent/plans/PLAN-ci-quick-cpu-scheduling.md": {
       "status": "active",
@@ -1036,6 +1035,19 @@
         "60a18836",
         "b74fa159",
         "de1f8bfa"
+      ],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-plan-verbs.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 2,
+      "done": 0,
+      "open_sigs": [
+        "7921044d",
+        "d03d7256"
       ],
       "done_sigs": []
     },

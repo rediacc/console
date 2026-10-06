@@ -1,6 +1,6 @@
 # PLAN: one registration verb, one freshness registry, one hook gh layer, one-call plan verbs, and the pytest-aware gate probe
 
-Status: approved -- operator 2026-10-04 (/ask): candidates 1, 3, 4, 6 and 7 of agent/reports/consolidation-investigation-2026-10-04.md, one plan, one PR, queue position 2
+Status: approved -- revised 2026-10-06 (operator /ask): build Parts A, B and C in one plan and one PR; Part D (plan verbs) is dropped; T7 stays a NEW scripts/ci-runner/shard-place.ts; Part E landed in 74d16390e. Before that: operator 2026-10-04 (/ask): candidates 1, 3, 4, 6 and 7 of agent/reports/consolidation-investigation-2026-10-04.md, one plan, one PR, queue position 2
 Owner: d778be9d
 First-Seen: 2026-10-04
 Depends-On: no-dep -- candidate 2 (change scope) was the only part that had to wait for PLAN-gate-drop-receipt-verify.md, and it was not approved. This plan does not touch the receipt, quick-select.ts or run.ts. Both plans edit scripts/ci-runner/manifest.ts and gates.lock.json, but that is a file overlap, and the exclusive Concurrency rule plus queue order (this plan at 2, that one at 3) settle it
@@ -125,25 +125,9 @@ Migrated callers:
 - **wl_prreview.** `run_gh`, `_gh_json` and `_gh_list` (`:141-180`) are replaced. `UnreadableError` is raised in exactly one place, at the CLI boundary: wl_prreview's callers do expect a raise, but that is now one documented conversion rather than a second implementation.
 - **Stays CI-side.** `ghx`, `ci_diagnose.GhFetcher` and ci-trace's `_fetcher` (`.ci/scripts/ci/ci-trace.py:247`).
 
-## Part D: plan verbs (candidate 6)
+## Part D: plan verbs (candidate 6) -- moved out
 
-**`worklist.py --plan-new <me> <agent/plans/PLAN-<slug>.md> [--write]`.**
-- **Refusals:**
-  - the file is missing or is not under `agent/plans/`;
-  - any of Status, Owner, First-Seen, Depends-On, Priority, Concurrency or Owns is missing;
-  - the plan has no box;
-  - the plan already has a ledger row (the refusal points to `--plan-tick`).
-- **Steps, in order:**
-  1. **Stage the file** with `git add -- <rel>`. This stages and never commits. It is needed because the ledger scan and INDEX read tracked plans only (`.ci/scripts/quality/check_plan_boxes.py:183-184`, #0b93d454).
-  2. **Write the ledger row**, `merge_ledger(doc, rel, ledger_row(root, rel, text))` (`.claude/hooks/stop/wl_planrec.py:1975,2007`), into `.ci/config/plan-boxes.json`.
-  3. **Refresh** with `R.refresh_index` (`.claude/hooks/stop/wl_planrec.py:1254`), which writes INDEX, its census and the QUEUE generated section through `_refresh_queue` (`:1280`).
-- **Untouched:** Promoted, which no tool writes.
-- **Output:** it prints the one commit line.
-
-**`--plan-tick <me> <plan> <box> <evidence...> --investigate present <kind>:<tok> <kind>:<tok>... [--write]`.**
-- **Order:** it builds the row with `R.plan_investigate` (`.claude/hooks/stop/wl_planrec.py:2244`), using the tick evidence as the note, which must clear INV_NOTE_MIN. It then passes the row as a new `inv_row=` parameter to `plan_tick` (`:2404`, which today looks it up at `:2453`). Nothing is written until both pass. The writes then go jsonl row, plan, ledger, index (`.claude/hooks/stop/worklist.py:794-796`).
-- **Verdict:** only `present` is accepted, because only `present` licenses an immediate tick. Clause 1 already exempts it (`.claude/hooks/stop/wl_planrec.py:2340-2341`). `absent` and `partial` are refused with a pointer to `--plan-investigate`.
-- **Other changes:** the usage texts at `.claude/hooks/stop/worklist_messages.py:2414,2455` are updated, and so is the dispatch at `.claude/hooks/stop/worklist.py:2518-2523`.
+Operator /ask 2026-10-06 left Part D out of this build. Its design and its two boxes (T14, T15) moved, unchanged, into agent/plans/PLAN-plan-verbs.md, parked until the operator queues it.
 
 ## Part E: the gate probe learns pytest testpaths (candidate 7, #57487768)
 
@@ -156,10 +140,12 @@ Migrated callers:
 ## Tasks
 - [ ] T1 Register this plan: `npm run check:ci-plan-boxes -- --update` and `npm run check:ci-plan-record -- --update` (the verb does not exist yet), and insert it by hand at Promoted position 2 in `agent/plans/QUEUE.md`. Proof: `check:ci-plan-boxes` and `check:ci-plan-record` pass. Control: revert the ledger row and plan-boxes reds, naming this plan.
 - [ ] T2 The WORKLIST registry gets `class` on all 134 names. `WORKLIST_EPICS_LEDGER` gets registered, or its exclusion is written down with the reason (to be found out in this box). env_manifest.py renders and checks WORKLIST shard membership against the registry. Proof: new cases in `.ci/rediacc_ci/tests/test_quality_env_manifest.py` and `.ci/rediacc_ci/tests/gates/test_gate_worklist_env_registry.py`. Control: a WORKLIST name hand-placed in the wrong shard reds, and the message names `npm run env:register`.
+  - Revised 2026-10-06: the registry holds 131 names now (134 when written); WORKLIST_EPICS_LEDGER is read only by scripts/gates/check-pr-task-trailers.ts, a TS gate outside the hook registry's Python scan, so it is written down as an exclusion.
 - [ ] T3 check_env_manifest gets the python-env clause, and `GATE_HARNESS_LEDGER` is classified as `gate-seam`. Proof: a `.ci/rediacc_ci/tests/test_quality_env_manifest.py` case. Control: a literal name planted in a copy of python-env-registry.json (through `ENV_MANIFEST_OVERRIDE_FILE`-style seams) reds, and an opaque `*` name does not.
 - [ ] T4 `env_register.py` and `npm run env:register`. Proof: `test_quality_env_register.py` against a `REDIACC_CI_ROOT` fixture tree, with a recording runner for the gen-docs and `--allow-new` subprocesses. Controls: a flag with no `--why` is refused and writes nothing; a re-registration under a different class is refused; a non-`.py` module skips `--allow-new`.
 - [ ] T5 Rewrite the "how to add" prose: env-manifest `_comment`, the registry `$why`, the env_manifest.py and worklist_env_registry.py docstrings, and `.ci/policy/README.md` §405 (the `class` field). Proof: `check:ci-policy-inventory`, `check:ci-prose-style`.
 - [ ] T6 Derived ARITY plus the AST call-site check in `.claude/rediacc_hooks/tests/test_wl_message_catalogue.py`; the hand table is deleted. Proof: test_117 passes on the tree. Controls: a planted call site `M.V_IDLE % ("a", "b")` in a tmp copy fails; a catalogue string with a mixed keyed and positional placeholder fails.
+  - Revised 2026-10-06: the hand table is 267 entries now (255 when written).
 - [ ] T7 `scripts/ci-runner/shard-place.ts` with `--selftest`, `npm run shard:place`, and the selftest chained into `check:ci-shard-manifest-coverage` (`package.json:154`). The coverage "missing" message names `npm run shard:place -- <lane>`. Controls: the selftest places a fixture unit on the lightest leg, puts a mutex unit with its group, drops a phantom, refuses test-e2e-workers, and leaves a no-op run byte-identical.
 - [ ] T8 `.ci/config/freshness.json` and `freshness.py`, and `gate_costs --report-to` is removed. Proof: `test_ci_freshness.py` with a fixture registry of `python -c` checks, plus updated gate_costs tests. Controls: one failing check makes rc 1 and names its artifact in the report; an empty registry is refused; `--cadence nightly` skips a pr-only entry.
 - [ ] T9 Rewire the package.json `check:ci-budget-freshness` script, the manifest.ts entry, and housekeeping's budget-check job. Proof: a `test_ci_freshness.py` pin that parses housekeeping.yml: the budget-check job calls `rediacc_ci.ci.freshness`, and calls neither budget_report nor gate_costs directly. Control: re-add the old step and the pin fails. Plus `check:ci-workflow-invariants`, `actionlint`.
@@ -167,14 +153,16 @@ Migrated callers:
 - [ ] T11 Migrate wl_ci (6 sites plus `:77`), `.claude/hooks/stop/worklist.py:278`, wl_civerdict and wl_schedred, along with their caches; `wl_ci._gh_json` is deleted. Proof: the existing `.claude/rediacc_hooks/tests/test_wl_schedred.py` (PATH gh shim), `.claude/rediacc_hooks/tests/test_wl_ci_status.py`, `.claude/rediacc_hooks/tests/test_wl_ci_verdict_surface.py`, `.ci/rediacc_ci/tests/test_ci_trace_scheduled.py` and `.claude/rediacc_hooks/tests/test_wl_ci_queue_and_mail.py` stay green unchanged. Control: a shim exiting 1 still yields `unreadable`, not a raise.
 - [ ] T12 Migrate wl_prreview onto `wl_gh.call` and `call_list` through the `run=` seam. Proof: `.claude/rediacc_hooks/tests/test_wl_prreview.py` stays green, and its fake runner is untouched.
 - [ ] T13 Pin the consolidation. A `test_wl_gh.py` case AST-scans `.claude/hooks/stop/*.py` and refuses any `subprocess.*(["gh", ...])` outside wl_gh.py. wl_gh.py goes into `sealed_modules`. Control: the scanner flags a planted source string. Plus `check:ci-worklist-env-registry`.
-- [ ] T14 `--plan-new`. Proof: `test_wl_plan_verbs.py` in a tmp git repo checks that the ledger row equals `ledger_row`, that INDEX lists the plan, and that the QUEUE generated section lists it. Controls: skip the `git add` and INDEX omits the plan (the test fails); a missing Owns header is refused with nothing written.
-- [ ] T15 `--plan-tick ... --investigate present ...`. Proof: one call in `test_wl_plan_verbs.py` writes the jsonl row and ticks the box. Controls: `--investigate partial` is refused; an unresolvable pointer is refused; in both cases plan, ledger and jsonl stay byte-identical.
-- [ ] T16 wl_reggate: testpaths mapping, exemption and globs. Proof: `.claude/hooks/stop/test-reggate-ledger.py` and `.claude/rediacc_hooks/tests/test_wl_plan_fidelity.py` stay green.
-- [ ] T17 Regression test in `.claude/rediacc_hooks/tests/test_wl_regression_gate.py`: a fixture root whose pyproject declares testpaths, plus a dirty `.ci/rediacc_ci/tests/gates/test_gate_fixture.py`, must prove via check:ci-pytest. Shown red on the pre-T16 code: the note there reads "no check:* key runs it". Control: remove `testpaths` from the fixture and the note reverts.
+  - Revised 2026-10-06: `.claude/hooks/stop/wl_checks.py:2109` (`prreview_runner`, added 33fd25417) also spawns gh and is migrated first, or this pin fails on it. wl_gh carries a copy of `.ci/rediacc_ci/core/gh_retry.py`'s `_TRANSIENT_RE`, pinned equal by a test the way test_prsignals_pins.py pins its copies (hooks cannot import rediacc_ci); a transient error gets a shorter cache TTL, never a sleep inside the hook budget.
+- [x] T16 wl_reggate: testpaths mapping, exemption and globs. Proof: `.claude/hooks/stop/test-reggate-ledger.py` and `.claude/rediacc_hooks/tests/test_wl_plan_fidelity.py` stay green.
+    (ticked) 2026-10-06T10:54:39Z by d778be9d: commit:74d16390e wl_reggate maps pytest testpaths (pytest_collects, .claude/hooks/stop/wl_reggate.py:638-656, 698-716); the .ci/rediacc_ci/tests/test_*.py and guards globs stay optional
+- [x] T17 Regression test in `.claude/rediacc_hooks/tests/test_wl_regression_gate.py`: a fixture root whose pyproject declares testpaths, plus a dirty `.ci/rediacc_ci/tests/gates/test_gate_fixture.py`, must prove via check:ci-pytest. Shown red on the pre-T16 code: the note there reads "no check:* key runs it". Control: remove `testpaths` from the fixture and the note reverts.
+    (ticked) 2026-10-06T10:54:40Z by d778be9d: commit:74d16390e test_wl_regression_gate.py test_97 (:560), test_98 and the control test_99 (:574)
 - [ ] T18 Place the four new pytest files (test_quality_env_register, test_ci_freshness, test_wl_gh, test_wl_plan_verbs) with `npm run shard:place -- quality-pytest`, using T7's own verb. Proof: `check:ci-shard-manifest-coverage`.
 - [ ] T19 Regenerate the lock with `npm run gen:gates-lock`, plus `tsx scripts/gate-bind.ts --write` if a region moved. Proof: `check:ci-gates-lock`, `check:ci-gate-bind`.
-- [ ] T20 Docs. `docs/agent-reference/ci-gates.md`: the one-command registration, the freshness registry replacing the prose at `:134`, `wl_gh` as the hook gh layer, and `shard:place`. `docs/agent-reference/plan-records.md`: `--plan-new` and `--investigate`. Then `npm run gen:docs -- --write` for doc-registry.md and the CLAUDE.md regions; CLAUDE.md is changed only by that generator. Proof: `check:ci-doc-region-parity`, `.ci/rediacc_ci/tests/gates/test_gate_docs_gen.py`.
+- [ ] T20 Docs. `docs/agent-reference/ci-gates.md`: the one-command registration, the freshness registry replacing the prose at `:134`, `wl_gh` as the hook gh layer, and `shard:place`. Then `npm run gen:docs -- --write` for doc-registry.md and the CLAUDE.md regions; CLAUDE.md is changed only by that generator. Proof: `check:ci-doc-region-parity`, `.ci/rediacc_ci/tests/gates/test_gate_docs_gen.py`.
 - [ ] T21 Registry gates on the final tree: `check:ci-env-manifest`, `check:ci-worklist-env-registry`, `check:ci-python-env-registry` (pairs moved by T11 drained with `--write-baseline`), `check:ci-policy-inventory`, `check:ci-hook-integrity`.
 - [ ] T22 Live checks, read-only. `npm run check:ci-budget-freshness` against GitHub gives the same verdict as the old two commands. `.ci/scripts/ci/ci-trace.py` and one Stop read CI through `wl_gh` (the `.cistate` file is rewritten atomically).
-- [ ] T23 Close #57487768 with tick evidence naming the T16 and T17 commits.
+- [x] T23 Close #57487768 with tick evidence naming the T16 and T17 commits.
+    (ticked) 2026-10-06T10:54:41Z by d778be9d: commit:74d16390e #57487768 closed 2026-10-05T02:10Z with commit:74d16390e
 - [ ] T24 Full `npm run check:ci-pytest` with no shard, the hook test-*.py suites, and `npm run ci:quick` on the final tree, with every red fixed in this PR.

@@ -4,6 +4,8 @@ The ordered queue of plans the plan-per-PR loop pulls from (box L2 of agent/plan
 
 Two lists, read in this order. `## Promoted` is hand-ordered by the operator and wins; no tool writes it, and an entry leaves it by hand when its PR merges. `## Generated` is rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` from live tracked plans with at least one open box: prerequisites first (`Depends-On:`, task refs and sub-plans like `PLAN-x.A0.md`, each prerequisite pulled ahead to the rank of what needs it), then held plans after unheld ones, prerequisites excepted, then in-progress plans before not-started ones, then operator Priority, AI Priority and path. Plans with no open box are listed under `### Not queued` with the reason, never as entries. Regenerate with `npm run check:ci-plan-record -- --update`; the same gate fails while the section is stale.
 
+`## In flight`, between `## Settings` and `## Promoted`, says what the loop is working on now: the effective switches, every active focus, the live branch and its PR, each plan in the PR's plan set with its box progress and how it joined (the `Plan:` line, a turbo batch claim, an `Operational-Reason:` addition, a prerequisite), the branch's epics outside that set, live writers, leased items, and the next plan with its reason. The Stop hook and the `--queue-set` and `--focus` verbs render it between its markers from runtime state; no gate compares it, and no number in it is a list entry.
+
 Entry format: `1. agent/plans/PLAN-<slug>.md`, optionally followed by ` -- <note>`. Only numbered entries inside the two sections are read.
 
 ## Settings
@@ -35,6 +37,22 @@ agent_hint: on
 agent_pushback: on
 judge: on
 ```
+
+## In flight
+
+What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--focus`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
+
+<!-- queue:inflight:begin -->
+- Mode: stop_hook on; turbo off; batch_size 3; plan_concurrency 5; writer_cap 15; cadence on; agent_hint on; agent_pushback on; judge on.
+- Focus: off.
+- Branch: 1006-2, no PR yet.
+- Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ci-consolidation.md, as its `Plan:` line unless the body names a plan first.
+- Work outside the PR's plans (1 epic(s)):
+  - epic 97672f9f, no plan, 29 commit(s) on the branch, 0 open item(s): Operator 2026-10-06 follow-ups: regeneration guard, ci-trace root causes and main-red alert, ci:quick scheduler utilization, package retention, budget 5xx retry
+- Writers: not counted at this refresh.
+- Leased items: 4: #d679b8d6 (worker:afaf182fd128e66fd, d778be9d), #dba9c93e (worker:aa5b12ebace16cf2a, d778be9d), #de0d355c (worker:a1e6524bd31efbbcd, d778be9d), #f28caf3f (worker:a1e6524bd31efbbcd, d778be9d).
+- Next plan: agent/plans/PLAN-ci-consolidation.md, Promoted entry 1 (solo); starts when this branch's PR binds it on its first push.
+<!-- queue:inflight:end -->
 
 ## Promoted
 
@@ -76,9 +94,10 @@ judge: on
 27. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
 28. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
 29. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-30. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-31. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
-32. agent/plans/PLAN-uncommitted-work-exposure-check.md -- P3, proposed, not started
+30. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+31. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+32. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+33. agent/plans/PLAN-uncommitted-work-exposure-check.md -- P3, proposed, not started
 
 ### Not queued
 
