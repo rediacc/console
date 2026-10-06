@@ -67,6 +67,7 @@ import time
 import _cipath  # noqa: F401
 from rediacc_ci import controls, gitx, paths
 from rediacc_ci.controls import plant
+from rediacc_ci.core import gh_retry
 from rediacc_ci.quality import agent_session_archival as ASA
 from rediacc_ci.well_known import GH_REPO
 
@@ -394,9 +395,8 @@ def _gh_merged_at(branch: str) -> float | None:
     """When `branch`'s PR merged (the newest, when there are several), or None when none did. Raises CannotRunError when GitHub cannot be asked."""
     repo = os.environ.get("GITHUB_REPOSITORY") or GH_REPO
     try:
-        done = subprocess.run(
+        done = gh_retry.gh(
             [
-                "gh",
                 "pr",
                 "list",
                 "--repo",
@@ -408,17 +408,13 @@ def _gh_merged_at(branch: str) -> float | None:
                 "--json",
                 "mergedAt",
             ],
-            capture_output=True,
-            text=True,
-            stdin=subprocess.DEVNULL,
-            check=False,
             timeout=60,
         )
     except (OSError, subprocess.SubprocessError) as exc:
         raise CannotRunError(
             "gh could not be run to read when %s merged (%s)" % (branch, exc)
         ) from exc
-    if done.returncode != 0:
+    if not done.ok:
         raise CannotRunError(
             "gh pr list failed for %s (rc %d): %s"
             % (branch, done.returncode, done.stderr.strip()[:200])
@@ -428,7 +424,9 @@ def _gh_merged_at(branch: str) -> float | None:
     # An answer that is not a JSON list of objects, or a stamp that is not an ISO date (a rate-limit page, an API shape change), is an oracle that could not be read: CANNOT RUN, never a crash and never a guessed date (per-commit review ee607a00.1).
     try:
         stamps = [
-            row.get("mergedAt") for row in json.loads(done.stdout or "[]") if row.get("mergedAt")
+            row.get("mergedAt")
+            for row in json.loads(done.stdout_raw or "[]")
+            if row.get("mergedAt")
         ]
         return max((dt.datetime.fromisoformat(s).timestamp() for s in stamps), default=None)
     except (ValueError, TypeError, AttributeError) as exc:
