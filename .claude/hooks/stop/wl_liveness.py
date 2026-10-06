@@ -158,6 +158,8 @@ def bg_output_facts(cwd, session_id, live_bg):
                 rows.append((tid, desc, int(age), size, age >= BG_STALE_MIN))
                 continue
         p = os.path.join(base, tid + ".output")
+        if not os.path.exists(p) and not os.environ.get("WORKLIST_BG_OUTPUT_DIR"):
+            p = sibling_session_output(base, tid) or p
         try:
             st = os.stat(p)
             age = (time.time() - st.st_mtime) / 60.0
@@ -165,6 +167,23 @@ def bg_output_facts(cwd, session_id, live_bg):
         except OSError:
             rows.append((tid, desc, None, 0, False))
     return rows
+
+
+def sibling_session_output(session_tasks_dir, task_id):
+    """`<task_id>.output` under ANOTHER session directory of the same project, or None.
+
+    A conversation continued after a compaction keeps CLAUDE_CODE_SESSION_ID (the id the worklist knows it by) while the harness writes its new tasks under the continuation's own session directory. Seen live 2026-10-06: env d778be9d, streams under 455e9445/tasks/, so every running task read as "no output stream" and four live agents were reported POSSIBLY STUCK. Task ids are random and unique per spawn, so a match in a sibling directory is that task's own stream, not a neighbour's.
+    """
+    project_dir = os.path.dirname(os.path.dirname(session_tasks_dir))
+    try:
+        sessions = os.listdir(project_dir)
+    except OSError:
+        return None
+    for s in sessions:
+        cand = os.path.join(project_dir, s, "tasks", task_id + ".output")
+        if os.path.exists(cand):
+            return cand
+    return None
 
 
 def workflow_stream(cwd, session_id, name):
@@ -585,6 +604,13 @@ def output_quiet_min(session_id, task_id):
         try:
             for proj in os.listdir(root):
                 p = os.path.join(root, proj, session_id, "tasks", task_id + ".output")
+                if not os.path.exists(p):
+                    p = (
+                        sibling_session_output(
+                            os.path.join(root, proj, session_id, "tasks"), task_id
+                        )
+                        or p
+                    )
                 try:
                     mtime = os.stat(p).st_mtime  # stat() follows symlinks
                 except OSError:

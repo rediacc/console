@@ -1601,3 +1601,44 @@ def test_q3m_without_the_conflict_append_q3_goes_silent(wl):  # noqa: F811
     )
     v = verdict(wl, stop_dir=stop)
     assert v["plan_conflicts"] == [], "q3m: q3 does not depend on the conflict rule: %s" % v
+
+
+SIBLING_FACTS_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_liveness as L
+rows = [{"id": t, "type": "subagent", "description": t} for t in sys.argv[4:]]
+print(json.dumps(L.bg_output_facts(sys.argv[2], sys.argv[3], rows)))
+"""
+
+
+def test_r10_a_continued_session_finds_its_task_streams_under_the_sibling_session_dir(tmp_path):
+    """2026-10-06: after a compaction the conversation kept CLAUDE_CODE_SESSION_ID d778be9d while the harness wrote its tasks under 455e9445/tasks/. Every running task read "no output stream", and four live agents were reported POSSIBLY STUCK. A task id is unique, so its own .output under a sibling session dir is its stream; an id found nowhere still reads None."""
+    cwd = "/work/repo"
+    proj = tmp_path / ("claude-%d" % os.getuid()) / re.sub(r"[^A-Za-z0-9]", "-", cwd)
+    (proj / "sess-env" / "tasks").mkdir(parents=True)
+    (proj / "sess-cont" / "tasks").mkdir(parents=True)
+    (proj / "sess-cont" / "tasks" / "taskalive.output").write_text("x" * 42, encoding="utf-8")
+    env = {k: v for k, v in os.environ.items() if k != "WORKLIST_BG_OUTPUT_DIR"}
+    env["TMPDIR"] = str(tmp_path)
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            SIBLING_FACTS_SNIPPET,
+            str(wlfix.STOP_DIR),
+            cwd,
+            "sess-env",
+            "taskalive",
+            "tasknone",
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-800:]
+    alive, none = json.loads(proc.stdout)
+    assert alive[2] is not None, "the sibling session's stream was not found"
+    assert alive[3] == 42, alive
+    assert none[2] is None, none
