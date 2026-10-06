@@ -418,8 +418,10 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/post-bash/arm_ci_watch.py | (none) | via .claude/rediacc_hooks/lifecycle.py | py |
 | .claude/hooks/post-bash/cancel_old_ci.py | (none) | via .claude/hooks/post-bash/arm_ci_watch.py | py |
 | .claude/hooks/post-bash/github_status_note.py | (none) | via .claude/rediacc_hooks/lifecycle.py | py |
+| .claude/hooks/post-bash/loop_speed_note.py | (none) | via .claude/rediacc_hooks/lifecycle.py | py |
 | .claude/hooks/post-bash/refresh_pr_body.py | (none) | via .claude/rediacc_hooks/lifecycle.py | py |
 | .claude/hooks/post-bash/review_commit.py | (none) | via .claude/rediacc_hooks/lifecycle.py | py |
+| .claude/hooks/post-tool/commit_remind.py | (none) | via .claude/rediacc_hooks/lifecycle.py | py |
 | .claude/hooks/profile/bash_env.sh | (none) | (nothing) | sh |
 | .claude/hooks/profile/py/sitecustomize.py | (none) | via .claude/hooks/stop/wl_resprofile.py | py |
 | .claude/hooks/stop/calibrate-judge-rules.py | (none) | (nothing) | py |
@@ -447,7 +449,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_bravedefault.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_checklist.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
 | .claude/hooks/stop/wl_checks.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
-| .claude/hooks/stop/wl_ci.py | (none) | via .claude/hooks/stop/test-adhoc-watch.py | py |
+| .claude/hooks/stop/wl_ci.py | (none) | via .claude/hooks/post-bash/loop_speed_note.py | py |
 | .claude/hooks/stop/wl_civerdict.py | (none) | via .claude/hooks/post-bash/arm_ci_watch.py | py |
 | .claude/hooks/stop/wl_claimcheck.py | (none) | via .claude/hooks/stop/test-completion-evidence.py | py |
 | .claude/hooks/stop/wl_classsweep.py | (none) | via .claude/hooks/stop/test-completion-evidence.py | py |
@@ -464,6 +466,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_lineage.py | (none) | via .claude/hooks/stop/wl_core.py | py |
 | .claude/hooks/stop/wl_liveness.py | (none) | via .claude/hooks/stop/test-teammate-idle.py | py |
 | .claude/hooks/stop/wl_lkg.py | (none) | via .claude/hooks/stop/worklist.py | py |
+| .claude/hooks/stop/wl_loopspeed.py | (none) | via .claude/hooks/post-bash/loop_speed_note.py | py |
 | .claude/hooks/stop/wl_planconc.py | (none) | via .claude/hooks/stop/test-plandeps.py | py |
 | .claude/hooks/stop/wl_plandeps.py | (none) | via .claude/hooks/stop/test-plandeps.py | py |
 | .claude/hooks/stop/wl_planenforce.py | (none) | via .claude/hooks/stop/test-planenforce.py | py |
@@ -494,9 +497,10 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_standdown.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_store.py | (none) | via .claude/hooks/context/ctx_budget.py | py |
 | .claude/hooks/stop/wl_trapfires.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
+| .claude/hooks/stop/wl_uncommitted.py | (none) | via .claude/hooks/post-tool/commit_remind.py | py |
 | .claude/hooks/stop/wl_wake.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
 | .claude/hooks/stop/worklist.py | Stop, TeammateIdle | settings.json | py |
-| .claude/hooks/stop/worklist_messages.py | (none) | via .claude/hooks/stop/wl_agents.py | py |
+| .claude/hooks/stop/worklist_messages.py | (none) | via .claude/hooks/post-bash/loop_speed_note.py | py |
 | .claude/hooks/trapguard/dispatch.py | (none) | via .claude/hooks/chain-head.sh | py |
 | .claude/hooks/why-on-edit.py | (none) | via .claude/hooks/stop/test-planrec.py | py |
 | .claude/rediacc_hooks/__init__.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
@@ -651,6 +655,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_ci_queue_and_mail.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_ci_status.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_ci_verdict_surface.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_commit_remind.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_continuity_surface.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_core_blocking.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_drift_loops_freshness.py | (none) | via pytest (testpaths) | py |
@@ -668,6 +673,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_lineage.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_lkg.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_loop_next.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_loopspeed.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_message_catalogue.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_messaging_removed.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_migrate.py | (none) | via pytest (testpaths) | py |
@@ -700,7 +706,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/wlfix.py | (none) | via .claude/hooks/stop/test-popup.py | py |
 | .claude/rediacc_hooks/wellknown.py | (none) | via .claude/hooks/post-bash/cancel_old_ci.py | py |
 
-293 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+299 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 

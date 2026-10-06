@@ -141,6 +141,8 @@ PATTERNS = {
             {"command": "python3 " + _P % "hooks/post-bash/review_commit.py", "timeout": 30},
             # GitHub's own service status, beside the CI command it qualifies (operator ruling 2026-10-05: PostToolUse is the primary channel). Reads the machine-wide cache only and starts a detached refresh when it is old, so it never waits on githubstatus.com; silent unless GitHub is degraded, and never exits non-zero.
             {"command": "python3 " + _P % "hooks/post-bash/github_status_note.py", "timeout": 10},
+            # agent/plans/PLAN-fast-loop.md Parts 3 and 4: one note when a pre-push receipt is built before a push is due, one when a `git push` lands while the cached PR run is in progress and not red. Informational; reads the cached CI state only, never the network; never exits non-zero.
+            {"command": "python3 " + _P % "hooks/post-bash/loop_speed_note.py", "timeout": 10},
             "python3 " + _P % "hooks/trapguard/dispatch.py" + " --posttool",
         ),
     },
@@ -154,6 +156,8 @@ PATTERNS = {
             "python3 " + _P % "hooks/context/onboard.py",
             # PLAN-stop-hook-continuity P2.6: an edit to a Stop-hook module is linted and import-smoked in the writer's own turn. It warns and never exits 2, so nothing behind it is stopped. Two 8-second steps plus interpreter start fit in 20.
             {"command": "python3 " + _P % "hooks/context/stop-hook-edit-check.py", "timeout": 20},
+            # agent/plans/PLAN-fast-loop.md Part 2: after an edit tool, a throttled reminder to commit the verified unit when this session holds uncommitted edits and no commit landed for `commit_remind_min` minutes. Advisory (additionalContext), exits 0, and leaves every other tool name before any import.
+            {"command": "python3 " + _P % "hooks/post-tool/commit_remind.py", "timeout": 10},
         ),
     },
     "pre-compact": {

@@ -162,7 +162,8 @@ FOCUS_PR_TTL_S = 180
 # Advisories released in full on every focused stop: they are about the PR or owed to someone else. `focus-pr-unreadable` (the merged/closed read went blind) is added to the plan's list: holding the one note that says focus may never end on its own would defeat it.
 FOCUS_ADVISORY_KEYS = frozenset(
     {"ci-queue", "ci-report", "unread-reports", "ladder", "focus-ended", "focus-pr-unreadable"}
-)
+) | frozenset({"commit-remind", "receipt-behind", "ci-hold"})
+# The second set above is the loop-speed reminders (agent/plans/PLAN-fast-loop.md Parts 2-4). None blocks, and a focused PR wind-down is exactly when a commit or a held push is owed. They are NOT in CORE.
 # A spawn declares babysit/merge fix work with `focus-fix:#<item-id>`.
 FOCUS_FIX_RE = re.compile(r"\bfocus-fix:#?([0-9a-f]{6,})\b")
 

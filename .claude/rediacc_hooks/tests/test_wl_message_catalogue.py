@@ -276,6 +276,11 @@ ARITY = {
     "R_FOCUS_ONLY": None,
     "N_CI_QUEUE": ("r", 2, 30, ""),
     "N_CI_QUEUE_PR_STALE_LINE": None,
+    "N_COMMIT_REMIND": (2, 30, 20, 15, "files"),
+    "N_RECEIPT_BEHIND": (1, "abc12345"),
+    "N_CI_HOLD": ("abc12345", 2),
+    "N_CI_HOLD_PUSHED": ("abc12345",),
+    "N_RECEIPT_EARLY": None,
     "V_BG_REPORT": ("never", "2026-01-01T00:15:00Z", 15, 2, "rows"),
     "V_BG_REPORT_TASKS": ("never", "2026-01-01T00:15:00Z", 15, 2, 1, "tasks", "rows"),
     # v19: runtime caller identity (L1 refusal, L2 backstop, L3 repair).
