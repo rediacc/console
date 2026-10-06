@@ -361,6 +361,9 @@ jobs:
           for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
           .ci/scripts/quality/check_git_history_depth.py
+      - name: GitHub reads retry transient faults
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_gh_retry_reads.py
       - name: Hook cross-OS seams
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_hook_cross_os.py

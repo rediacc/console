@@ -252,6 +252,7 @@
     "check:ci-enumeration-vacuity": "tsx scripts/gates/check-enumeration-vacuity.ts",
     "check:ci-allowlist-key-matching": ".ci/scripts/quality/check_allowlist_key_matching.py",
     "check:ci-schema-call-sites": ".ci/scripts/quality/check_schema_call_sites.py",
+    "check:ci-gh-retry-reads": ".ci/scripts/quality/check_gh_retry_reads.py",
     "check:ci-environment-names": ".ci/scripts/quality/check_environment_names.py",
     "check:ci-gate-bind": "tsx scripts/gate-bind.ts --selftest && tsx scripts/gate-bind.ts",
     "gate:bind": "tsx scripts/gate-bind.ts --write",
