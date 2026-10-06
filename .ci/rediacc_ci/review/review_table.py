@@ -616,8 +616,19 @@ def _opt(argv: list[str], name: str) -> str:
     return ""
 
 
+USAGE = "\n".join(line.strip() for line in (__doc__ or "").splitlines() if line.startswith("    PYTHONPATH=")) + "\n"
+FLAGS = {"--render-only", "--branch"}
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = list(argv or [])
+    if "--help" in argv or "-h" in argv:
+        sys.stdout.write(USAGE)
+        return 0
+    unknown = [a for i, a in enumerate(argv) if a.startswith("-") and a not in FLAGS and not (i and argv[i - 1] == "--branch")]
+    if unknown:
+        sys.stderr.write("review_table: unknown option %s\n%s" % (", ".join(unknown), USAGE))
+        return 2
     try:
         if "--render-only" in argv:
             branch = _opt(argv, "--branch") or _git(["rev-parse", "--abbrev-ref", "HEAD"])[1]
