@@ -154,9 +154,10 @@ def repo(tmp_path):
     return make_repo(tmp_path / "repo")
 
 
-def serve(gh, runs, jobs=None, fallback=None):
-    """Routes for one refresh: the jobs read, the per-workflow fallback, then the runs page (most specific first)."""
+def serve(gh, runs, jobs=None, fallback=None, push=None):
+    """Routes for one refresh: Console CI's push runs on main, the jobs read, the per-workflow fallback, then the runs page (most specific first)."""
     gh.reset()
+    gh.route("runs?event=push&branch=main", {"workflow_runs": push or []})
     gh.route("/jobs", {"jobs": jobs if jobs is not None else []})
     gh.route("/actions/workflows/", {"workflow_runs": fallback or []})
     gh.route("actions/runs?event=schedule", {"workflow_runs": runs})
@@ -276,14 +277,14 @@ def test_a_workflow_missing_from_the_page_gets_one_fallback_call(repo, tmp_path,
     doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
     assert row_of(doc, "housekeeping")["run_id"] == 5
     assert row_of(doc, "housekeeping")["red"] is True, "cancelled is red"
-    fb = gh.calls("/actions/workflows/")
+    fb = gh.calls("runs?event=schedule&status=completed")
     assert len(fb) == 1
     assert "housekeeping.yml/runs?event=schedule&status=completed&per_page=1" in fb[0]
     # Control: with both workflows on the page, no fallback call is made.
     gh.log.unlink()
     serve(gh, [run(RED_RUN), run(5, file="housekeeping.yml")])
     SR.refresh(repo, tmp_path / "wl.md", force=True)
-    assert gh.calls("/actions/workflows/") == []
+    assert gh.calls("runs?event=schedule&status=completed") == []
 
 
 def test_an_in_flight_rerun_is_reported_without_becoming_the_verdict(repo, tmp_path, gh):
@@ -668,3 +669,288 @@ def test_no_scheduled_workflow_means_zero_calls(tmp_path, gh):
     serve(gh, [])
     SR.refresh(root, tmp_path / "wl.md", force=True)
     assert gh.calls("actions/runs?event=schedule")
+
+
+# --------------------------------------------------------------------------- Console CI's push run on main
+#
+# Run 37394654719 (PR #595's merge, e6fc817f6, 2026-10-06) went red twice on main and no stop said so: every CI read in the hook was scoped to a PR head or a scheduled run. The push read is served here from that run's own recorded answers (the ci_diagnose fixtures), so the root cause the block names is computed by the real diagnosis, not asserted into a stub.
+
+DIAG_FIX = wlfix.STOP_DIR.parents[2] / ".ci" / "rediacc_ci" / "tests" / "fixtures" / "ci_diagnose"
+MAIN_RUN = 37394654719
+
+
+def _fx(name):
+    return json.loads((DIAG_FIX / name).read_text(encoding="utf-8"))
+
+
+def push_run(rid=MAIN_RUN, conclusion="cancelled", attempt=2, created="2026-10-06T00:33:44Z", **kw):
+    return run(
+        rid,
+        conclusion=conclusion,
+        attempt=attempt,
+        created=created,
+        event="push",
+        head_sha="e6fc817f6696f56511d73223d4be30b3c64d0ab1",
+        **kw,
+    )
+
+
+def serve_main_red(gh, push=None):
+    """The scheduled reads all green, and Console CI's newest push run on main is run 37394654719 attempt 2, with every read its diagnosis makes answered from the recording (most specific needle first)."""
+    gh.reset()
+    gh.route("runs?event=push&branch=main", {"workflow_runs": push or [push_run()]})
+    r = "actions/runs/%d" % MAIN_RUN
+    gh.route(r + "/attempts/1/jobs", _fx("jobs_37394654719_attempt1.json"))
+    gh.route(r + "/attempts/2/jobs", _fx("jobs_37394654719_attempt2.json"))
+    gh.route(r + "/attempts/1", _fx("run_37394654719_attempt1.json"))
+    gh.route(r + "/attempts/2", _fx("run_37394654719_attempt2.json"))
+    gh.route(r + "/jobs", _fx("jobs_37394654719_attempt2.json"))
+    gh.route("actions/runs?head_sha=", _fx("runs_head_e6fc817f.json"))
+    gh.route("actions/runs/37398501382/jobs", _fx("watchdog_jobs_37398501382.json"))
+    for jid in (112060087586, 112056552771, 112061625885):
+        gh.route("check-runs/%d/annotations" % jid, _fx("annotations_%d.json" % jid))
+    gh.route("/logs", {}, rc=1, err="no log in the recording")
+    gh.route(r, _fx("run_37394654719_attempt2.json"))
+    gh.route("/jobs", {"jobs": []})
+    gh.route("/actions/workflows/", {"workflow_runs": []})
+    gh.route(
+        "actions/runs?event=schedule",
+        {
+            "workflow_runs": [
+                run(GREEN_RUN, conclusion="success"),
+                run(1, file="housekeeping.yml", conclusion="success"),
+            ]
+        },
+    )
+
+
+@pytest.fixture
+def no_log_cache(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "xdg"))
+
+
+@pytest.mark.usefixtures("no_log_cache")
+def test_the_main_push_red_names_its_root_cause_not_the_sentinel(repo, tmp_path, gh):
+    serve_main_red(gh)
+    doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
+    push = doc["push"]
+    assert (push["run_id"], push["attempt"], push["red"], push["sha"]) == (
+        MAIN_RUN,
+        2,
+        True,
+        "e6fc817f",
+    )
+    assert push["root"] == "Validate Promotion"
+    assert push["root_conclusion"] == "cancelled"
+    assert push["category"] == "timeout-cancel"
+    assert push["cause"].startswith("timeout-kill: 'Validate Promotion' hit its timeout-minutes"), (
+        push["cause"]
+    )
+    assert push["failed_jobs"] == ["Validate Promotion", "CI Complete", "Pipeline Sentinel"], (
+        "aggregators after the root"
+    )
+    assert [w["red"] for w in doc["workflows"]] == [False, False], (
+        "the scheduled reads are untouched"
+    )
+    # The diagnosis is cached per (run, attempt): a second refresh makes no diagnosis read.
+    before = len(gh.calls("actions/runs?head_sha="))
+    SR.refresh(repo, tmp_path / "wl.md", force=True)
+    assert len(gh.calls("actions/runs?head_sha=")) == before
+
+
+def test_a_green_or_in_flight_push_run_is_not_red(repo, tmp_path, gh):
+    serve(
+        gh, [run(GREEN_RUN, conclusion="success")], push=[push_run(conclusion="success", attempt=1)]
+    )
+    doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
+    assert doc["push"]["red"] is False
+    assert gh.calls("actions/runs/%d/jobs" % MAIN_RUN) == [], "a green run costs no jobs read"
+    # An in-flight newer push run is reported, and the newest COMPLETED one stays the verdict.
+    newer = push_run(
+        rid=MAIN_RUN + 1, conclusion=None, status="in_progress", created="2026-10-06T05:00:00Z"
+    )
+    serve(
+        gh,
+        [run(GREEN_RUN, conclusion="success")],
+        push=[newer, push_run(conclusion="success", attempt=1)],
+    )
+    doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
+    assert (doc["push"]["run_id"], doc["push"]["in_flight"]) == (MAIN_RUN, True)
+
+
+def test_an_unreadable_push_read_blocks_nothing_and_keeps_the_scheduled_verdict(repo, tmp_path, gh):
+    serve(gh, [run(RED_RUN), run(1, file="housekeeping.yml", conclusion="success")])
+    gh.routes.insert(0, ["runs?event=push", {"out": {}, "rc": 1, "err": "HTTP 502"}])
+    gh.save()
+    doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
+    assert doc["state"] == "ok"
+    assert "502" in doc["push_error"]
+    got = SR.assess(tmp_path / "wl.md", [], "aaaaaaaa-1", doc)
+    assert [r["stem"] for r in got["block"]] == ["ci"], (
+        "only the scheduled red; the unreadable push read is no verdict"
+    )
+
+
+def push_doc(conclusion="cancelled"):
+    row = dict(
+        SR.push_workflow(wlfix.STOP_DIR.parents[2]),
+        run_id=MAIN_RUN,
+        attempt=2,
+        conclusion=conclusion,
+        created_at="2026-10-06T00:33:44Z",
+        url="u",
+        sha="e6fc817f",
+        failed_jobs=["Validate Promotion", "CI Complete", "Pipeline Sentinel"],
+        root="Validate Promotion",
+        root_conclusion="cancelled",
+        category="timeout-cancel",
+        cause="timeout-kill: 'Validate Promotion' hit its timeout-minutes (15m0s)",
+        red=SR.is_red(conclusion),
+        in_flight=False,
+    )
+    return {
+        "state": "ok",
+        "error": "",
+        "at": time.time(),
+        "workflows": [],
+        "push": row,
+        "push_error": "",
+    }
+
+
+@pytest.mark.parametrize(
+    ("text", "want"),
+    [
+        ("push:ci run:%d -- main red" % MAIN_RUN, True),
+        ("push:ci", True),
+        ("see run:%d" % MAIN_RUN, True),
+        # THE INCIDENT'S OWN ITEM (#17109e43): a release item that names the run in passing does not own its red.
+        (
+            "Release of PR #595 (bump-minor): Console CI on main run %d for e6fc817f6, then Release to Edge"
+            % MAIN_RUN,
+            False,
+        ),
+        ("Console CI nightly is red", False),
+        ("sched:ci", False),
+        ("push:cix", False),
+        ("run:%d0" % MAIN_RUN, False),
+    ],
+)
+def test_push_tracking_needs_the_explicit_token(text, want):
+    assert SR.tracks(text, push_doc()["push"]) is want
+
+
+def test_the_push_red_blocks_the_claimant_and_a_bare_mention_does_not_silence_it(tmp_path):
+    wlp = tmp_path / "wl.md"
+    S.briefs_path(wlp).write_text(
+        "aaaaaaaa %s a\nbbbbbbbb %s b\n" % (stamp(), stamp()), encoding="utf-8"
+    )
+    release = {
+        "id": "17109e43",
+        "state": ">",
+        "owner": "aaaaaaaa",
+        "text": "Release of PR #595: Console CI on main run %d for e6fc817f6, then Release to Edge"
+        % MAIN_RUN,
+    }
+    got = SR.assess(wlp, [release], "aaaaaaaa-1", push_doc())
+    assert [r["run_id"] for r in got["block"]] == [MAIN_RUN]
+    text = M.V_MAIN_PUSH_RED % SR.fields(got["block"][0], "aaaaaaaa")
+    assert "root cause: Validate Promotion (cancelled, timeout-cancel)" in text
+    assert "hit its timeout-minutes (15m0s)" in text
+    assert "ci-trace.py --run %d --why" % MAIN_RUN in text
+    add = SR.add_text(got["block"][0])
+    assert add.startswith("push:ci run:%d -- Console CI red on main @ e6fc817f" % MAIN_RUN), add
+    assert "worklist.py --add aaaaaaaa '%s'" % add in text
+    # A peer is told, once, and not blocked.
+    peer = SR.assess(wlp, [], "bbbbbbbb-2", push_doc())
+    assert peer["block"] == []
+    assert peer["peer"][0][1] == "aaaaaaaa"
+    # The suggested item ends the block: open-items holds its owner from here.
+    tracked = dict(release, id="c0ffee09", state=" ", text=add)
+    assert SR.assess(wlp, [tracked], "aaaaaaaa-1", push_doc())["block"] == []
+
+
+def test_a_push_tick_on_a_still_red_main_fires_and_a_green_main_owes_the_tick(tmp_path):
+    wlp = tmp_path / "wl.md"
+    tick = {
+        "id": "c0ffee0a",
+        "state": "x",
+        "owner": "aaaaaaaa",
+        "text": "push:ci run:%d -- main red" % MAIN_RUN,
+        "upd": stamp(),
+    }
+    got = SR.assess(wlp, [tick], "aaaaaaaa-1", push_doc())
+    assert [it["id"] for _r, it in got["tick"]] == ["c0ffee0a"]
+    assert "MAIN RED TICKED WITHOUT EVIDENCE" in M.V_MAIN_PUSH_RED_TICK % dict(
+        SR.fields(got["tick"][0][0], "aaaaaaaa"), item="c0ffee0a"
+    )
+    item = dict(tick, state=" ")
+    green = SR.assess(wlp, [item], "aaaaaaaa-1", push_doc(conclusion="success"))
+    assert [it["id"] for _r, it in green["green"]] == ["c0ffee0a"]
+    # Control: a scheduled-style name mention does not owe a push tick.
+    named = dict(item, text="Console CI nightly is red")
+    assert SR.assess(wlp, [named], "aaaaaaaa-1", push_doc(conclusion="success"))["green"] == []
+
+
+def test_session_start_names_a_cached_main_red(tmp_path, gh, monkeypatch):
+    monkeypatch.setenv("WORKLIST_STORE_DIR", str(tmp_path / "store"))
+    wlp = tmp_path / "wl.md"
+    wlp.write_text("", encoding="utf-8")
+    SR._write_json(SR.cache_path(wlp), push_doc())
+    line = SR.session_start_line(wlp)
+    assert line.startswith(
+        "Main is red: Console CI push run %d @ e6fc817f (cancelled," % MAIN_RUN
+    ), line
+    assert "root cause Validate Promotion (cancelled, timeout-cancel)" in line
+    assert gh.calls() == []
+    SR._write_json(SR.cache_path(wlp), push_doc(conclusion="success"))
+    assert SR.session_start_line(wlp) == ""
+
+
+def _stop_world_main_red(fix):
+    fix.setup()
+    fix.brief_now()
+    make_repo(fix.proj, workflows={"ci.yml": CI_YML})
+    shim = Gh(fix.base)
+    serve_main_red(shim)
+    env = {
+        "PATH": "%s%s%s" % (shim.bindir, os.pathsep, fix.env.get("PATH", "")),
+        "XDG_CACHE_HOME": str(fix.base / "xdg"),
+    }
+    return shim, env
+
+
+def test_the_stop_blocks_on_a_red_main_push_run_with_its_root_cause(wl):  # noqa: F811
+    _shim, env = _stop_world_main_red(wl)
+    first = wl.run(env)
+    assert first.decision == "block"
+    assert "MAIN IS RED, UNTRACKED" in first.out, first.out[:2500]
+    assert "root cause: Validate Promotion (cancelled, timeout-cancel)" in first.out
+    assert "root cause: Pipeline Sentinel" not in first.out
+    assert "root cause: CI Complete" not in first.out
+    # The incident's own release item does not silence it.
+    assert (
+        wl.cli(
+            "--add",
+            "deadbeef",
+            "Release of PR #595: Console CI on main run %d, then Release to Edge" % MAIN_RUN,
+        ).rc
+        == 0
+    )
+    assert "MAIN IS RED, UNTRACKED" in wl.run(env).out
+    # The item the block suggests does.
+    add = next(ln for ln in first.out.splitlines() if "worklist.py --add deadbeef 'push:ci" in ln)
+    text = add.split("'", 1)[1].rsplit("'", 1)[0]
+    assert wl.cli("--add", "deadbeef", text).rc == 0
+    assert "MAIN IS RED" not in wl.run(env).out
+
+
+@pytest.mark.usefixtures("no_log_cache")
+def test_planted_unit_without_the_push_read_nothing_blocks(repo, tmp_path, gh, monkeypatch):
+    """PLANTED RED for the gap, at the unit: the pre-fix refresh read no push run, so assess had nothing to block on."""
+    serve_main_red(gh)
+    monkeypatch.setattr(SR, "push_workflow", lambda _root: None)
+    doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
+    assert doc["push"] is None
+    assert SR.assess(tmp_path / "wl.md", [], "aaaaaaaa-1", doc)["block"] == []
+    assert gh.calls("runs?event=push") == []

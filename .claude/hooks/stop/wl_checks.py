@@ -4211,10 +4211,27 @@ def run_stop(event, event_ok, worklist, hook_file):
                 2,
                 refresh_min=60,
             )
+        if _sr_doc.get("push_error"):
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "main-push-unreadable",
+                M.N_MAIN_PUSH_UNREADABLE % {"error": _sr_doc.get("push_error") or "?"},
+                2,
+                refresh_min=60,
+            )
         _sr = wl_schedred.assess(worklist, fold.items, session_id, _sr_doc)
-        _sr_texts = [M.V_SCHEDULED_RED % wl_schedred.fields(_row, me8) for _row in _sr["block"]]
+        # A row with event "push" is Console CI's newest push run on main (wl_schedred docstring): the same claim and the same `scheduled-red` key (T_OWED, always tier, I2: the release is the party owed), in its own wording.
+        _push = wl_schedred.is_push
+        _sr_texts = [
+            (M.V_MAIN_PUSH_RED if _push(_row) else M.V_SCHEDULED_RED)
+            % wl_schedred.fields(_row, me8)
+            for _row in _sr["block"]
+        ]
         _sr_texts += [
-            M.V_SCHEDULED_RED_TICK % dict(wl_schedred.fields(_row, me8), item=_it.get("id"))
+            (M.V_MAIN_PUSH_RED_TICK if _push(_row) else M.V_SCHEDULED_RED_TICK)
+            % dict(wl_schedred.fields(_row, me8), item=_it.get("id"))
             for _row, _it in _sr["tick"]
         ]
         if _sr_texts:
@@ -4226,7 +4243,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 state_doc,
                 "scheduled-red-peer",
                 "\n".join(
-                    M.N_SCHEDULED_RED_PEER % dict(wl_schedred.fields(_row), owner=_owner)
+                    (M.N_MAIN_PUSH_RED_PEER if _push(_row) else M.N_SCHEDULED_RED_PEER)
+                    % dict(wl_schedred.fields(_row), owner=_owner)
                     for _row, _owner in _sr["peer"]
                 ),
                 2,
@@ -4238,7 +4256,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 session_id,
                 state_doc,
                 "scheduled-green",
-                M.N_SCHEDULED_GREEN % dict(wl_schedred.fields(_row, me8), item=_it.get("id")),
+                (M.N_MAIN_PUSH_GREEN if _push(_row) else M.N_SCHEDULED_GREEN)
+                % dict(wl_schedred.fields(_row, me8), item=_it.get("id")),
                 1,
                 refresh_min=360,
             )
