@@ -27,7 +27,7 @@ What each key does (default in brackets):
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-stop_hook: on -- re-enabled by the operator 2026-10-03 for the one-plan-per-PR loop
+stop_hook: off
 turbo: off -- operator 2026-10-04: turbo off; running writers finish, no new plans start
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
@@ -43,15 +43,16 @@ judge: on
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--focus`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: stop_hook on; turbo off; batch_size 3; plan_concurrency 5; writer_cap 15; cadence on; agent_hint on; agent_pushback on; judge on.
+- Mode: stop_hook off; turbo off; batch_size 3; plan_concurrency 5; writer_cap 15; cadence on; agent_hint on; agent_pushback on; judge on.
 - Focus: off.
-- Branch: 1006-2, no PR yet.
-- Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ci-consolidation.md, as its `Plan:` line unless the body names a plan first.
+- Branch: 1006-2, PR #597 open.
+- Plans on the PR (1):
+  - agent/plans/PLAN-ci-consolidation.md -- 3 of 22 boxes ticked, the PR body's `Plan:` line
 - Work outside the PR's plans (1 epic(s)):
-  - epic 97672f9f, no plan, 29 commit(s) on the branch, 0 open item(s): Operator 2026-10-06 follow-ups: regeneration guard, ci-trace root causes and main-red alert, ci:quick scheduler utilization, package retention, budget 5xx retry
-- Writers: not counted at this refresh.
-- Leased items: 4: #d679b8d6 (worker:afaf182fd128e66fd, d778be9d), #dba9c93e (worker:aa5b12ebace16cf2a, d778be9d), #de0d355c (worker:a1e6524bd31efbbcd, d778be9d), #f28caf3f (worker:a1e6524bd31efbbcd, d778be9d).
-- Next plan: agent/plans/PLAN-ci-consolidation.md, Promoted entry 1 (solo); starts when this branch's PR binds it on its first push.
+  - epic 97672f9f, no plan, 58 commit(s) on the branch, 0 open item(s): Operator 2026-10-06 follow-ups: regeneration guard, ci-trace root causes and main-red alert, ci:quick scheduler utilization, package retention, budget 5xx retry
+- Writers: 0 live of writer_cap 15 (session d778be9d).
+- Leased items: 3: #c5fe5295 (worker:1761422, d778be9d), #de0d355c (worker:b5hugmupy, d778be9d), #f28caf3f (worker:b5hugmupy, d778be9d).
+- Next plan: agent/plans/PLAN-config-passkey-optional.md, Generated entry 1 (no Promoted entry ahead of it has an open box); starts on the next branch after PR #597 merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
@@ -87,17 +88,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 20. agent/plans/PLAN-env-to-bitwarden-v2.md -- P3, draft, in progress (9 of 10 boxes ticked)
 21. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (1 of 17 boxes ticked)
 22. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-23. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
-24. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-25. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-26. agent/plans/PLAN-locale-techdiff-resync.md -- P2, ready, not started
-27. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
-28. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
-29. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-30. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-31. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-32. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
-33. agent/plans/PLAN-uncommitted-work-exposure-check.md -- P3, proposed, not started
+23. agent/plans/PLAN-fast-loop.md -- P0, approved, not started
+24. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
+25. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+26. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
+27. agent/plans/PLAN-locale-techdiff-resync.md -- P2, ready, not started
+28. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
+29. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
+30. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
+31. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+32. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+33. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 
