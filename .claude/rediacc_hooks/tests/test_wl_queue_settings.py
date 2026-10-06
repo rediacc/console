@@ -44,6 +44,7 @@ ALL_KEYS = (
     "batch_size",
     "plan_concurrency",
     "writer_cap",
+    "commit_remind_min",
     "cadence",
     "agent_hint",
     "agent_pushback",
@@ -314,8 +315,8 @@ def test_the_live_queue_has_a_clean_block_and_marks_ci_consolidation_solo():
     assert problems == [], problems
     assert PQ.sources(text) == dict.fromkeys(ALL_KEYS, "QUEUE.md")
     assert "agent/plans/PLAN-ci-consolidation.md" in PQ.solo_plans(text)
-    assert "stop_hook: on" in text
-    assert got.stop_hook is True
+    # NO PIN ON A SWITCH'S VALUE. `stop_hook` is the operator's to flip (2026-10-06: off until PLAN-fast-loop.md is complete), so asserting `on` here turned check:ci-pytest red on an operator decision. The block parsing clean, with every key sourced from the file, is what this test owns.
+    assert isinstance(got.stop_hook, bool)
 
 
 # ---- the verb ----------------------------------------------------------------------------------

@@ -83,7 +83,7 @@ def ordered(text: str) -> list[str]:
 SETTINGS_HEADING = "## Settings"
 SETTINGS_FENCE = "stop-hook"
 BOOL_KEYS = ("stop_hook", "turbo", "cadence", "agent_hint", "agent_pushback", "judge")
-INT_KEYS = ("batch_size", "plan_concurrency", "writer_cap")
+INT_KEYS = ("batch_size", "plan_concurrency", "writer_cap", "commit_remind_min")
 # The render order of a new block.
 SETTINGS_KEYS = (
     "stop_hook",
@@ -91,6 +91,7 @@ SETTINGS_KEYS = (
     "batch_size",
     "plan_concurrency",
     "writer_cap",
+    "commit_remind_min",
     "cadence",
     "agent_hint",
     "agent_pushback",
@@ -110,6 +111,8 @@ class Settings:
     batch_size: int = 1
     plan_concurrency: int = 1
     writer_cap: int = 4
+    # Minutes without a commit, with this session's own edits still uncommitted, before the commit reminder speaks (PLAN-fast-loop.md Part 2). A reminder, never a block.
+    commit_remind_min: int = 15
     cadence: bool = True
     agent_hint: bool = True
     agent_pushback: bool = True

@@ -19,6 +19,7 @@ What each key does (default in brackets):
 - `batch_size` (1): under turbo, the minimum number of finished plans before the PR is offered for merge. The merge itself never refuses a shorter PR.
 - `plan_concurrency` (1): under turbo, the most unfinished plans in flight at once. The PR's own unfinished plans and the plans live writers serve count against it, so a free writer slot opens a new plan only below this ceiling.
 - `writer_cap` (4): the most writer agents live at once. A spawn beyond it is refused (`block_agent_cap`), and the Stop hook blocks on a roster above it.
+- `commit_remind_min` (15): minutes without a commit, while this session's own edits are still uncommitted, before the Stop hook and the post-tool hook remind it to commit the verified unit. A reminder, never a block (agent/plans/PLAN-fast-loop.md Part 2).
 - `cadence` (on): lets a stop through after a demand when the session has reported something new, so the hook does not demand on every stop. Always-tier checks still block.
 - `agent_hint` (on): names a specialist agent (`.claude/agents/*.md`) that matches the open work, including once after each compaction.
 - `agent_pushback` (on): blocks a stop that declares work out of reach ("cannot be done here"), once per claim, and names the specialist agent that fits it when one clears the hint's confidence floor.
@@ -36,6 +37,7 @@ cadence: on
 agent_hint: on
 agent_pushback: on
 judge: on
+commit_remind_min: 15 -- operator 2026-10-06: PLAN-fast-loop Part 2 default
 ```
 
 ## In flight
@@ -43,16 +45,16 @@ judge: on
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--focus`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: stop_hook off; turbo off; batch_size 3; plan_concurrency 5; writer_cap 15; cadence on; agent_hint on; agent_pushback on; judge on.
+- Mode: stop_hook off; turbo off; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; cadence on; agent_hint on; agent_pushback on; judge on.
 - Focus: off.
 - Branch: 1006-2, PR #597 open.
 - Plans on the PR (1):
-  - agent/plans/PLAN-ci-consolidation.md -- 3 of 22 boxes ticked, the PR body's `Plan:` line
+  - agent/plans/PLAN-fast-loop.md -- 0 of 18 boxes ticked, the PR body's `Plan:` line
 - Work outside the PR's plans (1 epic(s)):
-  - epic 97672f9f, no plan, 58 commit(s) on the branch, 0 open item(s): Operator 2026-10-06 follow-ups: regeneration guard, ci-trace root causes and main-red alert, ci:quick scheduler utilization, package retention, budget 5xx retry
-- Writers: 0 live of writer_cap 15 (session d778be9d).
-- Leased items: 3: #c5fe5295 (worker:1761422, d778be9d), #de0d355c (worker:b5hugmupy, d778be9d), #f28caf3f (worker:b5hugmupy, d778be9d).
-- Next plan: agent/plans/PLAN-config-passkey-optional.md, Generated entry 1 (no Promoted entry ahead of it has an open box); starts on the next branch after PR #597 merges.
+  - epic 97672f9f, no plan, 60 commit(s) on the branch, 0 open item(s): Operator 2026-10-06 follow-ups: regeneration guard, ci-trace root causes and main-red alert, ci:quick scheduler utilization, package retention, budget 5xx retry
+- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a3b301a2444ae6615, worker:a54c720b4f25d8f54, worker:a636accc58cb639c7.
+- Leased items: 4: #c5fe5295 (worker:1761422, d778be9d), #de0d355c (worker:b5hugmupy, d778be9d), #eaf3d3f1 (worker:a3b301a2444ae6615, d778be9d), #f28caf3f (worker:b5hugmupy, d778be9d).
+- Next plan: agent/plans/PLAN-ci-consolidation.md, Promoted entry 1 (solo); starts on the next branch after PR #597 merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
