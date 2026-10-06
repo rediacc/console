@@ -15,7 +15,17 @@ import re
 import subprocess
 
 RECEIPT_REL = ".ci/cache/prepush-receipt.json"
-RECORD_POLICY_REL = ".ci/policy/record-paths.json"
+
+
+def _record_policy_rel():
+    """`.ci/policy/record-paths.json` through rediacc_ci.policy_paths (check:ci-policy-inventory): wl_proc puts `.ci` on sys.path when it imports, the seam every Stop module already uses to reach rediacc_ci."""
+    import wl_proc  # noqa: F401, PLC0415 -- its import puts .ci on sys.path
+    from rediacc_ci.policy_paths import policy_rel  # noqa: PLC0415
+
+    return policy_rel("record-paths.json")
+
+
+RECORD_POLICY_REL = _record_policy_rel()
 RECORD_POLICY_VERSION = 1
 GIT_TIMEOUT_S = 20
 

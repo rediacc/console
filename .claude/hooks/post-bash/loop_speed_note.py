@@ -65,7 +65,7 @@ def push_note(doc):
     import worklist_messages as M  # noqa: PLC0415
 
     root = C.project_root(C.project_start(doc))
-    worklist = C.worklist_for(root)
+    worklist = C.worklist_for(C.project_start(doc))
     head = L.pending_run(worklist, str(doc.get("session_id") or ""))
     if head is None:
         return ""

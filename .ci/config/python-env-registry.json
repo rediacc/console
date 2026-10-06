@@ -1821,7 +1821,15 @@
     ".claude/hooks/context/test-context-bands.py": [
       "PATH"
     ],
+    ".claude/hooks/post-bash/loop_speed_note.py": [
+      "COMMIT_REVIEW_CHILD",
+      "STOPHOOK_CHILD"
+    ],
     ".claude/hooks/post-bash/review_commit.py": [
+      "COMMIT_REVIEW_CHILD",
+      "STOPHOOK_CHILD"
+    ],
+    ".claude/hooks/post-tool/commit_remind.py": [
       "COMMIT_REVIEW_CHILD",
       "STOPHOOK_CHILD"
     ],
@@ -2146,6 +2154,9 @@
     ],
     ".claude/rediacc_hooks/tests/test_settings_collapse.py": [
       "PATH"
+    ],
+    ".claude/rediacc_hooks/tests/test_wl_commit_remind.py": [
+      "TMPDIR"
     ],
     ".claude/rediacc_hooks/tests/test_wl_report_inbox.py": [
       "TMPDIR"
