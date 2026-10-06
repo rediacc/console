@@ -28,7 +28,7 @@ What each key does (default in brackets):
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-stop_hook: off
+stop_hook: on -- operator 2026-10-06: back on once PLAN-fast-loop completed
 turbo: off -- operator 2026-10-04: turbo off; running writers finish, no new plans start
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
@@ -45,15 +45,15 @@ commit_remind_min: 15 -- operator 2026-10-06: PLAN-fast-loop Part 2 default
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--focus`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: stop_hook off; turbo off; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; cadence on; agent_hint on; agent_pushback on; judge on.
+- Mode: stop_hook on; turbo off; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; cadence on; agent_hint on; agent_pushback on; judge on.
 - Focus: off.
 - Branch: 1006-2, PR #597 open.
 - Plans on the PR (1):
-  - agent/plans/PLAN-fast-loop.md -- 0 of 18 boxes ticked, the PR body's `Plan:` line
+  - agent/plans/PLAN-fast-loop.md -- 19 of 19 boxes ticked, the PR body's `Plan:` line
 - Work outside the PR's plans (1 epic(s)):
-  - epic 97672f9f, no plan, 60 commit(s) on the branch, 0 open item(s): Operator 2026-10-06 follow-ups: regeneration guard, ci-trace root causes and main-red alert, ci:quick scheduler utilization, package retention, budget 5xx retry
-- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a3b301a2444ae6615, worker:a54c720b4f25d8f54, worker:a636accc58cb639c7.
-- Leased items: 4: #c5fe5295 (worker:1761422, d778be9d), #de0d355c (worker:b5hugmupy, d778be9d), #eaf3d3f1 (worker:a3b301a2444ae6615, d778be9d), #f28caf3f (worker:b5hugmupy, d778be9d).
+  - epic 97672f9f, no plan, 95 commit(s) on the branch, 0 open item(s): Operator 2026-10-06 follow-ups: regeneration guard, ci-trace root causes and main-red alert, ci:quick scheduler utilization, package retention, budget 5xx retry
+- Writers: 0 live of writer_cap 15 (session d778be9d).
+- Leased items: 4: #c5fe5295 (worker:684272, d778be9d), #de0d355c (worker:b5hugmupy, d778be9d), #eaf3d3f1 (worker:a3b301a2444ae6615, d778be9d), #f28caf3f (worker:b5hugmupy, d778be9d).
 - Next plan: agent/plans/PLAN-ci-consolidation.md, Promoted entry 1 (solo); starts on the next branch after PR #597 merges.
 <!-- queue:inflight:end -->
 
@@ -71,39 +71,39 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 1. agent/plans/PLAN-config-passkey-optional.md -- P0, approved, in progress (3 of 4 boxes ticked)
 2. agent/plans/PLAN-app-wide-org-selection.md -- P0, approved, in progress (2 of 3 boxes ticked), dep-blocked
 3. agent/plans/PLAN-config-handoff-relay-only.md -- P0, draft, in progress (9 of 11 boxes ticked), dep-blocked
-4. agent/plans/PLAN-fast-loop.md -- P0, approved, in progress (18 of 19 boxes ticked)
-5. agent/plans/PLAN-token-ip-rebind.md -- P0, draft, in progress (9 of 10 boxes ticked), dep-blocked
-6. agent/plans/PLAN-config-sync-hardening.md -- P0, draft, in progress (18 of 19 boxes ticked), dep-blocked
-7. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
-8. agent/plans/PLAN-plan-per-pr-loop.md -- P1, approved, in progress (15 of 16 boxes ticked)
-9. agent/plans/PLAN-secret-namespace-migration.md -- P1, executing, in progress (29 of 34 boxes ticked)
-10. agent/plans/PLAN-stop-hook-one-plan-scope.md -- P1, approved, in progress (14 of 15 boxes ticked)
-11. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
-12. agent/plans/PLAN-tooling-transformation.md -- P1, ready, in progress (151 of 154 boxes ticked)
-13. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked), dep-blocked
-14. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (7 of 9 boxes ticked)
-15. agent/plans/PLAN-account-env-to-bws.md -- P2, draft, in progress (19 of 20 boxes ticked)
-16. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
-17. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
-18. agent/plans/PLAN-retire-bash-oracles.md -- P2, approved, in progress (6 of 15 boxes ticked), dep-blocked
-19. agent/plans/PLAN-stop-hook-retro-20260924.md -- P2, ready, in progress (22 of 23 boxes ticked)
-20. agent/plans/PLAN-biome-only-lint.md -- P3, draft, in progress (10 of 29 boxes ticked)
-21. agent/plans/PLAN-env-to-bitwarden-v2.md -- P3, draft, in progress (9 of 10 boxes ticked)
-22. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (1 of 17 boxes ticked)
-23. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-24. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
-25. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-26. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-27. agent/plans/PLAN-locale-techdiff-resync.md -- P2, ready, not started
-28. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
-29. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
-30. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-31. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-32. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-33. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+4. agent/plans/PLAN-token-ip-rebind.md -- P0, draft, in progress (9 of 10 boxes ticked), dep-blocked
+5. agent/plans/PLAN-config-sync-hardening.md -- P0, draft, in progress (18 of 19 boxes ticked), dep-blocked
+6. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
+7. agent/plans/PLAN-plan-per-pr-loop.md -- P1, approved, in progress (15 of 16 boxes ticked)
+8. agent/plans/PLAN-secret-namespace-migration.md -- P1, executing, in progress (29 of 34 boxes ticked)
+9. agent/plans/PLAN-stop-hook-one-plan-scope.md -- P1, approved, in progress (14 of 15 boxes ticked)
+10. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
+11. agent/plans/PLAN-tooling-transformation.md -- P1, ready, in progress (151 of 154 boxes ticked)
+12. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked), dep-blocked
+13. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (7 of 9 boxes ticked)
+14. agent/plans/PLAN-account-env-to-bws.md -- P2, draft, in progress (19 of 20 boxes ticked)
+15. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
+16. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
+17. agent/plans/PLAN-retire-bash-oracles.md -- P2, approved, in progress (6 of 15 boxes ticked), dep-blocked
+18. agent/plans/PLAN-stop-hook-retro-20260924.md -- P2, ready, in progress (22 of 23 boxes ticked)
+19. agent/plans/PLAN-biome-only-lint.md -- P3, draft, in progress (10 of 29 boxes ticked)
+20. agent/plans/PLAN-env-to-bitwarden-v2.md -- P3, draft, in progress (9 of 10 boxes ticked)
+21. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (1 of 17 boxes ticked)
+22. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+23. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
+24. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+25. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
+26. agent/plans/PLAN-locale-techdiff-resync.md -- P2, ready, not started
+27. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
+28. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
+29. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
+30. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+31. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+32. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 
+- agent/plans/PLAN-fast-loop.md -- all boxes ticked: close it
 - agent/plans/PLAN-github-pr-review-restore.md -- all boxes ticked: close it
 - agent/plans/PLAN-prepush-full-cpu.md -- all boxes ticked: close it
 - agent/plans/PLAN-program-state-in-repo.md -- all boxes ticked: close it
