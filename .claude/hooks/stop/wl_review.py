@@ -1855,6 +1855,22 @@ def _citation_ok(repo, evidence):
     return False
 
 
+REBASED_COPY_DEPTH = 400
+
+
+def rebased_copy_below(repo, pid, fix):
+    """The commit at or below `fix` (within REBASED_COPY_DEPTH) whose patch-id is `pid`, or "". A rebase rewrites the reviewed commit's sha but not its patch-id, so a fix on the rebased branch descends from the copy, not from the sha the record names (seen 2026-10-06: 1006-2 rebased onto v1.8.0 main, and fix 7b6205f59 for e2a16724.1 was refused)."""
+    if not pid or pid == "(none)":
+        return ""
+    rc, out = git(repo, "rev-list", "--no-merges", "-n", str(REBASED_COPY_DEPTH), fix)
+    if rc != 0:
+        return ""
+    for sha in out.split():
+        if patch_id(repo, sha) == pid:
+            return sha
+    return ""
+
+
 def mark(root, branch, finding_id, kind, args, me, items=None, now=None):
     """Close one finding. Returns the path written; raises ValueError naming the failed check.
 
@@ -1873,9 +1889,12 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None):
             raise ValueError("the fix cannot be the reviewed commit itself")
         if git(repo, "merge-base", "--is-ancestor", fix, "HEAD")[0] != 0:
             raise ValueError("%s is not on this branch (not an ancestor of HEAD)" % fix[:12])
-        if git(repo, "merge-base", "--is-ancestor", review.sha, fix)[0] != 0:
+        if git(repo, "merge-base", "--is-ancestor", review.sha, fix)[
+            0
+        ] != 0 and not rebased_copy_below(repo, review.patch_id, fix):
             raise ValueError(
-                "%s does not descend from the reviewed commit %s" % (fix[:12], review.sha8)
+                "%s does not descend from the reviewed commit %s (nor from a rebased copy of it)"
+                % (fix[:12], review.sha8)
             )
         touched = git_out(
             repo, "diff-tree", "--no-commit-id", "--name-only", "-r", "--find-renames", fix

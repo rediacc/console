@@ -666,6 +666,24 @@ def test_mark_fixed_accepts_a_real_fix_and_refuses_the_rest(world):
     assert st["blocking"] == []
 
 
+def test_mark_fixed_accepts_a_fix_on_a_rebased_copy_of_the_reviewed_commit(world):
+    """2026-10-06: 1006-2 was rebased onto a new main, so the reviewed commit e2a16724 became a copy with a new sha and the same patch-id, and the fix on top of it was refused as "does not descend". The descent check now follows the patch-id to the copy."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    world.git("checkout", "-q", "main")
+    world.commit("unrelated_on_main.py", body="m = 1\n", msg="chore(main): move main")
+    world.git("checkout", "-q", BRANCH)
+    world.git("rebase", "-q", "main")
+    copy = world.git("rev-parse", "HEAD").stdout.strip()
+    assert copy != sha, "the rebase must rewrite the reviewed commit"
+    assert world.git("merge-base", "--is-ancestor", sha, copy, check=False).returncode != 0
+    fix = world.commit("f.py", body="a = 1\nb = 2\nc = 4\n")
+    R.mark(world.repo, BRANCH, fid, "fixed", [fix], "deadbeef")
+    review = R.parse(world.review_file(sha).read_text())
+    assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % fix)
+
+
 def test_mark_not_a_bug_needs_a_resolvable_citation(world):
     sha = world.commit()
     world.run_child(sha)
