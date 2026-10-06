@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from rediacc_ci.core import ghx
 from rediacc_ci.release import check_soak_period, nightly_tested_edge
 from rediacc_ci.release.nightly_tested_edge import nightly_failures_are_drift_only
 from rediacc_ci.well_known import GH_REPO
@@ -257,8 +258,63 @@ def test_soak_check_refuses_when_the_jobs_cannot_be_read(
     soak_env: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     def broken(*_: str) -> list[dict[str, Any]]:
-        raise nightly_tested_edge.ghx.GhError(["gh", "api"], 1, "HTTP 502", "server")
+        raise ghx.GhError(["gh", "api"], 1, "HTTP 502", "server")
 
     monkeypatch.setattr(nightly_tested_edge, "fetch_run_jobs", broken)
     assert check_soak_period.main([]) == 0
     assert outputs(soak_env)["ready"] == "false"
+
+
+# --- gh_retry (PLAN-gh-retry G12): a transient read fault is retried, a non-transient one is not ---
+
+
+class _FakeGh:
+    """Scripted `gh` outcomes (rc, stdout, stderr), one per attempt, the last repeating. Patched in as the `runner` and `sleep` of `gh_retry.gh`, so nothing touches the network or the clock."""
+
+    def __init__(self, *outcomes):
+        self.outcomes = list(outcomes)
+        self.calls = []
+        self.slept = []
+
+    def install(self, monkeypatch, module):
+        real = module.gh_retry.gh
+        fake = self
+
+        def runner(args, **_kw):
+            fake.calls.append(list(args))
+            rc, out, err = fake.outcomes[min(len(fake.calls), len(fake.outcomes)) - 1]
+            return module.gh_retry.ghx.GhResult(["gh", *args], rc, out, err)
+
+        monkeypatch.setattr(
+            module.gh_retry,
+            "gh",
+            lambda args, **kw: real(args, runner=runner, **{**kw, "sleep": fake.slept.append}),
+        )
+        return self
+
+
+def test_fetch_run_jobs_retries_a_502_then_merges_pages(monkeypatch) -> None:
+    pages = '[{"jobs":[{"name":"a"}]},{"jobs":[{"name":"b"}]}]'
+    fake = _FakeGh((1, "", "gh: Server Error (HTTP 502)"), (0, pages, ""))
+    fake.install(monkeypatch, nightly_tested_edge)
+    jobs = nightly_tested_edge.fetch_run_jobs("o/r", "42")
+    assert [j["name"] for j in jobs] == ["a", "b"]
+    assert fake.slept == [5.0]
+    assert fake.calls[0][-2:] == ["--paginate", "--slurp"]
+
+
+def test_fetch_run_jobs_persistent_5xx_raises(monkeypatch) -> None:
+    fake = _FakeGh((1, "", "gh: Server Error (HTTP 502)"))
+    fake.install(monkeypatch, nightly_tested_edge)
+    with pytest.raises(Exception, match="502"):
+        nightly_tested_edge.fetch_run_jobs("o/r", "42")
+    assert len(fake.calls) == 3
+
+
+def test_fetch_run_jobs_404_is_not_retried(monkeypatch) -> None:
+    fake = _FakeGh((1, "", "gh: Not Found (HTTP 404)"))
+    fake.install(monkeypatch, nightly_tested_edge)
+    with pytest.raises(Exception, match="404"):
+        nightly_tested_edge.fetch_run_jobs("o/r", "42")
+    assert len(fake.calls) == 1
+    assert fake.slept == []

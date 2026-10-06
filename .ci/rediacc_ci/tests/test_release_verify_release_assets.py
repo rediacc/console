@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from rediacc_ci.release import verify_release_assets
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import GH_REPO
 
@@ -108,3 +109,70 @@ def test_missing_version_fails_the_same_way_reworded(tmp_path: pathlib.Path) -> 
     assert new[0] == 1
     assert "VERSION" in old[2]
     assert "VERSION" in new[2]
+
+
+# --- gh_retry (PLAN-gh-retry G12): a transient read fault is retried, a non-transient one is not ---
+
+
+class _FakeGh:
+    """Scripted `gh` outcomes (rc, stdout, stderr), one per attempt, the last repeating. Patched in as the `runner` and `sleep` of `gh_retry.gh`, so nothing touches the network or the clock."""
+
+    def __init__(self, *outcomes):
+        self.outcomes = list(outcomes)
+        self.calls = []
+        self.slept = []
+
+    def install(self, monkeypatch, module):
+        real = module.gh_retry.gh
+        fake = self
+
+        def runner(args, **_kw):
+            fake.calls.append(list(args))
+            rc, out, err = fake.outcomes[min(len(fake.calls), len(fake.outcomes)) - 1]
+            return module.gh_retry.ghx.GhResult(["gh", *args], rc, out, err)
+
+        monkeypatch.setattr(
+            module.gh_retry,
+            "gh",
+            lambda args, **kw: real(args, runner=runner, **{**kw, "sleep": fake.slept.append}),
+        )
+        return self
+
+
+def _verify(monkeypatch, fake):
+    mod = verify_release_assets
+
+    fake.install(monkeypatch, mod)
+    monkeypatch.setenv("VERSION", "v1.2.3")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
+    return mod
+
+
+BODY = '{"tagName":"v1.2.3","assets":[{"name":"rdc-linux"}]}'
+
+
+def test_a_502_then_success_verifies(monkeypatch, capsys) -> None:
+    fake = _FakeGh((1, "", "gh: Server Error (HTTP 502)"), (0, BODY, ""))
+    mod = _verify(monkeypatch, fake)
+    assert mod.main([]) == 0
+    assert len(fake.calls) == 2
+    assert fake.slept == [5.0]
+    assert "has 1 rdc-* CLI asset" in capsys.readouterr().out
+
+
+def test_persistent_5xx_refuses_to_seal(monkeypatch, capsys) -> None:
+    fake = _FakeGh((1, "", "gh: Server Error (HTTP 502)"))
+    mod = _verify(monkeypatch, fake)
+    assert mod.main([]) == 1
+    out = capsys.readouterr().out
+    assert "no GitHub Release found" in out
+    assert "HTTP 502" in out
+    assert len(fake.calls) == 3
+
+
+def test_a_404_is_not_retried(monkeypatch) -> None:
+    fake = _FakeGh((1, "", "release not found (HTTP 404)"))
+    mod = _verify(monkeypatch, fake)
+    assert mod.main([]) == 1
+    assert len(fake.calls) == 1
+    assert fake.slept == []

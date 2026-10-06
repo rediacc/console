@@ -12,8 +12,9 @@ from __future__ import annotations
 import json
 import os
 import re
-import subprocess
 import sys
+
+from rediacc_ci.core import gh_retry
 
 SELF = "list-edge-releases.py"
 RELEASE_TAG_RE = re.compile(r"^v([0-9]+)\.([0-9]+)\.([0-9]+)$")
@@ -55,23 +56,20 @@ def main(argv: list[str]) -> int:
         print(f"{SELF}: GITHUB_OUTPUT must be set", file=sys.stderr)
         return 1
     repo = os.environ.get("GITHUB_REPOSITORY", "")
-    args = ["gh", "release", "list", "--exclude-drafts", "--exclude-pre-releases"]
+    args = ["release", "list", "--exclude-drafts", "--exclude-pre-releases"]
     args += ["--limit", LIST_LIMIT, "--json", "tagName,publishedAt"]
     if repo:
         args += ["--repo", repo]
-    try:
-        proc = subprocess.run(args, capture_output=True, text=True, check=False)
-    except OSError as exc:
-        print(f"{SELF}: could not run gh: {exc.strerror}", file=sys.stderr)
-        return 1
-    if proc.returncode != 0:
+    # Transient 5xx faults are retried; a failure that survives the retries stays the loud exit 1 below, never an empty list.
+    proc = gh_retry.gh(args)
+    if not proc.ok:
         print(
             f"{SELF}: gh release list failed (exit {proc.returncode}): {proc.stderr.strip()}",
             file=sys.stderr,
         )
         return 1
     try:
-        releases = parse_releases(proc.stdout)
+        releases = parse_releases(proc.stdout_raw)
     except (ValueError, TypeError) as exc:
         print(f"{SELF}: gh release list returned unreadable output: {exc}", file=sys.stderr)
         return 1

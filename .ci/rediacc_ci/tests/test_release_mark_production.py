@@ -523,3 +523,128 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     assert PORT.read_text(encoding="utf-8") == original, (
         "port source must be restored byte-identical"
     )
+
+
+# --- gh_retry (PLAN-gh-retry G12): the reads retry a transient fault; the writes never do ---
+
+
+class _ScriptedGh:
+    """In-process `gh`: `route(args)` returns (rc, stdout, stderr) per call; patched into `gh_retry.gh` with a recording runner and no-op sleep."""
+
+    def __init__(self, route):
+        self.route = route
+        self.calls: list[list[str]] = []
+        self.slept: list[float] = []
+        self.writes: list[list[str]] = []
+
+    def install(self, monkeypatch):
+        real = port.gh_retry.gh
+
+        def runner(args, **_kw):
+            self.calls.append(list(args))
+            rc, out, err = self.route(list(args), sum(1 for c in self.calls if c == list(args)))
+            return port.gh_retry.ghx.GhResult(["gh", *args], rc, out, err)
+
+        monkeypatch.setattr(
+            port.gh_retry,
+            "gh",
+            lambda args, **kw: real(args, runner=runner, **{**kw, "sleep": self.slept.append}),
+        )
+        monkeypatch.setattr(port.shutil, "which", lambda _n: "/usr/bin/gh")
+
+        def write(args):
+            self.writes.append(args)
+            return 0
+
+        monkeypatch.setattr(port, "_stdout_devnull", write)
+        monkeypatch.setattr(port, "_inherit", write)
+        monkeypatch.setenv("GITHUB_REPOSITORY", "acme/widget")
+        return self
+
+
+def _happy(args, _n, *, prod=(0, "", ""), view=(0, "{}", "")):
+    if args[:2] == ["release", "view"]:
+        return view
+    if args[-1] == ".object.sha":
+        return (0, "a" * 40 + "\n", "")
+    if args[-1] == ".object.type":
+        return (0, "commit\n", "")
+    if args[1].endswith("/git/refs/tags/production"):
+        return prod
+    return (90, "", "unrouted")
+
+
+def test_a_502_on_the_release_view_is_retried(monkeypatch) -> None:
+    fake = _ScriptedGh(
+        lambda a, n: (
+            (1, "", "gh: Server Error (HTTP 502)") if a[0] == "release" and n == 1 else _happy(a, n)
+        )
+    ).install(monkeypatch)
+    assert port.main(["v1.3.1"]) == 0
+    assert fake.slept == [5.0]
+    assert fake.writes[0][:3] == ["api", "--method", "PATCH"]
+
+
+def test_persistent_5xx_on_the_release_view_is_the_could_not_read_refusal(monkeypatch) -> None:
+    fake = _ScriptedGh(lambda _a, _n: (1, "", "gh: Server Error (HTTP 502)")).install(monkeypatch)
+    assert port.main(["v1.3.1"]) == 1
+    assert len(fake.calls) == 3
+    assert fake.writes == []
+
+
+def test_a_404_on_the_release_view_is_not_retried(monkeypatch) -> None:
+    fake = _ScriptedGh(lambda _a, _n: (1, "", "release not found (HTTP 404)")).install(monkeypatch)
+    assert port.main(["v1.3.1"]) == 1
+    assert len(fake.calls) == 1
+    assert fake.slept == []
+
+
+def test_a_502_on_the_ref_lookup_is_retried(monkeypatch) -> None:
+    fake = _ScriptedGh(
+        lambda a, n: (
+            (1, "", "gh: Server Error (HTTP 502)")
+            if a[-1] == ".object.sha" and n == 1
+            else _happy(a, n)
+        )
+    ).install(monkeypatch)
+    assert port.main(["v1.3.1"]) == 0
+    assert fake.slept == [5.0]
+
+
+def test_persistent_5xx_on_the_ref_lookup_moves_nothing(monkeypatch) -> None:
+    fake = _ScriptedGh(
+        lambda a, n: (
+            (1, "", "gh: Server Error (HTTP 502)") if a[-1] == ".object.sha" else _happy(a, n)
+        )
+    ).install(monkeypatch)
+    assert port.main(["v1.3.1"]) == 1
+    assert fake.writes == []
+
+
+def test_a_502_on_the_production_probe_is_retried_then_patches(monkeypatch) -> None:
+    fake = _ScriptedGh(
+        lambda a, n: (
+            (1, "", "gh: Server Error (HTTP 502)")
+            if a[1:] == ["repos/acme/widget/git/refs/tags/production"] and n == 1
+            else _happy(a, n)
+        )
+    ).install(monkeypatch)
+    assert port.main(["v1.3.1"]) == 0
+    assert fake.writes[0][:3] == ["api", "--method", "PATCH"]
+
+
+def test_persistent_5xx_on_the_production_probe_refuses_rather_than_posting(monkeypatch) -> None:
+    fake = _ScriptedGh(
+        lambda a, n: _happy(a, n, prod=(1, "", "gh: Server Error (HTTP 502)"))
+    ).install(monkeypatch)
+    assert port.main(["v1.3.1"]) == 1
+    assert fake.writes == []
+
+
+def test_a_404_on_the_production_probe_posts_without_retry(monkeypatch) -> None:
+    fake = _ScriptedGh(lambda a, n: _happy(a, n, prod=(1, "", "gh: Not Found (HTTP 404)"))).install(
+        monkeypatch
+    )
+    assert port.main(["v1.3.1"]) == 0
+    assert fake.writes[0][:3] == ["api", "--method", "POST"]
+    assert fake.slept == []
