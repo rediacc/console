@@ -839,10 +839,17 @@ SPREAD_NOISE = {
 }
 
 
+def _stats(samples_ms: list[float]) -> dict[str, float]:
+    """`br.stats` for a non-empty sample, typed as present."""
+    st = br.stats(samples_ms)
+    assert st is not None
+    return st
+
+
 def _spread(table):
     committed, measured, unit_stats = {}, {}, {}
     for unit_id, (was_s, samples_s) in table.items():
-        st = br.stats([x * 1000 for x in samples_s])
+        st = _stats([x * 1000 for x in samples_s])
         committed[unit_id] = was_s * 1000
         measured[unit_id] = st["p90"]
         unit_stats[unit_id] = st
@@ -868,8 +875,8 @@ def test_outlier_shaped_unit_moves_pass_on_the_sample_spread(tmp_path):
 def test_planted_unit_doubling_still_fails_on_the_sample_spread(tmp_path):
     """CONTROL: test_settings_collapse.py went 118 -> 278 s after 00fa66691; every sample of a unit doubling moves its median 2x, so the slower side reds and says which statistic did it."""
     base = [110.0, 112.0, 115.0, 116.0, 117.0, 118.0, 120.0]
-    was = br.stats([x * 1000 for x in base])["p90"]
-    doubled = br.stats([x * 2000 for x in base])
+    was = _stats([x * 1000 for x in base])["p90"]
+    doubled = _stats([x * 2000 for x in base])
     unit = "pytest:.claude/rediacc_hooks/tests/test_settings_collapse.py"
     findings, _ = br.unit_drift_findings({unit: was}, {unit: doubled["p90"]}, {unit: doubled})
     unit_findings = [f for f in findings if f.startswith("unit ")]
@@ -885,10 +892,10 @@ def test_planted_unit_doubling_still_fails_on_the_sample_spread(tmp_path):
 def test_planted_step_change_reds_once_the_window_agrees():
     """CONTROL: the 105 -> 57 s speedup reds once no old run is left in the window (max under 75% of the committed p90), and a slowdown reds once half the window carries it (the median)."""
     unit = "pytest:.ci/rediacc_ci/tests/test_ci_profiler_sampler_linux.py"
-    rolled = br.stats([x * 1000 for x in [56.6, 56.8, 56.9, 57.2, 57.3, 57.5, 59.2]])
+    rolled = _stats([x * 1000 for x in [56.6, 56.8, 56.9, 57.2, 57.3, 57.5, 59.2]])
     findings, _ = br.unit_drift_findings({unit: 105266.0}, {unit: rolled["p90"]}, {unit: rolled})
     assert len([f for f in findings if f.startswith("unit ") and "faster" in f]) == 1
-    half_slow = br.stats([x * 1000 for x in [60, 61, 62, 130, 131, 132, 133]])
+    half_slow = _stats([x * 1000 for x in [60, 61, 62, 130, 131, 132, 133]])
     findings, _ = br.unit_drift_findings(
         {unit: 62000.0}, {unit: half_slow["p90"]}, {unit: half_slow}
     )
@@ -898,7 +905,7 @@ def test_planted_step_change_reds_once_the_window_agrees():
 def test_a_median_move_under_the_absolute_floor_is_still_noise():
     """The floor applies to the judged statistic: a 10 s unit whose median moves 40% (4 s) is not a finding."""
     unit = "pytest:small.py"
-    st = br.stats([14000.0] * 7)
+    st = _stats([14000.0] * 7)
     assert br.unit_drift_findings({unit: 10000.0}, {unit: st["p90"]}, {unit: st})[0] == []
 
 
