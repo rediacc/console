@@ -61,14 +61,21 @@ def gh(
     args: list[str],
     *,
     env: dict[str, str] | None = None,
+    repo: str | None = None,
+    timeout: float | None = None,
     attempts: int = ATTEMPTS,
     sleep: Callable[[float], None] | None = None,
     runner: Callable[..., ghx.GhResult] | None = None,
 ) -> ghx.GhResult:
-    """`gh <args>` with transient retry. Never raises for a non-zero exit; read `.stdout`/`.json()`. `env` reaches gh unchanged (review_budget passes a token)."""
+    """`gh <args>` with transient retry. Never raises for a non-zero exit; read `.stdout`/`.json()`. `env` reaches gh unchanged (review_budget passes a token). `repo` and `timeout` pass through to ghx.gh (PLAN-gh-retry G0): a call site that resolves `{owner}/{repo}` names the repo, and an artifact download needs more than ghx's 30 s default. Only the arguments a caller sets are passed, so a test runner that predates them still fits."""
     run = runner or ghx.gh
+    extra: dict[str, Any] = {}
+    if repo is not None:
+        extra["repo"] = repo
+    if timeout is not None:
+        extra["timeout"] = timeout
     return retry_transient(
-        lambda: run(args, env=env, attempts=1),
+        lambda: run(args, env=env, attempts=1, **extra),
         lambda r: None if r.ok else (r.stderr or "failed"),
         attempts=attempts,
         sleep=sleep,
