@@ -99,6 +99,8 @@ const POLICY_FILES = Object.freeze([
   '.w7p5a-real-run-leg-blocklist',
   // 2026-10-01. The fourth .json, for the same reason as the three beside it: each entry is a small record (owner, reason, and exactly one of a re-checked blocker or a dated expiry), which a name-per-line dotfile could not carry. It excuses a blocklisted npm major past its 90-day deadline. Read only by scripts/gates/check-deps.ts, which enforces its liveness in-gate (expired, stale, dead).
   'deps-major-exceptions.json',
+  // 2026-10-06, PLAN-fast-loop.md Part 1. Gates whose verdict moves without a tracked input moving (network, clock, history, untracked cache): the incremental pre-push receipt never carries them. Read by scripts/ci-runner/input-hash.ts (exemptIdsOf) and block_unverified_push's v2 check; each row needs a reason of at least 80 characters (test_gate_incremental_receipt.py).
+  'carry-exempt.json',
   // 2026-09-21. A TABLE of permitted root and agent/ classes, one row per class with its own reason, which a name-per-line dotfile could not carry. Read only by .ci/rediacc_ci/quality/tree_shape.py.
   'tree-shape.json',
   // 2026-10-05, PLAN-prepush-full-cpu PF23/PF9. Two tables, each row with its own reason, which a name-per-line dotfile could not carry: the record paths a commit may touch without voiding a pre-push receipt (with the gates that read them), and the fixed parallel widths that stay fixed (network fan-outs, operator /ask 2026-10-05T07:23Z). Read by .ci/scripts/quality/check_record_paths.py and .claude/rediacc_hooks/guards/block_unverified_push.py.

@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "exempt": [
+    {
+      "id": "check:ci-plan-folders",
+      "reason": "Reads the current UTC date (dt.datetime.now) to age plans against .ci/config/plan-lifecycle.json, so its verdict turns red as the calendar advances while agent/plans/** and every other tracked input stay byte-identical."
+    },
+    {
+      "id": "check:ci-plan-housekeeping",
+      "reason": "Judges plan ages and allowlist entries that die on their own stated date against the wall clock (dt.datetime.now in plan_housekeeping.py), so a pass today becomes a fail later with no tracked input changed; its module also sits outside the declared paths."
+    },
+    {
+      "id": "check:ci-plan-deps",
+      "reason": "Compares plan Priority against the merge-base with the target branch (D17, origin/main, GITHUB_BASE_REF) and reads dates, so its verdict depends on git history and on how far origin/main has moved, not on tracked file content alone."
+    },
+    {
+      "id": "check:ci-runner-selftest",
+      "reason": "Selftest of the runner drives quick-select and merge-base resolution against origin/main, reads .ci/cache state and the clock, so its verdict depends on history and untracked cache files that no tracked-input hash covers."
+    },
+    {
+      "id": "check:ci-gate-manifest",
+      "reason": "Judges slow/fast gate classification from the local untracked .ci/cache/gate-durations.json (measured timings), so the verdict changes when the cache changes even though every tracked file is identical."
+    },
+    {
+      "id": "check:ci-pytest",
+      "reason": "Runs the whole pytest suite, whose tests read the clock, git history, the untracked .ci/cache toolchain and junit state, and files outside the declared paths; its verdict can move with none of the hashed inputs changing."
+    },
+    {
+      "id": "check:ci-lockfile",
+      "reason": "Runs npm ci --dry-run and npm install --package-lock-only under the pinned npm, which resolve against the live registry (including release-age windows), so a package published or yanked flips the verdict with no tracked input changed."
+    }
+  ]
+}

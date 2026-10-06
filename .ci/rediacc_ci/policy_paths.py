@@ -89,6 +89,8 @@ POLICY_FILES: tuple[str, ...] = (
     ".w7p5a-real-run-leg-blocklist",
     # 2026-10-01. The fourth .json, for the same reason as the three beside it: each entry is a small record (owner, reason, and exactly one of a re-checked blocker or a dated expiry), which a name-per-line dotfile could not carry. It excuses a blocklisted npm major past its 90-day deadline. Read only by scripts/gates/check-deps.ts, which enforces its liveness in-gate.
     "deps-major-exceptions.json",
+    # 2026-10-06, PLAN-fast-loop.md Part 1. Gates whose verdict moves without a tracked input moving: the incremental pre-push receipt never carries them. Read by scripts/ci-runner/input-hash.ts and block_unverified_push.py.
+    "carry-exempt.json",
     # 2026-09-21. The THIRD non-dotfile and the second .json, for the same reason the two above are: it holds a TABLE of permitted classes, one per row with its own reason, which a name-per-line dotfile could not carry. It is policy by the README predicate all the same -- every class in it is a claim about what the tree may look like, and a change to the tree can stop that
     # claim being true. Reached through policy_path() from .ci/rediacc_ci/quality/tree_shape.py and nowhere else.
     "tree-shape.json",
