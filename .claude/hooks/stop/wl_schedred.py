@@ -350,8 +350,30 @@ def _fetch_push(root, owner, name, wf, diag_cache):
         return None, err or "no runs document", diag_cache
     runs = [r for r in data.get("workflow_runs") or [] if r.get("event") in (None, "push")]
     done = [r for r in runs if r.get("status") == "completed"]
-    newest = _newest(done) if done else None
-    in_flight = any(
+    # THE NEWEST COMMIT'S RUNS ARE JUDGED TOGETHER (2026-10-06). One push to main can start two Console CI runs on one SHA, and the later one is a no-op that ends green in about a minute (rediacc_ci.ci.sibling_runs). Taking the newest completed run alone then read that no-op as main's verdict while the original was still running, and kept reading it after the original went red, because the no-op stays the newer run.
+    latest = _newest(runs) if runs else None
+    sha = str((latest or {}).get("head_sha") or "")
+    same = [r for r in runs if sha and str(r.get("head_sha") or "") == sha]
+    same_done = [r for r in same if r.get("status") == "completed"]
+    same_red = [
+        r for r in same_done if r.get("conclusion") not in ("success", "skipped", "neutral")
+    ]
+    settling = any(r.get("status") != "completed" for r in same)
+    cand = _newest(same_done) if same_done else None
+    # A still-running run OLDER than the newest completed one is the original the completed no-op stood in for: the SHA is not settled. A running run NEWER than it is the queued duplicate or a retry, and the completed run stands.
+    masked = cand is not None and any(
+        r.get("status") != "completed"
+        and str(r.get("created_at") or "") < str(cand.get("created_at") or "")
+        for r in same
+    )
+    if same_red:
+        newest = _newest(same_red)
+    elif cand is not None and not masked:
+        newest = cand
+    else:
+        older = [r for r in done if str(r.get("head_sha") or "") != sha]
+        newest = _newest(older) if older else (_newest(done) if done and not same else None)
+    in_flight = settling or any(
         r.get("status") != "completed"
         and (
             newest is None or str(r.get("created_at") or "") >= str(newest.get("created_at") or "")
