@@ -187,6 +187,34 @@ def scenario_partial_release(lease: Lease) -> list[str]:
     return []
 
 
+def scenario_partial_release_silent(lease: Lease) -> list[str]:
+    """The same partial release with a waiter that passes no on_wait callback: it blocks just the same, so it must settle just the same (review finding e2a16724.1)."""
+    mod = load_module(lease.module)
+    mod.WAIT_POLL_SECONDS = PARTIAL_POLL_S  # type: ignore[attr-defined]
+    pool = mod.Pool(lease.pool, TOKENS)  # type: ignore[attr-defined]
+    pool.ensure()
+    holder = pool.try_acquire(3, 3)
+    other = pool.try_acquire(1, 1)
+    if len(holder) != 3 or len(other) != 1:
+        return ["setup: holder got %d and other %d, want 3 and 1" % (len(holder), len(other))]
+    got: list[object] = []
+    waiter = threading.Thread(
+        target=lambda: got.extend(pool.acquire(1, 3, wait=True, timeout=ANSWER_S))
+    )
+    waiter.start()
+    time.sleep(PARTIAL_GAP_S * 3)
+    for token in holder:
+        time.sleep(PARTIAL_GAP_S)
+        pool.release([token])
+    waiter.join(ANSWER_S * 2)
+    pool.release([*got, *other])  # type: ignore[arg-type]
+    if len(got) != 3:
+        return [
+            "a waiter with no on_wait, woken by tokens freed one by one, took %d, want 3" % len(got)
+        ]
+    return []
+
+
 def scenario_short_without_wait(lease: Lease) -> list[str]:
     """Fewer than --min free and no --wait: prints 0, exit 75, keeps nothing."""
     holder = lease.spawn("acquire", "--max", "3")
@@ -399,6 +427,7 @@ SCENARIOS = {
     "over_grant": scenario_over_grant,
     "kill_frees": scenario_kill_frees,
     "partial_release": scenario_partial_release,
+    "partial_release_silent": scenario_partial_release_silent,
     "short_without_wait": scenario_short_without_wait,
     "broker_eof": scenario_broker_eof,
     "probe_race": scenario_probe_race,
