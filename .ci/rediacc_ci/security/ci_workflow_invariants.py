@@ -22,6 +22,13 @@ THE SIX INVARIANTS, all read from the PARSED document rather than grepped, so a 
   4. `no-jobs` -- a workflow with no jobs is a failure, never a pass.
   5. `workflow-missing` -- likewise a missing file.
   6. an unparseable workflow is a failure, never a pass.
+  7. `root-ancestor-conditional` -- no ancestor of `initialize` (a job in its
+     transitive `needs`) carries a job-level `if:`. Added after the twin was
+     deleted, so no differential covers it: a job's implicit `success()` reads
+     every ANCESTOR, so a skipped ancestor skips every job downstream of
+     `initialize` that has no status function, with `initialize` itself
+     green. PR #597's run 37465283674 (2026-10-06): `duplicate-run` ran on
+     push only, skipped on the PR, and `run-sh-tests` skipped with it.
 
 NO EXTERNAL PROCESS IS INVOLVED, ON EITHER SIDE. The twin shells out to exactly
 one thing, `python3`, and only to run the heredoc that is transcribed below;
@@ -87,6 +94,7 @@ KINDS = (
     "skip-release-missing-job",
     "skip-release-validator-ungated",
     "skip-release-second-decision",
+    "root-ancestor-conditional",
 )
 
 
@@ -198,6 +206,12 @@ def analyse(doc: object) -> list[tuple[str, str]]:
             if "skip_release" not in cond:
                 out.append(("skip-release-validator-ungated", vname))
 
+    out.extend(
+        ("root-ancestor-conditional", name)
+        for name in _root_ancestors(jobs, "initialize")
+        if "if" in jobs[name]
+    )
+
     fin = jobs.get("finalize-release-sentinel")
     if isinstance(fin, dict):
         steps = fin.get("steps")
@@ -208,6 +222,30 @@ def analyse(doc: object) -> list[tuple[str, str]]:
                 break
 
     return out
+
+
+def _needs(job: dict) -> list[str]:
+    needs = job.get("needs")
+    if isinstance(needs, str):
+        return [needs]
+    return [str(n) for n in needs] if isinstance(needs, list) else []
+
+
+def _root_ancestors(jobs: dict, root: str) -> list[str]:
+    """Every job `root` needs, transitively, in discovery order; [] when `root` is absent."""
+    start = jobs.get(root)
+    if not isinstance(start, dict):
+        return []
+    seen: list[str] = []
+    todo = _needs(start)
+    while todo:
+        name = todo.pop(0)
+        job = jobs.get(name)
+        if name in seen or not isinstance(job, dict):
+            continue
+        seen.append(name)
+        todo.extend(_needs(job))
+    return seen
 
 
 def message_for(kind: str, name: str, workflow_file: str) -> str | None:
@@ -256,6 +294,14 @@ def message_for(kind: str, name: str, workflow_file: str) -> str | None:
             "INVARIANT-FAIL: skip-release: expected job '%s' is absent from %s, so this "
             "invariant checked nothing. Retarget it deliberately rather than letting it pass "
             "over a renamed job." % (name, workflow_file)
+        )
+    if kind == "root-ancestor-conditional":
+        return (
+            "INVARIANT-FAIL: root-ancestor-conditional: job '%s' is an ancestor of "
+            "`initialize` and has a job-level `if:`. When it skips, every job downstream of "
+            "`initialize` without its own status function skips too (a job's implicit "
+            "`success()` reads all ancestors), and CI Complete fails on a hard-required skip. "
+            "Run it on every event and decide inside its steps." % name
         )
     if kind == "no-candidates":
         # Vacuity guard. If nobody passes a channel-derived docker_tag any more, this gate is asserting nothing and must say so rather than printing a green nobody earned.

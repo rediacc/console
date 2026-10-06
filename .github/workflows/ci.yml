@@ -99,8 +99,16 @@ jobs:
   # job it runs in: only a skipped `initialize` reaches the whole DAG through
   # the needs.initialize.result == 'success' clauses every job already has.
   # It is exempt from ci-complete's aggregation (see ci_job_aggregation's
-  # EXEMPT block): `initialize` runs on !cancelled(), so a red check means full
-  # CI, never a skip, and there is no verdict to aggregate.
+  # EXEMPT block): there is no verdict to aggregate.
+  #
+  # IT RUNS ON EVERY EVENT, WITH NO JOB-LEVEL `if:`. A job's implicit
+  # `success()` reads every ANCESTOR, not only its direct needs, so a skip here
+  # skipped every job downstream of `initialize` that has no status function
+  # of its own, even with `initialize` green. PR #597's run 37465283674
+  # (2026-10-06) skipped `run-sh-tests` that way, and CI Complete failed on it.
+  # `dedupe` returns early off a push and fails open on every API error, so
+  # the job only goes red on a crash, and that red reaches CI Complete loudly.
+  # ci_workflow_invariants refuses an `if:` on any ancestor of `initialize`.
   # ============================================================================
   duplicate-run:
     name: Duplicate Run Check
@@ -109,7 +117,6 @@ jobs:
     permissions:
       contents: read
       actions: read
-    if: github.event_name == 'push'
     outputs:
       duplicate_of: ${{ steps.dedupe.outputs.duplicate_of }}
     steps:
