@@ -41,6 +41,12 @@
  *   tsx scripts/gen/gen-docs.ts --selftest prove the generator can fail
  *   tsx scripts/gen/gen-docs.ts --snapshot record the pre-port row SET (refuses to overwrite)
  *   tsx scripts/gen/gen-docs.ts --diff-snapshot   compare live rows against that record
+ *   node scripts/gen/gen-docs.ts --affected    staged paths that could move a region, as JSON
+ *   tsx scripts/gen/gen-docs.ts --check-inputs prove every provider's declared `inputs` by trace
+ *
+ * `--affected` and `--check-inputs` exist for the pre-commit hook in
+ * .claude/rediacc_hooks/git/githooks.py, which refuses a commit that stages a provider input
+ * and leaves a region drifted. The `inputs` section below says how the declarations are kept true.
  *
  * DETERMINISM IS A REQUIREMENT, NOT A NICETY. Two `--write` runs on a clean tree must produce
  * byte-identical files, or verify mode reds on noise and everyone learns to ignore it. So:
@@ -56,20 +62,25 @@
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import { createRequire, syncBuiltinESMExports } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 
+// `.ts` SPECIFIERS, so plain `node` (type stripping, Node 24) runs this file as well as tsx does. The pre-commit hook runs `--affected` on every commit in this repository, and `node` starts in about 0.1 s where `npx tsx` takes 0.8 s.
 import {
   byCodePoint,
   GATES_LOCK,
+  type InputChange,
   PROVIDERS,
   type Provider,
   type ProviderRow,
   providerById,
+  providersReading,
   readGatesLock,
-} from '../lib/doc-providers.js';
-import { findRegions, OPEN_RE, rewriteRegions } from '../lib/doc-regions.js';
+  type SeamReader,
+} from '../lib/doc-providers.ts';
+import { findRegions, OPEN_RE, rewriteRegions } from '../lib/doc-regions.ts';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const SNAPSHOT = 'scripts/data/doc-registry-preport.json';
@@ -481,6 +492,353 @@ function diffSnapshot(root: string): number {
   return bad === 0 ? 0 : 1;
 }
 
+/* ----------------------------------------------------------------- inputs */
+
+/**
+ * The CJS face of `node:child_process`. Patching a property here, then calling
+ * `syncBuiltinESMExports()`, is what reaches the NAMED `execFileSync` binding doc-providers.ts
+ * imports; patching the ESM namespace directly is not possible.
+ */
+const childProcess = createRequire(import.meta.url)(
+  'node:child_process'
+) as typeof import('node:child_process');
+
+interface Traced<T> {
+  value: T;
+  /** Repo-relative paths whose content was read. */
+  read: Set<string>;
+  /** Repo-relative paths a `git ls-files` returned, or a stat or existence probe touched. */
+  listed: Set<string>;
+  /** Reads the trace cannot attribute to a repo path: outside the root, or a process other than `git ls-files`. */
+  unseen: Set<string>;
+}
+
+/**
+ * Run `fn` with every `fs` read and every `git ls-files` listing it makes recorded, optionally
+ * serving `plant[rel]` in place of a file's real content.
+ *
+ * WHY A TRACE. The pre-commit hook trusts each provider's declared `inputs`, and a declaration
+ * is a hand-written list: the failure this generator exists to abolish. So the declaration is
+ * checked against what the provider ACTUALLY touches, on the real tree, every selftest run. A new
+ * seam that lands without its declaration reds here, and at commit time, because the hook runs
+ * `--check-inputs` whenever the generator's own modules are staged.
+ *
+ * `unseen` is the anti-vacuity half: a read this trace cannot attribute is not a pass, it is a
+ * path the hook would be blind to. Any process but `git ls-files` lands there, by name.
+ */
+function traced<T>(root: string, fn: () => T, plant: Record<string, string> = {}): Traced<T> {
+  const read = new Set<string>();
+  const listed = new Set<string>();
+  const unseen = new Set<string>();
+  const rel = (p: unknown): string | null => {
+    if (typeof p !== 'string' && !(p instanceof URL) && !Buffer.isBuffer(p)) return null;
+    const r = path.relative(root, path.resolve(root, p instanceof URL ? p.pathname : String(p)));
+    if (r === '' || r.startsWith('..') || path.isAbsolute(r)) {
+      unseen.add(`outside the root: ${String(p)}`);
+      return null;
+    }
+    return r.split(path.sep).join('/');
+  };
+  const real = {
+    readFileSync: fs.readFileSync,
+    statSync: fs.statSync,
+    existsSync: fs.existsSync,
+    execFileSync: childProcess.execFileSync,
+  };
+  // One mutable view of each module: `@types/node` declares `statSync` read-only, and the patch is the point.
+  const fsMut = fs as unknown as Record<'readFileSync' | 'statSync' | 'existsSync', unknown>;
+  const cpMut = childProcess as unknown as Record<'execFileSync', unknown>;
+  const restore = (): void => {
+    fsMut.readFileSync = real.readFileSync;
+    fsMut.statSync = real.statSync;
+    fsMut.existsSync = real.existsSync;
+    cpMut.execFileSync = real.execFileSync;
+    syncBuiltinESMExports();
+  };
+  fsMut.readFileSync = (p: fs.PathOrFileDescriptor, ...rest: unknown[]): unknown => {
+    const r = rel(p);
+    if (r !== null) {
+      read.add(r);
+      if (Object.prototype.hasOwnProperty.call(plant, r)) return plant[r];
+    }
+    return (real.readFileSync as (...a: unknown[]) => unknown)(p, ...rest);
+  };
+  fsMut.statSync = (p: fs.PathLike, ...rest: unknown[]): unknown => {
+    const r = rel(p);
+    if (r !== null) listed.add(r);
+    return (real.statSync as (...a: unknown[]) => unknown)(p, ...rest);
+  };
+  fsMut.existsSync = (p: fs.PathLike): boolean => {
+    const r = rel(p);
+    if (r !== null) listed.add(r);
+    return real.existsSync(p);
+  };
+  cpMut.execFileSync = (file: string, args?: readonly string[], opts?: unknown): unknown => {
+    const out = (real.execFileSync as (...a: unknown[]) => unknown)(file, args, opts);
+    if (file === 'git' && args?.includes('ls-files')) {
+      for (const entry of String(out).split(args.includes('-z') ? '\0' : '\n')) {
+        if (entry === '') continue;
+        const tab = entry.indexOf('\t');
+        listed.add(args.includes('-s') && tab >= 0 ? entry.slice(tab + 1) : entry);
+      }
+    } else {
+      unseen.add(`a process: ${file} ${(args ?? []).join(' ')}`);
+    }
+    return out;
+  };
+  syncBuiltinESMExports();
+  try {
+    return { value: fn(), read, listed, unseen };
+  } finally {
+    restore();
+  }
+}
+
+/** A seam reader over the working tree at `root`. */
+const diskSeams =
+  (root: string): SeamReader =>
+  (rel) => {
+    try {
+      return fs.readFileSync(path.join(root, rel), 'utf-8');
+    } catch {
+      return null;
+    }
+  };
+
+/** Every traced path outside `p`'s declared scope, sorted, plus whatever the trace could not see. */
+function undeclared(p: Provider, t: Traced<unknown>, read: SeamReader): string[] {
+  const decl = p.inputs;
+  if (decl === undefined) return ['(no `inputs` declared at all)'];
+  const out = [...new Set([...t.read, ...t.listed])].filter((r) => !decl.scope(r, read));
+  return [...out.sort(byCodePoint), ...[...t.unseen].sort(byCodePoint)];
+}
+
+/**
+ * The generator's own modules: this file and its relative imports, transitively.
+ *
+ * DERIVED, NOT LISTED, for the reason every provider above gives. A staged change to any of these
+ * can change every region at once, and can change the `inputs` declarations themselves, so the
+ * hook treats one as touching every provider and re-runs the trace.
+ */
+export function machinery(root: string): string[] {
+  const entry = import.meta.filename;
+  const seen = new Set<string>();
+  const queue = [entry];
+  while (queue.length > 0) {
+    const abs = queue.pop() as string;
+    if (seen.has(abs)) continue;
+    seen.add(abs);
+    const text = fs.readFileSync(abs, 'utf-8');
+    for (const m of text.matchAll(/(?:from|import)\s*\(?\s*['"](\.[^'"\n]+)['"]/g)) {
+      const base = path.resolve(path.dirname(abs), m[1] as string);
+      const hit = [base, base.replace(/\.js$/, '.ts'), `${base}.ts`].find((c) => {
+        try {
+          return fs.statSync(c).isFile();
+        } catch {
+          return false;
+        }
+      });
+      if (hit === undefined) {
+        throw new Error(`${path.relative(root, abs)} imports ${m[1]}, and no file answers it`);
+      }
+      queue.push(hit);
+    }
+  }
+  return [...seen]
+    .map((abs) => path.relative(root, abs).split(path.sep).join('/'))
+    .sort(byCodePoint);
+}
+
+/** `git diff-index --cached` against HEAD, or the empty tree on a first commit. */
+function stagedChanges(): { changes: InputChange[]; seams: SeamReader } {
+  const git = (args: string[], input?: string): Buffer =>
+    execFileSync('git', args, { maxBuffer: 1024 * 1024 * 1024, input });
+  let base = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
+  try {
+    base = git(['rev-parse', '--verify', '-q', 'HEAD^{tree}']).toString().trim() || base;
+  } catch {
+    // no HEAD yet: diff against the empty tree
+  }
+  const raw = git(['diff-index', '--cached', '--raw', '-z', '--no-renames', '--full-index', base])
+    .toString('utf-8')
+    .split('\0');
+  const entries: { path: string; status: string; src: string; dst: string }[] = [];
+  for (let i = 0; i + 1 < raw.length; i += 2) {
+    const meta = raw[i] as string;
+    if (!meta.startsWith(':')) break;
+    const [srcMode, dstMode, src, dst, status] = meta.slice(1).split(' ');
+    // A submodule gitlink is a commit id, not a file; every provider drops them (`lsFiles`).
+    if (srcMode === '160000' || dstMode === '160000') continue;
+    entries.push({
+      path: raw[i + 1] as string,
+      status: (status ?? 'M').charAt(0),
+      src: srcMode === '000000' ? '' : (src as string),
+      dst: dstMode === '000000' ? '' : (dst as string),
+    });
+  }
+  // ONE `cat-file --batch` for every blob, rather than a process per lazy read.
+  const want = [...new Set(entries.flatMap((e) => [e.src, e.dst]).filter((s) => s !== ''))];
+  const blobs = new Map<string, string>();
+  if (want.length > 0) {
+    const buf = git(['cat-file', '--batch'], `${want.join('\n')}\n`);
+    let at = 0;
+    while (at < buf.length) {
+      const nl = buf.indexOf(10, at);
+      const [sha, type, size] = buf.subarray(at, nl).toString('utf-8').split(' ');
+      if (type === 'missing' || size === undefined) {
+        throw new Error(`git cat-file --batch: ${sha} is missing from the object store`);
+      }
+      const end = nl + 1 + Number(size);
+      blobs.set(sha as string, buf.subarray(nl + 1, end).toString('utf-8'));
+      at = end + 1;
+    }
+  }
+  const text = (sha: string): string | null => (sha === '' ? null : (blobs.get(sha) ?? null));
+  const cache = new Map<string, string | null>();
+  const seams: SeamReader = (rel) => {
+    if (!cache.has(rel)) {
+      try {
+        cache.set(rel, git(['cat-file', 'blob', `:${rel}`]).toString('utf-8'));
+      } catch {
+        cache.set(rel, null);
+      }
+    }
+    return cache.get(rel) ?? null;
+  };
+  return {
+    changes: entries.map((e) => ({
+      path: e.path,
+      status: e.status,
+      before: () => text(e.src),
+      after: () => text(e.dst),
+    })),
+    seams,
+  };
+}
+
+const hasMarker = (text: string | null): boolean =>
+  (text ?? '').split('\n').some((l) => OPEN_RE.test(l));
+
+/**
+ * `--affected`: which staged paths could move a generated region, as JSON on stdout.
+ *
+ * The pre-commit hook's fast path. Run from the repository with cwd at its top, it reads the
+ * commit's index (`GIT_INDEX_FILE` when git sets one, as `git commit -- <paths>` does) and asks
+ * three questions of every staged path: is it one of the generator's own modules, is it a
+ * document carrying a region (before or after), and which providers' declared inputs could it
+ * move. Nothing here runs a provider, which is what keeps it near 0.2 s.
+ */
+function affected(): number {
+  const { changes, seams } = stagedChanges();
+  const own = new Set(machinery(ROOT));
+  const hits: { path: string; why: string; providers: string[] }[] = [];
+  for (const c of changes) {
+    if (own.has(c.path)) {
+      hits.push({ path: c.path, why: 'machinery', providers: PROVIDERS.map((p) => p.id) });
+      continue;
+    }
+    if (c.path.endsWith('.md') && (hasMarker(c.before()) || hasMarker(c.after()))) {
+      hits.push({ path: c.path, why: 'target', providers: [] });
+      continue;
+    }
+    const ids = providersReading(c, seams);
+    if (ids.length > 0) hits.push({ path: c.path, why: 'input', providers: ids });
+  }
+  process.stdout.write(
+    `${JSON.stringify({
+      staged: changes.length,
+      providers: PROVIDERS.length,
+      hits,
+      machinery: hits.some((h) => h.why === 'machinery'),
+    })}\n`
+  );
+  return 0;
+}
+
+/** A line no provider extracts anything from: no `BLOCKER:`, no `.json`, no path, no key. */
+const NEUTRAL = '\nneutral gen-docs inputs probe line\n';
+/** The selftest's opposite probe: a line every suppression census counts. */
+const BLOCKER_PROBE = '\n# BLOCKER: planted by the gen-docs selftest\n';
+
+/**
+ * The `moves` differential: plant a neutral edit in the files a provider read, keep the ones its
+ * `moves` calls inert, and prove its rows do not change. Returns the violations.
+ *
+ * `moves` is the one part of a declaration the trace cannot check: the trace proves WHICH files
+ * a provider reads, never which edits to them matter. Every `moves` is built from the helper its
+ * `rows` calls, and this is what notices if the two ever part. Membership (an add or a delete) is
+ * not planted: those `moves` clauses either count every add and delete, or route `null` through
+ * the same helper that judges content.
+ */
+function movesDifferential(
+  root: string,
+  p: Provider,
+  base: Traced<ProviderRow[]>,
+  cap = 60,
+  probe = NEUTRAL
+): { inert: number; problems: string[] } {
+  const moves = p.inputs?.moves;
+  if (moves === undefined) return { inert: 0, problems: [] };
+  const seams = diskSeams(root);
+  // Content reads first, since those are the edits a provider can see, each half in code-point order so the pick is the same on every machine.
+  const pool = [
+    ...[...base.read].sort(byCodePoint),
+    ...[...base.listed].filter((r) => !base.read.has(r)).sort(byCodePoint),
+  ];
+  const plant: Record<string, string> = {};
+  for (const r of pool) {
+    if (Object.keys(plant).length >= cap) break;
+    if (!(p.inputs?.scope(r, seams) ?? true)) continue;
+    const before = seams(r);
+    if (before === null || before.includes('\0')) continue;
+    const after = before + probe;
+    const c: InputChange = { path: r, status: 'M', before: () => before, after: () => after };
+    if (!moves(c, seams)) plant[r] = after;
+  }
+  const inert = Object.keys(plant).length;
+  if (inert === 0) return { inert, problems: [] };
+  const again = traced(root, () => p.rows(root), plant).value;
+  const problems =
+    JSON.stringify(again) === JSON.stringify(base.value)
+      ? []
+      : [
+          `${p.id}: \`moves\` called ${inert} neutral edit(s) inert and the rows changed anyway: ` +
+            Object.keys(plant).sort(byCodePoint).slice(0, 8).join(', '),
+        ];
+  return { inert, problems };
+}
+
+/** `--check-inputs`: the trace and the `moves` differential over every provider, on the real tree. */
+function checkInputs(root: string): number {
+  let bad = 0;
+  const seams = diskSeams(root);
+  for (const p of PROVIDERS) {
+    const t = traced(root, () => p.rows(root));
+    const out = undeclared(p, t, seams);
+    const touched = new Set([...t.read, ...t.listed]).size;
+    if (touched === 0) {
+      bad += 1;
+      console.error(`${RED}VACUOUS${NC} ${p.id}: the trace saw no read at all`);
+      continue;
+    }
+    if (out.length > 0) {
+      bad += 1;
+      console.error(`${RED}UNDECLARED${NC} ${p.id}: ${out.length} path(s) read outside its inputs`);
+      for (const r of out.slice(0, 12)) console.error(`       - ${r}`);
+      console.error('       Declare them in its `inputs` (scripts/lib/doc-providers.ts).');
+      continue;
+    }
+    const d = movesDifferential(root, p, t);
+    for (const problem of d.problems) console.error(`${RED}MOVES LIES${NC} ${problem}`);
+    bad += d.problems.length;
+    console.log(
+      `${GREEN}ok${NC}   ${p.id}: ${touched} path(s) traced, all declared` +
+        (p.inputs?.moves ? `; ${d.inert} neutral edit(s) planted, rows unchanged` : '')
+    );
+  }
+  return bad === 0 ? 0 : 1;
+}
+
 /* --------------------------------------------------------------- selftest */
 
 function selftest(): number {
@@ -501,6 +859,7 @@ function selftest(): number {
       { key: 'b', cells: ['b', 'two'] },
       { key: 'a', cells: ['a', 'one'] },
     ],
+    inputs: { scope: () => false },
   };
   const body = render(P, P.rows(''));
   const doc = [
@@ -651,9 +1010,95 @@ function selftest(): number {
     readGatesLock(ROOT).length > 0
   );
 
+  // --- the trace that holds every `inputs` declaration honest, and proof that it can fire ---
+  const seams = diskSeams(ROOT);
+  const sneaky: Provider = {
+    ...P,
+    rows: (root) => {
+      fs.readFileSync(path.join(root, 'package.json'), 'utf-8');
+      execFileSync('git', ['-C', root, 'ls-files', '-z', '--', '.ci/config'], {
+        encoding: 'utf-8',
+      });
+      return [];
+    },
+  };
+  const caught = undeclared(
+    sneaky,
+    traced(ROOT, () => sneaky.rows(ROOT)),
+    seams
+  );
+  ck(
+    'planted: a provider reading a file its inputs do not declare is caught by the trace',
+    caught.includes('package.json'),
+    caught.slice(0, 3)
+  );
+  ck(
+    'planted: a provider listing the index outside its inputs is caught by the trace',
+    caught.includes('.ci/config/env-manifest.json'),
+    caught.slice(0, 3)
+  );
+  const viaProcess = traced(ROOT, () => execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD']));
+  ck(
+    'planted: a process the trace cannot attribute is reported, never passed',
+    [...viaProcess.unseen].some((u) => u.includes('rev-parse')),
+    [...viaProcess.unseen]
+  );
+  const planted = traced(ROOT, () => fs.readFileSync(path.join(ROOT, 'package.json'), 'utf-8'), {
+    'package.json': 'planted',
+  });
+  ck('planted content reaches the reader under trace', planted.value === 'planted');
+  ck(
+    'and the real reader is restored afterwards',
+    fs.readFileSync(path.join(ROOT, 'package.json'), 'utf-8') !== 'planted'
+  );
+  const own = machinery(ROOT);
+  ck(
+    "the generator's machinery closure reaches both modules it imports",
+    own.includes('scripts/gen/gen-docs.ts') &&
+      own.includes('scripts/lib/doc-providers.ts') &&
+      own.includes('scripts/lib/doc-regions.ts'),
+    own
+  );
+  // The real policy provider with a `moves` that lies: it calls every edit inert. A probe line that adds a BLOCKER moves its `BLOCKER lines` cell, so the differential must report it. Policy rather than suppressions because it counts the same thing in 40 ms instead of 1.5 s.
+  const real = providerById('policy') as Provider;
+  const liar: Provider = { ...real, inputs: { scope: () => true, moves: () => false } };
+  const lie = movesDifferential(
+    ROOT,
+    liar,
+    traced(ROOT, () => liar.rows(ROOT)),
+    1,
+    BLOCKER_PROBE
+  );
+  ck(
+    'planted: a `moves` that calls a row-moving edit inert is caught by the differential',
+    lie.inert === 1 && lie.problems.length === 1,
+    lie
+  );
+
+  ck(
+    'planted: a provider with no `inputs` at all is refused by the trace check',
+    undeclared(
+      { ...P, inputs: undefined },
+      traced(ROOT, () => []),
+      seams
+    ).length === 1
+  );
+  ck(
+    'every registered provider declares its `inputs`',
+    PROVIDERS.every((p) => p.inputs !== undefined),
+    PROVIDERS.filter((p) => p.inputs === undefined).map((p) => p.id)
+  );
+
   // --- every provider must actually see the tree ---
   for (const p of PROVIDERS) {
-    const rows = p.rows(ROOT);
+    const t = traced(ROOT, () => p.rows(ROOT));
+    const rows = t.value;
+    const out = undeclared(p, t, seams);
+    ck(
+      `provider "${p.id}" reads nothing outside its declared inputs (${new Set([...t.read, ...t.listed]).size} path(s) traced)`,
+      out.length === 0 && t.read.size + t.listed.size > 0,
+      out.slice(0, 10)
+    );
     ck(`provider "${p.id}" is not vacuous (${rows.length} rows)`, rows.length > 0);
     ck(`provider "${p.id}" has unique keys`, new Set(rows.map((r) => r.key)).size === rows.length);
     ck(
@@ -677,6 +1122,8 @@ function main(argv: string[]): number {
     return 1;
   }
   if (argv.includes('--selftest')) return selftest() === 0 ? 0 : 1;
+  if (argv.includes('--affected')) return affected();
+  if (argv.includes('--check-inputs')) return checkInputs(ROOT);
   if (argv.includes('--re-record')) {
     const at = argv.indexOf('--re-record');
     const w = argv.indexOf('--why');

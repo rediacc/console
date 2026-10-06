@@ -15,7 +15,7 @@ import pathlib
 import subprocess
 
 HOOKS_REL = (".claude", "rediacc_hooks", "git")
-HOOK_NAMES = ("commit-msg", "reference-transaction", "pre-push")
+HOOK_NAMES = ("commit-msg", "reference-transaction", "pre-push", "pre-commit")
 
 
 def hooks_dir(root: pathlib.Path) -> pathlib.Path:

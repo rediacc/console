@@ -1,4 +1,4 @@
-"""The git-level half of the commit policy: `commit-msg`, `reference-transaction` and `pre-push`.
+"""The git-level half of the commit policy: `commit-msg`, `reference-transaction` and `pre-push`, plus the `pre-commit` doc-region check.
 
 WHY A SECOND LAYER (the commit-policy plan in agent/plans, section 5.3; operator ruling 2, 2026-09-25: installed for everyone, with the `COMMIT_POLICY_OK=1` override). The pre-bash guards see only an agent's own Bash tool calls. Everything else that commits, cuts a branch or pushes never reaches them: the operator's terminal and `!` commands, and subprocesses (`worklist.py --git`, the per-commit reviewer, release scripts run locally; the 2026-09-22 push to `main` came from a script three process levels below the Bash call). Git runs these hooks for all of them once `core.hooksPath` points at this directory, which the `git-hooks-path` setup phase does in the console and in every checked-out submodule (`.ci/rediacc_ci/setup/githooks.py`). It is local config only, so `/tmp` fixtures and CI checkouts are unaffected.
 
@@ -6,6 +6,7 @@ WHAT EACH HOOK REFUSES (the rules are `commit_policy`'s, shared with the pre-bas
 
   commit-msg              a CI skip token; a commit on `main` that is not a well-formed `[hotfix]`; `[hotfix]` off `main`; `[no-review]` on a non-writing path or on a `[hotfix]`.
   reference-transaction   in the `prepared` state, a new `refs/heads/*` (old oid all zeros) that breaks the one-branch rule: outside a submodule, only from `main`, with no other live branch and an `MMDD-N` name; in a submodule, only the console's current branch name. LOCAL FACTS ONLY: no `gh`, so a branch counts as live until its upstream is gone.
+  pre-commit              a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `pre_commit` says how it stays fast).
   pre-push                a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one.
 
 THE PRE-BASH LAYER STAYS AUTHORITATIVE FOR AGENTS; this is the backstop. It reads no `gh`, so it cannot compute today's next name or know a PR merged; it checks shape and local liveness only.
@@ -19,12 +20,18 @@ LOADED BY FILE, NOT BY PACKAGE. Git runs a hook as a plain executable with no pa
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import json
 import os
 import pathlib
+import posixpath
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
+import time
 import urllib.parse
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -320,11 +327,237 @@ def pre_push(argv: list[str], stdin: str) -> int:
     return 0
 
 
+# --------------------------------------------------------------------------- pre-commit ---------------------------------------------------------------------------
+#
+# A COMMIT THAT LEAVES A GENERATED DOC REGION STALE IS REFUSED HERE, NOT 17 MINUTES LATER. On branch 1006-1, 1fb9eefe7 edited `.ci/policy/.audit-prod-allowlist` and 7f2ece4c1 edited `.ci/config/env-manifest.json`, both inputs of `scripts/gen/gen-docs.ts`, and neither re-ran `--write`. Each surfaced only in the pre-push run, as check:ci-doc-region-parity and three test_gate_docs_gen failures, and each needed a fix commit (423397221,
+# 84cfe4e55). A pre-push red costs the whole pre-push; this costs the commit.
+#
+# TWO PATHS, AND THE FAST ONE IS THE COMMON ONE. Verify is about 6 s plus a 0.7 s checkout, too slow for every commit, so `gen-docs.ts --affected` first asks which staged paths could move a row, from each provider's declared `inputs` in `scripts/lib/doc-providers.ts` (about 0.15 s, no provider runs). Only a hit pays for verify. The declarations cannot go stale silently: `--selftest` traces every
+# provider's real reads against them, and when the generator's own modules are staged this hook runs that trace too (`--check-inputs`).
+#
+# THE COMMIT'S TREE, NOT THE WORKING TREE. `git commit -F <msg> -- <paths>` commits those paths' working-tree content through a temporary index that git names in GIT_INDEX_FILE, and a plain commit commits the index; either way the committed tree is the index this hook sees, and the working tree may hold other sessions' unstaged edits. So verify runs on a full `checkout-index` of that
+# index into a scratch tree (0.7 s with parallel checkout, against 2.3 s serial), with the generator's own committed copy. A partial commit that leaves its regeneration unstaged is refused, which is the case a working-tree check would wave through. The tradeoff was measured, not assumed: an overlay of only the changed files is cheaper but wrong whenever the working tree differs from
+# the index anywhere a provider reads, which on this shared checkout is the normal state.
+#
+# UNKNOWN IS A REFUSAL. A missing `node`, a timeout or a generator that cannot run is reported as UNCHECKED and refused with the fix; `shim()`'s fail-open on a git error never sees them. There is no escape hatch of its own: the one override is `COMMIT_POLICY_OK=1`, the operator's, shared by every hook here.
+
+GEN_ENTRY = "scripts/gen/gen-docs.ts"
+GEN_FIX = "npx tsx scripts/gen/gen-docs.ts --write"
+_IMPORT_RE = re.compile(r"""(?:from|import)\s*\(?\s*['"](\.[^'"\n]+)['"]""")
+_DRIFT_RE = re.compile(r"^DRIFT (\S+)", re.MULTILINE)
+SELECT_TIMEOUT = 60
+VERIFY_TIMEOUT = 600
+
+
+class UncheckedError(Exception):
+    """The staged change could not be judged: never a pass."""
+
+
+def _run(args: list[str], cwd: str, env: dict | None = None, timeout: int = 60):
+    return subprocess.run(
+        args, cwd=cwd, env=env, capture_output=True, text=True, timeout=timeout, check=False
+    )
+
+
+def _index_text(repo: str, rel: str) -> str | None:
+    proc = _run(["git", "cat-file", "blob", ":" + rel], repo)
+    return proc.stdout if proc.returncode == 0 else None
+
+
+def generator_closure(repo: str) -> list[str]:
+    """`scripts/gen/gen-docs.ts` and its relative imports, transitively, as the COMMIT's index holds them.
+
+    The committed copy, never the working tree's: another session's half-written provider module must not decide, or break, this commit.
+    """
+    seen: list[str] = []
+    queue = [GEN_ENTRY]
+    while queue:
+        rel = queue.pop()
+        if rel in seen:
+            continue
+        text = _index_text(repo, rel)
+        if text is None:
+            raise UncheckedError("%s is not in the commit's index" % rel)
+        seen.append(rel)
+        for match in _IMPORT_RE.finditer(text):
+            if match.group(1).endswith(".js"):
+                # Plain node strips types but never maps a `.js` specifier onto a `.ts` file, so this import would die as ERR_MODULE_NOT_FOUND inside the selector. Named here instead.
+                raise UncheckedError(
+                    "%s imports %s; plain node cannot resolve a .js specifier to the .ts file, spell it %s"
+                    % (rel, match.group(1), match.group(1).removesuffix(".js") + ".ts")
+                )
+            base = posixpath.normpath(posixpath.join(posixpath.dirname(rel), match.group(1)))
+            stem = base.removesuffix(".js")
+            hit = next(
+                (c for c in (base, stem + ".ts", base + ".ts") if _index_text(repo, c) is not None),
+                None,
+            )
+            if hit is None:
+                raise UncheckedError(
+                    "%s imports %s, and the index holds no such file" % (rel, match.group(1))
+                )
+            queue.append(hit)
+    return sorted(seen)
+
+
+def _git_path(repo: str, name: str) -> str:
+    out = _git(["rev-parse", "--git-path", name])
+    return os.path.join(repo, out) if out and not os.path.isabs(out) else out
+
+
+def _gen_env(repo: str, scratch: str) -> dict:
+    """The environment every generator run gets: the commit's index named ABSOLUTE, no test override, a stable compile cache."""
+    env = {k: v for k, v in os.environ.items() if k != "GEN_DOCS_OVERRIDE_FILE"}
+    index = env.get("GIT_INDEX_FILE") or _git_path(repo, "index")
+    env["GIT_INDEX_FILE"] = os.path.join(repo, index) if not os.path.isabs(index) else index
+    # Keyed by file path, so it only pays off because the scratch paths below are FIXED per worktree: 0.29 s -> 0.14 s measured for `--affected`.
+    env["NODE_COMPILE_CACHE"] = os.path.join(scratch, "node-cache")
+    return env
+
+
+def scratch_for(git_dir: str) -> str:
+    """One scratch directory per worktree, at a fixed path, so a killed hook's leftovers are removed by the next run."""
+    key = hashlib.sha1(git_dir.encode("utf-8")).hexdigest()[:12]
+    return os.path.join(tempfile.gettempdir(), "gen-docs-precommit-%s" % key)
+
+
+def _hits_table(hits: list[dict]) -> str:
+    rows = []
+    for hit in hits[:12]:
+        why = {"machinery": "the generator itself", "target": "a document carrying a region"}.get(
+            hit["why"], ", ".join(hit["providers"])
+        )
+        rows.append("    %s  (%s)" % (hit["path"], why))
+    if len(hits) > 12:
+        rows.append("    ... and %d more" % (len(hits) - 12))
+    return "\n".join(rows)
+
+
+def _unchecked(why: str) -> int:
+    return _refuse(
+        "UNCHECKED: this commit could not be checked against the generated doc regions (%s).\n"
+        "An unknown is not a pass. Fix the cause, or run `%s` and commit the result."
+        % (why, GEN_FIX)
+    )
+
+
+def pre_commit(_argv: list[str]) -> int:
+    started = time.monotonic()
+    repo = _repo()
+    entry = _index_text(repo, GEN_ENTRY) if repo else None
+    if entry is None:
+        return 0  # a submodule, or any repository without the generator: nothing here reads it
+    if "'--affected'" not in entry:
+        # THE COMMITTED GENERATOR PREDATES THIS HOOK: it declares no provider inputs and has no `--affected` mode, so there is nothing to judge by, and running it under plain node fails on its `.js` specifiers (measured 2026-10-06, ERR_MODULE_NOT_FOUND, blocking every commit until this branch existed). Said, never silent.
+        sys.stderr.write(
+            "gen-docs pre-commit: the committed %s has no --affected mode yet; not checked\n"
+            % GEN_ENTRY
+        )
+        return 0
+    node = shutil.which("node")
+    if node is None:
+        return _unchecked(
+            "`node` is not on PATH; install Node 24 (.devcontainer/toolchain.env pins it) or commit from the devbox"
+        )
+    git_dir = _git(["rev-parse", "--absolute-git-dir"])
+    scratch = scratch_for(git_dir)
+    sel = os.path.join(scratch, "sel")
+    tree = os.path.join(scratch, "tree")
+    try:
+        closure = generator_closure(repo)
+        env = _gen_env(repo, scratch)
+        shutil.rmtree(sel, ignore_errors=True)
+        _run(["git", "checkout-index", "-f", "--prefix=%s/" % sel, "--", *closure], repo, env)
+        proc = _run([node, os.path.join(sel, GEN_ENTRY), "--affected"], repo, env, SELECT_TIMEOUT)
+        if proc.returncode != 0:
+            return _unchecked(
+                "`gen-docs.ts --affected` exited %d: %s"
+                % (proc.returncode, proc.stderr.strip()[-600:])
+            )
+        verdict = json.loads(proc.stdout)
+        hits = verdict["hits"]
+        if not hits:
+            if os.environ.get("GEN_DOCS_PRECOMMIT_VERBOSE") == "1":
+                sys.stderr.write(
+                    "gen-docs pre-commit: %d staged path(s), none read by any of %d providers (%.2fs)\n"
+                    % (verdict["staged"], verdict["providers"], time.monotonic() - started)
+                )
+            return 0
+        shutil.rmtree(tree, ignore_errors=True)
+        out = _run(
+            ["git", "-c", "checkout.workers=-1", "checkout-index", "-a", "--prefix=%s/" % tree],
+            repo,
+            env,
+            VERIFY_TIMEOUT,
+        )
+        if out.returncode != 0:
+            return _unchecked(
+                "checking out the commit's tree failed: %s" % out.stderr.strip()[-600:]
+            )
+        tree_env = dict(env, GIT_DIR=git_dir, GIT_WORK_TREE=tree)
+        runs: list[list[str]] = [[]] + ([["--check-inputs"]] if verdict["machinery"] else [])
+        for extra in runs:
+            proc = _run(
+                [node, os.path.join(tree, GEN_ENTRY), *extra], tree, tree_env, VERIFY_TIMEOUT
+            )
+            if proc.returncode == 0:
+                continue
+            drifted = _DRIFT_RE.findall(proc.stderr)
+            if extra or not drifted:
+                return _unchecked(
+                    "`gen-docs.ts %s` exited %d on the commit's tree:\n%s"
+                    % (
+                        " ".join(extra) or "(verify)",
+                        proc.returncode,
+                        (proc.stderr or proc.stdout).strip()[-1500:],
+                    )
+                )
+            return _refuse(
+                "this commit leaves a generated doc region stale.\n\n"
+                "  It stages what a gen-docs provider reads:\n%s\n\n"
+                "  and gen-docs, run against the commit's own tree, reports:\n%s\n\n"
+                "  Fix: regenerate, then commit the regenerated file(s) WITH the input(s):\n"
+                "    %s\n"
+                "    git commit -F <msg> -- <the same paths> %s\n"
+                "  (or `git add -- %s` before a plain commit). If the drift persists after --write, the\n"
+                "  working tree holds an unstaged edit to another provider input that this commit leaves\n"
+                "  out; `git status` names it."
+                % (
+                    _hits_table(hits),
+                    "\n".join("    " + line for line in proc.stderr.strip().splitlines()[:12]),
+                    GEN_FIX,
+                    " ".join(drifted),
+                    " ".join(drifted),
+                )
+            )
+        sys.stderr.write(
+            "gen-docs pre-commit: %d of %d staged path(s) touch a region's inputs; the commit's tree verified clean%s (%.1fs)\n"
+            % (
+                len(hits),
+                verdict["staged"],
+                ", provider inputs re-traced" if verdict["machinery"] else "",
+                time.monotonic() - started,
+            )
+        )
+        return 0
+    except subprocess.TimeoutExpired as exc:
+        return _unchecked(
+            "`%s` timed out after %ss" % (" ".join(str(a) for a in exc.cmd[:3]), exc.timeout)
+        )
+    except (UncheckedError, OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
+        return _unchecked(str(exc) or type(exc).__name__)
+    finally:
+        shutil.rmtree(tree, ignore_errors=True)
+
+
 def main(hook: str, argv: list[str]) -> int:
     if os.environ.get("COMMIT_POLICY_OK", "") == "1":
         return 0
     if hook == "commit-msg":
         return commit_msg(argv)
+    # Before the stdin read below: git gives pre-commit no stdin, so reading it would block on a terminal.
+    if hook == "pre-commit":
+        return pre_commit(argv)
     stdin = sys.stdin.read()
     if hook == "reference-transaction":
         return reference_transaction(argv, stdin)
