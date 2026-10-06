@@ -2,7 +2,7 @@
 
 A local HTTP server plays the release channel (`latest.json`, `manifest.json`, a shell-script `rdc`, the `.repo` file) and a FAKE `docker` records every invocation, so both sides run the same tests against the same fixtures with real `curl`. Compared per case: exit code, stdout, stderr and the fake docker's call log, including the container scripts (comment lines stripped: the quick-install script drops a block that cited line numbers of the bash file). A real run against the production edge channel, real Docker and the real images is in the porting report.
 
-INTENTIONAL DELTAS (Rule T), each a `test_delta_*` failing on the bash behaviour: an unresolvable `latest`; a version with `+`; the promotion test's channel-less skip; no jq needed; a failing `docker pull`; a failing download named as such.
+INTENTIONAL DELTAS (Rule T), each a `test_delta_*` failing on the bash behaviour: an unresolvable `latest`; a version with `+`; the promotion test's channel-less skip; no jq needed; a failing `docker pull`; a failing download named as such; a hung container killed inside the job's budget, naming its phase (Rule T 8).
 """
 
 from __future__ import annotations
@@ -10,6 +10,7 @@ from __future__ import annotations
 import functools
 import http.server
 import json
+import pathlib
 import re
 import shutil
 import subprocess
@@ -22,9 +23,6 @@ from rediacc_ci.testrun import install_methods as port
 from rediacc_ci.testrun import install_scripts
 from rediacc_ci.tests import testrun_support as ts
 from rediacc_ci.well_known import IMAGE_REGISTRY
-
-if typing.TYPE_CHECKING:
-    import pathlib
 
 TWIN = ".ci/scripts/test/test-install-methods.sh"
 MODULE = "rediacc_ci.testrun.install_methods"
@@ -108,7 +106,11 @@ def both(
 
 
 def calls(outcome: ts.Outcome) -> list[tuple]:
-    return [(call["tool"], [strip_comments(a) for a in call["argv"]]) for call in outcome.calls]
+    """The call log, script text compared. The port's one argv delta, the trace preamble in front of each `-c` script (Rule T 8), is stripped here and nowhere else; `test_delta_every_container_script_is_traced` proves it is there."""
+    return [
+        (call["tool"], [strip_comments(a.removeprefix(port.TRACE_PREAMBLE)) for a in call["argv"]])
+        for call in outcome.calls
+    ]
 
 
 def same(
@@ -634,3 +636,69 @@ def test_the_container_scripts_carry_every_placeholder_the_renderer_fills() -> N
             template, cfg, "rdc --version", **{"@NPM_BEFORE@": "2026-01-01T00:00:00Z"}
         )
         assert not re.search(r"@[A-Z_]+@", rendered), name
+
+
+# ---- Rule T 8: a hung container fails loudly, inside the job's budget -------------------------------------------------
+
+
+def test_delta_every_container_script_is_traced(tmp_path: pathlib.Path) -> None:
+    old, new, *_ = both(
+        tmp_path,
+        ["--method", "dnf", "--version", VERSION, "--platform", "linux", "--arch", "x64"],
+        {"REPO_CHANNEL": "pr-42", "RELEASES_BASE_URL": "https://releases.example.test"},
+    )
+    scripts_new = [c["argv"][-1] for c in new.calls if "-c" in c["argv"]]
+    assert scripts_new, "no container script reached the fake docker"
+    assert all(s.startswith(port.TRACE_PREAMBLE) for s in scripts_new)
+    assert not any(port.TRACE_PREAMBLE in c["argv"][-1] for c in old.calls)
+
+
+def test_delta_a_hung_container_fails_naming_its_phase_and_output(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Run 37437282770: Rocky Linux 9's dnf install hung silently until the job was cancelled. Now the timer fires, the test fails, and the log names the command it hung in and what it printed before."""
+    monkeypatch.setattr(port, "CONTAINER_TIMEOUT", 1)
+    runner = port.Runner(port.Config(version=VERSION))
+    script = "echo adding-the-repo; sleep 9; echo never"
+    assert runner.container("DNF (Rocky Linux 9)", ["bash", "-c", script]) == 1
+    err = capsys.readouterr().err
+    assert "did not finish within 1s" in err
+    assert "it was in phase: sleep 9" in err
+    assert "adding-the-repo" in err
+    assert "b'" not in err, "the captured output was printed as a bytes repr"
+
+
+def test_delta_trace_lines_never_reach_the_version_fence(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """`set -x` traces the probe's own `echo`s and `rdc --version`; the fence must still read exactly the version."""
+    runner = port.Runner(port.Config(version=VERSION))
+    script = port.version_fence_probe(f"echo {VERSION}")
+    assert runner.container("APK (Alpine)", ["sh", "-c", script]) == 0, capsys.readouterr().err
+    # A probe that prints NOTHING but whose own trace line names the version: read with the trace, the fence would hold `true 1.2.3` and pass on a binary that never answered.
+    silent = port.version_fence_probe(f"true {VERSION}")
+    assert runner.container("APK (Alpine)", ["sh", "-c", silent]) == 1
+
+
+def _job_budget(text: str, job: str) -> int:
+    block = re.search(
+        rf"^  {re.escape(job)}:\n(.*?)(?=^  [A-Za-z0-9_-]+:\n|\Z)", text, re.MULTILINE | re.DOTALL
+    )
+    assert block, job
+    minutes = re.search(r"^    timeout-minutes:\s*(\d+)", block.group(1), re.MULTILINE)
+    assert minutes, job
+    return int(minutes.group(1)) * 60
+
+
+def test_the_container_timeout_fits_inside_every_callers_budget() -> None:
+    """The twin's 1800 s sat above Validate Promotion's 20-minute budget, so it could never fire. Each caller's budget must leave room for a hang to be killed AND reported: the timer may take at most half of any calling job, and Validate Promotion's ~8-minute channel copy comes out of its budget first."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    workflows = root / ".github" / "workflows"
+    promote = _job_budget((workflows / "ci.yml").read_text(), "validate-promote")
+    assert promote - 8 * 60 >= port.CONTAINER_TIMEOUT * 2, promote
+    callers = [p for p in workflows.glob("*.yml") if "testrun.install_methods" in p.read_text()]
+    assert callers, "no workflow runs the install tests: this check would be vacuous"
+    for path in callers:
+        for minutes in re.findall(r"^    timeout-minutes:\s*(\d+)", path.read_text(), re.MULTILINE):
+            if int(minutes) >= 10:
+                assert int(minutes) * 60 >= port.CONTAINER_TIMEOUT * 2, (path.name, minutes)

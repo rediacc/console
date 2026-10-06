@@ -11,6 +11,7 @@ Deliberate differences from the twin (Rule T), each with a test that fails on th
   5. `jq` IS NOT NEEDED: the manifest and `doctor -o json` are parsed in Python, so the update-check and channel-verify tests no longer skip (or fail "jq not available") on a runner without it.
   6. THE VERIFY TEST'S DOWNLOAD WENT TO A PREDICTABLE `/tmp/rdc-verify-$$` and a failing early path left an ~800 MB binary there. It lives in the run's private temporary directory, removed on every path. Nor does the binary-download test `cd` the whole process into that directory any more.
   7. `DOCKER PULL` FAILURE is reported as such instead of as a version mismatch two lines later.
+  8. A HUNG CONTAINER FAILS LOUDLY, INSIDE THE JOB'S BUDGET. The twin's inner timeout was 1800 s while Validate Promotion's job budget is 20 minutes, so it could never fire: on 2026-10-06 (run 37437282770) Rocky Linux 9's `dnf install` was silent from 10:04:57 to 10:13:36, `timeout-minutes` cancelled the job, and the log held no clue. `CONTAINER_TIMEOUT` is now well inside every caller's budget (pinned against the workflows by a test), and every `-c` script runs under `set -x` with `PS4` set to `PHASE_MARK`, so the transcript records each command as it starts. On a timeout the test fails, naming the last traced command (the phase) and printing the output captured so far, decoded rather than as a bytes repr. Trace lines are dropped before the version fence is read, so they cannot reach the version check. The script TEXT is the twin's; the argv gains `TRACE_PREAMBLE` in front of it, and the parity test strips exactly that.
 """
 
 import contextlib
@@ -55,7 +56,11 @@ DEFAULT_RELEASES = RELEASES_ORIGIN
 FENCE_BEGIN = "__RDC_VERSION_BEGIN__"
 FENCE_END = "__RDC_VERSION_END__"
 SKIPPED = 77
-CONTAINER_TIMEOUT = 1800
+# Seconds one install container may run. Every caller runs several of these inside one job: Validate Promotion (ci.yml) has `timeout-minutes: 20` and spends ~8 of them copying the channel before its four install steps, and validate-install's jobs have 15. A single hang must be killed HERE, with its phase and output printed, while the job still has time to report it; 1800 s (the twin's) could never fire. A healthy dnf/apt install takes one to three minutes. `test_the_container_timeout_fits_inside_every_callers_budget` pins this against the workflows.
+CONTAINER_TIMEOUT = 360
+# `set -x` with this PS4 marks every command the container script starts, so a hang shows where it stopped. POSIX, so busybox `sh` (Alpine) honours it too.
+PHASE_MARK = "__RDC_PHASE__"
+TRACE_PREAMBLE = f"PS4='{PHASE_MARK} '; set -x\n"
 DL_FLAGS = [
     "-fsSL",
     "--connect-timeout",
@@ -186,6 +191,34 @@ def extract_fenced_version(transcript: str) -> str:
     return "\n".join(kept)
 
 
+def traced(argv: list[str]) -> list[str]:
+    """`argv` with `TRACE_PREAMBLE` in front of its `-c` script; any other argv unchanged."""
+    if len(argv) >= 2 and argv[-2] == "-c":
+        return [*argv[:-1], TRACE_PREAMBLE + argv[-1]]
+    return argv
+
+
+def as_text(output: bytes | str | None) -> str:
+    """`TimeoutExpired.output` is BYTES even under `text=True` on POSIX; decode it rather than print its repr."""
+    if output is None:
+        return ""
+    if isinstance(output, bytes):
+        return output.decode("utf-8", errors="replace")
+    return output
+
+
+def without_trace(transcript: str) -> str:
+    return "\n".join(line for line in transcript.splitlines() if PHASE_MARK not in line)
+
+
+def last_phase(transcript: str) -> str:
+    """The last command the script was traced starting, or where it must have stopped when none was."""
+    for line in reversed(transcript.splitlines()):
+        if PHASE_MARK in line:
+            return line.split(PHASE_MARK, 1)[1].strip() or "(empty trace line)"
+    return "before the script's first command (image pull or container start)"
+
+
 def render(template: str, cfg: Config, probe: str, **extra: str) -> str:
     values = {
         "@RELEASES@": cfg.releases,
@@ -299,6 +332,7 @@ class Runner:
 
     def container(self, label: str, argv: list[str]) -> int:
         """`run_container_version_test`: the script ends in a fenced probe; the fenced output must be exactly the version under test."""
+        argv = traced(argv)
         try:
             done = subprocess.run(
                 argv,
@@ -310,8 +344,15 @@ class Runner:
                 timeout=CONTAINER_TIMEOUT,
             )
         except subprocess.TimeoutExpired as exc:
-            log.error(f"{label}: container did not finish within {CONTAINER_TIMEOUT}s")
-            sys.stderr.write(str(exc.output or ""))
+            captured = as_text(exc.output)
+            log.error(
+                f"{label}: container did not finish within {CONTAINER_TIMEOUT}s; "
+                f"it was in phase: {last_phase(captured)}"
+            )
+            log.error(f"{label}: output captured before the kill follows")
+            sys.stderr.write(
+                captured if captured.endswith("\n") or not captured else captured + "\n"
+            )
             return 1
         except OSError as exc:
             log.error(f"{label}: {exc}")
@@ -323,7 +364,7 @@ class Runner:
             )
             print(raw, file=sys.stderr)
             return 1
-        reported = extract_fenced_version(raw)
+        reported = extract_fenced_version(without_trace(raw))
         if not verify_version(reported, self.cfg.version):
             log.error(
                 f"{label}: version mismatch - expected '{self.cfg.version}', got '{reported}'"

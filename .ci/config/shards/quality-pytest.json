@@ -270,6 +270,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ci_dispatch_release.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_profiler_panel.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_profiler_sampler_linux.py",
+        "pytest:.ci/rediacc_ci/tests/test_ci_sibling_runs.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_trace_pr_signals.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_trace_scheduled.py",
         "pytest:.ci/rediacc_ci/tests/test_conftest_duration_order.py",

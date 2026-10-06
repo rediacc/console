@@ -81,6 +81,55 @@ concurrency:
 
 jobs:
   # ============================================================================
+  # DUPLICATE RUN CHECK
+  # One merge to main produced TWO Console CI push runs on 2026-10-06
+  # (37437281526 and 37437282770, one second apart, cause unknown). ci-main
+  # queued the second; the first released v1.8.0; the second re-ran everything,
+  # re-staged and re-promoted edge for the released version and went red.
+  #
+  # This job asks whether an earlier push run on the same sha already covers it
+  # (concluded success, or is still queued or running, and was not itself a
+  # no-op). If so it writes duplicate_of=<run id>: `initialize` skips, so every
+  # job downstream of it skips, ci-complete skips too, and the run ends green
+  # with the original named in the summary. A failed or cancelled earlier run
+  # does not count: this run may be its retry. An unreadable API proceeds.
+  # The decision and its tests: rediacc_ci.ci.sibling_runs.
+  #
+  # ITS OWN JOB, not a step in `initialize`, because a step cannot skip the
+  # job it runs in: only a skipped `initialize` reaches the whole DAG through
+  # the needs.initialize.result == 'success' clauses every job already has.
+  # It is exempt from ci-complete's aggregation (see ci_job_aggregation's
+  # EXEMPT block): `initialize` runs on !cancelled(), so a red check means full
+  # CI, never a skip, and there is no verdict to aggregate.
+  # ============================================================================
+  duplicate-run:
+    name: Duplicate Run Check
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    if: github.event_name == 'push'
+    outputs:
+      duplicate_of: ${{ steps.dedupe.outputs.duplicate_of }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .ci/config
+            .ci/rediacc_ci
+      - name: Look for an earlier run on this commit
+        id: dedupe
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.ci.sibling_runs dedupe
+          --repo "$GITHUB_REPOSITORY" --sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID"
+          --event "$GITHUB_EVENT_NAME"
+          --output "$GITHUB_OUTPUT" --summary "$GITHUB_STEP_SUMMARY"
+
+  # ============================================================================
   # COLUMN 1: INITIALIZE
   # Jobs: initialize, ci-watchdog
   # No dependencies - starts immediately for fast feedback on Quality checks
@@ -107,7 +156,12 @@ jobs:
       # `gh run download` to look for an attested skip-plan on an ancestor
       # commit. Read-only, and the step cannot fail the job.
       actions: read
-    if: github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))
+    # duplicate-run is skipped off push; !cancelled() keeps that (and a crashed
+    # check) from skipping this job: only a positive duplicate_of skips it.
+    needs: [duplicate-run]
+    if: >-
+      !cancelled() && needs.duplicate-run.outputs.duplicate_of == '' &&
+      (github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]')))
     outputs:
       is_bot: ${{ steps.init.outputs.is_bot }}
       next_version: ${{ steps.init.outputs.next_version }}
@@ -1804,7 +1858,7 @@ jobs:
     # `CI Complete` reports success while a release-state assertion failed on
     # main. It is soft-required, because it legitimately skips on every PR
     # (it is gated on push-to-main plus a release channel).
-    needs: [initialize, label-guide, run-sh-tests, quality, review-gate, stripe-sandbox, build-docker, build-devcontainer, build-docker-fast, build-cli, package-tests, check-release-state, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle, e2e-dependency-probe]
+    needs: [duplicate-run, initialize, label-guide, run-sh-tests, quality, review-gate, stripe-sandbox, build-docker, build-devcontainer, build-docker-fast, build-cli, package-tests, check-release-state, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle, e2e-dependency-probe]
     timeout-minutes: 5
     # Job-level permissions REPLACE the workflow defaults, so contents and
     # packages are restated. actions: read is for the shadow reconciliation
@@ -1814,7 +1868,10 @@ jobs:
       contents: read
       packages: read
       actions: read
-    if: always() && !cancelled()
+    # A duplicate run (see duplicate-run) skips initialize and therefore every
+    # job; there is nothing here to judge, and judging would red the run on
+    # initialize's deliberate skip. The original run carries the verdict.
+    if: always() && !cancelled() && needs.duplicate-run.outputs.duplicate_of == ''
     steps:
       # The tier logic lives in rediacc_ci.ci.assert_ci_complete, so the repo
       # must be on disk. Sparse, and BOTH entries are load-bearing.
@@ -2012,6 +2069,19 @@ jobs:
       # doctrine exists to prevent ("a silently withheld release is far worse
       # than one unnecessary release"), so the guard fails in the same
       # direction the script does.
+      # BEFORE the seal: a refusal here must leave R2 unsealed. This job reads
+      # only its own run's ci-complete; another push run on the same sha that
+      # FAILED (the 2026-10-06 pair, 37437281526 / 37437282770) is a red
+      # verdict on this exact commit, so the release stops and names it. A
+      # sibling still queued behind ci-main is fine: duplicate-run makes it a
+      # no-op. Fails open on an unreadable API, as dispatch_release does.
+      - name: Refuse when a sibling run on this commit failed
+        if: needs.initialize.outputs.skip_release != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.ci.sibling_runs release-gate
+          --repo "$GITHUB_REPOSITORY" --sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID"
       - name: Write release sentinels
         if: needs.initialize.outputs.skip_release != 'true'
         env:
