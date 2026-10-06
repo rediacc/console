@@ -807,6 +807,10 @@
     "run": "npm run check:test:tutorial-player",
     "slow": true,
     "heavy": true,
+    "cores": {
+      "min": 4,
+      "max": 4
+    },
     "gate": true,
     "mutex": [
       "tree:repo"
