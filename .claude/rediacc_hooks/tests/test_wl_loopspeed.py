@@ -12,17 +12,16 @@ import json
 import re
 import shutil
 import subprocess
-import sys
 
 import pytest
+from rediacc_ci import paths
 
 from rediacc_hooks.tests import wlfix
 
 STOP_DIR = wlfix.STOP_DIR
 HOOKS = STOP_DIR.parent
 REPO = HOOKS.parent.parent
-if str(STOP_DIR) not in sys.path:
-    sys.path.insert(0, str(STOP_DIR))
+paths.on_sys_path(STOP_DIR)
 
 import wl_ci  # noqa: E402
 import wl_core as C  # noqa: E402

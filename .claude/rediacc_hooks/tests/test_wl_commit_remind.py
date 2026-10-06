@@ -13,19 +13,18 @@ import pathlib
 import re
 import shutil
 import subprocess
-import sys
 import time
 from typing import Any
 
 import pytest
+from rediacc_ci import paths
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 STOP_DIR = wlfix.STOP_DIR
 HOOKS = STOP_DIR.parent
-if str(STOP_DIR) not in sys.path:
-    sys.path.insert(0, str(STOP_DIR))
+paths.on_sys_path(STOP_DIR)
 
 import wl_core as C  # noqa: E402
 import wl_planqueue  # noqa: E402
