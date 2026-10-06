@@ -2,11 +2,6 @@
   "format": 1,
   "entries": [
     {
-      "id": "64dec644fb14",
-      "site": ".ci/rediacc_ci/housekeeping/cleanup_github_deployments.py :: main via _gh_capture :: gh gh api ? --paginate --jq .[].id",
-      "count": 1
-    },
-    {
       "id": "350d19a2b5be",
       "site": ".ci/rediacc_ci/housekeeping/cleanup_pr_environments.py :: main via _gh_capture :: gh gh api ? --jq length",
       "count": 1
@@ -114,76 +109,6 @@
     {
       "id": "8272b889486b",
       "site": ".ci/rediacc_ci/housekeeping/cleanup_versions.py :: Housekeeping.cleanup_workflow_runs via Housekeeping.cleanup_workflow_runs :: gh gh api repos/%s/actions/workflows?per_page=100 --jq [.workflows[] | select(.state == \"active\") | {id: .id, name: .name, path: .path}]",
-      "count": 1
-    },
-    {
-      "id": "fcd51dfe9c8a",
-      "site": ".ci/rediacc_ci/pr/sync_epic_block.py :: main via main :: gh gh pr view ? --json body --jq .body // \"\"",
-      "count": 1
-    },
-    {
-      "id": "0eb4ab03d7e5",
-      "site": ".ci/rediacc_ci/quality/claude_attribution.py :: main via gh_retry :: gh gh api repos/%s/compare/%s...%s?per_page=100 --paginate --jq .commits[] | {sha: .sha, message: .commit.message, name: .commit.author.name, email: .commit.author.email}",
-      "count": 1
-    },
-    {
-      "id": "930e68b5cfc6",
-      "site": ".ci/rediacc_ci/quality/claude_attribution.py :: main via gh_retry :: gh gh api repos/%s/pulls/%s --jq \"\\(.base.sha) \\(.head.sha) \\(.commits)\"",
-      "count": 1
-    },
-    {
-      "id": "4aedebd6fbc3",
-      "site": ".ci/rediacc_ci/quality/claude_attribution.py :: main via gh_retry :: gh gh api repos/%s/pulls/%s --jq .body // \"\"",
-      "count": 1
-    },
-    {
-      "id": "cb295cbb3a5c",
-      "site": ".ci/rediacc_ci/quality/commit_identity.py :: judge_pr via gh_retry :: gh gh api repos/%s/compare/%s...%s?per_page=100 --paginate --jq .commits[] | {sha: .sha, author: .author.login, committer: .committer.login, email: .commit.author.email, name: .commit.author.name}",
-      "count": 1
-    },
-    {
-      "id": "da8d2ab765f4",
-      "site": ".ci/rediacc_ci/quality/commit_identity.py :: judge_pr via gh_retry :: gh gh api repos/%s/pulls/%s --jq \"\\(.base.sha) \\(.head.sha) \\(.commits)\"",
-      "count": 1
-    },
-    {
-      "id": "cce163182bfb",
-      "site": ".ci/rediacc_ci/quality/commit_identity.py :: refresh_identity via gh_plain :: gh gh api repos/%s/commits?per_page=100 --paginate --jq .[] | select(.author.login == \"%s\") | .commit.author.email",
-      "count": 1
-    },
-    {
-      "id": "942d4a5edb9d",
-      "site": ".ci/rediacc_ci/quality/commit_identity.py :: refresh_identity via gh_plain :: gh gh api user --jq {login,id}",
-      "count": 1
-    },
-    {
-      "id": "7159fb6f256c",
-      "site": ".ci/rediacc_ci/quality/commit_identity.py :: refresh_identity via gh_plain :: gh gh api user/emails --jq .[].email",
-      "count": 1
-    },
-    {
-      "id": "c9370c0a5e79",
-      "site": ".ci/rediacc_ci/quality/submodule_branches.py :: console_pr_body via gh_probe :: gh gh pr view ? --json body --jq .body // empty",
-      "count": 1
-    },
-    {
-      "id": "8adb909a7e5b",
-      "site": ".ci/rediacc_ci/quality/submodule_branches.py :: main via get_pr_for_branch :: gh gh pr list --repo ? --head ? --state open --json number,url",
-      "count": 1
-    },
-    {
-      "id": "bc68afeb3ccb",
-      "site": ".ci/rediacc_ci/quality/submodule_branches.py :: main via gh_probe :: gh gh pr list --repo ? --head ? --state merged --json number",
-      "count": 1
-    },
-    {
-      "id": "60c150a9c513",
-      "site": ".ci/rediacc_ci/quality/submodule_branches.py :: unreplied_review_comments via gh_probe :: gh gh api repos/%s/pulls/%s/comments --paginate",
-      "count": 1
-    },
-    {
-      "id": "1f1fa42f702f",
-      "site": ".ci/rediacc_ci/release/verify_artifact_attestation.py :: main via main :: gh gh attestation verify ? --repo ?",
       "count": 1
     },
     {

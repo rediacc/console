@@ -20,6 +20,8 @@ import inspect
 import json
 import subprocess
 
+from rediacc_ci.core import gh_retry as core_retry
+from rediacc_ci.core import ghx
 from rediacc_ci.quality import commit_identity as ci
 from rediacc_ci.well_known import OPERATOR_EMAIL
 
@@ -219,3 +221,60 @@ def test_the_metadata_line_is_read_the_way_bash_reads_it() -> None:
 def test_selftest_runs_and_meets_its_floor() -> None:
     """The gate's own both-direction controls, with no token and no network."""
     assert ci.selftest() == 0
+
+
+# --- PLAN-gh-retry G12: reads go through core.gh_retry; fake runner, patched sleep ---
+def _fake_gh(monkeypatch, answers):
+    """Replace the one-attempt `ghx.gh` and the backoff sleep; returns (calls, naps)."""
+    calls: list[list[str]] = []
+    naps: list[float] = []
+    queue = list(answers)
+
+    def fake(args, **_kw):
+        calls.append(list(args))
+        rc, out, err = queue.pop(0)
+        return ghx.GhResult(list(args), rc, out, err)
+
+    monkeypatch.setattr(ghx, "gh", fake)
+    monkeypatch.setattr(core_retry.time, "sleep", naps.append)
+    return calls, naps
+
+
+def test_gh_retry_502_then_success(monkeypatch) -> None:
+    calls, naps = _fake_gh(
+        monkeypatch, [(1, "", "gh: Server Error (HTTP 502)"), (0, "body\n\n", "")]
+    )
+    assert ci.gh_retry("what", ["api", "x"]) == (True, "body")
+    assert len(calls) == 2
+    assert naps == [5.0]
+
+
+def test_gh_retry_persistent_5xx_refuses_and_names_stderr(monkeypatch, capsys) -> None:
+    calls, naps = _fake_gh(monkeypatch, [(1, "", "gh: Server Error (HTTP 503)")] * 3)
+    assert ci.gh_retry("what", ["api", "x"]) == (False, "")
+    assert len(calls) == 3
+    assert naps == [5.0, 15.0]
+    assert "HTTP 503" in capsys.readouterr().err
+
+
+def test_gh_retry_404_is_not_retried(monkeypatch, capsys) -> None:
+    calls, naps = _fake_gh(monkeypatch, [(1, "", "gh: Not Found (HTTP 404)")])
+    assert ci.gh_retry("what", ["api", "x"]) == (False, "")
+    assert len(calls) == 1
+    assert naps == []
+    assert "HTTP 404" in capsys.readouterr().err
+
+
+def test_gh_plain_retries_5xx_but_returns_a_404_body_at_once(monkeypatch) -> None:
+    calls, naps = _fake_gh(
+        monkeypatch,
+        [
+            (1, "", "gh: Bad Gateway (HTTP 502)"),
+            (0, "a@b.c\n", ""),
+            (1, '{"message":"Not Found"}', "HTTP 404"),
+        ],
+    )
+    assert ci.gh_plain(["api", "user/emails"]) == (0, "a@b.c\n")
+    assert naps == [5.0]
+    assert ci.gh_plain(["api", "user/emails"]) == (1, '{"message":"Not Found"}')
+    assert len(calls) == 3

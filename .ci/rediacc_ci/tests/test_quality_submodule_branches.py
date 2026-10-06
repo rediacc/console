@@ -142,3 +142,60 @@ def test_console_pr_body_reports_a_genuinely_empty_description_as_ok(
     ok, body = mod.console_pr_body(env={"PR_NUMBER": "1"})
     assert ok is True
     assert body == ""
+
+
+# --- PLAN-gh-retry G12: every gh READ goes through gh_retry --------------------------------
+
+
+def _fake_runner(results):
+    from rediacc_ci.core import ghx
+
+    calls: list[list[str]] = []
+    queue = list(results)
+
+    def run(args, **_kw):
+        calls.append(list(args))
+        rc, out, err = queue.pop(0)
+        return ghx.GhResult(["gh", *args], rc, out, err)
+
+    return run, calls
+
+
+def test_gh_probe_retries_a_transient_fault_then_succeeds() -> None:
+    naps: list[float] = []
+    run, calls = _fake_runner(
+        [(1, "", "gh: Server Error (HTTP 502)"), (0, '[{"number": 3}]', "")]
+    )
+    ok, out = mod.gh_probe(True, "t", ["pr", "list"], runner=run, sleep=naps.append)
+    assert ok is True
+    assert out == '[{"number": 3}]'
+    assert len(calls) == 2
+    assert naps == [5.0]
+
+
+def test_gh_probe_a_4xx_fails_at_once_and_loudly(capsys: pytest.CaptureFixture[str]) -> None:
+    run, calls = _fake_runner([(1, "", "gh: Not Found (HTTP 404)")])
+    ok, out = mod.gh_probe(False, "t", ["pr", "list"], runner=run, sleep=lambda _s: None)
+    assert (ok, out) == (False, "")
+    assert len(calls) == 1
+    assert "HTTP 404" in capsys.readouterr().err
+
+
+def test_gh_probe_exhausted_transient_is_a_failure_not_an_empty_answer() -> None:
+    run, calls = _fake_runner([(1, "", "gh: Server Error (HTTP 503)")] * 3)
+    ok, out = mod.gh_probe(False, "t", ["api", "x"], runner=run, sleep=lambda _s: None)
+    assert (ok, out) == (False, "")
+    assert len(calls) == 3
+
+
+def test_get_pr_for_branch_reads_through_gh_retry(monkeypatch: pytest.MonkeyPatch) -> None:
+    from rediacc_ci.core import gh_retry
+
+    run, calls = _fake_runner(
+        [(1, "", "gh: Bad Gateway (HTTP 502)"), (0, '[{"number": 7, "url": "u"}]', "")]
+    )
+    monkeypatch.setattr(mod, "have_gh", lambda: True)
+    monkeypatch.setattr(gh_retry.ghx, "gh", lambda args, **kw: run(args, **kw))
+    monkeypatch.setattr(gh_retry.time, "sleep", lambda _s: None)
+    assert mod.get_pr_for_branch("o/r", "b") == "7|u"
+    assert len(calls) == 2

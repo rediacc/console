@@ -93,8 +93,7 @@ TWO FAIL-CLOSED REPAIRS, also from the twin's comments. `check_pr_review_comment
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-`_gh_probe` IS COPIED HERE RATHER THAN IMPORTED, and that is a deliberate choice against `rediacc_ci.core.ghx`, which is the typed counterpart of the same idea. The reason is fidelity: `ghx.gh()` classifies failures, raises typed errors and does not retry three times with a `log_warn` between attempts, so a port built on it would produce different output on the paths a differential
-cannot reach (nothing in a fixture repo can make a real `gh` call). The twin's `_gh_probe` lives in `common.sh`, which this port does not source, so its 3-attempt loop, its `sleep $((attempt * 3))` backoff, its JSON validation and both of its message strings are transliterated below. When `ghx` grows a `_gh_probe`-compatible entry point, this copy is the first thing that should go.
+`gh_probe` ROUTES EVERY `gh` READ THROUGH `rediacc_ci.core.gh_retry` (PLAN-gh-retry G12): a transient fault is retried three times, a 4xx fails at once, and the one thing the retry cannot see, a 0-exit with a malformed JSON body, keeps `_gh_probe`'s own short loop.
 
 jq IS REPLACED BY `json`, and every jq expression is quoted above the code that replaces it so the two can be diffed by eye. The one behavioural note: `jq -r` prints a number as its decimal text, so a comment id compared as a dictionary key must be `str(id)` here, not `id`. Comparing ints would work until the day GitHub returns one as a float in a paginated body.
 
@@ -123,6 +122,7 @@ import tempfile
 import time
 
 from rediacc_ci import gitx, log, paths
+from rediacc_ci.core import gh_retry
 from rediacc_ci.controls import Controls, git_isolated
 from rediacc_ci.well_known import ACCOUNT_REPO, ELITE_REPO, GH_ORIGIN, HOMEBREW_TAP_REPO, RENET_REPO
 
@@ -204,38 +204,44 @@ def have_gh() -> bool:
     return shutil.which("gh") is not None
 
 
-def gh_probe(require_json: bool, what: str, args: list[str]) -> tuple[bool, str]:
-    """`common.sh`'s `_gh_probe`, transliterated. (ok, stdout).
+def gh_probe(
+    require_json: bool,
+    what: str,
+    args: list[str],
+    *,
+    runner=None,
+    sleep=None,
+) -> tuple[bool, str]:
+    """A one-shot `gh` READ through `gh_retry`. (ok, stdout).
 
-    Three attempts, a `log_warn` between them, a 3/6 second backoff, and an optional JSON validity check because "`gh api graphql` can exit 0 while returning a truncated or malformed body, so an exit-code check alone misses it". The failing branch prints the last exit code and the captured stderr, indented four spaces, exactly as the twin's `sed 's/^/ /'` does.
+    `gh_retry.gh` retries a TRANSIENT fault (5xx, connection reset) three times, 5 s then 15 s, and returns a 4xx or auth failure at once. The one case it cannot see is `gh api graphql` exiting 0 with a truncated or malformed body, so `require_json` keeps a small outer loop of three attempts, a `log_warn` and a 3/6 second pause for that case only. A read that fails prints the exit code and gh's stderr, indented four spaces, and returns (False, ""); every caller treats that as "could not read", never as an empty answer.
     """
+    nap = sleep or time.sleep
     attempt = 1
-    rc = 0
-    err = ""
-    out = ""
+    result = None
     while attempt <= 3:
-        proc = _run(["gh", *args], stderr=subprocess.PIPE)
-        rc = proc.returncode
-        out = proc.stdout or ""
-        err = proc.stderr or ""
-        if rc == 0:
-            if not require_json:
+        result = gh_retry.gh(args, sleep=sleep, runner=runner)
+        if not result.ok:
+            break
+        out = result.stdout_raw or ""
+        if not require_json:
+            return True, out
+        if out:
+            try:
+                json.loads(out)
+            except ValueError:
+                pass
+            else:
                 return True, out
-            if out:
-                try:
-                    json.loads(out)
-                except ValueError:
-                    pass
-                else:
-                    return True, out
         if attempt < 3:
             log.warn(
-                "%s: gh call failed or returned unusable output (attempt %d/3), retrying..."
-                % (what, attempt)
+                "%s: gh call returned unusable output (attempt %d/3), retrying..." % (what, attempt)
             )
-            time.sleep(attempt * 3)
+            nap(attempt * 3)
         attempt += 1
-    log.error("%s: gh failed after 3 attempts (last exit %d)." % (what, rc))
+    rc = result.returncode if result is not None else 0
+    err = result.stderr if result is not None else ""
+    log.error("%s: gh failed (last exit %d)." % (what, rc))
     if err:
         for line in err.rstrip("\n").split("\n"):
             print("    %s" % line, file=sys.stderr)
@@ -335,9 +341,10 @@ def get_pr_for_branch(repo: str, branch: str) -> str:
     """
     if not have_gh():
         return ""
-    proc = _run(
+    ok, out = gh_probe(
+        True,
+        "open-PR lookup for %s#%s" % (repo, branch),
         [
-            "gh",
             "pr",
             "list",
             "--repo",
@@ -348,12 +355,12 @@ def get_pr_for_branch(repo: str, branch: str) -> str:
             "open",
             "--json",
             "number,url",
-        ]
+        ],
     )
-    if proc.returncode != 0:
+    if not ok:
         return ""
     try:
-        rows = json.loads(proc.stdout or "[]")
+        rows = json.loads(out or "[]")
     except ValueError:
         return ""
     if not rows:

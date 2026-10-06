@@ -22,6 +22,8 @@ import typing
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.core import gh_retry as core_retry
+from rediacc_ci.core import ghx
 from rediacc_ci.housekeeping import cleanup_github_deployments as port
 from rediacc_ci.tests import frozen
 
@@ -378,3 +380,49 @@ def test_a_planted_removal_of_the_inactive_status_call_is_caught(tmp_path: pathl
         compare(tmp_path / "bad", "the-real-path-over-two-ids", subject=mutant)
     compare(tmp_path / "good", "the-real-path-over-two-ids")
     assert PORT.read_text(encoding="utf-8") == original
+
+
+# --- PLAN-gh-retry G12: the listing decides deletions, so it is retried and fails safe ---
+def _fake_listing(monkeypatch, answers):
+    calls: list[list[str]] = []
+    naps: list[float] = []
+    queue = list(answers)
+
+    def fake(args, **_kw):
+        calls.append(list(args))
+        if args[0] == "api" and "-X" not in args and "POST" not in args:
+            rc, out, err = queue.pop(0)
+            return ghx.GhResult(list(args), rc, out, err)
+        return ghx.GhResult(list(args), 0, "", "")
+
+    monkeypatch.setattr(ghx, "gh", fake)
+    monkeypatch.setattr(core_retry.time, "sleep", naps.append)
+    monkeypatch.setattr(port.common, "require_cmd", lambda _name: None)
+    return calls, naps
+
+
+def test_listing_502_then_success_lists_and_dry_run_deletes_nothing(monkeypatch) -> None:
+    calls, naps = _fake_listing(
+        monkeypatch, [(1, "", "gh: Server Error (HTTP 502)"), (0, "11\n12\n", "")]
+    )
+    rc = port.main(["--repo", "o/r", "--environment", "pr-1", "--dry-run"])
+    assert rc == 0
+    assert naps == [5.0]
+    assert len(calls) == 2
+
+
+def test_persistent_5xx_listing_deletes_nothing_and_fails(monkeypatch, capsys) -> None:
+    calls, naps = _fake_listing(monkeypatch, [(1, "", "gh: Server Error (HTTP 500)")] * 3)
+    rc = port.main(["--repo", "o/r", "--environment", "pr-1"])
+    assert rc == 1
+    assert naps == [5.0, 15.0]
+    assert len(calls) == 3
+    assert all("DELETE" not in c for c in calls)
+    assert "HTTP 500" in capsys.readouterr().err
+
+
+def test_404_listing_is_not_retried_and_deletes_nothing(monkeypatch) -> None:
+    calls, naps = _fake_listing(monkeypatch, [(1, "", "gh: Not Found (HTTP 404)")])
+    assert port.main(["--repo", "o/r", "--environment", "pr-1"]) == 1
+    assert naps == []
+    assert len(calls) == 1
