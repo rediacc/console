@@ -621,3 +621,42 @@ def test_a_planted_blind_spot_is_caught(tmp_path: pathlib.Path) -> None:
 
     compare(tmp_path / "good", name)
     assert PORT.read_text(encoding="utf-8") == original
+
+
+# ---- root-ancestor-conditional (added after the twin's deletion; no differential) ----------------------------------
+
+
+def _root_kinds(jobs: dict) -> list[tuple[str, str]]:
+    return [
+        f
+        for f in ci_workflow_invariants.analyse({"jobs": jobs})
+        if f[0] == "root-ancestor-conditional"
+    ]
+
+
+def test_a_conditional_ancestor_of_initialize_is_refused():
+    """PR #597's run 37465283674: `duplicate-run` ran on push only, skipped on the PR, and every implicit-success job downstream of a green `initialize` skipped with it."""
+    jobs = {
+        "duplicate-run": {"if": "github.event_name == 'push'", "runs-on": "x"},
+        "initialize": {"needs": ["duplicate-run"], "if": "${{ !cancelled() }}"},
+        "run-sh-tests": {"needs": ["initialize"], "if": "x != 'y'"},
+    }
+    assert _root_kinds(jobs) == [("root-ancestor-conditional", "duplicate-run")]
+
+
+def test_a_transitive_ancestor_is_reached_and_a_string_needs_is_read():
+    jobs = {
+        "a": {"if": "false"},
+        "b": {"needs": "a"},
+        "initialize": {"needs": ["b"]},
+    }
+    assert _root_kinds(jobs) == [("root-ancestor-conditional", "a")]
+
+
+def test_unconditional_ancestors_and_conditional_descendants_pass():
+    jobs = {
+        "duplicate-run": {"runs-on": "x"},
+        "initialize": {"needs": "duplicate-run", "if": "${{ !cancelled() }}"},
+        "later": {"needs": ["initialize"], "if": "github.event_name == 'push'"},
+    }
+    assert _root_kinds(jobs) == []
