@@ -8,7 +8,7 @@ name: Housekeeping
 # for R2 orphans and IN_FLIGHT_VERSION is intentionally NOT set.
 #
 # Four independent jobs:
-#   cleanup            - .ci/scripts/housekeeping/cleanup-versions.sh (releases, tags,
+#   cleanup            - rediacc_ci.housekeeping.cleanup_versions (releases, tags,
 #                        GHCR, deployments, CF Pages, envs, D1, Turnstile, R2 orphans,
 #                        branches, workflow runs/artifacts/cache).
 #   stripe-cleanup     - Stripe sandbox orphan sweep + per-region webhook verification.

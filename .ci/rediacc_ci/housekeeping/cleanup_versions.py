@@ -56,7 +56,7 @@ twin has a byte-exact answer for.
 -----------------------------------------------------------------------------
 RULE T: THE OPERATOR-SUPPLIED COUNTS ARE NO LONGER BASH ARITHMETIC WORDS
 -----------------------------------------------------------------------------
-`--days`, `--versions`, `BRANCH_MAX_AGE_DAYS` and `MAX_DELETES_PER_RUN` are validated at startup (`_whole_number`): ASCII digits only, read in base 10, anything else refused with exit 2 naming the flag and the value. That closes the octal trap below at its source for the four values an operator can set (`010` keeps ten, `08` keeps eight, `08x` is refused), and with it HAZARD 8 (`BRANCH_MAX_AGE_DAYS=08` unwinding the run mid-Phase 9). HAZARD 9 (a failed cache listing doubling the stream and unwinding the run) is fixed in `cleanup_actions_cache`: the failure is named and nothing is evicted. The sections below describe the TWIN; `arith` keeps emulating it for the values that still reach it (epochs, API numbers), and the `test_delta_*` cases pin each change against the live twin as the control.
+`--days`, `--versions`, `BRANCH_MAX_AGE_DAYS` and `MAX_DELETES_PER_RUN` are validated at startup (`_whole_number`): ASCII digits only, read in base 10, anything else refused with exit 2 naming the flag and the value. That closes the octal trap below at its source for the four values an operator can set (`010` keeps ten, `08` keeps eight, `08x` is refused), and with it HAZARD 8 (`BRANCH_MAX_AGE_DAYS=08` unwinding the run mid-Phase 9). HAZARD 9 (a failed cache listing doubling the stream and unwinding the run) is fixed in `cleanup_actions_cache`: the failure is named and nothing is evicted. Phase 10 carries three more (see `cleanup_workflow_runs`): a workflow whose file is gone from the default branch loses the keep-newest floor, whatever its state; the workflow listing is read past its first page; and a workflow's summary line names the retention that applied to it. The sections below describe the TWIN; `arith` keeps emulating it for the values that still reach it (epochs, API numbers), and the `test_delta_*` cases pin each change against the live twin as the control.
 
 -----------------------------------------------------------------------------
 BASH ARITHMETIC IS EMULATED, INCLUDING THE OCTAL TRAP
@@ -158,6 +158,15 @@ GH_RUNS_RETENTION_DAYS = 30
 GH_RUNS_RETENTION_DAYS_WATCHDOG = 7
 WATCHDOG_PATH = ".github/workflows/watchdog-monitor.yml"
 GH_RUNS_MAX_PAGES_PER_WORKFLOW = 10
+
+# A workflow stays in the Actions sidebar until it has ZERO runs, so the keep-newest floor above would hold a REMOVED workflow (its file no longer on the default branch) there forever. Phase 10 drops the floor for one and keeps only GH_RUNS_RETENTION_DAYS. A workflow is removed only when its path lies under this directory and the default branch's listing of it was read and does not hold that exact path.
+GH_WORKFLOWS_DIR = ".github/workflows/"
+# GitHub-managed workflows (pages-build-deployment, dependabot-updates, codeql) carry a `dynamic/...` path that is never a file, so they would always look removed. Never removed, by name.
+GH_WORKFLOWS_MANAGED_PREFIX = "dynamic/"
+# The contents API lists at most 1,000 entries of a directory and says nothing when it stops there, so a listing that long reads as possibly truncated, i.e. unreadable, and nothing is treated as removed.
+GH_CONTENTS_LISTING_LIMIT = 1000
+# The workflow listing's own pagination bound (100 per page). Ten pages is ten times today's 36 workflows.
+GH_WORKFLOWS_MAX_PAGES = 10
 
 GH_ARTIFACTS_RETENTION_DAYS = 14
 GH_ARTIFACTS_MAX_PAGES = 30
@@ -367,6 +376,54 @@ def release_state(view: list[str]) -> str:
     if gh_retry.is_transient(result.stderr):
         return "unknown"
     return "gone"
+
+
+def parse_workflow_files(code: int, blob: str) -> tuple[set[str] | None, str]:
+    """The paths the default branch holds under `.github/workflows/`, from the contents API's answer, or `(None, reason)` when that answer cannot be trusted.
+
+    FAILS CLOSED, as Phase 5b does and for the same reason: its worst case is deleting runs a live workflow keeps. A failed read, a body that is not a JSON array, an entry without a string `path`, an EMPTY listing (the directory holds the very workflow running this) and a listing at the API's 1,000-entry ceiling (possibly truncated) all return None, and the caller then treats every workflow as present.
+    """
+    if code != 0:
+        return None, "the read failed (exit %d)" % code
+    try:
+        entries = json.loads(blob)
+    except ValueError:
+        return None, "the answer is not JSON"
+    if not isinstance(entries, list):
+        return None, "the answer is not a directory listing"
+    if not entries:
+        return None, "the listing is empty"
+    if len(entries) >= GH_CONTENTS_LISTING_LIMIT:
+        return (
+            None,
+            "the listing holds %d entries, the API's ceiling, so it may be truncated"
+            % len(entries),
+        )
+    paths: set[str] = set()
+    for entry in entries:
+        path = entry.get("path") if isinstance(entry, dict) else None
+        if not isinstance(path, str) or not path:
+            return None, "an entry carries no path"
+        paths.add(path)
+    return paths, ""
+
+
+def workflow_retention_days(path: str) -> int:
+    """Phase 10's retention for one workflow, keyed by PATH, never by name: the watchdog's display name is generated per run, so a name match is unwritable."""
+    if path == WATCHDOG_PATH:
+        return GH_RUNS_RETENTION_DAYS_WATCHDOG
+    return GH_RUNS_RETENTION_DAYS
+
+
+def workflow_is_removed(path: str, present: set[str] | None) -> bool:
+    """True only for a `.github/workflows/` path the default branch's listing was READ and lacks. `dynamic/...` (GitHub-managed) and an unreadable listing (`present is None`) are never removed."""
+    if path.startswith(GH_WORKFLOWS_MANAGED_PREFIX):
+        return False
+    if not path.startswith(GH_WORKFLOWS_DIR):
+        return False
+    if present is None:
+        return False
+    return path not in present
 
 
 def capture_merged(argv: list[str]) -> tuple[int, str]:
@@ -2867,34 +2924,110 @@ class Housekeeping:
 
     # -- PHASE 10: WORKFLOW RUNS -------------------------------------------
 
+    def _list_workflows(self) -> list:
+        """Every workflow in the repository, in every state, with its path.
+
+        The twin read one page of 100 and filtered `state == "active"` inside the jq. The state now comes back so a REMOVED workflow can be selected whatever its state, and pages after the first are read while a page comes back full, so a 101st workflow is not silently dropped. Page 1's URL is the twin's. An unreadable page ends the listing with what was read: fewer workflows is fewer deletes.
+        """
+        listed: list = []
+        page = 1
+        while page <= GH_WORKFLOWS_MAX_PAGES:
+            url = "repos/%s/actions/workflows?per_page=100" % RELEASE_REPO
+            if page > 1:
+                url += "&page=%d" % page
+            code, blob = gh_read(
+                [
+                    "api",
+                    url,
+                    "--jq",
+                    "[.workflows[] | {id: .id, name: .name, path: .path, state: .state}]",
+                ]
+            )
+            if code != 0:
+                blob = "[]"
+            rows = blob_array(blob)
+            listed.extend(rows)
+            if len(rows) < 100:
+                break
+            page += 1
+        return listed
+
+    def _workflow_files(self, listed: list) -> set[str] | None:
+        """ONE read per run of the default branch's `.github/workflows/`, or None (every workflow present).
+
+        No `ref`: the contents API's documented default IS the repository's default branch, so the branch is GitHub's answer rather than an assumed `main`, in one call and with no window between reading the branch name and listing it. A listing that holds NONE of the listed `.github/workflows/` paths is also refused: that is a wrong tree, not every workflow deleted at once.
+        """
+        code, blob = gh_read(
+            ["api", "repos/%s/contents/%s" % (RELEASE_REPO, GH_WORKFLOWS_DIR.rstrip("/"))]
+        )
+        present, reason = parse_workflow_files(code, blob)
+        candidates = [
+            path
+            for path in (jq_text(jq_get(wf, "path")) for wf in listed)
+            if path.startswith(GH_WORKFLOWS_DIR)
+        ]
+        if present is not None and candidates and not any(p in present for p in candidates):
+            present, reason = (
+                None,
+                "it holds none of the %d listed workflow paths" % len(candidates),
+            )
+        if present is None:
+            log.warn(
+                "  Workflow files on the default branch unreadable (%s); every workflow is"
+                " treated as present and keeps its newest %d runs"
+                % (reason, GH_RUNS_KEEP_PER_WORKFLOW)
+            )
+            return None
+        removed = sum(1 for p in candidates if p not in present)
+        log.info(
+            "  Workflow files on the default branch: %d; %d of %d listed workflow paths removed"
+            % (len(present), removed, len(candidates))
+        )
+        return present
+
     def cleanup_workflow_runs(self) -> None:
         """`cleanup_workflow_runs` (:1673-1813).
 
         THE VACUOUS-GREEN CHECK at the end is the reason this phase is worth reading twice. It deleted nothing for `watchdog-monitor.yml` for months and reported success, because the scan window (MAX_PAGES x 100 runs) never reached back as far as the retention threshold. The warning fires only when the window was TRUNCATED (`page` exceeded the cap), so a young low-volume workflow
         with nothing to reap stays quiet.
+
+        REMOVED WORKFLOWS (intentional delta, Rule T). A workflow whose `.github/workflows/` file the default branch no longer holds loses the keep-newest-100 floor and keeps only its runs within retention, so it reaches zero runs and leaves the Actions sidebar; its state does not matter. Everything else is the twin's: the budget, dry-run, the retry, the five-failure breaker. FAIL CLOSED: an unreadable, empty, malformed or possibly truncated listing, or one that shares no path with the workflow list, treats every workflow as present. `dynamic/...` workflows are never removed. The vacuous-green warning stays quiet for a removed workflow, which gains no new runs. The line `<name>: deleted N of M (...)` names the retention that applied, the watchdog's 7d included.
         """
         log.step("Phase 10: Cleaning up completed workflow runs")
 
-        code, workflows_blob = gh_read(
-            [
-                "api",
-                "repos/%s/actions/workflows?per_page=100" % RELEASE_REPO,
-                "--jq",
-                (
-                    '[.workflows[] | select(.state == "active") | '
-                    "{id: .id, name: .name, path: .path}]"
-                ),
-            ]
-        )
-        if code != 0:
-            workflows_blob = "[]"
+        listed = self._list_workflows()
+        present = self._workflow_files(listed) if listed else None
 
-        workflows = blob_array(workflows_blob)
+        # INTENTIONAL DELTA (Rule T). The twin selects `state == "active"` and keeps the newest GH_RUNS_KEEP_PER_WORKFLOW runs of every workflow, so a workflow whose file was deleted never reaches zero runs and never leaves the Actions sidebar. A removed workflow is selected whatever its state (GitHub never flips a deleted file's workflow out of `active` by itself, but `PUT .../disable` sets `disabled_manually` on any workflow, and the twin's filter would then skip it forever); a present non-active one is skipped, as before.
+        workflows = []
+        removed_paths: set[str] = set()
+        for wf in listed:
+            wf_path_value = jq_get(wf, "path")
+            wf_path = jq_text(wf_path_value) if wf_path_value is not None else ""
+            if workflow_is_removed(wf_path, present):
+                removed_paths.add(wf_path)
+                workflows.append(wf)
+            elif jq_get(wf, "state") == "active":
+                workflows.append(wf)
         wf_count = len(workflows)
 
         if wf_count == 0:
             log.warn("  No active workflows listed (API error?); skipping phase")
             return
+
+        for wf in workflows:
+            wf_path = jq_text(jq_get(wf, "path"))
+            if wf_path in removed_paths:
+                log.info(
+                    "  Removed workflow (file not on the default branch): %s [%s, state %s];"
+                    " no keep-newest floor, runs within %dd kept"
+                    % (
+                        jq_text(jq_get(wf, "name")),
+                        wf_path,
+                        jq_text(jq_get(wf, "state")),
+                        workflow_retention_days(wf_path),
+                    )
+                )
 
         now_epoch = arith(now_epoch_utc())
 
@@ -2908,10 +3041,9 @@ class Housekeeping:
             # Keyed by PATH, never by name: the watchdog's display name is generated per run, so a name match is unwritable.
             wf_path_value = jq_get(wf, "path")
             wf_path = jq_text(wf_path_value) if wf_path_value is not None else ""
-            wf_retention_days = GH_RUNS_RETENTION_DAYS
-            if wf_path == WATCHDOG_PATH:
-                wf_retention_days = GH_RUNS_RETENTION_DAYS_WATCHDOG
+            wf_retention_days = workflow_retention_days(wf_path)
             wf_retention_seconds = wf_retention_days * 86400
+            wf_removed = wf_path in removed_paths
 
             log.step("  Workflow: %s (id=%s)" % (wf_name, wf_id))
 
@@ -2956,7 +3088,7 @@ class Housekeeping:
                     created_at = jq_text(jq_get(run, "created_at"))
                     wf_seen += 1
 
-                    if wf_index < GH_RUNS_KEEP_PER_WORKFLOW:
+                    if not wf_removed and wf_index < GH_RUNS_KEEP_PER_WORKFLOW:
                         wf_index += 1
                         continue
 
@@ -3006,8 +3138,10 @@ class Housekeeping:
                     break
                 page += 1
 
+            # A removed workflow gains no new runs, so a window that stops short of the threshold today reaches it as its runs age: the warning would be false for it.
             if (
-                wf_deleted == 0
+                not wf_removed
+                and wf_deleted == 0
                 and oldest_seen_epoch > 0
                 and page > GH_RUNS_MAX_PAGES_PER_WORKFLOW
                 and now_epoch - oldest_seen_epoch < wf_retention_seconds
@@ -3029,17 +3163,15 @@ class Housekeeping:
 
             if wf_deleted > 0:
                 verb = "would delete" if self.dry_run else "deleted"
-                log.info(
-                    "  %s: %s %d of %d (kept top %d + within %dd)"
-                    % (
-                        wf_name,
-                        verb,
-                        wf_deleted,
-                        wf_seen,
+                # INTENTIONAL DELTA (Rule T): the twin printed GH_RUNS_RETENTION_DAYS here for every workflow, so the watchdog's line claimed 30d while 7d applied.
+                if wf_removed:
+                    kept = "removed workflow: kept within %dd" % wf_retention_days
+                else:
+                    kept = "kept top %d + within %dd" % (
                         GH_RUNS_KEEP_PER_WORKFLOW,
-                        GH_RUNS_RETENTION_DAYS,
+                        wf_retention_days,
                     )
-                )
+                log.info("  %s: %s %d of %d (%s)" % (wf_name, verb, wf_deleted, wf_seen, kept))
 
             if budget_out:
                 break

@@ -275,10 +275,13 @@ def sides(
     argv: tuple[str, ...] = (),
     fixture: dict | None = None,
     env: dict | None = None,
+    port_delta=None,
 ) -> tuple[int, bytes, bytes, list[str]]:
     """Run BOTH implementations over the same fakes and assert byte equality.
 
     Returns the (shared) result so a case can go on to assert what the shared behaviour actually was -- which is the half that stops two identically wrong implementations from passing.
+
+    `port_delta` maps the PORT's result before the comparison, for a phase that carries a known intentional delta (Phase 10's `_phase_10_delta`): only that delta's shape is removed, so everything else stays byte-compared.
     """
     fixture = fixture or {}
     results = []
@@ -288,6 +291,8 @@ def sides(
             base.mkdir(parents=True)
             results.append(_run(side, phase, argv, fixture, dict(env or {}), base))
     old, new = results
+    if port_delta is not None:
+        new = port_delta(new)
     assert new[0] == old[0], "%s: exit diverged: twin %r port %r\n twin err: %s\n port err: %s" % (
         phase,
         old[0],
@@ -2324,9 +2329,79 @@ def _runs(count: int, *, start: int = 0, age: float = 1.5) -> list:
     ]
 
 
+# The workflow listing's `--jq`, on each side. The twin filters `state == "active"` inside the jq; the port brings the state back so a REMOVED workflow can be selected whatever its state.
+TWIN_WORKFLOWS_JQ = (
+    '[.workflows[] | select(.state == "active") | {id: .id, name: .name, path: .path}]'
+)
+PORT_WORKFLOWS_JQ = "[.workflows[] | {id: .id, name: .name, path: .path, state: .state}]"
+CONTENTS_READ = "repos/%s/contents/.github/workflows" % GH_REPO
+LISTING = "actions/workflows?per_page=100"
+
+
+def _phase_10_delta(
+    result: tuple[int, bytes, bytes, list[str]],
+) -> tuple[int, bytes, bytes, list[str]]:
+    """Remove the removed-workflow delta's SHAPE from the port's result, and nothing else: the presence read (call log and its `call:` stderr line), the listing's jq text mapped back to the twin's, and the one presence line the port prints. The UNREADABLE warning is deliberately not removed, so a parity case whose fixture forgot the presence answer fails instead of passing on the fail-closed path."""
+    code, out, err, calls = result
+
+    def keep(line: str) -> bool:
+        return CONTENTS_READ not in line and "Workflow files on the default branch: " not in line
+
+    def twin_jq(line: str) -> str:
+        return line.replace(PORT_WORKFLOWS_JQ, TWIN_WORKFLOWS_JQ)
+
+    err_lines = err.decode("utf-8").split("\n")
+    err = "\n".join(twin_jq(x) for x in err_lines if keep(x)).encode("utf-8")
+    calls = [twin_jq(x) for x in calls if keep(x)]
+    return code, out, err, calls
+
+
+def _workflow(wf_id: int, name: str, path: str, state: str = "active") -> dict:
+    return {"id": wf_id, "name": name, "path": path, "state": state}
+
+
+def _files(*paths: str) -> dict:
+    """The contents API's answer for `.github/workflows`: one object per entry."""
+    return rule(
+        CONTENTS_READ,
+        json_body=[{"name": p.rsplit("/", 1)[-1], "path": p, "type": "file"} for p in paths],
+    )
+
+
+def _p10_fixture(workflows: list, *rules: dict, files: dict | None = None) -> dict:
+    """A Phase 10 world. `files` is the contents API's rule; by default the default branch holds every listed `.github/workflows/` path, so nothing is removed and the twin's behaviour is the expected one."""
+    if files is None:
+        files = _files(
+            *[w["path"] for w in workflows if w["path"].startswith(".github/workflows/")]
+        )
+    return {
+        "gh": [
+            files,
+            rule(LISTING, json_body={"workflows": workflows}),
+            *rules,
+        ]
+    }
+
+
+def _p10_sides(fixture: dict, argv: tuple[str, ...] = ("--dry-run",), env: dict | None = None):
+    return sides(
+        "cleanup_workflow_runs", argv=argv, fixture=fixture, env=env, port_delta=_phase_10_delta
+    )
+
+
+def _p10_delta(fixture: dict, argv: tuple[str, ...] = ("--dry-run",), env: dict | None = None):
+    """Twin (the control) and port over the same world, decoded, without asserting they agree."""
+    old, new = _twin_and_port("cleanup_workflow_runs", argv, fixture, env)
+    return old, new, old[2].decode(), new[2].decode()
+
+
 def test_phase_10_reports_an_empty_workflow_list_as_a_possible_api_error() -> None:
-    """The only phase besides 5b that says out loud that it might not have been able to look. Every other one reports a clean sweep of nothing."""
-    result = sides("cleanup_workflow_runs", fixture={"gh": [rule("actions/workflows", rc=1)]})
+    """The only phase besides 5b that says out loud that it might not have been able to look. Every other one reports a clean sweep of nothing. An unreadable listing makes no presence read at all."""
+    result = sides(
+        "cleanup_workflow_runs",
+        fixture={"gh": [rule("actions/workflows", rc=1)]},
+        port_delta=_phase_10_delta,
+    )
     assert b"No active workflows listed (API error?); skipping phase" in result[2]
     assert result[0] == 0
 
@@ -2337,110 +2412,61 @@ def test_phase_10_keeps_the_hundred_newest_and_reaps_the_old_tail() -> None:
         {"id": 9001, "created_at": ago(400.5), "conclusion": "failure"},
         {"id": 9002, "created_at": ago(401.5), "conclusion": "failure"},
     ]
-    result = sides(
-        "cleanup_workflow_runs",
-        argv=("--dry-run",),
-        fixture={
-            "gh": [
-                rule(
-                    "actions/workflows?per_page=100",
-                    json_body={
-                        "workflows": [
-                            {
-                                "id": 11,
-                                "name": "Console CI",
-                                "path": ".github/workflows/ci.yml",
-                                "state": "active",
-                            },
-                            {
-                                "id": 12,
-                                "name": "Disabled",
-                                "path": ".github/workflows/x.yml",
-                                "state": "disabled_manually",
-                            },
-                        ]
-                    },
-                ),
-                # `&page=1`, because `per_page=100` contains `page=100`; and a
-                # second rule for every later page, or the same body would be served ten times over and the totals would be ten times wrong.
-                rule("workflows/11/runs", "&page=1", json_body={"workflow_runs": page}),
-                rule("workflows/11/runs", json_body={"workflow_runs": []}),
-            ]
-        },
+    result = _p10_sides(
+        _p10_fixture(
+            [
+                _workflow(11, "Console CI", ".github/workflows/ci.yml"),
+                _workflow(12, "Disabled", ".github/workflows/x.yml", "disabled_manually"),
+            ],
+            # `&page=1`, because `per_page=100` contains `page=100`; and a
+            # second rule for every later page, or the same body would be served ten times over and the totals would be ten times wrong.
+            rule("workflows/11/runs", "&page=1", json_body={"workflow_runs": page}),
+            rule("workflows/11/runs", json_body={"workflow_runs": []}),
+        )
     )
     err = result[2].decode()
     assert "Would delete run: 9001 (Console CI," in err
     assert "Would delete run: 9002 (Console CI," in err
     assert "Console CI: would delete 2 of 102 (kept top 100 + within 30d)" in err
     assert "Workflow runs: would delete 2 of 102 (across 1 workflows)" in err
-    assert "Disabled" not in err, "only active workflows are in scope"
+    assert "Disabled" not in err, "a PRESENT non-active workflow stays out of scope"
 
 
-def test_phase_10_gives_the_watchdog_its_own_shorter_retention_by_path() -> None:
-    """Keyed by path, never by name: the watchdog's display name is generated per run ("Watchdog: run <id> (gen N)"), so a name match is unwritable."""
+def test_delta_phase_10_the_watchdog_line_names_its_own_7d_retention() -> None:
+    """INTENTIONAL DELTA (Rule T). Keyed by path, never by name: the watchdog's display name is generated per run ("Watchdog: run <id> (gen N)"), so a name match is unwritable. The twin's summary line printed GH_RUNS_RETENTION_DAYS (30d) for the watchdog while 7d applied; the port names the 7d. Which runs are deleted is unchanged, and the control half pins that."""
     page = [*_runs(100), {"id": 9001, "created_at": ago(10.5), "conclusion": "success"}]
-    result = sides(
-        "cleanup_workflow_runs",
-        argv=("--dry-run",),
-        fixture={
-            "gh": [
-                rule(
-                    "actions/workflows?per_page=100",
-                    json_body={
-                        "workflows": [
-                            {
-                                "id": 21,
-                                "name": "Watchdog: run 123 (gen 4)",
-                                "path": ".github/workflows/watchdog-monitor.yml",
-                                "state": "active",
-                            },
-                            # A DECOY whose NAME contains "Watchdog" and whose PATH is a different file. Without it a port that matched on the name would behave identically here and this case would prove nothing; a planted name-match defect stayed green until this row was added.
-                            {
-                                "id": 22,
-                                "name": "Watchdog dispatcher",
-                                "path": ".github/workflows/dispatch-watchdog.yml",
-                                "state": "active",
-                            },
-                        ]
-                    },
-                ),
-                rule("workflows/21/runs", "&page=1", json_body={"workflow_runs": page}),
-                rule("workflows/22/runs", "&page=1", json_body={"workflow_runs": page}),
-                rule("runs?status=completed", json_body={"workflow_runs": []}),
-            ]
-        },
+    fixture = _p10_fixture(
+        [
+            _workflow(21, "Watchdog: run 123 (gen 4)", ".github/workflows/watchdog-monitor.yml"),
+            # A DECOY whose NAME contains "Watchdog" and whose PATH is a different file. Without it a port that matched on the name would behave identically here and this case would prove nothing; a planted name-match defect stayed green until this row was added.
+            _workflow(22, "Watchdog dispatcher", ".github/workflows/dispatch-watchdog.yml"),
+        ],
+        rule("workflows/21/runs", "&page=1", json_body={"workflow_runs": page}),
+        rule("workflows/22/runs", "&page=1", json_body={"workflow_runs": page}),
+        rule("runs?status=completed", json_body={"workflow_runs": []}),
     )
-    err = result[2].decode()
+    old, new, old_err, new_err = _p10_delta(fixture)
     # 10 days old: inside the shared 30-day window, outside the watchdog's 7.
-    assert "Watchdog: run 123 (gen 4): would delete 1 of 101 (kept top 100 + within 30d)" in err
-    # The decoy keeps its run: 10 days is inside the 30-day default, and its PATH is not the watchdog's however much its name looks like one.
-    assert "Watchdog dispatcher: would delete" not in err
-    assert "Workflow runs: would delete 1 of 202 (across 2 workflows)" in err
+    assert "Watchdog: run 123 (gen 4): would delete 1 of 101 (kept top 100 + within 30d)" in old_err
+    assert "Watchdog: run 123 (gen 4): would delete 1 of 101 (kept top 100 + within 7d)" in new_err
+    for err in (old_err, new_err):
+        assert "Would delete run: 9001 (Watchdog: run 123 (gen 4)," in err
+        # The decoy keeps its run: 10 days is inside the 30-day default, and its PATH is not the watchdog's however much its name looks like one.
+        assert "Watchdog dispatcher: would delete" not in err
+        assert "Workflow runs: would delete 1 of 202 (across 2 workflows)" in err
+    # Apart from that one line, the two sides agree byte for byte.
+    norm = _phase_10_delta(new)
+    assert norm[2].decode().replace("within 7d)", "within 30d)") == old_err
+    assert norm[3] == old[3]
 
 
 def test_phase_10_warns_when_its_scan_window_can_never_reach_the_threshold() -> None:
     """THE VACUOUS-GREEN CHECK. This phase deleted nothing for the watchdog for months while reporting success, because ten pages of runs never reached back as far as the retention threshold. The warning fires only when the window was TRUNCATED, so a young low-volume workflow stays quiet."""
-    result = sides(
-        "cleanup_workflow_runs",
-        argv=("--dry-run",),
-        fixture={
-            "gh": [
-                rule(
-                    "actions/workflows?per_page=100",
-                    json_body={
-                        "workflows": [
-                            {
-                                "id": 31,
-                                "name": "Busy",
-                                "path": ".github/workflows/busy.yml",
-                                "state": "active",
-                            }
-                        ]
-                    },
-                ),
-                rule("workflows/31/runs", json_body={"workflow_runs": _runs(100, age=2.5)}),
-            ]
-        },
+    result = _p10_sides(
+        _p10_fixture(
+            [_workflow(31, "Busy", ".github/workflows/busy.yml")],
+            rule("workflows/31/runs", json_body={"workflow_runs": _runs(100, age=2.5)}),
+        )
     )
     err = result[2].decode()
     assert "Busy: scan window reaches only 2d but retention is 30d --" in err
@@ -2452,27 +2478,11 @@ def test_phase_10_warns_when_its_scan_window_can_never_reach_the_threshold() -> 
 
 
 def test_phase_10_a_short_page_ends_the_pagination_without_the_warning() -> None:
-    result = sides(
-        "cleanup_workflow_runs",
-        argv=("--dry-run",),
-        fixture={
-            "gh": [
-                rule(
-                    "actions/workflows?per_page=100",
-                    json_body={
-                        "workflows": [
-                            {
-                                "id": 41,
-                                "name": "Quiet",
-                                "path": ".github/workflows/q.yml",
-                                "state": "active",
-                            }
-                        ]
-                    },
-                ),
-                rule("workflows/41/runs", json_body={"workflow_runs": _runs(3, age=2.5)}),
-            ]
-        },
+    result = _p10_sides(
+        _p10_fixture(
+            [_workflow(41, "Quiet", ".github/workflows/q.yml")],
+            rule("workflows/41/runs", json_body={"workflow_runs": _runs(3, age=2.5)}),
+        )
     )
     err = result[2].decode()
     assert "scan window reaches only" not in err
@@ -2485,32 +2495,286 @@ def test_phase_10_stops_a_workflow_after_five_consecutive_delete_failures() -> N
         *_runs(100),
         *[{"id": 9000 + i, "created_at": ago(400.5), "conclusion": "failure"} for i in range(8)],
     ]
-    result = sides(
-        "cleanup_workflow_runs",
-        fixture={
-            "gh": [
-                rule(
-                    "actions/workflows?per_page=100",
-                    json_body={
-                        "workflows": [
-                            {
-                                "id": 51,
-                                "name": "CI",
-                                "path": ".github/workflows/ci.yml",
-                                "state": "active",
-                            }
-                        ]
-                    },
-                ),
-                rule("workflows/51/runs", "&page=1", json_body={"workflow_runs": page}),
-                rule("workflows/51/runs", json_body={"workflow_runs": []}),
-                rule("-X", "DELETE", "actions/runs/", rc=1),
-            ]
-        },
+    result = _p10_sides(
+        _p10_fixture(
+            [_workflow(51, "CI", ".github/workflows/ci.yml")],
+            rule("workflows/51/runs", "&page=1", json_body={"workflow_runs": page}),
+            rule("workflows/51/runs", json_body={"workflow_runs": []}),
+            rule("-X", "DELETE", "actions/runs/", rc=1),
+        ),
+        argv=(),
     )
     err = result[2].decode()
     assert "Skipping remaining runs for CI after 5 consecutive failures" in err
     assert len([c for c in calls_of(result[3], "gh") if "actions/runs/" in " ".join(c)]) == 15
+
+
+# --- REMOVED WORKFLOWS (intentional delta, Rule T). The twin keeps the newest 100 runs of every workflow, so a workflow whose file is gone from the default branch never reaches zero runs and never leaves the Actions sidebar. Each case below runs the twin as the CONTROL: it shows the old behaviour, so the case would be red on it.
+
+GONE = ".github/workflows/autopilot.yml"
+HOUSEKEEPING = ".github/workflows/housekeeping.yml"
+
+
+def _old_tail(count: int, *, start: int = 0, age: float = 400.5) -> list:
+    return [
+        {"id": 5000 + start + i, "created_at": ago(age), "conclusion": "success"}
+        for i in range(count)
+    ]
+
+
+def _gone_world(page: list, *extra_workflows: dict, files: dict | None = None, rules=()) -> dict:
+    """Autopilot (id 61) is removed. Housekeeping (id 60, no runs) is present, as the workflow running this always is: a listing that held none of the listed paths would be refused as a wrong tree. The default branch holds housekeeping.yml and every extra workflow's file unless `files` says otherwise."""
+    if files is None:
+        files = _files(
+            HOUSEKEEPING,
+            *[w["path"] for w in extra_workflows if w["path"].startswith(".github/workflows/")],
+        )
+    return _p10_fixture(
+        [
+            _workflow(60, "Housekeeping", HOUSEKEEPING),
+            _workflow(61, "Autopilot", GONE),
+            *extra_workflows,
+        ],
+        *rules,
+        rule("workflows/61/runs", "&page=1", json_body={"workflow_runs": page}),
+        rule("runs?status=completed", json_body={"workflow_runs": []}),
+        files=files,
+    )
+
+
+def test_delta_phase_10_a_removed_workflow_with_over_100_old_runs_is_fully_reaped() -> None:
+    _old, new, old_err, new_err = _p10_delta(_gone_world(_old_tail(102)))
+    assert "Autopilot: would delete 2 of 102 (kept top 100 + within 30d)" in old_err, (
+        "the control moved: the twin no longer keeps 100"
+    )
+    assert "Autopilot: would delete 102 of 102 (removed workflow: kept within 30d)" in new_err
+    assert "kept top 100" not in new_err, "a removed workflow's line must not claim the floor"
+    assert (
+        "Removed workflow (file not on the default branch): Autopilot [%s, state active];"
+        " no keep-newest floor, runs within 30d kept" % GONE
+    ) in new_err
+    assert (
+        "Workflow files on the default branch: 1; 1 of 2 listed workflow paths removed" in new_err
+    )
+    assert "Workflow runs: would delete 102 of 102 (across 2 workflows)" in new_err
+    assert "Would delete run: 5000 (Autopilot," in new_err
+    assert new[0] == 0
+
+
+def test_delta_phase_10_a_removed_workflow_keeps_its_runs_younger_than_30_days() -> None:
+    page = [*_runs(50, age=2.5), *_old_tail(3)]
+    _old, _new, old_err, new_err = _p10_delta(_gone_world(page))
+    assert "Autopilot: would delete" not in old_err, "the twin keeps all 53 inside its floor"
+    assert "Autopilot: would delete 3 of 53 (removed workflow: kept within 30d)" in new_err
+    for run_id in (1000, 1049):
+        assert "Would delete run: %d " % run_id not in new_err
+    for run_id in (5000, 5001, 5002):
+        assert "Would delete run: %d (Autopilot," % run_id in new_err
+
+
+def test_delta_phase_10_a_present_workflow_beside_a_removed_one_still_keeps_100() -> None:
+    """The control for the floor: the same world, a present ci.yml with the same runs keeps its newest 100 on both sides. A port that dropped the floor for every workflow would fail here."""
+    present = _workflow(62, "Console CI", ".github/workflows/ci.yml")
+    world = _gone_world(
+        _old_tail(102),
+        present,
+        rules=[rule("workflows/62/runs", "&page=1", json_body={"workflow_runs": _old_tail(102)})],
+    )
+    _old, _new, old_err, new_err = _p10_delta(world)
+    for err in (old_err, new_err):
+        assert "Console CI: would delete 2 of 102 (kept top 100 + within 30d)" in err
+    assert "Autopilot: would delete 102 of 102 (removed workflow: kept within 30d)" in new_err
+    assert "Workflow runs: would delete 104 of 204 (across 3 workflows)" in new_err
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "dynamic/pages/pages-build-deployment",
+        "dynamic/dependabot/dependabot-updates",
+        "dynamic/github-code-scanning/codeql",
+    ],
+)
+def test_phase_10_a_github_managed_dynamic_workflow_is_never_removed(path: str) -> None:
+    """`dynamic/...` is never a file, so it is never on the default branch; it must still keep 100. Byte-identical to the twin (apart from the delta's shape), with a removed autopilot beside it so the presence listing was really read."""
+    managed = _workflow(63, "Managed", path)
+    world = _gone_world(
+        _old_tail(2),
+        managed,
+        rules=[rule("workflows/63/runs", "&page=1", json_body={"workflow_runs": _old_tail(102)})],
+    )
+    _old, _new, _old_err, new_err = _p10_delta(world)
+    assert "Managed: would delete 2 of 102 (kept top 100 + within 30d)" in new_err
+    assert "Removed workflow (file not on the default branch): Managed" not in new_err
+    assert (
+        "Workflow files on the default branch: 1; 1 of 2 listed workflow paths removed" in new_err
+    )
+    assert cv.workflow_is_removed(path, set()) is False
+
+
+def test_phase_10_a_reusable_workflow_call_workflow_whose_file_exists_is_unaffected() -> None:
+    """ct-tests.yml, ci-quality.yml and cd-stage.yml run only through `workflow_call`, so in the Actions list they look idle. Their files exist, so each keeps its newest 100, byte for byte as the twin does."""
+    reusable = [
+        _workflow(70 + i, name, ".github/workflows/%s.yml" % name)
+        for i, name in enumerate(("ct-tests", "ci-quality", "cd-stage"))
+    ]
+    rules = [
+        rule("workflows/%d/runs" % (70 + i), "&page=1", json_body={"workflow_runs": _old_tail(102)})
+        for i in range(3)
+    ]
+    rules.append(rule("runs?status=completed", json_body={"workflow_runs": []}))
+    result = _p10_sides(_p10_fixture(reusable, *rules))
+    err = result[2].decode()
+    for name in ("ct-tests", "ci-quality", "cd-stage"):
+        assert "%s: would delete 2 of 102 (kept top 100 + within 30d)" % name in err
+    assert "Removed workflow" not in err
+
+
+@pytest.mark.parametrize(
+    ("files", "reason"),
+    [
+        (rule(CONTENTS_READ, rc=1), "the read failed (exit 1)"),
+        (rule(CONTENTS_READ, json_body=[]), "the listing is empty"),
+        (
+            rule(
+                CONTENTS_READ,
+                json_body=[
+                    {"path": ".github/workflows/f%d.yml" % i, "type": "file"} for i in range(1000)
+                ],
+            ),
+            "the listing holds 1000 entries, the API's ceiling, so it may be truncated",
+        ),
+        (
+            rule(CONTENTS_READ, json_body={"message": "Not Found"}),
+            "the answer is not a directory listing",
+        ),
+        (rule(CONTENTS_READ, raw="<html>"), "the answer is not JSON"),
+        (rule(CONTENTS_READ, json_body=[{"type": "file"}]), "an entry carries no path"),
+        (_files(".github/workflows/other.yml"), "it holds none of the 2 listed workflow paths"),
+    ],
+    ids=["read-fails", "empty", "truncated", "not-a-list", "not-json", "no-path", "wrong-tree"],
+)
+def test_delta_phase_10_an_unreadable_presence_listing_removes_nothing(
+    files: dict, reason: str
+) -> None:
+    """FAIL CLOSED. When the default branch's listing cannot be trusted, every workflow is present: the removed one keeps its newest 100 exactly as the twin does, and the port says why."""
+    old, new, old_err, new_err = _p10_delta(_gone_world(_old_tail(102), files=files))
+    for err in (old_err, new_err):
+        assert "Autopilot: would delete 2 of 102 (kept top 100 + within 30d)" in err
+    assert "Removed workflow" not in new_err
+    assert (
+        "Workflow files on the default branch unreadable (%s); every workflow is treated as"
+        " present and keeps its newest 100 runs" % reason
+    ) in new_err
+    # And beyond that one warning, the port is the twin, byte for byte.
+    norm = _phase_10_delta(new)
+    assert "\n".join(x for x in norm[2].decode().split("\n") if "unreadable (" not in x) == old_err
+    assert norm[3] == old[3]
+
+
+def test_delta_phase_10_a_removed_workflow_really_deletes_and_charges_the_budget() -> None:
+    """Not a dry run: each delete is a `gh api -X DELETE`, retried as before, and charged to MAX_DELETES_PER_RUN, which stops the phase at 40 with the existing warning. The twin's control deletes the 2 beyond its floor."""
+    world = _gone_world(_old_tail(102), rules=[rule("-X", "DELETE", "actions/runs/", raw="")])
+    old, new, _old_err, new_err = _p10_delta(world, argv=(), env={"MAX_DELETES_PER_RUN": "40"})
+    deletes = [c for c in calls_of(new[3], "gh") if "DELETE" in c]
+    assert len(deletes) == 40
+    assert deletes[0] == ["api", "-X", "DELETE", "repos/%s/actions/runs/5000" % GH_REPO]
+    assert "hit MAX_DELETES_PER_RUN=40; remaining workflow runs deferred to next run" in new_err
+    assert "Autopilot: deleted 40 of 40 (removed workflow: kept within 30d)" in new_err
+    assert len([c for c in calls_of(old[3], "gh") if "DELETE" in c]) == 2
+
+
+def test_delta_phase_10_a_removed_workflow_in_a_non_active_state_is_still_reaped() -> None:
+    """GitHub never flips a deleted file's workflow out of `active` by itself (pr-checks.yml, deleted in 2025, still reads `active`), but `PUT .../disable` sets `disabled_manually` on any workflow, and the twin's `select(.state == "active")` then skips it forever. A PRESENT disabled workflow stays skipped on both sides."""
+    disabled_gone = _workflow(
+        64, "Old pipeline", ".github/workflows/pr-checks.yml", "disabled_manually"
+    )
+    disabled_here = _workflow(65, "Paused", ".github/workflows/paused.yml", "disabled_manually")
+    world = _gone_world(
+        _old_tail(2),
+        disabled_gone,
+        disabled_here,
+        files=_files(HOUSEKEEPING, ".github/workflows/paused.yml"),
+        rules=[rule("workflows/64/runs", "&page=1", json_body={"workflow_runs": _old_tail(120)})],
+    )
+    _old, _new, old_err, new_err = _p10_delta(world)
+    assert "Old pipeline" not in old_err, "the twin's control: a non-active workflow is never read"
+    assert "Old pipeline: would delete 120 of 120 (removed workflow: kept within 30d)" in new_err
+    assert "Old pipeline [.github/workflows/pr-checks.yml, state disabled_manually]" in new_err
+    for err in (old_err, new_err):
+        assert "Paused" not in err
+
+
+def test_delta_phase_10_the_vacuous_green_warning_stays_quiet_for_a_removed_workflow() -> None:
+    """A removed workflow gains no new runs, so a scan window that stops short of 30 days today reaches it as the runs age. The twin warns "nothing here can EVER be reaped" for it, which is false; the port does not. (A PRESENT workflow still warns: the case above.)"""
+    world = _gone_world([])
+    world["gh"] = [r for r in world["gh"] if "workflows/61/runs" not in r["match"]]
+    world["gh"].insert(
+        1, rule("workflows/61/runs", json_body={"workflow_runs": _runs(100, age=2.5)})
+    )
+    _old, _new, old_err, new_err = _p10_delta(world)
+    assert "Autopilot: scan window reaches only 2d but retention is 30d --" in old_err
+    assert "scan window reaches only" not in new_err
+    assert "Workflow runs: would delete 0 of 1000 (across 2 workflows)" in new_err
+
+
+def test_delta_phase_10_reads_the_workflow_listing_past_its_first_page() -> None:
+    """The twin read ONE page of 100 workflows, so a 101st was never cleaned. The port reads on while a page comes back full; page 1's URL is the twin's."""
+    first = [_workflow(1000 + i, "W%d" % i, ".github/workflows/w%d.yml" % i) for i in range(100)]
+    world = {
+        "gh": [
+            _files(*[w["path"] for w in first], ".github/workflows/late.yml"),
+            rule(
+                LISTING,
+                "&page=2",
+                json_body={"workflows": [_workflow(77, "Late", ".github/workflows/late.yml")]},
+            ),
+            rule(LISTING, json_body={"workflows": first}),
+            rule("workflows/77/runs", "&page=1", json_body={"workflow_runs": _old_tail(102)}),
+            rule("runs?status=completed", json_body={"workflow_runs": []}),
+        ]
+    }
+    _old, new, old_err, new_err = _p10_delta(world)
+    assert "Late" not in old_err
+    assert "Late: would delete 2 of 102 (kept top 100 + within 30d)" in new_err
+    assert "across 101 workflows" in new_err
+    listing_reads = [c for c in calls_of(new[3], "gh") if LISTING in " ".join(c)]
+    assert [c[1] for c in listing_reads] == [
+        "repos/%s/%s" % (GH_REPO, LISTING),
+        "repos/%s/%s&page=2" % (GH_REPO, LISTING),
+    ]
+
+
+def test_phase_10_presence_is_one_read_with_no_ref_and_exact_paths() -> None:
+    """ONE contents read per run, whatever the number of workflows, with no `ref` (the API's default is the repository's default branch), and an exact path comparison: a path that only shares a prefix is still removed."""
+    world = _gone_world(
+        _old_tail(2),
+        _workflow(66, "Prefix", ".github/workflows/autopilot.yml.bak"),
+        files=_files(HOUSEKEEPING, ".github/workflows/autopilot.yml.bak"),
+    )
+    _old, new, _old_err, new_err = _p10_delta(world)
+    reads = [c for c in calls_of(new[3], "gh") if "contents/" in " ".join(c)]
+    assert reads == [["api", CONTENTS_READ]]
+    assert "Removed workflow (file not on the default branch): Autopilot" in new_err
+    assert "Removed workflow (file not on the default branch): Prefix" not in new_err
+
+
+def test_parse_workflow_files_and_workflow_is_removed_directly() -> None:
+    present, reason = cv.parse_workflow_files(0, json.dumps([{"path": GONE}, {"path": "x"}]))
+    assert present == {GONE, "x"}
+    assert reason == ""
+    assert cv.parse_workflow_files(0, "[]") == (None, "the listing is empty")
+    assert cv.parse_workflow_files(1, "[]")[0] is None
+    assert cv.parse_workflow_files(0, json.dumps([{"path": "a"}] * 999))[0] == {"a"}
+    assert cv.parse_workflow_files(0, json.dumps([{"path": "a"}] * 1000))[0] is None
+    # Must fire.
+    assert cv.workflow_is_removed(GONE, {".github/workflows/ci.yml"}) is True
+    # Must not fire.
+    assert cv.workflow_is_removed(GONE, {GONE}) is False
+    assert cv.workflow_is_removed(GONE, None) is False
+    assert cv.workflow_is_removed("dynamic/pages/pages-build-deployment", set()) is False
+    assert cv.workflow_is_removed("", set()) is False
+    assert cv.workflow_is_removed(".github/workflows/CI.yml", {".github/workflows/ci.yml"}) is True
 
 
 # --------------------------------------------------------------------------- PHASE 11: WORKFLOW ARTIFACTS ---------------------------------------------------------------------------
@@ -2691,6 +2955,7 @@ def test_run_all_phases_over_an_empty_world_is_identical_end_to_end() -> None:
             "aws": [rule("", rc=1)],
         },
         env=cf_env(),
+        port_delta=_phase_10_delta,
     )
     assert result[0] == 0
     assert result[1] == b"\n" * 15, "14 inter-phase blanks plus the one before the total"
@@ -2741,6 +3006,7 @@ def test_run_all_phases_exits_1_once_at_the_end_when_a_phase_latched() -> None:
             ],
         },
         env=dict(R2_ENV, GITHUB_ACTIONS="true"),
+        port_delta=_phase_10_delta,
     )
     assert result[0] == 1
     err = result[2].decode()
