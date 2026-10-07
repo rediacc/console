@@ -85,6 +85,10 @@ EXIT_NO_VERDICT = 2
 EXIT_HEAD_MOVED = 3
 EXIT_NO_CI = 4
 
+# HOW LONG A --wait GIVES GITHUB TO MOVE THE PR HEAD onto the branch's pushed tip. Right after `git push`, the PR's headRefOid lags the remote ref by seconds, and a verdict read in that window belongs to the OLD head (measured 2026-10-07: PR #599, run 37633980671 on c6cca783 was returned as final seconds after 515d1f901 was pushed).
+HEAD_LAG_S = int(os.environ.get("CI_TRACE_HEAD_LAG_S", "120"))
+HEAD_LAG_POLL_S = int(os.environ.get("CI_TRACE_HEAD_LAG_POLL_S", "5"))
+
 # How long a branch head must have gone with no rollup-feeding run before it reads NO-CI rather than RUNNING. GitHub registers a push's runs asynchronously, normally within seconds; the grace absorbs a slow registration so a just-pushed head is never called NO-CI.
 NOCI_GRACE_S = int(os.environ.get("CI_TRACE_NOCI_GRACE_S", "180"))
 
@@ -123,6 +127,43 @@ def _branch(root):
         return out.stdout.strip()
     except (OSError, subprocess.SubprocessError):
         return ""
+
+
+def _git_out(root, *argv):
+    """(rc, stdout) of one git read, or (None, reason) when git cannot run."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(root), *argv],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return None, str(exc)
+    return out.returncode, (out.stdout or "").strip()
+
+
+def _remote_tip(root, branch):
+    """The sha `origin` holds for refs/heads/<branch> RIGHT NOW (ls-remote, not the possibly stale local tracking ref), or "" when it cannot be read or the branch is not there."""
+    rc, out = _git_out(root, "ls-remote", "origin", "refs/heads/%s" % branch)
+    if rc != 0 or not out:
+        return ""
+    return out.split()[0]
+
+
+def _local_unpushed_note(root, tip):
+    """A one-line note when the local HEAD is not the pushed tip, else "". The verdict is then for the pushed tip, and saying so beats a reader assuming the local commits are being tested."""
+    rc, local = _git_out(root, "rev-parse", "HEAD")
+    if rc != 0 or not local or local == tip:
+        return ""
+    rc, ahead = _git_out(root, "rev-list", "--count", "%s..HEAD" % tip)
+    detail = "%s commit(s) ahead" % ahead if rc == 0 and ahead.isdigit() else "differs"
+    return (
+        "note: local HEAD %s is not the pushed tip %s (%s, never pushed or pushed elsewhere);"
+        " this verdict is for the pushed tip %s, not for the local commits."
+        % (local[:8], tip[:8], detail, tip[:8])
+    )
 
 
 def _run_snapshot(root, run_id):
@@ -1042,6 +1083,7 @@ def main(argv=None):
         return EXIT_NO_VERDICT
 
     cache, read_failures, pinned_head = {}, 0, None
+    head_synced, lag_deadline = False, None
     seen: dict[str, float] = {}
     signals_at = 0.0
     signals_seen: set[str] = set()
@@ -1062,6 +1104,47 @@ def main(argv=None):
         read_failures = 0
         if args.wait:
             _gh_tick(args.json)
+
+        # THE START-OF-WAIT RACE. A PR read right after a push still reports the OLD head, whose finished run would be judged final. Hold every verdict until the PR's head equals the pushed tip, bounded, and never answer for the old head.
+        if args.wait and payload.get("source") == "pr" and not head_synced:
+            tip = _remote_tip(root, ref)
+            if tip and payload["head"] == tip:
+                head_synced = True
+                if not args.ref:
+                    note = _local_unpushed_note(root, tip)
+                    if note:
+                        print(note, file=sys.stderr)
+            else:
+                if lag_deadline is None:
+                    lag_deadline = time.time() + HEAD_LAG_S
+                    print(
+                        "waiting: PR #%s reports head %s but origin/%s is %s; holding the verdict"
+                        " until GitHub catches up (up to %ds)."
+                        % (
+                            payload.get("pr"),
+                            (payload["head"] or "?")[:8],
+                            ref,
+                            tip[:8] if tip else "unreadable",
+                            HEAD_LAG_S,
+                        ),
+                        file=sys.stderr,
+                    )
+                if time.time() > lag_deadline:
+                    _no_verdict(
+                        "head-lag: PR #%s still reports %s after %ds while origin/%s is %s; no"
+                        " verdict is given for a head that is not the pushed tip. Re-run the wait,"
+                        " and check the push landed."
+                        % (
+                            payload.get("pr"),
+                            (payload["head"] or "?")[:8],
+                            HEAD_LAG_S,
+                            ref,
+                            tip[:8] if tip else "(unreadable)",
+                        )
+                    )
+                    return EXIT_NO_VERDICT
+                time.sleep(HEAD_LAG_POLL_S)
+                continue
 
         # FAILURE 3, made structural. Pin the head from the first good read; if the PR's head changes underneath us, a later push superseded what we were watching and the old verdict is meaningless.
         if pinned_head is None:

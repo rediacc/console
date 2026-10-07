@@ -92,6 +92,8 @@ def drive(ct, monkeypatch):
         )
         monkeypatch.setattr(ct, "_fetcher", lambda _root: fetch)
         monkeypatch.setattr(ct, "_record_final", lambda *_a, **_k: None)
+        # The head-lag gate asks origin for the pushed tip; the stubbed PR head IS the tip here.
+        monkeypatch.setattr(ct, "_remote_tip", lambda *_a, **_k: HEAD)
         monkeypatch.setattr(ct.time, "sleep", lambda _s: None)
         return ct.main(["--ref", BRANCH, *argv])
 
