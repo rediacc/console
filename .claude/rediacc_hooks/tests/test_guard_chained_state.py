@@ -151,14 +151,16 @@ def test_bulk_guard_still_refuses_an_expanded_bulk_pathspec_with_its_own_count(
 
 
 def test_bulk_guard_never_calls_the_shared_index_the_commits_own(tmp_path, monkeypatch):
-    """An unexpandable pathspec still refuses (fail closed), but says whose count it is."""
+    """An unexpandable pathspec still refuses (fail closed), and says whose count it is: every pending file a pathspec could commit, never the index alone, which a pathspec commit does not commit (#c17c47c3)."""
     repo = _bulk_world(tmp_path / "r", ["a.ts", "b.ts"])
     rc, _out, err = _run(
         "block_unproven_bulk_transform", "git commit -F m -- $UNSET_HERE", repo, monkeypatch
     )
     assert rc == 2
-    assert "`$UNSET_HERE` could not be expanded" in err, err
-    assert "%d is the shared index, not this commit" % STALE_UNRELATED in err, err
+    assert "comes from `$UNSET_HERE`, which only the shell can read" in err, err
+    # 60 staged deletions, the 2 edited `.ts` files and the untracked message file `m`, which a pathspec could name too.
+    assert "the %d pending file(s) of this tree" % (STALE_UNRELATED + 3) in err, err
+    assert "shared index" not in err, err
 
 
 # --------------------------------------------------------------------------- V_SPLIT ---------------------------------------------------------------------------

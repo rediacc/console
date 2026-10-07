@@ -61,9 +61,12 @@ PROOF_PHRASE = re.compile(
 # WHOSE COUNT IT IS, said in the first line (R20260924.22). The fallback to the staged index is kept, because guessing permissively is how a real bulk commit walks past, but a pathspec commit does not commit the index, so presenting the index count as "this commit's" sent a session hunting for 54 files its 17-file commit never touched (2026-09-24 19:01:33).
 COUNT_INDEX = "%d staged file(s) is a bulk transform's scale"
 COUNT_PATHSPEC = "this commit's pathspec covers %d file(s), a bulk transform's scale"
-COUNT_UNEXPANDED = (
-    "pathspec %s could not be expanded; %d is the shared index, not this commit, and it is a bulk\n"
-    "transform's scale"
+# Filled with what made the pathspec unreadable and the ceiling's size. Not the shared index: a pathspec commit never commits the index, which is how 69b1f2f145 (45 files, `-- $(cat list)`) was counted as 3 here and refused at `gh pr create` (#c17c47c3).
+COUNT_OPAQUE = (
+    "this commit's pathspec comes from %s, which only the shell can read, so it is judged at\n"
+    "what any pathspec could commit: the %d pending file(s) of this tree, a bulk transform's\n"
+    "scale (spell the paths literally, or assign them in this command, to be judged on the\n"
+    "commit itself)"
 )
 COUNT_CEILING = (
     "an earlier clause of this command can still write under this commit's pathspec, which\n"
@@ -123,6 +126,40 @@ def _name_only(args, cwd, want_rc=False):
     if out is None:
         return None
     return [line for line in out.splitlines() if line.strip()]
+
+
+# `xargs ... git commit`: the paths are whatever the pipe or `-a <file>` feeds in, which only the shell knows. shellscan strips `xargs` as a prefix command, so the run alone cannot tell.
+XARGS_COMMIT = re.compile(r"\bxargs\b[^;&|\n]*\bgit\b[^;&|\n]*\bcommit\b")
+
+
+def _opaque_pathspec(cmd, scan, unexpanded):
+    """What makes this commit's pathspec unreadable before the shell runs, as a label, or None when it is literal (or absent).
+
+    THE COMMIT ARM AND THE RANGE ARM MUST COUNT ONE COMMIT THE SAME WAY. The range arm counts what `diff-tree` says the commit holds. The commit arm can only predict that, and when the pathspec is a substitution, a parameter it cannot expand, `--pathspec-from-file` or `xargs` input, the prediction used to fall back to the shared INDEX, which a pathspec commit never commits.
+    In a shared tree, the index held 3 unrelated paths while `git commit -F msg -- $(cat list)` committed 45 (69b1f2f145, #c17c47c3). The same message was refused at `gh pr create`.
+    """
+    if unexpanded:
+        # `PATHSPEC_TAIL` stops at `(`, so `$(cat list)` arrives as the bare token `$`, and a backticked one arrives split at its spaces.
+        if any(t == "$" or "$(" in t or "`" in t for t in unexpanded):
+            return "a command substitution"
+        return ", ".join("`%s`" % t for t in unexpanded)
+    commit = _commit_run(cmd)
+    if commit is not None and any(a.startswith("--pathspec-from-file") for a in commit.argv):
+        return "`--pathspec-from-file`"
+    if XARGS_COMMIT.search(scan):
+        return "`xargs` input"
+    return None
+
+
+def _pending_ceiling(cwd):
+    """Every path a commit with an unreadable pathspec could carry: what differs from HEAD in the worktree, what is staged, and every untracked file that is not ignored."""
+    untracked = hookio.git_out(
+        ["ls-files", "--others", "--exclude-standard"], cwd=cwd, want_rc=True
+    )
+    return _union(
+        _union(_name_only(["diff", "HEAD"], cwd) or [], _staged_files(cwd)),
+        [line for line in (untracked or "").splitlines() if line.strip()],
+    )
 
 
 def _commit_message_text(cmd, cwd):
@@ -718,7 +755,8 @@ def run(ev):
 
     cwd = ev.field("cwd") or root
 
-    if PSC.GIT_COMMIT.search(scan):
+    # `_commit_run` too: `xargs git commit` puts git behind a prefix command, which `GIT_COMMIT`'s command-position anchor does not reach and shellscan's walk does.
+    if PSC.GIT_COMMIT.search(scan) or _commit_run(cmd) is not None:
         # A PATHSPEC NARROWS THE COMMIT, SO IT NARROWS THIS COUNT. Reproduced live 2026-09-23: a three-file `git commit -F <msg> -- <three paths>` was refused citing 183 staged files, none of which that commit would have touched -- the index belonged to other sessions' work in the same tree, which is the normal state here and the reason `block_blanket_git_add.py` exists.
         # An EMPTY narrowed set falls back to the staged count ONLY when the tail did not resolve.
         # Guessing in the permissive direction is how a real bulk commit walks past a guard whose whole subject is scale, so a `--` belonging to some other clause still gets judged on the index. A pathspec naming paths this repository knows is a different answer: the commit really is that narrow, and it reads as empty only because this guard runs BEFORE the command that writes
@@ -727,9 +765,10 @@ def run(ev):
         files = _pathspec_files(cwd, paths) if paths and not unexpanded else []
         count = COUNT_PATHSPEC
         index_judged = True
-        if unexpanded:
-            files = _staged_files(cwd)
-            count = COUNT_UNEXPANDED % (", ".join("`%s`" % t for t in unexpanded), len(files))
+        opaque = _opaque_pathspec(cmd, scan, unexpanded)
+        if opaque:
+            files = _pending_ceiling(cwd)
+            count = COUNT_OPAQUE % (opaque, len(files))
         elif not files and not (paths and _pathspecs_resolve(cwd, paths)):
             files = _staged_files(cwd)
             count = (
@@ -756,9 +795,17 @@ def run(ev):
                     ceiling_note,
                 )
         # AN EARLIER CLAUSE THAT WRITES makes the pending set a lower bound, so the pathspec's ceiling is what gets judged; a real bulk commit then meets the same rule here that it meets at push. The refusal names the clause to run on its own.
-        writers = _earlier_writers(cmd, cwd, paths) if paths and not unexpanded else []
+        # An unreadable pathspec can cover the whole tree, so its ceiling is the repository's.
+        scope = paths
+        if opaque:
+            scope = [":/"]
+            writers = _earlier_writers(
+                cmd, cwd, [hookio.git_out(["rev-parse", "--show-toplevel"], cwd=cwd) or cwd]
+            )
+        else:
+            writers = _earlier_writers(cmd, cwd, paths) if paths else []
         if writers:
-            files = _pathspec_ceiling(cwd, paths, files)
+            files = _pathspec_ceiling(cwd, scope, files)
             count = COUNT_CEILING % len(files)
         if _bulk_unproven(files, _commit_message_text(cmd, cwd)):
             # An earlier clause that stages, commits, writes a file or publishes changes what was just counted, or the message file read for proof (R20260924.22).

@@ -471,32 +471,41 @@ def upstream_repo():
     return repo
 
 
-def both_arms(name, seed, pre, command, really_run, want_blocked):
-    """Commit-arm verdict before `command` runs, push-arm verdict after it ran; both must equal `want_blocked`."""
+def both_arms(name, seed, pre, command, really_run, want_blocked, message=None):
+    """Commit-arm verdict before `command` runs, then the range arm after it ran, at `git push` and at `gh pr create`; all three must equal `want_blocked`.
+
+    `command` and `really_run` may also use `%(list)s`, a scratch file `pre` can fill with paths.
+    """
     repo = upstream_repo()
     seed(repo)
     git(repo, "add", "-A")
     git(repo, "commit", "-qm", "seed")
     git(repo, "push", "-q", "-u", "origin", "main")
-    msg = os.path.join(scratch_dir(), "msg.txt")
+    scratch = scratch_dir()
+    msg = os.path.join(scratch, "msg.txt")
     with open(msg, "w", encoding="utf-8") as fh:
-        fh.write("docs(cli): regenerate the reference\n\nEvidence: check exit 0.\n")
+        fh.write(message or "docs(cli): regenerate the reference\n\nEvidence: check exit 0.\n")
     pre(repo)
-    at_commit, err = run(command % {"msg": msg}, repo)
+    fill = {"msg": msg, "list": os.path.join(scratch, "list.txt")}
+    with open(fill["list"], "w", encoding="utf-8") as fh:
+        fh.write(git(repo, "diff", "--name-only").stdout)
+    at_commit, err = run(command % fill, repo)
     really_run(repo, msg)
     at_push, _ = run("git push", repo)
-    Tally.total += 2
-    Tally.blocked += at_commit + at_push
-    ok = at_commit == at_push == want_blocked
-    Tally.fails += 2 * (not ok)
+    at_pr, _ = run("gh pr create --draft --title t --body b", repo)
+    Tally.total += 3
+    Tally.blocked += at_commit + at_push + at_pr
+    ok = at_commit == at_push == at_pr == want_blocked
+    Tally.fails += 3 * (not ok)
     print(
-        "%-70s want=%-9s commit=%-9s push=%-9s %s"
+        "%-70s want=%-9s commit=%-9s push=%-9s pr=%-9s %s"
         % (
             name,
             "BLOCKED" if want_blocked else "allowed",
             "BLOCKED" if at_commit else "allowed",
             "BLOCKED" if at_push else "allowed",
-            "ok" if ok else "*** FAIL *** (the arms disagree or both are wrong)",
+            "BLOCKED" if at_pr else "allowed",
+            "ok" if ok else "*** FAIL *** (the arms disagree or all are wrong)",
         )
     )
     if not ok and err:
@@ -841,6 +850,133 @@ both_arms(
     "git rm -r -q src && git commit -F %(msg)s",
     run_rm_dir,
     True,
+)
+
+# ---- 69b1f2f145: ONE MESSAGE, ONE VERDICT, ON EVERY ARM (#c17c47c3) ---------
+# The commit arm admitted `git commit -F msg -- $(cat list)` over 45 files and `gh pr create` refused the same commit. The proof rule was never the split: a literal pathspec with this message was refused at commit too. The `$(cat list)` pathspec reached the guard as the bare token `$`, and the commit arm fell back to the shared INDEX (3 unrelated staged paths), which a pathspec commit never commits.
+# The message is 69b1f2f145's own, verbatim, so the case survives the object's loss.
+MSG_69B1 = """\
+chore(plans): lift the 2026-09-26 holds and run-alone markers that turbo cannot see past
+
+With turbo on and writer_cap 10, plan_gate.next_turbo picked one plan out of the whole queue. Two temporary rulings from 2026-09-26 stood in the way:
+- 30 plans read "Status: held -- ... held until CI is green".
+- 40 plans read "Concurrency: exclusive -- ... every plan runs alone while the token budget is limited (for the next few days)".
+
+The hold's own condition is met: main CI is green at 01d3583e1. The run-alone reason was a token budget, and the operator's 2026-10-04 ask is the opposite: as many plans in parallel as possible.
+- Each held plan gets back the Status it named ("it was `<status>`"), with a note that the hold was lifted.
+- Each run-alone marker becomes `Concurrency: parallel`, and Owns: decides overlaps.
+- PLAN-gate-drop-receipt-verify's exclusive reason was an Owns overlap with PLAN-ci-quick-cpu-scheduling, which block_plan_concurrency already handles, so it is parallel too.
+- Two plans keep a genuine exclusive reason: PLAN-program-state-in-repo and PLAN-ci-quick-cpu-scheduling.
+- agent/INDEX.md, the QUEUE.md generated block and plan-boxes.json are regenerated.
+
+Proof: a script rewrote only the two header shapes, matched by exact regex. `git diff -U0 -- agent/plans` shows no changed line other than `Status:` and `Concurrency:` lines (70 insertions, 70 deletions across 40 plan files), and every file was sampled in that diff.
+
+Verification:
+- npm run check:ci-plan-record, check:ci-plan-boxes, check:ci-plan-folders, check:ci-plan-citations -> rc=0
+- plan_gate.next_turbo('.', [], 10, in_set=[turbo plan]) -> 8 plans, where it picked 1 before
+
+PR-TASK: db1be6c2
+"""
+PROVEN_69B1 = MSG_69B1.replace(
+    "and every file was sampled in that diff.",
+    "and all 45 files were sampled and read across both revisions.",
+)
+
+
+def seed_plans(repo):
+    for i in range(45):
+        write(repo, "agent/plans/PLAN-%02d.md" % i, "Status: held\n")
+    for i in range(3):
+        write(repo, "other%d.txt" % i, "x\n")
+
+
+def pre_plans(repo):
+    """The 45 header edits, plus the shared index: 3 unrelated paths another session staged."""
+    for i in range(45):
+        write(repo, "agent/plans/PLAN-%02d.md" % i, "Status: draft\n")
+    for i in range(3):
+        write(repo, "other%d.txt" % i, "y\n")
+    git(repo, "add", "other0.txt", "other1.txt", "other2.txt")
+
+
+def pre_two_plans(repo):
+    for i in range(2):
+        write(repo, "agent/plans/PLAN-%02d.md" % i, "Status: draft\n")
+
+
+def run_listed(repo, msg):
+    listed = git(repo, "diff", "--name-only", "HEAD").stdout.split()
+    git(repo, "commit", "-q", "-F", msg, "--", *[p for p in listed if p.startswith("agent/")])
+
+
+both_arms(
+    "69b1f2f145: `-- $(cat list)`, 45 files, its own message: refused on every arm",
+    seed_plans,
+    pre_plans,
+    "git commit -q -F %(msg)s -- $(cat %(list)s) 2>&1 | tail -5; git log --oneline -1",
+    run_listed,
+    True,
+    MSG_69B1,
+)
+both_arms(
+    "control: the same message, a literal `-- agent/plans` pathspec: refused",
+    seed_plans,
+    pre_plans,
+    "git commit -q -F %(msg)s -- agent/plans",
+    run_listed,
+    True,
+    MSG_69B1,
+)
+both_arms(
+    "control: `-- $(cat list)` with a named sample read across both revisions: allowed",
+    seed_plans,
+    pre_plans,
+    "git commit -q -F %(msg)s -- $(cat %(list)s)",
+    run_listed,
+    False,
+    PROVEN_69B1,
+)
+both_arms(
+    "control: `-- $(cat list)` in a tree with 2 pending files: allowed",
+    seed_plans,
+    pre_two_plans,
+    "git commit -q -F %(msg)s -- $(cat %(list)s)",
+    run_listed,
+    False,
+    MSG_69B1,
+)
+
+# EVERY SHAPE WHOSE PATHSPEC ONLY THE SHELL CAN READ is judged at the tree's pending ceiling, never at the index. Each of these was admitted over a 3-path index with 45 pending files.
+opaque_repo = scratch_repo()
+seed_plans(opaque_repo)
+git(opaque_repo, "add", "-A")
+git(opaque_repo, "commit", "-qm", "seed")
+pre_plans(opaque_repo)
+for label, command in (
+    ("backticks", "git commit -m 'chore: x' -- `cat list.txt`"),
+    ("`$(git diff --name-only)`", "git commit -m 'chore: x' -- $(git diff --name-only)"),
+    ("an unassigned `$FILES`", "git commit -m 'chore: x' -- $FILES"),
+    ("`--pathspec-from-file=list.txt`", "git commit -m 'chore: x' --pathspec-from-file=list.txt"),
+    ("`--pathspec-from-file list.txt`", "git commit -m 'chore: x' --pathspec-from-file list.txt"),
+    ("`cat list | xargs git commit --`", "cat list.txt | xargs git commit -m 'chore: x' --"),
+    ("`xargs -a list git commit`", "xargs -a list.txt git commit -m 'chore: x'"),
+    (
+        "a generator before `$(cat list)` is judged at the repository's ceiling",
+        "node gen.js; git commit -m 'chore: x' -- $(cat list.txt)",
+    ),
+):
+    case("opaque pathspec, %s: refused" % label, command, opaque_repo, True)
+case(
+    "control: the same tree's 3-path index commit is allowed",
+    "git commit -m 'chore: x'",
+    opaque_repo,
+    False,
+)
+case(
+    "control: a literal 1-file pathspec in the same tree is allowed",
+    "git commit -m 'chore: x' -- agent/plans/PLAN-00.md",
+    opaque_repo,
+    False,
 )
 
 # UNREADABLE ARGUMENTS FAIL CLOSED to the repository's pending changes, never to "stages nothing".
