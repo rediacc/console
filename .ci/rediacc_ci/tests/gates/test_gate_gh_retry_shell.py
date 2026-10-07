@@ -25,8 +25,6 @@ SHAPE_RE = re.compile(
 )
 REAPER = sh.REAPER_REL
 REAPER_CURL = 'resp="$(curl -sS -w'
-DISPATCH = ".ci/scripts/ci/dispatch-release.sh"
-DISPATCH_READ = 'rows=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls"'
 TWIN = ".ci/scripts/release/resolve-ci-run.sh"
 
 
@@ -91,7 +89,8 @@ def test_real_tree_is_green_and_not_vacuous(gate):
     assert workflows > 20, collapsed
     assert blocks > 300, collapsed
     assert curl >= 1, collapsed
-    assert gh >= 3, collapsed
+    # One live shell gh read is left since the 2026-10-07 cutover (promote-stable's retried rollback-label search); a gh detector that rots reads 0.
+    assert gh >= 1, collapsed
     gate.assert_eq(debt, len(sh.SHELL_DEBT), "every SHELL_DEBT row is filled by the tree")
     gate.ok(
         "%d scripts (%d live, %d dead), %d run: blocks, %d curl and %d gh calls, %d debt, 0 new"
@@ -210,23 +209,30 @@ def test_wiring_a_dead_twin_makes_its_reads_findings(gate, tmp_path):
 
 
 def test_a_routed_debt_read_drains_its_row(gate, tmp_path):
+    """A frozen read that is later routed through a retry reds as DRAINED until its row goes. The tree's own debt rows are all drained (SHELL_DEBT is empty since the 2026-10-07 cutover), so the row is planted: a one-shot read appended to a live script, frozen by its stable id, then routed."""
     root = _copy(tmp_path / "tree")
-    script = root / DISPATCH
+    script = root / REAPER
     clean = script.read_text(encoding="utf-8")
-    assert clean.count(DISPATCH_READ) == 1, "%s no longer has the frozen read" % DISPATCH
     script.write_text(
-        clean.replace(
-            DISPATCH_READ,
-            'rows=$(gh_retry "PR lookup" -- api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls"',
-        ),
+        clean + '\nprobe="$(gh api "repos/${REPO}/actions/runs/1")"\n', encoding="utf-8"
+    )
+    frozen = sh.judge(sh.load_corpus(root), {}, {})
+    assert len(frozen.new) == 1, "the planted one-shot read is not a new finding: %r" % (
+        frozen.new,
+    )
+    debt = {frozen.new[0].stable_id: "planted reaper read"}
+    held = sh.judge(sh.load_corpus(root), {}, debt)
+    gate.assert_eq(len(held.new), 0, "the planted read once frozen as SHELL_DEBT is debt, not new")
+    gate.assert_eq(len(held.drained), 0, "a frozen read still in the tree is not drained")
+    script.write_text(
+        clean + '\nprobe="$(gh_retry "probe" -- api "repos/${REPO}/actions/runs/1")"\n',
         encoding="utf-8",
     )
-    red = _shell(root)
-    gate.assert_exit(1, red, "a SHELL_DEBT read routed through gh_retry")
-    gate.assert_contains(red.err, "DRAINED SHELL_DEBT row")
-    gate.assert_contains(red.err, "dispatch-release.sh :: decide")
+    routed = sh.judge(sh.load_corpus(root), {}, debt)
+    gate.assert_eq(len(routed.drained), 1, "the frozen read routed through gh_retry")
+    gate.assert_contains(routed.drained[0], "planted reaper read")
     gate.ok(
-        "routing a frozen read through common.sh gh_retry reds as DRAINED until its row is deleted"
+        "a planted SHELL_DEBT read is debt while it stands and DRAINED once routed through common.sh gh_retry"
     )
 
 

@@ -8,9 +8,14 @@ LIVE. `.github/workflows/ci.yml` and `cd-v2.yml` run this module. `.ci/rediacc_c
 Ledger: `.ci/shadow/w7p6-initialize.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-initialize --assert --k 5`).
 
 -----------------------------------------------------------------------------
-THE POINTER-BUMP DETECTOR IS IN PROCESS, THE OTHER FOUR SIBLINGS ARE STILL BASH
+THREE DECIDERS ARE PYTHON, THE TWO REMAINING SIBLINGS ARE STILL BASH
 -----------------------------------------------------------------------------
-Step 4 calls `rediacc_ci.ci.detect_pointer_bump.main` directly. The twin ran `detect-pointer-bump.sh`; the port does not, so the two are compared with the REAL bash detector on the twin's side and the Python detector on this side (the detector's own differential owns the detector's behaviour). `generate-tag.sh` (three times), `detect-bump-type.sh`, `dispatch-release.sh` and `resolve-version.sh` are still run as bash by both sides, by the same relative paths and argv, because each has a Python twin that belongs to another cutover and the differential would otherwise compare several pairs at once.
+Step 4 calls `rediacc_ci.ci.detect_pointer_bump.main` directly, step 6 calls `rediacc_ci.version.detect_bump_type` in process, and step 6b runs `python3 -m rediacc_ci.ci.dispatch_release --decide-only`. The twin ran the bash `detect-pointer-bump.sh`, `detect-bump-type.sh` and `dispatch-release.sh`; this module runs none of them, and each port's own differential owns that port's behaviour against its bash oracle. `generate-tag.sh` (three times) and `resolve-version.sh` are still run as bash, by the same relative paths and argv.
+
+-----------------------------------------------------------------------------
+AN UNREADABLE PR LABEL IS A REFUSAL, NOT A RELEASE AND NOT A PATCH
+-----------------------------------------------------------------------------
+Both label reads (the bump type and the release decision) ask `gh api repos/<repo>/commits/<sha>/pulls`. The bash twins asked once: a single 5xx made `detect-bump-type.sh` SKIP that commit, so a `bump-minor` or `bump-major` label read as `patch`, and made `dispatch-release.sh` take its fail-open branch, so a PR labelled `bump-none` released. The Python ports retry a 5xx or connection fault through `rediacc_ci.core.gh_retry` and REFUSE when it outlasts the retries (PLAN-gh-retry G2, G3), and this module carries that refusal through: an unreadable bump type ends the run with exit 1 before any version is computed, and a release decider that exits non-zero, or exits 0 without a `decision:` line, ends it with exit 1 and the decider's own output on stderr. The twin's `|| true` that turned a crashed decider into a release is gone (Rule T, an intentional delta). A 4xx keeps each port's fail-open meaning, because the port itself still answers.
 
 -----------------------------------------------------------------------------
 DEFECT A -- `GITHUB_REPOSITORY` IS REQUIRED AND NEVER CHECKED, AND IT DIES 200
@@ -86,7 +91,7 @@ Every point where the twin would die is reproduced as an early `return` with the
 ONE DELIBERATE DIVERGENCE, AND IT IS THE SAME ONE `common.repo_root` CARRIES
 -----------------------------------------------------------------------------
 `get_repo_root` resolves three directories up from `common.sh` and honours nothing; `common.repo_root()` delegates to `paths.repo_root()`, which honours `$REDIACC_CI_ROOT`. On every real run that variable is unset and the two land on the same directory, which is what the ledger records. The differential exploits the override deliberately: it points the port at a fixture tree whose
-`.ci/scripts/lib/common.sh` sends the twin to the same place, which is the only way to drive the five sibling calls without running the real ones.
+`.ci/scripts/lib/common.sh` sends the twin to the same place, which is the only way to drive the sibling calls without running the real ones. The two label reads are driven through a fake `gh` on the fixture's PATH instead, so the real ports run end to end.
 """
 
 from __future__ import annotations
@@ -101,6 +106,7 @@ import time
 from rediacc_ci import log
 from rediacc_ci.ci import detect_pointer_bump
 from rediacc_ci.core import common
+from rediacc_ci.version import detect_bump_type
 from rediacc_ci.well_known import GH_ORIGIN, IMAGE_REGISTRY
 
 # --------------------------------------------------------------------------- Twin line numbers. Bash prints these inside its own diagnostics, so they are part of the observable output rather than documentation. `test_the_pinned_line_numbers_still_point_at_the_twins_lines` re-derives every one of them from the twin.
@@ -121,9 +127,6 @@ GENERATE_TAG_RENET_LINE = 141
 GENERATE_TAG_WEB_LINE = 159
 GENERATE_TAG_RDC_LINE = 160
 
-#: `BUMP_TYPE=$(.ci/scripts/version/detect-bump-type.sh --verbose)`
-DETECT_BUMP_TYPE_LINE = 175
-
 #: `FETCH_URL="https://x-access-token:${GITHUB_PAT}@github.com/${GITHUB_REPOSITORY}.git"`
 FETCH_URL_LINE = 219
 
@@ -141,14 +144,17 @@ GIT_TAG_LINE = 280
 RESOLVE_VERSION_NEXT_LINE = 288
 RESOLVE_VERSION_CURRENT_LINE = 290
 
-# --------------------------------------------------------------------------- The five sibling scripts, spelled exactly as the twin spells them: RELATIVE to the repo root, which both implementations have already chdir'd to. Absolute paths would be tidier and would also stop the fixture in the differential from working, because the fixture's whole mechanism is that a relative path
+# --------------------------------------------------------------------------- The two bash sibling scripts, spelled exactly as the twin spells them: RELATIVE to the repo root, which both implementations have already chdir'd to. Absolute paths would be tidier and would also stop the fixture in the differential from working, because the fixture's whole mechanism is that a relative path
 # lands in the fixture tree. ---------------------------------------------------------------------------
 GENERATE_TAG = ".ci/scripts/ci/generate-tag.sh"
-DISPATCH_RELEASE = ".ci/scripts/ci/dispatch-release.sh"
-# The prefix of dispatch-release.sh's stable line (`rediacc_ci.ci.dispatch_release.STABLE_LINE`).
-STABLE_LINE = "publish_stable: true"
-DETECT_BUMP_TYPE = ".ci/scripts/version/detect-bump-type.sh"
 RESOLVE_VERSION = ".ci/scripts/version/resolve-version.sh"
+
+#: The release decider, run as a child so its own logs and notices stay out of this step's streams exactly as the twin's `2>&1 | grep` kept them out. A module name, never the retired bash path: the shell half of `check:ci-gh-retry-reads` reads a string constant naming a `.sh` as a live executor.
+DISPATCH_RELEASE_MODULE = "rediacc_ci.ci.dispatch_release"
+#: The prefix of the decider's stable line (`rediacc_ci.ci.dispatch_release.STABLE_LINE`).
+STABLE_LINE = "publish_stable: true"
+#: The directory holding the `rediacc_ci` package, handed to the decider as its PYTHONPATH so the child imports this checkout's ports wherever the step's cwd is.
+PACKAGE_PARENT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 #: The file whose presence means "the submodules are already there" (twin :107).
 SUBMODULE_SENTINEL = "private/renet/.ci/ci.sh"
@@ -311,40 +317,43 @@ def check_image_path(path: str, tag: str) -> str:
     return "true" if proc.returncode == 0 else "false"
 
 
-def release_decision(root_relative: str = DISPATCH_RELEASE) -> tuple[str, str]:
-    """Twin :209, including the two things that make it fail OPEN.
+class UndecidedReleaseError(Exception):
+    """The release decider gave no verdict: it exited non-zero, could not be started, or exited 0 without a `decision:` line. Carries the decider's merged output so the refusal can show it."""
 
-        RELEASE_DECISION="$(GITHUB_OUTPUT='' <script> --decide-only 2>&1 \\
-            | grep '^decision:' || true)"
+    def __init__(self, status: int, output: str) -> None:
+        super().__init__(status)
+        self.status = status
+        self.output = output
 
-    `2>&1` merges the child's stderr INTO the pipe, so its diagnostics are filtered out with everything else and never reach the log; `|| true` swallows every non-zero status, the child's and grep's alike. A crashed, cancelled or missing decider therefore yields the empty string, and the
-    caller's `!= 'decision: skip'` then releases. That polarity is the twin's
-    stated design, not an accident, so it is reproduced exactly.
 
-    Returns `(decision, stable)`. `stable` is the child's
-    `publish_stable: true (#N)` line, or empty. INTENTIONAL DELTA from the
-    twin (Rule T, PLAN-retire-bash-oracles.md): initialize.sh predates the
-    operator's 2026-09-30 `release`-label ruling and never reads that line. It
-    fails CLOSED: a crashed or silent decider prints no such line, so the run
-    stays edge-only.
+def release_decision() -> tuple[str, str]:
+    """Step 6b's verdict: `(decision, stable)`, or UndecidedReleaseError.
+
+    The child is `python3 -m rediacc_ci.ci.dispatch_release --decide-only` with `GITHUB_OUTPUT` emptied, so it writes nothing but its stdout, and its stderr is merged into the captured text exactly as the twin's `2>&1` did: on a success path its logs and notices never reach this step's streams, and only the `decision:` and stable lines are read out of it.
+
+    WHAT CHANGED FROM THE TWIN (Rule T): the twin's `|| true` swallowed the decider's status, so a crashed or silent decider yielded the empty string and the caller released. The port's decider refuses (exit 1) when the PR's labels stay unreadable after its retries, and a refusal that this step then released on would undo it. So a non-zero exit, a decider that cannot be started, and an exit 0 with no `decision:` line all raise, and the caller fails the job.
+
+    `stable` is the child's `publish_stable: true (#N)` line, or empty. It fails CLOSED: only a positive label read prints it.
     """
     sys.stdout.flush()
     # The CHILD's environment, built once and handed to the child. Deliberately not an alias this module then reads its own variables through.
-    child_env = {**os.environ, "GITHUB_OUTPUT": ""}
+    child_env = {**os.environ, "GITHUB_OUTPUT": "", "PYTHONPATH": PACKAGE_PARENT}
     try:
         proc = subprocess.run(
-            [root_relative, "--decide-only"],
+            [sys.executable, "-m", DISPATCH_RELEASE_MODULE, "--decide-only"],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             encoding="utf-8",
+            errors="replace",
             env=child_env,
             check=False,
         )
-        merged = proc.stdout
-    except OSError:
-        # bash writes its `No such file or directory` to the command's stderr, which the `2>&1` has already pointed into the pipe, so grep eats it and the substitution is empty. Same shape here.
-        merged = ""
+    except OSError as err:
+        raise UndecidedReleaseError(127, str(err)) from err
+    merged = proc.stdout
     lines = [line for line in merged.split("\n") if line.startswith("decision:")]
+    if proc.returncode != 0 or not lines:
+        raise UndecidedReleaseError(proc.returncode, merged)
     stable = [line for line in merged.split("\n") if line.startswith(STABLE_LINE)]
     return "\n".join(lines), (stable[0] if stable else "")
 
@@ -537,9 +546,18 @@ def run(check_only: str, output_file: str) -> int:
 
     # ----------------------------------------------------------------------- Step 6: bump type -----------------------------------------------------------------------
     log.step("Detecting bump type from PR labels...")
-    status, bump_type = run_capture([DETECT_BUMP_TYPE, "--verbose"], DETECT_BUMP_TYPE_LINE)
-    if status != 0:
-        return status
+    # In process: `rediacc_ci.version.detect_bump_type`, whose `--verbose` log lines go to stderr as the bash twin's did. Stdout is flushed first so the `key=value` lines keep their order.
+    sys.stdout.flush()
+    try:
+        bump_type = detect_bump_type.Detector(verbose=True).run()
+    except detect_bump_type.UnreadableCommitError as exc:
+        # A commit's labels were never read, so `patch` here could be a missed minor or major. No version is computed from a guess.
+        log.error(
+            "%s %s; refusing to compute a version from a partial label scan"
+            % (detect_bump_type.PREFIX, exc)
+        )
+        log.error("Re-run the job once the GitHub API answers.")
+        return 1
     log.info("Bump type: %s" % bump_type)
     write_output("bump_type", bump_type, output_file)
 
@@ -549,8 +567,25 @@ def run(check_only: str, output_file: str) -> int:
         and os.environ.get("GITHUB_REF", "") == "refs/heads/main"
     ):
         log.step("Deciding whether this commit earns a release...")
-        decision, stable = release_decision()
-        log.info("Release decision: %s" % (decision or "<undecided, will release>"))
+        try:
+            decision, stable = release_decision()
+        except UndecidedReleaseError as undecided:
+            log.error(
+                "The release decider (python3 -m %s --decide-only) gave no verdict (exit %d); "
+                "refusing to release or skip on an unknown label set."
+                % (DISPATCH_RELEASE_MODULE, undecided.status)
+            )
+            if undecided.output:
+                sys.stderr.write(
+                    undecided.output if undecided.output.endswith("\n") else undecided.output + "\n"
+                )
+                sys.stderr.flush()
+            log.error(
+                "Nothing was tagged or released. Fix the cause above, or re-run the job if it "
+                "was a GitHub API fault."
+            )
+            return 1
+        log.info("Release decision: %s" % decision)
         if decision == "decision: skip":
             write_output("skip_release", "true", output_file)
         elif decision == "decision: release" and stable:

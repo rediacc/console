@@ -887,7 +887,7 @@
       "id": "b8a73d0c9cb92340",
       "file": ".ci/rediacc_ci/tests/test_ci_initialize.py",
       "code": "operator",
-      "count": 7,
+      "count": 5,
       "message": "Unsupported right operand type for in (\"str | None\")"
     },
     {
