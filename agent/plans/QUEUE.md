@@ -46,24 +46,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 
 <!-- queue:inflight:begin -->
 - Mode: stop_hook on; turbo off; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; cadence on; agent_hint on; agent_pushback on; judge on.
-- Focus: off.
-- Branch: 1006-3, no PR yet.
-- Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-gh-retry.md, as its `Plan:` line unless the body names a plan first.
-- Work outside the PR's plans (2 epic(s)):
-  - epic 97672f9f, no plan, 1 commit(s) on the branch, 0 open item(s): Operator 2026-10-06 follow-ups: regeneration guard, ci-trace root causes and main-red alert, ci:quick scheduler utilization, package retention, budget 5xx retry
-  - epic b320552c, plan agent/plans/PLAN-gh-retry.md, outside the set, 12 commit(s) on the branch, 3 open item(s): GitHub reads survive one 5xx: CI, release and gate reads through core/gh_retry (PLAN-gh-retry)
-- Writers: 2 live of writer_cap 15 (session d778be9d): worker:ae7dc05b82737c63a, worker:a8f01de50097f8efb.
-- Leased items: 2: #b6dc69f8 (worker:a8f01de50097f8efb, d778be9d), #c1e99d0d (worker:ae7dc05b82737c63a, d778be9d).
-- Next plan: agent/plans/PLAN-gh-retry.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
+- Focus: merge on PR #598 (branch 1006-3, session d778be9d, since 2026-10-07T03:17:01Z).
+- Branch: main, no live branch.
+- Plans on the PR: none.
+- Work outside the PR's plans: none.
+- Writers: 0 live of writer_cap 15 (session d778be9d).
+- Leased items: 1: #f5a63576 (worker:3223342, d778be9d).
+- Next plan: agent/plans/PLAN-ci-consolidation.md, Promoted entry 2 (solo); starts on branch 1007-1.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
-1. agent/plans/PLAN-gh-retry.md -- found 2026-10-06 on PR #597 (one GitHub 502 failed CI Complete); G0-G9 written and lead-verified before the merge, G10 is a P1 (cleanup_versions can delete a still-open PR's resources on one 5xx). #5d8cfea6's default: the next branch after #597, ahead of PLAN-ci-consolidation
-2. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; candidates 1, 3, 4, 6, 7 of agent/reports/consolidation-investigation-2026-10-04.md in one plan, one PR -- solo
-3. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: T9 (the enforced matrix in DESIGN-CONFIG-STORAGE.md) and T10 (live smoke)
-4. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: the 9 open boxes
-5. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: Step 12
+1. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; candidates 1, 3, 4, 6, 7 of agent/reports/consolidation-investigation-2026-10-04.md in one plan, one PR -- solo
+2. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: T9 (the enforced matrix in DESIGN-CONFIG-STORAGE.md) and T10 (live smoke)
+3. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: the 9 open boxes
+4. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: Step 12
 
 ## Generated
 
