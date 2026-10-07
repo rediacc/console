@@ -20,7 +20,7 @@ CI_PKG = paths.from_root(".ci", "rediacc_ci")
 
 
 def _load() -> types.ModuleType:
-    sys.path.insert(0, str(QUALITY))
+    paths.on_sys_path(QUALITY)
     try:
         spec = importlib.util.spec_from_file_location("check_inner_timeout_reachable", GATE)
         assert spec
