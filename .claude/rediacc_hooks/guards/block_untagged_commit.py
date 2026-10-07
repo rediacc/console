@@ -316,8 +316,12 @@ def run(ev):
             ids.extend(hookio.grep_o(r"[0-9a-f]{6,32}", record))
         known = hookio._command_substitution(hookio._grep_out(ids))
     # NO SNAPSHOT FALLS BACK TO THE LEDGER, which is what check:ci-pr-task-trailers reads. Measured 2026-10-03: branch 1003-1 had no agent/pr/1003-1.md, so `known` stayed empty and 41 commits carrying `PR-TASK: 76a0eaaf`, a worklist item id rather than an epic id, were allowed, until ci:quick refused them all at push time. The ledger is repo-scoped and always lists every epic, so judging against it cannot block a new branch's first commit that names a real epic.
-    if not known:
-        known = hookio._command_substitution(hookio._grep_out(_ledger_epic_ids(root)))
+    # The menu a refusal prints is the snapshot's (this branch's epics); with no snapshot it is the ledger's, as before.
+    shown = known or hookio._command_substitution(hookio._grep_out(_ledger_epic_ids(root)))
+    # THE LEDGER IS ALWAYS ACCEPTED TOO. Since 2026-10-07 the snapshot renders only this PR's epics plus the open backlog, so an older open epic enters it only once a commit cites it; judging against the snapshot alone would refuse that first commit forever.
+    known = hookio._command_substitution(
+        hookio._grep_out(sorted(set(known.split()) | set(_ledger_epic_ids(root))))
+    )
 
     match = TRAILER.search(msg)
     found = match.group(1) if match else ""
@@ -332,7 +336,7 @@ def run(ev):
     if found == "":
         ev.warn_raw(split)
         ev.warn_raw(MISSING_TRAILER)
-        _epic_menu(ev, known, snap, branch_key, branch)
+        _epic_menu(ev, shown, snap, branch_key, branch)
         return hookio.DENY
 
     # A trailer whose id names no epic is WORSE than no trailer: it looks tagged. With no snapshot the set is the ledger's (above); with neither there is no set to judge against, and the guard allows.
@@ -346,6 +350,6 @@ def run(ev):
             "by that id, the PR body's epic block never lists the commit, and the gap is\n"
             "reported by nobody. A single mistyped character does it.\n" % found
         )
-        _epic_menu(ev, known, snap, branch_key, branch)
+        _epic_menu(ev, shown, snap, branch_key, branch)
         return hookio.DENY
     return hookio.ALLOW

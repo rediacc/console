@@ -14,9 +14,12 @@ WHAT AN EPIC IS FOR. Two consumers, and both need the same grouping:
 IDS ARE NOT FIXED WIDTH. Worklist item ids are 8 hex from the CLI and 12 hex when migrated from the old markdown. Never parse assuming a width.
 """
 
+import datetime
 import json
 import os
 import pathlib
+import re
+import subprocess
 
 import wl_core as C
 import wl_store as S
@@ -114,6 +117,8 @@ def load_epics():
         prev = out.get(eid) or {}
         merged = dict(prev)
         merged.update({k: v for k, v in rec.items() if v is not None})
+        # `minted` is the FIRST record's stamp; `at` is later-wins like every other field, so it moves on every `add` and cannot say when the epic was born. `pr_epic_ids` reads this to keep a minted-but-not-yet-cited epic on the branch that minted it.
+        merged["minted"] = prev.get("minted") or rec.get("at") or ""
         # covers ACCUMULATE across records: `--epic add` is additive, so a later line naming one more item must not drop the ones named before it.
         merged["covers"] = sorted(set(prev.get("covers") or []) | set(rec.get("covers") or []))
         out[eid] = merged
@@ -176,15 +181,129 @@ def neutralize(text):
     return (text or "").replace("<!--", "<\u200b!--").replace("-->", "--\u200b>")
 
 
-def render(fold, heading="###"):
-    """Markdown: one section per epic, its items beneath.
+# ---- the PR's own epics, read from the branch's commits ---------------------------------------
+# WHY THE BLOCK IS SCOPED (operator request 2026-10-07). `render` used to print EVERY epic the ledger ever minted, with every covered item, so each PR repeated all earlier PRs' finished work and agent/pr/1006-3.md carried 20 epic sections. A PR body that grows with the repo's age stops telling a reviewer which change belongs to which task, which is the one thing it exists to say.
+
+# The trailer shape check:ci-pr-task-trailers reads (`trailerIds` in scripts/gates/check-pr-task-trailers.ts): a line of its own, optional indent. Reading the WHOLE message rather than git's `%(trailers)` keeps the two readers agreeing on a trailer git's parser would not count (a non-final paragraph).
+TRAILER_RE = re.compile(
+    r"^[ \t]*PR-TASK:[ \t]*([0-9a-f]{6,32})[ \t]*$", re.MULTILINE | re.IGNORECASE
+)
+
+# Tried in order. origin/main first because a local `main` is routinely stale in a worktree; `main` second so a fixture repo with no remote still has a base.
+BASE_REFS = ("origin/main", "main")
+
+
+def _git(root, *args):
+    """(rc, stdout). A git that is missing or hangs answers rc 127, never an exception: the caller turns a failure into a NAMED problem, it never crashes the publish."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(root), *args],
+            capture_output=True,
+            text=True,
+            timeout=20,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return 127, ""
+    return proc.returncode, proc.stdout
+
+
+def _resolves(root, ref):
+    return _git(root, "rev-parse", "--verify", "--quiet", "%s^{commit}" % ref)[0] == 0
+
+
+def branch_epics(root, branch):
+    """(cited, fork_at, problem) for `branch` against the first base in BASE_REFS that resolves.
+
+    `cited` is every `PR-TASK:` id the branch's own commits (`<base>..<branch>`) carry, first-seen order. `fork_at` is the merge-base's committer time as an ISO8601Z stamp, "" when unknown. `problem` is "" when the range was read, otherwise WHY it was not: an unread range is UNKNOWN, and the caller must say so rather than present an empty epic list as "this PR cites nothing".
+    """
+    if not _resolves(root, branch):
+        return [], "", "branch %r does not resolve in %s" % (branch, root)
+    base = next((b for b in BASE_REFS if _resolves(root, b)), "")
+    if not base:
+        return [], "", "no base ref resolves (tried %s)" % ", ".join(BASE_REFS)
+    rc, out = _git(root, "log", "--format=%B%x00", "%s..%s" % (base, branch))
+    if rc != 0:
+        return [], "", "git log %s..%s exited %d" % (base, branch, rc)
+    cited: list[str] = []
+    for raw in TRAILER_RE.findall(out):
+        eid = raw.lower()
+        if eid not in cited:
+            cited.append(eid)
+    fork_at = ""
+    rc, mb = _git(root, "merge-base", base, branch)
+    if rc == 0 and mb.strip():
+        rc, ct = _git(root, "show", "-s", "--format=%ct", mb.strip())
+        if rc == 0 and ct.strip().isdigit():
+            fork_at = datetime.datetime.fromtimestamp(int(ct.strip()), datetime.UTC).strftime(
+                "%Y-%m-%dT%H:%M:%SZ"
+            )
+    return cited, fork_at, ""
+
+
+def pr_epic_ids(epics, cited, fork_at=""):
+    """The PR's own epics, in ledger order: every epic the branch's commits cite, plus every epic MINTED after the branch forked.
+
+    WHY THE SECOND HALF. block_untagged_commit validates a new commit's `PR-TASK:` against the ids this snapshot declares, so an epic minted for this branch but not yet cited by any commit must already be declared, or the commit that would first cite it is refused for naming "no epic on this branch". Minted-after-fork is that set, read off the ledger's own stamps (no PR body, no network), and on this repo's one-live-branch model nothing else mints epics in the meantime.
+
+    A cited id the ledger does not know is NOT rendered here: a section with no ledger record behind it is what check:ci-pr-task-trailers refuses as hand-edited. `unknown_cited` names those for the caller to report.
+    """
+    cited = set(cited or ())
+    return [
+        eid
+        for eid, rec in epics.items()
+        if eid in cited or (fork_at and str(rec.get("minted") or "") >= fork_at)
+    ]
+
+
+def unknown_cited(epics, cited):
+    return [e for e in (cited or ()) if e not in epics]
+
+
+# THE BACKLOG HEADING IS A CONTRACT, not a label. scripts/gates/check-pr-epic-block.ts refuses a snapshot or PR body without a line matching `### Open system backlog (<N>)` whose N equals the entries listed under it; change it in both places or the gate goes red.
+BACKLOG_TITLE = "Open system backlog"
+BACKLOG_NONE = "_none_"
+BACKLOG_FRAME = (
+    "_Every open worklist item outside this PR's epics: the repository's improvement queue,"
+    " shown on every PR so it stays visible. Not this PR's work._"
+)
+
+
+def _item_line(r, iid, tag=""):
+    """One item, one line. `tag` sits BEFORE the text: brief_text truncates, and a tag after a cut-off parenthetical reads as part of it."""
+    return "- [%s] `#%s` %s%s" % (
+        r.get("state", " "),
+        iid,
+        tag,
+        neutralize(S.brief_text(r, cap=200)),
+    )
+
+
+def backlog_items(fold, pr_epics, epics=None):
+    """Every item with state != x that no epic in `pr_epics` covers, fold order. One definition, so the publish line's count and the rendered heading's N cannot disagree."""
+    epics = load_epics() if epics is None else epics
+    owned: set[str] = set()
+    for eid in pr_epics:
+        owned.update((epics.get(eid) or {}).get("covers") or [])
+    return [r for r in fold.items if r["id"] not in owned and r.get("state") != "x"]
+
+
+def render(fold, pr_epics, heading="###"):
+    """Markdown in two parts: this PR's epics in full, then the open system backlog.
+
+    `pr_epics` is the ordered list of epic ids this PR owns (`pr_epic_ids`). Each gets its section with EVERY covered item, ticked and open, because a reviewer reads the finished work too. An epic this PR does not own is not rendered at all, finished or not; its OPEN items reach the backlog with the epic named inline.
+
+    The backlog is MANDATORY: it renders on every PR, with `_none_` when empty, because a section that appears only when non-empty is indistinguishable from one a render regression dropped. It lists every item with state != x that no PR epic covers.
 
     Uses wl_store.brief_text, the v14 display identity (what the item FIRST said plus its LATEST note), never rec["text"] which accumulates every update note forever and would put twenty concatenated lines into a PR body.
     """
     epics = load_epics()
     items = {r["id"]: r for r in fold.items}
     lines, claimed = [], set()
-    for eid, rec in epics.items():
+    for eid in pr_epics:
+        rec = epics.get(eid)
+        if rec is None:
+            continue
         lines.append("%s %s" % (heading, neutralize(rec.get("title")) or "(untitled)"))
         lines.append("")
         lines.append("`PR-TASK: %s`" % eid)
@@ -194,19 +313,24 @@ def render(fold, heading="###"):
             lines.append("_no tracked items yet_")
         for iid in covered:
             claimed.add(iid)
-            r = items[iid]
-            lines.append(
-                "- [%s] `#%s` %s" % (r.get("state", " "), iid, neutralize(S.brief_text(r, cap=200)))
-            )
+            lines.append(_item_line(items[iid], iid))
         lines.append("")
-    # An item in no epic is REPORTED, never hidden: silence here would be indistinguishable from having no such work.
-    orphans = [r for r in fold.items if r["id"] not in claimed and r.get("state") != "x"]
-    if orphans:
-        lines.append("%s Not in any epic" % heading)
-        lines.append("")
-        lines.extend(
-            "- [%s] `#%s` %s" % (r.get("state", " "), r["id"], neutralize(S.brief_text(r, cap=200)))
-            for r in orphans
-        )
-        lines.append("")
+    # Which OTHER epics an open item sits in, named inline so a reader can tell a stray item from one parked under another task.
+    home: dict[str, list[str]] = {}
+    for eid, rec in epics.items():
+        if eid in pr_epics:
+            continue
+        for iid in rec.get("covers") or []:
+            home.setdefault(iid, []).append(eid)
+    backlog = backlog_items(fold, pr_epics, epics)
+    lines.append("%s %s (%d)" % (heading, BACKLOG_TITLE, len(backlog)))
+    lines.append("")
+    lines.append(BACKLOG_FRAME)
+    lines.append("")
+    if not backlog:
+        lines.append(BACKLOG_NONE)
+    for r in backlog:
+        where = home.get(r["id"]) or []
+        tag = "(epic %s) " % ", ".join("`%s`" % e for e in where) if where else ""
+        lines.append(_item_line(r, r["id"], tag))
     return "\n".join(lines).rstrip() + "\n"

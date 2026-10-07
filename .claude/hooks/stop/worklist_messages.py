@@ -348,7 +348,7 @@ CLI_BRIEF_LOOKS_LIKE_ID = (
 
 CLI_PUBLISH_USAGE = """usage: worklist.py --publish <me> <branch>
 
-Renders this repo's epics and their items to agent/pr/<branch>.md.
+Renders this branch's epics plus the open system backlog and their items to agent/pr/<branch>.md.
 
 The store lives in TMPDIR, so CI can never read it. This snapshot is the
 rendered view that CI CAN read, which is what lets a gate diff the PR body
