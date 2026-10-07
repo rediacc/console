@@ -22,6 +22,7 @@ import datetime
 import hashlib
 import importlib.util
 import json
+import keyword
 import os
 import pathlib
 import re
@@ -68,10 +69,15 @@ SPAWN_GRACE_S = 15
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 ISOZ = r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z"
 ME8 = r"[0-9a-f]{8}"
+ORACLE_SIGNER = "oracle"
 RESOLUTION_RES = (
     ("open", re.compile(r"^open$")),
     ("fixed", re.compile(r"^fixed ([0-9a-f]{40}) \| (%s) (%s)$" % (ME8, ISOZ))),
-    ("not-a-bug", re.compile(r"^not-a-bug \| (.{20,}) \| (%s) (%s)$" % (ME8, ISOZ))),
+    # `oracle` signs a claim the existence oracle refuted at review time (apply_existence_oracle); a person signs with their session's me8.
+    (
+        "not-a-bug",
+        re.compile(r"^not-a-bug \| (.{20,}) \| (%s|%s) (%s)$" % (ME8, ORACLE_SIGNER, ISOZ)),
+    ),
     ("deferred", re.compile(r"^deferred #([0-9a-f]{6,16}) \| (%s) (%s)$" % (ME8, ISOZ))),
 )
 VERDICT_RE = re.compile(
@@ -131,7 +137,7 @@ Severity:
 high = on the changed path it will produce wrong behaviour, data loss, a security hole, a broken build or a CI gate that can no longer fail;
 medium = a real bug only on an edge path, changed behaviour with no test, or a comment that states the wrong behaviour;
 low = anything else worth a line.
-Style and naming are never above low, and neither is anything in prose (plans, notes, generated ledgers, Markdown). Do not speculate about code you cannot see. Every finding names a file from this diff and a line number in the NEW version of that file. The claim must say what goes wrong and when, in one sentence a reviewer can check. If the commit only moves or renames text, answer clean. Also classify the commit for release labels: bump none (no user-facing change), patch, minor (new capability), major (only recommend); kind from bug, feature, docs, ci.
+Style and naming are never above low, and neither is anything in prose (plans, notes, generated ledgers, Markdown). Do not speculate about code you cannot see. The diff shows changed lines with a few lines of context, so imports, definitions and declarations usually sit OUTSIDE it: never claim a name is undefined, not imported, missing or a typo because you cannot see its definition here, only when the diff itself removes or renames it. Quote code only as it appears in the diff, character for character. Every finding names a file from this diff and a line number in the NEW version of that file. The claim must say what goes wrong and when, in one sentence a reviewer can check. If the commit only moves or renames text, answer clean. Also classify the commit for release labels: bump none (no user-facing change), patch, minor (new capability), major (only recommend); kind from bug, feature, docs, ci.
 
 COMMIT MESSAGE:
 %(message)s
@@ -312,6 +318,11 @@ class Finding:
     def deferred_item(self):
         m = RESOLUTION_RES[3][1].match(self.resolution)
         return m.group(1) if m else ""
+
+    def oracle_refuted(self):
+        """True when the existence oracle, not a person, closed this finding."""
+        m = RESOLUTION_RES[2][1].match(self.resolution)
+        return bool(m and m.group(2) == ORACLE_SIGNER)
 
 
 @dataclasses.dataclass
@@ -1240,6 +1251,739 @@ def validate(structured, paths, diff_text, sha, is_writing=None):
     return ("findings" if findings else "clean"), findings, labels, dropped
 
 
+# --------------------------------------------------------------------------- the existence oracle
+#
+# WHY. The model sees hunks, not files: `capped_diff` keeps ANCHOR_SLACK lines of context and drops whole files past `diff_cap_bytes`, and the call has no tools. A definition or an import outside that window is invisible, and the model turns the absence into a claim ("GH_REPO is undefined", "functools is not imported, NameError"). On 2026-10-07 four of those were recorded [high]/[medium] on 30117014 and
+# each blocked a stop until hand-refuted, and every Python or TypeScript "undefined/not imported" claim in the branch history (11 of them, 0930-1 to 1007-1) was resolved not-a-bug. The tree at the commit answers the question for nothing, so it is asked there before the claim is recorded.
+#
+# WHAT IT DOES. A finding whose claim asserts a name is undefined, missing, not imported or not shown (EXISTENCE_CLAIM) on a Python or JS/TS file has every code-shaped identifier pulled out of its claim, and each one is looked up in the commit's tree: a Python name by LEGB over the post-image's AST at the finding's line (module scope, the enclosing functions, builtins), `mod.attr` through the
+# module's own file in the tree (or the stdlib's own object), `obj.attr` as a declaration (`__slots__`, `self.x =`, a class member, an argparse dest) in the file or a repo module it imports; a JS/TS name by declaration or import anywhere in the file. When EVERY identifier is found, the claim is refuted and the finding is closed `not-a-bug | refuted by the existence oracle: <ident> <how> at <path:line> ... | oracle <isoZ>`. It stays in the record, claim intact, and
+# `surface_new` names it, so the audit trail is the record itself.
+#
+# WHICH WAY IT FAILS. Anything it cannot resolve (no identifier in the claim, a syntax error, an identifier it cannot find, a third-party module, a module with `__getattr__`, a prose file) leaves the finding open exactly as the model wrote it. A refutation needs a positive hit for every name, so a genuinely undefined name, which has no hit, is recorded as before. The JS/TS lookup ignores scope (a
+# `const x` in another function counts); `tsc` in CI is the backstop that catches what that over-counts, and a Python NameError is decided by scope, not by a grep.
+
+PY_SUFFIXES = (".py",)
+JS_SUFFIXES = (".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs")
+# A STRONG phrase is an existence claim on its own.
+EXISTENCE_STRONG = re.compile(
+    r"\b(?:not\s+(?:been\s+)?(?:defined|declared|imported)|never\s+(?:defined|declared|imported)"
+    r"|missing\s+(?:an?\s+)?import|no\s+such\s+(?:function|attribute|method|name|module|variable|symbol|class)"
+    r"|has\s+no\s+attribute|undefined\s+(?:function|variable|name|symbol|identifier|reference|import|constant|attribute|method)"
+    r"|NameError|ReferenceError|ImportError|ModuleNotFoundError)\b",
+    re.IGNORECASE,
+)
+# A WEAK phrase ("does not appear", "not shown in the diff", "typo") is as often about a string, a behaviour or a hidden implementation ("not shown in diff; this may raise a different exception type"), so it counts only beside the error a missing name produces. AttributeError alone is a TYPE claim as often as a name claim ("rel is a Path, .startswith() raises AttributeError"), hence the pairing.
+EXISTENCE_WEAK = re.compile(
+    r"\b(?:(?:does\s+not|doesn't|do\s+not|don't)\s+(?:exist|appear)|not\s+(?:shown|visible)|typo|misspel\w*)\b",
+    re.IGNORECASE,
+)
+EXISTENCE_ERROR = re.compile(r"\b(?:AttributeError|NameError|ReferenceError|ImportError)\b")
+# `undefined` alone is a VALUE in JS/TS ("returns undefined when the key is absent") and a name claim only in Python, which has no such value.
+EXISTENCE_PY_UNDEFINED = re.compile(r"\bundefined\b", re.IGNORECASE)
+_SPAN = re.compile(r"`([^`\n]+)`")
+_SPAN_STRINGS = re.compile(r"\"(?:[^\"\\\n]|\\.)*\"|'(?:[^'\\\n]|\\.)*'")
+_DOTTED = re.compile(r"(?<![\w./\-$])([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+)(?![\w/\-])")
+_CALL = re.compile(r"(?<![\w./\-$])([A-Za-z_$][\w$]*)\(")
+_SNAKE = re.compile(r"(?<![\w./\-$])([A-Za-z0-9]*_[\w]*|_[\w]+)(?![\w./(\-])")
+_CAMEL = re.compile(r"(?<![\w./\-$])([a-z][a-z0-9]*[A-Z][\w]*)(?![\w./(\-])")
+_SPAN_NAME = re.compile(r"(?<![\w.$\-])([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)")
+# Nouns a claim puts between a name and its verb ("the _git function is not defined"); the subject is then the word before the noun. `name` and `helper` are not here: both are ordinary identifiers.
+_SUBJECT_NOUNS = frozenset(
+    (
+        "function",
+        "module",
+        "variable",
+        "method",
+        "attribute",
+        "constant",
+        "class",
+        "symbol",
+        "import",
+    )
+)
+_SUBJECT_VERB = re.compile(
+    r"\s+(?:is|are|was|were)\s+(?:not\s+(?:defined|declared|imported)|undefined|never\s+(?:defined|declared|imported))\b",
+    re.IGNORECASE,
+)
+_SUBJECT_AFTER = re.compile(
+    r"\bundefined\s+(?:function|variable|name|method|attribute|constant|class|symbol|import)\s+`?([A-Za-z_][\w.]*)",
+    re.IGNORECASE,
+)
+_WORD = re.compile(r"[A-Za-z_][\w.]*")
+_KEYWORDS = frozenset(
+    [
+        *keyword.kwlist,
+        *keyword.softkwlist,
+        *(
+            "const",
+            "let",
+            "var",
+            "function",
+            "return",
+            "new",
+            "typeof",
+            "instanceof",
+            "await",
+            "async",
+            "of",
+        ),
+        *(
+            "null",
+            "undefined",
+            "true",
+            "false",
+            "this",
+            "void",
+            "delete",
+            "switch",
+            "case",
+            "default",
+            "throw",
+        ),
+        *(
+            "catch",
+            "extends",
+            "static",
+            "type",
+            "interface",
+            "enum",
+            "export",
+            "do",
+            "super",
+            "self",
+            "cls",
+        ),
+    ]
+)
+_FILE_EXT = frozenset(
+    (
+        "py",
+        "ts",
+        "tsx",
+        "mts",
+        "cts",
+        "js",
+        "jsx",
+        "mjs",
+        "cjs",
+        "md",
+        "json",
+        "jsonl",
+        "yml",
+        "yaml",
+        "toml",
+        "sh",
+        "bash",
+        "txt",
+        "lock",
+        "cfg",
+        "ini",
+        "html",
+        "css",
+        "go",
+        "rs",
+        "com",
+        "org",
+        "io",
+        "sql",
+    )
+)
+_NOT_NAMES = frozenset(("e.g", "i.e", "etc", "vs", "self", "cls", "this"))
+_JS_GLOBALS = frozenset(
+    (
+        "console",
+        "process",
+        "JSON",
+        "Math",
+        "Object",
+        "Array",
+        "String",
+        "Number",
+        "Boolean",
+        "Promise",
+        "Map",
+        "Set",
+        "WeakMap",
+        "Symbol",
+        "Date",
+        "RegExp",
+        "Error",
+        "Buffer",
+        "globalThis",
+        "undefined",
+        "null",
+        "require",
+        "module",
+        "exports",
+        "__dirname",
+        "__filename",
+        "setTimeout",
+        "clearTimeout",
+        "setInterval",
+        "clearInterval",
+        "URL",
+        "fetch",
+    )
+)
+
+
+def existence_claim(claim, path=""):
+    """True when the claim asserts a name is undefined, missing or not imported (see EXISTENCE_STRONG and EXISTENCE_WEAK)."""
+    if EXISTENCE_STRONG.search(claim):
+        return True
+    if EXISTENCE_WEAK.search(claim) and EXISTENCE_ERROR.search(claim):
+        return True
+    return bool(path.endswith(PY_SUFFIXES) and EXISTENCE_PY_UNDEFINED.search(claim))
+
+
+def claimed_identifiers(claim):
+    """The code-shaped identifiers a claim names, in order, deduplicated: `a.b` chains, `name(` calls, snake_case and camelCase words, and backtick spans that are one identifier. String literals inside a backtick span are code and are blanked; quotes in prose are only delimiters and are kept, so a quoted name is still checked. File names, exception class names and `e.g` are not identifiers."""
+    spans = [_SPAN_STRINGS.sub(" ", s) for s in _SPAN.findall(claim)]
+    prose = _SPAN.sub(" ", claim)
+    out: list[str] = []
+
+    def add(tok, called=False):
+        tok = tok.strip(".")
+        if not tok or tok in _NOT_NAMES or tok in out:
+            return
+        last = tok.rsplit(".", 1)[-1]
+        if "." in tok and last.lower() in _FILE_EXT and not called:
+            return
+        if re.search(r"(?:Error|Exception|Warning)$", last) or tok.isdigit():
+            return
+        if "." in tok and any(seg in ("", "e", "i") for seg in tok.split(".")):
+            return
+        out.append(tok)
+
+    for text in [prose, *spans]:
+        dotted: set[int] = set()
+        for m in _DOTTED.finditer(text):
+            add(m.group(1), called=text[m.end(1) : m.end(1) + 1] == "(")
+            dotted.update(range(m.start(1), m.end(1)))
+        for rx in (_CALL, _SNAKE, _CAMEL):
+            for m in rx.finditer(text):
+                if m.start(1) not in dotted:
+                    add(m.group(1))
+    for s in spans:
+        # Every name in a code span is cited code: `x = f()` names x as well as f, and a subject left out could let the other names refute a claim that is about it.
+        for m in _SPAN_NAME.finditer(s):
+            if m.group(1) not in _KEYWORDS:
+                add(m.group(1), called=s[m.end(1) : m.end(1) + 1] == "(")
+    # The grammatical subject of the existence phrase, even a plain word ("x is undefined", "the _git function is not defined"). It is added unfiltered: a pronoun ("it is undefined") resolves to nothing, so the claim stays open rather than being refuted by the other names it mentions.
+    subjects = [m.group(1) for m in _SUBJECT_AFTER.finditer(prose)]
+    plain = claim.replace("`", "")
+    for m in _SUBJECT_VERB.finditer(plain):
+        subject = _subject_before(plain, m.start())
+        if subject:
+            subjects.append(subject)
+    for raw in subjects:
+        tok = raw.strip(".")
+        if tok and tok not in out:
+            out.append(tok)
+    return out
+
+
+_CONJUNCTIONS = frozenset(("but", "and", "or", "yet", "so", "then"))
+_RELATIVES = frozenset(("which", "that", "who"))
+_ARTICLES = frozenset(("the", "a", "an", "this", "its", "their"))
+
+
+def _subject_before(text, end):
+    """The word a `... is not defined` phrase at `end` is about: the word before it, past a generic noun ("the _git function"); for a relative ("x, which is undefined") the word the relative refers to; for an elided subject ("contextlib is used ... but is not imported") the first word of the clause. "" when there is no word; a pronoun is returned as is, and it resolves to nothing."""
+    words = _WORD.findall(text[:end])
+
+    def drop_noun(ws):
+        if len(ws) > 1 and ws[-1].lower() in _SUBJECT_NOUNS:
+            ws.pop()
+        return ws
+
+    words = drop_noun(words)
+    if not words:
+        return ""
+    if words[-1].lower() in _RELATIVES and len(words) > 1:
+        return drop_noun(words[:-1])[-1]
+    if words[-1].lower() in _CONJUNCTIONS:
+        start = max(text.rfind("; ", 0, end), text.rfind(". ", 0, end)) + 1
+        clause = _WORD.findall(text[start:end])
+        while clause and clause[0].lower() in _ARTICLES:
+            clause.pop(0)
+        if clause:
+            return clause[0]
+    return words[-1]
+
+
+def _quoted_line(text, claim):
+    """The one line of `text` that a backtick span of the claim quotes (whitespace-insensitive, at least 6 characters), or 0. A quote the model copied is a better scope anchor than the line number it reported."""
+    lines = [re.sub(r"\s+", "", ln) for ln in text.split("\n")]
+    for span in _SPAN.findall(claim):
+        norm = re.sub(r"\s+", "", span)
+        if len(norm) < 6:
+            continue
+        hits = [n for n, ln in enumerate(lines, start=1) if norm in ln]
+        if len(hits) == 1:
+            return hits[0]
+    return 0
+
+
+class _Tree:
+    """Read-only access to one commit's tree, cached: the file list and blob text."""
+
+    def __init__(self, repo, sha):
+        self.repo, self.sha = repo, sha
+        self._files: list[str] | None = None
+        self._blobs: dict[str, str | None] = {}
+        self._asts: dict[str, object] = {}
+
+    def files(self):
+        if self._files is None:
+            rc, out = git(self.repo, "ls-tree", "-r", "--name-only", self.sha, timeout=60)
+            self._files = out.splitlines() if rc == 0 else []
+        return self._files
+
+    def text(self, path):
+        if path not in self._blobs:
+            rc, out = git(self.repo, "show", "%s:%s" % (self.sha, path))
+            self._blobs[path] = out if rc == 0 else None
+        return self._blobs[path]
+
+    def ast(self, path):
+        import ast  # noqa: PLC0415 -- only the oracle parses Python
+
+        if path not in self._asts:
+            src = self.text(path)
+            try:
+                self._asts[path] = ast.parse(src, filename=path) if src is not None else None
+            except (SyntaxError, ValueError):
+                self._asts[path] = None
+        return self._asts[path]
+
+    def module_file(self, dotted, near, level=0):
+        """The tracked `.py` file a Python module path names, or "". A relative import (`level` dots) resolves from `near`'s directory; an absolute one by suffix, preferring the match that shares the longest directory prefix with `near`."""
+        rel = dotted.replace(".", "/") if dotted else ""
+        if level:
+            base = pathlib.PurePosixPath(near).parent
+            for _ in range(level - 1):
+                base = base.parent
+            stem = (base / rel).as_posix() if rel else base.as_posix()
+            for cand in (stem + ".py", stem + "/__init__.py"):
+                if cand in set(self.files()):
+                    return cand
+            return ""
+        if not rel:
+            return ""
+        hits = [
+            f
+            for f in self.files()
+            for tail in (rel + ".py", rel + "/__init__.py")
+            if f == tail or f.endswith("/" + tail)
+        ]
+        if not hits:
+            return ""
+
+        def shared(f):
+            return len(
+                os.path.commonprefix([os.path.dirname(f) + "/", os.path.dirname(near) + "/"])
+            )
+
+        return max(hits, key=lambda f: (shared(f), -len(f)))
+
+
+def _py_bindings(nodes, fn=None):
+    """{name: line} bound directly in one scope: the statements in `nodes` (plus `fn`'s parameters), not descending into nested functions, classes or lambdas, whose own names ARE bindings here. Imports bind their alias or their first segment."""
+    import ast  # noqa: PLC0415
+
+    bound: dict[str, int] = {}
+
+    def put(name, line):
+        bound.setdefault(name, line)
+
+    if fn is not None:
+        a = fn.args
+        for arg in [*a.posonlyargs, *a.args, *a.kwonlyargs, a.vararg, a.kwarg]:
+            if arg is not None:
+                put(arg.arg, arg.lineno)
+    stack = list(nodes)
+    while stack:
+        node = stack.pop()
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            put(node.name, node.lineno)
+            stack.extend(node.decorator_list)
+            continue
+        if isinstance(
+            node, (ast.Lambda, ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
+        ):
+            # Their own scopes: a comprehension's target is not bound in the function around it.
+            continue
+        if isinstance(node, ast.If) and _type_checking_test(node.test):
+            # `if TYPE_CHECKING:` imports exist for the type checker only; at runtime the name is unbound.
+            stack.extend(node.orelse)
+            continue
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+            put(node.id, node.lineno)
+        elif isinstance(node, (ast.Import, ast.ImportFrom)):
+            for alias in node.names:
+                if alias.name != "*":
+                    put(alias.asname or alias.name.split(".")[0], node.lineno)
+        elif isinstance(node, (ast.ExceptHandler, ast.MatchAs, ast.MatchStar)) and node.name:
+            put(node.name, node.lineno)
+        stack.extend(ast.iter_child_nodes(node))
+    return bound
+
+
+def _type_checking_test(test):
+    import ast  # noqa: PLC0415
+
+    return (isinstance(test, ast.Name) and test.id == "TYPE_CHECKING") or (
+        isinstance(test, ast.Attribute) and test.attr == "TYPE_CHECKING"
+    )
+
+
+def _py_scopes(tree, line):
+    """The scopes a name used at `line` resolves through, innermost first: (bindings, node) for each enclosing function (and a class body the line sits in directly), then the module."""
+    import ast  # noqa: PLC0415
+
+    chain = []
+
+    def walk(body, in_class=None):
+        for node in body:
+            end = getattr(node, "end_lineno", None) or getattr(node, "lineno", 0)
+            if not (getattr(node, "lineno", 0) <= line <= end):
+                continue
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                chain.append(_py_bindings(node.body, fn=node))
+                walk(node.body)
+                return
+            if isinstance(node, ast.ClassDef):
+                inner_len = len(chain)
+                walk(node.body, in_class=node)
+                if len(chain) == inner_len:
+                    chain.append(_py_bindings(node.body))
+                return
+            for field in ("body", "orelse", "finalbody", "handlers", "cases"):
+                sub = getattr(node, field, None)
+                if isinstance(sub, list):
+                    walk(sub, in_class)
+
+    walk(tree.body)
+    chain.reverse()
+    chain.append(_py_bindings(tree.body))
+    return chain
+
+
+def _py_import_of(tree, name):
+    """How `name` is bound by an import anywhere in the file: ("module", dotted, level) for `import a.b as name` / `from p import name` (which may be a submodule), else None."""
+    import ast  # noqa: PLC0415
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if (alias.asname or alias.name.split(".")[0]) == name:
+                    return (alias.name if alias.asname else alias.name.split(".")[0], 0, "")
+        elif isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                if (alias.asname or alias.name) == name:
+                    return (node.module or "", node.level, alias.name)
+    return None
+
+
+def _py_attr_declared(tree, attr):
+    """The line where `attr` is declared as an attribute anywhere in `tree`: a class member (def, assignment, annotation), a `__slots__` string, `<expr>.attr = ...`, or an argparse `add_argument("--attr")` / `dest="attr"`. 0 when none."""
+    import ast  # noqa: PLC0415
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef):
+            for item in node.body:
+                if (
+                    isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+                    and item.name == attr
+                ):
+                    return item.lineno
+                targets = (
+                    item.targets
+                    if isinstance(item, ast.Assign)
+                    else [item.target]
+                    if isinstance(item, ast.AnnAssign)
+                    else []
+                )
+                for t in targets:
+                    if isinstance(t, ast.Name) and t.id == attr:
+                        return item.lineno
+                    if isinstance(t, ast.Name) and t.id == "__slots__":
+                        for c in ast.walk(item):
+                            if isinstance(c, ast.Constant) and c.value == attr:
+                                return c.lineno
+        elif (
+            isinstance(node, ast.Attribute)
+            and node.attr == attr
+            and isinstance(node.ctx, ast.Store)
+        ):
+            return node.lineno
+        elif (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "add_argument"
+        ):
+            for c in [*node.args, *(k.value for k in node.keywords if k.arg == "dest")]:
+                if (
+                    isinstance(c, ast.Constant)
+                    and isinstance(c.value, str)
+                    and c.value.lstrip("-").replace("-", "_") == attr
+                ):
+                    return node.lineno
+    return 0
+
+
+def _py_module_attr(tree_obj, modfile, attr):
+    """The line of a module-level binding of `attr` in `modfile`, -1 when the module defines `__getattr__` (anything goes, so nothing is proven), 0 when absent. A submodule `modfile`'s package also exposes `attr` when `<pkg>/<attr>.py` is tracked."""
+    tree = tree_obj.ast(modfile)
+    if tree is None:
+        return 0
+    top = _py_bindings(tree.body)
+    if "__getattr__" in top:
+        return -1
+    if attr in top:
+        return top[attr]
+    if modfile.endswith("/__init__.py"):
+        pkg = modfile[: -len("__init__.py")]
+        if pkg + attr + ".py" in set(tree_obj.files()) or pkg + attr + "/__init__.py" in set(
+            tree_obj.files()
+        ):
+            return 1
+    return 0
+
+
+# Stdlib modules whose import DOES something (opens a browser, prints, starts a GUI): never imported to answer a claim.
+_STDLIB_ACTS_ON_IMPORT = frozenset(
+    (
+        "antigravity",
+        "this",
+        "turtle",
+        "turtledemo",
+        "tkinter",
+        "idlelib",
+        "__main__",
+        "__hello__",
+        "__phello__",
+    )
+)
+
+
+def _stdlib_has(dotted, attrs):
+    """True when stdlib module `dotted` has the attribute chain `attrs`. Imports only a module in `sys.stdlib_module_names`, never a third-party one."""
+    import importlib  # noqa: PLC0415
+
+    top = dotted.split(".")[0]
+    if top not in getattr(sys, "stdlib_module_names", ()) or top in _STDLIB_ACTS_ON_IMPORT:
+        return False
+    try:
+        obj = importlib.import_module(dotted)
+    except Exception:  # noqa: BLE001 -- a stdlib module that will not import proves nothing
+        return False
+    for a in attrs:
+        if not hasattr(obj, a):
+            return False
+        obj = getattr(obj, a)
+    return True
+
+
+def _py_verify(tree_obj, path, line, ident):
+    """Evidence text when `ident` provably exists for code at `path:line`, else ""."""
+    import builtins  # noqa: PLC0415
+
+    tree = tree_obj.ast(path)
+    if tree is None:
+        return ""
+    head, *attrs = ident.split(".")
+    where = ""
+    for scope in _py_scopes(tree, line):
+        if head in scope:
+            where = "%s:%d" % (path, scope[head])
+            break
+    if not where:
+        if head in vars(builtins):
+            if not attrs:
+                return "%s is a builtin" % ident
+            return (
+                "%s is a builtin attribute" % ident
+                if _stdlib_has("builtins", [head, *attrs])
+                else ""
+            )
+        return ""
+    if not attrs:
+        return "%s bound at %s" % (ident, where)
+    imp = _py_import_of(tree, head)
+    if imp is not None:
+        mod, level, name = imp
+        full = ".".join(p for p in (mod, name) if p)
+        modfile = tree_obj.module_file(full, path, level) if full or level else ""
+        if not modfile and name:
+            # `from p import name` where name is a symbol of p, not a submodule: its attributes are declarations in p.
+            pfile = tree_obj.module_file(mod, path, level)
+            ptree = tree_obj.ast(pfile) if pfile else None
+            got = _py_attr_declared(ptree, attrs[0]) if ptree is not None else 0
+            if got:
+                return "%s declared at %s:%d (%s via %s)" % (ident, pfile, got, head, where)
+            return ""
+        if modfile:
+            got = _py_module_attr(tree_obj, modfile, attrs[0])
+            if got > 0:
+                rest = attrs[1:]
+                if rest:
+                    mtree = tree_obj.ast(modfile)
+                    if mtree is None or not all(_py_attr_declared(mtree, a) for a in rest):
+                        return ""
+                return "%s defined at %s:%d (%s imported at %s)" % (
+                    ident,
+                    modfile,
+                    got,
+                    head,
+                    where,
+                )
+            return ""
+        if not level and _stdlib_has(full or head, attrs):
+            return "%s exists in the stdlib (%s imported at %s)" % (ident, full or head, where)
+        return ""
+    # Not a module: an object's attribute, declared in this file or in a repo module it imports.
+    places = [path]
+    import ast  # noqa: PLC0415
+
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            for alias in node.names:
+                mod = (
+                    alias.name
+                    if isinstance(node, ast.Import)
+                    else ".".join(p for p in (node.module or "", alias.name) if p)
+                )
+                lvl = 0 if isinstance(node, ast.Import) else node.level
+                f = tree_obj.module_file(mod, path, lvl) or (
+                    tree_obj.module_file(node.module or "", path, lvl)
+                    if isinstance(node, ast.ImportFrom)
+                    else ""
+                )
+                if f and f not in places:
+                    places.append(f)
+    found = []
+    for a in attrs:
+        hit = ""
+        for f in places:
+            t = tree_obj.ast(f)
+            got = _py_attr_declared(t, a) if t is not None else 0
+            if got:
+                hit = "%s:%d" % (f, got)
+                break
+        if not hit:
+            return ""
+        found.append(hit)
+    return "%s declared at %s (%s bound at %s)" % (ident, ", ".join(found), head, where)
+
+
+def _js_decl_line(text, name):
+    """The 1-based line of a declaration or import of `name` anywhere in a JS/TS file, 0 when none. Scope-blind on purpose (see the section header)."""
+    n = re.escape(name)
+    pats = (
+        r"\b(?:function\*?|class|const|let|var|enum|interface|type|namespace)\s+%s\b" % n,
+        r"\bimport\s+%s\b" % n,
+        r"\bimport\s+(?:type\s+)?(?:[\w$]+\s*,\s*)?\{[^}]*\b%s\b[^}]*\}" % n,
+        r"\*\s+as\s+%s\b" % n,
+        r"\b(?:const|let|var)\s*[{\[][^=;]*\b%s\b[^=;]*[}\]]\s*=" % n,
+    )
+    for p in pats:
+        m = re.search(p, text, re.DOTALL)
+        if m:
+            return text.count("\n", 0, m.start()) + 1
+    return 0
+
+
+def _js_verify(tree_obj, path, ident):
+    text = tree_obj.text(path)
+    if text is None:
+        return ""
+    head, *attrs = ident.split(".")
+    if head in _JS_GLOBALS and not attrs:
+        return "%s is a JS global" % ident
+    got = _js_decl_line(text, head)
+    if not got:
+        return ""
+    if not attrs:
+        return "%s declared at %s:%d" % (ident, path, got)
+    m = re.search(
+        r"\bimport\s+(?:\*\s+as\s+%s|%s)\s+from\s+['\"](\.[^'\"]+)['\"]"
+        % (re.escape(head), re.escape(head)),
+        text,
+    )
+    if not m:
+        return ""
+    base = (pathlib.PurePosixPath(path).parent / m.group(1)).as_posix()
+    base = os.path.normpath(base)
+    files = set(tree_obj.files())
+    stem = re.sub(r"\.(?:js|mjs|cjs)$", "", base)
+    for cand in [
+        base,
+        *(stem + s for s in JS_SUFFIXES),
+        *(stem + "/index" + s for s in JS_SUFFIXES),
+    ]:
+        if cand in files:
+            mtext = tree_obj.text(cand) or ""
+            a = re.escape(attrs[0])
+            hit = re.search(
+                r"\bexport\s+(?:default\s+)?(?:async\s+)?(?:function\*?|class|const|let|var|enum|interface|type|namespace)\s+%s\b|\bexport\s*\{[^}]*\b%s\b[^}]*\}"
+                % (a, a),
+                mtext,
+            )
+            if hit:
+                return "%s exported at %s:%d" % (ident, cand, mtext.count("\n", 0, hit.start()) + 1)
+            return ""
+    return ""
+
+
+def refute_existence(tree_obj, finding):
+    """Evidence (one line, "|"-free) that every identifier the finding's existence claim names exists at the commit, or "" when the claim is not an existence claim, names no identifier, or any one identifier cannot be found."""
+    path = finding.file
+    if not existence_claim(finding.claim, path):
+        return ""
+    if path.endswith(PY_SUFFIXES):
+        line = _quoted_line(tree_obj.text(path) or "", finding.claim) or finding.line
+        lookup = lambda ident: _py_verify(tree_obj, path, line, ident)  # noqa: E731
+    elif path.endswith(JS_SUFFIXES):
+        lookup = lambda ident: _js_verify(tree_obj, path, ident)  # noqa: E731
+    else:
+        return ""
+    idents = claimed_identifiers(finding.claim)
+    if not idents:
+        return ""
+    proofs = []
+    for ident in idents:
+        try:
+            proof = lookup(ident)
+        except Exception:  # noqa: BLE001 -- an oracle that breaks proves nothing, so the finding stays open
+            return ""
+        if not proof:
+            return ""
+        proofs.append(proof)
+    return normalise_claim(
+        "refuted by the existence oracle at %s: %s" % (tree_obj.sha[:12], "; ".join(proofs)), 400
+    ).replace("|", "/")
+
+
+def apply_existence_oracle(repo, sha, findings, now=None, log=print):
+    """Close every finding `refute_existence` refutes, in place, as `not-a-bug | <evidence> | oracle <isoZ>`. Returns the ids closed."""
+    if not findings:
+        return []
+    tree_obj = _Tree(repo, sha)
+    closed = []
+    for f in findings:
+        if f.resolution != "open":
+            continue
+        evidence = refute_existence(tree_obj, f)
+        if evidence:
+            f.resolution = "not-a-bug | %s | %s %s" % (evidence, ORACLE_SIGNER, now_iso(now))
+            closed.append(f.id)
+            log("%s refuted: %s" % (f.id, evidence))
+    return closed
+
+
 def resolve_claude():
     return shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
 
@@ -1448,6 +2192,7 @@ def run_review(
                     review.verdict, review.findings, review.labels, review.dropped = validate(
                         structured, paths, diff_text, full, is_writing=_writing_test(root)
                     )
+                    apply_existence_oracle(repo, full, review.findings, now=now, log=log)
         review.reviewed_at = now_iso(now)
         # D3: a `.md` beats a ledger line. A verdict with nothing to do becomes a ledger line, unless a finished `.md` already stands for the sha (a findings record is never unlinked by a later clean result: the new verdict overwrites it, as any re-review does). A failed `.md` is replaced: the line goes in first, then the file goes.
         if ledger_eligible(review) and (previous is None or not previous.finished()):
@@ -1809,6 +2554,13 @@ def surface_new(root, branch, session_id, cfg=None):
                 "  [%s] %s %s:%d -- %s" % (f.severity, f.id, f.file, f.line, f.claim[:200])
             )
             lines.extend("    " + c for c in mark_commands(f.id))
+        # A claim the existence oracle closed is named on every surfacing, so a refutation is never silent; the evidence is the record's Resolution line.
+        lines.extend(
+            "  refuted by the existence oracle: [%s] %s %s:%d -- %s"
+            % (f.severity, f.id, f.file, f.line, f.claim[:120])
+            for f in review.findings
+            if f.oracle_refuted()
+        )
     lines.append(
         "Review records (the ledger and any `<sha>.md`) ride the next commit (`git commit -F <msg> -- <paths> %s/`) or `worklist.py --review-commit <me>`; a push waits until they are committed."
         % pathlib.Path(REVIEWS_REL, branch_slug(branch))
