@@ -633,9 +633,9 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
         ["a/b.py", "c.py"],
     )
     c.check(
-        "shard_file_relpaths never interleaves a directory: a gates/ file revisited after a sibling loses its conftest fixtures (#ebb52614)",
+        "shard_file_relpaths keeps manifest order: an interleaved gates/ file keeps its conftest fixtures through rediacc_ci.pytest_conftest_rebind (#6b5becd7), not through reordering",
         shard_file_relpaths(["pytest:t/gates/x.py", "pytest:t/y.py", "pytest:t/gates/z.py"]),
-        ["t/gates/x.py", "t/gates/z.py", "t/y.py"],
+        ["t/gates/x.py", "t/y.py", "t/gates/z.py"],
     )
     c.raises(
         "CONTROL: an id this lane never minted (no pytest: prefix) is refused rather than handed to pytest as a literal path",
@@ -1137,11 +1137,8 @@ def shard_file_relpaths(ids: list[str]) -> list[str]:
                 "shard id %r is not a quality-pytest unit (want 'pytest:<relpath>')" % uid
             )
         out.append(uid[len("pytest:") :])
-    # GROUPED BY DIRECTORY, first appearance first, manifest order kept inside each (#ebb52614). pytest scopes a conftest's fixtures by the collection node chain, and a `gates/` file revisited after a sibling directory's file is collected outside the `gates` package node: `fixture 'gate' not found`, measured 2026-10-02 with gates/x, tests/y, gates/z in one invocation. A regenerated leg must not be able to interleave them.
-    groups: dict[str, list[str]] = {}
-    for rel in out:
-        groups.setdefault(rel.rsplit("/", 1)[0] if "/" in rel else "", []).append(rel)
-    return [rel for rels in groups.values() for rel in rels]
+    # Manifest order, interleaved directories included. The `fixture 'gate' not found` this once reordered around (#ebb52614: gates/x, tests/y, gates/z) is pytest 9 binding a conftest's fixtures to the FIRST collector of its directory only; rediacc_ci.pytest_conftest_rebind (root conftest.py) binds them to every collector, so any order works (#6b5becd7).
+    return out
 
 
 USAGE = """\

@@ -808,7 +808,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/media/tts | 2 | (none) 1, .toml 1 |
 | .ci/policy | 27 | (none) 19, .json 7, .md 1 |
 | .ci/prompts | 1 | .md 1 |
-| .ci/rediacc_ci | 18 | .py 18 |
+| .ci/rediacc_ci | 19 | .py 19 |
 | .ci/rediacc_ci/build | 18 | .py 18 |
 | .ci/rediacc_ci/ci | 29 | .py 29 |
 | .ci/rediacc_ci/ci_signal | 2 | .py 2 |
@@ -832,7 +832,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 13 | .py 13 |
 | .ci/rediacc_ci/testrun | 11 | .py 11 |
-| .ci/rediacc_ci/tests | 350 | .py 350 |
+| .ci/rediacc_ci/tests | 351 | .py 351 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures/ci_diagnose | 22 | .json 16, .log 6 |
 | .ci/rediacc_ci/tests/gates | 179 | .py 178, .fixture 1 |

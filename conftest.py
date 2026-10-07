@@ -19,7 +19,8 @@ import pytest
 from rediacc_ci import xdist_groups
 
 # The sweep of basetemps a KILLED run left, for every test in both pytest roots; see that module for why it is a plugin rather than code here.
-pytest_plugins = ["rediacc_ci.pytest_tmp"]
+# The second: a directory pytest collects twice in one run gets its conftest fixtures both times (worklist #6b5becd7; the module says when pytest does that).
+pytest_plugins = ["rediacc_ci.pytest_tmp", "rediacc_ci.pytest_conftest_rebind"]
 
 
 # The lock's real-tree declarations, read ONCE per process. A dict rather than a module-level rebind so no `global` statement is needed; the key names the reason the entry exists rather than being a bare index.
