@@ -390,6 +390,10 @@ SIG_CASES = {
         "Curl error (28): Timeout was reached for https://mirror/repodata/repomd.xml",
         "Metadata cache created.",
     ),
+    "pkg-install-stall": (
+        "apt install of rclone failed or stalled past 30s in all 3 attempts",
+        "apt install of rclone attempt 1/3 failed or stalled past 30s; retrying in 10s",
+    ),
     "network": (
         "read tcp 10.0.0.1:443: read: ECONNRESET",
         "ECONNRESETS_TOTAL=0 counter exported",
@@ -437,6 +441,30 @@ def test_signature_hit_and_near_miss(sid):
     assert got[0] == sid, (sid, got)
     near = D._sig_hit("2026-01-01T00:00:00.0000000Z " + miss)
     assert near is None or near[0] != sid, (sid, near)
+
+
+def test_apt_mirror_stall_is_infra_not_the_generic_error():
+    """E2E Workers run 37660537647, job 112927927330: renet's rclone install stalled on an apt mirror, and the only other signature was the `Error:` wrapper line."""
+    lines = (FIX / "job_112927927330_apt_stall_tail.log").read_text(encoding="utf-8").splitlines()
+    assert D.classify(lines) == ("infra-likely", "pkg-install-stall")
+
+
+def test_the_same_error_wrapper_without_a_stall_stays_code():
+    """Control: the wrapper line and the per-attempt retry lines alone (a retry that may have succeeded) are no infra verdict."""
+    lines = [
+        "2026-10-07T18:22:20.0000000Z [renet:err] Error: failed to install rclone on worker: ssh command failed: exit status 1",
+        "2026-10-07T18:22:20.0000000Z apt install of rclone attempt 1/3 failed or stalled past 30s; retrying in 10s",
+    ]
+    assert D.classify(lines) == ("code-likely", "error")
+
+
+def test_a_stall_outranks_a_code_failure_in_the_same_log():
+    """Precedence is the table's own: any infra hit wins over any code hit, so a real failure beside a stall reads infra and the excerpt still shows both."""
+    lines = [
+        "2026-10-07T18:20:00.0000000Z --- FAIL: TestX (0.1s)",
+        "2026-10-07T18:22:20.0000000Z rclone is still not installed after every install attempt",
+    ]
+    assert D.classify(lines) == ("infra-likely", "pkg-install-stall")
 
 
 @pytest.mark.parametrize(

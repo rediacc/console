@@ -145,6 +145,17 @@ SIGNATURES = (
         "a package mirror failed",
         0,
     ),
+    # renet's worker setup gave up on the package manager. Only the FINAL lines count: `apt install of X failed or stalled past Ns in all N attempts` and `apt-get update failed ... in all N attempts` (aptretry.go), and `<tool> is still not installed after every install attempt` (the rclone dnf/zypper/apt arms in docker/service.go, which share that last line). The per-attempt `attempt 1/3 ... retrying` and `install attempt N failed, sleeping` lines are NOT matched: a retry that then succeeded is no verdict, and since an infra hit outranks every code hit, matching it would hide a real error later in the same log. E2E Workers run 37660537647 (legs 1,4,5,6,7) read `code-likely (error: an error was raised)` on an apt mirror stall.
+    (
+        "pkg-install-stall",
+        "infra",
+        re.compile(
+            r"\bapt(?:-get update| install of \S.*?) failed or stalled past \d+s in all \d+ attempts"
+            r"|\bis still not installed after every install attempt"
+        ),
+        "the package manager stalled or failed in every install attempt",
+        0,
+    ),
     (
         "network",
         "infra",
