@@ -10,7 +10,7 @@ ONE RULE IS ONE FUNCTION, `_bulk_unproven`, over ONE way of counting, `_name_onl
 
 OWN_SUITE = True, the same sentinel and for the same reason as `block_prose_style_commit`/`block_prose_style_edit`: this is a fresh guard authored directly, with no bash original to port from and no golden to compare against. `test-block_unproven_bulk_transform.py` stands in for that differential, exactly as it does for its siblings.
 
-WHAT COUNTS AS PROOF, kept identical to the phrases `wl_proofcheck.PROOF_PROMPT` asks the judge to look for: a shape-cluster diff, an AST-equality or AST-diff statement, a byte-identity claim, or an explicit statement that files were sampled and read.
+WHAT COUNTS AS PROOF, kept identical to the standard `wl_proofcheck.PROOF_PROMPT` holds the judge to: a shape-cluster diff, an AST-equality or AST-diff statement, a byte-identity claim, or an explicit statement that files were sampled and read which names the files or how many (`MANUAL_CLAIM`, in the same paragraph or list item as a count or a file name).
 A bare file count or diff stat does NOT count -- "884 files changed" is exactly the assertion that shipped alongside a real incident this rule exists for.
 
 THE THRESHOLD IS A SCALE PROXY, NOT A MECHANISM DETECTOR. This guard cannot tell a hand-written 25-file fix from a script applied to 25 files; it does not try to. Above the threshold, EITHER shape must show proof, because the plan's own principle is that scale itself is the risk this proof obligation answers to.
@@ -52,11 +52,27 @@ RANGE_COMMIT_CAP = 200
 # A word made only of digits and followed by `<`/`>` is a file descriptor (`2>&1`), not a path: `-- a b 2>&1` once captured `2` as a third pathspec.
 PATHSPEC_TAIL = hookio.rx(r"(^|[{S}])--([{S}]+(?![0-9]+[<>])[^{S};&|<>()]+)+")
 
+# A STRUCTURAL PROOF names the tool or the claim it reports, and counts wherever it appears: the tool's own output is the evidence.
 PROOF_PHRASE = re.compile(
-    r"shape[-_ ]cluster[-_ ]diff|shape_cluster_diff\.py|ast[-_ ]equalit|ast[-_ ]diff"
-    r"|byte[-_ ]identical|sampled\s+(?:\d+\s+)?files?|sampled\s+and\s+(?:diffed|read|compared)",
+    r"shape[-_ ]cluster[-_ ]diff|shape_cluster_diff\.py|ast[-_ ]equalit|ast[-_ ]diff|byte[-_ ]identical",
     re.IGNORECASE,
 )
+# A MANUAL PROOF is a claim that files were sampled and read, and `wl_proofcheck.PROOF_PROMPT` holds the judge to "naming which files or how many".
+# The claim alone ("sampled and read", "sampled files") was accepted here until #d47f0539, which made this guard looser than the judge it mirrors: a sentence that names nothing is an assertion, not a check anyone can repeat.
+MANUAL_CLAIM = re.compile(
+    r"sampled\s+(?:\d+\s+)?files?|sampled\s+and\s+(?:diffed|read|compared)|read\s+across\s+both\s+revisions",
+    re.IGNORECASE,
+)
+# What the claim must name, in its own unit: how many ("4 files", "all 45 files", "40 plan files", "32 named paths"), or which (a file name with an extension, optionally under directories).
+# The extension starts with a letter, and a one-character stem needs a 2+ character extension, so "x.md" and "foo.c" are files while "e.g." and "v0.8.3" are not.
+MANUAL_COUNT = re.compile(r"\b\d+\s+(?:[\w-]+\s+){0,2}?(?:files?|paths?)\b", re.IGNORECASE)
+MANUAL_PATH = re.compile(
+    r"(?<![\w.-])(?:[\w.-]+/)*"
+    r"(?:[\w-]{2,}(?:\.[\w-]+)*\.[A-Za-z][A-Za-z0-9]{0,7}|[\w-]\.[A-Za-z][A-Za-z0-9]{1,7})(?![\w])"
+)
+# The unit a claim and its names must share: a paragraph, with each list item its own unit, so a sibling bullet's file name cannot prove a claim that names nothing.
+# A paragraph rather than the sentence because the real follow-up proof df01e0083 says "every changed plan file was sampled and read across both revisions." and names the 40 plan files and the paths in the very next sentence.
+UNIT_BREAK = re.compile(r"\n[ \t]*\n|\n(?=[ \t]*(?:[-*+]|\d+[.)])[ \t])")
 
 # WHOSE COUNT IT IS, said in the first line (R20260924.22). The fallback to the staged index is kept, because guessing permissively is how a real bulk commit walks past, but a pathspec commit does not commit the index, so presenting the index count as "this commit's" sent a session hunting for 54 files its 17-file commit never touched (2026-09-24 19:01:33).
 COUNT_INDEX = "%d staged file(s) is a bulk transform's scale"
@@ -89,8 +105,10 @@ message carries no proof it did not destroy structure it does not know about.
 A bare file count or diff stat does not count. Run
     .ci/scripts/quality/shape_cluster_diff.py --rev HEAD <path...>
 (or the equivalent structural/AST proof for this kind of change) and quote its
-real output in the commit message, or state explicitly which files were
-sampled and read across both revisions.
+real output in the commit message, or state which files were sampled and
+read across both revisions, naming them or how many in the same paragraph
+("sampled 4 files: a.py, b.py, c.py, d.py"). "sampled and read" alone names
+nothing and is not proof.
 """
 
 BLOCK_RANGE = """BLOCKED: %s carries %d commit(s) this proof obligation has not seen cleared,
@@ -104,7 +122,14 @@ proven, then retry.
 
 
 def _proof_shown(text):
-    return bool(PROOF_PHRASE.search(text or ""))
+    """A structural proof anywhere, or a manual claim whose own unit names a file count or a file."""
+    text = text or ""
+    if PROOF_PHRASE.search(text):
+        return True
+    return any(
+        MANUAL_CLAIM.search(unit) and (MANUAL_COUNT.search(unit) or MANUAL_PATH.search(unit))
+        for unit in UNIT_BREAK.split(text)
+    )
 
 
 def _bulk_unproven(files, message):
