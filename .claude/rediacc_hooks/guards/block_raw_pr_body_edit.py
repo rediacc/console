@@ -261,7 +261,7 @@ def _blockless_repos(root):
 
 
 def _targets_blockless(repo, root):
-    return _slug(repo) in _blockless_repos(root)
+    return repo != shellscan.UNRESOLVED_REPO and _slug(repo) in _blockless_repos(root)
 
 
 def _read(path):
@@ -436,12 +436,17 @@ Run `%(mutator)s` as its own call, then `gh pr %(verb)s`.
 """
 
 
-def _judged_runs(cmd, verb, root, cwd):
-    """The walked `gh pr <verb>` calls this guard judges: every one whose repository carries the generated block, its repo read from that call (`shellscan.gh_run_repo`, so `-R=x`, `-Rx` and a quoted `--repo` all count). None when the walk finds no such call at all, and the caller falls back to the text segment."""
+def _judged_runs(cmd, verb, root, cwd, inherited=None):
+    """The walked `gh pr <verb>` calls this guard judges: every one whose repository carries the generated block, its repo read from that call (`shellscan.gh_run_repo`, so `-R=x`, `-Rx`, a quoted `--repo`, `-R $R` with R assigned earlier and the session's own `inherited` GH_REPO all count). None when the walk finds no such call at all, and the caller falls back to the text segment.
+
+    A repo the walk cannot evaluate (`shellscan.UNRESOLVED_REPO`) is no submodule this guard knows, so its call is judged as a console one: the strict direction (#9de9a8e9).
+    """
     runs = shellscan.gh_pr_runs(cmd, verb)
     if not runs:
         return None
-    return [r for r in runs if not _targets_blockless(shellscan.gh_run_repo(r, cwd), root)]
+    return [
+        r for r in runs if not _targets_blockless(shellscan.gh_run_repo(r, cwd, inherited), root)
+    ]
 
 
 def _judged_body(cmd, seg, verb, root, base, runs):
@@ -477,7 +482,7 @@ def _judged_body(cmd, seg, verb, root, base, runs):
 API_PR_ENDPOINT = re.compile(r"^repos/([^/]+)/([^/]+)/pulls/[0-9]+$")
 
 
-def _patch_call(cmd, scan, root, cwd=""):
+def _patch_call(cmd, scan, root, cwd="", inherited=None):
     """`(body file names, PR ref)` for the whole-body PATCHes `cmd` sends to a PR that carries generated blocks, None when it sends none.
 
     Read from each walked `gh api` call by `shellscan.gh_args`, so `-XPATCH`, `--method=PATCH`, `-Fbody=@f`, `--field=body=@f`, `-fbody=x` and `--input=f` are the PATCH and the body they are (measured 2026-10-07: every one of those spellings walked past the text reader below, which the long spellings could not). Only a command the walk finds no `gh api` call in keeps the text reader.
@@ -492,7 +497,9 @@ def _patch_call(cmd, scan, root, cwd=""):
         # gh fills `{owner}`/`{repo}` from `--repo`, then `GH_REPO`, then the checkout's remote: the same order `gh_run_repo` reads, so `GH_REPO=rediacc/renet gh api 'repos/{owner}/{repo}/pulls/5'` is a renet PR (#d2d5f89d).
         endpoint = shellscan.gh_api_endpoint(parsed)
         if "{owner}" in endpoint or "{repo}" in endpoint:
-            endpoint = shellscan.gh_api_endpoint(parsed, shellscan.gh_run_repo(call, cwd))
+            endpoint = shellscan.gh_api_endpoint(
+                parsed, shellscan.gh_run_repo(call, cwd, inherited)
+            )
         m = API_PR_ENDPOINT.match(endpoint)
         if not m or shellscan.gh_api_method(parsed) != "PATCH":
             continue
@@ -615,8 +622,8 @@ def run(ev):
 
     # A SUBMODULE PR CARRIES NO GENERATED BLOCK, so neither pr arm applies to one (`_blockless_repos`). The repo is read from each walked call (`_judged_runs`): `--repo`/`-R` in any spelling gh accepts, then a `cd` into private/<submodule>, then the cwd's origin, then rediacc/console. Only a command the walk finds no call in keeps the text reader, `shellscan.target_repo` over the
     # segment. Dropping the call rather than returning ALLOW keeps the other arms running, so `gh pr create --repo rediacc/renet ... && gh pr edit 5 --body x` is still judged on its console edit.
-    edit_runs = _judged_runs(cmd, "edit", root, ev.cwd or "")
-    create_runs = _judged_runs(cmd, "create", root, ev.cwd or "")
+    edit_runs = _judged_runs(cmd, "edit", root, ev.cwd or "", ev.env("GH_REPO"))
+    create_runs = _judged_runs(cmd, "create", root, ev.cwd or "", ev.env("GH_REPO"))
     if edit_runs is not None:
         edit_seg = edit_seg or "gh pr edit"
         if not edit_runs:
@@ -660,7 +667,7 @@ def run(ev):
     # `gh api repos/<o>/<r>/pulls/<n> -X PATCH -F body=@<file>` instead. That form
     # replaces the whole body exactly as `gh pr edit --body` does, and until 2026-09-04 it walked past this guard unread: this file's own message pointed at `gh pr edit --body-file`, the sanctioned guard refused that, and the door it pointed to instead had no marker check at all. Same rule as the edit arm: every generated marker must be visible in the body this call writes, and an
     # unreadable body is refused, because it can silently replace one that exists.
-    patch = _patch_call(cmd, scan, root, ev.cwd or "")
+    patch = _patch_call(cmd, scan, root, ev.cwd or "", ev.env("GH_REPO"))
     if patch is not None:
         names, ref = patch
         patch_body = cmd

@@ -149,7 +149,6 @@ WRITE_VERBS: dict[str, frozenset[str]] = {
     ),
 }
 WRITE_METHODS = frozenset({"POST", "PATCH", "PUT", "DELETE"})
-_API_BODY_FLAGS = frozenset({"-f", "-F", "--field", "--raw-field", "--input"})
 _LOCAL_TOP = frozenset({"--version", "version", "help", "--help", "completion"})
 _LOCAL_AUTH = frozenset({"login", "logout", "setup-git", "switch", "token"})
 
@@ -322,36 +321,56 @@ def classify(tokens: list[Token]) -> tuple[str, str]:
     return "read", ("%s %s" % (top, second)) if second else top
 
 
+@functools.cache
+def _shellscan():
+    """`rediacc_hooks.shellscan`, the one gh argv parser (`gh_args`, pflag's rules over gh's own flag table), shared with the `.claude` guards (#9de9a8e9).
+
+    WHY IMPORTED AND NOT COPIED. This module read `gh api` through its own `_API_BODY_FLAGS` table until 2026-10-07, a fourth copy beside the hooks' three, and it saw only the spellings it listed: `-fa=b`, `-Fa=b` and `-iXPOST` are writes to gh and were reads here, and in `-H 'Accept: x' graphql` the header was taken for the endpoint. The precedent for the hop is `hook_exec_baseline._load_counter` (`rediacc_hooks.execcount` through `paths.on_sys_path`), and `pyproject.toml`'s `mypy_path = ".ci,.claude"` types it. Anchored on THIS file, not on `--root`: the parser is part of the instrument, not of the tree being judged.
+    """
+    paths.on_sys_path(pathlib.Path(__file__).resolve().parents[3] / ".claude")
+    try:
+        from rediacc_hooks import shellscan  # noqa: PLC0415 -- the documented hop above
+    except ImportError as exc:
+        raise SystemExit(
+            "check:ci-gh-retry-reads reads `gh api` through .claude/rediacc_hooks/shellscan.py "
+            "and could not import it (%s); without it no gh api call can be classified" % exc
+        ) from exc
+    return shellscan
+
+
+# A placeholder for an argv token the AST cannot read, unique per position, so the parser places it as gh would place a word and the classifier can map it back.
+_HOLE = "\x00tok%d"
+
+
 def _classify_api(rest: list[Token]) -> tuple[str, str]:
-    endpoint = next((t for t in rest if isinstance(t, str) and not t.startswith("-")), None)
+    holes: dict[str, Token] = {}
+    words: list[str] = []
+    for i, tok in enumerate(rest):
+        if isinstance(tok, str):
+            words.append(str(tok))
+        else:
+            holes[_HOLE % i] = tok
+            words.append(_HOLE % i)
+    parsed = _shellscan().gh_args(["api", *words])
+    endpoint = parsed.operands[0] if parsed.operands else None
     if endpoint == "graphql":
         mutation = any(isinstance(t, str) and "mutation" in _text(t) for t in rest)
         return ("write", "api graphql mutation") if mutation else ("read", "api graphql")
     method: str | None = None
     method_unknown = False
-    body = False
-    for i, tok in enumerate(rest):
-        if not isinstance(tok, str):
-            continue
-        if tok in ("-X", "--method"):
-            nxt = rest[i + 1] if i + 1 < len(rest) else None
-            if isinstance(nxt, str):
-                method = nxt.upper()
-            elif isinstance(nxt, Choice) and all(v.upper() in WRITE_METHODS for v in nxt.values):
-                method = "|".join(sorted(v.upper() for v in nxt.values))
-                return "write", "api %s" % method
-            elif isinstance(nxt, Choice) and not any(
-                v.upper() in WRITE_METHODS for v in nxt.values
-            ):
-                method = "GET"
-            else:
-                method_unknown = True
-        elif tok.startswith("--method="):
-            method = tok.split("=", 1)[1].upper()
-        elif tok.startswith("-X") and len(tok) > 2:
-            method = tok[2:].upper()
-        elif tok in _API_BODY_FLAGS or tok.startswith(("--field=", "--raw-field=", "--input=")):
-            body = True
+    given = parsed.last("method")
+    if given is not None and given in holes:
+        nxt = holes[given]
+        if isinstance(nxt, Choice) and all(v.upper() in WRITE_METHODS for v in nxt.values):
+            method = "|".join(sorted(v.upper() for v in nxt.values))
+            return "write", "api %s" % method
+        if isinstance(nxt, Choice) and not any(v.upper() in WRITE_METHODS for v in nxt.values):
+            method = "GET"
+        else:
+            method_unknown = True
+    elif given is not None:
+        method = given.upper()
+    body = bool(parsed.values("field") or parsed.values("raw-field") or parsed.values("input"))
     if method is not None:
         return ("write" if method in WRITE_METHODS else "read"), "api %s" % method
     if method_unknown:

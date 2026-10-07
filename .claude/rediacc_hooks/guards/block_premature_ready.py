@@ -115,9 +115,15 @@ def run(ev):
         # --undo (always safe: it can only push a PR back to draft) and --help (flips nothing) belong to THIS call.
         if parsed.on("undo") or parsed.on("help"):
             continue
-        flips.append(
-            (shellscan.gh_run_repo(run_, cwd), parsed.operands[0] if parsed.operands else "")
-        )
+        repo = shellscan.gh_run_repo(run_, cwd, ev.env("GH_REPO"))
+        # A repo the walk cannot evaluate (`-R $R`, `GH_REPO=$(...)`) may be the console's, and its PR cannot be verified: refused as unverifiable, the verdict an empty selector gets below (#9de9a8e9).
+        if repo == shellscan.UNRESOLVED_REPO:
+            ev.warn(
+                MESSAGE % "verification failed (the repository is named through a variable or a "
+                "substitution this hook cannot evaluate; name it literally)"
+            )
+            return hookio.DENY
+        flips.append((repo, parsed.operands[0] if parsed.operands else ""))
     if not runs:
         # Every field below is read from the SEGMENT that carries `gh pr ready`, never
         # from the whole bash line. Line-wide parsing let a sibling command donate its

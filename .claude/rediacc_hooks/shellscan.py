@@ -1227,15 +1227,31 @@ def _parse(toks):
 class _Run:
     """One simple command bash would execute, as the walk found it."""
 
-    __slots__ = ("argv", "canonical", "cwd", "env", "git_dir", "git_sub", "name", "usage", "writes")
+    __slots__ = (
+        "argv",
+        "canonical",
+        "cwd",
+        "env",
+        "git_dir",
+        "git_sub",
+        "name",
+        "usage",
+        "vars",
+        "writes",
+        "xargv",
+    )
 
     def __init__(self, name, argv, canonical, cwd, env=None):
         self.name = name
         self.argv = argv
         self.canonical = canonical
         self.cwd = cwd
-        # The variables this command's environment gets FROM THE COMMAND LINE, quote-removed: an `export`ed earlier statement, its own `NAME=value` prefix, an `env NAME=value` in front of it, with None for one `env -u` or `unset` removed. What the hook's own process inherited is not here, so an absent name means "whatever the session's environment says". `gh_named_repo` reads `GH_REPO` from it (#d2d5f89d).
+        # The variables this command's environment gets FROM THE COMMAND LINE, expanded (`_expand_word`): an `export`ed earlier statement, its own `NAME=value` prefix, an `env NAME=value` in front of it, with None for one `env -u` or `unset` removed and the `_CLEARED` key after `env -i`. What the hook's own process inherited is not here, so an absent name means "whatever the session's environment says". `gh_named_repo` reads `GH_REPO` from it (#d2d5f89d).
         self.env = env if env is not None else {}
+        # The argv as bash hands it to the command (`_expand_word`): `$R` is the value an earlier statement of the same command gave R, `_UNRESOLVED` inside a word whose value cannot be known here, and an unquoted word that expands to nothing is gone. `argv` stays the quote-removed text every other reader matches on (#9de9a8e9).
+        self.xargv = None
+        # The walk's shell state when this command ran, `NAME -> (value, exported)` (see `_shell_builtin`); `gh_named_repo` reads it for a `GH_REPO` assigned but never exported.
+        self.vars = {}
         self.git_dir = None
         self.git_sub = None
         # How the command's RESULT is consumed: "status" when its exit status decides something (`&&`, `||`, `if`/`while`/`until`/`!`, a `$?` in the next clause), "kill" when its output feeds a `kill` (`kill $(...)`, `| xargs kill`). `block_self_matching_pgrep` reads it: a self-matching `pgrep -f` only costs something when one of these is true.
@@ -1366,7 +1382,106 @@ def _strip_prefixes(words):
 #
 # A VARIABLE IN A COMMAND'S ENVIRONMENT CAN CHOOSE WHAT IT ACTS ON as surely as a flag can: `GH_REPO=rediacc/renet gh pr create` is a create on renet, exactly as `--repo rediacc/renet` is, and a guard that reads only the flag judged it as a console create (measured 2026-10-07, block_nondraft_pr_create rc=2 against the flag's rc=0). So the walk records, per command, the variables the
 # command line itself hands it: a `NAME=value` prefix (that command only), `env NAME=value` / `env -u NAME` / `env -i` in front of it, and the statements that persist like a `cd` does: `export NAME=value`, `declare -x`/`typeset -x`, a bare `NAME=value` once NAME is exported, and `unset NAME`. A subshell, a pipeline stage or a substitution sees a copy; `sh -c` and a shell reading stdin see only the
-# exported ones; `eval` shares the shell. The shell state is a dict `NAME -> (value or None, exported)` and is never mutated in place, so a copy is just the same reference in a new state list.
+# exported ones; `eval` shares the shell. The shell state is a dict `NAME -> (value, exported)` and is never mutated in place, so a copy is just the same reference in a new state list.
+#
+# WHAT A NAME ABSENT FROM THE STATE MEANS, and the three values that are not text (#9de9a8e9). Absent is "whatever the session's environment holds", which this walk cannot see. `None` is KNOWN unset (`unset NAME`, `env -u NAME`), so it shadows the session's value rather than deferring to it. `_INHERITED` is a name the command exported without giving it a value (`export GH_REPO`): the session's value, now exported. `exported` is
+# True or False when the command line said so, and None when it never did (a bare `NAME=value` on a name the session may already export, as bash marks every inherited variable exported). A value containing `_UNRESOLVED` came from something this walk cannot evaluate: a `$(...)`, an unassigned `$NAME`, an expansion bash would split.
+#
+# WHAT A WORD EXPANDS TO. `-R $R` names the repository `$R` holds, and the quote-removed text is the three characters `$R`: measured 2026-10-07, `R=rediacc/renet; gh pr create -R $R -t x` was judged as a create on a repository called "$R", which no guard polices, so each of them let it through. `_expand_word` performs bash's parameter expansion over the walk's own state: `$NAME` and `${NAME}`, quoted or not, the value an earlier statement of the same
+# command assigned. Everything it cannot know (a substitution, `${NAME:-x}`, a positional, a name assigned nowhere in the command) becomes `_UNRESOLVED`, so a caller can tell "names nothing" from "names something this hook cannot see" and refuse the second. Assignments expand left to right (`A=1 B=$A` gives B "1"), and a command's arguments expand BEFORE its own prefix assignments apply (`R=x gh -R $R` names the old R): both measured on bash 5.
+
+_UNRESOLVED = "\x00unresolved\x00"
+_INHERITED = "\x00inherited\x00"
+# The key `env -i` leaves in a command's environment: an absent name then means "absent", not "the session's".
+_CLEARED = ""
+# What `gh_named_repo` answers for a repository it cannot know. Not an `OWNER/REPO`, so no glob of one matches it; every consumer says what it means for that guard (`tests/test_gh_flag_spellings.py::CONSUMERS`).
+UNRESOLVED_REPO = "<unresolved>"
+
+_PARAM_REF = re.compile(r"\$(?:([A-Za-z_][A-Za-z0-9_]*)|[0-9@*#?$!-])")
+_BRACED_NAME = re.compile(r"^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$")
+# An unquoted expansion carrying one of these is split into several words or globbed against the filesystem; neither is a value this walk can name.
+_SPLITS = " \t\n*?["
+
+
+def unresolved(value):
+    """Whether an expanded value carries something the walk could not evaluate."""
+    return value is not None and _UNRESOLVED in value
+
+
+def _append(old, value):
+    """`NAME+=value` over an old value: an absent or inherited one is the session's, which this walk cannot know."""
+    if old is None:
+        return value
+    if old == _INHERITED:
+        return _UNRESOLVED + value
+    return old + value
+
+
+def _var(name, shell):
+    value = shell.get(name, (_INHERITED, None))[0]
+    if value is None:
+        return ""
+    if value == _INHERITED:
+        return _UNRESOLVED
+    return value
+
+
+def _expand_text(text, shell, pieces):
+    """`$NAME` references in literal text, each value also appended to `pieces`."""
+
+    def one(m):
+        value = _var(m.group(1), shell) if m.group(1) else _UNRESOLVED
+        pieces.append(value)
+        return value
+
+    return _PARAM_REF.sub(one, text)
+
+
+def _expand_param(raw, shell):
+    m = _BRACED_NAME.match(raw)
+    return _var(m.group(1), shell) if m else _UNRESOLVED
+
+
+def _expand_word(word, shell, split=True):
+    """What bash hands a command for `word` under the walk's shell state `shell`. None when an unquoted word expands to nothing and vanishes from the argv. With `split`, a word whose unquoted expansion bash would split or glob is `_UNRESOLVED`; an assignment (`split=False`) is neither split nor globbed."""
+    pieces: list[str] = []
+    out = []
+    quoted = False
+    for part in word.parts:
+        kind = part.kind
+        if kind in ("sq", "ansi", "esc"):
+            quoted = True
+            out.append(part.value)
+        elif kind == "lit":
+            out.append(_expand_text(part.value, shell, pieces))
+        elif kind == "param":
+            value = _expand_param(part.raw, shell)
+            pieces.append(value)
+            out.append(value)
+        elif kind == "dq":
+            quoted = True
+            inner: list[str] = []
+            # The lexer folds `\$` inside double quotes into the literal text, so a `$` there may be an escaped one; such a string is not expanded on a guess.
+            escaped = "\\$" in part.raw
+            for sub in part.parts:
+                if sub.kind == "lit" and escaped and "$" in sub.value:
+                    out.append(_UNRESOLVED)
+                elif sub.kind == "lit":
+                    out.append(_expand_text(sub.value, shell, inner))
+                elif sub.kind == "esc":
+                    out.append(sub.value)
+                elif sub.kind == "param":
+                    out.append(_expand_param(sub.raw, shell))
+                else:
+                    out.append(_UNRESOLVED)
+        else:
+            out.append(_UNRESOLVED)
+    text = "".join(out)
+    if split and any(ch in piece for piece in pieces for ch in _SPLITS):
+        return _UNRESOLVED
+    if split and text == "" and not quoted and pieces:
+        return None
+    return text
 
 
 def _assignment(text):
@@ -1378,10 +1493,12 @@ def _assignment(text):
     return head.rstrip("+="), text[m.end() :], head.endswith("+=")
 
 
-def _call_env(words):
+def _call_env(words, shell=None):
     """What a simple command's own words do to the environment of the command it runs: `(statement, ops)`.
 
     `ops` are `("set", name, value, append)`, `("unset", name)` and `("clear",)`, in order: the leading assignments, then those of an `env` prefix command (`env -u NAME`, `--unset=NAME`, `-i`). `statement` is True when the words are ONLY assignments, a bare `NAME=value` that sets a shell variable and runs nothing. Mirrors `_strip_prefixes`, which decides what the command is.
+
+    With `shell` (the walk's state), each value is EXPANDED (`_expand_word`), the leading assignments left to right so a later one sees an earlier one, as bash assigns them; without it the values are the quote-removed text.
     """
     vals = [_word_value(w) for w in words]
     ops: list[tuple] = []
@@ -1393,10 +1510,15 @@ def _call_env(words):
         while k < len(vals) and vals[k] in ("-p", "--"):
             k += 1
     start = k
+    scope = dict(shell) if shell is not None else None
     while k < len(vals) and _ASSIGNMENT.match(vals[k]):
-        hit = _assignment(vals[k])
+        hit = _assignment(vals[k] if scope is None else _expand_word(words[k], scope, split=False))
         if hit:
             ops.append(("set", *hit))
+            if scope is not None:
+                name, value, append = hit
+                old, exp = scope.get(name, (_INHERITED, None))
+                scope[name] = (_append(old, value) if append else value, exp)
         k += 1
     if k == len(vals):
         return k > start, ops
@@ -1410,7 +1532,9 @@ def _call_env(words):
                 k += 1
                 break
             if name == "env":
-                hit = _assignment(arg)
+                hit = _assignment(
+                    arg if shell is None else (_expand_word(words[k], shell, split=False) or "")
+                )
                 if hit:
                     ops.append(("set", *hit))
                     k += 1
@@ -1445,48 +1569,75 @@ def _call_env(words):
 
 
 def _exported(shell):
-    """`{NAME: value}` of the exported variables in a walk's shell state: what a child process inherits from the command line."""
-    return {n: v for n, (v, exp) in shell.items() if exp}
+    """`{NAME: value}` of what a child process inherits from the command line: the exported variables, and None for each KNOWN-unset one (it shadows the session's value as surely as an export does)."""
+    return {n: v for n, (v, exp) in shell.items() if exp or v is None}
 
 
 def _apply_env(env, ops):
-    """`env` (a `{NAME: value}`) with `_call_env`'s ops applied, as a new dict."""
+    """`env` (a `{NAME: value}`) with `_call_env`'s ops applied, as a new dict. `env -i` leaves the `_CLEARED` key, so an absent name after it is absent rather than the session's."""
     out = dict(env)
     for op in ops:
         if op[0] == "clear":
-            out = {}
+            out = {_CLEARED: ""}
         elif op[0] == "unset":
             out[op[1]] = None
         else:
             _, name, value, append = op
-            out[name] = (out.get(name) or "") + value if append else value
+            if append:
+                old = out.get(name, "" if _CLEARED in out else _INHERITED)
+                value = _append(old, value)
+            out[name] = value
     return out
 
 
+# Attributes after which a variable's value is not the text assigned: an array, a nameref, an integer.
+_NOT_TEXT = frozenset("aAni")
+# The builtins that set, export or unset a shell variable.
+_DECLARING = frozenset(("export", "declare", "typeset", "local", "readonly", "unset"))
+
+
 def _shell_builtin(base, argv, shell):
-    """The shell state after `export`, `declare -x`/`typeset -x` or `unset` with `argv`, as a new dict; `shell` itself when `base` is none of them."""
-    if base not in ("export", "declare", "typeset", "unset"):
+    """The shell state after `export`, `declare`/`typeset`/`local`/`readonly` or `unset` with `argv` (already expanded, `split=False`), as a new dict; `shell` itself when `base` is none of them.
+
+    `export -n`, `declare +x` and `local` without `-x` leave a name unexported; `declare` and `readonly` without either keep its export state, which is None (unknown) for a name the command never exported. `unset NAME` records it KNOWN unset rather than forgetting it, so the session's value no longer stands behind it.
+    """
+    if base not in _DECLARING:
         return shell
     letters = "".join(a[1:] for a in argv if a.startswith("-") and len(a) > 1 and a != "--")
-    names = [a for a in argv if not (a.startswith("-") and len(a) > 1)]
+    plus = "".join(a[1:] for a in argv if a.startswith("+") and len(a) > 1)
+    names = [a for a in argv if not (a[:1] in "-+" and len(a) > 1)]
     out = dict(shell)
     if base == "unset":
         if "f" in letters:
             return shell
         for name in names:
-            out.pop(name, None)
+            out[name] = (None, False)
         return out
-    if base != "export" and "x" not in letters:
+    if "f" in letters or "F" in letters:
         return shell
-    exported = "n" not in letters or base != "export"
+    if base == "export":
+        exported = "n" not in letters
+    elif "x" in letters:
+        exported = True
+    elif "x" in plus or base == "local":
+        exported = False
+    else:
+        exported = None
     for arg in names:
         hit = _assignment(arg)
         if hit:
             name, value, append = hit
-            old = out.get(name, (None, False))[0]
-            out[name] = ((old or "") + value if append else value, exported)
+            old, was = out.get(name, (_INHERITED, None))
+            if _NOT_TEXT & set(letters):
+                value = _UNRESOLVED
+            elif append:
+                value = _append(old, value)
+            out[name] = (value, was if exported is None else exported)
         elif re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", arg):
-            out[arg] = (out.get(arg, (None, False))[0], exported)
+            old, was = out.get(arg, (_INHERITED, None))
+            if base == "local":
+                old = None
+            out[arg] = (old, was if exported is None else exported)
     return out
 
 
@@ -1618,13 +1769,15 @@ class _Walker:
             if value not in _RESERVED_PREFIX:
                 break
             lead.append(value)
-        statement, env_ops = _call_env(words)
+        # The state the words EXPAND under: a command's arguments are expanded before its own prefix assignments apply.
+        before = state[1]
+        statement, env_ops = _call_env(words, before)
         if statement:
-            # A bare `NAME=value` sets a shell variable; it reaches a child's environment only when NAME is exported.
-            shell = dict(state[1])
+            # A bare `NAME=value` sets a shell variable; it reaches a child's environment only when NAME is exported (or, export state unknown, when the session already exports it: `gh_named_repo`).
+            shell = dict(before)
             for _, var, value, append in env_ops:
-                old, exp = shell.get(var, (None, False))
-                shell[var] = ((old or "") + value if append else value, exp)
+                old, exp = shell.get(var, (_INHERITED, None))
+                shell[var] = (_append(old, value) if append else value, exp)
             state[1] = shell
         words, _prefixed = _strip_prefixes(words)
         if not words:
@@ -1639,8 +1792,10 @@ class _Walker:
             argv,
             " ".join([name, *rendered]),
             state[0],
-            _apply_env(_exported(state[1]), env_ops),
+            _apply_env(_exported(before), env_ops),
         )
+        run.xargv = [x for x in (_expand_word(w, before) for w in words[1:]) if x is not None]
+        run.vars = before
         run.writes = own_writes
         if tested or any(w in ("if", "elif", "while", "until", "!") for w in lead):
             run.usage.add("status")
@@ -1660,15 +1815,16 @@ class _Walker:
         elif base == "eval":
             state[0], state[1] = self.nested(" ".join(argv), state[0], persist=True, shell=state[1])
         elif base in SHELL_NAMES:
-            # A child shell inherits the environment, never the parent's unexported variables.
-            child = {n: (v, True) for n, v in run.env.items() if v is not None}
+            # A child shell inherits the environment, never the parent's unexported variables; a KNOWN-unset name stays known unset there.
+            child = {n: (v, v is not None) for n, v in run.env.items()}
             mode, payload = _shell_payload(argv)
             if mode == "c" and payload is not None:
                 self.nested(payload, state[0], persist=False, shell=child)
             elif mode == "stdin":
                 self.stdin(redirs, lexer, [state[0], child], upstream)
-        else:
-            state[1] = _shell_builtin(base, argv, state[1])
+        elif base in _DECLARING:
+            declared = [_expand_word(w, before, split=False) or "" for w in words[1:]]
+            state[1] = _shell_builtin(base, declared, state[1])
 
     def stdin(self, redirs, lexer, state, upstream):
         """A shell reading its script from stdin runs whatever arrives there (A0 L4): a heredoc body, a here-string, or the output of `cat <<EOF`/`echo` upstream in the pipe. `state` is the child shell's `[cwd, shell]`."""
@@ -2040,6 +2196,13 @@ GH_FLAGS = {
         "yes": ("", False),
     },
     ("pr", "close"): {"comment": ("c", True), "delete-branch": ("d", False)},
+    ("pr", "review"): {
+        "approve": ("a", False),
+        "body": ("b", True),
+        "body-file": ("F", True),
+        "comment": ("c", False),
+        "request-changes": ("r", False),
+    },
     ("api",): {
         "allow-escape-sequences": ("", False),
         "cache": ("", True),
@@ -2152,7 +2315,8 @@ def _gh_parse(words, table, stop_at_operand, git=False, noneg=frozenset(), probl
     while i < len(words):
         arg = words[i]
         i += 1
-        if arg == "--":
+        if arg == "--" or (git and arg == "--end-of-options"):
+            # git 2.53.0: `git commit -m x --end-of-options --no-verify` read `--no-verify` as a pathspec and ran the hooks.
             operands.extend(words[i:])
             break
         if arg.startswith("--"):
@@ -2423,6 +2587,213 @@ def git_switch_args(args):
     return ParsedArgs(("switch",), flags, operands, True, problems)
 
 
+# The verbs whose hooks `--no-verify` skips, and `git push`'s refspec reading (#9de9a8e9). Each table is `git <verb> --git-completion-helper-all` plus `-h` on git 2.53.0, complete for the same reason GIT_COMMIT_FLAGS is: an abbreviation is unique only against the whole set (`--no-ver` is ambiguous on push and commit, `--no-veri` on merge, and unique on push, am and rebase). A name starting `no-` is
+# negated by its bare remainder, so `--verify` and `--no-no-verify` both undo `--no-verify` and the last one wins. Measured in a scratch repository with every hook writing a marker: `push --no-verify --verify`, `merge --no-verify --no-no-verify`, `rebase --no-verify --verify` and `am -n --verify` all ran their hooks; `push --no-veri`, `rebase --no-veri`, `am -n`, `am -3n` and `am --no-veri` skipped them; `merge --no-veri` and
+# `push --no-ver` exited 129. `-n` is `--no-verify` on commit and am only: it is `--dry-run` on push and `--no-stat` on merge and rebase. `git push -n --no-dry-run` and `git push --tags --no-tags origin main:x` both created the remote branch.
+GIT_PUSH_FLAGS = {
+    "verbose": ("v", False),
+    "quiet": ("q", False),
+    "repo": ("", True),
+    "all": ("", False),
+    "branches": ("", False),
+    "mirror": ("", False),
+    "delete": ("d", False),
+    "tags": ("", False),
+    "dry-run": ("n", False),
+    "porcelain": ("", False),
+    "force": ("f", False),
+    "force-with-lease": ("", "opt"),
+    "force-if-includes": ("", False),
+    "recurse-submodules": ("", True),
+    "thin": ("", False),
+    "receive-pack": ("", True),
+    "exec": ("", True),
+    "set-upstream": ("u", False),
+    "progress": ("", False),
+    "prune": ("", False),
+    "no-verify": ("", False),
+    "follow-tags": ("", False),
+    "signed": ("", "opt"),
+    "atomic": ("", False),
+    "push-option": ("o", True),
+    "ipv4": ("4", False),
+    "ipv6": ("6", False),
+}
+GIT_PUSH_NONEG = frozenset(("ipv4", "ipv6"))
+GIT_MERGE_FLAGS = {
+    "n": ("n", False),
+    "stat": ("", False),
+    "summary": ("", False),
+    "compact-summary": ("", False),
+    "log": ("", "opt"),
+    "squash": ("", False),
+    "commit": ("", False),
+    "edit": ("e", False),
+    "cleanup": ("", True),
+    "ff": ("", False),
+    "ff-only": ("", False),
+    "rerere-autoupdate": ("", False),
+    "verify-signatures": ("", False),
+    "strategy": ("s", True),
+    "strategy-option": ("X", True),
+    "message": ("m", True),
+    "file": ("F", True),
+    "into-name": ("", True),
+    "verbose": ("v", False),
+    "quiet": ("q", False),
+    "abort": ("", False),
+    "quit": ("", False),
+    "continue": ("", False),
+    "allow-unrelated-histories": ("", False),
+    "progress": ("", False),
+    "gpg-sign": ("S", "opt"),
+    "autostash": ("", False),
+    "overwrite-ignore": ("", False),
+    "signoff": ("", False),
+    "no-verify": ("", False),
+}
+GIT_MERGE_NONEG = frozenset(("n", "ff-only", "file"))
+GIT_AM_FLAGS = {
+    "interactive": ("i", False),
+    "no-verify": ("n", False),
+    "binary": ("b", False),
+    "3way": ("3", False),
+    "quiet": ("q", False),
+    "signoff": ("s", False),
+    "utf8": ("u", False),
+    "keep": ("k", False),
+    "keep-non-patch": ("", False),
+    "message-id": ("m", False),
+    "keep-cr": ("", False),
+    "scissors": ("c", False),
+    "quoted-cr": ("", True),
+    "whitespace": ("", True),
+    "ignore-space-change": ("", False),
+    "ignore-whitespace": ("", False),
+    "directory": ("", True),
+    "exclude": ("", True),
+    "include": ("", True),
+    "C": ("C", True),
+    "p": ("p", True),
+    "patch-format": ("", True),
+    "reject": ("", False),
+    "resolvemsg": ("", True),
+    "continue": ("", False),
+    "resolved": ("r", False),
+    "skip": ("", False),
+    "abort": ("", False),
+    "quit": ("", False),
+    "show-current-patch": ("", "opt"),
+    "retry": ("", False),
+    "allow-empty": ("", False),
+    "committer-date-is-author-date": ("", False),
+    "ignore-date": ("", False),
+    "rerere-autoupdate": ("", False),
+    "gpg-sign": ("S", "opt"),
+    "empty": ("", True),
+    "rebasing": ("", False),
+}
+GIT_AM_NONEG = frozenset(
+    (
+        "quoted-cr",
+        "C",
+        "p",
+        "continue",
+        "resolved",
+        "skip",
+        "abort",
+        "quit",
+        "show-current-patch",
+        "retry",
+        "allow-empty",
+        "empty",
+    )
+)
+GIT_REBASE_FLAGS = {
+    "onto": ("", True),
+    "keep-base": ("", False),
+    "no-verify": ("", False),
+    "quiet": ("q", False),
+    "verbose": ("v", False),
+    "no-stat": ("n", False),
+    "signoff": ("", False),
+    "committer-date-is-author-date": ("", False),
+    "reset-author-date": ("", False),
+    "ignore-date": ("", False),
+    "C": ("C", True),
+    "ignore-whitespace": ("", False),
+    "whitespace": ("", True),
+    "force-rebase": ("f", False),
+    "no-ff": ("", False),
+    "continue": ("", False),
+    "skip": ("", False),
+    "abort": ("", False),
+    "quit": ("", False),
+    "edit-todo": ("", False),
+    "show-current-patch": ("", False),
+    "apply": ("", False),
+    "merge": ("m", False),
+    "interactive": ("i", False),
+    "preserve-merges": ("p", False),
+    "rerere-autoupdate": ("", False),
+    "empty": ("", True),
+    "keep-empty": ("k", False),
+    "autosquash": ("", False),
+    "update-refs": ("", False),
+    "gpg-sign": ("S", "opt"),
+    "autostash": ("", False),
+    "exec": ("x", True),
+    "allow-empty-message": ("", False),
+    "rebase-merges": ("r", "opt"),
+    "fork-point": ("", False),
+    "strategy": ("s", True),
+    "strategy-option": ("X", True),
+    "root": ("", False),
+    "reschedule-failed-exec": ("", False),
+    "reapply-cherry-picks": ("", False),
+}
+GIT_REBASE_NONEG = frozenset(
+    (
+        "C",
+        "continue",
+        "skip",
+        "abort",
+        "quit",
+        "edit-todo",
+        "show-current-patch",
+        "apply",
+        "merge",
+        "interactive",
+        "empty",
+    )
+)
+GIT_VERBS = {
+    "commit": (GIT_COMMIT_FLAGS, GIT_COMMIT_NONEG),
+    "tag": (GIT_TAG_FLAGS, GIT_TAG_NONEG),
+    "checkout": (GIT_CHECKOUT_FLAGS, GIT_CHECKOUT_NONEG),
+    "switch": (GIT_SWITCH_FLAGS, GIT_SWITCH_NONEG),
+    "push": (GIT_PUSH_FLAGS, GIT_PUSH_NONEG),
+    "merge": (GIT_MERGE_FLAGS, GIT_MERGE_NONEG),
+    "am": (GIT_AM_FLAGS, GIT_AM_NONEG),
+    "rebase": (GIT_REBASE_FLAGS, GIT_REBASE_NONEG),
+}
+
+
+def git_args(verb, args):
+    """`ParsedArgs` for the words after `git <verb>`, for any verb in `GIT_VERBS`, git's parse-options rules: a bundle, a unique prefix, `--no-X`, the last spelling winning, `--` and `--end-of-options` ending the options."""
+    table, noneg = GIT_VERBS[verb]
+    problems: list = []
+    flags, operands, _ = _gh_parse(
+        list(args), table, False, git=True, noneg=noneg, problems=problems
+    )
+    return ParsedArgs((verb,), flags, operands, True, problems)
+
+
+def git_push_args(args):
+    """`ParsedArgs` for the words after `git push`. The first operand is the repository whatever `--repo` says (`--repo=origin main:x` pushed to a repository called "main:x" on git 2.53.0); `--repo` names it only when there is no operand."""
+    return git_args("push", args)
+
+
 def gh_repo_name(value):
     """Lowercase `OWNER/REPO` for any `--repo` spelling gh accepts: `OWNER/REPO`, `HOST/OWNER/REPO`, or a URL (`https://github.com/o/r.git`, `git@github.com:o/r`). GitHub matches both names case-insensitively, so `Rediacc/Console` is the console. Anything else comes back as given."""
     text = (value or "").strip()
@@ -2463,23 +2834,46 @@ def _origin_repo(cwd):
     return repo if repo != "" else GH_REPO
 
 
-def gh_named_repo(run):
-    """The repository one walked `gh` call NAMES, as lowercase `OWNER/REPO`: its own `--repo`/`-R` in any spelling, else a non-empty `GH_REPO` in its environment (`run.env`: a `GH_REPO=x` prefix, `env GH_REPO=x`, an earlier `export GH_REPO=x`). None when it names neither, and its directory decides.
+def _named(value):
+    """`OWNER/REPO` for a non-empty `GH_REPO`/`--repo` value, `UNRESOLVED_REPO` for one the walk could not evaluate, None for an empty one (gh ignores it)."""
+    if value is None or value == "":
+        return None
+    if unresolved(value) or value == _INHERITED:
+        return UNRESOLVED_REPO
+    return gh_repo_name(value)
 
-    gh's own order (pkg/cmd/factory `BaseRepo`): the flag overrides the variable, which overrides the git remotes; an empty `GH_REPO` is ignored. Measured 2026-10-07 through dispatch.py: `GH_REPO=rediacc/renet gh pr create -t x` was judged as a console create (rc=2) where `--repo rediacc/renet` was not (rc=0), in every guard that read the repo (#d2d5f89d).
+
+def gh_named_repo(run, inherited=None):
+    """The repository one walked `gh` call NAMES, as lowercase `OWNER/REPO`: its own `--repo`/`-R` in any spelling, else a non-empty `GH_REPO` in its environment, else the session's own `GH_REPO` (`inherited`). None when it names none of them, and its directory decides. `UNRESOLVED_REPO` when it names one this walk cannot evaluate (`-R $R` with R assigned nowhere in the command, `GH_REPO=$(...)`): each caller refuses or judges the strictest case, in its own guard's terms.
+
+    gh's own order (pkg/cmd/factory `BaseRepo`): the flag overrides the variable, which overrides the git remotes; an empty `GH_REPO` is ignored. Measured 2026-10-07 through dispatch.py: `GH_REPO=rediacc/renet gh pr create -t x` was judged as a console create (rc=2) where `--repo rediacc/renet` was not (rc=0), in every guard that read the repo (#d2d5f89d). The flag and the variable are read EXPANDED (`run.xargv`, `run.env`), so `R=x; gh pr create -R $R` names x (#9de9a8e9).
+
+    THE SESSION'S ENVIRONMENT, `inherited`, and why it is observable at all (#9de9a8e9). A caller passes `ev.env("GH_REPO")`, the hook process's own. Claude Code starts both the hook and the Bash tool's shell from its own environment: measured 2026-10-07, the Bash tool's shell is `bash -c 'source <shell snapshot> && <command>'` under the `claude` process, every variable name in that process's environment is also in the shell's (the shell only adds: `CLAUDECODE`, `BASH_ENV`, `PYTHONPATH` and a dozen more), and the snapshot exports nothing but PATH. An `export GH_REPO=x` in one Bash call does NOT reach the next (measured: a variable exported in one call read back unset in the next), so a command can only change it on its own line, which the walk reads. The one source that stays invisible is a `GH_REPO` exported by a profile the snapshot sources but this hook never runs; the snapshot exports PATH alone today.
+
+    THE PRECEDENCE BELOW THE FLAG, in bash's terms. A `GH_REPO` in `run.env` (a prefix, `env NAME=`, an export, a known `unset`/`env -u`, which is None) is final. After `env -i` the command inherits nothing. A `GH_REPO` the command assigned without ever saying whether it is exported (`GH_REPO=x; gh ...`) reaches gh only if the session already exports it, as bash marks every inherited variable exported. Otherwise the session's own value stands.
     """
-    flagged = gh_args(run.argv).last("repo")
+    argv = run.xargv if getattr(run, "xargv", None) is not None else run.argv
+    flagged = gh_args(argv).last("repo")
     if flagged:
-        return gh_repo_name(flagged)
-    env = (getattr(run, "env", None) or {}).get("GH_REPO")
-    if env:
-        return gh_repo_name(env)
-    return None
+        return _named(flagged)
+    env = getattr(run, "env", None) or {}
+    if "GH_REPO" in env:
+        value = env["GH_REPO"]
+        return _named(inherited) if value == _INHERITED else _named(value)
+    if _CLEARED in env:
+        return None
+    shadow = (getattr(run, "vars", None) or {}).get("GH_REPO")
+    if shadow is not None:
+        value, exported = shadow
+        if exported is None and inherited:
+            return _named(inherited) if value == _INHERITED else _named(value)
+        return None
+    return _named(inherited)
 
 
-def gh_run_repo(run, cwd):
-    """The repository one walked `gh` call targets: what it names (`gh_named_repo`: `--repo`/`-R` in any spelling, then `GH_REPO`), then the private/<submodule> it runs in (its `cd`), then `cwd`'s origin, then rediacc/console. `target_repo`'s order, read from the call instead of from a text segment."""
-    named = gh_named_repo(run)
+def gh_run_repo(run, cwd, inherited=None):
+    """The repository one walked `gh` call targets: what it names (`gh_named_repo`: `--repo`/`-R` in any spelling, then `GH_REPO`, then the session's `inherited` one), then the private/<submodule> it runs in (its `cd`), then `cwd`'s origin, then rediacc/console. `target_repo`'s order, read from the call instead of from a text segment. `UNRESOLVED_REPO` passes through: the caller decides what an unknowable repo means."""
+    named = gh_named_repo(run, inherited)
     if named:
         return named
     m = re.search(r"(^|/)private/(renet|account|elite|homebrew-tap)(/|$)", run.cwd or "")

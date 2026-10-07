@@ -4,7 +4,7 @@ WHY (F3 of the commit-policy plan in agent/plans, section 5.3; operator ruling 2
 
   git commit --no-verify / -n           skips pre-commit and commit-msg
   git push --no-verify                  skips pre-push (NOT `push -n`, a dry run)
-  git merge|am|rebase|cherry-pick --no-verify
+  git merge|rebase --no-verify, git am --no-verify / -n
   git -c core.hooksPath=<x> ...         points this one command elsewhere
   git --config-env core.hooksPath=<v>   the same through an environment variable
   git config [--local|...] core.hooksPath <x>, --unset, --unset-all, set, unset
@@ -13,21 +13,24 @@ WHY (F3 of the commit-policy plan in agent/plans, section 5.3; operator ruling 2
 
 Reads stay allowed: `git config --get core.hooksPath`, `git config core.hooksPath` with no value, `git log -n 5`, and every ordinary commit.
 
+READ THE WAY GIT READS IT (#9de9a8e9). Whether a verb skips its hooks is `shellscan.git_args`, git's own parse-options over each verb's complete option table: a unique prefix is the option (`--no-veri`), a bundle carries it (`git am -3n`), and the LAST of `--no-verify`/`--verify`/`--no-no-verify` wins. Until 2026-10-07 this read `"--no-verify" in args`, which refused `git push --no-verify --verify` (the hooks run: measured on git 2.53.0) and admitted
+`git push --no-veri` and `git am -n` (both skip them). `git cherry-pick` is not judged: it has no `--no-verify` (git exits 129 and runs nothing). An option git calls ambiguous (`--no-ver`) is not refused here either: git refuses it and runs nothing.
+
 WHICH LAYER RULES. This pre-bash layer stays authoritative for agents, because only it can give a rich message before anything runs. The git layer is the backstop for commands that never reach a hook: the operator's own terminal, `!` commands, and subprocesses. The override is the operator's; an agent that sets it is refused here, and the operator's `!` route does not pass through this guard at all.
 """
 
 import re
 
-from rediacc_hooks import commit_policy, hookio
+from rediacc_hooks import commit_policy, hookio, shellscan
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
 ORDER = 49
 
-# The `-n` arm: `git commit -n` is the short spelling of `--no-verify`, and the one a bundle (`-anm`) hides.
-DEFECT = ('if sub == "commit" and "-n" in flags:', "if False:")
+# The verdict itself: with it gone, every spelling of `--no-verify` on every verb skips the hooks unrefused.
+DEFECT = ('if shellscan.git_args(sub, args).on("no-verify"):', "if False:")
 
-VERIFYING = frozenset(("commit", "push", "merge", "am", "rebase", "cherry-pick"))
+VERIFYING = frozenset(("commit", "push", "merge", "am", "rebase"))
 
 HOOKS_KEY = re.compile(r"^core\.hookspath$", re.IGNORECASE)
 
@@ -56,6 +59,10 @@ EDGE_CASES = [
     ("push -n is a dry run", "git push -n origin 0923-1"),
     ("an ordinary commit", "git commit -F m -- a"),
     ("prose naming the flag", "echo 'never git commit --no-verify'"),
+    ("the last of --no-verify and --verify wins", "git push --no-verify --verify origin 0923-1"),
+    ("am -n is --no-verify", "git am -3n x.patch"),
+    ("a unique prefix is the option", "git rebase --no-veri main"),
+    ("cherry-pick has no --no-verify", "git cherry-pick --no-verify HEAD"),
 ]
 
 
@@ -89,8 +96,6 @@ def _global_hooks_path(globals_):
 
 def _env_bypass(cmd):
     """An UNQUOTED word setting the override or git's config-by-environment variables, anywhere in the command's own tokens."""
-    from rediacc_hooks import shellscan  # noqa: PLC0415 -- shared lexer, as commit_policy uses it
-
     try:
         toks = shellscan._Lexer(cmd).tokens()
     except Exception:  # noqa: BLE001 -- an unlexable command sets nothing this can see
@@ -137,10 +142,7 @@ def run(ev):
             return _refuse(ev, "this rewrites or removes `core.hooksPath`.")
         if sub not in VERIFYING:
             continue
-        before = args[: args.index("--")] if "--" in args else args
-        if "--no-verify" in before:
-            return _refuse(ev, "`git %s --no-verify` skips the git-level hooks." % sub)
-        flags = commit_policy.commit_flags(run_) if sub == "commit" else []
-        if sub == "commit" and "-n" in flags:
-            return _refuse(ev, "`git commit -n` is `--no-verify`, and skips the git-level hooks.")
+        if shellscan.git_args(sub, args).on("no-verify"):
+            short = " (`-n` is the same option)" if sub in ("commit", "am") else ""
+            return _refuse(ev, "`git %s --no-verify`%s skips the git-level hooks." % (sub, short))
     return hookio.ALLOW

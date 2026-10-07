@@ -190,11 +190,12 @@ def _is_target(command):
     real, unstripped text.
     """
     scanned = shellscan._command_substitution(shellscan.scan_target(command))
-    return bool(
-        GIT_COMMIT.search(scanned)
-        or GH_PR.search(scanned)
-        or (GH_API_PR_PATCH.search(scanned) and PATCH_METHOD.search(scanned))
-    )
+    if GIT_COMMIT.search(scanned) or GH_PR.search(scanned):
+        return True
+    if GH_API_PR_PATCH.search(scanned) and PATCH_METHOD.search(scanned):
+        return True
+    # The walked `gh api` calls, whose method is read the way gh reads it: the regex above sees `-X PATCH` and `-XPATCH` but not `-iXPATCH` (#9de9a8e9).
+    return any(_api_pr_patch([r.name, *r.argv]) for r in shellscan.gh_runs(command, ("api",)))
 
 
 def messages(command, cwd=None):
@@ -225,17 +226,17 @@ STDIN_NAMES = commit_policy.STDIN_NAMES
 
 
 def _reads_stdin(tokens):
-    """Whether a target's own tokens take its message from stdin, which is the only way a heredoc on it (or piped into it) becomes the message."""
-    for index, token in enumerate(tokens):
-        following = tokens[index + 1] if index + 1 < len(tokens) else None
-        if token in ("-F", "--file", "--body-file") and following in STDIN_NAMES:
-            return True
-        if token in ("-F", "-f") and following in ("body=@-", "body=@/dev/stdin"):
-            return True
-        for prefix in ("--file=", "--body-file=", "-F"):
-            if token.startswith(prefix) and token[len(prefix) :] in STDIN_NAMES:
-                return True
-    return False
+    """Whether a target's own tokens take its message from stdin, which is the only way a heredoc on it (or piped into it) becomes the message. Read by the same parsers as `_flag_messages` (#9de9a8e9), so `-qF -` reads stdin as `-F -` does."""
+    parsed = _parsed(tokens)
+    if parsed is None:
+        return False
+    if parsed.command == ("commit",):
+        return any(v in STDIN_NAMES for v in parsed.values("file"))
+    if parsed.command == ("api",):
+        return any(v in ("body=@-", "body=@/dev/stdin") for v in parsed.values("field")) or any(
+            v in STDIN_NAMES for v in parsed.values("input")
+        )
+    return any(v in STDIN_NAMES for v in parsed.values("body-file"))
 
 
 def _is_target_stage(words):
@@ -243,65 +244,67 @@ def _is_target_stage(words):
     values = [shellscan._word_value(w) for w in words]
     values[0] = values[0].rsplit("/", 1)[-1]
     line = " ".join(values)
-    return bool(
-        GIT_COMMIT.match(line)
-        or GH_PR.match(line)
-        or (GH_API_PR_PATCH.match(line) and PATCH_METHOD.search(line))
+    return bool(GIT_COMMIT.match(line) or GH_PR.match(line) or _api_pr_patch(values))
+
+
+def _api_pr_patch(values):
+    """Whether argv `values` (`gh api ...`) PATCHes a PR, `-X` in every spelling pflag accepts (`-iXPATCH`, `-X=PATCH`, `--method=patch`), read by `shellscan.gh_args` (#9de9a8e9)."""
+    if not values or values[0].rsplit("/", 1)[-1] != "gh":
+        return False
+    parsed = shellscan.gh_args(values[1:])
+    return (
+        parsed.command == ("api",)
+        and bool(re.search(r"(^|/)pulls/[0-9]+$", shellscan.gh_api_endpoint(parsed)))
+        and shellscan.gh_api_method(parsed) == "PATCH"
     )
 
 
 def _flag_messages(tokens, command, cwd):
-    """The `-m`/`--body`/`-F <file>`/... values in ONE target command's tokens, as `(label, text)`."""
+    """The `-m`/`--body`/`-F <file>`/... values in ONE target command's tokens, as `(label, text)`.
+
+    READ THE WAY EACH TOOL READS ITS ARGV (#9de9a8e9): `git commit` through `shellscan.git_commit_args` (git's parse-options: `-qm x`, `--mess x`, `-qF f`, `-Ff`, `--fil f`), gh through `shellscan.gh_args` (pflag: `-dF f`, `-bx`, `-Fbody=@f`). Until 2026-10-07 this matched the spellings it listed, and each of those carried a message the guard never linted. A value-taking flag's value is never read as a flag, so `gh pr create -t --body` is a PR titled "--body".
+    """
+    parsed = _parsed(tokens)
+    if parsed is None:
+        return []
     out: list[tuple[str, str]] = []
-    index = 0
-    while index < len(tokens):
-        token = tokens[index]
-        if token in ("-m", "--message", "--body", "--title", "-b", "-t"):
-            if index + 1 < len(tokens):
-                out.append((token, tokens[index + 1]))
-            index += 2
-            continue
-        if token.startswith(("--message=", "--body=", "--title=")):
-            out.append((token.split("=", 1)[0], token.split("=", 1)[1]))
-            index += 1
-            continue
-        if token.startswith("-m") and len(token) > 2:
-            out.append(("-m", token[2:]))
-            index += 1
-            continue
-        if (
-            token in ("-F", "-f")
-            and index + 1 < len(tokens)
-            and tokens[index + 1].startswith("body=")
-        ):
-            # `gh api ... -F body=@<file>` / `-f body=<literal>`: the SANCTIONED
-            # PR-body edit (see GH_API_PR_PATCH above). Checked BEFORE the bare
-            # `-F <path>` arm below, since `gh api`'s `-F key=value` and git's
-            # `-F <path>` share a flag spelling with different grammars -- a
-            # `body=@<file>` token would otherwise be read, wrongly, as a
-            # literal filename.
-            value = tokens[index + 1][len("body=") :]
-            out.append(
-                (
-                    "--body",
-                    _read_message_file(value[1:], command, cwd) if value.startswith("@") else value,
-                )
-            )
-            index += 2
-            continue
-        if token in ("-F", "--file", "--body-file"):
-            if index + 1 < len(tokens):
-                out.append((token, _read_message_file(tokens[index + 1], command, cwd)))
-            index += 2
-            continue
-        if token.startswith(("--file=", "--body-file=")):
-            out.append(
-                (token.split("=", 1)[0], _read_message_file(token.split("=", 1)[1], command, cwd))
-            )
-            index += 1
-            continue
-        index += 1
+    if parsed.command == ("commit",):
+        for name, value in parsed.flags:
+            if name == "message":
+                out.append(("-m", value))
+            elif name == "file":
+                out.append(("-F", _read_message_file(value, command, cwd)))
+        return out
+    if parsed.command == ("api",):
+        for name, value in parsed.flags:
+            if name not in ("field", "raw-field") or not value.startswith("body="):
+                continue
+            # `-F body=@<file>` reads a file; `-f body=@x` is the literal text "@x".
+            body = value[len("body=") :]
+            if name == "field" and body.startswith("@"):
+                body = _read_message_file(body[1:], command, cwd)
+            out.append(("--body", body))
+        return out
+    for name, value in parsed.flags:
+        if name in ("body", "title"):
+            out.append(("--" + name, value))
+        elif name == "body-file":
+            out.append(("--body-file", _read_message_file(value, command, cwd)))
     return out
+
+
+def _parsed(tokens):
+    """`shellscan.ParsedArgs` for one target's tokens (`git [globals] commit ...`, `gh pr <verb> ...`, `gh api ...`), None for anything else."""
+    if not tokens:
+        return None
+    head = tokens[0].rsplit("/", 1)[-1]
+    if head == "git":
+        _, sub, args = commit_policy.git_split(list(tokens[1:]))
+        return shellscan.git_commit_args(args) if sub == "commit" else None
+    if head == "gh":
+        parsed = shellscan.gh_args(list(tokens[1:]))
+        return parsed if parsed.command[:1] in (("pr",), ("api",)) else None
+    return None
 
 
 # `$NAME` / `${NAME}`, the two spellings a same-command assignment is referenced by.

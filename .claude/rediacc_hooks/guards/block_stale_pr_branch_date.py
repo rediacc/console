@@ -48,6 +48,7 @@ ORDER = 23
 # The escape hatch. Without it a deliberately long-lived branch (resuming a multi-day wave onto its existing PR) can never file its PR, which is the shape that gets a guard bypassed rather than obeyed.
 DEFECT = ('if ev.env("PR_BRANCH_DATE_OK") != "":', "if False:")
 
+# The text reader, kept only for a command the walk finds no `gh pr create` in (the same fallback every sibling gh guard keeps). Every walked create reads its head through `shellscan.gh_args` (#9de9a8e9).
 HEAD_FLAG = hookio.rx(r"(--head|-H)[{S}=]+[A-Za-z0-9._/-]+")
 
 EDGE_CASES = [
@@ -61,6 +62,10 @@ EDGE_CASES = [
     ("gh pr edit is not gh pr create", "gh pr edit 42 --add-label ci"),
     ("prose naming the verb", "echo 'then gh pr create --draft'"),
     ("a wrapper payload is still at a command position", "sh -c 'gh pr create --head 0825-2'"),
+    # gh's own flag parse (#9de9a8e9): a bundle names the head it ends in, and a value-taking flag swallows `--head` as its value.
+    ("a stale head in a bundle", "gh pr create -dH 0101-1 --fill"),
+    ("a title of --head names no head", "gh pr create --draft -t --head --base main"),
+    ("a head in a variable the command assigns", "B=0825-2; gh pr create -d --head $B"),
     # THE TWO CLOCKS, and these two cases exist because a defect lived between them. One head carries UTC's today, the other carries the machine's local today; on any machine whose offset is not zero they are DIFFERENT strings
     # for part of every day, so an implementation that hard-codes UTC and one
     # that honours TZ answer differently on at least one of them. Computed at
@@ -112,27 +117,53 @@ def run(ev):
     if not pathlib.Path(cwd).is_dir():
         return hookio.ALLOW
 
-    # The branch this PR would come from: an explicit --head wins, else the checkout.
-    branch = ""
-    matches = hookio.grep_o(HEAD_FLAG, hookio._printf_line(scan))
-    if matches:
-        branch = hookio.sed_sub(hookio.rx(r"^(--head|-H)[{S}=]+"), "", matches[0]).rstrip("\n")
+    # The branches these PRs would come from: an explicit --head wins, else the checkout. Each walked create reads its own head the way gh does (`shellscan.gh_args` over the expanded argv): `-dH x`, `-Hx`, `-H=x` and `--head=x` name x, `-t --head` titles a PR "--head" and names none, and `--head $B` names what B was assigned earlier in the command. A head the walk cannot evaluate (`--head "$(git branch --show-current)"`) falls back to the checkout, which is what such a substitution almost always names; the text reader the walk replaced did the same for any `$`.
+    heads = []
+    runs = shellscan.gh_pr_runs(cmd, "create")
+    if runs:
+        for run_ in runs:
+            parsed = shellscan.gh_args(run_.xargv)
+            if parsed.on("help"):
+                continue
+            head = parsed.last("head") or ""
+            heads.append("" if shellscan.unresolved(head) else head)
+    else:
+        matches = hookio.grep_o(HEAD_FLAG, hookio._printf_line(scan))
+        heads.append(
+            hookio.sed_sub(hookio.rx(r"^(--head|-H)[{S}=]+"), "", matches[0]).rstrip("\n")
+            if matches
+            else ""
+        )
+    checkout = None
+    for head in heads:
+        branch = head
+        if branch == "":
+            if checkout is None:
+                checkout = hookio.git_out(["-C", cwd, "branch", "--show-current"])
+            branch = checkout
+        refusal = _stale(branch, cwd)
+        if refusal:
+            ev.warn_raw(refusal)
+            return hookio.DENY
+    return hookio.ALLOW
+
+
+def _stale(branch, cwd):
+    """The refusal for a PR from `branch`, "" when its date is today or it is not an `MMDD-N` name at all."""
     if branch == "":
-        branch = hookio.git_out(["-C", cwd, "branch", "--show-current"])
-    if branch == "":
-        return hookio.ALLOW
+        return ""
 
     # Only police the MMDD-N convention. A differently-shaped branch name is out of scope here: this guard answers "is the date stale", not "is the name legal", and conflating the two would make it fire on every non-wave branch.
     shape = hookio.grep_o(r"^([0-9]{4})-([0-9]+)$", branch)
     if not shape:
-        return hookio.ALLOW
+        return ""
     br_date = branch.split("-", 1)[0]
     # LOCAL, not UTC. The twin is a bare `date +%m%d`, which is local time
     # honouring TZ; `datetime.now(tz=UTC)` ignores TZ and was wrong by a day for
     # two hours every night east of Greenwich. See the clock note in the module docstring for the measurement.
     today = datetime.datetime.now().strftime("%m%d")  # noqa: DTZ005 -- see above
     if br_date == today:
-        return hookio.ALLOW
+        return ""
 
     # Pick the next free N for today, against the remote AND local, so the suggested command cannot collide with a wave another session already filed.
     nxt = 1
@@ -159,7 +190,7 @@ def run(ev):
             break
     new = "%s-%d" % (today, nxt)
 
-    ev.warn_raw(
+    return (
         "❌ BLOCKED: branch '%s' carries an OLD date; today is %s.\n"
         "\n"
         "Feature branches are MMDD-N keyed to the day the wave is FILED\n"
@@ -181,4 +212,3 @@ def run(ev):
         "existing PR), re-run with PR_BRANCH_DATE_OK=1.\n"
         % (branch, today, branch, cwd, branch, new, cwd, branch, cwd, new)
     )
-    return hookio.DENY

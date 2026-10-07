@@ -292,7 +292,12 @@ def run(ev):
         if parsed.on("help"):
             continue
         sel = parsed.operands[0] if parsed.operands else ""
-        merges.append((shellscan.gh_run_repo(run_, cwd), parsed.on("auto"), sel))
+        repo = shellscan.gh_run_repo(run_, cwd, ev.env("GH_REPO"))
+        # A repo the walk cannot evaluate (`-R $R`, `GH_REPO=$(...)`) may be one of ours, and an unknown merge is the unresolvable one (#9de9a8e9).
+        if repo == shellscan.UNRESOLVED_REPO:
+            ev.warn(UNRESOLVABLE_MESSAGE % ("<unresolvable: name it literally>", sel or "?"))
+            return hookio.DENY
+        merges.append((repo, parsed.on("auto"), sel))
     if not runs:
         # Every field (repo, selector, --auto) is read from the SEGMENT that carries this `gh pr merge`, and EACH merge on the line is checked on its own. Parsing line-wide cross-attributed fields between sibling invocations -- observed live: `gh pr view 94 --repo rediacc/renet; gh pr merge 66 --repo rediacc/account` resolved as rediacc/renet#66, an unrelated long-merged PR, and
         # blocked the merge on THAT PR's threads. It also examined only one of several merges on a line. See hook_gh_pr_segment.

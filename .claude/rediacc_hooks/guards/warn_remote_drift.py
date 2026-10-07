@@ -29,10 +29,6 @@ ORDER = 19
 # Remote strictly behind local is a NORMAL push of new commits. Without this arm every push of anything ever is refused as drift, which makes the guard an outage rather than a check -- the exact failure its own header forbids.
 DEFECT = ("if _is_ancestor(remote, local, root):", "if False:")
 
-# The argument text of the first `git push` in the command, up to the next shell operator.
-# Options whose value is the NEXT word, so that word is not mistaken for the remote or the refspec.
-PUSH_VALUE_OPTS = {"-o", "--push-option", "--repo", "--exec", "--receive-pack"}
-
 
 def _fixture_git(cwd, *args):
     """`git` for the fixture builder, with the ambient config shut out."""
@@ -188,6 +184,16 @@ EDGE_CASES = [
     ("a lease push to another remote", "git push --force-with-lease upstream 0831-1"),
     ("a lease push of another branch", "git push --force-with-lease origin main"),
     ("a lease push with a plain force too", "git push --force --force-with-lease origin 0831-1"),
+    # git's own parse of the push (#9de9a8e9): the last of a flag and its negation wins, a unique prefix is the option, a bundle carries a short one.
+    ("a dry run undone by --no-dry-run", "git push --dry-run --no-dry-run"),
+    ("a dry run, short flag", "git push -n"),
+    ("a dry run by unique prefix", "git push --dry"),
+    ("a lease by unique prefix", "git push --force-with origin 0831-1"),
+    ("a lease push with a bundled force", "git push -uf --force-with-lease origin 0831-1"),
+    (
+        "a lease taken back by --no-force-with-lease",
+        "git push --force-with-lease --no-force-with-lease origin 0831-1",
+    ),
 ]
 
 MESSAGE = (
@@ -213,27 +219,17 @@ LEASE_JUDGED = (
 
 def _lease_push(cmd, branch):
     """True when the push carries `--force-with-lease` to `origin` and names the current branch."""
-    # The lexer's argv, not a regex over the text: a regex up to the next `|` read `git push --force-with-lease origin <b> 2>&1 | tail -3` as three positionals (the redirect among them) and refused the admitted republish (2026-10-03).
+    # The lexer's argv, not a regex over the text: a regex up to the next `|` read `git push --force-with-lease origin <b> 2>&1 | tail -3` as three positionals (the redirect among them) and refused the admitted republish (2026-10-03). And git's own parse of it (`shellscan.git_push_args`, #9de9a8e9): `--force-with` is the lease by unique prefix, `-uf` carries a plain force, and the last of `--force-with-lease`/`--no-force-with-lease` wins.
     runs = commit_policy.git_runs(cmd, "push")
     if len(runs) != 1:
         return False
     _, _, words = commit_policy.git_split(runs[0].argv)
-    lease = False
-    positional = []
-    skip = False
-    for word in words:
-        if skip:
-            skip = False
-            continue
-        if word == "--force-with-lease" or word.startswith("--force-with-lease="):
-            lease = True
-        elif word in ("--force", "-f") or word.startswith("+"):
-            return False
-        elif word in PUSH_VALUE_OPTS:
-            skip = True
-        elif not word.startswith("-"):
-            positional.append(word)
-    if not lease or len(positional) != 2 or positional[0] != "origin":
+    parsed = shellscan.git_push_args(words)
+    lease = parsed.last("force-with-lease")
+    positional = parsed.operands
+    if parsed.on("force") or any(p.startswith("+") for p in positional):
+        return False
+    if lease is None or lease == "false" or len(positional) != 2 or positional[0] != "origin":
         return False
     names = {branch, "refs/heads/%s" % branch}
     src, sep, dst = positional[1].partition(":")
@@ -305,7 +301,9 @@ def run(ev):
     ]
     if not pushes:
         return hookio.ALLOW
-    if any("--dry-run" in commit_policy.git_split(r.argv)[2] for r in pushes):
+    if any(
+        shellscan.git_push_args(commit_policy.git_split(r.argv)[2]).on("dry-run") for r in pushes
+    ):
         return hookio.ALLOW
 
     branch = hookio.git_out(["symbolic-ref", "--short", "-q", "HEAD"], cwd=root, want_rc=True)

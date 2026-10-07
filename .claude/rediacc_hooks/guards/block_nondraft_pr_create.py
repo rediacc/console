@@ -3,7 +3,7 @@
 The org is on the GitHub FREE plan: draft PRs exist only on PUBLIC repos. console + homebrew-tap are public -> their PRs MUST be created as drafts (the PR stays draft until CI is green; `gh pr ready` is gated by block-premature-ready.sh). renet/account/elite are private -> GitHub rejects --draft there, so the hook blocks it up front with a real message instead of letting the API
 fail cryptically.
 
-Target-repo resolution order: explicit --repo/-R flag > a cd/`git -C` into a private/<submodule> path inside the command > the session cwd's origin remote. Unknown/foreign repos are not policed.
+Target-repo resolution order: explicit --repo/-R flag > GH_REPO in the call's environment > the session's own GH_REPO > a cd/`git -C` into a private/<submodule> path inside the command > the session cwd's origin remote (`shellscan.gh_run_repo`). Unknown/foreign repos are not policed; a repo named through something the hook cannot evaluate is refused (UNRESOLVED_MESSAGE).
 
 PORT NOTE ON THE LOOP'S FEED. `done <<<"$(hook_gh_pr_segment ...)"` is a here-string, so the segment list arrives with exactly one trailing newline whatever the substitution stripped, and `read` therefore always sees a final record. That is why the records below are taken from `_here_string(segs)` and not from `segs` itself: on a single segment with no trailing newline the two
 differ by one iteration, which is the whole loop.
@@ -33,6 +33,13 @@ PUBLIC_MESSAGE = (
     "rediacc/<renet|account|elite> (drafts are impossible there)."
 )
 
+# A create whose repository the walk cannot evaluate (`-R $R` with R assigned outside the command, `GH_REPO=$(...)`) is refused: either verdict could be the wrong one, and a guessed repo is the bypass (#9de9a8e9).
+UNRESOLVED_MESSAGE = (
+    "❌ BLOCKED: this 'gh pr create' names its repository through a variable or a command "
+    "substitution this hook cannot evaluate, so whether it must be a draft cannot be decided. "
+    "Name the repository literally: --repo %s with --draft, or --repo "
+    "rediacc/<renet|account|elite> without it." % GH_REPO
+)
 PRIVATE_MESSAGE = (
     "❌ BLOCKED: %s is PRIVATE and the org is on the GitHub free plan, where draft PRs only "
     "exist on public repos. GitHub would reject this. Create the submodule PR without "
@@ -125,7 +132,10 @@ def run(ev):
             # `--help` prints the usage and creates nothing.
             if parsed.on("help"):
                 continue
-            repo = shellscan.gh_run_repo(run, cwd)
+            repo = shellscan.gh_run_repo(run, cwd, ev.env("GH_REPO"))
+            if repo == shellscan.UNRESOLVED_REPO:
+                ev.warn(UNRESOLVED_MESSAGE)
+                return hookio.DENY
             has_draft = parsed.on("draft")
             refusal = _refusal(repo, has_draft)
             if refusal:
