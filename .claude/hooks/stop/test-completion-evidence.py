@@ -154,6 +154,16 @@ def _extra():
     # CONTROL: it must be able to return nothing, or MUST_HIT would pass against a function that simply echoes its input.
     if w.deferred_findings("") or w.deferred_findings("plain text, no admission"):
         bad.append("control failed: the detector fires on text with no admission")
+    # A line citing a TRACKED item already did the verdict's own remedy (`--add` it): the 2026-10-07 stop naming leased #9de9a8e9. Control first: the same line with no tracked set, or a different id, still fires.
+    cited = (
+        "**Residue now with a new writer (#9de9a8e9).** The writer named five gaps it didn't fix."
+    )
+    if not w.deferred_findings(cited):
+        bad.append("control failed: the cited line does not fire with nothing tracked")
+    if not w.deferred_findings(cited, tracked_ids=["1234abcd"]):
+        bad.append("an untracked id excused the line")
+    if w.deferred_findings(cited, tracked_ids=["9de9a8e9"]):
+        bad.append("a line citing a tracked item was still reported")
 
     # The sweep prompt keys on idle_stall's early-return TEXT. The first version looked for "closed", a word that string never contains, so the prompt could never have fired. Pin the coupling: change the sentence and this goes red rather than the prompt going silently off.
     sentinel = "an item left the open state this turn"

@@ -602,12 +602,20 @@ DEFERRED_FINDING_RE = re.compile(
 )
 
 
-def deferred_findings(last_msg, limit=6):
-    """Lines that report a finding the session chose not to fix, at most `limit`."""
+def deferred_findings(last_msg, limit=6, tracked_ids=()):
+    """Lines that report a finding the session chose not to fix, at most `limit`.
+
+    A line citing `#<id>` of an item in `tracked_ids` (this session's open, leased or deferred items) is not reported: the verdict's own remedy is "`--add` it so it is tracked", and that line already names the tracked item. Measured 2026-10-07: a stop naming the leased residue item #9de9a8e9 was refused with that very remedy.
+    """
     text = _strip_quoted_spans(last_msg or "")
+    tracked = {t.lower() for t in tracked_ids if t}
     out = []
     for line in text.split("\n"):
         if DEFERRED_FINDING_RE.search(line):
+            if tracked and any(
+                c.lower() in tracked for c in re.findall(r"#([0-9a-fA-F]{6,12})\b", line)
+            ):
+                continue
             trimmed = line.strip()[:160]
             if trimmed and trimmed not in out:
                 out.append(trimmed)
@@ -4909,7 +4917,14 @@ def run_stop(event, event_ok, worklist, hook_file):
         vadd("found-not-fixed", False, M.V_FOUND_NOT_FIXED)
     # The same rule, the phrasings the narrow pattern above never saw. Kept as a SEPARATE key so the original stays exactly as pinned by its own tests.
     try:
-        _deferred = deferred_findings(last_msg or "")
+        _deferred = deferred_findings(
+            last_msg or "",
+            tracked_ids=[
+                r["id"]
+                for r in fold.items
+                if r.get("state") in (" ", ">", "?") and C.owned_by_me(r.get("owner"), session_id)
+            ],
+        )
     except Exception:  # noqa: BLE001 -- a detector must never crash a stop
         _deferred = []
     if _deferred:
