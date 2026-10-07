@@ -2755,6 +2755,20 @@ N_PR_SCOPE = (
     "Queued, not blocking: %(items)d item(s), %(plans)d other plan(s); next: %(next)s.%(stood)s "
     "See worklist.py --list --open %(me)s."
 )
+# The same line under `turbo: on` (agent/plans/PLAN-stop-hook-turbo.md). Printing "One plan per PR" while turbo was on told the operator the switch had not taken (2026-10-07). `turbo` is one PR_SCOPE_TURBO_* rendered: what the free writer slots will do with the queue.
+N_PR_SCOPE_TURBO = (
+    "%(who)s Turbo is on (batch_size %(batch)d, writer_cap %(cap)d): the PR's plan set blocks, "
+    "%(turbo)s Queued, not blocking: %(items)d item(s), %(plans)d other plan(s); next: "
+    "%(next)s.%(stood)s See worklist.py --list --open %(me)s."
+)
+PR_SCOPE_TURBO_PICKS = (
+    "and free writer slots start %s, each joining this PR's `Plan:` line on the next push."
+)
+PR_SCOPE_TURBO_NONE = "and no queued plan is eligible for a free writer slot right now."
+PR_SCOPE_TURBO_SOLO = (
+    "but %s is a ` -- solo` entry in QUEUE.md, so this PR takes no further plan; turbo batches "
+    "the queue from the next PR."
+)
 PR_SCOPE_WHO_LIVE = "PR #%(pr)s works %(plans)s."
 PR_SCOPE_WHO_UNREADABLE = "The PR read for %(branch)s failed; scoped to %(plans)s."
 PR_SCOPE_WHO_NO_PR = "Branch %(branch)s has no PR yet."
