@@ -27,6 +27,7 @@ NO `xdist_group`. Shims and probes are written into pytest's own `tmp_path`; the
 import os
 import pathlib
 import re
+import shutil
 import sys
 import typing
 
@@ -1011,6 +1012,22 @@ def _wait_env(tmp_path, bindir):
     fake = tmp_path / "worklist.py"
     fake.write_text(FAKE_WORKLIST, encoding="utf-8")
     (tmp_path / "t").mkdir(parents=True, exist_ok=True)
+    # --wait asks origin for the pushed tip before it judges a PR head (the head-lag gate). Answer that one read from the shim, everything else is the real git.
+    real_git = shutil.which("git")
+    shim = pathlib.Path(bindir) / "git"
+    shim.write_text(
+        "#!/bin/sh\n"
+        'for a in "$@"; do\n'
+        "  if [ \"$a\" = ls-remote ]; then printf '%s\\trefs/heads/%s\\n' '"
+        + PR_HEAD
+        + "' '"
+        + PR_BRANCH
+        + "'; exit 0; fi\n"
+        "done\n"
+        'exec "' + str(real_git) + '" "$@"\n',
+        encoding="utf-8",
+    )
+    shim.chmod(0o755)
     env = {
         **with_path(bindir),
         "TMPDIR": str(tmp_path / "t"),

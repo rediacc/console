@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-07T14:00:22.679Z",
+  "generatedAt": "2026-10-07T15:32:27.278Z",
   "legs": [
     {
       "index": 1,
@@ -88,6 +88,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ci_list_e2e_probe_files.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_publish_verdict.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_record_e2e_probe_outcome.py",
+        "pytest:.ci/rediacc_ci/tests/test_ci_trace_head_lag.py",
         "pytest:.ci/rediacc_ci/tests/test_controls.py",
         "pytest:.ci/rediacc_ci/tests/test_core_account.py",
         "pytest:.ci/rediacc_ci/tests/test_core_advisory.py",
