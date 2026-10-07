@@ -139,7 +139,9 @@ def test_renders_only_this_prs_epics_then_the_backlog(wl):  # noqa: F811
     for key in ("old", "pr_done", "pr_open", "other_done", "new_open"):
         assert ids[key] not in back, key
     # The backlog is the LAST section, so nothing can trail after it unframed.
-    assert snap.rstrip().split("\n")[-1].startswith("- [ ] `#%s`" % ids["stray"])
+    # Which backlog item renders last follows the fold's order, not insertion (the ids are random hex); pinning `stray` failed about 3 runs in 5.
+    last = snap.rstrip().split("\n")[-1]
+    assert any(last.startswith("- [ ] `#%s`" % ids[k]) for k in ("stray", "other_open")), last
 
     # The shape line says what was read, so a collapse is visible.
     assert "2 PR epic(s) (1 cited by %s's commits) of 4 in the ledger" % BRANCH in got.out
