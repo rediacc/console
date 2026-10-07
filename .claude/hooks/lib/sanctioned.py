@@ -23,6 +23,9 @@ READS COMMAND TEXT, DELIBERATELY. Prose that merely DESCRIBES a banned shape is 
 write the file with the Write tool and pass it by path.
 """
 
+import importlib
+import importlib.util
+import pathlib
 import re
 import shlex
 
@@ -366,68 +369,51 @@ CI_READ_VERBS = [
     },
 ]
 
-# gh api flags that consume the next argument (or carry it after `=`). Everything else that starts with `-` is a switch, so the endpoint is the first argument left over.
-_API_VALUE_FLAGS = frozenset(
-    (
-        "-X",
-        "--method",
-        "-f",
-        "--raw-field",
-        "-F",
-        "--field",
-        "-H",
-        "--header",
-        "-q",
-        "--jq",
-        "-t",
-        "--template",
-        "--input",
-        "--hostname",
-        "--cache",
-        "-p",
-        "--preview",
-    )
-)
-# Request-body flags: with no explicit method, gh sends any of these as a POST.
-_API_BODY_FLAGS = frozenset(("-f", "--raw-field", "-F", "--field", "--input"))
 _API_HOST = re.compile(r"^https?://[^/]+/(?:api/v3/)?")
 
 
-def _flag_name(arg):
-    """`--jq=.x` -> `--jq`, `-XPOST` -> `-X`, `-fquery=1` -> `-f`; a long or bare flag is itself."""
-    if arg.startswith("--"):
-        return arg.split("=", 1)[0]
-    return arg[:2]
+def _shellscan():
+    """`rediacc_hooks.shellscan`, the one gh argv parser (#d2d5f89d).
+
+    This module is loaded BY PATH, by the guards, by ci-trace, by the Stop hook and by the registry checker, and not all of them have `.claude` on sys.path; the checker's own test loads a planted COPY from a temp directory. So: the import by name when it already works, else the canonical `.claude` hop (`rediacc_hooks/syspath.py`) beside this file, else the one above the working directory. None found is an ImportError that says so, never a silent fallback reader.
+    """
+    try:
+        return importlib.import_module("rediacc_hooks.shellscan")
+    except ImportError:
+        pass
+    here = pathlib.Path(__file__).resolve()
+    anchors = [
+        here.parents[2],
+        *(d / ".claude" for d in [pathlib.Path.cwd(), *pathlib.Path.cwd().parents]),
+    ]
+    for claude in anchors:
+        hop = claude / "rediacc_hooks" / "syspath.py"
+        if not hop.is_file():
+            continue
+        spec = importlib.util.spec_from_file_location("rediacc_hooks_syspath", hop)
+        if spec is None or spec.loader is None:
+            continue
+        syspath = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(syspath)
+        syspath.on_sys_path(syspath.CLAUDE_DIR)
+        return importlib.import_module("rediacc_hooks.shellscan")
+    raise ImportError(
+        "sanctioned.py needs rediacc_hooks.shellscan to read a gh api call, and found no "
+        ".claude/rediacc_hooks/syspath.py beside %s or above %s" % (here, pathlib.Path.cwd())
+    )
 
 
 def _api_parts(args):
-    """(endpoint, explicit method or "", body present) for `gh api <args>`; args are those after `api`."""
-    endpoint = ""
-    method = ""
-    body = False
-    i = 0
-    while i < len(args):
-        arg = args[i]
-        if arg.startswith("-") and arg != "-":
-            name = _flag_name(arg)
-            if name in _API_VALUE_FLAGS:
-                inline = (arg.startswith("--") and "=" in arg) or (
-                    not arg.startswith("--") and len(arg) > 2
-                )
-                if inline:
-                    value = arg.split("=", 1)[1] if arg.startswith("--") else arg[2:]
-                else:
-                    value = args[i + 1] if i + 1 < len(args) else ""
-                    i += 1
-                if name in ("-X", "--method"):
-                    method = value.upper()
-                if name in _API_BODY_FLAGS:
-                    body = True
-            i += 1
-            continue
-        if endpoint == "":
-            endpoint = arg
-        i += 1
+    """(endpoint, explicit method or "", body present) for `gh api <args>`; args are those after `api`.
+
+    Read by `shellscan.gh_args`, the pflag reader every gh guard shares (#d2d5f89d), so the method and the endpoint are what gh makes of them in every spelling: `-X GET`, `-XGET`, `-X=GET` (GET, not "=GET"), `--method=get`, a bundle ending in it (`-iX GET`, `-iXPATCH`), and a field in any spelling (`-fstatus=x`, `--raw-field=x`). Measured 2026-10-07 through dispatch.py, before this: `gh api -X=GET repos/o/r/actions/jobs/1` and `gh api -iX GET repos/o/r/actions/jobs/1` were admitted by
+    block_raw_ci_read where `-X GET` is refused, the first read as a "=GET" write and the second with "GET" taken for the endpoint.
+    """
+    shellscan = _shellscan()
+    parsed = shellscan.gh_args(["api", *args])
+    endpoint = parsed.operands[0] if parsed.operands else ""
+    method = (parsed.last("method") or "").upper()
+    body = bool(parsed.values("field") or parsed.values("raw-field") or parsed.values("input"))
     return endpoint, method, body
 
 

@@ -67,16 +67,12 @@ def run(ev):
 
     # `--repo <other>` means the merge targets a DIFFERENT repository, so this checkout's unpushed state is irrelevant to it. Only judge a merge that could delete THIS branch.
     # The repo is each merge's OWN flag, in every spelling gh accepts (`shellscan.gh_args`). Measured 2026-10-07: the text match read `--repo` alone and anywhere on the line, so `gh pr merge 42 -R rediacc/renet` was refused and `gh pr view 1 --repo rediacc/renet && gh pr merge 42` was let through on the view's flag. Only a command the walk finds no merge in keeps the
-    # text match.
+    # text match. A `GH_REPO` in the merge's own environment (`GH_REPO=x gh pr merge`, `env GH_REPO=x ...`, an earlier `export`) names its repo the same way, an explicit flag winning over it as in gh (`shellscan.gh_named_repo`, #d2d5f89d).
     if runs:
         named = [
-            parsed.last("repo")
-            for parsed in (shellscan.gh_args(r.argv) for r in runs)
-            if not parsed.on("help")
+            shellscan.gh_named_repo(r) for r in runs if not shellscan.gh_args(r.argv).on("help")
         ]
-        if not any(
-            r is None or hookio.case_glob(shellscan.gh_repo_name(r), "*/console") for r in named
-        ):
+        if not any(r is None or hookio.case_glob(r, "*/console") for r in named):
             return hookio.ALLOW
     else:
         repo_arg = ""

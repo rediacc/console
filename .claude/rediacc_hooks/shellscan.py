@@ -1227,13 +1227,15 @@ def _parse(toks):
 class _Run:
     """One simple command bash would execute, as the walk found it."""
 
-    __slots__ = ("argv", "canonical", "cwd", "git_dir", "git_sub", "name", "usage", "writes")
+    __slots__ = ("argv", "canonical", "cwd", "env", "git_dir", "git_sub", "name", "usage", "writes")
 
-    def __init__(self, name, argv, canonical, cwd):
+    def __init__(self, name, argv, canonical, cwd, env=None):
         self.name = name
         self.argv = argv
         self.canonical = canonical
         self.cwd = cwd
+        # The variables this command's environment gets FROM THE COMMAND LINE, quote-removed: an `export`ed earlier statement, its own `NAME=value` prefix, an `env NAME=value` in front of it, with None for one `env -u` or `unset` removed. What the hook's own process inherited is not here, so an absent name means "whatever the session's environment says". `gh_named_repo` reads `GH_REPO` from it (#d2d5f89d).
+        self.env = env if env is not None else {}
         self.git_dir = None
         self.git_sub = None
         # How the command's RESULT is consumed: "status" when its exit status decides something (`&&`, `||`, `if`/`while`/`until`/`!`, a `$?` in the next clause), "kill" when its output feeds a `kill` (`kill $(...)`, `| xargs kill`). `block_self_matching_pgrep` reads it: a self-matching `pgrep -f` only costs something when one of these is true.
@@ -1360,6 +1362,134 @@ def _strip_prefixes(words):
     return words[k:], prefixed
 
 
+# --------------------------------------------------------------------------- the environment a command runs with (#d2d5f89d) ---------------------------------------------------------------------------
+#
+# A VARIABLE IN A COMMAND'S ENVIRONMENT CAN CHOOSE WHAT IT ACTS ON as surely as a flag can: `GH_REPO=rediacc/renet gh pr create` is a create on renet, exactly as `--repo rediacc/renet` is, and a guard that reads only the flag judged it as a console create (measured 2026-10-07, block_nondraft_pr_create rc=2 against the flag's rc=0). So the walk records, per command, the variables the
+# command line itself hands it: a `NAME=value` prefix (that command only), `env NAME=value` / `env -u NAME` / `env -i` in front of it, and the statements that persist like a `cd` does: `export NAME=value`, `declare -x`/`typeset -x`, a bare `NAME=value` once NAME is exported, and `unset NAME`. A subshell, a pipeline stage or a substitution sees a copy; `sh -c` and a shell reading stdin see only the
+# exported ones; `eval` shares the shell. The shell state is a dict `NAME -> (value or None, exported)` and is never mutated in place, so a copy is just the same reference in a new state list.
+
+
+def _assignment(text):
+    """`(name, value, append)` for a `NAME=value` / `NAME+=value` word, None for anything else (an array element `a[1]=x` included: it can never be exported)."""
+    m = _ASSIGNMENT.match(text)
+    if not m or m.group(1):
+        return None
+    head = text[: m.end()]
+    return head.rstrip("+="), text[m.end() :], head.endswith("+=")
+
+
+def _call_env(words):
+    """What a simple command's own words do to the environment of the command it runs: `(statement, ops)`.
+
+    `ops` are `("set", name, value, append)`, `("unset", name)` and `("clear",)`, in order: the leading assignments, then those of an `env` prefix command (`env -u NAME`, `--unset=NAME`, `-i`). `statement` is True when the words are ONLY assignments, a bare `NAME=value` that sets a shell variable and runs nothing. Mirrors `_strip_prefixes`, which decides what the command is.
+    """
+    vals = [_word_value(w) for w in words]
+    ops: list[tuple] = []
+    k = 0
+    while k < len(vals) and vals[k] in _RESERVED_PREFIX:
+        k += 1
+    if k < len(vals) and vals[k] == "time":
+        k += 1
+        while k < len(vals) and vals[k] in ("-p", "--"):
+            k += 1
+    start = k
+    while k < len(vals) and _ASSIGNMENT.match(vals[k]):
+        hit = _assignment(vals[k])
+        if hit:
+            ops.append(("set", *hit))
+        k += 1
+    if k == len(vals):
+        return k > start, ops
+    while k < len(vals) and vals[k] in _PREFIX_COMMANDS:
+        name = vals[k]
+        takes = _PREFIX_COMMANDS[name]
+        k += 1
+        while k < len(vals):
+            arg = vals[k]
+            if arg == "--":
+                k += 1
+                break
+            if name == "env":
+                hit = _assignment(arg)
+                if hit:
+                    ops.append(("set", *hit))
+                    k += 1
+                    continue
+                if arg in ("-i", "--ignore-environment"):
+                    ops.append(("clear",))
+                    k += 1
+                    continue
+                if arg in ("-u", "--unset") and k + 1 < len(vals):
+                    ops.append(("unset", vals[k + 1]))
+                    k += 2
+                    continue
+                if arg.startswith("--unset="):
+                    ops.append(("unset", arg[len("--unset=") :]))
+                    k += 1
+                    continue
+                if re.match(r"^-[0iv]*u.", arg):
+                    ops.append(("unset", arg.split("u", 1)[1]))
+                    k += 1
+                    continue
+                if re.match(r"^-[0v]*i[0v]*$", arg):
+                    ops.append(("clear",))
+                    k += 1
+                    continue
+            if arg.startswith("-") and len(arg) > 1:
+                k += 2 if arg in takes else 1
+                continue
+            break
+        if name in _PREFIX_OPERAND and k < len(vals):
+            k += 1
+    return False, ops
+
+
+def _exported(shell):
+    """`{NAME: value}` of the exported variables in a walk's shell state: what a child process inherits from the command line."""
+    return {n: v for n, (v, exp) in shell.items() if exp}
+
+
+def _apply_env(env, ops):
+    """`env` (a `{NAME: value}`) with `_call_env`'s ops applied, as a new dict."""
+    out = dict(env)
+    for op in ops:
+        if op[0] == "clear":
+            out = {}
+        elif op[0] == "unset":
+            out[op[1]] = None
+        else:
+            _, name, value, append = op
+            out[name] = (out.get(name) or "") + value if append else value
+    return out
+
+
+def _shell_builtin(base, argv, shell):
+    """The shell state after `export`, `declare -x`/`typeset -x` or `unset` with `argv`, as a new dict; `shell` itself when `base` is none of them."""
+    if base not in ("export", "declare", "typeset", "unset"):
+        return shell
+    letters = "".join(a[1:] for a in argv if a.startswith("-") and len(a) > 1 and a != "--")
+    names = [a for a in argv if not (a.startswith("-") and len(a) > 1)]
+    out = dict(shell)
+    if base == "unset":
+        if "f" in letters:
+            return shell
+        for name in names:
+            out.pop(name, None)
+        return out
+    if base != "export" and "x" not in letters:
+        return shell
+    exported = "n" not in letters or base != "export"
+    for arg in names:
+        hit = _assignment(arg)
+        if hit:
+            name, value, append = hit
+            old = out.get(name, (None, False))[0]
+            out[name] = ((old or "") + value if append else value, exported)
+        elif re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", arg):
+            out[arg] = (out.get(arg, (None, False))[0], exported)
+    return out
+
+
 def _git_invocation(argv, cwd):
     """`(subcommand, directory)` for a `git` argv: every `-C` before the subcommand composes onto the current directory, the way git applies them."""
     here = cwd
@@ -1410,17 +1540,21 @@ class _Walker:
         self.analysis = analysis
         self.depth = depth
 
-    def text(self, src, cwd, persist):
-        """Walk a command string. `persist` says whether a `cd` in it outlives it (an `eval` does; a `sh -c` does not)."""
+    def text(self, src, cwd, persist, shell=None):
+        """Walk a command string. `persist` says whether a `cd` or an `export` in it outlives it (an `eval` does; a `sh -c` does not). Returns `(cwd, shell)` as they stand after it.
+
+        The walk's state is a two-slot list, `[cwd, shell]`: the directory (`cd`) and the shell variables (`_shell_builtin`), both of which a statement changes for the statements after it.
+        """
+        shell = shell if shell is not None else {}
         if self.depth >= _MAX_DEPTH or src == "":
-            return cwd
+            return cwd, shell
         lexer = _Lexer(src)
         toks = lexer.tokens()
         self.analysis.heredocs.extend(lexer.heredocs)
         inner = _Walker(self.analysis, self.depth + 1)
-        state = [cwd]
+        state = [cwd, shell]
         inner.items(_parse(toks), state, lexer)
-        return state[0] if persist else cwd
+        return (state[0], state[1]) if persist else (cwd, shell)
 
     def items(self, items, state, lexer):
         runs = self.analysis.runs
@@ -1439,7 +1573,7 @@ class _Walker:
             )
             spans = []
             for pos, stage in enumerate(stages):
-                own = [state[0]] if isolated else state
+                own = [state[0], state[1]] if isolated else state
                 start = len(runs)
                 self.element(
                     stage,
@@ -1458,7 +1592,7 @@ class _Walker:
     def element(self, stage, state, lexer, upstream, tested=False):
         kind = stage[0]
         if kind == "sub":
-            self.items(stage[1], [state[0]], lexer)
+            self.items(stage[1], [state[0], state[1]], lexer)
             self.redirs(stage[2], state, lexer)
             return
         if kind == "brace":
@@ -1484,6 +1618,14 @@ class _Walker:
             if value not in _RESERVED_PREFIX:
                 break
             lead.append(value)
+        statement, env_ops = _call_env(words)
+        if statement:
+            # A bare `NAME=value` sets a shell variable; it reaches a child's environment only when NAME is exported.
+            shell = dict(state[1])
+            for _, var, value, append in env_ops:
+                old, exp = shell.get(var, (None, False))
+                shell[var] = ((old or "") + value if append else value, exp)
+            state[1] = shell
         words, _prefixed = _strip_prefixes(words)
         if not words:
             return
@@ -1492,7 +1634,13 @@ class _Walker:
             return
         argv = [_word_value(w) for w in words[1:]]
         rendered = [r for r in (_word_render(w) for w in words[1:]) if r != ""]
-        run = _Run(name, argv, " ".join([name, *rendered]), state[0])
+        run = _Run(
+            name,
+            argv,
+            " ".join([name, *rendered]),
+            state[0],
+            _apply_env(_exported(state[1]), env_ops),
+        )
         run.writes = own_writes
         if tested or any(w in ("if", "elif", "while", "until", "!") for w in lead):
             run.usage.add("status")
@@ -1510,22 +1658,28 @@ class _Walker:
         elif base == "git":
             run.git_sub, run.git_dir = _git_invocation(argv, state[0])
         elif base == "eval":
-            state[0] = self.nested(" ".join(argv), state[0], persist=True)
+            state[0], state[1] = self.nested(" ".join(argv), state[0], persist=True, shell=state[1])
         elif base in SHELL_NAMES:
+            # A child shell inherits the environment, never the parent's unexported variables.
+            child = {n: (v, True) for n, v in run.env.items() if v is not None}
             mode, payload = _shell_payload(argv)
             if mode == "c" and payload is not None:
-                self.nested(payload, state[0], persist=False)
+                self.nested(payload, state[0], persist=False, shell=child)
             elif mode == "stdin":
-                self.stdin(redirs, lexer, state, upstream)
+                self.stdin(redirs, lexer, [state[0], child], upstream)
+        else:
+            state[1] = _shell_builtin(base, argv, state[1])
 
     def stdin(self, redirs, lexer, state, upstream):
-        """A shell reading its script from stdin runs whatever arrives there (A0 L4): a heredoc body, a here-string, or the output of `cat <<EOF`/`echo` upstream in the pipe."""
+        """A shell reading its script from stdin runs whatever arrives there (A0 L4): a heredoc body, a here-string, or the output of `cat <<EOF`/`echo` upstream in the pipe. `state` is the child shell's `[cwd, shell]`."""
         for redir in redirs:
             if redir.heredoc is not None and redir.heredoc.body_start is not None:
                 hd = redir.heredoc
-                self.nested(lexer.src[hd.body_start : hd.body_end], state[0], persist=False)
+                self.nested(
+                    lexer.src[hd.body_start : hd.body_end], state[0], persist=False, shell=state[1]
+                )
             elif redir.op == "<<<" and redir.target is not None:
-                self.nested(_word_value(redir.target), state[0], persist=False)
+                self.nested(_word_value(redir.target), state[0], persist=False, shell=state[1])
         if upstream is None or upstream[0] != "cmd":
             return
         words, _ = _strip_prefixes([t for t in upstream[1] if isinstance(t, _Word)])
@@ -1537,17 +1691,22 @@ class _Walker:
             for redir in ups:
                 if redir.heredoc is not None and redir.heredoc.body_start is not None:
                     hd = redir.heredoc
-                    self.nested(lexer.src[hd.body_start : hd.body_end], state[0], persist=False)
+                    self.nested(
+                        lexer.src[hd.body_start : hd.body_end],
+                        state[0],
+                        persist=False,
+                        shell=state[1],
+                    )
                 elif redir.op == "<<<" and redir.target is not None:
-                    self.nested(_word_value(redir.target), state[0], persist=False)
+                    self.nested(_word_value(redir.target), state[0], persist=False, shell=state[1])
         elif feeder in ("echo", "printf"):
             args = [_word_value(w) for w in words[1:]]
             while args and feeder == "echo" and re.match(r"^-[neE]+$", args[0]):
                 args = args[1:]
-            self.nested(" ".join(args), state[0], persist=False)
+            self.nested(" ".join(args), state[0], persist=False, shell=state[1])
 
-    def nested(self, src, cwd, persist):
-        return _Walker(self.analysis, self.depth + 1).text(src, cwd, persist)
+    def nested(self, src, cwd, persist, shell=None):
+        return _Walker(self.analysis, self.depth + 1).text(src, cwd, persist, shell)
 
     def redirs(self, redirs, state, lexer):
         for redir in redirs:
@@ -1566,7 +1725,7 @@ class _Walker:
         for part in parts:
             if part.sub is not None and self.depth < _MAX_DEPTH:
                 inner = _Walker(self.analysis, self.depth + 1)
-                inner.items(_parse(part.sub), [state[0]], lexer)
+                inner.items(_parse(part.sub), [state[0], state[1]], lexer)
             if part.parts:
                 self.parts(part.parts, state, lexer)
 
@@ -1909,15 +2068,18 @@ class ParsedArgs:
     """One gh (or git subcommand) invocation, parsed: `command` (`("pr", "create")`, `("api",)`, ...), `flags` as `(long name, value)` in order (a boolean's value is "true" unless spelled `=<v>`), and `operands`, the positional words.
 
     `known` is False for a command the tables do not describe; its flags are then read with the inherited table only, and an unknown flag ends the parse, as it ends gh's.
+
+    `problems` (git mode only) lists `("ambiguous", spelling)` and `("unknown", spelling)` for each option git itself would refuse: `git commit --fi x` is ambiguous between `--file` and `--fixup`, and git exits 129 and runs nothing. The parse READS ON past one rather than stopping, so a later `--file f` is still seen; a caller that wants to refuse such a command outright can.
     """
 
-    __slots__ = ("command", "flags", "known", "operands")
+    __slots__ = ("command", "flags", "known", "operands", "problems")
 
-    def __init__(self, command, flags, operands, known):
+    def __init__(self, command, flags, operands, known, problems=None):
         self.command = command
         self.flags = flags
         self.operands = operands
         self.known = known
+        self.problems = problems if problems is not None else []
 
     def values(self, name):
         """Every value `name` was given, in order."""
@@ -1934,28 +2096,56 @@ class ParsedArgs:
         return value is not None and value not in _GH_FALSE
 
 
-def _lookup(name, table, git):
-    """`(long name, spec)` for a `--name` spelling, or None. git also takes a unique prefix (`--fil` is `--file`) and a `--no-` negation, which sets nothing a guard reads and so comes back with spec None."""
+# `_lookup`'s answer for a git abbreviation that fits more than one option.
+_AMBIGUOUS = ("", None, False)
+
+
+def _git_spellings(table, noneg):
+    """Every `--<spelling>` git's parse-options accepts for `table`, mapped to the `(long name, negated)` meanings it may have: each name, `no-<name>` unless the option is in `noneg`, and for a name that itself starts `no-` its bare remainder (`--verify` is the negation of `--no-verify`, and `--no-no-verify` is too: measured on git 2.53.0)."""
+    out: dict[str, set] = {}
+    for name in table:
+        out.setdefault(name, set()).add((name, False))
+    for name in table:
+        if name in noneg:
+            continue
+        out.setdefault("no-" + name, set()).add((name, True))
+        if name.startswith("no-"):
+            out.setdefault(name[3:], set()).add((name, True))
+    return out
+
+
+def _lookup(name, table, git, noneg=frozenset()):
+    """`(long name, spec, negated)` for a `--name` spelling; None for an unknown one, `_AMBIGUOUS` for an abbreviation git refuses.
+
+    pflag takes exact names only. git (parse-options.c `parse_long_opt`) also takes a `--no-` negation and a unique PREFIX of any spelling, an exact spelling winning over a longer one it prefixes (`--allow-empty` is not an abbreviation of `--allow-empty-message`). Unique means one MEANING: two spellings of the same option are not a conflict. Measured on git 2.53.0 `git commit`: `--fil` is `--file`, `--no-veri` is `--no-verify`, `--no-e` is `--no-edit`; `--fi` (file, fixup), `--ver` (verbose, verify), `--no-ver` (no-verify, no-verbose) and `--al` exit 129.
+    """
     if name in table:
-        return name, table[name]
+        return name, table[name], False
     if not git:
         return None
-    if name.startswith("no-") and name[3:] in table:
-        return name[3:], None
-    hits = [k for k in table if k.startswith(name)] + [
-        "no-" + k for k in table if ("no-" + k).startswith(name) and name.startswith("no")
-    ]
-    if len(hits) != 1:
+    spellings = _git_spellings(table, noneg)
+    meanings = spellings.get(name)
+    if meanings is None:
+        meanings = set()
+        for spelling, means in spellings.items():
+            if name and spelling.startswith(name):
+                meanings |= means
+    if not meanings:
         return None
-    return (hits[0][3:], None) if hits[0].startswith("no-") else (hits[0], table[hits[0]])
+    if len(meanings) > 1:
+        return _AMBIGUOUS
+    long, negated = next(iter(meanings))
+    return long, table[long], negated
 
 
-def _gh_parse(words, table, stop_at_operand, git=False):
+def _gh_parse(words, table, stop_at_operand, git=False, noneg=frozenset(), problems=None):
     """pflag (or, with `git`, git's parse-options) over `words` with `table`. Returns `(flags, operands, rest)`: `rest` is what follows the first operand when `stop_at_operand`, else [].
 
-    A spec's second field is True for a flag that takes a value, False for a boolean, and "opt" for git's optional value (`-n5`, `--column=x`), which is never taken from the next word. The two dialects differ in two more places: git's `-F=x` names the file `=x` where pflag's names `x`, and git accepts the abbreviations `_lookup` describes.
+    A spec's second field is True for a flag that takes a value, False for a boolean, and "opt" for git's optional value (`-n5`, `--column=x`), which is never taken from the next word. The two dialects differ in three more places: git's `-F=x` names the file `=x` where pflag's names `x`; git accepts the abbreviations and negations `_lookup` describes (a negated boolean is recorded as `(name, "false")`, a negated value-taking option as nothing); and git mode READS ON past an option git would refuse, recording it in `problems`, where gh mode stops. git refuses such a command and runs nothing, so reading on can only over-report, and a table one option short of a newer git must not hide the `-F` after it.
     """
     shorts = {spec[0]: name for name, spec in table.items() if spec[0]}
+    if problems is None:
+        problems = []
     flags = []
     operands = []
     i = 0
@@ -1967,12 +2157,17 @@ def _gh_parse(words, table, stop_at_operand, git=False):
             break
         if arg.startswith("--"):
             name, eq, value = arg[2:].partition("=")
-            found = _lookup(name, table, git)
-            if found is None:
-                # gh and git refuse an unknown flag and run nothing; reading on would only guess.
-                break
-            name, spec = found
-            if spec is None:
+            found = _lookup(name, table, git, noneg)
+            if found is None or found is _AMBIGUOUS:
+                if not git:
+                    # gh refuses an unknown flag and runs nothing; reading on would only guess.
+                    break
+                problems.append(("unknown" if found is None else "ambiguous", arg))
+                continue
+            name, spec, negated = found
+            if negated:
+                if spec[1] is not True:
+                    flags.append((name, "false"))
                 continue
             if spec[1] == "opt":
                 value = value if eq else ""
@@ -1994,6 +2189,9 @@ def _gh_parse(words, table, stop_at_operand, git=False):
         for pos, letter in enumerate(letters):
             name = shorts.get(letter)
             if name is None:
+                if git:
+                    problems.append(("unknown", "-" + letter))
+                    continue
                 return flags, operands, []
             rest = letters[pos + 1 :]
             if table[name][1] == "opt":
@@ -2070,13 +2268,159 @@ GIT_TAG_FLAGS = {
     "color": ("", "opt"),
     "ignore-case": ("i", False),
     "n": ("n", "opt"),
+    # Hidden aliases of `--contains`/`--no-contains`: listed so `--wi` is as ambiguous here as it is to git.
+    "with": ("", True),
+    "without": ("", True),
 }
+
+
+# The `git tag` options git does not let `--no-` negate (`git tag --git-completion-helper-all` on git 2.53.0 lists every negation it does accept).
+GIT_TAG_NONEG = frozenset(
+    (
+        "list",
+        "delete",
+        "verify",
+        "message",
+        "trailer",
+        "contains",
+        "no-contains",
+        "merged",
+        "no-merged",
+        "with",
+        "without",
+    )
+)
 
 
 def git_tag_args(args):
     """`ParsedArgs` for the words after `git tag` (`commit_policy.git_split(run.argv)[2]`), git's parse-options rules: `-F f`, `-Ff`, `-aF f`, `--file=f`, `--fil f`."""
-    flags, operands, _ = _gh_parse(list(args), GIT_TAG_FLAGS, False, git=True)
-    return ParsedArgs(("tag",), flags, operands, True)
+    problems: list = []
+    flags, operands, _ = _gh_parse(
+        list(args), GIT_TAG_FLAGS, False, git=True, noneg=GIT_TAG_NONEG, problems=problems
+    )
+    return ParsedArgs(("tag",), flags, operands, True, problems)
+
+
+# `git commit --git-completion-helper-all` on git 2.53.0, hidden options (`--allow-empty`, `--allow-empty-message`) included, because a git abbreviation is unique only against the WHOLE set: leave one out and `--al` stops being ambiguous here while git still refuses it. Long name -> (shorthand or "", takes a value); "opt" is an optional value that is only ever attached (`-Skey`, `--gpg-sign=key`, `-uno`).
+GIT_COMMIT_FLAGS = {
+    "quiet": ("q", False),
+    "verbose": ("v", False),
+    "file": ("F", True),
+    "author": ("", True),
+    "date": ("", True),
+    "message": ("m", True),
+    "reedit-message": ("c", True),
+    "reuse-message": ("C", True),
+    "fixup": ("", True),
+    "squash": ("", True),
+    "reset-author": ("", False),
+    "trailer": ("", True),
+    "signoff": ("s", False),
+    "template": ("t", True),
+    "edit": ("e", False),
+    "cleanup": ("", True),
+    "status": ("", False),
+    "gpg-sign": ("S", "opt"),
+    "all": ("a", False),
+    "include": ("i", False),
+    "interactive": ("", False),
+    "patch": ("p", False),
+    "unified": ("U", True),
+    "inter-hunk-context": ("", True),
+    "only": ("o", False),
+    "no-verify": ("n", False),
+    "dry-run": ("", False),
+    "short": ("", False),
+    "branch": ("", False),
+    "ahead-behind": ("", False),
+    "porcelain": ("", False),
+    "long": ("", False),
+    "null": ("z", False),
+    "amend": ("", False),
+    "no-post-rewrite": ("", False),
+    "untracked-files": ("u", "opt"),
+    "pathspec-from-file": ("", True),
+    "pathspec-file-nul": ("", False),
+    "allow-empty": ("", False),
+    "allow-empty-message": ("", False),
+}
+# The ones the same listing offers no `--no-` form of.
+GIT_COMMIT_NONEG = frozenset(("trailer", "unified", "inter-hunk-context"))
+
+
+def git_commit_args(args):
+    """`ParsedArgs` for the words after `git commit` (`commit_policy.git_split(run.argv)[2]`), git's parse-options rules: `-F f`, `-Ff`, `-qF f`, `--file=f`, `--fil f`, `--no-veri`, `--verify` undoing an earlier `-n` (the last one wins, measured on git 2.53.0). Options and pathspecs may interleave, as git permutes them; everything after `--` is a pathspec."""
+    problems: list = []
+    flags, operands, _ = _gh_parse(
+        list(args), GIT_COMMIT_FLAGS, False, git=True, noneg=GIT_COMMIT_NONEG, problems=problems
+    )
+    return ParsedArgs(("commit",), flags, operands, True, problems)
+
+
+# `git checkout` and `git switch`, `--git-completion-helper-all` plus `-h` on git 2.53.0, for the branch a guard asks either one to create (`commit_policy._git_creations`). `-b`, `-B` and `-l` have no long name, so they sit under their letter, which `--`-spelling can only reach exactly. "opt" options never take the next word.
+GIT_CHECKOUT_FLAGS = {
+    "b": ("b", True),
+    "B": ("B", True),
+    "l": ("l", False),
+    "guess": ("", False),
+    "overlay": ("", False),
+    "quiet": ("q", False),
+    "recurse-submodules": ("", "opt"),
+    "progress": ("", False),
+    "merge": ("m", False),
+    "conflict": ("", True),
+    "detach": ("d", False),
+    "track": ("t", "opt"),
+    "force": ("f", False),
+    "orphan": ("", True),
+    "overwrite-ignore": ("", False),
+    "ignore-other-worktrees": ("", False),
+    "ours": ("2", False),
+    "theirs": ("3", False),
+    "patch": ("p", False),
+    "unified": ("U", True),
+    "inter-hunk-context": ("", True),
+    "ignore-skip-worktree-bits": ("", False),
+    "pathspec-from-file": ("", True),
+    "pathspec-file-nul": ("", False),
+}
+GIT_CHECKOUT_NONEG = frozenset(("b", "B", "l", "ours", "theirs", "unified", "inter-hunk-context"))
+GIT_SWITCH_FLAGS = {
+    "create": ("c", True),
+    "force-create": ("C", True),
+    "guess": ("", False),
+    "discard-changes": ("", False),
+    "quiet": ("q", False),
+    "recurse-submodules": ("", "opt"),
+    "progress": ("", False),
+    "merge": ("m", False),
+    "conflict": ("", True),
+    "detach": ("d", False),
+    "track": ("t", "opt"),
+    "force": ("f", False),
+    "orphan": ("", True),
+    "overwrite-ignore": ("", False),
+    "ignore-other-worktrees": ("", False),
+}
+GIT_SWITCH_NONEG: frozenset = frozenset()
+
+
+def git_checkout_args(args):
+    """`ParsedArgs` for the words after `git checkout`: `-b x`, `-qb x`, `-bx`, `--orph=x` (git 2.53.0 created the branch for each)."""
+    problems: list = []
+    flags, operands, _ = _gh_parse(
+        list(args), GIT_CHECKOUT_FLAGS, False, git=True, noneg=GIT_CHECKOUT_NONEG, problems=problems
+    )
+    return ParsedArgs(("checkout",), flags, operands, True, problems)
+
+
+def git_switch_args(args):
+    """`ParsedArgs` for the words after `git switch`: `-c x`, `-qc x`, `--cr x`, `--create=x` (git 2.53.0 created the branch for each)."""
+    problems: list = []
+    flags, operands, _ = _gh_parse(
+        list(args), GIT_SWITCH_FLAGS, False, git=True, noneg=GIT_SWITCH_NONEG, problems=problems
+    )
+    return ParsedArgs(("switch",), flags, operands, True, problems)
 
 
 def gh_repo_name(value):
@@ -2119,11 +2463,25 @@ def _origin_repo(cwd):
     return repo if repo != "" else GH_REPO
 
 
-def gh_run_repo(run, cwd):
-    """The repository one walked `gh` call targets: its own `--repo`/`-R` in any spelling, then the private/<submodule> it runs in (its `cd`), then `cwd`'s origin, then rediacc/console. `target_repo`'s order, read from the call instead of from a text segment."""
+def gh_named_repo(run):
+    """The repository one walked `gh` call NAMES, as lowercase `OWNER/REPO`: its own `--repo`/`-R` in any spelling, else a non-empty `GH_REPO` in its environment (`run.env`: a `GH_REPO=x` prefix, `env GH_REPO=x`, an earlier `export GH_REPO=x`). None when it names neither, and its directory decides.
+
+    gh's own order (pkg/cmd/factory `BaseRepo`): the flag overrides the variable, which overrides the git remotes; an empty `GH_REPO` is ignored. Measured 2026-10-07 through dispatch.py: `GH_REPO=rediacc/renet gh pr create -t x` was judged as a console create (rc=2) where `--repo rediacc/renet` was not (rc=0), in every guard that read the repo (#d2d5f89d).
+    """
     flagged = gh_args(run.argv).last("repo")
     if flagged:
         return gh_repo_name(flagged)
+    env = (getattr(run, "env", None) or {}).get("GH_REPO")
+    if env:
+        return gh_repo_name(env)
+    return None
+
+
+def gh_run_repo(run, cwd):
+    """The repository one walked `gh` call targets: what it names (`gh_named_repo`: `--repo`/`-R` in any spelling, then `GH_REPO`), then the private/<submodule> it runs in (its `cd`), then `cwd`'s origin, then rediacc/console. `target_repo`'s order, read from the call instead of from a text segment."""
+    named = gh_named_repo(run)
+    if named:
+        return named
     m = re.search(r"(^|/)private/(renet|account|elite|homebrew-tap)(/|$)", run.cwd or "")
     if m:
         return "rediacc/" + m.group(2)
@@ -2140,9 +2498,15 @@ def gh_api_method(parsed):
     return "GET"
 
 
-def gh_api_endpoint(parsed):
-    """The endpoint operand of a parsed `gh api` call as a bare path (`repos/o/r/pulls/5`): a scheme and host (`https://api.github.com/`), the query string and the leading and trailing slashes dropped; "" when there is none."""
+def gh_api_endpoint(parsed, repo=None):
+    """The endpoint operand of a parsed `gh api` call as a bare path (`repos/o/r/pulls/5`): a scheme and host (`https://api.github.com/`), the query string and the leading and trailing slashes dropped; "" when there is none.
+
+    With `repo` (`OWNER/REPO`, from `gh_run_repo`), gh's `{owner}` and `{repo}` placeholders are filled from it, as gh fills them from the same `--repo`/`GH_REPO`/remote order.
+    """
     if not parsed.operands:
         return ""
     path = re.sub(r"^https?://[^/]+/", "", parsed.operands[0]).split("?", 1)[0]
+    if repo and "/" in repo:
+        owner, name = repo.split("/", 1)
+        path = path.replace("{owner}", owner).replace("{repo}", name)
     return path.strip("/")
