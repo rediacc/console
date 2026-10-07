@@ -8,12 +8,11 @@ The real-target runs that are the acceptance for these scripts are the lead's re
 from __future__ import annotations
 
 import json
-import time
 import typing
 
 import pytest
 
-from rediacc_ci.ops import reset_bench
+from rediacc_ci.ops import cf_auth, reset_bench
 from rediacc_ci.tests import ops_cf_harness as h
 
 if typing.TYPE_CHECKING:
@@ -133,6 +132,133 @@ def test_delta_self_destruct_reports_a_failed_delete(world: h.World) -> None:
     assert "NOT deleted" not in err_b
     _, _, err_p = world.port("rediacc_ci.ops.backup_d1", ["edge", "--self-destruct"], env)
     assert "CF management token was NOT deleted: forbidden" in h.strip(err_p)
+
+
+# ---------------------------------------------------------------- cf_auth.await_propagation
+
+ACCT = cf_auth.DEFAULT_ACCOUNT_ID
+D1_PROBE = "/accounts/%s/d1/database" % ACCT
+SCRIPTS_PROBE = "/accounts/%s/workers/scripts" % ACCT
+
+
+class FakeCF:
+    """Stands in for `cf_auth.curl_json`: verify accepts at once, D1 refuses its first `d1_refusals` probes (the measured propagation shape) and, optionally, the `flap_at`-th one."""
+
+    def __init__(self, d1_refusals: int = 0, flap_at: int | None = None) -> None:
+        self.d1_refusals, self.flap_at = d1_refusals, flap_at
+        self.calls: list[tuple[str, str]] = []
+        self.refused = 0
+
+    def __call__(self, method: str, url: str, *_rest: object, **_kw: object) -> dict:
+        path = url.rsplit("/client/v4", maxsplit=1)[-1].split("?", maxsplit=1)[0]
+        self.calls.append((method, path))
+        if path == D1_PROBE:
+            n = sum(1 for _, p in self.calls if p == D1_PROBE)
+            if n <= self.d1_refusals or n == self.flap_at:
+                self.refused += 1
+                return {
+                    "success": False,
+                    "errors": [{"code": 10000, "message": "Authentication error"}],
+                }
+        return {"success": True, "result": {}}
+
+    def count(self, path: str) -> int:
+        return sum(1 for _, p in self.calls if p == path)
+
+
+class FakeClock:
+    def __init__(self) -> None:
+        self.t = 0.0
+
+    def __call__(self) -> float:
+        return self.t
+
+    def sleep(self, s: float) -> None:
+        self.t += s
+
+
+def _minted() -> cf_auth.Auth:
+    return cf_auth.Auth(
+        TOKEN_ENV["CF_MANAGEMENT_TOKEN"],
+        created=True,
+        policies=cf_auth.token_policies(ACCT, "USER1", ["ZONE1"]),
+    )
+
+
+def test_ready_probes_follow_the_minted_policies() -> None:
+    probes = cf_auth.ready_probes(cf_auth.token_policies(ACCT, "USER1", ["ZONE1"]))
+    assert probes == [
+        ("verify", "/user/tokens/verify"),
+        ("D1", D1_PROBE + "?per_page=1"),
+        ("Workers Scripts", SCRIPTS_PROBE),
+    ]
+    # A token granting none of the slow services is probed by verify alone.
+    bare = [
+        {
+            "effect": "allow",
+            "resources": {"com.cloudflare.api.account.%s" % ACCT: "*"},
+            "permission_groups": [{"id": "bf7481a1826f439697cb59a20b22293e"}],
+        }
+    ]
+    assert cf_auth.ready_probes(bare) == [cf_auth.VERIFY_PROBE]
+
+
+def test_await_propagation_waits_out_refusals(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake, clock = FakeCF(d1_refusals=3), FakeClock()
+    monkeypatch.setattr(cf_auth, "curl_json", fake)
+    waited = cf_auth.await_propagation(_minted(), sleep=clock.sleep, clock=clock)
+    assert fake.refused == 3  # the control: the fake really refused before it accepted
+    assert fake.count(D1_PROBE) == 3 + cf_auth.READY_CONSECUTIVE
+    assert fake.count(SCRIPTS_PROBE) == cf_auth.READY_CONSECUTIVE
+    assert all(m == "GET" for m, _ in fake.calls), "readiness probes must be read-only"
+    assert waited >= 3
+
+
+def test_await_propagation_resets_the_streak_on_a_refusal_between_successes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # accepted, refused (another edge node), then accepted twice: one success is not readiness
+    fake, clock = FakeCF(flap_at=2), FakeClock()
+    monkeypatch.setattr(cf_auth, "curl_json", fake)
+    cf_auth.await_propagation(_minted(), sleep=clock.sleep, clock=clock)
+    assert fake.refused == 1
+    assert fake.count(D1_PROBE) == 4
+
+
+def test_await_propagation_gives_up_naming_the_service(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake, clock = FakeCF(d1_refusals=10**6), FakeClock()
+    monkeypatch.setattr(cf_auth, "curl_json", fake)
+    with pytest.raises(
+        cf_auth.CfAuthError,
+        match=r"not accepted by D1 \(GET %s\) within 5 s; last error codes \[10000\]" % D1_PROBE,
+    ):
+        cf_auth.await_propagation(_minted(), deadline_s=5, sleep=clock.sleep, clock=clock)
+    assert clock.t <= 5 + cf_auth.READY_INTERVAL_S
+    assert fake.count(SCRIPTS_PROBE) == 0  # never reached past the stuck service
+
+
+def test_await_propagation_treats_a_non_json_answer_as_a_refusal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    answers = iter([cf_auth.CfAuthError("GET x did not return JSON (curl exit 7)")])
+    clock = FakeClock()
+
+    def flaky(*_args: object, **_kwargs: object) -> dict:
+        nxt = next(answers, None)
+        if nxt is not None:
+            raise nxt
+        return {"success": True}
+
+    monkeypatch.setattr(cf_auth, "curl_json", flaky)
+    cf_auth.await_propagation(_minted(), sleep=clock.sleep, clock=clock)
+    assert clock.t > 0
+
+
+def test_a_supplied_token_is_not_probed(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = FakeCF()
+    monkeypatch.setattr(cf_auth, "curl_json", fake)
+    assert cf_auth.await_propagation(cf_auth.Auth(TOKEN_ENV["CF_MANAGEMENT_TOKEN"])) == 0.0
+    assert fake.calls == []
 
 
 # ---------------------------------------------------------------- backup_d1
@@ -271,8 +397,12 @@ def test_reset_bench_d1_half_matches_bash(world: h.World) -> None:
     rc_b, out_b, err_b = world.twin_run("scripts/ops/reset-bench.sh", ["--yes", "--d1-only"], env)
     bash_calls = world.calls()
     world.reset_log()
+    world.add_routes(*h.PROBE_ROUTES)  # after the twin: the route table keys its golden
     rc_p, out_p, err_p = world.port("rediacc_ci.ops.reset_bench", ["--yes", "--d1-only"], env)
-    port_calls = world.calls()
+    # DECLARED DELTA: the port probes the minted token's readiness (the bash did not wait at all); compared without the probe block.
+    port_calls, probes = h.split_probe_block(world.calls())
+    assert not h.split_probe_block(bash_calls)[1]  # the control: the bash sent no probe
+    assert probes, "the minted token was used without a readiness probe"
     assert rc_b == rc_p == 0, (err_b, err_p)
     # ONE DECLARED DELTA: the closing hint names the bench deploy the way it is run now. The bash script it named was retired (PLAN-retire-bash-oracles B3), so the golden's line is mapped before the comparison, and the golden is asserted to carry it so the mapping cannot go vacuous.
     redeploy_bash = "To redeploy fresh code: scripts/ops/deploy-bench.sh\n"
@@ -306,7 +436,9 @@ def test_reset_bench_d1_half_matches_bash(world: h.World) -> None:
     assert not {"CF_GLOBAL_API_KEY", "CF_EMAIL", "CF_API_KEY"} & set(npx[0]["cf_env"])
     # The "Dropping N tables: ..." line lists them in drop order, which is the delta pinned below.
     assert [ln for ln in _quiet_selfdestruct(err_b) if "Dropping" not in ln] == [
-        ln for ln in _quiet_selfdestruct(err_p) if "Dropping" not in ln
+        ln
+        for ln in _quiet_selfdestruct(err_p)
+        if "Dropping" not in ln and "accepted by every service" not in ln
     ]
 
 
@@ -451,13 +583,50 @@ def test_delta_end_of_input_at_the_prompt_aborts(world: h.World) -> None:
 
 
 def test_delta_a_minted_token_is_awaited_before_the_first_query(world: h.World) -> None:
-    _reset_routes(world)
+    _reset_routes(world, *h.PROBE_ROUTES)
     env = world.env(**GLOBAL_ENV, **R2_ENV)
-    started = time.monotonic()
     rc, _, err = world.port("rediacc_ci.ops.reset_bench", ["--yes", "--d1-only"], env)
     assert rc == 0, err
-    assert time.monotonic() - started >= 7.5
-    assert [c["method"] for c in _curl_calls(world)][:3] == ["GET", "GET", "POST"]
+    curls = _curl_calls(world)
+    assert [c["method"] for c in curls][:3] == ["GET", "GET", "POST"]
+    first_query = next(i for i, c in enumerate(curls) if "/query" in c["url"])
+    probed = [c["url"].split("/client/v4")[-1] for c in curls[3:first_query]]
+    # Every slow service the token grants accepted it twice in a row before the first D1 query.
+    assert probed == [
+        "/user/tokens/verify",
+        "/user/tokens/verify",
+        "/accounts/%s/d1/database?per_page=1" % cf_auth.DEFAULT_ACCOUNT_ID,
+        "/accounts/%s/d1/database?per_page=1" % cf_auth.DEFAULT_ACCOUNT_ID,
+        "/accounts/%s/workers/scripts" % cf_auth.DEFAULT_ACCOUNT_ID,
+        "/accounts/%s/workers/scripts" % cf_auth.DEFAULT_ACCOUNT_ID,
+    ]
+    assert all(c["method"] == "GET" for c in curls[3:first_query])
+
+
+def test_delta_a_token_never_accepted_is_a_named_error_not_a_traceback(
+    world: h.World, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    refused = {
+        "method": "GET",
+        "match": "/d1/database?per_page=1",
+        "body": {"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]},
+    }
+    _reset_routes(world, refused, *h.PROBE_ROUTES)
+    # In-process, so the 60 s bound can be shortened without a test-only knob in the port.
+    for key, value in world.env(**GLOBAL_ENV, **R2_ENV).items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.chdir(world.root)
+    monkeypatch.setattr(cf_auth, "READY_DEADLINE_S", 1.0)
+    monkeypatch.setattr(cf_auth, "READY_INTERVAL_S", 0.2)
+    rc = reset_bench.main(["--yes", "--d1-only"])
+    err = capsys.readouterr().err
+    assert rc == 1
+    assert "not accepted by D1 (GET /accounts/%s/d1/database)" % cf_auth.DEFAULT_ACCOUNT_ID in err
+    assert "[10000]" in err
+    assert not any(
+        "/query" in c["url"] for c in _curl_calls(world)
+    )  # nothing ran on the refused token
+    assert any(c["method"] == "DELETE" for c in _curl_calls(world))  # and it was still destroyed
 
 
 # ---------------------------------------------------------------- deploy_bench
@@ -517,14 +686,18 @@ def test_deploy_bench_tokens_minted_from_the_global_key_wait_then_are_destroyed(
     env = world.env(**GLOBAL_ENV, **DEPLOY_ENV)
     world.twin_run("scripts/ops/deploy-bench.sh", [], env)
     bash_calls = world.calls()
-    assert any(c["tool"] == "sleep" for c in bash_calls)
+    assert any(c["tool"] == "sleep" for c in bash_calls)  # the control: the bash slept a fixed 5 s
     world.reset_log()
-    started = time.monotonic()
-    world.port("rediacc_ci.ops.deploy_bench", [], env)
-    assert (
-        time.monotonic() - started >= 7.5
-    )  # the port waits itself (time.sleep), not via a `sleep` binary
-    port_calls = world.calls()
+    world.add_routes(*h.PROBE_ROUTES)  # after the twin: the route table keys its golden
+    rc, _, err = world.port("rediacc_ci.ops.deploy_bench", [], env)
+    assert rc == 0, err
+    # The port probes instead: the probe block sits between the mint and the first wrangler call.
+    port_calls, probes = h.split_probe_block(world.calls())
+    assert {c["url"].split("/client/v4")[-1].split("?")[0] for c in probes} == {
+        "/user/tokens/verify",
+        "/accounts/%s/d1/database" % cf_auth.DEFAULT_ACCOUNT_ID,
+        "/accounts/%s/workers/scripts" % cf_auth.DEFAULT_ACCOUNT_ID,
+    }
     assert _deploy_shape(bash_calls) == _deploy_shape(port_calls)
 
 
@@ -533,8 +706,13 @@ def test_delta_a_supplied_token_does_not_wait(world: h.World) -> None:
     world.twin_run("scripts/ops/deploy-bench.sh", [], env)
     assert any(c["tool"] == "sleep" for c in world.calls())  # the control
     world.reset_log()
+    world.add_routes(*h.PROBE_ROUTES)
     world.port("rediacc_ci.ops.deploy_bench", [], env)
     assert not any(c["tool"] == "sleep" for c in world.calls())
+    assert not any(
+        c["tool"] == "curl" and ("/d1/database?" in c["url"] or "/workers/scripts" in c["url"])
+        for c in world.calls()
+    )
 
 
 def test_delta_arguments_are_rejected_not_ignored(world: h.World) -> None:

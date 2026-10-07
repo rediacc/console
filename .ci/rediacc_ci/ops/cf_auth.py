@@ -13,7 +13,7 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH, each one pinned by a test
   3. SELF-DESTRUCT REPORTS THE DELETE'S OUTCOME. The bash sent the DELETE to /dev/null and logged "deleted (self-destruct)" whatever Cloudflare answered, and its callers wrapped the whole function in `2>/dev/null || true` so even the warnings vanished. A management token that stays alive after a run is exactly what the operator needs to hear about. The result is checked (`success` in the body) and any failure is a warning on stderr; it still never changes the exit status of the run.
   4. SELF-DESTRUCT RUNS ONCE. The bash trap was installed for EXIT, INT and TERM, so an interrupt ran the handler and then the EXIT trap ran it again, the second pass failing on a token that no longer existed. `Auth.destroyed` makes the second call a no-op.
   7. THE MINTED TOKEN CARRIES R2 STORAGE WRITE. The bash policy had no R2 group, so a bench deploy that minted its own token died at the bucket preflight (`wrangler r2 bucket list` -> Cloudflare API error, run live 2026-10-01), and the same token could not list or create the bucket `deploy-bench` is meant to guarantee.
-  6. A MINTED TOKEN IS AWAITED BEFORE ITS FIRST USE (`await_propagation`). `deploy-bench.sh` carried a hand-written `sleep 5` for this; `reset-bench.sh` had none and failed every real run with `Authentication error` on its first D1 query (2026-10-01, twice, then reproduced in isolation: refused at 0 s, accepted at 6 s). One shared wait now serves both, only when the token was minted here.
+  6. A MINTED TOKEN IS AWAITED BEFORE ITS FIRST USE (`await_propagation`), BY PROBING, NOT BY SLEEPING. `deploy-bench.sh` carried a hand-written `sleep 5` for this; `reset-bench.sh` had none and failed every real run with `Authentication error` on its first D1 query (2026-10-01, twice, then reproduced in isolation: refused at 0 s, accepted at 6 s). A fixed 8 s replaced both and was itself a guess: measured 2026-10-07 over three mints, `/user/tokens/verify` accepts a new token at 0.3 s, Workers Scripts list at 1.2-1.4 s and D1 list/query at 2.0-4.4 s, and one accepted D1 request can be followed by another refusal. The wait now sends read-only GET probes, one per slow service the minted policies grant, until each has been accepted twice in a row, bounded at 60 s with a `CfAuthError` naming the service and Cloudflare's last error codes. Only a token minted here is awaited.
   5. MORE THAN FIFTY ZONES ARE NOT SILENTLY DROPPED. `zones?per_page=50` read the first page only, so a token minted for an account with fifty-one zones lacked Workers Routes Write on the last one. The first request is byte-identical to the bash; further pages are fetched only when `result_info.total_pages` says there are some.
 """
 
@@ -25,14 +25,28 @@ import json
 import os
 import subprocess
 import time
+import typing
 
 from rediacc_ci import log
 from rediacc_ci.well_known import CF_API_BASE as WK_CF_API_BASE
 
 CF_API_BASE = WK_CF_API_BASE
 DEFAULT_ACCOUNT_ID = "fa51e4a18d553c30e1633288e9733d04"
-# A new token answers `Authentication error` for a few seconds. Measured 2026-10-01 against the bench D1 query endpoint: refused at 0 s, accepted at 6 s.
-PROPAGATION_SECONDS = 8
+# A new token answers `Authentication error [code: 10000]` for a few seconds, per service: measured 2026-10-07 over three mints, verify at 0.3 s, Workers Scripts at 1.2-1.4 s, D1 at 2.0-4.4 s.
+# So readiness is probed, not slept: each slow service the token grants must accept `READY_CONSECUTIVE` GET probes in a row (propagation is per edge node, so one success does not promise the next), within `READY_DEADLINE_S`.
+READY_DEADLINE_S = 60.0
+READY_CONSECUTIVE = 2
+READY_INTERVAL_S = 1.0
+VERIFY_PROBE = ("verify", "/user/tokens/verify")
+# Account-scoped permission group id -> (service name, read-only path template). Only services measured to lag behind verify are probed; a group absent here needs no probe beyond verify.
+READY_PROBES = {
+    # D1 Write, D1 Read
+    "09b2857d1c31407795e75e3fed8617a1": ("D1", "/accounts/%s/d1/database?per_page=1"),
+    "192192df92ee43ac90f2aeeffce67e35": ("D1", "/accounts/%s/d1/database?per_page=1"),
+    # Workers Scripts Write, Workers Scripts Read
+    "e086da7e2179491d91ee5f35b3ca210a": ("Workers Scripts", "/accounts/%s/workers/scripts"),
+    "1a71c399035b4950a1bd1466bbe4f420": ("Workers Scripts", "/accounts/%s/workers/scripts"),
+}
 MINTED_NAME = "auto-rotation-management"
 
 # Account-scoped permission groups: Account API Tokens Read + Write, Turnstile Sites Write, Workers Scripts Read + Write, D1 Write, Workers R2 Storage Write.
@@ -69,6 +83,8 @@ class Auth:
     token: str
     created: bool = False
     destroyed: bool = False
+    # The policies a token minted here carries; `await_propagation` chooses its probes from them.
+    policies: list[dict] = dataclasses.field(default_factory=list)
 
     @property
     def headers(self) -> list[str]:
@@ -167,8 +183,8 @@ def token_policies(account_id: str, user_id: str, zone_ids: list[str]) -> list[d
 
 def create_management_token(
     global_key: str, email: str, account_id: str = DEFAULT_ACCOUNT_ID
-) -> str:
-    """Mint a scoped management token from the Global API Key; raise CfAuthError naming the failing step."""
+) -> tuple[str, list[dict]]:
+    """Mint a scoped management token from the Global API Key; return its value and the policies it carries, or raise CfAuthError naming the failing step."""
     headers = _global_headers(global_key, email)
     user = curl_json("GET", "%s/user" % CF_API_BASE, headers)
     result = user.get("result")
@@ -178,20 +194,21 @@ def create_management_token(
             "Cloudflare did not accept the Global API Key for %s: %s" % (email, _errors(user))
         )
     zone_ids = _zone_ids(headers, account_id)
-    payload = {"name": MINTED_NAME, "policies": token_policies(account_id, user_id, zone_ids)}
+    policies = token_policies(account_id, user_id, zone_ids)
+    payload = {"name": MINTED_NAME, "policies": policies}
     created = curl_json("POST", "%s/user/tokens" % CF_API_BASE, headers, json.dumps(payload))
     result = created.get("result")
     value = result.get("value") if isinstance(result, dict) else None
     if not value:
         raise CfAuthError("creating the management token failed: %s" % _errors(created))
-    return str(value)
+    return str(value), policies
 
 
 def _mint(global_key: str, email: str, account_id: str) -> Auth:
     log.step("Creating scoped management token from Global API Key...")
-    token = create_management_token(global_key, email, account_id)
+    token, policies = create_management_token(global_key, email, account_id)
     log.info("Management token created (will self-destruct after run)")
-    return Auth(token=token, created=True)
+    return Auth(token=token, created=True, policies=policies)
 
 
 def resolve(account_id: str = DEFAULT_ACCOUNT_ID) -> Auth:
@@ -219,10 +236,85 @@ def resolve(account_id: str = DEFAULT_ACCOUNT_ID) -> Auth:
     return Auth(token=token)
 
 
-def await_propagation(auth: Auth) -> None:
-    """Wait for a token this run minted to be accepted by Cloudflare's API; a supplied token needs no wait."""
-    if auth.created:
-        time.sleep(PROPAGATION_SECONDS)
+def ready_probes(policies: list[dict]) -> list[tuple[str, str]]:
+    """The (service, path) GET probes a token minted with `policies` must pass: verify first, then one per slow service an account policy grants, slowest (D1) first, in `READY_PROBES` order."""
+    rank = {probe: i for i, probe in enumerate(dict.fromkeys(READY_PROBES.values()))}
+    granted: list[tuple[str, str]] = []
+    order: list[int] = []
+    for policy in policies:
+        if policy.get("effect") != "allow":
+            continue
+        prefix = "com.cloudflare.api.account."
+        accounts = [
+            r[len(prefix) :]
+            for r in policy.get("resources", {})
+            if r.startswith(prefix) and not r.startswith(prefix + "zone.")
+        ]
+        for group in policy.get("permission_groups", []):
+            probe = READY_PROBES.get(group.get("id", "") if isinstance(group, dict) else "")
+            if probe is None:
+                continue
+            for account in accounts:
+                entry = (probe[0], probe[1] % account)
+                if entry not in granted:
+                    granted.append(entry)
+                    order.append(rank[probe])
+    return [VERIFY_PROBE] + [
+        e for _, e in sorted(zip(order, granted, strict=True), key=lambda x: x[0])
+    ]
+
+
+def _error_codes(body: dict) -> list:
+    errors = body.get("errors")
+    if not isinstance(errors, list):
+        return []
+    return [e.get("code") if isinstance(e, dict) else e for e in errors]
+
+
+def await_propagation(
+    auth: Auth,
+    deadline_s: float | None = None,
+    consecutive: int | None = None,
+    interval_s: float | None = None,
+    sleep: typing.Callable[[float], None] | None = None,
+    clock: typing.Callable[[], float] | None = None,
+) -> float:
+    """Block until every service a token this run minted is granted has accepted it `consecutive` times in a row; return the seconds waited.
+
+    A supplied token needs no wait and returns 0 at once. Every probe is a GET. Past `deadline_s` a `CfAuthError` names the service, the path and Cloudflare's last error codes.
+    """
+    if not auth.created:
+        return 0.0
+    # Read at call time, so the module constants stay the one place the bounds are set.
+    deadline_s = READY_DEADLINE_S if deadline_s is None else deadline_s
+    consecutive = READY_CONSECUTIVE if consecutive is None else consecutive
+    interval_s = READY_INTERVAL_S if interval_s is None else interval_s
+    sleep = time.sleep if sleep is None else sleep
+    clock = time.monotonic if clock is None else clock
+    start = clock()
+    for service, path in ready_probes(auth.policies):
+        url = CF_API_BASE + path
+        streak, last = 0, []
+        while True:
+            try:
+                body = curl_json("GET", url, auth.headers, content_type=False)
+            except CfAuthError as exc:
+                body = {"success": False, "errors": [{"code": str(exc)}]}
+            if body.get("success") is True:
+                streak += 1
+                if streak >= consecutive:
+                    break
+            else:
+                streak, last = 0, _error_codes(body)
+            if clock() - start > deadline_s:
+                raise CfAuthError(
+                    "the minted token was not accepted by %s (GET %s) within %.0f s; last error codes %s"
+                    % (service, path.split("?")[0], deadline_s, last)
+                )
+            sleep(interval_s)
+    waited = clock() - start
+    log.info("Management token accepted by every service it grants after %.1f s" % waited)
+    return waited
 
 
 def resolve_aws() -> None:
