@@ -25,6 +25,24 @@
  *    covers less. The other direction announces itself by making every push
  *    slower.
  *
+ *    WHICH LOCAL NUMBER, UNDER LOAD. The cache records per run the wall
+ *    (`recent`), the process tree's user+sys CPU (`cpu`), peak RSS and, for an
+ *    elastic gate only, cpu / wall / grant (`perCore`). It records nothing
+ *    about the MACHINE during the run. Mark-slow reads the FLOOR of `recent`,
+ *    since load only adds wall and one quiet run in the window is enough;
+ *    drop-slow reads the median (see `median`). CPU was weighed as a
+ *    load-free substitute and rejected on measured data: it inflates under the
+ *    same load (the 1007-1 push clone's build:cli read 37.7-56.8 s of CPU
+ *    while concurrent pytest -n 8 ran), and an I/O-bound gate's CPU is
+ *    near zero however long it blocks the push, so judging on CPU would
+ *    acquit exactly the slow gates the rule exists for. The clone's floor run
+ *    was NOT load-inflated: its 37.7 s of CPU matches the working tree's own
+ *    cold build (24.3 s wall, 37.7 s CPU) to within 0.2%. It was convicted
+ *    because nothing fast needed it any more, which `tierFindings` now
+ *    reads as "not in the lane". The residual is five consecutive contended
+ *    runs (see MIN_SAMPLES_TO_TIER); closing it needs a per-run machine-load
+ *    field from the cache writer, which is not recorded today.
+ *
  * 2. LEAF SELF-INCLUSION. A gate that declares `paths` but does not include its
  *    OWN implementation cannot be selected by editing itself. Found live: eight
  *    gates, including two whose entire job is testing a script that does not
@@ -149,23 +167,24 @@ function tierFindings(
   dur: Record<string, number>,
   samples: Record<string, number> = {},
   typical: Record<string, number> = {},
-  ciDur: CiDur = {}
+  ciDur: CiDur = {},
+  localSource = 'local .ci/cache/gate-durations.json'
 ): Finding[] {
   const out: Finding[] = [];
   // A GATE IS ALSO SLOW BY CLOSURE, and without this the two oracles here contradict each other. check:ci-client-bundle-budget costs 0.8s ITSELF and 132s through `needs: build:www`: the closure oracle says mark it, the tier oracle then says it is too cheap to be marked. Both are right about different costs, so tier defers to closure -- the number that decides lane membership is
   // what the gate costs to RUN, prerequisites included.
   const slowByClosure = slowByClosureSet(specs);
-  // A BUILD NODE A FAST GATE NEEDS IS THE LANE'S FLOOR, NOT A GATE THAT COULD MOVE TIER. build:packages and build:cli are `gate: false` prerequisites of the quick lane's typechecks; marking one slow would defer every fast gate that needs it, and the lane's total is bounded by the quick lane's p90 budget instead (scripts/ci-runner/quick-select.ts). A push clone builds them cold on every checkout (35-51 s against 12-20 s warm, 2026-10-01), which convicted them here on a load the rule was never about.
-  const neededByFast = new Set(specs.filter((s) => s.slow !== true).flatMap((s) => s.needs ?? []));
+  // A BUILD NODE A FAST GATE NEEDS IS THE LANE'S FLOOR, NOT A GATE THAT COULD MOVE TIER. build:packages is a `gate: false` prerequisite of the quick lane's fast gates (build:cli was too, until f55bb1d3 made check:types:incremental slow); marking one slow would defer every fast gate that needs it, and the lane's total is bounded by the quick lane's p90 budget instead (scripts/ci-runner/quick-select.ts). A push clone builds them cold on every checkout (35-51 s against 12-20 s warm, 2026-10-01), which convicted them here on a load the rule was never about.
+  // AND A BUILD NODE NO FAST GATE NEEDS IS NOT IN THE LANE AT ALL. ci-runner's select() never chooses a `gate: false` node on its own; it enters a run only through the needs-closure of a chosen gate. With every dependent slow, the node runs only when a slow gate is admitted, and marking it slow moves nothing, so "is in the pre-push lane" is simply false of it. That is the case which convicted build:cli in the 1007-1 push clone once f55bb1d3 made check:types:incremental, its last fast dependent, slow: a 23.1 s floor whose own CPU (37.7 s) matches the working tree's cold build, judged against a lane it no longer belonged to. So the MARK-SLOW direction never applies to a non-gate node. The DROP-SLOW direction still does, because a slow node demotes every gate that needs it.
   for (const spec of specs) {
-    if (spec.gate === false && spec.slow !== true && neededByFast.has(spec.id)) continue;
+    if (spec.gate === false && spec.slow !== true) continue;
     const ci = ciDur[spec.id];
     if (typeof ci === 'number') {
       // CI wins OUTRIGHT over a contradicting local cache, and judges BOTH directions off the one p90 -- no floor/median split, because this p90 is already a stable statistic over real CI runs, not a number a contended local checkout can skew. `continue` below means a step gate NEVER falls through to `dur`/local cache, even when one happens to hold an entry for it.
       if (spec.slow === true && ci < BUDGET_MS / SLACK && !slowByClosure.has(spec.id)) {
         out.push({
           oracle: 'tier',
-          text: `${spec.id} is marked slow but its CI step measures ${(ci / 1000).toFixed(1)}s — cheap enough for the pre-push lane (source: CI step timing). Drop \`slow: true\`.`,
+          text: `${spec.id} is marked slow but its CI step measures ${(ci / 1000).toFixed(1)}s, cheap enough for the pre-push lane (source: CI step timing). Drop \`slow: true\`.`,
         });
       }
       if (spec.slow !== true && ci > BUDGET_MS * SLACK) {
@@ -188,13 +207,13 @@ function tierFindings(
     if (spec.slow === true && mid < BUDGET_MS / SLACK && !slowByClosure.has(spec.id)) {
       out.push({
         oracle: 'tier',
-        text: `${spec.id} is marked slow but typically measures ${(mid / 1000).toFixed(1)}s — cheap enough for the pre-push lane (source: local .ci/cache/gate-durations.json). Drop \`slow: true\`.`,
+        text: `${spec.id} is marked slow but typically measures ${(mid / 1000).toFixed(1)}s, cheap enough for the pre-push lane (source: ${localSource}). Drop \`slow: true\`.`,
       });
     }
     if (spec.slow !== true && ms > BUDGET_MS * SLACK) {
       out.push({
         oracle: 'tier',
-        text: `${spec.id} is in the pre-push lane but measures ${(ms / 1000).toFixed(1)}s (source: local .ci/cache/gate-durations.json). Mark \`slow: true\` with a one-line reason, or make it faster.`,
+        text: `${spec.id} is in the pre-push lane but measures ${(ms / 1000).toFixed(1)}s (source: ${localSource}). Mark \`slow: true\` with a one-line reason, or make it faster.`,
       });
     }
   }
@@ -268,7 +287,7 @@ function closureFindings(specs: readonly GateSpec[]): Finding[] {
     if (via !== undefined) {
       out.push({
         oracle: 'closure',
-        text: `${spec.id} is in the pre-push lane but its needs closure reaches slow gate ${via} — it costs that gate's time, so the lane is not what the manifest claims. Mark it \`slow: true\` (the runner already demotes it at runtime).`,
+        text: `${spec.id} is in the pre-push lane but its needs closure reaches slow gate ${via}; it costs that gate's time, so the lane is not what the manifest claims. Mark it \`slow: true\` (the runner already demotes it at runtime).`,
       });
     }
   }
@@ -284,7 +303,7 @@ function leafFindings(specs: readonly GateSpec[]): Finding[] {
       if (!spec.paths.some((g) => globToRegExp(g).test(leaf))) {
         out.push({
           oracle: 'leaf',
-          text: `${spec.id} declares paths but not its own leaf ${leaf} — editing the gate does not select the gate.`,
+          text: `${spec.id} declares paths but not its own leaf ${leaf}: editing the gate does not select the gate.`,
         });
       }
     }
@@ -386,9 +405,49 @@ function selftest(tracked: readonly string[]): number {
     tierFindings([spec({ id: 'b', gate: false }), spec({ id: 'g', needs: ['b'] })], { b: 60_000 })
       .length === 0
   );
+  // THE 1007-1 PUSH CLONE'S build:cli WINDOW, verbatim from /home/developer/pushclone-0923/.ci/cache/gate-durations.json on 2026-10-07: wall [43.8, 43.8, 38.8, 30.9, 23.1] s, cpu [56.8, 55.3, 51.3, 39.5, 37.7] s. Its only dependents (check:types:incremental, check:ci-proxy-rdc-update) are slow, so it runs only under them and its own `slow` flag moves nothing.
+  const CLONE_BUILD_CLI = [43_831, 43_776, 38_824, 30_909, 23_114];
+  const window = (id: string, xs: readonly number[]) =>
+    [{ [id]: Math.min(...xs) }, { [id]: xs.length }, { [id]: median(xs) }] as const;
   check(
-    'tier CONTROL: the same non-gate node with no fast dependent is still convicted',
-    tierFindings([spec({ id: 'b', gate: false })], { b: 60_000 }).length === 1
+    'tier: a non-gate node only SLOW gates need is not in the pre-push lane, so the 1007-1 clone window does not convict it',
+    tierFindings(
+      [spec({ id: 'b', gate: false }), spec({ id: 'g', slow: true, needs: ['b'] })],
+      ...window('b', CLONE_BUILD_CLI)
+    ).length === 0
+  );
+  check(
+    'tier: a non-gate node NOTHING needs never runs, so it is not convicted either',
+    tierFindings([spec({ id: 'b', gate: false })], { b: 60_000 }).length === 0
+  );
+  check(
+    "tier CONTROL: the SAME clone window on a fast GATE still convicts (its least-contended run spent 37.7 s of CPU, as much as the tree's own cold build)",
+    tierFindings([spec({ id: 'b' })], ...window('b', CLONE_BUILD_CLI)).length === 1
+  );
+  check(
+    'tier CONTROL: a gate slow in every sample, CPU included, is convicted',
+    tierFindings([spec({})], ...window('x', [61_000, 58_000, 64_000, 59_500, 62_000])).length === 1
+  );
+  check(
+    'tier CONTROL: a cheap non-gate node marked slow is still told to drop it (that flag DOES move its dependents)',
+    tierFindings(
+      [spec({ id: 'b', gate: false, slow: true }), spec({ id: 'g', slow: true, needs: ['b'] })],
+      ...window('b', [900, 1_000, 1_100, 950, 1_050])
+    ).length === 1
+  );
+  // The working tree's own windows on the same day keep the verdicts they had: build:cli as a node and as a gate (floor 4.0 s), check:types:incremental marked slow (median 24.4 s).
+  const TREE_BUILD_CLI = [13_904, 19_757, 17_769, 4_046, 24_346];
+  const TREE_TYPES_INCR = [24_405, 40_742, 28_546, 8_358, 23_135];
+  check(
+    "tier CONTROL: the working tree's build:cli window convicts neither as a node nor as a gate",
+    tierFindings(
+      [spec({ id: 'b', gate: false }), spec({ id: 'g', slow: true, needs: ['b'] })],
+      ...window('b', TREE_BUILD_CLI)
+    ).length === 0 && tierFindings([spec({ id: 'b' })], ...window('b', TREE_BUILD_CLI)).length === 0
+  );
+  check(
+    "tier CONTROL: the working tree's check:types:incremental window keeps it slow (no drop finding)",
+    tierFindings([spec({ id: 't', slow: true })], ...window('t', TREE_TYPES_INCR)).length === 0
   );
   check(
     'tier CONTROL: a GATE that a fast gate needs is still convicted',
@@ -577,10 +636,22 @@ function main(): number {
   const dur: Record<string, number> = {};
   const samples: Record<string, number> = {};
   const typical: Record<string, number> = {};
+  // `--durations <path>` judges another checkout's cache (a push clone's, say) against THIS manifest, so a verdict seen there can be reproduced here without copying files around. Default: this checkout's own cache.
+  const argv = process.argv.slice(2);
+  const durAt = argv.indexOf('--durations');
+  if (durAt !== -1 && (argv[durAt + 1] === undefined || argv[durAt + 1].startsWith('--'))) {
+    return refused('--durations needs a path to a gate-durations.json');
+  }
+  const durPath =
+    durAt === -1
+      ? path.join(REPO, '.ci', 'cache', 'gate-durations.json')
+      : path.resolve(argv[durAt + 1]);
+  if (durAt !== -1 && !fs.existsSync(durPath)) {
+    return refused(`--durations ${durPath}: no such file, so nothing would be judged`);
+  }
+  if (durAt !== -1) process.stdout.write(`- tier oracle: local durations from ${durPath}\n`);
   try {
-    const raw: Record<string, unknown> = JSON.parse(
-      fs.readFileSync(path.join(REPO, '.ci', 'cache', 'gate-durations.json'), 'utf-8')
-    );
+    const raw: Record<string, unknown> = JSON.parse(fs.readFileSync(durPath, 'utf-8'));
     // The oracle judges the FLOOR of the last few raw measurements, not the scheduling average: load only ever adds time, so the cheapest recent run is the honest cost. A full run that overlapped two other sessions on 2026-09-02 pushed a 4.5s gate's average to 21s and this oracle demanded it be marked slow. A bare number is the older cache shape.
     for (const [id, v] of Object.entries(raw)) {
       if (typeof v === 'number') dur[id] = v;
@@ -631,7 +702,14 @@ function main(): number {
   }
 
   const findings = [
-    ...tierFindings(GATES, dur, samples, typical, ciDur),
+    ...tierFindings(
+      GATES,
+      dur,
+      samples,
+      typical,
+      ciDur,
+      durAt === -1 ? undefined : `local ${durPath}`
+    ),
     ...closureFindings(GATES),
     ...leafFindings(GATES),
     ...globFindings(GATES, tracked),
