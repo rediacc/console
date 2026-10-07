@@ -41,10 +41,11 @@ The bash declares `HOOK_SAW_BODY_FILE=0` and sets it to 1 inside
 why it is gone is this paragraph. Reported as a finding rather than fixed in the bash, which must stay byte-identical until the P6 cutover.
 """
 
+import os
 import pathlib
 import re
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan
 from rediacc_hooks.wellknown import ACCOUNT_REPO, ELITE_REPO, GH_REPO, RENET_REPO
 
 CHAIN = "pre-bash"
@@ -133,6 +134,43 @@ EDGE_CASES = [
         'gh pr create --draft --body "x <!-- worklist-epics:begin --> y"',
     ),
     ("a create with an unreadable body file", "gh pr create --draft --body-file /nonexistent.md"),
+    # 2026-10-07 (#09c80388): the verdict followed the flag's SPELLING, not the body. File-based halves are in test_pr_body_reader.py.
+    ("a create by -b with no block", 'gh pr create --draft -b "prose only"'),
+    (
+        "a create by -b carrying the block",
+        'gh pr create --draft -b "x <!-- worklist-epics:begin --> y"',
+    ),
+    (
+        "a create reading a heredoc on stdin with no block",
+        "gh pr create --draft --body-file - <<'EOF'\nprose only\nEOF",
+    ),
+    (
+        "a create reading a heredoc on stdin carrying the block",
+        "gh pr create --draft -F - <<'EOF'\nx\n<!-- worklist-epics:begin -->\nEOF",
+    ),
+    (
+        "a create whose body file an earlier clause writes",
+        (
+            "printf '%s' '<!-- worklist-epics:begin -->' > /nonexistent-pr-body.md && "
+            "gh pr create --draft --body-file /nonexistent-pr-body.md"
+        ),
+    ),
+    (
+        "a write AFTER the create cannot change what it read",
+        (
+            "gh pr create --draft --body-file /nonexistent-pr-body.md && "
+            "echo x > /nonexistent-pr-body.md"
+        ),
+    ),
+    ("an edit by -F", "gh pr edit 42 -F /nonexistent.md"),
+    ("an edit by -b", 'gh pr edit 42 -b "prose only"'),
+    (
+        "a PATCH whose body file an earlier clause writes",
+        (
+            "printf x > /nonexistent-pr-body.md && "
+            "gh api repos/o/r/pulls/42 -X PATCH -F body=@/nonexistent-pr-body.md"
+        ),
+    ),
     # ORDER MATTERS: the edit arm runs FIRST.
     (
         "a create that passes, then an edit that does not",
@@ -247,6 +285,241 @@ def _visible_body(cmd, seg, root):
     return body, saw_file
 
 
+# ---- ONE BODY READER FOR EVERY `gh pr create|edit` SPELLING (#09c80388) --
+# The text reader above keyed on the LONG flag names only, so on 2026-10-07 the dispatcher returned rc=2 for `gh pr create --body 'prose only'` and rc=0 for `gh pr create -F <file of the same prose>`: gh spells `--body-file` as `-F` and `--body` as `-b`, and neither short form was ever read. The same probe found two more ways the verdict depended on the spelling rather than the
+# body: `--body-file -` fed by a heredoc admitted prose the `--body` form refused, and a `--body-file` that an EARLIER clause of the same command writes was judged on the bytes an earlier command left on disk, so `<write the block> > b.md && gh pr create --body-file b.md` was refused over a stale `b.md` (the original #c17c47c3 symptom) and the reverse admitted a stale block.
+# The reader below parses the walked argv the way gh's pflag does, resolves a relative path from the directory THAT gh runs in, reads `-` from the heredoc or here-string attached to that very call, and reports an earlier write instead of reading through it, the convention `commit_policy.written_message_files` set for `git commit -F`.
+
+BODY_LONG = {"--body": "text", "--body-file": "file"}
+BODY_SHORT = {"b": "text", "F": "file"}
+# gh's boolean flags on `pr create`/`pr edit`: everything else that is not a body flag takes a value, so its value is skipped rather than read as a flag (`--title --body` titles a PR "--body").
+BOOL_LONG = frozenset(
+    {
+        "--draft",
+        "--fill",
+        "--fill-first",
+        "--fill-verbose",
+        "--web",
+        "--editor",
+        "--dry-run",
+        "--no-maintainer-edit",
+        "--remove-milestone",
+        "--help",
+    }
+)
+BOOL_SHORT = frozenset("defwh")
+
+
+class Body:
+    """What one `gh pr create|edit` call would send as its body.
+
+    `text` is everything readable, `flagged` whether any body flag is present at all, `opaque` whether some source could not be read (a missing file, a path behind an unset variable, a piped stdin), and `written` the `shellscan.Mutator` of an earlier clause that writes a body file, None when nothing does.
+    """
+
+    __slots__ = ("flagged", "opaque", "text", "written")
+
+    def __init__(self):
+        self.text = ""
+        self.flagged = False
+        self.opaque = False
+        self.written = None
+
+
+def body_sources(argv):
+    """`[(kind, value)]` for every body flag in a walked `gh pr <verb> ...` argv (`argv[0]` is `pr`), kind `text` or `file`, in order.
+
+    pflag semantics: `--body X`, `--body=X`, `-b X`, `-bX`, `-b=X`, and a bundle of boolean shorthands ending in one (`-dF X`). A value-taking flag's value is never itself read as a flag.
+    """
+    out = []
+    args = list(argv[2:])
+    i = 0
+    while i < len(args):
+        arg = args[i]
+        i += 1
+        if arg == "--":
+            break
+        if arg.startswith("--"):
+            name, eq, value = arg.partition("=")
+            if name in BODY_LONG:
+                if not eq:
+                    if i >= len(args):
+                        continue
+                    value = args[i]
+                    i += 1
+                out.append((BODY_LONG[name], value))
+            elif not eq and name not in BOOL_LONG:
+                i += 1
+            continue
+        if not arg.startswith("-") or arg == "-":
+            continue
+        letters = arg[1:]
+        for pos, ch in enumerate(letters):
+            if ch in BOOL_SHORT:
+                continue
+            rest = letters[pos + 1 :]
+            if not rest:
+                if i < len(args):
+                    rest = args[i]
+                    i += 1
+                else:
+                    break
+            elif rest.startswith("="):
+                rest = rest[1:]
+            if ch in BODY_SHORT:
+                out.append((BODY_SHORT[ch], rest))
+            break
+    return out
+
+
+def _is_gh_pr(verb):
+    def check(words):
+        values = [shellscan._word_value(w) for w in words]
+        return shellscan._base(values[0]) == "gh" and values[1:3] == ["pr", verb]
+
+    return check
+
+
+def gh_pr_runs(cmd, verb):
+    """Every `gh pr <verb>` bash would run in `cmd`, from the shared walk (a `sh -c` payload and an `eval` included)."""
+    return [
+        r
+        for r in commit_policy.runs(cmd)
+        if shellscan._base(r.name) == "gh" and r.argv[:2] == ["pr", verb]
+    ]
+
+
+def _stdin_of(cmd, run, verb):
+    """The heredoc and here-string bodies attached to THIS walked `gh pr <verb>`, [] when none is (a pipe, or no stdin at all)."""
+    try:
+        segments = commit_policy.target_segments(cmd, _is_gh_pr(verb))
+    except Exception:  # noqa: BLE001 -- an unlexable command has no readable heredoc
+        return []
+    # Paired in order, as `commit_policy._stdin_messages` pairs commits, so two creates in one command each get their own heredoc.
+    unpaired = list(segments)
+    for other in gh_pr_runs(cmd, verb):
+        want = [other.name, *other.argv]
+        match = next((s for s in unpaired if s.words == want), None)
+        if match is not None:
+            unpaired.remove(match)
+        if other is run:
+            return match.stdin if match is not None else []
+    return []
+
+
+def _expand(cmd, verb, name):
+    """`name` with `$VAR`/`${VAR}` replaced from plain assignments made before `verb`; None while anything stays unexpanded."""
+    values = shellscan.assignments_before(cmd, verb)
+
+    def sub(match):
+        key = match.group(1) or match.group(2)
+        return values.get(key, match.group(0))
+
+    out = re.sub(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)", sub, name)
+    return None if ("$" in out or "`" in out) else out
+
+
+def _written_by_earlier(cmd, verb, name, path, base):
+    """The earlier clause of `cmd` that writes the body file `name` (at `path`), None when none does. The two matches `commit_policy.written_message_files` makes: the name as spelled, or the same resolved path."""
+    for m in shellscan.earlier_mutators(cmd, verb, {"redirect"}):
+        if not m.target:
+            continue
+        target = _expand(cmd, verb, m.target) or m.target
+        if name in (m.target, target):
+            return m
+        full = target if target.startswith("/") else os.path.join(base, target)
+        if os.path.normpath(full) == path:
+            return m
+    # A `tee`, which `earlier_mutators` does not model, counted only BEFORE the verb: `shellscan.writes_file` reads the whole line, so a write after the call (which cannot change what it reads) would be refused too.
+    words = verb.split()
+    for run in commit_policy.runs(cmd):
+        if shellscan._base(run.name) == words[0] and run.argv[: len(words) - 1] == words[1:]:
+            break
+        if shellscan._base(run.name) != "tee":
+            continue
+        for arg in (a for a in run.argv if not a.startswith("-")):
+            full = arg if arg.startswith("/") else os.path.join(base, arg)
+            if name == arg or os.path.normpath(full) == path:
+                return shellscan.Mutator("redirect", "tee %s" % arg, arg)
+    return None
+
+
+def read_body(cmd, run, verb, base):
+    """The `Body` one walked `gh pr <verb>` run would send. `base` is the directory the command starts in."""
+    body = Body()
+    full_verb = "gh pr %s" % verb
+    parts = []
+    for kind, value in body_sources(run.argv):
+        body.flagged = True
+        if kind == "text":
+            parts.append(value)
+            continue
+        if value in commit_policy.STDIN_NAMES:
+            fed = _stdin_of(cmd, run, verb)
+            if fed:
+                parts.extend(fed)
+            else:
+                body.opaque = True
+            continue
+        name = _expand(cmd, full_verb, value)
+        if not name:
+            body.opaque = True
+            continue
+        path = os.path.normpath(
+            name if name.startswith("/") else os.path.join(commit_policy.run_dir(run, base), name)
+        )
+        written = _written_by_earlier(cmd, full_verb, value, path, base)
+        if written is not None:
+            body.written = body.written or written
+            continue
+        if not pathlib.Path(path).is_file():
+            body.opaque = True
+            continue
+        parts.append(_read(path))
+    body.text = "\n".join(parts)
+    return body
+
+
+WRITTEN_BODY = """BLOCKED: nothing in this command ran, including `%(mutator)s`.
+
+Every pre-bash guard runs ONCE, before the first clause. This `gh pr %(verb)s` reads
+its body from a file that `%(mutator)s`, an earlier clause of this same command,
+writes, so the bytes on disk now are an earlier command's and judging them says
+nothing about the body the PR would get.
+
+Run `%(mutator)s` as its own call, then `gh pr %(verb)s`.
+"""
+
+
+def _judged_body(cmd, seg, verb, root, base):
+    """The `Body` every `gh pr <verb>` in `cmd` would send, read by `read_body`.
+
+    The walk is the reader. Only a command the walk finds no such call in (a shape the lexer does not model) falls back to the text reader `_visible_body`, judged on the long flag names alone, as before.
+    """
+    runs = gh_pr_runs(cmd, verb)
+    if not runs:
+        body = Body()
+        body.flagged = shellscan.flag_present(seg, "body") or shellscan.flag_present(
+            seg, "body-file"
+        )
+        body.text, saw_file = _visible_body(cmd, seg, root)
+        body.opaque = (
+            shellscan.flag_present(seg, "body-file")
+            and not saw_file
+            and not shellscan.flag_present(seg, "body")
+        )
+        return body
+    out = Body()
+    texts = []
+    for run in runs:
+        one = read_body(cmd, run, verb, base)
+        out.flagged = out.flagged or one.flagged
+        out.opaque = out.opaque or one.opaque
+        out.written = out.written or one.written
+        texts.append(one.text)
+    out.text = "\n".join(texts)
+    return out
+
+
 def _carries(marker, body):
     return hookio.grep_q("<!-- %s:begin -->" % marker, body, fixed=True)
 
@@ -330,14 +603,20 @@ def run(ev):
     # quoting block-commit-meta.sh: "a guard whose only failure mode is refusing CORRECT input teaches people to route around it." It bit for real: a PR body had to lose a footer that check-claude-attribution.sh refuses, the corrected body kept the block, and the only routes left were the GitHub UI (unavailable to an agent) or closing and reopening the PR.
     #
     # The asymmetry with create that REMAINS is deliberate and is the whole safety argument: create may write an UNREADABLE body (a heredoc, a file a later step writes) because there is no block yet to destroy. Edit may not -- an unreadable edit body is refused, because it can silently replace one that exists.
-    if edit_seg != "" and (
-        shellscan.flag_present(edit_seg, "body") or shellscan.flag_present(edit_seg, "body-file")
-    ):
-        edit_body, _ = _visible_body(cmd, edit_seg, root)
-        if _has_every_marker(edit_body):
-            return hookio.ALLOW
-        ev.warn_raw(REFUSE_WHOLE_BODY)
-        return hookio.DENY
+    base = ev.field("cwd") or ev.cwd
+    if edit_seg != "":
+        edit_body = _judged_body(cmd, edit_seg, "edit", root, base)
+        if edit_body.flagged:
+            if edit_body.written is None and _has_every_marker(edit_body.text):
+                return hookio.ALLOW
+            # An earlier clause writing the body file is unreadable here, and an unreadable edit body is refused; the preamble says which clause, so the fix is visible.
+            ev.warn_raw(
+                shellscan.split_refusal(
+                    [edit_body.written] if edit_body.written else [], "gh pr edit", "the body file"
+                )
+            )
+            ev.warn_raw(REFUSE_WHOLE_BODY)
+            return hookio.DENY
 
     # ---- the SANCTIONED body write is a whole-body write too --------------- block-adhoc-sanctioned.sh refuses `gh pr edit --body` (it exits 1 on the deprecated projectCards GraphQL field with the body UNCHANGED) and prescribes
     # `gh api repos/<o>/<r>/pulls/<n> -X PATCH -F body=@<file>` instead. That form
@@ -361,6 +640,7 @@ def run(ev):
         patch_body = cmd
         saw = False
         need = False
+        written = None
         for name in _body_files(
             api_segs,
             API_BODY_ARGS,
@@ -369,12 +649,17 @@ def run(ev):
             if name == "":
                 continue
             need = True
+            # Same class as the create arm's earlier write (#09c80388): a body file this command writes first is an earlier command's bytes, so it is not read, and an unreadable PATCH body is refused, naming the write.
+            path = os.path.normpath(name if name.startswith("/") else os.path.join(base, name))
+            written = written or _written_by_earlier(cmd, "gh api", name, path, base)
+            if written is not None:
+                continue
             for cand in (name, "%s/%s" % (root, name)):
                 if pathlib.Path(cand).is_file():
                     saw = True
                     patch_body = patch_body + "\n" + hookio._command_substitution(_read(cand))
                     break
-        readable = not (need and not saw)
+        readable = not (need and not saw) and written is None
         patch_ok = readable and _has_every_marker(patch_body)
         # THE LIVE BODY IS CONSULTED ONLY FOR THIS ARM, and only once the static rule has already said no, which is what keeps the lookup off the common path and out of every case that never needed it. Two reasons it is this arm rather than both: this is the door the message above prescribes, and the `gh pr edit --body`/`--body-file` door is refused one guard earlier by
         # block-adhoc-sanctioned.sh (ORDER 32 against this file's 36) on the deprecated projectCards field, so its copy of the over-block is unreachable.
@@ -385,6 +670,9 @@ def run(ev):
             patch_ok = not _would_drop(patch_body, ref.split("\n")[0] if ref else "")
         if patch_ok:
             return hookio.ALLOW
+        ev.warn_raw(
+            shellscan.split_refusal([written] if written else [], "gh api", "the body file")
+        )
         ev.warn_raw(REFUSE_WHOLE_BODY)
         return hookio.DENY
 
@@ -396,24 +684,20 @@ def run(ev):
     # create is NOT refused outright, because it is the one call that legitimately writes a whole body: there is no block yet to destroy. It is refused only when the body it writes does NOT already carry the block, which is precisely the state CI fails on minutes later. A body that carries it passes untouched, so the sanctioned flow (build the body from the snapshot, create with
     # it) is not in this guard's way at all.
     if create_seg != "":
-        if not (
-            shellscan.flag_present(create_seg, "body")
-            or shellscan.flag_present(create_seg, "body-file")
-        ):
+        body = _judged_body(cmd, create_seg, "create", root, base)
+        if not body.flagged:
             return hookio.ALLOW
 
-        # What body text can we actually see? Same readability rule as block-untagged-commit.sh: judge what can be read, ALLOW what cannot, rather than refusing blind.
-        body, saw_file = _visible_body(cmd, create_seg, root)
+        # A body file an EARLIER clause of this command writes holds an earlier command's bytes. Reading them refused `<block> > b.md && gh pr create --body-file b.md` over a stale b.md and admitted the reverse (#c17c47c3); it is refused unread, naming the write, as `commit_policy.written_message_refusal` refuses a `git commit -F` file. Run apart, the same file is read and judged.
+        if body.written is not None:
+            ev.warn_raw(WRITTEN_BODY % {"mutator": body.written.label, "verb": "create"})
+            return hookio.DENY
 
-        # A --body-file naming a path that does not exist yet (written by a later step of the same command, or by a heredoc this scan stripped) is genuinely unreadable. Allow it; CI still gates the result.
-        if (
-            shellscan.flag_present(create_seg, "body-file")
-            and not saw_file
-            and not shellscan.flag_present(create_seg, "body")
-        ):
+        if hookio.grep_q(BEGIN_MARKER, body.text, fixed=True):
             return hookio.ALLOW
 
-        if hookio.grep_q(BEGIN_MARKER, body, fixed=True):
+        # What cannot be read is allowed, the readability rule block_untagged_commit set: a --body-file naming a path that does not exist, a path behind a variable no earlier assignment sets, a `--body-file -` fed by a pipe. CI still gates the result.
+        if body.opaque:
             return hookio.ALLOW
 
         ev.warn_raw(
