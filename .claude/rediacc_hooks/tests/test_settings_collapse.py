@@ -11,10 +11,13 @@ WHAT MAKES THE GREEN MEAN SOMETHING. A differential between two runs of the same
 `edit_json` builder emits neither. That is a gap in the corpus rather than in the collapse, and it is closed here with a payload built for it, because a control that plants nothing proves nothing.
 """
 
+import atexit
 import contextlib
 import json
 import os
+import shutil
 import subprocess
+import tempfile
 
 import pytest
 
@@ -50,10 +53,48 @@ def table_per_pattern():
     }
 
 
+def make_stub_dir():
+    """A directory holding the two commands whose answer is the network's, each made deterministic.
+
+    ROOT CAUSE OF THE FLAKE (2026-10-07, `test_verdict_set_is_unchanged[pre-bash-02]`). The differential decides every payload twice, and `gh pr ready` reaches `block_premature_ready`, which reads CI Complete from GitHub LIVE. The two reads were seconds apart, so one side could get "got: ABSENT" and the other "got: verification failed", and the test measured GitHub's mood rather than the collapse. Every guard with a `gh` call (`block_admin_merge`, `block_second_open_pr`, `block_second_branch` and `commit_policy` through it, `block_premature_ready`) has the same exposure, and `warn_remote_drift` runs `git fetch origin`, which both reaches the network and MOVES the remote-tracking refs between the two runs.
+
+    BOTH SIDES GET THE SAME ANSWER, one fixed failure, which every one of those callers already handles (the guards fail closed on it). `gh` exits 1 with an HTTP 502; `git fetch` exits 1 and every other git verb is handed to the real git, because the guards read local state with it and a stub that answered those would change the verdicts rather than fix them. The comparison itself is untouched.
+    """
+    stub = tempfile.mkdtemp(prefix="collapse-stubs-")
+    atexit.register(shutil.rmtree, stub, ignore_errors=True)
+    real_git = shutil.which("git") or "git"
+    scripts = {
+        "gh": "#!/bin/sh\necho 'HTTP 502: stubbed gh (hermetic differential)' >&2\nexit 1\n",
+        # The verb is found past git's global options, because block_unverified_push spells it `git -C <root> fetch`.
+        "git": (
+            "#!/bin/sh\n"
+            'verb() { while [ $# -gt 0 ]; do case "$1" in -C|-c|--git-dir|--work-tree) shift 2 ;; -*) shift ;; *) echo "$1"; return ;; esac; done; }\n'
+            '[ "$(verb "$@")" = fetch ] && { echo "stubbed git fetch" >&2; exit 1; }\n'
+            'exec %s "$@"\n'
+        )
+        % json.dumps(real_git),
+    }
+    for name, body in scripts.items():
+        path = os.path.join(stub, name)
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(body)
+        os.chmod(path, 0o700)
+    return stub
+
+
+STUB_DIR = make_stub_dir()
+
+
+def with_stubs(env):
+    """`env` with the deterministic `gh` and `git fetch` ahead of everything else on its PATH."""
+    env["PATH"] = STUB_DIR + os.pathsep + env.get("PATH", "")
+    return env
+
+
 def hook_env():
     env = dict(os.environ)
     env["CLAUDE_PROJECT_DIR"] = str(ROOT)
-    return env
+    return with_stubs(env)
 
 
 def run_separately(members, payload, env):
@@ -137,7 +178,7 @@ def without(tool, tmp_path):
                 (farm / name).symlink_to(os.path.join(directory, name))
     env = hook_env()
     env["PATH"] = str(farm)
-    return env
+    return with_stubs(env)
 
 
 def plan_duplicate_payload(tmp_path):
@@ -264,6 +305,31 @@ def test_every_head_pattern_leads_with_the_toolchain_checks():
 
 
 # --------------------------------------------------------------------------- Clause 2: the verdict set ---------------------------------------------------------------------------
+
+
+def test_the_network_commands_are_stubbed_for_both_sides():
+    """CONTROL for the hermetic differential: under the env both sides run in, `gh` fails and `git fetch` fails, whatever the real ones would say, and other git verbs still work."""
+    env = hook_env()
+    for command, want_rc in (
+        ("gh pr list", 1),
+        ("git fetch --quiet origin", 1),
+        ("git -C . fetch --quiet origin", 1),
+        ("git rev-parse --git-dir", 0),
+    ):
+        proc = subprocess.run(
+            ["bash", "-c", command],
+            capture_output=True,
+            text=True,
+            check=False,
+            env=env,
+            cwd=ROOT,
+            timeout=30,
+        )
+        assert proc.returncode == want_rc, (command, proc.returncode, proc.stderr)
+    gh = subprocess.run(
+        ["bash", "-c", "gh api x"], capture_output=True, text=True, check=False, env=env, timeout=30
+    )
+    assert "HTTP 502" in gh.stderr
 
 
 def test_the_corpus_is_large_enough_to_mean_something():
