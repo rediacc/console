@@ -377,7 +377,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:test-www | quality-packages / Run www unit tests | yes | no | no |
 | check:test:tutorial-player | quality-packages / Tutorial player release gate | yes | yes | no |
 | check:types | quality-code / TypeScript | yes | yes | no |
-| check:types:incremental | local-only | yes | no | no |
+| check:types:incremental | local-only | yes | yes | no |
 | check:version | quality-code / Versions | yes | no | no |
 | env:register | local-only | no | no | no |
 | gate-test:blocker-golden-corpus | quality-gate-tests / Quality-gate unit tests | yes | no | yes |
