@@ -255,6 +255,9 @@ time(s) for this failure set%s, so it will not block again for this set. It is
 still red and still yours to decide about:
 %s"""
 
+# ONE LINE, NOT A BLOCK (worklist #e3fca920): every failed job failed only on findings the PR carries on purpose, so there is nothing new to fix or watch. Args: PR, the carried keys, the carry file, the jobs, and a live-run suffix.
+CI_NOTE_CARRIED = "CI on PR #%s is red only on carried finding(s) %s; carried in %s (job(s): %s%s)."
+
 V_LOOP_DIED = (
     "YOUR WORK LOOP DIED. This session had %d work cron(s) and now has none, "
     "so nothing will drive the work forward again. That is the "
@@ -362,6 +365,7 @@ CLI_EPIC_USAGE = """usage: worklist.py --epic <me> <subcommand>
 
   new [--plan <rel>] <title...>  mint an epic, prints its id
   add <epic-id> <item-id>...     attach worklist items to an epic
+  remove <epic-id> <item-id>...  detach items an epic covers (e.g. post-merge work)
   plan <epic-id> <rel>           set the plan whose PR the epic's items block
   list                           show every epic, its plan and what it covers
 
