@@ -277,7 +277,7 @@
     "check:ci-seo-core": "tsx scripts/gates/check-seo.ts",
     "check:ci-docs-render-parity": "tsx scripts/gates/check-docs-render-parity.ts",
     "check:ci-page-locale-imports": "tsx scripts/gates/check-page-locale-imports.ts",
-    "check:ci-external-links": "tsx scripts/gates/check-external-links.ts",
+    "check:ci-external-links": "tsx scripts/gates/check-external-links.ts --selftest && tsx scripts/gates/check-external-links.ts",
     "check:ci-dkim-notify": "tsx scripts/gates/check-dkim-notify.ts",
     "check:ci-css-dom-refs": "tsx scripts/gates/check-css-dom-refs.ts --selftest && tsx scripts/gates/check-css-dom-refs.ts",
     "check:ci-svg-theme-reach": "tsx scripts/gates/check-svg-theme-reach.ts --selftest && tsx scripts/gates/check-svg-theme-reach.ts",

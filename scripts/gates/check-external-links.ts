@@ -20,6 +20,7 @@
  *
  * ---- gate ----
  * step: External links
+ * selftest: true
  * emit: false
  * blocker: BLOCKER: its `run:` goes through the `rediacc_ci.quality.run_external_gate` WRAPPER, which the derived run does not produce, and its `env:` carries PROSE comments the grammar cannot hold.
  *     THE ENV REASON IS DEAD AND THIS LINE USED TO STATE IT. Box A1 taught the
@@ -290,7 +291,30 @@ function buildHeaders(url: string): Record<string, string> {
  * the api.github.com equivalent so auth actually applies; the API returns
  * 200 for existing resources and 404 for deleted ones.
  */
-function toApiUrl(url: string): string | null {
+// github.com top-level paths that look like /<owner>/<repo> but are site pages, not repositories.
+const GH_NON_REPO_OWNERS = new Set([
+  'about',
+  'apps',
+  'collections',
+  'enterprise',
+  'events',
+  'features',
+  'marketplace',
+  'orgs',
+  'pricing',
+  'settings',
+  'sponsors',
+  'topics',
+  'users',
+]);
+
+export function toApiUrl(url: string): string | null {
+  // A bare repo page (optional trailing slash, query or fragment) maps to the repos endpoint.
+  const bare = url.match(/^https:\/\/github\.com\/([^/?#]+)\/([^/?#]+)\/?(?:[?#].*)?$/);
+  if (bare) {
+    if (GH_NON_REPO_OWNERS.has(bare[1].toLowerCase())) return null;
+    return `${WK_GH_API_BASE}/repos/${bare[1]}/${bare[2]}`;
+  }
   const m = url.match(
     /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(issues|pull|tree|blob)\/(.+?)(?:[?#].*)?$/
   );
@@ -639,7 +663,39 @@ function collectFiles(): { files: string[]; perRoot: Map<string, number> } | nul
   return { files, perRoot };
 }
 
+function selftestToApiUrl(): void {
+  const repoApi = `${WK_GH_API_BASE}/repos/rediacc/console`;
+  const cases: Array<[string, string | null]> = [
+    // Control first: a shape the function already handled must still map.
+    [
+      'https://github.com/rediacc/console/issues/12',
+      `${WK_GH_API_BASE}/repos/rediacc/console/issues/12`,
+    ],
+    ['https://github.com/rediacc/console', repoApi],
+    ['https://github.com/rediacc/console/', repoApi],
+    ['https://github.com/rediacc/console#readme', repoApi],
+    ['https://github.com/rediacc/console?tab=readme', repoApi],
+    ['https://github.com/features', null],
+    ['https://github.com/orgs/rediacc', null],
+    ['https://example.com/rediacc/console', null],
+  ];
+  let bad = 0;
+  for (const [input, want] of cases) {
+    const got = toApiUrl(input);
+    if (got !== want) {
+      bad++;
+      console.error(`  selftest FAIL: ${input} -> ${got} (want ${want})`);
+    }
+  }
+  if (bad > 0) process.exit(1);
+  console.log(`  selftest ok: ${cases.length} toApiUrl cases`);
+}
+
 async function main() {
+  if (process.argv.includes('--selftest')) {
+    selftestToApiUrl();
+    return;
+  }
   console.log('External Link Checker');
   console.log('='.repeat(60));
 
