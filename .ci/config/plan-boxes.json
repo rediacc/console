@@ -265,8 +265,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 19,
-      "done": 3,
+      "open": 18,
+      "done": 4,
       "open_sigs": [
         "024f958e",
         "059adb2b",
@@ -282,13 +282,13 @@
         "9997f9a7",
         "a362a778",
         "a6befbdf",
-        "b167aa51",
         "ba6746e6",
         "d9a7e542",
         "dbee2b16",
         "ec65e0bb"
       ],
       "done_sigs": [
+        "b167aa51",
         "ba647a63",
         "cb3b9a5f",
         "f62c3986"
@@ -733,31 +733,6 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
-    },
-    "agent/plans/PLAN-gh-retry.md": {
-      "status": "approved",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 14,
-      "open_sigs": [],
-      "done_sigs": [
-        "0d24bad2",
-        "3dcc69db",
-        "48cc8fe5",
-        "538d0373",
-        "632e39f6",
-        "681fb37a",
-        "690f1514",
-        "6dad6b22",
-        "914403c7",
-        "b539b124",
-        "cbdbcbc3",
-        "de81a64d",
-        "e674fa47",
-        "ecf56f81"
-      ]
     },
     "agent/plans/PLAN-gh-swallow-gates-audit.md": {
       "status": "compacted",
@@ -3009,6 +2984,31 @@
         "bace249f",
         "cb4c0152",
         "fc15df5e"
+      ]
+    },
+    "agent/plans/_done/PLAN-gh-retry.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-07",
+      "open": 0,
+      "done": 14,
+      "open_sigs": [],
+      "done_sigs": [
+        "0d24bad2",
+        "3dcc69db",
+        "48cc8fe5",
+        "538d0373",
+        "632e39f6",
+        "681fb37a",
+        "690f1514",
+        "6dad6b22",
+        "914403c7",
+        "b539b124",
+        "cbdbcbc3",
+        "de81a64d",
+        "e674fa47",
+        "ecf56f81"
       ]
     },
     "agent/plans/_done/PLAN-github-actions-to-bitwarden.md": {

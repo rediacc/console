@@ -482,7 +482,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-chunk-store-browse-server.md` | compacted | 48 | 0 | 0 | 4897 |
 | `agent/plans/PLAN-chunk-store-browse-toc-and-remote.md` | proposed | 147 | 11 | 0 | 30863 |
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
-| `agent/plans/PLAN-ci-consolidation.md` | approved | 168 | 19 | 3 | 21486 |
+| `agent/plans/PLAN-ci-consolidation.md` | approved | 169 | 18 | 4 | 21725 |
 | `agent/plans/PLAN-ci-quick-cpu-scheduling.md` | active | 76 | 3 | 2 | 10341 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-ci-watch-enforcement.md` | draft | 214 | 6 | 0 | 19722 |
@@ -509,7 +509,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-fix-german-translation-artifacts.md` | compacted | 50 | 0 | 0 | 3117 |
 | `agent/plans/PLAN-fix-in-session-rule.md` | compacted | 55 | 0 | 0 | 3577 |
 | `agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md` | compacted | 37 | 0 | 0 | 3148 |
-| `agent/plans/PLAN-gh-retry.md` | approved | 52 | 0 | 14 | 8379 |
 | `agent/plans/PLAN-gh-swallow-gates-audit.md` | compacted | 49 | 0 | 6 | 4454 |
 | `agent/plans/PLAN-git-history-media-rewrite.md` | compacted | 37 | 0 | 0 | 2958 |
 | `agent/plans/PLAN-git-ignore-aware-discover.md` | compacted | 57 | 0 | 10 | 4730 |
@@ -618,6 +617,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-fix-stop-hook-completion-evidence-refire.md` | done | 118 | 0 | 9 | 14626 |
 | `agent/plans/_done/PLAN-fixture-env-example-validation-entries.md` | done | 36 | 0 | 3 | 3465 |
 | `agent/plans/_done/PLAN-gate-drop-receipt-verify.md` | done | 69 | 0 | 8 | 14557 |
+| `agent/plans/_done/PLAN-gh-retry.md` | done | 52 | 0 | 14 | 8376 |
 | `agent/plans/_done/PLAN-github-actions-to-bitwarden.md` | done | 225 | 0 | 16 | 39107 |
 | `agent/plans/_done/PLAN-hint-corpus-ci-assertions.md` | done | 371 | 0 | 11 | 35528 |
 | `agent/plans/_done/PLAN-hook-inventory-warn-guards.md` | landed | 69 | 0 | 0 | 4111 |

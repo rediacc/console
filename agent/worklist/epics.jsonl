@@ -31,3 +31,4 @@
 {"at":"2026-10-06T22:18:10Z","by":"d778be9d","id":"b320552c","title":"GitHub reads survive one 5xx: CI, release and gate reads through core/gh_retry (PLAN-gh-retry)","covers":["c1e99d0d"],"order":null}
 {"at":"2026-10-06T22:18:11Z","by":"d778be9d","id":"b320552c","title":"GitHub reads survive one 5xx: CI, release and gate reads through core/gh_retry (PLAN-gh-retry)","covers":["b6dc69f8"],"order":null}
 {"at":"2026-10-06T22:43:20Z","by":"d778be9d","id":"b320552c","title":"GitHub reads survive one 5xx: CI, release and gate reads through core/gh_retry (PLAN-gh-retry)","covers":["a2609c61"],"order":null}
+{"at":"2026-10-07T04:24:46Z","by":"d778be9d","id":"8ed364fe","title":"One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)","covers":[],"order":null,"plan":"agent/plans/PLAN-ci-consolidation.md"}
