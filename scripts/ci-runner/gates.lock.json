@@ -5494,11 +5494,16 @@
       ".ci/scripts/quality/check_gh_retry_reads.py"
     ],
     "paths": [
-      ".ci/rediacc_ci/**",
-      ".ci/scripts/**",
-      ".claude/hooks/**",
-      ".claude/rediacc_hooks/**",
-      ".ci/config/gh-retry-reads-baseline.json"
+      ".ci/**",
+      "scripts/**",
+      ".claude/**",
+      ".github/workflows/**",
+      ".github/actions/**",
+      "package.json",
+      "packages/*/package.json",
+      "*.sh",
+      "Dockerfile*",
+      ".devcontainer/**"
     ],
     "pathsOrigin": "declared",
     "ci": {

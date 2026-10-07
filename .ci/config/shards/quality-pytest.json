@@ -428,6 +428,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_e2e_coverage.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_edge_verify_retries.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_embed_asset_freshness.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_gh_retry_shell.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_go_deps_probe_failure.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_greenlight_closure_trace.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_hook_cross_os.py",
