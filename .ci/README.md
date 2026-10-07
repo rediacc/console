@@ -26,7 +26,7 @@ Abridged — only the entry points most often edited by hand are listed. The ful
 │   ├── ci/
 │   │   └── generate-tag.sh  # Generate time-based CI tag (YYYYMMDD-HHMMSS)
 │   ├── version/
-│   │   ├── detect-bump-type.sh # patch/minor/major from bump-* labels on merged PRs in <tag>..HEAD
+│   │   ├── detect-bump-type.sh # FROZEN TWIN, not run by CI: the live bump detector is rediacc_ci.version.detect_bump_type (initialize step 6)
 │   │   └── resolve-version.sh  # Resolve current/next version from git tags
 │   ├── setup/
 │   │   ├── install-deps.sh     # npm ci with platform handling

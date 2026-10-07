@@ -1,6 +1,8 @@
 """Port of `.ci/scripts/test/gates/test-detect-bump-type.sh`, retired in W7 P5.
 
-Both-ways test for `.ci/scripts/version/detect-bump-type.sh`, the script that turns PR labels into the version bump a release takes.
+Both-ways test for `rediacc_ci.version.detect_bump_type`, the module that turns PR labels into the version bump a release takes.
+
+THE SUBJECT IS THE PORT, NOT THE BASH TWIN (2026-10-07). Since 056fe87b6 `rediacc_ci.ci.initialize` step 6 calls `detect_bump_type.Detector` in process, and nothing in CI executes `.ci/scripts/version/detect-bump-type.sh`; a gate test still driving the twin would cover code CI no longer runs. This test drives the module's own `main` as `python3 -m rediacc_ci.version.detect_bump_type --verbose` in a real git repository, which is the same `Detector(verbose=True).run()` initialize calls plus the one-word print. The twin survives as the differential oracle in `test_version_detect_bump_type.py`, which owns the port-versus-twin equivalence. Every failure the fake `gh` forces here is NON-transient, so it exercises the fail-open-and-small branch; a 5xx is a refusal in the port (PLAN-gh-retry G2) with a 20 s backoff, pinned in `test_version_detect_bump_type.py` with an injected sleep.
 
 WHY THIS CLASS NEEDS A GATE. The thing being replaced was green forever while answering nothing: it resolved the PR by grepping `(#123)` out of the HEAD commit title, so on any merge whose title did not carry that shape it silently answered `patch`. Every case here that expects `patch` therefore also proves the API was REACHED, from a call log the fake `gh` appends to. A `patch`
 that came from a fallback is not the same verdict as a `patch` that came from a lookup, and without the call log the two are indistinguishable.
@@ -8,9 +10,9 @@ that came from a fallback is not the same verdict as a `patch` that came from a 
 THE FAKE `gh` IS THE TWIN'S, BYTE FOR BYTE. It is a routing shim over per-SHA fixture files that applies the caller's own `--jq`, and it is the thing the subject is actually driven against; translating it would mean the two sides drive different subjects.
 
 WHERE THE FIXTURE BUILDER DIFFERS FROM THE TWIN, AND WHY THEY AGREE. The twin builds each PR object with `jq -nc` and each fixture array with `jq -s '.'`; this module builds the same structures with `json.dumps`. The consumer is `jq -r <expr> <file>` inside the fake, which parses the file, so only the PARSED structure is observable and formatting is not. `jq` is still required, by
-the fake and by the subject, and this module probes for it rather than letting a missing binary surface as an unrouted-path exit code.
+the fake, and this module probes for it rather than letting a missing binary surface as an unrouted-path exit code.
 
-NO `xdist_group`. Every case builds its own git repository, fixture directory and call log inside pytest's own `tmp_path`; nothing outside it is written, no port is bound and no module global is mutated. The two tracked files it reads (`.github/labels.yml` and the subject) are never written.
+NO `xdist_group`. Every case builds its own git repository, fixture directory and call log inside pytest's own `tmp_path`; nothing outside it is written, no port is bound and no module global is mutated. The one tracked file it reads (`.github/labels.yml`) is never written.
 """
 
 import json
@@ -18,12 +20,15 @@ import os
 import pathlib
 import re
 import shutil
+import sys
 
 from rediacc_ci import paths
+from rediacc_ci.ci import initialize
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.version import detect_bump_type
 from rediacc_ci.well_known import GH_REPO
 
-UNDER_TEST = paths.from_root(".ci", "scripts", "version", "detect-bump-type.sh")
+UNDER_TEST = pathlib.Path(detect_bump_type.__file__)
 LABELS_FILE = paths.from_root(".github", "labels.yml")
 
 BUMP_LABELS = ("bump-major", "bump-minor")
@@ -115,7 +120,7 @@ class World:
         self.gate = gate
         self.root = root
         self.git = harness.require_tool("git", "install git")
-        harness.require_tool("jq", "install jq (the fake gh and the subject both use it)")
+        harness.require_tool("jq", "install jq (the fake gh applies the caller's --jq with it)")
         if not UNDER_TEST.is_file():
             gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(UNDER_TEST))
         self.out = ""
@@ -190,11 +195,15 @@ class World:
             "GH_TOKEN": "fake",
             "GITHUB_REPOSITORY": GH_REPO,
             "NO_COLOR": "1",
+            # initialize's own PYTHONPATH, so the child imports this checkout's ports from the fixture repo's cwd.
+            "PYTHONPATH": initialize.PACKAGE_PARENT,
         }
         env.update(overrides)
-        result = harness.run(["bash", str(UNDER_TEST), "--verbose"], cwd=self.repo, env=env)
+        result = harness.run(
+            [sys.executable, "-m", detect_bump_type.__name__, "--verbose"], cwd=self.repo, env=env
+        )
         self.rc = result.rc
-        # The twin strips nothing but captures via `$(...)`, which drops trailing newlines; `.strip()` here is the same normalisation on the one-word verdict this script prints.
+        # `.strip()` drops the newline after the one-word verdict, the normalisation initialize's own capture applies.
         self.out = result.out.strip()
         self.err = result.err
 
@@ -207,25 +216,22 @@ class World:
 
 
 def test_bump_labels_are_declared(gate):
-    # Anti-drift with the declaration file: the labels this script matches on must exist in .github/labels.yml, or the inventory gates cannot keep them alive.
-    if not UNDER_TEST.is_file():
-        gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(UNDER_TEST))
+    # Anti-drift with the declaration file: the labels the port matches on must exist in .github/labels.yml, or the inventory gates cannot keep them alive.
     if not LABELS_FILE.is_file():
         gate.log_fail("the labels file is missing: %s" % paths.relative_to_root(LABELS_FILE))
     labels = LABELS_FILE.read_text(encoding="utf-8")
-    script = UNDER_TEST.read_text(encoding="utf-8")
+    matched = (detect_bump_type.MAJOR_LABEL, detect_bump_type.MINOR_LABEL)
     for label in BUMP_LABELS:
         if not re.search(r"^- name: %s$" % re.escape(label), labels, re.MULTILINE):
             gate.log_fail(
-                "detect-bump-type.sh matches '%s' but .github/labels.yml does not declare it"
-                % label
+                "detect_bump_type matches '%s' but .github/labels.yml does not declare it" % label
             )
-        if '"%s"' % label not in script:
+        if label not in matched:
             gate.log_fail(
-                "detect-bump-type.sh no longer matches '%s'; the label is declared and "
-                "consumed by nothing" % label
+                "detect_bump_type no longer matches '%s' (it matches %s); the label is declared "
+                "and consumed by nothing" % (label, ", ".join(matched))
             )
-    gate.log_pass("both bump labels are declared in labels.yml and still matched by the script")
+    gate.log_pass("both bump labels are declared in labels.yml and still matched by the port")
 
 
 def test_head_pr_minor_yields_minor(gate, tmp_path):
@@ -346,7 +352,7 @@ def test_range_cap_is_real(gate, tmp_path):
 
 def test_no_tag_scans_head_alone(gate, tmp_path):
     world = World(gate, tmp_path)
-    # initialize.sh calls this BEFORE its own `git fetch --tags`, so a shallow checkout with no tags is a real state, not a hypothetical.
+    # rediacc_ci.ci.initialize calls this in step 6, BEFORE its own `git fetch --tags` in step 6c, so a shallow checkout with no tags is a real state, not a hypothetical.
     old = world.commit("an old breaking change")
     head = world.commit("todays work")
     world.pulls_for(old, merged_pr(99, "bump-major"))

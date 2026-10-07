@@ -17,12 +17,13 @@
 #      being displayed.
 #
 # WHY THE TAG IS NAMED `production` AND NOT `prod-vX.Y.Z`. Every version reader
-# in this repo globs `v*` -- resolve-version.sh:46, initialize.sh:218,
-# derive-image-tag.sh:92, detect-bump-type.sh:105. A tag named `prod-v1.3.1`
-# would be invisible to that glob (it does not start with `v`), but the moment
-# someone "tidied" it to `v-prod-1.3.1` or similar it would start colliding with
-# the version resolver and could silently become "the latest tag". A single
-# fixed name that cannot ever look like a version is the safe shape.
+# in this repo globs `v*` -- resolve-version.sh:46, rediacc_ci/ci/initialize.py,
+# derive-image-tag.sh:92, rediacc_ci/version/detect_bump_type.py (commit_range).
+# A tag named `prod-v1.3.1` would be invisible to that glob (it does not start
+# with `v`), but the moment someone "tidied" it to `v-prod-1.3.1` or similar it
+# would start colliding with the version resolver and could silently become "the
+# latest tag". A single fixed name that cannot ever look like a version is the
+# safe shape.
 #
 # IDEMPOTENT: re-running for the same version is a no-op that still exits 0, so
 # a re-dispatched promotion does not fail here.

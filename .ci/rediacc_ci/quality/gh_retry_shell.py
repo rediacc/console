@@ -17,7 +17,7 @@ A WRITE is reported as information and never retried, by design: a retried POST 
 THE TWIN RULE (why most shell `gh` is not judged). The 2026-10 ports left bash TWINS of the Python modules under `.ci/scripts`; their `gh` reads were fixed in the ports, and the twins survive only as differential oracles. A hand list of twins would rot the day one is wired back, so the exclusion is COMPUTED: a script is judged only if it is LIVE, meaning a live executor names it, transitively:
   * a workflow or composite-action `run:` block;
   * a `package.json` script (the root and `packages/*`);
-  * a non-docstring string constant in a non-test Python module under `.ci`, `scripts` or `.claude` (this is how `rediacc_ci.ci.initialize` reaches `dispatch-release.sh`, and why that twin is NOT dead);
+  * a non-docstring string constant in a non-test Python module under `.ci`, `scripts` or `.claude` (this is how `rediacc_ci.ci.initialize` reached `dispatch-release.sh` until 2026-10-07; it now names the module `rediacc_ci.ci.dispatch_release`, so that twin is dead);
   * a non-comment line of a non-test TS/JS file under `scripts` or `.github/actions`, a Dockerfile under `.ci` / `.devcontainer` / the root, a `.devcontainer/*.json`, or a root-level `*.sh` (`run.sh`, `rdc.sh`);
   * a non-comment line of a script that is itself live (sourcing `lib/common.sh`, calling `$SCRIPT_DIR/x.sh`, or a `"$DIR"/tutorial-*.sh` glob in the same directory).
 A name is matched by its path TAIL (`version/detect-bump-type.sh`, `../lib/common.sh`); a bare basename counts only inside a same-directory script, or inside a Python constant that holds no whitespace (a path, not a usage message). Over-counting life is the deliberate direction: a twin wrongly read as live costs a visible finding, a live script wrongly read as dead would hide a read. Every dead script that holds an unretried GitHub read is PRINTED (`TWIN`) on every run, so the exclusion cannot quietly grow.
@@ -72,7 +72,7 @@ GH_API_GLOBALS = frozenset({"GITHUB_API_URL"})
 GH_API_LITERALS = ("api.github.com", "github.api_url")
 # common.sh's retry ladder: its `gh "$@"` IS the retry, so scanning it would report the retry as its own violation.
 IMPLEMENTATION = frozenset({(".ci/scripts/lib/common.sh", "_gh_probe")})
-# Gates INSPECT scripts: their path tables are data, and a gate that does run a script (dispatch-release's decision gate) runs it against a shimmed `gh`, never GitHub. So no gate module is an executor; this module and its driver are inside these too.
+# Gates INSPECT scripts: their path tables are data, and a gate that does run a release step (`check:ci-release-bump-skip`, which drives the Python release decider) runs it against a shimmed `gh`, never GitHub. So no gate module is an executor; this module and its driver are inside these too.
 GATE_DIRS = (
     ".ci/rediacc_ci/quality/",
     ".ci/rediacc_ci/security/",

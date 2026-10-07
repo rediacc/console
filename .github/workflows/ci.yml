@@ -2076,10 +2076,10 @@ jobs:
       # output name typo'd -- yields an empty string and therefore RELEASES.
       # `== 'true'` would invert that: any of those would silently skip both
       # steps, the job would go green, and the release would simply never
-      # happen. That is precisely the failure dispatch-release.sh's fail-open
-      # doctrine exists to prevent ("a silently withheld release is far worse
-      # than one unnecessary release"), so the guard fails in the same
-      # direction the script does.
+      # happen. That is precisely the failure the release decider's fail-open
+      # doctrine (rediacc_ci.ci.dispatch_release) exists to prevent ("a silently
+      # withheld release is far worse than one unnecessary release"), so the
+      # guard fails in the same direction the decider does.
       # BEFORE the seal: a refusal here must leave R2 unsealed. This job reads
       # only its own run's ci-complete; another push run on the same sha that
       # FAILED (the 2026-10-06 pair, 37437281526 / 37437282770) is a red

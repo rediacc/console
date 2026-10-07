@@ -5,9 +5,7 @@ Decides whether the merged commit that triggered this CI run earns a cd-v2 relea
 failure path FAILS OPEN, and why the decision and the dispatch are separable);
 none of it is restated here.
 
-LIVE CALLERS, not repointed. `.github/workflows/ci.yml` runs the bash twin in two steps of `finalize-release-sentinel`, `--decide-only` before the sentinel is
-sealed and `--dispatch-only` after. The bash twin stays the registered gate;
-this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
+LIVE CALLERS. This module IS the release decider CI runs; the bash twin is a frozen differential oracle nothing in CI executes. `--decide-only` runs once, as the child `rediacc_ci.ci.initialize.release_decision` starts in initialize step 6b (056fe87b6), and `.github/workflows/ci.yml`'s `finalize-release-sentinel` runs `python3 -m rediacc_ci.ci.dispatch_release --dispatch-only` after the seal, reading initialize's decision rather than deciding again. `check:ci-release-bump-skip`, `test_gate_dispatch_release.py` and `test_ci_initialize.py` drive this module; `test_ci_dispatch_release.py` holds it to the twin.
 
 Ledger: `.ci/shadow/w7p6-dispatch-release.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-release --assert --k 5`).
 
@@ -18,7 +16,7 @@ The twin captures the PR lookup with
 
     rows=$(gh api ".../pulls" --jq '...' 2>&1 </dev/null)
 
-so any line `gh` writes to stderr WHILE SUCCEEDING becomes a row of the PR table. Each such line is then parsed as `<number> <labels>`, and since it carries no `bump-none` it lands in `keep_prs`. Driven, with a fake `gh` that prints one deprecation notice on stderr and the real table on stdout:
+so any line `gh` writes to stderr WHILE SUCCEEDING becomes a row of the PR table (the twin's call, driven below; this module reproduces it through `run_gh_pulls`). Each such line is then parsed as `<number> <labels>`, and since it carries no `bump-none` it lands in `keep_prs`. Driven, with a fake `gh` that prints one deprecation notice on stderr and the real table on stdout:
 
     $ FAKE_GH_STDOUT='570 bump-none' \\
       FAKE_GH_STDERR='Warning: your gh version is out of date' \\

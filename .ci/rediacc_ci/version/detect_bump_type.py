@@ -143,7 +143,7 @@ class Detector:
     def commit_range(self) -> tuple[list[str], str]:
         """The twin's tag selection, and its two different answers.
 
-        A usable tag: scan `<tag>..HEAD`, and an EMPTY range means nothing new since the last release, which is `patch` rather than "look further". No usable tag: HEAD ALONE, never a blind window of history, because `initialize.sh` calls this BEFORE its own `git fetch --tags` and an unbounded `git log -n 50` would re-read PRs a previous release already consumed.
+        A usable tag: scan `<tag>..HEAD`, and an EMPTY range means nothing new since the last release, which is `patch` rather than "look further". No usable tag: HEAD ALONE, never a blind window of history, because `rediacc_ci.ci.initialize` calls this in step 6, BEFORE its own `git fetch --tags` in step 6c, and an unbounded `git log -n 50` would re-read PRs a previous release already consumed.
         """
         max_commits = os.environ.get("DETECT_BUMP_MAX_COMMITS") or DEFAULT_MAX_COMMITS
         tags = _git(["tag", "-l", "v*", "--sort=-v:refname"])

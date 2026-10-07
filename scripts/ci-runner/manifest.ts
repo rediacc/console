@@ -5025,9 +5025,9 @@ export const GATES: readonly GateSpec[] = [
     leaves: ['.ci/scripts/quality/check_release_bump_skip.py'],
     ci: {
       kind: 'test',
-      test: '.ci/scripts/quality/check_release_bump_skip.py',
+      test: '.ci/rediacc_ci/tests/gates/test_gate_dispatch_release.py',
       blocker:
-        'BLOCKER: the gate IS the test -- it drives the real dispatch-release.sh decide branch with a shimmed gh through all five paths, so ci-quality.yml quality-security runs the real decision every CI run; it exists because a bump-none merge and a broken decision both produce "no release" and only the emitted signal distinguishes them, which no release gate could see',
+        'BLOCKER: test_gate_dispatch_release.py runs this gate and its selftest in the quality-pytest lane; the gate drives the release decider initialize runs (python3 -m rediacc_ci.ci.dispatch_release --decide-only, the module named by initialize.DISPATCH_RELEASE_MODULE) with a shimmed gh through all five paths; it exists because a bump-none merge and a broken decision both produce "no release" and only the emitted signal distinguishes them, which no release gate could see',
     },
   },
   {
