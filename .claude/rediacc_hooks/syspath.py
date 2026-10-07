@@ -7,8 +7,10 @@ TWO WAYS IN. A guard, a pytest module or anything else already importing `rediac
 THE STRING IS INSERTED EXACTLY AS GIVEN, NOT RESOLVED. The scoped callers remove the entry in a `finally` by the same string they passed in; resolving it here would make that removal miss whenever the caller's path was not already canonical.
 """
 
+import importlib
 import pathlib
 import sys
+import types
 
 #: `<repo>/.claude`, the directory that makes `import rediacc_hooks` work.
 CLAUDE_DIR = pathlib.Path(__file__).resolve().parents[1]
@@ -28,4 +30,20 @@ def on_sys_path(directory: pathlib.Path | str) -> bool:
     return True
 
 
-__all__ = ["CLAUDE_DIR", "STOP_DIR", "on_sys_path"]
+def import_from_ci(module: str) -> types.ModuleType:
+    """Import `module` (a `rediacc_ci.*` name) with `.ci` on sys.path ONLY for the duration, and return it.
+
+    The one scoped loader the hooks share (the shape block_unverified_push._policy_rel uses): `.ci` goes on through `on_sys_path` and comes OFF in `finally` when this call put it there, because a permanent `.ci` entry would put its `config` and `scripts` directories on every later import in the hook's process. Once imported, the module stays in sys.modules. Raises ImportError when it cannot be imported, which a caller reports as blindness rather than folding into a one-shot read.
+
+    Anchored on THIS file, not on any repository a hook is asked about: the dependency is code, like an import.
+    """
+    cipath = str(CLAUDE_DIR.parent / ".ci")
+    inserted = on_sys_path(cipath)
+    try:
+        return importlib.import_module(module)
+    finally:
+        if inserted and cipath in sys.path:
+            sys.path.remove(cipath)
+
+
+__all__ = ["CLAUDE_DIR", "STOP_DIR", "import_from_ci", "on_sys_path"]
