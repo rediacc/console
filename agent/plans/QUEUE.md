@@ -29,7 +29,7 @@ A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turb
 
 ```stop-hook
 stop_hook: on -- operator 2026-10-06: back on once PLAN-fast-loop completed
-turbo: off -- operator 2026-10-04: turbo off; running writers finish, no new plans start
+turbo: on -- operator 2026-10-07: enable turbo mode
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
 writer_cap: 15 -- operator 2026-10-04: parallel limit 15
@@ -45,14 +45,15 @@ commit_remind_min: 15 -- operator 2026-10-06: PLAN-fast-loop Part 2 default
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--focus`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: stop_hook on; turbo off; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; cadence on; agent_hint on; agent_pushback on; judge on.
-- Focus: merge on PR #598 (branch 1006-3, session d778be9d, since 2026-10-07T03:17:01Z).
-- Branch: main, no live branch.
-- Plans on the PR: none.
-- Work outside the PR's plans: none.
-- Writers: 0 live of writer_cap 15 (session d778be9d).
-- Leased items: 1: #f5a63576 (worker:3223342, d778be9d).
-- Next plan: agent/plans/PLAN-ci-consolidation.md, Promoted entry 2 (solo); starts on branch 1007-1.
+- Mode: stop_hook on; turbo on; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; cadence on; agent_hint on; agent_pushback on; judge on.
+- Focus: off.
+- Branch: 1007-1, no PR yet.
+- Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ci-consolidation.md, as its `Plan:` line unless the body names a plan first.
+- Work outside the PR's plans (1 epic(s)):
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 2 commit(s) on the branch, 4 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 4 live of writer_cap 15 (session d778be9d): worker:a1474581826cb011f, worker:a887594fdb8b21678, worker:a9b39b8838290468d, worker:accb982cb88bb41be.
+- Leased items: 5: #46c361ff (worker:a887594fdb8b21678, d778be9d), #6487a641 (worker:a1474581826cb011f, d778be9d), #941045f1 (worker:accb982cb88bb41be, d778be9d), #f5a63576 (worker:3223342, d778be9d), #fbce68a5 (worker:a9b39b8838290468d, d778be9d).
+- Next plan: agent/plans/PLAN-ci-consolidation.md, Promoted entry 1 (solo); starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
