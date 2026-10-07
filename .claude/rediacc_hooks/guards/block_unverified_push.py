@@ -624,7 +624,10 @@ CARRIED_REL = ".ci/config/carried-reds.json"
 
 
 def _carried_at_head(root):
-    """carried-reds.json as committed at HEAD in `root`, parsed; None when HEAD has no such file or it does not parse."""
+    """carried-reds.json as committed at HEAD in `root`, parsed; None when HEAD has no such file.
+
+    A file that does not parse returns `{UNPARSEABLE: <error>}`, never None: None means "nothing carried", and a corrupt carry file read that way stopped carrying what its author thinks it carries without a word (found by the stop hook's carry reader, #e3fca920). `parse_carried` turns the marker into a schema error, which refuses.
+    """
     try:
         proc = subprocess.run(
             ["git", "-C", root, "show", "HEAD:%s" % CARRIED_REL],
@@ -638,8 +641,12 @@ def _carried_at_head(root):
         return None
     try:
         return json.loads(proc.stdout)
-    except ValueError:
-        return None
+    except ValueError as exc:
+        return {UNPARSEABLE: str(exc)[:120]}
+
+
+#: The key `_carried_at_head` returns a corrupt carry file under; not a key the schema allows, so it can never collide with a real document.
+UNPARSEABLE = "__unparseable__"
 
 
 def _read_json(path):
@@ -666,6 +673,8 @@ def parse_carried(doc):
     """
     if doc is None:
         return {}, None
+    if isinstance(doc, dict) and UNPARSEABLE in doc:
+        return {}, "carried-reds.json at HEAD does not parse as JSON: %s" % doc[UNPARSEABLE]
     if not isinstance(doc, dict) or doc.get("version") != CARRIED_VERSION:
         return {}, 'carried-reds.json at HEAD is not `"version": %d`.' % CARRIED_VERSION
     entries = doc.get("carried")
