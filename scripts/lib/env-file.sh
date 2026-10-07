@@ -67,7 +67,7 @@ unset _env_file_root
 # running from anywhere, and changing directory would change what a relative
 # path in its own arguments means.
 _env_file_py() {
-    PYTHONPATH="$ENV_FILE_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+    PYTHONSAFEPATH=1 PYTHONPATH="$ENV_FILE_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
         python3 -m rediacc_ci.core.env "$@"
 }
 
