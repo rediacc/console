@@ -446,7 +446,7 @@
     "knip": "^6.38.0",
     "lockfile-lint": "^5.0.1",
     "minimatch": "^10.2.6",
-    "oxc-parser": "^0.152.0",
+    "oxc-parser": "^0.153.0",
     "syncpack": "^15.3.3",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
