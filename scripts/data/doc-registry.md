@@ -913,7 +913,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/version | 5 | .py 5 |
 | .ci/scripts/build | 9 | .sh 9 |
 | .ci/scripts/build/sea-inject | 7 | .mjs 7 |
-| .ci/scripts/ci | 12 | .cjs 8, .sh 3, .py 1 |
+| .ci/scripts/ci | 13 | .cjs 8, .sh 4, .py 1 |
 | .ci/scripts/ci/profiler | 3 | .py 2, .awk 1 |
 | .ci/scripts/deploy | 26 | .sh 26 |
 | .ci/scripts/docker | 5 | .py 4, .sh 1 |

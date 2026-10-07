@@ -224,6 +224,8 @@ function gates(n: number): string {
 }
 
 function why(result: GateResult): string {
+  if (result.timedOutMs !== undefined)
+    return `TIMED OUT at its ${secs(result.timedOutMs)} limit, process group killed`;
   if (result.vacuity !== undefined) return `exit 0 but ${result.vacuity}`;
   if (result.exitCode === null) return 'killed';
   return `exit ${result.exitCode}`;
@@ -246,9 +248,14 @@ export function createReporter(opts: ReporterOptions) {
       }
     },
 
-    // Only under --verbose. At --jobs 1 a five-minute gate otherwise looks exactly like a hang, and ci:serial is the mode you reach for when something is already suspicious.
-    start(id: string): void {
-      opts.out(`  ..    ${pad(id)}\n`);
+    // Under --verbose, and always under --json, where this stream is stderr and is the only live trace a CI log has: housekeeping's capture sat silent for 863 s on 2026-10-06 with no line naming the gate it was waiting on. At --jobs 1 a five-minute gate otherwise looks exactly like a hang. `at` is seconds from the run's start, `limit` the gate's kill timer.
+    start(id: string, at?: { sinceStartMs: number; limitMs?: number }): void {
+      if (at === undefined) {
+        opts.out(`  ..    ${pad(id)}\n`);
+        return;
+      }
+      const limit = at.limitMs === undefined ? '' : `, limit ${secs(at.limitMs)}`;
+      opts.out(`  ..    ${pad(id)} started at ${secs(at.sinceStartMs)}${limit}\n`);
     },
 
     finish(result: GateResult): void {
@@ -366,6 +373,13 @@ export function createReporter(opts: ReporterOptions) {
         }
       }
 
+      // Named apart from FAILED, with the limit, so a hang is never read as an ordinary red and the reader sees which timer to question.
+      const timedOut = results.filter((r) => r.timedOutMs !== undefined);
+      if (timedOut.length > 0) {
+        opts.out('TIMED OUT (killed at the limit; scripts/ci-runner/gate-timeout.ts):\n');
+        for (const r of timedOut)
+          opts.out(`  ${pad(r.id)}  after ${secs(r.ms)}, limit ${secs(r.timedOutMs ?? 0)}\n`);
+      }
       if (failed.length > 0) {
         opts.out('FAILED:\n');
         for (const r of failed) opts.out(`  ${pad(r.id)}  ${r.rerun}\n`);
@@ -403,6 +417,7 @@ export function createReporter(opts: ReporterOptions) {
             failed: failed.length,
             blocked: blocked.length,
             skipped: skipped.length,
+            timedOut: timedOut.map((r) => r.id),
             exitCode,
             utilisation: meta.util ?? null,
             gates: results,

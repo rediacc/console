@@ -123,6 +123,8 @@ export interface GateResult {
   elastic?: boolean;
   /** Set only when the gate launched with more cores than the lease tokens it held: its bounded `lease` hold expired (or it was wider than the whole budget), so it ran past another run's tokens rather than wait without end. The footer names every one. */
   overLease?: { granted: number; held: number };
+  /** The gate was killed at its kill timer (gate-timeout.ts); the limit in ms. Always with status `fail` and exitCode null. */
+  timedOutMs?: number;
 }
 
 /**
@@ -1250,6 +1252,7 @@ export async function runPool(
       grantedCores: grants.get(id),
       elastic: settled?.gate.elastic !== undefined ? true : undefined,
       overLease: overLease.get(id),
+      timedOutMs: outcome.timedOutMs,
     });
     if (failed && opts.failFast) stopped = true;
   }

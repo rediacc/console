@@ -13,6 +13,7 @@
 import { spawn } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
+import { KILL_GRACE_MS } from './gate-timeout';
 import type { GateSpec } from './manifest';
 
 export interface ExecOutcome {
@@ -30,6 +31,8 @@ export interface ExecOutcome {
    * Carries the diagnostic to print in place of an exit code.
    */
   vacuity?: string;
+  /** Set when the runner killed the gate at its limit (gate-timeout.ts): the limit in ms. `code` is null and stderr carries a TIMED OUT line. */
+  timedOutMs?: number;
 }
 
 /**
@@ -110,6 +113,52 @@ export interface ExecOptions {
    */
   profileDir?: string;
   profileRunId?: string;
+  /** The gate's kill timer, ms (gate-timeout.ts gateTimeoutMs). Absent means no timer. */
+  timeoutMs?: number;
+}
+
+/**
+ * EVERY GATE RUNS IN ITS OWN PROCESS GROUP, and this is the table of the live ones. A gate is a tree (bash, npm, sh, node, esbuild, a browser), and killing only the pid the runner spawned leaves the rest running and holding the output pipes, so `close` never fires and the runner waits anyway. The group is the unit both kills address: the per-gate timer and the runner's own SIGTERM/SIGINT handler (`killLiveGates`). Before 2026-10-07 the gates shared the runner's group, so a SIGTERM to the runner alone left every running gate orphaned and still working (measured: `kill -TERM <runner>` exited 143 with the planted gate still alive).
+ */
+interface LiveGate {
+  id: string;
+  started: number;
+  pgid: number;
+}
+const LIVE = new Map<number, LiveGate>();
+
+/** The gates running right now, oldest first, with how long each has run. */
+export function liveGates(now: number = Date.now()): { id: string; ms: number; pgid: number }[] {
+  return [...LIVE.values()]
+    .sort((a, b) => a.started - b.started)
+    .map((g) => ({ id: g.id, ms: now - g.started, pgid: g.pgid }));
+}
+
+/** Signal one gate's whole process group; false when it is already gone. */
+function signalGroup(pgid: number, signal: NodeJS.Signals): boolean {
+  try {
+    process.kill(-pgid, signal);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Set once the runner is stopping on a signal: from then on execGate starts nothing, or the pool would launch the next gate into the gap the killed one left. */
+let refusing = false;
+export function refuseNewGates(): void {
+  refusing = true;
+}
+/** True once refuseNewGates ran, so a caller can stop printing start lines for gates that will never start. */
+export function refusingNewGates(): boolean {
+  return refusing;
+}
+
+/** Signal every live gate's process group; returns how many groups were still there to receive it. */
+export function killLiveGates(signal: NodeJS.Signals): number {
+  let n = 0;
+  for (const g of LIVE.values()) if (signalGroup(g.pgid, signal)) n += 1;
+  return n;
 }
 
 /**
@@ -146,11 +195,14 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
     const started = Date.now();
     const out: string[] = [];
     const err: string[] = [];
+    // NEVER SETTLES, on purpose: the signal handler exits the process within its grace. Settling would let the pool record a FAIL for a gate that never ran and let the run finish into a footer and a --json document that a capture would upload as a real measurement.
+    if (refusing) return;
 
     // bash, not sh: several gate bodies use bashisms, and npm runs scripts through a shell anyway. stdin is closed so a gate that waits on input fails instead of hanging the whole pool.
     // The gate's declared `env` (the same values its CI step sets) goes into the child. Without it the local run was not the CI run: tutorial-player's PUBLIC_VIDEO_CDN_BASE_URL was declared here and never applied, so the gate failed in every clean clone and passed in CI (2026-09-26). The pool's grant goes in last (`gateEnv`).
     // Windows-native (Git Bash) keeps the bare spawn and reports wall time only: its `times` reports nothing useful for native children.
     const wrapped = process.platform !== 'win32';
+    // `detached` makes the outer shell a process-group (and session) leader, so `kill(-pid)` reaches every process of the gate and none of the runner's (see LIVE). Not on Windows-native, where there are no process groups to address.
     const child = spawn(
       'bash',
       wrapped ? ['-c', RUSAGE_WRAPPER, 'bash', spec.run] : ['-c', spec.run],
@@ -159,8 +211,11 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
         env: gateEnv(spec, opts.grant),
         // fd 3 is opened on every platform so the spawn has one shape; unwrapped, nothing writes to it.
         stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
+        detached: wrapped,
       }
     );
+    const pgid = wrapped ? child.pid : undefined;
+    if (pgid !== undefined) LIVE.set(pgid, { id: spec.id, started, pgid });
     const rusage: string[] = [];
     // Read even when unwrapped: a pipe left paused may never reach EOF, and `close` waits for every stdio stream.
     const fd3 = child.stdio[3];
@@ -218,7 +273,56 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
       (opts.mergeOutput ? out : err).push(c);
     });
 
+    // THE KILL TIMER. SIGTERM to the whole group at the limit, SIGKILL after KILL_GRACE_MS, and a forced settle after twice that: a descendant that put itself in another group (a daemon) can hold the pipes open past every kill, and the runner must still move on and name the gate.
+    let timedOut = false;
+    let forced = false;
+    let settled = false;
+    const timers: NodeJS.Timeout[] = [];
+    const limit = opts.timeoutMs;
+    if (limit !== undefined && limit > 0) {
+      timers.push(
+        setTimeout(() => {
+          timedOut = true;
+          if (pgid !== undefined) signalGroup(pgid, 'SIGTERM');
+          else child.kill('SIGTERM');
+          timers.push(
+            setTimeout(() => {
+              if (pgid !== undefined) signalGroup(pgid, 'SIGKILL');
+              else child.kill('SIGKILL');
+            }, KILL_GRACE_MS),
+            setTimeout(() => {
+              forced = true;
+              for (const s of [child.stdout, child.stderr, child.stdio[3]]) s?.destroy();
+              settle(null);
+            }, 2 * KILL_GRACE_MS)
+          );
+        }, limit)
+      );
+    }
+
     const settle = (code: number | null, extraErr?: string): void => {
+      if (settled) return;
+      settled = true;
+      for (const t of timers) clearTimeout(t);
+      if (pgid !== undefined) LIVE.delete(pgid);
+      if (timedOut && limit !== undefined) {
+        const ms = Date.now() - started;
+        // The timer's line REPLACES the signal message: "terminated by signal SIGTERM" would read as something outside the runner killing the gate.
+        err.push(
+          `ci-runner: gate ${spec.id} TIMED OUT after ${(ms / 1000).toFixed(1)}s (limit ${(limit / 1000).toFixed(0)}s, scripts/ci-runner/gate-timeout.ts); its process group was killed\n` +
+            (forced
+              ? `ci-runner: a descendant of ${spec.id} outside its process group (setsid, a daemon) still held its output pipes ${(2 * KILL_GRACE_MS) / 1000}s later and was left running; the runner stopped waiting on it\n`
+              : '')
+        );
+        resolve({
+          code: null,
+          stdout: out.join(''),
+          stderr: err.join(''),
+          ms,
+          timedOutMs: limit,
+        });
+        return;
+      }
       if (extraErr !== undefined) err.push(extraErr);
       const stdout = out.join('');
       const stderr = err.join('');
