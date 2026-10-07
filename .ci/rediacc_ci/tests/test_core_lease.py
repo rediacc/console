@@ -399,11 +399,19 @@ def scenario_register_and_count(lease: Lease) -> list[str]:
         for _ in range(4)
     ]
     zeros = 0
-    for proc in procs:
-        out, _ = proc.communicate(timeout=ANSWER_S * 3)
-        if proc.returncode != 0 or not out.strip().isdigit():
-            return ["a registrar exited %s with output %r" % (proc.returncode, out)]
-        zeros += int(out)
+    try:
+        for proc in procs:
+            out, _ = proc.communicate(timeout=ANSWER_S * 3)
+            if proc.returncode != 0 or not out.strip().isdigit():
+                return ["a registrar exited %s with output %r" % (proc.returncode, out)]
+            zeros += int(out)
+    finally:
+        # The early return above leaves the other registrars running; reap them and close
+        # their pipes, or their leaked FileIO is finalized inside a later test on this worker.
+        for proc in procs:
+            if proc.poll() is None:
+                proc.kill()
+            proc.communicate(timeout=ANSWER_S)
     return ["%d count(s) read 0 for a live, just-registered run" % zeros] if zeros else []
 
 
