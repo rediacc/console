@@ -418,8 +418,8 @@ def run(ev):
         ev.warn(MESSAGE + "\n\nNot the fast-forward fallback because: " + reason + ".")
         return hookio.DENY
 
-    # Tags alone move no branch; the walk has the last word on what each placed push carries, so `--tags origin HEAD` is not tags alone.
-    if hookio.grep_q(TAGS_ONLY, scan) and all(_tags_only(r) for r in pushes):
+    # Tags alone move no branch; the walk has the last word on what each placed push carries, so `--tags origin HEAD` is not tags alone. It must have PLACED a push: `all()` over none is True, and the text alone would then excuse a push the walk could not read past the bare-push checks below (review 9025fddf.1).
+    if hookio.grep_q(TAGS_ONLY, scan) and pushes and all(_tags_only(r) for r in pushes):
         return hookio.ALLOW
 
     if not (hookio.grep_q(BARE_PUSH, scan) or hookio.grep_q(BARE_HEAD, scan)):
