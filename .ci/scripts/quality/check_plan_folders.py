@@ -24,7 +24,8 @@ THE VERBS.
 
     --check    (the default) the verdict
     --status   what is where, with no verdict at all
-    --move P   git mv P into its folder, leave a stub, stamp First-Seen and moved_at
+    --move P   git mv P into its folder, leave a stub, stamp First-Seen and moved_at, and
+               remap every commit citation a rebase-merge rewrote (refuses an unprovable one)
     --sweep    what the retention clocks would delete; REFUSES to act without --write
     --update   write the tombstone section of agent/INDEX.md
 
@@ -302,6 +303,41 @@ def selftest() -> int:
     )
     tally.check("an empty tombstone table renders as nothing", PL.render_tombstones([]), "")
 
+    # M. The citation remap `--move` applies. The git half (fork point, subject index, patch-ids) is driven against real rebased histories in .ci/rediacc_ci/tests/gates/test_gate_plan_folders.py; these pin the decision and the rewrite, both directions each.
+    tally.check(
+        "M1 one proven copy remaps",
+        PL.remap_verdict("p1", [("m1", "p1"), ("m2", "p2")]),
+        (PL.REMAP_OK, "m1"),
+    )
+    tally.check(
+        "M2 no same-subject commit refuses", PL.remap_verdict("p1", []), (PL.REMAP_NONE, "")
+    )
+    tally.check(
+        "M3 a subject match with another patch refuses",
+        PL.remap_verdict("p1", [("m1", "p2")]),
+        (PL.REMAP_DIFFERS, ""),
+    )
+    tally.check(
+        "M4 two proven copies refuse",
+        PL.remap_verdict("p1", [("m1", "p1"), ("m2", "p1")]),
+        (PL.REMAP_AMBIGUOUS, ""),
+    )
+    tally.check(
+        "M5 an empty patch proves nothing", PL.remap_verdict("", [("m1", "")]), (PL.REMAP_EMPTY, "")
+    )
+    fenced = "commit:abc123def x\n```\nabc123def quoted\n```\n20261007 1234567890ab\n"
+    tally.check(
+        "M6 tokens skip fences and all-digit runs",
+        PL.unfenced_tokens(fenced),
+        ["abc123def", "1234567890ab"],
+    )
+    tally.check(
+        "M7 the rewrite touches unfenced lines only",
+        PL.apply_remap(fenced, {"abc123def": "fedcba987"}),
+        "commit:fedcba987 x\n```\nabc123def quoted\n```\n20261007 1234567890ab\n",
+    )
+    tally.check("M8 an empty mapping is the identity", PL.apply_remap(fenced, {}), fenced)
+
     return 0 if tally.report() else 1
 
 
@@ -481,6 +517,23 @@ def move(root: pathlib.Path, rel: str, config: dict) -> int:
             file=sys.stderr,
         )
         return 1
+    remap = PL.plan_remap(root, text)
+    if remap.refused:
+        print(
+            "✗ %s cites %d commit(s) that are not on %s and cannot be remapped unambiguously, "
+            "so the move would carry citations a fresh clone cannot resolve:"
+            % (rel, len(remap.refused), remap.main or "main"),
+            file=sys.stderr,
+        )
+        for token, why in remap.refused:
+            print("  %s -- %s" % (token, why), file=sys.stderr)
+        print(
+            "  Nothing was moved. Point each one at the main commit it became (subject and "
+            "`git patch-id --stable` equal) or at a blob id (`git hash-object <file>`), then "
+            "re-run --move.",
+            file=sys.stderr,
+        )
+        return 1
     when = gitx.git(["log", "-1", "--format=%cI", "--", rel], root=root).stdout.strip()
     first_seen = (plan.first_seen or when)[:10]
     if not first_seen:
@@ -503,13 +556,38 @@ def move(root: pathlib.Path, rel: str, config: dict) -> int:
             "✗ git mv %s -> %s failed: %s" % (rel, new_rel, result.stderr.strip()), file=sys.stderr
         )
         return 1
+    body = PL.apply_remap(text, remap.mapping)
     if not plan.first_seen:
-        (root / new_rel).write_text(_stamp(text, first_seen), encoding="utf-8")
+        body = _stamp(body, first_seen)
+    if body != text:
+        (root / new_rel).write_text(body, encoding="utf-8")
     (root / rel).write_text(PL.stub_text(rel, new_rel, plan.title), encoding="utf-8")
     gitx.git(["add", "--", rel, new_rel], root=root)
     _record_move(root, rel, new_rel, target_dir)
     print("✓ %s -> %s (First-Seen: %s)" % (rel, new_rel, first_seen))
+    _report_remap(remap)
     return 0
+
+
+def _report_remap(remap: PL.Remap) -> None:
+    """The shape of the citation remap, so a reader can see it ran and on what."""
+    print(
+        "  commit citations: %d cited, %d on %s, %d remapped, %d still on this branch"
+        % (
+            remap.commits,
+            len(remap.on_main),
+            remap.main or "main",
+            len(remap.mapping),
+            len(remap.on_branch),
+        )
+    )
+    for old, new in remap.mapping.items():
+        print("    remapped %s -> %s (%s)" % (old, new, remap.subjects.get(old, "")))
+    for token in remap.on_branch:
+        print(
+            "    kept %s: reachable from HEAD and not from %s, so this PR's rebase-merge will "
+            "rewrite it; close a plan after its merge so --move can remap it" % (token, remap.main)
+        )
 
 
 def _stamp(text: str, first_seen: str) -> str:

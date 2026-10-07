@@ -854,6 +854,7 @@
       "PLAN_HK_ROOT"
     ],
     ".ci/rediacc_ci/quality/plan_lifecycle.py": [
+      "PLAN_FOLDERS_MAIN",
       "PLAN_FOLDERS_MIN_PLANS",
       "PLAN_FOLDERS_ROOT"
     ],

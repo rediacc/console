@@ -350,3 +350,39 @@ def test_needs_git_dates_asks_only_where_a_clock_is_read():
     assert not PL.needs_git_dates(_plan("agent/plans/PLAN-a.md", "compacted"))
     assert PL.needs_git_dates(_plan("agent/plans/PLAN-a.md", "draft"))
     assert PL.needs_git_dates(_plan("agent/plans/_done/PLAN-a.md", "done"))
+
+
+# --------------------------------------------------------------------------- The citation remap `--move` applies. The git half is driven against real rebased histories in tests/gates/test_gate_plan_folders.py.
+
+
+def test_the_commit_token_regex_mirrors_the_citation_gate():
+    """`--move` must read the tokens check:ci-plan-citations judges, no more and no fewer."""
+    hook = _hook_module("wl_planrec")
+    assert PL.COMMIT_TOKEN_RE.pattern == hook.HEXTOK_RE.pattern
+
+
+def test_the_fence_regex_mirrors_the_citation_gate():
+    hook = _hook_module("wl_planfid")
+    assert PL.FENCE_RE.pattern == hook.FENCE_RE.pattern
+
+
+@pytest.mark.parametrize(
+    ("own", "candidates", "want"),
+    [
+        ("p1", [("m1", "p1"), ("m2", "p2")], (PL.REMAP_OK, "m1")),
+        ("p1", [], (PL.REMAP_NONE, "")),
+        ("p1", [("m1", "p2")], (PL.REMAP_DIFFERS, "")),
+        ("p1", [("m1", "p1"), ("m2", "p1")], (PL.REMAP_AMBIGUOUS, "")),
+        ("p1", [("m1", "p1"), ("m1", "p1")], (PL.REMAP_OK, "m1")),
+        ("", [("m1", "")], (PL.REMAP_EMPTY, "")),
+    ],
+)
+def test_remap_verdict_maps_only_one_proven_copy(own, candidates, want):
+    assert PL.remap_verdict(own, candidates) == want
+
+
+def test_the_rewrite_spares_fences_and_keeps_every_other_byte():
+    text = "a commit:abc123def\r\n```\nabc123def\n```\nabc123def0 abc123def\n"
+    got = PL.apply_remap(text, {"abc123def": "fedcba987"})
+    assert got == "a commit:fedcba987\r\n```\nabc123def\n```\nabc123def0 fedcba987\n"
+    assert PL.unfenced_tokens(text) == ["abc123def", "abc123def0"]
