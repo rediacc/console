@@ -1378,6 +1378,8 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
     const timed = runner(
       [
         { id: 'selftest:e2e-pass', run: 'echo e2e-pass', gate: true },
+        // A gate reading stdin must still see EOF at once (stdin is /dev/null), so the runner-death watch never rides on stdin; on a pipe this gate would hang and join `timedOut`.
+        { id: 'selftest:e2e-stdin', run: 'cat; echo e2e-stdin-eof', gate: true },
         { id: 'selftest:e2e-hang', run: hang(tPid), gate: true },
       ],
       'timeout',
@@ -1391,6 +1393,14 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
       ['--json'],
       sPid
     );
+    // SIGKILL TO THE RUNNER: no handler can run, so only the gate's own wrapper can notice (exec.ts RUSAGE_WRAPPER's watch on fd 4). Red before 2026-10-07's fix: the gate, in its own process group, outlived the runner indefinitely.
+    const kPid = path.join(dir, 'sigkill.pid');
+    const killed9 = runner(
+      [{ id: 'selftest:e2e-kill9', run: hang(kPid), gate: true }],
+      'sigkill',
+      ['--json'],
+      kPid
+    );
     const up = await fileAppears(sPid, 30_000);
     const sigGate = up ? Number(fs.readFileSync(sPid, 'utf8').trim()) : Number.NaN;
     require_(
@@ -1398,6 +1408,22 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
       'CONTROL: the signalled runner\'s gate must be running before the SIGTERM, or "dead after" proves nothing'
     );
     signalled.child.kill('SIGTERM');
+
+    const kUp = await fileAppears(kPid, 30_000);
+    const kGate = kUp ? Number(fs.readFileSync(kPid, 'utf8').trim()) : Number.NaN;
+    require_(
+      kUp && pidAlive(kGate),
+      'CONTROL: the SIGKILLed runner\'s gate must be running before the kill, or "dead after" proves nothing'
+    );
+    killed9.child.kill('SIGKILL');
+    await killed9.done;
+    const kDeadline = Date.now() + 3_000;
+    while (pidAlive(kGate) && Date.now() < kDeadline) await new Promise((r) => setTimeout(r, 50));
+    require_(
+      Number.isInteger(kGate) && !pidAlive(kGate),
+      `a gate must die within 3 s of its runner being SIGKILLed, pid ${kGate} is still alive`
+    );
+    killPidFile(kPid);
 
     const [t, sig] = await Promise.all([timed.done, signalled.done]);
     let doc: { timedOut?: unknown; gates?: { id: string; status: string; timedOutMs?: number }[] } =
@@ -1416,8 +1442,9 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
       'the hung gate must carry timedOutMs = its 1 s limit'
     );
     require_(
-      doc.gates?.find((g) => g.id === 'selftest:e2e-pass')?.status === 'ok',
-      'CONTROL: the passing gate must stay ok under the same timer, or the timer kills everything'
+      doc.gates?.find((g) => g.id === 'selftest:e2e-pass')?.status === 'ok' &&
+        doc.gates?.find((g) => g.id === 'selftest:e2e-stdin')?.status === 'ok',
+      'CONTROL: the passing and the stdin-reading gates must stay ok under the same timer, or the timer (or the runner-death watch) kills everything'
     );
     const tGate = Number(fs.readFileSync(tPid, 'utf8').trim());
     require_(
