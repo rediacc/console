@@ -30,6 +30,13 @@
   "version": 2,
   "carried": [
     {
+      "gate": "check:ci-plan-implementation",
+      "findings": [
+        "P-A1:112304fdab4d"
+      ],
+      "reason": "1007-1 works agent/plans/PLAN-ci-consolidation.md. Its last open box, T24, runs the full pytest suite, the hook test-*.py suites and ci:quick on the FINAL tree, which can only happen after this first push; T22 and earlier are ticked. The carry names this exact key and goes once T24 is ticked."
+    },
+    {
       "gate": "check:ci-pytest",
       "findings": [
         "pytest-skip:.ci.rediacc_ci.tests.test_core_account::test_stop_real_run_kills_a_real_tracked_pid_and_a_real_port_occupant",
