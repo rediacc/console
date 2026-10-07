@@ -471,6 +471,35 @@ def _rollup_branch(root, owner, name, ref):
     return state, info
 
 
+def latest_per_job(contexts):
+    """The contexts with a re-run job's SUPERSEDED attempts dropped: one CheckRun per (workflow run, job name), the highest databaseId (job ids grow with each attempt).
+
+    A job's verdict is the LATEST attempt that ran it; a job a later attempt did not re-run has only its earlier attempt, which stays. The rollup normally hands over the latest per context already, but this reader must not depend on that: PR #599 run 37633980671 reported "Quality / Submodule Branches FAILURE (attempt 1)" after attempt 2 re-ran that job green. A StatusContext, or a CheckRun with no run or id, has no attempt to compare and passes through.
+    """
+    contexts = list(contexts or [])
+    best: dict[tuple, int] = {}
+    for i, c in enumerate(contexts):
+        key = _job_key(c)
+        if key is not None and (key not in best or _job_id(c) > _job_id(contexts[best[key]])):
+            best[key] = i
+    keep = set(best.values())
+    return [c for i, c in enumerate(contexts) if _job_key(c) is None or i in keep]
+
+
+def _job_id(c):
+    try:
+        return int(c.get("databaseId") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _job_key(c):
+    if c.get("__typename") == "StatusContext" or not c.get("name"):
+        return None
+    run = _ctx_run(c)
+    return (run, c["name"]) if run and _job_id(c) else None
+
+
 def ci_classify(info):
     """(live, hard, soft) from PER-JOB conclusions only.
 
@@ -479,7 +508,7 @@ def ci_classify(info):
     A completed failing job whose name matches the watchdog's retry allowlist is SOFT while the head is live, because a retry may be inbound. Once the head is final and it is STILL failing, the watchdog is done with it and it is hard, which is the difference between "wait" and "go read the log".
     """
     rows, pending, blocking_seen = [], 0, 0
-    for c in info.get("contexts") or []:
+    for c in latest_per_job(info.get("contexts")):
         # Skipped BEFORE branching on shape, and before the pending count too: this context can be a StatusContext OR a CheckRun depending on how it was posted, and it must never contribute to "live" either -- it can
         # sit at conclusion=failure indefinitely (a crashed verdict publisher
         # never re-runs), which would otherwise wedge the rollup as perpetually in-flight rather than genuinely final.
@@ -544,7 +573,7 @@ def ci_gate(info, require_complete=True):
     In order: a failure is red (failures are irrevocable, even off a partial read); anything blocking in flight is running; a cancelled blocking context is red (the caller attributes the cause); a truncated read is no-verdict (a partial page proves nothing about the contexts it never reached); then `CI Complete` decides.
     """
     live, hard, soft = ci_classify(info)
-    contexts = info.get("contexts") or []
+    contexts = latest_per_job(info.get("contexts"))
     blocking = [
         c
         for c in contexts
@@ -1170,7 +1199,12 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
     cache: Any = None
     c = wl_gh.cache_load(cache_p)
     if c is not None and c.get("sha") == tip:
-        ttl = CI_CACHE_FINAL_S if c.get("final") else CI_CACHE_LIVE_S
+        # A FINAL cache that holds a failure gets the short TTL: a rerun (watchdog or operator) of that very job lands on the same SHA and the same run, and a 15 minute cache would keep reporting the superseded attempt's red long after the rerun went green.
+        red_held = any(
+            (x.get("conclusion") or "").upper() in CI_FAIL_CONCLUSIONS
+            for x in (c.get("info") or {}).get("contexts") or []
+        )
+        ttl = CI_CACHE_FINAL_S if c.get("final") and not red_held else CI_CACHE_LIVE_S
         cache = c if wl_gh.cache_fresh(c, ttl, ttl) else None
     if cache is not None:
         state, info, steps = cache["state"], cache.get("info"), cache.get("steps") or {}
