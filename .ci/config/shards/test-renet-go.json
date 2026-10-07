@@ -1,7 +1,7 @@
 {
   "lane": "test-renet-go",
   "of": 2,
-  "generatedAt": "2026-09-27T00:00:00.000Z",
+  "generatedAt": "2026-10-07T19:54:10.520Z",
   "legs": [
     {
       "index": 1,
@@ -68,6 +68,7 @@
         "github.com/rediacc/renet/pkg/hub",
         "github.com/rediacc/renet/pkg/i18n/locales",
         "github.com/rediacc/renet/pkg/infra/aptretry",
+        "github.com/rediacc/renet/pkg/infra/aptsources",
         "github.com/rediacc/renet/pkg/infra/ceph",
         "github.com/rediacc/renet/pkg/infra/cephpkg",
         "github.com/rediacc/renet/pkg/infra/image",
