@@ -388,6 +388,12 @@ def test_the_rewrite_spares_fences_and_keeps_every_other_byte():
     assert PL.unfenced_tokens(text) == ["abc123def", "abc123def0"]
 
 
+def test_unfenced_tokens_reads_a_commit_prefixed_digit_sha_and_skips_a_bare_number():
+    # About 1 in 69 shas is all digits at 9 characters; `commit:` says it is a sha, a bare run stays a date or run id (#0241c97d).
+    text = "done commit:325389306 on run 375892341 dated 20261007\n"
+    assert PL.unfenced_tokens(text) == ["325389306"]
+
+
 # ---- moved_from: the stub at the plan's current home (agent/plans/) and the legacy one (agent/) ----
 
 

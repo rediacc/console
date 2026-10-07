@@ -305,7 +305,38 @@ def _git_ok(root, *args) -> bool:
 
 
 def sha9(s: str) -> str:
+    """The 9-character abbreviation `done=` and `Full-Text:` are written with.
+
+    LEFT AT EXACTLY NINE even when all digits, unlike a `commit:` citation (`citable_token`): `RECORD_LINE_RE` reads `done=` as exactly nine characters and `FULLTEXT_RE` reads `Full-Text:` by its own anchor, and `check:ci-plan-record` resolves both regardless of their letters, so neither depends on a hex-token reader that skips digit runs.
+    """
     return (s or "").strip()[:9]
+
+
+def shacite() -> Any:
+    """`rediacc_ci.shacite`, the one rule for writing and reading a short-sha citation, loaded through `wl_gh.import_ci` (`.ci` on sys.path only while importing). Raises ImportError when it cannot be imported: a citation reader that cannot see the rule says so rather than guessing."""
+    import wl_gh  # noqa: PLC0415 -- the shared `.ci` loader, needed only when a digit run or a `commit:` ref is in hand
+
+    return wl_gh.import_ci("rediacc_ci.shacite")
+
+
+def citable_commit_refs(root, text, repos=None):
+    """`text` with every all-digit `commit:<sha>` lengthened until it carries a letter (`shacite.citable_token`), so the tick evidence a verb writes is read by every citation reader, including `plan_lifecycle.unfenced_tokens`, which still skips digit runs whatever their prefix.
+
+    `repos` are the git directories a token may resolve in (default: `root` alone); the first that knows the token supplies the full sha. A token none of them resolves is left as typed, so the verb's own validation still sees and refuses it. Text with no `commit:` is returned without loading anything.
+    """
+    text = text or ""
+    if "commit:" not in text:
+        return text
+    roots = [str(r) for r in (repos or [root])]
+
+    def expand(tok):
+        for repo in roots:
+            got = _git_out(repo, "rev-parse", "--verify", "--quiet", tok + "^{commit}")
+            if got:
+                return got
+        return ""
+
+    return shacite().lengthen_commit_refs(text, expand)
 
 
 # --------------------------------------------------------------------------- resolve(): one function, eight kinds, no second opinion anywhere.
@@ -501,10 +532,10 @@ def launder(root, text):
     pieces, last = [], 0
     for m in HEXTOK_RE.finditer(out):
         tok = m.group(1)
-        # AN ALL-DIGIT TOKEN IS NEVER LAUNDERED, and it is the one exception worth
+        # A BARE ALL-DIGIT TOKEN IS NEVER LAUNDERED, and it is the one exception worth
         # having. `[0-9a-f]{7,40}` also matches a CI run id (`100500447167`), a
-        # date and an issue number, and those are exactly the evidence shapes `wl_checks.completion_evidence` treats as first-class. Laundering a run id out of a record would destroy the most citable fact in it to defend against an all-digit git object, which does not occur. Cheap asymmetry, taken in the direction that keeps evidence.
-        if tok.isdigit():
+        # date and an issue number, and those are exactly the evidence shapes `wl_checks.completion_evidence` treats as first-class. Laundering a run id out of a record would destroy the most citable fact in it. All-digit shas DO occur (about 1 in 69 nine-character abbreviations, #0241c97d), so a token written `commit:<token>`, the form that says it is a sha, is resolved like any other; `shacite.skip_as_number` is the rule `check_plan_citations` reads with too.
+        if tok.isdigit() and shacite().skip_as_number(out, m.start(1), tok):
             continue
         if resolve(root, "blob", tok)[0] or resolve(root, "commit", tok)[0]:
             continue
@@ -2484,6 +2515,8 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
         if problem:
             raise RecordError(problem)
 
+    # AN ALL-DIGIT `commit:<sha9>` IS WRITTEN LENGTHENED (#0241c97d), so the line this verb puts into the plan is read by every citation reader, `plan_lifecycle`'s --move remap included.
+    ev = citable_commit_refs(root, ev)
     lines = text.splitlines(keepends=True)
     eol = "\n" if lines[i].endswith("\n") else ""
     # ONE CHARACTER, at one offset. `line.replace("[ ]", "[x]", 1)` would also rewrite a `[ ]` that appears in the task TEXT of a box about checkboxes, and this repo has plans about checkboxes.
@@ -2668,6 +2701,8 @@ def plan_backfill_investigation(
         if not lines[i].endswith("\n"):
             lines[i] = lines[i] + "\n"
         stamp = now or C.stamp_now()
+        # Lengthened like `plan_tick`'s line (#0241c97d).
+        ev = citable_commit_refs(root, ev)
         note_line = TICK_EVIDENCE % (stamp, (me or "?")[:8], clip(ev, TICK_EVIDENCE_MAX))
         lines.insert(_evidence_slot(lines, i), note_line + "\n")
         out = "".join(lines)

@@ -39,6 +39,7 @@ import pathlib
 import re
 
 from rediacc_ci import gitx, paths, proc
+from rediacc_ci.shacite import citable_token, skip_as_number
 
 # --------------------------------------------------------------------------- The layout, in one place.
 
@@ -841,21 +842,9 @@ def unfenced_tokens(text: str) -> list[str]:
             continue
         for m in COMMIT_TOKEN_RE.finditer(line):
             tok = m.group(1)
-            if not tok.isdigit() and tok not in out:
+            if not skip_as_number(line, m.start(1), tok) and tok not in out:
                 out.append(tok)
     return out
-
-
-def citable_token(full: str, short: str) -> str:
-    """`short` lengthened along `full` until it carries a letter, so a token the remap WRITES is one every reader of it will read.
-
-    `unfenced_tokens` here and `check:ci-plan-citations` both skip an all-digit token as a date or a run id, and about 1 in 68 nine-character abbreviations is all digits. A remap that wrote one would put a citation into the closed plan that no gate ever judges again (found 2026-10-07, #e9852315: the same skip made a fixture's 9-digit citation read as "0 cited"). `check_plan_citations` takes its own probe token the same way.
-    """
-    if not short.isdigit():
-        return short
-    return next(
-        (full[:n] for n in range(len(short) + 1, len(full) + 1) if not full[:n].isdigit()), full
-    )
 
 
 def apply_remap(text: str, mapping: dict[str, str]) -> str:

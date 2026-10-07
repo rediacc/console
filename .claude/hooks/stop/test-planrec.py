@@ -381,6 +381,68 @@ control(
     1,
 )
 
+# THE `commit:` FORM IS NOT A RUN ID (#0241c97d). About 1 in 69 nine-character abbreviations is all digits, so the run-id exception above must not swallow a token written `commit:<sha9>`: that prefix says it is a sha. A repository whose tip is re-dated until its sha9 is all digits makes the case fixed rather than a 1-in-69 draw.
+_dig = pathlib.Path(tempfile.mkdtemp())
+sh(_dig, "git", "init", "-q")
+sh(_dig, "git", "config", "user.email", "t@example.com")
+sh(_dig, "git", "config", "user.name", "t")
+sh(_dig, "git", "commit", "-q", "--allow-empty", "-m", "digits")
+for _i in range(5000):
+    _dsha = git_out(_dig, "rev-parse", "HEAD")
+    if _dsha[:9].isdigit():
+        break
+    _when = "@%d +0000" % (1767225600 + _i)
+    subprocess.run(
+        ["git", "-C", str(_dig), "commit", "-q", "--amend", "--allow-empty", "-m", "digits"],
+        env={**os.environ, "GIT_COMMITTER_DATE": _when, "GIT_AUTHOR_DATE": _when},
+        check=True,
+        capture_output=True,
+    )
+truthy("fixture: the tip's sha9 is all digits", _dsha[:9].isdigit())
+_d9 = _dsha[:9]
+_resolve_calls: list[tuple[str, str]] = []
+_real_resolve = R.resolve
+
+
+def _spy_resolve(root, kind, token):
+    _resolve_calls.append((kind, token))
+    return _real_resolve(root, kind, token)
+
+
+R.resolve = _spy_resolve
+try:
+    _kept_d, _rep_d = R.launder(_dig, "(ticked) commit:%s rc=0" % _d9)
+finally:
+    R.resolve = _real_resolve
+control("a resolving all-digit commit:<sha9> survives laundering", _rep_d, [])
+truthy(
+    "...because it was READ and resolved, not skipped as a run id",
+    any(t == _d9 for _k, t in _resolve_calls),
+)
+_dead_d, _rep_dead = R.launder(_dig, "(ticked) commit:123456789 rc=0")
+control(
+    "an all-digit commit:<sha9> that resolves to nothing is laundered and reported",
+    _rep_dead,
+    ["object:123456789"],
+)
+_bare_d, _rep_bare = R.launder(_dig, "run 123456789 went red, and nocommit:123456789")
+control("CONTROL: the same digits bare or behind nocommit: still survive", _rep_bare, [])
+
+# THE WRITE HALF: an all-digit commit:<sha9> in tick evidence is written lengthened until it carries a letter, so `plan_lifecycle.unfenced_tokens` (which skips every digit run) still sees it in the plan. A letter-bearing one, a bare digit run and a token nothing resolves are left exactly as typed.
+_lengthened = R.citable_commit_refs(_dig, "(ticked) commit:%s rc=0" % _d9)
+_want = next(_dsha[:n] for n in range(10, 41) if not _dsha[:n].isdigit())
+control(
+    "citable_commit_refs lengthens an all-digit commit:<sha9>",
+    _lengthened,
+    "(ticked) commit:%s rc=0" % _want,
+)
+control(
+    "CONTROL: an unresolvable, a bare and a letter-bearing token are untouched",
+    R.citable_commit_refs(_dig, "commit:123456789 run %s commit:abc123def" % _d9),
+    "commit:123456789 run %s commit:abc123def" % _d9,
+)
+shutil.rmtree(_dig, ignore_errors=True)
+
 # ---------------------------------------------------------------------------
 # 6. derive(). The pointer, the epics, the gates, the paths, and done=.
 # ---------------------------------------------------------------------------

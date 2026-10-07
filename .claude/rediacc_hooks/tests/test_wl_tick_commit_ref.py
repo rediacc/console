@@ -161,3 +161,53 @@ def test_t6_mutation_accepting_bare_evidence_flips_the_refusal(wl):  # noqa: F81
     item = added(wl)
     got = wl.cli("--tick", wlfix.ME, item, "pytest rc=0, 12 passed")
     assert got.rc == 0, "the mutated hook still refused: %s" % got.err[:300]
+
+
+def _digit_head(repo) -> str:
+    """Re-date HEAD until its 9-character abbreviation is all digits (about 1 in 69 shas are), and return the sha. Deterministic per tree; the cap is a test bug, never a pass."""
+    for i in range(5000):
+        sha = head(repo)
+        if sha[:9].isdigit():
+            return sha
+        when = "@%d +0000" % (1767225600 + i)
+        subprocess.run(
+            ["git", "commit", "-q", "--amend", "--allow-empty", "-m", "chore: base"],
+            cwd=str(repo),
+            check=True,
+            capture_output=True,
+            env={**wlfix.scrubbed_environ(), "GIT_COMMITTER_DATE": when, "GIT_AUTHOR_DATE": when},
+        )
+    raise AssertionError("no all-digit 9-char prefix in 5000 re-dates")
+
+
+def test_t6_an_all_digit_commit_ref_is_recorded_lengthened(wl):  # noqa: F811
+    """#0241c97d. `commit:<sha9>` whose nine characters are all digits ticks, and the evidence is RECORDED lengthened until it carries a letter, so a reader that skips digit runs (plan_lifecycle --move) still sees it. Red before the fix: the bare nine digits were stored."""
+    wl.reg_repo()
+    sha = _digit_head(wl.proj)
+    want = next(sha[:n] for n in range(10, 41) if not sha[:n].isdigit())
+    item = added(wl)
+    got = wl.cli("--tick", wlfix.ME, item, "commit:%s pytest rc=0" % sha[:9])
+    assert got.rc == 0, got.err[:400]
+    events = wl.wl_events()
+    assert "commit:%s pytest rc=0" % want in events, events[-600:]
+    assert "commit:%s pytest" % sha[:9] not in events, "the bare all-digit sha9 was recorded"
+
+
+def test_t6_inverse_an_all_digit_ref_nothing_resolves_is_refused_as_typed(wl):  # noqa: F811
+    """CONTROL: lengthening needs a commit to lengthen along; a digit ref that names none is refused, and the refusal names the token as typed."""
+    wl.reg_repo()
+    item = added(wl)
+    got = wl.cli("--tick", wlfix.ME, item, "commit:123456789 pytest rc=0")
+    assert got.rc != 0, got.out[:300]
+    assert "commit:123456789 is not a commit reachable from HEAD" in got.err, got.err[:400]
+
+
+def test_t6_a_letter_bearing_ref_is_recorded_as_typed(wl):  # noqa: F811
+    """CONTROL: only all-digit refs are rewritten."""
+    wl.reg_repo()
+    sha = head(wl.proj)
+    short = next(sha[:n] for n in range(9, 41) if not sha[:n].isdigit())
+    item = added(wl)
+    got = wl.cli("--tick", wlfix.ME, item, "commit:%s pytest rc=0" % short)
+    assert got.rc == 0, got.err[:400]
+    assert "commit:%s pytest rc=0" % short in wl.wl_events()

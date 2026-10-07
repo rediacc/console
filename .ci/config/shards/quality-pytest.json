@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-07T13:15:33.768Z",
+  "generatedAt": "2026-10-07T13:50:26.537Z",
   "legs": [
     {
       "index": 1,
@@ -173,6 +173,7 @@
         "pytest:.ci/rediacc_ci/tests/test_setup_build_packages.py",
         "pytest:.ci/rediacc_ci/tests/test_setup_install_cli_global.py",
         "pytest:.ci/rediacc_ci/tests/test_setup_install_deps.py",
+        "pytest:.ci/rediacc_ci/tests/test_shacite.py",
         "pytest:.ci/rediacc_ci/tests/test_signal_create_complete.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_e2e.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_rdc_update.py",

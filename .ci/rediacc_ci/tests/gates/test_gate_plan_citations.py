@@ -157,3 +157,56 @@ def test_the_exclusion_is_scoped_to_the_moved_plan(gate, tmp_path):
     gate.assert_exit(1, result, "the sibling plan's new citation is not excused by the move")
     gate.assert_contains(result.out + result.err, "PLAN-other.md", "and it is the one named")
     gate.log_pass("the carried-lines exclusion is per moved plan, not global")
+
+
+# THE ALL-DIGIT `commit:` CITATION (#0241c97d). About 1 in 69 nine-character abbreviations is all digits, and the extractor skipped every all-digit token as a run id or a date, so a real `commit:<sha9>` tick citation was never judged: a dead one passed, and a plan whose only citation was one read as a blind corpus. The `commit:` form now says "this is a sha"; a bare digit run is still a number.
+
+
+def _digit_cited_plan(tmp_path, line: str) -> tuple[pathlib.Path, str]:
+    """A plan committed at a base, then `line` added under its box. Returns (root, base). `{d9}` in `line` becomes the 9-character, ALL-DIGIT abbreviation of a real commit on this history (re-dated until it is one, the shape #e9852315 drew by chance)."""
+    from rediacc_ci.tests.gates.test_gate_plan_folders import _force_digit_prefix  # noqa: PLC0415
+
+    root = _init(tmp_path)
+    _write(root, "agent/PLAN-digits.md", "# PLAN: digits\nStatus: in-progress\n\n- [ ] T1 a box\n")
+    base = _commit(root, "base")
+    _write(root, "src/work.txt", "work\n")
+    _commit(root, "feat: the work")
+    sha = _force_digit_prefix(root)
+    assert sha[:9].isdigit(), sha
+    _write(
+        root,
+        "agent/PLAN-digits.md",
+        "# PLAN: digits\nStatus: in-progress\n\n- [x] T1 a box\n%s\n" % line.format(d9=sha[:9]),
+    )
+    _commit(root, "tick")
+    return root, base
+
+
+def test_an_all_digit_commit_citation_that_resolves_is_read(gate, tmp_path):
+    """Red before #0241c97d: the only citation was skipped, so the corpus read as ZERO citations and the gate refused as blind (exit 1)."""
+    root, base = _digit_cited_plan(tmp_path, "    (ticked) commit:{d9} rc=0")
+    result = _gate(root, base)
+    gate.assert_exit(0, result, "a resolving all-digit commit: citation is judged and passes")
+    gate.assert_contains(result.out, "carrying 1 citation(s)", "the extractor counted it")
+    gate.log_pass("an all-digit commit:<sha9> that resolves is read and verified")
+
+
+def test_an_all_digit_commit_citation_that_does_not_resolve_is_reported(gate, tmp_path):
+    """Red before #0241c97d: the dead pointer was skipped as a run id and the gate passed."""
+    root, base = _digit_cited_plan(
+        tmp_path, "    (ticked) commit:123456789 rc=0, see `package.json:1`"
+    )
+    result = _gate(root, base)
+    gate.assert_exit(1, result, "a dead all-digit commit: citation is a finding")
+    gate.assert_contains(result.err, "123456789", "and the finding names it")
+    gate.log_pass("an all-digit commit:<sha9> that resolves to nothing is reported")
+
+
+def test_a_bare_digit_run_is_still_not_judged(gate, tmp_path):
+    """CONTROL, the other direction: without the prefix the same digits are a run id, and judging them would red on every CI run id a plan quotes."""
+    root, base = _digit_cited_plan(
+        tmp_path, "    (ticked) run 123456789 went red, see `package.json:1`"
+    )
+    result = _gate(root, base)
+    gate.assert_exit(0, result, "an unprefixed digit run is not a citation")
+    gate.log_pass("a bare all-digit run id is still skipped")
