@@ -183,4 +183,5 @@ Operator /ask 2026-10-06 left Part D out of this build. Its design and its two b
     (ticked) 2026-10-07T05:40:21Z by d778be9d: commit:95e52541e live checks read-only: freshness verdict matches the old two commands; CI reads go through wl_gh
 - [x] T23 Close #57487768 with tick evidence naming the T16 and T17 commits.
     (ticked) 2026-10-06T10:54:41Z by d778be9d: commit:74d16390e #57487768 closed 2026-10-05T02:10Z with commit:74d16390e
-- [ ] T24 Full `npm run check:ci-pytest` with no shard, the hook test-*.py suites, and `npm run ci:quick` on the final tree, with every red fixed in this PR.
+- [x] T24 Full `npm run check:ci-pytest` with no shard, the hook test-*.py suites, and `npm run ci:quick` on the final tree, with every red fixed in this PR.
+    (ticked) 2026-10-07T14:59:26Z by d778be9d: nocommit:research T24 on the final tree: ci:quick @67d85e821 332/334 ok, both reds carried; full unsharded check:ci-pytest 23427 passed 0 failed after 33b796ac7; hooks run_tests.py 10713 passed rc=0; reds found on the way fixed in f02249d67 63e725da1 a5e970235 33b796ac7 55649b9cb 22f68bb18 98be3c688
