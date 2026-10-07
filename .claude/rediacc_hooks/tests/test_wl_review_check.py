@@ -291,3 +291,59 @@ def test_merge_arm_passes_the_ledger_branch_and_refuses_it_without_the_line(tmp_
         _world(tmp_path / "b", "ledger-empty"), BRANCH, GH_REPO
     )
     assert reasons == ["uncovered"], (reasons, lines)
+
+
+def _submodule_world(tmp_path):
+    """A clean console (reviewed) plus a nested repository `private/sub` on the same branch whose one commit has no review file, as a submodule whose reviewer is still running."""
+    repo = _world(tmp_path, "resolved")
+    sub = repo / "private" / "sub"
+    sub.mkdir(parents=True)
+    _git(sub, "init", "-q", "--initial-branch=main")
+    (sub / "seed.txt").write_text("seed\n", encoding="utf-8")
+    _git(sub, "add", "seed.txt")
+    _git(sub, "commit", "-q", "-m", "seed")
+    origin = tmp_path / "sub-origin.git"
+    subprocess.run(
+        ["git", "init", "-q", "--bare", str(origin)], check=True, capture_output=True, env=GIT_ENV
+    )
+    _git(sub, "remote", "add", "origin", str(origin))
+    _git(sub, "push", "-q", "origin", "main")
+    _git(sub, "checkout", "-q", "-b", BRANCH)
+    (sub / "g.py").write_text("b = 2\n", encoding="utf-8")
+    _git(sub, "add", "g.py")
+    _git(sub, "commit", "-q", "-m", "fix(sub): b")
+    (repo / ".gitmodules").write_text(
+        '[submodule "private/sub"]\n\tpath = private/sub\n\turl = %s\n' % origin, encoding="utf-8"
+    )
+    return repo, _git(sub, "rev-parse", "HEAD")
+
+
+def _status(repo, tmp_path, sha):
+    """`--status` while a spawn lock for `sha` is inside its grace window (start now, no pid), the state a just-started reviewer leaves."""
+    env = dict(GIT_ENV, COMMIT_REVIEW_CHILD="", TMPDIR=str(tmp_path / "tmp"))
+    locks = tmp_path / "tmp" / "claude-worklist" / "reviews" / "locks"
+    locks.mkdir(parents=True)
+    (locks / ("%s.lock" % sha)).write_text(
+        json.dumps({"pid": None, "start": __import__("time").time(), "branch": BRANCH}),
+        encoding="utf-8",
+    )
+    return subprocess.run(
+        [sys.executable, str(WL_REVIEW), "--status", "--root", str(repo)],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+
+
+def test_status_names_a_submodule_review_in_flight_while_the_console_is_clean(tmp_path):
+    """The push guard judges `branch_state(..., repos={label})` per pushed repository and refused with IN FLIGHT for a submodule while `--status`, which advice names, printed `clean`. `--status` and `--check` now walk every repository on the branch."""
+    repo, sha = _submodule_world(tmp_path)
+    console_only = R.branch_state(repo, BRANCH, repos={"console"})
+    assert not R.describe(console_only), "CONTROL: the console alone must be clean"
+    guard_view = R.branch_state(repo, BRANCH, repos={"private/sub"})
+    assert guard_view["in_flight"] or guard_view["uncovered"], "CONTROL: the push guard's view"
+    got = _status(repo, tmp_path, sha)
+    assert got.returncode == 0, got.stdout + got.stderr
+    assert "IN FLIGHT private/sub %s" % sha[:8] in got.stdout, got.stdout
+    assert "clean" not in got.stdout, got.stdout
