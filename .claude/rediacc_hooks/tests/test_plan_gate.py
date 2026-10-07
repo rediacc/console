@@ -155,15 +155,28 @@ def _patch_table(body, repo=GH_REPO):
     )
 
 
+PROMOTED_A = "## Promoted\n\n1. agent/plans/PLAN-a.md\n"
+
+
+def _tip_table(table, queue=PROMOTED_A, present=("agent/plans/PLAN-a.md",), readable=True):
+    """`table` plus what the stubbed git answers about the PUSHED TIP: `ls-remote` names pbd.TIP (or fails when not `readable`), `show <tip>:QUEUE.md` is `queue`, and `cat-file -e <tip>:<rel>` succeeds only for `present` (the stub's default rc is 0, so every absent plan is stated as rc 1)."""
+    out = dict(table)
+    ls = pbd._key("git", "ls-remote", "origin", "refs/heads/" + pbd.BRANCH)
+    out[ls] = {"out": "%s\trefs/heads/%s\n" % (pbd.TIP, pbd.BRANCH)} if readable else {"rc": 128}
+    out[pbd._key("git", "show", "%s:%s" % (pbd.TIP, plan_gate.QUEUE_REL))] = {"out": queue}
+    for rel in ("agent/plans/PLAN-a.md", "agent/plans/PLAN-b.md", "agent/plans/PLAN-c.md"):
+        key = pbd._key("git", "cat-file", "-e", "%s:%s" % (pbd.TIP, rel))
+        out[key] = {"rc": 0} if rel in present else {"rc": 128}
+    return out
+
+
 def _refresh(tmp_path, table, with_queue=True):
     env, work = pbd._world(tmp_path, table)
     if with_queue:
         plans = work / "repo" / "agent" / "plans"
         plans.mkdir(parents=True)
         (plans / "PLAN-a.md").write_text(OPEN, encoding="utf-8")
-        (plans / "QUEUE.md").write_text(
-            "## Promoted\n\n1. agent/plans/PLAN-a.md\n", encoding="utf-8"
-        )
+        (plans / "QUEUE.md").write_text(PROMOTED_A, encoding="utf-8")
     proc = subprocess.run(
         ["python3", str(pbd.SUBJECTS["refresh-pr-body"])],
         input=json.dumps({"tool_input": {"command": "git push"}}).encode(),
@@ -179,13 +192,48 @@ def _refresh(tmp_path, table, with_queue=True):
 
 
 def test_refresh_writes_the_queue_head_as_the_plan_line(tmp_path):
-    body = _refresh(tmp_path, _patch_table("A body with no plan."))
+    body = _refresh(tmp_path, _tip_table(_patch_table("A body with no plan.")))
     assert body is not None
     assert body.startswith("Plan: agent/plans/PLAN-a.md\n\nA body with no plan."), body
 
 
+def test_refresh_ignores_a_plan_only_the_working_tree_carries(tmp_path):
+    """The plan is queued and on disk but absent at the pushed tip: CI would judge a body naming a file the head lacks."""
+    table = _tip_table(_patch_table("A body with no plan."), present=())
+    body = _refresh(tmp_path, table)
+    assert body is not None
+    assert "Plan:" not in body, body
+
+
+def test_refresh_ignores_a_queue_only_the_working_tree_carries(tmp_path):
+    """The tip's QUEUE.md does not list the plan the working tree's queue promotes."""
+    table = _tip_table(_patch_table("A body with no plan."), queue="## Promoted\n")
+    body = _refresh(tmp_path, table)
+    assert body is not None
+    assert "Plan:" not in body, body
+
+
+def test_refresh_reads_the_queue_at_the_tip_not_the_working_tree(tmp_path):
+    """The tip promotes PLAN-b (present there); the working tree promotes PLAN-a: the tip wins."""
+    tip_queue = "## Promoted\n\n1. agent/plans/PLAN-b.md\n"
+    table = _tip_table(
+        _patch_table("A body with no plan."), queue=tip_queue, present=("agent/plans/PLAN-b.md",)
+    )
+    body = _refresh(tmp_path, table)
+    assert body is not None
+    assert body.startswith("Plan: agent/plans/PLAN-b.md\n\n"), body
+
+
+def test_refresh_with_an_unreadable_tip_writes_no_plan_line(tmp_path):
+    table = _tip_table(_patch_table("A body with no plan."), readable=False)
+    body = _refresh(tmp_path, table)
+    assert body is not None
+    assert "Plan:" not in body, body
+    assert "Last pushed" in body
+
+
 def test_refresh_keeps_a_plan_line_the_body_already_has(tmp_path):
-    body = _refresh(tmp_path, _patch_table("Plan: agent/plans/PLAN-b.md\n\nWork."))
+    body = _refresh(tmp_path, _tip_table(_patch_table("Plan: agent/plans/PLAN-b.md\n\nWork.")))
     assert body is not None
     assert body.startswith("Plan: agent/plans/PLAN-b.md\n\nWork."), body
     assert "PLAN-a" not in body
@@ -896,8 +944,11 @@ def test_turbo_named_round_trip(tmp_path, monkeypatch):
     assert plan_gate.turbo_named(root, "1004-2") == [_t("z")]
 
 
-def _refresh_turbo(tmp_path, monkeypatch, body, settings):
-    env, work = pbd._world(tmp_path, _patch_table(body))
+def _refresh_turbo(tmp_path, monkeypatch, body, settings, present=None):
+    if present is None:
+        present = ("agent/plans/PLAN-a.md", _t("b"), _t("c"))
+    queue = "## Settings\n\n%s\n## Promoted\n\n1. agent/plans/PLAN-a.md\n" % settings
+    env, work = pbd._world(tmp_path, _tip_table(_patch_table(body), queue=queue, present=present))
     plans = work / "repo" / "agent" / "plans"
     plans.mkdir(parents=True)
     (plans / "PLAN-a.md").write_text(OPEN, encoding="utf-8")
@@ -930,3 +981,109 @@ def test_refresh_with_turbo_off_ignores_the_named_plans(tmp_path, monkeypatch):
     body = _refresh_turbo(tmp_path, monkeypatch, "Plan: agent/plans/PLAN-x.md\n\nWork.", TURBO_OFF)
     assert body.startswith("Plan: agent/plans/PLAN-x.md\n\nWork."), body
     assert "PLAN-b" not in body
+
+
+def test_refresh_under_turbo_drops_a_named_plan_the_tip_lacks(tmp_path, monkeypatch):
+    """PLAN-b is carried at the tip, PLAN-c was named locally and is not pushed."""
+    body = _refresh_turbo(
+        tmp_path,
+        monkeypatch,
+        "Plan: agent/plans/PLAN-x.md\n\nWork.",
+        TURBO_ON,
+        present=("agent/plans/PLAN-a.md", _t("b")),
+    )
+    assert body.startswith("Plan: agent/plans/PLAN-x.md, %s\n\nWork." % _t("b")), body
+    assert "PLAN-c" not in body
+
+
+def test_refresh_under_turbo_with_an_unreadable_tip_appends_nothing(tmp_path, monkeypatch):
+    env, work = pbd._world(
+        tmp_path, _tip_table(_patch_table("Plan: agent/plans/PLAN-x.md\n\nWork."), readable=False)
+    )
+    plans = work / "repo" / "agent" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "QUEUE.md").write_text(
+        "## Settings\n\n%s\n## Promoted\n\n1. agent/plans/PLAN-a.md\n" % TURBO_ON, encoding="utf-8"
+    )
+    monkeypatch.setenv("TMPDIR", env["TMPDIR"])
+    plan_gate.record_turbo_named(str(work / "repo"), pbd.BRANCH, [_t("b")])
+    proc = subprocess.run(
+        ["python3", str(pbd.SUBJECTS["refresh-pr-body"])],
+        input=json.dumps({"tool_input": {"command": "git push"}}).encode(),
+        capture_output=True,
+        check=False,
+        env=env,
+        cwd=str(work),
+        timeout=120,
+    )
+    assert proc.returncode == 0, proc.stderr
+    body = (work / "record.txt").read_text(encoding="utf-8")
+    assert body.startswith("Plan: agent/plans/PLAN-x.md\n\nWork."), body
+    assert "PLAN-b" not in body
+
+
+# ---------------------------------------------------------------- the tip-aware readers, against a real origin
+
+
+def _tip_repo(tmp_path):
+    """(clone, tip): origin carries branch `br` at a commit with QUEUE.md promoting PLAN-a and PLAN-pushed; the clone's working tree then adds PLAN-local, queued first and never committed."""
+    env = {
+        "PATH": "/usr/bin:/bin",
+        "HOME": str(tmp_path),
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@t",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@t",
+    }
+
+    def git(*args, cwd):
+        return subprocess.run(
+            ["git", *args], cwd=cwd, env=env, check=True, capture_output=True, text=True
+        ).stdout.strip()
+
+    origin = tmp_path / "origin.git"
+    clone = tmp_path / "clone"
+    git("init", "-q", "--bare", str(origin), cwd=str(tmp_path))
+    git("clone", "-q", str(origin), str(clone), cwd=str(tmp_path))
+    git("checkout", "-q", "-b", "br", cwd=str(clone))
+    plans = clone / "agent" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "PLAN-pushed.md").write_text(OPEN, encoding="utf-8")
+    (plans / "QUEUE.md").write_text(
+        "## Promoted\n\n1. agent/plans/PLAN-gone.md\n2. agent/plans/PLAN-pushed.md\n",
+        encoding="utf-8",
+    )
+    git("add", "-A", cwd=str(clone))
+    git("commit", "-q", "-m", "x", cwd=str(clone))
+    git("push", "-q", "origin", "br", cwd=str(clone))
+    tip = git("rev-parse", "HEAD", cwd=str(clone))
+    (plans / "PLAN-local.md").write_text(OPEN, encoding="utf-8")
+    (plans / "QUEUE.md").write_text(
+        "## Promoted\n\n1. agent/plans/PLAN-local.md\n2. agent/plans/PLAN-pushed.md\n",
+        encoding="utf-8",
+    )
+    return str(clone), tip, env
+
+
+def test_tip_readers_see_the_pushed_tip_and_queue_head_still_sees_the_working_tree(
+    tmp_path, monkeypatch
+):
+    root, tip, env = _tip_repo(tmp_path)
+    for key, value in env.items():
+        monkeypatch.setenv(key, value)
+    assert plan_gate.pushed_tip(root, "br") == tip
+    assert plan_gate.pushed_tip(root, "nope") == ""
+    assert plan_gate.pushed_tip(root, "") == ""
+    assert plan_gate.queue_at(root, tip) == [
+        "agent/plans/PLAN-gone.md",
+        "agent/plans/PLAN-pushed.md",
+    ]
+    assert plan_gate.queue_at(root, "") == []
+    assert plan_gate.exists_at(root, tip, "agent/plans/PLAN-pushed.md")
+    assert not plan_gate.exists_at(root, tip, "agent/plans/PLAN-local.md")
+    assert plan_gate.queue_head_at(root, tip) == "agent/plans/PLAN-pushed.md"
+    assert plan_gate.queue_head_at(root, "") == ""
+    # The Stop hook's readers are the working tree's, unchanged.
+    assert plan_gate.queue_head(root) == "agent/plans/PLAN-local.md"
+    assert plan_gate.queue(root)[0] == "agent/plans/PLAN-local.md"
