@@ -768,11 +768,14 @@ def attested_at(ledger, rel, sig):
 
 
 def done_commit(history, rel, sig):
-    """The first commit in `history` that attests `sig` for `rel`, or ""."""
+    """The commit that ticked `sig` for `rel` and kept it ticked: the first commit of the LATEST unbroken run of ledgers in `history` (oldest first) that attest it, or "" when the newest ledger does not.
+
+    A box can be ticked, reopened and ticked again. The FIRST attesting commit then names the stale original tick: on 2026-10-07 PLAN-ci-consolidation T1, ticked when the plan was written (65d4eefe2), reopened (a1efe7747) and re-ticked after a fresh investigation (a2e639712), read to check:ci-plan-implementation P-A4 as investigated after its implementation.
+    """
+    start = ""
     for commit, doc in history:
-        if attested_at(doc, rel, sig):
-            return commit
-    return ""
+        start = (start or commit) if attested_at(doc, rel, sig) else ""
+    return start
 
 
 # --------------------------------------------------------------------------- derive(): everything the record can compute about itself.
