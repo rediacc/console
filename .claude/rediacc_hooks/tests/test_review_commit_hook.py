@@ -1017,6 +1017,20 @@ if sys.argv[5] != "-":
         src = src.replace(old, new)
     R = types.ModuleType("wl_review")
     R.__file__ = str(pathlib.Path(sys.argv[1], "wl_review.py"))
+    met = []
+
+    def _tear_rendezvous(wait):
+        # The FIRST split write only: drop this writer's marker, then wait for the peer's, so both first halves are on disk before either second half.
+        if met:
+            return
+        met.append(1)
+        here = pathlib.Path(sys.argv[4]).parent
+        (here / ("half-" + sys.argv[3])).write_text("x")
+        deadline = time.monotonic() + wait
+        while len(list(here.glob("half-*"))) < 2 and time.monotonic() < deadline:
+            time.sleep(0.001)
+
+    R._tear_rendezvous = _tear_rendezvous
     sys.modules["wl_review"] = R
     exec(compile(src, R.__file__, "exec"), R.__dict__)
 else:
@@ -1030,15 +1044,24 @@ for n in range(50):
 R.append_clean(root, "0930-1", R.Review(sha="%s%039x" % (tag, 0), subject="dup", branch="0930-1", verdict="clean", model="m"))
 """
 
-# The T4 control: the single write split in two (key half, value half) with a yield between them, and the lock gone.
+
+# The T4 control: the lock gone and the single write split in two, with a RENDEZVOUS between the halves of each writer's first append (APPENDER's `_tear_rendezvous`): each drops a marker after its first half and waits for the peer's (60 s, a ceiling only a wedged peer reaches). So the interleaving A1 B1 A2 B2 is driven, not hoped for: a
+# 0.5 ms sleep between the halves left it to the scheduler, and the control tore nothing in 2 of 5 full-module runs. The rendezvous cannot fake the tear either: with the lock still held the peer blocks on flock before its first half, the wait times out, and the halves land whole, so the control goes red (proved by TEAR_KEEPING_THE_LOCK below).
+def _split(wait):
+    return [
+        "            os.write(fd, data)\n",
+        "            os.write(fd, data[: len(data) // 2])\n            _tear_rendezvous(%d)\n            os.write(fd, data[len(data) // 2 :])\n"
+        % wait,
+    ]
+
+
 TEAR = [
     ["fcntl.flock(fd, fcntl.LOCK_EX)", "pass"],
     ["fcntl.flock(fd, fcntl.LOCK_UN)", "pass"],
-    [
-        "            os.write(fd, data)\n",
-        "            os.write(fd, data[: len(data) // 2])\n            time.sleep(0.0005)\n            os.write(fd, data[len(data) // 2 :])\n",
-    ],
+    _split(60),
 ]
+# 2 s, not 60: under the lock the first writer's wait is SPENT (its peer is parked on flock), so the case costs the timeout once.
+TEAR_KEEPING_THE_LOCK = [_split(2)]
 
 
 def _race(tmp_path, mutation):
@@ -1082,6 +1105,14 @@ def test_control_a_split_write_without_the_lock_tears_a_line(tmp_path):
     assert errors, (
         "the unlocked split write tore nothing in 100 appends: the race case proves nothing"
     )
+
+
+def test_control_the_split_write_under_the_lock_tears_nothing(tmp_path):
+    """The control's control: the same split write and rendezvous WITH the lock kept tears nothing, so the tear above is the missing lock's doing and not the rendezvous forcing it."""
+    text = _race(tmp_path, TEAR_KEEPING_THE_LOCK)
+    reviews, errors = R.parse_ledger(text)
+    assert errors == [], errors[:3]
+    assert len(reviews) == 100
 
 
 # ---- T13: `wl_review.py --ledger-migrate [--write]`
