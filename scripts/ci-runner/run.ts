@@ -1,5 +1,5 @@
 #!/usr/bin/env tsx
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 /**
  * `npm run ci`, as a parallel worker pool over the gate manifest.
@@ -41,9 +41,27 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CORES_ENV, execGate, type Grant, gateEnv, LEASE_HELD_ENV } from './exec';
+import {
+  CORES_ENV,
+  type ExecOutcome,
+  execGate,
+  type Grant,
+  gateEnv,
+  killLiveGates,
+  LEASE_HELD_ENV,
+  liveGates,
+  refuseNewGates,
+  refusingNewGates,
+} from './exec';
 import { findingsSelftest, receiptFindings } from './findings';
 import { retiredFieldFindings } from './gate-spec';
+import {
+  GATE_TIMEOUT_FLOOR_MS,
+  gateTimeoutMs,
+  gateTimeoutSelftest,
+  KILL_GRACE_MS,
+  slowestMeasurement,
+} from './gate-timeout';
 import {
   CARRY_EXEMPT_REL,
   computeGateHashes,
@@ -151,6 +169,10 @@ interface Options {
   shard?: { index: number; of: number };
   /** `--receipt-out`: where to write the push receipt instead of this checkout's own `.ci/cache/`. */
   receiptOut?: string;
+  /** `--gate-timeout <s>`: one kill timer for every gate, in place of each gate's derived one (gate-timeout.ts). */
+  gateTimeoutMs?: number;
+  /** `--slow-rotation i/N`: run only bucket i of the slow set split N ways by cost (`rotationBucket`), for housekeeping's gate-cost capture. */
+  slowRotation?: { index: number; of: number };
 }
 
 /** Every flag off. Selftest-only, so a control states the flag it exercises
@@ -231,6 +253,15 @@ function parseArgs(argv: readonly string[]): Options {
         opts.lane = value(i, arg);
         i += 1;
         break;
+      case '--slow-rotation': {
+        const raw = value(i, arg);
+        const m = /^(\d+)\/(\d+)$/.exec(raw);
+        if (m === null || Number(m[1]) < 1 || Number(m[1]) > Number(m[2]))
+          throw new Error(`ci-runner: --slow-rotation needs "i/N" with 1 <= i <= N, got '${raw}'`);
+        opts.slowRotation = { index: Number(m[1]), of: Number(m[2]) };
+        i += 1;
+        break;
+      }
       case '--shard': {
         const raw = value(i, arg);
         const m = /^(\d+)\/(\d+)$/.exec(raw);
@@ -270,6 +301,10 @@ function parseArgs(argv: readonly string[]): Options {
       case '--verbose':
         opts.verbose = true;
         break;
+      case '--gate-timeout':
+        opts.gateTimeoutMs = number(value(i, arg), arg) * 1000;
+        i += 1;
+        break;
       case '--receipt-out': {
         // A CLEAN-SNAPSHOT RECEIPT. The gates judge the worktree they run in, and the push carries HEAD^{tree}. In a tree shared with live writers, their uncommitted edits turn a receipt red for a tree that does not contain them (2026-09-24: 14 writers, python-lint red on two files in nobody's HEAD). Running ci:quick in a clean clone checked out at HEAD
         // and writing the receipt into the pushing checkout's cache judges exactly the pushed tree. Nothing is trusted: the receipt still records the clone's own HEAD^{tree}, and block_unverified_push refuses unless that equals the pushing HEAD^{tree}. ABSOLUTE ONLY, because a relative path would resolve against whichever cwd npm happened to use.
@@ -293,6 +328,14 @@ function parseArgs(argv: readonly string[]): Options {
     process.env.CI_SCHED !== ''
   ) {
     opts.sched = schedFrom(process.env.CI_SCHED, 'CI_SCHED');
+  }
+  if (
+    opts.slowRotation !== undefined &&
+    (opts.quick || opts.changed || opts.only !== undefined || opts.lane !== undefined)
+  ) {
+    throw new Error(
+      'ci-runner: --slow-rotation is its own selection; it does not combine with --quick, --changed, --only or --lane.'
+    );
   }
   if ((opts.lane === undefined) !== (opts.shard === undefined)) {
     throw new Error('ci-runner: --lane and --shard are both required together, or neither.');
@@ -614,6 +657,47 @@ function isDisposableClone(opts: Options): boolean {
   return porcelain === '';
 }
 
+/**
+ * The quick lane's slow set: `slow: true`, closed over `needs`. THE LANE IS A FIXPOINT, not a filter. A cheap gate whose `needs` closure reaches a slow prerequisite costs that prerequisite's time, so it is not cheap -- buildGraph pulls prereqs in transitively and would have made the "10 second" lane silently cost minutes. Demote until nothing moves. gate_costs.py `sampled_gate_ids` computes the same set.
+ */
+function slowClosure(specs: readonly GateSpec[]): Set<string> {
+  const slow = new Set(specs.filter((spec) => spec.slow === true).map((spec) => spec.id));
+  for (;;) {
+    const before = slow.size;
+    for (const spec of specs) {
+      if (slow.has(spec.id)) continue;
+      if ((spec.needs ?? []).some((n) => slow.has(n))) slow.add(spec.id);
+    }
+    if (slow.size === before) return slow;
+  }
+}
+
+/** A slow gate never priced in lane-durations.json costs this much for the rotation's split. */
+const ROTATION_UNPRICED_MS = 60_000;
+
+/**
+ * THE SLOW ROTATION (housekeeping.yml's gate-cost capture). `--quick` runs a slow gate only when the day's diff touches it, so a nightly capture of the quick lane measured 3 of 69 slow gates (capture 37294996911) and most went unmeasured for weeks. Bucket i of N is that night's share: the slow gates sorted by cost (CI step p90, else ROTATION_UNPRICED_MS) and dealt longest first onto the lightest bucket (LPT), so N consecutive nights measure every one and no night carries two of the longest. Deterministic for a given lane-durations.json, which is what lets a rotation index taken from the date mean anything.
+ */
+export function rotationBucket(
+  ids: readonly string[],
+  costMs: (id: string) => number,
+  index: number,
+  of: number
+): string[] {
+  const buckets: { ms: number; ids: string[] }[] = Array.from({ length: of }, () => ({
+    ms: 0,
+    ids: [],
+  }));
+  const sorted = [...ids].sort((a, b) => costMs(b) - costMs(a) || a.localeCompare(b));
+  for (const id of sorted) {
+    let best = 0;
+    for (let b = 1; b < of; b += 1) if (buckets[b].ms < buckets[best].ms) best = b;
+    buckets[best].ms += costMs(id);
+    buckets[best].ids.push(id);
+  }
+  return buckets[index - 1].ids;
+}
+
 function select(
   specs: readonly GateSpec[],
   opts: Options,
@@ -640,18 +724,36 @@ function select(
     chosen = [...result.chosen];
     notes.push(result.note);
   }
-  if (opts.quick) {
-    // THE LANE IS A FIXPOINT, not a filter. A cheap gate whose `needs` closure reaches a slow prerequisite costs that prerequisite's time, so it is not cheap -- buildGraph pulls prereqs in transitively and would have made the "10 second" lane silently cost minutes. Demote until nothing moves.
+  if (opts.slowRotation !== undefined) {
+    const { index, of } = opts.slowRotation;
+    const slow = slowClosure(specs);
     const byId = new Map(specs.map((spec) => [spec.id, spec]));
-    const slow = new Set(specs.filter((spec) => spec.slow === true).map((spec) => spec.id));
-    for (;;) {
-      const before = slow.size;
-      for (const spec of specs) {
-        if (slow.has(spec.id)) continue;
-        if ((spec.needs ?? []).some((n) => slow.has(n))) slow.add(spec.id);
-      }
-      if (slow.size === before) break;
-    }
+    const p90 = opts.manifest === undefined ? ciStepP90() : new Map<string, number>();
+    const cost = (id: string): number => p90.get(id) ?? ROTATION_UNPRICED_MS;
+    // A tree writer runs only on a CI runner, whose checkout is thrown away after the job; anywhere else it is left out and named, the quick lane's own rule (treeWriteRefusal).
+    const throwaway = process.env.GITHUB_ACTIONS === 'true';
+    const bucket = rotationBucket(
+      chosen.filter((spec) => slow.has(spec.id)).map((spec) => spec.id),
+      cost,
+      index,
+      of
+    );
+    const refused = bucket.filter((id) => treeWriteRefusal(byId.get(id), throwaway) !== undefined);
+    chosen = chosen.filter((spec) => bucket.includes(spec.id) && !refused.includes(spec.id));
+    // The estimate counts the prerequisites the graph pulls in (build:www, build:packages): measured 2026-10-07, bucket 4/5 printed 505 s from its gates alone and ran 762 s serial, 178 s of it build:www.
+    const graph = buildGraph(specs, new Set(chosen.map((spec) => spec.id)));
+    const estS = Math.round(graph.reduce((sum, spec) => sum + cost(spec.id), 0) / 1000);
+    notes.push(`--slow-rotation ${index}/${of} (${chosen.length} of ${slow.size} slow gate(s))`);
+    warn(
+      `ci-runner: --slow-rotation ${index}/${of}: ${chosen.length} slow gate(s) and ${graph.length - chosen.length} prerequisite(s), about ${estS}s by CI step p90: ${chosen.map((spec) => spec.id).join(', ')}\n` +
+        (refused.length > 0
+          ? `  left out, tree writers outside a CI runner: ${refused.join(', ')}\n`
+          : '')
+    );
+  }
+  if (opts.quick) {
+    const byId = new Map(specs.map((spec) => [spec.id, spec]));
+    const slow = slowClosure(specs);
     // NAME THE DEMOTIONS. A gate that silently left the lane is coverage lost without a record, which is the vacuity this whole design is against.
     const demoted = specs
       .filter((spec) => spec.gate && spec.slow !== true && slow.has(spec.id))
@@ -1174,6 +1276,179 @@ function applyCaptures(
   });
 }
 
+/** Poll for a non-empty file, up to `ms`; true when it appeared. */
+async function fileAppears(file: string, ms: number): Promise<boolean> {
+  const until = Date.now() + ms;
+  while (Date.now() < until) {
+    try {
+      if (fs.readFileSync(file, 'utf8').trim() !== '') return true;
+    } catch {
+      /* not yet */
+    }
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  return false;
+}
+
+/** SIGKILL the pid a planted gate wrote, so a broken check never leaves its plant running. */
+function killPidFile(file: string): void {
+  try {
+    process.kill(Number(fs.readFileSync(file, 'utf8').trim()), 'SIGKILL');
+  } catch {
+    /* gone, or never written */
+  }
+}
+
+function pidAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * THE KILL TIMER AND THE SIGNAL HANDLER, END TO END THROUGH A REAL RUNNER PROCESS (gate-timeout.ts, exec.ts LIVE, installSignalHandlers). Two runners are spawned on synthetic manifests, concurrently and started at the top of the selftest so their few seconds overlap the rest of it:
+ *   - `--json --gate-timeout 1` over a passing gate and a gate that never exits: stdout must parse as ONE JSON document naming the hung gate in `timedOut`, the hung gate's process must be dead, and stderr (never stdout) must carry the start lines and the TIMED OUT line. Red before 2026-10-07: that runner waited on the hung gate forever and printed nothing about it.
+ *   - a hung gate and SIGTERM to the runner alone: exit 143, stderr naming the gate still running, the gate's process dead, stdout empty. Red before 2026-10-07: exit 143 with the gate still alive and no line naming it.
+ * Each case carries its control: the passing gate must be ok (a timer that kills everything also "names the hung gate"), and the gate must be ALIVE before the signal (or "dead after" proves nothing).
+ */
+async function runnerProcessSelftest(): Promise<{ assertions: number; failures: string[] }> {
+  const failures: string[] = [];
+  let assertions = 0;
+  const require_ = (cond: boolean, message: string): void => {
+    assertions += 1;
+    if (!cond) failures.push(message);
+  };
+  if (process.platform === 'win32') return { assertions, failures };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-kill-'));
+  const env = { ...process.env };
+  delete env.CI_RUNNER_CACHE;
+  delete env.CI_RUNNER_MANIFEST;
+  const runner = (
+    manifest: object[],
+    name: string,
+    extra: string[],
+    pidFile: string
+  ): {
+    child: ReturnType<typeof spawn>;
+    done: Promise<{ code: number | null; out: string; err: string }>;
+  } => {
+    const file = path.join(dir, `${name}.json`);
+    fs.writeFileSync(file, JSON.stringify(manifest));
+    const child = spawn(
+      process.execPath,
+      [
+        '--import',
+        'tsx',
+        path.join(REPO_ROOT, 'scripts/ci-runner/run.ts'),
+        '--manifest',
+        file,
+        '--jobs',
+        '1',
+        '--sched',
+        'slots',
+        ...extra,
+      ],
+      { cwd: REPO_ROOT, env, stdio: ['ignore', 'pipe', 'pipe'] }
+    );
+    const out: string[] = [];
+    const err: string[] = [];
+    child.stdout?.on('data', (c: Buffer) => out.push(c.toString()));
+    child.stderr?.on('data', (c: Buffer) => err.push(c.toString()));
+    // A WATCHDOG ON THE CHECK ITSELF: with the timer or the handler broken, this runner would wait on its hung gate forever and the selftest with it. 30 s is far past both cases' few seconds; on expiry the runner and the planted gate are SIGKILLed and the case fails by name.
+    const done = new Promise<{ code: number | null; out: string; err: string }>((resolve) => {
+      const dog = setTimeout(() => {
+        failures.push(`${name}: the runner was still running after 30 s and was SIGKILLed`);
+        child.kill('SIGKILL');
+        killPidFile(pidFile);
+      }, 30_000);
+      child.on('close', (code) => {
+        clearTimeout(dog);
+        resolve({ code, out: out.join(''), err: err.join('') });
+      });
+    });
+    return { child, done };
+  };
+  const hang = (pidFile: string): string => `echo $BASHPID > ${pidFile}; exec tail -f /dev/null`;
+
+  try {
+    const tPid = path.join(dir, 'timeout.pid');
+    const timed = runner(
+      [
+        { id: 'selftest:e2e-pass', run: 'echo e2e-pass', gate: true },
+        { id: 'selftest:e2e-hang', run: hang(tPid), gate: true },
+      ],
+      'timeout',
+      ['--json', '--gate-timeout', '1'],
+      tPid
+    );
+    const sPid = path.join(dir, 'signal.pid');
+    const signalled = runner(
+      [{ id: 'selftest:e2e-sig', run: hang(sPid), gate: true }],
+      'signal',
+      ['--json'],
+      sPid
+    );
+    const up = await fileAppears(sPid, 30_000);
+    const sigGate = up ? Number(fs.readFileSync(sPid, 'utf8').trim()) : Number.NaN;
+    require_(
+      up && pidAlive(sigGate),
+      'CONTROL: the signalled runner\'s gate must be running before the SIGTERM, or "dead after" proves nothing'
+    );
+    signalled.child.kill('SIGTERM');
+
+    const [t, sig] = await Promise.all([timed.done, signalled.done]);
+    let doc: { timedOut?: unknown; gates?: { id: string; status: string; timedOutMs?: number }[] } =
+      {};
+    try {
+      doc = JSON.parse(t.out);
+    } catch {
+      doc = {};
+    }
+    require_(
+      JSON.stringify(doc.timedOut) === '["selftest:e2e-hang"]',
+      `--json stdout must be ONE JSON document naming the hung gate in timedOut, got ${JSON.stringify(t.out.slice(0, 200))}`
+    );
+    require_(
+      doc.gates?.find((g) => g.id === 'selftest:e2e-hang')?.timedOutMs === 1000,
+      'the hung gate must carry timedOutMs = its 1 s limit'
+    );
+    require_(
+      doc.gates?.find((g) => g.id === 'selftest:e2e-pass')?.status === 'ok',
+      'CONTROL: the passing gate must stay ok under the same timer, or the timer kills everything'
+    );
+    const tGate = Number(fs.readFileSync(tPid, 'utf8').trim());
+    require_(
+      Number.isInteger(tGate) && !pidAlive(tGate),
+      `the timed-out gate (pid ${tGate}) must be dead`
+    );
+    require_(
+      /^ {2}\.\. {4}selftest:e2e-hang +started at /m.test(t.err) &&
+        t.err.includes('selftest:e2e-hang TIMED OUT after'),
+      `--json must put the start lines and the TIMED OUT line on stderr, never stdout; stderr was ${JSON.stringify(t.err.slice(0, 400))}`
+    );
+    require_(t.code === 1, `a run with a timed-out gate must exit 1, got ${t.code}`);
+
+    require_(sig.code === 143, `SIGTERM to the runner must exit 143, got ${sig.code}`);
+    require_(
+      /received SIGTERM with 1 gate\(s\) still running: selftest:e2e-sig \(/.test(sig.err),
+      `the SIGTERM line must name the gate still running, stderr was ${JSON.stringify(sig.err.slice(0, 400))}`
+    );
+    // The handler exits only after the group is gone or SIGKILLed, so a short wait is only for the kernel to reap.
+    await new Promise((r) => setTimeout(r, 200));
+    require_(
+      Number.isInteger(sigGate) && !pidAlive(sigGate),
+      `SIGTERM to the runner must kill its gate's process group, pid ${sigGate} is still alive`
+    );
+    require_(sig.out === '', 'a runner stopped by a signal must write no --json document');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+  return { assertions, failures };
+}
+
 const SELFTEST_OUT = 'ci-runner-selftest-stdout-marker';
 const SELFTEST_ERR = 'ci-runner-selftest-stderr-marker';
 
@@ -1203,6 +1478,8 @@ function syntheticSpec(id: string, run: string, needs?: string[]): GateSpec {
  * nothing, so this refuses to proceed.
  */
 async function selftest(): Promise<number> {
+  // Started first and awaited last: two real runner processes whose seconds of startup and kill grace overlap everything below.
+  const processCheck = runnerProcessSelftest();
   const specs = [
     syntheticSpec('selftest:pass', 'echo selftest-pass'),
     syntheticSpec('selftest:fail', `echo ${SELFTEST_OUT}; echo ${SELFTEST_ERR} >&2; exit 3`),
@@ -1663,6 +1940,44 @@ async function selftest(): Promise<number> {
     require_(
       termed.code === null && termed.stderr.includes('signal SIGTERM'),
       `a gate killed by SIGTERM (outer status 143) must report the signal, got code ${termed.code}`
+    );
+    // THE KILL TIMER, in process, both directions: a gate that never exits is killed at its limit WITH its whole group (the `tail` is a grandchild of the spawned shell, so killing the shell alone would leave it), and a gate that finishes inside its limit is untouched.
+    const hungPidFile = path.join(os.tmpdir(), `ci-runner-hung-${process.pid}.pid`);
+    // Raced against a 20 s watchdog, so a broken timer fails this case instead of hanging the selftest.
+    let dog: NodeJS.Timeout | undefined;
+    const hung = await Promise.race([
+      execGate(
+        syntheticSpec(
+          'selftest:hung',
+          `(echo $BASHPID > ${hungPidFile}; exec tail -f /dev/null); true`
+        ),
+        { ...wrapOpts, timeoutMs: 300 }
+      ),
+      new Promise<ExecOutcome>((resolve) => {
+        dog = setTimeout(() => {
+          killPidFile(hungPidFile);
+          resolve({ code: -1, stdout: '', stderr: 'selftest watchdog: never settled', ms: 20_000 });
+        }, 20_000);
+      }),
+    ]);
+    clearTimeout(dog);
+    const hungPid = Number(fs.readFileSync(hungPidFile, 'utf8').trim());
+    fs.rmSync(hungPidFile, { force: true });
+    await new Promise((r) => setTimeout(r, 100));
+    require_(
+      hung.timedOutMs === 300 &&
+        hung.code === null &&
+        hung.stderr.includes('selftest:hung TIMED OUT after') &&
+        !pidAlive(hungPid),
+      `a gate past its kill timer must be killed with its process group and named, got timedOutMs ${hung.timedOutMs}, code ${hung.code}, grandchild ${hungPid} alive ${pidAlive(hungPid)}`
+    );
+    const quick = await execGate(syntheticSpec('selftest:in-time', 'echo in-time'), {
+      ...wrapOpts,
+      timeoutMs: 10_000,
+    });
+    require_(
+      quick.timedOutMs === undefined && quick.code === 0,
+      `CONTROL: a gate inside its kill timer must pass untouched, got timedOutMs ${quick.timedOutMs}, code ${quick.code}`
     );
   }
   const cannot = await runPool([syntheticSpec('selftest:cannot-run', 'exit 77')], {
@@ -2298,6 +2613,37 @@ async function selftest(): Promise<number> {
     );
   }
 
+  // THE SLOW ROTATION, both directions: N buckets partition the slow set exactly (every gate measured within N nights, none twice), the split is balanced (the two longest never share a night), and a bucket is not the whole set (or "rotation" is a full run under another name).
+  {
+    const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+    const ms: Record<string, number> = { a: 500, b: 400, c: 100, d: 90, e: 80, f: 10, g: 5 };
+    const buckets = [1, 2, 3].map((i) => rotationBucket(ids, (id) => ms[id], i, 3));
+    const flat = buckets.flat().sort();
+    require_(
+      JSON.stringify(flat) === JSON.stringify(ids),
+      `--slow-rotation buckets must partition the slow set exactly, got ${JSON.stringify(buckets)}`
+    );
+    require_(
+      !buckets.some((b) => b.includes('a') && b.includes('b')),
+      `--slow-rotation must not put the two longest gates on one night, got ${JSON.stringify(buckets)}`
+    );
+    require_(
+      buckets.every((b) => b.length > 0 && b.length < ids.length),
+      `CONTROL: every bucket must hold some but not all gates, got ${JSON.stringify(buckets)}`
+    );
+    let refused = false;
+    try {
+      parseArgs(['--slow-rotation', '1/5', '--quick']);
+    } catch {
+      refused = true;
+    }
+    require_(refused, '--slow-rotation with --quick must be refused, not silently combined');
+  }
+
+  const timeoutAssertions = gateTimeoutSelftest();
+  const proc = await processCheck;
+  failures.push(...proc.failures);
+
   if (failures.length > 0) {
     process.stderr.write('CONTROL FAILED: ci-runner --selftest did not fire\n');
     for (const f of failures) process.stderr.write(`  - ${f}\n`);
@@ -2306,7 +2652,7 @@ async function selftest(): Promise<number> {
     return 1;
   }
   process.stdout.write(
-    `ci-runner: selftest ok (${9 + 1 + keyed.assertions + 3 + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2 + qs.assertions + 10 + 5 + 9 + 10 + 4 + leaseCheck.assertions + 12 + inc.assertions} assertions)\n`
+    `ci-runner: selftest ok (${9 + 1 + keyed.assertions + 3 + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2 + qs.assertions + 10 + 5 + 9 + 10 + 4 + leaseCheck.assertions + 12 + inc.assertions + (process.platform !== 'win32' ? 2 : 0) + timeoutAssertions + proc.assertions + 4} assertions)\n`
   );
   return 0;
 }
@@ -2459,6 +2805,7 @@ function narrowingFlags(opts: Options): string[] {
   if (opts.only !== undefined) flags.push('--only');
   if (opts.skip !== undefined) flags.push('--skip');
   if (opts.changed) flags.push('--changed');
+  if (opts.slowRotation !== undefined) flags.push('--slow-rotation');
   return flags;
 }
 
@@ -3107,8 +3454,17 @@ async function runGraph(
     process.env.CI_RUNNER_CACHE ?? (opts.manifest === undefined ? DEFAULT_CACHE : undefined);
   const durations = loadDurations(cachePath);
   // Scheduling estimates: this machine's timings, else the committed CI step p90, so a long gate never timed here (a fresh clone's pytest) still starts in the first wave. The cache keeps learning from `durations` alone.
-  const estimates =
-    opts.manifest === undefined ? new Map([...ciStepP90(), ...durations]) : durations;
+  const ciP90 = opts.manifest === undefined ? ciStepP90() : new Map<string, number>();
+  const estimates = new Map([...ciP90, ...durations]);
+  // THE KILL TIMERS (gate-timeout.ts), one per gate, from the slowest thing measured of it: the CI step p90, this machine's ewma, its largest recent passing wall.
+  const records = loadDurationRecords(cachePath);
+  const limits = new Map(
+    graph.map((spec) => {
+      const rec = records.get(spec.id);
+      const measured = slowestMeasurement(ciP90.get(spec.id), rec?.ewma, ...(rec?.recent ?? []));
+      return [spec.id, gateTimeoutMs(spec, measured, opts.gateTimeoutMs)] as const;
+    })
+  );
   const sched: Sched = opts.sched ?? 'cores';
   // Under `cores`, --jobs names C, the core budget, rather than a slot count.
   const lease: RunnerLease | undefined =
@@ -3132,6 +3488,14 @@ async function runGraph(
         : `sched cores: C ${budget.cores} +${Math.round(budget.epsilon * 100)}%, K ${budget.maxProcs}, M ${(budget.memMb / 1024).toFixed(1)} GB`,
   };
   reporter.header(graph.length, meta);
+  {
+    const all = [...limits.values()];
+    humanOut(
+      opts.gateTimeoutMs !== undefined
+        ? `ci-runner: kill timer ${(opts.gateTimeoutMs / 1000).toFixed(0)}s for every gate (--gate-timeout)\n`
+        : `ci-runner: kill timers ${(Math.min(...all) / 1000).toFixed(0)}-${(Math.max(...all) / 1000).toFixed(0)}s per gate (${all.filter((ms) => ms === GATE_TIMEOUT_FLOOR_MS).length} at the floor; scripts/ci-runner/gate-timeout.ts)\n`
+    );
+  }
   if (lease !== undefined) humanOut(`ci-runner: ${lease.note}\n`);
   const cpuSampler = startCpuSampler();
   let pooled: GateResult[];
@@ -3149,12 +3513,24 @@ async function runGraph(
           : undefined,
       lease,
       exec: (spec, grant: Grant) =>
-        execGate(spec, { cwd: REPO_ROOT, mergeOutput: opts.mergeOutput, ...PROFILE_OPTS, grant }),
-      onStart: opts.verbose
-        ? (spec) => {
-            reporter.start(spec.id);
-          }
-        : undefined,
+        execGate(spec, {
+          cwd: REPO_ROOT,
+          mergeOutput: opts.mergeOutput,
+          ...PROFILE_OPTS,
+          grant,
+          timeoutMs: limits.get(spec.id),
+        }),
+      // Start lines under --json too, where they go to stderr: a serial capture otherwise shows nothing between the plan and the end, and a hang cannot be told from a slow gate.
+      onStart:
+        opts.verbose || opts.json
+          ? (spec) => {
+              if (refusingNewGates()) return;
+              reporter.start(spec.id, {
+                sinceStartMs: Date.now() - started,
+                limitMs: limits.get(spec.id),
+              });
+            }
+          : undefined,
       onFinish: (result) => {
         reporter.finish(result);
       },
@@ -3162,6 +3538,8 @@ async function runGraph(
   } finally {
     lease?.close();
   }
+  // A SIGNAL CUT THIS RUN SHORT: its last gate may settle before the handler's exit, and finishing from here would print a footer and a --json document over a run that has no verdict. The handler exits the process; this only stops the run from finishing first.
+  if (refusingNewGates()) await new Promise<never>(() => {});
   meta.wallMs = Date.now() - started;
   const cpu = cpuSampler.stop();
   const results = applyCaptures(pooled, PROFILE_OPTS.profileDir, PROFILE_OPTS.profileRunId);
@@ -3386,7 +3764,46 @@ async function runAdvance(
   return exitCode;
 }
 
+/**
+ * THE RUNNER'S OWN SIGTERM AND SIGINT. Every gate runs in its own process group (exec.ts LIVE), so a signal to the runner no longer reaches the gates by itself, and before this handler existed the runner died on it with no word and left them running: `kill -TERM <runner>` exited 143 with the planted gate still alive (2026-10-07). Now the runner names every gate still running and how long it has run, stops launching, SIGTERMs each group, SIGKILLs what is left after KILL_GRACE_MS, and exits 128+n. A second signal skips the grace. No footer and no --json document are written (exec.ts never settles a gate it refused): a run cut short has no verdict, and an empty stdout is what a capture's validator refuses by name. A gate that WAS running still gets its FAIL block with everything it printed before the kill, which is the evidence of where it hung.
+ */
+let signalsInstalled = false;
+function installSignalHandlers(): void {
+  if (signalsInstalled) return;
+  signalsInstalled = true;
+  let caught = 0;
+  const onSignal = (signal: NodeJS.Signals): void => {
+    caught += 1;
+    const code = 128 + (os.constants.signals[signal] ?? 15);
+    refuseNewGates();
+    const running = liveGates();
+    process.stderr.write(
+      `ci-runner: received ${signal} with ${running.length} gate(s) still running${running.length === 0 ? '' : `: ${running.map((g) => `${g.id} (${(g.ms / 1000).toFixed(1)}s)`).join(', ')}`}; killing their process groups and exiting ${code}\n`
+    );
+    if (caught > 1 || killLiveGates('SIGTERM') === 0) {
+      killLiveGates('SIGKILL');
+      process.exit(code);
+    }
+    const deadline = Date.now() + KILL_GRACE_MS;
+    const poll = setInterval(() => {
+      if (liveGates().length > 0 && Date.now() < deadline) return;
+      clearInterval(poll);
+      const left = liveGates();
+      if (left.length > 0) {
+        process.stderr.write(
+          `ci-runner: SIGKILL to ${left.length} gate(s) that outlived the ${KILL_GRACE_MS / 1000}s grace: ${left.map((g) => g.id).join(', ')}\n`
+        );
+        killLiveGates('SIGKILL');
+      }
+      process.exit(code);
+    }, 50);
+  };
+  process.on('SIGTERM', onSignal);
+  process.on('SIGINT', onSignal);
+}
+
 async function main(): Promise<number> {
+  installSignalHandlers();
   // `--list-units <lane>` prints the lane's test units, one JSON object per line (PLAN-ci-time-budget T2.8): the input to a shard manifest and to the per-unit durations T1.6/T3.2 measure. Handled before parseArgs, which knows only gate flags.
   const listUnitsAt = process.argv.indexOf('--list-units');
   if (listUnitsAt >= 0) return listUnits(process.argv[listUnitsAt + 1]);

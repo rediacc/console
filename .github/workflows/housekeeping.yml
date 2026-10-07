@@ -15,8 +15,8 @@ name: Housekeeping
 #   budget-check       - rediacc_ci.ci.freshness --check --cadence nightly: every
 #                        artifact .ci/config/freshness.json registers against fresh
 #                        measurements, reported to the nightly-status issue.
-#   gate-costs-capture - a serial ci:quick measuring each gate's CPU, uploaded as the
-#                        artifact gate_costs --refresh reads.
+#   gate-costs-capture - a serial ci:quick plus one third of the slow gates, measuring
+#                        each gate's CPU, uploaded as the artifact gate_costs --refresh reads.
 
 on:
   schedule:
@@ -262,16 +262,33 @@ jobs:
   gate-costs-capture:
     name: Gate cost capture
     # PLAN-ci-quick-cpu-scheduling 2.5. CI runs each gate as its own workflow step, so
-    # the only per-gate CPU figures come from this serial ci:quick run (--jobs 1: every
-    # gate uncontended). gate_costs.py --refresh/--check read the last five uploads.
+    # the only per-gate CPU figures come from this serial run (--jobs 1: every gate
+    # uncontended). gate_costs.py --refresh/--check read the last five uploads, of
+    # which the 3-day artifact retention leaves at most three.
     #
-    # ESTIMATED FIT, 2026-09-30: gate_step_p90_seconds covers 234 of the 293 quick
-    # gates and sums to 383 s; the other 59 at 0.56 x their local contended wall add
-    # about 125 s, so about 8.5 minutes of gates plus about 2 minutes of setup. Gates
-    # this bare checkout cannot run (no submodules, no Go or uv toolchain) fail fast
-    # and land in the file's `unmeasured` list, not in its medians.
+    # TWO RUNS, ONE CAPTURE. The serial ci:quick measures the fast gates, but --quick
+    # runs a slow gate only when the day's diff touches it (3 of 69 in capture
+    # 37294996911), so the slow gates went unmeasured for weeks. The second run takes
+    # one third of the slow set per night (run.ts --slow-rotation, split by CI step
+    # p90 so each third is 1112-1293 s with its prerequisites). THREE, not
+    # gate_costs's SAMPLE_CAPTURES of five: the repository keeps artifacts 3 days whatever `retention-days` says,
+    # so no more than 3 captures exist at once and every slow gate must fall inside
+    # them. Both runs land in ONE gate-costs-<sha> artifact, because collect_captures
+    # reads the first gate-costs-* artifact of a run.
+    #
+    # BUDGET, 2026-10-07: setup about 1 min; the quick run 277.5 s healthy, bounded at
+    # 12 min; the rotation 19-22 min by p90 (a local 4/5 sample ran 1.2x its p90
+    # estimate once build:www was counted), bounded at 32 min with every slow gate
+    # killed at 600 s (a 1-core grant can stretch a parallel suite past its p90, and
+    # the kill names it rather than eating the night). 50 minutes clears the sum of
+    # both bounds. Each gate also carries the runner's own kill timer
+    # (scripts/ci-runner/gate-timeout.ts), so a hung gate is killed and NAMED in the
+    # log rather than silently outliving the job, as it did on 2026-10-06 and -07
+    # (check:ci-docs-browse-invariants, a 0.5 s gate, still running at the cancel).
+    # Gates this bare checkout cannot run (no submodules, no Go or uv toolchain) fail
+    # fast and land in the file's `unmeasured` list, not in its medians.
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 50
     permissions:
       contents: read
     steps:
@@ -283,15 +300,24 @@ jobs:
           natives: 'true'
 
       # Gate reds are expected on this checkout and do not fail the capture; a missing
-      # or empty report does, since an artifact nobody can read measures nothing.
+      # or empty report does, since an artifact nobody can read measures nothing. The
+      # runner's stderr (a start and a finish line per gate) streams into this log
+      # live AND into a file uploaded below, so a run that is cut short still shows
+      # which gate it was waiting on. On the outer timeout the runner's SIGTERM
+      # handler prints the gates still running and kills their process groups.
       - name: Capture per-gate CPU (serial ci:quick)
-        run: |
-          set +e
-          npx tsx scripts/ci-runner/run.ts --quick --jobs 1 --sched slots --json >gate-costs.json 2>"$RUNNER_TEMP/gate-costs.log"
-          echo "run.ts exit $? (gate reds are expected on this checkout and do not fail the capture)"
-          set -e
-          tail -n 80 "$RUNNER_TEMP/gate-costs.log"
-          PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_costs --validate-capture gate-costs.json
+        run: .ci/scripts/ci/capture-gate-costs.sh quick
+
+      # Never fails by itself: a hung or unreadable rotation must not cost the night's
+      # fast capture, so its verdict is carried in `rc` and the last step fails on it.
+      - name: Capture slow-gate rotation (one third per night)
+        id: rotation
+        run: .ci/scripts/ci/capture-gate-costs.sh rotation
+
+      - name: Merge the rotation into the capture
+        env:
+          ROTATION_RC: ${{ steps.rotation.outputs.rc }}
+        run: .ci/scripts/ci/capture-gate-costs.sh merge
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -299,3 +325,17 @@ jobs:
           path: gate-costs.json
           retention-days: 30
           if-no-files-found: error
+
+      # The runner's stderr, kept whatever happened above. NOT named gate-costs-*:
+      # gate_costs.collect_captures reads the first artifact with that prefix as a capture.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: capture-logs-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/gate-costs-*.log
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Fail the job when the slow rotation failed
+        if: steps.rotation.outputs.rc != '0'
+        run: exit 1
