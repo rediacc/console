@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-07T09:04:11.778Z",
+  "generatedAt": "2026-10-07T13:15:33.768Z",
   "legs": [
     {
       "index": 1,
@@ -274,6 +274,7 @@
         "pytest:.ci/rediacc_ci/tests/test_canonical_sys_path_hop.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_budget_report.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_cancel_older_runs.py",
+        "pytest:.ci/rediacc_ci/tests/test_ci_capture_gate_costs.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_check_rerun_attempt.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_diagnose.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_dispatch_release.py",
