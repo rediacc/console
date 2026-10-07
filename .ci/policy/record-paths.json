@@ -128,6 +128,10 @@
         {
           "id": "check:ci-runner-selftest",
           "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are planAdvance selftest fixtures; the runner reads .ci/policy/record-paths.json, which is not a record path, and no file under agent/."
+        },
+        {
+          "id": "check:ci-env-manifest",
+          "reason": "It imports worklist_env_registry only for its registry loader; the one citation of agent/ the derivation finds there (worklist_env_registry.py:732) is a selftest fixture's exclusions key naming a directory the registry REFUSES to scan (invariant 7), so no file under agent/ is read."
         }
       ]
     },
@@ -225,6 +229,10 @@
         {
           "id": "check:ci-runner-selftest",
           "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are planAdvance selftest fixtures; the runner reads .ci/policy/record-paths.json, which is not a record path, and no file under agent/."
+        },
+        {
+          "id": "check:ci-env-manifest",
+          "reason": "It imports worklist_env_registry only for its registry loader; the one citation of agent/ the derivation finds there (worklist_env_registry.py:732) is a selftest fixture's exclusions key naming a directory the registry REFUSES to scan (invariant 7), so no file under agent/ is read."
         }
       ]
     },
@@ -309,7 +317,12 @@
           "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:626 (root) agent/"
         }
       ],
-      "notReaders": []
+      "notReaders": [
+        {
+          "id": "check:ci-env-manifest",
+          "reason": "It imports worklist_env_registry only for its registry loader; the one citation of agent/ the derivation finds there (worklist_env_registry.py:732) is a selftest fixture's exclusions key naming a directory the registry REFUSES to scan (invariant 7), so no file under agent/ is read."
+        }
+      ]
     }
   ]
 }
