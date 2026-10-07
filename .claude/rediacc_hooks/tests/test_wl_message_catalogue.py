@@ -5,6 +5,8 @@ Ported from `.claude/hooks/stop/worklist-cases/08-poll-and-waiting.sh`. Cases 10
 
 from __future__ import annotations
 
+import ast
+import contextlib
 import importlib.util
 import json
 import re
@@ -49,422 +51,217 @@ SCHED_ROW = {
 }
 PUSH_ROW = dict(SCHED_ROW, stem="ci-push", sha="e6fc817f", root="Validate Promotion", cause="c")
 
-# The arity of every catalogue constant at its call site in `worklist.py`. Six strings have no needle anywhere in this suite (V_DIVERGED, V_PR_UNREADABLE, V_EVENT_UNPARSEABLE, R_JUDGE_CONTINUE, CTX_SESSION_START_STALE, the exempt-overrun stuck detail), and this registry is their shape protection: every constant must exist and render with the EXACT argument
-# arity its call site uses, so a placeholder added or dropped in the catalogue cannot lurk in a branch no test drives. `None` means the constant is printed verbatim and the `%` check is skipped; it still has to be REGISTERED, which is what the gap check at the end of the test is for.
-ARITY = {
-    "V_STUCK": ("H", 3, "D"),
-    "V_EVENT_UNPARSEABLE": ("f",),
-    "V_OPEN_ITEMS": (1, "x"),
-    "V_UNDEFAULTED": (1, "x"),
-    "V_COMPLETION_EVIDENCE": ("a", "b"),
-    "V_COMPLETION_TICKS": ("x",),
-    "V_COMPLETION_TASKS": ("x",),
-    "V_IDLE": ("#1",),
-    "V_STALE_LOCAL": ("r", 2),
-    "V_DIVERGED": ("r", 2, "r"),
-    "V_PR_STALE": ("d",),
-    "V_PR_UNREADABLE": ("d",),
-    "V_LOOP_DIED": (1,),
-    "V_CI_RED": ("9", 1, "q", "rows", 2, 1, "m"),
-    "V_CI_UNREADABLE": ("d",),
-    # (task-id, the offending command blob): see wl_ci.adhoc_watch.
-    "V_ADHOC_WATCH": ("b1", "blob"),
-    "CI_NOTE_RETRYABLE": ("9", 1, "pats", "rows"),
-    "CI_NOTE_DOWNGRADED": ("9", 1, 2, "", "rows"),
-    "V_MANY_WORK_CRONS": (2, "l"),
-    "V_AGENT_STATE": ("me", "s", "", 250, 4000, "m"),
-    "V_AGENT_BOOTSTRAP": ("me", "me"),
-    "V_AGENT_STILL_ABSENT": ("me",),
-    "CLI_STATE_REFUSED": ("v", "d", 250, 4000),
-    "CLI_STATE_WHOLE_DOC": ("m",),
-    # One substitution: the offending first step, quoted back so the refusal names what it saw rather than restating the rule in the abstract.
-    "CLI_STATE_WAIT_LED": ("lead",),
-    "V_SOLO_GRIND": (39, 12),
-    "N_UNREAD_REPORTS": (2, "b", "rows", "p", "p", "m"),
-    "CLI_REAP_USAGE": (),
-    "CLI_REAP_UNKNOWN": ("t", "l"),
-    "N_ROSTER_STALE": (20, 1, 19, "p", "m"),
-    # The parallel-writer roster (wl_checks.run_stop, wl_roster.status_verb).
-    "V_ROSTER_CAP": (5, 4, "rows", "a1 a2", "m"),
-    "V_ROSTER_SILENT": (1, 20, "rows", "m"),
-    "V_ROSTER_UNLEASED": (1, "rows", "m"),
-    "V_ROSTER_DEAD": (1, "rows", "m", "m"),
-    "V_QUEUE_SLOT": {"free": 1, "queued": 12, "ids": "#a", "me": "m", "held": ""},
-    # agent/plans/PLAN-plan-priority-concurrency.md section 5c. N_QUEUE_HELD: item id, rank tag, hold reason; N_QUEUE_HELD_MORE: the counted rest; V_ROSTER_CONCURRENCY: count, rows, session prefix; N_CAP_WAIT_CONC: live writers, cap, their ids, queued, holder plans, stood-down count, next status due.
-    "N_QUEUE_HELD": ("a", "[P1 op]", "why"),
-    "N_QUEUE_HELD_MORE": (2,),
-    "V_ROSTER_CONCURRENCY": (1, "rows", "m"),
-    "N_CAP_WAIT_CONC": (1, 4, "a1b2c3d4", 2, "PLAN-e.md", 7, "12:00Z"),
-    # Section 2 and 5c's guide lines: the blind-order problem; the hold reason, session prefix and item id; the hold reason alone on a queued row.
-    "N_GUIDE_ORDER_BLIND": ("OSError: x",),
-    "N_GUIDE_HELD": ("why", "m", "a"),
-    "N_GUIDE_HELD_QUEUED": ("why",),
-    "N_ROSTER_HONEST": (3, 4, 1, "12:00Z", "rows"),
-    "N_CAP_WAIT": (4, 4, "a1b2c3d4, e5f6a7b8", 3, 7, "12:00Z"),
-    "N_CAP_WAIT_COMPACTION": (),
-    # Focus mode (agent/plans/PLAN-stop-hook-focus-mode.md): mode, PR, since, parked now, advisories held, session prefix.
-    "N_FOCUS": ("babysit", "543", "2026-09-25T10:00:00Z", 3, 2, "deadbeef"),
-    # why, what (mode PR since), parked names, advisories held, refused spawns.
-    "N_FOCUS_ENDED": ("merged", "babysit PR #543 since t", "plan-adopted x2", 1, 0),
-    "N_FOCUS_COMPACTION": (),
-    # The one-plan-per-PR loop (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4 and 7). N_PR_SCOPE: who, queued items, other plans, next plan, stood-down phrase, session prefix; the PR_SCOPE_WHO_* fragments take pr, branch and the named plans by key.
-    "N_PR_SCOPE": {"who": "w", "items": 1, "plans": 2, "next": "n", "stood": "", "me": "m"},
-    "PR_SCOPE_WHO_LIVE": {"pr": 592, "branch": "b", "plans": "p"},
-    "PR_SCOPE_WHO_UNREADABLE": {"pr": 0, "branch": "b", "plans": "p"},
-    "PR_SCOPE_WHO_NO_PR": {"pr": 0, "branch": "b", "plans": "p"},
-    "PR_SCOPE_WHO_MERGED": {"pr": 592, "branch": "b", "plans": "p"},
-    "PR_SCOPE_WHO_ON_MAIN": {"pr": 0, "branch": "b", "plans": "p"},
-    "PR_SCOPE_STOOD": ("solo-grind x1",),
-    "PR_SCOPE_NO_NEXT": None,
-    "N_PR_SCOPE_BROKEN": ("RuntimeError: x",),
-    # loop-next: every arm renders from one field dict (pr, branch, next, next_branch, stale, box, plans, delete, ahead).
-    "V_LOOP_NEXT_MERGED": {
-        "pr": 1,
-        "branch": "b",
-        "next": "n",
-        "next_branch": "nb",
-        "stale": "",
-        "box": "x",
-        "plans": "p",
-        "delete": "",
-        "ahead": 0,
-        "turbo": "",
-    },
-    "V_LOOP_NEXT_ON_MAIN": {"next": "n", "next_branch": "nb", "stale": "", "box": "x", "turbo": ""},
-    "V_LOOP_NEXT_NO_PR_WORK": {"branch": "b", "next": "n", "box": "x"},
-    "V_LOOP_NEXT_NO_PR_OPEN": {"branch": "b", "ahead": 2},
-    "V_LOOP_NEXT_MERGE": {"pr": 1, "plans": "p"},
-    # The bounded unreadable arm: the failing read, the branch twice, the block budget.
-    "V_LOOP_NEXT_UNREADABLE": ("gh down", "b", "b", 2),
-    "LOOP_NEXT_DELETE": ("b",),
-    "LOOP_NEXT_STALE": ("p",),
-    "LOOP_NEXT_BRANCH_UNKNOWN": None,
-    "LOOP_NEXT_NO_BOX": None,
-    # turbo (agent/plans/PLAN-stop-hook-turbo.md T10): the post-merge picks line, the arm, and one pick line.
-    "LOOP_NEXT_TURBO": ("a, b",),
-    "V_TURBO_NEXT": {"pr": 594, "free": 2, "cap": 4, "picks": "p", "finished": 1, "batch": 2},
-    "TURBO_NEXT_PICK": ("agent/plans/PLAN-a.md", 1, 4, "x"),
-    # wl_store.classify_items' fail-closed lease line (R20260925.5): display line, lease state, session prefix, item id.
-    "N_LEASE_FAILED_CLOSED": ("- [>] x", "expired", "m", "abcd1234"),
-    "N_FOCUS_PR_UNREADABLE": ("543", "branch", "gh failed", 24),
-    "CTX_POSTCOMPACT_FOCUS": ("babysit", "543", "branch", "t", "543", "deadbeef"),
-    "CLI_FOCUS_USAGE": None,
-    "CLI_FOCUS_ON": ("deadbeef", "babysit", "543", "branch", "543", "deadbeef"),
-    "CLI_FOCUS_PR_UNKNOWN": ("branch", "gh failed"),
-    "CLI_FOCUS_OFF": ("deadbeef", "babysit", "543", "t"),
-    "CLI_FOCUS_NOT_ON": ("deadbeef",),
-    "CLI_FOCUS_STATUS": ("babysit", "543", "branch", "t", 2),
-    "CLI_FOCUS_REFUSED": ("reason",),
-    "CLI_STATUS_ROW": {
-        "id": "a1",
-        "type": "t",
-        "desc": "d",
-        "lineage": "depth 1",
-        "children": "none",
-        "size": 1,
-        "quiet": "0m",
-        "edits": 0,
-        "tool": "Bash x",
-        "text": "x",
-        "verdict": "v",
-    },
-    "CLI_STATUS_NONE": ("a1",),
-    "CLI_STATUS_BLIND": ("m",),
-    "CLI_LOOP_USAGE": (),
-    "CLI_BRIEF_USAGE": (),
-    "CLI_UNKNOWN_VERB": ("v",),
-    # agent/plans/PLAN-stop-hook-turbo.md D4 and D9. N_STOP_HOOK_OFF takes the note, the broken-sibling clause and the settings-problems clause by key; CLI_QUEUE_SET_USAGE is static; CLI_QUEUE_SET_REFUSED takes the reason.
-    "N_STOP_HOOK_OFF": {"note": "n", "broken": "", "problems": ""},
-    "CLI_QUEUE_SET_USAGE": None,
-    "CLI_QUEUE_SET_REFUSED": ("why",),
-    "CLI_BRIEF_LOOKS_LIKE_ID": ("v",),
-    "V_JUDGE_ORDER_REJECTED": ("v", "v"),
-    "V_LADDER_INVESTIGATE_GONE": ("rows", "facts", "m", "m"),
-    "CLI_STATE_NO_DIR": ("me", "me"),
-    "CLI_STATE_USAGE": (),
-    "CLI_STATE_NO_BODY": ("x", "p"),
-    "V_UNCONFIRMED": ("#1",),
-    "V_BROKEN_SCHEDULE": (2, "rows"),
-    "GUIDE_HEADER": None,
-    "GUIDE_EMPTY": None,
-    "GUIDE_TRUNCATED": (3, 12),
-    "V_DEFER_EXPIRED": (2, 120, "rows", "", "m"),
-    "V_UNJUSTIFIED": (2, 30, "rows", "", "m", "m"),
-    "V_CI_WAITING": ("w", 2, "rows"),
-    "V_DEFER_AUDIT": (1, "rows", "m"),
-    "N_DEFER_AUDIT_OK": (1, "rows"),
-    "R_AUDIT_MALFORMED": ("p", "f"),
-    "CLI_DEFER_NO_JUSTIFICATION": None,
-    "CLI_DEFER_VAGUE_WHY": ("w",),
-    "CLI_DEFER_ALREADY_SETTLED": ("f", "r"),
-    "CLI_RESERVED_ACTOR": ("m",),
-    "DEFER_AUDIT_PROMPT": {"n": 1, "window": 120, "items": "i"},
-    "V_LADDER_INVESTIGATE": ("rows", "facts", "m"),
-    "V_LADDER_RESOLVE": ("rows", "facts", "m"),
-    "N_LADDER_PING": ("rows", "m"),
-    "N_JUDGE_STAMP": ("m", "approved"),
-    "N_JUDGE_STAMP_FULL": ("m", "approved", "why"),
-    "N_OUTQ_MORE": (3,),
-    "N_OUTQ_DIGEST": (3, "rows"),
-    "N_UNBLOCKED": ("i", "t"),
-    "CLI_RELAY_USAGE": None,
-    "N_OUTQ_DIGEST_MORE": (3,),
-    "N_OUTQ_LADDER_LINE": (2, "#a, #b"),
-    "N_ONBOARD_DELIVERED": (17,),
-    "N_AGENT_HINT": ("a", "a", "t, t"),
-    "N_AGENT_CORPUS_ERR": ("rows",),
-    "N_BEHAVIOR_HINT": (1, 12, "heading", "hint-id", "file:CLAUDE.md:1"),
-    "N_HINT_CORPUS_ERR": ("rows",),
-    "N_HINT_PROPOSALS_PENDING": (3,),
-    # (claims, agent, matched terms): the give-up push-back.
-    "V_AGENT_PUSHBACK": ("does-not-reproduce", "ops-vms", "ceph, ops, vms"),
-    # (claims): the agent-free half of the same conjunction.
-    "V_GIVEUP_CLAIM": ("does-not-reproduce",),
-    # (matched dismissal text): the deflected-finding check.
-    "V_DEFLECTED_FINDING": ("that's pre-existing and unrelated",),
-    # (count, threshold_min, rows): the orphan-background-shell sweep.
-    "V_BG_ORPHAN": (2, 20, "    pid 123, 45.0 min old: bash\n"),
-    "CLI_ITEM_USAGE": None,
-    "CLI_TICK_NO_EVIDENCE": ("id", ""),
-    "CLI_TICK_ASKED_HINT": ("2026-09-24T16:04Z",),
-    # v16: the triage verb, the tick door gate and the plan-file convention.
-    "CLI_TICK_ISSUE_DOOR": ("id",),
-    "CLI_TRIAGE_INLINE": {"id": "i", "me": "m", "reason": "r"},
-    "CLI_TRIAGE_PLAN": {"id": "i", "me": "m", "reason": "r", "plan": "p", "finding": "f"},
-    "CLI_TRIAGE_OPERATOR": {"id": "i", "me": "m", "reason": "r"},
-    "CLI_TRIAGE_SELF": {"id": "i", "me": "m", "why": "", "context": "c", "branch": "b"},
-    "TRIAGE_PROMPT": {"finding": "f", "context": "c"},
-    # v20: the /handoff checklist gate (wl_checklist, agent/programs/<slug>/CHECKLIST.md).
-    "V_CL_SHAPE": ("d", "rows"),
-    "V_CL_UNREADABLE": ("e",),
-    "V_CL_PRODUCING": ("s", 0, 1, "rows", "d"),
-    "V_CL_PRODUCING_DONE": ("s", "d"),
-    "V_CL_FLIP": ("d", "executing", "rows", "d"),
-    "V_CL_WAVES": ("s", "d", "rows"),
-    "N_CL_FOREIGN": ("s", "o", ""),
-    "N_CL_FOREIGN_DRIFT": ("d", "executing", "o", "rows"),
-    "N_CL_FOREIGN_WAVES": ("slug", "d", "o", "rows", "hint"),
-    "N_CL_DOOR_PARKED": ("d", 1, "rows"),
-    "N_CADENCE_PAUSE": (2, "k", 1, 3, "carried"),
-    "N_CADENCE_PAUSE_CARRIED": ("rows",),
-    "V_PLAN_DRIFT": (1, "rows"),
-    "V_INTENT_EXPIRED": ("t", 1, 1, "cov"),
-    # Epics and the published snapshot. USAGE constants carry no placeholder; the rest are single-substitution except CLI_EPIC_MADE/ATTACHED/WROTE.
-    "CLI_EPIC_USAGE": None,
-    "CLI_EPIC_REFUSED": ("reason",),
-    "CLI_EPIC_MADE": ("f2757830", "a title"),
-    "CLI_EPIC_ATTACHED": ("f2757830", 3),
-    "CLI_PUBLISH_USAGE": None,
-    "CLI_PUBLISH_WROTE": ("agent/pr/x.md", 1312, 1),
-    "CLI_INTENT_USAGE": None,
-    "CTX_CHECKLISTS": ("listing",),
-    "CTX_PLANS": ("l",),
-    "CTX_PLANS_EXCERPT": ("p", "b"),
-    "V_UNCITED": ("x",),
-    "V_FOUND_NOT_FIXED": None,
-    "V_UNSTATED": ("#1",),
-    "V_MISLABELLED": ("x",),
-    "V_OUT_OF_SYNC": (1, "#1"),
-    "V_SUBMODULE_POINTER": (1, "x"),
-    # Printed verbatim by `--help`; no interpolation, so None (skip the % check) rather than an arity. It still has to be REGISTERED, which is the point of the gap check: a constant nobody mapped is a constant nobody rendered.
-    "USAGE": None,
-    "V_HOOK_BLIND": ("p", "e", "f"),
-    "V_NO_REMAINING": ("x",),
-    "R_BLOCK": (1, "v", "f"),
-    "R_BLOCK_FOCUS": ("v", "m", "f", "me"),
-    "R_FOCUS_MORE": (2,),
-    "R_FOCUS_ONLY": None,
-    "N_CI_QUEUE": ("r", 2, 30, ""),
-    "N_CI_QUEUE_PR_STALE_LINE": None,
-    "N_COMMIT_REMIND": (2, 30, 20, 15, "files"),
-    "N_RECEIPT_BEHIND": (1, "abc12345"),
-    "N_CI_HOLD": ("abc12345", 2),
-    "N_CI_HOLD_PUSHED": ("abc12345",),
-    "N_RECEIPT_EARLY": None,
-    "V_BG_REPORT": ("never", "2026-01-01T00:15:00Z", 15, 2, "rows"),
-    "V_BG_REPORT_TASKS": ("never", "2026-01-01T00:15:00Z", 15, 2, 1, "tasks", "rows"),
-    # v19: runtime caller identity (L1 refusal, L2 backstop, L3 repair).
-    "CLI_REASSIGN_USAGE": None,
-    "CLI_REASSIGN_ALIVE": ("p", "p"),
-    "CLI_REASSIGN_YOUNG": ("p", 5, 30, "p"),
-    "CLI_REASSIGN_EMPTY": ("p", "p"),
-    "CLI_REASSIGN_DONE": ("p", "m", "i", "m"),
-    "N_PHANTOM_IDENTITY": (1, "rows", "p", "m"),
-    "N_PHANTOM_BLIND": ("why",),
-    "R_JUDGE_UNAVAILABLE": ("e", "f", "m"),
-    "R_REGGATE_MALFORMED": ("p", "f"),
-    "R_JUDGE_CONTINUE": ("r", "n", "t"),
-    "R_REGGATE_BLOCK": ("b", "i", "", "", "m", "t"),
-    "R_REGGATE_HALLUCINATED": ("g",),
-    "R_REGGATE_ALSO": ("r", "n"),
-    # Round-log splice verb (wl_roundlog.py) and the admission detector (wl_admit.py). USAGE and PROMPT carry no placeholders; REFUSED takes (reason, detail) and NO_LOG takes the target path.
-    "CLI_ROUNDLOG_USAGE": None,
-    "ADMISSION_PROMPT": None,
-    "CLI_ROUNDLOG_REFUSED": ("v", "d"),
-    "CLI_ROUNDLOG_NO_LOG": ("p",),
-    "CTX_SESSION_START": ("s", "d", "l", ""),
-    "CTX_SESSION_START_STALE": (3, "s"),
-    "CTX_POSTCOMPACT_MISSING": ("p", "m"),
-    "CTX_POSTCOMPACT_BRIEFING": ("d", "s", "r", "p", "t"),
-    "CTX_POSTCOMPACT_PEERS": ("b",),
-    "CTX_POSTCOMPACT_FACTS": ("b", "h", "g"),
-    # The stop-hook retro (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.12 and R.13).
-    "CTX_POSTCOMPACT_RETRO": {
-        "transcript": "t",
-        "when": "w",
-        "me8": "m",
-        "date": "d",
-        "from": 0,
-        "to": 1,
-    },
-    "CTX_POSTCOMPACT_RETRO_WHEN_BRIEFED": None,
-    "CTX_POSTCOMPACT_RETRO_WHEN_MISSING": None,
-    # R20260924.16: the one line a sub-agent's compaction briefing starts with.
-    "CTX_POSTCOMPACT_SUBAGENT": ("a",),
-    "RETRO_ITEM": {"me8": "m", "band": "b", "date": "d"},
-    "CLI_RETRO_BRIEF_USAGE": None,
-    "RETRO_BRIEF": {
-        "me8": "m",
-        "band": "b",
-        "date": "d",
-        "item": "i",
-        "plan": "p",
-        "transcript": "t",
-        "from_off": 0,
-        "to_off": 1,
-        "blocklog": "b",
-        "blocks": "b",
-        "hints": "h",
-        "judgelog": "j",
-        "judge": "j",
-        "admitlog": "a",
-        "admit": "a",
-        "ticklog": "t",
-        "ticks": "t",
-        "boxes": "x",
-    },
-    "JUDGE_PROMPT": {
-        "streak": 1,
-        "remaining": "r",
-        "leases": 0,
-        "loop": "l",
-        "citations": "c",
-        "message": "m",
-        "traps": "t",
-    },
-    "REGGATE_PROMPT": {"fixset": "f", "keys": "k"},
-    "FIXSET_GROUND_TRUTH": {"count": 1, "files": "f", "more": "", "how": "diff-tree"},
-    "V_PLAN_ADOPTED": {"rel": "p", "n_open": 2, "n_gap": 1, "recipes": "r", "me": "m"},
-    # ONE HOLE, and deliberately one: the PR plan set's open counts and the named box are computed by `wl_planenforce.render`, so the catalogue string wraps a body rather than formatting fields a call site would have to keep in step.
-    "V_PLAN_UNIMPLEMENTED": {"body": "b"},
-    # v20 plan fidelity (wl_planfid.py). V_PLANFID takes the plan path, the umbrella rows, the untracked-task rows, the judge's instruction, and then the session prefix TWICE (once for the --add exit, once as the owner tag of the deferral line) before the planfid: token.
-    "V_PLANFID": ("p", "u", "m", "i", "me", "me", "t"),
-    "V_PLANFID_DEGRADED": ("e",),
-    # v21 idle-stall gate. V_IDLE_STALL takes the open-item count, the rendered rows, then the session prefix THREE times (one per exit: --tick, --lease, --defer). V_UNBLOCKED_CLAIM takes the count and the claimed lines.
-    "V_IDLE_STALL": (1, "rows", "me", "me", "me"),
-    "V_UNBLOCKED_CLAIM": (1, "rows"),
-    # v23 pending-ask gate. V_PENDING_ASK takes the announcing line then the session prefix (the --defer exit); N_ASK_REFUSALS takes the count and the ledger path.
-    "V_PENDING_ASK": ("line", "me"),
-    "N_ASK_REFUSALS": (2, "p"),
-    # v22. V_DEFERRED_FINDING takes the rendered finding lines; V_SWEEP_MOMENT takes what just closed. Both are single-substitution, and case 117 is what caught them being unregistered: the registry works.
-    "V_DEFERRED_FINDING": ("rows",),
-    "V_SWEEP_MOMENT": ("an item this turn",),
-    "PLANFID_PROMPT": {"plan": "p", "items": "i", "message": "m"},
-    # v21 priority ladder. V_PR_FINISH takes the branch, the PR number, the rendered boxes, then the hook path, the session prefix and the PR number for the --add exit, and the hook path and the session prefix for the --tick. R_ALWAYS_COLLAPSED takes
-    # the rendered one-line-per-invariant block.
-    "V_PR_FINISH": ("b", 543, "rows", "h", "me", 543, "h", "me"),
-    "V_CL_OWNER": (
-        "agent/programs/x/CHECKLIST.md",
-        "e6500e92",
-        "unknown",
-        "no events",
-        "e6500e92",
-        "cl-owner:x",
-        "cl-owner:x",
-    ),
-    "V_WAKE_TIMER": (
-        2,
-        "watch, writer",
-        2400000,
-        "python3 .claude/hooks/stop/wl_wake.py me --minutes 30",
-    ),
-    # The PR-level Claude review on a green head (agent/plans/PLAN-github-pr-review-restore.md, GR9): named fields, one dict renders all three.
-    "V_PR_REVIEW_UNANSWERED": {"pr": 543, "head": "deadsha00000", "reason": "r"},
-    "V_PR_REVIEW_FAILED_RUN": {"pr": 543, "head": "deadsha00000", "reason": "r"},
-    "N_PR_REVIEW_UNREADABLE": {"pr": 543, "head": "deadsha00000", "reason": "r"},
-    # Scheduled workflows on main (agent/plans/PLAN-scheduled-red-detector.md, A1/A2/A5): every one renders from `wl_schedred.fields(row, me8)`, plus `item`, `owner`, `error` or `tracked`/`stale` where its call site adds them.
+# .claude/hooks/stop -> .claude/hooks -> .claude -> the repository.
+REPO_ROOT = wlfix.STOP_DIR.parents[2]
+
+# ---- DERIVED ARITY. The catalogue strings are the oracle; nothing here is a hand copy of them. ----
+#
+# This file used to carry a hand table of every constant's call-site arity (267 entries by 2026-10-06). It asserted a shape the call sites were never checked against. Now the shape is DERIVED from each string's own `%` placeholders and rendered, and the call sites are AST-scanned against that derivation, which is the claim the table only made.
+
+# A printf-style placeholder: an optional `(key)`, flags, width, precision, length, conversion.
+PLACEHOLDER = re.compile(
+    r"%(?:\((?P<key>[^)]*)\))?[#0\- +]*(?P<width>\*|\d+)?(?:\.(?P<prec>\*|\d+))?[hlL]?(?P<conv>.)",
+    re.DOTALL,
+)
+
+# The sample each conversion letter takes. A placeholder whose letter is not here fails, so a new conversion is a decision rather than a silent `str()`.
+CONVERSION_SAMPLES = {
+    "s": "x",
+    "r": "x",
+    "a": "x",
+    "d": 1,
+    "i": 1,
+    "u": 1,
+    "x": 1,
+    "X": 1,
+    "o": 1,
+    "c": 1,
+    "f": 1.0,
+    "F": 1.0,
+    "e": 1.0,
+    "E": 1.0,
+    "g": 1.0,
+    "G": 1.0,
+}
+
+# Overrides kept ONLY where the sample value is the contract. The scheduled-red and main-push messages render from `wl_schedred.fields(row, me8)`, which no call-site literal shows, so these prove each string uses only keys that row provides (plus what its call site adds).
+SAMPLES = {
     "V_SCHEDULED_RED": SCHED_ROW,
     "V_SCHEDULED_RED_TICK": dict(SCHED_ROW, item="i"),
     "N_SCHEDULED_RED_PEER": dict(SCHED_ROW, owner="o"),
-    "N_SCHEDULED_UNREADABLE": {"error": "e"},
     "N_SCHEDULED_GREEN": dict(SCHED_ROW, item="i"),
     "CTX_SCHEDULED_RED_SESSION_START": dict(SCHED_ROW, tracked="untracked", stale=""),
-    # Console CI's push run on main (wl_schedred `doc["push"]`): the same fields plus the push row's sha, root and cause.
     "V_MAIN_PUSH_RED": PUSH_ROW,
     "V_MAIN_PUSH_RED_TICK": dict(PUSH_ROW, item="i"),
     "N_MAIN_PUSH_RED_PEER": dict(PUSH_ROW, owner="o"),
     "N_MAIN_PUSH_GREEN": dict(PUSH_ROW, item="i"),
-    "N_MAIN_PUSH_UNREADABLE": {"error": "e"},
     "CTX_MAIN_PUSH_RED_SESSION_START": dict(PUSH_ROW, tracked="untracked", stale=""),
-    "R_ALWAYS_COLLAPSED": ("rows",),
-    "R_ROTATING_COLLAPSED": ("rows",),
-    # v23 lineage. CLI_ADOPT_USAGE takes nothing (it is a static usage block). CLI_ADOPT_REFUSED takes the session prefix, the predecessor prefix and the reason the evidence failed; CLI_ADOPT_SELF takes the prefix that turned out to be the caller; and CLI_ADOPT_DONE takes the session prefix, the predecessor prefix, the rung that fired, the evidence basis, the boundary uuid, how
-    # many items just changed owner, and the session prefix again for the follow-up command.
-    "CLI_ADOPT_USAGE": None,
-    "CLI_MIGRATE_USAGE": None,
-    "CLI_ADOPT_REFUSED": ("me", "prev", "why"),
-    # No format args: it is appended to REGGATE_PROMPT verbatim, never % -ed.
-    "REGGATE_GATE_MAINTENANCE": None,
-    "CLI_ADOPT_SELF": ("prev",),
-    "CLI_ADOPT_DONE": ("me", "prev", "continued-in", "1 shared record", "bde8bb05", 3, "me"),
-    # W12 plan records (wl_planrec.py). USAGE carries no placeholder; REFUSED takes the RecordError text and DRY takes the rendered record, both single substitutions. WROTE and REVIVED are keyed, and WROTE spends `blob` three times (the git show recipe, the git log recipe, and the message body), which is exactly the arity a positional tuple would get wrong silently.
-    "CLI_PLANREC_USAGE": None,
-    "CLI_PLANREC_REFUSED": ("why",),
-    "CLI_PLANREC_DRY": ("record",),
-    "CLI_PLANREC_WROTE": {
-        "rel": "p",
-        "status": "compacted",
-        "bytes": 900,
-        "was": 9000,
-        "blob": "b",
-        "me": "m",
-    },
-    "CLI_PLANREC_REVIVED": {"rel": "p", "blob": "b", "bytes": 9000},
-    # W12 P2. --plan-why has THREE answers and each is its own constant, because "no record names this file" and "there is no index" are different results and collapsing them would make an empty answer indistinguishable from a blind one. NO_EDGE spends `path` twice (the sentence and the git log recipe), which a positional tuple would get wrong silently.
-    "CLI_PLANWHY_USAGE": None,
-    "CLI_PLANWHY_HIT": {"path": "p", "body": "b"},
-    "CLI_PLANWHY_NO_EDGE": {"path": "p", "n": 3, "index": "agent/INDEX.md"},
-    "CLI_PLANWHY_NO_INDEX": {"path": "p", "index": "agent/INDEX.md"},
-    "CLI_PLANTICK_USAGE": None,
-    "CLI_PLANTICK_DRY": {"rel": "p", "note": "n"},
-    "CLI_PLANTICK_WROTE": {
-        "rel": "p",
-        "ledger": "l",
-        "investigation": "i",
-        "index": "x",
-        "note": "n",
-        "me": "m",
-    },
-    "CLI_PLANINV_USAGE": None,
-    "CLI_PLANINV_DRY": {
-        "rel": "p",
-        "sig": "s",
-        "verdict": "v",
-        "head": "h",
-        "br": "b",
-        "table": "t",
-    },
-    "CLI_PLANINV_WROTE": {
-        "rel": "p",
-        "sig": "s",
-        "verdict": "v",
-        "head": "h",
-        "br": "b",
-        "table": "t",
-        "ledger": "l",
-        "next": "n",
-    },
 }
+
+
+class Shape:
+    """What one catalogue string takes: nothing, N positionals, or a set of keys."""
+
+    def __init__(self, keys=None, count=0):
+        self.keys = keys
+        self.count = count
+
+    @property
+    def verbatim(self):
+        return self.keys is None and self.count == 0
+
+    def sample(self, placeholders):
+        if self.keys is not None:
+            return {key: CONVERSION_SAMPLES[conv] for key, conv in placeholders}
+        return tuple(CONVERSION_SAMPLES[conv] for _key, conv in placeholders)
+
+    def describe(self):
+        if self.keys is not None:
+            return "keys %s" % sorted(self.keys)
+        return "%d positional" % self.count
+
+
+def placeholders(text):
+    """[(key | None, conversion)] for every placeholder, `%%` ignored. Raises ValueError on a shape `%` cannot render."""
+    out = []
+    for m in PLACEHOLDER.finditer(text):
+        conv = m.group("conv")
+        if conv == "%":
+            continue
+        if m.group("width") == "*" or m.group("prec") == "*":
+            raise ValueError(
+                "a `*` width or precision takes an extra argument this derivation does not model: %r"
+                % m.group(0)
+            )
+        if conv not in CONVERSION_SAMPLES:
+            raise ValueError("unknown conversion %r in %r" % (conv, m.group(0)))
+        out.append((m.group("key"), conv))
+    keyed = [k for k, _ in out if k is not None]
+    if keyed and len(keyed) != len(out):
+        raise ValueError("mixes keyed and positional placeholders, which `%` refuses to render")
+    return out
+
+
+def shape_of(text):
+    found = placeholders(text)
+    if found and found[0][0] is not None:
+        return Shape(keys=frozenset(k for k, _ in found)), found
+    return Shape(count=len(found)), found
+
+
+def catalogue_strings(catalogue):
+    return {
+        key: value
+        for key, value in vars(catalogue).items()
+        if not key.startswith("_") and isinstance(value, str)
+    }
+
+
+def render_findings(strings):
+    """Every string derives a shape and renders with it; a SAMPLES override renders with its row."""
+    failures = []
+    for name, text in sorted(strings.items()):
+        try:
+            shape, found = shape_of(text)
+        except ValueError as exc:
+            failures.append("SHAPE %s: %s" % (name, exc))
+            continue
+        if shape.verbatim:
+            continue
+        args = SAMPLES.get(name, shape.sample(found))
+        try:
+            text % args
+        except (TypeError, ValueError, KeyError, IndexError) as exc:
+            # These four are what a `%` render can raise: a missing key, too few or mistyped arguments, and an unsupported format character. Anything outside them is a defect this test should surface as an error rather than fold into the tally.
+            failures.append("RENDER %s with %r: %s" % (name, args, exc))
+    stale = sorted(set(SAMPLES) - set(strings))
+    if stale:
+        failures.append("SAMPLES names constant(s) the catalogue no longer has: %s" % stale)
+    return failures
+
+
+def catalogue_aliases(tree):
+    """The names a module binds the catalogue to: `import worklist_messages as M`, and worklist.py's `M = _MODS["worklist_messages"]`."""
+    aliases: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            aliases.update(a.asname or a.name for a in node.names if a.name == "worklist_messages")
+        elif isinstance(node, ast.Assign) and isinstance(node.value, ast.Subscript):
+            key = node.value.slice
+            if isinstance(key, ast.Constant) and key.value == "worklist_messages":
+                aliases.update(t.id for t in node.targets if isinstance(t, ast.Name))
+    return aliases
+
+
+def callsite_findings(rel, source, shapes):
+    """(findings, checked) for every `<alias>.NAME % <literal>` in one module.
+
+    A tuple literal must match the positional count; a dict literal with constant keys must match the key set EXACTLY (a missing key raises at render time, and an extra one is a field the caller computes that the message dropped); any other non-tuple literal (a string, an f-string, a number) is one positional. A right operand that is a name or a call is not a literal and is not judged: its arity is decided at run time.
+    """
+    tree = ast.parse(source, filename=rel)
+    aliases = catalogue_aliases(tree)
+    findings = []
+    checked = 0
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mod)):
+            continue
+        left = node.left
+        if not (
+            isinstance(left, ast.Attribute)
+            and isinstance(left.value, ast.Name)
+            and left.value.id in aliases
+        ):
+            continue
+        name = left.attr
+        where = "%s:%d %s" % (rel, node.lineno, name)
+        if name not in shapes:
+            findings.append("MISSING %s: the catalogue has no such string" % where)
+            continue
+        shape = shapes[name]
+        right = node.right
+        if isinstance(right, ast.Tuple):
+            if any(isinstance(e, ast.Starred) for e in right.elts):
+                continue
+            got = Shape(count=len(right.elts))
+        elif isinstance(right, ast.Dict):
+            keys = [k for k in right.keys if isinstance(k, ast.Constant)]
+            if len(keys) != len(right.keys):
+                continue  # a `**spread` or a computed key: decided at run time
+            got = Shape(keys=frozenset(k.value for k in keys))
+        elif isinstance(right, (ast.Constant, ast.JoinedStr)):
+            got = Shape(count=1)
+        else:
+            continue
+        checked += 1
+        if shape.verbatim:
+            findings.append(
+                "VERBATIM %s: the string has no placeholder and is rendered with %s"
+                % (where, got.describe())
+            )
+        elif (shape.keys, shape.count) != (got.keys, got.count):
+            findings.append(
+                "ARITY %s: the string takes %s, the call site passes %s"
+                % (where, shape.describe(), got.describe())
+            )
+    return findings, checked
+
+
+def hook_modules(root):
+    """Every hook module that can render the catalogue: `.claude/hooks/**/*.py`, tests excluded."""
+    return sorted(
+        p for p in (root / ".claude" / "hooks").rglob("*.py") if "__pycache__" not in p.parts
+    )
+
+
+def scan_callsites(root, shapes):
+    findings = []
+    checked = 0
+    for path in hook_modules(root):
+        rel = str(path.relative_to(root))
+        got, n = callsite_findings(rel, path.read_text(encoding="utf-8"), shapes)
+        findings.extend(got)
+        checked += n
+    return findings, checked
 
 
 def load_catalogue():
@@ -479,30 +276,101 @@ def load_catalogue():
 
 
 def test_117_the_message_catalogue_renders_at_every_call_site_arity():
-    """Shape protection for the whole catalogue, including the constants no needle in this suite ever reaches."""
+    """Every string renders at its DERIVED arity, and every literal call site in the hooks passes exactly that."""
     catalogue = load_catalogue()
-    failures = []
-    for name, args in ARITY.items():
-        value = getattr(catalogue, name, None)
-        if value is None:
-            failures.append("MISSING %s" % name)
-            continue
-        if args is None:
-            continue
-        try:
-            value % args
-        except (TypeError, ValueError, KeyError, IndexError) as exc:
-            # The bash caught bare Exception. These four are what a `%` render can raise: a missing key, too few or mistyped arguments, and an unsupported format character. Anything outside them is a defect this test should surface as an error rather than fold into the tally.
-            failures.append("ARITY %s: %s" % (name, exc))
-    strings = {
-        key
-        for key, value in vars(catalogue).items()
-        if not key.startswith("_") and isinstance(value, str)
-    }
-    gap = strings - set(ARITY)
-    if gap:
-        failures.append("UNMAPPED new constant(s), add arity here: %s" % sorted(gap))
+    strings = catalogue_strings(catalogue)
+    assert len(strings) >= 100, (
+        "only %d catalogue strings; the loader is not seeing the catalogue" % len(strings)
+    )
+    failures = render_findings(strings)
+    shapes = {}
+    for name, text in strings.items():
+        with contextlib.suppress(ValueError):  # already a SHAPE failure above
+            shapes[name] = shape_of(text)[0]
+    found, checked = scan_callsites(REPO_ROOT, shapes)
+    failures.extend(found)
+    # Anti-vacuity: an alias the scan stopped resolving would check nothing and pass.
+    assert checked >= 100, (
+        "only %d literal call site(s) checked; the AST scan has lost the hooks" % checked
+    )
     assert not failures, "catalogue-arity failures=%d: %s" % (len(failures), failures)
+
+
+def test_117b_a_planted_call_site_with_the_wrong_arity_fails(tmp_path):
+    """CONTROL: `M.V_IDLE % ("a", "b")` in a tmp copy of a real hook module, against the real catalogue."""
+    strings = catalogue_strings(load_catalogue())
+    shapes = {name: shape_of(text)[0] for name, text in strings.items()}
+    assert shapes["V_IDLE"].count == 1, "the plant assumes V_IDLE takes one positional"
+    real = wlfix.STOP_DIR / "wl_checks.py"
+    source = real.read_text(encoding="utf-8")
+    clean, checked = callsite_findings("wl_checks.py", source, shapes)
+    assert checked > 0, "the clean copy checks no call site, so the plant below would prove nothing"
+    planted = tmp_path / "wl_checks.py"
+    planted.write_text(source + '\n\nPLANT = M.V_IDLE % ("a", "b")\n', encoding="utf-8")
+    got, _ = callsite_findings("wl_checks.py", planted.read_text(encoding="utf-8"), shapes)
+    new = [f for f in got if f not in clean]
+    assert any(
+        f.startswith("ARITY wl_checks.py:") and "V_IDLE" in f and "2 positional" in f for f in new
+    ), new
+    assert real.read_text(encoding="utf-8") == source, "the real module is never written"
+
+
+def test_117c_call_site_rules_both_directions():
+    """Pure cases: the dict rule is exact in both directions, and what is not a literal is not judged."""
+    shapes = {
+        "ONE": shape_of("a %s")[0],
+        "KEYED": shape_of("%(a)s %(b)d")[0],
+        "PLAIN": shape_of("no placeholder, 100%% plain")[0],
+    }
+    src = (
+        "import worklist_messages as Q\n"
+        "a = Q.ONE % ('x',)\n"
+        "b = Q.ONE % 'x'\n"
+        "c = Q.KEYED % {'a': 1, 'b': 2}\n"
+        "d = Q.ONE % some_tuple\n"
+        "e = Q.ONE % make()\n"
+    )
+    assert callsite_findings("ok.py", src, shapes) == ([], 3), (
+        "CONTROL: correct literals and non-literals pass"
+    )
+    bad = (
+        "import worklist_messages as Q\n"
+        "a = Q.ONE % ('x', 'y')\n"
+        "b = Q.KEYED % {'a': 1}\n"
+        "c = Q.KEYED % {'a': 1, 'b': 2, 'extra': 3}\n"
+        "d = Q.PLAIN % 'x'\n"
+        "e = Q.GONE % 'x'\n"
+    )
+    found, _ = callsite_findings("bad.py", bad, shapes)
+    assert [f.split(":")[0] + ":" + f.split(":")[1].split()[0] for f in found] == [
+        "ARITY bad.py:2",
+        "ARITY bad.py:3",
+        "ARITY bad.py:4",
+        "VERBATIM bad.py:5",
+        "MISSING bad.py:6",
+    ], found
+    other = "import something_else as Q\nx = Q.ONE % ('x', 'y')\n"
+    assert callsite_findings("other.py", other, shapes) == ([], 0), (
+        "only the catalogue's aliases are scanned"
+    )
+    mods = 'M = _MODS["worklist_messages"]\nx = M.ONE % ("x", "y")\n'
+    assert callsite_findings("wl.py", mods, shapes)[1] == 1, (
+        "worklist.py's _MODS binding is an alias too"
+    )
+
+
+def test_117d_a_mixed_keyed_and_positional_string_fails():
+    """CONTROL: `%` refuses to render a string mixing `%(key)s` and `%s`, so the derivation must refuse it too."""
+    failures = render_findings({"MIXED": "%(who)s waited %s minutes", "FINE": "%(who)s waited"})
+    assert failures, "a mixed string must fail"
+    assert failures[0].startswith("SHAPE MIXED:"), failures
+    assert not any("FINE" in f for f in failures), "CONTROL: the well-formed keyed string passes"
+    assert render_findings({"STAR": "%*d"})[0].startswith("SHAPE STAR:"), (
+        "a `*` width is refused, not guessed"
+    )
+    assert render_findings({"ODD": "%q"})[0].startswith("SHAPE ODD:"), (
+        "an unknown conversion is refused"
+    )
 
 
 def test_118_a_missing_catalogue_fails_closed_and_spares_the_query_modes(wl):  # noqa: F811

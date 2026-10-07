@@ -19,25 +19,24 @@ THE SELECTOR IS review_comments' OWN. `FENCE_NEEDLE`, `VERDICT_HEADING`, the low
 
 THE DISPOSITION GRAMMAR IS THE PER-COMMIT ONE (`.claude/hooks/stop/wl_review.py`, `mark`): `fixed <sha40>` an ancestor of local HEAD, `not-a-bug | <evidence>` with at least 20 characters that pass `wl_review._citation_ok`, `deferred #<item>` an open, `[?]` or `[>]` worklist item. Every line is checked before anything is posted, so a refused file posts nothing.
 
-SEALED. No environment variable is read. `gh` is the only external tool, called through one injectable runner (`run_gh`), and the reply posts under the session's own gh identity, which is a different author from github-actions[bot]. Ancestry and citations are checked with wl_review's git helpers against the local checkout.
+SEALED. No environment variable is read. `gh` is the only external tool, reached through `wl_gh` (the Stop hook's one gh layer) with one injectable runner (`run_gh`, a `wl_gh.runner`), and the reply posts under the session's own gh identity, which is a different author from github-actions[bot]. Ancestry and citations are checked with wl_review's git helpers against the local checkout.
 
-EVERY READ RETRIES A TRANSIENT FAULT, NO WRITE DOES (agent/plans/PLAN-gh-retry.md G13). `_gh_json` is the one read path, and it wraps the runner in `rediacc_ci.core.gh_retry.retry_transient`, bounded to GH_READ_ATTEMPTS and GH_READ_PAUSE_S because the Stop hook calls this inside its own budget (wl_checks.prreview_runner). The comment POSTs and the resolveReviewThread mutation call the runner directly, once: a retried POST after a lost response is a second comment.
+EVERY READ RETRIES A TRANSIENT FAULT, NO WRITE DOES (agent/plans/PLAN-gh-retry.md G13, PLAN-ci-consolidation.md T12). Reads go through `wl_gh.call` and `wl_gh.call_list` with the runner as their `run=` seam, so the retry (wl_gh.GH_READ_ATTEMPTS, wl_gh.GH_READ_PAUSE_S, bounded for the Stop hook's budget in wl_checks.prreview_runner) and the JSON arms live in one place; `_read` is the ONE conversion of their `(None, why)` into UnreadableError, which this module's callers expect. The comment POSTs and the resolveReviewThread mutation go through `wl_gh.write`, once: a retried POST after a lost response is a second comment.
 """
 
 from __future__ import annotations
 
 import argparse
-import functools
 import importlib.util
 import json
 import pathlib
 import re
-import subprocess
 import sys
 import time
 from collections.abc import Callable
 from typing import Any
 
+import wl_gh
 import wl_review
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -125,68 +124,28 @@ class UnreadableError(RuntimeError):
     """A gh read failed or returned something that is not the expected JSON."""
 
 
-def run_gh(argv: list[str]) -> tuple[int, str, str]:
-    """(rc, stdout, stderr) of one `gh` call from the console root; rc 127 when gh could not run."""
-    try:
-        done = subprocess.run(
-            ["gh", *argv],
-            capture_output=True,
-            text=True,
-            timeout=120,
-            check=False,
-            stdin=subprocess.DEVNULL,
-            cwd=str(CONSOLE_ROOT),
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        return 127, "", str(exc)
-    return done.returncode, done.stdout, done.stderr
+# The CLI's own per-call bound: `--answer` and `--wait` run outside the Stop hook, which passes its budgeted runner instead (wl_checks.prreview_runner).
+RUN_GH_TIMEOUT_S = 120
+# (rc, stdout, stderr) of one `gh` call from the console root, stdin closed; rc 124 on a timeout and 127 when gh could not run.
+run_gh: Runner = wl_gh.runner(CONSOLE_ROOT, timeout=RUN_GH_TIMEOUT_S)
 
 
-# Two attempts and one 2 s pause, the bound the Stop hook's other reads use (wl_ci.GH_READ_ATTEMPTS), never gh_retry's default 5 s then 15 s. Read at call time, so a test can zero the pause.
-GH_READ_ATTEMPTS = 2
-GH_READ_PAUSE_S = 2
-
-
-@functools.cache
-def gh_retry_module() -> Any:
-    """`rediacc_ci.core.gh_retry`, imported on first use through the shared scoped loader `syspath.import_from_ci` (`.ci` on sys.path only while importing)."""
-    return _syspath().import_from_ci("rediacc_ci.core.gh_retry")
+def _read(what: str, result: tuple[Any, str]) -> Any:
+    """The ONE conversion of a wl_gh read's `(None, why)` into UnreadableError, which every caller here expects."""
+    data, err = result
+    if data is None:
+        raise UnreadableError("%s: %s" % (what, err))
+    return data
 
 
 def _gh_json(runner: Runner, what: str, argv: list[str]) -> Any:
-    """The parsed JSON of the READ `gh <argv>`, a transient fault retried; UnreadableError otherwise. Reads only: a write goes through `runner` once."""
-    try:
-        retry = gh_retry_module()
-    except (ImportError, OSError) as exc:
-        raise UnreadableError(
-            "%s: rediacc_ci.core.gh_retry could not be imported: %s" % (what, exc)
-        ) from exc
-    rc, out, err = retry.retry_transient(
-        lambda: runner(argv),
-        lambda r: None if r[0] == 0 else (r[2] or r[1] or "failed"),
-        attempts=GH_READ_ATTEMPTS,
-        sleep=lambda _scheduled: time.sleep(GH_READ_PAUSE_S),
-    )
-    if rc != 0:
-        raise UnreadableError("%s: gh exited %d: %s" % (what, rc, (err or out).strip()[:300]))
-    try:
-        return json.loads(out)
-    except ValueError as exc:
-        raise UnreadableError("%s: gh returned output that is not JSON (%s)" % (what, exc)) from exc
+    """The parsed JSON of the READ `gh <argv>` (wl_gh.call: a transient fault retried); UnreadableError otherwise."""
+    return _read(what, wl_gh.call(argv, run=runner))
 
 
 def _gh_list(runner: Runner, what: str, path: str) -> list[dict]:
-    """Every page of a REST list, flattened. `--slurp` wraps each page in an outer array."""
-    pages = _gh_json(runner, what, ["api", path, "--paginate", "--slurp"])
-    if not isinstance(pages, list):
-        raise UnreadableError("%s: expected a list of pages" % what)
-    out: list[dict] = []
-    for page in pages:
-        if isinstance(page, list):
-            out.extend(c for c in page if isinstance(c, dict))
-        elif isinstance(page, dict):
-            out.append(page)
-    return out
+    """Every page of a REST list, flattened (wl_gh.call_list); UnreadableError otherwise."""
+    return _read(what, wl_gh.call_list(["api", path], run=runner))
 
 
 # ---- the summary selector, the same rule review_comments runs ----
@@ -865,7 +824,7 @@ def cmd_answer(
         return RC_UNANSWERED
 
     body = render_answer(view, findings, dispositions)
-    rc, out, err = runner(
+    rc, out, err = wl_gh.write(
         [
             "api",
             "-X",
@@ -873,7 +832,8 @@ def cmd_answer(
             "repos/%s/issues/%d/comments" % (view.repo, view.number),
             "-f",
             "body=%s" % body,
-        ]
+        ],
+        run=runner,
     )
     if rc != 0:
         print(
@@ -902,7 +862,7 @@ def cmd_answer(
             else "the reply to #issuecomment-%s" % view.summary_id
         )
         reply = "F%d: %s (answered in %s)." % (n, describe(dispositions[n]), cite)
-        rc, _out, err = runner(
+        rc, _out, err = wl_gh.write(
             [
                 "api",
                 "-X",
@@ -910,7 +870,8 @@ def cmd_answer(
                 "repos/%s/pulls/%d/comments/%s/replies" % (view.repo, view.number, root.get("id")),
                 "-f",
                 "body=%s" % reply,
-            ]
+            ],
+            run=runner,
         )
         if rc != 0:
             failures += 1
@@ -929,8 +890,9 @@ def cmd_answer(
             continue
         if thread[1]:
             continue
-        rc, _out, err = runner(
-            ["api", "graphql", "-f", "query=%s" % RESOLVE_MUTATION, "-f", "id=%s" % thread[0]]
+        rc, _out, err = wl_gh.write(
+            ["api", "graphql", "-f", "query=%s" % RESOLVE_MUTATION, "-f", "id=%s" % thread[0]],
+            run=runner,
         )
         if rc != 0:
             failures += 1

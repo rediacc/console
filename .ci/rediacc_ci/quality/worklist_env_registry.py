@@ -33,6 +33,16 @@ WHAT IS DERIVED AND WHAT IS AUTHORED, because a registry whose every field is de
   requirement, because 111 machine-written sentences about numeric thresholds
   would be filler, and filler is how a required field stops being read.
 
+  AUTHORED, and the one field another gate reads: the CLASS, `harness` or
+  `gate-seam`. It is the env-manifest shard the name belongs to, and
+  `env_manifest.render_worklist` generates every WORKLIST_* member of
+  `.ci/config/env-manifest.json` from it. That makes this file the one authored
+  home of a WORKLIST_* name; the manifest's copy is output.
+
+`foreign_reads` IS THE SECOND EXCLUSION, for names read only where this scan cannot look. The scan reads Python and bash; `WORKLIST_EPICS_LEDGER` is read by a TypeScript gate alone, so under `names` it would report DEAD. Each entry carries its class, its reader and a reason, and the exclusion contract applies: the reader must still name it, word-bounded, and a name the scan CAN see may not hide there.
+
+REGISTERING A NAME is one command, `npm run env:register -- <module> <NAME> --class <c> --kind <k> --default <spelling>... [--why <w>]` (`env_register.py`). It applies this gate's schema before writing, writes this file, re-renders the manifest and runs the three registry gates.
+
 `corpus` IS THE RESIDUAL, AND THAT IS WHY IT REQUIRES A REASON. Any name whose default fits no other shape lands there. Making the residual the most expensive kind to declare is what stops it becoming the drawer everything is swept into.
 
 BOTH DIRECTIONS, WHICH IS THE ACCEPTANCE THE BOX ASKS FOR:
@@ -46,7 +56,7 @@ BOTH DIRECTIONS, WHICH IS THE ACCEPTANCE THE BOX ASKS FOR:
 THE EXCLUSIONS ARE IN THE REGISTRY, NOT IN THIS FILE, and the box is right to insist. `agent/` is live gated state under invariant 7 and is full of plans that NAME these variables in prose; admitting it would register every name any plan ever discussed and make "dead" unreportable forever. `docs/` is the same argument. Both are declared in the registry with their reasons, so the
 reason travels with the exclusion and this gate cannot quietly widen it. An exclusion prefix that excludes NOTHING is itself a finding.
 
-ANTI-VACUITY, SIX REFUSALS. A missing or unparseable registry; a registry with no names; a registry with no exclusions; a corpus of zero tracked files; a corpus in which zero names are read; and a `git ls-files` that fails. Each exits 1 with its own sentence. The success line prints the name count, the file count, the read-site count and the per-kind breakdown, so a collapse is
+ANTI-VACUITY, EIGHT REFUSALS. A missing or unparseable registry; a registry with no names; a registry with no exclusions; a registry with no sealed_modules; a `foreign_reads` that is not an object; a corpus of zero tracked files; a corpus in which zero names are read; and a `git ls-files` that fails. Each exits 1 with its own sentence. The success line prints the name count, the file count, the read-site count, the per-kind and per-class breakdowns and the foreign reads, so a collapse is
 visible.
 
 Exit 1 on any finding or refusal, 2 on a failed control.
@@ -77,6 +87,9 @@ NAME_RE = re.compile(r"WORKLIST_[A-Z0-9_]+")
 
 KINDS = ("flag", "tuning", "path", "handle", "corpus")
 WHY_REQUIRED = frozenset({"flag", "handle", "corpus"})
+
+# The env-manifest shard each name renders into (`.ci/config/env-manifest.json`). A WORKLIST_* name is supplied by a local harness or by a gate's own control and by nothing else, so the other six live shards are not offered: a WORKLIST name classified `secret` or `toolchain` would be a misreading, not a decision.
+CLASSES = ("harness", "gate-seam")
 WHY_MIN_CHARS = 60
 
 # The environment-reading call shapes. `pop` and `setdefault` are deliberately absent: neither appears in this tree, and adding a shape nothing uses is a branch no control can reach.
@@ -327,10 +340,10 @@ def tracked_files(root):
 _SOURCE_OVERRIDE = os.environ.get("WORKLIST_SOURCE_OVERRIDE_FILE", "")
 
 
-def scan_corpus(root, exclusions):
+def scan_corpus(root, exclusions, files=None):
     """(reads, scanned_file_count, excluded_file_count) over the tracked tree."""
     root = pathlib.Path(root)
-    files = tracked_files(root)
+    files = tracked_files(root) if files is None else files
     if not files:
         raise RefusalError(
             "`git ls-files` returned ZERO paths, so this gate is not seeing the tree; "
@@ -399,6 +412,12 @@ def load_registry(path):
             "retuned from the environment at all; a registry without them would enforce "
             "'registered' where the operator asked for 'no escape hatches'." % p
         )
+    foreign = obj.get("foreign_reads", {})
+    if not isinstance(foreign, dict):
+        raise RefusalError(
+            "%s: `foreign_reads` is not an object, so the names read outside this scan cannot "
+            "be told apart from dead ones" % p
+        )
     return obj
 
 
@@ -419,6 +438,7 @@ def check_entry(name, entry, defaults):
     if kind not in KINDS:
         out.append("%s: kind %r is not one of %s" % (name, kind, ", ".join(KINDS)))
         return out
+    out.extend(check_class(name, entry))
     pinned = entry.get("defaults")
     if not isinstance(pinned, list) or sorted(pinned) != sorted(defaults):
         out.append(
@@ -459,6 +479,75 @@ def check_entry(name, entry, defaults):
             "which direction the failure goes. It has %d."
             % (name, kind, WHY_MIN_CHARS, len(str(why).strip()))
         )
+    return out
+
+
+def check_class(name, entry):
+    """The `class` field: which env-manifest shard the name renders into. Pure."""
+    cls = entry.get("class")
+    if cls in CLASSES:
+        return []
+    return [
+        "%s: class %r is not one of %s. The class decides which env-manifest shard the name "
+        "renders into; set it with `npm run env:register`." % (name, cls, ", ".join(CLASSES))
+    ]
+
+
+def check_foreign(root, foreign, registered, read_names, tracked):
+    """Findings for `foreign_reads`: WORKLIST_* names read only where this scan cannot look.
+
+    The scan reads Python and bash. A name a TypeScript gate reads would report as DEAD from `names`, so it is written down here instead, with a reason and a reader. This is an exclusion, so it gets the exclusion contract: the reason is required, and the reader must still name it, word-bounded, or the entry is dangling. A name the scan DOES find has no business here, and a name in both places has two homes.
+    """
+    findings = []
+    for name in sorted(foreign):
+        entry = foreign[name]
+        if not isinstance(entry, dict):
+            findings.append("FOREIGN %s: the entry is not an object" % name)
+            continue
+        if not NAME_RE.fullmatch(name):
+            findings.append("FOREIGN %s is not a WORKLIST_* name" % name)
+        findings.extend(check_class(name, entry))
+        why = entry.get("why", "")
+        if not isinstance(why, str) or len(why.strip()) < WHY_MIN_CHARS:
+            findings.append(
+                "FOREIGN %s needs a `why` of at least %d characters saying why this scan cannot "
+                "see the read. It has %d." % (name, WHY_MIN_CHARS, len(str(why).strip()))
+            )
+        if name in registered:
+            findings.append(
+                "FOREIGN %s is also under `names`. A name has one authored home; delete one." % name
+            )
+        if name in read_names:
+            findings.append(
+                "FOREIGN %s is read where this scan looks (Python or bash), so it belongs under "
+                "`names` with a kind and its pinned defaults. Move it there with "
+                "`npm run env:register`." % name
+            )
+        reader = entry.get("reader", "")
+        if not isinstance(reader, str) or reader not in tracked:
+            findings.append(
+                "FOREIGN %s cites reader %r, which is not a tracked file. An exclusion whose "
+                "reader moved or went away is dangling: repoint it or delete the entry."
+                % (name, reader)
+            )
+            continue
+        text = (pathlib.Path(root) / reader).read_text(encoding="utf-8", errors="replace")
+        if not re.search(r"\b%s\b" % re.escape(name), text):
+            findings.append(
+                "FOREIGN %s cites reader %s, which no longer names it. The read went away; "
+                "delete the entry rather than leave an exclusion that excludes nothing."
+                % (name, reader)
+            )
+    return findings
+
+
+def classes_of(registry):
+    """{NAME: class} over `names` and `foreign_reads`: what env_manifest renders from."""
+    out = {}
+    for section in ("names", "foreign_reads"):
+        for name, entry in (registry.get(section) or {}).items():
+            if isinstance(entry, dict):
+                out[name] = entry.get("class")
     return out
 
 
@@ -525,7 +614,8 @@ def run(root=None):
     )
     registry = load_registry(registry_path)
     exclusions = sorted(registry["exclusions"])
-    reads, scanned, excluded = scan_corpus(root, exclusions)
+    files = tracked_files(root)
+    reads, scanned, excluded = scan_corpus(root, exclusions, files)
     if not reads:
         raise RefusalError(
             "ZERO WORKLIST_* reads across %d scanned file(s). Either the scanner has "
@@ -535,6 +625,14 @@ def run(root=None):
     findings, stats = evaluate(registry, reads)
     sealed_findings, stats["sealed"] = check_sealed(root, registry["sealed_modules"])
     findings.extend(sealed_findings)
+    foreign = registry.get("foreign_reads", {})
+    findings.extend(
+        check_foreign(root, foreign, registry["names"], {r.name for r in reads}, set(files))
+    )
+    stats["foreign"] = sorted(foreign)
+    stats["classes"] = {}
+    for cls in classes_of(registry).values():
+        stats["classes"][cls] = stats["classes"].get(cls, 0) + 1
     # An exclusion that excludes nothing is a claim about the tree that has stopped being true, and it is the half of the exclusion contract that rots.
     if excluded == 0 and exclusions:
         findings.append(
@@ -567,10 +665,14 @@ def main(argv=None):
         return 1
     for prefix in stats["exclusions"]:
         log.info("  excluded by declaration: %s" % prefix)
+    # Printed on SUCCESS, like the exclusions: a name this scan cannot see is debt a reader should be able to count without breaking anything first.
+    for name in stats["foreign"]:
+        log.info("  read outside this scan, by declaration: %s" % name)
     log.success(
         "worklist env registry: %d name(s) across %d file(s) at %d read site(s), "
         "all registered and all read; %d tracked file(s) scanned, %d excluded by "
-        "declaration; %d sealed module(s) read no environment; kinds %s"
+        "declaration; %d sealed module(s) read no environment; kinds %s; classes %s; "
+        "%d foreign read(s)"
         % (
             stats["names"],
             stats["files"],
@@ -579,6 +681,8 @@ def main(argv=None):
             stats["excluded"],
             stats["sealed"],
             ", ".join("%s %d" % (k, stats["kinds"][k]) for k in sorted(stats["kinds"])),
+            ", ".join("%s %d" % (k, stats["classes"][k]) for k in sorted(stats["classes"])),
+            len(stats["foreign"]),
         )
     )
     return 0
@@ -598,6 +702,8 @@ _FIXTURE_SH = """#!/usr/bin/env bash
 export WORKLIST_LIMIT=3
 echo "${WORKLIST_TAIL:-4}"
 """
+
+_FIXTURE_TS = "const ledger = process.env.WORKLIST_TS_ONLY || 'x';\n"
 
 _FIXTURE_PROSE = "A plan naming WORKLIST_GHOST and WORKLIST_FOCUS in prose.\n"
 
@@ -627,18 +733,27 @@ def _registry_obj():
         "names": {
             "WORKLIST_FOCUS": {
                 "kind": "flag",
+                "class": "harness",
                 "defaults": ["'on'"],
                 "why": "a fixture flag whose default is on, so a typo leaves it on and "
                 "that is the fail-open direction this registry exists for",
             },
-            "WORKLIST_LIMIT": {"kind": "tuning", "defaults": ["'5'"]},
-            "WORKLIST_STORE_DIR": {"kind": "path", "defaults": ["REQUIRED"]},
-            "WORKLIST_TAIL": {"kind": "tuning", "defaults": ["'4'"]},
+            "WORKLIST_LIMIT": {"kind": "tuning", "class": "harness", "defaults": ["'5'"]},
+            "WORKLIST_STORE_DIR": {"kind": "path", "class": "gate-seam", "defaults": ["REQUIRED"]},
+            "WORKLIST_TAIL": {"kind": "tuning", "class": "harness", "defaults": ["'4'"]},
+        },
+        "foreign_reads": {
+            "WORKLIST_TS_ONLY": {
+                "class": "gate-seam",
+                "reader": "gate.ts",
+                "why": "a fixture name read only by a TypeScript gate, which this Python and bash "
+                "scan cannot see",
+            },
         },
     }
 
 
-def _fixture(tmp, py=_FIXTURE_PY, sh=_FIXTURE_SH, registry=None, sealed=_FIXTURE_SEALED):
+def _fixture(tmp, py=_FIXTURE_PY, sh=_FIXTURE_SH, registry=None, sealed=_FIXTURE_SEALED, ts=None):
     """A real git repository, because the scanner reads `git ls-files`."""
     root = pathlib.Path(tmp)
     (root / ".ci" / "policy").mkdir(parents=True, exist_ok=True)
@@ -647,6 +762,7 @@ def _fixture(tmp, py=_FIXTURE_PY, sh=_FIXTURE_SH, registry=None, sealed=_FIXTURE
     if sealed is not None:
         (root / "sealed.py").write_text(sealed, encoding="utf-8")
     (root / "run.sh").write_text(sh, encoding="utf-8")
+    (root / "gate.ts").write_text(_FIXTURE_TS if ts is None else ts, encoding="utf-8")
     (root / "agent" / "PLAN.md").write_text(_FIXTURE_PROSE, encoding="utf-8")
     (root / ".ci" / "policy" / REGISTRY_NAME).write_text(
         json.dumps(registry if registry is not None else _registry_obj(), indent=2),
@@ -784,6 +900,96 @@ def selftest():
             "PLANT: an exclusion that excludes NOTHING reds",
             any("matched ZERO tracked paths" in f for f in findings),
         )
+
+    # ---- class: the env-manifest shard each name renders into ----
+    with tempfile.TemporaryDirectory() as tmp:
+        reg = _registry_obj()
+        del reg["names"]["WORKLIST_LIMIT"]["class"]
+        root = _fixture(tmp, registry=reg)
+        findings, _ = run(root)
+        check(
+            "PLANT: a name with no class reds, and names the verb that sets it",
+            any("WORKLIST_LIMIT: class None" in f and "env:register" in f for f in findings),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        reg = _registry_obj()
+        reg["names"]["WORKLIST_LIMIT"]["class"] = "secret"
+        root = _fixture(tmp, registry=reg)
+        findings, _ = run(root)
+        check(
+            "PLANT: a class outside harness and gate-seam reds",
+            any("WORKLIST_LIMIT: class 'secret'" in f for f in findings),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = _fixture(tmp)
+        _, stats = run(root)
+        check(
+            "CONTROL: classes are counted over names AND foreign reads",
+            stats["classes"] == {"harness": 3, "gate-seam": 2}
+            and stats["foreign"] == ["WORKLIST_TS_ONLY"],
+        )
+
+    # ---- foreign_reads: the exclusion contract, on names this scan cannot see ----
+    with tempfile.TemporaryDirectory() as tmp:
+        root = _fixture(tmp, ts="const nothing = 1;\n")
+        findings, _ = run(root)
+        check(
+            "PLANT: a foreign read whose reader no longer names it is dangling",
+            any(
+                "FOREIGN WORKLIST_TS_ONLY cites reader gate.ts, which no longer" in f
+                for f in findings
+            ),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        reg = _registry_obj()
+        reg["foreign_reads"]["WORKLIST_TS_ONLY"]["reader"] = "moved.ts"
+        root = _fixture(tmp, registry=reg)
+        findings, _ = run(root)
+        check(
+            "PLANT: a foreign read citing an untracked reader reds",
+            any("not a tracked file" in f for f in findings),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        reg = _registry_obj()
+        reg["foreign_reads"]["WORKLIST_LIMIT"] = dict(reg["foreign_reads"]["WORKLIST_TS_ONLY"])
+        root = _fixture(tmp, registry=reg)
+        findings, _ = run(root)
+        check(
+            "PLANT: a name the scan DOES read cannot be parked as foreign",
+            any("FOREIGN WORKLIST_LIMIT is read where this scan looks" in f for f in findings),
+        )
+        check(
+            "PLANT: and a name with two homes says so",
+            any("FOREIGN WORKLIST_LIMIT is also under `names`" in f for f in findings),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        reg = _registry_obj()
+        reg["foreign_reads"]["WORKLIST_TS_ONLY"]["why"] = "ts"
+        root = _fixture(tmp, registry=reg)
+        findings, _ = run(root)
+        check(
+            "PLANT: a foreign read with no substantive why reds",
+            any("FOREIGN WORKLIST_TS_ONLY needs a `why`" in f for f in findings),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = _fixture(tmp)
+        findings, _ = run(root)
+        check(
+            "ANTI-SILENCER: a declared foreign read is not reported DEAD or UNREGISTERED",
+            not any("WORKLIST_TS_ONLY" in f for f in findings),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        reg = _registry_obj()
+        reg["foreign_reads"] = ["WORKLIST_TS_ONLY"]
+        root = _fixture(tmp, registry=reg)
+        check("VACUITY: a foreign_reads that is not an object is a REFUSAL", _refuses(root))
 
     with tempfile.TemporaryDirectory() as tmp:
         reg = _registry_obj()

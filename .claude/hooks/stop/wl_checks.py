@@ -2100,29 +2100,9 @@ PRREVIEW_BUDGET_S = 45
 
 def prreview_runner(root, budget_s=PRREVIEW_BUDGET_S, call_timeout_s=PRREVIEW_CALL_TIMEOUT_S):
     """A wl_prreview runner bounded per call and in total. A spent budget or a timeout returns rc 124, which check_state reports as unreadable (rc 2)."""
-    deadline = time.monotonic() + budget_s
+    import wl_gh  # noqa: PLC0415 -- the hook gh layer (agent/plans/PLAN-ci-consolidation.md T13)
 
-    def run(argv):
-        left = deadline - time.monotonic()
-        if left <= 1:
-            return 124, "", "the Stop hook's %ds gh budget for the review read is spent" % budget_s
-        try:
-            done = subprocess.run(
-                ["gh", *argv],
-                capture_output=True,
-                text=True,
-                timeout=min(call_timeout_s, left),
-                check=False,
-                stdin=subprocess.DEVNULL,
-                cwd=str(root),
-            )
-        except subprocess.TimeoutExpired:
-            return 124, "", "gh timed out after %ds" % int(min(call_timeout_s, left))
-        except (OSError, subprocess.SubprocessError) as exc:
-            return 127, "", str(exc)
-        return done.returncode, done.stdout, done.stderr
-
-    return run
+    return wl_gh.runner(root, timeout=call_timeout_s, budget_s=budget_s)
 
 
 def prreview_nudge(state_doc, info, check, runner=None, focus=False, now=None):

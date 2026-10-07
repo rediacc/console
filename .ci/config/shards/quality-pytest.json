@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-07T05:11:48.688Z",
+  "generatedAt": "2026-10-07T05:26:59.471Z",
   "legs": [
     {
       "index": 1,
@@ -137,6 +137,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_claude_attribution.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_command_tree.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_drill_verdicts.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_env_register.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_go_module_sync.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_mutate_check.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_no_app_admin_perm.py",
@@ -190,6 +191,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_ci_verdict_surface.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_core_blocking.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_first_touch.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_gh.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_guide_and_deferrals.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_lineage.py",

@@ -19,12 +19,13 @@ from rediacc_hooks.tests import wlfix
 from rediacc_hooks.wellknown import GH_REPO
 
 P = wlfix.import_wl("wl_prreview")
+GH = wlfix.import_wl("wl_gh")
 
 
 @pytest.fixture(autouse=True)
 def _no_retry_pause(monkeypatch):
     """FakeGh's failure text is `HTTP 502`, a transient fault, so every failing READ is retried once (PLAN-gh-retry G13); the pause is zeroed so the suite does not sleep 2 s per failing read."""
-    monkeypatch.setattr(P, "GH_READ_PAUSE_S", 0)
+    monkeypatch.setattr(GH, "GH_READ_PAUSE_S", 0)
 
 
 REPO = GH_REPO
@@ -346,13 +347,13 @@ def test_a_persistent_502_read_is_bounded_to_two_attempts():
     gh = FakeGh()
     gh.fail = ["repo view"]
     assert P.cmd_status(None, gh) == 2
-    assert sum(1 for c in gh.calls if c[:2] == ["repo", "view"]) == P.GH_READ_ATTEMPTS == 2
+    assert sum(1 for c in gh.calls if c[:2] == ["repo", "view"]) == GH.GH_READ_ATTEMPTS == 2
 
 
 def test_the_retry_pause_is_the_hook_bound_not_gh_retrys_default(monkeypatch):
     naps: list[float] = []
-    monkeypatch.setattr(P, "GH_READ_PAUSE_S", 2)
-    monkeypatch.setattr(P.time, "sleep", naps.append)
+    monkeypatch.setattr(GH, "GH_READ_PAUSE_S", 2)
+    monkeypatch.setattr(GH.time, "sleep", naps.append)
     gh = FlakyGh("repo view", "HTTP 503: Service Unavailable")
     assert P.cmd_status(None, gh) == 0
     assert naps == [2]

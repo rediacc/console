@@ -296,10 +296,10 @@ def _focus_cli(argv):
         )
     note = ""
     if pr is None:
-        import wl_ci  # noqa: PLC0415
+        import wl_gh  # noqa: PLC0415
 
-        data, err = wl_ci._gh_json(
-            root, ["pr", "list", "--head", branch, "--state", "open", "--json", "number"]
+        data, err = wl_gh.call(
+            ["pr", "list", "--head", branch, "--state", "open", "--json", "number"], cwd=root
         )
         if not err and isinstance(data, list) and data and isinstance(data[0], dict):
             pr = data[0].get("number")
@@ -826,7 +826,6 @@ def _plantick_cli(argv):
             "index": R.INDEX_REL,
             "investigation": "/".join(R.INVESTIGATION_REL),
             "note": note,
-            "me": me,
         }
     )
 

@@ -40,6 +40,23 @@ Clause 2 is the one that keeps the manifest honest in the OTHER direction, and i
 with clause 4 it says: every live-shard entry must still be a real read, so a
 variable that goes away RED-LIGHTS its stale manifest line instead of sitting there looking like coverage. "Tombstones enforced" then falls out of the same arithmetic as "zero unclassified" -- there is no second mechanism to keep in sync.
 
+TWO MORE INPUTS, AND WHAT EACH ONE ADDS (agent/plans/PLAN-ci-consolidation.md, Part A).
+
+  python-env   `.ci/config/python-env-registry.json`, the AST-measured
+               `module -> [NAME]` read set. It resolves a read through a
+               constant in ANOTHER module (`os.environ.get(harness.LEDGER_ENV)`),
+               which the os-environ reader above cannot. Its literal names join
+               `sources`, so the four clauses hold them too; a `*expr` entry is an
+               expression, not a name, and is not asked to be classified.
+  worklist     `.ci/policy/worklist-env-registry.json`. Every WORKLIST_* member of
+               a live shard is GENERATED from that registry's `class`
+               (`render_worklist`), and a member placed anywhere else is a finding
+               naming `npm run env:register`. The four clauses cannot see a hand
+               MOVE between shards: the name is still in exactly one shard and
+               still read. Only the registry knows where it belongs.
+
+HOW A NAME IS ADDED: `npm run env:register -- <module> <NAME> --class <shard>` (`env_register.py`). It writes the one authored home, re-renders the WORKLIST_* members, records a Python read with a typed `--allow-new`, regenerates the docs and runs this gate with its two siblings. An UNCLASSIFIED finding names it.
+
 ANTI-VACUITY, AND WHY IT IS NOT `n > 0`. A per-source count floor is the obvious guard against a reader that silently stops matching, and it is the wrong shape: a clause like `env_file_names > 0` becomes a false red the day the last `.env` example is deleted, which is a legitimate terminal state. Two clauses that are true in EVERY state replace it:
 
   * every reader is proven on its own FIXTURE, in both directions, in the
@@ -73,9 +90,14 @@ import tempfile
 
 from rediacc_ci import log, paths, runtmp
 from rediacc_ci.controls import Controls, controls_first
+from rediacc_ci.policy_paths import policy_path
+from rediacc_ci.quality import worklist_env_registry as wer
 
 MANIFEST_REL = ".ci/config/env-manifest.json"
 VAULT_REL = ".ci/config/bws-secret-map.json"
+PYTHON_ENV_REL = ".ci/config/python-env-registry.json"
+WORKLIST_PREFIX = "WORKLIST_"
+REGISTER_VERB = "npm run env:register -- <module> <NAME> --class <shard> [...]"
 
 #: Test-only. One file path that REPLACES `.ci/config/env-manifest.json` as the
 #: thing every clause is compared against. The corpus side is untouched -- the
@@ -93,6 +115,11 @@ VAULT_REL = ".ci/config/bws-secret-map.json"
 #: which is why `WORKLIST_REGISTRY_OVERRIDE_FILE` was added one file over. This
 #: is that seam, for this gate.
 MANIFEST_OVERRIDE = os.environ.get("ENV_MANIFEST_OVERRIDE_FILE", "")
+
+#: Test-only, the same seam for the OTHER input: a tmp copy that replaces
+#: `.ci/config/python-env-registry.json`, so a plant can add a name to the
+#: measured read set without writing the tracked baseline.
+PYTHON_ENV_OVERRIDE = os.environ.get("ENV_MANIFEST_PYTHON_ENV_OVERRIDE_FILE", "")
 
 LIVE_SHARDS = (
     "secret",
@@ -463,8 +490,14 @@ def clause_report(sources: set[str], lists: dict[str, list[str]]) -> list[str]:
     ]
 
 
-def clause_findings(sources: set[str], lists: dict[str, list[str]]) -> list[str]:
-    """The four clauses, each returning its own findings. Order is the box's."""
+def clause_findings(
+    sources: set[str], lists: dict[str, list[str]], origins: dict[str, str] | None = None
+) -> list[str]:
+    """The four clauses, each returning its own findings. Order is the box's.
+
+    `origins` names, for a name only python-env-registry.json supplies, the module that reads it, so an UNCLASSIFIED finding the five readers cannot reproduce still says where to look.
+    """
+    origins = origins or {}
     findings = []
     sets = {s: set(v) for s, v in lists.items()}
     shards = set()
@@ -484,8 +517,15 @@ def clause_findings(sources: set[str], lists: dict[str, list[str]]) -> list[str]
 
     # 1. sources \ shards == {}
     findings.extend(
-        "UNCLASSIFIED %s -- the tree reads it and %s does not place it. Add it "
-        "to exactly one of: %s" % (name, MANIFEST_REL, ", ".join(LIVE_SHARDS))
+        "UNCLASSIFIED %s -- the tree reads it%s and %s does not place it. Register it with "
+        "`%s`, using exactly one of: %s"
+        % (
+            name,
+            " (%s, per %s)" % (origins[name], PYTHON_ENV_REL) if name in origins else "",
+            MANIFEST_REL,
+            REGISTER_VERB,
+            ", ".join(LIVE_SHARDS),
+        )
         for name in sorted(sources - shards)
     )
 
@@ -587,12 +627,111 @@ def suppress_map(manifest: dict) -> dict[str, set[str]]:
     return {rel: set(names) for rel, names in raw.items()}
 
 
+def load_python_env(root: pathlib.Path, override: pathlib.Path | None = None) -> dict:
+    """`modules` of python-env-registry.json: the AST-measured `module -> [NAME]` read set."""
+    path = override or root / PYTHON_ENV_REL
+    shown = str(override) if override else PYTHON_ENV_REL
+    if not path.is_file():
+        raise RefusalError(
+            "%s is missing. It is the measured Python read set this gate holds the manifest "
+            "against; without it the cross-module reads the os-environ reader cannot resolve "
+            "go unchecked, and a green would claim them." % shown
+        )
+    try:
+        modules = json.loads(path.read_text(encoding="utf-8")).get("modules")
+    except json.JSONDecodeError as exc:
+        raise RefusalError("%s is not valid JSON: %s" % (shown, exc)) from exc
+    if not isinstance(modules, dict) or not modules:
+        raise RefusalError("%s records no modules, so the clause would check nothing" % shown)
+    return modules
+
+
+def python_env_names(modules: dict) -> dict[str, str]:
+    """{NAME: first module that reads it} over the LITERAL names. Pure.
+
+    A `*expr` entry is an expression the registry could not resolve to a name (`os.environ.get(key)` in a save/restore loop). It is not a variable, so it cannot be classified, and demanding it would make the clause unsatisfiable.
+    """
+    out: dict[str, str] = {}
+    for module in sorted(modules):
+        for name in modules[module]:
+            if isinstance(name, str) and not name.startswith("*") and NAME_RE.match(name):
+                out.setdefault(name, module)
+    return out
+
+
+def load_worklist_classes(root: pathlib.Path) -> dict[str, str]:
+    """{WORKLIST_NAME: class} from the authored home, `.ci/policy/worklist-env-registry.json`."""
+    try:
+        registry = wer.load_registry(policy_path(wer.REGISTRY_NAME, root))
+    except wer.RefusalError as exc:
+        raise RefusalError(
+            "the WORKLIST_* shard membership is rendered from the worklist env registry, "
+            "and it cannot be read: %s" % exc
+        ) from exc
+    return wer.classes_of(registry)
+
+
+def render_worklist(lists: dict[str, list[str]], classes: dict[str, str]) -> dict[str, list[str]]:
+    """The live shards with every WORKLIST_* member placed by its registry class. Pure.
+
+    This is the GENERATED half of the manifest. Every WORKLIST_* name is removed from every live shard and re-inserted, sorted, into the shard its `class` names; a name with an unusable class is left out, which `worklist_findings` reports. The tombstone shard is never rendered over: retiring a name is a decision, not an output.
+    """
+    out = {}
+    for shard, entries in lists.items():
+        if shard in LIVE_SHARDS:
+            out[shard] = [n for n in entries if not n.startswith(WORKLIST_PREFIX)]
+        else:
+            out[shard] = list(entries)
+    for name, cls in classes.items():
+        if cls in LIVE_SHARDS:
+            out[cls].append(name)
+    for shard in LIVE_SHARDS:
+        out[shard] = sorted(out[shard])
+    return out
+
+
+def worklist_findings(lists: dict[str, list[str]], classes: dict[str, str]) -> list[str]:
+    """Each WORKLIST_* live-shard member against the registry class it renders from. Pure.
+
+    The four clauses cannot see a hand MOVE: a name taken out of `harness` and put in `gate-seam` is still in exactly one shard and still read. Only the registry knows where it belongs.
+    """
+    placed: dict[str, list[str]] = {}
+    for shard in LIVE_SHARDS:
+        for name in lists[shard]:
+            if name.startswith(WORKLIST_PREFIX):
+                placed.setdefault(name, []).append(shard)
+    hint = (
+        "WORKLIST_* membership is generated from the `class` in .ci/policy/%s; do not "
+        "hand-place it. Set the class with `%s`, which re-renders this list."
+        % (wer.REGISTRY_NAME, REGISTER_VERB)
+    )
+    findings = []
+    for name in sorted(set(placed) | set(classes)):
+        cls = classes.get(name)
+        where = placed.get(name, [])
+        if name not in classes:
+            findings.append(
+                "%s is in shard `%s` and the worklist env registry does not know it. %s"
+                % (name, "`, `".join(where), hint)
+            )
+        elif cls not in LIVE_SHARDS:
+            findings.append(
+                "%s has registry class %r, which is no live shard. %s" % (name, cls, hint)
+            )
+        elif where != [cls]:
+            findings.append(
+                "%s is in shard `%s` and its registry class is `%s`. %s"
+                % (name, "`, `".join(where) or "(none)", cls, hint)
+            )
+    return findings
+
+
 # -------------------------------------------------------------------------- Controls --------------------------------------------------------------------------
 
 
 def selftest() -> bool:
     """Both directions on every reader, then both directions on the arithmetic."""
-    c = Controls("env manifest", 2 * len(SOURCES) + 15)
+    c = Controls("env manifest", 2 * len(SOURCES) + 24)
 
     for reader in SOURCES:
         c.truthy(
@@ -705,6 +844,53 @@ def selftest() -> bool:
         "a Python file that does not parse RAISES rather than reading as empty",
         _raises_syntax("def (:\n"),
     )
+
+    # The python-env clause: literal names are classified, `*expr` entries are not names.
+    py = python_env_names({"b.py": ["SEAM", "*key"], "a.py": ["SEAM"]})
+    c.check(
+        "python-env: a literal name is read, attributed to its first module", py, {"SEAM": "a.py"}
+    )
+    c.truthy("CONTROL: a `*expr` opaque entry is not a name", "*key" not in py and "key" not in py)
+    c.truthy(
+        "python-env: an UNCLASSIFIED name only the registry supplies cites its module",
+        any(
+            "UNCLASSIFIED SEAM -- the tree reads it (a.py, per" in f
+            for f in clause_findings({"ALIVE", "SEAM"}, lists, {"SEAM": "a.py"})
+        ),
+    )
+
+    # The WORKLIST render: membership is generated from the registry class.
+    wl: dict[str, list[str]] = {s: [] for s in ALL_SHARDS}
+    wl["harness"] = ["OTHER", "WORKLIST_A", "WORKLIST_B"]
+    wl[TOMBSTONE_SHARD] = ["WORKLIST_DEAD"]
+    classes = {"WORKLIST_A": "harness", "WORKLIST_B": "gate-seam"}
+    rendered = render_worklist(wl, classes)
+    c.check("render: a misplaced member moves to its class", rendered["gate-seam"], ["WORKLIST_B"])
+    c.check(
+        "CONTROL: render leaves a tombstone alone", rendered[TOMBSTONE_SHARD], ["WORKLIST_DEAD"]
+    )
+    c.check(
+        "CONTROL: a rendered manifest has no WORKLIST finding",
+        worklist_findings(rendered, classes),
+        [],
+    )
+    c.truthy(
+        "a hand-placed WORKLIST name reds, naming the verb",
+        any(
+            "WORKLIST_B is in shard `harness`" in f and "npm run env:register" in f
+            for f in worklist_findings(wl, classes)
+        ),
+    )
+    c.truthy(
+        "a WORKLIST name the registry does not know reds",
+        any(
+            "does not know it" in f for f in worklist_findings(rendered, {"WORKLIST_A": "harness"})
+        ),
+    )
+    c.truthy(
+        "VACUITY: a missing python-env registry is a REFUSAL",
+        _refuses(lambda: load_python_env(pathlib.Path("/nonexistent-env-manifest-root"))),
+    )
     return not c.report()
 
 
@@ -743,6 +929,14 @@ def run(root=None):
     sources, per_names, per_files, dynamic_js, seen, unreadable = derive_sources(
         base, files, suppress
     )
+    # The measured Python read set resolves reads through a constant in ANOTHER module (`os.environ.get(harness.LEDGER_ENV)`), which the os-environ reader above cannot. Its literal names join the sources, so they must be classified and so their manifest entries do not read as STALE.
+    py_env = python_env_names(
+        load_python_env(base, pathlib.Path(PYTHON_ENV_OVERRIDE) if use_override_py(root) else None)
+    )
+    origins = {n: m for n, m in py_env.items() if n not in sources}
+    sources = sources | set(py_env)
+    per_names["python-env"] = set(py_env)
+    classes = load_worklist_classes(base)
     blind = [r.id for r in SOURCES if per_files[r.id] == 0]
     if blind:
         raise RefusalError(
@@ -754,12 +948,19 @@ def run(root=None):
         raise RefusalError("the five readers found ZERO names across %d tracked files" % len(files))
     findings = (
         unreadable
-        + clause_findings(sources, lists)
+        + clause_findings(sources, lists, origins)
+        + worklist_findings(lists, classes)
         + proof_site_findings(suppress, seen, lists)
         + collision_findings(manifest, base, lists)
         + note_findings(manifest, lists)
     )
+    per_files["python-env"] = len(set(py_env.values()))
     return findings, sources, per_names, per_files, dynamic_js, lists, manifest, len(files)
+
+
+def use_override_py(root) -> bool:
+    """The python-env seam, under the same rule as the manifest seam: the real invocation only."""
+    return root is None and bool(PYTHON_ENV_OVERRIDE)
 
 
 def main(argv=None):
@@ -781,6 +982,10 @@ def main(argv=None):
             "  %-13s %5d name(s) from %5d file(s)"
             % (reader.id, len(per_names[reader.id]), per_files[reader.id])
         )
+    print(
+        "  %-13s %5d name(s) from %5d module(s), per %s"
+        % ("python-env", len(per_names["python-env"]), per_files["python-env"], PYTHON_ENV_REL)
+    )
     print("  %-13s %5d name(s) (the union)" % ("TOTAL", len(sources)))
 
     log.info("the four clauses, as arithmetic:")
@@ -822,10 +1027,20 @@ def main(argv=None):
             % (len(findings), MANIFEST_REL)
         )
         return 1
+    rendered = sum(1 for s in LIVE_SHARDS for n in lists[s] if n.startswith(WORKLIST_PREFIX))
     log.success(
-        "%d name(s) derived from %d tracked file(s) by %d readers; all classified "
-        "across %d live shard(s) plus %d tombstone(s); the four clauses hold"
-        % (len(sources), n_files, len(SOURCES), len(LIVE_SHARDS), len(lists[TOMBSTONE_SHARD]))
+        "%d name(s) derived from %d tracked file(s) by %d readers plus %s; all classified "
+        "across %d live shard(s) plus %d tombstone(s); the four clauses hold; %d WORKLIST_* "
+        "member(s) placed as the worklist env registry renders them"
+        % (
+            len(sources),
+            n_files,
+            len(SOURCES),
+            PYTHON_ENV_REL,
+            len(LIVE_SHARDS),
+            len(lists[TOMBSTONE_SHARD]),
+            rendered,
+        )
     )
     return 0
 

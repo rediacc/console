@@ -26,11 +26,11 @@ import json
 import os
 import pathlib
 import re
-import tempfile
 import time
 
 import wl_ci
 import wl_core as C
+import wl_gh
 
 # Fifteen minutes: a scheduled run lands at most a few times a day, and a red that is minutes old costs one stop of delay at worst.
 TTL_S = int(os.environ.get("WORKLIST_SCHED_RED_TTL_S", "900"))
@@ -131,30 +131,10 @@ def claim_path(worklist, stem):
     return pathlib.Path("%s.schedred-claim-%s" % (worklist, stem))
 
 
-def _write_json(path, doc):
-    path = pathlib.Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=path.name + ".")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            json.dump(doc, fh)
-        os.replace(tmp, path)
-    except OSError:
-        with contextlib.suppress(OSError):
-            os.unlink(tmp)
-
-
-def _read_json(path):
-    try:
-        return json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-
-
 def read_cache(worklist):
     """The shared cache document, or None when absent or corrupt. No network, by contract."""
-    doc = _read_json(cache_path(worklist))
-    if not isinstance(doc, dict) or not isinstance(doc.get("workflows"), list):
+    doc = wl_gh.cache_load(cache_path(worklist))
+    if doc is None or not isinstance(doc.get("workflows"), list):
         return None
     return doc
 
@@ -228,8 +208,9 @@ def _newest(runs):
 
 def _failed_jobs(root, owner, name, run_id):
     """([failed job name, ...], error). One call; a job is failed when it completed with anything but success, skipped or neutral."""
-    data, err = wl_ci._gh_json(
-        root, ["api", "repos/%s/%s/actions/runs/%s/jobs?per_page=%d" % (owner, name, run_id, PAGE)]
+    data, err = wl_gh.call(
+        ["api", "repos/%s/%s/actions/runs/%s/jobs?per_page=%d" % (owner, name, run_id, PAGE)],
+        cwd=root,
     )
     if err or not isinstance(data, dict):
         return [], err or "no jobs document"
@@ -243,12 +224,12 @@ def _failed_jobs(root, owner, name, run_id):
 
 def _fetch(root, owner, name, workflows, jobs_cache):
     """(rows, error, jobs_cache). An error string means the verdict could not be read at all."""
-    data, err = wl_ci._gh_json(
-        root,
+    data, err = wl_gh.call(
         [
             "api",
             "repos/%s/%s/actions/runs?event=schedule&branch=main&per_page=%d" % (owner, name, PAGE),
         ],
+        cwd=root,
     )
     if err or not isinstance(data, dict):
         return [], err or "no runs document", jobs_cache
@@ -264,13 +245,13 @@ def _fetch(root, owner, name, workflows, jobs_cache):
         done = [r for r in runs if r.get("status") == "completed"]
         if not done:
             # Missing from the page (a monthly workflow), or only in flight there: one narrow call for its newest completed scheduled run.
-            more, ferr = wl_ci._gh_json(
-                root,
+            more, ferr = wl_gh.call(
                 [
                     "api",
                     "repos/%s/%s/actions/workflows/%s/runs?event=schedule&status=completed&per_page=1"
                     % (owner, name, wf["file"]),
                 ],
+                cwd=root,
             )
             if ferr:
                 return [], ferr, jobs_cache
@@ -354,13 +335,13 @@ def _diagnosis(root, owner, name, run_id):
 
 def _fetch_push(root, owner, name, wf, diag_cache):
     """(row or None, error, diag_cache) for Console CI's newest COMPLETED push run on main. One runs call; a red row adds one jobs call and one diagnosis, both cached per (run, attempt)."""
-    data, err = wl_ci._gh_json(
-        root,
+    data, err = wl_gh.call(
         [
             "api",
             "repos/%s/%s/actions/workflows/%s/runs?event=push&branch=main&per_page=%d"
             % (owner, name, wf["file"], PUSH_PAGE),
         ],
+        cwd=root,
     )
     if err or not isinstance(data, dict):
         return None, err or "no runs document", diag_cache
@@ -439,10 +420,9 @@ def refresh(root, worklist, force=False, now=None):
         if not workflows and not pushwf:
             return {"state": "ok", "error": "", "at": now, "workflows": []}
         cached = read_cache(worklist)
-        if cached and not force:
-            ttl = ERROR_TTL_S if cached.get("state") == "unreadable" else TTL_S
-            if now - float(cached.get("at") or 0) <= ttl:
-                return cached
+        # An unreadable document carries its `error`, so it lives ERROR_TTL_S; an ok one carries "" and lives TTL_S.
+        if cached and not force and wl_gh.cache_fresh(cached, TTL_S, ERROR_TTL_S, now):
+            return cached
         jobs_cache = (cached or {}).get("jobs") or {}
         if not isinstance(jobs_cache, dict):
             jobs_cache = {}
@@ -472,7 +452,7 @@ def refresh(root, worklist, force=False, now=None):
                 doc["push_diag"] = (cached or {}).get("push_diag") or {}
             else:
                 doc["push"], doc["push_diag"] = prow, pdiag
-        _write_json(cache_path(worklist), doc)
+        wl_gh.cache_write(cache_path(worklist), doc)
         return doc
     except Exception as exc:  # noqa: BLE001 -- information and a bounded block, never a crash
         return {
@@ -496,13 +476,13 @@ def recent_runs(root, stem, limit=5):
         owner, name = wl_ci.repo_slug(root)
         if not owner:
             return [], "no origin remote"
-        data, err = wl_ci._gh_json(
-            root,
+        data, err = wl_gh.call(
             [
                 "api",
                 "repos/%s/%s/actions/workflows/%s/runs?event=schedule&per_page=%d"
                 % (owner, name, wf["file"], int(limit)),
             ],
+            cwd=root,
         )
         if err or not isinstance(data, dict):
             return [], err or "no runs document"
@@ -630,7 +610,7 @@ def claim(worklist, stem, run_id, me8, now=None):
         try:
             fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
         except FileExistsError:
-            doc = _read_json(path)
+            doc = wl_gh.load_json(path)
             if not _claim_stale(worklist, doc, run_id, now):
                 return str(doc.get("sid8"))
             with contextlib.suppress(OSError):
@@ -641,7 +621,7 @@ def claim(worklist, stem, run_id, me8, now=None):
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             json.dump({"run": run_id, "sid8": me8, "at": now}, fh)
         break
-    doc = _read_json(path)
+    doc = wl_gh.load_json(path)
     return str((doc or {}).get("sid8") or "")
 
 

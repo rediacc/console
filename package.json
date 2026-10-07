@@ -176,6 +176,7 @@
     "check:ci-pytest": ".ci/rediacc_ci/check_pytest.py",
     "gen:gates-lock": "tsx scripts/gen/gen-gates-lock.ts --write",
     "shard:place": "tsx scripts/ci-runner/shard-place.ts --write",
+    "env:register": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.env_register",
     "gen:docs": "tsx scripts/gen/gen-docs.ts",
     "check:ci-step-env-parity": "tsx scripts/gates/check-ci-step-env-parity.ts --selftest && tsx scripts/gates/check-ci-step-env-parity.ts",
     "check:ci-rdc-native": ".ci/scripts/quality/check_rdc_native.py",

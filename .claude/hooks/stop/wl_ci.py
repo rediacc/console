@@ -2,19 +2,18 @@
 
 import contextlib
 import datetime
-import functools
 import hashlib
 import importlib.util
-import json
 import os
 import pathlib
 import re
-import subprocess
 import sys
 import time
 import urllib.parse
+from typing import Any
 
 import wl_core as C
+import wl_gh
 import wl_store as S
 
 _git = C._git
@@ -74,12 +73,12 @@ def pr_body_freshness(root, ref=None):
         'headRefName:"%s",states:OPEN,first:1){nodes{number lastEditedAt updatedAt}}}}'
         % (m.group(1), m.group(2), target)
     )
-    raw, err = gh_read(root, ["api", "graphql", "-f", "query=" + query], timeout=25)
-    if raw is None:
+    data, err = wl_gh.call(["api", "graphql", "-f", "query=" + query], cwd=root, timeout=25)
+    if data is None:
         return "unreadable", err[-120:]
     try:
-        rows = json.loads(raw)["data"]["repository"]["pullRequests"]["nodes"]
-    except (ValueError, KeyError, TypeError):
+        rows = data["data"]["repository"]["pullRequests"]["nodes"]
+    except (KeyError, TypeError):
         return "unreadable", "graphql response had no pullRequests.nodes"
     if not rows:
         return "no-pr", target
@@ -171,78 +170,6 @@ def repo_slug(root):
     return (m.group(1), m.group(2)) if m else (None, None)
 
 
-# A HOOK'S RETRY IS BOUNDED TO ITS BUDGET (agent/plans/PLAN-gh-retry.md G13): two attempts and one 2 s pause, the policy ci_cancel_cause builds GhFetcher with, so a 5xx costs this Stop hook two seconds rather than gh_retry's default 5 s then 15 s. A 4xx, a timeout and any other failure still come back at once.
-GH_READ_ATTEMPTS = 2
-GH_READ_PAUSE_S = 2
-
-
-@functools.cache
-def gh_retry_module():
-    """`rediacc_ci.core.gh_retry`, the one transient-retry policy, imported on first use through the shared scoped loader `rediacc_hooks.syspath.import_from_ci` (`.ci` on sys.path only while importing).
-
-    ANCHORED ON THIS FILE, because the policy is a CODE dependency of the hook, like an import, not a property of whichever repository `root` names (test_wl_schedred drives it against a scratch repo). A copy of this module run outside the tree must therefore carry the tree's layout with it (test_gate_ci_trace_branch.copy_hooks). The hop file is loaded BY FILE because this module lives outside the `rediacc_hooks` package (the wl_prscope shape).
-    """
-    hop = pathlib.Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
-    spec = importlib.util.spec_from_file_location("_rediacc_syspath", hop)
-    if spec is None or spec.loader is None:
-        raise ImportError("cannot load %s" % hop)
-    syspath = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(syspath)
-    return syspath.import_from_ci("rediacc_ci.core.gh_retry")
-
-
-def _gh_once(root, args, timeout):
-    """(stdout, "") from one `gh <args>`, or (None, why not). Never raises."""
-    try:
-        out = subprocess.run(
-            ["gh", *args],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            cwd=str(root),
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        return None, str(exc)[:160]
-    if out.returncode != 0:
-        return None, (out.stderr or out.stdout or "gh exited %d" % out.returncode)[-160:]
-    return out.stdout, ""
-
-
-def gh_read(root, args, timeout=25, sleep=None):
-    """(stdout, "") from the READ `gh <args>`, or (None, why not), retrying a TRANSIENT failure within GH_READ_ATTEMPTS and GH_READ_PAUSE_S. Never raises: a gh_retry that cannot be imported is reported as blindness, never folded into a one-shot read."""
-    try:
-        retry = gh_retry_module()
-    except (ImportError, OSError) as exc:
-        return None, "rediacc_ci.core.gh_retry could not be imported: %s" % str(exc)[:120]
-    nap = sleep or time.sleep
-    return retry.retry_transient(
-        lambda: _gh_once(root, args, timeout),
-        lambda r: None if r[0] is not None else (r[1] or "failed"),
-        attempts=GH_READ_ATTEMPTS,
-        sleep=lambda _scheduled: nap(GH_READ_PAUSE_S),
-    )
-
-
-def _gh_json(root, args, timeout=25):
-    """(data, error) from the READ `gh <args>`, retried on a transient fault (`gh_read`). Never raises; an error is a STRING, so every caller can report blindness instead of guessing."""
-    raw, err = gh_read(root, args, timeout=timeout)
-    if raw is None:
-        return None, err
-    try:
-        data = json.loads(raw)
-    except ValueError:
-        return None, "non-JSON from `gh %s`: %r" % (" ".join(args[:2]), raw[:80])
-    # GraphQL reports field errors with exit 0 and an `errors` array.
-    if (
-        isinstance(data, dict)
-        and data.get("errors")
-        and not (data.get("data") or {}).get("repository")
-    ):
-        return None, json.dumps(data["errors"])[:160]
-    return data, ""
-
-
 def ci_query(owner, name, ref, cursor):
     """The ONE read. statusCheckRollup rather than checkSuites.checkRuns on purpose: the rollup exposes the LATEST check run per context, so a watchdog rerun replaces the failed attempt rather than appearing beside it. That is what makes a rerun-in-flight read as IN_PROGRESS here, and this check go quiet by itself while the watchdog works."""
     after = ',after:"%s"' % cursor if cursor else ""
@@ -320,9 +247,9 @@ def commit_ci_runs(root, owner, name, sha):
 
     Each run is (id, workflow name, event, status, attempt, created_at, conclusion). An empty list with no error is the [skip ci] / path-filtered answer: nothing is coming. The conclusion is "" while the run is in flight.
     """
-    data, err = _gh_json(
-        root,
+    data, err = wl_gh.call(
         ["api", "repos/%s/%s/actions/runs?head_sha=%s&per_page=100" % (owner, name, sha)],
+        cwd=root,
     )
     if data is None:
         return None, err
@@ -346,8 +273,7 @@ def commit_ci_runs(root, owner, name, sha):
 
 def nearest_checked_ancestor(root, owner, name, sha, depth=10):
     """(oid, error) -- the closest strict ancestor of `sha` whose rollup is non-null, within `depth` commits of first-parent history; (None, "") when none is."""
-    data, err = _gh_json(
-        root,
+    data, err = wl_gh.call(
         [
             "api",
             "graphql",
@@ -359,6 +285,7 @@ def nearest_checked_ancestor(root, owner, name, sha, depth=10):
             )
             % (owner, name, sha, depth + 1),
         ],
+        cwd=root,
     )
     if data is None:
         return None, err
@@ -433,7 +360,7 @@ def _rollup_pages(root, owner, name, ref, build_query, extract, source, keep=Non
     contexts, cursor, commit, pr, roll = [], None, None, None, None
     truncated = True
     for _ in range(CI_MAX_PAGES):
-        data, err = _gh_json(root, ["api", "graphql", "-f", "query=" + build_query(cursor)])
+        data, err = wl_gh.call(["api", "graphql", "-f", "query=" + build_query(cursor)], cwd=root)
         if data is None:
             return "unreadable", err
         terminal, commit, pr = extract(data)
@@ -874,9 +801,9 @@ def ci_steps(root, info, rows, cached):
         if key in cached:
             row["step"], row["attempt"] = cached[key]
             continue
-        data, _err = _gh_json(
-            root,
+        data, _err = wl_gh.call(
             ["api", "repos/%s/%s/actions/jobs/%s" % (info["owner"], info["name"], key)],
+            cwd=root,
             timeout=20,
         )
         if data is None:
@@ -931,23 +858,21 @@ def ci_queue_state(root, worklist, session_id):
     if not ref:
         return "unset", None
     cache_p = ciqueue_path(worklist, session_id)
-    try:
-        c = json.loads(cache_p.read_text(encoding="utf-8"))
-        if time.time() - (c.get("at") or 0) <= CI_QUEUE_CACHE_S:
-            return c.get("state") or "unknown", c.get("detail")
-    except (OSError, ValueError, TypeError):
-        pass
+    c = wl_gh.cache_read(cache_p, CI_QUEUE_CACHE_S, CI_QUEUE_CACHE_S)
+    if c is not None:
+        return c.get("state") or "unknown", c.get("detail")
     owner, name = repo_slug(root)
-    state, detail = "unknown", None
+    state: str = "unknown"
+    detail: dict[str, Any] | None = None
     if owner:
-        data, err = _gh_json(
-            root,
+        data, err = wl_gh.call(
             # The runs API matches only the BARE branch name, URL-encoded: `origin/x` or `refs/heads/x` matched no run at all, the same class ci-trace's --runs had.
             [
                 "api",
                 "repos/%s/%s/actions/runs?branch=%s&per_page=10"
                 % (owner, name, urllib.parse.quote(_bare_branch(ref), safe="/")),
             ],
+            cwd=root,
             timeout=20,
         )
         runs = (data or {}).get("workflow_runs") if isinstance(data, dict) else None
@@ -981,11 +906,7 @@ def ci_queue_state(root, worklist, session_id):
                 }
             else:
                 state = "clear"
-    with contextlib.suppress(OSError, TypeError):
-        cache_p.write_text(
-            json.dumps({"at": time.time(), "state": state, "detail": detail}),
-            encoding="utf-8",
-        )
+    wl_gh.cache_write(cache_p, {"at": time.time(), "state": state, "detail": detail})
     return state, detail
 
 
@@ -1026,14 +947,11 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
     if not tip:
         return "no-pr", "origin/%s" % ref
     cache_p, marker_p = cistate_path(worklist, session_id), cimark_path(worklist, session_id)
-    cache = None
-    try:
-        c = json.loads(cache_p.read_text(encoding="utf-8"))
+    cache: Any = None
+    c = wl_gh.cache_load(cache_p)
+    if c is not None and c.get("sha") == tip:
         ttl = CI_CACHE_FINAL_S if c.get("final") else CI_CACHE_LIVE_S
-        if c.get("sha") == tip and time.time() - (c.get("at") or 0) <= ttl:
-            cache = c
-    except (OSError, ValueError, TypeError):
-        cache = None
+        cache = c if wl_gh.cache_fresh(c, ttl, ttl) else None
     if cache is not None:
         state, info, steps = cache["state"], cache.get("info"), cache.get("steps") or {}
     else:
@@ -1079,16 +997,13 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
     sig = hashlib.sha1(
         ("%s|%s" % (tip, ",".join(sorted(r["name"] for r in hard)))).encode("utf-8", "replace")
     ).hexdigest()[:12]
-    try:
-        mark = json.loads(marker_p.read_text(encoding="utf-8"))
-    except (OSError, ValueError, TypeError):
-        mark = {}
+    mark = wl_gh.cache_load(marker_p) or {}
     blocks = int(mark.get("blocks") or 0) if mark.get("sig") == sig else 0
     detail = {"info": info, "hard": hard, "soft": soft, "live": live, "acked": acked, "n": blocks}
     if acked or blocks >= CI_MAX_BLOCKS:
         return "downgraded", detail
-    with contextlib.suppress(OSError):
-        marker_p.write_text(json.dumps({"sig": sig, "blocks": blocks + 1}), encoding="utf-8")
+    # Not a cache (no TTL), but written atomically like one: a half-written marker would reset the block budget.
+    wl_gh.cache_write(marker_p, {"sig": sig, "blocks": blocks + 1})
     detail["n"] = blocks + 1
     return "trouble", detail
 
@@ -1108,11 +1023,7 @@ def pr_link(root, worklist, session_id, branch):
     if not branch:
         return [], "no branch to read a PR for"
     cache_p = prlink_path(worklist, session_id)
-    cache = {}
-    with contextlib.suppress(OSError, ValueError, TypeError):
-        cache = json.loads(cache_p.read_text(encoding="utf-8"))
-    if not isinstance(cache, dict):
-        cache = {}
+    cache = wl_gh.cache_load(cache_p) or {}
     hit = cache.get(branch)
     if isinstance(hit, dict):
         with contextlib.suppress(TypeError, ValueError):
@@ -1126,7 +1037,7 @@ def pr_link(root, worklist, session_id, branch):
         "states:[OPEN,MERGED,CLOSED],first:5,orderBy:{field:UPDATED_AT,direction:DESC})"
         "{nodes{number state body mergedAt closedAt}}}}"
     ) % (owner, name, branch)
-    data, err = _gh_json(root, ["api", "graphql", "-f", "query=" + query])
+    data, err = wl_gh.call(["api", "graphql", "-f", "query=" + query], cwd=root)
     if err:
         return [], err
     try:
@@ -1144,8 +1055,7 @@ def pr_link(root, worklist, session_id, branch):
             if isinstance(v, dict) and now - float(v.get("t") or 0) <= wl_standdown.FOCUS_PR_TTL_S
         }
     fresh[branch] = {"t": now, "nodes": nodes}
-    with contextlib.suppress(OSError, TypeError):
-        cache_p.write_text(json.dumps(fresh), encoding="utf-8")
+    wl_gh.cache_write(cache_p, fresh)
     return nodes, ""
 
 
@@ -1182,20 +1092,17 @@ def focus_pr_end(root, worklist, session_id, focus):
 
 
 def _ci_cache_write(path, sha, state, info, steps, final):
-    with contextlib.suppress(OSError, TypeError):
-        path.write_text(
-            json.dumps(
-                {
-                    "sha": sha,
-                    "at": time.time(),
-                    "state": state,
-                    "info": info,
-                    "steps": steps,
-                    "final": bool(final),
-                }
-            ),
-            encoding="utf-8",
-        )
+    wl_gh.cache_write(
+        path,
+        {
+            "sha": sha,
+            "at": time.time(),
+            "state": state,
+            "info": info,
+            "steps": steps,
+            "final": bool(final),
+        },
+    )
 
 
 def ci_rows_text(rows, _info):

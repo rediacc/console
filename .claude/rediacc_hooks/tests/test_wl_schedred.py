@@ -18,7 +18,7 @@ from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 SR = wlfix.import_wl("wl_schedred")
-CI = wlfix.import_wl("wl_ci")
+GH = wlfix.import_wl("wl_gh")
 M = wlfix.import_wl("worklist_messages")
 S = wlfix.import_wl("wl_store")
 
@@ -56,8 +56,8 @@ jobs: {}
 
 @pytest.fixture(autouse=True)
 def _no_retry_pause(monkeypatch):
-    """wl_ci._gh_json retries a transient (5xx) read once (PLAN-gh-retry G13); the pause is zeroed so a planted 502 does not sleep 2 s."""
-    monkeypatch.setattr(CI, "GH_READ_PAUSE_S", 0)
+    """wl_gh.call retries a transient (5xx) read once (PLAN-gh-retry G13); the pause is zeroed so a planted 502 does not sleep 2 s."""
+    monkeypatch.setattr(GH, "GH_READ_PAUSE_S", 0)
 
 
 def run(rid, file="ci.yml", conclusion="failure", attempt=1, created="2026-10-03T06:02:45Z", **kw):
@@ -336,13 +336,13 @@ def test_an_unreadable_answer_is_cached_for_the_error_ttl(repo, tmp_path, gh):
     doc = SR.refresh(repo, wlp, now=now)
     assert doc["state"] == "unreadable"
     assert "502" in doc["error"]
-    # A persistent 502 costs one bounded retry (wl_ci.GH_READ_ATTEMPTS), then the unreadable answer is cached.
-    assert len(gh.calls("actions/runs")) == CI.GH_READ_ATTEMPTS == 2
+    # A persistent 502 costs one bounded retry (wl_gh.GH_READ_ATTEMPTS), then the unreadable answer is cached.
+    assert len(gh.calls("actions/runs")) == GH.GH_READ_ATTEMPTS == 2
     SR.refresh(repo, wlp, now=now + SR.ERROR_TTL_S - 5)
-    assert len(gh.calls("actions/runs")) == CI.GH_READ_ATTEMPTS
+    assert len(gh.calls("actions/runs")) == GH.GH_READ_ATTEMPTS
     # Control: past the error TTL (still well inside the ok TTL) it asks again.
     SR.refresh(repo, wlp, now=now + SR.ERROR_TTL_S + 5)
-    assert len(gh.calls("actions/runs")) == 2 * CI.GH_READ_ATTEMPTS
+    assert len(gh.calls("actions/runs")) == 2 * GH.GH_READ_ATTEMPTS
 
 
 def test_a_corrupt_cache_is_refetched(repo, tmp_path, gh):
@@ -602,7 +602,7 @@ def test_session_start_line_reads_the_cache_only(tmp_path, gh, monkeypatch):
     wlp = tmp_path / "wl.md"
     wlp.write_text("", encoding="utf-8")
     assert SR.session_start_line(wlp) == ""
-    SR._write_json(SR.cache_path(wlp), dict(red_doc(), jobs={}))
+    GH.cache_write(SR.cache_path(wlp), dict(red_doc(), jobs={}))
     line = SR.session_start_line(wlp)
     assert line.startswith("Scheduled red on main: Console CI run %d (failure," % RED_RUN), line
     assert "untracked" in line
@@ -613,10 +613,10 @@ def test_session_start_line_reads_the_cache_only(tmp_path, gh, monkeypatch):
     assert "tracked by #" in SR.session_start_line(wlp)
     assert gh.calls() == []
     # Control: a cache older than six hours is marked stale.
-    SR._write_json(SR.cache_path(wlp), dict(red_doc(), at=time.time() - 7 * 3600))
+    GH.cache_write(SR.cache_path(wlp), dict(red_doc(), at=time.time() - 7 * 3600))
     assert "stale" in SR.session_start_line(wlp)
     # Control: an all-green cache says nothing.
-    SR._write_json(SR.cache_path(wlp), red_doc(conclusion="success"))
+    GH.cache_write(SR.cache_path(wlp), red_doc(conclusion="success"))
     assert SR.session_start_line(wlp) == ""
 
 
@@ -679,7 +679,7 @@ def test_the_session_start_hook_prints_the_cached_red_with_no_call(wl):  # noqa:
     payload = json.dumps({"session_id": wl.sid, "cwd": str(wl.proj)})
     quiet = wl.cli("--session-start", stdin=payload, env=env)
     assert "Scheduled red on main" not in quiet.out
-    SR._write_json(SR.cache_path(wl.wl), dict(red_doc(), jobs={}))
+    GH.cache_write(SR.cache_path(wl.wl), dict(red_doc(), jobs={}))
     got = wl.cli("--session-start", stdin=payload, env=env)
     assert "Scheduled red on main: Console CI run %d" % RED_RUN in got.out, got.out[:1500]
     assert "a scheduled red on main" in got.out
@@ -923,14 +923,14 @@ def test_session_start_names_a_cached_main_red(tmp_path, gh, monkeypatch):
     monkeypatch.setenv("WORKLIST_STORE_DIR", str(tmp_path / "store"))
     wlp = tmp_path / "wl.md"
     wlp.write_text("", encoding="utf-8")
-    SR._write_json(SR.cache_path(wlp), push_doc())
+    GH.cache_write(SR.cache_path(wlp), push_doc())
     line = SR.session_start_line(wlp)
     assert line.startswith(
         "Main is red: Console CI push run %d @ e6fc817f (cancelled," % MAIN_RUN
     ), line
     assert "root cause Validate Promotion (cancelled, timeout-cancel)" in line
     assert gh.calls() == []
-    SR._write_json(SR.cache_path(wlp), push_doc(conclusion="success"))
+    GH.cache_write(SR.cache_path(wlp), push_doc(conclusion="success"))
     assert SR.session_start_line(wlp) == ""
 
 

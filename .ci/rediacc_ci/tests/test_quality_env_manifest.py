@@ -41,10 +41,14 @@ ENTRY = ".ci/scripts/quality/check_env_manifest.py"
 pytestmark = pytest.mark.xdist_group("env-manifest")
 
 
-def _run(root, override=None):
+def _run(root, override=None, python_env=None):
     env = None
-    if override is not None:
-        env = dict(os.environ, ENV_MANIFEST_OVERRIDE_FILE=str(override))
+    if override is not None or python_env is not None:
+        env = dict(os.environ)
+        if override is not None:
+            env["ENV_MANIFEST_OVERRIDE_FILE"] = str(override)
+        if python_env is not None:
+            env["ENV_MANIFEST_PYTHON_ENV_OVERRIDE_FILE"] = str(python_env)
     return subprocess.run(
         [sys.executable, str(root / ENTRY)],
         cwd=root,
@@ -236,3 +240,117 @@ def test_the_python_reader_ignores_a_literal_inside_another_gates_fixture():
     """Why the regex pass was dropped: it read other gates' fixture strings as reads."""
     fixture = 'FIX = """\\nos.environ["NOT_A_READ"] = "x"\\n"""\n'
     assert "NOT_A_READ" not in em.names_from_py(fixture)
+
+
+# ---- T2: WORKLIST_* shard membership is RENDERED from the registry's `class` ----
+
+
+def _registry_classes():
+    root = paths.repo_root()
+    reg = json.loads((root / ".ci/policy/worklist-env-registry.json").read_text(encoding="utf-8"))
+    out = {name: entry.get("class") for name, entry in reg["names"].items()}
+    out.update({name: entry.get("class") for name, entry in reg.get("foreign_reads", {}).items()})
+    return out
+
+
+def test_every_worklist_shard_member_is_where_the_registry_class_puts_it():
+    """The membership is generated output: the real manifest must equal its own re-render."""
+    root = paths.repo_root()
+    manifest = json.loads((root / em.MANIFEST_REL).read_text(encoding="utf-8"))
+    classes = _registry_classes()
+    assert classes, "the registry yielded no classes; this case would be vacuous"
+    assert all(classes.values()), "a registry entry carries no class"
+    lists = em.shard_lists(manifest)
+    in_manifest = {n for s in em.LIVE_SHARDS for n in lists[s] if n.startswith("WORKLIST_")}
+    assert in_manifest == set(classes), sorted(in_manifest ^ set(classes))
+    assert em.render_worklist(lists, classes) == lists
+
+
+def test_a_worklist_name_hand_placed_in_the_wrong_shard_reds():
+    """CONTROL for T2: no other clause sees a move, because the name is still in exactly one shard."""
+    name = min(n for n, c in _registry_classes().items() if c == "harness")
+
+    def mutate(data):
+        data["shards"]["harness"].remove(name)
+        data["shards"]["gate-seam"].append(name)
+        data["shards"]["gate-seam"].sort()
+
+    with planted(mutate) as proc:
+        assert proc.returncode == 1, proc.stdout + proc.stderr
+        assert "%s is in shard `gate-seam`" % name in proc.stderr, proc.stderr
+        assert "npm run env:register" in proc.stderr, proc.stderr
+
+
+def test_a_worklist_name_the_registry_does_not_know_reds():
+    def mutate(data):
+        data["shards"]["harness"].append("WORKLIST_ZZ_NOT_REGISTERED")
+        data["shards"]["harness"].sort()
+
+    with planted(mutate) as proc:
+        assert proc.returncode == 1, proc.stdout + proc.stderr
+        assert "WORKLIST_ZZ_NOT_REGISTERED" in proc.stderr, proc.stderr
+        assert "npm run env:register" in proc.stderr, proc.stderr
+
+
+def test_render_moves_misplaced_members_and_leaves_the_rest_alone():
+    lists: dict[str, list[str]] = {s: [] for s in em.ALL_SHARDS}
+    lists["harness"] = ["OTHER", "WORKLIST_A", "WORKLIST_B"]
+    lists["gate-seam"] = ["SEAM"]
+    lists["tombstone"] = ["WORKLIST_DEAD"]
+    got = em.render_worklist(lists, {"WORKLIST_A": "harness", "WORKLIST_B": "gate-seam"})
+    assert got["harness"] == ["OTHER", "WORKLIST_A"]
+    assert got["gate-seam"] == ["SEAM", "WORKLIST_B"]
+    assert got["tombstone"] == ["WORKLIST_DEAD"], "a tombstone is never rendered over"
+    assert lists["harness"] == ["OTHER", "WORKLIST_A", "WORKLIST_B"], "the input is not mutated"
+
+
+# ---- T3: every literal name python-env-registry.json records is classified ----
+
+
+@contextlib.contextmanager
+def planted_python_env(mutate):
+    """Mutate a TMP COPY of python-env-registry.json and run the real gate against it."""
+    root = paths.repo_root()
+    live = root / em.PYTHON_ENV_REL
+    before = live.read_bytes()
+    with tempfile.TemporaryDirectory() as td:
+        mutated = pathlib.Path(td) / "python-env-registry-mutated.json"
+        data = json.loads(before.decode("utf-8"))
+        mutate(data)
+        mutated.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        yield _run(root, python_env=mutated)
+    assert live.read_bytes() == before, "the real registry must never be written at all"
+
+
+def test_gate_harness_ledger_is_classified_as_a_gate_seam():
+    """The one name the plan measured as failing the clause, read through `harness.LEDGER_ENV`."""
+    manifest = json.loads((paths.repo_root() / em.MANIFEST_REL).read_text(encoding="utf-8"))
+    assert "GATE_HARNESS_LEDGER" in manifest["shards"]["gate-seam"]
+
+
+def test_a_literal_name_in_the_python_env_registry_must_be_classified():
+    def mutate(data):
+        data["modules"][".ci/rediacc_ci/quality/env_manifest.py"].append("ZZ_PLANTED_PY_ENV")
+
+    with planted_python_env(mutate) as proc:
+        assert proc.returncode == 1, proc.stdout + proc.stderr
+        assert "UNCLASSIFIED ZZ_PLANTED_PY_ENV" in proc.stderr, proc.stderr
+        assert "python-env-registry.json" in proc.stderr, proc.stderr
+
+
+def test_an_opaque_star_name_in_the_python_env_registry_is_not_a_finding():
+    """CONTROL: `*expr` is an expression, not a name; the clause must not demand it be classified."""
+
+    def mutate(data):
+        data["modules"][".ci/rediacc_ci/quality/env_manifest.py"].append("*zz_planted_key")
+
+    with planted_python_env(mutate) as proc:
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+        assert "zz_planted_key" not in proc.stdout + proc.stderr
+
+
+def test_a_missing_python_env_registry_is_a_refusal():
+    with tempfile.TemporaryDirectory() as td:
+        proc = _run(paths.repo_root(), python_env=pathlib.Path(td) / "absent.json")
+    assert proc.returncode == 2, proc.stdout + proc.stderr
+    assert "is missing" in proc.stderr, proc.stderr
