@@ -2567,7 +2567,11 @@ def pr_scope_line(state, root, me8, queued_n, stood):
     if not state.turbo:
         return M.N_PR_SCOPE % fields
     # UNDER TURBO the line says what turbo does with the queue, never "One plan per PR": a solo plan in the set keeps the PR to itself, else the picks the free writer slots take (`state.turbo_picks`, filled by wl_prscope.with_turbo), else that none is eligible.
-    solo = sorted(p for p in (state.plans or ()) if p in _solo_plans(root))
+    # On a branch with no PR yet the plan set is empty: the plan the first push binds is `next_plan`, and it can also arrive as a turbo pick. Both count, so a solo head never reads as a plan that joins (live defect, 2026-10-07).
+    bound = (state.next_plan,) if state.kind == wl_prscope.NO_PR and state.next_plan else ()
+    solo = sorted(
+        {p for p in (*(state.plans or ()), *bound, *state.turbo_picks) if p in _solo_plans(root)}
+    )
     if solo:
         turbo = M.PR_SCOPE_TURBO_SOLO % _base(solo[0])
     elif state.turbo_picks:
