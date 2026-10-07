@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-07T07:45:26.728Z",
+  "generatedAt": "2026-10-07T09:04:11.778Z",
   "legs": [
     {
       "index": 1,
@@ -179,6 +179,7 @@
         "pytest:.ci/rediacc_ci/tests/test_testrun_seed_smoke.py",
         "pytest:.ci/rediacc_ci/tests/test_version_bump.py",
         "pytest:.ci/rediacc_ci/tests/test_version_inject_env.py",
+        "pytest:.claude/rediacc_hooks/tests/test_gh_flag_spellings.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_delegates.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_fixtures.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_wiring.py",

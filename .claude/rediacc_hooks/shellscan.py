@@ -399,6 +399,7 @@ def gh_pr_segment(scan, verb):
     return segs if segs != "" else scan
 
 
+# A guard that has the walked call asks `gh_run_repo` (below) instead: this reads `--repo`/`-R` from quote-stripped TEXT, so `-R=x`, `-Rx` and `--repo 'x'` are invisible to it. It stays as the fallback for a command whose walk finds no `gh pr <verb>` call.
 # target_repo <segment> <whole-scan> <cwd> Resolve the rediacc repo a `gh pr` invocation targets, in order: 1. --repo/-R in the SAME segment as the verb 2. a `cd`/`git -C` into private/<submodule> anywhere on the line (a cd applies to every later segment, so this one is deliberately line-wide) 3. the session cwd's origin remote 4. rediacc/console
 #
 # RULE T (A0 L12): "ANYWHERE ON THE LINE" WAS WRONG IN BOTH DIRECTIONS. A `cd` persists only in the shell that ran it: one inside `( ... )`, inside a pipeline stage, inside a `$(...)` or in a background job is gone by the next command, and a `git -C` names the directory of that ONE git command and no other. The line-wide grep read `git -C private/renet fetch; gh pr merge 3` as a renet merge and `gh pr merge 3 && cd private/renet` likewise. Step 2 now asks `_analyse` which directory THIS gh invocation actually runs in; only a line with no gh invocation the walk can find keeps the line-wide grep, since there is then no invocation to scope to.
@@ -423,17 +424,7 @@ def target_repo(seg, scan, cwd):
             # `str.removeprefix` is exactly `${sm#private/}`: shortest prefix,
             # once, and a no-op when it is absent.
             repo = "rediacc/" + sm.removeprefix("private/")
-    if repo == "" and cwd != "":
-        # The pipeline's exit status is sed's, never git's, so a failed git here is indistinguishable from a repo with no origin: both leave `repo` empty and fall through to the default below.
-        url = _git_stdout(["-C", cwd, "remote", "get-url", "origin"])
-        records, terminated = _records(url)
-        out = []
-        for record in records:
-            line = re.sub(r"\.git$", "", record)
-            line = re.sub(r".*[:/]([^/]+/[^/]+)$", r"\1", line)
-            out.append(line)
-        repo = _command_substitution(_sed_out(out, terminated))
-    return repo if repo != "" else GH_REPO
+    return repo if repo != "" else _origin_repo(cwd)
 
 
 # pr_selector <segment> <verb> The PR selector (number/url/branch) belongs to the same invocation as the verb -- read it from the segment, never from the line.
@@ -1789,3 +1780,369 @@ def writes_file(cmd, *names):
     """
     wanted = {n for n in names if n}
     return any(target in wanted for target in _WRITE_TARGET.findall(cmd or ""))
+
+
+# --------------------------------------------------------------------------- gh's flags, read the way gh reads them (#8ed364fe) ---------------------------------------------------------------------------
+#
+# A GUARD THAT READS A FLAG BY REGEX SEES ONLY THE SPELLINGS ITS REGEX NAMES, and gh (pflag under cobra) accepts many more for each one: `--repo x`, `--repo=x`, `-R x`, `-Rx`, `-R=x`, and a bundle of boolean shorthands ending in it (`-dR x`); a value-taking flag swallows the next word whatever it looks like (`--title --draft` titles a PR "--draft"); `--draft=false` is not a
+# draft; and a `pr`-level flag may sit BEFORE the verb (`gh pr -R x create`). Measured 2026-10-07 through the real dispatcher: `gh pr create -R=rediacc/renet -t x` was refused as a console create while `--repo=rediacc/renet` passed, `-dH <name>` cut a remote branch past block_second_branch, `gh api ... -XPATCH -Fbody=@f` walked past the PATCH arm the long spelling is refused by,
+# and `git commit -qF <file>` was never read. 28801da09 fixed the body flags of one guard with a parser over the walked argv; this is that parser, shared, for every gh flag a guard asks about.
+#
+# `gh_args` parses ONE walked argv (`run.argv`, the words after `gh`). It never reads command text, so a quoted value is the value (`--repo 'rediacc/renet'`), and prose naming a flag is never a flag.
+
+# Every flag of the gh commands a guard judges, `gh <cmd> --help` on gh 2.98.0: long name -> (shorthand or "", takes a value). `help` is inherited by all of them and `repo` by every `pr` command.
+_GH_INHERITED = {"help": ("h", False)}
+_GH_PR_INHERITED = {"repo": ("R", True)}
+GH_FLAGS = {
+    ("pr", "create"): {
+        "assignee": ("a", True),
+        "base": ("B", True),
+        "body": ("b", True),
+        "body-file": ("F", True),
+        "draft": ("d", False),
+        "dry-run": ("", False),
+        "editor": ("e", False),
+        "fill": ("f", False),
+        "fill-first": ("", False),
+        "fill-verbose": ("", False),
+        "head": ("H", True),
+        "label": ("l", True),
+        "milestone": ("m", True),
+        "no-maintainer-edit": ("", False),
+        "project": ("p", True),
+        "recover": ("", True),
+        "reviewer": ("r", True),
+        "template": ("T", True),
+        "title": ("t", True),
+        "web": ("w", False),
+    },
+    ("pr", "edit"): {
+        "add-assignee": ("", True),
+        "add-label": ("", True),
+        "add-project": ("", True),
+        "add-reviewer": ("", True),
+        "base": ("B", True),
+        "body": ("b", True),
+        "body-file": ("F", True),
+        "milestone": ("m", True),
+        "remove-assignee": ("", True),
+        "remove-label": ("", True),
+        "remove-milestone": ("", False),
+        "remove-project": ("", True),
+        "remove-reviewer": ("", True),
+        "title": ("t", True),
+    },
+    ("pr", "merge"): {
+        "admin": ("", False),
+        "author-email": ("A", True),
+        "auto": ("", False),
+        "body": ("b", True),
+        "body-file": ("F", True),
+        "delete-branch": ("d", False),
+        "disable-auto": ("", False),
+        "match-head-commit": ("", True),
+        "merge": ("m", False),
+        "rebase": ("r", False),
+        "squash": ("s", False),
+        "subject": ("t", True),
+    },
+    ("pr", "ready"): {"undo": ("", False)},
+    ("pr", "view"): {
+        "comments": ("c", False),
+        "jq": ("q", True),
+        "json": ("", True),
+        "template": ("t", True),
+        "web": ("w", False),
+    },
+    ("pr", "list"): {
+        "app": ("", True),
+        "assignee": ("a", True),
+        "author": ("A", True),
+        "base": ("B", True),
+        "draft": ("d", False),
+        "head": ("H", True),
+        "jq": ("q", True),
+        "json": ("", True),
+        "label": ("l", True),
+        "limit": ("L", True),
+        "search": ("S", True),
+        "state": ("s", True),
+        "template": ("t", True),
+        "web": ("w", False),
+    },
+    ("pr", "comment"): {
+        "body": ("b", True),
+        "body-file": ("F", True),
+        "create-if-none": ("", False),
+        "delete-last": ("", False),
+        "edit-last": ("", False),
+        "editor": ("e", False),
+        "web": ("w", False),
+        "yes": ("", False),
+    },
+    ("pr", "close"): {"comment": ("c", True), "delete-branch": ("d", False)},
+    ("api",): {
+        "allow-escape-sequences": ("", False),
+        "cache": ("", True),
+        "field": ("F", True),
+        "header": ("H", True),
+        "hostname": ("", True),
+        "include": ("i", False),
+        "input": ("", True),
+        "jq": ("q", True),
+        "method": ("X", True),
+        "paginate": ("", False),
+        "preview": ("p", True),
+        "raw-field": ("f", True),
+        "silent": ("", False),
+        "slurp": ("", False),
+        "template": ("t", True),
+        "verbose": ("", False),
+    },
+}
+
+# strconv.ParseBool's false spellings, which pflag applies to `--draft=<v>` and `-d=<v>`.
+_GH_FALSE = frozenset(("0", "f", "F", "false", "FALSE", "False"))
+
+
+class ParsedArgs:
+    """One gh (or git subcommand) invocation, parsed: `command` (`("pr", "create")`, `("api",)`, ...), `flags` as `(long name, value)` in order (a boolean's value is "true" unless spelled `=<v>`), and `operands`, the positional words.
+
+    `known` is False for a command the tables do not describe; its flags are then read with the inherited table only, and an unknown flag ends the parse, as it ends gh's.
+    """
+
+    __slots__ = ("command", "flags", "known", "operands")
+
+    def __init__(self, command, flags, operands, known):
+        self.command = command
+        self.flags = flags
+        self.operands = operands
+        self.known = known
+
+    def values(self, name):
+        """Every value `name` was given, in order."""
+        return [v for n, v in self.flags if n == name]
+
+    def last(self, name):
+        """The value gh uses for a single-valued flag (the last one wins), None when it is absent."""
+        found = self.values(name)
+        return found[-1] if found else None
+
+    def on(self, name):
+        """Is the boolean flag `name` set? `--draft=false` is not."""
+        value = self.last(name)
+        return value is not None and value not in _GH_FALSE
+
+
+def _lookup(name, table, git):
+    """`(long name, spec)` for a `--name` spelling, or None. git also takes a unique prefix (`--fil` is `--file`) and a `--no-` negation, which sets nothing a guard reads and so comes back with spec None."""
+    if name in table:
+        return name, table[name]
+    if not git:
+        return None
+    if name.startswith("no-") and name[3:] in table:
+        return name[3:], None
+    hits = [k for k in table if k.startswith(name)] + [
+        "no-" + k for k in table if ("no-" + k).startswith(name) and name.startswith("no")
+    ]
+    if len(hits) != 1:
+        return None
+    return (hits[0][3:], None) if hits[0].startswith("no-") else (hits[0], table[hits[0]])
+
+
+def _gh_parse(words, table, stop_at_operand, git=False):
+    """pflag (or, with `git`, git's parse-options) over `words` with `table`. Returns `(flags, operands, rest)`: `rest` is what follows the first operand when `stop_at_operand`, else [].
+
+    A spec's second field is True for a flag that takes a value, False for a boolean, and "opt" for git's optional value (`-n5`, `--column=x`), which is never taken from the next word. The two dialects differ in two more places: git's `-F=x` names the file `=x` where pflag's names `x`, and git accepts the abbreviations `_lookup` describes.
+    """
+    shorts = {spec[0]: name for name, spec in table.items() if spec[0]}
+    flags = []
+    operands = []
+    i = 0
+    while i < len(words):
+        arg = words[i]
+        i += 1
+        if arg == "--":
+            operands.extend(words[i:])
+            break
+        if arg.startswith("--"):
+            name, eq, value = arg[2:].partition("=")
+            found = _lookup(name, table, git)
+            if found is None:
+                # gh and git refuse an unknown flag and run nothing; reading on would only guess.
+                break
+            name, spec = found
+            if spec is None:
+                continue
+            if spec[1] == "opt":
+                value = value if eq else ""
+            elif spec[1] and not eq:
+                if i >= len(words):
+                    break
+                value = words[i]
+                i += 1
+            elif not spec[1] and not eq:
+                value = "true"
+            flags.append((name, value))
+            continue
+        if not arg.startswith("-") or arg == "-":
+            if stop_at_operand:
+                return flags, [arg], words[i:]
+            operands.append(arg)
+            continue
+        letters = arg[1:]
+        for pos, letter in enumerate(letters):
+            name = shorts.get(letter)
+            if name is None:
+                return flags, operands, []
+            rest = letters[pos + 1 :]
+            if table[name][1] == "opt":
+                flags.append((name, rest))
+                break
+            if not table[name][1]:
+                if rest.startswith("=") and not git:
+                    flags.append((name, rest[1:]))
+                    break
+                flags.append((name, "true"))
+                continue
+            if rest.startswith("=") and not git:
+                value = rest[1:]
+            elif rest:
+                value = rest
+            elif i < len(words):
+                value = words[i]
+                i += 1
+            else:
+                return flags, operands, []
+            flags.append((name, value))
+            break
+    return flags, operands, []
+
+
+def gh_args(argv):
+    """`ParsedArgs` for one walked `gh` invocation; `argv` is the words AFTER `gh` (`run.argv`).
+
+    A `pr`-level flag before the verb is read too, as gh reads it: `gh pr -R x create -t y` is a create on `x`.
+    """
+    if not argv:
+        return ParsedArgs((), [], [], False)
+    if argv[0] == "api":
+        table = dict(_GH_INHERITED, **GH_FLAGS[("api",)])
+        flags, operands, _ = _gh_parse(argv[1:], table, False)
+        return ParsedArgs(("api",), flags, operands, True)
+    if argv[0] != "pr":
+        return ParsedArgs((argv[0],), [], list(argv[1:]), False)
+    pr_table = dict(_GH_INHERITED, **_GH_PR_INHERITED)
+    leading, verb, rest = _gh_parse(argv[1:], pr_table, True)
+    if not verb:
+        return ParsedArgs(("pr",), leading, [], False)
+    command: tuple[str, ...] = ("pr", verb[0])
+    known = command in GH_FLAGS
+    table = dict(pr_table, **GH_FLAGS.get(command, {}))
+    flags, operands, _ = _gh_parse(rest, table, False)
+    return ParsedArgs(command, leading + flags, operands, known)
+
+
+# `git tag -h` on git 2.53.0, complete, because a git abbreviation is unique only against the whole set.
+GIT_TAG_FLAGS = {
+    "list": ("l", False),
+    "delete": ("d", False),
+    "verify": ("v", False),
+    "annotate": ("a", False),
+    "message": ("m", True),
+    "file": ("F", True),
+    "trailer": ("", True),
+    "edit": ("e", False),
+    "sign": ("s", False),
+    "cleanup": ("", True),
+    "local-user": ("u", True),
+    "force": ("f", False),
+    "create-reflog": ("", False),
+    "column": ("", "opt"),
+    "contains": ("", True),
+    "no-contains": ("", True),
+    "merged": ("", True),
+    "no-merged": ("", True),
+    "omit-empty": ("", False),
+    "sort": ("", True),
+    "points-at": ("", True),
+    "format": ("", True),
+    "color": ("", "opt"),
+    "ignore-case": ("i", False),
+    "n": ("n", "opt"),
+}
+
+
+def git_tag_args(args):
+    """`ParsedArgs` for the words after `git tag` (`commit_policy.git_split(run.argv)[2]`), git's parse-options rules: `-F f`, `-Ff`, `-aF f`, `--file=f`, `--fil f`."""
+    flags, operands, _ = _gh_parse(list(args), GIT_TAG_FLAGS, False, git=True)
+    return ParsedArgs(("tag",), flags, operands, True)
+
+
+def gh_repo_name(value):
+    """Lowercase `OWNER/REPO` for any `--repo` spelling gh accepts: `OWNER/REPO`, `HOST/OWNER/REPO`, or a URL (`https://github.com/o/r.git`, `git@github.com:o/r`). GitHub matches both names case-insensitively, so `Rediacc/Console` is the console. Anything else comes back as given."""
+    text = (value or "").strip()
+    text = re.sub(r"^[a-z][a-z0-9+.-]*://", "", text)
+    text = re.sub(r"^[^@/]+@([^:/]+):", r"\1/", text)
+    text = re.sub(r"\.git$", "", text.rstrip("/"))
+    parts = [p for p in text.split("/") if p]
+    return "/".join(parts[-2:]).lower() if len(parts) >= 2 else (value or "")
+
+
+def gh_runs(cmd, command):
+    """Every walked `gh` call in `cmd` whose `gh_args(...).command` is `command` (`("pr", "create")`, `("api",)`), in execution order, a `sh -c` payload and an `eval` included."""
+    return [
+        r
+        for r in _analyse(cmd).runs
+        if _base(r.name) == "gh" and gh_args(r.argv).command == tuple(command)
+    ]
+
+
+def gh_pr_runs(cmd, verb):
+    """Every walked `gh pr <verb>` in `cmd`, whatever `pr`-level flags precede the verb."""
+    return gh_runs(cmd, ("pr", verb))
+
+
+def _origin_repo(cwd):
+    """`OWNER/REPO` of the origin remote of `cwd`, else rediacc/console: `target_repo`'s last two steps."""
+    repo = ""
+    if cwd != "":
+        # The pipeline's exit status is sed's, never git's, so a failed git here is indistinguishable from a repo with no origin: both leave `repo` empty and fall through to the default below.
+        url = _git_stdout(["-C", cwd, "remote", "get-url", "origin"])
+        records, terminated = _records(url)
+        out = []
+        for record in records:
+            line = re.sub(r"\.git$", "", record)
+            line = re.sub(r".*[:/]([^/]+/[^/]+)$", r"\1", line)
+            out.append(line)
+        repo = _command_substitution(_sed_out(out, terminated))
+    return repo if repo != "" else GH_REPO
+
+
+def gh_run_repo(run, cwd):
+    """The repository one walked `gh` call targets: its own `--repo`/`-R` in any spelling, then the private/<submodule> it runs in (its `cd`), then `cwd`'s origin, then rediacc/console. `target_repo`'s order, read from the call instead of from a text segment."""
+    flagged = gh_args(run.argv).last("repo")
+    if flagged:
+        return gh_repo_name(flagged)
+    m = re.search(r"(^|/)private/(renet|account|elite|homebrew-tap)(/|$)", run.cwd or "")
+    if m:
+        return "rediacc/" + m.group(2)
+    return _origin_repo(cwd)
+
+
+def gh_api_method(parsed):
+    """The HTTP method a parsed `gh api` call sends: `-X` in any spelling, else POST when it carries a field or `--input`, else GET (gh's own default)."""
+    method = parsed.last("method")
+    if method:
+        return method.upper()
+    if parsed.values("field") or parsed.values("raw-field") or parsed.values("input"):
+        return "POST"
+    return "GET"
+
+
+def gh_api_endpoint(parsed):
+    """The endpoint operand of a parsed `gh api` call as a bare path (`repos/o/r/pulls/5`): a scheme and host (`https://api.github.com/`), the query string and the leading and trailing slashes dropped; "" when there is none."""
+    if not parsed.operands:
+        return ""
+    path = re.sub(r"^https?://[^/]+/", "", parsed.operands[0]).split("?", 1)[0]
+    return path.strip("/")

@@ -9,14 +9,19 @@ PORT NOTE ON THE LOOP'S FEED. `done <<<"$(hook_gh_pr_segment ...)"` is a here-st
 differ by one iteration, which is the whole loop.
 """
 
+import re
+
 from rediacc_hooks import hookio, shellscan
 from rediacc_hooks.wellknown import ACCOUNT_REPO, ELITE_REPO, GH_REPO, HOMEBREW_TAP_REPO, RENET_REPO
 
 CHAIN = "pre-bash"
 ORDER = 22
 
-# Reading `--draft` from the whole line instead of from this invocation's segment is the exact donation the header describes: a sibling create's flag makes an unrelated one look compliant.
-DEFECT = ("hookio.grep_q_line(HAS_DRAFT, seg)", "hookio.grep_q_line(HAS_DRAFT, scan)")
+# Reading `--draft` from every create on the line instead of from this one is the exact donation the header describes: a sibling create's flag makes an unrelated one look compliant.
+DEFECT = (
+    'has_draft = parsed.on("draft")',
+    'has_draft = any(shellscan.gh_args(r.argv).on("draft") for r in runs)',
+)
 
 HAS_DRAFT = hookio.rx(r"(^|[{S}])(--draft|-d)([{S}=]|$)")
 
@@ -88,6 +93,15 @@ EDGE_CASES = [
         "the sanctioned PATCH body edit is not a create",
         "gh api repos/o/r/pulls/42 -X PATCH -f body=x",
     ),
+    # 2026-10-07 (#8ed364fe): every spelling gh accepts means what gh makes of it. The flag-file-free halves of tests/test_gh_flag_spellings.py.
+    ("-R=<private repo> names that repo", "gh pr create -R=" + RENET_REPO + " -t x"),
+    ("a bundled -dt is a draft", "gh pr create -dt x"),
+    ("a title spelled --draft is not a draft", "gh pr create -t --draft"),
+    ("--draft=false is not a draft", "gh pr create --draft=false -t x"),
+    ("a pr-level -R before the verb is still a create", "gh pr -R " + GH_REPO + " create -t x"),
+    ("--help creates nothing", "gh pr create --help"),
+    ("the REST create spelled -XPOST", "gh api repos/o/r/pulls -XPOST -f title=x"),
+    ("a REST create implied by a field, as gh implies it", "gh api repos/o/r/pulls -f title=x"),
 ]
 
 
@@ -97,34 +111,72 @@ def run(ev):
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
 
     # REST bypass, checked before the `gh pr` early return two lines down: a REST call carries no `gh pr create` verb, so that anchor treats it as out of scope and everything below is skipped for a command reaching the identical mutation.
-    split = hookio.sed_sub(r"[;&|()`]", "\n", scan)
-    api_lines = hookio.grep_lines(API_VERB, split)
-    api_lines = [line for line in api_lines if hookio.grep_q_line(API_PULLS_BARE, line)]
-    api_segs = hookio._command_substitution(hookio._grep_out(api_lines))
-    if api_segs and hookio.grep_q(API_POST_METHOD, api_segs):
+    if _rest_create(cmd, scan):
         ev.warn(REST_CREATE_MESSAGE)
         return hookio.DENY
+
+    # EVERY create is read from its own walked call (`shellscan.gh_args`), so `-R=x`, `-Rx`, `--repo 'x'`, `-dt x`, `--draft=false` and a `--title --draft` all mean what gh makes of them, and a `pr`-level flag before the verb (`gh pr -R x create`) is still a create. Measured 2026-10-07: each of those spellings got a different verdict from the long form. Only a command the walk finds no create in keeps
+    # the text reader below.
+    cwd = ev.field("cwd")
+    runs = shellscan.gh_pr_runs(cmd, "create")
+    if runs:
+        for run in runs:
+            parsed = shellscan.gh_args(run.argv)
+            # `--help` prints the usage and creates nothing.
+            if parsed.on("help"):
+                continue
+            repo = shellscan.gh_run_repo(run, cwd)
+            has_draft = parsed.on("draft")
+            refusal = _refusal(repo, has_draft)
+            if refusal:
+                ev.warn(refusal)
+                return hookio.DENY
+        return hookio.ALLOW
 
     if not shellscan.gh_pr_at_command_pos(scan, "create"):
         return hookio.ALLOW
 
     # --repo and --draft both come from the SEGMENT carrying this `gh pr create`, and EVERY create on the line is judged on its own: line-wide parsing let a sibling invocation donate its repo or its --draft, so `gh pr create --repo rediacc/renet -t x; gh pr create -t y` read as one compliant draft. The cd/-C hint stays line-wide, because a cd genuinely does apply to every later
     # segment. No signal at all defaults to the console checkout, which fails toward draft. See hook_gh_pr_segment / hook_target_repo.
-    cwd = ev.field("cwd")
     segs = shellscan.gh_pr_segment(scan, "create")
     records, _ = shellscan._records(shellscan._here_string(segs))
     for seg in records:
         if seg == "":
             continue
-        repo = shellscan.target_repo(seg, scan, cwd)
-
-        has_draft = hookio.grep_q_line(HAS_DRAFT, seg)
-
-        if hookio.case_glob(repo, GH_REPO, HOMEBREW_TAP_REPO):
-            if not has_draft:
-                ev.warn(PUBLIC_MESSAGE % repo)
-                return hookio.DENY
-        elif hookio.case_glob(repo, RENET_REPO, ACCOUNT_REPO, ELITE_REPO) and has_draft:
-            ev.warn(PRIVATE_MESSAGE % repo)
+        refusal = _refusal(
+            shellscan.target_repo(seg, scan, cwd), hookio.grep_q_line(HAS_DRAFT, seg)
+        )
+        if refusal:
+            ev.warn(refusal)
             return hookio.DENY
     return hookio.ALLOW
+
+
+def _refusal(repo, has_draft):
+    """The message refusing a create on `repo` with or without `--draft`, "" when it is allowed."""
+    if hookio.case_glob(repo, GH_REPO, HOMEBREW_TAP_REPO):
+        return "" if has_draft else PUBLIC_MESSAGE % repo
+    if hookio.case_glob(repo, RENET_REPO, ACCOUNT_REPO, ELITE_REPO) and has_draft:
+        return PRIVATE_MESSAGE % repo
+    return ""
+
+
+def _rest_create(cmd, scan):
+    """Does `cmd` create a PR through `gh api .../pulls` (a POST, spelled `-X POST`, `-XPOST`, `--method=POST`, or implied by a field, as gh implies it)?
+
+    Read from each walked `gh api` call; only a command the walk finds none in keeps the text match, whose endpoint test and long `-X POST` spelling it was until 2026-10-07.
+    """
+    calls = shellscan.gh_runs(cmd, ("api",))
+    if calls:
+        for call in calls:
+            parsed = shellscan.gh_args(call.argv)
+            if re.search(r"(^|/)pulls$", shellscan.gh_api_endpoint(parsed)) and (
+                shellscan.gh_api_method(parsed) == "POST"
+            ):
+                return True
+        return False
+    split = hookio.sed_sub(r"[;&|()`]", "\n", scan)
+    api_lines = hookio.grep_lines(API_VERB, split)
+    api_lines = [line for line in api_lines if hookio.grep_q_line(API_PULLS_BARE, line)]
+    api_segs = hookio._command_substitution(hookio._grep_out(api_lines))
+    return bool(api_segs and hookio.grep_q(API_POST_METHOD, api_segs))

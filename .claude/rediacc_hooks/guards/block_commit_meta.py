@@ -32,7 +32,7 @@ ORDER = 4
 # The commit-verb gate is the whole 2026-08-27 fix. Without it the phrase test runs against every command again, so grepping the docs for the banned trailer is refused as though it were adding one.
 # THE SUBJECT IS `scan`, NOT `cmd`, AND THE DIFFERENCE MADE THIS PLANT VACUOUS. The branch below moved to the unwrapped `scan` when bypass-resistant verb detection landed, and this declaration kept naming `cmd`, so the only text in the file the plant still matched was THIS LINE: `source.replace(old, new)` rewrote the tuple into `("if False:", "if False:")` and left the real
 # branch untouched, and `test_the_differential_can_fail` then reported the port as answering identically with its defect planted. A plant that edits its own declaration is a control that cannot fire.
-DEFECT = ("if not _authors_a_message(scan):", "if False:")
+DEFECT = ("if not (_authors_a_message(scan) or _walked_message_files(cmd)[0]):", "if False:")
 
 # Not authoring a message -> not this guard's business.
 #
@@ -180,6 +180,19 @@ EDGE_CASES = [
         "the gh api body spelling",
         "gh api repos/o/r/pulls/7 -X PATCH -F body=@$HOME/%s/footer.md" % HOME_BODIES,
     ),
+    # 2026-10-07 (#8ed364fe): every spelling git and gh accept for a message file is read.
+    ("an attached -F on a commit", "git commit -F$HOME/%s/footer.md -- a" % HOME_BODIES),
+    ("a bundled -qF on a commit", "git commit -qF $HOME/%s/footer.md -- a" % HOME_BODIES),
+    ("an attached -F on a tag", "git tag -a v1 -F$HOME/%s/footer.md" % HOME_BODIES),
+    ("a bundled -dF on a create", "gh pr create -dF $HOME/%s/footer.md -t x" % HOME_BODIES),
+    (
+        "an attached -Fbody=@ on a PATCH",
+        "gh api repos/o/r/pulls/7 -XPATCH -Fbody=@$HOME/%s/footer.md" % HOME_BODIES,
+    ),
+    (
+        "a merge body file is the merge commit's message",
+        "gh pr merge 7 --squash --body-file $HOME/%s/footer.md" % HOME_BODIES,
+    ),
     (
         "an inherited $HOME body file without the footer",
         "gh pr create --title t --body-file $HOME/%s/clean.md" % HOME_BODIES,
@@ -204,18 +217,62 @@ def _authors_a_message(scan):
     return hookio.grep_q(GH_API_PR_PATCH, scan) and hookio.grep_q(PATCH_METHOD, scan)
 
 
-def _commit_file_bodies(cmd, root, env):
-    """Every message-file target's bytes, read off disk: `-F <path>`, `--file[= ]<path>`, `--body-file[= ]<path>`, `-F body=@<path>` and `--input <path>`. `-F -` (stdin) is skipped: stdin at hook time is the hook's OWN payload, not the commit's, so there is nothing here to read.
+def _walked_message_files(cmd):
+    """`(authors, names)` from the walked calls of `cmd`: whether any of them writes a message (a `git commit`, a `git tag`, a `gh pr create|edit|merge`, a `gh api .../pulls/<n>` PATCH), and every message-file name they read, in order.
 
-    Each name is tried both as given (an absolute path, or one already relative to the caller's cwd) and rooted at `root` -- the same two candidates `block_untagged_commit.py` tries, for the identical reason. `env(name, None)` answers a variable the command does not assign (see `_expand`).
+    Each argv is read the way its tool reads it: `commit_policy.parse_commit_args` for `git commit`, `shellscan.git_tag_args` for `git tag`, `shellscan.gh_args` for gh. So `-Ff`, `-qF f`, `-dF f`, `--file=f`, `--fil f`, `-Fbody=@f` and `--field=body=@f` all name `f`. Measured 2026-10-07, before this: `git commit -Ffoot.md`, `git commit -qF foot.md`, `git tag -a v1 -Ffoot.md`, `gh pr create -dF foot.md` and `gh api ... -Fbody=@foot.md` with the footer in the file were
+    admitted, their `--file`/`--body-file`/`-F body=@` twins refused. `gh pr merge --body-file` is here too: its body is the merge commit's message.
     """
-    bodies = []
-    written = False
+    authors = False
+    names = []
+    for run in commit_policy.runs(cmd):
+        base = shellscan._base(run.name)
+        if base == "git" and run.git_sub in ("commit", "tag"):
+            authors = True
+            _, _, args = commit_policy.git_split(run.argv)
+            if run.git_sub == "commit":
+                names.extend(commit_policy.parse_commit_args(args).files)
+            else:
+                names.extend(shellscan.git_tag_args(args).values("file"))
+        elif base == "gh":
+            parsed = shellscan.gh_args(run.argv)
+            if parsed.command in (("pr", "create"), ("pr", "edit"), ("pr", "merge")):
+                authors = True
+                names.extend(parsed.values("body-file"))
+            elif parsed.command == ("api",) and _api_pr_patch(parsed):
+                authors = True
+                names.extend(
+                    v[len("body=@") :]
+                    for n, v in parsed.flags
+                    if n == "field" and v.startswith("body=@")
+                )
+                names.extend(parsed.values("input"))
+    return authors, names
+
+
+def _api_pr_patch(parsed):
+    """Is a parsed `gh api` call a PATCH of a PR (`.../pulls/<n>`), in any spelling of the method?"""
+    return bool(re.search(r"(^|/)pulls/[0-9]+$", shellscan.gh_api_endpoint(parsed))) and (
+        shellscan.gh_api_method(parsed) == "PATCH"
+    )
+
+
+def _commit_file_bodies(cmd, root, env):
+    """Every message-file target's bytes, read off disk: `git commit -F`, `git tag -F`, `gh pr ... --body-file`, `gh api ... -F body=@<path>` and `--input <path>`, each in every spelling its tool accepts (`_walked_message_files`). `-F -` (stdin) is skipped: stdin at hook time is the hook's OWN payload, not the commit's, so there is nothing here to read.
+
+    Each name is tried both as given (an absolute path, or one already relative to the caller's cwd) and rooted at `root` -- the same two candidates `block_untagged_commit.py` tries, for the identical reason. `env(name, None)` answers a variable the command does not assign (see `_expand`). A command the walk finds no message-writing call in keeps the text reader, `FILE_ARGS`, which knows the long spellings and a spaced `-F`.
+    """
     names = {}
     for verb in MESSAGE_VERBS:
         names.update(shellscan.assignments_before(cmd, verb))
+    authors, walked = _walked_message_files(cmd)
+    if authors:
+        return _bodies_for(walked, cmd, root, names, env)
+    bodies = []
+    written = False
     for pattern, strip in FILE_ARGS:
-        found, wrote = _bodies_for(pattern, strip, cmd, root, names, env)
+        raws = [hookio.sed_sub(strip, "", m).rstrip("\n") for m in hookio.grep_o(pattern, cmd)]
+        found, wrote = _bodies_for(raws, cmd, root, names, env)
         bodies.extend(found)
         written = written or wrote
     return bodies, written
@@ -244,15 +301,14 @@ def _expand(name, names, env):
     return SHELL_VAR.sub(sub, SHELL_VAR.sub(sub, name))
 
 
-def _bodies_for(pattern, strip, cmd, root, names, env):
-    """One spelling's worth of `grep -oE <pattern> | sed -E 's/<strip>//'`, resolved and read.
+def _bodies_for(raws, cmd, root, names, env):
+    """The message-file names `raws`, as spelled in the command, resolved and read.
 
     Returns `(bodies, written)`, `written` saying that this same command writes one of the named files, so its content is in the command text rather than on disk.
     """
     bodies = []
     written = False
-    for match in hookio.grep_o(pattern, cmd):
-        raw = hookio.sed_sub(strip, "", match).rstrip("\n")
+    for raw in raws:
         if raw in {"", "-"}:
             continue
         name = _expand(raw, names, env)
@@ -283,7 +339,8 @@ def run(ev):
     # Bypass-resistant VERB detection (unwraps sh -c/eval payloads, strips heredocs+prose): worklist evidence or a python script's own argument text MENTIONING "git commit" or "gh pr create" must not trip this gate, only a real invocation.
     # TRAILER_OR_FOOTER below still reads the RAW cmd, because for a real commit the message body IS the command string and stripping it would hide the content this guard exists to check.
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
-    if not _authors_a_message(scan):
+    # The walk is asked too, because the text gate knows `-X PATCH`'s spellings only as far as its regex does (`-iXPATCH` is a PATCH) and never sees a `pr`-level flag before the verb (`gh pr -R x create`).
+    if not (_authors_a_message(scan) or _walked_message_files(cmd)[0]):
         return hookio.ALLOW
 
     if hookio.grep_q(TRAILER_OR_FOOTER, cmd, ignore_case=True):

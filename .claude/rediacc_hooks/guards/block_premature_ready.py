@@ -13,7 +13,10 @@ CHAIN = "pre-bash"
 ORDER = 25
 
 # The `--undo` test read from the whole line instead of from this invocation: `gh pr ready --undo 1; gh pr ready 531` then looks like an always-allowed undo and the real flip skips the green gate entirely.
-DEFECT = ("hookio.grep_q_line(UNDO, seg)", "hookio.grep_q_line(UNDO, scan)")
+DEFECT = (
+    'if parsed.on("undo") or parsed.on("help"):',
+    'if any(shellscan.gh_args(r.argv).on("undo") for r in runs):',
+)
 
 UNDO = r"--undo"
 
@@ -100,31 +103,46 @@ def run(ev):
         ev.warn(READY_GRAPHQL_MESSAGE)
         return hookio.DENY
 
-    if not shellscan.gh_pr_at_command_pos(scan, "ready"):
+    # Every flip is read from its own walked call (`shellscan.gh_args`): `-R=x` and `-Rx` name the repo they name, `--undo=false` is not an undo, and the PR is the first OPERAND wherever the flags sit (`gh pr ready --repo x 42` is #42, which the text reader took to be a PR called "x"). Measured 2026-10-07. Only a command the walk finds no flip in keeps the text reader.
+    runs = shellscan.gh_pr_runs(cmd, "ready")
+    if not runs and not shellscan.gh_pr_at_command_pos(scan, "ready"):
         return hookio.ALLOW
 
-    # Every field below is read from the SEGMENT that carries `gh pr ready`, never
-    # from the whole bash line. Line-wide parsing let a sibling command donate its
-    # fields to this one: `gh pr ready --undo 1; gh pr ready 531` looked like an always-allowed undo, and `gh pr view 1 --repo rediacc/renet; gh pr ready 531` looked like a non-console flip -- both would have skipped the green gate entirely. See hook_gh_pr_segment.
     cwd = ev.field("cwd")
-    segs = shellscan.gh_pr_segment(scan, "ready")
-    records, _ = shellscan._records(shellscan._here_string(segs))
-    for seg in records:
-        if seg == "":
+    flips = []
+    for run_ in runs:
+        parsed = shellscan.gh_args(run_.argv)
+        # --undo (always safe: it can only push a PR back to draft) and --help (flips nothing) belong to THIS call.
+        if parsed.on("undo") or parsed.on("help"):
             continue
-        # --undo (always safe: it can only push a PR back to draft) must belong to THIS invocation, not to a sibling one earlier on the line.
-        if hookio.grep_q_line(UNDO, seg):
-            continue
-
+        flips.append(
+            (shellscan.gh_run_repo(run_, cwd), parsed.operands[0] if parsed.operands else "")
+        )
+    if not runs:
+        # Every field below is read from the SEGMENT that carries `gh pr ready`, never
+        # from the whole bash line. Line-wide parsing let a sibling command donate its
+        # fields to this one: `gh pr ready --undo 1; gh pr ready 531` looked like an always-allowed undo, and `gh pr view 1 --repo rediacc/renet; gh pr ready 531` looked like a non-console flip -- both would have skipped the green gate entirely. See hook_gh_pr_segment.
+        segs = shellscan.gh_pr_segment(scan, "ready")
+        records, _ = shellscan._records(shellscan._here_string(segs))
+        for seg in records:
+            if seg == "":
+                continue
+            # --undo must belong to THIS invocation, not to a sibling one earlier on the line.
+            if hookio.grep_q_line(UNDO, seg):
+                continue
+            flips.append(
+                (
+                    shellscan.target_repo(seg, scan, cwd),
+                    shellscan._command_substitution(shellscan.pr_selector(seg, "ready")),
+                )
+            )
+    for repo, named in flips:
         # Only console has draft PRs (free plan, public repo). A --repo pointing elsewhere is a no-op flip; let gh handle it.
-        repo = shellscan.target_repo(seg, scan, cwd)
         if repo != GH_REPO:
             continue
 
         # PR selector: first bare number/URL/branch token after `ready`, else the session cwd's current branch (matching gh's own default resolution).
-        sel = shellscan._command_substitution(shellscan.pr_selector(seg, "ready"))
-        if sel == "":
-            sel = hookio.git_out(["-C", cwd or ".", "branch", "--show-current"])
+        sel = named or hookio.git_out(["-C", cwd or ".", "branch", "--show-current"])
 
         conclusion = hookio.run_out(
             [

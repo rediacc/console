@@ -50,7 +50,8 @@ def run(ev):
 
     # Bypass-resistant command scanning (unwraps sh -c/eval payloads, strips heredocs+prose), same as block_admin_merge.py: worklist evidence prose MENTIONING "gh pr merge" must not trip this guard, only a real invocation.
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
-    if not shellscan.gh_pr_at_command_pos(scan, "merge"):
+    runs = shellscan.gh_pr_runs(cmd, "merge")
+    if not runs and not shellscan.gh_pr_at_command_pos(scan, "merge"):
         return hookio.ALLOW
 
     # `cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0`. Reproduced as the
@@ -65,12 +66,25 @@ def run(ev):
         return hookio.ALLOW
 
     # `--repo <other>` means the merge targets a DIFFERENT repository, so this checkout's unpushed state is irrelevant to it. Only judge a merge that could delete THIS branch.
-    repo_arg = ""
-    matches = hookio.grep_o(r"--repo[= ]+[^ ]+", cmd)
-    if matches:
-        repo_arg = hookio.sed_sub(r".*[= ]", "", matches[0]).rstrip("\n")
-    if not (repo_arg == "" or hookio.case_glob(repo_arg, "*/console")):
-        return hookio.ALLOW
+    # The repo is each merge's OWN flag, in every spelling gh accepts (`shellscan.gh_args`). Measured 2026-10-07: the text match read `--repo` alone and anywhere on the line, so `gh pr merge 42 -R rediacc/renet` was refused and `gh pr view 1 --repo rediacc/renet && gh pr merge 42` was let through on the view's flag. Only a command the walk finds no merge in keeps the
+    # text match.
+    if runs:
+        named = [
+            parsed.last("repo")
+            for parsed in (shellscan.gh_args(r.argv) for r in runs)
+            if not parsed.on("help")
+        ]
+        if not any(
+            r is None or hookio.case_glob(shellscan.gh_repo_name(r), "*/console") for r in named
+        ):
+            return hookio.ALLOW
+    else:
+        repo_arg = ""
+        matches = hookio.grep_o(r"--repo[= ]+[^ ]+", cmd)
+        if matches:
+            repo_arg = hookio.sed_sub(r".*[= ]", "", matches[0]).rstrip("\n")
+        if not (repo_arg == "" or hookio.case_glob(repo_arg, "*/console")):
+            return hookio.ALLOW
 
     remote = hookio.git_out(
         ["rev-parse", "-q", "--verify", "refs/remotes/origin/%s" % branch],
