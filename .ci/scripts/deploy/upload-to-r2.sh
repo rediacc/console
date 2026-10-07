@@ -242,7 +242,7 @@ r2_rm() {
 # run that scrub raced the finalize sentinel write and deleted a SEALED
 # release's binaries while keeping `.released` — the "sealed-but-empty" state
 # that burned v1.1.16/v1.1.17. Orphan cleanup now lives only in the nightly
-# housekeeping job (cleanup-versions.sh Phase 8d), off the release critical path.
+# housekeeping job (rediacc_ci.housekeeping.cleanup_versions Phase 8d), off the release critical path.
 #
 # Return codes (caller branches on these):
 #   0  → PROCEED: no sentinel. Clean prefix, or a byte-only orphan from a

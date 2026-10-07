@@ -22,7 +22,10 @@
 #   .ci/scripts/deploy/upload-to-r2.sh                   (idempotent write guard; no scrub)
 #   .ci/scripts/deploy/write-release-sentinel.sh         (commit-phase writer; refuses empty)
 #   .ci/scripts/test/assert-r2-sentinel.sh               (post-upload binaries-present gate)
-#   .ci/scripts/housekeeping/cleanup-versions.sh         (Phase 8d orphan sweep, nightly only)
+#   .ci/scripts/housekeeping/cleanup-versions.sh         (Phase 8d orphan sweep; the bash twin the
+#                                                         differential tests run as control. The nightly
+#                                                         job runs rediacc_ci.housekeeping.cleanup_versions,
+#                                                         which uses rediacc_ci.core.release_state_validator)
 #
 # The library is pure-bash and makes AWS / git calls lazily. Callers that want
 # to test the assertion logic should feed `rsv_assert_bijection` synthetic
