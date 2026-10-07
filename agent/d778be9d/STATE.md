@@ -1,32 +1,17 @@
-## SESSION d778be9d 2026-10-06T02:37:38Z
+## SESSION d778be9d 2026-10-07T00:59:25Z
 
-# STATE d778be9d (2026-10-06 ~03:00Z; harness session 455e9445)
+Console PR #598 is a DRAFT on branch 1006-3, head 3d46e9af5, pushed. Plan: agent/plans/PLAN-gh-retry.md, epic #b320552c. Every box G0-G13 is ticked. Account half: rediacc/account#93 on account branch 1006-3 (e9c23be, a lockfile freshness bump). The console pointer already points at it, and it merges FIRST at /pr-merge. Both PRs were opened with the PR_BRANCH_DATE_OK=1 prefix (the date guard's documented hatch for a multi-day wave).
 
-## Where things stand
-- PR #595 MERGED 00:33Z via the ff fallback (main e6fc817f6). account#91 merged (6551844cd). GitLab mirrored.
-- #595 release NOT shipped: main CI 37394654719 cancelled twice by the watchdog (Validate Promotion 15.7 min vs 15).
-- Branch 1006-1 is cut from main. Plan PLAN-clean-review-ledger (epic 6bcda063): T17/T18 proven, not yet ticked.
-- Commits on 1006-1:
-  - f1520b314: deps; account bfbc9b3 on account's 1006-1, pushed
-  - 8b6635a22, 94ae5f9cd: review records
-  - 5174318b9: elastic cores on 5 gates (typecheck 24.4 -> 8.4 s)
-- UNCOMMITTED (mine):
-  - watchdog-monitor.cjs and check-lane-budget.ts: Validate Promotion cap 20 min (#641f4f0e, tick with the sha)
-  - manifest.ts: comment fix for review finding 5174318b.1 (mark fixed with the sha)
-  - agent/worklist/epics.jsonl and agent/pr/1006-1.md: epics 6bcda063 and 22409811. Must be committed, else check:ci-pr-task-trailers reds.
-- Last pre-push (ciq-20261006-041842.log) reds beyond the carries:
-  - check:ci-security-audit, 4 new prod advisories: proxy-addr critical (<2.0.8, fix 2.0.8), source-map-js high (<1.2.2), smol-toml moderate (<=1.8.0, fix 1.9.0), sprintf-js moderate via gray-matter/node_modules/sprintf-js 1.0.3 (npm offers only a gray-matter semver-major; an override to 1.1.3, or an allowlist BLOCKER, decides it)
-  - check:ci-budget-freshness: drift again (test_gate_doc_region_parity 27%); refresh, then gate-bind --write
-  - check:test:tutorial-player: seek scenario, sameDocument false (a page RELOAD, env noise). Fix: retry a scenario once when the document reloaded.
-  - check:ci-pr-task-trailers: the epics commit above
-- Scratchpad (d778be9d dir): prepush.sh (current-branch driver), carrycheck.py (verify reds equal carries).
+The last local pre-push (3d46e9af5) has only check:ci-pytest red, and that is carried (4 host-only skips). The scratchpad prepush.sh now runs npm ci in the push clone whenever the lockfile hash changes; a stale node_modules had faked a check:ci-peer-deps red.
+
+The PR body's epic block was built from the COMMITTED snapshot agent/pr/1006-3.md (from 5bbf86794), so check:ci-pr-epic-block should pass on this run. A fresher snapshot (from worklist.py --publish) sits uncommitted in the tree, together with agent/d778be9d/STATE.md.
+
+In flight:
+- #dfd933e8: the CI verdict for 1006-3 (the push hook's ci-trace watch).
+- #ab17ccc1: an opus gate-author (worker ae140648d7ad6caeb) is building a pre-bash guard that refuses formatter runs whose path set may be empty or be the whole tree. It prevents the 2026-10-07 repo-wide `ruff format` mistake.
+- Wake timer bvxp52nuv is armed.
 
 ## Next action
-Done on 1006-1: 1fb9eefe7 audit, 6fe24d1cb budget, 6e5260eb4 wording, 91c5a64ae+3401befcc review_table, 7b4964dd9 fence, 1a4a6971e T18, bfd34b7bd github recovering, c1ab3d2e0 tutorial retry, 0a370b588 account pointer (account c22b8eb pushed).
-1. Writer #d901ba82 budget churn (leased) -> spot-check, commit (its gate-bind may regenerate ci-quality.yml).
-2. Pre-push (scratchpad prepush.sh) + carrycheck.py; tick T17 with counts; push; gh pr create console + account on 1006-1; CI, review, merge (#17109e43 release follows).
-
-## Operator rulings
-- Network widths fixed and listed; failed cd strict.
-- GitHub status: all four surfaces, must not block.
-- build-renet over its cap: advisory. quality-code legs: keep 4.
+1. Read the CI verdict (`python3 .ci/scripts/ci/ci-trace.py`). Fix any red at once, as its own commit, then the prepush.sh pipeline, carrycheck.py and the push.
+2. When the guard writer reports: spot-check it. Run python-lint, python-types, the guard tests and gen-docs (--write if it drifts). Commit by path with PR-TASK: b320552c. Commit agent/pr/1006-3.md and STATE.md. Then prepush, push, and `.ci/scripts/pr/sync-epic-block.sh 598 1006-3`.
+3. Get Review Complete green and answer its summary (wl_prreview.py). Then `gh pr ready 598`, then /pr-merge: merge account#93, bump the pointer to the merged sha, then merge the console PR (ff fallback if more than 100 commits).
