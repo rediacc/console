@@ -51,6 +51,8 @@ BLOCK = [
     "git stash",
     "git stash push -m wip",
     "git stash pop",
+    "git stash drop",
+    "git stash clear",
     "git clean -fd",
     "git clean -fdx packages/",
     "cd no-such-subdir && git checkout -- foo.txt",  # after a ;/&& chain
@@ -68,6 +70,8 @@ ALLOW = [
     "git checkout backup-storage",
     "git stash list",
     "git stash show -p",
+    "git stash create",  # writes a dangling commit only
+    "git stash store 0123abc",  # records an existing commit in the reflog only
     "git clean -n",
     "git clean --dry-run -fd",
     "git status",

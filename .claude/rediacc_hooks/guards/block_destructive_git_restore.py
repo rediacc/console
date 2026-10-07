@@ -16,6 +16,7 @@ DELIBERATELY NOT BLOCKED, because these do not discard anything:
   - `git checkout <branch>` / `-b` / `-B`: branch switching and creation.
     Only PATH-scoped checkout discards.
   - `git stash list` / `show`: read-only.
+  - `git stash create` / `store`: `create` only writes a dangling commit object and `store` only records an existing commit in the stash reflog (`git help stash`); neither touches the working tree or the index.
   - `git clean -n` / `--dry-run`: prints what it would remove.
 The escape for a genuine need is a human: ask the operator, who can run it themselves with the `!` prefix and knows what else is in the tree.
 
@@ -44,9 +45,7 @@ RESTORE = GIT + hookio.rx(r"restore([{S}]|$)")
 
 # Bare `git stash` (stashes everything) OR an explicitly mutating subcommand. `list` and `show` must NOT match, so the verb cannot be a bare wildcard: an earlier draft made it optional, which swallowed `git stash list` and the control harness caught it immediately.
 STASH_BARE = GIT + hookio.rx(r"stash[{S}]*($|[;&|])")
-STASH_VERB = GIT + hookio.rx(
-    r"stash[{S}]+(push|save|pop|apply|drop|clear|branch|create|store)([{S}]|$)"
-)
+STASH_VERB = GIT + hookio.rx(r"stash[{S}]+(push|save|pop|apply|drop|clear|branch)([{S}]|$)")
 
 # `git clean` deletes UNTRACKED files, which in this repo includes entire packages (pkg/chunkstore is untracked in its entirety). Excluded when -n or --dry-run appears anywhere in the invocation.
 CLEAN = GIT + hookio.rx(r"clean([{S}]|$)")
@@ -82,6 +81,10 @@ EDGE_CASES = [
     # The read-only forms, which are the whole reason the verb cannot be a bare wildcard.
     ("stash list is read-only", "git stash list"),
     ("stash show is read-only", "git stash show"),
+    ("stash create writes only a dangling commit", "git stash create"),
+    ("stash store only records a commit in the reflog", "git stash store 0123abc"),
+    ("a stash drop still discards", "git stash drop"),
+    ("a stash clear still discards", "git stash clear"),
     ("clean -n prints what it would remove", "git clean -n"),
     ("clean --dry-run does the same", "git clean --dry-run"),
     ("branch switching is untouched", "git checkout main"),
