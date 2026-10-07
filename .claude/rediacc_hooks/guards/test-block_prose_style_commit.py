@@ -276,6 +276,30 @@ CASES = [
         "tail -n1 README.md; %s -F %s -- p" % (COMMIT, BODY_FILE_PATH),
         True,
     ),
+    # Each flag read the way its tool reads it (#9de9a8e9): git's parse-options for `git commit`, pflag for gh. Every spelling below carried a message this guard never linted until 2026-10-07; the long form of each is a case above.
+    ("a bundled -qm", '%s -qm "Did %s run the tests?" -- p' % (COMMIT, Y), True),
+    ("a unique prefix --mess", '%s --mess "Did %s run it?" -- p' % (COMMIT, Y), True),
+    ("a bundled -qF file", "%s -qF %s -- p" % (COMMIT, BODY_FILE_PATH), True),
+    ("an attached -Ffile", "%s -F%s -- p" % (COMMIT, BODY_FILE_PATH), True),
+    ("a unique prefix --fil file", "%s --fil %s -- p" % (COMMIT, BODY_FILE_PATH), True),
+    (
+        "a bundled -qF - heredoc",
+        "%s -qF - <<'EOF'\nfix: the thing\n\n%s think this is right.\nEOF" % (COMMIT, EYE),
+        True,
+    ),
+    ("a gh pr bundle -dF file", "gh pr create -t x -dF %s" % BODY_FILE_PATH, True),
+    ("an attached gh -b", 'gh pr create -t x -b"Did %s run it?"' % Y, True),
+    ("a gh pr review body", 'gh pr review 1 -c -b "Did %s run it?"' % Y, True),
+    (
+        "the sanctioned PATCH spelled -iXPATCH -Fbody=@",
+        "gh api repos/o/r/pulls/589 -iXPATCH -Fbody=@%s" % BODY_FILE_PATH,
+        True,
+    ),
+    (
+        "a title spelled --body is still read as the title",
+        'gh pr create -t --body -b "fix: x"',
+        False,
+    ),
 ]
 
 

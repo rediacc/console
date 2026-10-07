@@ -54,6 +54,12 @@ UNVERIFIABLE = (
     "   guard cannot verify is the operator's own `!` command.\n"
 )
 
+# What UNVERIFIABLE says gh answered for a repository the walk cannot evaluate: gh is never asked about it.
+UNRESOLVED_REASON = (
+    "(not asked: the repository is named through a variable or a substitution this hook "
+    "cannot evaluate; name it literally)"
+)
+
 ALREADY_OPEN = (
     "❌ BLOCKED: you already have %s open PR(s) in %s. One at a time.\n"
     "\n"
@@ -174,7 +180,11 @@ def run(ev):
             # `--help` prints the usage and creates nothing.
             if shellscan.gh_args(run_.argv).on("help"):
                 continue
-            repo = shellscan.gh_run_repo(run_, cwd)
+            repo = shellscan.gh_run_repo(run_, cwd, ev.env("GH_REPO"))
+            # A repo the walk cannot evaluate (`-R $R`, `GH_REPO=$(...)`) has no open-PR list to read: refused as unverifiable, never listed under a made-up name (#9de9a8e9).
+            if repo == shellscan.UNRESOLVED_REPO:
+                ev.warn_raw(UNVERIFIABLE % ("the repository this command names", UNRESOLVED_REASON))
+                return hookio.DENY
             if repo not in repos:
                 repos.append(repo)
     elif shellscan.gh_pr_at_command_pos(scan, "create"):

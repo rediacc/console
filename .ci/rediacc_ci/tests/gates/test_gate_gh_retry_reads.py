@@ -290,3 +290,53 @@ def selftest():
 """
     gate.assert_eq(g.scan_source(rel, src), [], "an overridden binary is not a gh call")
     gate.ok("a caller overriding a defaulted binary is not a gh call")
+
+
+def test_gh_api_is_classified_by_the_hooks_own_gh_parser(gate):
+    """The `gh api` read/write split reads the argv through `shellscan.gh_args`, the pflag reader the `.claude` guards share (#9de9a8e9), not a fourth hand-written flag table. Each spelling below is one gh accepts; the long form beside it is the control."""
+    cases: list[tuple[list[g.Token], str]] = [
+        # (argv after "gh", kind)
+        (["api", "x", "-f", "a=b"], "write"),
+        (["api", "x", "-fa=b"], "write"),
+        (["api", "x", "--raw-field=a=b"], "write"),
+        (["api", "x", "-F", "a=b"], "write"),
+        (["api", "x", "-Fa=b"], "write"),
+        (["api", "x", "--input=f"], "write"),
+        (["api", "-X", "POST", "x"], "write"),
+        (["api", "-iXPOST", "x"], "write"),
+        (["api", "-iX", "POST", "x"], "write"),
+        (["api", "-X=POST", "x"], "write"),
+        (["api", "-X", "GET", "x", "-f", "a=b"], "read"),
+        (["api", "-X=GET", "x", "-fa=b"], "read"),
+        (["api", "--method=get", "x", "-f", "a=b"], "read"),
+        # A value-taking flag's value is never the endpoint: the header names no `graphql`, the query is a read.
+        (["api", "-H", "Accept: x", "graphql", "-f", "query=query{a}"], "read"),
+        (["api", "-X", "POST", "graphql", "-f", "query=mutation{a}"], "write"),
+        # A `-f` that is the VALUE of `-q` is no body field.
+        (["api", "-q", "-f", "x"], "read"),
+        (["api", "-X", g.DYN, "x"], "unresolved"),
+        (["api", "-X", g.Choice(frozenset({"PATCH", "POST"})), "x"], "write"),
+        (["api", "-X", g.Choice(frozenset({"GET", "HEAD"})), "x", "-f", "a=b"], "read"),
+    ]
+    for tail, kind in cases:
+        gate.assert_eq(g.classify(["gh", *tail])[0], kind, "gh %r" % (tail,))
+    gate.ok("%d gh api spellings classified as gh reads them" % len(cases))
+
+
+def test_every_gh_api_body_and_method_flag_of_the_shared_table_is_honoured(gate):
+    """Parity with the table itself: every spelling of every `gh api` flag that implies a POST, and of `--method`, changes the verdict, so a flag added to `shellscan.GH_FLAGS` reaches this gate with no second edit."""
+    shellscan = g._shellscan()
+    table = shellscan.GH_FLAGS[("api",)]
+    implied = ("field", "raw-field", "input")
+    seen = 0
+    for name in (*implied, "method"):
+        short, _takes = table[name]
+        value = "POST" if name == "method" else "a=b"
+        spellings = [["--" + name, value], ["--%s=%s" % (name, value)]]
+        if short:
+            spellings += [["-" + short, value], ["-%s%s" % (short, value)], ["-i" + short, value]]
+        for spelling in spellings:
+            gate.assert_eq(g.classify(["gh", "api", "x", *spelling])[0], "write", repr(spelling))
+            seen += 1
+    gate.assert_eq(seen > 0, True, "the shared table offered no spelling at all")
+    gate.ok("%d spellings of %d flags from shellscan.GH_FLAGS each make a write" % (seen, 4))

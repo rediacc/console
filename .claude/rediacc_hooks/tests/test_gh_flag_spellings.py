@@ -15,6 +15,7 @@ The cure is one reader, `shellscan.gh_args`, which parses a walked gh argv the w
 
 from __future__ import annotations
 
+import datetime
 import importlib.util
 import json
 import os
@@ -87,14 +88,18 @@ def world(tmp_path, monkeypatch):
     return root, log
 
 
-def judge(world, stem, command):
-    """(rc, the gh calls the guard made) for `command`, payload cwd and project dir at the fixture."""
+def judge(world, stem, command, session=None):
+    """(rc, the gh calls the guard made) for `command`, payload cwd and project dir at the fixture.
+
+    `session` is the hook process's own environment on top of the fixture's: the runner's `GH_REPO` is dropped first, so an operator who exports one does not change which repo every case below names (#9de9a8e9).
+    """
     root, log = world
     log.write_text("", encoding="utf-8")
     payload = json.dumps(
         {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(root)}
     )
-    env = dict(os.environ, CLAUDE_PROJECT_DIR=str(root))
+    env = {k: v for k, v in os.environ.items() if k != "GH_REPO"}
+    env.update(session or {}, CLAUDE_PROJECT_DIR=str(root))
     rc, _out, _err = dispatch.run_one(stem, payload, cwd=str(root), env=env)
     return rc, log.read_text(encoding="utf-8").splitlines()
 
@@ -624,3 +629,245 @@ def test_the_walk_records_the_environment_a_gh_call_gets(cmd, repo):
     runs = [r for r in shellscan._analyse(cmd).runs if r.name == "gh"]
     assert runs, "the walk found no gh call in %r" % cmd
     assert shellscan.gh_named_repo(runs[-1]) == repo
+
+
+# --- the five residues of fad446748 (#9de9a8e9), each a long-form control beside the spelling it must equal ---
+
+# The machine's LOCAL today, as block_stale_pr_branch_date reads it; computed, so the cases are never a stale date by tomorrow.
+TODAY = datetime.datetime.now().strftime("%m%d")  # noqa: DTZ005 -- the guard's own clock
+
+
+# Residue 1. The head a `gh pr create` names is read by `shellscan.gh_args`: `-dH x` names `x`, and `-t --head` titles a PR "--head" and names no head at all. The fixture's checkout is `0101-1`, stale on every day but one; `0229-7` is stale on every day but one other.
+@pytest.mark.parametrize(
+    ("control", "want", "other"),
+    [
+        ("gh pr create --draft --head %s-9" % TODAY, 0, "gh pr create -dH %s-9" % TODAY),
+        ("gh pr create --draft --head %s-9" % TODAY, 0, "gh pr create -dH%s-9" % TODAY),
+        ("gh pr create --draft --head %s-9" % TODAY, 0, "gh pr -R x/y create -dH %s-9" % TODAY),
+        (
+            "gh pr create --draft --head %s-9" % TODAY,
+            0,
+            "B=%s-9; gh pr create -d --head $B" % TODAY,
+        ),
+        ("gh pr create --draft --head 0229-7", 2, "gh pr create -dH 0229-7"),
+        ("gh pr create --draft --head 0229-7", 2, "gh pr create -dH=0229-7"),
+        # `-t` takes `--head` as its value, so the head is the checkout's, and `0101-1` is stale.
+        ("gh pr create --draft -t x --base main", 2, "gh pr create --draft -t --head --base main"),
+    ],
+)
+def test_stale_branch_date_reads_head_in_every_spelling(world, control, want, other):
+    if TODAY in ("0101", "0229"):
+        pytest.skip("today is the fixture's own date")
+    rc, _ = judge(world, "block_stale_pr_branch_date", control)
+    assert rc == want, "control %r answered rc=%d, not %d" % (control, rc, want)
+    rc, _ = judge(world, "block_stale_pr_branch_date", other)
+    assert rc == want, "%r answered rc=%d where %r answers rc=%d" % (other, rc, control, want)
+
+
+# Residue 2. Whether a git verb skips the hooks is git's own parse: the last of `--no-verify`/`--verify` wins, a unique prefix is the option, `-n` is `--no-verify` on `commit` and `am` and something else on `push`, `merge` and `rebase`, and `cherry-pick` has no such option at all. Every row below was measured on git 2.53.0 in a scratch repository with every hook writing a marker (2026-10-07).
+@pytest.mark.parametrize(
+    ("control", "want", "other"),
+    [
+        ("git commit -m x -- a", 0, "git commit --no-verify --no-no-verify -m x -- a"),
+        ("git commit -m x -- a", 0, "git commit --no-verify --verify -m x -- a"),
+        ("git commit -m x -- a", 0, "git commit -n --verify -m x -- a"),
+        ("git commit -m x -- a", 0, "git commit --no-ver -m x -- a"),
+        ("git commit --no-verify -m x -- a", 2, "git commit --verify -n -m x -- a"),
+        ("git commit --no-verify -m x -- a", 2, "git commit --no-veri -m x -- a"),
+        ("git push origin 0101-1", 0, "git push --no-verify --verify origin 0101-1"),
+        ("git push origin 0101-1", 0, "git push --no-ver origin 0101-1"),
+        ("git push --no-verify origin 0101-1", 2, "git push --no-veri origin 0101-1"),
+        ("git push --no-verify origin 0101-1", 2, "git push origin 0101-1 --no-verify"),
+        ("git merge --no-edit side", 0, "git merge --no-verify --verify side"),
+        ("git merge --no-edit side", 0, "git merge -n side"),
+        ("git merge --no-edit side", 0, "git merge --no-veri side"),
+        ("git merge --no-verify side", 2, "git merge side --no-verify"),
+        ("git am p.patch", 0, "git am -n --verify p.patch"),
+        ("git am --no-verify p.patch", 2, "git am -n p.patch"),
+        ("git am --no-verify p.patch", 2, "git am -3n p.patch"),
+        ("git am --no-verify p.patch", 2, "git am --no-veri p.patch"),
+        ("git rebase main", 0, "git rebase -n main"),
+        ("git rebase main", 0, "git rebase --no-verify --verify main"),
+        ("git rebase --no-verify main", 2, "git rebase --no-veri main"),
+        ("git cherry-pick HEAD", 0, "git cherry-pick --no-verify HEAD"),
+    ],
+)
+def test_hook_bypass_reads_verify_the_way_git_does(world, control, want, other):
+    rc, _ = judge(world, "block_git_hook_bypass", control)
+    assert rc == want, "control %r answered rc=%d, not %d" % (control, rc, want)
+    rc, _ = judge(world, "block_git_hook_bypass", other)
+    assert rc == want, "%r answered rc=%d where %r answers rc=%d" % (other, rc, control, want)
+
+
+# Residue 4. A repository named through a variable: resolved when the same command assigns it, the SAFE verdict of each guard when it cannot be. CONSUMERS is every guard that reads `gh_run_repo`/`gh_named_repo`; `test_every_repo_consumer_is_pinned` keeps it complete.
+CONSUMERS = (
+    "block_admin_merge",
+    "block_merge_with_unpushed",
+    "block_nondraft_pr_create",
+    "block_premature_ready",
+    "block_raw_pr_body_edit",
+    "block_second_open_pr",
+)
+REPO_VARIABLE = [
+    # (stem, control, its rc, the variable spelling resolved by the walk, the unresolvable spelling's rc)
+    (
+        "block_nondraft_pr_create",
+        "gh pr create --repo %s -t x" % RENET_REPO,
+        0,
+        "R=%s; gh pr create -R $R -t x" % RENET_REPO,
+        ("gh pr create -R $R -t x", 2),
+    ),
+    (
+        "block_admin_merge",
+        "gh pr merge 5 --repo someone/other --rebase",
+        0,
+        'R=someone/other; gh pr merge 5 -R "$R" --rebase',
+        ("gh pr merge 5 -R $R --rebase", 2),
+    ),
+    (
+        "block_premature_ready",
+        "gh pr ready 42 --repo %s" % RENET_REPO,
+        0,
+        "R=%s; gh pr ready 42 --repo=${R}" % RENET_REPO,
+        ("gh pr ready 42 -R $R", 2),
+    ),
+    (
+        "block_second_open_pr",
+        "gh pr create --repo %s -t x" % RENET_REPO,
+        2,
+        "R=%s; GH_REPO=$R gh pr create -t x" % RENET_REPO,
+        ("GH_REPO=$R gh pr create -t x", 2),
+    ),
+    (
+        "block_merge_with_unpushed",
+        "gh pr merge 42 --repo %s" % RENET_REPO,
+        0,
+        "R=%s; export GH_REPO=$R; gh pr merge 42" % RENET_REPO,
+        ("gh pr merge 42 -R $(cat repo.txt)", 2),
+    ),
+    (
+        "block_raw_pr_body_edit",
+        "gh pr edit 113 --repo %s --body 'prose only'" % RENET_REPO,
+        0,
+        "R=%s; gh pr edit 113 -R $R --body 'prose only'" % RENET_REPO,
+        ("gh pr edit 113 -R $R --body 'prose only'", 2),
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("stem", "control", "want", "resolved", "unresolved"),
+    REPO_VARIABLE,
+    ids=[c[0] for c in REPO_VARIABLE],
+)
+def test_a_repo_in_a_variable_resolves_or_fails_safe(
+    world, stem, control, want, resolved, unresolved
+):
+    rc, _ = judge(world, stem, control)
+    assert rc == want, "control %r answered rc=%d, not %d" % (control, rc, want)
+    rc, calls = judge(world, stem, resolved)
+    assert rc == want, "%r answered rc=%d where %r answers rc=%d (gh calls: %r)" % (
+        resolved,
+        rc,
+        control,
+        want,
+        calls,
+    )
+    command, safe = unresolved
+    rc, calls = judge(world, stem, command)
+    assert rc == safe, "%r names no repo this hook can know and answered rc=%d, not %d (%r)" % (
+        command,
+        rc,
+        safe,
+        calls,
+    )
+
+
+def test_every_repo_consumer_is_pinned():
+    guards = pathlib.Path(__file__).resolve().parents[1] / "guards"
+    reading = sorted(
+        p.stem
+        for p in guards.glob("*.py")
+        if not p.name.startswith("test-")
+        and any(
+            name in p.read_text(encoding="utf-8") for name in ("gh_run_repo(", "gh_named_repo(")
+        )
+    )
+    assert reading == sorted(CONSUMERS), (
+        "the guards reading a gh call's repo changed; pin each new one in REPO_VARIABLE"
+    )
+    assert sorted(c[0] for c in REPO_VARIABLE) == sorted(CONSUMERS)
+    for stem in CONSUMERS:
+        text = (guards / ("%s.py" % stem)).read_text(encoding="utf-8")
+        assert "UNRESOLVED_REPO" in text, "%s never says what an unresolvable repo means" % stem
+        assert 'ev.env("GH_REPO")' in text, "%s ignores the session's own GH_REPO" % stem
+
+
+# Residue 5. The hook process inherits Claude Code's environment, and so does the Bash tool's shell (the shell adds to it and never removes from it; an `export` in one Bash call does not reach the next). So a `GH_REPO` in the hook's own environment is the one the session's gh calls see, at the lowest precedence.
+@pytest.mark.parametrize(
+    ("stem", "command", "want"),
+    [
+        ("block_nondraft_pr_create", "gh pr create -t x", 0),
+        ("block_nondraft_pr_create", "gh pr create -t x -R %s" % GH_REPO, 2),
+        ("block_nondraft_pr_create", "GH_REPO= gh pr create -t x", 2),
+        ("block_nondraft_pr_create", "unset GH_REPO; gh pr create -t x", 2),
+        ("block_nondraft_pr_create", "env -i gh pr create -t x", 2),
+        ("block_nondraft_pr_create", "export -n GH_REPO; gh pr create -t x", 2),
+        ("block_merge_with_unpushed", "gh pr merge 42", 0),
+        ("block_premature_ready", "gh pr ready 42", 0),
+    ],
+)
+def test_the_sessions_own_gh_repo_is_the_lowest_precedence(world, stem, command, want):
+    rc, calls = judge(world, stem, command, session={"GH_REPO": RENET_REPO})
+    assert rc == want, "%r under GH_REPO=%s answered rc=%d, not %d (%r)" % (
+        command,
+        RENET_REPO,
+        rc,
+        want,
+        calls,
+    )
+
+
+@pytest.mark.parametrize(
+    ("cmd", "inherited", "repo"),
+    [
+        ("R=a/b; gh pr view 1 -R $R", None, "a/b"),
+        ('R=a/b; gh pr view 1 -R "$R"', None, "a/b"),
+        ("R=a/b; gh pr view 1 -R${R}", None, "a/b"),
+        ("R=a/b X=$R; gh pr view 1 -R $X", None, "a/b"),
+        ("R=a/b; GH_REPO=$R gh pr view 1", None, "a/b"),
+        ("R=a/b; export GH_REPO=$R; gh pr view 1", None, "a/b"),
+        ("A=a GH_REPO=$A/b gh pr view 1", None, "a/b"),
+        ("gh pr view 1 -R '$R'", None, "$R"),
+        ("gh pr view 1 -R $R", None, shellscan.UNRESOLVED_REPO),
+        ("R=a/b gh pr view 1 -R $R", None, shellscan.UNRESOLVED_REPO),
+        ("export GH_REPO=$R; gh pr view 1", None, shellscan.UNRESOLVED_REPO),
+        ("gh pr view 1 -R $(cat r)", None, shellscan.UNRESOLVED_REPO),
+        ('R="a/b c"; gh pr view 1 -R $R', None, shellscan.UNRESOLVED_REPO),
+        ('R=a/b; unset R; gh pr view 1 -R "$R"', None, None),
+        ("gh pr view 1", "x/y", "x/y"),
+        ("gh pr view 1 -R a/b", "x/y", "a/b"),
+        ("GH_REPO=a/b gh pr view 1", "x/y", "a/b"),
+        ("GH_REPO= gh pr view 1", "x/y", None),
+        ("env -i gh pr view 1", "x/y", None),
+        ("env -u GH_REPO sh -c 'gh pr view 1'", "x/y", None),
+        ("unset GH_REPO; gh pr view 1", "x/y", None),
+        ("export GH_REPO; gh pr view 1", "x/y", "x/y"),
+        ("export -n GH_REPO; gh pr view 1", "x/y", None),
+        ("GH_REPO=a/b; gh pr view 1", "x/y", "a/b"),
+        ("GH_REPO=a/b; gh pr view 1", None, None),
+    ],
+)
+def test_a_repo_variable_is_read_the_way_bash_expands_it(cmd, inherited, repo):
+    runs = [r for r in shellscan._analyse(cmd).runs if r.name == "gh"]
+    assert runs, "the walk found no gh call in %r" % cmd
+    assert shellscan.gh_named_repo(runs[-1], inherited) == repo
+
+
+# Every builtin the walk treats as setting a variable runs its arm. The live hook raised `NameError: _DECLARING` for each of these while shellscan was half edited (2026-10-07, #9de9a8e9), and no case here walked one; a walk that raises is a guard that crashes on every command of that shape.
+@pytest.mark.parametrize("builtin", sorted(shellscan._DECLARING))
+def test_every_declaring_builtin_walks(builtin):
+    cmd = "%s GH_REPO=a/b; %s GH_REPO; gh pr view 1" % (builtin, builtin)
+    runs = shellscan._analyse(cmd).runs
+    assert [r.name for r in runs] == [builtin, builtin, "gh"]
+    assert shellscan.gh_named_repo(runs[-1]) in (None, "a/b", shellscan.UNRESOLVED_REPO)

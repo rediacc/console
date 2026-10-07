@@ -70,9 +70,15 @@ def run(ev):
     # text match. A `GH_REPO` in the merge's own environment (`GH_REPO=x gh pr merge`, `env GH_REPO=x ...`, an earlier `export`) names its repo the same way, an explicit flag winning over it as in gh (`shellscan.gh_named_repo`, #d2d5f89d).
     if runs:
         named = [
-            shellscan.gh_named_repo(r) for r in runs if not shellscan.gh_args(r.argv).on("help")
+            shellscan.gh_named_repo(r, ev.env("GH_REPO"))
+            for r in runs
+            if not shellscan.gh_args(r.argv).on("help")
         ]
-        if not any(r is None or hookio.case_glob(r, "*/console") for r in named):
+        # A repo the walk cannot evaluate (`-R $R`, `GH_REPO=$(...)`) may be this one, so it is judged as this one (#9de9a8e9).
+        if not any(
+            r is None or r == shellscan.UNRESOLVED_REPO or hookio.case_glob(r, "*/console")
+            for r in named
+        ):
             return hookio.ALLOW
     else:
         repo_arg = ""

@@ -26,9 +26,6 @@ ORDER = 50
 DEFECT = ("if missing:", "if False:")
 
 GITLINK_MODE = "160000"
-DRY_RUN_FLAGS = frozenset(("--dry-run", "-n"))
-NO_TIP_FLAGS = frozenset(("--delete", "-d", "--tags"))
-PUSH_WITH_VALUE = frozenset(("--repo", "-o", "--push-option", "--receive-pack", "--exec"))
 
 _FIXTURE_DATE = "2026-01-01T00:00:00+00:00"
 
@@ -125,30 +122,19 @@ def _same(a, b):
     return os.path.realpath(a) == os.path.realpath(b)
 
 
-def _remote_and_refspecs(args):
-    """`(remote, refspecs)` for `git push <args>`; remote "" when none is named."""
-    positionals = []
-    k = 0
-    while k < len(args):
-        arg = args[k]
-        if arg == "--":
-            positionals.extend(args[k + 1 :])
-            break
-        if arg in PUSH_WITH_VALUE:
-            k += 2
-            continue
-        if not arg.startswith("-"):
-            positionals.append(arg)
-        k += 1
-    return (positionals[0] if positionals else ""), positionals[1:]
-
-
 def _targets(root, args):
-    """`[(remote, src, dst)]` the push would publish, or [] when it publishes no branch tip."""
-    if any(a in DRY_RUN_FLAGS or a in NO_TIP_FLAGS for a in args):
+    """`[(remote, src, dst)]` the push would publish, or [] when it publishes no branch tip.
+
+    Read by `shellscan.git_push_args`, git's own parse-options over `git push`'s whole option table (#9de9a8e9). Until 2026-10-07 this matched flag spellings by membership, and git 2.53.0 disagreed four ways: `-n --no-dry-run`, `-d --no-delete` and `--tags origin <branch>` each published the branch this read as publishing nothing, and `--push-o x` (a unique prefix of `--push-option`) made its value the remote. The other two ways it was wrong refused a push that publishes nothing: `-fn` and `--dry` are dry runs.
+    """
+    parsed = shellscan.git_push_args(args)
+    if parsed.on("dry-run") or parsed.on("delete"):
+        return []
+    remote = parsed.operands[0] if parsed.operands else (parsed.last("repo") or "")
+    specs = parsed.operands[1:]
+    if parsed.on("tags") and not specs:
         return []
     branch = commit_policy.current_branch(root)
-    remote, specs = _remote_and_refspecs(args)
     if remote == "":
         remote = (
             (_git(["config", "branch.%s.remote" % branch], root) or "origin")
