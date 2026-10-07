@@ -4174,6 +4174,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     elif cistate == "cancelled":
         # Blocking contexts cancelled with nothing failing. wl_ci renders the attributed cause and returns "" for superseded/unknown, which stay silent (test_122).
         ci_report = wl_ci.ci_cancel_note(cidetail)
+    elif cistate == "carried":
+        # Red only on findings .ci/config/carried-reds.json carries: one advisory line, never a block (worklist #e3fca920). A red with any uncarried or unreadable finding is `trouble` below.
+        ci_report = wl_ci.ci_carried_note(cidetail)
     elif cistate in ("trouble", "downgraded", "soft"):
         _rows = cidetail["hard"] or cidetail["soft"]
         _txt = wl_ci.ci_rows_text(_rows, cidetail["info"])
@@ -4406,9 +4409,14 @@ def run_stop(event, event_ok, worklist, hook_file):
         _prf_info = None
         if cistate in ("ok", "pending"):
             _prf_info = cidetail
-        elif cistate in ("trouble", "downgraded", "soft", "watched", "cancelled") and isinstance(
-            cidetail, dict
-        ):
+        elif cistate in (
+            "trouble",
+            "downgraded",
+            "soft",
+            "watched",
+            "cancelled",
+            "carried",
+        ) and isinstance(cidetail, dict):
             _prf_info = cidetail.get("info")
         _prf_num = (_prf_info or {}).get("pr")
         # The branch is read LOCALLY. `agent_branch` is not bound until the unread-reports surface several hundred lines below, and referencing it here raised UnboundLocalError -- caught by the fail-closed arm, which turned the whole check into a HOOK BUG banner on the proving case. That is the arm working; it is not a reason to leave it reachable.

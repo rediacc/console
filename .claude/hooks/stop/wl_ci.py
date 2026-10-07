@@ -4,6 +4,7 @@ import contextlib
 import datetime
 import hashlib
 import importlib.util
+import json
 import os
 import pathlib
 import re
@@ -693,6 +694,223 @@ def ci_cancel_note(detail):
     )
 
 
+# ---- CARRIED REDS (worklist #e3fca920). A PR that carries a red on purpose (`.ci/config/carried-reds.json`, the push guard's file) failed CI on exactly that finding and nothing else, and the check below used to block every stop on it as "nothing is watching" until the per-set budget ran out: run 37613276374 on PR #599, whose one failed job, Quality / Branch, failed only on
+# `::finding::P-A1:112304fdab4d`, the carry of PLAN-ci-consolidation.md's last box. A failed job is CARRIED only when every failed step of it is a `npm run <gate>` step that printed at least one `::finding::` key and every key it printed is carried for that gate. Anything this cannot read, place or match is a REAL red: unreadable is never carried.
+CARRIED_REL = ".ci/config/carried-reds.json"
+# Bounded like ci_steps: one job read and one log read per job, at most this many jobs, inside a wall-clock budget, because the Stop hook runs on every stop. A job past either bound is unread, so it stays a real red.
+CI_CARRY_LOOKUPS = 3
+CI_CARRY_BUDGET_S = 10.0
+FINDING_LINE_RE = re.compile(r"^::finding::(\S+)\s*$")
+STEP_GATE_RE = re.compile(r"^##\[group\]Run npm run (?:--?[\w-]+ )*([\w:.-]+)\s*$")
+EXIT_LINE = "##[error]Process completed with exit code"
+
+
+def _push_guard():
+    """`rediacc_hooks.guards.block_unverified_push`, the carry file's one schema reader (`parse_carried`), reached through the canonical hop (`.claude/rediacc_hooks/syspath.py`) the way wl_prscope reaches plan_gate. Raises ImportError; the caller reports that as an unreadable carry."""
+    helper = pathlib.Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
+    spec = importlib.util.spec_from_file_location("_rediacc_syspath", helper)
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load %s" % helper)
+    syspath = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(syspath)
+    syspath.on_sys_path(syspath.CLAUDE_DIR)
+    from rediacc_hooks.guards import block_unverified_push  # noqa: PLC0415
+
+    return block_unverified_push
+
+
+def carried_at(root, sha):
+    """({gate: set(keys) | "*"} or None, why): carried-reds.json as committed at `sha`, parsed by the push guard's `parse_carried`.
+
+    AT THE PR TIP, NOT AT HEAD. The push guard reads HEAD because it judges the push about to happen; this judges a CI run that already happened, on the tree of `sha`. None means NOTHING is carried and `why` names the reason (absent, does not parse, schema error, reader not importable), which the red then prints.
+    """
+    raw = _git(root, "show", "%s:%s" % (sha, CARRIED_REL))
+    if not raw:
+        return None, "%s is absent or empty at %s" % (CARRIED_REL, str(sha)[:8])
+    try:
+        doc = json.loads(raw)
+    except ValueError as exc:
+        return None, "%s at %s does not parse: %s" % (CARRIED_REL, str(sha)[:8], str(exc)[:80])
+    try:
+        guard = _push_guard()
+    except Exception as exc:  # noqa: BLE001 -- a broken reader is an unreadable carry, never an empty one
+        return None, "the carry reader (block_unverified_push.parse_carried) did not import: %s" % (
+            str(exc)[:120]
+        )
+    carried, err = guard.parse_carried(doc)
+    if err:
+        return None, "%s at %s: %s" % (CARRIED_REL, str(sha)[:8], err)
+    return carried, ""
+
+
+def step_findings(diag, log, step):
+    """(gate, keys, why) for one failed step: the `npm run <gate>` its log group opens with and the `::finding::` keys it printed. `why` is non-empty when the step cannot be placed in the log.
+
+    PLACED BY ci_diagnose.failing_step_slice, the tracer's own slicer, and then trusted only when the slice ENDS on the step's exit line: the slicer falls back to the whole log when a step cannot be placed, and a whole log would lend this step another step's findings. The window also opens up to a second early, so it is cut at its LAST `##[group]Run` line, which is this step's own.
+    """
+    _name, lines = diag.failing_step_slice(log, {"steps": [step]})
+    body = [diag.TS_RE.sub("", ln, count=1) for ln in lines]
+    while body and not body[-1].strip():
+        body.pop()
+    if not body or not body[-1].startswith(EXIT_LINE):
+        return "", [], "step %r could not be placed in the job log" % step.get("name")
+    start = max((i for i, ln in enumerate(body) if ln.startswith("##[group]Run ")), default=-1)
+    if start < 0:
+        return "", [], "step %r has no `##[group]Run` line in its log slice" % step.get("name")
+    m = STEP_GATE_RE.match(body[start])
+    keys = []
+    for ln in body[start + 1 :]:
+        f = FINDING_LINE_RE.match(ln)
+        if f and f.group(1) not in keys:
+            keys.append(f.group(1))
+    return (m.group(1) if m else ""), keys, ""
+
+
+def judge_job_carry(diag, job, log, carried):
+    """{"verdict": "carried" | "real" | "unreadable", "gate", "keys", "why"} for one failed job. Pure: no network.
+
+    CARRIED only when every failed step is a `npm run <gate>` step that printed at least one `::finding::` key and every key is carried for that gate. A step that printed no key is a crash or a gate without keys, and a gate carried as `"*"` cannot be told from its own crash, so both stay real.
+    """
+    out = {"verdict": "real", "gate": "", "keys": [], "why": ""}
+    if carried is None:
+        out.update(verdict="unreadable", why="no carry file was read")
+        return out
+    failed = [
+        s
+        for s in (job or {}).get("steps") or []
+        if (s.get("conclusion") or "") in diag.FAIL_CONCLUSIONS
+    ]
+    if not failed:
+        out["why"] = "no failed step in the job (%s)" % ((job or {}).get("conclusion") or "?")
+        return out
+    gates: list[str] = []
+    keys: list[str] = []
+    for step in failed:
+        gate, found, why = step_findings(diag, log, step)
+        if why:
+            out.update(verdict="unreadable", why=why)
+            return out
+        gates.append(gate)
+        keys.extend(k for k in found if k not in keys)
+        out.update(gate=", ".join(g for g in gates if g), keys=list(keys))
+        if not gate:
+            out["why"] = "failed step %r runs no `npm run <gate>`" % step.get("name")
+            return out
+        if not found:
+            out["why"] = (
+                "%s failed with no ::finding:: line (a crash, or a gate that emits no keys)" % gate
+            )
+            return out
+        have = carried.get(gate)
+        if have is None:
+            out["why"] = "%s is not carried in %s" % (gate, CARRIED_REL)
+            return out
+        if have == "*":
+            out["why"] = '%s is carried as "*", which cannot be told from its own crash' % gate
+            return out
+        extra = [k for k in found if k not in have]
+        if extra:
+            out["why"] = "uncarried finding(s) of %s: %s" % (gate, ", ".join(extra[:4]))
+            return out
+    out["verdict"] = "carried"
+    return out
+
+
+def _derived_job(diag, name):
+    """CI Complete and the jobs downstream of it fail BECAUSE another job failed (ci_diagnose.DOWNSTREAM_JOBS). Review Complete is not one: it is its own result."""
+    return any(p in str(name or "") for p in (CI_COMPLETE_CONTEXT, *diag.DOWNSTREAM_JOBS))
+
+
+def ci_carry_split(root, info, tip, hard, cached, diag=None, fetch=None, clock=time.monotonic):
+    """(real, carried): `hard` split into the rows still red for real and the rows whose every finding is carried. Each examined row gets `carry`, the judge_job_carry dict, which ci_rows_text prints under a real red.
+
+    `cached` is the ci_trouble steps cache for this tip; a carried or real verdict is stored under `_carry` and reused, an unreadable one is not, so the next stop reads again. A derived row (CI Complete, a downstream sentinel) is carried only beside at least one carried row and no real one.
+    """
+    diag = diag or _load_diagnose()
+    if diag is None:
+        for row in hard:
+            row["carry"] = {"verdict": "unreadable", "why": "ci_diagnose did not load", "keys": []}
+        return list(hard), []
+    memo = cached.setdefault("_carry", {})
+    carried, cwhy = carried_at(root, tip)
+    if fetch is None and info.get("owner"):
+        fetch = diag.GhFetcher(
+            "%s/%s" % (info["owner"], info["name"]), cwd=root, timeout=10, attempts=1
+        )
+    deadline = clock() + CI_CARRY_BUDGET_S
+    looked = 0
+    roots: list[dict[str, Any]] = []
+    derived: list[dict[str, Any]] = []
+    for row in hard:
+        (derived if _derived_job(diag, row.get("name")) else roots).append(row)
+    for row in roots:
+        key = str(row.get("job") or "")
+        if carried is None:
+            row["carry"] = {"verdict": "unreadable", "why": cwhy, "keys": []}
+            continue
+        if key and isinstance(memo.get(key), dict):
+            row["carry"] = memo[key]
+            continue
+        if not key or fetch is None:
+            row["carry"] = {"verdict": "unreadable", "why": "no job id to read", "keys": []}
+            continue
+        if looked >= CI_CARRY_LOOKUPS or clock() > deadline:
+            row["carry"] = {"verdict": "unreadable", "why": "carry read budget spent", "keys": []}
+            continue
+        looked += 1
+        job, err = fetch.json("actions/jobs/%s" % key)
+        if job is None:
+            row["carry"] = {"verdict": "unreadable", "why": "job read failed: %s" % err, "keys": []}
+            continue
+        if clock() > deadline:
+            row["carry"] = {"verdict": "unreadable", "why": "carry read budget spent", "keys": []}
+            continue
+        log, err = diag.job_log(fetch, key, completed=job.get("status") == "completed")
+        if log is None:
+            row["carry"] = {"verdict": "unreadable", "why": "log read failed: %s" % err, "keys": []}
+            continue
+        row["carry"] = judge_job_carry(diag, job, log, carried)
+        if row["carry"]["verdict"] != "unreadable" and job.get("status") == "completed":
+            memo[key] = row["carry"]
+    real = [r for r in roots if (r.get("carry") or {}).get("verdict") != "carried"]
+    carried_rows = [r for r in roots if r not in real]
+    for row in derived:
+        if carried_rows and not real:
+            row["carry"] = {
+                "verdict": "carried",
+                "why": "derived from the carried job(s)",
+                "keys": [],
+            }
+        else:
+            row["carry"] = {
+                "verdict": "real",
+                "why": "derived job, red beside no carried root",
+                "keys": [],
+            }
+    if carried_rows and not real:
+        return [], carried_rows + derived
+    return real + derived, carried_rows
+
+
+def ci_carried_note(detail):
+    """The one-line advisory for a `carried` ci_trouble state: every failed job's findings are carried, so nothing new is red."""
+    import worklist_messages as M  # noqa: PLC0415 -- pure text, loaded on the path that speaks
+
+    info = (detail or {}).get("info") or {}
+    rows = (detail or {}).get("carried") or []
+    keys: list[str] = []
+    for r in rows:
+        keys.extend(k for k in (r.get("carry") or {}).get("keys") or [] if k not in keys)
+    jobs = [r.get("name") or "?" for r in rows]
+    return M.CI_NOTE_CARRIED % (
+        info.get("pr", "?"),
+        ", ".join(keys) or "?",
+        CARRIED_REL,
+        ", ".join(jobs),
+        "; the run is still in progress" if (detail or {}).get("live") else "",
+    )
+
+
 # v12 (operator, 2026-07-30): "hook should detect that is current session sitting for CI pipeline? If so, it should FORCE current session to work on waiting items!!!" The shape of a CI watch, matched against a background task's command + description. Deliberately CONSERVATIVE: `gh run watch`, an Actions run URL/path, a run-id-sized number near "watch", or "CI" near "watch". A dev
 # file-watcher (`npm run watch`) matches none of these, and a false positive here turns a working session's stop into an accusation.
 CI_WATCH_RE = re.compile(
@@ -914,7 +1132,9 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
     """(state, detail) -- is the open PR in trouble nobody is on?
 
     state: unset | multi-session | no-pr | ok | pending | cancelled | watched | soft |
-           trouble | downgraded | unreadable
+           carried | trouble | downgraded | unreadable
+
+    `carried` is a final head whose every failed job failed only on findings `.ci/config/carried-reds.json` carries (ci_carry_split); its detail names them under `carried` and ci_carried_note renders the advisory. A red with any uncarried, unreadable or keyless failure stays `trouble`.
 
     `ok` is ci_gate's GREEN (CI Complete present and successful), not merely "nothing failed". `pending` is a head with no failure that is not green yet; it carries the info dict and blocks nothing. `cancelled` is a head whose blocking contexts were cancelled with nothing failing; its detail carries the attributed `cause` (ci_cancel_note renders it).
 
@@ -989,7 +1209,19 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
         _ci_cache_write(cache_p, tip, state, info, steps, final=not live)
         return "watched", {"info": info, "hard": hard, "soft": soft, "watcher": watcher}
     ci_steps(root, info, hard or soft, steps)
+    # A red whose every finding is carried (.ci/config/carried-reds.json) is reported, not blocked on. Judged while the run is live too: the verdict is recomputed every stop the cache lets through, so a job that fails later turns it back into `trouble`.
+    carried_rows = []
+    if hard:
+        hard, carried_rows = ci_carry_split(root, info, tip, hard, steps)
     _ci_cache_write(cache_p, tip, state, info, steps, final=not live)
+    if not hard and carried_rows:
+        return "carried", {
+            "info": info,
+            "hard": [],
+            "soft": soft,
+            "carried": carried_rows,
+            "live": live,
+        }
     if not hard:
         return "soft", {"info": info, "hard": hard, "soft": soft, "live": live}
     low = (ack_text or "").lower()
@@ -999,7 +1231,15 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
     ).hexdigest()[:12]
     mark = wl_gh.cache_load(marker_p) or {}
     blocks = int(mark.get("blocks") or 0) if mark.get("sig") == sig else 0
-    detail = {"info": info, "hard": hard, "soft": soft, "live": live, "acked": acked, "n": blocks}
+    detail = {
+        "info": info,
+        "hard": hard,
+        "soft": soft,
+        "live": live,
+        "acked": acked,
+        "n": blocks,
+        "carried": carried_rows,
+    }
     if acked or blocks >= CI_MAX_BLOCKS:
         return "downgraded", detail
     # Not a cache (no TTL), but written atomically like one: a half-written marker would reset the block budget.
@@ -1121,6 +1361,10 @@ def ci_rows_text(rows, _info):
             out.append("        .ci/scripts/ci/ci-trace.py --job %s --errors" % r["job"])
         elif r.get("url"):
             out.append("        %s" % r["url"])
+        carry = r.get("carry") or {}
+        if carry.get("verdict") in ("real", "unreadable") and carry.get("why"):
+            # WHY THIS RED IS NOT A CARRIED ONE, so a carry that stopped matching (a new key, a corrupt file) is named rather than inferred.
+            out.append("        not carried: %s" % carry["why"])
     return "\n".join(out)
 
 
