@@ -54,7 +54,7 @@
  * step: Shard manifest coverage
  * needs: node, go, private/renet, private/account
  * lane: quality-go
- * selftest: true
+ * run: tsx scripts/ci-runner/shard-place.ts --selftest && tsx scripts/gates/check-shard-manifest-coverage.ts --selftest && tsx scripts/gates/check-shard-manifest-coverage.ts
  * why: a shard leg runs only the ids its committed manifest names, so a unit the
  *   manifest omits runs in no CI job while every leg stays green; suite 25 of E2E
  *   Workers did exactly that until 2026-09-27
