@@ -2556,7 +2556,7 @@ def pr_scope_line(state, root, me8, queued_n, stood):
         "branch": state.branch,
         "plans": named,
     }
-    return M.N_PR_SCOPE % {
+    fields = {
         "who": who,
         "items": int(queued_n),
         "plans": wl_backlog.other_plans(root, state.plans),
@@ -2564,6 +2564,30 @@ def pr_scope_line(state, root, me8, queued_n, stood):
         "stood": M.PR_SCOPE_STOOD % wl_standdown.parked_line(stood, 6) if stood else "",
         "me": me8,
     }
+    if not state.turbo:
+        return M.N_PR_SCOPE % fields
+    # UNDER TURBO the line says what turbo does with the queue, never "One plan per PR": a solo plan in the set keeps the PR to itself, else the picks the free writer slots take (`state.turbo_picks`, filled by wl_prscope.with_turbo), else that none is eligible.
+    solo = sorted(p for p in (state.plans or ()) if p in _solo_plans(root))
+    if solo:
+        turbo = M.PR_SCOPE_TURBO_SOLO % _base(solo[0])
+    elif state.turbo_picks:
+        turbo = M.PR_SCOPE_TURBO_PICKS % ", ".join(_base(p) for p in state.turbo_picks)
+    else:
+        turbo = M.PR_SCOPE_TURBO_NONE
+    return M.N_PR_SCOPE_TURBO % dict(
+        fields, turbo=turbo, batch=int(state.batch_size), cap=int(state.writer_cap)
+    )
+
+
+def _solo_plans(root):
+    """The ` -- solo` entries of agent/plans/QUEUE.md (wl_planqueue.solo_plans); an unreadable queue has none, so the line falls back to the picks rather than claiming a solo it cannot see."""
+    import wl_planqueue  # noqa: PLC0415 -- read only on a turbo stop
+
+    try:
+        text = (pathlib.Path(root) / wl_planqueue.QUEUE_REL).read_text(encoding="utf-8")
+    except OSError:
+        return set()
+    return wl_planqueue.solo_plans(text)
 
 
 def ci_arming(root, session_id, focus_ref, state):

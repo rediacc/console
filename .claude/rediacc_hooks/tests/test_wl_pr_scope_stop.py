@@ -643,3 +643,52 @@ def test_inflight_m1_a_renderer_that_flips_a_switch_fails_the_mode_check(wl):  #
     body = inflight_of(wl)
     assert "stop_hook off; turbo on" in body, body
     assert not mode_ok(wl), body
+
+
+# ---- turbo: the queued line must not claim "One plan per PR" (operator, 2026-10-07) ----
+
+TURBO_ON = "Turbo is on (batch_size 3, writer_cap 15): the PR's plan set blocks,"
+
+
+def write_turbo_queue(fix, *rels: str, solo: str = "") -> None:
+    """QUEUE.md with `turbo: on` in its `## Settings` block and `rels` Promoted, `solo` carrying the ` -- solo` note."""
+    entries = "".join(
+        "%d. %s -- fixture entry%s\n" % (i + 1, r, " -- solo" if r == solo else "")
+        for i, r in enumerate(rels)
+    )
+    text = (
+        "# Plan queue\n\n## Settings\n\n```stop-hook\nturbo: on\nbatch_size: 3\nwriter_cap: 15\n```\n\n"
+        "## Promoted\n\n" + entries
+    )
+    (fix.proj / "agent" / "plans" / "QUEUE.md").write_text(text, encoding="utf-8")
+
+
+def test_turbo_the_queued_line_says_turbo_not_one_plan_per_pr(wl):  # noqa: F811
+    own = loop_world(wl)
+    write_turbo_queue(wl, own, "agent/plans/PLAN-queued-next.md")
+    got = run_stop(wl)
+    out = reason(got) + got.out
+    assert TURBO_ON in out, out[:2000]
+    assert PR_SCOPE not in out, out[:2000]
+    assert "PR #543 works PLAN-pr-own.md." in out, out[:2000]
+
+
+def test_turbo_a_solo_plan_in_the_set_is_named_as_why_no_plan_joins(wl):  # noqa: F811
+    own = loop_world(wl)
+    write_turbo_queue(wl, own, "agent/plans/PLAN-queued-next.md", solo=own)
+    got = run_stop(wl)
+    out = reason(got) + got.out
+    assert TURBO_ON in out, out[:2000]
+    assert (
+        "but PLAN-pr-own.md is a ` -- solo` entry in QUEUE.md, so this PR takes no further plan"
+        in out
+    ), out[:2000]
+    assert PR_SCOPE not in out, out[:2000]
+
+
+def test_turbo_control_turbo_off_keeps_the_one_plan_line(wl):  # noqa: F811
+    loop_world(wl)
+    got = run_stop(wl)
+    out = reason(got) + got.out
+    assert PR_SCOPE in out, out[:2000]
+    assert "Turbo is on" not in out, out[:2000]
