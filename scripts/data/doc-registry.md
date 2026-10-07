@@ -816,7 +816,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/pr | 2 | .py 2 |
 | .ci/rediacc_ci/private | 9 | .py 9 |
 | .ci/rediacc_ci/proxies | 10 | .py 10 |
-| .ci/rediacc_ci/quality | 107 | .py 107 |
+| .ci/rediacc_ci/quality | 108 | .py 108 |
 | .ci/rediacc_ci/release | 28 | .py 28 |
 | .ci/rediacc_ci/review | 7 | .py 7 |
 | .ci/rediacc_ci/review/prompts | 2 | .md 2 |
@@ -826,7 +826,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests | 346 | .py 346 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures/ci_diagnose | 22 | .json 16, .log 6 |
-| .ci/rediacc_ci/tests/gates | 178 | .py 177, .fixture 1 |
+| .ci/rediacc_ci/tests/gates | 179 | .py 178, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/actionlint | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/bash-pairs | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/corpus | 17 | .list 17 |
