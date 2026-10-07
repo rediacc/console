@@ -56,7 +56,7 @@ twin has a byte-exact answer for.
 -----------------------------------------------------------------------------
 RULE T: THE OPERATOR-SUPPLIED COUNTS ARE NO LONGER BASH ARITHMETIC WORDS
 -----------------------------------------------------------------------------
-`--days`, `--versions`, `BRANCH_MAX_AGE_DAYS` and `MAX_DELETES_PER_RUN` are validated at startup (`_whole_number`): ASCII digits only, read in base 10, anything else refused with exit 2 naming the flag and the value. That closes the octal trap below at its source for the four values an operator can set (`010` keeps ten, `08` keeps eight, `08x` is refused), and with it HAZARD 8 (`BRANCH_MAX_AGE_DAYS=08` unwinding the run mid-Phase 9). HAZARD 9 (a failed cache listing doubling the stream and unwinding the run) is fixed in `cleanup_actions_cache`: the failure is named and nothing is evicted. Phase 10 carries three more (see `cleanup_workflow_runs`): a workflow whose file is gone from the default branch loses the keep-newest floor, whatever its state; the workflow listing is read past its first page; and a workflow's summary line names the retention that applied to it. The sections below describe the TWIN; `arith` keeps emulating it for the values that still reach it (epochs, API numbers), and the `test_delta_*` cases pin each change against the live twin as the control.
+`--days`, `--versions`, `BRANCH_MAX_AGE_DAYS` and `MAX_DELETES_PER_RUN` are validated at startup (`_whole_number`): ASCII digits only, read in base 10, anything else refused with exit 2 naming the flag and the value. That closes the octal trap below at its source for the four values an operator can set (`010` keeps ten, `08` keeps eight, `08x` is refused), and with it HAZARD 8 (`BRANCH_MAX_AGE_DAYS=08` unwinding the run mid-Phase 9). HAZARD 9 (a failed cache listing doubling the stream and unwinding the run) is fixed in `cleanup_actions_cache`: the failure is named and nothing is evicted. Phase 10 carries four more (see `cleanup_workflow_runs`): a workflow whose file is gone from the default branch loses the keep-newest floor, whatever its state; the workflow listing is read past its first page; a workflow's summary line names the retention that applied to it; and every page of a workflow's runs is listed before the first delete. Phase 11 lists every page of artifacts before its first delete for the same reason. The sections below describe the TWIN; `arith` keeps emulating it for the values that still reach it (epochs, API numbers), and the `test_delta_*` cases pin each change against the live twin as the control.
 
 -----------------------------------------------------------------------------
 BASH ARITHMETIC IS EMULATED, INCLUDING THE OCTAL TRAP
@@ -2985,11 +2985,45 @@ class Housekeeping:
         )
         return present
 
+    def _list_runs(self, wf_id: str) -> tuple[list, bool]:
+        """Every completed run of one workflow, newest first, read BEFORE any of them is deleted, and whether the listing was truncated.
+
+        The pages are offset pages (`page=N` is runs 100(N-1)+1 to 100N of the list as it stands at that read), so deleting runs between two reads shifts the rest towards the front and the next page starts past them. Listing first is how Phases 3 and 5 avoid that. The listing is bounded by GH_RUNS_MAX_PAGES_PER_WORKFLOW exactly as the interleaved loop was, so a night still reads at most 1,000 runs of a workflow; it is TRUNCATED when every one of those pages came back full, i.e. older runs may exist beyond it. A run listed twice (a run completing between two reads shifts the list the other way) is kept once. An unreadable page ends the listing with what was read.
+        """
+        runs: list = []
+        listed_ids: set[str] = set()
+        page = 1
+        while page <= GH_RUNS_MAX_PAGES_PER_WORKFLOW:
+            code, runs_blob = gh_read(
+                [
+                    "api",
+                    "repos/%s/actions/workflows/%s/runs?status=completed&per_page=100&page=%d"
+                    % (RELEASE_REPO, wf_id, page),
+                    "--jq",
+                    (
+                        "[.workflow_runs[] | {id: .id, created_at: .created_at, conclusion: .conclusion}]"
+                    ),
+                ]
+            )
+            if code != 0:
+                runs_blob = "[]"
+            rows = blob_array(runs_blob)
+            for row in rows:
+                run_id = jq_text(jq_get(row, "id"))
+                if run_id not in listed_ids:
+                    listed_ids.add(run_id)
+                    runs.append(row)
+            if len(rows) < 100:
+                return runs, False
+            page += 1
+        return runs, True
+
     def cleanup_workflow_runs(self) -> None:
         """`cleanup_workflow_runs` (:1673-1813).
 
-        THE VACUOUS-GREEN CHECK at the end is the reason this phase is worth reading twice. It deleted nothing for `watchdog-monitor.yml` for months and reported success, because the scan window (MAX_PAGES x 100 runs) never reached back as far as the retention threshold. The warning fires only when the window was TRUNCATED (`page` exceeded the cap), so a young low-volume workflow
-        with nothing to reap stays quiet.
+        THE VACUOUS-GREEN CHECK at the end is the reason this phase is worth reading twice. It deleted nothing for `watchdog-monitor.yml` for months and reported success, because the scan window (MAX_PAGES x 100 runs) never reached back as far as the retention threshold. The warning fires only when the LISTING was truncated (all GH_RUNS_MAX_PAGES_PER_WORKFLOW pages came back full) and even the oldest run it holds is inside retention, so a young low-volume workflow with nothing to reap stays quiet, and so does a window whose old runs failed to delete or ran into the budget.
+
+        LIST FIRST, THEN DELETE (intentional delta, Rule T). The runs listing is offset-paged, and the twin deleted each page's reapable runs before reading the next page, so every delete moved a later run onto a page already read and it went unseen until a later night. `_list_runs` reads the whole capped window before the first delete, as Phases 3 and 5 do; the cap is unchanged, so a night still reads at most 1,000 runs of a workflow, and the listing of the workflow whose deletes exhaust the budget is the only one read in full without being worked through. A spent budget lists nothing.
 
         REMOVED WORKFLOWS (intentional delta, Rule T). A workflow whose `.github/workflows/` file the default branch no longer holds loses the keep-newest-100 floor and keeps only its runs within retention, so it reaches zero runs and leaves the Actions sidebar; its state does not matter. Everything else is the twin's: the budget, dry-run, the retry, the five-failure breaker. FAIL CLOSED: an unreadable, empty, malformed or possibly truncated listing, or one that shares no path with the workflow list, treats every workflow as present. `dynamic/...` workflows are never removed. The vacuous-green warning stays quiet for a removed workflow, which gains no new runs. The line `<name>: deleted N of M (...)` names the retention that applied, the watchdog's 7d included.
         """
@@ -3047,106 +3081,81 @@ class Housekeeping:
 
             log.step("  Workflow: %s (id=%s)" % (wf_name, wf_id))
 
-            page = 1
+            # INTENTIONAL DELTA (Rule T): nothing is listed once the budget is spent, so listing first costs no read the twin's first-run budget check would have avoided.
+            if not self.deletes_budget_ok():
+                log.warn(
+                    "  Phase 10: hit MAX_DELETES_PER_RUN=%s; remaining workflow "
+                    "runs deferred to next run" % self.max_deletes
+                )
+                budget_out = True
+                break
+
+            runs, truncated = self._list_runs(wf_id)
+
             wf_index = 0
             wf_deleted = 0
             wf_seen = 0
-            oldest_seen_epoch = 0
             consecutive_failures = 0
 
-            while page <= GH_RUNS_MAX_PAGES_PER_WORKFLOW:
-                code, runs_blob = gh_read(
-                    [
-                        "api",
-                        "repos/%s/actions/workflows/%s/runs?status=completed&per_page=100&page=%d"
-                        % (RELEASE_REPO, wf_id, page),
-                        "--jq",
-                        (
-                            "[.workflow_runs[] | {id: .id, created_at: .created_at, "
-                            "conclusion: .conclusion}]"
-                        ),
-                    ]
-                )
-                if code != 0:
-                    runs_blob = "[]"
-
-                runs = blob_array(runs_blob)
-                page_count = len(runs)
-                if page_count == 0:
+            for run in runs:
+                if not self.deletes_budget_ok():
+                    log.warn(
+                        "  Phase 10: hit MAX_DELETES_PER_RUN=%s; remaining workflow "
+                        "runs deferred to next run" % self.max_deletes
+                    )
+                    budget_out = True
                     break
+                run_id = jq_text(jq_get(run, "id"))
+                created_at = jq_text(jq_get(run, "created_at"))
+                wf_seen += 1
 
-                stop_workflow = False
-                for run in runs:
-                    if not self.deletes_budget_ok():
-                        log.warn(
-                            "  Phase 10: hit MAX_DELETES_PER_RUN=%s; remaining workflow "
-                            "runs deferred to next run" % self.max_deletes
-                        )
-                        budget_out = True
-                        break
-                    run_id = jq_text(jq_get(run, "id"))
-                    created_at = jq_text(jq_get(run, "created_at"))
-                    wf_seen += 1
-
-                    if not wf_removed and wf_index < GH_RUNS_KEEP_PER_WORKFLOW:
-                        wf_index += 1
-                        continue
-
-                    created_epoch = arith(date_epoch(created_at))
-                    oldest_seen_epoch = created_epoch
-                    if created_epoch == 0 or now_epoch - created_epoch < wf_retention_seconds:
-                        wf_index += 1
-                        continue
-
-                    if self.dry_run:
-                        log.warn(
-                            "  [DRY-RUN] Would delete run: %s (%s, %s)"
-                            % (run_id, wf_name, created_at)
-                        )
-                        wf_deleted += 1
-                    elif retry_with_backoff(
-                        3,
-                        2,
-                        [
-                            "gh",
-                            "api",
-                            "-X",
-                            "DELETE",
-                            "repos/%s/actions/runs/%s" % (RELEASE_REPO, run_id),
-                        ],
-                        quiet=True,
-                    ):
-                        log.debug("  Deleted run: %s (%s)" % (run_id, wf_name))
-                        wf_deleted += 1
-                        self.record_delete()
-                        consecutive_failures = 0
-                    else:
-                        consecutive_failures += 1
-                        log.warn("  Failed to delete run: %s (%s)" % (run_id, wf_name))
-                        if consecutive_failures >= CONSECUTIVE_FAILURE_LIMIT:
-                            log.warn(
-                                "  Skipping remaining runs for %s after %d "
-                                "consecutive failures" % (wf_name, consecutive_failures)
-                            )
-                            stop_workflow = True
-                            break
+                if not wf_removed and wf_index < GH_RUNS_KEEP_PER_WORKFLOW:
                     wf_index += 1
+                    continue
 
-                if budget_out or stop_workflow:
-                    break
-                if page_count < 100:
-                    break
-                page += 1
+                created_epoch = arith(date_epoch(created_at))
+                if created_epoch == 0 or now_epoch - created_epoch < wf_retention_seconds:
+                    wf_index += 1
+                    continue
 
-            # A removed workflow gains no new runs, so a window that stops short of the threshold today reaches it as its runs age: the warning would be false for it.
-            if (
-                not wf_removed
-                and wf_deleted == 0
-                and oldest_seen_epoch > 0
-                and page > GH_RUNS_MAX_PAGES_PER_WORKFLOW
-                and now_epoch - oldest_seen_epoch < wf_retention_seconds
-            ):
-                span_days = bash_div(now_epoch - oldest_seen_epoch, 86400)
+                if self.dry_run:
+                    log.warn(
+                        "  [DRY-RUN] Would delete run: %s (%s, %s)" % (run_id, wf_name, created_at)
+                    )
+                    wf_deleted += 1
+                elif retry_with_backoff(
+                    3,
+                    2,
+                    [
+                        "gh",
+                        "api",
+                        "-X",
+                        "DELETE",
+                        "repos/%s/actions/runs/%s" % (RELEASE_REPO, run_id),
+                    ],
+                    quiet=True,
+                ):
+                    log.debug("  Deleted run: %s (%s)" % (run_id, wf_name))
+                    wf_deleted += 1
+                    self.record_delete()
+                    consecutive_failures = 0
+                else:
+                    consecutive_failures += 1
+                    log.warn("  Failed to delete run: %s (%s)" % (run_id, wf_name))
+                    if consecutive_failures >= CONSECUTIVE_FAILURE_LIMIT:
+                        log.warn(
+                            "  Skipping remaining runs for %s after %d "
+                            "consecutive failures" % (wf_name, consecutive_failures)
+                        )
+                        break
+                wf_index += 1
+
+            # THE VACUOUS-GREEN WARNING, judged on the LISTING: the window was truncated (every page full) and even its oldest run is inside retention, so nothing beyond the floor can be reaped until the window reaches further back. Read from the listing rather than from where the delete loop stopped, a budget that runs out mid-workflow can neither raise it nor hide it. A removed workflow gains no new runs, so its window reaches the threshold as its runs age: the warning would be false for it.
+            oldest_listed_epoch = 0
+            if truncated and runs and not wf_removed and wf_deleted == 0:
+                oldest_listed_epoch = arith(date_epoch(jq_text(jq_get(runs[-1], "created_at"))))
+            if oldest_listed_epoch > 0 and now_epoch - oldest_listed_epoch < wf_retention_seconds:
+                span_days = bash_div(now_epoch - oldest_listed_epoch, 86400)
                 log.warn(
                     "  %s: scan window reaches only %dd but retention is %dd --"
                     % (wf_name, span_days, wf_retention_days)
@@ -3184,19 +3193,14 @@ class Housekeeping:
 
     # -- PHASE 11: WORKFLOW ARTIFACTS --------------------------------------
 
-    def cleanup_workflow_artifacts(self) -> None:
-        """`cleanup_workflow_artifacts` (:1823-1900)."""
-        log.step("Phase 11: Cleaning up workflow artifacts")
+    def _list_artifacts(self) -> list:
+        """Every artifact, newest first, read BEFORE any of them is deleted, bounded by GH_ARTIFACTS_MAX_PAGES as the interleaved loop was.
 
-        now_epoch = arith(now_epoch_utc())
-        retention_seconds = GH_ARTIFACTS_RETENTION_DAYS * 86400
-
+        Offset pages again: deleting the expired artifacts of page 1 before reading page 2 moved page 2's artifacts onto page 1, and they were never seen. An artifact listed twice is kept once; an unreadable page ends the listing with what was read.
+        """
+        artifacts: list = []
+        listed_ids: set[str] = set()
         page = 1
-        seen = 0
-        deleted = 0
-        expired_count = 0
-        consecutive_failures = 0
-
         while page <= GH_ARTIFACTS_MAX_PAGES:
             code, artifacts_blob = gh_read(
                 [
@@ -3211,76 +3215,97 @@ class Housekeeping:
             )
             if code != 0:
                 artifacts_blob = "[]"
-
-            artifacts = blob_array(artifacts_blob)
-            page_count = len(artifacts)
-            if page_count == 0:
-                break
-
-            stop = False
-            for artifact in artifacts:
-                if not self.deletes_budget_ok():
-                    log.warn(
-                        "  Phase 11: hit MAX_DELETES_PER_RUN=%s; remaining artifacts "
-                        "deferred to next run" % self.max_deletes
-                    )
-                    stop = True
-                    break
-                artifact_id = jq_text(jq_get(artifact, "id"))
-                created_at = jq_text(jq_get(artifact, "created_at"))
-                expired = jq_text(jq_get(artifact, "expired"))
-                seen += 1
-
-                should_delete = False
-                if expired == "true":
-                    should_delete = True
-                    expired_count += 1
-                else:
-                    created_epoch = arith(date_epoch(created_at))
-                    if created_epoch != 0 and now_epoch - created_epoch >= retention_seconds:
-                        should_delete = True
-
-                if not should_delete:
-                    continue
-
-                if self.dry_run:
-                    log.warn(
-                        "  [DRY-RUN] Would delete artifact: %s (created: %s, expired: %s)"
-                        % (artifact_id, created_at, expired)
-                    )
-                    deleted += 1
-                elif retry_with_backoff(
-                    3,
-                    2,
-                    [
-                        "gh",
-                        "api",
-                        "-X",
-                        "DELETE",
-                        "repos/%s/actions/artifacts/%s" % (RELEASE_REPO, artifact_id),
-                    ],
-                    quiet=True,
-                ):
-                    log.debug("  Deleted artifact: %s" % artifact_id)
-                    deleted += 1
-                    self.record_delete()
-                    consecutive_failures = 0
-                else:
-                    consecutive_failures += 1
-                    log.warn("  Failed to delete artifact: %s" % artifact_id)
-                    if consecutive_failures >= CONSECUTIVE_FAILURE_LIMIT:
-                        log.warn(
-                            "  Stopping artifact cleanup after %d consecutive "
-                            "failures" % consecutive_failures
-                        )
-                        stop = True
-                        break
-
-            if stop:
-                break
-            if page_count < 100:
+            rows = blob_array(artifacts_blob)
+            for row in rows:
+                artifact_id = jq_text(jq_get(row, "id"))
+                if artifact_id not in listed_ids:
+                    listed_ids.add(artifact_id)
+                    artifacts.append(row)
+            if len(rows) < 100:
                 break
             page += 1
+        return artifacts
+
+    def cleanup_workflow_artifacts(self) -> None:
+        """`cleanup_workflow_artifacts` (:1823-1900).
+
+        LIST FIRST, THEN DELETE (intentional delta, Rule T), for Phase 10's reason: the artifacts listing is offset-paged, so deleting page 1's expired artifacts before reading page 2 moved page 2's onto page 1, unseen. `_list_artifacts` reads up to GH_ARTIFACTS_MAX_PAGES pages first; a spent budget lists nothing.
+        """
+        log.step("Phase 11: Cleaning up workflow artifacts")
+
+        now_epoch = arith(now_epoch_utc())
+        retention_seconds = GH_ARTIFACTS_RETENTION_DAYS * 86400
+
+        seen = 0
+        deleted = 0
+        expired_count = 0
+        consecutive_failures = 0
+
+        # INTENTIONAL DELTA (Rule T), the same as Phase 10's: nothing is listed once the budget is spent, then the whole listing is read before the first delete.
+        if not self.deletes_budget_ok():
+            log.warn(
+                "  Phase 11: hit MAX_DELETES_PER_RUN=%s; remaining artifacts "
+                "deferred to next run" % self.max_deletes
+            )
+            artifacts: list = []
+        else:
+            artifacts = self._list_artifacts()
+
+        for artifact in artifacts:
+            if not self.deletes_budget_ok():
+                log.warn(
+                    "  Phase 11: hit MAX_DELETES_PER_RUN=%s; remaining artifacts "
+                    "deferred to next run" % self.max_deletes
+                )
+                break
+            artifact_id = jq_text(jq_get(artifact, "id"))
+            created_at = jq_text(jq_get(artifact, "created_at"))
+            expired = jq_text(jq_get(artifact, "expired"))
+            seen += 1
+
+            should_delete = False
+            if expired == "true":
+                should_delete = True
+                expired_count += 1
+            else:
+                created_epoch = arith(date_epoch(created_at))
+                if created_epoch != 0 and now_epoch - created_epoch >= retention_seconds:
+                    should_delete = True
+
+            if not should_delete:
+                continue
+
+            if self.dry_run:
+                log.warn(
+                    "  [DRY-RUN] Would delete artifact: %s (created: %s, expired: %s)"
+                    % (artifact_id, created_at, expired)
+                )
+                deleted += 1
+            elif retry_with_backoff(
+                3,
+                2,
+                [
+                    "gh",
+                    "api",
+                    "-X",
+                    "DELETE",
+                    "repos/%s/actions/artifacts/%s" % (RELEASE_REPO, artifact_id),
+                ],
+                quiet=True,
+            ):
+                log.debug("  Deleted artifact: %s" % artifact_id)
+                deleted += 1
+                self.record_delete()
+                consecutive_failures = 0
+            else:
+                consecutive_failures += 1
+                log.warn("  Failed to delete artifact: %s" % artifact_id)
+                if consecutive_failures >= CONSECUTIVE_FAILURE_LIMIT:
+                    log.warn(
+                        "  Stopping artifact cleanup after %d consecutive "
+                        "failures" % consecutive_failures
+                    )
+                    break
 
         verb = "would delete" if self.dry_run else "deleted"
         log.info(
