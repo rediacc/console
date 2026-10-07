@@ -30,13 +30,6 @@
   "version": 2,
   "carried": [
     {
-      "gate": "check:ci-plan-implementation",
-      "findings": [
-        "P-A1:51f8991c75bf"
-      ],
-      "reason": "1006-3 works agent/plans/PLAN-gh-retry.md. Its box G12 drains the 48 one-shot GitHub reads still frozen in .ci/config/gh-retry-reads-baseline.json, module by module on this PR, and stays open until the last one is drained. The carry names this exact key."
-    },
-    {
       "gate": "check:ci-pytest",
       "findings": [
         "pytest-skip:.ci.rediacc_ci.tests.test_core_account::test_stop_real_run_kills_a_real_tracked_pid_and_a_real_port_occupant",
