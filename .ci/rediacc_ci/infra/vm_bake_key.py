@@ -13,6 +13,8 @@ WHAT IS HASHED. The files that decide what `renet ops image build` leaves on the
     for the phase markers and download bound pkg_install_retry.go uses);
   * pkg/config, pkg/infra/pkgset (the package registry), pkg/embed (its Go files only,
     so pkg/embed/proxy/** and the staged assets are out), pkg/infra/image;
+  * pkg/infra/aptsources, the fragment setup_command.go's writeAptConf runs to move the stock
+    Ubuntu sources to HTTPS, so it decides the apt sources files the image keeps;
   * pkg/infra/cephpkg/fingerprint.go, the OpenPGP fingerprint check gpu_drivers.go runs on
     NVIDIA's signing keys before it imports one;
   * pkg/infra/opsconfig/images.go, the base image pins;
@@ -73,6 +75,8 @@ PACKAGES: dict[str, str | dict[str, str]] = {
     },
     "pkg/config": HASH,
     "pkg/infra/pkgset": HASH,
+    # writeAptConf rewrites the stock Ubuntu apt sources to HTTPS with it (renet beb1e87); the rewritten files stay on the baked disk.
+    "pkg/infra/aptsources": HASH,
     # gpu_drivers.go uses only KeyFingerprint and NormalizeFingerprint. The pins, plans and embedded Ceph keys of cephpkg.go shape
     # no image, so a Ceph pin bump must not rebake every VM image.
     "pkg/infra/cephpkg": {
