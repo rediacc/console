@@ -403,7 +403,8 @@ def _epoch(iso):
 
 def _span(start, end):
     a, b = _epoch(start), _epoch(end)
-    if a is None or b is None:
+    # A job cancelled before it ran can carry a started_at AFTER its completed_at (run 37633980671 a2, 2026-10-07: `--history` printed "-7m40s"); that is no duration.
+    if a is None or b is None or b < a:
         return None
     return round(b - a)
 
@@ -864,13 +865,16 @@ def durations(job, p90_minutes=None):
 
 
 def history(fetch, job_name, n=5, workflow_file="ci.yml"):
-    """The last `n` completed runs of one job by display name, newest first."""
-    data, _err = fetch.json(
-        "actions/workflows/%s/runs?per_page=20&status=completed" % workflow_file
-    )
+    """The last `n` completed runs of one job by display name, newest first.
+
+    NO `status=` FILTER IN THE REQUEST. MEASURED 2026-10-07: `workflows/ci.yml/runs?per_page=20&status=completed` answered `total_count` 46, newest run 2026-10-01 (0930-1), while the unfiltered listing answered 239 with that day's runs first; `&status=success` answered ONE run from 2026-09-29. GitHub serves a status-filtered listing from a stale index (budget_report.py `fetch_runs` measured the same on 2026-09-28), so `--history` answered week-old runs of another branch with no warning. The unfiltered listing is fresh; completion is filtered here instead.
+    """
+    data, _err = fetch.json("actions/workflows/%s/runs?per_page=30" % workflow_file)
     runs = (data or {}).get("workflow_runs") if isinstance(data, dict) else None
     out = []
     for r in runs or []:
+        if r.get("status") != "completed":
+            continue
         jobs, err = run_jobs(fetch, r.get("id"))
         if err:
             # SAID, NEVER SKIPPED. A run whose jobs could not be read used to drop out silently, and the history then quietly answered from older runs (observed 2026-10-02: five 0923-1 runs listed while five newer 0930-1 runs carried the job).

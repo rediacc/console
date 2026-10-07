@@ -560,8 +560,20 @@ def test_the_failing_step_ends_at_its_own_exit_line():
 def test_history_says_when_a_run_could_not_be_read():
     runs = {
         "workflow_runs": [
-            {"id": 1, "head_branch": "b", "head_sha": "a" * 40, "run_attempt": 1},
-            {"id": 2, "head_branch": "b", "head_sha": "b" * 40, "run_attempt": 1},
+            {
+                "id": 1,
+                "head_branch": "b",
+                "head_sha": "a" * 40,
+                "run_attempt": 1,
+                "status": "completed",
+            },
+            {
+                "id": 2,
+                "head_branch": "b",
+                "head_sha": "b" * 40,
+                "run_attempt": 1,
+                "status": "completed",
+            },
         ]
     }
     jobs = {"total_count": 1, "jobs": [{"id": 9, "name": "J", "conclusion": "success"}]}
@@ -569,6 +581,34 @@ def test_history_says_when_a_run_could_not_be_read():
         FakeFetch({"actions/workflows/ci.yml/runs": runs, "actions/runs/2/jobs": jobs}), "J"
     )
     assert [r["conclusion"] for r in rows] == ["unreadable", "success"]
+
+
+def test_history_lists_unfiltered_and_skips_runs_still_in_flight():
+    """FIRES-if-unfixed: MEASURED 2026-10-07 -- `runs?status=completed` answered 0930-1 runs from a week earlier while that day's runs existed, so the request carries no status filter and an in-flight run is skipped here."""
+    runs = {
+        "workflow_runs": [
+            {
+                "id": 3,
+                "head_branch": "b",
+                "head_sha": "c" * 40,
+                "run_attempt": 1,
+                "status": "in_progress",
+            },
+            {
+                "id": 2,
+                "head_branch": "b",
+                "head_sha": "b" * 40,
+                "run_attempt": 1,
+                "status": "completed",
+            },
+        ]
+    }
+    jobs = {"total_count": 1, "jobs": [{"id": 9, "name": "J", "conclusion": "failure"}]}
+    fetch = FakeFetch({"actions/workflows/ci.yml/runs": runs, "actions/runs/2/jobs": jobs})
+    rows = D.history(fetch, "J")
+    assert [(r["run_id"], r["conclusion"]) for r in rows] == [(2, "failure")]
+    assert "status=" not in fetch.calls[0], fetch.calls[0]
+    assert "actions/runs/3/jobs" not in fetch.calls
 
 
 # ---- main push run 37394654719 (2026-10-06): the root cause, not the sentinel -----------
@@ -1059,3 +1099,9 @@ def test_ghfetcher_404_is_one_call_and_no_pause(monkeypatch):
     assert f.json("x")[0] is None
     assert len(calls) == 1
     assert naps == []
+
+
+def test_span_of_a_job_cancelled_before_it_ran_is_no_duration():
+    """FIRES-if-unfixed: run 37633980671 a2 (2026-10-07) carried started_at after completed_at, and `--history` printed "-7m40s"."""
+    assert D._span("2026-10-07T14:20:00Z", "2026-10-07T14:12:20Z") is None
+    assert D._span("2026-10-07T14:12:20Z", "2026-10-07T14:20:00Z") == 460
