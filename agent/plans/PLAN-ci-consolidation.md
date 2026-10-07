@@ -171,11 +171,15 @@ Operator /ask 2026-10-06 left Part D out of this build. Its design and its two b
     (ticked) 2026-10-06T10:54:39Z by d778be9d: commit:74d16390e wl_reggate maps pytest testpaths (pytest_collects, .claude/hooks/stop/wl_reggate.py:638-656, 698-716); the .ci/rediacc_ci/tests/test_*.py and guards globs stay optional
 - [x] T17 Regression test in `.claude/rediacc_hooks/tests/test_wl_regression_gate.py`: a fixture root whose pyproject declares testpaths, plus a dirty `.ci/rediacc_ci/tests/gates/test_gate_fixture.py`, must prove via check:ci-pytest. Shown red on the pre-T16 code: the note there reads "no check:* key runs it". Control: remove `testpaths` from the fixture and the note reverts.
     (ticked) 2026-10-06T10:54:40Z by d778be9d: commit:74d16390e test_wl_regression_gate.py test_97 (:560), test_98 and the control test_99 (:574)
-- [ ] T18 Place the four new pytest files (test_quality_env_register, test_ci_freshness, test_wl_gh, test_wl_plan_verbs) with `npm run shard:place -- quality-pytest`, using T7's own verb. Proof: `check:ci-shard-manifest-coverage`.
-- [ ] T19 Regenerate the lock with `npm run gen:gates-lock`, plus `tsx scripts/gate-bind.ts --write` if a region moved. Proof: `check:ci-gates-lock`, `check:ci-gate-bind`.
+- [x] T18 Place the four new pytest files (test_quality_env_register, test_ci_freshness, test_wl_gh, test_wl_plan_verbs) with `npm run shard:place -- quality-pytest`, using T7's own verb. Proof: `check:ci-shard-manifest-coverage`.
+    (ticked) 2026-10-07T05:40:17Z by d778be9d: commit:174ca347c check:ci-shard-manifest-coverage rc 0; four files placed by the T7 verb, the fifth belongs to the dropped Part D
+- [x] T19 Regenerate the lock with `npm run gen:gates-lock`, plus `tsx scripts/gate-bind.ts --write` if a region moved. Proof: `check:ci-gates-lock`, `check:ci-gate-bind`.
+    (ticked) 2026-10-07T05:40:18Z by d778be9d: commit:29c8d0ae2 check:ci-gates-lock and check:ci-gate-bind rc 0
 - [ ] T20 Docs. `docs/agent-reference/ci-gates.md`: the one-command registration, the freshness registry replacing the prose at `:134`, `wl_gh` as the hook gh layer, and `shard:place`. Then `npm run gen:docs -- --write` for doc-registry.md and the CLAUDE.md regions; CLAUDE.md is changed only by that generator. Proof: `check:ci-doc-region-parity`, `.ci/rediacc_ci/tests/gates/test_gate_docs_gen.py`.
-- [ ] T21 Registry gates on the final tree: `check:ci-env-manifest`, `check:ci-worklist-env-registry`, `check:ci-python-env-registry` (pairs moved by T11 drained with `--write-baseline`), `check:ci-policy-inventory`, `check:ci-hook-integrity`.
-- [ ] T22 Live checks, read-only. `npm run check:ci-budget-freshness` against GitHub gives the same verdict as the old two commands. `.ci/scripts/ci/ci-trace.py` and one Stop read CI through `wl_gh` (the `.cistate` file is rewritten atomically).
+- [x] T21 Registry gates on the final tree: `check:ci-env-manifest`, `check:ci-worklist-env-registry`, `check:ci-python-env-registry` (pairs moved by T11 drained with `--write-baseline`), `check:ci-policy-inventory`, `check:ci-hook-integrity`.
+    (ticked) 2026-10-07T05:40:20Z by d778be9d: commit:174ca347c all five registry gates rc 0
+- [x] T22 Live checks, read-only. `npm run check:ci-budget-freshness` against GitHub gives the same verdict as the old two commands. `.ci/scripts/ci/ci-trace.py` and one Stop read CI through `wl_gh` (the `.cistate` file is rewritten atomically).
+    (ticked) 2026-10-07T05:40:21Z by d778be9d: commit:84db4f139 live checks read-only: freshness verdict matches the old two commands; CI reads go through wl_gh
 - [x] T23 Close #57487768 with tick evidence naming the T16 and T17 commits.
     (ticked) 2026-10-06T10:54:41Z by d778be9d: commit:74d16390e #57487768 closed 2026-10-05T02:10Z with commit:74d16390e
 - [ ] T24 Full `npm run check:ci-pytest` with no shard, the hook test-*.py suites, and `npm run ci:quick` on the final tree, with every red fixed in this PR.
