@@ -178,25 +178,17 @@ GH_READ_PAUSE_S = 2
 
 @functools.cache
 def gh_retry_module():
-    """`rediacc_ci.core.gh_retry`, the one transient-retry policy, imported on first use.
+    """`rediacc_ci.core.gh_retry`, the one transient-retry policy, imported on first use through the shared scoped loader `rediacc_hooks.syspath.import_from_ci` (`.ci` on sys.path only while importing).
 
-    ANCHORED ON THIS FILE, because the policy is a CODE dependency of the hook, like an import, not a property of whichever repository `root` names (test_wl_schedred drives it against a scratch repo). A copy of this module run outside the tree must therefore carry the tree's layout with it (test_gate_ci_trace_branch.copy_hooks). `.ci` goes on sys.path through the canonical `.claude` hop (rediacc_hooks/syspath.py, loaded BY FILE because this module lives outside that package, the wl_prscope shape) and comes OFF again in `finally`, the scoped shape block_unverified_push._policy_rel uses: a permanent `.ci` entry would put its `config` and `scripts` directories on every later import in the Stop hook's process. Once imported, the module stays in sys.modules.
+    ANCHORED ON THIS FILE, because the policy is a CODE dependency of the hook, like an import, not a property of whichever repository `root` names (test_wl_schedred drives it against a scratch repo). A copy of this module run outside the tree must therefore carry the tree's layout with it (test_gate_ci_trace_branch.copy_hooks). The hop file is loaded BY FILE because this module lives outside the `rediacc_hooks` package (the wl_prscope shape).
     """
-    claude = pathlib.Path(__file__).resolve().parents[2]
-    hop = claude / "rediacc_hooks" / "syspath.py"
+    hop = pathlib.Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
     spec = importlib.util.spec_from_file_location("_rediacc_syspath", hop)
     if spec is None or spec.loader is None:
         raise ImportError("cannot load %s" % hop)
     syspath = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(syspath)
-    cipath = str(claude.parent / ".ci")
-    inserted = syspath.on_sys_path(cipath)
-    try:
-        from rediacc_ci.core import gh_retry  # noqa: PLC0415 - deliberately late, see above
-    finally:
-        if inserted and cipath in sys.path:
-            sys.path.remove(cipath)
-    return gh_retry
+    return syspath.import_from_ci("rediacc_ci.core.gh_retry")
 
 
 def _gh_once(root, args, timeout):

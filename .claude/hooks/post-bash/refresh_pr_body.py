@@ -52,22 +52,10 @@ GH_READ_ATTEMPTS = 2
 GH_READ_PAUSE_S = 2
 
 
-def _gh_retry():
-    """`rediacc_ci.core.gh_retry`, the one transient-retry policy, with `.ci` put on sys.path through the canonical `.claude` hop (`rediacc_hooks.syspath`) and taken off again in `finally`, the scoped shape block_unverified_push._policy_rel uses."""
-    cipath = str(syspath.CLAUDE_DIR.parent / ".ci")
-    inserted = syspath.on_sys_path(cipath)
-    try:
-        from rediacc_ci.core import gh_retry  # noqa: PLC0415 - deliberately late, see above
-    finally:
-        if inserted and cipath in sys.path:
-            sys.path.remove(cipath)
-    return gh_retry
-
-
 def _gh_read(*args):
     """(rc, stdout with trailing newlines stripped) of the READ `gh <args>`, a TRANSIENT failure (gh_retry.is_transient on its stderr) retried within GH_READ_ATTEMPTS. A 4xx or any other failure comes back at once. rc 127 when gh cannot run or gh_retry cannot be imported, which is said on stderr rather than read as an answer."""
     try:
-        retry = _gh_retry()
+        retry = syspath.import_from_ci("rediacc_ci.core.gh_retry")
     except ImportError as exc:
         sys.stderr.write("%s: rediacc_ci.core.gh_retry could not be imported (%s)\n" % (NAME, exc))
         return 127, ""

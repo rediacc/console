@@ -15,8 +15,7 @@ THE MODES.
 
 REVIEW COMPLETE IS A REQUIRED CHECK (operator ruling 2026-10-03). A timeout is not a pass: the loop does not merge on rc 3, it reports and checks again. A `failed-run` is a review-run error to investigate and fix, not an excuse; only `outage` (the LLM was unavailable) passes with a warning.
 
-THE SELECTOR IS review_comments', BY VALUE. `FENCE_NEEDLE`, `VERDICT_HEADING`, the low-effort list and the summary floors are copied from `.ci/rediacc_ci/quality/review_comments.py`, and `.claude/rediacc_hooks/tests/test_wl_prreview.py` pins them equal. The copy is deliberate: that module imports the `rediacc_ci` package, which a hook run from `.claude/settings.json` has no path to, and a
-summary this tool calls answered while the gate calls it unanswered is the exact disagreement the pin exists to catch.
+THE SELECTOR IS review_comments' OWN. `FENCE_NEEDLE`, `VERDICT_HEADING`, the low-effort list and the summary floors are imported from `.ci/rediacc_ci/quality/review_comments.py` through `rediacc_hooks/syspath.py` (`import_from_ci`, `.ci` on sys.path only while importing), so a summary this tool calls answered while the gate calls it unanswered cannot come from a drifted copy. `.claude/rediacc_hooks/tests/test_wl_prreview.py` still pins the names equal and the verdict agreeing. The import runs when this module loads, so a tree without `.ci` fails loudly here rather than judging with stale values.
 
 THE DISPOSITION GRAMMAR IS THE PER-COMMIT ONE (`.claude/hooks/stop/wl_review.py`, `mark`): `fixed <sha40>` an ancestor of local HEAD, `not-a-bug | <evidence>` with at least 20 characters that pass `wl_review._citation_ok`, `deferred #<item>` an open, `[?]` or `[>]` worklist item. Every line is checked before anything is posted, so a refused file posts nothing.
 
@@ -44,48 +43,31 @@ import wl_review
 HERE = pathlib.Path(__file__).resolve().parent
 CONSOLE_ROOT = HERE.parents[2]
 
-# ---- copied by value from rediacc_ci.quality.review_comments (pinned equal by the test) ----
-LOW_EFFORT_PATTERNS = (
-    "acknowledged",
-    "ack",
-    "ok",
-    "okay",
-    "understood",
-    "noted",
-    "done",
-    "fixed",
-    "will do",
-    "will fix",
-    "got it",
-    "thanks",
-    "thank you",
-    "ty",
-    "thx",
-    "yes",
-    "no",
-    "sure",
-    "agreed",
-    "makes sense",
-    "good point",
-    "right",
-    "correct",
-    "i see",
-    "see above",
-    "addressed",
-    "updated",
-    "changed",
-    "applied",
-)
-INLINE_MIN_CHARS = 10
-SUMMARY_MIN_CHARS = 30
-SUMMARY_LONGFORM_CHARS = 200
-TRAILING_PUNCT = re.compile(r"[.!?]*$")
-FENCE_NEEDLE = "json:review-findings"
-VERDICT_HEADING = re.compile(r"^[ \t\n\r\f\v]*#{1,3}[ \t\n\r\f\v]*Review verdict", re.IGNORECASE)
-FENCE_TICKS = r"(?:\\?`){3}"
-FENCE_OPENER = re.compile(r"^[ \t]*%s%s[ \t]*$" % (FENCE_TICKS, re.escape(FENCE_NEEDLE)))
-FENCE_CLOSER = re.compile(r"^[ \t]*%s[ \t]*$" % FENCE_TICKS)
-# ---- end of the copy ----
+
+def _syspath() -> Any:
+    """The canonical `.claude` hop, rediacc_hooks/syspath.py, loaded BY FILE: this module lives outside the `rediacc_hooks` package (the wl_ci shape)."""
+    hop = HERE.parents[1] / "rediacc_hooks" / "syspath.py"
+    spec = importlib.util.spec_from_file_location("_rediacc_syspath", hop)
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load %s" % hop)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+# ---- the review gate's selector, imported from rediacc_ci.quality.review_comments (the one definition, no copy) ----
+_RC = _syspath().import_from_ci("rediacc_ci.quality.review_comments")
+LOW_EFFORT_PATTERNS = _RC.LOW_EFFORT_PATTERNS
+INLINE_MIN_CHARS = _RC.INLINE_MIN_CHARS
+SUMMARY_MIN_CHARS = _RC.SUMMARY_MIN_CHARS
+SUMMARY_LONGFORM_CHARS = _RC.SUMMARY_LONGFORM_CHARS
+TRAILING_PUNCT = _RC.TRAILING_PUNCT
+FENCE_NEEDLE = _RC.FENCE_NEEDLE
+VERDICT_HEADING = _RC.VERDICT_HEADING
+FENCE_TICKS = _RC.FENCE_TICKS
+FENCE_OPENER = _RC.FENCE_OPENER
+FENCE_CLOSER = _RC.FENCE_CLOSER
+# ---- end of the import ----
 
 # The report header claude_review_gate.REPORT_HEADER writes, and the sha7 it names.
 REPORT_HEAD = re.compile(r"\*\*Claude finished the automated review of ([0-9a-f]{7,40})\*\*")
@@ -167,23 +149,8 @@ GH_READ_PAUSE_S = 2
 
 @functools.cache
 def gh_retry_module() -> Any:
-    """`rediacc_ci.core.gh_retry`, imported on first use, with `.ci` put on sys.path through the canonical `.claude` hop (rediacc_hooks/syspath.py, loaded by file) and taken off again in `finally`. The same accessor as wl_ci.gh_retry_module, repeated rather than imported because wl_ci pulls in the worklist store and this tool is sealed."""
-    claude = HERE.parents[1]
-    spec = importlib.util.spec_from_file_location(
-        "_rediacc_syspath", claude / "rediacc_hooks" / "syspath.py"
-    )
-    if spec is None or spec.loader is None:
-        raise ImportError("cannot load %s" % (claude / "rediacc_hooks" / "syspath.py"))
-    syspath = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(syspath)
-    cipath = str(CONSOLE_ROOT / ".ci")
-    inserted = syspath.on_sys_path(cipath)
-    try:
-        from rediacc_ci.core import gh_retry  # noqa: PLC0415 - deliberately late, see above
-    finally:
-        if inserted and cipath in sys.path:
-            sys.path.remove(cipath)
-    return gh_retry
+    """`rediacc_ci.core.gh_retry`, imported on first use through the shared scoped loader `syspath.import_from_ci` (`.ci` on sys.path only while importing)."""
+    return _syspath().import_from_ci("rediacc_ci.core.gh_retry")
 
 
 def _gh_json(runner: Runner, what: str, argv: list[str]) -> Any:
