@@ -32,6 +32,8 @@ substitution strips ALL trailing newlines regardless of how many sed produced or
 `_strip_existing_block` TRANSLITERATES THE awk MARKER STRIP AS A RAW FILE, by contrast, because the twin's `cat "$work/body-stripped.md"` reads that file's actual bytes with no variable capture in between. AWK's default record handling means a file that ends with a real trailing newline and one that does not both yield the SAME set of records, and `print` appends the output record
 separator (a newline) after every record it emits -- so the return value here always ends with exactly one trailing newline when any lines survive the strip, and is the empty string when none do, independent of the input's own trailing-newline state.
 
+INTENTIONAL DELTA FROM THE TWIN (Rule T, agent/plans/PLAN-retire-bash-oracles.md): a real sync (not `--dry-run`) REFUSES unless the working-tree snapshot is byte-identical to `agent/pr/<branch>.md` at the branch's pushed tip (`git ls-remote origin refs/heads/<branch>`, then `git show <tip>:agent/pr/<branch>.md`). CI's `check:ci-pr-epic-block` compares the body with the snapshot AT THE PUSHED HEAD, so a body built from an unpushed snapshot goes red (run 37642753285, 2026-10-07, "in the body but not the snapshot: c965ea99"). The twin read the working tree only. There is no escape flag: every caller (the `pr-epics` skill, the `pr_description.py` guidance) syncs after publishing, and a body that disagrees with the pushed head is the defect, never a wanted state. An unreadable remote or tip is a refusal too, never a pass. `--dry-run` writes nothing and is not checked.
+
 `argv[2]` (`DRY`) MIRRORS `"${3:-}"`: absent third argument reads as the
 empty string, not `None`, and only the literal string `--dry-run` arms the dry-run path -- any other third argument is silently ignored, same as the
 twin (`"${DRY}" == "--dry-run"` is the only comparison, there is no `else`
@@ -93,6 +95,57 @@ def _relative_to(path: pathlib.Path, root: pathlib.Path) -> str:
     return str(path).removeprefix(str(root) + "/")
 
 
+def _pushed_tip_refusal(repo_root: pathlib.Path, branch: str, snap: pathlib.Path) -> str | None:
+    """None when the working-tree snapshot equals the copy at the branch's pushed tip, else the refusal text."""
+    rel = _relative_to(snap, repo_root)
+    ref = f"refs/heads/{branch}"
+    ls = subprocess.run(
+        ["git", "ls-remote", "origin", ref],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if ls.returncode != 0:
+        return (
+            f"cannot read origin's tip of {branch} (git ls-remote exit {ls.returncode}: "
+            f"{ls.stderr.strip()}); the pushed copy of {rel} is unchecked, so nothing was synced"
+        )
+    tip = ls.stdout.split("\t", 1)[0].strip() if ls.stdout.strip() else ""
+    if not tip:
+        return (
+            f"{branch} is not on origin, so there is no pushed copy of {rel} to match\n"
+            f"  run: git add -- {rel} && git commit -F <msg> -- {rel} && git push origin {branch}"
+        )
+    have = subprocess.run(
+        ["git", "cat-file", "-e", f"{tip}^{{commit}}"],
+        cwd=repo_root,
+        capture_output=True,
+        check=False,
+    )
+    if have.returncode != 0:
+        return (
+            f"origin's tip of {branch} ({tip[:9]}) is not in the local object store\n"
+            f"  run: git fetch origin {branch}"
+        )
+    shown = subprocess.run(
+        ["git", "show", f"{tip}:{rel}"], cwd=repo_root, capture_output=True, check=False
+    )
+    if shown.returncode != 0:
+        return (
+            f"{rel} is absent at origin's tip of {branch} ({tip[:9]}), so CI's snapshot is missing\n"
+            f"  run: git add -- {rel} && git commit -F <msg> -- {rel} && git push origin {branch}"
+        )
+    if shown.stdout != snap.read_bytes():
+        return (
+            f"{rel} differs from the copy at origin's tip of {branch} ({tip[:9]}); "
+            "check:ci-pr-epic-block compares the PR body with the pushed snapshot\n"
+            f"  run: git add -- {rel} && git commit -F <msg> -- {rel} && git push origin {branch}\n"
+            "  then re-run this sync"
+        )
+    return None
+
+
 def main(argv: list[str]) -> int:
     if len(argv) < 2:
         sys.stderr.write(USAGE)
@@ -119,6 +172,12 @@ def main(argv: list[str]) -> int:
         print(f"✗ no snapshot at {_relative_to(snap, repo_root)}", file=sys.stderr)
         print(f"  run: worklist.py --publish <me> {branch}", file=sys.stderr)
         return 1
+
+    if dry != "--dry-run":
+        refusal = _pushed_tip_refusal(repo_root, branch, snap)
+        if refusal is not None:
+            print(f"✗ refusing to sync: {refusal}", file=sys.stderr)
+            return 1
 
     section = _section(snap.read_text(encoding="utf-8"))
 

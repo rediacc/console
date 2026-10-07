@@ -168,12 +168,23 @@ def _repo(tmp_path: pathlib.Path) -> pathlib.Path:
     (repo / "f.txt").write_text("base\n", encoding="utf-8")
     _git(repo, "add", "-A")
     _git(repo, "commit", "-q", "-m", "base")
+    origin = tmp_path / "origin.git"
+    _git(tmp_path, "init", "-q", "--bare", str(origin))
+    _git(repo, "remote", "add", "origin", str(origin))
     return repo
 
 
 def _snapshot(repo: pathlib.Path, branch: str, text: str) -> None:
     slug = branch.replace("/", "-")
     (repo / "agent" / "pr" / f"{slug}.md").write_text(text, encoding="utf-8")
+
+
+def _publish(repo: pathlib.Path, branch: str, text: str) -> None:
+    """Write the snapshot, commit it and push it to the fixture's origin as `branch`: the state the pushed-tip check wants before a real sync."""
+    _snapshot(repo, branch, text)
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "snapshot")
+    _git(repo, "push", "-q", "origin", f"HEAD:refs/heads/{branch}")
 
 
 def _fake_gh_bin(where: pathlib.Path) -> pathlib.Path:
@@ -313,7 +324,7 @@ def test_dry_run_slash_in_branch_name_maps_to_dash(tmp_path: pathlib.Path) -> No
 
 def test_gh_pr_edit_replaces_existing_block_and_url_passes_through(tmp_path: pathlib.Path) -> None:
     repo = _repo(tmp_path)
-    _snapshot(repo, "0906-1", "- [x] a\n- [ ] b\n")
+    _publish(repo, "0906-1", "- [x] a\n- [ ] b\n")
     gh_env = {
         "FAKE_GH_BODY": (
             "Some existing body text.\n\n"
@@ -334,7 +345,7 @@ def test_gh_pr_edit_replaces_existing_block_and_url_passes_through(tmp_path: pat
 def test_gh_edit_stdout_is_not_swallowed(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY for the pass-through requirement. `gh pr edit`'s own stdout (the PR URL) must appear BEFORE the final checkmark line on both sides -- a port that captured and discarded it would still exit 0 and print the checkmark, passing every other assertion in this file."""
     repo = _repo(tmp_path)
-    _snapshot(repo, "0906-1", "- [x] a\n")
+    _publish(repo, "0906-1", "- [x] a\n")
     gh_env = {"FAKE_GH_BODY": "plain body\n"}
     old, _, _, _ = run_both(repo, "5", "0906-1", gh_env=gh_env)
     lines = old.stdout.splitlines()
@@ -348,7 +359,7 @@ def test_gh_edit_stdout_is_not_swallowed(tmp_path: pathlib.Path) -> None:
 
 def test_gh_pr_view_failure_propagates(tmp_path: pathlib.Path) -> None:
     repo = _repo(tmp_path)
-    _snapshot(repo, "0906-1", "body\n")
+    _publish(repo, "0906-1", "body\n")
     gh_env = {"FAKE_GH_VIEW_RC": "17"}
     old, new, _, _ = run_both(repo, "5", "0906-1", gh_env=gh_env)
     assert old.returncode == 17
@@ -357,7 +368,7 @@ def test_gh_pr_view_failure_propagates(tmp_path: pathlib.Path) -> None:
 
 def test_gh_pr_edit_failure_propagates(tmp_path: pathlib.Path) -> None:
     repo = _repo(tmp_path)
-    _snapshot(repo, "0906-1", "body\n")
+    _publish(repo, "0906-1", "body\n")
     gh_env = {"FAKE_GH_EDIT_RC": "3", "FAKE_GH_BODY": "plain body\n"}
     old, new, _, _ = run_both(repo, "5", "0906-1", gh_env=gh_env)
     assert old.returncode == 3
@@ -376,7 +387,7 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     assert mutated != original, "the line this plant targets is no longer present verbatim"
 
     repo = _repo(tmp_path)
-    _snapshot(repo, "0906-1", "- [x] a\n")
+    _publish(repo, "0906-1", "- [x] a\n")
     # The line STARTS WITH the exact begin marker but carries trailing junk,
     # so real awk's `$0==b` (exact equality) does NOT treat it as the marker
     # and passes it through unskipped; `.startswith(BEGIN)` wrongly does.
@@ -410,11 +421,8 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
 
 def _inprocess_view(monkeypatch, tmp_path, results):
     mod = importlib.import_module("rediacc_ci.pr.sync_epic_block")
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    _git(repo, "init", "-q", "-b", "main")
-    (repo / "agent" / "pr").mkdir(parents=True)
-    (repo / "agent" / "pr" / "b1.md").write_text("## Epic\n\nitems\n", encoding="utf-8")
+    repo = _repo(tmp_path)
+    _publish(repo, "b1", "## Epic\n\nitems\n")
     monkeypatch.chdir(repo)
     queue = list(results)
     calls: list[list[str]] = []
@@ -477,7 +485,7 @@ def test_the_shipped_script_is_a_thin_exec_of_the_port() -> None:
 def test_the_shipped_script_and_the_oracle_agree_end_to_end(tmp_path: pathlib.Path) -> None:
     """Through the real entry point an agent runs: the edit path, the gh call sequence and the streams match the frozen bash body."""
     repo = _repo(tmp_path)
-    _snapshot(repo, "0906-1", "- [x] a\n- [ ] b\n")
+    _publish(repo, "0906-1", "- [x] a\n- [ ] b\n")
     gh_env = {
         "FAKE_GH_BODY": "Body.\n\n<!-- worklist-epics:begin -->\nstale\n<!-- worklist-epics:end -->\n"
     }
@@ -486,3 +494,96 @@ def test_the_shipped_script_and_the_oracle_agree_end_to_end(tmp_path: pathlib.Pa
     assert old.returncode == 0
     _assert_agree(old, new, "shipped-vs-oracle")
     assert _normalize_edit_call(old_calls) == _normalize_edit_call(new_calls)
+
+
+# --- INTENTIONAL DELTA (Rule T): a sync refuses a snapshot the pushed tip does not hold ---
+
+
+def _calls_edit(calls: list[str]) -> bool:
+    return any(c.startswith("pr\tedit") for c in calls)
+
+
+def test_delta_a_snapshot_that_differs_from_the_pushed_tip_is_refused(
+    tmp_path: pathlib.Path,
+) -> None:
+    """INTENTIONAL DELTA. 2026-10-07 run 37642753285: `worklist.py --publish` rewrote the snapshot, the sync ran, nothing was committed or pushed, and `check:ci-pr-epic-block` failed three legs ("in the body but not the snapshot"). The twin is the control: it syncs the very same state. The port refuses, names the commit and the push, and never edits the PR."""
+    repo = _repo(tmp_path)
+    _publish(repo, "0906-1", "- [x] a\n")
+    _snapshot(repo, "0906-1", "- [x] a\n- [ ] c965ea99 new epic\n")  # rewritten, unpushed
+    gh_env = {"FAKE_GH_BODY": "plain body\n"}
+    old, new, old_calls, new_calls = run_both(repo, "5", "0906-1", gh_env=gh_env)
+    assert old.returncode == 0
+    assert _calls_edit(old_calls), "twin moved: it no longer syncs the unpushed state"
+    assert new.returncode == 1
+    assert "refusing to sync" in new.stderr
+    assert "agent/pr/0906-1.md differs from the copy at origin's tip of 0906-1" in new.stderr
+    assert "git commit" in new.stderr
+    assert "git push origin 0906-1" in new.stderr
+    assert not _calls_edit(new_calls), "the refused sync still edited the PR"
+    assert new_calls == [], "the refusal must come before any gh call"
+    assert new.stdout == ""
+
+
+def test_a_snapshot_equal_to_the_pushed_tip_syncs_as_before(tmp_path: pathlib.Path) -> None:
+    """The matching direction: pushed and identical, so port and twin agree byte for byte, edit included."""
+    repo = _repo(tmp_path)
+    _publish(repo, "0906-1", "- [x] a\n- [ ] b\n")
+    old, new, old_calls, new_calls = run_both(
+        repo, "5", "0906-1", gh_env={"FAKE_GH_BODY": "body\n"}
+    )
+    assert old.returncode == 0
+    _assert_agree(old, new, "snapshot-matches-tip")
+    assert _normalize_edit_call(old_calls) == _normalize_edit_call(new_calls)
+    assert _calls_edit(new_calls)
+
+
+def test_delta_a_snapshot_absent_at_the_pushed_tip_is_refused(tmp_path: pathlib.Path) -> None:
+    """INTENTIONAL DELTA. The branch is pushed but the tip has no `agent/pr/<branch>.md` (only the working tree does). The twin syncs it; the port refuses with its own message."""
+    repo = _repo(tmp_path)
+    _git(repo, "push", "-q", "origin", "HEAD:refs/heads/0906-1")  # tip = base commit, no snapshot
+    _snapshot(repo, "0906-1", "- [x] a\n")
+    old, new, old_calls, new_calls = run_both(
+        repo, "5", "0906-1", gh_env={"FAKE_GH_BODY": "body\n"}
+    )
+    assert old.returncode == 0
+    assert _calls_edit(old_calls), "twin moved"
+    assert new.returncode == 1
+    assert "agent/pr/0906-1.md is absent at origin's tip of 0906-1" in new.stderr
+    assert "differs" not in new.stderr
+    assert new_calls == []
+
+
+def test_delta_a_branch_not_on_origin_is_refused(tmp_path: pathlib.Path) -> None:
+    """INTENTIONAL DELTA. No pushed tip at all: refused, telling the author to push the branch."""
+    repo = _repo(tmp_path)
+    _snapshot(repo, "0906-1", "- [x] a\n")
+    old, new, old_calls, new_calls = run_both(
+        repo, "5", "0906-1", gh_env={"FAKE_GH_BODY": "body\n"}
+    )
+    assert old.returncode == 0
+    assert _calls_edit(old_calls), "twin moved"
+    assert new.returncode == 1
+    assert "0906-1 is not on origin" in new.stderr
+    assert new_calls == []
+
+
+def test_delta_an_unreadable_origin_is_a_refusal_not_a_pass(tmp_path: pathlib.Path) -> None:
+    """Unknown is a failure: with no `origin` the pushed copy is unchecked, so nothing is synced."""
+    repo = _repo(tmp_path)
+    _git(repo, "remote", "remove", "origin")
+    _snapshot(repo, "0906-1", "- [x] a\n")
+    _new, new_calls = _run(PORT, repo, "5", "0906-1", gh_env={"FAKE_GH_BODY": "body\n"})
+    assert _new.returncode == 1
+    assert "cannot read origin's tip" in _new.stderr
+    assert new_calls == []
+
+
+def test_dry_run_is_not_gated_on_the_pushed_tip(tmp_path: pathlib.Path) -> None:
+    """`--dry-run` writes nothing, so an unpushed snapshot still previews (the existing dry-run cases already agree with the twin; this pins it with a differing tip)."""
+    repo = _repo(tmp_path)
+    _publish(repo, "0906-1", "- [x] a\n")
+    _snapshot(repo, "0906-1", "- [x] a\n- [ ] unpushed\n")
+    old, new, _, _ = run_both(repo, "5", "0906-1", "--dry-run")
+    assert old.returncode == 0
+    _assert_agree(old, new, "dry-run-unpushed")
+    assert "unpushed" in new.stdout
