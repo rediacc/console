@@ -908,7 +908,7 @@ def test_a_retried_out_5xx_on_the_bump_read_refuses(tmp_path: pathlib.Path) -> N
 
 
 def test_one_5xx_on_each_read_is_retried_to_the_right_answer(tmp_path: pathlib.Path) -> None:
-    """The green counterpart of the two refusals: a single 502 per read is retried, so the bump-minor reads as minor and the bump-none skips. On the same fake the twin answered patch and released."""
+    """The green counterpart of the two refusals: a single 502 per read is retried, so the bump-minor reads as minor and the bump-none skips, on BOTH sides (the twin and the port each call the retried Python ports since 056fe87b6). Before that cutover the bash detect-bump-type.sh and dispatch-release.sh answered patch and released on this same fake."""
     old, new, files = run_both(
         tmp_path,
         env_extra={
