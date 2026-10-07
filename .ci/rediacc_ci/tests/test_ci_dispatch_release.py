@@ -208,14 +208,16 @@ def test_a_lookup_failure_fails_open(bindir: pathlib.Path) -> None:
     )
 
 
-def test_defect_a_a_succeeding_lookups_stderr_becomes_a_phantom_pr(
+WARNING_LINE = "Warning: your gh version is out of date"
+
+
+def test_delta_defect_a_a_succeeding_lookups_stderr_is_not_a_pr_row(
     bindir: pathlib.Path,
 ) -> None:
-    """One benign diagnostic flips skip into release, on BOTH sides.
+    """INTENTIONAL DELTA (Rule T), Defect A. The twin's `2>&1` read one benign stderr line on a SUCCEEDING lookup as a PR row, and that phantom row (no `bump-none`) flipped skip into release. The recording of the twin is kept as the control; the port reads rows from stdout only and still skips.
 
-    This is the case the `2>&1` capture makes possible, and it is asserted against the twin as well as the port so that the port is not "fixed" into disagreeing with the thing it replaces.
+    The clean call is asserted identical first, so the delta below is the stderr line and nothing else.
     """
-    assert port.STDERR_IS_DATA is True
     control = assert_identical(
         bindir,
         "--decide-only",
@@ -224,32 +226,34 @@ def test_defect_a_a_succeeding_lookups_stderr_becomes_a_phantom_pr(
     )
     assert control[1].endswith("decision: skip\n")
 
-    polluted = assert_identical(
+    old, new = run_both(
         bindir,
         "--decide-only",
-        expect_exit=0,
-        env_extra={
-            "FAKE_GH_STDOUT": "570 bump-none",
-            "FAKE_GH_STDERR": "Warning: your gh version is out of date",
-        },
+        env_extra={"FAKE_GH_STDOUT": "570 bump-none", "FAKE_GH_STDERR": WARNING_LINE},
     )
-    assert polluted[1].endswith("decision: release\n")
-    assert "#Warning: also contains abcdef1" in polluted[1]
+    # The control: the twin still ships the bump-none PR, naming a PR called `#Warning:`.
+    assert old[0] == 0
+    assert old[1].endswith("decision: release\n"), old
+    assert "#Warning: also contains abcdef1" in old[1]
+    # The port: the verdict and every stdout byte of the clean call, plus gh's line kept as a diagnostic.
+    assert new[0] == 0
+    assert new[1] == control[1], new
+    assert "#Warning" not in new[1] + new[2]
+    assert WARNING_LINE in new[2], "gh's stderr was dropped instead of kept as a diagnostic"
 
 
-def test_the_fakes_own_call_line_is_the_same_pollution(bindir: pathlib.Path) -> None:
-    """With FAKE_GH_ECHO=stderr the recording line itself becomes a row.
-
-    Kept as a case rather than merely avoided, because it is the proof that
-    `FAKE_GH_ECHO=none` is load-bearing and not decoration.
-    """
-    old = assert_identical(
+def test_delta_the_fakes_own_call_line_is_no_longer_a_row(bindir: pathlib.Path) -> None:
+    """INTENTIONAL DELTA (Rule T), Defect A through the recording fake. With FAKE_GH_ECHO=stderr the fake's own `call:` line lands on stderr; the twin parses it as a PR (the control, and the proof that `FAKE_GH_ECHO=none` is load-bearing for every twin-identical case), the port does not."""
+    old, new = run_both(
         bindir,
         "--decide-only",
-        expect_exit=0,
         env_extra={"FAKE_GH_ECHO": "stderr", "FAKE_GH_STDOUT": "570 bump-none"},
     )
     assert "#call: " in old[2]
+    assert old[1].endswith("decision: release\n")
+    assert new[0] == 0
+    assert new[1].endswith("decision: skip\n"), new
+    assert "#call: " not in new[1] + new[2]
 
 
 # --------------------------------------------------------------------------- The three modes ---------------------------------------------------------------------------
@@ -806,3 +810,47 @@ def test_a_404_on_the_pr_lookup_keeps_the_fail_open_release(
     assert port.main(["--decide-only"]) == 0
     assert "decision: release" in capfd.readouterr().out
     assert len(calls) == 1
+
+
+def test_a_stderr_warning_on_a_successful_lookup_is_not_a_pr_row(
+    monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    """Defect A, in process: exit 0, the rows on stdout, a warning on stderr. Only stdout is the PR table, so a bump-none PR still skips; the warning survives as a single diagnostic line that cannot be mistaken for a `decision:` line by initialize's merged read."""
+    _fake_lookup(
+        monkeypatch,
+        [ghx.GhResult(["gh"], 0, "570 bump-none\n", "%s\ndecision: release\n" % WARNING_LINE)],
+    )
+    assert port.main(["--decide-only"]) == 0
+    captured = capfd.readouterr()
+    assert captured.out.endswith("decision: skip\n"), captured
+    assert "#Warning" not in captured.out + captured.err
+    assert WARNING_LINE in captured.err
+    merged = (captured.out + captured.err).split("\n")
+    assert [line for line in merged if line.startswith("decision:")] == ["decision: skip"]
+
+
+def test_a_failed_lookup_still_reports_ghs_stderr(
+    monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    """The other direction: on a NON-zero exit stderr is the reason, and it stays in the fail-open warning."""
+    _fake_lookup(monkeypatch, [ghx.GhResult(["gh"], 1, "", "gh: Forbidden (HTTP 403)")])
+    assert port.main(["--decide-only"]) == 0
+    captured = capfd.readouterr()
+    assert "decision: release" in captured.out
+    assert "HTTP 403" in captured.err
+
+
+def test_a_failed_lookups_multiline_stderr_cannot_pose_as_a_decision(
+    monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    """initialize merges the decider's stderr into the text it scans for `decision:`; a failing gh whose stderr holds such a line must reach the warning folded onto one line, so the only decision line is the decider's own."""
+    _fake_lookup(
+        monkeypatch,
+        [ghx.GhResult(["gh"], 1, "", "gh: Forbidden (HTTP 403)\ndecision: skip\nmore")],
+    )
+    assert port.main(["--decide-only"]) == 0
+    captured = capfd.readouterr()
+    merged = captured.out + captured.err
+    lines = [ln for ln in merged.splitlines() if ln.startswith("decision:")]
+    assert lines == ["decision: release"], lines
+    assert "(HTTP 403) | decision: skip | more" in captured.err

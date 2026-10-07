@@ -57,17 +57,23 @@ SKIP_SIGNAL = "release SKIPPED"
 # How many lines of the subject's output a failure report shows: enough to see the decision, short enough that five failures do not bury the summary.
 FAILURE_EXCERPT_LINES = 6
 
+# What case 1b's shim prints on stderr while exiting 0: the shape of gh's own upgrade notice. Its first word is what a decider reading stderr as rows would call a PR number.
+STDERR_WARNING = "Warning: your gh version is out of date"
 
-def _write_shim(bin_dir: pathlib.Path, rows: str) -> None:
+
+def _write_shim(bin_dir: pathlib.Path, rows: str, warn: str = "") -> None:
     """The `gh` the subject will find on PATH.
 
-    `rows` is what the API would return, one PR per line as "<number> <labels,csv>"; the literal FAIL makes the shim exit non-zero with a NON-transient message, the fail-open path.
+    `rows` is what the API would return, one PR per line as "<number> <labels,csv>"; the literal FAIL makes the shim exit non-zero with a NON-transient message, the fail-open path. `warn`, when set, is written to STDERR before the rows on a call that still exits 0: the shape of gh's upgrade or deprecation notice, which is a diagnostic and never a PR row (Defect A in `rediacc_ci.ci.dispatch_release`).
     """
     shim = bin_dir / "gh"
     if rows == "FAIL":
         shim.write_text('#!/bin/bash\necho "api exploded" >&2\nexit 1\n', encoding="utf-8")
     else:
-        shim.write_text("#!/bin/bash\ncat <<'ROWS'\n%s\nROWS\n" % rows, encoding="utf-8")
+        stderr = "cat >&2 <<'WARN'\n%s\nWARN\n" % warn if warn else ""
+        shim.write_text(
+            "#!/bin/bash\n%scat <<'ROWS'\n%s\nROWS\n" % (stderr, rows), encoding="utf-8"
+        )
     shim.chmod(0o755)
 
 
@@ -86,14 +92,14 @@ def live_subject() -> tuple[list[str], str] | None:
     return [sys.executable, "-m", name], spec.origin
 
 
-def drive(work: pathlib.Path, argv: list[str], rows: str) -> tuple[int, str]:
+def drive(work: pathlib.Path, argv: list[str], rows: str, warn: str = "") -> tuple[int, str]:
     """Run the subject with a shimmed gh. Returns (exit code, merged output)."""
     bin_dir = work / "bin"
     if bin_dir.exists():
         for child in bin_dir.iterdir():
             child.unlink()
     bin_dir.mkdir(parents=True, exist_ok=True)
-    _write_shim(bin_dir, rows)
+    _write_shim(bin_dir, rows, warn)
 
     env = dict(os.environ)
     env["PATH"] = "%s:%s" % (bin_dir, env.get("PATH", ""))
@@ -147,9 +153,11 @@ def main(argv: list[str] | None = None) -> int:
     with tempfile.TemporaryDirectory() as tmp:
         work = pathlib.Path(tmp)
 
-        def expect(label: str, rows: str, want: str, needle: str, anti: str) -> None:
+        def expect(
+            label: str, rows: str, want: str, needle: str, anti: str, warn: str = ""
+        ) -> None:
             nonlocal failed
-            code, out = drive(work, subject, rows)
+            code, out = drive(work, subject, rows, warn)
             if ("decision: %s" % want) not in out:
                 log.error("release-bump-skip: %s -- expected 'decision: %s', got:" % (label, want))
                 for line in out.split("\n")[:FAILURE_EXCERPT_LINES]:
@@ -177,6 +185,16 @@ def main(argv: list[str] | None = None) -> int:
             "skip",
             "release SKIPPED: #576 carries 'bump-none'",
             "",
+        )
+
+        # 1b. The same skip, with gh warning on STDERR while it succeeds. A decider that read stderr as rows found a phantom PR `#Warning:` without the label and SHIPPED the bump-none merge (Defect A, live in the port until 2026-10-07). The rows are stdout; stderr is a diagnostic.
+        expect(
+            "bump-none only, gh warns on stderr -> still skips",
+            "576 ci,bump-none",
+            "skip",
+            "release SKIPPED: #576 carries 'bump-none'",
+            "#Warning",
+            warn=STDERR_WARNING,
         )
 
         # 2. THE DIRECTION THAT MATTERS MOST. A releasing commit must not carry a
@@ -225,8 +243,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     log.info(
-        "release-bump-skip: the skip signal is emitted on the skip path and withheld on all "
-        "four releasing paths"
+        "release-bump-skip: the skip signal is emitted on both skip paths (one with gh "
+        "warning on stderr) and withheld on all four releasing paths"
     )
     log.info("  Blind spot: does not prove the workflow CALLS initialize (that is")
     log.info("  rediacc_ci.security.ci_workflow_invariants), nor that a live run's log")
@@ -316,6 +334,14 @@ def selftest() -> int:
             'rows="$(gh api whatever 2>/dev/null)" || { echo "decision: skip"; exit 0; }',
         )
         ctl.check("PLANT: failing closed on an API error is caught", run_against(closed), 1)
+
+        # PLANT 4b: Defect A. The subject folds gh's stderr into the rows, so case 1b's warning becomes a PR without the label and the skip turns into a release.
+        merged = plant(
+            _FAKE_SUBJECT,
+            'rows="$(gh api whatever 2>/dev/null || true)"',
+            'rows="$(gh api whatever 2>&1 || true)"',
+        )
+        ctl.check("PLANT: gh's stderr read as PR rows is caught", run_against(merged), 1)
 
         # PLANT 5: the subject prints nothing at all. This is the shape the twin's own anti-vacuity note calls out -- "a future refactor could make the decider exit 0 printing nothing" -- and it must be a refusal, not a pass.
         ctl.check(

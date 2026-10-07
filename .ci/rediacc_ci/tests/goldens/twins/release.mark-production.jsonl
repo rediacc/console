@@ -1,4 +1,4 @@
-{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 48, "source": "bash", "twin": ".ci/scripts/release/mark-production.sh", "twin_blob": "3886c5ada8431a1611fc143ffc27e09103b2b6f3"}}
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 48, "source": "bash", "twin": ".ci/scripts/release/mark-production.sh", "twin_blob": "ca7331cd071626273232ee0a60b255bfa2bee49a"}}
 {"_silent": []}
 {"_key": "test_a_403_is_could_not_tell_and_is_a_different_message#9ef91926f936573b", "err": "\u2717 mark-production: could not read the release for v1.3.1, so the check did NOT run: HTTP 403: Resource not accessible by integration\n", "out": "", "rc": "1"}
 {"_key": "test_a_403_is_could_not_tell_and_is_a_different_message#9ef91926f936573b|more", "err": "", "out": "[\"proc+\", [\"release\\tview\\tv1.3.1\\t--json\\ttagName\"]]", "rc": "0"}

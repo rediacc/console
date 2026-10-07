@@ -10,13 +10,13 @@ LIVE CALLERS. This module IS the release decider CI runs; the bash twin is a fro
 Ledger: `.ci/shadow/w7p6-dispatch-release.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-release --assert --k 5`).
 
 -----------------------------------------------------------------------------
-DEFECT A, REPRODUCED RATHER THAN REPAIRED: `2>&1` MAKES gh's STDERR INTO DATA
+DEFECT A, FIXED (2026-10-07): THE TWIN'S `2>&1` MADE gh's STDERR INTO DATA
 -----------------------------------------------------------------------------
 The twin captures the PR lookup with
 
     rows=$(gh api ".../pulls" --jq '...' 2>&1 </dev/null)
 
-so any line `gh` writes to stderr WHILE SUCCEEDING becomes a row of the PR table (the twin's call, driven below; this module reproduces it through `run_gh_pulls`). Each such line is then parsed as `<number> <labels>`, and since it carries no `bump-none` it lands in `keep_prs`. Driven, with a fake `gh` that prints one deprecation notice on stderr and the real table on stdout:
+so any line `gh` writes to stderr WHILE SUCCEEDING becomes a row of the PR table. Each such line is then parsed as `<number> <labels>`, and since it carries no `bump-none` it lands in `keep_prs`. Driven, with a fake `gh` that prints one deprecation notice on stderr and the real table on stdout:
 
     $ FAKE_GH_STDOUT='570 bump-none' \\
       FAKE_GH_STDERR='Warning: your gh version is out of date' \\
@@ -27,8 +27,9 @@ so any line `gh` writes to stderr WHILE SUCCEEDING becomes a row of the PR table
       contains abcdef1 and is not; releasing.
     decision: release
 
-Without the stderr line the same call prints `decision: skip`. So one benign diagnostic on a SUCCEEDING lookup invents a phantom PR, flips the verdict, and names that phantom in a notice a human is expected to believe. It errs in the release direction, which is the twin's stated preference, but the reasoning printed for it is false. `STDERR_IS_DATA` names it so a test can assert it
-by name. Reported, not fixed: repairing it is a cutover-box decision.
+Without the stderr line the same call prints `decision: skip`. So one benign diagnostic on a SUCCEEDING lookup invented a phantom PR, shipped a `bump-none` merge, and named that phantom in a notice a human is expected to believe; a stderr line whose second word is `release` would also have promoted the release to STABLE, past the soak. This port reproduced it until 056fe87b6 made it the decider CI runs, which turned a frozen twin's defect into a live one.
+
+THE FIX: `run_gh_pulls` reads the PR table from gh's STDOUT ONLY (the `--jq` output) when gh exits 0. On that path stderr is a diagnostic: `decide` logs it as ONE warn line (newlines folded, so no line of it can start with `decision:` in the merged text initialize reads), never as a row. On a non-zero exit stderr is the reason, so the fail-open warning still interpolates stderr then stdout, exactly as the twin does. The twin stays frozen; the differential pins this as an INTENTIONAL DELTA (`test_delta_defect_a_*` in `test_ci_dispatch_release.py`, with the twin's release kept as the control), and `check:ci-release-bump-skip` case 1b drives the live module with a warning on stderr.
 
 -----------------------------------------------------------------------------
 DEFECT B: THE `keep_prs` TRAILING SPACE IS TRIMMED IN THREE MESSAGES AND NOT
@@ -87,9 +88,6 @@ REQUIRED_VARS = ("GITHUB_REPOSITORY", "GITHUB_SHA")
 
 # Divergence 1 above. A stand-in for bash's `line N: gh: command not found`, which cannot be reproduced without naming a line of a file this module is not.
 GH_NOT_FOUND = "gh: command not found"
-
-# Defect A, named so `test_ci_dispatch_release.py` can assert it by name rather than by restating the sentence.
-STDERR_IS_DATA = True
 
 # `--jq '.[] | select(.merged_at != null) | "\\(.number) \\((.labels // []) |
 # map(.name) | join(","))"'` (twin :135). Identical to detect-bump-type.sh's, deliberately, and passed to `gh` rather than to a separate `jq` process, so a fake `gh` that ignored `--jq` would exercise a path CI never runs.
@@ -150,10 +148,10 @@ class UnreadablePullError(Exception):
     """The PR lookup still failed with a 5xx or connection fault after gh_retry's backoff, so the label set is UNKNOWN."""
 
 
-def run_gh_pulls(repository: str, sha: str) -> tuple[int, str]:
-    """The lookup, through gh_retry, with stderr still folded into the captured text (Defect A).
+def run_gh_pulls(repository: str, sha: str) -> tuple[int, str, str]:
+    """The lookup, through gh_retry: `(exit status, text, diagnostic)`.
 
-    Returns `(exit status, captured text)`. The twin merges stderr into stdout with `2>&1`; gh_retry keeps the streams apart, so the text is stderr followed by stdout, which is the order the differential's fake writes them in. A real gh interleaves by time; the order only matters for the phantom row of Defect A, which is reproduced, not repaired.
+    ON EXIT 0 the text is gh's STDOUT ALONE, the `--jq` rows, and the diagnostic is whatever gh wrote to stderr while succeeding (an upgrade or deprecation notice). Keeping the two apart is the Defect A fix: the twin's `2>&1` parsed that notice as a PR row. ON A NON-ZERO EXIT the text is stderr followed by stdout, the twin's merged capture in the order the differential's fake writes them, because there it is the reason the fail-open warning prints, and the diagnostic is empty.
 
     A 5xx or connection fault that outlasts the retries raises UnreadablePullError (PLAN-gh-retry G3): an unreadable PR is not an empty label set, and releasing on it could release a `bump-none` PR or withhold a stable label. Any other failure (a 403, a 404) keeps the twin's fail-open meaning.
 
@@ -164,8 +162,10 @@ def run_gh_pulls(repository: str, sha: str) -> tuple[int, str]:
         raise UnreadablePullError(result.stderr.strip())
     if result.returncode == 127:
         # Divergence 1. bash reaches the same branch with its own wording.
-        return 127, GH_NOT_FOUND
-    return result.returncode, (result.stderr + result.stdout_raw).rstrip("\n")
+        return 127, GH_NOT_FOUND, ""
+    if result.returncode != 0:
+        return result.returncode, (result.stderr + result.stdout_raw).rstrip("\n"), ""
+    return 0, result.stdout_raw.rstrip("\n"), result.stderr.strip(POSIX_SPACE)
 
 
 def decide(repository: str, sha: str) -> tuple[bool, str]:
@@ -178,11 +178,18 @@ def decide(repository: str, sha: str) -> tuple[bool, str]:
 
     Logs its reasoning and emits the same GHA notices in whichever mode it runs. It does NOT touch $GITHUB_OUTPUT; that is `main`'s job.
     """
-    status, rows = run_gh_pulls(repository, sha)
+    status, rows, diagnostic = run_gh_pulls(repository, sha)
+    if diagnostic:
+        # Defect A's fix: gh's stderr on a SUCCEEDING lookup is reported, never parsed. Folded onto one line so none of it can pose as a `decision:` line in initialize's merged read.
+        log.warn(
+            "gh api %s succeeded with a diagnostic on stderr (not read as PR rows): %s"
+            % (pulls_url(repository, sha), " | ".join(diagnostic.split("\n")))
+        )
     if status != 0:
+        # Folded like the diagnostic above: gh's stderr is several lines on a failure, and a line of it starting `decision:` must not pose as the decision in initialize's merged read.
         log.warn(
             "could not resolve the PR for %s (%s); dispatching the release anyway"
-            % (short_sha(sha), rows)
+            % (short_sha(sha), " | ".join(rows.rstrip("\n").split("\n")))
         )
         print(
             "::notice title=Release::PR lookup failed for %s; releasing rather than "
