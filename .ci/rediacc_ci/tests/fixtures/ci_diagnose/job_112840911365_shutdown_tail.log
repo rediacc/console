@@ -1,0 +1,12 @@
+2026-10-07T14:11:55.5839655Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 532.0/532.0 kB 14.2 MB/s eta 0:00:00
+2026-10-07T14:11:55.5980520Z Downloading mypy_extensions-1.1.0-py3-none-any.whl (5.0 kB)
+2026-10-07T14:11:55.6464776Z Downloading pathspec-1.1.1-py3-none-any.whl (57 kB)
+2026-10-07T14:11:55.6820855Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 57.3/57.3 kB 1.4 MB/s eta 0:00:00
+2026-10-07T14:11:55.6985023Z Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+2026-10-07T14:11:55.7351682Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 45.6/45.6 kB 1.0 MB/s eta 0:00:00
+2026-10-07T14:11:55.8795197Z Installing collected packages: typing_extensions, pathspec, mypy_extensions, librt, ast-serialize, mypy
+2026-10-07T14:11:58.2500025Z Successfully installed ast-serialize-0.12.1 librt-0.16.0 mypy-2.3.1 mypy_extensions-1.1.0 pathspec-1.1.1 typing_extensions-4.16.0
+2026-10-07T14:11:59.7257147Z info: type-checking 1407 Python file(s) in 4 group(s) with mypy 2.3.1 (/usr/bin/python3 -m mypy)
+2026-10-07T14:12:20.6593462Z ##[error]The runner has received a shutdown signal. This can happen when the runner service is stopped, or a manually started runner is canceled.
+2026-10-07T14:12:20.7756146Z ##[error]The operation was canceled.
+2026-10-07T14:12:20.7995062Z Cleaning up orphan processes
