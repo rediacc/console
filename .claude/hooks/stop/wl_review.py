@@ -2226,11 +2226,12 @@ def _untracked_or_modified(root, d):
     return names
 
 
-def branch_state(root, branch, cfg=None, items=None, repos=None):
+def branch_state(root, branch, cfg=None, items=None, repos=None, extra_repos=()):
     """Everything a reader needs about the branch's reviews, computed once.
 
     `items`, when given, is {item_id: state} from the worklist fold: a `deferred #<item>` whose item is gone reopens its finding. Without it a deferral counts as resolved (the mark verb checked the item when it was written).
     `repos`, when given, limits the coverage walk; default: the console plus every repo a review in the directory names.
+    `extra_repos` is added to whichever set that is: `--status` and `--check` add branch_repos() so a submodule review still in flight (no file yet) is walked, without dropping a repo only a review file names.
     """
     cfg = cfg or load_config(root)
     block_rank = SEV_RANK[cfg["block_at"]]
@@ -2275,7 +2276,7 @@ def branch_state(root, branch, cfg=None, items=None, repos=None):
             (st["blocking"] if SEV_RANK[f.severity] >= block_rank else st["advisory"]).append(
                 (path, f)
             )
-    for label in sorted(repos if repos is not None else seen_repos):
+    for label in sorted(set(repos if repos is not None else seen_repos) | set(extra_repos)):
         repo = repo_from_label(root, label)
         if not (repo / ".git").exists():
             continue
@@ -2424,12 +2425,14 @@ def check_state(root, branch, label="console", cfg=None):
                 % (branch, root, CHECK_COMMAND, branch)
             ],
         )
-    # label None judges every repository branch_state walks by default (the console plus each one a review names). The CLI's --check
+    # label None judges every repository branch_state walks by default (the console plus each one a review names), plus branch_repos()
+    # for a submodule review in flight; replacing the default with branch_repos() alone dropped a reviewed repo (efed9e0c7). The CLI's --check
     # passes it: with `{"console"}` it printed "clean" while a submodule commit's review was still in flight (2026-10-02, renet
     # 3ca4821f), which block_unverified_push then refused.
-    st = branch_state(
-        root, branch, cfg, repos=set(branch_repos(root, branch)) if label is None else {label}
-    )
+    if label is None:
+        st = branch_state(root, branch, cfg, extra_repos=branch_repos(root, branch))
+    else:
+        st = branch_state(root, branch, cfg, repos={label})
     return push_refusals(st), describe(st, limit=8)
 
 
@@ -3076,7 +3079,7 @@ def main(argv):
         return ledger_migrate(root, write="--write" in argv)
     if argv[0] == "--status":
         branch = _opt(argv, "--branch") or current_branch(root)
-        lines = describe(branch_state(root, branch, repos=set(branch_repos(root, branch))))
+        lines = describe(branch_state(root, branch, extra_repos=branch_repos(root, branch)))
         print(
             "per-commit reviews for %s: %s"
             % (branch, "%d line(s) to settle" % len(lines) if lines else "clean")
