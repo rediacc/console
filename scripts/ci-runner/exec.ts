@@ -41,9 +41,12 @@ export interface ExecOutcome {
  * A subshell, not the plan's `trap "times >&3" EXIT; eval "$1" 3>&-`, measured 2026-09-30 for two reasons: an `exit N` inside the gate runs the EXIT trap while `3>&-` is still in force, so the report is lost for exactly the gates that exit explicitly; and a gate that sets its own EXIT trap replaces the wrapper's (bash has one slot). Closing fd 3 for the gate keeps a daemon that inherits it from holding the pipe open and delaying `close`.
  *
  * The positional parameters are cleared and `$0` stays `bash`, so the gate body sees what a bare `bash -c <run>` gave it. Cost: one extra fork per gate, and a signal-killed gate now surfaces as exit 128+n from the outer shell, which settle() maps back to the signal message.
+ *
+ * THE RUNNER-DEATH WATCH (fd 4). Each gate leads its own process group (LIVE), so a runner that dies without running its signal handler (SIGKILL, the OOM killer) no longer takes its gates with it: measured 2026-10-07, a gate of a SIGKILLed runner was still alive 3 s later and would have run forever. fd 4 is a pipe whose other end only the runner holds, and nothing is ever written to it, so a background `read` on it returns EOF exactly when the runner is gone, by any death; the watcher then SIGKILLs the whole group, itself included, with `kill -KILL 0` (pid 0 is the sender's own process group) rather than `-$$`: the spawned `bash` may be a wrapper that execs bash as its child (this machine's bashcov-sup shim), and then the group leader is not `$$`, so `-$$` named no group and the first version of this watch killed nothing (measured 2026-10-07). It also polls its own shell once a second and exits when that is gone: a gate that kills its outer shell directly (`kill -9 $$`, a selftest case) would otherwise leave the watcher holding fd 4, and `close`, which waits on every stdio stream, would never fire (measured: the first version hung the selftest exactly there). Chosen over the other two candidates: the gate's stdin would carry the same EOF, but a gate that reads stdin would then block on a live runner instead of seeing /dev/null's EOF (selftest:e2e-stdin pins that); `prctl(PR_SET_PDEATHSIG)` needs a helper binary, is Linux-only, and fires on the death of the spawning THREAD rather than the process. This needs only bash builtins, so it works wherever the wrapper does (Linux, macOS). The gate itself runs with fd 4 closed, so no descendant can hold the watch open or read from it; the watcher has its output on /dev/null and fd 3 closed, so it never delays `close` or the `times` report; and on a normal exit the outer shell kills it before reporting.
  */
 const RUSAGE_WRAPPER =
-  '( __ci_run=$1; shift; eval "$__ci_run" ) 3>&-; __ci_rc=$?; times >&3; exit $__ci_rc';
+  '{ while :; do read -r -t 1 -u 4 _; __r=$?; if [ $__r -le 128 ] && [ $__r -ne 0 ]; then kill -KILL 0; fi; kill -0 $$ 2>/dev/null || exit 0; done; } </dev/null >/dev/null 2>&1 3>&- & __ci_w=$!; ' +
+  '( __ci_run=$1; shift; eval "$__ci_run" ) 3>&- 4<&-; __ci_rc=$?; kill $__ci_w 2>/dev/null; times >&3; exit $__ci_rc';
 
 /** Seconds from one `times` field, `1m2.345s`; the decimal mark follows LC_NUMERIC. */
 function timesField(field: string): number {
@@ -209,8 +212,8 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
       {
         cwd: opts.cwd,
         env: gateEnv(spec, opts.grant),
-        // fd 3 is opened on every platform so the spawn has one shape; unwrapped, nothing writes to it.
-        stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
+        // fd 3 (the `times` report) and fd 4 (the runner-death watch, never written) are opened on every platform so the spawn has one shape; unwrapped, nothing uses them.
+        stdio: ['ignore', 'pipe', 'pipe', 'pipe', 'pipe'],
         detached: wrapped,
       }
     );
@@ -225,6 +228,9 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
         rusage.push(c);
       });
     }
+    // The watch's runner end: nothing is written either way, but it is drained for the same reason as fd 3, and held by `child` for the gate's whole life, so it closes only when this process does.
+    const fd4 = child.stdio[4];
+    if (fd4 !== null && fd4 !== undefined && 'resume' in fd4) fd4.resume();
 
     // RECORDS MUST LAND OUTSIDE THE REPO. A relative or in-tree profileDir writes capture files into the working tree -- the ci-runner's own selftest did exactly that and left selftest_pass.jsonl / selftest_fail.jsonl at the repo root. An unusable directory means no profile, never a file in the tree.
     const profileDir =
@@ -292,7 +298,8 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
             }, KILL_GRACE_MS),
             setTimeout(() => {
               forced = true;
-              for (const s of [child.stdout, child.stderr, child.stdio[3]]) s?.destroy();
+              for (const s of [child.stdout, child.stderr, child.stdio[3], child.stdio[4]])
+                s?.destroy();
               settle(null);
             }, 2 * KILL_GRACE_MS)
           );
