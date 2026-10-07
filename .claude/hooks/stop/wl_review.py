@@ -2289,6 +2289,26 @@ def branch_state(root, branch, cfg=None, items=None, repos=None):
     return st
 
 
+def branch_repos(root, branch):
+    """Every repository the push guard could judge for this branch: the console, plus each `.gitmodules` checkout that is on a branch of the same name.
+
+    `--status` and `--check` read this, so what they print is what `block_push_with_unrecorded_reviews` refuses on. A submodule commit whose reviewer is still running has no review file yet, so walking only the repositories a review names (branch_state's default) printed "clean" while the push of private/renet was refused IN FLIGHT.
+    """
+    labels = ["console"]
+    rc, out = git(root, "config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$")
+    if rc != 0:
+        return labels
+    for line in out.splitlines():
+        parts = line.split(None, 1)
+        if len(parts) != 2:
+            continue
+        label = parts[1].strip()
+        repo = pathlib.Path(root) / label
+        if (repo / ".git").exists() and current_branch(repo) == branch:
+            labels.append(label)
+    return labels
+
+
 def run_command(label, sha, branch):
     return "python3 .claude/hooks/stop/wl_review.py --run %s --branch %s --repo %s" % (
         sha,
@@ -2407,7 +2427,9 @@ def check_state(root, branch, label="console", cfg=None):
     # label None judges every repository branch_state walks by default (the console plus each one a review names). The CLI's --check
     # passes it: with `{"console"}` it printed "clean" while a submodule commit's review was still in flight (2026-10-02, renet
     # 3ca4821f), which block_unverified_push then refused.
-    st = branch_state(root, branch, cfg, repos=None if label is None else {label})
+    st = branch_state(
+        root, branch, cfg, repos=set(branch_repos(root, branch)) if label is None else {label}
+    )
     return push_refusals(st), describe(st, limit=8)
 
 
@@ -3054,7 +3076,7 @@ def main(argv):
         return ledger_migrate(root, write="--write" in argv)
     if argv[0] == "--status":
         branch = _opt(argv, "--branch") or current_branch(root)
-        lines = describe(branch_state(root, branch))
+        lines = describe(branch_state(root, branch, repos=set(branch_repos(root, branch))))
         print(
             "per-commit reviews for %s: %s"
             % (branch, "%d line(s) to settle" % len(lines) if lines else "clean")
