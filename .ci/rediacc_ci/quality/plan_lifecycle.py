@@ -846,6 +846,18 @@ def unfenced_tokens(text: str) -> list[str]:
     return out
 
 
+def citable_token(full: str, short: str) -> str:
+    """`short` lengthened along `full` until it carries a letter, so a token the remap WRITES is one every reader of it will read.
+
+    `unfenced_tokens` here and `check:ci-plan-citations` both skip an all-digit token as a date or a run id, and about 1 in 68 nine-character abbreviations is all digits. A remap that wrote one would put a citation into the closed plan that no gate ever judges again (found 2026-10-07, #e9852315: the same skip made a fixture's 9-digit citation read as "0 cited"). `check_plan_citations` takes its own probe token the same way.
+    """
+    if not short.isdigit():
+        return short
+    return next(
+        (full[:n] for n in range(len(short) + 1, len(full) + 1) if not full[:n].isdigit()), full
+    )
+
+
 def apply_remap(text: str, mapping: dict[str, str]) -> str:
     """`text` with every unfenced token in `mapping` replaced. Fenced lines and every other byte are untouched, line endings included."""
     if not mapping:
@@ -961,7 +973,9 @@ def plan_remap(root: pathlib.Path, text: str) -> Remap:
         if verdict == REMAP_OK:
             width = str(max(len(tok), 7))
             short = gitx.git(["rev-parse", "--short=" + width, new], root=root).stdout.strip()
-            out.mapping[tok] = new if len(tok) == 40 else (short or new[: len(tok)])
+            out.mapping[tok] = (
+                new if len(tok) == 40 else citable_token(new, short or new[: len(tok)])
+            )
             out.subjects[tok] = subject
             continue
         out.refused.append((tok, _refusal(verdict, subject, len(candidates), out.main)))
@@ -1001,6 +1015,7 @@ __all__ = [
     "Tombstone",
     "apply_remap",
     "as_date",
+    "citable_token",
     "classify",
     "enumerate_plans",
     "findings",

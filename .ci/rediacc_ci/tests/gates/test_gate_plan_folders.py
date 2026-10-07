@@ -13,6 +13,7 @@ import subprocess
 import sys
 
 from rediacc_ci import paths
+from rediacc_ci.quality import plan_lifecycle as PL
 from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_plan_folders.py")
@@ -426,7 +427,9 @@ def _commit_file(root: pathlib.Path, rel: str, text: str, subject: str) -> str:
     return _git(root, "rev-parse", "HEAD").strip()
 
 
-def _rebased_history(tmp_path: pathlib.Path) -> tuple[pathlib.Path, dict[str, str]]:
+def _rebased_history(
+    tmp_path: pathlib.Path, digits: str = ""
+) -> tuple[pathlib.Path, dict[str, str]]:
     """A seeded tree on `main` plus the commits the controls cite, keyed by role.
 
     landed    a branch commit whose rebased copy is on main (subject and patch-id equal)
@@ -434,6 +437,8 @@ def _rebased_history(tmp_path: pathlib.Path) -> tuple[pathlib.Path, dict[str, st
     onmain    a commit made on main itself
     lost      a branch commit nothing on main carries
     drifted   a branch commit whose same-subject main commit carries a different patch
+
+    `digits` names one role ("drifted" or "copy") whose sha is re-dated until its 9-character abbreviation is all decimal digits, the shape #e9852315 drew by chance.
     """
     root = _seed(tmp_path)
     _git(root, "branch", "-M", "main")
@@ -444,13 +449,47 @@ def _rebased_history(tmp_path: pathlib.Path) -> tuple[pathlib.Path, dict[str, st
         root, "src/lost.txt", "lost\n", "feat: the change that never landed"
     )
     shas["drifted"] = _commit_file(root, "src/drift.txt", "one\n", "feat: the drifted change")
+    if digits == "drifted":
+        shas["drifted"] = _force_digit_prefix(root)
     _git(root, "checkout", "-q", "main")
     shas["onmain"] = _commit_file(root, "src/main.txt", "main\n", "chore: a commit made on main")
     _git(root, "cherry-pick", shas["landed"])
-    shas["copy"] = _git(root, "rev-parse", "HEAD").strip()
+    shas["copy"] = (
+        _force_digit_prefix(root) if digits == "copy" else _git(root, "rev-parse", "HEAD").strip()
+    )
     _commit_file(root, "src/drift.txt", "two\n", "feat: the drifted change")
     _git(root, "branch", "-D", "feature")
     return root, shas
+
+
+def _cite(sha: str) -> str:
+    """The token a fixture cites `sha` as: its 9-character abbreviation, lengthened until it carries a letter.
+
+    NOT `sha[:9]`. The move's reader (and check:ci-plan-citations) skip an ALL-DIGIT token as a date or a run id, and about 1 in 68 nine-character abbreviations is all digits, so a fixture citing `sha[:9]` cited nothing that often and its control read "0 cited". That is #e9852315: `test_move_refuses_a_same_subject_commit_whose_patch_differs` went green-to-red in one full unsharded run of 23,405 and passed alone, because the fixture's commits carry the wall clock and so a fresh sha every run.
+    """
+    for n in range(9, len(sha) + 1):
+        if not sha[:n].isdigit():
+            return sha[:n]
+    return sha
+
+
+def _force_digit_prefix(root: pathlib.Path, width: int = 9) -> str:
+    """Re-date HEAD until its first `width` hex digits are all decimal, and return the new sha. Deterministic per tree (the dates are fixed), about 68 tries on average; the cap is a test bug, never a pass."""
+    subject = _git(root, "log", "-1", "--format=%s").strip()
+    for i in range(5000):
+        sha = _git(root, "rev-parse", "HEAD").strip()
+        if sha[:width].isdigit():
+            return sha
+        _git(
+            root,
+            "commit",
+            "--amend",
+            "--allow-empty",
+            "-qm",
+            subject,
+            when="@%d +0000" % (1767225600 + i),
+        )
+    raise harness.GateAssertionError("no all-digit %d-char prefix in 5000 re-dates" % width)
 
 
 def _closing_plan(root: pathlib.Path, body: str) -> None:
@@ -463,7 +502,7 @@ def _closing_plan(root: pathlib.Path, body: str) -> None:
 
 def test_move_remaps_a_rebased_branch_commit_and_keeps_one_already_on_main(gate, tmp_path):
     root, shas = _rebased_history(tmp_path)
-    landed, copy, onmain = shas["landed"][:9], shas["copy"][:9], shas["onmain"][:9]
+    landed, copy, onmain = _cite(shas["landed"]), _cite(shas["copy"]), _cite(shas["onmain"])
     _closing_plan(
         root,
         "- [x] T1 the landed change\n    (ticked) commit:%s and again %s\n"
@@ -481,7 +520,7 @@ def test_move_remaps_a_rebased_branch_commit_and_keeps_one_already_on_main(gate,
 
 def test_move_refuses_a_cited_commit_main_does_not_carry(gate, tmp_path):
     root, shas = _rebased_history(tmp_path)
-    lost = shas["lost"][:9]
+    lost = _cite(shas["lost"])
     _closing_plan(root, "- [x] T1 lost\n    (ticked) commit:%s\n" % lost)
     result = _gate(root, "--move", "agent/plans/PLAN-closing.md")
     gate.assert_exit(1, result, "an unmappable citation refuses the move rather than guessing")
@@ -497,7 +536,7 @@ def test_move_refuses_a_cited_commit_main_does_not_carry(gate, tmp_path):
 
 def test_move_refuses_a_same_subject_commit_whose_patch_differs(gate, tmp_path):
     root, shas = _rebased_history(tmp_path)
-    drifted = shas["drifted"][:9]
+    drifted = _cite(shas["drifted"])
     _closing_plan(root, "- [x] T1 drift\n    (ticked) commit:%s\n" % drifted)
     result = _gate(root, "--move", "agent/plans/PLAN-closing.md")
     gate.assert_exit(1, result, "a subject match without a patch-id match is not a proof")
@@ -506,11 +545,45 @@ def test_move_refuses_a_same_subject_commit_whose_patch_differs(gate, tmp_path):
     gate.log_pass("--move refuses a subject match whose patch-id differs")
 
 
+def test_move_reads_a_citation_whose_nine_char_abbreviation_is_all_digits(gate, tmp_path):
+    """#e9852315 as a fixed shape rather than a 1-in-68 draw. The reader skips an all-digit token, so the fixture must cite a letter-carrying one; this pins both halves: `sha[:9]` alone really is invisible, and `_cite` makes the refusal fire."""
+    root, shas = _rebased_history(tmp_path, digits="drifted")
+    gate.assert_eq(shas["drifted"][:9].isdigit(), True, "the planted sha opens with nine digits")
+    gate.assert_eq(
+        PL.unfenced_tokens("commit:" + shas["drifted"][:9]), [], "and bare, it is not read"
+    )
+    drifted = _cite(shas["drifted"])
+    gate.assert_eq(len(drifted) > 9 and not drifted.isdigit(), True, "_cite lengthened it")
+    _closing_plan(root, "- [x] T1 drift\n    (ticked) commit:%s\n" % drifted)
+    result = _gate(root, "--move", "agent/plans/PLAN-closing.md")
+    gate.assert_exit(1, result, "the lengthened citation is read, so the patch-id refusal fires")
+    gate.assert_contains(result.err, drifted, "the refusal names the sha")
+    gate.log_pass("--move reads a citation whose 9-char abbreviation is all digits once lengthened")
+
+
+def test_move_never_writes_an_all_digit_remap(gate, tmp_path):
+    """The product half of #e9852315. A rebased copy whose 9-char abbreviation is all digits must be written lengthened, or the closed plan carries a citation no gate reads again."""
+    root, shas = _rebased_history(tmp_path, digits="copy")
+    copy9 = shas["copy"][:9]
+    gate.assert_eq(copy9.isdigit(), True, "the planted copy opens with nine digits")
+    landed, copy = _cite(shas["landed"]), _cite(shas["copy"])
+    _closing_plan(root, "- [x] T1 landed\n    (ticked) commit:%s\n" % landed)
+    result = _gate(root, "--move", "agent/plans/PLAN-closing.md")
+    gate.assert_exit(0, result, "a proven copy remaps")
+    moved = (root / "agent/plans/_done/PLAN-closing.md").read_text(encoding="utf-8")
+    gate.assert_not_contains(
+        moved, "commit:%s\n" % copy9, "the all-digit abbreviation is not written"
+    )
+    gate.assert_contains(moved, "commit:%s" % copy, "the lengthened, letter-carrying token is")
+    gate.assert_contains(PL.unfenced_tokens(moved), copy, "and the citation reader sees it")
+    gate.log_pass("--move lengthens a remap whose abbreviation would be all digits")
+
+
 def test_move_refuses_a_commit_with_several_proven_copies(gate, tmp_path):
     root, shas = _rebased_history(tmp_path)
     _git(root, "revert", "--no-edit", shas["copy"])
     _git(root, "cherry-pick", shas["landed"])
-    landed = shas["landed"][:9]
+    landed = _cite(shas["landed"])
     _closing_plan(root, "- [x] T1 twice\n    (ticked) commit:%s\n" % landed)
     result = _gate(root, "--move", "agent/plans/PLAN-closing.md")
     gate.assert_exit(1, result, "two proven copies is a choice, and the tool does not guess")
@@ -522,9 +595,9 @@ def test_move_refuses_a_commit_with_several_proven_copies(gate, tmp_path):
 def test_move_spares_a_fenced_quote_and_a_commit_still_on_this_branch(gate, tmp_path):
     """The two NEGATIVE controls. check:ci-plan-citations never judges a fenced line, and a commit reachable from HEAD is live on this branch; neither may refuse a move."""
     root, shas = _rebased_history(tmp_path)
-    lost = shas["lost"][:9]
+    lost = _cite(shas["lost"])
     _git(root, "checkout", "-qb", "next")
-    pending = _commit_file(root, "src/pending.txt", "pending\n", "feat: not merged yet")[:9]
+    pending = _cite(_commit_file(root, "src/pending.txt", "pending\n", "feat: not merged yet"))
     _closing_plan(
         root,
         "- [x] T1 pending\n    (ticked) commit:%s\n\n```\n%s feat: a quoted log line\n```\n"

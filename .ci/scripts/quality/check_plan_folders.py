@@ -337,6 +337,17 @@ def selftest() -> int:
         "commit:fedcba987 x\n```\nabc123def quoted\n```\n20261007 1234567890ab\n",
     )
     tally.check("M8 an empty mapping is the identity", PL.apply_remap(fenced, {}), fenced)
+    digits = "3253893064" + "ab" + "0" * 28
+    tally.check(
+        "M9 an all-digit rewrite is lengthened until it carries a letter, and the reader sees it",
+        PL.unfenced_tokens("commit:" + PL.citable_token(digits, digits[:9])),
+        [digits[:11]],
+    )
+    tally.check(
+        "M10 a rewrite that already carries a letter is kept as abbreviated",
+        PL.citable_token("abc" + "0" * 37, "abc000000"),
+        "abc000000",
+    )
 
     return 0 if tally.report() else 1
 
