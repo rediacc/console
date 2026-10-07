@@ -1,5 +1,5 @@
-# canonical: rediacc/console@62a6df4c44934677adcee0340889cce5d3e94961
-# generated: 2026-09-24T06:04:00Z
+# canonical: rediacc/console@f913174da453418b9eae1574cf21f5e5838fb9dd
+# generated: 2026-10-07T06:10:26Z
 7ee12fc903b5a3da597d5a87803119e276e7ce5cc69cdfda36ffa1eb88173443  docker/Caddyfile
 2025fcbb3384eb42d93caa2a4add6f9fce3c0a89dd81717b7b0fb46cc78f4077  lib/breakpoint-blocker.sh
 e70e63241b60a17671bd79c68b4e6022f396737ffdc5479fbc720b16ef15de03  lib/breakpoint-common.sh
@@ -14,7 +14,7 @@ aa25ac79873b4670a168fcc4b69377b99b0888f0769b8f95cd9e048c0767b9ad  scripts/instal
 1eda11286b5e02798d4a5bceee0ac9dcea308c1d0dcd34a24226fcb329b010c5  scripts/preflight-breakpoint.sh
 78a48693199efd53515005d3391de9a589a07f119cf5fc4e4767ac28040ea7e0  scripts/publish-endpoints.sh
 c6d13d09db19b4d560d52359df9619b3daf8f7e184a43faf751935f99c80f315  scripts/pull-service-images.sh
-b603322a40f73d177366717eb446d1fca1d326f3b0f4219f016d7aed894c7e60  scripts/reap-breakpoint-orphans.sh
+c9996c09182ddef3768ff93116468bf15ecd562ac77ea7d3a917189341f9cb71  scripts/reap-breakpoint-orphans.sh
 d4e7a0a6e27b58da7d499dcee866dc292698871f944bf61744931c97f1f8ccd4  scripts/resolve-recipient.sh
 1a989a3ee02337c16b34afbd0bb4450b1daeacc7ef24f92fec3442baf1e0c007  scripts/select-mode.sh
 4d3aa5794823055ea17616f87d09f821c3c4b69469095ec273bf02b358452985  scripts/start-origin.sh

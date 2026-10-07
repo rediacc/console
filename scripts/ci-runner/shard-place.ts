@@ -56,11 +56,7 @@ import path from 'node:path';
 import process from 'node:process';
 
 import { GREEN, NC, RED } from '../lib/console.js';
-import {
-  parseShardManifest,
-  shardManifestPath,
-  type ShardManifestFile,
-} from './shard-manifest.js';
+import { parseShardManifest, shardManifestPath, type ShardManifestFile } from './shard-manifest.js';
 import { LANE_ENUMERATORS, type Unit } from './unit-enumerators.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
@@ -375,7 +371,9 @@ async function main(argv: string[]): Promise<number> {
   }
   const enumerator = LANE_ENUMERATORS[lane];
   if (PLACE_REFUSED[lane] === undefined && enumerator === undefined) {
-    console.error(`${RED}✗ lane ${lane} has no LANE_ENUMERATORS entry; nothing says what its units are.${NC}`);
+    console.error(
+      `${RED}✗ lane ${lane} has no LANE_ENUMERATORS entry; nothing says what its units are.${NC}`
+    );
     return 1;
   }
   const rel = shardManifestPath(lane);
@@ -384,7 +382,9 @@ async function main(argv: string[]): Promise<number> {
   try {
     const units = enumerator === undefined ? [] : await enumerator(ROOT);
     if (PLACE_REFUSED[lane] === undefined && units.length === 0) {
-      console.error(`${RED}✗ lane ${lane} enumerated ZERO units; placing against nothing would drop every id.${NC}`);
+      console.error(
+        `${RED}✗ VACUOUS: lane ${lane} enumerated ZERO units; placing against nothing would drop every id.${NC}`
+      );
       return 1;
     }
     const { text: next, result } = placeText(
@@ -430,10 +430,7 @@ async function selftest(): Promise<number> {
     generatedAt: '2026-10-01T00:00:00.000Z',
     legs: legs.map((ids, i) => ({ index: i + 1, ids })),
   });
-  const pricing = (
-    costs: Record<string, number>,
-    extra: Partial<Pricing> = {}
-  ): Pricing => ({
+  const pricing = (costs: Record<string, number>, extra: Partial<Pricing> = {}): Pricing => ({
     costMs: (id) => costs[id] ?? costs['*'],
     workers: 1,
     priceGroupOf: () => undefined,
@@ -469,7 +466,12 @@ async function selftest(): Promise<number> {
     add('stamps generatedAt on a change', r.file.generatedAt === NOW);
   }
   {
-    const r = placeUnits(base, [...baseUnits, u('x'), u('y')], pricing({ ...costs, x: 60, y: 45 }), NOW);
+    const r = placeUnits(
+      base,
+      [...baseUnits, u('x'), u('y')],
+      pricing({ ...costs, x: 60, y: 45 }),
+      NOW
+    );
     const at = Object.fromEntries(r.placed.map((p) => [p.id, p.leg]));
     add(
       'PLACES heaviest first: x (60) takes leg 2, then y (45) the next lightest, leg 3',
@@ -478,7 +480,11 @@ async function selftest(): Promise<number> {
     );
   }
   {
-    const units = [...baseUnits.filter((x) => x.id !== 'a'), u('a', { mutex: 'G' }), u('m', { mutex: 'G' })];
+    const units = [
+      ...baseUnits.filter((x) => x.id !== 'a'),
+      u('a', { mutex: 'G' }),
+      u('m', { mutex: 'G' }),
+    ];
     const r = placeUnits(base, units, pricing(costs), NOW);
     add(
       'MUTEX: a new member of group G joins G on leg 1, the HEAVIEST leg, not the lightest',
@@ -487,7 +493,12 @@ async function selftest(): Promise<number> {
     );
   }
   {
-    const r = placeUnits(base, [...baseUnits, u('p', { mutex: 'H' }), u('q', { mutex: 'H' })], pricing(costs), NOW);
+    const r = placeUnits(
+      base,
+      [...baseUnits, u('p', { mutex: 'H' }), u('q', { mutex: 'H' })],
+      pricing(costs),
+      NOW
+    );
     add(
       'MUTEX: two new members of one new group land on ONE leg',
       r.placed.length === 2 && r.placed[0]?.leg === r.placed[1]?.leg,
@@ -495,14 +506,24 @@ async function selftest(): Promise<number> {
     );
   }
   {
-    const units = baseUnits.map((x) => (x.id === 'a' || x.id === 'c' ? u(x.id, { mutex: 'S' }) : x));
+    const units = baseUnits.map((x) =>
+      x.id === 'a' || x.id === 'c' ? u(x.id, { mutex: 'S' }) : x
+    );
     add(
       'REFUSES: a group whose committed members already sit on two legs',
-      throwsWith(() => placeUnits(base, [...units, u('s', { mutex: 'S' })], pricing(costs), NOW), 'split over legs 1, 2'),
+      throwsWith(
+        () => placeUnits(base, [...units, u('s', { mutex: 'S' })], pricing(costs), NOW),
+        'split over legs 1, 2'
+      )
     );
   }
   {
-    const r = placeUnits(base, baseUnits.filter((x) => x.id !== 'e'), pricing(costs), NOW);
+    const r = placeUnits(
+      base,
+      baseUnits.filter((x) => x.id !== 'e'),
+      pricing(costs),
+      NOW
+    );
     add(
       'DROPS: a phantom id (its unit is gone) leaves leg 3',
       r.dropped.length === 1 && r.dropped[0]?.id === 'e' && r.file.legs[2]?.ids.join(',') === 'd',
@@ -518,7 +539,10 @@ async function selftest(): Promise<number> {
   );
   add(
     'REFUSES quality-code, naming gate-bind --write',
-    throwsWith(() => placeUnits(mk('quality-code', [['x']]), [u('x')], pricing(costs), NOW), 'gate-bind.ts --write')
+    throwsWith(
+      () => placeUnits(mk('quality-code', [['x']]), [u('x')], pricing(costs), NOW),
+      'gate-bind.ts --write'
+    )
   );
   add(
     'placeHint: shard:place for a placeable lane, the owning verb for a refused one',
@@ -528,22 +552,37 @@ async function selftest(): Promise<number> {
   {
     const text = `${JSON.stringify(base, null, 2)}\n`;
     const out = placeText(text, L, baseUnits, pricing(costs), NOW);
-    add('NO-OP: nothing to place or drop returns the input text itself, generatedAt untouched', out.text === text);
+    add(
+      'NO-OP: nothing to place or drop returns the input text itself, generatedAt untouched',
+      out.text === text
+    );
     const odd = text.replace(/\n {2}/g, '\n    ');
-    add('NO-OP holds for formatting this tool would not write', placeText(odd, L, baseUnits, pricing(costs), NOW).text === odd);
+    add(
+      'NO-OP holds for formatting this tool would not write',
+      placeText(odd, L, baseUnits, pricing(costs), NOW).text === odd
+    );
     const once = placeText(text, L, [...baseUnits, u('n')], pricing(costs), NOW).text;
     add(
       'CONTROL: a run that places changes the text, and a second run on its output is a no-op',
-      once !== text && placeText(once, L, [...baseUnits, u('n')], pricing(costs), '2099-01-01T00:00:00.000Z').text === once
+      once !== text &&
+        placeText(once, L, [...baseUnits, u('n')], pricing(costs), '2099-01-01T00:00:00.000Z')
+          .text === once
     );
   }
   add(
     'REFUSES: a missing unit with no cost and no lane default',
-    throwsWith(() => placeUnits(base, [...baseUnits, u('z')], pricing({ a: 1, b: 1, c: 1, d: 1, e: 1 }), NOW), 'has no cost')
+    throwsWith(
+      () =>
+        placeUnits(base, [...baseUnits, u('z')], pricing({ a: 1, b: 1, c: 1, d: 1, e: 1 }), NOW),
+      'has no cost'
+    )
   );
   add(
     'REFUSES: a duplicate id in the committed manifest',
-    throwsWith(() => placeUnits(mk(L, [['a'], ['a']]), [u('a')], pricing(costs), NOW), 'on legs 1 and 2')
+    throwsWith(
+      () => placeUnits(mk(L, [['a'], ['a']]), [u('a')], pricing(costs), NOW),
+      'on legs 1 and 2'
+    )
   );
   add(
     'REFUSES: a #bucket id outside test-e2e-workers',
@@ -552,7 +591,13 @@ async function selftest(): Promise<number> {
   add(
     'REFUSES: a placed unit that needs a missing one (it would have to move)',
     throwsWith(
-      () => placeUnits(base, [...baseUnits.filter((x) => x.id !== 'c'), u('c', { needs: ['n'] }), u('n')], pricing(costs), NOW),
+      () =>
+        placeUnits(
+          base,
+          [...baseUnits.filter((x) => x.id !== 'c'), u('c', { needs: ['n'] }), u('n')],
+          pricing(costs),
+          NOW
+        ),
       'needs the missing "n"'
     )
   );
@@ -565,22 +610,43 @@ async function selftest(): Promise<number> {
     );
   }
   {
-    const r = placeUnits(base, [...baseUnits, u('n')], pricing(costs, { constraints: { notOnLeg: [{ unit: 'n', leg: 2 }] } }), NOW);
-    add('CONSTRAINT: notOnLeg keeps a unit off the lightest leg', r.placed[0]?.leg === 3, JSON.stringify(r.placed));
+    const r = placeUnits(
+      base,
+      [...baseUnits, u('n')],
+      pricing(costs, { constraints: { notOnLeg: [{ unit: 'n', leg: 2 }] } }),
+      NOW
+    );
+    add(
+      'CONSTRAINT: notOnLeg keeps a unit off the lightest leg',
+      r.placed[0]?.leg === 3,
+      JSON.stringify(r.placed)
+    );
   }
   {
     const unsorted = mk(L, [['b', 'a'], ['c'], ['d', 'e']]);
-    const r = placeUnits(unsorted, [...baseUnits, u('0')], pricing({ ...costs, c: 500, d: 500 }), NOW);
+    const r = placeUnits(
+      unsorted,
+      [...baseUnits, u('0')],
+      pricing({ ...costs, c: 500, d: 500 }),
+      NOW
+    );
     add(
       'ORDER: an unsorted leg keeps its order and gets the new id appended',
       r.file.legs[0]?.ids.join(',') === 'b,a,0',
       JSON.stringify(r.file.legs[0])
     );
     const s = placeUnits(base, [...baseUnits, u('0')], pricing({ ...costs, c: 500, d: 500 }), NOW);
-    add('ORDER: a sorted leg stays sorted', s.file.legs[0]?.ids.join(',') === '0,a,b', JSON.stringify(s.file.legs[0]));
+    add(
+      'ORDER: a sorted leg stays sorted',
+      s.file.legs[0]?.ids.join(',') === '0,a,b',
+      JSON.stringify(s.file.legs[0])
+    );
   }
   {
-    const p = pricing({ g1: 400, f1: 100, f2: 100 }, { workers: 4, priceGroupOf: (id) => (id === 'g1' ? 'G' : undefined) });
+    const p = pricing(
+      { g1: 400, f1: 100, f2: 100 },
+      { workers: 4, priceGroupOf: (id) => (id === 'g1' ? 'G' : undefined) }
+    );
     add(
       'PRICE: a 4-worker leg costs max(serial / 4, its largest group): 400, not 150',
       legPriceMs(['g1', 'f1', 'f2'], p) === 400 && legPriceMs(['f1', 'f2'], p) === 50
@@ -590,7 +656,7 @@ async function selftest(): Promise<number> {
     const src = fs.readFileSync(LANE_BUDGET, 'utf8');
     const m = /const XDIST_DECL_RE = (\/.*\/m);/.exec(src);
     add(
-      'PIN: XDIST_DECL_RE equals check-lane-budget.ts\'s own, so both price the same groups',
+      "PIN: XDIST_DECL_RE equals check-lane-budget.ts's own, so both price the same groups",
       m !== null && m[1] === XDIST_DECL_RE.toString(),
       m?.[1]
     );
@@ -601,7 +667,13 @@ async function selftest(): Promise<number> {
     const text = fs.readFileSync(path.join(ROOT, shardManifestPath(L)), 'utf8');
     try {
       const first = placeText(text, L, units ?? [], realPricing(L, units ?? []), NOW);
-      const second = placeText(first.text, L, units ?? [], realPricing(L, units ?? []), '2099-01-01T00:00:00.000Z');
+      const second = placeText(
+        first.text,
+        L,
+        units ?? [],
+        realPricing(L, units ?? []),
+        '2099-01-01T00:00:00.000Z'
+      );
       add(
         `REAL TREE: ${L} (${units?.length ?? 0} units) placed once is a no-op placed again`,
         (units?.length ?? 0) > 0 && second.text === first.text && second.result.placed.length === 0,

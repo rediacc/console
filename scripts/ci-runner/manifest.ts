@@ -2275,6 +2275,29 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // THE TWO WRITING VERBS, registered for the reason gen:gates-lock is: a hand-written package.json key counts against check:ci-package-key-budget, which refuses growth, and these are registry members rather than sprawl. gate:false because they WRITE; the scheduler never runs them.
+    id: 'shard:place',
+    run: 'npm run shard:place',
+    gate: false,
+    leaves: ['scripts/ci-runner/shard-place.ts'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: a writer, not a validation. CI judges the committed shard manifests through check:ci-shard-manifest-coverage; a step here would claim CI rewrites the placement it is meant to hold still.',
+    },
+  },
+  {
+    id: 'env:register',
+    run: 'npm run env:register',
+    gate: false,
+    leaves: ['.ci/rediacc_ci/quality/env_register.py'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        "BLOCKER: a writer, not a validation. CI judges the registries it edits through check:ci-env-manifest and check:ci-worklist-env-registry; a step here would claim CI registers names on the author's behalf.",
+    },
+  },
+  {
     id: 'check:ci-syncpack-sources',
     run: 'npm run check:ci-syncpack-sources',
     gate: true,

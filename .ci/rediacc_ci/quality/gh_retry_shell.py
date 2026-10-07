@@ -53,6 +53,7 @@ from rediacc_ci import paths
 from rediacc_ci.controls import Checker, controls_first, plant
 from rediacc_ci.core import allowlist
 from rediacc_ci.quality import gh_retry_reads as py
+from rediacc_ci.well_known import CF_API_BASE, GH_API_BASE
 
 NAME = "gh retry reads (shell)"
 SELF_REL = ".ci/rediacc_ci/quality/gh_retry_shell.py"
@@ -1313,11 +1314,19 @@ def describe(s: ShellSite) -> str:
 # Controls.
 # ---------------------------------------------------------------------------
 
-_FIX_SH = r"""#!/bin/bash
-GH_API="https://api.github.com"
-CF_API="https://api.cloudflare.com/client/v4"
+_FIX_SH = (
+    r"""#!/bin/bash
+GH_API="""
+    '"' + GH_API_BASE + '"'
+    r"""
+CF_API="""
+    '"' + CF_API_BASE + '"'
+    r"""
 RUNS="${GH_API}/repos/o/r/actions/runs"
-# curl -sS "https://api.github.com/repos/o/r" is a comment, not a call
+# curl -sS """
+    '"' + GH_API_BASE + r"""/repos/o/r"""
+    '"'
+    r""" is a comment, not a call
 status() {
     local resp
     resp="$(curl -sS -w $'\n%{http_code}' \
@@ -1341,12 +1350,15 @@ labels() {
     command -v gh >/dev/null
     cat <<EOF
 gh api repos/o/r/heredoc
-curl https://api.github.com/heredoc
+curl """
+    + GH_API_BASE
+    + r"""/heredoc
 EOF
     gh pr edit "$1" --add-label x
     retry_with_backoff 3 2 gh api "repos/o/r/tags"
 }
 """
+)
 
 _FIX_YML = """name: fixture
 on: push
@@ -1381,7 +1393,7 @@ def _fixture_corpus(workflow_line: str = ".ci/scripts/live/run-me.sh") -> Corpus
     return Corpus(
         scripts={
             ".ci/scripts/live/run-me.sh": 'source "$(dirname "$0")/../lib/common.sh"\n"$SCRIPT_DIR"/step-*.sh\ngh api repos/o/r/tags\n',
-            ".ci/scripts/live/step-one.sh": "curl -sS -X DELETE https://api.github.com/repos/o/r/x\n",
+            ".ci/scripts/live/step-one.sh": f"curl -sS -X DELETE {GH_API_BASE}/repos/o/r/x\n",
             ".ci/scripts/lib/common.sh": 'gh_retry() { _gh_probe false "$@"; }\n',
             ".ci/scripts/lib/local-common.sh": "true\n",
             ".ci/scripts/twin/old-twin.sh": "gh api repos/o/r/pulls\n",
@@ -1474,30 +1486,30 @@ def selftest() -> bool:
         [s.qualname for s in scan_text("f.sh", as_get, GH_API_GLOBALS) if s.needs_retry]
         == ["cancel"],
     )
-    literal = 'curl -fsSL \\\n  "https://api.github.com/repos/o/r/releases/latest"\n'
+    literal = f'curl -fsSL \\\n  "{GH_API_BASE}/repos/o/r/releases/latest"\n'
     check(
         "CURL: a literal api.github.com URL on a continuation line is a read",
         _one(literal) == [("<main>", "curl", "read", "one-shot")],
     )
     check(
         "CURL: `-d` without -G is a write",
-        _one("curl -d a=b https://api.github.com/x\n")[0][2] == "write",
+        _one(f"curl -d a=b {GH_API_BASE}/x\n")[0][2] == "write",
     )
     check(
         "CURL: `-G --data-urlencode` is a read",
-        _one("curl -G --data-urlencode q=x https://api.github.com/search\n")[0][2] == "read",
+        _one(f"curl -G --data-urlencode q=x {GH_API_BASE}/search\n")[0][2] == "read",
     )
     check(
         'CURL: `-X "$m"` is unresolved, counted as a read',
-        _one('curl -X "$m" https://api.github.com/x\n')[0][2] == "unresolved",
+        _one(f'curl -X "$m" {GH_API_BASE}/x\n')[0][2] == "unresolved",
     )
     check(
         "CURL: `--retry=3` is retried",
-        _one("curl --retry=3 https://api.github.com/x\n")[0][3] == "retried",
+        _one(f"curl --retry=3 {GH_API_BASE}/x\n")[0][3] == "retried",
     )
     check(
         "CURL: combined short flags `-fsSLo out` keep the URL",
-        _one("curl -fsSLo out https://api.github.com/x\n")[0][2] == "read",
+        _one(f"curl -fsSLo out {GH_API_BASE}/x\n")[0][2] == "read",
     )
     check(
         "CURL: WK_GH_API_BASE (a well-known seed) is the GitHub API",
@@ -1677,7 +1689,7 @@ def selftest() -> bool:
     )
     nocurl = Corpus(
         {k: v for k, v in corpus.scripts.items() if k != ".ci/scripts/live/step-one.sh"},
-        {".github/workflows/fixture.yml": _FIX_YML.replace("github.api_url", "env.OTHER")},
+        {".github/workflows/fixture.yml": plant(_FIX_YML, "github.api_url", "env.OTHER")},
         corpus.executors,
         corpus.gh_seeds,
     )
