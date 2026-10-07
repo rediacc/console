@@ -59,7 +59,7 @@ account_bws_exec() {
     case ",${REDIACC_BWS_PROFILES:-}," in
         *",${profile},"*) return 0 ;;
     esac
-    PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.core.bws_env \
+    PYTHONSAFEPATH=1 PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.core.bws_env \
         exec --profile "$profile" -- "$CONSOLE_ROOT_DIR/run.sh" "$@"
 }
 
@@ -148,7 +148,7 @@ account_allocate_ports() {
         base="$REDIACC_DEV_PORT_BASE"
         local offset
         for offset in 0 1 2; do
-            if PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+            if PYTHONSAFEPATH=1 PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
                 python3 -m rediacc_ci.core.ports is-port-in-use $((base + offset)); then
                 log_error "Port $((base + offset)) is already in use inside this environment"
                 log_info "REDIACC_DEV_PORT_BASE pins the ports so the proxy labels stay valid; free it rather than drifting"
@@ -171,7 +171,7 @@ account_allocate_ports() {
     # probe). The answer is identical: a candidate below the first free port
     # cannot start a free run, so scanning from the preferred base reaches the
     # same port the two-stage version did.
-    base=$(PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+    base=$(PYTHONSAFEPATH=1 PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
         python3 -m rediacc_ci.core.ports find-consecutive-free 3 \
         "$ACCOUNT_DEV_PORT_PREFERRED" "$ACCOUNT_DEV_PORT_RANGE_END") || {
         log_error "Cannot find 3 consecutive free ports in range ${ACCOUNT_DEV_PORT_PREFERRED}-${ACCOUNT_DEV_PORT_RANGE_END}"
@@ -205,7 +205,7 @@ account_wait_port() {
     local announced=false
 
     while true; do
-        if PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+        if PYTHONSAFEPATH=1 PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
             python3 -m rediacc_ci.core.ports is-port-in-use "$port"; then
             return 0
         fi
@@ -798,7 +798,7 @@ account_test_e2e() {
         exit 1
     fi
 
-    if ! PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+    if ! PYTHONSAFEPATH=1 PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
         python3 -m rediacc_ci.core.ports is-port-in-use "$gateway_port"; then
         log_error "Dev gateway not running on port $gateway_port"
         log_info "Start it first: ./run.sh account dev"
@@ -856,7 +856,7 @@ account_reset() {
         ACCOUNT_X25519_PUBLIC_KEY="$X25519_PUB" \
         ACCOUNT_JWT_SECRET="$JWT_SEC" \
         ACCOUNT_SERVER_API_KEY="$API_K" \
-        PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+        PYTHONSAFEPATH=1 PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
         python3 -m rediacc_ci.core.bws_env store-from-env \
         "ACCOUNT_ED25519_PRIVATE_KEY_DEV > ACCOUNT_ED25519_PRIVATE_KEY" \
         "ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY" \
@@ -870,7 +870,7 @@ account_reset() {
     unset ED25519_PRIV ED25519_PUB X25519_PRIV X25519_PUB JWT_SEC API_K
     # This machine's public-key cache, so the next dev renet bakes the NEW key.
     mkdir -p "$ACCOUNT_DIR/.cache"
-    PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.core.bws_env cache-to \
+    PYTHONSAFEPATH=1 PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.core.bws_env cache-to \
         "$ACCOUNT_DIR/.cache/public-keys.env" \
         "ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY" \
         "ACCOUNT_X25519_PUBLIC_KEY_DEV > ACCOUNT_X25519_PUBLIC_KEY" ||
@@ -1065,7 +1065,7 @@ account_db() {
         [[ -n "$base" ]] && preferred=$((base + ${DEVBOX_OFFSET_STUDIO:-3}))
     fi
     local port
-    port="$(PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+    port="$(PYTHONSAFEPATH=1 PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
         python3 -m rediacc_ci.core.ports find-preferred-port \
         "$preferred" "$((preferred + 1))" "$((preferred + 40))")" || {
         log_error "No free port near $preferred for the database browser"
