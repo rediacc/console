@@ -361,6 +361,21 @@ cases.append((2, run(PUSH), "a red with NO carried-reds file still refuses"))
 carry(keyed(K1))
 cases.append((0, run(PUSH), "a red whose every failure is NAMED and justified is allowed"))
 
+# A CORRUPT carry file committed at HEAD: it used to read as None ("nothing carried"), the same as no file, so the refusal never said the file was broken (#e3fca920). The verdict was already a refusal; the reason must name the parse failure.
+with open(CARRIED, "w", encoding="utf-8") as _fh:
+    _fh.write('{"version": 2, "carried": [')
+git("add", "--", CARRIED)
+git("commit", "-q", "-m", "corrupt carry")
+_rekey()
+cases.append((2, run(PUSH), "a corrupt committed carry file refuses"))
+_corrupt = run_err(PUSH)
+if "does not parse as JSON" not in _corrupt:
+    sys.exit(
+        "FAIL: the corrupt carry refusal does not name the parse failure: %r" % _corrupt[-400:]
+    )
+carry(keyed(K1))
+cases.append((0, run(PUSH), "CONTROL: the same red with the carry repaired is allowed again"))
+
 put(exitCode=1, failed=[TRAILERS, "check:lint"], findings={TRAILERS: [K1], "check:lint": None})
 cases.append((2, run(PUSH), "a SECOND, unnamed red still refuses -- carrying is per-gate"))
 
