@@ -184,8 +184,15 @@ def main():
         stripped = strip_block(body)
         if gh_repo == GH_REPO:
             # TURBO (agent/plans/PLAN-stop-hook-turbo.md D5): the plans the Stop hook named for this branch join the `Plan:` line; turbo off appends nothing, which is the write-once link.
-            named = plan_gate.turbo_named(root, br) if plan_gate.settings_at(root)[0].turbo else []
-            stripped = plan_gate.with_plan_line(stripped, plan_gate.queue_head(root), append=named)
+            # The plans are read AT THE PUSHED TIP, never the working tree (the sibling of sync_epic_block's tip check): CI judges a body naming a file the pushed head does not carry. A tip that cannot be read writes no Plan line, the quiet skip every read here takes.
+            tip = plan_gate.pushed_tip(root, br)
+            head = plan_gate.queue_head_at(root, tip)
+            named = []
+            if tip and plan_gate.settings_at(root, tip)[0].turbo:
+                named = [
+                    r for r in plan_gate.turbo_named(root, br) if plan_gate.exists_at(root, tip, r)
+                ]
+            stripped = plan_gate.with_plan_line(stripped, head, append=named)
         # mktemp, NOT "$ROOT/.git/...". This repo uses git WORKTREES, where `.git` is a FILE containing a gitdir pointer, so writing under it fails with "Not a directory" -- which is exactly how the first version of this hook silently did nothing while still exiting 0.
         try:
             handle, tmp = tempfile.mkstemp()

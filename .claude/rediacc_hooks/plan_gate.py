@@ -60,6 +60,43 @@ def queue_head(root: str) -> str:
     return ""
 
 
+def pushed_tip(root: str, branch: str) -> str:
+    """The 40-hex tip of `branch` on origin (`git ls-remote origin refs/heads/<branch>`), "" when it cannot be read: no such branch, an unreachable origin, a missing git or unparseable output. The PR body is judged at the pushed head, so a writer that names a plan reads it here, never from the working tree."""
+    if not branch:
+        return ""
+    out = commit_policy.git(["ls-remote", "origin", "refs/heads/%s" % branch], cwd=root)
+    first = (out or "").split("\n", 1)[0].split("\t", 1)[0].strip()
+    return first if re.fullmatch(r"[0-9a-f]{40}", first) else ""
+
+
+def exists_at(root: str, rev: str, rel: str) -> bool:
+    """True when `rel` is a file in commit `rev` (`git cat-file -e <rev>:<rel>`); False for an empty `rev` or a `rev` missing locally."""
+    if not rev or not rel:
+        return False
+    return commit_policy.git(["cat-file", "-e", "%s:%s" % (rev, rel)], cwd=root) is not None
+
+
+def queue_at(root: str, rev: str) -> list[str]:
+    """`queue`, read from agent/plans/QUEUE.md at commit `rev` instead of the working tree; [] when `rev` is empty or the file or the format module cannot be read there."""
+    if not rev:
+        return []
+    text = _read(root, QUEUE_REL, rev)
+    if text is None:
+        return []
+    try:
+        return _planqueue().ordered(text)
+    except ImportError:
+        return []
+
+
+def queue_head_at(root: str, rev: str) -> str:
+    """`queue_head` judged at commit `rev`: the first queued plan, in the queue at `rev`, that is a file at `rev`; "" when none is or `rev` is empty."""
+    for rel in queue_at(root, rev):
+        if exists_at(root, rev, rel):
+            return rel
+    return ""
+
+
 def own_text(body: str) -> str:
     """The body with every generated block removed."""
     return GENERATED_BLOCK.sub("", body)
@@ -511,14 +548,18 @@ __all__ = [
     "TURBO_NAMED_SUFFIX",
     "batch_size",
     "body_plans",
+    "exists_at",
     "has_operational_reason",
     "next_turbo",
     "open_boxes",
     "plan_concurrency",
     "plan_merge_refusal",
     "pr_plan_set",
+    "pushed_tip",
     "queue",
+    "queue_at",
     "queue_head",
+    "queue_head_at",
     "record_turbo_named",
     "settings_at",
     "turbo_named",
