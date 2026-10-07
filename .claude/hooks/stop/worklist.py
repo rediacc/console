@@ -2416,6 +2416,19 @@ def main():
             total = len(E.load_epics()[got].get("covers") or [])
             sys.stdout.write(M.CLI_EPIC_ATTACHED % (got, total))
             sys.exit(0)
+        if sub == "remove":
+            if len(rest) < 2:
+                sys.stderr.write(
+                    M.CLI_EPIC_REFUSED % "usage: --epic <me> remove <epic-id> <item-id>..."
+                )
+                sys.exit(2)
+            got, why = E.remove_from_epic(me, rest[0], rest[1:])
+            if not got:
+                sys.stderr.write(M.CLI_EPIC_REFUSED % why)
+                sys.exit(2)
+            total = len(E.load_epics()[got].get("covers") or [])
+            sys.stdout.write(M.CLI_EPIC_ATTACHED % (got, total))
+            sys.exit(0)
         if sub == "list":
             for eid, rec in E.load_epics().items():
                 sys.stdout.write(

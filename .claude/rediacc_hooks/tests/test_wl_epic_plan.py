@@ -85,6 +85,26 @@ def test_epic_later_add_keeps_the_plan(wl):  # noqa: F811
     assert got["epics"][eid]["plan"] == rel
 
 
+def test_epic_remove_detaches_an_item_and_a_later_add_restores_it(wl):  # noqa: F811
+    # 2026-10-07 #4b15e1e7: a post-merge task attached to the PR plan's epic blocked a PR it cannot finish in, and covers only ever accumulated, so nothing could detach it.
+    rel = rel_of(write_plan(wl, "scope-a"))
+    stay, leave = add(wl, "(deadbeef) stays"), add(wl, "(deadbeef) post-merge")
+    eid = new_epic(wl, "--plan", rel, "scope-a work")
+    assert wl.cli("--epic", wlfix.ME, "add", eid, stay, leave).rc == 0
+    assert probe(wl, rel)["covers"] == sorted([stay, leave])
+    got = wl.cli("--epic", wlfix.ME, "remove", eid, leave)
+    assert got.rc == 0, got.err[:300]
+    assert probe(wl, rel)["covers"] == [stay], "remove must detach only the named item"
+    assert probe(wl, rel)["epics"][eid]["plan"] == rel, "a remove keeps the plan"
+    # Refusals: an item the epic does not cover, an unknown epic, no item named.
+    assert wl.cli("--epic", wlfix.ME, "remove", eid, leave).rc == 2
+    assert wl.cli("--epic", wlfix.ME, "remove", "ffffffff", stay).rc == 2
+    assert wl.cli("--epic", wlfix.ME, "remove", eid).rc == 2
+    # A later add re-attaches: the fold is ordered, not a permanent tombstone.
+    assert wl.cli("--epic", wlfix.ME, "add", eid, leave).rc == 0
+    assert probe(wl, rel)["covers"] == sorted([stay, leave])
+
+
 def test_epic_title_naming_a_plan_resolves_nothing(wl):  # noqa: F811
     plan = write_plan(wl, "scope-a")
     rel = rel_of(plan)

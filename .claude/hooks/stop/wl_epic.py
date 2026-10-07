@@ -73,10 +73,10 @@ def plan_rel_problem(rel, root=None):
     return ""
 
 
-def record_epic(me, epic_id, title, covers, order=None, plan=None):
+def record_epic(me, epic_id, title, covers, order=None, plan=None, uncovers=None):
     """Append one epic record. Append-only, like every sidecar here.
 
-    `plan` is written only when given: `load_epics` merges non-None fields later-wins, so a record that omits it (a later `add`) keeps the plan an earlier record set.
+    `plan` is written only when given: `load_epics` merges non-None fields later-wins, so a record that omits it (a later `add`) keeps the plan an earlier record set. `uncovers` (a `--epic remove`) is subtracted from the accumulated covers by `load_epics`.
     """
     rec = {
         "at": C.stamp_now(),
@@ -88,6 +88,8 @@ def record_epic(me, epic_id, title, covers, order=None, plan=None):
     }
     if plan:
         rec["plan"] = str(plan)
+    if uncovers:
+        rec["uncovers"] = sorted({c for c in uncovers if c})[:EPIC_MAX_COVERS]
     S._append_lines(epics_path(), str(epics_path()) + ".lock", [rec])
 
 
@@ -120,7 +122,12 @@ def load_epics():
         # `minted` is the FIRST record's stamp; `at` is later-wins like every other field, so it moves on every `add` and cannot say when the epic was born. `pr_epic_ids` reads this to keep a minted-but-not-yet-cited epic on the branch that minted it.
         merged["minted"] = prev.get("minted") or rec.get("at") or ""
         # covers ACCUMULATE across records: `--epic add` is additive, so a later line naming one more item must not drop the ones named before it.
-        merged["covers"] = sorted(set(prev.get("covers") or []) | set(rec.get("covers") or []))
+        # An `uncovers` record DETACHES items: an item attached to the wrong epic (a post-merge task under the PR's plan epic, which then blocks a PR it cannot finish in, 2026-10-07 #4b15e1e7) had no way out, because covers only ever accumulated.
+        merged["covers"] = sorted(
+            (set(prev.get("covers") or []) | set(rec.get("covers") or []))
+            - set(rec.get("uncovers") or [])
+        )
+        merged.pop("uncovers", None)
         out[eid] = merged
     ordered = sorted(
         out.values(),
@@ -168,6 +175,26 @@ def add_to_epic(me, epic_id, item_ids):
         return None
     record_epic(me, epic_id, epics[epic_id].get("title"), item_ids, epics[epic_id].get("order"))
     return epic_id
+
+
+def remove_from_epic(me, epic_id, item_ids):
+    """Detach items from an existing epic (an `uncovers` record). Refuses an unknown epic, and an item the epic does not cover, by returning (None, why)."""
+    epics = load_epics()
+    if epic_id not in epics:
+        return None, "no epic %r; run --epic <me> list" % epic_id
+    covered = set(epics[epic_id].get("covers") or [])
+    stray = [i for i in item_ids if i not in covered]
+    if stray:
+        return None, "epic #%s does not cover %s" % (epic_id, ", ".join(stray))
+    record_epic(
+        me,
+        epic_id,
+        epics[epic_id].get("title"),
+        [],
+        epics[epic_id].get("order"),
+        uncovers=item_ids,
+    )
+    return epic_id, ""
 
 
 def neutralize(text):
