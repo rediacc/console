@@ -477,7 +477,7 @@ def _judged_body(cmd, seg, verb, root, base, runs):
 API_PR_ENDPOINT = re.compile(r"^repos/([^/]+)/([^/]+)/pulls/[0-9]+$")
 
 
-def _patch_call(cmd, scan, root):
+def _patch_call(cmd, scan, root, cwd=""):
     """`(body file names, PR ref)` for the whole-body PATCHes `cmd` sends to a PR that carries generated blocks, None when it sends none.
 
     Read from each walked `gh api` call by `shellscan.gh_args`, so `-XPATCH`, `--method=PATCH`, `-Fbody=@f`, `--field=body=@f`, `-fbody=x` and `--input=f` are the PATCH and the body they are (measured 2026-10-07: every one of those spellings walked past the text reader below, which the long spellings could not). Only a command the walk finds no `gh api` call in keeps the text reader.
@@ -489,7 +489,11 @@ def _patch_call(cmd, scan, root):
     refs: list[str] = []
     for call in calls:
         parsed = shellscan.gh_args(call.argv)
-        m = API_PR_ENDPOINT.match(shellscan.gh_api_endpoint(parsed))
+        # gh fills `{owner}`/`{repo}` from `--repo`, then `GH_REPO`, then the checkout's remote: the same order `gh_run_repo` reads, so `GH_REPO=rediacc/renet gh api 'repos/{owner}/{repo}/pulls/5'` is a renet PR (#d2d5f89d).
+        endpoint = shellscan.gh_api_endpoint(parsed)
+        if "{owner}" in endpoint or "{repo}" in endpoint:
+            endpoint = shellscan.gh_api_endpoint(parsed, shellscan.gh_run_repo(call, cwd))
+        m = API_PR_ENDPOINT.match(endpoint)
         if not m or shellscan.gh_api_method(parsed) != "PATCH":
             continue
         # The endpoint names its own repo, so a PATCH to a submodule PR leaves the arm here, call by call: `repos/rediacc/renet/pulls/113` beside `repos/rediacc/console/pulls/591` on one command still has the console one judged.
@@ -656,7 +660,7 @@ def run(ev):
     # `gh api repos/<o>/<r>/pulls/<n> -X PATCH -F body=@<file>` instead. That form
     # replaces the whole body exactly as `gh pr edit --body` does, and until 2026-09-04 it walked past this guard unread: this file's own message pointed at `gh pr edit --body-file`, the sanctioned guard refused that, and the door it pointed to instead had no marker check at all. Same rule as the edit arm: every generated marker must be visible in the body this call writes, and an
     # unreadable body is refused, because it can silently replace one that exists.
-    patch = _patch_call(cmd, scan, root)
+    patch = _patch_call(cmd, scan, root, ev.cwd or "")
     if patch is not None:
         names, ref = patch
         patch_body = cmd

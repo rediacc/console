@@ -143,6 +143,10 @@ def run(ev):
 
         # PR selector: first bare number/URL/branch token after `ready`, else the session cwd's current branch (matching gh's own default resolution).
         sel = named or hookio.git_out(["-C", cwd or ".", "branch", "--show-current"])
+        # `branch --show-current` prints nothing on a detached HEAD and when git fails, and an empty selector names no PR to verify: refused as unverifiable, the verdict an empty `gh pr view` answer already reached, said directly instead of after a gh call about nothing.
+        if not sel:
+            ev.warn(MESSAGE % "verification failed (no PR named and no current branch)")
+            return hookio.DENY
 
         conclusion = hookio.run_out(
             [

@@ -467,7 +467,10 @@ def _branch_creation(args: list[str]) -> tuple[str, str] | None:
 
 
 def _flag_value(args: list[str], names: tuple[str, ...]) -> str | None:
-    """The value of the first of `names` in `args`: `-b x`, `-bx` (short) or `--flag=x` / `--flag x`."""
+    """The value of the first of `names` in `args`: `-b x`, `-bx` (short) or `--flag=x` / `--flag x`.
+
+    Only `git worktree add -b` still reads through this, and `block_worktree_add` refuses every `git worktree add` from the Bash tool before it matters: it knows no bundle (`-fb x`) and no abbreviation. gh and `git checkout`/`switch` go through shellscan's parser (#d2d5f89d).
+    """
     for k, arg in enumerate(args):
         if arg == "--":
             return None
@@ -523,14 +526,17 @@ def push_destinations(args: list[str]) -> list[tuple[str, str]]:
 def _git_creations(run, start: str, root: str, created=frozenset()) -> list[Creation]:
     _, sub, args = git_split(run.argv)
     found: list[tuple[str, str]] = []
-    if sub == "checkout":
-        value = _flag_value(args, ("-b", "-B", "--orphan"))
-        if value:
-            found.append((value, "checkout-b"))
-    elif sub == "switch":
-        value = _flag_value(args, ("-c", "-C", "--create", "--force-create", "--orphan"))
-        if value:
-            found.append((value, "switch-c"))
+    if sub in ("checkout", "switch"):
+        # git's own parse-options rules (`shellscan.git_checkout_args`/`git_switch_args`, #d2d5f89d): a bundle (`-qb x`, `-qc x`) and a unique prefix (`--cr x`, `--orph x`) create the branch they name. Measured on git 2.53.0, each of those created it; `_flag_value` saw none of them.
+        from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+
+        if sub == "checkout":
+            parsed = shellscan.git_checkout_args(args)
+            names, kind = ("b", "B", "orphan"), "checkout-b"
+        else:
+            parsed = shellscan.git_switch_args(args)
+            names, kind = ("create", "force-create", "orphan"), "switch-c"
+        found.extend((v, kind) for n, v in parsed.flags if n in names and v)
     elif sub == "branch":
         hit = _branch_creation(args)
         if hit:
@@ -560,9 +566,17 @@ def _git_creations(run, start: str, root: str, created=frozenset()) -> list[Crea
 
 
 def _gh_creations(run, start: str, root: str, created=frozenset()) -> list[Creation]:
-    argv = run.argv
-    if argv[:2] == ["pr", "create"]:
-        value = _flag_value(argv[2:], ("--head", "-H"))
+    """The branch a walked `gh` call creates: `gh pr create --head <name>` or a `gh api .../git/refs` POST.
+
+    Read through `shellscan.gh_args`, the one pflag reader the gh guards share (#d2d5f89d), so every spelling gh accepts is the branch it names: `-H x`, `-Hx`, `-H=x` (`x`, never `=x`), `--head=x`, a bundle ending in it (`-dH x`), a `pr`-level flag before the verb (`gh pr -R r create -H x`), and a value-taking flag's value is never a flag (`-t --head` titles a PR "--head"). The REST form's method is `shellscan.gh_api_method` (`-XPOST`, `--method=POST`, `-X=POST`, or a field with no `-X`) and its endpoint the call's own operand, so a `git/refs` in a header or a `--jq` is no endpoint. Measured 2026-10-07 through dispatch.py, before this: `gh pr create -dH 0229-7` was admitted (rc=0) where `--head 0229-7` is refused, and `-H=0101-1` was refused as a branch called `=0101-1`.
+    """
+    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+
+    parsed = shellscan.gh_args(run.argv)
+    if parsed.on("help"):
+        return []
+    if parsed.command == ("pr", "create"):
+        value = parsed.last("head")
         if value:
             return [
                 Creation(
@@ -570,17 +584,15 @@ def _gh_creations(run, start: str, root: str, created=frozenset()) -> list[Creat
                 )
             ]
         return []
-    if argv[:1] == ["api"] and any("git/refs" in a for a in argv[1:]):
-        method = _flag_value(argv[1:], ("--method", "-X")) or ""
-        fields = [
-            a
-            for k, a in enumerate(argv)
-            if k > 0 and argv[k - 1] in ("-f", "-F", "--field", "--raw-field")
-        ]
-        if method.upper() == "POST" or (not method and fields):
-            ref = next((f.split("=", 1)[1] for f in fields if f.startswith("ref=")), "")
-            name = ref.removeprefix("refs/heads/")
-            return [Creation(scoped_repo(run, start, root, created), name, "gh-api-ref")]
+    if (
+        parsed.command == ("api",)
+        and "git/refs" in shellscan.gh_api_endpoint(parsed)
+        and shellscan.gh_api_method(parsed) == "POST"
+    ):
+        fields = [v for n, v in parsed.flags if n in ("field", "raw-field")]
+        ref = next((f.split("=", 1)[1] for f in fields if f.startswith("ref=")), "")
+        name = ref.removeprefix("refs/heads/")
+        return [Creation(scoped_repo(run, start, root, created), name, "gh-api-ref")]
     return []
 
 
@@ -605,25 +617,6 @@ def branch_creations(cmd: str, root: str, base: str | None = None) -> list[Creat
 
 # --------------------------------------------------------------------------- commit messages and paths ---------------------------------------------------------------------------
 
-_COMMIT_WITH_VALUE = frozenset(
-    (
-        "--message",
-        "--file",
-        "--reuse-message",
-        "--reedit-message",
-        "--author",
-        "--date",
-        "--cleanup",
-        "--fixup",
-        "--squash",
-        "--template",
-        "--trailer",
-        "--pathspec-from-file",
-    )
-)
-# Short options whose value is the rest of the bundle or the next word: `-m`, `-F`, `-C`, `-c`, `-t`.
-_COMMIT_SHORT_WITH_VALUE = "mFCct"
-
 _CAT_HEREDOC = re.compile(
     r"^\$\(\s*cat\s+<<-?\s*['\"]?([A-Za-z_][A-Za-z0-9_]*)['\"]?\n(.*?)\n[ \t]*\1[ \t]*\n?\s*\)$",
     re.DOTALL,
@@ -636,56 +629,37 @@ class CommitArgs(typing.NamedTuple):
     trailers: list[str]
     paths: list[str]
     flags: list[str]
+    # `("ambiguous" | "unknown", spelling)` for each option git would refuse (and so commit nothing); see `shellscan.ParsedArgs.problems`.
+    problems: tuple = ()
 
 
 def parse_commit_args(args: list[str]) -> CommitArgs:
-    """`git commit <args>` into its message values, `-F` files, trailers, pathspecs and bare flags (short bundles split into one flag per letter)."""
-    messages: list[str] = []
-    files: list[str] = []
-    trailers: list[str] = []
-    paths: list[str] = []
+    """`git commit <args>` into its message values, `-F` files, trailers, pathspecs and the boolean options in force.
+
+    Read by `shellscan.git_commit_args`, git's own parse-options rules over git's complete `git commit` option table (#d2d5f89d): a unique PREFIX of a long option is that option (`--fil f` is `--file f`, `--mess x` is `--message x`, `--no-veri` is `--no-verify`), short options bundle (`-qF f`, `-Ff`), a value-taking option's value is never an option, and options and pathspecs interleave. Measured 2026-10-07 through dispatch.py, before this: `git commit --fil <file> -- a` with the attribution footer in the file was admitted by block_commit_meta (rc=0) where `--file` is refused (rc=2),
+    and `git commit --no-veri -m x` walked past block_git_hook_bypass while git 2.53.0 really did skip the pre-commit hook.
+
+    `flags` lists each boolean (or optional-value) option ON at the end of the parse, the last spelling winning as it does in git (`-n --verify` runs the hooks), in both its spellings: `--no-verify` and `-n`, `--all` and `-a`. `problems` names an ambiguous or unknown option; git refuses that command, and the parse reads on past it.
+    """
+    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+
+    parsed = shellscan.git_commit_args(args)
     flags: list[str] = []
-    k = 0
-    while k < len(args):
-        arg = args[k]
-        if arg == "--":
-            paths.extend(args[k + 1 :])
-            break
-        if arg.startswith("--"):
-            key, eq, value = arg.partition("=")
-            if key in _COMMIT_WITH_VALUE:
-                if not eq:
-                    value = args[k + 1] if k + 1 < len(args) else ""
-                    k += 1
-                if key == "--message":
-                    messages.append(value)
-                elif key == "--file":
-                    files.append(value)
-                elif key == "--trailer":
-                    trailers.append(value)
-            else:
-                flags.append(arg)
-            k += 1
+    for name in dict.fromkeys(n for n, _ in parsed.flags):
+        short, takes = shellscan.GIT_COMMIT_FLAGS[name]
+        if takes is True or not parsed.on(name):
             continue
-        if arg.startswith("-") and len(arg) > 1:
-            letters = arg[1:]
-            for i, letter in enumerate(letters):
-                if letter in _COMMIT_SHORT_WITH_VALUE:
-                    value = letters[i + 1 :]
-                    if value == "":
-                        value = args[k + 1] if k + 1 < len(args) else ""
-                        k += 1
-                    if letter == "m":
-                        messages.append(value)
-                    elif letter == "F":
-                        files.append(value)
-                    break
-                flags.append("-" + letter)
-            k += 1
-            continue
-        paths.append(arg)
-        k += 1
-    return CommitArgs(messages, files, trailers, paths, flags)
+        flags.append("--" + name)
+        if short:
+            flags.append("-" + short)
+    return CommitArgs(
+        parsed.values("message"),
+        parsed.values("file"),
+        parsed.values("trailer"),
+        list(parsed.operands),
+        flags,
+        tuple(parsed.problems),
+    )
 
 
 def _unwrap(value: str) -> str:
