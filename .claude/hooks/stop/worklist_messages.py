@@ -2766,8 +2766,8 @@ PR_SCOPE_TURBO_PICKS = (
 )
 PR_SCOPE_TURBO_NONE = "and no queued plan is eligible for a free writer slot right now."
 PR_SCOPE_TURBO_SOLO = (
-    "but %s is a ` -- solo` entry in QUEUE.md, so this PR takes no further plan; turbo batches "
-    "the queue from the next PR."
+    "but %s is a ` -- solo` entry in QUEUE.md, so it runs alone in this PR and no other plan "
+    "joins; turbo batches the queue from the next PR."
 )
 PR_SCOPE_WHO_LIVE = "PR #%(pr)s works %(plans)s."
 PR_SCOPE_WHO_UNREADABLE = "The PR read for %(branch)s failed; scoped to %(plans)s."

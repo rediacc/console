@@ -680,8 +680,7 @@ def test_turbo_a_solo_plan_in_the_set_is_named_as_why_no_plan_joins(wl):  # noqa
     out = reason(got) + got.out
     assert TURBO_ON in out, out[:2000]
     assert (
-        "but PLAN-pr-own.md is a ` -- solo` entry in QUEUE.md, so this PR takes no further plan"
-        in out
+        "but PLAN-pr-own.md is a ` -- solo` entry in QUEUE.md, so it runs alone in this PR" in out
     ), out[:2000]
     assert PR_SCOPE not in out, out[:2000]
 
@@ -692,3 +691,20 @@ def test_turbo_control_turbo_off_keeps_the_one_plan_line(wl):  # noqa: F811
     out = reason(got) + got.out
     assert PR_SCOPE in out, out[:2000]
     assert "Turbo is on" not in out, out[:2000]
+
+
+def test_turbo_a_solo_queue_head_on_a_branch_with_no_pr_is_not_called_a_joining_pick(wl):  # noqa: F811
+    """The live defect of 2026-10-07: on branch 1007-1 with no PR the plan set is empty, the solo queue head arrived as a turbo pick, and the line said it would JOIN this PR. It is the plan the first push binds, and it runs alone."""
+    F.world(wl, ci=True)
+    wl.git("switch", "-q", "-c", BRANCH)
+    head = loop_plan(wl, "solo-head", opened=2, done=0)
+    write_turbo_queue(wl, head, loop_plan(wl, "queued-next", opened=2, done=0), solo=head)
+    F.merged_nodes(wl, [])
+    got = run_stop(wl)
+    out = reason(got) + got.out
+    assert "has no PR yet. Turbo is on" in out, out[:2000]
+    assert (
+        "but PLAN-solo-head.md is a ` -- solo` entry in QUEUE.md, so it runs alone in this PR"
+        in out
+    ), out[:2000]
+    assert "free writer slots start PLAN-solo-head.md" not in out, out[:2000]
