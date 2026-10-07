@@ -871,3 +871,52 @@ def test_every_declaring_builtin_walks(builtin):
     runs = shellscan._analyse(cmd).runs
     assert [r.name for r in runs] == [builtin, builtin, "gh"]
     assert shellscan.gh_named_repo(runs[-1]) in (None, "a/b", shellscan.UNRESOLVED_REPO)
+
+
+# `commit_policy` reads every git verb it judges through shellscan's parse-options tables (#d5d33bee). Each row was measured on git 2.53.0 in a scratch repository: the long form beside it is the control.
+@pytest.mark.parametrize(
+    ("control", "want", "other"),
+    [
+        # git push: `--tags` beside a refspec, and a delete/all/mirror taken back by its negation, each created the remote branch.
+        ("git push origin HEAD:0229-7", 2, "git push --tags origin HEAD:0229-7"),
+        ("git push origin HEAD:0229-7", 2, "git push -d --no-delete origin HEAD:0229-7"),
+        ("git push origin HEAD:0229-7", 2, "git push --all --no-all origin HEAD:0229-7"),
+        ("git push origin HEAD:0229-7", 2, "git push --mirror --no-mirror origin HEAD:0229-7"),
+        ("git push origin HEAD:0229-7", 2, "git push --push-o ci.skip origin HEAD:0229-7"),
+        ("git push --delete origin 0229-7", 0, "git push --del origin 0229-7"),
+        ("git push --delete origin 0229-7", 0, "git push -fd origin 0229-7"),
+        ("git push --tags origin", 0, "git push --all origin"),
+        # git branch: verbose, a list mode taken back, a valued --format/--column and a delete taken back all CREATED the branch.
+        ("git branch 0229-7", 2, "git branch -v 0229-7"),
+        ("git branch 0229-7", 2, "git branch -vv 0229-7"),
+        ("git branch 0229-7", 2, "git branch -l --no-list 0229-7"),
+        ("git branch 0229-7", 2, "git branch --format x 0229-7"),
+        ("git branch 0229-7", 2, "git branch --column=never 0229-7"),
+        ("git branch 0229-7", 2, "git branch -d --no-delete 0229-7"),
+        ("git branch --copy 0101-1 0229-7", 2, "git branch --cop 0101-1 0229-7"),
+        ("git branch --list 0229-7", 0, "git branch -d 0229-7"),
+        ("git branch --list 0229-7", 0, "git branch --contains HEAD 0229-7"),
+        ("git branch --list 0229-7", 0, "git branch --sh"),
+        # A global option that takes a separate value: `--attr-source <tree>` made the tree read as the subcommand.
+        ("git branch 0229-7", 2, "git --attr-source HEAD branch 0229-7"),
+        # git worktree add: a bundle carries -b.
+        ("git worktree add -b 0229-7 ../w", 2, "git worktree add -fb 0229-7 ../w"),
+    ],
+)
+def test_second_branch_reads_git_verbs_the_way_git_does(world, control, want, other):
+    rc, _ = judge(world, "block_second_branch", control)
+    assert rc == want, "control %r answered rc=%d, not %d" % (control, rc, want)
+    rc, _ = judge(world, "block_second_branch", other)
+    assert rc == want, "%r answered rc=%d where %r answers rc=%d" % (other, rc, control, want)
+
+
+# `git --attr-source <tree> commit` commits (git 2.53.0), so every commit guard must see the commit behind it.
+def test_a_global_option_with_a_value_does_not_hide_the_verb(world):
+    assert judge(world, "block_git_hook_bypass", "git commit --no-verify -m x -- a")[0] == 2
+    assert (
+        judge(
+            world, "block_git_hook_bypass", "git --attr-source HEAD commit --no-verify -m x -- a"
+        )[0]
+        == 2
+    )
+    assert commit_policy.git_split(["--attr-source", "HEAD", "commit", "-m", "x"])[1] == "commit"

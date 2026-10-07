@@ -1641,6 +1641,22 @@ def _shell_builtin(base, argv, shell):
     return out
 
 
+# git's global options that take the NEXT word as their value (`git --help`, git.c `handle_options`, git 2.53.0). `--attr-source <tree>` was missing from both copies of this list until 2026-10-07 (#d5d33bee): `git --attr-source HEAD commit` commits, and the walk read `HEAD` as the subcommand, so no commit guard saw the commit. `--exec-path` without `=` prints a path and exits, so the word after it never runs.
+GIT_GLOBAL_WITH_VALUE = frozenset(
+    (
+        "-C",
+        "-c",
+        "--git-dir",
+        "--work-tree",
+        "--namespace",
+        "--super-prefix",
+        "--config-env",
+        "--exec-path",
+        "--attr-source",
+    )
+)
+
+
 def _git_invocation(argv, cwd):
     """`(subcommand, directory)` for a `git` argv: every `-C` before the subcommand composes onto the current directory, the way git applies them."""
     here = cwd
@@ -1651,15 +1667,7 @@ def _git_invocation(argv, cwd):
             here = _join_dir(here, argv[k + 1])
             k += 2
             continue
-        if arg in (
-            "-c",
-            "--git-dir",
-            "--work-tree",
-            "--namespace",
-            "--super-prefix",
-            "--config-env",
-            "--exec-path",
-        ) and k + 1 < len(argv):
+        if arg in GIT_GLOBAL_WITH_VALUE and k + 1 < len(argv):
             k += 2
             continue
         if arg.startswith("-"):
@@ -2767,7 +2775,77 @@ GIT_REBASE_NONEG = frozenset(
         "empty",
     )
 )
+# `git branch -h` plus `--git-completion-helper-all` on git 2.53.0, hidden `--with`/`--without`/`--set-upstream` included (#d5d33bee). `-D`, `-M` and `-C` have no long name of their own. `--contains`, `--merged` and their `no-` twins take the next word unless they are last; they put `git branch` in list mode either way, so reading the next word as theirs never creates a branch here that git would not.
+GIT_BRANCH_FLAGS = {
+    "verbose": ("v", False),
+    "quiet": ("q", False),
+    "track": ("t", "opt"),
+    "set-upstream": ("", False),
+    "set-upstream-to": ("u", True),
+    "unset-upstream": ("", False),
+    "color": ("", "opt"),
+    "remotes": ("r", False),
+    "contains": ("", True),
+    "no-contains": ("", True),
+    "with": ("", True),
+    "without": ("", True),
+    "abbrev": ("", "opt"),
+    "all": ("a", False),
+    "delete": ("d", False),
+    "D": ("D", False),
+    "move": ("m", False),
+    "M": ("M", False),
+    "omit-empty": ("", False),
+    "copy": ("c", False),
+    "C": ("C", False),
+    "list": ("l", False),
+    "show-current": ("", False),
+    "create-reflog": ("", False),
+    "edit-description": ("", False),
+    "force": ("f", False),
+    "merged": ("", True),
+    "no-merged": ("", True),
+    "column": ("", "opt"),
+    "sort": ("", True),
+    "points-at": ("", True),
+    "ignore-case": ("i", False),
+    "recurse-submodules": ("", False),
+    "format": ("", True),
+}
+GIT_BRANCH_NONEG = frozenset(
+    (
+        "remotes",
+        "contains",
+        "no-contains",
+        "with",
+        "without",
+        "all",
+        "D",
+        "M",
+        "C",
+        "merged",
+        "no-merged",
+    )
+)
+# `git worktree add -h` on git 2.53.0 (#d5d33bee): `-b` and `-B` have no long name.
+GIT_WORKTREE_ADD_FLAGS = {
+    "force": ("f", False),
+    "b": ("b", True),
+    "B": ("B", True),
+    "orphan": ("", False),
+    "detach": ("d", False),
+    "checkout": ("", False),
+    "lock": ("", False),
+    "reason": ("", True),
+    "quiet": ("q", False),
+    "track": ("", False),
+    "guess-remote": ("", False),
+    "relative-paths": ("", False),
+}
+GIT_WORKTREE_ADD_NONEG = frozenset(("b", "B"))
 GIT_VERBS = {
+    "branch": (GIT_BRANCH_FLAGS, GIT_BRANCH_NONEG),
+    "worktree-add": (GIT_WORKTREE_ADD_FLAGS, GIT_WORKTREE_ADD_NONEG),
     "commit": (GIT_COMMIT_FLAGS, GIT_COMMIT_NONEG),
     "tag": (GIT_TAG_FLAGS, GIT_TAG_NONEG),
     "checkout": (GIT_CHECKOUT_FLAGS, GIT_CHECKOUT_NONEG),

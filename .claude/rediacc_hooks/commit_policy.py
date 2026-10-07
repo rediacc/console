@@ -273,26 +273,15 @@ def ff_fallback_refusal(repo_root: str, remote: str, live: str, sha: str, base: 
 
 # --------------------------------------------------------------------------- parsing git invocations ---------------------------------------------------------------------------
 
-_GIT_GLOBAL_WITH_VALUE = frozenset(
-    (
-        "-C",
-        "-c",
-        "--git-dir",
-        "--work-tree",
-        "--namespace",
-        "--super-prefix",
-        "--config-env",
-        "--exec-path",
-    )
-)
-
 
 def git_split(argv: list[str]) -> tuple[list[str], str, list[str]]:
-    """`(global options, subcommand, subcommand args)` for a `git` argv (the name excluded)."""
+    """`(global options, subcommand, subcommand args)` for a `git` argv (the name excluded). The options taking a separate value are `shellscan.GIT_GLOBAL_WITH_VALUE`, the walk's own list (#d5d33bee)."""
+    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+
     k = 0
     while k < len(argv):
         arg = argv[k]
-        if arg in _GIT_GLOBAL_WITH_VALUE and k + 1 < len(argv):
+        if arg in shellscan.GIT_GLOBAL_WITH_VALUE and k + 1 < len(argv):
             k += 2
             continue
         if arg.startswith("-"):
@@ -418,99 +407,54 @@ def foreign_git_only(ev, cmd: str) -> bool:
     return foreign_only(ev, cmd)
 
 
-_BRANCH_READS = frozenset(
-    (
-        "-d",
-        "-D",
-        "--delete",
-        "-r",
-        "--remotes",
-        "-a",
-        "--all",
-        "-v",
-        "-vv",
-        "--verbose",
-        "-l",
-        "--list",
-        "--show-current",
-        "--contains",
-        "--no-contains",
-        "--merged",
-        "--no-merged",
-        "--points-at",
-        "--edit-description",
-        "-u",
-        "--set-upstream-to",
-        "--unset-upstream",
-        "--sort",
-        "--format",
-        "--column",
-    )
-)
-_BRANCH_RENAME = frozenset(("-m", "-M", "--move"))
-_BRANCH_COPY = frozenset(("-c", "-C", "--copy"))
-
-
 def _branch_creation(args: list[str]) -> tuple[str, str] | None:
-    """`(name, kind)` for `git branch <args>`, or None for a read, a delete or a list."""
-    flags = [a for a in args if a.startswith("-")]
-    positionals = [a for a in args if not a.startswith("-")]
-    if any(f.split("=", 1)[0] in _BRANCH_READS for f in flags):
-        return None
-    if not positionals:
-        return None
-    if any(f in _BRANCH_RENAME for f in flags):
-        return positionals[-1], "rename"
-    if any(f in _BRANCH_COPY for f in flags):
-        return positionals[-1], "copy"
-    return positionals[0], "branch"
+    """`(name, kind)` for `git branch <args>`, or None for a read, a delete or a list.
 
-
-def _flag_value(args: list[str], names: tuple[str, ...]) -> str | None:
-    """The value of the first of `names` in `args`: `-b x`, `-bx` (short) or `--flag=x` / `--flag x`.
-
-    Only `git worktree add -b` still reads through this, and `block_worktree_add` refuses every `git worktree add` from the Bash tool before it matters: it knows no bundle (`-fb x`) and no abbreviation. gh and `git checkout`/`switch` go through shellscan's parser (#d2d5f89d).
+    Read by `shellscan.git_args("branch", ...)`, git's parse-options over the whole option table, and decided the way builtin/branch.c decides its mode (#d5d33bee): a delete, an explicit or implied list (`-l`, `--contains`, `--merged`, `--points-at`, ...), `--show-current`, `--edit-description`, an upstream change and `-a`/`-r` create nothing; a move or a copy creates its LAST operand; anything else with an operand creates the first. Measured on git 2.53.0, `git branch -v x`, `-vv x`, `-l --no-list x`, `--format f x`, `--column=never x` and `-d --no-delete x` each CREATED x, and the old flag-name membership read every one of them as a read; `--cop a x` copies to x, which it read as a branch called `a`.
     """
-    for k, arg in enumerate(args):
-        if arg == "--":
-            return None
-        for name in names:
-            if arg == name:
-                return args[k + 1] if k + 1 < len(args) else None
-            if name.startswith("--") and arg.startswith(name + "="):
-                return arg[len(name) + 1 :]
-            if not name.startswith("--") and arg.startswith(name) and len(arg) > len(name):
-                return arg[len(name) :]
-    return None
+    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
 
-
-_PUSH_WITH_VALUE = frozenset(("--repo", "-o", "--push-option", "--receive-pack", "--exec"))
+    parsed = shellscan.git_args("branch", args)
+    names = parsed.operands
+    if not names:
+        return None
+    if any(
+        parsed.on(f)
+        for f in (
+            "delete",
+            "D",
+            "list",
+            "show-current",
+            "edit-description",
+            "unset-upstream",
+            "remotes",
+            "all",
+        )
+    ):
+        return None
+    listing = ("contains", "no-contains", "with", "without", "merged", "no-merged", "points-at")
+    if any(parsed.values(f) for f in listing) or parsed.last("set-upstream-to"):
+        return None
+    if parsed.on("move") or parsed.on("M"):
+        return names[-1], "rename"
+    if parsed.on("copy") or parsed.on("C"):
+        return names[-1], "copy"
+    return names[0], "branch"
 
 
 def push_destinations(args: list[str]) -> list[tuple[str, str]]:
     """`(src, dst)` branch names for `git push <args>`, `refs/heads/` stripped.
 
-    Delete forms, `--all`, `--mirror` and `--tags` name no branch being created and give nothing; so does a destination outside `refs/heads/`.
+    Read by `shellscan.git_push_args`, git's parse-options over `git push`'s whole option table (#d5d33bee). A delete, `--all` and `--mirror` name no branch being created (git 2.53.0 refuses `--all` or `--mirror` beside a refspec, and pushes only existing local branches without one), nor does `--tags` alone; `--tags` BESIDE a refspec pushes that refspec too. The last of a flag and its negation wins and a unique prefix is the option. Measured on git 2.53.0: `--tags origin HEAD:x`, `-d --no-delete origin HEAD:x`, `--all --no-all origin HEAD:x` and `--mirror --no-mirror origin HEAD:x` each CREATED x, and the flag-name membership this read until then took every one of them for a push creating nothing. A destination outside `refs/heads/` gives nothing.
     """
-    if any(a in ("--delete", "-d", "--all", "--mirror", "--tags") for a in args):
+    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+
+    parsed = shellscan.git_push_args(args)
+    if parsed.on("delete") or parsed.on("all") or parsed.on("mirror"):
         return []
-    positionals = []
-    k = 0
-    while k < len(args):
-        arg = args[k]
-        if arg == "--":
-            positionals.extend(args[k + 1 :])
-            break
-        if arg in _PUSH_WITH_VALUE:
-            k += 2
-            continue
-        if arg.startswith("-"):
-            k += 1
-            continue
-        positionals.append(arg)
-        k += 1
+    specs = parsed.operands[1:]
     out = []
-    for raw in positionals[1:]:
+    for raw in specs:
         spec = raw.removeprefix("+")
         src, colon, dst = spec.partition(":")
         if not colon:
@@ -542,7 +486,11 @@ def _git_creations(run, start: str, root: str, created=frozenset()) -> list[Crea
         if hit:
             found.append(hit)
     elif sub == "worktree" and args[:1] == ["add"]:
-        value = _flag_value(args[1:], ("-b", "-B"))
+        # git's parse (`shellscan.git_args("worktree-add", ...)`, #d5d33bee): `-fb x` creates x as `-b x` does (git 2.53.0). block_worktree_add refuses every `git worktree add` from the Bash tool before this matters.
+        from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+
+        parsed = shellscan.git_args("worktree-add", args[1:])
+        value = parsed.last("b") or parsed.last("B")
         if value:
             found.append((value, "worktree"))
     elif sub == "push":

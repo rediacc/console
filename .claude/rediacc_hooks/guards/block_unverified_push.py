@@ -801,19 +801,9 @@ def rebase_recipe(base, head):
 
 
 def _push_remote(args):
-    """The remote a `git push <args>` names (its first positional), "" when it names none."""
-    k = 0
-    while k < len(args):
-        arg = args[k]
-        if arg == "--":
-            return args[k + 1] if k + 1 < len(args) else ""
-        if arg in commit_policy._PUSH_WITH_VALUE:
-            k += 2
-            continue
-        if not arg.startswith("-"):
-            return arg
-        k += 1
-    return ""
+    """The remote a `git push <args>` names (its first operand), "" when it names none. Read by `shellscan.git_push_args` (#d5d33bee), so a valued option in any spelling (`--push-o x`, `-ox`, `--repo=x`) never stands in for the remote."""
+    operands = shellscan.git_push_args(args).operands
+    return operands[0] if operands else ""
 
 
 def live_pushes(cmd, root):
@@ -831,9 +821,8 @@ def live_pushes(cmd, root):
         if _push_remote(args) not in ("", BASE_REMOTE):
             continue
         dests = commit_policy.push_destinations(args)
-        if not dests and not any(
-            a in ("--delete", "-d", "--all", "--mirror", "--tags") for a in args
-        ):
+        parsed = shellscan.git_push_args(args)
+        if not dests and not any(parsed.on(f) for f in ("delete", "all", "mirror", "tags")):
             dests = [("HEAD", current)]
         for src, named in dests:
             dst = current if named == "HEAD" else named
