@@ -2,19 +2,20 @@ name: Housekeeping
 
 # Nightly cleanup, decoupled from the release pipeline. This previously ran
 # inline on every push-to-main (a job in ci.yml), which meant version/R2/GHCR
-# cleanup raced live releases — including the orphan sweep that can delete a
+# cleanup raced live releases, including the orphan sweep that can delete a
 # version's bytes. Running it only on a schedule (or manual dispatch) guarantees
 # it never overlaps a release, so the sentinel+tag bijection is the sole guard
 # for R2 orphans and IN_FLIGHT_VERSION is intentionally NOT set.
 #
 # Four independent jobs:
-#   cleanup            — .ci/scripts/housekeeping/cleanup-versions.sh (releases, tags,
+#   cleanup            - .ci/scripts/housekeeping/cleanup-versions.sh (releases, tags,
 #                        GHCR, deployments, CF Pages, envs, D1, Turnstile, R2 orphans,
 #                        branches, workflow runs/artifacts/cache).
-#   stripe-cleanup     — Stripe sandbox orphan sweep + per-region webhook verification.
-#   budget-check       — budget_report --check and gate_costs --check against their
-#                        committed baselines, reported to the nightly-status issue.
-#   gate-costs-capture — a serial ci:quick measuring each gate's CPU, uploaded as the
+#   stripe-cleanup     - Stripe sandbox orphan sweep + per-region webhook verification.
+#   budget-check       - rediacc_ci.ci.freshness --check --cadence nightly: every
+#                        artifact .ci/config/freshness.json registers against fresh
+#                        measurements, reported to the nightly-status issue.
+#   gate-costs-capture - a serial ci:quick measuring each gate's CPU, uploaded as the
 #                        artifact gate_costs --refresh reads.
 
 on:
@@ -212,7 +213,8 @@ jobs:
         with:
           # .ci for the rediacc_ci package, scripts/ci for report-budget-check.cjs,
           # .github for the workflow YAML budget_report.py's lane_display_patterns reads,
-          # scripts/ci-runner for the gates.lock.json gate_costs.py --check compares against.
+          # scripts/ci-runner for the gates.lock.json gate_costs.py --check compares against;
+          # .ci also carries config/freshness.json, the registry the check step runs.
           sparse-checkout: |
             .ci
             .github
@@ -223,33 +225,18 @@ jobs:
         with:
           runner-label: ubuntu-slim
 
+      # ONE STEP, ONE REPORT WRITER (agent/plans/PLAN-ci-consolidation.md Part B). Every
+      # artifact .ci/config/freshness.json registers at the nightly cadence is checked
+      # here (today lane-durations.json via budget_report --check and gate-costs.json
+      # via gate_costs --check), and rediacc_ci.ci.freshness alone writes the summary
+      # the report step posts, one section per artifact. A missing artifact, a check
+      # that cannot start and a refused registry are all failures, never a pass.
       - name: CI time budget check
         id: budget-check
         run: |
           set +e
-          PYTHONPATH=.ci python3 -m rediacc_ci.ci.budget_report --check >/tmp/budget-check.txt 2>&1
+          PYTHONPATH=.ci python3 -m rediacc_ci.ci.freshness --check --cadence nightly --report-to /tmp/budget-check.txt
           rc=$?
-          echo "rc=$rc" >>"$GITHUB_OUTPUT"
-          cat /tmp/budget-check.txt
-          exit 0
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      # PLAN-ci-quick-cpu-scheduling 2.5: the committed per-gate CPU baseline against the
-      # last five gate-costs-capture artifacts. Its findings are appended to the budget
-      # summary so the ONE report step below posts both (report-budget-check.cjs dedupes
-      # on the run id, so a second post from this run would be dropped). Exit 3 means
-      # .ci/config/gate-costs.json is missing: since 2026-10-04 the file is committed, so
-      # a missing baseline is reported and fails the job like any other finding.
-      - name: Gate cost baseline check
-        id: gate-costs-check
-        run: |
-          set +e
-          PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_costs --check --report-to /tmp/budget-check.txt
-          rc=$?
-          # NO_BASELINE (3) is a failure since 2026-10-04: .ci/config/gate-costs.json
-          # is committed, and mapping 3 to a pass is how the check compared
-          # nothing for every night before that.
           echo "rc=$rc" >>"$GITHUB_OUTPUT"
           exit 0
         env:
@@ -261,7 +248,7 @@ jobs:
       # report-nightly-status.cjs's function, which is wired to a DIFFERENT trigger
       # (workflow_run: completed of "Console CI") with no payload this cron carries.
       - name: Report a stale or over-budget CI leg
-        if: steps.budget-check.outputs.rc != '0' || steps.gate-costs-check.outputs.rc != '0'
+        if: steps.budget-check.outputs.rc != '0'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           BUDGET_CHECK_SUMMARY_PATH: /tmp/budget-check.txt
@@ -269,7 +256,7 @@ jobs:
           script: return await require('./scripts/ci/report-budget-check.cjs')({github, context, core})
 
       - name: Fail the job when the budget check failed
-        if: steps.budget-check.outputs.rc != '0' || steps.gate-costs-check.outputs.rc != '0'
+        if: steps.budget-check.outputs.rc != '0'
         run: exit 1
 
   gate-costs-capture:

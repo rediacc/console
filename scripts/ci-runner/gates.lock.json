@@ -1584,12 +1584,13 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      ".ci/rediacc_ci/ci/budget_report.py",
-      ".ci/rediacc_ci/ci/gate_costs.py"
+      ".ci/rediacc_ci/ci/freshness.py"
     ],
     "paths": [
+      ".ci/config/freshness.json",
       ".ci/config/lane-durations.json",
       ".ci/config/gate-costs.json",
+      ".ci/rediacc_ci/ci/freshness.py",
       ".ci/rediacc_ci/ci/budget_report.py",
       ".ci/rediacc_ci/ci/gate_costs.py"
     ],
@@ -5274,6 +5275,7 @@
       "build:packages"
     ],
     "leaves": [
+      "scripts/ci-runner/shard-place.ts",
       "scripts/gates/check-shard-manifest-coverage.ts"
     ],
     "ci": {

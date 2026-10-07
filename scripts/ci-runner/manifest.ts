@@ -1521,10 +1521,12 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-budget-freshness',
     slow: true, // network: reads ci.yml and housekeeping.yml runs and artifacts
     gate: true,
-    leaves: ['.ci/rediacc_ci/ci/budget_report.py', '.ci/rediacc_ci/ci/gate_costs.py'],
+    leaves: ['.ci/rediacc_ci/ci/freshness.py'],
     paths: [
+      '.ci/config/freshness.json',
       '.ci/config/lane-durations.json',
       '.ci/config/gate-costs.json',
+      '.ci/rediacc_ci/ci/freshness.py',
       '.ci/rediacc_ci/ci/budget_report.py',
       '.ci/rediacc_ci/ci/gate_costs.py',
     ],
@@ -4917,7 +4919,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-shard-manifest-coverage',
     gate: true,
     needs: ['build:packages'],
-    leaves: ['scripts/gates/check-shard-manifest-coverage.ts'],
+    leaves: ['scripts/ci-runner/shard-place.ts', 'scripts/gates/check-shard-manifest-coverage.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

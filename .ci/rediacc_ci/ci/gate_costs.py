@@ -4,7 +4,7 @@
 CI runs each gate as its own workflow step, not through scripts/ci-runner, so no per-gate CPU exists there. The nightly housekeeping job `gate-costs-capture` runs `run.ts --quick --jobs 1 --sched slots --json` serially (so every gate is measured uncontended) and uploads the report as the artifact `gate-costs-<sha>`. This module turns the last `SAMPLE_CAPTURES` of those into `.ci/config/gate-costs.json` (`--refresh`) and checks the committed file against them (`--check`).
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_costs --refresh [--dry-run]
-    PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_costs --check [--report-to SUMMARY]
+    PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_costs --check
     PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_costs --validate-capture gate-costs.json
 
 THE FILE'S SCHEMA, defined here beside its only writer:
@@ -19,7 +19,7 @@ THE FILE'S SCHEMA, defined here beside its only writer:
 
 Per gate, each figure is the MEDIAN over the captures in which the gate passed and reported `cpuMs`: `cpu_s` and `wall_s` in seconds, `peak_rss_mb` (null when the sampler captured none). `eff_cores` is cpu_s / wall_s. `capped` is eff_cores >= `CAPPED_FRACTION` x the runner's cores: such a gate used the whole machine, so its width says more about the runner than about the gate and does not port to another machine. `rank` is 1 for the largest cpu_s. A gate the captures ran but never measured (failed, blocked, skipped: the capture runner has no submodules and no Go or uv toolchain) sits in `unmeasured` with its newest status, so a missing baseline is named rather than silently absent.
 
-`--check` exits 1 on: a gate in the file that the manifest (`scripts/ci-runner/gates.lock.json`) no longer has; a gate the fresh captures ran that the file has in neither `gates` nor `unmeasured` (registered after the last refresh); a committed gate no fresh capture measured; cpu_s drifting more than `DRIFT_THRESHOLD` where either side is at least `MIN_DRIFT_CPU_S`; eff_cores drifting the same way where neither side is capped (the same floor applies, since the width of a sub-second gate is noise); a changed runner core count; zero usable captures. It exits `NO_BASELINE` (3) and prints a notice when the file does not exist yet. Nothing was compared, and both callers (housekeeping.yml's gate cost step and `check:ci-budget-freshness`) fail the job on it, since 7c845cf3b. The first real file comes from `--refresh` after the first nightly capture, never from invented numbers.
+`--check` exits 1 on: a gate in the file that the manifest (`scripts/ci-runner/gates.lock.json`) no longer has; a gate the fresh captures ran that the file has in neither `gates` nor `unmeasured` (registered after the last refresh); a committed gate no fresh capture measured; cpu_s drifting more than `DRIFT_THRESHOLD` where either side is at least `MIN_DRIFT_CPU_S`; eff_cores drifting the same way where neither side is capped (the same floor applies, since the width of a sub-second gate is noise); a changed runner core count; zero usable captures. It exits `NO_BASELINE` (3) and prints a notice when the file does not exist yet. Nothing was compared, and its one caller, `rediacc_ci.ci.freshness --check` (`.ci/config/freshness.json`, run per PR as `check:ci-budget-freshness` and nightly by housekeeping.yml's budget-check job), fails on it; that registry also refuses the missing file before this check runs. The first real file comes from `--refresh` after the first nightly capture, never from invented numbers.
 
 The Actions API reads reuse budget_report's `fetch_runs`/`fetch_artifacts`/`download_artifact_zip` (retrying, ghx-backed, a failed call raises rather than reading as empty).
 """
@@ -328,14 +328,9 @@ def refresh(
     return 0
 
 
-def _fail(lines: list[str], report_to: Path | None) -> int:
-    """Print a failing verdict to stderr and, when asked, append it to `report_to` (housekeeping.yml's budget summary, which its one report step posts)."""
-    text = "\n".join(lines) + "\n"
-    sys.stderr.write(text)
-    if report_to is not None:
-        # tree-write: safe only with an explicit --report-to (housekeeping's /tmp summary), which check:ci-budget-freshness never passes
-        with report_to.open("a", encoding="utf-8") as fh:
-            fh.write("\n--- gate cost baseline (gate_costs --check) ---\n" + text)
+def _fail(lines: list[str]) -> int:
+    """Print a failing verdict to stderr. The report housekeeping posts is written by `rediacc_ci.ci.freshness --check --report-to`, its one writer, from this output."""
+    sys.stderr.write("\n".join(lines) + "\n")
     return 1
 
 
@@ -347,7 +342,6 @@ def check(
     collect: Callable[
         ..., tuple[list[Capture], list[dict[str, Any]], list[str]]
     ] = collect_captures,
-    report_to: Path | None = None,
 ) -> int:
     if not path.exists():
         print(
@@ -359,9 +353,9 @@ def check(
     try:
         committed = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        return _fail(["gate_costs --check: %s does not parse: %s" % (path, exc)], report_to)
+        return _fail(["gate_costs --check: %s does not parse: %s" % (path, exc)])
     if not isinstance(committed, dict):
-        return _fail(["gate_costs --check: %s is not a JSON object" % path], report_to)
+        return _fail(["gate_costs --check: %s is not a JSON object" % path])
     lock_ids = load_lock_ids(root)
     captures, _sources, warnings = collect(repo)
     findings = ["capture unreadable: %s" % w for w in warnings]
@@ -375,8 +369,7 @@ def check(
     if findings:
         return _fail(
             ["Gate cost baseline check found %d issue(s):" % len(findings)]
-            + ["  - %s" % f for f in findings],
-            report_to,
+            + ["  - %s" % f for f in findings]
         )
     print(
         "Gate cost baseline check: %d gate(s) from %d capture(s), all within %.0f%% of %s."
@@ -433,12 +426,6 @@ def main(argv: list[str]) -> int:
     parser.add_argument(
         "--dry-run", action="store_true", help="with --refresh: print instead of writing"
     )
-    parser.add_argument(
-        "--report-to",
-        type=Path,
-        default=None,
-        help="with --check: append a failing verdict to this file",
-    )
     parser.add_argument("--repo", default=budget_report.DEFAULT_REPO)
     parser.add_argument(
         "--gate-costs", type=Path, default=None, help="override the baseline path (tests)"
@@ -451,7 +438,7 @@ def main(argv: list[str]) -> int:
     try:
         if args.refresh:
             return refresh(target, args.repo, dry_run=args.dry_run)
-        return check(target, args.repo, root, report_to=args.report_to)
+        return check(target, args.repo, root)
     except ghx.GhError as exc:
         print("gate_costs: %s" % exc, file=sys.stderr)
         return 1
