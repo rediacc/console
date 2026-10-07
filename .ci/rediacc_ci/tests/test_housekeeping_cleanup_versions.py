@@ -2329,6 +2329,20 @@ def _runs(count: int, *, start: int = 0, age: float = 1.5) -> list:
     ]
 
 
+def _pages(wf_id: int, runs: list) -> list:
+    """One workflow's runs served the way the API serves them: at most 100 per page, page N under the exact needle `&page=N ` (the URL is followed by ` --jq`, so `&page=1 ` cannot match page 10), and an empty page past the end. A page holding more than 100 is a fixture no API returns, and it hides the order in which the pages are read."""
+    out = [
+        rule(
+            "workflows/%d/runs" % wf_id,
+            "&page=%d " % (k + 1),
+            json_body={"workflow_runs": runs[i : i + 100]},
+        )
+        for k, i in enumerate(range(0, len(runs), 100))
+    ]
+    out.append(rule("workflows/%d/runs" % wf_id, json_body={"workflow_runs": []}))
+    return out
+
+
 # The workflow listing's `--jq`, on each side. The twin filters `state == "active"` inside the jq; the port brings the state back so a REMOVED workflow can be selected whatever its state.
 TWIN_WORKFLOWS_JQ = (
     '[.workflows[] | select(.state == "active") | {id: .id, name: .name, path: .path}]'
@@ -2418,10 +2432,7 @@ def test_phase_10_keeps_the_hundred_newest_and_reaps_the_old_tail() -> None:
                 _workflow(11, "Console CI", ".github/workflows/ci.yml"),
                 _workflow(12, "Disabled", ".github/workflows/x.yml", "disabled_manually"),
             ],
-            # `&page=1`, because `per_page=100` contains `page=100`; and a
-            # second rule for every later page, or the same body would be served ten times over and the totals would be ten times wrong.
-            rule("workflows/11/runs", "&page=1", json_body={"workflow_runs": page}),
-            rule("workflows/11/runs", json_body={"workflow_runs": []}),
+            *_pages(11, page),
         )
     )
     err = result[2].decode()
@@ -2441,8 +2452,8 @@ def test_delta_phase_10_the_watchdog_line_names_its_own_7d_retention() -> None:
             # A DECOY whose NAME contains "Watchdog" and whose PATH is a different file. Without it a port that matched on the name would behave identically here and this case would prove nothing; a planted name-match defect stayed green until this row was added.
             _workflow(22, "Watchdog dispatcher", ".github/workflows/dispatch-watchdog.yml"),
         ],
-        rule("workflows/21/runs", "&page=1", json_body={"workflow_runs": page}),
-        rule("workflows/22/runs", "&page=1", json_body={"workflow_runs": page}),
+        *_pages(21, page),
+        *_pages(22, page),
         rule("runs?status=completed", json_body={"workflow_runs": []}),
     )
     old, new, old_err, new_err = _p10_delta(fixture)
@@ -2465,7 +2476,8 @@ def test_phase_10_warns_when_its_scan_window_can_never_reach_the_threshold() -> 
     result = _p10_sides(
         _p10_fixture(
             [_workflow(31, "Busy", ".github/workflows/busy.yml")],
-            rule("workflows/31/runs", json_body={"workflow_runs": _runs(100, age=2.5)}),
+            # Twelve full pages exist; the window is ten of them.
+            *_pages(31, _runs(1200, age=2.5)),
         )
     )
     err = result[2].decode()
@@ -2498,8 +2510,7 @@ def test_phase_10_stops_a_workflow_after_five_consecutive_delete_failures() -> N
     result = _p10_sides(
         _p10_fixture(
             [_workflow(51, "CI", ".github/workflows/ci.yml")],
-            rule("workflows/51/runs", "&page=1", json_body={"workflow_runs": page}),
-            rule("workflows/51/runs", json_body={"workflow_runs": []}),
+            *_pages(51, page),
             rule("-X", "DELETE", "actions/runs/", rc=1),
         ),
         argv=(),
@@ -2536,7 +2547,7 @@ def _gone_world(page: list, *extra_workflows: dict, files: dict | None = None, r
             *extra_workflows,
         ],
         *rules,
-        rule("workflows/61/runs", "&page=1", json_body={"workflow_runs": page}),
+        *_pages(61, page),
         rule("runs?status=completed", json_body={"workflow_runs": []}),
         files=files,
     )
@@ -2578,7 +2589,7 @@ def test_delta_phase_10_a_present_workflow_beside_a_removed_one_still_keeps_100(
     world = _gone_world(
         _old_tail(102),
         present,
-        rules=[rule("workflows/62/runs", "&page=1", json_body={"workflow_runs": _old_tail(102)})],
+        rules=[*_pages(62, _old_tail(102))],
     )
     _old, _new, old_err, new_err = _p10_delta(world)
     for err in (old_err, new_err):
@@ -2601,7 +2612,7 @@ def test_phase_10_a_github_managed_dynamic_workflow_is_never_removed(path: str) 
     world = _gone_world(
         _old_tail(2),
         managed,
-        rules=[rule("workflows/63/runs", "&page=1", json_body={"workflow_runs": _old_tail(102)})],
+        rules=[*_pages(63, _old_tail(102))],
     )
     _old, _new, _old_err, new_err = _p10_delta(world)
     assert "Managed: would delete 2 of 102 (kept top 100 + within 30d)" in new_err
@@ -2618,11 +2629,7 @@ def test_phase_10_a_reusable_workflow_call_workflow_whose_file_exists_is_unaffec
         _workflow(70 + i, name, ".github/workflows/%s.yml" % name)
         for i, name in enumerate(("ct-tests", "ci-quality", "cd-stage"))
     ]
-    rules = [
-        rule("workflows/%d/runs" % (70 + i), "&page=1", json_body={"workflow_runs": _old_tail(102)})
-        for i in range(3)
-    ]
-    rules.append(rule("runs?status=completed", json_body={"workflow_runs": []}))
+    rules = [r for i in range(3) for r in _pages(70 + i, _old_tail(102))]
     result = _p10_sides(_p10_fixture(reusable, *rules))
     err = result[2].decode()
     for name in ("ct-tests", "ci-quality", "cd-stage"):
@@ -2695,7 +2702,7 @@ def test_delta_phase_10_a_removed_workflow_in_a_non_active_state_is_still_reaped
         disabled_gone,
         disabled_here,
         files=_files(HOUSEKEEPING, ".github/workflows/paused.yml"),
-        rules=[rule("workflows/64/runs", "&page=1", json_body={"workflow_runs": _old_tail(120)})],
+        rules=[*_pages(64, _old_tail(120))],
     )
     _old, _new, old_err, new_err = _p10_delta(world)
     assert "Old pipeline" not in old_err, "the twin's control: a non-active workflow is never read"
@@ -2709,9 +2716,7 @@ def test_delta_phase_10_the_vacuous_green_warning_stays_quiet_for_a_removed_work
     """A removed workflow gains no new runs, so a scan window that stops short of 30 days today reaches it as the runs age. The twin warns "nothing here can EVER be reaped" for it, which is false; the port does not. (A PRESENT workflow still warns: the case above.)"""
     world = _gone_world([])
     world["gh"] = [r for r in world["gh"] if "workflows/61/runs" not in r["match"]]
-    world["gh"].insert(
-        1, rule("workflows/61/runs", json_body={"workflow_runs": _runs(100, age=2.5)})
-    )
+    world["gh"][1:1] = _pages(61, _runs(1000, age=2.5))
     _old, _new, old_err, new_err = _p10_delta(world)
     assert "Autopilot: scan window reaches only 2d but retention is 30d --" in old_err
     assert "scan window reaches only" not in new_err
@@ -2730,7 +2735,7 @@ def test_delta_phase_10_reads_the_workflow_listing_past_its_first_page() -> None
                 json_body={"workflows": [_workflow(77, "Late", ".github/workflows/late.yml")]},
             ),
             rule(LISTING, json_body={"workflows": first}),
-            rule("workflows/77/runs", "&page=1", json_body={"workflow_runs": _old_tail(102)}),
+            *_pages(77, _old_tail(102)),
             rule("runs?status=completed", json_body={"workflow_runs": []}),
         ]
     }
@@ -2775,6 +2780,135 @@ def test_parse_workflow_files_and_workflow_is_removed_directly() -> None:
     assert cv.workflow_is_removed("dynamic/pages/pages-build-deployment", set()) is False
     assert cv.workflow_is_removed("", set()) is False
     assert cv.workflow_is_removed(".github/workflows/CI.yml", {".github/workflows/ci.yml"}) is True
+
+
+# --- LIST FIRST, THEN DELETE (intentional delta, Rule T). The runs and artifacts listings are OFFSET pages: `page=N` is items 100(N-1)+1 to 100N of the list as it stands when that page is read. The twin deleted each page's reapable items before reading the next page, so every delete moved a later item onto a page already read, and that item was never seen. The fakes below model it with `unless_logged="DELETE"`: a page answers with its contents before any delete, and with the shifted contents a real API returns after one.
+
+
+def _shifting_runs_world(wf_id: int = 81) -> dict:
+    """A present workflow with 300 completed runs: 100 young (the floor), then 200 past retention. Once a delete has happened, the list has shifted: page 2 holds what was page 3, and page 3 is empty."""
+    young = _runs(100)
+    old_a = _old_tail(100)
+    old_b = _old_tail(100, start=100)
+    path = "workflows/%d/runs" % wf_id
+    return _p10_fixture(
+        [_workflow(wf_id, "CI", ".github/workflows/ci.yml")],
+        rule(path, "&page=1 ", json_body={"workflow_runs": young}),
+        rule(path, "&page=2 ", json_body={"workflow_runs": old_a}, unless_logged="DELETE"),
+        rule(path, "&page=2 ", json_body={"workflow_runs": old_b}),
+        rule(path, "&page=3 ", json_body={"workflow_runs": old_b}, unless_logged="DELETE"),
+        rule(path, json_body={"workflow_runs": []}),
+        rule("-X", "DELETE", "actions/runs/", raw=""),
+    )
+
+
+def _deleted_run_ids(calls: list[str]) -> list[int]:
+    return [
+        int(c[-1].rsplit("/", 1)[-1])
+        for c in calls_of(calls, "gh")
+        if "DELETE" in c and "actions/runs/" in c[-1]
+    ]
+
+
+def test_delta_phase_10_lists_every_page_before_the_first_delete() -> None:
+    """The twin reads page 2, deletes its 100 old runs, then reads page 3 at offset 200 of a list that is now 200 long, gets nothing, and never sees runs 5100-5199 (the control). The port lists all three pages first and deletes all 200."""
+    old, new, old_err, new_err = _p10_delta(_shifting_runs_world(), argv=())
+    assert _deleted_run_ids(old[3]) == list(range(5000, 5100)), "the control moved"
+    assert "CI: deleted 100 of 200 (kept top 100 + within 30d)" in old_err
+    assert _deleted_run_ids(new[3]) == list(range(5000, 5200))
+    assert "CI: deleted 200 of 300 (kept top 100 + within 30d)" in new_err
+    calls = [" ".join(c) for c in calls_of(new[3], "gh")]
+    reads = [i for i, c in enumerate(calls) if "/runs?status=completed" in c]
+    deletes = [i for i, c in enumerate(calls) if "DELETE" in c]
+    # Page 3 came back full, so page 4 is read too, and is empty.
+    assert len(reads) == 4
+    assert max(reads) < min(deletes), "every page is read before the first delete"
+
+
+def test_phase_10_a_truncated_window_that_reaches_the_threshold_reaps_and_stays_quiet() -> None:
+    """The warning's meaning under list-first: it is about the WINDOW (ten full pages) and the oldest run in it. Here the window is truncated but its last 50 runs are past retention, so they are reaped and nothing is said, byte for byte as the twin does."""
+    runs = [*_runs(950, age=2.5), *_old_tail(50)]
+    result = _p10_sides(
+        _p10_fixture(
+            [_workflow(32, "Busy", ".github/workflows/busy.yml")],
+            *_pages(32, [*runs, *_old_tail(100, start=50)]),
+        )
+    )
+    err = result[2].decode()
+    assert "scan window reaches only" not in err
+    assert "Busy: would delete 50 of 1000 (kept top 100 + within 30d)" in err
+    assert len([c for c in calls_of(result[3], "gh") if "workflows/32/runs" in " ".join(c)]) == 10
+
+
+def test_phase_10_failed_deletes_in_a_window_that_reaches_the_threshold_raise_no_warning() -> None:
+    """Nothing deleted is not the same as nothing reapable. Ten full pages whose last 100 runs are past retention, every delete failing: the phase stops after five failures and does NOT claim the window can never reach the threshold, because its oldest LISTED run is past it. Byte for byte as the twin, whose five-failure stop ends the scan before its page counter passes the cap."""
+    runs = [*_runs(900, age=2.5), *_old_tail(100)]
+    result = _p10_sides(
+        _p10_fixture(
+            [_workflow(37, "Flaky", ".github/workflows/flaky.yml")],
+            *_pages(37, runs),
+            rule("-X", "DELETE", "actions/runs/", rc=1),
+        ),
+        argv=(),
+    )
+    err = result[2].decode()
+    assert "Skipping remaining runs for Flaky after 5 consecutive failures" in err
+    assert "scan window reaches only" not in err
+
+
+def test_delta_phase_10_a_budget_out_mid_workflow_lists_at_most_the_capped_window() -> None:
+    """Listing first must not become an unbounded listing. Twelve full pages exist and the budget allows 40 deletes: the port reads the ten-page window (never an eleventh), deletes 40, and lists nothing of the next workflow. The twin (the control) stopped reading at page 2, where its budget ran out."""
+    runs = [*_runs(100), *_old_tail(1100)]
+    world = _p10_fixture(
+        [
+            _workflow(33, "CI", ".github/workflows/ci.yml"),
+            _workflow(34, "Next", ".github/workflows/next.yml"),
+        ],
+        *_pages(33, runs),
+        *_pages(34, _old_tail(102)),
+        rule("-X", "DELETE", "actions/runs/", raw=""),
+    )
+    old, new, _old_err, new_err = _p10_delta(world, argv=(), env={"MAX_DELETES_PER_RUN": "40"})
+
+    def run_reads(calls: list[str], wf_id: int) -> int:
+        return len([c for c in calls_of(calls, "gh") if "workflows/%d/runs" % wf_id in " ".join(c)])
+
+    assert run_reads(old[3], 33) == 2, "the control moved"
+    assert run_reads(new[3], 33) == 10
+    assert run_reads(new[3], 34) == 0
+    assert len(_deleted_run_ids(new[3])) == 40
+    assert "Phase 10: hit MAX_DELETES_PER_RUN=40; remaining workflow runs deferred" in new_err
+    assert "Next:" not in new_err
+
+
+def test_delta_phase_10_a_spent_budget_lists_no_runs_at_all() -> None:
+    """With the budget already spent, the twin still read page 1 of the first workflow before its per-run check refused; the port refuses before listing."""
+    world = _p10_fixture(
+        [_workflow(35, "CI", ".github/workflows/ci.yml")], *_pages(35, _old_tail(102))
+    )
+    old, new, old_err, new_err = _p10_delta(world, argv=(), env={"MAX_DELETES_PER_RUN": "0"})
+    warning = "Phase 10: hit MAX_DELETES_PER_RUN=0; remaining workflow runs deferred to next run"
+    assert warning in old_err
+    assert warning in new_err
+    assert any("/runs?status=completed" in " ".join(c) for c in calls_of(old[3], "gh"))
+    assert not any("/runs?status=completed" in " ".join(c) for c in calls_of(new[3], "gh"))
+    assert "Workflow runs: deleted 0 of 0 (across 1 workflows)" in new_err
+
+
+def test_delta_phase_10_a_run_listed_on_two_pages_is_handled_once() -> None:
+    """A run that completes between two page reads pushes the list one place back, so the last run of page 2 is also the first of page 3. The twin (the control) counts it twice and would delete it twice; the port lists it once."""
+    world = _p10_fixture(
+        [_workflow(36, "CI", ".github/workflows/ci.yml")],
+        rule("workflows/36/runs", "&page=1 ", json_body={"workflow_runs": _runs(100)}),
+        rule("workflows/36/runs", "&page=2 ", json_body={"workflow_runs": _old_tail(100)}),
+        rule("workflows/36/runs", "&page=3 ", json_body={"workflow_runs": _old_tail(51, start=99)}),
+        rule("workflows/36/runs", json_body={"workflow_runs": []}),
+    )
+    _old, _new, old_err, new_err = _p10_delta(world)
+    assert old_err.count("Would delete run: 5099 (CI,") == 2, "the control moved"
+    assert new_err.count("Would delete run: 5099 (CI,") == 1
+    assert "CI: would delete 151 of 251 (kept top 100 + within 30d)" in old_err
+    assert "CI: would delete 150 of 250 (kept top 100 + within 30d)" in new_err
 
 
 # --------------------------------------------------------------------------- PHASE 11: WORKFLOW ARTIFACTS ---------------------------------------------------------------------------
@@ -2855,6 +2989,89 @@ def test_phase_11_reads_an_api_failure_as_an_empty_page_and_stops() -> None:
     result = sides("cleanup_workflow_artifacts", fixture={"gh": [rule("artifacts", rc=1)]})
     assert b"Artifacts: deleted 0 of 0 (0 already expired, retention: 14d)" in result[2]
     assert len(calls_of(result[3], "gh")) == 1, "an empty page ends the loop"
+
+
+ARTIFACTS = "actions/artifacts?per_page=100"
+
+
+def _artifacts(count: int, *, start: int = 0, expired: bool = True) -> dict:
+    return {
+        "artifacts": [
+            {
+                "id": 7000 + start + i,
+                "created_at": ago(1.5),
+                "expired": expired,
+                "size_in_bytes": 10,
+            }
+            for i in range(count)
+        ]
+    }
+
+
+def _deleted_artifact_ids(calls: list[str]) -> list[int]:
+    return [
+        int(c[-1].rsplit("/", 1)[-1])
+        for c in calls_of(calls, "gh")
+        if "DELETE" in c and "actions/artifacts/" in c[-1]
+    ]
+
+
+def test_delta_phase_11_lists_every_page_before_the_first_delete() -> None:
+    """INTENTIONAL DELTA (Rule T), Phase 10's twin. 200 expired artifacts on two offset pages: the twin deletes page 1's hundred, then reads page 2 of a list that is now 100 long, gets nothing, and never sees artifacts 7100-7199 (the control). The port lists both pages first and deletes all 200."""
+    fixture = {
+        "gh": [
+            rule(ARTIFACTS, "&page=1 ", json_body=_artifacts(100)),
+            rule(
+                ARTIFACTS, "&page=2 ", json_body=_artifacts(100, start=100), unless_logged="DELETE"
+            ),
+            rule(ARTIFACTS, json_body=_artifacts(0)),
+            rule("-X", "DELETE", "actions/artifacts/", raw=""),
+        ]
+    }
+    old, new = _twin_and_port("cleanup_workflow_artifacts", (), fixture)
+    old_err, new_err = old[2].decode(), new[2].decode()
+    assert _deleted_artifact_ids(old[3]) == list(range(7000, 7100)), "the control moved"
+    assert "Artifacts: deleted 100 of 100 (100 already expired, retention: 14d)" in old_err
+    assert _deleted_artifact_ids(new[3]) == list(range(7000, 7200))
+    assert "Artifacts: deleted 200 of 200 (200 already expired, retention: 14d)" in new_err
+    calls = [" ".join(c) for c in calls_of(new[3], "gh")]
+    reads = [i for i, c in enumerate(calls) if ARTIFACTS in c]
+    deletes = [i for i, c in enumerate(calls) if "DELETE" in c]
+    # Page 2 came back full, so page 3 is read too, and is empty.
+    assert len(reads) == 3
+    assert max(reads) < min(deletes), "every page is read before the first delete"
+
+
+def test_delta_phase_11_the_listing_stays_bounded_and_a_spent_budget_lists_nothing() -> None:
+    """The listing is bounded by GH_ARTIFACTS_MAX_PAGES (30) as the interleaved loop was: 31 full pages exist and page 31 is never read. With the budget already spent, the twin (the control) read page 1 first; the port reads nothing."""
+    full = {"gh": [rule(ARTIFACTS, json_body=_artifacts(100, expired=False))]}
+    _old, new = _twin_and_port("cleanup_workflow_artifacts", ("--dry-run",), full)
+    assert len(calls_of(new[3], "gh")) == cv.GH_ARTIFACTS_MAX_PAGES
+
+    spent = {"gh": [rule(ARTIFACTS, json_body=_artifacts(3)), rule("-X", "DELETE", raw="")]}
+    old, new = _twin_and_port("cleanup_workflow_artifacts", (), spent, {"MAX_DELETES_PER_RUN": "0"})
+    warning = "Phase 11: hit MAX_DELETES_PER_RUN=0; remaining artifacts deferred to next run"
+    assert warning in old[2].decode()
+    assert warning in new[2].decode()
+    assert len(calls_of(old[3], "gh")) == 1, "the control moved"
+    assert calls_of(new[3], "gh") == []
+
+
+def test_delta_phase_11_an_artifact_listed_on_two_pages_is_handled_once() -> None:
+    page_1 = _artifacts(100)
+    page_2 = _artifacts(51, start=99)
+    fixture = {
+        "gh": [
+            rule(ARTIFACTS, "&page=1 ", json_body=page_1),
+            rule(ARTIFACTS, "&page=2 ", json_body=page_2),
+            rule(ARTIFACTS, json_body=_artifacts(0)),
+        ]
+    }
+    old, new = _twin_and_port("cleanup_workflow_artifacts", ("--dry-run",), fixture)
+    old_err, new_err = old[2].decode(), new[2].decode()
+    assert old_err.count("Would delete artifact: 7099 ") == 2, "the control moved"
+    assert new_err.count("Would delete artifact: 7099 ") == 1
+    assert "Artifacts: would delete 150 of 150 (150 already expired" in new_err
 
 
 # --------------------------------------------------------------------------- PHASE 12: ACTIONS CACHE ---------------------------------------------------------------------------
