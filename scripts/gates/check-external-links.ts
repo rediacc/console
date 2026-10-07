@@ -674,8 +674,8 @@ function selftestToApiUrl(): void {
     [`${WK_GH_ORIGIN}/${WK_GH_REPO}/`, repoApi],
     [`${WK_GH_ORIGIN}/${WK_GH_REPO}#readme`, repoApi],
     [`${WK_GH_ORIGIN}/${WK_GH_REPO}?tab=readme`, repoApi],
-    ['https://github.com/features', null],
-    ['https://github.com/orgs/rediacc', null],
+    [`${WK_GH_ORIGIN}/features`, null],
+    [`${WK_GH_ORIGIN}/orgs/rediacc`, null],
     [`https://example.com/${WK_GH_REPO}`, null],
   ];
   let bad = 0;
