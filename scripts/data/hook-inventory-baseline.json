@@ -69,6 +69,7 @@
   ".claude/rediacc_hooks/guards/block_unpushed_submodule_pin.py",
   ".claude/rediacc_hooks/guards/block_unsatisfiable_pid_wait.py",
   ".claude/rediacc_hooks/guards/block_untagged_commit.py",
+  ".claude/rediacc_hooks/guards/block_unscoped_formatter_run.py",
   ".claude/rediacc_hooks/guards/block_unverified_push.py",
   ".claude/rediacc_hooks/guards/block_worktree_add.py",
   ".claude/rediacc_hooks/guards/warn_hook_change.py",
