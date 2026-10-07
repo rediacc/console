@@ -325,7 +325,8 @@ jobs:
           if-no-files-found: error
 
       # The execution file carries total_cost_usd, num_turns and the per-model
-      # `modelUsage` breakdown. 7 days because this is a debugging aid, not a
+      # `modelUsage` breakdown. 3 days, the repository's artifact retention
+      # (.ci/config/actions-retention.json): a debugging aid, not a
       # record; `if-no-files-found: ignore` keeps a skipped or crashed review
       # from failing the job over a missing artifact.
       - name: Preserve the review execution file
@@ -335,7 +336,7 @@ jobs:
           name: claude-review-execution-${{ steps.gate.outputs.head_sha }}
           path: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 3
 
       # Without track_progress the action runs in AGENT mode, which creates no
       # tracking comment at all -- the report exists only as the model's final

@@ -12,7 +12,9 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from rediacc_ci import paths
 from rediacc_ci.ci import gate_costs as gc
+from rediacc_ci.quality import workflows
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -295,6 +297,30 @@ def test_collect_captures_takes_newest_live_artifacts_up_to_limit():
     assert caps[0]["gates"][0]["id"] == "b"
     assert len(warnings) == 1
     assert "run 1" in warnings[0]
+
+
+def test_sample_captures_fits_the_recorded_retention():
+    """One nightly capture a day, and the repository keeps artifacts `days` days (.ci/config/actions-retention.json, the operator's 2026-10-07 "Keep 3 days"): a window larger than that names captures that cannot exist. Read from the record, so lowering the setting reds here until the window follows."""
+    days, why = workflows.load_retention_days(paths.repo_root())
+    assert days is not None, why
+    assert 1 <= gc.SAMPLE_CAPTURES <= days
+
+
+def test_collect_captures_defaults_to_sample_captures():
+    """The default window stops at SAMPLE_CAPTURES even when more live captures are listed."""
+    listed = [
+        {"id": i, "head_sha": "s%d" % i, "created_at": "2026-10-0%d" % i}
+        for i in range(1, gc.SAMPLE_CAPTURES + 3)
+    ]
+    blob = _zip("gate-costs.json", json.dumps(capture([gate("g", 1, 1)])))
+    caps, sources, _warnings = gc.collect_captures(
+        "o/r",
+        list_runs=lambda _repo, _wf, event, *_a: listed if event == "schedule" else [],
+        list_artifacts=lambda _repo, run_id: [{"id": run_id, "name": "gate-costs-x"}],
+        download=lambda _repo, _aid: blob,
+    )
+    assert len(caps) == gc.SAMPLE_CAPTURES
+    assert [s["id"] for s in sources] == list(range(gc.SAMPLE_CAPTURES + 2, 2, -1))
 
 
 # --------------------------------------------------------------------------- the workflow's two entry points ---------------------------------------------------------------------------

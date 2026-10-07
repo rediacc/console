@@ -60,6 +60,8 @@ the schedule.
 | `npm run ci -- --manifest <path>` | Schedule from an alternate manifest file instead of `scripts/ci-runner/manifest.ts` |
 | `npm run ci -- --list` | List every gate id and its command without running any of them (what `npm run ci:list` wraps) |
 | `npm run ci -- --verbose` | Also print a line when each gate starts. Worth it at `--jobs 1`, where a five-minute gate is otherwise indistinguishable from a hang |
+| `npm run ci -- --gate-timeout <s>` | One kill timer of `<s>` seconds for every gate, in place of each gate's derived limit (4x its slowest measurement, never under 300 s; `scripts/ci-runner/gate-timeout.ts`). A gate past its limit gets SIGTERM, then SIGKILL, and is reported failed and named, while the pool continues |
+| `npm run ci -- --slow-rotation i/N` | Run only bucket `i` of the slow gates split `N` ways by CI step p90, prerequisites included. Its own selection: it does not combine with `--quick`, `--changed`, `--only` or `--lane`. Housekeeping's gate-cost capture (`rediacc_ci.ci.capture_gate_costs rotation`) runs `i/3` by day of year, since the 3-day artifact retention keeps at most three captures |
 
 **Keep-going is the default, deliberately.** CI made the same call: every quality step carries `!cancelled()` so one push surfaces every failure in the lane. With keep-going, N independent failures cost one run; with `--fail-fast` they cost N runs. Use `--fail-fast` only in a tight edit loop where the first red is the only one you care about.
 

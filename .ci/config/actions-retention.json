@@ -1,0 +1,28 @@
+{
+  "$comment": [
+    "A COMMITTED COPY of this repository's GitHub Actions artifact-and-log retention, the",
+    "same kind of record as actions-allowlist.json: a repository setting written down so a",
+    "gate can hold the tree to it offline.",
+    "",
+    "WHY IT MATTERS. GitHub caps every upload at this value whatever its `retention-days:`",
+    "says. housekeeping.yml asked for 30 on its gate-costs artifact, and gate-costs-c277f2ab",
+    "(created 2026-10-05T10:16Z) expired 2026-10-08T10:11Z: three days. A workflow that",
+    "asks for more than this reads as a promise nobody keeps, and code that samples N",
+    "artifacts back (gate_costs.SAMPLE_CAPTURES) was sized against that promise.",
+    "",
+    "THE RULING. Operator, 2026-10-07 (ASKED:2026-10-07T11:44Z): \"Keep 3 days\".",
+    "",
+    "THE GATE. check:ci-workflows (rediacc_ci.quality.workflows, check_retention_days)",
+    "refuses any `retention-days:` under .github/workflows or .github/actions above `days`,",
+    "an unreadable one (an expression it cannot evaluate), and a missing or malformed",
+    "record here. It never writes a setting.",
+    "",
+    "REFRESH with `.ci/scripts/quality/check_workflows.py --refresh-retention`, which READS",
+    "/repos/<owner>/<repo>/actions/permissions/artifact-and-log-retention and rewrites",
+    "`days`, `maximum_allowed_days` and `refreshed_at`. Lowering the setting makes the gate",
+    "red on every line above the new value, which is the point."
+  ],
+  "refreshed_at": "2026-10-07T11:49:43Z",
+  "days": 3,
+  "maximum_allowed_days": 90
+}

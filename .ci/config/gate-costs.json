@@ -2,7 +2,7 @@
   "$comment": [
     "PLAN-ci-quick-cpu-scheduling 2.5: per-gate CPU baseline for ci:quick's scheduler.",
     "Written ONLY by `PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_costs --refresh`, from the",
-    "medians of the last 5 `gate-costs-<sha>` artifacts of housekeeping.yml's gate-costs-capture",
+    "medians of the last 3 `gate-costs-<sha>` artifacts of housekeeping.yml's gate-costs-capture",
     "job (run.ts --quick --jobs 1, serial and uncontended). Checked nightly by `gate_costs --check`.",
     "cpu_s/wall_s in seconds; eff_cores = cpu_s / wall_s; capped = eff_cores >= 0.9 x source.cores",
     "(the gate filled the runner, so its width is not portable); rank 1 = the largest cpu_s.",

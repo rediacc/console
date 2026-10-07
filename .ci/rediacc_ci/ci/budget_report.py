@@ -145,6 +145,7 @@ UNIT_FASTER_STAT = "max"
 HEADROOM_JOBS = ("Validate Promotion", "Stage Artifacts")
 
 # T3.1: a sampled run older than this no longer describes today's CI -- the same "the same call once returned August runs and, a minute later, September ones" defect this guards against, and the same 14-day figure check-lane-budget.ts's own check 5 (MAX_STALENESS_DAYS) applies to the OUTPUT file, applied here to the INPUT sample.
+# WHAT THE 14 DAYS DO NOT COVER. The repository keeps artifacts and logs 3 days (.ci/config/actions-retention.json, operator ruling 2026-10-07 "Keep 3 days"), while a run's and a job's own records (and so every job timing) outlive that. So the 14-day window bounds the job-duration sample only; a sampled run older than 3 days contributes no unit-duration artifact (GitHub lists it `expired`, and `collect_unit_durations` passes it over by count) and no fresh job log for `variantCosts` (a log already in VARIANT_LOG_CACHE_REL_PATH still counts; an uncached one fails its fetch and is named). Raising the retention, not this constant, is what would widen those two.
 SAMPLE_MAX_AGE_DAYS = 14
 
 # Actions API pagination: one page at a time, `per_page` capped at the API's own 100 maximum. `fetch_jobs`/`fetch_artifacts` walk pages explicitly with this cap rather than `gh_retry.api_json(..., paginate=True)`: `--paginate` without `--jq` only auto-merges a response whose BODY IS a bare top-level JSON array (MEASURED: `repos/.../labels` does); `.../runs/{id}/jobs` and `.../runs/{id}/artifacts` are both a JSON OBJECT with one array field inside (`{"total_count", "jobs": [...]}`), and gh's own `--paginate` help text says a multi-page object response is printed as one JSON document PER PAGE, not merged -- MEASURED live (run 36358238015, 158 jobs, two pages): `gh api --paginate` printed two back-to-back `{"total_count":158,"jobs":[...]}` objects, and `ghx.api_json`'s `.json()` (a plain `json.loads`) raised `GhBadOutputError` ("Extra data") on the concatenation. `--slurp` would wrap those into an array of page-objects, still needing this module to merge their `jobs` arrays itself, so a manual `page=` loop is no more code and stays inside `ghx.api_json`'s existing, already-tested single-document contract.
@@ -954,6 +955,7 @@ def collect_unit_durations(
     per_lane: dict[str, dict[str, list[float]]] = {lane: {} for lane in lanes}
     hits: dict[str, int] = dict.fromkeys(lanes, 0)
     wanted: list[tuple[int, str, str, Any]] = []
+    expired = 0
     for run_id in run_ids:
         try:
             artifacts = list_artifacts(repo, run_id)
@@ -965,7 +967,16 @@ def collect_unit_durations(
             for artifact in artifacts:
                 name = artifact.get("name")
                 if isinstance(name, str) and name.startswith(prefix):
+                    # GitHub's own word that the zip is gone (the 3-day repository retention; see SAMPLE_MAX_AGE_DAYS): downloading it can only fail, once per artifact.
+                    if artifact.get("expired"):
+                        expired += 1
+                        continue
                     wanted.append((run_id, lane, name, artifact.get("id")))
+    if expired:
+        log.info(
+            "budget_report: %d unit-duration artifact(s) listed as expired (past the repository's "
+            "artifact retention) and passed over" % expired
+        )
 
     def read(item: tuple[int, str, str, Any]) -> tuple[dict[str, float] | None, Exception | None]:
         _run_id, lane, _name, artifact_id = item

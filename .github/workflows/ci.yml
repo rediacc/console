@@ -434,7 +434,7 @@ jobs:
           path: |
             .ci/cache/scope-shadow/scope-classify.json
             .ci/cache/scope-shadow/scope-baseline.json
-          retention-days: 7
+          retention-days: 3
           if-no-files-found: ignore
 
       # The attested-shaped plan, under the BARE name scope-engine's
@@ -448,7 +448,7 @@ jobs:
         with:
           name: ci-skip-plan
           path: .ci/cache/scope-shadow/plan.json
-          retention-days: 7
+          retention-days: 3
           if-no-files-found: ignore
 
       # Upload CI tags as artifact for debugging

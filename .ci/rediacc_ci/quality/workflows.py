@@ -107,15 +107,19 @@ changes which lines belong to the mapping.
 STREAMS. `log_error` is `✗ <msg>` on stderr; every `Line:` / `Fix:` / continuation line is a bare `echo` on stdout. That split is the reason `scripts/lib/shadow-gate.ts` sees one finding per violation rather than three.
 """
 
+import json
 import os
 import pathlib
 import re
 import shutil
 import sys
 import tempfile
+from datetime import UTC, datetime
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
+from rediacc_ci.core import gh_retry
+from rediacc_ci.well_known import GH_REPO
 
 # The seams the twin exposes so the standalone gate test can drive the inline-run rule against fixtures.
 WORKFLOW_DIR_ENV = "WORKFLOW_DIR"
@@ -124,6 +128,11 @@ INLINE_ONLY_ENV = "WORKFLOW_INLINE_ONLY"
 
 DEFAULT_WORKFLOW_DIR = ".github/workflows"
 DEFAULT_INLINE_MAX_LOGIC = 8
+
+# THE RETENTION CAP. GitHub caps every upload at the repository's artifact-and-log retention whatever `retention-days:` asks for (gate-costs-c277f2ab, asked 30, lived 3 days), so a higher value is a promise the platform does not keep. The record is the committed copy of the setting; see its own $comment.
+RETENTION_RECORD_REL = ".ci/config/actions-retention.json"
+RETENTION_ENDPOINT = "repos/%s/actions/permissions/artifact-and-log-retention"
+RETENTION_RE = re.compile(r"^[ \t]*(?:-[ \t]+)?retention-days:[ \t]*(.*?)[ \t]*(?:#.*)?$")
 
 # The two skip conditions every banned-pattern scan applies to a matched line.
 COMMENT_RE = re.compile(r"^[ \t]*#")
@@ -636,11 +645,118 @@ def check_gh_slurp_jq(errors: Errors, root: pathlib.Path, files: list[str]) -> N
             )
 
 
+def load_retention_days(root: pathlib.Path) -> tuple[int | None, str]:
+    """`(days, "")` from the committed record, or `(None, reason)`. A missing or malformed record is a refusal: without the cap there is nothing to hold the tree to, and a scan against no cap would pass everything."""
+    record = root / RETENTION_RECORD_REL
+    try:
+        data = json.loads(record.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None, "%s is missing" % RETENTION_RECORD_REL
+    except (OSError, json.JSONDecodeError) as exc:
+        return None, "%s is unreadable: %s" % (RETENTION_RECORD_REL, exc)
+    days = data.get("days") if isinstance(data, dict) else None
+    if isinstance(days, bool) or not isinstance(days, int) or days < 1:
+        return None, "%s has no positive integer `days` (found %r)" % (RETENTION_RECORD_REL, days)
+    return days, ""
+
+
+def retention_value(line: str) -> str | None:
+    """The raw value of a `retention-days:` line, unquoted, or None when the line is not one."""
+    m = RETENTION_RE.match(line)
+    if m is None:
+        return None
+    return m.group(1).strip().strip("'\"")
+
+
+def retention_finding(value: str, cap: int) -> str | None:
+    """Why `value` breaks the cap, or None. A value that is not a literal integer (an expression, empty) is a finding too: the gate cannot tell it is under the cap, and unknown is not fine."""
+    if not value.isdigit():
+        return "is not a literal day count (%r); the cap of %d cannot be checked against it" % (
+            value,
+            cap,
+        )
+    if int(value) > cap:
+        return "asks for %s days; the repository keeps artifacts and logs %d" % (value, cap)
+    return None
+
+
+def check_retention_days(errors: Errors, root: pathlib.Path, files: list[str]) -> int:
+    """Every `retention-days:` at or under the recorded repository retention. Returns the number of lines judged. Zero lines in a non-empty tree is a refusal: the uploads moved or the matcher broke, and either way a green would say nothing."""
+    if not files:
+        return 0
+    cap, why = load_retention_days(root)
+    if cap is None:
+        errors.report(
+            "%s; refusing to certify any retention-days" % why,
+            [
+                (
+                    "  Fix:  restore the record, or rebuild it with "
+                    ".ci/scripts/quality/check_workflows.py --refresh-retention"
+                ),
+                "",
+            ],
+        )
+        return 0
+    judged = 0
+    for rel in files:
+        for number, line in enumerate(read_lines(root / rel), start=1):
+            if COMMENT_RE.search(line):
+                continue
+            value = retention_value(line)
+            if value is None:
+                continue
+            judged += 1
+            finding = retention_finding(value, cap)
+            if finding is None:
+                continue
+            errors.report(
+                "%s:%d: retention-days %s" % (rel, number, finding),
+                [
+                    "  Line: %s" % line,
+                    "  Fix:  set retention-days: %d or lower (%s records the repository "
+                    "setting; GitHub caps the upload there anyway)" % (cap, RETENTION_RECORD_REL),
+                    "",
+                ],
+            )
+    if judged == 0:
+        errors.report(
+            "no retention-days line in %d workflow/action file(s); the retention scan is not "
+            "seeing the tree, so its green would mean nothing" % len(files),
+            ["  Fix:  check RETENTION_RE against the upload steps' spelling", ""],
+        )
+    return judged
+
+
+def refresh_retention(root: pathlib.Path) -> int:
+    """READ the repository setting and rewrite the record's `days`, `maximum_allowed_days` and `refreshed_at`. A GET only: this never writes a setting."""
+    record = root / RETENTION_RECORD_REL
+    proc = gh_retry.gh(["api", RETENTION_ENDPOINT % GH_REPO])
+    if not proc.ok:
+        log.error(
+            "could not read the retention setting for %s: %s" % (GH_REPO, proc.stderr.strip())
+        )
+        return 1
+    live = json.loads(proc.stdout)
+    days = live.get("days")
+    if isinstance(days, bool) or not isinstance(days, int) or days < 1:
+        log.error("the API answered no positive `days`: %r" % live)
+        return 1
+    doc = json.loads(record.read_text(encoding="utf-8")) if record.is_file() else {}
+    doc["refreshed_at"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    doc["days"] = days
+    doc["maximum_allowed_days"] = live.get("maximum_allowed_days")
+    record.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    log.info("refreshed %s from %s: %d day(s)" % (RETENTION_RECORD_REL, GH_REPO, days))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run every rule. 0 clean, 1 problem."""
     args = list(argv or [])
     if args and args[0] == "--selftest":
         return selftest()
+    if args and args[0] == "--refresh-retention":
+        return refresh_retention(paths.repo_root())
 
     root = paths.repo_root()
     log.step("Checking workflows for banned patterns...")
@@ -664,12 +780,18 @@ def main(argv: list[str] | None = None) -> int:
     check_env_shell_vars(errors, root, workflow_dir)
     check_pr_environment_names(errors, root, workflow_dir)
     check_gh_slurp_jq(errors, root, files)
+    retention_lines = check_retention_days(errors, root, files)
 
     if errors.count > 0:
         print()
         log.error("Found %d problem(s) in workflows" % errors.count)
         return 1
     log.info("All workflows are clean")
+    if files:
+        log.info(
+            "%d workflow/action file(s); %d retention-days line(s), all at or under the "
+            "recorded %s day(s)" % (len(files), retention_lines, load_retention_days(root)[0])
+        )
     return 0
 
 
@@ -879,6 +1001,31 @@ def selftest() -> int:
         [],
     )
 
+    # -- the retention cap --------------------------------------------------
+    ctl.check(
+        "CONTROL: a retention-days line yields its value",
+        retention_value("          retention-days: 30"),
+        "30",
+    )
+    ctl.check(
+        "CONTROL: a quoted value is unquoted",
+        retention_value("          retention-days: '7'  # why"),
+        "7",
+    )
+    ctl.check(
+        "MIRROR: a line that is not retention-days yields nothing",
+        retention_value("          if-no-files-found: error"),
+        None,
+    )
+    ctl.truthy("PLANT: 30 over a cap of 3 is a finding", retention_finding("30", 3))
+    ctl.truthy("PLANT: 4 over a cap of 3 is a finding", retention_finding("4", 3))
+    ctl.falsy("MIRROR: 3 at a cap of 3 is not", retention_finding("3", 3))
+    ctl.falsy("MIRROR: 1 under a cap of 3 is not", retention_finding("1", 3))
+    ctl.truthy(
+        "PLANT: an expression is unknown, and unknown is a finding",
+        retention_finding("${{ inputs.days }}", 3),
+    )
+
     # -- the whole gate, over a fixture tree --------------------------------
     def run(root: pathlib.Path) -> int:
         saved = os.environ.get(paths.ROOT_ENV)
@@ -895,14 +1042,44 @@ def selftest() -> int:
         root = pathlib.Path(tmp)
         wf = root / ".github" / "workflows"
         wf.mkdir(parents=True)
+        record = root / RETENTION_RECORD_REL
+        record.parent.mkdir(parents=True)
+        record.write_text('{"days": 3}\n', encoding="utf-8")
+        upload = "      - uses: actions/upload-artifact@%s\n        with:\n          retention-days: %s\n"
         (wf / "ci.yml").write_text(
             "jobs:\n  q:\n    steps:\n      - uses: actions/checkout@%s\n"
-            "      - name: Thin\n        run: |\n          ./x.sh\n" % ("a" * 40),
+            "      - name: Thin\n        run: |\n          ./x.sh\n"
+            % ("a" * 40)
+            + upload % ("b" * 40, "3"),
             encoding="utf-8",
         )
         ctl.check("CONTROL: a clean workflow tree passes", run(root), 0)
+        (wf / "up.yml").write_text(
+            "jobs:\n  q:\n    steps:\n" + upload % ("b" * 40, "30"), encoding="utf-8"
+        )
+        ctl.check("PLANT: retention-days 30 over a recorded 3 reds the gate", run(root), 1)
+        (wf / "up.yml").write_text(
+            "jobs:\n  q:\n    steps:\n" + upload % ("b" * 40, "3"), encoding="utf-8"
+        )
+        ctl.check("MIRROR: the same upload at retention-days 3 passes", run(root), 0)
+        record.unlink()
+        ctl.check("REFUSAL: a missing retention record reds, never passes", run(root), 1)
+        record.write_text('{"days": 3}\n', encoding="utf-8")
         (wf / "bad.yml").write_text("jobs:\n  q:\n    continue-on-error: true\n", encoding="utf-8")
         ctl.check("PLANT: one banned pattern reds the gate", run(root), 1)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        # Zero retention-days lines in a tree that has workflows: the scan is not seeing the uploads.
+        root = pathlib.Path(tmp)
+        wf = root / ".github" / "workflows"
+        wf.mkdir(parents=True)
+        (root / RETENTION_RECORD_REL).parent.mkdir(parents=True)
+        (root / RETENTION_RECORD_REL).write_text('{"days": 3}\n', encoding="utf-8")
+        (wf / "ci.yml").write_text(
+            "jobs:\n  q:\n    steps:\n      - uses: actions/checkout@%s\n" % ("a" * 40),
+            encoding="utf-8",
+        )
+        ctl.check("VACUITY: no retention-days line anywhere is a FAILURE", run(root), 1)
 
     with tempfile.TemporaryDirectory() as tmp:
         # THE ANTI-VACUITY CASE. A tree with no workflows at all must be a FAILURE: the layout moved and the gate is asserting nothing.
