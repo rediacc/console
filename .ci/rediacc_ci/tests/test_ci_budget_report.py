@@ -1146,10 +1146,33 @@ def test_fetch_runs_warns_loudly_on_a_stale_sample(monkeypatch, capsys):
 
 
 def test_fetch_runs_silent_on_a_fresh_sample(monkeypatch, capsys):
+    # The clock is pinned: on the real clock this fixed run passed 14 days on 2026-10-11 and the test went red by the calendar.
     fresh_run = {"id": 9, "created_at": "2026-09-27T00:00:00Z"}
     monkeypatch.setattr(br.gh_retry, "api_json", lambda *_a, **_k: {"workflow_runs": [fresh_run]})
-    br.fetch_runs("o/r", "ci.yml", "pull_request", None, "completed", 1)
+    now = br._iso_to_epoch("2026-09-28T00:00:00Z")
+    br.fetch_runs("o/r", "ci.yml", "pull_request", None, "completed", 1, now=now)
     assert capsys.readouterr().err == ""
+
+
+def test_fetch_runs_query_bound_and_age_check_agree_at_the_edge(monkeypatch, capsys):
+    """FIRES-if-unfixed, MEASURED 2026-10-07: the date-only bound `created=>=2026-09-23` admitted run 35836962509 (2026-09-23T08:24:43Z) and the age check then called it 14.1 days old, over the limit, so `--refresh` refused a run its own query fetched. The fake applies the query's own `created>=` bound the way the API does (a date compares by day, a timestamp exactly)."""
+    edge = {"id": 1, "created_at": "2026-09-23T08:24:43Z"}
+    inside = {"id": 2, "created_at": "2026-09-23T12:00:00Z"}
+
+    def server(path, **_kw):
+        bound = path.split("created=%3E%3D", 1)[1].split("&", 1)[0]
+        keep = []
+        for r in (edge, inside):
+            created = str(r["created_at"])
+            if (created[:10] if len(bound) == 10 else created) >= bound:
+                keep.append(r)
+        return {"workflow_runs": keep}
+
+    monkeypatch.setattr(br.gh_retry, "api_json", server)
+    now = br._iso_to_epoch("2026-10-07T10:50:00Z")
+    result = br.fetch_runs("o/r", "housekeeping.yml", "schedule", "main", "completed", 10, now=now)
+    assert [r["id"] for r in result] == [2]
+    assert "sample limit" not in capsys.readouterr().err
 
 
 # --------------------------------------------------------------------------- P2 sample: the date window, per-class branch scope, and the sampled-run record ---------------------------------------------------------------------------
@@ -1157,7 +1180,7 @@ def test_fetch_runs_silent_on_a_fresh_sample(monkeypatch, capsys):
 
 def test_sample_window_param_bounds_the_query_to_the_age_limit():
     now = br._iso_to_epoch("2026-09-28T12:00:00Z")
-    assert br.sample_window_param(now) == "created=%3E%3D2026-09-14"
+    assert br.sample_window_param(now) == "created=%3E%3D2026-09-14T12:00:00Z"
 
 
 def test_fetch_runs_puts_the_date_window_into_the_request(monkeypatch):
@@ -1173,7 +1196,7 @@ def test_fetch_runs_puts_the_date_window_into_the_request(monkeypatch):
     br.fetch_runs("o/r", "ci.yml", "pull_request", "0923-1", "completed", 10, now=now)
     assert len(seen) == br.RUN_LIST_READS
     assert len(set(seen)) == 1
-    assert "created=%3E%3D2026-09-14" in seen[0]
+    assert "created=%3E%3D2026-09-14T12:00:00Z" in seen[0]
     assert "branch=0923-1" in seen[0]
     assert "status=completed" in seen[0]
 

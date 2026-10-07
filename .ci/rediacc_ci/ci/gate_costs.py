@@ -14,12 +14,15 @@ THE FILE'S SCHEMA, defined here beside its only writer:
       "refreshed_at": "2026-10-01T03:30:00Z",
       "source": {"runner": "ubuntu-latest", "cores": 4, "runs": [{"id", "sha", "created_at"}]},
       "gates": {"<gate id>": {"cpu_s", "wall_s", "eff_cores", "capped", "peak_rss_mb", "rank"}},
-      "unmeasured": {"<gate id>": "<status in the newest capture that ran it>"}
+      "unmeasured": {"<gate id>": "<status in the newest capture that ran it>"},
+      "carried": {"<gate id>": "<refreshed_at of the file that measured it>"}
     }
 
 Per gate, each figure is the MEDIAN over the captures in which the gate passed and reported `cpuMs`: `cpu_s` and `wall_s` in seconds, `peak_rss_mb` (null when the sampler captured none). `eff_cores` is cpu_s / wall_s. `capped` is eff_cores >= `CAPPED_FRACTION` x the runner's cores: such a gate used the whole machine, so its width says more about the runner than about the gate and does not port to another machine. `rank` is 1 for the largest cpu_s. A gate the captures ran but never measured (failed, blocked, skipped: the capture runner has no submodules and no Go or uv toolchain) sits in `unmeasured` with its newest status, so a missing baseline is named rather than silently absent.
 
-`--check` exits 1 on: a gate in the file that the manifest (`scripts/ci-runner/gates.lock.json`) no longer has; a gate the fresh captures ran that the file has in neither `gates` nor `unmeasured` (registered after the last refresh); a committed gate no fresh capture measured; cpu_s drifting more than `DRIFT_THRESHOLD` where either side is at least `MIN_DRIFT_CPU_S`; eff_cores drifting the same way where neither side is capped (the same floor applies, since the width of a sub-second gate is noise); a changed runner core count; zero usable captures. It exits `NO_BASELINE` (3) and prints a notice when the file does not exist yet. Nothing was compared, and its one caller, `rediacc_ci.ci.freshness --check` (`.ci/config/freshness.json`, run per PR as `check:ci-budget-freshness` and nightly by housekeeping.yml's budget-check job), fails on it; that registry also refuses the missing file before this check runs. The first real file comes from `--refresh` after the first nightly capture, never from invented numbers.
+TWO KINDS OF GATE, BECAUSE `--quick` IS TWO LANES. A capture runs every fast gate, and a slow gate (`slow: true` in the lock, or one whose `needs` reach a slow gate: run.ts's own fixpoint, `sampled_gate_ids`) ONLY when the captured commit's diff touches it (run.ts `quickDiffAdmit`). So a slow gate is DIFF-SAMPLED: present in one capture, absent from the next five, with nothing wrong. MEASURED 2026-10-07: capture 37294996911 reads `--quick (286 fast gate(s) + 3 diff-selected slow; 66 deferred)`; check:ci-format-scope entered the file from capture 37192382851 (whose diff touched it), and when that capture left the window every PR went red with "no capture measured it (absent in the newest)", the second such red after check:ci-proxy-rdc-update (365933af3). Therefore: a diff-sampled gate absent from EVERY capture in the window is not a finding, and `--refresh` CARRIES its last figures forward (named in `carried`, stamped with when they were measured) rather than dropping them; a diff-sampled gate the captures ran is held to every rule a fast gate is. Both sets are printed by name on every green.
+
+`--check` exits 1 on: a gate in the file that the manifest (`scripts/ci-runner/gates.lock.json`) no longer has (either kind); a FAST gate the fresh captures ran that the file has in neither `gates` nor `unmeasured` (registered after the last refresh); a committed fast gate no fresh capture measured, or a committed diff-sampled gate a fresh capture ran and could not measure; cpu_s drifting more than `DRIFT_THRESHOLD` where either side is at least `MIN_DRIFT_CPU_S`; eff_cores drifting the same way where neither side is capped (the same floor applies, since the width of a sub-second gate is noise); a changed runner core count; zero usable captures. It exits `NO_BASELINE` (3) and prints a notice when the file does not exist yet. Nothing was compared, and its one caller, `rediacc_ci.ci.freshness --check` (`.ci/config/freshness.json`, run per PR as `check:ci-budget-freshness` and nightly by housekeeping.yml's budget-check job), fails on it; that registry also refuses the missing file before this check runs. The first real file comes from `--refresh` after the first nightly capture, never from invented numbers.
 
 The Actions API reads reuse budget_report's `fetch_runs`/`fetch_artifacts`/`download_artifact_zip` (retrying, ghx-backed, a failed call raises rather than reading as empty).
 """
@@ -37,7 +40,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable, Collection, Sequence
 
 from rediacc_ci import paths
 from rediacc_ci.ci import budget_report
@@ -65,6 +68,8 @@ DEFAULT_COMMENT = [
     "job (run.ts --quick --jobs 1, serial and uncontended). Checked nightly by `gate_costs --check`.",
     "cpu_s/wall_s in seconds; eff_cores = cpu_s / wall_s; capped = eff_cores >= 0.9 x source.cores",
     "(the gate filled the runner, so its width is not portable); rank 1 = the largest cpu_s.",
+    "carried: a slow (diff-sampled) gate no capture in the window ran keeps its last figures,",
+    "stamped with when they were measured (gate_costs.py docstring, TWO KINDS OF GATE).",
     "Do not hand-edit: the next --refresh overwrites every figure.",
 ]
 
@@ -96,6 +101,12 @@ def _num(value: Any) -> float | None:
     if isinstance(value, bool) or not isinstance(value, int | float):
         return None
     return float(value)
+
+
+def _rank(gates: dict[str, dict[str, Any]]) -> None:
+    """`rank` 1 for the largest cpu_s, in place; ties broken by id."""
+    for rank, gid in enumerate(sorted(gates, key=lambda g: (-gates[g]["cpu_s"], g)), start=1):
+        gates[gid]["rank"] = rank
 
 
 def aggregate(captures: Sequence[Capture]) -> dict[str, Any]:
@@ -137,14 +148,18 @@ def aggregate(captures: Sequence[Capture]) -> dict[str, Any]:
             "peak_rss_mb": round(statistics.median(rec["rss"])) if rec["rss"] else None,
             "rank": 0,
         }
-    for rank, gid in enumerate(sorted(gates, key=lambda g: (-gates[g]["cpu_s"], g)), start=1):
-        gates[gid]["rank"] = rank
+    _rank(gates)
     unmeasured = {gid: status for gid, status in newest_status.items() if gid not in gates}
     return {
         "cores": cores,
         "gates": dict(sorted(gates.items())),
         "unmeasured": dict(sorted(unmeasured.items())),
     }
+
+
+def _is_not_found(exc: ghx.GhError) -> bool:
+    """GitHub answered 404 for this one run or artifact: it was deleted (or expired) after the run list named it. MEASURED 2026-10-07: runs 37192382851 and 37111522524 answer `gh: Not Found (HTTP 404)` while list reads can still serve them (ci-trace.py records GitHub serving stale run lists). Every other failure (auth, rate limit, network) is not this and still raises."""
+    return "HTTP 404" in (exc.stderr or "") or "HTTP 404" in str(exc)
 
 
 def collect_captures(
@@ -155,7 +170,7 @@ def collect_captures(
     list_artifacts: Callable[[str, int], list[dict[str, Any]]] = budget_report.fetch_artifacts,
     download: Callable[[str, Any], bytes] = budget_report.download_artifact_zip,
 ) -> tuple[list[Capture], list[dict[str, Any]], list[str]]:
-    """The newest `limit` gate-costs captures across the capture workflow's scheduled and dispatched runs: (captures newest first, their run records, warnings). A run with no live `gate-costs-` artifact is passed over; an artifact that will not parse is warned about and passed over."""
+    """The newest `limit` gate-costs captures across the capture workflow's scheduled and dispatched runs: (captures newest first, their run records, warnings). A run with no live `gate-costs-` artifact (its capture job failed, timed out or was cancelled) is passed over; so is a run or artifact GitHub answers 404 for (deleted after the list named it), named on stderr; an artifact that will not parse is warned about and passed over. Zero captures is still the caller's failure."""
     runs: dict[Any, dict[str, Any]] = {}
     for event in CAPTURE_EVENTS:
         for run in list_runs(
@@ -172,10 +187,21 @@ def collect_captures(
         run_id = run.get("id")
         if not isinstance(run_id, int):
             continue
+        try:
+            listed = list_artifacts(repo, run_id)
+        except ghx.GhError as exc:
+            if not _is_not_found(exc):
+                raise
+            print(
+                "gate_costs: run %s is listed but GitHub answers 404 for it (deleted); passed over."
+                % run_id,
+                file=sys.stderr,
+            )
+            continue
         artifact = next(
             (
                 a
-                for a in list_artifacts(repo, run_id)
+                for a in listed
                 if str(a.get("name", "")).startswith(ARTIFACT_PREFIX) and not a.get("expired")
             ),
             None,
@@ -183,7 +209,18 @@ def collect_captures(
         if artifact is None:
             continue
         try:
-            with zipfile.ZipFile(io.BytesIO(download(repo, artifact.get("id")))) as zf:
+            blob = download(repo, artifact.get("id"))
+        except ghx.GhError as exc:
+            if not _is_not_found(exc):
+                raise
+            print(
+                "gate_costs: run %s artifact %s answers 404 (deleted or expired); passed over."
+                % (run_id, artifact.get("name")),
+                file=sys.stderr,
+            )
+            continue
+        try:
+            with zipfile.ZipFile(io.BytesIO(blob)) as zf:
                 member = next((n for n in zf.namelist() if n.endswith(".json")), None)
                 if member is None:
                     raise ValueError("no .json member")
@@ -200,24 +237,72 @@ def collect_captures(
     return captures, sources, warnings
 
 
+def carry_forward(
+    prior: dict[str, Any], agg: dict[str, Any], lock_ids: set[str], sampled: set[str]
+) -> dict[str, str]:
+    """The prior file's diff-sampled gates that no capture in this window ran at all, still registered and still slow: `{gate id: when its figures were measured}`. A gate a capture ran (measured or not) is the window's to describe, so it is never carried; a fast gate is never carried, since every capture runs it."""
+    raw_gates = prior.get("gates")
+    prior_gates: dict[str, Any] = raw_gates if isinstance(raw_gates, dict) else {}
+    raw_carried = prior.get("carried")
+    prior_carried: dict[str, Any] = raw_carried if isinstance(raw_carried, dict) else {}
+    seen = set(agg["gates"]) | set(agg["unmeasured"])
+    stamp = str(prior.get("refreshed_at") or "unknown")
+    return {
+        gid: str(prior_carried.get(gid) or stamp)
+        for gid in sorted(prior_gates)
+        if gid in lock_ids
+        and gid in sampled
+        and gid not in seen
+        and isinstance(prior_gates[gid], dict)
+    }
+
+
 def build_baseline(
-    captures: Sequence[Capture], sources: Sequence[dict[str, Any]], comment: Any, refreshed_at: str
+    captures: Sequence[Capture],
+    sources: Sequence[dict[str, Any]],
+    comment: Any,
+    refreshed_at: str,
+    *,
+    prior: dict[str, Any] | None = None,
+    lock_ids: set[str] | None = None,
+    sampled: set[str] | None = None,
 ) -> dict[str, Any]:
     agg = aggregate(captures)
+    gates = agg["gates"]
+    carried: dict[str, str] = {}
+    if prior is not None and lock_ids is not None and sampled is not None:
+        carried = carry_forward(prior, agg, lock_ids, sampled)
+        for gid in carried:
+            gates[gid] = dict(prior["gates"][gid])
+        _rank(gates)
     return {
         "$comment": comment if comment is not None else DEFAULT_COMMENT,
         "refreshed_at": refreshed_at,
         "source": {"runner": CAPTURE_RUNNER, "cores": agg["cores"], "runs": list(sources)},
-        "gates": agg["gates"],
+        "gates": dict(sorted(gates.items())),
         "unmeasured": agg["unmeasured"],
+        "carried": carried,
     }
 
 
-def load_lock_ids(root: Path) -> set[str]:
+def load_lock(root: Path) -> list[dict[str, Any]]:
     data = json.loads((root / GATES_LOCK_REL_PATH).read_text(encoding="utf-8"))
     if not isinstance(data, list) or not data:
         raise ValueError("%s holds no gates" % GATES_LOCK_REL_PATH)
-    return {e["id"] for e in data if isinstance(e, dict) and isinstance(e.get("id"), str)}
+    return [e for e in data if isinstance(e, dict) and isinstance(e.get("id"), str)]
+
+
+def sampled_gate_ids(entries: Sequence[dict[str, Any]]) -> set[str]:
+    """The gates a `run.ts --quick` capture runs only when the captured commit's diff touches them: `slow: true`, closed over `needs` (a gate needing a slow gate is demoted with it). The same fixpoint as run.ts's `--quick` lane (scripts/ci-runner/run.ts, "THE LANE IS A FIXPOINT")."""
+    slow = {e["id"] for e in entries if e.get("slow") is True}
+    while True:
+        before = len(slow)
+        for e in entries:
+            needs = e.get("needs")
+            if e["id"] not in slow and isinstance(needs, list) and any(n in slow for n in needs):
+                slow.add(e["id"])
+        if len(slow) == before:
+            return slow
 
 
 def _drift(committed: Any, measured: Any) -> float | None:
@@ -228,9 +313,13 @@ def _drift(committed: Any, measured: Any) -> float | None:
 
 
 def check_findings(
-    committed: dict[str, Any], fresh: dict[str, Any], lock_ids: set[str]
+    committed: dict[str, Any],
+    fresh: dict[str, Any],
+    lock_ids: set[str],
+    *,
+    sampled: Collection[str] = frozenset(),
 ) -> list[str]:
-    """Every reason the committed baseline no longer describes the manifest or the captures. Pure: `fresh` is `aggregate()`'s output."""
+    """Every reason the committed baseline no longer describes the manifest or the captures. Pure: `fresh` is `aggregate()`'s output; `sampled` is `sampled_gate_ids()` (see the module docstring, TWO KINDS OF GATE)."""
     findings: list[str] = []
     base = committed.get("gates") or {}
     known = set(base) | set(committed.get("unmeasured") or {})
@@ -244,13 +333,18 @@ def check_findings(
     findings.extend(
         "gate %r ran in the captures but is missing from %s; run --refresh."
         % (g, GATE_COSTS_REL_PATH)
-        for g in sorted((seen & lock_ids) - known)
+        for g in sorted((seen & lock_ids) - known - set(sampled))
     )
     findings.extend(
-        "gate %r has a baseline but no capture measured it (%s in the newest)."
-        % (g, fresh["unmeasured"].get(g, "absent"))
+        "gate %r has a baseline but no capture measured it (%s)."
+        % (
+            g,
+            "%s in the newest capture that ran it" % fresh["unmeasured"][g]
+            if g in fresh["unmeasured"]
+            else "absent from every capture, and every --quick capture runs it",
+        )
         for g in sorted(set(base) & lock_ids)
-        if g not in fresh["gates"]
+        if g not in fresh["gates"] and (g in fresh["unmeasured"] or g not in sampled)
     )
 
     base_cores = (committed.get("source") or {}).get("cores")
@@ -281,9 +375,23 @@ def check_findings(
     return findings
 
 
+def sampling_notes(
+    committed: dict[str, Any], fresh: dict[str, Any], lock_ids: set[str], sampled: set[str]
+) -> dict[str, list[str]]:
+    """The two diff-sampled sets `check_findings` deliberately does not judge, for the success line: `not_sampled` (baselined, no capture in the window ran it) and `pending` (a capture ran it, the file does not have it yet; the next --refresh adds it)."""
+    base = committed.get("gates") or {}
+    known = set(base) | set(committed.get("unmeasured") or {})
+    seen = set(fresh["gates"]) | set(fresh["unmeasured"])
+    return {
+        "not_sampled": sorted(g for g in set(base) & lock_ids & sampled if g not in seen),
+        "pending": sorted((seen & lock_ids & sampled) - known),
+    }
+
+
 def refresh(
     path: Path,
     repo: str,
+    root: Path,
     *,
     dry_run: bool = False,
     collect: Callable[
@@ -302,20 +410,34 @@ def refresh(
         )
         return 1
     comment = None
+    prior: dict[str, Any] = {}
     if path.exists():
         try:
-            prior = json.loads(path.read_text(encoding="utf-8"))
-            if isinstance(prior, dict):
-                comment = prior.get("$comment")
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                prior = loaded
+                comment = loaded.get("$comment")
         except (OSError, json.JSONDecodeError):
             comment = None
-    baseline = build_baseline(captures, sources, comment, now())
+    entries = load_lock(root)
+    baseline = build_baseline(
+        captures,
+        sources,
+        comment,
+        now(),
+        prior=prior,
+        lock_ids={e["id"] for e in entries},
+        sampled=sampled_gate_ids(entries),
+    )
     payload = json.dumps(baseline, indent=2) + "\n"
+    carried = baseline["carried"]
     print(
-        "gate_costs --refresh: %d gate(s) measured, %d unmeasured, from %d capture(s) on %s core(s)."
+        "gate_costs --refresh: %d gate(s) measured, %d unmeasured, %d diff-sampled carried%s, from %d capture(s) on %s core(s)."
         % (
-            len(baseline["gates"]),
+            len(baseline["gates"]) - len(carried),
             len(baseline["unmeasured"]),
+            len(carried),
+            " (%s)" % ", ".join(carried) if carried else "",
             len(captures),
             baseline["source"]["cores"],
         )
@@ -356,30 +478,49 @@ def check(
         return _fail(["gate_costs --check: %s does not parse: %s" % (path, exc)])
     if not isinstance(committed, dict):
         return _fail(["gate_costs --check: %s is not a JSON object" % path])
-    lock_ids = load_lock_ids(root)
-    captures, _sources, warnings = collect(repo)
+    entries = load_lock(root)
+    lock_ids = {e["id"] for e in entries}
+    sampled = sampled_gate_ids(entries)
+    captures, sources, warnings = collect(repo)
     findings = ["capture unreadable: %s" % w for w in warnings]
+    notes: dict[str, list[str]] = {"not_sampled": [], "pending": []}
     if not captures:
         findings.append(
             "no %s* artifact in %s's recent runs: the nightly capture is not producing one."
             % (ARTIFACT_PREFIX, CAPTURE_WORKFLOW)
         )
     else:
-        findings.extend(check_findings(committed, aggregate(captures), lock_ids))
+        fresh = aggregate(captures)
+        findings.extend(check_findings(committed, fresh, lock_ids, sampled=sampled))
+        notes = sampling_notes(committed, fresh, lock_ids, sampled)
     if findings:
         return _fail(
             ["Gate cost baseline check found %d issue(s):" % len(findings)]
             + ["  - %s" % f for f in findings]
         )
     print(
-        "Gate cost baseline check: %d gate(s) from %d capture(s), all within %.0f%% of %s."
+        "Gate cost baseline check: %d gate(s) from %d capture(s) (run %s), all within %.0f%% of %s; %d of %d registered gate(s) are diff-sampled (slow lane)."
         % (
             len(committed.get("gates") or {}),
             len(captures),
+            ", ".join(str(src.get("id")) for src in sources) or "?",
             DRIFT_THRESHOLD * 100,
             GATE_COSTS_REL_PATH,
+            len(sampled & lock_ids),
+            len(lock_ids),
         )
     )
+    # Not judged, by design (module docstring, TWO KINDS OF GATE), and so printed by name every run.
+    if notes["not_sampled"]:
+        print(
+            "  %d diff-sampled gate(s) not in this window: %s (baseline kept; run.ts --quick runs a slow gate only when the captured commit's diff touches it)."
+            % (len(notes["not_sampled"]), ", ".join(notes["not_sampled"]))
+        )
+    if notes["pending"]:
+        print(
+            "  %d diff-sampled gate(s) captured but not yet in the file: %s (the next --refresh adds them)."
+            % (len(notes["pending"]), ", ".join(notes["pending"]))
+        )
     return 0
 
 
@@ -437,7 +578,7 @@ def main(argv: list[str]) -> int:
     target = args.gate_costs or (root / GATE_COSTS_REL_PATH)
     try:
         if args.refresh:
-            return refresh(target, args.repo, dry_run=args.dry_run)
+            return refresh(target, args.repo, root, dry_run=args.dry_run)
         return check(target, args.repo, root)
     except ghx.GhError as exc:
         print("gate_costs: %s" % exc, file=sys.stderr)
