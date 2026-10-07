@@ -35,6 +35,7 @@ arm needs a live `gh` answer and stays uncovered here.
 
 import json
 import pathlib
+import re
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan, syspath
 from rediacc_hooks.wellknown import ACCOUNT_REPO, GH_REPO, RENET_REPO
@@ -131,6 +132,10 @@ EDGE_CASES = [
         ("gh pr view 94 --repo " + RENET_REPO + "; gh pr merge 66 --repo " + ACCOUNT_REPO),
     ),
     ("a foreign repo is not policed", "gh pr merge 42 --repo someone/other"),
+    # 2026-10-07 (#8ed364fe): every spelling gh accepts means what gh makes of it.
+    ("-R=<foreign> is not policed either", "gh pr merge 42 -R=someone/other"),
+    ("the REST merge spelled -XPUT", "gh api repos/o/r/pulls/5/merge -XPUT"),
+    ("the REST merge spelled --method=PUT", "gh api repos/o/r/pulls/5/merge --method=PUT"),
     ("a different pr subcommand", "gh pr view 42"),
     # REST parity: the same mutation reached through `gh api` instead of `gh pr merge`.
     (
@@ -226,6 +231,28 @@ def _jq_conclusion(text):
     return value if isinstance(value, str) else json.dumps(value, separators=(",", ":"))
 
 
+def _rest_merge(scan, cmd):
+    """Does `cmd` merge a PR through `gh api .../pulls/<n>/merge` with a PUT, in any spelling of the method (`-X PUT`, `-XPUT`, `--method=PUT`)?
+
+    Read from each walked `gh api` call; only a command the walk finds none in keeps the text match, which saw the long `-X PUT` spelling alone until 2026-10-07.
+    """
+    calls = shellscan.gh_runs(cmd, ("api",))
+    if calls:
+        for call in calls:
+            parsed = shellscan.gh_args(call.argv)
+            if re.search(r"pulls/[0-9]+/merge$", shellscan.gh_api_endpoint(parsed)) and (
+                shellscan.gh_api_method(parsed) == "PUT"
+            ):
+                return True
+        return False
+    # Split SCAN on the shell separators, keep the segment(s) with `gh api` at command position, then require the merge endpoint and the PUT method independently, since either flag may come first on the line.
+    split = hookio.sed_sub(r"[;&|()`]", "\n", scan)
+    api_lines = hookio.grep_lines(API_VERB, split)
+    api_lines = [line for line in api_lines if hookio.grep_q_line(API_MERGE_ENDPOINT, line)]
+    api_segs = hookio._command_substitution(hookio._grep_out(api_lines))
+    return bool(api_segs and hookio.grep_q(API_PUT_METHOD, api_segs))
+
+
 def run(ev):
     cmd = ev.field("tool_input", "command")
     # Bypass-resistant command scanning (unwraps sh -c/eval payloads, strips
@@ -234,17 +261,14 @@ def run(ev):
     # --admin'` and `--admin=true` MUST. See lib/command-scan.sh.
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
 
-    # REST bypass, checked before the `gh pr` early return two lines down: a REST call carries no `gh pr merge` verb, so that anchor treats it as out of scope and everything below is skipped for a command reaching the identical mutation. Split SCAN on the shell separators, keep the segment(s) with `gh api` at command position, then require the merge endpoint and the PUT method
-    # independently, since either flag may come first on the line.
-    split = hookio.sed_sub(r"[;&|()`]", "\n", scan)
-    api_lines = hookio.grep_lines(API_VERB, split)
-    api_lines = [line for line in api_lines if hookio.grep_q_line(API_MERGE_ENDPOINT, line)]
-    api_segs = hookio._command_substitution(hookio._grep_out(api_lines))
-    if api_segs and hookio.grep_q(API_PUT_METHOD, api_segs):
+    # REST bypass, checked before the `gh pr` early return two lines down: a REST call carries no `gh pr merge` verb, so that anchor treats it as out of scope and everything below is skipped for a command reaching the identical mutation.
+    if _rest_merge(scan, cmd):
         ev.warn(REST_MERGE_MESSAGE)
         return hookio.DENY
 
-    if not shellscan.gh_pr_at_command_pos(scan, "merge"):
+    # Every merge is read from its own walked call (`shellscan.gh_args`): `-R=x`, `-Rx` and `--repo 'x'` name the repo they name, and the PR is the first OPERAND wherever the flags sit (`gh pr merge --repo x 66` is #66, which the text reader took to be a PR called "x"). Measured 2026-10-07. Only a command the walk finds no merge in keeps the text reader.
+    runs = shellscan.gh_pr_runs(cmd, "merge")
+    if not runs and not shellscan.gh_pr_at_command_pos(scan, "merge"):
         return hookio.ALLOW
 
     # SCAN is the only parsed view: it already carries the prose-stripped command plus any unwrapped shell-wrapper payload. A second, separately-built stripped view used to exist for field parsing; keeping two views in sync is the drift hazard lib/command-scan.sh already records, so fields are read from SCAN.
@@ -262,20 +286,32 @@ def run(ev):
         root = hookio.git_out(["rev-parse", "--show-toplevel"])
     cwd = ev.field("cwd")
 
-    # Every field (repo, selector, --auto) is read from the SEGMENT that carries this `gh pr merge`, and EACH merge on the line is checked on its own. Parsing line-wide cross-attributed fields between sibling invocations -- observed live: `gh pr view 94 --repo rediacc/renet; gh pr merge 66 --repo rediacc/account` resolved as rediacc/renet#66, an unrelated long-merged PR, and
-    # blocked the merge on THAT PR's threads. It also examined only one of several merges on a line. See hook_gh_pr_segment.
-    segs = shellscan.gh_pr_segment(scan, "merge")
-    records, _ = shellscan._records(shellscan._here_string(segs))
-    for seg in records:
-        if seg == "":
+    merges = []
+    for run_ in runs:
+        parsed = shellscan.gh_args(run_.argv)
+        if parsed.on("help"):
             continue
-        repo = shellscan.target_repo(seg, scan, cwd)
+        sel = parsed.operands[0] if parsed.operands else ""
+        merges.append((shellscan.gh_run_repo(run_, cwd), parsed.on("auto"), sel))
+    if not runs:
+        # Every field (repo, selector, --auto) is read from the SEGMENT that carries this `gh pr merge`, and EACH merge on the line is checked on its own. Parsing line-wide cross-attributed fields between sibling invocations -- observed live: `gh pr view 94 --repo rediacc/renet; gh pr merge 66 --repo rediacc/account` resolved as rediacc/renet#66, an unrelated long-merged PR, and
+        # blocked the merge on THAT PR's threads. It also examined only one of several merges on a line. See hook_gh_pr_segment.
+        segs = shellscan.gh_pr_segment(scan, "merge")
+        records, _ = shellscan._records(shellscan._here_string(segs))
+        for seg in records:
+            if seg == "":
+                continue
+            merges.append(
+                (
+                    shellscan.target_repo(seg, scan, cwd),
+                    shellscan.flag_present(seg, "auto"),
+                    shellscan._command_substitution(shellscan.pr_selector(seg, "merge")),
+                )
+            )
+    for repo, auto, sel in merges:
         if not hookio.case_glob(repo, "rediacc/*"):
             continue
 
-        auto = shellscan.flag_present(seg, "auto")
-
-        sel = shellscan._command_substitution(shellscan.pr_selector(seg, "merge"))
         # `${SEL:+"$SEL"}` -- the argument is present only when SEL is not empty.
         view = ["timeout", "20", "gh", "pr", "view"]
         if sel != "":

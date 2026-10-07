@@ -166,12 +166,32 @@ def run(ev):
         return hookio.ALLOW
 
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
-    if not shellscan.gh_pr_at_command_pos(scan, "create"):
+    # Each create's repo is read from its own walked call (`shellscan.gh_run_repo`), so `-R=x`, `-Rx` and `--repo 'x'` count the open PRs of the repo they name: measured 2026-10-07, `gh pr create -R=rediacc/renet` listed console's. Only a command the walk finds no create in keeps the text reader.
+    runs = shellscan.gh_pr_runs(cmd, "create")
+    if runs:
+        repos = []
+        for run_ in runs:
+            # `--help` prints the usage and creates nothing.
+            if shellscan.gh_args(run_.argv).on("help"):
+                continue
+            repo = shellscan.gh_run_repo(run_, cwd)
+            if repo not in repos:
+                repos.append(repo)
+    elif shellscan.gh_pr_at_command_pos(scan, "create"):
+        seg = shellscan.gh_pr_segment(scan, "create")
+        repos = [shellscan.target_repo(seg, scan, cwd)]
+    else:
         return hookio.ALLOW
 
-    seg = shellscan.gh_pr_segment(scan, "create")
-    repo = shellscan.target_repo(seg, scan, cwd)
+    for repo in repos:
+        refusal = _refusal(ev, repo)
+        if refusal:
+            return refusal
+    return hookio.ALLOW
 
+
+def _refusal(ev, repo):
+    """DENY, with the message written, when `repo` already has an open PR of ours or its open PRs cannot be listed; None otherwise."""
     listing, rc = _run_capture(
         [
             "gh",
@@ -196,7 +216,7 @@ def run(ev):
 
     count = _jq_length(listing)
     if not (count != "" and int(count) > 0):
-        return hookio.ALLOW
+        return None
 
     ev.warn_raw(ALREADY_OPEN % (count, repo, _rows(listing)))
     return hookio.DENY

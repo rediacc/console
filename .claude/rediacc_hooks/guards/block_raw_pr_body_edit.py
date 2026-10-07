@@ -53,7 +53,7 @@ ORDER = 36
 
 # The `gh api ... -X PATCH -F body=` arm, added 2026-09-04. Without it the door
 # this file's own message points people at has no marker check, which is exactly the state it was in until that day.
-DEFECT = ("if api_segs and hookio.grep_q(", "if False and hookio.grep_q(")
+DEFECT = ("    if patch is not None:", "    if False:")
 
 BEGIN_MARKER = "<!-- worklist-epics:begin -->"
 # Every machine-written section of a PR body in this repo. An edit must carry them ALL, because `gh pr edit --body` writes the whole body and anything absent is gone. Measured on PR #585, 2026-09-03: the body carries worklist-epics AND pushed-head.
@@ -211,6 +211,15 @@ EDGE_CASES = [
         ("gh pr edit 113 --repo " + RENET_REPO + ' --body "prose only"'),
     ),
     ("a submodule edit by -R", ("gh pr edit 89 -R " + ACCOUNT_REPO + ' --body "prose only"')),
+    # 2026-10-07 (#8ed364fe): every spelling gh accepts means what gh makes of it.
+    ("a submodule edit by -R=", ("gh pr edit 89 -R=" + ACCOUNT_REPO + ' -b "prose only"')),
+    ("a PATCH spelled -XPATCH", "gh api repos/o/r/pulls/42 -XPATCH -f body='prose only'"),
+    ("a PATCH spelled --method=PATCH", "gh api repos/o/r/pulls/42 --method=PATCH -fbody=x"),
+    ("a PATCH by --raw-field=body=", "gh api repos/o/r/pulls/42 -X PATCH --raw-field=body=x"),
+    (
+        "a PATCH of a review's own body is not the PR body",
+        "gh api repos/o/r/pulls/42/reviews/9 -X PATCH -f body=x",
+    ),
     ("a console edit by --repo", ("gh pr edit 591 --repo " + GH_REPO + ' --body "prose only"')),
     (
         "a submodule create",
@@ -290,24 +299,8 @@ def _visible_body(cmd, seg, root):
 # body: `--body-file -` fed by a heredoc admitted prose the `--body` form refused, and a `--body-file` that an EARLIER clause of the same command writes was judged on the bytes an earlier command left on disk, so `<write the block> > b.md && gh pr create --body-file b.md` was refused over a stale `b.md` (the original #c17c47c3 symptom) and the reverse admitted a stale block.
 # The reader below parses the walked argv the way gh's pflag does, resolves a relative path from the directory THAT gh runs in, reads `-` from the heredoc or here-string attached to that very call, and reports an earlier write instead of reading through it, the convention `commit_policy.written_message_files` set for `git commit -F`.
 
-BODY_LONG = {"--body": "text", "--body-file": "file"}
-BODY_SHORT = {"b": "text", "F": "file"}
-# gh's boolean flags on `pr create`/`pr edit`: everything else that is not a body flag takes a value, so its value is skipped rather than read as a flag (`--title --body` titles a PR "--body").
-BOOL_LONG = frozenset(
-    {
-        "--draft",
-        "--fill",
-        "--fill-first",
-        "--fill-verbose",
-        "--web",
-        "--editor",
-        "--dry-run",
-        "--no-maintainer-edit",
-        "--remove-milestone",
-        "--help",
-    }
-)
-BOOL_SHORT = frozenset("defwh")
+# Which of gh's body flags carries text and which a file to read; their spellings are `shellscan.gh_args`'s business (`-b`, `-bX`, `-b=X`, `-dF X`, and a value-taking flag's value never read as a flag).
+BODY_KINDS = {"body": "text", "body-file": "file"}
 
 
 class Body:
@@ -326,66 +319,19 @@ class Body:
 
 
 def body_sources(argv):
-    """`[(kind, value)]` for every body flag in a walked `gh pr <verb> ...` argv (`argv[0]` is `pr`), kind `text` or `file`, in order.
-
-    pflag semantics: `--body X`, `--body=X`, `-b X`, `-bX`, `-b=X`, and a bundle of boolean shorthands ending in one (`-dF X`). A value-taking flag's value is never itself read as a flag.
-    """
-    out = []
-    args = list(argv[2:])
-    i = 0
-    while i < len(args):
-        arg = args[i]
-        i += 1
-        if arg == "--":
-            break
-        if arg.startswith("--"):
-            name, eq, value = arg.partition("=")
-            if name in BODY_LONG:
-                if not eq:
-                    if i >= len(args):
-                        continue
-                    value = args[i]
-                    i += 1
-                out.append((BODY_LONG[name], value))
-            elif not eq and name not in BOOL_LONG:
-                i += 1
-            continue
-        if not arg.startswith("-") or arg == "-":
-            continue
-        letters = arg[1:]
-        for pos, ch in enumerate(letters):
-            if ch in BOOL_SHORT:
-                continue
-            rest = letters[pos + 1 :]
-            if not rest:
-                if i < len(args):
-                    rest = args[i]
-                    i += 1
-                else:
-                    break
-            elif rest.startswith("="):
-                rest = rest[1:]
-            if ch in BODY_SHORT:
-                out.append((BODY_SHORT[ch], rest))
-            break
-    return out
+    """`[(kind, value)]` for every body flag in a walked `gh pr <verb> ...` argv (`argv[0]` is `pr`), kind `text` or `file`, in order, read by `shellscan.gh_args`."""
+    return [(BODY_KINDS[n], v) for n, v in shellscan.gh_args(argv).flags if n in BODY_KINDS]
 
 
 def _is_gh_pr(verb):
     def check(words):
         values = [shellscan._word_value(w) for w in words]
-        return shellscan._base(values[0]) == "gh" and values[1:3] == ["pr", verb]
+        return shellscan._base(values[0]) == "gh" and shellscan.gh_args(values[1:]).command == (
+            "pr",
+            verb,
+        )
 
     return check
-
-
-def gh_pr_runs(cmd, verb):
-    """Every `gh pr <verb>` bash would run in `cmd`, from the shared walk (a `sh -c` payload and an `eval` included)."""
-    return [
-        r
-        for r in commit_policy.runs(cmd)
-        if shellscan._base(r.name) == "gh" and r.argv[:2] == ["pr", verb]
-    ]
 
 
 def _stdin_of(cmd, run, verb):
@@ -396,7 +342,7 @@ def _stdin_of(cmd, run, verb):
         return []
     # Paired in order, as `commit_policy._stdin_messages` pairs commits, so two creates in one command each get their own heredoc.
     unpaired = list(segments)
-    for other in gh_pr_runs(cmd, verb):
+    for other in shellscan.gh_pr_runs(cmd, verb):
         want = [other.name, *other.argv]
         match = next((s for s in unpaired if s.words == want), None)
         if match is not None:
@@ -490,13 +436,20 @@ Run `%(mutator)s` as its own call, then `gh pr %(verb)s`.
 """
 
 
-def _judged_body(cmd, seg, verb, root, base):
-    """The `Body` every `gh pr <verb>` in `cmd` would send, read by `read_body`.
-
-    The walk is the reader. Only a command the walk finds no such call in (a shape the lexer does not model) falls back to the text reader `_visible_body`, judged on the long flag names alone, as before.
-    """
-    runs = gh_pr_runs(cmd, verb)
+def _judged_runs(cmd, verb, root, cwd):
+    """The walked `gh pr <verb>` calls this guard judges: every one whose repository carries the generated block, its repo read from that call (`shellscan.gh_run_repo`, so `-R=x`, `-Rx` and a quoted `--repo` all count). None when the walk finds no such call at all, and the caller falls back to the text segment."""
+    runs = shellscan.gh_pr_runs(cmd, verb)
     if not runs:
+        return None
+    return [r for r in runs if not _targets_blockless(shellscan.gh_run_repo(r, cwd), root)]
+
+
+def _judged_body(cmd, seg, verb, root, base, runs):
+    """The `Body` the judged `gh pr <verb>` calls (`runs`, from `_judged_runs`) would send, read by `read_body`.
+
+    The walk is the reader. Only a command the walk finds no such call in (`runs` is None: a shape the lexer does not model) falls back to the text reader `_visible_body`, judged on the long flag names alone, as before.
+    """
+    if runs is None:
         body = Body()
         body.flagged = shellscan.flag_present(seg, "body") or shellscan.flag_present(
             seg, "body-file"
@@ -518,6 +471,77 @@ def _judged_body(cmd, seg, verb, root, base):
         texts.append(one.text)
     out.text = "\n".join(texts)
     return out
+
+
+# The PR endpoint a whole-body PATCH names: `repos/<owner>/<repo>/pulls/<n>` and nothing below it (a review or a comment has a body of its own).
+API_PR_ENDPOINT = re.compile(r"^repos/([^/]+)/([^/]+)/pulls/[0-9]+$")
+
+
+def _patch_call(cmd, scan, root):
+    """`(body file names, PR ref)` for the whole-body PATCHes `cmd` sends to a PR that carries generated blocks, None when it sends none.
+
+    Read from each walked `gh api` call by `shellscan.gh_args`, so `-XPATCH`, `--method=PATCH`, `-Fbody=@f`, `--field=body=@f`, `-fbody=x` and `--input=f` are the PATCH and the body they are (measured 2026-10-07: every one of those spellings walked past the text reader below, which the long spellings could not). Only a command the walk finds no `gh api` call in keeps the text reader.
+    """
+    calls = shellscan.gh_runs(cmd, ("api",))
+    if not calls:
+        return _patch_call_text(scan, root)
+    names: list[str] = []
+    refs: list[str] = []
+    for call in calls:
+        parsed = shellscan.gh_args(call.argv)
+        m = API_PR_ENDPOINT.match(shellscan.gh_api_endpoint(parsed))
+        if not m or shellscan.gh_api_method(parsed) != "PATCH":
+            continue
+        # The endpoint names its own repo, so a PATCH to a submodule PR leaves the arm here, call by call: `repos/rediacc/renet/pulls/113` beside `repos/rediacc/console/pulls/591` on one command still has the console one judged.
+        if _targets_blockless("%s/%s" % (m.group(1), m.group(2)), root):
+            continue
+        fields = [
+            v for n, v in parsed.flags if n in ("field", "raw-field") and v.startswith("body=")
+        ]
+        inputs = parsed.values("input")
+        if not fields and not inputs:
+            continue
+        refs.append(m.group(0))
+        # `-F body=@<path>` reads a file (`-f body=@x` is the literal text "@x", carried in the command and judged there); `--input <path>` is the whole request body.
+        names.extend(
+            v[len("body=@") :]
+            for n, v in parsed.flags
+            if n == "field" and v.startswith("body=@") and v != "body=@"
+        )
+        names.extend(i for i in inputs if i)
+    if not refs:
+        return None
+    return names, refs[0]
+
+
+def _patch_call_text(scan, root):
+    """`_patch_call` for a command the walk finds no `gh api` call in: the long spellings, by regex over the segments, as before 2026-10-07."""
+    split = hookio.sed_sub(r"[;&|()`]", "\n", scan)
+    lines = hookio.grep_lines(API_VERB, split)
+    lines = [line for line in lines if hookio.grep_q_line(API_PULLS, line)]
+    lines = [line for line in lines if hookio.grep_q_line(API_PATCH, line)]
+    lines = [
+        line
+        for line in lines
+        if not any(
+            _targets_blockless(ref.split("/")[1] + "/" + ref.split("/")[2], root)
+            for ref in hookio.grep_o(API_PR_REF, line + "\n")
+        )
+    ]
+    api_segs = hookio._command_substitution(hookio._grep_out(lines))
+    if not (api_segs and hookio.grep_q(API_BODY_FLAG, api_segs)):
+        return None
+    names = [
+        n
+        for n in _body_files(
+            api_segs,
+            API_BODY_ARGS,
+            hookio.rx(r"^((-F|--field)[{S}]+body=@|--input([{S}]+|=))"),
+        )
+        if n != ""
+    ]
+    refs = hookio.grep_o(API_PR_REF, api_segs)
+    return names, refs[0] if refs else ""
 
 
 def _carries(marker, body):
@@ -585,13 +609,23 @@ def run(ev):
 
     root = _root(ev)
 
-    # A SUBMODULE PR CARRIES NO GENERATED BLOCK, so neither pr arm applies to one (`_blockless_repos`). The repo is read the way every sibling `gh pr` guard reads it, `shellscan.target_repo`: `--repo`/`-R` in the SAME segment, then a `cd`/`git -C` into private/<submodule>, then the cwd's origin, then rediacc/console. Blanking the segment rather than returning ALLOW keeps the
-    # other arms running, so `gh pr create --repo rediacc/renet ... && gh pr edit 5 --body x` is still judged on its console edit.
-    if edit_seg != "" and _targets_blockless(
+    # A SUBMODULE PR CARRIES NO GENERATED BLOCK, so neither pr arm applies to one (`_blockless_repos`). The repo is read from each walked call (`_judged_runs`): `--repo`/`-R` in any spelling gh accepts, then a `cd` into private/<submodule>, then the cwd's origin, then rediacc/console. Only a command the walk finds no call in keeps the text reader, `shellscan.target_repo` over the
+    # segment. Dropping the call rather than returning ALLOW keeps the other arms running, so `gh pr create --repo rediacc/renet ... && gh pr edit 5 --body x` is still judged on its console edit.
+    edit_runs = _judged_runs(cmd, "edit", root, ev.cwd or "")
+    create_runs = _judged_runs(cmd, "create", root, ev.cwd or "")
+    if edit_runs is not None:
+        edit_seg = edit_seg or "gh pr edit"
+        if not edit_runs:
+            edit_seg = ""
+    elif edit_seg != "" and _targets_blockless(
         shellscan.target_repo(edit_seg, scan, ev.cwd or ""), root
     ):
         edit_seg = ""
-    if create_seg != "" and _targets_blockless(
+    if create_runs is not None:
+        create_seg = create_seg or "gh pr create"
+        if not create_runs:
+            create_seg = ""
+    elif create_seg != "" and _targets_blockless(
         shellscan.target_repo(create_seg, scan, ev.cwd or ""), root
     ):
         create_seg = ""
@@ -605,7 +639,7 @@ def run(ev):
     # The asymmetry with create that REMAINS is deliberate and is the whole safety argument: create may write an UNREADABLE body (a heredoc, a file a later step writes) because there is no block yet to destroy. Edit may not -- an unreadable edit body is refused, because it can silently replace one that exists.
     base = ev.field("cwd") or ev.cwd
     if edit_seg != "":
-        edit_body = _judged_body(cmd, edit_seg, "edit", root, base)
+        edit_body = _judged_body(cmd, edit_seg, "edit", root, base, edit_runs)
         if edit_body.flagged:
             if edit_body.written is None and _has_every_marker(edit_body.text):
                 return hookio.ALLOW
@@ -622,32 +656,14 @@ def run(ev):
     # `gh api repos/<o>/<r>/pulls/<n> -X PATCH -F body=@<file>` instead. That form
     # replaces the whole body exactly as `gh pr edit --body` does, and until 2026-09-04 it walked past this guard unread: this file's own message pointed at `gh pr edit --body-file`, the sanctioned guard refused that, and the door it pointed to instead had no marker check at all. Same rule as the edit arm: every generated marker must be visible in the body this call writes, and an
     # unreadable body is refused, because it can silently replace one that exists.
-    split = hookio.sed_sub(r"[;&|()`]", "\n", scan)
-    lines = hookio.grep_lines(API_VERB, split)
-    lines = [line for line in lines if hookio.grep_q_line(API_PULLS, line)]
-    lines = [line for line in lines if hookio.grep_q_line(API_PATCH, line)]
-    # The endpoint names its own repo, so a PATCH to a submodule PR leaves the arm here, line by line: `repos/rediacc/renet/pulls/113` beside `repos/rediacc/console/pulls/591` on one command still has the console one judged.
-    lines = [
-        line
-        for line in lines
-        if not any(
-            _targets_blockless(ref.split("/")[1] + "/" + ref.split("/")[2], root)
-            for ref in hookio.grep_o(API_PR_REF, line + "\n")
-        )
-    ]
-    api_segs = hookio._command_substitution(hookio._grep_out(lines))
-    if api_segs and hookio.grep_q(API_BODY_FLAG, api_segs):
+    patch = _patch_call(cmd, scan, root)
+    if patch is not None:
+        names, ref = patch
         patch_body = cmd
         saw = False
         need = False
         written = None
-        for name in _body_files(
-            api_segs,
-            API_BODY_ARGS,
-            hookio.rx(r"^((-F|--field)[{S}]+body=@|--input([{S}]+|=))"),
-        ):
-            if name == "":
-                continue
+        for name in names:
             need = True
             # Same class as the create arm's earlier write (#09c80388): a body file this command writes first is an earlier command's bytes, so it is not read, and an unreadable PATCH body is refused, naming the write.
             path = os.path.normpath(name if name.startswith("/") else os.path.join(base, name))
@@ -666,8 +682,7 @@ def run(ev):
         #
         # A WRITE CARRYING NO GENERATED MARKER AT ALL IS STILL REFUSED WITHOUT ASKING GitHub. That is a hand-written body, the thing this guard exists for, and it is also every negative case in the suite: making the verdict depend on a network read there would trade a deterministic refusal for one that answers differently depending on what a PR looks like today.
         if not patch_ok and readable and any(_carries(m, patch_body) for m in GENERATED_MARKERS):
-            ref = hookio._command_substitution("\n".join(hookio.grep_o(API_PR_REF, api_segs)))
-            patch_ok = not _would_drop(patch_body, ref.split("\n")[0] if ref else "")
+            patch_ok = not _would_drop(patch_body, ref)
         if patch_ok:
             return hookio.ALLOW
         ev.warn_raw(
@@ -684,7 +699,7 @@ def run(ev):
     # create is NOT refused outright, because it is the one call that legitimately writes a whole body: there is no block yet to destroy. It is refused only when the body it writes does NOT already carry the block, which is precisely the state CI fails on minutes later. A body that carries it passes untouched, so the sanctioned flow (build the body from the snapshot, create with
     # it) is not in this guard's way at all.
     if create_seg != "":
-        body = _judged_body(cmd, create_seg, "create", root, base)
+        body = _judged_body(cmd, create_seg, "create", root, base, create_runs)
         if not body.flagged:
             return hookio.ALLOW
 
