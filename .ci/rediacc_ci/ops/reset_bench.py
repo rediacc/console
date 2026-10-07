@@ -14,7 +14,7 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
   3. A FAILED OBJECT DELETE IS NAMED, with the count already deleted (the bash loop ran `npx wrangler r2 object delete ... >/dev/null` under `set -e` and stopped with only wrangler's text).
   4. `jq` IS NOT REQUIRED. The bash demanded it up front; every JSON read is in-process here.
   5. `--help` PRINTS THIS MODULE'S USAGE TEXT, not the script's own comments selected with `grep '^# '` (which also printed every column-zero section comment from the body of the script).
-  7. A MINTED TOKEN IS AWAITED before the first D1 query (`cf_auth.await_propagation`). The bash had no wait and failed every real run with `Authentication error` while Cloudflare propagated the new token.
+  7. A MINTED TOKEN IS AWAITED before the first D1 query (`cf_auth.await_propagation`, GET probes until D1 and Workers Scripts each accept it twice in a row, at most 60 s). The bash had no wait and failed every real run with `Authentication error` while Cloudflare propagated the new token; a token still refused at the deadline is a named error and exit 1, never a traceback.
   6. END OF INPUT AT THE PROMPT ABORTS. `read -rp` returning non-zero under `set -e` exited with no message; the port prints `Aborted.` and exits 1.
 """
 
@@ -321,6 +321,9 @@ def main(argv: list[str]) -> int:
             "PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench"
         )
         return 0
+    except cf_auth.CfAuthError as exc:
+        log.error(str(exc))
+        return 1
     finally:
         cf_auth.self_destruct(auth)
 

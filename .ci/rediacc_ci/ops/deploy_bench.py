@@ -9,7 +9,7 @@ Resources: D1 `account-db-bench`, R2 `rediacc-configs-bench`, worker `rediacc-ac
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_ops_deploy_bench.py` that fails on the bash behaviour).
 
   1. ARGUMENTS ARE REJECTED. The script took no arguments and ignored every one it was given, so `deploy-bench.sh --dry-run` (the natural thing to type before a deploy to a shared environment) performed a real deploy. An argument now exits 2 before anything runs; `-h`/`--help` prints usage.
-  2. THE TOKEN-PROPAGATION WAIT IS TAKEN ONLY FOR A TOKEN THIS RUN MINTED (`cf_auth.await_propagation`, 8 s). The unconditional `sleep 5` exists because a freshly created management token can race Cloudflare's propagation; an operator-supplied token cannot.
+  2. THE TOKEN-PROPAGATION WAIT IS TAKEN ONLY FOR A TOKEN THIS RUN MINTED (`cf_auth.await_propagation`: GET probes until every slow service the token grants accepts it twice in a row, at most 60 s, then a named error and exit 1). The bash's unconditional `sleep 5` existed because a freshly created management token can race Cloudflare's propagation; an operator-supplied token cannot.
   3. NO `jq`. Every JSON read and the secrets payload are built in-process, so the `require_cmd jq` precondition is gone.
   4. THE SIX REQUIRED SIGNING KEYS REPORT THROUGH THE LOGGER with the same wording, instead of bash's `script: line N: NAME: message` text, which named a line number that no longer meant anything after any edit.
   5. THE SECRETS ARE VALIDATED BEFORE THE FIRST REMOTE WRITE. The six signing keys, the non-empty checks and the OTLP probe ran after the migrations and the deploy, so a missing value left bench on new code with the old secrets, the 2026-09-24 failure shape (state changed, then refused). Only the rotation drift check still runs after the deploy, as it did.
@@ -333,7 +333,7 @@ def main(argv: list[str]) -> int:
         return 1
     try:
         _deploy(auth, root)
-    except DeployError as exc:
+    except (DeployError, cf_auth.CfAuthError) as exc:
         for line in str(exc).splitlines():
             log.error(line)
         return 1

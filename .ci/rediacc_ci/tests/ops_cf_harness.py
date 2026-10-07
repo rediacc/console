@@ -127,6 +127,37 @@ TOKEN_ROUTES = [
     {"method": "POST", "match": "/user/tokens", "body": {"result": {"value": "MINTED"}}},
 ]
 
+# The read-only GETs `cf_auth.await_propagation` sends for a minted token (verify is answered by TOKEN_ROUTES). NOT in TOKEN_ROUTES: the route table is part of a twin golden's key, so a test adds these with `World.add_routes` AFTER its `twin_run`, or in a port-only test.
+PROBE_ROUTES = [
+    {"method": "GET", "match": "/d1/database?per_page=1", "body": {"success": True, "result": []}},
+    {"method": "GET", "match": "/workers/scripts", "body": {"success": True, "result": []}},
+]
+PROBE_MATCHES = ("/user/tokens/verify", "/d1/database?per_page=1", "/workers/scripts")
+
+
+def split_probe_block(calls: list[dict]) -> tuple[list[dict], list[dict]]:
+    """(calls without the readiness probes, the probes): the contiguous run of probe GETs right after the token-mint POST."""
+    rest: list[dict] = []
+    block: list[dict] = []
+    after_mint = False
+    for call in calls:
+        is_probe = (
+            call.get("tool") == "curl"
+            and call.get("method") == "GET"
+            and any(m in call.get("url", "") for m in PROBE_MATCHES)
+        )
+        if after_mint and is_probe:
+            block.append(call)
+            continue
+        after_mint = (
+            call.get("tool") == "curl"
+            and call.get("method") == "POST"
+            and call.get("url", "").endswith("/user/tokens")
+        )
+        rest.append(call)
+    return rest, block
+
+
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 
@@ -187,6 +218,10 @@ class World:
 
     def set_routes(self, routes: list[dict]) -> None:
         self.routes.write_text(json.dumps(routes))
+
+    def add_routes(self, *routes: dict) -> None:
+        """Put `routes` ahead of the current table (first match wins)."""
+        self.set_routes([*routes, *json.loads(self.routes.read_text())])
 
     def env(self, **extra: str) -> dict[str, str]:
         env = {
