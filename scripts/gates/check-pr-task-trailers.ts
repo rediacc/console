@@ -752,20 +752,14 @@ const main = (): number => {
     return 1;
   }
 
-  // ACCEPTANCE, both directions, because the two disagreements have different causes and different fixes.
-  const { ledgerOnly, snapshotOnly } = bothWays(ledgerIds, snapIds);
-  if (ledgerOnly.length > 0 || snapshotOnly.length > 0) {
+  // ACCEPTANCE, one direction. The snapshot renders only THIS PR's epics plus the open system backlog (operator 2026-10-07, wl_epic.render), so an epic in the ledger that the snapshot omits is the design, not staleness. An epic in the snapshot that no ledger event recorded is still a hand edit or a lost entry, and still refused. Trailers are judged against the whole ledger below (`known = ledgerIds`).
+  const { snapshotOnly } = bothWays(ledgerIds, snapIds);
+  if (snapshotOnly.length > 0) {
     console.error(`✗ the epic ledger and agent/pr/${branch.replace(/\//g, '-')}.md disagree.`);
-    if (ledgerOnly.length > 0) {
-      console.error(`  in ${ledgerRel} but NOT in the snapshot: ${ledgerOnly.join(', ')}`);
-      console.error(`    -> the snapshot is STALE. Run: worklist.py --publish <me> ${branch}`);
-    }
-    if (snapshotOnly.length > 0) {
-      console.error(`  in the snapshot but NOT in ${ledgerRel}: ${snapshotOnly.join(', ')}`);
-      console.error('    -> the snapshot names an epic no event ever recorded, so it was');
-      console.error('       hand-edited or its ledger entry was lost. Do not add it to the');
-      console.error('       snapshot; record the epic: worklist.py --epic <me> new <title>');
-    }
+    console.error(`  in the snapshot but NOT in ${ledgerRel}: ${snapshotOnly.join(', ')}`);
+    console.error('    -> the snapshot names an epic no event ever recorded, so it was');
+    console.error('       hand-edited or its ledger entry was lost. Do not add it to the');
+    console.error('       snapshot; record the epic: worklist.py --epic <me> new <title>');
     return 1;
   }
 

@@ -86,6 +86,43 @@ export const snapshotSection = (raw: string): string =>
     .join('\n')
     .trim();
 
+/**
+ * THE BACKLOG SECTION IS MANDATORY (operator request 2026-10-07). The block
+ * renders this PR's own epics and then `### Open system backlog (<N>)`: every
+ * open worklist item outside them, the repository's improvement queue, shown on
+ * every PR so it stays visible. `wl_epic.render` writes it even when empty
+ * (`_none_`), so a block WITHOUT it was hand-edited or rendered by a regressed
+ * renderer, and both are refused here. Keep the title in step with
+ * `BACKLOG_TITLE` in .claude/hooks/stop/wl_epic.py.
+ *
+ * N must equal the entries listed under the heading. A count that disagrees
+ * with its own list means the list was truncated (or padded) after rendering,
+ * and a section that only has to EXIST would still pass with its body deleted.
+ */
+export const BACKLOG_TITLE = 'Open system backlog';
+const BACKLOG_HEAD = /^### Open system backlog \((\d+)\)\s*$/;
+
+/** "" when `text` carries a well-formed backlog section, else why not. */
+export const backlogProblem = (text: string): string => {
+  const lines = text.split('\n');
+  const heads = lines
+    .map((l, i) => ({ i, m: BACKLOG_HEAD.exec(l) }))
+    .filter((h): h is { i: number; m: RegExpExecArray } => h.m !== null);
+  if (heads.length === 0) return `no "### ${BACKLOG_TITLE} (<N>)" heading`;
+  if (heads.length > 1) return `${heads.length} "### ${BACKLOG_TITLE}" headings, expected one`;
+  const { i, m } = heads[0];
+  const declared = Number(m[1]);
+  const rest = lines.slice(i + 1);
+  const stop = rest.findIndex((l) => /^#{1,6} /.test(l));
+  const body = stop < 0 ? rest : rest.slice(0, stop);
+  const listed = body.filter((l) => /^- \[.\] `#[0-9a-f]+`/.test(l)).length;
+  const none = body.some((l) => l.trim() === '_none_');
+  if (declared === 0)
+    return none && listed === 0 ? '' : 'declares 0 open items but is not "_none_"';
+  if (listed !== declared) return `declares ${declared} open item(s) but lists ${listed}`;
+  return '';
+};
+
 const say = (msg: string): void => console.log(msg);
 const die = (msg: string[]): number => {
   for (const m of msg) console.error(m);
@@ -117,6 +154,46 @@ const selftest = (): number => {
     taskIds('we use PR-TASK: ids for this').length === 0
   );
   check('a too-short id is not accepted', taskIds('`PR-TASK: ab`').length === 0);
+
+  // The backlog section, both directions. A gate with only the firing cases would happily refuse a well-formed block.
+  const item = (id: string): string => `- [ ] \`#${id}\` some open work`;
+  const backlog = (n: number, rows: string[]): string =>
+    `### E\n\n\`PR-TASK: abc123\`\n\n### ${BACKLOG_TITLE} (${n})\n\n_framing line_\n\n${rows.join('\n')}`;
+  check(
+    'a well-formed backlog passes',
+    backlogProblem(backlog(2, [item('aa11'), item('bb22')])) === ''
+  );
+  check('an empty backlog saying _none_ passes', backlogProblem(backlog(0, ['_none_'])) === '');
+  check(
+    'an item tagged with another epic still counts',
+    backlogProblem(backlog(1, ['- [?] `#cc33` (epic `dd44ee55`) parked'])) === ''
+  );
+  check(
+    'a section followed by another heading counts only its own rows',
+    backlogProblem(`${backlog(1, [item('aa11')])}\n### Later\n${item('ff66')}`) === ''
+  );
+  // CONTROLS: each must fire.
+  check(
+    'CONTROL: a block with no backlog section fires',
+    backlogProblem('### E\n\n`PR-TASK: abc123`\n\n- [x] `#aa11` done').startsWith('no ')
+  );
+  check(
+    'CONTROL: the retired "Not in any epic" heading is not accepted',
+    backlogProblem(`### Not in any epic\n\n${item('aa11')}`) !== ''
+  );
+  check(
+    'CONTROL: a count above the list fires (rows deleted after render)',
+    backlogProblem(backlog(3, [item('aa11')])).includes('lists 1')
+  );
+  check(
+    'CONTROL: a count below the list fires (rows added by hand)',
+    backlogProblem(backlog(1, [item('aa11'), item('bb22')])).includes('lists 2')
+  );
+  check('CONTROL: N=0 with no "_none_" fires', backlogProblem(backlog(0, [])) !== '');
+  check(
+    'CONTROL: two backlog headings fire',
+    backlogProblem(`${backlog(0, ['_none_'])}\n${backlog(0, ['_none_'])}`).includes('2 ')
+  );
 
   check(
     'snapshot header is stripped',
@@ -164,9 +241,24 @@ const main = (): number => {
     ]);
   }
 
+  const snapBacklog = backlogProblem(section);
+  if (snapBacklog) {
+    return die([
+      `✗ agent/pr/${branch.replace(/\//g, '-')}.md: the "${BACKLOG_TITLE}" section is malformed: ${snapBacklog}.`,
+      '  Every PR carries the open system backlog; the renderer always writes it, so a',
+      '  snapshot without it was hand-edited or rendered by a regressed wl_epic.render.',
+      `  Re-publish, do not hand-edit: worklist.py --publish <me> ${branch}`,
+    ]);
+  }
+  const backlogN = BACKLOG_HEAD.exec(
+    section.split('\n').find((l) => BACKLOG_HEAD.test(l)) ?? ''
+  )?.[1];
+
   const prNumber = process.env.PR_NUMBER || '';
   if (!prNumber) {
-    say(`✓ snapshot ok: ${ids.length} epic(s) declared (no PR_NUMBER, body not checked)`);
+    say(
+      `✓ snapshot ok: ${ids.length} epic(s) declared, ${BACKLOG_TITLE} (${backlogN}) present (no PR_NUMBER, body not checked)`
+    );
     return 0;
   }
 
@@ -192,6 +284,15 @@ const main = (): number => {
     ]);
   }
 
+  const bodyBacklog = backlogProblem(block);
+  if (bodyBacklog) {
+    return die([
+      `✗ PR #${prNumber}'s epic block: the "${BACKLOG_TITLE}" section is malformed: ${bodyBacklog}.`,
+      '  The section is mandatory on every PR; it was dropped or edited by hand.',
+      `  Re-sync: .ci/scripts/pr/sync-epic-block.sh ${prNumber} ${branch}`,
+    ]);
+  }
+
   const bodyIds = taskIds(block);
   const missing = ids.filter((i) => !bodyIds.includes(i));
   const extra = bodyIds.filter((i) => !ids.includes(i));
@@ -205,7 +306,9 @@ const main = (): number => {
     ]);
   }
 
-  say(`✓ PR #${prNumber}'s epic block matches the snapshot (${ids.length} epic(s))`);
+  say(
+    `✓ PR #${prNumber}'s epic block matches the snapshot (${ids.length} epic(s), ${BACKLOG_TITLE} (${backlogN}) present in both)`
+  );
   return 0;
 };
 

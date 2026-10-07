@@ -2312,7 +2312,25 @@ def main():
         # project_start(), not getcwd(): its ladder ends AT cwd, so this only adds the CLAUDE_PROJECT_DIR rung every other verb already honours. Resolving from cwd alone walks into a nested repo (private/renet, private/growth) and reads the wrong store, which is the incident project_start was written for.
         wl = C.worklist_for(C.project_start())
         fold = S.load(wl, sync=False)
-        body = E.render(fold)
+        # THE PR'S OWN EPICS (operator request 2026-10-07): the ids this branch's commits cite, plus the epics minted since it forked (wl_epic.pr_epic_ids says why), read from the checkout the snapshot is written into.
+        epics = E.load_epics()
+        cited, fork_at, problem = E.branch_epics(root, branch)
+        own = E.pr_epic_ids(epics, cited, fork_at)
+        # UNREAD IS UNKNOWN, NEVER "CITES NOTHING". The write still happens, because the backlog is worth publishing and the L1 identity table drives this verb with no repository at all, but the reason is printed on stderr, and check:ci-pr-epic-block refuses a snapshot declaring no PR-TASK id, so the gap cannot pass as green.
+        if problem:
+            sys.stderr.write(
+                "worklist --publish: the commits of %s were NOT read (%s), so the snapshot carries"
+                " only the epics minted since the fork; check:ci-pr-epic-block refuses one with none.\n"
+                % (branch, problem)
+            )
+        for eid in E.unknown_cited(epics, cited):
+            sys.stderr.write(
+                "worklist --publish: a commit on %s cites PR-TASK %s, which agent/worklist/epics.jsonl"
+                " does not record; it is not rendered (check:ci-pr-task-trailers names the commit).\n"
+                % (branch, eid)
+            )
+        body = E.render(fold, own)
+        backlog = len(E.backlog_items(fold, own, epics))
         out = root / "agent" / "pr" / ("%s.md" % branch.replace("/", "-"))
         out.parent.mkdir(parents=True, exist_ok=True)
         header = (
@@ -2321,8 +2339,20 @@ def main():
         )
         out.write_text(header + body, encoding="utf-8")
         sys.stdout.write(
-            M.CLI_PUBLISH_WROTE
-            % (out.relative_to(root), len(header) + len(body), len(E.load_epics()))
+            M.CLI_PUBLISH_WROTE % (out.relative_to(root), len(header) + len(body), len(own))
+        )
+        # The SHAPE, so a collapse is visible: how many epics the commits cited, how many the ledger holds, and the backlog size.
+        sys.stdout.write(
+            "  %d PR epic(s) (%d cited by %s's commits%s) of %d in the ledger; %s: %d open item(s)\n"
+            % (
+                len(own),
+                len(cited),
+                branch,
+                ", range UNREAD" if problem else "",
+                len(epics),
+                E.BACKLOG_TITLE,
+                backlog,
+            )
         )
         sys.exit(0)
     if sys.argv[1:2] == ["--epic"] and len(sys.argv) < 4:
