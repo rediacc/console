@@ -386,3 +386,32 @@ def test_the_rewrite_spares_fences_and_keeps_every_other_byte():
     got = PL.apply_remap(text, {"abc123def": "fedcba987"})
     assert got == "a commit:fedcba987\r\n```\nabc123def\n```\nabc123def0 fedcba987\n"
     assert PL.unfenced_tokens(text) == ["abc123def", "abc123def0"]
+
+
+# ---- moved_from: the stub at the plan's current home (agent/plans/) and the legacy one (agent/) ----
+
+
+def _stub_tree(tmp_path, origin: str, target: str) -> None:
+    for rel, text in (
+        (origin, PL.stub_text(origin, target, "fixture")),
+        (target, "# PLAN: fixture\n\nStatus: done\n"),
+    ):
+        path = tmp_path / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+
+
+def test_moved_from_finds_a_stub_left_in_agent_plans(tmp_path):
+    """Every move since the folder migration leaves its stub at agent/plans/<name>; reading agent/ alone missed them (2026-10-07)."""
+    _stub_tree(tmp_path, "agent/plans/PLAN-moved.md", "agent/plans/_done/PLAN-moved.md")
+    assert PL.moved_from(tmp_path, "agent/plans/_done/PLAN-moved.md") == "agent/plans/PLAN-moved.md"
+
+
+def test_moved_from_still_finds_a_legacy_stub_in_agent(tmp_path):
+    _stub_tree(tmp_path, "agent/PLAN-old.md", "agent/plans/_done/PLAN-old.md")
+    assert PL.moved_from(tmp_path, "agent/plans/_done/PLAN-old.md") == "agent/PLAN-old.md"
+
+
+def test_moved_from_control_a_stub_pointing_elsewhere_proves_nothing(tmp_path):
+    _stub_tree(tmp_path, "agent/plans/PLAN-x.md", "agent/plans/_removed/PLAN-x.md")
+    assert PL.moved_from(tmp_path, "agent/plans/_done/PLAN-x.md") == ""

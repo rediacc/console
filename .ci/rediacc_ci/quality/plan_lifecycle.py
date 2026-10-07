@@ -282,16 +282,21 @@ def moved_from(root, rel: str) -> str:
     Shared by every consumer that must not double-count a move as new content: `check_plan_citations.py`'s `carried_lines` and `check_plan_boxes.py`'s `_added_plans` both need this, because a moved plan is NEVER a git rename. `--move` leaves a stub at the old path rather than deleting it, so git sees a MODIFY at the old path and an ADD at the new one, at any similarity threshold -- there is no delete for rename detection to pair against. The stub is read rather than inferred from the basename, so a plan that merely shares a name with something at the legacy path proves nothing here.
     """
     name = rel.rsplit("/", 1)[-1]
-    if not is_plan_path(rel) or folder_of(rel) == AGENT_DIR:
+    here = folder_of(rel)
+    if not is_plan_path(rel) or here == AGENT_DIR:
         return ""
-    origin = "%s/%s" % (AGENT_DIR, name)
-    try:
-        probe = (pathlib.Path(root) / origin).read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return ""
-    if not looks_like_stub(probe) or parse_plan(origin, probe).moved_to != rel:
-        return ""
-    return origin
+    # A move leaves its stub where the plan lived: agent/plans/ since the folder migration, agent/ before it. Both are tried, the current home first; only a stub that names `rel` proves the move (2026-10-07: reading agent/ alone missed every modern move, so the citations gate re-judged each moved plan's carried lines as new).
+    for folder in (PLANS_DIR, AGENT_DIR):
+        if folder == here:
+            continue
+        origin = "%s/%s" % (folder, name)
+        try:
+            probe = (pathlib.Path(root) / origin).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        if looks_like_stub(probe) and parse_plan(origin, probe).moved_to == rel:
+            return origin
+    return ""
 
 
 def folder_of(rel: str) -> str:
