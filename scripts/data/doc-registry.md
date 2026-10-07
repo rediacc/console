@@ -265,7 +265,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-redirect-integrity | quality-www-build / Redirects | yes | yes | no |
 | check:ci-redirects | quality-www-build / Redirects | no | yes | no |
 | check:ci-regions-sync | test: .ci/rediacc_ci/tests/gates/test_gate_regions_sync.py | yes | no | no |
-| check:ci-release-bump-skip | test: .ci/scripts/quality/check_release_bump_skip.py | yes | no | no |
+| check:ci-release-bump-skip | test: .ci/rediacc_ci/tests/gates/test_gate_dispatch_release.py | yes | no | no |
 | check:ci-release-key-canonical | quality-security / Release key canonical | yes | no | no |
 | check:ci-release-signing-coverage | quality-security / Release signing coverage | yes | no | no |
 | check:ci-renet | quality-go / Run renet quality | yes | yes | no |

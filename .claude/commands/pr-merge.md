@@ -207,7 +207,7 @@ If the ancestry check does NOT print "pure fast-forward" (main has moved ahead o
 gh pr view <console-pr> --repo rediacc/console --json labels -q '[.labels[].name] | join(", ")'
 ```
 
-If the label set contains `bump-none`, this merge earns no release: ci.yml's `pr-labels` job sets `bump-none` when every reviewed commit's per-commit review record carries the `Labels:` verdict `bump=none`, which means no git tag, no GitHub Release, no R2 upload, **no edge deploy**. Its commits ship with the next release-worthy merge. Console CI still runs on `main` and still does the real Docker build and push, so it must still go green, but `dispatch-release.sh` will deliberately skip and **no
+If the label set contains `bump-none`, this merge earns no release: ci.yml's `pr-labels` job sets `bump-none` when every reviewed commit's per-commit review record carries the `Labels:` verdict `bump=none`, which means no git tag, no GitHub Release, no R2 upload, **no edge deploy**. Its commits ship with the next release-worthy merge. Console CI still runs on `main` and still does the real Docker build and push, so it must still go green, but the release decider (`rediacc_ci.ci.dispatch_release`, run by initialize) will deliberately skip and **no
 Release run will ever appear**. Confirm the decision from the run rather than inferring it from an absence:
 
 ```bash

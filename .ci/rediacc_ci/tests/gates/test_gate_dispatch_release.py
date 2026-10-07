@@ -1,6 +1,8 @@
 """Port of `.ci/scripts/test/gates/test-dispatch-release.sh`, retired in W7 P5.
 
-Both-ways test for `.ci/scripts/ci/dispatch-release.sh`, the step that decides whether a merge to main earns a release at all.
+Both-ways test for the release decider CI runs, `python3 -m rediacc_ci.ci.dispatch_release` (the module `rediacc_ci.ci.initialize.DISPATCH_RELEASE_MODULE` names), the step that decides whether a merge to main earns a release at all.
+
+THE SUBJECT IS THE PORT, NOT THE BASH TWIN (2026-10-07). Since 056fe87b6 initialize runs the Python decider and nothing in CI executes `.ci/scripts/ci/dispatch-release.sh`; a gate test still driving the twin would cover code CI no longer runs. The twin survives as the differential oracle in `test_ci_dispatch_release.py`, which owns the port-versus-twin equivalence. Every failure the fake `gh` forces here is NON-transient, so it exercises the fail-open branch; a 5xx is a refusal in the port (PLAN-gh-retry G3) with a 20 s backoff, and that refusal is pinned in `test_ci_dispatch_release.py` with an injected sleep.
 
 WHY THIS CLASS NEEDS A GATE. The decision is invisible when it is wrong in the direction that matters. A release that should not have happened is noticed immediately, because a tag appears; a release that was silently WITHHELD looks like nothing at all, and stays looking like nothing until somebody wonders why the version stream stopped. So the fail-open paths are tested as
 carefully as the skip: an API failure, an unresolvable commit and a mixed PR set must all end in a dispatch, and each of those is asserted here rather than reasoned about.
@@ -14,17 +16,23 @@ module-level so the controls exercise the same code path the real assertion does
 THE PORT'S ONE STRUCTURAL CHANGE. The twin's fixtures are built with `jq -nc`; here they are `json.dumps`, which removes `jq` from the fixture-BUILDING path. The fake `gh` still shells out to `jq` to apply the caller's own `--jq`, so the real extraction expression in the subject is still evaluated by the real tool, which is the half that matters.
 """
 
+import importlib.util
 import json
 import os
 import pathlib
 import re
 import stat
+import sys
 
 from rediacc_ci import paths
+from rediacc_ci.ci import dispatch_release, initialize
 from rediacc_ci.tests.gates import harness
 from rediacc_ci.well_known import GH_REPO
 
-UNDER_TEST = paths.from_root(".ci", "scripts", "ci", "dispatch-release.sh")
+# The decider initialize runs, by the name initialize runs it under, so a renamed decider moves this test with it.
+DECIDER_MODULE = initialize.DISPATCH_RELEASE_MODULE
+_SPEC = importlib.util.find_spec(DECIDER_MODULE)
+UNDER_TEST = pathlib.Path(_SPEC.origin) if _SPEC and _SPEC.origin else None
 CI_WORKFLOW = paths.from_root(".github", "workflows", "ci.yml")
 LABELS_FILE = paths.from_root(".github", "labels.yml")
 LABEL_APPLIER = paths.from_root(".ci", "rediacc_ci", "review", "pr_labels.py")
@@ -142,10 +150,14 @@ class Fixture:
             "GITHUB_OUTPUT": str(self.output),
             "DISPATCH_RELEASE_DRY_RUN": "1",
             "NO_COLOR": "1",
+            # initialize hands its child the same PYTHONPATH, so the decider imports this checkout's ports.
+            "PYTHONPATH": initialize.PACKAGE_PARENT,
         }
         overlay.update(env or {})
-        bash = harness.require_tool("bash", "install bash; the subject is a bash script")
-        result = harness.run([bash, str(UNDER_TEST), *args], env=overlay, timeout=120)
+        harness.require_tool("bash", "install bash; the fake gh is a bash script")
+        result = harness.run(
+            [sys.executable, "-m", DECIDER_MODULE, *args], env=overlay, timeout=120
+        )
         self.out = result.combined
         self.rc = result.rc
 
@@ -158,8 +170,8 @@ class Fixture:
 
 
 def make_fixture(gate, tmp_path) -> Fixture:
-    if not os.access(UNDER_TEST, os.X_OK):
-        gate.log_fail("%s is not executable" % paths.relative_to_root(UNDER_TEST))
+    if UNDER_TEST is None or not UNDER_TEST.is_file():
+        gate.log_fail("the release decider module %s does not resolve" % DECIDER_MODULE)
     harness.require_tool("jq", "install jq; the fake gh applies the caller's own --jq")
     fixture = Fixture(tmp_path)
     fixture.setup()
@@ -269,15 +281,13 @@ def test_a_commit_with_no_pr_releases(gate, tmp_path):
 
 
 def test_the_label_is_declared_and_managed(gate):
-    """The script keys on a literal label name, so the name has to exist and be appliable."""
-    source = UNDER_TEST.read_text(encoding="utf-8")
-    match = re.search(r"^SKIP_LABEL='(.*)'$", source, re.MULTILINE)
-    skip_label = match.group(1) if match else ""
-    gate.assert_eq(skip_label, "bump-none", "the skip label is parseable out of the script")
+    """The decider keys on a literal label name, so the name has to exist and be appliable."""
+    skip_label = dispatch_release.SKIP_LABEL
+    gate.assert_eq(skip_label, "bump-none", "the decider's skip label is bump-none")
     labels = LABELS_FILE.read_text(encoding="utf-8")
     if not re.search(r"^- name: %s$" % re.escape(skip_label), labels, re.MULTILINE):
         gate.log_fail(
-            "the script skips on '%s', which .github/labels.yml does not declare" % skip_label
+            "the decider skips on '%s', which .github/labels.yml does not declare" % skip_label
         )
     if skip_label not in LABEL_APPLIER.read_text(encoding="utf-8"):
         gate.log_fail(
@@ -428,7 +438,7 @@ def ordering_violations(job: str) -> list[str]:
         (i + 1 for i, ln in enumerate(lines) if "write-release-sentinel.sh" in ln), None
     )
     if decide_line is None:
-        # NO DECIDE STEP HERE IS NOW CORRECT, and that is the 2026-08-26 fix rather than a regression: the decision moved to initialize.sh (step 6b) because this job `needs: ci-complete` and is therefore DOWNSTREAM of stage-artifacts, the job that writes R2. Deciding here arrived after the uploader had already advanced the channel pointer. "Absent" must not be confused with
+        # NO DECIDE STEP HERE IS NOW CORRECT, and that is the 2026-08-26 fix rather than a regression: the decision moved to initialize (step 6b, now `rediacc_ci.ci.initialize`) because this job `needs: ci-complete` and is therefore DOWNSTREAM of stage-artifacts, the job that writes R2. Deciding here arrived after the uploader had already advanced the channel pointer. "Absent" must not be confused with
         # "unguarded", so absence is acceptable only when the job demonstrably READS the decision.
         if "needs.initialize.outputs.skip_release" in job:
             return []
@@ -519,7 +529,7 @@ def test_ci_yml_decides_before_it_seals(gate):
         "      - name: Write release sentinels\n"
         "        run: .ci/scripts/deploy/write-release-sentinel.sh --version v1.2.27\n"
         "      - name: Dispatch cd-v2 release\n"
-        "        run: .ci/scripts/ci/dispatch-release.sh --decide-only"
+        "        run: python3 -m rediacc_ci.ci.dispatch_release --decide-only"
     )
     found = ordering_violations(broken)
     if not found:
@@ -570,3 +580,29 @@ def test_ci_yml_guards_fail_toward_releasing(gate):
     gate.log_pass(
         "both steps carry != 'true' (controls: == 'true' rejected, single-guard rejected)"
     )
+
+
+# --- check:ci-release-bump-skip, run in CI from here ----------------------
+#
+# That gate's `ci` is `kind: test` naming THIS file. Until 2026-10-07 it named its own entry point, which no CI step runs, so the registry claimed CI coverage nothing delivered. Driving it here puts it in the quality-pytest lane this file is sharded into.
+
+RELEASE_BUMP_SKIP = paths.from_root(".ci", "scripts", "quality", "check_release_bump_skip.py")
+
+
+def test_release_bump_skip_gate_holds_on_the_live_decider(gate):
+    """The skip-signal gate passes against the decider initialize runs, and its own plants still fire."""
+    if not RELEASE_BUMP_SKIP.is_file():
+        gate.log_fail("the gate entry point is missing: %s" % RELEASE_BUMP_SKIP)
+    result = harness.run([sys.executable, str(RELEASE_BUMP_SKIP)], timeout=120)
+    gate.assert_exit(0, result, "check:ci-release-bump-skip passes on the live decider")
+    gate.assert_contains(
+        result.combined,
+        "driving python3 -m %s" % DECIDER_MODULE,
+        "and the decider it drove is the module initialize runs, not the bash twin",
+    )
+    gate.assert_contains(
+        result.combined, "withheld on all four releasing paths", "through all five branches"
+    )
+    selftest = harness.run([sys.executable, str(RELEASE_BUMP_SKIP), "--selftest"], timeout=120)
+    gate.assert_exit(0, selftest, "its selftest's plants all fire")
+    gate.log_pass("check:ci-release-bump-skip: green on the live decider, selftest plants fire")

@@ -162,8 +162,8 @@ PATTERNS: dict[str, dict[str, object]] = {
         "sample": 'LABEL="${AUTOPILOT_LABEL:-%s}"' % SELFTEST_LABEL,
     },
     "grep-exact-label": {
-        # detect-bump-type.sh matches PR labels with `grep -qx "<label>"`;
-        # verified the only -qx uses in the surfaces are label matches.
+        # The frozen bash twin detect-bump-type.sh matches PR labels with `grep -qx "<label>"`; verified the only -qx uses in the surfaces are label matches.
+        # The live port, rediacc_ci.version.detect_bump_type, matches by exact comma-segment equality (`has_label`) against its MAJOR_LABEL / MINOR_LABEL constants, a shape no pattern here reads; test_gate_detect_bump_type.py asserts those two are declared.
         "find": re.compile(r'grep -qx "[A-Za-z0-9._:-]+"'),
         "capture": re.compile(r'.*"([^"]+)".*'),
         "sample": 'echo "$labels" | grep -qx "%s"' % SELFTEST_LABEL,

@@ -70,8 +70,8 @@
 
 # Version Bump Labels
 #
-# Consumed by .ci/scripts/version/detect-bump-type.sh, which resolves the PRs a
-# release contains through the GitHub API. The label applier
+# Consumed by rediacc_ci.version.detect_bump_type (initialize step 6), which
+# resolves the PRs a release contains through the GitHub API. The label applier
 # (.ci/rediacc_ci/review/pr_labels.py, Console CI's pr-labels job) sets at most
 # one of them once CI Complete is green, from the highest per-commit review
 # verdict; a patch carries none (operator rulings 2026-10-02).

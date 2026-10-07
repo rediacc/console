@@ -3,23 +3,11 @@
 
 Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.release_bump_skip`.
 
-CUT OVER FROM BASH 2026-09-07 (W7 P4). Measured that day:
+CUT OVER FROM BASH 2026-09-07 (W7 P4), measured with `npx tsx scripts/lib/shadow-gate.ts --pair w7p2-rbs --assert --k 5` (equivalence over 7 distinct trees, byte-identical streams on this tree, and byte-identical RED through the `RELEASE_DECIDE_SCRIPT` seam).
 
-    npx tsx scripts/lib/shadow-gate.ts --pair w7p2-rbs --assert --k 5
-    -> equivalence holds over 7 distinct trees
+THE SUBJECT MOVED 2026-10-07. The gate drove `.ci/scripts/ci/dispatch-release.sh` until initialize cut over to the retried Python decider (056fe87b6); it now drives `python3 -m rediacc_ci.ci.dispatch_release --decide-only`, the module `rediacc_ci.ci.initialize.DISPATCH_RELEASE_MODULE` names, so it judges the decider CI runs rather than a frozen twin.
 
-and driven again on this tree, both streams captured SEPARATELY, the twin and this port exit 0 with byte-identical stdout and byte-identical stderr. Driven RED as well, through the `RELEASE_DECIDE_SCRIPT` seam against a fixture copy of dispatch-release.sh whose skip signal was reworded: both sides exit 1, report the missing signal AND the vacuity of the four anti-assertions, byte
-for byte.
-
-THAT RED RUN FOUND A REAL DIVERGENCE, now fixed in the module rather than
-papered over. The twin captures with `res="$(drive "$rows")"` and command
-substitution strips trailing newlines; the port kept them, so `out.split("\n")` produced a trailing empty element and the failure excerpt printed one extra six-space line per driven case. See the `.rstrip("\n")` in `rediacc_ci.quality.release_bump_skip.drive` for the measurement. It only shows on the excerpt path, which fires when dispatch-release.sh is already broken -- the one
-moment the two implementations must still read as the same gate.
-
-`test:` NOW NAMES THIS FILE, because for this gate the gate IS the test and the blocker says so. Leaving it on the twin would claim the CI coverage of a file the registry no longer invokes.
-
-SEPARATELY, AND NOT CAUSED BY THIS CHANGE: nothing in CI actually runs this gate. `.ci/rediacc_ci/battery.py` globs `test-*.sh` inside `.ci/scripts/test/gates/`, this file is not in that directory under either name, no workflow step names `check:ci-release-bump-skip`, and the ci-runner composite is never invoked by a workflow. The blocker's "ci-quality.yml quality-security runs
-the real decision every CI run" is therefore not true today and was not true before the cutover either. Reported to the driver; the fix is a battery member, which is outside this change's file set.
+`test:` NAMES `test_gate_dispatch_release.py`, WHICH RUNS THIS GATE IN CI. Until 2026-10-07 it named this file, and no workflow step, pytest shard or battery member ran it, so the registry claimed CI coverage nothing delivered. `test_release_bump_skip_gate_holds_on_the_live_decider` in that file runs this entry point and its `--selftest` in the quality-pytest lane.
 
 WHY AN ENTRY POINT AT ALL. A port cannot be run by path (`from rediacc_ci ...` fails with `.ci` off `sys.path`, which the insert below fixes), and the `-m` form that does work is unreadable to `check:ci-parity`'s tokenizer, which resolves its leaves to `[python3]`. `check_npmrc.py` records both measurements.
 
@@ -27,8 +15,8 @@ INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-release-bump-skip.sh` was 
 
 ---- gate ----
 kind: test
-test: .ci/scripts/quality/check_release_bump_skip.py
-blocker: BLOCKER: the gate IS the test -- it drives the real dispatch-release.sh decide branch with a shimmed gh through all five paths, so ci-quality.yml quality-security runs the real decision every CI run; it exists because a bump-none merge and a broken decision both produce "no release" and only the emitted signal distinguishes them, which no release gate could see
+test: .ci/rediacc_ci/tests/gates/test_gate_dispatch_release.py
+blocker: BLOCKER: test_gate_dispatch_release.py runs this gate and its selftest in the quality-pytest lane; the gate drives the release decider initialize runs (python3 -m rediacc_ci.ci.dispatch_release --decide-only, the module named by initialize.DISPATCH_RELEASE_MODULE) with a shimmed gh through all five paths; it exists because a bump-none merge and a broken decision both produce "no release" and only the emitted signal distinguishes them, which no release gate could see
 needs: none
 ---- end gate ----
 """
