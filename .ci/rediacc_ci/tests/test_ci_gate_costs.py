@@ -34,12 +34,29 @@ def capture(gates: list[dict[str, Any]], cores: int | None = 4) -> dict[str, Any
     return {"jobs": 1, "wallMs": 1, "utilisation": util, "gates": gates}
 
 
-def write_lock(root: Path, ids: list[str]) -> None:
+def lock_entries(
+    ids: list[str], slow: tuple[str, ...] = (), needs: dict[str, list[str]] | None = None
+) -> list[dict[str, Any]]:
+    entries: list[dict[str, Any]] = []
+    for i in ids:
+        e: dict[str, Any] = {"id": i, "run": "true", "gate": True}
+        if i in slow:
+            e["slow"] = True
+        if needs and i in needs:
+            e["needs"] = needs[i]
+        entries.append(e)
+    return entries
+
+
+def write_lock(
+    root: Path,
+    ids: list[str],
+    slow: tuple[str, ...] = (),
+    needs: dict[str, list[str]] | None = None,
+) -> None:
     lock = root / gc.GATES_LOCK_REL_PATH
     lock.parent.mkdir(parents=True, exist_ok=True)
-    lock.write_text(
-        json.dumps([{"id": i, "run": "true", "gate": True} for i in ids]), encoding="utf-8"
-    )
+    lock.write_text(json.dumps(lock_entries(ids, slow, needs)), encoding="utf-8")
 
 
 def baseline_from(captures: list[dict[str, Any]]) -> dict[str, Any]:
@@ -203,7 +220,10 @@ def test_missing_file_is_a_notice_not_a_verdict(tmp_path: Path, capsys: pytest.C
 def test_check_green_then_red_end_to_end(tmp_path: Path):
     write_lock(tmp_path, ["g"])
     target = tmp_path / "gate-costs.json"
-    assert gc.refresh(target, "o/r", collect=_collect([capture([gate("g", 10000, 10000)])])) == 0
+    assert (
+        gc.refresh(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 10000, 10000)])]))
+        == 0
+    )
     written = json.loads(target.read_text(encoding="utf-8"))
     assert written["source"] == {
         "runner": "ubuntu-latest",
@@ -231,11 +251,12 @@ def test_check_reds_on_zero_captures(tmp_path: Path):
 
 
 def test_refresh_preserves_comment_and_refuses_without_captures(tmp_path: Path):
+    write_lock(tmp_path, ["g"])
     target = tmp_path / "gate-costs.json"
     target.write_text(json.dumps({"$comment": ["kept"]}), encoding="utf-8")
-    assert gc.refresh(target, "o/r", collect=_collect([])) == 1
+    assert gc.refresh(target, "o/r", tmp_path, collect=_collect([])) == 1
     assert json.loads(target.read_text(encoding="utf-8")) == {"$comment": ["kept"]}
-    assert gc.refresh(target, "o/r", collect=_collect([capture([gate("g", 1, 1)])])) == 0
+    assert gc.refresh(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 1, 1)])])) == 0
     assert json.loads(target.read_text(encoding="utf-8"))["$comment"] == ["kept"]
 
 
@@ -285,7 +306,7 @@ def test_check_writes_no_report_and_reds_on_stderr(
     """`rediacc_ci.ci.freshness --check --report-to` is the one writer of housekeeping's report (PLAN-ci-consolidation T8), so gate_costs has no `--report-to` and its failing verdict goes to stderr for freshness to capture."""
     write_lock(tmp_path, ["g"])
     target = tmp_path / "gate-costs.json"
-    gc.refresh(target, "o/r", collect=_collect([capture([gate("g", 10000, 10000)])]))
+    gc.refresh(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 10000, 10000)])]))
     capsys.readouterr()
     red = gc.check(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 20000, 20000)])]))
     assert red == 1
@@ -312,3 +333,221 @@ def test_validate_capture(tmp_path: Path):
     report.write_text("", encoding="utf-8")
     assert gc.validate_capture(report) == 1, "an empty report (run.ts refused a flag) is refused"
     assert gc.validate_capture(tmp_path / "absent.json") == 1
+
+
+# --------------------------------------------------------------------------- diff-sampled (slow) gates ---------------------------------------------------------------------------
+#
+# FIRES-if-unfixed, MEASURED 2026-10-07. The capture is `run.ts --quick`, which runs every fast gate and ONLY the slow gates the captured commit's diff touches (run.ts quickDiffAdmit; capture 37294996911 reads "--quick (286 fast gate(s) + 3 diff-selected slow; 66 deferred)"). check:ci-format-scope (slow) entered the baseline from capture 37192382851, whose diff touched it, and every PR went red with "has a baseline but no capture measured it (absent in the newest)" once that capture left the window. 365933af3 was the same red for check:ci-proxy-rdc-update.
+
+
+def test_sampled_gates_are_the_slow_fixpoint_over_needs():
+    entries = lock_entries(
+        ["fast", "slow", "dep", "depdep"],
+        slow=("slow",),
+        needs={"dep": ["slow"], "depdep": ["dep"]},
+    )
+    assert gc.sampled_gate_ids(entries) == {"slow", "dep", "depdep"}
+    assert gc.sampled_gate_ids(lock_entries(["fast"])) == set(), (
+        "CONTROL: no slow gate, nothing sampled"
+    )
+
+
+def test_slow_gate_no_capture_ran_is_not_a_finding():
+    committed = baseline_from([capture([gate("q", 2000, 2000), gate("s", 2000, 2000)])])
+    fresh = gc.aggregate([capture([gate("q", 2000, 2000)])])
+    assert gc.check_findings(committed, fresh, {"q", "s"}, sampled={"s"}) == []
+    # CONTROL: the same absence on a gate every capture runs is still red.
+    findings = gc.check_findings(committed, fresh, {"q", "s"}, sampled=set())
+    assert len(findings) == 1
+    assert "'s'" in findings[0]
+    assert "no capture measured it" in findings[0]
+
+
+def test_slow_gate_a_capture_ran_but_could_not_measure_still_reds():
+    committed = baseline_from([capture([gate("s", 2000, 2000)])])
+    fresh = gc.aggregate([capture([gate("s", None, 5, status="fail")])])
+    findings = gc.check_findings(committed, fresh, {"s"}, sampled={"s"})
+    assert len(findings) == 1
+    assert "no capture measured it (fail" in findings[0]
+
+
+def test_slow_gate_removed_from_the_manifest_still_reds():
+    committed = baseline_from([capture([gate("q", 2000, 2000), gate("s", 2000, 2000)])])
+    fresh = gc.aggregate([capture([gate("q", 2000, 2000)])])
+    findings = gc.check_findings(committed, fresh, {"q"}, sampled=set())
+    assert len(findings) == 1
+    assert "not in the manifest" in findings[0]
+
+
+def test_slow_gate_newly_seen_is_not_new_but_a_fast_one_is():
+    committed = baseline_from([capture([gate("q", 2000, 2000)])])
+    fresh = gc.aggregate([capture([gate("q", 2000, 2000), gate("s", 2000, 2000)])])
+    assert gc.check_findings(committed, fresh, {"q", "s"}, sampled={"s"}) == []
+    findings = gc.check_findings(committed, fresh, {"q", "s"}, sampled=set())
+    assert len(findings) == 1, "CONTROL: a fast gate the captures ran is registered-after-refresh"
+    assert "missing from" in findings[0]
+
+
+def test_slow_gate_drift_is_still_judged_when_sampled():
+    committed = baseline_from([capture([gate("s", 10000, 10000)])])
+    fresh = gc.aggregate([capture([gate("s", 20000, 20000)])])
+    findings = gc.check_findings(committed, fresh, {"s"}, sampled={"s"})
+    assert len(findings) == 1
+    assert "'s' cpu_s" in findings[0]
+
+
+def test_sampling_notes_name_every_unsampled_and_pending_gate():
+    committed = baseline_from([capture([gate("q", 2000, 2000), gate("s", 2000, 2000)])])
+    fresh = gc.aggregate([capture([gate("q", 2000, 2000), gate("t", 2000, 2000)])])
+    notes = gc.sampling_notes(committed, fresh, {"q", "s", "t"}, {"s", "t"})
+    assert notes["not_sampled"] == ["s"]
+    assert notes["pending"] == ["t"]
+
+
+def test_check_end_to_end_slow_gate_absent_is_green_and_named(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    write_lock(tmp_path, ["q", "s"], slow=("s",))
+    target = tmp_path / "gate-costs.json"
+    target.write_text(
+        json.dumps(baseline_from([capture([gate("q", 2000, 2000), gate("s", 2000, 2000)])])),
+        encoding="utf-8",
+    )
+    assert (
+        gc.check(target, "o/r", tmp_path, collect=_collect([capture([gate("q", 2000, 2000)])])) == 0
+    )
+    out = capsys.readouterr().out
+    assert "1 diff-sampled gate(s) not in this window: s" in out
+    # CONTROL: the same tree with s registered as a fast gate is red.
+    write_lock(tmp_path, ["q", "s"])
+    assert (
+        gc.check(target, "o/r", tmp_path, collect=_collect([capture([gate("q", 2000, 2000)])])) == 1
+    )
+
+
+def test_refresh_carries_a_slow_gate_the_window_missed(tmp_path: Path):
+    write_lock(tmp_path, ["q", "s", "f", "gone"], slow=("s",))
+    target = tmp_path / "gate-costs.json"
+    prior = gc.build_baseline(
+        [
+            capture(
+                [
+                    gate("q", 2000, 2000),
+                    gate("s", 9000, 3000),
+                    gate("f", 1500, 1500),
+                    gate("gone", 1, 1),
+                ]
+            )
+        ],
+        [{"id": 1}],
+        None,
+        "2026-10-01T00:00:00Z",
+    )
+    target.write_text(json.dumps(prior), encoding="utf-8")
+    write_lock(tmp_path, ["q", "s", "f"], slow=("s",))
+    assert (
+        gc.refresh(target, "o/r", tmp_path, collect=_collect([capture([gate("q", 4000, 2000)])]))
+        == 0
+    )
+    written = json.loads(target.read_text(encoding="utf-8"))
+    assert written["gates"]["s"] == {**prior["gates"]["s"], "rank": 1}, (
+        "the slow gate's figures are carried"
+    )
+    assert written["carried"] == {"s": "2026-10-01T00:00:00Z"}
+    assert "f" not in written["gates"], (
+        "CONTROL: a fast gate the captures stopped measuring is dropped"
+    )
+    assert "gone" not in written["gates"], "CONTROL: a gate the manifest dropped is not carried"
+    assert written["gates"]["q"]["rank"] == 2
+    # Carried again, the stamp keeps naming when the figure was measured, not the refresh that carried it.
+    assert (
+        gc.refresh(
+            target,
+            "o/r",
+            tmp_path,
+            collect=_collect([capture([gate("q", 4000, 2000)])]),
+            now=lambda: "2026-10-09T00:00:00Z",
+        )
+        == 0
+    )
+    assert json.loads(target.read_text(encoding="utf-8"))["carried"] == {
+        "s": "2026-10-01T00:00:00Z"
+    }
+    # Sampled again, it is measured, not carried.
+    assert (
+        gc.refresh(
+            target,
+            "o/r",
+            tmp_path,
+            collect=_collect([capture([gate("q", 4000, 2000), gate("s", 3000, 3000)])]),
+        )
+        == 0
+    )
+    again = json.loads(target.read_text(encoding="utf-8"))
+    assert again["gates"]["s"]["cpu_s"] == 3.0
+    assert again["carried"] == {}
+
+
+def _gh404(*_a: Any) -> Any:
+    raise gc.ghx.GhError(["gh", "api", "x"], 1, "gh: Not Found (HTTP 404)", gc.ghx.FAILURE_FAILED)
+
+
+def test_collect_captures_passes_over_a_listed_run_github_answers_404_for(
+    capsys: pytest.CaptureFixture[str],
+):
+    """FIRES-if-unfixed, MEASURED 2026-10-07: run 37192382851 (a source of the committed file) answers `Not Found (HTTP 404)` on its artifact list, and that GhError made the whole --check exit 1."""
+    runs = [
+        {"id": 2, "head_sha": "b", "created_at": "2026-10-02"},
+        {"id": 1, "head_sha": "a", "created_at": "2026-10-01"},
+    ]
+    blob = _zip("gate-costs.json", json.dumps(capture([gate("a", 1, 1)])))
+
+    def artifacts(_repo: str, run_id: int) -> list[dict[str, Any]]:
+        if run_id == 2:
+            _gh404()
+        return [{"id": 10, "name": "gate-costs-a"}]
+
+    caps, sources, warnings = gc.collect_captures(
+        "o/r",
+        list_runs=lambda _repo, _wf, event, *_a: runs if event == "schedule" else [],
+        list_artifacts=artifacts,
+        download=lambda _repo, _aid: blob,
+    )
+    assert [s["id"] for s in sources] == [1]
+    assert warnings == []
+    assert "run 2 is listed but GitHub answers 404" in capsys.readouterr().err
+    # A deleted artifact is passed over the same way.
+    caps, sources, _w = gc.collect_captures(
+        "o/r",
+        list_runs=lambda _repo, _wf, event, *_a: runs[1:] if event == "schedule" else [],
+        list_artifacts=lambda _repo, _rid: [{"id": 10, "name": "gate-costs-a"}],
+        download=_gh404,
+    )
+    assert caps == []
+
+
+def test_collect_captures_still_raises_on_a_failure_that_is_not_404():
+    def denied(*_a: Any) -> Any:
+        raise gc.ghx.GhError(["gh"], 1, "HTTP 401: Bad credentials", gc.ghx.FAILURE_UNAUTHENTICATED)
+
+    with pytest.raises(gc.ghx.GhError):
+        gc.collect_captures(
+            "o/r",
+            list_runs=lambda _repo, _wf, event, *_a: (
+                [{"id": 1, "created_at": "x"}] if event == "schedule" else []
+            ),
+            list_artifacts=denied,
+            download=lambda *_a: b"",
+        )
+
+
+def test_a_single_capture_window_still_reds_a_fast_gate_it_could_not_measure(tmp_path: Path):
+    """The window can collapse to one capture (2026-10-07: only 37294996911 is live). One capture is still evidence for every fast gate, since every capture runs every fast gate, so a fast gate that one capture failed is still red."""
+    write_lock(tmp_path, ["q", "s"], slow=("s",))
+    target = tmp_path / "gate-costs.json"
+    target.write_text(
+        json.dumps(baseline_from([capture([gate("q", 2000, 2000), gate("s", 2000, 2000)])])),
+        encoding="utf-8",
+    )
+    one = [capture([gate("q", None, 5, status="fail")])]
+    assert gc.check(target, "o/r", tmp_path, collect=_collect(one)) == 1

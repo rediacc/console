@@ -277,12 +277,14 @@ def stale_sample_findings(runs: list[dict[str, Any]], now: float | None = None) 
 
 
 def sample_window_param(now: float | None = None) -> str:
-    """`created=>=<date>` (URL-encoded) bounding a runs query to the last `SAMPLE_MAX_AGE_DAYS` days.
+    """`created=>=<UTC timestamp>` (URL-encoded) bounding a runs query to EXACTLY the last `SAMPLE_MAX_AGE_DAYS` days, the same cutoff `stale_sample_findings` applies.
+
+    A TIMESTAMP, NOT A DATE. MEASURED 2026-10-07: the date-only bound `created=>=2026-09-23` admitted run 35836962509 (created 2026-09-23T08:24:43Z), which `stale_sample_findings` then reported as "14.1 day(s) old, over the 14-day sample limit" on every read that day, and which `--refresh` refuses outright: the query and the age check disagreed by up to a day, so the refresh failed on a run its own query fetched. The API honours a full timestamp: `>=2026-09-23T09:00:00Z` answered 9 runs without it and `>=2026-09-23T08:00:00Z` 10 runs with it. Now a stale-sample warning means the API ignored the bound, as `fetch_runs` says.
 
     WHY THE QUERY CARRIES A DATE AND NOT ONLY A POST-HOC WARNING. MEASURED 2026-09-28: `workflows/ci.yml/runs?event=pull_request&status=completed&per_page=10` (no `branch`) answered `total_count` 102 and ten runs from 2026-08-28..30 while the same repo had PR runs from that very morning; `...&status=success` answered 17 runs from August. The identical query with `created=>=2026-09-14` added answered 120 runs, newest first, from today -- on every retry. GitHub serves an `event`/`status`-only listing from a stale index; a `created` bound forces the fresh one. Sorting and `stale_sample_findings` cannot repair a page that never contained a fresh run, so the window goes INTO the request."""
     now_epoch = time.time() if now is None else now
     since = datetime.fromtimestamp(now_epoch - SAMPLE_MAX_AGE_DAYS * 86_400.0, tz=UTC)
-    return "created=%%3E%%3D%s" % since.strftime("%Y-%m-%d")
+    return "created=%%3E%%3D%s" % since.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def fetch_runs(
@@ -296,6 +298,9 @@ def fetch_runs(
     now: float | None = None,
 ) -> list[dict[str, Any]]:
     """The `limit` newest runs of `event` created inside the `SAMPLE_MAX_AGE_DAYS` window (`sample_window_param`), by `created_at` DESCENDING -- explicitly, never the API's own order. MEASURED 2026-09-27: the identical query returned an August-dated page and then, a minute later, a September-dated one, so "the API's own default order" is not trustworthy enough to slice on directly. A run older than `SAMPLE_MAX_AGE_DAYS` is still warned about loudly (never refused: this is a report, and a thin or stale sample is still evidence), via `stale_sample_findings` -- with the window in the query that warning now means the API ignored the bound, not that the sample drifted."""
+    # One clock for the query bound and the age check, so a run at the edge cannot be admitted by one and refused by the other.
+    if now is None:
+        now = time.time()
     query = "event=%s&status=%s&per_page=%d&%s" % (
         event,
         status,
