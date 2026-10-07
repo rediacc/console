@@ -1,7 +1,9 @@
 r"""npm run env:register -- one environment name, registered everywhere it must be, in one command.
 
-    npm run env:register -- <module> <NAME> --class <shard>
+    npm run env:register -- <module> <NAME> [<NAME>...] --class <shard>
                             [--kind <k> --default <spelling>... --why <text>]
+
+SEVERAL NAMES, ONE CALL. Every name given is read by the same <module> and takes the same `--class`; the manifest and registry are written once and ONE typed `--allow-new` carries every pair. This is not a convenience: the python-env gate refuses a write while any other new read is unnamed, so two new names registered one call at a time can never both succeed. `--kind`, `--default` and `--why` describe one WORKLIST_* name, so they are refused with more than one name.
 
 THE FAN-OUT THIS REPLACES. Adding one environment read used to mean editing up to three files by hand, in an order nobody wrote down, and then running three gates to find out which one had been missed: one hook variable took three commits on 2026-10-04. Each name has exactly ONE authored home, and this verb writes it, then derives everything else:
 
@@ -57,9 +59,10 @@ from rediacc_ci.quality import python_env_registry as per
 from rediacc_ci.quality import worklist_env_registry as wer
 
 USAGE = (
-    "usage: npm run env:register -- <module> <NAME> --class <shard> "
+    "usage: npm run env:register -- <module> <NAME> [<NAME>...] --class <shard> "
     "[--kind <k> --default <spelling>... --why <text>]\n"
-    "  <module>   the tracked file that reads NAME, relative to the repository root\n"
+    "  <module>   the tracked file that reads every NAME, relative to the repository root\n"
+    "  <NAME>     one or more names; they share --class, and --kind/--default/--why need exactly one\n"
     "  --class    one of: %s (WORKLIST_* names: %s)\n"
     "  --kind     WORKLIST_* only: one of %s\n"
     "  --default  WORKLIST_* only, repeatable: a default SPELLING exactly as the registry gate\n"
@@ -93,7 +96,7 @@ class Request:
 
 
 def parse_args(argv):
-    """argv -> Request. Raises RefusalError on anything malformed; a flag is never silently dropped."""
+    """argv -> list of Request, one per name. Raises RefusalError on anything malformed; a flag is never silently dropped."""
     positional = []
     opts = {"--class": None, "--kind": None, "--why": None}
     defaults = []
@@ -115,14 +118,25 @@ def parse_args(argv):
             raise RefusalError("unknown flag %s" % arg)
         positional.append(arg)
         i += 1
-    if len(positional) != 2:
+    if len(positional) < 2:
         raise RefusalError(
-            "expected <module> <NAME>, got %d positional argument(s)" % len(positional)
+            "expected <module> <NAME>..., got %d positional argument(s)" % len(positional)
         )
     if opts["--class"] is None:
         raise RefusalError("--class is required")
+    names = positional[1:]
+    if len(set(names)) != len(names):
+        raise RefusalError("a name was given twice: %s" % " ".join(names))
+    if len(names) > 1 and (opts["--kind"] or defaults or opts["--why"]):
+        raise RefusalError(
+            "--kind, --default and --why describe one WORKLIST_* name; with %d names, register "
+            "each of those on its own" % len(names)
+        )
     module = str(pathlib.PurePosixPath(positional[0]))
-    return Request(module, positional[1], opts["--class"], opts["--kind"], defaults, opts["--why"])
+    return [
+        Request(module, name, opts["--class"], opts["--kind"], defaults, opts["--why"])
+        for name in names
+    ]
 
 
 # ------------------------------------------------------------------ reading the tree
@@ -311,9 +325,13 @@ def _plan_foreign(root, req, names, foreign):
 
 
 def plan(root, req):
-    """(new_registry_text | None, new_manifest_text). Raises RefusalError; writes nothing."""
+    """(new_registry_text | None, new_manifest_text) for one request. Raises RefusalError; writes nothing."""
+    return plan_all(root, [req])
+
+
+def plan_all(root, reqs):
+    """(new_registry_text | None, new_manifest_text) for every request at once. Raises RefusalError; writes nothing."""
     root = pathlib.Path(root)
-    _validate_common(root, req)
     manifest_path = root / em.MANIFEST_REL
     registry_path = policy_path(wer.REGISTRY_NAME, root)
     manifest = _read_json(manifest_path)
@@ -321,22 +339,20 @@ def plan(root, req):
         lists = em.shard_lists(manifest)
     except em.RefusalError as exc:
         raise RefusalError(str(exc)) from exc
-    shard = _current_shard(lists, req.name)
-    if shard == em.TOMBSTONE_SHARD:
-        raise RefusalError(
-            "%s is a tombstone. Bringing a retired name back is a decision with a replacement "
-            "to unwind (docs/environment-variables.md); edit the manifest by hand." % req.name
-        )
+    registry = _read_json(registry_path)
+    before = _dump(registry)
 
-    registry_text = None
-    if req.name.startswith(em.WORKLIST_PREFIX):
-        registry = _read_json(registry_path)
-        before = _dump(registry)
-        _plan_worklist(root, req, registry)
-        new_text = _dump(registry)
-        registry_text = new_text if new_text != before else None
-        classes = wer.classes_of(registry)
-    else:
+    for req in reqs:
+        _validate_common(root, req)
+        shard = _current_shard(lists, req.name)
+        if shard == em.TOMBSTONE_SHARD:
+            raise RefusalError(
+                "%s is a tombstone. Bringing a retired name back is a decision with a replacement "
+                "to unwind (docs/environment-variables.md); edit the manifest by hand." % req.name
+            )
+        if req.name.startswith(em.WORKLIST_PREFIX):
+            _plan_worklist(root, req, registry)
+            continue
         if req.kind is not None or req.defaults or req.why is not None:
             raise RefusalError(
                 "--kind, --default and --why describe WORKLIST_* names only; %s is "
@@ -350,33 +366,47 @@ def plan(root, req):
             )
         if shard is None:
             lists[req.cls] = sorted([*lists[req.cls], req.name])
-        classes = wer.classes_of(_read_json(registry_path))
 
-    _check_python_read(root, req)
-    lists = em.render_worklist(lists, classes)
+    _check_python_reads(root, reqs)
+    lists = em.render_worklist(lists, wer.classes_of(registry))
     for name in em.ALL_SHARDS:
         manifest["shards"][name] = lists[name]
-    return registry_text, _dump(manifest)
+    new_text = _dump(registry)
+    return (new_text if new_text != before else None), _dump(manifest)
 
 
-def _check_python_read(root, req):
-    """For a `.py` module whose pair is not yet recorded: the read must be one the python-env gate can SEE.
+def _check_python_reads(root, reqs):
+    """For `.py` modules whose pairs are not yet recorded: each read must be one the python-env gate can SEE, and no OTHER new read may be pending.
 
     Checked here, before anything is written, because step 4's `--allow-new` refuses a pair that is not a real addition, and by then steps 2 and 3 would have written. The derivation is the gate's own (`python_env_registry.derive`), so a read through a cross-module constant counts exactly as it will there.
+
+    A pending read nobody named is refused here too, by name. The gate would refuse it anyway (a write that would add an unnamed pair is an error), but only after the manifest was written, and with a message about `--allow-new` rather than about which other read is blocking. Blessing it silently is the one thing this verb must not do: an unnamed read is exactly what the typed flag exists to stop.
     """
-    if not req.module.endswith(".py"):
-        return
-    if "%s:%s" % (req.module, req.name) in _recorded_pairs(root):
+    recorded = _recorded_pairs(root)
+    todo = [
+        r for r in reqs if r.module.endswith(".py") and "%s:%s" % (r.module, r.name) not in recorded
+    ]
+    if not todo:
         return
     try:
         derived, _ = per.derive(root)
     except per.RefusalError as exc:
         raise RefusalError("the python-env derivation cannot run: %s" % exc) from exc
-    if req.name not in derived.get(req.module, []):
+    for req in todo:
+        if req.name not in derived.get(req.module, []):
+            raise RefusalError(
+                "%s does not read %s as check_python_env_registry derives it (a tracked module, an "
+                "os.environ / getenv read of a literal or a module constant). Write the read, and "
+                "track the file, first." % (req.module, req.name)
+            )
+    asked = {"%s:%s" % (r.module, r.name) for r in todo}
+    others = sorted(per.pairs_of(derived) - recorded - asked)
+    if others:
         raise RefusalError(
-            "%s does not read %s as check_python_env_registry derives it (a tracked module, an "
-            "os.environ / getenv read of a literal or a module constant). Write the read, and "
-            "track the file, first." % (req.module, req.name)
+            "%d other new environment read(s) are pending and were not named, so the registry "
+            "write would refuse them: %s. Name each in this call (`env:register <module> "
+            "<NAME>...`, one call per module), or remove the read, then re-run."
+            % (len(others), ", ".join(others))
         )
 
 
@@ -401,10 +431,14 @@ def _verdict(out, err):
     return lines[-1].strip() if lines else "(no output at all)"
 
 
-def register(root, req, runner=default_runner):
-    """Run all six steps. Returns the exit code."""
+def register(root, reqs, runner=default_runner):
+    """Run all six steps for one or several names of one module. Returns the exit code."""
     root = pathlib.Path(root)
-    registry_text, manifest_text = plan(root, req)
+    if isinstance(reqs, Request):
+        reqs = [reqs]
+    registry_text, manifest_text = plan_all(root, reqs)
+    first = reqs[0]
+    label = " ".join(r.name for r in reqs)
 
     wrote = []
     if registry_text is not None and _write_if_changed(
@@ -413,25 +447,23 @@ def register(root, req, runner=default_runner):
         wrote.append(".ci/policy/%s" % wer.REGISTRY_NAME)
     if _write_if_changed(root / em.MANIFEST_REL, manifest_text):
         wrote.append(em.MANIFEST_REL)
-    print("env:register %s %s --class %s" % (req.module, req.name, req.cls))
+    print("env:register %s %s --class %s" % (first.module, label, first.cls))
     print("  wrote: %s" % (", ".join(wrote) if wrote else "nothing (already registered so)"))
 
     quality = root / ".ci" / "scripts" / "quality"
-    pair = "%s:%s" % (req.module, req.name)
-    if not req.module.endswith(".py"):
-        print("  python-env: skipped, %s is not a Python module" % req.module)
-    elif pair in _recorded_pairs(root):
-        print("  python-env: %s is already recorded" % pair)
+    recorded = _recorded_pairs(root)
+    pairs = ["%s:%s" % (r.module, r.name) for r in reqs]
+    fresh = [p for p in pairs if p not in recorded]
+    if not first.module.endswith(".py"):
+        print("  python-env: skipped, %s is not a Python module" % first.module)
+    elif not fresh:
+        print("  python-env: %s already recorded" % ", ".join(pairs))
     else:
-        cmd = [
-            sys.executable,
-            str(quality / "check_python_env_registry.py"),
-            "--write-baseline",
-            "--allow-new",
-            pair,
-        ]
+        cmd = [sys.executable, str(quality / "check_python_env_registry.py"), "--write-baseline"]
+        for pair in fresh:
+            cmd += ["--allow-new", pair]
         rc, out, err = runner(cmd, root)
-        print("  python-env: --allow-new %s -> rc %d" % (pair, rc))
+        print("  python-env: --allow-new %s -> rc %d" % (" ".join(fresh), rc))
         if rc != 0:
             log.error(
                 "check_python_env_registry refused the typed addition, so the read is not "
@@ -455,12 +487,12 @@ def register(root, req, runner=default_runner):
     if failed:
         log.error(
             "%d of %d registry gate(s) red after registering %s. Nothing was committed; read "
-            "the verdicts above." % (failed, len(GATES), req.name)
+            "the verdicts above." % (failed, len(GATES), label)
         )
         return 1
     log.success(
         "%s registered as %s; %d gate(s) green. NOT COMMITTED: commit %s with the read."
-        % (req.name, req.cls, len(GATES), ", ".join(wrote) or "the read")
+        % (label, first.cls, len(GATES), ", ".join(wrote) or "the read")
     )
     return 0
 
@@ -471,8 +503,7 @@ def main(argv=None, runner=default_runner):
         print(USAGE)
         return 0 if argv else 2
     try:
-        req = parse_args(argv)
-        return register(paths.repo_root(), req, runner)
+        return register(paths.repo_root(), parse_args(argv), runner)
     except RefusalError as exc:
         log.error("env:register refused, and wrote nothing: %s" % exc)
         print(USAGE, file=sys.stderr)
