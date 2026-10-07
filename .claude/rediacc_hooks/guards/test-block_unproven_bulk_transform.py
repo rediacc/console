@@ -1023,6 +1023,51 @@ case(
     unread_repo,
     False,
 )
+# git's own parse of `git add`/`git rm` (#e8be3092), each row measured on git 2.53.0 in a scratch repository: the last of a flag and its negation wins, a unique prefix is the option, a valued option swallows its value, `--` and `--end-of-options` end the options, and a global option's value is never the verb. The long form of each is a row above.
+for label, command in (
+    ("`-n --no-dry-run -A` is no dry run", "git add -n --no-dry-run -A"),
+    ("`--al` is `--all`", "git add --al"),
+    ("`--no-ignore-removal` is `--all`", "git add --no-ignore-removal"),
+    ("a global `--attr-source <tree>` before `add -A`", "git --attr-source HEAD add -A"),
+    ("`--chmod +x` swallows `+x`, then `-A`", "git add --chmod +x -A"),
+):
+    case(
+        "%s: judged at its 25 files" % label,
+        '%s && git commit -m "fix: a small thing"' % command,
+        unread_repo,
+        True,
+    )
+for label, command in (
+    ("`-A --no-all` with no pathspec stages nothing", "git add -A --no-all"),
+    ("`--ignore-removal` with no pathspec stages nothing", "git add --ignore-removal"),
+    ("`--dry` is a dry run", "git add --dry -A"),
+    ("`-nA` is a dry run", "git add -nA"),
+    ("`-- -A` is a path named -A", "git add -- -A"),
+    ("`--end-of-options -A` is a path named -A", "git add --end-of-options -A"),
+    ("`-u --no-update` with no pathspec stages nothing", "git add -u --no-update"),
+    ("`git rm --dry-run` removes nothing", "git rm -r --dry-run w"),
+):
+    case(
+        "%s: allowed" % label,
+        '%s && git commit -m "fix: a small thing"' % command,
+        unread_repo,
+        False,
+    )
+# `git commit -a` read by `shellscan.git_commit_args` (#e8be3092): 25 modified tracked files, nothing staged. git 2.53.0 committed all 25 for `-qa` and `--all`, and nothing for `-a --no-all` (no changes added).
+all_repo = scratch_repo()
+for i in range(BULK + 5):
+    write(all_repo, "t/m%02d.py" % i, "x = %d\n" % i)
+git(all_repo, "add", "-A")
+git(all_repo, "commit", "-qm", "seed t")
+for i in range(BULK + 5):
+    write(all_repo, "t/m%02d.py" % i, "x = %d  # edited\n" % i)
+for label, command, want in (
+    ("control: `git commit --all` takes the 25 edits", 'git commit --all -m "fix: x"', True),
+    ("`git commit -qa` takes the 25 edits", 'git commit -qa -m "fix: x"', True),
+    ("`git commit -a --no-all` takes nothing", 'git commit -a --no-all -m "fix: x"', False),
+    ("`git commit -ma` is the message a", "git commit -ma", False),
+):
+    case(label, command, all_repo, want)
 case(
     '`git commit -m -a` is the message "-a", not --all',
     "git commit -m -a",

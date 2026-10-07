@@ -716,7 +716,8 @@ def push_source(push_line):
         after = words[words.index("push") + 1 :]
     except ValueError:
         return ""
-    specs = [w for w in after if not w.startswith("-") and ":" in w and "://" not in w]
+    # The refspecs are the operands after the remote, read by `shellscan.git_push_args` (#e8be3092): a valued option's value (`-o a:b`) is no refspec.
+    specs = [w for w in shellscan.git_push_args(after).operands[1:] if ":" in w and "://" not in w]
     if len(specs) != 1:
         return ""
     src = specs[0].split(":", 1)[0].lstrip("+")
@@ -1535,11 +1536,13 @@ def every_push_deletes_only(scan):
     for seg in pushes:
         words = seg.split()
         tail = words[words.index("push") + 1 :] if "push" in words else []
-        if any(w in ("--all", "--mirror", "--tags") for w in tail):
+        # git's parse of the words (`shellscan.git_push_args`, #e8be3092): measured on git 2.53.0, `-d --no-delete` pushed, `--del` deleted, and `-o <value>`'s value is no refspec.
+        parsed = shellscan.git_push_args(tail)
+        if parsed.on("all") or parsed.on("branches") or parsed.on("mirror") or parsed.on("tags"):
             return False
-        if "--delete" in tail or "-d" in tail:
+        if parsed.on("delete"):
             continue
-        refspecs = [w for w in tail if not w.startswith("-")][1:]
+        refspecs = parsed.operands[1:]
         if not refspecs or not all(r.startswith(":") and len(r) > 1 for r in refspecs):
             return False
     return True

@@ -42,12 +42,11 @@ import fnmatch
 import hashlib
 import json
 import os
-import shlex
 import signal
 import subprocess
 import time
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan
 from rediacc_hooks.guards import block_prose_style_commit as PSC
 
 CHAIN = "pre-bash"
@@ -105,17 +104,18 @@ def _sha256(path):
 
 
 def _pathspecs(cmd):
-    """The paths after a `--`, which is the only pathspec spelling trusted here.
+    """The pathspecs the command's `git commit` takes, as git reads them (`commit_policy.commit_paths`, git's parse-options over the full commit table, #e8be3092): the operands, after `--` or bare. Until 2026-10-07 this took the words after the first `--` anywhere on the line, so `echo -- x; git commit -m y` probed `x;`, `git`, `commit` and `y` as files, and a pipe after the pathspec added its stage's words; the option table that rationale was waiting for now exists."""
+    return commit_policy.commit_paths(cmd)
 
-    A bare trailing path is left to the index arm on purpose: telling `git commit -m msg` from `git commit msg-file` needs git's own option table, and guessing wrong would hand the probe the bytes of a file the commit is not taking. `--` is what `block-pathspecless-git-commit.sh` demands anyway, so the sanctioned form is the one that resolves.
-    """
-    try:
-        tokens = shlex.split(cmd, comments=False)
-    except ValueError:
-        return []
-    if "--" not in tokens:
-        return []
-    return [t for t in tokens[tokens.index("--") + 1 :] if t and not t.startswith("-")]
+
+def _takes_working_tree(cmd, scan=None):
+    """Whether a `git commit` in the command runs with `-a`/`--all` in any spelling git accepts (`-qam x`, `-am x`, the last of `-a`/`--no-all` winning), read by `shellscan.git_commit_args` (#e8be3092). `-m -a` is the message "-a". The text match stays for a command whose walk places no commit."""
+    commits = commit_policy.git_runs(cmd, "commit")
+    if not commits:
+        return bool(hookio.grep_q(WORKING_TREE_FORM, cmd if scan is None else scan))
+    return any(
+        shellscan.git_commit_args(commit_policy.git_split(r.argv)[2]).on("all") for r in commits
+    )
 
 
 def _changed(paths, cwd):
@@ -318,7 +318,7 @@ def _probe_commit(ev, deadline):
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
     if not PSC.GIT_COMMIT.search(scan):
         return hookio.ALLOW
-    if hookio.grep_q(WORKING_TREE_FORM, scan):
+    if _takes_working_tree(cmd, scan):
         ev.warn(NOTICE_ALL)
         return hookio.ALLOW
 
@@ -393,7 +393,7 @@ def run(ev):
 
 
 # The `-a` arm, which is the one branch that speaks on a tree with nothing staged. Planting it proves the differential can see this guard at all, exactly as the same substitution does for `warn_stale_index`.
-DEFECT = ("if hookio.grep_q(WORKING_TREE_FORM, scan):", "if False:")
+DEFECT = ("if _takes_working_tree(cmd, scan):", "if False:")
 
 EDGE_CASES = [
     ("the plain commit", "git commit -m x"),

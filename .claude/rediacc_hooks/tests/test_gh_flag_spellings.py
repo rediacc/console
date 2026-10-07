@@ -920,3 +920,177 @@ def test_a_global_option_with_a_value_does_not_hide_the_verb(world):
         == 2
     )
     assert commit_policy.git_split(["--attr-source", "HEAD", "commit", "-m", "x"])[1] == "commit"
+
+
+# The last hand-written git readers in `.claude` (#e8be3092), each row measured on git 2.53.0: `-uf` and `-qf` forced the remote branch, and `--force-with` is `--force-with-lease` by unique prefix, which forced a branch the lease form is never admitted for.
+@pytest.mark.parametrize(
+    ("control", "want", "other"),
+    [
+        ("git push --force origin 0101-1", 2, "git push -uf origin 0101-1"),
+        ("git push --force origin 0101-1", 2, "git push -qf origin 0101-1"),
+        ("git push --force origin 0101-1", 2, "git push --forc=x origin 0101-1 --force"),
+        ("git push --force-with-lease origin main", 2, "git push --force-with origin main"),
+        ("git push --force-with-lease origin main", 2, "git push --force-with=main origin main"),
+        ("git push --mirror origin", 2, "git push --mirr origin"),
+        ("git push -u origin 0101-1", 0, "git push -uq origin 0101-1"),
+    ],
+)
+def test_force_push_reads_push_the_way_git_does(world, control, want, other):
+    rc, _ = judge(world, "block_git_force_push", control)
+    assert rc == want, "control %r answered rc=%d, not %d" % (control, rc, want)
+    rc, _ = judge(world, "block_git_force_push", other)
+    assert rc == want, "%r answered rc=%d where %r answers rc=%d" % (other, rc, control, want)
+
+
+# block_push_to_protected_branch (#e8be3092), measured on git 2.53.0: `-n --no-dry-run` pushes, `--dry` is a dry run, and `--branches` (an alias of `--all`) and `--al` push every local branch, main included.
+@pytest.mark.parametrize(
+    ("control", "want", "other"),
+    [
+        ("git push origin HEAD:main", 2, "git push -n --no-dry-run origin HEAD:main"),
+        ("git push --dry-run origin HEAD:main", 0, "git push --dry origin HEAD:main"),
+        ("git push --dry-run origin HEAD:main", 0, "git push -qn origin HEAD:main"),
+        ("git push --all origin", 2, "git push --branches origin"),
+        ("git push --all origin", 2, "git push --al origin"),
+    ],
+)
+def test_protected_branch_reads_push_the_way_git_does(world, control, want, other):
+    rc, _ = judge(world, "block_push_to_protected_branch", control)
+    assert rc == want, "control %r answered rc=%d, not %d" % (control, rc, want)
+    rc, _ = judge(world, "block_push_to_protected_branch", other)
+    assert rc == want, "%r answered rc=%d where %r answers rc=%d" % (other, rc, control, want)
+
+
+# block_push_with_unrecorded_reviews: a dry run or a delete taken back by its negation publishes (git 2.53.0 created the branch for each).
+@pytest.mark.parametrize(
+    ("args", "publishes"),
+    [
+        (["push", "origin", "0101-1"], True),
+        (["push", "-n", "--no-dry-run", "origin", "0101-1"], True),
+        (["push", "-d", "--no-delete", "origin", "0101-1"], True),
+        (["push", "--dry", "origin", "0101-1"], False),
+        (["push", "-qn", "origin", "0101-1"], False),
+        (["push", "-o", "x", "origin", ":0101-1"], False),
+        (["push", "--del", "origin", "0101-1"], False),
+    ],
+)
+def test_unrecorded_reviews_reads_publishing_the_way_git_does(args, publishes):
+    from rediacc_hooks.guards import block_push_with_unrecorded_reviews as guard  # noqa: PLC0415
+
+    run = shellscan._analyse("git " + " ".join(args)).runs[-1]
+    assert guard._publishes(run) is publishes
+
+
+# block_unverified_push's text readers, which block_unproven_bulk_transform shares (#e8be3092): measured on git 2.53.0, `-d --no-delete` pushes, `--del` deletes, and `-o <value>` names no remote and no refspec.
+@pytest.mark.parametrize(
+    ("scan", "deletes_only"),
+    [
+        ("git push --delete origin 0101-1", True),
+        ("git push -d --no-delete origin 0101-1", False),
+        ("git push --del origin 0101-1", True),
+        ("git push -o ci.skip origin :0101-1", True),
+        ("git push --tags origin :0101-1", False),
+        ("git push origin :0101-1", True),
+    ],
+)
+def test_delete_only_reads_push_the_way_git_does(scan, deletes_only):
+    from rediacc_hooks.guards import block_unverified_push as guard  # noqa: PLC0415
+
+    assert guard.every_push_deletes_only(scan) is deletes_only
+
+
+@pytest.mark.parametrize(
+    ("line", "source"),
+    [
+        ("git push origin feat:main", "feat"),
+        ("git push -o a:b origin feat:main", "feat"),
+        ("git push --push-option=a:b origin +feat:main", "feat"),
+        ("git push origin HEAD:main", ""),
+    ],
+)
+def test_push_source_reads_push_the_way_git_does(line, source):
+    from rediacc_hooks.guards import block_unverified_push as guard  # noqa: PLC0415
+
+    assert guard.push_source(line) == source
+
+
+def _post_bash(name):
+    path = pathlib.Path(__file__).resolve().parents[2] / "hooks" / "post-bash" / ("%s.py" % name)
+    spec = importlib.util.spec_from_file_location("post_bash_%s_under_test" % name, path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+# The two post-bash hooks that find the branches a push targets (#e8be3092): the operands after the remote, as git reads them. The word-splitting they replace counted `-o`'s value, a non-origin remote, and a redirect and a pipe stage as branches.
+@pytest.mark.parametrize("hook", ["cancel_old_ci", "refresh_pr_body"])
+@pytest.mark.parametrize(
+    ("cmd", "branches"),
+    [
+        ("git push origin HEAD:0728-2", ["0728-2"]),
+        ("git push origin 0728-3", ["0728-3"]),
+        ("git push -o ci.skip origin 0101-1", ["0101-1"]),
+        ("git push upstream 0101-1", ["0101-1"]),
+        ("git push origin 0101-1 2>&1 | tail -3", ["0101-1"]),
+        ("git push", []),
+    ],
+)
+def test_post_bash_push_destinations_read_the_way_git_does(hook, cmd, branches):
+    assert _post_bash(hook).destinations(cmd) == branches
+
+
+# warn_staged_shape_duplication (#e8be3092): the commit's pathspecs and its `-a` are what git reads, not the words after the first `--` anywhere on the line.
+@pytest.mark.parametrize(
+    ("cmd", "paths", "working_tree"),
+    [
+        ("git commit -m x -- a b", ["a", "b"], False),
+        ("echo -- x; git commit -m y", [], False),
+        ("git commit -m x -- a 2>&1 | tail -3", ["a"], False),
+        ("git commit -a -m x", [], True),
+        ("git commit -qam x", [], True),
+        ("git commit --all -m x", [], True),
+        ("git commit -m -a", [], False),
+    ],
+)
+def test_shape_probe_reads_commit_the_way_git_does(cmd, paths, working_tree):
+    from rediacc_hooks.guards import warn_staged_shape_duplication as guard  # noqa: PLC0415
+
+    assert guard._pathspecs(cmd) == paths
+    assert guard._takes_working_tree(cmd) is working_tree
+
+
+# block_destructive_git_restore's `git clean` arm (#e8be3092): the dry run is the clean's OWN `-n`, read the way git reads it, never a `-n` elsewhere on the line (`git log -n 1`), and `-n --no-dry-run` deletes (git 2.53.0).
+@pytest.mark.parametrize(
+    ("control", "want", "other"),
+    [
+        ("git clean -fd", 2, "git log -n 1 && git clean -fd"),
+        ("git clean -fd", 2, "git clean -n --no-dry-run -fd"),
+        ("git clean -fd", 2, "git clean -n; git clean -fd"),
+        ("git clean -n", 0, "git clean -fdn"),
+        ("git clean -n", 0, "git clean --dry -fd"),
+        ("git clean -n", 0, "git clean -e -n -n"),
+    ],
+)
+def test_clean_reads_dry_run_the_way_git_does(world, control, want, other):
+    rc, _ = judge(world, "block_destructive_git_restore", control)
+    assert rc == want, "control %r answered rc=%d, not %d" % (control, rc, want)
+    rc, _ = judge(world, "block_destructive_git_restore", other)
+    assert rc == want, "%r answered rc=%d where %r answers rc=%d" % (other, rc, control, want)
+
+
+# block_untagged_commit reads the commit's own `-F <file>` the way git does (#e8be3092): `-qF f`, `-Ff`, `--fil f` (git 2.53.0 took the message from f for each). An unread file left no readable message, and the guard ALLOWS a commit whose message it cannot see.
+@pytest.mark.parametrize(
+    ("control", "want", "other"),
+    [
+        ("git commit -F prose.md -- a", 2, "git commit -qF prose.md -- a"),
+        ("git commit -F prose.md -- a", 2, "git commit -Fprose.md -- a"),
+        ("git commit -F prose.md -- a", 2, "git commit --fil prose.md -- a"),
+        ("git commit -F prose.md -- a", 2, "git commit --file=prose.md -- a"),
+    ],
+)
+def test_untagged_commit_reads_the_message_file_the_way_git_does(world, control, want, other):
+    rc, _ = judge(world, "block_untagged_commit", control)
+    assert rc == want, "control %r answered rc=%d, not %d" % (control, rc, want)
+    rc, _ = judge(world, "block_untagged_commit", other)
+    assert rc == want, "%r answered rc=%d where %r answers rc=%d" % (other, rc, control, want)

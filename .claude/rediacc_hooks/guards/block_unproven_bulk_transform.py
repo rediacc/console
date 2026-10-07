@@ -26,7 +26,7 @@ import re
 import shlex
 import subprocess
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan
 from rediacc_hooks.guards import block_prose_style_commit as PSC
 from rediacc_hooks.guards import block_unverified_push as PUSH
 
@@ -428,77 +428,30 @@ def _pathspec_ceiling(cwd, paths, files):
     return out
 
 
-# `git add` flags that change nothing about WHICH paths a pathspec stages, as far as a count is concerned. `--no-all`/`--ignore-removal` stage a subset of the default and `-p`/`-i`/`-e` a subset of what they are shown, so each is judged as the default, the larger set.
-ADD_PLAIN_FLAGS = frozenset(
-    {
-        "-f",
-        "--force",
-        "-v",
-        "--verbose",
-        "-N",
-        "--intent-to-add",
-        "--ignore-errors",
-        "--ignore-missing",
-        "--renormalize",
-        "--sparse",
-        "--refresh",
-        "--no-all",
-        "--ignore-removal",
-        "-p",
-        "--patch",
-        "-i",
-        "--interactive",
-        "-e",
-        "--edit",
-    }
-)
-ADD_SHORT_PLAIN = frozenset("fvNpie")
-# A pathspec made only of a leading `:` magic word this guard does not read (`:(exclude)x`, `:!x`) is passed to git as written; git itself is the parser.
-
-
 def _parse_stage(run):
     """`(mode, pathspecs)` for a `git add` / `git rm` run, `None` when it stages nothing, or `("unparsed", None)`.
 
     `mode` is `all` (tracked changes plus untracked files), `update` (tracked changes only, `add -u` and every `rm`). Empty `pathspecs` under `add -A`/`add -u` is the whole repository, git's own reading since 2.0; empty under a plain `add` stages nothing.
+
+    READ THE WAY GIT READS IT (#e8be3092): `shellscan.git_args`, git's parse-options over the complete `git add`/`git rm` option tables, after `commit_policy.git_split` drops the global options (`--attr-source <tree>` included). The last of a flag and its negation wins, a unique prefix is the option, a valued option (`--chmod +x`) swallows its value, and `--`/`--end-of-options` end the options. Measured on git 2.53.0 against the
+    flag-name matching this replaced: `git add -n --no-dry-run -A` staged everything and was read as a dry run (the one under-count, so the one bypass), while `-A --no-all`, `-u --no-update` and `--ignore-removal` with no pathspec, `--dry -A` and `--end-of-options -A` staged nothing and were judged at the ceiling. `--no-all`/`--ignore-removal` with a pathspec stage a subset of the default and `-p`/`-i`/`-e`/`-N` a subset of what they are shown, so each is judged as the default, the larger set; `-A` beside `-u` is a fatal error in git and is judged as `-A`, the larger. An option git would refuse (`problems`), and a `--pathspec-from-file`, stay unreadable and are judged at the ceiling.
     """
-    argv = run.argv
-    k = 0
-    while k < len(argv) and argv[k] != run.git_sub:
-        k += 2 if argv[k] in ("-C", "-c", "--git-dir", "--work-tree") else 1
-    args = argv[k + 1 :]
-    mode = "update" if run.git_sub == "rm" else "all"
-    whole = False
-    specs = []
-    options = True
-    for arg in args:
-        if options and arg == "--":
-            options = False
-        elif options and arg.startswith("-") and arg != "-":
-            if run.git_sub == "rm":
-                if arg.startswith("--pathspec-from-file"):
-                    return ("unparsed", None)
-                if arg in ("-n", "--dry-run"):
-                    return None
-                continue
-            if arg in ("-n", "--dry-run"):
-                return None
-            if arg in ("-A", "--all", "--no-ignore-removal"):
-                whole = True
-            elif arg in ("-u", "--update"):
-                whole = True
-                mode = "update"
-            elif arg in ADD_PLAIN_FLAGS or arg.startswith("--chmod="):
-                pass
-            elif not arg.startswith("--") and set(arg[1:]) <= ADD_SHORT_PLAIN | {"A", "u", "n"}:
-                if "n" in arg:
-                    return None
-                whole = whole or "A" in arg or "u" in arg
-                if "u" in arg and "A" not in arg:
-                    mode = "update"
-            else:
-                return ("unparsed", None)
-        else:
-            specs.append(arg)
+    _, sub, args = commit_policy.git_split(run.argv)
+    parsed = shellscan.git_args(sub, args)
+    if parsed.problems or parsed.values("pathspec-from-file"):
+        return ("unparsed", None)
+    if parsed.on("dry-run"):
+        return None
+    specs = list(parsed.operands)
+    if sub == "rm":
+        return ("update", specs) if specs else None
+    add_all = None
+    for name, value in parsed.flags:
+        if name in ("all", "ignore-removal"):
+            add_all = (value != "false") == (name == "all")
+    update = parsed.on("update")
+    whole = bool(add_all) or update
+    mode = "update" if update and not add_all else "all"
     if not specs and not whole:
         return None
     return mode, specs
@@ -595,53 +548,10 @@ def _commit_run(cmd):
     )
 
 
-# `git commit` short options that take a value, so an `a` after one of them in a cluster is that value (`-ma` is the message "a"), not `--all`.
-COMMIT_VALUE_SHORT = frozenset("mFCctSu")
-# The ones whose value may be the NEXT word, which is then skipped: `-m -a` is the message "-a".
-COMMIT_VALUE_NEXT = frozenset(
-    {
-        "-m",
-        "-F",
-        "-C",
-        "-c",
-        "-t",
-        "--message",
-        "--file",
-        "--author",
-        "--date",
-        "--template",
-        "--reuse-message",
-        "--reedit-message",
-        "--fixup",
-        "--squash",
-        "--trailer",
-        "--cleanup",
-    }
-)
-
-
 def _commit_all(run):
-    """Whether this `git commit` runs with `-a`/`--all`, which stages every modified and deleted tracked file first."""
-    args = run.argv[run.argv.index("commit") + 1 :] if "commit" in run.argv else []
-    skip = False
-    for arg in args:
-        if skip:
-            skip = False
-            continue
-        if arg == "--":
-            return False
-        if arg == "--all":
-            return True
-        if arg in COMMIT_VALUE_NEXT:
-            skip = True
-            continue
-        if arg.startswith("-") and not arg.startswith("--"):
-            for ch in arg[1:]:
-                if ch == "a":
-                    return True
-                if ch in COMMIT_VALUE_SHORT:
-                    break
-    return False
+    """Whether this `git commit` runs with `-a`/`--all`, which stages every modified and deleted tracked file first. Read by `shellscan.git_commit_args` (#e8be3092): `-qa` is `--all`, `-ma` is the message "a", `-m -a` the message "-a", and the last of `-a`/`--no-all` wins (git 2.53.0 committed nothing for `-a --no-all`, which the hand-written reader this replaced counted as all)."""
+    _, _, args = commit_policy.git_split(run.argv)
+    return shellscan.git_commit_args(args).on("all")
 
 
 def _union(first, second):

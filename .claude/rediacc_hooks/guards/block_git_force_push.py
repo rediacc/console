@@ -37,8 +37,11 @@ ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
     ("live-branch", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-ahead}"}, {}),
 ]
 
-# Re-qualifying the plus arm to `+refs/` is precisely the first attempt the header records: `+main:main` and `+HEAD:main` go back to being allowed while the long form is still refused, which is what made the hole look closed.
-DEFECT = (r"]\+[^", r"]\+refs/[^")
+# The verdict itself. Until #e8be3092 this re-qualified the regex's plus arm to `+refs/`, the first attempt the header records; since every placed push is also read by `_push_forces`, that one arm can no longer reopen the hole alone, which is the point of reading pushes the way git does. Planting `if False:` here lets every force through.
+DEFECT = (
+    "if hookio.grep_q(FORCE_PUSH, scan) or any(any(_push_forces(r)) for r in pushes):",
+    "if False:",
+)
 
 # ANCHORED TO COMMAND POSITION 2026-08-28, after check:ci-guard-mention-anchoring found this guard refusing an ordinary sentence. Matching the phrase ANYWHERE means a doc line, a worklist note or an `echo` explaining the rule is refused as if it were the rule being broken. This NARROWS PROSE ONLY: every control below still blocks the real command, at line start and after a
 # separator. NOT AN ALLOW-LIST, which this guard's own text forbids: the set of refused FLAGS is untouched. Only the position of `git push` is constrained, so a sentence about force-pushing stops being treated as one.
@@ -59,7 +62,7 @@ LEASE_PUSH = hookio.rx(r"(^|[;&|(])[{S}]*git push[^|;&]*--force-with-lease")
 
 LEASE_FLAG = "--force-with-lease"
 # Flags that ride a lease push without forcing anything else. `--force-if-includes` only narrows the lease.
-LEASE_COMPANIONS = frozenset(("-q", "--quiet", "-v", "--verbose", "--force-if-includes"))
+LEASE_COMPANIONS = frozenset(("quiet", "verbose", "force-if-includes"))
 SHA = re.compile(r"^[0-9a-f]{7,40}$")
 
 MESSAGE = (
@@ -173,11 +176,25 @@ def _names(branch):
     return (branch, "refs/heads/" + branch)
 
 
+def _push_forces(run):
+    """`(force, lease)` for one walked `git push`: whether it forces outside a lease (`--force`/`-f` in any bundle, `--mirror`, a `+refspec`) and whether it carries a lease, read by `shellscan.git_push_args` (#e8be3092).
+
+    Measured on git 2.53.0 against the regexes below, which still run beside it: `git push -uf` and `-qf` forced the remote branch and matched neither, and `--force-with` is `--force-with-lease` by unique prefix, so it forced `main` past the one-live-branch rule unseen.
+    """
+    _, _, args = commit_policy.git_split(run.argv)
+    parsed = shellscan.git_push_args(args)
+    force = (
+        parsed.on("force") or parsed.on("mirror") or any(o.startswith("+") for o in parsed.operands)
+    )
+    lease = parsed.last("force-with-lease")
+    return force, lease is not None and lease != "false"
+
+
 def _lease_run_refusal(run, root, base):
     """ "" when this lease push is the admitted form, else why not."""
     _, _, args = commit_policy.git_split(run.argv)
-    flags = [a for a in args if a.startswith("-")]
-    positionals = [a for a in args if not a.startswith("-")]
+    parsed = shellscan.git_push_args(args)
+    positionals = parsed.operands
     repo = commit_policy.run_repo(run, base)
     if not repo or not commit_policy.is_inside(repo, root):
         return "the repository it pushes is not inside this checkout"
@@ -191,16 +208,17 @@ def _lease_run_refusal(run, root, base):
         console = commit_policy.current_branch(top, foreign=True) if top else ""
         if live != console:
             return "a submodule's live branch carries the console's name (`%s`)" % console
-    for flag in flags:
-        if flag == LEASE_FLAG or flag in LEASE_COMPANIONS:
+    if parsed.problems:
+        return "`%s` is an option git itself refuses" % parsed.problems[0][1]
+    for name, value in parsed.flags:
+        if name in LEASE_COMPANIONS:
             continue
-        if flag.startswith(LEASE_FLAG + "="):
-            ref = flag[len(LEASE_FLAG) + 1 :]
-            name, _, expect = ref.partition(":")
-            if name not in _names(live) or (expect and not SHA.match(expect)):
-                return "the lease names `%s`, not the live branch `%s`" % (ref, live)
+        if name == "force-with-lease":
+            name_, _, expect = value.partition(":")
+            if value and (name_ not in _names(live) or (expect and not SHA.match(expect))):
+                return "the lease names `%s`, not the live branch `%s`" % (value, live)
             continue
-        return "`%s` is not part of the admitted lease form" % flag
+        return "`--%s` is not part of the admitted lease form" % name
     if len(positionals) > 2:
         return "it pushes more than one refspec"
     if positionals and positionals[0] != "origin":
@@ -219,13 +237,10 @@ def lease_refusal(ev, cmd, scan, text_scan):
 
     `scan` carries the lexer's canonical push lines; `text_scan` is the command text alone, whose lease count the lexer has to reach (a lease the text shows and the lexer did not place is one this guard cannot judge).
     """
-    if hookio.grep_q(FORCE_NOT_LEASE, scan):
+    pushes = commit_policy.git_runs(cmd, "push")
+    if hookio.grep_q(FORCE_NOT_LEASE, scan) or any(_push_forces(r)[0] for r in pushes):
         return "a forcing form other than --force-with-lease"
-    leases = [
-        r
-        for r in commit_policy.git_runs(cmd, "push")
-        if any(a == LEASE_FLAG or a.startswith(LEASE_FLAG + "=") for a in r.argv)
-    ]
+    leases = [r for r in pushes if _push_forces(r)[1]]
     if not leases or len(leases) < _count(LEASE_PUSH, text_scan):
         return "a lease push this guard cannot place"
     root = ev.project_dir
@@ -248,7 +263,9 @@ def run(ev):
     if canon:
         scan = scan + "\n" + canon
 
-    if hookio.grep_q(FORCE_PUSH, scan):
+    # Each push the walk places is read the way git reads it (`_push_forces`), and the text match stays beside it rather than behind it: a force in a shape the walk cannot place is still refused, at the cost of refusing `--force --no-force`, which forces nothing.
+    pushes = commit_policy.git_runs(cmd, "push")
+    if hookio.grep_q(FORCE_PUSH, scan) or any(any(_push_forces(r)) for r in pushes):
         reason = lease_refusal(ev, cmd, scan, text_scan)
         if reason == "":
             return hookio.ALLOW

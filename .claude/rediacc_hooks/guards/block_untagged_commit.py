@@ -250,9 +250,20 @@ def run(ev):
     # 1+2. `-m` values and a `-F -` heredoc or here-string, read per commit by `commit_policy.commit_message_text`. This used to be the WHOLE COMMAND TEXT, so a `python3 - <<'EOF'` chained before the commit put its body's `PR-TASK:` line in front of the commit's own (#64c3e990): a right trailer was refused as "names no epic" and a trailer that sat only in the python heredoc was allowed. A heredoc counts only when it feeds that commit's stdin; a piped stdin or a command-substituted message stays opaque. The `-F <file>` read stays below; a file this same command writes first was refused above.
     msg = commit_policy.commit_message_text(cmd, root, files=False)
 
-    # 3. -F <file> / --file=<file>: read it off disk.
-    for match in hookio.grep_o(FILE_ARGS, cmd):
-        name = hookio.sed_sub(hookio.rx(r"^(-F|--file)([{S}]+|=)"), "", match).rstrip("\n")
+    # 3. -F <file> / --file=<file>: read it off disk. Each walked commit's own files, read by git's parse-options (`commit_policy.parse_commit_args`, #e8be3092): measured on git 2.53.0, `-qF f`, `-Ff` and `--fil f` each took the message from f, and the regex this replaced read none of them, so the message was "unreadable" and the commit was ALLOWED. The regex stays only for a command whose walk places no commit.
+    commits = commit_policy.git_runs(cmd, "commit")
+    if commits:
+        names = [
+            f
+            for r in commits
+            for f in commit_policy.parse_commit_args(commit_policy.git_split(r.argv)[2]).files
+        ]
+    else:
+        names = [
+            hookio.sed_sub(hookio.rx(r"^(-F|--file)([{S}]+|=)"), "", m).rstrip("\n")
+            for m in hookio.grep_o(FILE_ARGS, cmd)
+        ]
+    for name in names:
         if name in {"", "-"}:
             continue
         for cand in (name, "%s/%s" % (root, name)):

@@ -115,7 +115,7 @@ ANY_PUSH = hookio.rx(r"git push([{S};&|)]|$)")
 # Anchored on the rediacc_hooks package, not on this file: the differential suite runs a planted copy of a guard from a temporary directory, where `__file__`'s parents name nothing in the repository.
 HOOKS_PKG = pathlib.Path(hookio.__file__).resolve().parent
 CI_TRACE = HOOKS_PKG.parents[1] / ".ci" / "scripts" / "ci" / "ci-trace.py"
-FF_QUIET = frozenset(("-q", "--quiet", "-v", "--verbose"))
+FF_QUIET = frozenset(("--quiet", "--verbose"))
 MAIN_NAMES = ("main", "refs/heads/main")
 SHA = re.compile(r"^[0-9a-f]{7,40}$")
 # The GitLab mirror push (operator ruling 2026-10-03): its flags, and the git-level hook module whose URL pin and ref check it shares, loaded BY FILE like the hook shims load it.
@@ -186,9 +186,28 @@ def _count(pattern, text, distinct=False):
     return sum(len(list(compiled.finditer(record))) for record in records)
 
 
-def _push_parts(run):
+def _parsed(run):
+    """One walked `git push`, read by `shellscan.git_push_args` (#e8be3092): git's parse-options over the whole option table, so a bundle (`-qn`), a unique prefix (`--dry`, `--al`), a negation (`--no-dry-run`) and a valued option's value (`-o x`) are what git makes of them."""
     _, _, args = commit_policy.git_split(run.argv)
-    return [a for a in args if a.startswith("-")], [a for a in args if not a.startswith("-")]
+    return shellscan.git_push_args(args)
+
+
+def _push_parts(run):
+    """`(option names, operands)` of one walked push, each name spelled `--<long name>`."""
+    parsed = _parsed(run)
+    return ["--" + name for name, _ in parsed.flags], list(parsed.operands)
+
+
+def _pushes_every_branch(run):
+    """`--all`, its alias `--branches`, or `--mirror`, in any spelling git accepts. Measured on git 2.53.0: `--branches` and `--al` push every local branch, main included, and the text match below sees only the two long names."""
+    parsed = _parsed(run)
+    return parsed.on("all") or parsed.on("branches") or parsed.on("mirror")
+
+
+def _tags_only(run):
+    """`--tags` with no refspec moves no branch; `--tags origin HEAD` pushes the checked-out branch too (git 2.53.0)."""
+    parsed = _parsed(run)
+    return parsed.on("tags") and len(parsed.operands) < 2
 
 
 def _names_main(run):
@@ -205,7 +224,7 @@ def _dry_run_only(cmd, text_scan):
     pushes = commit_policy.git_runs(cmd, "push")
     if not pushes or len(pushes) < _count(ANY_PUSH, text_scan):
         return False
-    return all("--dry-run" in _push_parts(run)[0] or "-n" in _push_parts(run)[0] for run in pushes)
+    return all(_parsed(run).on("dry-run") for run in pushes)
 
 
 def _gh_pr(live):
@@ -306,8 +325,10 @@ def mirror_refusal(ev, run, flags, positionals):
 
 def ff_fallback_refusal(ev, cmd, scan, text_scan):
     """ "" when this push to main is the admitted fast-forward fallback (box M2), else why not."""
-    if hookio.grep_q(ALL_BRANCHES, scan):
-        return "`--all` or `--mirror` pushes every branch"
+    if hookio.grep_q(ALL_BRANCHES, scan) or any(
+        _pushes_every_branch(r) for r in commit_policy.git_runs(cmd, "push")
+    ):
+        return "`--all`, `--branches` or `--mirror` pushes every branch"
     mains = [r for r in commit_policy.git_runs(cmd, "push") if _names_main(r)]
     shown = _count(DEST_MAIN, text_scan, distinct=True)
     if len(mains) != 1 or shown > 1:
@@ -385,14 +406,20 @@ def run(ev):
     if _dry_run_only(cmd, text_scan):
         return hookio.ALLOW
 
-    if hookio.grep_q(DEST_MAIN, scan) or hookio.grep_q(ALL_BRANCHES, scan):
+    pushes = commit_policy.git_runs(cmd, "push")
+    if (
+        hookio.grep_q(DEST_MAIN, scan)
+        or hookio.grep_q(ALL_BRANCHES, scan)
+        or any(_pushes_every_branch(r) for r in pushes)
+    ):
         reason = ff_fallback_refusal(ev, cmd, scan, text_scan)
         if reason == "":
             return hookio.ALLOW
         ev.warn(MESSAGE + "\n\nNot the fast-forward fallback because: " + reason + ".")
         return hookio.DENY
 
-    if hookio.grep_q(TAGS_ONLY, scan):
+    # Tags alone move no branch; the walk has the last word on what each placed push carries, so `--tags origin HEAD` is not tags alone.
+    if hookio.grep_q(TAGS_ONLY, scan) and all(_tags_only(r) for r in pushes):
         return hookio.ALLOW
 
     if not (hookio.grep_q(BARE_PUSH, scan) or hookio.grep_q(BARE_HEAD, scan)):
