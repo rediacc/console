@@ -38,7 +38,7 @@ import os
 import pathlib
 import re
 
-from rediacc_ci import gitx, paths
+from rediacc_ci import gitx, paths, proc
 
 # --------------------------------------------------------------------------- The layout, in one place.
 
@@ -801,17 +801,200 @@ def citation_refs(root: pathlib.Path) -> list[tuple[str, str]]:
     return refs
 
 
+# --------------------------------------------------------------------------- Citation remap at `--move`: the commits a rebase-merge rewrote.
+#
+# WHY THE MOVE REMAPS. Every PR in this repository is rebase-merged, so the `commit:<sha>` a plan's tick lines cite on its feature branch names a commit main never carries: the merge replays it under a new sha and the branch commit lives on only in the merging clone's reflog. A plan is closed AFTER the merge, by `--move`, and the move re-adds every line under the new path, where
+# check:ci-plan-citations judges each one as new and reds the next branch's pre-push ("names neither a blob nor a commit in this clone"). Commit f913174da repaired one plan by hand; this is that repair, made by the one tool every close already runs.
+#
+# THE PROOF IS TWO-PART, and both parts are required. The SUBJECT finds the candidate and `git patch-id --stable` proves it is the same change: a subject alone is a guess (two commits may share one), and a patch-id alone has no index to search. Anything short of exactly one candidate proving out is REFUSED, never guessed: a wrong remap is a citation that resolves and lies, which is worse than one that fails loudly.
+
+#: The hex token a citation is spelled as. Mirrors `wl_planrec.HEXTOK_RE` (the tests compare the two), so the move reads the same tokens check:ci-plan-citations does.
+COMMIT_TOKEN_RE = re.compile(r"(?<![0-9a-zA-Z])([0-9a-f]{7,40})(?![0-9a-zA-Z])")
+
+#: A fence line. Mirrors `wl_planfid.FENCE_RE`: check:ci-plan-citations never judges a line inside a fence, so the move neither remaps nor refuses one.
+FENCE_RE = re.compile(r"^\s*```")
+
+#: Overrides which ref is "main" for the remap; otherwise `origin/main`, then `main`.
+MAIN_REF_ENV = "PLAN_FOLDERS_MAIN"
+
+REMAP_OK = "remap"
+REMAP_NONE = "none"
+REMAP_DIFFERS = "patch-differs"
+REMAP_AMBIGUOUS = "ambiguous"
+REMAP_EMPTY = "empty-patch"
+
+
+def unfenced_tokens(text: str) -> list[str]:
+    """Every distinct hex token outside a fence, in first-seen order. All-digit runs are a date, a run id or an issue number, never judged as an object by the citations gate, so never read here."""
+    out: list[str] = []
+    fenced = False
+    for line in text.splitlines():
+        if FENCE_RE.match(line):
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
+        for m in COMMIT_TOKEN_RE.finditer(line):
+            tok = m.group(1)
+            if not tok.isdigit() and tok not in out:
+                out.append(tok)
+    return out
+
+
+def apply_remap(text: str, mapping: dict[str, str]) -> str:
+    """`text` with every unfenced token in `mapping` replaced. Fenced lines and every other byte are untouched, line endings included."""
+    if not mapping:
+        return text
+    out = []
+    fenced = False
+    for line in text.splitlines(keepends=True):
+        if FENCE_RE.match(line):
+            fenced = not fenced
+            out.append(line)
+            continue
+        if fenced:
+            out.append(line)
+            continue
+        out.append(COMMIT_TOKEN_RE.sub(lambda m: mapping.get(m.group(1), m.group(1)), line))
+    return "".join(out)
+
+
+def remap_verdict(own_patch: str, candidates: list[tuple[str, str]]) -> tuple[str, str]:
+    """(verdict, sha). PURE: `own_patch` is the cited commit's patch-id, `candidates` the [(sha, patch-id)] of every main commit sharing its subject.
+
+    `REMAP_OK` and the one sha whose patch-id equals `own_patch`, or a refusal code and "". An EMPTY patch-id proves nothing (every empty commit shares it), so it refuses before any comparison.
+    """
+    if not own_patch:
+        return REMAP_EMPTY, ""
+    proven = sorted({sha for sha, patch in candidates if patch == own_patch})
+    if len(proven) == 1:
+        return REMAP_OK, proven[0]
+    if proven:
+        return REMAP_AMBIGUOUS, ""
+    return (REMAP_DIFFERS if candidates else REMAP_NONE), ""
+
+
+def main_ref(root: pathlib.Path) -> str:
+    """The ref that is "main" for the remap, or "" when none resolves."""
+    for ref in (os.environ.get(MAIN_REF_ENV) or "", "origin/main", "main"):
+        if ref and gitx.git(["rev-parse", "--verify", "--quiet", ref + "^{commit}"], root=root).ok:
+            return ref
+    return ""
+
+
+def _full_commit(root: pathlib.Path, token: str) -> str:
+    got = gitx.git(["rev-parse", "--verify", "--quiet", token + "^{commit}"], root=root)
+    return got.stdout.strip() if got.ok else ""
+
+
+def _patch_id(root: pathlib.Path, sha: str) -> str:
+    shown = gitx.git(["show", "--format=", "--no-color", "--no-ext-diff", sha], root=root)
+    if not shown.ok or not shown.stdout.strip():
+        return ""
+    got = proc.run(["git", "-C", str(root), "patch-id", "--stable"], input_text=shown.stdout)
+    return got.stdout.split()[0] if got.ok and got.stdout.split() else ""
+
+
+@dataclasses.dataclass
+class Remap:
+    """What `plan_remap` decided for one plan's text. `refused` is [(token, why)] and non-empty means the move must not happen."""
+
+    main: str = ""
+    mapping: dict[str, str] = dataclasses.field(default_factory=dict)
+    subjects: dict[str, str] = dataclasses.field(default_factory=dict)
+    on_main: list[str] = dataclasses.field(default_factory=list)
+    on_branch: list[str] = dataclasses.field(default_factory=list)
+    refused: list[tuple[str, str]] = dataclasses.field(default_factory=list)
+    commits: int = 0
+
+
+def plan_remap(root: pathlib.Path, text: str) -> Remap:
+    """Classify every unfenced commit citation in `text` and map the rewritten ones.
+
+    on main     an ancestor of `main_ref`: kept as written.
+    on branch   an ancestor of HEAD but not of main: kept, and named, because this PR's own rebase-merge will rewrite it and only a move after the merge can remap it.
+    rewritten   anything else: mapped to the ONE commit in `<fork point>..main` with the same subject and patch-id, or refused.
+
+    A token that is not a commit here (a blob, a tree, a worklist id, nothing) is not this function's business: check:ci-plan-citations judges it.
+    """
+    out = Remap()
+    commits = [(tok, full) for tok in unfenced_tokens(text) if (full := _full_commit(root, tok))]
+    out.commits = len(commits)
+    if not commits:
+        return out
+    out.main = main_ref(root)
+    if not out.main:
+        out.refused = [
+            (
+                tok,
+                "no main ref resolves (tried $%s, origin/main, main), so whether it is on main "
+                "cannot be asked; `git fetch origin main` and re-run" % MAIN_REF_ENV,
+            )
+            for tok, _full in commits
+        ]
+        return out
+    logs: dict[str, dict[str, list[str]]] = {}
+    for tok, full in commits:
+        if gitx.is_ancestor(full, out.main, root=root):
+            out.on_main.append(tok)
+            continue
+        if gitx.is_ancestor(full, "HEAD", root=root):
+            out.on_branch.append(tok)
+            continue
+        fork = gitx.merge_base(full, out.main, root=root) or ""
+        if fork not in logs:
+            span = "%s..%s" % (fork, out.main) if fork else out.main
+            index: dict[str, list[str]] = {}
+            raw = gitx.git(["log", "--format=%H%x1f%s", span], root=root).stdout
+            for row in raw.splitlines():
+                sha, _sep, subj = row.partition("\x1f")
+                index.setdefault(subj, []).append(sha)
+            logs[fork] = index
+        subject = gitx.git(["log", "-1", "--format=%s", full], root=root).stdout.strip()
+        candidates = [(sha, _patch_id(root, sha)) for sha in logs[fork].get(subject, [])]
+        verdict, new = remap_verdict(_patch_id(root, full), candidates)
+        if verdict == REMAP_OK:
+            width = str(max(len(tok), 7))
+            short = gitx.git(["rev-parse", "--short=" + width, new], root=root).stdout.strip()
+            out.mapping[tok] = new if len(tok) == 40 else (short or new[: len(tok)])
+            out.subjects[tok] = subject
+            continue
+        out.refused.append((tok, _refusal(verdict, subject, len(candidates), out.main)))
+    return out
+
+
+def _refusal(verdict: str, subject: str, n: int, main: str) -> str:
+    if verdict == REMAP_EMPTY:
+        return "its diff is empty, so no patch-id can prove which %s commit it became" % main
+    if verdict == REMAP_AMBIGUOUS:
+        return (
+            "ambiguous: of the %d commit(s) on %s sharing its subject %r, more than one carries its patch-id"
+            % (n, main, subject)
+        )
+    if verdict == REMAP_DIFFERS:
+        return "%d commit(s) on %s share its subject %r but none its patch-id" % (n, main, subject)
+    return (
+        "no commit on %s carries its subject %r (not merged yet, dropped, or %s is stale: "
+        "`git fetch origin main`)" % (main, subject, main)
+    )
+
+
 __all__ = [
     "AGENT_DIR",
+    "COMMIT_TOKEN_RE",
     "DONE_DIR",
+    "FENCE_RE",
     "PLANS_DIR",
     "PLAN_PATHSPECS",
     "PLAN_REF_RE",
+    "REMAP_OK",
     "REMOVED_DIR",
     "STUB_STATUS",
     "Finding",
     "Plan",
+    "Remap",
     "Tombstone",
+    "apply_remap",
     "as_date",
     "classify",
     "enumerate_plans",
@@ -822,9 +1005,13 @@ __all__ = [
     "is_stub",
     "last_touch",
     "looks_like_stub",
+    "main_ref",
     "parse_plan",
     "parse_tombstones",
+    "plan_remap",
+    "remap_verdict",
     "render_tombstones",
     "retention_days",
     "stub_text",
+    "unfenced_tokens",
 ]

@@ -412,3 +412,128 @@ def test_status_reports_without_a_verdict(gate, tmp_path):
     gate.assert_contains(result.out, "due for sweep:", "it says how much is due")
     gate.assert_contains(result.out, "active", "and buckets the corpus by state")
     gate.log_pass("--status reports the layout and reaches no verdict")
+
+
+# --------------------------------------------------------------------------- `--move` remaps the commits a rebase-merge rewrote.
+#
+# THE SHAPE UNDER TEST. Every PR here is rebase-merged, so a plan's `commit:<sha>` ticks name branch commits that main never carries; the plan is closed after the merge, and the move re-adds every line under the new path, where check:ci-plan-citations judges each one. The fixture builds exactly that history: a branch commit, its rebased copy on main (same subject, same `git patch-id --stable`, a different sha), and the branch deleted.
+
+
+def _commit_file(root: pathlib.Path, rel: str, text: str, subject: str) -> str:
+    _write(root, rel, text)
+    _git(root, "add", "--", rel)
+    _git(root, "commit", "-qm", subject)
+    return _git(root, "rev-parse", "HEAD").strip()
+
+
+def _rebased_history(tmp_path: pathlib.Path) -> tuple[pathlib.Path, dict[str, str]]:
+    """A seeded tree on `main` plus the commits the controls cite, keyed by role.
+
+    landed    a branch commit whose rebased copy is on main (subject and patch-id equal)
+    copy      that rebased copy
+    onmain    a commit made on main itself
+    lost      a branch commit nothing on main carries
+    drifted   a branch commit whose same-subject main commit carries a different patch
+    """
+    root = _seed(tmp_path)
+    _git(root, "branch", "-M", "main")
+    shas: dict[str, str] = {}
+    _git(root, "checkout", "-qb", "feature")
+    shas["landed"] = _commit_file(root, "src/landed.txt", "landed\n", "feat: the landed change")
+    shas["lost"] = _commit_file(
+        root, "src/lost.txt", "lost\n", "feat: the change that never landed"
+    )
+    shas["drifted"] = _commit_file(root, "src/drift.txt", "one\n", "feat: the drifted change")
+    _git(root, "checkout", "-q", "main")
+    shas["onmain"] = _commit_file(root, "src/main.txt", "main\n", "chore: a commit made on main")
+    _git(root, "cherry-pick", shas["landed"])
+    shas["copy"] = _git(root, "rev-parse", "HEAD").strip()
+    _commit_file(root, "src/drift.txt", "two\n", "feat: the drifted change")
+    _git(root, "branch", "-D", "feature")
+    return root, shas
+
+
+def _closing_plan(root: pathlib.Path, body: str) -> None:
+    rel = "agent/plans/PLAN-closing.md"
+    _write(root, rel, "# PLAN: closing\nStatus: done\n\n" + body)
+    _ledger(root, {rel: {"status": "done", "open": 0, "done": 1}})
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "docs: the closing plan")
+
+
+def test_move_remaps_a_rebased_branch_commit_and_keeps_one_already_on_main(gate, tmp_path):
+    root, shas = _rebased_history(tmp_path)
+    landed, copy, onmain = shas["landed"][:9], shas["copy"][:9], shas["onmain"][:9]
+    _closing_plan(
+        root,
+        "- [x] T1 the landed change\n    (ticked) commit:%s and again %s\n"
+        "- [x] T2 on main\n    (ticked) commit:%s\n" % (landed, landed, onmain),
+    )
+    result = _gate(root, "--move", "agent/plans/PLAN-closing.md")
+    gate.assert_exit(0, result, "a citation the rebase rewrote is remappable, so the move succeeds")
+    moved = (root / "agent/plans/_done/PLAN-closing.md").read_text(encoding="utf-8")
+    gate.assert_contains(moved, "commit:%s and again %s" % (copy, copy), "both spellings remapped")
+    gate.assert_not_contains(moved, landed, "the dead branch sha is gone")
+    gate.assert_contains(moved, "commit:%s" % onmain, "a citation already on main is untouched")
+    gate.assert_contains(result.out, "%s -> %s" % (landed, copy), "the mapping is printed")
+    gate.log_pass("--move remaps a rebased commit by subject and patch-id, leaves main's own")
+
+
+def test_move_refuses_a_cited_commit_main_does_not_carry(gate, tmp_path):
+    root, shas = _rebased_history(tmp_path)
+    lost = shas["lost"][:9]
+    _closing_plan(root, "- [x] T1 lost\n    (ticked) commit:%s\n" % lost)
+    result = _gate(root, "--move", "agent/plans/PLAN-closing.md")
+    gate.assert_exit(1, result, "an unmappable citation refuses the move rather than guessing")
+    gate.assert_contains(result.err, lost, "the refusal names the sha")
+    gate.assert_eq((root / "agent/plans/_done/PLAN-closing.md").exists(), False, "nothing moved")
+    gate.assert_contains(
+        (root / "agent/plans/PLAN-closing.md").read_text(encoding="utf-8"),
+        "Status: done",
+        "and the plan is still the plan, not a stub",
+    )
+    gate.log_pass("--move refuses a citation with no rebased copy on main")
+
+
+def test_move_refuses_a_same_subject_commit_whose_patch_differs(gate, tmp_path):
+    root, shas = _rebased_history(tmp_path)
+    drifted = shas["drifted"][:9]
+    _closing_plan(root, "- [x] T1 drift\n    (ticked) commit:%s\n" % drifted)
+    result = _gate(root, "--move", "agent/plans/PLAN-closing.md")
+    gate.assert_exit(1, result, "a subject match without a patch-id match is not a proof")
+    gate.assert_contains(result.err, drifted, "the refusal names the sha")
+    gate.assert_contains(result.err, "patch-id", "and says the patch is what disagreed")
+    gate.log_pass("--move refuses a subject match whose patch-id differs")
+
+
+def test_move_refuses_a_commit_with_several_proven_copies(gate, tmp_path):
+    root, shas = _rebased_history(tmp_path)
+    _git(root, "revert", "--no-edit", shas["copy"])
+    _git(root, "cherry-pick", shas["landed"])
+    landed = shas["landed"][:9]
+    _closing_plan(root, "- [x] T1 twice\n    (ticked) commit:%s\n" % landed)
+    result = _gate(root, "--move", "agent/plans/PLAN-closing.md")
+    gate.assert_exit(1, result, "two proven copies is a choice, and the tool does not guess")
+    gate.assert_contains(result.err, landed, "the refusal names the sha")
+    gate.assert_contains(result.err, "ambiguous", "and calls it ambiguous")
+    gate.log_pass("--move refuses a citation two main commits both prove")
+
+
+def test_move_spares_a_fenced_quote_and_a_commit_still_on_this_branch(gate, tmp_path):
+    """The two NEGATIVE controls. check:ci-plan-citations never judges a fenced line, and a commit reachable from HEAD is live on this branch; neither may refuse a move."""
+    root, shas = _rebased_history(tmp_path)
+    lost = shas["lost"][:9]
+    _git(root, "checkout", "-qb", "next")
+    pending = _commit_file(root, "src/pending.txt", "pending\n", "feat: not merged yet")[:9]
+    _closing_plan(
+        root,
+        "- [x] T1 pending\n    (ticked) commit:%s\n\n```\n%s feat: a quoted log line\n```\n"
+        % (pending, lost),
+    )
+    result = _gate(root, "--move", "agent/plans/PLAN-closing.md")
+    gate.assert_exit(0, result, "neither a fenced quote nor a live branch commit refuses")
+    moved = (root / "agent/plans/_done/PLAN-closing.md").read_text(encoding="utf-8")
+    gate.assert_contains(moved, "commit:%s" % pending, "the branch commit is kept")
+    gate.assert_contains(moved, "%s feat: a quoted log line" % lost, "the fenced quote is kept")
+    gate.assert_contains(result.out, pending, "and the kept branch commit is named")
+    gate.log_pass("--move spares fenced quotes and commits still reachable from HEAD")
