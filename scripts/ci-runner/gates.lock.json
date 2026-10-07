@@ -689,6 +689,7 @@
   {
     "id": "check:types:incremental",
     "run": "npm run check:types:incremental",
+    "slow": true,
     "cores": {
       "min": 1,
       "max": "all"
