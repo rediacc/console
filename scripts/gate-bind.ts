@@ -685,10 +685,22 @@ export function emitReceiptStep(
     '        with:',
     `          name: quality-shard-\${{ matrix.shard }}`,
     `          path: ${receiptFile}`,
-    '          retention-days: 7',
+    `          retention-days: ${retentionDays()}`,
     '          if-no-files-found: error',
   ];
 }
+
+/**
+ * The repository's artifact retention, from the record check:ci-workflows judges every `retention-days` against (operator ruling 2026-10-07, "Keep 3 days"). Read, not restated: a literal here was rewritten to 7 by the next `--write` after 19ec49414 set it to 3 by hand, and check:ci-workflows refused the generated line.
+ */
+function retentionDays(): number {
+  const days = (JSON.parse(read(RETENTION_RECORD)) as { days?: unknown }).days;
+  if (typeof days !== 'number' || !Number.isInteger(days) || days < 1) {
+    throw new Error(`${RETENTION_RECORD} has no positive integer \`days\`; got ${String(days)}`);
+  }
+  return days;
+}
+const RETENTION_RECORD = '.ci/config/actions-retention.json';
 
 /**
  * Binaries that live in `node_modules/.bin` and NOWHERE ELSE.
