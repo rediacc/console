@@ -67,6 +67,7 @@ import path from 'node:path';
 import process from 'node:process';
 
 import { parseShardManifest, type ShardManifestFile } from '../ci-runner/shard-manifest.js';
+import { placeHint } from '../ci-runner/shard-place.js';
 import { LANE_ENUMERATORS } from '../ci-runner/unit-enumerators.js';
 import { GREEN, NC, RED } from '../lib/console.js';
 import { refused } from '../lib/controls.js';
@@ -314,7 +315,7 @@ export function compareManifest(
         add(
           'missing',
           `"${base}#${b}" is in no leg: "${base}" is split into buckets, and bucket "${b}"'s ` +
-            'describe groups therefore run in no CI job. Add it to a leg.'
+            `describe groups therefore run in no CI job. Add it to a leg: ${placeHint(lane)}`
         );
       }
     }
@@ -325,7 +326,7 @@ export function compareManifest(
       add(
         'missing',
         `"${unit}" runs in no CI job: the lane's enumerator lists it and no leg names it. ` +
-          'Add it to a leg (the lightest one, by the lane-durations estimate).'
+          `Place it on the lightest leg: ${placeHint(lane)}`
       );
     }
   }
@@ -614,6 +615,26 @@ function selftest(): number {
             x.message.includes('runs in no CI job')
         ),
         detail: kinds(f),
+      };
+    })(),
+    (() => {
+      const f = compareManifest(
+        mk('quality-pytest', 2, [['pytest:a.py'], ['pytest:b.py']]),
+        ['pytest:a.py', 'pytest:b.py', 'pytest:new.py'],
+        null
+      );
+      const w = compareManifest(
+        mk('test-e2e-workers', 1, [[`${E}01.test.ts`]]),
+        [`${E}01.test.ts`, `${E}25.test.ts`],
+        B
+      );
+      return {
+        name: 'FIRES: the missing message names the verb that places it (shard:place, or the lane owner)',
+        ok:
+          has(f, 'missing', 'npm run shard:place -- quality-pytest') &&
+          has(w, 'missing', '--rebalance test-e2e-workers --write') &&
+          !has(w, 'missing', 'shard:place'),
+        detail: [...f, ...w].map((x) => x.message).join(' | '),
       };
     })(),
     (() => {

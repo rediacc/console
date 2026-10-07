@@ -279,33 +279,26 @@ def test_collect_captures_takes_newest_live_artifacts_up_to_limit():
 # --------------------------------------------------------------------------- the workflow's two entry points ---------------------------------------------------------------------------
 
 
-def test_check_report_to_appends_only_a_failing_verdict(tmp_path: Path):
+def test_check_writes_no_report_and_reds_on_stderr(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """`rediacc_ci.ci.freshness --check --report-to` is the one writer of housekeeping's report (PLAN-ci-consolidation T8), so gate_costs has no `--report-to` and its failing verdict goes to stderr for freshness to capture."""
     write_lock(tmp_path, ["g"])
     target = tmp_path / "gate-costs.json"
-    summary = tmp_path / "budget-check.txt"
-    summary.write_text("budget: green\n", encoding="utf-8")
     gc.refresh(target, "o/r", collect=_collect([capture([gate("g", 10000, 10000)])]))
-    ok = gc.check(
-        target,
-        "o/r",
-        tmp_path,
-        collect=_collect([capture([gate("g", 10000, 10000)])]),
-        report_to=summary,
-    )
-    assert ok == 0
-    assert summary.read_text(encoding="utf-8") == "budget: green\n"
-    red = gc.check(
-        target,
-        "o/r",
-        tmp_path,
-        collect=_collect([capture([gate("g", 20000, 20000)])]),
-        report_to=summary,
-    )
+    capsys.readouterr()
+    red = gc.check(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 20000, 20000)])]))
     assert red == 1
-    text = summary.read_text(encoding="utf-8")
-    assert text.startswith("budget: green\n")
-    assert "gate_costs --check" in text
-    assert "'g' cpu_s" in text
+    err = capsys.readouterr().err
+    assert "Gate cost baseline check found 1 issue(s)" in err
+    assert "'g' cpu_s" in err
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["gate-costs.json", "scripts"], (
+        "check wrote a file beside the baseline"
+    )
+    with pytest.raises(SystemExit) as exc:
+        gc.main(["--check", "--report-to", str(tmp_path / "budget-check.txt")])
+    assert exc.value.code == 2, "--report-to must be refused by argparse: freshness owns the report"
+    assert not (tmp_path / "budget-check.txt").exists()
 
 
 def test_validate_capture(tmp_path: Path):

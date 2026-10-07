@@ -1,0 +1,39 @@
+{
+  "$comment": [
+    "The freshness registry (agent/plans/PLAN-ci-consolidation.md Part B). Each entry is one",
+    "committed artifact that a LIVE producer rewrites from real CI data, and the check that",
+    "compares the committed file with fresh measurements. Read only by",
+    "`PYTHONPATH=.ci python3 -m rediacc_ci.ci.freshness`: `--check --cadence <pr|nightly>`",
+    "runs every entry whose `cadence` names that cadence and exits 1 when any check fails;",
+    "`--list` prints the registry; `--refresh <artifact>` runs that entry's producers in order.",
+    "Keys per entry, all required and no others: `artifact` (repo-relative path, must exist),",
+    "`producers` (argv lists, run in order by --refresh), `check` (one argv), `network` (true",
+    "when the check reads GitHub, so a token is needed), `cadence` (a non-empty subset of",
+    "[\"pr\", \"nightly\"]). Every argv runs from the repo root with PYTHONPATH=.ci.",
+    "The shrink-only debt baselines (docker-image, devcontainer, embed, search-index",
+    "freshness) are a different class and do not belong here: they are frozen findings,",
+    "not caches of a live measurement (agent/reports/consolidation-investigation-2026-10-04.md",
+    "section 3). lane-durations.json has two producers because",
+    "check_job_timeout_headroom.py --refresh owns its `job_max_seconds` section and stamps",
+    "that section's own refreshed_at (that script's module docstring, RETIRED INTO)."
+  ],
+  "artifacts": [
+    {
+      "artifact": ".ci/config/lane-durations.json",
+      "producers": [
+        ["python3", "-m", "rediacc_ci.ci.budget_report", "--refresh"],
+        ["python3", ".ci/scripts/quality/check_job_timeout_headroom.py", "--refresh"]
+      ],
+      "check": ["python3", "-m", "rediacc_ci.ci.budget_report", "--check"],
+      "network": true,
+      "cadence": ["pr", "nightly"]
+    },
+    {
+      "artifact": ".ci/config/gate-costs.json",
+      "producers": [["python3", "-m", "rediacc_ci.ci.gate_costs", "--refresh"]],
+      "check": ["python3", "-m", "rediacc_ci.ci.gate_costs", "--check"],
+      "network": true,
+      "cadence": ["pr", "nightly"]
+    }
+  ]
+}
