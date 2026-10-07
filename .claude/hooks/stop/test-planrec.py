@@ -424,6 +424,22 @@ control(
     AFTER,
 )
 control("...and nothing for a signature nobody attests", R.done_commit(hist, REL, "deadbeef"), "")
+_ticked, _open = hist[1][1], hist[0][1]
+control(
+    "a box ticked, reopened and ticked again is done at the RE-tick, not the stale first tick",
+    R.done_commit([("T1", _ticked), ("R", _open), ("T2", _ticked)], REL, R.box_sig(TASK_DONE)),
+    "T2",
+)
+control(
+    "...an unbroken run keeps its first commit",
+    R.done_commit([("T1", _ticked), ("T2", _ticked)], REL, R.box_sig(TASK_DONE)),
+    "T1",
+)
+control(
+    "...and a box reopened at the newest ledger is not done",
+    R.done_commit([("T1", _ticked), ("R", _open)], REL, R.box_sig(TASK_DONE)),
+    "",
+)
 
 # --------------------------------------------------------------------------- 7. compact(): every refusal, and the pair that proves it is not refusing everything. ---------------------------------------------------------------------------
 raises(
