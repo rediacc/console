@@ -21,4 +21,4 @@ Body-Sig: 2dfbc83dcfbc8b98
 ### 9025fddf.1 [medium] .claude/rediacc_hooks/guards/block_push_to_protected_branch.py:421
 Anchor: in-diff
 Claim: The TAGS_ONLY check uses `all(_tags_only(r) for r in pushes)` which returns True vacuously when pushes is empty, allowing any command matching the `--tags` regex text even if the walk found no pushes. This fails open: if the walk cannot parse a push, the guard still allows it based on the regex alone, bypassing the intended fallback-to-regex-only safety check.
-Resolution: open
+Resolution: fixed 8ba89fd58721a5739d9e4a572cf83b477c293593 | d778be9d 2026-10-07T12:06:09Z
