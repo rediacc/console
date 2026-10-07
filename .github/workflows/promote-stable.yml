@@ -165,9 +165,13 @@ jobs:
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          EDGE_DATE: ${{ steps.soak.outputs.date }}
+        # gh_retry (common.sh): three attempts, so one GitHub 5xx no longer reds
+        # the promotion (the PR #597 class). A search that still fails ends the
+        # step under bash -e, which blocks the promotion: it fails closed.
         run: |
-          EDGE_DATE="${{ steps.soak.outputs.date }}"
-          ROLLBACKS=$(gh pr list --repo "$GITHUB_REPOSITORY" --state merged \
+          source .ci/scripts/lib/common.sh
+          ROLLBACKS=$(gh_retry "rollback-label search" -- pr list --repo "$GITHUB_REPOSITORY" --state merged \
             --search "merged:>=${EDGE_DATE} label:rollback" --json number --jq 'length')
 
           if [[ "$ROLLBACKS" -gt 0 ]]; then

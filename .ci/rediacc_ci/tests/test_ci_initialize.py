@@ -22,14 +22,14 @@ The K=5 ledger is `.ci/shadow/w7p6-initialize.observations.jsonl`
 
 from __future__ import annotations
 
+import importlib
+import inspect
 import os
 import re
 import shlex
 import shutil
 import stat
 from typing import TYPE_CHECKING
-
-import pytest
 
 from rediacc_ci.ci import initialize as port
 from rediacc_ci.tests import differential as diff
@@ -41,7 +41,14 @@ GH_HOST = WK_GH_ORIGIN.removeprefix("https://")
 if TYPE_CHECKING:
     import pathlib
 
+    import pytest
+
 TWIN = ".ci/scripts/ci/initialize.sh"
+# The two bash label readers the twin ran and the port no longer does (it runs their Python ports). Named here, in a test, and nowhere in the port: a non-test string constant naming a `.sh` makes it a live executor to the shell half of `check:ci-gh-retry-reads`.
+TWIN_DETECT_BUMP_TYPE = ".ci/scripts/version/detect-bump-type.sh"
+TWIN_DISPATCH_RELEASE = ".ci/scripts/ci/dispatch-release.sh"
+# `BUMP_TYPE=$(.ci/scripts/version/detect-bump-type.sh --verbose)` in the frozen twin.
+TWIN_DETECT_BUMP_TYPE_LINE = 175
 # The real bash detector, symlinked into the twin's fixture; the port runs the Python detector in process.
 BASH_DETECTOR = ".ci/scripts/ci/detect-pointer-bump.sh"
 MODULE = "rediacc_ci.ci.initialize"
@@ -105,6 +112,14 @@ case "${1:-}" in
         fi
         exit "${FAKE_GIT_TAG_EXIT:-0}"
         ;;
+    merge-base)
+        # detect_bump_type's `merge-base --is-ancestor <tag> HEAD`: the tag is an ancestor, so the detector scans `<tag>..HEAD` through the `log` arm below. `rev-parse` stays unhandled on purpose: the pointer-bump detector calls it, and answering it here would change that detector's path too.
+        exit 0
+        ;;
+    log)
+        # `log --format=%H -n <cap> <tag>..HEAD`: exactly one commit in range.
+        echo "${FAKE_HEAD_SHA:-1111111111111111111111111111111111111111}"
+        ;;
     *)
         echo "fake git: unhandled subcommand ${1:-}" >&2
         exit 3
@@ -120,6 +135,37 @@ esac
 exit 1
 """
 
+# The two label reads (`rediacc_ci.version.detect_bump_type` in process, `rediacc_ci.ci.dispatch_release` as a child) both ask `gh api repos/<repo>/commits/<sha>/pulls`; this fake answers them, so the REAL ports run end to end. The detector asks about HEAD (FAKE_HEAD_SHA, via the fake git's rev-parse) and the decider about GITHUB_SHA, so each read gets its own rows. A sha in FAKE_GH_FAIL answers `gh: Server Error (HTTP 502)` every time (a fault that outlasts gh_retry's three attempts); a sha in FAKE_GH_FLAKY answers it ONCE, then serves its rows. Rows are pre-rendered `<number> <labels>`, the shape the caller's own `--jq` produces; applying that expression is each port's own differential's job.
+FAKE_GH = """#!/bin/bash
+printf 'gh %s %s\\n' "${1:-}" "${2:-}" >>"$FAKE_LOG"
+sha="${2#*/commits/}"
+sha="${sha%/pulls}"
+case " ${FAKE_GH_FAIL:-} " in
+    *" $sha "*)
+        echo "gh: Server Error (HTTP 502)" >&2
+        exit 1
+        ;;
+esac
+case " ${FAKE_GH_FLAKY:-} " in
+    *" $sha "*)
+        marker="${FAKE_LOG}.flaked-$sha"
+        if [[ ! -e "$marker" ]]; then
+            : >"$marker"
+            echo "gh: Server Error (HTTP 502)" >&2
+            exit 1
+        fi
+        ;;
+esac
+if [[ "$sha" == "${GITHUB_SHA:-}" ]]; then
+    rows="${FAKE_GH_DECIDE_ROWS:-}"
+else
+    rows="${FAKE_GH_BUMP_ROWS:-}"
+fi
+if [[ -n "$rows" ]]; then
+    printf '%s\\n' "$rows"
+fi
+"""
+
 # One template per sibling. Each records its argv, then behaves as its env says.
 FAKE_SIBLINGS = {
     ".ci/scripts/ci/generate-tag.sh": """#!/bin/bash
@@ -133,24 +179,6 @@ case "$*" in
     *"--closure web"*) echo "web-bbbb" ;;
     *"--closure rdc"*) echo "rdc-cccc" ;;
 esac
-""",
-    # The ONLY sibling whose environment the twin alters, so the value it
-    # actually receives is logged: `GITHUB_OUTPUT=''` must arrive as the EMPTY
-    # STRING, and `[UNSET]` here would mean the port dropped the assignment. The same fact printed to stderr would prove nothing, because the twin's `2>&1 | grep` swallows it -- which is what the stderr line below checks.
-    ".ci/scripts/ci/dispatch-release.sh": """#!/bin/bash
-printf 'dispatch-release.sh GITHUB_OUTPUT=[%s] %s\\n' "${GITHUB_OUTPUT-UNSET}" "$*" >>"$FAKE_LOG"
-echo "GITHUB_OUTPUT=[${GITHUB_OUTPUT-UNSET}]" >&2
-if [[ -n "${FAKE_DECISION:-}" ]]; then
-    echo "decision: ${FAKE_DECISION}"
-fi
-if [[ -n "${FAKE_STABLE:-}" ]]; then
-    echo "${FAKE_STABLE}"
-fi
-""",
-    ".ci/scripts/version/detect-bump-type.sh": """#!/bin/bash
-printf 'detect-bump-type.sh %s\\n' "$*" >>"$FAKE_LOG"
-echo "fake detect-bump-type: verbose noise" >&2
-echo "${FAKE_BUMP_TYPE:-patch}"
 """,
     ".ci/scripts/version/resolve-version.sh": """#!/bin/bash
 printf 'resolve-version.sh %s\\n' "$*" >>"$FAKE_LOG"
@@ -240,6 +268,7 @@ def fixture_root(
         executable(root / relative, body)
 
     executable(root / "bin/git", FAKE_GIT)
+    executable(root / "bin/gh", FAKE_GH)
     if docker:
         executable(root / "bin/docker", FAKE_DOCKER)
 
@@ -368,6 +397,13 @@ def _old_side(tmp_path, tools, args, env_extra, output, tty, timeout, fixture_kw
     for name in ("output", "true"):
         frozen["old_%s" % name] = None if got[name] == diff.ABSENT else got[name]
     return (rc, out, err), frozen
+
+
+def calls_of(files: dict[str, str | None]) -> str:
+    """The frozen call log, which every run records; a missing one is a broken fixture, not an empty log."""
+    calls = files["old_calls"]
+    assert calls is not None, "the run recorded no call log"
+    return calls
 
 
 def assert_identical(old, new, files) -> None:
@@ -545,13 +581,28 @@ def test_an_argument_that_is_not_a_shell_identifier_is_printfs_own_refusal(
 
 # --------------------------------------------------------------------------- The full run ---------------------------------------------------------------------------
 
+# The commit the fake git's `log <tag>..HEAD` names (the bump detector's one lookup) and the merged commit the release decider asks about. Different on purpose, so the fake gh can answer each read on its own.
+HEAD_SHA = "1111111111111111111111111111111111111111"
+MERGE_SHA = "2222222222222222222222222222222222222222"
+
 PUSH_MAIN = {
     **PAT_ENV,
     "GITHUB_EVENT_NAME": "push",
     "GITHUB_REF": "refs/heads/main",
     "COMMIT_AUTHOR": "a-human",
     "FAKE_GIT_TAGS": "v1.2.3 v1.0.0",
+    "GH_TOKEN": "fake-gh-token",
+    "GITHUB_SHA": MERGE_SHA,
 }
+
+# What each label read is asked, as the call log records it.
+BUMP_CALLS = (
+    "git tag -l v* --sort=-v:refname\n"
+    "git merge-base --is-ancestor v1.2.3 HEAD\n"
+    "git log --format=%%H -n 50 v1.2.3..HEAD\n"
+    "gh api repos/%s/commits/%s/pulls\n" % (GH_REPO, HEAD_SHA)
+)
+DECIDE_CALL = "gh api repos/%s/commits/%s/pulls\n" % (GH_REPO, MERGE_SHA)
 
 
 def test_the_whole_push_to_main_run_agrees_line_for_line(tmp_path: pathlib.Path) -> None:
@@ -559,7 +610,7 @@ def test_the_whole_push_to_main_run_agrees_line_for_line(tmp_path: pathlib.Path)
     old, new, files = run_both(
         tmp_path,
         output="outputs.txt",
-        env_extra={**PUSH_MAIN, "FAKE_DECISION": "release", "FAKE_DOCKER_HAVE": ""},
+        env_extra={**PUSH_MAIN, "FAKE_GH_DECIDE_ROWS": "571 feature", "FAKE_DOCKER_HAVE": ""},
         docker=True,
     )
     assert old[0] == 0
@@ -593,8 +644,8 @@ def test_the_whole_push_to_main_run_agrees_line_for_line(tmp_path: pathlib.Path)
         + "generate-tag.sh --submodule private/renet\n"
         + "generate-tag.sh --closure web --extra renet-aaaa\n"
         + "generate-tag.sh --closure rdc --extra renet-aaaa\n"
-        + "detect-bump-type.sh --verbose\n"
-        + "dispatch-release.sh GITHUB_OUTPUT=[] --decide-only\n"
+        + BUMP_CALLS
+        + DECIDE_CALL
         + "git fetch --tags --force --no-recurse-submodules "
         + ("https://x-access-token:s3cr3t-app-token@" + GH_HOST + "/")
         + GH_REPO
@@ -639,7 +690,8 @@ def test_a_pull_request_run_skips_the_release_decision_and_the_versioning(
         docker=True,
     )
     assert old[0] == 0
-    assert "dispatch-release.sh" not in files["old_calls"]
+    assert DECIDE_CALL not in calls_of(files)
+    assert "Deciding whether this commit earns a release" not in old[2]
     assert "Push event: versioned tags" not in old[2]
     assert old[1].endswith("renet_exists=false\nweb_exists=false\nrdc_exists=false\n")
     assert "image_tag=renet-aaaa\n" in old[1]
@@ -747,6 +799,8 @@ def test_a_failing_pointer_bump_detector_degrades_to_a_full_run(
         return 7
 
     monkeypatch.setattr(port.detect_pointer_bump, "main", failing)
+    # Hermetic: the bump detector would otherwise read GITHUB_REPOSITORY and GH_TOKEN from the test's own environment and ask the real API.
+    monkeypatch.setattr(port.detect_bump_type.Detector, "run", lambda _self: "patch")
     monkeypatch.setenv("GITHUB_PAT", "x")
     monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
     monkeypatch.setattr(port, "SUBMODULE_SENTINEL", str(tmp_path / "sentinel"))
@@ -793,78 +847,133 @@ def test_a_failing_tag_generator_takes_its_exit_status_with_it(
 
 def test_a_skip_decision_writes_skip_release(tmp_path: pathlib.Path) -> None:
     old, new, files = run_both(
-        tmp_path, env_extra={**PUSH_MAIN, "FAKE_DECISION": "skip"}, docker=False
+        tmp_path, env_extra={**PUSH_MAIN, "FAKE_GH_DECIDE_ROWS": "570 bump-none"}, docker=False
     )
     assert "skip_release=true\n" in old[1]
     assert "✓ Release decision: decision: skip" in old[2]
     assert_identical(old, new, files)
 
 
-def test_an_undecided_release_falls_open(tmp_path: pathlib.Path) -> None:
-    """No `decision:` line at all: nothing is written and the run releases."""
-    old, new, files = run_both(tmp_path, env_extra={**PUSH_MAIN, "FAKE_DECISION": ""})
+def test_a_decider_with_no_verdict_refuses_rather_than_releasing(tmp_path: pathlib.Path) -> None:
+    """The twin's `|| true` released on a decider that answered nothing (Rule T, intentional delta).
+
+    Driven through the real decider: with GITHUB_SHA unset it exits 1 naming the variable. The run stops before any version is computed, and the decider's own words reach the log instead of being filtered away.
+    """
+    old, new, files = run_both(tmp_path, env_extra={**PUSH_MAIN, "GITHUB_SHA": None})
+    assert old[0] == 1
     assert "skip_release" not in old[1]
-    assert "✓ Release decision: <undecided, will release>" in old[2]
+    assert "next_version" not in old[1]
+    assert "gave no verdict (exit 1); refusing to release or skip" in old[2]
+    assert "Required environment variable 'GITHUB_SHA' is not set" in old[2]
+    assert "git fetch" not in calls_of(files), "no version may follow a refused decision"
     assert_identical(old, new, files)
 
 
-def test_a_stable_release_writes_publish_stable_an_intentional_delta(
-    tmp_path: pathlib.Path,
-) -> None:
-    """The `release` label (operator ruling 2026-09-30), port only.
+def test_a_retried_out_5xx_on_the_release_read_refuses(tmp_path: pathlib.Path) -> None:
+    """PLAN-gh-retry G3 carried through step 6b. The twin released here: one 5xx took dispatch-release.sh's fail-open branch, so a PR labelled bump-none shipped.
 
-    INTENTIONAL DELTA (Rule T): initialize.sh never reads the stable line, so the twin's run is the same run minus the notice and the output key. Every other byte still agrees.
+    Costs gh_retry's real 5 s + 15 s backoff inside the decider child.
     """
-    stable = "publish_stable: true (#591)"
     old, new, files = run_both(
         tmp_path,
-        env_extra={**PUSH_MAIN, "FAKE_DECISION": "release", "FAKE_STABLE": stable},
-        docker=False,
+        env_extra={**PUSH_MAIN, "FAKE_GH_DECIDE_ROWS": "570 bump-none", "FAKE_GH_FAIL": MERGE_SHA},
+        timeout=120,
     )
-    assert "publish_stable" not in old[1]
-    notice = (
-        "::notice title=Release to stable::%s: this release publishes to edge AND "
-        "stable, skipping the 7-day soak.\n" % stable
-    )
-    assert notice + "publish_stable=true\n" in new[1]
-    assert new[1].replace(notice + "publish_stable=true\n", "") == old[1]
-    assert "✓ Release channel: edge AND stable (%s)\n" % stable in new[2]
-    assert strip_prog(new[2]).replace(
-        "✓ Release channel: edge AND stable (%s)\n" % stable, ""
-    ) == strip_prog(old[2])
-    assert new[0] == old[0] == 0
-    assert files["new_calls"] == files["old_calls"]
+    assert old[0] == 1
+    assert "skip_release" not in old[1]
+    assert "decision" not in old[1]
+    assert "refusing to decide the release on an unknown label set" in old[2]
+    assert "refusing to release or skip on an unknown label set" in old[2]
+    assert "<undecided, will release>" not in old[2]
+    assert "git fetch" not in calls_of(files)
+    assert_identical(old, new, files)
 
 
-@pytest.mark.parametrize("decision", ["skip", ""])
-def test_a_stable_line_without_a_release_decision_is_ignored(
-    tmp_path: pathlib.Path, decision: str
-) -> None:
-    """Skip wins, and an undecided run stays edge-only: stable fails closed."""
+def test_a_retried_out_5xx_on_the_bump_read_refuses(tmp_path: pathlib.Path) -> None:
+    """PLAN-gh-retry G2 carried through step 6. The twin skipped the unreadable commit, so its bump-minor read as patch.
+
+    Costs gh_retry's real 5 s + 15 s backoff, in process.
+    """
+    old, new, files = run_both(
+        tmp_path,
+        env_extra={**PUSH_MAIN, "FAKE_GH_BUMP_ROWS": "601 bump-minor", "FAKE_GH_FAIL": HEAD_SHA},
+        timeout=120,
+    )
+    assert old[0] == 1
+    assert "bump_type" not in old[1]
+    assert "refusing to compute a version from a partial label scan" in old[2]
+    assert DECIDE_CALL not in calls_of(files), "the decision must not run on a refused bump"
+    assert calls_of(files).count(BUMP_CALLS.rsplit("\n", 2)[-2]) == 3, "three attempts"
+    assert_identical(old, new, files)
+
+
+def test_one_5xx_on_each_read_is_retried_to_the_right_answer(tmp_path: pathlib.Path) -> None:
+    """The green counterpart of the two refusals: a single 502 per read is retried, so the bump-minor reads as minor and the bump-none skips. On the same fake the twin answered patch and released."""
     old, new, files = run_both(
         tmp_path,
         env_extra={
             **PUSH_MAIN,
-            "FAKE_DECISION": decision,
-            "FAKE_STABLE": "publish_stable: true (#591)",
+            "FAKE_GH_BUMP_ROWS": "601 bump-minor",
+            "FAKE_GH_DECIDE_ROWS": "570 bump-none",
+            "FAKE_GH_FLAKY": "%s %s" % (HEAD_SHA, MERGE_SHA),
         },
-        docker=False,
+        timeout=120,
     )
-    assert "publish_stable" not in new[1]
+    assert old[0] == 0
+    assert "bump_type=minor\n" in old[1]
+    assert "skip_release=true\n" in old[1]
+    assert calls_of(files).count(DECIDE_CALL) == 2, "one failed attempt, one answered"
     assert_identical(old, new, files)
 
 
-def test_the_deciders_stderr_is_swallowed_by_the_two_to_one_redirect(
+def test_a_stable_release_writes_publish_stable(tmp_path: pathlib.Path) -> None:
+    """The `release` label (operator ruling 2026-09-30): edge AND stable, skipping the soak."""
+    stable = "publish_stable: true (#591)"
+    old, new, files = run_both(
+        tmp_path, env_extra={**PUSH_MAIN, "FAKE_GH_DECIDE_ROWS": "591 release"}, docker=False
+    )
+    notice = (
+        "::notice title=Release to stable::%s: this release publishes to edge AND "
+        "stable, skipping the 7-day soak.\n" % stable
+    )
+    assert notice + "publish_stable=true\n" in old[1]
+    assert "✓ Release channel: edge AND stable (%s)\n" % stable in old[2]
+    assert old[0] == 0
+    assert_identical(old, new, files)
+
+
+def test_a_stable_label_on_a_skipped_pr_is_ignored(tmp_path: pathlib.Path) -> None:
+    """Skip wins: a PR carrying both `release` and `bump-none` earns no release, so nothing goes to stable."""
+    old, new, files = run_both(
+        tmp_path,
+        env_extra={**PUSH_MAIN, "FAKE_GH_DECIDE_ROWS": "591 release,bump-none"},
+        docker=False,
+    )
+    assert "skip_release=true\n" in old[1]
+    assert "publish_stable" not in old[1]
+    assert_identical(old, new, files)
+
+
+def test_the_deciders_streams_and_github_output_stay_out_of_the_step(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`2>&1 | grep` means the child's diagnostics are filtered, never printed.
+    """The decider's logs and notices are filtered, never printed, and it writes no `$GITHUB_OUTPUT`.
 
-    The fake prints its own view of `$GITHUB_OUTPUT` to stderr, which also proves the variable reaches it as the EMPTY STRING rather than unset.
+    A skip is the verdict the decider would append to `$GITHUB_OUTPUT` itself, so a relative GITHUB_OUTPUT that reached the child would appear in the fixture root; it must not.
     """
-    old, new, files = run_both(tmp_path, env_extra={**PUSH_MAIN, "FAKE_DECISION": "release"})
-    assert "GITHUB_OUTPUT=[]" not in old[2]
-    assert "GITHUB_OUTPUT=[UNSET]" not in old[2]
-    assert "dispatch-release.sh GITHUB_OUTPUT=[] --decide-only" in files["old_calls"]
+    old, new, files = run_both(
+        tmp_path,
+        env_extra={
+            **PUSH_MAIN,
+            "FAKE_GH_DECIDE_ROWS": "570 bump-none",
+            "GITHUB_OUTPUT": "child-github-output.txt",
+        },
+    )
+    assert "release SKIPPED" not in old[2], "the decider's log must be filtered"
+    assert "::notice title=Release skipped" not in old[1], "the decider's notice must be filtered"
+    assert "skip_release=true\n" in old[1]
+    assert DECIDE_CALL in calls_of(files)
+    assert not (tmp_path / "new-root" / "child-github-output.txt").exists()
     assert_identical(old, new, files)
 
 
@@ -1014,7 +1123,7 @@ def test_the_pinned_line_numbers_still_point_at_the_twins_lines() -> None:
         port.GENERATE_TAG_RENET_LINE,
         port.GENERATE_TAG_WEB_LINE,
         port.GENERATE_TAG_RDC_LINE,
-        port.DETECT_BUMP_TYPE_LINE,
+        TWIN_DETECT_BUMP_TYPE_LINE,
         port.FETCH_URL_LINE,
         port.GIT_FETCH_LINE,
         port.GIT_TAG_LINE,
@@ -1044,7 +1153,7 @@ def test_the_pinned_line_numbers_still_point_at_the_twins_lines() -> None:
     assert "--submodule private/renet" in at(port.GENERATE_TAG_RENET_LINE)
     assert "--closure web" in at(port.GENERATE_TAG_WEB_LINE)
     assert "--closure rdc" in at(port.GENERATE_TAG_RDC_LINE)
-    assert port.DETECT_BUMP_TYPE in at(port.DETECT_BUMP_TYPE_LINE)
+    assert TWIN_DETECT_BUMP_TYPE in at(TWIN_DETECT_BUMP_TYPE_LINE)
     assert "FETCH_URL=" in at(port.FETCH_URL_LINE)
     assert "git fetch --tags --force --no-recurse-submodules" in at(port.GIT_FETCH_LINE)
     assert "git tag -l 'v*' --sort=-v:refname" in at(port.GIT_TAG_LINE)
@@ -1053,15 +1162,18 @@ def test_the_pinned_line_numbers_still_point_at_the_twins_lines() -> None:
 
 
 def test_the_five_sibling_paths_are_the_ones_the_twin_calls() -> None:
-    """A renamed sibling must red HERE, not in a CI job three steps later."""
+    """A renamed sibling must red HERE, not in a CI job three steps later.
+
+    Two of the five are no longer run: the port calls the Python ports of the bash label readers, and must not name their `.sh` paths at all.
+    """
 
     def read_twin():
         with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as handle:
             text = handle.read()
         named = (
             port.GENERATE_TAG,
-            port.DISPATCH_RELEASE,
-            port.DETECT_BUMP_TYPE,
+            TWIN_DISPATCH_RELEASE,
+            TWIN_DETECT_BUMP_TYPE,
             port.RESOLVE_VERSION,
         )
         return 0, "".join("%s\n" % p for p in named if p in text), ""
@@ -1070,10 +1182,19 @@ def test_the_five_sibling_paths_are_the_ones_the_twin_calls() -> None:
     body = diff.twin_call(TWIN, ["sibling paths"], read_twin)[1]
     for path in (
         port.GENERATE_TAG,
-        port.DISPATCH_RELEASE,
-        port.DETECT_BUMP_TYPE,
+        TWIN_DISPATCH_RELEASE,
+        TWIN_DETECT_BUMP_TYPE,
         port.RESOLVE_VERSION,
     ):
         assert path in body, "%s is not called by the twin any more" % path
     for path in (port.GENERATE_TAG, port.RESOLVE_VERSION):
         assert os.access("%s/%s" % (diff.repo(), path), os.X_OK), "%s is not executable" % path
+
+
+def test_the_port_runs_the_python_label_readers_and_never_the_bash_ones() -> None:
+    """The cutover, pinned: neither bash label reader is named anywhere in the port's source, and the module the decider child runs is importable."""
+    source = inspect.getsource(port)
+    for twin in (TWIN_DETECT_BUMP_TYPE, TWIN_DISPATCH_RELEASE):
+        assert twin not in source, "%s is named by the port again" % twin
+    assert importlib.import_module(port.DISPATCH_RELEASE_MODULE).STABLE_LINE == port.STABLE_LINE
+    assert port.detect_bump_type.__name__ == "rediacc_ci.version.detect_bump_type"

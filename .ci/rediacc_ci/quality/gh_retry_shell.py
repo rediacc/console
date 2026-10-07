@@ -1,7 +1,7 @@
 """check:ci-gh-retry-reads, shell half -- every GitHub READ made from SHELL retries a transient fault.
 
 WHY THIS EXISTS. The Python half (`rediacc_ci.quality.gh_retry_reads`) scans only Python, so the live orphan reaper `.ci/breakpoint/scripts/reap-breakpoint-orphans.sh` (run by housekeeping.yml) kept a one-shot `curl ... api.github.com` read nobody flagged until commit ec583bbda gave it `--retry 2 --retry-delay 5`. Writing this half found a worse one: CI's release decision, `rediacc_ci.ci.initialize` (ci.yml and cd-v2.yml), still EXECUTES the bash
-`dispatch-release.sh` and `detect-bump-type.sh`, whose one-shot `gh api .../commits/<sha>/pulls` reads are the wrong-release-on-a-5xx class PLAN-gh-retry fixed only in their Python twins. They are frozen below in SHELL_DEBT, printed every run, until they are routed.
+`dispatch-release.sh` and `detect-bump-type.sh`, whose one-shot `gh api .../commits/<sha>/pulls` reads are the wrong-release-on-a-5xx class PLAN-gh-retry fixed only in their Python twins. They were frozen in SHELL_DEBT until initialize cut over to the retried Python ports (2026-10-07); both bash scripts are dead twins now, and SHELL_DEBT is empty.
 
 WHAT IS SCANNED.
   * Shell scripts (`*.sh`, `*.bash`) under `.ci` (minus `.ci/cache` and test paths, by `gh_retry_reads.is_test_path`) and `scripts`.
@@ -90,16 +90,7 @@ ALLOWED: dict[str, str] = {}
 # ---------------------------------------------------------------------------
 # SHELL_DEBT: live one-shot reads that must be FIXED, frozen so the gate fails on GROWTH. id -> the site, for the reader. Delete a row by hand when its read is routed (the gate reds it as DRAINED until then). Never add a row for a new read.
 # ---------------------------------------------------------------------------
-SHELL_DEBT: dict[str, str] = {
-    # Run by `rediacc_ci.ci.initialize.release_decision` (ci.yml and cd-v2.yml `initialize`). A failed read FAILS OPEN by design and dispatches the release, so one 5xx releases a PR labelled to skip it: the PLAN-gh-retry wrong-release class, fixed in `ci/dispatch_release.py` but not in the bash this step still runs.
-    "0a3bcbebf4ee": ".ci/scripts/ci/dispatch-release.sh :: decide :: gh api repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls",
-    # Run by `rediacc_ci.ci.initialize` (`run_capture([DETECT_BUMP_TYPE, "--verbose"])`). A failed read `continue`s past that commit, so a bump-major or bump-minor label on it reads as a patch whenever another commit's lookup succeeded.
-    "a6b0a2819693": ".ci/scripts/version/detect-bump-type.sh :: <main> :: gh api repos/${GITHUB_REPOSITORY}/commits/${sha}/pulls",
-    # The tool `.claude/rediacc_hooks/guards/block_raw_pr_body_edit.py` tells an agent to run. Under `set -euo pipefail` a 5xx ends the sync red (fails closed), so the cost is a re-run, not a wrong body.
-    "b22bf53718f9": ".ci/scripts/pr/sync-epic-block.sh :: <main> :: gh pr view $PR --json body",
-    # Inside `$(...)` under the runner's `bash -e`, a 5xx fails the promotion step (fails closed), so the cost is a red stable promotion, the PR #597 class.
-    "d4b81a348f25": ".github/workflows/promote-stable.yml :: promote/Check for rollback labels :: gh pr list --search label:rollback",
-}
+SHELL_DEBT: dict[str, str] = {}
 
 FIX_CURL = (
     "add `--retry 2 --retry-delay 5`; curl then retries a timeout, 408, 429 and 5xx only, so a single 5xx is retried and a 4xx still fails at once. "
@@ -1267,20 +1258,22 @@ def judge(corpus: Corpus, allowed: dict[str, str], debt: dict[str, str]) -> Shel
             "VACUOUS: zero workflow run: blocks read from %s; the YAML reader has rotted."
             % ", ".join(WORKFLOW_GLOBS)
         )
+    # THE DETECTOR FLOORS read the dead twins too: they prove the detectors still SEE the tree, not that the live tree holds a given shape. The tree's one live shell GitHub write went when sync-epic-block.sh became an exec of its Python port, so a live-only floor could no longer pass.
+    seen = [*sites, *dead]
     if corpus.scripts and blocks:
-        if not any(s.tool == "curl" for s in sites):
+        if not any(s.tool == "curl" for s in seen):
             problems.append(
                 "VACUOUS: zero curl calls to the GitHub API found; the curl detector is not seeing the tree."
             )
-        if not any(s.tool == "gh" for s in sites):
+        if not any(s.tool == "gh" for s in seen):
             problems.append(
                 "VACUOUS: zero gh calls found in live scripts and run: blocks; the gh detector is not seeing the tree."
             )
-        if not any(s.route == "retried" for s in sites):
+        if not any(s.route == "retried" for s in seen):
             problems.append(
                 "VACUOUS: zero retried shell reads on the tree; either every live shell GitHub read lost its retry (see the findings above) or the retry detector has rotted."
             )
-        if not any(s.kind == "write" for s in sites):
+        if not any(s.kind == "write" for s in seen):
             problems.append(
                 "VACUOUS: zero shell writes classified; the read/write classifier has rotted."
             )
