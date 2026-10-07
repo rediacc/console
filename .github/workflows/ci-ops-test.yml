@@ -364,7 +364,7 @@ jobs:
         with:
           name: tutorial-sequence-logs-${{ matrix.name }}-${{ matrix.shard }}-${{ github.sha }}
           path: ${{ runner.temp }}/tutorial-logs/
-          retention-days: 30
+          retention-days: 3
           if-no-files-found: ignore
 
       # T1.6 (PLAN-ci-time-budget): the same file as above, ALSO under its own

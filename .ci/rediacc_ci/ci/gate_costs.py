@@ -20,7 +20,7 @@ THE FILE'S SCHEMA, defined here beside its only writer:
 
 Per gate, each figure is the MEDIAN over the captures in which the gate passed and reported `cpuMs`: `cpu_s` and `wall_s` in seconds, `peak_rss_mb` (null when the sampler captured none). `eff_cores` is cpu_s / wall_s. `capped` is eff_cores >= `CAPPED_FRACTION` x the runner's cores: such a gate used the whole machine, so its width says more about the runner than about the gate and does not port to another machine. `rank` is 1 for the largest cpu_s. A gate the captures ran but never measured (failed, blocked, skipped: the capture runner has no submodules and no Go or uv toolchain) sits in `unmeasured` with its newest status, so a missing baseline is named rather than silently absent.
 
-TWO KINDS OF GATE, BECAUSE `--quick` IS TWO LANES. A capture runs every fast gate, and a slow gate (`slow: true` in the lock, or one whose `needs` reach a slow gate: run.ts's own fixpoint, `sampled_gate_ids`) ONLY when the captured commit's diff touches it (run.ts `quickDiffAdmit`). So a slow gate is DIFF-SAMPLED: present in one capture, absent from the next five, with nothing wrong. MEASURED 2026-10-07: capture 37294996911 reads `--quick (286 fast gate(s) + 3 diff-selected slow; 66 deferred)`; check:ci-format-scope entered the file from capture 37192382851 (whose diff touched it), and when that capture left the window every PR went red with "no capture measured it (absent in the newest)", the second such red after check:ci-proxy-rdc-update (365933af3). Therefore: a diff-sampled gate absent from EVERY capture in the window is not a finding, and `--refresh` CARRIES its last figures forward (named in `carried`, stamped with when they were measured) rather than dropping them; a diff-sampled gate the captures ran is held to every rule a fast gate is. Both sets are printed by name on every green.
+TWO KINDS OF GATE, BECAUSE `--quick` IS TWO LANES. A capture runs every fast gate, and a slow gate (`slow: true` in the lock, or one whose `needs` reach a slow gate: run.ts's own fixpoint, `sampled_gate_ids`) ONLY when the captured commit's diff touches it (run.ts `quickDiffAdmit`). So a slow gate is DIFF-SAMPLED: present in one capture, absent from the next ones, with nothing wrong. MEASURED 2026-10-07: capture 37294996911 reads `--quick (286 fast gate(s) + 3 diff-selected slow; 66 deferred)`; check:ci-format-scope entered the file from capture 37192382851 (whose diff touched it), and when that capture left the window every PR went red with "no capture measured it (absent in the newest)", the second such red after check:ci-proxy-rdc-update (365933af3). Therefore: a diff-sampled gate absent from EVERY capture in the window is not a finding, and `--refresh` CARRIES its last figures forward (named in `carried`, stamped with when they were measured) rather than dropping them; a diff-sampled gate the captures ran is held to every rule a fast gate is. Both sets are printed by name on every green.
 
 `--check` exits 1 on: a gate in the file that the manifest (`scripts/ci-runner/gates.lock.json`) no longer has (either kind); a FAST gate the fresh captures ran that the file has in neither `gates` nor `unmeasured` (registered after the last refresh); a committed fast gate no fresh capture measured, or a committed diff-sampled gate a fresh capture ran and could not measure; cpu_s drifting more than `DRIFT_THRESHOLD` where either side is at least `MIN_DRIFT_CPU_S`; eff_cores drifting the same way where neither side is capped (the same floor applies, since the width of a sub-second gate is noise); a changed runner core count; zero usable captures. It exits `NO_BASELINE` (3) and prints a notice when the file does not exist yet. Nothing was compared, and its one caller, `rediacc_ci.ci.freshness --check` (`.ci/config/freshness.json`, run per PR as `check:ci-budget-freshness` and nightly by housekeeping.yml's budget-check job), fails on it; that registry also refuses the missing file before this check runs. The first real file comes from `--refresh` after the first nightly capture, never from invented numbers.
 
@@ -53,7 +53,8 @@ CAPTURE_EVENTS = ("schedule", "workflow_dispatch")
 CAPTURE_RUNNER = "ubuntu-latest"
 ARTIFACT_PREFIX = "gate-costs-"
 # How many captures the medians span, and how many runs per event are listed to find them (a housekeeping run whose capture job failed carries no artifact).
-SAMPLE_CAPTURES = 5
+# THREE BECAUSE THE REPOSITORY KEEPS ARTIFACTS 3 DAYS (operator ruling 2026-10-07, "Keep 3 days"; recorded in .ci/config/actions-retention.json and enforced on every `retention-days:` by check:ci-workflows). GitHub caps each upload there whatever the workflow asks for: gate-costs-c277f2ab asked for 30 and expired three days after its 2026-10-05 capture. One nightly capture per day leaves at most three alive, so a window of five was two captures that never existed, and the medians quietly spanned three. housekeeping.yml's slow-gate rotation is 3-way for the same reason. test_sample_captures_fits_the_recorded_retention holds this at or under the record.
+SAMPLE_CAPTURES = 3
 RUNS_LISTED = 15
 # The same 25% budget_report.py's --check applies to lane-durations.json.
 DRIFT_THRESHOLD = budget_report.DRIFT_THRESHOLD
@@ -64,7 +65,7 @@ NO_BASELINE = 3
 DEFAULT_COMMENT = [
     "PLAN-ci-quick-cpu-scheduling 2.5: per-gate CPU baseline for ci:quick's scheduler.",
     "Written ONLY by `PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_costs --refresh`, from the",
-    "medians of the last 5 `gate-costs-<sha>` artifacts of housekeeping.yml's gate-costs-capture",
+    "medians of the last 3 `gate-costs-<sha>` artifacts of housekeeping.yml's gate-costs-capture",
     "job (run.ts --quick --jobs 1, serial and uncontended). Checked nightly by `gate_costs --check`.",
     "cpu_s/wall_s in seconds; eff_cores = cpu_s / wall_s; capped = eff_cores >= 0.9 x source.cores",
     "(the gate filled the runner, so its width is not portable); rank 1 = the largest cpu_s.",
@@ -550,7 +551,9 @@ def main(argv: list[str]) -> int:
     )
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument(
-        "--refresh", action="store_true", help="rewrite the baseline from the last 5 captures"
+        "--refresh",
+        action="store_true",
+        help="rewrite the baseline from the last %d captures" % SAMPLE_CAPTURES,
     )
     mode.add_argument(
         "--check",

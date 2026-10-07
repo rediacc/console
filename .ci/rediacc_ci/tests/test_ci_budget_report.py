@@ -15,6 +15,7 @@ import re
 import threading
 import time
 import zipfile
+from typing import Any
 
 import pytest
 
@@ -374,6 +375,43 @@ def test_collect_unit_durations_reports_a_lane_with_zero_artifacts_rather_than_s
     )
     assert per_lane["test-e2e-workers"] == {"e2e-workers:a.spec.ts": [500.0]}
     assert per_lane["test-account-e2e"] == {}
+    assert missing == ["test-account-e2e"]
+
+
+def test_collect_unit_durations_passes_over_an_expired_artifact_without_downloading_it():
+    """The repository keeps artifacts 3 days and the run sample spans 14 (SAMPLE_MAX_AGE_DAYS), so older runs list their zips as `expired`. Those are never downloaded; a live sibling still is, and a lane left with only expired artifacts is reported missing rather than read as measured."""
+    blob = _zip_with(
+        "results.json",
+        json.dumps(
+            {
+                "suites": [
+                    {"specs": [{"file": "a.spec.ts", "tests": [{"results": [{"duration": 500}]}]}]}
+                ]
+            }
+        ),
+    )
+    listed: dict[int, list[dict[str, Any]]] = {
+        1: [{"id": "live", "name": "unit-durations-test-e2e-workers-x-new"}],
+        2: [
+            {"id": "gone", "name": "unit-durations-test-e2e-workers-x-old", "expired": True},
+            {"id": "gone2", "name": "unit-durations-test-account-e2e-x-old", "expired": True},
+        ],
+    }
+    downloaded: list[str] = []
+
+    def fake_download(_repo, artifact_id):
+        downloaded.append(artifact_id)
+        return blob
+
+    per_lane, missing = br.collect_unit_durations(
+        GH_REPO,
+        [1, 2],
+        ["test-e2e-workers", "test-account-e2e"],
+        list_artifacts=lambda _repo, run_id: listed[run_id],
+        download=fake_download,
+    )
+    assert downloaded == ["live"]
+    assert per_lane["test-e2e-workers"] == {"e2e-workers:a.spec.ts": [500.0]}
     assert missing == ["test-account-e2e"]
 
 

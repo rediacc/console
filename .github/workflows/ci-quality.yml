@@ -1243,7 +1243,7 @@ jobs:
         with:
           name: quality-shard-${{ matrix.shard }}
           path: /tmp/gate-receipt-quality-code.json
-          retention-days: 7
+          retention-days: 3
           if-no-files-found: error
       # <<< gate-bind
 
@@ -1760,7 +1760,7 @@ jobs:
         with:
           name: tutorial-player-release-gate-${{ github.run_attempt }}
           path: artifacts/tutorial-player-release-gate/
-          retention-days: 7
+          retention-days: 3
           if-no-files-found: ignore
 
       - name: Run CLI unit tests

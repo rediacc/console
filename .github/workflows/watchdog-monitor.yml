@@ -268,7 +268,7 @@ jobs:
           name: watchdog-logs-${{ inputs.target_run_id }}-gen${{ inputs.generation }}
           path: ${{ runner.temp }}/watchdog-logs/
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 3
 
       # Same shape as the log-capture step above: most generations see no
       # violation and write nothing, which is not an error, and this must
@@ -282,7 +282,7 @@ jobs:
           name: ci-budget-${{ inputs.target_run_id }}-gen${{ inputs.generation }}
           path: ${{ runner.temp }}/watchdog-budget/
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 3
 
       # !cancelled(), not the implicit success(). Phase 3b (2026-08-26) made the
       # three by-design paths -- cancelled, left-uncancelled, rerun-pending --

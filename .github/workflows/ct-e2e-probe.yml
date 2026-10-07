@@ -200,7 +200,7 @@ jobs:
         with:
           name: e2e-probe-result-${{ matrix.file }}-${{ github.sha }}
           path: ${{ runner.temp }}/e2e-probe/result.json
-          retention-days: 14
+          retention-days: 3
           if-no-files-found: error
 
       - name: Fix VM image ownership for cache save
@@ -252,5 +252,5 @@ jobs:
         with:
           name: e2e-probe-edges-${{ github.sha }}
           path: e2e-probe-edges.json
-          retention-days: 14
+          retention-days: 3
           if-no-files-found: error

@@ -884,3 +884,57 @@ def test_watchdog_workflow_wires_the_p4_budget_env(gate):
     gate.assert_contains(text, "WATCHDOG_RUN_BUDGET_MIN: '35'", "D-W1: the pipeline target is 35")
     gate.assert_contains(text, "STUCK_THRESHOLD_MIN: '15'", "T4.3: the stuck threshold is 15")
     gate.log_pass("watchdog-monitor.yml wires per-job enforce, run-level report at 35, stuck 15")
+
+
+_WATCHDOG_DISPATCH_RE = re.compile(
+    r"rediacc_ci\.ci\.dispatch_watchdog\s+--run-id\s+\"\$(\w+)\"", re.MULTILINE
+)
+HOUSEKEEPING = paths.from_root(".github", "workflows", "housekeeping.yml")
+
+
+def _watchdog_targets(text: str) -> list[str]:
+    """The shell variable each `dispatch_watchdog --run-id "$VAR"` call in one workflow passes."""
+    return _WATCHDOG_DISPATCH_RE.findall(text)
+
+
+def test_the_watchdog_never_watches_housekeeping(gate):
+    """Housekeeping's gate-costs-capture job is allowed 50 minutes (784c0c80e: bounded quick phase 12 + slow-gate rotation 32; operator ruling 2026-10-07, "Keep 50 min + rotation"), far over the 15-minute per-job budget.
+    It needs no JOB_BUDGET_CAPS entry ONLY because the watchdog never monitors a housekeeping run: the chain is started by ci.yml's CI Watchdog job on ci.yml's own run ($GITHUB_RUN_ID) and re-dispatched by watchdog-monitor.yml on the same target ($TARGET_RUN_ID), and `monitor()` reads and cancels jobs of that target run alone.
+    If anything starts the chain from another workflow, or ci.yml calls housekeeping.yml as a reusable workflow (its jobs would then sit inside the monitored run), the 50-minute job falls under the 15-minute budget and this reds."""
+    gate.assert_eq(
+        _watchdog_targets(
+            '  PYTHONPATH=.ci python3 -m rediacc_ci.ci.dispatch_watchdog --run-id "$X" \\\n'
+        ),
+        ["X"],
+        "CONTROL: the matcher finds a dispatch and the variable it targets",
+    )
+    starters = {}
+    for wf in sorted(WORKFLOW.parent.glob("*.yml")):
+        found = _watchdog_targets(wf.read_text(encoding="utf-8"))
+        if found:
+            starters[wf.name] = found
+    gate.assert_eq(
+        starters,
+        {"ci.yml": ["GITHUB_RUN_ID"], "watchdog-monitor.yml": ["TARGET_RUN_ID"]},
+        "the watchdog chain starts only on ci.yml's own run and re-targets only that run",
+    )
+    ci_text = paths.from_root(".github", "workflows", "ci.yml").read_text(encoding="utf-8")
+    gate.assert_eq(
+        "housekeeping.yml" in "".join(re.findall(r"^\s*uses:\s*(\S+)", ci_text, re.MULTILINE)),
+        False,
+        "ci.yml does not call housekeeping.yml as a reusable workflow",
+    )
+    hk = HOUSEKEEPING.read_text(encoding="utf-8")
+    gate.assert_eq(_watchdog_targets(hk), [], "housekeeping.yml does not start the watchdog chain")
+    timeout = re.search(
+        r"^  gate-costs-capture:\n(?:    .*\n|\s*\n)*?    timeout-minutes: (\d+)", hk, re.MULTILINE
+    )
+    gate.assert_eq(
+        int(timeout.group(1)) if timeout else None,
+        50,
+        "gate-costs-capture keeps its ruled 50-minute timeout (784c0c80e)",
+    )
+    gate.log_pass(
+        "watchdog starters %s; housekeeping's 50-minute capture sits outside every watched run"
+        % starters
+    )

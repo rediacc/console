@@ -84,6 +84,16 @@
       "GITHUB_REPOSITORY",
       "GITHUB_RUN_ID"
     ],
+    ".ci/rediacc_ci/ci/capture_gate_costs.py": [
+      "CAPTURE_DIR",
+      "CAPTURE_EXTRA_ARGS",
+      "CAPTURE_NIGHT",
+      "GITHUB_OUTPUT",
+      "QUICK_BOUND",
+      "ROTATION_BOUND",
+      "ROTATION_RC",
+      "RUNNER_TEMP"
+    ],
     ".ci/rediacc_ci/ci/check_rerun_attempt.py": [
       "*name",
       "GITHUB_ENV",
