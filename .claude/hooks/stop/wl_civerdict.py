@@ -11,16 +11,14 @@ THE SESSIONSTART LINE IS CACHE-ONLY. `session_start_line` makes no network call 
 Never raises into the Stop hook: every read failure is an empty answer, because this is information, not a gate.
 """
 
-import contextlib
 import hashlib
 import json
-import os
 import pathlib
-import tempfile
 import time
 
 import wl_ci
 import wl_core as C
+import wl_gh
 
 CHECK_NAME = "CI Verdict"
 SCHEMA = "ci-verdict/v1"
@@ -59,34 +57,13 @@ def seen_path(worklist, session_id):
     return pathlib.Path("%s.civerdict-seen-%s" % (worklist, (session_id or "")[:8]))
 
 
-def _write_json(path, doc):
-    path = pathlib.Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=path.name + ".")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            json.dump(doc, fh)
-        os.replace(tmp, path)
-    except OSError:
-        with contextlib.suppress(OSError):
-            os.unlink(tmp)
-
-
-def _read_json(path):
-    try:
-        return json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-
-
 def read_cache(worklist, branch):
-    doc = _read_json(cache_path(worklist, branch))
-    return doc if isinstance(doc, dict) else None
+    return wl_gh.cache_load(cache_path(worklist, branch))
 
 
 def write_cache(worklist, branch, sha, verdict, title="", summary="", source="check-run", now=None):
     """Record what is known about `sha`'s verdict. `verdict` None means "looked, none published yet", which the TTL keeps from being re-asked every stop."""
-    _write_json(
+    wl_gh.cache_write(
         cache_path(worklist, branch),
         {
             "branch": branch,
@@ -117,13 +94,13 @@ def fetch(root, sha):
     owner, name = wl_ci.repo_slug(root)
     if not owner or not sha:
         return None
-    data, _err = wl_ci._gh_json(
-        root,
+    data, _err = wl_gh.call(
         [
             "api",
             "repos/%s/%s/commits/%s/check-runs?check_name=CI%%20Verdict&per_page=100"
             % (owner, name, sha),
         ],
+        cwd=root,
     )
     runs = [
         r
@@ -151,7 +128,11 @@ def refresh(root, worklist, branch, ref, now=None):
     entry = read_cache(worklist, branch)
     if not tip:
         return entry
-    if entry and entry.get("sha") == tip and now - float(entry.get("at") or 0) <= FETCH_TTL_S:
+    if (
+        entry
+        and entry.get("sha") == tip
+        and wl_gh.cache_fresh(entry, FETCH_TTL_S, FETCH_TTL_S, now)
+    ):
         return entry
     got = fetch(root, tip)
     if got is None:
@@ -205,11 +186,11 @@ def note(root, worklist, session_id, ref=None, branch=None, now=None):
             return ""
         key = key_of(entry)
         sp = seen_path(worklist, session_id)
-        seen = _read_json(sp)
+        seen = wl_gh.load_json(sp)
         seen = seen if isinstance(seen, list) else []
         if key in seen:
             return ""
-        _write_json(sp, ([*seen, key])[-SEEN_KEEP:])
+        wl_gh.cache_write(sp, ([*seen, key])[-SEEN_KEEP:])
         return format_note(entry)
     except Exception:  # noqa: BLE001 -- information, never a reason to wedge a stop
         return ""

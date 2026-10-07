@@ -411,12 +411,14 @@ Every `WORKLIST_*` environment name the program reads: 133 of them, across 28 fi
 
 * **A decision, not data.** The `kind` of each name is a human's claim that the derivation
 is right, and the derivation is wrong for two names in this tree today: the default `"1"` cannot distinguish a boolean from a count, and `WORKLIST_AGENT_HINT_MIN_MARGIN` and `WORKLIST_AGENT_PUSHBACK_MIN_SCORE` are both counts.
+* **The `class` field is the one another gate reads.** Each name's `class`, `harness` or
+`gate-seam`, is the shard it belongs to in `.ci/config/env-manifest.json`, and `check:ci-env-manifest` generates every WORKLIST_* member of those shard lists from it. This file is therefore the one authored home of a WORKLIST_* name, and a member hand-placed in another shard is a finding. `npm run env:register` writes the entry, re-renders the manifest and runs the three registry gates.
 * **BLOCKER-gated in substance if not in spelling.** Its suppression surface is the
-`exclusions` block, and each prefix carries the reason it is excluded rather than the gate hardcoding it. An exclusion that matches zero tracked paths is a finding, which is the liveness half. Three of the five kinds (`flag`, `handle`, `corpus`) additionally require a substantive `why`, because those are the three where a typo turns something OFF or narrows what is looked at.
+`exclusions` block, and each prefix carries the reason it is excluded rather than the gate hardcoding it. An exclusion that matches zero tracked paths is a finding, which is the liveness half. The second surface is `foreign_reads`: names read only where the Python and bash scan cannot look (`WORKLIST_EPICS_LEDGER`, read by a TypeScript gate), each with its reader and a reason, printed on every run, and a finding once the reader stops naming it. Three of the five kinds (`flag`, `handle`, `corpus`) additionally require a substantive `why`, because those are the three where a typo turns something OFF or narrows what is looked at.
 * **It has a parser.** `worklist_env_registry.load_registry()`, which refuses an empty
 name set and an empty exclusion set rather than reporting zero findings.
-* **Its location is an implementation detail.** One reader, through
-`policy_path("worklist-env-registry.json")`.
+* **Its location is an implementation detail.** Two readers, both through
+`policy_path("worklist-env-registry.json")`: its own gate, and `env_manifest.load_worklist_classes`, which renders the `class` fields.
 
 The defect it exists for: a typo'd name reads as UNSET. `WORKLIST_FOCUS` defaults to `on`, so a misspelling leaves it running while the author believes it is off. The agent-hint, push-back and cadence switches were of the same shape until they moved into `agent/plans/QUEUE.md`, where a misspelled key is a reported problem instead of a silent default.
 

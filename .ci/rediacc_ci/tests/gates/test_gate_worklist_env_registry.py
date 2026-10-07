@@ -161,3 +161,75 @@ def test_the_selftest_covers_both_directions(gate):
     gate.log_pass(
         "%d plants, %d anti-silencers, %d refusals" % (len(plants), len(anti), len(vacuity))
     )
+
+
+def _planted_registry(mutate) -> harness.RunResult:
+    """Run the real gate against a mutated TMP COPY of the registry; the tracked file is never written."""
+    original = REGISTRY.read_bytes()
+    with tempfile.TemporaryDirectory() as td:
+        mutated = pathlib.Path(td) / "worklist-env-registry-mutated.json"
+        obj = json.loads(original.decode("utf-8"))
+        mutate(obj)
+        mutated.write_text(json.dumps(obj, indent=2) + "\n", encoding="utf-8")
+        result = _run(env={"WORKLIST_REGISTRY_OVERRIDE_FILE": str(mutated)})
+    assert REGISTRY.read_bytes() == original, "the tracked registry must never be written"
+    return result
+
+
+def test_every_registered_name_carries_a_class(gate):
+    gate.log_test("the class each name renders into env-manifest under, on every entry")
+    obj = json.loads(REGISTRY.read_text(encoding="utf-8"))
+    entries = list(obj["names"].values()) + list(obj.get("foreign_reads", {}).values())
+    gate.assert_eq(len(entries) >= 100, True, "%d entries" % len(entries))
+    missing = [e for e in entries if e.get("class") not in ("harness", "gate-seam")]
+    gate.assert_eq(missing, [], "every entry has a class")
+    result = _run()
+    gate.assert_exit(0, result, "clean run")
+    gate.assert_contains(result.combined, "classes gate-seam ", "the class breakdown is printed")
+    gate.assert_contains(
+        result.combined,
+        "read outside this scan, by declaration: WORKLIST_EPICS_LEDGER",
+        "the foreign read is printed on success, not only when broken",
+    )
+    gate.log_pass("%d entries, every one classed" % len(entries))
+
+
+def test_a_name_with_no_class_reds(gate):
+    gate.log_test("PLANT: drop WORKLIST_FOCUS's class in a REAL registry copy")
+
+    def mutate(obj):
+        del obj["names"]["WORKLIST_FOCUS"]["class"]
+
+    result = _planted_registry(mutate)
+    gate.assert_exit(1, result, "a classless name must red")
+    gate.assert_contains(result.combined, "WORKLIST_FOCUS: class None", "names it")
+    gate.assert_contains(result.combined, "npm run env:register", "and names the verb")
+    gate.log_pass("a name with no class cannot render, and the gate says so")
+
+
+def test_a_dangling_foreign_read_reds(gate):
+    gate.log_test("PLANT: repoint the real foreign read at a tracked file that never names it")
+
+    def mutate(obj):
+        obj["foreign_reads"]["WORKLIST_EPICS_LEDGER"]["reader"] = "package.json"
+
+    result = _planted_registry(mutate)
+    gate.assert_exit(1, result, "a dangling exclusion must red")
+    gate.assert_contains(result.combined, "no longer names it", "says the reader dropped it")
+    gate.log_pass("the exclusion is liveness-checked against its reader")
+
+
+def test_a_foreign_read_the_scan_can_see_reds(gate):
+    gate.log_test("PLANT: park a Python-read name under foreign_reads")
+
+    def mutate(obj):
+        entry = dict(obj["foreign_reads"]["WORKLIST_EPICS_LEDGER"])
+        entry["reader"] = ".claude/hooks/stop/wl_standdown.py"
+        obj["foreign_reads"]["WORKLIST_FOCUS"] = entry
+
+    result = _planted_registry(mutate)
+    gate.assert_exit(1, result, "a scanned name cannot hide as foreign")
+    gate.assert_contains(
+        result.combined, "FOREIGN WORKLIST_FOCUS is read where this scan looks", "names it"
+    )
+    gate.log_pass("foreign_reads cannot become a drawer for names the scan already sees")
