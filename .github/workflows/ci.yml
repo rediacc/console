@@ -1162,15 +1162,18 @@ jobs:
     # watchdog already force-cancels the run on a Quality failure, so the
     # exposure is a burned runner, not a bad deploy.
     needs: [initialize, build-renet]
-    # The explicit pointer_bump_only clause is load-bearing: this if never
-    # references its build-renet need, so under always() the job would RUN on
-    # a fast-path push and die fetching the missing renet artifact.
+    # The build-renet clause is load-bearing: under always() the job ran after a
+    # failed or cancelled build-renet and its OPS Check legs died in "Download
+    # renet binaries" (Artifact not found), a misleading red beside the real one
+    # (run 37633980671 attempt 2, 2026-10-07). It also covers the fast-path push,
+    # where build-renet is skipped. CI Complete still reports build-renet itself.
     if: >-
       always() &&
       needs.initialize.outputs.full_suite == 'true' &&
       needs.initialize.result == 'success' &&
       needs.initialize.outputs.pointer_bump_only != 'true' &&
-      needs.initialize.outputs.run_ops != 'false'
+      needs.initialize.outputs.run_ops != 'false' &&
+      needs.build-renet.result == 'success'
     uses: ./.github/workflows/ci-ops-test.yml
     secrets:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
