@@ -42,6 +42,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   WK_GH_API_BASE,
+  WK_GH_ORIGIN,
+  WK_GH_REPO,
   WK_RELEASES_ORIGIN,
   WK_SITE_ORIGIN,
 } from '../../packages/shared/src/config/well-known.generated.js';
@@ -664,20 +666,17 @@ function collectFiles(): { files: string[]; perRoot: Map<string, number> } | nul
 }
 
 function selftestToApiUrl(): void {
-  const repoApi = `${WK_GH_API_BASE}/repos/rediacc/console`;
+  const repoApi = `${WK_GH_API_BASE}/repos/${WK_GH_REPO}`;
   const cases: Array<[string, string | null]> = [
     // Control first: a shape the function already handled must still map.
-    [
-      'https://github.com/rediacc/console/issues/12',
-      `${WK_GH_API_BASE}/repos/rediacc/console/issues/12`,
-    ],
-    ['https://github.com/rediacc/console', repoApi],
-    ['https://github.com/rediacc/console/', repoApi],
-    ['https://github.com/rediacc/console#readme', repoApi],
-    ['https://github.com/rediacc/console?tab=readme', repoApi],
+    [`${WK_GH_ORIGIN}/${WK_GH_REPO}/issues/12`, `${WK_GH_API_BASE}/repos/${WK_GH_REPO}/issues/12`],
+    [`${WK_GH_ORIGIN}/${WK_GH_REPO}`, repoApi],
+    [`${WK_GH_ORIGIN}/${WK_GH_REPO}/`, repoApi],
+    [`${WK_GH_ORIGIN}/${WK_GH_REPO}#readme`, repoApi],
+    [`${WK_GH_ORIGIN}/${WK_GH_REPO}?tab=readme`, repoApi],
     ['https://github.com/features', null],
     ['https://github.com/orgs/rediacc', null],
-    ['https://example.com/rediacc/console', null],
+    [`https://example.com/${WK_GH_REPO}`, null],
   ];
   let bad = 0;
   for (const [input, want] of cases) {
