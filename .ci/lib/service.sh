@@ -54,7 +54,7 @@ service_start() {
             log_error "python3 is required; the port logic lives in rediacc_ci.core.ports"
             return 1
         fi
-        port="$(PYTHONPATH="$_ports_ci_dir${PYTHONPATH:+:$PYTHONPATH}" \
+        port="$(PYTHONSAFEPATH=1 PYTHONPATH="$_ports_ci_dir${PYTHONPATH:+:$PYTHONPATH}" \
             python3 -m rediacc_ci.core.ports find-preferred-port 8080 8081 8199)" || {
             log_error "No free port in 8080-8199 for the service"
             return 1

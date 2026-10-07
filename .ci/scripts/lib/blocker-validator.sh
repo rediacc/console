@@ -109,8 +109,10 @@ readonly BLOCKER_VALIDATOR_RS=$'\x1e'
 # OWN cwd, and changing directory here would resolve them against the wrong tree
 # -- which, per the canonical module's own docstring, is indistinguishable from
 # an empty allowlist.
+# PYTHONSAFEPATH=1 because `python3 -m` puts the CWD first on sys.path, ahead of PYTHONPATH: a caller whose cwd is
+# a `.ci` directory would import ITS rediacc_ci and silently ignore REDIACC_CI_ROOT (python 3.11+; older ones ignore it).
 _blocker_py() {
-    PYTHONPATH="$BLOCKER_VALIDATOR_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+    PYTHONSAFEPATH=1 PYTHONPATH="$BLOCKER_VALIDATOR_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
         python3 -m rediacc_ci.core.allowlist "$@"
 }
 

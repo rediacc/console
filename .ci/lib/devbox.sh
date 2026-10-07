@@ -92,7 +92,7 @@ devbox_mount_root() {
 devbox_container_name() {
     local wt slot
     wt="$(devbox_worktree)"
-    slot="$(PYTHONPATH="$DEVBOX_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+    slot="$(PYTHONSAFEPATH=1 PYTHONPATH="$DEVBOX_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
         python3 -m rediacc_ci.core.ports derive-slot "$wt" 100)"
     printf 'rediacc-devbox-%s-%s\n' "$slot" "$(basename "$wt")"
 }
@@ -195,7 +195,7 @@ devbox_base_port() {
     fi
 
     # First time: derive from the worktree path.
-    PYTHONPATH="$DEVBOX_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+    PYTHONSAFEPATH=1 PYTHONPATH="$DEVBOX_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
         python3 -m rediacc_ci.core.ports find-port-block "$(devbox_worktree)" \
         "$DEVBOX_PORT_RANGE_START" "$DEVBOX_PORT_RANGE_END" "$DEVBOX_PORT_BLOCK"
 }
@@ -576,7 +576,7 @@ devbox_build_image() {
     # live and the Dockerfile refuses an empty cutoff, so it comes from the one
     # implementation, rediacc_ci.core.release_age.
     local npm_before
-    npm_before="$(PYTHONPATH="$DEVBOX_CI_DIR" python3 -m rediacc_ci.core.release_age npm-before)" || {
+    npm_before="$(PYTHONSAFEPATH=1 PYTHONPATH="$DEVBOX_CI_DIR" python3 -m rediacc_ci.core.release_age npm-before)" || {
         log_error "Could not compute the npm --before cutoff (rediacc_ci.core.release_age npm-before)"
         return 1
     }
