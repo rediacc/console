@@ -457,15 +457,20 @@ class Harness:
     def tally_finish(self, subject: str) -> None:
         """`tally_finish`, byte-identical verdict lines, raising instead of returning 1.
 
-        The bash callers `exit` on its status so a caller that forgets cannot report green by falling off the end. A pytest test cannot fall off the end into a pass either, because the fixture's teardown refuses a zero-control test.
+        The bash callers `exit` on its status so a caller that forgets cannot report green by falling off the end. A pytest test cannot fall off the end into a pass either: the fixture's teardown refuses a zero-control test, and refuses a test whose tally holds a failure that no `tally_finish` raised.
         """
         print()
         if self.tally_fails == 0:
             print("✓ %s: %d control(s) passed" % (subject, self.tally_count))
             return
-        raise GateAssertionError(
-            "✗ %s: %d of %d control(s) failed" % (subject, self.tally_fails, self.tally_count)
-        )
+        raise GateAssertionError(self.tally_verdict(subject))
+
+    def tally_verdict(self, subject: str) -> str:
+        """The red verdict line, the one wording both `tally_finish` and the fixture's teardown raise with.
+
+        The teardown needs it because `no()` only RECORDS: a test that calls `no()` and never reaches `tally_finish` would otherwise exit green with its failure printed and ignored, which is how a shrink-only baseline test stayed green against an empty baseline.
+        """
+        return "✗ %s: %d of %d control(s) failed" % (subject, self.tally_fails, self.tally_count)
 
     # -- the ledger ----------------------------------------------------------
 

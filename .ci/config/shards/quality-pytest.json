@@ -20,6 +20,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_embed_credits.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_emit_advisory.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_fanout_timeout_declarable.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_fixture_teardown.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_form_validation.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_gate_header.py",
