@@ -47,6 +47,7 @@ import datetime
 import json
 import os
 import pathlib
+import re
 import subprocess
 import time
 import types
@@ -56,6 +57,7 @@ import pytest
 
 from rediacc_hooks import dispatch, guards, hookio
 from rediacc_hooks.tests import goldenio, guardcorpus
+from rediacc_hooks.wellknown import GH_ORIGIN, GH_REPO
 
 ROOT = guardcorpus.repo_root()
 
@@ -197,7 +199,12 @@ FIXTURE_BUILDERS = {
 #   * `block_host_toolchain_run` asks the real PATH whether `ruff`/`go`/`shfmt` are executable and walks the real tree for `.venv` / `node_modules`, both through `hookio.repo_root()`, which is the module's own location and ignores every variable the harness sets. Nine records flipped on a host where `packages/cli/node_modules` or `~/.local/bin/ruff` was absent.
 #
 # So each gets a synthetic world, built once per session like every other fixture here, and the harness hands it over rather than the guard being changed: `cwd` for the branch guard, and a `repo_root` plus a PATH tail made only of the fixture's own `bin/` for the toolchain guard. The guard's code path is untouched; only the world it looks at stops being this machine.
-CWD_WORLDS = {"block_stale_pr_branch_date": "stale-branch-checkout"}
+#
+#   * `block_premature_ready` resolved a selector-less `gh pr ready` against `git -C . branch --show-current`, the PYTEST PROCESS's directory, whatever `cwd` the harness handed the event. Its goldens were frozen on a checkout with a branch; CI's `actions/checkout` of a pull_request is a DETACHED merge commit, where the same read prints nothing and the guard takes its "no current branch" refusal instead. Six records went red in CI only (run 37649744806, #6f901a98). The guard now falls back to `ev.cwd`, and the harness hands it `console-pr-checkout`.
+CWD_WORLDS = {
+    "block_stale_pr_branch_date": "stale-branch-checkout",
+    "block_premature_ready": "console-pr-checkout",
+}
 HOST_WORLDS = {"block_host_toolchain_run": "toolchain-host"}
 
 
@@ -232,9 +239,23 @@ def _toolchain_host(path):
     return path
 
 
-# The two host worlds, registered beside every other named fixture so `fixture_path` builds each once per session.
+def _console_checkout(path, detached, branch="0923-1"):
+    """A checkout whose `origin` names the console repository, on `branch` (the `MMDD-N` name `0923-1` by default) or detached at the same commit.
+
+    The origin URL is the one `gh` and `shellscan._origin_repo` read the repo from, so a selector-less `gh pr ready` here is a console flip; the bare remote `_build_repo` pushed to is only how the commits got a remote-tracking ref. `git remote get-url` reads config and never touches the network. DETACHED is what `actions/checkout` produces for a pull_request, and what `gh pr ready` with no selector cannot resolve (gh 2.98.0 there: "could not determine current branch: failed to run git: not on any branch", rc=1).
+    """
+    _build_repo(path, branch, 0)
+    _git(path, "remote", "set-url", "origin", "%s/%s.git" % (GH_ORIGIN, GH_REPO))
+    if detached:
+        _git(path, "checkout", "-q", "--detach")
+    return path
+
+
+# The host worlds, registered beside every other named fixture so `fixture_path` builds each once per session.
 FIXTURE_BUILDERS["stale-branch-checkout"] = _stale_branch_checkout
 FIXTURE_BUILDERS["toolchain-host"] = _toolchain_host
+FIXTURE_BUILDERS["console-pr-checkout"] = lambda p: _console_checkout(p, detached=False)
+FIXTURE_BUILDERS["console-pr-detached"] = lambda p: _console_checkout(p, detached=True)
 
 
 # THE ROOT A PAYLOAD SPELLS LITERALLY. `block_agent_browser_repo_output`'s "an absolute path inside the repo" case writes `/home/developer/console/x.png` into its EDGE_CASES, which means "inside the repo" only in a checkout at that path; from any other checkout the guard answers "outside" and the case silently tests the opposite arm. The payload is re-homed onto THIS checkout just before the guard reads it, while the case key (`golden_case_key`) is still hashed from the payload as written, so the key is the same everywhere and `goldenio.normalize` turns the answer back into `<REPO>`. On the recording checkout it is the identity.
@@ -641,7 +662,7 @@ PROCESS_TABLE_READERS = {
 SPREAD_STEMS = [stem for stem in guards.stems() if stem not in PROCESS_TABLE_READERS]
 
 
-def python_fields(stem, payload, extra, stubs, work):
+def python_fields(stem, payload, extra, stubs, work, cwd=None):
     """One case's answer from the live port, exactly as the harness observes it.
 
     `os.environ` is swapped for the case environment rather than passed down, because a ported guard that shells out to `git` or `gh` inherits the process environment. Passing an `env` only to `dispatch` would leave those children reading the test runner's own environment instead of the case's.
@@ -649,9 +670,11 @@ def python_fields(stem, payload, extra, stubs, work):
     `time.tzset()` IS NOT DECORATION, and it is the one piece of libc state that an in-process call does not get from swapping a dict. `TZ` is read by libc once and cached, so `datetime.now()` here would keep answering in the test runner's own zone however the case set the variable. Measured 2026-09-07: without this call, `block_stale_pr_branch_date` reported the port as
     diverging under a pinned `TZ=UTC` when the port was right and the HARNESS was
     the thing ignoring the variable. Restoring the runner's own zone afterwards matters for the same reason.
+
+    `cwd` overrides the guard's world for a test that pins one arm in a world no golden case runs in (the detached checkout below).
     """
     env = case_env(stem, extra, stubs, work)
-    cwd = case_cwd(stem, work)
+    cwd = cwd or case_cwd(stem, work)
     saved = dict(os.environ)
     os.environ.clear()
     os.environ.update(env)
@@ -978,6 +1001,83 @@ def assert_matches_golden(fixture_work, stem, label, payload, extra, stubs):
     }
     diffs = diff_fields(decoded, got)
     assert not diffs, render(diffs, stem, label, payload)
+
+
+# --------------------------------------------------------------------------- The ambient checkout ---------------------------------------------------------------------------
+#
+# A GOLDEN THAT DEPENDS ON THE RUNNER'S OWN CHECKOUT PASSES WHERE IT WAS RECORDED AND NOWHERE ELSE (#6f901a98). `block_premature_ready` read `git -C . branch --show-current`, and `.` is whatever directory pytest runs in: a branch on every developer machine, a DETACHED merge commit under `actions/checkout` of a pull_request. Six records were green locally and red in CI only (run 37649744806), which is the one place a red cannot be reproduced from.
+#
+# So every guard whose source reads a branch (the regex below, over-inclusive on purpose: a payload mentioning `--show-current` also qualifies, which only costs time) has its whole golden replayed from inside two synthetic checkouts: detached (CI's shape) and on `main` (the branch name guards treat specially). A green here means the answer does not depend on where pytest stands. Red at fad446748, the commit that made the guard refuse an empty selector: the detached replay diverges on exactly the six CI cases.
+AMBIENT_CHECKOUTS = ("console-pr-detached", "ambient-on-main")
+FIXTURE_BUILDERS["ambient-on-main"] = lambda p: _console_checkout(p, detached=False, branch="main")
+BRANCH_READ = re.compile(r"show-current|symbolic-ref|abbrev-ref|current_branch\(")
+BRANCH_READERS = sorted(
+    stem
+    for stem in SPREAD_STEMS
+    if stem not in _OWN_SUITE_STEMS
+    and BRANCH_READ.search(pathlib.Path(guards.load(stem).__file__).read_text(encoding="utf-8"))
+)
+
+
+def test_the_branch_readers_are_seen():
+    """The regex finds the guard that went red in CI, and more than it: an empty or one-guard list would make the replay below a control that cannot fail."""
+    assert "block_premature_ready" in BRANCH_READERS, BRANCH_READERS
+    assert len(BRANCH_READERS) >= 5, BRANCH_READERS
+
+
+@pytest.mark.parametrize("ambient", AMBIENT_CHECKOUTS)
+@pytest.mark.parametrize("stem", BRANCH_READERS)
+def test_goldens_ignore_the_ambient_checkout(monkeypatch, fixture_work, stem, ambient):
+    """Every golden case of a branch-reading guard, replayed from inside a detached and an on-`main` checkout."""
+    where = fixture_path(fixture_work, ambient)
+    head = subprocess.run(
+        ["git", "-C", where, "branch", "--show-current"],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=_git_env(),
+    ).stdout.strip()
+    # The control's own control: a "detached" world that is on a branch would make this replay a second copy of the ordinary one.
+    assert head == ("" if ambient == "console-pr-detached" else "main"), (ambient, head)
+    cases = [c for c in GOLDEN_CASES if c[0] == stem]
+    assert cases, "%s has no golden case to replay" % stem
+    monkeypatch.chdir(where)
+    diverged = []
+    for _, label, payload, _, extra, stubs in cases:
+        try:
+            assert_matches_golden(fixture_work, stem, label, payload, extra, stubs)
+        except AssertionError as exc:
+            diverged.append(str(exc).splitlines()[0])
+    assert not diverged, (
+        "%d of %d %s golden cases change answer when pytest runs inside a %s checkout, so the "
+        "golden is true only where it was recorded. Hand the guard a fixture world "
+        "(CWD_WORLDS, or a CLAUDE_PROJECT_DIR token in its ENVS) instead of the process's "
+        "directory:\n  %s" % (len(diverged), len(cases), stem, ambient, "\n  ".join(diverged))
+    )
+
+
+def test_a_selectorless_flip_on_a_detached_head_is_refused(fixture_work):
+    """`gh pr ready` with no selector on a detached HEAD is refused before any `gh` call; a named PR or a branch is verified as usual.
+
+    The refusal is right: gh itself cannot resolve a PR there ("could not determine current branch: failed to run git: not on any branch", rc=1, gh 2.98.0), so the flip can never happen and refusing costs nothing. The `gh` stub answers SUCCESS throughout, so a refusal can only come from the detached arm.
+    """
+    stem = "block_premature_ready"
+    module = guards.load(stem)
+    green = {"gh": "#!/bin/sh\necho SUCCESS\n"}
+    detached = fixture_path(fixture_work, "console-pr-detached")
+    bare = edge_payload(module, "gh pr ready")
+    got = python_fields(stem, bare, {}, green, fixture_work, cwd=detached)
+    assert got["rc"] == "2", got
+    assert "(no PR named and no current branch)" in got["err"], got
+    # The production shape: the Bash tool's payload carries its own `cwd`, which wins over the dispatcher's.
+    carried = json.dumps(dict(json.loads(bare), cwd=detached))
+    got = python_fields(stem, carried, {}, green, fixture_work)
+    assert got["rc"] == "2", got
+    assert "(no PR named and no current branch)" in got["err"], got
+    # Controls: the same flip on a branch, and a named PR on the detached head, both reach gh and pass.
+    assert python_fields(stem, bare, {}, green, fixture_work)["rc"] == "0"
+    named = edge_payload(module, "gh pr ready 42")
+    assert python_fields(stem, named, {}, green, fixture_work, cwd=detached)["rc"] == "0"
 
 
 @pytest.mark.parametrize("stem", SPREAD_STEMS)

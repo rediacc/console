@@ -108,7 +108,8 @@ def run(ev):
     if not runs and not shellscan.gh_pr_at_command_pos(scan, "ready"):
         return hookio.ALLOW
 
-    cwd = ev.field("cwd")
+    # The payload's own `cwd` (the Bash tool always sends one), else the dispatcher's `ev.cwd`, never `.`: `.` is the hook PROCESS's directory, which neither the payload nor the dispatcher named, so the same payload resolved a different branch depending on where the caller stood (#6f901a98; block_stale_pr_branch_date carries the same fix, #ab3018c9). In the live hook `ev.cwd` IS the process directory, so this changes nothing there.
+    cwd = ev.field("cwd") or ev.cwd
     flips = []
     for run_ in runs:
         parsed = shellscan.gh_args(run_.argv)
@@ -148,7 +149,7 @@ def run(ev):
             continue
 
         # PR selector: first bare number/URL/branch token after `ready`, else the session cwd's current branch (matching gh's own default resolution).
-        sel = named or hookio.git_out(["-C", cwd or ".", "branch", "--show-current"])
+        sel = named or hookio.git_out(["-C", cwd, "branch", "--show-current"])
         # `branch --show-current` prints nothing on a detached HEAD and when git fails, and an empty selector names no PR to verify: refused as unverifiable, the verdict an empty `gh pr view` answer already reached, said directly instead of after a gh call about nothing.
         if not sel:
             ev.warn(MESSAGE % "verification failed (no PR named and no current branch)")
