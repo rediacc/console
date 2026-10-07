@@ -78,6 +78,11 @@ if sha in os.environ.get("FAKE_GH_FAIL_SHAS", "").split(","):
     sys.stderr.write("fake gh: forced failure for %s\\n" % sha)
     sys.exit(1)
 
+# A diagnostic on stderr from a call that still SUCCEEDS: gh's upgrade or deprecation notice.
+if os.environ.get("FAKE_GH_WARN"):
+    sys.stderr.write(os.environ["FAKE_GH_WARN"] + "\\n")
+    sys.stderr.flush()
+
 fixtures = os.environ["FAKE_GH_FIXTURES"]
 target = os.path.join(fixtures, "pulls-%s.json" % sha)
 if not os.path.isfile(target):
@@ -555,6 +560,55 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     assert PORT.read_text(encoding="utf-8") == original, (
         "port source must be restored byte-identical"
     )
+
+
+WARNING_LINE = "Warning: your gh version is out of date"
+
+
+def test_delta_stderr_on_a_succeeding_lookup_is_not_a_pr_row(tmp_path: pathlib.Path) -> None:
+    """INTENTIONAL DELTA (Rule T). The twin's `2>&1` reads gh's stderr on a SUCCEEDING lookup as a PR row (kept as the control); the port reads rows from stdout only and reports the line as a diagnostic. Same verdict and call log, because the phantom carries no bump label, but it is the shape that flipped dispatch_release's skip into a release.
+
+    A mutant that folds stderr back into the rows is driven red, so the assertion on the port is not passing because the warning never arrived.
+    """
+    world = World(tmp_path)
+    released = world.commit("released")
+    world.git("tag", "v1.0.0", released)
+    head = world.commit("head")
+    world.pulls_for(head, merged_pr(60, "bump-minor"))
+
+    old, new, old_calls, new_calls = world.both(FAKE_GH_WARN=WARNING_LINE)
+    assert old.stdout == new.stdout == "minor\n"
+    assert new_calls == old_calls
+    assert "PR #Warning: labels: your gh version is out of date" in old.stderr, (
+        "the TWIN no longer shows the phantom row; the control is not exercising stderr"
+    )
+    assert "PR #Warning:" not in new.stderr
+    assert "PR #60 labels: bump-minor" in new.stderr
+    assert WARNING_LINE in new.stderr, "gh's stderr was dropped instead of kept as a diagnostic"
+
+    original = PORT.read_text(encoding="utf-8")
+    mutated = original.replace(
+        '            rows = result.stdout_raw.rstrip("\\n")',
+        '            rows = (result.stderr + result.stdout_raw).rstrip("\\n")',
+    )
+    assert mutated != original, "the line this plant targets is no longer present verbatim"
+    mutant = tmp_path / "mutant.py"
+    mutant.write_text(mutated, encoding="utf-8")
+    bad, _bad_calls = world.run(mutant, ["--verbose"], FAKE_GH_WARN=WARNING_LINE)
+    assert "PR #Warning:" in bad.stderr, (
+        "the mutant did not read stderr as a row; the test is blind"
+    )
+    assert PORT.read_text(encoding="utf-8") == original
+
+
+def test_a_stderr_warning_on_a_successful_read_is_not_a_row(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """In process: exit 0, a label on stdout, a warning on stderr that would read as a `bump-major` row if stderr were parsed. Only stdout counts."""
+    ok = ghx.GhResult(["gh"], 0, "8 bump-minor\n", "9 bump-major\n")
+    verdict, counts = _scan(monkeypatch, {"aaa": [ok]}, ["aaa"])
+    assert verdict == "minor"
+    assert counts == {"aaa": 1}
 
 
 # --- gh_retry seam (PLAN-gh-retry G2): in-process, ghx.gh faked, backoff not slept. ---

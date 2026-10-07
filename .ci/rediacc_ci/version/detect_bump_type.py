@@ -10,6 +10,8 @@ declared, documented and INERT. A wrong answer here is invisible: `patch` is als
 
 UNREADABLE IS NOT A FALLBACK (PLAN-gh-retry G2). Per-commit reads go through `gh_retry.gh`. A 5xx or connection fault that outlasts the retries makes this exit 1 with no verdict on stdout, because skipping that commit could turn a major or minor into `patch`. A non-transient failure (a 404, a forced failure in the differential) keeps the skip below.
 
+STDERR IS NEVER A PR ROW (an INTENTIONAL DELTA, Rule T). The twin captures each lookup with `2>&1`, so a line gh writes to stderr while SUCCEEDING is parsed as `<number> <labels>`: a phantom `PR #Warning:` in the verbose log. The port reads rows from stdout only and logs such a line, under `--verbose`, as a diagnostic. Pinned by `test_delta_stderr_on_a_succeeding_lookup_is_not_a_pr_row`; the same shape flipped a verdict in `rediacc_ci.ci.dispatch_release` (Defect A there).
+
 FAIL OPEN AND SMALL, PRESERVED EXACTLY (for every failure that is not a retried-out transient one). Every error path prints `patch` and exits 0: a missed minor is a version number, an invented major is a statement to every consumer of the version stream. Nine distinct fallback reasons exist and all nine are reproduced, including their `--verbose` text, because the reason is the only way to tell a real `patch` from a degraded one.
 
 GIT IS SHELLED OUT TO, NOT REIMPLEMENTED -- `git tag -l 'v*' --sort=-v:refname`,
@@ -191,7 +193,14 @@ class Detector:
                 error = (result.stdout_raw + result.stderr).rstrip("\n")
                 self.verbose_log("commits/%s/pulls failed, skipping. Error: %s" % (sha[:7], error))
                 continue
+            # The rows are gh's STDOUT ALONE. The twin's `2>&1` also parsed a stderr line written on a SUCCEEDING call (an upgrade or deprecation notice) as a PR row, `PR #Warning:`; here it stays a diagnostic. The verdict could only move if such a line carried a whole `bump-major`/`bump-minor` segment, but the phantom PR is the same class as dispatch_release's Defect A, which did flip a verdict.
             rows = result.stdout_raw.rstrip("\n")
+            diagnostic = result.stderr.strip()
+            if diagnostic:
+                self.verbose_log(
+                    "commits/%s/pulls succeeded with a diagnostic on stderr (not read as PR rows): %s"
+                    % (sha[:7], " | ".join(diagnostic.split("\n")))
+                )
             api_ok = True
             for row in rows.split("\n"):
                 if not row:
