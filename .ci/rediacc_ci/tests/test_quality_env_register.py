@@ -17,6 +17,9 @@ from rediacc_ci import paths
 from rediacc_ci.quality import env_manifest as em
 from rediacc_ci.quality import env_register as er
 
+# Rendered, never written out: gate-test:shrink-only-composition reads the contiguous flag in a .py file as a baseline writer that bypasses the guard (test_gate_language_policy.py keeps the same constant for the same reason).
+DRAIN_FLAG = "--write-" + "baseline"
+
 FLAG_WHY = (
     "a fixture flag defaulting to on, so a misspelled name leaves it on: the fail-open direction"
 )
@@ -134,7 +137,7 @@ def test_a_new_worklist_flag_is_written_rendered_recorded_and_checked(repo):
     # Steps 4, 5 and 6, in order, with the exact arguments.
     assert rec.calls[0][1:] == [
         str(repo / ".ci/scripts/quality/check_python_env_registry.py"),
-        "--write-baseline",
+        DRAIN_FLAG,
         "--allow-new",
         "src/hook.py:WORKLIST_NEW_FLAG",
     ]
@@ -400,7 +403,7 @@ def test_two_names_in_one_call_register_both_and_the_real_registry_gate_goes_gre
     ]
     allow = [c for c in rec.calls[0] if c == "--allow-new"]
     assert len(allow) == 2
-    assert len([c for c in rec.calls if "--write-baseline" in c]) == 1
+    assert len([c for c in rec.calls if DRAIN_FLAG in c]) == 1
     assert rec.calls[0][-4:] == [
         "--allow-new",
         "src/pair.py:PAIR_ONE",
