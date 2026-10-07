@@ -27,13 +27,16 @@ PORT NOTE ON THE SIX SEQUENTIAL TESTS. The bash runs all six greps unconditional
 
 import pathlib
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan
 
 CHAIN = "pre-bash"
 ORDER = 30
 
 # `git clean -n` and `--dry-run` PRINT what they would remove and delete nothing. Dropping the exclusion turns the one safe way to inspect the untracked set into a refusal, which is how this guard would start being routed around.
-DEFECT = ("and not hookio.grep_q(DRY_RUN, scan)", "and True")
+DEFECT = (
+    'not shellscan.git_args("clean", commit_policy.git_split(r.argv)[2]).on("dry-run")',
+    "True",
+)
 
 # Command position: line start, or after ; & | ( $( or a backtick. Flags between
 # `git` and the verb (-C <path>, -c k=v) stay matched: they change where the
@@ -107,6 +110,17 @@ def _is_inside(target, root):
     return t == r or r in t.parents
 
 
+def _destructive_clean(cmd, scan):
+    """Whether the command runs a `git clean` that deletes: each walked clean read by `shellscan.git_args("clean", ...)` (#e8be3092), so its dry run is its OWN `-n`/`--dry-run` in any spelling git accepts (`-fdn`, `--dry`) and the last of `-n`/`--no-dry-run` wins. Until 2026-10-07 a `-n` ANYWHERE on the line excused every clean: `git log -n 1 && git clean -fd` deleted with no refusal, and so did `git clean -n --no-dry-run -fd` (git 2.53.0). The text match decides only for a command whose walk places no clean."""
+    cleans = commit_policy.git_runs(cmd, "clean")
+    if not cleans:
+        return hookio.grep_q(CLEAN, scan) and not hookio.grep_q(DRY_RUN, scan)
+    return any(
+        not shellscan.git_args("clean", commit_policy.git_split(r.argv)[2]).on("dry-run")
+        for r in cleans
+    )
+
+
 def run(ev):
     cmd = ev.field("tool_input", "command")
     if cmd == "":
@@ -135,7 +149,7 @@ def run(ev):
         blocked = "git stash"
     if hookio.grep_q(STASH_VERB, scan):
         blocked = "git stash"
-    if hookio.grep_q(CLEAN, scan) and not hookio.grep_q(DRY_RUN, scan):
+    if _destructive_clean(cmd, scan):
         blocked = "git clean"
     if hookio.grep_q(CHECKOUT_DDASH, scan):
         blocked = "git checkout <path>"

@@ -36,7 +36,7 @@ import pathlib
 import re
 import subprocess
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan
 from rediacc_hooks.wellknown import OPERATOR_EMAIL
 
 CHAIN = "pre-bash"
@@ -76,6 +76,15 @@ EDGE_CASES = [
     ("--author named inside the message", 'git commit -m "explain --author=a@b.c in prose"'),
     ("--author named inside a single-quoted message", "git commit -m 'explain --author=a@b.c'"),
     ("a -F message file hides its body", "git commit -F msg.txt"),
+    # git's own parse of `--author` (#e8be3092): a unique prefix is the option, and the value is the next word whatever it holds.
+    (
+        "an --auth override (a unique prefix)",
+        'git commit --auth="Nobody <nobody@example.invalid>" -m "x"',
+    ),
+    (
+        "an --author value as the next word",
+        'git commit -q --author "Nobody <nobody@example.invalid>" -m x',
+    ),
     # Not a commit at all.
     ("prose about an address", ("echo '" + OPERATOR_EMAIL + " is the wrong one'")),
     ("git tag is deliberately out of scope", 'git tag -m "x" v1'),
@@ -218,7 +227,16 @@ def run(ev):
     deauthored = hookio.sed_sub(r"(-m|--message)[= ]+'[^']*'", r"\1 MSG", deauthored)
     deauthored = hookio.sed_sub(hookio.rx(r"(-F|--file)[= ]+[^{S}]+"), r"\1 FILE", deauthored)
     override = ""
-    first = hookio.grep_o(AUTHOR_FLAG, deauthored)[:1]
+    # Each walked commit's own `--author`, read by git's parse-options (`shellscan.git_commit_args`, #e8be3092): `--auth=<ident>` is `--author` by unique prefix (git 2.53.0 committed with it), and a `-m` value is never an option, so the prose case above needs no stripping here. The text match stays for a command whose walk places no commit.
+    commits = commit_policy.git_runs(cmd, "commit")
+    # Spelled `--author=<value>`, the shape the reading below was written for.
+    authors = [
+        "--author=" + a
+        for r in commits
+        for a in [shellscan.git_commit_args(commit_policy.git_split(r.argv)[2]).last("author")]
+        if a
+    ]
+    first = authors[:1] if commits else hookio.grep_o(AUTHOR_FLAG, deauthored)[:1]
     if first:
         printed = []
         for record in first:

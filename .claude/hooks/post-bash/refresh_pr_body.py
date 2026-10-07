@@ -29,7 +29,7 @@ import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
-from rediacc_hooks import hookio, plan_gate, syspath
+from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan, syspath
 from rediacc_hooks.wellknown import GH_REPO
 
 NAME = "refresh_pr_body"
@@ -78,16 +78,15 @@ def _gh_read(*args):
 
 def destinations(cmd):
     """Destination branches, same parsing as cancel_old_ci.py: `HEAD:0728-2` and a bare `0728-3` both name one, and a bare `git push` targets the current branch."""
-    tail = []
-    for line in cmd.split("\n"):
-        _, sep, rest = line.rpartition("git push")
-        if sep:
-            tail.append(rest)
     found = []
-    for tok in " ".join(tail).split():
-        if tok.startswith("-") or tok in ("origin", "gitlab"):
+    # The walked pushes, read by `shellscan.git_push_args` (#e8be3092): the branches are the operands after the remote, so `-o`'s value, a remote other than origin, and a redirect or a pipe stage after the push are no branch.
+    for run in shellscan._analyse(cmd).runs:
+        if run.name.rsplit("/", 1)[-1] != "git" or run.git_sub != "push":
             continue
-        found.append(tok.rsplit(":", 1)[-1] if ":" in tok else tok)
+        _, _, args = commit_policy.git_split(run.argv)
+        for raw in shellscan.git_push_args(args).operands[1:]:
+            spec = raw.lstrip("+")
+            found.append(spec.rsplit(":", 1)[-1] if ":" in spec else spec)
     return found
 
 

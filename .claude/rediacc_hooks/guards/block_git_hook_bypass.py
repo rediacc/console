@@ -34,10 +34,21 @@ VERIFYING = frozenset(("commit", "push", "merge", "am", "rebase"))
 
 HOOKS_KEY = re.compile(r"^core\.hookspath$", re.IGNORECASE)
 
-CONFIG_WRITES = frozenset(
-    ("--unset", "--unset-all", "--replace-all", "--add", "--rename-section", "--remove-section")
+# `git config`'s subcommands, which the operands lead with in its new spelling.
+CONFIG_SUBCOMMANDS = frozenset(
+    ("list", "get", "set", "unset", "rename-section", "remove-section", "edit")
 )
-CONFIG_READS = frozenset(("--get", "--get-all", "--get-regexp", "--list", "-l", "--get-urlmatch"))
+CONFIG_READS = (
+    "get",
+    "get-all",
+    "get-regexp",
+    "get-urlmatch",
+    "list",
+    "get-color",
+    "get-colorbool",
+)
+CONFIG_WRITES = ("unset", "unset-all", "replace-all", "add")
+CORE_SECTION = re.compile(r"^core$", re.IGNORECASE)
 
 ENV_BYPASS = re.compile(
     r"^(%s|GIT_CONFIG_PARAMETERS|GIT_CONFIG_COUNT|GIT_CONFIG_KEY_[0-9]+)\+?="
@@ -67,18 +78,26 @@ EDGE_CASES = [
 
 
 def _config_write(args):
-    """Whether `git config <args>` writes or removes `core.hooksPath`."""
-    words = [a for a in args if not a.startswith("-")]
-    flags = [a.split("=", 1)[0] for a in args if a.startswith("-")]
-    if words[:1] in (["set"], ["unset"]) and len(words) > 1 and HOOKS_KEY.match(words[1]):
-        return True
-    if words[:1] in (["get"], ["list"]):
+    """Whether `git config <args>` writes or removes `core.hooksPath`, or the whole `core` section it lives in.
+
+    Read by `shellscan.git_args("config", ...)`, git's parse-options over the config options (#e8be3092), so a valued option's value (`-f <file>`, `--type <t>`) is never the key and a unique prefix is the action (`--unset-a`, `--repl`). Measured on git 2.53.0: `--unset-a core.hooksPath`, `-f .git/config core.hooksPath x`, `set -f .git/config core.hooksPath x`, `--type path core.hooksPath x` and `unset --file .git/config core.hooksPath` each rewrote or removed the key, and the flag-name matching this replaced read every one as a read.
+    """
+    parsed = shellscan.git_args("config", args)
+    words = parsed.operands
+    if words[:1] and words[0] in CONFIG_SUBCOMMANDS:
+        sub, rest = words[0], words[1:]
+        if sub in ("set", "unset"):
+            return bool(rest) and bool(HOOKS_KEY.match(rest[0]))
+        if sub in ("rename-section", "remove-section"):
+            return bool(rest) and bool(CORE_SECTION.match(rest[0]))
         return False
+    if any(parsed.on(f) for f in CONFIG_READS):
+        return False
+    if parsed.on("rename-section") or parsed.on("remove-section"):
+        return bool(words) and bool(CORE_SECTION.match(words[0]))
     if not words or not HOOKS_KEY.match(words[0]):
         return False
-    if any(f in CONFIG_READS for f in flags):
-        return False
-    return any(f in CONFIG_WRITES for f in flags) or len(words) > 1
+    return any(parsed.on(f) for f in CONFIG_WRITES) or len(words) > 1
 
 
 def _global_hooks_path(globals_):

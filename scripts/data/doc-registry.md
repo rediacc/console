@@ -509,7 +509,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/trapguard/dispatch.py | (none) | via .claude/hooks/chain-head.sh | py |
 | .claude/hooks/why-on-edit.py | (none) | via .claude/hooks/stop/test-planrec.py | py |
 | .claude/rediacc_hooks/__init__.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
-| .claude/rediacc_hooks/commit_policy.py | (none) | via .claude/hooks/stop/wl_planqueue.py | py |
+| .claude/rediacc_hooks/commit_policy.py | (none) | via .claude/hooks/post-bash/cancel_old_ci.py | py |
 | .claude/rediacc_hooks/dispatch.py | (none) | via .claude/hooks/chain-head.sh | py |
 | .claude/rediacc_hooks/execcount.py | (none) | (nothing) | py |
 | .claude/rediacc_hooks/git/githooks.py | (none) | via .claude/rediacc_hooks/guards/block_push_to_protected_branch.py | py |

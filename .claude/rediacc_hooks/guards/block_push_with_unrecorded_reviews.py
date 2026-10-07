@@ -140,17 +140,15 @@ def _push_runs(cmd):
 
 
 def _publishes(run):
-    """False for a push that publishes no commits: a dry run, or a delete-only refspec list."""
-    args = list(run.argv)
-    if "--dry-run" in args or "-n" in args:
+    """False for a push that publishes no commits: a dry run, a delete, or a delete-only refspec list.
+
+    Read by `shellscan.git_push_args` (#e8be3092): the last of `-n`/`--no-dry-run` and of `-d`/`--no-delete` wins, a bundle (`-qn`) and a unique prefix (`--dry`, `--del`) are the option, and a valued option's value (`-o x`) is never the remote. Measured on git 2.53.0, `git push -n --no-dry-run origin x` and `-d --no-delete origin x` both created x, and the flag membership this read until then took both for pushes publishing nothing.
+    """
+    _, _, args = commit_policy.git_split(list(run.argv))
+    parsed = shellscan.git_push_args(args)
+    if parsed.on("dry-run") or parsed.on("delete"):
         return False
-    if "--delete" in args or "-d" in args:
-        return False
-    refspecs = (
-        [a for a in args[args.index("push") + 1 :] if not a.startswith("-")][1:]
-        if "push" in args
-        else []
-    )
+    refspecs = parsed.operands[1:]
     return not (refspecs and all(r.startswith(":") for r in refspecs))
 
 
