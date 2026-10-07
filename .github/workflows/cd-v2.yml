@@ -59,6 +59,8 @@ jobs:
   init:
     name: Initialize
     runs-on: ubuntu-latest
+    # Bounds the artifact download in assert_artifact_version (DOWNLOAD_TIMEOUT_S=300) with headroom; check:ci-inner-timeout-reachable requires a ceiling above every step timer.
+    timeout-minutes: 30
     # actions: read is for resolve-ci-run.sh, which reads
     # repos/*/actions/runs with github.token. Everything else in this job
     # (check-existing-release, assert-artifact-version, the submodule fetch)
