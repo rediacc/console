@@ -1530,7 +1530,7 @@ def _job_cancel_cause(fetch, job):
     if run is None:
         return None
     jobs, _err = D.run_jobs(fetch, job.get("run_id"), job.get("run_attempt"))
-    return D.cancel_cause(fetch, run, jobs=jobs or [job])
+    return D.cancel_cause(fetch, run, jobs=jobs or [job], focus=job)
 
 
 def verb_job(root, job_id, mode, as_json):
@@ -1575,10 +1575,10 @@ def verb_job(root, job_id, mode, as_json):
     step, lines, widened = D.evidence(log, job)
     category, sig = D.classify(lines)
     cause = None
-    if category == "unknown" and job.get("conclusion") == "cancelled":
+    if D.needs_cancel_cause(job, category, sig):
         # A cancelled job's log rarely says who stopped it; the cancel evidence does (the watchdog's budget annotation, GitHub's timeout annotation). Job 112061625885 read `category: unknown` here while `--why` on its run could name the timeout.
         cause = _job_cancel_cause(fetch, job)
-        category = D.cancel_category(job, cause, category)
+        category, sig = D.cancel_reclassify(job, cause, category, sig)
     ex = D.excerpt(lines)
     gaps = D.log_gaps(log)
     dur = D.durations(job)

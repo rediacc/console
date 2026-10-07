@@ -55,12 +55,25 @@ CAUSE_KINDS = (
 )
 # `watchdog-cancel` and `timeout-cancel` name a job that was STOPPED rather than one that failed: the Watchdog Monitor's enforced budget (its `CI BUDGET VIOLATION: '<job>' ran <m>m (budget <b>m)` annotation) or GitHub's own `timeout-minutes` kill (`The job has exceeded the maximum execution time`). They are read from cancel_cause's evidence, and only when the job's log carries no infra or code signature of
 # its own, since a log that says WHY the job ran long (a slow renet setup phase) is the deeper answer.
-CATEGORIES = ("infra-likely", "code-likely", "watchdog-cancel", "timeout-cancel", "unknown")
+CATEGORIES = (
+    "infra-likely",
+    "code-likely",
+    "watchdog-cancel",
+    "timeout-cancel",
+    "manual-cancel",
+    "unknown",
+)
 CANCEL_CATEGORIES = {
     "watchdog-budget": "watchdog-cancel",
     "timeout-kill": "timeout-cancel",
     # GitHub never gave the job a runner (PR run 37361706365 on 2026-10-05, during an Actions incident): nothing in the code ran, so it is infrastructure.
     "runner-not-acquired": "infra-likely",
+}
+# A RUN-LEVEL CANCEL prints the runner's shutdown-signal message into every job it stops, exactly as a lost runner does (Quality / Static job 112840911365, run 37633980671: the watchdog cancelled the run for Quality / Submodule Branches and the job read `runner-lost`). A job whose log ends on that message is therefore a lost runner only when no run-level cancel is attributed; with one, the cancel is the answer.
+RUN_CANCEL_CATEGORIES = {
+    "watchdog-budget": "watchdog-cancel",
+    "watchdog-failure": "watchdog-cancel",
+    "manual": "manual-cancel",
 }
 FAIL_CONCLUSIONS = ("failure", "timed_out", "startup_failure")
 # A root cause may be a job that was stopped: a cancelled job is never green, and on a main push run it is often the only non-aggregator that did not pass.
@@ -532,11 +545,14 @@ def _annotations(fetch, check_run_id):
     return data if isinstance(data, list) else []
 
 
-def _watchdog_evidence(fetch, run, runs):
-    """(kind, cause-fields) from the Watchdog Monitor runs that watched `run`, or (None, {})."""
+def _watchdog_evidence(fetch, run, runs, since=None):
+    """(kind, cause-fields) from the Watchdog Monitor runs that watched `run`, or (None, {}). `since` is an earlier start (ISO) to widen the window to: a job a rerun carried over into attempt N ran, and was cancelled, in the attempt before it, so the watchdog that cancelled it predates attempt N's own start."""
     run_id = run.get("id")
     title = WATCHDOG_TITLE_RE % run_id
     lo = _epoch(run.get("run_started_at") or run.get("created_at")) or 0
+    early = _epoch(since) if since else None
+    if early:
+        lo = min(lo, early)
     hi = _epoch(run.get("updated_at")) if run.get("status") == "completed" else None
     watchers = []
     for r in runs:
@@ -599,7 +615,10 @@ def cancel_cause(fetch, run, pr_head=None, jobs=None, focus=None):
     runs = (data or {}).get("workflow_runs") if isinstance(data, dict) else None
     runs = runs if isinstance(runs, list) else []
 
-    kind, fields = _watchdog_evidence(fetch, run, runs)
+    # A focus job carried over from an earlier attempt (job 112840911365: started 14:09:48 in attempt 1, listed under attempt 2 which began 14:18:33) was stopped by evidence from that earlier window.
+    kind, fields = _watchdog_evidence(
+        fetch, run, runs, since=(focus or {}).get("started_at") if focus else None
+    )
     if kind:
         cause.update(fields, kind=kind)
         return cause
@@ -947,7 +966,9 @@ def _focus(fetch, job, cache_dir=None, cause=None):
         block["excerpt"] = excerpt(lines)
         block["widened"] = widened
         gaps = log_gaps(log)
-    block["category"] = cancel_category(job, cause, block["category"])
+    block["category"], block["signature"] = cancel_reclassify(
+        job, cause, block["category"], block["signature"]
+    )
     return block, gaps
 
 
@@ -960,6 +981,22 @@ def cancel_category(job, cause, category):
     if mapped and (not named or named == (job or {}).get("name")):
         return mapped
     return category
+
+
+def needs_cancel_cause(job, category, sig):
+    """True when a cancelled job's category still depends on the run's cancel evidence: nothing recognised, or only the runner-lost message a run cancel also prints."""
+    return (job or {}).get("conclusion") == "cancelled" and (
+        category == "unknown" or sig == "runner-lost"
+    )
+
+
+def cancel_reclassify(job, cause, category, sig):
+    """(category, signature) after the run's cancel evidence. A cancelled job whose only signature is `runner-lost` and whose run was cancelled by the watchdog (or a person) is that cancel, not a lost runner: the signature is dropped so the verdict does not also say the runner went away. Everything else goes through cancel_category."""
+    if needs_cancel_cause(job, category, sig) and sig == "runner-lost":
+        mapped = RUN_CANCEL_CATEGORIES.get((cause or {}).get("kind") or "")
+        if mapped:
+            return mapped, ""
+    return cancel_category(job, cause, category), sig
 
 
 def diagnose(fetch, run_id, attempt=None, pr_head=None, now=None, cache_dir=None):

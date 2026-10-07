@@ -666,6 +666,91 @@ def test_cancel_category_never_overrides_a_log_signature_or_another_jobs_cause()
     assert D.cancel_category(job, {"kind": "superseded", "job": None}, "unknown") == "unknown"
 
 
+# ---- a shutdown-signal log is a run cancel when the run was cancelled -------------
+
+SHUTDOWN_TAIL = "job_112840911365_shutdown_tail.log"
+WATCHDOG_CANCEL = [
+    {
+        "title": "Watchdog: pipeline-cancelled",
+        "message": 'Pipeline cancelled by the watchdog: Job failed: "Quality / Submodule Branches"',
+    }
+]
+
+
+def _shutdown_texts():
+    log = (FIX / SHUTDOWN_TAIL).read_text(encoding="utf-8")
+    # The diagnosis focuses the longest cancelled job, whichever of the run's E2E legs that is.
+    return {
+        "actions/jobs/%s/logs" % j["id"]: log
+        for j in _load("jobs_36953549081_attempt1.json")["jobs"]
+    }
+
+
+def test_shutdown_log_of_a_watchdog_cancelled_run_is_not_runner_lost(tmp_path):
+    """Run 37633980671: the watchdog cancelled the run and GitHub printed the runner-shutdown message into the job."""
+    routes = real_routes(**{"check-runs/110680194371/annotations": WATCHDOG_CANCEL})
+    d = D.diagnose(FakeFetch(routes, _shutdown_texts()), RUN, attempt=1, cache_dir=tmp_path)
+    assert d["cause"]["kind"] == "watchdog-failure"
+    assert d["first_failure"]["category"] == "watchdog-cancel", d["first_failure"]
+    assert d["first_failure"]["signature"] == ""
+    assert "runner-lost" not in D.render(d)
+
+
+def test_shutdown_log_with_no_cancel_evidence_stays_runner_lost(tmp_path):
+    """Control: the same log and job, but no watchdog run and no annotation, is a lost runner."""
+    routes = real_routes(
+        **{
+            "actions/runs": {"workflow_runs": []},
+            "check-runs/%s/annotations" % JOB: [],
+        }
+    )
+    d = D.diagnose(FakeFetch(routes, _shutdown_texts()), RUN, attempt=1, cache_dir=tmp_path)
+    assert d["first_failure"]["category"] == "infra-likely"
+    assert d["first_failure"]["signature"] == "runner-lost"
+
+
+def test_cancel_reclassify_only_rewrites_runner_lost_and_only_for_run_cancels():
+    job = {"name": "Quality / Static", "conclusion": "cancelled"}
+    wd = {"kind": "watchdog-failure", "job": None}
+    assert D.cancel_reclassify(job, wd, "infra-likely", "runner-lost") == ("watchdog-cancel", "")
+    manual = {"kind": "manual", "job": None}
+    assert D.cancel_reclassify(job, manual, "infra-likely", "runner-lost") == ("manual-cancel", "")
+    assert D.cancel_reclassify(job, None, "infra-likely", "runner-lost") == (
+        "infra-likely",
+        "runner-lost",
+    )
+    assert D.cancel_reclassify(job, {"kind": "unknown"}, "infra-likely", "runner-lost") == (
+        "infra-likely",
+        "runner-lost",
+    )
+    # Another infra signature is a deeper answer than the cancel.
+    assert D.cancel_reclassify(job, wd, "infra-likely", "slow-setup") == (
+        "infra-likely",
+        "slow-setup",
+    )
+    # A failed job is not a stopped one.
+    failed = dict(job, conclusion="failure")
+    assert D.cancel_reclassify(failed, wd, "infra-likely", "runner-lost") == (
+        "infra-likely",
+        "runner-lost",
+    )
+
+
+def test_watchdog_that_predates_a_carried_over_job_is_found_through_since():
+    """Job 112840911365 started in attempt 1 and is listed under attempt 2, which began after the watchdog run."""
+    run = dict(
+        _load("run_36953549081_attempt1.json"),
+        run_started_at="2026-10-02T03:00:00Z",
+        updated_at="2026-10-02T03:30:00Z",
+    )
+    routes = real_routes(**{"check-runs/110680194371/annotations": WATCHDOG_CANCEL})
+    fetch = FakeFetch(routes)
+    assert D.cancel_cause(fetch, run, jobs=[])["kind"] != "watchdog-failure"
+    early = dict(the_job(), started_at="2026-10-02T02:30:00Z")
+    got = D.cancel_cause(fetch, run, jobs=[], focus=early)
+    assert got["kind"] == "watchdog-failure", got
+
+
 def test_conclusion_text_adds_counts_only_when_they_disagree():
     assert D._conclusion_text({"conclusion": "failure", "jobs": {"failure": 3}}) == "failure"
     assert D._conclusion_text({"conclusion": "success", "jobs": {}}) == "success"
