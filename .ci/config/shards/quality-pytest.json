@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-07T13:50:26.537Z",
+  "generatedAt": "2026-10-07T14:00:22.679Z",
   "legs": [
     {
       "index": 1,
@@ -331,6 +331,7 @@
         "pytest:.ci/rediacc_ci/tests/test_proxies_go_unit.py",
         "pytest:.ci/rediacc_ci/tests/test_proxies_ops_host_check.py",
         "pytest:.ci/rediacc_ci/tests/test_proxies_unit_tests.py",
+        "pytest:.ci/rediacc_ci/tests/test_pytest_conftest_rebind.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_account_probes.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_agent_session_archival.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_ci_scans_tracked_paths.py",
