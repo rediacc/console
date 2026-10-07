@@ -26,12 +26,15 @@ WHAT IS DELIBERATELY NOT ASSERTED, so a green is not read as more than it is:
   * Nothing here checks that the cited line SAYS what the sentence claims. That
     is `wl_checks.cited_excerpts`'s job and ultimately a reader's. This proves
     the pointer lands somewhere, which is the half a machine can settle.
-  * An ALL-DIGIT hex token is never judged. `[0-9a-f]{7,40}` also matches a CI
-    run id (100500447167), a date and an issue number, and those are the
-    evidence shapes `wl_checks.completion_evidence` treats as first-class.
-    Laundering a run id out of a plan to defend against an all-digit git object,
-    which does not occur, would destroy the most citable fact in the file. The
-    same asymmetry, in the same direction, as `wl_planrec.launder`.
+  * An ALL-DIGIT hex token is not judged UNLESS it is written `commit:<token>`.
+    `[0-9a-f]{7,40}` also matches a CI run id (100500447167), a date and an
+    issue number, and those are the evidence shapes
+    `wl_checks.completion_evidence` treats as first-class, so a bare digit run
+    stays skipped. All-digit shas DO occur: about 1 in 69 nine-character
+    abbreviations is all digits (#0241c97d), and the `commit:` prefix is the
+    tick and plan citation form that says the token is one, so that form is
+    judged (`rediacc_ci.shacite.skip_as_number`). The same rule, in the same
+    direction, as `wl_planrec.launder`.
   * A line INSIDE a fenced code block is skipped. A plan that shows the reader
     `git show <40 hex>` as an example is documenting a command, not citing an
     object, and reding on it would teach sessions to stop writing examples.
@@ -85,6 +88,7 @@ import tempfile
 
 import _cipath  # noqa: F401
 from rediacc_ci import paths
+from rediacc_ci import shacite as SC
 from rediacc_ci.quality import plan_lifecycle as PL
 
 ROOT = pathlib.Path(
@@ -443,8 +447,8 @@ def citations(text):
         if any(m.start() < e and s < m.end() for s, e in spans):
             continue
         tok = m.group(1)
-        # See the docstring: an all-digit token is a run id, a date or an issue number far more often than it is a git object, and it is never judged.
-        if tok.isdigit() or len(tok) < OBJECT_MIN:
+        # See the docstring: an all-digit token is a run id, a date or an issue number far more often than it is a git object, so it is judged only when written `commit:<token>`, the form that says it is one (#0241c97d: 1 in 69 sha9s is all digits).
+        if SC.skip_as_number(text or "", m.start(1), tok) or len(tok) < OBJECT_MIN:
             continue
         # The trailing group of a UUID, not a git object. See UUID_TAIL_RE.
         if (m.start(1), m.end(1)) in uuid_tail_spans:
@@ -859,7 +863,7 @@ def selftest(root):
 
     # The EXTRACTOR, separately from the resolvers: a line carrying all four shapes must yield all four. A resolver that works over an extractor that sees nothing is a gate that cannot fail.
     # The object token is the shortest prefix of HEAD (12 or more) that carries a letter: the extractor never judges an ALL-DIGIT token (see `citations`), and about 1 in 285 SHAs opens with twelve digits. A CI run drew one and this control failed on a working extractor (test_gate_plan_citations, run on 101fa974a).
-    obj = next((head[:n] for n in range(12, len(head) + 1) if not head[:n].isdigit()), head)
+    obj = SC.citable_token(head, head[:12])
     probe = f"see {scoped[0]}:12 and {scoped[0]} plus check:ci-plan-record at {obj}"
     kinds = {k for k, _t in citations(probe)}
     ck(
@@ -891,6 +895,19 @@ def selftest(root):
     ck(
         "CONTROL: a hex-and-letter token IS treated as an object",
         any(k == "object" for k, _t in citations("at c6d3af163 the branch point")),
+    )
+    # THE `commit:` FORM, both directions (#0241c97d). The prefix says the digits are a sha, so an all-digit one is judged; the same digits bare, or behind a look-alike prefix, are still a number.
+    ck(
+        "an all-digit token written `commit:<token>` IS treated as an object",
+        ("object", "325389306") in citations("(ticked) commit:325389306 rc=0"),
+    )
+    ck(
+        "CONTROL: the same digits bare are NOT",
+        not any(t == "325389306" for _k, t in citations("(ticked) 325389306 rc=0")),
+    )
+    ck(
+        "CONTROL: the same digits behind `nocommit:` are NOT",
+        not any(t == "325389306" for _k, t in citations("nocommit:325389306 rc=0")),
     )
     ck(
         "the tail of a UUID is NOT treated as an object",

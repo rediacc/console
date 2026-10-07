@@ -1092,6 +1092,17 @@ def commit_ref_problem(root, text):
     return None
 
 
+def citable_tick_evidence(root, text):
+    """`text` with every all-digit `commit:<sha>` lengthened until it carries a letter (#0241c97d), resolved in the same repositories `commit_ref_problem` accepts. About 1 in 69 nine-character abbreviations is all digits, and a reader that skips digit runs (`plan_lifecycle.unfenced_tokens`) would not see the evidence once it is quoted into a plan. Text with no all-digit ref is returned as is, without loading anything."""
+    if not any(m.group(1).isdigit() for m in COMMIT_REF_RE.finditer(text or "")):
+        return text
+    import wl_git  # noqa: PLC0415 -- sibling, only for this verb
+    import wl_planrec as R  # noqa: PLC0415 -- sibling, only for this verb
+
+    repos = [str(root), *(os.path.join(str(root), p) for p, _b in wl_git.submodules(str(root)))]
+    return R.citable_commit_refs(root, text, repos)
+
+
 def _item_cli(argv, worklist):
     """--add / --triage / --tick / --defer / --lease / --update / --list: the v10 item verbs. Exits non-zero on misuse, so a rejected write cannot be mistaken for a delivered one."""
 
@@ -1231,6 +1242,7 @@ def _item_cli(argv, worklist):
             kind, token = bad
             detail = CLI_TICK_COMMIT_REF_DETAIL[kind] % token if token else ""
             die(CLI_TICK_NO_COMMIT_REF % (item_id, detail, item_id))
+        rest = citable_tick_evidence(root, rest)
         S.set_state(worklist, me, item_id, "x", rest)
         print("ticked #%s (%s)" % (item_id, rest[:80]))
         return

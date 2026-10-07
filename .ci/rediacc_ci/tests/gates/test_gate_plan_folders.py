@@ -550,7 +550,12 @@ def test_move_reads_a_citation_whose_nine_char_abbreviation_is_all_digits(gate, 
     root, shas = _rebased_history(tmp_path, digits="drifted")
     gate.assert_eq(shas["drifted"][:9].isdigit(), True, "the planted sha opens with nine digits")
     gate.assert_eq(
-        PL.unfenced_tokens("commit:" + shas["drifted"][:9]), [], "and bare, it is not read"
+        PL.unfenced_tokens(shas["drifted"][:9]), [], "bare, with no commit: prefix, it is not read"
+    )
+    gate.assert_eq(
+        PL.unfenced_tokens("commit:" + shas["drifted"][:9]),
+        [shas["drifted"][:9]],
+        "written as commit:<digits>, it is read (#0241c97d)",
     )
     drifted = _cite(shas["drifted"])
     gate.assert_eq(len(drifted) > 9 and not drifted.isdigit(), True, "_cite lengthened it")
