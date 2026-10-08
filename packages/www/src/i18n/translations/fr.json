@@ -9844,7 +9844,10 @@
     "title": "Assurer la continuité de votre activité"
   },
   "video": {
-    "playVideo": "Lire la vidéo"
+    "playVideo": "Lire la vidéo",
+    "player": {
+      "chapters": "Chapitres"
+    }
   },
   "whyNow": {
     "cards": [

@@ -2,7 +2,7 @@
 /**
  * A page may not link the video player's stylesheet unless it contains a player.
  *
- * THE DEFECT. `TutorialVideoPlayer.tsx` imports `plyr/dist/plyr.css` at module scope.
+ * THE DEFECT. `TutorialVideoPlayer.tsx` imported `plyr/dist/plyr.css` at module scope.
  * Astro's page-CSS hoisting reads every chunk's `viteMetadata.importedCss` and attaches
  * client-chunk CSS to every page carrying that script -- DYNAMIC IMPORT BOUNDARIES ARE
  * IRRELEVANT TO IT. So the sheet is linked wherever the HYDRATOR is, not wherever a
@@ -14,14 +14,16 @@
  * filename-matching gate silently blind, and this gate's whole subject is a file whose
  * name is a content hash. The markers were chosen by measurement: `.tvp-root` and
  * `.tvp-toolbar` also appear in a NON-player bundle, so matching on those would
- * over-report; `.plyr__control` and `.tvp-caption-word` each appear in exactly one
- * built asset.
+ * over-report; `.media-status-indicator-captions-off-icon` (the Video.js skin's own sheet,
+ * replacing Plyr's `.plyr__control` on 2026-10-08) and `.tvp-caption-word` each appear in
+ * exactly one built asset. The skin marker is a plain class with no attribute quoting, so a
+ * minifier cannot respell it.
  *
  * THE FLOORS EXIST BECAUSE THE ASSERTION IS A NEGATIVE. "No page links it without a
  * mount" is satisfied perfectly by a broken scanner, an absent build, or a deleted
  * stylesheet. Six floors make each of those a loud refusal instead of a green run, and
  * F6 is the positive half: the stylesheet must still REACH the player through a JS
- * chunk, or deleting plyr outright would pass this gate.
+ * chunk, or deleting the player skin outright would pass this gate.
  *
  * ---- gate ----
  * step: Player CSS scope
@@ -46,7 +48,7 @@ const DIST = path.join(ROOT, 'packages/www/dist');
 const MOUNT =
   /class="[^"]*\b(?:video-player-mount|tutorial-video-container)\b[^"]*"[^>]*data-video-src/;
 /** Content markers. Each appears in exactly one built asset; see the header. */
-const MARKERS = ['.plyr__control', '.tvp-caption-word'];
+const MARKERS = ['.media-status-indicator-captions-off-icon', '.tvp-caption-word'];
 const LINK = /<link[^>]+rel="stylesheet"[^>]+href="([^"]+\.css)"/g;
 
 const MIN_PAGES = 1000;
@@ -132,7 +134,7 @@ export function scan(dist: string): Result {
   const jsText = js.map((f) => fs.readFileSync(f, 'utf8')).join('\n');
   const unreferenced = r.playerCss.filter((c) => !jsText.includes(path.basename(c)));
   if (unreferenced.length === r.playerCss.length) {
-    r.refusal = `F6: no JS chunk names any player stylesheet (${r.playerCss.join(', ')}). Nothing loads them, so the pages are "clean" because the player has no styles at all -- which deleting plyr outright would also achieve.`;
+    r.refusal = `F6: no JS chunk names any player stylesheet (${r.playerCss.join(', ')}). Nothing loads them, so the pages are "clean" because the player has no styles at all -- which deleting the player skin outright would also achieve.`;
     return r;
   }
   return r;

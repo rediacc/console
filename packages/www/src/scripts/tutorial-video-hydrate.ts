@@ -27,7 +27,7 @@ import { openTheater } from './video-theater';
 /**
  * HYDRATE WHEN THE PLAYER IS ACTUALLY IN VIEW, not on DOMContentLoaded.
  *
- * plyr plus the player is 122,110 B, and it was reaching every visitor of every
+ * The Video.js skin plus the player is about 272 KB, and it was reaching every visitor of every
  * locale homepage the moment the document parsed -- `check:ci-client-bundle-budget`
  * measures the homepage at 576,294 B against a 500,000 B target, and this chunk is
  * essentially the whole overage.

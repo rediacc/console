@@ -1350,7 +1350,7 @@ for (const entry of toc as TocEntry[]) {
        own column while the player used 100%. Watching it properly is what the player's
        own fullscreen button is for -- `.tutorial-video-container` is emitted by
        src/plugins/remark-tutorial-embed.ts and hydrated into TutorialVideoPlayer.tsx,
-       whose Plyr control list carries `fullscreen` (the <video> itself has NO `controls`
+       whose Video.js skin carries a fullscreen button (the <video> itself has NO `controls`
        attribute; that is the OTHER embed, remark-video-embed.ts, which builds
        `.video-container`). So the inline copy has no reason to out-shout the words it
        illustrates.

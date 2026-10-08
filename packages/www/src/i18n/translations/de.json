@@ -9842,7 +9842,10 @@
     "title": "So sichern wir Geschäftskontinuität"
   },
   "video": {
-    "playVideo": "Video abspielen"
+    "playVideo": "Video abspielen",
+    "player": {
+      "chapters": "Kapitel"
+    }
   },
   "whyNow": {
     "cards": [

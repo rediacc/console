@@ -342,5 +342,10 @@
       "dev-env": "Dev Ortamları",
       "defense": "Proaktif Savunma"
     }
+  },
+  "video": {
+    "player": {
+      "chapters": "Bölümler"
+    }
   }
 }

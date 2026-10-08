@@ -15,21 +15,26 @@
  * SO DO NOT TURN EITHER SPECIFIER BACK INTO A BARE `import`. That single edit re-links
  * 37 KB onto 794 pages, and `check:ci-player-css-scope` is the gate that would catch it.
  *
- * Order matters: plyr first, then the overrides, matching the concatenation order the
- * single emitted chunk used to have.
+ * Order matters: the Video.js skin first, then the overrides.
+ *
+ * THE SKIN'S RULES ARE IN CASCADE LAYERS (`@layer base`, `@layer components`, ...), and
+ * every unlayered declaration beats every layered one regardless of specificity. So the
+ * overrides in tutorial-video.css win without fighting the skin's `:where()` selectors --
+ * and so does any unlayered page-wide rule (a global `button` or `video` reset), which is
+ * the thing to suspect first when a skin control looks wrong.
  *
  * AND THESE LINKS LAND AT THE END OF <head>, after every page stylesheet, whereas
  * Astro's hoisted <link> used to sit among the page CSS. Verified 2026-09-03 to change
  * nothing that exists today -- three browser screenshots are byte-identical to the
  * pre-change baselines -- but the cascade IS genuinely different: page CSS can no
- * longer beat a `.plyr`/`.tvp-*` rule by SOURCE ORDER at equal specificity.
+ * longer beat a `.tvp-*` rule by SOURCE ORDER at equal specificity.
  *
  * So a page-level override of a player selector must win on SPECIFICITY. That is
  * already how solution-video.css writes its overrides, and its comments say the reason
  * in as many words; what changed is that specificity is now the only lever rather than
  * the belt-and-braces one.
  */
-import plyrCssUrl from 'plyr/dist/plyr.css?url';
+import skinCssUrl from '@videojs/react/video/skin.css?url';
 import playerCssUrl from '../styles/tutorial-video.css?url';
 
 let pending: Promise<void> | null = null;
@@ -53,7 +58,7 @@ function loadOne(href: string): Promise<void> {
 /** Resolves once both sheets are in the document. Memoised; safe to call per mount. */
 export function ensurePlayerStyles(): Promise<void> {
   pending ??= (async () => {
-    await loadOne(plyrCssUrl);
+    await loadOne(skinCssUrl);
     await loadOne(playerCssUrl);
   })();
   return pending;

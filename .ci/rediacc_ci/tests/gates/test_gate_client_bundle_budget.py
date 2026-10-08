@@ -51,6 +51,10 @@ def real_dist_skip_reason():
 FIXED = r"""/\bimport\s*["']"""
 REVERTED = r"""/\bimport\s+["']"""
 
+# THE SECOND MUTANT (2026-10-08): the dynamic matcher back to quotes only. The bundler emits dynamic imports as template literals (import(`./X.<hash>.js`)), and under the quote-only spelling every real build reported "deferred 0 B", the plyr one included, so the deferred ceiling was never consulted. The selftest's backtick plant must name it.
+DYNAMIC_FIXED = r"""/\bimport\s*\(\s*(["'`])([^"'`]+)\1/g"""
+DYNAMIC_QUOTE_ONLY = r"""/\bimport\s*\(\s*(["'])([^"']+)\1/g"""
+
 # `import"..."`: a side-effect import with NO space, which is what a minifier emits and what the gate was blind to.
 NO_SPACE_EDGE = re.compile(rb'import"[^"]+"')
 
@@ -129,6 +133,32 @@ def test_mutant_reverts_the_fix(gate, tmp_path):
         "naming the facade plant",
     )
     gate.log_pass("CONTROL: the plants detect the exact defect, not merely pass beside it")
+
+
+def test_mutant_quote_only_dynamic_imports(gate, tmp_path):
+    """THE SECOND MUTANT. A dynamic matcher that cannot read backticks must turn the selftest red."""
+    gate.log_test("CONTROL: a quote-only dynamic import matcher must make the backtick plant go red")
+    (tmp_path / "node_modules").symlink_to(paths.from_root("node_modules"))
+    (tmp_path / "lib").symlink_to(paths.from_root("scripts", "lib"))
+    (tmp_path / "gates").mkdir()
+    source = GATE.read_text(encoding="utf-8")
+    mutated = source.replace(DYNAMIC_FIXED, DYNAMIC_QUOTE_ONLY)
+    # VACUITY GUARD, as above: an unapplied replacement would run the unmutated gate.
+    if mutated == source:
+        gate.log_fail(
+            "the mutation did not apply (%r is no longer in the gate); this control would "
+            "be testing the unmutated gate" % DYNAMIC_FIXED
+        )
+    mutant = tmp_path / "gates" / "mutant.ts"
+    mutant.write_text(mutated, encoding="utf-8")
+    result = run_tsx(gate, mutant, "--selftest")
+    gate.assert_exit(1, result, "a quote-only dynamic matcher must make the selftest FAIL")
+    gate.assert_contains(
+        result.combined,
+        "FAIL  PLANT: a backtick dynamic import",
+        "naming the backtick plant",
+    )
+    gate.log_pass("CONTROL: the backtick plant detects the matcher that read every build as 0 B deferred")
 
 
 def test_real_dist_has_the_shape(gate):

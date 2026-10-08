@@ -98,6 +98,8 @@ const CLIENT_KEY_PATHS: Record<BundleName, readonly string[]> = {
     'pages.solutionPages.*.hero.title',
     'regionPicker',
     'solutions.categories',
+    // The tutorial player's chapters track label, read by TutorialVideoPlayer through useTranslation. Video.js's own control strings come from its shipped locale packs, not from here.
+    'video.player',
   ],
   'client-route': ['hero.install.tabs', 'pages.downloads', 'pages.install', 'pages.partners.form'],
 };

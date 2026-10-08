@@ -6,10 +6,11 @@
  * them in the hydrator would have made the theater import the scheduler it is called
  * from, which is a cycle.
  *
- * WHY A PLACEHOLDER AND NOT `client:visible`. `plyr` reads `document` at module scope --
- * importing it under Node throws `ReferenceError: document is not defined` -- so the
- * player cannot be server-rendered at all, which is what an Astro island requires. The
- * dynamic `import()` below is what keeps it off the server.
+ * WHY A PLACEHOLDER AND NOT `client:visible`. The player is built on first CLICK, not on
+ * visibility: a visitor who never presses play must never download it. An island would
+ * also server-render the skin, while the placeholder already server-renders the poster,
+ * which is all a crawler or a no-JS visitor can use. The dynamic `import()` below is what
+ * keeps the player chunk off the page until it is asked for.
  */
 
 import { createElement } from 'react';

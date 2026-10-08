@@ -9821,7 +9821,10 @@
     "title": "事業継続をどう実現するか"
   },
   "video": {
-    "playVideo": "動画を再生"
+    "playVideo": "動画を再生",
+    "player": {
+      "chapters": "チャプター"
+    }
   },
   "whyNow": {
     "cards": [

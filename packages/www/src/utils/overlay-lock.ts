@@ -4,8 +4,8 @@
  *
  * They lived inside `components/Overlay.tsx` until the video theater needed
  * them too. The theater is driven from a plain script (`scripts/video-theater.ts`)
- * because the Plyr player it hosts cannot be server-rendered and therefore
- * cannot live inside a React island, so importing the component to reach its
+ * because the Video.js player it hosts is a deferred client-only chunk and
+ * does not live inside a React island, so importing the component to reach its
  * private helpers was not an option -- and copying them would have made the
  * theater the sixth hand-rolled scroll lock, which is the exact duplication
  * `Overlay.tsx`'s own header says it was written to end.

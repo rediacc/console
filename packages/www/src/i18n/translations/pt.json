@@ -9860,7 +9860,10 @@
     "title": "Como Garantimos a Continuidade do Seu Negócio"
   },
   "video": {
-    "playVideo": "Reproduzir vídeo"
+    "playVideo": "Reproduzir vídeo",
+    "player": {
+      "chapters": "Capítulos"
+    }
   },
   "whyNow": {
     "cards": [

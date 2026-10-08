@@ -4,23 +4,23 @@
  * WHY THIS EXISTS. The inline mount is capped at 36rem (solution and persona heroes,
  * solution-pages.css) and 48rem (the homepage, SPHomeVideo.astro), and the footage is
  * 1920x1080 with its captions burned into the pixels -- there is no VTT, which is why
- * Plyr drops its CC button for these. At 576px the frame is displayed at about 30%
+ * the player has no CC button for these. At 576px the frame is displayed at about 30%
  * scale and the baked captions stop being readable.
  *
  * WHY NOT JUST CALL requestFullscreen(). Three measured reasons:
  *   1. It would race the transient user-activation window. The first click has to fetch
- *      122 KB of player before there is anything to fullscreen, and the hydrator already
+ *      about 270 KB of player before there is anything to fullscreen, and the hydrator already
  *      documents that even `play()` gets refused when that fetch outlasts the gesture.
  *      A refused fullscreen is louder (Firefox and Safari throw) and leaves the visitor
  *      a small player that also is not playing.
  *   2. iPhone Safari has no `Element.requestFullscreen`. Only
  *      `video.webkitEnterFullscreen()`, which hands off to the native iOS player and
  *      discards the in-frame language picker -- the control that exists precisely
- *      because Plyr's settings menu could not host it correctly.
+ *      because the packaged skin's settings menu takes no child items.
  *   3. Taking the whole screen unasked is a context hijack whose only exit is Escape.
  *
  * An overlay we own has none of those problems: it opens synchronously on the click,
- * it behaves identically on every device, and Plyr's own fullscreen button is still
+ * it behaves identically on every device, and the skin's own fullscreen button is still
  * right there for anyone who wants the real thing -- reliably, because by then the
  * player exists.
  *
@@ -28,9 +28,8 @@
  * dataset and calls `createRoot` on it, so copying the mount's dataset onto a stage div
  * inside the overlay builds the player in its final home with no reparenting. Moving a
  * live `.tvp-shell` node instead would be the risky path: TutorialVideoPlayer's own
- * notes record that Plyr's `destroy()` swaps in a clone and desyncs React, and that the
- * chapter and caption overlays are relocated into Plyr's DOM on `ready` and moved back
- * on teardown.
+ * notes record that the caption and language overlays are children of the skin root,
+ * so a moved shell would drag live player state with it.
  */
 
 import { FOCUSABLE, lockScroll } from '../utils/overlay-lock';
@@ -62,7 +61,7 @@ export function closeTheater(): void {
 function onKeyDown(e: KeyboardEvent): void {
   if (!root || root.hidden) return;
   if (e.key === 'Escape') {
-    // ESCAPE BELONGS TO FULLSCREEN FIRST. Someone who pressed Plyr's fullscreen button
+    // ESCAPE BELONGS TO FULLSCREEN FIRST. Someone who pressed the skin's fullscreen button
     // from inside the theater expects the first Escape to leave fullscreen and keep
     // watching, not to be thrown back to the page. Most browsers do not even deliver this keydown while fullscreen, so the guard is belt and braces rather than the only thing standing between the two behaviours.
     if (document.fullscreenElement) return;
@@ -88,7 +87,7 @@ function build(): HTMLElement {
   el.className = 'video-theater';
   el.setAttribute('role', 'dialog');
   el.setAttribute('aria-modal', 'true');
-  // `hidden` rather than an opacity or visibility trick. display:none is what takes the close button and Plyr's whole control bar out of the tab order while the theater is shut; ImageModal.astro carries a long comment about the site-wide axe `aria-hidden-focus` violation that the weaker spellings caused there.
+  // `hidden` rather than an opacity or visibility trick. display:none is what takes the close button and the skin's whole control bar out of the tab order while the theater is shut; ImageModal.astro carries a long comment about the site-wide axe `aria-hidden-focus` violation that the weaker spellings caused there.
   el.hidden = true;
 
   const frame = document.createElement('div');

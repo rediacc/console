@@ -225,7 +225,7 @@ function clickWithRetry(selector) {
 }
 
 function clickPlaybackButton() {
-  return clickWithRetry('.tvp-root [data-plyr="play"]');
+  return clickWithRetry('.tvp-root .media-play-button');
 }
 
 /** The readiness wait (lib/tutorial-player-diagnostics.js `waitForPlayerReady`), bound to this page and the scenario budget. */
@@ -244,12 +244,13 @@ function burstPlaybackClicks(count, gapMs) {
 function currentState() {
   return evalInPage(`(() => {
     const video = document.querySelector('.tvp-root video');
-    const plyrRoot = video?.closest('.plyr');
+    // The skin's view of playback: its play button carries [data-started] once played, [data-paused] while paused.
+    const play = video?.closest('.media-skin')?.querySelector('.media-play-button');
     return {
       paused: video ? video.paused : null,
       ended: video ? video.ended : null,
       currentTime: video ? video.currentTime : null,
-      plyrPlaying: plyrRoot ? plyrRoot.classList.contains('plyr--playing') : null,
+      skinPlaying: play ? play.hasAttribute('data-started') && !play.hasAttribute('data-paused') : null,
       sameDocument: window.__tpgDoc === 1,
       players: document.querySelectorAll('.tvp-root video').length
     };
@@ -404,7 +405,7 @@ function scenarioSeekNoSnapback() {
 
   assertCondition(clickPlaybackButton().ok, 'play click failed before seek');
   wait(1200);
-  // Direct media-element seek rather than driving a .tvp-chapter-tick click: the chapter overlay only paints once the <track> cues have loaded (async, no reliable ready signal to poll for here), so a direct write is the more robust check for "does a seek stick" -- the SPA-history-triggered snapback this scenario exists to catch happens downstream of the media element's own currentTime, not upstream of it.
+  // Direct media-element seek rather than driving a click on a .media-time-slider-chapter segment: the skin's chapter segments only paint once the <track> cues have loaded (async, no reliable ready signal to poll for here), so a direct write is the more robust check for "does a seek stick" -- the SPA-history-triggered snapback this scenario exists to catch happens downstream of the media element's own currentTime, not upstream of it.
   const seekTarget = 48;
   evalInPage(`(() => {
     const v = document.querySelector('.tvp-root video');
@@ -442,7 +443,7 @@ function scenarioFullscreenAndLayering() {
   wait(900);
 
   // The Fullscreen API refuses requestFullscreen() without a trusted user gesture, same root cause as the play button -- must be a native click, not eval'd .click().
-  const enter = clickSelector('.tvp-root [data-plyr="fullscreen"]');
+  const enter = clickSelector('.tvp-root .media-fullscreen-button');
   assertCondition(enter.ok, 'failed to click fullscreen button', enter);
   wait(700);
 
@@ -451,14 +452,14 @@ function scenarioFullscreenAndLayering() {
     captionPresent: Boolean(document.querySelector('.tvp-root .tvp-caption'))
   }))()`);
   assertCondition(fsState.fullscreen, 'fullscreen not active after toggle', fsState);
-  // .tvp-caption is not swapped for a fullscreen-only element (unlike the deleted TerminalPlayer's `.terminal-player-caption-layer--fullscreen`): it is the SAME element, repositioned by `.plyr--fullscreen-active .tvp-caption` CSS. Its continued presence in the DOM is what matters here.
+  // .tvp-caption is not swapped for a fullscreen-only element (unlike the deleted TerminalPlayer's `.terminal-player-caption-layer--fullscreen`): it is the SAME element, a child of the skin root `.media-skin`, which is the element the skin's fullscreen button fullscreens, repositioned by `.media-skin:fullscreen .tvp-caption` CSS. Its continued presence in the DOM is what matters here.
   assertCondition(
     fsState.captionPresent,
     'caption element missing after entering fullscreen',
     fsState
   );
 
-  clickSelector('.tvp-root [data-plyr="fullscreen"]');
+  clickSelector('.tvp-root .media-fullscreen-button');
   wait(500);
   const exitState = evalInPage(`(() => ({ fullscreen: Boolean(document.fullscreenElement) }))()`);
   assertCondition(!exitState.fullscreen, 'fullscreen did not exit', exitState);
@@ -468,7 +469,9 @@ function scenarioFullscreenAndLayering() {
     const s = (el, prop) => el ? getComputedStyle(el)[prop] : null;
     return {
       captionZ: s(document.querySelector('.tvp-root .tvp-caption'), 'zIndex'),
-      chapterOverlayZ: s(document.querySelector('.tvp-root .tvp-chapter-overlay'), 'zIndex')
+      // The skin draws one time-slider segment per chapter cue; both counts are recorded so the artifact shows whether the chapters track reached the slider.
+      chapterSegments: document.querySelectorAll('.tvp-root .media-time-slider-chapter').length,
+      chapterCues: [...(document.querySelector('.tvp-root video')?.textTracks ?? [])].find((x) => x.kind === 'chapters')?.cues?.length ?? null
     };
   })()`);
   writeArtifact('scenario-layering-docs.json', docsZ);
@@ -478,7 +481,7 @@ function scenarioMountConsistency() {
   // The homepage no longer carries a tutorial/video player -- SPHomeHero.astro deliberately removed the old "fake terminal" (operator-approved: it "failed contrast... shipped a disclaimer apologising for being simulated"). The docs route and a solution-page hero are the two mount paths that both go through TutorialVideoPlayer today (tutorial-video-hydrate.ts:25), so THIS is the pair worth checking for consistency: same component, two different placements.
   log('→ scenario: docs/solution-page mount consistency');
 
-  // ONE PROBE SHAPE for both pages, because the point of this scenario is that the two surfaces answer it DIFFERENTLY. Docs mounts build immediately; solution mounts carry `data-click-to-load` and render a server-side poster instead of building the 122 KB player. Measured across all 44 English mount-carrying pages at 1440x900 and 390x844, every mount is ABOVE THE FOLD, so an IntersectionObserver fires on load and defers nothing -- which is why the deferral had to become a click.
+  // ONE PROBE SHAPE for both pages, because the point of this scenario is that the two surfaces answer it DIFFERENTLY. Docs mounts build immediately; solution mounts carry `data-click-to-load` and render a server-side poster instead of building the 272 KB player. Measured across all 44 English mount-carrying pages at 1440x900 and 390x844, every mount is ABOVE THE FOLD, so an IntersectionObserver fires on load and defers nothing -- which is why the deferral had to become a click.
   //
   // The solution assertions are the REAL contract and strictly stronger than the single `hasPlayer` this used to carry: no player before the click, a poster to click, a player inside the THEATER after it, the poster still there, and Escape putting it all back. The old form could not tell a working deferral from a broken mount.
   const probe = () =>

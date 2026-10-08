@@ -9788,7 +9788,10 @@
     "title": "让业务永不中断"
   },
   "video": {
-    "playVideo": "播放视频"
+    "playVideo": "播放视频",
+    "player": {
+      "chapters": "章节"
+    }
   },
   "whyNow": {
     "cards": [

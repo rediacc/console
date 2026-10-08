@@ -342,5 +342,10 @@
       "dev-env": "Environnements de développement",
       "defense": "Défense préventive"
     }
+  },
+  "video": {
+    "player": {
+      "chapters": "Chapitres"
+    }
   }
 }

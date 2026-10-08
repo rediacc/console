@@ -9840,7 +9840,10 @@
     "title": "Cómo garantizamos la continuidad de tu negocio"
   },
   "video": {
-    "playVideo": "Reproducir video"
+    "playVideo": "Reproducir video",
+    "player": {
+      "chapters": "Capítulos"
+    }
   },
   "whyNow": {
     "cards": [

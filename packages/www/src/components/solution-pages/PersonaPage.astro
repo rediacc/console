@@ -203,7 +203,7 @@ const breadcrumbItems = [
   />
 
   {/* The hero video mounts through the shared hydrator rather than as an island, because
-      `plyr` reads `document` at module scope and cannot be server-rendered. Same script
+      the Video.js player is a deferred client-only chunk, not a server-rendered island. Same script
       SolutionPage.astro loads for its own hero video. */}
   <script src="../../scripts/tutorial-video-hydrate.ts"></script>
 </BaseLayout>

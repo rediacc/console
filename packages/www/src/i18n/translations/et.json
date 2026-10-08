@@ -9852,7 +9852,10 @@
     "title": "Kuidas tagame äri järjepidevuse"
   },
   "video": {
-    "playVideo": "Esita video"
+    "playVideo": "Esita video",
+    "player": {
+      "chapters": "Peatükid"
+    }
   },
   "whyNow": {
     "cards": [
