@@ -54,16 +54,18 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Mode: stop_hook on; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; cadence on; agent_hint on; agent_pushback on; judge on.
 - Focus: off.
 - Branch: 1008-1, no PR yet.
-- Plans on the PR (5):
-  - agent/plans/PLAN-ci-consolidation.md -- 22 of 22 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+- Plans on the PR (7):
+  - agent/plans/PLAN-retire-bash-oracles.md -- 7 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-gate-scheduling-learned.md -- 12 of 12 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-locale-techdiff-resync.md -- 5 of 5 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-cd-errors-in-ci.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-retire-bash-oracles.md -- 7 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-plan-dependencies.md -- 3 of 12 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-lessons-registry.md -- 0 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans: none.
 - Writers: not counted at this refresh.
 - Leased items: 0.
-- Next plan: agent/plans/PLAN-config-passkey-optional.md, Promoted entry 5; starts after this branch's PR merges.
+- Next plan: agent/plans/PLAN-deferred-findings-block-merge.md, Promoted entry 2; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
