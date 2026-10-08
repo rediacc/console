@@ -99,7 +99,8 @@ SHFMT_OPTS = ("-i", "4", "-ci", "-d")
 # Re-measured 2026-10-08 at 86 after section 12 U3 deleted test-toolchain.sh.
 # Re-measured 2026-10-08 at 84 after section 12 U2 deleted test-media-r2.sh and .ci/media/verify.sh.
 # Re-measured 2026-10-08 at 80 after section 12 U1 deleted blocker-validator.sh, emit-advisory.sh, test-blocker-golden-corpus.sh and test-runner-advice.sh.
-DEFAULT_MIN_FILES = "80"
+# Re-measured 2026-10-08 at 79 after section 12 U3 step 2 deleted test-helpers.sh.
+DEFAULT_MIN_FILES = "79"
 
 # The three roots the floor counts, in the twin's argv order (order is irrelevant to a count and is kept so the two reads match on inspection).
 FLOOR_ROOTS = (".ci", ".claude", "scripts")

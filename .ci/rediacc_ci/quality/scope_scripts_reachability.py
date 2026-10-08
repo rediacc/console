@@ -107,7 +107,7 @@ THE DISPATCH-HALF ANTI-VACUITY REFUSAL CALLS A FUNCTION THAT DOES NOT EXIST. The
 
     log_fail "the dispatch scan found 0 scripts/ reference(s) across ..."
 
-`log_fail` is defined in `.ci/scripts/test/lib/test-helpers.sh` and in four test scripts, in NONE of the libraries this gate loads. Under `set -euo pipefail` an unknown command exits 127 immediately, so the three explanatory `echo` lines and the `exit 1` beneath it never run: the refusal prints `...: line N: log_fail: command not found` and exits 127.
+`log_fail` was defined in `.ci/scripts/test/lib/test-helpers.sh` (deleted in PLAN-retire-bash-oracles section 12 U3 step 2) and in four test scripts, in NONE of the libraries this gate loads. Under `set -euo pipefail` an unknown command exits 127 immediately, so the three explanatory `echo` lines and the `exit 1` beneath it never run: the refusal prints `...: line N: log_fail: command not found` and exits 127.
 
 THIS IS THE SAME DEFECT, IN THE SAME SHAPE, AS ONE ALREADY RECORDED IN THIS TREE.
 The shell battery runner, since retired, said of the pool-writer-safety gate: "the anti-vacuity refusal that exists for exactly that case called a log_fail() that does not exist, so the gate exited 127 rather than refusing. Two failures had to be repaired before this one line became visible." That gate was given its own `log_fail` at its bash twin's line 76; this one was not.

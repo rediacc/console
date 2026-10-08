@@ -1092,9 +1092,6 @@
   ".ci/scripts/security/check_workflow_gates.py": {
    "noqa F401": 1
   },
-  ".ci/scripts/test/lib/test-helpers.sh": {
-   "shellcheck-disable SC2064": 1
-  },
   ".claude/hooks/context/band-notice.py": {
    "noqa BLE001": 3
   },

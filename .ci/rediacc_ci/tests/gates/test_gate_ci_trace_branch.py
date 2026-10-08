@@ -6,7 +6,7 @@ HERMETIC: `gh` is shimmed, so this gate never touches the network. A gate that n
 
 WHAT THIS GATE CANNOT SEE, carried over unchanged: it does not prove the GraphQL field selection is still valid against the live schema. A deprecation surfaces at runtime as `unreadable`, which at least says so, but this gate stays green through it.
 
-THE FAKE `gh` IS THE TWIN'S. `with_fake_gh` in test-helpers.sh cats ONE file for every call, which cannot tell the PR query from the branch query, and telling them apart is the entire subject here. So the twin writes its own router and this module writes the same one from a template.
+THE FAKE `gh` IS THE TWIN'S. `with_fake_gh` in test-helpers.sh (deleted in PLAN-retire-bash-oracles section 12 U3 step 2) catted ONE file for every call, which could not tell the PR query from the branch query, and telling them apart is the entire subject here. So the twin writes its own router and this module writes the same one from a template.
 
 TWO PLACES WHERE `$0` HAD TO BECOME "THIS MODULE", and they are not cosmetic:
 

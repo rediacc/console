@@ -440,15 +440,15 @@ def test_the_twin_is_gone_and_the_driver_says_so(target: str) -> None:
     )
 
 
-def test_the_baseline_and_the_allowlist_no_longer_describe_the_twins() -> None:
-    """A policy list still naming a deleted file is a suppression covering nothing, and `check:ci-language-policy` and `check:ci-suppression-liveness` each red on one. Asserted here so the drain cannot be split off into a later commit."""
-    baseline = json.loads(
-        (ROOT / ".ci" / "config" / "language-policy-baseline.json").read_text(encoding="utf-8")
-    )
+def test_the_policy_lists_no_longer_describe_the_twins() -> None:
+    """A policy list still naming a deleted file is a suppression covering nothing, and `check:ci-language-policy` and `check:ci-suppression-liveness` each red on one. Asserted here so the drain cannot be split off into a later commit.
+
+    The language policy is STRICT since PLAN-retire-bash-oracles section 12 G1 deleted `.ci/config/language-policy-baseline.json`, so the allowlist is the only list a twin could still hide in."""
+    language = (ROOT / ".ci" / "policy" / ".language-policy-allowlist").read_text(encoding="utf-8")
     dead_bash = (ROOT / ".ci" / "policy" / ".dead-bash-allowlist").read_text(encoding="utf-8")
     for target in TARGETS:
         rel = ".ci/docker/run-in-%s.sh" % target
-        assert rel not in baseline["bashFiles"], rel
+        assert ":%s\n" % rel not in language, rel
         assert "manual:%s" % rel not in dead_bash, rel
 
 

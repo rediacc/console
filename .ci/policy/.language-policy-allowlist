@@ -6,12 +6,14 @@
 # the allowlist that ruling names. Its reader is
 # `.ci/scripts/quality/check_language_policy.py`.
 #
-# THIS FILE IS NOT THE BACKLOG. The 520 non-exempt bash files that exist today
-# (measured 2026-09-07) are frozen in `.ci/config/language-policy-baseline.json`,
-# which is generated, shrink-only, and goes away entirely at the W1 P6 strict
-# flip. An entry HERE is a claim that the file will still be bash after that
-# flip. Moving something from the baseline into this file is not a drain, it is
-# a decision, and it needs a reason that survives the reading.
+# THERE IS NO BACKLOG ANY MORE. The 520 non-exempt bash files measured on
+# 2026-09-07 were frozen in a generated, shrink-only baseline
+# (`.ci/config/language-policy-baseline.json`). PLAN-retire-bash-oracles drained
+# it to the survivors below and deleted it, which is the W1 P6 strict flip: the
+# gate now refuses every tracked bash file in the covered trees that this file
+# does not name. An entry HERE is a claim that the file stays bash, and adding
+# one is a decision that needs a reason that survives the reading, never a way
+# past a red.
 #
 # Three entry kinds, because the liveness oracle differs and the gate checks each:
 #
@@ -57,28 +59,31 @@ tree:.ci/breakpoint/
 # BLOCKER: tutorial RECORDINGS whose text is the lesson a reader follows plus the sample apps' Rediaccfiles, which are bash by product definition (a Rediaccfile is a bash script renet sources); rewriting either in Python would change what the tutorial teaches
 tree:.ci/tutorials/
 
-# The "shim:" class is DELIBERATELY EMPTY, and empty is its correct state today.
-#
-# Ruling 7 names one-line shims as surviving bash, so the class has to exist for
-# the W1 P6 strict flip to have anywhere to put one. Measured 2026-09-07 across
-# the covered trees, exactly one tracked bash file had a single effective line
-# (.claude/oracles/pre-bash/lib/command-scan.sh), and it was ordinary debt rather
-# than a frozen shim, so it stayed in the baseline where a drain could reach it.
-# W7 P6 drained it by porting the last guard that sourced the library and moving
-# the real 303-line file onto that path, which deleted the forwarder. The
-# measurement now returns NOTHING, and the class is empty because no tracked bash
-# file in the covered trees is a one-line shim at all.
+# The "shim:" class held nothing until the strict flip. Measured 2026-09-07,
+# the one single-line bash file in the covered trees was ordinary debt, and W7 P6
+# drained it. The three entries below are W11-C's (820e53328): each is a
+# `set -euo pipefail` plus one `exec python3 -m rediacc_ci.infra.*` line, so the
+# shim oracle (one effective line) is exactly the claim that keeps them honest.
 
-# BLOCKER: this is the file that provisions the Python toolchain, so it is the root of the dependency graph every other Python file in these trees hangs from; check_pytest.py:389 shells out to it as its own remedy and rdc.sh:41 prints it as the way off a host with no uv and no pip, and a bootstrap written in Python would offer a broken Python estate a repair path that runs through the thing that is broken
+# BLOCKER: a one-line exec into rediacc_ci.infra.ci_pull_images; the path itself is the contract, spelled as PULLER at .ci/breakpoint/scripts/pull-service-images.sh:38, and that tree is vendored and byte-locked by check-breakpoint-drift.sh, so renaming or removing the file would fork code whose whole contract is that it ships identical downstream
+shim:.ci/scripts/infra/ci-pull-images.sh
+
+# BLOCKER: a one-line exec into rediacc_ci.infra.ci_start_elite; the path itself is the contract, spelled as SERVICES_SCRIPT at .ci/breakpoint/scripts/start-origin.sh:88, and that tree is vendored and byte-locked by check-breakpoint-drift.sh, so renaming or removing the file would fork code whose whole contract is that it ships identical downstream
+shim:.ci/scripts/infra/ci-start-elite.sh
+
+# BLOCKER: a one-line exec into rediacc_ci.infra.ci_stop_elite; the path itself is the contract, tested with -x and executed by .ci/breakpoint/scripts/stop-breakpoint.sh:240-242, and that tree is vendored and byte-locked by check-breakpoint-drift.sh, so renaming or removing the file would fork code whose whole contract is that it ships identical downstream
+shim:.ci/scripts/infra/ci-stop-elite.sh
+
+# BLOCKER: this is the file that provisions the Python toolchain, so it is the root of the dependency graph every other Python file in these trees hangs from; .ci/rediacc_ci/check_pytest.py:428 runs its `doctor` report to find pytest and :477 prints it as the remedy, and rdc.sh:33 prints it as the way off a host with no uv and no pip, and a bootstrap written in Python would offer a broken Python estate a repair path that runs through the thing that is broken
 file:.ci/bootstrap.sh
 
-# BLOCKER: a sourceable variable table whose consumers sit outside ruling 7's reach and stay bash for good -- rdc.sh:17 and scripts/dev/worktree.sh:223 source it, as do three inline workflow run: steps (cd-deploy-account.yml:238, ct-tests.yml:177, edge-clone-d1.yml:71), and Python already reads it through the shell bridge at .ci/rediacc_ci/setup/bridge.py instead of reimplementing it
+# BLOCKER: a sourceable variable table whose consumers sit outside ruling 7's reach and stay bash for good -- .ci/media/media-entry.sh:49 sources it, as do two inline workflow run: steps (cd-deploy-account.yml:261, ct-tests.yml:179), and Python already reads it through the shell bridge at .ci/rediacc_ci/setup/bridge.py instead of reimplementing it
 file:.ci/config/constants.sh
 
-# BLOCKER: generated, sourceable variable table (check_literal_sources.py --write renders it from .ci/config/well-known.env and R4 holds it equal); its consumers are bash (.ci/config/constants.sh, .ci/scripts/lib/common.sh) that run where python3 is not guaranteed
+# BLOCKER: generated, sourceable variable table (check_literal_sources.py --write renders it from .ci/config/well-known.env and R4 holds it equal); its consumers are bash that run where python3 is not guaranteed: .ci/config/constants.sh, .ci/docker/service/env.sh:15 (sourced into the caller's shell) and .ci/media/tools/upload-r2.sh:63
 file:.ci/config/well-known.generated.sh
 
-# BLOCKER: this is PID 1 of the published web image, copied to /docker-entrypoint.sh at Dockerfile:121 and named by ENTRYPOINT at Dockerfile:130, and the image is nginx on alpine with no Python interpreter in it; adding one to satisfy a repo-side language rule changes the shipped artifact rather than this repository
+# BLOCKER: this is PID 1 of the published web image, copied to /docker-entrypoint.sh at Dockerfile:127 and named by ENTRYPOINT at Dockerfile:136, and the image is nginx on alpine with no Python interpreter in it; adding one to satisfy a repo-side language rule changes the shipped artifact rather than this repository
 file:.ci/docker/web/entrypoint.sh
 
 # BLOCKER: its entire contract is `export` into the CALLER's shell, which is what docker-compose.yml:5 documents as the way to use it, and a child process cannot mutate its parent's environment in any language; rewriting it in Python would mean emitting shell for the caller to eval, which is the same bash with one more hop
@@ -101,16 +106,16 @@ file:.ci/docker/run-in-tts.sh
 # "the five .ci/docker entrypoints" is the phrase a future reader will arrive with,
 # and three is now the whole of it.
 
-# BLOCKER: driven by 3 committed Python callers (test_gate_rebase_resolve.py, test_gate_shadow_gate.py, and a hooks trapguard test) whose own docstrings say the fixture library is driven, not reimplemented -- a Python port here would be a second copy of the fixtures and this gate would then certify the wrong one
+# BLOCKER: driven by 2 committed Python callers (test_gate_rebase_resolve.py:32 and test_hooks_trapguard.py:531) whose own docstrings say the fixture library is driven, not reimplemented -- a Python port here would be a second copy of the fixtures and this gate would then certify the wrong one
 file:.ci/scripts/test/lib/git-fixture.sh
 
 # BLOCKER: driven by mutate_check.py, whose own docstring says a Python reimplementation "would be a second instrument and this gate would then certify the wrong one" -- same shape as git-fixture.sh above
 file:.ci/scripts/test/mutate-check.sh
 
-# BLOCKER: sourced only, by ci-start-elite.sh and through `bash -c '. "$1"; env -0'` by the ports ci_start_account.py and ci_start_elite.py, to export variables into the CALLER's shell -- same contract as the already-exempted .ci/docker/service/env.sh, a child process cannot mutate its parent's environment in any language
+# BLOCKER: sourced only, through `bash -c '. "$1"; env -0'` by the ports ci_start_account.py and ci_start_elite.py (ci-start-elite.sh is now a one-line shim over the latter) and by hand per .ci/docker/ci/docker-compose.yml:7, to export variables into the CALLER's shell -- same contract as the already-exempted .ci/docker/service/env.sh, a child process cannot mutate its parent's environment in any language
 file:.ci/scripts/infra/ci-env.sh
 
-# BLOCKER: a bound fixture, not a standalone tool, doubly tied to bash -- .ci/rediacc_ci/quality/mutate_check.py:105-106 hardcodes SUITE_NAME as this exact basename and mutate-check.sh:162,167 invokes it as `bash "$SUITE"` explicitly; a Python rewrite would need edits to another gate's live contract plus the already-exempted mutate-check.sh, neither owned by this box
+# BLOCKER: a bound fixture, not a standalone tool, doubly tied to bash -- .ci/rediacc_ci/quality/mutate_check.py:75 hardcodes SUITE_NAME as this exact basename and mutate-check.sh:166,171 invokes it as `bash "$SUITE"` explicitly; a Python rewrite would need edits to another gate's live contract plus the already-exempted mutate-check.sh, neither owned by this box
 file:.ci/scripts/test/fixtures/mutate-check/fixture-suite.sh
 
 # BLOCKER: the head of every guarded hook pattern, admitted by operator ruling 2026-09-21 (option A of PLAN-tooling-transformation.md box D4) so .claude/settings.json can carry one command per (event, matcher) pattern; it now CARRIES both toolchain checks inline, the jq one parsed without jq by design and the python3 one unable to start in Python at all, since a check for an interpreter written in that interpreter cannot run in the one condition it exists to report
@@ -118,3 +123,9 @@ file:.claude/hooks/chain-head.sh
 
 # BLOCKER: BASH_ENV is a bash-only mechanism, so the file the harness points BASH_ENV at has to be sourceable bash (header lines 1-8)
 file:.claude/hooks/profile/bash_env.sh
+
+# BLOCKER: kept by operator ruling D2 (PLAN-retire-bash-oracles): .ci/bootstrap.sh:87 sources it before any Python exists, because bootstrap is what installs the Python toolchain, so a port would make the installer depend on the thing it installs; rediacc_ci.core.toolchain is its Python twin and check:ci-bash-lib-ported keeps the two complete
+file:.ci/scripts/lib/toolchain.sh
+
+# BLOCKER: a two-line forwarder to .ci/media/tools/upload-r2.sh whose PATH is spelled by private/growth/video_pipeline/publish.py:38 (_R2_UPLOAD_SCRIPT), a gitignored repository (.gitignore:81) this checkout cannot commit to, so the name including its extension is frozen by a caller no change here can reach; test_gate_media_shims.py proves the forward, and deleting it is a cross-repo breaking change
+file:.ci/scripts/deploy/upload-media-to-r2.sh

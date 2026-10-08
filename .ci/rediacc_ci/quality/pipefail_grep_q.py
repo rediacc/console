@@ -52,8 +52,8 @@ not SAFE.
 
 The mechanism differs and the effect does not: a BUILTIN takes EPIPE and returns non-zero, an EXTERNAL producer is SIGPIPE'd to 141, and under `pipefail` both make a pipeline that MATCHED report false. `printf` and `echo` are therefore in SCALING_PRODUCERS, and the eleven sites that widening found across eight files were converted in the same change.
 
-`.claude/oracles/**` IS EXCLUDED FROM THE CORPUS ON PURPOSE and holds eight of the shape. Those files are the FROZEN bash originals for `.claude/rediacc_hooks/guards/block_compacted_plan_edit.py` and `block_unlinked_commit_author.py`; `.claude/oracles/README.md:49-54` says "They are FROZEN. Do not fix a bug here; fix it in the port." Nothing registers them, the live code is Python
-and has no pipe, so the eight are not defects and must not be converted. Recorded here so the next sweep does not re-derive 47 files and 104 sites and have to work out again why they do not count.
+`.claude/oracles/**` WAS EXCLUDED FROM THE CORPUS ON PURPOSE and held eight of the shape. Those files were the FROZEN bash originals for `.claude/rediacc_hooks/guards/block_compacted_plan_edit.py` and `block_unlinked_commit_author.py`, never registered, while the live code is Python and has no pipe, so the eight were not defects. d5d296dea deleted the whole oracle tree, so
+there is nothing left to exclude; it is recorded so a sweep of old history does not re-derive 47 files and 104 sites and have to work out again why they did not count.
 
 THE PIPEFAIL TEST IS PER-FILE, AND IT IS WRONG IN BOTH DIRECTIONS. It greps the whole file for `set -o pipefail` and cannot see an inner shell's options:
 
@@ -211,11 +211,11 @@ _GQ = "grep -q"
 #             with the daemon's state, not with a constant. THREE live console
 # sites, all of the same shape and all under `.ci/lib/`'s INHERITED pipefail (neither file sets it itself), so all three were invisible twice over -- once for the missing producer name and once for the per-file test: .ci/lib/account.sh:796 teardown of `account-server` .ci/lib/service.sh:156 teardown of four rediacc-service-* containers .ci/lib/service.sh:183 `service status`
 # reporting running/not Losing the race SKIPS a container teardown, or reports a running container as absent. A fourth site, `.ci/scripts/private/concurrent-fork-isolation-test.sh:266`, is the known FALSE-POSITIVE direction -- it lives inside an `_ssh "sudo bash -c '...'"` body whose remote shell sets no pipefail (its neighbour at :278 says exactly that in a comment) -- and was
-# converted anyway, for the same reason test-install-methods.sh:1129 was: an allowlist entry would be a suppression, and the conversion is defensively correct the day that remote body gains `-o pipefail`. ONE MORE SITE CARRIES THE IDENTICAL SHAPE AND IS NOT THE CLASS: `.ci/scripts/infra/ci-stop-elite.sh:35` is
-#             `docker ps -a --format ... | grep -q "^${container}$"`, but both set
-# `set -e` ONLY (line 8) and it is EXECUTED as a subprocess, never sourced -- so no sourcer's pipefail reaches it and the pipeline reports grep's status. Checked 2026-09-16 and left alone
-#             deliberately; the gate is silent on it by its own rule, and this
-# note exists so the next sweep does not re-derive the answer. Its former twin
+# converted anyway, for the same reason test-install-methods.sh:1129 was: an allowlist entry would be a suppression, and the conversion is defensively correct the day that remote body gains `-o pipefail`. ONE MORE SITE CARRIED THE IDENTICAL SHAPE AND WAS NOT THE CLASS: `.ci/scripts/infra/ci-stop-elite.sh:35` was
+#             `docker ps -a --format ... | grep -q "^${container}$"`, but the file set
+# `set -e` ONLY (line 8) and was EXECUTED as a subprocess, never sourced -- so no sourcer's pipefail reached it and the pipeline reported grep's status. Checked 2026-09-16 and left alone
+#             deliberately. W11-C (820e53328) turned that file into a one-line
+# shim over `rediacc_ci.infra.ci_stop_elite`, so the site is gone. Its former twin
 # `.ci/scripts/infra/ci-stop.sh:44` carried the same shape and was retired with
 #             the rest of the bash ports; `rediacc_ci.infra.ci_stop` reads the
 # container list without a pipeline at all.

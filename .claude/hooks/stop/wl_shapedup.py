@@ -144,7 +144,7 @@ def read_verdict(out, root=None):
     # `already` USED TO RETURN SILENT HERE, and that was backwards. Operator ruling 2026-09-02, after the calibration fixture and this line had contradicted each other for a full run: "Make it FIRE".
     #
     # The rubric asks whether these copies should become one thing, and reads `already` as "yes, and the thing already exists". Answering that with silence made the MOST actionable case the quietest one -- a helper is on disk, N copies ignore it, and adopting it is a mechanical edit with no design left to do. V_ACTION already carried the right order for it ("Extract the shared
-    # piece into <harness>"), which is the adopt instruction; nothing needed writing, only unmuting. The evidence that settled it: with_temp_dir exists at .ci/scripts/test/lib/test-helpers.sh, and 70 gate scripts hand-roll `mktemp -d` against 26 that use it.
+    # piece into <harness>"), which is the adopt instruction; nothing needed writing, only unmuting. The evidence that settled it at the time: with_temp_dir existed in test-helpers.sh, and 70 gate scripts hand-rolled `mktemp -d` against 26 that used it (both since ported to pytest and deleted).
     #
     # `already` naming a module that is NOT on disk still fires too -- that is a claim, not a fact, and it fires with the harness it named so the session can see the mistake. Both branches fire now; they differ only in whether the named harness is real, which the instruction carries either way.
     return "fire", {

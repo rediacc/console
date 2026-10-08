@@ -10,7 +10,8 @@ WHAT IT CHECKS, per library in `LIBS`:
   - a `.sh` under `LIB_DIRS` missing from `LIBS` is a finding, so a new library cannot bypass the gate;
   - a `LIBS` library whose `.sh` is gone, a listed module that does not exist, and an alias whose bash function no longer exists are findings, so the tables only describe the tree that is there.
 
-THE RETIREMENT IS BUILT IN. When B1/B3 delete a library, its `LIBS` row must go in the same change. When the last row goes, zero functions are scanned, and that is a finding telling the author to retire this gate (package.json key, manifest entry, workflow step), because a gate that scans nothing passes forever.
+THE RETIREMENT IS BUILT IN, AND IT WAITS FOR THE LAST RETIRED LIBRARY. When a library is deleted, its `LIBS` row must go in the same change. When the last row goes, zero functions are scanned, and that is a finding telling the author to retire this gate (package.json key, manifest entry, workflow step), because a gate that scans nothing passes forever. Section 12 U1 removed
+`blocker-validator.sh` and `emit-advisory.sh`, so `toolchain.sh` is the one row left, and it is KEEP-BASH by ruling D2: `.ci/bootstrap.sh:87` sources it before any Python exists. Operator ruling D9 (2026-10-08) keeps this gate for as long as that library is kept, since the workflows read the Python `toolchain pairs/report` while `bootstrap.sh` reads the bash, and this gate is what keeps the two complete. The gate retires with `toolchain.sh`, not before.
 
 Exit 0 clean, 1 on findings, 2 when the gate's own controls fail (controls_first convention).
 """
