@@ -1,6 +1,6 @@
 """Block edits that add a fat inline `run:` block to a GitHub workflow.
 
-The rule (enforced in CI by `check:ci-workflows`, .ci/scripts/quality/check_workflows.py): a workflow `run:` block scalar whose shell logic exceeds 8 non-blank/non-comment lines does not belong inline. CI step logic lives in .ci/scripts/<area>/<name>.sh so it is locally runnable and shareable across CI systems; the workflow step is env wiring + one script call.
+The rule (enforced in CI by `check:ci-workflows`, .ci/scripts/quality/check_workflows.py): a workflow `run:` block scalar whose shell logic exceeds 8 non-blank/non-comment lines does not belong inline. CI step logic lives in a Python module, .ci/rediacc_ci/<area>/<name>.py run as `python3 -m rediacc_ci.<area>.<name>` (a new .sh is refused by check:ci-language-policy), so it is locally runnable and shareable across CI systems; the workflow step is env wiring + one module call.
 
 This is the fast local nudge for that rule: it fires only for .github/workflows/*.yml|yaml edits, only when the new content introduces a `run:` block that already crosses the threshold within the edited fragment. The CI gate remains the source of truth: it parses whole files, so a fat block assembled across several edits still fails there even if no single fragment trips this hook.
 
