@@ -218,6 +218,9 @@ const REF_MARKER_CONTROLS: { name: string; was: string; now: string; en: string;
 /** A naturalization mask sentinel, `⟦0⟧`, as private/growth/i18n_pipeline/mask.py writes it. */
 const SENTINEL = /\u27e6\d+\u27e7/g;
 
+/** The shape of a restored product name: one whitespace-free token that starts with a capital, so a lowercase common word (`lisanslar`, `rakipler`) is not a name. Apostrophe suffixes (`Rediacc'ın`) stay allowed. */
+const PRODUCT_NAME_TOKEN = /^\p{Lu}[\p{L}\p{N}'\u2019_-]*$/u;
+
 /** At most this many characters may stand where one sentinel stood. */
 const SENTINEL_REPLACEMENT_MAX = 40;
 
@@ -239,7 +242,7 @@ const SENTINEL_REPLACEMENT_MAX = 40;
  * byte for byte and in order, with only the gaps where the sentinels stood filled. Each
  * gap holds at most SENTINEL_REPLACEMENT_MAX characters of a name, never a sentence: no
  * sentence or clause punctuation, no line break, no sentinel, and it is either a span of
- * the English value verbatim or one whitespace-free token (a product name, which the mask
+ * the English value verbatim or one whitespace-free capitalised token (a product name, which the mask
  * map restores and the English may not carry), so no run of words is written in. The English value must not
  * carry the sentinel (a real one would be English's own text), and the NEW value must
  * carry no leaked sentinel at all, so swapping `⟦0⟧` for `⟦1⟧` is not a repair. A rewrite
@@ -264,7 +267,7 @@ export function isSentinelRepair(was: string, now: string, en: string): boolean 
     .every(
       (gap) =>
         !/[.!?;:,\u3002\uff01\uff1f\uff1b\uff1a\uff0c\u3001\u27e6\u27e7<>]/u.test(gap) &&
-        (gap === '' || en.includes(gap) || !/\s/u.test(gap))
+        (gap === '' || en.includes(gap) || PRODUCT_NAME_TOKEN.test(gap))
     );
 }
 
@@ -372,6 +375,20 @@ const SENTINEL_CONTROLS: { name: string; was: string; now: string; en: string; w
     name: 'CONTROL: words that are not in the English written into the sentinel gap are NOT exempt',
     was: '\u27e60\u27e7 vs rakipler',
     now: 'Rediacc 25 lisans dahil vs rakipler',
+    en: 'How we stack up against other vendors',
+    want: false,
+  },
+  {
+    name: 'a product name with a Turkish apostrophe suffix is exempt',
+    was: '\u27e60\u27e7 vs rakipler',
+    now: "Rediacc'ın vs rakipler",
+    en: 'How we stack up against other vendors',
+    want: true,
+  },
+  {
+    name: 'CONTROL: one lowercase common word written into the sentinel gap is NOT exempt',
+    was: '\u27e60\u27e7 vs rakipler',
+    now: 'lisanslar vs rakipler',
     en: 'How we stack up against other vendors',
     want: false,
   },

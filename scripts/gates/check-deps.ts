@@ -1916,7 +1916,7 @@ function globToRegExp(glob: string): RegExp {
 function planPinSync(
   text: string,
   moved: Map<string, string>,
-  declared: Array<Record<string, string>>
+  declared: Record<string, string>[]
 ): { text: string | null; groups: number; involved: number; rewrites: string[]; errors: string[] } {
   const out = {
     text: null as string | null,
@@ -1925,7 +1925,7 @@ function planPinSync(
     rewrites: [] as string[],
     errors: [] as string[],
   };
-  let rc: { versionGroups?: Array<Record<string, unknown>> };
+  let rc: { versionGroups?: Record<string, unknown>[] };
   try {
     rc = JSON.parse(text) as typeof rc;
   } catch (e) {
@@ -1944,27 +1944,37 @@ function planPinSync(
     const globs = deps.filter(
       (d): d is string => typeof d === 'string' && /[*?]/.test(d) && !d.startsWith('!')
     );
-    const globMoved = [...moved.keys()].filter((name) =>
-      globs.some((g) => globToRegExp(g).test(name))
+    // Literal members are handled by the rewrite below, so a glob entry only matters for a moved package it covers that no literal entry names.
+    const globMoved = [...moved.keys()].filter(
+      (name) => !members.includes(name) && globs.some((g) => globToRegExp(g).test(name))
     );
-    if (movedMembers.length === 0) {
-      // A glob entry cannot be expanded against the manifests here, so a moved package it covers is named for a hand edit; a group pinned to anything but a caret range (a `*` group) holds no line to keep.
-      const gm = pin.match(SYNCPACK_PIN_RE);
-      const best = globMoved.reduce<string | null>(
-        (a, n) =>
-          a === null || compareVersions(moved.get(n) as string, a) > 0
-            ? (moved.get(n) as string)
-            : a,
-        null
+    // A glob entry cannot be expanded against the manifests here, so a moved package it covers past the pin (or past the line a literal member moves it to) is named for a hand edit, whether or not the group also has a moved literal member; a group pinned to anything but a caret range (a `*` group) holds no line to keep.
+    const gm = pin.match(SYNCPACK_PIN_RE);
+    const pinLine = movedMembers.reduce<string | null>(
+      (a, d) => {
+        const v = moved.get(d) as string;
+        return a === null || compareVersions(v, a) > 0 ? v : a;
+      },
+      gm ? gm[1] : null
+    );
+    const globBest = globMoved.reduce<string | null>(
+      (a, n) =>
+        a === null || compareVersions(moved.get(n) as string, a) > 0 ? (moved.get(n) as string) : a,
+      null
+    );
+    const globPast =
+      gm !== null &&
+      globBest !== null &&
+      pinLine !== null &&
+      compareVersions(globBest, pinLine) > 0;
+    if (globPast) {
+      out.involved++;
+      out.errors.push(
+        `group "${label}" covers ${globMoved.map((n) => `${n}@${moved.get(n)}`).join(', ')} through a glob entry, which is not expanded, so its pin ${pin} is not moved; set its pinVersion by hand`
       );
-      if (gm && best !== null && compareVersions(best, gm[1]) > 0) {
-        out.involved++;
-        out.errors.push(
-          `group "${label}" covers ${globMoved.map((n) => `${n}@${moved.get(n)}`).join(', ')} through a glob entry, which is not expanded, so its pin ${pin} is not moved; set its pinVersion by hand`
-        );
-      }
-      return;
     }
+    if (movedMembers.length === 0) return;
+    if (globPast) return;
     out.involved++;
     const m = pin.match(SYNCPACK_PIN_RE);
     if (!m) {
@@ -4314,6 +4324,52 @@ function selftest(): void {
         plan.errors[0].includes('group "Pin OpenTelemetry by glob"') &&
         plan.rewrites.length === 0,
       JSON.stringify(plan)
+    );
+  }
+  {
+    // A moved literal member must not hide a moved glob-covered package that ends past the line the pin would move to.
+    const mixedRc = `${JSON.stringify(
+      {
+        versionGroups: [
+          {
+            label: 'Pin OpenTelemetry mixed',
+            packages: ['**'],
+            dependencies: ['@opentelemetry/api', '@opentelemetry/sdk-*'],
+            pinVersion: '^0.222.0',
+          },
+        ],
+      },
+      null,
+      2
+    )}\n`;
+    const mixed = planPinSync(
+      mixedRc,
+      new Map([
+        ['@opentelemetry/api', '0.223.0'],
+        ['@opentelemetry/sdk-node', '0.224.0'],
+      ]),
+      []
+    );
+    expect(
+      'pin groups: a glob entry covering a package that moved past a moved literal member is an error naming the group, with no rewrite',
+      mixed.text === null &&
+        mixed.errors.length === 1 &&
+        mixed.errors[0].includes('group "Pin OpenTelemetry mixed"') &&
+        mixed.rewrites.length === 0,
+      JSON.stringify(mixed)
+    );
+    const level = planPinSync(
+      mixedRc,
+      new Map([
+        ['@opentelemetry/api', '0.223.0'],
+        ['@opentelemetry/sdk-node', '0.223.0'],
+      ]),
+      []
+    );
+    expect(
+      'pin groups: a glob-covered package level with the moved literal member is rewritten with the group, not refused',
+      level.errors.length === 0 && level.rewrites.length === 1,
+      JSON.stringify(level)
     );
   }
   // A file the rewrite cannot reproduce byte for byte is refused, not reformatted.
