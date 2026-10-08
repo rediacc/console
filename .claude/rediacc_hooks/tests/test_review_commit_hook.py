@@ -1357,3 +1357,31 @@ def test_drop_foreign_reviews_removes_only_records_of_a_repository_outside_the_p
     assert R.drop_foreign_reviews(world.repo, BRANCH, write=False)[1].startswith(
         "no review records"
     )
+
+
+def test_drop_foreign_reviews_refuses_when_gitmodules_cannot_be_read(world):
+    """Review 166c8fe1.1: an unreadable `.gitmodules` once fell back to the console alone, so every submodule record read as foreign and --write would delete them. It now refuses and touches nothing."""
+    sub = _submodule(world, "registered")
+    world.answer([])
+    sha = world.commit("e.py", repo=sub)
+    cmd = [
+        sys.executable,
+        str(R.SELF),
+        "--run",
+        sha,
+        "--branch",
+        BRANCH,
+        "--root",
+        str(world.repo),
+        "--repo",
+        "registered",
+    ]
+    done = subprocess.run(
+        cmd, capture_output=True, text=True, env=world.env, check=False, timeout=60
+    )
+    assert done.returncode == 0, done.stderr
+    (world.repo / ".gitmodules").write_text("[submodule\n\tbroken = = =\n", encoding="utf-8")
+    rc, text = R.drop_foreign_reviews(world.repo, BRANCH, write=True)
+    assert rc == 1, text
+    assert "refused" in text
+    assert sha in world.ledger_shas(), "the submodule record survives"
