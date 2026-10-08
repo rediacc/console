@@ -35,10 +35,9 @@ K = 5
 
 # A path LEAVES this table in the same change that graduates its row to `status: "ledger"` (the real run happened, so the `dry_run_*` fields go with the BLOCKER); `verify-edge-endpoints`, `verify-stable-endpoints` and `assert-edge-tag-exists` graduated on 2026-09-23 without that edit and left this module red.
 # Every path whose dry-run half has been driven and recorded, and the external tool whose argv the row's `[call]` findings must therefore carry. The tool is the one named in that path's BLOCKER line, so this table is also the check that a ledger recorded the RIGHT script's traffic: `mark-production` agreeing only on `curl` lines would mean the fixture answered a neighbour's probes.
-EXPECTED_DRY_RUN_PATHS = {
-    ".ci/scripts/deploy/delete-r2-channel.sh": ("aws",),
-    ".ci/scripts/release/assert-artifact-version.sh": ("gh",),
-}
+#
+# Retired 2026-10-08: delete-r2-channel.sh (commit a9caf34b1) and assert-artifact-version.sh (commit 58aaa1604) were the last two rows, and both twins are deleted after their goldens froze. The ledgers stay under .ci/shadow as records; their status rows left w7p5a-status.json with the twins. A row recorded here again would restore the entries and the sweeps below.
+EXPECTED_DRY_RUN_PATHS: dict[str, tuple[str, ...]] = {}
 
 
 def _status_rows() -> list[dict]:
@@ -62,14 +61,15 @@ def _row_for(path: str) -> dict:
     return next(r for r in _dry_run_rows() if r["path"] == path)
 
 
-def test_the_dry_run_evidence_set_is_not_empty() -> None:
-    """VACUITY FLOOR. Every test below is parameterised over the rows carrying a `dry_run_ledger`, so an empty set would turn this whole module green while checking nothing -- the exact shape of a gate that cannot fail."""
+def test_the_dry_run_evidence_set_is_retired() -> None:
+    """RETIREMENT FLOOR. Every twin a dry-run ledger attested to is deleted, so no status row may still carry a `dry_run_ledger`; a row that did would name a script nothing can run. The sweeps below are parameterised over such rows and are empty by design until one is recorded again."""
     rows = _dry_run_rows()
-    assert rows, (
-        "no row in %s carries a `dry_run_ledger`. Either the field was removed or "
-        "this module is parameterised over nothing; a green run here would assert "
-        "nothing at all." % STATUS
+    assert not rows, (
+        "%s carries a `dry_run_ledger` on %s, but %s lists no expected dry-run path. "
+        "Add the path to EXPECTED_DRY_RUN_PATHS in the same change that records it."
+        % (STATUS, [r["path"] for r in rows], "EXPECTED_DRY_RUN_PATHS")
     )
+    assert not EXPECTED_DRY_RUN_PATHS
 
 
 @pytest.mark.parametrize("path", _ids())

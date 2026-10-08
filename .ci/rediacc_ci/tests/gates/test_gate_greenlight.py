@@ -468,9 +468,9 @@ def test_cli_emit_is_false_only(gate):
         )
         gate.assert_eq(out, "", "a skipped candidate job emits no output line at all")
 
-        # CONTROL 2: one console-side closure blob moved, everything else identical.
+        # CONTROL 2: one console-side closure blob moved, everything else identical. The battery is the module rediacc_ci/private/license_e2e.py, reached through the whole-package closure entry, so the moved entry is the `rediacc_ci` tree itself.
         out = captured(
-            run_cli(gate, bindir, GL_REPO_ROOT=os.fspath(REPO_ROOT), GL_PERTURB="license-e2e.sh")
+            run_cli(gate, bindir, GL_REPO_ROOT=os.fspath(REPO_ROOT), GL_PERTURB="rediacc_ci")
         )
         gate.assert_eq(out, "", "a single changed closure file withdraws the greenlight")
 
@@ -710,10 +710,11 @@ def test_declared_closure_paths_exist(gate):
         )
         count += 1
     # The floor sits JUST BELOW the real total (408 across 18 keys as of 2026-08-08), not at some token value: a `> 15` floor survived a table that had lost every key but one. At 400 a parse break reads as 0 and a dropped VM/E2E key costs 30 entries, both of which fire this; trimming a path or two during honest maintenance does not.
+    # Re-measured 2026-10-08 at 383 after PLAN-retire-bash-oracles wave 1 deleted thirteen closure entries (the setup, private, build and test bash twins) and the floor moved to that measured count.
     gate.assert_eq(
-        1 if count > 400 else 0,
+        1 if count >= 383 else 0,
         1,
-        "the table must stay whole (%d entries seen, floor 400)" % count,
+        "the table must stay whole (%d entries seen, floor 383)" % count,
     )
 
     # CONTROL: the same assertion applied to a path that does NOT exist must fail, or the loop above proves only that the loop ran.

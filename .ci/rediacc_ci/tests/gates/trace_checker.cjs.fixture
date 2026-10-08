@@ -176,12 +176,12 @@ const deriveFor = (key) => {
 
     if (/submodules:\s*(true|recursive)/.test(body)) checksOutSubmodules = true;
 
-    // setup-workspace runs install-deps.sh on a cache miss (action.yml:77,81)
-    // and build-packages.sh whenever its flag is set (action.yml:91-93).
+    // setup-workspace runs rediacc_ci.setup.install_deps on a cache miss
+    // and rediacc_ci.setup.build_packages whenever its flag is set.
     if (/uses:\s*\.\/\.github\/actions\/setup-workspace/.test(body)) {
-      required.add('.ci/scripts/setup/install-deps.sh');
+      required.add('.ci/rediacc_ci/setup/install_deps.py');
       if (/build-packages:\s*'true'/.test(body)) {
-        required.add('.ci/scripts/setup/build-packages.sh');
+        required.add('.ci/rediacc_ci/setup/build_packages.py');
       }
     }
 

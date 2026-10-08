@@ -517,7 +517,7 @@ Trap-Id: cache-key-misses-a-baked-in-input
 Enforced-By: JUDGMENT-ONLY
 Residue: A closure of PATHS cannot cover an input that is not a path, and a git tag is not a path. Nothing detects that an artifact is stamped with something its cache key never saw.
 
-`generate-tag.sh`'s closure hashes git OIDs at HEAD, documented as being "immune to the in-job version bump that dirties package.json". That immunity is right for a dirty working file and exactly wrong for the released version: a git TAG is not a path, so no `CLOSURE_PATHS` entry could ever cover it, and the key went insensitive to the one input the image is stamped with.
+`rediacc_ci.ci.generate_tag`'s closure hashes git OIDs at HEAD, documented as being "immune to the in-job version bump that dirties package.json". That immunity is right for a dirty working file and exactly wrong for the released version: a git TAG is not a path, so no `CLOSURE_PATHS` entry could ever cover it, and the key went insensitive to the one input the image is stamped with.
 
 Cost: two full rounds. Runs `30534726467` and `30542942037`,
 `Version mismatch: expected '1.2.13', got '1.2.12'`, deterministic and self-perpetuating because cutting a tag does not move the closure.
@@ -534,7 +534,7 @@ Trap-Id: gate-accepts-the-body-it-rejects
 Enforced-By: JUDGMENT-ONLY
 Residue: Whether a needle can appear in the bad case as well as the good one is a question about the SUBJECT's data, which no meta-gate holds. Grep for a field that only exists when populated.
 
-`wait-for-preview-worker.sh` waited for a "usable body" and its own comment said a 200 carrying no keys must fail. The guard was `grep -q '"keys"'`, but `app.ts:154-173` declares `const keys = []` and always returns `c.json({ e2e: { keys } })`, so `"keys"` is present even when empty.
+`rediacc_ci.deploy.wait_for_preview_worker` (originally `wait-for-preview-worker.sh`) waited for a "usable body" and its own comment said a 200 carrying no keys must fail. The guard was `grep -q '"keys"'`, but `app.ts:154-173` declares `const keys = []` and always returns `c.json({ e2e: { keys } })`, so `"keys"` is present even when empty.
 
 Measured both ways: the old grep ACCEPTS `{"e2e":{"keys":[]}}`. Grep for a field that only exists inside a populated entry (`publicKeySpki`), not for the container.
 
@@ -932,7 +932,7 @@ Measured 2026-09-09 on `rediacc-devbox-26-console`, after editing
 **The shape of the fix.** Reach the file through a DIRECTORY mount instead. This
 repo bind-mounts the worktree at its identical host path, so
 `$DEVBOX_WORKSPACE/.devcontainer/devbox-autostart.sh` is the same file always
-current, and `devbox_autostart_dispatch` (`.ci/lib/devbox.sh`) now runs that copy
+current, and `devbox_autostart_dispatch` (`rediacc_ci.core.devbox`) now runs that copy
 rather than the one under `/usr/local/bin`. Where a single-file mount is
 unavoidable, `docker cp` it in at dispatch time, or compare inodes before
 believing a test.
@@ -949,7 +949,7 @@ Residue: The gate covers TRACKED shell scripts under `set -e`. A one-off `agent-
 
 Measured 2026-08-28. The `eval` immediately after returns a real `scrollHeight` in both cases, so the page is genuinely there; only the exit code differs.
 
-**Why it is expensive.** `packages/www/scripts/measure-page-density.sh` runs under `set -euo pipefail` and redirects that call, so `set -e` killed it at its FIRST page. The symptom was not an error message. It was an empty log and a CSV containing only its header row, which reads as "the harness produced nothing to say" rather than "the harness was shot". Two runs were written off
+**Why it is expensive.** `rediacc_ci.dev.measure_page_density` (originally `packages/www/scripts/measure-page-density.sh`) runs under `set -euo pipefail` and redirects that call, so `set -e` killed it at its FIRST page. The symptom was not an error message. It was an empty log and a CSV containing only its header row, which reads as "the harness produced nothing to say" rather than "the harness was shot". Two runs were written off
 as a wedged browser session before the exit code was suspected at all.
 
 **The fix is not to trust the status.** Neutralise it and let a claim about the PAGE decide:
@@ -1528,7 +1528,7 @@ With that, deleting the `|| true` fails the control. `export -n` afterwards matt
 `.ci/scripts/test/gates/test-emit-advisory.sh:78` already had this right -- its `emit_advisory` errexit control runs in `bash -c` -- so the correct form was in the tree, one directory away, and the wrong one still got written.
 
 **How to notice it without a plant.** Ask what suppressed context the assertion is running in before trusting any control over `set -e`, `set -u` or `pipefail`. A sweep of the 20 indented `set -e` re-arms in tracked shell files found the rest are `set +e` / `set -e` restore pairs around a deliberately-tolerated command, which are unaffected. One other genuine member:
-`.ci/scripts/version/inject-env.sh:49` wraps its body in `_inject_env_main()` and arms `set -euo pipefail` there, but line 137 calls it as `if _inject_env_main "$@"`, so `-e` is inert throughout (`-u` and `pipefail` still apply). Behaviour is unaffected today -- every consequential status in that function is checked explicitly and it falls back to `0.0.0-dev`, which `--strict` then
+The retired `.ci/scripts/version/inject-env.sh:49` wrapped its body in `_inject_env_main()` and armed `set -euo pipefail` there, but line 137 called it as `if _inject_env_main "$@"`, so `-e` was inert throughout (`-u` and `pipefail` still applied). Behaviour was unaffected -- every consequential status in that function was checked explicitly and it fell back to `0.0.0-dev`, which `--strict` then
 refuses, so it fails closed -- but a future edit that leans on errexit there will not get it.
 
 ## A `--suite` path under a symlink makes the mutation runner write to the REAL tree

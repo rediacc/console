@@ -76,16 +76,6 @@
       "why": "Shared modules imported by relative path from roughly 30 gates. scripts/lib/gate-header.ts and scripts/lib/policy-paths.ts are single-writer files (driver contract section 3). This was the destination of the scripts/utils/ merge, which COMPLETED on 2026-09-06: console.ts, crc32.ts and translation-diff.ts landed here, scripts/utils/ is gone, its 24 importers were re-pointed and the dead allowDefaultProject glob eslint.config/typescript.js:138 was dropped in the same change. There is no rule for scripts/utils/** any more because no such path can exist."
     },
     {
-      "id": "devbox-bash",
-      "paths": ["scripts/dev/worktree.sh"],
-      "home": "scripts/dev",
-      "stays": true,
-      "why": "The one file under scripts/dev that is NOT operator-only, and the reason scripts/dev survives W9 P2's move. .ci/legacy/run-legacy.sh:793 dispatches it as `./run.sh worktree` and .ci/rediacc_ci/tests/gates/test_gate_worktree_devbox_teardown.py:31 lifts remove_worktree's body as its SUT, so it is gate-tested and scripts/ops (`why`: nothing but a human runs these) would be a false description of it. This rule sits BEFORE operator-bash because first match wins; without it the file would match no rule at all and the layout gate reports UNCLASSIFIED.",
-      "notes": [
-        "Moving this file is a change to .ci/legacy/run-legacy.sh and to the teardown gate test in the same commit, not a git mv. W9 P2 declined to make it, because run-legacy.sh was owned by a concurrent writer and the exception was already declared."
-      ]
-    },
-    {
       "id": "devbox-rotation",
       "paths": ["scripts/dev/bws-rotate.py"],
       "home": "scripts/dev",
@@ -100,7 +90,7 @@
         ".ci/config/python-env-registry.json:1825 keys the script's seven environment variables (BWS_ACCESS_TOKEN, BWS_BIN, BWS_ROTATE_ENV_FILE, BWS_ROTATE_GITMODULES, BWS_ROTATE_MIN_SECRETS, BWS_ROTATE_SECRET_MAP, GH_BIN) on this path."
       ],
       "notes": [
-        "Placed immediately after devbox-bash so the two scripts/dev declarations read together. No rule below it matches scripts/dev/*.py, so first-match order is not load-bearing for this entry today; it would become so if a broader scripts/dev/** rule were ever added, which is the reason to keep it above operator-bash rather than at the end.",
+        "Placed above operator-bash. No rule below it matches scripts/dev/*.py, so first-match order is not load-bearing for this entry today; it would become so if a broader scripts/dev/** rule were ever added, which is the reason to keep it above operator-bash rather than at the end.",
         "The retired bash twin is gone and the port was born at the same path, so nothing is in flight here: this rule declares an existing home, it does not ask for a move."
       ]
     },
@@ -120,10 +110,7 @@
       "home": "scripts/ops",
       "stays": true,
       "why": "Operator-only tools: a human runs them by hand and no workflow, npm key, run.sh verb or gate invokes them. Surveyed 2026-09-06, ten were unambiguously operator-only and four more operator-run with a CI-side reader or test. By 2026-10-02 every bash tool here was ported under .ci/rediacc_ci/ops/ (PLAN-retire-bash-oracles B3) or retired (the one-shot R2 scrub), leaving bws-map-refresh.py and secret-rename.py.",
-      "blockedOn": "CLEARED 2026-09-20: the move landed. Fourteen files arrived from scripts/dev/, scripts/docker/ and the scripts/ root as git renames, after W8 P1a-P6 and W0.1 had made their edits at the old path and were all ticked. scripts/docker no longer exists; scripts/dev keeps worktree.sh alone under the devbox-bash rule above.",
-      "exceptions": [
-        "scripts/dev/worktree.sh is NOT operator-only and did NOT move; it has its own rule, devbox-bash, immediately above this one."
-      ],
+      "blockedOn": "CLEARED 2026-09-20: the move landed. Fourteen files arrived from scripts/dev/, scripts/docker/ and the scripts/ root as git renames, after W8 P1a-P6 and W0.1 had made their edits at the old path and were all ticked. scripts/docker no longer exists; worktree.sh left scripts/dev when it was frozen to a golden and deleted (PLAN-retire-bash-oracles wave 1, 94934de41).",
       "breaksIfMoved": [
         "REPOINTED 2026-09-20, all six, in the change that moved the files. The list is kept because it names the shape of the damage a FUTURE move would do, not because any entry is still outstanding.",
         ".ci/rediacc_ci/quality/silent_failure_patterns.py:80 carries scripts/ops, as the retired bash twin did at its own line 73. A missing directory makes find return nothing and the gate reports success over half its corpus. SILENTLY GREEN.",
@@ -135,12 +122,11 @@
     },
     {
       "id": "toolchain-bash",
-      "paths": ["scripts/eslint-heap.sh", "scripts/pre-commit-check.sh"],
+      "paths": ["scripts/pre-commit-check.sh"],
       "home": "scripts",
       "stays": true,
-      "why": "Two shell scripts that are pinned by NAME somewhere outside scripts/.",
+      "why": "A shell script that is pinned by NAME somewhere outside scripts/.",
       "breaksIfMoved": [
-        "scripts/eslint-heap.sh: three package.json keys (check:lint, fix:lint, lint) plus .ci/scripts/quality/check_lint_scope_coverage.py:99 ESLINT_RUNNER = \"eslint-heap.sh\", and it is a registered gate leaf at scripts/ci-runner/manifest.ts:90.",
         "scripts/pre-commit-check.sh: .claude/hooks/pre-bash/block-protected-files.sh:30 hardcodes the literal path in its PROTECTED regex. It has zero npm keys and its real wiring lives in the operator's untracked local settings, per .dead-bash-allowlist:56."
       ]
     },

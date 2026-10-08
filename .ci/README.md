@@ -23,23 +23,17 @@ Abridged — only the entry points most often edited by hand are listed. The ful
 ├── scripts/
 │   ├── lib/
 │   │   └── common.sh        # Shared utilities (OS detection, logging)
-│   ├── ci/
-│   │   └── generate-tag.sh  # Generate time-based CI tag (YYYYMMDD-HHMMSS)
-│   ├── version/
-│   │   ├── detect-bump-type.sh # FROZEN TWIN, not run by CI: the live bump detector is rediacc_ci.version.detect_bump_type (initialize step 6)
-│   │   └── resolve-version.sh  # Resolve current/next version from git tags
-│   ├── setup/
-│   │   ├── install-deps.sh     # npm ci with platform handling
-│   │   └── build-packages.sh   # Build shared libraries
-│   ├── test/
-│   │   └── run-e2e.sh          # Run E2E (renet) tests
 │   ├── docker/
-│   │   └── retag_image.py      # Re-tag CI images to semantic version
-│   ├── housekeeping/
-│   │   └── cleanup-versions.sh # Cleanup old releases, tags, and GHCR packages
-│   └── build/
-│       ├── build-cli.sh        # Build CLI
-│       └── build-renet.sh      # Build renet binary
+│   │   └── retag_image.py   # Re-tag CI images to semantic version
+│   └── housekeeping/
+│       └── retire-shadowed-secrets.py
+├── rediacc_ci/              # Python modules that replaced the retired bash scripts (run with PYTHONPATH=.ci python3 -m)
+│   ├── ci/generate_tag.py   # Generate time-based CI tag (YYYYMMDD-HHMMSS)
+│   ├── version/             # resolve_version, detect_bump_type, bump
+│   ├── setup/               # install_deps (npm ci with platform handling), build_packages (shared libraries)
+│   ├── testrun/e2e.py       # Run E2E (renet) tests
+│   ├── housekeeping/cleanup_versions.py # Cleanup old releases, tags, and GHCR packages
+│   └── build/               # build_cli, build_renet, and the other build modules
 └── README.md
 ```
 
@@ -49,16 +43,16 @@ All scripts are designed to be run from the repository root:
 
 ```bash
 # Install dependencies
-.ci/scripts/setup/install-deps.sh
+PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_deps
 
 # Build shared packages
-.ci/scripts/setup/build-packages.sh
+PYTHONPATH=.ci python3 -m rediacc_ci.setup.build_packages
 
 # Run unit tests
 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.unit
 
 # Run E2E (renet) tests
-.ci/scripts/test/run-e2e.sh
+PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e
 ```
 
 ## Versioning
@@ -83,7 +77,7 @@ For CI, write the computed version to an output file:
 PYTHONPATH=.ci python3 -m rediacc_ci.version.bump --auto --output "$GITHUB_OUTPUT"
 ```
 
-Note that the version source of truth is **git tags**, not a file — there are no version bump commits. `resolve-version.sh --current` reads the latest tag and `--bump-type` computes the next one. See the "Versioning" section of the top-level `CLAUDE.md`.
+Note that the version source of truth is **git tags**, not a file — there are no version bump commits. `rediacc_ci.version.resolve_version --current` reads the latest tag and `--bump-type` computes the next one. See the "Versioning" section of the top-level `CLAUDE.md`.
 
 ## Environment Variables
 

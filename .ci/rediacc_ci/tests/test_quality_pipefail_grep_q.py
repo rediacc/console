@@ -152,7 +152,8 @@ def test_inherited_pipefail_is_decided_by_path(rel: str | None, hits: int) -> No
 def test_the_live_corpus_is_not_empty() -> None:
     """`git ls-files` over the real tree must return files, or the gate is blind."""
     files = [f for f in gate.scan_files(paths.repo_root()) if f]
-    assert len(files) > 100
+    # Floor re-measured 2026-10-08 at 52 scanned shell files after PLAN-retire-bash-oracles wave 1 deleted 76 tracked .sh files.
+    assert len(files) >= 52
 
 
 def test_selftest_passes_and_is_not_vacuous(capsys) -> None:
