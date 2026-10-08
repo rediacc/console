@@ -3990,13 +3990,13 @@
             {
               "number": "$300K+",
               "ref": 1,
-              "source": "ITIC 2024 seisakuaja tunnikulu uuring",
+              "source": "ITIC 2024 Hourly Cost of Downtime Survey",
               "text": "tunni seisakuaja eest 90% keskmistest kuni suurtest ettevõtetest"
             },
             {
               "number": "18%",
               "ref": 2,
-              "source": "Parametrix 2024 pilvekatkestuste riskiaruanne",
+              "source": "Parametrix 2024 Cloud Outage Risk Report",
               "text": "kriitiliste pilve katkestuste sündmuste kasv 2024. aastal"
             },
             {
@@ -4112,7 +4112,7 @@
           "quote": "AWS us-east-1 katkestuse ajal märtsis tegid meie 12 tootmisteenust tõrkesiirde sekundaarsesse andmekeskusesse 22 sekundiga. Meie kliendid ei märganud midagi. Meie konkurendid olid 6 tundi maas. Saime sel nädalal kolm uut ettevõtete lepingut nende klientidelt."
         },
         "techDiff": {
-          "description": "Rediacc kasutab btrfs send/receive inkrementaalsete erinevuste arvutamiseks failisüsteemi tasemel. Selle asemel, et edastada täismahtuseid, liiguvad saitide vahel ainult muutunud plokid. 380 GB keskkond, millel on 2,4 GB päevaseid muutusi, edastab 2,4 GB - mitte 380 GB. See on 98% ribalaiuse kokkuhoid. Replikatsioon töötab pidevalt või ajakava järgi.",
+          "description": "Rediacc kopeerib ainult andmed, mis on eelmisest korrast muutunud. Võtame 380 GB keskkonna, kus täna muutub 2,4 GB. Rediacc liigutab 2,4 GB, mitte 380 GB. See <span class=\"sp-emphasis\">vähendab ribalaiuse kasutust 98%</span>. See võib töötada pidevalt või ajakava järgi.",
           "rediaccLabel": "Rediacc (btrfs send/receive)",
           "rows": [
             {
@@ -5347,7 +5347,7 @@
           "quote": "Käivitasime 12 tootmisidentset testkeskkonda alla 10 minutiga, igaühes täielik 241 GB PostgreSQL andmebaas. Meie varasem protsess põhines käsitsi andmebaasi dumpidel staging-keskkonda. See nõudis 3 insenerit ja 2 päeva keskkonna kohta."
         },
         "techDiff": {
-          "description": "Rediacc kasutab btrfs copy-on-write hetktõmmiseid failisüsteemi tasandil. 241 GB tootmiskeskkonna hetktõmmis valmib allsekundiliselt ja tarbib algul null lisaruumi. Kuna kloon arengu käigus erinema hakkab, kasutavad ainult muutunud plokid uut ruumi. Kümme klooni 241 GB andmebaasist võib kasutada vähem kui 12 GB lisaruumi.",
+          "description": "Nipp on selles: Rediacc kopeerib <span class=\"sp-emphasis\">salvestuskihi</span> tasemel, mitte failitasemel. 241 GB koopia valmib alla sekundiga ja ei kasuta peaaegu üldse lisaruumi. Hiljem võtavad uut ruumi ainult muutunud osad. Kümme koopiat sellest 241 GB keskkonnast mahuvad alla 12 GB.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -5675,7 +5675,7 @@
           "quote": "Käivitasime oma esimese automatiseeritud tõrkesiire testi teisipäeva hommikul. See leidis 3 kriitilist lünka — aegunud DNS-kirje, puuduv SSL-sertifikaat teisel serveril ja andmebaasi replikatsiooni viivitus 4 minutit. Kõik kolm oleksid põhjustanud tõelise katkestuse. Parandasime need pärastlõunal. Nüüd testime igakuiselt ja magame rahulikumalt."
         },
         "techDiff": {
-          "description": "Traditsioonilised KT-testid nõuavad tootmise seisakut, inseneride tiimi ja nädalaid planeerimist. Rediacc loob kogu infrastruktuuri klooni <span class=\"sp-emphasis\">sekundites</span>. Test käivitatakse klooni vastu. Tootmine ei peatu kunagi.",
+          "description": "Vanaviisi KT-testid nõuavad tootmise seisakut, tuppa täit insenere ja nädalatepikkust planeerimist. Rediacc kloonib kogu keskkonna <span class=\"sp-emphasis\">sekunditega</span>. Test jookseb koopial. Tootmine ei peatu kunagi.",
           "rediaccLabel": "Rediacc KT-testimine",
           "rows": [
             {
@@ -5894,7 +5894,7 @@
         "references": {
           "items": [
             {
-              "text": "Sophos, “The Impact of Compromised Backups on Ransomware Outcomes,” märts 2024. “94% organisatsioonidest, keda rünnak tabas, ütlesid, et küberkurjategijad üritasid rünnaku ajal nende varukoopiaid kahjustada.”",
+              "text": "Sophos, “The Impact of Compromised Backups on Ransomware Outcomes,” märts 2024. “94% organisatsioonidest, keda rünnak tabas viimase aasta jooksul, ütlesid, et küberkurjategijad üritasid rünnaku ajal nende varukoopiaid kahjustada.”",
               "url": "https://www.sophos.com/en-us/blog/the-impact-of-compromised-backups-on-ransomware-outcomes/"
             },
             {
@@ -6000,7 +6000,7 @@
           "quote": "Meid tabas lunavara kell 3:17 hommikul laupäeval. Ründajad krüpteerisid 14 serverit, sealhulgas meie varukoopia hoidla — või nii nad arvasid. Rediacc muutumatud hetktõmmised olid puutumata. Kell 3:24 olid kõik 14 serverit taastatud suletud varukoopiatest. Kokku andmekadu: null baiti. Kokku makstud lunaraha: null dollarit."
         },
         "techDiff": {
-          "description": "Rediacc teeb failidest kirjutuskaitstud koopia, hetktõmmise ühest ajahetkest. Kui koopia on suletud, <span class=\"sp-emphasis\">blokeerib salvestuskiht ise iga muudatuse</span>. See pole tarkvaralukk, mida pahavara saaks murda. Isegi administraatori peaparooliga ei saa lunavara suletud koopiat krüpteerida, muuta ega kustutada.",
+          "description": "Rediacc teeb kirjutuskaitstud koopia, failide külmutatud hetktõmmise ühest ajahetkest. Kui koopia on lukustatud, <span class=\"sp-emphasis\">blokeerib muudatused salvestuskiht ise</span>. See pole tarkvaraline lukk, mida pahavara suudaks murda. Isegi kõrgeima administraatori parooliga ei saa lunavara lukustatud koopiat krüptida, muuta ega kustutada.",
           "rediaccLabel": "Rediacc (btrfs muutumatu)",
           "rows": [
             {
@@ -6602,7 +6602,7 @@
           "quote": "Meie peamine andmebaasiserver ebaõnnestus laupäeval kell 2:14 - rikutud kettakontroller. Vana süsteemiga oleks see tähendanud tervet nädalavahetust 11 teenuse seadistamise, taastamise ja uuesti konfigureerimisega. Selle asemel käivitasin ühe käsu telefonist. Kell 2:18 oli kõik tagasi - MariaDB, API, Nginx, Redis, kõik. Samad konfiguratsioonid, sama olek, samad andmed. Valveinseneer läks tagasi magama."
         },
         "techDiff": {
-          "description": "Traditsiooniline taastamine tähendab uue serveri seadistamist, pakettide installimist, failide ükshaaval taastamist, teenuste uuesti konfigureerimist ja lootmist, et midagi ei jäänud vahele. Rediacc kasutab btrfs-hetktõmmiseid, et kloonida kogu keskkond - mahud, konfiguratsioonid, konteinerid, võrguseaded - ühes aatomioperatsioonis.",
+          "description": "Vana viis: seadista uus server, paigalda paketid, taasta failid ükshaaval, konfigureeri teenused uuesti. Seejärel looda, et midagi ei jäänud vahele. Rediacc töötab teisiti. See kopeerib kogu keskkonna korraga. Kettad, seadistused, konteinerid, võrk, <span class=\"sp-emphasis\">kõik ühe liigutusega</span>.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -8092,7 +8092,7 @@
           "quote": "Läksime 3-päevaselt taastamisplaanilt alla 4 minuti peale. Tegeliku lunavararünnaku ajal kell 2 öösel käivitas valveinseneer ühe käsu ja kõik 8 tootmiskonteinerit olid võrgus kell 2:04. Meie eelmise tarnija hinnang oli 72 tundi - tegime selle 240 sekundiga."
         },
         "techDiff": {
-          "description": "Traditsiooniline taastamine ehitab nullist - installi OS uuesti, taasta failid, konfigureeri teenused uuesti. Rediacc taastab btrfs-hetktõmmistest: failisüsteem lülitub lihtsalt salvestatud olekule. Uuesti installimist pole, uuesti konfigureerimist pole, andmeedastust pole. Hetktõmmis on juba kettal - see lihtsalt muutub aktiivseks.",
+          "description": "Vana taaste ehitab kõik nullist: paigalda süsteem uuesti, taasta failid, seadista teenused uuesti. Rediacc töötab teisiti. Puhas koopia <span class=\"sp-emphasis\">on juba kettal</span>. Me lihtsalt lülitame selle sisse. Ei mingit uuesti paigaldamist, seadistamist ega aeglast andmeedastust.",
           "traditionalLabel": "Traditsiooniline taasülesehitus",
           "rediaccLabel": "Rediacc (hetkelised btrfs-koopiad)",
           "rows": [
@@ -8414,7 +8414,7 @@
           "quote": "Meie SOC2 audiitor nõudis 3 aasta varukoopiasäilitamise tõendust. Varem tähendas see 2 nädalat logide läbikaevamist ja tabelarvutuste ristkontrolli. Rediacciga käivitasin rdc retention report --framework soc2 ja andsin üle täieliku aruande 4 minutiga. Audiitor ütles, et see oli kõige korrektsem tõendus, mida nad olid näinud."
         },
         "techDiff": {
-          "description": "Traditsiooniline säilitushaldus tähendab varukoopiakuupäevade jälgimist tabelarvutustes, käsitsi puhastamisskriptide käivitamist ja lootmist, et midagi pole enne audiitorit jäänud kahe silma vahele. Rediacc kasutab btrfs-i snapshotide elutsüklihaldust koos automatiseeritud poliitikajõustamisega - varukoopiad säilitatakse, kontrollitakse ja puhastatakse ilma inimese sekkumiseta.",
+          "description": "Arvutustabelipõhine vastavus tähendab varukoopiate kuupäevade käsitsi jälgimist, puhastusskriptide käivitamist ja lootmist, et auditi eel poleks midagi märkamatuks jäänud. Rediacc säilitab, kontrollib ja puhastab varukoopiaid <span class=\"sp-emphasis\">ise</span>. Ühtegi käsitsi tehtavat sammu pole.",
           "rediaccLabel": "Rediacc säilitamine",
           "rows": [
             {
@@ -8750,7 +8750,7 @@
           "quote": "Meil oli eelmisel kvartalil kriitiline OpenSSL-i paik. Tavaliselt oleksime kavandanud hooldusaken ja palvetanud. Selle asemel kloonisime kõik 22 tootmisserverit, rakendasime paiga, käivitasime täieliku testikomplekti ja kinnitasime nulli regressiooni - kõik 18 minutiga. Paigaldasime tootmise samal päeval täieliku kindlusega."
         },
         "techDiff": {
-          "description": "Rediacc kasutab btrfs copy-on-write snapshoote, et kloonida kogu tootmiskeskkond - OS, konteinerid, andmebaasid, konfiguratsioon - alaosekundi jooksul. Kloon töötab isoleeritud võrgus koos oma Docker-deemoniga. Kloonile rakendatud paigad ei puutu tootmist. Kui kloon puruneb, kustutate selle. Kui see toimib, rakendate sama paiga tootmises.",
+          "description": "Rediacc kopeerib kogu töötava keskkonna <span class=\"sp-emphasis\">sekunditega</span>. See hõlmab operatsioonisüsteemi, rakendusi, andmebaase ja kõiki seadistusi. Koopia töötab oma isoleeritud võrgus oma Dockeriga. Koopiale pandud paigad ei puuduta päris servereid. Kui koopia läheb katki, kustuta see. Kui see töötab, rakenda sama paik päriselt.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -9313,7 +9313,7 @@
           "quote": "Kriitiline CVE ilmus reedel pärastlõunal. Laupäeva hommikuks olime klooninud tootmise, rakendanud paiga, kontrollinud seda kõigi 4 mõjutatud teenuse vastu ja paigaldanud - null seisakut. Meie varasem protsess oleks võtnud 3 nädalat ja muudatuste haldamise koosoleku."
         },
         "techDiff": {
-          "description": "Traditsiooniline paikamine nõuab lavakeskkonda, mis vastab tootmisele - kuid lava kaldub kõrvale päevade jooksul. Rediacc loob sekunditega btrfs copy-on-write snapshooti teie tegelikust tootmistaristust, laseb rakendada ja kontrollida paika reaalsete andmete ja konfiguratsioonide vastu, seejärel paigaldab kontrollitud paranduse tootmises. Kui paik läbib kontrolli ebaõnnestunult, kustutage kloon. Tootmine jääb puutumatuks.",
+          "description": "Vana moodi paikamine vajab testkoopiat, mis vastab tootmiskeskkonnale. Kuid testkeskkond triivib mõne päevaga eemale. Rediacc teeb päris tootmiskeskkonnast kohese koopia <span class=\"sp-emphasis\">sekunditega</span>. Rakenda paik koopiale. Testi seda päris andmete ja päris seadistustega. Kui see töötab, võta see tootmises kasutusele. Kui ei tööta, viska koopia minema. Tootmine jääb puutumata.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {

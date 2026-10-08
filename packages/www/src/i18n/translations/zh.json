@@ -4064,7 +4064,7 @@
           "quote": "在去年三月的 AWS us-east-1 故障期间，我们的 12 个生产服务在 22 秒内故障转移到了备用数据中心。我们的客户毫无察觉。我们的竞争对手宕机了 6 小时。那周我们从他们的客户那里获得了三个新的企业合同。"
         },
         "techDiff": {
-          "description": "Rediacc 只复制自上次以来发生变化的数据。比如一个 380 GB 的环境，今天变化了 2.4 GB，Rediacc 就只传输 2.4 GB，而不是 380 GB。这样<span class=\"sp-emphasis\">带宽减少 98%</span>。可以持续运行，也可以按计划运行。",
+          "description": "Rediacc 只复制自上次以来发生变化的数据。假设一个 380 GB 的环境，今天只变了 2.4 GB，Rediacc 只传输 2.4 GB，而不是 380 GB。这样<span class=\"sp-emphasis\">带宽可节省 98%</span>。它可以持续运行，也可以按计划运行。",
           "rediaccLabel": "Rediacc 方式（btrfs send/receive）",
           "rows": [
             {
@@ -5295,7 +5295,7 @@
           "quote": "我们在不到 10 分钟内创建了 12 个与生产环境完全相同的测试环境——每个都包含完整的 241 GB PostgreSQL 数据库。我们之前的流程是手动将数据库导出到预发布环境，需要 3 名工程师和每个环境 2 天的时间。"
         },
         "techDiff": {
-          "description": "Rediacc 使用 btrfs 写时复制快照技术在文件系统层面运行。对 241 GB 生产环境的快照在亚秒级完成，且初始不占用额外存储空间。随着克隆在开发过程中产生差异，只有变更的数据块使用新空间。十个 241 GB 数据库的克隆可能仅使用不到 12 GB 的额外存储。",
+          "description": "秘诀在于：Rediacc 在<span class=\"sp-emphasis\">存储层</span>复制，而不是在文件层面。241 GB 的副本不到一秒就能完成，几乎不占额外空间。之后只有变化的部分才会占用新空间。十份 241 GB 环境的副本，加起来不到 12 GB 就能放下。",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -5623,7 +5623,7 @@
           "quote": "我们周二上午跑了第一次自动化故障转移测试。一下子发现 3 个关键问题：过期的 DNS 记录、备用系统上缺失的 SSL 证书，还有 4 分钟的数据库复制延迟。这三个都会导致真实故障。下午就全修了。现在每月测试一次，睡得踏实多了。"
         },
         "techDiff": {
-          "description": "老派 DR 测试需要生产停机、一屋子工程师和数周规划。Rediacc <span class=\"sp-emphasis\">数秒内</span>克隆整套环境。测试在克隆上跑。生产一秒不停。",
+          "description": "老派的 DR 测试需要生产停机、一屋子工程师和数周的规划。Rediacc 能在<span class=\"sp-emphasis\">数秒内</span>克隆整套环境。测试在副本上运行。生产永不停机。",
           "rediaccLabel": "Rediacc DR 测试",
           "rows": [
             {
@@ -5948,7 +5948,7 @@
           "quote": "周六凌晨 3:17，我们遭到勒索软件攻击。攻击者加密了 14 台服务器，包括备份库，至少他们是这么以为的。Rediacc 的不可变快照毫发无损。凌晨 3:24，全部 14 台服务器都已从封存的备份中恢复。数据丢失：0 字节。赎金支付：0 美元。"
         },
         "techDiff": {
-          "description": "Rediacc 会创建一份只读副本，即文件在某一时刻的冻结快照。副本一旦封存，<span class=\"sp-emphasis\">存储层本身就会阻止任何修改</span>。这不是恶意软件能撬开的软件锁。即使拥有最高管理员密码，勒索软件也无法加密、修改或删除已封存的副本。",
+          "description": "Rediacc 会创建一个只读副本，也就是某一时刻文件的冻结快照。副本一旦封存，<span class=\"sp-emphasis\">存储层本身就会阻止任何改动</span>。这不是恶意软件能破解的软件锁。即使拿到最高管理员密码，勒索软件也无法加密、修改或删除已封存的副本。",
           "rediaccLabel": "Rediacc（btrfs 不可变）",
           "rows": [
             {
@@ -6550,7 +6550,7 @@
           "quote": "我们的主数据库服务器在周六凌晨 2:14 故障了，原因是磁盘控制器损坏。按照旧方案，这需要整个周末来配置、恢复和重新设置 11 个服务。结果呢？我从手机上运行了一条命令。到 2:18，一切都恢复了：MariaDB、API、Nginx、Redis，全部。相同的配置、相同的状态、相同的数据。值班工程师回床上继续睡了。"
         },
         "techDiff": {
-          "description": "传统做法：配置新服务器、安装软件包、逐个恢复文件、重新配置服务，然后祈祷没有遗漏。Rediacc 的方式完全不同，它一次性复制整套环境。驱动器、配置、容器、网络，<span class=\"sp-emphasis\">全部一步完成</span>。",
+          "description": "老办法是：搭一台新服务器，装软件包，逐个恢复文件，重新配置服务，然后祈祷没有遗漏。Rediacc 的做法不同，它一次性复制整套环境。磁盘、配置、容器、网络，<span class=\"sp-emphasis\">一步到位</span>。",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -6978,19 +6978,19 @@
             {
               "number": "27%",
               "ref": 1,
-              "source": "Flexera 2024 年云计算状态报告",
+              "source": "Flexera 2024 State of the Cloud Report",
               "text": "的云支出每年都被浪费掉"
             },
             {
               "number": "17%",
               "ref": 2,
-              "source": "Flexera 2025 年云计算状态报告",
+              "source": "Flexera 2025 State of the Cloud Report",
               "text": "组织平均云预算超支比例"
             },
             {
               "number": "$0.09/GB",
               "ref": 3,
-              "source": "AWS/Azure/GCP 定价 2024",
+              "source": "AWS/Azure/GCP Pricing 2024",
               "text": "设计上让离开变得昂贵的出站流量费"
             }
           ],
@@ -8034,7 +8034,7 @@
           "quote": "我们从 3 天的恢复计划缩短到 4 分钟以内。凌晨 2 点的一次真实勒索软件事件中，值班工程师运行一条命令，2:04 时 8 个生产容器全部恢复上线。之前厂商的预估是 72 小时，我们用了 240 秒。"
         },
         "techDiff": {
-          "description": "传统恢复要从头重建：重装系统、恢复文件、重新配置服务。Rediacc 则不同。一份干净的副本<span class=\"sp-emphasis\">已经在磁盘上</span>。我们只需启用它。无需重装，无需设置，无需缓慢的数据传输。",
+          "description": "传统恢复要从头重建一切：重装系统、恢复文件、重新配置服务。Rediacc 的做法不同。一份干净的副本<span class=\"sp-emphasis\">早已在磁盘上</span>。我们只需启用它。无需重装，无需配置，也没有缓慢的数据传输。",
           "traditionalLabel": "传统重建",
           "rediaccLabel": "Rediacc（btrfs 即时副本）",
           "rows": [
@@ -8356,7 +8356,7 @@
           "quote": "我们的 SOC2 审计员要求提供 3 年的备份保留证明。之前这意味着 2 周的日志翻查和电子表格交叉引用。使用 Rediacc，我运行了 rdc retention report --framework soc2，4 分钟内交出了一份完整的报告。审计员说这是她见过的最干净的证据。"
         },
         "techDiff": {
-          "description": "电子表格合规就是靠人工跟踪备份日期、手动运行清理脚本，祈祷审计员来之前没有漏掉任何东西。Rediacc <span class=\"sp-emphasis\">自动</span>保留、检验、清理备份。零人工步骤。",
+          "description": "靠电子表格做合规，就是手工记录备份日期、运行清理脚本，再祈祷审计人员上门前没有遗漏。Rediacc 会<span class=\"sp-emphasis\">自动</span>保留、检查并清理备份。无需任何人工步骤。",
           "rediaccLabel": "Rediacc 保留",
           "rows": [
             {
@@ -8692,7 +8692,7 @@
           "quote": "上季度我们遇到一个关键的 OpenSSL 补丁。通常我们会排期维护窗口然后祈祷。这次不一样，我们克隆了全部 22 台生产服务器，应用补丁，跑完整个测试套件，确认零回归，全部在 18 分钟内完成。当天就满怀信心地给生产环境打了补丁。"
         },
         "techDiff": {
-          "description": "Rediacc 能在<span class=\"sp-emphasis\">几秒内</span>克隆整个生产环境，包括操作系统、应用、数据库和所有配置。克隆运行在隔离网络上，拥有独立的 Docker。克隆上的补丁永不触及真实服务器。克隆坏了？删除它。成功了？在生产环境应用同样的补丁。",
+          "description": "Rediacc 能在<span class=\"sp-emphasis\">数秒内</span>复制整套运行中的环境，包括操作系统、应用、数据库和所有配置。副本运行在独立的隔离网络中，拥有自己的 Docker。副本上的补丁永远不会碰到真实服务器。副本坏了就删掉；没问题就把同一个补丁正式打上去。",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -9255,7 +9255,7 @@
           "quote": "关键 CVE 在周五下午发布。周六上午，我们已经克隆生产、应用补丁、在所有 4 个受影响的服务上验证，并零停机完成部署。用之前的流程需要 3 周和一次变更管理会议。"
         },
         "techDiff": {
-          "description": "传统补丁需要一个与生产环境匹配的预发布环境，但预发布很快就会偏差。Rediacc 在<span class=\"sp-emphasis\">数秒内</span>创建生产环境的精确克隆。在克隆上应用补丁，用真实数据和真实配置验证。修复有效就部署到生产环境；失败就销毁克隆。生产环境始终保持不变。",
+          "description": "传统打补丁需要一个与生产环境一致的预发布副本，但预发布环境几天内就会漂移。Rediacc 能在<span class=\"sp-emphasis\">数秒内</span>为真实的生产环境创建即时副本。把补丁打在副本上，用真实数据和真实配置测试。成功就部署到生产，失败就丢掉副本。生产环境始终不受影响。",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
