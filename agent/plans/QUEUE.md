@@ -65,7 +65,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 2 of 13 plans done, 123 of 172 boxes done (71%).
+Promoted: 3 of 13 plans done, 124 of 172 boxes done (72%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -77,7 +77,7 @@ Promoted: 2 of 13 plans done, 123 of 172 boxes done (71%).
 | 6 | PLAN-remove-cross-session-messaging.md | 0/13 | 13 open |
 | 7 | PLAN-config-passkey-optional.md | 3/4 | 1 open |
 | 8 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
-| 9 | PLAN-stop-hook-retro-20260924.md | 22/23 | 1 open |
+| 9 | PLAN-stop-hook-retro-20260924.md | 23/23 | done |
 | 10 | PLAN-cd-errors-in-ci.md | 5/6 | 1 open |
 | 11 | PLAN-scope-mirrors.md | 0/11 | 11 open |
 | 12 | PLAN-lessons-registry.md | 9/11 | 2 open |
