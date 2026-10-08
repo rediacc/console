@@ -33,6 +33,14 @@
       "reason": "Concurrent unit-duration artifact zip downloads from the GitHub REST API (several hundred per ten-run sample); it matches VARIANT_LOG_WORKERS and bounds requests in flight, not cores."
     },
     {
+      "file": ".ci/rediacc_ci/ci/gate_ledger.py",
+      "match": "CI_FOLD_WORKERS = 6",
+      "width": 6,
+      "kind": "io",
+      "limit": "GitHub REST API job reads for the CI fold-in, under GitHub's secondary rate limits on concurrent requests",
+      "reason": "The ledger's CI fold reads each unseen run's jobs (about 10 s of two paged gh api calls per run) in parallel inside a deadline; the width bounds requests in flight against GitHub, not local cores."
+    },
+    {
       "file": ".ci/rediacc_ci/deploy/r2_promote.py",
       "match": "COPY_WIDTH = 8",
       "width": 8,

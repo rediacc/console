@@ -71,7 +71,7 @@ Retry behaviour, per step:
 
 What can still split the pair: `init` failing before its tag step, or the dispatch never arriving. The sentinel then has no tag, Check Release State names it, and the repair is a `release_mode=patch` re-dispatch (it recomputes the same version, because no tag exists for it yet).
 
-`check:ci-workflow-invariants` (`.ci/rediacc_ci/security/ci_workflow_invariants.py`, release-order phase) enforces the shape on the job graph. It refuses a version-tag step behind any job other than `init`, a tag step or job whose `if:` reads `retry_mode`, a dispatch that does not immediately follow the seal under the same `if:`, `contents: write` anywhere in cd-v2, a `git push` not on the `preset: cd` App token, and a `cd` preset that stops requesting `workflows: write`.
+`check:ci-workflow-invariants` (`.ci/rediacc_ci/security/ci_workflow_invariants.py`, release-order phase) enforces the shape on the job graph. It refuses a version-tag step behind any job other than `init`, a tag step or job whose `if:` reads `retry_mode`, a dispatch that does not immediately follow the seal under the same `if:`, `contents: write` anywhere in cd-v2, an inline `git push` in a cd-v2 `run:` step that is not on the `preset: cd` App token, and a `cd` preset that stops requesting `workflows: write`.
 
 The `release` PR label sets `publish_stable` on the automatic dispatch. When the merged PR carries the exact label `release` and not `bump-none`, `initialize` records `publish_stable=true` and finalize-release-sentinel dispatches cd-v2 with `-f publish_stable=true`, so the merge publishes to edge AND stable with no soak (operator ruling 2026-09-30). A failed PR lookup still releases, to edge only. The decision lives in `.ci/rediacc_ci/ci/dispatch_release.py`.
 

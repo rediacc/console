@@ -4438,6 +4438,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Suppression liveness — are our allowlist entries still needed?',
     },
   },
+  // >>> gen-manifest: region 41
   {
     id: 'check:ci-pr-condition-ledger',
     env: {
@@ -4453,6 +4454,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'PR-condition ledger is current',
     },
   },
+  // <<< gen-manifest: region 41
   {
     id: 'check:ci-dead-bash',
     run: 'npm run check:ci-dead-bash',
@@ -4482,7 +4484,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Action freshness',
     },
   },
-  // >>> gen-manifest: region 41
+  // >>> gen-manifest: region 42
   {
     id: 'check:ci-jq-boolean-default',
     run: 'npm run check:ci-jq-boolean-default',
@@ -4495,7 +4497,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'jq boolean defaults',
     },
   },
-  // <<< gen-manifest: region 41
+  // <<< gen-manifest: region 42
   {
     id: 'check:ci-dead-case-arms',
     run: 'npm run check:ci-dead-case-arms',
@@ -4544,7 +4546,7 @@ export const GATES: readonly GateSpec[] = [
         'BLOCKER: test_gate_profiler_coverage.py:test_real_tree_seam_free runs the gate seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security) -- real workflows, real allowlist, real action.yml, real floors -- so the full job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction',
     },
   },
-  // >>> gen-manifest: region 42
+  // >>> gen-manifest: region 43
   {
     id: 'check:ci-go-module-sync',
     run: 'npm run check:ci-go-module-sync',
@@ -4557,7 +4559,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check Go module sync against the renet worktree',
     },
   },
-  // <<< gen-manifest: region 42
+  // <<< gen-manifest: region 43
   {
     // Structural, not semantic. "every declared env var must be referenced" was measured first and rejected: 290 of 849 step env vars have no textual reference, because gh and aws read theirs implicitly. This checks the one shape that is unambiguously a defect -- a step key after a step-boundary comment, left behind when the step itself was deleted.
     id: 'check:ci-workflow-orphan-step-keys',
@@ -4614,7 +4616,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
-  // >>> gen-manifest: region 43
+  // >>> gen-manifest: region 44
   {
     id: 'check:ci-em-dash-surfaces',
     run: 'npm run check:ci-em-dash-surfaces',
@@ -4651,7 +4653,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
-  // <<< gen-manifest: region 43
+  // <<< gen-manifest: region 44
   {
     id: 'check:ci-anchor-integrity',
     run: 'npm run check:ci-anchor-integrity',
@@ -4831,7 +4833,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Setup port parity',
     },
   },
-  // >>> gen-manifest: region 44
+  // >>> gen-manifest: region 45
   {
     id: 'check:ci-parity',
     run: 'npm run check:ci-parity',
@@ -4844,7 +4846,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Validate parity between the local gate set and the CI quality surface',
     },
   },
-  // <<< gen-manifest: region 44
+  // <<< gen-manifest: region 45
 
   // F3: two Quality/Static steps that ran in CI and nowhere else. The forward gate could not see them because its BARE_GATE pattern only covered
   // .ci/scripts/{quality,security}/check-*.sh; these live in .ci/scripts/test/
@@ -5124,7 +5126,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Python package tests',
     },
   },
-  // >>> gen-manifest: region 45
+  // >>> gen-manifest: region 46
   {
     id: 'check:ci-pathspec-scope',
     run: 'npm run check:ci-pathspec-scope',
@@ -5137,7 +5139,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pathspec scope',
     },
   },
-  // <<< gen-manifest: region 45
+  // <<< gen-manifest: region 46
   {
     id: 'check:ci-package-key-budget',
     run: 'npm run check:ci-package-key-budget',
@@ -5454,7 +5456,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Install table',
     },
   },
-  // >>> gen-manifest: region 46
+  // >>> gen-manifest: region 47
   {
     id: 'check:ci-gen-manifest',
     run: 'npm run check:ci-gen-manifest',
@@ -5503,7 +5505,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Container build context',
     },
   },
-  // <<< gen-manifest: region 46
+  // <<< gen-manifest: region 47
   // The executor image, built and booted: B1 (no token at boot) and B2 (no renet) shipped because nothing ever ran it. A full docker build of the CLI workspace, hence slow and local-only until a CI job that already builds images carries it.
   {
     id: 'check:ci-proxy-image-smoke',
@@ -5522,7 +5524,7 @@ export const GATES: readonly GateSpec[] = [
         'BLOCKER: a full docker build of the executor image (npm ci of the workspace plus the CLI bundle) that also needs a renet-linux-amd64 to stage; no CI job builds renet before the quality lanes, and wiring it into ci-build-docker is a workflow change outside the proxy writer file set (PLAN-cloudflare-proxy.md Writer A)',
     },
   },
-  // >>> gen-manifest: region 47
+  // >>> gen-manifest: region 48
   {
     id: 'check:ci-cli-proxy-safe-output',
     run: 'npm run check:ci-cli-proxy-safe-output',
@@ -5559,7 +5561,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Turnstile widget drift',
     },
   },
-  // <<< gen-manifest: region 47
+  // <<< gen-manifest: region 48
 ];
 
 /** The root workflow every CI run enters through. */

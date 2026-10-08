@@ -1155,6 +1155,8 @@
       "CI"
     ],
     ".ci/rediacc_ci/security/ci_workflow_invariants.py": [
+      "APP_TOKEN_ACTION_FILE",
+      "CD_WORKFLOW_FILE",
       "WORKFLOW_FILE"
     ],
     ".ci/rediacc_ci/security/shellcheck.py": [
@@ -2121,6 +2123,9 @@
       "TMPDIR"
     ],
     ".claude/rediacc_hooks/guards/test-block_second_branch.py": [
+      "PATH"
+    ],
+    ".claude/rediacc_hooks/guards/test-block_turbo_early_push.py": [
       "PATH"
     ],
     ".claude/rediacc_hooks/guards/test-warn_staged_shape_duplication.py": [

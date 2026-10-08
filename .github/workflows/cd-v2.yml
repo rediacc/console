@@ -692,6 +692,11 @@ jobs:
       # after init tagged it). A `gh release view` that fails for any reason
       # other than "release not found" is UNKNOWN and refused, never read as
       # "missing" or as "present".
+      # Checked out first, unconditionally: the decision below reads GitHub through
+      # common.sh's gh_retry, so one 5xx on `gh release view` retries instead of
+      # failing the retry run.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - name: Decide what this run still owes
         id: owed
         env:
@@ -700,13 +705,11 @@ jobs:
           RETRY_MODE: ${{ needs.init.outputs.retry_mode }}
         run: |
           if [[ "$RETRY_MODE" != true ]]; then echo "owed=true" >> "$GITHUB_OUTPUT"; exit 0; fi
-          rc=0; ERR=$(gh release view "v${VERSION}" --repo "$GITHUB_REPOSITORY" 2>&1 >/dev/null) || rc=$?
+          source .ci/scripts/lib/common.sh
+          rc=0; ERR=$(gh_retry "release lookup" -- release view "v${VERSION}" --repo "$GITHUB_REPOSITORY" 2>&1 >/dev/null) || rc=$?
           if [[ "$rc" == 0 ]]; then echo "::notice::Retry of v${VERSION}: its GitHub Release exists, nothing owed."; echo "owed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           grep -qi 'release not found' <<<"$ERR" || { echo "::error::Could not tell whether Release v${VERSION} exists (rc=${rc}): ${ERR}"; exit 1; }
           echo "::notice::Retry of v${VERSION}: no GitHub Release yet; completing submodule tags, Homebrew, the floor and the Release."; echo "owed=true" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: steps.owed.outputs.owed == 'true'
 
       - name: Fetch secrets from Bitwarden
         if: steps.owed.outputs.owed == 'true'
