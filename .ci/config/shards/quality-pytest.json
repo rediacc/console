@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-08T09:37:16.405Z",
+  "generatedAt": "2026-10-08T11:24:06.865Z",
   "legs": [
     {
       "index": 1,
@@ -159,6 +159,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_toolchain_env_dockerfile_sync.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_trap_registry.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_workflows.py",
+        "pytest:.ci/rediacc_ci/tests/test_release_cd_preflight.py",
         "pytest:.ci/rediacc_ci/tests/test_release_check_edge_manifest.py",
         "pytest:.ci/rediacc_ci/tests/test_release_check_soak_period.py",
         "pytest:.ci/rediacc_ci/tests/test_release_cleanup_channel_docker_tags.py",
