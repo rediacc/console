@@ -319,7 +319,7 @@ def shacite() -> Any:
     return wl_gh.import_ci("rediacc_ci.shacite")
 
 
-_CITATION_GATE = []
+_CITATION_GATE: list = []
 
 
 def _citation_gate():

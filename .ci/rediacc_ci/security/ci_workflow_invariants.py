@@ -456,7 +456,8 @@ def _push_findings(cd_doc: object) -> tuple[list[tuple[str, str]], int]:
         last_checkout: dict | None = None
         for i, st in enumerate(_steps(job)):
             uses = _text(st.get("uses"))
-            with_map = st.get("with") if isinstance(st.get("with"), dict) else {}
+            raw_with = st.get("with")
+            with_map = raw_with if isinstance(raw_with, dict) else {}
             if uses == APP_MINT_ACTION and _text(with_map.get("preset")).strip() == "cd":
                 token_ids.append(_text(st.get("id")))
             if uses.startswith("actions/checkout@"):
@@ -593,16 +594,22 @@ def _release_phase(ci_file: str, cd_file: str, action_file: str) -> tuple[list[s
     errors = [m for k, n in findings if (m := release_message_for(k, n, files)) is not None]
     if errors:
         return errors, []
+    tag_rows = typing.cast("list[tuple[str, str, list[str]]]", shape["tag"])
     tag = "; ".join(
         "%s step '%s' (needs: %s)" % (job, step, ", ".join(anc) or "nothing")
-        for job, step, anc in shape["tag"]  # type: ignore[union-attr]
+        for job, step, anc in tag_rows
     )
     return [], [
         "release order holds: %s creates the version tag, not behind any job that can fail "
         "after the seal and not skipped on retry_mode; %s dispatches CD in the step right after "
         "the seal under the same if:; %d cd-v2 jobs, none holding contents: write; %d `git "
         "push` step(s), each on the cd App token; the cd preset requests workflows: write"
-        % (tag, SENTINEL_JOB, shape["jobs"], shape["pushes"])
+        % (
+            tag,
+            SENTINEL_JOB,
+            typing.cast("int", shape["jobs"]),
+            typing.cast("int", shape["pushes"]),
+        )
     ]
 
 
