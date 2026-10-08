@@ -127,3 +127,19 @@ def test_the_pr_finish_review_box_stays_unticked_while_a_deferral_stands(tmp_pat
     ticked, waiting = _pr_finish_box(_state(tmp_path, "deferred", items=items))
     assert not ticked, "a deferral must keep the per-commit reviews box unticked"
     assert not waiting, "a deferral is not the reviewer-running wait"
+
+
+@pytest.mark.parametrize(
+    ("text", "token", "want"),
+    [
+        ("operator-only: 71afd29f.12 needs a call", "71afd29f.1", False),
+        ("operator-only: x71afd29f.1 needs a call", "71afd29f.1", False),
+        ("operator-only: 71afd29f.1 needs a call", "71afd29f.1", True),
+        ("operator-only: 71afd29f.1.", "71afd29f.1", True),
+        ("see pr:8/F12", "pr:8/F1", False),
+        ("see pr:8/F1, the rest fixed", "pr:8/F1", True),
+    ],
+)
+def test_a_waiver_item_names_its_finding_as_a_whole_token(text, token, want):
+    """Findings b18d31bd.1 and b18d31bd.2: a substring test let an item naming `.12` or `F12` waive `.1` or `F1`."""
+    assert R.names_token(text, token) is want

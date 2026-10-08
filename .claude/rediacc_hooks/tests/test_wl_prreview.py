@@ -208,6 +208,7 @@ ITEMS = {
     "abcdef12": (" ", "pr:%d/F3 needs the operator" % PR, "operator-only"),
     "deadbe00": ("x", "closed one", "operator-only"),
     "c0ffee00": (" ", "pr:%d/F3 is small" % PR, "inline"),
+    "f33f33f3": (" ", "pr:%d/F33 needs the operator" % PR, "operator-only"),
     "0dead000": ("~", "pr:%d/F3 removed" % PR, "operator-only"),
 }
 
@@ -684,6 +685,7 @@ def test_answer_refuses_a_deferral_with_the_fix_order(repo, capsys, item):
         ("waived #0dead000 %s" % ASKED, "does not exist"),
         ("waived #deadbe00 %s" % ASKED, "does not name pr:7/F3"),
         ("waived #c0ffee00 %s" % ASKED, "not operator-only"),
+        ("waived #f33f33f3 %s" % ASKED, "does not name pr:7/F3"),
         ("waived #abcdef12 ASKED:2026-10-08T10:06Z", "matches no AskUserQuestion answer"),
         ("waived #abcdef12", "is not fixed <sha40>"),
     ],
