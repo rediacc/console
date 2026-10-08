@@ -1139,13 +1139,12 @@ LIFECYCLE_PLANTS = (
 def _planted_repo(
     tmp_path: pathlib.Path, old: str, new: str, target_rel: str = LIFECYCLE_PORT
 ) -> pathlib.Path:
-    """A repository view whose `.ci/rediacc_ci` and `.ci/lib` are COPIES, one of them carrying one plant, and everything else a symlink to the checkout."""
+    """A repository view whose `.ci/rediacc_ci` is a COPY carrying one plant, and everything else a symlink to the checkout."""
     repo = paths.repo_root()
     fake = tmp_path / "repo"
     (fake / ".ci" / "scripts").mkdir(parents=True)
     for rel in (".ci/config", ".ci/scripts/lib", ".devcontainer", "scripts"):
         (fake / rel).symlink_to(repo / rel)
-    shutil.copytree(repo / ".ci" / "lib", fake / ".ci" / "lib")
     shutil.copytree(
         repo / ".ci" / "rediacc_ci",
         fake / ".ci" / "rediacc_ci",

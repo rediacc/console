@@ -422,8 +422,16 @@ def _newline_delta_holds(scenario: str, old_out: str, new_out: str) -> bool:
     )
 
 
+# D12: the twin's bind sources went through `.ci/lib/../..`; the port's do not (the directory is gone). The scenarios whose `docker run` argv carries the binds compare the twin's transcript with that spelling folded to the port's.
+BIND_SPELLING_SCENARIOS = ("up-create", "up-existing")
+TWIN_BIND_SPELLING = "/.ci/lib/../../.devcontainer/"
+PORT_BIND_SPELLING = "/.devcontainer/"
+
+
 def equivalent(scenario: str, old_out: str, new_out: str) -> bool:
     """The comparison the whole file stands on, minus the Rule T deltas."""
+    if scenario in BIND_SPELLING_SCENARIOS:
+        old_out = old_out.replace(TWIN_BIND_SPELLING, PORT_BIND_SPELLING)
     if scenario in NEWLINE_SCENARIOS:
         return _newline_delta_holds(scenario, old_out, new_out)
     return _without_delta_labels(old_out, scenario) == _without_delta_labels(new_out, scenario)
@@ -1065,6 +1073,29 @@ def test_delta_d1_a_host_with_no_docker_group_still_creates_the_devbox() -> None
     assert run.count("--group-add") == (1 if os.path.exists("/dev/kvm") else 0)
     assert "DOCKER_GID=" in run
     assert any("No docker group on this host" in line for line in errs_of(obs))
+
+
+@pytest.mark.parametrize("scenario", BIND_SPELLING_SCENARIOS)
+def test_delta_d12_the_script_binds_do_not_go_through_the_deleted_lib_directory(
+    scenario: str,
+) -> None:
+    """Defect D12, fixed: the bind sources are `<root>/.devcontainer/<file>`. The twin's `<root>/.ci/lib/../../.devcontainer/<file>` cannot be resolved once `.ci/lib` is not a directory, so docker would refuse every `devbox_up`.
+
+    Both directions: the frozen twin transcript carries the old spelling (so the fold in `equivalent` is a real fold), and the port's carries the new one and never the old.
+    """
+    # The record `test_the_port_matches_the_live_twin[<scenario>]` froze: its label is passed explicitly, so this test reads the same key.
+    old_out = diff.twin_call(
+        TWIN,
+        [scenario],
+        _retired,
+        label="test_the_port_matches_the_live_twin[%s]" % scenario,
+    )[1]
+    new_out = drive("new", scenario)[1]
+    assert TWIN_BIND_SPELLING in old_out, "the frozen twin no longer shows the old spelling"
+    assert TWIN_BIND_SPELLING not in new_out
+    assert "%sdevbox-entrypoint.sh:/usr/local/bin/devbox-entrypoint.sh:ro" % PORT_BIND_SPELLING in (
+        new_out
+    )
 
 
 def test_delta_d2_the_identity_probe_fails_when_the_devbox_is_not_running() -> None:

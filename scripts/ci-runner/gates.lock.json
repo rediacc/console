@@ -5381,21 +5381,6 @@
     }
   },
   {
-    "id": "gate-test:run-sh",
-    "run": ".ci/scripts/test/gates/test-run-sh.sh",
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-run-sh.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-gate-tests",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
     "id": "check:ci-release-bump-skip",
     "run": "npm run check:ci-release-bump-skip",
     "gate": true,

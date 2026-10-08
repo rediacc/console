@@ -47,7 +47,34 @@ MEDIA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$MEDIA_DIR/../.." && pwd)"
 
 source "$ROOT_DIR/.ci/config/constants.sh"
-source "$ROOT_DIR/.ci/lib/local-common.sh"
+
+# What this pipeline takes from the CI helpers, and nothing else: the five log functions
+# (the glyphs, stderr-only and colour rules of .ci/scripts/lib/common.sh) and the three
+# preparation steps, which are one-line calls into the Python port. A failing step
+# returns non-zero, so a bare call under `set -e` stops the script as the sourced
+# function did; every call site in tutorials.sh and bridge.sh is a bare statement or a
+# `{ ...; } >&2` group, none sits in an `if` or `||`.
+if [[ -t 2 ]] && [[ -z "${NO_COLOR:-}" ]]; then
+    _red='\033[0;31m' _green='\033[0;32m' _yellow='\033[1;33m' _blue='\033[0;34m'
+    _cyan='\033[0;36m' _nc='\033[0m'
+else
+    _red='' _green='' _yellow='' _blue='' _cyan='' _nc=''
+fi
+log_info() { echo -e "${_green}✓${_nc} $*" >&2; }
+log_warn() { echo -e "${_yellow}⚠${_nc} $*" >&2; }
+log_error() { echo -e "${_red}✗${_nc} $*" >&2; }
+log_step() { echo -e "${_blue}→${_nc} $*" >&2; }
+log_debug() {
+    if [[ "${DEBUG:-false}" == "true" ]]; then
+        echo -e "${_cyan}[DEBUG]${_nc} $*" >&2
+    fi
+}
+_local_common() {
+    PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.core.local_common "$@"
+}
+ensure_deps() { _local_common ensure-deps; }
+ensure_packages_built() { _local_common ensure-packages-built; }
+check_node_version() { _local_common check-node-version "$@"; }
 
 # portable.sh IS SOURCED FIRST and is not in the alphabetical list below, because it is
 # not a subject module: it is the seam layer where this pipeline names a non-portable

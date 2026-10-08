@@ -1,7 +1,6 @@
 {
   "note": "SHRINK-ONLY and GENERATED. Tracked bash under the trees ruling 7 (docs/ci-overhaul/04-decisions.md) assigns to Python (.ci, .claude, scripts/{ops,drills,dev}), minus the .language-policy-allowlist exemptions. It may only LOSE members: a new path is refused even when the total shrinks, since composition is the claim. Drain with --write-baseline, not to clear a red.",
   "bashFiles": [
-    ".ci/lib/local-common.sh",
     ".ci/scripts/deploy/upload-media-to-r2.sh",
     ".ci/scripts/infra/ci-pull-images.sh",
     ".ci/scripts/infra/ci-start-elite.sh",
@@ -12,7 +11,6 @@
     ".ci/scripts/lib/toolchain.sh",
     ".ci/scripts/test/gates/test-blocker-golden-corpus.sh",
     ".ci/scripts/test/gates/test-media-r2.sh",
-    ".ci/scripts/test/gates/test-run-sh.sh",
     ".ci/scripts/test/gates/test-runner-advice.sh",
     ".ci/scripts/test/lib/test-helpers.sh"
   ]

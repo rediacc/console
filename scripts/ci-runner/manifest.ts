@@ -5057,19 +5057,7 @@ export const GATES: readonly GateSpec[] = [
   //
   // A mutex group binding the three writers against check:lint / check:format / lint:unused is the fallback, and it is expensive. It would serialise 511.7s of work against an observed 264.2s wall, a 1.94x regression that drops the run from about 9x to about 4.7x. It also binds the two LONGEST gates in the set to each other, because one of the writers is the critical path:
   // test-gate-paths-exist.sh measured 142.6s standalone on an idle tree and 264.1s under parallel load, against check:lint at 194.8s under the same load. (The plan's 116.7s for check:lint is stale; do not cost this from it.) No mutex is declared here, deliberately, because that trade wants an explicit decision rather than a silent default.
-  {
-    id: 'gate-test:run-sh',
-    run: '.ci/scripts/test/gates/test-run-sh.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-run-sh.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-gate-tests',
-      step: 'Quality-gate unit tests',
-    },
-  },
+  // RETIRED WITH ITS SUBJECT (W11-A, 2026-10-08): gate-test:run-sh ran .ci/scripts/test/gates/test-run-sh.sh, which is deleted. Its pytest port `.ci/rediacc_ci/tests/gates/test_gate_run_sh.py` is collected by check:ci-pytest, and the bare-checkout ubuntu-slim proof is ci.yml's run-sh-tests job, which runs it through the stdlib-only `rediacc_ci.tests.gates.run_bare`.
   {
     id: 'check:ci-release-bump-skip',
     run: 'npm run check:ci-release-bump-skip',

@@ -836,6 +836,7 @@ def build_sandbox(repo: pathlib.Path, case: Case) -> tuple[pathlib.Path, Farm]:
         shutil.rmtree(base)
     root = base / "root"
     (root / ".ci" / "scripts").mkdir(parents=True)
+    # `.ci/lib` is a DANGLING link, kept on purpose: the directory is gone, but every frozen lifecycle transcript lists the sandbox tree and the link is one of its lines (`.ci/lib link <repo>/.ci/lib`).
     for rel in (
         ".ci/lib",
         ".ci/config",

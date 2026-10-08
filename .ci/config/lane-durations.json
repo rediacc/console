@@ -293,7 +293,6 @@
     "github.com/rediacc/renet/pkg/trim": 0.0,
     "battery:test-blocker-golden-corpus.sh": 3088.9,
     "battery:test-media-r2.sh": 953.5,
-    "battery:test-run-sh.sh": 1700.1,
     "battery:test-runner-advice.sh": 2793.1,
     "battery:test-toolchain.sh": 317.5,
     "tutorial:installation": 11400.0,

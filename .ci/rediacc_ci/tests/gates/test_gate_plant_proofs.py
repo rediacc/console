@@ -1,10 +1,10 @@
 """The gate test for `check:ci-plant-proofs`, which has no bash twin.
 
-NEW GATE, NOT A PORT, so there is no `.ci/scripts/test/gates/test-*.sh` to name here and nothing to compare against. What it tests is the thing the selftest structurally cannot: the gate as a PROCESS, invoked the way CI invokes it, against copies of the REAL controls it is meant to police.
+NEW GATE, NOT A PORT, so there is no `.ci/scripts/test/gates/test-*.sh` to name here and nothing to compare against. What it tests is the thing the selftest structurally cannot: the gate as a PROCESS, invoked the way CI invokes it, against copies of the controls it is meant to police.
 
 WHY THAT DISTINCTION IS NOT PEDANTRY HERE, and this gate paid for it the same day it was written. Every selftest control passed against synthetic fixtures
 while a target-only proof rule let ONE control's `grep` launder its NEIGHBOUR's
-plant. The synthetic fixtures had one plant each, so the case could not exist in them. It showed up on the first plant into the real `.ci/scripts/test/gates/test-run-sh.sh`, where three controls mutate the same copied file six logical lines apart -- the gate stayed GREEN with both proof lines deleted. That is the whole argument for driving real subjects.
+plant. The synthetic fixtures had one plant each, so the case could not exist in them. It showed up on the first plant into the real `test-run-sh.sh` (since deleted for its pytest port), where three controls mutated the same copied file six logical lines apart -- the gate stayed GREEN with both proof lines deleted. The bash subject here is a fixture with that shape; the TypeScript and debt subjects are still real files.
 
 NOTHING TRACKED IS EVER MUTATED. Every plant lands in a scratch git repository holding COPIES. Other sessions share this worktree.
 """
@@ -24,7 +24,24 @@ from rediacc_ci.tests.gates import harness
 WRITE_BASELINE = "--write-" + "baseline"
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_plant_proofs.py")
-BASH_SUBJECT = ".ci/scripts/test/gates/test-run-sh.sh"
+# The bash subject is a FIXTURE written into the mirror, not a tracked file. The real control this module used to plant into (`test-run-sh.sh`, three controls mutating one copied file six logical lines apart) was deleted when its pytest port replaced it, and no other tracked bash gate test carries a proven plant. The fixture keeps the shape that file had, which is the shape the neighbour-laundering case needs.
+BASH_SUBJECT = ".ci/scripts/test/gates/test-fixture-plants.sh"
+BASH_FIXTURE = """#!/bin/bash
+ctl="$(mktemp -d)"
+printf 'TOP clean\\ndocumented alpha\\n' >"$ctl/arms.txt"
+# control (b): delete a dispatch row and require the unreachable-verb verdict
+grep -q '^TOP clean$' "$ctl/arms.txt" ||
+    no "CONTROL PLANT DID NOT LAND: the package no longer dispatches 'clean', so the unreachable-verb control below plants nothing and passes for free"
+sed -i '/^TOP clean$/d' "$ctl/arms.txt"
+grep -q '^TOP clean$' "$ctl/arms.txt" &&
+    no "CONTROL PLANT DID NOT LAND: the dispatch row survived the deletion in the copy"
+# control (c): rename another row, proven on a DIFFERENT needle of the SAME copy
+grep -q '^documented alpha$' "$ctl/arms.txt" ||
+    no "CONTROL PLANT DID NOT LAND: the documented row is gone"
+sed -i 's/^documented alpha$/documented beta/' "$ctl/arms.txt"
+grep -q '^documented beta$' "$ctl/arms.txt" ||
+    no "CONTROL PLANT DID NOT LAND: the rename did not apply"
+"""
 TS_SUBJECT = "scripts/gates/check-docs-browse-invariants.ts"
 # A REAL subject that is currently UNPROVEN, so the mirror's baseline is not empty. Without it every drain and trim case below asserted against a zero-row baseline, which is the vacuous-fixture shape this whole gate is about; the `if not obj[KEY]` guards caught it on the first run.
 DEBT_SUBJECT = ".ci/scripts/test/gates/test-runner-advice.sh"
@@ -52,10 +69,13 @@ def _run(root, *args):
 def _mirror(tmp):
     """A scratch git repo holding copies of the two REAL subjects, plus a baseline."""
     root = pathlib.Path(tmp)
-    for rel in (BASH_SUBJECT, TS_SUBJECT, DEBT_SUBJECT, pp.PYTHON_DELEGATE):
+    for rel in (TS_SUBJECT, DEBT_SUBJECT, pp.PYTHON_DELEGATE):
         target = root / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(paths.from_root(*rel.split("/")), target)
+    fixture = root / BASH_SUBJECT
+    fixture.parent.mkdir(parents=True, exist_ok=True)
+    fixture.write_text(BASH_FIXTURE, encoding="utf-8")
     (root / "package.json").write_text(
         json.dumps({"scripts": {pp.PYTHON_DELEGATE_ID: pp.PYTHON_DELEGATE}}),
         encoding="utf-8",
@@ -104,7 +124,7 @@ def test_the_gate_is_green_on_the_real_tree(gate):
 def test_one_of_the_two_proofs_is_enough(gate):
     """The MUST-NOT-FIRE direction, on a real subject.
 
-    `test-run-sh.sh` control (b) carries both a pre-check and a post-check. Either one on its own proves the plant landed, and a gate that demanded both would be a gate authors route around.
+    The fixture's control (b) carries both a pre-check and a post-check. Either one on its own proves the plant landed, and a gate that demanded both would be a gate authors route around.
     """
     gate.log_test("NEGATIVE: strip the PRE-check only; the post-check still proves it")
     with harness.temp_dir() as tmp:
@@ -117,7 +137,7 @@ def test_one_of_the_two_proofs_is_enough(gate):
 
 
 def test_a_bash_control_losing_its_proof_reds(gate):
-    gate.log_test("PLANT: strip BOTH proofs off a REAL bash control, in a copy")
+    gate.log_test("PLANT: strip BOTH proofs off a bash control, in a copy")
     with harness.temp_dir() as tmp:
         root = _mirror(tmp)
         gate.assert_exit(0, _run(root), "the untouched mirror is green first")
@@ -125,7 +145,7 @@ def test_a_bash_control_losing_its_proof_reds(gate):
         _edit(root, BASH_SUBJECT, BASH_PROOF_AFTER, "")
         result = _run(root)
         gate.assert_exit(1, result, "an unproven plant is a finding")
-        gate.assert_contains(result.combined, "test-run-sh.sh", "names the file")
+        gate.assert_contains(result.combined, "test-fixture-plants.sh", "names the file")
         gate.assert_contains(result.combined, "never proves the mutation landed", "says what")
         gate.assert_contains(result.combined, "CONTROL PLANT DID NOT LAND", "hands over the fix")
         gate.assert_contains(result.combined, "Do NOT add it to", "and refuses the baseline")
