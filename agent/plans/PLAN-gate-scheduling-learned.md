@@ -27,29 +27,29 @@ The source of the scheduler, model and ledger must name no gate id. A test (T9) 
 
 ## What exists (investigated 2026-10-08, file:line in the agent reports)
 
-**Ordering.** `planAdmission` returns a single `rank` comparator (`scripts/ci-runner/pool.ts:777-940`). `runPool` sorts the ready set by it (`pool.ts:1157`).
-- slots mode: longest wall first (`pool.ts:823`).
-- cores mode: max(bottom level, mutex chain, cpu) (`pool.ts:926-936`).
-- `sim.ts` drives the same `admit`/`planAdmission` (`sim.ts:1-25`), so an order can be checked by simulation.
+**Ordering.** `planAdmission` returns a single `rank` comparator (`scripts/ci-runner/pool.ts:777-940`). `runPool` sorts the ready set by it (`scripts/ci-runner/pool.ts:1157`).
+- slots mode: longest wall first (`scripts/ci-runner/pool.ts:823`).
+- cores mode: max(bottom level, mutex chain, cpu) (`scripts/ci-runner/pool.ts:926-936`).
+- `sim.ts` drives the same `admit`/`planAdmission` (`scripts/ci-runner/sim.ts:1-25`), so an order can be checked by simulation.
 
 **Receipt.**
-- Built only under `--quick`, at `run.ts:4043-4107`. `whole = narrowedBy.length === 0` (`run.ts:4087`).
-- 50 archived copies are kept under `.ci/cache/receipts/` (`run.ts:2970-2985`).
-- Per-gate `inputHash` is null for 306 of 352 gates: only 46 declare `paths` (`input-hash.ts:207-244`).
+- Built only under `--quick`, at `scripts/ci-runner/run.ts:4043-4107`. `whole = narrowedBy.length === 0` (`scripts/ci-runner/run.ts:4087`).
+- 50 archived copies are kept under `.ci/cache/receipts/` (`scripts/ci-runner/run.ts:2970-2985`).
+- Per-gate `inputHash` is null for 306 of 352 gates: only 46 declare `paths` (`scripts/ci-runner/input-hash.ts:207-244`).
 - `filesHash` is not a sound input key for path-less gates. `check:version` went green, red, then green with the same `filesHash`, because the fix was in package.json.
 
-**Streaming.** FAIL blocks already print the moment a gate fails (`report.ts:281-287`). But the operator's `prepush.sh` redirects everything to a log, so nothing is seen until the end.
+**Streaming.** FAIL blocks already print the moment a gate fails (`scripts/ci-runner/report.ts:281-287`). But the operator's `prepush.sh` redirects everything to a log, so nothing is seen until the end.
 
-**Stopping.** SIGTERM/SIGINT stops new launches and kills the gates, and the run exits with no receipt (`run.ts:3795-3830`).
+**Stopping.** SIGTERM/SIGINT stops new launches and kills the gates, and the run exits with no receipt (`scripts/ci-runner/run.ts:3795-3830`).
 
 **Existing data.** None of it is a cross-run pass/fail history:
 - `lane-durations.json`, `gate-costs.json` and `gate-durations.json` hold timing only.
 - `agent/reggate/*.jsonl` is the Stop hook's effort ledger, not gate outcomes.
-- The ci-trace log cache (`~/.cache/ci-trace/logs/`) and `ci_diagnose` categories (`ci_diagnose.py:58-71`) are the CI side.
+- The ci-trace log cache (`~/.cache/ci-trace/logs/`) and `ci_diagnose` categories (`.ci/rediacc_ci/ci/ci_diagnose.py:58-71`) are the CI side.
 
 **Locked append.** `.claude/hooks/stop/wl_store.py:649-667` `_append_lines`: blocking flock, one O_APPEND write per batch, torn-tail heal.
 
-**PUSH-GUARD HOLE (found on the way).** `--fail-fast` is not a narrowing flag (`run.ts:2830-2837`). Gates it skips are written as `blocked` (`run.ts:3121`), which the guard accepts as a verdict (`block_unverified_push.py:1332`, `:1502`). So a `--quick --fail-fast` run whose only red is carried may produce a `whole: true` receipt with unjudged gates. This is verified first in T1, then fixed.
+**PUSH-GUARD HOLE (found on the way).** `--fail-fast` is not a narrowing flag (`scripts/ci-runner/run.ts:2830-2837`). Gates it skips are written as `blocked` (`scripts/ci-runner/run.ts:3121`), which the guard accepts as a verdict (`.claude/rediacc_hooks/guards/block_unverified_push.py:1332`, `:1502`). So a `--quick --fail-fast` run whose only red is carried may produce a `whole: true` receipt with unjudged gates. This is verified first in T1, then fixed.
 
 ## 1. Outcome ledger (piece 1)
 
@@ -78,7 +78,7 @@ The source of the scheduler, model and ledger must name no gate id. A test (T9) 
 Carried verdicts are never written, because a carried gate did not run.
 
 **Writer.**
-- ci-runner's `onFinish` (`run.ts:3561`) feeds `scripts/ci-runner/ledger.ts`. That module streams rows to a long-lived `python3 -m rediacc_ci.ci.gate_ledger append` child, copying the lease-broker pattern including its loud degradation.
+- ci-runner's `onFinish` (`scripts/ci-runner/run.ts:3561`) feeds `scripts/ci-runner/ledger.ts`. That module streams rows to a long-lived `python3 -m rediacc_ci.ci.gate_ledger append` child, copying the lease-broker pattern including its loud degradation.
 - `_append_lines` moves to `.ci/rediacc_ci/core/jsonl_append.py`, and `wl_store` imports it from there. There is one implementation, not two copies.
 - Off when `CI=true` unless the env var is set.
 
@@ -101,7 +101,7 @@ The anchors are:
 - every `ci.test` path;
 - `GLOBAL_INPUTS`.
 
-A changed file's class is the longest anchor that matches it, using the input-hash glob grammar's Python twin (`v2_match_glob`, `block_unverified_push.py:1354`). An unmatched file is `~<first two segments>`.
+A changed file's class is the longest anchor that matches it, using the input-hash glob grammar's Python twin (`v2_match_glob`, `.claude/rediacc_hooks/guards/block_unverified_push.py:1354`). An unmatched file is `~<first two segments>`.
 
 Classes are recomputed from the stored paths against the current lock at model time, so they never go stale.
 
@@ -182,7 +182,7 @@ There is also a machine stream, `--events <abs>` (default `<receipt dir>/ci-quic
 - The operator's `prepush.sh` streams through `tee` plus a line-buffered filter for `RED|PREFLIGHT|STAGE|ranking`.
 - It gains a `TRIAGE=1` mode that passes `--stop-on-stage-red`.
 - On exit 3 it says `no receipt (stopped)` instead of parsing a stale receipt.
-- `pr-babysitter.md:100-102` gains the loop: red, `--narrow` until green, one full receipt when a push is due.
+- `.claude/agents/pr-babysitter.md:100-102` gains the loop: red, `--narrow` until green, one full receipt when a push is due.
 
 ## 6. Self-improvement loop (piece 7)
 
@@ -191,7 +191,7 @@ There is also a machine stream, `--events <abs>` (default `<receipt dir>/ci-quic
 - rewrites `model.json`;
 - writes `reports/<date>.md`.
 
-Worklist items carry the token `[gate-model:<kind>:<key>]`. An open item with the token is refreshed with `--update`; otherwise one is added. Ownership uses an O_EXCL claim, as in `wl_schedred.py:540,605`. The kinds:
+Worklist items carry the token `[gate-model:<kind>:<key>]`. An open item with the token is refreshed with `--update`; otherwise one is added. Ownership uses an O_EXCL claim, as in `.claude/hooks/stop/wl_schedred.py:540,605`. The kinds:
 - `flaky-test:<node>` (from the brief)
 - `flaky-gate:<id>`
 - `chronic:<id>`
@@ -207,7 +207,7 @@ Every kind after `flaky-test` is INFERRED; the brief's own list was truncated af
 
 ## 7. Upgrade companion fix (piece 6, #3b831146)
 
-After `executeInstalls` succeeds (`check-deps.ts:2240`), `check-deps.ts --upgrade` rewrites the `pinVersion` of every `.syncpackrc.json` group whose `dependencies` it moved. It uses the exact-form, byte-stable write of `applyOverrideBump` (`:1525-1565`).
+After `executeInstalls` succeeds (`scripts/gates/check-deps.ts:2240`), `check-deps.ts --upgrade` rewrites the `pinVersion` of every `.syncpackrc.json` group whose `dependencies` it moved. It uses the exact-form, byte-stable write of `applyOverrideBump` (`:1525-1565`).
 - A lockstep group moves only when all of its members moved.
 - Labels stay unchanged, because `check-syncpack-reasons.ts` keys on them.
 - A selftest fixture covers this. Control: without the rewrite, `check:version` is red on the fixture.
@@ -269,7 +269,7 @@ After `executeInstalls` succeeds (`check-deps.ts:2240`), `check-deps.ts --upgrad
 
 ## Risks
 
-- `scripts/ci-runner/**` is a global input (`input-hash.ts:24`), so landing it voids every carried gate once.
+- `scripts/ci-runner/**` is a global input (`scripts/ci-runner/input-hash.ts:24`), so landing it voids every carried gate once.
 - `check:ci-pytest` (about 945 s) stays the critical path of a full receipt. This plan shortens the triage cycles, not the full run.
 - Elastic-gate wall estimates can be stale, and the safety check uses the same estimates. Each run records simulated against actual wall in its events.
 - The UTC-boundary clock rule is a heuristic; probes are the decisive check and cost a clone checkout.
