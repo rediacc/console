@@ -128,6 +128,7 @@
     "check:ci-gen-manifest": "tsx scripts/gen/gen-manifest.ts --selftest && tsx scripts/gen/gen-manifest.ts",
     "check:ci-gate-manifest": "tsx scripts/gates/check-gate-manifest.ts --selftest && tsx scripts/gates/check-gate-manifest.ts",
     "check:ci-trap-registry": ".ci/scripts/quality/check_trap_registry.py",
+    "check:ci-scope-mirrors": ".ci/scripts/quality/check_scope_mirrors.py",
     "check:ci-tree-shape": ".ci/scripts/quality/check_tree_shape.py",
     "check:ci-runner-selftest": "tsx scripts/ci-runner/run.ts --selftest",
     "check:ci-devbox-exec": ".ci/scripts/quality/check_devbox_exec.py",

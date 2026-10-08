@@ -167,11 +167,12 @@ a rule the operator has written down twice.
   ("at an epic milestone, at least every 2 hours of committed work, and before
   a stop that leaves unpushed commits"; under `turbo: on` with `turbo_push:
   batch-end` (the default) a completed batch pushes and opens its PR with no
-  reason, and the hooks decide push timing), and "a second branch or PR is the
+  reason, an earlier push needs a `TURBO_PUSH_REASON` kind or a `backup_push_h`
+  backup, and the hooks decide push timing), and "a second branch or PR is the
   operator's own `!` command; there is nothing to ask for."
 
   Findings rule: "Ask for the big-bang, not for permission to patch one thing...
-  put the whole cluster into a single plan and ask to run it."
+  put the whole cluster into a single plan ... and ask to run it."
 
   Worktree/branch routing: default to the checkout the session is already in.
   `git worktree add` stays hook-blocked from the assistant's own Bash tool

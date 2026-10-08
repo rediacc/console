@@ -1965,3 +1965,11 @@ Residue: only a trailing --retro is recovered; one in the middle of the note is 
 Documented-In: text:.claude/hooks/stop/worklist.py accepted anywhere BEFORE the bare
 
 The worklist verbs accept `--retro` and `--evidence` anywhere before a bare `--`. After it, only a trailing `--retro` is recovered; one in the middle of a note becomes part of the note text, and the flag silently does nothing.
+
+## A rule mirrored by hand drifts in the copy nobody re-reads
+Trap-Id: hand-mirrored-rule-drift
+Enforced-By: gate:check:ci-scope-mirrors
+Residue: a mirror that adds an exception or contradicts the canonical while still carrying every atom passes the terms test; only constant tuples serve as code oracles.
+Documented-In: text:.ci/rediacc_ci/quality/scope_mirrors.py BLIND SPOTS (plan D9), also printed on every green
+
+CLAUDE.md states the PR-scope rules once, and the output style, the pr-epics skill, `/pr-babysit`, `/pr-merge`, the pr-babysitter agent, a guard's message and the QUEUE.md header restate them in their own words. Those copies are what an agent reads mid-task. A change to the rule reaches the copies only when its author remembers each one: 8ed69711c copied one sentence into five files by hand, and earlier changes left eight disagreements behind (agent/plans/PLAN-scope-mirrors.md, F1-F8). The canonical spans are anchored and pinned by sha, so an edit to one turns red until every registered mirror has been re-read and the clause repinned.
