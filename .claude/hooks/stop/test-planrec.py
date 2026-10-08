@@ -1406,6 +1406,146 @@ raises(
 )
 (ROOT / REL).write_text(PLAN, encoding="utf-8")
 
+# --------------------------------------------------------------------------- 14d. plan_investigate(retro=True): the late record, and the order it must not erode.
+#
+# The defect this answers: check:ci-plan-implementation's P-A2 printed `--plan-investigate ... --write` as the remedy for a box that was ALREADY ticked, and plan_investigate refuses every box that is not open, so the remedy could never run. `--retro` is the one door for a ticked box; each door it must keep shut has a refusal below, and each refusal has the case it must let through.
+# ---------------------------------------------------------------------------
+(ROOT / REL).write_text(PLAN, encoding="utf-8")
+_HEAD_NOW = git_out(ROOT, "rev-parse", "HEAD")
+_retro_note = (
+    "before %s the tree held no reachability baseline at all: the plan-boxes ledger listed this "
+    "box as open and nothing regenerated it; that commit added the regeneration." % AFTER[:12]
+)
+truthy("the fixture retro note clears the retro floor", len(_retro_note) >= R.RETRO_NOTE_MIN)
+_rrow, _rres = R.plan_investigate(
+    ROOT,
+    REL,
+    _sig_done,
+    "absent",
+    ["fileline:%s:1" % REL, "commit:%s" % AFTER],
+    _retro_note,
+    "deadbeef",
+    retro=True,
+)
+control("--retro on a TICKED box writes a row marked retro", _rrow.get("retro"), True)
+control("...about the box that was asked for", _rrow["sig"], _sig_done)
+control("...naming the implementing commit in full", _rrow["retro_commit"], AFTER)
+control("...with the verdict the caller gave, not a forced one", _rrow["verdict"], "absent")
+control("...and `head` is the live HEAD, when the row was really written", _rrow["head"], _HEAD_NOW)
+_n_before = len(R.read_investigations(ROOT))
+R.append_investigation(ROOT, _rrow)
+control(
+    "...and it lands in the ledger through the one append path",
+    (len(R.read_investigations(ROOT)), R.investigation_for(ROOT, REL, _sig_done).get("retro")),
+    (_n_before + 1, True),
+)
+
+raises(
+    "--retro on an OPEN box is refused: it can still be investigated before the work",
+    lambda: R.plan_investigate(
+        ROOT,
+        REL,
+        R.box_sig(TASK_OPEN),
+        "absent",
+        ["fileline:%s:1" % REL, "commit:%s" % AFTER],
+        _retro_note,
+        "deadbeef",
+        retro=True,
+    ),
+    "still OPEN",
+)
+_nonretro = _refusal(
+    lambda: R.plan_investigate(
+        ROOT,
+        REL,
+        _sig_done,
+        "absent",
+        ["fileline:%s:1" % REL, "commit:%s" % AFTER],
+        _retro_note,
+        "deadbeef",
+    )
+)
+truthy("WITHOUT --retro a ticked box is still refused", "already TICKED" in _nonretro)
+truthy("...and the refusal names the command that CAN run", "--retro --write" in _nonretro)
+truthy("...and says the order for next time", "--plan-investigate FIRST" in _nonretro)
+
+_dangling = subprocess.run(
+    ["git", "-C", str(ROOT), "commit-tree", "HEAD^{tree}", "-m", "not on this branch"],
+    capture_output=True,
+    text=True,
+    check=True,
+).stdout.strip()
+truthy(
+    "CONTROL: the dangling commit really exists, so its refusal is not a dead pointer",
+    R._git_ok(ROOT, "cat-file", "-e", _dangling + "^{commit}"),
+)
+falsy(
+    "CONTROL: and really is not an ancestor of HEAD",
+    R._git_ok(ROOT, "merge-base", "--is-ancestor", _dangling, "HEAD"),
+)
+raises(
+    "--retro citing a commit that is NOT an ancestor of HEAD is refused",
+    lambda: R.plan_investigate(
+        ROOT,
+        REL,
+        _sig_done,
+        "absent",
+        ["fileline:%s:1" % REL, "commit:%s" % _dangling],
+        _retro_note,
+        "deadbeef",
+        retro=True,
+    ),
+    "not an ancestor of HEAD",
+)
+raises(
+    "--retro with no commit pointer at all is refused",
+    lambda: R.plan_investigate(
+        ROOT,
+        REL,
+        _sig_done,
+        "absent",
+        ["fileline:%s:1" % REL, "plan:%s" % REL],
+        _retro_note,
+        "deadbeef",
+        retro=True,
+    ),
+    "commit:<sha>",
+)
+raises(
+    "--retro with a note under the retro floor is refused, though it clears the live 40",
+    lambda: R.plan_investigate(
+        ROOT,
+        REL,
+        _sig_done,
+        "absent",
+        ["fileline:%s:1" % REL, "commit:%s" % AFTER],
+        _retro_note[:60],
+        "deadbeef",
+        retro=True,
+    ),
+    "--retro: the note",
+)
+# A RETRO ROW NEVER LICENSES A TICK. Planted directly as the latest row for the OPEN box (the shape a re-opened box would have), and plan_tick must refuse it.
+R.append_investigation(ROOT, dict(_rrow, sig=R.box_sig(TASK_OPEN)))
+raises(
+    "plan_tick refuses a box whose latest investigation row is a --retro row",
+    lambda: R.plan_tick(
+        ROOT, REL, R.box_sig(TASK_OPEN), "verified by .ci/config/plan-boxes.json:1", "deadbeef"
+    ),
+    "--retro row",
+)
+# And the live row restores the tick, so the refusal above was about the retro row and nothing else.
+R.append_investigation(ROOT, _row14)
+truthy(
+    "CONTROL: a later LIVE row for the same box licenses the tick again",
+    bool(
+        R.plan_tick(
+            ROOT, REL, R.box_sig(TASK_OPEN), "verified by .ci/config/plan-boxes.json:1", "deadbeef"
+        )
+    ),
+)
+(ROOT / REL).write_text(PLAN, encoding="utf-8")
+
 # --------------------------------------------------------------------------- 14b. dirty_paths() and the .strip() that ate the first character.
 #
 # REGRESSION CONTROL, and the defect was live. Porcelain format is two status characters, a space, then the path, and for an UNSTAGED modification the first character is a space. `wl_core._git` ends in `.strip()`, so the first line of output lost that space and `ln[3:]` returned a truncated path -- `un.sh` for `run.sh`. `candidates()` compares plan paths against this set to print

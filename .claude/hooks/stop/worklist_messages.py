@@ -2644,6 +2644,42 @@ CLI_PLANINV_NEXT = {
     ),
 }
 
+#: THE ORDER, said before either verb's usage so it is the first thing read: investigate, then implement, then tick. `--plan-tick` refuses a box with no investigation row, and a box ticked by hand is only ever recordable afterwards as a visible `--retro` row.
+CLI_PLAN_ORDER = (
+    "ORDER: investigate FIRST, then implement, then tick.\n"
+    "  1. worklist.py --plan-investigate <me> <plan> <box> <absent|present|partial> \\\n"
+    "         <kind>:<token> <kind>:<token> -- <note> --write\n"
+    "  2. implement (skip when the verdict was `present`)\n"
+    "  3. worklist.py --plan-tick <me> <plan> <box> <evidence> --write\n"
+    "A box ticked any other way can only be recorded late, with --retro, and\n"
+    "check:ci-plan-implementation prints every such row on every run.\n"
+    "\n"
+)
+
+#: Appended to CLI_PLANINV_USAGE by `--plan-investigate`'s usage path.
+CLI_PLANINV_RETRO_USAGE = (
+    "\n"
+    "--retro     THE LATE RECORD, for a box that is ALREADY ticked with no row\n"
+    "            (check:ci-plan-implementation's P-A2). <box> then selects among\n"
+    "            the DONE boxes, and an OPEN box is refused: it can still be\n"
+    "            investigated before the work. Required on top of the bars above:\n"
+    "            at least one `commit:<sha>` pointer, the FIRST naming the commit\n"
+    "            that implemented the box, every one an ancestor of HEAD; and a\n"
+    "            note of at least 120 characters saying what the tree held BEFORE\n"
+    "            that commit (verdict `absent` for new code, `partial` when part\n"
+    '            existed). The row carries `"retro": true`, the gate does not\n'
+    "            pretend it preceded the work, and it prints every retro row on\n"
+    "            this branch on every run.\n"
+)
+
+#: The `next` paragraph of CLI_PLANINV_DRY/WROTE for a --retro row, in place of CLI_PLANINV_NEXT's per-verdict advice (a retro row licenses no tick).
+CLI_PLANINV_RETRO_NEXT = (
+    "--retro row about the commit %(retro_commit)s: it records a box closed BEFORE it was\n"
+    "investigated. P-A2 accepts it and check:ci-plan-implementation lists it on every\n"
+    "run as `closed before investigation`. It licenses no tick: a re-opened box is\n"
+    "investigated live like any other."
+)
+
 CLI_PLANREC_REVIVED = (
     "restored %(rel)s from blob %(blob)s (%(bytes)d bytes)\n"
     "  The record is gone and the plan is a live plan again, which means it is\n"

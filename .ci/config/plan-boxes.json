@@ -701,12 +701,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 12,
-      "done": 0,
+      "open": 2,
+      "done": 10,
       "open_sigs": [
+        "1b842dc7",
+        "c69dc069"
+      ],
+      "done_sigs": [
         "0001ff07",
         "106a374f",
-        "1b842dc7",
         "1d326aac",
         "257e3ba1",
         "74185959",
@@ -714,10 +717,8 @@
         "995f01ea",
         "a7d8572a",
         "b0ad6ba7",
-        "c69dc069",
         "f763f891"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-gh-swallow-gates-audit.md": {
       "status": "compacted",
