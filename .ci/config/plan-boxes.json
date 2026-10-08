@@ -953,20 +953,20 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-locale-techdiff-resync.md": {
-      "status": "ready",
+      "status": "done",
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "2026-09-21",
-      "open": 5,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 5,
+      "open_sigs": [],
+      "done_sigs": [
         "30748c4a",
         "65129ad2",
         "6ff2ef5d",
         "9cad8dae",
         "b903a441"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-localize-cheat-sheet-rendering.md": {
       "status": "compacted",

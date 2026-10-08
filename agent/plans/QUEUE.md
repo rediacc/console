@@ -59,8 +59,8 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-cd-errors-in-ci.md -- 0 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-retire-bash-oracles.md -- 6 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans: none.
-- Writers: 2 live of writer_cap 15 (session d778be9d): worker:aed783a521ac8db42, worker:a96aa6313380b1a1b.
-- Leased items: 4: #575d2992 (worker:a96aa6313380b1a1b, d778be9d), #9b4e7449 (worker:acb91b7c0d10abd91, d778be9d), #d6fbb434 (worker:aed783a521ac8db42, d778be9d), #dd4cb2e3 (worker:a82aa5d86793f5af1, d778be9d).
+- Writers: 2 live of writer_cap 15 (session d778be9d): worker:a96aa6313380b1a1b, worker:acfe8be539bdd86fa.
+- Leased items: 2: #575d2992 (worker:a96aa6313380b1a1b, d778be9d), #dd4cb2e3 (worker:acfe8be539bdd86fa, d778be9d).
 - Next plan: agent/plans/PLAN-config-passkey-optional.md, Promoted entry 5; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
@@ -73,11 +73,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 5. agent/plans/PLAN-config-passkey-optional.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 4 boxes open, T4 pre-deploy production query then eu deploy and Bitwarden walk-through (unblocks the org-selection chain)
 6. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 16 boxes open, R1 root-cause the nightly Console CI failure on main (PLAN-ci-verdict is done, so ci-trace works)
 7. agent/plans/PLAN-stop-hook-retro-20260924.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 23 boxes open, R20260924.15 re-count the seven frictions on .blocklog and record before/after in Status
-8. agent/plans/PLAN-locale-techdiff-resync.md -- operator 2026-10-08 melt-the-list: EASY, 5 of 5 boxes open, mechanical i18n pipeline re-translation of nine solutionPages groups x 12 locales at haiku default (gate #583 has merged)
-9. agent/plans/PLAN-cd-errors-in-ci.md -- operator 2026-10-08: catch CD errors at CI level; W1 is the housekeeping root fix due before the 03:00Z run
-10. agent/plans/PLAN-scope-mirrors.md -- operator /ask 2026-10-04 (#e70faed1): queued after the Promoted entries; eight live drifts F1-F8 predicted
-11. agent/plans/PLAN-lessons-registry.md -- operator /ask 2026-10-04 (#077d85c1): extends TRAPS.md and check:ci-trap-registry with content-checked Documented-In anchors
-12. agent/plans/PLAN-inline-suppressions.md -- operator /ask 2026-10-08T10:48Z (#575d2992): ban inline lint/type suppressions; fix in code, deliberate patterns to linter config with BLOCKER reasons
+8. agent/plans/PLAN-cd-errors-in-ci.md -- operator 2026-10-08: catch CD errors at CI level; W1 is the housekeeping root fix due before the 03:00Z run
+9. agent/plans/PLAN-scope-mirrors.md -- operator /ask 2026-10-04 (#e70faed1): queued after the Promoted entries; eight live drifts F1-F8 predicted
+10. agent/plans/PLAN-lessons-registry.md -- operator /ask 2026-10-04 (#077d85c1): extends TRAPS.md and check:ci-trap-registry with content-checked Documented-In anchors
+11. agent/plans/PLAN-inline-suppressions.md -- operator /ask 2026-10-08T10:48Z (#575d2992): ban inline lint/type suppressions; fix in code, deliberate patterns to linter config with BLOCKER reasons
 
 ## Generated
 
