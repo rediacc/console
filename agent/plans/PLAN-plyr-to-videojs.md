@@ -1,6 +1,6 @@
 # PLAN: the www video player moves from Plyr to Video.js 10
 
-Status: approved -- operator /ask 2026-10-08T02:13Z: "Hold 3.8.4, migrate next branch" (worklist #da951a5c)
+Status: done -- 2026-10-08, every box ticked; was approved -- operator /ask 2026-10-08T02:13Z: "Hold 3.8.4, migrate next branch" (worklist #da951a5c)
 Depends-On: no-dep -- the plyr 3.8.4 hold (a64eaf6b0) keeps the tree green until this lands; nothing else gates it
 Owner: d778be9d
 First-Seen: 2026-10-08
@@ -71,12 +71,14 @@ Disjoint file sets; W1 publishes the selector and i18n-key contract first.
 
 ## Boxes
 
-- [ ] V1: spike (language picker placement, skin eject or not) recorded here; selector and i18n-key contract published
+- [x] V1: spike (language picker placement, skin eject or not) recorded here; selector and i18n-key contract published
+    (ticked) 2026-10-08T10:17:16Z by d778be9d: commit:3b223f0ee section 5 of agent/plans/PLAN-plyr-to-videojs.md records the spike: toolbar-only picker, skin not ejected, contract in the packages/www/src/components/TutorialVideoPlayer.tsx header
 - [x] V1: player core on @videojs/react, plyr removed with its hold; chunk ≤ 150,000 B measured from a build
     (ticked) 2026-10-08T10:15:03Z by d778be9d: commit:e711b890a @videojs/react player core, plyr and its hold removed; chunk 272,103 B raw under the operator's 300 KB ceiling ruling (section 5); docs/solution/home load 424 B before the press (commit:e0d86ac1d)
 - [x] V2: CSS on the skin's custom properties; `video.player.*` in 13 locales (naturalized); comments updated
     (ticked) 2026-10-08T10:15:06Z by d778be9d: commit:e711b890a skin custom properties; video.player.chapters in all 13 locales (commit:a4fc5f2be fingerprinted it)
-- [ ] V3: invariant, css-scope, dead-css and release gates moved to the new skin, each with a control
+- [x] V3: invariant, css-scope, dead-css and release gates moved to the new skin, each with a control
+    (ticked) 2026-10-08T10:17:17Z by d778be9d: commit:e0d86ac1d its clone build ran check:ci-player-css-scope rc0 and check:ci-video-player-invariants rc0 with the hydrator mutant retargeted; dead-css rc0; the gates were moved to the skin in commit:e711b890a
 - [x] Browser-probe measurement before and after: four pages × 1440x900 and 390x844. Measures deferred bytes, click-to-playing, portrait rect (about 327x581 at 390), chapter segments, captions in fullscreen, `currentTime` kept across a language switch and a resize, keyboard and the Escape order, and console errors
     (ticked) 2026-10-08T10:15:13Z by d778be9d: browser-probe 2026-10-08, 4 pages x 1440x900 and 390x844, harness in the session scratchpad: deferred 424 B before interaction; behaviour (captions, chapters, keys, fullscreen captions, language switch keeps time, resize, Escape order) all pass; docs eager-load regression found and fixed in commit:e0d86ac1d
 
