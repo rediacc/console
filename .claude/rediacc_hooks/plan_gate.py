@@ -156,7 +156,8 @@ def _read(root: str, rel: str, rev: str) -> str | None:
         return commit_policy.git(["show", "%s:%s" % (rev, rel)], cwd=root)
     try:
         return (pathlib.Path(root) / rel).read_text(encoding="utf-8")
-    except OSError:
+    # A non-UTF-8 file reads as absent, so callers fall back to defaults instead of crashing.
+    except (OSError, UnicodeDecodeError):
         return None
 
 
