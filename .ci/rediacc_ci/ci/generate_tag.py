@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/ci/generate-tag.sh` (362 lines, 4 tag modes).
+"""Port of the retired `.ci/scripts/ci/generate-tag.sh` (362 lines, 4 tag modes).
 
 Mints the tag a CI-built Docker image is published under. The twin is mostly COMMENT -- roughly 200 of its 362 lines argue for the membership of each hashed input, record the measured incidents that shaped the closure key (the v1.2.12 "Version mismatch: expected '1.2.13', got '1.2.12'" runs, the weekly bucket, the 12-hex widening after 3-char collisions), and name what the key
 still does not cover. All of that stays in the twin and is not restated here; what follows is only what a reader of THIS file needs.
 
 FOUR MODES, in the twin's own precedence order (`--submodule` > `--closure` > `--self` > time-based). The precedence is silent: `--self --closure web` runs the closure and says nothing about the ignored flag.
 
-LIVE CALLERS, not repointed: the Initialize step (`rediacc_ci.ci.initialize`, which replaced `initialize.sh`) calls `.ci/scripts/ci/generate-tag.sh --submodule private/renet`, `--closure web` and `--closure rdc`, publishing the last two as `web_tag`/`rdc_tag`, which `cd-stage.yml` retags straight onto a release channel. The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only
-step.
+LIVE CALLER: the Initialize step (`rediacc_ci.ci.initialize`) runs `main` in process for `--submodule private/renet`, `--closure web` and `--closure rdc`, publishing the last two as `web_tag`/`rdc_tag`, which `cd-stage.yml` retags straight onto a release channel. The bash twin is retired (PLAN-retire-bash-oracles B3); its answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/ci.generate-tag.jsonl`.
+
+INTENTIONAL DELTA (Rule T), the input lists. The twin hashed `.ci/scripts/build/build-renet.sh` into the renet tag, and `build-cli.sh`, `build-cli-musl.sh`, `build-cli-executables.sh` and `prepare-cli-assets.sh` into the web and rdc closure keys. Those scripts are deleted, and a `git rev-parse HEAD:<path>` of a deleted path is a hard refusal, so each entry now names the Python module that replaced it (`build_renet.py`, `build_cli.py`, `build_cli_musl.py`, `build_cli_executables.py`, `prepare_cli_assets.py`). The change moves the renet, web and rdc tags once, so every image is rebuilt once. `test_ci_generate_tag.py::test_the_input_lists_name_no_retired_script` fails on the old lists.
 
 Ledger: `.ci/shadow/w7p6-generate-tag.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-generate-tag --assert --k 5`).
 
@@ -64,7 +65,7 @@ DIVERGENCES, ALL IN TEXT ONLY A HUMAN READS
  4. common.sh's `echo -e` interprets backslash escapes in the message;
     `rediacc_ci.log` formats the message as data.
 
-WHAT IS SHELLED OUT TO AND WHAT IS NOT. `git` is shelled out to, because the answers are git's (`rev-parse --short` honours core.abbrev, `rev-parse HEAD:p` resolves a gitlink to its recorded commit) and a reimplementation would be a second answer to a question git has already answered. So is `resolve-version.sh`, which is a sibling script rather than a tool. `sha256sum` and `cut
+WHAT IS SHELLED OUT TO AND WHAT IS NOT. `git` is shelled out to, because the answers are git's (`rev-parse --short` honours core.abbrev, `rev-parse HEAD:p` resolves a gitlink to its recorded commit) and a reimplementation would be a second answer to a question git has already answered. `rediacc_ci.version.resolve_version` is called in process. `sha256sum` and `cut
 -c1-N` are NOT: hashlib produces the same digest and the slice is a slice, so two processes per hashed file would buy nothing.
 
 Exit: 0 on a tag, 1 on any refusal.
@@ -78,7 +79,8 @@ import os
 import subprocess
 import sys
 
-from rediacc_ci import log, paths
+from rediacc_ci import log
+from rediacc_ci.version import resolve_version
 
 # Defect names, so a test asserts them by name rather than by restating a sentence.
 GITHUB_OUTPUT_IS_SILENTLY_OPTIONAL = True
@@ -101,7 +103,7 @@ BUILD_CONFIG_FILES = (
     "{sub}/build.sh",
     ".github/workflows/ci-build-renet.yml",
     ".github/workflows/ci-build-docker.yml",
-    ".ci/scripts/build/build-renet.sh",
+    ".ci/rediacc_ci/build/build_renet.py",
 )
 
 # `CLOSURE_PATHS` per closure (twin :203-245). Hashed as git object ids AT HEAD, not as file bytes: an entry may be a directory (the tree oid covers files added later) or a gitlink (private/account resolves to its recorded commit), and HEAD-based hashing is immune to the in-job version bump that dirties
@@ -120,7 +122,7 @@ CLOSURE_PATHS = {
         "packages/provisioning",
         "private/account",
         ".ci/rediacc_ci/build/build_www.py",
-        ".ci/scripts/build/build-cli.sh",
+        ".ci/rediacc_ci/build/build_cli.py",
         ".ci/rediacc_ci/build/pack_cli_npm.py",
         ".ci/rediacc_ci/build/buildx_push_web.py",
         ".github/workflows/ci-build-docker.yml",
@@ -133,9 +135,9 @@ CLOSURE_PATHS = {
         "package.json",
         "package-lock.json",
         "tsconfig.json",
-        ".ci/scripts/build/build-cli-musl.sh",
-        ".ci/scripts/build/build-cli-executables.sh",
-        ".ci/scripts/build/prepare-cli-assets.sh",
+        ".ci/rediacc_ci/build/build_cli_musl.py",
+        ".ci/rediacc_ci/build/build_cli_executables.py",
+        ".ci/rediacc_ci/build/prepare_cli_assets.py",
         "scripts/gen/generate-third-party-licenses.ts",
         ".github/workflows/ci-build-cli.yml",
         ".github/workflows/ci-build-docker.yml",
@@ -153,9 +155,6 @@ CLOSURE_ADVICE = (
     "narrows what the tag covers, so a changed build can reuse a",
     "stale image. Fix the path, or delete the entry if it is gone.",
 )
-
-# `$SCRIPT_DIR/../version/resolve-version.sh` (twin :329), resolved from the TWIN's directory. Expressed relative to the repo root, which is the same place, and which `paths.repo_root()` finds from this module rather than from cwd.
-RESOLVE_VERSION = ".ci/scripts/version/resolve-version.sh"
 
 
 class RefusalError(Exception):
@@ -311,22 +310,12 @@ def iso_week_bucket(now: datetime.datetime | None = None) -> str:
 
 
 def closure_version() -> tuple[str, bool]:
-    """`resolve-version.sh --current`, with the twin's fallback (twin :329-333).
+    """`resolve_version --current`, in process, with the twin's fallback (twin :329-333).
 
     Returns `(value, fell_back)`. Failure is NOT fatal -- this runs where no tag is reachable (a shallow clone, a fresh fork, initialize.sh Step 5 before it fetches tags) -- but the fallback is DISTINGUISHING rather than empty: an empty marker would collapse every untagged build to one key, which is the exact failure the version component was added to fix.
     """
-    script = str(paths.repo_root() / RESOLVE_VERSION)
-    try:
-        proc = subprocess.run(
-            [script, "--current"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            text=True,
-            check=False,
-        )
-        status, value = proc.returncode, proc.stdout.rstrip("\n")
-    except OSError:
-        status, value = 127, ""
+    status, out, _err = resolve_version.run(["--current"])
+    value = out.rstrip("\n")
     if status == 0 and value:
         return value, False
     head_status, head = git_out(["rev-parse", "HEAD"], quiet=True)

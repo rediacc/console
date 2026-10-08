@@ -204,7 +204,7 @@ jobs:
       # RETRY MODE RUNS THIS TOO, and the comment that used to excuse it away
       # was wrong. It claimed "retry uses the latest tag's version, which the
       # artifacts already match by definition". They do not match by
-      # definition: retry takes its VERSION from resolve-version.sh --current
+      # definition: retry takes its VERSION from resolve_version --current
       # (the "Resolve version (retry/workers-only mode)" step above) but takes
       # its ARTIFACTS from resolve-ci-run.sh, which with no ci_run_id supplied
       # picks the LATEST GREEN CI RUN ON MAIN -- not the run that cut the

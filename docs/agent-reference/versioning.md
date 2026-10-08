@@ -4,13 +4,13 @@ Source of truth: **git tags** (e.g. `v0.8.3`). No version bump commits — every
 
 ## Resolving the version
 
-`.ci/scripts/version/resolve-version.sh` (Python port: `.ci/rediacc_ci/...`) reads the latest `v*` tag via `git tag -l --sort=-v:refname`, not `git describe` — `describe` requires the tag to be reachable from `HEAD`, which fails in a shallow CI clone.
+`rediacc_ci.version.resolve_version` reads the latest `v*` tag via `git tag -l --sort=-v:refname`, not `git describe`, because `describe` requires the tag to be reachable from `HEAD`, which fails in a shallow CI clone.
 
 ```
-resolve-version.sh --current              # 0.8.2
-resolve-version.sh --bump-type patch      # 0.8.3
-resolve-version.sh --bump-type minor      # 0.9.0
-resolve-version.sh --bump-type major      # 1.0.0
+PYTHONPATH=.ci python3 -m rediacc_ci.version.resolve_version --current              # 0.8.2
+PYTHONPATH=.ci python3 -m rediacc_ci.version.resolve_version --bump-type patch      # 0.8.3
+PYTHONPATH=.ci python3 -m rediacc_ci.version.resolve_version --bump-type minor      # 0.9.0
+PYTHONPATH=.ci python3 -m rediacc_ci.version.resolve_version --bump-type major      # 1.0.0
 ```
 
 ## Injection per component, verified against the real build

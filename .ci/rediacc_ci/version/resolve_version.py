@@ -1,7 +1,6 @@
-"""Port of `.ci/scripts/version/resolve-version.sh`.
+"""Port of the retired `.ci/scripts/version/resolve-version.sh`, whose answers are frozen in `tests/goldens/twins/version.resolve-version.jsonl`.
 
-Resolves the current published version from git tags (`git tag -l 'v*'`, newest first by version sort) and, given `--bump-type`, the next patch/minor/major version after it. This is the single place that decides what version number an artifact ships with; `inject-env.sh` calls it as a subprocess (never sources it), and this port preserves that shape: it is a plain stdout-producing
-CLI, not a library a caller sources into its own shell.
+Resolves the current published version from git tags (`git tag -l 'v*'`, newest first by version sort) and, given `--bump-type`, the next patch/minor/major version after it. This is the single place that decides what version number an artifact ships with; callers run it as `python3 -m rediacc_ci.version.resolve_version` or in process through `run`.
 
 GIT IS SHELLED OUT TO, NOT REIMPLEMENTED, on the `resolve_backfill_commit.py` precedent: `git tag -l` is the twin's own probe, run with the same arguments against whatever repository the process's cwd belongs to. This port never `cd`s, matching the twin.
 
@@ -16,6 +15,8 @@ missing component reads as empty, which `${X:-0}` then defaults to "0".
 
 from __future__ import annotations
 
+import contextlib
+import io
 import subprocess
 import sys
 
@@ -120,6 +121,17 @@ def main(argv: list[str]) -> int:
 
     print(f"{major_out}.{minor_out}.{patch_out}")
     return 0
+
+
+def run(argv: list[str]) -> tuple[int, str, str]:
+    """`main(argv)` in process, as `(status, stdout, stderr)`.
+
+    The in-process form of `$(resolve-version.sh ...)` for a caller that wants the version without a child interpreter. Stdout is returned verbatim, trailing newline included; a caller that wants command-substitution semantics strips it.
+    """
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        status = main(argv)
+    return status, out.getvalue(), err.getvalue()
 
 
 if __name__ == "__main__":

@@ -920,7 +920,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/goldens/shfmt | 11 | .golden 11 |
 | .ci/rediacc_ci/tests/goldens/staging-tag-guard | 12 | .golden 12 |
 | .ci/rediacc_ci/tests/goldens/standing-orders-brief | 16 | .golden 16 |
-| .ci/rediacc_ci/tests/goldens/twins | 79 | .jsonl 79 |
+| .ci/rediacc_ci/tests/goldens/twins | 85 | .jsonl 85 |
 | .ci/rediacc_ci/tests/goldens/validate-stage-artifacts | 3 | .golden 3 |
 | .ci/rediacc_ci/tests/goldens/verify-ssh | 16 | .golden 16 |
 | .ci/rediacc_ci/tests/goldens/version-bump | 28 | .golden 28 |
@@ -930,9 +930,9 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/version | 5 | .py 5 |
 | .ci/scripts/build | 9 | .sh 9 |
 | .ci/scripts/build/sea-inject | 7 | .mjs 7 |
-| .ci/scripts/ci | 12 | .cjs 8, .sh 3, .py 1 |
+| .ci/scripts/ci | 9 | .cjs 8, .py 1 |
 | .ci/scripts/ci/profiler | 3 | .py 2, .awk 1 |
-| .ci/scripts/deploy | 6 | .sh 6 |
+| .ci/scripts/deploy | 5 | .sh 5 |
 | .ci/scripts/docker | 5 | .py 4, .sh 1 |
 | .ci/scripts/docs | 2 | .mjs 2 |
 | .ci/scripts/housekeeping | 2 | .py 1, .sh 1 |
@@ -949,7 +949,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/test/fixtures/mutate-check | 2 | .py 1, .sh 1 |
 | .ci/scripts/test/gates | 5 | .sh 5 |
 | .ci/scripts/test/lib | 2 | .sh 2 |
-| .ci/scripts/version | 3 | .sh 3 |
+| .ci/scripts/version | 1 | .sh 1 |
 | .ci/shadow | 285 | .jsonl 284, .json 1 |
 | .ci/tutorials | 21 | .sh 20, .md 1 |
 | .ci/tutorials/apps/demo-pgadmin | 2 | (none) 1, .yml 1 |

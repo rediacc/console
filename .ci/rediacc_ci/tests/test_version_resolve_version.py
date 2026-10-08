@@ -1,4 +1,4 @@
-"""`rediacc_ci.version.resolve_version` against its bash twin.
+"""`rediacc_ci.version.resolve_version` against the frozen output of its retired bash twin (`tests/goldens/twins/version.resolve-version.jsonl`).
 
 Sibling of `test_release_check_existing_release.py` for the git-fixture strategy: real git tags in a disposable local repo, never GitHub. `git tag` needs no remote at all, so this fixture is simpler than that sibling's -- one `git init` plus a run of `git tag -a` calls.
 
@@ -48,7 +48,14 @@ def run_both(repo: pathlib.Path, *args: str) -> tuple[tuple[int, str, str], tupl
     old_env = diff.env_for()
     new_env = diff.env_for(PYTHONPATH=_CI_ABS, PYTHONDONTWRITEBYTECODE="1")
     arg_str = " ".join(args)
-    old = diff.bash_streams(f"bash {_TWIN_ABS} {arg_str}", env=old_env, cwd=str(repo), timeout=30)
+    old = diff.twin_streams(
+        TWIN,
+        f"bash {_TWIN_ABS} {arg_str}",
+        env=old_env,
+        cwd=str(repo),
+        timeout=30,
+        work=(str(repo.parent),),
+    )
     new = diff.bash_streams(
         f"python3 -m rediacc_ci.version.{MODULE} {arg_str}",
         env=new_env,
