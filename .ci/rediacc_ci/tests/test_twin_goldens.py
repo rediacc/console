@@ -20,6 +20,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests import regolden
 
 ROOT = paths.repo_root()
 GOLDENS = sorted(diff.GOLDEN_DIR.glob("*.jsonl"))
@@ -106,7 +107,9 @@ def test_the_header_names_its_twin(path) -> None:
         % (path.name, header.get("case_count"), len(silent) + len(records))
     )
     live = ROOT / twin
-    if live.is_file():
+    if twin in diff.SHIMMED_TWINS:
+        assert diff.shim_problem(twin) is None, diff.shim_problem(twin)
+    elif live.is_file():
         assert diff.blob_sha(twin) == header["twin_blob"], (
             "%s is STALE: %s changed after it was frozen (blob %s, golden %s). Re-freeze with "
             '`%s %s --source bash --reason "<why>"` before the twin is deleted.'
@@ -300,3 +303,43 @@ def test_python_traceback_mask_still_refuses_a_real_difference() -> None:
     assert diff.mask_python_traceback(file_frame) != diff.mask_python_traceback(
         file_frame.replace("value = cfg", "value = conf")
     )
+
+
+# --------------------------------------------------------------------------- Shimmed twins (W11-C) ---------------------------------------------------------------------------
+
+
+def test_every_shimmed_twin_is_a_shim_with_a_golden() -> None:
+    """ANTI-VACUITY for the carve-out: each entry exists, is a real shim, and has a golden filed under its stem."""
+    assert diff.SHIMMED_TWINS
+    for twin in sorted(diff.SHIMMED_TWINS):
+        assert diff.shim_problem(twin) is None, diff.shim_problem(twin)
+        assert diff.golden_file(twin).is_file(), twin
+
+
+def test_the_shim_check_can_fail(tmp_path, monkeypatch) -> None:
+    """CONTROL: a body that is not a shim, a shim without the executable bit and a shim naming a module that does not import are each refused."""
+    monkeypatch.setattr(diff.paths, "repo_root", lambda: tmp_path)
+    good = (
+        '#!/bin/bash\nset -euo pipefail\nPYTHONPATH="${BASH_SOURCE[0]%/*}/../..${PYTHONPATH:+:$PYTHONPATH}" '
+        'exec python3 -m rediacc_ci.infra.ci_stop_elite "$@"\n'
+    )
+    path = tmp_path / "x.sh"
+    path.write_text(good, encoding="utf-8")
+    path.chmod(0o755)
+    assert diff.shim_problem("x.sh") is None
+    path.chmod(0o644)
+    assert "not executable" in (diff.shim_problem("x.sh") or "")
+    path.chmod(0o755)
+    path.write_text(good + "echo more\n", encoding="utf-8")
+    assert "effective lines" in (diff.shim_problem("x.sh") or "")
+    path.write_text(good.replace("ci_stop_elite", "no_such_module"), encoding="utf-8")
+    assert "does not import" in (diff.shim_problem("x.sh") or "")
+
+
+def test_regolden_refuses_a_bash_freeze_of_a_shimmed_twin(capsys, monkeypatch) -> None:
+    # `regolden.main` chdirs and exports the mode before it refuses; monkeypatch restores both.
+    monkeypatch.chdir(ROOT)
+    monkeypatch.setenv(diff.REGOLDEN_ENV, "port")
+    twin = min(diff.SHIMMED_TWINS)
+    assert regolden.main([twin, "--source", "bash", "--reason", "x"]) == 2
+    assert "shim over its port" in capsys.readouterr().err

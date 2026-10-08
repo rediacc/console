@@ -26,12 +26,15 @@ THE CREDENTIAL-CLEANUP HAZARD IS PINNED, NOT FIXED.
 ONE NAMED DIVERGENCE, and it is the missing-docker case. The twin has no `require_cmd docker`, so bash itself prints `<script>: line 49: docker: command not found` -- a message naming a line number the port does not have. `test_a_missing_docker_is_127_on_both_sides_with_a_named_text_divergence` asserts the exit STATUS is 127 on both, that both say `command not found`, and that the
 texts differ only in that prefix.
 
+THE TWIN IS A SHIM NOW (W11-C). Every `old` answer comes from `goldens/twins/infra.ci-pull-images.jsonl` through `differential.twin_run`: both streams, the docker call log (with the bytes on docker's stdin) and the final `~/.docker/config.json`, as the original bash produced them. The shim itself is held by the `test_the_shim_*` cases.
+
 K=5 LEDGER: `.ci/shadow/w7p6-ci-pull-images.observations.jsonl`, recorded in a
 disposable scratch git repository outside this checkout.
 """
 
 from __future__ import annotations
 
+import importlib
 import os
 import pathlib
 import shutil
@@ -39,12 +42,16 @@ import subprocess
 import sys
 import tempfile
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.infra import ci_pull_images as cpi
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import IMAGE_REGISTRY
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "infra" / "ci-pull-images.sh"
+TWIN_REL = ".ci/scripts/infra/ci-pull-images.sh"
+TWIN = ROOT / TWIN_REL
 PORT = pathlib.Path(cpi.__file__).resolve()
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -139,38 +146,69 @@ def _run(subject: pathlib.Path, base: pathlib.Path, extra: dict[str, str]):
     return proc.returncode, proc.stdout, proc.stderr, calls
 
 
+def _old(name: str, *, seed=None, **extra: str):
+    """The twin's answer for one case, from the golden (or, in a freeze, from the live bash): `(rc, stdout, stderr, calls, config)`."""
+    cell: dict[str, tuple] = {}
+    with tempfile.TemporaryDirectory() as td:
+
+        def side(subject: pathlib.Path):
+            def run():
+                base = pathlib.Path(td) / subject.stem
+                base.mkdir(parents=True, exist_ok=True)
+                if seed is not None:
+                    seed(base)
+                rc, out, err, calls = _run(subject, base, dict(extra))
+                config = base / ".docker" / "config.json"
+                blob = config.read_text(encoding="utf-8") if config.is_file() else None
+                cell["v"] = (calls, blob)
+                return rc, out.decode(), err.decode()
+
+            return run
+
+        rc, out, err, got = diff.twin_run(
+            TWIN_REL,
+            ["old", name, *("%s=%s" % kv for kv in sorted(extra.items()))],
+            side(TWIN),
+            port=side(PORT),
+            extras={
+                "calls": lambda: "".join("%s\n" % c for c in cell["v"][0]),
+                "config": lambda: diff.ABSENT if cell["v"][1] is None else cell["v"][1],
+            },
+            work=(td,),
+        )
+    calls = [line for line in got["calls"].splitlines() if line]
+    blob = None if got["config"] == diff.ABSENT else got["config"]
+    return rc, out.encode(), err.encode(), calls, blob
+
+
 def _sides(name: str, *, seed=None, **extra: str):
-    """Both subjects, one fixture shape, two private trees.
+    """Both subjects, one fixture shape: the twin's recorded answer against a live run of the port.
 
     `seed` is called with the case's base directory before the subject runs, so a case can plant a `~/.docker/config.json` for BOTH sides identically.
     """
-    results = []
-    bases = []
+    old = _old(name, seed=seed, **extra)
     with tempfile.TemporaryDirectory() as td:
-        for subject in (TWIN, PORT):
-            base = pathlib.Path(td) / subject.stem
-            base.mkdir(parents=True)
-            if seed is not None:
-                seed(base)
-            bases.append(base)
-            results.append(_run(subject, base, dict(extra)))
-        old, new = results
-        for i, label in enumerate(("exit", "stdout", "stderr", "calls")):
-            assert new[i] == old[i], "%s: %s diverged:\n twin: %r\n port: %r" % (
-                name,
-                label,
-                old[i],
-                new[i],
-            )
+        base = pathlib.Path(td) / PORT.stem
+        base.mkdir(parents=True)
+        if seed is not None:
+            seed(base)
+        new = _run(PORT, base, dict(extra))
         # Read the config back INSIDE the context manager; the directory is gone after it.
-        configs = [(b / ".docker" / "config.json") for b in bases]
-        blobs = [c.read_text(encoding="utf-8") if c.is_file() else None for c in configs]
-        assert blobs[0] == blobs[1], "%s: ~/.docker/config.json diverged:\n twin: %r\n port: %r" % (
+        config = base / ".docker" / "config.json"
+        blob = config.read_text(encoding="utf-8") if config.is_file() else None
+    for i, label in enumerate(("exit", "stdout", "stderr", "calls")):
+        assert new[i] == old[i], "%s: %s diverged:\n twin: %r\n port: %r" % (
             name,
-            blobs[0],
-            blobs[1],
+            label,
+            old[i],
+            new[i],
         )
-    return (*old, blobs[0])
+    assert blob == old[4], "%s: ~/.docker/config.json diverged:\n twin: %r\n port: %r" % (
+        name,
+        old[4],
+        blob,
+    )
+    return (*old[:4], blob)
 
 
 # --------------------------------------------------------------------------- The controls, first: a fake that is not reached proves nothing. ---------------------------------------------------------------------------
@@ -196,6 +234,49 @@ def test_both_subjects_exist_where_this_file_says_they_do() -> None:
 def test_the_twin_parses_under_bash() -> None:
     proc = subprocess.run([BASH, "-n", str(TWIN)], capture_output=True, check=False)
     assert proc.returncode == 0, proc.stderr
+
+
+# --------------------------------------------------------------------------- The shim contract (W11-C). ---------------------------------------------------------------------------
+
+SHIM_MODULE = "rediacc_ci.infra.ci_pull_images"
+
+
+@pytest.fixture(autouse=False)
+def shim_only():
+    """A freeze runs against the original bash, which is not a shim yet."""
+    if diff.regolden_mode(TWIN_REL) == "bash":
+        pytest.skip("freezing from the original bash")
+
+
+def _effective_lines(path: pathlib.Path) -> list[str]:
+    return [
+        line.strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.strip().startswith("#") and line.strip() != "set -euo pipefail"
+    ]
+
+
+@pytest.mark.usefixtures("shim_only")
+def test_the_shim_is_one_effective_line_naming_the_port() -> None:
+    lines = _effective_lines(TWIN)
+    assert len(lines) == 1, lines
+    assert lines[0].endswith('exec python3 -m %s "$@"' % SHIM_MODULE), lines[0]
+    assert os.access(TWIN, os.X_OK), "the breakpoint scripts test -x on this path"
+
+
+def test_the_shim_names_an_importable_module() -> None:
+    assert importlib.import_module(SHIM_MODULE) is cpi
+
+
+@pytest.mark.usefixtures("shim_only")
+def test_the_shim_run_from_elsewhere_with_no_token_is_refused_by_the_port() -> None:
+    """Run from /tmp with no GITHUB_TOKEN: the shim finds the package through its own location, and the port's refusal is what comes back."""
+    env = {k: v for k, v in os.environ.items() if k not in ("GITHUB_TOKEN", "PYTHONPATH")}
+    proc = subprocess.run(
+        [str(TWIN)], capture_output=True, env=env, check=False, cwd="/tmp", timeout=60
+    )
+    assert proc.returncode == 1, (proc.returncode, proc.stderr)
+    assert proc.stderr == "✗ GITHUB_TOKEN environment variable is required\n".encode(), proc.stderr
 
 
 # ---------------------------------------------------------------------------
@@ -414,13 +495,11 @@ def test_no_docker_config_at_all_is_not_an_error() -> None:
 
 def test_a_missing_docker_is_127_on_both_sides_with_a_named_text_divergence() -> None:
     """THE ONE NAMED DIVERGENCE. There is no `require_cmd docker` in this twin (unlike `docker-pull-ghcr.sh`), so bash's own `command not found` is the message, and it carries `<script>: line 49: `. Everything that a caller can act on -- the status, the words, the absence of any further work -- is asserted equal; only the prefix differs."""
-    results = []
+    old = _old("no-docker", _no_docker="1")
     with tempfile.TemporaryDirectory() as td:
-        for subject in (TWIN, PORT):
-            base = pathlib.Path(td) / subject.stem
-            base.mkdir(parents=True)
-            results.append(_run(subject, base, {"_no_docker": "1"}))
-    old, new = results
+        base = pathlib.Path(td) / PORT.stem
+        base.mkdir(parents=True)
+        new = _run(PORT, base, {"_no_docker": "1"})
     assert old[0] == new[0] == 127
     assert old[3] == new[3] == []
     old_lines = old[2].decode().splitlines()

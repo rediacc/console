@@ -285,10 +285,8 @@ def test_the_twin_is_sourced_by_one_script_and_executed_by_none() -> None:
             sourcing.append(path)
         elif re.search(r'(bash|sh|\./)\s*"?[^\s"]*ci-env\.sh', text):
             executed.append(hit)
-    # ci-start-account.sh was retired under PLAN-retire-bash-oracles B3; its port sources nothing.
-    assert sorted(set(sourcing)) == [
-        ".ci/scripts/infra/ci-start-elite.sh",
-    ], sourcing
+    # ci-start-account.sh was retired under PLAN-retire-bash-oracles B3 and ci-start-elite.sh is a one-line shim over its port (W11-C): nothing sources the twin, and the port reads it through an `env -0` round trip.
+    assert sorted(set(sourcing)) == [], sourcing
     assert executed == [], executed
 
 

@@ -1,6 +1,4 @@
 [
-  ".ci/scripts/infra/ci-pull-images.sh\tdocker",
-  ".ci/scripts/infra/ci-pull-images.sh\tjq",
   ".ci/scripts/lib/common.sh\taws",
   ".ci/scripts/lib/common.sh\tgh",
   ".ci/scripts/lib/common.sh\tjq"

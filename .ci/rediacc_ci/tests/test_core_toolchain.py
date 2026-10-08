@@ -1162,9 +1162,13 @@ def test_defect_1_has_a_live_variant_on_env() -> None:
         assert rc == 0, "the --env arm now exits non-zero; delete this pin"
         assert out == "", out
         assert "No such file or directory" in err
-    # THE CALL SITES, so the finding's blast radius is asserted and not claimed.
+    # THE CALL SITES: all four workflow jobs moved to the port's `pairs` verb (W11-C), which fails loudly on a missing pins file, so none of them reaches the bash arm above.
     workflow = paths.from_root(".github/workflows/ci-quality.yml").read_text(encoding="utf-8")
-    assert workflow.count('.ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"') == 4
+    assert workflow.count('.ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"') == 0
+    assert (
+        workflow.count('PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pairs >> "$GITHUB_ENV"')
+        == 4
+    )
 
 
 def test_defect_1_the_port_does_not_reproduce_the_always_zero_exit() -> None:

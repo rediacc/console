@@ -1,0 +1,14 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 12, "source": "bash", "twin": ".ci/scripts/infra/ci-stop-elite.sh", "twin_blob": "4861e9d2ecc155887ad7e3a9fb36901dd28aa5f2"}}
+{"_silent": []}
+{"_key": "test_port_and_twin_agree#1ada34898811ca35", "err": "", "out": "Stopping Rediacc Elite CI services...\n  Stopping Elite Docker Compose services...\n  Docker compose down failed, forcing container removal\n  Force removing: rediacc-web\nrediacc-web\nrediacc-web\nAll Elite services stopped\n", "rc": "0"}
+{"_key": "test_port_and_twin_agree#1ada34898811ca35|calls", "err": "", "out": "compose\t-f\tdocker-compose.yml\t-f\tdocker-compose.standalone.yml\tdown\t--volumes\t--remove-orphans\nps\t-a\t--format\t{{.Names}}\nstop\trediacc-web\nrm\trediacc-web\n", "rc": "0"}
+{"_key": "test_port_and_twin_agree#3835c22cc3746f65", "err": "", "out": "Stopping Rediacc Elite CI services...\n  Stopping Elite Docker Compose services...\n  Force removing: rediacc-web\nAll Elite services stopped\n", "rc": "0"}
+{"_key": "test_port_and_twin_agree#3835c22cc3746f65|calls", "err": "", "out": "compose\t-f\tdocker-compose.yml\t-f\tdocker-compose.standalone.yml\tdown\t--volumes\t--remove-orphans\nps\t-a\t--format\t{{.Names}}\nstop\trediacc-web\nrm\trediacc-web\n", "rc": "0"}
+{"_key": "test_port_and_twin_agree#7ac2f55cd68e7620", "err": "", "out": "Stopping Rediacc Elite CI services...\nAll Elite services stopped\n", "rc": "0"}
+{"_key": "test_port_and_twin_agree#7ac2f55cd68e7620|calls", "err": "", "out": "ps\t-a\t--format\t{{.Names}}\n", "rc": "0"}
+{"_key": "test_port_and_twin_agree#9736456193b5ac6b", "err": "", "out": "Stopping Rediacc Elite CI services...\n  Stopping Elite Docker Compose services...\nAll Elite services stopped\n", "rc": "0"}
+{"_key": "test_port_and_twin_agree#9736456193b5ac6b|calls", "err": "", "out": "compose\t-f\tdocker-compose.yml\t-f\tdocker-compose.standalone.yml\tdown\t--volumes\t--remove-orphans\nps\t-a\t--format\t{{.Names}}\n", "rc": "0"}
+{"_key": "test_port_and_twin_agree#b0cb299fdff28776", "err": "", "out": "Stopping Rediacc Elite CI services...\n  Stopping Elite Docker Compose services...\n  Force removing: rediacc-web\nrediacc-web\nrediacc-web\nAll Elite services stopped\n", "rc": "0"}
+{"_key": "test_port_and_twin_agree#b0cb299fdff28776|calls", "err": "", "out": "compose\t-f\tdocker-compose.yml\t-f\tdocker-compose.standalone.yml\tdown\t--volumes\t--remove-orphans\nps\t-a\t--format\t{{.Names}}\nstop\trediacc-web\nrm\trediacc-web\n", "rc": "0"}
+{"_key": "test_port_and_twin_agree#d4fa0fd873f6101b", "err": "", "out": "Stopping Rediacc Elite CI services...\n  Stopping Elite Docker Compose services...\nAll Elite services stopped\n", "rc": "0"}
+{"_key": "test_port_and_twin_agree#d4fa0fd873f6101b|calls", "err": "", "out": "compose\t-f\tdocker-compose.yml\t-f\tdocker-compose.standalone.yml\tdown\t--volumes\t--remove-orphans\nps\t-a\t--format\t{{.Names}}\n", "rc": "0"}

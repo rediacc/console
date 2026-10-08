@@ -33,6 +33,7 @@ stripped strings, which would also stop the comparison seeing a real trailing-wh
 """
 
 import base64
+import importlib.util
 import json
 import os
 import pathlib
@@ -722,6 +723,45 @@ def twin_streams(
     return answer
 
 
+# Twins whose `.sh` is kept as a one-line shim over the port because a drift-locked tree (`.ci/breakpoint`) tests the path with -x. Their golden stays the frozen bash answer, but the golden's `twin_blob` names the ORIGINAL bash, so the live file is held to the shim shape instead of the blob, and a freeze `--source bash` is refused (it would record the port as if it were bash).
+SHIMMED_TWINS = frozenset(
+    {
+        ".ci/scripts/infra/ci-pull-images.sh",
+        ".ci/scripts/infra/ci-start-elite.sh",
+        ".ci/scripts/infra/ci-stop-elite.sh",
+    }
+)
+SHIM_LINE_RE = re.compile(
+    r'^PYTHONPATH="\$\{BASH_SOURCE\[0\]%/\*\}/\.\./\.\.\$\{PYTHONPATH:\+:\$PYTHONPATH\}" '
+    r'exec python3 -m (?P<module>rediacc_ci(?:\.\w+)+) "\$@"$'
+)
+
+
+def shim_problem(twin: str) -> str | None:
+    """None when `twin` is a well-formed shim (executable, one effective line, a module `rediacc_ci` can import), else why not."""
+    path = paths.repo_root() / twin
+    if not os.access(path, os.X_OK):
+        return "%s is not executable" % twin
+    lines = [
+        line.strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.strip().startswith("#") and line.strip() != "set -euo pipefail"
+    ]
+    if len(lines) != 1:
+        return "%s holds %d effective lines, a shim holds one" % (twin, len(lines))
+    match = SHIM_LINE_RE.match(lines[0])
+    if match is None:
+        return "%s: the effective line is not the shim form: %s" % (twin, lines[0])
+    module = match["module"]
+    try:
+        found = importlib.util.find_spec(module)
+    except (ImportError, ValueError):
+        found = None
+    if found is None:
+        return "%s names %s, which does not import" % (twin, module)
+    return None
+
+
 def blob_sha(path: str) -> str:
     """`git hash-object` of the file as recorded: the sha `git cat-file -p` answers once it is committed, and the one a reader of a deleted twin needs."""
     proc = subprocess.run(
@@ -746,6 +786,10 @@ def write_recorded(
         if only is not None and stem not in only:
             continue
         twin = RECORDED_TWINS[stem]
+        if source == "bash" and str(twin) in SHIMMED_TWINS:
+            raise RuntimeError(
+                "%s is a shim over its port: a bash freeze would record the port as bash" % twin
+            )
         path = golden_file(twin)
         old_header, old_silent, old_records = goldenio.read_golden(path)
         answers = {k: (str(v[0]), v[1], v[2]) for k, v in RECORDED[stem].items()}
