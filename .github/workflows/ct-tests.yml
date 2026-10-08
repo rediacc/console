@@ -2459,7 +2459,7 @@ jobs:
       # PINNED TO LEG 1 (T2.14), same reasoning as "Test eBPF" above.
       - name: Test eBPF socket isolation (ebpf_e2e)
         if: matrix.shard == 1
-        run: sudo .ci/scripts/private/renet-ebpf-e2e.sh
+        run: sudo env PYTHONPATH=.ci python3 -m rediacc_ci.private.renet_ebpf_e2e
 
       # Root-tagged renet repository state tests (SaveState/LoadState). They
       # t.Fatal off-root, so under sudo they must run and PASS.
@@ -2467,7 +2467,7 @@ jobs:
       # PINNED TO LEG 1 (T2.14), same reasoning as "Test eBPF" above.
       - name: Test renet repository (root-tagged)
         if: matrix.shard == 1
-        run: sudo .ci/scripts/private/renet-root-tests.sh
+        run: sudo env PYTHONPATH=.ci python3 -m rediacc_ci.private.renet_root_tests
 
       # CSI driver conformance (csi-sanity, spec 09 §12) on a scratch loop-BTRFS
       # datastore. Two ruled deviations (spec 09 §16) stay red by design and are
@@ -2475,7 +2475,7 @@ jobs:
       # PINNED TO LEG 1 (T2.14), same reasoning as "Test eBPF" above.
       - name: Test renet CSI driver (csi-sanity conformance)
         if: matrix.shard == 1
-        run: sudo .ci/scripts/private/renet-csi-sanity.sh
+        run: sudo env PYTHONPATH=.ci python3 -m rediacc_ci.private.renet_csi_sanity
 
   test-renet-integration:
     name: Renet (integration, ${{ matrix.shard }}/3)
@@ -2544,7 +2544,7 @@ jobs:
       # `jq` (preinstalled on the runner image) reads this leg's `ids`, strips
       # the `renet-integration:` id prefix `scripts/ci-runner/unit-enumerators.ts`
       # (`renetIntegrationUnits`) puts on them, and hands the plain filenames to
-      # `ci-test.sh` (via `.ci/scripts/private/renet-integration.sh`, unchanged)
+      # `ci-test.sh` (via `rediacc_ci.private.renet_integration`)
       # as RENET_INTEGRATION_FILES. `sudo env VAR=... cmd`, not `sudo -E`: the
       # value is set directly on the command sudo execs, so nothing else in this
       # step's environment is exposed to the root-run script that was not
@@ -2556,7 +2556,7 @@ jobs:
             .ci/config/shards/test-renet-integration.json)
           echo "Shard ${{ matrix.shard }}/3 files: $FILES"
           # sudo resets the environment, so the switches ride in explicitly. RENET_PYTEST_JUNIT=1 makes ci-test.sh write the --junit-xml the unit-durations and results uploads below read (before it, both found no file on every run). CI itself stays unset: under root it turns on LUKS/fstab Go integration tests this runner cannot pass. RENET_SKIP_GO_UNIT_TESTS=1: the Renet (go, i/2) legs already run ./pkg/..., so these legs do not repeat it.
-          sudo env "RENET_PYTEST_JUNIT=1" "RENET_SKIP_GO_UNIT_TESTS=1" "RENET_INTEGRATION_FILES=$FILES" .ci/scripts/private/renet-integration.sh --no-cleanup
+          sudo env PYTHONPATH=.ci "RENET_PYTEST_JUNIT=1" "RENET_SKIP_GO_UNIT_TESTS=1" "RENET_INTEGRATION_FILES=$FILES" python3 -m rediacc_ci.private.renet_integration --no-cleanup
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
@@ -2651,12 +2651,12 @@ jobs:
             private/renet/go.sum
             .ci/scripts/private/license-mint/go.sum
 
-      # The script IS the local-dev entry point; there is no CI-only variant to
+      # The module IS the local-dev entry point; there is no CI-only variant to
       # drift from. It mints its own throwaway key when ACCOUNT_ED25519_PUBLIC_KEY
       # is unset, which is the case here on purpose: no production key is
       # involved, and nothing it signs outlives the job.
       - name: Run the license enforcement battery
-        run: .ci/scripts/private/license-e2e.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.private.license_e2e
 
   # ============================================================================
   # ACCOUNT E2E: Full Playwright E2E tests for the account portal

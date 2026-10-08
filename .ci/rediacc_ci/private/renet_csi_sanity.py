@@ -3,7 +3,7 @@
 
 Builds a scratch loop-BTRFS datastore, runs the CSI driver conformance suite (csi-sanity, spec 09 section 12) against it, and refuses to report success unless the transcript proves specs actually EXECUTED.
 
-THE BASH TWIN REMAINS THE LIVE CALL SITE. `.github/workflows/ct-tests.yml:1758` spells `run: sudo .ci/scripts/private/renet-csi-sanity.sh`, and nothing else in the tree invokes either subject. THIS MODULE CARRIES NO `---- gate ----` HEADER, and neither does the twin: this is a workflow step, not a registered gate. Cutover is a separate, later, driver-only step.
+THE BASH TWIN IS DELETED. The workflow step (`.github/workflows/ct-tests.yml`, Test renet CSI driver) runs `sudo env PYTHONPATH=.ci python3 -m rediacc_ci.private.renet_csi_sanity`; the twin's bytes survive as `goldens/twins/private.renet-csi-sanity.jsonl`. This module carries no `---- gate ----` header: this is a workflow step, not a registered gate.
 
 -----------------------------------------------------------------------------
 THE LOUD-SKIP GUARD IS THE POINT OF THE SCRIPT

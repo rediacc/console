@@ -28,10 +28,12 @@ import pathlib
 import re
 import shutil
 import subprocess
+from typing import Any
 
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import RENET_REPO
 
 ROOT = paths.repo_root()
@@ -40,6 +42,7 @@ COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "private" / "renet_ebpf_e2e.py"
 
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/private/renet-ebpf-e2e.sh")
+TWIN_STR = str(TWIN_REL)
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/private/renet_ebpf_e2e.py")
 
 # U+2014, as an escape: this file lives under `.ci`, which `check:ci-em-dash-surfaces` scans, and the twin's annotation contains the character itself.
@@ -107,6 +110,47 @@ def _mask(text: str, root: pathlib.Path, tmp: pathlib.Path) -> str:
     return text.replace(str(root), "<root>").replace(str(tmp), "<tmp>")
 
 
+def _recording() -> bool:
+    """True only while the twin's bytes are being recorded (`REDIACC_CI_REGOLDEN=bash`). Every other run reads the golden and the twin is not in the tree."""
+    return diff.regolden_mode(TWIN_STR) == "bash"
+
+
+def _twin_answer(
+    tmp_path: pathlib.Path,
+    root: pathlib.Path,
+    binder: str,
+    parts: list[str],
+    **run_kw,
+) -> dict[str, Any]:
+    """The twin's four observables: recorded from bash while recording, the golden otherwise."""
+    seen: dict[str, list[str]] = {"calls": []}
+
+    def drive(subject: pathlib.PurePosixPath) -> tuple[int, str, str]:
+        out = _run(subject, root, tmp_path, binder, **run_kw)
+        seen["calls"] = list(out["calls"])
+        return out["exit"], out["stdout"], out["stderr"]
+
+    rc, out, err, frozen = diff.twin_run(
+        TWIN_STR,
+        parts,
+        lambda: drive(TWIN_REL),
+        port=lambda: drive(PORT_REL),
+        extras={"calls": lambda: "\n".join(seen["calls"])},
+    )
+    return {
+        "exit": rc,
+        "stdout": out,
+        "stderr": err,
+        "calls": [line for line in frozen["calls"].split("\n") if line],
+    }
+
+
+def _subjects(tmp_path: pathlib.Path, root: pathlib.Path, binder: str, tag: str = "", **run_kw):
+    """`(subject path, observables)` for the twin (golden) and the port (live), in that order."""
+    yield TWIN_REL, _twin_answer(tmp_path, root, binder, ["subjects", tag], **run_kw)
+    yield PORT_REL, _run(PORT_REL, root, tmp_path, binder, **run_kw)
+
+
 def _fixture(tmp_path: pathlib.Path, *, submodule: str = "dir") -> pathlib.Path:
     """A tree shaped like the repository, holding COPIES of both subjects.
 
@@ -116,7 +160,8 @@ def _fixture(tmp_path: pathlib.Path, *, submodule: str = "dir") -> pathlib.Path:
     (root / ".ci" / "scripts" / "private").mkdir(parents=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True)
     (root / ".ci" / "rediacc_ci" / "private").mkdir(parents=True)
-    shutil.copy2(TWIN, root / TWIN_REL)
+    if _recording():
+        shutil.copy2(TWIN, root / TWIN_REL)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
@@ -210,7 +255,7 @@ def _run(
     tmp_path: pathlib.Path,
     binder: str,
     argv: tuple[str, ...] = (),
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """Drive one subject and collect all four observables."""
     env = {
         "PATH": binder,
@@ -307,7 +352,7 @@ def test_port_and_twin_agree(tmp_path, binder_kw, fixture_kw):
     binder = _binder(tmp_path, **binder_kw)
     argv = fixture_kw.get("argv", ())
 
-    old = _run(TWIN_REL, root, tmp_path, binder, argv=argv)
+    old = _twin_answer(tmp_path, root, binder, ["agree"], argv=argv)
     new = _run(PORT_REL, root, tmp_path, binder, argv=argv)
 
     for field in ("exit", "stdout", "stderr", "calls"):
@@ -356,8 +401,7 @@ def test_an_already_mounted_bpffs_is_not_mounted_again(tmp_path):
     """THE NEGATIVE CONTROL on the mount decision. A port that mounted unconditionally would satisfy every positive assertion in this file and would stack a second bpffs over the live one on every CI run."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, fstype=b"bpf_fs\n")
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
+    for subject, out in _subjects(tmp_path, root, binder, tag="root/binder"):
         names = [line.split("\t")[0] for line in out["calls"]]
         assert names == ["stat", "go"], "%s: mounted anyway (%r)" % (subject.name, names)
         assert "Mounting bpffs" not in out["stderr"]
@@ -367,8 +411,7 @@ def test_the_loud_skip_guard_fires_on_an_all_skips_run(tmp_path):
     """THE POSITIVE CONTROL for the reason this script exists. `go test` exits 0 when every test skipped, and without the guard both subjects would report success having verified nothing at all."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, fstype=b"bpf_fs\n", out=ALL_SKIP)
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
+    for subject, out in _subjects(tmp_path, root, binder, tag="root/binder"):
         assert out["exit"] == 1, "%s went green on an all-skips run" % subject.name
         assert ZERO_TESTS_ERROR in out["stdout"], out["stdout"]
         assert "eBPF socket-isolation tests passed" not in out["stderr"]
@@ -378,8 +421,7 @@ def test_the_guard_does_not_fire_on_a_real_pass(tmp_path):
     """A gate with only positive controls will happily flag a healthy tree."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, fstype=b"bpf_fs\n")
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
+    for subject, out in _subjects(tmp_path, root, binder, tag="root/binder"):
         assert out["exit"] == 0, "%s failed a run in which both tests passed" % subject.name
         assert "::error::" not in out["stdout"]
         assert "eBPF socket-isolation tests passed" in out["stderr"]
@@ -389,7 +431,8 @@ def test_the_em_dash_reaches_stdout_as_the_character(tmp_path):
     """The port spells U+2014 as an escape so no em dash is TYPED into a file under `.ci/rediacc_ci`; the CHARACTER still has to be printed, because the twin prints it and the whole claim is byte-identical output. Asserted on the raw bytes so an escape that never got interpreted would show up."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, fstype=b"bpf_fs\n", out=ALL_SKIP)
-    for subject in (TWIN_REL, PORT_REL):
+
+    def drive(subject: pathlib.PurePosixPath) -> str:
         proc = subprocess.run(
             ["bash" if subject.suffix == ".sh" else "python3", str(root / subject)],
             capture_output=True,
@@ -403,7 +446,14 @@ def test_the_em_dash_reaches_stdout_as_the_character(tmp_path):
             timeout=120,
         )
         (tmp_path.resolve() / "calls.log").unlink(missing_ok=True)
-        assert EM_DASH.encode("utf-8") in proc.stdout, "%s printed no em dash" % subject.name
+        return proc.stdout.decode("utf-8")
+
+    work = (root, tmp_path.resolve())
+    _, twin_out, _ = diff.twin_call(
+        TWIN_STR, ["em-dash"], lambda: (0, drive(TWIN_REL), ""), work=work
+    )
+    for subject, text in ((TWIN_REL, twin_out), (PORT_REL, drive(PORT_REL))):
+        assert EM_DASH in text, "%s printed no em dash" % subject.name
 
 
 def test_a_failed_mount_stops_before_go(tmp_path):
@@ -412,8 +462,7 @@ def test_a_failed_mount_stops_before_go(tmp_path):
     neither is visible in stdout."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, mount_rc=32, mount_err=b"mount: only root can do that\n")
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
+    for subject, out in _subjects(tmp_path, root, binder, tag="root/binder"):
         assert out["exit"] == 32, "%s exited %r, not mount's own 32" % (subject.name, out["exit"])
         names = [line.split("\t")[0] for line in out["calls"]]
         assert names == ["stat", "mount"], "%s ran go anyway: %r" % (subject.name, names)
@@ -428,8 +477,8 @@ def test_the_mask_does_not_hide_the_message(tmp_path):
 
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, mount="missing")
-    raw = {}
-    for subject in (TWIN_REL, PORT_REL):
+
+    def drive(subject: pathlib.PurePosixPath) -> str:
         proc = subprocess.run(
             ["bash" if subject.suffix == ".sh" else "python3", str(root / subject)],
             capture_output=True,
@@ -444,7 +493,11 @@ def test_the_mask_does_not_hide_the_message(tmp_path):
             timeout=120,
         )
         (tmp_path.resolve() / "calls.log").unlink(missing_ok=True)
-        raw[subject.name] = proc.stderr
+        return proc.stderr
+
+    work = (root, tmp_path.resolve())
+    _, twin_raw, _ = diff.twin_call(TWIN_STR, ["raw"], lambda: (0, drive(TWIN_REL), ""), work=work)
+    raw = {TWIN_REL.name: twin_raw, PORT_REL.name: drive(PORT_REL)}
     assert raw[TWIN_REL.name] != raw[PORT_REL.name], (
         "the two prefixes are identical, so the mask is unnecessary and should be deleted"
     )
