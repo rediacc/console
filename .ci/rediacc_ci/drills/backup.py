@@ -26,7 +26,6 @@ from __future__ import annotations
 
 import base64
 import contextlib
-import getpass
 import hashlib
 import http.cookiejar
 import json
@@ -42,7 +41,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log
-from rediacc_ci.drills import lib, wire
+from rediacc_ci.drills import lib, vm_ssh, wire
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -153,13 +152,9 @@ class Options:
         self.legs = DEFAULT_LEGS
         self.net_base = os.environ.get("VM_NET_BASE") or "192.168.111"
         self.vm_ip = self.net_base + ".11"
-        self.ssh_user = os.environ.get("SSH_USER") or os.environ.get("USER") or getpass.getuser()
-        renet_data = os.environ.get("RENET_DATA_DIR") or os.path.join(
-            os.environ.get("HOME", "~"), ".renet"
-        )
-        self.ssh_key = os.environ.get("SSH_KEY") or os.path.join(
-            renet_data, "staging", ".ssh", "id_rsa"
-        )
+        # The provisioned VM user and the staged key, resolved in one place for every drill (vm_ssh).
+        self.ssh_user = vm_ssh.default_user()
+        self.ssh_key = vm_ssh.default_key()
         self.store_endpoint = os.environ.get("DRILL_STORE_ENDPOINT", "")
         self.store_bucket = os.environ.get("DRILL_STORE_BUCKET", "")
         self.store_key = os.environ.get("DRILL_STORE_KEY", "")
