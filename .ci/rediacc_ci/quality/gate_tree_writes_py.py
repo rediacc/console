@@ -1570,7 +1570,7 @@ class Evaluator:
             seed = ENV_SEEDS.get(_const_str(args[0] if args else None) or "")
             return seed if seed is not None else self.env_default(e, scope)
         # An INJECTED environment mapping (`def run(root, env)`, `env.get(...)`) is how a testable gate reads its environment. Only the runner FILE variables are trusted through an arbitrary receiver: their names mean nothing else, while `HOME` or `TMPDIR` on a dict that is not the environment could, so those keep the os.environ spelling.
-        # The receiver is judged by its NAME only (the analyzer does not track which mapping a parameter holds): `env`, `environ`, `os.environ`, `self.env`, `environment` count, `cfg` or `data` do not, so a plain dict under a runner-variable key still falls through to UNRESOLVED.
+        # The receiver is judged by its NAME only (the analyzer does not track which mapping a parameter holds): `env`, `environ`, `os.environ`, `self.env`, `environment` count, and so do their copies (`os.environ.copy()`, `dict(os.environ)`); `cfg` or `data`, and copies of them, do not, so a plain dict under a runner-variable key still falls through to UNRESOLVED.
         if (
             isinstance(e.func, ast.Attribute)
             and e.func.attr == "get"

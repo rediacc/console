@@ -126,7 +126,8 @@ def test_a_copy_of_the_environment_is_still_an_environment_receiver(tmp_path):
             "g.py": "import os\n\n\ndef run(cfg):\n"
             "    with open(os.environ.copy().get('GITHUB_OUTPUT'), 'a') as fh:\n        fh.write('x')\n"
             "    with open(dict(os.environ).get('GITHUB_ENV'), 'a') as fh:\n        fh.write('x')\n"
-            "    with open(cfg.copy().get('GITHUB_OUTPUT'), 'a') as fh:\n        fh.write('x')\n\n\n"
+            "    with open(cfg.copy().get('GITHUB_OUTPUT'), 'a') as fh:\n        fh.write('x')\n"
+            "    with open(dict(cfg).get('GITHUB_OUTPUT'), 'a') as fh:\n        fh.write('x')\n\n\n"
             "run({})\n"
         },
         "g.py",
@@ -134,6 +135,7 @@ def test_a_copy_of_the_environment_is_still_an_environment_receiver(tmp_path):
     assert [s.origin for s in sorted(sites, key=lambda s: s.line)] == [
         "OUTSIDE",
         "OUTSIDE",
+        "UNRESOLVED",
         "UNRESOLVED",
     ]
 
