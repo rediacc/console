@@ -11,7 +11,7 @@ WHY THE SHIM LIVES UNDER `scripts/lib/` AND NOT `.ci/lib/`, WHICH IS WHERE ITS S
 `age-check.sh`, and `check:ci-language-policy` went rc=1 with `2 NEW bash
 file(s)`; the registration was unwound rather than allowlisted.
 
-A bash shim for bash callers cannot itself be Python, so the choice was an allowlist entry or a different address. `scripts/` is not a covered root, and the shim already serves callers on both sides of the line -- `scripts/ops/deploy-bench.sh` and `programs/backup-storage/start-local-plane.sh` were never under `.ci` at all -- so a shared location is the better description of what
+A bash shim for bash callers cannot itself be Python, so the choice was an allowlist entry or a different address. `scripts/` is not a covered root, and the shim already serves callers on both sides of the line -- `scripts/ops/deploy-bench.sh` and `programs/backup-storage/start-local-plane.sh` (both since ported to Python) were never under `.ci` at all -- so a shared location is the better description of what
 it is, not merely the legal one. No exemption was added to any allowlist for this gate or for the shim.
 
 THREE CHECKS, because two of them can pass while the thing is broken:
@@ -63,10 +63,9 @@ SHIM_REL = "scripts/lib/env-file.sh"
 
 # The sites that adopted the shim. Each must still call it; see CHECK B.
 # The bench deploy LEFT this list on 2026-09-24: it reads no env file at all, re-executing itself under the `deploy-bench` Bitwarden profile (PLAN-account-env-to-bws T17/T18). It is the Python module `rediacc_ci.ops.deploy_bench` since PLAN-retire-bash-oracles B3.
-ADOPTED = (
-    ".ci/lib/account.sh",
-    "programs/backup-storage/start-local-plane.sh",
-)
+# `programs/backup-storage/start-local-plane.sh` LEFT this list when it became the Python module `rediacc_ci.drills.backup_local_plane` (PLAN-retire-bash-oracles B5), which reads the file through `rediacc_ci.core.env` directly.
+# `.ci/lib/account.sh` LEFT it when that library was ported to Python (PLAN-retire-bash-oracles B3, W8); the Python callers read the file through `rediacc_ci.core.env`. No bash site is left that calls `env_file_load`, so CHECK B has nothing to run until one is adopted again, and CHECKS A and C (the sweep and the differential) carry the gate.
+ADOPTED: tuple[str, ...] = ()
 
 # The sites that may still run `set -a`, reason first. These are PRINTED every run rather than being quietly skipped: an exemption nobody sees is how a gate stops meaning what its name says.
 EXEMPT = (
@@ -197,11 +196,14 @@ def check_sweep(root):
     return findings, len(scan)
 
 
-def check_sites(root, fixture):
-    """CHECK B. Returns (findings, n_invocations)."""
+def check_sites(root, fixture, adopted=None):
+    """CHECK B. Returns (findings, n_invocations).
+
+    `adopted` defaults to the real list; the selftest passes its own so the anti-silencer plant needs no real file.
+    """
     findings = []
     invocations = 0
-    for site in ADOPTED:
+    for site in adopted or ADOPTED:
         path = root / site
         if not path.is_file():
             findings.append("%s: listed as an adopted site and not present" % site)
@@ -239,7 +241,7 @@ def check_sites(root, fixture):
                     "%s:%d: expected fromshell/fromfile, got '%s' -- either the file "
                     "overwrote the shell, or nothing read the file" % (site, lineno, out)
                 )
-    if invocations == 0:
+    if invocations == 0 and (adopted or ADOPTED):
         findings.append(
             "ZERO invocations were exercised: this check asserted nothing about any site"
         )
@@ -363,27 +365,17 @@ def selftest():
             refused = True
         c.truthy("VACUITY: a tree with zero shell files is a REFUSAL, not a pass", refused)
 
-        # 8. ANTI-SILENCER: an adopted site that reverted to `source` is caught. Proven by PLANTING the reversion on a copy of the real tree, not by asking the matcher about a string.
+        # 8. ANTI-SILENCER: an adopted site that reverted to `source` is caught. Proven by PLANTING the reversion in a synthetic site, not by asking the matcher about a string. The site is written here so the control needs no real file: the real adopted sites come and go as they are ported.
         planted = tmp / "planted"
         planted.mkdir()
-        (planted / "programs" / "backup-storage").mkdir(parents=True)
-        src = root / "programs/backup-storage/start-local-plane.sh"
-        reverted = re.sub(
-            r'(?m)^(\s*)env_file_load "([^"]*)"',
-            r'\1set -a; . "\2"; set +a',
-            src.read_text(encoding="utf-8"),
+        (planted / "reverted.sh").write_text(
+            'source "$1/scripts/lib/env-file.sh"\nset -a; . "/etc/example.env"; set +a\n',
+            encoding="utf-8",
         )
-        (planted / "programs/backup-storage/start-local-plane.sh").write_text(
-            reverted, encoding="utf-8"
-        )
-        for rel in (".ci/lib/account.sh", SHIM_REL):
-            dst = planted / rel
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(root / rel, dst)
-        site_findings, _n = check_sites(planted, fixture)
+        site_findings, _n = check_sites(planted, fixture, adopted=("reverted.sh",))
         c.truthy(
             "ANTI-SILENCER: a site reverted to `set -a; source` is a finding",
-            any("start-local-plane.sh" in f for f in site_findings),
+            any("reverted.sh" in f for f in site_findings),
         )
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

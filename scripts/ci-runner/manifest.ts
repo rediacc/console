@@ -86,10 +86,10 @@ export const GATES: readonly GateSpec[] = [
     gate: false,
     // NO WIDTH DECLARED (agent/plans/PLAN-prepush-full-cpu.md PF5, 2026-10-05): the hand-typed `weight: 2` is retired, and the pool budgets this gate at its measured cpu/wall. eslint 9.39 runs single-threaded unless told `--concurrency <n>`, a knob this gate's script does not pass yet; biome, the one other tool here, honours RAYON_NUM_THREADS (measured: 101% CPU at 1, 1004% unset) and is about 1.5s of the run.
     heavy: true,
-    // eslint no longer runs directly: check:lint calls scripts/eslint-heap.sh,
+    // eslint no longer runs directly: check:lint calls .ci/rediacc_ci/quality/eslint_heap.py,
     // which clamps the heap downward only when the host cannot honour the requested size (never raises -- CI keeps its full request) and then
     // execs eslint itself. The leaf is the wrapper, not the tool it wraps.
-    leaves: ['scripts/eslint-heap.sh', 'biome'],
+    leaves: ['.ci/rediacc_ci/quality/eslint_heap.py', 'biome'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -100,13 +100,13 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:lint:cli',
     run: 'npm run check:lint:cli',
-    // ELASTIC, up to 4: eslint-heap.sh passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
+    // ELASTIC, up to 4: eslint_heap.py passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
     cores: { min: 1, max: 4 },
     slow: true, // 65.1s alone / 87.5s in the concurrent four
     gate: true,
     // NO WIDTH DECLARED (PF5, 2026-10-05): measured cpu/wall, for the reason on check:lint.
     heavy: true,
-    leaves: ['scripts/eslint-heap.sh'],
+    leaves: ['.ci/rediacc_ci/quality/eslint_heap.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -117,13 +117,13 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:lint:web',
     run: 'npm run check:lint:web',
-    // ELASTIC, up to 4: eslint-heap.sh passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
+    // ELASTIC, up to 4: eslint_heap.py passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
     cores: { min: 1, max: 4 },
     slow: true, // 60.8s alone / 83.2s in the concurrent four
     gate: true,
     // NO WIDTH DECLARED (PF5, 2026-10-05): measured cpu/wall, for the reason on check:lint.
     heavy: true,
-    leaves: ['scripts/eslint-heap.sh'],
+    leaves: ['.ci/rediacc_ci/quality/eslint_heap.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -134,13 +134,13 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:lint:tooling',
     run: 'npm run check:lint:tooling',
-    // ELASTIC, up to 4: eslint-heap.sh passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
+    // ELASTIC, up to 4: eslint_heap.py passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
     cores: { min: 1, max: 4 },
     slow: true, // measured in the concurrent four; retier from the reference worktree
     gate: true,
     // NO WIDTH DECLARED (PF5, 2026-10-05): measured cpu/wall, for the reason on check:lint.
     heavy: true,
-    leaves: ['scripts/eslint-heap.sh'],
+    leaves: ['.ci/rediacc_ci/quality/eslint_heap.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -151,7 +151,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:lint:account',
     run: 'npm run check:lint:account',
-    // ELASTIC, up to 4: eslint-heap.sh passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
+    // ELASTIC, up to 4: eslint_heap.py passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
     cores: { min: 1, max: 4 },
     slow: true, // measured in the concurrent four; retier from the reference worktree
     gate: true,
@@ -160,7 +160,7 @@ export const GATES: readonly GateSpec[] = [
     // TWO leaves, not one: this shard alone chains `biome lint private/account/` after
     // eslint. Landing it with the other three shards' single leaf reddened
     // check:ci-parity hygiene immediately, which is the split-turns-hygiene-red case the proposal warned about and the reason leaves are derived with resolveLeaves rather than copied between sibling entries.
-    leaves: ['biome', 'scripts/eslint-heap.sh'],
+    leaves: ['biome', '.ci/rediacc_ci/quality/eslint_heap.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

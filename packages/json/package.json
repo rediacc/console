@@ -3,8 +3,8 @@
   "version": "0.0.0-dev",
   "private": true,
   "scripts": {
-    "build": "./generate.sh",
-    "test": "./test-templates.sh"
+    "build": "python3 ../../.ci/rediacc_ci/catalog/generate.py",
+    "test": "python3 ../../.ci/rediacc_ci/catalog/lifecycle.py"
   },
   "dependencies": {
     "@vitest/coverage-v8": "^5.0.2",
