@@ -143,9 +143,8 @@ def test_tier_entries_reads_the_python_tuples_on_every_form() -> None:
     )
     for text, want in cases:
         assert ja.tier_entries(text) == want, text
-    got = ja.tier_entries(ja.FIXTURE_ASSERT)
-    for member in ("INITIALIZE", "QUALITY", "BUILD_CLI"):
-        assert member in got, got
+    # Exact, in order: the fixture holds two hard and one soft member, so an extra or a missing one fails (review finding 930dcad8.1).
+    assert ja.tier_entries(ja.FIXTURE_ASSERT) == ["INITIALIZE", "QUALITY", "BUILD_CLI"]
 
 
 def test_result_var_for_matches_tr() -> None:

@@ -890,3 +890,25 @@ def test_the_harness_refuses_a_path_that_leaks_the_real_docker(tmp_path):
     resolved = shutil.which("docker", path=with_it)
     assert resolved == str(pathlib.Path(with_it) / "docker"), resolved
     assert resolved != "/usr/bin/docker"
+
+
+def test_checksum_rows_do_not_depend_on_the_working_directory(tmp_path, monkeypatch):
+    """The glob is rooted at `dists_dir`, so a caller's cwd neither feeds nor loses the rows (review finding 7caaf877.3)."""
+    dists = tmp_path / "dists"
+    (dists / "main" / "binary-amd64").mkdir(parents=True)
+    (dists / "main" / "binary-amd64" / "Packages").write_bytes(b"abc")
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    (elsewhere / "main" / "binary-arm64").mkdir(parents=True)
+    (elsewhere / "main" / "binary-arm64" / "Packages").write_bytes(b"decoy")
+    monkeypatch.chdir(elsewhere)
+    rows = build_pkg_repo._checksum_rows(str(dists), "sha256")
+    assert len(rows) == 1, rows
+    assert rows[0].endswith(" 3 main/binary-amd64/Packages"), rows
+    assert pathlib.Path.cwd() == elsewhere
+
+
+def test_checksum_rows_over_a_missing_dists_directory_raise(tmp_path):
+    """The bash `cd` died on a missing directory; an empty Release must not be the replacement (review finding 7caaf877.2)."""
+    with pytest.raises(FileNotFoundError):
+        build_pkg_repo._checksum_rows(str(tmp_path / "absent"), "md5")

@@ -732,13 +732,17 @@ SHIMMED_TWINS = frozenset(
     }
 )
 SHIM_LINE_RE = re.compile(
-    r'^PYTHONPATH="\$\{BASH_SOURCE\[0\]%/\*\}/\.\./\.\.\$\{PYTHONPATH:\+:\$PYTHONPATH\}" '
+    r'^PYTHONPATH="\$\(dirname "\$\{BASH_SOURCE\[0\]\}"\)/\.\./\.\.\$\{PYTHONPATH:\+:\$PYTHONPATH\}" '
     r'exec python3 -m (?P<module>rediacc_ci(?:\.\w+)+) "\$@"$'
 )
+MAIN_GUARD_RE = re.compile(r"""^if\s+__name__\s*==\s*['"]__main__['"]\s*:""", re.MULTILINE)
 
 
 def shim_problem(twin: str) -> str | None:
-    """None when `twin` is a well-formed shim (executable, one effective line, a module `rediacc_ci` can import), else why not."""
+    """None when `twin` is a well-formed shim (executable, one effective line, a module `rediacc_ci` can import and `python3 -m` can run), else why not.
+
+    The line resolves its own directory with `dirname`, not `${BASH_SOURCE[0]%/*}`, because `%/*` leaves a bare `x.sh` unchanged and `bash x.sh` from the shim's own directory then built `x.sh/../..` (review finding 820e5332.1).
+    """
     path = paths.repo_root() / twin
     if not os.access(path, os.X_OK):
         return "%s is not executable" % twin
@@ -759,6 +763,10 @@ def shim_problem(twin: str) -> str | None:
         found = None
     if found is None:
         return "%s names %s, which does not import" % (twin, module)
+    # find_spec only locates the module; `python3 -m` runs it as __main__, so a module with no entry guard would exit 0 having done nothing (review finding 820e5332.2).
+    origin = found.origin if found.origin and found.origin.endswith(".py") else None
+    if origin is None or not MAIN_GUARD_RE.search(pathlib.Path(origin).read_text(encoding="utf-8")):
+        return '%s names %s, which has no `if __name__ == "__main__"` entry point' % (twin, module)
     return None
 
 

@@ -320,7 +320,7 @@ def test_the_shim_check_can_fail(tmp_path, monkeypatch) -> None:
     """CONTROL: a body that is not a shim, a shim without the executable bit and a shim naming a module that does not import are each refused."""
     monkeypatch.setattr(diff.paths, "repo_root", lambda: tmp_path)
     good = (
-        '#!/bin/bash\nset -euo pipefail\nPYTHONPATH="${BASH_SOURCE[0]%/*}/../..${PYTHONPATH:+:$PYTHONPATH}" '
+        '#!/bin/bash\nset -euo pipefail\nPYTHONPATH="$(dirname "${BASH_SOURCE[0]}")/../..${PYTHONPATH:+:$PYTHONPATH}" '
         'exec python3 -m rediacc_ci.infra.ci_stop_elite "$@"\n'
     )
     path = tmp_path / "x.sh"
@@ -334,6 +334,8 @@ def test_the_shim_check_can_fail(tmp_path, monkeypatch) -> None:
     assert "effective lines" in (diff.shim_problem("x.sh") or "")
     path.write_text(good.replace("ci_stop_elite", "no_such_module"), encoding="utf-8")
     assert "does not import" in (diff.shim_problem("x.sh") or "")
+    path.write_text(good.replace("infra.ci_stop_elite", "paths"), encoding="utf-8")
+    assert "entry point" in (diff.shim_problem("x.sh") or "")
 
 
 def test_regolden_refuses_a_bash_freeze_of_a_shimmed_twin(capsys, monkeypatch) -> None:
@@ -343,3 +345,28 @@ def test_regolden_refuses_a_bash_freeze_of_a_shimmed_twin(capsys, monkeypatch) -
     twin = min(diff.SHIMMED_TWINS)
     assert regolden.main([twin, "--source", "bash", "--reason", "x"]) == 2
     assert "shim over its port" in capsys.readouterr().err
+
+
+def test_every_shim_runs_from_its_own_directory_by_bare_name(tmp_path) -> None:
+    """The tracked shims' PYTHONPATH expression, run as `bash name.sh` from the shim's own directory, still finds `rediacc_ci` (review finding 820e5332.1)."""
+    root = tmp_path / "root"
+    (root / "rediacc_ci").mkdir(parents=True)
+    (root / "rediacc_ci" / "__init__.py").write_text("", encoding="utf-8")
+    (root / "rediacc_ci" / "probe.py").write_text("print('reached')\n", encoding="utf-8")
+    here = root / "s" / "t"
+    here.mkdir(parents=True)
+    for twin in sorted(diff.SHIMMED_TWINS):
+        live = (paths.repo_root() / twin).read_text(encoding="utf-8")
+        line = next(ln for ln in live.splitlines() if ln.startswith("PYTHONPATH="))
+        body = re.sub(r"-m rediacc_ci\.\S+", "-m rediacc_ci.probe", line)
+        assert body != line, line
+        (here / "shim.sh").write_text("#!/bin/bash\n" + body + "\n", encoding="utf-8")
+        proc = subprocess.run(
+            ["bash", "shim.sh"],
+            cwd=here,
+            capture_output=True,
+            text=True,
+            check=False,
+            env={"PATH": "/usr/bin:/bin"},
+        )
+        assert (proc.returncode, proc.stdout.strip()) == (0, "reached"), (twin, proc.stderr)

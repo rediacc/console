@@ -210,8 +210,15 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     # Fail loudly if the library cannot be loaded at all: a gate that cannot reach its subject must not report on it. Port 1 is closed, so a HEALTHY probe returns non-zero here; only LOAD_FAILED_RC means the load failed.
-    if probe_rc(root, 1) in (LOAD_FAILED_RC, PROBE_RAISED_RC):
+    first_rc = probe_rc(root, 1)
+    if first_rc == LOAD_FAILED_RC:
         log.error("Could not import %s from %s." % (PROBE_FN, PROBE_LIB))
+        log.error("Refusing to report on a probe this gate cannot actually call.")
+        return 1
+    if first_rc == PROBE_RAISED_RC:
+        log.error(
+            "%s was imported from %s but raised when called on port 1." % (PROBE_FN, PROBE_LIB)
+        )
         log.error("Refusing to report on a probe this gate cannot actually call.")
         return 1
 

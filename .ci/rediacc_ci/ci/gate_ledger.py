@@ -927,6 +927,11 @@ def pytest_hosts(
     }
 
 
+def _why(exc: BaseException) -> str:
+    """The reason an UNCHECKED line carries: the message, or the exception's type when it has none (a bare `sys.exit()` and many OSErrors stringify to empty; review finding de62cb71.3)."""
+    return (str(exc) or type(exc).__name__)[:160]
+
+
 def fold_ci(
     d: pathlib.Path,
     root: pathlib.Path,
@@ -997,7 +1002,7 @@ def fold_ci(
         try:
             runs.extend(fetch_runs(repo, CI_WORKFLOW, event, None, "completed", limit))
         except Exception as exc:  # noqa: BLE001 -- any read failure is reported as UNCHECKED
-            unchecked.append("runs(%s): %s" % (event, str(exc)[:160]))
+            unchecked.append("runs(%s): %s" % (event, _why(exc)))
     runs = list({r.get("id"): r for r in runs}.values())
     ensure_dir(d)
     folded = rows_n = already = 0
@@ -1029,7 +1034,7 @@ def fold_ci(
                 return fetch_jobs(repo, int(run["id"])), "", clock() - t
             except (Exception, SystemExit) as exc:  # noqa: BLE001
                 # SystemExit too: left to the future it would re-raise in the reader and exit the folding process.
-                return None, str(exc)[:160], clock() - t
+                return None, _why(exc), clock() - t
 
         pool = _DaemonPool(workers)
         try:

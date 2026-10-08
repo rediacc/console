@@ -699,22 +699,29 @@ def test_declared_closure_paths_exist(gate):
         )
 
     count = 0
+    keys: set[str] = set()
     for line in result.out.split("\n"):
         if "\t" not in line:
             continue
         key, _, path = line.partition("\t")
         if not path:
             continue
+        keys.add(key)
         gate.assert_eq(
             ls_tree_lines(gate, path), 1, "closure path for %s must exist in HEAD: %s" % (key, path)
         )
         count += 1
     # The floor sits JUST BELOW the real total (408 across 18 keys as of 2026-08-08), not at some token value: a `> 15` floor survived a table that had lost every key but one. At 400 a parse break reads as 0 and a dropped VM/E2E key costs 30 entries, both of which fire this; trimming a path or two during honest maintenance does not.
-    # Re-measured 2026-10-08 at 383 after PLAN-retire-bash-oracles wave 1 deleted thirteen closure entries (the setup, private, build and test bash twins). The floor keeps the same eight-entry margin under the measured total as before (408 -> 400): 375.
+    # Re-measured 2026-10-08 at 383 entries across 18 keys after PLAN-retire-bash-oracles wave 1 deleted thirteen closure entries. The floor is 381, two under the measured total ("a path or two" of honest maintenance), because the eight-entry margin of cc0f8ea7 (375) could absorb a whole small key (package_tests holds 6, license_enforcement 7) without firing; the key count is asserted as well, so a dropped key fails even when its entries fit the margin (review finding cc0f8ea7.3).
     gate.assert_eq(
-        1 if count >= 375 else 0,
+        1 if count >= 381 else 0,
         1,
-        "the table must stay whole (%d entries seen, floor 375)" % count,
+        "the table must stay whole (%d entries seen, floor 381)" % count,
+    )
+    gate.assert_eq(
+        1 if len(keys) >= 18 else 0,
+        1,
+        "no closure key may disappear (%d keys seen, floor 18)" % len(keys),
     )
 
     # CONTROL: the same assertion applied to a path that does NOT exist must fail, or the loop above proves only that the loop ran.

@@ -53,3 +53,13 @@ def test_a_missing_interpreter_names_every_path_it_looked_at(tmp_path, monkeypat
     err = capsys.readouterr().err
     assert "uv-tools/pytest/bin/python" in err, err
     assert "uv-tools/bin/pytest" in err, err
+
+
+def test_an_override_that_names_no_python_is_refused_not_replaced(tmp_path, monkeypatch, capsys):
+    calls = _world(tmp_path, monkeypatch)
+    _exe(tmp_path / ".ci/cache/toolchain/uv-tools/pytest/bin/python")
+    override = _exe(tmp_path / "elsewhere/pytest", "#!/usr/bin/env bash\n")
+    monkeypatch.setenv("PYTEST_BIN", str(override))
+    assert regolden._reexec_under_pytest() == 77
+    assert calls == []
+    assert "PYTEST_BIN" in capsys.readouterr().err

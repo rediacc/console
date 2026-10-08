@@ -788,6 +788,47 @@ def test_fold_ci_reports_a_system_exit_from_a_job_read_as_unchecked(
     assert "UNCHECKED" in out[-1], out[-1]
 
 
+def test_an_unchecked_run_with_an_empty_exception_message_still_says_why(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Review de62cb71.3: a bare `sys.exit()` stringifies to empty, so the UNCHECKED line carried no reason."""
+
+    def fetch(*_a: Any) -> list[dict[str, Any]]:
+        raise SystemExit
+
+    def no_runs(*_a: Any, **_k: Any) -> list[dict[str, Any]]:
+        raise OSError
+
+    prog: list[str] = []
+    L.fold_ci(
+        tmp_path,
+        paths.repo_root(),
+        repo="o/r",
+        logs=False,
+        fetch_runs=lambda *_a, **_k: _fold_runs(1),
+        fetch_jobs=fetch,
+        out=lambda _m: None,
+        workers=1,
+        progress=prog.append,
+    )
+    assert any("UNCHECKED (SystemExit)" in m for m in prog), prog
+    out: list[str] = []
+    L.fold_ci(
+        tmp_path / "second",
+        paths.repo_root(),
+        repo="o/r",
+        logs=False,
+        fetch_runs=no_runs,
+        fetch_jobs=fetch,
+        out=out.append,
+        workers=1,
+        progress=lambda _m: None,
+    )
+    err = capsys.readouterr().err
+    assert "unchecked runs(pull_request): OSError" in err, err
+    assert "unchecked jobs(100): SystemExit" in err, err
+
+
 def test_fold_ci_leaves_no_joinable_worker_behind_a_deadline(tmp_path: pathlib.Path) -> None:
     """A worker stuck in a gh call at the deadline must not keep the interpreter alive: non-daemon pool threads are joined at exit."""
     gate = threading.Event()

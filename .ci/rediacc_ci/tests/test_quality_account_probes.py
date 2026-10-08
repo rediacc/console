@@ -135,3 +135,19 @@ def test_selftest_runs_and_meets_its_floor() -> None:
 def _fixture(root: pathlib.Path, body: str) -> pathlib.Path:
     """A throwaway tree carrying a minimal `rediacc_ci.core.account`."""
     return ap.fixture_root(root, body)
+
+
+def test_main_names_a_raising_probe_as_raised_not_as_an_import_failure(
+    tmp_path: pathlib.Path, monkeypatch, capsys
+) -> None:
+    """A probe that imports and then raises on port 1 is reported as raised (review finding cc0f8ea7.2), and a missing function as an import failure."""
+    raises = _fixture(tmp_path / "raises", ap.FIXTURE_RAISES)
+    monkeypatch.setattr(ap.paths, "repo_root", lambda: raises)
+    assert ap.main([]) == 1
+    err = capsys.readouterr().err
+    assert "raised when called" in err, err
+    assert "Could not import" not in err, err
+    nofn = _fixture(tmp_path / "nofn", ap.FIXTURE_NO_FUNCTION)
+    monkeypatch.setattr(ap.paths, "repo_root", lambda: nofn)
+    assert ap.main([]) == 1
+    assert "Could not import" in capsys.readouterr().err
