@@ -772,9 +772,11 @@ async function selftest(): Promise<number> {
         (_tsc, s) => {
           calls += 1;
           const poisoned = fs.existsSync(info);
+          // tree-write: safe the retry selftest's tsbuildinfo sits in its own mkdtemp directory under os.tmpdir()
           fs.writeFileSync(info, 'built');
           return Promise.resolve({ step: s, code: fails(poisoned) ? 1 : 0, ms: 0, output: '' });
         };
+      // tree-write: safe the retry selftest's tsbuildinfo sits in its own mkdtemp directory under os.tmpdir()
       fs.writeFileSync(info, 'stale');
       const healed = await runChecked(
         tsc ?? '',
@@ -787,6 +789,7 @@ async function selftest(): Promise<number> {
         `retry: a red from a poisoned tsbuildinfo must be retried from none and pass, got exit ${healed.code} after ${calls} call(s)`
       );
       calls = 0;
+      // tree-write: safe the retry selftest's tsbuildinfo sits in its own mkdtemp directory under os.tmpdir()
       fs.writeFileSync(info, 'stale');
       const real = await runChecked(
         tsc ?? '',
@@ -799,6 +802,7 @@ async function selftest(): Promise<number> {
         `retry: a red that a clean program reproduces must stand, got exit ${real.code} after ${calls} call(s)`
       );
       calls = 0;
+      // tree-write: safe the retry selftest's tsbuildinfo sits in its own mkdtemp directory under os.tmpdir()
       fs.rmSync(info, { force: true });
       const uncached = await runChecked(
         tsc ?? '',
