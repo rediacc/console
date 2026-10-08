@@ -486,6 +486,35 @@ def test_lf1_a_filling_local_batch_is_an_advisory_not_open_it(lrepo):
     assert "gh pr create" not in text, text
 
 
+def test_lf1_the_advisory_names_the_plan_that_is_still_open(lrepo):
+    text, _blocking = wl_checks.loop_next_text(lstate(lrepo), lrepo, {}, False, me="d778be9d")
+    assert "still open: PLAN-batch-open.md (1 open)" in text, text
+
+
+def test_lf1_an_empty_set_does_not_read_as_complete(lrepo):
+    text, blocking = wl_checks.loop_next_text(
+        lstate(lrepo, plans=()), lrepo, {}, False, me="d778be9d"
+    )
+    assert blocking is False, text
+    assert "still open: no plans in the set" in text, text
+    assert "still open: none" not in text, text
+
+
+def test_lf1_an_unreadable_plan_keeps_the_batch_unfinished(lrepo):
+    """A plan whose boxes cannot be read is never finished, so the batch-end push is not ordered."""
+    ghost = "agent/plans/PLAN-ghost.md"
+    st = ready(lrepo)
+    st.plans = (*st.plans[:2], ghost)
+    assert wl_checks._set_finished(st, lrepo) is False
+    text, blocking = wl_checks.loop_next_text(st, lrepo, {}, False, me="d778be9d")
+    assert blocking is False, text
+    assert "PLAN-ghost.md (unreadable)" in text, text
+
+
+def test_lf1_control_a_finished_set_is_finished(lrepo):
+    assert wl_checks._set_finished(ready(lrepo), lrepo) is True
+
+
 def test_lf1_control_turbo_push_pr_blocks_with_open_it(lrepo):
     text, blocking = wl_checks.loop_next_text(
         lstate(lrepo, turbo_push="pr"), lrepo, {}, False, me="d778be9d"

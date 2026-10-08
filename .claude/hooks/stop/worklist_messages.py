@@ -2918,7 +2918,7 @@ V_TURBO_NEXT = (
 TURBO_NEXT_PICK = "    TURBO: start %s on a writer (slot %d of %d); its first box is %s"
 
 # Turbo local-first (agent/plans/PLAN-turbo-local-first.md D2-D6): under `turbo: on` with `turbo_push: batch-end` a no-PR branch fills its batch locally and opens its PR once, when the batch completes.
-# N_TURBO_LOCAL: the no-PR loop-next arm while the batch is incomplete, an advisory. Keys: branch, ahead, finished, batch, plans.
+# N_TURBO_LOCAL: the no-PR loop-next arm while the batch is incomplete, an advisory. Keys: branch, ahead, finished, batch, plans, open (the unfinished plans, from wl_checks._open_in_set).
 N_TURBO_LOCAL = (
     "TURBO LOCAL-FIRST: %(ahead)d commit(s) on %(branch)s are held locally; batch %(finished)d/"
     "%(batch)d finished (%(plans)s); still open: %(open)s. No push or PR until the batch completes: under "

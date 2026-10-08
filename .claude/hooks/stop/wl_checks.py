@@ -2617,7 +2617,9 @@ def local_batch(state):
 
 
 def _open_in_set(state, root):
-    """The batch plans that still carry an open box, each with its count, or "none". "Batch 3/3 finished" alone read as complete while two turbo-named plans were still open (2026-10-08)."""
+    """The batch plans that still carry an open box, each with its count, "none" when every plan is finished, or "no plans in the set" for an empty set. "Batch 3/3 finished" alone read as complete while two turbo-named plans were still open (2026-10-08)."""
+    if not state.plans:
+        return "no plans in the set"
     plan_gate = wl_prscope._hooks_pkg()[0]
     parts = []
     for rel in state.plans:
@@ -2708,9 +2710,9 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
             fields["finished"] = int(state.finished)
             fields["batch"] = int(state.batch_size)
             fields["me"] = me
+            fields["open"] = _open_in_set(state, root)
             if fields["ahead"] > 0:
                 if not wl_prscope.batch_ready(state, _set_finished(state, root)):
-                    fields["open"] = _open_in_set(state, root)
                     return M.N_TURBO_LOCAL % fields, False
                 return M.V_LOOP_NEXT_BATCH_OPEN % fields, True
         if fields["ahead"] > 0:

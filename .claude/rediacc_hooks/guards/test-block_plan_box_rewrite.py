@@ -460,7 +460,7 @@ def main():
                     raise subprocess.TimeoutExpired(argv, 30)
                 return _f(argv, k_)
 
-            # mock.patch.object, not setattr: typed, self-restoring, and no inline suppression (operator 2026-10-08 banned those).
+            # mock.patch.object, not setattr: typed, self-restoring, and no inline suppression needed.
             try:
                 with mock.patch.object(subprocess, "run", flaky):
                     got_ = good["_head_corpus"](str(root), set())
