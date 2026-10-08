@@ -230,6 +230,7 @@
     "check:ci-dead-service-methods": "tsx scripts/gates/check-dead-service-methods.ts",
     "check:ci-retired-commands": "tsx scripts/gates/check-retired-commands-in-docs.ts",
     "check:ci-no-inline-python": ".ci/scripts/quality/check_inline_python.py",
+    "check:ci-inline-suppressions": ".ci/scripts/quality/check_inline_suppressions.py",
     "check:ci-inner-timeout-reachable": ".ci/scripts/quality/check_inner_timeout_reachable.py",
     "check:ci-control-in-string": "tsx scripts/gates/check-control-in-string.ts --selftest && tsx scripts/gates/check-control-in-string.ts",
     "check:ci-timeout-headroom": ".ci/scripts/quality/check_job_timeout_headroom.py",

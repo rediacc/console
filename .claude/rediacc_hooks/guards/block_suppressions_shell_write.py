@@ -1,0 +1,236 @@
+"""Refuse a Bash command that writes a NEW inline lint or type suppression marker into a code file.
+
+The shell half of `block_suppressions.py` (operator ruling 2026-10-08: inline suppressions are banned, by hook and by CI). The edit tools are judged there; the same insertion through the shell is judged here, through the same scanner (`rediacc_ci.quality.inline_suppressions`).
+
+THE SHAPES, read by `shellscan`'s lexer rather than a regex over the text, so `echo "noq[a]"` to the terminal, a commit message heredoc, and `grep -rn noq[a]` all pass:
+
+  1. A REDIRECT or `tee` into a code file (`cat > a.py <<EOF`, `echo ... >> a.sh`, `printf ... | tee a.ts`). The text written (the heredoc bodies and the writer's own arguments) is counted in the target's language and compared with the file on disk: an overwrite must not raise any (kind, code) count above the file's current one, and an append must not carry any marker at all.
+  2. `sed -i` / `perl -i` on a code file. A substitution may not put more markers in its REPLACEMENT than its PATTERN removes, and an `a`/`i`/`c` text command may not carry one.
+  3. An INTERPRETER program (`python3 -c`, `python3 - <<EOF`, `node -e`, `perl -e`, `ruby -e`) that writes files and whose source holds a marker anywhere. Its STRINGS are what it writes, so the source is read RAW, strings included.
+
+SHAPE 3 OVER-REFUSES, and says so. A program that REMOVES markers names them too, and a static read cannot tell `s.replace(MARKER, "")` from `s.replace("", MARKER)`. The refusal names the Edit tool, which `block_suppressions.py` judges exactly (the whole file before and after). A removal script that must run in the shell spells the token with a character class (`noq[a]`), the convention both guards' sources use.
+
+EVERY HEREDOC IN THE COMMAND IS READ AS CONTENT for a redirect or `tee`, because the lexer records heredoc bodies without the command that consumes them. A command that writes a code file AND carries an unrelated heredoc naming a marker (a commit message, say) is refused; split it into two commands.
+
+WHAT IT DOES NOT SEE: `cp`/`mv` of a file that already carries markers, `git apply`/`patch`, and code assembled at run time. `check:ci-inline-suppressions` sees all of them, because it reads the tree rather than the command.
+
+THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`); it is judged by `test-block_suppressions.py` (the shared harness for both halves) and against its own DEFECT.
+
+IT FAILS OPEN, LOUDLY, as its edit sibling does: a scanner that cannot be imported leaves the command allowed and stderr saying it went UNEXAMINED.
+"""
+
+import importlib
+import os
+import pathlib
+import re
+import sys
+
+from rediacc_hooks import hookio, shellscan, syspath
+
+CHAIN = "pre-bash"
+OWN_SUITE = True
+ORDER = 58
+
+# Planting `False` here drops shape 1, the redirect: `cat > a.py <<EOF` with a marker in the body goes through, and the redirect cases flip.
+DEFECT = ("if language is not None:", "if False:")
+
+# The cheap pre-filter: a command that names none of these cannot write a marker, and most commands do not, so the lexer is never started for them. Character classes keep the literal tokens out of this file.
+_PREFILTER = re.compile(
+    r"noq[a]|type\s*:\s*ignor[e]|pyright|pylint|mypy\s*:|@ts-|eslint-disabl[e]|biome-ignor[e]"
+    r"|nolin[t]|lint:ignor[e]|shellcheck|hadolint",
+    re.IGNORECASE,
+)
+INTERPRETERS = ("python", "node", "perl", "ruby", "deno", "bun", "tsx")
+INPLACE = ("sed", "gsed", "perl")
+WRITERS = ("echo", "printf", "cat")
+WRITE_CODE = re.compile(
+    r"open\([^)]*,\s*(mode\s*=\s*)?['\"][^'\"]*[wax+]|write_text|write_bytes|\.write\(|writeFileSync"
+    r"|appendFileSync|os\.replace|os\.rename|shutil\.(copy|move)"
+)
+_SED_SUB = re.compile(
+    r"(?:^|[;\s{])s(?P<d>[^\w\s\\])(?P<pat>(?:\\.|(?!(?P=d)).)*)(?P=d)(?P<rep>(?:\\.|(?!(?P=d)).)*)(?P=d)"
+)
+_SED_TEXT = re.compile(r"(?:^|[;\s])(?:\d+|\$|/[^/]*/)?\s*[aic]\\?\s*(?P<text>[^;\n]*)")
+
+UNEXAMINED = (
+    "block-suppressions-shell-write: the inline-suppression scanner could not be loaded (%s); "
+    "this command passed UNEXAMINED. CI (check:ci-inline-suppressions) still judges the tree."
+)
+
+MESSAGE = """BLOCKED: this command writes a NEW inline lint/type suppression marker (%s).
+Inline suppressions are banned (operator ruling 2026-10-08).
+
+  %s
+
+Instead:
+  * Fix the code the linter is pointing at.
+  * For a deliberate, project-wide exception, add a per-file entry to the linter's own
+    config (pyproject.toml per-file-ignores, biome.json overrides, .golangci.yml) with a
+    BLOCKER: reason, per docs/agent-reference/suppressions.md.
+  * To edit a file that already carries markers, use the Edit tool: it compares the whole
+    file before and after, so keeping or removing an existing marker passes. A shell
+    program cannot be read that precisely, which is why one that merely NAMES a marker
+    is refused here.
+"""
+
+_NQ = "# noq" + "a"
+_TSI = "@ts-ignor" + "e"
+_SC = "# shellcheck disabl" + "e"
+
+EDGE_CASES = [
+    (
+        "a heredoc writing a python file with a marker",
+        "cat > /r/x.py <<'EOF'\nimport os  %s: F401\nEOF" % _NQ,
+    ),
+    ("an append to a shell script", "echo '%s=SC2086' >> scripts/x.sh" % _SC),
+    ("tee into a TS file", "printf '// %s\\n' | tee src/a.ts" % _TSI),
+    ("sed -i adding a marker", "sed -i 's/x = 1/x = 1  %s: B010/' a.py" % _NQ),
+    ("sed -i appending a marker line", "sed -i '/^import/a %s: E402' a.py" % _NQ),
+    (
+        "python -c writing a marker",
+        "python3 -c \"open('a.py','a').write('x = 1  %s: B010')\"" % _NQ,
+    ),
+    (
+        "python heredoc writing a marker",
+        "python3 - <<'EOF'\nimport pathlib\npathlib.Path('a.py').write_text('x = 1  %s: B010\\n')\nEOF"
+        % _NQ,
+    ),
+    ("inside sh -c", "sh -c \"echo 'x = 1  %s: B010' >> a.py\"" % _NQ),
+    # CONTROLS.
+    ("sed -i removing a marker", "sed -i 's/  %s: B010//' a.py" % _NQ),
+    ("echo to the terminal", "echo 'never write %s: B010'" % _NQ),
+    (
+        "a commit message heredoc naming the marker",
+        "git commit -F - <<'EOF'\nfix: drop the %s: B010 swaps\nEOF" % _NQ,
+    ),
+    (
+        "a heredoc into a Markdown file",
+        "cat > docs/x.md <<'EOF'\nNever write `%s: B010`.\nEOF" % _NQ,
+    ),
+    ("grep for markers", "grep -rnP '%s' .ci" % _NQ),
+    (
+        "a python program that only reads",
+        "python3 -c \"print(open('a.py').read().count('%s'))\"" % _NQ,
+    ),
+    ("an unrelated redirect", "echo hello > /tmp/out.txt"),
+    ("a heredoc python file with no marker", "cat > /r/x.py <<'EOF'\nimport os\nEOF"),
+]
+
+
+def _engine():
+    root = hookio.repo_root()
+    cipath = str(pathlib.Path(root) / ".ci")
+    inserted = syspath.on_sys_path(cipath)
+    try:
+        module = importlib.import_module("rediacc_ci.quality.inline_suppressions")
+    finally:
+        if inserted and cipath in sys.path:
+            sys.path.remove(cipath)
+    return root, module
+
+
+def _language(engine, target, content):
+    head = content.lstrip("\n").split("\n", 1)[0]
+    return engine.language_for(target, head)
+
+
+def _abs(target, run_cwd, cwd):
+    base = (
+        cwd
+        if run_cwd is None
+        else (run_cwd if os.path.isabs(run_cwd) else os.path.join(cwd, run_cwd))
+    )
+    return target if os.path.isabs(target) else os.path.normpath(os.path.join(base, target))
+
+
+def _disk_counts(engine, path, language):
+    try:
+        with open(path, encoding="utf-8", errors="surrogateescape") as handle:
+            return engine.count_markers(handle.read(), language)
+    except OSError:
+        return engine.count_markers("", language)
+
+
+def _operands(argv):
+    """`run.argv` is the ARGUMENTS, without the command name."""
+    return [a for a in argv if not (a.startswith("-") and len(a) > 1)]
+
+
+def _render(engine, grew):
+    return ", ".join(engine.render_marker(kind, code) for kind, code, _b, _a in grew)
+
+
+def _offending(engine, cmd, cwd):
+    """A one-line description of the first marker-adding write in `cmd`, or ""."""
+    analysis = shellscan._analyse(cmd)
+    bodies = [
+        cmd[doc.body_start : doc.body_end]
+        for doc in analysis.heredocs
+        if doc.body_start is not None and doc.body_end is not None
+    ]
+    appends = {target for op, target in analysis.writes if op in (">>", "&>>")}
+    # What a `tee` writes is its UPSTREAM stage's output; read as every writer's arguments in the command, plus the heredocs.
+    piped = "\n".join(
+        bodies + [a for r in analysis.runs if r.name.rsplit("/", 1)[-1] in WRITERS for a in r.argv]
+    )
+    for run in analysis.runs:
+        name = run.name.rsplit("/", 1)[-1]
+        argv = list(run.argv)
+        targets = [(t, "\n".join(bodies + (argv if name in WRITERS else []))) for t in run.writes]
+        if name == "tee":
+            targets += [(t, piped) for t in _operands(argv)]
+        for target, content in targets:
+            language = _language(engine, target, content)
+            if language is not None:
+                new = engine.count_markers(content, language)
+                appending = target in appends or (name == "tee" and "-a" in argv)
+                old = (
+                    engine.count_markers("", language)
+                    if appending
+                    else _disk_counts(engine, _abs(target, run.cwd, cwd), language)
+                )
+                grew = engine.growth(old, new)
+                if grew:
+                    return "%s into %s" % (_render(engine, grew), target)
+        in_place = any(a == "-i" or a.startswith(("-i", "--in-place")) for a in argv)
+        if name in INPLACE and in_place and any(engine.language_for(a) for a in _operands(argv)):
+            exprs = [a for a in argv if not a.startswith("-") and not engine.language_for(a)]
+            for expr in exprs:
+                pattern = "\n".join(m.group("pat") for m in _SED_SUB.finditer(expr))
+                added = "\n".join(m.group("rep") for m in _SED_SUB.finditer(expr))
+                if not _SED_SUB.search(expr):
+                    added = "\n".join(m.group("text") for m in _SED_TEXT.finditer(expr))
+                grew = engine.growth(
+                    engine.count_any_language(pattern), engine.count_any_language(added)
+                )
+                if grew:
+                    return "%s -i adding %s" % (name, _render(engine, grew))
+        if name.startswith(INTERPRETERS):
+            ops = _operands(argv)
+            code = " ".join(argv)
+            if not ops or ops[0] == "-":
+                code += "\n" + "\n".join(bodies)
+            if WRITE_CODE.search(code):
+                grew = engine.growth(engine.count_any_language(""), engine.count_any_language(code))
+                if grew:
+                    return "a %s program that writes files and names %s" % (
+                        name,
+                        _render(engine, grew),
+                    )
+    return ""
+
+
+def run(ev):
+    cmd = ev.field("tool_input", "command")
+    if not cmd or not _PREFILTER.search(cmd):
+        return hookio.ALLOW
+    try:
+        root, engine = _engine()
+    except (ImportError, OSError, RuntimeError, SyntaxError) as exc:
+        ev.warn(UNEXAMINED % exc)
+        return hookio.ALLOW
+    what = _offending(engine, cmd, ev.default(("cwd",), str(root)))
+    if not what:
+        return hookio.ALLOW
+    ev.warn_raw(MESSAGE % (what, cmd.split("\n", 1)[0][:160]))
+    return hookio.DENY

@@ -2576,6 +2576,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-inline-suppressions',
+    run: 'npm run check:ci-inline-suppressions',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_inline_suppressions.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Inline suppression markers',
+    },
+  },
+  {
     id: 'check:ci-i18n-value-types',
     run: 'npm run check:ci-i18n-value-types',
     gate: true,
