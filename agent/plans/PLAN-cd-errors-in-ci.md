@@ -61,6 +61,7 @@ The 10-07 scheduled run 37604651929 deleted tag v1.3.1 while `cli/v1.3.1/.releas
   - Pins in ci_workflow_invariants.py: the cd preset requests `workflows`, every cd-v2 `git push` uses the app token, and tag-and-release has no `contents: write`.
   - Docs: release-process.md, and the main-only list in pr-merge.md.
   - Controls: a push-only preflight `if:` reds the reachability check, and dropping `permission-workflows` reds the pin.
+- [ ] W5 release order (found 2026-10-08, CD run 37749637824): "Tag & Release" wrote the R2 sentinel cli/v2.2.0/.released and deployed edge, then "Validate Install (post-publish) / Linux (x64)" went red on the Rocky 9 DNF stall and the git tag job "Tag & GitHub Release" was skipped, so a sentinel existed with no tag: the bijection drift that reddened main on 10-07, created by CD itself. Make the tag and the sentinel one unit (tag before or with the sentinel, never gated behind post-publish validation), or have a validation red roll the sentinel back; add a test over the cd-v2.yml job graph that refuses a sentinel writer whose tag job can be skipped.
 - [ ] A live run on a PR: cd-preflight green on the head, and red on a replay of the 10-07 state.
 
 ## What stays post-merge, and how it fails loudly
