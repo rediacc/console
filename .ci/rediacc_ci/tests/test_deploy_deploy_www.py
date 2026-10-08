@@ -8,7 +8,7 @@ THE CALL LOG AND THE GENERATED CONFIG ARE THE EVIDENCE. Everything the script pr
 
 BOTH SIDES GET THEIR OWN D1 STATE FILE, because a run MUTATES it (a preview deploy deletes and recreates a database). Sharing one would make the second side read what the first side wrote, which is a different scenario rather than the same one.
 
-`$REDIACC_CI_ROOT` STEERS ONLY THE PORT, and the twin resolves its root from the COPIED `common.sh`'s own location, so the two arrive at the same fixture from opposite directions. `test_the_two_root_resolutions_agree` pins that, including the half that matters: the twin does not read the variable at all.
+`$REDIACC_CI_ROOT` STEERS ONLY THE PORT: the twin resolved its root from the COPIED `common.sh`'s own location. The bash side of every case is answered from its frozen golden (`goldens/twins/deploy.deploy-www.jsonl`), so the twin file is not needed to run this module; `test_the_root_variable_steers_the_port` pins the variable's effect on the port.
 """
 
 from __future__ import annotations
@@ -25,12 +25,14 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_www as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "deploy-www.sh"
+TWIN_REL = ".ci/scripts/deploy/deploy-www.sh"
 COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "deploy_www.py"
 BASH = shutil.which("bash") or "/bin/bash"
@@ -185,8 +187,9 @@ def fixture(
     root = tmp_path / "repo"
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
+    if TWIN.exists():  # the bash side is recorded only while the twin is on disk
+        shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
+        shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
@@ -211,6 +214,35 @@ def fixture(
 
 
 def _run(
+    root: pathlib.Path,
+    side: str,
+    *args: str,
+    drop: str = "",
+    drop_env: tuple[str, ...] = (),
+    **extra: str,
+):
+    """The port runs live; the bash side is answered from its frozen golden."""
+    if side != "old":
+        return _run_live(root, side, *args, drop=drop, drop_env=drop_env, **extra)
+    worker = root / "workers" / "www"
+    parts = [
+        *args,
+        "--",
+        "drop=%s" % drop,
+        "drop_env=%s" % ",".join(drop_env),
+        "worker_files=%s" % ",".join(sorted(p.name for p in worker.iterdir())),
+        "d1=%s" % (root / "old-d1.json").read_text(encoding="utf-8"),
+        *("%s=%s" % kv for kv in sorted(extra.items())),
+    ]
+    return diff.twin_result(
+        TWIN_REL,
+        parts,
+        lambda: _run_live(root, side, *args, drop=drop, drop_env=drop_env, **extra),
+        work=(root,),
+    )
+
+
+def _run_live(
     root: pathlib.Path,
     side: str,
     *args: str,
@@ -542,14 +574,11 @@ def test_a_flag_that_is_not_an_identifier_exits_two_on_both_sides(tmp_path) -> N
     )
 
 
-def test_the_two_root_resolutions_agree(tmp_path) -> None:
+def test_the_root_variable_steers_the_port(tmp_path) -> None:
     """$REDIACC_CI_ROOT STEERS ONLY THE PORT.
 
-    The twin resolves the root from the copied `common.sh`'s own location and reads no such variable, so the fact that both sides land on the same fixture is a real agreement rather than a shared configuration. Pinned by pointing the variable at a DECOY and watching the port follow it while the twin does not.
+    The twin resolved the root from the copied `common.sh`'s own location and read no such variable (frozen in the golden), so both sides landing on the same fixture was a real agreement. Pinned by pointing the variable at a DECOY and watching the port follow it.
     """
-    assert "REDIACC_CI_ROOT" not in TWIN.read_text(encoding="utf-8")
-    assert "REDIACC_CI_ROOT" not in COMMON.read_text(encoding="utf-8")
-
     root = fixture(tmp_path)
     decoy = tmp_path / "decoy"
     decoy.mkdir()
@@ -663,13 +692,3 @@ def test_both_credentials_are_read_with_literal_keys() -> None:
     for name in ("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"):
         assert 'os.environ.get("%s"' % name in source, name
     assert source.index("CLOUDFLARE_API_TOKEN") < source.index("CLOUDFLARE_ACCOUNT_ID")
-
-
-def test_the_twin_still_says_what_this_port_says_it_says() -> None:
-    """A STALENESS GUARD. Every literal below is quoted from the twin; if the twin is edited, this fails here rather than silently in a ledger nobody re-records."""
-    text = TWIN.read_text(encoding="utf-8")
-    assert 'DB_NAME="account-db-pr-${PR_NUM}"' in text
-    assert "--location eeur" in text
-    assert "jq -r '.uuid // empty'" in text
-    assert "sed -n '/^[[:space:]]*[{[]/,$p'" in text
-    assert "rm -f wrangler.preview.toml" in text

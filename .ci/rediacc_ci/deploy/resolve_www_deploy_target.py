@@ -36,12 +36,12 @@ def main(argv: list[str]) -> int:
     output_path = _require("GITHUB_OUTPUT")
 
     if target == "stable":
-        script = "deploy-www.sh"
+        script = "deploy_www"
         worker = "rediacc-www"
         domain = SITE_HOST
         sandbox = ""
     else:
-        script = "deploy-edge.sh"
+        script = "deploy_edge"
         worker = "edge-rediacc-www"
         domain = EDGE_HOST
         sandbox = "--sandbox"

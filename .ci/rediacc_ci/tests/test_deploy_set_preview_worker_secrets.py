@@ -6,7 +6,7 @@ the mocked parity ledger is a separate, achievable piece of work. This is that p
 THE DOCUMENT IS COMPARED, NOT JUST THE STREAMS, and on this script that is the whole point. The observable effect of the program is one JSON document handed to `wrangler secret bulk`; two implementations can print an identical `✓ Set 15 secrets on pr-123 in one bulk call` while sending a different key set, a different key ORDER, or a differently escaped value. Every case that
 reaches wrangler asserts the recorded stdin, and `test_the_bulk_call_and_its_document_are_pinned_in_full` pins it against literal bytes rather than against the port's own builders.
 
-TWO STALENESS ALARMS RE-DERIVE THE TWIN'S OWN LISTS. `KEYS` and `REQUIRED_NONEMPTY` are copies, so the day someone adds a sixteenth secret or a twelfth guard to the twin, `test_the_key_list_is_the_twins_key_list` and `test_the_guard_list_is_the_twins_guard_list` fail instead of the port quietly sending a document that is one key short.
+THE BASH SIDE OF EVERY CASE IS ANSWERED FROM ITS FROZEN GOLDEN (`goldens/twins/deploy.set-preview-worker-secrets.jsonl`), so the twin file is not needed to run this module; the key and guard counts are pinned against the port by `test_pure_helpers` and the happy-path document.
 """
 
 from __future__ import annotations
@@ -21,12 +21,14 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import set_preview_worker_secrets as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "set-preview-worker-secrets.sh"
+TWIN_REL = ".ci/scripts/deploy/set-preview-worker-secrets.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "set_preview_worker_secrets.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -91,6 +93,30 @@ def _bin(tmp_path: pathlib.Path, name: str, *, drop: str = "") -> str:
 
 
 def _run(
+    subject: pathlib.Path,
+    tmp_path: pathlib.Path,
+    *,
+    drop: str = "",
+    drop_env: tuple[str, ...] = (),
+    **extra: str,
+):
+    """The port runs live; the bash side is answered from its frozen golden."""
+    if subject.suffix != ".sh":
+        return _run_live(subject, tmp_path, drop=drop, drop_env=drop_env, **extra)
+    parts = [
+        "drop=%s" % drop,
+        "drop_env=%s" % ",".join(drop_env),
+        *("%s=%s" % kv for kv in sorted(extra.items())),
+    ]
+    return diff.twin_result(
+        TWIN_REL,
+        parts,
+        lambda: _run_live(subject, tmp_path, drop=drop, drop_env=drop_env, **extra),
+        work=(tmp_path,),
+    )
+
+
+def _run_live(
     subject: pathlib.Path,
     tmp_path: pathlib.Path,
     *,
@@ -263,11 +289,6 @@ def test_the_guard_message_names_a_variable_this_script_does_not_have(
     old, new, old_calls, new_calls = run_both(tmp_path, ROOT_EMAIL="")
     assert "WORKER_NAME=pr-123." in old.stderr
 
-    # The twin names WORKER_NAME exactly once, inside that message, and never assigns or reads it. If either ever changes, this observation is stale and the port's constant should be re-read rather than trusted.
-    source = _twin_source()
-    assert source.count("WORKER_NAME") == 1
-    assert 'WORKER_NAME=$WORKER."' in source
-    assert "${WORKER_NAME" not in source
     assert port.GUARD_LABEL_SAYS_WORKER_NAME
     _assert_agree(old, new, "worker-name-label", old_calls, new_calls)
 
@@ -347,34 +368,9 @@ def test_a_value_with_quotes_and_newlines_survives_intact(tmp_path: pathlib.Path
     _assert_agree(old, new, "escaping", old_calls, new_calls)
 
 
-def _twin_source() -> str:
-    return TWIN.read_text(encoding="utf-8")
-
-
-def test_the_key_list_is_the_twins_key_list() -> None:
-    """STALENESS ALARM. `KEYS` is a copy of the twin's `--arg` list, so this re-derives that list from the twin's source and fails if the two drift. A sixteenth secret added to the twin must not leave the port sending fifteen."""
-    pairs = re.findall(r'--arg (\w+) "\$\{(\w+):-\}"', _twin_source())
-    assert pairs, "the --arg shape changed; this alarm is no longer reading anything"
-    assert [(env, var) for var, env in pairs] == list(port.KEYS)
-
-    # The object constructor must bind the SAME variables to the SAME keys.
-    body = re.search(r"'\{(.*?)\}'", _twin_source(), re.DOTALL)
-    assert body is not None
-    built = re.findall(r"(\w+): \$(\w+)", body.group(1))
-    assert built == list(port.KEYS)
-
-
-def test_the_guard_list_is_the_twins_guard_list() -> None:
-    """STALENESS ALARM for the eleven `_require_nonempty` calls, in order."""
-    names = re.findall(r'^_require_nonempty (\w+) "', _twin_source(), re.MULTILINE)
-    assert names, "the _require_nonempty shape changed; this alarm reads nothing"
-    assert tuple(names) == port.REQUIRED_NONEMPTY
-
-
 def test_the_closing_line_counts_what_is_actually_sent() -> None:
-    """ "15" IS A LITERAL IN THE TWIN, not a tally, so the day a sixteenth key lands without touching that line the log under-reports. This is the alarm."""
+    """The twin hard-coded "15" in its closing line rather than tallying, so the port's claim must equal the number of keys it sends."""
     assert len(port.KEYS) == port.SECRET_COUNT_CLAIM
-    assert 'log_info "Set 15 secrets' in _twin_source()
 
 
 def test_pure_helpers() -> None:
