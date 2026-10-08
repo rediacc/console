@@ -82,7 +82,7 @@ def test_fails_any_over_threshold_block(gate):
         )
         gate.assert_contains(
             result.combined,
-            "extract each over-threshold block to .ci/scripts",
+            "extract each over-threshold block to a Python module",
             "prints the teaching remedy",
         )
     gate.log_pass("a single over-threshold block fails, no exceptions")
