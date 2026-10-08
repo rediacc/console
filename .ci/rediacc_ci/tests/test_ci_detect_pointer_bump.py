@@ -37,7 +37,6 @@ if typing.TYPE_CHECKING:
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "ci" / "detect-pointer-bump.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "ci" / "detect_pointer_bump.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -219,7 +218,6 @@ def fixture(
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
     if TWIN.is_file():  # only a re-freeze from bash runs it (PLAN-retire-bash-oracles B3)
         shutil.copy2(TWIN, root / ".ci" / "scripts" / "ci" / TWIN.name)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

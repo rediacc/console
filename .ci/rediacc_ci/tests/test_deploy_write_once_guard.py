@@ -24,7 +24,7 @@ import typing
 
 import pytest
 
-from rediacc_ci import paths
+from rediacc_ci import paths, well_known
 from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
@@ -32,7 +32,6 @@ if typing.TYPE_CHECKING:
 
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/deploy/upload-to-r2.sh"
-COMMON_REL = ".ci/scripts/lib/common.sh"
 VALIDATOR_REL = ".ci/scripts/lib/release-state-validator.sh"
 
 ENDPOINT = "https://r2.example.invalid"
@@ -123,7 +122,7 @@ CASES: dict[str, tuple[str, str, dict[str, str]]] = {
 }
 
 BASE_ENV = {
-    "RELEASES_BUCKET": "rediacc-releases",
+    "RELEASES_BUCKET": well_known.RELEASES_BUCKET,
     "CLOUDFLARE_R2_ENDPOINT": ENDPOINT,
     "DRY_RUN": "false",
     "LC_ALL": "C.UTF-8",
@@ -171,13 +170,9 @@ def _run_bash(scratch: pathlib.Path, prefix: str, context: str, extra: dict[str,
     text = (ROOT / TWIN_REL).read_text(encoding="utf-8")
     match = _GUARD_RE.search(text)
     assert match, "write_once_guard() is no longer in %s" % TWIN_REL
-    script = (
-        "source '%s'\nsource '%s'\n%s\nrc=0\nwrite_once_guard \"$1\" \"$2\" || rc=$?\nexit $rc\n"
-        % (
-            ROOT / COMMON_REL,
-            ROOT / VALIDATOR_REL,
-            match.group(0),
-        )
+    script = 'source \'%s\'\n%s\nrc=0\nwrite_once_guard "$1" "$2" || rc=$?\nexit $rc\n' % (
+        ROOT / VALIDATOR_REL,
+        match.group(0),
     )
     proc = subprocess.run(
         ["bash", "-c", script, "guard", prefix, context],

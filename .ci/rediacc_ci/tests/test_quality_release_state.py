@@ -256,18 +256,8 @@ def test_require_var_treats_an_empty_value_as_unset(
     """The 2026-09-05 shape: a deleted org secret resolves to "" and must fail.
 
     `[[ -z "${!var:-}" ]]` cannot tell unset from empty, and that is correct
-    here: an empty credential is not a credential.
+    here: an empty credential is not a credential. The bash `require_var` is covered, frozen, by `test_core_common`'s `require-var-exported-empty`.
     """
-    script = """
-        source .ci/scripts/lib/common.sh
-        require_var PROBE_VAR
-        echo REACHED
-    """
-    code, out, err = diff.bash_streams(script, env=diff.env_for(PROBE_VAR=""))
-    assert code == 1
-    assert "REACHED" not in out
-    assert "is not set" in err
-
     monkeypatch.setenv("PROBE_VAR", "")
     with pytest.raises(SystemExit) as excinfo:
         rs.require_var("PROBE_VAR")

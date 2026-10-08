@@ -157,7 +157,7 @@ class Roundtrip:
         vm: Callable[[str, str | None], VmResult],
         api: Api,
         work: pathlib.Path,
-        datastore: str = "/mnt/rediacc",
+        datastore: str = well_known.DATASTORE_PATH,
         cell_bytes: str = "65536",
         net_src: str = "2880",
         say: Callable[[str], None] | None = None,
@@ -450,7 +450,7 @@ def main(argv: list[str] | None = None) -> int:
         vm,
         api,
         work,
-        datastore=environ.get("DATASTORE") or "/mnt/rediacc",
+        datastore=environ.get("DATASTORE") or well_known.DATASTORE_PATH,
         cell_bytes=environ.get("CELL_BYTES") or "65536",
         net_src=environ.get("NET_SRC") or "2880",
     ).run()

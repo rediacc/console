@@ -36,9 +36,15 @@ def _sh(text: str) -> str:
 
 
 def twin(body: str, **env):
-    """Source the real common.sh and run `body`. Streams separate."""
+    """What the frozen bash `common.sh` answered for `body`. Streams separate.
+
+    The `.sh` is deleted; the answer comes from `goldens/twins/lib.common.jsonl`, frozen from the live file by `regolden --source bash` before it went (PLAN-retire-bash-oracles W11-B).
+    """
     script = "source %s\n%s\n" % (_sh(str(TWIN)), body)
-    return diff.bash_streams("bash -c %s" % _sh(script), env=diff.env_for(**env))
+    cmd = "bash -c %s" % _sh(script)
+    return diff.twin_streams(
+        TWIN_REL, cmd, env=diff.env_for(**env), work=diff.pytest_tmp_roots(cmd)
+    )
 
 
 def port(argv: list[str], **env):
@@ -505,9 +511,24 @@ R2_CASES = [(scenario, case) for scenario, cases in r2_driver.SCENARIOS.items() 
 @pytest.mark.parametrize(
     ("scenario", "case"), R2_CASES, ids=["%s/%s" % (s, c.name) for s, c in R2_CASES]
 )
-def test_r2_count_objects_matches_the_live_twin(scenario, case) -> None:
+def _frozen_old(scenario, case) -> list[str]:
+    """The observation lines the bash `r2_count_objects` / `wait_for` produced for `case`, from the golden; a re-record from the port runs the driver's new side."""
     repo = paths.repo_root()
-    assert r2_driver.observe("old", repo, case) == r2_driver.observe("new", repo, case), (
+    rc, out, _err = diff.twin_call(
+        TWIN_REL,
+        ["stub-farm", scenario, case.name],
+        lambda: (0, "\n".join(r2_driver.observe("old", repo, case)), ""),
+        port=lambda: (0, "\n".join(r2_driver.observe("new", repo, case)), ""),
+    )
+    assert rc == 0
+    return out.split("\n")
+
+
+@pytest.mark.parametrize(
+    ("scenario", "case"), R2_CASES, ids=["%s/%s" % (s, c.name) for s, c in R2_CASES]
+)
+def test_r2_count_objects_matches_the_frozen_twin(scenario, case) -> None:
+    assert _frozen_old(scenario, case) == r2_driver.observe("new", paths.repo_root(), case), (
         "case %s/%s diverged" % (scenario, case.name)
     )
 
@@ -515,9 +536,8 @@ def test_r2_count_objects_matches_the_live_twin(scenario, case) -> None:
 def test_r2_stub_is_what_both_sides_reach(tmp_path) -> None:
     """ANTI-VACUITY: a count case must log exactly one `aws` call, on both sides."""
     case = r2_driver.SCENARIOS["count"][0]
-    for side in ("old", "new"):
-        lines = r2_driver.observe(side, paths.repo_root(), case)
-        assert sum(" call#" in line for line in lines) == 1, (side, lines)
+    for lines in (_frozen_old("count", case), r2_driver.observe("new", paths.repo_root(), case)):
+        assert sum(" call#" in line for line in lines) == 1, lines
     farm = stubfarm.Farm(tmp_path)
     farm.stub("aws")
     assert stubfarm.shadows(farm, "aws", farm.env({"PATH": "/usr/bin:/bin"}))

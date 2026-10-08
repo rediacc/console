@@ -53,7 +53,6 @@ from rediacc_ci.build import pack_cli_npm as pcn
 from rediacc_ci.tests import frozen
 
 ROOT = paths.repo_root()
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "build" / "pack_cli_npm.py"
 
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/build/pack-cli-npm.sh")
@@ -171,7 +170,6 @@ def fixture(where: pathlib.Path, name: str, subject: pathlib.PurePosixPath) -> p
     (root / ".ci" / "scripts" / "build").mkdir(parents=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True)
     (root / ".ci" / "rediacc_ci" / "build").mkdir(parents=True)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

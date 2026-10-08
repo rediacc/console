@@ -293,7 +293,6 @@ def _fake_root(tmp_path: pathlib.Path, run_sh: str) -> pathlib.Path:
     (root / ".ci/scripts/lib").mkdir(parents=True)
     if (ROOT / "scripts/drills/lib.sh").is_file():  # only a re-freeze from bash sources it
         shutil.copy2(ROOT / "scripts/drills/lib.sh", root / "scripts/drills/lib.sh")
-    shutil.copy2(ROOT / ".ci/scripts/lib/common.sh", root / ".ci/scripts/lib/common.sh")
     (root / ".ci/config").mkdir(parents=True)
     shutil.copy2(ROOT / ".ci/config/well-known.env", root / ".ci/config/well-known.env")
     # common.sh sources the generated projection (410f34073); without it the twin died on its first line.

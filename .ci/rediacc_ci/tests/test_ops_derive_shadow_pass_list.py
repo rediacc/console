@@ -54,6 +54,7 @@ VENDORED = (
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/well_known.py",
     ".ci/rediacc_ci/proc.py",
+    ".ci/rediacc_ci/log.py",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/ghx.py",
     ".ci/rediacc_ci/core/gh_retry.py",

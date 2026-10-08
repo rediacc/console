@@ -34,13 +34,6 @@ PLAN = "agent/plans/PLAN-retire-bash-oracles.md (task G2)"
 LIBS: dict[str, tuple[str, ...]] = {
     # allowlist.py because `_blocker_py` is nothing but a forwarder to `python3 -m rediacc_ci.core.allowlist`.
     ".ci/scripts/lib/blocker-validator.sh": ("blocker_validator.py", "allowlist.py"),
-    # ../log.py because common.sh's log_* functions are ported there and nowhere else; it was missing from this list until 2026-10-01, which left 5 ported functions baselined as unported.
-    ".ci/scripts/lib/common.sh": (
-        "common.py",
-        "ghx.py",
-        "../proc.py",
-        "../log.py",
-    ),
     ".ci/scripts/lib/emit-advisory.sh": ("advisory.py",),
     ".ci/scripts/lib/toolchain.sh": ("toolchain.py",),
 }
@@ -55,18 +48,6 @@ ALIASES: dict[str, dict[str, str]] = {
     ".ci/scripts/lib/blocker-validator.sh": {
         "_blocker_emit": "blocker_validator.py:replay_frames",
         "_blocker_py": "allowlist.py:main",
-    },
-    ".ci/scripts/lib/common.sh": {
-        # ghx.gh(attempts=3) is _gh_probe's retry; GhResult.json() is gh_json's parse-or-refuse half (ghx.py TRAP 1 and TRAP 3).
-        "_gh_probe": "ghx.py:gh",
-        "gh_retry": "ghx.py:gh",
-        "gh_json": "ghx.py:json",
-        "get_repo_root": "common.py:repo_root",
-        "log_info": "../log.py:info",
-        "log_warn": "../log.py:warn",
-        "log_error": "../log.py:error",
-        "log_step": "../log.py:step",
-        "log_debug": "../log.py:debug",
     },
     ".ci/scripts/lib/toolchain.sh": {
         "toolchain_load": "toolchain.py:load_pins",

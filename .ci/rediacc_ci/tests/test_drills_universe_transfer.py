@@ -183,7 +183,6 @@ def world(tmp_path: pathlib.Path) -> typing.Iterator[World]:
         "scripts/drills/lib.sh",
         "scripts/drills/universe.sh",
         "scripts/drills/transfer.sh",
-        ".ci/scripts/lib/common.sh",
         ".ci/config/well-known.env",
         ".ci/config/well-known.generated.sh",
     ):

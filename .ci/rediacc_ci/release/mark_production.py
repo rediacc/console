@@ -12,15 +12,7 @@ THE TAG IS RESOLVED THROUGH THE API, NOT THROUGH git, and the port keeps that. T
 checkout with no tags, where `git tag -f -a production "$VERSION^{commit}"`
 fails with "unknown revision" on a perfectly good tag. An annotated tag's ref points at a TAG object, so the port also keeps the dereference step: without it, `production` would point at an annotation and `git show production` would print the message instead of the code.
 
-TWO LOGGERS, BECAUSE THE TWIN HAS TWO. `source common.sh 2>/dev/null || { ... }`
-means the script runs with common.sh's stderr loggers when the library is present and with a private `echo`-based fallback when it is not -- and the fallback's `log_info` writes to STDOUT, not stderr, with no glyph. That is a stream difference, not a cosmetic one, so `_Loggers.for_root()` picks the same pair off the same single input (does `<root>/.ci/scripts/lib/common.sh` exist),
-and the differential drives BOTH by copying each subject into a fixture tree
-with no lib directory. A port that only implemented the common.sh path would be
-byte-identical in CI and wrong on any machine where the library is missing, which is precisely the case the fallback exists for.
-
-ROOT IS DERIVED FROM THIS FILE'S OWN LOCATION, matching the twin's `SCRIPT_DIR/../../..`. This module sits one directory deeper than the twin, so it is `parents[3]` here against the twin's `parents[2]`, and both land on the repository root. `rediacc_ci.paths.repo_root()` is deliberately NOT used: it honours `$REDIACC_CI_ROOT`, the twin has no such override, and a fixture that moved
-one and not the other would diverge for a reason that has nothing to do
-with this script.
+ONE LOGGER. The twin had two (`common.sh`'s stderr loggers, and a private `echo` fallback that wrote info to STDOUT when the library was missing). `common.sh` is deleted, and so is the fallback: every line goes through `rediacc_ci.log` (W11-B, a Rule-T fix; the two fixture-without-lib goldens were re-recorded `--source port`).
 
 THE ONE KNOWN DIVERGENCE, PINNED BY A TEST RATHER THAN HIDDEN. common.sh logs through `echo -e`, which interprets backslash escapes IN THE MESSAGE, and the error branches interpolate `gh`'s own output into the message. So a `gh` failure whose text contains a literal `\\n` prints a newline through the twin and two characters through this port. `rediacc_ci.log` formats the message as
 data on purpose (see its module docstring); the differential asserts the two disagree there, so nobody later "fixes" the Python to re-interpret escapes.
@@ -31,7 +23,6 @@ K=5 LEDGER: `.ci/shadow/w7p6-mark-production.observations.jsonl`.
 from __future__ import annotations
 
 import os
-import pathlib
 import re
 import shutil
 import subprocess
@@ -52,43 +43,22 @@ NOT_FOUND_MARKERS = ("release not found", "Not Found")
 
 
 class _Loggers:
-    """The twin's two logging worlds, chosen the way the twin chooses them.
+    """The logging world: `rediacc_ci.log`, glyphs, colour on a tty, STDERR for both levels.
 
-    `common` is common.sh's: glyph, colour on a tty, STDERR for both levels.
-    `fallback` is the inline `log_info() { echo "$*"; }` /
-    `log_error() { echo "$*" >&2; }` pair, which puts info on STDOUT bare.
+    The twin also had a private `echo`-based fallback (info on STDOUT, bare) for a checkout without `common.sh`. That file is deleted (PLAN-retire-bash-oracles W11-B), so the fallback world is deleted with it (a Rule-T fix: it would have silently moved info lines to stdout with no glyph).
     """
 
-    def __init__(self, *, common_sh: bool) -> None:
-        self.common_sh = common_sh
-
-    @classmethod
-    def for_root(cls, root: pathlib.Path) -> _Loggers:
-        return cls(common_sh=(root / ".ci" / "scripts" / "lib" / "common.sh").is_file())
-
     def info(self, message: str) -> None:
-        if self.common_sh:
-            log.info(message)
-        else:
-            print(message, flush=True)
+        log.info(message)
 
     def error(self, message: str) -> None:
-        if self.common_sh:
-            log.error(message)
-        else:
-            print(message, file=sys.stderr, flush=True)
+        log.error(message)
 
     def require_cmd(self, cmd: str) -> bool:
-        """Both worlds print the same words; only the decoration differs."""
         if shutil.which(cmd) is not None:
             return True
         self.error("Required command '%s' is not available" % cmd)
         return False
-
-
-def console_root() -> pathlib.Path:
-    # This file: <root>/.ci/rediacc_ci/release/mark_production.py
-    return pathlib.Path(__file__).resolve().parents[3]
 
 
 def normalise_version(raw: str) -> str:
@@ -142,8 +112,7 @@ def _inherit(args: list[str]) -> int:
 
 
 def main(argv: list[str]) -> int:
-    root = console_root()
-    out = _Loggers.for_root(root)
+    out = _Loggers()
 
     if not out.require_cmd("gh"):
         return 1

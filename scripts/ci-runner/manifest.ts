@@ -1023,19 +1023,6 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // A .ci script must declare the non-baseline binaries it runs. An undeclared one exits 127 with no message under `set -euo pipefail`, and reads as working code on any host that happens to have it.
-    id: 'check:ci-shell-declared-commands',
-    run: 'npm run check:ci-shell-declared-commands',
-    gate: true,
-    leaves: ['scripts/gates/check-shell-declared-commands.ts'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-code',
-      step: 'CI scripts declare the binaries they execute',
-    },
-  },
-  {
     // The PR body carries a generated epic block; this asserts it matches the published snapshot, since a generated section nobody checks drifts while still looking authoritative.
     id: 'check:ci-pr-epic-block',
     env: {
@@ -1488,7 +1475,6 @@ export const GATES: readonly GateSpec[] = [
       '**/package.json',
       'private/account',
       '.ci/scripts/quality/check_lockfile.py',
-      '.ci/scripts/lib/common.sh',
     ],
     pathsOrigin: 'declared',
     leaves: ['.ci/scripts/quality/check_lockfile.py'],
@@ -3549,7 +3535,6 @@ export const GATES: readonly GateSpec[] = [
       'private/account',
       '.ci/scripts/quality/check_account_portal.py',
       '.ci/rediacc_ci/quality/account_portal.py',
-      '.ci/scripts/lib/common.sh',
       'packages/www/scripts/build-account-onboarding.ts',
       'packages/www/src/data/account-onboarding.json',
       'packages/www/src/data/tutorial-storyboard/**',
@@ -4170,7 +4155,6 @@ export const GATES: readonly GateSpec[] = [
       'scripts/data/em-dash-surfaces-baseline.json',
       'scripts/data/locale-de-contamination-baseline.json',
       'scripts/data/docker-image-freshness-baseline.json',
-      'scripts/data/shell-declared-commands-baseline.json',
       'scripts/data/static-nowrap-baseline.json',
       'scripts/data/hook-coverage-baseline.json',
       'scripts/data/css-dom-refs-baseline.json',

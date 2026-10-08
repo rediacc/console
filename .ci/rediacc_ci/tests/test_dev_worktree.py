@@ -32,7 +32,6 @@ if TYPE_CHECKING:
 
 REPO = paths.repo_root()
 TWIN = "scripts/dev/worktree.sh"
-COMMON_SH = REPO / ".ci" / "scripts" / "lib" / "common.sh"
 CI_DIR = REPO / ".ci"
 REAL_GIT = shutil.which("git") or "/usr/bin/git"
 SYSTEM_PATH = "/usr/bin:/bin"
@@ -245,7 +244,6 @@ def make_fixture(tmp_path: Path, name: str = "fx") -> Fixture:
     (fx.root / "scripts" / "dev").mkdir(parents=True)
     (fx.root / ".ci" / "scripts" / "lib").mkdir(parents=True)
     (fx.root / "scripts" / "dev" / ".keep").write_text("", encoding="utf-8")
-    shutil.copy(COMMON_SH, fx.root / ".ci" / "scripts" / "lib" / "common.sh")
     (fx.root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         REPO / ".ci" / "config" / "well-known.env", fx.root / ".ci" / "config" / "well-known.env"

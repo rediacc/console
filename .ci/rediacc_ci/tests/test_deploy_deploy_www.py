@@ -33,7 +33,6 @@ if typing.TYPE_CHECKING:
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "deploy-www.sh"
 TWIN_REL = ".ci/scripts/deploy/deploy-www.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "deploy_www.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -189,7 +188,6 @@ def fixture(
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
     if TWIN.exists():  # the bash side is recorded only while the twin is on disk
         shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
-        shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

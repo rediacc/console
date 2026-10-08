@@ -268,11 +268,13 @@ def _unresolved_fn():
     assert spec is not None
     assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
-    sys.path.insert(0, str(GATE.parent))
+    already = str(GATE.parent.resolve()) in sys.path
+    added = paths.on_sys_path(GATE.parent)
     try:
         spec.loader.exec_module(module)
     finally:
-        sys.path.remove(str(GATE.parent))
+        if not already:
+            sys.path.remove(added)
     return module.unresolved
 
 

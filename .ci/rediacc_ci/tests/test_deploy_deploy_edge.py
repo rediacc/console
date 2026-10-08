@@ -34,7 +34,6 @@ ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "deploy-edge.sh"
 TWIN_REL = ".ci/scripts/deploy/deploy-edge.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "deploy_edge.py"
-COMMON_SH = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 BASH = shutil.which("bash") or "/bin/bash"
 
 # `uname` and `dirname` are what `common.sh` needs at source time; `tr` is the token strip at :27 on the bash side. Nothing else is on the scratch PATH.
@@ -89,7 +88,6 @@ def _fixture_root(tmp_path: pathlib.Path, *, config: bool = True) -> pathlib.Pat
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     worker = root / "workers" / "www"
     worker.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(COMMON_SH, root / ".ci" / "scripts" / "lib" / COMMON_SH.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

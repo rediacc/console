@@ -39,7 +39,6 @@ from rediacc_ci.well_known import RUNTIME_DIR
 ROOT = paths.repo_root()
 SLUG = "compose-healthcheck-smoke-test"
 TWIN = ROOT / ".ci" / "scripts" / "private" / "compose-healthcheck-smoke-test.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "private" / "compose_healthcheck_smoke_test.py"
 
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/private/compose-healthcheck-smoke-test.sh")
@@ -182,7 +181,6 @@ def _fixture(tmp_path: pathlib.Path, *, twin: bool = False) -> pathlib.Path:
     if twin:
         # ONLY WHEN THE TWIN IS THE SUBJECT, which is the one-shot recorder and nothing else. The suite drives the port or a throwaway mutant of it, and the twin is no longer in the tree to copy.
         shutil.copy2(TWIN, root / TWIN_REL)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

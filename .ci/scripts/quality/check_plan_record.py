@@ -1471,7 +1471,7 @@ def selftest():
             f"got {PQ.problems(root)}",
         )
         R.write_atomic(queue_path, fresh)
-        picked.write_text(picked_text.replace("- [ ] T2", "- [x] T2"), encoding="utf-8")
+        picked.write_text(plant(picked_text, "- [ ] T2", "- [x] T2"), encoding="utf-8")
         ck(
             "RQ-PROGRESS: a tick with no re-render is reported",
             any("progress block" in p for p in PQ.problems(root)),

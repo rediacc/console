@@ -11,7 +11,7 @@ The text is LEXED, not grepped: quotes, `$(...)`, backticks, `${...}`, `$'...'`,
 WHAT IS A SITE, AND WHEN IT IS RETRIED.
   curl  A curl command whose URL names the GitHub API: the literal `api.github.com`, the Actions expression `github.api_url` / `$GITHUB_API_URL`, a `.ci/config/well-known.env` key whose value is the API (`WK_GH_API_BASE`), or a variable assigned any of these in the same text (`GH_API="https://api.github.com"`, to a fixpoint, so `URL="${GH_API}/x"` counts too). A WRITE is `-X/--request POST|PATCH|PUT|DELETE`, or a body flag (`-d`, `--data*`, `--json`, `-F`, `-T`) without `-G`; a computed `-X "$m"` is UNRESOLVED and counts as a read. RETRIED means a literal `--retry N`
         with N >= 1 (curl then retries timeouts, 408, 429, 500, 502, 503 and 504, and nothing else), or a `retry_with_backoff` wrapper.
-  gh    A `gh` command at command position (after assignments, `if`/`!`/`then`/`do`, `command`, `env`, `sudo`, a `timeout` launcher). Read or write is `gh_retry_reads.classify`, the SAME classifier the Python half uses, so the two halves cannot disagree about a verb. RETRIED means `.ci/scripts/lib/common.sh`'s `gh_retry <what> -- <args>` / `gh_json <what> -- <args>` (three attempts), or `retry_with_backoff`. common.sh's `_gh_probe` IS the retry, so its own `gh "$@"` is IMPLEMENTATION, not a site.
+  gh    A `gh` command at command position (after assignments, `if`/`!`/`then`/`do`, `command`, `env`, `sudo`, a `timeout` launcher). Read or write is `gh_retry_reads.classify`, the SAME classifier the Python half uses, so the two halves cannot disagree about a verb. RETRIED means a `gh_retry <what> -- <args>` / `gh_json <what> -- <args>` wrapper (three attempts), or `retry_with_backoff`. The shell library that defined those (common.sh) was deleted 2026-10-08; the names stay recognised so a re-added wrapper is judged as a retry, and the live route is the Python verb `python3 -m rediacc_ci.core.gh_retry`.
 A WRITE is reported as information and never retried, by design: a retried POST after a lost response creates a second run, release or comment.
 
 THE TWIN RULE (why most shell `gh` is not judged). The 2026-10 ports left bash TWINS of the Python modules under `.ci/scripts`; their `gh` reads were fixed in the ports, and the twins survive only as differential oracles. A hand list of twins would rot the day one is wired back, so the exclusion is COMPUTED: a script is judged only if it is LIVE, meaning a live executor names it, transitively:
@@ -25,7 +25,7 @@ A name is matched by its path TAIL (`version/detect-bump-type.sh`, `../lib/commo
 BLIND SPOTS, stated so a green is not read as more than it is:
   * A script reached only by a computed path (`"$dir/$name.sh"`) or by a `find ... -exec` is read as dead. The TWIN lines are where that would show.
   * An extensionless shell script (a Rediaccfile) is not in the corpus; none under the scan roots reads GitHub (measured 2026-10-07).
-  * A hand-rolled bash retry loop around `gh` or `curl` is not recognised; route it through common.sh, or excuse it in ALLOWED with a BLOCKER.
+  * A hand-rolled bash retry loop around `gh` or `curl` is not recognised; route it through `python3 -m rediacc_ci.core.gh_retry`, or excuse it in ALLOWED with a BLOCKER.
   * `wget`, and reads of `raw.githubusercontent.com` / `github.com` (not the API), are out of scope.
 
 ANTI-VACUITY. Zero scripts, zero live scripts, zero workflow `run:` blocks, zero curl GitHub sites, zero gh sites, zero retried reads or zero writes FAILS: each is the signature of a lexer or a liveness walk that stopped seeing the tree. An unlexable text that names gh or curl is UNPARSEABLE, never clean. Controls run first, then three REAL-TREE plants in memory: the reaper with its `--retry 2 --retry-delay 5` removed must add exactly one finding on the reaper; a one-shot `gh api` line inserted into a real workflow `run:` block must add one; and a reference to a dead twin that holds a read, planted into the same block, must make that twin live and add its reads.
@@ -70,8 +70,6 @@ WELL_KNOWN_REL = ".ci/config/well-known.env"
 # `GITHUB_API_URL` is set by the Actions runner itself; `github.api_url` is the same value as an expression.
 GH_API_GLOBALS = frozenset({"GITHUB_API_URL"})
 GH_API_LITERALS = ("api.github.com", "github.api_url")
-# common.sh's retry ladder: its `gh "$@"` IS the retry, so scanning it would report the retry as its own violation.
-IMPLEMENTATION = frozenset({(".ci/scripts/lib/common.sh", "_gh_probe")})
 # Gates INSPECT scripts: their path tables are data, and a gate that does run a release step (`check:ci-release-bump-skip`, which drives the Python release decider) runs it against a shimmed `gh`, never GitHub. So no gate module is an executor; this module and its driver are inside these too.
 GATE_DIRS = (
     ".ci/rediacc_ci/quality/",
@@ -97,10 +95,7 @@ FIX_CURL = (
     "add `--retry 2 --retry-delay 5`; curl then retries a timeout, 408, 429 and 5xx only, so a single 5xx is retried and a 4xx still fails at once. "
     "Do not add it to SHELL_DEBT, and do not add it to ALLOWED unless the read genuinely cannot be retried, and then say why as a BLOCKER."
 )
-FIX_GH = (
-    "source .ci/scripts/lib/common.sh and call `gh_retry <what> -- <gh args>` (or `gh_json` when the body must be JSON), or move the read into Python through "
-    "rediacc_ci.core.gh_retry. Do not add it to SHELL_DEBT, and do not add it to ALLOWED unless the read genuinely cannot be retried, and then say why as a BLOCKER."
-)
+FIX_GH = "move the read into Python through rediacc_ci.core.gh_retry (`python3 -m rediacc_ci.core.gh_retry` from a shell step). Do not add it to SHELL_DEBT, and do not add it to ALLOWED unless the read genuinely cannot be retried, and then say why as a BLOCKER."
 
 # ---------------------------------------------------------------------------
 # The lexer.
@@ -871,8 +866,6 @@ def scan_text(
                 continue
         else:
             continue
-        if (rel, func) in IMPLEMENTATION:
-            continue
         kind, verb = py.classify(_gh_argv(args))
         out.append(
             ShellSite(
@@ -1266,10 +1259,7 @@ def judge(corpus: Corpus, allowed: dict[str, str], debt: dict[str, str]) -> Shel
             problems.append(
                 "VACUOUS: zero curl calls to the GitHub API found; the curl detector is not seeing the tree."
             )
-        if not any(s.tool == "gh" for s in seen):
-            problems.append(
-                "VACUOUS: zero gh calls found in live scripts and run: blocks; the gh detector is not seeing the tree."
-            )
+        # No tree-level floor on `gh` calls (dropped 2026-10-08, measured 0 live and 0 dead): the last two shell callers, dispatch-release.sh and detect-bump-type.sh, were deleted with common.sh and their reads live in the Python verb `python3 -m rediacc_ci.core.gh_retry`. The gh detector is still proven on the real tree by the in-memory plant below (a one-shot `gh api` line inserted into a real run: block must add a finding) and by the fixture controls; the curl floor and the retried-read floor keep a live subject (the orphan reaper's `--retry 2` read).
         if not any(s.route == "retried" for s in seen):
             problems.append(
                 "VACUOUS: zero retried shell reads on the tree; either every live shell GitHub read lost its retry (see the findings above) or the retry detector has rotted."
@@ -1526,15 +1516,6 @@ def selftest() -> bool:
     check(
         "GH: the gh_retry DEFINITION is not a call",
         _one('gh_retry() { _gh_probe false "$@"; }\n') == [],
-    )
-    check(
-        "GH: common.sh's _gh_probe body is the implementation",
-        scan_text(
-            ".ci/scripts/lib/common.sh",
-            '_gh_probe() {\n    out="$(gh "$@" 2>"$err")"\n}\n',
-            GH_API_GLOBALS,
-        )
-        == [],
     )
     check(
         "GH: an array argv `argv=(gh workflow run x)` is a write",

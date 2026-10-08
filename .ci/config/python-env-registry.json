@@ -280,6 +280,9 @@
       "*name",
       "WSL_DISTRO_NAME"
     ],
+    ".ci/rediacc_ci/core/proxyx.py": [
+      "PYTHONPATH"
+    ],
     ".ci/rediacc_ci/core/release_state_validator.py": [
       "AWS_ACCESS_KEY_ID",
       "CLOUDFLARE_R2_ENDPOINT"
@@ -613,6 +616,9 @@
     ".ci/rediacc_ci/log.py": [
       "CI",
       "NO_COLOR"
+    ],
+    ".ci/rediacc_ci/native.py": [
+      "PYTHONPATH"
     ],
     ".ci/rediacc_ci/ops/apply_cf_redirect_rules.py": [
       "CF_EMAIL",
@@ -1268,6 +1274,9 @@
     ".ci/rediacc_ci/tests/gates/media_verify_ext.py": [
       "MEDIA_COVERAGE_FILE"
     ],
+    ".ci/rediacc_ci/tests/gates/run_bare.py": [
+      "GATE_HARNESS_LEDGER"
+    ],
     ".ci/rediacc_ci/tests/gates/test_gate_assert_edge_tag_exists.py": [
       "PATH"
     ],
@@ -1550,6 +1559,9 @@
     ".ci/rediacc_ci/tests/test_deploy_verify_edge_endpoints.py": [
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/test_deploy_write_once_guard.py": [
+      "HOME"
+    ],
     ".ci/rediacc_ci/tests/test_deploy_write_once_guard_check.py": [
       "HOME",
       "PATH"
@@ -1680,6 +1692,9 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_release_assert_edge_tag_exists.py": [
+      "HOME"
+    ],
+    ".ci/rediacc_ci/tests/test_release_assert_r2_sentinel.py": [
       "HOME"
     ],
     ".ci/rediacc_ci/tests/test_release_check_edge_manifest.py": [

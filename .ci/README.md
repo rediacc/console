@@ -21,8 +21,6 @@ Abridged — only the entry points most often edited by hand are listed. The ful
 │   ├── constants.sh         # Pinned tool versions and shared CI constants
 │   └── nfpm.yaml            # Linux package (deb/rpm/apk) build definition
 ├── scripts/
-│   ├── lib/
-│   │   └── common.sh        # Shared utilities (OS detection, logging)
 │   ├── docker/
 │   │   └── retag_image.py   # Re-tag CI images to semantic version
 │   └── housekeeping/
@@ -104,8 +102,7 @@ Test scripts locally before CI:
 
 ```bash
 # Check if common utilities work
-source .ci/scripts/lib/common.sh
-detect_os  # Should print: linux, macos, or windows
+PYTHONPATH=.ci python3 -c "from rediacc_ci.core import common; print(common.detect_os())"  # linux, macos, or windows
 
 # Run the shell-gate suite the way CI does
 npm run test:quality-gates
@@ -113,21 +110,10 @@ npm run test:quality-gates
 
 ## Adding New Scripts
 
-1. Create script in appropriate directory
-2. Source `lib/common.sh` for utilities
-3. Add `set -euo pipefail` for strict mode
-4. Make executable: `chmod +x script.sh`
-5. Document usage in script header
+New CI logic is Python (the language policy, `check:ci-language-policy`, refuses new bash under `.ci`):
 
-Template:
-```bash
-#!/bin/bash
-# Description of what this script does
-# Usage: script.sh [options]
-
-set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../lib/common.sh"
-
-# Script logic here
-```
+1. Create a module under `.ci/rediacc_ci/<area>/`
+2. Use `rediacc_ci.core.common` (OS detection, `require_cmd`, `parse_args`) and `rediacc_ci.log` for utilities
+3. Run it as `PYTHONPATH=.ci python3 -m rediacc_ci.<area>.<module>`
+4. Document usage in the module docstring
+5. Add a pytest under `.ci/rediacc_ci/tests/`

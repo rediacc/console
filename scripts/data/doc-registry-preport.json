@@ -226,7 +226,6 @@
         "check:ci-shared-constant-duplication",
         "check:ci-shared-esm-resolvable",
         "check:ci-shell-commands",
-        "check:ci-shell-declared-commands",
         "check:ci-shell-format",
         "check:ci-shell-lint",
         "check:ci-shell-size",

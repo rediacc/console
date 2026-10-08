@@ -96,10 +96,15 @@ def test_the_missing_file_error_matches_greps_wording(tmp_path: pathlib.Path) ->
     assert port_err == "grep: %s: No such file or directory" % missing
 
 
+def frozen(script: str, *, env: dict[str, str], marker: pathlib.Path):
+    """What the bash `common.sh` answered (`goldens/twins/lib.common.jsonl`, frozen before the `.sh` was deleted)."""
+    return diff.twin_streams(".ci/scripts/lib/common.sh", script, env=env, work=(marker.parent,))
+
+
 def test_require_submodule_skips_locally_and_fails_under_ci(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """All three rungs, against the real bash function sourced from common.sh.
+    """All three rungs, against the frozen answers of the bash function sourced from common.sh.
 
     The CI rung is the one that must not be lost: common.sh's own comment says a gate that silently skips is worse than no gate at all, and names the three scanners that would report success while checking nothing.
     """
@@ -113,7 +118,7 @@ def test_require_submodule_skips_locally_and_fails_under_ci(
 
     # Present: the function returns 0 and prints nothing.
     marker.write_text("module x\n", encoding="utf-8")
-    code, out, err = diff.bash_streams(script % marker, env=diff.env_for(CI=None))
+    code, out, err = frozen(script % marker, env=diff.env_for(CI=None), marker=marker)
     assert code == 0
     assert "SKIPPED" not in out
     assert err.strip() == ""
@@ -122,14 +127,14 @@ def test_require_submodule_skips_locally_and_fails_under_ci(
 
     # Absent, locally: warn and return 1, which the caller turns into a skip.
     marker.unlink()
-    code, out, err = diff.bash_streams(script % marker, env=diff.env_for(CI=None))
+    code, out, err = frozen(script % marker, env=diff.env_for(CI=None), marker=marker)
     assert code == 0
     assert "SKIPPED" in out
     assert "Renet submodule not available, skipping" in err
     assert rt._require_submodule(marker, "Renet submodule") is False
 
     # Absent, under CI: a HARD failure, exit 1, three lines naming the fix.
-    code, out, err = diff.bash_streams(script % marker, env=diff.env_for(CI="true"))
+    code, out, err = frozen(script % marker, env=diff.env_for(CI="true"), marker=marker)
     assert code == 1
     assert "required in CI but missing" in err
     assert "A gate skipped here would report success while checking nothing." in err

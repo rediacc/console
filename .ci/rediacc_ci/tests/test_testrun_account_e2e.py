@@ -80,7 +80,6 @@ def fixture(directory: pathlib.Path, report: bool = True) -> pathlib.Path:
         ts.ROOT / SCRIPT_REL
     ).is_file():  # only a re-freeze from bash runs the twin (PLAN-retire-bash-oracles B3)
         shutil.copy(ts.ROOT / SCRIPT_REL, root / SCRIPT_REL)
-    shutil.copy(ts.ROOT / ".ci/scripts/lib/common.sh", root / ".ci/scripts/lib/common.sh")
     (root / ".ci/config").mkdir(parents=True)
     shutil.copy(ts.ROOT / ".ci/config/well-known.env", root / ".ci/config/well-known.env")
     # common.sh sources the generated projection (410f34073); without it the twin died on its first line.

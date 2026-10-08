@@ -43,7 +43,6 @@ ROOT = paths.repo_root()
 
 TWIN_REL = ".ci/scripts/build/build-cli-executables.sh"
 PORT_REL = ".ci/rediacc_ci/build/build_cli_executables.py"
-COMMON_REL = ".ci/scripts/lib/common.sh"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
 INJECT_REL = ".ci/scripts/version/inject-env.sh"
 ASSETS_REL = ".ci/rediacc_ci/build/prepare_cli_assets.py"
@@ -226,9 +225,9 @@ def fixture(tmp_path: pathlib.Path, *, port_source: str | None = None) -> pathli
     root = tmp_path / "repo"
     recording = diff.regolden_mode(TWIN_REL) == "bash"
     twin_files = (TWIN_REL, INJECT_REL) if recording else ()
-    for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, INJECT_REL, *VENDORED):
+    for rel in (TWIN_REL, PORT_REL, WELL_KNOWN_REL, INJECT_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (*twin_files, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
+    for rel in (*twin_files, WELL_KNOWN_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     if port_source is None:
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)

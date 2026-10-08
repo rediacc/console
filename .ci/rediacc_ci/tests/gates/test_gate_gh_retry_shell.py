@@ -11,7 +11,7 @@ import re
 import sys
 from typing import TYPE_CHECKING
 
-from rediacc_ci import paths
+from rediacc_ci import paths, well_known
 from rediacc_ci.quality import gh_retry_shell as sh
 from rediacc_ci.tests.gates import harness
 
@@ -27,7 +27,10 @@ REAPER = sh.REAPER_REL
 REAPER_CURL = 'resp="$(curl -sS -w'
 # A synthetic dead twin, planted into each copy: the real tree's dead twins are being retired (PLAN-retire-bash-oracles B3), so a test that named one of them would break with the deletion it is meant to survive.
 TWIN = ".ci/scripts/release/synthetic-dead-twin.sh"
-TWIN_BODY = '#!/usr/bin/env bash\nset -euo pipefail\ngh api "repos/rediacc/console/pulls" --jq ".[0].number"\n'
+TWIN_BODY = (
+    '#!/usr/bin/env bash\nset -euo pipefail\ngh api "repos/%s/pulls" --jq ".[0].number"\n'
+    % well_known.GH_REPO
+)
 
 
 def _shell(root: pathlib.Path) -> harness.RunResult:
@@ -94,8 +97,7 @@ def test_real_tree_is_green_and_not_vacuous(gate):
     assert workflows > 20, collapsed
     assert blocks > 300, collapsed
     assert curl >= 1, collapsed
-    # One live shell gh read is left since the 2026-10-07 cutover (promote-stable's retried rollback-label search); a gh detector that rots reads 0.
-    assert gh >= 1, collapsed
+    # Measured 2026-10-08: zero shell `gh` calls, live or dead, since the last two callers moved to `python3 -m rediacc_ci.core.gh_retry` and common.sh went. The gh detector is held by the in-memory real-tree run: block plant asserted below, not by a floor the tree can no longer fill.
     gate.assert_eq(debt, len(sh.SHELL_DEBT), "every SHELL_DEBT row is filled by the tree")
     gate.ok(
         "%d scripts (%d live, %d dead), %d run: blocks, %d curl and %d gh calls, %d debt, 0 new"
@@ -262,7 +264,7 @@ def test_a_routed_debt_read_drains_its_row(gate, tmp_path):
     gate.assert_eq(len(routed.drained), 1, "the frozen read routed through gh_retry")
     gate.assert_contains(routed.drained[0], "planted reaper read")
     gate.ok(
-        "a planted SHELL_DEBT read is debt while it stands and DRAINED once routed through common.sh gh_retry"
+        "a planted SHELL_DEBT read is debt while it stands and DRAINED once routed through a gh_retry wrapper"
     )
 
 

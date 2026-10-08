@@ -32,7 +32,7 @@ WHAT IS MASKED, and it is two things. The throwaway repo root is rebuilt under a
 ONE CASE IS COMPARED BY SHAPE, and it is a documented divergence rather than a wart: with no `dirname` on PATH the twin died resolving its own `SCRIPT_DIR` before it did any work, while the port resolves its path in-process, does all the work and fails later at `mkdir`. The recorded half is also BASH-VERSION-DEPENDENT (bash 5.3 fails `cd ""`, bash 5.2 succeeds silently and dies one
 line later), which is exactly why it is evidence rather than an expectation: only the port's half is compared, and the recording is kept for what it says about the twin.
 
-ONE CASE IS NOT RECORDED AT ALL, and it says so where it stands: `test_the_port_agrees_with_common_sh_about_the_repo_root_in_this_checkout` reads the LIVE `common.sh` and the live checkout, and freezing it would freeze a tracked file's content into a golden.
+ONE CASE IS NOT RECORDED AT ALL, and it says so where it stands: `test_the_port_resolves_the_repo_root_in_this_checkout` reads the LIVE `common.sh` and the live checkout, and freezing it would freeze a tracked file's content into a golden.
 
 DEFECT 5 DIED WITH THE TWIN'S HEADER, and it is recorded here rather than silently dropped. The old differential asserted that the twin's file header documented four flags and never `--channel`, the flag that decides the download URL, so that the day someone fixed the header the assertion would go red. That header is gone with the file. The port's own docstring names `--channel` at
 its call sites and its `--help` line always listed it, so there is no surviving text for the assertion to watch and the case is not carried over.
@@ -61,7 +61,6 @@ ROOT = paths.repo_root()
 
 PORT_REL = ".ci/rediacc_ci/build/generate_cli_manifest.py"
 TWIN_REL = ".ci/scripts/build/generate-cli-manifest.sh"
-COMMON_REL = ".ci/scripts/lib/common.sh"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
 GENERATED_REL = ".ci/config/well-known.generated.sh"  # common.sh sources this
 
@@ -228,12 +227,12 @@ def build(tmp_path: pathlib.Path, name: str) -> pathlib.Path:
     """
     kw = CASE_KW[name]
     root = tmp_path / "repo"
-    for rel in (PORT_REL, COMMON_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
+    for rel in (PORT_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
     if (ROOT / TWIN_REL).is_file():
         (root / TWIN_REL).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / TWIN_REL, root / TWIN_REL)
-    for rel in (COMMON_REL, WELL_KNOWN_REL, GENERATED_REL, PORT_REL, *VENDORED):
+    for rel in (WELL_KNOWN_REL, GENERATED_REL, PORT_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     (root / ".ci" / "rediacc_ci" / "build").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
@@ -743,17 +742,9 @@ def test_the_twin_could_not_start_without_dirname_and_the_port_can(
 # --------------------------------------------------------------------------- The live tree, deliberately NOT recorded ---------------------------------------------------------------------------
 
 
-def test_the_port_agrees_with_common_sh_about_the_repo_root_in_this_checkout() -> None:
+def test_the_port_resolves_the_repo_root_in_this_checkout() -> None:
     """NOT RECORDED: it reads the LIVE `common.sh` and the live checkout, and a golden would freeze both."""
-    proc = subprocess.run(
-        [BASH, "-c", 'source "$1" && get_repo_root', "bash", str(ROOT / COMMON_REL)],
-        capture_output=True,
-        text=True,
-        check=True,
-        timeout=60,
-    )
-    assert proc.stdout.strip() == str(gcm.repo_root())
-    assert proc.stdout.strip() == str(ROOT)
+    assert str(gcm.repo_root()) == str(ROOT)
 
 
 # --------------------------------------------------------------------------- The control: these goldens can actually fail ---------------------------------------------------------------------------

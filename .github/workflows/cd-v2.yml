@@ -714,7 +714,7 @@ jobs:
       needs.init.outputs.workers_only != 'true'
     steps:
       # Checked out first, unconditionally: the decision below reads GitHub through
-      # common.sh's gh_retry, so one 5xx on `gh release view` retries instead of
+      # rediacc_ci.core.gh_retry, so one 5xx on `gh release view` retries instead of
       # failing the retry run.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -731,8 +731,7 @@ jobs:
           RETRY_MODE: ${{ needs.init.outputs.retry_mode }}
         run: |
           if [[ "$RETRY_MODE" != true ]]; then echo "owed=true" >> "$GITHUB_OUTPUT"; exit 0; fi
-          source .ci/scripts/lib/common.sh
-          rc=0; ERR=$(gh_retry "release lookup" -- release view "v${VERSION}" --repo "$GITHUB_REPOSITORY" 2>&1 >/dev/null) || rc=$?
+          rc=0; ERR=$(PYTHONPATH=.ci python3 -m rediacc_ci.core.gh_retry "release lookup" -- release view "v${VERSION}" --repo "$GITHUB_REPOSITORY" 2>&1 >/dev/null) || rc=$?
           if [[ "$rc" == 0 ]]; then echo "::notice::Retry of v${VERSION}: its GitHub Release exists, nothing owed."; echo "owed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           grep -qi 'release not found' <<<"$ERR" || { echo "::error::Could not tell whether Release v${VERSION} exists (rc=${rc}): ${ERR}"; exit 1; }
           echo "::notice::Retry of v${VERSION}: no GitHub Release yet; completing submodule tags, Homebrew, the floor and the Release."; echo "owed=true" >> "$GITHUB_OUTPUT"

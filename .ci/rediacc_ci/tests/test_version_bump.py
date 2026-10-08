@@ -51,7 +51,6 @@ ROOT = paths.repo_root()
 PORT = ROOT / ".ci" / "rediacc_ci" / "version" / "bump.py"
 TWIN_REL = ".ci/scripts/version/bump.sh"
 CONSTANTS = ROOT / ".ci" / "config" / "constants.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 TOOLCHAIN_ENV = ROOT / ".devcontainer" / "toolchain.env"
 BASH = shutil.which("bash") or "/bin/bash"
 PYTHON = sys.executable
@@ -161,7 +160,6 @@ def build(where: pathlib.Path, name: str, subject: pathlib.Path) -> pathlib.Path
         shutil.copy2(ROOT / TWIN_REL, root / ".ci" / "scripts" / "version" / "bump.sh")
     else:
         shutil.copy2(PORT, root / ".ci" / "rediacc_ci" / "version" / "bump.py")
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

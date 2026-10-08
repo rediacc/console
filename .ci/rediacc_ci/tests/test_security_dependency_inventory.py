@@ -59,7 +59,6 @@ PORT = ROOT / PORT_REL
 # The minimum of the package a path-invoked port needs. Deliberately short: the fixture must not become a second copy of the repository.
 COPIED = (
     TWIN_REL,
-    ".ci/scripts/lib/common.sh",
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/paths.py",
     ".ci/rediacc_ci/well_known.py",

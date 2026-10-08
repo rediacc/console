@@ -49,7 +49,6 @@ ROOT = paths.repo_root()
 
 TWIN_REL = ".ci/scripts/build/build-renet.sh"
 PORT_REL = ".ci/rediacc_ci/build/build_renet.py"
-COMMON_REL = ".ci/scripts/lib/common.sh"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
 LOCKFILE_REL = "private/renet/embed-assets.lock.json"
 
@@ -282,10 +281,10 @@ def fixture(
     renet_dir: bool = True,
 ) -> pathlib.Path:
     root = tmp_path / "repo"
-    for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
+    for rel in (TWIN_REL, PORT_REL, WELL_KNOWN_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
     twin_files = (TWIN_REL,) if diff.regolden_mode(TWIN_REL) == "bash" else ()
-    for rel in (*twin_files, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
+    for rel in (*twin_files, WELL_KNOWN_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     if port_source is None:
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)

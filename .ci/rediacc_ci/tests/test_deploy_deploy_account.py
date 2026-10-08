@@ -32,7 +32,6 @@ ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "deploy-account.sh"
 TWIN_REL = ".ci/scripts/deploy/deploy-account.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "deploy_account.py"
-COMMON_SH = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 BASH = shutil.which("bash") or "/bin/bash"
 
 # The canonical shape of the line the twin reads, copied from `workers/account/wrangler.eu.toml:40-43`.
@@ -93,7 +92,6 @@ def _fixture_root(tmp_path: pathlib.Path, *, configs: dict[str, str] | None = No
     worker = root / "workers" / "account"
     worker.mkdir(parents=True, exist_ok=True)
     if TWIN.exists():  # the bash side is recorded only while the twin is on disk
-        shutil.copy2(COMMON_SH, root / ".ci" / "scripts" / "lib" / COMMON_SH.name)
         shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(

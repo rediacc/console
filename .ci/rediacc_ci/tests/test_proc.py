@@ -48,7 +48,12 @@ def bash_rc(script: str) -> int:
 
     That is the same leak `test_the_bash_timeout_leaks_grandchildren...` asserts directly, showing up here as a cost rather than as a failure.
     """
-    rc, _out, _err = diff.bash_streams("{ %s\n} >/dev/null 2>&1" % script)
+    command = "{ %s\n} >/dev/null 2>&1" % script
+    if COMMON_SH in script:
+        # The bash `common.sh` is deleted: its exit code comes from `goldens/twins/lib.common.jsonl`, frozen from the live file (PLAN-retire-bash-oracles W11-B).
+        rc, _out, _err = diff.twin_streams(COMMON_SH, command)
+    else:
+        rc, _out, _err = diff.bash_streams(command)
     return rc
 
 
@@ -65,13 +70,17 @@ def test_gnu_timeout_is_present_for_the_differential():
     assert os.access(found, os.X_OK)
 
 
-def test_common_sh_defines_both_functions_being_replaced():
-    """ANTI-VACUITY for the bash side of every case below."""
-    with open("%s/%s" % (diff.repo(), COMMON_SH), encoding="utf-8") as handle:
-        body = handle.read()
-    assert "run_with_timeout() {" in body
-    assert "retry_with_backoff() {" in body
-    assert "return 124" in body, "the 124 convention must still be in the original"
+def test_the_frozen_common_sh_runs_both_functions_being_replaced():
+    """ANTI-VACUITY for the bash side of every case below: the frozen answers are those of a `common.sh` that DEFINED both functions, not of one that failed to source (127 / 1 everywhere)."""
+    timed_out = bash_rc(
+        "source %s; rc=0; run_with_timeout 1 sleep 5 || rc=$?; exit $rc" % COMMON_SH
+    )
+    assert timed_out == 124, "the 124 convention must still be in the frozen original"
+    retried = bash_rc(
+        "source %s; sleep() { :; }; rc=0; retry_with_backoff 3 1 sh -c 'exit 5' || rc=$?; exit $rc"
+        % COMMON_SH
+    )
+    assert retried == 1
 
 
 # --------------------------------------------------------------------------- The exit-code matrix: three implementations, same answers ---------------------------------------------------------------------------
@@ -148,13 +157,10 @@ def test_neither_bash_timeout_enforces_its_deadline_and_this_one_does():
     assert gnu == 124
     assert gnu_elapsed > 1.5, "GNU timeout still waits for a TERM-ignoring child"
 
-    started = time.monotonic()
     bash = bash_rc(
         "source %s; rc=0; run_with_timeout 1 %s || rc=$?; exit $rc" % (COMMON_SH, trapper)
     )
-    bash_elapsed = time.monotonic() - started
     assert bash == 0, "common.sh reports SUCCESS for a command it failed to stop"
-    assert bash_elapsed > 1.5
 
     started = time.monotonic()
     result = proc.run_with_timeout(["bash", "-c", 'trap "" TERM; sleep 2'], 1)
@@ -179,15 +185,35 @@ def test_the_bash_timeout_leaks_grandchildren_and_this_one_does_not(tmp_path):
     marker = tmp_path / "grandchild.pid"
     inner = "(echo $BASHPID > '%s'; sleep 5) & wait" % marker
 
-    bash_rc(
-        "source %s; rc=0; run_with_timeout 1 bash -c %s >/dev/null 2>&1 || rc=$?; exit $rc"
-        % (COMMON_SH, shlex.quote(inner))
+    command = (
+        "{ source %s; rc=0; run_with_timeout 1 bash -c %s >/dev/null 2>&1 || rc=$?; exit $rc\n} >/dev/null 2>&1"
+        % (
+            COMMON_SH,
+            shlex.quote(inner),
+        )
     )
-    leaked = int(marker.read_text().strip())
-    assert _alive(leaked), "common.sh:248 signals one pid, so the grandchild survives"
-    os.kill(leaked, signal.SIGKILL)  # do not leave it behind for the rest of the suite
 
-    marker.unlink()
+    def leaked_alive() -> str:
+        # Read AFTER the wrapper returned: the question is whether the grandchild outlived it.
+        pid = int(marker.read_text().strip())
+        alive = _alive(pid)
+        if alive:
+            os.kill(pid, signal.SIGKILL)  # do not leave it behind for the rest of the suite
+        return str(alive)
+
+    _rc, _out, _err, frozen = diff.twin_run(
+        COMMON_SH,
+        ["leak", inner],
+        lambda: (diff.bash_streams(command)[0], "", ""),
+        extras={"grandchild-alive": leaked_alive},
+        work=(tmp_path,),
+        label="grandchild-leak",
+    )
+    assert frozen["grandchild-alive"] == "True", (
+        "common.sh:248 signals one pid, so the grandchild survives"
+    )
+
+    marker.unlink(missing_ok=True)
     proc.run_with_timeout(["bash", "-c", inner], 1)
     tracked = int(marker.read_text().strip())
     # The group kill is asynchronous, so poll rather than assert instantly. A bare assertion here would be flaky in the one direction that matters least.
@@ -242,7 +268,7 @@ def bash_schedule(attempts: int, delay: int) -> list[int]:
         "rc=0\n"
         "retry_with_backoff %d %d sh -c 'exit 1' || rc=$?\n" % (COMMON_SH, attempts, delay)
     )
-    _rc, out, _err = diff.bash_streams(script)
+    _rc, out, _err = diff.twin_streams(COMMON_SH, script)
     return [int(line.split()[1]) for line in out.splitlines() if line.startswith("SLEPT ")]
 
 

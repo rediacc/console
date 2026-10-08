@@ -396,14 +396,11 @@ def test_the_python_clients_declare_no_rule_of_their_own():
             "%s stopped naming the canonical module" % rel
         )
 
-    # AND THE HOP THAT IS STILL THERE, recorded rather than asserted away. `check_language_policy.blocker_quality_problem` shells out to `.ci/scripts/lib/blocker-validator.sh` for the QUALITY rule, and that file now shells back to `rediacc_ci.core.allowlist`. Python -> bash -> Python for an answer the first Python could have computed. It is correct and it is wasteful, and the
-    # reason it was not changed in the same pass is that the shell-out is what its gate test's "the validator cannot be consulted" refusal exists to exercise; removing one without the other deletes a live control. Pinned so the hop cannot be forgotten.
+    # THE HOP IS GONE: `check_language_policy.blocker_quality_problem` calls `rediacc_ci.core.allowlist` in process (its docstring says so), no longer `.ci/scripts/lib/blocker-validator.sh`. Pinned the other way round, so the shell-out cannot come back unnoticed, and the 'validator cannot be consulted' arm the old pin protected is already gone from test_gate_language_policy.py.
     policy = _text(".ci/scripts/quality/check_language_policy.py")
-    assert "blocker-validator.sh" in policy, (
-        "check_language_policy no longer shells out for the BLOCKER quality rule. If "
-        "it now calls rediacc_ci.core.allowlist directly, good; delete this assertion "
-        "AND the 'validator cannot be consulted' arm of test_gate_language_policy.py, which "
-        "tests a failure mode that no longer exists."
+    assert "blocker-validator.sh" not in policy, (
+        "check_language_policy shells out to blocker-validator.sh again for the BLOCKER "
+        "quality rule; call rediacc_ci.core.allowlist in process instead."
     )
 
     housekeeping = _text(".ci/rediacc_ci/quality/plan_housekeeping.py")

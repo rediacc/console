@@ -119,7 +119,7 @@ def run(repo: pathlib.Path, script: str, *argv: str) -> harness.RunResult:
 
     Called from inside `harness.fake_bin`, so PATH holds only what the test admitted -- for the whole chain that is `uname` and `dirname` and nothing
     else. Measured, not assumed: run.sh resolves ROOT_DIR with dirname on its
-    first line, and .ci/scripts/lib/common.sh runs detect_os at source time.
+    first line.
     """
     if os.environ.get("MEDIA_COVERAGE_FILE"):
         raise ChainError(

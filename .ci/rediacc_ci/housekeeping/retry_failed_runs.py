@@ -11,16 +11,7 @@ READABLE. `considered=.. excluded=.. too-old=.. attempt-capped=.. dead-head=..
 retried=..` prints on every run, including the ones that retry nothing, because
 a sweeper that legitimately does nothing must be distinguishable from a broken one. The port prints the same six numbers.
 
-TWO LOGGERS, BECAUSE THE TWIN HAS TWO. `source common.sh 2>/dev/null || { ... }`
-gives this script common.sh's stderr loggers when the library is present and a private `echo`-based set when it is not, and the two are NOT cosmetic variants of each other:
-
-    level   common.sh                     fallback
-    info    "✓ <msg>"  -> stderr     "  <msg>"        -> STDOUT
-    warn    "⚠ <msg>"  -> stderr     "  WARN: <msg>"  -> stderr
-    step    "→ <msg>"  -> stderr     "==> <msg>"      -> STDOUT
-    error   "✗ <msg>"  -> stderr     "<msg>"          -> stderr
-
-`_Loggers.for_root()` picks the pair off the same single input the twin picks it off (does `<root>/.ci/scripts/lib/common.sh` exist), and the differential drives BOTH by copying each subject into a fixture tree with no lib directory. A port that implemented only the library path would be byte-identical in CI and put every line on the wrong stream on a fresh clone.
+ONE LOGGER. The twin had two (`common.sh`'s stderr loggers, and a private `echo` set that put info and step on STDOUT when the library was missing). `common.sh` is deleted, and so is the fallback: every line goes through `rediacc_ci.log` (W11-B, a Rule-T fix; the affected goldens were re-recorded `--source port`).
 
 `jq`, `date` AND `gh` ARE STILL SHELLED OUT TO, each for a different reason. `gh` is the API. `date -u -d "$created"` accepts GNU's whole free-form date grammar and returns 0 on strings no Python parser agrees about, and the twin's `|| echo 0` turns exactly that answer into the too-old skip, so the port asks the same `date`. `jq -r '... | @tsv'` is the record splitter, and its
 escaping
@@ -37,7 +28,6 @@ K=5 LEDGER: `.ci/shadow/w7p6-retry-failed-runs.observations.jsonl`.
 from __future__ import annotations
 
 import os
-import pathlib
 import shutil
 import subprocess
 import sys
@@ -68,57 +58,28 @@ FIELD_COUNT = 6
 
 
 class _Loggers:
-    """The twin's two logging worlds, chosen the way the twin chooses them."""
+    """The logging world: `rediacc_ci.log`, glyphs, colour on a tty, STDERR for every level.
 
-    def __init__(self, *, common_sh: bool) -> None:
-        self.common_sh = common_sh
-
-    @classmethod
-    def for_root(cls, root: pathlib.Path) -> _Loggers:
-        return cls(common_sh=(root / ".ci" / "scripts" / "lib" / "common.sh").is_file())
+    The twin also had a private `echo`-based set (info and step on STDOUT, no glyph) for a checkout without `common.sh`. That file is deleted (PLAN-retire-bash-oracles W11-B), so the fallback world is deleted with it (a Rule-T fix).
+    """
 
     def info(self, message: str) -> None:
-        if self.common_sh:
-            log.info(message)
-        else:
-            print("  %s" % message, flush=True)
+        log.info(message)
 
     def warn(self, message: str) -> None:
-        if self.common_sh:
-            log.warn(message)
-        else:
-            print("  WARN: %s" % message, file=sys.stderr, flush=True)
+        log.warn(message)
 
     def step(self, message: str) -> None:
-        if self.common_sh:
-            log.step(message)
-        else:
-            print("==> %s" % message, flush=True)
+        log.step(message)
 
     def error(self, message: str) -> None:
-        if self.common_sh:
-            log.error(message)
-        else:
-            print(message, file=sys.stderr, flush=True)
+        log.error(message)
 
     def require_cmd(self, cmd: str) -> bool:
-        """Both worlds print the same words; only the decoration differs.
-
-        The fallback defines its OWN `require_cmd` (:55-60) rather than calling common.sh's, and the twin says why in a comment: a fallback for "common.sh is missing" that called common.sh's helper would die at 127
-        while reporting nothing about the dependency it exists to report.
-        """
         if shutil.which(cmd) is not None:
             return True
         self.error("Required command '%s' is not available" % cmd)
         return False
-
-
-def console_root() -> pathlib.Path:
-    """`SCRIPT_DIR/../../..` from `.ci/scripts/housekeeping/`.
-
-    This module sits one directory deeper, so it is `parents[3]` against the twin's `parents[2]`; both land on the repository root.
-    """
-    return pathlib.Path(__file__).resolve().parents[3]
 
 
 def is_excluded(path: str) -> bool:
@@ -233,8 +194,7 @@ def head_is_live(head: str, live_heads: str) -> bool:
 
 
 def main(argv: list[str]) -> int:
-    root = console_root()
-    out = _Loggers.for_root(root)
+    out = _Loggers()
 
     if not out.require_cmd("gh"):
         return 1
