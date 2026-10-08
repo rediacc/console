@@ -46,6 +46,9 @@ def _template():
     _run("git", "-C", str(root), "init", "-q")
     _run("git", "-C", str(root), "config", "user.email", "t@example.com")
     _run("git", "-C", str(root), "config", "user.name", "t")
+    # THE TEMPLATE MUST NOT CHANGE UNDER A COPY. git runs `maintenance run --auto` DETACHED after a commit, and a repack prunes loose-object directories: CI run 37720545287 (Pytest 2/3) lost .git/objects/1d, 16 and 79 from this template mid-copytree in test_young_is_silent. No automatic maintenance here, nor in the copies, which inherit this config.
+    _run("git", "-C", str(root), "config", "gc.auto", "0")
+    _run("git", "-C", str(root), "config", "maintenance.auto", "false")
     for i in range(1, 33):
         (agent / ("PLAN-filler-%d.md" % i)).write_text(
             "Status: draft\n\n# filler %d\n\n- [ ] a task long enough to parse\n" % i,
