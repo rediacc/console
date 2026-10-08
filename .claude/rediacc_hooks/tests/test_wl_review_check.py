@@ -44,8 +44,18 @@ def _git(repo, *args):
     ).stdout.strip()
 
 
+# The finding's Resolution line per `record` kind; `<kind>@<severity>` sets the severity (default high).
+RESOLUTIONS = {
+    "open": "open",
+    "resolved": "not-a-bug | f.py:2 names the second element on purpose | deadbeef 2026-10-02T00:00:00Z",
+    "deferred": "deferred #abcdef12 | deadbeef 2026-10-02T00:00:00Z",
+    "fixed": "fixed %(sha)s | deadbeef 2026-10-02T00:00:00Z",
+    "waived": "waived #abcdef12 ASKED:2026-10-02T00:00Z | deadbeef 2026-10-02T00:00:00Z",
+}
+
+
 def _world(tmp_path, record):
-    """A checkout of BRANCH one commit past origin/main. `record` is None (no review), "open" (an open high finding) or "resolved" (the same finding marked not-a-bug); a written record is committed beside the commit it reviews."""
+    """A checkout of BRANCH one commit past origin/main. `record` is None (no review), or a RESOLUTIONS kind optionally suffixed `@<severity>`: "open" (an open high finding), "resolved" (the same finding marked not-a-bug), "deferred" (a legacy deferral), "fixed" or "waived"; a written record is committed beside the commit it reviews."""
     repo = tmp_path / "repo"
     origin = tmp_path / "origin.git"
     subprocess.run(
@@ -66,16 +76,15 @@ def _world(tmp_path, record):
     if record in ("ledger", "ledger-dirty", "ledger-garbled", "ledger-empty"):
         _ledger_record(repo, sha, record)
     elif record is not None:
+        kind, _, severity = record.partition("@")
         finding = R.Finding(
             id="%s.1" % sha[:8],
-            severity="high",
+            severity=severity or "high",
             file="f.py",
             line=2,
             anchor="in-diff",
             claim="values[1] reads the second element, not the first",
-            resolution="open"
-            if record == "open"
-            else "not-a-bug | f.py:2 names the second element on purpose | deadbeef 2026-10-02T00:00:00Z",
+            resolution=RESOLUTIONS[kind] % {"sha": sha},
         )
         review = R.Review(
             sha=sha,
@@ -375,3 +384,159 @@ def test_an_unchecked_out_main_keeps_the_not_checked_out_refusal(tmp_path):
     repo = _world(tmp_path, "resolved")
     reasons, _lines = R.check_state(repo, "main", label="console")
     assert reasons == ["not-checked-out"], reasons
+
+
+# --------------------------------------------------------------------------- deferrals (agent/plans/PLAN-deferred-findings-block-merge.md L1, L5)
+
+
+@pytest.mark.parametrize("severity", ["low", "medium", "high"])
+def test_check_refuses_a_deferral_at_any_severity(tmp_path, severity):
+    """D1: a legacy deferral is a refusal whatever its severity and whatever state its item is in; no worklist fold is read."""
+    got = _check(_world(tmp_path, "deferred@%s" % severity))
+    assert got.returncode == 1, got.stdout + got.stderr
+    assert "refused (deferred)" in got.stdout, got.stdout
+    assert "DEFERRED [%s]" % severity in got.stdout, got.stdout
+    assert "worklist.py --triage <me> '" in got.stdout, got.stdout
+
+
+@pytest.mark.parametrize("kind", ["fixed", "waived", "fixed@low", "waived@low"])
+def test_control_the_same_finding_fixed_or_waived_is_clean(tmp_path, kind):
+    """CONTROL: only the Resolution line differs from the refused world above."""
+    got = _check(_world(tmp_path, kind))
+    assert got.returncode == 0, got.stdout + got.stderr
+    assert "clean" in got.stdout, got.stdout
+
+
+def test_a_deferral_refuses_whatever_its_item_state_and_a_lease_changes_no_refusal(tmp_path):
+    repo = _world(tmp_path, "deferred@low")
+    for items in (None, {}, {"abcdef12": " "}, {"abcdef12": "x"}, {"abcdef12": ">"}):
+        st = R.branch_state(repo, BRANCH, repos={"console"}, items=items)
+        assert [f.id for _p, f in st["deferred"]], (items, st)
+        assert R.push_refusals(st) == ["deferred"], (items, R.push_refusals(st))
+        assert not st["blocking"], "a deferral never reopens to open"
+        assert not st["advisory"], "a deferral never reopens to open"
+
+
+def test_merge_arm_refuses_the_deferral_and_passes_the_fixed_branch(tmp_path):
+    reasons, lines = merge_guard.review_refusals(
+        _world(tmp_path / "a", "deferred"), BRANCH, GH_REPO
+    )
+    assert reasons == ["deferred"], (reasons, lines)
+    assert any(line.startswith("DEFERRED [high]") for line in lines), lines
+    reasons, lines = merge_guard.review_refusals(_world(tmp_path / "b", "fixed"), BRANCH, GH_REPO)
+    assert reasons == [], (reasons, lines)
+
+
+def test_the_merge_message_names_the_deferral_and_the_status_command():
+    assert "deferred" in merge_guard.REVIEWS_MESSAGE
+    assert "wl_review.py --status" in merge_guard.REVIEWS_MESSAGE
+
+
+# --------------------------------------------------------------------------- the pushed tip (finding 71afd29f.3)
+
+
+def _parked(tmp_path, record="resolved"):
+    """BRANCH pushed and then left for a `parked` branch, so check_state judges origin/BRANCH."""
+    repo = _world(tmp_path, record)
+    _git(repo, "push", "-q", "origin", BRANCH)
+    _git(repo, "fetch", "-q", "origin")
+    _git(repo, "checkout", "-q", "-b", "parked")
+    return repo
+
+
+def test_a_pushed_tip_judgement_names_the_ref_its_sha_and_its_age(tmp_path):
+    repo = _parked(tmp_path)
+    sha = _git(repo, "rev-parse", "--short=12", "origin/%s" % BRANCH)
+    reasons, lines = R.check_state(repo, BRANCH, label="console")
+    assert reasons == [], (reasons, lines)
+    assert lines, lines
+    assert lines[0].startswith("judged at origin/%s %s" % (BRANCH, sha)), lines
+    assert "no fetch runs here" in lines[0], lines
+    assert "min ago" in lines[0], lines
+
+
+def test_control_a_checked_out_branch_prints_no_tip_line(tmp_path):
+    reasons, lines = R.check_state(_world(tmp_path, "resolved"), BRANCH, label="console")
+    assert reasons == [], reasons
+    assert not any(line.startswith("judged at") for line in lines), lines
+
+
+def test_a_stale_tracking_ref_is_refused_against_the_pr_head(tmp_path):
+    """The PR head moved on in another clone: this clone's origin/<branch> lacks it, so the walk would miss commits the PR merges."""
+    repo = _parked(tmp_path)
+    other = tmp_path / "other"
+    subprocess.run(
+        ["git", "clone", "-q", "-b", BRANCH, str(tmp_path / "origin.git"), str(other)],
+        check=True,
+        capture_output=True,
+        env=GIT_ENV,
+    )
+    (other / "later.py").write_text("y = 2\n", encoding="utf-8")
+    _git(other, "add", "later.py")
+    _git(other, "commit", "-q", "-m", "feat(x): pushed from another clone")
+    _git(other, "push", "-q", "origin", BRANCH)
+    head = _git(other, "rev-parse", "HEAD")
+    reasons, lines = R.check_state(repo, BRANCH, label="console", expected_tip=head)
+    assert reasons == ["stale-tip"], (reasons, lines)
+    assert any("git fetch origin %s" % BRANCH in line for line in lines), lines
+    # CONTROL: the same check against the tip this clone does hold passes, so the refusal is the pin's doing.
+    held = _git(repo, "rev-parse", "origin/%s" % BRANCH)
+    reasons, _lines = R.check_state(repo, BRANCH, label="console", expected_tip=held)
+    assert reasons == [], reasons
+    _git(repo, "fetch", "-q", "origin")
+    reasons, lines = R.check_state(repo, BRANCH, label="console", expected_tip=head)
+    assert reasons == ["uncovered"], (reasons, lines)
+
+
+def test_the_cli_takes_expect_tip(tmp_path):
+    repo = _world(tmp_path, "resolved")
+    got = _check(repo, "--expect-tip", "0" * 40)
+    assert got.returncode == 1, got.stdout
+    assert "refused (stale-tip)" in got.stdout, got.stdout
+    got = _check(repo, "--expect-tip", _git(repo, "rev-parse", "HEAD"))
+    assert got.returncode == 0, got.stdout + got.stderr
+
+
+def test_the_merge_guard_pins_the_walk_to_the_pr_head_oid():
+    good = json.dumps({"headRefOid": "a" * 40})
+    assert merge_guard._jq_head_oid(good) == "a" * 40
+    assert merge_guard._jq_head_oid(json.dumps({"headRefOid": "nope"})) == ""
+    assert merge_guard._jq_head_oid("") == ""
+
+
+def test_the_guard_end_to_end_refuses_a_head_oid_the_clone_lacks(tmp_path):
+    """The `gh pr view` the guard already makes carries headRefOid; a clean branch whose walked tip lacks it is refused as stale-tip."""
+    repo = _world(tmp_path, "resolved")
+    stub_bin = tmp_path / "bin"
+    stub_bin.mkdir()
+    gh = stub_bin / "gh"
+    gh.write_text(
+        GH_STUB.replace(
+            '"headRefName":"0930-1"', '"headRefName":"0930-1","headRefOid":"%s"' % ("0" * 40)
+        ),
+        encoding="utf-8",
+    )
+    gh.chmod(0o755)
+    payload = json.dumps(
+        {
+            "tool_name": "Bash",
+            "tool_input": {"command": "gh pr merge 7 --repo %s --rebase --auto" % GH_REPO},
+            "cwd": str(repo),
+        }
+    )
+    env = dict(
+        GIT_ENV,
+        CLAUDE_PROJECT_DIR=str(repo),
+        PATH="%s%s%s" % (stub_bin, os.pathsep, os.environ.get("PATH", "")),
+    )
+    got = subprocess.run(
+        [sys.executable, str(DISPATCH), "block_admin_merge"],
+        input=payload,
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+        cwd=str(repo),
+    )
+    assert got.returncode != 0, got.stderr
+    assert "stale-tip" in got.stderr, got.stderr

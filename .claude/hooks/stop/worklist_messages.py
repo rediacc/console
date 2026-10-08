@@ -464,7 +464,8 @@ V_PR_REVIEW_UNANSWERED = (
     "Review Gate goes red on the next push while this stands: %(reason)s.\n"
     "Answer it BEFORE pushing again:\n"
     "    python3 .claude/hooks/stop/wl_prreview.py --draft --pr %(pr)s > <file>\n"
-    "    (one disposition per finding: fixed <sha40> | not-a-bug | <evidence> | deferred #<item>)\n"
+    "    (one disposition per finding: fixed <sha40> | not-a-bug | <evidence> | "
+    "waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z for an operator-only triage)\n"
     "    python3 .claude/hooks/stop/wl_prreview.py --answer <file> --pr %(pr)s\n"
     "`wl_prreview.py --check --pr %(pr)s` exits 0 once the summary is answered and every "
     "finding thread is resolved."
@@ -2195,9 +2196,11 @@ Plan records (W12):
                                 restore a record's full text from its blob
 
 Per-commit reviews (agent/reviews/<branch>/: clean.jsonl, plus <sha40>.md per other verdict):
-  --review-mark <me> [<finding-id> fixed <sha> | not-a-bug <evidence...> | deferred #<item>]
+  --review-mark <me> [<finding-id> fixed <sha> | not-a-bug <evidence...> |
+                     waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z]
                                 close one finding after checking the fix, the
-                                evidence or the item; bare, list the open ones
+                                evidence, or the operator-only item and the
+                                operator's answer; bare, list the open ones
   --review-commit <me>          commit the finished, unrecorded review files
   --review-run <me> [<sha>]     list unreviewed commits, or review one now
   --prune-reviews <me> [--write] list review directories past retention;

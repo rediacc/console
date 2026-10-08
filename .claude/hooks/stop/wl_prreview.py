@@ -17,7 +17,7 @@ REVIEW COMPLETE IS A REQUIRED CHECK (operator ruling 2026-10-03). A timeout is n
 
 THE SELECTOR IS review_comments' OWN. `FENCE_NEEDLE`, `VERDICT_HEADING`, the low-effort list and the summary floors are imported from `.ci/rediacc_ci/quality/review_comments.py` through `rediacc_hooks/syspath.py` (`import_from_ci`, `.ci` on sys.path only while importing), so a summary this tool calls answered while the gate calls it unanswered cannot come from a drifted copy. `.claude/rediacc_hooks/tests/test_wl_prreview.py` still pins the names equal and the verdict agreeing. The import runs when this module loads, so a tree without `.ci` fails loudly here rather than judging with stale values.
 
-THE DISPOSITION GRAMMAR IS THE PER-COMMIT ONE (`.claude/hooks/stop/wl_review.py`, `mark`): `fixed <sha40>` an ancestor of local HEAD, `not-a-bug | <evidence>` with at least 20 characters that pass `wl_review._citation_ok`, `deferred #<item>` an open, `[?]` or `[>]` worklist item. Every line is checked before anything is posted, so a refused file posts nothing.
+THE DISPOSITION GRAMMAR IS THE PER-COMMIT ONE (`.claude/hooks/stop/wl_review.py`, `mark`): `fixed <sha40>` an ancestor of local HEAD, `not-a-bug | <evidence>` with at least 20 characters that pass `wl_review._citation_ok`, `waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z` an operator-only triaged worklist item whose text names the finding as `pr:<number>/F<n>`, with the minute of the operator's AskUserQuestion answer (agent/plans/PLAN-deferred-findings-block-merge.md D6). `deferred #<item>` is retired: a deferral is unfinished work, refused here and, through review_comments' `DEFERRED_ANSWER_RE`, by the Review Gate. Every line is checked before anything is posted, so a refused file posts nothing.
 
 SEALED. No environment variable is read. `gh` is the only external tool, reached through `wl_gh` (the Stop hook's one gh layer) with one injectable runner (`run_gh`, a `wl_gh.runner`), and the reply posts under the session's own gh identity, which is a different author from github-actions[bot]. Ancestry and citations are checked with wl_review's git helpers against the local checkout.
 
@@ -27,6 +27,7 @@ EVERY READ RETRIES A TRANSIENT FAULT, NO WRITE DOES (agent/plans/PLAN-gh-retry.m
 from __future__ import annotations
 
 import argparse
+import importlib
 import importlib.util
 import json
 import pathlib
@@ -66,6 +67,7 @@ VERDICT_HEADING = _RC.VERDICT_HEADING
 FENCE_TICKS = _RC.FENCE_TICKS
 FENCE_OPENER = _RC.FENCE_OPENER
 FENCE_CLOSER = _RC.FENCE_CLOSER
+DEFERRED_ANSWER_RE = _RC.DEFERRED_ANSWER_RE
 # ---- end of the import ----
 
 # The report header claude_review_gate.REPORT_HEADER writes, and the sha7 it names.
@@ -100,7 +102,20 @@ RC_FAILED_RUN = 4
 
 FIXED_RE = re.compile(r"^fixed ([0-9a-f]{40})$")
 NOT_A_BUG_RE = re.compile(r"^not-a-bug \| (.+)$")
+# Retired (D6): recognised only to refuse it with the fix order.
 DEFERRED_RE = re.compile(r"^deferred #([0-9a-f]{6,16})$")
+WAIVED_RE = re.compile(
+    r"^waived #([0-9a-f]{6,16}) ASKED:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(?::\d{2})?Z$"
+)
+DISPOSITION_GRAMMAR = (
+    "fixed <sha40> | not-a-bug | <evidence> | waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z"
+)
+DEFERRED_REFUSAL = (
+    "deferred is retired (agent/plans/PLAN-deferred-findings-block-merge.md D6): fix the finding "
+    "and answer `fixed <sha40>`, answer `not-a-bug | <evidence>`, or, for an operator-only "
+    "triage (worklist.py --triage <me> 'pr:%d/F%d ...'), ask the operator and answer "
+    "`waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z`"
+)
 DISPOSITION_LINE = re.compile(r"^F(\d+)[ \t]+(.*?)[ \t]*$")
 SUMMARY_LINE = re.compile(r"^#[ \t]*summary:[ \t]*(\d+)[ \t]*$")
 EVIDENCE_MIN = 20
@@ -117,7 +132,8 @@ RESOLVE_MUTATION = (
 )
 
 Runner = Callable[[list[str]], tuple[int, str, str]]
-Items = Callable[[], dict[str, tuple[str, str]]]
+Items = Callable[[], dict[str, tuple[str, ...]]]
+AskedOk = Callable[[str], bool]
 
 
 class UnreadableError(RuntimeError):
@@ -238,7 +254,7 @@ def summary_reply(comments: list[dict], summary: dict) -> dict | None:
 
 
 def summary_verdict(comments: list[dict]) -> tuple[str, dict | None, dict | None]:
-    """("none" | "empty" | "answered" | "unanswered", summary, reply)."""
+    """("none" | "empty" | "answered" | "deferred" | "unanswered", summary, reply). "deferred" is a reply whose disposition parks a finding (DEFERRED_ANSWER_RE): it exists and still fails, as review_comments.summary_verdict rules."""
     summary = newest_summary(comments)
     if summary is None:
         return "none", None, None
@@ -246,6 +262,8 @@ def summary_verdict(comments: list[dict]) -> tuple[str, dict | None, dict | None
         return "empty", summary, None
     reply = summary_reply(comments, summary)
     if reply is not None:
+        if DEFERRED_ANSWER_RE.search(reply.get("body") or ""):
+            return "deferred", summary, reply
         return "answered", summary, reply
     return "unanswered", summary, None
 
@@ -405,7 +423,7 @@ def check_state(pr: int | None = None, runner: Runner = run_gh) -> dict[str, Any
     except UnreadableError:
         token = ""
     unresolved = [c.get("id") for c in roots if not threads.get(c.get("id"), ("", False))[1]]
-    rc = RC_UNANSWERED if view.verdict == "unanswered" or unresolved else RC_OK
+    rc = RC_UNANSWERED if view.verdict in ("unanswered", "deferred") or unresolved else RC_OK
     reasons = {
         "none": "no review summary on PR #%d" % view.number,
         "empty": "summary %s carries an empty findings array; nothing to answer" % view.summary_id,
@@ -413,6 +431,8 @@ def check_state(pr: int | None = None, runner: Runner = run_gh) -> dict[str, Any
         % (view.summary_id, (view.reply or {}).get("id")),
         "unanswered": "summary %s on PR #%d has no substantive reply; run wl_prreview.py --draft, then --answer"
         % (view.summary_id, view.number),
+        "deferred": "summary %s on PR #%d is answered by comment %s, which defers a finding to a worklist item; a deferral is unfinished work: fix it or waive it with the operator's ASKED:, then run wl_prreview.py --draft and --answer again"
+        % (view.summary_id, view.number, (view.reply or {}).get("id")),
     }
     reason = reasons[view.verdict]
     if unresolved:
@@ -612,7 +632,10 @@ def render_draft(view: PrView, findings: list[dict]) -> str:
         "# Replace each TODO with one of:",
         "#   fixed <sha40>                 a commit on this branch (an ancestor of HEAD)",
         "#   not-a-bug | <evidence>        20+ characters citing an existing path:line or a sha on this branch",
-        "#   deferred #<item>              an open worklist item",
+        "#   waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z",
+        "#                                 an operator-only triaged item naming pr:%d/F<n>, and the minute of the operator's AskUserQuestion answer"
+        % view.number,
+        "# A deferral is not an answer: every finding is fixed, shown not to be a bug, or waived by the operator.",
     ]
     for n, f in enumerate(findings, 1):
         lines.append(
@@ -647,13 +670,30 @@ def cmd_draft(pr: int | None, runner: Runner) -> int:
 # ---- --answer ----
 
 
-def default_items() -> dict[str, tuple[str, str]]:
-    """{item id: (state, text)} from the worklist fold, the same fold `worklist.py --review-mark` supplies."""
-    import wl_core as C  # noqa: PLC0415 -- sibling, loaded only when a deferral is checked
+def default_items() -> dict[str, tuple[str, ...]]:
+    """{item id: (state, text, triage verdict)} from the worklist fold, the same fold `worklist.py --review-mark` supplies."""
+    import wl_core as C  # noqa: PLC0415 -- sibling, loaded only when a waiver is checked
     import wl_store as S  # noqa: PLC0415
 
     fold = S.load(C.worklist_for(C.project_start()), sync=False)
-    return {r["id"]: (r.get("state", " "), r.get("text", "")) for r in fold.items}
+    return {
+        r["id"]: (
+            r.get("state", " "),
+            r.get("text", ""),
+            str((r.get("triage") or {}).get("v") or ""),
+        )
+        for r in fold.items
+    }
+
+
+def default_asked_ok(text: str) -> bool:
+    """True when an `ASKED:<minute>Z` in `text` matches an AskUserQuestion answer in this session's lead transcript (wl_checks._asked_in_transcript, the tick-evidence rule). The siblings load by name, only when a waiver is checked."""
+    checks = importlib.import_module("wl_checks")
+    core = importlib.import_module("wl_core")
+    roster = importlib.import_module("wl_roster")
+    sub = roster.session_subagents_dir(str(pathlib.Path.cwd()), core.resolve_session_id())
+    transcript = str(sub.parent.with_suffix(".jsonl")) if sub is not None else None
+    return bool(checks._asked_in_transcript(text, transcript))
 
 
 def parse_dispositions(text: str) -> tuple[str, dict[int, str], list[str]]:
@@ -685,10 +725,15 @@ def validate(
     count: int,
     repo_root: pathlib.Path,
     items: Items,
+    asked_ok: AskedOk | None = None,
+    pr: int = 0,
 ) -> list[str]:
-    """Every refusal, naming the finding. Empty means every finding has a valid disposition."""
+    """Every refusal, naming the finding. Empty means every finding has a valid disposition.
+
+    A waiver passes checks (a)-(c) of the plan's D3: the item exists and its text names `pr:<pr>/F<n>`, its latest triage verdict is operator-only, and `asked_ok` matches the `ASKED:` minute to an AskUserQuestion answer.
+    """
     errors: list[str] = []
-    fold: dict[str, tuple[str, str]] | None = None
+    fold: dict[str, tuple[str, ...]] | None = None
     unreadable = ""
     errors.extend(
         "F%d: the summary has no such finding (it has %d)" % (n, count)
@@ -697,10 +742,7 @@ def validate(
     for n in range(1, count + 1):
         d = dispositions.get(n, "")
         if not d or d == TODO:
-            errors.append(
-                "F%d: no disposition (fixed <sha40> | not-a-bug | <evidence> | deferred #<item>)"
-                % n
-            )
+            errors.append("F%d: no disposition (%s)" % (n, DISPOSITION_GRAMMAR))
             continue
         m = FIXED_RE.match(d)
         if m:
@@ -723,29 +765,42 @@ def validate(
                     % n
                 )
             continue
-        m = DEFERRED_RE.match(d)
+        if DEFERRED_RE.match(d):
+            errors.append("F%d: %s" % (n, DEFERRED_REFUSAL % (pr, n)))
+            continue
+        m = WAIVED_RE.match(d)
         if m:
-            item = m.group(1)
+            item, minute = m.group(1), m.group(2)
             if fold is None and not unreadable:
                 try:
                     fold = items()
-                except Exception as exc:  # noqa: BLE001 -- an unreadable worklist refuses the deferral, it does not crash the verb
+                except Exception as exc:  # noqa: BLE001 -- an unreadable worklist refuses the waiver, it does not crash the verb
                     unreadable = str(exc) or type(exc).__name__
             if fold is None:
-                # Every deferral is refused for the read failure, not only the first: an empty stand-in fold would call the later items missing.
+                # Every waiver is refused for the read failure, not only the first: an empty stand-in fold would call the later items missing.
                 errors.append("F%d: the worklist cannot be read (%s)" % (n, unreadable))
                 continue
+            name = "pr:%d/F%d" % (pr, n)
             rec = fold.get(item)
-            if rec is None:
+            triage = (rec[2] if len(rec) > 2 else "") if rec else ""
+            if rec is None or rec[0] == "~":
                 errors.append("F%d: worklist item #%s does not exist" % (n, item))
-            elif rec[0] not in (" ", "?", ">"):
+            elif name not in (rec[1] if len(rec) > 1 else ""):
                 errors.append(
-                    "F%d: worklist item #%s is not open, [?] or [>] (state %r)" % (n, item, rec[0])
+                    "F%d: worklist item #%s does not name %s in its text" % (n, item, name)
+                )
+            elif triage != "operator-only":
+                errors.append(
+                    "F%d: worklist item #%s has triage verdict %r, not operator-only: only an operator-only finding is waived; fix it instead"
+                    % (n, item, triage or "none")
+                )
+            elif asked_ok is None or not asked_ok("ASKED:%sZ" % minute):
+                errors.append(
+                    "F%d: ASKED:%sZ matches no AskUserQuestion answer in this session's transcript within 300 s: ask the operator first, then waive with that answer's minute"
+                    % (n, minute)
                 )
             continue
-        errors.append(
-            "F%d: %r is not fixed <sha40> | not-a-bug | <evidence> | deferred #<item>" % (n, d)
-        )
+        errors.append("F%d: %r is not %s" % (n, d, DISPOSITION_GRAMMAR))
     return errors
 
 
@@ -756,9 +811,9 @@ def describe(d: str) -> str:
     m = NOT_A_BUG_RE.match(d)
     if m:
         return "not a bug: %s" % m.group(1).strip()
-    m = DEFERRED_RE.match(d)
+    m = WAIVED_RE.match(d)
     if m:
-        return "deferred to worklist item #%s" % m.group(1)
+        return "waived by the operator (ASKED:%sZ), worklist item #%s" % (m.group(2), m.group(1))
     return d
 
 
@@ -790,6 +845,7 @@ def cmd_answer(
     runner: Runner,
     repo_root: pathlib.Path = CONSOLE_ROOT,
     items: Items = default_items,
+    asked_ok: AskedOk | None = default_asked_ok,
 ) -> int:
     try:
         text = path.read_text(encoding="utf-8")
@@ -819,7 +875,7 @@ def cmd_answer(
             "the file answers summary %s but the newest summary is %s; run --draft again"
             % (named, view.summary_id),
         )
-    errors += validate(dispositions, len(findings), repo_root, items)
+    errors += validate(dispositions, len(findings), repo_root, items, asked_ok, view.number)
     if errors:
         print("wl_prreview --answer: refused, nothing posted:", file=sys.stderr)
         for e in errors:

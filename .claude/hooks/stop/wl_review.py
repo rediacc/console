@@ -80,8 +80,19 @@ RESOLUTION_RES = (
         "not-a-bug",
         re.compile(r"^not-a-bug \| (.{20,}) \| (%s|%s) (%s)$" % (ME8, ORACLE_SIGNER, ISOZ)),
     ),
+    # LEGACY: `deferred` is retired as a new resolution (agent/plans/PLAN-deferred-findings-block-merge.md D1). The parser still reads it so merged history stays well formed, and every reader of the judged branch refuses it at any severity.
     ("deferred", re.compile(r"^deferred #([0-9a-f]{6,16}) \| (%s) (%s)$" % (ME8, ISOZ))),
+    # The one escape (D3): an operator-ruled waiver, written only by the mark verb after it checks the item, its operator-only triage and the AskUserQuestion answer at the `ASKED:` minute.
+    (
+        "waived",
+        re.compile(
+            r"^waived #([0-9a-f]{6,16}) ASKED:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})Z \| (%s) (%s)$"
+            % (ME8, ISOZ)
+        ),
+    ),
 )
+RESOLUTION_BY_KIND = dict(RESOLUTION_RES)
+RESOLUTION_GRAMMAR = "open | fixed <sha40> | not-a-bug | <evidence> | waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z (legacy: deferred #<item>), each signed `| <me8> <isoZ>`"
 VERDICT_RE = re.compile(
     r"^(findings|clean|skipped \((?:gitlink-only|no-review)\)|failed \([^()\n]{1,200}\))$"
 )
@@ -320,12 +331,12 @@ class Finding:
         return ""
 
     def deferred_item(self):
-        m = RESOLUTION_RES[3][1].match(self.resolution)
+        m = RESOLUTION_BY_KIND["deferred"].match(self.resolution)
         return m.group(1) if m else ""
 
     def oracle_refuted(self):
         """True when the existence oracle, not a person, closed this finding."""
-        m = RESOLUTION_RES[2][1].match(self.resolution)
+        m = RESOLUTION_BY_KIND["not-a-bug"].match(self.resolution)
         return bool(m and m.group(2) == ORACLE_SIGNER)
 
 
@@ -567,9 +578,7 @@ def parse(text):
         )
         if not finding.resolution_kind():
             raise MalformedReviewError(
-                "Resolution %r is not open | fixed <sha40> | not-a-bug | <evidence> | deferred #<item>, each signed `| <me8> <isoZ>`"
-                % finding.resolution[:80],
-                rn,
+                "Resolution %r is not %s" % (finding.resolution[:80], RESOLUTION_GRAMMAR), rn
             )
         review.findings.append(finding)
     if body_sig(review.findings) != review.body_sig:
@@ -2233,7 +2242,7 @@ def _untracked_or_modified(root, d):
 def branch_state(root, branch, cfg=None, items=None, repos=None, extra_repos=(), tip="HEAD"):
     """Everything a reader needs about the branch's reviews, computed once.
 
-    `items`, when given, is {item_id: state} from the worklist fold: a `deferred #<item>` whose item is gone reopens its finding. Without it a deferral counts as resolved (the mark verb checked the item when it was written).
+    A legacy `deferred #<item>` lands in `st["deferred"]` at any severity, whatever state its item is in (agent/plans/PLAN-deferred-findings-block-merge.md D1), and push_refusals refuses it. `items`, when given, is the worklist fold as {item_id: state} or {item_id: (state, text, ...)}: a deferral whose own item, or any item whose text names the finding, is leased `[>]` is also listed in `st["deferred_in_flight"]`, which moves its Stop-hook line from the block to the note (D5) and changes no refusal.
     `repos`, when given, limits the coverage walk; default: the console plus every repo a review in the directory names.
     `extra_repos` is added to whichever set that is: `--status` and `--check` add branch_repos() so a submodule review still in flight (no file yet) is walked, without dropping a repo only a review file names.
     """
@@ -2252,7 +2261,10 @@ def branch_state(root, branch, cfg=None, items=None, repos=None, extra_repos=(),
         "in_flight": [],
         "uncommitted": [],
         "uncovered": [],
+        "deferred": [],
+        "deferred_in_flight": [],
     }
+    leased = _leased_items(items)
     dirty = _untracked_or_modified(root, d) if d.is_dir() else set()
     seen_repos = {"console"}
     records, st["malformed"] = dir_records(d)
@@ -2274,8 +2286,12 @@ def branch_state(root, branch, cfg=None, items=None, repos=None, extra_repos=(),
             )
         for f in review.findings:
             kind = f.resolution_kind()
-            reopened = kind == "deferred" and items is not None and f.deferred_item() not in items
-            if kind != "open" and not reopened:
+            if kind == "deferred":
+                st["deferred"].append((path, f))
+                if f.deferred_item() in leased or any(f.id in text for text in leased.values()):
+                    st["deferred_in_flight"].append((path, f))
+                continue
+            if kind != "open":
                 continue
             (st["blocking"] if SEV_RANK[f.severity] >= block_rank else st["advisory"]).append(
                 (path, f)
@@ -2293,6 +2309,18 @@ def branch_state(root, branch, cfg=None, items=None, repos=None, extra_repos=(),
         for sha in uncovered(root, repo, branch, cfg, walk_tip):
             st["uncovered"].append((label, sha))
     return st
+
+
+def _leased_items(items):
+    """{item_id: text} of every `[>]` item in a worklist fold given as {id: state} or {id: (state, text, ...)}; text is "" when the fold carries none."""
+    out = {}
+    for item_id, rec in (items or {}).items():
+        state, text = (
+            (rec, "") if isinstance(rec, str) else (rec[0], rec[1] if len(rec) > 1 else "")
+        )
+        if state == ">":
+            out[item_id] = text or ""
+    return out
 
 
 def branch_repos(root, branch):
@@ -2328,9 +2356,39 @@ def mark_commands(finding_id):
         "worklist.py --review-mark <me> %s fixed <sha-of-the-fix>" % finding_id,
         "worklist.py --review-mark <me> %s not-a-bug <evidence citing path:line or a sha>"
         % finding_id,
-        "worklist.py --review-mark <me> %s deferred #<worklist-item naming %s>"
+        "worklist.py --review-mark <me> %s waived #<operator-only item naming %s> ASKED:<YYYY-MM-DDTHH:MM>Z"
         % (finding_id, finding_id),
     )
+
+
+def triage_command(f):
+    """D5 step 1: one new worklist item per deferred finding, through the triage verb, so its verdict names the next step."""
+    claim = " ".join(f.claim.replace("'", "").split())[:160]
+    return "worklist.py --triage <me> '%s %s:%d: %s'" % (f.id, f.file, f.line, claim)
+
+
+# D5: the order a deferred finding is settled in. A deferral is unfinished work; nothing parks it.
+DEFERRAL_ORDER = (
+    "then by the triage verdict:",
+    "  INLINE: fix it, commit, then worklist.py --review-mark <me> <finding-id> fixed <sha-of-the-fix>",
+    "  PLAN+SUBAGENT: a Plan agent writes agent/plans/PLAN-<slug>.md, a leased writer fixes it this session, then worklist.py --review-mark <me> <finding-id> fixed <sha>",
+    "  OPERATOR-ONLY: AskUserQuestion, then worklist.py --review-mark <me> <finding-id> waived #<triage-item> ASKED:<YYYY-MM-DDTHH:MM>Z",
+    "  or, when a re-read shows no defect: worklist.py --review-mark <me> <finding-id> not-a-bug <evidence citing path:line or a sha>",
+)
+
+
+def deferral_lines(rows):
+    """The finding line and its triage command for each deferred finding, then the order once."""
+    if not rows:
+        return []
+    out = []
+    for _p, f in rows:
+        out.append(
+            "DEFERRED [%s] %s %s:%d -- %s" % (f.severity, f.id, f.file, f.line, f.claim[:160])
+        )
+        out.append("    " + triage_command(f))
+    out.extend("  " + line for line in DEFERRAL_ORDER)
+    return out
 
 
 def describe(st, limit=5):
@@ -2343,6 +2401,8 @@ def describe(st, limit=5):
     for _path, f in st["blocking"][:limit]:
         out.append("OPEN [%s] %s %s:%d -- %s" % (f.severity, f.id, f.file, f.line, f.claim[:160]))
         out.extend("    " + c for c in mark_commands(f.id))
+    # Every deferral is listed, not `limit` of them: each is a refusal on its own, and a --check that names some of them hides the rest.
+    out.extend(deferral_lines(st.get("deferred", [])))
     for label, sha in st["uncovered"][:limit]:
         out.append("UNREVIEWED %s %s: %s" % (label, sha[:8], run_command(label, sha, st["branch"])))
     for label, sha in st["in_flight"][:limit]:
@@ -2399,6 +2459,8 @@ def push_refusals(st, console_push=True):
         reasons.append("malformed")
     if st["blocking"]:
         reasons.append("blocking")
+    if st.get("deferred"):
+        reasons.append("deferred")
     if st["uncovered"]:
         reasons.append("uncovered")
     if st["in_flight"]:
@@ -2413,8 +2475,24 @@ def push_refusals(st, console_push=True):
 CHECK_COMMAND = "python3 .claude/hooks/stop/wl_review.py --check"
 
 
-def check_state(root, branch, label="console", cfg=None):
-    """(reasons, lines) for the merge-and-ready precondition: every commit since the base has a review record in `agent/reviews/<branch>/` with no open finding at or above `block_at`, and every record is committed. Empty `reasons` means the branch is clean. Local only: no network call.
+def _ref_age(root, ref, now=None):
+    """How long ago `ref` last moved, from its reflog ("12 min ago"), or "at an unknown time" when the reflog holds no entry."""
+    out = git_out(root, "log", "-g", "-1", "--date=unix", "--format=%gd", ref)
+    m = re.search(r"@\{(\d+)\}", out or "")
+    if not m:
+        return "at an unknown time"
+    secs = max(0, int((now if now is not None else time.time()) - int(m.group(1))))
+    if secs < 3600:
+        return "%d min ago" % (secs // 60)
+    if secs < 172800:
+        return "%d h ago" % (secs // 3600)
+    return "%d days ago" % (secs // 86400)
+
+
+def check_state(root, branch, label="console", cfg=None, expected_tip=""):
+    """(reasons, lines) for the merge-and-ready precondition: every commit since the base has a review record in `agent/reviews/<branch>/` with no open finding at or above `block_at` and no deferred finding, and every record is committed. Empty `reasons` means the branch is clean. Local only: no network call.
+
+    THE TIP IS NAMED, AND CAN BE PINNED (finding 71afd29f.3). A branch judged at `origin/<branch>` is judged at this clone's remote-tracking ref, which no fetch refreshes here, so the output names that ref, its sha and when it last moved. `expected_tip` (the PR's `headRefOid`, which block_admin_merge already reads with its `gh pr view`; `--expect-tip <sha>` on the CLI) pins it: a walked tip that does not contain that commit refuses as `stale-tip`, so commits the PR would merge are never judged by their absence.
 
     The coverage walk reads `merge-base(origin/main, tip)..tip`. A console branch that is not checked out at `root` is judged at its pushed tip `origin/<branch>` (a PR merges what was pushed); only a branch with no pushed ref refuses (`not-checked-out`), rather than judging the wrong commits. `main` is never judged at its pushed tip, so an unchecked-out main keeps the refusal. `label` names the repository whose commits are walked (the console, or a submodule whose review records live in the console's directory for the same branch).
     """
@@ -2436,6 +2514,36 @@ def check_state(root, branch, label="console", cfg=None):
                 % (branch, root, CHECK_COMMAND, branch)
             ],
         )
+    tip_lines = []
+    if tip != "HEAD":
+        tip_lines.append(
+            "judged at %s %s: the remote-tracking ref, last moved %s; no fetch runs here (git fetch origin %s refreshes it; --expect-tip <sha> pins it to the PR head)"
+            % (
+                tip,
+                git_out(root, "rev-parse", "--short=12", tip),
+                _ref_age(root, "refs/remotes/" + tip),
+                branch,
+            )
+        )
+    if expected_tip and label in ("console", None):
+        walked = git_out(root, "rev-parse", "-q", "--verify", "%s^{commit}" % tip)
+        if not walked or git(root, "merge-base", "--is-ancestor", expected_tip, walked)[0] != 0:
+            return (
+                ["stale-tip"],
+                [
+                    *tip_lines,
+                    "the PR head %s is not contained in the walked tip %s (%s), so commits the PR merges would go unjudged; git fetch origin %s and re-run: %s --branch %s --expect-tip %s"
+                    % (
+                        expected_tip[:12],
+                        tip,
+                        (walked or "unresolved")[:12],
+                        branch,
+                        CHECK_COMMAND,
+                        branch,
+                        expected_tip,
+                    ),
+                ],
+            )
     # label None judges every repository branch_state walks by default (the console plus each one a review names), plus branch_repos()
     # for a submodule review in flight; replacing the default with branch_repos() alone dropped a reviewed repo (efed9e0c7). The CLI's --check
     # passes it: with `{"console"}` it printed "clean" while a submodule commit's review was still in flight (2026-10-02, renet
@@ -2444,7 +2552,7 @@ def check_state(root, branch, label="console", cfg=None):
         st = branch_state(root, branch, cfg, extra_repos=branch_repos(root, branch), tip=tip)
     else:
         st = branch_state(root, branch, cfg, repos={label}, tip=tip)
-    return push_refusals(st), describe(st, limit=8)
+    return push_refusals(st), tip_lines + describe(st, limit=8)
 
 
 def _malformed_remedy(path, err, branch):
@@ -2478,17 +2586,32 @@ def stop_texts(st, limit=5):
                 ),
             )
         )
+    parts = []
     if st["blocking"]:
         lines = []
         for _p, f in st["blocking"][:limit]:
             lines.append("[%s] %s %s:%d -- %s" % (f.severity, f.id, f.file, f.line, f.claim[:160]))
             lines.extend("    " + c for c in mark_commands(f.id))
-        block = (
-            "OPEN PER-COMMIT REVIEW FINDING(S) at or above the block threshold on %s (%d). Fix each and mark it, or record why it is not a bug, or defer it to a worklist item that names it:\n  %s"
+        parts.append(
+            "OPEN PER-COMMIT REVIEW FINDING(S) at or above the block threshold on %s (%d). Fix each and mark it fixed, record why it is not a bug, or, for an operator-only triage, waive it with the operator's ASKED: answer:\n  %s"
             % (st["branch"], len(st["blocking"]), "\n  ".join(lines))
         )
-    rest = dict(st, malformed=[], blocking=[])
+    in_flight = {f.id for _p, f in st.get("deferred_in_flight", [])}
+    waiting = [(p, f) for p, f in st.get("deferred", []) if f.id not in in_flight]
+    if waiting:
+        parts.append(
+            "DEFERRED PER-COMMIT REVIEW FINDING(S) on %s (%d). A deferral is unfinished work: push and merge refuse it at any severity (agent/plans/PLAN-deferred-findings-block-merge.md). Triage each one, then fix it this session:\n  %s"
+            % (st["branch"], len(waiting), "\n  ".join(deferral_lines(waiting)))
+        )
+    block = "\n\n".join(parts)
+    rest = dict(st, malformed=[], blocking=[], deferred=[])
     note_lines = describe(rest, limit)
+    # The wait stand-down (D5): a deferral whose triage item is leased to a writer is a note while the writer works; push and merge still refuse it.
+    note_lines += [
+        "DEFERRED [%s] %s %s:%d: its triage item is leased [>], so this waits on the writer; push and merge still refuse it"
+        % (f.severity, f.id, f.file, f.line)
+        for _p, f in st.get("deferred_in_flight", [])
+    ]
     note = (
         ("Per-commit reviews on %s:\n  %s" % (st["branch"], "\n  ".join(note_lines)))
         if note_lines
@@ -2659,10 +2782,54 @@ def rebased_copy_below(repo, pid, fix):
     return ""
 
 
-def mark(root, branch, finding_id, kind, args, me, items=None, now=None):
+WAIVE_ASKED_RE = re.compile(r"^ASKED:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(?::\d{2})?Z$")
+
+
+def deferral_refusal(finding):
+    """The D5 plan-and-fix order `mark deferred` answers with: a deferral is no longer a resolution."""
+    return "\n".join(
+        [
+            "deferred is retired (agent/plans/PLAN-deferred-findings-block-merge.md D1): a finding is fixed before merge, always. Triage it, then fix it this session:",
+            "  " + triage_command(finding),
+            *("  " + line for line in DEFERRAL_ORDER),
+        ]
+    )
+
+
+def _waive(finding_id, args, items, asked_ok):
+    """The `waived #<item> ASKED:<minute>Z` resolution body after checks (a)-(c) of D3; raises ValueError naming the failed one."""
+    if len(args) != 2 or not re.match(r"^#?[0-9a-f]{6,16}$", args[0]):
+        raise ValueError(
+            "waived takes a worklist item and the operator's answer: #<item> ASKED:<YYYY-MM-DDTHH:MM>Z"
+        )
+    m = WAIVE_ASKED_RE.match(args[1])
+    if not m:
+        raise ValueError("%r is not ASKED:<YYYY-MM-DDTHH:MM>Z" % args[1])
+    item, minute = args[0].lstrip("#"), m.group(1)
+    rec = (items or {}).get(item)
+    if rec is None or rec[0] == "~":
+        raise ValueError("worklist item #%s does not exist" % item)
+    text = rec[1] if len(rec) > 1 else ""
+    triage = rec[2] if len(rec) > 2 else ""
+    if finding_id not in (text or ""):
+        raise ValueError("worklist item #%s does not name %s in its text" % (item, finding_id))
+    if triage != "operator-only":
+        raise ValueError(
+            "worklist item #%s has triage verdict %r, not operator-only: only an operator-only finding is waived; fix it instead (worklist.py --triage <me> --id %s ...)"
+            % (item, triage or "none", item)
+        )
+    if asked_ok is None or not asked_ok("ASKED:%sZ" % minute):
+        raise ValueError(
+            "ASKED:%sZ matches no AskUserQuestion answer in this session's transcript within 300 s: ask the operator first (AskUserQuestion), then waive with that answer's minute"
+            % minute
+        )
+    return "waived #%s ASKED:%sZ" % (item, minute)
+
+
+def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_ok=None):
     """Close one finding. Returns the path written; raises ValueError naming the failed check.
 
-    `items` is {item_id: (state, text)} from the worklist fold, needed only for `deferred`.
+    `items` is {item_id: (state, text, triage_verdict)} from the worklist fold and `asked_ok(text)` is True when an `ASKED:<minute>Z` in `text` matches an AskUserQuestion answer in the lead transcript (worklist._review_cli builds it from wl_checks._asked_in_transcript); both are needed only for `waived`. `deferred` is refused with the plan-and-fix order (agent/plans/PLAN-deferred-findings-block-merge.md D1, D5).
     """
     path, review, finding = find_finding(root, branch, finding_id)
     repo = repo_from_label(root, review.repo)
@@ -2723,20 +2890,11 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None):
             )
         resolution = "not-a-bug | %s | %s" % (evidence, stamp)
     elif kind == "deferred":
-        if len(args) != 1 or not re.match(r"^#?[0-9a-f]{6,16}$", args[0]):
-            raise ValueError("deferred takes one worklist item id, #<id>")
-        item = args[0].lstrip("#")
-        rec = (items or {}).get(item)
-        if rec is None:
-            raise ValueError("worklist item #%s does not exist" % item)
-        state, text = rec
-        if state not in (" ", "?", ">"):
-            raise ValueError("worklist item #%s is not open, [?] or [>] (state %r)" % (item, state))
-        if finding_id not in (text or ""):
-            raise ValueError("worklist item #%s does not name %s in its text" % (item, finding_id))
-        resolution = "deferred #%s | %s" % (item, stamp)
+        raise ValueError(deferral_refusal(finding))
+    elif kind == "waived":
+        resolution = "%s | %s" % (_waive(finding_id, args, items, asked_ok), stamp)
     else:
-        raise ValueError("the resolution is fixed, not-a-bug or deferred, not %r" % kind)
+        raise ValueError("the resolution is fixed, not-a-bug or waived, not %r" % kind)
     finding.resolution = resolution
     with _mark_lock(review.sha):
         current, err = read_review(path)
@@ -2829,7 +2987,8 @@ VERB_USAGE = """usage:
   worklist.py --review-mark <me>                                       list the branch's open findings
   worklist.py --review-mark <me> <finding-id> fixed <sha>              the fix: on the branch, after the reviewed commit, touching the file
   worklist.py --review-mark <me> <finding-id> not-a-bug <evidence...>  >= 20 chars citing an existing path:line or a sha on the branch
-  worklist.py --review-mark <me> <finding-id> deferred #<item>         an open worklist item whose text names the finding id
+  worklist.py --review-mark <me> <finding-id> waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z
+                                                                       an operator-only triaged item naming the finding id, and the minute of the operator's AskUserQuestion answer
   worklist.py --review-commit <me>                                     commit the finished, unrecorded review files of the branch
   worklist.py --review-run <me> [<sha> [--repo <console|private/x>]]   list unreviewed commits, or review one now in the foreground
   worklist.py --prune-reviews <me> [--write]                           list (or, with --write, delete) agent/reviews/<branch>/ directories past retention
@@ -2915,8 +3074,8 @@ def drop_foreign_reviews(root, branch, write):
     return 0, "\n".join([head + "; deleted:", *("  " + r for r in rows)])
 
 
-def verb(name, me, args, root, items_loader, branch=None):
-    """(rc, text) for one worklist review verb. `items_loader()` returns {item_id: (state, text)} from the worklist fold; it is called only when a deferral needs it."""
+def verb(name, me, args, root, items_loader, branch=None, asked_ok=None):
+    """(rc, text) for one worklist review verb. `items_loader()` returns {item_id: (state, text, triage_verdict)} from the worklist fold and `asked_ok(text)` checks an `ASKED:` minute against the lead transcript; both are used only by a waiver."""
     root = pathlib.Path(root)
     if name == "--prune-reviews":
         return prune_reviews(root, args)
@@ -2932,12 +3091,20 @@ def verb(name, me, args, root, items_loader, branch=None):
             if not branch:
                 return 0, "open per-commit review findings: none (HEAD is on no branch)"
             st = branch_state(root, branch, repos=())
-            rows = st["blocking"] + st["advisory"]
+            rows = st["blocking"] + st["deferred"] + st["advisory"]
             if not rows:
                 return 0, "open per-commit review findings for %s: none" % branch
             text = ["open per-commit review findings for %s:" % branch]
             text += [
-                "  [%s] %s %s:%d -- %s" % (f.severity, f.id, f.file, f.line, f.claim[:200])
+                "  %s[%s] %s %s:%d -- %s"
+                % (
+                    "DEFERRED " if f.resolution_kind() == "deferred" else "",
+                    f.severity,
+                    f.id,
+                    f.file,
+                    f.line,
+                    f.claim[:200],
+                )
                 for _p, f in rows
             ]
             return 0, "\n".join(text)
@@ -2945,9 +3112,11 @@ def verb(name, me, args, root, items_loader, branch=None):
             return 2, VERB_USAGE
         if not branch:
             return 1, "refused: HEAD is on no branch, so no review directory applies"
-        items = items_loader() if args[1] == "deferred" else None
+        items = items_loader() if args[1] == "waived" else None
         try:
-            path = mark(root, branch, args[0], args[1], args[2:], me, items=items)
+            path = mark(
+                root, branch, args[0], args[1], args[2:], me, items=items, asked_ok=asked_ok
+            )
         except ValueError as exc:
             return 1, "refused: %s" % exc
         return 0, "marked %s %s in %s; the change rides the next commit (or --review-commit)" % (
@@ -3115,7 +3284,7 @@ def ledger_migrate(root, write=False, codec=None, snapshot=None, log=print):
 USAGE = """usage:
   wl_review.py --run <sha> --branch <branch> [--repo <console|private/x>] [--root <console>]   review one commit now
   wl_review.py --status [--branch <branch>]                                                    print the branch's review state
-  wl_review.py --check [--branch <branch>]                                                     exit 1 while the branch has review refusals, 0 when clean
+  wl_review.py --check [--branch <branch>] [--expect-tip <sha>]                                exit 1 while the branch has review refusals (an open blocking or any deferred finding, or a walked tip that lacks <sha>), 0 when clean
   wl_review.py --ledger-migrate [--write]                                                      move every eligible <sha40>.md into its branch's clean.jsonl (dry run by default)
 """
 
@@ -3156,7 +3325,9 @@ def main(argv):
         return 0
     if argv[0] == "--check":
         branch = _opt(argv, "--branch") or current_branch(root)
-        reasons, lines = check_state(root, branch, label=_opt(argv, "--repo", None))
+        reasons, lines = check_state(
+            root, branch, label=_opt(argv, "--repo", None), expected_tip=_opt(argv, "--expect-tip")
+        )
         print(
             "per-commit reviews for %s: %s"
             % (
