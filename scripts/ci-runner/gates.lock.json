@@ -5470,21 +5470,6 @@
     }
   },
   {
-    "id": "gate-test:media-r2",
-    "run": ".ci/scripts/test/gates/test-media-r2.sh",
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-media-r2.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-gate-tests",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
     "id": "gate-test:runner-advice",
     "run": ".ci/scripts/test/gates/test-runner-advice.sh",
     "reads": [

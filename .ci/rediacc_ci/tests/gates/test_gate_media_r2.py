@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-media-r2.sh`.
+"""Port of `.ci/scripts/test/gates/test-media-r2.sh`, deleted on 2026-10-08; its frozen golden answers for it in test_twin_parity.py.
 
 `.ci/media/r2.sh`, the tutorial-narration cache in R2.
 

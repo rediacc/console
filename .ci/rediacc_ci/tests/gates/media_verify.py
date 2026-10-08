@@ -1,6 +1,6 @@
-"""`.ci/media/verify.sh`, ported: the post-cutover ownership proof and the module sandbox.
+"""The post-cutover ownership proof and the module sandbox, ported from `.ci/media/verify.sh` (deleted 2026-10-08 with its last sourcer, test-media-r2.sh).
 
-WHAT THE BASH ORIGINAL PROVES, restated because it is the whole reason a media gate test is not just a behaviour test. Phase 1 of the media split copied 35 functions out of run.sh and three out of media.sh into seven modules WITHOUT deleting the originals, so for one phase both copies existed and the entire risk was silent drift between them. Phase 2 deleted the originals. There is
+WHAT THE BASH ORIGINAL PROVED, restated because it is the whole reason a media gate test is not just a behaviour test. Phase 1 of the media split copied 35 functions out of run.sh and three out of media.sh into seven modules WITHOUT deleting the originals, so for one phase both copies existed and the entire risk was silent drift between them. Phase 2 deleted the originals. There is
 no second copy left to drift from, so the question changed from "did the copy drift" to "does the delegation still reach the function that used to be here", and it is answered two ways: STRUCTURE (exactly one file defines the name, it is the module under test, the origins no longer define it, and sourcing media-entry.sh resolves the name to THIS module's body) and BEHAVIOUR (what
 the module does when its dependencies are missing, which is the only part CI can drive).
 
@@ -123,7 +123,7 @@ def _coverage_prelude() -> str:
     return "exec 9>>'%s'; BASH_XTRACEFD=9; PS4='+|${BASH_SOURCE:-}|${LINENO}|'; set -x;" % target
 
 
-# Strict mode and the five log functions, the head of every fresh shell: the same text as `_media_log_prelude` in `.ci/media/verify.sh`. Glyphs, stderr only, no colour (the shell's stderr is merged into a pipe, never a terminal).
+# Strict mode and the five log functions, the head of every fresh shell: the same text as `_media_log_prelude` in the deleted `.ci/media/verify.sh`. Glyphs, stderr only, no colour (the shell's stderr is merged into a pipe, never a terminal).
 LOG_PRELUDE = """set -euo pipefail
 log_info() { echo -e "\u2713 $*" >&2; }
 log_warn() { echo -e "\u26a0 $*" >&2; }
