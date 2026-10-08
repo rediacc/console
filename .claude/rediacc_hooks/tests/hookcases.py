@@ -1369,6 +1369,22 @@ STATIC: list[Case] = [
         ask_json("Should I push now?"),
         "settled(push now question refused)",
     ),
+    case(
+        # An unpunctuated timing ask is still the permission rule's: the time word is not what refuses it.
+        "check 2 guards/block_settled_questions.py",
+        ask_json("Should we push now."),
+        "settled(push now unpunctuated refused)",
+    ),
+    case(
+        "check 2 guards/block_settled_questions.py",
+        ask_json("How do we push the batch once the review is in?"),
+        "settled(push how-do with a once clause is timing)",
+    ),
+    case(
+        "check 2 guards/block_settled_questions.py",
+        ask_json("How do we push the batch until the review is in?"),
+        "settled(push how-do with an until clause is timing)",
+    ),
     # 2026-09-16, added live: the worktree/branch ROUTING class -- "shouldn't have asked ... it has big-bang answering usually" -- gets the same two-condition treatment as commit/branch/push/pr/merge.
     case(
         "check 2 guards/block_settled_questions.py",

@@ -120,7 +120,7 @@ PUSH_TIMING_BEFORE = (
     r"(^|[^a-z])(should|shall|can|may|must) (the|this|that|these|it|they) [a-z_ ]{0,40}be $"
 )
 PUSH_TIMING_AFTER = (
-    r"^[^.?!;]*?((^|[^a-z])(now|yet|first|later|already|today|tonight)([^a-z]|$)|"
+    r"^[^.?!;]*?((^|[^a-z])(now|yet|first|later|already|today|tonight|once|until)([^a-z]|$)|"
     r"(^|[^a-z])or (keep|wait|continue|hold|finish|not)([^a-z]|$))"
 )
 PUSH_BARE = (
