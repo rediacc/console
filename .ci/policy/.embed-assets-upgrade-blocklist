@@ -23,6 +23,6 @@
 # those lanes ambiguous between the upgrade and the repair -- the one thing this
 # wave has spent its whole length disentangling.
 # REVISIT WHEN PR #589 MERGES: delete this line, run
-# `npm run check:ci-embed-asset-freshness -- --upgrade`, then follow the four
+# `npx tsx scripts/gates/check-embed-asset-freshness.ts --upgrade`, then follow the four
 # steps that gate prints. The pin is 1.36.4+k3s1 as of 2026-09-16.
 k3s
