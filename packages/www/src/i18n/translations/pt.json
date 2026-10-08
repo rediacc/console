@@ -3913,7 +3913,7 @@
           "cloneVisual": {
             "arrow": {
               "icon": "refresh-arrow",
-              "label": "Failover",
+              "label": "Comutação",
               "time": "22s"
             },
             "clone": {
@@ -4016,7 +4016,7 @@
           ],
           "timeline": {
             "newLabel": "Com a Rediacc",
-            "newSteps": ["Detetar", "<30s", "Online"],
+            "newSteps": ["Detetar", "<30s", "Em serviço"],
             "oldLabel": "O método antigo",
             "oldSteps": [
               {
@@ -5056,7 +5056,7 @@
               "title": "Self-service integrado com Git"
             },
             {
-              "description": "Não é só código — é a stack completa. SO, contentores, bases de dados e configuração clonados em conjunto. Erros detetados a custo 1x, não 30-100x em produção.",
+              "description": "Não é só código. É a stack completa. SO, contentores, bases de dados, configuração, tudo junto. Os erros são apanhados a custo 1x, não 30-100x em produção.",
               "icon": "layers",
               "title": "App + base de dados + configuração"
             }
@@ -5073,7 +5073,7 @@
         "calculator": {
           "annualLabel": "Custo anual da equipa",
           "description": "Arraste os controlos para corresponder à sua equipa. Os números podem surpreendê-lo.",
-          "footnote": "Baseado numa remuneração total média de $160K ($92/h totalmente carregada). Custo de espera pelo ambiente: tempo bloqueado × impacto de produtividade de 60%. Troca de contexto: $24K-$50K/programador/ano. 69% dos programadores perdem 8+ horas semanais em ineficiências (Atlassian 2024). Os programadores não ficam completamente inativos enquanto esperam — mas as dependências em cascata agravam-se ao longo dos sprints. Estimativas conservadoras — a poupança real é frequentemente superior.",
+          "footnote": "Baseado em remuneração total média de $160K ($92/h com encargos). Custo de espera: tempo bloqueado × redução de 60% na produtividade. Troca de contexto: $24K-$50K/programador/ano. 69% dos programadores perdem 8+ horas por semana em ineficiências (Atlassian 2024). Não ficam completamente inativos enquanto esperam, mas as dependências em cascata agravam-se sprint após sprint. Estimativas conservadoras, a poupança real é frequentemente superior.",
           "headerTitle": "Calcule o custo de espera pelo ambiente",
           "results": {
             "blockedTime": "Tempo bloqueado / sprint",
@@ -5136,7 +5136,7 @@
         },
         "hero": {
           "ctaLabel": "Começar a Clonar",
-          "subtitle": "Crie cópias exatas da produção — aplicação, base de dados e configuração — para desenvolvimento e testes. Sem tickets. Sem esperas.",
+          "subtitle": "Faça uma cópia exata da produção <span class=\"sp-emphasis\">em segundos</span>. A app, a base de dados, as configurações. Sem tickets. Sem esperas.",
           "title": "Clone a produção em 60 segundos"
         },
         "howItWorks": {
@@ -5228,7 +5228,7 @@
           "title": "Clonagem de Ambientes - Clone a Produção | Rediacc"
         },
         "problem": {
-          "description": "O seu programador precisa de um ambiente de testes. Cria um ticket. A equipa de operações aprovisiona um servidor. Alguém configura-o. Três dias depois, não corresponde à produção na mesma. Entretanto, o programador esteve bloqueado desde segunda-feira — e cada interrupção custa 23 minutos de tempo de recuperação.",
+          "description": "Um programador precisa de um ambiente de testes. Abre um ticket. A equipa de ops monta um servidor. Alguém configura. Três dias depois, ainda não é igual à produção. Enquanto isso, está bloqueado desde segunda, e cada interrupção custa 23 minutos para recuperar a atenção.",
           "statCallouts": [
             {
               "number": "69%",
@@ -5352,7 +5352,7 @@
             "beforeValue": "3 dias",
             "improvement": "99,97% mais rápido"
           },
-          "quote": "Criámos 12 ambientes de teste idênticos à produção em menos de 10 minutos — cada um com uma base de dados PostgreSQL completa de 241 GB. O nosso processo anterior era fazer dumps manuais da base de dados para staging. Precisava de 3 engenheiros e 2 dias por ambiente."
+          "quote": "Montámos 12 ambientes de teste idênticos à produção em menos de 10 minutos, cada um com 241 GB de PostgreSQL completo. O processo anterior era fazer dumps manuais para staging. Levava 3 engenheiros e 2 dias por ambiente."
         },
         "techDiff": {
           "description": "A Rediacc utiliza snapshots copy-on-write do btrfs ao nível do sistema de ficheiros. Um snapshot de um ambiente de produção de 241 GB conclui em frações de segundo e consome inicialmente zero armazenamento adicional. À medida que o clone diverge através do desenvolvimento, apenas os blocos alterados utilizam novo espaço. Dez clones de uma base de dados de 241 GB podem usar menos de 12 GB de armazenamento adicional.",
@@ -5387,17 +5387,17 @@
         "benefits": {
           "items": [
             {
-              "description": "Teste o failover sem afetar a produção. A simulação corre contra um clone btrfs — os seus serviços em direto nunca param.",
+              "description": "Teste o failover sem tocar na produção. O teste corre numa cópia instantânea. Os serviços em direto nunca param.",
               "icon": "shield",
               "title": "Simulações seguras"
             },
             {
-              "description": "Veja exatamente o que acontece durante a recuperação, passo a passo. Cada serviço, cada porta, cada verificação de saúde — registado com timestamps exatos.",
+              "description": "Veja precisamente o que acontece durante a recuperação, passo a passo. Cada serviço, cada porta, cada verificação de saúde registada com timestamps exatos.",
               "icon": "eye",
               "title": "Visibilidade total"
             },
             {
-              "description": "Saiba que o seu plano de desastre funciona antes de precisar dele. O teste de failover integra-se com o seu pipeline de CI — falhou? Recebe um alerta antes de importar.",
+              "description": "Saiba que o plano funciona antes de precisar dele. O teste encaixa-se diretamente num pipeline de CI. Uma falha dispara um alerta muito antes de ser importante.",
               "icon": "check-circle",
               "title": "Confiança antes do caos"
             }
@@ -5549,7 +5549,7 @@
               "title": "Simular"
             },
             {
-              "description": "Veja cada passo em tempo real. RTO, RPO, estado dos serviços — tudo medido e registado. Integra-se com a sua stack de monitorização.",
+              "description": "Acompanhe cada passo em tempo real. RTO, RPO, saúde dos serviços, tudo rastreado. Integra-se com as suas ferramentas de monitorização.",
               "icon": "eye",
               "title": "Observar"
             },
@@ -5621,7 +5621,7 @@
         "references": {
           "items": [
             {
-              "text": "Veeam, \"2024 Data Protection Trends Report — BC/DR Trends,\" 2024. \"Apenas 13% das organizações utilizam fluxos de trabalho orquestrados como parte dos seus processos de recuperação de desastre.\" \"Apenas 58% dos servidores cumpriram o seu SLA de recuperação durante o último ataque em grande escala.\" \"Apenas 32% das organizações acreditam que conseguem recuperar 50 cargas de trabalho numa semana de trabalho completa.\"",
+              "text": "Veeam, “2024 Data Protection Trends Report: BC/DR Trends,” 2024. “Apenas 13% das organizações utilizam fluxos de trabalho orquestrados como parte dos seus processos de recuperação de desastre.” “Apenas 58% dos servidores cumpriram o seu SLA de recuperação durante o último ataque em grande escala.” “Apenas 32% das organizações acreditam que conseguem recuperar 50 cargas de trabalho numa semana de trabalho completa.”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
@@ -5683,7 +5683,7 @@
           "quote": "Executámos o nosso primeiro teste de failover automatizado numa terça-feira de manhã. Encontrou 3 lacunas críticas — um registo DNS obsoleto, um certificado SSL em falta no secundário e um atraso de replicação da base de dados de 4 minutos. As três teriam causado uma falha real. Corrigimo-las numa tarde. Agora testamos mensalmente e dormimos melhor."
         },
         "techDiff": {
-          "description": "Os testes de DR tradicionais exigem tempo de inatividade da produção, uma equipa de engenheiros e semanas de planeamento. A Rediacc utiliza snapshots copy-on-write do btrfs para criar um clone isolado de toda a sua infraestrutura em segundos. O teste corre contra o clone — a produção nunca para.",
+          "description": "Os testes tradicionais exigem inatividade em produção, uma equipa completa de engenheiros e semanas de planeamento. A Rediacc cria um clone isolado de toda a sua infraestrutura <span class=\"sp-emphasis\">em segundos</span>. O teste corre no clone. A produção nunca para.",
           "rediaccLabel": "Testes de DR com Rediacc",
           "rows": [
             {
@@ -5695,12 +5695,12 @@
               "traditional": "3-5 dias para planear, reunir equipa e executar"
             },
             {
-              "rediacc": "Mensal ou via cron/CI — teste com a mesma frequência com que implementa",
-              "traditional": "Testado anualmente (quando muito) — trimestralmente na melhor hipótese"
+              "rediacc": "Mensal, via cron/CI, teste com a frequência das suas implementações",
+              "traditional": "Testado anualmente (se tanto), trimestralmente na melhor hipótese"
             },
             {
-              "rediacc": "Verificações de saúde automatizadas — aprovação/reprovação com RTO/RPO exatos",
-              "traditional": "Verificação manual — julgamentos do tipo \"parece correto\""
+              "rediacc": "Verificações automatizadas, aprovação/reprovação com números exatos",
+              "traditional": "Verificação manual: alguém decide que \"parece correto\""
             },
             {
               "rediacc": "Fork ao cluster inteiro em 46 segundos — corre o exercício na cópia",
@@ -5722,7 +5722,7 @@
         "calculator": {
           "annualLabel": "Exposição anual",
           "description": "Arraste os controlos para corresponder à sua infraestrutura. Os números acumulam-se depressa.",
-          "footnote": "Receita em risco baseada no custo médio de inatividade de $9.000/min (Splunk/Oxford Economics 2024). Mão de obra de recuperação: 6 engenheiros × horas de recuperação × $200/h (taxa combinada). Custo de reputação estimado como percentagem dos custos diretos (estimativa do setor). Com a Rediacc: os snapshots imutáveis restauram em menos de 5 minutos — o tempo de inatividade aproxima-se de zero.",
+          "footnote": "Receita em risco baseada no custo médio de $9.000/min de inatividade (Splunk/Oxford Economics 2024). Custo de recuperação: 6 engenheiros × horas de recuperação × $200/hora (taxa combinada). Custo de reputação estimado como percentagem dos custos diretos (estimativa do setor). Com Rediacc: os snapshots imutáveis restauram em menos de 5 minutos, o tempo de inatividade chega perto de zero.",
           "headerTitle": "Calcule a sua exposição a ransomware",
           "results": {
             "downtime": "Inatividade por incidente",
@@ -5748,7 +5748,7 @@
         },
         "comparison": {
           "capabilityLabel": "Capacidade",
-          "description": "As ferramentas de backup tradicionais prometem imutabilidade através de bloqueios por software. A Rediacc aplica-a ao nível do kernel — onde o ransomware não consegue chegar.",
+          "description": "Outras ferramentas de backup prometem cópias bloqueadas com bloqueios por software. Ransomware consegue contornar esses bloqueios. Rediacc implementa o bloqueio na camada de armazenamento, onde ransomware não consegue chegar.",
           "features": [
             {
               "name": "Backups imutáveis",
@@ -5778,7 +5778,7 @@
             {
               "name": "Tempo de recuperação",
               "refs": [14, 15, 16, 17, 18, 0],
-              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<5 min"]
+              "values": ["Minutos", "Minutos", "Minutos", "Minutos", "Segundos", "<5 min"]
             },
             {
               "name": "Self-hosted / sem dependência da nuvem",
@@ -5873,10 +5873,10 @@
         "meta": {
           "description": "Os seus backups são imutáveis desde o momento em que são criados. Ninguém os pode alterar. Nem hackers. Nem sequer você.",
           "keywords": "backups imutáveis, proteção contra ransomware, snapshots btrfs, verificação de backups, recuperação de desastre, copy-on-write, backups selados",
-          "title": "Backups Imutáveis — Backups à Prova de Ransomware | Rediacc"
+          "title": "Backups Imutáveis: À Prova de Ransomware | Rediacc"
         },
         "problem": {
-          "description": "Os atacantes modernos encontram os seus backups antes de encriptarem os seus ficheiros. Se os seus backups podem ser alterados, serão. As ferramentas de backup tradicionais deixam a porta aberta — e 94% das vítimas de ransomware tiveram os seus backups visados durante o ataque. Precisa de backups que fechem à chave no momento em que são criados.",
+          "description": "Imagine isto: são 3 da manhã e o ransomware acabou de atacar. Os backups também foram encriptados. E eis o porquê: os atacantes procuram os backups primeiro. Na verdade, 94% das vítimas de ransomware tiveram os seus backups como alvo durante o ataque (Sophos 2024). Se um backup consegue ser alterado, será alterado. Os backups precisam de ficar bloqueados no segundo em que são criados.",
           "statCallouts": [
             {
               "number": "94%",
@@ -6005,22 +6005,22 @@
             },
             "improvement": "Recuperação 4.800x mais rápida"
           },
-          "quote": "Fomos atingidos por ransomware às 3h17 de um sábado. Os atacantes encriptaram 14 servidores incluindo o nosso repositório de backup — ou assim pensaram. Os snapshots imutáveis da Rediacc estavam intactos. Às 3h24 todos os 14 servidores estavam restaurados a partir de backups selados. Perda de dados total: zero bytes. Resgate pago: zero dólares."
+          "quote": "Fomos alvo de ransomware às 3h17 de um sábado. Os atacantes encriptaram 14 servidores, incluindo o nosso repositório de backups, ou assim pensavam. Os snapshots imutáveis da Rediacc ficaram intactos. Às 3h24, todos os 14 servidores foram restaurados a partir de backups selados. Perda total de dados: zero bytes. Resgate pago: zero dólares."
         },
         "techDiff": {
-          "description": "A Rediacc utiliza snapshots read-only do btrfs ao nível do sistema de ficheiros. Assim que um snapshot é selado, o próprio kernel impede modificações — não bloqueios por software que o malware pode contornar, mas imutabilidade ao nível do sistema de ficheiros. Mesmo com acesso root, o ransomware não consegue encriptar, modificar ou eliminar um snapshot btrfs selado.",
+          "description": "A Rediacc cria uma cópia só de leitura, um snapshot congelado dos ficheiros num dado momento. Assim que essa cópia é selada, <span class=\"sp-emphasis\">a própria camada de armazenamento bloqueia qualquer alteração</span>. Não é um bloqueio por software que o malware consiga contornar. Mesmo com a palavra-passe de administrador de topo, o ransomware não consegue encriptar, alterar ou eliminar uma cópia selada.",
           "rediaccLabel": "Rediacc (btrfs imutável)",
           "rows": [
             {
-              "rediacc": "Snapshots read-only aplicados pelo kernel — não podem ser modificados mesmo com root",
-              "traditional": "\"Imutabilidade\" ao nível do software — pode ser contornada com acesso admin/root"
+              "rediacc": "Cópias só de leitura protegidas pela camada de armazenamento, seguras mesmo com a palavra-passe de administrador de topo",
+              "traditional": "\"Bloqueios\" por software que uma palavra-passe de admin consegue desativar"
             },
             {
-              "rediacc": "Snapshots existem na camada do sistema de ficheiros — invisíveis para malware no espaço de utilizador",
-              "traditional": "Ficheiros de backup armazenados como ficheiros normais em disco — visíveis e encriptáveis"
+              "rediacc": "Cópias guardadas na camada de armazenamento, invisíveis para o malware",
+              "traditional": "Backups armazenados como ficheiros normais, fáceis de localizar e encriptar"
             },
             {
-              "rediacc": "Clone diário automatizado + arranque + verificação de saúde — restaura e verifica realmente",
+              "rediacc": "Clonamos, arrancamos e verificamos a saúde diariamente, é realmente testado",
               "traditional": "Verificação = apenas mensagem de estado \"backup concluído\""
             },
             {
@@ -6300,17 +6300,17 @@
         "benefits": {
           "items": [
             {
-              "description": "Servidores, configurações, bases de dados, definições de rede — toda a pilha restaurada como uma única unidade. Sem reconstrução, sem reconfiguração, sem dependências esquecidas.",
+              "description": "Servidores, configurações, bases de dados, rede, tudo volta como uma unidade. Sem reconstrução. Sem reconfiguração. Nada deixado para trás. Usa Kubernetes? O cluster inteiro faz fork e move-se da mesma forma, aplicações e dados juntos.",
               "icon": "zap",
               "title": "Ambientes completos, não ficheiros"
             },
             {
-              "description": "Reverta para qualquer snapshot na sua linha de tempo. Ontem, na semana passada, há três meses. Escolha exatamente o estado de que precisa — sem adivinhar que ficheiros mudaram.",
+              "description": "Reverta para qualquer cópia guardada no histórico. Ontem, na semana passada, há três meses. Escolha o estado exato de que precisa. Sem adivinhar que ficheiros mudaram.",
               "icon": "clock",
               "title": "Qualquer ponto no tempo"
             },
             {
-              "description": "Cada restauro é verificado automaticamente — endpoints HTTP, ligações à base de dados, saúde do serviço. Não \"ficheiros restaurados\" — realmente em execução e a responder.",
+              "description": "Verificamos cada restauro: endpoints HTTP, ligações à base de dados, saúde dos serviços. Não basta “ficheiros restaurados.” Tem de estar realmente em execução e a responder.",
               "icon": "check-circle",
               "title": "Recuperação verificada"
             }
@@ -6327,7 +6327,7 @@
         "calculator": {
           "annualLabel": "Custo anual de inatividade",
           "description": "Arraste os controlos para corresponder ao seu ambiente. Veja o custo real da recuperação ao nível de ficheiros.",
-          "footnote": "Recuperação ao nível de ficheiros: 2 h/serviço de provisionamento + reconfiguração. Receita perdida: horas de inatividade × receita horária. Trabalho de pessoal: 2 engenheiros × horas de recuperação × $200/h. Rotatividade: 20% da receita perdida por incumprimento de SLA. Rediacc: o clone btrfs restaura o ambiente completo em menos de 5 minutos — um único comando, sem reconstrução.",
+          "footnote": "Recuperação ficheiro a ficheiro: 2h/serviço de provisionamento + configuração. Receita perdida: horas de paragem × receita horária. Custo de pessoal: 2 engenheiros × horas de recuperação × $200/h. Perda de clientes: 20% da receita perdida por incumprimento de SLA. Rediacc: o clone btrfs restaura o ambiente completo em menos de 5 minutos com um único comando, sem reconstrução.",
           "headerTitle": "Calcule a sua exposição ao tempo de inatividade",
           "results": {
             "churn": "Impacto na rotatividade de clientes",
@@ -6397,7 +6397,7 @@
         },
         "hero": {
           "ctaLabel": "Restaurar em Minutos",
-          "subtitle": "Não apenas ficheiros. Ambientes inteiros — servidores, configurações, bases de dados — restaurados e em funcionamento em minutos.",
+          "subtitle": "Não são apenas ficheiros. Ambientes inteiros: servidores, configurações, bases de dados. De volta e a funcionar <span class=\"sp-emphasis\">em minutos</span>.",
           "title": "Recuperação completa do ambiente em minutos"
         },
         "howItWorks": {
@@ -6469,7 +6469,7 @@
               "title": "Restaurar"
             },
             {
-              "description": "As verificações de saúde automáticas confirmam que cada serviço está em execução. Não uma contagem de ficheiros — verificações HTTP, SQL e de endpoint de saúde reais.",
+              "description": "Verificações automáticas confirmam que cada serviço está a funcionar. Não é uma contagem de ficheiros, testes reais de HTTP, SQL e saúde.",
               "icon": "check-circle",
               "title": "Verificar"
             }
@@ -6478,12 +6478,12 @@
         },
         "label": "Recuperação Instantânea",
         "meta": {
-          "description": "Não apenas ficheiros. Ambientes inteiros — servidores, configurações, bases de dados — restaurados e em funcionamento em minutos.",
+          "description": "Não são apenas ficheiros, ambientes inteiros (servidores, configurações, bases de dados) restaurados e a funcionar em minutos.",
           "keywords": "recuperação instantânea, restauro completo do ambiente, clone btrfs, recuperação de desastres, restauro de cópia de segurança, recuperação em ponto no tempo, verificações de saúde, recuperação com um único comando",
           "title": "Recuperação Instantânea - Restauro Total | Rediacc"
         },
         "problem": {
-          "description": "Restaurar ficheiros individualmente demora horas. Reconstruir ambientes inteiros demora dias. Quando o seu servidor de produção cai, não precisa apenas de recuperar ficheiros — precisa de recuperar tudo. O servidor, a configuração, a base de dados, as definições de rede. Tudo.",
+          "description": "Restaurar ficheiros um a um demora horas. Reconstruir um ambiente completo leva dias. Quando o servidor principal falha, ficheiros sozinhos não chegam. Precisa que tudo volte. O servidor, as configurações, a base de dados, a rede, tudo a funcionar de novo.",
           "statCallouts": [
             {
               "number": "3,4 semanas",
@@ -6544,7 +6544,7 @@
               "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
             },
             {
-              "text": "Veeam, \"Data Protection Trends Report — BC/DR Trends\", 2024. \"Apenas 13% das organizações utilizam fluxos de trabalho orquestrados como parte dos seus processos de recuperação de desastres.\"",
+              "text": "Veeam, “Data Protection Trends Report: BC/DR Trends,” 2024. “Apenas 13% das organizações utilizam fluxos de trabalho orquestrados como parte dos seus processos de recuperação de desastres.”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
@@ -6607,26 +6607,26 @@
             },
             "improvement": "Recuperação 270x mais rápida · Zero incidentes ao fim de semana desde a implementação"
           },
-          "quote": "O nosso servidor de base de dados principal falhou às 2:14 da manhã de um sábado — controlador de disco corrompido. Com a nossa configuração anterior, teria sido um fim de semana inteiro a provisionar, restaurar e reconfigurar 11 serviços. Em vez disso, executei um comando pelo telemóvel. Às 2:18, tudo estava de volta — MariaDB, a API, Nginx, Redis, tudo. Mesmas configurações, mesmo estado, mesmos dados. O engenheiro de permanência voltou a dormir."
+          "quote": "O nosso servidor de base de dados principal falhou às 2:14 da manhã de um sábado, controlador de disco corrompido. Com o setup anterior, seria um fim de semana inteiro a provisionar, restaurar e reconfigurar 11 serviços. Em vez disso, executei um comando pelo telemóvel. Às 2:18, tudo estava de volta, MariaDB, a API, Nginx, Redis, tudo. Mesmas configurações, mesmo estado, mesmos dados. O engenheiro de permanência voltou a dormir."
         },
         "techDiff": {
-          "description": "A recuperação tradicional implica provisionar um novo servidor, instalar pacotes, restaurar ficheiros um a um, reconfigurar serviços e torcer para que nada tenha sido esquecido. A Rediacc usa snapshots btrfs para clonar o ambiente inteiro — volumes, configurações, contentores, definições de rede — numa única operação atómica.",
+          "description": "A forma antiga: provisionar novo servidor. Instalar pacotes. Restaurar ficheiros um a um. Reconfigurar serviços. E depois rezar para que nada tenha escapado. A Rediacc funciona diferente. Copia o ambiente completo numa única operação. Discos, configurações, contentores, rede, <span class=\"sp-emphasis\">tudo de uma vez</span>.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
-              "rediacc": "Clone btrfs atómico — volumes, configurações, contentores, rede numa única operação",
-              "traditional": "Restaurar ficheiros individualmente — perder configurações, permissões, estado"
+              "rediacc": "Cópia instantânea de tudo: discos, configurações, contentores, rede, tudo junto",
+              "traditional": "Restaurar ficheiros um a um. Perder configurações, permissões, estado."
             },
             {
-              "rediacc": "Mesmo servidor, mesma montagem, mesmo daemon Docker — tudo restaurado no lugar",
+              "rediacc": "Mesmo servidor, mesma montagem, mesmo Docker. Tudo restaurado no seu lugar.",
               "traditional": "Provisionar novo servidor, instalar pacotes, reconfigurar manualmente"
             },
             {
-              "rediacc": "Menos de 5 minutos — todos os serviços sobem juntos com verificações de saúde automáticas",
-              "traditional": "Horas de trabalho manual — cada serviço reconstruído e testado separadamente"
+              "rediacc": "Menos de 5 minutos. Todos os serviços sobem juntos com verificações de saúde automáticas.",
+              "traditional": "Horas de trabalho manual. Cada serviço reconstruído e testado isoladamente."
             },
             {
-              "rediacc": "Snapshot em ponto no tempo — estado exato no momento da cópia de segurança, sem desvio",
+              "rediacc": "Snapshot de um momento exato. Sem desvios.",
               "traditional": "Desvio de configuração entre a cópia de segurança e o estado atual"
             }
           ],
@@ -7860,7 +7860,7 @@
         },
         "comparison": {
           "capabilityLabel": "Capacidade",
-          "description": "As ferramentas de cópia de segurança tradicionais restauram ficheiros. A Rediacc restaura ambientes inteiros — contentores, configurações, bases de dados — em minutos.",
+          "description": "Ferramentas de backup tradicionais restauram ficheiros. Rediacc restaura sistemas inteiros em minutos. Contentores, configurações e bases de dados, tudo junto.",
           "features": [
             {
               "name": "Recuperação de ambiente completo",
@@ -7984,7 +7984,7 @@
           "title": "Recuperação Rápida - Resposta Rápida a Desastres | Rediacc"
         },
         "problem": {
-          "description": "A maioria das equipas passa dias a reconstruir após um ransomware. Entretanto, os clientes não conseguem chegar até si. A receita para. A confiança quebra-se. O ataque dura uma hora. A recuperação demora uma semana. Esse é o dano real — e a recuperação média de ransomware demora 24 dias.",
+          "description": "São 2 da manhã. O ransomware acabou de bloquear os servidores. Agora vêm dias inteiros de reconstrução do zero. Os clientes não conseguem aceder. A receita para. A confiança quebra. O ataque durou uma hora. A limpeza leva uma semana. Esse é o verdadeiro dano. A recuperação média de ransomware demora 24 dias.",
           "statCallouts": [
             {
               "number": "24 dias",
@@ -8097,10 +8097,10 @@
             },
             "improvement": "Recuperação 1.080x mais rápida"
           },
-          "quote": "Passámos de um plano de recuperação de 3 dias para menos de 4 minutos. Durante um incidente real de ransomware às 2 da manhã, o nosso engenheiro de permanência executou um comando e todos os 8 contentores de produção estavam de volta online às 2:04. A estimativa do nosso fornecedor anterior era de 72 horas — fizemo-lo em 240 segundos."
+          "quote": "Passámos de um plano de recuperação de 3 dias para menos de 4 minutos. Durante um incidente real de ransomware às 2 da manhã, o nosso engenheiro de permanência executou um comando e todos os 8 contentores de produção voltaram online às 2:04. A estimativa do nosso fornecedor anterior era de 72 horas, fizemo-lo em 240 segundos."
         },
         "techDiff": {
-          "description": "A recuperação tradicional reconstrói do zero — reinstalar o SO, restaurar ficheiros, reconfigurar serviços. A Rediacc restaura a partir de snapshots btrfs: o sistema de ficheiros simplesmente muda para o estado guardado. Sem reinstalação, sem reconfiguração, sem transferência de dados. O snapshot já está em disco — apenas fica ativo.",
+          "description": "A recuperação antiga reconstrói tudo do zero: reinstala o sistema, restaura ficheiros, reconfigura serviços. A Rediacc funciona de forma diferente. Uma cópia limpa <span class=\"sp-emphasis\">já está em disco</span>. Basta ativá-la. Sem reinstalação, sem reconfiguração, sem transferência de dados lenta.",
           "traditionalLabel": "Reconstrução tradicional",
           "rediaccLabel": "Rediacc (cópias btrfs instantâneas)",
           "rows": [

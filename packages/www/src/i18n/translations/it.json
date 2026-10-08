@@ -4012,7 +4012,7 @@
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["Rilevamento", "<30s", "Online"],
+            "newSteps": ["Rilevamento", "<30s", "Operativo"],
             "oldLabel": "Il vecchio metodo",
             "oldSteps": [
               {
@@ -5617,7 +5617,7 @@
         "references": {
           "items": [
             {
-              "text": "Veeam, \"2024 Data Protection Trends Report — BC/DR Trends,\" 2024. \"Solo il 13% delle organizzazioni utilizza workflow orchestrati come parte dei propri processi di disaster recovery.\" \"Solo il 58% dei server ha rispettato il proprio SLA di ripristino durante l'ultimo attacco su larga scala.\" \"Solo il 32% delle organizzazioni ritiene di poter ripristinare 50 workload entro un'intera settimana lavorativa.\"",
+              "text": "Veeam, “2024 Data Protection Trends Report: BC/DR Trends,” 2024. “Solo il 13% delle organizzazioni utilizza workflow orchestrati come parte dei propri processi di disaster recovery.” “Solo il 58% dei server ha rispettato il proprio SLA di ripristino durante l'ultimo attacco su larga scala.” “Solo il 32% delle organizzazioni ritiene di poter ripristinare 50 workload entro un'intera settimana lavorativa.”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
@@ -5869,7 +5869,7 @@
         "meta": {
           "description": "I tuoi backup sono immutabili dal momento in cui vengono creati. Nessuno può modificarli. Né gli hacker. Né tu stesso.",
           "keywords": "backup immutabili, protezione dal ransomware, snapshot btrfs, verifica dei backup, disaster recovery, copy-on-write, backup sigillati",
-          "title": "Backup immutabili — Backup a prova di ransomware | Rediacc"
+          "title": "Backup immutabili contro il ransomware | Rediacc"
         },
         "problem": {
           "description": "Gli attaccanti moderni trovano i tuoi backup prima di crittografare i tuoi file. Se i tuoi backup possono essere modificati, lo saranno. Gli strumenti di backup tradizionali lasciano la porta aperta: il 94% delle vittime di ransomware ha subito attacchi ai propri backup durante l'attacco. Hai bisogno di backup che si chiudano a chiave nel momento in cui vengono creati.",
@@ -9165,7 +9165,7 @@
             "arrows": [
               {
                 "icon": "bolt",
-                "label": "47s + 2m"
+                "label": "47s + 2min"
               },
               {
                 "icon": "arrow-right-circle",
@@ -9193,7 +9193,7 @@
                   "247 asserzioni - 0 fallimenti"
                 ],
                 "status": "In test",
-                "title": "Clone: Patch Test"
+                "title": "Clone: test patch"
               },
               {
                 "footer": "Tempo totale: 3m 41s · zero downtime",
