@@ -99,8 +99,22 @@ def test_real_tree_is_green_and_not_vacuous(gate):
         "%d scripts (%d live, %d dead), %d run: blocks, %d curl and %d gh calls, %d debt, 0 new"
         % (scripts, live, dead, blocks, curl, gh, debt)
     )
+    # The dead-twin plant needs a real dead script holding an unretried read; the tree has none left, so it reports "skipped" (the rule itself is driven on a planted twin by `test_wiring_a_dead_twin_makes_its_reads_findings`). Each of the three is either red or an explicit skip, never silent, and the two that need no dead script must be red.
     gate.assert_eq(
-        result.out.count("shell plant red:"), 3, "all three shell real-tree plants fired"
+        result.out.count("shell plant red:") + result.out.count("shell plant skipped:"),
+        3,
+        "every shell real-tree plant reported red or skipped",
+    )
+    gate.assert_eq(
+        len(
+            [
+                ln
+                for ln in result.out.splitlines()
+                if ln.startswith("  shell plant red:") and "the dead twin" not in ln
+            ]
+        ),
+        2,
+        "the reaper and run: block shell plants fired",
     )
     gate.assert_contains(
         result.out, "shell plant red: the reaper's --retry removed -> %s:" % REAPER

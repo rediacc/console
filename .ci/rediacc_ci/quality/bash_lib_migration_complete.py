@@ -31,10 +31,7 @@ PLAN = "agent/plans/PLAN-retire-bash-oracles.md (task G2)"
 
 # Library (repo path) -> the modules that carry its twin, relative to rediacc_ci/core. Every .sh under LIB_DIRS must appear here.
 LIBS: dict[str, tuple[str, ...]] = {
-    ".ci/lib/account.sh": ("account.py", "account_lifecycle.py"),
-    ".ci/lib/devbox.sh": ("devbox.py",),
     ".ci/lib/local-common.sh": ("local_common.py",),
-    ".ci/lib/service.sh": ("service.py",),
     # allowlist.py because `_blocker_py` is nothing but a forwarder to `python3 -m rediacc_ci.core.allowlist`.
     ".ci/scripts/lib/blocker-validator.sh": ("blocker_validator.py", "allowlist.py"),
     # ../log.py because common.sh's log_* functions are ported there and nowhere else; it was missing from this list until 2026-10-01, which left 5 ported functions baselined as unported.
@@ -57,12 +54,6 @@ PREFIXES: dict[str, tuple[str, ...]] = {
 
 # Library -> bash name -> "<module>:<def>", where the naming rule does not reach. The module must be one of the library's LIBS modules and must define the def; each target's docstring or comment names the bash function it ports, which is how every row below was checked (2026-10-01).
 ALIASES: dict[str, dict[str, str]] = {
-    ".ci/lib/account.sh": {
-        "account_spawn": "account_lifecycle.py:spawn_background",
-    },
-    ".ci/lib/service.sh": {
-        "_service_compose": "service.py:compose_argv",
-    },
     ".ci/scripts/lib/blocker-validator.sh": {
         "_blocker_emit": "blocker_validator.py:replay_frames",
         "_blocker_py": "allowlist.py:main",
@@ -227,8 +218,8 @@ def scan(root: pathlib.Path) -> tuple[list[str], int, int]:
 def selftest() -> bool:
     """True when a control FAILED. Each control plants one defect in an in-memory library."""
     failed = False
-    lib = ".ci/lib/account.sh"
-    bash = "account_a() {\n:\n}\naccount_b() {\n:\n}\n"
+    lib = ".ci/lib/sample.sh"
+    bash = "sample_a() {\n:\n}\nsample_b() {\n:\n}\n"
     flat = {"m.py": "def a():\n    pass\ndef b():\n    pass\n"}
 
     def check(got: list[str], want: list[str], what: str) -> None:
@@ -239,13 +230,13 @@ def selftest() -> bool:
 
     check(unported(bash, flat, lib, {}), [], "a fully ported library read as having gaps")
     check(
-        unported(bash + "account_new() {\n:\n}\n", flat, lib, {}),
-        ["account_new"],
+        unported(bash + "sample_new() {\n:\n}\n", flat, lib, {}),
+        ["sample_new"],
         "a NEW bash function without a twin was not reported",
     )
     check(
         unported(bash, {"m.py": "def a():\n    pass\n"}, lib, {}),
-        ["account_b"],
+        ["sample_b"],
         "a removed Python def was not reported",
     )
     check(
@@ -260,35 +251,35 @@ def selftest() -> bool:
     )
     check(
         unported(bash, {"m.py": "class D:\n    def a(self):\n        pass\n"}, lib, {}),
-        ["account_b"],
+        ["sample_b"],
         "a class missing one ported METHOD read as complete",
     )
-    alias = {"account_spawn": "m.py:spawn_background"}
+    alias = {"sample_spawn": "m.py:spawn_background"}
     check(
         unported(
-            "account_spawn() {\n:\n}\n", {"m.py": "def spawn_background():\n    pass\n"}, lib, alias
+            "sample_spawn() {\n:\n}\n", {"m.py": "def spawn_background():\n    pass\n"}, lib, alias
         ),
         [],
         "a qualified alias was not honoured",
     )
     check(
         unported(
-            "account_spawn() {\n:\n}\n",
+            "sample_spawn() {\n:\n}\n",
             {"m.py": "def other():\n    pass\n", "n.py": "def spawn_background():\n    pass\n"},
             lib,
             alias,
         ),
-        ["account_spawn"],
+        ["sample_spawn"],
         "an alias resolved through a def in a DIFFERENT module",
     )
     check(
         unported(
-            "account_spawn() {\n:\n}\n",
+            "sample_spawn() {\n:\n}\n",
             {"m.py": "def spawn():\n    pass\n"},
             lib,
             alias,
         ),
-        ["account_spawn"],
+        ["sample_spawn"],
         "an aliased function fell back to the naming rule when its alias target was gone",
     )
     return failed

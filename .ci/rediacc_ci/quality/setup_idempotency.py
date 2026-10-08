@@ -95,7 +95,7 @@ PORT NOTES.
 -----------------------------------------------------------------------------
 
 EVERY SUBPROCESS THE TWIN RUNS IS STILL RUN. The slot is derived by running `rediacc_ci.core.ports derive-slot` as a CHILD under the control's PYTHONPATH (it used to be sourced out of a bash shim, deleted in W7P5-b; importing the module in-process instead would read THIS interpreter's copy and the broken-copy control would go permanently green). `devbox_route_label` is still
-sourced out of `devbox.sh` through `bash -c`, exactly as the twin invokes it. Re-implementing either in Python would test this module's idea of what those functions do rather than what they do, and check E in particular exists because "OK" and "404" are both valid text to a static reader.
+imported out of `rediacc_ci.core.devbox` under a PYTHONPATH prefix. Re-implementing either in Python would test this module's idea of what those functions do rather than what they do, and check E in particular exists because "OK" and "404" are both valid text to a static reader.
 
 THE `awk` FUNCTION-BODY EXTRACTOR IS TRANSLATED, NOT SHELLED OUT, because it is four lines and its exact semantics matter: it starts at a line matching
 `^<name>\(\) \{`, prints every line from there INCLUDING the closing `}`, and
@@ -122,6 +122,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from collections.abc import Callable
 
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
@@ -133,6 +134,9 @@ _ANSI = {"RED": "\033[0;31m", "GREEN": "\033[0;32m", "NC": "\033[0m"}
 FIXTURE_NOISE_RE = re.compile(r"(^|/)\.[a-z0-9-]+-fixture\.[0-9]+\.[a-z]+$")
 
 # The words a `setup --check` run must actually print. A check that prints nothing is indistinguishable from a check that did not run.
+# The Python port of the retired .ci/lib/devbox.sh: the subject of checks A (devbox_up, devbox_ensure_image), E and F.
+DEVBOX_PY_REL = ".ci/rediacc_ci/core/devbox.py"
+
 REQUIRED_ROWS = ("node", "docker", "deps", "image", "devbox", "port block")
 
 # check E's oracle: any of these next to a 4xx/5xx is a contradiction.
@@ -190,6 +194,25 @@ def function_body(text: str, name: str) -> str:
     return "\n".join(out)
 
 
+def method_body(text: str, name: str) -> str:
+    """The body of `def <name>(` at class-method indentation, up to the next method or class-level statement. "" when absent.
+
+    The Python twin of `function_body`, for `core/devbox.py` whose bash original `devbox.sh` is retired. A decorator or the next `def` at the same indent ends the body.
+    """
+    start_re = re.compile(r"^    def %s\(" % re.escape(name))
+    end_re = re.compile(r"^(    (def |@)|\S)")
+    out: list[str] = []
+    inside = False
+    for line in text.split("\n"):
+        if inside and end_re.match(line):
+            break
+        if not inside and start_re.search(line):
+            inside = True
+        if inside:
+            out.append(line)
+    return "\n".join(out)
+
+
 def read_text(path: pathlib.Path) -> str:
     """File contents, or "" when it cannot be read.
 
@@ -201,9 +224,19 @@ def read_text(path: pathlib.Path) -> str:
         return ""
 
 
-def assert_guarded(report: Report, file: pathlib.Path, fn: str, mutation: str, guard: str) -> bool:
-    """A: the function either does not mutate, or carries a guard. True when ok."""
-    body = function_body(read_text(file), fn)
+def assert_guarded(
+    report: Report,
+    file: pathlib.Path,
+    fn: str,
+    mutation: str,
+    guard: str,
+    extract: Callable[[str, str], str] = function_body,
+) -> bool:
+    """A: the function either does not mutate, or carries a guard. True when ok.
+
+    `extract` is `function_body` for a bash library and `method_body` for a Python module.
+    """
+    body = extract(read_text(file), fn)
     if body == "":
         report.fail("A: no function %s in %s" % (fn, file.name))
         return False
@@ -215,8 +248,8 @@ def assert_guarded(report: Report, file: pathlib.Path, fn: str, mutation: str, g
     return True
 
 
-def check_a(report: Report, lib: pathlib.Path) -> bool:
-    """Every mutating setup step is guarded."""
+def check_a(report: Report, lib: pathlib.Path, devbox_py: pathlib.Path) -> bool:
+    """Every mutating setup step is guarded. The devbox steps are read from the Python port `devbox_py`."""
     ok = True
     # Installing Go must be skipped when a good enough Go is present.
     ok &= assert_guarded(
@@ -250,14 +283,15 @@ def check_a(report: Report, lib: pathlib.Path) -> bool:
     # Creating the container must be skipped when one already runs.
     ok &= assert_guarded(
         report,
-        lib / "devbox.sh",
-        "devbox_up",
-        r"docker run|\$d run",
-        "devbox_container_running|devbox_container_id",
+        devbox_py,
+        "up",
+        r'\*d,\s*"run"',
+        r"self\.(container_running|container_id)\b",
+        method_body,
     )
     # Pulling the image must be skipped when it is present.
     ok &= assert_guarded(
-        report, lib / "devbox.sh", "devbox_ensure_image", "pull", "devbox_image_present"
+        report, devbox_py, "ensure_image", r'"pull"', r"self\.image_present\b", method_body
     )
     return bool(ok)
 
@@ -447,11 +481,25 @@ def check_d(report: Report, file: pathlib.Path) -> bool:
     return True
 
 
-def route_label(lib: pathlib.Path, code: str, hint: str = "") -> tuple[bool, str]:
-    """(function exists, its output) for `devbox_route_label <code> [hint]`."""
-    suffix = " '%s'" % hint if hint else ""
+_ROUTE_PROBE = (
+    "import sys\n"
+    "from rediacc_ci.core.devbox import route_label\n"
+    "sys.stdout.write(route_label(sys.argv[1], sys.argv[2]).out)\n"
+)
+
+
+def route_label(root: str, code: str, hint: str = "") -> tuple[bool, str]:
+    """(import and call succeeded, the label) for `rediacc_ci.core.devbox.route_label(code, hint)` out of `<root>/.ci`.
+
+    Shelled out for the reason `derive_slot` is: PYTHONPATH is prefixed, so a broken COPY of the package at `<root>` wins over the real one and the E control exercises the planted defect rather than this interpreter's own module.
+    """
+    env = dict(os.environ)
+    ci_dir = str(pathlib.Path(root) / ".ci")
+    existing = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = ci_dir + (os.pathsep + existing if existing else "")
     proc = subprocess.run(
-        ["bash", "-c", "source '%s' 2>/dev/null; devbox_route_label %s%s" % (lib, code, suffix)],
+        [sys.executable, "-c", _ROUTE_PROBE, code, hint],
+        env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
         text=True,
@@ -460,63 +508,56 @@ def route_label(lib: pathlib.Path, code: str, hint: str = "") -> tuple[bool, str
     return proc.returncode == 0, proc.stdout.strip()
 
 
-def check_e(report: Report, lib: pathlib.Path) -> bool:
+def check_e(report: Report, root: str) -> bool:
     """E: no status label contradicts its HTTP code."""
-    probe = subprocess.run(
-        ["bash", "-c", "source '%s' 2>/dev/null; declare -f devbox_route_label >/dev/null" % lib],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    if probe.returncode != 0:
+    present, _ = route_label(root, "200")
+    if not present:
         report.fail(
-            "E: devbox_route_label is missing from %s; the label logic must stay testable"
-            % lib.name
+            "E: rediacc_ci.core.devbox.route_label is missing or fails under %s/.ci; "
+            "the label logic must stay testable" % root
         )
         return False
 
     # Any 4xx/5xx must NOT be described with a success word.
     for code in ("400", "404", "418", "500", "502", "503"):
-        _, out = route_label(lib, code, "hint")
+        _, out = route_label(root, code, "hint")
         if out == "":
-            report.fail("E: devbox_route_label produced nothing for %s" % code)
+            report.fail("E: route_label produced nothing for %s" % code)
             return False
         if SUCCESS_WORDS_RE.search(out):
             report.fail('E: HTTP %s is labelled with a success word: "%s"' % (code, out))
             return False
 
     # A 502 must name the actual cause rather than a bare failure.
-    _, out = route_label(lib, "502", "run account dev")
+    _, out = route_label(root, "502", "run account dev")
     if "no backend" not in out.lower():
         report.fail('E: a 502 must say no backend is listening, got: "%s"' % out)
         return False
 
     # 2xx/3xx must still be reported as reachable.
     for code in ("200", "301"):
-        _, out = route_label(lib, code)
+        _, out = route_label(root, code)
         if "live" not in out.lower():
             report.fail('E: HTTP %s should be reported live, got: "%s"' % (code, out))
             return False
     return True
 
 
-REDIRECT_RE = re.compile(r"middlewares\.\$\{slug\}-[a-z-]+\.redirectregex")
+# The slug placeholder as a label string spells it: `${slug}` (shell), `%s` (printf style) or `{slug}` (format style).
+SLUG_PLACEHOLDER = r"(?:\$\{slug\}|%s|\{slug\})"
+REDIRECT_RE = re.compile(r"middlewares\." + SLUG_PLACEHOLDER + r"-([a-z-]+)\.redirectregex")
+RULE_PREFIX = r"routers\." + SLUG_PLACEHOLDER + r"-ROUTER\.rule="
 
 
 def check_f(report: Report, lib: pathlib.Path) -> bool:
     """F: a path-scoped redirect must also be method-scoped."""
     text = read_text(lib)
-    routers = sorted(
-        {
-            match.replace("middlewares.${slug}-", "").replace(".redirectregex", "")
-            for match in REDIRECT_RE.findall(text)
-        }
-    )
+    routers = sorted(set(REDIRECT_RE.findall(text)))
     for router in routers:
-        needle = "routers.${slug}-%s.rule=" % router
+        needle = re.compile(RULE_PREFIX.replace("ROUTER", re.escape(router)))
         rule = ""
         for line in text.split("\n"):
-            if needle in line:
+            if needle.search(line):
                 rule = line
                 break
         if rule == "":
@@ -682,12 +723,13 @@ def main(argv: list[str] | None = None) -> int:
 
     root = paths.repo_root()
     lib = root / ".ci" / "lib"
+    devbox_py = root / DEVBOX_PY_REL
     setup_body_file = root / ".ci" / "legacy" / "run-legacy.sh"
     report = Report()
 
     print("check-setup-idempotency: guards, report-only check, port derivation, exit-code honesty")
 
-    if check_a(report, lib):
+    if check_a(report, lib, devbox_py):
         report.ok("every mutating setup step is guarded")
     if check_b(report, root):
         report.ok("setup --check reports and mutates nothing")
@@ -695,9 +737,9 @@ def main(argv: list[str] | None = None) -> int:
         report.ok("port derivation is deterministic and per-worktree distinct")
     if check_d(report, lib / "local-common.sh"):
         report.ok("ensure_renet_built checks the build's exit code")
-    if check_e(report, lib / "devbox.sh"):
+    if check_e(report, str(root)):
         report.ok("no status label contradicts its HTTP code")
-    if check_f(report, lib / "devbox.sh"):
+    if check_f(report, devbox_py):
         report.ok("no path-scoped redirect leaves its method unscoped")
     if check_g(report, setup_body_file):
         report.ok("setup initialises submodules before any phase that reads one")
@@ -780,18 +822,25 @@ def main(argv: list[str] | None = None) -> int:
             )
             control_fails = 1
 
-        # E-control: restore the "OK (404)" wording.
-        devbox_broken = tmpdir / "devbox-broken.sh"
-        devbox_broken.write_text(
-            read_text(lib / "devbox.sh").replace('echo "live (HTTP $code)"', 'echo "OK ($code)"'),
-            encoding="utf-8",
-        )
-        if 'echo "OK ($code)"' not in read_text(devbox_broken):
+        # E-control: restore the "OK (404)" wording in a broken COPY of the package, which wins over the real one on PYTHONPATH.
+        label_root = tmpdir / "label-root"
+        (label_root / ".ci").mkdir(parents=True)
+        with contextlib.suppress(OSError):
+            shutil.copytree(root / ".ci" / "rediacc_ci", label_root / ".ci" / "rediacc_ci")
+        devbox_broken = label_root / ".ci" / "rediacc_ci" / "core" / "devbox.py"
+        if devbox_broken.is_file():
+            devbox_broken.write_text(
+                read_text(devbox_broken).replace(
+                    'ROUTE_LIVE = "live (HTTP %s)"', 'ROUTE_LIVE = "OK (%s)"'
+                ),
+                encoding="utf-8",
+            )
+        if 'ROUTE_LIVE = "OK (%s)"' not in read_text(devbox_broken):
             print(
                 "%sCONTROL IS VACUOUS%s: E -- mutation did not apply." % (red, nc), file=sys.stderr
             )
             control_fails = 1
-        elif not run_control("E (label vs code)", check_e, devbox_broken):
+        elif not run_control("E (label vs code)", check_e, str(label_root)):
             print(
                 "%sCONTROL DID NOT FIRE%s: E (label vs code) -- the planted defect passed."
                 % (red, nc),
@@ -799,17 +848,14 @@ def main(argv: list[str] | None = None) -> int:
             )
             control_fails = 1
 
-        # F-control: plant the exact defect -- a redirect router on Path(`/`)
-        # with no Method. The current tree has no redirect at all, so without
-        # this control the assertion would be vacuously green.
-        devbox_redirect = tmpdir / "devbox-redirect.sh"
+        # F-control: plant the exact defect -- a redirect router on Path(`/`) with no Method. The current tree has no redirect at all, so without this control the assertion would be vacuously green.
+        devbox_redirect = tmpdir / "devbox-redirect.py"
         devbox_redirect.write_text(
-            read_text(lib / "devbox.sh") + "_planted_devbox_redirect() {\n"
-            "    docker run \\\n"
-            '        --label "traefik.http.routers.${slug}-dbui.rule=Host(\\`x\\`) '
-            '&& Path(\\`/\\`)" \\\n'
-            '        --label "traefik.http.middlewares.${slug}-dbui.redirectregex.regex=.*"\n'
-            "}\n",
+            read_text(devbox_py) + "\n\ndef _planted_devbox_redirect():\n"
+            "    return [\n"
+            '        "traefik.http.routers.%s-dbui.rule=Host(`x`) && Path(`/`)",\n'
+            '        "traefik.http.middlewares.%s-dbui.redirectregex.regex=.*",\n'
+            "    ]\n",
             encoding="utf-8",
         )
         if "dbui.redirectregex" not in read_text(devbox_redirect):
@@ -891,7 +937,7 @@ def main(argv: list[str] | None = None) -> int:
 
 def selftest() -> int:
     """Both directions on every extractor and on the two settle oracles."""
-    ctl = Controls("setup-idempotency", floor=27, verbose=True)
+    ctl = Controls("setup-idempotency", floor=34, verbose=True)
     plain = {"RED": "", "GREEN": "", "NC": ""}
 
     # -- function_body ------------------------------------------------------
@@ -943,6 +989,45 @@ def selftest() -> int:
             assert_guarded(report, target, "absent", "curl -fL", "command -v go"),
         )
 
+        # -- method_body and the Python-port guard (check A over core/devbox.py) --
+        py_src = (
+            "class D:\n"
+            "    def up(self):\n"
+            "        if self.container_running():\n"
+            "            return 0\n"
+            '        return self.run([*d, "run", "-d"])\n'
+            "\n"
+            "    def other(self):\n"
+            "        pass\n"
+        )
+        ctl.check(
+            "CONTROL: a method body stops at the next method",
+            method_body(py_src, "up").count("def "),
+            1,
+        )
+        ctl.check("VACUITY: an absent method yields nothing", method_body(py_src, "nope"), "")
+        ctl.check(
+            "MIRROR: a similarly-named method is not this one",
+            method_body("    def upgrade(self):\n        x\n", "up"),
+            "",
+        )
+        py_target = tmpdir / "port.py"
+        py_target.write_text(py_src, encoding="utf-8")
+        up_mut, up_guard = r'\*d,\s*"run"', r"self\.(container_running|container_id)\b"
+        ctl.truthy(
+            "CONTROL: a guarded `docker run` in a Python method passes A",
+            assert_guarded(report, py_target, "up", up_mut, up_guard, method_body),
+        )
+        py_target.write_text(py_src.replace("self.container_running()", "True"), encoding="utf-8")
+        ctl.falsy(
+            "PLANT: the same method with the running-check REMOVED fails A",
+            assert_guarded(report, py_target, "up", up_mut, up_guard, method_body),
+        )
+        ctl.falsy(
+            "VACUITY: a missing Python method is a FAILURE",
+            assert_guarded(report, py_target, "absent", up_mut, up_guard, method_body),
+        )
+
         # -- check_d ---------------------------------------------------------
         report = Report(colour=plain)
         good = tmpdir / "good.sh"
@@ -986,6 +1071,13 @@ def selftest() -> int:
             encoding="utf-8",
         )
         ctl.truthy("MIRROR: the same redirect WITH a Method passes F", check_f(report, scoped))
+        printf_scoped = tmpdir / "devbox-printf.py"
+        printf_scoped.write_text(
+            '"traefik.http.routers.%s-dbui.rule=Host(`x`) && Path(`/`)"\n'
+            '"traefik.http.middlewares.%s-dbui.redirectregex.regex=.*"\n',
+            encoding="utf-8",
+        )
+        ctl.falsy("PLANT: the printf-style spelling is read too", check_f(report, printf_scoped))
         orphan = tmpdir / "devbox-orphan.sh"
         orphan.write_text(
             'y --label "traefik.http.middlewares.${slug}-nope.redirectregex.regex=.*"\n',
