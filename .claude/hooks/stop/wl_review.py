@@ -32,7 +32,7 @@ import sys
 import tempfile
 import time
 
-from wl_models import HAIKU_MODEL
+import wl_models
 
 HERE = pathlib.Path(__file__).resolve().parent
 CONSOLE_ROOT = HERE.parents[2]
@@ -200,7 +200,7 @@ def load_config(root=None):
     if cfg.get("block_at") not in SEV_RANK:
         cfg["block_at"] = "high"
     # Not a config key: the model id is WK_CLAUDE_HAIKU_MODEL in .ci/config/well-known.env, the one place an upgrade edits (the Stop-hook judge reads it too).
-    cfg["model"] = HAIKU_MODEL
+    cfg["model"] = wl_models.haiku_model()
     return cfg
 
 
