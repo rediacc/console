@@ -297,18 +297,15 @@ def test_a_non_json_body_prints_jqs_parse_error_twice(tmp_path: pathlib.Path) ->
 
 
 def test_defect_a_transport_failure_is_a_silent_non_zero(tmp_path: pathlib.Path) -> None:
-    """THE DEFECT, PINNED. `curl -s` (no `-S`) says nothing on a network error and the assignment feeds `set -e`, so the caller gets the step line, NO diagnostic whatsoever, and exit 6. A workflow step fails with no reason in the log.
-
-    Reproduced because agreement with the live twin is the deliverable;
-    repaired, this test goes red and names the port that must follow.
-    """
+    """RULE-T DELTA (2026-10-08, found by the W6 writer). The bash twin's `curl -s` (no `-S`) said nothing on a network error and the assignment fed `set -e`, so the caller got the step line, NO diagnostic whatsoever, and exit 6: a workflow step failed with no reason in the log. The golden keeps that silent answer; the port keeps the exit and the request and adds one line naming it."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], FAKE_CURL_RC="6")
     assert old.returncode == 6
     assert old.stderr == ("→ Purging Cloudflare cache for " + MEDIA_HOST + "...\n")
-    assert old.stdout == ""
-    assert len(old_calls) == 1
-    assert port.A_TRANSPORT_FAILURE_IS_SILENT
-    _assert_agree(old, new, "curl-fails", old_calls, new_calls)
+    assert new.returncode == 6, "the exit status is unchanged"
+    assert new.stdout == old.stdout == ""
+    assert new_calls == old_calls, "the request is unchanged"
+    assert new.stderr.startswith(old.stderr)
+    assert "Purge failed: curl exited 6" in new.stderr[len(old.stderr) :]
 
 
 def test_extra_arguments_are_ignored_by_both(tmp_path: pathlib.Path) -> None:
