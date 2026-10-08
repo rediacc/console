@@ -744,13 +744,6 @@
       "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
     },
     {
-      "id": "2c4506fb4982ded7",
-      "file": ".ci/rediacc_ci/tests/gates/test_gate_shadow_gate.py",
-      "code": "operator",
-      "count": 2,
-      "message": "Unsupported operand types for + (\"None\" and \"int\")"
-    },
-    {
       "id": "ecf31c3313150dc5",
       "file": ".ci/rediacc_ci/tests/gates/test_gate_suppression_liveness.py",
       "code": "union-attr",

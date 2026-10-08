@@ -138,8 +138,8 @@ const SURFACES: readonly Surface[] = [
   // `.ci/scripts` READ 300 UNTIL THE BASH RETIREMENT CAMPAIGN TOOK IT TO 299, at which point the floor was refusing the campaign's own success rather than a collapsed glob. Re-measured 2026-09-21 at 299 and lowered to 200, so the margin is 99 files and shrinking; it is restated on each retirement batch so a closing margin is visible early.
   // Re-measured 2026-10-08 at 192 after PLAN-retire-bash-oracles wave 1 deleted its bash twins, and lowered from 200 to the measured count: the margin is zero, so the next batch lowers it again in the same change.
   // Re-measured 2026-10-08 at 184 after W11-A deleted test-run-sh.sh and W11-B deleted lib/common.sh, and lowered from 187 to the measured count.
-  // Re-measured 2026-10-08 at 183 after section 12 U3 deleted test-toolchain.sh, then at 182 after U2 deleted test-media-r2.sh.
-  { dir: '.ci/scripts', kind: 'source', exts: ['.sh', '.py'], minFiles: 182 },
+  // Re-measured 2026-10-08 at 183 after section 12 U3 deleted test-toolchain.sh, then at 182 after U2 deleted test-media-r2.sh, then at 178 after section 12 U1 deleted blocker-validator.sh, emit-advisory.sh, test-blocker-golden-corpus.sh and test-runner-advice.sh.
+  { dir: '.ci/scripts', kind: 'source', exts: ['.sh', '.py'], minFiles: 178 },
   { dir: '.ci/rediacc_ci', kind: 'source', exts: ['.py'], minFiles: 200 },
   // `.ci/lib` was retired as a surface on 2026-10-08: W11-A deleted local-common.sh, its last file, and the directory is gone.
   // packages/cli. The first two join at ZERO (measured clean when they were added); the third rides the baseline, because 93 percent of its findings are prose inside JSDoc where the dash often does real syntactic work, and a mechanical pass over that changes documented meaning.

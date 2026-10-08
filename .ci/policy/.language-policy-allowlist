@@ -44,7 +44,7 @@
 # launchers that are ordinary debt. See the note at the end of this file.
 #
 # Each entry MUST carry a "# BLOCKER: <reason>" line above it, validated through
-# the canonical `.ci/scripts/lib/blocker-validator.sh` (30-character minimum, no
+# the canonical `rediacc_ci.core.allowlist` (30-character minimum, no
 # low-effort phrases). A blank line resets the tracked BLOCKER, which is the
 # repo-wide convention documented in docs/agent-reference/suppressions.md.
 

@@ -1,6 +1,6 @@
 """AI-navigable advisory emission, ported from `.ci/scripts/lib/emit-advisory.sh`.
 
-PORTED FROM `.ci/scripts/lib/emit-advisory.sh` (218 lines), which still exists and is still sourced by four callers. This module does NOT shim it: deletion and cutover are a later step, so both implementations are live and `.ci/rediacc_ci/tests/test_core_advisory.py` is the differential that says they agree, byte for byte, on both streams.
+PORTED FROM `.ci/scripts/lib/emit-advisory.sh` (218 lines), DELETED in PLAN-retire-bash-oracles section 12 U1 once its last sourcer (`blocker-validator.sh`) went; its text is `git cat-file -p cc6278e4b8530fe98cb64ba15ad84282d0676b4e` (the `twin_blob` of `goldens/twins/lib.emit-advisory.jsonl`). `.ci/rediacc_ci/tests/test_core_advisory.py` compares this module against the twin's frozen answers, byte for byte, on both streams.
 
 WHAT THE PORT DELETES, WHICH IS MOST OF THE FILE. 108 of the twin's 218 lines are comment, and roughly half of that comment exists because of ONE bash fact: bash 3.2 has no `declare -A`. The twin opens with a version guard, a refusal message naming `brew install bash`, and a measured account of what happens without it --
 `ADV_SEVERITY[lodash]=critical` aborting the caller with "lodash: unbound

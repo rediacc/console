@@ -44,7 +44,8 @@ grep -q '^documented beta$' "$ctl/arms.txt" ||
 """
 TS_SUBJECT = "scripts/gates/check-docs-browse-invariants.ts"
 # A REAL subject that is currently UNPROVEN, so the mirror's baseline is not empty. Without it every drain and trim case below asserted against a zero-row baseline, which is the vacuous-fixture shape this whole gate is about; the `if not obj[KEY]` guards caught it on the first run.
-DEBT_SUBJECT = ".ci/scripts/test/gates/test-runner-advice.sh"
+# `.ci/docker/web/entrypoint.sh` since PLAN-retire-bash-oracles section 12 U1 deleted the previous subject, `test-runner-advice.sh` (four unproven `sed -i` plants), leaving this file's nginx-config `sed -i` as the one bash plant the real baseline still carries.
+DEBT_SUBJECT = ".ci/docker/web/entrypoint.sh"
 
 # The proof pair this gate requires, lifted verbatim from the real bash subject.
 BASH_PROOF = """grep -q '^TOP clean$' "$ctl/arms.txt" ||

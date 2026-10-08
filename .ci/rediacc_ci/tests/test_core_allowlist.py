@@ -1,6 +1,10 @@
 """`rediacc_ci.core.allowlist` against the two readers it consolidates.
 
-WHAT THE PROOF IS. `core/allowlist.py` is a third implementation of a convention that already has two shared ones plus two hand-rolled copies. "The port looks right" is not evidence, so this suite runs the REAL bash function and the REAL TypeScript function over real input and compares BYTES.
+WHAT THE PROOF IS. `core/allowlist.py` is a third implementation of a convention that already has two shared ones plus two hand-rolled copies. "The port looks right" is not evidence, so this suite runs the REAL TypeScript function, and the bash reader's frozen bytes, over real input and compares BYTES.
+
+THE BASH READER IS GONE; ITS BYTES ARE NOT. `.ci/scripts/lib/blocker-validator.sh` was deleted in PLAN-retire-bash-oracles section 12 U1. Its `parse_blockered_list` output stays frozen in `goldens/allowlist/bash-pairs/`, and the places this suite used to RUN it now run its port, `rediacc_ci.core.blocker_validator.parse_blockered_list`, rendered exactly as the bash driver
+printed (`_port_pairs`). The port reproduced all 17 bash-pairs goldens (149 rows) byte for byte when the switch was made, and its byte agreement with the bash library itself is frozen in `goldens/twins/lib.blocker-validator.jsonl` (`test_core_blocker_validator.py`). The bash REASON differential was deleted rather than repointed: the port's reason path IS `allowlist.validate_reason`, so it
+would have compared this module with itself.
 
 THE GOLDEN MECHANISM, and why it is shaped this way.
 
@@ -21,7 +25,7 @@ THE GOLDEN MECHANISM, and why it is shaped this way.
   3. The suite ALSO runs both readers over the LIVE lists and requires
      three-way agreement there. The goldens catch a regression in the port; the
      live differential catches DRIFT in the readers, which a frozen golden
-     cannot see. The bash half always runs. The TypeScript half needs `tsx`, and
+     cannot see. The ported-bash half always runs. The TypeScript half needs `tsx`, and
      the lane that runs this suite (`quality-static`) is `node: false` -- so it
      follows the pattern `test_workflows.py:326` already established: when tsx
      cannot be run, ASSERT ITS ABSENCE rather than skipping, because a skip
@@ -38,27 +42,26 @@ THE ANTI-VACUITY CONTRACT, because a golden suite is the easiest thing in this r
     not an assumed one.
   * EVERY COMPARISON IS PERTURBED. For each golden with rows,
     `test_perturbing_*` mutates the frozen corpus in a tempdir and requires the
-    comparison to FAIL -- and requires the real bash reader to follow the
+    comparison to FAIL -- and requires the ported bash reader to follow the
     mutation to the same new bytes, so the perturbation is proved to be visible
     to both sides rather than merely to have broken the port.
   * NO HAND-TYPED FLOORS. Every count in here is derived from the corpus or
     from the readers' own tables.
 
 THE DEFECT THIS SUITE FOUND ON THE WAY, AND ITS FIX. `validate_blocker_quality` in the bash reader used to normalize with `echo "$reason"`, and bash's `echo` builtin eats a word that is exactly `-n`, `-e` or `-E`. A BLOCKER reason of `-n` was therefore measured as ZERO characters by bash and TWO by TypeScript. Both still rejected it, so no gate was wrong, and this suite recorded
-the divergence and said the fix belonged in the bash file. It landed on 2026-09-09 with the collapse: neither shared reader normalizes anything any more, both ask this module, and `test_the_bash_echo_builtin_defect_is_gone_and_stays_gone` now asserts the agreement plus a reproduction of the old normalization proving the control still has something to detect.
+the divergence and said the fix belonged in the bash file. It landed on 2026-09-09 with the collapse: neither shared reader normalizes anything any more, both ask this module. The bash reader is deleted now, and `test_a_bare_dash_n_reason_is_measured_as_two_characters` keeps the canonical's half of that control.
 
 WHAT THIS SUITE NO LONGER HAS TO CARRY. It says below that the readers are separate implementations; since 2026-09-09 they are CLIENTS, which is why every comparison here still passes and why none of them would notice a phrase present in a reader's own table and absent from this module's. That direction is `.ci/rediacc_ci/tests/test_blocker_implementations.py`'s, and it exists
 because this file's reason corpus is generated FROM `LOW_EFFORT_PHRASES` at :370 and is structurally blind to the list being short.
 
 REGENERATING THE GOLDENS: `PYTHONPATH=.ci python3 .ci/rediacc_ci/tests/
-test_core_allowlist.py --record` from the repo root, with node_modules present. It re-freezes the corpus from the live sources and re-runs both readers.
+test_core_allowlist.py --record` from the repo root, with node_modules present. It re-freezes the corpus from the live sources and re-runs the TypeScript reader and the ported bash reader; a bash-pairs golden it writes names `PORT_READER` in its header, so a reader can tell a frozen bash record from a port re-record.
 """
 
 import hashlib
 import json
 import os
 import pathlib
-import shlex
 import shutil
 import subprocess
 import sys
@@ -66,7 +69,7 @@ import sys
 import pytest
 
 from rediacc_ci import paths, well_known
-from rediacc_ci.core import allowlist
+from rediacc_ci.core import allowlist, blocker_validator
 from rediacc_ci.tests import differential as diff
 
 GOLDEN_ROOT = paths.from_root(".ci", "rediacc_ci", "tests", "goldens", "allowlist")
@@ -78,8 +81,9 @@ REASONS_DIR = GOLDEN_ROOT / "reasons"
 HEADER_END = "# ---"
 
 BASH_READER = "bash:.ci/scripts/lib/blocker-validator.sh::parse_blockered_list"
+# What `--record` writes into a bash-pairs golden now that the bash reader is deleted: its port, which reproduced every frozen bash-pairs golden byte for byte when the switch was made.
+PORT_READER = "py:.ci/rediacc_ci/core/blocker_validator.py::parse_blockered_list"
 TS_READER = "ts:scripts/lib/blocker-validator.ts::parseBlockeredList"
-BASH_REASON_READER = "bash:.ci/scripts/lib/blocker-validator.sh::validate_blocker_quality"
 TS_REASON_READER = "ts:scripts/lib/blocker-validator.ts::validateBlockerQuality"
 
 # The file name the reason cases are validated "in". A constant rather than a real path because it is only ever interpolated into the message, and pinning it keeps the recorded messages independent of where the corpus lives.
@@ -121,19 +125,6 @@ SLUGS: list[str] = [_slug(s) for s in SOURCES]
 DOC_BEGIN = "<<<DOC "
 DOC_END = "<<<END"
 
-BASH_PAIRS_DRIVER = r"""
-set -uo pipefail
-source .ci/scripts/lib/blocker-validator.sh
-for f in "$@"; do
-    unset _entries _reasons
-    declare -A _entries _reasons
-    parse_blockered_list "$f" _entries _reasons "#"
-    printf '<<<DOC %s\n' "$f"
-    for k in "${!_reasons[@]}"; do printf '%s\t%s\n' "$k" "${_reasons[$k]}"; done | LC_ALL=C sort
-    printf '<<<END\n'
-done
-"""
-
 TS_RECORDS_DRIVER = """
 import { parseBlockeredList } from '%s/scripts/lib/blocker-validator.ts';
 for (const f of process.argv.slice(2)) {
@@ -143,24 +134,6 @@ for (const f of process.argv.slice(2)) {
       + String.fromCharCode(9) + r.blocker + String.fromCharCode(10));
   process.stdout.write('<<<END' + String.fromCharCode(10));
 }
-"""
-
-# Reads TAB-separated `<case-id>\t<reason>` lines and prints `<case-id>\t<ok|reject>\t<sha256 of the message>`. The `::error::` prefix that
-# `ci_error` adds under CI=true is stripped from line 1 so the digest is over the
-# same bytes the TypeScript reader returns.
-BASH_REASONS_DRIVER = r"""
-set -uo pipefail
-source .ci/scripts/lib/blocker-validator.sh
-while IFS=$'\t' read -r id reason; do
-    if out=$(validate_blocker_quality "$id" "$reason" "$2" 2>&1); then
-        verdict=ok
-        out=""
-    else
-        verdict=reject
-    fi
-    digest=$(printf '%s' "$out" | sed '1s/^::error:://' | sha256sum | cut -d' ' -f1)
-    printf '%s\t%s\t%s\n' "$id" "$verdict" "$digest"
-done < "$1"
 """
 
 TS_REASONS_DRIVER = """
@@ -243,21 +216,16 @@ def _run_tsx(script: str, args: list[str]) -> str | None:
     return result.stdout if result.returncode == 0 else None
 
 
-def _run_bash(script: str, args: list[str], *, cwd: str | None = None) -> tuple[int, str, str]:
-    """The bash reader, with stdout and stderr kept APART.
+def _port_pairs(files: list[str]) -> dict[str, str]:
+    """The ported bash reader over `files`, rendered as the deleted bash driver printed it: one `entry<TAB>reason` line per reasoned entry, in C-locale order.
 
-    Never merged, for the reason `differential.py` states at length: the shape of defect these differentials exist to catch is a stream swap, and `2>&1` hides it completely. Every caller below asserts on stderr separately.
-
-    Arguments arrive as POSITIONAL PARAMETERS via a `set --` prelude rather than being interpolated into the script text. `differential.bash_streams` runs `bash -c <script>` with nothing after it, so there is no other way to give the driver a `$1`, and string-substituting a path into a shell script is how a directory with a quote in it becomes a syntax error.
+    In process, relative to the CURRENT directory, as the bash driver resolved its arguments against its cwd. `LC_ALL=C sort` over UTF-8 lines is code-point order, which is Python's `sorted` on `str`.
     """
-    prelude = "set -- %s\n" % " ".join(shlex.quote(a) for a in args)
-    return diff.bash_streams(prelude + script, env=diff.env_for(CI="true"), cwd=cwd)
-
-
-def _bash_pairs(files: list[str], *, cwd: str | None = None) -> tuple[dict[str, str], str]:
-    code, out, err = _run_bash(BASH_PAIRS_DRIVER, files, cwd=cwd)
-    assert code == 0, "bash pairs driver failed (%d): %s" % (code, err)
-    return _split_documents(out), err
+    docs: dict[str, str] = {}
+    for name in files:
+        tables = blocker_validator.parse_blockered_list(name)
+        docs[name] = "".join(sorted("%s\t%s\n" % pair for pair in tables.blocker.items()))
+    return docs
 
 
 def _ts_records(files: list[str]) -> dict[str, str] | None:
@@ -396,11 +364,11 @@ def test_every_golden_names_its_reader_its_command_and_its_input():
     """Provenance is part of the artifact, not something the reader must recall."""
     for slug in SLUGS:
         for directory, reader in (
-            (BASH_PAIRS_DIR, BASH_READER),
-            (TS_RECORDS_DIR, TS_READER),
+            (BASH_PAIRS_DIR, (BASH_READER, PORT_READER)),
+            (TS_RECORDS_DIR, (TS_READER,)),
         ):
             meta, _ = _read_golden(directory / ("%s.golden" % slug))
-            assert meta["reader"] == reader
+            assert meta["reader"] in reader
             assert meta["source"] in SOURCES
             assert meta["corpus"] == "corpus/%s.list" % slug
             assert meta["comment-char"] == "#"
@@ -459,17 +427,17 @@ def test_driver_envelope_cannot_collide_with_payload():
         assert DOC_END not in corpus
 
 
-# --------------------------------------------------------------------------- 2. The perturbation controls. Every comparison above must FAIL when the input moves, and the real bash reader must follow the mutation. ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 2. The perturbation controls. Every comparison above must FAIL when the input moves, and the ported bash reader must follow the mutation. ---------------------------------------------------------------------------
 
 
 def _slugs_with_rows() -> list[str]:
     return [slug for slug in SLUGS if allowlist.parse_text(_corpus_text(slug))]
 
 
-def test_perturbing_one_entry_breaks_the_bash_pairs_golden_and_bash_follows(tmp_path):
+def test_perturbing_one_entry_breaks_the_bash_pairs_golden_and_the_reader_follows(tmp_path):
     """Both directions, on every non-empty corpus file.
 
-    The mutation is applied to a COPY. Renaming one entry token must (a) change what this module renders, so the golden no longer matches, and (b) change what the bash reader renders in the same way -- otherwise the "failure" would only prove the port is fragile, not that the comparison is watching anything.
+    The mutation is applied to a COPY. Renaming one entry token must (a) change what this module renders, so the golden no longer matches, and (b) change what the ported bash reader renders in the same way -- otherwise the "failure" would only prove the port is fragile, not that the comparison is watching anything.
     """
     slugs = _slugs_with_rows()
     assert slugs, "nothing to perturb; the corpus has no entries"
@@ -493,14 +461,13 @@ def test_perturbing_one_entry_breaks_the_bash_pairs_golden_and_bash_follows(tmp_
             "golden comparison is not watching the entries" % slug
         )
 
-    docs, stderr = _bash_pairs(mutated_paths)
-    assert stderr == "", "the bash driver wrote to stderr: %r" % stderr
+    docs = _port_pairs(mutated_paths)
     for slug, path in zip(slugs, mutated_paths, strict=True):
         mine = allowlist.render_pairs(allowlist.parse_file(path))
         _agree("perturbed bash-pairs/%s" % slug, docs[path], mine)
         _, golden = _read_golden(BASH_PAIRS_DIR / ("%s.golden" % slug))
         assert docs[path] != golden, (
-            "%s: the bash reader produced the recorded bytes from MUTATED input" % slug
+            "%s: the ported bash reader produced the recorded bytes from MUTATED input" % slug
         )
 
 
@@ -557,22 +524,21 @@ def _live_source(source: str) -> pathlib.Path | None:
     return pathlib.Path(diff.repo()) / matches[0]
 
 
-def test_bash_reader_and_python_agree_on_the_live_lists():
-    """The real `parse_blockered_list`, over the real files, right now."""
+def test_ported_bash_reader_and_python_agree_on_the_live_lists():
+    """The ported `parse_blockered_list`, over the real files, right now."""
     live = {s: _live_source(s) for s in SOURCES}
     present = [s for s, p in live.items() if p is not None]
     assert present, (
         "not one corpus source is tracked any more; this differential has "
         "stopped comparing anything. Re-record the goldens against the new paths."
     )
-    docs, stderr = _bash_pairs([str(live[s]) for s in present])
-    assert stderr == "", "the bash driver wrote to stderr: %r" % stderr
+    docs = _port_pairs([str(live[s]) for s in present])
     compared = 0
     for source in present:
         path = live[source]
         mine = allowlist.render_pairs(allowlist.parse_file(path))
         theirs = docs[str(path)]
-        assert theirs == mine, "live bash differential diverged on %s" % source
+        assert theirs == mine, "live ported-bash differential diverged on %s" % source
         if mine:
             compared += 1
     assert compared > 0, "every live list is empty; the differential proved nothing"
@@ -632,69 +598,17 @@ def test_reason_messages_golden_matches_python_byte_for_byte():
         _agree("reasons/messages/%s" % kind, case["message"], rejection.message)
 
 
-def test_bash_reason_validator_agrees_with_python_on_every_case(tmp_path):
-    """The real `validate_blocker_quality`, driven over the same corpus.
+def test_a_bare_dash_n_reason_is_measured_as_two_characters():
+    """THE DEFECT, AND THE COLLAPSE THAT REMOVED IT: the canonical's half, salvaged.
 
-    Compared by sha256 of the message with `ci_error`'s `::error::` prefix stripped, so a difference in a single character of any of the four output lines is a failure -- not merely a difference in the accept/reject verdict.
+    `echo "-n"` in bash prints NOTHING, so the bash reader's `validate_blocker_quality` used to normalize a two-character reason to zero characters and print a different message from the other two readers. That was fixed on 2026-09-09 when the bash reader stopped normalizing and asked this module, and the bash reader itself was deleted in PLAN-retire-bash-oracles section 12 U1.
+    What survives is the claim about THIS module: `-n` is a reason of two characters, rejected for being too short, and the message says 2, never 0.
     """
-    cases = [case for case in _reason_cases() if case[1] != "-n"]
-    assert cases
-    # tmp_path, not `.ci/cache/`: a run killed mid-test leaves nothing behind in the working tree. Observed once this session, when a 120s harness timeout killed the suite and the PID-keyed TSV survived in the repository.
-    tsv = tmp_path / "reasons.tsv"
-    tsv.write_text(_cases_tsv(cases), encoding="utf-8")
-    code, out, err = _run_bash(BASH_REASONS_DRIVER, [str(tsv), REASON_FILE])
-    assert code == 0, "bash reasons driver failed: %s" % err
-    assert err == "", "the bash reasons driver wrote to stderr: %r" % err
-    _agree("bash reason verdicts", out, _python_reason_rows(cases))
-
-
-def test_the_bash_echo_builtin_defect_is_gone_and_stays_gone(tmp_path):
-    """THE DEFECT, AND THE COLLAPSE THAT REMOVED IT.
-
-    `echo "-n"` in bash prints NOTHING, so `validate_blocker_quality` used to normalize a two-character reason to zero characters and print a different message from the other two readers. This suite recorded that divergence rather than working around it, and said in as many words that the fix belonged in the bash file and that this control should be retired when it landed. It
-    landed on 2026-09-09: the bash reader no longer normalizes anything, it asks `rediacc_ci.core.allowlist`, so `echo` is not on the path.
-
-    THE CONTROL IS RETIRED BY INVERSION, NOT BY DELETION. What was "the two disagree, and here is the digest that proves it" is now "the two agree, and here is the same digest on both sides", plus a reproduction of the old normalization showing the driver WOULD still see the divergence if it came back. Deleting it would have removed the only test in this repository that exercises a
-    reason bash's `echo` can eat.
-    """
-    tsv = tmp_path / "dashn.tsv"
-    tsv.write_text("dashn\t-n\n", encoding="utf-8")
-    code, out, err = _run_bash(BASH_REASONS_DRIVER, [str(tsv), REASON_FILE])
-    assert code == 0, err
-    verdict, digest = out.strip().split("\t")[1:]
-    assert verdict == "reject"
-
     mine = allowlist.validate_reason("dashn", "-n", REASON_FILE)
     assert mine is not None
     assert mine.kind == "too-short"
     assert "(2 chars, minimum 30)" in mine.message
-    assert _sha256(mine.message) == digest, (
-        "bash and the canonical disagree on a bare '-n' reason again. The reader "
-        "used to normalize with the `echo` builtin, which eats `-n`, `-e` and `-E`; "
-        "if that shape has returned to .ci/scripts/lib/blocker-validator.sh it is "
-        "the same defect, not a new one."
-    )
-
-    # The message the bash reader actually prints, end to end, through ci_error.
-    printed = _run_bash(
-        "source .ci/scripts/lib/blocker-validator.sh\n"
-        'validate_blocker_quality dashn "-n" "%s" || true\n' % REASON_FILE,
-        [],
-    )[1]
-    assert "(2 chars, minimum 30)" in printed, printed
-    assert "(0 chars, minimum 30)" not in printed, printed
-
-    # THE CONTROL, so this is not a test that would pass with the differential broken: reproduce the OLD normalization and show it still yields zero, i.e. the divergence is genuinely absent rather than merely unmeasured.
-    old_normalization = _run_bash(
-        'n=$(echo "-n" | tr "[:upper:]" "[:lower:]" | '
-        "sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/[.!?,;:]*$//')\n"
-        'printf "%s\\n" "${#n}"\n',
-        [],
-    )[1].strip()
-    assert old_normalization == "0", (
-        "the `echo` builtin no longer eats `-n` on this bash, so this control is "
-        "measuring nothing; got %r" % old_normalization
-    )
+    assert "(0 chars, minimum 30)" not in mine.message
 
 
 def test_entries_with_no_reason_are_reported_not_silently_accepted():
@@ -758,9 +672,9 @@ def test_a_missing_list_is_an_error_here_and_silence_in_both_readers(tmp_path):
         allowlist.parse_file(absent)
     assert allowlist.parse_file(absent, missing_ok=True) == []
 
-    docs, _ = _bash_pairs([str(absent)])
+    docs = _port_pairs([str(absent)])
     assert docs[str(absent)] == "", (
-        "the bash reader no longer returns silently for a missing file; this "
+        "the ported bash reader no longer returns silently for a missing file; this "
         "control describes a divergence that has been fixed"
     )
     ts = _ts_records([str(absent)])
@@ -803,7 +717,7 @@ def test_the_module_entry_point_separates_absent_from_dirty(tmp_path):
     assert found.stderr == ""
 
 
-def test_load_resolves_from_the_repo_root_while_the_bash_reader_needs_cwd(tmp_path):
+def test_load_resolves_from_the_repo_root_while_the_ported_bash_reader_needs_cwd(tmp_path):
     """`audit.sh:327` passes a bare relative name; from anywhere else it finds nothing."""
     source = _live_source(".deps-upgrade-blocklist")
     assert source is not None
@@ -818,15 +732,19 @@ def test_load_resolves_from_the_repo_root_while_the_bash_reader_needs_cwd(tmp_pa
         assert allowlist.load(name) == from_root
         with pytest.raises(allowlist.ListNotFoundError):
             allowlist.parse_file(name)
+        elsewhere = _port_pairs([name])
     finally:
         os.chdir(cwd)
 
-    docs, _ = _bash_pairs([name], cwd=str(tmp_path))
-    assert docs[name] == "", (
-        "the bash reader found the list from an unrelated cwd; the relative-path "
+    assert elsewhere[name] == "", (
+        "the ported bash reader found the list from an unrelated cwd; the relative-path "
         "trap this control describes no longer exists"
     )
-    docs, _ = _bash_pairs([name])
+    os.chdir(paths.repo_root())
+    try:
+        docs = _port_pairs([name])
+    finally:
+        os.chdir(cwd)
     assert docs[name] == allowlist.render_pairs(from_root)
 
 
@@ -945,7 +863,7 @@ def _record() -> int:
         )
         return 1
 
-    bash_docs, _ = _bash_pairs(frozen)
+    bash_docs = _port_pairs(frozen)
     ts_docs = _ts_records(frozen)
     if ts_docs is None:
         print("cannot record: npx tsx is not runnable here", file=sys.stderr)
@@ -958,9 +876,9 @@ def _record() -> int:
         _write_golden(
             BASH_PAIRS_DIR / ("%s.golden" % slug),
             {
-                "reader": BASH_READER,
-                "command": "parse_blockered_list <corpus> A B '#'; "
-                "for k in ${!B[@]}; printf '%s\\t%s\\n'; LC_ALL=C sort",
+                "reader": PORT_READER,
+                "command": "parse_blockered_list(<corpus>).blocker; "
+                "printf '%s\\t%s\\n'; LC_ALL=C sort",
                 "projection": "pairs",
                 "source": source,
                 "corpus": "corpus/%s.list" % slug,

@@ -5,11 +5,7 @@
     ".ci/scripts/infra/ci-pull-images.sh",
     ".ci/scripts/infra/ci-start-elite.sh",
     ".ci/scripts/infra/ci-stop-elite.sh",
-    ".ci/scripts/lib/blocker-validator.sh",
-    ".ci/scripts/lib/emit-advisory.sh",
     ".ci/scripts/lib/toolchain.sh",
-    ".ci/scripts/test/gates/test-blocker-golden-corpus.sh",
-    ".ci/scripts/test/gates/test-runner-advice.sh",
     ".ci/scripts/test/lib/test-helpers.sh"
   ]
 }

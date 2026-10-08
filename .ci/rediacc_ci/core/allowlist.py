@@ -4,7 +4,9 @@ WHAT IS BEING CONSOLIDATED. `docs/agent-reference/suppressions.md` describes a s
 today, and they do not have the same capabilities:
 
   .ci/scripts/lib/blocker-validator.sh   parse_blockered_list + verify_all_blockers
-                                         5 gates and 1 gate test source it
+                                         5 gates and 1 gate test sourced it; deleted
+                                         in PLAN-retire-bash-oracles section 12 U1,
+                                         its port is rediacc_ci.core.blocker_validator
   scripts/lib/blocker-validator.ts       parseBlockeredList + verifyAllBlockers
                                          13 gates import it
   .ci/scripts/quality/check_runner_advice.py:599  parse_allowlist -- a third copy,
@@ -66,7 +68,7 @@ from rediacc_ci import paths
 
 # --------------------------------------------------------------------------- The quality rules, kept byte-identical to the two shared readers. ---------------------------------------------------------------------------
 
-# Exact-match after normalization. Copied from LOW_EFFORT_BLOCKER_PATTERNS in .ci/scripts/lib/blocker-validator.sh and its TypeScript twin, in their order, which is load-bearing: the message quotes the FIRST pattern that matches and a reordering would change the bytes a gate prints.
+# Exact-match after normalization. Copied from LOW_EFFORT_BLOCKER_PATTERNS in the bash reader (`.ci/scripts/lib/blocker-validator.sh`, since deleted) and its TypeScript twin, in their order, which is load-bearing: the message quotes the FIRST pattern that matches and a reordering would change the bytes a gate prints.
 LOW_EFFORT_PHRASES: tuple[str, ...] = (
     # npm-audit ack-tier phrases
     "no fix",
