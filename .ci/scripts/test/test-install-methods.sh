@@ -888,7 +888,7 @@ test_dnf_install() {
         curl -fsSL ${REPO_URL}/rpm${REPO_CHANNEL_SUFFIX}/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
 
         # Install
-        dnf install -y ${PKG_NAME} >/dev/null 2>&1
+        dnf install -y --setopt=timeout=30 --setopt=minrate=1048576 --setopt=retries=3 ${PKG_NAME}
 
         # Verify (fenced; see run_container_version_test)
         $(version_fence_probe "${PKG_BINARY_NAME} --version")
