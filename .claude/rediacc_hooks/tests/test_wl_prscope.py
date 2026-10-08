@@ -510,3 +510,86 @@ def test_batch_ready_waits_for_the_batch_or_an_empty_queue(world):
     assert prscope.batch_ready(dataclasses.replace(got, turbo_more=False), True)
     assert not prscope.batch_ready(dataclasses.replace(got, finished=2), False)
     assert prscope.batch_ready(dataclasses.replace(got, turbo=False), False)
+
+
+# ---- LF3 of agent/plans/PLAN-turbo-local-first.md: a local batch on a no-PR branch ----------------
+
+
+def turbo_no_pr(world, monkeypatch, turbo="on", push=""):
+    """`turbo_live`'s world with no PR on the branch, the hook having named b and c for it; `push` plants a `turbo_push:` line. TMPDIR points into the fixture, so the turbo-named record (kept beside the worklist path) never lands in the machine's shared temp dir."""
+    tmp = world.base / "tmp"
+    tmp.mkdir(exist_ok=True)
+    monkeypatch.setenv("TMPDIR", str(tmp))
+    turbo_live(world, turbo=turbo)
+    world.nodes([])
+    if push:
+        queue = world.root / "agent" / "plans" / "QUEUE.md"
+        queue.write_text(
+            queue.read_text(encoding="utf-8").replace(
+                "turbo: %s\n" % turbo, "turbo: %s\nturbo_push: %s\n" % (turbo, push), 1
+            ),
+            "utf-8",
+        )
+    plan_gate = wlfix.import_wl("wl_prscope")._hooks_pkg()[0]
+    plan_gate.record_turbo_named(str(world.root), "1003-1", [rel("b"), rel("c")])
+    return plan_gate
+
+
+def test_lf3_a_no_pr_branch_under_batch_end_carries_the_head_and_the_named_plans(
+    world, monkeypatch
+):
+    prscope = wlfix.import_wl("wl_prscope")
+    plan_gate = turbo_no_pr(world, monkeypatch)
+    got = turbo_state(world, ((), 0))
+    assert got.kind == "no-pr"
+    assert got.turbo_push == "batch-end"
+    assert got.backup_push_h == 4
+    assert got.local_batch is True
+    assert got.plans == (rel("a"), rel("b"), rel("c"))
+    assert got.prereqs == ()
+    assert got.finished == 0
+    # The picks skip the local batch's own plans, as they skip a live PR's set.
+    assert got.turbo_picks == (rel("d"),)
+    assert not prscope.batch_ready(got, False)
+    # The body `gh pr create` would get names the same batch.
+    assert plan_gate.body_plans(plan_gate.batch_body(str(world.root), "1003-1")) == list(got.plans)
+
+
+def test_lf3_a_finished_local_batch_counts_and_is_ready(world, monkeypatch):
+    prscope = wlfix.import_wl("wl_prscope")
+    turbo_no_pr(world, monkeypatch)
+    world.plans(a=_xplan("a", opened=0, done=1), b=_xplan("b", opened=0, done=1))
+    got = turbo_state(world, ((), 0))
+    assert got.finished == 2
+    assert prscope.batch_ready(got, True)
+
+
+def test_lf3_control_turbo_off_keeps_the_no_pr_set_empty(world, monkeypatch):
+    turbo_no_pr(world, monkeypatch, turbo="off")
+    got = turbo_state(world, ((), 0))
+    assert got.kind == "no-pr"
+    assert got.local_batch is False
+    assert got.plans == ()
+    assert got.finished == 0
+
+
+def test_lf3_control_turbo_push_pr_keeps_the_no_pr_set_empty(world, monkeypatch):
+    turbo_no_pr(world, monkeypatch, push="pr")
+    got = turbo_state(world, ((), 0))
+    assert got.kind == "no-pr"
+    assert got.turbo_push == "pr"
+    assert got.local_batch is False
+    assert got.plans == ()
+    assert got.turbo_picks[0] == rel("a"), "with no local set the queue head is a pick again"
+
+
+def test_lf3_backup_push_h_is_copied_from_the_settings(world, monkeypatch):
+    turbo_no_pr(world, monkeypatch)
+    queue = world.root / "agent" / "plans" / "QUEUE.md"
+    queue.write_text(
+        queue.read_text(encoding="utf-8").replace(
+            "turbo: on\n", "turbo: on\nbackup_push_h: 0\n", 1
+        ),
+        "utf-8",
+    )
+    assert turbo_state(world, ((), 0)).backup_push_h == 0

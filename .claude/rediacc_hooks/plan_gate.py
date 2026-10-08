@@ -188,10 +188,12 @@ def _default_settings():
     return types.SimpleNamespace(
         stop_hook=True,
         turbo=False,
+        turbo_push="batch-end",
         batch_size=1,
         plan_concurrency=1,
         writer_cap=4,
         commit_remind_min=15,
+        backup_push_h=4,
         cadence=True,
         agent_hint=True,
         agent_pushback=True,
@@ -484,6 +486,11 @@ def turbo_named(root: str, branch: str) -> list[str]:
     return [p for p in got or [] if isinstance(p, str) and PLAN_PATH.match(p)]
 
 
+def batch_body(root: str, branch: str) -> str:
+    """The PR body for opening `branch`'s PR once its turbo batch completes (agent/plans/PLAN-turbo-local-first.md D2): a `Plan:` line naming the queue head plus every plan the Stop hook named for `branch`, for `gh pr create --body-file`. The full line is written at creation because `refresh_pr_body` runs only on a push and P-A1 reads the body at the `opened` event. "" when neither a queue head nor a named plan exists."""
+    return with_plan_line("", queue_head(root), turbo_named(root, branch))
+
+
 def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "") -> str:
     """ "" when the PR may merge on its plans, else the reason it may not (agent/plans/PLAN-stop-hook-turbo.md D6).
 
@@ -546,6 +553,7 @@ def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "") -> str:
 __all__ = [
     "QUEUE_REL",
     "TURBO_NAMED_SUFFIX",
+    "batch_body",
     "batch_size",
     "body_plans",
     "exists_at",

@@ -8,6 +8,8 @@ KINDS. `live` (an MMDD-N branch with an OPEN PR), `no-pr` (such a branch, no PR 
 
 TURBO (agent/plans/PLAN-stop-hook-turbo.md D5/D8). With `turbo: on` in agent/plans/QUEUE.md `## Settings`, `turbo_picks` names the queued plans to start now on free writer slots (`plan_gate.next_turbo`: queue order, held, finished and in-set plans skipped, prerequisites first, concurrency-compatible with the live writers' plans, solo entries alone). The live writers are the caller's to supply (`live`, or `with_turbo` after the roster is known): without them no plan is named, since a pick that ignores a busy writer could start a plan the spawn guard then refuses. With turbo off every field below is what it was, byte for byte.
 
+LOCAL-FIRST (agent/plans/PLAN-turbo-local-first.md D1). Under turbo with `turbo_push: batch-end` (the default) the batch is worked and verified locally and the PR opens once, when it completes. A `no-pr` branch therefore carries the batch's plan set as if its PR were live, read from the body `with_plan_line("", <queue head>, turbo_named(<branch>))` (the same `Plan:` line `plan_gate.batch_body` prints for `gh pr create`): `plans`, `prereqs`, `finished` and the turbo picks are computed exactly as for a live PR, and `local_batch` is True. With turbo off or `turbo_push: pr` a `no-pr` branch keeps an empty plan set.
+
 `today` is the MMDD the next branch is named for. It defaults to LOCAL time, the clock `block_second_branch` names branches with, so the name printed here is the one that guard admits.
 
 Reads no environment variable of its own; gh is reached through `wl_ci` and `commit_policy`.
@@ -63,6 +65,9 @@ class LoopState:
     turbo_picks: tuple[str, ...] = ()
     turbo_more: bool = False
     finished: int = 0
+    turbo_push: str = "batch-end"
+    backup_push_h: int = 4
+    local_batch: bool = False
 
 
 def _plan_epics(rel):
@@ -110,7 +115,7 @@ def turbo_picks(root, state, live_plans, writers):
         return (), False
     slots = int(state.writer_cap) - int(writers or 0)
     plan_gate, _cp = _hooks_pkg()
-    in_set = state.plans if state.kind in (LIVE, UNREADABLE) else ()
+    in_set = state.plans if state.kind in (LIVE, UNREADABLE) or state.local_batch else ()
     picks = (
         plan_gate.next_turbo(str(root), live_plans or (), slots, in_set=in_set) if slots > 0 else []
     )
@@ -138,7 +143,7 @@ def record_named(root, state):
 
 
 def batch_ready(state, finished_all):
-    """True when the PR may be offered for merge as far as the batch goes (agent/plans/PLAN-stop-hook-turbo.md D8): always with turbo off; under turbo, every plan of the set finished (`finished_all`, the caller's box read) and either `batch_size` of them finished or no queued plan left to take."""
+    """True when the PR may be offered for merge, or under `local_batch` pushed and opened, as far as the batch goes (agent/plans/PLAN-stop-hook-turbo.md D8, PLAN-turbo-local-first.md D2): always with turbo off; under turbo, every plan of the set finished (`finished_all`, the caller's box read) and either `batch_size` of them finished or no queued plan left to take."""
     if state is None or not state.turbo:
         return True
     return bool(finished_all) and (state.finished >= state.batch_size or not state.turbo_more)
@@ -166,6 +171,8 @@ def loop_state(
     turbo = bool(settings.turbo)
     batch = plan_gate.batch_size(settings)
     cap = int(settings.writer_cap)
+    turbo_push = str(getattr(settings, "turbo_push", "batch-end"))
+    backup_h = int(getattr(settings, "backup_push_h", 4))
     branch = commit_policy.current_branch(top)
     head = plan_gate.queue_head(top)
     stale = head if head and _open_count(plan_gate, top, head) == 0 else ""
@@ -176,7 +183,10 @@ def loop_state(
         prereqs: tuple[str, ...] = ()
         notes = [reason] if reason else []
         finished = 0
-        if kind in (LIVE, UNREADABLE):
+        local = kind == NO_PR and turbo and turbo_push == "batch-end"
+        if local:
+            body = plan_gate.with_plan_line("", head, plan_gate.turbo_named(top, branch))
+        if kind in (LIVE, UNREADABLE) or local:
             plans, problems = plan_gate.pr_plan_set(top, body)
             notes.extend(problems)
             own = set(plan_gate.body_plans(body) if body else ()) or {head}
@@ -202,6 +212,9 @@ def loop_state(
             batch_size=batch,
             writer_cap=cap,
             finished=finished,
+            turbo_push=turbo_push,
+            backup_push_h=backup_h,
+            local_batch=local,
         )
         if live is not None:
             state = with_turbo(state, top, live[0], live[1])

@@ -10,6 +10,11 @@ from __future__ import annotations
 import datetime
 import json
 import pathlib
+import subprocess
+import types
+
+import pytest
+from rediacc_ci import paths
 
 from rediacc_hooks.tests import test_wl_focus as F
 from rediacc_hooks.tests import wlfix
@@ -26,6 +31,12 @@ from rediacc_hooks.tests.test_wl_pr_scope_stop import (
 )
 from rediacc_hooks.tests.test_wl_roster import subagents_dir
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
+
+paths.on_sys_path(wlfix.STOP_DIR)
+import wl_checks  # noqa: E402
+import wl_judge  # noqa: E402
+import wl_prscope  # noqa: E402
+import worklist_messages as M  # noqa: E402
 
 LOOP_NEXT = "LOOP NEXT:"
 
@@ -264,8 +275,15 @@ def turbo_plan(fix, name: str, opened: int = 1, done: int = 0) -> str:
     return "agent/plans/PLAN-%s.md" % name
 
 
-def turbo_world(fix, turbo: bool = True, red: bool = False, own_open: int = 1, batch: int = 2):
-    """PR #543 OPEN on BRANCH working PLAN-pr-own.md, two more queued plans with X fields, and the settings block written after the queue."""
+def turbo_world(
+    fix,
+    turbo: bool = True,
+    red: bool = False,
+    own_open: int = 1,
+    batch: int = 2,
+    turbo_push: str = "pr",
+):
+    """PR #543 OPEN on BRANCH working PLAN-pr-own.md, two more queued plans with X fields, and the settings block written after the queue. `turbo_push` defaults to `pr`, the mode in which a live PR takes new plans (agent/plans/PLAN-turbo-local-first.md D3)."""
     F.world(fix, ci=True, red=red)
     head = fix.git("rev-parse", "HEAD").stdout.strip()
     fix.git("update-ref", "refs/remotes/origin/main", head)
@@ -276,7 +294,9 @@ def turbo_world(fix, turbo: bool = True, red: bool = False, own_open: int = 1, b
     one = turbo_plan(fix, "turbo-one", opened=2)
     two = turbo_plan(fix, "turbo-two", opened=2)
     write_queue(fix, own, one, two)
-    fix.settings(turbo=turbo, batch_size=batch, plan_concurrency=9, writer_cap=4)
+    fix.settings(
+        turbo=turbo, turbo_push=turbo_push, batch_size=batch, plan_concurrency=9, writer_cap=4
+    )
     # The session's project directory exists and holds no subagent: an honest zero writers, not a blind roster (a blind roster names no plan).
     subagents_dir(fix).parent.parent.mkdir(parents=True, exist_ok=True)
     fix.env["CLAUDE_CONFIG_DIR"] = str(fix.base / "claude")
@@ -373,3 +393,271 @@ def test_tn_m1_a_turbo_flag_read_as_always_on_fires_the_arm_with_turbo_off(wl): 
     assert "turbo-next" in keys_of(wl, got), (
         "m1: the turbo-off case does not depend on the flag: %s" % reason(got)[:900]
     )
+
+
+# ---- turbo local-first (agent/plans/PLAN-turbo-local-first.md D2-D4, D6; boxes LF-W2 and LF-min) ----
+#
+# UNIT CASES drive wl_checks.loop_next_text / turbo_next_text / wl_judge.sanitize_next_action in process against a real git checkout (the arms count `origin/main..HEAD` and read plan boxes off disk) and a LoopState-shaped namespace carrying wl_prscope's local-first fields directly, so they hold whichever LoopState is on disk.
+# The INTEGRATION cases drive the real hook, where wl_prscope computes `local_batch` itself.
+
+
+def _git(root, *args):
+    return subprocess.run(
+        ["git", "-C", str(root), *args], capture_output=True, text=True, check=True
+    ).stdout.strip()
+
+
+def _plan(root, name, opened, done=1):
+    text = "# PLAN: %s\n\nStatus: approved\n\n## Tasks\n\n" % name
+    text += "".join("- [x] D%d ticked %s box\n" % (i, name) for i in range(done))
+    text += "".join("- [ ] T%d open %s box\n" % (i, name) for i in range(opened))
+    folder = root / "agent" / "plans"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / ("PLAN-%s.md" % name)).write_text(text, encoding="utf-8")
+    return "agent/plans/PLAN-%s.md" % name
+
+
+@pytest.fixture
+def lrepo(tmp_path):
+    """A checkout on BRANCH with origin/main at the base commit and 5 commits ahead of it."""
+    root = tmp_path / "repo"
+    root.mkdir()
+    _git(root, "init", "-q", "-b", "main")
+    _git(root, "config", "user.email", "t@example.invalid")
+    _git(root, "config", "user.name", "t")
+    (root / "a.txt").write_text("a\n", encoding="utf-8")
+    _git(root, "add", "a.txt")
+    _git(root, "commit", "-qm", "base")
+    _git(root, "update-ref", "refs/remotes/origin/main", _git(root, "rev-parse", "HEAD"))
+    _git(root, "switch", "-q", "-c", BRANCH)
+    for i in range(5):
+        (root / ("w%d.txt" % i)).write_text("%d\n" % i, encoding="utf-8")
+        _git(root, "add", "w%d.txt" % i)
+        _git(root, "commit", "-qm", "work %d" % i)
+    return root
+
+
+def lstate(root, **kw):
+    """A no-PR local batch: turbo on, batch-end, batch 1/3 finished, one plan of the set still open, a queued plan eligible."""
+    done_plan = _plan(root, "batch-done", opened=0)
+    open_plan = _plan(root, "batch-open", opened=1)
+    nxt = _plan(root, "queued", opened=2, done=0)
+    base = {
+        "kind": wl_prscope.NO_PR,
+        "branch": BRANCH,
+        "pr": 0,
+        "plans": (done_plan, open_plan),
+        "prereqs": (),
+        "epic_items": frozenset(),
+        "next_plan": nxt,
+        "queue_head": done_plan,
+        "stale_promoted": "",
+        "next_branch": "",
+        "reason": "",
+        "turbo": True,
+        "batch_size": 3,
+        "writer_cap": 4,
+        "turbo_picks": (nxt,),
+        "turbo_more": True,
+        "finished": 1,
+        "turbo_push": "batch-end",
+        "backup_push_h": 4,
+        "local_batch": True,
+    }
+    base.update(kw)
+    return types.SimpleNamespace(**base)
+
+
+def ready(root, **kw):
+    """The same batch, ready: every plan finished and batch_size of them done."""
+    a = _plan(root, "batch-a", opened=0)
+    b = _plan(root, "batch-b", opened=0)
+    c = _plan(root, "batch-c", opened=0)
+    return lstate(root, **{"plans": (a, b, c), "queue_head": a, "finished": 3, **kw})
+
+
+def test_lf1_a_filling_local_batch_is_an_advisory_not_open_it(lrepo):
+    text, blocking = wl_checks.loop_next_text(lstate(lrepo), lrepo, {}, False, me="d778be9d")
+    assert blocking is False, text
+    assert text.startswith("TURBO LOCAL-FIRST: 5 commit(s) on %s" % BRANCH), text
+    assert "batch 1/3 finished" in text, text
+    assert "No push or PR until the batch completes" in text, text
+    assert "Open it" not in text, text
+    assert "gh pr create" not in text, text
+
+
+def test_lf1_control_turbo_push_pr_blocks_with_open_it(lrepo):
+    text, blocking = wl_checks.loop_next_text(
+        lstate(lrepo, turbo_push="pr"), lrepo, {}, False, me="d778be9d"
+    )
+    assert blocking is True, text
+    assert "Open it" in text, text
+
+
+def test_lf1_control_turbo_off_blocks_with_open_it(lrepo):
+    text, blocking = wl_checks.loop_next_text(
+        lstate(lrepo, turbo=False, local_batch=False), lrepo, {}, False
+    )
+    assert blocking is True, text
+    assert "Open it" in text, text
+
+
+def test_lf1_control_a_state_without_the_new_fields_is_todays_loop(lrepo):
+    """A LoopState that predates wl_prscope's local-first fields reads as `turbo_push: pr`."""
+    st = lstate(lrepo)
+    for name in ("turbo_push", "local_batch", "backup_push_h"):
+        delattr(st, name)
+    text, blocking = wl_checks.loop_next_text(st, lrepo, {}, False)
+    assert blocking is True, text
+    assert "Open it" in text, text
+
+
+def test_lf2_a_ready_local_batch_blocks_with_the_batch_open_sequence(lrepo):
+    st = ready(lrepo)
+    text, blocking = wl_checks.loop_next_text(st, lrepo, {}, False, me="d778be9d")
+    assert blocking is True, text
+    assert text.startswith("LOOP NEXT: the turbo batch on %s is complete" % BRANCH), text
+    order = [
+        "npm run ci   ",
+        "npm run ci:quick",
+        "droppedTouched",
+        "run-e2e.sh",
+        "git push -u origin %s" % BRANCH,
+        "worklist.py --batch-body d778be9d",
+        "gh pr create --draft --base main --head %s --body-file" % BRANCH,
+    ]
+    at = [text.find(step) for step in order]
+    assert all(i >= 0 for i in at), (at, text)
+    assert at == sorted(at), (at, text)
+    for rel in st.plans:
+        assert rel.rsplit("/", 1)[-1] in text, (rel, text)
+
+
+def test_lf2_the_printed_body_names_every_batch_plan(wl):  # noqa: F811
+    """`worklist.py --batch-body <me>` prints plan_gate.batch_body: the queue head plus every plan the hook named for the branch."""
+    base_world(wl)
+    wl.git("switch", "-q", "-c", BRANCH)
+    own, nxt = plans(wl)
+    other = loop_plan(wl, "named-two", opened=1, done=0)
+    write_queue(wl, own, nxt, other)
+    record = pathlib.Path(str(wl.wl)[: -len(".md")] + ".turbo-named.json")
+    record.write_text(json.dumps({BRANCH: [nxt, other]}), encoding="utf-8")
+    got = wl.cli("--batch-body", wlfix.ME)
+    assert got.rc == 0, got.err
+    line = next((ln for ln in got.out.splitlines() if ln.startswith("Plan:")), "")
+    for rel in (own, nxt, other):
+        assert rel in line, (rel, got.out)
+
+
+def test_lf2_control_batch_body_refuses_a_bad_call(wl):  # noqa: F811
+    got = wl.cli("--batch-body")
+    assert got.rc == 2, got.err
+    assert "usage: --batch-body" in got.err, got.err
+
+
+def test_lf_mutation_turbo_push_read_as_pr_turns_lf1_and_lf2_red(lrepo, monkeypatch):
+    """Mutation control: with turbo_push always read as `pr`, the LF1 world blocks with "Open it" and the LF2 world never names the batch sequence, so both cases depend on the mode."""
+    monkeypatch.setattr(wl_checks, "turbo_push_mode", lambda _state: "pr")
+    text, blocking = wl_checks.loop_next_text(lstate(lrepo), lrepo, {}, False)
+    assert blocking is True, "m: LF1 survived the mutation: %s" % text
+    assert "Open it" in text, "m: LF1 survived the mutation: %s" % text
+    text, blocking = wl_checks.loop_next_text(ready(lrepo), lrepo, {}, False)
+    assert "LOOP NEXT: the turbo batch" not in text, "m: LF2 survived the mutation: %s" % text
+
+
+def test_lf4_turbo_next_names_picks_on_a_no_pr_local_batch(lrepo):
+    st = lstate(lrepo)
+    text = wl_checks.turbo_next_text(st, lrepo, 0)
+    assert text.startswith("TURBO NEXT:"), text
+    assert "the local batch on %s" % BRANCH in text, text
+    assert "TURBO: start %s on a writer (slot 1 of 4)" % st.turbo_picks[0] in text, text
+    assert "PR #" not in text, text
+
+
+def test_lf4_turbo_next_is_silent_on_a_live_batch_end_pr(lrepo):
+    st = lstate(lrepo, kind=wl_prscope.LIVE, pr=543, local_batch=False)
+    assert wl_checks.turbo_next_text(st, lrepo, 0) == ""
+
+
+def test_lf4_control_pr_mode_names_picks_on_the_live_pr(lrepo):
+    st = lstate(lrepo, kind=wl_prscope.LIVE, pr=543, local_batch=False, turbo_push="pr")
+    text = wl_checks.turbo_next_text(st, lrepo, 0)
+    assert "PR #543 has 4 free writer slot(s) of 4" in text, text
+    assert "TURBO: start %s" % st.turbo_picks[0] in text, text
+
+
+def test_lf4_control_a_no_pr_branch_in_pr_mode_names_nothing(lrepo):
+    st = lstate(lrepo, turbo_push="pr", local_batch=False)
+    assert wl_checks.turbo_next_text(st, lrepo, 0) == ""
+
+
+def test_lf4_a_closed_batch_end_pr_is_offered_for_merge_once_its_set_is_finished(lrepo):
+    """D3: the batch closed when the PR opened, so a queue that gained an eligible plan since (`turbo_more`) cannot hold the merge while turbo-next stays silent."""
+    st = ready(lrepo, kind=wl_prscope.LIVE, pr=543, local_batch=False, finished=1)
+    text, blocking = wl_checks.loop_next_text(st, lrepo, {}, False)
+    assert blocking is True, text
+    assert "run /pr-merge" in text, text
+    text, _b = wl_checks.loop_next_text(
+        ready(lrepo, kind=wl_prscope.LIVE, pr=543, local_batch=False, finished=1, turbo_push="pr"),
+        lrepo,
+        {},
+        False,
+    )
+    assert text == "", "control: pr mode still waits for the batch: %s" % text
+
+
+def test_lf8_the_judge_sanitiser_strips_a_pr_order_only_in_a_local_batch():
+    for order in (
+        "Run gh pr create --draft for the branch now.",
+        "Open the draft PR so CI can run.",
+        "open a PR for 1008-1",
+    ):
+        out = wl_judge.sanitize_next_action({"next_action": order}, local_batch=True)
+        assert out["next_action"].startswith("[rejected by the stop gate"), (order, out)
+        assert "turbo batch" in out["next_action"], out
+        kept = wl_judge.sanitize_next_action({"next_action": order}, local_batch=False)
+        assert kept["next_action"] == order, ("pr mode keeps it", kept)
+    work = "Tick LF-W2's next box and commit the verified unit."
+    assert (
+        wl_judge.sanitize_next_action({"next_action": work}, local_batch=True)["next_action"]
+        == work
+    )
+
+
+def test_lf8_the_judge_paragraph_rides_only_a_filling_local_batch(lrepo):
+    assert wl_checks._judge_local_batch(lstate(lrepo), lrepo) == {"finished": 1, "batch": 3}
+    assert wl_checks._judge_local_batch(ready(lrepo), lrepo) is None
+    assert wl_checks._judge_local_batch(lstate(lrepo, turbo_push="pr"), lrepo) is None
+    assert wl_checks._judge_local_batch(None, lrepo) is None
+    text = M.JUDGE_LOCAL_BATCH % {"finished": 1, "batch": 3}
+    assert "never advise a\npush, a PR or a CI run" in text.replace("Never", "never"), text
+
+
+# ---- integration: the real hook, where wl_prscope computes local_batch ----------------------------
+
+
+def local_world(fix, turbo_push: str = "batch-end", turbo: bool = True):
+    base_world(fix)
+    fix.git("switch", "-q", "-c", BRANCH)
+    own, nxt = plans(fix)
+    write_queue(fix, own, nxt)
+    fix.settings(turbo=turbo, turbo_push=turbo_push, batch_size=3)
+    for i in range(5):
+        (fix.proj / ("w%d.txt" % i)).write_text("%d\n" % i, encoding="utf-8")
+        fix.git("add", "w%d.txt" % i)
+        fix.git("commit", "-qm", "work %d" % i)
+    return own, nxt
+
+
+def test_lf1_live_hook_a_local_batch_never_says_open_it(wl):  # noqa: F811
+    local_world(wl)
+    got = stop(wl)
+    assert "loop-next" not in keys_of(wl, got), reason(got)[:1500]
+    assert "Open it" not in got.out, got.out[:1500]
+
+
+def test_lf1_live_hook_control_pr_mode_says_open_it(wl):  # noqa: F811
+    local_world(wl, turbo_push="pr")
+    got = stop(wl)
+    assert "loop-next" in keys_of(wl, got), reason(got)[:1500]
+    assert "Open it" in reason(got), reason(got)[:1500]
