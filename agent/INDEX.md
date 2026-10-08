@@ -497,7 +497,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-config-sync-hardening.md` | draft | 475 | 1 | 18 | 57866 |
 | `agent/plans/PLAN-config-team-scoping.md` | draft | 244 | 1 | 10 | 31097 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
-| `agent/plans/PLAN-deferred-findings-block-merge.md` | approved | 229 | 17 | 0 | 25262 |
+| `agent/plans/PLAN-deferred-findings-block-merge.md` | approved | 239 | 7 | 10 | 26275 |
 | `agent/plans/PLAN-deletion-budget.md` | draft | 386 | 28 | 0 | 53190 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2750 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |

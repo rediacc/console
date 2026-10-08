@@ -106,8 +106,9 @@ Owns: .ci/rediacc_ci/quality/review_resolutions.py, .ci/scripts/quality/check_re
 
 ### Writer W1 -- CI layer (Opus: a new gate is the oracle)
 
-- [ ] C1 Add `.ci/rediacc_ci/quality/review_resolutions.py` (logic: rules i-iv of D4, a `--selftest`, the step summary listing waivers) and `.ci/scripts/quality/check_review_resolutions.py` (shim with a `---- gate ----` header: `lane: quality-branch`, `selftest: true`). The shim's shape follows `.ci/scripts/quality/check_agent_session_archival.py:1-60`. Acceptance: `npm run check:ci-review-resolutions` on 1008-1 before M exits 1 and names all 15 deferrals by id; `python3 .ci/scripts/quality/check_review_resolutions.py --selftest` rc=0.
-- [ ] C2 `.ci/rediacc_ci/tests/gates/test_gate_review_resolutions.py`, each case built in a tmp git repo:
+- [x] C1 Add `.ci/rediacc_ci/quality/review_resolutions.py` (logic: rules i-iv of D4, a `--selftest`, the step summary listing waivers) and `.ci/scripts/quality/check_review_resolutions.py` (shim with a `---- gate ----` header: `lane: quality-branch`, `selftest: true`). The shim's shape follows `.ci/scripts/quality/check_agent_session_archival.py:1-60`. Acceptance: `npm run check:ci-review-resolutions` on 1008-1 before M exits 1 and names all 15 deferrals by id; `python3 .ci/scripts/quality/check_review_resolutions.py --selftest` rc=0.
+    (ticked) 2026-10-08T15:54:16Z by d778be9d: commit:58e1629f5 check_review_resolutions.py --selftest rc=0
+- [x] C2 `.ci/rediacc_ci/tests/gates/test_gate_review_resolutions.py`, each case built in a tmp git repo:
   - a planted `deferred` at low, medium and high: rc 1 each;
   - the same finding `fixed <sha>`: rc 0 (the control, where only the resolution changes);
   - `waived ... ASKED:` at rc 0, and listed;
@@ -116,46 +117,55 @@ Owns: .ci/rediacc_ci/quality/review_resolutions.py, .ci/scripts/quality/check_re
   - an empty directory with one reviewable commit: rc 1 (anti-vacuous);
   - an empty directory whose only commit is review-only or before the epoch: rc 0;
   - `pull_request` with no head ref: rc 2.
+    (ticked) 2026-10-08T15:54:43Z by d778be9d: commit:58e1629f5 pytest test_gate_review_resolutions.py rc=0
 
   Acceptance: `pytest .ci/rediacc_ci/tests/gates/test_gate_review_resolutions.py` passes, and a deliberate inversion of rule (i) turns at least one test red.
-- [ ] C3 Parity corpus: a test with one list of resolution strings (every legal kind, the legacy deferral, and 4 malformed shapes), asserting that the `wl_review.RESOLUTION_RES` classification (loaded by path from `.claude/hooks/stop`) equals `review_resolutions.kind_of`. Add `waived` to `RESOLUTION_KINDS` at `.ci/rediacc_ci/review/review_table.py:53` and to its test. Acceptance: the test passes, and removing `waived` from either side fails it.
-- [ ] C4 Wiring:
+- [x] C3 Parity corpus: a test with one list of resolution strings (every legal kind, the legacy deferral, and 4 malformed shapes), asserting that the `wl_review.RESOLUTION_RES` classification (loaded by path from `.claude/hooks/stop`) equals `review_resolutions.kind_of`. Add `waived` to `RESOLUTION_KINDS` at `.ci/rediacc_ci/review/review_table.py:53` and to its test. Acceptance: the test passes, and removing `waived` from either side fails it.
+    (ticked) 2026-10-08T15:54:44Z by d778be9d: commit:58e1629f5 parity test passes; plant drop waived -> red
+- [x] C4 Wiring:
   - `package.json`: a `check:ci-review-resolutions` script beside line 201.
   - `scripts/ci-runner/manifest.ts`: an entry like the one at `scripts/ci-runner/manifest.ts:2183-2197` (`ci.kind: step`, job `quality-branch`, step `Review resolutions`, `env: GITHUB_BASE_REF`, no `paths:`).
   - `npm run gen:gates-lock` to regenerate `scripts/ci-runner/gates.lock.json`.
   - A hand-written step in `.github/workflows/ci-quality.yml` after "Agent session archival" (line 646), with `if: ${{ !cancelled() }}` and env `GITHUB_BASE_REF`, `GITHUB_HEAD_REF`, `GITHUB_EVENT_NAME`.
   - A reader entry for `check:ci-review-resolutions` under the `agent/reviews/**` record in `.ci/policy/record-paths.json:14-60`.
+    (ticked) 2026-10-08T15:54:19Z by d778be9d: commit:0b8baf432 check:ci-parity, -gates-lock, -workflows rc=0
 
   Acceptance: `npm run check:ci-gates-lock`, `npm run check:ci-record-paths`, `check:ci-runner-selftest` and the workflow gate checks all exit 0.
-- [ ] C5 PR-level CI half: add `DEFERRED_ANSWER_RE` and the `"deferred"` verdict to `.ci/rediacc_ci/quality/review_comments.py:380-393`, and make `main()` fail with "a disposition defers a finding: fix it or waive it with ASKED:". Add a selftest row and tests in `test_quality_review_comments.py`. Acceptance: a reply containing "deferred to worklist item #abcdef12" gives `deferred` and rc 1; the same reply with "fixed in <sha>" gives `answered` and rc 0.
+- [x] C5 PR-level CI half: add `DEFERRED_ANSWER_RE` and the `"deferred"` verdict to `.ci/rediacc_ci/quality/review_comments.py:380-393`, and make `main()` fail with "a disposition defers a finding: fix it or waive it with ASKED:". Add a selftest row and tests in `test_quality_review_comments.py`. Acceptance: a reply containing "deferred to worklist item #abcdef12" gives `deferred` and rc 1; the same reply with "fixed in <sha>" gives `answered` and rc 0.
+    (ticked) 2026-10-08T15:54:20Z by d778be9d: commit:58e1629f5 test_quality_review_comments.py rc=0
 
 ### Writer W2 -- local merge path, Stop hook, mark verb (Opus: verdict semantics plus an anti-self-service verifier)
 
-- [ ] L1 `wl_review.py` verdict:
+- [x] L1 `wl_review.py` verdict:
   - `branch_state` collects `st["deferred"]` at any severity and no longer reopens through the fold (remove line 2277). It splits out `st["deferred_in_flight"]` only when `items` marks the finding's triage item `[>]`.
   - `push_refusals` adds `"deferred"`.
   - `describe` prints a `DEFERRED [sev] <id> <file>:<line> -- <claim>` line plus the D5 commands.
+    (ticked) 2026-10-08T15:54:22Z by d778be9d: commit:b18d31bda test_wl_review_check.py rc=0
 
   Acceptance: `python3 .claude/hooks/stop/wl_review.py --check` on 1008-1 before M prints `refused (deferred)` with all 15 ids and exits 1; `block_admin_merge` refuses the same branch, and a test drives `review_refusals` against a fixture.
-- [ ] L2 `mark()`:
+- [x] L2 `mark()`:
   - `deferred` is refused with the D5 order text.
   - `waived` is added with checks (a), (b) and (c) from D3.
   - `verb()` and `worklist._review_cli` pass `items` as `{id: (state, text, triage_v)}` and an `asked_ok(text)` built from `wl_checks._asked_in_transcript` and `worklist._lead_transcript`.
   - Update `mark_commands`, `VERB_USAGE` (line 2832), `worklist_messages` lines 467 and 2198, `REVIEWS_MESSAGE` in `block_admin_merge.py:69-74` (name the deferral, and the next command `python3 .claude/hooks/stop/wl_review.py --status`), and the `stop_texts` block text.
+    (ticked) 2026-10-08T15:54:24Z by d778be9d: commit:b18d31bda test_wl_review_deferrals.py rc=0
 
   Acceptance (tests): `deferred` is refused; `waived` is refused with no item, a non-operator-only triage, or an `ASKED:` minute with no matching AskUserQuestion answer in a fixture transcript (and one 6 minutes off); `waived` is accepted when all three hold.
-- [ ] L3 Stop hook: `stop_texts` renders the DEFERRED section into the `commit-review` block and moves `deferred_in_flight` to the note. No change is needed at `.claude/hooks/stop/wl_checks.py:4213-4236` beyond what `_rv_items` already passes. Acceptance: a new `.claude/rediacc_hooks/tests/test_wl_review_deferrals.py` checks four things:
+- [x] L3 Stop hook: `stop_texts` renders the DEFERRED section into the `commit-review` block and moves `deferred_in_flight` to the note. No change is needed at `.claude/hooks/stop/wl_checks.py:4213-4236` beyond what `_rv_items` already passes. Acceptance: a new `.claude/rediacc_hooks/tests/test_wl_review_deferrals.py` checks four things:
   - a planted deferral blocks a stop with the triage command;
   - its `[>]` triage item turns it into a note;
   - `fixed` clears both;
   - the pr-finish review box stays unticked while a deferral stands.
-- [ ] L4 `wl_prreview.py`:
+    (ticked) 2026-10-08T15:54:25Z by d778be9d: commit:b18d31bda test_wl_review_deferrals.py rc=0
+- [x] L4 `wl_prreview.py`:
   - Remove `deferred` from `DEFERRED_RE` uses, the draft (line 615), the validator (lines 726-745) and `describe` (line 761).
   - Add `waived #<item> ASKED:<minute>Z` with the L2 checks.
   - Mirror the `"deferred"` verdict in `summary_verdict` (line 240), importing `_RC.DEFERRED_ANSWER_RE`.
+    (ticked) 2026-10-08T15:54:27Z by d778be9d: commit:b18d31bda test_wl_prreview.py rc=0
 
   Acceptance: `.claude/rediacc_hooks/tests/test_wl_prreview.py` gets updated rows 214, 627, 640 and 669 that now expect refusal, plus a `waived` acceptance row. The existing pin test still holds the two `summary_verdict` copies equal.
-- [ ] L5 Update the existing deferral test at `.claude/rediacc_hooks/tests/test_review_commit_hook.py:785-810` to the refusal. Add `deferred` rows to `test_wl_review_check.py` (planted deferral gives rc 1, fixed gives rc 0). Acceptance: `pytest .claude/rediacc_hooks/tests/test_review_commit_hook.py .claude/rediacc_hooks/tests/test_wl_review_check.py .claude/rediacc_hooks/tests/test_wl_review_deferrals.py .claude/rediacc_hooks/tests/test_wl_prreview.py` passes, and so does the full hook suite.
+- [x] L5 Update the existing deferral test at `.claude/rediacc_hooks/tests/test_review_commit_hook.py:785-810` to the refusal. Add `deferred` rows to `test_wl_review_check.py` (planted deferral gives rc 1, fixed gives rc 0). Acceptance: `pytest .claude/rediacc_hooks/tests/test_review_commit_hook.py .claude/rediacc_hooks/tests/test_wl_review_check.py .claude/rediacc_hooks/tests/test_wl_review_deferrals.py .claude/rediacc_hooks/tests/test_wl_prreview.py` passes, and so does the full hook suite.
+    (ticked) 2026-10-08T15:54:29Z by d778be9d: commit:b18d31bda 281 passed over the four hook suites
 
 ### Writer W3 -- docs (Sonnet)
 

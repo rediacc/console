@@ -407,7 +407,7 @@ Wave 1 has 9 live writers, inside the writer cap of 10. W7 runs alone in wave 2.
 
 **Ordering constraints:**
 - W7 depends on W1 (removes `blocker-validator.sh`, the other sourcer of `emit-advisory.sh`).
-- W7 depends on W5 (removes `.ci/scripts/housekeeping/cleanup-versions.sh:1337` and `.ci/scripts/release/advance-contract-floor.sh:49`, sourcers of `release-state-validator.sh`).
+- W7 depends on W5 (removes `.ci/scripts/housekeeping/cleanup-versions.sh` and `.ci/scripts/release/advance-contract-floor.sh`, sourcers of `release-state-validator.sh`).
 - W2 and W3 are coupled only through `generate_tag.py`, which only W3 edits.
 - W3's `deploy-proxy.sh` calls W2's `build-renet.sh`. Either order works, because the state is consistent at the end of the wave.
 
@@ -467,6 +467,271 @@ The lead's final check is `npm run ci`, plus `check:ci-{language-policy,dead-bas
 - Do not touch `.ci/breakpoint/**`.
 - Do not hand-edit `language-policy-baseline.json` to absorb anything. Drain it only with `--write-baseline`.
 - Do not tick G2 as "retired" if any library is kept. The box wording needs an operator re-ruling to "shrink".
+
+## 11. W11, wave 3: common.sh, local-common.sh, test-run-sh.sh, toolchain.sh, the elite trio (operator D2/D3/D4/D6/D7 defaults, ASKED:2026-10-08T13:48Z)
+
+Read-only design dated 2026-10-08. Every claim below was checked against the tree. Today the tree has 114 tracked `.sh` files (`git ls-files '*.sh' | wc -l`).
+
+### 11.1 Facts that change what section 10 assumed
+
+1. **Real `common.sh` sourcers now.** `git grep -nE '^\s*(source|\.)\s+.*lib/common\.sh'` finds:
+   - KEEP-BASH files: `.ci/docker/service/env.sh:14`, `.ci/media/tools/upload-r2.sh:62`, `.ci/media/verify.sh:278`.
+   - `.ci/lib/local-common.sh:21`.
+   - W7's files (W7 deletes them): `deploy/{clone-d1:16,test-d1-migrations:34,upload-to-r2:25,write-release-sentinel:32}.sh` and `.ci/scripts/test/assert-r2-sentinel.sh`.
+   - `.ci/scripts/infra/ci-pull-images.sh:21`.
+   - Workflows: `.github/workflows/cd-v2.yml:734` and `.github/workflows/promote-stable.yml:173`.
+   - Test heredocs and doc examples: `.ci/README.md:113,136`, `.ci/rediacc_ci/tests/test_drills_lib.py:87`, `.ci/rediacc_ci/tests/test_quality_release_state.py:130,195,259`, `.ci/rediacc_ci/tests/test_quality_renet_types.py:109`.
+
+   So `common.sh` cannot go until W7 has committed, `local-common.sh` is gone, and `ci-pull-images.sh` is a shim.
+
+2. **Python that breaks in production when `common.sh` disappears.** This is not in section 10.
+   - `.ci/rediacc_ci/version/bump.py:351` and `.ci/rediacc_ci/release/update_homebrew_tap.py:555` raise `MissingSourceError` if `.ci/scripts/lib/common.sh` is absent.
+     - `bump.py` runs on every build: `.github/workflows/ci-build-docker.yml:83,183` and `.github/workflows/ci-quality.yml:925`.
+     - `update_homebrew_tap` runs in the release job at `.github/workflows/cd-v2.yml:794`.
+   - `.ci/rediacc_ci/release/mark_production.py:67` (run at `.github/workflows/promote-stable.yml:314`) and `.ci/rediacc_ci/housekeeping/retry_failed_runs.py:78` (run at `.github/workflows/housekeeping.yml:86`) choose their logger by testing whether `common.sh` exists.
+     - Deleting the file would silently move info lines to stdout with no glyph.
+3. **Many test files copy `common.sh` into fixtures unconditionally.** About 50 test files do `shutil.copy2(COMMON...)`. Examples: `.ci/rediacc_ci/tests/test_build_cli.py:102`, `.ci/rediacc_ci/tests/test_ci_detect_pointer_bump.py:222`, `.ci/rediacc_ci/tests/test_deploy_deploy_edge.py:92`, `test_private_*.py`, and the `for rel in (... COMMON_REL ...)` loops in `test_build_*`.
+   - These copies happen even where the twin is already deleted.
+   - Others read it live: `.ci/rediacc_ci/tests/test_core_common.py:29`, `.ci/rediacc_ci/tests/test_log.py:40,370,390`, `.ci/rediacc_ci/tests/test_proc.py:33,70`, `.ci/rediacc_ci/tests/test_env_create_e2e_env.py:690`, `.ci/rediacc_ci/tests/test_infra_ci_env.py:250`.
+   - Some use it as a real gate subject: `.ci/rediacc_ci/tests/gates/test_gate_swallowed_failures.py:114`.
+4. **Python already runs on the bare `ubuntu-slim` runner.**
+   - `.github/workflows/ci.yml:138` runs `python3 -m rediacc_ci.ci.sibling_runs` on the ubuntu-slim job at `:115`.
+   - `.github/workflows/ci.yml:495` runs `cancel_older_runs` on the slim job at `:472`.
+   - The bash twin itself calls `python3 -m rediacc_ci.core.run_verbs arms` (`.ci/scripts/test/gates/test-run-sh.sh:208`).
+   - The pytest port's imports are stdlib only: `.ci/rediacc_ci/tests/gates/test_gate_run_sh.py` imports `os`, `re`, `paths` and `harness`, and `.ci/rediacc_ci/tests/gates/harness.py:18-29` is stdlib only. Its tests all take `gate` only (`:295-624`). Only the `gate` fixture is pytest (`.ci/rediacc_ci/tests/gates/conftest.py:29-54`).
+5. **The toolchain Python verbs already match the bash.** Checked on this tree:
+   - `diff <(.ci/scripts/lib/toolchain.sh --env) <(PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pairs)` is empty, and the same holds for `--report` against `report`.
+   - `pin npm` gives `11.20.0` from both.
+   - One gate pins the old spelling: `.ci/rediacc_ci/quality/lockfile.py:512` requires the literal `toolchain_pin_for npm` in the setup-node-npm composite, and `:684` holds the fixture copy.
+6. **Constraints on `rdc.sh`.**
+   - It is 173 lines against `CEILING = 185` (`.ci/rediacc_ci/quality/rdc_native.py:42`).
+   - It must keep the literal `rediacc_ci.native` (`.ci/rediacc_ci/quality/rdc_native.py:196`).
+   - `check:ci-rdc-sh-env` allows only `export` of PATH, REDIACC_CONFIG and NODE_COMPILE_CACHE (`.ci/rediacc_ci/security/rdc_sh_env_check.py:7-8,98`). So PYTHONPATH must be a command-prefix assignment, never `export`.
+   - That gate's layer 2 writes a stub `local-common.sh` into a fixture (`.ci/rediacc_ci/security/rdc_sh_env_check.py:112-121,257`).
+   - Python and bash compute the same deps hash on this tree (`72ab0943…e8e5`), so the stamp files stay compatible.
+   - Importing `rediacc_ci.core.local_common` costs about 0.08-0.10 s.
+7. **The `gh-retry` verb belongs in `core/gh_retry.py`, which has no `main` yet.** `gh()` at `:60` retries only transient failures (3 attempts, 5 s then 15 s). A "release not found" therefore fails at once. That is an intentional Rule-T improvement over `_gh_probe`'s blind three tries.
+8. **Keeping the elite trio as shims trips the drift control.**
+   - `.ci/rediacc_ci/tests/test_twin_goldens.py:109-113` requires a live twin's blob to equal its golden's `twin_blob`. A file whose body becomes a shim at the same path fails that check.
+   - `regolden --source bash` on a shim would record the Python as if it were bash.
+   - Both need an explicit "shimmed twin" carve-out.
+9. **Gates that read `local-common.sh` as their subject:**
+   - `scripts/gates/check-bootstrap-idempotency.ts:56` (`HELPER_FILE`).
+   - `scripts/gates/check-native-rebuild.ts:91`, which scans `.ci/lib/*.sh`; that directory empties completely.
+   - `.ci/rediacc_ci/quality/setup_idempotency.py:257-278,738,806` (in flight, owned by L1b).
+   - `.ci/rediacc_ci/tests/gates/test_gate_plant_proofs.py:27` uses `test-run-sh.sh` as its real bash subject.
+10. **`.ci/lib/` disappears.** `.ci/rediacc_ci/core/devbox.py:1870` builds bind sources as `<.ci/lib>/../../.devcontainer/...` (`self.lib_dir`, `:569`).
+
+### 11.2 Excluded files (owned by live writers; W11 must not edit them)
+
+- **W7:**
+  - The bash files: `.ci/scripts/deploy/{upload-to-r2,write-release-sentinel,clone-d1,test-d1-migrations}.sh`, `.ci/scripts/lib/{release-state-validator,emit-advisory}.sh`, `.ci/scripts/test/assert-r2-sentinel.sh`.
+  - The Python: `deploy/upload_to_r2.py`, `deploy/write_once_guard_check.py`, `release/backfill_write_sentinel.py`, `deploy/test_d1_migrations.py`, `core/release_state_validator.py`.
+  - The workflow: `.github/workflows/backfill-release-sentinel.yml`.
+  - The tests: `test_deploy_{upload_to_r2,write_once_guard_check,clone_d1,test_d1_migrations,write_release_sentinel}.py`, `test_core_{release_state_validator,advisory}.py`, `gates/test_gate_emit_advisory.py`, `test_quality_release_state.py`.
+  - Any residual `common.sh` copy left in these files passes to W11-B only after W7 commits.
+- **L1a / L1b (working-tree diff right now):**
+  - `.ci/config/{env-manifest,inline-suppressions-baseline,language-policy-baseline,python-env-registry,python-types-baseline,secret-supply}.json`
+  - `.ci/policy/{.dead-bash-allowlist,.language-policy-allowlist,.w7p5a-real-run-blocklist,.w7p5a-real-run-leg-blocklist,README.md}`, `.ci/shadow/w7p5a-status.json`
+  - `.ci/rediacc_ci/quality/{account_probes,bash_lib_migration_complete,devbox_exec,gh_retry_shell,setup_idempotency}.py`, `.ci/rediacc_ci/security/shfmt.py`
+  - `tests/gates/test_gate_{gate_anti_vacuity,greenlight}.py`, `tests/test_quality_{account_probes,devbox_exec}.py`, `tests/test_w7p4b_ledgers.py`, `tests/test_w7p5a_dry_run_ledgers.py`
+  - `.ci/scripts/ci/greenlight.cjs`, `.ci/scripts/quality/check_{account_probes,devbox_exec}.py`
+  - `scripts/data/{em-dash-surfaces-baseline,shell-declared-commands-baseline}.json`, `scripts/gates/check-em-dash-surfaces.ts`
+- **Lead-reserved (section 10.3):**
+  - `scripts/ci-runner/manifest.ts`, `gates.lock.json`, root `package.json`
+  - `.ci/README.md`, CLAUDE.md, TRAPS.md, `scripts/data/doc-registry.md`
+  - `.ci/config/lane-durations.json`, `quality/{pipefail_grep_q,scope_scripts_reachability}.py`, `tests/gates/trace_checker.cjs.fixture`
+- Do not touch `.ci/breakpoint/**` (drift-locked).
+
+### 11.3 Writer units (3 sonnet writers, disjoint files)
+
+**W11-A: D6, entry points and `local-common.sh`**
+
+Files to delete:
+- `.ci/lib/local-common.sh`
+- `.ci/scripts/test/gates/test-run-sh.sh`
+
+Files A owns:
+- **The bare runner.** A new `.ci/rediacc_ci/tests/gates/run_bare.py`, stdlib only:
+  - `python3 -m rediacc_ci.tests.gates.run_bare <module>` imports the module.
+  - It runs every `test_*(gate)` against a fresh `harness.Harness(module, name)`.
+  - It applies the two teardown refusals from `conftest.py:44-54`: a recorded `no()` without `tally_finish`, and zero passes.
+  - It refuses a module with zero tests, or a test that takes any argument other than `gate`.
+  - It exits 1 on any failure.
+  - Its own pytest test proves it imports with `sys.modules['pytest'] = None`.
+- `.github/workflows/ci.yml:627`: change to `PYTHONPATH=.ci python3 -m rediacc_ci.tests.gates.run_bare rediacc_ci.tests.gates.test_gate_run_sh`.
+- `tests/gates/test_gate_run_sh.py`:
+  - `LANE_SNIPPET` becomes `PYTHONPATH=.ci python3 -m rediacc_ci.core.local_common lane-decide`.
+  - The `LOCAL_COMMON` body-inspection control reads `gate_lane_should_route` in `core/local_common.py` instead.
+- `tests/gates/test_gate_plant_proofs.py` (retarget its real bash subject) and `quality/plant_proofs.py` if a vacuity floor fires.
+- `.ci/rediacc_ci/core/local_common.py`:
+  - A new composite verb `prepare-cli`: `check_node_version(toolchain.node_floor())`, then `ensure_deps`, `ensure_packages_built`, `ensure_cli_built`, `ensure_renet_built`, stopping at the first failure.
+  - Consider importing `core.devbox` lazily (`:65`) if the timing budget needs it.
+- `rdc.sh`:
+  - Line 18 becomes inline `log_{info,warn,error,step}` with the same glyphs, tty/NO_COLOR rule and `echo -e`.
+  - Move the python3 check from `:39-43` above the `--native` branch, so it covers both paths.
+  - Lines 48 and 72-75 become one `PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.core.local_common prepare-cli >&2`.
+  - No `export`. Stay at or under 185 lines.
+- `.ci/rediacc_ci/native.py:134-160`: the `_PREPARE_PROGRAM` bash becomes in-process `local_common` calls.
+- `.ci/rediacc_ci/setup/bridge.py:35-40`:
+  - The PRELUDE drops `local-common.sh` (and drops `toolchain.sh` too if `constants.sh` does not need it).
+  - Add in-process routing for local-common function names, mirroring `_devbox_words`. That includes `check_node_version "$NODE_VERSION_MIN"`, resolved through `toolchain.node_floor()`.
+  - **Keep the `bridge.call("<name>"` spellings** at `.ci/rediacc_ci/setup/machine.py:265,325,359,361,373,381` and `.ci/rediacc_ci/dev/www.py:48,54`. The in-flight `.ci/rediacc_ci/quality/setup_idempotency.py:684` regex and `.ci/rediacc_ci/setup/port_parity.py:399` both match those tokens.
+- `.ci/media/media-entry.sh:50`:
+  - Inline `log_*` (`log_debug` included, gated on `DEBUG=true`).
+  - Add three wrappers: `ensure_deps`, `ensure_packages_built`, `check_node_version`, each calling `python3 -m rediacc_ci.core.local_common <verb>`.
+  - Check every call site in `tutorials.sh` and `bridge.sh` that relied on the bash `exit 1` inside the function.
+- `.ci/rediacc_ci/security/rdc_sh_env_check.py`: the fixture swaps the stub `local-common.sh` for a PATH-shimmed `python3` that no-ops `-m rediacc_ci.core.local_common`.
+- Shadow drivers lose their bash halves: `core/local_common_shadow_driver.py`, `core/local_common_actions_shadow_driver.py`, `.ci/rediacc_ci/dev/shadow_driver.py:135-140,208`, `.ci/rediacc_ci/setup/shadow_driver.py:137`.
+- `tests/test_core_local_common.py`: switch to `diff.twin_call` and drop the sourcer-list assertion at `:294-296`.
+- `scripts/gates/check-bootstrap-idempotency.ts:56` and `scripts/gates/check-native-rebuild.ts:91`: point them at `def ensure_deps` in `core/local_common.py`. If they cannot be made non-vacuous, report them for retirement.
+- `.ci/rediacc_ci/core/devbox.py:1870`: bind from `<root>/.devcontainer` directly. This is a Rule-T fix and needs its own test.
+- Tests: `test_native.py`, `test_dev_www.py`, `test_setup_*.py`, `test_security_rdc_sh_env_check.py`, `test_core_devbox.py`, `gates/test_gate_media_entry.py` if it moves.
+
+**W11-B: D3, `common.sh` and gh-retry**
+
+Files to delete:
+- `.ci/scripts/lib/common.sh` (last, gated, see 11.4).
+
+Files B owns:
+- `.ci/rediacc_ci/core/gh_retry.py`: add `main()`.
+  - Usage: `python3 -m rediacc_ci.core.gh_retry <what> -- <gh args>`.
+  - Success: print stdout with trailing newlines stripped (parity with `$(...)`) and exit 0.
+  - Each transient retry: one warn line.
+  - Final failure: an error line `<what>: gh failed after N attempts (last exit rc)`, gh's last stderr indented 4 spaces on stderr, exit 1.
+  - Tests go in `tests/test_ci_gh_retry.py`.
+- `.github/workflows/cd-v2.yml:716-718,734-735` and `.github/workflows/promote-stable.yml:169-175`: point both at the verb. Keep `2>&1 >/dev/null` and the `grep -qi 'release not found'`.
+- Rule-T fixes, each with its own test and golden handling:
+  - `.ci/rediacc_ci/version/bump.py:351` and `.ci/rediacc_ci/release/update_homebrew_tap.py:555`: drop `common.sh` from the sources they require.
+  - `.ci/rediacc_ci/release/mark_production.py:55-80` and `.ci/rediacc_ci/housekeeping/retry_failed_runs.py:70-100`: always use the `rediacc_ci.log` world and delete the fallback world. Re-record the affected golden rows with `--source port` and a reason.
+- `.ci/docker/service/env.sh:14`: source `.ci/config/well-known.generated.sh` directly (it needs `WK_ADMIN_EMAIL_DEFAULT`, `:47`) and inline `log_step`/`log_info`. Update `core/service_shadow_driver.py` and `tests/test_core_service.py` for the sandbox.
+- `.ci/media/tools/upload-r2.sh:62`: inline `log_*` and `require_{cmd,var,file}`, and source `well-known.generated.sh` (it needs `WK_MEDIA_ORIGIN`).
+- `.ci/media/verify.sh:278`, plus its Python port preludes `.ci/rediacc_ci/tests/gates/media_verify.py:160` and `.ci/rediacc_ci/tests/gates/test_gate_media_pool.py:182`: replace the `source common.sh` with an inline `set -euo pipefail` and `log_*` prelude. Comments at `:207-229,462`; `.ci/rediacc_ci/tests/gates/test_gate_media_venv.py:23`.
+- Freeze, then convert to goldens: `tests/test_core_common.py`, `test_log.py`, `test_proc.py`, `core/common_stub_shadow_driver.py` and its test, `test_quality_renet_types.py`.
+- The vestigial-copy sweep: every test file in 11.1 item 3 that is not W7's, plus `.ci/rediacc_ci/tests/ops_cf_harness.py:193`. Guard each copy behind `diff.regolden_mode(TWIN) == "bash"`, or drop it.
+- Two gates that name `common.sh`:
+  - `.ci/rediacc_ci/tests/gates/test_gate_swallowed_failures.py:114`: retarget to a live subject.
+  - `.ci/rediacc_ci/quality/silent_failure_patterns.py:21,248`: the remedy text points at a deleted helper; repoint it to `python3 -m rediacc_ci.core.common r2-count-objects`.
+- Later, after W7 commits: W7's test files in the sweep.
+
+**W11-C: D2 toolchain and D4 elite shims**
+
+No files deleted; the three elite files are rewritten in place as shims.
+
+Files C owns:
+- `.github/actions/setup-node-npm/action.yml:34-35`: `pin="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pin npm)"`.
+  - Precedent that python3 works in the windows and mac matrix jobs: `.github/workflows/ci-build-cli.yml:109,114`.
+- `.github/workflows/ci-quality.yml:247-248,2206-2207,2447-2448,2590-2591`: `... toolchain pairs >> "$GITHUB_ENV"` and `... toolchain report`. Comments at `:244,1791`.
+- `.ci/rediacc_ci/quality/lockfile.py:512,684` (the needle and `FIXTURE_COMPOSITE`) and its test.
+- `.ci/rediacc_ci/core/run_verbs.py:496,539` (hint text, optional).
+- `.ci/scripts/infra/{ci-pull-images,ci-start-elite,ci-stop-elite}.sh`: freeze, then replace each body with one effective line, so the lead can list it as `shim:`:
+  ```
+  PYTHONPATH="${BASH_SOURCE[0]%/*}/../..${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.infra.<module> "$@"
+  ```
+  Keep the executable bit; the breakpoint scripts test `-x` (`.ci/breakpoint/scripts/start-origin.sh:88-106`, `.ci/breakpoint/scripts/pull-service-images.sh:38-59`, `.ci/breakpoint/scripts/stop-breakpoint.sh:240`).
+- `tests/test_infra_ci_{pull_images,start_elite,stop_elite}.py`: switch to `twin_call`, salvage the `TWIN.read_text` and `bash -n` cases per DB16, and add shim-contract tests:
+  - one effective line;
+  - names an importable module;
+  - run from `/tmp` with no `GITHUB_TOKEN`, `ci-pull-images.sh` exits 1 with the port's refusal on stderr.
+- `tests/test_twin_goldens.py` and `tests/differential.py`/`regolden.py`: a `SHIMMED_TWINS` carve-out. In it, the blob check is replaced by a shim-shape assertion, and `--source bash` is refused.
+
+### 11.4 Order
+
+1. **Freeze first (A, B and C in parallel, before any deletion or body edit).**
+   - A: `PYTHONPATH=.ci python3 -m rediacc_ci.tests.regolden .ci/scripts/test/gates/test-run-sh.sh --source bash --reason "B3 freeze (W11)"`. This routes through `gates/test_twin_parity.py` and must run while `local-common.sh` exists. Then `regolden .ci/lib/local-common.sh --source bash -k <new cases>`, which extends `lib.local-common.jsonl` without touching W8's 18 lane records.
+   - B: `regolden .ci/scripts/lib/common.sh --source bash --reason ...`. Run it module by module or with `-k`. `modules_naming` (`.ci/rediacc_ci/tests/regolden.py:38-51`) matches the basename `common.sh`, which also hits every `local-common.sh` module. Check `git diff --stat` so that only `lib.common.jsonl` is new.
+   - C: `regolden .ci/scripts/infra/ci-{pull-images,start-elite,stop-elite}.sh --source bash`.
+2. **Repoint (in parallel).** A builds the bare runner, `rdc.sh`, the bridge, `media-entry.sh` and native. B does gh_retry and the workflows, the four Rule-T readers, env.sh, upload-r2.sh and verify.sh. C does the toolchain sites and the shims.
+3. **A deletes** `local-common.sh` and `test-run-sh.sh`.
+4. **B deletes `common.sh`**, gated on all three: W7 committed, A's deletion done, and C's `ci-pull-images.sh` shim in place. B then sweeps the vestigial copies, W7's tests included.
+
+### 11.5 Verification per unit
+
+Prefix: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q -n 16`. Every unit also runs `test_twin_goldens.py`, `gates/test_twin_parity.py` and ruff.
+
+**W11-A**
+- Tests: `test_core_local_common.py`, `gates/test_gate_run_sh.py`, the new `test_run_bare`, `test_native.py`, `test_setup_*.py`, `test_dev_www.py`, `test_core_devbox.py`, `test_security_rdc_sh_env_check.py`, `gates/test_gate_media_entry.py`, `gates/test_gate_plant_proofs.py`.
+- Gates: `npm run check:ci-rdc-native check:ci-rdc-sh-env check:ci-scope-scripts-reachability check:ci-bootstrap-idempotency check:ci-plant-proofs`; also `npx tsx scripts/gates/check-native-rebuild.ts`.
+- Bare-runner proof:
+  - `env -i PATH=/usr/bin:/bin HOME="$HOME" bash -c 'PYTHONPATH=.ci python3 -m rediacc_ci.tests.gates.run_bare rediacc_ci.tests.gates.test_gate_run_sh'` exits 0 and takes well under 60 s (the job's `timeout-minutes: 5`).
+  - The same run with pytest blocked passes.
+  - The PR's `Entry Point (run.sh)` job is green on ubuntu-slim.
+- `rdc.sh` live checks:
+  - `./rdc.sh --help` exits 0, and stdout carries no `→`/`✓`: `./rdc.sh --help 2>/dev/null | grep -c '[→✓]'` returns 0.
+  - `./rdc.sh config list -o json | python3 -m json.tool` (stdout is pure JSON).
+  - `REDIACC_SKIP_MACHINE_ACTIVATION=1 ./rdc.sh --version` (the tutorial path).
+  - Touch a package source: the next run rebuilds, the run after does not (stamp compatibility).
+  - `PATH` without python3 gives a named error and exit 1.
+  - Warm `time ./rdc.sh --version` five times before and after; the budget is at most +150 ms.
+- Others:
+  - `./run.sh setup --check` keeps the same rows, and exit 1 means only the pending-deps report (as in W8).
+  - `./run.sh provision status`.
+  - `bash -n .ci/media/media-entry.sh rdc.sh`.
+- Count: -2 `.sh`.
+
+**W11-B**
+- Tests: `test_ci_gh_retry.py` cases:
+  - success passthrough;
+  - a 404 prints `release not found` with no retry;
+  - a 5xx retries twice with injected sleep;
+  - exit 1.
+- More tests: `test_core_{common,ghx,service}.py`, `test_log.py`, `test_proc.py`, `test_version_bump.py`, `test_release_{update_homebrew_tap,mark_production}.py`, `test_housekeeping_retry_failed_runs.py`, `gates/test_gate_media_{pool,venv,r2,helpers}.py`, `gates/test_gate_swallowed_failures.py`. Then the **full `.ci` suite** after the deletion, because the copy sweep is only proven by a full run.
+- Gates: `check:ci-gh-retry-reads` (read-only here; the floor at `.ci/rediacc_ci/quality/gh_retry_shell.py:1273` belongs to L1b), `check:ci-workflows`, `check:ci-swallowed-failures`, `check`, `check:ci-shell-format`.
+- Live checks:
+  - `GH_TOKEN=… PYTHONPATH=.ci python3 -m rediacc_ci.core.gh_retry "release lookup" -- release view v0.0.0-nope --repo rediacc/console`: exit is non-zero and stderr contains `release not found`.
+  - The `pr list … --json number --jq length` form prints a number.
+  - `PYTHONPATH=.ci python3 -m rediacc_ci.version.bump --help` from a tree with no `common.sh`.
+  - `.ci/scripts/test/gates/test-media-r2.sh`.
+- The production proof is the next real `cd-v2` retry and `promote-stable` run (section 10.5 rule).
+- Count: -1.
+
+**W11-C**
+- Tests: `test_core_toolchain.py`, `test_quality_lockfile.py`, `test_infra_ci_{pull_images,start_elite,stop_elite,env}.py`, `test_twin_goldens.py`.
+- Gates: `check:ci-lockfile`, `check:ci-workflows`, `check:ci-breakpoint-drift`.
+- Live checks:
+  - `diff <(.ci/scripts/lib/toolchain.sh --env) <(PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pairs)` is empty, and the same for report.
+  - `bash -n` on the three shims.
+  - `(cd /tmp && env -u GITHUB_TOKEN .ci/scripts/infra/ci-pull-images.sh)` exits 1 with the port's message.
+- Live proof: a breakpoint dispatch with `services: onprem`, run by the operator.
+- Count: 0.
+
+### 11.6 Lead drains (L3; every W11 writer reports these and does not fix them)
+
+- `language-policy-baseline.json` (`--write-baseline`):
+  - drop `common.sh`, `local-common.sh` and `test-run-sh.sh`;
+  - move `toolchain.sh` to `file:` with `BLOCKER: sourced by .ci/bootstrap.sh:87 before the Python toolchain exists and by .ci/scripts/test/gates/test-toolchain.sh:25 on the bare runner`;
+  - add the three elite files as `shim:` with `BLOCKER: path contract of the drift-locked .ci/breakpoint tree`;
+  - add `deploy/upload-media-to-r2.sh` as `file:` (D7).
+- Correct the stale BLOCKER texts for `well-known.generated.sh` (it names `common.sh`) and `ci-env.sh` (it names `ci-start-elite.sh` as a sourcer).
+- Lower the shfmt floor (-3).
+- `bash_lib_migration_complete.py`: drop the LIBS rows for `common.sh` and `local-common.sh`. `toolchain.sh` stays, so G2 can only shrink the gate; changing the box wording needs the operator.
+- `.dead-bash-allowlist`, em-dash, secret-supply, inline-suppressions, python-types and python-env-registry: add `run_bare.py` and the `gh_retry` `main`.
+- `shell-declared-commands-baseline`: `scripts/gates/check-shell-declared-commands.ts:120` scans only files that contain `lib/common.sh`, so it goes vacuous. Retire or retarget it (operator call).
+- `.ci/scripts/ci/greenlight.cjs:80,214-513`: the `common.sh` closures.
+- `.ci/rediacc_ci/quality/gh_retry_shell.py:74` (the stale `IMPLEMENTATION`) and the floor at `:1273`.
+- `.ci/rediacc_ci/quality/setup_idempotency.py:257-278,738,806` (it reads `local-common.sh`).
+- `scripts/ci-runner/manifest.ts:5039-5043`: point `gate-test:run-sh` at the bare entry or the pytest module. Also `:1491` and `:3534` (the `common.sh` paths).
+- Then run `npm run gen:gates-lock`, `npx tsx scripts/gate-bind.ts --write` and `npx tsx scripts/gen/gen-docs.ts --write`.
+- `lane-durations.json` (`battery:test-run-sh.sh`), `.ci/shadow/twin-parity.ledger.jsonl`, `trace_checker.cjs.fixture`.
+- `.ci/README.md:113,136` tell authors to `source common.sh`; CLAUDE.md and TRAPS.md.
+
+### 11.7 Risks
+
+- **`rdc.sh` is user-facing.** These behaviours must not change:
+  - stdout stays CLI-only, so `-o json` pipelines keep parsing;
+  - `exec node` stays last (signals);
+  - the `~/.local/bin/rdc` symlink rule;
+  - the `--native` delegation;
+  - the export allowlist.
+
+  What does change:
+  - python3 becomes required on every call, the same precedent as `run.sh:25-30`. It may be absent on Windows Git Bash; the moved python3 check names it.
+  - The CLI process no longer inherits `CI_OS`, `CI_ARCH`, `CI_TEMP` and `LOCAL_*_DIR`. `packages/cli/src` reads none of them (grep found nothing), but diff the env dump from `rdc_sh_env_check` before and after anyway.
+  - Each call costs about 0.1 s more; the timing budget above bounds it.
+- **Deleting `common.sh` without the four reader fixes reds every build** (`bump.py`) and the release Homebrew step.
+- **Shimmed twins conflict with the drift control and with `regolden --source bash`.** That is why the carve-out in 11.3 is needed.
+- **`.ci/lib/` vanishes.** That makes the `.ci/rediacc_ci/core/devbox.py:1870` path fix, and the two TS gates that scanned that directory, load-bearing.
+- **Media verbs:** a bash `ensure_deps` failure used to `exit` inside the function. A wrapper only returns non-zero, so a call site inside `if` or `||` behaves differently. Every call site needs a review.
 
 ## Remaining (operator)
 
