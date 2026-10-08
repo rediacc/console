@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Both sides of the MACHINE-MUTATING half of the `core.local_common` port differential.
+"""The port side of the MACHINE-MUTATING half of the `core.local_common` differential. The bash side (`.ci/lib/local-common.sh`) is retired: its transcripts are frozen in `goldens/twins/lib.local-common.jsonl`, keyed by `actions/<scenario>/<case>`, and `test_core_local_common.py` compares this driver's output against them.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.local_common_actions_shadow_driver --side old --twin .ci/lib/local-common.sh --port .ci/rediacc_ci/core/local_common.py <scenario>
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.local_common_actions_shadow_driver --side new --twin .ci/lib/local-common.sh --port .ci/rediacc_ci/core/local_common.py <scenario>
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.local_common_actions_shadow_driver --side new --port .ci/rediacc_ci/core/local_common.py <scenario>
+
+While the bash existed, `--side old --twin .ci/lib/local-common.sh` ran each case through a `bash -c` that sourced the library; a Rule-T change to the port is recorded with `regolden --source port`.
 
 A SECOND DRIVER FOR THE SAME TWIN, and a second ledger pair (`w7p5b-local-common-actions`), because the technique differs: `core/local_common_shadow_driver.py` compares pure answers inside one bash process per side, and this one runs every case as ITS OWN PROCESS per side with the external programs stubbed (`core/stubfarm.py`) and compares rc, both streams, the ordered transcript of every stubbed call and every file the case left behind. RUN AS A MODULE, never by path, for the reason that driver records.
 
@@ -811,6 +812,7 @@ def build_sandbox(repo: pathlib.Path, case: Case) -> tuple[pathlib.Path, Farm]:
         shutil.rmtree(base)
     root = base / "root"
     (root / ".ci" / "scripts").mkdir(parents=True)
+    # A DANGLING LINK, kept on purpose: the library directory is gone, but every frozen transcript lists the sandbox tree and the link is one of its lines (`.ci/lib link <REPO>/.ci/lib`). Dropping it would move 130 recorded trees.
     (root / ".ci" / "lib").symlink_to(repo / ".ci" / "lib")
     (root / ".ci" / "config").symlink_to(repo / ".ci" / "config")
     # `devbox.sh` refuses to load without `<its dir>/../rediacc_ci/core`, resolved LOGICALLY through the `.ci/lib` link, so the lane cases need the package beside it.
@@ -855,39 +857,11 @@ def side_env(root: pathlib.Path, farm: Farm, case: Case) -> dict[str, str]:
     return farm.env(base, hidden=case.hidden)
 
 
-OLD_PROGRAM = r"""
-set -euo pipefail
-R="$1"; shift
-source "$R/.ci/config/constants.sh"
-source "$R/.ci/scripts/lib/toolchain.sh"
-source "$R/.ci/lib/local-common.sh"
-fn="$1"; shift
-case "$fn" in
-    prompt_continue) prompt_continue "$@" || exit 1 ;;
-    # `gate_lane_run` does not load devbox.sh itself: its only caller (`.ci/legacy/run-legacy.sh`) runs `gate_lane_should_route` first, which does. The harness loads it the same way that call path does.
-    gate_lane_run) . "$R/.ci/lib/devbox.sh"; gate_lane_run "$@" ;;
-    _renet_source_hash | _renet_artifact_fp) "$fn" "$@" ;;
-    # `_reset_docker_memo` only reaches the memo when devbox.sh is loaded (`declare -F devbox_docker_reset`), and its whole effect is on the environment a child inherits, so the harness loads devbox.sh and prints the memo afterwards.
-    # Both callers of `_deps_hash` read it through `$(...)`, where errexit is off: called BARE under `set -e`, a missing lockfile kills the `{ ...; }` group at its `_sha256sum` line, drops the runtime line from the stream and exits 1, an answer no caller can ever see.
-    _deps_hash) printf '%s\n' "$(_deps_hash)" ;;
-    _reset_docker_memo)
-        . "$R/.ci/lib/devbox.sh"
-        _reset_docker_memo
-        if [[ -v _DEVBOX_DOCKER ]]; then printf '_DEVBOX_DOCKER=%s\n' "$_DEVBOX_DOCKER"; else printf '_DEVBOX_DOCKER unset\n'; fi
-        ;;
-    *) "$fn" "$@" ;;
-esac
-"""
-
-
 def run_side(
-    side: str, repo: pathlib.Path, root: pathlib.Path, case: Case, env: dict[str, str]
+    repo: pathlib.Path, root: pathlib.Path, case: Case, env: dict[str, str]
 ) -> subprocess.CompletedProcess:
-    if side == "old":
-        argv = ["bash", "-c", OLD_PROGRAM, "lc-old", str(root), FN[case.verb], *case.args]
-    else:
-        env = dict(env, PYTHONPATH=str(repo / ".ci"))
-        argv = [sys.executable, "-m", "rediacc_ci.core.local_common", case.verb, *case.args]
+    env = dict(env, PYTHONPATH=str(repo / ".ci"))
+    argv = [sys.executable, "-m", "rediacc_ci.core.local_common", case.verb, *case.args]
     return subprocess.run(
         argv,
         cwd=root,
@@ -922,8 +896,8 @@ def tree_listing(root: pathlib.Path) -> list[str]:
     return out
 
 
-def observe(side: str, repo: pathlib.Path, case: Case) -> list[str]:
-    """Run one case on one side in the fixed sandbox; return its observation lines."""
+def observe(repo: pathlib.Path, case: Case) -> list[str]:
+    """Run one case in the fixed sandbox; return its observation lines."""
     root, farm = build_sandbox(repo, case)
     lines: list[str] = []
 
@@ -936,7 +910,7 @@ def observe(side: str, repo: pathlib.Path, case: Case) -> list[str]:
             for name in case.between:
                 FIXTURES[name](root)
         farm.reset_log()
-        proc = run_side(side, repo, root, case, side_env(root, farm, case))
+        proc = run_side(repo, root, case, side_env(root, farm, case))
         lines.append("obs %s rc=%d" % (tag, proc.returncode))
         lines += [
             "obs %s out#%d| %s" % (tag, i, norm(t)) for i, t in enumerate(proc.stdout.splitlines())
@@ -969,22 +943,20 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         description="one side of the core.local_common actions differential"
     )
-    parser.add_argument("--side", choices=("old", "new"), required=True)
-    parser.add_argument("--twin", required=True)
+    parser.add_argument("--side", choices=("new",), required=True)
     parser.add_argument("--port", required=True)
     parser.add_argument("scenario", choices=sorted(SCENARIOS))
     args = parser.parse_args(argv)
     repo = pathlib.Path.cwd().resolve()
-    for label, rel in (("twin", args.twin), ("port", args.port)):
-        if not (repo / rel).is_file():
-            sys.stderr.write(
-                "local_common_actions_shadow_driver: the %s %s does not exist under %s\n"
-                % (label, rel, repo)
-            )
-            return EXIT_CANNOT_RUN
+    if not (repo / args.port).is_file():
+        sys.stderr.write(
+            "local_common_actions_shadow_driver: the port %s does not exist under %s\n"
+            % (args.port, repo)
+        )
+        return EXIT_CANNOT_RUN
     with locked():
         for case in SCENARIOS[args.scenario]:
-            for line in observe(args.side, repo, case):
+            for line in observe(repo, case):
                 print(line)
     return 0
 

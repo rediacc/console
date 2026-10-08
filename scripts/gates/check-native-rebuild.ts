@@ -16,7 +16,7 @@
  * blind spot, which is exactly why no existing gate saw it.
  *
  * SCOPE: the local entrypoints that install the ROOT workspace -- the run.sh verb body
- * (now `.ci/legacy/run-legacy.sh`, see SCANNED) and `.ci/lib/*.sh`. Sub-project installs
+ * (now `.ci/legacy/run-legacy.sh`, see SCANNED) and `core/local_common.py`. Sub-project installs
  * (`cd private/account && npm install`) are NOT in scope: ssh2/cpu-features/esbuild are
  * root devDependencies and a sub-project install neither provides nor needs them.
  *
@@ -33,7 +33,7 @@
  * see. Measured 2026-09-06 with this file's own `isRootInstall` against both revisions:
  * run.sh held ZERO root installs before the router split and zero after. `setup()` does
  * not install directly -- it goes through `ensure_deps`, and the install this gate really
- * covers is the `npm install` inside `ensure_deps` in `.ci/lib/local-common.sh`. The `setup`
+ * covers is the `npm install` inside `ensure_deps` in `.ci/rediacc_ci/core/local_common.py`. The `setup`
  * workflow is covered through that helper, not through the entry file, and a reader who
  * trusted the old sentence would have concluded the coverage moved when the split happened.
  * It never lived there.
@@ -79,7 +79,7 @@ const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
  * BEFORE the split and 0 after, and run-legacy.sh holds 0 too. The split was reported as
  * having weakened this gate; it had not, because the coverage was never there. The one
  * root install in scope is the `npm install` inside `ensure_deps` in
- * `.ci/lib/local-common.sh`, reached from setup() through that helper, and that is what the
+ * `.ci/rediacc_ci/core/local_common.py`, reached from setup() through that helper, and that is what the
  * aggregate floor below is actually holding up. Named by function, not by line, for the
  * reason the header gives.
  *
@@ -88,18 +88,14 @@ const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
  * gate that fails on a correct tree.
  */
 export const ENTRY = 'run.sh';
-export const SCANNED = [ENTRY, ...fsSafeList('.ci/lib')];
-
-function fsSafeList(dir: string): string[] {
-  try {
-    return fs
-      .readdirSync(path.join(REPO, dir))
-      .filter((f) => f.endsWith('.sh'))
-      .map((f) => `${dir}/${f}`);
-  } catch {
-    return [];
-  }
-}
+/**
+ * `.ci/rediacc_ci/core/local_common.py` held the one root install in scope and is DELETED; `ensure_deps` is
+ * `core/local_common.py` now, spelled `_must(["npm", "install"], cwd=root)`. That file replaces
+ * the `.ci/lib/*.sh` glob this list used to carry, and `scanSource` reads a `.py` path with the
+ * Python spelling of an install.
+ */
+export const HELPER_PY = '.ci/rediacc_ci/core/local_common.py';
+export const SCANNED = [ENTRY, HELPER_PY];
 
 /** How far after an install we still accept the rebuild. */
 export const WINDOW = 20;
@@ -108,7 +104,7 @@ export const WINDOW = 20;
  * An install, however npm is spelled at the call site.
  *
  * The second alternative is not hypothetical. `ensure_deps` in
- * `.ci/lib/local-common.sh` selects its npm deliberately -- npm 11 hoists zod
+ * `.ci/rediacc_ci/core/local_common.py` selects its npm deliberately -- npm 11 hoists zod
  * differently and breaks `packages/shared` -- so it builds `npm_cmd=(npm)` or
  * `npm_cmd=(npx -y npm@10)` and runs `"${npm_cmd[@]}" install`. A pattern
  * requiring the literal word `npm` could not see that line, so the ONLY install
@@ -131,6 +127,11 @@ export const WINDOW = 20;
 const INSTALL_RE =
   /\bnpm\s+(install|ci)\b|\$\{?"?[A-Za-z_]*npm[A-Za-z0-9_]*(?:\[@\])?\}?"?\s+(install|ci)\b/i;
 const NATIVES_RE = /npm\s+run\s+install:natives/;
+/** The Python spelling, an argv list: `["npm", "install"]`, `["npm", "ci"]`. */
+const PY_INSTALL_RE = /\[\s*"npm"\s*,\s*"(install|ci)"\s*[,\]]/;
+const PY_NATIVES_RE = /\[\s*"npm"\s*,\s*"run"\s*,\s*"install:natives"\s*[,\]]/;
+/** A `cwd=` naming something other than the root is a sub-project install, as `cd "$ROOT_DIR/sub"` is in shell. */
+const PY_ROOT_CWD_RE = /cwd=(?:root|local_root_dir\(\w*\))\s*[,)]/;
 /** `cd $ROOT_DIR` / `cd "$LOCAL_ROOT_DIR"` -- but NOT `cd "$ROOT_DIR/sub"`. */
 const ROOT_CD_RE = /\bcd\s+"?\$\{?(?:LOCAL_)?ROOT_DIR\}?"?(?=\s|\)|&|;|$)/;
 
@@ -154,11 +155,24 @@ export const isRootInstall = (line: string): boolean => {
   return true;
 };
 
+/** The same question for a Python line: an `["npm", "install"]` argv that runs in the root (no `cwd=`, or `cwd=root`) and is not a global install. */
+export const isRootInstallPy = (line: string): boolean => {
+  const code = line.trim();
+  if (code.startsWith('#')) return false;
+  if (!PY_INSTALL_RE.test(code)) return false;
+  if (/"-g"/.test(code)) return false;
+  if (/cwd=/.test(code) && !PY_ROOT_CWD_RE.test(code)) return false;
+  return true;
+};
+
 /** Does a rebuild follow within WINDOW lines? */
-export const pairedWithNatives = (lines: string[], idx: number, window = WINDOW): boolean =>
-  lines
-    .slice(idx + 1, idx + 1 + window)
-    .some((l) => !l.trim().startsWith('#') && NATIVES_RE.test(l));
+export const pairedWithNatives = (
+  lines: string[],
+  idx: number,
+  window = WINDOW,
+  natives: RegExp = NATIVES_RE
+): boolean =>
+  lines.slice(idx + 1, idx + 1 + window).some((l) => !l.trim().startsWith('#') && natives.test(l));
 
 export interface Finding {
   file: string;
@@ -166,12 +180,18 @@ export interface Finding {
   text: string;
 }
 
+/** The install predicate for a path: shell spelling, or the Python argv spelling for a `.py` file. */
+const installPredicate = (file: string): ((line: string) => boolean) =>
+  file.endsWith('.py') ? isRootInstallPy : isRootInstall;
+
 export const scanSource = (file: string, source: string): Finding[] => {
   const lines = source.split('\n');
   const out: Finding[] = [];
+  const isInstall = installPredicate(file);
+  const natives = file.endsWith('.py') ? PY_NATIVES_RE : NATIVES_RE;
   lines.forEach((line, i) => {
-    if (!isRootInstall(line)) return;
-    if (pairedWithNatives(lines, i)) return;
+    if (!isInstall(line)) return;
+    if (pairedWithNatives(lines, i, WINDOW, natives)) return;
     out.push({ file, line: i + 1, text: line.trim() });
   });
   return out;
@@ -255,6 +275,31 @@ const selftest = (): number => {
     'a commented rebuild does not count as pairing',
     scanSource('x.sh', 'npm install\n# npm run install:natives\n').length === 1
   );
+  // The Python spelling, which is where the one real root install lives. Both directions, so a detector that flags every argv list (or none) cannot pass.
+  check(
+    'a Python argv install in the root is flagged when unpaired',
+    scanSource('x.py', '    _must(["npm", "install"], cwd=root)\n    return True\n').length === 1
+  );
+  check(
+    'the same Python install, paired with the natives argv, is clean',
+    scanSource(
+      'x.py',
+      '    _must(["npm", "install"], cwd=root)\n    _must(["npm", "run", "install:natives"], cwd=root)\n'
+    ).length === 0
+  );
+  check(
+    'a Python install in a sub-project cwd is out of scope',
+    scanSource('x.py', '    _must(["npm", "install"], cwd=account_dir)\n').length === 0
+  );
+  check(
+    'CONTROL: a Python npm build argv is not an install',
+    scanSource('x.py', '    _must(["npm", "run", "build"], cwd=root)\n').length === 0
+  );
+  check(
+    'the shell spelling is not read in a .py file, nor the argv spelling in a .sh one',
+    scanSource('x.py', 'npm install\n').length === 0 &&
+      scanSource('x.sh', '_must(["npm", "install"], cwd=root)\n').length === 0
+  );
   return fail === 0 ? 0 : 1;
 };
 
@@ -287,7 +332,7 @@ const main = (): number => {
       continue;
     }
     scanned += 1;
-    installs += src.split('\n').filter(isRootInstall).length;
+    installs += src.split('\n').filter(installPredicate(rel)).length;
     findings.push(...scanSource(rel, src));
   }
 

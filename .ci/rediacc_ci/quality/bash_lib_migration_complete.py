@@ -25,13 +25,13 @@ from rediacc_ci import paths
 from rediacc_ci.controls import controls_first
 
 # Every .sh in these directories must be listed in LIBS.
-LIB_DIRS = (".ci/lib", ".ci/scripts/lib")
+# .ci/lib left with local-common.sh (W11-A); only .ci/scripts/lib holds bash libraries now.
+LIB_DIRS = (".ci/scripts/lib",)
 CORE_DIR = ".ci/rediacc_ci/core"
 PLAN = "agent/plans/PLAN-retire-bash-oracles.md (task G2)"
 
 # Library (repo path) -> the modules that carry its twin, relative to rediacc_ci/core. Every .sh under LIB_DIRS must appear here.
 LIBS: dict[str, tuple[str, ...]] = {
-    ".ci/lib/local-common.sh": ("local_common.py",),
     # allowlist.py because `_blocker_py` is nothing but a forwarder to `python3 -m rediacc_ci.core.allowlist`.
     ".ci/scripts/lib/blocker-validator.sh": ("blocker_validator.py", "allowlist.py"),
     # ../log.py because common.sh's log_* functions are ported there and nowhere else; it was missing from this list until 2026-10-01, which left 5 ported functions baselined as unported.

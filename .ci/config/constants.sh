@@ -96,7 +96,6 @@ fi
 # =============================================================================
 readonly CONSOLE_ROOT_DIR="${CONSOLE_ROOT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 readonly CI_DIR="$CONSOLE_ROOT_DIR/.ci"
-readonly CI_LIB_DIR="$CI_DIR/lib"
 
 # =============================================================================
 # DOCKER REGISTRY CONFIGURATION

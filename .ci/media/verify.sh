@@ -375,7 +375,7 @@ media_assert_sole_owner() {
 # control needs to ALTER. .ci itself is rebuilt as a directory of symlinks for the same
 # reason. Symlinks
 # rather than copies because the whole tree is needed (run.sh sources .ci/config,
-# .ci/scripts/lib, .ci/lib and reads .devcontainer/toolchain.env at startup) and copying
+# .ci/scripts/lib and reads .devcontainer/toolchain.env at startup) and copying
 # it per test would be slow enough to matter.
 #
 # The point of building a whole repo rather than calling media_entry_main directly is

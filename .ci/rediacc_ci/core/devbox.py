@@ -565,8 +565,8 @@ class Devbox:
         # `.ci/config/constants.sh:76`: `${CONSOLE_ROOT_DIR:-<its own checkout>}`, so an EMPTY value falls back as well as a missing one.
         self.console_root = self.env.get("CONSOLE_ROOT_DIR") or root
         self.state_file = self.console_root + "/" + DEVBOX_STATE_NAME
-        # `.ci/lib/devbox.sh:22`: the directory the twin was sourced from, logical.
-        self.lib_dir = os.path.join(root, ".ci", "lib")
+        # Rule T fix D12: the twin built its bind sources as `<.ci/lib>/../../.devcontainer/<file>`, a path that only resolves while `.ci/lib` exists as a directory. The library directory is gone, and docker refuses to resolve the bind through a missing component, so the sources are `<root>/.devcontainer/<file>` directly.
+        self.devcontainer_dir = os.path.join(root, ".devcontainer")
         # `.ci/lib/devbox.sh:32-33`: REDIACC_CI_ROOT wins, else `$DEVBOX_LIB_DIR/..`.
         ci_root = self.env.get("REDIACC_CI_ROOT", "")
         self.ci_dir = ci_root + "/.ci" if ci_root else os.path.join(root, ".ci")
@@ -1867,7 +1867,7 @@ class Devbox:
         binds = ["-v", "%s:%s" % (mount_root, mount_root)]
         for pair in SCRIPT_BINDS:
             source, target = pair.split(":", 1)
-            binds += ["-v", "%s/../../.devcontainer/%s:%s:ro" % (self.lib_dir, source, target)]
+            binds += ["-v", "%s/%s:%s:ro" % (self.devcontainer_dir, source, target)]
         with contextlib.suppress(OSError):
             if stat.S_ISSOCK(os.stat("/var/run/docker.sock").st_mode):
                 binds += ["-v", "/var/run/docker.sock:/var/run/docker.sock"]

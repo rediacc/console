@@ -624,7 +624,7 @@ jobs:
           runner-label: ubuntu-slim
 
       - name: run.sh entry-point controls
-        run: .ci/scripts/test/gates/test-run-sh.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.tests.gates.run_bare rediacc_ci.tests.gates.test_gate_run_sh
 
       - name: gate toolchain resolver controls
         run: .ci/scripts/test/gates/test-toolchain.sh

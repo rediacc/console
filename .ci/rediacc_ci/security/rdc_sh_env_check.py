@@ -107,17 +107,12 @@ ACCOUNT_JWT_SECRET=LEAKSENTINEL_JWT
 ACCOUNT_SERVER_API_KEY=LEAKSENTINEL_API
 """
 
-FIXTURE_CONSTANTS = "NODE_VERSION_MIN=18\n"
-
-FIXTURE_LOCAL_COMMON = """log_info() { echo "INFO: $*" >&2; }
-log_warn() { echo "WARN: $*" >&2; }
-log_error() { echo "ERROR: $*" >&2; }
-log_step() { echo "STEP: $*" >&2; }
-check_node_version() { :; }
-ensure_deps() { :; }
-ensure_packages_built() { :; }
-ensure_cli_built() { :; }
-ensure_renet_built() { :; }
+# `rdc.sh` prepares the CLI through `python3 -m rediacc_ci.core.local_common prepare-cli`, which would install and build for real. The fixture shims `python3`: that one module invocation is a no-op, anything else reaches the real interpreter.
+PYTHON_SHIM = """#!/usr/bin/env bash
+if [[ "${1:-}" == "-m" && "${2:-}" == "rediacc_ci.core.local_common" ]]; then
+    exit 0
+fi
+exec "%(python)s" "$@"
 """
 
 # The twin's heredoc is UNQUOTED, so `$REAL_NODE` and `$DUMP` are expanded when
@@ -233,15 +228,16 @@ def _real_node() -> str:
     return found
 
 
-def build_fixture(fix: pathlib.Path, rdc_sh: pathlib.Path, real_node: str) -> pathlib.Path:
+def build_fixture(
+    fix: pathlib.Path, rdc_sh: pathlib.Path, real_node: str, real_python: str
+) -> pathlib.Path:
     """Everything between `FIX="$(mktemp -d)"` and the `env -i` run (:102-176)."""
     fix_root = fix / "root"
     fix_home = fix / "home"
     shim = fix / "shim"
     dump = fix / "cli-env.dump"
     for target in (
-        fix_root / ".ci" / "config",
-        fix_root / ".ci" / "lib",
+        fix_root / ".ci",
         fix_root / "private" / "account",
         fix_root / "packages" / "cli" / "dist",
         fix_root / ".claude" / "skills" / "rdc",
@@ -253,10 +249,6 @@ def build_fixture(fix: pathlib.Path, rdc_sh: pathlib.Path, real_node: str) -> pa
     # `cp "$RDC_SH" "$FIX_ROOT/rdc.sh"` -- ROOT_DIR derives from the copy's own location, so the copy exercises the same code against fixture siblings.
     shutil.copy2(rdc_sh, fix_root / "rdc.sh")
 
-    (fix_root / ".ci" / "config" / "constants.sh").write_text(FIXTURE_CONSTANTS, encoding="utf-8")
-    (fix_root / ".ci" / "lib" / "local-common.sh").write_text(
-        FIXTURE_LOCAL_COMMON, encoding="utf-8"
-    )
     (fix_root / ".account-state").write_text(FIXTURE_ACCOUNT_STATE, encoding="utf-8")
     (fix_root / "private" / "account" / ".env").write_text(FIXTURE_ENV, encoding="utf-8")
     (fix_root / "packages" / "cli" / "dist" / "cli-bundle.cjs").write_text(
@@ -274,6 +266,9 @@ def build_fixture(fix: pathlib.Path, rdc_sh: pathlib.Path, real_node: str) -> pa
     curl_shim = shim / "curl"
     curl_shim.write_text(CURL_SHIM, encoding="utf-8")
     curl_shim.chmod(0o755)
+    python_shim = shim / "python3"
+    python_shim.write_text(PYTHON_SHIM % {"python": real_python}, encoding="utf-8")
+    python_shim.chmod(0o755)
     return fix_root
 
 
@@ -319,7 +314,8 @@ def layer_two(tally: Tally, fix: pathlib.Path, rdc_sh: pathlib.Path) -> None:
     print("Layer 2 (functional): dev path seeds config, leaks no secrets", flush=True)
 
     real_node = _real_node()
-    fix_root = build_fixture(fix, rdc_sh, real_node)
+    real_python = shutil.which("python3") or sys.executable
+    fix_root = build_fixture(fix, rdc_sh, real_node, real_python)
     dump = fix / "cli-env.dump"
 
     if run_dev_path(fix, fix_root) != 0:

@@ -16,7 +16,7 @@
 #
 # SOURCED, NEVER EXECUTED. Callers supply ROOT_DIR, the log_* helpers, and (for
 # _build_cli_sea_cached only) ensure_deps/ensure_packages_built from
-# .ci/lib/local-common.sh.
+# media-entry.sh.
 
 # --- VM provisioning ----------------------------------------------------------
 # These wrap `rdc ops`, which owns local KVM/QEMU provisioning. They existed as

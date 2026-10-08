@@ -25,6 +25,7 @@ NO `XDIST_GROUP` for the same class of reason: no port is bound, no module globa
 
 import os
 import re
+import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
@@ -35,17 +36,19 @@ ROOT = paths.repo_root()
 RUN = paths.from_root("run.sh")
 SRC = paths.from_root(".ci", "rediacc_ci", "core", "run_verbs.py")
 LEGACY = paths.from_root(".ci", "legacy", "run-legacy.sh")
-LOCAL_COMMON = paths.from_root(".ci", "lib", "local-common.sh")
+LOCAL_COMMON = paths.from_root(".ci", "rediacc_ci", "core", "local_common.py")
 PY_PACKAGE_INIT = paths.from_root(".ci", "rediacc_ci", "__init__.py")
 
 # A CEILING, NOT A STYLE RULE. A router that starts absorbing logic re-creates the file the split was undoing, one reasonable special case at a time.
 ROUTER_LINE_CEILING = 120
 
-# The lane decision, taken in a fresh shell that sources exactly what a real gate sources. Byte-for-byte the twin's, including the order of the three sources.
-LANE_SNIPPET = (
-    ". .ci/config/constants.sh; . .ci/scripts/lib/toolchain.sh; "
-    ". .ci/lib/local-common.sh; gate_lane_decide"
-)
+# The lane decision, taken in a fresh interpreter through the same verb a real gate reaches it by. The bash library that used to answer it (`local-common.sh`) is gone; the verb prints the lane with no newline.
+LANE_ARGV = [
+    sys.executable,
+    "-m",
+    "rediacc_ci.core.local_common",
+    "lane-decide",
+]
 
 BASH_FIX = "install bash; the subject is a bash router and a bash lane library"
 
@@ -103,22 +106,6 @@ def body(source: str, name: str) -> str:
                 inside = True
             continue
         if re.match(r"^[^ \t#]", line):
-            break
-        out.append(re.sub(r"^\s*#.*$", "", line))
-    return "\n".join(out)
-
-
-def bash_body(source: str, name: str) -> str:
-    """The same extraction for a BASH function (`name() {` to the closing brace), comment lines emptied."""
-    out = []
-    opening = re.compile(r"^%s\(\) \{" % re.escape(name))
-    inside = False
-    for line in source.splitlines():
-        if not inside:
-            if opening.match(line):
-                inside = True
-            continue
-        if line.startswith("}"):
             break
         out.append(re.sub(r"^\s*#.*$", "", line))
     return "\n".join(out)
@@ -355,7 +342,7 @@ def lane(**overrides: str) -> str:
     THE OVERLAY IS ONE VARIABLE, exactly as `env VAR=1 bash -c ...` gives the twin.
     Clearing the others would be tidier and would let this module report a lane the twin does not see on a machine where one of them is already exported, which is a divergence invented by the port.
     """
-    result = harness.run([bash_bin(), "-c", LANE_SNIPPET], cwd=ROOT, env=dict(overrides))
+    result = harness.run(LANE_ARGV, cwd=ROOT, env={"PYTHONPATH": str(ROOT / ".ci"), **overrides})
     return result.out.strip()
 
 
@@ -389,14 +376,14 @@ def test_the_gate_lane_is_decided_and_never_degrades_silently(gate):
             gate.no("%s (decided %r, want %r)" % (bad, got, want))
 
     # A routed verb must not silently degrade: if it cannot route, it says so.
-    should_route = bash_body(read(LOCAL_COMMON), "gate_lane_should_route")
+    should_route = body(read(LOCAL_COMMON), "gate_lane_should_route")
     if not should_route.strip():
         gate.log_fail(
             "gate_lane_should_route was not extracted from %s; the control below would "
             "search an empty body and report silent degradation on correct code."
             % paths.relative_to_root(LOCAL_COMMON)
         )
-    if re.search(r"log_warn|log_error", should_route):
+    if re.search(r'\.log\("(warn|error)"', should_route):
         gate.ok("a lane that cannot route reports it rather than degrading silently")
     else:
         gate.no(

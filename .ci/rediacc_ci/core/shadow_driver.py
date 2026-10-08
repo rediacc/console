@@ -18,7 +18,7 @@ THE SANDBOX, AND WHY EACH SIDE BUILDS ITS OWN
 `account.sh` reads and WRITES real paths under `$CONSOLE_ROOT_DIR`: `private/account/account.db`, `.account-state`, `.devbox-state`, `.account-logs/`. A differential pointing both sides at one directory would have the first side leave the tree in the state that makes the second take a different branch, and the comparison would then be between two different programs.
 
 So each side builds its OWN temporary `CONSOLE_ROOT_DIR`: a real directory holding the writable state, with `.devcontainer`, `scripts`, `.ci/config`, `.ci/scripts`, `.ci/lib` and `.ci/rediacc_ci` SYMLINKED to the checkout this driver was invoked from.
-Symlinks rather than copies because `constants.sh` derives `CI_LIB_DIR` from `CONSOLE_ROOT_DIR` and `account.sh` reaches back out through `$CI_LIB_DIR/../..` for `scripts/lib/env-file.sh`, so the sandbox has to have the whole shape; and because the code under comparison must be the TRACKED code, which is what the recorded tree id claims.
+Symlinks rather than copies because `constants.sh` derived `CI_LIB_DIR` from `CONSOLE_ROOT_DIR` and `account.sh` reached back out through `$CI_LIB_DIR/../..` for `scripts/lib/env-file.sh`, so the sandbox has to have the whole shape; and because the code under comparison must be the TRACKED code, which is what the recorded tree id claims.
 Every path either command names is relative, so `shadow-gate`'s `reachesOutside` check passes honestly rather than by accident.
 
 The temporary directory differs between the two sides, so every observation is normalised: the sandbox root becomes `<work>` and `$HOME` becomes `<home>` before anything is printed.
@@ -102,13 +102,12 @@ SCAN_WINDOW = account.DB_BROWSER_SCAN_SPAN + 1
 PINNED_SPAN = (LIVE_PORT, DEVBOX_STUDIO_PORT + SCAN_WINDOW - 1)
 EPHEMERAL_RANGE_FILE = pathlib.Path("/proc/sys/net/ipv4/ip_local_port_range")
 
-# What the sandbox symlinks. `.devcontainer` carries the toolchain pins `constants.sh` refuses to load without; `scripts` is here because `account.sh` sources `scripts/lib/env-file.sh` through `$CI_LIB_DIR/../..`; `.ci/scripts` because the prelude sources `toolchain.sh` and, through `local-common.sh`, `common.sh`.
+# What the sandbox symlinks. `.devcontainer` carries the toolchain pins; `scripts` and `.ci/scripts` are the trees the port's helpers resolve through. `.ci/lib` is not here: the directory was emptied when `local-common.sh` was deleted, and nothing in the port reads it.
 SANDBOX_LINKS = (
     (".devcontainer",),
     ("scripts",),
     (".ci", "config"),
     (".ci", "scripts"),
-    (".ci", "lib"),
     (".ci", "rediacc_ci"),
 )
 

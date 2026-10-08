@@ -463,8 +463,8 @@ def real_scope_hashes() -> dict[str, str]:
         for path in port.shell_files(ROOT / rel):
             out[path] = hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest()
     out["run.sh"] = hashlib.sha256((ROOT / "run.sh").read_bytes()).hexdigest()
-    # Floor re-measured 2026-10-08 at 94 after PLAN-retire-bash-oracles wave 1 deleted 76 tracked .sh files.
-    assert len(out) >= 94, "only %d shell files in the four scopes" % len(out)
+    # Floor re-measured 2026-10-08 at 94 after PLAN-retire-bash-oracles wave 1 deleted 76 tracked .sh files, then at 86 after W7 (six R2-state twins) and W11-A (local-common.sh, test-run-sh.sh).
+    assert len(out) >= 86, "only %d shell files in the four scopes" % len(out)
     return out
 
 
@@ -584,8 +584,8 @@ def test_shell_files_is_sorted_and_finds_the_nested_ones() -> None:
     """The paths carry the ROOT they were asked about; `main` asks relatively."""
     found = port.shell_files(ROOT / ".ci")
     assert found == sorted(found)
-    # Floor re-measured 2026-10-08 at 91 after PLAN-retire-bash-oracles wave 1.
-    assert len(found) >= 91, "only %d .sh under .ci" % len(found)
+    # Floor re-measured 2026-10-08 at 91 after PLAN-retire-bash-oracles wave 1, then at 83 after W7 and W11-A.
+    assert len(found) >= 83, "only %d .sh under .ci" % len(found)
     assert str(ROOT / ".ci/bootstrap.sh") in found
     assert all(f.endswith(".sh") for f in found)
 
@@ -638,7 +638,7 @@ def test_the_scope_list_and_flags_are_the_twins() -> None:
     """The twin's literals are gone from the tree, so what is asserted is that the port still carries them and that the RECORDED argv agrees with the flags it claims."""
     assert port.SHFMT_OPTS == ("-i", "4", "-ci", "-d")
     assert port.OPTIONAL_SCOPES == ("scripts/dev", "scripts/ops", ".github")
-    assert port.DEFAULT_MIN_FILES == "96"
+    assert port.DEFAULT_MIN_FILES == "88"
     assert port.FLOOR_ROOTS == (".ci", ".claude", "scripts")
     first = recorded("a-clean-fixture")[3][0]
     assert first.startswith("FAKECALL shfmt %s " % " ".join(port.SHFMT_OPTS)), first

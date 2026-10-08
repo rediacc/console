@@ -134,7 +134,6 @@ set -euo pipefail
 export REDIACC_DOCKER_GROUP_REEXEC=1
 source "$ROOT_DIR/.ci/config/constants.sh"
 source "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"
-source "$ROOT_DIR/.ci/lib/local-common.sh"
 """
 
 # The stubs that turn `setup()` into a phase trace.

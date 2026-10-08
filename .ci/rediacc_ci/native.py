@@ -26,15 +26,13 @@ WHAT IS UNCHANGED, because a port that improves things is a rewrite: the step or
 from __future__ import annotations
 
 import dataclasses
+import importlib
 import json
+import os
 import pathlib
 import platform as _host
 import subprocess
 import sys
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:  # `os` appears only in PathLike annotations, never at runtime.
-    import os
 
 from rediacc_ci import log
 from rediacc_ci.core import platform as plat
@@ -130,33 +128,20 @@ def _stream(argv: list[str], cwd: str | os.PathLike[str] | None = None) -> None:
         raise NativeError("%s exited %d" % (argv[0], completed.returncode))
 
 
-# The bash the three shared helpers are reached through, as ONE program. Written out here rather than inline so the call below reads as a call, and so the exact sequence a reviewer has to compare against `rdc.sh`'s old lines 143-145 is on consecutive lines.
-_PREPARE_PROGRAM = """
-set -euo pipefail
-source "$1/.ci/config/constants.sh"
-source "$1/.ci/lib/local-common.sh"
-check_node_version "$NODE_VERSION_MIN"
-ensure_deps
-ensure_packages_built
-"""
-
-
 def prepare_toolchain(root: pathlib.Path) -> None:
-    """node version + deps + built packages, through the bash that already owns them.
+    """node version + deps + built packages, in this process, through `core.local_common`.
 
-    ONE bash, not three: sourcing `local-common.sh` is the expensive part and the three calls are one logical step. `set -euo pipefail` inside, so the first failure is the exit code, exactly as it was when these three lines sat in `rdc.sh` under its own `set -e`.
-
-    THE ORDER IS THE BASH ORDER. `check_node_version` first: `ensure_deps` runs npm, and npm on an unsupported node produces a worse message than the version check.
+    THE ORDER IS THE ORDER `rdc.sh` HAS: `check_node_version` first, because `ensure_deps` runs npm and npm on an unsupported node produces a worse message than the version check. The first failure stops it, exactly as the three lines did under `rdc.sh`'s `set -e`. The functions log their own refusals; the NativeError carries the exit.
     """
-    _stream(
-        [
-            "bash",
-            "-c",
-            _PREPARE_PROGRAM,
-            "rediacc_ci.native",
-            str(root),
-        ]
-    )
+    # Imported here and not at the top: `core.local_common` reads `.ci/config/well-known.env` at import, and `check:ci-rdc-native` drives this module from a COPY of the package that carries no config. `--print-plan` and the platform table must stay importable without it.
+    local_common = importlib.import_module("rediacc_ci.core.local_common")
+    env = dict(os.environ, LOCAL_ROOT_DIR=str(root))
+    try:
+        ready = local_common.prepare_node_deps_packages(env)
+    except local_common.LocalCommonError as exc:
+        raise NativeError("toolchain preparation failed (exit %d)" % exc.code) from exc
+    if not ready:
+        raise NativeError("toolchain preparation failed")
 
 
 def build_and_install(root: pathlib.Path, built_plan: Plan) -> None:

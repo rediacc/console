@@ -1,7 +1,7 @@
 """`.ci/lib/local-common.sh`, ported function for function: all thirty-three.
 
 PORTED FROM `.ci/lib/local-common.sh` (30 functions at 2026-09-24; 33 since 2026-09-30, when `_deps_hash`, `deps_are_current` and `_reset_docker_memo` were split out).
-The twin still exists and is still sourced at `rdc.sh:18`, `.ci/legacy/run-legacy.sh:47`, `.ci/media/media-entry.sh:50`, `.ci/rediacc_ci/native.py:137` (inside a `bash -c`) and `.ci/scripts/test/gates/test-run-sh.sh:116`, and `.ci/rediacc_ci/setup/bridge.py` still runs four of its functions as bash. Nothing is cut over here: this is a pre-cutover port on the sequencing every other lib in W7P5-b used, and the deletion is W7P5-c's.
+The twin, `.ci/lib/local-common.sh`, is DELETED (PLAN-retire-bash-oracles B3): its transcripts are frozen in `.ci/rediacc_ci/tests/goldens/twins/lib.local-common.jsonl`, and a Rule-T change to the port is recorded with `regolden --source port`. Its callers reach this module directly: `rdc.sh` and `rediacc_ci.native` through `prepare_cli` / `prepare_node_deps_packages`, `.ci/media/media-entry.sh` through three one-line wrappers over the `ensure-deps`, `ensure-packages-built` and `check-node-version` verbs, `rediacc_ci.setup.bridge` in process, and the gate lane (`gate_lane_*`) from `run.sh`.
 
 --------------------------------------------------------------------------
 TWO HALVES, TWO DIFFERENTIALS
@@ -62,7 +62,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log, paths
-from rediacc_ci.core import devbox
+from rediacc_ci.core import devbox, toolchain
 from rediacc_ci.well_known import GO_DL_BASE
 
 # `.ci/lib/local-common.sh:65`. `-path` in find is plain fnmatch: `*` crosses `/`, which is what makes a bare `*/dist/*` prune everything under any `dist` below the start point.
@@ -827,6 +827,23 @@ def ensure_cli_built(env: dict[str, str] | None = None) -> bool:
     return True
 
 
+def prepare_node_deps_packages(env: dict[str, str] | None = None) -> bool:
+    """The first three steps of every entry point's preparation: the node floor, the dependencies, the shared packages.
+
+    THE ORDER IS THE ORDER THE BASH CALLERS HAD. `check_node_version` first, because `ensure_deps` runs npm and npm on an unsupported node produces a worse message than the version check. Stops at the first failure, as the callers' `set -e` did.
+    """
+    return (
+        check_node_version(toolchain.node_floor())
+        and ensure_deps(env)
+        and ensure_packages_built(env)
+    )
+
+
+def prepare_cli(env: dict[str, str] | None = None) -> bool:
+    """`rdc.sh`'s whole preparation as one call: node floor, dependencies, shared packages, the CLI bundle, renet. First failure stops it."""
+    return prepare_node_deps_packages(env) and ensure_cli_built(env) and ensure_renet_built(env)
+
+
 def prompt_continue(message: str = "Continue?") -> bool:
     """`prompt_continue`, `.ci/lib/local-common.sh:341`.
 
@@ -1498,6 +1515,8 @@ USAGE = """rediacc_ci.core.local_common -- .ci/lib/local-common.sh, every functi
   renet-source-hash <dir>            _renet_source_hash
   renet-artifact-fp <path>           _renet_artifact_fp
   ensure-renet-built                 ensure_renet_built
+  prepare-cli                        node floor, deps, packages, CLI bundle, renet (rdc.sh)
+  prepare-node-deps-packages         node floor, deps, packages (rdc.sh --native)
   lane-decide                        gate_lane_decide
   lane-should-route                  gate_lane_should_route (0 route, 1 host, 2 refuse)
   lane-run <args...>                 gate_lane_run
@@ -1523,6 +1542,8 @@ _BOOL_VERBS = {
     "ensure-docker-installed": lambda _rest: ensure_docker_installed(),
     "ensure-docker-group": lambda _rest: ensure_docker_group(),
     "ensure-renet-built": lambda _rest: ensure_renet_built(),
+    "prepare-cli": lambda _rest: prepare_cli(),
+    "prepare-node-deps-packages": lambda _rest: prepare_node_deps_packages(),
 }
 
 

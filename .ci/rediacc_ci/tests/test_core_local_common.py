@@ -1,7 +1,6 @@
-"""`rediacc_ci.core.local_common` against the live `.ci/lib/local-common.sh`.
+"""`rediacc_ci.core.local_common` against the transcripts frozen from the retired `.ci/lib/local-common.sh` (`goldens/twins/lib.local-common.jsonl`).
 
-THE TWIN IS STILL HERE AND IS STILL THE ONLY IMPLEMENTATION OF TWENTY-ONE OF ITS THIRTY FUNCTIONS.
-`rdc.sh:18`, `.ci/media/media-entry.sh:50`, `.ci/rediacc_ci/native.py:137` and `.ci/scripts/test/gates/test-run-sh.sh:116` all still source it, nothing is cut over, and this file drives the bash for real on every run: `rediacc_ci.core.local_common_shadow_driver` sources `local-common.sh` through the same prelude the deleted `run-legacy.sh` used and calls the twin's own functions, then does the same work through the port, and the two transcripts are compared byte for byte.
+THE TWIN IS DELETED (PLAN-retire-bash-oracles B3). While it existed every scenario was driven on both sides: `rediacc_ci.core.local_common_shadow_driver` sourced `local-common.sh` through the prelude the deleted `run-legacy.sh` used and called the twin's own functions, and the port did the same work; the twin's full transcripts are the golden, and this file compares the port's live transcript against them byte for byte. A Rule-T change to the port is recorded with `regolden --source port`.
 
 WHAT IS COVERED AND WHAT IS NOT is decided by the driver's seven scenarios and stated in its module docstring rather than restated here.
 The short version: everything whose answer is computation over a local file or a local git read, and none of the eleven installers, the three interactive or session-altering functions, or the three `gate_lane_*` functions, which reach into `.ci/lib/devbox.sh`.
@@ -37,7 +36,7 @@ DRIVER = ".ci/rediacc_ci/core/local_common_shadow_driver.py"
 DRIVER_MODULE = "rediacc_ci.core.local_common_shadow_driver"
 LEDGER = ".ci/shadow/w7p5b-local-common.observations.jsonl"
 
-SCENARIOS = sorted(driver.BASH_SCENARIOS)
+SCENARIOS = sorted(driver.SCENARIOS)
 
 # The floor each scenario must clear. Measured against the recorded ledger rows, then rounded DOWN so a real change to a message does not turn into a test edit; the point is to catch a transcript collapsing to nothing, not to pin a count.
 OBSERVATION_FLOOR = {
@@ -101,34 +100,43 @@ def _delta_comparable(out: str, scenario: str) -> list[str]:
     ]
 
 
+def _retired() -> tuple[int, str, str]:
+    raise RuntimeError(
+        "%s is retired: re-record a Rule-T change with `%s %s --source port --reason ...`"
+        % (TWIN, diff.REGOLDEN_VERB, TWIN)
+    )
+
+
+def _run_driver(scenario: str) -> tuple[int, str, str]:
+    proc = subprocess.run(
+        [sys.executable, "-m", DRIVER_MODULE, "--side", "new", "--port", PORT, scenario],
+        cwd=str(paths.repo_root()),
+        env={**os.environ, "PYTHONPATH": ".ci"},
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=600,
+    )
+    return proc.returncode, proc.stdout, proc.stderr
+
+
 def drive(side: str, scenario: str) -> tuple[int, str, str]:
     """One side of one scenario, run once per session and remembered.
 
-    Cached because every case below wants the same transcript and each run of the bash side sources `constants.sh`, `toolchain.sh` and `local-common.sh` and builds a git repository before it does anything at all.
+    The `old` side is the FROZEN transcript of the retired bash twin (`goldens/twins/lib.local-common.jsonl`): the explicit label makes the four tests that read one scenario share one record.
     """
     key = (side, scenario)
     if key not in _CACHE:
-        proc = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                DRIVER_MODULE,
-                "--side",
-                side,
-                "--twin",
+        if side == "old":
+            _CACHE[key] = diff.twin_call(
                 TWIN,
-                "--port",
-                PORT,
-                scenario,
-            ],
-            cwd=str(paths.repo_root()),
-            env={**os.environ, "PYTHONPATH": ".ci"},
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=600,
-        )
-        _CACHE[key] = (proc.returncode, proc.stdout, proc.stderr)
+                ["scenario", scenario],
+                _retired,
+                port=lambda: _run_driver(scenario),
+                label="scenario",
+            )
+        else:
+            _CACHE[key] = _run_driver(scenario)
     return _CACHE[key]
 
 
@@ -207,10 +215,6 @@ def test_the_differential_can_fail() -> None:
 # -- the twin is still there, and still says what this file claims it says ----
 
 
-def twin_text() -> str:
-    return (paths.repo_root() / TWIN).read_text(encoding="utf-8")
-
-
 # (bash name, the attribute it became here). `_version_gte` loses its underscore because a module-private name in bash is not a module-private name in Python; `_ensure_docker_group`, `_renet_source_hash` and `_renet_artifact_fp` the same.
 PORTED_FUNCTIONS = (
     ("_sha256sum", "sha256sum"),
@@ -253,18 +257,10 @@ PORTED_FUNCTIONS = (
 NOT_PORTED_FUNCTIONS: tuple[str, ...] = ()
 
 
-def test_the_twin_still_defines_every_function_this_slice_names() -> None:
-    """Thirty-three, measured rather than remembered."""
-    text = twin_text()
-    for name, _ in PORTED_FUNCTIONS:
-        assert "\n%s() {" % name in text, "%s is gone from %s" % (name, TWIN)
-    for name in NOT_PORTED_FUNCTIONS:
-        assert "\n%s() {" % name in text, "%s is gone from %s" % (name, TWIN)
+def test_the_ported_set_is_the_thirty_three_functions_the_twin_had() -> None:
+    """Thirty-three, measured while the twin existed (its `name() {` lines) and recorded here."""
     assert len(PORTED_FUNCTIONS) + len(NOT_PORTED_FUNCTIONS) == 33
-    # And the twin defines NOTHING ELSE, so a function added later cannot slip past the classification above unnoticed.
-    defined = [line.split("(")[0] for line in text.split("\n") if line.endswith("() {")]
-    named = {name for name, _ in PORTED_FUNCTIONS} | set(NOT_PORTED_FUNCTIONS)
-    assert set(defined) == named, "the twin's function set moved: %s" % sorted(set(defined) ^ named)
+    assert len({name for name, _ in PORTED_FUNCTIONS}) == len(PORTED_FUNCTIONS)
 
 
 def test_the_ported_half_is_here() -> None:
@@ -287,18 +283,19 @@ def test_the_unported_half_has_no_python_counterpart() -> None:
         )
 
 
-def test_the_twin_is_still_sourced_and_nothing_is_cut_over() -> None:
-    """The sequencing claim in the port's docstring, checked against every sourcer."""
+def test_every_entry_point_reaches_the_port_and_none_sources_the_twin() -> None:
+    """The cutover claim, checked against every former sourcer: each calls the port, none names the bash library."""
     root = paths.repo_root()
     for relative, needle in (
-        ("rdc.sh", 'source "$ROOT_DIR/.ci/lib/local-common.sh"'),
-        (".ci/media/media-entry.sh", 'source "$ROOT_DIR/.ci/lib/local-common.sh"'),
-        (".ci/rediacc_ci/native.py", 'source "$1/.ci/lib/local-common.sh"'),
+        ("rdc.sh", "rediacc_ci.core.local_common prepare-cli"),
+        (".ci/media/media-entry.sh", "rediacc_ci.core.local_common"),
+        (".ci/rediacc_ci/native.py", "local_common.prepare_node_deps_packages"),
+        (".ci/rediacc_ci/setup/bridge.py", "_local_common_call"),
     ):
         text = (root / relative).read_text(encoding="utf-8")
-        assert needle in text, (
-            "%s no longer sources the twin; if this slice has been cut over, this "
-            "differential needs a different subject" % relative
+        assert needle in text, "%s no longer reaches the port (%s)" % (relative, needle)
+        assert not re.search(r"(source|\.)\s+\S*local-common\.sh", text), (
+            "%s sources the deleted bash library" % relative
         )
 
 
@@ -307,9 +304,6 @@ def test_the_lane_reaches_devbox_only_through_the_port() -> None:
 
     ASSERTED AGAINST THE AST: a live string naming `devbox.sh` in the port would be a bash bridge wearing a Python name. The walk must find `devbox` tokens in the port (it imports `core.devbox`) and must find NO `devbox.sh` literal. The pure-half driver stays devbox-free, as that slice ruled.
     """
-    twin = twin_text()
-    for name in ("devbox_state_get", "devbox_container_running", "devbox_exec"):
-        assert name in twin, "%s left the twin, so the coupling claim is stale" % name
     port_tokens = live_tokens_naming(PORT, "devbox")
     assert port_tokens != [], (
         "the port names nothing devbox-shaped, so the lane cannot be reaching core.devbox"
@@ -555,11 +549,16 @@ def test_no_sha256_tool_degrades_the_same_way_on_both_sides(tmp_path) -> None:
             'o="$( ( set -e; compute_hash_for_package_dirs "$W" pkg ) 2>/dev/null )"\n'
             'echo "walk=$? out=[$o]"\n' % work
         )
-        twin = subprocess.run(
-            ["bash", "-c", script], env=env, capture_output=True, text=True, check=False
-        )
-        assert "sha=1" in twin.stdout, "the twin did not reach its refusal: %s" % twin.stdout
-        walk_line = next(line for line in twin.stdout.split("\n") if line.startswith("walk="))
+
+        def run_twin() -> tuple[int, str, str]:
+            done = subprocess.run(
+                ["bash", "-c", script], env=env, capture_output=True, text=True, check=False
+            )
+            return done.returncode, done.stdout, done.stderr
+
+        _, twin_stdout, _ = diff.twin_call(TWIN, ["no-sha256"], run_twin, label="no-sha256")
+        assert "sha=1" in twin_stdout, "the twin did not reach its refusal: %s" % twin_stdout
+        walk_line = next(line for line in twin_stdout.split("\n") if line.startswith("walk="))
         twin_walk_code = int(walk_line.split()[0].split("=")[1])
         assert "out=[]" in walk_line, "the twin printed a hash with no tool: %s" % walk_line
 
@@ -624,49 +623,9 @@ def test_the_tools_the_scenarios_use_are_installed() -> None:
         )
 
 
-def test_the_driver_refuses_when_the_twin_is_not_there() -> None:
-    """The driver's own control, driven rather than read."""
-    proc = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            DRIVER_MODULE,
-            "--side",
-            "old",
-            "--twin",
-            ".ci/lib/no-such-file.sh",
-            "--port",
-            PORT,
-            "hash",
-        ],
-        cwd=str(paths.repo_root()),
-        env={**os.environ, "PYTHONPATH": ".ci"},
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert proc.returncode == driver.EXIT_CANNOT_RUN
-    assert "attests to nothing" in proc.stderr
-
-
-def test_the_driver_scenarios_and_the_bash_bodies_line_up() -> None:
-    """Every scenario the driver offers has a bash body, which is what `old` runs."""
-    assert isinstance(driver.BASH_SCENARIOS, dict)
-    for name, body in driver.BASH_SCENARIOS.items():
-        assert body.strip(), "scenario %s has an empty bash body" % name
-        assert "step " in body or "emit " in body, "scenario %s calls nothing" % name
-
-
-def test_the_repo_root_is_a_checkout_with_the_twin_in_it() -> None:
-    """A last refusal: everything above is relative to this."""
-    assert (paths.repo_root() / TWIN).is_file()
-    assert (paths.repo_root() / PORT).is_file()
-    assert pathlib.Path(DRIVER).name == "local_common_shadow_driver.py"
-
-
 # -- the machine-mutating half, against a stub farm ---------------------------
 #
-# Driven by `rediacc_ci.core.local_common_actions_shadow_driver`: each case runs both sides as child processes in one fixed sandbox with `npm`, `node`, `go`, `sudo`, `curl`, `tar`, `gcc`, `docker` and `sg` stubbed, and compares rc, both streams, the ordered stub transcript and the whole sandbox tree afterwards. Every case drives the LIVE twin.
+# Driven by `rediacc_ci.core.local_common_actions_shadow_driver`: each case runs the port as a child process in one fixed sandbox with `npm`, `node`, `go`, `sudo`, `curl`, `tar`, `gcc`, `docker` and `sg` stubbed, and compares rc, both streams, the ordered stub transcript and the whole sandbox tree afterwards against the frozen transcript of the retired twin.
 
 # RULE T: action cases whose transcript the port intentionally changed.
 ACTION_DELTA_CASES = {"renet/source-hash-empty"}
@@ -676,37 +635,16 @@ ACTION_CASES = [
 ]
 
 
-# The cases whose bash side sources `.ci/lib/devbox.sh`: the whole `lane` scenario (the twin's `gate_lane_*` call `devbox_*`) and `_reset_docker_memo`, whose only effect is on a memo `devbox.sh` owns. That library is deleted (it is `core.devbox` now), so these cases answer from the golden frozen out of the twin while it still ran them; every other case still drives the live twin.
-DEVBOX_COUPLED_VERBS = {"reset-docker-memo"}
-
-
-def _devbox_coupled(scenario: str, case) -> bool:
-    return scenario == "lane" or case.verb in DEVBOX_COUPLED_VERBS
-
-
 def _old_actions(scenario: str, case, repo) -> list[str]:
-    """The twin's observation lines for one action case."""
-    if not _devbox_coupled(scenario, case):
-        return actions_driver.observe("old", repo, case)
+    """The retired twin's observation lines for one action case, from the golden.
 
-    def retired():
-        raise RuntimeError(
-            "devbox.sh is retired: re-record a Rule-T change with `%s %s --source port --reason ...`"
-            % (diff.REGOLDEN_VERB, TWIN)
-        )
-
-    def live():
-        return 0, "\n".join(actions_driver.observe("old", repo, case)), ""
+    THE TEST NAME IS PART OF THE KEY (`test_actions_match_the_live_twin[<scenario>/<case>]`), so it keeps its name although the twin is gone: the first eighteen records, the lane and memo cases, were frozen under it.
+    """
 
     def port():
-        return 0, "\n".join(actions_driver.observe("new", repo, case)), ""
+        return 0, "\n".join(actions_driver.observe(repo, case)), ""
 
-    out = diff.twin_call(
-        TWIN,
-        ["actions", scenario, case.name],
-        live if diff.regolden_mode(TWIN) == "bash" else retired,
-        port=port,
-    )[1]
+    out = diff.twin_call(TWIN, ["actions", scenario, case.name], _retired, port=port)[1]
     return out.splitlines()
 
 
@@ -717,7 +655,7 @@ def test_actions_match_the_live_twin(scenario, case) -> None:
     repo = paths.repo_root()
     with actions_driver.locked():
         old = _old_actions(scenario, case, repo)
-        new = actions_driver.observe("new", repo, case)
+        new = actions_driver.observe(repo, case)
     if "%s/%s" % (scenario, case.name) in ACTION_DELTA_CASES:
         # Rule T fix C1 (`test_delta_c1`): an empty source tree hashes as nothing, where the twin hashed its own empty stdin. Compared on the two answers, so the case still proves the rest of the transcript moved no other line.
         assert old != new, "the delta case %s/%s no longer diverges" % (scenario, case.name)
@@ -749,7 +687,7 @@ def test_the_action_farm_really_shadows_npm() -> None:
         env = actions_driver.side_env(root, farm, case)
         for name in ("npm", "node", "sudo", "docker", "uname"):
             assert stubfarm.shadows(farm, name, env), "%s is not the stub" % name
-        lines = actions_driver.observe("old", paths.repo_root(), case)
+        lines = actions_driver.observe(paths.repo_root(), case)
     assert sum(" call#" in line for line in lines) >= 3
 
 
@@ -873,11 +811,17 @@ def test_delta_c2_a_deleted_last_file_never_kills_the_fingerprint(tmp_path) -> N
     """Defect C2, fixed: the fingerprint no longer depends on who called it. A changed list ENDING in a deleted file made the twin's bare `existing=` assignment die under armed errexit, so the same repository fingerprinted or did not depending on the call site."""
     _repo_with_a_deleted_last_file(tmp_path)
     lib = paths.repo_root() / ".ci" / "lib" / "local-common.sh"
-    twin = _bash(
-        'source %s; set -euo pipefail; _git_tree_fingerprint "$PWD" .; echo "rc=$?"' % lib, tmp_path
-    )
-    assert twin.stdout.strip() == "", "the twin's call-site dependence moved"
-    assert twin.returncode == 1, "the twin's call-site dependence moved"
+
+    def run_twin() -> tuple[int, str, str]:
+        done = _bash(
+            'source %s; set -euo pipefail; _git_tree_fingerprint "$PWD" .; echo "rc=$?"' % lib,
+            tmp_path,
+        )
+        return done.returncode, done.stdout, done.stderr
+
+    twin_rc, twin_out, _ = diff.twin_call(TWIN, ["delta-c2"], run_twin, label="delta-c2")
+    assert twin_out.strip() == "", "the twin's call-site dependence moved"
+    assert twin_rc == 1, "the twin's call-site dependence moved"
     fingerprint = local_common.git_tree_fingerprint(str(tmp_path), ["."])
     assert fingerprint is not None
     assert len(fingerprint.strip()) == 64

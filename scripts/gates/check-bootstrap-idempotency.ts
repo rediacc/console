@@ -3,7 +3,7 @@
  * check:ci-bootstrap-idempotency -- every bootstrap path installs THROUGH the stamp.
  *
  * `./run.sh setup` is expected to be run repeatedly, so a second run must do no
- * work. `ensure_deps` in .ci/lib/local-common.sh is what makes that true: it
+ * work. `ensure_deps` in .ci/rediacc_ci/core/local_common.py is what makes that true: it
  * hashes package.json, package-lock.json and .npmrc and skips when the stamp
  * matches.
  *
@@ -53,7 +53,8 @@ const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 // which is the honest refusal working -- a scan whose subject moved must go red, not pass on an empty file.
 export const ENTRY = 'run.sh';
 export const SCANNED = [ENTRY, '.ci/lib/setup.sh'];
-export const HELPER_FILE = '.ci/lib/local-common.sh';
+/** The helper is Python now (`.ci/lib/local-common.sh` is deleted); `pythonHelperInstalls` reads it. */
+export const HELPER_FILE = '.ci/rediacc_ci/core/local_common.py';
 export const HELPER = 'ensure_deps';
 
 /** The helper legitimately contains the install; it IS the guard. */
@@ -111,6 +112,31 @@ export const shellFunctions = (source: string): Fn[] => {
     }
   });
   return out;
+};
+
+/**
+ * The body of `def <name>(` in a Python source: from the def line to the next line that
+ * starts in column zero with something other than a blank or a comment.
+ */
+export const pythonFunctionBody = (source: string, name: string): string[] => {
+  const lines = source.split('\n');
+  const start = lines.findIndex((l) => new RegExp(`^def ${name}\\(`).test(l));
+  if (start < 0) return [];
+  const body: string[] = [];
+  for (const line of lines.slice(start + 1)) {
+    if (/^[^\s#]/.test(line)) break;
+    body.push(line);
+  }
+  return body;
+};
+
+/** Does the helper itself run the install and the natives rebuild, as argv lists? */
+export const pythonHelperInstalls = (source: string): boolean => {
+  const body = pythonFunctionBody(source, HELPER).filter((l) => !l.trim().startsWith('#'));
+  return (
+    body.some((l) => /\[\s*"npm"\s*,\s*"(install|ci)"\s*[,\]]/.test(l)) &&
+    body.some((l) => /\[\s*"npm"\s*,\s*"run"\s*,\s*"install:natives"\s*[,\]]/.test(l))
+  );
 };
 
 export interface Finding {
@@ -179,6 +205,27 @@ const selftest = (): number => {
     scan('f', 'x() {\n  # npm install then rebuild\n}\n').length === 0
   );
   check('code outside any function is ignored', scan('f', 'npm install\n').length === 0);
+  // The helper is read as Python. Both directions: a body that installs and rebuilds passes, one that lost either half, or a file with no such def, does not.
+  const py = (body: string): string =>
+    `def ensure_deps(env=None):\n${body}\n\ndef other():\n    pass\n`;
+  const both =
+    '    _must(["npm", "install"], cwd=root)\n    _must(["npm", "run", "install:natives"], cwd=root)';
+  check('a Python helper that installs and rebuilds is accepted', pythonHelperInstalls(py(both)));
+  check(
+    'CONTROL: a Python helper with no install is refused',
+    !pythonHelperInstalls(py('    return True'))
+  );
+  check(
+    'CONTROL: a Python helper that lost the natives rebuild is refused',
+    !pythonHelperInstalls(py('    _must(["npm", "install"], cwd=root)'))
+  );
+  check(
+    'CONTROL: an install in the NEXT function does not count for this one',
+    !pythonHelperInstalls(
+      'def ensure_deps(env=None):\n    return True\n\ndef other():\n' + both + '\n'
+    )
+  );
+  check('CONTROL: a file with no such def is refused', !pythonHelperInstalls('x = 1\n'));
   // THE FALSE POSITIVE THE FIRST VERSION SHIPPED: a message that merely explains what install:natives does is prose, not an install.
   check(
     'a log_warn mentioning the command is NOT flagged',
@@ -202,8 +249,7 @@ const main = (): number => {
     console.error(`✗ cannot read ${HELPER_FILE}; a green here would mean nothing.`);
     return 1;
   }
-  const helperFn = shellFunctions(helperSrc).find((f) => f.name === HELPER);
-  if (!helperFn || !helperFn.body.some(isRootInstall)) {
+  if (!pythonHelperInstalls(helperSrc)) {
     console.error(`✗ ${HELPER_FILE}: ${HELPER}() is missing or no longer installs anything.`);
     console.error('  This gate exists to route bootstrap paths through it. Failing rather');
     console.error('  than asserting a guard that is no longer a guard.');

@@ -2288,14 +2288,6 @@
       "peak_rss_mb": 12,
       "rank": 114
     },
-    "gate-test:run-sh": {
-      "cpu_s": 0.69,
-      "wall_s": 0.743,
-      "eff_cores": 0.93,
-      "capped": false,
-      "peak_rss_mb": 25,
-      "rank": 87
-    },
     "gate-test:runner-advice": {
       "cpu_s": 1.544,
       "wall_s": 1.53,

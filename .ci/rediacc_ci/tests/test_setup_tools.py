@@ -141,15 +141,19 @@ def test_no_row_writes_a_version_down() -> None:
 
 
 def test_the_table_covers_ensure_host_tools() -> None:
-    """`.ci/lib/local-common.sh:590` names four tools; all four must be rows.
+    """`ensure_host_tools` names four tools; all four must be rows.
 
-    Read from the FILE rather than restated here, so a tool added to the bash loop and not to the table is a red. That is the whole point of consolidating six enumerations: the table has to be a superset, provably.
+    Read from the port's SOURCE rather than restated here, so a tool added to its loop and not to the table is a red. That is the whole point of consolidating six enumerations: the table has to be a superset, provably.
     """
-    text = paths.from_root(".ci", "lib", "local-common.sh").read_text(encoding="utf-8")
-    match = re.search(r"for tool in ([a-z0-9 ]+); do", text)
+    text = paths.from_root(".ci", "rediacc_ci", "core", "local_common.py").read_text(
+        encoding="utf-8"
+    )
+    match = re.search(r"for tool in \(([^)]*)\) if shutil\.which", text)
     assert match is not None, "ensure_host_tools' loop has moved; re-derive this test"
+    wanted = set(re.findall(r'"([a-z0-9]+)"', match.group(1)))
+    assert len(wanted) == 4, "ensure_host_tools names %d tool(s), expected 4" % len(wanted)
     named = {row.name for row in tools.TOOLS}
-    assert set(match.group(1).split()) - named == set()
+    assert wanted - named == set()
 
 
 def test_the_table_covers_the_toolchain_acquire_arms() -> None:

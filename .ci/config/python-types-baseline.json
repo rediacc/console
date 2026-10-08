@@ -1143,20 +1143,6 @@
       "message": "Argument 1 to \"append\" of \"list\" has incompatible type \"tuple[str, None]\"; expected \"tuple[str, str]\""
     },
     {
-      "id": "adfd24c131c4a1ba",
-      "file": ".ci/rediacc_ci/tests/test_infra_ci_stop_elite.py",
-      "code": "arg-type",
-      "count": 2,
-      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, object]\"; expected \"int\""
-    },
-    {
-      "id": "3b1fde99f4a0fb62",
-      "file": ".ci/rediacc_ci/tests/test_infra_ci_stop_elite.py",
-      "code": "arg-type",
-      "count": 2,
-      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, object]\"; expected \"tuple[str, ...]\""
-    },
-    {
       "id": "f390e08f07c241b3",
       "file": ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",
       "code": "arg-type",
