@@ -179,7 +179,7 @@ def _main_push_refusal(
 ) -> str:
     """ "" when this update of `main` is the fast-forward fallback (box M2 of PLAN-plan-per-pr-loop), else why not.
 
-    LOCAL FACTS ONLY, like every hook here: one ref in the whole push, a real commit (not a delete), the live branch's pushed tip (`<remote>/<live>`), and the remote's current `main` its ancestor. Whether that tip is the open PR's head with CI Complete green is the pre-bash guard's question (it reads `gh`); this layer stops every other shape from every source.
+    LOCAL FACTS ONLY, like every hook here: one ref in the whole push, a real commit (not a delete), the pushed tip of an `MMDD-N` branch on the remote (`commit_policy.pushed_live_branches`; the refspec, not the checkout, names it), and the remote's current `main` its ancestor. Whether that tip is the open PR's head with CI Complete green is the pre-bash guard's question (it reads `gh`); this layer stops every other shape from every source.
     """
     _local_ref, local_oid, _remote_ref, remote_oid = line
     if local_oid == cp.ZERO_OID:
