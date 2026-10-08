@@ -32,7 +32,7 @@ async function playInline(el: HTMLElement) {
 }
 
 /** The press handler for a docs mount. A failed chunk fetch (offline, a blip) would otherwise leave a dead button, because the listener fires once: it is re-armed so the next press retries. */
-function armInline(el: HTMLElement) {
+export function armInline(el: HTMLElement) {
   el.addEventListener(
     'click',
     () => {
