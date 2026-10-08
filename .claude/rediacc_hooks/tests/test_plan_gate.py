@@ -700,6 +700,14 @@ def test_settings_at_reads_the_working_tree_and_defaults_without_a_file(tmp_path
     assert problems == []
 
 
+def test_settings_at_a_non_utf8_queue_falls_back_to_defaults(tmp_path):
+    """A QUEUE.md that is not valid UTF-8 reads as absent; it once raised UnicodeDecodeError through every caller."""
+    (tmp_path / "agent" / "plans").mkdir(parents=True)
+    (tmp_path / "agent" / "plans" / "QUEUE.md").write_bytes(b"## Settings\n\xff\xfe turbo: on\n")
+    got, _problems = plan_gate.settings_at(str(tmp_path))
+    assert got.turbo is False
+
+
 def test_batch_size_is_one_with_turbo_off(tmp_path):
     root = _turbo_root(
         tmp_path, {"a": _xplan()}, ["a"], "```stop-hook\nturbo: off\nbatch_size: 5\n```\n"
