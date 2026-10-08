@@ -87,7 +87,7 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `.devcontainer-upgrade-blocklist` | name per line | 0 | 1 | both |
 | `.e2e-coverage-allowlist` | name per line | 21 | 3 | both |
 | `.embed-assets-upgrade-blocklist` | name per line | 0 | 1 | both |
-| `.go-deps-upgrade-blocklist` | name per line | 3 | 4 | both |
+| `.go-deps-upgrade-blocklist` | name per line | 2 | 3 | both |
 | `.host-toolchain-exceptions` | name per line | 0 | 1 | both |
 | `.language-policy-allowlist` | name per line | 17 | 18 | both |
 | `.plan-housekeeping-allowlist` | name per line | 0 | 1 | both |
