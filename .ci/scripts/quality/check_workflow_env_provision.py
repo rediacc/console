@@ -196,13 +196,40 @@ def selftest() -> int:
         )
         check("CONTROL: runner built-ins are never flagged", not any("builtin" in x for x in f))
 
-    # CONTROL on the real tree: the PATH form of the script hop must still resolve a real `$GITHUB_ENV` writer. build-renet.sh was that writer until it was retired behind its golden (2026-10-04, as the comment below predicted); simulate-promotion.sh is a live one (its `echo "PROMOTED=..." >>"$GITHUB_ENV"` line).
-    hop = ROOT / ".ci/scripts/deploy/simulate-promotion.sh"
-    check(
-        "CONTROL: the one-hop script resolver finds a real $GITHUB_ENV writer",
-        hop.is_file() and bool(GHENV.findall(hop.read_text(encoding="utf-8"))),
-        str(hop),
-    )
+    # CONTROL on the PATH form of the script hop, through a PLANTED script: a real one goes stale as the bash twins retire (build-renet.sh on 2026-10-04, simulate-promotion.sh on 2026-10-08 each took this control red when deleted). A job that runs a script writing `$GITHUB_ENV` provides that name; the same job without the hop does not.
+    with tempfile.TemporaryDirectory() as td:
+        fx = pathlib.Path(td)
+        (fx / ".ci" / "scripts" / "x").mkdir(parents=True)
+        (fx / ".ci" / "scripts" / "x" / "provide.sh").write_text(
+            '#!/usr/bin/env bash\necho "HOPPED_NAME=1" >>"$GITHUB_ENV"\n', encoding="utf-8"
+        )
+        (fx / ".github" / "workflows").mkdir(parents=True)
+        (fx / ".github" / "workflows" / "w.yml").write_text(
+            yaml.safe_dump(
+                {
+                    "jobs": {
+                        "hopper": {
+                            "steps": [
+                                {"run": ".ci/scripts/x/provide.sh"},
+                                {"run": "use ${HOPPED_NAME}"},
+                            ]
+                        },
+                        "nohop": {"steps": [{"run": "use ${HOPPED_NAME}"}]},
+                    }
+                }
+            )
+        )
+        per_job, _anywhere = scan(fx, set())
+        check(
+            "CONTROL: the one-hop script resolver finds a planted $GITHUB_ENV writer",
+            "HOPPED_NAME" in per_job[("w.yml", "hopper")][0],
+            str(per_job),
+        )
+        check(
+            "PLANT: without the hop the name is not provided",
+            "HOPPED_NAME" not in per_job[("w.yml", "nohop")][0],
+            str(per_job),
+        )
     # CONTROL on the MODULE half, which is the one the nine jobs now go through: the path form above survives only because the `.sh` file is still on disk, unreferenced, so it would keep passing after the module resolver had gone quiet.
     check(
         "CONTROL: the module hop finds $RENET_BINARY through the cut-over spelling",

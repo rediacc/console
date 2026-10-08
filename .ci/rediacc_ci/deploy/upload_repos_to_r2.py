@@ -8,7 +8,7 @@ package-manager channel paths reuse filenames across releases, so
 `cli/edge/rdc-0.9.13.deb` can serve DIFFERENT bytes from one CI run to the next. Marking those immutable let CF keep a previous run's body under a URL the next run's APKINDEX points at with a different sha256, and `BAD signature` cascaded. `no-cache` means CF never caches, so there is no stale body to go stale. Truly versioned paths (`cli/v<semver>/`, `npm/<channel>/*.tgz`) keep
 their one-year immutable policy and are `upload-to-r2.sh`'s business, not this file's.
 
-NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST. `aws` and (through `cf-purge-urls.sh`) `curl` are the two external tools that carry a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_upload_repos_to_r2.py`) puts RECORDING FAKES for both on a scratch PATH. The `aws` fake logs its exact argv and, for a `cp`, the CONTENT of the file being uploaded. That content log
+NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST. `aws` and (through `cf_purge_urls`) `curl` are the two external tools that carry a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_upload_repos_to_r2.py`) puts RECORDING FAKES for both on a scratch PATH. The `aws` fake logs its exact argv and, for a `cp`, the CONTENT of the file being uploaded. That content log
 is load bearing: the install scripts are REWRITTEN on the way past (the default channel is substituted), and two implementations can print an identical `Repos uploaded to R2 channel: edge` while uploading a script that still points at `stable`.
 
 THREE EXTERNAL TOOLS ARE CALLED RATHER THAN REIMPLEMENTED, each for a measured reason and not for symmetry:
@@ -29,8 +29,7 @@ THREE EXTERNAL TOOLS ARE CALLED RATHER THAN REIMPLEMENTED, each for a measured r
     honouring TMPDIR) as the twin's. That path appears in the `aws s3 cp` argv,
     which is the thing the differential compares.
 
-`cf-purge-urls.sh` IS INVOKED AS THE BASH SCRIPT THE TWIN INVOKES, deliberately, even though `rediacc_ci.deploy.cf_purge_urls` exists and is itself a verified port. The acceptance rule for this wave is agreement with the LIVE twin, and the twin's observable behaviour includes that script's exact bytes; repointing a call site is a cutover-box decision, not this one's. `PURGE_SCRIPT`
-names the path once so the cutover is a one-line change when the box that owns it lands.
+THE PURGE RUNS IN PROCESS through `rediacc_ci.deploy.cf_purge_urls.purge`, which keeps the retired `cf-purge-urls.sh`'s output and exit status; there is no purge script path left to resolve.
 
 `get_repo_root` IS REPRODUCED BY LOCATION, NOT BY cwd. The twin does `cd "$(get_repo_root)"`, and `get_repo_root` resolves `.ci/scripts/lib/../../..`
 from `common.sh`'s own directory. This file sits at `.ci/rediacc_ci/deploy/`,
@@ -110,7 +109,7 @@ import sys
 import tempfile
 
 from rediacc_ci.core import common
-from rediacc_ci.deploy import channel_snapshot, r2_promote, transfer_retry
+from rediacc_ci.deploy import cf_purge_urls, channel_snapshot, r2_promote, transfer_retry
 from rediacc_ci.deploy.promote_r2_to_stable import META_EXCLUDES
 from rediacc_ci.release import check_soak_period, check_stable_manifest
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
@@ -130,9 +129,6 @@ PUBLIC_HOST = RELEASES_ORIGIN
 
 # Seconds between the attempts of a retried transfer (Rule T, #4175e786). A module constant, not an environment variable: the bash twin has no knob, and a test that must not sleep sets it directly.
 RETRY_DELAY_S = 5.0
-
-# `.ci/scripts/deploy/cf-purge-urls.sh` (:162), relative to the repository root the twin cd's into. Named once so the cutover to `cf_purge_urls.py` is one line in the box that owns it.
-PURGE_SCRIPT = ".ci/scripts/deploy/cf-purge-urls.sh"
 
 # The two install scripts (:142), in order, relative to the repository root.
 INSTALL_SCRIPTS = ("dist/pages/install.sh", "dist/pages/install.ps1")
@@ -394,11 +390,6 @@ def _seal_snapshot(version: str, endpoint: str) -> None:
     print("Channel snapshot sealed: %s (%d metadata object(s))" % (root, len(metadata)))
 
 
-def purge_argv(zone: str) -> list[str]:
-    """`.ci/scripts/deploy/cf-purge-urls.sh --zone "$CLOUDFLARE_ZONE_ID"` (:162)."""
-    return [PURGE_SCRIPT, "--zone", zone]
-
-
 def repo_url(fmt: str, channel: str, relative: str) -> str:
     """`https://releases.rediacc.com/<fmt>/<channel>/<path>` (:135).
 
@@ -572,16 +563,12 @@ def _purge(urls: list[str], zone: str) -> None:
     """`printf '%s\\n' "${PURGE_URLS[@]}" | cf-purge-urls.sh --zone <zone>` (:160-163).
 
     Guarded by `${#PURGE_URLS[@]} -gt 0` in the twin, which is why an empty list
-    makes no call at all rather than a call with empty stdin. Under `pipefail` the pipeline's status is the purge script's, since printf cannot fail here.
+    makes no call at all rather than a call with empty stdin. Under `pipefail` the pipeline's status is the purge script's, since printf cannot fail here. The purge runs in process through `cf_purge_urls.purge`.
     """
     payload = "".join(url + "\n" for url in urls)
-    try:
-        status = _run(purge_argv(zone), input=payload, text=True)
-    except OSError as exc:
-        # A MISSING OR UNRUNNABLE PURGE SCRIPT. bash reports this itself, with its own line number and status 127; Python raises. Same stream, same
-        # status, different sentence -- the same ruling the `${VAR:?}` guards get.
-        print("%s: %s: %s" % (SELF, PURGE_SCRIPT, exc.strerror), file=sys.stderr)
-        raise BashExitError(127) from exc
+    _flush()
+    status = cf_purge_urls.purge(zone, payload)
+    _flush()
     if status:
         raise BashExitError(status)
 
@@ -708,6 +695,7 @@ def main(argv: list[str]) -> int:
     endpoint = values["CLOUDFLARE_R2_ENDPOINT"]
     snapshot_version = os.environ.get("SNAPSHOT_VERSION", "")
 
+    # SKIP_RELEASE_GUARD_BEGIN (the gate test `test_gate_skip_release_channel_pointer.py` splices its mutants between these markers)
     if skip_release_requested(dict(os.environ)):
         if channel in RELEASE_CHANNELS:
             for line in skip_banner(channel):
@@ -717,6 +705,7 @@ def main(argv: list[str]) -> int:
             "%s: SKIP_RELEASE ignored on channel '%s': not a release channel, "
             "uploading as usual" % (SELF, channel)
         )
+    # SKIP_RELEASE_GUARD_END
 
     if snapshot_version and channel != "edge":
         print(

@@ -19,12 +19,14 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import delete_r2_channel as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "deploy" / "delete-r2-channel.sh"
+TWIN_REL = ".ci/scripts/deploy/delete-r2-channel.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "delete_r2_channel.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -49,7 +51,8 @@ if os.environ.get("FAKE_AWS_RC") or (fail_on and call_index == int(fail_on)):
     sys.stderr.write("fatal error: An error occurred (AccessDenied) calling ListObjectsV2\\n")
     sys.exit(int(os.environ.get("FAKE_AWS_RC") or "1"))
 
-sys.stdout.write("delete: s3://redacted/object\\n")
+if not os.environ.get("FAKE_AWS_QUIET"):
+    sys.stdout.write("delete: s3://redacted/object\\n")
 """
 
 # common.sh needs `dirname` at source time (SCRIPT_DIR) and `uname`/`tr` in its detection helpers. Nothing else is on the scratch PATH, so a tool leaking in would be visible as a behaviour change rather than as a silent convenience.
@@ -76,7 +79,34 @@ def _bin(tmp_path: pathlib.Path, name: str, *, drop: str = "") -> str:
     return str(stub)
 
 
-def _run(
+def _run(subject: pathlib.Path, tmp_path: pathlib.Path, args: list[str], **kw):
+    """One side. The twin's answer comes from its golden (PLAN-retire-bash-oracles B3); `_run_live` is how it was recorded, from the twin or, for a Rule-T change, from the port."""
+    if subject.suffix != ".sh":
+        return _run_live(subject, tmp_path, args, **kw)
+    box: dict[str, str] = {}
+
+    def live(which: pathlib.Path):
+        def run() -> tuple[int, str, str]:
+            proc, calls = _run_live(which, tmp_path, args, **kw)
+            box["calls"] = "\n".join(calls)
+            return proc.returncode, proc.stdout, proc.stderr
+
+        return run
+
+    rc, out, err, got = diff.twin_run(
+        TWIN_REL,
+        [repr(args), repr(sorted(kw.items()))],
+        live(subject),
+        port=live(PORT),
+        extras={"calls": lambda: box["calls"]},
+        work=(tmp_path,),
+    )
+    return subprocess.CompletedProcess([], rc, out, err), [
+        line for line in got["calls"].split("\n") if line
+    ]
+
+
+def _run_live(
     subject: pathlib.Path,
     tmp_path: pathlib.Path,
     args: list[str],
@@ -211,40 +241,70 @@ def test_the_twelve_calls_are_asserted_in_full(tmp_path: pathlib.Path) -> None:
     _assert_agree(old, new, "happy-path", old_calls, new_calls)
 
 
-def test_aws_stderr_is_discarded(tmp_path: pathlib.Path) -> None:
-    """`2>/dev/null` on every call. The fake writes a loud `fatal error` line and NONE of it may appear: a port that let it through would change what a PR-close workflow log says on every failed clean-up."""
-    old, new, old_calls, new_calls = run_both(tmp_path, [], FAKE_AWS_RC="1")
-    assert "fatal error" not in old.stderr
-    assert "AccessDenied" not in old.stderr
-    _assert_agree(old, new, "stderr-discarded", old_calls, new_calls)
+def test_aws_stderr_of_a_successful_delete_is_discarded(tmp_path: pathlib.Path) -> None:
+    """`2>/dev/null` on every call. A delete that succeeds says nothing on stderr beyond the two log lines, whatever aws wrote there."""
+    old, new, old_calls, new_calls = run_both(tmp_path, [])
+    assert old.returncode == new.returncode == 0
+    assert old.stderr == new.stderr
+    _assert_agree(old, new, "stderr-quiet-on-success", old_calls, new_calls)
 
 
-def test_defect_a_refused_delete_reads_as_deleted(tmp_path: pathlib.Path) -> None:
-    """THE VACUITY DEFECT, PINNED. Every one of the twelve deletes is refused, and the run is indistinguishable from a clean-up that worked: same two log lines, same exit 0. The header justifies `|| true` with "a channel that was never created is not an error", which is true and does not distinguish that case
-    from a credential that stopped working.
+FAILED_RM_WARNING = "::warning::delete-r2-channel: aws s3 rm %s failed with status 1\n"
+AWS_DENIED = "fatal error: An error occurred (AccessDenied) calling ListObjectsV2\n"
 
-    Reproduced because agreement with the live twin is the deliverable;
-    repaired, this test goes red and names the port that must follow.
+
+def test_delta_a_refused_delete_is_reported_and_fails_the_run(tmp_path: pathlib.Path) -> None:
+    """RULE T DELTA (PLAN-retire-bash-oracles B4), replacing the pinned defect `A_REFUSED_DELETE_READS_AS_DELETED`.
+
+    The twin ended every `aws s3 rm` in `2>/dev/null || true` and printed "deleted from R2" unconditionally, so an expired key or an AccessDenied produced exactly the output of a clean-up that worked: exit 0, twelve silent failures, and a bucket still holding the channel. A prefix that was never created is NOT a failure (`aws s3 rm --recursive` over an absent prefix exits 0), so `|| true` was never needed to
+    cover that case.
+
+    The port still attempts all twelve prefixes, then names every refused one with aws's own message, drops the false success line, and exits 1. This test fails on the twin's behaviour (exit 0, the success line, an empty stderr).
     """
     old, new, old_calls, new_calls = run_both(tmp_path, [], FAKE_AWS_RC="1")
-    assert old.returncode == 0, "the twin now fails on a refused delete"
-    assert old.stderr == (
-        "✓ Cleaning up R2 channel: pr-fixture...\n"
-        "✓ Channel 'pr-fixture' (+ promoted) deleted from R2\n"
+    assert len(new_calls) == 12, "the sweep must attempt every prefix before judging"
+    assert new.returncode == 1, "a refused delete must fail the run"
+    assert "(+ promoted) deleted from R2" not in new.stderr, (
+        "a refused delete must not be reported as a deletion"
     )
-    assert old.stdout == "", "a refused delete prints nothing, so the run looks quiet"
-    assert len(old_calls) == 12, "the sweep stopped at the first refusal"
-    assert port.A_REFUSED_DELETE_READS_AS_DELETED
+    assert new.stdout == ""
+    for prefix in port.prefixes(BUCKET, CHANNEL):
+        assert FAILED_RM_WARNING % prefix in new.stderr
+    assert new.stderr.count(AWS_DENIED) == 12, "aws's own explanation must reach the log"
+    assert new.stderr.endswith(
+        "::error::delete-r2-channel: channel 'pr-fixture' was NOT fully deleted from R2: "
+        "12 of 12 prefixes failed\n"
+    )
     _assert_agree(old, new, "all-refused", old_calls, new_calls)
+    assert new_calls == old_calls
 
 
-def test_one_refused_delete_does_not_stop_the_sweep(tmp_path: pathlib.Path) -> None:
-    """`|| true` per call, not per run: the remaining eleven formats are still cleaned up. Driven separately from the all-refused case because a port using a single try/except around the loop would pass that one and fail this."""
+def test_delta_one_refused_delete_does_not_stop_the_sweep_but_fails_the_run(
+    tmp_path: pathlib.Path,
+) -> None:
+    """`|| true` per call, not per run, is kept: the remaining eleven prefixes are still cleaned up. What changes (the delta above) is the verdict: one refusal now fails the run and is named. Driven separately from the all-refused case because a port using a single try/except around the loop would pass that one and fail this."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], FAKE_FAIL_ON_CALL="3")
-    assert old.returncode == 0
-    assert len(old_calls) == 12
-    assert old.stdout == "delete: s3://redacted/object\n" * 11
+    assert len(new_calls) == 12
+    assert new.stdout == "delete: s3://redacted/object\n" * 11
+    assert new.returncode == 1
+    third = port.prefixes(BUCKET, CHANNEL)[2]
+    assert FAILED_RM_WARNING % third in new.stderr
+    assert new.stderr.count("::warning::") == 1
+    assert new.stderr.endswith(
+        "::error::delete-r2-channel: channel 'pr-fixture' was NOT fully deleted from R2: "
+        "1 of 12 prefixes failed\n"
+    )
     _assert_agree(old, new, "one-refused", old_calls, new_calls)
+    assert new_calls == old_calls
+
+
+def test_a_channel_that_was_never_created_is_not_a_failure(tmp_path: pathlib.Path) -> None:
+    """The case `|| true` was written for: `aws s3 rm --recursive` over an absent prefix exits 0 and prints nothing. Twelve quiet successes end in the success line and exit 0 on both sides."""
+    old, new, old_calls, new_calls = run_both(tmp_path, [], FAKE_AWS_QUIET="1")
+    assert new.returncode == 0
+    assert new.stdout == ""
+    assert new.stderr.endswith("Channel 'pr-fixture' (+ promoted) deleted from R2\n")
+    _assert_agree(old, new, "never-created", old_calls, new_calls)
 
 
 def test_a_missing_aws_binary_is_refused_first(tmp_path: pathlib.Path) -> None:

@@ -53,7 +53,6 @@ pytestmark = pytest.mark.xdist_group("deploy-fixed-tmp")
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/deploy/simulate-promotion.sh"
 TWIN = ROOT / TWIN_REL
-PURGE = ROOT / ".ci" / "scripts" / "deploy" / "cf-purge-urls.sh"
 COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "simulate_promotion.py"
 BASH = shutil.which("bash") or "/bin/bash"
@@ -285,14 +284,13 @@ def _bin(root: pathlib.Path, *, drop: str = "") -> str:
 
 
 def fixture(tmp_path: pathlib.Path, bucket: dict[str, str] | None = None) -> pathlib.Path:
-    """A throwaway repository holding the twin, cf-purge-urls.sh and common.sh, plus one bucket copy per side."""
+    """A throwaway repository holding the twin and common.sh, plus one bucket copy per side."""
     root = tmp_path / "repo"
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
-    # The twin only while a regolden records from it; the purge script and its library stay, because the PORT still runs cf-purge-urls.sh.
+    # The twin only while a regolden records from it; common.sh stays, because the twin sources it.
     if diff.regolden_mode(TWIN_REL) == "bash":
         shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
-    shutil.copy2(PURGE, root / ".ci" / "scripts" / "deploy" / PURGE.name)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
@@ -921,10 +919,11 @@ def test_strip_prefix_and_read_lines_follow_bash_rather_than_python() -> None:
     assert port.read_lines("") == []
 
 
-def test_the_purge_script_is_still_the_bash_one_and_still_exists() -> None:
-    assert port.PURGE_SCRIPT_RELATIVE == ".ci/scripts/deploy/cf-purge-urls.sh"
-    assert PURGE.is_file()
-    assert port.purge_argv("z")[-2:] == ["--zone", "z"]
+def test_the_purge_is_the_in_process_cf_purge_urls_port() -> None:
+    """The purge script is retired: the module calls `cf_purge_urls.purge` and keeps no script path."""
+    assert port.cf_purge_urls.__name__ == "rediacc_ci.deploy.cf_purge_urls"
+    assert not hasattr(port, "PURGE_SCRIPT_RELATIVE")
+    assert not hasattr(port, "purge_argv")
 
 
 def test_normalise_ignores_where_a_parallel_retry_sleep_lands() -> None:

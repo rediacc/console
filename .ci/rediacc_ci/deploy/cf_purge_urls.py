@@ -220,18 +220,27 @@ def batches(urls: list[str], size: int = BATCH_SIZE) -> list[list[str]]:
     return [urls[i : i + size] for i in range(0, len(urls), size)]
 
 
+def _missing_tool(name: str) -> BashExitError:
+    """A tool that is not on PATH: bash ends the run with status 127 and `<tool>: command not found`; the process spawn raises `FileNotFoundError` instead, and a traceback would be the only explanation a caller running this in process gets."""
+    print("%s: %s: command not found" % (SELF, name), file=sys.stderr)
+    return BashExitError(127)
+
+
 def _jq(args: list[str], stdin_text: str) -> tuple[int, str]:
     """One `jq` run with its stderr INHERITED, as every twin pipeline leaves it.
 
     jq's diagnostics are the only explanation a workflow log gets when a body is not JSON, so they are not captured here either.
     """
-    proc = subprocess.run(
-        ["jq", *args],
-        input=stdin_text,
-        stdout=subprocess.PIPE,
-        text=True,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            ["jq", *args],
+            input=stdin_text,
+            stdout=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError as exc:
+        raise _missing_tool("jq") from exc
     return proc.returncode, proc.stdout
 
 
@@ -251,7 +260,10 @@ def payload_for(batch: list[str]) -> str:
 
 def _curl(argv: list[str]) -> str:
     """`RESPONSE=$(curl ...)`: stdout captured, stderr inherited, `set -e` armed."""
-    proc = subprocess.run(argv, stdout=subprocess.PIPE, text=True, check=False)
+    try:
+        proc = subprocess.run(argv, stdout=subprocess.PIPE, text=True, check=False)
+    except FileNotFoundError as exc:
+        raise _missing_tool(argv[0]) from exc
     if proc.returncode != 0:
         # THE FIRST HALF OF THE DEFECT NAMED IN THE DOCSTRING. The header promises exit 0; this is curl's status ending the run instead.
         raise BashExitError(proc.returncode)
@@ -278,6 +290,23 @@ def main(argv: list[str]) -> int:
         piped = True
     if piped:
         urls = urls + stdin_urls(sys.stdin.read())
+
+    return _purge(zone, urls)
+
+
+def purge(zone: str, payload: str) -> int:
+    """The purge as an in-process call: `printf '%s\\n' <urls> | cf-purge-urls.sh --zone <zone>` without a child process.
+
+    `payload` is the text a caller would have piped (one URL per line), read with the same rules as the script's stdin: an empty line is skipped and a final line with no newline is dropped. The return value is the exit status the script would have ended with, and the output goes to this process's own stdout and stderr, so a caller that used to inherit the child's streams sees the same bytes in the same place.
+    """
+    return _purge(zone, stdin_urls(payload))
+
+
+def _purge(zone: str, urls: list[str]) -> int:
+    """The body shared by `main` and `purge`: zone check, credentials, then the batched requests."""
+    if not zone:
+        print("::error::%s: --zone <ZONE_ID> is required" % SELF, file=sys.stderr)
+        return 1
 
     total = len(urls)
     if total == 0:
