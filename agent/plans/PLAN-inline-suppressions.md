@@ -128,21 +128,67 @@ allowed-unused-imports = ["_cipath", "_hookpath", "_stoppath"]
   # BLOCKER: a hook that raises bricks the agent's turn, so every hook in this tree fails open on an unexpected exception and reports it; a narrowed except would turn an unknown failure into a crash
   "BLE001",
 ]
-".claude/rediacc_hooks/{commit_policy,dispatch,plan_gate,hookio}.py" = [...same two, same reasons...]
-".claude/rediacc_hooks/guards/{block,warn,require}_*.py" = [...same two...]
+".claude/rediacc_hooks/commit_policy.py" = [
+  # BLOCKER: the Stop-hook modules import each other lazily because their import graph is cyclic (wl_liveness <-> wl_roster, wl_checks <-> its callers) and every hook invocation pays for what it imports at top level; P0 records the -X importtime cost of worklist.py beside this entry
+  "PLC0415",
+  # BLOCKER: a hook that raises bricks the agent's turn, so every hook in this tree fails open on an unexpected exception and reports it; a narrowed except would turn an unknown failure into a crash
+  "BLE001",
+]
+".claude/rediacc_hooks/dispatch.py" = [
+  # BLOCKER: the Stop-hook modules import each other lazily because their import graph is cyclic (wl_liveness <-> wl_roster, wl_checks <-> its callers) and every hook invocation pays for what it imports at top level; P0 records the -X importtime cost of worklist.py beside this entry
+  "PLC0415",
+  # BLOCKER: a hook that raises bricks the agent's turn, so every hook in this tree fails open on an unexpected exception and reports it; a narrowed except would turn an unknown failure into a crash
+  "BLE001",
+]
+".claude/rediacc_hooks/plan_gate.py" = [
+  # BLOCKER: the Stop-hook modules import each other lazily because their import graph is cyclic (wl_liveness <-> wl_roster, wl_checks <-> its callers) and every hook invocation pays for what it imports at top level; P0 records the -X importtime cost of worklist.py beside this entry
+  "PLC0415",
+  # BLOCKER: a hook that raises bricks the agent's turn, so every hook in this tree fails open on an unexpected exception and reports it; a narrowed except would turn an unknown failure into a crash
+  "BLE001",
+]
+".claude/rediacc_hooks/hookio.py" = [
+  # BLOCKER: the Stop-hook modules import each other lazily because their import graph is cyclic (wl_liveness <-> wl_roster, wl_checks <-> its callers) and every hook invocation pays for what it imports at top level; P0 records the -X importtime cost of worklist.py beside this entry
+  "PLC0415",
+  # BLOCKER: a hook that raises bricks the agent's turn, so every hook in this tree fails open on an unexpected exception and reports it; a narrowed except would turn an unknown failure into a crash
+  "BLE001",
+]
+".claude/rediacc_hooks/guards/block_*.py" = [
+  # BLOCKER: the Stop-hook modules import each other lazily because their import graph is cyclic (wl_liveness <-> wl_roster, wl_checks <-> its callers) and every hook invocation pays for what it imports at top level; P0 records the -X importtime cost of worklist.py beside this entry
+  "PLC0415",
+  # BLOCKER: a hook that raises bricks the agent's turn, so every hook in this tree fails open on an unexpected exception and reports it; a narrowed except would turn an unknown failure into a crash
+  "BLE001",
+]
+".claude/rediacc_hooks/guards/warn_*.py" = [
+  # BLOCKER: the Stop-hook modules import each other lazily because their import graph is cyclic (wl_liveness <-> wl_roster, wl_checks <-> its callers) and every hook invocation pays for what it imports at top level; P0 records the -X importtime cost of worklist.py beside this entry
+  "PLC0415",
+  # BLOCKER: a hook that raises bricks the agent's turn, so every hook in this tree fails open on an unexpected exception and reports it; a narrowed except would turn an unknown failure into a crash
+  "BLE001",
+]
+".claude/rediacc_hooks/guards/require_*.py" = [
+  # BLOCKER: the Stop-hook modules import each other lazily because their import graph is cyclic (wl_liveness <-> wl_roster, wl_checks <-> its callers) and every hook invocation pays for what it imports at top level; P0 records the -X importtime cost of worklist.py beside this entry
+  "PLC0415",
+  # BLOCKER: a hook that raises bricks the agent's turn, so every hook in this tree fails open on an unexpected exception and reports it; a narrowed except would turn an unknown failure into a crash
+  "BLE001",
+]
 "**/rediacc_hooks/guards/test-*.py" = ["N999",
   # BLOCKER: a guard harness execs the guard's own literal source to prove the deployed text, not a copy, behaves as claimed
   "S102"]
 "**/tests/**/test_*.py" = ["S101", "S311",
   # BLOCKER: test fixtures carry fake credentials that the code under test must handle; no real secret can reach a pytest tree
   "S105", "S106", "S102"]
-".ci/rediacc_ci/ci/{publish_ci_verdict,github_status}.py" = [
+".ci/rediacc_ci/ci/publish_ci_verdict.py" = [
   # BLOCKER: a verdict or status publisher must post `unknown` rather than crash, because a crash loses the verdict the run produced
   "BLE001"]
-".ci/scripts/ci/ci-trace.py" = ["BLE001"]  # same group
-".ci/rediacc_ci/review/{pr_labels,review_table}.py" = ["BLE001"]  # BLOCKER: advisory output never fails CI
-".ci/rediacc_ci/security/{workflow_gates,ci_workflow_invariants}.py" = ["BLE001"]  # BLOCKER: a heredoc's traceback is exit 1; BaseException is caught to translate it
-".ci/rediacc_ci/testrun/{install_methods,linux_packages}.py" = ["BLE001"]  # BLOCKER: a test that raises is a failed test, not an aborted run
+".ci/rediacc_ci/ci/github_status.py" = [
+  # BLOCKER: a verdict or status publisher must post `unknown` rather than crash, because a crash loses the verdict the run produced
+  "BLE001"]
+".ci/scripts/ci/ci-trace.py" = ["BLE001"]  # BLOCKER: a verdict or status publisher must post `unknown` rather than crash, because a crash loses the verdict the run produced
+".ci/rediacc_ci/review/pr_labels.py" = ["BLE001"]  # BLOCKER: advisory output never fails CI
+".ci/rediacc_ci/review/review_table.py" = ["BLE001"]  # BLOCKER: advisory output never fails CI
+".ci/rediacc_ci/security/workflow_gates.py" = ["BLE001"]  # BLOCKER: a heredoc's traceback is exit 1; BaseException is caught to translate it
+".ci/rediacc_ci/security/ci_workflow_invariants.py" = ["BLE001"]  # BLOCKER: a heredoc's traceback is exit 1; BaseException is caught to translate it
+".ci/rediacc_ci/testrun/install_methods.py" = ["BLE001"]  # BLOCKER: a test that raises is a failed test, not an aborted run
+".ci/rediacc_ci/testrun/linux_packages.py" = ["BLE001"]  # BLOCKER: a test that raises is a failed test, not an aborted run
 ".ci/rediacc_ci/drills/lib.py" = ["BLE001"]  # BLOCKER: teardown must finish
 "conftest.py" = ["BLE001"]  # BLOCKER: an audit hook that raises aborts the audited operation
 

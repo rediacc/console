@@ -40,7 +40,7 @@ plyr 3.8.5 (2026-10-06) marks the Plyr class `@deprecated` ("security updates on
 - **Kept as is:** snapshot and restore (:204-262, :418-435).
 - **Removed:** `public/assets/plyr.svg`.
 - **Control labels:** `I18nProvider` with `video.player.*` keys in all 13 locales. Today every label is English in all of them.
-- **Loading:** the placeholder plus `import()` stays, as does `?url` runtime CSS (packages/www/src/scripts/tutorial-video-styles.ts:32,56). The deferred chunk must stay ≤ 150,000 B (scripts/gates/check-client-bundle-budget.ts:78; it is 122,110 B today).
+- **Loading:** the placeholder plus `import()` stays, as does `?url` runtime CSS (packages/www/src/scripts/tutorial-video-styles.ts:32,56). The deferred chunk was first set to stay ≤ 150,000 B (it was 122,110 B at the time); the 300 KB ceiling ruling in section 5 supersedes that figure, and the V1 core box keeps its original wording for that reason.
 
 ## 3. Gates that change
 
@@ -66,7 +66,7 @@ Disjoint file sets; W1 publishes the selector and i18n-key contract first.
 ## 5. Spike record and the size ruling (2026-10-08)
 
 - **Spike.** The language picker lives in the toolbar only: the Video.js 10 skin has no settings pane to extend, and ejecting the skin would mean owning about 2,786 lines plus a Tailwind 4.3 build. The skin stays un-ejected and is themed through its custom properties. The selector and i18n-key contract is recorded in the header of `packages/www/src/components/TutorialVideoPlayer.tsx`.
-- **Size ruling.** The deferred player chunk measures 272,103 B raw (277,296 B as the bundle gate counts it), against the 150,000 B this plan first set. The operator ruled on 2026-10-08 to raise the ceiling to 300 KB (`DEFERRED_CEILING` 300,000 in `scripts/gates/check-client-bundle-budget.ts`, e711b890a). The cost is paid only on the first press: docs, solution and home pages load 424 B of player code before it (e0d86ac1d).
+- **Size ruling.** The deferred player chunk measures 272,103 B raw (277,296 B as the bundle gate counts it) on the clone build of e0d86ac1d; the first build at e711b890a measured 272,097 B player plus 5,193 B pack (277,290 B), and the 6 B difference is the later rebuild. Both sit against the 150,000 B this plan first set. The operator ruled on 2026-10-08 to raise the ceiling to 300 KB (`DEFERRED_CEILING` 300,000 in `scripts/gates/check-client-bundle-budget.ts`, e711b890a). The browser-probe harness was a throwaway script in the session scratchpad and is not in the repo; the probe box rests on the recorded results alone, and the commit body of e0d86ac1d lists the build-side gate runs. The cost is paid only on the first press: docs, solution and home pages load 424 B of player code before it (e0d86ac1d).
 - **Measured portrait rect.** Both the Plyr and the Video.js builds give 351x624 at 390x844, the same 9:16 shape as the "about 327x581" estimated above.
 
 ## Boxes
