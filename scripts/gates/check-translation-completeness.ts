@@ -31,6 +31,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { truncatedLines } from '../lib/findings-report.js';
+import { requireSubmodule, submodulePath } from '../lib/submodule-presence.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -909,15 +910,19 @@ function main(): void {
   // was moved, renamed or deleted dropped out of the check silently while the
   // gate still reported "All translations are complete".
   //
-  // `optionalRoot` marks a set that lives in a private submodule: when the
-  // submodule is not checked out at all, the whole set is legitimately absent.
-  // A tree missing *inside* a checked-out submodule still fails.
+  // `submoduleMarker` marks a set that lives in a private submodule: the
+  // submodule's `.git` entry, which a checkout creates and an uninitialised
+  // mount point lacks. When it is absent the set is skipped LOCALLY and is a
+  // hard failure in CI (scripts/lib/submodule-presence.ts), because a CI
+  // checkout that lost the submodule would otherwise report these sets complete
+  // having read none of them. A tree missing *inside* a checked-out submodule
+  // still fails.
   const LOCALE_SETS: {
     name: string;
     label: string;
     dir: string;
     flatFiles?: boolean;
-    optionalRoot?: string;
+    submoduleMarker?: string;
   }[] = [
     { name: 'cli', label: 'CLI', dir: path.join(__dirname, '../../packages/cli/src/i18n/locales') },
     {
@@ -946,24 +951,26 @@ function main(): void {
     {
       name: 'account-web',
       label: 'account web',
-      dir: path.join(__dirname, '../../private/account/web/src/i18n/locales'),
-      optionalRoot: path.join(__dirname, '../../private/account'),
+      dir: submodulePath('private/account/web/src/i18n/locales'),
+      submoduleMarker: submodulePath('private/account/.git'),
     },
     {
       name: 'account-emails',
       label: 'account email',
-      dir: path.join(__dirname, '../../private/account/src/i18n/locales'),
-      optionalRoot: path.join(__dirname, '../../private/account'),
+      dir: submodulePath('private/account/src/i18n/locales'),
+      submoduleMarker: submodulePath('private/account/.git'),
     },
   ];
 
   for (const set of LOCALE_SETS) {
+    if (
+      set.submoduleMarker &&
+      !requireSubmodule(`${set.label} translations`, [set.submoduleMarker])
+    ) {
+      console.log('');
+      continue;
+    }
     if (!fs.existsSync(set.dir)) {
-      const rootMissing = set.optionalRoot && !fs.existsSync(set.optionalRoot);
-      if (rootMissing) {
-        console.log(`Skipping ${set.label} translations (submodule not checked out)\n`);
-        continue;
-      }
       allErrors.push(
         `[${set.name}] Configured locale directory does not exist: ${set.dir} - ` +
           `the tree was moved, renamed or deleted; update LOCALE_SETS in ` +

@@ -42,6 +42,7 @@ import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { declaredSubmoduleMarkers, requireSubmodule } from '../lib/submodule-presence.js';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 
@@ -151,6 +152,13 @@ let CONTROL_ARMS = 0;
   }
 }
 
+// The scan reaches into every submodule through --recurse-submodules, which
+// lists NOTHING for one that is not checked out: the scope shrinks without a
+// word. So every declared submodule must be present. Locally a missing one is
+// named and the rest is still scanned; in CI it is a refusal
+// (scripts/lib/submodule-presence.ts).
+requireSubmodule('AWS credential bridge scan', declaredSubmoduleMarkers());
+
 const files = execFileSync('git', ['ls-files', '--recurse-submodules', '-z', '*.sh'], {
   cwd: ROOT,
   encoding: 'utf8',
@@ -171,7 +179,7 @@ for (const rel of files) {
   try {
     text = readFileSync(join(ROOT, rel), 'utf8');
   } catch {
-    continue; // a submodule that is not checked out
+    continue; // listed but unreadable: deleted in the working tree
   }
   const verdict = classify(text);
   if (verdict === 'not-a-caller') continue;

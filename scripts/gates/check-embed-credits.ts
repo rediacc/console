@@ -30,8 +30,9 @@
  *
  * Exit codes:
  *   0 - the Dockerfile agrees with the lockfile and the artifacts are current,
- *       or the renet submodule is not checked out (nothing to attribute)
- *   1 - a drifted pin or a stale generated artifact
+ *       or the renet submodule is not checked out OUTSIDE CI
+ *   1 - a drifted pin, a stale generated artifact, or the lockfile or
+ *       Dockerfile absent under CI (scripts/lib/submodule-presence.ts)
  *
  * ---- gate ----
  * step: Check embed credits consistency
@@ -46,18 +47,16 @@ import { fileURLToPath } from 'node:url';
 import { generatedArtifacts, LOCKFILE, type Lockfile } from '../gen/generate-embed-credits.js';
 import { parseDockerfileVersions } from '../lib/dockerfile-versions.js';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { requireSubmodule, submodulePath } from '../lib/submodule-presence.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
 
 const DOCKERFILE =
-  process.env.EMBED_CREDITS_DOCKERFILE ?? path.join(CONSOLE_ROOT, 'private/renet/Dockerfile');
+  process.env.EMBED_CREDITS_DOCKERFILE ?? submodulePath('private/renet/Dockerfile');
 
 function main(): void {
-  if (!fs.existsSync(LOCKFILE) || !fs.existsSync(DOCKERFILE)) {
-    console.log(`${YELLOW}⊘ renet submodule not checked out — nothing to attribute${NC}`);
-    return;
-  }
+  if (!requireSubmodule('embed credits', [LOCKFILE, DOCKERFILE])) return;
 
   const lock = JSON.parse(fs.readFileSync(LOCKFILE, 'utf-8')) as Lockfile;
   const errors: string[] = [];

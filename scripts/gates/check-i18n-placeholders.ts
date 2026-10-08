@@ -39,6 +39,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { requireSubmodule, submodulePath } from '../lib/submodule-presence.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -63,6 +64,8 @@ interface LocaleSet {
   name: string;
   dir: string;
   layout: 'flat' | 'dir';
+  /** The `.git` entry of the private submodule the set lives in; absent for in-tree sets. */
+  submoduleMarker?: string;
 }
 
 const LOCALE_SETS: LocaleSet[] = [
@@ -70,8 +73,9 @@ const LOCALE_SETS: LocaleSet[] = [
   { name: 'www', dir: path.join(ROOT, 'packages/www/src/i18n/translations'), layout: 'flat' },
   {
     name: 'account-web',
-    dir: path.join(ROOT, 'private/account/web/src/i18n/locales'),
+    dir: submodulePath('private/account/web/src/i18n/locales'),
     layout: 'dir',
+    submoduleMarker: submodulePath('private/account/.git'),
   },
 ];
 
@@ -135,14 +139,23 @@ interface Violation {
 
 const violations: Violation[] = [];
 let scannedLocales = 0;
+let scannedSets = 0;
+const missingSets: string[] = [];
 
 for (const set of LOCALE_SETS) {
-  if (!fs.existsSync(set.dir)) {
-    // A private submodule may not be checked out; skip rather than fail, the
-    // same way the rest of the quality suite treats optional submodules.
-    console.log(`  (skipping ${set.name}: ${path.relative(ROOT, set.dir)} not present)`);
+  // A private submodule that is not checked out skips LOCALLY and is a hard failure in CI (scripts/lib/submodule-presence.ts): a CI checkout that lost it would otherwise report parity for a set it never read.
+  if (
+    set.submoduleMarker &&
+    !requireSubmodule(`${set.name} placeholder parity`, [set.submoduleMarker])
+  ) {
     continue;
   }
+  if (!fs.existsSync(set.dir)) {
+    // An in-tree set, or a set inside a checked-out submodule, that is missing was moved or deleted. Skipping it would report parity for a tree nobody read.
+    missingSets.push(`[${set.name}] ${path.relative(ROOT, set.dir)} does not exist`);
+    continue;
+  }
+  scannedSets++;
   const english = load(set, SOURCE);
   for (const locale of localesOf(set)) {
     scannedLocales++;
@@ -162,6 +175,21 @@ for (const set of LOCALE_SETS) {
       }
     }
   }
+}
+
+if (missingSets.length > 0) {
+  console.error('\x1b[31m✗ Configured locale set(s) missing\x1b[0m\n');
+  for (const line of missingSets) console.error(`  ${line}`);
+  console.error(
+    '\n  The tree was moved, renamed or deleted; update LOCALE_SETS in ' +
+      'scripts/gates/check-i18n-placeholders.ts to match it.\n'
+  );
+  process.exit(1);
+}
+
+if (scannedLocales === 0) {
+  console.error('\x1b[31m✗ no locale file was scanned; this gate is not seeing the tree.\x1b[0m');
+  process.exit(1);
 }
 
 if (violations.length > 0) {
@@ -188,5 +216,5 @@ if (violations.length > 0) {
 
 console.log(
   `\x1b[32m✓\x1b[0m Placeholder parity holds ` +
-    `(${LOCALE_SETS.length} sets, ${scannedLocales} locale files scanned)`
+    `(${scannedSets} of ${LOCALE_SETS.length} sets, ${scannedLocales} locale files scanned)`
 );
