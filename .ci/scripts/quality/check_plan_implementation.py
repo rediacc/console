@@ -658,11 +658,13 @@ def _late_print_is_unconditional(source=None):
     return any(is_print(n) for n in main_fn.body)
 
 
-def late_rows_line(late_rows):
+def late_rows_line(late_rows, judged=True):
     """The advisory printed on EVERY run, red or green: how many boxes this branch closed before investigating them.
 
     Not a finding, because the late record is the honest repair and a red nobody can clear would only push the next session to skip it. Not silent either: a count of 0 is printed too, so a reader can tell "none" from "not looked at".
     """
+    if not judged:
+        return "  P-A2 late records: not judged (no base ledger on this run, so no closed box was read)"
     if not late_rows:
         return (
             "  P-A2 late records: 0 box(es) on this branch were closed before investigation "
@@ -1128,6 +1130,10 @@ def controls_fired(enforce, planfile, planrec=None):
     caught(
         "RETRO-d: an empty late list printed nothing countable",
         "0 box(es)" in late_rows_line([]),
+    )
+    caught(
+        "RETRO-d2: a run with no base ledger claimed 0 late boxes instead of saying nothing was judged",
+        "not judged" in late_rows_line([], False) and "0 box(es)" not in late_rows_line([], False),
     )
     caught(
         "RETRO-f: the late-records advisory print sits under a conditional in main(), so it is skipped when no base ledger is available",
@@ -1904,7 +1910,7 @@ def main(argv=None) -> int:
                 late_rows,
             )
         )
-    print(late_rows_line(late_rows))
+    print(late_rows_line(late_rows, base_plans is not None))
 
     # P-A1's scope, printed on red and green alike so a collapsed scope is visible rather than read as a drained corpus.
     if not scope_problem:

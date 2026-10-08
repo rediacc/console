@@ -80,6 +80,8 @@ CREDENTIAL_VARS = (
     "CLOUDFLARE_R2_ENDPOINT",
 )
 
+MIN_SHA_PREFIX = 7
+_SHA_PREFIX_RE = re.compile(r"^[0-9a-fA-F]{%d,40}$" % MIN_SHA_PREFIX)
 _VERSION_RE = re.compile(r"^v?([0-9]+\.[0-9]+\.[0-9]+)$")
 
 
@@ -630,6 +632,12 @@ def check_c(state: State, version: str, phase: str, release_sha: str) -> Result:
 
 def check_d(state: State, version: str, phase: str, release_sha: str) -> Result:
     """Phase pr: the predicted version has neither tag nor sentinel, and is newer than every release. Phase cd: its sentinel is sealed, and a tag, if one exists, is at `release_sha` when that is given."""
+    if phase == "cd" and release_sha and not _SHA_PREFIX_RE.match(release_sha):
+        raise UnreadableError(
+            "release-sha",
+            "%r is not a hex commit prefix of at least %d characters; a shorter stub matches "
+            "almost any tag sha" % (release_sha, MIN_SHA_PREFIX),
+        )
     sentinels, tags = _seen(state)
     remote = state.tags()
     name = tag(version)
@@ -783,6 +791,13 @@ def check_homebrew(root: pathlib.Path, version: str, checksums_dir: str, dry_run
         )
     lines: list[str] = []
     proc = dry_run(version)
+    output = proc.stderr + proc.stdout
+    if proc.returncode != 0 and "unknown revision" in output and "origin/main" in output:
+        # The tap's fetch is allowed to fail (`|| true`), so an unreachable GitHub only matters when the tap holds no origin/main at all: the checkout cannot be read, which is not formula drift.
+        raise UnreadableError(
+            "homebrew",
+            "the tap has no origin/main and the fetch did not supply one: %s" % _tail(output),
+        )
     if proc.returncode != 0:
         return Result(
             "homebrew",

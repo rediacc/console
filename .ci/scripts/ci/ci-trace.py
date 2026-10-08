@@ -30,6 +30,7 @@ import json
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -2054,8 +2055,13 @@ def _selftest():
         raise OSError("boom")
 
     # mock.patch.object, not setattr: the swap is typed, restores itself on every exit path, and needs no inline suppression (operator 2026-10-08 banned those).
+    # The refresh log lives under tempfile.gettempdir(); a scratch dir keeps the selftest from opening (and, past 1 MB, truncating) the operator's real log.
+    scratch = tempfile.mkdtemp(prefix="ci-trace-selftest-")
     try:
-        with mock.patch.object(subprocess, "Popen", _FakePopen):
+        with (
+            mock.patch.object(tempfile, "gettempdir", return_value=scratch),
+            mock.patch.object(subprocess, "Popen", _FakePopen),
+        ):
             _fold_into_gate_ledger("/tmp/ci-trace-root")
         argv_ok = bool(calls) and calls[0][0][1:] == ["-m", "rediacc_ci.ci.gate_model", "refresh"]
         kw = calls[0][1] if calls else {}
@@ -2072,6 +2078,7 @@ def _selftest():
         raised = False
         try:
             with (
+                mock.patch.object(tempfile, "gettempdir", return_value=scratch),
                 mock.patch.object(subprocess, "Popen", _raising_popen),
                 contextlib.redirect_stderr(err),
             ):
@@ -2083,9 +2090,14 @@ def _selftest():
             not raised and "the gate ledger fold did not start" in err.getvalue(),
             err.getvalue(),
         )
+        check(
+            "the selftest wrote its fold log under the scratch dir, not the real temp dir",
+            (pathlib.Path(scratch) / "rediacc-gate-model-refresh.log").is_file(),
+        )
     finally:
         os.environ.clear()
         os.environ.update(saved_env)
+        shutil.rmtree(scratch, ignore_errors=True)
 
     verdict_job = {"name": "CI Verdict", "conclusion": "failure"}
     real_failure_job = {"name": "Quality / Code", "conclusion": "failure"}

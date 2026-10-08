@@ -640,6 +640,13 @@ def _narrowed(site: str, label: str, step: dict) -> list[tuple[str, str]]:
     return [("cd-preflight-narrowed", "%s drops %s" % (label, ",".join(sorted(missing))))]
 
 
+# A positive `event_name == 'pull_request'` (either operand order), not preceded by `!` or `!(`. `!=` never matches because the operator must be `==`, and a text-only "contains pull_request" test would pass `github.event_name != 'pull_request'`, the main-only blind spot.
+_ADMITS_PR_RE = re.compile(
+    r"(?<!!)(?<!!\()(?:github\.event_name\s*==\s*['\"]pull_request['\"]"
+    r"|['\"]pull_request['\"]\s*==\s*github\.event_name)"
+)
+
+
 def analyse_preflight(
     ci_doc: object, cd_doc: object, hk_doc: object
 ) -> tuple[list[tuple[str, str]], list[str]]:
@@ -657,7 +664,7 @@ def analyse_preflight(
     ci_jobs: dict[str, typing.Any] = jobs if isinstance(jobs, dict) else {}
     for job, i, st, _phase in pr:
         cond = _text(ci_jobs[job].get("if")) + " " + _text(st.get("if"))
-        if "pull_request" not in cond:
+        if not _ADMITS_PR_RE.search(cond):
             out.append(("cd-preflight-not-on-pr", job))
         out += _narrowed("pr", _step_label(job, i, st), st)
         shape.append("ci.yml job %s runs it on pull_request" % job)

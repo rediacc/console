@@ -727,6 +727,46 @@ def test_fold_ci_deadline_hits_the_futures_timeout_branch(tmp_path: pathlib.Path
     assert any("UNCHECKED (deadline)" in m for m in prog), prog
 
 
+def test_fold_ci_leaves_no_joinable_worker_behind_a_deadline(tmp_path: pathlib.Path) -> None:
+    """A worker stuck in a gh call at the deadline must not keep the interpreter alive: non-daemon pool threads are joined at exit."""
+    gate = threading.Event()
+    before = set(threading.enumerate())
+    entered = threading.Event()
+    main_calls = [0]
+
+    def fetch(*_a: Any) -> list[dict[str, Any]]:
+        entered.set()
+        gate.wait(10)
+        return []
+
+    def clock() -> float:
+        if threading.current_thread() is not threading.main_thread():
+            return 0.0
+        main_calls[0] += 1
+        entered.wait(5)
+        return 0.0 if main_calls[0] == 1 else 1000.0
+
+    try:
+        L.fold_ci(
+            tmp_path,
+            paths.repo_root(),
+            repo="o/r",
+            logs=False,
+            fetch_runs=lambda *_a, **_k: _fold_runs(1),
+            fetch_jobs=fetch,
+            out=lambda _m: None,
+            deadline_s=50.0,
+            workers=1,
+            progress=lambda _m: None,
+            clock=clock,
+        )
+        stuck = [t for t in threading.enumerate() if t not in before and t.is_alive()]
+        assert stuck, "the blocked worker should still be running at this point"
+        assert all(t.daemon for t in stuck), [t.name for t in stuck if not t.daemon]
+    finally:
+        gate.set()
+
+
 def test_finding_keys_reads_the_runner_alphabet_only() -> None:
     lines = [
         "2026Z ::finding::pytest-fail:a.b::c#d#",

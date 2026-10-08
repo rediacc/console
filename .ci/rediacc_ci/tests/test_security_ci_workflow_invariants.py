@@ -1105,6 +1105,10 @@ def _push_only(ci: dict, _cd: dict, _hk: dict) -> None:
     ci["jobs"]["cd-preflight"]["if"] = "always() && github.event_name == 'push'"
 
 
+def _main_only_negated(ci: dict, _cd: dict, _hk: dict) -> None:
+    ci["jobs"]["cd-preflight"]["if"] = "always() && github.event_name != 'pull_request'"
+
+
 def _no_pr_job(ci: dict, _cd: dict, _hk: dict) -> None:
     del ci["jobs"]["cd-preflight"]
 
@@ -1155,6 +1159,7 @@ def _narrow_hk(_ci: dict, _cd: dict, hk: dict) -> None:
     ("mutate", "expected"),
     [
         (_push_only, ["cd-preflight-not-on-pr"]),
+        (_main_only_negated, ["cd-preflight-not-on-pr"]),
         (_no_pr_job, ["cd-preflight-no-pr-job"]),
         (_before_tag, ["cd-preflight-before-tag"]),
         (_other_job, ["cd-preflight-before-tag"]),
