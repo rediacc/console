@@ -15,10 +15,10 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2832,
- "files": 696,
+ "count": 2831,
+ "files": 695,
  "by_rule": {
-  "R1": 1546,
+  "R1": 1545,
   "R11": 149,
   "R14": 1,
   "R18": 13,
@@ -1919,11 +1919,6 @@
    "R7": [
     "121d1a754b598468",
     "c815b27fd457db42"
-   ]
-  },
-  ".claude/rediacc_hooks/guards/block_suppressions.py": {
-   "R1": [
-    "fe8ccf95257cb4dc"
    ]
   },
   ".claude/rediacc_hooks/guards/block_unverified_push.py": {
