@@ -814,7 +814,7 @@ truthy(
     bool(R.compact(ROOT, REL, "deadbeef", why="auto", park=True)[0]),
 )
 
-# --------------------------------------------------------------------------- 10f. A DROPPED BOX IS NAMED. plan_tasks discards a box whose normalised key is under 8 characters, so the line exists in the plan and in NEITHER list -- and _assert_boxes_preserved cannot see it, because it runs the same parser on both sides.
+# --------------------------------------------------------------------------- 10f. A DROPPED BOX IS NAMED. plan_tasks discards a box whose normalised key is empty (a checkbox is kept at any other length), so the line exists in the plan and in NEITHER list -- and _assert_boxes_preserved cannot see it, because it runs the same parser on both sides.
 # ---------------------------------------------------------------------------
 SHORT = "agent/PLAN-short.md"
 (ROOT / SHORT).write_text(PLAN + "- [x] **\n", encoding="utf-8")

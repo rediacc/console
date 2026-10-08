@@ -37,6 +37,11 @@ if importlib.util.find_spec("pytest") is None:
         raise SystemExit(
             subprocess.run([str(_VENV_PY), str(_HERE), *sys.argv[1:]], check=False).returncode
         )
+    if os.access(_VENV_PY, os.X_OK):
+        raise SystemExit(
+            "regolden: pytest is not importable inside %s itself (the venv exists but is incomplete).\n  fix: bash .ci/bootstrap.sh"
+            % _VENV_PY
+        )
     raise SystemExit(
         "regolden: pytest is not importable and %s is missing.\n  fix: bash .ci/bootstrap.sh"
         % _VENV_PY

@@ -186,6 +186,21 @@ def test_the_stop_hook_adds_no_block_to_a_queue_without_one(hook):
     assert PQ.progress_text((hook.proj / PQ.QUEUE_REL).read_text(encoding="utf-8")) is None
 
 
+def test_insertion_keeps_extra_blank_lines_under_the_heading(root):
+    """Finding 1864fb61.1: the insertion once stripped EVERY newline after `## Promoted`, so a list set off by two blank lines lost one on the first --update."""
+    hand = HAND.replace("## Promoted\n\n1.", "## Promoted\n\n\n\n1.")
+    assert hand != HAND
+    once = PQ.with_fresh_progress(root, hand)
+    assert PQ.without_progress(once) == hand
+    assert PQ.with_fresh_progress(root, once) == once
+
+
+def test_a_short_checkbox_is_kept_by_plan_tasks():
+    """Finding 1864fb61.2: the fix is in `wl_planfid.plan_tasks`, which test_a_short_checkbox_is_still_a_box reaches only through `plan_boxes`: a checkbox of 7 characters is a task, an empty one is not."""
+    tasks = PFID.plan_tasks("# P\n\n## Notes\n\n- [ ] WC1: e2e.\n- [ ] **\n")
+    assert tasks == ["WC1: e2e."], tasks
+
+
 def test_a_short_checkbox_is_still_a_box():
     """A checkbox counts at any length: "- [ ] WC1: e2e." normalises to 7 characters, under the plain-bullet floor, and was dropped, so PLAN-inline-suppressions read 0/10 instead of 0/11."""
     text = "# P\n\n## Tasks\n\n- [ ] WA1: the long first box.\n- [ ] WC1: e2e.\n- [x] W2: ok.\n"
