@@ -110,6 +110,7 @@ if TYPE_CHECKING:
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import gh_retry, ghx
+from rediacc_ci.testrun import e2e as e2e_run
 from rediacc_ci.well_known import GH_REPO
 
 DEFAULT_REPO = GH_REPO
@@ -722,7 +723,7 @@ def _walk_playwright_suite(
 def parse_playwright_unit_ms(
     text: str, lane: str, *, bucket_titles: Mapping[str, str] | None = None
 ) -> dict[str, float]:
-    """Playwright `--reporter=json`: per-spec-FILE total duration (ms), summed across every test and attempt under that file -- the file IS the unit `e2eWorkersUnits`/`accountE2eUnits` enumerate, UNLESS `bucket_titles` (`{describe title: bucket id}`, from `_e2e_shard_bucket_titles`) names the test's own immediate describe block, in which case the file splits into `<file>#<bucket>` sub-units matching the shard manifest's own `#partN` ids (T2.12) -- the same describe-name split `run-e2e.sh`'s `E2E_SHARD_GREP_BUCKETS` uses to build that leg's `--grep`, read here rather than duplicated, so a bucket rename in one place cannot silently drift from the other.
+    """Playwright `--reporter=json`: per-spec-FILE total duration (ms), summed across every test and attempt under that file -- the file IS the unit `e2eWorkersUnits`/`accountE2eUnits` enumerate, UNLESS `bucket_titles` (`{describe title: bucket id}`, from `_e2e_shard_bucket_titles`) names the test's own immediate describe block, in which case the file splits into `<file>#<bucket>` sub-units matching the shard manifest's own `#partN` ids (T2.12) -- the same describe-name split `rediacc_ci.testrun.e2e.SHARD_GREP_BUCKETS` uses to build that leg's `--grep`, read here rather than duplicated, so a bucket rename in one place cannot silently drift from the other.
 
     MEASURED live (run 36358238015, 13-postgres-fork-isolation.test.ts): the Playwright JSON nests one suite per top-level `test.describe` directly under the file-level suite, with each spec's own `results[].duration` beneath it, so the bucket lookup happens exactly one level below the file. A file whose describe titles match nothing in `bucket_titles` keeps its own whole-file id, unsplit.
     """
@@ -874,7 +875,7 @@ def parse_unit_duration_artifact(
 ) -> dict[str, float]:
     """One downloaded `unit-durations-<lane>-...` artifact zip to `{unit id: p90 candidate ms}`, by the format `LANE_ARTIFACT_FORMAT` declares for `lane`. `bucket_titles` (playwright only; see `parse_playwright_unit_ms`) is threaded straight through.
 
-    A sharded E2E leg's own `run-e2e.sh` invocation writes ONE `unit-durations*.json` member per Playwright process it starts (T1.6's own per-invocation-file shape), so a single artifact can legitimately carry several members with the format's suffix -- not just the one a prior version of this function picked with `next(...)`. EVERY matching member is read and its per-unit-id milliseconds SUMMED: a unit split across invocations (e.g. a retried spec re-run as its own process) sums back to the file's total duration, the same total a single, unsplit invocation would have reported directly. A single matching member is therefore unchanged: the sum of one dict is that dict."""
+    A sharded E2E leg's own runner invocation writes ONE `unit-durations*.json` member per Playwright process it starts (T1.6's own per-invocation-file shape), so a single artifact can legitimately carry several members with the format's suffix -- not just the one a prior version of this function picked with `next(...)`. EVERY matching member is read and its per-unit-id milliseconds SUMMED: a unit split across invocations (e.g. a retried spec re-run as its own process) sums back to the file's total duration, the same total a single, unsplit invocation would have reported directly. A single matching member is therefore unchanged: the sum of one dict is that dict."""
     fmt = LANE_ARTIFACT_FORMAT.get(lane)
     if fmt is None:
         raise ValueError("no unit-duration artifact format declared for lane %r" % lane)
@@ -1012,22 +1013,13 @@ def collect_unit_durations(
 
 # T3.1: the shard manifest's own "bucket greps" (a job display name for check 2's now-empty `job_p90_minutes`, and a describe-block split for the three `#partN` units this box's BLOCKER named as unsampled).
 
-_SHARD_BUCKET_ARRAY_RE = re.compile(r"declare -A E2E_SHARD_GREP_BUCKETS=\((.*?)\n\)", re.DOTALL)
-_SHARD_BUCKET_ENTRY_RE = re.compile(r'\["([^"]+)"\]="([^"]*)"')
 
+def _e2e_shard_bucket_titles() -> dict[str, str]:
+    """`{describe title: bucket id}`, read from `rediacc_ci.testrun.e2e.SHARD_GREP_BUCKETS` (T2.12) -- the SAME table the E2E runner uses to build a bucketed leg's `--grep`, so `parse_playwright_unit_ms` can bucket a downloaded artifact's per-test data the identical way the real leg that produced it was scoped, rather than a second, drifting copy of the describe titles living here.
 
-def _e2e_shard_bucket_titles(root: Path, workflow_script: str = "run-e2e.sh") -> dict[str, str]:
-    """`{describe title: bucket id}`, read from `.ci/scripts/test/run-e2e.sh`'s own `E2E_SHARD_GREP_BUCKETS` associative array (T2.12) -- the SAME table `run-e2e.sh` itself uses to build a bucketed leg's `--grep`, so `parse_playwright_unit_ms` can bucket a downloaded artifact's per-test data the identical way the real leg that produced it was scoped, rather than a second, drifting copy of the describe titles living here. Best-effort: a script this regex does not recognise yields an empty map (every spec falls back to whole-file grouping), never a crash -- this is a report."""
-    script_path = root / ".ci" / "scripts" / "test" / workflow_script
-    try:
-        text = script_path.read_text(encoding="utf-8")
-    except OSError:
-        return {}
-    array_m = _SHARD_BUCKET_ARRAY_RE.search(text)
-    if array_m is None:
-        return {}
+    It used to parse the bash `E2E_SHARD_GREP_BUCKETS` array out of the retired `run-e2e.sh`, and returned an empty map without a word once that file was gone (Rule T, PLAN-retire-bash-oracles B3). The table is code now, so it cannot be missing."""
     titles: dict[str, str] = {}
-    for bucket, pattern in _SHARD_BUCKET_ENTRY_RE.findall(array_m.group(1)):
+    for bucket, pattern in e2e_run.SHARD_GREP_BUCKETS.items():
         for title in pattern.split("|"):
             if title:
                 titles[title] = bucket
@@ -1543,7 +1535,7 @@ def compute_lane_durations(
         if s is not None:
             job_p90_minutes[name] = s["p90"]
 
-    bucket_titles = _e2e_shard_bucket_titles(tree_root)
+    bucket_titles = _e2e_shard_bucket_titles()
     run_ids = [run["id"] for run in pr_runs]
     unit_samples, missing_lanes = collect_unit_durations(
         repo,

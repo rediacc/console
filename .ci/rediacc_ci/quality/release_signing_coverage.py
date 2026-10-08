@@ -1,15 +1,15 @@
 """Every release package format is SIGNED, or is declared unsigned on purpose.
 
-Ported from `.ci/scripts/quality/check-release-signing-coverage.sh`, which W7 P5 batch C1 retired once `.ci/shadow/w7p2-signing-coverage.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-release-signing-coverage.sh`, which W7 P5 batch C1 retired once `.ci/shadow/w7p2-signing-coverage.observations.jsonl` asserted equivalence over five distinct trees. It read the bash builder `build-linux-pkg.sh` by `sed` and `awk`; that builder is retired too (PLAN-retire-bash-oracles B3), and the gate now reads its Python successor, `rediacc_ci.build.build_linux_pkg`, through `ast`: the same two questions, asked of the module that actually runs.
 
 WHY THE TWIN EXISTS, carried over from its own header because the incident IS the specification. On 2026-09-05 a deb shipped UNSIGNED and green: the signing
 setup was guarded by `[[ -n "${RELEASE_GPG_PRIVATE_KEY:-}" ]]`, the org secret
 behind it had been deleted, and an empty value is indistinguishable from "no signing wanted". That was fixed for deb and rpm. A class sweep the next day found the SAME shape one branch over in apk, which had shipped unsigned for the same reason and was fixed reactively too.
 
-Fixing formats one at a time as they are noticed is the actual defect. This gate asks the structural question instead: `build-linux-pkg.sh` accepts N formats, and EACH one must either refuse to ship unsigned when the caller demands signing, or appear in `UNSIGNED_ON_PURPOSE` below as a deliberate, reasoned exception. A fifth format added tomorrow fails here before it can ship
+Fixing formats one at a time as they are noticed is the actual defect. This gate asks the structural question instead: `build_linux_pkg.py` accepts N formats, and EACH one must either refuse to ship unsigned when the caller demands signing, or appear in `UNSIGNED_ON_PURPOSE` below as a deliberate, reasoned exception. A fifth format added tomorrow fails here before it can ship
 unsigned.
 
-WHAT IT CANNOT DO, unchanged by the port: it does not verify a real signature on a real artifact. That needs the release key, which is a secret and is deliberately not available to a quality job. It checks that the REFUSAL exists. `check:ci-release-key-canonical` covers the key's usability, and `test-linux-packages.sh` signs real packages in CI.
+WHAT IT CANNOT DO, unchanged by the port: it does not verify a real signature on a real artifact. That needs the release key, which is a secret and is deliberately not available to a quality job. It checks that the REFUSAL exists. `check:ci-release-key-canonical` covers the key's usability, and `rediacc_ci.testrun.linux_packages` signs real packages in CI.
 
 EVERY EXEMPTION STATES A TESTED CONSTRAINT, not a guess, because the first archlinux reason was a guess and it was WRONG: it said "no signature block in nfpm.yaml", which reads as an omission someone could fix by adding one. Adding one fails at config load. The two constraints are different in kind and the difference was measured, not reasoned:
 
@@ -42,20 +42,17 @@ THE PARSE IS THE GATE'S BLIND SPOT, AND IT IS PRESERVED. `formats_of` reads the 
 case and not this one. Carried unchanged, because widening it would change the verdict.
 """
 
+import ast
 import os
 import pathlib
-import re
 import subprocess
 import sys
 import tempfile
 
 from rediacc_ci.controls import Controls, plant
 
-# The POSIX space class, written out. `\s` on a Python str additionally matches U+00A0, U+2028 and friends, so a builder line indented with a non-breaking space would be seen by the port and not by sed or awk. See the same note in `rediacc_ci.quality.npmrc`, where it was written first.
-SPACE = r"[ \t\n\v\f\r]"
-
 # The builder, relative to the root. `$SIGNING_COVERAGE_BUILDER` overrides it, which is how the twin's own controls point it at a scratch copy.
-BUILDER_REL = ".ci/scripts/build/build-linux-pkg.sh"
+BUILDER_REL = ".ci/rediacc_ci/build/build_linux_pkg.py"
 
 # Formats that ship UNSIGNED on purpose, in bash's measured hash order. Each needs a reason, and the gate refuses an entry whose format IS guarded, so an exemption cannot outlive its cause.
 #
@@ -98,63 +95,111 @@ SUBJECT = "release signing coverage"
 # A reason shorter than this is not a reason. The twin's `-gt 30`.
 MIN_REASON_LEN = 30
 
-# The validation case arm: ` deb | rpm | apk | archlinux) ;;`. BRE `^[[:space:]]*\([a-z |]*\))[[:space:]]*;;[[:space:]]*$` with the class spelled out. Only lowercase letters, spaces and pipes are inside the group, which is what stops it matching an arm whose pattern contains a glob or a variable.
-_CASE_ONELINE = re.compile(r"^%s*([a-z |]*)\)%s*;;%s*$" % (SPACE, SPACE, SPACE))
+# The module-level tuple naming the formats the builder accepts, and the function whose if/elif/else chain holds one branch per format.
+FORMATS_NAME = "FORMATS"
+UNSIGNED_REPORTER = "_report_unsigned"
 
-# A multi-line case arm header: ` rpm | deb)` with nothing after it. The awk program requires a leading `[a-z]`, so `) ;;`-style continuations and the `*)` default arm are both excluded.
-_ARM_HEADER = re.compile(r"^%s*[a-z][a-z |]*\)%s*$" % (SPACE, SPACE))
+# The environment variable the refusal reads. Matched as an EXACT string constant, so prose that merely mentions it (a log message, a comment) does not count as a guard.
+GUARD_NAME = "RELEASE_SIGNING_REQUIRED"
 
-# The end of a case arm body.
-_ARM_END = re.compile(r"^%s*;;%s*$" % (SPACE, SPACE))
 
-# `sub(/\)[[:space:]]*$/, "", arm)` -- the trailing paren and any space after it.
-_ARM_TAIL = re.compile(r"\)%s*$" % SPACE)
+def _parse(text: str) -> ast.Module | None:
+    """The module's AST, or None when it does not parse: an unparseable builder verifies nothing, and the caller turns that into the VACUOUS refusal."""
+    try:
+        return ast.parse(text)
+    except (SyntaxError, ValueError):
+        return None
+
+
+def _strings(node: ast.expr) -> list[str] | None:
+    """The string constants of a tuple/list literal, or None when `node` is anything else (a constant that is not a string included)."""
+    if not isinstance(node, (ast.Tuple, ast.List)):
+        return None
+    out: list[str] = []
+    for element in node.elts:
+        if not (isinstance(element, ast.Constant) and isinstance(element.value, str)):
+            return None
+        out.append(element.value)
+    return out
 
 
 def formats_of(text: str) -> list[str]:
-    """The formats the builder ACCEPTS, read from its own validation case.
+    """The formats the builder ACCEPTS, read from its own module-level `FORMATS = (...)` tuple.
 
-    Read from the builder rather than duplicated here: a list that can drift is a list that will. The pipeline is four shell stages and is reproduced stage by stage, because each one has an edge a "sensible" rewrite loses:
-
-        sed -n 's/^\\s*\\([a-z |]*\\))\\s*;;\\s*$/\\1/p'  every matching line
-        head -1                                         the FIRST one only
-        tr -d ' '                                       delete SPACES, not tabs
-        tr '|' '\\n'                                     split on the pipe
-        grep -v '^$'                                    drop empties
-
-    `tr -d ' '` is the stage worth naming: it deletes the space character and nothing else, so a tab between two format names would survive into the format name itself and the gate would look for a format called `deb\\trpm`. That is the twin's behaviour and it is preserved rather than tidied.
+    Read from the builder rather than duplicated here: a list that can drift is a list that will. THE FIRST module-level assignment wins and later ones are never read (the bash twin took the first matching case line with `head -1`), so a second tuple further down cannot steal the parse. A builder that does not parse, has no such assignment, or whose value is not a tuple of string literals yields NO formats, which the floor turns into a refusal.
     """
-    for line in text.split("\n"):
-        match = _CASE_ONELINE.match(line)
-        if match is None:
-            continue
-        # head -1: the FIRST matching line wins and the rest are never read.
-        body = match.group(1).replace(" ", "")
-        return [part for part in body.split("|") if part != ""]
+    tree = _parse(text)
+    if tree is None:
+        return []
+    for node in tree.body:
+        if (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id == FORMATS_NAME
+        ):
+            return [part for part in (_strings(node.value) or []) if part != ""]
     return []
 
 
+def _covered(test: ast.expr) -> set[str]:
+    """The formats one `if`/`elif` condition selects: `fmt in ("rpm", "deb")` or `fmt == "apk"`. Anything else selects nothing (so its branch can never be read as covering a format by accident)."""
+    if not (isinstance(test, ast.Compare) and len(test.ops) == 1 and len(test.comparators) == 1):
+        return set()
+    left, op, right = test.left, test.ops[0], test.comparators[0]
+    if not (isinstance(left, ast.Name) and left.id == "fmt"):
+        return set()
+    if isinstance(op, ast.In):
+        return set(_strings(right) or [])
+    if isinstance(op, ast.Eq) and isinstance(right, ast.Constant) and isinstance(right.value, str):
+        return {right.value}
+    return set()
+
+
+def _guards(body: list[ast.stmt]) -> bool:
+    """Does this branch REFUSE on `RELEASE_SIGNING_REQUIRED`: a `raise` AND the variable's exact name as a string constant, both inside it.
+
+    Either alone is not a guard. The name alone is what a log line or a no-op read carries, and the 2026-09-05 incident's first plant renamed the variable on the `if` line while the message on the next line still carried it, which is why prose does not count; a `raise` alone refuses for some other reason."""
+    raises = False
+    names = False
+    for stmt in body:
+        for node in ast.walk(stmt):
+            if isinstance(node, ast.Raise):
+                raises = True
+            if isinstance(node, ast.Constant) and node.value == GUARD_NAME:
+                names = True
+    return raises and names
+
+
 def guarded_in(fmt: str, text: str) -> str:
-    """Does `fmt`'s OWN case arm contain the signing guard? "yes" or "no".
+    """Does `fmt`'s OWN branch of the builder's unsigned-reporting chain contain the signing guard? "yes" or "no".
 
     Returned as the twin's two strings rather than as a bool, because those strings are what the control compares and what a failure prints.
 
-    READING "IS RELEASE_SIGNING_REQUIRED ANYWHERE AFTER THE ARM" IS WHAT THE FIRST DRAFT DID, and it was wrong in BOTH directions: the guard sits INSIDE the arm, so the arm line is read before anything arms, and a later arm inherits an earlier arm's guard. The scan is scoped to the arm body, `<formats>)` through `;;`.
+    The chain is the `if`/`elif`/`else` inside `_report_unsigned`. A branch covers the formats its condition names; the final `else` covers every accepted format no earlier branch named. A later branch never inherits an earlier branch's guard (each branch is read alone), and a guard outside the chain belongs to nobody. A builder with no such function, or that does not parse, guards nothing.
     """
-    inarm = False
-    found = False
-    for line in text.split("\n"):
-        if _ARM_HEADER.match(line):
-            arm = _ARM_TAIL.sub("", line, count=1)
-            arm = re.sub(SPACE, "", arm)
-            inarm = fmt in arm.split("|")
-            continue
-        if _ARM_END.match(line):
-            inarm = False
-            continue
-        if inarm and "RELEASE_SIGNING_REQUIRED" in line:
-            found = True
-    return "yes" if found else "no"
+    tree = _parse(text)
+    if tree is None:
+        return "no"
+    accepted = formats_of(text)
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name == UNSIGNED_REPORTER:
+            chain = next((stmt for stmt in node.body if isinstance(stmt, ast.If)), None)
+            seen: set[str] = set()
+            while chain is not None:
+                covers = _covered(chain.test)
+                seen |= covers
+                if fmt in covers and _guards(chain.body):
+                    return "yes"
+                orelse = chain.orelse
+                # `else:` holding one `if` parses exactly like `elif`; it is an `elif` only when its condition names a format, and otherwise it is the else branch's own body.
+                if len(orelse) == 1 and isinstance(orelse[0], ast.If) and _covered(orelse[0].test):
+                    chain = orelse[0]
+                    continue
+                if orelse and fmt in accepted and fmt not in seen and _guards(orelse):
+                    return "yes"
+                break
+    return "no"
 
 
 class GateTally:
@@ -304,31 +349,31 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# A builder whose validation case lists the four real formats and whose deb/rpm arm carries the guard. The base every plant below mutates, and asserted CLEAN first: without that, each plant would "fire" against a fixture that was already failing and the suite would be green while testing nothing.
-_CLEAN_BUILDER = """#!/usr/bin/env bash
-case "$FORMAT" in
-    deb | rpm | apk | archlinux) ;;
-    *)
-        echo "unknown format" >&2
-        exit 1
-        ;;
-esac
+# A builder whose `FORMATS` tuple lists the four real formats and whose deb/rpm branch carries the guard. The base every plant below mutates, and asserted CLEAN first: without that, each plant would "fire" against a fixture that was already failing and the suite would be green while testing nothing.
+_CLEAN_BUILDER = """import os
 
-case "$FORMAT" in
-    rpm | deb)
-        if [[ "${RELEASE_SIGNING_REQUIRED:-0}" == "1" ]]; then
-            echo "refusing to ship an UNSIGNED $FORMAT" >&2
-            exit 1
-        fi
-        ;;
-    apk)
-        echo "APK_RSA_PRIVATE_KEY not set, skipping APK signing"
-        ;;
-    archlinux)
-        echo "nfpm cannot sign archlinux"
-        ;;
-esac
+FORMATS = ("deb", "rpm", "apk", "archlinux")
+
+
+def _report_unsigned(fmt):
+    if fmt in ("rpm", "deb"):
+        if os.environ.get("RELEASE_SIGNING_REQUIRED", "0") == "1":
+            raise SystemExit("refusing to ship an UNSIGNED " + fmt)
+        print("skipping signing")
+    elif fmt == "apk":
+        print("APK_RSA_PRIVATE_KEY not set, skipping APK signing")
+    else:
+        print("nfpm cannot sign archlinux")
 """
+
+
+def _chain(chain_body: str) -> str:
+    """A minimal builder whose `_report_unsigned` holds `chain_body` (already indented four spaces after its first line)."""
+    return (
+        'import os\n\nFORMATS = ("deb", "rpm", "apk")\n\n\ndef _report_unsigned(fmt):\n    '
+        + chain_body
+        + "\n"
+    )
 
 
 def selftest() -> int:
@@ -340,7 +385,7 @@ def selftest() -> int:
 
     with tempfile.TemporaryDirectory() as tmp:
         root = pathlib.Path(tmp)
-        builder = root / "build-linux-pkg.sh"
+        builder = root / "build_linux_pkg.py"
 
         def run(content: str | None) -> int:
             """Point the gate at a builder holding `content`, or at nothing."""
@@ -365,20 +410,22 @@ def selftest() -> int:
         ctl.check("VACUITY: an absent builder is refused", run(None), 1)
         ctl.check("VACUITY: an EMPTY builder is refused", run(""), 1)
         ctl.check(
-            "VACUITY: a builder with no validation case is refused",
-            run("#!/usr/bin/env bash\necho hi\n"),
+            "VACUITY: a builder with no FORMATS tuple is refused",
+            run("import os\nprint(os.name)\n"),
             1,
         )
         ctl.check(
             "VACUITY: three formats is below the floor of %d" % MIN_FORMATS,
-            run(plant(_CLEAN_BUILDER, "deb | rpm | apk | archlinux)", "deb | rpm | apk)")),
+            run(
+                plant(_CLEAN_BUILDER, '("deb", "rpm", "apk", "archlinux")', '("deb", "rpm", "apk")')
+            ),
             1,
         )
 
         # PLANT 1: a format that neither refuses nor is exempt. This is the 2026-09-05 shape itself, one format over.
         ctl.check(
             "PLANT: an unguarded, unexempt format is caught",
-            run(plant(_CLEAN_BUILDER, "rpm | deb)", "rpm)")),
+            run(plant(_CLEAN_BUILDER, 'fmt in ("rpm", "deb")', 'fmt == "rpm"')),
             1,
         )
         # PLANT 2: a fifth format added with no guard and no exemption.
@@ -387,8 +434,8 @@ def selftest() -> int:
             run(
                 plant(
                     _CLEAN_BUILDER,
-                    "deb | rpm | apk | archlinux)",
-                    "deb | rpm | apk | archlinux | snap)",
+                    '("deb", "rpm", "apk", "archlinux")',
+                    '("deb", "rpm", "apk", "archlinux", "snap")',
                 )
             ),
             1,
@@ -399,8 +446,9 @@ def selftest() -> int:
             run(
                 plant(
                     _CLEAN_BUILDER,
-                    '        echo "nfpm cannot sign archlinux"',
-                    '        if [[ "${RELEASE_SIGNING_REQUIRED:-0}" == "1" ]]; then exit 1; fi',
+                    '        print("nfpm cannot sign archlinux")',
+                    '        if os.environ.get("RELEASE_SIGNING_REQUIRED", "0") == "1":\n'
+                    '            raise SystemExit("unsigned archlinux")',
                 )
             ),
             1,
@@ -410,7 +458,9 @@ def selftest() -> int:
             "PLANT: an exemption naming no real format is caught",
             run(
                 plant(
-                    _CLEAN_BUILDER, "deb | rpm | apk | archlinux)", "deb | rpm | apk | rpmv4 | msi)"
+                    _CLEAN_BUILDER,
+                    '("deb", "rpm", "apk", "archlinux")',
+                    '("deb", "rpm", "apk", "rpmv4", "msi")',
                 )
             ),
             1,
@@ -418,13 +468,19 @@ def selftest() -> int:
 
         # MIRRORS. Each is a shape that must stay GREEN, and each is a direction a "tidier" rewrite of the parser would invert.
         ctl.check(
-            "MIRROR: extra spacing in the validation case still parses",
-            run(plant(_CLEAN_BUILDER, "deb | rpm | apk | archlinux)", "deb|rpm|apk|archlinux)")),
+            "MIRROR: a differently spaced FORMATS tuple still parses",
+            run(
+                plant(
+                    _CLEAN_BUILDER,
+                    '("deb", "rpm", "apk", "archlinux")',
+                    '("deb","rpm","apk","archlinux")',
+                )
+            ),
             0,
         )
         ctl.check(
-            "MIRROR: an unrelated later one-line arm does not steal the parse",
-            run(_CLEAN_BUILDER + '\ncase "$X" in\n    zip | tar) ;;\nesac\n'),
+            "MIRROR: an unrelated later tuple does not steal the parse",
+            run(_CLEAN_BUILDER + '\nOTHER = ("zip", "tar")\n'),
             0,
         )
 
@@ -437,16 +493,19 @@ def selftest() -> int:
         formats_of(_CLEAN_BUILDER),
         ["deb", "rpm", "apk", "archlinux"],
     )
-    ctl.check("formats_of: no case at all is EMPTY, not a guess", formats_of("echo hi\n"), [])
+    ctl.check("formats_of: no FORMATS at all is EMPTY, not a guess", formats_of("print(1)\n"), [])
     ctl.check(
-        "formats_of: head -1 -- the FIRST matching arm wins",
-        formats_of("    a | b) ;;\n    c | d) ;;\n"),
+        "formats_of: the FIRST assignment wins",
+        formats_of('FORMATS = ("a", "b")\nFORMATS = ("c", "d")\n'),
         ["a", "b"],
     )
     ctl.check(
-        "formats_of: an empty group yields no formats, not one empty name",
-        formats_of("    ) ;;\n"),
+        "formats_of: a non-literal value yields no formats, not a guess",
+        formats_of("FORMATS = tuple(NAMES)\n"),
         [],
+    )
+    ctl.check(
+        "formats_of: source that does not parse yields no formats", formats_of("FORMATS = (\n"), []
     )
     ctl.check(
         "guarded_in: the guard inside deb's own arm counts",
@@ -468,13 +527,19 @@ def selftest() -> int:
         "guarded_in: a LATER arm does not inherit an earlier arm's guard",
         guarded_in(
             "apk",
-            "    deb)\n        RELEASE_SIGNING_REQUIRED=1\n        ;;\n    apk)\n        :\n        ;;\n",
+            _chain(
+                'if fmt == "deb":\n        if os.environ.get("RELEASE_SIGNING_REQUIRED"):\n'
+                '            raise SystemExit(1)\n    elif fmt == "apk":\n        pass'
+            ),
         ),
         "no",
     )
     ctl.check(
-        "guarded_in: the guard AFTER the esac belongs to nobody",
-        guarded_in("apk", "    apk)\n        :\n        ;;\nesac\nRELEASE_SIGNING_REQUIRED=1\n"),
+        "guarded_in: a guard OUTSIDE the chain belongs to nobody",
+        guarded_in(
+            "apk",
+            _chain('if fmt == "apk":\n        pass') + 'GUARD = "RELEASE_SIGNING_REQUIRED"\n',
+        ),
         "no",
     )
 

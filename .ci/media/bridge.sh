@@ -120,7 +120,7 @@ _build_cli_sea_cached() {
         CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
             -tags "nolicense" -ldflags="-s -w -X main.Version=0.0.0-dev" \
             -o "$embed_renet" ./cmd/renet)
-    bash "$ROOT_DIR/.ci/scripts/build/build-cli-executables.sh" --platform linux --arch x64
+    PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.build.build_cli_executables --platform linux --arch x64
     [[ -f "$out" ]] || {
         log_error "SEA build did not produce $out"
         exit 1

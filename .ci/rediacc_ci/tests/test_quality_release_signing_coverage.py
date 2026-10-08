@@ -1,70 +1,43 @@
-"""`rediacc_ci.quality.release_signing_coverage` against the shell it replaces.
+"""`rediacc_ci.quality.release_signing_coverage` over the builder it reads.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. Two of this gate's three moving parts are not readable: a `sed` BRE with a bracket expression containing a space and a pipe, and an eleven-line `awk` program with a stateful `inarm` flag. Their behaviour on the awkward inputs -- an arm with no space around the pipe, an arm that is only `)`, a guard sitting after the `esac`, a
-second one-line case arm further down -- is decided by POSIX bracket-expression rules and by awk's `sub` semantics rather than by anything a reader could infer. A table of expected strings would be a table of what the PORT does, asserted against itself.
+THE BUILDER IS PYTHON NOW. This gate used to read the bash `build-linux-pkg.sh` with a `sed` BRE (the format list) and an eleven-line `awk` program (the per-format signing guard), and this file ran those two pipelines for real against the port's reimplementation of them, on every awkward input. When the bash builder was retired (PLAN-retire-bash-oracles B3) the gate was retargeted to its successor, `rediacc_ci.build.build_linux_pkg`, read through `ast`: the format list is the module's `FORMATS` tuple and the guard is a `raise` naming `RELEASE_SIGNING_REQUIRED` inside the format's own branch of `_report_unsigned`. The tables below are the same questions, one expected answer per awkward shape, and each shape is a property of the `ast` reading rather than of a shell pipeline.
 
-The bash fragments below are lifted from `.ci/scripts/quality/check-release-signing-coverage.sh` (the `formats_of` and `guarded_in` function bodies), with nothing changed but the substitution of their arguments. The tally the gate prints its verdict through came from `.ci/scripts/lib/gate-controls.sh`, which has since been retired, so that half is compared against
-`goldens/gate-controls-tally/` rather than against a live library. They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-signing-coverage.observations.jsonl` compares over five distinct trees. This file covers the seams that ledger cannot isolate, because a ledger row can only say the two sides agreed on THAT tree.
+The tally the gate prints its verdict through came from `.ci/scripts/lib/gate-controls.sh`, which has since been retired, so that half is compared against `goldens/gate-controls-tally/` rather than against a live library. They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-signing-coverage.observations.jsonl` compares over five distinct trees. This file covers the seams that ledger cannot isolate.
 """
 
 import contextlib
 import io
-import pathlib
 
 import pytest
 
+from rediacc_ci import paths
 from rediacc_ci.quality import release_signing_coverage as rsc
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import frozen
 
-# The `formats_of` pipeline, verbatim from the twin with `"$1"` replaced by the fixture path. Four stages; the comment on each is in the port's docstring.
-_FORMATS_PIPELINE = (
-    r"""sed -n 's/^[[:space:]]*\([a-z |]*\))[[:space:]]*;;[[:space:]]*$/\1/p' builder.sh |"""
-    """ head -1 | tr -d ' ' | tr '|' '\\n' | grep -v '^$' || true"""
-)
-
-# The `guarded_in` awk program, verbatim. `-v fmt=` is how the twin passes the
-# format name, so the quoting question the port has to get right is exercised here rather than assumed.
-_GUARDED_AWK = r"""awk -v fmt="%s" '
-        /^[[:space:]]*[a-z][a-z |]*\)[[:space:]]*$/ {
-            arm = $0
-            sub(/\)[[:space:]]*$/, "", arm)
-            gsub(/[[:space:]]/, "", arm)
-            inarm = 0
-            m = split(arm, parts, "|")
-            for (i = 1; i <= m; i++) if (parts[i] == fmt) inarm = 1
-            next
-        }
-        /^[[:space:]]*;;[[:space:]]*$/ { inarm = 0; next }
-        inarm && /RELEASE_SIGNING_REQUIRED/ { found = 1 }
-        END { print (found ? "yes" : "no") }
-    ' builder.sh"""
-
-# Every shape the format parse has to survive. The comment on each line is the property it is there for; a case with no property is a case that will be deleted the first time someone tidies this file.
+# Every shape the format parse has to survive, as (builder source, expected formats). The comment on each line is the property it is there for; a case with no property is a case that will be deleted the first time someone tidies this file.
 FORMAT_CASES = [
-    "    deb | rpm | apk | archlinux) ;;\n",  # the real builder's line
-    "    deb|rpm|apk|archlinux) ;;\n",  # no spaces at all
-    "deb) ;;\n",  # no indent, one format
-    "\tdeb | rpm) ;;\n",  # TAB indent: [[:space:]] matches, `tr -d ' '` does not
-    "    a | b) ;;\n    c | d) ;;\n",  # head -1: the FIRST arm wins
-    "    ) ;;\n",  # an EMPTY group, which must not yield one empty name
-    "    deb | rpm) ;;  # trailing comment\n",  # the `$` anchor must reject this
-    "    DEB | RPM) ;;\n",  # uppercase is outside [a-z]
-    "    deb | rpm)\n",  # a multi-line arm header is NOT the validation case
-    "    *) ;;\n",  # the default arm: `*` is outside the bracket expression
-    "    deb | rpm) ;; \n",  # one trailing space before end of line
-    "echo hi\n",  # no case at all
-    "",  # the empty file
+    (
+        'FORMATS = ("deb", "rpm", "apk", "archlinux")\n',
+        ["deb", "rpm", "apk", "archlinux"],
+    ),  # the real shape
+    ('FORMATS=("deb","rpm")\n', ["deb", "rpm"]),  # no spaces at all
+    ('FORMATS = ["deb"]\n', ["deb"]),  # a list literal is a literal too
+    ('FORMATS = ("deb",)\n', ["deb"]),  # one format
+    ('FORMATS = ("a", "b")\nFORMATS = ("c", "d")\n', ["a", "b"]),  # the FIRST assignment wins
+    ('FORMATS = ("", "deb")\n', ["deb"]),  # an EMPTY name must not survive as a format
+    ('FORMATS = ("deb", 3)\n', []),  # a non-string element is not a literal list of names
+    ("FORMATS = tuple(NAMES)\n", []),  # a computed value is not read
+    ('OTHER = ("deb", "rpm")\n', []),  # a different name is not the format list
+    ('def f():\n    FORMATS = ("deb",)\n', []),  # only a MODULE-LEVEL assignment counts
+    ('FORMATS = ("deb", "rpm"\n', []),  # source that does not parse reads nothing
+    ("print(1)\n", []),  # no assignment at all
+    ("", []),  # the empty file
 ]
 
 
-@pytest.mark.parametrize("content", FORMAT_CASES)
-def test_formats_of_matches_the_sed_pipeline(tmp_path: pathlib.Path, content: str) -> None:
-    """The four shell stages, run for real, against the port's reimplementation."""
-    (tmp_path / "builder.sh").write_text(content, encoding="utf-8")
-    code, out, err = diff.bash_streams(_FORMATS_PIPELINE, cwd=str(tmp_path))
-    assert code == 0, err
-    expected = [line for line in out.split("\n") if line != ""]
+@pytest.mark.parametrize(("content", "expected"), FORMAT_CASES)
+def test_formats_of_reads_the_formats_tuple(content: str, expected: list[str]) -> None:
     assert rsc.formats_of(content) == expected
 
 
@@ -73,75 +46,120 @@ def test_the_format_table_exercises_both_directions() -> None:
 
     Asserted rather than trusted: this is the control ON the table, and without it a later edit that dropped every negative case would leave the file green and vacuous.
     """
-    parsed = [rsc.formats_of(c) for c in FORMAT_CASES]
+    parsed = [rsc.formats_of(content) for content, _expected in FORMAT_CASES]
     assert any(p for p in parsed), "no case parses; the table tests nothing"
     assert any(not p for p in parsed), "every case parses; the table has no negatives"
 
 
-# Every shape the arm scan has to survive, as (builder text, format, why).
+def _builder(chain: str, formats: str = '("deb", "rpm", "apk", "archlinux")') -> str:
+    """A builder module with `FORMATS` and a `_report_unsigned` holding `chain` (indented four spaces after its first line)."""
+    return "import os\n\nFORMATS = %s\n\n\ndef _report_unsigned(fmt):\n    %s\n" % (formats, chain)
+
+
+GUARD_RAISE = (
+    'if os.environ.get("RELEASE_SIGNING_REQUIRED", "0") == "1":\n'
+    '            raise SystemExit("refusing")'
+)
+
+# Every shape the branch scan has to survive, as (builder text, format, expected, why).
 GUARD_CASES = [
     (
-        "    rpm | deb)\n        RELEASE_SIGNING_REQUIRED=1\n        ;;\n",
+        _builder('if fmt in ("rpm", "deb"):\n        %s\n    else:\n        pass' % GUARD_RAISE),
         "deb",
-        "the guard inside the format's own arm",
+        "yes",
+        "the guard inside the format's own branch",
     ),
     (
-        "    rpm | deb)\n        RELEASE_SIGNING_REQUIRED=1\n        ;;\n    apk)\n        :\n        ;;\n",
+        _builder(
+            'if fmt in ("rpm", "deb"):\n        %s\n    elif fmt == "apk":\n        pass'
+            % GUARD_RAISE
+        ),
         "apk",
-        "a LATER arm must not inherit an earlier arm's guard",
+        "no",
+        "a LATER branch must not inherit an earlier branch's guard",
     ),
     (
-        "    apk)\n        :\n        ;;\nesac\nRELEASE_SIGNING_REQUIRED=1\n",
+        _builder('if fmt == "apk":\n        pass\n    else:\n        %s' % GUARD_RAISE),
+        "archlinux",
+        "yes",
+        "the else branch covers every format no earlier branch named",
+    ),
+    (
+        _builder('if fmt == "apk":\n        %s\n    else:\n        pass' % GUARD_RAISE),
+        "archlinux",
+        "no",
+        "a guard in an EARLIER branch is not the else branch's",
+    ),
+    (
+        _builder('if fmt == "deb":\n        %s' % GUARD_RAISE),
+        "rpm",
+        "no",
+        "a format the chain never names is unguarded",
+    ),
+    (
+        _builder('if fmt == "snap":\n        %s\n    else:\n        pass' % GUARD_RAISE),
+        "snap",
+        "yes",
+        "the branch is read for the format it names, accepted or not",
+    ),
+    (
+        _builder('if fmt == "deb":\n        print("RELEASE_SIGNING_REQUIRED is not set here")'),
+        "deb",
+        "no",
+        "a message that merely MENTIONS the variable is not a guard",
+    ),
+    (
+        _builder('if fmt == "deb":\n        os.environ.get("RELEASE_SIGNING_REQUIRED")'),
+        "deb",
+        "no",
+        "reading the variable without refusing is not a guard",
+    ),
+    (
+        _builder('if fmt == "deb":\n        raise SystemExit("unsigned")'),
+        "deb",
+        "no",
+        "a refusal that never names the variable is not THE guard",
+    ),
+    (
+        _builder('if fmt == "apk":\n        pass') + 'GUARD = "RELEASE_SIGNING_REQUIRED"\n',
         "apk",
-        "a guard after the esac belongs to nobody",
+        "no",
+        "a guard outside the chain belongs to nobody",
     ),
     (
-        "    deb)\n        RELEASE_SIGNING_REQUIRED=1\n        ;;\n",
-        "rpm",
-        "a format the builder never names",
-    ),
-    (
-        "    deb|rpm)\n        RELEASE_SIGNING_REQUIRED=1\n        ;;\n",
-        "rpm",
-        "no spaces around the pipe",
-    ),
-    (
-        "\tdeb)\n\t\tRELEASE_SIGNING_REQUIRED=1\n\t\t;;\n",
+        "def other(fmt):\n    if fmt == 'deb':\n        raise SystemExit(os.environ.get('RELEASE_SIGNING_REQUIRED'))\n",
         "deb",
-        "TAB indentation throughout",
+        "no",
+        "only `_report_unsigned` is read",
     ),
-    (
-        "    deb) ;;\n        RELEASE_SIGNING_REQUIRED=1\n",
-        "deb",
-        "a ONE-LINE arm is not an arm header, so nothing is in scope",
-    ),
-    (
-        "    deb)\n        # RELEASE_SIGNING_REQUIRED is not set here\n        ;;\n",
-        "deb",
-        "a COMMENT mentioning the guard counts, and that is the twin's behaviour",
-    ),
-    (
-        "    *)\n        RELEASE_SIGNING_REQUIRED=1\n        ;;\n",
-        "deb",
-        "the default arm never matches: the awk regex demands a leading [a-z]",
-    ),
-    ("", "deb", "the empty file"),
+    ("def _report_unsigned(fmt:\n", "deb", "no", "source that does not parse guards nothing"),
+    ("", "deb", "no", "the empty file"),
 ]
 
 
-@pytest.mark.parametrize(("content", "fmt", "why"), GUARD_CASES)
-def test_guarded_in_matches_the_awk(
-    tmp_path: pathlib.Path, content: str, fmt: str, why: str
+@pytest.mark.parametrize(("content", "fmt", "expected", "why"), GUARD_CASES)
+def test_guarded_in_reads_the_formats_own_branch(
+    content: str, fmt: str, expected: str, why: str
 ) -> None:
-    (tmp_path / "builder.sh").write_text(content, encoding="utf-8")
-    code, out, err = diff.bash_streams(_GUARDED_AWK % fmt, cwd=str(tmp_path))
-    assert code == 0, err
-    assert rsc.guarded_in(fmt, content) == out.strip(), why
+    assert rsc.guarded_in(fmt, content) == expected, why
 
 
 def test_the_guard_table_exercises_both_directions() -> None:
-    answers = {rsc.guarded_in(fmt, content) for content, fmt, _why in GUARD_CASES}
+    answers = {rsc.guarded_in(fmt, content) for content, fmt, _expected, _why in GUARD_CASES}
     assert answers == {"yes", "no"}, "the guard table must contain both verdicts"
+
+
+def test_the_real_builder_guards_rpm_and_deb_and_exempts_the_rest() -> None:
+    """The gate's verdict on the tree it protects, by name: deb and rpm refuse to ship unsigned, apk and archlinux do not and are on the exemption list. A builder edit that moved a guard shows up here before it reaches a release."""
+    text = (paths.repo_root() / rsc.BUILDER_REL).read_text(encoding="utf-8")
+    assert rsc.formats_of(text) == ["deb", "rpm", "apk", "archlinux"]
+    assert {fmt: rsc.guarded_in(fmt, text) for fmt in rsc.formats_of(text)} == {
+        "deb": "yes",
+        "rpm": "yes",
+        "apk": "no",
+        "archlinux": "no",
+    }
+    assert {fmt for fmt, _reason in rsc.UNSIGNED_ON_PURPOSE} == {"apk", "archlinux"}
 
 
 # The tally cases, named by the arm they drive. The second value of each pair is what `gate_check` was given as `got`, so "mixed" runs one passing and one failing control and "green" runs two passing ones.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/build/build-cli-musl.sh` (165 lines).
+"""Port of the retired `.ci/scripts/build/build-cli-musl.sh` (165 lines).
 
-Builds the CLI as a musl-linked SEA binary by running `build-cli-executables.sh` INSIDE a `node:24-alpine` container, then renaming the container's glibc-named output (`dist/cli/rdc-linux-<arch>`) to the musl name (`dist/cli/rdc-linux-musl-<arch>`) and carrying its checksum across.
+Builds the CLI as a musl-linked SEA binary by running `rediacc_ci.build.build_cli_executables` INSIDE a `node:24-alpine` container (whose script already installs `python3`), then renaming the container's glibc-named output (`dist/cli/rdc-linux-<arch>`) to the musl name (`dist/cli/rdc-linux-musl-<arch>`) and carrying its checksum across.
 
 The whole build lives in a single `docker run ... sh -c '<script>'`. That inline script is the twin's, character for character, including the `'"$ARCH"'` quote-dance that splices the host's `$ARCH` into a single-quoted heredoc-ish string; see `CONTAINER_SCRIPT` below for why it is stored as a plain format string here instead.
 
@@ -11,8 +11,8 @@ WHAT IS SHELLED OUT TO, AND WHAT IS NOT
 SHELLED OUT, because each one is the twin's actual contract with the machine:
 
   * `docker run` -- the build itself.
-  * `.ci/scripts/version/inject-env.sh --version <v> --strict --print` -- the
-    publishable-version seam. Its stdout is discarded (`>/dev/null`) and only
+  * `.ci/rediacc_ci/version/inject_env.py --version <v> --strict --print`, run
+    as a script under this interpreter -- the publishable-version seam. Its stdout is discarded (`>/dev/null`) and only
     its exit status is read, exactly as at `:82`.
   * `sudo chown -R <uid>:<gid> <repo>/dist/cli/` -- ownership repair for files
     the container created as root. stderr suppressed, failure ignored (`:139`).
@@ -86,8 +86,8 @@ DOCKER_PLATFORMS = {
     "arm64": "linux/arm64",
 }
 
-# `:82`, relative to the twin's own `$SCRIPT_DIR/..`.
-INJECT_ENV_REL = ".ci/scripts/version/inject-env.sh"
+# `:82`. The version seam, relative to the console root; the bash `inject-env.sh` it replaced is retired behind its golden (PLAN-retire-bash-oracles B3).
+INJECT_ENV_REL = ".ci/rediacc_ci/version/inject_env.py"
 
 # `:111`. The image the build runs in.
 CONTAINER_IMAGE = "node:24-alpine"
@@ -110,7 +110,7 @@ cd packages/shared && npx tsc -p tsconfig.json && cd /workspace
 cd packages/provisioning && npx tsc -p tsconfig.json && cd /workspace
 
 echo "\u2192 Building CLI bundle and SEA binary..."
-.ci/scripts/build/build-cli-executables.sh --platform linux --arch %s
+PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli_executables --platform linux --arch %s
 """
 
 # The lines bash names in a `set -u` death when an option's value is missing. `--arch "$2"` is `:28`; `--output "$2"` is `:32`.
@@ -280,7 +280,14 @@ def main(argv: list[str]) -> int:
         # `>/dev/null` on stdout only: the script's own diagnostics stay visible.
         with open(os.devnull, "wb") as sink:
             status = _run(
-                [str(root / INJECT_ENV_REL), "--version", cli_version, "--strict", "--print"],
+                [
+                    sys.executable,
+                    str(root / INJECT_ENV_REL),
+                    "--version",
+                    cli_version,
+                    "--strict",
+                    "--print",
+                ],
                 stdout=sink,
             )
         if status != 0:

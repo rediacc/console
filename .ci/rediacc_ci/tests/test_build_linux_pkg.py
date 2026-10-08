@@ -29,6 +29,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.build import build_linux_pkg as port
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import PKG_MAINTAINER_EMAIL, PKG_SIGNING_KEY_NAME, SITE_ORIGIN
 
 if typing.TYPE_CHECKING:
@@ -42,7 +43,8 @@ COMMON_REL = ".ci/scripts/lib/common.sh"
 CONSTANTS_REL = ".ci/config/constants.sh"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
 TOOLCHAIN_REL = ".devcontainer/toolchain.env"
-CANON_REL = ".ci/scripts/build/canonicalise-gpg-key.sh"
+CANON_REL = ".ci/rediacc_ci/build/canonicalise_gpg_key.py"
+TWIN_CANON_REL = ".ci/scripts/build/canonicalise-gpg-key.sh"
 
 VENDORED = (
     ".ci/rediacc_ci/__init__.py",
@@ -164,7 +166,8 @@ exit 0
 """
 )
 
-FAKE_CANON = (
+# The retired bash canonicaliser's recorder, written only by a re-freeze (it is what the bash twin shelled out to).
+TWIN_FAKE_CANON = (
     """#!/bin/bash
 __self=canonicalise-gpg-key.sh
 """
@@ -174,6 +177,25 @@ __record "$@"
 exit "${FAKE_CANON_RC:-0}"
 """
 )
+
+# The port runs `rediacc_ci.build.canonicalise_gpg_key` as a script; this recorder answers in its place and writes the SAME call-log line the bash recorder wrote (the build directory masked the same way), so the call log is comparable with the frozen twin's.
+FAKE_CANON = """import os
+import sys
+
+tmp = os.environ.get("FIXTURE_TMP", "")
+
+
+def mask(a):
+    if tmp and a.startswith(tmp + "/"):
+        rest = a[len(tmp) + 1 :]
+        return "<BUILD_DIR>" if "/" not in rest else "<BUILD_DIR>/" + rest.split("/", 1)[1]
+    return a
+
+
+with open(os.environ["FAKE_CALL_LOG"], "a", encoding="utf-8") as fh:
+    fh.write("FAKEBIN canonicalise-gpg-key.sh" + "".join("\\t" + mask(a) for a in sys.argv[1:]) + "\\n")
+raise SystemExit(int(os.environ.get("FAKE_CANON_RC", "0")))
+"""
 
 # Records, then delegates to the real `find` so the DIRECTORY-ORDER behaviour the port's module head relies on is genuinely exercised. `FAKE_FIND_RC` overrides the real status without changing the output, which is what DEFECT 3 needs: a `find` that PRINTS a package and still exits non-zero.
 FAKE_FIND = (
@@ -218,8 +240,11 @@ def fixture(
     binary: bool = True,
 ) -> pathlib.Path:
     root = tmp_path / "repo"
+    recording = diff.regolden_mode(TWIN_REL) == "bash"
     for rel in (
         TWIN_REL,
+        TWIN_CANON_REL,
+        CANON_REL,
         PORT_REL,
         COMMON_REL,
         CONSTANTS_REL,
@@ -228,8 +253,9 @@ def fixture(
         *VENDORED,
     ):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
+    twin_files = (TWIN_REL,) if recording else ()
     for rel in (
-        TWIN_REL,
+        *twin_files,
         COMMON_REL,
         WELL_KNOWN_REL,
         CONSTANTS_REL,
@@ -245,7 +271,10 @@ def fixture(
 
     canon = root / CANON_REL
     canon.write_text(FAKE_CANON, encoding="utf-8")
-    canon.chmod(0o755)
+    if recording:
+        twin_canon = root / TWIN_CANON_REL
+        twin_canon.write_text(TWIN_FAKE_CANON, encoding="utf-8")
+        twin_canon.chmod(0o755)
 
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "config" / "nfpm.yaml").write_text("# template\n", encoding="utf-8")
@@ -356,9 +385,19 @@ def _reset(root: pathlib.Path) -> None:
     (root / "fixture-tmp").mkdir(parents=True, exist_ok=True)
 
 
-def run_both(root: pathlib.Path, **kw):
+def _old_side(root: pathlib.Path, **kw):
+    """The twin's whole answer: process, call log and produced files. It comes from the golden (PLAN-retire-bash-oracles B3); this is how it was recorded."""
     _reset(root)
-    old = (*_run(root, "old", **kw), _artifacts(root), _leftover_temp(root))
+    return (*_run(root, "old", **kw), _artifacts(root), _leftover_temp(root))
+
+
+def run_both(root: pathlib.Path, **kw):
+    old = diff.twin_result(
+        TWIN_REL,
+        [repr(sorted(kw.items()))],
+        lambda: _old_side(root, **kw),
+        work=(str(root), str(root.parent)),
+    )
     _reset(root)
     new = (*_run(root, "new", **kw), _artifacts(root), _leftover_temp(root))
     return old, new
@@ -429,7 +468,12 @@ def test_the_absent_tools_are_absent_in_the_env_that_is_actually_driven(tmp_path
     `nfpm`, `gpg` or `docker` -- which is the thing that would quietly turn a signing test into a real `gpg --import` against a developer's keyring. It also proves PATH was REPLACED rather than prepended, by asserting the machine's own PATH entries are gone.
     """
     root = fixture(tmp_path)
-    proc, _, _ = _run(root, "old", args=("--help",))
+    proc, _, _ = diff.twin_result(
+        TWIN_REL,
+        ["help-control"],
+        lambda: _run(root, "old", args=("--help",)),
+        work=(str(root), str(root.parent)),
+    )
     assert proc.returncode == 0
 
     env = {
@@ -1260,7 +1304,7 @@ def test_the_find_predicates_are_the_twins_four_patterns() -> None:
 
 def test_console_root_is_this_checkout() -> None:
     assert port.console_root() == ROOT
-    assert port.script_dir(ROOT) == ROOT / ".ci" / "scripts" / "build"
+    assert (ROOT / port.CANONICALISER_REL).is_file()
 
 
 def test_the_module_reads_env_at_the_call_site() -> None:

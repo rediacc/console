@@ -28,6 +28,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.build import build_cli_musl as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -38,7 +39,14 @@ TWIN_REL = ".ci/scripts/build/build-cli-musl.sh"
 PORT_REL = ".ci/rediacc_ci/build/build_cli_musl.py"
 COMMON_REL = ".ci/scripts/lib/common.sh"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
-INJECT_REL = ".ci/scripts/version/inject-env.sh"
+INJECT_REL = ".ci/rediacc_ci/version/inject_env.py"
+TWIN_INJECT_REL = ".ci/scripts/version/inject-env.sh"
+
+# The container's build line: the retired twin ran the bash script, the port runs the Python module (Rule T). Calls are compared with the new line spelled as the old one, and `test_delta_the_container_builds_with_the_python_module` pins both spellings.
+OLD_BUILD_LINE = ".ci/scripts/build/build-cli-executables.sh --platform linux --arch"
+NEW_BUILD_LINE = (
+    "PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli_executables --platform linux --arch"
+)
 
 VENDORED = (
     ".ci/rediacc_ci/__init__.py",
@@ -102,8 +110,8 @@ FAKE_SUDO = """#!/bin/bash
 exit 0
 """
 
-# The version seam at `:82`. `--strict` refuses `0.0.0-dev`-shaped values; the fake reproduces the decision by exit code alone, which is all the twin reads.
-FAKE_INJECT_ENV = """#!/bin/bash
+# The version seam at `:82`. `--strict` refuses `0.0.0-dev`-shaped values; the fake reproduces the decision by exit code alone, which is all the twin reads. This is the retired bash twin's recorder, written only by a re-freeze.
+TWIN_FAKE_INJECT_ENV = """#!/bin/bash
 {
     printf 'FAKEBIN inject-env'
     for a in "$@"; do printf '\\t%s' "${a//$'\\n'/\\\\n}"; done
@@ -112,6 +120,16 @@ FAKE_INJECT_ENV = """#!/bin/bash
 echo 'CLI_VERSION resolved'
 if [[ "${FAKE_INJECT_RC:-0}" != 0 ]]; then exit "$FAKE_INJECT_RC"; fi
 exit 0
+"""
+
+# The port runs `rediacc_ci.version.inject_env` as a script; this recorder answers in its place and writes the SAME call-log line the bash recorder wrote.
+FAKE_INJECT_ENV = """import os
+import sys
+
+with open(os.environ["FAKE_CALL_LOG"], "a", encoding="utf-8") as fh:
+    fh.write("FAKEBIN inject-env" + "".join("\\t" + a.replace("\\n", "\\\\n") for a in sys.argv[1:]) + "\\n")
+print("CLI_VERSION resolved")
+raise SystemExit(int(os.environ.get("FAKE_INJECT_RC", "0")))
 """
 
 SELF_RE = re.compile(r"\S*(?:%s|%s)" % (re.escape(TWIN_REL), re.escape(PORT_REL)))
@@ -124,16 +142,27 @@ def fixture(
     stale_output: bool = False,
 ) -> pathlib.Path:
     root = tmp_path / "repo"
-    for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, INJECT_REL, *VENDORED):
+    for rel in (
+        TWIN_REL,
+        PORT_REL,
+        COMMON_REL,
+        WELL_KNOWN_REL,
+        INJECT_REL,
+        TWIN_INJECT_REL,
+        *VENDORED,
+    ):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (TWIN_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
+    twin_files = (TWIN_REL,) if diff.regolden_mode(TWIN_REL) == "bash" else ()
+    for rel in (*twin_files, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     if port_source is None:
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)
     else:
         (root / PORT_REL).write_text(port_source, encoding="utf-8")
     (root / INJECT_REL).write_text(FAKE_INJECT_ENV, encoding="utf-8")
-    (root / INJECT_REL).chmod(0o755)
+    if diff.regolden_mode(TWIN_REL) == "bash":
+        (root / TWIN_INJECT_REL).write_text(TWIN_FAKE_INJECT_ENV, encoding="utf-8")
+        (root / TWIN_INJECT_REL).chmod(0o755)
     (root / "dist" / "cli").mkdir(parents=True, exist_ok=True)
     if stale_output:
         # DEFECT 2's input: an artifact a PREVIOUS build left behind.
@@ -245,10 +274,20 @@ def _reset(root: pathlib.Path, *, stale_output: bool = False) -> None:
         )
 
 
-def run_both(root: pathlib.Path, *, stale_output: bool = False, **kw):
+def _old_side(root: pathlib.Path, *, stale_output: bool = False, **kw):
+    """The twin's whole answer: process, call log and produced files. It comes from the golden (PLAN-retire-bash-oracles B3); this is how it was recorded."""
     _reset(root, stale_output=stale_output)
-    old, old_calls = _run(root, "old", **kw)
-    old_files = _artifacts(root)
+    proc, calls = _run(root, "old", **kw)
+    return proc, calls, _artifacts(root)
+
+
+def run_both(root: pathlib.Path, *, stale_output: bool = False, **kw):
+    old, old_calls, old_files = diff.twin_result(
+        TWIN_REL,
+        [repr(sorted(kw.items())), "stale_output=%s" % stale_output],
+        lambda: _old_side(root, stale_output=stale_output, **kw),
+        work=(str(root), str(root.parent)),
+    )
     _reset(root, stale_output=stale_output)
     new, new_calls = _run(root, "new", **kw)
     new_files = _artifacts(root)
@@ -276,10 +315,8 @@ def _agree(old_t, new_t, label: str) -> None:
         old.stderr,
         new.stderr,
     )
-    assert new_calls == old_calls, "%s: call log diverged:\n%s---\n%s" % (
-        label,
-        old_calls,
-        new_calls,
+    assert new_calls.replace(NEW_BUILD_LINE, OLD_BUILD_LINE) == old_calls, (
+        "%s: call log diverged:\n%s---\n%s" % (label, old_calls, new_calls)
     )
     assert new_files == old_files, "%s: artifacts diverged:\n%r\n%r" % (
         label,
@@ -459,13 +496,30 @@ def test_the_success_path_builds_renames_and_checksums(tmp_path) -> None:
     _agree(old_t, new_t, "success")
 
 
+def test_delta_the_container_builds_with_the_python_module(tmp_path) -> None:
+    """RULE T. The container script ran `.ci/scripts/build/build-cli-executables.sh`; that script is retired, so it runs `python3 -m rediacc_ci.build.build_cli_executables` (the image installs `python3` already, for node-gyp). The version preflight likewise runs `inject_env.py` instead of `inject-env.sh`."""
+    root = fixture(tmp_path)
+    old_t, new_t = run_both(root, args=("--arch", "x64"), produces=False)
+    old_docker = _docker_argv(old_t[1])[-1]
+    new_docker = _docker_argv(new_t[1])[-1]
+    assert OLD_BUILD_LINE in old_docker, "the retired twin's build line moved"
+    assert "python3 -m rediacc_ci" not in old_docker
+    assert NEW_BUILD_LINE in new_docker
+    assert ".ci/scripts/build/build-cli-executables.sh" not in new_docker
+    assert "apk add --no-cache python3" in new_docker, "the container must have the interpreter"
+
+
 def test_the_docker_argv_is_the_whole_point_of_the_script(tmp_path) -> None:
     """Exit code, stdout and stderr are identical no matter what argv reaches docker, so this pins the recorded argv against the port's own builder."""
     root = fixture(tmp_path)
-    _reset(root)
-    old, _ = _run(root, "old", args=("--arch", "arm64"), produces=False)
+    old, old_calls, _ = diff.twin_result(
+        TWIN_REL,
+        ["docker-argv"],
+        lambda: _old_side(root, args=("--arch", "arm64"), produces=False),
+        work=(str(root), str(root.parent)),
+    )
     assert old.returncode == 1, "no artifact was produced, so the twin refuses"
-    recorded = _docker_argv((root / "old-calls.log").read_text(encoding="utf-8"))
+    recorded = _docker_argv(old_calls)
     expected = port.docker_argv(
         platform="linux/arm64",
         repo_root=str(root),
@@ -475,7 +529,10 @@ def test_the_docker_argv_is_the_whole_point_of_the_script(tmp_path) -> None:
         release_build="",
     )
     # The fake escapes newlines so a multi-line argument (the container script, which is the LAST one) survives a line-oriented call log; the expectation is escaped the same way rather than the log being made multi-line, because `shadow-gate.ts` reads findings line by line too.
-    assert recorded == ["FAKEBIN docker", *(a.replace("\n", "\\n") for a in expected[1:])]
+    assert recorded == [
+        "FAKEBIN docker",
+        *(a.replace("\n", "\\n").replace(NEW_BUILD_LINE, OLD_BUILD_LINE) for a in expected[1:]),
+    ]
     assert expected[expected.index("--platform") + 1] == "linux/arm64"
     assert "%s:/workspace" % root in expected
     assert "CLI_VERSION=0.0.0-dev" in expected, "the `${CLI_VERSION:-0.0.0-dev}` default"

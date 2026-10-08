@@ -1,6 +1,6 @@
 ---
 name: e2e-local
-description: Running the Playwright/bridge E2E suites LOCALLY against the KVM fleet instead of round-tripping CI. Covers the two-command recipe (rediacc_ci.env.create_e2e_env + run-e2e.sh), targeting one suite or one distro, the three env traps that make a local run fail in ways CI never does (missing bin/renet, CI=true stealing the data dir, the wrong SSH key), how to read bridge-logs, and how to pull a failing CI job's artifact when a distro-specific failure genuinely cannot be reproduced locally. Use whenever an E2E test is red, before pushing a test change, or when tempted to "just push and see what CI says".
+description: Running the Playwright/bridge E2E suites LOCALLY against the KVM fleet instead of round-tripping CI. Covers the two-command recipe (rediacc_ci.env.create_e2e_env + rediacc_ci.testrun.e2e), targeting one suite or one distro, the three env traps that make a local run fail in ways CI never does (missing bin/renet, CI=true stealing the data dir, the wrong SSH key), how to read bridge-logs, and how to pull a failing CI job's artifact when a distro-specific failure genuinely cannot be reproduced locally. Use whenever an E2E test is red, before pushing a test change, or when tempted to "just push and see what CI says".
 tools: Bash, Read, Edit, Write, Grep, Glob
 model: opus
 ---
@@ -29,9 +29,9 @@ PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env \
   --vm-workers "11 12"
 
 # 2. run everything, or one suite
-.ci/scripts/test/run-e2e.sh --workers 1 --fail-on-skip
-.ci/scripts/test/run-e2e.sh --workers 1 --test 25-backup-chunk-store
-.ci/scripts/test/run-e2e.sh --workers 1 --grep "@backup"
+PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --fail-on-skip
+PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 25-backup-chunk-store
+PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --grep "@backup"
 ```
 
 `--test <substring>` is the one that turns a 40-minute suite into a 60-second one. Use it while iterating, then run the whole thing once before pushing.

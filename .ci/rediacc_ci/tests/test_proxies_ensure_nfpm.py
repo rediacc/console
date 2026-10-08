@@ -53,28 +53,33 @@ FIXTURE_FILES = (
 )
 
 # A stub SUBJECT: prints a directory holding a fake nfpm, with no network. `%s` is what that fake nfpm answers to `--version`.
-STUB_SUBJECT = """#!/usr/bin/env bash
-# The real subject's SHAPE, minus the network: the early-exit on a warm cache,
+STUB_SUBJECT = """# The real subject's SHAPE, minus the network: the early-exit on a warm cache,
 # the arch refusal (which the proxy drives with a `uname` shim, so the stub has
 # to honour it or that check cannot pass), the `fetching` line on stderr, and
 # the cache directory on stdout.
-set -euo pipefail
-root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-d="$root/.ci/cache/bin"
-if [ -x "$d/nfpm" ]; then printf '%%s\\n' "$d"; exit 0; fi
-ARCH="$(uname -m)"
-case "$ARCH" in
-    x86_64 | amd64) ;;
-    *)
-        echo "ensure-nfpm: no pinned checksum for $ARCH in .ci/config/constants.sh -- add one rather than downloading unverified bytes" >&2
-        exit 1
-        ;;
-esac
-mkdir -p "$d"
-printf '%%s\\n' '#!/bin/bash' "echo '%s'" >"$d/nfpm"
-chmod +x "$d/nfpm"
-echo "ensure-nfpm: fetching nfpm 2.45.0 for x86_64" >&2
-printf '%%s\\n' "$d"
+import os
+import pathlib
+import subprocess
+import sys
+
+root = pathlib.Path(__file__).resolve().parents[3]
+d = root / ".ci" / "cache" / "bin"
+if os.access(str(d / "nfpm"), os.X_OK):
+    print(d)
+    raise SystemExit(0)
+arch = subprocess.run(["uname", "-m"], stdout=subprocess.PIPE, text=True, check=True).stdout.strip()
+if arch not in ("x86_64", "amd64"):
+    print(
+        "ensure-nfpm: no pinned checksum for " + arch + " in .ci/config/constants.sh -- "
+        "add one rather than downloading unverified bytes",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
+d.mkdir(parents=True, exist_ok=True)
+(d / "nfpm").write_text("#!/bin/bash\\necho '%s'\\n", encoding="utf-8")
+(d / "nfpm").chmod(0o755)
+print("ensure-nfpm: fetching nfpm 2.45.0 for x86_64", file=sys.stderr)
+print(d)
 """
 
 
@@ -115,13 +120,12 @@ def build_fixture(
             port_source, encoding="utf-8"
         )
     shutil.copytree(ROOT / ".ci" / "scripts" / "lib", fixture / ".ci" / "scripts" / "lib")
-    subject = fixture / ".ci" / "scripts" / "build" / "ensure-nfpm.sh"
+    subject = fixture / ensure_nfpm.SUBJECT_REL
     subject.parent.mkdir(parents=True, exist_ok=True)
     if stub_version is None:
-        subject.write_bytes((ROOT / ".ci" / "scripts" / "build" / "ensure-nfpm.sh").read_bytes())
+        subject.write_bytes((ROOT / ensure_nfpm.SUBJECT_REL).read_bytes())
     else:
         subject.write_text(STUB_SUBJECT % stub_version, encoding="utf-8")
-    subject.chmod(0o755)
     return fixture
 
 
@@ -143,19 +147,31 @@ def run_both(
 ) -> tuple[subprocess.CompletedProcess[str], subprocess.CompletedProcess[str]]:
     env = _env(fixture)
     kwargs = {"env": env, "cwd": str(fixture), "capture_output": True, "text": True}
-    old = diff.twin_result(
+
+    def port_side() -> subprocess.CompletedProcess[str]:
+        return subprocess.run(  # type: ignore[call-overload]
+            ["python3", "-m", PORT_MODULE, *args], timeout=300, check=False, **kwargs
+        )
+
+    def port_streams() -> tuple[int, str, str]:
+        proc = port_side()
+        return proc.returncode, proc.stdout, proc.stderr
+
+    def retired_bash() -> tuple[int, str, str]:
+        raise RuntimeError("proxy-ensure-nfpm.sh is retired; only its golden answers")
+
+    # The bash proxy is retired, so its answer comes from the golden. A case whose output names the subject (the banner line) was re-recorded from the port after the subject moved to the Python module (Rule T, PLAN-retire-bash-oracles).
+    rc, out, err = diff.twin_call(
         TWIN_REL,
         [repr(["bash", str(fixture / TWIN_REL), *args])],
-        lambda: subprocess.run(  # type: ignore[call-overload]
-            ["bash", str(fixture / TWIN_REL), *args], timeout=300, check=False, **kwargs
-        ),
+        retired_bash,
+        port=port_streams,
         work=(fixture.parent,),
     )
+    old = subprocess.CompletedProcess([], rc, out, err)
     # The subject caches into the FIXTURE root, so a second run would take the warm branch. Both sides must start from the same cold state.
     shutil.rmtree(fixture / ".ci" / "cache", ignore_errors=True)
-    new = subprocess.run(  # type: ignore[call-overload]
-        ["python3", "-m", PORT_MODULE, *args], timeout=300, check=False, **kwargs
-    )
+    new = port_side()
     return old, new
 
 
@@ -232,6 +248,18 @@ def test_a_stubbed_subject_at_the_pin_passes_every_check(tmp_path: pathlib.Path)
     assert old.returncode == 0, old.stderr
     assert "the installed nfpm reports 2.45.0, exactly the pin" in old.stdout
     assert_same(old, new)
+
+
+def test_the_banner_names_the_python_subject_not_the_retired_bash_one(
+    tmp_path: pathlib.Path,
+) -> None:
+    """RULE T: the proxy drives `rediacc_ci.build.ensure_nfpm`, the module CI runs. The retired bash proxy announced `ensure-nfpm.sh`, a file that no longer exists; a banner naming it is a stale claim about what was tested."""
+    fixture = build_fixture(tmp_path, stub_version="nfpm version 2.45.0")
+    _old, new = run_both(fixture)
+    assert (
+        "proxy ensure-nfpm: local stand-in for .ci/rediacc_ci/build/ensure_nfpm.py\n" in new.stdout
+    )
+    assert "ensure-nfpm.sh" not in new.stdout + new.stderr
 
 
 def test_a_stubbed_subject_at_the_wrong_version_is_caught(tmp_path: pathlib.Path) -> None:

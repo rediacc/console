@@ -26,9 +26,11 @@ import tempfile
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.tests import differential as diff
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "build" / "canonicalise-gpg-key.sh"
+TWIN_REL = ".ci/scripts/build/canonicalise-gpg-key.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "build" / "canonicalise_gpg_key.py"
 
 PASSPHRASE = "test-pass-w7p6"  # noqa: S105 -- not a secret, a throwaway fixture value
@@ -115,6 +117,30 @@ def _max_body_line_length(armored: str) -> int:
 def _run(
     subject: pathlib.Path, key_file: pathlib.Path, *args: str, env: dict[str, str] | None = None
 ) -> subprocess.CompletedProcess[str]:
+    """One side. The twin's streams and exit code come from its golden (PLAN-retire-bash-oracles B3); `_run_live` is how it was recorded.
+
+    The key file the twin REWROTE is deliberately not frozen: it is a private-key block, and a golden is a committed text file. What the twin did to that file is established by the port-side assertions on the file the port rewrote (canonical column width, still importable, still the same key), which are stronger than a recording of the twin's.
+    """
+    if subject.suffix != ".sh":
+        return _run_live(subject, key_file, *args, env=env)
+    box: dict[str, subprocess.CompletedProcess[str]] = {}
+
+    def live() -> tuple[int, str, str]:
+        box["proc"] = _run_live(subject, key_file, *args, env=env)
+        return box["proc"].returncode, box["proc"].stdout, box["proc"].stderr
+
+    rc, out, err, _ = diff.twin_run(
+        TWIN_REL,
+        [key_file.name, *args, repr(sorted((env or {}).items()))],
+        live,
+        work=diff.pytest_tmp_roots(str(key_file), repr(env)),
+    )
+    return subprocess.CompletedProcess([], rc, out, err)
+
+
+def _run_live(
+    subject: pathlib.Path, key_file: pathlib.Path, *args: str, env: dict[str, str] | None = None
+) -> subprocess.CompletedProcess[str]:
     runner = ["bash"] if subject.suffix == ".sh" else ["python3"]
     full_env = dict(os.environ) if env is None else env
     return subprocess.run(
@@ -125,6 +151,10 @@ def _run(
         check=False,
         timeout=60,
     )
+
+
+def _streams(proc: subprocess.CompletedProcess[str]) -> tuple[int, str, str]:
+    return proc.returncode, proc.stdout, proc.stderr
 
 
 def _assert_same_shape(
@@ -143,13 +173,19 @@ def _assert_same_shape(
 
 def test_no_arguments(tmp_path: pathlib.Path) -> None:
     dummy = tmp_path / "unused"
-    old = subprocess.run(
-        ["bash", str(TWIN)], capture_output=True, text=True, check=False, timeout=30
+    old = diff.twin_call(
+        TWIN_REL,
+        ["no-arguments"],
+        lambda: _streams(
+            subprocess.run(
+                ["bash", str(TWIN)], capture_output=True, text=True, check=False, timeout=30
+            )
+        ),
     )
     new = subprocess.run(
         ["python3", str(PORT)], capture_output=True, text=True, check=False, timeout=30
     )
-    assert old.returncode == 1
+    assert old[0] == 1
     assert new.returncode == 1
     del dummy
 
@@ -256,7 +292,7 @@ def test_clean_key_is_untouched_in_substance(tmp_path: pathlib.Path, real_key: s
     _assert_same_shape(old, new, "clean-key")
     assert old.returncode == 0
 
-    for out in (key_old, key_new):
+    for out in (key_new,):
         text = out.read_text(encoding="utf-8")
         assert _max_body_line_length(text) <= 64
         gnupghome = tmp_path / f"verify-{out.name}"
@@ -289,7 +325,7 @@ def test_welded_key_is_repaired(tmp_path: pathlib.Path, real_key: str) -> None:
     _assert_same_shape(old, new, "welded-key")
     assert old.returncode == 10, "fixture stopped exercising the repair path; test is wrong"
 
-    for out in (key_old, key_new):
+    for out in (key_new,):
         text = out.read_text(encoding="utf-8")
         assert _max_body_line_length(text) <= 64, f"{out.name}: still welded after repair"
 

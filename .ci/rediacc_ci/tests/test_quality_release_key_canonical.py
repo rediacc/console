@@ -20,8 +20,8 @@ from rediacc_ci.tests import differential as diff
 
 MODULE = "release_key_canonical"
 
-GUARD_LINE = 'canonicalise-gpg-key.sh "$K" "$P" || canon_rc=$?\n'
-CALL_LINE = "echo running canonicalise-gpg-key.sh\n"
+GUARD_LINE = "    elif canon_rc == CANON_REPAIRED:\n"
+CALL_LINE = 'CANONICALISER_REL = ".ci/rediacc_ci/build/canonicalise_gpg_key.py"\n'
 
 
 # --------------------------------------------------------------------------- The decision functions, driven directly. Both directions for every rule. ---------------------------------------------------------------------------
@@ -67,12 +67,18 @@ def test_the_welder_stops_after_the_first_weld() -> None:
 @pytest.mark.parametrize(
     ("text", "count"),
     [
-        pytest.param('canon.sh "$K" || canon_rc=$?\n', 1, id="one-real-guard"),
+        pytest.param("    elif canon_rc == CANON_REPAIRED:\n", 1, id="one-real-guard"),
         pytest.param(
-            "# `|| canon_rc=$?` explains it\ncanon.sh || canon_rc=$?\n", 1, id="prose-not-counted"
+            "# `canon_rc == CANON_REPAIRED` explains it\nelif canon_rc == CANON_REPAIRED:\n",
+            1,
+            id="prose-not-counted",
         ),
-        pytest.param("    # || canon_rc=$?\n", 0, id="an-indented-comment-is-a-comment"),
-        pytest.param("canon.sh || canon_rc=$?  # note\n", 1, id="a-trailing-comment-still-counts"),
+        pytest.param(
+            "    # canon_rc == CANON_REPAIRED\n", 0, id="an-indented-comment-is-a-comment"
+        ),
+        pytest.param(
+            "elif canon_rc == CANON_REPAIRED:  # note\n", 1, id="a-trailing-comment-still-counts"
+        ),
         pytest.param("", 0, id="empty"),
     ],
 )
@@ -81,26 +87,26 @@ def test_guard_count(text: str, count: int) -> None:
 
 
 def test_literal_count_counts_lines_not_occurrences() -> None:
-    assert gate.literal_count("a canonicalise-gpg-key.sh b\n", gate.CANON_LITERAL) == 1
+    assert gate.literal_count("a canonicalise_gpg_key.py b\n", gate.CANON_LITERAL) == 1
     assert (
-        gate.literal_count("canonicalise-gpg-key.sh canonicalise-gpg-key.sh\n", gate.CANON_LITERAL)
+        gate.literal_count("canonicalise_gpg_key.py canonicalise_gpg_key.py\n", gate.CANON_LITERAL)
         == 1
     )
     assert (
-        gate.literal_count("canonicalise-gpg-key.sh\ncanonicalise-gpg-key.sh\n", gate.CANON_LITERAL)
+        gate.literal_count("canonicalise_gpg_key.py\ncanonicalise_gpg_key.py\n", gate.CANON_LITERAL)
         == 2
     )
 
 
 def test_the_missing_file_asymmetry_is_reproduced(tmp_path: pathlib.Path) -> None:
     """`grep -v ... | grep -c` prints "0"; a direct `grep -c` prints NOTHING."""
-    absent = tmp_path / "not-here.sh"
+    absent = tmp_path / "not-here.py"
     assert gate.guard_count_field(absent) == "0"
     assert gate.call_count_field(absent) == ""
-    present = tmp_path / "here.sh"
+    present = tmp_path / "here.py"
     present.write_text(GUARD_LINE + CALL_LINE, encoding="utf-8")
     assert gate.guard_count_field(present) == "1"
-    assert gate.call_count_field(present) == "2"
+    assert gate.call_count_field(present) == "1"
 
 
 def test_the_refusal_wording_is_carried_verbatim() -> None:

@@ -1,9 +1,9 @@
 """Port of `.ci/scripts/test/proxies/proxy-ensure-nfpm.sh`.
 
-Local proxy for `.ci/scripts/build/ensure-nfpm.sh`, wired as the registered gate `check:ci-proxy-ensure-nfpm` (`package.json:392`, `scripts/ci-runner/manifest.ts:7496-7499`). See the twin's header for what it guards in CI and why it builds a THROWAWAY fixture root instead of running in this checkout: the warm `.ci/cache/bin/nfpm` here would take the early-exit branch and the
+Local proxy for `rediacc_ci.build.ensure_nfpm`, wired as the registered gate `check:ci-proxy-ensure-nfpm` (`package.json:392`, `scripts/ci-runner/manifest.ts:7496-7499`). See the twin's header for what it guards in CI and why it builds a THROWAWAY fixture root instead of running in this checkout: the warm `.ci/cache/bin/nfpm` here would take the early-exit branch and the
 download and checksum would never be reached.
 
-The SUBJECT stays bash and is run as bash, exactly as the twin runs it. Only the proxy is ported, same division as `rediacc_ci.proxies.docker_prepull`. A Python port of the subject also exists at `rediacc_ci.build.ensure_nfpm`; this proxy does NOT point at it, because the thing under test is what CI executes.
+The SUBJECT is `rediacc_ci.build.ensure_nfpm`, run as a script from the throwaway fixture root, because that module is what CI executes. (The bash subject `ensure-nfpm.sh` it replaced was retired behind its golden; PLAN-retire-bash-oracles B3.) The module takes its root from its own location and imports nothing from `rediacc_ci`, so the single copied file is enough.
 
 -----------------------------------------------------------------------------
 A REAL DEFECT IN THE TWIN, REPRODUCED RATHER THAN FIXED
@@ -50,7 +50,7 @@ import tempfile
 from rediacc_ci.core import proxyx
 from rediacc_ci.well_known import GH_ORIGIN
 
-SUBJECT_REL = ".ci/scripts/build/ensure-nfpm.sh"
+SUBJECT_REL = ".ci/rediacc_ci/build/ensure_nfpm.py"
 
 # `grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1` (:113).
 SEMVER_RE = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
@@ -108,7 +108,7 @@ def run() -> int:
     toolchain_env = root / ".devcontainer" / "toolchain.env"
 
     p = proxyx.Proxy("ensure-nfpm", SUBJECT_REL)
-    p.need_exec(str(subject), "the subject script is missing from this checkout")
+    p.need_file(str(subject), "the subject script is missing from this checkout")
     p.need_file(str(constants), "the pin site is missing from this checkout")
     p.need_file(str(toolchain_env), "constants.sh sources this; the checkout is incomplete")
     p.need_cmd("curl", "sudo apt-get install -y curl")
@@ -168,7 +168,7 @@ def _version_or_die(binary: pathlib.Path) -> str:
 
 def _drive(p: proxyx.Proxy, root: pathlib.Path, fix: pathlib.Path, pinned: str) -> int:
     # `:74-79`. A minimal fixture root with a COLD cache.
-    (fix / ".ci" / "scripts" / "build").mkdir(parents=True, exist_ok=True)
+    (fix / ".ci" / "rediacc_ci" / "build").mkdir(parents=True, exist_ok=True)
     (fix / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     (fix / ".devcontainer").mkdir(parents=True, exist_ok=True)
     fix_subject = fix / SUBJECT_REL
@@ -187,7 +187,6 @@ def _drive(p: proxyx.Proxy, root: pathlib.Path, fix: pathlib.Path, pinned: str) 
     shutil.copyfile(
         root / ".devcontainer" / "toolchain.env", fix / ".devcontainer" / "toolchain.env"
     )
-    fix_subject.chmod(0o755)
 
     path = clean_path(os.environ.get("PATH", ""))
 
@@ -195,7 +194,7 @@ def _drive(p: proxyx.Proxy, root: pathlib.Path, fix: pathlib.Path, pinned: str) 
         env = dict(os.environ)
         env["PATH"] = extra_path + ":" + path if extra_path else path
         return subprocess.run(
-            [str(fix_subject)],
+            [sys.executable, str(fix_subject)],
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT if merge else subprocess.PIPE,
@@ -221,7 +220,8 @@ def _drive(p: proxyx.Proxy, root: pathlib.Path, fix: pathlib.Path, pinned: str) 
     else:
         p.bad(
             "it printed '%s', which is not a directory; every caller does "
-            'PATH="$(ensure-nfpm.sh):$PATH" and would silently get nothing' % printed
+            'PATH="$(python3 -m rediacc_ci.build.ensure_nfpm):$PATH" and would silently get nothing'
+            % printed
         )
 
     binary = pathlib.Path(printed) / "nfpm"

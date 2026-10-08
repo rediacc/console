@@ -21,6 +21,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.ci import budget_report as br
+from rediacc_ci.testrun import e2e as e2e_run
 from rediacc_ci.well_known import GH_REPO
 
 # --------------------------------------------------------------------------- parse_workflow_jobs: has_matrix ---------------------------------------------------------------------------
@@ -324,7 +325,7 @@ def _playwright_json(file_name: str, duration_ms: int) -> str:
 
 
 def test_parse_unit_duration_artifact_sums_several_members_of_the_same_format():
-    """CONTROL: a sharded E2E leg's own run-e2e.sh can invoke Playwright more than once, writing one `unit-durations*.json` per invocation into the SAME artifact. Two members naming the same spec file must sum to that file's total duration, not have one silently discarded by `next(...)`."""
+    """CONTROL: a sharded E2E leg's own runner can invoke Playwright more than once, writing one `unit-durations*.json` per invocation into the SAME artifact. Two members naming the same spec file must sum to that file's total duration, not have one silently discarded by `next(...)`."""
     blob = _zip_with_many(
         {
             "unit-durations-1.json": _playwright_json("a.spec.ts", 2000),
@@ -1485,32 +1486,26 @@ def test_renet_integration_classname_ids_land_in_the_committed_manifest():
 
 # --------------------------------------------------------------------------- T3.1: e2e-workers describe-block buckets (BLOCKER item 5, #partN) ---------------------------------------------------------------------------
 
-_FIXTURE_RUN_E2E_SH = """
-declare -A E2E_SHARD_GREP_BUCKETS=(
-    ["part1"]="PostgreSQL Data Persistence @bridge @integration|Repository Fork Data Inheritance @bridge @integration"
-    ["part2"]="Multiple Fork Independence @bridge @integration|Fork Data Integrity @bridge @integration"
-    ["part3"]="Large Data Volume Fork @bridge @integration|Service Restart Persistence @bridge @integration"
-)
-"""
 
-
-def _write_fixture_run_e2e_sh(tmp_path):
-    script_dir = tmp_path / ".ci" / "scripts" / "test"
-    script_dir.mkdir(parents=True)
-    (script_dir / "run-e2e.sh").write_text(_FIXTURE_RUN_E2E_SH, encoding="utf-8")
-    return tmp_path
-
-
-def test_e2e_shard_bucket_titles_reads_the_bash_array(tmp_path):
-    root = _write_fixture_run_e2e_sh(tmp_path)
-    titles = br._e2e_shard_bucket_titles(root)
+def test_e2e_shard_bucket_titles_reads_the_runners_python_table():
+    """Rule T. The table the report buckets by is `rediacc_ci.testrun.e2e.SHARD_GREP_BUCKETS`, the one the E2E runner builds a bucketed leg's `--grep` from. The report used to parse the retired `run-e2e.sh`'s bash `declare -A` text, so once that script was gone it returned an empty map with no error and every spec silently fell back to whole-file grouping."""
+    titles = br._e2e_shard_bucket_titles()
     assert titles["PostgreSQL Data Persistence @bridge @integration"] == "part1"
     assert titles["Repository Fork Data Inheritance @bridge @integration"] == "part1"
     assert titles["Large Data Volume Fork @bridge @integration"] == "part3"
+    expected = {
+        title: bucket
+        for bucket, pattern in e2e_run.SHARD_GREP_BUCKETS.items()
+        for title in pattern.split("|")
+        if title
+    }
+    assert titles == expected
 
 
-def test_e2e_shard_bucket_titles_missing_script_is_an_empty_map_not_a_crash(tmp_path):
-    assert br._e2e_shard_bucket_titles(tmp_path) == {}
+def test_e2e_shard_bucket_titles_needs_no_bash_script():
+    """The retired bash runner is not an input any more: the answer is the same whether or not a `run-e2e.sh` exists under any root."""
+    assert not (paths.repo_root() / ".ci" / "scripts" / "test" / "run-e2e.sh").exists()
+    assert br._e2e_shard_bucket_titles()
 
 
 def _pw_describe_suite(file, describe_title, duration):
@@ -1605,10 +1600,10 @@ def test_parse_playwright_unit_ms_with_no_bucket_titles_is_unchanged():
 
 
 def test_e2e_workers_bucket_ids_land_in_the_committed_manifest():
-    """The BLOCKER's other named gap: the three `#partN` units have no sample. Reads the REAL `run-e2e.sh` bucket table and the REAL committed `test-e2e-workers.json` manifest (both via `paths.repo_root()`, no fixture copy) and checks the produced ids against it."""
+    """The BLOCKER's other named gap: the three `#partN` units have no sample. Reads the REAL `SHARD_GREP_BUCKETS` table of `rediacc_ci.testrun.e2e` and the REAL committed `test-e2e-workers.json` manifest (both via `paths.repo_root()`, no fixture copy) and checks the produced ids against it."""
     root = paths.repo_root()
-    bucket_titles = br._e2e_shard_bucket_titles(root)
-    assert bucket_titles, "run-e2e.sh's E2E_SHARD_GREP_BUCKETS did not parse"
+    bucket_titles = br._e2e_shard_bucket_titles()
+    assert bucket_titles, "testrun.e2e.SHARD_GREP_BUCKETS is empty"
     manifest = json.loads((root / ".ci/config/shards/test-e2e-workers.json").read_text())
     manifest_ids = {i for leg in manifest["legs"] for i in leg["ids"]}
     file = "13-postgres-fork-isolation.test.ts"

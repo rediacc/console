@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-releaseversion-build-version.sh`, retired in W7 P5.
 
-Both-ways test for the two version checks inside `.ci/scripts/build/build-cli-executables.sh`.
+Both-ways test for the two version checks inside `rediacc_ci.build.build_cli_executables` (written against the bash `build-cli-executables.sh`, retired behind its golden, PLAN-retire-bash-oracles B3).
 
 WHAT THEY ARE FOR.
   1. The release guard: on the publishable path (RELEASE_BUILD=true, set by
@@ -14,30 +14,38 @@ WHAT WAS BROKEN. Check 2 asserted only `[[ -n "$CLI_VERSION" ]] && [[ ... != "nu
 ]]` -- it never compared the reported version to the version the build was told to produce, and it parsed the reported value into the SAME variable name that carried the expected one, destroying the only copy. A SEA built as 0.0.0-dev passed with a cheerful "CLI version: 0.0.0-dev", and release 31154305287 published binaries built as 1.2.16 under the label 1.2.17 with this step
 green. Check 1 did not exist at all.
 
-HOW THE SMOKE TEST IS EXERCISED. Building a real SEA takes minutes, so the comparison block is EXTRACTED FROM THE REAL SCRIPT by its own anchors and run against planted doctor output. It is the script's own bytes, not a copy of its logic; if someone rewrites the block, the anchors stop matching and `test_block_is_extractable` fails rather than silently testing nothing.
+HOW THE SMOKE TEST IS EXERCISED. Building a real SEA takes minutes, so the comparison is called on its own: `_check_doctor_json` is the module's own function, run in a child process against planted doctor output, and the planted mutation is made on a COPY of the module's source. A mutation whose pattern stopped matching would plant the FIXED code and report that the fixed code lets a mismatch through, which it does not -- so the plant is asserted to have changed something.
 
-TWO REFUSALS THE PORT ADDS, both guarding controls rather than the subject. An extraction that comes back EMPTY produces a runner that exits 0 having done nothing, which would turn four cases green for the wrong reason; and the planted mutation in the last case is asserted to have CHANGED something, because a `sed` whose pattern stopped matching plants the FIXED code and then
-reports that the fixed code lets a mismatch through, which it does not -- the case would red
-while naming the opposite of what happened.
-
-THE BUILD IS DRIVEN AT ITS REAL PATH, unchanged from the twin, because the release guard sits between the `--dry-run` exit and `node bundle.mjs`: a refused build costs a second and writes nothing. `--output` still points into a per-test tmpdir so the one case that gets PAST the guard has nowhere to land but scratch.
+THE BUILD IS DRIVEN AT ITS REAL PATH, as the twin was, because the release guard sits between the `--dry-run` exit and `node bundle.mjs`: a refused build costs a second and writes nothing. `--output` still points into a per-test tmpdir so the one case that gets PAST the guard has nowhere to land but scratch.
 """
 
 import json
 import os
 import stat
+import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-GATE = paths.from_root(".ci", "scripts", "build", "build-cli-executables.sh")
+GATE = paths.from_root(".ci", "rediacc_ci", "build", "build_cli_executables.py")
 
-BLOCK_START = 'INSTALL_METHOD=$(echo "$DOCTOR_OUTPUT" | jq -r'
-BLOCK_END = 'log_info "CLI version: $REPORTED_CLI_VERSION (matches build version)"'
+# The comparison in `_check_doctor_json`, and the pre-fix behaviour: a comparison that compares nothing.
+MUTATION_FROM = "if reported_version != expected_version:"
+MUTATION_TO = "if False:"
 
-# The pre-fix behaviour: a comparison that compares nothing.
-MUTATION_FROM = '"$REPORTED_CLI_VERSION" != "$EXPECTED_CLI_VERSION"'
-MUTATION_TO = "1 -eq 0"
+# Calls `_check_doctor_json` of the module at argv[1] (the real file or a mutated copy) and prints a refusal the way `main` does.
+DRIVER = """
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("build_cli_executables_under_test", sys.argv[1])
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+try:
+    mod._check_doctor_json(sys.argv[3], sys.argv[2])
+except mod.Refusal as refusal:
+    for line in refusal.lines:
+        mod.log.error(line)
+    raise SystemExit(refusal.code)
+"""
 
 
 def require_gate(gate) -> str:
@@ -47,12 +55,11 @@ def require_gate(gate) -> str:
 
 
 def run_build(gate, tmp_path, env: dict[str, str]) -> harness.RunResult:
-    """The REAL script, at its real path, refused by the guard before it writes."""
+    """The REAL module, at its real path, refused by the guard before it writes."""
     require_gate(gate)
-    bash = harness.require_tool("bash", "install bash; the subject IS a bash script")
     return harness.run(
         [
-            bash,
+            sys.executable,
             str(GATE),
             "--platform",
             "linux",
@@ -62,29 +69,9 @@ def run_build(gate, tmp_path, env: dict[str, str]) -> harness.RunResult:
             str(tmp_path / "out"),
         ],
         cwd=paths.repo_root(),
-        env=env,
+        env={"PYTHONPATH": str(paths.from_root(".ci")), **env},
         timeout=300,
     )
-
-
-def extract_block(gate) -> str:
-    source = require_gate(gate)
-    kept: list[str] = []
-    started = False
-    for line in source.splitlines(keepends=True):
-        if not started and BLOCK_START in line:
-            started = True
-        if started:
-            kept.append(line)
-            if BLOCK_END in line:
-                break
-    if not kept:
-        gate.log_fail(
-            "the doctor comparison block could not be extracted from %s: no line contains "
-            "%r. The anchors moved, so every case below would be driving an EMPTY script."
-            % (paths.relative_to_root(GATE), BLOCK_START)
-        )
-    return "".join(kept)
 
 
 def doctor_json(version: str) -> str:
@@ -101,34 +88,25 @@ def doctor_json(version: str) -> str:
 
 
 def run_block(gate, tmp_path, expected: str, reported: str, *, mutate: bool = False):
-    block = extract_block(gate)
+    source = require_gate(gate)
+    subject = GATE
     if mutate:
-        hits = block.count(MUTATION_FROM)
         # THE CONTROL ON THE CONTROL. A mutation that matches nothing plants the FIXED comparison and then asserts it lets a mismatch through.
-        if hits == 0:
+        if source.count(MUTATION_FROM) == 0:
             gate.log_fail(
-                "the planted mutation target %r no longer appears in the extracted block, "
+                "the planted mutation target %r no longer appears in the module, "
                 "so the 'neutered' comparison below is the LIVE one. Re-point the "
                 "mutation; do not delete the case." % MUTATION_FROM
             )
-        block = block.replace(MUTATION_FROM, MUTATION_TO)
-    script = tmp_path / "block.sh"
-    script.write_text(
-        "#!/bin/bash\n"
-        "set -euo pipefail\n"
-        'log_info() { echo "INFO: $*"; }\n'
-        'log_error() { echo "ERROR: $*" >&2; }\n'
-        "EXPECTED_CLI_VERSION=%s\n"
-        "DOCTOR_OUTPUT=%s\n" % (_sq(expected), _sq(doctor_json(reported))) + block,
-        encoding="utf-8",
+        subject = tmp_path / "mutant.py"
+        subject.write_text(source.replace(MUTATION_FROM, MUTATION_TO), encoding="utf-8")
+    harness.require_tool("jq", "install jq; the comparison reads the doctor JSON with it")
+    return harness.run(
+        [sys.executable, "-c", DRIVER, str(subject), expected, doctor_json(reported)],
+        cwd=paths.repo_root(),
+        env={"PYTHONPATH": str(paths.from_root(".ci"))},
+        timeout=120,
     )
-    bash = harness.require_tool("bash", "install bash; the extracted block is bash")
-    return harness.run([bash, str(script)], cwd=paths.repo_root(), timeout=120)
-
-
-def _sq(value: str) -> str:
-    """Single-quote for bash. The twin interpolates unquoted; the doctor JSON has no single quotes so both are safe today, and this stays safe if it grows one."""
-    return "'%s'" % value.replace("'", "'\\''")
 
 
 def test_release_build_refuses_the_placeholder(gate, tmp_path):
@@ -166,7 +144,7 @@ def test_dev_build_still_accepts_the_placeholder(gate, tmp_path):
     stub.write_text(
         "#!/bin/bash\n"
         "# Answers --version (the script logs it) and fails anything else, so the run\n"
-        "# stops at `node bundle.mjs` -- after the release guard, before any output.\n"
+        "# stops at the bundler -- after the release guard, before any output.\n"
         '[[ "${1:-}" == "--version" ]] && { echo "v22.0.0"; exit 0; }\n'
         'echo "stub node: refusing to run $*" >&2\n'
         "exit 1\n",
@@ -195,16 +173,16 @@ def test_dev_build_still_accepts_the_placeholder(gate, tmp_path):
     gate.log_pass("the dev path is untouched by the release guard")
 
 
-def test_block_is_extractable(gate):
-    gate.log_test("the doctor comparison block is still where the anchors say")
-    block = extract_block(gate)
+def test_the_comparison_is_where_the_mutation_expects_it(gate):
+    gate.log_test("the doctor comparison is still in the module")
+    source = require_gate(gate)
     gate.assert_contains(
-        block, "REPORTED_CLI_VERSION", "extraction must capture the reported-version parse"
+        source, "reported_version", "the reported-version parse must still be in the module"
     )
     gate.assert_contains(
-        block, "EXPECTED_CLI_VERSION", "extraction must capture the expected-version comparison"
+        source, MUTATION_FROM, "the expected-version comparison must still be spelled as planted"
     )
-    gate.log_pass("block extracted from the real script (%d line(s))" % len(block.splitlines()))
+    gate.log_pass("comparison found in the real module")
 
 
 def test_matching_version_passes(gate, tmp_path):

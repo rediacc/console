@@ -32,6 +32,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.build import prepare_cli_assets as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -112,7 +113,8 @@ def fixture(
     root = tmp_path / "repo"
     for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (TWIN_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
+    twin_files = (TWIN_REL,) if diff.regolden_mode(TWIN_REL) == "bash" else ()
+    for rel in (*twin_files, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     if port_source is None:
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)
@@ -222,10 +224,20 @@ def _reset(root: pathlib.Path) -> None:
         generated.unlink()
 
 
-def run_both(root: pathlib.Path, **kw):
+def _old_side(root: pathlib.Path, **kw):
+    """The twin's whole answer: process, call log and produced files. It comes from the golden (PLAN-retire-bash-oracles B3); this is how it was recorded."""
     _reset(root)
-    old, old_calls = _run(root, "old", **kw)
-    old_files = _artifacts(root)
+    proc, calls = _run(root, "old", **kw)
+    return proc, calls, _artifacts(root)
+
+
+def run_both(root: pathlib.Path, **kw):
+    old, old_calls, old_files = diff.twin_result(
+        TWIN_REL,
+        [repr(sorted(kw.items()))],
+        lambda: _old_side(root, **kw),
+        work=(str(root), str(root.parent)),
+    )
     _reset(root)
     new, new_calls = _run(root, "new", **kw)
     new_files = _artifacts(root)

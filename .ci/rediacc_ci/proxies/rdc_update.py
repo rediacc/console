@@ -1,9 +1,9 @@
 """Port of `.ci/scripts/test/proxies/proxy-rdc-update.sh`.
 
-Local proxy for the CI job that drives `rdc update` end to end, wired as the registered gate `check:ci-proxy-rdc-update` (`package.json:386`). CI runs `.ci/scripts/test/test-rdc-update.sh all` in the update-flow job of `.github/workflows/ct-update-flow.yml` against a REAL SEA binary; that workflow is outside the parity surface, so nothing in `npm run ci` has ever touched the
+Local proxy for the CI job that drives `rdc update` end to end, wired as the registered gate `check:ci-proxy-rdc-update` (`package.json:386`). CI runs `python3 -m rediacc_ci.testrun.rdc_update all` in the update-flow job of `.github/workflows/ct-update-flow.yml` against a REAL SEA binary; that workflow is outside the parity surface, so nothing in `npm run ci` has ever touched the
 updater.
 
-The SUBJECT stays bash and is run as bash. Only the proxy is ported.
+The SUBJECT is `rediacc_ci.testrun.rdc_update`, run as a module from the proxy's own root (the bash subject `test-rdc-update.sh` it replaced was retired behind its golden; PLAN-retire-bash-oracles B3).
 
 THE EXEMPTION IS BY NAME AND PRINTED EVERY RUN, preserved exactly. `happy` and `rollback` need genuine SEA packaging (the CLI refuses a plain node bundle with "Cannot update: not running as a packaged binary"), so with `RDC_BINARY` unset the run is five scenarios and the two are NAMED in yellow on every single run rather than quietly dropped. Setting `RDC_BINARY` removes the
 exemption by itself.
@@ -48,16 +48,18 @@ import sys
 
 from rediacc_ci.core import proxyx
 
-SUBJECT_REL = ".ci/scripts/test/test-rdc-update.sh"
+SUBJECT_REL = ".ci/rediacc_ci/testrun/rdc_update.py"
+SUBJECT_MODULE = "rediacc_ci.testrun.rdc_update"
 FALLBACK_REL = "packages/cli/dist/cli-bundle.cjs"
 
-# Scenarios that need no SEA packaging (:43). Kept as a list rather than a count so a name added to the subject and forgotten here is visible in the diff.
-SEA_FREE = ["check-only", "sha256-mismatch", "rollback-empty", "channel-switch", "reinstall"]
-# BLOCKER: these two invoke the SEA-only update and rollback paths, which a node bundle cannot reach at all. Exempt by name, reported every run, and skipped only while RDC_BINARY is unset. (:45-47)
-SEA_ONLY = ["happy", "rollback"]
+# Scenarios that need no SEA packaging. Kept as a list rather than a count so a name added to the subject and forgotten here is visible in the diff.
+SEA_FREE = ["check-only", "channel-switch", "reinstall"]
+# BLOCKER: these four invoke the SEA-only update and rollback paths, which a node bundle cannot reach at all. Exempt by name, reported every run, and skipped only while RDC_BINARY is unset. `sha256-mismatch` and `rollback-empty` used to sit in SEA_FREE because the bash subject only checked that the command failed, so a node bundle "passed" them by refusing for the wrong reason ("not running as a packaged binary"); the Python subject checks the reason (Rule T), and the reduced run no longer claims them.
+SEA_ONLY = ["happy", "rollback", "sha256-mismatch", "rollback-empty"]
 
-# `grep -oE '^ [a-z0-9-]+\) scenario_'` (:73). EXACTLY eight spaces: a re-indented dispatch matches nothing and takes the loud refusal below, which is the right direction.
-DISPATCH_RE = re.compile(r"^        ([a-z0-9-]+)\) scenario_", re.MULTILINE)
+# The `SCENARIOS = (...)` tuple of the subject, closed by a `)` in column 0. A re-indented or renamed tuple matches nothing and takes the loud refusal below, which is the right direction.
+SCENARIOS_BLOCK_RE = re.compile(r"^SCENARIOS = \((.*?)^\)", re.MULTILINE | re.DOTALL)
+SCENARIO_NAME_RE = re.compile(r'"([a-z0-9-]+)"')
 
 
 def _proxy_root() -> pathlib.Path:
@@ -66,11 +68,11 @@ def _proxy_root() -> pathlib.Path:
 
 
 def parse_declared(subject_text: str) -> list[str]:
-    """`:73`, the whole pipeline: grep -oE | sed | sort.
-
-    The `sed 's/) scenario_//; s/^ *//'` reduces each match to the bare name, which is exactly the capture group here.
-    """
-    return sorted(DISPATCH_RE.findall(subject_text))
+    """The scenario names in the subject's `SCENARIOS` tuple, sorted (the bash twin read its `case` dispatch with grep | sed | sort)."""
+    block = SCENARIOS_BLOCK_RE.search(subject_text)
+    if block is None:
+        return []
+    return sorted(SCENARIO_NAME_RE.findall(block.group(1)))
 
 
 def joined(names: list[str]) -> str:
@@ -92,7 +94,7 @@ def run() -> int:
         os.environ["RDC_BINARY"] = fallback
     rdc_binary = os.environ["RDC_BINARY"]
 
-    p.need_exec(subject, "the subject script is missing from this checkout")
+    p.need_file(subject, "the subject script is missing from this checkout")
     p.need_exec(
         rdc_binary,
         "npm run build:cli, or export RDC_BINARY=/path/to/rdc",
@@ -105,20 +107,20 @@ def run() -> int:
     )
     p.preflight()
 
-    # :70-86. The subject's own scenario set, read from its dispatch rather than retyped.
+    # :70-86. The subject's own scenario set, read from its SCENARIOS tuple rather than retyped.
     declared = parse_declared(pathlib.Path(subject).read_text(encoding="utf-8"))
     known = sorted(SEA_FREE + SEA_ONLY)
     if not declared:
         red, off = p._c(proxyx.RED), p._c(proxyx.OFF)
         print(
-            f"{red}proxy rdc-update: read ZERO scenarios out of the subject's dispatch{off}",
+            f"{red}proxy rdc-update: read ZERO scenarios out of the subject's SCENARIOS tuple{off}",
             file=sys.stderr,
         )
         print(
-            "  The partition below would then be vacuous. Check the grep in this file",
+            "  The partition below would then be vacuous. Check the pattern in this file",
             file=sys.stderr,
         )
-        print(f"  against the dispatch block at the end of {subject}.", file=sys.stderr)
+        print(f"  against the SCENARIOS tuple in {subject}.", file=sys.stderr)
         return 1
     if declared == known:
         p.ok(f"this proxy's partition covers all {len(declared)} scenarios the subject declares")
@@ -133,7 +135,7 @@ def run() -> int:
         yel, off = p._c(proxyx.YEL), p._c(proxyx.OFF)
         print(f"{yel}proxy rdc-update: REDUCED RUN. RDC_BINARY is unset, so the fallback is{off}")
         print(f"{yel}  {fallback} (a node bundle, not a packaged SEA binary).{off}")
-        print(f"{yel}  NOT EXERCISED HERE: {' '.join(SEA_ONLY)} -- both need SEA packaging.{off}")
+        print(f"{yel}  NOT EXERCISED HERE: {' '.join(SEA_ONLY)} -- these need SEA packaging.{off}")
         print(
             f"{yel}  CI runs all {len(declared)} against a real binary; "
             f"to do the same locally run{off}"
@@ -147,7 +149,14 @@ def run() -> int:
 
     # :104-115. Streams kept separate, and the whole of each is dumped on a failure (`cat`, not `tail -N`).
     sys.stdout.flush()
-    sub = subprocess.run([subject, *to_run], capture_output=True, text=True, check=False)
+    sub = subprocess.run(
+        [sys.executable, "-m", SUBJECT_MODULE, *to_run],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=str(root),
+        env={**os.environ, "PYTHONPATH": str(root / ".ci")},
+    )
     rc = sub.returncode
 
     if rc == 0:

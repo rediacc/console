@@ -20,9 +20,9 @@
  * A lane with neither is UN-ENUMERABLE and reds. It is never skipped: a manifest this
  * gate cannot check is a manifest nothing checks.
  *
- * `#<bucket>` SUFFIXES. `run-e2e.sh` splits one spec file into describe-group buckets
- * (`13-postgres-fork-isolation.test.ts#part1/2/3`), resolving each bucket name through
- * its `E2E_SHARD_GREP_BUCKETS` map. An id `<file>#<bucket>` counts toward the unit
+ * `#<bucket>` SUFFIXES. The E2E runner (`rediacc_ci.testrun.e2e`) splits one spec file into
+ * describe-group buckets (`13-postgres-fork-isolation.test.ts#part1/2/3`), resolving each
+ * bucket name through its `SHARD_GREP_BUCKETS` dict. An id `<file>#<bucket>` counts toward the unit
  * `<file>`, and a bucketed file must carry EVERY bucket that map declares: a missing
  * bucket is that bucket's describe groups running in no CI job, the same defect as a
  * missing file. A bucket suffix on any other lane reds, because no other runner resolves
@@ -75,11 +75,11 @@ import { refused } from '../lib/controls.js';
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const DEFAULT_SHARDS_DIR = path.join(ROOT, '.ci', 'config', 'shards');
 const LOCK = path.join(ROOT, 'scripts', 'ci-runner', 'gates.lock.json');
-const RUN_E2E = path.join(ROOT, '.ci', 'scripts', 'test', 'run-e2e.sh');
+const RUN_E2E = path.join(ROOT, '.ci', 'rediacc_ci', 'testrun', 'e2e.py');
 
 /** Lanes whose runner resolves a `#<bucket>` suffix, and where its bucket map lives. */
 const BUCKET_LANES: Readonly<Record<string, string>> = {
-  'test-e2e-workers': '.ci/scripts/test/run-e2e.sh (E2E_SHARD_GREP_BUCKETS)',
+  'test-e2e-workers': '.ci/rediacc_ci/testrun/e2e.py (SHARD_GREP_BUCKETS)',
 };
 
 /** What each enumerator needs from the job it runs in; printed whenever one cannot run, so a missing tool reads as a missing tool and not as flake. */
@@ -113,22 +113,25 @@ export function splitId(id: string): { base: string; bucket: string | null } {
   return at < 0 ? { base: id, bucket: null } : { base: id.slice(0, at), bucket: id.slice(at + 1) };
 }
 
-/** The bucket names `run-e2e.sh` declares in `E2E_SHARD_GREP_BUCKETS`, in source order. */
-export function parseBucketKeys(runE2eSource: string): string[] {
-  const block = /declare -A E2E_SHARD_GREP_BUCKETS=\(([\s\S]*?)\n\s*\)/.exec(runE2eSource);
-  if (block === null) return [];
-  return [...(block[1] as string).matchAll(/\["([^"]+)"\]=/g)].map((m) => m[1] as string);
+/** The `SHARD_GREP_BUCKETS = { ... }` dict body of the E2E runner's source, or null when it has none. */
+function bucketBlock(runE2eSource: string): string | null {
+  const block = /^SHARD_GREP_BUCKETS = \{([\s\S]*?)^\}/m.exec(runE2eSource);
+  return block === null ? null : (block[1] as string);
 }
 
-/** `E2E_SHARD_GREP_BUCKETS` as name -> the `--grep` pattern `run-e2e.sh` hands Playwright. */
+/** The bucket names `rediacc_ci.testrun.e2e` declares in `SHARD_GREP_BUCKETS`, in source order. */
+export function parseBucketKeys(runE2eSource: string): string[] {
+  const block = bucketBlock(runE2eSource);
+  if (block === null) return [];
+  return [...block.matchAll(/^\s*"([^"]+)":/gm)].map((m) => m[1] as string);
+}
+
+/** `SHARD_GREP_BUCKETS` as name -> the `--grep` pattern the E2E runner hands Playwright. */
 export function parseBucketPatterns(runE2eSource: string): Record<string, string> {
-  const block = /declare -A E2E_SHARD_GREP_BUCKETS=\(([\s\S]*?)\n\s*\)/.exec(runE2eSource);
+  const block = bucketBlock(runE2eSource);
   if (block === null) return {};
   return Object.fromEntries(
-    [...(block[1] as string).matchAll(/\["([^"]+)"\]="([^"]*)"/g)].map((m) => [
-      m[1] as string,
-      m[2] as string,
-    ])
+    [...block.matchAll(/^\s*"([^"]+)":\s*"([^"]*)"/gm)].map((m) => [m[1] as string, m[2] as string])
   );
 }
 
@@ -527,7 +530,7 @@ function selftest(): number {
   const has = (f: Finding[], kind: Finding['kind'], needle: string): boolean =>
     f.some((x) => x.kind === kind && x.message.includes(needle));
   const runE2eFixture =
-    'declare -A E2E_SHARD_GREP_BUCKETS=(\n    ["part1"]="A|B"\n    ["part2"]="C|D"\n    ["part3"]="E|F"\n)\n';
+    'SHARD_GREP_BUCKETS = {\n    "part1": "A|B",\n    "part2": "C|D",\n    "part3": "E|F",\n}\n';
 
   const P = { part1: 'A @x|B @x', part2: 'C @x', part3: 'D @x' };
   const T = (d: string, n: string) => `13.test.ts ${d} @x ${n}`;
@@ -590,7 +593,7 @@ function selftest(): number {
     (() => {
       const p = parseBucketPatterns(runE2eFixture);
       return {
-        name: 'parseBucketPatterns reads name -> pattern from the run-e2e.sh block',
+        name: 'parseBucketPatterns reads name -> pattern from the SHARD_GREP_BUCKETS dict',
         ok: JSON.stringify(p) === JSON.stringify({ part1: 'A|B', part2: 'C|D', part3: 'E|F' }),
         detail: JSON.stringify(p),
       };
@@ -730,7 +733,7 @@ function selftest(): number {
         B
       );
       return {
-        name: 'FIRES: a bucket run-e2e.sh does not declare reds',
+        name: 'FIRES: a bucket the E2E runner does not declare reds',
         ok: has(f, 'bucket', '"part9"'),
         detail: kinds(f),
       };
@@ -800,7 +803,7 @@ function selftest(): number {
         splitId('check:x').bucket === null,
     },
     {
-      name: 'parseBucketKeys reads the bucket names from a run-e2e.sh-shaped block',
+      name: 'parseBucketKeys reads the bucket names from a SHARD_GREP_BUCKETS-shaped block',
       ok: parseBucketKeys(runE2eFixture).join(',') === 'part1,part2,part3',
     },
     {
@@ -810,7 +813,7 @@ function selftest(): number {
     (() => {
       const real = parseBucketKeys(fs.readFileSync(RUN_E2E, 'utf8'));
       return {
-        name: 'the REAL run-e2e.sh declares at least one bucket (the parser sees the file)',
+        name: 'the REAL e2e.py declares at least one bucket (the parser sees the file)',
         ok: real.length > 0,
         detail: real.join(','),
       };

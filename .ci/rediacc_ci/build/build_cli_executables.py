@@ -20,11 +20,11 @@ SHELLED OUT, because the twin shells out to it and the call is the observable:
     the mac and win branches below are exercised, since this machine is Linux.
   * `node`, five times, with distinct argv: `--version`, `bundle.mjs`,
     `--experimental-sea-config`, `sea-inject/cli.mjs`, `sea-inject/verify.mjs`.
-  * `.ci/scripts/build/prepare-cli-assets.sh`, by the same absolute path the twin
-    builds from `$SCRIPT_DIR`. It has its OWN port (`build/prepare_cli_assets.py`)
-    and this file deliberately does not call it: the twin invokes the BASH one, so
-    calling the Python one would make the two sides run different programs and
-    the differential would be comparing the ports to each other.
+  * `python -m rediacc_ci.build.prepare_cli_assets`, the port of the bash
+    `prepare-cli-assets.sh` the twin shelled out to. The twin and its sibling are
+    both retired behind goldens, so the sibling is now the Python module, run as a
+    subprocess exactly as the bash one was (its argv and exit status are the
+    observables the differential records).
   * `cp`, `chmod +x`, `strip --strip-all`, `codesign`, `sha256sum`/`shasum`, `jq`.
     `cp` and `chmod` are shelled out rather than done with `shutil`/`os.chmod`
     because `chmod +x` is `a+x` MASKED BY THE UMASK and `cp` creates with the
@@ -170,9 +170,9 @@ def console_root() -> pathlib.Path:
 
 
 def script_dir(root: pathlib.Path) -> pathlib.Path:
-    """`$SCRIPT_DIR` -- `.ci/scripts/build`, where the BASH twin lives.
+    """`$SCRIPT_DIR` -- `.ci/scripts/build`, where `sea-inject/cli.mjs` and `sea-inject/verify.mjs` live.
 
-    Not this file's directory. `prepare-cli-assets.sh`, `sea-inject/cli.mjs` and `sea-inject/verify.mjs` are siblings of the TWIN, and their paths appear in the argv of real subprocesses, so both sides must name the same three files.
+    Not this file's directory: the two injector scripts are siblings of the retired bash twin, and their paths appear in the argv of real subprocesses, so both sides name the same files.
     """
     return root / ".ci" / "scripts" / "build"
 
@@ -375,9 +375,6 @@ def _status(argv: list[str], line: int, **kw) -> int:
     """
     sys.stdout.flush()
     sys.stderr.flush()
-    # WINDOWS CANNOT EXEC A `.sh`. CreateProcess has no shebang, so on the win-x64/win-arm64 legs `prepare-cli-assets.sh` raised OSError and this function reported bash's rc 127 "command not found" for a script that exists (run 35993423259, 2026-09-24). The twin ran under Git Bash, which reads the shebang itself; handing the script to `bash` explicitly is the same execution. POSIX keeps the direct exec, so the differential's argv is unchanged. `bash` is resolved through PATH with `shutil.which`, never passed bare: CreateProcess searches System32 BEFORE PATH, so a bare `bash` can start the WSL launcher instead of the Git Bash this step runs under.
-    if os.name == "nt" and argv and argv[0].endswith(".sh"):
-        argv = [shutil.which("bash") or "bash", *argv]
     try:
         return subprocess.run(argv, check=False, **kw).returncode
     except OSError:
@@ -689,9 +686,20 @@ def build(argv: list[str]) -> int:
     require_file(str(cli_dir / "dist" / "cli-bundle.cjs"))
     log.info("Bundle created: %d bytes" % _size("dist/cli-bundle.cjs"))
 
-    # STEP 1.5: embedded renet assets, via the BASH sibling (see the module head).
+    # STEP 1.5: embedded renet assets, via `rediacc_ci.build.prepare_cli_assets` (the bash `prepare-cli-assets.sh` it replaced is retired). The interpreter that runs this module runs the sibling, so no `bash` is needed on the Windows legs either.
     log.step("Preparing embedded renet assets...")
-    _must([str(sdir / "prepare-cli-assets.sh"), "--platform", platform_name, "--arch", arch], 150)
+    _must(
+        [
+            sys.executable,
+            "-m",
+            "rediacc_ci.build.prepare_cli_assets",
+            "--platform",
+            platform_name,
+            "--arch",
+            arch,
+        ],
+        150,
+    )
 
     # STEP 2: the SEA blob.
     log.step("Generating SEA blob...")

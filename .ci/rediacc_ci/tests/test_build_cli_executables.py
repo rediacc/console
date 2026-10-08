@@ -34,6 +34,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.build import build_cli_executables as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -45,7 +46,8 @@ PORT_REL = ".ci/rediacc_ci/build/build_cli_executables.py"
 COMMON_REL = ".ci/scripts/lib/common.sh"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
 INJECT_REL = ".ci/scripts/version/inject-env.sh"
-ASSETS_REL = ".ci/scripts/build/prepare-cli-assets.sh"
+ASSETS_REL = ".ci/rediacc_ci/build/prepare_cli_assets.py"
+TWIN_ASSETS_REL = ".ci/scripts/build/prepare-cli-assets.sh"
 
 VENDORED = (
     ".ci/rediacc_ci/__init__.py",
@@ -169,7 +171,8 @@ exit "${FAKE_CODESIGN_RC:-0}"
 """
 )
 
-FAKE_ASSETS = (
+# The retired bash sibling's recorder, written only by a re-freeze (it is what the bash twin shelled out to).
+TWIN_FAKE_ASSETS = (
     """#!/bin/bash
 __self=prepare-cli-assets.sh
 """
@@ -178,6 +181,15 @@ __self=prepare-cli-assets.sh
 exit "${FAKE_ASSETS_RC:-0}"
 """
 )
+
+# The port's sibling is the module `rediacc_ci.build.prepare_cli_assets`; this recorder answers in its place and writes the SAME call-log line the bash recorder wrote, so the call log is comparable with the frozen twin's.
+FAKE_ASSETS = """import os
+import sys
+
+with open(os.environ["FAKE_CALL_LOG"], "a", encoding="utf-8") as fh:
+    fh.write("FAKEBIN prepare-cli-assets.sh" + "".join("\\t" + a for a in sys.argv[1:]) + "\\n")
+raise SystemExit(int(os.environ.get("FAKE_ASSETS_RC", "0")))
+"""
 
 FAKES = {
     "node": FAKE_NODE,
@@ -212,9 +224,11 @@ def doctor_json(
 
 def fixture(tmp_path: pathlib.Path, *, port_source: str | None = None) -> pathlib.Path:
     root = tmp_path / "repo"
+    recording = diff.regolden_mode(TWIN_REL) == "bash"
+    twin_files = (TWIN_REL, INJECT_REL) if recording else ()
     for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, INJECT_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (TWIN_REL, COMMON_REL, WELL_KNOWN_REL, INJECT_REL, *VENDORED):
+    for rel in (*twin_files, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     if port_source is None:
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)
@@ -224,7 +238,10 @@ def fixture(tmp_path: pathlib.Path, *, port_source: str | None = None) -> pathli
     # The sibling the twin shells out to, replaced by a recorder. Its real 200-line self has its own port and its own differential; running it here would be testing that file through this one.
     assets = root / ASSETS_REL
     assets.write_text(FAKE_ASSETS, encoding="utf-8")
-    assets.chmod(0o755)
+    if recording:
+        twin_assets = root / TWIN_ASSETS_REL
+        twin_assets.write_text(TWIN_FAKE_ASSETS, encoding="utf-8")
+        twin_assets.chmod(0o755)
 
     (root / "packages" / "cli").mkdir(parents=True, exist_ok=True)
     return root
@@ -313,10 +330,20 @@ def _reset(root: pathlib.Path) -> None:
         shutil.rmtree(root / rel, ignore_errors=True)
 
 
-def run_both(root: pathlib.Path, **kw):
+def _old_side(root: pathlib.Path, **kw):
+    """The twin's whole answer: process, call log and produced files. It comes from the golden (PLAN-retire-bash-oracles B3); this is how it was recorded."""
     _reset(root)
-    old, old_calls = _run(root, "old", **kw)
-    old_files = _artifacts(root)
+    proc, calls = _run(root, "old", **kw)
+    return proc, calls, _artifacts(root)
+
+
+def run_both(root: pathlib.Path, **kw):
+    old, old_calls, old_files = diff.twin_result(
+        TWIN_REL,
+        [repr(sorted(kw.items()))],
+        lambda: _old_side(root, **kw),
+        work=(str(root), str(root.parent)),
+    )
     _reset(root)
     new, new_calls = _run(root, "new", **kw)
     new_files = _artifacts(root)
@@ -755,10 +782,8 @@ def test_the_injected_version_reaches_the_bundler_environment(tmp_path) -> None:
     """The whole reason inject-env is SOURCED rather than run: `node bundle.mjs` must inherit `CLI_VERSION`. Proved by making the fake node write it out."""
     root = fixture(tmp_path)
     probe = root / "fixture-bin" / "node"
-    for side, argv in (
-        ("old", [BASH, str(root / TWIN_REL)]),
-        ("new", [sys.executable, str(root / PORT_REL)]),
-    ):
+
+    def drive(side: str, argv: list[str]) -> tuple[int, str, str]:
         _reset(root)
         env = {
             "PATH": scratch_bin(root),
@@ -784,9 +809,24 @@ def test_the_injected_version_reaches_the_bundler_environment(tmp_path) -> None:
         proc = subprocess.run(
             [*argv, *NATIVE], cwd=str(root), capture_output=True, text=True, env=env, check=False
         )
-        assert proc.returncode == 0, proc.stderr
-        seen = (root / ("%s-calls.log.env" % side)).read_text(encoding="utf-8")
-        assert seen == "4.5.6 4.5.6 4.5.6\n", "%s: %r" % (side, seen)
+        return proc.returncode, proc.stdout, proc.stderr
+
+    def seen_of(side: str) -> str:
+        return (root / ("%s-calls.log.env" % side)).read_text(encoding="utf-8")
+
+    rc, _out, err, frozen = diff.twin_run(
+        TWIN_REL,
+        ["bundler-environment"],
+        lambda: drive("old", [BASH, str(root / TWIN_REL)]),
+        extras={"seen": lambda: seen_of("old")},
+        work=(str(root), str(root.parent)),
+    )
+    assert rc == 0, err
+    assert frozen["seen"] == "4.5.6 4.5.6 4.5.6\n", "old: %r" % frozen["seen"]
+    rc, _out, err = drive("new", [sys.executable, str(root / PORT_REL)])
+    assert rc == 0, err
+    seen = seen_of("new")
+    assert seen == "4.5.6 4.5.6 4.5.6\n", "new: %r" % seen
 
 
 # --------------------------------------------------------------------------- The required-file gates and status propagation ---------------------------------------------------------------------------
