@@ -22,6 +22,7 @@
   ".claude/rediacc_hooks/guards/block_ci_skip_token.py",
   ".claude/rediacc_hooks/guards/block_cli_bundle.py",
   ".claude/rediacc_hooks/guards/block_commit_meta.py",
+  ".claude/rediacc_hooks/guards/block_commit_of_live_writer_file.py",
   ".claude/rediacc_hooks/guards/block_commit_on_main.py",
   ".claude/rediacc_hooks/guards/block_compacted_plan_edit.py",
   ".claude/rediacc_hooks/guards/block_destructive_git_restore.py",
