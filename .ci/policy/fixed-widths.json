@@ -57,14 +57,6 @@
       "reason": "The promotion simulation's parallel CopyObject calls (PLAN-ci-time-budget T2.5 widened it from the twin's 8): small server-side R2 requests, so the width is request concurrency against R2."
     },
     {
-      "file": ".ci/scripts/deploy/simulate-promotion.sh",
-      "match": "xargs -P 8 -I{} bash -c 'copy_one_object \"$@\"' _ {} <\"$KEYS\"",
-      "width": 8,
-      "kind": "io",
-      "limit": "Cloudflare R2 S3 API, server-side CopyObject requests",
-      "reason": "The bash twin of simulate_promotion.py: eight concurrent copy_one_object calls, each one aws s3api CopyObject request against R2, so the width bounds remote requests rather than local cores."
-    },
-    {
       "file": ".ci/rediacc_ci/security/audit.py",
       "match": "FETCH_PARALLELISM = 8",
       "width": 8,

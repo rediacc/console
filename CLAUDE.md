@@ -255,7 +255,7 @@ cd packages/www && npm run dev
 
 Version source of truth: **git tags** (e.g., `v0.8.3`). No version bump commits; injected at build time only, never stored in source, so every `package.json` carries the `0.0.0-dev` placeholder and none is published to npm.
 
-**[docs/agent-reference/versioning.md](docs/agent-reference/versioning.md)** carries `resolve-version.sh`'s mechanics, the per-component injection table (CLI, CLI Docker, www, renet), and `bump.sh`'s two push-to-main-only call sites.
+**[docs/agent-reference/versioning.md](docs/agent-reference/versioning.md)** carries `rediacc_ci.version.resolve_version`'s mechanics, the per-component injection table (CLI, CLI Docker, www, renet), and `bump.sh`'s two push-to-main-only call sites.
 
 ## Release Channels
 

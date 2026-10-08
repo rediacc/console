@@ -82,20 +82,20 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `.audit-prod-allowlist` | name per line | 2 | 3 | both |
 | `.ci-parity-exempt` | name per line | 8 | 9 | both |
 | `.cli-i18n-orphan-allowlist` | name per line | 5 | 6 | both |
-| `.dead-bash-allowlist` | name per line | 7 | 8 | both |
+| `.dead-bash-allowlist` | name per line | 5 | 6 | both |
 | `.deps-upgrade-blocklist` | name per line | 5 | 6 | both |
 | `.devcontainer-upgrade-blocklist` | name per line | 0 | 1 | both |
 | `.e2e-coverage-allowlist` | name per line | 21 | 3 | both |
 | `.embed-assets-upgrade-blocklist` | name per line | 0 | 1 | both |
 | `.go-deps-upgrade-blocklist` | name per line | 2 | 3 | both |
 | `.host-toolchain-exceptions` | name per line | 0 | 1 | both |
-| `.language-policy-allowlist` | name per line | 17 | 18 | both |
+| `.language-policy-allowlist` | name per line | 16 | 17 | both |
 | `.plan-housekeeping-allowlist` | name per line | 0 | 1 | both |
 | `.profiler-coverage-allowlist` | name per line | 63 | 4 | both |
 | `.runner-advice-allowlist` | name per line | 0 | 1 | both |
 | `.unverified-download-allowlist` | name per line | 4 | 4 | both |
-| `.w7p5a-real-run-blocklist` | name per line | 6 | 6 | both |
-| `.w7p5a-real-run-leg-blocklist` | name per line | 7 | 7 | both |
+| `.w7p5a-real-run-blocklist` | name per line | 0 | 0 | both |
+| `.w7p5a-real-run-leg-blocklist` | name per line | 0 | 0 | both |
 | `carry-exempt.json` | JSON table | - | 0 | both |
 | `deps-major-exceptions.json` | JSON table | - | 0 | both |
 | `fixed-widths.json` | JSON table | - | 0 | both |
@@ -228,7 +228,6 @@ git blame --line-porcelain -- <file> \
 | 20 | `glob:.ci/scripts/test/gates/` | 2026-07-21 | 46 |
 | 23 | `glob:.ci/tutorials/` | 2026-07-21 | 46 |
 | 26 | `dispatch:phase_` | 2026-07-21 | 46 |
-| 36 | `manual:.ci/scripts/deploy/deploy-proxy.sh` | 2026-07-21 | 46 |
 | 39 | `manual:.ci/scripts/security/dependency-inventory.sh` | 2026-07-21 | 46 |
 | 42 | `manual:.devcontainer/start-vscode.sh` | 2026-07-21 | 46 |
 | 45 | `manual:scripts/ops/apply-cf-redirect-rules.sh` | 2026-07-21 | 46 |
@@ -237,7 +236,6 @@ git blame --line-porcelain -- <file> \
 | 54 | `manual:scripts/pre-commit-check.sh` | 2026-07-21 | 46 |
 | 57 | `manual:.ci/breakpoint/scripts/sync-breakpoint.sh` | 2026-07-27 | 41 |
 | 60 | `manual:.ci/docker/run-in-web.sh` | 2026-08-28 | 9 |
-| 63 | `manual:.ci/scripts/test/manual/probe-receipt-stability.sh` | 2026-08-28 | 9 |
 
 #### `.deps-upgrade-blocklist`
 

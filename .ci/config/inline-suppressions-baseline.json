@@ -423,9 +423,6 @@
   ".ci/rediacc_ci/tests/test_build_canonicalise_gpg_key.py": {
    "noqa S105": 2
   },
-  ".ci/rediacc_ci/tests/test_build_ensure_nfpm.py": {
-   "type-ignore call-overload": 2
-  },
   ".ci/rediacc_ci/tests/test_build_linux_packages.py": {
    "noqa PLC0415": 1,
    "type-ignore arg-type": 2
@@ -571,7 +568,7 @@
    "noqa B023": 1
   },
   ".ci/rediacc_ci/tests/test_proxies_ensure_nfpm.py": {
-   "type-ignore call-overload": 5
+   "type-ignore call-overload": 4
   },
   ".ci/rediacc_ci/tests/test_proxies_go_unit.py": {
    "type-ignore call-overload": 5
@@ -580,13 +577,13 @@
    "type-ignore call-overload": 3
   },
   ".ci/rediacc_ci/tests/test_proxies_linux_packages.py": {
-   "type-ignore call-overload": 5
+   "type-ignore call-overload": 4
   },
   ".ci/rediacc_ci/tests/test_proxies_ops_host_check.py": {
    "type-ignore call-overload": 5
   },
   ".ci/rediacc_ci/tests/test_proxies_rdc_update.py": {
-   "type-ignore call-overload": 5
+   "type-ignore call-overload": 4
   },
   ".ci/rediacc_ci/tests/test_proxies_unit_tests.py": {
    "type-ignore call-overload": 6
@@ -1106,18 +1103,6 @@
   },
   ".ci/scripts/quality/check_www_build_token.py": {
    "noqa F401": 1
-  },
-  ".ci/scripts/release/reprobe-r2-sentinel.sh": {
-   "shellcheck-disable SC2043": 1
-  },
-  ".ci/scripts/release/tag-submodules.sh": {
-   "shellcheck-disable SC2043": 1
-  },
-  ".ci/scripts/release/update-homebrew-tap.sh": {
-   "shellcheck-disable SC2016": 1
-  },
-  ".ci/scripts/release/verify-artifact-attestation.sh": {
-   "shellcheck-disable SC2044": 1
   },
   ".ci/scripts/security/check_workflow_gates.py": {
    "noqa F401": 1

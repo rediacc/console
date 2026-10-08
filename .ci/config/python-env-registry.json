@@ -22,7 +22,8 @@
       "RELEASE_BUILD"
     ],
     ".ci/rediacc_ci/build/build_linux_packages.py": [
-      "NEXT_VERSION"
+      "NEXT_VERSION",
+      "PYTHONPATH"
     ],
     ".ci/rediacc_ci/build/build_linux_pkg.py": [
       "APK_RSA_PRIVATE_KEY",
@@ -64,6 +65,12 @@
     ],
     ".ci/rediacc_ci/build/prepare_cli_assets.py": [
       "RENET_VERSION"
+    ],
+    ".ci/rediacc_ci/catalog/lifecycle.py": [
+      "*name",
+      "ARTIFACTS_DIR",
+      "REPOSITORY_NETWORK_MODE",
+      "RESULTS_FILE"
     ],
     ".ci/rediacc_ci/check_pytest.py": [
       "CI",
@@ -441,6 +448,9 @@
     ".ci/rediacc_ci/deploy/write_release_sentinel.py": [
       "CLOUDFLARE_R2_ENDPOINT"
     ],
+    ".ci/rediacc_ci/dev/measure_page_density.py": [
+      "XDG_RUNTIME_DIR"
+    ],
     ".ci/rediacc_ci/diagnostics/collect_drill_diagnostics.py": [
       "RUNNER_TEMP",
       "TMPDIR"
@@ -487,6 +497,24 @@
       "SSH_USER",
       "USER",
       "VM_NET_BASE"
+    ],
+    ".ci/rediacc_ci/drills/backup_local_plane.py": [
+      "BRIDGE_HOST",
+      "GATEWAY_PORT",
+      "LOG_DIR",
+      "PROBE_BUCKET",
+      "RUSTFS_KEY",
+      "RUSTFS_PORT",
+      "RUSTFS_SECRET"
+    ],
+    ".ci/rediacc_ci/drills/backup_roundtrip.py": [
+      "BRIDGE_HOST",
+      "CELL_BYTES",
+      "DATASTORE",
+      "GATEWAY_PORT",
+      "NET_SRC",
+      "VM",
+      "WORK"
     ],
     ".ci/rediacc_ci/drills/lib.py": [
       "DRILL_HOST",
@@ -1305,9 +1333,6 @@
     ".ci/rediacc_ci/tests/gates/test_gate_housekeeping_phases.py": [
       "PATH"
     ],
-    ".ci/rediacc_ci/tests/gates/test_gate_installmethods_manifest.py": [
-      "PATH"
-    ],
     ".ci/rediacc_ci/tests/gates/test_gate_mark_production.py": [
       "PATH"
     ],
@@ -1348,9 +1373,6 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_toolchain.py": [
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/gates/test_gate_worktree_devbox_teardown.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/gates/test_harness.py": [
@@ -1400,6 +1422,9 @@
     ],
     ".ci/rediacc_ci/tests/test_build_prepare_cli_assets.py": [
       "HOME"
+    ],
+    ".ci/rediacc_ci/tests/test_catalog_lifecycle.py": [
+      "REPOSITORY_NETWORK_MODE"
     ],
     ".ci/rediacc_ci/tests/test_ci_cancel_older_runs.py": [
       "PATH"
@@ -1544,6 +1569,9 @@
     ".ci/rediacc_ci/tests/test_drills_backup_license.py": [
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/test_drills_backup_local_plane.py": [
+      "ACCOUNT_BACKUP_S3_BUCKET"
+    ],
     ".ci/rediacc_ci/tests/test_drills_lib.py": [
       "HOME",
       "PATH"
@@ -1620,6 +1648,9 @@
       "*k"
     ],
     ".ci/rediacc_ci/tests/test_quality_browser_smoke.py": [
+      "HOME"
+    ],
+    ".ci/rediacc_ci/tests/test_quality_eslint_heap.py": [
       "HOME"
     ],
     ".ci/rediacc_ci/tests/test_quality_lockfile.py": [
@@ -1780,8 +1811,7 @@
     ".ci/scripts/quality/check_language_policy.py": [
       "LANGUAGE_POLICY_ALLOWLIST",
       "LANGUAGE_POLICY_BASELINE",
-      "LANGUAGE_POLICY_ROOT",
-      "LANGUAGE_POLICY_VALIDATOR"
+      "LANGUAGE_POLICY_ROOT"
     ],
     ".ci/scripts/quality/check_plan_boxes.py": [
       "GITHUB_BASE_REF",
