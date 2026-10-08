@@ -266,6 +266,12 @@ def plan_stub_target(path):
             head = handle.read(STUB_PROBE_BYTES).decode("utf-8", errors="replace")
     except OSError:
         return _flat_legacy_fallback(path)
+    return stub_target_of_text(head)
+
+
+def stub_target_of_text(text):
+    """The `Moved-To:` target of stub TEXT, or "" when the text is not a stub (both halves required, as `is_plan_stub` documents). Reads only the first STUB_PROBE_BYTES characters, so a long plan that cites a successor in its body is never taken for a pointer."""
+    head = text[:STUB_PROBE_BYTES]
     if not _STUB_STATUS_RE.search(head):
         return ""
     match = _STUB_TARGET_RE.search(head)

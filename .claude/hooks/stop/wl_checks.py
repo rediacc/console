@@ -2710,9 +2710,10 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
             fields["finished"] = int(state.finished)
             fields["batch"] = int(state.batch_size)
             fields["me"] = me
-            fields["open"] = _open_in_set(state, root)
             if fields["ahead"] > 0:
                 if not wl_prscope.batch_ready(state, _set_finished(state, root)):
+                    # Only the advisory renders the open boxes, so only this branch pays the plan reads.
+                    fields["open"] = _open_in_set(state, root)
                     return M.N_TURBO_LOCAL % fields, False
                 return M.V_LOOP_NEXT_BATCH_OPEN % fields, True
         if fields["ahead"] > 0:

@@ -1376,14 +1376,25 @@ STATIC: list[Case] = [
         "settled(push now unpunctuated refused)",
     ),
     case(
-        "check 2 guards/block_settled_questions.py",
+        # A mechanics lead (how do/does/can ...) keeps a trailing time clause part of the mechanics.
+        "check 0 guards/block_settled_questions.py",
         ask_json("How do we push the batch once the review is in?"),
-        "settled(push how-do with a once clause is timing)",
+        "settled(push how-do with a once clause is mechanics)",
+    ),
+    case(
+        "check 0 guards/block_settled_questions.py",
+        ask_json("How do I push to a fork once my branch is rebased?"),
+        "settled(push how-do to a fork with a once clause is mechanics)",
+    ),
+    case(
+        "check 0 guards/block_settled_questions.py",
+        ask_json("How do we push the batch until the review is in?"),
+        "settled(push how-do with an until clause is mechanics)",
     ),
     case(
         "check 2 guards/block_settled_questions.py",
-        ask_json("How do we push the batch until the review is in?"),
-        "settled(push how-do with an until clause is timing)",
+        ask_json("Should I push once CI is green?"),
+        "settled(push should with a once clause is timing)",
     ),
     # 2026-09-16, added live: the worktree/branch ROUTING class -- "shouldn't have asked ... it has big-bang answering usually" -- gets the same two-condition treatment as commit/branch/push/pr/merge.
     case(
