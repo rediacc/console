@@ -168,7 +168,10 @@ def newest_summary(comments: list[dict]) -> dict | None:
         body = comment.get("body") or ""
         if BOT_LOGIN not in _login(comment) or body.startswith("<!--"):
             continue
-        if FENCE_NEEDLE in body or VERDICT_HEADING.search(body):
+        # A fence OPENER line, never the bare needle: the bot's wrapper comment names `json:review-findings` in prose and, being newer, outranked the real review on PR #599 (#51ec5215).
+        if any(FENCE_OPENER.match(line) for line in body.split("\n")) or VERDICT_HEADING.search(
+            body
+        ):
             matches.append(comment)
     if not matches:
         return None

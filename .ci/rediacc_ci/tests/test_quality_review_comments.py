@@ -49,7 +49,8 @@ exit 1
 BOT = {"login": "github-actions[bot]"}
 HUMAN = {"login": "muhammed"}
 LONG = "y" * 250
-FENCE = "x ```json:review-findings\n[]"
+# Line-anchored since #51ec5215: the twin matched the needle anywhere, the port needs a fence OPENER line, and the twin's recorded output is the same for both spellings (test_delta_prose_naming_the_fence_is_not_a_summary pins the difference).
+FENCE = "x\n```json:review-findings\n[]"
 SUMMARY = {"id": 5189236393, "user": BOT, "created_at": "2026-08-05T10:00:00Z", "body": FENCE}
 
 
@@ -403,3 +404,23 @@ def test_findings_fence_reader_accepts_backslash_escaped_backticks():
     assert gate.findings_fence_is_empty(ESCAPED_EMPTY_BODY.replace("[]", "[")) is False
     comment = {"id": 9, "user": BOT, "created_at": "t", "body": ESCAPED_EMPTY_BODY}
     assert gate.summary_verdict([comment])[0] == "empty"
+
+
+def test_delta_prose_naming_the_fence_is_not_a_summary():
+    """INTENTIONAL DIVERGENCE from the retired twin (#51ec5215). The twin selected any bot comment containing `json:review-findings`; on PR #599 the bot's wrapper comment, prose naming the fence, was newer than the real review and outranked it. The port requires a fence opener line."""
+    review = dict(
+        SUMMARY,
+        id=1,
+        created_at="2026-10-08T05:00:00Z",
+        body="## Review verdict: approve\n\n```json:review-findings\n[]\n```\n",
+    )
+    wrapper = dict(
+        SUMMARY,
+        id=2,
+        created_at="2026-10-08T05:01:00Z",
+        body="The review above ends with a json:review-findings fence.",
+    )
+    assert gate.newest_summary([review, wrapper]) is review
+    # Control: a wrapper that does carry an opener line is a summary, and the newest wins.
+    fenced_wrapper = dict(wrapper, body="x\n```json:review-findings\n[]\n```")
+    assert gate.newest_summary([review, fenced_wrapper]) is fenced_wrapper
