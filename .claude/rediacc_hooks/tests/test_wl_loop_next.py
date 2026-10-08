@@ -671,3 +671,36 @@ def test_lf9_a_filling_local_batch_with_nothing_ahead_works_the_queue_head(lrepo
     assert blocking is True, text
     assert "0 commit" not in text, text
     assert text.strip(), text
+
+
+def _finished_world(tmp_path, open_box):
+    """A stub at agent/plans/PLAN-moved.md that moved to _done/, whose real text has one box, open or ticked."""
+    plans = tmp_path / "agent" / "plans"
+    (plans / "_done").mkdir(parents=True)
+    (plans / "PLAN-moved.md").write_text(
+        "# PLAN: moved (moved)\nStatus: moved\nMoved-To: agent/plans/_done/PLAN-moved.md\n",
+        encoding="utf-8",
+    )
+    box = (
+        "- [ ] T1 the one remaining unit of work"
+        if open_box
+        else "- [x] T1 the one remaining unit of work"
+    )
+    (plans / "_done" / "PLAN-moved.md").write_text(
+        "# PLAN: moved\nStatus: draft\n\n## Tasks\n\n%s\n" % box, encoding="utf-8"
+    )
+    return types.SimpleNamespace(plans=("agent/plans/PLAN-moved.md",))
+
+
+def test_a_moved_plan_with_an_open_box_is_not_finished(tmp_path):
+    """The Stop hook read the stub and saw no box, so it ordered a push the turbo guard then refused (d6a6e18b5). The set is judged through Moved-To."""
+    assert wl_checks._set_finished(_finished_world(tmp_path, open_box=True), str(tmp_path)) is False
+
+
+def test_control_a_moved_plan_with_every_box_ticked_is_finished(tmp_path):
+    assert wl_checks._set_finished(_finished_world(tmp_path, open_box=False), str(tmp_path)) is True
+
+
+def test_an_empty_plan_set_is_not_finished(tmp_path):
+    """An empty set was vacuously finished, which would order a push for a batch of nothing."""
+    assert wl_checks._set_finished(types.SimpleNamespace(plans=()), str(tmp_path)) is False
