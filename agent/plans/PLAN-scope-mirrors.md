@@ -198,6 +198,7 @@ W-gate and the lead's CLAUDE.md anchoring run in parallel; the D1 grammar is the
 - [x] **SM4 (lead): reconcile the predictions.** Each of F1-F8 is either confirmed by a finding line or struck with the reason. Any finding not predicted is added as F9 and up.
     (ticked) 2026-10-08T22:17:41Z by d778be9d: commit:169ccbe2b check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
 - [x] **SM5a (W-prose): mirror anchors and fixes.** F1, F2, F3 and F8, plus a `TURBO_PUSH_REASON='red-fix: ...'` clause in `.claude/agents/pr-babysitter.md:101` (F6). Add `<!-- scope: ... -->` anchors per the D3 map. Accept: the gate reports no C4, C5, C6 or C10 finding on these files.
+  - Amended 2026-10-09 (review 992fe1ff.3): the Accept result is shown by the clean run itself. `npm run check:ci-scope-mirrors` on the live tree at 169ccbe2b exits 0 with "0 baselined" and no finding line, which means no C4, C5, C6 or C10 finding on any mirror, these files included; F1, F2, F3 and F8 were each replayed on a `--root` copy at rc 1 before their fix.)
     (ticked) 2026-10-08T22:17:43Z by d778be9d: commit:169ccbe2b check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
 - [x] **SM5b (lead): canonical corrections.**
     - F5: add `turbo_push`, `plan_concurrency` and `backup_push_h` to `CLAUDE.md:61`.
@@ -221,6 +222,7 @@ W-gate and the lead's CLAUDE.md anchoring run in parallel; the D1 grammar is the
     - **T8 unregistered restatement:** add a paragraph with `turbo_push: batch-end` to a tmp `.claude/commands/handoff.md`. Expect C9. With `<!-- scope: pr.turbo-batch-end -->` added but no registry row, expect C10 instead.
     - **T9 repin refuses while T2's plant is in place;** after the plant is reverted, repin is allowed.
     - **T10 baseline:** a growth write is refused; a drain is allowed.
+  - Amended 2026-10-09 (review 992fe1ff.2): `.ci/rediacc_ci/tests/gates/test_gate_scope_mirrors.py` holds T1-T10 plus the empty-tree case, 11 tests, each plant on a temp copy; all pass in the 39-test run. With the gate's C5 and C9 checks disabled, all 11 go red. Since 4ae6c9579, T1 holds each floor equal to its measured count.)
     (ticked) 2026-10-08T22:17:49Z by d778be9d: commit:169ccbe2b check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
 - [x] **SM7 (lead): wiring.**
     1. package.json: `"the ci-scope-mirrors gate": ".ci/scripts/quality/check_scope_mirrors.py"` (the bare path, per `scripts/gate-bind.ts` header lines 5-8).
@@ -237,6 +239,7 @@ W-gate and the lead's CLAUDE.md anchoring run in parallel; the D1 grammar is the
 
   Accept: both gates rc 0.
 - [x] **SM9: live plant proof on the real tree, two passes in one script (TRAPS `mutation-needs-both-directions`, `docs/agent-reference/TRAPS.md:230`).** Pass 1: `npm run the ci-scope-mirrors gate` rc 0 on the clean tree. Pass 2: the T2 plant applied to a copy with `--root` gives rc 1, and the stderr line names the trailers mirror. Tick with both exit codes.
+  - Amended 2026-10-09 (review 992fe1ff.1): pass 1 on the clean tree exits 0; pass 2, the T2 plant on a `--root` copy, exits 1 with the stderr line `✗ C5 .claude/skills/pr-epics/trailers.md:37 [pr.turbo-batch-end] verbatim mirror no longer contains the canonical text of CLAUDE.md:22`.)
     (ticked) 2026-10-08T22:17:54Z by d778be9d: commit:169ccbe2b check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
 
 ## First run
