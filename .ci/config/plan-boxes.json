@@ -697,18 +697,17 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-gate-scheduling-learned.md": {
-      "status": "approved",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 11,
-      "open_sigs": [
-        "1b842dc7"
-      ],
+      "open": 0,
+      "done": 12,
+      "open_sigs": [],
       "done_sigs": [
         "0001ff07",
         "106a374f",
+        "1b842dc7",
         "1d326aac",
         "257e3ba1",
         "74185959",
@@ -1083,18 +1082,17 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-plyr-to-videojs.md": {
-      "status": "approved",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 3,
-      "open_sigs": [
-        "41fbf1cf",
-        "81eaf513"
-      ],
+      "open": 0,
+      "done": 5,
+      "open_sigs": [],
       "done_sigs": [
+        "41fbf1cf",
         "6c5976f0",
+        "81eaf513",
         "c1b361ff",
         "dd9c1004"
       ]

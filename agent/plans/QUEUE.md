@@ -63,18 +63,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 
 ## Promoted
 
-1. agent/plans/PLAN-gate-scheduling-learned.md -- operator 2026-10-08: implement now, first plan of the branch after PR #599 (learned gate ledger, red classification, ranked scheduler, narrow re-run, upgrade companions)
-2. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; candidates 1, 3, 4, 6, 7 of agent/reports/consolidation-investigation-2026-10-04.md in one plan, one PR -- solo
-3. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: T9 (the enforced matrix in DESIGN-CONFIG-STORAGE.md) and T10 (live smoke)
-4. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: the 9 open boxes
-5. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: Step 12
-6. agent/plans/PLAN-config-passkey-optional.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 4 boxes open, T4 pre-deploy production query then eu deploy and Bitwarden walk-through (unblocks the org-selection chain)
-7. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 16 boxes open, R1 root-cause the nightly Console CI failure on main (PLAN-ci-verdict is done, so ci-trace works)
-8. agent/plans/PLAN-stop-hook-retro-20260924.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 23 boxes open, R20260924.15 re-count the seven frictions on .blocklog and record before/after in Status
-9. agent/plans/PLAN-locale-techdiff-resync.md -- operator 2026-10-08 melt-the-list: EASY, 5 of 5 boxes open, mechanical i18n pipeline re-translation of nine solutionPages groups x 12 locales at haiku default (gate #583 has merged)
-10. agent/plans/PLAN-cd-errors-in-ci.md -- operator 2026-10-08: catch CD errors at CI level; W1 is the housekeeping root fix due before the 03:00Z run
-11. agent/plans/PLAN-scope-mirrors.md -- operator /ask 2026-10-04 (#e70faed1): queued after the Promoted entries; eight live drifts F1-F8 predicted
-12. agent/plans/PLAN-lessons-registry.md -- operator /ask 2026-10-04 (#077d85c1): extends TRAPS.md and check:ci-trap-registry with content-checked Documented-In anchors
+1. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; candidates 1, 3, 4, 6, 7 of agent/reports/consolidation-investigation-2026-10-04.md in one plan, one PR -- solo
+2. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: T9 (the enforced matrix in DESIGN-CONFIG-STORAGE.md) and T10 (live smoke)
+3. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: the 9 open boxes
+4. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: Step 12
+5. agent/plans/PLAN-config-passkey-optional.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 4 boxes open, T4 pre-deploy production query then eu deploy and Bitwarden walk-through (unblocks the org-selection chain)
+6. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 16 boxes open, R1 root-cause the nightly Console CI failure on main (PLAN-ci-verdict is done, so ci-trace works)
+7. agent/plans/PLAN-stop-hook-retro-20260924.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 23 boxes open, R20260924.15 re-count the seven frictions on .blocklog and record before/after in Status
+8. agent/plans/PLAN-locale-techdiff-resync.md -- operator 2026-10-08 melt-the-list: EASY, 5 of 5 boxes open, mechanical i18n pipeline re-translation of nine solutionPages groups x 12 locales at haiku default (gate #583 has merged)
+9. agent/plans/PLAN-cd-errors-in-ci.md -- operator 2026-10-08: catch CD errors at CI level; W1 is the housekeeping root fix due before the 03:00Z run
+10. agent/plans/PLAN-scope-mirrors.md -- operator /ask 2026-10-04 (#e70faed1): queued after the Promoted entries; eight live drifts F1-F8 predicted
+11. agent/plans/PLAN-lessons-registry.md -- operator /ask 2026-10-04 (#077d85c1): extends TRAPS.md and check:ci-trap-registry with content-checked Documented-In anchors
 
 ## Generated
 
@@ -84,29 +83,28 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 3. agent/plans/PLAN-token-ip-rebind.md -- P0, draft, in progress (9 of 10 boxes ticked), dep-blocked
 4. agent/plans/PLAN-config-sync-hardening.md -- P0, draft, in progress (18 of 19 boxes ticked), dep-blocked
 5. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
-6. agent/plans/PLAN-secret-namespace-migration.md -- P1, executing, in progress (29 of 34 boxes ticked)
-7. agent/plans/PLAN-stop-hook-one-plan-scope.md -- P1, approved, in progress (14 of 15 boxes ticked)
-8. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
-9. agent/plans/PLAN-tooling-transformation.md -- P1, ready, in progress (151 of 154 boxes ticked)
-10. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked), dep-blocked
-11. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (7 of 9 boxes ticked)
-12. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
-13. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
-14. agent/plans/PLAN-retire-bash-oracles.md -- P2, approved, in progress (6 of 15 boxes ticked), dep-blocked
-15. agent/plans/PLAN-biome-only-lint.md -- P3, draft, in progress (10 of 29 boxes ticked)
-16. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (1 of 17 boxes ticked)
-17. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-18. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
-19. agent/plans/PLAN-k3s-137-and-pr-conditions.md -- P1, approved, not started
+6. agent/plans/PLAN-k3s-137-and-pr-conditions.md -- P1, approved, in progress (4 of 5 boxes ticked)
+7. agent/plans/PLAN-secret-namespace-migration.md -- P1, executing, in progress (29 of 34 boxes ticked)
+8. agent/plans/PLAN-stop-hook-one-plan-scope.md -- P1, approved, in progress (14 of 15 boxes ticked)
+9. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
+10. agent/plans/PLAN-tooling-transformation.md -- P1, ready, in progress (151 of 154 boxes ticked)
+11. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked), dep-blocked
+12. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (7 of 9 boxes ticked)
+13. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
+14. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
+15. agent/plans/PLAN-retire-bash-oracles.md -- P2, approved, in progress (6 of 15 boxes ticked), dep-blocked
+16. agent/plans/PLAN-biome-only-lint.md -- P3, draft, in progress (10 of 29 boxes ticked)
+17. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (1 of 17 boxes ticked)
+18. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+19. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
 20. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
 21. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-22. agent/plans/PLAN-plyr-to-videojs.md -- P1, approved, not started
-23. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
-24. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
-25. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-26. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-27. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-28. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+22. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
+23. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
+24. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
+25. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+26. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+27. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 

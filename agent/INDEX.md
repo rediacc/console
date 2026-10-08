@@ -508,7 +508,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-fix-german-translation-artifacts.md` | compacted | 50 | 0 | 0 | 3117 |
 | `agent/plans/PLAN-fix-in-session-rule.md` | compacted | 55 | 0 | 0 | 3577 |
 | `agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md` | compacted | 37 | 0 | 0 | 3148 |
-| `agent/plans/PLAN-gate-scheduling-learned.md` | approved | 287 | 1 | 11 | 22200 |
+| `agent/plans/PLAN-gate-scheduling-learned.md` | done | 288 | 0 | 12 | 22590 |
 | `agent/plans/PLAN-gh-swallow-gates-audit.md` | compacted | 49 | 0 | 6 | 4454 |
 | `agent/plans/PLAN-git-history-media-rewrite.md` | compacted | 37 | 0 | 0 | 2958 |
 | `agent/plans/PLAN-git-ignore-aware-discover.md` | compacted | 57 | 0 | 10 | 4730 |
@@ -531,7 +531,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-plan-per-pr-loop.md` | approved | 71 | 1 | 15 | 14314 |
 | `agent/plans/PLAN-plan-preflight.md` | approved | 127 | 9 | 0 | 23411 |
 | `agent/plans/PLAN-plan-verbs.md` | draft | 34 | 3 | 0 | 3707 |
-| `agent/plans/PLAN-plyr-to-videojs.md` | approved | 91 | 2 | 3 | 9156 |
+| `agent/plans/PLAN-plyr-to-videojs.md` | done | 93 | 0 | 5 | 9703 |
 | `agent/plans/PLAN-prepush-full-cpu.md` | approved | 265 | 0 | 31 | 48426 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
 | `agent/plans/PLAN-program-state-in-repo.md` | approved | 47 | 0 | 5 | 6984 |
