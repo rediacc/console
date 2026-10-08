@@ -685,6 +685,22 @@ def test_mark_fixed_accepts_a_fix_on_a_rebased_copy_of_the_reviewed_commit(world
     assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % fix)
 
 
+def test_mark_fixed_follows_a_moved_to_stub_to_the_moved_file(world):
+    """2026-10-08: plans closed by `check_plan_folders.py --move` leave a `Moved-To:` stub at the old path, and a fix to the moved plan was refused as "does not touch" the stub path. The mark now follows the stub; a fix touching neither file is still refused."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    world.commit("done/f.py", body="a = 1\nb = 2\nc = 3\n", msg="docs: move")
+    world.commit("f.py", body="Status: moved\nMoved-To: done/f.py\n", msg="docs: stub")
+    unrelated = world.commit("other.py", body="z = 1\n")
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(world.repo, BRANCH, fid, "fixed", [unrelated], "deadbeef")
+    fix = world.commit("done/f.py", body="a = 1\nb = 2\nc = 4\n")
+    R.mark(world.repo, BRANCH, fid, "fixed", [fix], "deadbeef")
+    review = R.parse(world.review_file(sha).read_text())
+    assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % fix)
+
+
 def test_mark_not_a_bug_needs_a_resolvable_citation(world):
     sha = world.commit()
     world.run_child(sha)

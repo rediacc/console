@@ -33,6 +33,7 @@ import tempfile
 import time
 
 import wl_models
+import wl_store
 
 HERE = pathlib.Path(__file__).resolve().parent
 CONSOLE_ROOT = HERE.parents[2]
@@ -2696,7 +2697,13 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None):
             "--",
             finding.file,
         )
-        if finding.file not in touched and not set(renamed.splitlines()) & set(touched):
+        # A plan closed by `check_plan_folders.py --move` leaves a `Moved-To:` stub at the old path, which `--follow` cannot see through: the fix lands in the moved file.
+        moved = wl_store.plan_stub_target(os.path.join(repo, finding.file))
+        if (
+            finding.file not in touched
+            and not set(renamed.splitlines()) & set(touched)
+            and not (moved and moved in touched)
+        ):
             raise ValueError("%s does not touch %s" % (fix[:12], finding.file))
         resolution = "fixed %s | %s" % (fix, stamp)
     elif kind == "not-a-bug":
