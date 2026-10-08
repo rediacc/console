@@ -297,6 +297,22 @@ def test_receipt_commands_earn_the_early_receipt_note(command, held, monkeypatch
     assert doc["hookSpecificOutput"]["additionalContext"] == M.N_RECEIPT_EARLY
 
 
+@pytest.mark.parametrize("filling", [True, False])
+def test_a_filling_local_batch_silences_the_early_receipt_note(filling, held, monkeypatch):
+    """PLAN-turbo-local-first D4: no push is due while a turbo batch fills, so the receipt note stays quiet. Control: a batch that is not filling keeps the note."""
+    import wl_checks  # noqa: PLC0415
+
+    root, *_ = held
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(root))
+    monkeypatch.setattr(wl_checks, "local_batch_open", lambda _state, _root: filling)
+    rc, out = run_member("npm run ci:quick", root)
+    assert rc == 0
+    if filling:
+        assert out == ""
+    else:
+        assert json.loads(out)["hookSpecificOutput"]["additionalContext"] == M.N_RECEIPT_EARLY
+
+
 @pytest.mark.parametrize(
     "command",
     [
