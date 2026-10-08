@@ -88,3 +88,37 @@ def test_rejects_stale_generated_artifact(gate, tmp_path):
     gate.assert_exit(1, result, "a stale generated artifact should fail")
     gate.assert_contains(result.combined, "stale", "error says the artifact is stale")
     gate.log_pass("a stale generated attribution artifact is rejected")
+
+
+def test_embed_credits_absent_submodule_fails_under_ci(gate, tmp_path):
+    """A CI checkout that lost private/renet must turn this gate RED, never into a skip that exits 0 (#11bcecca)."""
+    result = run_gate(
+        gate,
+        env={
+            "EMBED_CREDITS_DOCKERFILE": str(tmp_path / "absent" / "Dockerfile"),
+            "CI": "true",
+            "GITHUB_ACTIONS": "",
+        },
+    )
+    gate.assert_exit(1, result, "an absent submodule path under CI=true is a refusal")
+    gate.assert_contains(
+        result.combined, "required in CI but missing", "the refusal names what is missing"
+    )
+    gate.log_pass("absent submodule under CI fails")
+
+
+def test_embed_credits_absent_submodule_skips_outside_ci(gate, tmp_path):
+    """MIRROR: the same absence outside CI is a stated skip with exit 0, so a fresh clone stays workable."""
+    result = run_gate(
+        gate,
+        env={
+            "EMBED_CREDITS_DOCKERFILE": str(tmp_path / "absent" / "Dockerfile"),
+            "CI": "",
+            "GITHUB_ACTIONS": "",
+        },
+    )
+    gate.assert_exit(0, result, "an absent submodule path outside CI is a skip")
+    gate.assert_contains(
+        result.combined, "under CI this is a hard failure", "the skip says it would fail in CI"
+    )
+    gate.log_pass("absent submodule outside CI skips loudly")

@@ -44,10 +44,11 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { grantedCores } from '../ci-runner/lease-client.js';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { requireSubmodule, submodulePath } from '../lib/submodule-presence.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
-const RENET_DIR = path.join(CONSOLE_ROOT, 'private', 'renet');
+const RENET_DIR = submodulePath('private', 'renet');
 const LOCKFILE = path.join(RENET_DIR, 'embed-assets.lock.json');
 const ASSETS_DIR = path.join(RENET_DIR, 'pkg', 'embed', 'assets');
 const execFileAsync = promisify(execFile);
@@ -415,11 +416,7 @@ async function main(): Promise<void> {
     `${GREEN}✓${NC} control fired: the comparison accepts a match and rejects a stale one`
   );
 
-  if (!fs.existsSync(LOCKFILE)) {
-    console.log(`${YELLOW}⚠${NC} SKIPPED: ${path.relative(CONSOLE_ROOT, LOCKFILE)} is absent`);
-    console.log('  (the renet submodule is not checked out; nothing to verify)');
-    process.exit(0);
-  }
+  if (!requireSubmodule('embed asset versions', [LOCKFILE])) process.exit(0);
 
   const components: Record<string, Component> =
     JSON.parse(fs.readFileSync(LOCKFILE, 'utf-8')).components ?? {};

@@ -51,6 +51,7 @@ import { fileURLToPath } from 'node:url';
 import { parseBlockeredList, verifyAllBlockers } from '../lib/blocker-validator.js';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import { policyPath } from '../lib/policy-paths.js';
+import { declaredSubmoduleMarkers, requireSubmodule } from '../lib/submodule-presence.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -180,10 +181,7 @@ function runControls(): string[] {
   const stage = `COPY --from=builder /out/app /app\n`;
   if (scan('c', stage).length !== 0) bad.push('a build-stage COPY was flagged as a registry ref');
 
-  // ALLOWLIST ANCHORING. The entries are bare hosts, so a substring test let a lookalike host carry a real entry inside it. Each negative below passed under the old `url.includes(token)` form.
-  // `kind` is 'fetch' | 'image'; 'download' is not a member, and the `as Finding`
-  // cast was hiding that rather than expressing intent -- TS2352 refused it because the two types do not overlap. isAllowed reads only f.url (see :136-152), so the
-  // value is arbitrary here; it just has to be one the type actually admits.
+  // ALLOWLIST ANCHORING. The entries are bare hosts, so a substring test let a lookalike host carry a real entry inside it. Each negative below passed under the old `url.includes(token)` form. `kind` is 'fetch' | 'image'; 'download' is not a member, and the `as Finding` cast was hiding that rather than expressing intent -- TS2352 refused it because the two types do not overlap. isAllowed reads only f.url (see :136-152), so the value is arbitrary here; it just has to be one the type actually admits.
   const at = (url: string): Finding => ({ file: 'c', line: 1, url, kind: 'fetch' });
   const host = ['awscli.amazonaws.com'];
   const withPath = ['download.docker.com/linux/ubuntu/gpg'];
@@ -249,11 +247,13 @@ function main(): void {
       return [];
     }
   };
+  // --recurse-submodules lists NOTHING inside a submodule that is not checked out, so the warning below cannot see that case: the scope just shrinks. Every declared submodule must be present; locally a missing one is named and the rest is scanned, in CI it is a refusal (scripts/lib/submodule-presence.ts).
+  requireSubmodule('Dockerfile download scan', declaredSubmoduleMarkers());
   const tracked = list('');
   const withSubs = list('--recurse-submodules');
   const files = [...new Set([...tracked, ...withSubs])];
 
-  // A submodule that is not checked out contributes nothing, and that must be stated rather than counted as clean.
+  // A listed Dockerfile that is absent on disk (deleted in the working tree, or a submodule checkout that is partial) contributes nothing, and that must be stated rather than counted as clean.
   const missingSubs = withSubs.filter((f) => !fs.existsSync(path.join(ROOT, f)));
   if (missingSubs.length > 0) {
     console.log(

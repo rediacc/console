@@ -39,10 +39,11 @@
  * above only looked at digest SHAPE, and a stale digest is perfectly shaped.
  *
  * Exit codes:
- *   0 - parity holds, or the renet submodule is not checked out
+ *   0 - parity holds, or the renet submodule is not checked out OUTSIDE CI
  *   1 - a missing arch, an unpinned fetch, an incoherent entry, a download
- *       url or digest that disagrees with the version or the Dockerfile, or a
- *       Dockerfile that cannot be read while a download arch needs it
+ *       url or digest that disagrees with the version or the Dockerfile, a
+ *       Dockerfile that cannot be read while a download arch needs it, or the
+ *       lockfile absent under CI (scripts/lib/submodule-presence.ts)
  *
  * ---- gate ----
  * step: Check embed arch parity
@@ -55,13 +56,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { requireSubmodule, submodulePath } from '../lib/submodule-presence.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
 
 const LOCKFILE =
-  process.env.EMBED_PARITY_LOCKFILE ??
-  path.join(CONSOLE_ROOT, 'private/renet/embed-assets.lock.json');
+  process.env.EMBED_PARITY_LOCKFILE ?? submodulePath('private/renet/embed-assets.lock.json');
 
 const DOCKERFILE = path.join(path.dirname(LOCKFILE), 'Dockerfile');
 
@@ -131,10 +132,7 @@ function urlCarriesVersion(url: string, version: string): boolean {
 }
 
 function main(): void {
-  if (!fs.existsSync(LOCKFILE)) {
-    console.log(`${YELLOW}⊘ embed lockfile not present; renet submodule not checked out${NC}`);
-    return;
-  }
+  if (!requireSubmodule('embed arch parity', [LOCKFILE])) return;
 
   const lock = JSON.parse(fs.readFileSync(LOCKFILE, 'utf-8')) as {
     components: Record<string, Component>;

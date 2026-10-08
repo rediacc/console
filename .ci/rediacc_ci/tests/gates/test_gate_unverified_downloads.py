@@ -65,3 +65,37 @@ def test_allowlist_is_load_bearing(gate, tmp_path):
         result.combined, "unverified remote artifact", "the failure names the class"
     )
     gate.log_pass("the allowlist is load-bearing, not decorative")
+
+
+def test_unverified_downloads_absent_submodule_fails_under_ci(gate, tmp_path):
+    """A CI checkout that lost private/renet must turn this gate RED, never into a skip that exits 0 (#11bcecca)."""
+    result = run(
+        gate,
+        env={
+            "SUBMODULE_PRESENCE_ROOT": str(tmp_path / "absent" / "root"),
+            "CI": "true",
+            "GITHUB_ACTIONS": "",
+        },
+    )
+    gate.assert_exit(1, result, "an absent submodule path under CI=true is a refusal")
+    gate.assert_contains(
+        result.combined, "required in CI but missing", "the refusal names what is missing"
+    )
+    gate.log_pass("absent submodule under CI fails")
+
+
+def test_unverified_downloads_absent_submodule_skips_outside_ci(gate, tmp_path):
+    """MIRROR: the same absence outside CI is a stated skip with exit 0, so a fresh clone stays workable."""
+    result = run(
+        gate,
+        env={
+            "SUBMODULE_PRESENCE_ROOT": str(tmp_path / "absent" / "root"),
+            "CI": "",
+            "GITHUB_ACTIONS": "",
+        },
+    )
+    gate.assert_exit(0, result, "an absent submodule path outside CI is a skip")
+    gate.assert_contains(
+        result.combined, "under CI this is a hard failure", "the skip says it would fail in CI"
+    )
+    gate.log_pass("absent submodule outside CI skips loudly")

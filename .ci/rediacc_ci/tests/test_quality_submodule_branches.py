@@ -194,3 +194,46 @@ def test_get_pr_for_branch_reads_through_gh_retry(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setattr(gh_retry.time, "sleep", lambda _s: None)
     assert mod.get_pr_for_branch("o/r", "b") == "7|u"
     assert len(calls) == 2
+
+
+# -- the absent-submodule arm, driven end to end through the registered entry point --
+ENTRY = (
+    pathlib.Path(__file__).resolve().parents[2]
+    / "scripts"
+    / "quality"
+    / "check_submodule_branches.py"
+)
+
+
+def _run_entry(tree: pathlib.Path, ci: str) -> subprocess.CompletedProcess:
+    """The gate as CI runs it, on a fixture root with NO submodule checked out.
+
+    `PR_HEAD_REF` pins the branch arm (not main) and an empty `PR_NUMBER` keeps `gh` out of it, so the only thing left to decide the verdict is the four absent submodules.
+    """
+    env = dict(os.environ)
+    env.update(
+        {
+            "REDIACC_CI_ROOT": str(tree),
+            "PR_HEAD_REF": "feature-x",
+            "PR_NUMBER": "",
+            "CI": ci,
+            "GITHUB_ACTIONS": "",
+        }
+    )
+    return subprocess.run(
+        ["python3", str(ENTRY)], env=env, capture_output=True, text=True, check=False, timeout=120
+    )
+
+
+def test_absent_submodules_fail_under_ci(tmp_path: pathlib.Path) -> None:
+    """The job checks every submodule out, so one missing there is a lost checkout: a refusal, never a green."""
+    result = _run_entry(tmp_path, "true")
+    assert result.returncode != 0, result.stdout + result.stderr
+    assert "is required in CI but missing" in result.stdout + result.stderr
+
+
+def test_absent_submodules_skip_outside_ci(tmp_path: pathlib.Path) -> None:
+    """MIRROR: the same tree outside CI is a stated skip with exit 0, so a fresh clone stays workable."""
+    result = _run_entry(tmp_path, "")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "hard failure in CI" in result.stdout + result.stderr
