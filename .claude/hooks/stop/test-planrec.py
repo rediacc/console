@@ -164,6 +164,11 @@ def build(td):
     sh(root, "git", "config", "user.name", "t")
 
     (root / REL).write_text(PLAN, encoding="utf-8")
+    # A TRACKED file the citation controls (14c2) cite as `scripts/ci-runner/run.ts:352`. It is committed here because the gate's resolver reads the tracked set ONCE per process and treats an untracked file as gitignored.
+    (root / "scripts" / "ci-runner").mkdir(parents=True)
+    (root / "scripts" / "ci-runner" / "run.ts").write_text(
+        "".join("line %d\n" % n for n in range(1, 400)), encoding="utf-8"
+    )
     (root / "package.json").write_text(
         json.dumps({"scripts": {"check:ci-plan-record": "x", "check:ci-plan-boxes": "y"}}),
         encoding="utf-8",
@@ -1168,10 +1173,9 @@ falsy(
 )
 (ROOT / "agent" / "PLAN-rec2.md").unlink()
 
-# --------------------------------------------------------------------------- 14c. plan_backfill_investigation(): the retroactive record, and the two doors it must keep shut.
+# --------------------------------------------------------------------------- 14c. retro_evidence_text(): the plan half of the ONE late-record writer (`plan_investigate(retro=True)`), which absorbed the retired `--plan-backfill`.
 #
-# WHY THE VERB EXISTS, in one line: `plan_investigate` and `plan_tick` both reach their box through `open_boxes`, so a box already flipped to `[x]` with the Edit tool is unreachable by either one for ever, and 316 such boxes were measured on branch `0923-1`. WHAT MUST NOT HAPPEN is that the repair becomes a bypass, so the pairs below assert each refusal against the case it is
-# supposed to let through. The load-bearing one is `head`: it is `done_commit^` and never the live HEAD, which is what makes P-A4's `merge-base --is-ancestor` true by construction rather than by luck.
+# WHY IT EXISTS: P-A2 wants an evidence line beneath the box AND a ledger row. The row is `plan_investigate(retro=True)`'s (always marked `"retro": true`, covered in 14d); the line for a box flipped with the Edit tool is this function's. There is no second writer and no unmarked late row any more.
 # ---------------------------------------------------------------------------
 (ROOT / REL).write_text(PLAN, encoding="utf-8")
 _sig_done = R.box_sig(TASK_DONE)
@@ -1189,7 +1193,7 @@ def _evidence_beneath(text, sig):
     return ""
 
 
-# THE PLANTED DEFECT, driven before the fix so the silence afterwards means something: the fixture's done box carries no evidence line, which is exactly the P-A2 finding this whole verb exists to repair.
+# THE PLANTED DEFECT, driven before the fix so the silence afterwards means something: the fixture's done box carries no evidence line, which is exactly the P-A2 finding this exists to repair.
 control(
     "PLANT: the fixture's ticked box has no evidence line beneath it",
     _evidence_beneath(PLAN, _sig_done),
@@ -1200,57 +1204,31 @@ control(
     [b[3] for b in R.done_boxes(PLAN)],
     [_sig_done],
 )
+control(
+    "the retired verb is GONE from the module, with no alias",
+    (hasattr(R, "plan_backfill_investigation"), hasattr(R, "BACKFILL_VERDICT")),
+    (False, False),
+)
 
 _bf_note = (
-    "the backfill fixture note, long enough to clear the 40-character floor, citing %s" % AFTER
+    "the late-record fixture note, long enough to clear the 40-character floor, citing %s" % AFTER
 )
-_bfrow, _bfres, _bftext = R.plan_backfill_investigation(
-    ROOT,
-    REL,
-    _sig_done,
-    ["fileline:%s:1" % REL, "commit:%s" % AFTER],
-    _bf_note,
-    "deadbeef",
-)
-control("the backfilled verdict is `present` and is not an argument", _bfrow["verdict"], "present")
-control("...and the module offers exactly one", R.BACKFILL_VERDICT, "present")
-control(
-    "the row names the commit that really ticked the box", _bfrow["backfill"]["done_commit"], AFTER
-)
-control("`head` is the PARENT of that commit, not the live HEAD", _bfrow["head"], BEFORE)
-control(
-    "...and the row says so, so a reader can tell a reconstruction from a record",
-    _bfrow["backfill"]["head_is"],
-    "done_commit^",
-)
-truthy(
-    "P-A4's own arithmetic holds on the row this verb wrote",
-    R._git_ok(ROOT, "merge-base", "--is-ancestor", _bfrow["head"], AFTER),
-)
-control("the row is about the box that was asked for", _bfrow["sig"], _sig_done)
-
-# THE FIX IS SILENT ON WHAT IT REPAIRED, which is the other half of the plant above.
+_bftext = R.retro_evidence_text(ROOT, REL, _sig_done, None, _bf_note, "deadbeef")
 truthy("the evidence line is now beneath the box", _evidence_beneath(_bftext, _sig_done) != "")
 truthy(
     "...and it cites the real closing commit", AFTER[:9] in _evidence_beneath(_bftext, _sig_done)
-)
-truthy(
-    "...on a line that uses the record grammar's four spaces",
-    any(R.TICK_LINE_RE.match(ln) for ln in _bftext.splitlines()),
 )
 falsy(
     "CONTROL: and that line is invisible to BULLET_RE at every indent it accepts",
     any(P.BULLET_RE.match(ln) for ln in _bftext.splitlines() if R.TICK_LINE_RE.match(ln)),
 )
-
-# THE INVARIANT. A backfill must move NOTHING: check_plan_boxes.py's A1 cannot tell a moved signature from a deleted box, and this verb is run over 31 plans at once.
 control(
-    "the OPEN box set is byte-identical after the backfill",
+    "the OPEN box set is byte-identical after the line is added",
     sorted(F.plan_boxes(_bftext)[0]),
     sorted(F.plan_boxes(PLAN)[0]),
 )
 control(
-    "the DONE box set is byte-identical after the backfill",
+    "the DONE box set is byte-identical after the line is added",
     sorted(F.plan_boxes(_bftext)[1]),
     sorted(F.plan_boxes(PLAN)[1]),
 )
@@ -1261,150 +1239,114 @@ control(
 )
 truthy("the box mark was never touched", ("- [x] " + TASK_DONE) in _bftext)
 
-# IDEMPOTENT. 95 of the 316 boxes already carried a well-formed line citing real commits, and overwriting one of those would replace a contemporaneous record with a reconstruction.
-_bfrow2, _bfres2, _bftext2 = R.plan_backfill_investigation(
-    ROOT,
-    REL,
-    _sig_done,
-    ["fileline:%s:1" % REL, "commit:%s" % AFTER],
-    _bf_note,
-    "deadbeef",
-    text=_bftext,
-)
+# IDEMPOTENT: a contemporaneous line is never replaced by a reconstruction.
+_bftext2 = R.retro_evidence_text(ROOT, REL, _sig_done, None, _bf_note, "deadbeef", text=_bftext)
 control("a box that already carries an evidence line keeps it, byte for byte", _bftext2, _bftext)
-control(
-    "...and still exactly one such line exists",
-    len([ln for ln in _bftext2.splitlines() if R.TICK_LINE_RE.match(ln)]),
-    1,
-)
 
-# DOOR 1: AN OPEN BOX. The live pipeline can still answer this one honestly, so the repair must refuse it rather than pre-date an investigation nobody performed.
+# The same bars the live verbs hold.
 raises(
-    "an OPEN box is refused, and the refusal hands over the live verb",
-    lambda: R.plan_backfill_investigation(
-        ROOT,
-        REL,
-        R.box_sig(TASK_OPEN),
-        ["fileline:%s:1" % REL, "commit:%s" % AFTER],
-        _bf_note,
-        "deadbeef",
-    ),
-    "still OPEN",
-)
-truthy(
-    "...naming --plan-investigate rather than merely refusing",
-    "--plan-investigate"
-    in _refusal(
-        lambda: R.plan_backfill_investigation(
-            ROOT,
-            REL,
-            R.box_sig(TASK_OPEN),
-            ["fileline:%s:1" % REL, "commit:%s" % AFTER],
-            _bf_note,
-            "deadbeef",
-        )
-    ),
-)
-
-# DOOR 2: AN ABANDONED BOX. `done_commit` returns "" when no committed ledger attests the signature, and a trail must never be manufactured for a box no commit closed.
-#
-# THE FIXTURE IS NAMED `orphan`, NOT `abandoned`, AND THE NAME IS THE CONTROL. The first version of this case called the file `agent/PLAN-abandoned-fixture.md` and asserted the needle `abandoned`, which the refusal message carries only because it interpolates the PATH. Driven as a mutant -- the `if not commit` guard replaced with `if False` -- that version PASSED: execution fell
-# through to the "no parent commit" refusal, whose text quotes the same filename. A control a different refusal can satisfy proves nothing about the one it names.
-_ab = "agent/PLAN-orphan-fixture.md"
-_ab_task = "A box ticked in the tree that no committed ledger has ever attested as done"
-(ROOT / _ab).write_text(
-    "# Orphan\nStatus: executing\nOwner: deadbeef\n\n## Tasks\n- [x] " + _ab_task + "\n",
-    encoding="utf-8",
+    "an OPEN box is refused: it belongs to the live pipeline",
+    lambda: R.retro_evidence_text(ROOT, REL, R.box_sig(TASK_OPEN), None, _bf_note, "deadbeef"),
+    "no DONE box matches",
 )
 raises(
-    "a box no commit attests is refused LOUDLY rather than skipped",
-    lambda: R.plan_backfill_investigation(
-        ROOT,
-        _ab,
-        R.box_sig(_ab_task),
-        ["fileline:%s:1" % REL, "commit:%s" % AFTER],
-        _bf_note,
-        "deadbeef",
-    ),
-    "ledger walk reads it as abandoned",
-)
-truthy(
-    "...and the refusal hands over check:ci-plan-boxes rather than merely refusing",
-    "check:ci-plan-boxes"
-    in _refusal(
-        lambda: R.plan_backfill_investigation(
-            ROOT,
-            _ab,
-            R.box_sig(_ab_task),
-            ["fileline:%s:1" % REL, "commit:%s" % AFTER],
-            _bf_note,
-            "deadbeef",
-        )
-    ),
-)
-(ROOT / _ab).unlink()
-
-# THE BARS ARE THE LIVE VERB'S BARS, through the shared vet_pointers_and_note. A backfill whose floors had drifted below --plan-investigate's would be a weaker record wearing the same grammar.
-raises(
-    "one pointer is refused here exactly as it is on the live verb",
-    lambda: R.plan_backfill_investigation(
-        ROOT, REL, _sig_done, ["commit:%s" % AFTER], _bf_note, "deadbeef"
-    ),
-    "at least 2 are required",
-)
-raises(
-    "two pointers of ONE kind are refused",
-    lambda: R.plan_backfill_investigation(
-        ROOT, REL, _sig_done, ["commit:%s" % AFTER, "commit:%s" % BEFORE], _bf_note, "deadbeef"
-    ),
-    "DISTINCT kinds",
-)
-raises(
-    "a pointer that does not resolve refuses the WHOLE row",
-    lambda: R.plan_backfill_investigation(
-        ROOT,
-        REL,
-        _sig_done,
-        ["fileline:no/such/file.py:1", "commit:%s" % AFTER],
-        _bf_note,
-        "deadbeef",
-    ),
-    "do not resolve",
-)
-raises(
-    "a note under the floor is refused",
-    lambda: R.plan_backfill_investigation(
-        ROOT, REL, _sig_done, ["fileline:%s:1" % REL, "commit:%s" % AFTER], "too short", "deadbeef"
-    ),
-    "at least 40 are required",
-)
-raises(
-    "an evidence line carrying nothing checkable is refused, the same bar --plan-tick holds",
-    lambda: R.plan_backfill_investigation(
-        ROOT,
-        REL,
-        _sig_done,
-        ["fileline:%s:1" % REL, "commit:%s" % AFTER],
-        _bf_note,
-        "deadbeef",
-        evidence="done it, works",
-    ),
+    "an evidence line carrying nothing checkable is refused, the bar --plan-tick holds",
+    lambda: R.retro_evidence_text(ROOT, REL, _sig_done, "done it, works", _bf_note, "deadbeef"),
     "nothing checkable",
 )
 raises(
+    "an evidence line under the floor is refused",
+    lambda: R.retro_evidence_text(ROOT, REL, _sig_done, "too short", _bf_note, "deadbeef"),
+    "at least",
+)
+raises(
     "a compacted record is refused, its boxes being history rather than work",
-    lambda: R.plan_backfill_investigation(
-        ROOT,
-        REL,
-        _sig_done,
-        ["fileline:%s:1" % REL, "commit:%s" % AFTER],
-        _bf_note,
-        "deadbeef",
-        text=RECORD,
-    ),
+    lambda: R.retro_evidence_text(ROOT, REL, _sig_done, None, _bf_note, "deadbeef", text=RECORD),
     "COMPACTED RECORD",
 )
+raises(
+    "a bare-basename file:line in the late evidence line is refused",
+    lambda: R.retro_evidence_text(
+        ROOT, REL, _sig_done, "the box was verified at run.ts:352 under rc=0", _bf_note, "deadbeef"
+    ),
+    "run.ts:352",
+)
 (ROOT / REL).write_text(PLAN, encoding="utf-8")
+
+# --------------------------------------------------------------------------- 14c2. CITATIONS ARE RESOLVED BEFORE THEY ARE WRITTEN (#fcaee69b): `--plan-tick`'s evidence and `--plan-investigate`'s note go through check_plan_citations.py's own extractor and resolver.
+#
+# The defect: bare basenames like `run.ts:352` landed in a plan through --plan-tick and only check:ci-plan-citations caught them afterwards. PLANT each, show it refused, then show the full-path spelling accepted.
+# ---------------------------------------------------------------------------
+_plain = R.refuse_unresolved_citations
+raises(
+    "a bare basename file:line is refused by the shared helper, in the resolver's words",
+    lambda: _plain(ROOT, "see run.ts:352", "the evidence"),
+    "run.ts:352",
+)
+truthy(
+    "...and the refusal names the full-path spelling",
+    "scripts/ci-runner/run.ts:352" in _refusal(lambda: _plain(ROOT, "see run.ts:352", "x")),
+)
+control(
+    "CONTROL: the repo-relative spelling is silent",
+    _plain(ROOT, "see scripts/ci-runner/run.ts:352", "the evidence"),
+    None,
+)
+raises(
+    "a line number past the end of the file is refused",
+    lambda: _plain(ROOT, "see scripts/ci-runner/run.ts:9999", "the evidence"),
+    "scripts/ci-runner/run.ts:9999",
+)
+control("CONTROL: prose with no citation is silent", _plain(ROOT, "nothing cited here", "x"), None)
+
+_CIT_PLAN = "agent/PLAN-citation-fixture.md"
+_CIT_OPEN = "Wire the citation resolver into the tick verb of this fixture plan"
+(ROOT / _CIT_PLAN).write_text(
+    "# C\nStatus: executing\nOwner: deadbeef\n\n## Tasks\n- [ ] " + _CIT_OPEN + "\n",
+    encoding="utf-8",
+)
+_cit_sig = R.box_sig(_CIT_OPEN)
+_cit_note = (
+    "the citation fixture investigation note, long enough to clear the floor, about "
+    "scripts/ci-runner/run.ts:352 and its neighbours"
+)
+raises(
+    "--plan-investigate refuses a note citing a bare basename",
+    lambda: R.plan_investigate(
+        ROOT,
+        _CIT_PLAN,
+        _cit_sig,
+        "present",
+        ["fileline:%s:1" % REL, "commit:%s" % AFTER],
+        _cit_note.replace("scripts/ci-runner/", ""),
+        "deadbeef",
+    ),
+    "run.ts:352",
+)
+_crow, _cres = R.plan_investigate(
+    ROOT,
+    _CIT_PLAN,
+    _cit_sig,
+    "present",
+    ["fileline:%s:1" % REL, "commit:%s" % AFTER],
+    _cit_note,
+    "deadbeef",
+)
+control("CONTROL: the same note with the full path is accepted", _crow["sig"], _cit_sig)
+R.append_investigation(ROOT, _crow)
+raises(
+    "--plan-tick refuses evidence citing run.ts:352 and writes nothing",
+    lambda: R.plan_tick(ROOT, _CIT_PLAN, _cit_sig, "verified at run.ts:352 exit 0", "deadbeef"),
+    "run.ts:352",
+)
+_cit_text, _cit_doc, _cit_msg = R.plan_tick(
+    ROOT, _CIT_PLAN, _cit_sig, "verified at scripts/ci-runner/run.ts:352 exit 0", "deadbeef"
+)
+truthy(
+    "CONTROL: --plan-tick accepts scripts/ci-runner/run.ts:352",
+    "scripts/ci-runner/run.ts:352" in _cit_text,
+)
+(ROOT / _CIT_PLAN).unlink()
 
 # --------------------------------------------------------------------------- 14d. plan_investigate(retro=True): the late record, and the order it must not erode.
 #

@@ -935,7 +935,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/pr | 1 | .sh 1 |
 | .ci/scripts/private | 5 | .sh 5 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
-| .ci/scripts/quality | 158 | .py 156, .json 1, .mjs 1 |
+| .ci/scripts/quality | 157 | .py 155, .json 1, .mjs 1 |
 | .ci/scripts/quality/lib | 1 | .py 1 |
 | .ci/scripts/release | 15 | .sh 15 |
 | .ci/scripts/security | 2 | .py 2 |
