@@ -150,6 +150,7 @@ def _log_dir(env: Env) -> Path:
 
 
 def phase_quick(env: Env, **run_kw: Any) -> int:
+    # --no-diff-slow: the diff's slow gates belong to the rotation phase. Run 37762219016 selected 48 of them from one stray file (every slow gate without `paths` fails open) and hit the 12m bound.
     bound = env.get("QUICK_BOUND") or DEFAULT_QUICK_BOUND
     out = _out_dir(env) / "quick.json"
     extra = (env.get("CAPTURE_EXTRA_ARGS") or "").split()
@@ -157,7 +158,7 @@ def phase_quick(env: Env, **run_kw: Any) -> int:
         parse_bound(bound),
         out,
         _log_dir(env) / "gate-costs-quick.log",
-        ["--quick", *extra],
+        ["--quick", "--no-diff-slow", *extra],
         **run_kw,
     )
     if hung(rc):

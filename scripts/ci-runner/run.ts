@@ -205,6 +205,8 @@ interface Options {
   gateTimeoutMs?: number;
   /** `--slow-rotation i/N`: run only bucket i of the slow set split N ways by cost (`rotationBucket`), for housekeeping's gate-cost capture. */
   slowRotation?: { index: number; of: number };
+  /** `--no-diff-slow` (with `--quick`): the fast lane alone, no slow gate selected by the diff. Housekeeping's gate-cost capture, whose rotation measures the slow set. */
+  noDiffSlow?: boolean;
   /** `--stop-on-stage-red[=preflight|1]`: stop, with no receipt and exit 3, once that stage settles with a red carried-reds.json does not cover. Bare means stage 1. */
   stopOnStageRed?: 'preflight' | '1';
   /** `--narrow`: run the last receipt's non-carried fails, their learned clusters, the gates the fix touched and the gates associated with the changed classes; never a receipt. */
@@ -333,6 +335,9 @@ function parseArgs(argv: readonly string[]): Options {
       case '--quick':
         opts.quick = true;
         break;
+      case '--no-diff-slow':
+        opts.noDiffSlow = true;
+        break;
       case '--changed':
         opts.changed = true;
         break;
@@ -409,6 +414,8 @@ function parseArgs(argv: readonly string[]): Options {
       'ci-runner: --slow-rotation is its own selection; it does not combine with --quick, --changed, --only or --lane.'
     );
   }
+  if (opts.noDiffSlow && !opts.quick)
+    throw new Error('ci-runner: --no-diff-slow narrows --quick; it needs --quick.');
   if ((opts.lane === undefined) !== (opts.shard === undefined)) {
     throw new Error('ci-runner: --lane and --shard are both required together, or neither.');
   }
@@ -851,7 +858,10 @@ function select(
       });
     // DIFF-SELECTED SLOW GATES (quick-select.ts). Every slow gate the change set since the last push touches joins this one pass; every other slow gate stays deferred and is named as such.
     const slowCandidates = chosen.filter((spec) => slow.has(spec.id));
-    const verdict = quickDiffAdmit(slowCandidates, specs, opts, warn, quickDeps);
+    // --no-diff-slow: the diff is not even read, since a scheduled checkout's stray file (a fail-open slow gate declares no paths) otherwise pulls 48 slow gates into the capture's 12-minute bound (run 37762219016).
+    const verdict = opts.noDiffSlow
+      ? { admitted: [], droppedTouched: [], treeWritersAdmitted: [] }
+      : quickDiffAdmit(slowCandidates, specs, opts, warn, quickDeps);
     const admitted = verdict.admitted;
     selectedSlow = admitted;
     droppedTouched = verdict.droppedTouched;
@@ -2809,6 +2819,17 @@ async function selftest(): Promise<number> {
       refused = true;
     }
     require_(refused, '--slow-rotation with --quick must be refused, not silently combined');
+    let bare = false;
+    try {
+      parseArgs(['--no-diff-slow']);
+    } catch {
+      bare = true;
+    }
+    require_(bare, '--no-diff-slow without --quick must be refused');
+    require_(
+      narrowingFlags(parseArgs(['--quick', '--no-diff-slow'])).includes('--no-diff-slow'),
+      '--no-diff-slow runs less than the quick lane, so it must narrow the receipt'
+    );
   }
 
   // THE LEARNED SCHEDULER (agent/plans/PLAN-gate-scheduling-learned.md T6-T9): the order, the ledger writer, the stream, and the cross-module controls (the property over archived timelines, the stage stop through a real runner, no gate id in the learned half).
@@ -2988,6 +3009,7 @@ function narrowingFlags(opts: Options): string[] {
   if (opts.skip !== undefined) flags.push('--skip');
   if (opts.changed) flags.push('--changed');
   if (opts.slowRotation !== undefined) flags.push('--slow-rotation');
+  if (opts.noDiffSlow) flags.push('--no-diff-slow');
   // A gate --fail-fast never launched is a `skipped` result, which receiptGates writes with verdict `blocked`, and the push guard accepts `blocked` as a verdict: a --fail-fast receipt whose only red was carried claimed a whole lane with unjudged gates (agent/plans/PLAN-gate-scheduling-learned.md, the push-guard hole, T1). A stage stop and --narrow run less than the lane by design.
   if (opts.failFast) flags.push('--fail-fast');
   if (opts.stopOnStageRed !== undefined) flags.push('--stop-on-stage-red');

@@ -132,7 +132,7 @@ def test_quick_passes_on_a_usable_capture_despite_gate_reds(
     out = capsys.readouterr().out
     assert "run.ts exit 1 (gate reds are expected" in out
     log = (tmp_path / "logs" / "gate-costs-quick.log").read_text(encoding="utf-8")
-    assert "start --quick --only check:x --jobs 1" in log
+    assert "start --quick --no-diff-slow --only check:x --jobs 1" in log
 
 
 def test_quick_fails_on_a_capture_that_measured_nothing(fake: Path, tmp_path: Path) -> None:
