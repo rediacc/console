@@ -710,11 +710,11 @@ def test_declared_closure_paths_exist(gate):
         )
         count += 1
     # The floor sits JUST BELOW the real total (408 across 18 keys as of 2026-08-08), not at some token value: a `> 15` floor survived a table that had lost every key but one. At 400 a parse break reads as 0 and a dropped VM/E2E key costs 30 entries, both of which fire this; trimming a path or two during honest maintenance does not.
-    # Re-measured 2026-10-08 at 383 after PLAN-retire-bash-oracles wave 1 deleted thirteen closure entries (the setup, private, build and test bash twins) and the floor moved to that measured count.
+    # Re-measured 2026-10-08 at 383 after PLAN-retire-bash-oracles wave 1 deleted thirteen closure entries (the setup, private, build and test bash twins). The floor keeps the same eight-entry margin under the measured total as before (408 -> 400): 375.
     gate.assert_eq(
-        1 if count >= 383 else 0,
+        1 if count >= 375 else 0,
         1,
-        "the table must stay whole (%d entries seen, floor 383)" % count,
+        "the table must stay whole (%d entries seen, floor 375)" % count,
     )
 
     # CONTROL: the same assertion applied to a path that does NOT exist must fail, or the loop above proves only that the loop ran.

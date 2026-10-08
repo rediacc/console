@@ -306,7 +306,7 @@ def test_missing_blocker_is_refused(gate):
 
 
 def test_low_effort_blocker_is_refused(gate):
-    """This is also the control that the CANONICAL validator is really consulted. "tbd" is on the banned-phrase list of `rediacc_ci.core.allowlist` and nowhere in the subject's own source, so a passing verdict here would mean the subprocess never ran."""
+    """This is also the control that the CANONICAL validator is really consulted. "tbd" is on the banned-phrase list of `rediacc_ci.core.allowlist` and nowhere in the subject's own source, and the gate reaches that list through `rediacc_ci.core.blocker_validator` in process, so a passing verdict here would mean the validator was never consulted."""
     with harness.temp_dir() as d:
         fixture(d)
         allowlist(d, "# BLOCKER: tbd\ntree:.ci/media/\n")

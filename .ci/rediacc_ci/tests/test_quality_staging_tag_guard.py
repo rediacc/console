@@ -261,6 +261,29 @@ def test_a_rail_that_is_only_in_a_docstring_does_not_count(tmp_path: pathlib.Pat
     assert "still refuses a non-staging tag (got '0' want '1')" in err
 
 
+def test_rail_count_reads_code_not_prose() -> None:
+    """The verbatim call quoted in a docstring or comment is not the rail; the call statement is."""
+    call = 'def f(t):\n    return re.match(r"staging-", t) is not None\n'
+    assert gate.rail_count(call) == 1
+    assert gate.rail_count(call + call) == 2
+    assert gate.rail_count('def f(t):\n    """re.match(r"staging-", t)"""\n    return True\n') == 0
+    assert gate.rail_count('# re.match(r"staging-", t)\nx = 1\n') == 0
+    assert gate.rail_count("def (:") == 0
+
+
+def test_a_pathlib_joined_python_caller_is_seen_and_judged(tmp_path: pathlib.Path) -> None:
+    """`ROOT / "cleanup_staging.py"` is an executing reference as much as `os.path.join(..., "cleanup_staging.py")`."""
+    body = (
+        'TARGET = ROOT / ".ci" / "scripts" / "docker" / "cleanup_staging.py"\n'
+        "def go(channel):\n"
+        '    subprocess.run([str(TARGET), "--tag", channel])\n'
+    )
+    root = build(tmp_path, {PY_CALLER_REL: body})
+    code, _, err = run_port(root)
+    assert code == 1
+    assert "%s guards its call against a non-staging tag (got '0' want '1')" % PY_CALLER_REL in err
+
+
 def test_grep_hits_reads_python_callers_under_the_release_package(tmp_path: pathlib.Path) -> None:
     """`.ci/rediacc_ci/release` is read for `.py` callers; the rest of `.ci/rediacc_ci` still is not."""
     root = build(

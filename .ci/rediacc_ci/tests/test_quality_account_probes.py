@@ -82,10 +82,19 @@ def test_probe_rc_distinguishes_a_missing_function_from_a_dead_port(
     assert dead != ap.LOAD_FAILED_RC
 
 
+def test_a_probe_that_raises_exits_distinct_from_dead(tmp_path: pathlib.Path) -> None:
+    """An uncaught raise in the probe call must not read as the DEAD answer (rc 1)."""
+    raises = _fixture(tmp_path / "raises", ap.FIXTURE_RAISES)
+    healthy = _fixture(tmp_path / "healthy", ap.FIXTURE_HEALTHY)
+    assert ap.probe_rc(raises, 1) == ap.PROBE_RAISED_RC
+    assert ap.probe_rc(healthy, _free_port()) == 1
+    assert not ap.probe_says_alive(raises, 1)
+
+
 def test_the_real_probe_reads_a_closed_port_as_dead_and_a_live_one_as_alive() -> None:
     """The live subject, through the same child-interpreter path the gate uses."""
     root = paths.repo_root()
-    assert ap.probe_rc(root, _free_port()) not in (0, ap.LOAD_FAILED_RC)
+    assert ap.probe_rc(root, _free_port()) == 1
     port = _free_port()
     server = ap.start_listener(port)
     try:
