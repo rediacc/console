@@ -179,8 +179,18 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.resolve_www_deploy_target
 
       - name: Deploy Worker
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.${{ steps.target.outputs.script }}
+        # Each module is spelled out so check:ci-inner-timeout-reachable can
+        # read both modules' timers; a `-m rediacc_ci.deploy.${{ ... }}` hid
+        # which one runs. The two names are resolve_www_deploy_target's only
+        # outputs, and anything else is refused rather than guessed.
+        run: |
+          case "$DEPLOY_SCRIPT" in
+            deploy_www) PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www ;;
+            deploy_edge) PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_edge ;;
+            *) echo "::error::unknown deploy script '$DEPLOY_SCRIPT'"; exit 1 ;;
+          esac
         env:
+          DEPLOY_SCRIPT: ${{ steps.target.outputs.script }}
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 

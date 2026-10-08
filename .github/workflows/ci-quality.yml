@@ -349,9 +349,6 @@ jobs:
       - name: Environment names
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_environment_names.py
-      - name: Gate registration follows the gates/ convention
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_gate_id_convention.py
       - name: Gate-reachability probe agrees with registrations
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_gate_reachability_coverage.py

@@ -328,24 +328,33 @@ jobs:
       # live AND into a file uploaded below, so a run that is cut short still shows
       # which gate it was waiting on. On the outer timeout the runner's SIGTERM
       # handler prints the gates still running and kills their process groups.
+      #
+      # CAPTURE_DIR puts the three captures OUTSIDE the checkout (#b4e94451): written to
+      # the repo root, quick.json counted as a changed file in the rotation's diff. It is
+      # set per step because job-level `env` cannot read the `runner` context.
       - name: Capture per-gate CPU (serial ci:quick)
+        env:
+          CAPTURE_DIR: ${{ runner.temp }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.capture_gate_costs quick
 
       # Never fails by itself: a hung or unreadable rotation must not cost the night's
       # fast capture, so its verdict is carried in `rc` and the last step fails on it.
       - name: Capture slow-gate rotation (one third per night)
         id: rotation
+        env:
+          CAPTURE_DIR: ${{ runner.temp }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.capture_gate_costs rotation
 
       - name: Merge the rotation into the capture
         env:
+          CAPTURE_DIR: ${{ runner.temp }}
           ROTATION_RC: ${{ steps.rotation.outputs.rc }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.capture_gate_costs merge
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: gate-costs-${{ github.sha }}
-          path: gate-costs.json
+          path: ${{ runner.temp }}/gate-costs.json
           retention-days: 3
           if-no-files-found: error
 

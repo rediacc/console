@@ -127,6 +127,8 @@ PREIMAGE = ROOT / ".ci" / "config" / "github-secret-preimage.json"
 RENAME_TABLE = ROOT / "scripts" / "ops" / "secret-rename.py"
 REGIONS = ROOT / "regions.json"
 DEPLOY_DIR = ROOT / ".ci" / "scripts" / "deploy"
+# Where the region fan-ins live since ca8d42f5c (2026-10-08) ported the Worker-deploy bash twins: `SUFFIXED_PREFIXES` in a module here, each prefix read as `<PREFIX>_<SUFFIX>`.
+DEPLOY_PY_DIR = ROOT / ".ci" / "rediacc_ci" / "deploy"
 
 # Call sites live in two places. .ci/breakpoint/workflow/ is a REAL bws-secrets caller that this gate used to miss entirely, because it globbed .github only (recorded as a blind spot in the migration plan's Part 16).
 EXTRA_WORKFLOW_DIRS = [ROOT / ".ci" / "breakpoint" / "workflow"]
@@ -207,9 +209,37 @@ job_at = workflows.job_at
 
 USE_RE = re.compile(r"(?<![\w./-])secrets\.([A-Za-z_][A-Za-z0-9_]*)")
 CALLS_REUSABLE_RE = re.compile(r"^\s*uses: \./\.github/workflows/")
-SUFFIX_RE = re.compile(r'^\s*[A-Za-z_][A-Za-z0-9_]*="([A-Z0-9_]+)_\$\{SUFFIX\}"', re.MULTILINE)
 # Never compared, never fetched: the bootstrap token and the implicit one.
 NOT_SHADOWED = {"GITHUB_TOKEN", "BWS_ACCESS_TOKEN"}
+
+
+def suffixed_prefixes(directory: Path) -> list[tuple[Path, str]]:
+    """(module, prefix) for every string in a module-level `SUFFIXED_PREFIXES` tuple or list under `directory`.
+
+    RETARGETED 2026-10-08. Assertion 7 grepped `.ci/scripts/deploy/*.sh` for `VAR="PREFIX_${SUFFIX}"`; ca8d42f5c ported those scripts, and the port names its fan-ins as DATA, `SUFFIXED_PREFIXES`, read through `<PREFIX>_<SUFFIX>`. Read by `ast`, so a prefix in a comment or a docstring is not a construction, and a nested assignment of the same name is not the module's.
+    """
+    out: list[tuple[Path, str]] = []
+    for module in sorted(directory.glob("*.py")):
+        try:
+            tree = ast.parse(module.read_text(encoding="utf-8"))
+        except (OSError, SyntaxError, UnicodeDecodeError):
+            continue
+        for node in tree.body:
+            if isinstance(node, ast.Assign):
+                targets, value = node.targets, node.value
+            elif isinstance(node, ast.AnnAssign) and node.value is not None:
+                targets, value = [node.target], node.value
+            else:
+                continue
+            if not any(isinstance(t, ast.Name) and t.id == "SUFFIXED_PREFIXES" for t in targets):
+                continue
+            if isinstance(value, (ast.Tuple, ast.List)):
+                out.extend(
+                    (module, e.value)
+                    for e in value.elts
+                    if isinstance(e, ast.Constant) and isinstance(e.value, str)
+                )
+    return out
 
 
 def call_sites() -> list[Path]:
@@ -1028,32 +1058,26 @@ def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = N
         ]
     except (OSError, ValueError, KeyError) as exc:
         return [*problems, f"cannot read region suffixes from {REGIONS.name} ({exc})"]
-    constructions = 0
-    for script in sorted(DEPLOY_DIR.glob("*.sh")):
-        for prefix in SUFFIX_RE.findall(script.read_text(encoding="utf-8")):
-            constructions += 1
-            for suffix in suffixes:
-                built = f"{prefix}_{suffix}"
-                if built in secrets or built in exemptions:
-                    continue
-                problems.append(
-                    f'{script.relative_to(ROOT)} builds {built!r} at runtime ("{prefix}_${{SUFFIX}}") '
-                    f"and the map does not hold it -- the name appears as a literal nowhere, so "
-                    f"nothing else can see this"
-                )
-    if constructions == 0:
+    fan_ins = suffixed_prefixes(DEPLOY_PY_DIR)
+    for module, prefix in fan_ins:
+        for suffix in suffixes:
+            built = f"{prefix}_{suffix}"
+            if built in secrets or built in exemptions:
+                continue
+            where = module.relative_to(ROOT) if module.is_relative_to(ROOT) else module
+            problems.append(
+                f"{where} builds {built!r} at runtime (SUFFIXED_PREFIXES "
+                f"{prefix!r} + '_' + SUFFIX) and the map does not hold it -- the name appears as "
+                f"a literal nowhere, so nothing else can see this"
+            )
+    if not fan_ins:
         problems.append(
-            f"no PREFIX_${{SUFFIX}} construction found under {DEPLOY_DIR.relative_to(ROOT)}; "
+            f"no SUFFIXED_PREFIXES fan-in found under {DEPLOY_PY_DIR.relative_to(ROOT)}; "
             f"the runtime-name scan lost its subject"
         )
 
     # ---- an exemption that no longer describes anything ----------------------
-    built_names = {
-        f"{prefix}_{suffix}"
-        for script in sorted(DEPLOY_DIR.glob("*.sh"))
-        for prefix in SUFFIX_RE.findall(script.read_text(encoding="utf-8"))
-        for suffix in suffixes
-    }
+    built_names = {f"{prefix}_{suffix}" for _, prefix in fan_ins for suffix in suffixes}
     # Re-derived for EVERY such exemption, mapped or not. Assertion 7 used to be the only caller, and it short-circuits on `built in secrets` -- so the same kind applied to a MAPPED name was accepted on nothing but a non-empty string, making the weakest-checked kind also the one with no expiry and no worklist id. Found by audit, not by design.
     for name, rec in sorted(exemptions.items()):
         if rec.get("kind") == "superseded-at-runtime":
@@ -1108,6 +1132,27 @@ jobs:
     if not ok:
         print(f"        got  {got}\n        want {want}")
         return 1
+    # ---- assertion 7's reader, both directions -----------------------------------
+    with tempfile.TemporaryDirectory() as d:
+        mod = Path(d) / "deployer.py"
+        mod.write_text(
+            '"""SUFFIXED_PREFIXES = ("IN_A_DOCSTRING",)"""\n'
+            '# SUFFIXED_PREFIXES = ("IN_A_COMMENT",)\n'
+            'SUFFIXED_PREFIXES: tuple[str, ...] = (\n    "SELFTEST_FAN_IN",\n)\n'
+            'def f():\n    SUFFIXED_PREFIXES = ("NESTED",)\n',
+            encoding="utf-8",
+        )
+        got7 = [p for _, p in suffixed_prefixes(Path(d))]
+        empty7 = suffixed_prefixes(Path(d) / "absent")
+    ok7 = got7 == ["SELFTEST_FAN_IN"] and empty7 == []
+    print(
+        f"  {'PASS' if ok7 else 'FAIL'}  the fan-in reader takes the module tuple and nothing in a "
+        f"docstring, comment or function"
+    )
+    if not ok7:
+        print(f"        got {got7} / {empty7}")
+        return 1
+
     # the failure direction must be detectable
     fake = {"secrets": {"SELFTEST_PLAIN_NAME": {"id": "x"}}}
     missing = [n for _, n, _ in got if n not in fake["secrets"]]

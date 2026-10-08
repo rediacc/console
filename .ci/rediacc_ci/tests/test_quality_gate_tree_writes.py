@@ -83,6 +83,26 @@ def test_unreached_function_is_not_a_site(tmp_path):
     assert sites == []
 
 
+def test_a_runner_file_variable_is_outside_and_an_arbitrary_key_is_not(tmp_path):
+    """Both directions: the step summary through an injected env mapping is OUTSIDE, any other key on the same mapping stays UNRESOLVED."""
+    sites = scan(
+        tmp_path,
+        {
+            "g.py": "import os\n\n\ndef run(env):\n"
+            "    with open(env.get('GITHUB_STEP_SUMMARY'), 'a') as fh:\n        fh.write('x')\n"
+            "    with open(env.get('REVIEW_OUT'), 'a') as fh:\n        fh.write('x')\n"
+            "    with open(os.environ.get('GITHUB_OUTPUT'), 'a') as fh:\n        fh.write('x')\n\n\n"
+            "run(os.environ)\n"
+        },
+        "g.py",
+    )
+    assert [s.origin for s in sorted(sites, key=lambda s: s.line)] == [
+        "OUTSIDE",
+        "UNRESOLVED",
+        "OUTSIDE",
+    ]
+
+
 def test_scratch_is_ci_cache_only(tmp_path):
     sites = scan(
         tmp_path,

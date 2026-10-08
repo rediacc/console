@@ -935,7 +935,10 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-setup-idempotency',
     gate: true,
     paths: [
-      '.ci/lib/**',
+      // `.ci/lib/**` WAS HERE until 94934de41 deleted devbox.sh and its siblings (2026-10-08); checks A, C, E and F now read their Python ports, so those three files are the subjects an edit must select this gate on.
+      '.ci/rediacc_ci/core/devbox.py',
+      '.ci/rediacc_ci/core/local_common.py',
+      '.ci/rediacc_ci/core/ports.py',
       'run.sh',
       // setup() is ported to rediacc_ci.setup.machine.run_setup, which check G reads now that .ci/legacy/run-legacy.sh is deleted. Without this an edit to the file the gate READS does not select it.
       '.ci/rediacc_ci/setup/machine.py',
@@ -1091,7 +1094,12 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-devbox-exec',
     gate: true,
     // The lane library and anything that could add a call site to it. Narrow on purpose: this gate reasons about devbox.sh's own invocations, and a wider path filter would imply a coverage it does not have.
-    paths: ['.ci/lib/devbox.sh', '.ci/scripts/quality/check_devbox_exec.py'],
+    // The subject moved with 94934de41 (2026-10-08): `.ci/lib/devbox.sh` is deleted and the gate reads its port, core/devbox.py (DEVBOX_REL in rediacc_ci/quality/devbox_exec.py).
+    paths: [
+      '.ci/rediacc_ci/core/devbox.py',
+      '.ci/rediacc_ci/quality/devbox_exec.py',
+      '.ci/scripts/quality/check_devbox_exec.py',
+    ],
     pathsOrigin: 'declared',
     leaves: ['.ci/scripts/quality/check_devbox_exec.py'],
     ci: {
@@ -1364,7 +1372,7 @@ export const GATES: readonly GateSpec[] = [
       '.ci/scripts/**',
       'scripts/**',
       '.claude/hooks/**',
-      '.ci/lib/**',
+      // `.ci/lib/**` left this list on 2026-10-08: 94934de41 and 0327ab26b deleted every file under it, and a glob matching nothing only drops out of --changed. The scan root in pipefail_grep_q.py stays, so a shell file that reappears there is scanned without a manifest edit.
       '.devcontainer/**',
       '.ci/media/**',
     ],
@@ -2860,18 +2868,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Shell commands exist on the runner image',
     },
   },
-  {
-    id: 'check:ci-gate-id-convention',
-    run: 'npm run check:ci-gate-id-convention',
-    gate: true,
-    leaves: ['.ci/scripts/quality/check_gate_id_convention.py'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
-      step: 'Gate registration follows the gates/ convention',
-    },
-  },
+  // RETIRED WITH ITS SUBJECT (2026-10-08): check:ci-gate-id-convention held every manifest entry that RUNS a `.ci/scripts/test/gates/test-*.sh` to the `gate-test:<name>` id. W11-A/B/C and section 12 U1-U3 deleted the last such script and its entry, so the lock carries zero `gate-test:` ids and zero gates/ runs, and the gate refused an empty corpus. Its module, entry point and test are deleted.
   {
     id: 'check:ci-pool-writer-safety',
     run: 'npm run check:ci-pool-writer-safety',
@@ -5097,7 +5094,7 @@ export const GATES: readonly GateSpec[] = [
     paths: [
       '.ci/rediacc_ci/**',
       '.claude/rediacc_hooks/**',
-      '.ci/scripts/test/gates/**',
+      // `.ci/scripts/test/gates/**` left this list on 2026-10-08: W11-A/B/C and section 12 U1-U3 deleted the last bash gate test and twin under it, so the glob matched nothing and could only drop out of --changed.
       '.claude/hooks/**',
       '.claude/settings.json',
       '.ci/scripts/test/lib/git-fixture.sh',

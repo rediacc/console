@@ -91,14 +91,14 @@
  * ---- end gate ----
  */
 
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
+const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 
 /** The values `matrix.secretSuffix` takes in cd-deploy-account.yml. */
-const REGION_SUFFIXES = ["EU", "US", "ASIA"];
+const REGION_SUFFIXES = ['EU', 'US', 'ASIA'];
 
 interface Pair {
   workflow: string;
@@ -118,22 +118,22 @@ interface Pair {
  */
 const PAIRS: Pair[] = [
   {
-    workflow: ".github/workflows/cd-deploy-account.yml",
-    builder: ".ci/rediacc_ci/deploy/set_account_worker_secrets.py",
+    workflow: '.github/workflows/cd-deploy-account.yml',
+    builder: '.ci/rediacc_ci/deploy/set_account_worker_secrets.py',
     exportFloor: 35,
     readFloor: 25,
     fanInFloor: 4,
   },
   {
-    workflow: ".github/workflows/cd-deploy-worker.yml",
-    builder: ".ci/rediacc_ci/deploy/set_www_worker_secrets.py",
+    workflow: '.github/workflows/cd-deploy-worker.yml',
+    builder: '.ci/rediacc_ci/deploy/set_www_worker_secrets.py',
     exportFloor: 20,
     readFloor: 20,
     fanInFloor: 0,
   },
   {
-    workflow: ".github/workflows/ci.yml",
-    builder: ".ci/rediacc_ci/deploy/set_preview_worker_secrets.py",
+    workflow: '.github/workflows/ci.yml',
+    builder: '.ci/rediacc_ci/deploy/set_preview_worker_secrets.py',
     exportFloor: 12,
     readFloor: 12,
     fanInFloor: 0,
@@ -157,28 +157,27 @@ const PAIRS: Pair[] = [
  */
 interface Exemption {
   name: string;
-  direction: "exported-not-read" | "read-not-exported";
+  direction: 'exported-not-read' | 'read-not-exported';
   reason: string;
 }
 
 const EXEMPT: Exemption[] = [
   {
-    name: "CLOUDFLARE_API_TOKEN",
-    direction: "exported-not-read",
+    name: 'CLOUDFLARE_API_TOKEN',
+    direction: 'exported-not-read',
     reason:
-      "BLOCKER: consumed by `npx wrangler` out of the environment, never by the builder script itself. Dropping it breaks auth, so it must stay exported.",
+      'BLOCKER: consumed by `npx wrangler` out of the environment, never by the builder script itself. Dropping it breaks auth, so it must stay exported.',
   },
   {
-    name: "CLOUDFLARE_ACCOUNT_ID",
-    direction: "exported-not-read",
-    reason:
-      "BLOCKER: same as CLOUDFLARE_API_TOKEN -- wrangler reads it, the builder does not.",
+    name: 'CLOUDFLARE_ACCOUNT_ID',
+    direction: 'exported-not-read',
+    reason: 'BLOCKER: same as CLOUDFLARE_API_TOKEN -- wrangler reads it, the builder does not.',
   },
   {
-    name: "PR_NUMBER",
-    direction: "read-not-exported",
+    name: 'PR_NUMBER',
+    direction: 'read-not-exported',
     reason:
-      "BLOCKER: set as JOB-level env on deploy-preview in ci.yml (one definition serving ~8 steps), not repeated in the step env block. This gate parses the STEP block only.",
+      'BLOCKER: set as JOB-level env on deploy-preview in ci.yml (one definition serving ~8 steps), not repeated in the step env block. This gate parses the STEP block only.',
   },
 ];
 
@@ -196,17 +195,12 @@ const NAME_ENTRY = /^\s+"([A-Z][A-Z0-9_]*)",?\s*$/;
  * and nothing around it. The close is the first column-0 `)` after the opening,
  * which is how ruff formats every tuple in these ports. Missing tuple: empty.
  */
-function tupleLines(
-  text: string,
-  name: string,
-): { line: number; text: string }[] {
-  const lines = text.split("\n");
-  const open = lines.findIndex((l) =>
-    new RegExp(`^${name}\\b[^\\n]*=\\s*\\($`).test(l),
-  );
+function tupleLines(text: string, name: string): { line: number; text: string }[] {
+  const lines = text.split('\n');
+  const open = lines.findIndex((l) => new RegExp(`^${name}\\b[^\\n]*=\\s*\\($`).test(l));
   if (open < 0) return [];
   const out: { line: number; text: string }[] = [];
-  for (let i = open + 1; i < lines.length && lines[i] !== ")"; i++) {
+  for (let i = open + 1; i < lines.length && lines[i] !== ')'; i++) {
     out.push({ line: i, text: lines[i] });
   }
   return out;
@@ -219,18 +213,16 @@ function tupleLines(
  */
 export function builderReads(source: string): Map<string, number> {
   // Triple-quoted strings (module and function docstrings) are prose: blank them, keeping every newline so line numbers stay true.
-  const text = source.replace(/"""[\s\S]*?"""/g, (block) =>
-    block.replace(/[^\n]/g, " "),
-  );
+  const text = source.replace(/"""[\s\S]*?"""/g, (block) => block.replace(/[^\n]/g, ' '));
   const out = new Map<string, number>();
-  const lineOf = (offset: number) => text.slice(0, offset).split("\n").length;
-  const lines = text.split("\n");
+  const lineOf = (offset: number) => text.slice(0, offset).split('\n').length;
+  const lines = text.split('\n');
   for (const m of text.matchAll(ENV_GET_RE)) {
     const line = lineOf(m.index ?? 0);
     if (/^\s*#/.test(lines[line - 1])) continue;
     if (!out.has(m[1])) out.set(m[1], line);
   }
-  for (const { line, text: row } of tupleLines(text, "KEYS")) {
+  for (const { line, text: row } of tupleLines(text, 'KEYS')) {
     const m = KEYS_ROW_2COL.exec(row);
     if (m && !out.has(m[1])) out.set(m[1], line + 1);
   }
@@ -249,12 +241,11 @@ export function builderFanIns(text: string): {
 } {
   const names = new Map<string, number>();
   const templates: string[] = [];
-  for (const { line, text: row } of tupleLines(text, "SUFFIXED_PREFIXES")) {
+  for (const { line, text: row } of tupleLines(text, 'SUFFIXED_PREFIXES')) {
     const m = NAME_ENTRY.exec(row);
     if (!m) continue;
     templates.push(`${m[1]}_\${SUFFIX}`);
-    for (const suffix of REGION_SUFFIXES)
-      names.set(`${m[1]}_${suffix}`, line + 1);
+    for (const suffix of REGION_SUFFIXES) names.set(`${m[1]}_${suffix}`, line + 1);
   }
   return { names, templates };
 }
@@ -269,19 +260,15 @@ export function builderFanIns(text: string): {
 export function guardLabels(
   text: string,
   reads: Map<string, number>,
-  fanInPrefixes: Set<string>,
+  fanInPrefixes: Set<string>
 ): { label: string; varName: string | null; line: number }[] {
   const out: { label: string; varName: string | null; line: number }[] = [];
-  for (const tuple of ["REQUIRED_NONEMPTY", "REQUIRED_NONEMPTY_STABLE"]) {
+  for (const tuple of ['REQUIRED_NONEMPTY', 'REQUIRED_NONEMPTY_STABLE']) {
     for (const { line, text: row } of tupleLines(text, tuple)) {
       const m = NAME_ENTRY.exec(row);
       if (!m) continue;
       const name = m[1];
-      const varName = fanInPrefixes.has(name)
-        ? null
-        : reads.has(name)
-          ? name
-          : "(unread)";
+      const varName = fanInPrefixes.has(name) ? null : reads.has(name) ? name : '(unread)';
       out.push({ label: name, varName, line: line + 1 });
     }
   }
@@ -293,7 +280,7 @@ export interface StepEnv {
   stepLine: number;
   names: Map<string, number>;
   /** Which spelling of the builder the step's `run:` actually used. */
-  invokedAs: "path" | "python-module";
+  invokedAs: 'path' | 'python-module';
 }
 
 /**
@@ -303,12 +290,9 @@ export interface StepEnv {
  * builder living somewhere else is matched by path only.
  */
 export function pythonPortModule(builder: string): string | null {
-  const m =
-    /^\.ci\/(rediacc_ci\/[a-z][a-z0-9_]*)\/([a-z0-9][a-z0-9_]*)\.py$/.exec(
-      builder,
-    );
+  const m = /^\.ci\/(rediacc_ci\/[a-z][a-z0-9_]*)\/([a-z0-9][a-z0-9_]*)\.py$/.exec(builder);
   if (!m) return null;
-  return `${m[1].replace(/\//g, ".")}.${m[2]}`;
+  return `${m[1].replace(/\//g, '.')}.${m[2]}`;
 }
 
 /**
@@ -320,17 +304,12 @@ export function pythonPortModule(builder: string): string | null {
  * finds decides which env block it reads; a loose match would read a
  * neighbour's.
  */
-export function runInvokesBuilder(
-  runScalar: string,
-  builder: string,
-): StepEnv["invokedAs"] | null {
-  if (runScalar.includes(builder)) return "path";
+export function runInvokesBuilder(runScalar: string, builder: string): StepEnv['invokedAs'] | null {
+  if (runScalar.includes(builder)) return 'path';
   const mod = pythonPortModule(builder);
   if (mod === null) return null;
-  const re = new RegExp(
-    `(?:^|\\s)-m\\s+${mod.replace(/\./g, "\\.")}(?![\\w.])`,
-  );
-  return re.test(runScalar) ? "python-module" : null;
+  const re = new RegExp(`(?:^|\\s)-m\\s+${mod.replace(/\./g, '\\.')}(?![\\w.])`);
+  return re.test(runScalar) ? 'python-module' : null;
 }
 
 /**
@@ -342,16 +321,13 @@ export function runInvokesBuilder(
  * we carve out holds more than one step-level `run:` or `env:`, the split is
  * wrong and `null` comes back rather than a set of names from a neighbour.
  */
-export function stepEnvNames(
-  yamlText: string,
-  builder: string,
-): StepEnv | null {
-  const lines = yamlText.split("\n");
+export function stepEnvNames(yamlText: string, builder: string): StepEnv | null {
+  const lines = yamlText.split('\n');
   const starts: number[] = [];
   lines.forEach((l, i) => {
     if (
       /^\s*-\s+(name|uses|id|run|env|if|with|shell|working-directory|continue-on-error|timeout-minutes):/.test(
-        l,
+        l
       )
     ) {
       starts.push(i);
@@ -368,28 +344,22 @@ export function stepEnvNames(
     let runEnd = runIdx + 1;
     while (
       runEnd < block.length &&
-      (block[runEnd].trim() === "" ||
+      (block[runEnd].trim() === '' ||
         block[runEnd].length - block[runEnd].trimStart().length > keyIndent)
     )
       runEnd += 1;
-    const invokedAs = runInvokesBuilder(
-      block.slice(runIdx, runEnd).join("\n"),
-      builder,
-    );
+    const invokedAs = runInvokesBuilder(block.slice(runIdx, runEnd).join('\n'), builder);
     if (invokedAs === null) continue;
     const atKey = (re: RegExp) =>
-      block.filter((l) => new RegExp(`^\\s{${keyIndent}}${re.source}`).test(l))
-        .length;
+      block.filter((l) => new RegExp(`^\\s{${keyIndent}}${re.source}`).test(l)).length;
     if (atKey(/run:/) !== 1 || atKey(/env:/) !== 1) return null;
-    const envIdx = block.findIndex((l) =>
-      new RegExp(`^\\s{${keyIndent}}env:\\s*$`).test(l),
-    );
+    const envIdx = block.findIndex((l) => new RegExp(`^\\s{${keyIndent}}env:\\s*$`).test(l));
     if (envIdx < 0) return null;
     const names = new Map<string, number>();
     let childIndent = -1;
     for (let k = envIdx + 1; k < block.length; k++) {
       const raw = block[k];
-      if (raw.trim() === "") continue;
+      if (raw.trim() === '') continue;
       const ind = raw.length - raw.trimStart().length;
       if (ind <= keyIndent) break;
       if (/^\s*#/.test(raw)) continue;
@@ -401,9 +371,7 @@ export function stepEnvNames(
     const nameIdx = block.findIndex((l) => /^\s*-?\s*name:/.test(l));
     return {
       stepName:
-        nameIdx >= 0
-          ? block[nameIdx].replace(/^\s*-?\s*name:\s*/, "").trim()
-          : "(unnamed step)",
+        nameIdx >= 0 ? block[nameIdx].replace(/^\s*-?\s*name:\s*/, '').trim() : '(unnamed step)',
       stepLine: from + 1,
       names,
       invokedAs,
@@ -418,45 +386,40 @@ export function stepEnvNames(
     '"""docstring: env.get("DOC_ONLY_NAME", "") is prose, not a read.',
     'a second docstring line."""',
     '# os.environ.get("COMMENT_ONLY_NAME", "") must be ignored',
-    "SUFFIXED_PREFIXES: tuple[str, ...] = (",
+    'SUFFIXED_PREFIXES: tuple[str, ...] = (',
     '    "AWS_SES_ACCESS_KEY_ID",',
     '    "OBS_OTLP_CREDENTIALS",',
-    ")",
-    "KEYS: tuple[tuple[str, str], ...] = (",
+    ')',
+    'KEYS: tuple[tuple[str, str], ...] = (',
     '    ("ACCOUNT_JWT_SECRET", "jwt"),',
     '    ("ROOT_EMAIL", "admin"),',
-    ")",
-    "REQUIRED_NONEMPTY: tuple[str, ...] = (",
+    ')',
+    'REQUIRED_NONEMPTY: tuple[str, ...] = (',
     '    "ACCOUNT_JWT_SECRET",',
     '    "AWS_SES_ACCESS_KEY_ID",',
     '    "RENAMED_AWAY",',
-    ")",
+    ')',
     'worker = os.environ.get("WORKER_NAME", "")',
-    "jurisdiction = os.environ.get(",
+    'jurisdiction = os.environ.get(',
     '    "R2_JURISDICTION", ""',
-    ")",
+    ')',
     'pr = env.get("PR_NUMBER", "")',
     'other = values.get("NOT_AN_ENV_READ", "")',
-  ].join("\n");
+  ].join('\n');
 
   const reads = builderReads(builderFixture);
   const mustRead = [
-    "WORKER_NAME",
-    "R2_JURISDICTION",
-    "PR_NUMBER",
-    "ACCOUNT_JWT_SECRET",
-    "ROOT_EMAIL",
+    'WORKER_NAME',
+    'R2_JURISDICTION',
+    'PR_NUMBER',
+    'ACCOUNT_JWT_SECRET',
+    'ROOT_EMAIL',
   ];
-  const mustNotRead = [
-    "COMMENT_ONLY_NAME",
-    "DOC_ONLY_NAME",
-    "NOT_AN_ENV_READ",
-    "RENAMED_AWAY",
-  ];
+  const mustNotRead = ['COMMENT_ONLY_NAME', 'DOC_ONLY_NAME', 'NOT_AN_ENV_READ', 'RENAMED_AWAY'];
   for (const n of mustRead) {
     if (!reads.has(n)) {
       console.error(
-        `x instrument control: builderReads() missed ${n}. Read set was ${JSON.stringify([...reads.keys()])}. Every verdict below would be meaningless.`,
+        `x instrument control: builderReads() missed ${n}. Read set was ${JSON.stringify([...reads.keys()])}. Every verdict below would be meaningless.`
       );
       process.exit(1);
     }
@@ -464,7 +427,7 @@ export function stepEnvNames(
   for (const n of mustNotRead) {
     if (reads.has(n)) {
       console.error(
-        `x instrument control: builderReads() wrongly reported ${n} as an environment read (it sits in a comment, a docstring, a non-environment mapping, or a guard tuple). A gate that over-reads flags the whole tree.`,
+        `x instrument control: builderReads() wrongly reported ${n} as an environment read (it sits in a comment, a docstring, a non-environment mapping, or a guard tuple). A gate that over-reads flags the whole tree.`
       );
       process.exit(1);
     }
@@ -472,190 +435,175 @@ export function stepEnvNames(
 
   const fan = builderFanIns(builderFixture);
   for (const n of [
-    "AWS_SES_ACCESS_KEY_ID_EU",
-    "AWS_SES_ACCESS_KEY_ID_US",
-    "AWS_SES_ACCESS_KEY_ID_ASIA",
-    "OBS_OTLP_CREDENTIALS_ASIA",
+    'AWS_SES_ACCESS_KEY_ID_EU',
+    'AWS_SES_ACCESS_KEY_ID_US',
+    'AWS_SES_ACCESS_KEY_ID_ASIA',
+    'OBS_OTLP_CREDENTIALS_ASIA',
   ]) {
     if (!fan.names.has(n)) {
       console.error(
-        `x instrument control: builderFanIns() did not resolve ${n} from SUFFIXED_PREFIXES. Got ${JSON.stringify([...fan.names.keys()])}. The fan-ins are the half a find-and-replace cannot see; unresolved, they would be silently unchecked.`,
+        `x instrument control: builderFanIns() did not resolve ${n} from SUFFIXED_PREFIXES. Got ${JSON.stringify([...fan.names.keys()])}. The fan-ins are the half a find-and-replace cannot see; unresolved, they would be silently unchecked.`
       );
       process.exit(1);
     }
   }
   if (fan.templates.length !== 2) {
     console.error(
-      `x instrument control: builderFanIns() read ${fan.templates.length} template(s) from a fixture with two prefixes.`,
+      `x instrument control: builderFanIns() read ${fan.templates.length} template(s) from a fixture with two prefixes.`
     );
     process.exit(1);
   }
 
-  const guards = guardLabels(
-    builderFixture,
-    reads,
-    new Set(["AWS_SES_ACCESS_KEY_ID"]),
-  );
+  const guards = guardLabels(builderFixture, reads, new Set(['AWS_SES_ACCESS_KEY_ID']));
   if (
     guards.length !== 3 ||
-    guards[0].varName !== "ACCOUNT_JWT_SECRET" ||
+    guards[0].varName !== 'ACCOUNT_JWT_SECRET' ||
     guards[1].varName !== null ||
-    guards[2].varName !== "(unread)"
+    guards[2].varName !== '(unread)'
   ) {
     console.error(
-      `x instrument control: guardLabels() read ${JSON.stringify(guards)}; expected a direct guard on ACCOUNT_JWT_SECRET, a fan-in guard with varName null, and a guard on a name nothing reads flagged (unread).`,
+      `x instrument control: guardLabels() read ${JSON.stringify(guards)}; expected a direct guard on ACCOUNT_JWT_SECRET, a fan-in guard with varName null, and a guard on a name nothing reads flagged (unread).`
     );
     process.exit(1);
   }
 
   const wfFixture = [
-    "jobs:",
-    "  deploy:",
-    "    steps:",
-    "      - name: Unrelated step",
-    "        env:",
-    "          DECOY_NAME: ${{ secrets.DECOY }}",
-    "        run: echo hi",
-    "",
-    "      - name: Set Worker secrets",
-    "        env:",
-    "          # a comment inside the env block",
-    "          ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}",
-    "          WORKER_NAME: ${{ steps.config.outputs.worker }}",
-    "          FOLDED_NOTE: >-",
-    "            NOT_A_KEY: the body of a folded scalar, not an env name",
-    "        run: .ci/rediacc_ci/deploy/set_fixture_secrets.py",
-  ].join("\n");
-  const step = stepEnvNames(
-    wfFixture,
-    ".ci/rediacc_ci/deploy/set_fixture_secrets.py",
-  );
+    'jobs:',
+    '  deploy:',
+    '    steps:',
+    '      - name: Unrelated step',
+    '        env:',
+    '          DECOY_NAME: ${{ secrets.DECOY }}',
+    '        run: echo hi',
+    '',
+    '      - name: Set Worker secrets',
+    '        env:',
+    '          # a comment inside the env block',
+    '          ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}',
+    '          WORKER_NAME: ${{ steps.config.outputs.worker }}',
+    '          FOLDED_NOTE: >-',
+    '            NOT_A_KEY: the body of a folded scalar, not an env name',
+    '        run: .ci/rediacc_ci/deploy/set_fixture_secrets.py',
+  ].join('\n');
+  const step = stepEnvNames(wfFixture, '.ci/rediacc_ci/deploy/set_fixture_secrets.py');
   if (
     !step ||
-    step.stepName !== "Set Worker secrets" ||
+    step.stepName !== 'Set Worker secrets' ||
     step.names.size !== 3 ||
-    !step.names.has("ACCOUNT_JWT_SECRET") ||
-    step.names.has("DECOY_NAME") ||
-    step.names.has("NOT_A_KEY")
+    !step.names.has('ACCOUNT_JWT_SECRET') ||
+    step.names.has('DECOY_NAME') ||
+    step.names.has('NOT_A_KEY')
   ) {
     console.error(
-      `x instrument control: stepEnvNames() read ${JSON.stringify(step && { n: step.stepName, k: [...step.names.keys()] })}; expected exactly ACCOUNT_JWT_SECRET, WORKER_NAME and FOLDED_NOTE from the step that runs the fixture builder -- nothing from the neighbouring step, and nothing from the body of a folded scalar.`,
+      `x instrument control: stepEnvNames() read ${JSON.stringify(step && { n: step.stepName, k: [...step.names.keys()] })}; expected exactly ACCOUNT_JWT_SECRET, WORKER_NAME and FOLDED_NOTE from the step that runs the fixture builder -- nothing from the neighbouring step, and nothing from the body of a folded scalar.`
     );
     process.exit(1);
   }
-  if (step.invokedAs !== "path") {
+  if (step.invokedAs !== 'path') {
     console.error(
-      `x instrument control: stepEnvNames() reported the fixture's literal file-path run: line as "${step.invokedAs}". The two spellings must stay distinguishable in the output.`,
+      `x instrument control: stepEnvNames() reported the fixture's literal file-path run: line as "${step.invokedAs}". The two spellings must stay distinguishable in the output.`
     );
     process.exit(1);
   }
-  if (
-    stepEnvNames(wfFixture, ".ci/rediacc_ci/deploy/absent_builder.py") !== null
-  ) {
+  if (stepEnvNames(wfFixture, '.ci/rediacc_ci/deploy/absent_builder.py') !== null) {
     console.error(
-      "x instrument control: stepEnvNames() invented a step for a builder no step invokes. It must return null so the caller can refuse.",
+      'x instrument control: stepEnvNames() invented a step for a builder no step invokes. It must return null so the caller can refuse.'
     );
     process.exit(1);
   }
 
   // The PORTED spelling: the same builder, invoked as its python module.
   if (
-    pythonPortModule(".ci/rediacc_ci/deploy/set_fixture_secrets.py") !==
-    "rediacc_ci.deploy.set_fixture_secrets"
+    pythonPortModule('.ci/rediacc_ci/deploy/set_fixture_secrets.py') !==
+    'rediacc_ci.deploy.set_fixture_secrets'
   ) {
     console.error(
-      `x instrument control: pythonPortModule() mapped the fixture builder to ${JSON.stringify(pythonPortModule(".ci/rediacc_ci/deploy/set_fixture_secrets.py"))}; the rule is .ci/rediacc_ci/<pkg>/<name>.py -> rediacc_ci.<pkg>.<name>.`,
+      `x instrument control: pythonPortModule() mapped the fixture builder to ${JSON.stringify(pythonPortModule('.ci/rediacc_ci/deploy/set_fixture_secrets.py'))}; the rule is .ci/rediacc_ci/<pkg>/<name>.py -> rediacc_ci.<pkg>.<name>.`
     );
     process.exit(1);
   }
-  if (pythonPortModule("scripts/ops/example_builder.py") !== null) {
+  if (pythonPortModule('scripts/ops/example_builder.py') !== null) {
     console.error(
-      "x instrument control: pythonPortModule() invented a module for a path outside .ci/rediacc_ci/. A builder with no port must be matched by path only.",
+      'x instrument control: pythonPortModule() invented a module for a path outside .ci/rediacc_ci/. A builder with no port must be matched by path only.'
     );
     process.exit(1);
   }
   const portedFixture = wfFixture.replace(
-    "        run: .ci/rediacc_ci/deploy/set_fixture_secrets.py",
-    "        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_fixture_secrets",
+    '        run: .ci/rediacc_ci/deploy/set_fixture_secrets.py',
+    '        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_fixture_secrets'
   );
   if (portedFixture === wfFixture) {
     console.error(
-      "x instrument control: the ported-invocation fixture is identical to the file-path one, so the next two assertions would prove nothing about the module form.",
+      'x instrument control: the ported-invocation fixture is identical to the file-path one, so the next two assertions would prove nothing about the module form.'
     );
     process.exit(1);
   }
-  const portedStep = stepEnvNames(
-    portedFixture,
-    ".ci/rediacc_ci/deploy/set_fixture_secrets.py",
-  );
+  const portedStep = stepEnvNames(portedFixture, '.ci/rediacc_ci/deploy/set_fixture_secrets.py');
   if (
     !portedStep ||
-    portedStep.invokedAs !== "python-module" ||
-    portedStep.stepName !== "Set Worker secrets" ||
+    portedStep.invokedAs !== 'python-module' ||
+    portedStep.stepName !== 'Set Worker secrets' ||
     portedStep.names.size !== 3 ||
-    !portedStep.names.has("ACCOUNT_JWT_SECRET")
+    !portedStep.names.has('ACCOUNT_JWT_SECRET')
   ) {
     console.error(
-      `x instrument control: stepEnvNames() did not find the step whose run: invokes the builder's python port. Read ${JSON.stringify(portedStep && { n: portedStep.stepName, as: portedStep.invokedAs, k: [...portedStep.names.keys()] })}. A ported builder would read as VACUOUS INPUT and the contract would go unchecked.`,
+      `x instrument control: stepEnvNames() did not find the step whose run: invokes the builder's python port. Read ${JSON.stringify(portedStep && { n: portedStep.stepName, as: portedStep.invokedAs, k: [...portedStep.names.keys()] })}. A ported builder would read as VACUOUS INPUT and the contract would go unchecked.`
     );
     process.exit(1);
   }
   // ... and the module match must be exact: a LONGER module name is a different
   // script, and claiming its step would read a neighbour's env block.
   const nearMiss = wfFixture.replace(
-    "        run: .ci/rediacc_ci/deploy/set_fixture_secrets.py",
-    "        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_fixture_secrets_v2",
+    '        run: .ci/rediacc_ci/deploy/set_fixture_secrets.py',
+    '        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_fixture_secrets_v2'
   );
-  if (
-    stepEnvNames(nearMiss, ".ci/rediacc_ci/deploy/set_fixture_secrets.py") !==
-    null
-  ) {
+  if (stepEnvNames(nearMiss, '.ci/rediacc_ci/deploy/set_fixture_secrets.py') !== null) {
     console.error(
-      "x instrument control: stepEnvNames() matched rediacc_ci.deploy.set_fixture_secrets_v2 for set_fixture_secrets.py. A prefix match claims the wrong step and checks the wrong env block.",
+      'x instrument control: stepEnvNames() matched rediacc_ci.deploy.set_fixture_secrets_v2 for set_fixture_secrets.py. A prefix match claims the wrong step and checks the wrong env block.'
     );
     process.exit(1);
   }
   if (
     stepEnvNames(
       wfFixture.replace(
-        "        run: .ci/rediacc_ci/deploy/set_fixture_secrets.py",
-        '        run: echo "see rediacc_ci.deploy.set_fixture_secrets for the payload"',
+        '        run: .ci/rediacc_ci/deploy/set_fixture_secrets.py',
+        '        run: echo "see rediacc_ci.deploy.set_fixture_secrets for the payload"'
       ),
-      ".ci/rediacc_ci/deploy/set_fixture_secrets.py",
+      '.ci/rediacc_ci/deploy/set_fixture_secrets.py'
     ) !== null
   ) {
     console.error(
-      "x instrument control: a step merely NAMING the module in prose was matched as invoking it. Only a real `-m <module>` invocation may claim a step.",
+      'x instrument control: a step merely NAMING the module in prose was matched as invoking it. Only a real `-m <module>` invocation may claim a step.'
     );
     process.exit(1);
   }
 
   // The failure direction, both halves, on the same fixture pair.
   const exported = new Set(step.names.keys());
-  const renamed = new Set(["ACCOUNT_JWT_SECRETX", "WORKER_NAME"]);
+  const renamed = new Set(['ACCOUNT_JWT_SECRETX', 'WORKER_NAME']);
   const missingRead = [...reads.keys()].filter(
-    (n) => n === "ACCOUNT_JWT_SECRET" && !renamed.has(n),
+    (n) => n === 'ACCOUNT_JWT_SECRET' && !renamed.has(n)
   );
   if (missingRead.length !== 1) {
     console.error(
-      "x instrument control did not fire: a builder read absent from the step env was not detectable. The gate could not report the defect it exists for.",
+      'x instrument control did not fire: a builder read absent from the step env was not detectable. The gate could not report the defect it exists for.'
     );
     process.exit(1);
   }
   const leftover = [...renamed].filter((n) => !reads.has(n));
-  if (leftover.length !== 1 || leftover[0] !== "ACCOUNT_JWT_SECRETX") {
+  if (leftover.length !== 1 || leftover[0] !== 'ACCOUNT_JWT_SECRETX') {
     console.error(
-      "x instrument control did not fire: a leftover export nobody reads was not detectable.",
+      'x instrument control did not fire: a leftover export nobody reads was not detectable.'
     );
     process.exit(1);
   }
   // And the NEGATIVE direction: an agreeing pair must produce nothing.
   const agreeing = [...reads.keys()].filter(
-    (n) => ["ACCOUNT_JWT_SECRET"].includes(n) && !exported.has(n),
+    (n) => ['ACCOUNT_JWT_SECRET'].includes(n) && !exported.has(n)
   );
   if (agreeing.length !== 0) {
     console.error(
-      "x instrument control: a name that IS exported was still reported as missing. The gate would flag a healthy tree.",
+      'x instrument control: a name that IS exported was still reported as missing. The gate would flag a healthy tree.'
     );
     process.exit(1);
   }
@@ -672,25 +620,25 @@ let totalReads = 0;
 let totalFanIns = 0;
 let totalGuards = 0;
 
-const exemptFor = (name: string, direction: Exemption["direction"]) =>
+const exemptFor = (name: string, direction: Exemption['direction']) =>
   EXEMPT.find((e) => e.name === name && e.direction === direction);
 
 for (const pair of PAIRS) {
   let wfText: string;
   let bText: string;
   try {
-    wfText = readFileSync(join(ROOT, pair.workflow), "utf8");
+    wfText = readFileSync(join(ROOT, pair.workflow), 'utf8');
   } catch {
     refusals.push(
-      `    ${pair.workflow}: MISSING. Refusing to run: this gate cannot see the workflow half of the contract, and a green verdict would mean nothing.`,
+      `    ${pair.workflow}: MISSING. Refusing to run: this gate cannot see the workflow half of the contract, and a green verdict would mean nothing.`
     );
     continue;
   }
   try {
-    bText = readFileSync(join(ROOT, pair.builder), "utf8");
+    bText = readFileSync(join(ROOT, pair.builder), 'utf8');
   } catch {
     refusals.push(
-      `    ${pair.builder}: MISSING. Refusing to run: this gate cannot see the builder half of the contract, and a green verdict would mean nothing.`,
+      `    ${pair.builder}: MISSING. Refusing to run: this gate cannot see the builder half of the contract, and a green verdict would mean nothing.`
     );
     continue;
   }
@@ -698,13 +646,13 @@ for (const pair of PAIRS) {
   const step = stepEnvNames(wfText, pair.builder);
   if (step === null) {
     refusals.push(
-      `    ${pair.workflow}: no step whose \`run:\` invokes ${pair.builder}, or the step's shape is ambiguous (more than one step-level run:/env:). Refusing to run rather than checking a contract with one end missing.`,
+      `    ${pair.workflow}: no step whose \`run:\` invokes ${pair.builder}, or the step's shape is ambiguous (more than one step-level run:/env:). Refusing to run rather than checking a contract with one end missing.`
     );
     continue;
   }
   if (step.names.size < pair.exportFloor) {
     refusals.push(
-      `    ${pair.workflow}:${step.stepLine} step "${step.stepName}" yielded only ${step.names.size} exported env name(s), floor is ${pair.exportFloor}. The env block moved or the parser broke; refusing rather than passing on a short read.`,
+      `    ${pair.workflow}:${step.stepLine} step "${step.stepName}" yielded only ${step.names.size} exported env name(s), floor is ${pair.exportFloor}. The env block moved or the parser broke; refusing rather than passing on a short read.`
     );
     continue;
   }
@@ -712,14 +660,14 @@ for (const pair of PAIRS) {
   const reads = builderReads(bText);
   if (reads.size < pair.readFloor) {
     refusals.push(
-      `    ${pair.builder}: yielded only ${reads.size} environment read(s), floor is ${pair.readFloor}. The extractor lost the file; refusing.`,
+      `    ${pair.builder}: yielded only ${reads.size} environment read(s), floor is ${pair.readFloor}. The extractor lost the file; refusing.`
     );
     continue;
   }
   const fan = builderFanIns(bText);
   if (fan.templates.length < pair.fanInFloor) {
     refusals.push(
-      `    ${pair.builder}: resolved ${fan.templates.length} SUFFIXED_PREFIXES fan-in(s), floor is ${pair.fanInFloor}. The regional indirection is the half no find-and-replace can see; refusing rather than checking the easy names only.`,
+      `    ${pair.builder}: resolved ${fan.templates.length} SUFFIXED_PREFIXES fan-in(s), floor is ${pair.fanInFloor}. The regional indirection is the half no find-and-replace can see; refusing rather than checking the easy names only.`
     );
     continue;
   }
@@ -735,61 +683,59 @@ for (const pair of PAIRS) {
 
   for (const [name, line] of allReads) {
     if (step.names.has(name)) continue;
-    const ex = exemptFor(name, "read-not-exported");
+    const ex = exemptFor(name, 'read-not-exported');
     if (ex) {
       fired.add(`${ex.name}|${ex.direction}`);
       continue;
     }
     problems.push(
       `    ${pair.builder}:${line}  reads ${name}, which ${pair.workflow}:${step.stepLine} ("${step.stepName}") does NOT export.\n` +
-        `      The port reads it as "" and the deploy ships an empty value. Export it from that step, or stop reading it.`,
+        `      The port reads it as "" and the deploy ships an empty value. Export it from that step, or stop reading it.`
     );
   }
   for (const [name, line] of step.names) {
     if (allReads.has(name)) continue;
-    const ex = exemptFor(name, "exported-not-read");
+    const ex = exemptFor(name, 'exported-not-read');
     if (ex) {
       fired.add(`${ex.name}|${ex.direction}`);
       continue;
     }
     problems.push(
       `    ${pair.workflow}:${line}  exports ${name}, which ${pair.builder} never reads.\n` +
-        `      A leftover export is the OTHER half of a rename: the builder is reading some other spelling. Delete it, or fix the name the builder reads.`,
+        `      A leftover export is the OTHER half of a rename: the builder is reading some other spelling. Delete it, or fix the name the builder reads.`
     );
   }
 
-  const fanPrefixes = new Set(
-    fan.templates.map((t) => t.replace(/_\$\{SUFFIX\}$/, "")),
-  );
+  const fanPrefixes = new Set(fan.templates.map((t) => t.replace(/_\$\{SUFFIX\}$/, '')));
   for (const g of guardLabels(bText, reads, fanPrefixes)) {
     totalGuards += 1;
     if (g.varName === null) continue; // a fan-in RESULT; its label is the Worker key
     if (g.label !== g.varName) {
       problems.push(
         `    ${pair.builder}:${g.line}  guard demands "${g.label}", but the port never reads that name from the environment.\n` +
-          `      A half-renamed guard refuses on a variable nothing supplies. Make the guard name match what the port reads.`,
+          `      A half-renamed guard refuses on a variable nothing supplies. Make the guard name match what the port reads.`
       );
     }
   }
 
   shape.push(
-    `    ${pair.workflow}:${step.stepLine} "${step.stepName}" (runs ${step.invokedAs === "python-module" ? `the module ${pythonPortModule(pair.builder)}` : "the file by path"}) exports ${step.names.size} -> ${pair.builder} reads ${reads.size} + ${fan.names.size} fan-in name(s) from ${fan.templates.length} template(s)`,
+    `    ${pair.workflow}:${step.stepLine} "${step.stepName}" (runs ${step.invokedAs === 'python-module' ? `the module ${pythonPortModule(pair.builder)}` : 'the file by path'}) exports ${step.names.size} -> ${pair.builder} reads ${reads.size} + ${fan.names.size} fan-in name(s) from ${fan.templates.length} template(s)`
   );
 }
 
 if (refusals.length > 0) {
   console.error(
-    `x builder env contract: VACUOUS INPUT, refusing to run (${refusals.length}):\n${refusals.join("\n")}\n\n` +
-      "  A contract check with one end missing is not a check. It would print a\n" +
-      "  checkmark having compared nothing, which is the exact shape this gate exists\n" +
-      "  to prevent on the deploy path.",
+    `x builder env contract: VACUOUS INPUT, refusing to run (${refusals.length}):\n${refusals.join('\n')}\n\n` +
+      '  A contract check with one end missing is not a check. It would print a\n' +
+      '  checkmark having compared nothing, which is the exact shape this gate exists\n' +
+      '  to prevent on the deploy path.'
   );
   process.exit(1);
 }
 
 if (shape.length !== PAIRS.length) {
   console.error(
-    `x builder env contract: only ${shape.length} of ${PAIRS.length} pair(s) were checked. Refusing a verdict on a partial run.`,
+    `x builder env contract: only ${shape.length} of ${PAIRS.length} pair(s) were checked. Refusing a verdict on a partial run.`
   );
   process.exit(1);
 }
@@ -800,18 +746,18 @@ if (dead.length > 0) {
     ...dead.map(
       (e) =>
         `    EXEMPT list: "${e.name}" (${e.direction}) never fired this run -- a dead exemption.\n` +
-        `      Remove it from EXEMPT in scripts/gates/check-builder-env-contract.ts. An allowlist entry that excuses nothing is how an allowlist becomes a way to pass.`,
-    ),
+        `      Remove it from EXEMPT in scripts/gates/check-builder-env-contract.ts. An allowlist entry that excuses nothing is how an allowlist becomes a way to pass.`
+    )
   );
 }
 
 if (problems.length > 0) {
   console.error(
-    `x builder env contract broken (${problems.length}):\n${problems.join("\n")}\n\n` +
-      "  The workflow step and the builder it runs are joined by nothing but a matching\n" +
-      "  string. A disagreement is silent at author time and at lint time; it surfaces\n" +
-      "  at DEPLOY time, in production, on the first region that deploys.\n" +
-      "  Do not add the name to EXEMPT to get past this. Fix the spelling on one side.",
+    `x builder env contract broken (${problems.length}):\n${problems.join('\n')}\n\n` +
+      '  The workflow step and the builder it runs are joined by nothing but a matching\n' +
+      '  string. A disagreement is silent at author time and at lint time; it surfaces\n' +
+      '  at DEPLOY time, in production, on the first region that deploys.\n' +
+      '  Do not add the name to EXEMPT to get past this. Fix the spelling on one side.'
   );
   process.exit(1);
 }
@@ -819,18 +765,17 @@ if (problems.length > 0) {
 console.log(
   `+ builder env contract: ${PAIRS.length} (workflow step, builder) pair(s) agree in BOTH directions --\n` +
     `  ${totalExports} exported env name(s) vs ${totalReads} direct read(s) plus ${totalFanIns} SUFFIXED_PREFIXES fan-in(s)\n` +
-    `  expanded over ${REGION_SUFFIXES.join("/")}, and ${totalGuards} guard name(s) are names the port\n` +
+    `  expanded over ${REGION_SUFFIXES.join('/')}, and ${totalGuards} guard name(s) are names the port\n` +
     `  reads. ${EXEMPT.length} exemption(s), all live:\n` +
-    EXEMPT.map(
-      (e) =>
-        `    ${e.name} (${e.direction}): ${e.reason.replace(/^BLOCKER: /, "")}`,
-    ).join("\n") +
-    "\n" +
-    shape.join("\n") +
-    "\n" +
-    "  Blind spots, stated rather than left to be found: this proves the NAMES agree, not\n" +
+    EXEMPT.map((e) => `    ${e.name} (${e.direction}): ${e.reason.replace(/^BLOCKER: /, '')}`).join(
+      '\n'
+    ) +
+    '\n' +
+    shape.join('\n') +
+    '\n' +
+    '  Blind spots, stated rather than left to be found: this proves the NAMES agree, not\n' +
     "  that a value is non-empty (that is the builders' REQUIRED_NONEMPTY guards). It does\n" +
-    "  NOT cover .ci/rediacc_ci/ops/deploy_bench.py, which builds the same payload from\n" +
-    "  a Bitwarden profile rather than a workflow env: block -- a different contract with a\n" +
-    "  different oracle. Names read by a sourced library are invisible here too.",
+    '  NOT cover .ci/rediacc_ci/ops/deploy_bench.py, which builds the same payload from\n' +
+    '  a Bitwarden profile rather than a workflow env: block -- a different contract with a\n' +
+    '  different oracle. Names read by a sourced library are invisible here too.'
 );

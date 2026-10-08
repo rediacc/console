@@ -226,6 +226,7 @@
         "check:ci-shared-constant-duplication",
         "check:ci-shared-esm-resolvable",
         "check:ci-shell-commands",
+        "check:ci-shell-declared-commands",
         "check:ci-shell-format",
         "check:ci-shell-lint",
         "check:ci-shell-size",
@@ -689,7 +690,9 @@
       "gate-test:claude-hooks": "retired with its subject when .claude/hooks/test-hooks.sh was ported to pytest under .claude/rediacc_hooks/tests/. The entry was a 40-line wrapper around the harness and carried no assertion of its own beyond translating its summary line; the ports are collected by check:ci-pytest, whose paths were widened in the same change to keep the harness's declared subjects selectable. This provider's other 131 dropped rows predate this change and are not explained here.",
       "check:ci-review-cap-coherence": "retired with the PR-level Claude review on 2026-10-02 (agent/plans/PLAN-per-commit-review.md section 11.6, WP-3): its subject, the review-pass budget in common.sh and core/review_budget.py, was deleted with claude-review-gate.sh and review-status.sh, so there is no cap left to keep coherent.",
       "check:ci-review-prompt-render": "retired with the PR-level Claude review on 2026-10-02 (agent/plans/PLAN-per-commit-review.md section 11.6, WP-3): its subject, the prompt templates under .ci/scripts/review/prompts/, was deleted with the review job that rendered them.",
-      "check:ci-review-turn-capacity": "retired with the PR-level Claude review on 2026-10-02 (agent/plans/PLAN-per-commit-review.md section 11.6, WP-3): its subject, the diff-sized turn budget the review job routed through, was deleted with that job; control_vacuity's control moved to quality/renet_tier_map.py."
+      "check:ci-review-turn-capacity": "retired with the PR-level Claude review on 2026-10-02 (agent/plans/PLAN-per-commit-review.md section 11.6, WP-3): its subject, the diff-sized turn budget the review job routed through, was deleted with that job; control_vacuity's control moved to quality/renet_tier_map.py.",
+      "check:ci-shell-declared-commands": "retired in 32b264edc (W11-B, 2026-10-08) with common.sh: its only subject was scripts sourcing common.sh, and its baseline held exactly those three rows. That commit dropped the key from this snapshot instead of retiring it here, which left rows 409 against 408 keys; the key is restored and explained (2026-10-08).",
+      "check:ci-gate-id-convention": "retired with its subject on 2026-10-08: it held every manifest entry that runs a .ci/scripts/test/gates/test-*.sh to the gate-test:<name> id, and W11-A/B/C and section 12 U1-U3 deleted the last such script and entry, so the lock carries zero gate-test: ids and the gate refused an empty corpus."
     },
     "ci-tree": {
       ".ci/docker/tts": "removed in 8243c3a97 (registry spine, gate and hook ports, three lane cutovers); confirmed with `git log --diff-filter=D -- .ci/docker/tts`.",

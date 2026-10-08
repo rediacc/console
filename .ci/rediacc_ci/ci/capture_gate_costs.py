@@ -10,7 +10,7 @@ PORTED FROM `.ci/scripts/ci/capture-gate-costs.sh` (784c0c80e), which is deleted
 
 THE BOUND, EXACTLY AS `timeout` DREW IT. The runner starts in its own process group; at the bound the whole group gets SIGTERM (run.ts's own handler then names the gates still running and kills their groups, scripts/ci-runner/run.ts installSignalHandlers), and SIGKILL `KILL_AFTER_S` (30 s) later if it is still alive. The phase sees 124 when SIGTERM ended it and 137 when SIGKILL had to, which are `timeout`'s own two answers, so "hung" still means rc 124 or 137.
 
-ENV. RUNNER_TEMP, where the runner's stderr logs go (default: a fresh temporary directory). GITHUB_OUTPUT (rotation; skipped when unset). ROTATION_RC (merge). CAPTURE_NIGHT, 1-3, overrides the rotation index taken from the day of the year. QUICK_BOUND / ROTATION_BOUND override the outer bounds (12m / 32m; `timeout`'s spelling: a number with an optional s, m or h). CAPTURE_DIR is where the three .json files go (default: the current directory, which is what the workflow uploads from; a local sample points it outside the tree). CAPTURE_EXTRA_ARGS is appended to the quick run (a local `--only <ids>` sample), split on whitespace.
+ENV. RUNNER_TEMP, where the runner's stderr logs go (default: a fresh temporary directory). GITHUB_OUTPUT (rotation; skipped when unset). ROTATION_RC (merge). CAPTURE_NIGHT, 1-3, overrides the rotation index taken from the day of the year. QUICK_BOUND / ROTATION_BOUND override the outer bounds (12m / 32m; `timeout`'s spelling: a number with an optional s, m or h). CAPTURE_DIR is where the three .json files go (default: RUNNER_TEMP; never the working tree, and with neither set a phase refuses; the workflow sets it to `${{ runner.temp }}` and uploads from there). CAPTURE_EXTRA_ARGS is appended to the quick run (a local `--only <ids>` sample), split on whitespace.
 
 Local, from the repository root:
 
@@ -142,7 +142,17 @@ def _signal_group(child: subprocess.Popen[bytes], sig: signal.Signals) -> None:
 
 
 def _out_dir(env: Env) -> Path:
-    return Path(env.get("CAPTURE_DIR") or ".")
+    """Where the three .json files go: CAPTURE_DIR, else RUNNER_TEMP, and NEVER the working tree.
+
+    It defaulted to "." until 2026-10-08 (#b4e94451), so quick.json landed in the checkout before the rotation phase ran and the runner's diff counted it as a changed file. GitHub always sets RUNNER_TEMP, outside the workspace; with neither variable set this refuses rather than guessing a directory inside the tree.
+    """
+    chosen = env.get("CAPTURE_DIR") or env.get("RUNNER_TEMP")
+    if not chosen:
+        raise ValueError(
+            "neither CAPTURE_DIR nor RUNNER_TEMP is set; the captures must land outside the "
+            "working tree, where the runner's diff cannot see them. Set CAPTURE_DIR=$(mktemp -d)"
+        )
+    return Path(chosen)
 
 
 def _log_dir(env: Env) -> Path:
@@ -176,8 +186,8 @@ def phase_quick(env: Env, **run_kw: Any) -> int:
 
 def phase_rotation(env: Env, **run_kw: Any) -> int:
     bound = env.get("ROTATION_BOUND") or DEFAULT_ROTATION_BOUND
-    out = _out_dir(env) / "rotation.json"
     try:
+        out = _out_dir(env) / "rotation.json"
         bound_s = parse_bound(bound)
         night = rotation_night(env)
     except ValueError as exc:

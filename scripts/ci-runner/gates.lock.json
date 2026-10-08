@@ -967,7 +967,9 @@
     "run": "npm run check:ci-setup-idempotency",
     "gate": true,
     "paths": [
-      ".ci/lib/**",
+      ".ci/rediacc_ci/core/devbox.py",
+      ".ci/rediacc_ci/core/local_common.py",
+      ".ci/rediacc_ci/core/ports.py",
       "run.sh",
       ".ci/rediacc_ci/setup/machine.py",
       ".ci/scripts/quality/check_setup_idempotency.py"
@@ -1138,7 +1140,8 @@
     "run": "npm run check:ci-devbox-exec",
     "gate": true,
     "paths": [
-      ".ci/lib/devbox.sh",
+      ".ci/rediacc_ci/core/devbox.py",
+      ".ci/rediacc_ci/quality/devbox_exec.py",
       ".ci/scripts/quality/check_devbox_exec.py"
     ],
     "pathsOrigin": "declared",
@@ -1420,7 +1423,6 @@
       ".ci/scripts/**",
       "scripts/**",
       ".claude/hooks/**",
-      ".ci/lib/**",
       ".devcontainer/**",
       ".ci/media/**"
     ],
@@ -3010,20 +3012,6 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-static",
       "step": "Shell commands exist on the runner image"
-    }
-  },
-  {
-    "id": "check:ci-gate-id-convention",
-    "run": "npm run check:ci-gate-id-convention",
-    "gate": true,
-    "leaves": [
-      ".ci/scripts/quality/check_gate_id_convention.py"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-static",
-      "step": "Gate registration follows the gates/ convention"
     }
   },
   {
@@ -5404,7 +5392,6 @@
     "paths": [
       ".ci/rediacc_ci/**",
       ".claude/rediacc_hooks/**",
-      ".ci/scripts/test/gates/**",
       ".claude/hooks/**",
       ".claude/settings.json",
       ".ci/scripts/test/lib/git-fixture.sh",

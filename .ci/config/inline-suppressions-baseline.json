@@ -809,9 +809,6 @@
   ".ci/scripts/quality/check_format_scope.py": {
    "noqa F401": 1
   },
-  ".ci/scripts/quality/check_gate_id_convention.py": {
-   "noqa F401": 1
-  },
   ".ci/scripts/quality/check_gate_reachability_coverage.py": {
    "noqa F401": 1,
    "noqa PLC0415": 1

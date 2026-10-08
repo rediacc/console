@@ -720,14 +720,6 @@
       "peak_rss_mb": 58,
       "rank": 152
     },
-    "check:ci-gate-id-convention": {
-      "cpu_s": 0.111,
-      "wall_s": 0.103,
-      "eff_cores": 1.08,
-      "capped": false,
-      "peak_rss_mb": 56,
-      "rank": 264
-    },
     "check:ci-gate-manifest": {
       "cpu_s": 0.385,
       "wall_s": 0.345,
