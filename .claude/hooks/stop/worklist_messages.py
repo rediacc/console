@@ -2921,7 +2921,7 @@ TURBO_NEXT_PICK = "    TURBO: start %s on a writer (slot %d of %d); its first bo
 # N_TURBO_LOCAL: the no-PR loop-next arm while the batch is incomplete, an advisory. Keys: branch, ahead, finished, batch, plans.
 N_TURBO_LOCAL = (
     "TURBO LOCAL-FIRST: %(ahead)d commit(s) on %(branch)s are held locally; batch %(finished)d/"
-    "%(batch)d finished (%(plans)s). No push or PR until the batch completes: under "
+    "%(batch)d finished (%(plans)s); still open: %(open)s. No push or PR until the batch completes: under "
     "`turbo_push: batch-end` the batch is verified locally and pushed once. The one push before "
     "then is a backup push with no PR, when the backup-push advisory names it."
 )
