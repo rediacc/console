@@ -619,7 +619,7 @@ def test_ledger_gate_selftest(gate):
     npx = require_subject(gate)
     result = harness.run([npx, "tsx", LEDGER_SUBJECT_REL, "--selftest"], cwd=paths.repo_root())
     gate.assert_exit(0, result, "the online gate's own controls pass")
-    gate.assert_contains(result.combined, "case(s) passed", "reports its case count")
+    gate.assert_contains(result.combined, "controls passed", "reports its control count")
     gate.log_pass("check-pr-condition-ledger --selftest passes")
 
 
