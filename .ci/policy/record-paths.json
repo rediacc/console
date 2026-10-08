@@ -112,6 +112,10 @@
           "evidence": ".ci/rediacc_ci/quality/script_exec_bit.py:114 (glob) *.md"
         },
         {
+          "id": "check:ci-trap-registry",
+          "evidence": ".ci/rediacc_ci/quality/trap_registry.py:641 (glob) *.md"
+        },
+        {
           "id": "check:ci-tree-shape",
           "evidence": ".claude/hooks/stop/wl_agents.py:245 (glob) *.md"
         },
