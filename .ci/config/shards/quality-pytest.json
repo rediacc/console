@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-08T06:54:42.481Z",
+  "generatedAt": "2026-10-08T09:37:16.405Z",
   "legs": [
     {
       "index": 1,
@@ -164,6 +164,7 @@
         "pytest:.ci/rediacc_ci/tests/test_release_cleanup_channel_docker_tags.py",
         "pytest:.ci/rediacc_ci/tests/test_release_deployment_summary.py",
         "pytest:.ci/rediacc_ci/tests/test_release_reprobe_r2_sentinel.py",
+        "pytest:.ci/rediacc_ci/tests/test_release_retention_contract.py",
         "pytest:.ci/rediacc_ci/tests/test_release_tag_submodules.py",
         "pytest:.ci/rediacc_ci/tests/test_release_verify_artifact_attestation.py",
         "pytest:.ci/rediacc_ci/tests/test_review_review_table.py",
@@ -203,6 +204,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_lineage.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_messaging_removed.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_models.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_priority.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_priority_ladder.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_prscope.py",

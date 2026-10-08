@@ -30,6 +30,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import upload_to_r2 as port
 from rediacc_ci.deploy import write_once_guard_check as harness
+from rediacc_ci.release import retention_contract
 from rediacc_ci.well_known import RELEASES_BUCKET as WK_RELEASES_BUCKET
 from rediacc_ci.well_known import RELEASES_ORIGIN
 
@@ -1040,11 +1041,12 @@ def test_divergence_a_flag_without_a_value_is_bashs_unbound_variable(
 
 
 def test_the_max_release_versions_is_the_twins() -> None:
-    """`MAX_RELEASE_VERSIONS` is a copy of `.ci/config/constants.sh`, which the port deliberately does not source (the bucket is the registry's, so it needs no alarm)."""
+    """The twin's window (`.ci/config/constants.sh` `R2_MAX_RELEASE_VERSIONS`, which the port deliberately does not source) is the retention contract's `KEEP_RELEASES`, the one keep count the port and housekeeping both read (#a5a1f981). The port restates no copy of its own any more; the control is that it has none."""
     source = CONSTANTS.read_text(encoding="utf-8")
     maximum = re.search(r"^readonly R2_MAX_RELEASE_VERSIONS=(\d+)", source, re.MULTILINE)
     assert maximum is not None, "constants.sh no longer spells R2_MAX_RELEASE_VERSIONS this way"
-    assert int(maximum.group(1)) == port.MAX_RELEASE_VERSIONS
+    assert int(maximum.group(1)) == retention_contract.KEEP_RELEASES
+    assert not hasattr(port, "MAX_RELEASE_VERSIONS"), "the port restates the keep count again"
 
 
 def test_the_cache_control_policies_are_the_twins() -> None:

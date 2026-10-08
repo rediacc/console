@@ -834,13 +834,13 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/private | 9 | .py 9 |
 | .ci/rediacc_ci/proxies | 10 | .py 10 |
 | .ci/rediacc_ci/quality | 109 | .py 109 |
-| .ci/rediacc_ci/release | 28 | .py 28 |
+| .ci/rediacc_ci/release | 29 | .py 29 |
 | .ci/rediacc_ci/review | 7 | .py 7 |
 | .ci/rediacc_ci/review/prompts | 2 | .md 2 |
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 13 | .py 13 |
 | .ci/rediacc_ci/testrun | 11 | .py 11 |
-| .ci/rediacc_ci/tests | 355 | .py 355 |
+| .ci/rediacc_ci/tests | 356 | .py 356 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures/ci_diagnose | 24 | .json 16, .log 8 |
 | .ci/rediacc_ci/tests/fixtures/gate_model/20261008 | 3 | .json 2, .jsonl 1 |
