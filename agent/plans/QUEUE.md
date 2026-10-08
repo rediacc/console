@@ -105,7 +105,7 @@ Promoted: 1 of 11 plans done, 80 of 140 boxes done (57%).
 2. agent/plans/PLAN-config-handoff-relay-only.md -- P0, draft, in progress (9 of 11 boxes ticked), dep-blocked
 3. agent/plans/PLAN-token-ip-rebind.md -- P0, draft, in progress (9 of 10 boxes ticked), dep-blocked
 4. agent/plans/PLAN-config-sync-hardening.md -- P0, draft, in progress (18 of 19 boxes ticked), dep-blocked
-5. agent/plans/PLAN-deferred-findings-block-merge.md -- P1, approved, in progress (10 of 17 boxes ticked)
+5. agent/plans/PLAN-deferred-findings-block-merge.md -- P1, approved, in progress (16 of 17 boxes ticked)
 6. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
 7. agent/plans/PLAN-k3s-137-and-pr-conditions.md -- P1, approved, in progress (4 of 5 boxes ticked)
 8. agent/plans/PLAN-secret-namespace-migration.md -- P1, executing, in progress (29 of 34 boxes ticked)

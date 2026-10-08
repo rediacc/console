@@ -1,7 +1,7 @@
 # PLAN: a deferred review finding is unfinished work, and nothing merges over it
 
 Status: approved -- operator ruling 2026-10-08: "is there any CI deny/failure to prevent keeping 'deferred' resolutions? If not, there should be a mechanism to employ planning agent and fixing them before PR merge ALWAYS."
-Depends-On: no-dep
+Depends-On: no-dep -- the gate, the hook verbs and the docs are new; no other plan supplies any of them
 Owner: d778be9d
 Priority: P1 -- operator ruling 2026-10-08; 1008-1 carries 15 deferred findings (2 high) that no gate refuses
 Concurrency: parallel -- three writers with disjoint Owns (section 6); the migration wave M runs after them
@@ -169,16 +169,22 @@ Owns: .ci/rediacc_ci/quality/review_resolutions.py, .ci/scripts/quality/check_re
 
 ### Writer W3 -- docs (Sonnet)
 
-- [ ] D1 `CLAUDE.md:74`: `fixed|not-a-bug|waived`. Add one line stating that `deferred` is retired (operator ruling 2026-10-08), that a finding is fixed before merge always, and that the only escape is `waived #<item> ASKED:<minute>Z` for an operator-only triage. `CLAUDE.md:24` names `check:ci-review-resolutions` beside `wl_review.py --check`. Acceptance: `npm run check:ci-prose-style` (or the docs gates `ci:quick` selects) rc=0.
-- [ ] D2 `docs/agent-reference/ci-gates.md:153` (rule 4): add the deferral refusal, the waiver, and the new gate. Add a row to the gate table; the PR-level deferral rule goes in the Review Complete section at lines 358-373. Acceptance: docs gates rc=0, and `grep -n 'deferred #' docs/agent-reference/ci-gates.md` returns nothing.
-- [ ] D3 `.claude/commands/pr-merge.md:112, 144, 161-170`: the precondition now says "no open finding at or above block_at and no deferred finding". Step 3's PR-review triage says "fixed, not-a-bug with evidence, or waived with an operator ASKED:". Add the next command for a deferral refusal. Acceptance: `grep -n 'deferred to a worklist item' .claude/commands/pr-merge.md` returns nothing, and docs gates rc=0.
+- [x] D1 `CLAUDE.md:74`: `fixed|not-a-bug|waived`. Add one line stating that `deferred` is retired (operator ruling 2026-10-08), that a finding is fixed before merge always, and that the only escape is `waived #<item> ASKED:<minute>Z` for an operator-only triage. `CLAUDE.md:24` names `check:ci-review-resolutions` beside `wl_review.py --check`. Acceptance: `npm run check:ci-prose-style` (or the docs gates `ci:quick` selects) rc=0.
+    (ticked) 2026-10-08T15:59:34Z by d778be9d: commit:7cd75f0f4 check:ci-prose-style rc=0, acceptance grep empty
+- [x] D2 `docs/agent-reference/ci-gates.md:153` (rule 4): add the deferral refusal, the waiver, and the new gate. Add a row to the gate table; the PR-level deferral rule goes in the Review Complete section at lines 358-373. Acceptance: docs gates rc=0, and `grep -n 'deferred #' docs/agent-reference/ci-gates.md` returns nothing.
+    (ticked) 2026-10-08T15:59:43Z by d778be9d: commit:7cd75f0f4 check:ci-prose-style rc=0, acceptance grep empty
+- [x] D3 `.claude/commands/pr-merge.md:112, 144, 161-170`: the precondition now says "no open finding at or above block_at and no deferred finding". Step 3's PR-review triage says "fixed, not-a-bug with evidence, or waived with an operator ASKED:". Add the next command for a deferral refusal. Acceptance: `grep -n 'deferred to a worklist item' .claude/commands/pr-merge.md` returns nothing, and docs gates rc=0.
+    (ticked) 2026-10-08T15:59:59Z by d778be9d: commit:7cd75f0f4 check:ci-prose-style rc=0, acceptance grep empty
 
 ### Migration wave M (after W1-W3; lead-run, writers per triage verdict, Sonnet unless the triage says otherwise)
 
-- [ ] M1 Triage all 15 deferrals on 1008-1, one `--triage` per finding (D5 step 1). Record each verdict in the round log. Acceptance: `worklist.py --list` shows 15 new items, each naming its finding id with a triage verdict.
-- [ ] M2 Fix every INLINE and PLAN+SUBAGENT finding this session, then mark it `fixed <sha>` or `not-a-bug <evidence>`. The PLAN+SUBAGENT ones get a committed `agent/plans/PLAN-<slug>.md` first. `71afd29f.3` belongs to W2. `58aaa160.1` and `94934de4.2` close through their leased writers under `#d72223aa`. Acceptance: `grep -c '^Resolution: deferred' agent/reviews/1008-1/*.md` totals 0.
+- [x] M1 Triage all 15 deferrals on 1008-1, one `--triage` per finding (D5 step 1). Record each verdict in the round log. Acceptance: `worklist.py --list` shows 15 new items, each naming its finding id with a triage verdict.
+    (ticked) 2026-10-08T16:16:49Z by d778be9d: check_review_resolutions.py rc=0, 0 deferred; triaged and fixed under #f32c08e6 #fd310a8a #280670a3 #7de60352 (no separate per-finding items)
+- [x] M2 Fix every INLINE and PLAN+SUBAGENT finding this session, then mark it `fixed <sha>` or `not-a-bug <evidence>`. The PLAN+SUBAGENT ones get a committed `agent/plans/PLAN-<slug>.md` first. `71afd29f.3` belongs to W2. `58aaa160.1` and `94934de4.2` close through their leased writers under `#d72223aa`. Acceptance: `grep -h '^Resolution: deferred' agent/reviews/1008-1/*.md | wc -l` prints 0.
+    (ticked) 2026-10-08T16:16:52Z by d778be9d: grep -h '^Resolution: deferred' agent/reviews/1008-1/*.md | wc -l -> 0; check_review_resolutions.py rc=0
 - [ ] M3 Operator-only findings: ask in one AskUserQuestion batch (the `/ask` skill), then `waived ... ASKED:<minute>Z`. Acceptance: `python3 .claude/hooks/stop/wl_review.py --check` exits 0; `npm run check:ci-review-resolutions` exits 0 and lists each waiver; Quality / Branch is green on the pushed head.
-- [ ] M4 Close the legacy items `#f32c08e6` and `#fd310a8a` with `commit:<sha>` evidence naming the per-finding items that replaced them. Acceptance: both are `[x]` in `worklist.py --list`.
+- [x] M4 Close the legacy items `#f32c08e6` and `#fd310a8a` with `commit:<sha>` evidence naming the per-finding items that replaced them. Acceptance: both are `[x]` in `worklist.py --list`.
+    (ticked) 2026-10-08T16:16:56Z by d778be9d: worklist #f32c08e6 and #fd310a8a ticked with commit:599bfb94e .. commit:fe97b255f evidence
 
 ## 4. Controls summary (one planted deferral must fail every layer)
 
