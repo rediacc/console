@@ -3,14 +3,14 @@
 
 Simulates an edge-to-stable promotion into a throwaway `<channel>-promoted` R2 channel, so the package-manager install tests (apt/dnf/apk/pacman) can run against PROMOTED bytes before a real promotion happens. A broken promotion is then caught in CI rather than after `promote-stable` has already moved production bytes.
 
-NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST. `aws` and (through `cf-purge-urls.sh`) `curl` are the two external tools that carry a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_simulate_promotion.py`) puts RECORDING FAKES
+NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST. `aws` and (through `cf_purge_urls`) `curl` are the two external tools that carry a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_simulate_promotion.py`) puts RECORDING FAKES
 for both on a scratch PATH, with an on-disk fixture standing in for the bucket.
 `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
 THE CALL LOG IS THE PRIMARY EVIDENCE. The run prints six or seven `log_info` lines, none of them derived from what moved; the ENTIRE observable effect is the `aws` invocations, the exact `--key`/`--copy-source` pairs they carry, and the URL list handed to `cf-purge-urls.sh`.
 
 -----------------------------------------------------------------------------
-`awk`, `sed`, `sleep` AND `cf-purge-urls.sh` ARE CALLED, NOT REIMPLEMENTED
+`awk`, `sed` AND `sleep` ARE CALLED, NOT REIMPLEMENTED
 -----------------------------------------------------------------------------
 `awk` because the field program at twin :187 is what turns an `aws s3 ls --recursive` listing into keys, and its exact behaviour is the thing that has to survive: default `FS` splits on RUNS of whitespace, so a key containing two consecutive spaces comes back with one, and `printf "%s%s", $i, (i < NF ? OFS : ORS)` rejoins with single spaces. A Python `line.split(None, 3)[3]` would
 keep the doubled space and quietly promote a different key. Driven 2026-09-13 in the fixture, where a key with an embedded space is deliberately present.
@@ -21,7 +21,7 @@ with `|` delimiters.
 `sleep` because both retry loops call it as an external program, and calling it here rather than using `time.sleep` makes the RETRY SCHEDULE observable in the call log rather than only in wall-clock time. That is what lets the differential prove `1 2 3 4 5` attempts with 15/30/45/60-second gaps without waiting three minutes for it, and it is what a `time.sleep` port would have
 hidden.
 
-`cf-purge-urls.sh` is invoked as the bash script the twin invokes, for the reason `upload_repos_to_r2.py` gives: agreement with the live twin includes that script's exact bytes.
+The purge is `rediacc_ci.deploy.cf_purge_urls.purge`, called in process: the twin's `cf-purge-urls.sh` is gone, and the port that replaced it keeps its output and exit status.
 
 -----------------------------------------------------------------------------
 THE COPIES ARE PARALLEL, SO THEIR ORDER IS NOT DETERMINISTIC ON EITHER SIDE
@@ -99,6 +99,7 @@ import tempfile
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.deploy import cf_purge_urls
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
 # The twin's own name, used in the bash-diagnostic stand-ins.
@@ -144,9 +145,6 @@ SED_FIX_SCRATCH = "/tmp/config"
 
 # The two files whose channel URLs are rewritten after the copy (twin :208). Templates over the PROMOTED channel, because the rewrite happens on the copy that has already landed there.
 SED_FIX_FILES = ("rpm/%s/rediacc.repo", "archlinux/%s/rediacc.conf")
-
-# `.ci/scripts/deploy/cf-purge-urls.sh` (twin :226). RELATIVE in the twin, and reached from the repository root the script `cd`s to at :36.
-PURGE_SCRIPT_RELATIVE = ".ci/scripts/deploy/cf-purge-urls.sh"
 
 # `export BUCKET CC_MUTABLE CLOUDFLARE_R2_ENDPOINT SRC_PREFIX DST_PREFIX` (twin :145, :183). The exports exist so the `bash -c` children xargs spawns can see them; nothing `aws` reads is among them. Reproduced anyway, because the environment a child sees is part of what the two implementations are being compared on.
 EXPORTED_FOR_CHILDREN = (
@@ -265,11 +263,6 @@ def upload_argv(key: str, endpoint: str) -> list[str]:
         "--cache-control",
         CC_MUTABLE,
     ]
-
-
-def purge_argv(zone: str) -> list[str]:
-    """`.ci/scripts/deploy/cf-purge-urls.sh --zone "$CLOUDFLARE_ZONE_ID"` (twin :226)."""
-    return [PURGE_SCRIPT_RELATIVE, "--zone", zone]
 
 
 def purge_url(dst_prefix: str, relative: str) -> str:
@@ -465,16 +458,12 @@ def _purge(purge_urls: list[str], zone: str) -> None:
     """`printf '%s\\n' "${PURGE_URLS[@]}" | cf-purge-urls.sh --zone <zone>` (twin :225-226).
 
     Guarded by `${#PURGE_URLS[@]} -gt 0`, so an empty list makes no call at all.
-    Under `pipefail` the pipeline's status is the purge script's, since `printf` cannot fail here.
+    Under `pipefail` the pipeline's status is the purge script's, since `printf` cannot fail here. The purge runs in process through `cf_purge_urls.purge`.
     """
     payload = "".join(url + "\n" for url in purge_urls)
-    argv = purge_argv(zone)
-    try:
-        status = _run(argv, input=payload.encode("utf-8", "surrogateescape"))
-    except OSError as exc:
-        # A MISSING OR UNRUNNABLE PURGE SCRIPT. bash reports this itself with its own line number and status 127; Python raises.
-        print("%s: %s: %s" % (SELF, argv[0], exc.strerror), file=sys.stderr, flush=True)
-        raise BashExitError(127) from exc
+    _flush()
+    status = cf_purge_urls.purge(zone, payload)
+    _flush()
     if status:
         raise BashExitError(status)
 

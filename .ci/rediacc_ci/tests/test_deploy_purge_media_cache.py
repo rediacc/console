@@ -20,6 +20,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import purge_media_cache as port
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import CF_API_BASE, MEDIA_ORIGIN
 
 MEDIA_HOST = MEDIA_ORIGIN.removeprefix("https://")
@@ -28,7 +29,8 @@ if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "deploy" / "purge-media-cache.sh"
+TWIN_REL = ".ci/scripts/deploy/purge-media-cache.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "purge_media_cache.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -80,7 +82,19 @@ def _bin(tmp_path: pathlib.Path, name: str, *, drop: str = "") -> str:
     return str(stub)
 
 
-def _run(
+def _run(subject: pathlib.Path, tmp_path: pathlib.Path, args: list[str], **kw):
+    """One side. The twin's answer comes from its golden (PLAN-retire-bash-oracles B3); `_run_live` is how it was recorded."""
+    if subject.suffix == ".sh":
+        return diff.twin_result(
+            TWIN_REL,
+            [repr(args), repr(sorted(kw.items()))],
+            lambda: _run_live(subject, tmp_path, args, **kw),
+            work=(tmp_path,),
+        )
+    return _run_live(subject, tmp_path, args, **kw)
+
+
+def _run_live(
     subject: pathlib.Path,
     tmp_path: pathlib.Path,
     args: list[str],

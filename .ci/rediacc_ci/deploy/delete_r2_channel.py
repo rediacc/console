@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/delete-r2-channel.sh`.
 
-Deletes one PR channel's R2 artifacts, plus the `-promoted` copy the promotion-simulation test leaves behind. Runs on PR close, which is why every delete is best-effort: a channel that was never created is not an error.
+Deletes one PR channel's R2 artifacts, plus the `-promoted` copy the promotion-simulation test leaves behind. Runs on PR close: every prefix is attempted whatever an earlier one did, and a channel that was never created is not an error.
 
 Twelve `aws s3 rm --recursive` calls, two per package format:
 
@@ -15,15 +15,9 @@ prefixes, and the OBSERVABLE EFFECT of this program is entirely the set of `rm` 
 
 `aws` IS SHELLED OUT TO, NOT REPLACED BY `boto3`, and the reason is the same one that keeps `jq` in the Cloudflare siblings: the twin's contract with the tool includes the tool's own stdout (`delete: s3://...` lines a workflow log shows), its exit status, and the `2>/dev/null` that hides its stderr. A boto3 port would have to re-emit all three.
 
-THE DEFECT THIS PORT REPRODUCES, AND IT IS THE VACUITY CLASS. A REFUSED DELETE
-IS REPORTED AS A DELETION. Every call is `2>/dev/null || true`, and the closing line is unconditional, so an expired key or an `AccessDenied` produces exactly the output a successful clean-up produces:
-
-    ✓ Cleaning up R2 channel: pr-1...
-    ✓ Channel 'pr-1' (+ promoted) deleted from R2
-
-exit 0, with the twelve failures silent. Driven 2026-09-13 with a fake `aws` exiting 1 on every call. The header justifies `|| true` by "a channel that was never created is not an error", which is true and does not distinguish that case
-from a credential that stopped working. `A_REFUSED_DELETE_READS_AS_DELETED`
-names it and the differential pins it in both directions. Reproduced rather than repaired because the acceptance rule for this wave is agreement with the live twin.
+A REFUSED DELETE IS REPORTED AS ONE (Rule T delta, PLAN-retire-bash-oracles B4). The twin ended every call in `2>/dev/null || true` and printed its closing line unconditionally, so an expired key or an `AccessDenied` produced exactly the output of a clean-up that worked: exit 0, twelve silent failures, and a bucket still holding the channel. `|| true` was written for "a channel that was never created is
+not an error", and that case never needed it: `aws s3 rm --recursive` over an absent prefix exits 0. This port still attempts all twelve prefixes, then names every refused one with aws's own message, drops the false success line and exits 1. The cases that moved are recorded as intentional deltas in `goldens/twins/deploy.delete-r2-channel.jsonl`, and `test_delta_*` in
+`.ci/rediacc_ci/tests/test_deploy_delete_r2_channel.py` fail on the twin's behaviour.
 
 ONE DIVERGENCE, in refusal text nobody parses. The five `: "${VAR:?msg}"` guards
 are bash's own diagnostic, `<path>: line 25: CHANNEL: CHANNEL is required (e.g. pr-123)`, carrying the bash file name and a bash line number. This port prints the `VAR: msg` half without the prefix, on the same stream, with the same exit status 1. Identical ruling to `deploy/wait_for_preview_worker.py`. The ORDER of the guards is observable and is kept: `require_cmd aws` runs
@@ -65,9 +59,6 @@ REQUIRED_ENV: tuple[tuple[str, str], ...] = (
         "AWS_SECRET_ACCESS_KEY is required (map it from CLOUDFLARE_R2_SECRET_ACCESS_KEY)",
     ),
 )
-
-# The defect named in the module docstring, as a constant so a test can assert it by name instead of restating the sentence.
-A_REFUSED_DELETE_READS_AS_DELETED = True
 
 
 class MissingEnvError(Exception):
@@ -111,13 +102,13 @@ def aws_argv(prefix: str, endpoint: str) -> list[str]:
     return ["aws", "s3", "rm", prefix, "--recursive", "--endpoint-url", endpoint]
 
 
-def _rm(argv: list[str]) -> int:
-    """`aws ... 2>/dev/null || true`.
+def _rm(argv: list[str]) -> tuple[int, str]:
+    """One `aws s3 rm`, returning its status and its stderr.
 
-    STDOUT IS INHERITED and stderr is DISCARDED, exactly as the twin leaves them: the `delete: s3://...` lines reach the workflow log, the error text does not. The status is returned only so a test can see it; the twin discards it, which is the defect above.
+    STDOUT IS INHERITED, exactly as the twin leaves it: the `delete: s3://...` lines reach the workflow log. Stderr is captured instead of discarded, because it is the only explanation a refused delete has; a call that succeeded has its stderr dropped, as the twin dropped all of it.
     """
-    proc = subprocess.run(argv, stderr=subprocess.DEVNULL, check=False)
-    return proc.returncode
+    proc = subprocess.run(argv, stderr=subprocess.PIPE, check=False)
+    return proc.returncode, proc.stderr.decode("utf-8", errors="replace")
 
 
 def main(argv: list[str]) -> int:
@@ -142,10 +133,26 @@ def main(argv: list[str]) -> int:
 
     log.info("Cleaning up R2 channel: %s..." % channel)
 
+    failed: list[str] = []
     for prefix in prefixes(bucket, channel):
-        _rm(aws_argv(prefix, endpoint))
+        status, stderr = _rm(aws_argv(prefix, endpoint))
+        if status:
+            failed.append(prefix)
+            sys.stderr.write(stderr)
+            print(
+                "::warning::delete-r2-channel: aws s3 rm %s failed with status %d"
+                % (prefix, status),
+                file=sys.stderr,
+            )
 
-    # UNCONDITIONAL, and that is the defect. Twelve refusals produce this line.
+    if failed:
+        print(
+            "::error::delete-r2-channel: channel '%s' was NOT fully deleted from R2: "
+            "%d of %d prefixes failed" % (channel, len(failed), len(FORMATS) * 2),
+            file=sys.stderr,
+        )
+        return 1
+
     log.info("Channel '%s' (+ promoted) deleted from R2" % channel)
     return 0
 

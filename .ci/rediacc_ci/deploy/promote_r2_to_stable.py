@@ -60,7 +60,7 @@ import sys
 import tempfile
 
 from rediacc_ci.core import common
-from rediacc_ci.deploy import channel_snapshot, channel_stamp, r2_promote
+from rediacc_ci.deploy import cf_purge_urls, channel_snapshot, channel_stamp, r2_promote
 
 # The twin's own name, carried in its four guard messages. A literal, because the bytes must survive the port.
 SELF = "promote-r2-to-stable.sh"
@@ -208,9 +208,6 @@ INSTALL_SED = channel_stamp.INSTALL_SED
 CHANNEL_SED = channel_stamp.CHANNEL_SED
 REWRITES = channel_stamp.REWRITES
 
-# `"$SCRIPT_DIR/cf-purge-urls.sh"` (twin :180), where SCRIPT_DIR is `.ci/scripts/deploy`.
-PURGE_SCRIPT_RELATIVE = ".ci/scripts/deploy/cf-purge-urls.sh"
-
 # The four `${VAR:?msg}` guards (twin :58-61), in order, as (name, message).
 REQUIRED_ENV: tuple[tuple[str, str], ...] = (
     ("AWS_ACCESS_KEY_ID", "%s: AWS_ACCESS_KEY_ID must be set" % SELF),
@@ -242,13 +239,6 @@ class BashExitError(Exception):
     def __init__(self, code: int) -> None:
         super().__init__("set -e: exit %d" % code)
         self.code = code
-
-
-def script_dir() -> str:
-    """`SCRIPT_DIR` (twin :56), by location rather than by cwd. `abspath`, NOT `realpath`: bash's `cd` is logical."""
-    here = os.path.dirname(os.path.abspath(__file__))
-    root = os.path.abspath(os.path.join(here, "..", "..", ".."))
-    return os.path.join(root, os.path.dirname(PURGE_SCRIPT_RELATIVE))
 
 
 def environment() -> dict[str, str]:
@@ -287,11 +277,6 @@ def endpoint_args(endpoint: str) -> list[str]:
 def phases(dir_name: str) -> tuple[tuple[str, ...], ...]:
     """Phase 1 (`META_EXCLUDES`) then the directory's phase-2 arms, in order."""
     return (META_EXCLUDES, *PHASE_TWO.get(dir_name, ()))
-
-
-def purge_argv(zone: str) -> list[str]:
-    """`"$SCRIPT_DIR/cf-purge-urls.sh" --zone "${CLOUDFLARE_ZONE_ID:-}"` (twin :180). An UNSET zone is an EMPTY ARGUMENT, and cf-purge-urls.sh refuses it after the promotion has happened, which is the twin's stated design."""
-    return [os.path.join(script_dir(), os.path.basename(PURGE_SCRIPT_RELATIVE)), "--zone", zone]
 
 
 def channel_url(dir_name: str, relative: str) -> str:
@@ -400,15 +385,11 @@ def _promote_dirs(endpoint: str, version: str = "") -> list[str]:
 
 
 def _purge(urls: list[str], zone: str) -> None:
-    """`printf '%s\\n' "${PURGE_URLS[@]}" | cf-purge-urls.sh --zone <zone>` (twin :178-181)."""
+    """`printf '%s\\n' "${PURGE_URLS[@]}" | cf-purge-urls.sh --zone <zone>` (twin :178-181), run in process through `cf_purge_urls.purge`: the script's status is the run's, and its output lands on this process's own streams. An UNSET zone is an EMPTY zone, and the purge refuses it after the promotion has happened, which is the twin's stated design."""
     payload = "".join(url + "\n" for url in urls)
-    argv = purge_argv(zone)
-    try:
-        status = _run(argv, input=payload, text=True)
-    except OSError as exc:
-        # A MISSING OR UNRUNNABLE PURGE SCRIPT: bash would report it with status 127.
-        print("%s: %s: %s" % (SELF, argv[0], exc.strerror), file=sys.stderr)
-        raise BashExitError(127) from exc
+    _flush()
+    status = cf_purge_urls.purge(zone, payload)
+    _flush()
     if status:
         raise BashExitError(status)
 

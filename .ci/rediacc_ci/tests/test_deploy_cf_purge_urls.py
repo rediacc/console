@@ -19,13 +19,17 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import cf_purge_urls as port
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import CF_API_BASE as WK_CF_API_BASE
 
 if typing.TYPE_CHECKING:
     import pathlib
 
+    import pytest
+
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "deploy" / "cf-purge-urls.sh"
+TWIN_REL = ".ci/scripts/deploy/cf-purge-urls.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "cf_purge_urls.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -88,7 +92,19 @@ def _bin(tmp_path: pathlib.Path, name: str, *, drop: str = "") -> str:
     return str(stub)
 
 
-def _run(
+def _run(subject: pathlib.Path, tmp_path: pathlib.Path, args: list[str], **kw):
+    """One side. The twin's answer comes from its golden (PLAN-retire-bash-oracles B3); `_run_live` is how it was recorded."""
+    if subject.suffix == ".sh":
+        return diff.twin_result(
+            TWIN_REL,
+            [repr(args), repr(sorted(kw.items()))],
+            lambda: _run_live(subject, tmp_path, args, **kw),
+            work=(tmp_path,),
+        )
+    return _run_live(subject, tmp_path, args, **kw)
+
+
+def _run_live(
     subject: pathlib.Path,
     tmp_path: pathlib.Path,
     args: list[str],
@@ -198,28 +214,6 @@ def test_help_is_byte_identical(tmp_path: pathlib.Path) -> None:
     late_old, late_new, _loc, _lnc = run_both(tmp_path, ["https://a", "--help"])
     assert late_old.stdout == old.stdout
     _assert_agree(late_old, late_new, "help-late", None, None)
-
-
-def test_help_matches_the_twins_header_extraction() -> None:
-    """THE STALENESS ALARM for divergence 2 in the port's docstring. `HELP` is a
-    literal, so this recomputes `sed -n '2,/^$/p' | sed 's/^# \\{0,1\\}//'` from
-    the twin's source and fails if the two ever drift apart."""
-    lines = TWIN.read_text(encoding="utf-8").split("\n")
-    picked: list[str] = []
-    for line in lines[1:]:
-        picked.append(line)
-        if line == "":
-            break
-    stripped = []
-    for line in picked:
-        if line.startswith("# "):
-            stripped.append(line[2:])
-        elif line.startswith("#"):
-            stripped.append(line[1:])
-        else:
-            stripped.append(line)
-    extracted = "".join(line + "\n" for line in stripped)
-    assert extracted == port.HELP
 
 
 def test_a_missing_zone_is_refused(tmp_path: pathlib.Path) -> None:
@@ -539,3 +533,100 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     assert PORT.read_text(encoding="utf-8") == original, (
         "port source must be restored byte-identical"
     )
+
+
+# --------------------------------------------------------------------------- The in-process entry the promotion and upload ports call ---------------------------------------------------------------------------
+
+
+def test_a_missing_curl_ends_the_run_with_127_and_names_the_tool(tmp_path: pathlib.Path) -> None:
+    """RULE T DELTA (PLAN-retire-bash-oracles B3). bash ends the run with status 127 and `<tool>: command not found` when `curl` is not on PATH. The port used to let `FileNotFoundError` escape as a traceback with status 1, which an in-process caller could not tell from a purge failure. It now keeps the status and names the tool. Only the sentence differs from bash's, which carries the bash file and line."""
+    new, calls = _run(PORT, tmp_path, ["--zone", ZONE, "https://a"], drop="curl")
+    assert new.returncode == 127
+    assert new.stderr == "cf-purge-urls.sh: curl: command not found\n"
+    assert new.stdout == "cf-purge-urls.sh: purging 1 URL(s) from CF zone zone-fixture\n"
+    assert "Traceback" not in new.stderr
+    assert calls == []
+
+
+def test_a_missing_jq_ends_the_run_with_127_and_names_the_tool(tmp_path: pathlib.Path) -> None:
+    new, _calls = _run(PORT, tmp_path, ["--zone", ZONE, "https://a"], drop="jq")
+    assert new.returncode == 127
+    assert new.stderr == "cf-purge-urls.sh: jq: command not found\n"
+
+
+def _in_process(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: pathlib.Path,
+    **env: str,
+) -> pathlib.Path:
+    """Point the process at the scratch PATH with the recording `curl`; returns the call log."""
+    call_log = tmp_path / "in-process-calls.log"
+    call_log.write_text("", encoding="utf-8")
+    monkeypatch.setenv("PATH", _bin(tmp_path, "in-process-bin"))
+    monkeypatch.setenv("FAKE_CALL_LOG", str(call_log))
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", BEARER)
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
+    return call_log
+
+
+def test_purge_reads_its_payload_as_the_scripts_stdin_and_returns_the_status(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    """`purge(zone, payload)` is `printf '%s\\n' <urls> | cf-purge-urls.sh --zone <zone>` without the child: the same request, the same two stdout lines, status 0."""
+    call_log = _in_process(monkeypatch, tmp_path)
+    assert port.purge(ZONE, "https://a\nhttps://b\n") == 0
+    captured = capfd.readouterr()
+    assert captured.out == (
+        "cf-purge-urls.sh: purging 2 URL(s) from CF zone zone-fixture\n"
+        "cf-purge-urls.sh: purged 2 URL(s) successfully\n"
+    )
+    assert captured.err == ""
+    assert call_log.read_text(encoding="utf-8").splitlines() == [
+        purge_call(["https://a", "https://b"])
+    ]
+
+
+def test_purge_drops_a_final_line_without_a_newline_and_skips_empty_lines(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    """The stdin rules survive the move in process: `read` never delivers a partial last line, and an empty line is skipped."""
+    call_log = _in_process(monkeypatch, tmp_path)
+    assert port.purge(ZONE, "https://a\n\nhttps://b") == 0
+    assert capfd.readouterr().out.startswith("cf-purge-urls.sh: purging 1 URL(s) ")
+    assert call_log.read_text(encoding="utf-8").splitlines() == [purge_call(["https://a"])]
+
+
+def test_purge_returns_the_transport_failure_status_instead_of_raising(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    """THE FAILURE PATH THE CALLERS DEPEND ON. A curl transport failure ends the purge with curl's status (6), and the caller turns that into its own exit. Returned, not raised: an exception here would skip the caller's `Repos uploaded` / `Promotion simulated` bookkeeping."""
+    _in_process(monkeypatch, tmp_path, FAKE_CURL_RC="6")
+    assert port.purge(ZONE, "https://a\n") == 6
+    captured = capfd.readouterr()
+    assert captured.err == "curl: (6) Could not resolve host: api.cloudflare.com\n"
+    assert captured.out == "cf-purge-urls.sh: purging 1 URL(s) from CF zone zone-fixture\n"
+
+
+def test_purge_with_an_empty_zone_refuses_before_any_request(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    """An unset `CLOUDFLARE_ZONE_ID` reaches the purge as an empty zone, and the purge refuses it after the promotion has happened: status 1, one `::error::` line, no request."""
+    call_log = _in_process(monkeypatch, tmp_path)
+    assert port.purge("", "https://a\n") == 1
+    captured = capfd.readouterr()
+    assert captured.err == "::error::cf-purge-urls.sh: --zone <ZONE_ID> is required\n"
+    assert captured.out == ""
+    assert call_log.read_text(encoding="utf-8") == ""
+
+
+def test_purge_without_credentials_warns_and_succeeds(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    call_log = _in_process(monkeypatch, tmp_path)
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN")
+    monkeypatch.delenv("CF_GLOBAL_API_KEY", raising=False)
+    monkeypatch.delenv("CF_EMAIL", raising=False)
+    assert port.purge(ZONE, "https://a\n") == 0
+    assert "no Cloudflare credentials in env" in capfd.readouterr().err
+    assert call_log.read_text(encoding="utf-8") == ""

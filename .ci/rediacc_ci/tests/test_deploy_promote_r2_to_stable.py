@@ -34,7 +34,6 @@ if typing.TYPE_CHECKING:
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/deploy/promote-r2-to-stable.sh"
 TWIN = ROOT / TWIN_REL
-PURGE = ROOT / ".ci" / "scripts" / "deploy" / "cf-purge-urls.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "promote_r2_to_stable.py"
 MODULE = "rediacc_ci.deploy.promote_r2_to_stable"
 BASH = shutil.which("bash") or "/bin/bash"
@@ -576,10 +575,11 @@ def test_endpoint_args_reproduces_the_unquoted_word_split() -> None:
     assert port.endpoint_args("a b") == ["--endpoint-url", "a", "b"]
 
 
-def test_the_purge_script_is_still_the_bash_one_and_still_exists() -> None:
-    assert port.PURGE_SCRIPT_RELATIVE == ".ci/scripts/deploy/cf-purge-urls.sh"
-    assert PURGE.is_file()
-    assert port.purge_argv("z")[-2:] == ["--zone", "z"]
+def test_the_purge_is_the_in_process_cf_purge_urls_port() -> None:
+    """The purge script is retired: the module calls `cf_purge_urls.purge` and keeps no script path."""
+    assert port.cf_purge_urls.__name__ == "rediacc_ci.deploy.cf_purge_urls"
+    assert not hasattr(port, "PURGE_SCRIPT_RELATIVE")
+    assert not hasattr(port, "purge_argv")
 
 
 def test_every_variable_is_read_with_a_literal_os_environ_get() -> None:

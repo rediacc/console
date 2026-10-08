@@ -30,13 +30,15 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import channel_snapshot, r2_promote
 from rediacc_ci.deploy import upload_repos_to_r2 as port
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests.wkloader import copy_loader
 from rediacc_ci.well_known import CF_API_BASE, RELEASES_BUCKET, RELEASES_ORIGIN
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "deploy" / "upload-repos-to-r2.sh"
-PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "upload_repos_to_r2.py"
+TWIN_REL = ".ci/scripts/deploy/upload-repos-to-r2.sh"
+TWIN = ROOT / TWIN_REL
 PURGE = ROOT / ".ci" / "scripts" / "deploy" / "cf-purge-urls.sh"
+PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "upload_repos_to_r2.py"
 COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -226,9 +228,11 @@ def fixture(tmp_path: pathlib.Path, tree: dict[str, str] | None = None) -> pathl
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "rediacc_ci" / "deploy").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
-    shutil.copy2(PURGE, root / ".ci" / "scripts" / "deploy" / PURGE.name)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
+    # The twin and its library only while a regolden records from them; compare mode answers from the golden.
+    if diff.regolden_mode(TWIN_REL) == "bash":
+        shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
+        shutil.copy2(PURGE, root / ".ci" / "scripts" / "deploy" / PURGE.name)
+        shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
@@ -249,7 +253,19 @@ def fixture(tmp_path: pathlib.Path, tree: dict[str, str] | None = None) -> pathl
     return root
 
 
-def _run(
+def _run(root: pathlib.Path, side: str, **kw):
+    """One side. The twin's answer comes from its golden (PLAN-retire-bash-oracles B3); `_run_live` is how it was recorded."""
+    if side == "old":
+        return diff.twin_result(
+            TWIN_REL,
+            [repr((root,)), repr(sorted(kw.items()))],
+            lambda: _run_live(root, side, **kw),
+            work=diff.twin_work((root,), kw),
+        )
+    return _run_live(root, side, **kw)
+
+
+def _run_live(
     root: pathlib.Path,
     side: str,
     *,
@@ -642,7 +658,8 @@ def test_pure_helpers() -> None:
     assert port.SELF == "upload-repos-to-r2.sh"
     assert port.FORMATS == ("apt", "rpm", "apk", "archlinux")
     assert port.CC_MUTABLE == "no-cache"
-    assert port.PURGE_SCRIPT == ".ci/scripts/deploy/cf-purge-urls.sh"
+    assert not hasattr(port, "PURGE_SCRIPT")
+    assert port.cf_purge_urls.__name__ == "rediacc_ci.deploy.cf_purge_urls"
 
     assert port.sync_argv("apt", "edge", "https://e") == [
         "aws",
@@ -662,7 +679,7 @@ def test_pure_helpers() -> None:
     assert port.sed_argv("pr-1", "dist/pages/install.sh")[2] == (
         "s|REDIACC_CHANNEL:-stable|REDIACC_CHANNEL:-pr-1|g"
     )
-    assert port.purge_argv("Z") == [".ci/scripts/deploy/cf-purge-urls.sh", "--zone", "Z"]
+    assert not hasattr(port, "purge_argv")
 
     assert port.repo_url("apt", "edge", "dists/stable/P.gz") == (
         RELEASES_ORIGIN + "/apt/edge/dists/stable/P.gz"
@@ -687,23 +704,6 @@ def test_pure_helpers() -> None:
     assert banner[-1] == ""
     assert banner[2] == "  RELEASE SKIPPED (bump-none) -- NOTHING WAS WRITTEN TO R2"
     assert len(banner) == 19
-
-
-def test_the_guard_list_is_the_twins_guard_list() -> None:
-    """STALENESS ALARM. `REQUIRED_ENV` is a copy of the twin's five `${VAR:?msg}`
-    guards, re-derived here from the twin's source, in order and with messages."""
-    source = TWIN.read_text(encoding="utf-8")
-    found = re.findall(r'^: "\$\{(\w+):\?([^}]*)\}"', source, re.MULTILINE)
-    assert found, "the guard shape changed; this alarm is no longer reading anything"
-    assert [(name, msg) for name, msg in found] == list(port.REQUIRED_ENV)
-
-
-def test_the_skip_values_are_the_twins_case_arms() -> None:
-    """STALENESS ALARM for the `case` arms, which sit between the two markers the gate test `test_gate_skip_release_channel_pointer.py` splits the twin on."""
-    source = TWIN.read_text(encoding="utf-8")
-    arm = re.search(r"case \"\$\{SKIP_RELEASE:-\}\" in\n\s*([^)]*)\) return 0", source)
-    assert arm is not None, "the case shape changed; this alarm reads nothing"
-    assert {value.strip() for value in arm.group(1).split("|")} == set(port.SKIP_RELEASE_VALUES)
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
@@ -774,15 +774,12 @@ def _drive_port_in_process(
     """
     root = fixture(tmp_path, {"dist/repos/apt/InRelease": "InRelease body\n"})
     stub = pathlib.Path(_bin(root, aws_body=FLAKY_AWS))
-    purge = root / "purge.sh"
-    purge.write_text("#!/usr/bin/python3\nimport sys\n\nsys.stdin.read()\n", encoding="utf-8")
-    purge.chmod(0o755)
     call_log = root / "calls.log"
     call_log.write_text("", encoding="utf-8")
 
     monkeypatch.chdir(root)
     monkeypatch.setattr(port, "repo_root", lambda: str(root))
-    monkeypatch.setattr(port, "PURGE_SCRIPT", str(purge))
+    monkeypatch.setattr(port.cf_purge_urls, "purge", lambda _zone, _payload: 0)
     monkeypatch.setattr(port, "RETRY_DELAY_S", 0.0)
     # These cases are about the transfer retry; FLAKY_AWS models no bucket, so the prune (pinned by the `test_prune_*` cases) is switched off here rather than fed a fake listing.
     monkeypatch.setattr(port, "_prune_trees", lambda *_args: None)

@@ -26,7 +26,7 @@ jobs:
     # unsupported (see .github/CONTRIBUTING.md).
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      # The logic now lives in .ci/scripts/deploy/delete-r2-channel.sh, so the
+      # The logic now lives in .ci/rediacc_ci/deploy/delete_r2_channel.py, so the
       # repo has to be on disk. Sparse, but a sparse cone is a SECOND dependency
       # graph: the bws-secrets step below `uses:` a local composite resolved from
       # the WORKSPACE, so the action itself and the map it reads must be in the
