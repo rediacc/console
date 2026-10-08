@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 200 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 202 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -519,6 +519,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
 | `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
 | `agent/plans/PLAN-k3s-137-and-pr-conditions.md` | approved | 107 | 5 | 0 | 8129 |
+| `agent/plans/PLAN-lessons-registry.md` | approved | 176 | 11 | 0 | 20098 |
 | `agent/plans/PLAN-lint-css-ci-wiring.md` | compacted | 54 | 0 | 0 | 4377 |
 | `agent/plans/PLAN-lint-rule-matrix-probe.md` | compacted | 50 | 0 | 0 | 3583 |
 | `agent/plans/PLAN-locale-techdiff-resync.md` | ready | 81 | 5 | 0 | 6060 |
@@ -553,6 +554,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
 | `agent/plans/PLAN-scope-gate-sort-collation.md` | compacted | 38 | 0 | 0 | 2784 |
 | `agent/plans/PLAN-scope-gates-split.md` | compacted | 38 | 0 | 0 | 2608 |
+| `agent/plans/PLAN-scope-mirrors.md` | approved | 235 | 11 | 0 | 23324 |
 | `agent/plans/PLAN-secret-namespace-migration.md` | executing | 1714 | 5 | 29 | 187836 |
 | `agent/plans/PLAN-sentence-aware-wrapping.md` | compacted | 38 | 0 | 0 | 2804 |
 | `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
@@ -665,4 +667,4 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 | `agent/plans/_removed/PLAN-uncommitted-work-exposure-check.md` | removed | 107 | 0 | 0 | 15888 |
 
-200 plan(s), 134 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+202 plan(s), 136 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
