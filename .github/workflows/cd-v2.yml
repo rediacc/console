@@ -1,14 +1,17 @@
 name: Release to Edge
 
 # Publish workflow -- dispatched from CI's finalize-release-sentinel job
-# (right after the sentinel is sealed), or manually. Promotes Docker images,
-# creates git tag + GitHub Release, deploys edge worker.
+# (right after the sentinel is sealed), or manually. Creates the version git
+# tag, promotes Docker images, deploys edge, validates the live install, then
+# tags submodules and publishes Homebrew + the GitHub Release.
 #
 # We dispatch from finalize (rather than firing on workflow_run) so a CI
 # run that gets force-cancelled mid-housekeeping after the sentinel was
 # already written cannot strand a sealed version without a tag. The
 # sentinel write IS the atomic commit point; this workflow only runs once
-# the sentinel is committed.
+# the sentinel is committed, and its FIRST write is the matching git tag
+# (init's "Create version tag"), before any job that can fail or skip.
+# ci_workflow_invariants.py refuses a graph that puts the tag behind one.
 
 on:
   workflow_dispatch:
@@ -39,8 +42,9 @@ on:
         default: false
 
 # Release publishing, Docker and Cloudflare Pages scopes are declared per job
-# below, not here: only tag-and-release needs contents: write, and only
-# publish needs packages: write.
+# below, not here: no job holds contents: write (every git push and the
+# GitHub Release ride the cd-preset App token), and only publish needs
+# packages: write.
 # Every job below declares its own permissions, so this workflow-level default
 # is deliberately empty: a job added without a block gets nothing and fails
 # loudly, rather than silently inheriting a scope nobody audited it for.
@@ -63,8 +67,9 @@ jobs:
     timeout-minutes: 30
     # actions: read is for resolve-ci-run.sh, which reads
     # repos/*/actions/runs with github.token. Everything else in this job
-    # (check-existing-release, assert-artifact-version, the submodule fetch)
-    # runs on the cd-preset App token. No write scope is needed here.
+    # (check-existing-release, assert-artifact-version, the submodule fetch
+    # and the version tag push) runs on the cd-preset App token, so no write
+    # scope is needed on github.token here.
     permissions:
       contents: read
       actions: read
@@ -92,6 +97,8 @@ jobs:
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
             GITHUB_APP_ID > BWS_APP_ID
+            GIT_BOT_NAME > BWS_GIT_BOT_NAME
+            GIT_BOT_EMAIL > BWS_GIT_BOT_EMAIL
 
       - uses: ./.github/actions/app-token
         id: app-token
@@ -101,7 +108,8 @@ jobs:
           preset: cd
           repositories: console,renet,account,homebrew-tap,elite
 
-      # Re-checkout with submodules using app token (needed for submodule branch check)
+      # Re-checkout with submodules using app token (needed for submodule
+      # branch check, and the credential the version tag push rides)
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0  # Full history needed for merge-base --is-ancestor in submodule divergence check
@@ -217,6 +225,43 @@ jobs:
           VERSION: ${{ steps.version.outputs.next_version || steps.init.outputs.next_version }}
           CI_RUN_ID: ${{ steps.resolve.outputs.ci_run_id }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.assert_artifact_version
+
+      # THE TAG AND THE SENTINEL ARE ONE UNIT. ci.yml's finalize-release-sentinel
+      # sealed cli/v<V>/.released before dispatching this run, and Check
+      # Release State requires a v<V> tag for every sentinel. So the tag is
+      # this workflow's FIRST write, in the job that decides the version and
+      # behind nothing but the two read-only guards above. It used to live in
+      # tag-and-release, behind publish, both edge deploys, the smoke test and
+      # post-publish install validation: CD run 37749637824 (v2.2.0) went red
+      # on a Rocky 9 DNF stall in that validation, the tag job was skipped,
+      # and the sealed sentinel was left with no tag, which reddened main.
+      #
+      # The tag points at the CI commit whose artifacts this run promotes,
+      # which is also the commit the sentinel records (--commit-sha
+      # github.sha in finalize), not at whatever main was at dispatch.
+      #
+      # IDEMPOTENT, AND RETRY RUNS IT. retry_mode takes its version from the
+      # latest tag, so on a retry the tag exists and this step only proves it
+      # (via ls-remote, never a local guess) and moves on. A patch run reaching
+      # an existing tag at another commit is refused: check-existing-release
+      # already said it was absent, so something moved. An ls-remote that
+      # fails (rc other than 0 or 2) is UNKNOWN, and unknown is refused.
+      - name: Create version tag
+        if: steps.skip-check.outputs.workers_only != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.next_version || steps.init.outputs.next_version }}
+          CI_SHA: ${{ steps.resolve.outputs.ci_sha }}
+          RETRY_MODE: ${{ steps.skip-check.outputs.retry_mode }}
+          GIT_BOT_NAME: ${{ env.BWS_GIT_BOT_NAME }}
+          GIT_BOT_EMAIL: ${{ env.BWS_GIT_BOT_EMAIL }}
+        run: |
+          rc=0; REFS=$(git ls-remote --exit-code origin "refs/tags/v${VERSION}" "refs/tags/v${VERSION}^{}") || rc=$?
+          if [[ "$rc" == 0 ]]; then AT=$(tail -n1 <<<"$REFS" | cut -f1); [[ "$AT" == "$CI_SHA" || "$RETRY_MODE" == true ]] || { echo "::error::Tag v${VERSION} already exists at ${AT}, not at CI commit ${CI_SHA}. Refusing to release one version from two commits."; exit 1; }; echo "::notice::Tag v${VERSION} already exists at ${AT} (retry_mode=${RETRY_MODE}); nothing to create."; exit 0; fi
+          [[ "$rc" == 2 ]] || { echo "::error::git ls-remote origin failed (rc=${rc}), so whether v${VERSION} exists is UNKNOWN. Refusing to guess; re-dispatch once GitHub answers."; exit 1; }
+          [[ "$RETRY_MODE" != true ]] || { echo "::error::Retry of v${VERSION}, but origin has no such tag. Retry derives its version from tags; re-dispatch with release_mode=patch."; exit 1; }
+          git -c user.name="$GIT_BOT_NAME" -c user.email="$GIT_BOT_EMAIL" tag -a "v${VERSION}" -m "v${VERSION}" "$CI_SHA"
+          git push origin "v${VERSION}"
+          echo "::notice::Created tag v${VERSION} at ${CI_SHA}"
 
   # ============================================================================
   # PUBLISH
@@ -364,10 +409,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.verify_artifact_attestation
 
-      # Tag creation + GitHub Release + Homebrew update moved to the
-      # `tag-and-release` job below, which runs after edge deploys +
-      # smoke-test succeed. Keeping them there prevents orphan tags
-      # pointing at a broken release.
+      # The version tag is created in init (see "Create version tag"): the
+      # sentinel is already sealed, so the tag must not wait on anything that
+      # can fail. Submodule tags, the Homebrew formula and the GitHub Release
+      # wait in `tag-and-release` below, behind the edge deploys, the smoke
+      # test and post-publish install validation.
 
       # Package repos + R2 edge upload already handled by CI (cd-stage.yml).
       # CI builds self-contained repos and uploads to {format}/edge/ on push-to-main.
@@ -480,10 +526,10 @@ jobs:
     permissions:
       contents: read
     needs: [init, publish, smoke-test, tag-and-release]
-    # tag-and-release is correctly skipped in retry/workers-only mode (the
-    # tag already exists), so we cannot use bare success() here -- a skipped
-    # need makes success() false, which silently skips the stable deploy.
-    # Allow tag-and-release to be either success or skipped; gate the rest
+    # tag-and-release is correctly skipped in workers-only mode (no version
+    # is cut), so we cannot use bare success() here -- a skipped need makes
+    # success() false, which silently skips the stable deploy. Allow
+    # tag-and-release to be either success or skipped; gate the rest
     # explicitly so a real upstream failure still blocks the deploy.
     if: >-
       always() &&
@@ -567,7 +613,7 @@ jobs:
   # (same workflow, same script). Catches state corruption between staging
   # validation and live R2 (CDN purge bugs, R2 outage, accidental scrubs).
   # The `quick` install method runs `install.sh | bash` end-to-end inside
-  # Ubuntu/Debian containers — it would have failed loud if v1.1.4's
+  # Ubuntu/Debian containers; it would have failed loud if v1.1.4's
   # versioned R2 path was empty.
   # ============================================================================
   validate-install-published:
@@ -595,16 +641,25 @@ jobs:
 
   # ============================================================================
   # TAG & GITHUB RELEASE - Runs AFTER edge deploys + smoke-test + post-publish
-  # install validation succeed. Creates the git tag, tags submodules, updates
-  # Homebrew formula, publishes the GitHub Release. Ordering this last means a
-  # failed deploy or broken install does not leave an orphan tag pointing at a
-  # broken release.
+  # install validation succeed. Tags submodules, updates the Homebrew formula,
+  # advances the contract floor and publishes the GitHub Release. The VERSION
+  # git tag is NOT created here any more: init creates it, because the R2
+  # sentinel is already sealed and a sentinel without a tag is the bijection
+  # break Check Release State reddens main on. What waits for validation is
+  # what users install from (Homebrew) or read as "released" (the Release).
+  #
+  # RETRY RUNS THIS JOB TOO, so a release whose validation went red after the
+  # tag can be completed by a release_mode=retry dispatch. The first step asks
+  # whether the GitHub Release exists; on a retry where it does, every later
+  # step is skipped (nothing owed, and tag_submodules would refuse a submodule
+  # that moved since). On a patch run everything is owed by definition:
+  # check-existing-release proved the Release absent in init.
   # ============================================================================
   tag-and-release:
     name: Tag & GitHub Release
     runs-on: ubuntu-latest
     # NO `contents: write`, and that is the point. Every write in this job now
-    # rides the cd-preset App token: the tag push, the submodule tags, the
+    # rides the cd-preset App token: the submodule tags, the
     # homebrew-tap bump and the contract floor push go through the global
     # insteadOf credential, and "Create GitHub Release" is now explicitly on
     # `steps.app-token.outputs.token` too.
@@ -626,14 +681,35 @@ jobs:
       contents: read
       actions: read
     needs: [init, publish, deploy-marketing-edge, deploy-account-edge, smoke-test, validate-install-published]
+    # retry_mode is NOT excluded here any more; see the job header and the
+    # "Decide what this run still owes" step. workers_only cuts no version.
     if: >-
       success() &&
-      needs.init.outputs.retry_mode != 'true' &&
       needs.init.outputs.workers_only != 'true'
     steps:
+      # Patch run: everything is owed. Retry run: owed only when the GitHub
+      # Release for this version is missing (a run whose validation went red
+      # after init tagged it). A `gh release view` that fails for any reason
+      # other than "release not found" is UNKNOWN and refused, never read as
+      # "missing" or as "present".
+      - name: Decide what this run still owes
+        id: owed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.init.outputs.next_version }}
+          RETRY_MODE: ${{ needs.init.outputs.retry_mode }}
+        run: |
+          if [[ "$RETRY_MODE" != true ]]; then echo "owed=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          rc=0; ERR=$(gh release view "v${VERSION}" --repo "$GITHUB_REPOSITORY" 2>&1 >/dev/null) || rc=$?
+          if [[ "$rc" == 0 ]]; then echo "::notice::Retry of v${VERSION}: its GitHub Release exists, nothing owed."; echo "owed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          grep -qi 'release not found' <<<"$ERR" || { echo "::error::Could not tell whether Release v${VERSION} exists (rc=${rc}): ${ERR}"; exit 1; }
+          echo "::notice::Retry of v${VERSION}: no GitHub Release yet; completing submodule tags, Homebrew, the floor and the Release."; echo "owed=true" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.owed.outputs.owed == 'true'
 
       - name: Fetch secrets from Bitwarden
+        if: steps.owed.outputs.owed == 'true'
         # LIVE: the BWS_ values below are read by this job's steps, flipped from
         # secrets.* by the cutover. The secrets.* reads that remain are the
         # comparator's, which must keep reading GitHub or it compares a value with
@@ -650,6 +726,7 @@ jobs:
             GIT_BOT_NAME > BWS_GIT_BOT_NAME
             GIT_BOT_EMAIL > BWS_GIT_BOT_EMAIL
       - uses: ./.github/actions/app-token
+        if: steps.owed.outputs.owed == 'true'
         id: app-token
         with:
           client-id: ${{ env.BWS_APP_ID }}
@@ -658,6 +735,7 @@ jobs:
           repositories: console,renet,account,homebrew-tap,elite
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.owed.outputs.owed == 'true'
         with:
           fetch-depth: 0
           filter: blob:none   # see the divergence-check checkout above
@@ -665,6 +743,7 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Download release artifacts
+        if: steps.owed.outputs.owed == 'true'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: release-artifacts-${{ needs.init.outputs.ci_sha }}
@@ -672,22 +751,16 @@ jobs:
           run-id: ${{ needs.init.outputs.ci_run_id }}
           github-token: ${{ github.token }}
 
-      - name: Create version tag
-        run: |
-          VERSION="${{ needs.init.outputs.next_version }}"
-          git config user.name "${BWS_GIT_BOT_NAME}"
-          git config user.email "${BWS_GIT_BOT_EMAIL}"
-          git tag -a "v${VERSION}" -m "v${VERSION}"
-          git push origin "v${VERSION}"
-          echo "::notice::Created tag v${VERSION}"
-
+      # The version tag itself is created by init's "Create version tag".
       - name: Tag submodules
+        if: steps.owed.outputs.owed == 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.tag_submodules
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ needs.init.outputs.next_version }}
 
       - name: Update Homebrew formula
+        if: steps.owed.outputs.owed == 'true'
         run: |
           PYTHONPATH=.ci python3 -m rediacc_ci.release.update_homebrew_tap \
             --version ${{ needs.init.outputs.next_version }} \
@@ -705,6 +778,7 @@ jobs:
       # only writes if the observed oldest is strictly greater than the
       # value already in the file. Idempotent on retry/no-op runs.
       - name: Advance release-contract-floor ratchet
+        if: steps.owed.outputs.owed == 'true'
         env:
           CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
@@ -714,6 +788,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.advance_contract_floor
 
       - name: Create GitHub Release
+        if: steps.owed.outputs.owed == 'true'
         env:
           # The App token, not github.token. See this job's `permissions:` block:
           # every other write here already uses it, and this step running last on
@@ -725,14 +800,23 @@ jobs:
 
   # No cleanup-on-failure job. Failure model:
   #   - R2 sentinel is the atomic commit point, written by ci.yml's
-  #     finalize-release-sentinel BEFORE this workflow runs. cd-v2 failures
-  #     do not invalidate the seal; fix forward via retry mode.
-  #   - validate-install-published gates tag-and-release, so a broken release
-  #     never gets tagged / homebrewed / GitHub-released.
+  #     finalize-release-sentinel BEFORE this workflow runs. The git tag is
+  #     its twin and is created FIRST here, in init, so the pair cannot be
+  #     split by anything downstream (a red deploy, smoke test or install
+  #     validation). ci_workflow_invariants.py refuses a job graph that puts
+  #     the tag behind any job other than init, or skips it on retry_mode.
+  #   - What remains possible: init itself failing before its tag step
+  #     (resolve, check-existing-release, assert-artifact-version), or the
+  #     dispatch never arriving. The sentinel then has no tag; Check Release
+  #     State names it, and the repair is a release_mode=patch re-dispatch
+  #     (retry derives its version FROM tags, so it cannot see the version).
+  #   - validate-install-published still gates tag-and-release, so a broken
+  #     release never gets submodule-tagged / homebrewed / GitHub-released.
+  #     A retry dispatch completes those once the install is fixed.
   #   - Docker channel tags are mutable; the next successful publish overwrites
   #     them. Untagging on failure just trades "stale image" for "404", which
   #     is strictly worse for downstream consumers.
   #   - Housekeeping (ci.yml on every successful main push) cleans staging
   #     tags, R2 orphans, dead branches with sentinel-aware logic.
-  #   - Check Release State (drift gate) catches sentinel ↔ tag mismatches on
+  #   - Check Release State (drift gate) catches sentinel <-> tag mismatches on
   #     the next push.

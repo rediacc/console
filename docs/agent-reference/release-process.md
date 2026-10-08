@@ -4,7 +4,8 @@ Single pipeline: CI validates everything BEFORE publish. CD is a thin promote st
 
 ```
 CI: quality -> build -> dry-run -> validate install (6 platforms) -> ci-complete
-CD (auto on CI success): promote Docker -> git tag -> GitHub Release -> R2 -> deploy edge
+CI on main: ci-complete -> finalize-release-sentinel (seal cli/v<V>/.released, dispatch CD)
+CD: init (git tag v<V>) -> promote Docker -> deploy edge -> smoke + install validation -> submodule tags, Homebrew, GitHub Release
 ```
 
 Install validation runs pre-publish against R2 staging artifacts. Docker is validated on push-to-main only (PR images are dry-run on a PR).
@@ -35,8 +36,8 @@ gh workflow run "Release to Edge" -f ci_run_id=<id> -f release_mode=patch|retry
 
 `release_mode` is a `workflow_dispatch` `choice` input with only two values -- **GitHub itself rejects `minor`/`major`**, there is no in-repo validation to bypass:
 
-- `retry` (the default) -- re-run publish for the version the sentinel already computed.
-Use this for a publish that failed after the version was decided (e.g. a transient R2 or Docker push failure); it does not recompute the version.
+- `retry` (the default) -- re-run publish for the newest git tag (`resolve_version --current`), without recomputing the version.
+Use this for a publish that failed after init tagged the version (a transient R2 or Docker push failure, a red install validation). Because the version comes FROM the tags, a retry cannot see a sealed version that never got its tag; that case needs `patch`.
 - `patch` -- recompute `next_version` from merged PR labels and existing git tags, then
 publish. This is the normal path for a manual or CI-triggered edge release.
 
@@ -53,6 +54,24 @@ version bump, CLI build, Docker promote and GitHub Release. For when the release
 Console CI on main" guard. Only for cherry-picking a specific prior CI run; using it to publish an old run ahead of a newer green one is exactly the case the guard exists to stop.
 
 `ci_run_id` may be left empty to auto-derive the latest green Console CI on `main`.
+
+### Job order: the tag and the sentinel are one unit
+
+`finalize-release-sentinel` in `ci.yml` seals `cli/v<V>/.released` and, in the very next step under the same `if:`, dispatches this workflow. Check Release State requires a `v<V>` git tag for every sentinel, so the tag is cd-v2's FIRST write: the `Create version tag` step at the end of `init`, behind only the read-only guards `check-existing-release` and `assert-artifact-version`.
+
+Everything that can fail after the seal runs after the tag: `publish` (Docker promote), both edge deploys, the smoke test and `validate-install-published`. `tag-and-release` still waits for all of them, and now does only the parts users consume: submodule tags, the Homebrew formula, the contract-floor ratchet and the GitHub Release.
+
+The tag used to live in `tag-and-release`. On 2026-10-08 CD run 37749637824 (v2.2.0) went red on a Rocky 9 DNF stall in post-publish install validation, the tag job was skipped, and the sealed sentinel was left with no tag, which reddened main.
+
+Retry behaviour, per step:
+
+- `Create version tag` runs on `retry` too and is idempotent. It asks `git ls-remote` for the tag: present means a no-op, absent means create it at the CI commit (`ci_sha`, the commit the sentinel records), and any other `ls-remote` failure is refused as unknown. On a `patch` run, a tag already present at a different commit is refused.
+- `tag-and-release` runs on `retry` too. Its first step asks whether the GitHub Release exists: if it does, every later step is skipped; if it is missing (`release not found`), the run completes submodule tags, Homebrew, the floor and the Release. Any other `gh` error is refused.
+- `deploy_workers_only` cuts no version, so both are skipped.
+
+What can still split the pair: `init` failing before its tag step, or the dispatch never arriving. The sentinel then has no tag, Check Release State names it, and the repair is a `release_mode=patch` re-dispatch (it recomputes the same version, because no tag exists for it yet).
+
+`check:ci-workflow-invariants` (`.ci/rediacc_ci/security/ci_workflow_invariants.py`, release-order phase) enforces the shape on the job graph. It refuses a version-tag step behind any job other than `init`, a tag step or job whose `if:` reads `retry_mode`, a dispatch that does not immediately follow the seal under the same `if:`, `contents: write` anywhere in cd-v2, a `git push` not on the `preset: cd` App token, and a `cd` preset that stops requesting `workflows: write`.
 
 The `release` PR label sets `publish_stable` on the automatic dispatch. When the merged PR carries the exact label `release` and not `bump-none`, `initialize` records `publish_stable=true` and finalize-release-sentinel dispatches cd-v2 with `-f publish_stable=true`, so the merge publishes to edge AND stable with no soak (operator ruling 2026-09-30). A failed PR lookup still releases, to edge only. The decision lives in `.ci/rediacc_ci/ci/dispatch_release.py`.
 
