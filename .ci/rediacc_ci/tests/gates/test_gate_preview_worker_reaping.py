@@ -16,6 +16,7 @@ WHAT THIS GATE CANNOT SEE: it tests the SELECTOR and the guards by reading them,
 READ-ONLY against the subject; this module writes nothing anywhere.
 """
 
+import ast
 import re
 
 from rediacc_ci import paths
@@ -70,18 +71,20 @@ def phase_body(gate) -> list[str]:
 
 
 def extract_body(text: str) -> list[str]:
-    """The lines of `PHASE_OPENER`'s method in `text`; empty when it is absent."""
-    body: list[str] = []
-    collecting = False
-    opener_indent = len(PHASE_OPENER) - len(PHASE_OPENER.lstrip())
-    for line in text.splitlines():
-        if not collecting and line.startswith(PHASE_OPENER):
-            collecting = True
-        elif collecting and line.strip() and len(line) - len(line.lstrip()) <= opener_indent:
-            break
-        if collecting:
-            body.append(line)
-    return body
+    """The lines of `PHASE_OPENER`'s method in `text`; empty when it is absent or the text does not parse.
+
+    Taken from the syntax tree, not from indentation: a column-0 comment or a line of a multi-line string inside the method must not end the body early (review finding cc0f8ea7.1).
+    """
+    name = PHASE_OPENER.split("def ", 1)[1].split("(", 1)[0]
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return []
+    lines = text.splitlines()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == name:
+            return lines[node.lineno - 1 : node.end_lineno]
+    return []
 
 
 def test_phase_body_stops_at_the_end_of_its_class(gate):
@@ -98,6 +101,22 @@ def test_phase_body_stops_at_the_end_of_its_class(gate):
     if not any("self.stop()" in ln for ln in body):
         gate.log_fail("the body lost its own tail: %r" % body)
     gate.log_pass("the phase body ends where its class does")
+
+
+def test_phase_body_survives_a_column_zero_line_inside_it(gate):
+    """A column-0 comment and a column-0 line of a multi-line string inside the method do not end the body."""
+    text = (
+        "class Reaper:\n"
+        + PHASE_OPENER
+        + '\n        self.go()\n# column zero comment\n        note = """\ncolumn zero string\n"""\n'
+        + "        self.stop()\n    def other(self):\n        pass\n"
+    )
+    body = extract_body(text)
+    if not any("self.stop()" in ln for ln in body):
+        gate.log_fail("a column-0 line inside the method truncated the body: %r" % body)
+    if any("other" in ln for ln in body):
+        gate.log_fail("the body ran into the next method: %r" % body)
+    gate.log_pass("the phase body survives column-0 lines inside it")
 
 
 def first_line_with(body: list[str], needle: str) -> int:

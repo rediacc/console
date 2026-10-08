@@ -629,6 +629,9 @@ def _checksum_rows(dists_dir: str, algorithm: str) -> list[str]:
     bash expands `main/binary-*/Packages main/binary-*/Packages.gz` in collation order and leaves an unmatched pattern LITERAL, which the `[[ -f ]]` then skips. Reproduced with a sorted glob and an `is_file` test, because a Release that lists a file it does not have breaks `apt update` on every client.
     """
     # Globbed relative to `dists_dir` (root_dir) rather than by changing the process directory, so nothing here depends on, or can lose, the caller's cwd (the sibling of review finding 74389ce3.1).
+    if not os.path.isdir(dists_dir):
+        # The bash `cd "$DISTS_DIR"` died here; a root_dir glob over a missing directory would instead return nothing and publish a Release with no checksum rows (review finding 7caaf877.2).
+        raise FileNotFoundError("dists directory does not exist: %s" % dists_dir)
     rows: list[str] = []
     for pattern in ("main/binary-*/Packages", "main/binary-*/Packages.gz"):
         for name in sorted(globmod.glob(pattern, root_dir=dists_dir)):

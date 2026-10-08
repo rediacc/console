@@ -74,6 +74,14 @@ def _reexec_under_pytest() -> int:
         return named if os.path.basename(named).startswith("python") else ""
 
     interpreter = shebang_python(override) if override else ""
+    if override and not interpreter:
+        # An explicit override that names no python is refused, never quietly replaced by the tool venv (review finding 7caaf877.1).
+        print(
+            "regolden: $PYTEST_BIN=%s is not a script whose shebang names a python interpreter; "
+            "point it at one or unset it." % override,
+            file=sys.stderr,
+        )
+        return 77
     if not interpreter:
         tried.append(str(venv_py))
         interpreter = str(venv_py) if os.access(venv_py, os.X_OK) else ""
