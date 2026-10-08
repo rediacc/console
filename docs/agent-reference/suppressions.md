@@ -141,7 +141,7 @@ With no token the online gate skips loudly on a workstation and fails in CI; a 4
 ### Running the gate tests locally
 
 ```bash
-npm run test:quality-gates   # runs every .ci/scripts/test/gates/test-*.sh
+npm run check:ci-pytest      # the gate tests, ported to pytest under .ci/rediacc_ci/tests/gates
 npm run check:ci-security-audit       # the BLOCKER-gated npm audit
 npm run check:ci-overrides-reasons    # the BLOCKER-gated package.json overrides
 ```

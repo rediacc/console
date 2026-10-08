@@ -43,7 +43,7 @@ SECURITY BANS, each with its own reason:
 THE FOUR STRUCTURAL RULES AND THE INCIDENTS BEHIND THEM.
 -----------------------------------------------------------------------------
 
-THE INLINE-RUN RULE. CI step LOGIC belongs in .ci/scripts/<area>/<name>.sh, which is locally runnable and shareable across CI systems. A workflow `run:` block scalar whose shell logic (non-blank, non-comment lines) exceeds $INLINE_MAX_LOGIC lines is a violation. Full stop -- there is no baseline and no grandfathering. There used to be a ratchet:
+THE INLINE-RUN RULE. CI step LOGIC belongs in a Python module, .ci/rediacc_ci/<area>/<name>.py run as `python3 -m rediacc_ci.<area>.<name>` (a new .sh is refused by check:ci-language-policy), which is locally runnable and shareable across CI systems. A workflow `run:` block scalar whose shell logic (non-blank, non-comment lines) exceeds $INLINE_MAX_LOGIC lines is a violation. Full stop -- there is no baseline and no grandfathering. There used to be a ratchet:
 .ci/quality/workflow-inline-baseline.json froze 52 legacy violations per-file and only allowed the counts to fall. All 52 were extracted, so the file and its ratchet logic are gone. Do not reintroduce them: an escape hatch that exists gets used, and the rule only actually held once the hatch was removed.
 
 A block owns every following line that is blank OR indented deeper than the `run:` key; a logic line is a non-blank line whose first non-space char is not `#`.
@@ -439,9 +439,10 @@ def check_inline_run_blocks(
         if name in detail:
             body.append(detail[name].rstrip("\n"))
         body.append(
-            "  Fix:  extract each over-threshold block to .ci/scripts/<area>/<name>.sh; "
-            "the workflow step becomes env wiring + one script call, and the script "
-            "header documents its required env + how to run it locally."
+            "  Fix:  extract each over-threshold block to a Python module, "
+            ".ci/rediacc_ci/<area>/<name>.py run as `python3 -m rediacc_ci.<area>.<name>`; "
+            "the workflow step becomes env wiring + one module call, and the module "
+            "docstring documents its required env + how to run it locally."
         )
         body.append("")
         errors.report(
