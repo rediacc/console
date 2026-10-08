@@ -21,14 +21,14 @@ Body-Sig: 1e7b29cdd330da9e
 ### a18deccd.1 [medium] scripts/lib/submodule-presence.ts:56
 Anchor: in-diff
 Claim: The old doc line `/** True on a CI runner: CI=true or GITHUB_ACTIONS=true, the literal string. */` is kept above the new JSDoc, and it now states the wrong behaviour because inCi no longer requires the literal 'true'.
-Resolution: open
+Resolution: fixed 187bdc0916e04e14eea2483c84a9c215cfa25349 | d778be9d 2026-10-08T09:08:26Z
 
 ### a18deccd.2 [medium] scripts/lib/submodule-presence.ts:61
 Anchor: in-diff
 Claim: The changed inCi semantics (CI=1, any non-off value, GITHUB_ACTIONS widened the same way) are not covered by any test in this diff, so a regression back to literal-'true' matching would pass the gate unnoticed; the verification was manual shell runs only.
-Resolution: open
+Resolution: fixed 187bdc0916e04e14eea2483c84a9c215cfa25349 | d778be9d 2026-10-08T09:08:27Z
 
 ### a18deccd.3 [low] scripts/lib/submodule-presence.ts:63
 Anchor: in-diff
 Claim: The off-list regex is anchored with no trimming, so a value such as ' false' or '0\n' with surrounding whitespace is treated as CI-on, which is a surprising edge but fails closed.
-Resolution: open
+Resolution: not-a-bug | scripts/lib/submodule-presence.ts:63 fails closed on an unexpected value | d778be9d 2026-10-08T08:53:51Z
