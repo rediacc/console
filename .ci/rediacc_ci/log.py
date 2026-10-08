@@ -16,7 +16,7 @@ developer piping a gate into `less` gets escapes. Only `common.sh` tests the str
 
 The colour VALUES disagree too: `YELLOW` is `\\033[1;33m` in `common.sh` and `\\033[0;33m` in `.ci/bootstrap.sh`. Both are "yellow"; neither file knows the other exists.
 
-THE INCIDENT THIS MODULE IS SHAPED BY (2026-09-06, recorded verbatim at `.ci/scripts/lib/emit-advisory.sh:22-50` and pinned by `.ci/rediacc_ci/tests/gates/test_gate_emit_advisory.py`). `emit-advisory.sh` used to assign RED/GREEN/YELLOW/NC and define log_error / log_success / log_warn / log_info UNCONDITIONALLY. Four quality gates -- check-profiler-coverage.sh,
+THE INCIDENT THIS MODULE IS SHAPED BY (2026-09-06, recorded verbatim at `.ci/scripts/lib/emit-advisory.sh:22-50`, a file deleted in PLAN-retire-bash-oracles section 12 U1 whose text is `git cat-file -p cc6278e4b8530fe98cb64ba15ad84282d0676b4e`, and pinned by `.ci/rediacc_ci/tests/gates/test_gate_emit_advisory.py`). `emit-advisory.sh` used to assign RED/GREEN/YELLOW/NC and define log_error / log_success / log_warn / log_info UNCONDITIONALLY. Four quality gates -- check-profiler-coverage.sh,
 check-swallowed-failures.sh, check-ci-job-aggregation.sh and check-go-deps.sh -- source `common.sh` first and then reach `emit-advisory.sh` transitively through `blocker-validator.sh:26`, so the later definitions won and silently replaced common.sh's TTY-gated logger. Two consequences:
 
   1. log_info / log_warn / log_success moved from stderr to STDOUT, so a gate
@@ -45,7 +45,7 @@ THE THREE RULES, and why each is not negotiable.
   NO_COLOR AND CI BOTH DISABLE IT. NO_COLOR is the cross-tool convention
   (no-color.org: any value, including empty, disables). CI is this repo's own,
   and it matters because GitHub's log viewer renders escape sequences as
-  literal text -- `emit-advisory.sh:22` says so in one line.
+  literal text -- `emit-advisory.sh:22` said so in one line.
 
 THE DELIBERATE DIVERGENCE FROM common.sh, stated out loud rather than discovered
 later. Under `CI=true` with stderr attached to a tty, common.sh emits colour and

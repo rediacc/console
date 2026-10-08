@@ -1,9 +1,9 @@
-"""`rediacc_ci.core.blocker_validator` against the live `blocker-validator.sh`.
+"""`rediacc_ci.core.blocker_validator` against the frozen answers of `blocker-validator.sh`.
 
-THE TWIN IS LIVE HERE, NOT FROZEN. `.ci/scripts/lib/blocker-validator.sh` is still sourced by eight real call sites (listed in the port's docstring), so running the real file is strictly better than a frozen copy: a copy could agree
-with the port while both had drifted away from what those gates execute.
+THE TWIN IS FROZEN. `.ci/scripts/lib/blocker-validator.sh` was frozen into `goldens/twins/lib.blocker-validator.jsonl` (65 cases, `--source bash`) and deleted in PLAN-retire-bash-oracles section 12 U1. Every bash call below goes through `differential.twin_streams`, which answers from that golden, so the port is still compared against what the bash library printed, byte for byte. The bash text is `git cat-file -p 31ee52d2231d191462e99025a819ee1ffe6a7be1`.
+A NEW case has no bash left to record it from: add it with `PYTHONPATH=.ci python3 -m rediacc_ci.tests.regolden .ci/scripts/lib/blocker-validator.sh --source port --reason "<why>"` and review the diff.
 
-THE BASH DRIVERS ARE STRINGS IN THIS FILE and not scripts under `.ci/`. Ruling 7 freezes the tracked `.sh` count, and a driver is exactly the kind of file that gets added without anyone deciding to. It is also the honest place for it: the driver is part of the TEST, not part of the tree under test.
+THE BASH DRIVERS ARE STRINGS IN THIS FILE and not scripts under `.ci/`. They are part of each golden KEY now, so editing one re-keys its cases. Ruling 7 freezes the tracked `.sh` count, and a driver is exactly the kind of file that gets added without anyone deciding to. It is also the honest place for it: the driver is part of the TEST, not part of the tree under test.
 
 WHAT IS COMPARED AND WHAT IS NOT.
   * Byte for byte, streams separate, exit code included: every SINGLE-failure
@@ -161,20 +161,30 @@ def listfile(tmp_path):
     return make
 
 
-def both_pairs(path: str, comment_char: str = "#"):
-    old = diff.bash_streams(
-        "bash -c %s bash %s %s" % (_sh(BASH_PAIRS), _sh(path), _sh(comment_char))
+def twin(driver: str, port: str, *args: str, env: dict[str, str] | None = None):
+    """The frozen twin's answer for `driver` over `args`, and the port's live answer for the same arguments.
+
+    `port` is the port verb (`pairs`, `verify`, `reason`, `replay`); it is also what `--source port` re-records from. Every scratch path in `args` folds to a stable token, so the key is the same on any machine.
+    """
+    quoted = " ".join(_sh(a) for a in args)
+    new_cmd = "%s %s %s" % (PY, port, quoted)
+    old = diff.twin_streams(
+        TWIN,
+        "bash -c %s bash %s" % (_sh(driver), quoted),
+        env=env,
+        work=diff.pytest_tmp_roots(*args),
+        port=lambda: diff.bash_streams(new_cmd, env=env),
     )
-    new = diff.bash_streams("%s pairs %s %s" % (PY, _sh(path), _sh(comment_char)))
+    new = diff.bash_streams(new_cmd, env=env)
     return old, new
+
+
+def both_pairs(path: str, comment_char: str = "#"):
+    return twin(BASH_PAIRS, "pairs", path, comment_char)
 
 
 def both_verify(path: str, comment_char: str = "#"):
-    old = diff.bash_streams(
-        "bash -c %s bash %s %s" % (_sh(BASH_VERIFY), _sh(path), _sh(comment_char))
-    )
-    new = diff.bash_streams("%s verify %s %s" % (PY, _sh(path), _sh(comment_char)))
-    return old, new
+    return twin(BASH_VERIFY, "verify", path, comment_char)
 
 
 # --------------------------------------------------------------------------- 1. parse_blockered_list, byte for byte ---------------------------------------------------------------------------
@@ -243,9 +253,7 @@ def test_verify_under_ci_moves_the_head_line_to_stdout_on_both_sides(listfile):
     THE STREAM SWAP IS THE SUBJECT, so the two streams are never merged. This is the exact gap a W7 P4 cutover differential found in `profiler_coverage.py`: same words, same exit code, different stream, and the annotation is what surfaces a finding in the Actions UI.
     """
     path = listfile("# BLOCKER: tbd\nA-1\n")
-    env = diff.env_for(CI="true")
-    old = diff.bash_streams("bash -c %s bash %s '#'" % (_sh(BASH_VERIFY), _sh(path)), env=env)
-    new = diff.bash_streams("%s verify %s '#'" % (PY, _sh(path)), env=env)
+    old, new = twin(BASH_VERIFY, "verify", path, "#", env=diff.env_for(CI="true"))
     assert old == new
     assert "::error::" in old[1], "CI=true did not produce an annotation on stdout"
     assert "::error::" not in old[2]
@@ -279,10 +287,7 @@ REASONS = [
 
 @pytest.mark.parametrize(("case", "reason"), REASONS, ids=[c[0] for c in REASONS])
 def test_reason_agrees_byte_for_byte(case, reason):
-    old = diff.bash_streams(
-        "bash -c %s bash %s %s %s" % (_sh(BASH_REASON), _sh("E-1"), _sh(reason), _sh("some/list"))
-    )
-    new = diff.bash_streams("%s reason %s %s %s" % (PY, _sh("E-1"), _sh(reason), _sh("some/list")))
+    old, new = twin(BASH_REASON, "reason", "E-1", reason, "some/list")
     assert old == new, "case %s: %r != %r" % (case, old, new)
 
 
@@ -372,8 +377,7 @@ def test_replay_agrees_with_the_twins_reader(tmp_path, case, stream):
     """
     target = tmp_path / "framed"
     target.write_text(stream, encoding="utf-8")
-    old = diff.bash_streams("bash -c %s bash %s" % (_sh(BASH_REPLAY), _sh(str(target))))
-    new = diff.bash_streams("%s replay %s" % (PY, _sh(str(target))))
+    old, new = twin(BASH_REPLAY, "replay", str(target))
     assert old == new, "case %s: %r != %r" % (case, old, new)
 
 
@@ -381,7 +385,7 @@ def test_the_zero_frame_message_is_unreachable_on_both_sides(tmp_path, capsys):
     """Named, so the dead arm cannot be deleted as noise or promoted by accident."""
     target = tmp_path / "framed"
     target.write_text("", encoding="utf-8")
-    old = diff.bash_streams("bash -c %s bash %s" % (_sh(BASH_REPLAY), _sh(str(target))))
+    old, _new = twin(BASH_REPLAY, "replay", str(target))
     assert "unframed output" in old[1] + old[2]
     assert "emitted no message" not in old[1] + old[2]
 
@@ -405,8 +409,7 @@ def test_the_twin_leaks_a_python_traceback_and_the_port_cannot(tmp_path):
     """
     target = tmp_path / "bad-utf8"
     target.write_bytes(b"# BLOCKER: %s\n\xff\xfe-entry\n" % GOOD.encode())
-    old = diff.bash_streams("bash -c %s bash %s '#'" % (_sh(BASH_PAIRS), _sh(str(target))))
-    new = diff.bash_streams("%s pairs %s '#'" % (PY, _sh(str(target))))
+    old, new = twin(BASH_PAIRS, "pairs", str(target), "#")
 
     assert old[0] == new[0] == 1
     assert "Traceback (most recent call last):" in old[2]

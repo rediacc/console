@@ -291,8 +291,6 @@
     "github.com/rediacc/renet/pkg/thinpool": 0.0,
     "github.com/rediacc/renet/pkg/toolexec/ceph": 0.0,
     "github.com/rediacc/renet/pkg/trim": 0.0,
-    "battery:test-blocker-golden-corpus.sh": 3088.9,
-    "battery:test-runner-advice.sh": 2793.1,
     "tutorial:installation": 11400.0,
     "tutorial:ssh-keys": 2000.0,
     "tutorial:add-server": 50600.0,

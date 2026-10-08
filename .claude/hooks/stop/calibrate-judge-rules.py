@@ -191,8 +191,8 @@ SHAPE_CASES = [
         "silent",
         # RE-VERIFIED AND REPOINTED 2026-09-21 for the same retirement. Two of the three now name the Python ports that carry those twins' cases, which strengthens the control rather than weakening it: the three signatures are visibly incompatible (one takes the gate handle and a workflow path, one takes a tmp_path and a mapping, one is a bash function setting LAST_OUT).
         [
-            # REPOINTED AGAIN 2026-09-24: the bash twin at test-autopilot-breakpoint-alignment.sh:47 was ported and deleted, so the bash contract now comes from test-runner-advice.sh:42, the same shape (a function setting LAST_OUT and returning rc). The two Python lines moved to the `def run_gate` lines themselves.
-            ".ci/scripts/test/gates/test-runner-advice.sh:42",
+            # REPOINTED AGAIN 2026-09-24: the bash twin at test-autopilot-breakpoint-alignment.sh:47 was ported and deleted, so the bash contract came from test-runner-advice.sh:42. REPOINTED A THIRD TIME 2026-10-08: that file was deleted by section 12 U1 and no bash `run_gate` is left, so the third contract is now test_gate_bws_map.py:140, a `run_gate(gate, root)` returning the merged output plus an `rc=` line as a str, where the other two return a RunResult. Still three incompatible signatures.
+            ".ci/rediacc_ci/tests/gates/test_gate_bws_map.py:140",
             ".ci/rediacc_ci/tests/gates/test_gate_ci_workflow_invariants.py:40",
             ".ci/rediacc_ci/tests/gates/test_gate_embed_asset_freshness.py:90",
         ],

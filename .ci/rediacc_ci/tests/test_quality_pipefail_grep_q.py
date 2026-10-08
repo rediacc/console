@@ -153,7 +153,8 @@ def test_the_live_corpus_is_not_empty() -> None:
     """`git ls-files` over the real tree must return files, or the gate is blind."""
     files = [f for f in gate.scan_files(paths.repo_root()) if f]
     # Floor re-measured 2026-10-08 at 52 scanned shell files after PLAN-retire-bash-oracles wave 1 deleted 76 tracked .sh files, then at 46 after W7 and W11-A, then at 43 after W11-B (lib/common.sh and a swept script), measured with the deletion staged, then at 42 after section 12 U3 deleted test-toolchain.sh, then at 40 after U2 deleted test-media-r2.sh and verify.sh.
-    assert len(files) >= 40
+    # Then at 36 after section 12 U1 deleted blocker-validator.sh, emit-advisory.sh, test-blocker-golden-corpus.sh and test-runner-advice.sh, measured in a clone with the deletions applied.
+    assert len(files) >= 36
 
 
 def test_selftest_passes_and_is_not_vacuous(capsys) -> None:

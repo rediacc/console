@@ -9,9 +9,10 @@ WHAT WAS ALREADY TRUE BEFORE THIS FILE, so a reader can see what is new.
     `LOW_EFFORT_BLOCKER_PATTERNS`, with a planted-defect control and a
     second-read guard against a truncated extractor. Containment of the PHRASE
     list is therefore settled, and this gate does not re-assert it.
-  * `.ci/scripts/test/gates/test-blocker-golden-corpus.sh` runs all three live
-    implementations over a 20-case corpus and pins the vendored copy as
-    differing on exactly FIVE of them.
+  * `.ci/rediacc_ci/tests/gates/test_gate_blocker_golden_corpus.py` runs the
+    live implementations over a 20-case corpus (`CORPUS_TEXT`, recorded
+    2026-09-06 against all three, the bash one included) and pins the vendored
+    copy as differing on exactly FIVE of them.
 
 THE GAP IS THE WORD "EXACTLY FIVE". It is a magic number. Nothing says WHICH five, nothing says why, and nothing notices when the number stays five while the membership changes -- the composition trap, one row in and one row out. Worse, two of the five are a different KIND of difference from the other three and the corpus cannot tell them apart: three are two implementations
 rejecting the same reason for different stated reasons, and two are the vendored copy ACCEPTING a reason the canonical one REFUSES. Only the second kind is a hole in a suppression gate.
@@ -50,6 +51,7 @@ Nothing here mutates anything. The perturbation controls in `selftest()` build t
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import os
 import pathlib
@@ -63,7 +65,9 @@ from rediacc_ci.core import allowlist
 VENDORED_REL = ".ci/breakpoint/lib/breakpoint-blocker.sh"
 MANIFEST_REL = ".ci/breakpoint/MANIFEST.sha256"
 MANIFEST_ROW = "lib/breakpoint-blocker.sh"
-CORPUS_REL = ".ci/scripts/test/gates/test-blocker-golden-corpus.sh"
+# The corpus lives in the gate test that drives it, as the `CORPUS_TEXT` literal. Its bash twin (`test-blocker-golden-corpus.sh`, a heredoc of the same rows) was retired in PLAN-retire-bash-oracles section 12 U1; the rows are byte-identical to that heredoc, and the twin's text stays recoverable from its frozen golden's `twin_blob`.
+CORPUS_REL = ".ci/rediacc_ci/tests/gates/test_gate_blocker_golden_corpus.py"
+CORPUS_NAME = "CORPUS_TEXT"
 
 # The tree under judgement, resolved at CALL time. Without this seam every refusal in `run()` is unreachable from a PROCESS -- the module's own controls could reach them by argument, and the gate test could only ever watch the gate succeed. A gate nobody has seen fail through its real entry point is the exact shape this estate keeps getting caught by.
 ROOT_ENV = "VENDORED_BLOCKER_ROOT"
@@ -160,17 +164,38 @@ class Case:
         return "Case(%r, sh=%r, bp=%r)" % (self.case_id, self.sh, self.bp)
 
 
-def parse_corpus(source: str) -> list[Case]:
-    """The `<id>|<reason>|<ts>|<sh>|<bp>` heredoc, as rows.
+def corpus_literal(source: str) -> str | None:
+    """The value of the module-level `CORPUS_TEXT = "..."` assignment in `source`, or None.
 
-    THE HEREDOC IS THE RECORD AND THE PARSE MUST NOT BE CLEVER. The corpus gate states in its own header that no field may contain a `|`, so a five-way split is exact; a row that does not split into five is returned to the caller as a refusal rather than skipped, because a silently dropped row is a case this gate would then claim to have derived.
+    READ WITH `ast`, NOT A REGEX. The literal is a Python string, so its VALUE is what the corpus gate compares against; a regex over the source text would read a `\\` escape or a line continuation differently from the interpreter, and the two gates would then disagree about the same row. A source that does not parse, or holds no such assignment, answers None and the caller refuses.
     """
-    # ANCHORED ON THE VARIABLE NAME AND TOLERANT OF WHAT FOLLOWS THE REDIRECT. The first draft matched `<<'EOF'\n` and found nothing, because the real line is `read -r -d '' CORPUS <<'EOF' || true` -- the `|| true` sits between the redirect and the newline. That parsed to zero rows, which the refusal caught and a laxer gate would have reported as a clean run over an empty corpus.
-    match = re.search(r"CORPUS\s*<<'EOF'[^\n]*\n(.*?)\nEOF\n", source, re.DOTALL)
-    if match is None:
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return None
+    for node in tree.body:
+        if (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id == CORPUS_NAME
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, str)
+        ):
+            return node.value.value
+    return None
+
+
+def parse_corpus(source: str) -> list[Case]:
+    """The `<id>|<reason>|<ts>|<sh>|<bp>` rows of the corpus gate's `CORPUS_TEXT`.
+
+    THE LITERAL IS THE RECORD AND THE PARSE MUST NOT BE CLEVER. The corpus gate asserts that no field contains a `|`, so a five-way split is exact; a row that does not split into five is returned to the caller as a refusal rather than skipped, because a silently dropped row is a case this gate would then claim to have derived.
+    """
+    text = corpus_literal(source)
+    if text is None:
         return []
     rows: list[Case] = []
-    for line in match.group(1).splitlines():
+    for line in text.splitlines():
         if not line.strip():
             continue
         fields = line.split("|")
@@ -473,7 +498,7 @@ def _fixture(tmp, *, vendored: str, corpus: str, manifest: str | None = None) ->
     """A minimal tree: the vendored copy, its manifest row, and a corpus."""
     root = pathlib.Path(tmp)
     (root / ".ci" / "breakpoint" / "lib").mkdir(parents=True)
-    (root / ".ci" / "scripts" / "test" / "gates").mkdir(parents=True)
+    (root / CORPUS_REL).parent.mkdir(parents=True)
     target = root / VENDORED_REL
     target.write_text(vendored, encoding="utf-8")
     (root / CORPUS_REL).write_text(corpus, encoding="utf-8")
@@ -500,7 +525,7 @@ def selftest() -> bool:
 
     check = Checker()
 
-    # The REAL files are the fixture. An invented vendored copy and an invented corpus would prove the parsers agree with each other and nothing about the artifacts in this tree; the two defects a synthetic fixture cannot see are a comment shape the extractor mis-reads and a heredoc that moved.
+    # The REAL files are the fixture. An invented vendored copy and an invented corpus would prove the parsers agree with each other and nothing about the artifacts in this tree; the two defects a synthetic fixture cannot see are a comment shape the extractor mis-reads and a corpus literal that moved or was renamed.
     real_vendored = _real(VENDORED_REL)
     real_corpus = _real(CORPUS_REL)
 
@@ -645,7 +670,7 @@ def selftest() -> bool:
         )
 
     with tempfile.TemporaryDirectory() as tmp:
-        root = _fixture(tmp, vendored=real_vendored, corpus="# no heredoc at all\n")
+        root = _fixture(tmp, vendored=real_vendored, corpus="# no CORPUS_TEXT at all\n")
         result, _ = _run_at(root)
         check(
             "a corpus that parses to zero rows is REFUSED",

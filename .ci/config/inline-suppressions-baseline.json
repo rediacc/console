@@ -669,9 +669,6 @@
   ".ci/scripts/docker/retag_image.py": {
    "noqa F401": 1
   },
-  ".ci/scripts/lib/blocker-validator.sh": {
-   "shellcheck-disable SC2178": 3
-  },
   ".ci/scripts/lib/toolchain.sh": {
    "shellcheck-disable SC1090": 1
   },

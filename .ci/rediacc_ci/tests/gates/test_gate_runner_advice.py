@@ -8,13 +8,9 @@ the gate SEAM-FREE against the real tree.
 Every fire case has its control: the same fixture, one thing changed, and the opposite verdict asserted. A gate that cannot be made to fire is not a gate, and a gate that fires on everything is not one either.
 
 --------------------------------------------------------------------------
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP
+WHY THIS MODULE NO LONGER DECLARES `REAL_TREE_TWIN` (section 12 U1, 2026-10-08)
 --------------------------------------------------------------------------
-Read from the lock, not from a guess about the fixtures. `gates.lock.json` declares `gate-test:runner-advice` with `reads: ["tree:repo"]`, and it is right to: `test_real_tree_seam_free` runs the gate with NO seams at all, so it reads the tracked `.ci/policy/runner-profile-baseline.json`, the real `.github/workflows` and the real allowlist; `test_awk_and_python_agree_on_the_verdict`
-runs the real `report.awk`; and `test_real_allowlist_blockers_are_substantive` runs the real `.ci/policy/.runner-advice-allowlist` through the real shared validator. A battery step rewriting any of those mid-sweep would be a divergence blamed on this port.
-
-`REAL_TREE_TWIN = True` buys the serialisation, and it is honoured ONLY because
-this module declares no `XDIST_GROUP` of its own -- see `real_tree_admission` in `test_twin_parity.py`, where an own-group declaration makes the opt-in vacuous.
+`gate-test:runner-advice` was retired from the manifest with its bash twin, so `gates.lock.json` carries no `tree:repo` read for it and `real_tree_admission` in `test_twin_parity.py` refuses a declaration the lock does not back. Three cases still read the tracked tree and write nothing: `test_real_tree_seam_free` (the real baseline, workflows and allowlist), `test_awk_and_python_agree_on_the_verdict` (the real `report.awk`) and `test_real_allowlist_blockers_are_substantive` (the real allowlist through `rediacc_ci.core.blocker_validator`). A pure reader needs no group.
 
 --------------------------------------------------------------------------
 WHY THE MODULE-LEVEL CASES STILL SHELL OUT TO python3
@@ -40,14 +36,12 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-runner-advice.sh"
 
-# test_real_tree_seam_free (no seams at all), test_awk_and_python_agree_on_the_verdict (the real report.awk) and test_real_allowlist_blockers_are_substantive (the real allowlist) all read the tracked tree. The lock says so too. See the docstring.
-REAL_TREE_TWIN = True
-
 GATE_REL = ".ci/scripts/quality/check_runner_advice.py"
 GATE = paths.from_root(*GATE_REL.split("/"))
 REPORT_AWK_REL = ".ci/scripts/ci/profiler/report.awk"
 REPORT_AWK = paths.from_root(*REPORT_AWK_REL.split("/"))
-VALIDATOR_REL = ".ci/scripts/lib/blocker-validator.sh"
+# The shared BLOCKER validator. The twin sourced `.ci/scripts/lib/blocker-validator.sh`; that library was deleted in PLAN-retire-bash-oracles section 12 U1 and this drives its port's `verify` verb, which is the twin's `parse_blockered_list` + `verify_all_blockers` pair (byte agreement frozen in `goldens/twins/lib.blocker-validator.jsonl`).
+VALIDATOR_REL = ".ci/rediacc_ci/core/blocker_validator.py"
 VALIDATOR = paths.from_root(*VALIDATOR_REL.split("/"))
 REAL_ALLOWLIST_REL = ".ci/policy/.runner-advice-allowlist"
 REAL_ALLOWLIST = paths.from_root(*REAL_ALLOWLIST_REL.split("/"))
@@ -1103,20 +1097,14 @@ def test_hosted_vm_record_fires_the_gate(gate):
         )
 
 
-VALIDATE_BLOCKERS_SH = """
-        source "$1"
-        declare -A entries=() reasons=()
-        parse_blockered_list "$2" entries reasons
-        verify_all_blockers "$2" reasons
-    """
-
-
 def run_validator(gate, listfile) -> harness.RunResult:
-    bash = harness.require_tool("bash", "install bash; the shared validator IS a bash library")
+    python3 = require_python(gate)
     if not VALIDATOR.is_file():
         gate.log_fail("the shared BLOCKER validator is missing: %s" % VALIDATOR_REL)
     return harness.run(
-        [bash, "-c", VALIDATE_BLOCKERS_SH, "_", os.fspath(VALIDATOR), os.fspath(listfile)]
+        [python3, "-m", "rediacc_ci.core.blocker_validator", "verify", os.fspath(listfile)],
+        cwd=paths.repo_root(),
+        env={"PYTHONPATH": os.fspath(paths.ci_dir()), "PYTHONSAFEPATH": "1"},
     )
 
 

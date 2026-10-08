@@ -5151,34 +5151,9 @@ export const GATES: readonly GateSpec[] = [
       step: 'Package key budget',
     },
   },
-  {
-    id: 'gate-test:blocker-golden-corpus',
-    run: '.ci/scripts/test/gates/test-blocker-golden-corpus.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-blocker-golden-corpus.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-gate-tests',
-      step: 'Quality-gate unit tests',
-    },
-  },
+  // RETIRED WITH ITS SUBJECT (section 12 U1): gate-test:blocker-golden-corpus ran .ci/scripts/test/gates/test-blocker-golden-corpus.sh, deleted with .ci/scripts/lib/blocker-validator.sh. Its pytest port `.ci/rediacc_ci/tests/gates/test_gate_blocker_golden_corpus.py` is collected by check:ci-pytest and answers the frozen golden `lib.blocker-validator.jsonl`.
   // RETIRED WITH ITS SUBJECT (section 12 U2): gate-test:media-r2 ran .ci/scripts/test/gates/test-media-r2.sh, deleted with the then-dead .ci/media/verify.sh. Its pytest port `.ci/rediacc_ci/tests/gates/test_gate_media_r2.py` is collected by check:ci-pytest and answers its frozen golden.
-  {
-    id: 'gate-test:runner-advice',
-    run: '.ci/scripts/test/gates/test-runner-advice.sh',
-    reads: ['tree:repo'],
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-runner-advice.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-gate-tests',
-      step: 'Quality-gate unit tests',
-    },
-  },
+  // RETIRED WITH ITS SUBJECT (section 12 U1): gate-test:runner-advice ran .ci/scripts/test/gates/test-runner-advice.sh, deleted with .ci/scripts/lib/emit-advisory.sh. Its pytest port `.ci/rediacc_ci/tests/gates/test_gate_runner_advice.py` is collected by check:ci-pytest.
   {
     // A sweep added retry_schema_exhaustion to the judge call sites one at a time and MISSED THE FIFTH, in wl_shapedup.py -- the commit that found it says so in its own subject. Five examples checked individually is not the claim that the set is uniform, and the fifth is what an example-based sweep drops. Enumerated from source, so a sixth site is covered the day it is written.
     id: 'check:ci-schema-call-sites',

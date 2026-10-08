@@ -6,7 +6,7 @@
 # tracked BLOCKER, so one reason covers the contiguous group beneath it; plain
 # `#` comment lines do NOT reset it, which is how the per-workflow subheadings
 # below stay inside their group). Reasons are parsed and quality-checked by the
-# shared validator in .ci/scripts/lib/blocker-validator.sh, exactly like every
+# shared validator rediacc_ci.core.allowlist, exactly like every
 # other allowlist in this repo -- see docs/agent-reference/suppressions.md.
 #
 # THIS LIST CAN ONLY SHRINK. The gate re-derives its own oracle every run and

@@ -2264,22 +2264,6 @@
       "peak_rss_mb": 58,
       "rank": 197
     },
-    "gate-test:blocker-golden-corpus": {
-      "cpu_s": 1.757,
-      "wall_s": 1.592,
-      "eff_cores": 1.1,
-      "capped": false,
-      "peak_rss_mb": 40,
-      "rank": 45
-    },
-    "gate-test:runner-advice": {
-      "cpu_s": 1.544,
-      "wall_s": 1.53,
-      "eff_cores": 1.01,
-      "capped": false,
-      "peak_rss_mb": 31,
-      "rank": 49
-    },
     "test:install-script": {
       "cpu_s": 0.103,
       "wall_s": 0.159,

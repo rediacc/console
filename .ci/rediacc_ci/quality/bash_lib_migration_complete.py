@@ -32,23 +32,14 @@ PLAN = "agent/plans/PLAN-retire-bash-oracles.md (task G2)"
 
 # Library (repo path) -> the modules that carry its twin, relative to rediacc_ci/core. Every .sh under LIB_DIRS must appear here.
 LIBS: dict[str, tuple[str, ...]] = {
-    # allowlist.py because `_blocker_py` is nothing but a forwarder to `python3 -m rediacc_ci.core.allowlist`.
-    ".ci/scripts/lib/blocker-validator.sh": ("blocker_validator.py", "allowlist.py"),
-    ".ci/scripts/lib/emit-advisory.sh": ("advisory.py",),
     ".ci/scripts/lib/toolchain.sh": ("toolchain.py",),
 }
 
-# Extra name prefixes a library puts on its functions, beyond its own file stem; the twin drops them.
-PREFIXES: dict[str, tuple[str, ...]] = {
-    ".ci/scripts/lib/blocker-validator.sh": ("blocker_",),
-}
+# Extra name prefixes a library puts on its functions, beyond its own file stem; the twin drops them. Empty since section 12 U1 deleted blocker-validator.sh, the only library with one.
+PREFIXES: dict[str, tuple[str, ...]] = {}
 
 # Library -> bash name -> "<module>:<def>", where the naming rule does not reach. The module must be one of the library's LIBS modules and must define the def; each target's docstring or comment names the bash function it ports, which is how every row below was checked (2026-10-01).
 ALIASES: dict[str, dict[str, str]] = {
-    ".ci/scripts/lib/blocker-validator.sh": {
-        "_blocker_emit": "blocker_validator.py:replay_frames",
-        "_blocker_py": "allowlist.py:main",
-    },
     ".ci/scripts/lib/toolchain.sh": {
         "toolchain_load": "toolchain.py:load_pins",
         # The `pairs` and `keys` verbs of toolchain.main print load_pins() in the two shapes these produce.

@@ -5455,39 +5455,6 @@
     }
   },
   {
-    "id": "gate-test:blocker-golden-corpus",
-    "run": ".ci/scripts/test/gates/test-blocker-golden-corpus.sh",
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-blocker-golden-corpus.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-gate-tests",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
-    "id": "gate-test:runner-advice",
-    "run": ".ci/scripts/test/gates/test-runner-advice.sh",
-    "reads": [
-      "tree:repo"
-    ],
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-runner-advice.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-gate-tests",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
     "id": "check:ci-schema-call-sites",
     "run": "npm run check:ci-schema-call-sites",
     "gate": true,

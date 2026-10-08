@@ -18,11 +18,15 @@ TWO ASSERTIONS ARE NARROWER THAN THEY LOOK, both written strict first and both h
     diagnostic, so the case pins those two shapes, not a blanket zero.
 Both keep the property that a NEW hardcoded reference is red.
 
-EVERY CASE COPIES `.ci/breakpoint/` and the subset cases read `.ci/scripts/lib/blocker-validator.sh`; both are reads, and no `XDIST_GROUP` is declared. `gates.lock.json` no longer carries a `gate-test:breakpoint-portability` entry, this file's bash twin is retired, and `real_tree_admission` in `test_twin_parity.py` only runs against modules that still declare a `BASH_TWIN` -- this one no longer does. A pure reader needs no group.
+EVERY CASE COPIES `.ci/breakpoint/` and the subset cases read `.ci/rediacc_ci/core/allowlist.py`; both are reads, and no `XDIST_GROUP` is declared. `gates.lock.json` no longer carries a `gate-test:breakpoint-portability` entry, this file's bash twin is retired, and `real_tree_admission` in `test_twin_parity.py` only runs against modules that still declare a `BASH_TWIN` -- this one no longer does. A pure reader needs no group.
 
 `check_subset` TAKES ITS EXTRACTOR AS AN ARGUMENT, which is the port's shape for the twin's function shadowing. The flaky-read control needs the SAME code path driven with a truncating reader; a control that re-implemented the comparison would prove only that it agrees with itself.
+
+THE CANONICAL SIDE IS `rediacc_ci.core.allowlist.LOW_EFFORT_PHRASES`, the ONE list. Until PLAN-retire-bash-oracles section 12 U1 it was the `LOW_EFFORT_BLOCKER_PATTERNS` mirror in `.ci/scripts/lib/blocker-validator.sh`, kept alive only for this check and held equal to the Python list by `test_blocker_implementations.py`; the mirror went with that library, and the check now reads the list the mirror copied. It is read
+from the FILE's text, with `ast`, rather than imported, so the planted-violation control below can hand `check_subset` a mutated copy exactly as it handed it a mutated bash file.
 """
 
+import ast
 import hashlib
 import os
 import pathlib
@@ -37,7 +41,7 @@ from rediacc_ci.well_known import GH_REPO
 
 ROOT = paths.repo_root()
 BP_SRC = ROOT / ".ci" / "breakpoint"
-CANONICAL_VALIDATOR = ROOT / ".ci" / "scripts" / "lib" / "blocker-validator.sh"
+CANONICAL_VALIDATOR = ROOT / ".ci" / "rediacc_ci" / "core" / "allowlist.py"
 
 # The scripts allowed to reach for console's tree, and the reason. Each calls a console-only service helper behind an `[[ -x ]]` existence test, so a repo without that tree takes an explicit branch instead of dying obscurely.
 #
@@ -57,7 +61,7 @@ COMMENT_RE = re.compile(r"^[ \t]*#")
 ASSIGNED_NAME_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)=")
 QUOTED_RE = re.compile(r'"([^"]*)"')
 
-CANON_ARRAY = "LOW_EFFORT_BLOCKER_PATTERNS"
+CANON_ARRAY = "LOW_EFFORT_PHRASES"
 VENDORED_ARRAY = "BREAKPOINT_LOW_EFFORT_BLOCKERS"
 
 # Floors on each read. Both are documented as INSUFFICIENT on their own by the twin, which is why the second independent read exists beside them.
@@ -112,10 +116,39 @@ def bp_hit_files(root: pathlib.Path, pattern: str) -> list[str]:
     return sorted({hit.rsplit(":", 1)[0] for hit in bp_code_hits(root, pattern)})
 
 
-def extract_array(path: pathlib.Path, name: str) -> list[str]:
-    """The quoted string elements of a `readonly <name>=(` array literal.
+def extract_python_tuple(text: str, name: str) -> list[str]:
+    """The string elements of a module-level `<name> = (...)` or `<name>: ... = (...)` literal in Python source, or [] when there is none.
 
-    Comment lines inside the array carry no quotes and are therefore skipped for free, exactly as the twin's `grep -oE '"[^"]*"'` skips them.
+    `ast`, so a comment line inside the tuple, a trailing comma or a wrapped line reads as the interpreter reads it. A source that does not parse answers [], which `check_subset` refuses as an unparsable canonical rather than an empty one.
+    """
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return []
+    for node in tree.body:
+        targets: list[ast.expr]
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            targets, value = [node.target], node.value
+        elif isinstance(node, ast.Assign):
+            targets, value = node.targets, node.value
+        else:
+            continue
+        if not any(isinstance(t, ast.Name) and t.id == name for t in targets):
+            continue
+        if not isinstance(value, (ast.Tuple, ast.List)):
+            return []
+        return [
+            elt.value
+            for elt in value.elts
+            if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
+        ]
+    return []
+
+
+def extract_array(path: pathlib.Path, name: str) -> list[str]:
+    """The string elements of the list `name` in `path`: a Python tuple literal for a `.py` file (the canonical), else a bash `readonly <name>=(` array (the vendored copy).
+
+    In the bash form, comment lines inside the array carry no quotes and are therefore skipped for free, exactly as the twin's `grep -oE '"[^"]*"'` skips them.
     """
     start = "readonly %s=(" % name
     out: list[str] = []
@@ -124,6 +157,8 @@ def extract_array(path: pathlib.Path, name: str) -> list[str]:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return out
+    if path.suffix == ".py":
+        return extract_python_tuple(text, name)
     for line in text.split("\n"):
         if line.startswith(start):
             inside = True
@@ -476,15 +511,15 @@ def test_subset_check_catches_a_real_violation(gate):
             )
             return
         source = CANONICAL_VALIDATOR.read_text(encoding="utf-8")
-        needle = '"skip" "skipping" "skipped" "ignore"'
+        needle = '\n    "skipped",\n'
         if needle not in source:
             gate.log_fail(
                 "the plant did not land: %s no longer spells the phrase list as %r, so this "
                 "control would run against an unchanged canonical copy"
                 % (paths.relative_to_root(CANONICAL_VALIDATOR), needle)
             )
-        mutant = tmp / "canonical-missing-skipped.sh"
-        mutant.write_text(source.replace(needle, '"skip" "skipping" "ignore"', 1), encoding="utf-8")
+        mutant = tmp / "canonical-missing-skipped.py"
+        mutant.write_text(source.replace(needle, "\n", 1), encoding="utf-8")
         gate.assert_eq(mutant.read_text(encoding="utf-8") == source, False, "the plant landed")
 
         rc, log = check_subset(mutant, bp)
