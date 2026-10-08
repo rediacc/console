@@ -955,7 +955,7 @@ def fold_ci(
                 todo.append((sk, run))
         if len(todo) > max_unseen:
             skipped_old = len(todo) - max_unseen
-            todo = todo[-max_unseen:]
+            todo = todo[len(todo) - max_unseen :] if max_unseen > 0 else []
         say(
             "gate_ledger fold-ci: %d unseen run(s) to read (%d older left for the next fold), %d worker(s), %.0f s deadline"
             % (len(todo), skipped_old, workers, deadline_s)
@@ -1083,6 +1083,14 @@ def status(d: pathlib.Path | None, out: Callable[[str], None] = log.info) -> int
     return 1 if not runs else 0
 
 
+def _non_negative_int(text: str) -> int:
+    value = int(text)
+    if value < 0:
+        msg = "must be >= 0, got %d" % value
+        raise argparse.ArgumentTypeError(msg)
+    return value
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="gate_ledger", description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -1100,7 +1108,7 @@ def main(argv: list[str] | None = None) -> int:
     fc = sub.add_parser("fold-ci", help="fold completed CI runs (budget_report reads)")
     fc.add_argument("--repo", default=None)
     fc.add_argument("--limit", type=int, default=CI_RUNS_PER_EVENT)
-    fc.add_argument("--max-unseen", type=int, default=CI_FOLD_MAX_UNSEEN)
+    fc.add_argument("--max-unseen", type=_non_negative_int, default=CI_FOLD_MAX_UNSEEN)
     fc.add_argument("--workers", type=int, default=CI_FOLD_WORKERS)
     fc.add_argument("--deadline", type=float, default=CI_FOLD_DEADLINE_S, help="seconds")
     fc.add_argument(

@@ -820,7 +820,9 @@ _TS_TOKEN_RE = re.compile(
 
 def strip_ts_comments(text: str) -> str:
     """`text` with every TypeScript comment removed and every string, template and regex literal left whole."""
-    return _TS_TOKEN_RE.sub(lambda m: m.group(1) or (m.group(2) + m.group(3) if m.group(3) else ""), text)
+    return _TS_TOKEN_RE.sub(
+        lambda m: m.group(1) or (m.group(2) + m.group(3) if m.group(3) else ""), text
+    )
 
 
 def archive_pin_declared(rel: str, text: str, pattern: str) -> bool:
@@ -1503,8 +1505,10 @@ jobs:
         ),
         (
             "16: a division is not a regex literal, so a block comment after it is still stripped",
-            lambda: strip_ts_comments("const a = x / b; /* c */ const d = 1 / 2; /* e */ z")
-            == "const a = x / b;  const d = 1 / 2;  z",
+            lambda: (
+                strip_ts_comments("const a = x / b; /* c */ const d = 1 / 2; /* e */ z")
+                == "const a = x / b;  const d = 1 / 2;  z"
+            ),
         ),
     ]
     for label, probe15 in checks15:

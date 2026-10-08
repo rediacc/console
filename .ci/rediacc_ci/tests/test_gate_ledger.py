@@ -13,6 +13,7 @@ import multiprocessing
 import os
 import pathlib
 import sys
+import threading
 import time
 from typing import Any
 
@@ -657,6 +658,72 @@ def test_fold_ci_deadline_names_the_unread_runs_as_unchecked(tmp_path: pathlib.P
     )
     assert rc == 1, out
     assert "3 UNCHECKED" in out[-1], out[-1]
+    assert any("UNCHECKED (deadline)" in m for m in prog), prog
+
+
+def test_fold_ci_max_unseen_zero_reads_nothing(tmp_path: pathlib.Path) -> None:
+    read: list[int] = []
+    out: list[str] = []
+
+    def fetch(_repo: str, run_id: int) -> list[dict[str, Any]]:
+        read.append(run_id)
+        return []
+
+    L.fold_ci(
+        tmp_path,
+        paths.repo_root(),
+        repo="o/r",
+        logs=False,
+        fetch_runs=lambda *_a, **_k: _fold_runs(3),
+        fetch_jobs=fetch,
+        out=out.append,
+        max_unseen=0,
+        workers=1,
+        progress=lambda _m: None,
+    )
+    assert read == [], "--max-unseen 0 must read no run"
+
+
+def test_max_unseen_refuses_a_negative_value() -> None:
+    with pytest.raises(SystemExit):
+        L.main(["fold-ci", "--max-unseen", "-1"])
+
+
+def test_fold_ci_deadline_hits_the_futures_timeout_branch(tmp_path: pathlib.Path) -> None:
+    gate = threading.Event()
+    main_calls = [0]
+    out: list[str] = []
+    prog: list[str] = []
+
+    def fetch(*_a: Any) -> list[dict[str, Any]]:
+        gate.wait(10)
+        return []
+
+    def clock() -> float:
+        # the pool worker always sees t=0 (inside the deadline); the main thread sees the deadline pass after its first read
+        if threading.current_thread() is not threading.main_thread():
+            return 0.0
+        main_calls[0] += 1
+        return 0.0 if main_calls[0] == 1 else 1000.0
+
+    try:
+        rc = L.fold_ci(
+            tmp_path,
+            paths.repo_root(),
+            repo="o/r",
+            logs=False,
+            fetch_runs=lambda *_a, **_k: _fold_runs(1),
+            fetch_jobs=fetch,
+            out=out.append,
+            deadline_s=50.0,
+            workers=1,
+            progress=prog.append,
+            clock=clock,
+        )
+    finally:
+        gate.set()
+    assert rc == 1, out
+    assert "UNCHECKED" in out[-1], out[-1]
     assert any("UNCHECKED (deadline)" in m for m in prog), prog
 
 

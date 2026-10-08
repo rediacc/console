@@ -113,9 +113,9 @@ PUSH_NOUN_AFTER = (
     r"guard|guards|rule|rules|hook|hooks|policy|path|step|steps|run|runs|receipt|receipts|"
     r"cadence|ledger|matrix)(?![a-z])"
 )
-# THE TIMING, in the same sentence as the action: a when/whether/how lead before it, a time word or an "or wait" alternative after it, a "(time|ready) to" or modal-passive lead ("should the batch be pushed"), or a sentence that is nothing but the action ("open the pr?").
+# THE TIMING, in the same sentence as the action (an AFTER hit needs a `?` in that sentence, so "we already pushed the first fix to origin." is a statement; `how` leads only as "how should/shall", so "how do i push to a fork?" is a mechanics question): a when/whether/how lead before it, a time word or an "or wait" alternative after it, a "(time|ready) to" or modal-passive lead ("should the batch be pushed"), or a sentence that is nothing but the action ("open the pr?").
 PUSH_TIMING_BEFORE = (
-    r"(^|[^a-z])(when|whether|how) (should|shall|do|does|will|would|can|must|to|is|are)"
+    r"(^|[^a-z])((when|whether) (should|shall|do|does|will|would|can|must|to|is|are)|how (should|shall))"
     r"([^a-z]|$)|(^|[^a-z])(time|ready|ok|okay|safe) to $|"
     r"(^|[^a-z])(should|shall|can|may|must) (the|this|that|these|it|they) [a-z_ ]{0,40}be $"
 )
@@ -429,7 +429,7 @@ def _push_timing(sentence, header_object):
             continue
         if (
             re.search(PUSH_TIMING_BEFORE, before)
-            or re.search(PUSH_TIMING_AFTER, after)
+            or ("?" in sentence and re.search(PUSH_TIMING_AFTER, after))
             or re.match(PUSH_BARE, sentence)
         ):
             return m.group(0)
