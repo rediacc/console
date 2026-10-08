@@ -2288,14 +2288,6 @@
       "peak_rss_mb": 31,
       "rank": 49
     },
-    "gate-test:toolchain": {
-      "cpu_s": 0.107,
-      "wall_s": 0.092,
-      "eff_cores": 1.16,
-      "capped": false,
-      "peak_rss_mb": 17,
-      "rank": 270
-    },
     "test:install-script": {
       "cpu_s": 0.103,
       "wall_s": 0.159,

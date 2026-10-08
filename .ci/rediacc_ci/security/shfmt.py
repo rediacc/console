@@ -96,7 +96,8 @@ SHFMT_OPTS = ("-i", "4", "-ci", "-d")
 #
 # The floor stays well under the count, to catch a broken enumeration rather than today's file count, and is restated on each retirement batch so a closing margin is visible early.
 # Re-measured 2026-10-08 at 87 after W7 (six R2-state twins), W11-A (local-common.sh, test-run-sh.sh) and W11-B (lib/common.sh).
-DEFAULT_MIN_FILES = "87"
+# Re-measured 2026-10-08 at 86 after section 12 U3 deleted test-toolchain.sh.
+DEFAULT_MIN_FILES = "86"
 
 # The three roots the floor counts, in the twin's argv order (order is irrelevant to a count and is kept so the two reads match on inspection).
 FLOOR_ROOTS = (".ci", ".claude", "scripts")

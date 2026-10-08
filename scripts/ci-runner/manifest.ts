@@ -5070,21 +5070,7 @@ export const GATES: readonly GateSpec[] = [
         '${SITE_URL}/regions.json returns 404, so silent drift would ship to every install',
     },
   },
-  // NOT RETIRED, AND THE ONE EXCEPTION IN THIS BATCH. test-toolchain.sh is invoked directly by `.github/workflows/ci.yml:562` (job `run-sh-tests`, step "gate toolchain resolver controls"), a BARE-CHECKOUT `ubuntu-slim` job that deliberately installs no toolchain -- no node, no Python, no `.ci/cache/toolchain/uv-tools/bin/pytest` -- so it can report in under a minute.
-  // `.ci/rediacc_ci/tests/gates/test_gate_toolchain.py` reaches the identical 15 controls (verified: same case set, same PASS count) and runs as ADDITIONAL coverage under check:ci-pytest, but it cannot REPLACE this entry: pytest is not on that runner's PATH without a setup step this job exists to avoid. The twin stays registered here permanently, not pending a later deletion.
-  {
-    id: 'gate-test:toolchain',
-    run: '.ci/scripts/test/gates/test-toolchain.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-toolchain.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-gate-tests',
-      step: 'Quality-gate unit tests',
-    },
-  },
+  // RETIRED WITH ITS SUBJECT (section 12 U3, operator D8 ASKED:2026-10-08T19:13Z): gate-test:toolchain ran .ci/scripts/test/gates/test-toolchain.sh, which is deleted. The pytest port `.ci/rediacc_ci/tests/gates/test_gate_toolchain.py` is collected by check:ci-pytest, and ci.yml's bare-checkout run-sh-tests job runs it through the stdlib-only `rediacc_ci.tests.gates.run_bare`, which now supplies `tmp_path`, so the no-pytest reason this entry once gave no longer holds.
   // RETIRED WITH ITS SUBJECT: gate-test:claude-hooks, the heaviest entry in this file at 537.4s, was a 40-line wrapper around `.claude/hooks/test-hooks.sh` and had no other work in it. The harness is gone, ported to pytest under `.claude/rediacc_hooks/tests/`, and its label multiset was compared run-against-run before the deletion rather than diff-against-diff. The ports are
   // collected by check:ci-pytest, whose `paths` already carry `.claude/hooks/**` and `.claude/rediacc_hooks/**`, so nothing lost selection when this entry left.
   //

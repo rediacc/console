@@ -294,7 +294,6 @@
     "battery:test-blocker-golden-corpus.sh": 3088.9,
     "battery:test-media-r2.sh": 953.5,
     "battery:test-runner-advice.sh": 2793.1,
-    "battery:test-toolchain.sh": 317.5,
     "tutorial:installation": 11400.0,
     "tutorial:ssh-keys": 2000.0,
     "tutorial:add-server": 50600.0,
