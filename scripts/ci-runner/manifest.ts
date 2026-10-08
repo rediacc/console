@@ -2200,6 +2200,8 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-review-resolutions',
     env: {
       GITHUB_BASE_REF: '${{ github.base_ref }}',
+      GITHUB_HEAD_REF: '${{ github.head_ref }}',
+      GITHUB_EVENT_NAME: '${{ github.event_name }}',
     },
     run: 'npm run check:ci-review-resolutions',
     gate: true,

@@ -1795,10 +1795,13 @@ const wiringRank = (f: string): number => {
  * `.ci/config/merged-prs.json` was reported as hardcoded in a gate test when
  * `scripts/lib/suppression-liveness.ts` reads it (review finding f8461c53.1). A test still names a
  * file that no program names.
+ *
+ * THE BASENAME RULE IS BY EXTENSION, NOT BARE. `packages/shared/src/config/test-credentials.ts` and `test-prefixes.ts` are programs that happen to start with `test-`, and a bare `test[_-]*` rule ranked them below every other namer. The test conventions this repository actually uses are pytest's `test_*.py` and the `test-*.{py,sh,js}` hook and script tests; a TypeScript test is `*.test.ts` or sits under a `tests/` directory.
  */
 const isTestPath = (f: string): boolean =>
   /(?:^|\/)(?:tests?|__tests__)\//.test(f) ||
-  /(?:^|\/)test[_-][^/]*$/.test(f) ||
+  /(?:^|\/)test_[^/]*\.py$/.test(f) ||
+  /(?:^|\/)test-[^/]*\.(?:py|sh|js)$/.test(f) ||
   /\.(?:test|spec)\.[^/]+$/.test(f);
 
 const codeRank = (f: string): number => (isTestPath(f) ? 1 : 0);
