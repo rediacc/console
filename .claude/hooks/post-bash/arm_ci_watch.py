@@ -5,6 +5,8 @@ WHY. The operator disabled the Stop hook on 2026-10-02, and with it went the onl
 
 ONE WATCHER PER HEAD. `<worklist>.ciwatch-<sha1(branch)[:8]>` records the head, pid, session and item of the watcher armed last. A second push of the same head (a retry, a no-op push, a submodule push from the same turn) finds that watcher alive and arms nothing. A new head arms a new watcher; the old one keeps running until its own head's verdict, which is still a true statement about that head.
 
+NO OPEN PR, NO WATCH. A push of a branch without an open PR starts no CI, so nothing is armed (an unanswerable lookup keeps the watch).
+
 ONLY A PUSH THAT MOVED THE LIVE BRANCH. The command must mention `git push` (the same test cancel_old_ci.py uses), and afterwards `origin/<branch>` must equal `HEAD`: git updates the remote-tracking ref only on a successful push, so a failed push, a push of a submodule, or a push of some other ref leaves them apart and nothing is armed. `main` and a detached HEAD are never watched.
 
 THE ITEM. The session's CI item is reused while it is open (its id is in the state file and a fresh `--lease` on it succeeds); otherwise `worklist.py --add` makes one, tagged with the session prefix. The lease names `worker:<pid>`: the watcher is a detached process, not a harness background task, so the roster reports it as unverifiable rather than dead, which is the documented reading of such a worker. Leases are capped at `wl_core.MAX_LEASE_MIN`.
@@ -143,13 +145,46 @@ def spawn_watch(root, sid, branch, item, log_path):
     return proc.pid
 
 
-def arm(root, sid, cli=worklist_cli, spawn=spawn_watch, alive=watcher_alive):
+def open_pr_exists(root, branch):
+    """False only when `gh pr list` ANSWERED that `branch` has no open PR. A plain push of a PR-less branch starts no CI (ci.yml runs on push to main and on pull_request), so a watcher would only wait out its timeout. A lookup that fails (no gh, network, auth) is unknown, not "no PR", and keeps the watch (fail open)."""
+    try:
+        proc = subprocess.run(
+            [
+                "gh",
+                "pr",
+                "list",
+                "--head",
+                branch,
+                "--state",
+                "open",
+                "--json",
+                "number",
+                "--jq",
+                "length",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            cwd=str(root),
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return True
+    if proc.returncode != 0:
+        return True
+    return proc.stdout.strip() != "0"
+
+
+def arm(root, sid, cli=worklist_cli, spawn=spawn_watch, alive=watcher_alive, has_pr=open_pr_exists):
     """Arm (or reuse) the watcher for the pushed head. Returns the line to print, or ""."""
     branch = _git(root, "symbolic-ref", "--short", "-q", "HEAD")
     if not branch or branch == "main" or not sid:
         return ""
     head = _git(root, "rev-parse", "HEAD")
     if not head or _git(root, "rev-parse", "origin/%s" % branch) != head:
+        return ""
+    # Turbo local-first (agent/plans/PLAN-turbo-local-first.md D5): a backup push with no open PR triggers no CI, so nothing is armed.
+    if not has_pr(root, branch):
         return ""
     me = sid[:8]
     worklist = C.worklist_for(root)
