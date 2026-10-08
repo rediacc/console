@@ -4100,7 +4100,7 @@
           "quote": "Pendant la panne AWS us-east-1 en mars dernier, nos 12 services de production ont basculé vers notre datacenter secondaire en 22 secondes. Nos clients n’ont rien remarqué. Nos concurrents étaient en panne pendant 6 heures. Nous avons décroché trois nouveaux contrats entreprise cette semaine-là grâce à leurs clients."
         },
         "techDiff": {
-          "description": "Rediacc ne copie que ce qui change. Prenez une infrastructure de 380 Go avec 2,4 Go de changements quotidiens. Rediacc transfère 2,4 Go, pas 380 Go. <span class=\"sp-emphasis\">98 % de réduction de bande passante</span>. Fonctionne en continu ou selon un planning.",
+          "description": "Rediacc ne copie que les données modifiées depuis la dernière fois. Prenons un environnement de 380 GB dont 2,4 GB changent aujourd'hui. Rediacc transfère 2,4 GB, pas 380 GB. Cela <span class=\"sp-emphasis\">réduit la bande passante de 98 %</span>. Il peut tourner en continu ou selon un planning.",
           "rediaccLabel": "Rediacc (btrfs send/receive)",
           "rows": [
             {
@@ -5335,7 +5335,7 @@
           "quote": "Nous avons mis en place 12 environnements de test identiques à la production en moins de 10 minutes, chacun avec une DB PostgreSQL complète de 241 Go. Avant, c'était des dumps manuels vers la staging. Il fallait 3 ingénieurs et 2 jours par environnement."
         },
         "techDiff": {
-          "description": "Rediacc utilise des snapshots btrfs copy-on-write au niveau du système de fichiers. Un snapshot d’un environnement de production de 241 Go se termine en moins d’une seconde et ne consomme aucun stockage supplémentaire initialement. À mesure que le clone diverge pendant le développement, seuls les blocs modifiés utilisent de l’espace supplémentaire. Dix clones d’une base de données de 241 Go peuvent utiliser moins de 12 Go de stockage additionnel.",
+          "description": "Voici l'astuce : Rediacc copie au niveau du <span class=\"sp-emphasis\">stockage</span>, pas au niveau des fichiers. Une copie de 241 GB se termine en moins d'une seconde et n'occupe presque aucun espace supplémentaire. Seules les parties modifiées prennent de la place plus tard. Dix copies de cet environnement de 241 GB tiennent dans moins de 12 GB.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -5663,7 +5663,7 @@
           "quote": "Nous avons lancé notre premier test de basculement automatisé un mardi matin. Il a détecté 3 lacunes critiques : un enregistrement DNS obsolète, un certificat SSL manquant en secondaire, et un retard de réplication de 4 minutes. Chacune aurait causé une vraie panne. Nous les avons corrigées en un après-midi. Maintenant nous testons chaque mois et dormons mieux."
         },
         "techDiff": {
-          "description": "Les tests DR classiques exigent un arrêt de production, une équipe complète et des semaines de planification. Rediacc crée un clone isolé de votre infrastructure <span class=\"sp-emphasis\">en quelques secondes</span>. Le test s'exécute contre le clone. La production continue.",
+          "description": "Les tests DR à l'ancienne exigent un arrêt de la production, une salle pleine d'ingénieurs et des semaines de préparation. Rediacc clone un environnement complet <span class=\"sp-emphasis\">en quelques secondes</span>. Le test s'exécute sur la copie. La production ne s'arrête jamais.",
           "rediaccLabel": "Rediacc Test DR",
           "rows": [
             {
@@ -5988,7 +5988,7 @@
           "quote": "Nous avons été frappés par un ransomware à 3h17 du matin un samedi. Les attaquants ont chiffré 14 serveurs, y compris notre répertoire de sauvegardes, ou du moins c'est ce qu'ils pensaient. Les snapshots immuables de Rediacc étaient intacts. À 3h24, les 14 serveurs étaient restaurés à partir de sauvegardes scellées. Perte totale de données : zéro octet. Rançon payée : zéro dollar."
         },
         "techDiff": {
-          "description": "Rediacc prend une copie en lecture seule, un snapshot gelé des fichiers à un instant T. Une fois scellée, la couche de stockage <span class=\"sp-emphasis\">elle-même bloque tout changement</span>. Ce n'est pas un verrou logiciel que les malwares peuvent contourner. Même avec le mot de passe de l'administrateur principal, un ransomware ne peut pas chiffrer, modifier ou supprimer une copie scellée.",
+          "description": "Rediacc réalise une copie en lecture seule, un instantané figé des fichiers à un moment précis. Une fois cette copie scellée, <span class=\"sp-emphasis\">la couche de stockage elle-même bloque toute modification</span>. Ce n'est pas un verrou logiciel que les malwares peuvent forcer. Même avec le mot de passe de l'administrateur suprême, un ransomware ne peut ni chiffrer, ni modifier, ni supprimer une copie scellée.",
           "rediaccLabel": "Rediacc (btrfs immuable)",
           "rows": [
             {
@@ -6590,7 +6590,7 @@
           "quote": "Notre serveur de base de données principal est tombé à 2h14 du matin un samedi, contrôleur de disque corrompu. Avant, c'aurait été un week-end complet de provisionnement, restauration et reconfiguration de 11 services. J'ai lancé une commande depuis mon téléphone. À 2h18, tout était rétabli, MariaDB, l'API, Nginx, Redis, tout. Mêmes configs, même état, mêmes données. L'ingénieur d'astreinte est retourné dormir."
         },
         "techDiff": {
-          "description": "L'ancienne façon : provisionner un serveur. Installer les packages. Restaurer fichier par fichier. Reconfigurer les services. Puis croiser les doigts. Rediacc fonctionne différemment. Il copie l'installation complète d'un coup. Disques, configs, conteneurs, réseau, <span class=\"sp-emphasis\">tout en une seule opération</span>.",
+          "description": "L'ancienne méthode : monter un nouveau serveur, installer les paquets, restaurer les fichiers un par un, reconfigurer les services. Puis espérer que rien n'a été oublié. Rediacc fonctionne autrement. Il copie tout l'environnement d'un seul coup. Disques, configurations, conteneurs, réseau, <span class=\"sp-emphasis\">tout en une seule opération</span>.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -8080,7 +8080,7 @@
           "quote": "Nous sommes passés d'un plan de récupération de 3 jours à moins de 4 minutes. Lors d'un vrai incident de ransomware à 2h du matin, notre ingénieur d'astreinte a lancé une commande et les 8 conteneurs de production étaient rétablis à 2h04. Notre ancien fournisseur estimait 72 heures, nous l'avons fait en 240 secondes."
         },
         "techDiff": {
-          "description": "L'ancienne méthode reconstruit tout de zéro : réinstaller le système, restaurer les fichiers, reconfigurer les services. Rediacc fonctionne différemment. Une copie propre <span class=\"sp-emphasis\">est déjà sur le disque</span>. Il suffit de l'activer. Pas de réinstallation, pas de reconfiguration, pas de transfert de données lent.",
+          "description": "L'ancienne récupération reconstruit tout de zéro : réinstaller le système, restaurer les fichiers, reconfigurer les services. Rediacc fonctionne autrement. Une copie propre <span class=\"sp-emphasis\">est déjà sur le disque</span>. Il n'y a qu'à l'activer. Pas de réinstallation, pas de configuration, pas de transfert de données lent.",
           "traditionalLabel": "Reconstruction traditionnelle",
           "rediaccLabel": "Rediacc (copies btrfs instantanées)",
           "rows": [
@@ -8402,7 +8402,7 @@
           "quote": "Notre auditeur SOC2 a demandé 3 ans de preuves de rétention de sauvegardes. Avant, cela signifiait 2 semaines de recherche dans les journaux et de croisement avec des tableurs. Avec Rediacc, j’ai exécuté rdc retention report --framework soc2 et remis un rapport complet en 4 minutes. L’auditeur a dit que c’était la preuve la plus propre qu’il ait vue."
         },
         "techDiff": {
-          "description": "Gérer la conformité au tableur, c'est tracker les dates de sauvegarde à la main, lancer des scripts de nettoyage, et espérer qu'on n'a rien oublié avant l'audit. Rediacc conserve, vérifie et nettoie les sauvegardes <span class=\"sp-emphasis\">automatiquement</span>. Zéro étape humaine.",
+          "description": "La conformité par tableur, c'est suivre les dates de sauvegarde à la main, lancer des scripts de nettoyage et espérer que rien n'a glissé avant l'arrivée de l'auditeur. Rediacc conserve, vérifie et nettoie les sauvegardes <span class=\"sp-emphasis\">tout seul</span>. Aucune étape manuelle.",
           "rediaccLabel": "Rediacc Rétention",
           "rows": [
             {
@@ -8738,7 +8738,7 @@
           "quote": "Le trimestre dernier, nous avions un correctif OpenSSL critique. Normalement, on planifie une fenêtre de maintenance et on croise les doigts. Là, on a cloné les 22 serveurs de prod, appliqué le correctif, lancé notre suite de tests complète et confirmé zéro régression, tout ça en 18 minutes. On a patché la production le jour même en toute confiance."
         },
         "techDiff": {
-          "description": "Rediacc clone votre infrastructure de production en <span class=\"sp-emphasis\">quelques secondes</span> : OS, conteneurs, bases de données, tout. Ce clone tourne sur un réseau isolé avec son propre Docker. Les correctifs appliqués au clone ne touchent jamais la production. Ça casse ? Supprimez-le. Ça marche ? Appliquez le même correctif en prod.",
+          "description": "Rediacc copie un environnement en production complet <span class=\"sp-emphasis\">en quelques secondes</span>. Cela comprend le système d'exploitation, les applications, les bases de données et tous les paramètres. La copie tourne sur son propre réseau isolé, avec son propre Docker. Les correctifs appliqués à la copie ne touchent jamais les vrais serveurs. Si la copie casse, supprimez-la. Si elle fonctionne, appliquez le même correctif pour de bon.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -9301,7 +9301,7 @@
           "quote": "Un CVE critique est tombé un vendredi après-midi. Le samedi matin, on avait cloné la production, appliqué le correctif, vérifié sur les 4 services affectés et tout était en ligne, zéro downtime. Notre ancien processus aurait pris 3 semaines et une réunion de gestion du changement."
         },
         "techDiff": {
-          "description": "La correction classique demande un environnement de staging qui correspond à la production, mais le staging dérive en quelques jours. Rediacc crée une copie de votre infrastructure réelle <span class=\"sp-emphasis\">en quelques secondes</span>. Appliquez le correctif sur la copie. Testez-le contre les vraies données et les vrais paramètres. Si ça marche, déployez en production. Si ça échoue, supprimez la copie. La production reste intacte.",
+          "description": "Le patching à l'ancienne exige une copie de staging identique à la production. Mais le staging dérive en quelques jours. Rediacc crée une copie instantanée de votre véritable environnement de production <span class=\"sp-emphasis\">en quelques secondes</span>. Appliquez le correctif sur la copie. Testez-le avec de vraies données et de vrais paramètres. Si ça marche, déployez en production. Si ça échoue, jetez la copie. La production reste intacte.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {

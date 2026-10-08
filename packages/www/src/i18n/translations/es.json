@@ -4096,7 +4096,7 @@
           "quote": "Durante la caída de AWS us-east-1 el pasado marzo, nuestros 12 servicios de producción hicieron failover a nuestro datacenter secundario en 22 segundos. Nuestros clientes no lo notaron. Nuestros competidores estuvieron caídos 6 horas. Conseguimos tres nuevos contratos enterprise esa semana de sus clientes."
         },
         "techDiff": {
-          "description": "Rediacc solo copia lo que cambió. Un setup de 380 GB con 2,4 GB de cambios diarios: Rediacc mueve 2,4 GB, no 380 GB. Eso <span class=\"sp-emphasis\">reduce el ancho de banda un 98%</span>. Se ejecuta continuamente o por calendario.",
+          "description": "Rediacc solo copia los datos que cambiaron desde la última vez. Imagina un entorno de 380 GB en el que hoy cambian 2,4 GB. Rediacc mueve 2,4 GB, no 380 GB. Eso <span class=\"sp-emphasis\">recorta el ancho de banda un 98 %</span>. Puede ejecutarse de forma continua o programada.",
           "rediaccLabel": "Rediacc (btrfs send/receive)",
           "rows": [
             {
@@ -5331,7 +5331,7 @@
           "quote": "Desplegamos 12 entornos de prueba idénticos a producción en menos de 10 minutos, cada uno con una base de datos PostgreSQL de 241 GB completa. Nuestro proceso anterior era volcados manuales a staging. Costaba 3 ingenieros y 2 días por entorno."
         },
         "techDiff": {
-          "description": "Rediacc utiliza instantáneas copy-on-write de btrfs a nivel de sistema de archivos. Una instantánea de un entorno de producción de 241 GB se completa en menos de un segundo y no consume almacenamiento adicional inicialmente. A medida que el clon diverge durante el desarrollo, solo los bloques modificados usan nuevo espacio. Diez clones de una base de datos de 241 GB pueden usar menos de 12 GB de almacenamiento adicional.",
+          "description": "El truco: Rediacc copia en la <span class=\"sp-emphasis\">capa de almacenamiento</span>, no a nivel de archivos. Una copia de 241 GB termina en menos de un segundo y casi no ocupa espacio extra. Solo las partes que cambian ocupan espacio nuevo más adelante. Diez copias de ese entorno de 241 GB caben en menos de 12 GB.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -5659,7 +5659,7 @@
           "quote": "Ejecutamos nuestra primera prueba de failover automatizada un martes por la mañana. Encontró 3 brechas críticas — un registro DNS obsoleto, un certificado SSL faltante en el secundario y un retraso de replicación de base de datos de 4 minutos. Las tres habrían causado una caída real. Las corregimos en una tarde. Ahora probamos mensualmente y dormimos mejor."
         },
         "techDiff": {
-          "description": "Las pruebas de DR anticuadas requieren parar producción, un equipo de ingenieros y semanas de planificación. Rediacc clona tu infraestructura completa <span class=\"sp-emphasis\">en segundos</span>. La prueba se ejecuta en el clon. Producción nunca se detiene.",
+          "description": "Las pruebas de DR a la antigua exigen parar producción, una sala llena de ingenieros y semanas de planificación. Rediacc clona un entorno completo <span class=\"sp-emphasis\">en segundos</span>. La prueba se ejecuta en la copia. Producción nunca se detiene.",
           "rediaccLabel": "Pruebas de DR Rediacc",
           "rows": [
             {
@@ -5984,7 +5984,7 @@
           "quote": "El ransomware nos atacó a las 3:17am en sábado. Los atacantes cifraron 14 servidores, incluyendo nuestro repositorio de backups, o eso creían. Las instantáneas inmutables de Rediacc nunca fueron tocadas. A las 3:24am teníamos todos los 14 servidores restaurados desde backups sellados. Pérdida total de datos: cero bytes. Rescate pagado: cero dólares."
         },
         "techDiff": {
-          "description": "Rediacc crea una copia de solo lectura, un snapshot congelado de los archivos en un momento dado. Una vez sellada esa copia, <span class=\"sp-emphasis\">la propia capa de almacenamiento impide cualquier cambio</span>. No es un bloqueo de software que el malware pueda eludir. Ni siquiera con la contraseña de administrador principal puede el ransomware cifrar, cambiar o eliminar una copia sellada.",
+          "description": "Rediacc crea una copia de solo lectura, una instantánea congelada de los archivos en un momento dado. Una vez sellada esa copia, <span class=\"sp-emphasis\">la propia capa de almacenamiento bloquea cualquier cambio</span>. No es un bloqueo de software que el malware pueda forzar. Aunque tenga la contraseña del administrador supremo, el ransomware no puede cifrar, modificar ni borrar una copia sellada.",
           "rediaccLabel": "Rediacc (btrfs inmutable)",
           "rows": [
             {
@@ -6586,7 +6586,7 @@
           "quote": "Nuestro servidor de base de datos principal falló a las 2:14 AM un sábado, controlador de disco corrupto. Con la configuración anterior, habría sido todo un fin de semana aprovisionando, restaurando y reconfigurando 11 servicios. Así que ejecuté un comando desde mi teléfono. A las 2:18 AM, todo estaba de vuelta, MariaDB, la API, Nginx, Redis, todo. Las mismas configs, el mismo estado, los mismos datos. El ingeniero de guardia volvió a dormir."
         },
         "techDiff": {
-          "description": "La forma antigua: montas un servidor nuevo, instalas paquetes, restauras archivos uno por uno, reconfiguras servicios y rezas por no haberte olvidado de nada. Rediacc funciona diferente. Copia la configuración completa en una sola operación. Unidades, configuraciones, contenedores, red, <span class=\"sp-emphasis\">todo en un solo movimiento</span>.",
+          "description": "La forma antigua: montar un servidor nuevo, instalar paquetes, restaurar archivos uno por uno, reconfigurar servicios. Y luego rezar para que no se haya olvidado nada. Rediacc funciona distinto. Copia todo el entorno de una vez. Discos, configuraciones, contenedores, red, <span class=\"sp-emphasis\">todo en un solo movimiento</span>.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -7020,19 +7020,19 @@
             {
               "number": "27%",
               "ref": 1,
-              "source": "Reporte State of the Cloud 2024 de Flexera",
+              "source": "Flexera 2024 State of the Cloud Report",
               "text": "del gasto en IaaS/PaaS en la nube se desperdicia en las organizaciones"
             },
             {
               "number": "17%",
               "ref": 2,
-              "source": "Reporte State of the Cloud 2025 de Flexera",
+              "source": "Flexera 2025 State of the Cloud Report",
               "text": "exceso promedio del presupuesto de nube por las organizaciones"
             },
             {
               "number": "$0.09/GB",
               "ref": 3,
-              "source": "Precios AWS/Azure/GCP 2024",
+              "source": "AWS/Azure/GCP Pricing 2024",
               "text": "tarifas de egreso que hacen que irse sea costoso por diseño"
             }
           ],
@@ -8076,7 +8076,7 @@
           "quote": "Pasamos de un plan de recuperación de 3 días a menos de 4 minutos. En un incidente real de ransomware a las 2 de la mañana, nuestro ingeniero de guardia ejecutó un comando y los 8 contenedores de producción estaban de vuelta en línea a las 2:04. La estimación del proveedor anterior era 72 horas; lo hicimos en 240 segundos."
         },
         "techDiff": {
-          "description": "La recuperación tradicional reconstruye desde cero: instalar el SO, restaurar archivos, reconfigurar servicios. Rediacc funciona diferente. Una copia limpia <span class=\"sp-emphasis\">ya está en el disco</span>. Solo la activamos. Sin reinstalación, sin configuración, sin transferencias lentas.",
+          "description": "La recuperación tradicional lo reconstruye todo desde cero: reinstalar el sistema, restaurar archivos, volver a configurar servicios. Rediacc funciona distinto. Una copia limpia <span class=\"sp-emphasis\">ya está en el disco</span>. Solo hay que activarla. Sin reinstalar, sin configurar, sin transferencias lentas de datos.",
           "traditionalLabel": "Reconstrucción tradicional",
           "rediaccLabel": "Rediacc (copias btrfs instantáneas)",
           "rows": [
@@ -8398,7 +8398,7 @@
           "quote": "Nuestro auditor de SOC2 pidió pruebas de retención de copias de 3 años. Anteriormente, eso significaba 2 semanas de buscar en logs y cruzar referencias con hojas de cálculo. Con Rediacc, ejecuté rdc retention report --framework soc2 y entregué un informe completo en 4 minutos. El auditor dijo que era la evidencia más limpia que había visto."
         },
         "techDiff": {
-          "description": "El cumplimiento con hojas de cálculo significa rastrear fechas de copias a mano, ejecutar scripts de limpieza y esperar que nada se haya omitido antes de que llegue el auditor. Rediacc conserva, verifica y elimina copias <span class=\"sp-emphasis\">automáticamente</span>. Sin pasos manuales.",
+          "description": "El cumplimiento con hojas de cálculo significa llevar a mano las fechas de las copias, ejecutar scripts de limpieza y esperar que nada se haya escapado antes de que llegue el auditor. Rediacc conserva, comprueba y limpia las copias <span class=\"sp-emphasis\">por sí solo</span>. Sin pasos manuales.",
           "rediaccLabel": "Retención Rediacc",
           "rows": [
             {
@@ -8734,7 +8734,7 @@
           "quote": "Tuvimos un parche crítico de OpenSSL el trimestre pasado. Normalmente programaríamos una ventana de mantenimiento y rezaríamos. En cambio, clonamos los 22 servidores de producción, aplicamos el parche, ejecutamos la suite completa de pruebas y confirmamos cero regresiones. Todo en 18 minutos. Parcheamos producción el mismo día con total confianza."
         },
         "techDiff": {
-          "description": "Rediacc copia un entorno en vivo completo <span class=\"sp-emphasis\">en segundos</span>: sistema operativo, apps, bases de datos, configuración. El clon corre en su propia red aislada con su propio Docker. Los parches en el clon jamás tocan los servidores reales. Si falla, lo eliminas. Si funciona, aplicas el mismo parche en producción.",
+          "description": "Rediacc copia un entorno en vivo completo <span class=\"sp-emphasis\">en segundos</span>. Eso incluye el sistema operativo, las aplicaciones, las bases de datos y todos los ajustes. La copia corre en su propia red aislada con su propio Docker. Los parches en la copia nunca tocan los servidores reales. Si la copia se rompe, bórrala. Si funciona, aplica el mismo parche de verdad.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -9297,7 +9297,7 @@
           "quote": "Un CVE crítico apareció un viernes por la tarde. Para el sábado por la mañana habíamos clonado producción, aplicado el parche, verificado contra los 4 servicios afectados y desplegado sin tiempo de inactividad. Nuestro proceso anterior habría tardado 3 semanas y una reunión de gestión de cambios."
         },
         "techDiff": {
-          "description": "El parcheo tradicional necesita un entorno de staging que coincida con producción, pero staging se desalinea en días. Rediacc crea una copia instantánea de tu infraestructura de producción real <span class=\"sp-emphasis\">en segundos</span>. Aplica el parche en el clon. Pruébalo contra datos y configuraciones reales. Si funciona, despliega a producción. Si falla, desecha el clon. Producción permanece intacta.",
+          "description": "El parcheo tradicional necesita una copia de staging que coincida con producción. Pero staging se desvía en pocos días. Rediacc crea una copia instantánea de tu entorno real de producción <span class=\"sp-emphasis\">en segundos</span>. Aplica el parche en la copia. Pruébalo con datos y configuraciones reales. Si funciona, despliégalo en producción. Si falla, descarta la copia. Producción queda intacta.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {

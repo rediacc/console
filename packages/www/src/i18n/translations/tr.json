@@ -2725,7 +2725,7 @@
             "Neleri durduruyor (gerçek örneklerle)",
             "Geçerli kurallar: cezalar, süreler, tam metin",
             "Maliyet hesabı: yayımlanmış verilerle",
-            "⟦0⟧ vs rakipler: teknik bazında (fiyat değil)",
+            "Rediacc vs rakipler: teknik bazında (fiyat değil)",
             "Kuruluş ve sınırlamalar",
             "Denetçinin isteyeceği kanıtlar"
           ]
@@ -3967,13 +3967,13 @@
             {
               "number": "$300K+",
               "ref": 1,
-              "source": "ITIC 2024 Kesinti Saatlik Maliyeti Anketi",
+              "source": "ITIC 2024 Hourly Cost of Downtime Survey",
               "text": "orta-büyük ölçekli işletmelerin %90'ı için saat başı kesinti maliyeti"
             },
             {
               "number": "18%",
               "ref": 2,
-              "source": "Parametrix 2024 Bulut Kesinti Risk Raporu",
+              "source": "Parametrix 2024 Cloud Outage Risk Report",
               "text": "2024'te kritik bulut kesinti olaylarındaki artış"
             },
             {
@@ -4089,7 +4089,7 @@
           "quote": "Geçen Mart ayındaki AWS us-east-1 kesintisinde 12 üretim hizmetimiz 22 saniyede ikincil veri merkezimize devredildi. Müşterilerimiz fark etmedi. Rakiplerimiz 6 saat kapalı kaldı. O hafta onların müşterilerinden üç yeni kurumsal sözleşme aldık."
         },
         "techDiff": {
-          "description": "Rediacc sadece değişen verileri kopyalar. 380 GB'lık bir ortamda günde 2,4 GB değişirse, 380 GB değil, sadece 2,4 GB taşır. Böylece <span class=\"sp-emphasis\">bant genişliğini %98 azaltır</span>. İstediğiniz zaman veya zamanlı olarak çalışır.",
+          "description": "Rediacc yalnızca son seferden bu yana değişen verileri kopyalar. Bugün 2,4 GB'ı değişen 380 GB'lık bir ortam düşünün. Rediacc 380 GB'ı değil, 2,4 GB'ı taşır. Bu, <span class=\"sp-emphasis\">bant genişliğini %98 azaltır</span>. Sürekli ya da zamanlanmış çalışabilir.",
           "rediaccLabel": "Rediacc (btrfs send/receive)",
           "rows": [
             {
@@ -5324,7 +5324,7 @@
           "quote": "10 dakikadan kısa sürede 12 adet üretim ortamıyla birebir test ortamı oluşturduk — her biri tam 241 GB PostgreSQL veritabanıyla. Önceki sürecimiz staging'e manuel veritabanı dökümleriydi. Her ortam için 3 mühendis ve 2 gün gerekiyordu."
         },
         "techDiff": {
-          "description": "Rediacc, dosya sistemi seviyesinde btrfs copy-on-write anlık görüntüleri kullanır. 241 GB'lık bir üretim ortamının anlık görüntüsü saniyenin altında tamamlanır ve başlangıçta sıfır ek depolama tüketir. Klon geliştirme sürecinde farklılaştıkça, yalnızca değişen bloklar yeni alan kullanır. 241 GB'lık bir veritabanının on klonu, 12 GB'tan az ek depolama kullanabilir.",
+          "description": "İşin püf noktası şu: Rediacc dosya düzeyinde değil, <span class=\"sp-emphasis\">depolama katmanında</span> kopyalar. 241 GB'lık bir kopya bir saniyeden kısa sürede biter ve neredeyse hiç ek yer kullanmaz. Sonradan yalnızca değişen kısımlar yeni yer kaplar. O 241 GB'lık ortamın on kopyası 12 GB'ın altına sığar.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -5652,7 +5652,7 @@
           "quote": "İlk otomatik failover testimizi Salı sabahı çalıştırdık. Üç kritik açık buldu: eski bir DNS kaydı, ikincil sunucudaki eksik SSL sertifikası ve 4 dakikalık veritabanı replikasyon gecikmesi. Üçü de gerçek kesintiye neden olurdu. Öğleden sonra hepsini düzelttik. Artık aylık test yapıyoruz ve daha rahat uyuyoruz."
         },
         "techDiff": {
-          "description": "Eski usul felaket kurtarma testleri üretimde kesinti, odayı dolduran mühendisler ve haftalarca planlama gerektirir. Rediacc tüm sistemi <span class=\"sp-emphasis\">saniyeler içinde</span> klonlar. Test kopya üzerinde çalışır. Üretim hiç durmaz.",
+          "description": "Eski usul felaket kurtarma testleri üretimde kesinti, odayı dolduran mühendisler ve haftalarca planlama gerektirir. Rediacc ortamın tamamını <span class=\"sp-emphasis\">saniyeler içinde</span> klonlar. Test kopya üzerinde çalışır. Üretim hiç durmaz.",
           "rediaccLabel": "Rediacc Felaket Kurtarma Testi",
           "rows": [
             {
@@ -5977,7 +5977,7 @@
           "quote": "Cumartesi sabahı saat 3:17'de fidye yazılımı saldırısı aldık. Saldırganlar yedekleme deposu dahil 14 sunucuyu şifreledi, ya da sandılar. Rediacc'ın değişmez anlık görüntüleri dokunulmamıştı. 3:24'te tüm 14 sunucu mühürlü yedeklemelerden geri yüklendi. Veri kaybı: sıfır bayt. Ödenen fidye: sıfır dolar."
         },
         "techDiff": {
-          "description": "Rediacc salt okunur bir kopya alır: dosyaların tek bir andaki dondurulmuş görüntüsü. Bu kopya mühürlendikten sonra <span class=\"sp-emphasis\">depolama katmanının kendisi her değişikliği engeller</span>. Bu, kötü amaçlı yazılımın atlayabileceği bir yazılım kilidi değildir. En yetkili yönetici parolasıyla bile fidye yazılımı mühürlü bir kopyayı şifreleyemez, değiştiremez veya silemez.",
+          "description": "Rediacc salt okunur bir kopya alır; dosyaların belirli bir andaki dondurulmuş görüntüsüdür bu. Kopya mühürlendikten sonra <span class=\"sp-emphasis\">değişikliği depolama katmanının kendisi engeller</span>. Bu, kötü amaçlı yazılımın kırabileceği bir yazılım kilidi değildir. En üst yönetici parolası elde olsa bile fidye yazılımı mühürlü bir kopyayı şifreleyemez, değiştiremez ya da silemez.",
           "rediaccLabel": "Rediacc (btrfs değiştirilemez)",
           "rows": [
             {
@@ -6579,7 +6579,7 @@
           "quote": "Ana veritabanı sunucumuz bir Cumartesi sabahı saat 2:14'te, bozulan bir disk denetleyicisi yüzünden çöktü. Eski kurulumumuzla bu, 11 hizmetin hazırlanması, geri yüklenmesi ve yeniden yapılandırılmasıyla geçen koca bir hafta sonu demekti. Bunun yerine telefonumdan tek komut çalıştırdım. 2:18'de her şey geri gelmişti: MariaDB, API, Nginx, Redis, hepsi. Aynı yapılandırmalar, aynı durum, aynı veriler. Nöbetçi mühendis uyumaya geri döndü."
         },
         "techDiff": {
-          "description": "Eski yöntem: yeni bir sunucu kur. Paketleri yükle. Dosyaları tek tek geri yükle. Hizmetleri yeniden yapılandır. Sonra hiçbir şeyin atlanmadığını um. Rediacc farklı çalışır. Tüm sistemi tek seferde kopyalar. Birimler, yapılandırmalar, konteynerler, ağ, <span class=\"sp-emphasis\">hepsi tek hamlede</span>.",
+          "description": "Eski yöntem: yeni bir sunucu kurmak, paketleri yüklemek, dosyaları tek tek geri yüklemek, servisleri yeniden yapılandırmak. Sonra da hiçbir şeyin atlanmadığını ummak. Rediacc farklı çalışır. Tüm ortamı tek seferde kopyalar. Sürücüler, yapılandırmalar, konteynerler, ağ, <span class=\"sp-emphasis\">hepsi tek hamlede</span>.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -8069,7 +8069,7 @@
           "quote": "3 günlük kurtarma planından 4 dakikanın altına indik. Saat 2'de gerçek bir fidye yazılımı saldırısında nöbetçi mühendisimiz tek komut çalıştırdı ve 2:04'te 8 üretim konteyneri yeniden online'daydı. Önceki sağlayıcımız 72 saati tahmin etmişti, biz 240 saniyede bitirdik."
         },
         "techDiff": {
-          "description": "Geleneksel kurtarma sıfırdan başlar: sistemi yeniden kur, dosyaları geri yükle, servisleri yeniden ayarla. Rediacc farklı çalışır. Temiz bir kopya <span class=\"sp-emphasis\">zaten diskte var</span>. Biz sadece bunu aktif ediyoruz. Yeniden kurulum yok, ayarlama yok, yavaş veri transferi yok.",
+          "description": "Eski kurtarma her şeyi sıfırdan kurar: sistemi yeniden kur, dosyaları geri yükle, servisleri yeniden ayarla. Rediacc farklı çalışır. Temiz bir kopya <span class=\"sp-emphasis\">zaten diskte durur</span>. Biz sadece açarız. Yeniden kurulum yok, ayar yapmak yok, yavaş veri aktarımı yok.",
           "traditionalLabel": "Geleneksel yeniden kurulum",
           "rediaccLabel": "Rediacc (anlık btrfs kopyaları)",
           "rows": [
@@ -8391,7 +8391,7 @@
           "quote": "SOC2 denetçimiz 3 yıllık yedekleme saklama kanıtı istedi. Daha önce bu, 2 hafta boyunca günlükleri araştırmak ve elektronik tablolarla çapraz referans vermek anlamına geliyordu. Rediacc ile rdc retention report --framework soc2 çalıştırdım ve 4 dakikada eksiksiz bir rapor teslim ettim. Denetçi gördüğü en temiz kanıt olduğunu söyledi."
         },
         "techDiff": {
-          "description": "Elektronik tablo uyumluluğu, yedekleme tarihlerini el ile takip etmek, temizlik betikleri çalıştırmak ve denetçi gelmeden hiçbir şeyin atlanmadığını ummak demektir. Rediacc bunları <span class=\"sp-emphasis\">otomatik olarak</span> yapıyor: yedeklemeleri saklar, doğrular ve temizler. İnsan müdahalesi sıfır.",
+          "description": "Elektronik tablolarla uyumluluk; yedek tarihlerini elle takip etmek, temizlik betikleri çalıştırmak ve denetçi gelmeden önce hiçbir şeyin kaçmadığını ummak demektir. Rediacc yedekleri <span class=\"sp-emphasis\">kendi kendine</span> saklar, doğrular ve temizler. İnsan eli gerekmez.",
           "rediaccLabel": "Rediacc Saklama",
           "rows": [
             {
@@ -8727,7 +8727,7 @@
           "quote": "Geçen çeyrekte kritik OpenSSL yamağı vardı. Normalde bakım penceresine girer, dua ederdik. Bunun yerine 22 üretim sunucusunu klonladık, yamayı yükledik, tam test paketini çalıştırdık ve sıfır regresyon doğruladık, hepsi 18 dakikada. Aynı gün tam güvenle üretim ortamını yamaladık."
         },
         "techDiff": {
-          "description": "Rediacc tüm üretim ortamınızı, işletim sistemi, konteynerler, veritabanları, yapılandırma, <span class=\"sp-emphasis\">saniyeler içinde</span> klonlar. Klon, kendi Docker daemon'ıyla izole bir ağda çalışır. Klona uygulanan yamalar üretim ortamına asla dokunmaz. Klon bozulursa, silin. Çalışırsa, aynı yamayı üretim ortamına uygulayın.",
+          "description": "Rediacc, canlı bir ortamın tamamını <span class=\"sp-emphasis\">saniyeler içinde</span> kopyalar. İşletim sistemi, uygulamalar, veritabanları ve tüm ayarlar buna dahildir. Kopya, kendi yalıtılmış ağında ve kendi Docker'ıyla çalışır. Kopyadaki yamalar gerçek sunuculara asla dokunmaz. Kopya bozulursa silin. Çalışırsa aynı yamayı gerçekten uygulayın.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -9290,7 +9290,7 @@
           "quote": "Bir Cuma öğleden sonra kritik bir CVE yayınlandı. Cumartesi sabahına kadar üretim ortamını klonladık, yamayı uyguladık, etkilenen 4 hizmetin tamamında doğruladık ve dağıttık — sıfır kesinti. Önceki sürecimiz 3 hafta ve bir değişiklik yönetimi toplantısı alırdı."
         },
         "techDiff": {
-          "description": "Eski usul yamalama, üretimle eşleşen bir staging kopyası gerektirir. Ama staging günler içinde üretimden uzaklaşır. Rediacc, gerçek üretim ortamının anlık bir kopyasını <span class=\"sp-emphasis\">saniyeler içinde</span> oluşturur. Yamayı kopya üzerinde uygulayın. Gerçek veri ve gerçek ayarlarla test edin. İşe yararsa üretime dağıtın. Başarısız olursa kopyayı atın. Üretime hiç dokunulmaz.",
+          "description": "Eski usul yamalama, üretimle aynı olan bir hazırlık (staging) kopyası gerektirir. Ama staging birkaç gün içinde üretimden uzaklaşır. Rediacc, gerçek üretim ortamının anlık bir kopyasını <span class=\"sp-emphasis\">saniyeler içinde</span> oluşturur. Yamayı kopyaya uygulayın. Gerçek veri ve gerçek ayarlarla test edin. Çalışırsa üretime dağıtın. Başarısız olursa kopyayı atın. Üretime dokunulmaz.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
