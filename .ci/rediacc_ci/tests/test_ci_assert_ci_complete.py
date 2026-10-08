@@ -1,4 +1,6 @@
-"""`rediacc_ci.ci.assert_ci_complete` against its bash twin.
+"""`rediacc_ci.ci.assert_ci_complete` against the frozen output of its retired bash twin.
+
+The twin's answers are read from `tests/goldens/twins/ci.assert-ci-complete.jsonl`; the module is the only thing that runs.
 
 The twin reads ONLY `RESULT_*` env vars plus `POINTER_BUMP_ONLY`, so both sides are driven directly under `diff.env_for(...)`, which REPLACES the environment rather than extending it. That replacement is what makes the `<unset>` cases meaningful: a `RESULT_TESTS` leaking in from the developer's shell would turn the most important assertions in this file green for the wrong reason.
 
@@ -29,7 +31,7 @@ def run_both(
 ) -> tuple[tuple[int, str, str], tuple[int, str, str]]:
     old_env = diff.env_for(**env_extra)
     new_env = diff.env_for(**env_extra, PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1")
-    old = diff.bash_streams("bash %s" % TWIN, env=old_env, tty=tty, timeout=30)
+    old = diff.twin_streams(TWIN, "bash %s" % TWIN, env=old_env, tty=tty, timeout=30)
     new = diff.bash_streams("python3 -m %s" % MODULE, env=new_env, tty=tty, timeout=30)
     return old, new
 
@@ -47,26 +49,6 @@ def test_all_success_passes() -> None:
     old = assert_identical(all_green(), expect_exit=0)
     assert old[2] == "✓ All CI jobs passed successfully!\n"
     assert old[1] == ""
-
-
-def test_the_tier_arrays_still_match_the_twins() -> None:
-    """The two arrays are a COPY, so drift is a real risk. Re-read the twin.
-
-    Parsed out of the bash rather than hard-coded a second time here: a test that restated the lists would agree with the port and with itself while both drifted from the file CI actually runs.
-    """
-    with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as fh:
-        text = fh.read()
-    hard_line = next(ln for ln in text.splitlines() if ln.startswith("HARD_REQUIRED=("))
-    twin_hard = tuple(hard_line.split("(", 1)[1].rstrip(")").split())
-    soft_block = text.split("SOFT_REQUIRED=(", 1)[1].split(")", 1)[0]
-    twin_soft = tuple(
-        word
-        for line in soft_block.splitlines()
-        for word in line.split()
-        if not line.lstrip().startswith("#")
-    )
-    assert twin_hard == port.HARD_REQUIRED
-    assert twin_soft == port.SOFT_REQUIRED
 
 
 def test_every_unset_variable_is_a_failure_not_a_pass() -> None:
@@ -183,7 +165,7 @@ def test_pointer_bump_is_the_exact_string_true() -> None:
 def test_arguments_are_ignored_by_both() -> None:
     old_env = diff.env_for(**all_green())
     new_env = diff.env_for(**all_green(), PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1")
-    old = diff.bash_streams("bash %s --help extra" % TWIN, env=old_env, timeout=30)
+    old = diff.twin_streams(TWIN, "bash %s --help extra" % TWIN, env=old_env, timeout=30)
     new = diff.bash_streams("python3 -m %s --help extra" % MODULE, env=new_env, timeout=30)
     assert old == new
     assert old[0] == 0

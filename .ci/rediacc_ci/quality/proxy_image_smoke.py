@@ -18,7 +18,7 @@ and asserts: the process is still running after boot; `/v1/health` answers 200; 
 
 THE CONTROL THAT MAKES "STAYS UP" MEAN SOMETHING. The same image is also started WITHOUT REDIACC_TOKEN, and the gate requires that one to exit non-zero naming the variable. A "still running" check that could not tell those two apart would be vacuous.
 
-THE RENET IT SHIPS. The Dockerfile copies `workers/proxy/renet/renet-linux-amd64`, which deploy-proxy.sh builds. When none is staged the gate stages one for the run and removes it afterwards: `private/bin/renet-linux-amd64` when present, else a `go build` of `private/renet/cmd/renet` (no embedded assets, fine for a boot test). No staged binary and no way to make one is exit 2: no verdict.
+THE RENET IT SHIPS. The Dockerfile copies `workers/proxy/renet/renet-linux-amd64`, which `rediacc_ci.deploy.deploy_proxy` builds. When none is staged the gate stages one for the run and removes it afterwards: `private/bin/renet-linux-amd64` when present, else a `go build` of `private/renet/cmd/renet` (no embedded assets, fine for a boot test). No staged binary and no way to make one is exit 2: no verdict.
 
 SLOW. A full image build (npm ci of the workspace, three package builds, the bundle) takes minutes, so the gate is `slow: true` in the manifest and no CI step runs it yet.
 

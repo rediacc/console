@@ -1,4 +1,4 @@
-"""Differential: `rediacc_ci.version.detect_bump_type` against its twin `.ci/scripts/version/detect-bump-type.sh`.
+"""Differential: `rediacc_ci.version.detect_bump_type` against the frozen output of its retired twin `.ci/scripts/version/detect-bump-type.sh` (`tests/goldens/twins/version.detect-bump-type.jsonl`).
 
 REAL GIT REPOSITORIES, NOT A STUBBED `git`. Every case builds an actual repository in `tmp_path` -- commits, tags, a branch that is not an ancestor of HEAD -- and both subjects run against it with the same cwd. Stubbing `git` would mean the two sides agreeing about a fake, and the interesting inputs here
 are exactly the ones a fake gets wrong: `--sort=-v:refname` is git's own version
@@ -31,13 +31,15 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.core import ghx
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.version import detect_bump_type as port
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "version" / "detect-bump-type.sh"
+TWIN_REL = ".ci/scripts/version/detect-bump-type.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "version" / "detect_bump_type.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -120,6 +122,7 @@ class World:
 
     def __init__(self, tmp_path: pathlib.Path) -> None:
         self.tmp = tmp_path
+        self.commits = 0
         self.repo = tmp_path / "repo"
         self.fixtures = tmp_path / "fixtures"
         self.repo.mkdir(parents=True, exist_ok=True)
@@ -131,17 +134,26 @@ class World:
         self.git("config", "commit.gpgsign", "false")
 
     def git(self, *args: str) -> str:
+        # A fixed, per-commit date makes every sha reproducible, which is what lets the twin's answers (they name shas) be frozen as goldens.
+        stamp = "2026-01-01T00:%02d:00+0000" % self.commits
         proc = subprocess.run(
             ["git", "-C", str(self.repo), *args],
             capture_output=True,
             text=True,
             check=False,
-            env={**os.environ, "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null"},
+            env={
+                **os.environ,
+                "GIT_CONFIG_GLOBAL": "/dev/null",
+                "GIT_CONFIG_SYSTEM": "/dev/null",
+                "GIT_AUTHOR_DATE": stamp,
+                "GIT_COMMITTER_DATE": stamp,
+            },
         )
         assert proc.returncode == 0, f"git {args} failed: {proc.stderr}"
         return proc.stdout.strip()
 
     def commit(self, subject: str) -> str:
+        self.commits += 1
         with open(self.repo / "file.txt", "a", encoding="utf-8") as fh:
             fh.write(subject + "\n")
         self.git("add", "file.txt")
@@ -170,7 +182,25 @@ class World:
             assert shutil.which("gh", path=str(stub)) is None, "gh leaked into the stub PATH"
         return str(stub)
 
-    def run(
+    def run(self, subject: pathlib.Path, args: list[str], **kwargs):
+        """The port runs live; the twin's answer comes from its frozen golden."""
+        if subject != TWIN:
+            return self._run_live(subject, args, **kwargs)
+        cwd = kwargs.get("cwd")
+        parts = [
+            "args=%r" % (args,),
+            "env=%r" % (sorted((k, v) for k, v in kwargs.items() if k not in ("cwd", "with_gh")),),
+            "with_gh=%r" % (kwargs.get("with_gh", True),),
+            "cwd=%s" % (cwd or self.repo),
+        ]
+        return diff.twin_result(
+            TWIN_REL,
+            parts,
+            lambda: self._run_live(subject, args, **kwargs),
+            work=(str(self.tmp),),
+        )
+
+    def _run_live(
         self,
         subject: pathlib.Path,
         args: list[str],

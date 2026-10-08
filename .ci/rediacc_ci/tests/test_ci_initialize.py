@@ -31,6 +31,7 @@ import shutil
 import stat
 from typing import TYPE_CHECKING
 
+from rediacc_ci.ci import generate_tag
 from rediacc_ci.ci import initialize as port
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import GH_ORIGIN, GH_REPO, IMAGE_REGISTRY
@@ -95,7 +96,8 @@ case "${1:-}" in
             exit 1
         fi
         if [[ -n "${FAKE_GIT_SUBMODULE_CREATES:-}" ]]; then
-            mkdir -p private/renet/.ci && touch private/renet/.ci/ci.sh
+            mkdir -p private/renet/.ci && touch private/renet/.ci/ci.sh private/renet/.git \
+                private/renet/Dockerfile private/renet/Dockerfile.native private/renet/build.sh
         fi
         exit 0
         ;;
@@ -120,6 +122,30 @@ case "${1:-}" in
         # `log --format=%H -n <cap> <tag>..HEAD`: exactly one commit in range.
         echo "${FAKE_HEAD_SHA:-1111111111111111111111111111111111111111}"
         ;;
+    -C)
+        # `generate_tag --submodule`: `git -C <dir> rev-parse --short HEAD`.
+        if [[ "${3:-}" == rev-parse && "${4:-}" == --short ]]; then
+            if [[ -n "${FAKE_GENERATE_TAG_EXIT:-}" ]]; then
+                echo "fake git: refusing" >&2
+                exit "${FAKE_GENERATE_TAG_EXIT}"
+            fi
+            echo "renet-aaaa"
+            exit 0
+        fi
+        echo "fake git: unhandled -C ${2:-} ${3:-}" >&2
+        exit 3
+        ;;
+    rev-parse)
+        # `generate_tag --closure`: `git rev-parse HEAD:<path>`. Every other rev-parse stays unhandled on purpose: the pointer-bump detector asks them.
+        case "${2:-}" in
+            HEAD:*)
+                echo "oid-${2#HEAD:}"
+                exit 0
+                ;;
+        esac
+        echo "fake git: unhandled subcommand rev-parse" >&2
+        exit 3
+        ;;
     *)
         echo "fake git: unhandled subcommand ${1:-}" >&2
         exit 3
@@ -129,9 +155,10 @@ esac
 
 FAKE_DOCKER = """#!/bin/bash
 printf 'docker %s\\n' "$*" >>"$FAKE_LOG"
-case " ${FAKE_DOCKER_HAVE:-} " in
-    *" ${3:-} "*) exit 0 ;;
-esac
+# FAKE_DOCKER_HAVE lists the manifests that exist, as globs: the closure tags are computed, so a test names them by prefix.
+for pattern in ${FAKE_DOCKER_HAVE:-}; do
+    [[ "${3:-}" == ${pattern} ]] && exit 0
+done
 exit 1
 """
 
@@ -166,28 +193,12 @@ if [[ -n "$rows" ]]; then
 fi
 """
 
-# One template per sibling. Each records its argv, then behaves as its env says.
-FAKE_SIBLINGS = {
-    ".ci/scripts/ci/generate-tag.sh": """#!/bin/bash
-printf 'generate-tag.sh %s\\n' "$*" >>"$FAKE_LOG"
-if [[ -n "${FAKE_GENERATE_TAG_EXIT:-}" ]]; then
-    echo "fake generate-tag: refusing" >&2
-    exit "${FAKE_GENERATE_TAG_EXIT}"
-fi
-case "$*" in
-    *"--submodule private/renet"*) echo "renet-aaaa" ;;
-    *"--closure web"*) echo "web-bbbb" ;;
-    *"--closure rdc"*) echo "rdc-cccc" ;;
-esac
-""",
-    ".ci/scripts/version/resolve-version.sh": """#!/bin/bash
-printf 'resolve-version.sh %s\\n' "$*" >>"$FAKE_LOG"
-case "$*" in
-    *--current*) echo "1.2.3" ;;
-    *) echo "1.2.4" ;;
-esac
-""",
-}
+# The closure tags hold an ISO-week bucket, so their 12 hex digits change every Monday, and the renet tag's digits hash the fixture's files. They are masked on both sides; everything around them is compared byte for byte.
+_CLOSURE_TAG = re.compile(r"\b(web|rdc|renet-aaaa)-[0-9a-f]{12}\b")
+
+
+def mask_closure_tags(text: str) -> str:
+    return _CLOSURE_TAG.sub(r"\1-<hash>", text)
 
 
 def strip_prog(text: str) -> str:
@@ -228,7 +239,6 @@ def fixture_root(
     *,
     sentinel: bool = True,
     docker: bool = False,
-    missing_siblings: tuple[str, ...] = (),
 ) -> pathlib.Path:
     """One side's disposable repository-shaped tree."""
     root = assert_scratch(tmp_path / ("%s-root" % side))
@@ -262,10 +272,14 @@ def fixture_root(
     ):
         detector.symlink_to("%s/%s" % (diff.repo(), BASH_DETECTOR))
 
-    for relative, body in FAKE_SIBLINGS.items():
-        if relative in missing_siblings:
-            continue
-        executable(root / relative, body)
+    # The inputs `generate_tag` hashes into the renet tag (the module runs for real; only git is faked).
+    for relative in (
+        ".github/workflows/ci-build-renet.yml",
+        ".github/workflows/ci-build-docker.yml",
+        ".ci/rediacc_ci/build/build_renet.py",
+    ):
+        (root / relative).parent.mkdir(parents=True, exist_ok=True)
+        (root / relative).write_text("# %s\n" % relative, encoding="utf-8")
 
     executable(root / "bin/git", FAKE_GIT)
     executable(root / "bin/gh", FAKE_GH)
@@ -275,6 +289,9 @@ def fixture_root(
     if sentinel:
         (root / "private/renet/.ci").mkdir(parents=True, exist_ok=True)
         (root / "private/renet/.ci/ci.sh").write_text("", encoding="utf-8")
+        (root / "private/renet/.git").write_text("gitdir: elsewhere\n", encoding="utf-8")
+        for name in ("Dockerfile", "Dockerfile.native", "build.sh"):
+            (root / "private/renet" / name).write_text("seed %s\n" % name, encoding="utf-8")
     return root
 
 
@@ -322,7 +339,7 @@ def run_both(
         )
 
         def scrub(text: str, root: pathlib.Path = root) -> str:
-            return text.replace(str(root), "<root>")
+            return mask_closure_tags(text.replace(str(root), "<root>"))
 
         results[side] = (result[0], scrub(result[1]), scrub(result[2]))
         files["%s_calls" % side] = scrub(call_log.read_text(encoding="utf-8"))
@@ -367,7 +384,7 @@ def _old_side(tmp_path, tools, args, env_extra, output, tty, timeout, fixture_kw
             )
 
             def scrub(text: str) -> str:
-                return text.replace(str(root), "<root>")
+                return mask_closure_tags(text.replace(str(root), "<root>"))
 
             cell["calls"] = scrub(call_log.read_text(encoding="utf-8"))
             for name in ("output", "true"):
@@ -397,6 +414,17 @@ def _old_side(tmp_path, tools, args, env_extra, output, tty, timeout, fixture_kw
     for name in ("output", "true"):
         frozen["old_%s" % name] = None if got[name] == diff.ABSENT else got[name]
     return (rc, out, err), frozen
+
+
+SUBMODULE_CALL = "git -C private/renet rev-parse --short HEAD\n"
+
+
+def closure_calls(closure: str) -> str:
+    """The git calls one `--closure` tag makes: every input resolved at HEAD, then the tag list."""
+    return (
+        "".join("git rev-parse HEAD:%s\n" % path for path in generate_tag.CLOSURE_PATHS[closure])
+        + "git tag -l v* --sort=-v:refname\n"
+    )
 
 
 def calls_of(files: dict[str, str | None]) -> str:
@@ -619,16 +647,16 @@ def test_the_whole_push_to_main_run_agrees_line_for_line(tmp_path: pathlib.Path)
         "pointer_bump_only=false",
         "pointer_bump_only=false",
         "baseline_sha=",
-        "renet_tag=renet-aaaa",
-        "web_tag=web-bbbb",
-        "rdc_tag=rdc-cccc",
-        "image_tag=renet-aaaa",
+        "renet_tag=renet-aaaa-<hash>",
+        "web_tag=web-<hash>",
+        "rdc_tag=rdc-<hash>",
+        "image_tag=renet-aaaa-<hash>",
         "bump_type=patch",
         "next_version=1.2.4",
-        "renet_tag=renet-aaaa-1.2.4",
-        "web_tag=web-bbbb-1.2.4",
-        "rdc_tag=rdc-cccc-1.2.4",
-        "image_tag=renet-aaaa-1.2.4",
+        "renet_tag=renet-aaaa-<hash>-1.2.4",
+        "web_tag=web-<hash>-1.2.4",
+        "rdc_tag=rdc-<hash>-1.2.4",
+        "image_tag=renet-aaaa-<hash>-1.2.4",
         "renet_exists=false",
         "web_exists=false",
         "rdc_exists=false",
@@ -641,27 +669,25 @@ def test_the_whole_push_to_main_run_agrees_line_for_line(tmp_path: pathlib.Path)
         )
         + GH_ORIGIN
         + "/\n"
-        + "generate-tag.sh --submodule private/renet\n"
-        + "generate-tag.sh --closure web --extra renet-aaaa\n"
-        + "generate-tag.sh --closure rdc --extra renet-aaaa\n"
+        + SUBMODULE_CALL
+        + closure_calls("web")
+        + closure_calls("rdc")
         + BUMP_CALLS
         + DECIDE_CALL
         + "git fetch --tags --force --no-recurse-submodules "
         + ("https://x-access-token:s3cr3t-app-token@" + GH_HOST + "/")
         + GH_REPO
         + ".git\n"
-        + "git tag -l v* --sort=-v:refname\n"
-        + "resolve-version.sh --bump-type patch\n"
-        + "resolve-version.sh --current\n"
+        + "git tag -l v* --sort=-v:refname\n" * 3
         + "docker manifest inspect "
         + IMAGE_REGISTRY
-        + "/renet:renet-aaaa-1.2.4\n"
+        + "/renet:renet-aaaa-<hash>-1.2.4\n"
         + "docker manifest inspect "
         + IMAGE_REGISTRY
-        + "/server:web-bbbb-1.2.4\n"
+        + "/server:web-<hash>-1.2.4\n"
         + "docker manifest inspect "
         + IMAGE_REGISTRY
-        + "/rdc:rdc-cccc-1.2.4\n"
+        + "/rdc:rdc-<hash>-1.2.4\n"
     )
     assert_identical(old, new, files)
 
@@ -673,7 +699,7 @@ def test_defect_b_the_versioned_tag_line_joins_with_a_bare_comma(
     old, new, files = run_both(tmp_path, env_extra=PUSH_MAIN, docker=True)
     assert (
         "✓ Push event: versioned tags - "
-        "RENET: renet-aaaa-1.2.4,WEB: web-bbbb-1.2.4,RDC: rdc-cccc-1.2.4\n"
+        "RENET: renet-aaaa-<hash>-1.2.4,WEB: web-<hash>-1.2.4,RDC: rdc-<hash>-1.2.4\n"
     ) in old[2], "the twin's DEFECT B changed; re-read the module docstring"
     assert ", WEB" not in old[2]
     assert_identical(old, new, files)
@@ -694,7 +720,7 @@ def test_a_pull_request_run_skips_the_release_decision_and_the_versioning(
     assert "Deciding whether this commit earns a release" not in old[2]
     assert "Push event: versioned tags" not in old[2]
     assert old[1].endswith("renet_exists=false\nweb_exists=false\nrdc_exists=false\n")
-    assert "image_tag=renet-aaaa\n" in old[1]
+    assert "image_tag=renet-aaaa-<hash>\n" in old[1]
     assert "-1.2.4" not in old[1], "only a push event versions the tags"
     assert_identical(old, new, files)
 
@@ -707,13 +733,13 @@ def test_an_existing_image_reports_true(tmp_path: pathlib.Path) -> None:
             **PAT_ENV,
             "GITHUB_EVENT_NAME": "pull_request",
             "FAKE_GIT_TAGS": "v1.2.3",
-            "FAKE_DOCKER_HAVE": (IMAGE_REGISTRY + "/server:web-bbbb"),
+            "FAKE_DOCKER_HAVE": (IMAGE_REGISTRY + "/server:web-*"),
         },
         docker=True,
     )
     assert "web_exists=true" in old[1]
     assert "renet_exists=false" in old[1]
-    assert "✓ web:web-bbbb exists=true" in old[2]
+    assert "✓ web:web-<hash> exists=true" in old[2]
     assert_identical(old, new, files)
 
 
@@ -728,7 +754,7 @@ def test_defect_d_a_missing_docker_reports_the_images_as_absent(
     )
     assert old[0] == 0
     assert "renet_exists=false\nweb_exists=false\nrdc_exists=false\n" in old[1]
-    assert "docker" not in files["old_calls"]
+    assert "docker manifest" not in files["old_calls"]
     assert "docker" not in old[2], "nothing says the probe could not be made"
     assert_identical(old, new, files)
 
@@ -840,8 +866,9 @@ def test_a_failing_tag_generator_takes_its_exit_status_with_it(
     )
     assert old[0] == 4
     assert "renet_tag=" not in old[1]
-    assert old[2].endswith("fake generate-tag: refusing\n")
-    assert files["old_calls"].count("generate-tag.sh") == 1, "it must stop at the first one"
+    assert old[2].endswith("fake git: refusing\n")
+    assert files["old_calls"].count("rev-parse --short") == 1, "it must stop at the first one"
+    assert "HEAD:" not in files["old_calls"], "no closure tag may follow a refused renet tag"
     assert_identical(old, new, files)
 
 
@@ -1045,7 +1072,9 @@ def test_three_failed_fetches_refuse_to_compute_a_version(tmp_path: pathlib.Path
     assert "s3cr3t-app-token" not in old[2], "the app token must never reach the log"
     assert ("@" + GH_HOST) in old[2], "the diagnostic must survive"
     assert "***" in old[2], "redacted, not suppressed"
-    assert "git tag" not in files["old_calls"], "no version may be computed from a stale list"
+    # The two closure tags read the tag list themselves (step 5); no further read may follow the refused fetch.
+    assert calls_of(files).count("git tag") == 2, "no version may be computed from a stale list"
+    assert calls_of(files).endswith(".git\n"), "the refused fetch is the last call"
     assert_identical(old, new, files)
 
 
@@ -1089,7 +1118,7 @@ def test_the_version_sort_is_gits_and_only_the_first_line_is_taken(
         },
     )
     assert "✓ Latest tag: v1.10.0" in old[2]
-    assert "✓ Next version: 1.2.4 (from tag: 1.2.3)" in old[2]
+    assert "✓ Next version: 1.10.1 (from tag: 1.10.0)" in old[2]
     assert_identical(old, new, files)
 
 
@@ -1120,26 +1149,24 @@ def test_the_pinned_line_numbers_still_point_at_the_twins_lines() -> None:
         port.WRITE_OUTPUT_LINE,
         port.GIT_CONFIG_LINE,
         port.GIT_SUBMODULE_LINE,
-        port.GENERATE_TAG_RENET_LINE,
-        port.GENERATE_TAG_WEB_LINE,
-        port.GENERATE_TAG_RDC_LINE,
         TWIN_DETECT_BUMP_TYPE_LINE,
         port.FETCH_URL_LINE,
         port.GIT_FETCH_LINE,
         port.GIT_TAG_LINE,
-        port.RESOLVE_VERSION_NEXT_LINE,
-        port.RESOLVE_VERSION_CURRENT_LINE,
     )
+    # The golden's key names the twelve lines that were read when it was frozen. The five sibling lines (the `generate-tag.sh` and `resolve-version.sh` substitutions) died with the exec they described, and the key keeps their numbers so the frozen answer still matches.
+    frozen_lines = (43, 104, 111, 141, 159, 160, 175, 219, 234, 280, 288, 290)
+    assert set(pinned) <= set(frozen_lines), "a pinned constant moved off the frozen lines"
 
     def read_twin():
         with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as handle:
             lines = handle.read().split("\n")
-        return 0, "".join("%d\t%s\n" % (n, lines[n - 1]) for n in sorted(set(pinned))), ""
+        return 0, "".join("%d\t%s\n" % (n, lines[n - 1]) for n in frozen_lines), ""
 
     # The twin is retired (PLAN-retire-bash-oracles B3): the lines at the pinned numbers are frozen with it, so a pin that moves names a line the golden never held.
     frozen = dict(
         line.split("\t", 1)
-        for line in diff.twin_call(TWIN, ["pinned lines %r" % (sorted(set(pinned)),)], read_twin)[
+        for line in diff.twin_call(TWIN, ["pinned lines %r" % (list(frozen_lines),)], read_twin)[
             1
         ].splitlines()
     )
@@ -1150,45 +1177,21 @@ def test_the_pinned_line_numbers_still_point_at_the_twins_lines() -> None:
     assert 'echo "${key}=${value}" >>"$OUTPUT_FILE"' in at(port.WRITE_OUTPUT_LINE)
     assert "git config --global url." in at(port.GIT_CONFIG_LINE)
     assert "git submodule update --init --recursive private/" in at(port.GIT_SUBMODULE_LINE)
-    assert "--submodule private/renet" in at(port.GENERATE_TAG_RENET_LINE)
-    assert "--closure web" in at(port.GENERATE_TAG_WEB_LINE)
-    assert "--closure rdc" in at(port.GENERATE_TAG_RDC_LINE)
     assert TWIN_DETECT_BUMP_TYPE in at(TWIN_DETECT_BUMP_TYPE_LINE)
     assert "FETCH_URL=" in at(port.FETCH_URL_LINE)
     assert "git fetch --tags --force --no-recurse-submodules" in at(port.GIT_FETCH_LINE)
     assert "git tag -l 'v*' --sort=-v:refname" in at(port.GIT_TAG_LINE)
-    assert "--bump-type" in at(port.RESOLVE_VERSION_NEXT_LINE)
-    assert "--current" in at(port.RESOLVE_VERSION_CURRENT_LINE)
 
 
-def test_the_five_sibling_paths_are_the_ones_the_twin_calls() -> None:
-    """A renamed sibling must red HERE, not in a CI job three steps later.
-
-    Two of the five are no longer run: the port calls the Python ports of the bash label readers, and must not name their `.sh` paths at all.
-    """
-
-    def read_twin():
-        with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as handle:
-            text = handle.read()
-        named = (
-            port.GENERATE_TAG,
-            TWIN_DISPATCH_RELEASE,
-            TWIN_DETECT_BUMP_TYPE,
-            port.RESOLVE_VERSION,
-        )
-        return 0, "".join("%s\n" % p for p in named if p in text), ""
-
-    # Frozen with the retired twin (PLAN-retire-bash-oracles B3): the sibling paths it called.
-    body = diff.twin_call(TWIN, ["sibling paths"], read_twin)[1]
-    for path in (
-        port.GENERATE_TAG,
-        TWIN_DISPATCH_RELEASE,
-        TWIN_DETECT_BUMP_TYPE,
-        port.RESOLVE_VERSION,
-    ):
-        assert path in body, "%s is not called by the twin any more" % path
-    for path in (port.GENERATE_TAG, port.RESOLVE_VERSION):
-        assert os.access("%s/%s" % (diff.repo(), path), os.X_OK), "%s is not executable" % path
+def test_the_siblings_run_in_process_and_no_script_path_is_named() -> None:
+    """The cutover, pinned: step 5 and step 6c call the Python ports directly, and the module names no `.sh` sibling."""
+    source = inspect.getsource(port)
+    for retired in ("scripts/ci/generate-tag.sh", "scripts/version/resolve-version.sh"):
+        assert retired not in source, retired
+    assert port.generate_tag.__name__ == "rediacc_ci.ci.generate_tag"
+    assert port.resolve_version.__name__ == "rediacc_ci.version.resolve_version"
+    for constant in ("GENERATE_TAG", "RESOLVE_VERSION"):
+        assert not hasattr(port, constant), constant
 
 
 def test_the_port_runs_the_python_label_readers_and_never_the_bash_ones() -> None:

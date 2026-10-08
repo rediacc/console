@@ -54,6 +54,7 @@ import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
+from rediacc_ci.version import resolve_version
 from rediacc_ci.well_known import RELEASES_BUCKET
 
 # The bucket, and the sentinel object name inside each version prefix.
@@ -391,26 +392,20 @@ def require_var(name: str) -> None:
         raise SystemExit(1)
 
 
-def _resolve_in_flight(root: pathlib.Path) -> str:
-    """`$IN_FLIGHT_VERSION`, or `v$(resolve-version.sh --bump-type patch)`.
+def _resolve_in_flight() -> str:
+    """`$IN_FLIGHT_VERSION`, or `v$(resolve_version --bump-type patch)`.
 
     Mirrors what ci.yml's initialize step computes, which is what keeps this gate runnable standalone.
     """
     given = os.environ.get("IN_FLIGHT_VERSION")
     if given:
         return given
-    script = root / ".ci" / "scripts" / "version" / "resolve-version.sh"
-    proc = subprocess.run(
-        [str(script), "--bump-type", "patch"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    # `set -e` on the twin: a failing resolve-version.sh kills the gate with its own diagnostics. The port forwards them and does the same.
-    if proc.returncode != 0:
-        sys.stderr.write(proc.stderr)
-        raise SystemExit(proc.returncode)
-    return "v" + proc.stdout.strip()
+    status, out, err = resolve_version.run(["--bump-type", "patch"])
+    # `set -e` on the twin: a failing resolver kills the gate with its own diagnostics. The port forwards them and does the same.
+    if status != 0:
+        sys.stderr.write(err)
+        raise SystemExit(status)
+    return "v" + out.strip()
 
 
 def _read_pointer(channel: str, name: str, endpoint: str) -> str:
@@ -453,7 +448,7 @@ def main(argv: list[str] | None = None) -> int:
     os.environ["AWS_DEFAULT_REGION"] = "auto"
     endpoint = os.environ["CLOUDFLARE_R2_ENDPOINT"]
 
-    in_flight = _resolve_in_flight(root)
+    in_flight = _resolve_in_flight()
     log.info("in-flight version (excluded from bijection check): %s" % in_flight)
 
     log.step("listing cli sentinels")

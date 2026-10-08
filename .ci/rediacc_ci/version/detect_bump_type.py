@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/version/detect-bump-type.sh`.
+"""Port of the retired `.ci/scripts/version/detect-bump-type.sh`, whose answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/version.detect-bump-type.jsonl`.
 
 Decides the version bump a release takes -- `major`, `minor` or `patch` -- from the labels of the PRs that release CONTAINS, printing exactly one word on stdout.
 

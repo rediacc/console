@@ -1,4 +1,4 @@
-# The staged renet binary (deploy-proxy.sh writes it); the directory is tracked so the
+# The staged renet binary (rediacc_ci.deploy.deploy_proxy writes it); the directory is tracked so the
 # Dockerfile COPY always has a source.
 *
 !.gitignore

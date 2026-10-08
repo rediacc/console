@@ -96,7 +96,7 @@ def scaffold(
                     needs_list.append(phantom_need)
                 lines.append("    needs: [%s]" % ", ".join(needs_list))
             lines.append("    steps:")
-            lines.append("      - run: .ci/scripts/ci/assert-ci-complete.sh")
+            lines.append("      - run: .ci/scripts/ci/assert_ci_complete.py")
             lines.append("        env:")
             for k in aggregated:
                 if k == drop_result:
@@ -118,14 +118,12 @@ def scaffold(
         (hard if k in ("initialize", "build-cli") else soft).append(var)
 
     lines2 = [
-        "#!/bin/bash",
-        "set -euo pipefail",
-        "HARD_REQUIRED=(%s)" % " ".join(hard),
-        "SOFT_REQUIRED=(",
+        "HARD_REQUIRED = (%s)" % "".join('"%s", ' % var for var in hard),
+        "SOFT_REQUIRED = (",
     ]
-    lines2.extend("    %s" % var for var in soft)
+    lines2.extend('    "%s",' % var for var in soft)
     if extra_tier:
-        lines2.append("    %s" % extra_tier.removeprefix("RESULT_"))
+        lines2.append('    "%s",' % extra_tier.removeprefix("RESULT_"))
     lines2.append(")")
     assert_path.write_text("\n".join(lines2) + "\n", encoding="utf-8")
 
@@ -142,7 +140,7 @@ def run_gate(workflow, assert_path) -> harness.RunResult:
 
 def test_healthy_pair_passes(gate, tmp_path):
     # Baseline. Without this, every failure case below could be passing for the wrong reason (a fixture the parser cannot read fails everything).
-    ok_yml, ok_sh = tmp_path / "ok.yml", tmp_path / "ok.sh"
+    ok_yml, ok_sh = tmp_path / "ok.yml", tmp_path / "ok_assert.py"
     scaffold(ok_yml, ok_sh)
     result = run_gate(ok_yml, ok_sh)
     gate.assert_exit(0, result, "a fully wired workflow must pass")
@@ -152,7 +150,7 @@ def test_healthy_pair_passes(gate, tmp_path):
 
 def test_job_missing_from_needs_fails(gate, tmp_path):
     # THE PRIMARY DEFECT, planted. This is the shape check-release-state has in the real ci.yml: a declared job the required check never depends on.
-    n_yml, n_sh = tmp_path / "n.yml", tmp_path / "n.sh"
+    n_yml, n_sh = tmp_path / "n.yml", tmp_path / "n_assert.py"
     scaffold(n_yml, n_sh, drop_need="ops-tests")
     result = run_gate(n_yml, n_sh)
     gate.assert_eq(result.rc, 1, "a job outside ci-complete's needs must fail the gate")
@@ -162,8 +160,8 @@ def test_job_missing_from_needs_fails(gate, tmp_path):
 
 
 def test_job_missing_result_env_fails(gate, tmp_path):
-    # The second half of the wire. A job can be in needs and still be invisible: assert-ci-complete.sh only reads what the env block passes it.
-    r_yml, r_sh = tmp_path / "r.yml", tmp_path / "r.sh"
+    # The second half of the wire. A job can be in needs and still be invisible: assert_ci_complete.py only reads what the env block passes it.
+    r_yml, r_sh = tmp_path / "r.yml", tmp_path / "r_assert.py"
     scaffold(r_yml, r_sh, drop_result="tests")
     result = run_gate(r_yml, r_sh)
     gate.assert_eq(result.rc, 1, "a job with no RESULT_ env var must fail the gate")
@@ -174,7 +172,7 @@ def test_job_missing_result_env_fails(gate, tmp_path):
 
 def test_phantom_need_fails(gate, tmp_path):
     # The reverse break: a needs entry naming nothing. GitHub rejects the whole workflow at parse time, so catching it locally is strictly cheaper.
-    p_yml, p_sh = tmp_path / "p.yml", tmp_path / "p.sh"
+    p_yml, p_sh = tmp_path / "p.yml", tmp_path / "p_assert.py"
     scaffold(p_yml, p_sh, phantom_need="does-not-exist")
     result = run_gate(p_yml, p_sh)
     gate.assert_eq(result.rc, 1, "a needs entry naming no job must fail")
@@ -184,8 +182,8 @@ def test_phantom_need_fails(gate, tmp_path):
 
 
 def test_untiered_result_var_fails(gate, tmp_path):
-    # A var that is passed and then read by nobody. assert-ci-complete.sh does not error on an extra env var, so this is silent by construction.
-    u_yml, u_sh = tmp_path / "u.yml", tmp_path / "u.sh"
+    # A var that is passed and then read by nobody. assert_ci_complete.py does not error on an extra env var, so this is silent by construction.
+    u_yml, u_sh = tmp_path / "u.yml", tmp_path / "u_assert.py"
     scaffold(u_yml, u_sh, drop_tier="OPS_TESTS")
     result = run_gate(u_yml, u_sh)
     gate.assert_eq(result.rc, 1, "a RESULT_ var in no tier must fail")
@@ -197,8 +195,8 @@ def test_untiered_result_var_fails(gate, tmp_path):
 
 
 def test_orphan_tier_member_fails(gate, tmp_path):
-    # The other direction of the same wire. assert-ci-complete.sh treats an unset var as a failure, so this makes EVERY run red until someone reads the tier list -- loud, but expensive to diagnose in CI rather than here.
-    o_yml, o_sh = tmp_path / "o.yml", tmp_path / "o.sh"
+    # The other direction of the same wire. assert_ci_complete.py treats an unset var as a failure, so this makes EVERY run red until someone reads the tier list -- loud, but expensive to diagnose in CI rather than here.
+    o_yml, o_sh = tmp_path / "o.yml", tmp_path / "o_assert.py"
     scaffold(o_yml, o_sh, extra_tier="RESULT_GHOST_JOB")
     result = run_gate(o_yml, o_sh)
     gate.assert_eq(result.rc, 1, "a tier member nobody passes must fail")
@@ -209,7 +207,7 @@ def test_orphan_tier_member_fails(gate, tmp_path):
 
 def test_dead_exemption_fails(gate, tmp_path):
     # Liveness. A BLOCKER proves a reason existed; it cannot prove it is still true. Deleting build-renet from the workflow leaves its exemption behind, which is the shape that left 101 electron suppressions in this repo.
-    d_yml, d_sh = tmp_path / "d.yml", tmp_path / "d.sh"
+    d_yml, d_sh = tmp_path / "d.yml", tmp_path / "d_assert.py"
     scaffold(d_yml, d_sh, drop_job="build-renet")
     result = run_gate(d_yml, d_sh)
     gate.assert_eq(result.rc, 1, "an exemption for a deleted job must fail")
@@ -222,7 +220,7 @@ def test_dead_exemption_fails(gate, tmp_path):
 
 def test_exempt_job_is_not_required_to_be_aggregated(gate, tmp_path):
     # The exemption must actually do something. In the healthy fixture none of the five exempt jobs is in needs or env, and the gate passes -- so the failure cases above are the exemption being absent, not the check being off.
-    e_yml, e_sh = tmp_path / "e.yml", tmp_path / "e.sh"
+    e_yml, e_sh = tmp_path / "e.yml", tmp_path / "e_assert.py"
     scaffold(e_yml, e_sh)
     gate.assert_not_contains(
         e_yml.read_text(encoding="utf-8"),
@@ -247,7 +245,7 @@ def test_low_effort_blocker_is_rejected(gate, tmp_path):
     gate.assert_contains(mutated, "# BLOCKER: tbd", "the mutation must have applied")
     mutant.write_text(mutated, encoding="utf-8")
 
-    b_yml, b_sh = tmp_path / "b.yml", tmp_path / "b.assert.sh"
+    b_yml, b_sh = tmp_path / "b.yml", tmp_path / "b_assert.py"
     scaffold(b_yml, b_sh)
     result = harness.run(
         ["python3", str(mutant)],
@@ -266,7 +264,7 @@ def test_low_effort_blocker_is_rejected(gate, tmp_path):
 
 def test_too_few_jobs_is_blind_not_green(gate, tmp_path):
     # Anti-vacuity. A parser that stops understanding the layout returns a tiny job set, and every check over it passes. That must read as blind, never as "all wired".
-    f_yml, f_sh = tmp_path / "f.yml", tmp_path / "f.sh"
+    f_yml, f_sh = tmp_path / "f.yml", tmp_path / "f_assert.py"
     scaffold(f_yml, f_sh, few_jobs=True)
     result = run_gate(f_yml, f_sh)
     gate.assert_eq(result.rc, 1, "a below-floor job count must fail")
@@ -281,7 +279,7 @@ def test_too_few_jobs_is_blind_not_green(gate, tmp_path):
 
 def test_aggregator_without_needs_is_blind_not_green(gate, tmp_path):
     # The degenerate case the primary check cannot distinguish on its own: with zero needs entries, "every job is missing" is true but the useful verdict is that the aggregator aggregates nothing.
-    nn_yml, nn_sh = tmp_path / "nn.yml", tmp_path / "nn.sh"
+    nn_yml, nn_sh = tmp_path / "nn.yml", tmp_path / "nn_assert.py"
     scaffold(nn_yml, nn_sh, no_needs=True)
     result = run_gate(nn_yml, nn_sh)
     gate.assert_eq(result.rc, 1, "an aggregator with no needs must fail")
@@ -291,7 +289,7 @@ def test_aggregator_without_needs_is_blind_not_green(gate, tmp_path):
 
 def test_missing_aggregator_is_named(gate, tmp_path):
     # A rename of the required status check must break here, loudly, rather than matching an empty block and asserting over nothing.
-    na_yml, na_sh = tmp_path / "na.yml", tmp_path / "na.sh"
+    na_yml, na_sh = tmp_path / "na.yml", tmp_path / "na_assert.py"
     scaffold(na_yml, na_sh, no_aggregator=True)
     result = run_gate(na_yml, na_sh)
     gate.assert_eq(result.rc, 1, "a missing aggregator job must fail")
@@ -301,8 +299,8 @@ def test_missing_aggregator_is_named(gate, tmp_path):
 
 def test_missing_input_file_is_named(gate, tmp_path):
     # An absent input used to be the classic silent pass: no file, no findings, green. Both inputs are guarded.
-    ok_sh = tmp_path / "ok.sh"
-    ok_sh.write_text("#!/bin/bash\n", encoding="utf-8")
+    ok_sh = tmp_path / "ok_assert.py"
+    ok_sh.write_text("\n", encoding="utf-8")
     result = run_gate(tmp_path / "nope.yml", ok_sh)
     gate.assert_eq(result.rc, 1, "a missing workflow must fail")
     gate.assert_contains(result.combined, "input not found", "with the missing-input diagnostic")
@@ -344,7 +342,7 @@ def test_real_tree_passes(gate):
     # for, and it was real: check-release-state was a declared job that
     # ci-complete did not aggregate, and because stage-artifacts requires its result to be `success` OR `skipped`, a FAILURE made stage-artifacts skip, which the soft tier reads as green. `CI Complete` could therefore pass while a release-state assertion failed on main.
     #
-    # It is now wired in (ci.yml's ci-complete `needs:` and `env:`, plus SOFT_REQUIRED in assert-ci-complete.sh), so the durable assertion is the inverse: the real tree must PASS, and must keep passing. A future job added to ci.yml without being aggregated fails here as well as in CI.
+    # It is now wired in (ci.yml's ci-complete `needs:` and `env:`, plus SOFT_REQUIRED in assert_ci_complete.py), so the durable assertion is the inverse: the real tree must PASS, and must keep passing. A future job added to ci.yml without being aggregated fails here as well as in CI.
     result = harness.run(["python3", str(GATE)])
     if result.rc != 0:
         gate.log_fail("the real ci.yml no longer satisfies the aggregation invariant", result)

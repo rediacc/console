@@ -1,6 +1,6 @@
-"""`rediacc_ci.ci.generate_tag` against its bash twin.
+"""`rediacc_ci.ci.generate_tag` against the frozen output of its retired bash twin (`tests/goldens/twins/ci.generate-tag.jsonl`).
 
-WHAT IS FAKED AND WHAT IS NOT, because this twin is the one of the three whose external tools are SAFE. `git` here is only ever `rev-parse`, and `resolve-version.sh` only ever `git tag -l` -- reads, all of them, so the real binaries are used against DISPOSABLE FIXTURE REPOSITORIES built under `tmp_path`. Nothing in this file writes to `/home/developer/console`'s git data, creates a
+WHAT IS FAKED AND WHAT IS NOT, because this module is the one of the three whose external tools are SAFE. `git` here is only ever `rev-parse`, and `resolve-version.sh` only ever `git tag -l` -- reads, all of them, so the real binaries are used against DISPOSABLE FIXTURE REPOSITORIES built under `tmp_path`. Nothing in this file writes to `/home/developer/console`'s git data, creates a
 tag, or reaches a network. `assert_scratch` re-derives `--show-toplevel` for every fixture and refuses if it ever resolves to the checkout.
 
 The two cases that do run against the real repository -- `--self` and `--closure` -- are read-only `git rev-parse` calls, and they are the only way to prove the port agrees with the twin on the REAL closure content rather than on a fixture's.
@@ -42,6 +42,14 @@ if TYPE_CHECKING:
     import pathlib
 
 TWIN = ".ci/scripts/ci/generate-tag.sh"
+# Inputs the retired twin hashed and the module does not (the intentional delta in `generate_tag.py`). The fixture trees still carry them, so a re-freeze from the twin finds what it asks for.
+RETIRED_BUILD_RENET = ".ci/scripts/build/build-renet.sh"
+RETIRED_CLOSURE_PATHS = (
+    ".ci/scripts/build/build-cli.sh",
+    ".ci/scripts/build/build-cli-musl.sh",
+    ".ci/scripts/build/build-cli-executables.sh",
+    ".ci/scripts/build/prepare-cli-assets.sh",
+)
 MODULE = "rediacc_ci.ci.generate_tag"
 
 # `YYYYMMDD-HHMMSS`, the shape both sides must produce in the default mode.
@@ -75,12 +83,21 @@ def assert_scratch(path: pathlib.Path) -> pathlib.Path:
     return resolved
 
 
+# A fixed commit date, so every fixture sha is reproducible and the twin's frozen answers (they name shas) stay valid on any machine.
+GIT_ENV = {
+    **os.environ,
+    "GIT_AUTHOR_DATE": "2026-01-01T00:00:00+0000",
+    "GIT_COMMITTER_DATE": "2026-01-01T00:00:00+0000",
+}
+
+
 def git(repo: pathlib.Path, *args: str) -> str:
     out = subprocess.run(
         ["git", "-C", str(repo), *GIT_FLAGS, *args],
         capture_output=True,
         text=True,
         check=True,
+        env=GIT_ENV,
     )
     return out.stdout.strip()
 
@@ -101,24 +118,42 @@ def make_repo(path: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
     return path
 
 
+def run_port(
+    *args: str,
+    cwd: str | None = None,
+    env_extra: dict[str, str] | None = None,
+    tty: str | None = None,
+) -> tuple[int, str, str]:
+    """The module, run live."""
+    quoted = " ".join(shlex.quote(a) for a in args)
+    new_env = diff.env_for(
+        **(env_extra or {}), PYTHONPATH="%s/.ci" % diff.repo(), PYTHONDONTWRITEBYTECODE="1"
+    )
+    return diff.bash_streams(
+        "python3 -m %s %s" % (MODULE, quoted), env=new_env, cwd=cwd, tty=tty, timeout=60
+    )
+
+
 def run_both(
     *args: str,
     cwd: str | None = None,
     env_extra: dict[str, str] | None = None,
     tty: str | None = None,
 ) -> tuple[tuple[int, str, str], tuple[int, str, str]]:
+    """The twin's frozen answer for this case, and the module's live one."""
     quoted = " ".join(shlex.quote(a) for a in args)
-    extra = env_extra or {}
     twin = "%s/%s" % (diff.repo(), TWIN)
-    old_env = diff.env_for(**extra)
-    new_env = diff.env_for(**extra, PYTHONPATH="%s/.ci" % diff.repo(), PYTHONDONTWRITEBYTECODE="1")
-    old = diff.bash_streams(
-        "bash %s %s" % (twin, quoted), env=old_env, cwd=cwd, tty=tty, timeout=60
+    old = diff.twin_streams(
+        TWIN,
+        "bash %s %s" % (twin, quoted),
+        env=diff.env_for(**(env_extra or {})),
+        cwd=cwd,
+        tty=tty,
+        timeout=60,
+        work=diff.pytest_tmp_roots(cwd or "", *args),
+        port=lambda: run_port(*args, cwd=cwd, env_extra=env_extra, tty=tty),
     )
-    new = diff.bash_streams(
-        "python3 -m %s %s" % (MODULE, quoted), env=new_env, cwd=cwd, tty=tty, timeout=60
-    )
-    return old, new
+    return old, run_port(*args, cwd=cwd, env_extra=env_extra, tty=tty)
 
 
 def assert_identical(
@@ -162,11 +197,15 @@ def submodule_tree(tmp_path: pathlib.Path) -> pathlib.Path:
     for name in (
         ".github/workflows/ci-build-renet.yml",
         ".github/workflows/ci-build-docker.yml",
-        ".ci/scripts/build/build-renet.sh",
     ):
         target = root / name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text("# %s\n" % name, encoding="utf-8")
+    # Both spellings of the build script carry the same bytes, so the retired twin and the module hash the same config.
+    for name in (".ci/rediacc_ci/build/build_renet.py", RETIRED_BUILD_RENET):
+        target = root / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("# build-renet\n", encoding="utf-8")
     make_repo(
         root / "sub",
         {
@@ -182,7 +221,7 @@ def submodule_tree(tmp_path: pathlib.Path) -> pathlib.Path:
 def closure_repo(tmp_path: pathlib.Path) -> pathlib.Path:
     """A git repo holding every `rdc` closure path, and NO tags."""
     files = {}
-    for path in port.CLOSURE_PATHS["rdc"]:
+    for path in (*port.CLOSURE_PATHS["rdc"], *RETIRED_CLOSURE_PATHS):
         # A directory entry is created as a directory with one file in it, so the tree oid the twin reads is a real tree.
         if path.endswith((".json", ".sh", ".ts", ".yml")):
             files[path] = "%s content\n" % path
@@ -195,18 +234,14 @@ def closure_repo(tmp_path: pathlib.Path) -> pathlib.Path:
 
 
 def test_the_default_mode_mints_a_utc_timestamp_tag() -> None:
-    """Normalisation 2: the one field neither side can make identical."""
-    old, new = run_both()
-    assert old[0] == new[0] == 0
-    old_tag = old[1].strip()
-    new_tag = new[1].strip()
-    assert TIME_TAG.match(old_tag), old_tag
-    assert TIME_TAG.match(new_tag), new_tag
-    assert old[2] == "✓ Generated CI tag: %s\n" % old_tag
-    assert new[2] == "✓ Generated CI tag: %s\n" % new_tag
-    old_at = datetime.datetime.strptime(old_tag, "%Y%m%d-%H%M%S").replace(tzinfo=datetime.UTC)
-    new_at = datetime.datetime.strptime(new_tag, "%Y%m%d-%H%M%S").replace(tzinfo=datetime.UTC)
-    assert abs((new_at - old_at).total_seconds()) < 30, "the two clocks disagree"
+    """The one field no frozen answer can hold: a clock reading. The format is asserted, and the minted time is compared with this process's clock."""
+    code, out, err = run_port()
+    assert code == 0
+    tag = out.strip()
+    assert TIME_TAG.match(tag), tag
+    assert err == "✓ Generated CI tag: %s\n" % tag
+    minted = datetime.datetime.strptime(tag, "%Y%m%d-%H%M%S").replace(tzinfo=datetime.UTC)
+    assert abs((datetime.datetime.now(datetime.UTC) - minted).total_seconds()) < 30
 
 
 def test_the_time_tag_is_utc_and_not_local() -> None:
@@ -236,10 +271,20 @@ def test_the_iso_week_bucket_is_percent_g_percent_v_not_percent_y_percent_w() ->
 
 
 def test_self_mode_is_the_repos_short_head() -> None:
-    old = assert_identical("--self", expect_exit=0)
-    tag = old[1].strip()
-    assert re.fullmatch(r"[0-9a-f]{7,40}", tag), tag
-    assert old[2] == "✓ Generated self tag: %s\n" % tag
+    """Against the real checkout, whose head moves: the answer is git's own."""
+    code, out, err = run_port("--self")
+    tag = out.strip()
+    assert code == 0
+    assert (
+        tag
+        == subprocess.run(
+            ["git", "-C", diff.repo(), "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+    )
+    assert err == "✓ Generated self tag: %s\n" % tag
 
 
 def test_self_mode_in_a_fixture_repo_agrees_with_git(closure_repo: pathlib.Path) -> None:
@@ -286,10 +331,11 @@ def test_the_config_half_of_the_tag_moves_when_a_build_config_file_moves(
     assert after_new[1] == after_old[1]
 
 
-def test_the_real_renet_submodule_tag_is_identical_on_both_sides() -> None:
-    """Not a fixture: the tag CI actually publishes, hashed from real bytes."""
-    old = assert_identical("--submodule", "private/renet", expect_exit=0)
-    assert re.fullmatch(r"[0-9a-f]{7,40}-[0-9a-f]{12}\n", old[1]), old[1]
+def test_the_real_renet_submodule_tag_is_minted_from_the_real_inputs() -> None:
+    """Not a fixture: the tag CI actually publishes, hashed from real bytes. Every input must exist, and the tag has the published shape."""
+    code, out, err = run_port("--submodule", "private/renet", cwd=diff.repo())
+    assert code == 0, err
+    assert re.fullmatch(r"[0-9a-f]{7,40}-[0-9a-f]{12}\n", out), out
 
 
 def test_a_missing_submodule_directory_is_refused(submodule_tree: pathlib.Path) -> None:
@@ -328,11 +374,14 @@ def test_a_gitfile_submodule_counts_as_a_repository(
         "sub/build.sh",
         ".github/workflows/ci-build-renet.yml",
         ".github/workflows/ci-build-docker.yml",
-        ".ci/scripts/build/build-renet.sh",
+        ".ci/rediacc_ci/build/build_renet.py",
     ],
 )
 def test_every_build_config_input_is_fail_loud(submodule_tree: pathlib.Path, missing: str) -> None:
-    """Six inputs, six controls. One silently-skipped entry is the whole risk."""
+    """Six inputs, six controls. One silently-skipped entry is the whole risk.
+
+    INTENTIONAL DELTA (Rule T) on the last entry: the twin hashed `.ci/scripts/build/build-renet.sh`, the module hashes `build_renet.py`, so the twin's frozen answer for that case is a tag and the case is re-recorded from the module.
+    """
     (submodule_tree / missing).unlink()
     old = assert_identical("--submodule", "sub", expect_exit=1, cwd=str(submodule_tree))
     assert old[1] == ""
@@ -341,13 +390,29 @@ def test_every_build_config_input_is_fail_loud(submodule_tree: pathlib.Path, mis
         assert "✗ %s" % line in old[2]
 
 
-def test_the_build_config_list_is_the_twins_list_in_order() -> None:
-    """Order matters: it decides WHICH missing input is reported first."""
-    with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as fh:
-        text = fh.read()
-    block = text.partition("BUILD_CONFIG_FILES=(")[2].partition(")")[0]
-    in_twin = [line.strip().strip('"') for line in block.strip().split("\n")]
-    assert in_twin == [t.format(sub="$SUBMODULE_PATH") for t in port.BUILD_CONFIG_FILES]
+def test_the_input_lists_name_no_retired_script() -> None:
+    """INTENTIONAL DELTA (Rule T): a deleted script in an input list is a hard refusal at HEAD, so the lists name the Python modules. Fails on the lists the twin hashed."""
+    listed = [t.format(sub="private/renet") for t in port.BUILD_CONFIG_FILES]
+    for closure_paths in port.CLOSURE_PATHS.values():
+        listed.extend(closure_paths)
+    retired = [p for p in listed if p.startswith(".ci/scripts/build/")]
+    assert retired == [], retired
+
+
+def test_every_input_in_the_lists_exists_at_head() -> None:
+    """The real tree, not a fixture: a list entry that does not resolve would refuse every CI run."""
+    for closure_paths in port.CLOSURE_PATHS.values():
+        for entry in closure_paths:
+            probe = subprocess.run(
+                ["git", "-C", diff.repo(), "rev-parse", "--verify", "-q", "HEAD:%s" % entry],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            assert probe.returncode == 0, "%s is not at HEAD" % entry
+    for template in port.BUILD_CONFIG_FILES:
+        entry = template.format(sub="private/renet")
+        assert os.path.isfile(os.path.join(diff.repo(), entry)), entry
 
 
 def test_defect_h_the_build_config_check_is_cwd_dependent(
@@ -375,20 +440,19 @@ def test_defect_i_the_bare_commit_arm_is_unreachable() -> None:
     """`BUILD_CONFIG_FILES` is non-empty and every miss exits, so it never fires."""
     assert port.UNREACHABLE_BARE_COMMIT_TAG is True
     assert len(port.BUILD_CONFIG_FILES) > 0
-    with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as fh:
-        assert 'CI_TAG="${SUBMODULE_COMMIT}-${CONFIG_SHORT}"' in fh.read()
 
 
 # --------------------------------------------------------------------------- --closure ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("closure", ["web", "rdc"])
-def test_the_real_closure_tags_are_identical_on_both_sides(closure: str) -> None:
-    """Against the REAL repository, which is what cd-stage.yml retags."""
-    old = assert_identical("--closure", closure, expect_exit=0)
-    tag = old[1].strip()
+def test_the_real_closure_tags_are_minted_from_the_real_tree(closure: str) -> None:
+    """Against the REAL repository, which is what cd-stage.yml retags. The key holds an ISO-week bucket and the head, so only its shape is pinned."""
+    code, out, err = run_port("--closure", closure, cwd=diff.repo())
+    assert code == 0, err
+    tag = out.strip()
     assert re.fullmatch(r"%s-[0-9a-f]{12}" % closure, tag), tag
-    assert old[2] == "✓ Generated closure tag (%s): %s\n" % (closure, tag)
+    assert err.endswith("✓ Generated closure tag (%s): %s\n" % (closure, tag))
 
 
 def test_an_unknown_closure_is_refused() -> None:
@@ -397,19 +461,23 @@ def test_an_unknown_closure_is_refused() -> None:
     assert old[2] == "✗ Unknown closure: bogus (expected: web, rdc)\n"
 
 
-def test_extra_changes_the_closure_key() -> None:
-    plain = assert_identical("--closure", "rdc", expect_exit=0)
-    keyed = assert_identical("--closure", "rdc", "--extra", "RENET=abc", expect_exit=0)
-    assert plain[1] != keyed[1]
+def closure_tag_of(repo: pathlib.Path, *args: str) -> str:
+    code, out, err = run_port("--closure", "rdc", *args, cwd=str(repo))
+    assert code == 0, err
+    return out
 
 
-def test_extra_appends_rather_than_overwrites() -> None:
+def test_extra_changes_the_closure_key(closure_repo: pathlib.Path) -> None:
+    assert closure_tag_of(closure_repo) != closure_tag_of(closure_repo, "--extra", "RENET=abc")
+
+
+def test_extra_appends_rather_than_overwrites(closure_repo: pathlib.Path) -> None:
     """`EXTRA_KEY+="$2"`, so two `--extra` are the concatenation of both."""
-    both = assert_identical("--closure", "rdc", "--extra", "a", "--extra", "b", expect_exit=0)
-    joined = assert_identical("--closure", "rdc", "--extra", "ab", expect_exit=0)
-    assert both[1] == joined[1]
-    only_b = assert_identical("--closure", "rdc", "--extra", "b", expect_exit=0)
-    assert both[1] != only_b[1], "the second --extra overwrote the first"
+    both = closure_tag_of(closure_repo, "--extra", "a", "--extra", "b")
+    assert both == closure_tag_of(closure_repo, "--extra", "ab")
+    assert both != closure_tag_of(closure_repo, "--extra", "b"), (
+        "the second --extra overwrote the first"
+    )
 
 
 def test_a_missing_closure_input_is_fail_loud(closure_repo: pathlib.Path) -> None:
@@ -439,90 +507,63 @@ def test_an_untagged_checkout_falls_back_to_a_distinguishing_key(
 ) -> None:
     """An EMPTY marker would collapse every untagged build to one key."""
     head = git(closure_repo, "rev-parse", "HEAD")
-    old = assert_identical("--closure", "rdc", expect_exit=0, cwd=str(closure_repo))
+    code, out, err = run_port("--closure", "rdc", cwd=str(closure_repo))
+    assert code == 0
     assert (
         "⚠ No version tag reachable; closure key falls back to 'untagged-%s'. "
-        "Image reuse is disabled for this build.\n" % head in old[2]
+        "Image reuse is disabled for this build.\n" % head in err
     )
-    assert old[1].strip().startswith("rdc-")
+    assert out.strip().startswith("rdc-")
 
 
 def test_cutting_a_tag_moves_the_closure_key(closure_repo: pathlib.Path) -> None:
     """The measured v1.2.12 bug: the key must move when the baked version does."""
-    untagged = assert_identical("--closure", "rdc", expect_exit=0, cwd=str(closure_repo))
+    untagged = run_port("--closure", "rdc", cwd=str(closure_repo))
     git(closure_repo, "tag", "v1.2.12")
-    tagged = assert_identical("--closure", "rdc", expect_exit=0, cwd=str(closure_repo))
+    tagged = run_port("--closure", "rdc", cwd=str(closure_repo))
     assert tagged[1] != untagged[1]
     assert "No version tag reachable" not in tagged[2]
     git(closure_repo, "tag", "v1.2.13")
-    bumped = assert_identical("--closure", "rdc", expect_exit=0, cwd=str(closure_repo))
+    bumped = run_port("--closure", "rdc", cwd=str(closure_repo))
     assert bumped[1] != tagged[1], "the key did not move when the tag did"
-
-
-def test_the_closure_path_lists_are_the_twins_lists_in_order() -> None:
-    with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as fh:
-        text = fh.read()
-    for closure, paths in port.CLOSURE_PATHS.items():
-        block = text.partition("        %s)\n            CLOSURE_PATHS=(" % closure)[2]
-        block = block.partition(")")[0]
-        in_twin = [line.strip() for line in block.strip().split("\n")]
-        assert in_twin == list(paths), closure
 
 
 # --------------------------------------------------------------------------- Output sinks ---------------------------------------------------------------------------
 
 
-def test_output_writes_the_tag_and_says_so(tmp_path: pathlib.Path) -> None:
-    old_file = assert_scratch(tmp_path / "old.txt")
-    new_file = assert_scratch(tmp_path / "new.txt")
-    twin = "%s/%s" % (diff.repo(), TWIN)
-    old = diff.bash_streams(
-        "bash %s --self --output %s" % (twin, shlex.quote(str(old_file))),
-        env=diff.env_for(),
-        timeout=60,
+def test_output_writes_the_tag_and_says_so(
+    tmp_path: pathlib.Path, closure_repo: pathlib.Path
+) -> None:
+    target = assert_scratch(tmp_path / "out.txt")
+    code, out, err = run_port("--self", "--output", str(target), cwd=str(closure_repo))
+    assert code == 0
+    assert target.read_text(encoding="utf-8") == out
+    assert out.strip() == git(closure_repo, "rev-parse", "--short", "HEAD")
+    assert "✓ Wrote CI tag to: %s\n" % target in err
+
+
+def test_github_output_appends_and_says_so(
+    tmp_path: pathlib.Path, closure_repo: pathlib.Path
+) -> None:
+    target = assert_scratch(tmp_path / "gho.txt")
+    target.write_text("pre=1\n", encoding="utf-8")
+    code, out, err = run_port(
+        "--self", "--github-output", cwd=str(closure_repo), env_extra={"GITHUB_OUTPUT": str(target)}
     )
-    new = diff.bash_streams(
-        "python3 -m %s --self --output %s" % (MODULE, shlex.quote(str(new_file))),
-        env=diff.env_for(PYTHONPATH="%s/.ci" % diff.repo(), PYTHONDONTWRITEBYTECODE="1"),
-        timeout=60,
-    )
-    assert old[0] == new[0] == 0
-    assert old_file.read_text(encoding="utf-8") == new_file.read_text(encoding="utf-8")
-    assert old_file.read_text(encoding="utf-8") == old[1]
-    assert "✓ Wrote CI tag to: %s\n" % old_file in old[2]
-    assert new[2].replace(str(new_file), str(old_file)) == old[2]
+    assert code == 0
+    assert target.read_text(encoding="utf-8") == "pre=1\nci_tag=%s\n" % out.strip()
+    assert "✓ Set GITHUB_OUTPUT: ci_tag=%s\n" % out.strip() in err
 
 
-def test_github_output_appends_and_says_so(tmp_path: pathlib.Path) -> None:
-    twin = "%s/%s" % (diff.repo(), TWIN)
-    results = {}
-    for label, cmd, env in (
-        ("old", "bash %s --self --github-output" % twin, {}),
-        (
-            "new",
-            "python3 -m %s --self --github-output" % MODULE,
-            {"PYTHONPATH": "%s/.ci" % diff.repo(), "PYTHONDONTWRITEBYTECODE": "1"},
-        ),
-    ):
-        target = assert_scratch(tmp_path / ("gho-%s.txt" % label))
-        target.write_text("pre=1\n", encoding="utf-8")
-        run = diff.bash_streams(cmd, env=diff.env_for(**env, GITHUB_OUTPUT=str(target)), timeout=60)
-        results[label] = (run, target.read_text(encoding="utf-8"))
-    (old_run, old_text) = results["old"]
-    (new_run, new_text) = results["new"]
-    assert old_run[0] == new_run[0] == 0
-    assert old_text == new_text
-    assert old_text.startswith("pre=1\nci_tag=")
-    assert "✓ Set GITHUB_OUTPUT: ci_tag=" in old_run[2]
-    assert old_run[2] == new_run[2]
-
-
-def test_defect_g_github_output_without_the_variable_is_a_silent_no_op() -> None:
-    """The caller asked. Both sides say nothing and exit 0."""
+def test_defect_g_github_output_without_the_variable_is_a_silent_no_op(
+    closure_repo: pathlib.Path,
+) -> None:
+    """The caller asked. The twin said nothing and exited 0, and so does the module."""
     assert port.GITHUB_OUTPUT_IS_SILENTLY_OPTIONAL is True
-    asked = assert_identical("--self", "--github-output", expect_exit=0)
-    plain = assert_identical("--self", expect_exit=0)
+    asked = run_port("--self", "--github-output", cwd=str(closure_repo))
+    plain = run_port("--self", cwd=str(closure_repo))
     assert asked == plain, "the request left no trace at all"
+    assert asked[0] == 0
     assert "GITHUB_OUTPUT" not in asked[2]
 
 
@@ -573,10 +614,12 @@ def test_defect_j_a_value_option_as_the_last_token_dies_as_bash(opt: str) -> Non
     assert new[2] == (port.MISSING_VALUE % opt) + "\n"
 
 
-def test_the_mode_precedence_is_silent(submodule_tree: pathlib.Path) -> None:
+def test_the_mode_precedence_is_silent(
+    submodule_tree: pathlib.Path, closure_repo: pathlib.Path
+) -> None:
     """`--submodule` beats `--closure` beats `--self`, with no word about it."""
-    both = assert_identical("--self", "--closure", "rdc", expect_exit=0)
-    closure_only = assert_identical("--closure", "rdc", expect_exit=0)
+    both = run_port("--self", "--closure", "rdc", cwd=str(closure_repo))
+    closure_only = run_port("--closure", "rdc", cwd=str(closure_repo))
     assert both == closure_only
 
     sub = assert_identical("--submodule", "sub", "--self", expect_exit=0, cwd=str(submodule_tree))
@@ -584,10 +627,11 @@ def test_the_mode_precedence_is_silent(submodule_tree: pathlib.Path) -> None:
     assert sub == sub_only
 
 
-def test_a_repeated_value_option_takes_the_last_one() -> None:
+def test_a_repeated_value_option_takes_the_last_one(closure_repo: pathlib.Path) -> None:
     """Unlike `--extra`, `--closure` ASSIGNS, so the second wins."""
-    old = assert_identical("--closure", "bogus", "--closure", "rdc", expect_exit=0)
-    assert old[1].startswith("rdc-")
+    code, out, _err = run_port("--closure", "bogus", "--closure", "rdc", cwd=str(closure_repo))
+    assert code == 0
+    assert out.startswith("rdc-")
 
 
 # --------------------------------------------------------------------------- Colour, and the module entry point ---------------------------------------------------------------------------
@@ -608,9 +652,9 @@ def test_no_color_suppresses_colour_on_both_sides() -> None:
 
 def test_the_info_line_goes_to_stderr_so_stdout_stays_capturable() -> None:
     """`log_info ... >&2`. A stream swap here would poison every `$(...)`."""
-    old = assert_identical("--self", expect_exit=0)
-    assert old[1].count("\n") == 1
-    assert "Generated" not in old[1]
+    _code, out, _err = run_port("--self")
+    assert out.count("\n") == 1
+    assert "Generated" not in out
 
 
 def test_the_module_runs_as_python_m() -> None:

@@ -7,7 +7,7 @@ The twin's header, carried in full because the four checks and the direction arg
     WHY. `ci-complete` is the single required status check for branch
     protection. It is green when, and only when, the jobs it aggregates are
     green. A job that is not in its `needs:` list, or is in `needs:` but has no
-    `RESULT_*` env var feeding assert-ci-complete.sh, is invisible to it: the job
+    `RESULT_*` env var feeding assert_ci_complete.py, is invisible to it: the job
     can go red and the required check still reports success.
 
     Nothing enforced the relationship, so it decayed. ci.yml declares 24
@@ -18,7 +18,7 @@ The twin's header, carried in full because the four checks and the direction arg
 
     FOUR CHECKS, because there are four ways the wiring breaks:
       1. A job is missing from `needs:`         -> its result is unreadable.
-      2. A job is in `needs:` but has no        -> assert-ci-complete.sh never
+      2. A job is in `needs:` but has no        -> assert_ci_complete.py never
          RESULT_<JOB> in the `env:` block          sees it, so it cannot judge it.
       3. `needs:` names a job that does not     -> GitHub refuses the workflow at
          exist                                     parse time.
@@ -68,6 +68,7 @@ orphan lists come out in an order that is neither insertion nor sorted. This por
 port that called `.upper().replace("-", "_")` would agree on every job name this workflow has ever had and would diverge the first time one contains a character the translation leaves alone.
 """
 
+import ast
 import os
 import pathlib
 import re
@@ -88,6 +89,9 @@ MIN_JOBS = 10
 # The two test seams, spelled the twin's way so a gate test driving one drives both implementations.
 WORKFLOW_ENV = "CI_JOB_AGGREGATION_WORKFLOW"
 ASSERT_ENV = "CI_JOB_AGGREGATION_ASSERT"
+
+# The module-level tuples of `assert_ci_complete.py` that hold the tier members.
+TIER_NAMES = ("HARD_REQUIRED", "SOFT_REQUIRED")
 
 # ---------------------------------------------------------------------------
 # The exempt set. Entry = job name; reason = why ci-complete cannot or must not
@@ -206,30 +210,30 @@ def result_vars(block: str) -> list[str]:
 
 
 def tier_entries(text: str) -> list[str]:
-    """One tier member per line, from HARD_REQUIRED and SOFT_REQUIRED.
+    """One tier member per entry, from the HARD_REQUIRED and SOFT_REQUIRED tuples of `assert_ci_complete.py`.
 
-        awk '
-            /^(HARD_REQUIRED|SOFT_REQUIRED)\\+?=\\(/ { collecting = 1; sub(/^[^(]*\\(/, "") }
-            collecting { ... strip a trailing ")" and any comment, split on whitespace }
-        '
-
-    Reads the real arrays, including the `+=` form the pointer-bump fast path
-    uses, so a member added there is seen here. The closing-paren test is `index(line, ")") > 0` on the WHOLE line, so an array whose last element sits on the same line as the `)` still yields that element.
+    The tiers are Python tuples of string literals, so the module is parsed with `ast` and the members read off the assignments, including an augmented `+=` form. A comment inside a tuple is not a member, an unrelated tuple is not read, and text that does not parse yields nothing, which the caller's anti-vacuity floor then refuses.
     """
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return []
     out: list[str] = []
-    collecting = False
-    for raw in text.split("\n"):
-        line = raw
-        if re.match(r"^(HARD_REQUIRED|SOFT_REQUIRED)\+?=\(", line):
-            collecting = True
-            line = re.sub(r"^[^(]*\(", "", line, count=1)
-        if not collecting:
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            names = [t.id for t in node.targets if isinstance(t, ast.Name)]
+        elif isinstance(node, ast.AugAssign) and isinstance(node.target, ast.Name):
+            names = [node.target.id]
+        else:
             continue
-        if ")" in line:
-            line = re.sub(r"\).*$", "", line, count=1)
-            collecting = False
-        line = re.sub(r"#.*$", "", line, count=1)
-        out.extend(part for part in re.split(r"[ \t]+", line) if part != "")
+        if not any(name in TIER_NAMES for name in names):
+            continue
+        if isinstance(node.value, ast.Tuple | ast.List):
+            out.extend(
+                elt.value
+                for elt in node.value.elts
+                if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
+            )
     return out
 
 
@@ -264,7 +268,8 @@ def main(argv: list[str] | None = None) -> int:
         os.environ.get(WORKFLOW_ENV) or str(root / ".github" / "workflows" / "ci.yml")
     )
     assert_script = pathlib.Path(
-        os.environ.get(ASSERT_ENV) or str(root / ".ci" / "scripts" / "ci" / "assert-ci-complete.sh")
+        os.environ.get(ASSERT_ENV)
+        or str(root / ".ci" / "rediacc_ci" / "ci" / "assert_ci_complete.py")
     )
 
     # require_input -f: refuse, in the gate's own words, rather than skip.
@@ -331,7 +336,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if len(results) == 0:
         log.error(
-            "%s passes no RESULT_* env vars in %s: assert-ci-complete.sh judges nothing."
+            "%s passes no RESULT_* env vars in %s: assert_ci_complete.py judges nothing."
             % (AGGREGATOR, workflow)
         )
         return 1
@@ -389,7 +394,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if missing_results:
         log.error(
-            "%d job(s) with no RESULT_* env var: assert-ci-complete.sh never sees them:"
+            "%d job(s) with no RESULT_* env var: assert_ci_complete.py never sees them:"
             % len(missing_results)
         )
         for job in missing_results:
@@ -477,12 +482,11 @@ jobs:
       RESULT_BUILD_CLI: ${{ needs.build-cli.result }}
 """
 
-FIXTURE_ASSERT = """#!/bin/bash
-HARD_REQUIRED=(
-    INITIALIZE
-    QUALITY
+FIXTURE_ASSERT = """HARD_REQUIRED = (
+    "INITIALIZE",
+    "QUALITY",
 )
-SOFT_REQUIRED=(BUILD_CLI)
+SOFT_REQUIRED = ("BUILD_CLI",)
 """
 
 
@@ -563,17 +567,17 @@ def selftest() -> int:
     )
     ctl.check(
         "PLANT: the `+=` form is read too",
-        tier_entries("HARD_REQUIRED+=(EXTRA)\n"),
+        tier_entries('HARD_REQUIRED += ("EXTRA",)\n'),
         ["EXTRA"],
     )
     ctl.check(
         "MIRROR: a comment inside the array is stripped",
-        tier_entries("HARD_REQUIRED=(\n  A  # why\n)\n"),
+        tier_entries('HARD_REQUIRED = (\n  "A",  # why\n)\n'),
         ["A"],
     )
     ctl.check(
         "MIRROR: an unrelated array is not read",
-        tier_entries("OTHER=(A B)\n"),
+        tier_entries('OTHER = ("A", "B")\n'),
         [],
     )
 
@@ -611,9 +615,9 @@ def selftest() -> int:
 
         def run(workflow: str, assert_body: str) -> int:
             (root / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
-            (root / ".ci" / "scripts" / "ci").mkdir(parents=True, exist_ok=True)
+            (root / ".ci" / "rediacc_ci" / "ci").mkdir(parents=True, exist_ok=True)
             (root / ".github" / "workflows" / "ci.yml").write_text(workflow, encoding="utf-8")
-            (root / ".ci" / "scripts" / "ci" / "assert-ci-complete.sh").write_text(
+            (root / ".ci" / "rediacc_ci" / "ci" / "assert_ci_complete.py").write_text(
                 assert_body, encoding="utf-8"
             )
             saved = os.environ.get(paths.ROOT_ENV)

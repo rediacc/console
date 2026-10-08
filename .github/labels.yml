@@ -128,7 +128,7 @@
   guide: false
 
 # `release` HAS a consumer since the operator's 2026-09-30 ruling:
-# `rediacc_ci.ci.dispatch_release` (and its twin dispatch-release.sh) reads it,
+# `rediacc_ci.ci.dispatch_release` reads it,
 # as an exact whole label, from the merged PR during `initialize`, and a kept
 # (non-bump-none) PR carrying it dispatches cd-v2 with `publish_stable=true`:
 # edge AND stable, skipping the 7-day soak. A failed lookup never promotes.

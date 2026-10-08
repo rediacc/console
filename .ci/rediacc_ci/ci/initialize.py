@@ -8,9 +8,9 @@ LIVE. `.github/workflows/ci.yml` and `cd-v2.yml` run this module. `.ci/rediacc_c
 Ledger: `.ci/shadow/w7p6-initialize.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-initialize --assert --k 5`).
 
 -----------------------------------------------------------------------------
-THREE DECIDERS ARE PYTHON, THE TWO REMAINING SIBLINGS ARE STILL BASH
+EVERY SIBLING IS PYTHON, AND EVERY ONE BUT THE RELEASE DECIDER RUNS IN PROCESS
 -----------------------------------------------------------------------------
-Step 4 calls `rediacc_ci.ci.detect_pointer_bump.main` directly, step 6 calls `rediacc_ci.version.detect_bump_type` in process, and step 6b runs `python3 -m rediacc_ci.ci.dispatch_release --decide-only`. The twin ran the bash `detect-pointer-bump.sh`, `detect-bump-type.sh` and `dispatch-release.sh`; this module runs none of them, and each port's own differential owns that port's behaviour against its bash oracle. `generate-tag.sh` (three times) and `resolve-version.sh` are still run as bash, by the same relative paths and argv.
+Step 4 calls `rediacc_ci.ci.detect_pointer_bump.main` directly, step 5 calls `rediacc_ci.ci.generate_tag.main` three times, step 6 calls `rediacc_ci.version.detect_bump_type`, step 6c calls `rediacc_ci.version.resolve_version.run`, and step 6b runs `python3 -m rediacc_ci.ci.dispatch_release --decide-only` as a child. The twin ran the bash `detect-pointer-bump.sh`, `detect-bump-type.sh`, `dispatch-release.sh`, `generate-tag.sh` and `resolve-version.sh`; this module runs none of them, and each port's own differential owns that port's behaviour against its frozen bash answers. The `line N` numbers for the five sibling substitutions are gone with them: an in-process call has no exec to fail.
 
 -----------------------------------------------------------------------------
 AN UNREADABLE PR LABEL IS A REFUSAL, NOT A RELEASE AND NOT A PATCH
@@ -96,6 +96,8 @@ ONE DELIBERATE DIVERGENCE, AND IT IS THE SAME ONE `common.repo_root` CARRIES
 
 from __future__ import annotations
 
+import contextlib
+import io
 import os
 import shutil
 import subprocess
@@ -104,9 +106,9 @@ import tempfile
 import time
 
 from rediacc_ci import log
-from rediacc_ci.ci import detect_pointer_bump
+from rediacc_ci.ci import detect_pointer_bump, generate_tag
 from rediacc_ci.core import common
-from rediacc_ci.version import detect_bump_type
+from rediacc_ci.version import detect_bump_type, resolve_version
 from rediacc_ci.well_known import GH_ORIGIN, IMAGE_REGISTRY
 
 # --------------------------------------------------------------------------- Twin line numbers. Bash prints these inside its own diagnostics, so they are part of the observable output rather than documentation. `test_the_pinned_line_numbers_still_point_at_the_twins_lines` re-derives every one of them from the twin.
@@ -122,11 +124,6 @@ GIT_CONFIG_LINE = 104
 #: `if ! git submodule update --init --recursive private/ 2>/dev/null; then`
 GIT_SUBMODULE_LINE = 111
 
-#: The three `generate-tag.sh` command substitutions.
-GENERATE_TAG_RENET_LINE = 141
-GENERATE_TAG_WEB_LINE = 159
-GENERATE_TAG_RDC_LINE = 160
-
 #: `FETCH_URL="https://x-access-token:${GITHUB_PAT}@github.com/${GITHUB_REPOSITORY}.git"`
 FETCH_URL_LINE = 219
 
@@ -139,15 +136,6 @@ GIT_FETCH_LINE = 234
 #: the 64 KB pipe buffer until the tag list outgrows it. The twin now takes the
 #: first line in-shell, which is what this port has always done.
 GIT_TAG_LINE = 280
-
-#: The two `resolve-version.sh` substitutions.
-RESOLVE_VERSION_NEXT_LINE = 288
-RESOLVE_VERSION_CURRENT_LINE = 290
-
-# --------------------------------------------------------------------------- The two bash sibling scripts, spelled exactly as the twin spells them: RELATIVE to the repo root, which both implementations have already chdir'd to. Absolute paths would be tidier and would also stop the fixture in the differential from working, because the fixture's whole mechanism is that a relative path
-# lands in the fixture tree. ---------------------------------------------------------------------------
-GENERATE_TAG = ".ci/scripts/ci/generate-tag.sh"
-RESOLVE_VERSION = ".ci/scripts/version/resolve-version.sh"
 
 #: The release decider, run as a child so its own logs and notices stay out of this step's streams exactly as the twin's `2>&1 | grep` kept them out. A module name, never the retired bash path: the shell half of `check:ci-gh-retry-reads` reads a string constant naming a `.sh` as a live executor.
 DISPATCH_RELEASE_MODULE = "rediacc_ci.ci.dispatch_release"
@@ -249,6 +237,23 @@ def run_capture(argv: list[str], line: int) -> tuple[int, str]:
     except OSError as err:
         return bash_exec_failure(line, argv[0], err, searched=False), ""
     return proc.returncode, proc.stdout.rstrip("\n")
+
+
+def capture_module(main, argv: list[str]) -> tuple[int, str]:
+    """`VAR=$(cmd)` for a sibling run in process: stdout captured, stderr inherited, trailing newlines stripped."""
+    sys.stdout.flush()
+    buffer = io.StringIO()
+    with contextlib.redirect_stdout(buffer):
+        status = main(argv)
+    return status, buffer.getvalue().rstrip("\n")
+
+
+def resolve(argv: list[str]) -> tuple[int, str]:
+    """`$(resolve-version.sh ...)` in process: the version on stdout, the diagnostics forwarded to stderr."""
+    status, out, err = resolve_version.run(argv)
+    sys.stderr.write(err)
+    sys.stderr.flush()
+    return status, out.rstrip("\n")
 
 
 def write_output(key: str, value: str, output_file: str) -> None:
@@ -519,19 +524,13 @@ def run(check_only: str, output_file: str) -> int:
     # ----------------------------------------------------------------------- Step 5: the three image tags -----------------------------------------------------------------------
     log.step("Generating CI tags...")
 
-    status, renet_tag = run_capture(
-        [GENERATE_TAG, "--submodule", "private/renet"], GENERATE_TAG_RENET_LINE
-    )
+    status, renet_tag = capture_module(generate_tag.main, ["--submodule", "private/renet"])
     if status != 0:
         return status
-    status, web_tag = run_capture(
-        [GENERATE_TAG, "--closure", "web", "--extra", renet_tag], GENERATE_TAG_WEB_LINE
-    )
+    status, web_tag = capture_module(generate_tag.main, ["--closure", "web", "--extra", renet_tag])
     if status != 0:
         return status
-    status, rdc_tag = run_capture(
-        [GENERATE_TAG, "--closure", "rdc", "--extra", renet_tag], GENERATE_TAG_RDC_LINE
-    )
+    status, rdc_tag = capture_module(generate_tag.main, ["--closure", "rdc", "--extra", renet_tag])
     if status != 0:
         return status
 
@@ -617,14 +616,12 @@ def run(check_only: str, output_file: str) -> int:
     if status != 0:
         return status
 
-    status, next_version = run_capture(
-        [RESOLVE_VERSION, "--bump-type", bump_type], RESOLVE_VERSION_NEXT_LINE
-    )
+    status, next_version = resolve(["--bump-type", bump_type])
     if status != 0:
         return status
     write_output("next_version", next_version, output_file)
     # The nested substitution's status is DISCARDED by bash: the outer log_info succeeds either way, so a failing `--current` only empties the parenthesis.
-    _, current_version = run_capture([RESOLVE_VERSION, "--current"], RESOLVE_VERSION_CURRENT_LINE)
+    _, current_version = resolve(["--current"])
     log.info("Next version: %s (from tag: %s)" % (next_version, current_version))
 
     # ----------------------------------------------------------------------- Step 6d: on push-to-main every tag carries the version, to bust the cache -----------------------------------------------------------------------

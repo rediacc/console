@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-ci-complete-tiers.sh`, retired in W7 P5.
 
-Both-ways test for the tier logic in `.ci/scripts/ci/assert-ci-complete.sh`, added with the pointer-bump fast path (2026-07-22).
+Both-ways test for the tier logic in `rediacc_ci.ci.assert_ci_complete`, added with the pointer-bump fast path (2026-07-22).
 
 The contract under test:
   - Normally, BUILD_DOCKER / BUILD_DOCKER_FAST / BUILD_CLI are HARD-required: a
@@ -12,7 +12,7 @@ The contract under test:
 
 Both directions matter: too strict and every fast-path run is red (the fast path is dead on arrival); too lax and a skipped build reads as green on a normal run, which is the exact DAG-breakage the hard tier exists to catch.
 
-THE ONE PLACE THE PORT IS DELIBERATELY NOT A TRANSLATION. The twin hand-types the 21 `RESULT_*` names of its all-green baseline, with a comment on three of them recording that each was added only after a job landed and the fixture caught the omission by accident. That is a hand-typed floor, and the failure it invites is the quiet one: a job added to the subject and NOT to the
+THE ONE PLACE THE PORT IS DELIBERATELY NOT A TRANSLATION. The retired twin hand-typed the 21 `RESULT_*` names of its all-green baseline, with a comment on three of them recording that each was added only after a job landed and the fixture caught the omission by accident. That is a hand-typed floor, and the failure it invites is the quiet one: a job added to the subject and NOT to the
 fixture is simply never exercised, and the suite stays green having stopped covering it.
 
 So the port DERIVES the baseline from `HARD_REQUIRED` and `SOFT_REQUIRED` in the subject itself, refuses an empty parse, and keeps a case whose whole job is to
@@ -21,15 +21,12 @@ twin's 21. If they ever disagree the port reds and the twin does not, and the pa
 """
 
 import os
-import re
 
 from rediacc_ci import paths
+from rediacc_ci.ci import assert_ci_complete as port
 from rediacc_ci.tests.gates import harness
 
-SUT = paths.from_root(".ci", "scripts", "ci", "assert-ci-complete.sh")
-
-ARRAY_RE = re.compile(r"^(HARD_REQUIRED|SOFT_REQUIRED)=\((.*?)\)", re.MULTILINE | re.DOTALL)
-NAME_RE = re.compile(r"[A-Z][A-Z0-9_]*")
+SUT = paths.from_root(".ci", "rediacc_ci", "ci", "assert_ci_complete.py")
 
 # A fast-path run: builds and their dependents skipped -> must PASS. This is a SCENARIO and not a floor, so it stays written out, exactly as the twin has it.
 FASTPATH_SKIPS = {
@@ -89,19 +86,11 @@ TWIN_BASELINE_NAMES = frozenset(
 
 
 def required_jobs() -> dict[str, list[str]]:
-    """`{"HARD_REQUIRED": [...], "SOFT_REQUIRED": [...]}` read from the subject.
+    """`{"HARD_REQUIRED": [...], "SOFT_REQUIRED": [...]}` read from the module's tier tuples.
 
-    The `+=` re-binding inside the POINTER_BUMP_ONLY branch is deliberately NOT
-    matched: the regex is anchored on `NAME=(`, and that branch spells it
-    `SOFT_REQUIRED+=(`. The baseline this feeds is the NORMAL-path one.
+    The POINTER_BUMP tuples are deliberately NOT included: the baseline this feeds is the NORMAL-path one.
     """
-    source = SUT.read_text(encoding="utf-8")
-    found: dict[str, list[str]] = {}
-    for name, body in ARRAY_RE.findall(source):
-        # Comment lines inside the array are prose about individual jobs and are full of the very names being parsed; drop them before extracting.
-        cleaned = "\n".join(ln for ln in body.splitlines() if not ln.strip().startswith("#"))
-        found[name] = NAME_RE.findall(cleaned)
-    return found
+    return {"HARD_REQUIRED": list(port.HARD_REQUIRED), "SOFT_REQUIRED": list(port.SOFT_REQUIRED)}
 
 
 def baseline(gate) -> dict[str, str]:
@@ -132,7 +121,14 @@ def run_assert(gate, expected: int, name: str, overrides: dict | None = None, dr
     env.update(overrides or {})
     env["PATH"] = os.environ.get("PATH", "")
     env["HOME"] = os.environ.get("HOME", "")
-    result = harness.run(["bash", str(SUT)], env=env, env_replace=True)
+    env["PYTHONPATH"] = str(paths.from_root(".ci"))
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    result = harness.run(
+        ["python3", "-m", "rediacc_ci.ci.assert_ci_complete"],
+        cwd=paths.from_root(),
+        env=env,
+        env_replace=True,
+    )
     gate.assert_exit(expected, result, name)
     gate.log_pass(name)
 

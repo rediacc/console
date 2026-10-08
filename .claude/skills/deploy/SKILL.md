@@ -25,7 +25,7 @@ A deploy to either side reaches real users. Edge and stable are BOTH production-
 | www | stable | `rediacc-www` (www.rediacc.com) | `workers/www/wrangler.toml` | none |
 | www | edge | `edge-rediacc-www` (edge.rediacc.com) | `workers/www/wrangler.edge.toml` | none |
 
-Regions, domains and bucket names live in `regions.json`. The proxy Worker (`rediacc-proxy-eu`) is a separate, manual-only path (`.ci/scripts/deploy/deploy-proxy.sh`) and is out of scope here. The CLI release channels (R2 `edge/` and `stable/`) are promoted by `promote-stable.yml` and `cd-v2.yml`, not by this skill.
+Regions, domains and bucket names live in `regions.json`. The proxy Worker (`rediacc-proxy-eu`) is a separate, manual-only path (`PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy`) and is out of scope here. The CLI release channels (R2 `edge/` and `stable/`) are promoted by `promote-stable.yml` and `cd-v2.yml`, not by this skill.
 
 ## 2. Preferred path: let CI deploy
 
@@ -92,7 +92,7 @@ WWW_MODULE=deploy_edge    # or: deploy_www  (stable)
 ./run.sh devbox exec -- env PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers -- bash -c '
   set -euo pipefail
   npm run build:packages
-  APP_VERSION="$(.ci/scripts/version/resolve-version.sh --current)" PUBLIC_VIDEO_CDN_BASE_URL=https://media.rediacc.com \
+  APP_VERSION="$(PYTHONPATH=.ci python3 -m rediacc_ci.version.resolve_version --current)" PUBLIC_VIDEO_CDN_BASE_URL=https://media.rediacc.com \
     npm run build -w @rediacc/www
   rm -rf workers/www/dist && mkdir -p workers/www/dist && cp -r packages/www/dist/* workers/www/dist/
   ( cd private/account/web && VITE_TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" VITE_CI_MODE=false \

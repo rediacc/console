@@ -1,4 +1,4 @@
-"""Differential: `rediacc_ci.deploy.deploy_proxy` against its twin `.ci/scripts/deploy/deploy-proxy.sh`.
+"""Differential: `rediacc_ci.deploy.deploy_proxy` against the frozen output of its retired twin `.ci/scripts/deploy/deploy-proxy.sh` (`tests/goldens/twins/deploy.deploy-proxy.jsonl`).
 
 RECORDING FAKE `npm`, `npx` AND `curl` ON A SCRATCH PATH, AND A FIXTURE REPO ROOT WITH RECORDING FAKES OF `resolve-version.sh` AND `build-renet.sh` AT THEIR REAL PATHS. NOTHING IS BUILT OR FETCHED HERE. The twin's first real act is two `npm run build --workspace` runs from the repo root (:45-46), and the fake `npm` is what stops them: a differential that let those run would compile `@rediacc/shared` and `@rediacc/cli` for real, twice per case. The root is made to agree across the two
 implementations exactly as in the two sibling differentials -- a COPY of `common.sh` inside `tmp_path` for the bash side, `$REDIACC_CI_ROOT` for the port -- and `test_the_copied_twin_is_the_real_twin` keeps the copy honest.
@@ -23,13 +23,40 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_proxy as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "deploy" / "deploy-proxy.sh"
+TWIN_REL = ".ci/scripts/deploy/deploy-proxy.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "deploy_proxy.py"
+
+# The port is driven through this program, which swaps its two siblings for the recording fakes: `resolve_version.run` (in process) and the argv of the renet build (a child). The twin reached the same fakes by path.
+DRIVER = """
+import os
+import sys
+
+from rediacc_ci.deploy import deploy_proxy
+from rediacc_ci.version import resolve_version
+
+
+def fake_resolve(argv):
+    with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
+        fh.write("resolve-version.sh\\t" + "\\t".join(argv) + "\\n")
+        fh.write("  cwd=" + os.path.basename(os.getcwd()) + "\\n")
+    return 0, os.environ.get("FAKE_VERSION", "1.2.3") + "\\n", ""
+
+
+def fake_build_argv(repo_root, version):
+    return [str(repo_root / ".ci" / "scripts" / "build" / "build-renet.sh"), "--version", version]
+
+
+resolve_version.run = fake_resolve
+deploy_proxy.build_renet_argv = fake_build_argv
+sys.exit(deploy_proxy.main(sys.argv[1:]))
+"""
 COMMON_SH = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -152,7 +179,9 @@ def _fixture_root(tmp_path: pathlib.Path, *, worker: str = "dir") -> pathlib.Pat
         ROOT / ".ci" / "config" / "well-known.generated.sh",
         root / ".ci" / "config" / "well-known.generated.sh",
     )
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
+    if TWIN.is_file():
+        # Only while the twin exists, i.e. on a re-freeze from bash; compare mode never runs it.
+        shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
     for rel, body in (
         (("version", "resolve-version.sh"), FAKE_RESOLVE_VERSION),
         (("build", "build-renet.sh"), FAKE_BUILD_RENET),
@@ -217,9 +246,9 @@ def _run(
     env.update(extra)
     for name in drop_env:
         env.pop(name, None)
-    runner = [BASH] if subject.suffix == ".sh" else [sys.executable]
+    argv = [BASH, str(subject)] if subject.suffix == ".sh" else [sys.executable, "-c", DRIVER]
     proc = subprocess.run(
-        [*runner, str(subject), *args],
+        [*argv, *args],
         cwd=root,
         capture_output=True,
         text=True,
@@ -233,7 +262,12 @@ def _run(
 
 def run_both(tmp_path: pathlib.Path, root: pathlib.Path, *args: str, **kw):
     twin_copy = root / ".ci" / "scripts" / "deploy" / TWIN.name
-    old, old_calls = _run(twin_copy, tmp_path, root, args, **kw)
+    old, old_calls = diff.twin_result(
+        TWIN_REL,
+        ["args=%r" % (args,), "kw=%r" % (sorted(kw.items()),)],
+        lambda: _run(twin_copy, tmp_path, root, args, **kw),
+        work=(str(tmp_path),),
+    )
     new, new_calls = _run(PORT, tmp_path, root, args, **kw)
     return old, new, old_calls, new_calls
 
@@ -255,7 +289,10 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
 
 
 def _twin_source() -> str:
-    return TWIN.read_text(encoding="utf-8")
+    """The twin's text, as frozen with its other answers."""
+    return diff.twin_call(TWIN_REL, ["source"], lambda: (0, TWIN.read_text(encoding="utf-8"), ""))[
+        1
+    ]
 
 
 def _twin_line(needle: str) -> int:
@@ -268,14 +305,6 @@ def _twin_line(needle: str) -> int:
     ]
     assert len(hits) == 1, (needle, hits)
     return hits[0]
-
-
-def test_the_copied_twin_is_the_real_twin(tmp_path: pathlib.Path) -> None:
-    """THE COPY IS THE SUBJECT, so a stale copy would silently pass everything."""
-    root = _fixture_root(tmp_path)
-    copied = root / ".ci" / "scripts" / "deploy" / TWIN.name
-    assert copied.read_bytes() == TWIN.read_bytes()
-    assert (root / ".ci" / "scripts" / "lib" / "common.sh").read_bytes() == COMMON_SH.read_bytes()
 
 
 # --------------------------------------------------------------------------- The real deploy ---------------------------------------------------------------------------
@@ -530,16 +559,35 @@ def test_the_deploy_call_still_carries_no_config_flag(tmp_path: pathlib.Path) ->
 
 def test_a_real_deploy_stages_the_renet_it_built_for_the_image(tmp_path: pathlib.Path) -> None:
     """B2: THE IMAGE HAD NO RENET. The deploy builds renet at the release version and copies `renet-linux-amd64` to `workers/proxy/renet/`, where the Dockerfile picks it up. Each side is run alone so the staged file is that side's own."""
-    for side in (TWIN, PORT):
-        root = _fixture_root(tmp_path / side.suffix.lstrip("."))
-        subject = root / ".ci" / "scripts" / "deploy" / TWIN.name if side == TWIN else PORT
+
+    def staged_of(root: pathlib.Path) -> str:
+        staged = root / "workers" / "proxy" / port.RENET_STAGE / port.RENET_BINARY
+        return staged.read_text(encoding="utf-8") if staged.is_file() else ""
+
+    def run_twin():
+        side_tmp = tmp_path / "twin"
+        root = _fixture_root(side_tmp)
         proc, calls = _run(
-            subject, tmp_path / side.suffix.lstrip("."), root, (), FAKE_VERSION="9.8.7"
+            root / ".ci" / "scripts" / "deploy" / TWIN.name,
+            side_tmp,
+            root,
+            (),
+            FAKE_VERSION="9.8.7",
         )
+        return proc, calls, staged_of(root)
+
+    twin_proc, twin_calls, twin_staged = diff.twin_result(
+        TWIN_REL, ["stages renet"], run_twin, work=(str(tmp_path),)
+    )
+    port_root = _fixture_root(tmp_path / "port")
+    port_proc, port_calls = _run(PORT, tmp_path / "port", port_root, (), FAKE_VERSION="9.8.7")
+    for proc, calls, staged in (
+        (twin_proc, twin_calls, twin_staged),
+        (port_proc, port_calls, staged_of(port_root)),
+    ):
         assert proc.returncode == 0, proc.stderr
         assert "build-renet.sh\t--version\t9.8.7\n" in calls
-        staged = root / "workers" / "proxy" / port.RENET_STAGE / port.RENET_BINARY
-        assert staged.read_text(encoding="utf-8") == "RENET 9.8.7\n", side.name
+        assert staged == "RENET 9.8.7\n"
 
 
 def test_the_port_stages_an_executable_renet_even_over_a_stale_non_executable_one(
