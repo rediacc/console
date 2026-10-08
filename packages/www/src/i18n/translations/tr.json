@@ -9831,7 +9831,10 @@
     "title": "İş Sürekliliğini Nasıl Sağlıyoruz"
   },
   "video": {
-    "playVideo": "Videoyu oynat"
+    "playVideo": "Videoyu oynat",
+    "player": {
+      "chapters": "Bölümler"
+    }
   },
   "whyNow": {
     "cards": [

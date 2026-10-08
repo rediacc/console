@@ -9,13 +9,16 @@
  * could is a browser gate, which is wave D gate 2 and unowned. So this covers what is
  * checkable from source, and says plainly what it cannot see.
  *
- * THE REGRESSION THAT MATTERS MOST is the first one. Plyr's `quality` pane was tried as
- * the host for the language picker and it snaps every click to min(options): the radio
- * whose DOM value was "4" delivered 0, and with 1-based values "5" delivered 1, because
- * `setQuality`'s `options.includes()` disagrees with the list `setQualityMenu` rendered
- * the rows from. Re-adding `quality` to the settings array would silently bring back a
- * control that plays a different language than the one clicked -- the worst kind of
- * regression, because it looks like it works.
+ * THE PICKER'S HOME, AND WHY THERE IS ONLY ONE (2026-10-08). The player moved from Plyr to
+ * Video.js 10's packaged `VideoSkin` (agent/plans/PLAN-plyr-to-videojs.md). Plyr's settings
+ * menu hosted a `language` row with an in-frame overlay as its fallback; the Video.js skin's
+ * settings menu hard-codes its children and takes no slot, and ejecting the skin to add one
+ * measured 2,786 lines plus a Tailwind 4.3 toolchain. So the in-frame toolbar is now THE
+ * picker, unconditional whenever the cast has 2+ locales, and it must sit INSIDE the skin
+ * root, because that root is the element the skin's fullscreen button fullscreens: an
+ * overlay one level up would vanish the moment a viewer went fullscreen. The Plyr-era
+ * `quality`-pane check (a pane that snapped every click to min(options)) is retired with
+ * Plyr; that pane no longer exists to be re-added.
  *
  * THE SECOND FAMILY, ADDED 2026-09-23, IS ABOUT THE STYLESHEETS AND NOT THE PICKER. The player's CSS moved out of the component and behind `ensurePlayerStyles()` so it would stop being linked on 794 pages that never build a player; what that move bought has to be paid for by two things the compiler cannot state. The sheets must still be imported with `?url`, or they go
  * straight back into the component chunk, and the mount module must AWAIT them before `createRoot`, or the first frame of player DOM is unstyled. `check:ci-player-css-scope` catches the first from a built `dist`; nothing at all caught the second until now.
@@ -48,17 +51,9 @@ const STYLES = path.join(REPO, 'packages/www/src/scripts/tutorial-video-styles.t
 const MOUNT = path.join(REPO, 'packages/www/src/scripts/tutorial-video-mount.ts');
 const THEATER = path.join(REPO, 'packages/www/src/scripts/video-theater.ts');
 
-/** The broken host must not come back, in any spelling. */
-export const qualityPaneFaults = (player: string): string[] => {
-  const out: string[] = [];
-  if (/settings:\s*[^;]*['"]quality['"]/.test(player))
-    out.push(
-      "the Plyr settings array lists 'quality' again; that pane snaps every click to min(options)"
-    );
-  if (/quality:\s*\{[^}]*forced/.test(player))
-    out.push('`quality.forced` is configured again, which is the pane this work removed');
-  return out;
-};
+/** The one place the toolbar is rendered: inside the skin root, gated only on its own existence. */
+export const SANCTIONED_OVERLAY =
+  '{toolbar && <div className="tvp-toolbar-overlay">{toolbar}</div>}';
 
 /**
  * The picker renders INSIDE the player frame, on every mount, with no opt-in.
@@ -69,32 +64,39 @@ export const qualityPaneFaults = (player: string): string[] => {
  */
 export const placementFaults = (player: string, hero: string): string[] => {
   const out: string[] = [];
-  // The picker's HOME is a `language` row in Plyr's own settings menu, beside Captions
-  // and Speed. `config.settings` is iterated with no allowlist (plyr.mjs:2645), so an
-  // entry Plyr does not know still gets its row, pane, shortcuts and animation; only
-  // populating the pane is ours. The `i18n` label is required: `i18n.get` returns '' for
-  // an unknown key and the row would render blank.
-  if (!/'language'/.test(player))
+  if (!/tvp-toolbar-overlay/.test(player)) {
     out.push(
-      'the `language` entry is gone from config.settings; the picker has no row in the settings menu'
+      'the in-frame language overlay is gone, and it is the ONLY picker: a cast with 2+ locales would offer no language at all'
     );
-  if (!/i18n:\s*\{\s*language:/.test(player))
-    out.push('the `language` i18n label is gone, so the settings row would render blank');
-  // The populator moved to its own module when the component hit eslint's max-lines; what
-  // matters is that the player still CALLS it, not where it lives.
-  if (!/mountLanguagePane\(/.test(player))
-    out.push('nothing populates the language pane, so the row opens onto an empty menu');
-  if (!/tvp-toolbar-overlay/.test(player))
-    out.push('the in-frame overlay fallback is gone; a Plyr upgrade would leave no picker at all');
-  if (!/!menuMounted/.test(player))
+    return out;
+  }
+  // The toolbar exists exactly when the cast has 2+ locales. Any further condition is the
+  // per-surface drift the operator ruled out, spelled as a ternary instead of a flag.
+  if (!/const toolbar =\s*pickerLangs\.length > 1 \?/.test(player))
     out.push(
-      'the overlay is no longer conditional on the menu failing, so both pickers can show at once'
+      'the toolbar is no longer built on `pickerLangs.length > 1` alone, so some mount with 2+ locales can lose its picker'
     );
-  // The overlay belongs to the keyed root subtree, not the shell above it.
-  const rootAt = player.indexOf('className={`tvp-root');
-  const overlayAt = player.indexOf('tvp-toolbar-overlay');
-  if (rootAt >= 0 && overlayAt >= 0 && overlayAt < rootAt)
-    out.push('the overlay is emitted before the player root, so it is not inside the frame');
+  // The ONE sanctioned render site, guarded by nothing but the toolbar's own existence.
+  const at = player.indexOf(SANCTIONED_OVERLAY);
+  if (at < 0)
+    out.push(
+      `the overlay is no longer rendered as \`${SANCTIONED_OVERLAY}\`, so it carries a condition beyond the toolbar existing (or was reshaped; if so, update SANCTIONED_OVERLAY here deliberately)`
+    );
+  else {
+    // Inside the skin root, which is what the skin's fullscreen button fullscreens.
+    const skinOpen = player.indexOf('<VideoSkin');
+    const skinClose = player.indexOf('</VideoSkin>');
+    if (skinOpen < 0 || skinClose < 0 || at < skinOpen || at > skinClose)
+      out.push(
+        'the overlay is rendered outside <VideoSkin>, so it is not inside the element fullscreen takes and vanishes in fullscreen'
+      );
+  }
+  // A second picker in the skin's settings menu was measured impossible without ejecting;
+  // its Plyr-era machinery coming back means two pickers, or one that renders empty.
+  if (/mountLanguagePane|language-pane|menuMounted/.test(player))
+    out.push(
+      "a settings-menu language picker is back beside the in-frame one; the packaged VideoSkin's settings menu takes no child, so it is the toolbar or nothing"
+    );
   if (/inPlayerLanguage|inPlayerPicker/.test(player) || /in-player-language/.test(hero))
     out.push(
       'an opt-in flag is back; the in-frame picker is meant to be unconditional on every mount'
@@ -102,11 +104,7 @@ export const placementFaults = (player: string, hero: string): string[] => {
   // Strip the ONE sanctioned use, then any remaining `{toolbar}` is a second render site.
   // The negative-lookahead spelling this replaces could not fire: the planted defect ends
   // in `</div>`, which is exactly what the lookahead excluded.
-  const withoutOverlay = player.replace(
-    '{toolbar && !menuMounted && <div className="tvp-toolbar-overlay">{toolbar}</div>}',
-    ''
-  );
-  if (/\{toolbar\}/.test(withoutOverlay))
+  if (/\{toolbar\}/.test(player.replace(SANCTIONED_OVERLAY, '')))
     out.push('the toolbar is rendered somewhere other than inside the in-frame overlay');
   return out;
 };
@@ -129,20 +127,13 @@ export const chromeFaults = (css: string): string[] => {
     out.push(
       'the 13-locale menu is uncapped inside the frame, which clips its tail with no scrollbar'
     );
-  // MEASURED, not stylistic: `.tvp-root` is overflow:hidden, so an unclamped 13-entry pane
-  // is 488px tall starting 127px ABOVE the container. The first four languages are not
-  // scrolled off, they are invisible and unreachable.
-  if (!/\[id\$='-language'\] \[role='menu'\]\s*\{[^}]*max-height/.test(css))
-    out.push(
-      "the settings-menu language pane is uncapped; at 13 entries the top of the list is CLIPPED by .tvp-root's overflow, not scrollable"
-    );
   return out;
 };
 
 /**
  * THE MOUNT MODULE MUST AWAIT THE PLAYER'S STYLESHEETS BEFORE IT CREATES A ROOT.
  *
- * `plyr.css` and `tutorial-video.css` are no longer imported by the component. They were
+ * The skin's `skin.css` and `tutorial-video.css` are not imported by the component. They were
  * being linked on 794 pages that never build a player, so they moved behind
  * `ensurePlayerStyles()` and load at runtime; PLAN-plyr-css-on-demand-loading.md carries
  * the measurement. The price of that move is an ordering obligation nothing in the type
@@ -212,8 +203,9 @@ export const mountRoutingFaults = (callers: Record<string, string>): string[] =>
 /**
  * And both sheets must still be imported with `?url`.
  *
- * `import 'plyr/dist/plyr.css'` and `import href from 'plyr/dist/plyr.css?url'` differ by
- * four characters and by 37,018 B on 794 pages. Only the second compiles to a
+ * `import 'plyr/dist/plyr.css'` and `import href from 'plyr/dist/plyr.css?url'` differed by
+ * four characters and by 37,018 B on 794 pages; the Video.js skin sheet that replaced it on
+ * 2026-10-08 builds to 81,643 B, so the same slip now costs more than twice that. Only the second compiles to a
  * transform-only import, which Vite keeps out of the chunk's `importedCss`, which is what
  * stops Astro's page-CSS hoisting from linking the sheet everywhere the hydrator goes.
  *
@@ -223,7 +215,7 @@ export const mountRoutingFaults = (callers: Record<string, string>): string[] =>
  */
 export const styleUrlFaults = (styles: string): string[] => {
   const out: string[] = [];
-  for (const spec of ['plyr/dist/plyr.css', '../styles/tutorial-video.css']) {
+  for (const spec of ['@videojs/react/video/skin.css', '../styles/tutorial-video.css']) {
     if (!styles.includes(`'${spec}?url'`))
       out.push(
         `'${spec}' is no longer imported with ?url, so its bytes return to the component chunk and Astro links them on every page carrying the hydrator`
@@ -247,7 +239,6 @@ const selftest = (
     console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${name}${ok || !detail ? '' : ` -- ${detail}`}`);
   };
   const all = () => [
-    ...qualityPaneFaults(player),
     ...placementFaults(player, hero),
     ...chromeFaults(css),
     ...styleOrderFaults(mount),
@@ -342,8 +333,8 @@ const selftest = (
       ).length === 0
   );
   fires(
-    'MUTANT: turning plyr.css back into a bare import is caught, and it is the edit that re-links 37,018 B',
-    mutate(styles, "'plyr/dist/plyr.css?url'", "'plyr/dist/plyr.css'"),
+    'MUTANT: turning the Video.js skin sheet back into a bare import is caught, and it is the edit that re-links it on every hydrator page',
+    mutate(styles, "'@videojs/react/video/skin.css?url'", "'@videojs/react/video/skin.css'"),
     styleUrlFaults
   );
   fires(
@@ -352,33 +343,41 @@ const selftest = (
     styleUrlFaults
   );
 
-  // THE CONTROL THAT MATTERS: the pane that plays the wrong language must be caught.
-  check(
-    "re-adding 'quality' to the settings array is caught",
-    qualityPaneFaults(`${player}\n      settings: ['captions', 'speed', 'quality'],`).length > 0
+  // THE PICKER. Each control is a mutant of the REAL component, null-guarded by `mutate`, so a
+  // rewrite that moved the text it aims at reds this selftest instead of testing nothing.
+  const place = (p: string) => placementFaults(p, hero);
+  fires(
+    'losing the in-frame overlay, the ONLY picker, is caught',
+    mutate(player, 'tvp-toolbar-overlay', 'tvp-gone'),
+    place
   );
-  check(
-    're-adding a forced-quality config is caught',
-    qualityPaneFaults(`${player}\nconst x = { quality: { forced: true, options: [] } };`).length > 0
+  fires(
+    'MUTANT (move): rendering the overlay after </VideoSkin>, outside what fullscreen takes, is caught',
+    player.includes(SANCTIONED_OVERLAY) && player.includes('</VideoSkin>')
+      ? player
+          .replace(SANCTIONED_OVERLAY, '')
+          .replace('</VideoSkin>', `</VideoSkin>\n${SANCTIONED_OVERLAY}`)
+      : null,
+    place
   );
-  check(
-    'dropping the settings-menu row is caught',
-    placementFaults(
-      player.replace("'language',", "'nope',").replaceAll("'language'", "'nope'"),
-      hero
-    ).length > 0
+  fires(
+    'an extra condition on the overlay is caught',
+    mutate(
+      player,
+      '{toolbar && <div className="tvp-toolbar-overlay">',
+      '{toolbar && inTheater && <div className="tvp-toolbar-overlay">'
+    ),
+    place
   );
-  check(
-    'losing the pane populator is caught',
-    placementFaults(player.replaceAll('mountLanguagePane(', 'gone('), hero).length > 0
+  fires(
+    'gating the toolbar on anything beyond 2+ locales is caught',
+    mutate(player, 'pickerLangs.length > 1 ?', 'pickerLangs.length > 1 && inTheater ?'),
+    place
   );
-  check(
-    'losing the overlay FALLBACK is caught, not just the row',
-    placementFaults(player.replaceAll('tvp-toolbar-overlay', 'tvp-gone'), hero).length > 0
-  );
-  check(
-    'showing overlay and menu at once is caught',
-    placementFaults(player.replace('!menuMounted && ', ''), hero).length > 0
+  fires(
+    'a settings-menu picker coming back beside the toolbar is caught',
+    `${player}\nmountLanguagePane(menu, langs);`,
+    place
   );
   check(
     'a per-surface opt-in flag coming back is caught',
@@ -405,12 +404,6 @@ const selftest = (
     ).length > 0
   );
   check(
-    'uncapping the settings-menu language pane is caught',
-    chromeFaults(
-      css.replace(/(\[id\$='-language'\] \[role='menu'\]\s*\{)[^}]*max-height[^;]*;/, '$1')
-    ).length > 0
-  );
-  check(
     'uncapping the 13-locale overlay menu is caught',
     chromeFaults(
       css.replace(/(\.tvp-toolbar-overlay \.language-menu\s*\{)[^}]*max-height[^;]*;/, '$1')
@@ -429,7 +422,7 @@ const main = (): number => {
   const theater = fs.readFileSync(THEATER, 'utf8');
   // Each subject must still be recognisably itself before any verdict is taken on it. `scheduleHydration` is the hydrator's entry point and the link element is the styles module's whole mechanism; either one gone means this gate is reading a file that has been repurposed, and a fault list computed from it would be arbitrary rather than absent.
   if (
-    !/new Plyr\(/.test(player) ||
+    !/<VideoSkin\b/.test(player) ||
     !/video-player-mount/.test(hero) ||
     !/scheduleHydration/.test(hydrate) ||
     !/document\.createElement\('link'\)/.test(styles) ||
@@ -444,11 +437,7 @@ const main = (): number => {
   if (process.argv.slice(2).includes('--selftest'))
     return selftest(player, hero, css, hydrate, styles, mount, theater);
 
-  const picker = [
-    ...qualityPaneFaults(player),
-    ...placementFaults(player, hero),
-    ...chromeFaults(css),
-  ];
+  const picker = [...placementFaults(player, hero), ...chromeFaults(css)];
   const stylesheets = [
     ...styleOrderFaults(mount),
     ...mountRoutingFaults({ hydrator: hydrate, theater }),
@@ -461,15 +450,17 @@ const main = (): number => {
     // EACH EPILOGUE IS PRINTED ONLY FOR THE FAMILY THAT FIRED. The picker paragraph used to print unconditionally, which was harmless while it was the only family and is a live defect now that it is not: a reader whose stylesheet ordering broke would be handed a paragraph about Plyr's quality pane and no mention of the thing they actually broke.
     if (picker.length) {
       console.error(
-        "\n  Plyr's quality pane cannot host the language picker: it snaps every click to"
+        "\n  The in-frame toolbar is the player's ONLY language picker: Video.js 10's packaged"
       );
-      console.error('  min(options), so the video plays a language nobody chose. The picker lives');
-      console.error('  inside the player frame instead. See the comment on the Plyr config.');
+      console.error(
+        '  VideoSkin settings menu takes no child row. It must render inside <VideoSkin>,'
+      );
+      console.error('  the element fullscreen takes. See agent/plans/PLAN-plyr-to-videojs.md.');
     }
     if (stylesheets.length) {
       console.error("\n  The player's stylesheets load at RUNTIME and are awaited before the root");
       console.error(
-        '  is created. Both halves are load-bearing: `?url` keeps 37,018 B off the 794'
+        '  is created. Both halves are load-bearing: `?url` keeps the skin sheet (81,643 B) off the 794'
       );
       console.error(
         '  pages that carry the hydrator and no player, and the await is what makes the'
@@ -480,7 +471,7 @@ const main = (): number => {
     return 1;
   }
   console.log(
-    '✓ video-player invariants hold: no quality pane, the picker is inside the frame and mutually exclusive, and its chrome survives a bright video.'
+    '✓ video-player invariants hold: the in-frame toolbar is the one picker, it renders inside <VideoSkin> on every 2+ locale cast, and its chrome survives a bright video.'
   );
   console.log(
     '  7 source(s) read; mountPlayers awaits ensurePlayerStyles() before createRoot, the hydrator and the theater build only through it, and both sheets are still imported with ?url so they stay off the 794 pages with no player.'

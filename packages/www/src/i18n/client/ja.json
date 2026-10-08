@@ -342,5 +342,10 @@
       "dev-env": "開発環境",
       "defense": "先制防御"
     }
+  },
+  "video": {
+    "player": {
+      "chapters": "チャプター"
+    }
   }
 }

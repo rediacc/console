@@ -9858,7 +9858,10 @@
     "title": "Come proteggiamo la continuità aziendale"
   },
   "video": {
-    "playVideo": "Riproduci video"
+    "playVideo": "Riproduci video",
+    "player": {
+      "chapters": "Capitoli"
+    }
   },
   "whyNow": {
     "cards": [

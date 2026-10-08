@@ -63,20 +63,26 @@ export function definedClasses(css: string): Set<string> {
  * Vendor classes built by a third-party library at RUNTIME, which no source file can
  * mention because our code never writes them.
  *
- * BLOCKER: `plyr` is a declared dependency (`packages/www/package.json`) imported by
- * `src/components/TutorialVideoPlayer.tsx`. Its stylesheet and
- * `src/styles/tutorial-video.css` are loaded at RUNTIME by
- * `src/scripts/tutorial-video-styles.ts` (2026-09-03) rather than imported by the
- * component -- a module-scope import put them on 794 pages with no player. The
- * suppression is unchanged in substance; only the citation moved, because a reason
- * that points at a line which no longer exists is a reason nobody can check. The library builds `.plyr__poster` and `.plyr__captions`
- * itself; styling a vendor library's generated DOM is the entire point of those rules, and
- * the gate reported both as dead. Deleting them would unstyle the tutorial player's poster
- * and captions. Scanning `node_modules/plyr/dist` instead was considered and rejected: it
- * would make the gate depend on an installed tree and on a minified bundle's token soup,
- * and slow every run for one library.
+ * BLOCKER: `@videojs/react` is a declared dependency (`packages/www/package.json`) imported
+ * by `src/components/TutorialVideoPlayer.tsx`, whose packaged `VideoSkin` renders the player's
+ * controls. Its stylesheet (`@videojs/react/video/skin.css`) and `src/styles/tutorial-video.css`
+ * are loaded at RUNTIME by `src/scripts/tutorial-video-styles.ts` rather than imported by the
+ * component -- a module-scope import put them on 794 pages with no player. The skin builds
+ * `.media-skin`, `.media-poster`, `.media-time-slider-chapter` and the `video-skin` /
+ * `video-controls*` / `video-time*` containers itself; tutorial-video.css styles that
+ * generated DOM, which is the entire point of those rules, and the gate would report every
+ * one as dead. Deleting them would unstyle the tutorial player. Scanning
+ * `node_modules/@videojs/react` instead was considered and rejected: it would make the gate
+ * depend on an installed tree and on a minified bundle's token soup, and slow every run for
+ * one library.
+ *
+ * The prefixes are NARROW on purpose. `media-` is safe because no site stylesheet defines a
+ * class starting with it (checked 2026-10-08 when Plyr's `plyr__` was replaced). A bare
+ * `video-` is NOT: the site's own `video-player-mount`, `video-theater-*`, `video-poster-*`
+ * and `video-container` would then be rescued from this gate forever, so only the three skin
+ * containers are named in full.
  */
-const VENDOR_CLASS_PREFIXES = ['plyr__'];
+const VENDOR_CLASS_PREFIXES = ['media-', 'video-skin', 'video-controls', 'video-time'];
 
 /**
  * Class-name fragments a source builds by interpolation, harvested ONLY from a class
@@ -240,14 +246,30 @@ function selftest(): number {
   );
 
   // DEFECT C: a vendor runtime class no source can mention.
-  check(
-    'the vendor prefix list covers the plyr runtime classes',
-    VENDOR_CLASS_PREFIXES.some((p) => 'plyr__poster'.startsWith(p))
-  );
-  check(
-    'CONTROL: the vendor prefix does not rescue an unrelated class',
-    !VENDOR_CLASS_PREFIXES.some((p) => 'player-shell'.startsWith(p))
-  );
+  for (const vendor of [
+    'media-poster',
+    'media-time-slider-chapter',
+    'video-skin',
+    'video-controls-settings-button',
+    'video-time-slider-group',
+  ])
+    check(
+      `the vendor prefix list covers the Video.js skin runtime class ${vendor}`,
+      VENDOR_CLASS_PREFIXES.some((p) => vendor.startsWith(p))
+    );
+  // The site's own video-* classes must stay subject to the gate: a prefix wide enough to rescue them would make every one of them undeletable by this gate's verdict.
+  for (const site of [
+    'player-shell',
+    'video-player-mount',
+    'video-theater-stage',
+    'video-poster-play',
+    'video-container',
+    'social-media-links',
+  ])
+    check(
+      `CONTROL: the vendor prefix does not rescue the site class ${site}`,
+      !VENDOR_CLASS_PREFIXES.some((p) => site.startsWith(p))
+    );
 
   // The whole-sheet view. NOTE what is NOT asserted here: whether the live tree currently
   // has an orphaned stylesheet. That is a property of the REPO, and asserting it in the

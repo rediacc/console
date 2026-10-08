@@ -9837,7 +9837,10 @@
     "title": "비즈니스 연속성, 이렇게 지킵니다"
   },
   "video": {
-    "playVideo": "동영상 재생"
+    "playVideo": "동영상 재생",
+    "player": {
+      "chapters": "챕터"
+    }
   },
   "whyNow": {
     "cards": [

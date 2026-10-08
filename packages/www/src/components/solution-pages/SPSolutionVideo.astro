@@ -23,20 +23,19 @@ const sources = resolveSolutionVideoSources(slug);
 // ONE PLAYER, NOT TWO. This used to mount `SolutionVideoPlayer`, a second React island
 // with native controls, its own language picker and two <video> elements toggled by CSS.
 // Two players is two of everything to maintain and two places for a bug to live, and the
-// tutorial one is the better of the pair: Plyr controls, a speed menu, fullscreen,
+// tutorial one is the better of the pair: Video.js controls, a speed menu, fullscreen,
 // keyboard handling, and a picker that keeps your place across a language switch.
 //
 // What the solution videos DON'T have, and why the player no longer demands it: no VTT
 // (captions are burned into each localized file), no chapters, no per-word timings. Those
-// props are optional now, and Plyr drops its CC button when there is no track behind it.
+// props are optional now, and the skin drops its CC button when there is no track behind it.
 //
-// A PLACEHOLDER, NOT `client:visible`. `plyr` reads `document` at module scope, so
-// importing it under Node throws before any component code runs -- an Astro island would
-// have to server-render it and cannot. The shared hydrator mounts it from a dynamic
-// import instead; this div is the same contract the tutorial embeds use.
+// A PLACEHOLDER, NOT `client:visible`. the Video.js player is a deferred
+// client-only chunk (the packaged skin alone is about 260 KB), so an Astro island would
+// ship it with the page. The shared hydrator mounts it from a dynamic import instead; this div is the same contract the tutorial embeds use.
 //
 // The portrait cut is picked by `matchMedia` inside the player rather than by rendering
-// both and hiding one, because with Plyr two elements would mean two player instances.
+// both and hiding one, because with Video.js two elements would mean two player instances.
 const localized = Object.fromEntries(
   Object.entries(sources)
     .filter(([, urls]) => Boolean(urls))
