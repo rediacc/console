@@ -661,7 +661,7 @@ def _late_print_is_unconditional(source=None):
 def late_rows_line(late_rows, judged=True):
     """The advisory printed on EVERY run, red or green: how many boxes this branch closed before investigating them.
 
-    Not a finding, because the late record is the honest repair and a red nobody can clear would only push the next session to skip it. Not silent either: a count of 0 is printed too, so a reader can tell "none" from "not looked at".
+    Not a finding, because the late record is the honest repair and a red nobody can clear would only push the next session to skip it. Not silent either: a count of 0 is printed too, so a reader can tell "none" from "not looked at". With `judged=False` (no base ledger on this run, so no closed box was read) the line says "not judged" and never claims a count, whatever `late_rows` holds.
     """
     if not judged:
         return "  P-A2 late records: not judged (no base ledger on this run, so no closed box was read)"

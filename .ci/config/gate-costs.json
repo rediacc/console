@@ -7,6 +7,8 @@
     "job (run.ts --quick --jobs 1, serial and uncontended). Checked nightly by `gate_costs --check`.",
     "cpu_s/wall_s in seconds; eff_cores = cpu_s / wall_s; capped = eff_cores >= 0.9 x source.cores",
     "(the gate filled the runner, so its width is not portable); rank 1 = the largest cpu_s.",
+    "carried: a slow (diff-sampled) gate no capture in the window ran keeps its last figures,",
+    "stamped with when they were measured (gate_costs.py docstring, TWO KINDS OF GATE).",
     "Do not hand-edit: the next --refresh overwrites every figure."
   ],
   "refreshed_at": "2026-10-08T10:24:57Z",

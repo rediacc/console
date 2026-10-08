@@ -577,3 +577,9 @@ def test_a_single_capture_window_still_reds_a_fast_gate_it_could_not_measure(tmp
     )
     one = [capture([gate("q", None, 5, status="fail")])]
     assert gc.check(target, "o/r", tmp_path, collect=_collect(one)) == 1
+
+
+def test_committed_baseline_header_is_what_the_generator_writes() -> None:
+    """A header that differs from DEFAULT_COMMENT would be rewritten by the next --refresh."""
+    committed = json.loads((paths.repo_root() / ".ci/config/gate-costs.json").read_text("utf-8"))
+    assert committed["$comment"] == gc.DEFAULT_COMMENT

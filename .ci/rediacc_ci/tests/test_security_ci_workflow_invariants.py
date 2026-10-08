@@ -1109,6 +1109,21 @@ def _main_only_negated(ci: dict, _cd: dict, _hk: dict) -> None:
     ci["jobs"]["cd-preflight"]["if"] = "always() && github.event_name != 'pull_request'"
 
 
+def _job_pr_step_negated(ci: dict, _cd: dict, _hk: dict) -> None:
+    """A positive job-level pull_request test must not mask a step-level `if:` that excludes it."""
+    job = ci["jobs"]["cd-preflight"]
+    job["if"] = "always() && (github.event_name == 'push' || github.event_name == 'pull_request')"
+    job["steps"][1]["if"] = "github.event_name != 'pull_request'"
+
+
+def _spaced_negation(ci: dict, _cd: dict, _hk: dict) -> None:
+    ci["jobs"]["cd-preflight"]["if"] = "always() && ! (github.event_name == 'pull_request')"
+
+
+def _nested_negation(ci: dict, _cd: dict, _hk: dict) -> None:
+    ci["jobs"]["cd-preflight"]["if"] = "always() && !((github.event_name == 'pull_request'))"
+
+
 def _no_pr_job(ci: dict, _cd: dict, _hk: dict) -> None:
     del ci["jobs"]["cd-preflight"]
 
@@ -1160,6 +1175,9 @@ def _narrow_hk(_ci: dict, _cd: dict, hk: dict) -> None:
     [
         (_push_only, ["cd-preflight-not-on-pr"]),
         (_main_only_negated, ["cd-preflight-not-on-pr"]),
+        (_job_pr_step_negated, ["cd-preflight-not-on-pr"]),
+        (_spaced_negation, ["cd-preflight-not-on-pr"]),
+        (_nested_negation, ["cd-preflight-not-on-pr"]),
         (_no_pr_job, ["cd-preflight-no-pr-job"]),
         (_before_tag, ["cd-preflight-before-tag"]),
         (_other_job, ["cd-preflight-before-tag"]),
