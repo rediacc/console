@@ -334,6 +334,25 @@ def test_backfill_finds_judged_roots_and_is_idempotent(tmp_path: pathlib.Path) -
     assert len(L.read_rows(led)[0]) == len(rows)
 
 
+def test_backfill_after_a_crash_between_append_and_seen_adds_no_duplicates(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The rows of a receipt are in the ledger but its seen key was never written (a crash between the two steps): the next backfill marks it seen and appends nothing."""
+    main = tmp_path / "main"
+    docs = [_receipt("t1", "2026-10-08T00:10:00.000Z", {"x:a": _entry("ok")}, root=str(main))]
+    _plant_root(main, docs)
+    led = tmp_path / "ledger"
+    batches, _counts = L.backfill_rows(docs, main)
+    assert len(batches) == 1
+    assert L.append_rows(led, batches[0][1]) > 0
+    before = L.read_rows(led)[0]
+    out: list[str] = []
+    assert L.backfill(led, main, [], out=out.append) == 0
+    assert L.read_rows(led)[0] == before, "a folded receipt must not be appended a second time"
+    assert "0 new run(s)" in out[-1]
+    assert batches[0][0] in L.read_seen(led)
+
+
 def test_backfill_rows_drop_a_base_tree_git_cannot_diff(tmp_path: pathlib.Path) -> None:
     """A base_tree whose diff is unknown (`changed` None: an object this clone lacks) must not be recorded as if `changed` were relative to it. `tmp_path` is not a git repository, so no diff can be answered; the second receipt's base is dropped, the first never had one."""
     docs = [

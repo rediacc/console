@@ -663,7 +663,12 @@ def backfill(
     with held(d / FOLD_LOCK_NAME):
         seen = read_seen(d)
         fresh = [(k, rs) for k, rs in batches if k not in seen]
+        # A crash between the append and mark_seen leaves rows with no seen key; a batch whose deterministic run id is already in the ledger is marked seen and skipped, never appended twice.
+        folded = {str(r["id"]) for r in read_rows(d)[0] if r.get("t") == "run"}
         for k, rs in fresh:
+            if any(r.get("t") == "run" and str(r.get("id")) in folded for r in rs):
+                mark_seen(d, [k])
+                continue
             written += append_rows(d, rs)
             mark_seen(d, [k])
             runs += 1

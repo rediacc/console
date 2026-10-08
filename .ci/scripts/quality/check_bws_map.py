@@ -825,13 +825,18 @@ def strip_ts_comments(text: str) -> str:
     )
 
 
+def blank_multiline_ts_literals(code: str) -> str:
+    """`code` with every string or template literal that spans a line removed, so a line inside one is never read as a declaration."""
+    return _TS_TOKEN_RE.sub(lambda m: "" if m.group(1) and "\n" in m.group(1) else m.group(0), code)
+
+
 def archive_pin_declared(rel: str, text: str, pattern: str) -> bool:
     """Does the file's CODE declare ARCHIVE_RE with exactly this pattern?
 
     Python is parsed: a module-level `ARCHIVE_RE = re.compile(<str>)` whose string equals the pattern, so a comment or docstring can never count. TypeScript has no parser here, so `/* */` and `//` comments are stripped first and the declaration must then start a line. A file that does not parse pins nothing.
     """
     if rel.endswith(".ts"):
-        code = strip_ts_comments(text)
+        code = blank_multiline_ts_literals(strip_ts_comments(text))
         decl = archive_pin_declaration(rel, pattern)
         return any(line.startswith(decl) for line in code.splitlines())
     try:
@@ -1501,6 +1506,20 @@ jobs:
             lambda: (
                 strip_ts_comments('const a = "x//y", b = /p\\/\\/q/; // gone\nrest')
                 == 'const a = "x//y", b = /p\\/\\/q/; \nrest'
+            ),
+        ),
+        (
+            "15: a declaration line inside a multi-line template literal pins nothing",
+            lambda: (
+                archive_clone_problems(
+                    {},
+                    pat,
+                    {
+                        "a.ts": "const doc = `\n" + good_pins["a.ts"] + "\n`;",
+                        "b.py": good_pins["b.py"],
+                    },
+                )
+                != []
             ),
         ),
         (
