@@ -19,8 +19,10 @@ import {
   fitToLease,
   type GateCost,
   LEASE_POLL_MS,
+  type PoolOptions,
   planAdmission,
   type Sched,
+  type ScheduleOrder,
   SETTLE_MS,
 } from './pool';
 
@@ -56,6 +58,8 @@ interface SimConfig {
   budget: CoreBudget;
   /** Record a violation whenever two or more running gates' budgeted cores exceed this (cores rule only). */
   capCheck?: number;
+  /** The learned order (rank.ts), passed to planAdmission exactly as runPool passes it. */
+  order?: ScheduleOrder;
 }
 
 /** Several runs on one machine drawing from one token pool, the way core_lease.py's broker serves them. */
@@ -141,6 +145,7 @@ function runState(run: SimRun, cfg: SimConfig) {
     sched: cfg.sched,
     budget: cfg.budget,
     costs,
+    order: cfg.order,
   });
   const cand = (id: string): Candidate => {
     const c = byId.get(id);
@@ -368,6 +373,81 @@ export function simulateRuns(
       idleToEndCoreS: (cfg.machineCores * s.endMs - s.busyAtEnd) / 1000,
     });
   return { makespanMs: out.makespanMs, idleCoreS: out.idleCoreS, runs: results };
+}
+
+/** What predictMakespan needs of the run: the same planning inputs runPool gets. */
+type PlanInputs = Pick<
+  PoolOptions,
+  'jobs' | 'heavyLimit' | 'durations' | 'sched' | 'budget' | 'costs' | 'order'
+>;
+
+/**
+ * THE RUNNER'S SAFETY CHECK (agent/plans/PLAN-gate-scheduling-learned.md section 5): the makespan of one graph under one order, simulated through the same admit() and planAdmission() runPool drives, with each gate's TRUTH set to exactly what the scheduler is told (its planning wall, its measured width), so two orders are compared on the same estimates and the difference is the order's alone. No lease: the lone-run shape, the same for both orders. `needs` outside the graph are dropped, as buildGraph has already pulled in every prerequisite that runs.
+ */
+export function predictMakespan(
+  specs: readonly GateSpec[],
+  plan: PlanInputs,
+  machineCores: number
+): { makespanMs: number; starts: Map<string, number> } {
+  const inGraph = new Set(specs.map((s) => s.id));
+  const sched = plan.sched ?? 'slots';
+  const gates: SimGate[] = specs.map((spec) => {
+    const cost = plan.costs?.get(spec.id);
+    const estMs = plan.durations.get(spec.id) ?? cost?.wallMs ?? 5000;
+    const measured =
+      sched === 'cores' &&
+      cost?.cpuMs !== undefined &&
+      cost.cpuMs > 0 &&
+      cost.wallMs !== undefined &&
+      cost.wallMs > 0;
+    const base = {
+      id: spec.id,
+      needs: (spec.needs ?? []).filter((n) => inGraph.has(n)),
+      elastic: spec.cores,
+      heavy: spec.heavy,
+      mutex: spec.mutex,
+      reads: spec.reads,
+      memMb: cost?.rssMb ?? (spec.heavy === true ? 4096 : 512),
+    };
+    if (!measured) {
+      const width = Math.max(1, spec.cores?.min ?? 1);
+      return {
+        ...base,
+        cores: width,
+        wallMs: estMs,
+        measured: false,
+        est: { estMs: plan.durations.get(spec.id), wallMs: cost?.wallMs },
+      };
+    }
+    const cpuMs = cost?.cpuMs ?? 0;
+    const wallMs = cost?.wallMs ?? estMs;
+    const c = Math.max(1, plan.budget?.cores ?? plan.jobs);
+    return {
+      ...base,
+      // Truth = the plan: a fixed-width gate keeps d cores busy for its planning wall; an elastic one carries its measured work.
+      cores:
+        spec.cores !== undefined
+          ? cpuMs / Math.max(1, estMs)
+          : Math.min(Math.max(cpuMs / wallMs, 0.25), c),
+      wallMs: estMs,
+      perCore: spec.cores !== undefined ? (cost?.perCore ?? 1) : undefined,
+      est: { estMs, wallMs, cpuMs, perCore: cost?.perCore },
+    };
+  });
+  const r = simulate(gates, {
+    sched,
+    machineCores: Math.max(1, machineCores),
+    jobs: plan.jobs,
+    heavyLimit: plan.heavyLimit,
+    budget: plan.budget ?? {
+      cores: plan.jobs,
+      epsilon: 0,
+      maxProcs: 2 * plan.jobs,
+      memMb: Number.POSITIVE_INFINITY,
+    },
+    order: plan.order,
+  });
+  return { makespanMs: r.makespanMs, starts: r.starts };
 }
 
 /** A small deterministic generator, so every run of the selftest simulates the same mix. */

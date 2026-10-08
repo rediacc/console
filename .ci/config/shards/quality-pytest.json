@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-08T05:44:59.317Z",
+  "generatedAt": "2026-10-08T06:54:42.481Z",
   "legs": [
     {
       "index": 1,
@@ -112,6 +112,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_write_release_sentinel.py",
         "pytest:.ci/rediacc_ci/tests/test_dev_worktree.py",
         "pytest:.ci/rediacc_ci/tests/test_docker_retag_image.py",
+        "pytest:.ci/rediacc_ci/tests/test_gate_model_replay.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_pr_environments.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_stale_d1.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_ci_env.py",
@@ -312,6 +313,8 @@
         "pytest:.ci/rediacc_ci/tests/test_docker_run_in_image.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_lib.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_universe_transfer.py",
+        "pytest:.ci/rediacc_ci/tests/test_gate_ledger.py",
+        "pytest:.ci/rediacc_ci/tests/test_gate_model.py",
         "pytest:.ci/rediacc_ci/tests/test_gitx.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_build_renet.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_ci_pull_images.py",

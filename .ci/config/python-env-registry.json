@@ -127,6 +127,11 @@
     ".ci/rediacc_ci/ci/dispatch_watchdog.py": [
       "GITHUB_REPOSITORY"
     ],
+    ".ci/rediacc_ci/ci/gate_ledger.py": [
+      "CI",
+      "REDIACC_GATE_LEDGER_DIR",
+      "XDG_STATE_HOME"
+    ],
     ".ci/rediacc_ci/ci/generate_tag.py": [
       "GITHUB_OUTPUT"
     ],

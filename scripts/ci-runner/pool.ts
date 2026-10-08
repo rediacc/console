@@ -191,6 +191,38 @@ export interface PoolOptions {
   lease?: PoolLease;
   /** How often a pool with a gate held by the lease re-reads it, ms (default LEASE_POLL_MS). The selftest shortens it. */
   leasePollMs?: number;
+  /** The learned order (rank.ts). Absent means today's priority, exactly as before it existed. */
+  order?: ScheduleOrder;
+}
+
+/**
+ * THE LEARNED ORDER as the pool reads it (agent/plans/PLAN-gate-scheduling-learned.md section 5, built by rank.ts). Two keys over today's priority: pinned gates first, by today's priority; then preflight, in its admission order; then every other gate by `value` (p_red / wall), highest first, today's priority breaking ties. Ordering only: admission, budgets and claims are untouched.
+ */
+export interface ScheduleOrder {
+  readonly pinned: ReadonlySet<string>;
+  readonly preflight: readonly string[];
+  readonly value: ReadonlyMap<string, number>;
+}
+
+/** Today's comparator under a learned order; `order` undefined returns `base` itself, so an unranked run is byte-for-byte today's. */
+function withOrder(
+  base: (a: GateSpec, b: GateSpec) => number,
+  order: ScheduleOrder | undefined
+): (a: GateSpec, b: GateSpec) => number {
+  if (order === undefined) return base;
+  const pre = new Map(order.preflight.map((id, i) => [id, i]));
+  const tier = (id: string): number => (order.pinned.has(id) ? 0 : pre.has(id) ? 1 : 2);
+  return (a, b) => {
+    const ta = tier(a.id);
+    const tb = tier(b.id);
+    if (ta !== tb) return ta - tb;
+    if (ta === 1) return (pre.get(a.id) ?? 0) - (pre.get(b.id) ?? 0);
+    if (ta === 2) {
+      const d = (order.value.get(b.id) ?? 0) - (order.value.get(a.id) ?? 0);
+      if (d !== 0) return d;
+    }
+    return base(a, b);
+  };
 }
 
 /** What the lease reports before a pass. Every field is Infinity when nothing is leased. */
@@ -773,7 +805,7 @@ export function admit(
  */
 export function planAdmission(
   specs: readonly GateSpec[],
-  opts: Pick<PoolOptions, 'jobs' | 'durations' | 'sched' | 'budget' | 'costs'>
+  opts: Pick<PoolOptions, 'jobs' | 'durations' | 'sched' | 'budget' | 'costs' | 'order'>
 ): { byId: Map<string, Candidate>; rank: (a: GateSpec, b: GateSpec) => number } {
   const position = new Map(specs.map((spec, i) => [spec.id, i]));
   // A missing or corrupt duration cache must never fail the run, so an unknown gate is simply assumed cheap-ish and sorts late.
@@ -820,7 +852,7 @@ export function planAdmission(
     }
     return {
       byId,
-      rank: (a, b) => expected(b) - expected(a) || byPosition(a, b),
+      rank: withOrder((a, b) => expected(b) - expected(a) || byPosition(a, b), opts.order),
     };
   }
 
@@ -933,7 +965,10 @@ export function planAdmission(
   );
   return {
     byId,
-    rank: (a, b) => (priority.get(b.id) ?? 0) - (priority.get(a.id) ?? 0) || byPosition(a, b),
+    rank: withOrder(
+      (a, b) => (priority.get(b.id) ?? 0) - (priority.get(a.id) ?? 0) || byPosition(a, b),
+      opts.order
+    ),
   };
 }
 
