@@ -589,6 +589,77 @@ def test_fold_ci_is_idempotent_and_unknown_is_a_failure(tmp_path: pathlib.Path) 
     assert "3 UNCHECKED" in out[-1], out[-1]
 
 
+def _fold_runs(n: int) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": 100 + i,
+            "run_attempt": 1,
+            "head_sha": "0" * 40,
+            "event": "push",
+            "created_at": "2026-10-08T00:%02d:00Z" % i,
+            "head_branch": "main",
+        }
+        for i in range(n)
+    ]
+
+
+def test_fold_ci_skips_seen_before_reading_and_caps_to_newest_with_progress(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = paths.repo_root()
+    runs = _fold_runs(6)
+    L.ensure_dir(tmp_path)
+    L.mark_seen(tmp_path, ["ci:100:1", "ci:101:1"])
+    read: list[int] = []
+
+    def fetch(_repo: str, run_id: int) -> list[dict[str, Any]]:
+        read.append(run_id)
+        return []
+
+    out: list[str] = []
+    prog: list[str] = []
+    rc = L.fold_ci(
+        tmp_path,
+        root,
+        repo="o/r",
+        logs=False,
+        fetch_runs=lambda *_a, **_k: runs,
+        fetch_jobs=fetch,
+        out=out.append,
+        max_unseen=2,
+        workers=2,
+        progress=prog.append,
+    )
+    assert rc == 0, out
+    assert sorted(read) == [104, 105], "seen runs and runs beyond the cap are never read"
+    assert "2 already folded" in out[-1], out[-1]
+    assert "2 older unseen deferred" in out[-1], out[-1]
+    assert len([m for m in prog if "folded (" in m]) == 2, prog
+
+
+def test_fold_ci_deadline_names_the_unread_runs_as_unchecked(tmp_path: pathlib.Path) -> None:
+    root = paths.repo_root()
+    ticks = iter(range(0, 10_000, 100))
+    out: list[str] = []
+    prog: list[str] = []
+    rc = L.fold_ci(
+        tmp_path,
+        root,
+        repo="o/r",
+        logs=False,
+        fetch_runs=lambda *_a, **_k: _fold_runs(3),
+        fetch_jobs=lambda *_a: [],
+        out=out.append,
+        deadline_s=50.0,
+        workers=1,
+        progress=prog.append,
+        clock=lambda: float(next(ticks)),
+    )
+    assert rc == 1, out
+    assert "3 UNCHECKED" in out[-1], out[-1]
+    assert any("UNCHECKED (deadline)" in m for m in prog), prog
+
+
 def test_finding_keys_reads_the_runner_alphabet_only() -> None:
     lines = [
         "2026Z ::finding::pytest-fail:a.b::c#d#",

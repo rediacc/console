@@ -32,6 +32,8 @@ import pathlib
 import re
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeout
 from typing import TYPE_CHECKING, Any
 
 from rediacc_ci import gitx, log, paths
@@ -84,6 +86,10 @@ CHANGED_PATHS_MAX = 400
 CI_EVENTS = ("pull_request", "push", "schedule")
 CI_WORKFLOW = "ci.yml"
 CI_RUNS_PER_EVENT = 100
+# MEASURED 2026-10-08: one run's jobs read costs ~10 s (two paged `gh api` calls of ~160 jobs), serial; 230 unseen runs held `gate_model refresh --force` silent for 24+ min (rc 124, no model.json). A fold now reads the NEWEST unseen runs only, in parallel, inside a deadline.
+CI_FOLD_MAX_UNSEEN = 40
+CI_FOLD_WORKERS = 6
+CI_FOLD_DEADLINE_S = 600.0
 
 
 # ---------------------------------------------------------------------------- location
@@ -872,8 +878,15 @@ def fold_ci(
     fetch_jobs: Callable[[str, int], list[dict[str, Any]]] | None = None,
     fetcher: Any = None,
     out: Callable[[str], None] = log.info,
+    max_unseen: int = CI_FOLD_MAX_UNSEEN,
+    workers: int = CI_FOLD_WORKERS,
+    deadline_s: float = CI_FOLD_DEADLINE_S,
+    progress: Callable[[str], None] | None = None,
+    clock: Callable[[], float] = time.monotonic,
 ) -> int:
-    """Fold completed CI runs into the ledger, idempotently (`ci:<run>:<attempt>` in seen.idx). Exit 1 when any read failed: an unread run is UNCHECKED, never folded as clean."""
+    """Fold completed CI runs into the ledger, idempotently (`ci:<run>:<attempt>` in seen.idx). Exit 1 when any read failed: an unread run is UNCHECKED, never folded as clean.
+
+    Runs already in seen.idx are skipped BEFORE any read. Only the `max_unseen` NEWEST unseen runs are read (older ones are counted, not UNCHECKED: the next fold takes them), their job lists are fetched by a `workers` pool, and one progress line per run goes to stderr. A run whose read is not done when `deadline_s` passes is UNCHECKED and named, so the fold ends instead of hanging."""
     from rediacc_ci.ci import budget_report, ci_diagnose  # noqa: PLC0415 -- fold-ci only
 
     fetch_runs = fetch_runs or budget_report.fetch_runs
@@ -928,38 +941,74 @@ def fold_ci(
     runs = list({r.get("id"): r for r in runs}.values())
     ensure_dir(d)
     folded = rows_n = already = 0
+    skipped_old = 0
+    say = progress or (lambda m: print(m, file=sys.stderr, flush=True))
+    t0 = clock()
     with held(d / FOLD_LOCK_NAME):
         seen = read_seen(d)
+        todo: list[tuple[str, dict[str, Any]]] = []
         for run in sorted(runs, key=lambda r: str(r.get("created_at") or "")):
             sk = "ci:%s:%s" % (run.get("id"), run.get("run_attempt") or 1)
             if sk in seen:
                 already += 1
-                continue
+            else:
+                todo.append((sk, run))
+        if len(todo) > max_unseen:
+            skipped_old = len(todo) - max_unseen
+            todo = todo[-max_unseen:]
+        say(
+            "gate_ledger fold-ci: %d unseen run(s) to read (%d older left for the next fold), %d worker(s), %.0f s deadline"
+            % (len(todo), skipped_old, workers, deadline_s)
+        )
+
+        def read_jobs(run: dict[str, Any]) -> tuple[list[dict[str, Any]] | None, str, float]:
+            t = clock()
+            if t - t0 > deadline_s:
+                return None, "deadline", 0.0
             try:
-                jobs = fetch_jobs(repo, int(run["id"]))
+                return fetch_jobs(repo, int(run["id"])), "", clock() - t
             except Exception as exc:  # noqa: BLE001
-                unchecked.append("jobs(%s): %s" % (run.get("id"), str(exc)[:160]))
-                continue
-            rows = ci_rows(
-                run,
-                jobs,
-                steps=steps,
-                tests=tests,
-                patterns=patterns,
-                log_lines=log_lines,
-                category_of=category_of,
-                tree_of=tree_of,
-                pytest_hosts=hosts,
-                leg_tests=legs,
-            )
-            rows_n += append_rows(d, rows)
-            mark_seen(d, [sk])
-            seen.add(sk)
-            folded += 1
+                return None, str(exc)[:160], clock() - t
+
+        pool = ThreadPoolExecutor(max_workers=max(1, workers))
+        try:
+            futs = [(sk, run, pool.submit(read_jobs, run)) for sk, run in todo]
+            for sk, run, fut in futs:
+                left = deadline_s - (clock() - t0)
+                try:
+                    jobs, err, took = fut.result(timeout=max(left, 0.0))
+                except FuturesTimeout:
+                    jobs, err, took = None, "deadline", 0.0
+                if jobs is None:
+                    unchecked.append("jobs(%s): %s" % (run.get("id"), err))
+                    say("gate_ledger fold-ci: run %s UNCHECKED (%s)" % (run.get("id"), err))
+                    continue
+                rows = ci_rows(
+                    run,
+                    jobs,
+                    steps=steps,
+                    tests=tests,
+                    patterns=patterns,
+                    log_lines=log_lines,
+                    category_of=category_of,
+                    tree_of=tree_of,
+                    pytest_hosts=hosts,
+                    leg_tests=legs,
+                )
+                rows_n += append_rows(d, rows)
+                mark_seen(d, [sk])
+                seen.add(sk)
+                folded += 1
+                say(
+                    "gate_ledger fold-ci: run %s folded (%d row(s), jobs read %.1f s) [%d/%d, %.0f s]"
+                    % (run.get("id"), len(rows), took, folded, len(todo), clock() - t0)
+                )
+        finally:
+            pool.shutdown(wait=False, cancel_futures=True)
     rotate(d)
     out(
-        "gate_ledger fold-ci: %d run(s) listed over %s, %d folded (%d row(s)), %d already folded, %d UNCHECKED"
-        % (len(runs), "/".join(CI_EVENTS), folded, rows_n, already, len(unchecked))
+        "gate_ledger fold-ci: %d run(s) listed over %s, %d folded (%d row(s)), %d already folded, %d older unseen deferred, %d UNCHECKED"
+        % (len(runs), "/".join(CI_EVENTS), folded, rows_n, already, skipped_old, len(unchecked))
     )
     for u in unchecked:
         log.error("gate_ledger fold-ci: unchecked %s" % u)
@@ -1051,6 +1100,9 @@ def main(argv: list[str] | None = None) -> int:
     fc = sub.add_parser("fold-ci", help="fold completed CI runs (budget_report reads)")
     fc.add_argument("--repo", default=None)
     fc.add_argument("--limit", type=int, default=CI_RUNS_PER_EVENT)
+    fc.add_argument("--max-unseen", type=int, default=CI_FOLD_MAX_UNSEEN)
+    fc.add_argument("--workers", type=int, default=CI_FOLD_WORKERS)
+    fc.add_argument("--deadline", type=float, default=CI_FOLD_DEADLINE_S, help="seconds")
     fc.add_argument(
         "--no-logs",
         action="store_true",
@@ -1072,7 +1124,16 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         from rediacc_ci.well_known import GH_REPO  # noqa: PLC0415
 
-        return fold_ci(d, root, repo=args.repo or GH_REPO, limit=args.limit, logs=not args.no_logs)
+        return fold_ci(
+            d,
+            root,
+            repo=args.repo or GH_REPO,
+            limit=args.limit,
+            logs=not args.no_logs,
+            max_unseen=args.max_unseen,
+            workers=args.workers,
+            deadline_s=args.deadline,
+        )
     return status(d)
 
 
