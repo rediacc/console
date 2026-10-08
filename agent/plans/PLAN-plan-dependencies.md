@@ -65,15 +65,17 @@ Two writers at most. Writer A owns the grammar, the CI gate, the guard, the reco
     (ticked) 2026-10-08T19:27:56Z by d778be9d: commit:f005df64b test-plandeps/test-depgate rc=0; pytest 120+65 passed; check:ci-plan-deps rc=0
 - [x] T9 [B] Add the controls in `.claude/hooks/stop/test-depgate.py` (section 5c), and rewrite the DEPENDENCY controls in `test-backlog.py` to the new semantics.
     (ticked) 2026-10-08T19:27:59Z by d778be9d: commit:f005df64b test-plandeps/test-depgate rc=0; pytest 120+65 passed; check:ci-plan-deps rc=0
-- [ ] T10 [lead] Run `check_plan_deps.py --draft` and put the 13 plans with candidate edges to the operator through /ask (section 4). Apply all 30 values with `--set ... --write`. Land them in the same commit as T2 and T3, with a bulk-transform proof line in the commit message.
+- [x] T10 [lead] Run `check_plan_deps.py --draft` and put the 13 plans with candidate edges to the operator through /ask (section 4). Apply all 30 values with `--set ... --write`. Land them in the same commit as T2 and T3, with a bulk-transform proof line in the commit message.
+    (ticked) 2026-10-08T19:57:24Z by d778be9d: check_plan_deps.py --draft: 49 plans, 0 non-keep proposals; check:ci-plan-deps rc=0 (headers set earlier, e.g. commit:dabf66518 tree)
 - [x] T12 [A] Task edges per the operator ruling: stable task ids in boxes, `PLAN-y.md#<id>` and `#<sig>` edges, finding D9 with nearest-box suggestion, task-level completion in the lease/tick gate and the FIRST row.
     (ticked) 2026-10-08T19:28:02Z by d778be9d: commit:f005df64b test-plandeps/test-depgate rc=0; pytest 120+65 passed; check:ci-plan-deps rc=0
-- [ ] T11 [lead] Update the prose:
+- [x] T11 [lead] Update the prose:
   - CLAUDE.md line 37 (the plan sentence);
   - agent/README.md layout section (:16-32);
   - docs/agent-reference/plan-records.md (a record carries `Depends-On`);
   - register `DEPS-WAIVED:` in docs/agent-reference/suppressions.md;
   - run the full hook suite, the four plan gates and `check:ci-gate-bind` / `check:ci-gates-lock`.
+    (ticked) 2026-10-08T19:51:06Z by d778be9d: commit:dabf66518 prose check clean; plan-deps/plan-folders/plan-boxes/plan-record/gates-lock rc=0
 
 ## 0. Facts established
 
