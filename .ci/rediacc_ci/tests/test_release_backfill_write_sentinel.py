@@ -3,7 +3,7 @@
 WHILE BOTH COPIES EXISTED every case below ran `.ci/scripts/release/backfill-write-sentinel.sh` over the same environment and compared its exit code, stdout and stderr against the port's.
 The K=5 ledger `.ci/shadow/w7p5a-backfill-write-sentinel.observations.jsonl` recorded that verdict over five distinct trees (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-backfill-write-sentinel --assert --k 5`) and licensed the port; W7 P5 retired the twin and the cases that executed it went with it.
 
-`DRY_RUN=false` STAYS ON THE LOCAL-ARGUMENT-VALIDATION PATH, same design as `test_deploy_upload_media_to_r2.py`'s forwarding-shim cases: `aws` is MADE unreachable below, so the forward into `.ci/scripts/deploy/write-release-sentinel.sh` dies at its own `require_cmd aws` -- before any network access, before any R2 credential is read. That failure message is exactly what the case
+`DRY_RUN=false` STAYS ON THE LOCAL-ARGUMENT-VALIDATION PATH, same design as `test_deploy_upload_media_to_r2.py`'s forwarding-shim cases: `aws` is MADE unreachable below, so the call into `rediacc_ci.deploy.write_release_sentinel` dies at its own `require_cmd aws` -- before any network access, before any R2 credential is read. That failure message is exactly what the case
 asserts, which is the real, unmocked forward this port makes, stopped by the same missing binary the bash twin stopped on.
 """
 
@@ -54,7 +54,7 @@ def test_dry_run_true_prints_the_invocation_byte_for_byte() -> None:
     env = {"VERSION": "v1.1.2", "CHANNEL": "edge", "COMMIT_SHA": "deadbeef1234", "DRY_RUN": "true"}
     expected_stdout = (
         "→ DRY RUN -- would invoke:\n"
-        "   .ci/scripts/deploy/write-release-sentinel.sh --version 1.1.2 "
+        "   PYTHONPATH=.ci python3 -m rediacc_ci.deploy.write_release_sentinel --version 1.1.2 "
         "--channel edge --commit-sha deadbeef1234\n"
         "→ no R2 mutation performed\n"
     )

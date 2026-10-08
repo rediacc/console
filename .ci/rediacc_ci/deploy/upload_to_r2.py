@@ -4,24 +4,17 @@
 Uploads the release artifacts to R2: the CLI binaries to the immutable versioned prefix `cli/v<V>/` and to the mutable channel prefix `cli/<channel>/`, the npm tarballs to `npm/<channel>/`, the two channel pointers (`manifest.json` and `latest.json`), then trims the retention window recorded in `cli/versions.json`.
 
 --------------------------------------------------------------------------
-`write_once_guard` IS NOT PORTED. IT IS CALLED, AS BASH, FROM THE TWIN ITSELF
+`write_once_guard` IS PORTED, BEHIND GOLDENS FROZEN FROM THE BASH
 --------------------------------------------------------------------------
-The sentinel-aware write guard is the one function in this file that decides whether a SEALED release may be overwritten, and its three answers (0 proceed, 10 skip, `exit 1` refuse) are the difference between an idempotent rerun and the `sealed-but-empty` state that burned v1.1.16 and v1.1.17. A Python reimplementation of it would be, in `write_once_guard_check.py`'s words, "a
-second instrument certifying itself": the harness that proves the guard correct would then be checking a copy rather than the guard.
+The sentinel-aware write guard decides whether a SEALED release may be overwritten, and its three answers (0 proceed, 10 skip, refuse) are the difference between an idempotent rerun and the `sealed-but-empty` state that burned v1.1.16 and v1.1.17. It stayed bash for that reason until operator ruling D5 (2026-10-08), which ported it to `deploy.write_once_guard` AFTER
+`tests/goldens/twins/deploy.upload-to-r2.jsonl` froze the bash function's exit code, both streams and `aws` call sequence on every branch (sealed, empty, partial, no sentinel, an `aws` failure, a dry run). `tests/test_deploy_write_once_guard.py` holds the port to them.
 
-So this port does what that harness does. `extract_guard` applies the same
-`sed -n '/^write_once_guard()/,/^}/p'` range to the twin's own text, and
-`Uploader.write_once_guard` sources `common.sh` (for the real `log_info`/`log_error`) and the real `.ci/scripts/lib/release-state-validator.sh` beside it, then calls the extracted function. The bytes on stderr, the `aws s3api` calls it makes and the code it returns are the twin's, because they ARE the twin's.
+The guard is called as `rc = write_once_guard(...)` and a `SealedButEmptyError` ends the run with status 1, which is what the old function's `exit 1` did to the script. Defect 2 below is carried, and the goldens pin it.
 
-IT IS INVOKED THROUGH `|| rc=$?`, AND THAT IS LOAD BEARING, NOT STYLE. The twin
-writes `write_once_guard ... || guard_rc=$?`, and a function whose status is
-consumed by a `||` list runs with errexit SUPPRESSED THROUGHOUT ITS BODY. That suppression is what produces defect 2 below. A runner that called the function bare would abort where the twin continues, and the two would disagree on exactly the path that matters most.
-
-`RELEASES_BUCKET` AND `DRY_RUN` REACH THE CHILD THROUGH THE ENVIRONMENT rather than by sourcing `.ci/config/constants.sh`. constants.sh hard-requires `.devcontainer/toolchain.env` and `return 1 2>/dev/null || exit 1`s without it, which would make the guard's availability depend on a file the guard does not read. The two values it needs are computed here from the same defaults
-(`BUCKET_DEFAULT`, and `retention_contract.KEEP_RELEASES` for the window) and pinned against constants.sh by `test_the_max_release_versions_is_the_twins`.
+`RELEASES_BUCKET` REACHES THE VALIDATOR PROBES THROUGH THE ENVIRONMENT, which is where `core.release_state_validator.bucket` reads it. The keep window is `retention_contract.KEEP_RELEASES`, pinned against `constants.sh` by `test_the_max_release_versions_is_the_twins`.
 
 --------------------------------------------------------------------------
-THREE OTHER PROGRAMS ARE SPAWNED, EACH FOR A MEASURED REASON
+THREE PROGRAMS ARE SPAWNED, EACH FOR A MEASURED REASON
 --------------------------------------------------------------------------
   * `aws`, because it is the credentialed tool with a real remote side. Faked on
     `PATH` in the differential, never reimplemented.
@@ -37,7 +30,6 @@ THREE OTHER PROGRAMS ARE SPAWNED, EACH FOR A MEASURED REASON
     `sorted(glob.glob(...))` is codepoint order and returns an empty list, so
     the two agree only by accident of today's locale and today's filenames.
     `bash_glob` asks bash.
-  * `bash`, for the guard, as above.
 
 `basename` IS THE ONE EXTERNAL THE PORT DOES NOT SPAWN. `os.path.basename` differs from the binary only for a path with a trailing slash or an empty argument, and every argument here is a glob expansion of `<dir>/rdc-*`, which can be neither.
 
@@ -118,13 +110,9 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.deploy import channel_snapshot
+from rediacc_ci.deploy import channel_snapshot, write_once_guard
 from rediacc_ci.release import check_stable_manifest, retention_contract
 from rediacc_ci.well_known import RELEASES_BUCKET
-
-# The twin's own name. Used for nothing the twin prints (it prints `$0`), only
-# for this port's own refusals, which the twin has no analogue for.
-SELF = "upload-to-r2.sh"
 
 # `.ci/config/constants.sh` `RELEASES_BUCKET`, from the registry. The keep count is not restated here: it is `retention_contract.KEEP_RELEASES`, the one constant housekeeping's tag retention reads too, and constants.sh's `R2_MAX_RELEASE_VERSIONS` (the twin's) is pinned to it by a staleness alarm.
 BUCKET_DEFAULT = RELEASES_BUCKET
@@ -139,7 +127,7 @@ RELEASE_CHANNELS = ("stable", "edge")
 
 # The `case` arms of `skip_release_requested` (:106-109). A SET of SPELLINGS, because the twin lists each one rather than lowercasing: `TrUe` and `Y` are NOT
 # skip values, and a port using `.lower() in {...}` would suppress a release the
-# twin publishes. These lines sit between the SKIP_RELEASE_GUARD_BEGIN/END markers that `.ci/rediacc_ci/tests/gates/test_gate_skip_release_channel_pointer.py` splits the twin on to assemble its mutants.
+# twin publishes. The guard call in `main` sits between the two marker comments that `.ci/rediacc_ci/tests/gates/test_gate_skip_release_channel_pointer.py` splits this file on to assemble its mutants.
 SKIP_RELEASE_VALUES = frozenset({"true", "TRUE", "True", "1", "yes", "YES", "y", "on", "ON"})
 
 # The three credentials checked, IN ORDER, when `--dry-run` is absent (:146). The first missing one wins, and the loop is what makes that observable.
@@ -154,11 +142,6 @@ AN_EMPTY_CLI_DIR_PUBLISHES_A_POINTER = True
 AN_UNANSWERED_COUNT_READS_AS_SEALED_BUT_EMPTY = True
 A_FAILED_TRACKER_READ_RESETS_THE_WINDOW = True
 A_MALFORMED_TRACKER_IS_OVERWRITTEN_EMPTY = True
-
-# `sed -n '/^write_once_guard()/,/^}/p'`, the same range
-# `.ci/rediacc_ci/deploy/write_once_guard_check.py:120-121` uses: from the definition line to the first line that is a closing brace at column 0.
-GUARD_START = re.compile(r"^write_once_guard\(\)")
-GUARD_END = re.compile(r"^\}")
 
 
 class BashExitError(Exception):
@@ -290,46 +273,6 @@ def r2_path(kind: str, channel: str, rest: str) -> str:
     return "%s/%s/%s" % (kind, channel, rest)
 
 
-def extract_guard(text: str) -> str:
-    """`sed -n '/^write_once_guard()/,/^}/p'`, range semantics and all.
-
-    A sed range RE-ARMS after it closes, so a second `write_once_guard()` further down would be appended rather than ignored. Reproduced, because the point of extracting rather than reimplementing is that the bytes are the twin's.
-    """
-    out: list[str] = []
-    inside = False
-    lines = text.split("\n")
-    if text.endswith("\n"):
-        lines.pop()
-    for line in lines:
-        if not inside:
-            if GUARD_START.search(line):
-                inside = True
-                out.append(line)
-            continue
-        out.append(line)
-        if GUARD_END.search(line):
-            inside = False
-    return "".join(line + "\n" for line in out)
-
-
-def guard_runner_source(common_sh: str, validator_sh: str, guard: str) -> str:
-    """The bash the guard is called from, assembled once so a test can read it.
-
-    `|| rc=$?` REPRODUCES THE TWIN'S CALL CONTEXT, which suppresses errexit
-    inside the function body and is what makes defect 2 reachable. A bare call would abort where the twin continues.
-    """
-    return ('source %s\nsource %s\n%s\nrc=0\nwrite_once_guard "$1" "$2" || rc=$?\nexit $rc\n') % (
-        _quote(common_sh),
-        _quote(validator_sh),
-        guard,
-    )
-
-
-def _quote(path: str) -> str:
-    """Single-quote a path for bash. Paths here come from `__file__`."""
-    return "'" + path.replace("'", "'\\''") + "'"
-
-
 def _flush() -> None:
     """Empty Python's buffers before a child inherits the descriptor.
 
@@ -438,52 +381,25 @@ class Uploader:
             out += "\n"
         return out.rstrip("\n")
 
-    # -- the guard, which stays bash ------------------------------------------
+    # -- the guard ------------------------------------------------------------
 
     def write_once_guard(self, prefix: str, context: str) -> int:
-        """Call the twin's OWN `write_once_guard`, as bash. See the docstring.
+        """`write_once_guard`: 0 proceed, 10 skip (sealed with binaries), 1 the sealed-but-empty refusal.
 
-        Returns the guard's status: 0 proceed, 10 skip, 1 the guard's `exit 1`. The twin's `exit 1` kills the whole script, so the caller must too.
+        The old guard's `exit 1` killed the whole script, so the caller ends the run on 1. The validator probes read the bucket from the environment.
         """
-        twin = os.path.join(self.root, ".ci", "scripts", "deploy", SELF)
-        common_sh = os.path.join(self.root, ".ci", "scripts", "lib", "common.sh")
-        validator = os.path.join(self.root, ".ci", "scripts", "lib", "release-state-validator.sh")
-        for required in (twin, common_sh, validator):
-            if not os.path.isfile(required):
-                # NOT A DIVERGENCE, because the twin cannot reach this state: the
-                # function lives inside the twin. Loud rather than a `command not
-                # found` from bash, with the fix in the message.
-                log.error(
-                    "%s: cannot run the write-once guard: %s is missing. The guard is "
-                    "deliberately NOT reimplemented in Python; it is sourced from the "
-                    "bash twin, so this port needs the twin's tree intact." % (SELF, required)
-                )
-                raise BashExitError(1)
-
-        guard = extract_guard(_read(twin))
-        if not guard.strip():
-            log.error(
-                "%s: cannot run the write-once guard: no `write_once_guard()` block in "
-                "%s. Either it was renamed or the sed range this port shares with "
-                "write_once_guard_check.py no longer matches." % (SELF, twin)
-            )
-            raise BashExitError(1)
-
-        # The guard reads both as globals. constants.sh is deliberately not sourced, so they are handed over through the environment instead.
         os.environ["RELEASES_BUCKET"] = self.bucket
-        os.environ["DRY_RUN"] = "true" if self.dry_run else "false"
         _flush()
-        return subprocess.run(
-            [
-                "bash",
-                "-c",
-                guard_runner_source(common_sh, validator, guard),
-                SELF,
+        try:
+            return write_once_guard.write_once_guard(
                 prefix,
                 context,
-            ],
-            check=False,
-        ).returncode
+                endpoint=self.endpoint,
+                dry_run=self.dry_run,
+                bucket=self.bucket,
+            )
+        except write_once_guard.SealedButEmptyError:
+            return 1
 
     # -- the retention tracker -------------------------------------------------
 
@@ -511,14 +427,16 @@ class Uploader:
             ["jq", "--arg", "v", new_version, "if index($v) then . else [$v] + . end"],
             existing + "\n",
         )
-        # THE KEEP RULE IS `retention_contract`'s, the one housekeeping's tag retention reads too, so the two pruners agree by construction (#a5a1f981). jq stays the parser of record: a tracker it cannot read leaves `updated` empty, and the twin then writes an EMPTY tracker (DEFECT 4, reproduced: anything that is not a JSON array of strings takes that path).
+        # THE KEEP RULE IS `retention_contract`'s, the one housekeeping's tag retention reads too, so the two pruners agree by construction (#a5a1f981). jq stays the parser of record: a tracker it cannot read leaves `updated` empty, and the twin then writes an EMPTY tracker (DEFECT 4, reproduced: anything that is not a JSON array takes that path).
         try:
             versions = json.loads(updated) if updated else None
         except ValueError:
             versions = None
-        if not isinstance(versions, list) or not all(isinstance(v, str) for v in versions):
+        if not isinstance(versions, list):
             self.r2_put("", tracker_path, quiet=True)
             return ""
+        # RULE-T DELTA (review finding 12f71bd1.1). The twin's jq pipeline keeps a non-string entry (`["1.2.3", null]` stays as it is), and an earlier cut of this port emptied the whole tracker over one such entry, which erases the retention history. A tracker entry that is not a version string is dropped and every other entry is kept.
+        versions = [v for v in versions if isinstance(v, str)]
         plan = retention_contract.tracker_retention_plan(versions, new_version, "", max_versions)
         # Every run that reaches here is a release channel's, and `cli/versions.json` is one file for both of them; the keep rule therefore does not wait for a snapshot (#32c67de3). Stable is read only when something fell outside the window, which is the one extra call the twin comparison declares.
         if plan.held:
@@ -595,11 +513,6 @@ class Uploader:
             if self.snapshot:
                 log.info("  Deleting %s" % channel_snapshot.prefix(ver))
                 self.r2_rm(channel_snapshot.prefix(ver))
-
-
-def _read(path: str) -> str:
-    with open(path, encoding="utf-8") as handle:
-        return handle.read()
 
 
 def _jq(argv: list[str], stdin: str) -> str:
@@ -798,6 +711,7 @@ def main(argv: list[str]) -> int:
         log.error("--channel is required")
         return 1
 
+    # SKIP_RELEASE_GUARD_BEGIN (the gate test `test_gate_skip_release_channel_pointer.py` splices its mutants between these markers)
     if skip_release_requested(parsed["skip_release"]):
         if channel in RELEASE_CHANNELS:
             for line in skip_banner(version, channel):
@@ -807,6 +721,7 @@ def main(argv: list[str]) -> int:
             "--skip-release ignored on channel '%s': not a release channel, uploading as usual"
             % channel
         )
+    # SKIP_RELEASE_GUARD_END
 
     dry_run = parsed["dry_run"] == "true"
     log.step("Uploading v%s to R2 channel: %s" % (version, channel))

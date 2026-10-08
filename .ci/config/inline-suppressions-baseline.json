@@ -660,12 +660,6 @@
   ".ci/scripts/ci/profiler/sampler_linux.py": {
    "noqa F401": 1
   },
-  ".ci/scripts/deploy/clone-d1.sh": {
-   "shellcheck-disable SC2086": 2
-  },
-  ".ci/scripts/deploy/upload-to-r2.sh": {
-   "shellcheck-disable SC1091": 1
-  },
   ".ci/scripts/docker/cleanup_staging.py": {
    "noqa F401": 1
   },

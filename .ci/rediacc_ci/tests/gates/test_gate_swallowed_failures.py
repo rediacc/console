@@ -116,7 +116,7 @@ REPAIRS = (
         "r2_count_objects reports an unreachable bucket",
     ),
     (
-        ".ci/scripts/lib/release-state-validator.sh",
+        ".ci/rediacc_ci/core/release_state_validator.py",
         "THREE STATES, DELIBERATELY",
         "the release-state validator separates empty from unanswerable",
     ),

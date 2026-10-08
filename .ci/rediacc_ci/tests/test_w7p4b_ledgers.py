@@ -390,6 +390,8 @@ RETIRED_TWINS = {
     "w7p4b-cancel-older-runs": "the 30-twin batch in commit 62599afc0",
     "w7p4b-install-cli-global": "W7P5 batch M1",
     "w7p4b-run-renet": "W7P5 batch M5",
+    "w7p4b-clone-d1": "PLAN-retire-bash-oracles W7 (goldens/twins/deploy.clone-d1.jsonl)",
+    "w7p4b-assert-r2-sentinel": "PLAN-retire-bash-oracles W7 (goldens/twins/test.assert-r2-sentinel.jsonl)",
     "w7p4b-run-account": "W7P5 batch M5",
     "w7p4b-compose-healthcheck-smoke-test": "W7P5 batch M5",
     "w7p4b-scope-shadow": "W7P5 batch M6",

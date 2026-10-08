@@ -1,4 +1,6 @@
-"""Differential: `rediacc_ci.deploy.upload_to_r2` against its twin `.ci/scripts/deploy/upload-to-r2.sh`.
+"""Differential: `rediacc_ci.deploy.upload_to_r2` against the bytes its twin `.ci/scripts/deploy/upload-to-r2.sh` printed.
+
+THE TWIN'S SIDE IS FROZEN. Every `"old"` run goes through `differential.twin_run`, so its exit code, both streams and `aws` call log come from `goldens/twins/deploy.upload-to-r2.jsonl` and the `.sh` is never read once it is deleted. A `regolden --source bash` run still drives the live bash while it exists, which is why the fixture copies the twin and its libraries in only when they are on disk. The write-once guard now lives in `deploy.write_once_guard` and has its own differential, `test_deploy_write_once_guard.py`.
 
 A RECORDING FAKE `aws` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches R2, and nothing here reads or writes the real checkout: every case builds a throwaway tree holding the twin, the two bash libraries it sources, the port, and a `dist/` of its own, then runs both sides against it. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real
 production run" clause and says in as many words that a mocked parity ledger is separate, achievable work. This is that work.
@@ -17,6 +19,7 @@ The file log is still kept, and it holds the one thing the stream cannot: the CO
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -29,8 +32,8 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import upload_to_r2 as port
-from rediacc_ci.deploy import write_once_guard_check as harness
 from rediacc_ci.release import retention_contract
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import RELEASES_BUCKET as WK_RELEASES_BUCKET
 from rediacc_ci.well_known import RELEASES_ORIGIN
 
@@ -38,7 +41,8 @@ if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "deploy" / "upload-to-r2.sh"
+TWIN_REL = ".ci/scripts/deploy/upload-to-r2.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "upload_to_r2.py"
 COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 VALIDATOR = ROOT / ".ci" / "scripts" / "lib" / "release-state-validator.sh"
@@ -169,16 +173,19 @@ def fixture(tmp_path: pathlib.Path, tree: dict[str, str] | None = None) -> pathl
         ".devcontainer",
     ):
         (root / relative).mkdir(parents=True, exist_ok=True)
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
-    shutil.copy2(VALIDATOR, root / ".ci" / "scripts" / "lib" / VALIDATOR.name)
-    shutil.copy2(CONSTANTS, root / ".ci" / "config" / CONSTANTS.name)
-    shutil.copy2(CONSTANTS.with_name("well-known.env"), root / ".ci" / "config" / "well-known.env")
-    shutil.copy2(
-        CONSTANTS.with_name("well-known.generated.sh"),
-        root / ".ci" / "config" / "well-known.generated.sh",
-    )
-    shutil.copy2(TOOLCHAIN, root / ".devcontainer" / TOOLCHAIN.name)
+    if TWIN.is_file():  # only a `regolden --source bash` run still reads the bash
+        shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
+        shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
+        shutil.copy2(VALIDATOR, root / ".ci" / "scripts" / "lib" / VALIDATOR.name)
+        shutil.copy2(CONSTANTS, root / ".ci" / "config" / CONSTANTS.name)
+        shutil.copy2(
+            CONSTANTS.with_name("well-known.env"), root / ".ci" / "config" / "well-known.env"
+        )
+        shutil.copy2(
+            CONSTANTS.with_name("well-known.generated.sh"),
+            root / ".ci" / "config" / "well-known.generated.sh",
+        )
+        shutil.copy2(TOOLCHAIN, root / ".devcontainer" / TOOLCHAIN.name)
     shutil.copy2(PORT, root / ".ci" / "rediacc_ci" / "deploy" / PORT.name)
 
     for relative, body in (DEFAULT_TREE if tree is None else tree).items():
@@ -191,7 +198,7 @@ def fixture(tmp_path: pathlib.Path, tree: dict[str, str] | None = None) -> pathl
     return root
 
 
-def _run(
+def _run_live(
     root: pathlib.Path,
     side: str,
     argv: tuple[str, ...] = ("--version", "1.2.3", "--channel", "edge"),
@@ -232,6 +239,59 @@ def _run(
         input="",
     )
     return proc, call_log.read_text(encoding="utf-8")
+
+
+def _fingerprint(root: pathlib.Path) -> list[tuple[str, str]]:
+    """What the fixture holds that the run can see: every file outside the code trees, by content, so two cases that differ only in `dist/` get two golden keys."""
+    found = []
+    for path in sorted(root.rglob("*")):
+        rel = path.relative_to(root)
+        if rel.parts[0] in (".ci", ".devcontainer", "fixture-bin") or path.name.endswith(
+            "-calls.log"
+        ):
+            continue
+        if path.is_file():
+            found.append((str(rel), hashlib.sha256(path.read_bytes()).hexdigest()[:12]))
+    return found
+
+
+def _run(
+    root: pathlib.Path,
+    side: str,
+    argv: tuple[str, ...] = ("--version", "1.2.3", "--channel", "edge"),
+    *,
+    drop: str = "",
+    drop_env: tuple[str, ...] = (),
+    aws_body: str = FAKE_AWS,
+    **extra: str,
+):
+    """`(CompletedProcess, call log)`. The `"old"` side is the bash twin's frozen answer."""
+    if side != "old":
+        return _run_live(root, side, argv, drop=drop, drop_env=drop_env, aws_body=aws_body, **extra)
+    held: dict[str, str] = {}
+
+    def bash():
+        proc, calls = _run_live(
+            root, "old", argv, drop=drop, drop_env=drop_env, aws_body=aws_body, **extra
+        )
+        held["calls"] = calls
+        return proc.returncode, proc.stdout, proc.stderr
+
+    rc, out, err, frozen = diff.twin_run(
+        TWIN_REL,
+        [
+            repr(argv),
+            drop,
+            repr(drop_env),
+            aws_body,
+            repr(sorted(extra.items())),
+            repr(_fingerprint(root)),
+        ],
+        bash,
+        extras={"calls": lambda: held["calls"]},
+        work=(root.parent, *diff.pytest_tmp_roots(*extra.values())),
+    )
+    return subprocess.CompletedProcess([], rc, out, err), frozen["calls"]
 
 
 def run_both(tmp_path: pathlib.Path, tree: dict[str, str] | None = None, **kw):
@@ -401,37 +461,7 @@ def test_dry_run_skips_the_credential_check(tmp_path: pathlib.Path) -> None:
     _assert_agree(old, new, "dry-run-no-creds", old_calls, new_calls)
 
 
-# --------------------------------------------------------------------------- The write-once guard, which is the twin's own bash function on both sides ---------------------------------------------------------------------------
-
-
-def test_the_guard_the_port_runs_is_the_twins_own_text() -> None:
-    """THE PORT DOES NOT REIMPLEMENT `write_once_guard`; IT EXTRACTS IT. Asserted against the gate harness that makes the same extraction, so the two cannot drift apart, and against the twin's text so an empty extraction is visible."""
-    source = TWIN.read_text(encoding="utf-8")
-    extracted = port.extract_guard(source)
-    assert extracted == harness.extract_guard(source), (
-        "the port and write_once_guard_check.py now extract different text"
-    )
-    assert extracted.startswith("write_once_guard() {\n")
-    assert extracted.endswith("}\n")
-    assert "rsv_sentinel_exists" in extracted
-    assert "rsv_binary_count" in extracted
-    assert "return 10" in extracted
-    # NOT a Python reimplementation: nothing in the port spells the guard's logic.
-    body = PORT.read_text(encoding="utf-8")
-    assert "rsv_sentinel_exists" not in body.split('"""', 2)[2], (
-        "the port's CODE names a validator function; the guard must stay bash"
-    )
-
-
-def test_the_guard_runner_preserves_the_twins_errexit_suppression() -> None:
-    """`write_once_guard ... || guard_rc=$?` SUPPRESSES errexit inside the whole
-    function body, and that suppression is what makes defect 2 reachable. A
-    runner calling the function bare would abort where the twin continues, so the
-    `|| rc=$?` is asserted rather than assumed."""
-    runner = port.guard_runner_source("/c.sh", "/v.sh", "write_once_guard() { :; }\n")
-    assert 'write_once_guard "$1" "$2" || rc=$?' in runner
-    assert runner.startswith("source '/c.sh'\nsource '/v.sh'\n")
-    assert runner.endswith("exit $rc\n")
+# --------------------------------------------------------------------------- The write-once guard's answers, as the uploader acts on them ---------------------------------------------------------------------------
 
 
 def test_sealed_with_binaries_skips_the_prefix_but_still_moves_the_pointer(
@@ -565,17 +595,6 @@ def test_defect_an_unanswered_count_reads_as_sealed_but_empty(tmp_path: pathlib.
     assert "PYTHONPATH=.ci python3 -m rediacc_ci.ops.scrub_sentinel v1.2.3 --execute" in old.stderr
     assert port.AN_UNANSWERED_COUNT_READS_AS_SEALED_BUT_EMPTY
     _assert_agree(old, new, "unanswered-count", old_calls, new_calls)
-
-
-def test_the_guard_refuses_loudly_when_the_twins_text_is_gone(tmp_path: pathlib.Path) -> None:
-    """THE ONE STATE THE TWIN CANNOT BE IN, so there is nothing to diverge from: the port reads the guard out of the twin, so a missing twin means the guard cannot run. A `command not found` from bash would read as flake, so the refusal names the file and says why the function is not Python."""
-    root = fixture(tmp_path)
-    (root / ".ci" / "scripts" / "deploy" / TWIN.name).unlink()
-    new, calls = _run(root, "new")
-    assert new.returncode == 1
-    assert "cannot run the write-once guard" in new.stderr
-    assert "deliberately NOT reimplemented in Python" in new.stderr
-    assert calls == "", "the run reached aws without a guard"
 
 
 # --------------------------------------------------------------------------- The retention tracker ---------------------------------------------------------------------------
@@ -743,6 +762,28 @@ def test_defect_a_malformed_tracker_is_overwritten_with_an_empty_file(
     assert old.stdout == "", "a failing jq leaked its partial output onto stdout"
     assert port.A_MALFORMED_TRACKER_IS_OVERWRITTEN_EMPTY
     _assert_agree(old, new, "bad-tracker", old_calls, new_calls)
+
+
+def test_delta_a_non_string_tracker_entry_is_dropped_and_the_rest_kept(
+    tmp_path: pathlib.Path,
+) -> None:
+    """RULE-T DELTA, review finding 12f71bd1.1. The twin's jq pipeline keeps `["1.2.3", null]` as it is (`index($v)` finds the version and nothing inspects the other entries). An earlier cut of this port answered a tracker holding ANY non-string entry by uploading an EMPTY tracker, which erases the retention history over one bad entry. The port drops the entries that are not version strings and keeps every other one; a tracker that is not an array at all still takes the DEFECT 4 path.
+
+    FAILS ON THE EARLIER CUT: it uploaded `STDIN<<<\n>>>` here. The twin is the control for what each tracker looked like on the way in."""
+    argv = ("--version", "1.2.3", "--channel", "stable")
+    tracker = '["9.9.1",null,"1.2.3",7,"9.9.0"]'
+    old, new, old_calls, new_calls = run_both(tmp_path, argv=argv, FAKE_TRACKER=tracker)
+    assert old.returncode == new.returncode == 0
+    assert 'STDIN<<<[\n  "9.9.1",\n  null,\n  "1.2.3",\n  7,\n  "9.9.0"\n]\n>>>' in old_calls, (
+        "the twin stopped keeping non-string entries"
+    )
+    assert 'STDIN<<<[\n  "9.9.1",\n  "1.2.3",\n  "9.9.0"\n]\n>>>' in new_calls
+    assert "STDIN<<<\n>>>" not in new_calls, "one bad entry emptied the tracker"
+    assert new.stdout == old.stdout
+    assert new_calls == old_calls.replace(
+        'STDIN<<<[\n  "9.9.1",\n  null,\n  "1.2.3",\n  7,\n  "9.9.0"\n]\n>>>',
+        'STDIN<<<[\n  "9.9.1",\n  "1.2.3",\n  "9.9.0"\n]\n>>>',
+    ), "the delta is the filtered tracker body and nothing else"
 
 
 def test_a_failing_tracker_write_does_still_abort_the_run(tmp_path: pathlib.Path) -> None:
@@ -1049,48 +1090,49 @@ def test_the_max_release_versions_is_the_twins() -> None:
     assert not hasattr(port, "MAX_RELEASE_VERSIONS"), "the port restates the keep count again"
 
 
-def test_the_cache_control_policies_are_the_twins() -> None:
-    """The immutable policy is legitimate on `cli/v<V>/` and was an INCIDENT on a
-    package-manager channel path (see `upload_repos_to_r2.py`'s header). The two
-    strings are re-derived so the two files cannot drift into each other."""
-    source = TWIN.read_text(encoding="utf-8")
-    found = dict(re.findall(r'^readonly (CACHE_CONTROL_\w+)="([^"]*)"', source, re.MULTILINE))
-    assert found == {
-        "CACHE_CONTROL_MUTABLE": port.CACHE_CONTROL_MUTABLE,
-        "CACHE_CONTROL_IMMUTABLE": port.CACHE_CONTROL_IMMUTABLE,
-    }
+def test_the_cache_control_policies_are_the_registered_ones() -> None:
+    """The immutable policy is legitimate on `cli/v<V>/` and was an INCIDENT on a package-manager channel path (see `upload_repos_to_r2.py`'s header). The two strings are pinned so the two files cannot drift into each other."""
+    assert port.CACHE_CONTROL_MUTABLE == "no-cache"
+    assert port.CACHE_CONTROL_IMMUTABLE == "public, max-age=31536000, immutable"
 
 
 def test_the_skip_values_are_the_twins_case_arms() -> None:
-    """STALENESS ALARM for the `case` arms, which sit between the two markers the gate test `test_gate_skip_release_channel_pointer.py` splits the twin on to build its mutants."""
-    source = TWIN.read_text(encoding="utf-8")
-    arm = re.search(r"case \"\$\{SKIP_RELEASE:-\}\" in\n\s*([^)]*)\) return 0", source)
-    assert arm is not None, "the case shape changed; this alarm reads nothing"
-    assert {value.strip() for value in arm.group(1).split("|")} == set(port.SKIP_RELEASE_VALUES)
+    """The twin's `case` arms listed each spelling rather than lowercasing: `TrUe` and `Y` are NOT skip values."""
+    assert set(port.SKIP_RELEASE_VALUES) == {
+        "true",
+        "TRUE",
+        "True",
+        "1",
+        "yes",
+        "YES",
+        "y",
+        "on",
+        "ON",
+    }
 
 
 def test_the_credential_list_is_the_twins() -> None:
-    source = TWIN.read_text(encoding="utf-8")
-    loop = re.search(r"^    for var in ([^\n;]*); do", source, re.MULTILINE)
-    assert loop is not None, "the credential loop changed shape; this alarm reads nothing"
-    assert tuple(loop.group(1).split()) == port.REQUIRED_CREDENTIALS
+    assert port.REQUIRED_CREDENTIALS == (
+        "CLOUDFLARE_R2_ACCESS_KEY_ID",
+        "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
+        "CLOUDFLARE_R2_ENDPOINT",
+    )
 
 
-def test_the_skip_release_markers_still_bracket_the_guard() -> None:
-    """The gate test assembles its mutants by splitting the twin on these two markers. They are not this port's, and a wave that removed them would break that gate silently, so their presence is asserted from here too."""
-    source = TWIN.read_text(encoding="utf-8")
+def test_the_skip_release_markers_bracket_the_skip_guard() -> None:
+    """`test_gate_skip_release_channel_pointer.py` assembles its mutants by splitting the port on these two markers. A change that removed them would break that gate silently, so their presence is asserted from here too."""
+    source = PORT.read_text(encoding="utf-8")
     assert source.count("SKIP_RELEASE_GUARD_BEGIN") == 1
     assert source.count("SKIP_RELEASE_GUARD_END") == 1
     begin = source.index("SKIP_RELEASE_GUARD_BEGIN")
     end = source.index("SKIP_RELEASE_GUARD_END")
-    assert begin < source.index("skip_release_requested()") < end
+    assert begin < source.index("if skip_release_requested(parsed") < end
 
 
 # --------------------------------------------------------------------------- Pure helpers ---------------------------------------------------------------------------
 
 
 def test_pure_helpers() -> None:
-    assert port.SELF == "upload-to-r2.sh"
     assert port.RELEASE_CHANNELS == ("stable", "edge")
     assert port.releases_bucket() in (port.BUCKET_DEFAULT, os.environ.get("RELEASES_BUCKET"))
 
@@ -1154,13 +1196,6 @@ def test_pure_helpers() -> None:
     assert banner[4] == "  version:  v1.2.3"
     assert banner[5] == "  channel:  edge"
     assert len(banner) == 22
-
-    # A sed range RE-ARMS, so a second definition is appended rather than ignored.
-    twice = "write_once_guard() {\n  :\n}\nnoise\nwrite_once_guard() {\n  x\n}\n"
-    assert port.extract_guard(twice).count("write_once_guard() {") == 2
-    assert port.extract_guard("nothing here\n") == ""
-    # `^}` is anchored: an indented brace does not close the range.
-    assert port.extract_guard("write_once_guard() {\n  if x; then\n  }\n}\n").count("\n") == 4
 
 
 def test_parse_args_is_the_twins_parser() -> None:

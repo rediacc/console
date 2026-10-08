@@ -5,8 +5,7 @@ Clone a D1 database from source to target: export the source, wrap the dump in
 `PRAGMA defer_foreign_keys=ON` / `foreign_keys=OFF` because D1 exports tables
 alphabetically rather than in FK dependency order, import into the target, and verify FK integrity afterwards.
 
-LIVE CALLERS, NOT REPOINTED. the removed edge-clone-d1.yml workflow (deleted 2026-09-20) runs the bash twin, and so does `.ci/scripts/deploy/test-d1-migrations.sh:114` (whose own port, `deploy/test_d1_migrations.py`, deliberately invokes the BASH twin for the reason its docstring gives). This module is the twin's verified-equivalent alternative; the cutover is a separate, later,
-driver-only step.
+CALLERS. `deploy.test_d1_migrations` calls `main` in process for each region. The bash twin `clone-d1.sh` was frozen to `goldens/twins/deploy.clone-d1.jsonl` and deleted under operator ruling D5 (PLAN-retire-bash-oracles, unit W7).
 
 NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (wrangler) and `sqlite3` are the only two programs that could, and the differential (`.ci/rediacc_ci/tests/test_deploy_clone_d1.py`) puts a RECORDING FAKE for each on a scratch PATH. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger
 is a separate, achievable piece of work. This is that piece.

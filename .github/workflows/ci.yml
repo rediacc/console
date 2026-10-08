@@ -980,7 +980,7 @@ jobs:
   # ============================================================================
   # COLUMN 3A-BIS: RELEASE-STATE DRIFT GATE
   # BLOCKER gate that enforces the sentinel-based release contract defined in
-  # .ci/scripts/lib/release-state-validator.sh. Fails loud if R2 `.released`
+  # rediacc_ci.core.release_state_validator. Fails loud if R2 `.released`
   # sentinels and git release tags are not in bijection. Runs before
   # stage-artifacts so drift from a prior cancelled run is caught before any
   # new bytes are uploaded. Only blocks release channels on push-to-main;
@@ -2087,8 +2087,8 @@ jobs:
   # has passed. The sentinel seals the version: from here on, write_once_guard
   # refuses to overwrite, and the drift gate requires a matching git tag.
   #
-  # See .ci/scripts/lib/release-state-validator.sh for the invariant and
-  # .ci/scripts/deploy/write-release-sentinel.sh for the writer.
+  # See rediacc_ci.core.release_state_validator for the invariant and
+  # rediacc_ci.deploy.write_release_sentinel for the writer.
   #
   # always() prefix is load-bearing (same reason as housekeeping): ci-complete
   # transitively needs deploy-preview / smoke-test-preview which are

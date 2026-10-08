@@ -135,11 +135,6 @@ def run_both(
     return old, _run(tmp_path, "new", **kw)
 
 
-def _demark(text: str) -> str:
-    """Drop `common.sh`'s `✗ ` error marker. See the UNKNOWN case for why."""
-    return "\n".join(line.removeprefix("✗ ") for line in text.split("\n"))
-
-
 def assert_agree(old: tuple, new: tuple, label: str) -> None:
     o_rc, o_out, o_err, o_calls = old
     n_rc, n_out, n_err, n_calls = new
@@ -151,7 +146,7 @@ def assert_agree(old: tuple, new: tuple, label: str) -> None:
         n_err,
     )
     assert n_out == o_out, "%s: stdout diverged:\nold: %r\nnew: %r" % (label, o_out, n_out)
-    assert _demark(n_err) == _demark(o_err), "%s: stderr diverged:\nold: %r\nnew: %r" % (
+    assert n_err == o_err, "%s: stderr diverged:\nold: %r\nnew: %r" % (
         label,
         o_err,
         n_err,
@@ -209,28 +204,17 @@ def test_absent_sentinel_annotates_and_exits_one(tmp_path: pathlib.Path) -> None
 
 
 def test_unknown_probe_diverges_only_by_the_log_error_marker(tmp_path: pathlib.Path) -> None:
-    """A credential failure is NOT a 404, and both sides say so before failing.
+    """A credential failure is NOT a 404, and both sides say so before failing, with the same `✗ ` marker.
 
-    THE ONE BYTE-LEVEL DIVERGENCE IN THIS PAIR, and it belongs to neither
-    subject. The twin sources `common.sh`, whose `log_error` prefixes `✗ `;
-    `rediacc_ci.core.release_state_validator._log_error` deliberately drops that marker (its own docstring says so, because it is a colour-conditional decoration the shared library has no stream to decide against). The finding
-    TEXT, the indented aws stderr, the exit code and the call log are identical;
-    only the two-byte marker differs, which `shadow-gate.ts` strips as a severity MARKER before comparing anyway.
-
-    Asserted explicitly here rather than normalised away silently, so that the day someone gives the library its marker back this case says which half changed.
+    THE TEST NAME IS KEPT because the frozen bash answer is keyed by it; the divergence the name describes is gone. The validator's `_log_error` used to drop `common.sh`'s `✗ ` marker (a two-byte divergence this case asserted explicitly). It now goes through `rediacc_ci.log`, which is `common.sh`'s `log_error` in Python, as part of porting the write-once guard (operator ruling D5, whose goldens pin the marker); the divergence and its normaliser are gone and the two sides compare byte for byte.
     """
     old, new = run_both(tmp_path, mode="unknown", VERSION="v1.1.2")
     assert old[0] == 1
     assert old[1] == "::error::cli/v1.1.2/.released NOT present after write\n"
-    assert old[2].startswith(
-        "✗ rsv_sentinel_exists: could not determine whether cli/v1.1.2/.released exists"
-    )
-    assert new[2].startswith(
-        "rsv_sentinel_exists: could not determine whether cli/v1.1.2/.released exists"
-    )
-    assert not new[2].startswith("✗"), (
-        "the library grew the ✗ marker; delete the _demark() normalisation and this case"
-    )
+    for side in (old, new):
+        assert side[2].startswith(
+            "✗ rsv_sentinel_exists: could not determine whether cli/v1.1.2/.released exists"
+        )
     # The aws stderr is indented four spaces and echoed by both, which is the half that tells an operator the probe failed on credentials.
     assert "    An error occurred (InvalidAccessKeyId)" in old[2]
     assert_agree(old, new, "unknown")

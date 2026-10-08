@@ -1,4 +1,6 @@
-"""Differential: `rediacc_ci.deploy.clone_d1` against its twin `.ci/scripts/deploy/clone-d1.sh`.
+"""Differential: `rediacc_ci.deploy.clone_d1` against the bytes its twin `.ci/scripts/deploy/clone-d1.sh` printed.
+
+THE TWIN'S SIDE IS FROZEN (operator ruling D5, PLAN-retire-bash-oracles B3). Every `"old"` run goes through `differential.twin_run`, so its exit code, both streams and call log come from `goldens/twins/deploy.clone-d1.jsonl` and the `.sh` is never read once it is deleted. A `regolden --source bash` run still drives the live bash while it exists, which is why the fixture copies the twin and `common.sh` only when they are on disk.
 
 RECORDING FAKES FOR `npx` AND `sqlite3` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Those two are the only programs in this script that can reach anything outside the machine or open a database; every other tool it uses (`grep`, `sed`, `wc`, `du`, `cut`, `jq`, `mktemp`, `rm`, `cat`) is the real binary symlinked into the same scratch directory, because both sides call the same one and
 that is the point of calling them at all.
@@ -20,6 +22,7 @@ THE ONE MASKED THING is `mktemp -d`'s random suffix, which cannot be equal betwe
 
 from __future__ import annotations
 
+import hashlib
 import inspect
 import os
 import re
@@ -32,12 +35,14 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import clone_d1 as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "deploy" / "clone-d1.sh"
+TWIN_REL = ".ci/scripts/deploy/clone-d1.sh"
+TWIN = ROOT / TWIN_REL
 COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "clone_d1.py"
 BASH = shutil.which("bash") or "/bin/bash"
@@ -222,8 +227,9 @@ def fixture(tmp_path: pathlib.Path, *, sanitize_sql: bool = False) -> pathlib.Pa
     root = tmp_path / "repo"
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
+    if TWIN.is_file():  # only a `regolden --source bash` run still reads the bash
+        shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
+        shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
@@ -239,7 +245,7 @@ def fixture(tmp_path: pathlib.Path, *, sanitize_sql: bool = False) -> pathlib.Pa
     return root
 
 
-def _run(
+def _run_live(
     root: pathlib.Path,
     side: str,
     *,
@@ -287,6 +293,43 @@ def _run(
         input="",
     )
     return proc, call_log.read_text(encoding="utf-8")
+
+
+def _run(
+    root: pathlib.Path,
+    side: str,
+    *,
+    args: tuple[str, ...] = ("--source", "account-db-eu", "--target", "edge-account-db-eu"),
+    drop: str = "",
+    drop_env: tuple[str, ...] = (),
+    **extra: str,
+):
+    """`(CompletedProcess, call log)`. The `"old"` side is the bash twin's frozen answer."""
+    if side != "old":
+        return _run_live(root, side, args=args, drop=drop, drop_env=drop_env, **extra)
+    held: dict[str, str] = {}
+
+    def bash():
+        proc, calls = _run_live(root, "old", args=args, drop=drop, drop_env=drop_env, **extra)
+        held["calls"] = calls
+        return proc.returncode, proc.stdout, proc.stderr
+
+    sanitize = root / ".ci" / "scripts" / "deploy" / "sanitize-d1.sql"
+    rc, out, err, frozen = diff.twin_run(
+        TWIN_REL,
+        [
+            repr(args),
+            drop,
+            repr(drop_env),
+            repr(sorted(extra.items())),
+            hashlib.sha256(sanitize.read_bytes()).hexdigest()[:12] if sanitize.is_file() else "-",
+        ],
+        bash,
+        files=tuple(v for k, v in sorted(extra.items()) if k == "FAKE_STASH_FILE"),
+        extras={"calls": lambda: held["calls"]},
+        work=(root.parent, *diff.pytest_tmp_roots(*extra.values(), *args)),
+    )
+    return subprocess.CompletedProcess([], rc, out, err), frozen["calls"]
 
 
 def run_both(tmp_path: pathlib.Path, *, fixture_kw: dict | None = None, **kw):
@@ -647,25 +690,6 @@ def test_defect_c_the_account_id_is_never_required(tmp_path) -> None:
     proc, _log = old
     assert proc.returncode == 0
     assert "CLOUDFLARE_ACCOUNT_ID" not in proc.stderr
-    assert "Requires: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID" in TWIN.read_text(
-        encoding="utf-8"
-    ), "the header still promises the guard the code does not have"
-
-
-def test_defect_d_the_blocker_comments_name_a_value_the_script_never_builds() -> None:
-    """A source-level assertion, because the defect is in the SUPPRESSION rather than in any behaviour: both `# BLOCKER:` lines justify the unquoted
-    expansion with a value (`--env=X`, from a `cloneSource`) that appears
-    nowhere in the file."""
-    assert port.THE_BLOCKER_COMMENTS_NAME_A_VALUE_THAT_IS_NEVER_BUILT
-    text = TWIN.read_text(encoding="utf-8")
-    assert text.count("# BLOCKER:") == 2
-    assert text.count('--env=X"') + text.count("--env=X ") >= 2, "the stale wording"
-    assert "cloneSource" in text
-    # The only thing actually assigned to CONFIG_FLAG:
-    assert 'CONFIG_FLAG="--config $WRANGLER_CONFIG"' in text
-    assert "--env=" not in text.split("# BLOCKER", 1)[0], (
-        "no code above the first suppression builds --env= either"
-    )
 
 
 # --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
@@ -717,28 +741,6 @@ def test_the_argv_builders_match_the_twins_words() -> None:
         "--command=PRAGMA foreign_key_check",
         "--json",
     ]
-
-
-def test_the_sed_programs_are_the_twins_own_bytes() -> None:
-    """A STALENESS GUARD ON THE TWO PROGRAMS THAT BUILD THE ARTIFACT. They are quoted out of the twin rather than paraphrased, so a change to either one in the bash file fails here instead of silently diverging."""
-    text = TWIN.read_text(encoding="utf-8")
-    assert port.STRIP_TRANSACTIONS_SED in text
-    assert port.DROP_STATEMENTS_SED in text
-    assert port.REDACT_PATTERN in text
-    assert port.USAGE in text
-    assert port.FK_COMMAND in text
-
-
-def test_the_twin_still_says_what_this_port_says_it_says() -> None:
-    text = TWIN.read_text(encoding="utf-8")
-    assert "EXPORT_ATTEMPTS=3" in text
-    assert "sleep 10" in text
-    assert "require_var CLOUDFLARE_API_TOKEN" in text
-    assert "trap 'rm -rf \"$TMPDIR\"' EXIT" in text
-    assert '"$SCRIPT_DIR/sanitize-d1.sql"' in text
-    assert 'echo "PRAGMA defer_foreign_keys=ON;"' in text
-    assert 'echo "PRAGMA foreign_keys=ON;"' in text
-    assert "FK integrity check passed (0 violations)" in text
 
 
 def test_the_helpers_the_selftest_leans_on_are_exported() -> None:

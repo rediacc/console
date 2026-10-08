@@ -27,7 +27,7 @@ from rediacc_ci.release.list_edge_releases import semver
 if TYPE_CHECKING:
     from collections.abc import Collection, Sequence
 
-# The one keep count. `.ci/config/constants.sh` `R2_MAX_RELEASE_VERSIONS` (read by the bash twin `upload-to-r2.sh`) is pinned to this by `test_deploy_upload_to_r2.test_the_max_release_versions_is_the_twins`.
+# The one keep count. `.ci/config/constants.sh` `R2_MAX_RELEASE_VERSIONS` (the bash twin `upload-to-r2.sh` read it; the file stays the registry copy) is pinned to this by `test_deploy_upload_to_r2.test_the_max_release_versions_is_the_twins`.
 KEEP_RELEASES = 20
 
 # `^v[0-9]+\.[0-9]+\.[0-9]+$`: the release tags the bijection covers (`release_state.STRICT_SEMVER`).
