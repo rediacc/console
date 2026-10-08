@@ -1,82 +1,30 @@
-"""Behavioural gate for the dev-stack liveness probes in `.ci/lib/account.sh`.
+"""Behavioural gate for the dev-stack liveness probe `rustfs_alive` in `.ci/rediacc_ci/core/account.py`.
 
-Ported from `.ci/scripts/quality/check-account-probes.sh`, retired in W7 P5;
-see `rediacc_ci.quality.__init__`; the committed differential ledger under `.ci/shadow/` is what licensed the retirement.
+WHY THIS EXISTS. On 2026-08-04 the bash original (`account_rustfs_alive`) reported ALIVE for a port with nothing on it, and shipped that way long enough to reach CI. The capture was:
 
-The twin's own header, carried because the incident IS the gate:
+    code=$(curl -s -o /dev/null -m 2 -w '%{http_code}' "$url" 2>/dev/null || echo 000)
+    [[ "$code" != "000" ]]
 
-    WHY THIS EXISTS. On 2026-08-04 `account_rustfs_alive` reported ALIVE for a
-    port with nothing on it, and shipped that way long enough to reach CI. The
-    capture was:
+On a refused connection curl PRINTS `000` (that is what `%{http_code}` yields) AND exits non-zero, so `|| echo 000` appended a SECOND one: the captured value was `000000`, which is `!= "000"`, so the probe said alive. Downstream, account_dev announced "Reusing RustFS already serving on port ...", never started the container, exported CONFIG_R2_* anyway, and the gateway then advertised a config store that did not exist.
 
-        code=$(curl -s -o /dev/null -m 2 -w '%{http_code}' "$url" 2>/dev/null || echo 000)
-        [[ "$code" != "000" ]]
+The Python port is not immune: a fallback that appends `000` when curl exits non-zero reintroduces the same concatenation.
 
-    On a refused connection curl PRINTS `000` (that is what %{http_code} yields)
-    AND exits non-zero, so `|| echo 000` appended a SECOND one: the captured
-    value was `000000`, which is `!= "000"`, so the probe said alive.
-    Downstream, account_dev announced "Reusing RustFS already serving on port
-    ...", never started the container, exported CONFIG_R2_* anyway, and the
-    gateway then advertised a config store that did not exist.
+WHY NO EXISTING GATE COULD HAVE CAUGHT IT. The absence branch of a probe that guards a heavy external dependency never executes on a developer machine, because the dependency is always present there. It is untested BY CONSTRUCTION, and reading the code does not help: the code is not wrong on the path anyone runs. The only cure is to exercise the absent case deliberately.
 
-    WHY NO EXISTING GATE COULD HAVE CAUGHT IT. The absence branch of a probe
-    that guards a heavy external dependency never executes on a developer
-    machine, because the dependency is always present there (RustFS genuinely
-    listens on 9100 on the operator's box). It is untested BY CONSTRUCTION, and
-    reading the code does not help: the code is not wrong on the path anyone
-    runs. The only cure is to exercise the absent case deliberately, which is
-    what this does.
+CONTROL-FIRST. Three assertions, and the gate FAILS ITSELF if its own control cannot fire:
+  1. closed port  -> the probe must say DEAD   (the defect)
+  2. live port    -> the probe must say ALIVE  (the CONTROL: without this, a probe hard-wired to `False` would pass assertion 1)
+  3. the historical implementation, re-run inline, MUST say ALIVE on the same closed port, proving this test targets the real bug and is not green by accident against an unrelated code path.
 
-    CONTROL-FIRST. Three assertions, and the gate FAILS ITSELF if its own
-    control cannot fire:
-      1. closed port  -> the probe must say DEAD   (the defect)
-      2. live port    -> the probe must say ALIVE  (the CONTROL: without this, a
-                         probe hard-wired to `false` would pass assertion 1)
-      3. the historical implementation, re-run inline, MUST say ALIVE on the
-         same closed port, proving this test targets the real bug and is not
-         green by accident against an unrelated code path.
+THE PROBE RUNS IN A CHILD INTERPRETER with `<root>/.ci` prefixed to PYTHONPATH, so a fixture tree carrying a defective copy of `rediacc_ci.core.account` wins over the real package. Importing in-process would read THIS interpreter's copy and every planted-defect control would go permanently green.
 
-    Usage: check-account-probes.sh
+THE LOAD PROBE'S EXIT 3 IS LOAD-BEARING AND IS CARRIED AS A CONSTANT. An import failure or a missing `rustfs_alive` must exit LOAD_FAILED_RC, distinct from the probe returning False. A gate that collapsed them would delete the distinction between "the module did not load" and "the probe correctly reports a closed port as dead", and assertion 1 would pass while testing nothing.
 
------------------------------------------------------------------------------
-PORT NOTES.
------------------------------------------------------------------------------
+`curl` IS NOT PROBED, ON PURPOSE. Assertion 3 re-runs the historical capture through curl, and with no curl on PATH that capture yields the empty string plus the fallback, i.e. exactly `000`, which trips "PLANTED DEFECT NO LONGER REPRODUCES". The message is wrong about the cause and right about the verdict.
 
-THE SUBJECT IS STILL BASH, SO THE PORT STILL SPAWNS BASH. `account_rustfs_alive` is a shell function; there is no way to exercise it that does not source the library. The port therefore keeps the twin's subshell verbatim, including both letters of `set +eu`, and the twin's paragraph explaining them is carried at the
-function that carries the flags rather than summarised here:
+THE THREE ASSERTIONS ARE INDEPENDENT AND ALL THREE RUN, because a run that stopped at assertion 1 would hide whether the CONTROL could still fire.
 
-    `set +eu` is REQUIRED, and both letters were paid for separately while
-    writing this. account.sh is not safe to source under the strict flags this
-    gate runs with: errexit trips on its re-source guard (account.sh:8,
-    `[[ -n "${ACCOUNT_LIB_LOADED:-}" ]] && return 0`, whose && list returns
-    NON-ZERO on a first load), and nounset trips on the unset variables it
-    references (`$CONSOLE_ROOT_DIR`, among others; `find-port.sh` used to
-    contribute its own until W7P5-b deleted it, and account.sh still has
-    enough of its own for the flag to matter). Either one aborts the source
-    part-way, leaving every
-    function below undefined, and a probe that cannot be called reads as "not
-    alive", i.e. the gate would report a PASS on assertion 1 while testing
-    nothing at all. run.sh does not hit this because it does not source the
-    library under strict flags.
-
-`CI_LIB_DIR` IS EXPORTED FOR THE CHILD, NOT FOR THIS PROCESS. The twin exports it into its own environment and the subshell inherits it; the port passes it in the child's env dict. Same value, `<root>/.ci/lib`, and the twin's reason is unchanged: "account.sh sources siblings through $CI_LIB_DIR (account.sh:12), so that MUST be exported before sourcing or the load half-fails and the
-function never exists."
-
-THE LOAD PROBE'S EXIT 3 IS LOAD-BEARING AND IS CARRIED AS A CONSTANT. The twin writes `declare -F account_rustfs_alive >/dev/null || exit 3` and then tests `load_rc -eq 3`. A port that collapsed that into "the probe returned non-zero" would delete the distinction between "the library did not load" and "the port is correctly reporting a closed port as dead", which is the whole
-reason the twin comments: "without the check below, a failed source makes `account_rustfs_alive` missing, the subshell returns non-zero, and 'not alive' reads as 'correctly dead' -- assertion 1 would pass while testing nothing at all. That is the exact vacuous-green this gate exists to prevent, and it happened while writing it."
-
-`command -v python3` IS SATISFIED BY CONSTRUCTION and has no counterpart below, the same way `require_cmd python3` is in the editorconfig port. The twin needs the probe because it shells out to a `python3` that may not exist to bind the control listener; this module IS that python3. Inventing a branch for it would be a check that cannot fail. What the port DOES still probe is
-`bash`, because that is the interpreter it now shells out to, and the twin's refusal wording is reused for it so a reader meets the same sentence: refusing "to report green
-from a run where the control could not fire".
-
-`curl` IS NOT PROBED, ON PURPOSE, IN EITHER IMPLEMENTATION. Assertion 3 re-runs the historical capture through curl, and with no curl on PATH that capture yields the empty string plus the `|| echo 000` fallback, i.e. exactly `000`, which trips "PLANTED DEFECT NO LONGER REPRODUCES". That message is wrong about the cause and right about the verdict, and the port emits the same bytes
-because a clearer message here would be a finding the differential scores as a mismatch. Reported as a twin defect rather than repaired.
-
-THE THREE ASSERTIONS ARE INDEPENDENT AND ALL THREE RUN. The twin does not short-circuit after the first failure; it accumulates `failures` and reports the count. The port keeps that, because a run that stopped at assertion 1 would hide whether the CONTROL could still fire, and "the control could not fire" is the finding that matters most.
-
-THE LISTENER IS THE TWIN'S OWN `python3 -m http.server`, spawned as a child rather than served in-process. An in-process `http.server` thread would be tidier and would change what assertion 2 proves: the twin's control demonstrates that a REAL socket on a REAL port answers curl, and a same-process server shares the interpreter with the code asserting about it.
-
-THE READINESS LOOP IS `curl`, 50 attempts, 0.1s apart, as in the twin. A `socket.connect_ex` probe would be faster and would answer a different question: the probe under test speaks HTTP through curl, so the readiness check has to prove HTTP is being answered, not merely that a port is open.
+THE LISTENER IS `python3 -m http.server`, spawned as a child rather than served in-process: the control demonstrates that a REAL socket on a REAL port answers curl, and a same-process server shares the interpreter with the code asserting about it. The readiness loop is `curl`, 50 attempts, 0.1s apart, because the probe under test speaks HTTP through curl and the readiness check has to prove HTTP is being answered, not merely that a port is open.
 """
 
 import contextlib
@@ -84,7 +32,6 @@ import ctypes
 import os
 import pathlib
 import re
-import shutil
 import signal
 import socket
 import subprocess
@@ -95,17 +42,15 @@ import time
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The library under test, repo-relative exactly as the twin spells it. Printed in the step line and in the two refusal messages, so the reader is told which file was not there rather than which variable was empty. THE TWIN'S MESSAGES CARRY AN EM DASH, and this repository's authoring rule forbids typing one into a source file. The character is therefore named by its code point
-# rather than typed, exactly the way `scripts/lib/shadow-gate.ts` names ESC with `String.fromCharCode(27)` instead of embedding a raw control byte. This is byte fidelity, not decoration: the differential compares finding TEXT, so substituting a hyphen would make the port report a different finding
-# from its twin on every line below that uses it.
+# The module under test, repo-relative. Printed in the step line and in the refusal messages. The messages carry an em dash, which this repository's authoring rule forbids typing into a source file, so the character is named by its code point.
 DASH = "\u2014"
 
-PROBE_LIB = ".ci/lib/account.sh"
+PROBE_LIB = ".ci/rediacc_ci/core/account.py"
 
 # The function the whole gate is about. Named once so a rename fails loudly in the load probe rather than silently matching nothing.
-PROBE_FN = "account_rustfs_alive"
+PROBE_FN = "rustfs_alive"
 
-# The subshell's exit status for "the library loaded but the function is not there". Three, not one, because one is what a healthy probe returns for a closed port and the two must never be confused. See the port notes.
+# The child's exit status for "the module loaded but the function is not there". Three, not one, because one is what a healthy probe returns for a closed port and the two must never be confused. See the port notes.
 LOAD_FAILED_RC = 3
 
 # The readiness loop, in the twin's numbers: `for _ in $(seq 1 50)` with `sleep 0.1` between attempts, i.e. up to five seconds for a local listener.
@@ -126,40 +71,27 @@ def free_port() -> int:
         sock.close()
 
 
-def probe_script(port: int) -> str:
-    """The twin's subshell body, byte for byte in its load-bearing parts.
-
-    `set +eu` first, the source silenced on both streams, the `declare -F` guard exiting LOAD_FAILED_RC, then the call. Nothing here is reordered: the source must be silenced before the guard so a chatty library cannot be mistaken for output of the probe, and the guard must precede the call so a missing
-    function is distinguishable from a dead port.
-    """
-    return (
-        "set +eu\n"
-        "# shellcheck disable=SC1090\n"
-        'source "%s" >/dev/null 2>&1\n'
-        "declare -F %s >/dev/null || exit %d\n"
-        '%s "%d"\n' % (PROBE_LIB, PROBE_FN, LOAD_FAILED_RC, PROBE_FN, port)
-    )
-
-
-def ci_lib_dir(root: pathlib.Path) -> str:
-    """The twin's `CI_LIB_DIR`, spelled the twin's way.
-
-    `check-account-probes.sh:82` sets `CI_LIB_DIR="$SCRIPT_DIR/../../lib"` and
-    never resolves it, then PRINTS that value in the load-failure message. The resolved and unresolved spellings name ONE directory and are DIFFERENT BYTES, and the differential compares bytes. Carrying the tidy form would make the port report a different finding from its twin for the same defect, so the untidy one is carried and named here rather than discovered later.
-    """
-    return "%s/../../lib" % (root / ".ci" / "scripts" / "quality")
+PROBE_SCRIPT = (
+    "import sys\n"
+    "try:\n"
+    "    from rediacc_ci.core.account import %s as probe\n"
+    "except Exception:\n"
+    "    sys.exit(%d)\n"
+    "sys.exit(0 if probe(int(sys.argv[1])) else 1)\n"
+) % (PROBE_FN, LOAD_FAILED_RC)
 
 
 def probe_rc(root: pathlib.Path, port: int) -> int:
-    """Run the probe against `port` from `root`. Returns the subshell's status.
+    """Run the probe against `port` from `root`. Returns the child's status.
 
-    Zero means the probe said ALIVE, LOAD_FAILED_RC means the function was never defined, and anything else means it said DEAD. The caller must keep those three apart; collapsing the last two is the vacuous green the twin's header describes.
+    Zero means the probe said ALIVE, LOAD_FAILED_RC means the function was never importable, and anything else means it said DEAD. The caller must keep those three apart; collapsing the last two is the vacuous green the header describes.
     """
     env = dict(os.environ)
-    # account.sh sources siblings through $CI_LIB_DIR (account.sh:12).
-    env["CI_LIB_DIR"] = ci_lib_dir(root)
+    ci_dir = str(root / ".ci")
+    existing = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = ci_dir + (os.pathsep + existing if existing else "")
     proc = subprocess.run(
-        ["bash", "-c", probe_script(port)],
+        [sys.executable, "-c", PROBE_SCRIPT, str(port)],
         cwd=str(root),
         env=env,
         stdout=subprocess.DEVNULL,
@@ -270,17 +202,9 @@ def main(argv: list[str] | None = None) -> int:
         log.error("failure, not a pass: a probe library that vanished cannot be verified.")
         return 1
 
-    # The twin probes python3 here because it shells out to one. This module is that python3; what it shells out to is bash, so bash is what is probed, in the twin's own words about refusing a green the control could not earn.
-    if shutil.which("bash") is None:
-        log.error("bash is required to source the probe library. Refusing to report")
-        log.error("green from a run where the control could not fire.")
-        return 1
-
     # Fail loudly if the library cannot be loaded at all: a gate that cannot reach its subject must not report on it. Port 1 is closed, so a HEALTHY probe returns non-zero here; only LOAD_FAILED_RC means the load failed.
     if probe_rc(root, 1) == LOAD_FAILED_RC:
-        log.error(
-            "Could not load %s from %s (CI_LIB_DIR=%s)." % (PROBE_FN, PROBE_LIB, ci_lib_dir(root))
-        )
+        log.error("Could not import %s from %s." % (PROBE_FN, PROBE_LIB))
         log.error("Refusing to report on a probe this gate cannot actually call.")
         return 1
 
@@ -345,54 +269,42 @@ def main(argv: list[str] | None = None) -> int:
 
 # --------------------------------------------------------------------------- Selftest ---------------------------------------------------------------------------
 
-# THE FIXTURES CARRY `$CONSOLE_ROOT_DIR`, WHICH IS UNSET, ON PURPOSE. It is the line at `.ci/lib/account.sh:19` that makes nounset abort the source, and it is the reason the twin needs the `u` of `set +eu` as well as the `e`. A fixture without it loads cleanly under strict flags, and the control asserting that `set +eu` matters then passes for a reason that has nothing to do with
-# the flags. Measured: with the line removed, the strict form of probe_script exits 0 against a live port, i.e. it proves nothing.
-#
-# The fixture library bodies. Written as literals, never by substituting into a copy of the real account.sh: a substitution silently yields an unmutated copy the day the targeted line is reworded, and the control then passes against source it never changed. That is the failure check-control-vacuity.sh exists
-# for, and the twin builds its own controls the same way.
-FIXTURE_HEALTHY = """#!/bin/bash
-[[ -n "${ACCOUNT_LIB_LOADED:-}" ]] && return 0
-readonly ACCOUNT_LIB_LOADED=1
-source "$CI_LIB_DIR/find-port.sh"
-ACCOUNT_DIR="$CONSOLE_ROOT_DIR/private/account"
-account_rustfs_alive() {
-    local port="$1"
-    local code
-    code=$(curl -s -o /dev/null -m 2 -w '%{http_code}' "http://127.0.0.1:${port}/" 2>/dev/null || true)
-    [[ -n "$code" && "$code" != "000" ]]
-}
+# The fixture module bodies. Written as literals, never by substituting into a copy of the real account.py: a substitution silently yields an unmutated copy the day the targeted line is reworded, and the control then passes against source it never changed.
+FIXTURE_HEALTHY = """import subprocess
+
+
+def rustfs_alive(port):
+    proc = subprocess.run(
+        ["curl", "-s", "-o", "/dev/null", "-m", "2", "-w", "%{http_code}", "http://127.0.0.1:%d/" % port],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return proc.stdout not in {"", "000"}
 """
 
-# The 2026-08-04 shape, restored exactly: `|| echo 000` instead of `|| true`.
+# The 2026-08-04 shape, restored: a fallback appended on a non-zero exit, so a refused connection captures `000000`.
 FIXTURE_DEFECTIVE = FIXTURE_HEALTHY.replace(
-    "2>/dev/null || true)", "2>/dev/null || echo 000)"
-).replace('[[ -n "$code" && "$code" != "000" ]]', '[[ "$code" != "000" ]]')
+    '    return proc.stdout not in {"", "000"}',
+    '    out = proc.stdout + ("000" if proc.returncode != 0 else "")\n    return out != "000"',
+)
 
 # A probe that can never say yes. Assertion 1 passes against it, which is exactly why assertion 2 exists.
-FIXTURE_ALWAYS_DEAD = FIXTURE_HEALTHY.replace('[[ -n "$code" && "$code" != "000" ]]', "false")
+FIXTURE_ALWAYS_DEAD = FIXTURE_HEALTHY.replace(
+    '    return proc.stdout not in {"", "000"}', "    return False"
+)
 
-# A library that loads and defines nothing. The load probe must see this, or "not alive" would read as "correctly dead".
-FIXTURE_NO_FUNCTION = """#!/bin/bash
-source "$CI_LIB_DIR/find-port.sh"
-ACCOUNT_DIR="$CONSOLE_ROOT_DIR/private/account"
-account_something_else() { return 0; }
-"""
-
-# The sibling the FIXTURES source. Empty is enough: the point is that the source succeeds, not what it defines.
-#
-# ARCHAEOLOGY, DELIBERATELY KEPT. The real `.ci/lib/find-port.sh` is DELETED (W7P5-b) and the real account.sh no longer sources it. These fixtures are the 2026-08-04 shape frozen as literals, exactly so that they do NOT track the live file -- see the paragraph above on why substituting into a copy of the real account.sh would silently yield an unmutated control. Removing the line
-# would re-key the fixtures against a shape the incident never had.
-FIXTURE_FIND_PORT = '#!/bin/bash\n: "${FIND_PORT_LOADED:=1}"\n'
+# A module that loads and defines nothing. The load probe must see this, or "not alive" would read as "correctly dead".
+FIXTURE_NO_FUNCTION = "def something_else():\n    return True\n"
 
 
-def _fixture_root(tmp: pathlib.Path, body: str) -> pathlib.Path:
-    """A throwaway tree carrying `.ci/lib/{account,find-port}.sh` and nothing else."""
-    lib = tmp / ".ci" / "lib"
-    lib.mkdir(parents=True, exist_ok=True)
-    # `.ci/scripts/quality` must EXIST, because CI_LIB_DIR is the twin's unresolved `<root>/.ci/scripts/quality/../../lib` and the kernel resolves `..` against real directories. Without it the source fails, every function is undefined, and "not alive" would read as "correctly dead".
-    (tmp / ".ci" / "scripts" / "quality").mkdir(parents=True, exist_ok=True)
-    (lib / "account.sh").write_text(body, encoding="utf-8")
-    (lib / "find-port.sh").write_text(FIXTURE_FIND_PORT, encoding="utf-8")
+def fixture_root(tmp: pathlib.Path, body: str) -> pathlib.Path:
+    """A throwaway tree carrying a minimal `rediacc_ci.core.account` and nothing else."""
+    core = tmp / ".ci" / "rediacc_ci" / "core"
+    core.mkdir(parents=True, exist_ok=True)
+    (tmp / ".ci" / "rediacc_ci" / "__init__.py").write_text("", encoding="utf-8")
+    (core / "__init__.py").write_text("", encoding="utf-8")
+    (core / "account.py").write_text(body, encoding="utf-8")
     return tmp
 
 
@@ -439,29 +351,20 @@ def selftest() -> int:
         server.kill()
         server.wait()
 
-    # -- probe_script carries the load-bearing lines -----------------------
-    body = probe_script(4242)
-    ctl.truthy("probe_script disables errexit and nounset", "set +eu" in body)
-    ctl.truthy("probe_script guards on declare -F", "declare -F %s" % PROBE_FN in body)
-    ctl.truthy("probe_script exits 3 when the function is missing", "|| exit 3" in body)
-    ctl.truthy("probe_script calls the probe with the port", '%s "4242"' % PROBE_FN in body)
-
-    # The unresolved CI_LIB_DIR spelling, asserted in BOTH directions: it must carry the twin's `../../lib` tail, and it must not be the tidy resolved form that would print different bytes for the same defect.
-    ctl.check(
-        "CI_LIB_DIR keeps the twin's unresolved spelling",
-        ci_lib_dir(pathlib.Path("/x")),
-        "/x/.ci/scripts/quality/../../lib",
+    # -- the probe child carries the load-bearing lines --------------------
+    ctl.truthy(
+        "the probe imports the function by name", "import %s as probe" % PROBE_FN in PROBE_SCRIPT
     )
-    ctl.falsy(
-        "CI_LIB_DIR is NOT the resolved form",
-        ci_lib_dir(pathlib.Path("/x")) == "/x/.ci/lib",
+    ctl.truthy(
+        "the probe exits with the load-failed status when the import fails",
+        "sys.exit(%d)" % LOAD_FAILED_RC in PROBE_SCRIPT,
     )
 
     with tempfile.TemporaryDirectory() as tmp:
-        root_healthy = _fixture_root(pathlib.Path(tmp) / "healthy", FIXTURE_HEALTHY)
-        root_defect = _fixture_root(pathlib.Path(tmp) / "defect", FIXTURE_DEFECTIVE)
-        root_dead = _fixture_root(pathlib.Path(tmp) / "dead", FIXTURE_ALWAYS_DEAD)
-        root_nofn = _fixture_root(pathlib.Path(tmp) / "nofn", FIXTURE_NO_FUNCTION)
+        root_healthy = fixture_root(pathlib.Path(tmp) / "healthy", FIXTURE_HEALTHY)
+        root_defect = fixture_root(pathlib.Path(tmp) / "defect", FIXTURE_DEFECTIVE)
+        root_dead = fixture_root(pathlib.Path(tmp) / "dead", FIXTURE_ALWAYS_DEAD)
+        root_nofn = fixture_root(pathlib.Path(tmp) / "nofn", FIXTURE_NO_FUNCTION)
 
         closed = free_port()
         # -- assertion 1, both directions ----------------------------------

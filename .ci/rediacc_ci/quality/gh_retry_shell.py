@@ -1274,10 +1274,7 @@ def judge(corpus: Corpus, allowed: dict[str, str], debt: dict[str, str]) -> Shel
             problems.append(
                 "VACUOUS: zero retried shell reads on the tree; either every live shell GitHub read lost its retry (see the findings above) or the retry detector has rotted."
             )
-        if not any(s.kind == "write" for s in seen):
-            problems.append(
-                "VACUOUS: zero shell writes classified; the read/write classifier has rotted."
-            )
+        # No tree-level floor on shell WRITES: the last shell write site left with the housekeeping port, and the live tree's remaining shell GitHub calls are reads. The read/write classifier is proven by the fixture controls (a POST variable and `gh pr edit` are writes, `-G` and an explicit GET are reads), which run before this verdict.
     return ShellVerdict(
         len(corpus.scripts),
         live,
