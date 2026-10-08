@@ -736,3 +736,188 @@ Prefix: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q -n 16`. Every
 ## Remaining (operator)
 
 The plan's only open decision is whether to run it as described. A few individual Rule T fixes will surface in B4 as `[?]` items with a default, the first being `assert_channel_for_event` failing open (`DEFAULT: fail closed`).
+
+## 12. Closing the eight open boxes (read-only design, 2026-10-08, operator order "move them to the head of promoted and complete")
+
+Every count below was measured on this tree with W11-B uncommitted. The B5 ports and the G2 gate fix are already done. What is left is about 8 bash files, one live drill run, the baseline deletion, two operator rulings (D8, D9) and the regeneration/tick pass. Nothing needs an operator-only power unless the CLI's ancestry check rejects the two override variables (see 12.2).
+
+### 12.1 Measurements
+
+- **`git ls-files '*.sh' | wc -l` = 106.** It becomes 105 once W11-B's deletion of `.ci/scripts/lib/common.sh` is staged.
+- **Transient red, not a defect:** `check_language_policy.py` exits 1 right now with "1 NEW bash file(s): .ci/scripts/lib/common.sh". The deletion is unstaged, so `git ls-files` still lists the file, but the working-tree baseline already dropped it. It clears when W11-B is committed.
+- **Libraries left under `.ci/scripts/lib`:** `blocker-validator.sh`, `emit-advisory.sh` and `toolchain.sh`. `check_bash_lib_ported.py` reports "3 librar(ies), 26 bash function(s): every one has a Python twin (18 by name, 8 through ALIASES)".
+- **Goldens whose twin still exists:** `infra.ci-{pull-images,start-elite,stop-elite}` (shims, carved out by `differential.py:727` `SHIMMED_TWINS`) and `test.gates.test-{blocker-golden-corpus,media-r2,runner-advice}`.
+- **Not frozen yet:** there is no `lib.blocker-validator.jsonl` and no `lib.emit-advisory.jsonl`. The seams are `test_core_blocker_validator.py:36` and `test_core_advisory.py:19`.
+
+### The 10 remaining baseline entries (working tree)
+
+| Entry | Verdict | Evidence |
+|---|---|---|
+| `deploy/upload-media-to-r2.sh` | KEEP-BASH, `file:` (two effective lines) | Cross-repo caller `private/growth/video_pipeline/publish.py:38`. That repo is a separate gitignored GitLab repo (`.gitignore:81`), so this PR cannot change it. Its local caller is `packages/www/scripts/publish-tutorial-video-to-r2.ts:28`. |
+| `infra/ci-{pull-images,start-elite,stop-elite}.sh` | KEEP, `shim:` | One-line `exec python3 -m rediacc_ci.infra.*` shims (W11-C, 820e53328). They are a path contract for the drift-locked breakpoint tree (section 10, row 2). |
+| `lib/toolchain.sh` | KEEP-BASH, `file:` (D2) | `.ci/bootstrap.sh:87` sources it before Python exists. |
+| `lib/blocker-validator.sh` | Not ported away yet | Nothing in production runs it any more: since 09ee66c60 `check_language_policy` validates in process. It survives only because tests read it: `test_core_allowlist.py:126,153,680`, `gates/test_gate_breakpoint_portability.py:40,452-472`, `gates/test_gate_shadow_gate.py:71`, `gates/test_gate_emit_advisory.py:37`, `gates/test_gate_runner_advice.py:50`, `test_blocker_implementations.py`, plus the two gate twins. |
+| `lib/emit-advisory.sh` | Not ported away yet | Its only real sourcer is `blocker-validator.sh:80`. The W7 note (67a505d64) says the breakpoint tree sources it; that is wrong. `breakpoint-blocker.sh:6` only mentions it in a comment. |
+| `test/gates/test-blocker-golden-corpus.sh` | Twin with a port and a golden (09ee66c60) | Also read as data by `quality/vendored_blocker_derivation.py:66` (`CORPUS_REL`) and `gates/test_gate_shadow_gate.py:70`. Run by `manifest.ts:5169-5173`. |
+| `test/gates/test-runner-advice.sh` | Twin with a port and a golden | Read by `gates/test_gate_plant_proofs.py:47` (`DEBT_SUBJECT`) and `.ci/config/plant-proof-baseline.json:13-31`. Run by `manifest.ts:5195-5200`. |
+| `test/gates/test-media-r2.sh` | Twin with a port and a golden | Run by `gates/test_gate_media_docs.py:59` and `manifest.ts:5182`. It is the only remaining sourcer of `.ci/media/verify.sh` (`verify.sh:4-7`), so deleting it leaves `verify.sh` dead. |
+| `test/lib/test-helpers.sh` | Library kept for its sourcers | Sourced by `test-toolchain.sh:29`, `media/verify.sh:141` and the two gate twins. `gates/test_gate_media_helpers.py` uses it as its subject. |
+
+### Per box: what is done and what is left
+
+- **A5 (Phase A acceptance).** Not run yet. In the dirty tree, `check:ci-hook-integrity` and `check:ci-guard-mention-anchoring` printed green verdicts ("51 guard(s) … refuse commands"); `check:ci-language-policy` is the transient red above.
+  - **Left:** the full run listed in 12.4 step 2, after W11-B commits.
+  - **"Before" wall time:** 294.65 s (plan section 1). `check_pytest.py:110` already notes that the same fixture "is 233s of test time now".
+- **B1 (cutover).**
+  - `assert-job-succeeded`, `detect-pointer-bump` and `initialize`: deleted in 6eb239b4d.
+  - `run-legacy.sh`: deleted in 3bfab056e.
+  - `common.sh`: W11-B, uncommitted. The only `source …lib/common.sh` lines left are frozen heredoc keys inside the `twin_streams` goldens (`test_drills_lib.py:87`, `test_quality_release_state.py:133,198`, `test_quality_renet_types.py:114`).
+  - **Left:** commit W11-B plus the integration writer's output. Then the box ticks.
+- **B2 (port groups C and D-port).** Every PORT row in the inventory is GONE except three, and those three already have ports, so the remaining work is B3's. **Left:** none beyond B3, so B2 ticks with B3.
+- **B3 (golden-then-delete).** **Left:** units U1, U2 and U3 below. The shimmed trio is closed by the `SHIMMED_TWINS` carve-out.
+- **B5 (out-of-policy scripts).** Every port is done:
+  - drills and ops: 50dd86fb0 and 882658c69;
+  - `worktree.sh`: 94934de41;
+  - eslint-heap, the json generator and test-templates, backup-storage and page density: d1e160c59.
+  - No `scripts/drills`, `scripts/ops/*.sh` or `packages/json/*.sh` remain.
+  - **Live proof so far:** the license drill ran live on the Ceph fleet on 2026-10-01, with all legs a-f and port 43/43 (47085176d, worklist #87037302). But `drills/license.py` changed after that run (68c262cbc, 1b5757eab, 15bf298bd, 797d99c05), so the proof is stale.
+  - `backup_roundtrip.py` and `backup_local_plane.py` (d1e160c59) have never run live.
+  - CI's `ct-tests.yml` `test-drills` job (`:2837`, full-suite only) covers universe, transfer and backup (`:2880-2952`).
+  - **Left:** one live run, in 12.2.
+- **G1 (delete the baseline).** **Left:**
+  - Delete the 8 files in U1-U3, then delete the baseline file. Deleting it is strict mode with no code change (`check_language_policy.py:15,702-723`).
+  - Allowlist the 5 survivors.
+  - Fix the stale BLOCKER texts:
+    - `constants.sh` cites `rdc.sh:17` and `scripts/dev/worktree.sh:223`. `rdc.sh` no longer sources it and `worktree.sh` is gone. The real sourcers are `media-entry.sh:49`, `cd-deploy-account.yml:261` and `ct-tests.yml:179`.
+    - `well-known.generated.sh` names `common.sh`.
+    - `ci-env.sh` names `ci-start-elite.sh`, which is now a shim.
+    - `bootstrap.sh` cites `rdc.sh:41`; the line is now `rdc.sh:33`.
+    - `test-toolchain.sh`'s reason ("pytest not on that runner") is false since W11-A's `run_bare.py`.
+  - `test_docker_run_in_image.py:446` reads the baseline file and will break when it is deleted.
+  - Tick PLAN-tooling-transformation W1P6 (`:4186`) in the same commit.
+- **G2 (bash-lib gate).**
+  - Done: `log.py` is counted, class methods are recognised (`bash_lib_migration_complete.py:64`), and the baseline is gone with 0 gaps (`:5`).
+  - **Left:** remove the LIBS/PREFIXES/ALIASES rows for the two deleted libraries.
+  - Literal retirement is impossible while `toolchain.sh` is KEEP. Section 10.7 says it needs an operator re-ruling (D9 below).
+- **G3 (regenerate, correct the prose).**
+  - The prose half is already clean. `CLAUDE.md` and `TRAPS.md` contain no oracle-as-spec text: the grep for "oracle" there hits only unrelated uses (`CLAUDE.md:153`, `TRAPS.md:1076,1086,1667`).
+  - Stale present-tense mentions of `.claude/oracles`, to fix:
+    - `docs/ci-overhaul/12-remaining-work.md:102` ("must not 'finish the job' by removing them");
+    - `.ci/rediacc_ci/quality/pipefail_grep_q.py:55`;
+    - `scripts/data/doc-registry-preport.json:704-706` ("is kept as the differential").
+  - The rest are past-tense history and can stay.
+  - `.ci/breakpoint/lib/breakpoint-blocker.sh:3,30,45` cite the deleted validator, but the file is drift-locked. Leave it and record why.
+  - **Left:** the regeneration commands in 12.4.
+
+### 12.2 Live infrastructure: what was probed
+
+Probe results:
+- `virsh -c qemu:///system list --all` returns an empty table, so no VMs are defined.
+- `virsh net-list` shows `default` and `renet11`, both active. `pool-list` shows `tmp`, active.
+- `~/.renet/disks/ubuntu-24.04-minimal-cloudimg-amd64.img` exists, and so do `~/.renet/staging/.ssh/id_rsa` and `~/.config/rediacc/`.
+- The user is in the `libvirt` and `docker` groups. `free -m` shows 35,452 MB available against the full fleet's 21,504 MB (`ops-vms.md`). There are 24 cores, and 149 GB is free on `/`.
+- `REDIACC_ALLOW_CLUSTER_OPS` and `REDIACC_ALLOW_GRAND_REPO` are both set in this session's environment (names only checked).
+
+What this means:
+- **B5 is likely completable by an agent.** The two overrides are present, which matches the restart the operator did for #87037302 on 2026-10-01. The CLI's ancestry check is the one thing that could not be verified read-only.
+- **Fallback if the ancestry check rejects them:** legs c-f and the headless drills still run. Legs a and b need the operator to restart the session with both variables exported, the same as on 2026-10-01.
+
+The smallest honest path, run by one opus `ops-vms` agent in the background with no tracked-file edits:
+1. `PROVISION_CEPH_CLUSTER=1 ./rdc.sh ops up` (about 40 min).
+2. `./run.sh drill universe`, `./run.sh drill transfer`, `./run.sh drill backup`, `./run.sh drill license`.
+3. Each drill again with `--selftest`; each of those must exit non-zero.
+4. `PYTHONPATH=.ci python3 -m rediacc_ci.drills.backup_local_plane` (background), then `PYTHONPATH=.ci python3 -m rediacc_ci.drills.backup_roundtrip`.
+5. `npm run check:ci-drill-verdicts`.
+6. `./rdc.sh ops down`.
+
+Record the exit codes and assertion counts on a worklist item.
+
+Other live proofs that belong to other runs (section 10.5) and do not block these boxes: the release-path ports are proven by the next real `cd-v2`/`promote-stable` run, and the shims by a breakpoint dispatch.
+
+### 12.3 Writer units
+
+The integration writer owns `.ci/**`, `scripts/**` (except doc-registry), `package.json`, the workflows, `.ci/config` and `.ci/policy`. So U1-U3 start only after it reports and W11-B is committed. The B5 runner (U0) can start now because it edits nothing. At most 4 run at once.
+
+**U0, B5 live drills (opus, the `ops-vms` agent).** Owns no files. Steps as in 12.2. Acceptance: every drill exits 0, every `--selftest` exits non-zero, `backup_roundtrip` exits 0, the fleet is torn down.
+
+**U1, the BLOCKER chain (opus, because it retargets two gates).** Deletes 4 files: `lib/blocker-validator.sh`, `lib/emit-advisory.sh`, `test/gates/test-blocker-golden-corpus.sh`, `test/gates/test-runner-advice.sh`.
+- **Freeze first, while all four exist:**
+  - `PYTHONPATH=.ci python3 -m rediacc_ci.tests.regolden .ci/scripts/lib/blocker-validator.sh .ci/scripts/lib/emit-advisory.sh --source bash --reason "B3 freeze (section 12)"`
+  - Check `git diff --stat`: only `lib.blocker-validator.jsonl` and `lib.emit-advisory.jsonl` should be new. `modules_naming` matches by basename (`regolden.py:38-51`), so use `-k` if other modules get pulled in.
+  - Confirm `test_twin_goldens.py` passes for the two gate-twin goldens frozen in 09ee66c60.
+- **Retarget:**
+  - `quality/vendored_blocker_derivation.py:66,237,479,505`: read the corpus from the Python port's table in `gates/test_gate_blocker_golden_corpus.py` or its golden.
+  - `gates/test_gate_shadow_gate.py:70-71`: make the pilot pair `core.blocker_validator` or `core.allowlist` against `scripts/lib/blocker-validator.ts`.
+  - `gates/test_gate_breakpoint_portability.py:40,452-472`: run `check_subset` against `core/allowlist.py`'s pattern list (its copy is at `:69`).
+  - `test_core_allowlist.py:126,153,680` and `test_blocker_implementations.py`: replace the bash halves with goldens or delete them per DB16.
+  - `gates/test_gate_emit_advisory.py`: retire it per DB16, or retarget to `log.py` and `advisory.py`.
+  - `gates/test_gate_runner_advice.py:50`; `gates/test_gate_plant_proofs.py:47` (needs a new real subject).
+  - Docstring and comment lines: `core/allowlist.py:6`, `security/audit.py:23`, `log.py:19-20`.
+- **Report to the lead, do not edit:** `manifest.ts:5169-5200` (two `gate-test` entries), `plant-proof-baseline.json`, `lane-durations.json:294,296`, the LIBS/PREFIXES/ALIASES rows, the inline-suppressions row at `:672`, `.runner-advice-allowlist:9`, `.profiler-coverage-allowlist:9` and the allowlist header at `:47`.
+- **Acceptance:**
+  - `pytest -q -n 16 test_core_{blocker_validator,advisory,allowlist}.py test_blocker_implementations.py gates/test_gate_{blocker_golden_corpus,runner_advice,shadow_gate,breakpoint_portability,vendored_blocker_derivation,plant_proofs,emit_advisory}.py test_twin_goldens.py gates/test_twin_parity.py`
+  - `npm run check:ci-vendored-blocker-derivation check:ci-plant-proofs check:ci-breakpoint-drift check:ci-bash-lib-ported`
+  - The file count drops by 4.
+
+**U2, the media seam (opus, because it decides the coverage probe).** Deletes `test/gates/test-media-r2.sh` and the then-dead `.ci/media/verify.sh`.
+- **Freeze first:** confirm `test.gates.test-media-r2.jsonl`'s `twin_blob` matches with `test_twin_goldens.py`. If it does not, run `regolden .ci/scripts/test/gates/test-media-r2.sh --source bash --reason …` before the deletion.
+- **Edits:**
+  - `gates/test_gate_media_docs.py:46,59`: pick the "one fast test" for coverage from a remaining subject.
+  - `.ci/media/coverage.sh:70-76`: once the bash gate directory empties, measure through the Python port root only, and keep it non-vacuous.
+  - Docstrings: `.ci/media/r2.sh:13`, `media_verify.py:1,126`, `media_verify_ext.py:1`.
+  - `scripts/quality/check_gate_id_convention.py:47`, `test_quality_dead_python.py:110`.
+- **Report to the lead:** `manifest.ts:5182-5186`, `lane-durations.json:295`, the `doc-providers` media seam.
+- **Acceptance:**
+  - `pytest gates/test_gate_media_{docs,r2,pool,venv,helpers,portable}.py test_twin_goldens.py gates/test_twin_parity.py`
+  - `bash -n .ci/media/*.sh`, `npm run check:ci-dead-bash`
+  - The file count drops by 2.
+
+**U3, `test-toolchain.sh` and `test-helpers.sh` (sonnet; the oracle is the existing pytest port). Operator decision D8, default: port.**
+- **Step 1 (parallel with U1 and U2):**
+  - `gates/run_bare.py`: supply a stdlib `tmp_path` (a fresh `tempfile.TemporaryDirectory()` as a `pathlib.Path`, removed afterwards). Keep the refusal for any other argument (`run_bare.py` docstring). Add a test for this.
+  - Point `.github/workflows/ci.yml:630` at `PYTHONPATH=.ci python3 -m rediacc_ci.tests.gates.run_bare rediacc_ci.tests.gates.test_gate_toolchain`. The module takes `(gate, tmp_path)` at `:68,93,114`.
+  - Delete `test-toolchain.sh`.
+- **Step 2 (after U1 and U2):** `test-helpers.sh` has no sourcers left. Delete it, and retire or retarget `gates/test_gate_media_helpers.py` per DB16.
+- **Report to the lead:** `manifest.ts:5073-5085` (`gate-test:toolchain`) and both allowlist entries.
+- **Acceptance:**
+  - `env -i PATH=/usr/bin:/bin HOME="$HOME" bash -c 'PYTHONPATH=.ci python3 -m rediacc_ci.tests.gates.run_bare rediacc_ci.tests.gates.test_gate_toolchain'` exits 0, and still exits 0 with pytest blocked.
+  - `pytest test_run_bare* gates/test_gate_toolchain.py`
+  - The file count drops by 2.
+  - The Entry Point job is green on the PR.
+
+**Expected count:** 105 → 97 (U1 −4, U2 −2, U3 −2).
+
+**Operator decisions to put through `/ask`, with a default each:**
+- **D8.** Port `test-toolchain.sh` and delete `test-helpers.sh`? Default: yes. The alternative is two `file:` entries whose reasons are no longer true.
+- **D9.** G2 reworded to "retire with the last *retired* library; `toolchain.sh` (KEEP-BASH, D2) keeps its twin check"? Default: yes. Since W11-C the workflows read the Python `toolchain pairs/report` while `bootstrap.sh` reads the bash, and this gate is what keeps the two complete.
+
+### 12.4 Order for the lead
+
+1. **Now:** start U0 in the background. When the integration writer reports, commit W11-B plus its output, then `--plan-investigate` and `--plan-tick` B1 citing that commit and 6eb239b4d / 3bfab056e. Run `/ask` for D8 and D9.
+2. **A5:** run the following, then tick A5 with the before and after times.
+   - `pytest -q -n 16 .claude/rediacc_hooks/tests`
+   - `test_guards_differential.py::test_the_differential_can_fail` (`:1112`), `test_bash_semantics.py`, `test_golden_drift.py`
+   - `npm run check:ci-language-policy check:ci-hook-integrity check:ci-dead-python check:ci-guard-mention-anchoring`
+   - `pytest gates/test_gate_docs_gen.py`
+   - real events piped through `.claude/hooks/chain-head.sh`
+   - `time` the guard differential, against the 294.65 s "before"
+3. **Spawn U1, U2 and U3 step 1** (with U0, that is 4 live).
+4. **After each unit, the lead runs** `--write-baseline`, the LIBS rows, `manifest.ts` removals, `lane-durations`, the plant-proof baseline and the shfmt / em-dash / inline-suppressions / secret-supply / dead-bash drains, then:
+   - `npm run gen:gates-lock`
+   - `npx tsx scripts/gate-bind.ts --write`
+   - `npm run shard:place`
+   - `npx tsx scripts/gen/gen-docs.ts --write`
+
+   Commit each unit separately.
+5. **U3 step 2,** then the same lead pass.
+6. **G1:**
+   - Allowlist `toolchain.sh` (`file:`), the three elite shims (`shim:`) and `upload-media-to-r2.sh` (`file:`), each with a BLOCKER.
+   - Correct the 5 stale BLOCKER texts.
+   - Fix `test_docker_run_in_image.py:446`.
+   - Delete `.ci/config/language-policy-baseline.json`; `check:ci-language-policy` must print "language policy STRICT".
+   - Run `check:ci-suppression-liveness`.
+   - Tick G1 and PLAN-tooling-transformation W1P6.
+7. **G2 (per D9):** drop the two library rows, tick.
+8. **G3:** the three stale-prose fixes. Show the empty grep for oracle-as-spec text in `CLAUDE.md` and `TRAPS.md`. Regenerate once more, then run `check:ci-{gates-lock,gate-bind,parity,plan-record}`.
+9. **Final checks:** the full `.ci` pytest (`PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q -n 16 .ci/rediacc_ci/tests`), then `npm run ci`.
+10. **Last ticks:** B2 and B3 (citing the U1-U3 commits) and B5 (citing U0's run). Each tick goes through `--plan-investigate` then `--plan-tick`, in the same commit as `plan-boxes.json`.
