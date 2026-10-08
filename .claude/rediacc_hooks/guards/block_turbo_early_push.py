@@ -17,6 +17,8 @@ THE THREE CONDITIONS, each read through the reader the Stop hook and the merge g
 
   Each admitted command appends one JSON line per push or create to agent/ledgers/turbo-push-reasons.jsonl in the console checkout (ts, branch, repo, act, kind, why, head, open_promoted), written only once every act in the command is admitted. This guard runs LAST in the chain (ORDER below), so every other guard has already admitted the same command when the line is written.
 
+A COMPLETE BATCH NEEDS NO REASON (operator ruling ASKED:2026-10-08T10:25Z, on "how should a finished turbo batch push?": "It should not be even askable also for other/future sessions as well"). Before this the Stop hook's V_LOOP_NEXT_BATCH_OPEN ordered the push and `gh pr create` of a finished local batch while this guard refused both for want of a reason (11 Promoted plans, batch_size 3), and that gap is what put the question to the operator. Now, when a command would be refused, the branch's local batch is read through the Stop hook's own predicates (`_batch`: `wl_prscope.loop_state`, `wl_checks.local_batch`, `wl_checks.local_batch_open`), and a complete batch admits every push and `gh pr create` of the command with ledger kind `batch-complete`. A batch still open keeps the refusal, which names its open boxes (and the queued plan it still takes, when every box is ticked) so the session works instead of asking. A live PR, `turbo_push: pr`, and a PR read that failed are not a filling local batch and keep today's rules. A batch reader that raises or will not import fails open, loudly, as the queue readers do. Push timing is therefore never the operator's question; `block_settled_questions` refuses it on the pre-ask chain.
+
 SCOPE. Every `git push` (any remote or refspec, `-C`/`cd` included) in this checkout or a submodule under it, and every `gh pr create`. NOT judged: a `--dry-run` push (publishes nothing); a delete push (`--delete`, `:<branch>`: the M6 cleanup after a merge); a push whose every destination is `main` (the fast-forward fallback and the GitLab mirror push, which `block_push_to_protected_branch` admits only on a merged-ready PR); a repository outside this checkout.
 
 THE OPERATOR. There is no override token, the convention of every pre-bash guard (`block_second_branch`, `block_git_hook_bypass`): the operator's own `!` command bypasses PreToolUse hooks entirely, so it never reaches this guard.
@@ -42,6 +44,8 @@ DEFECT = ("if not open_plans:", "if True:")
 
 REASON_ENV = "TURBO_PUSH_REASON"
 KINDS = ("ci-cd", "red-fix", "deadline", "backup")
+# The ledger kind of a push or PR the hooks released because the local batch is complete; never a TURBO_PUSH_REASON kind, since it needs no reason.
+BATCH_KIND = "batch-complete"
 MIN_WHY = 20
 DEFAULT_BACKUP_H = 4
 LEDGER_REL = "agent/ledgers/turbo-push-reasons.jsonl"
@@ -75,17 +79,34 @@ FIXTURE_QUEUE = (
     "## Promoted\n\n1. agent/plans/PLAN-fx-a.md -- a fixture plan\n"
 )
 FIXTURE_PLAN = (
-    "# PLAN: fx\n\nStatus: in-progress\nDepends-On: no-dep -- a fixture plan\n\n## Tasks\n\n%s"
+    "# PLAN: fx\n\nStatus: in-progress\nDepends-On: no-dep -- a fixture plan\n"
+    "Owns: docs/fixture.md\nConcurrency: parallel\n\n## Tasks\n\n%s"
 )
 
 
-def world(path, turbo="on", box="- [ ] FX1 an open box\n", date="2026-01-01T00:00:00+00:00"):
-    """A console-shaped repository on `1008-1`: QUEUE.md with `turbo`, one Promoted plan holding `box`, `origin/main` at the seed and one unpushed commit made at `date`."""
+def world(
+    path,
+    turbo="on",
+    box="- [ ] FX1 an open box\n",
+    date="2026-01-01T00:00:00+00:00",
+    more=(),
+    settings="",
+):
+    """A console-shaped repository on `1008-1`: QUEUE.md with `turbo` (plus any `settings` lines), the Promoted plan PLAN-fx-a holding `box` and one more Promoted plan PLAN-fx-<slug> per `(slug, box)` in `more`, a GitHub-shaped `origin` URL (the Stop hook's PR read derives owner/name from it), `origin/main` at the seed and one unpushed commit made at `date`. With PLAN-fx-a ticked and `batch_size` 1 (the default) the branch's local batch is complete while a later Promoted plan is still open."""
     path = pathlib.Path(path)
     (path / "agent" / "plans").mkdir(parents=True)
-    (path / QUEUE_REL).write_text(FIXTURE_QUEUE % turbo, encoding="utf-8")
+    queue = FIXTURE_QUEUE % turbo
+    if settings:
+        queue = queue.replace("backup_push_h: 4\n", "backup_push_h: 4\n%s" % settings)
+    for n, (slug, more_box) in enumerate(more, start=2):
+        queue += "%d. agent/plans/PLAN-fx-%s.md -- a fixture plan\n" % (n, slug)
+        (path / ("agent/plans/PLAN-fx-%s.md" % slug)).write_text(
+            FIXTURE_PLAN % more_box, encoding="utf-8"
+        )
+    (path / QUEUE_REL).write_text(queue, encoding="utf-8")
     (path / "agent/plans/PLAN-fx-a.md").write_text(FIXTURE_PLAN % box, encoding="utf-8")
     _git(path, "init", "-q", "--initial-branch=main")
+    _git(path, "remote", "add", "origin", "https://github.com/fixture/console.git")
     _git(path, "commit", "-q", "--allow-empty", "-m", "seed", env_date=date)
     _git(path, "update-ref", "refs/remotes/origin/main", "HEAD")
     _git(path, "checkout", "-q", "-b", "1008-1")
@@ -99,14 +120,26 @@ FIXTURES = {
     "turbo-open-fresh": lambda p: world(p, date=datetime.datetime.now(datetime.UTC).isoformat()),
     "turbo-done": lambda p: world(p, box="- [x] FX1 a ticked box\n"),
     "turbo-off": lambda p: world(p, turbo="off"),
+    "turbo-batch-done": lambda p: world(
+        p, box="- [x] FX1 a ticked box\n", more=[("b", "- [ ] FX2 an open box\n")]
+    ),
 }
 
-GH_OPEN_PR = {"gh": "#!/bin/sh\necho 599\n"}
-GH_NO_PR = {"gh": "#!/bin/sh\nexit 0\n"}
+# `gh api graphql` is the Stop hook's PR read (`wl_ci.pr_link`, through `wl_prscope.loop_state`); `gh pr list` is the red-fix check. Each stub answers both in the shape the real `gh` prints.
+_GH = (
+    "#!/bin/sh\n"
+    'if [ "$1" = api ]; then echo \'{"data":{"repository":{"pullRequests":{"nodes":[%s]}}}}\'; '
+    "exit 0; fi\n%s"
+)
+GH_OPEN_BODY = _GH % ('{"number":599,"state":"OPEN","body":""}', "echo 599\n")
+GH_NONE_BODY = _GH % ("", "exit 0\n")
+GH_OPEN_PR = {"gh": GH_OPEN_BODY}
+GH_NO_PR = {"gh": GH_NONE_BODY}
 
 ENVS = [
     ("open-old-pr", {"CLAUDE_PROJECT_DIR": "{FIXTURE:turbo-open-old}"}, GH_OPEN_PR),
     ("open-fresh-nopr", {"CLAUDE_PROJECT_DIR": "{FIXTURE:turbo-open-fresh}"}, GH_NO_PR),
+    ("batch-done-nopr", {"CLAUDE_PROJECT_DIR": "{FIXTURE:turbo-batch-done}"}, GH_NO_PR),
     ("all-done", {"CLAUDE_PROJECT_DIR": "{FIXTURE:turbo-done}"}, GH_NO_PR),
     ("turbo-off", {"CLAUDE_PROJECT_DIR": "{FIXTURE:turbo-off}"}, GH_NO_PR),
 ]
@@ -328,6 +361,151 @@ def _judge(ev, act, repo, reason, open_plans, backup_h):
     return kind, why
 
 
+# --------------------------------------------------------------------------- the batch
+
+
+class Batch:
+    """What the Stop hook's own readers say about the branch's local batch. `local` is False off a filling local batch (a live PR, `turbo_push: pr`, a PR read that failed, a branch off the loop), and `why_not` then says which. `rows` is [(plan, open, done, first open box or "")] in the batch's set order; `more` names a queued plan the batch must still take, "" when none."""
+
+    def __init__(self, local, complete=False, why_not="", branch="", finished=0, size=1):
+        self.local = local
+        self.complete = complete
+        self.why_not = why_not
+        self.branch = branch
+        self.finished = finished
+        self.size = size
+        self.rows = []
+        self.more = ""
+        self.disagree = []
+
+
+def _batch(ev, root, session_id):
+    """The branch's local batch as the Stop hook reads it, or None when it could not be read (the caller fails open, loudly).
+
+    ONE READING, NOT A SECOND COPY. `wl_prscope.loop_state` builds the state the Stop hook builds, `wl_checks.local_batch` says whether a local batch is filling, and `wl_checks.local_batch_open` (`wl_prscope.batch_ready` over the set's box read) says whether it is still open: the exact predicates `loop_next_text` uses to choose V_LOOP_NEXT_BATCH_OPEN, the block that orders this push. A guard that decided completion its own way would reopen the gap this function closes.
+
+    `turbo_more` (whether the queue still holds a plan the batch must take) is the one input the Stop hook fills from its writer roster. It matters only when every plan of the set is finished and fewer than `batch_size` are, so the roster is read only then, through `wl_planconc.live_plans` (the pre-tool estimate `block_plan_concurrency` uses). Live writers only ever NARROW what `plan_gate.next_turbo` finds eligible, so `turbo_more` False with no writers proves it False with any, and the ~3 s roster read is skipped then too.
+    """
+    syspath.on_sys_path(plan_gate.STOP_DIR)
+    try:
+        import wl_checks  # noqa: PLC0415 -- the Stop hook's batch predicates, read-only
+        import wl_core  # noqa: PLC0415
+        import wl_planenforce  # noqa: PLC0415
+        import wl_prscope  # noqa: PLC0415
+
+        worklist = wl_core.worklist_for(wl_core.project_start({"cwd": str(root)}))
+        state = wl_prscope.loop_state(str(root), worklist, session_id, gh=False)
+        if not wl_checks.local_batch(state):
+            why = "the loop reads this branch as `%s`" % state.kind
+            if state.turbo and wl_checks.turbo_push_mode(state) != "batch-end":
+                why = "`turbo_push: %s` opens the PR at the first push" % state.turbo_push
+            elif state.reason:
+                why += " (%s)" % state.reason[:160]
+            return Batch(False, why_not=why, branch=state.branch)
+        rows = []
+        for rel in state.plans:
+            opened, done, _why = plan_gate.open_boxes(str(root), rel)
+            box = wl_planenforce.first_box(str(root), rel)
+            rows.append((rel, opened, done, "%s  %s" % (box[0], box[1][:100]) if box else ""))
+        if not any(r[3] for r in rows) and state.finished < state.batch_size:
+            state = wl_prscope.with_turbo(state, str(root), (), 0)
+            if state.turbo_more:
+                import wl_planconc  # noqa: PLC0415
+                import wl_store  # noqa: PLC0415
+
+                live = wl_planconc.live_plans(
+                    str(root), session_id, wl_store.load(worklist, sync=False)
+                )
+                if live is None:
+                    ev.warn(
+                        "block-turbo-early-push: the live writers could not be counted, so the "
+                        "batch is judged as if none were live (the queue's eligible plans count)."
+                    )
+                else:
+                    state = wl_prscope.with_turbo(state, str(root), sorted(live), len(live))
+        hook_complete = not wl_checks.local_batch_open(state, str(root))
+        # THE STRICTER READ WINS. `local_batch_open` reads boxes through `wl_planenforce.first_box`, which follows no `Moved-To:` stub, while `loop_state`'s own `finished` count (`plan_gate.open_boxes`) does, and an empty set is vacuously finished. Where the two disagree the push is not released: a stub whose target still has an open box, or a batch of no plan, is not a completed batch.
+        disagree = [r[0] for r in rows if r[1] > 0 and not r[3]]
+        complete = hook_complete and bool(rows) and not disagree
+    except Exception as exc:  # noqa: BLE001 -- a broken reader must SAY SO, never wedge a push
+        ev.warn(UNREAD % ("the batch state could not be read (%s: %s)" % (type(exc).__name__, exc)))
+        return None
+    out = Batch(
+        True,
+        complete=complete,
+        branch=state.branch,
+        finished=state.finished,
+        size=state.batch_size,
+    )
+    out.rows = rows
+    out.disagree = disagree
+    # Only the batch_size arm names a plan to take: every box of the set ticked by both reads, fewer than batch_size finished, and the queue still holding an eligible plan.
+    if not hook_complete and rows and not disagree and not any(r[3] for r in rows):
+        out.more = (
+            state.turbo_picks[0]
+            if state.turbo_picks
+            else "an eligible queued plan (the `plan_concurrency` ceiling holds it for now)"
+        )
+    return out
+
+
+def _batch_lines(batch):
+    """The refusal's account of the batch: what remains, so the session works it instead of asking."""
+    if batch is None:
+        return "The batch state could not be read (see the note above), so completion cannot\nrelease this push.\n\n"
+    if not batch.local:
+        return (
+            "No local batch is filling on this branch (%s), so batch completion\ncannot release this push.\n\n"
+            % batch.why_not
+        )
+    head = (
+        "The local batch on %s is NOT complete: %d of batch_size %d plan(s) finished.\n"
+        "What remains, and it is the work to do now (push timing is the hooks' call, never a\n"
+        "question for the operator):\n" % (batch.branch, batch.finished, batch.size)
+    )
+    lines = [
+        "  %s  %d open, %d done%s\n" % (rel, o, d, ("; next box %s" % box) if box else "")
+        for rel, o, d, box in batch.rows
+        if box or o
+    ]
+    if not batch.rows:
+        lines.append(
+            "  the batch holds no plan: no `## Promoted` entry of agent/plans/QUEUE.md exists\n"
+            "  under agent/plans/, so there is nothing complete to push\n"
+        )
+    lines.extend(
+        "  %s: its first box read finds none, but the plan it resolves to (a `Moved-To:`\n"
+        "  target) still has an open box; tick it there or fix the stub\n" % rel
+        for rel in batch.disagree
+    )
+    if batch.more:
+        lines.append(
+            "  every plan of the set is ticked, but fewer than batch_size are finished and the\n"
+            "  batch still takes %s: start it on a free writer slot (the Stop hook's\n"
+            "  turbo-next names it)\n" % batch.more
+        )
+    return (
+        head
+        + "".join(lines)
+        + "Once it completes this guard admits `git push` and `gh pr create` with no reason\n(ledger kind `%s`).\n\n"
+        % BATCH_KIND
+    )
+
+
+def _row(root, act, repo, kind, why, open_plans):
+    """One ledger line for one admitted act."""
+    return {
+        "ts": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "branch": commit_policy.current_branch(repo),
+        "repo": "." if repo == root else str(pathlib.Path(repo).relative_to(root)),
+        "act": act,
+        "kind": kind,
+        "why": why,
+        "head": commit_policy.git(["rev-parse", "HEAD"], cwd=repo) or "",
+        "open_promoted": len(open_plans),
+    }
+
+
 def _record(ev, root, rows):
     path = pathlib.Path(root) / LEDGER_REL
     try:
@@ -347,7 +525,7 @@ finished and committed on this machine and pushed once; a push (and every CI cyc
 starts) needs a real operational reason while Promoted plans are still open.
 
 %(lines)s
-Open Promoted plans:
+%(batch)sOpen Promoted plans:
 %(plans)s
 An operational reason goes on the command itself, `<kind>: <why, %(min)d+ chars>`:
 
@@ -360,6 +538,7 @@ An operational reason goes on the command itself, `<kind>: <why, %(min)d+ chars>
     TURBO_PUSH_REASON='ci-cd: %(example)s needs the VM E2E matrix, box <id>' git push -u origin <branch>
 
 Each admitted reason is appended to %(ledger)s. Otherwise keep committing locally.
+When to push is decided here and by the Stop hook, so it is never asked of the operator.
 The operator's own `!` command does not pass through this guard.
 """
 
@@ -399,18 +578,24 @@ def run(ev):
         if kind is None:
             refusals.append("  %s\n    refused: %s\n" % (spelling, why))
             continue
-        rows.append(
-            {
-                "ts": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "branch": commit_policy.current_branch(repo),
-                "repo": "." if repo == root else str(pathlib.Path(repo).relative_to(root)),
-                "act": act,
-                "kind": kind,
-                "why": why,
-                "head": commit_policy.git(["rev-parse", "HEAD"], cwd=repo) or "",
-                "open_promoted": len(open_plans),
-            }
-        )
+        rows.append(_row(root, act, repo, kind, why, open_plans))
+    batch = None
+    if refusals:
+        # Read only now: a reasoned push never pays for the batch read. A complete batch releases every act of the command, PR included.
+        batch = _batch(ev, root, str(ev.field("session_id") or ""))
+        if batch is None:
+            return hookio.ALLOW
+        if batch.complete:
+            why = "the local batch on %s is complete: %d of batch_size %d finished (%s)" % (
+                batch.branch,
+                batch.finished,
+                batch.size,
+                ", ".join(r[0].rsplit("/", 1)[-1] for r in batch.rows),
+            )
+            rows = [
+                _row(root, act, repo, BATCH_KIND, why, open_plans) for act, repo, _r, _s in acts
+            ]
+            refusals = []
     if refusals:
         ev.warn_raw(
             REFUSAL
@@ -418,6 +603,7 @@ def run(ev):
                 "n": len(open_plans),
                 "what": "push" if all(a[0] == "push" for a in acts) else "push or PR",
                 "lines": "".join(refusals),
+                "batch": _batch_lines(batch),
                 "plans": "".join(
                     "  %s  %d open, %d done\n" % (rel, o, d) for rel, o, d in open_plans
                 ),
