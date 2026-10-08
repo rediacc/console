@@ -54,8 +54,14 @@ export const submodulePath = (...segments: string[]): string =>
   path.resolve(submoduleRoot(), ...segments);
 
 /** True on a CI runner: `CI=true` or `GITHUB_ACTIONS=true`, the literal string. */
+/**
+ * CI is any SET value other than an explicit off (`CI=1` counts too). check-account-email-templates failed on any truthy `CI` before this helper existed (review 2bc9b47a.1), so the
+ * literal-`true` reading would have turned a missing submodule on a `CI=1` runner into a silent skip.
+ */
 export function inCi(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.CI === 'true' || env.GITHUB_ACTIONS === 'true';
+  const on = (v: string | undefined): boolean =>
+    v !== undefined && v !== '' && !/^(0|false|no|off)$/i.test(v);
+  return on(env.CI) || on(env.GITHUB_ACTIONS);
 }
 
 export type SubmoduleVerdict =
