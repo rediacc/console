@@ -1426,12 +1426,7 @@ export const mediaProvider: Provider = {
       );
     }
 
-    // THE UNION OF THREE SEAMS, because the interesting rows are the ones a single seam
-    // cannot show. `packages/www/public/media/` is gitignored and mirrored by NEITHER
-    // script: 138 files of narration audio, captions, photos and posters that were
-    // untracked with the rest in #512 and never went to R2. Rendering only what the sync
-    // scripts name would make that the one directory the table cannot see, which is the
-    // same as not documenting it at all.
+    // THE UNION OF THREE SEAMS, because the interesting rows are the ones a single seam cannot show. `packages/www/public/media/` is gitignored and mirrored by NEITHER script: 138 files of narration audio, captions, photos and posters that were untracked with the rest in #512 and never went to R2. Rendering only what the sync scripts name would make that the one directory the table cannot see, which is the same as not documenting it at all.
     const keys = mediaKeys(push, pull, ignored);
 
     // A DIRECTORY INSIDE A SYNCED ONE IS SYNCED, and saying otherwise is the false alarm
