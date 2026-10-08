@@ -5604,7 +5604,7 @@
         "references": {
           "items": [
             {
-              "text": "Veeam, \"2024 Data Protection Trends Report — BC/DR Trends,\" 2024. \"조직의 13%만이 재해 복구 프로세스의 일부로 오케스트레이션된 워크플로를 활용합니다.\" \"서버의 58%만이 마지막 대규모 공격 중 복구 SLA를 충족했습니다.\" \"조직의 32%만이 전체 업무 주간 내에 50개의 워크로드를 복구할 수 있다고 생각합니다.\"",
+              "text": "Veeam, “2024 Data Protection Trends Report: BC/DR Trends,” 2024. “조직의 13%만이 재해 복구 프로세스의 일부로 오케스트레이션된 워크플로를 활용합니다.” “서버의 58%만이 마지막 대규모 공격 중 복구 SLA를 충족했습니다.” “조직의 32%만이 전체 업무 주간 내에 50개의 워크로드를 복구할 수 있다고 생각합니다.”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {

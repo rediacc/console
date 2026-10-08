@@ -3790,7 +3790,7 @@
               "title": "デフォルトでマルチクラウド"
             },
             {
-              "description": "Move between clouds whenever you want. Open-format snapshots. No proprietary agents. Standard btrfs — available in every modern Linux kernel.",
+              "description": "いつでもクラウド間を移行できます。保存コピーはオープンフォーマットで、ロックインされるエージェントもありません。標準のbtrfsで、2013年からLinuxに組み込まれています。",
               "icon": "lock",
               "title": "ベンダーロックインなし"
             }
@@ -3938,7 +3938,7 @@
           },
           "steps": [
             {
-              "description": "rdc replicate production --target secondaryを実行。増分同期 — 変更されたブロックのみ転送。",
+              "description": "1コマンド実行：rdc replicate production --target secondary。差分同期だから、変更部分だけ移動。速くて、安い。",
               "icon": "copy",
               "title": "レプリケーション"
             },
@@ -3959,7 +3959,7 @@
         "meta": {
           "description": "インフラは複数のクラウドで稼働。1つが障害を起こしても、他が自動的に引き継ぎます。ダウンタイムなしで事業を継続。",
           "keywords": "クラウド障害保護, マルチクラウドフェイルオーバー, クロスクラウドレプリケーション, 災害復旧, クラウド冗長性, 自動フェイルオーバー, btrfsレプリケーション",
-          "title": "クラウド障害保護 — AWSがダウンしても、あなたはダウンしない | Rediacc"
+          "title": "クラウド障害も安心、いつでもオンラインで事業継続 | Rediacc"
         },
         "problem": {
           "description": "重大なクラウド障害イベントは2024年に前年比18%増加し、18.7%長期化し、68%がヒューマンエラーに起因しました。唯一のクラウドがダウンすると、すべてがダウンします。顧客、収益、評判。すべてが他者のインフラに人質に取られます。",
@@ -4015,59 +4015,59 @@
         "references": {
           "items": [
             {
-              "text": "ITIC, “2024 Hourly Cost of Downtime Report,” 2024. “The average cost of a single hour of downtime now exceeds $300,000 for over 90% of mid-size and large enterprises.”",
+              "text": "ITIC, “2024 Hourly Cost of Downtime Report,” 2024. “1時間のダウンタイムの平均コストは、中規模以上の企業の90%以上で30万ドルを超えています。”",
               "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
             },
             {
-              "text": "Parametrix, “2024 Cloud Outage Risk Report,” 2024. “Critical cloud service interruption events increased by 18.0% and lasted 18.7% longer in 2024 than in 2023. Human error accounted for 68% of incidents.”",
+              "text": "Parametrix, “2024 Cloud Outage Risk Report,” 2024. “クラウドサービスの重大な障害は、2024年に2023年比で18.0%増加し、継続時間は18.7%長くなりました。インシデントの68%はヒューマンエラーが原因でした。”",
               "url": "https://www.reinsurancene.ws/critical-cloud-service-outages-increase-in-2024-parametrix/"
             },
             {
-              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” 2024. “The total cost of downtime for Global 2000 companies is $400B annually, or 9 percent of profits, when digital environments fail unexpectedly.”",
+              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” 2024. “デジタル環境が予期せず停止した場合、Global 2000企業のダウンタイムによる損失は年間4000億ドル、利益の9%に相当します。”",
               "url": "https://www.splunk.com/en_us/newsroom/press-releases/2024/conf24-splunk-report-shows-downtime-costs-global-2000-companies-400-billion-annually.html"
             },
             {
-              "text": "Veeam supports cross-cloud backup and replication between VMware, Hyper-V, AWS, Azure, and Google Cloud.",
+              "text": "VeeamはVMware、Hyper-V、AWS、Azure、Google Cloud間でのクロスクラウドバックアップと複製に対応。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Zerto replicates workloads between VMware, Hyper-V, AWS, Azure, IBM Cloud, and 350+ cloud service providers.",
+              "text": "ZertoはVMware、Hyper-V、AWS、Azure、IBM Cloud、350以上のクラウドサービスプロバイダー間でワークロードを複製。",
               "url": "https://www.zerto.com/solutions/use-cases/cloud/hybrid-cloud-and-multi-cloud/"
             },
             {
-              "text": "Druva provides cross-cloud DR by storing backup data across AWS and Azure from a single console.",
+              "text": "Druvaは1つのコンソールからAWSとAzureにバックアップデータを保存してクロスクラウドDRを提供。",
               "url": "https://www.druva.com/solutions/accelerate-protect-cloud-projects"
             },
             {
-              "text": "Veeam uses incremental backup with Changed Block Tracking (CBT) to transfer only modified data blocks.",
+              "text": "Veeamは増分バックアップと変更ブロック追跡（CBT）で変更されたデータブロックだけを転送。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/changed_block_tracking.html"
             },
             {
-              "text": "Zerto VRAs continuously replicate only changed data blocks at the hypervisor level in near-synchronous fashion.",
+              "text": "Zerto VRAはハイパーバイザレベルで変更ブロックのみをほぼ同期的に継続複製。",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Druva uses incremental-forever backup with global variable-block deduplication achieving up to 90% bandwidth savings.",
+              "text": "Druvaはインクリメンタルフォーエバー方式のバックアップとグローバルな可変ブロック重複排除で、最大90%の帯域幅削減を実現。",
               "url": "https://help.druva.com/en/articles/12158018-first-backup-vs-incremental-backups"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & ReplicationはオンプレミスのWindows Serverに展開し、お客様がインフラを完全に管理。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zertoはオンプレミスに Zerto Virtual ManagerとVirtual Replication Applianceで展開。",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             },
             {
-              "text": "Zerto provides automated Re-IP of recovered VMs during failover with pre/post recovery scripts for DNS updates.",
+              "text": "Zertoはフェイルオーバー時に復旧VM自動Re-IPとDNS更新用のプリ/ポストリカバリスクリプトを提供。",
               "url": "https://help.zerto.com/kb/000002926"
             },
             {
-              "text": "Veeam Backup & Replication provides continuous replication of full application stacks with orchestrated failover.",
+              "text": "Veeam Backup & Replicationはアプリケーションスタック全体の継続複製、オーケストレーション型フェイルオーバーを提供。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/replica_job.html"
             },
             {
-              "text": "Zerto Virtual Protection Groups replicate multi-VM application stacks as a single consistent unit with write-order fidelity.",
+              "text": "Zerto Virtual Protection Groupはマルチ VMのアプリケーションスタックを、書き込み順序を保持した1つの一貫したユニットとして複製。",
               "url": "https://help.zerto.com/bundle/Admin.VC.HTML/page/ProtectingVirtualMachinesfrom.htm"
             }
           ]
@@ -5038,7 +5038,7 @@
         "calculator": {
           "annualLabel": "年間チームコスト",
           "description": "スライダーをチームに合わせてドラッグしてください。数字に驚くかもしれません。",
-          "footnote": "平均総報酬$160K（$92/時間、フルロードベース）。環境待ちコスト：ブロック時間×60%の生産性への影響。コンテキストスイッチング：$24K-$50K/開発者/年。開発者の69%が週8時間以上を非効率に費やしている（Atlassian 2024）。待機中の開発者は完全にアイドル状態ではありませんが、依存関係の連鎖がスプリント間で蓄積されます。控えめな見積もり — 実際の節約額はより大きいことが多いです。",
+          "footnote": "平均給与は年160,000ドル（時給92ドル、福利厚生込み）で算出。環境待ちコスト＝ブロック時間×60%の生産性低下。コンテキスト切り替え＝24,000～50,000ドル/開発者/年。開発者の69%が週8時間以上、非効率で時間を失っている（Atlassian 2024）。待機中も完全にアイドルではありませんが、依存関係がスプリント間で複合します。保守的な見積もり、実際の効果はもっと大きいことがほとんど。",
           "headerTitle": "環境待ちコストを計算する",
           "results": {
             "blockedTime": "スプリントごとのブロック時間",
@@ -5064,7 +5064,7 @@
         },
         "comparison": {
           "capabilityLabel": "機能",
-          "description": "開発ツールはコードをクローンします。データベースツールはデータをクローンします。Rediaccだけが両方を — 一緒に、60秒でクローンします。",
+          "description": "開発ツールはコードをクローンします。DB ツールはデータをクローンします。Rediaccだけが両方を、一緒に、60秒で実現します。",
           "features": [
             {
               "name": "アプリケーションクローン",
@@ -5089,7 +5089,7 @@
             {
               "name": "プロビジョニング時間",
               "refs": [9, 10, 11, 12, 13, 0],
-              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<60s"]
+              "values": ["数分", "数分", "数分", "数分", "秒", "<60s"]
             },
             {
               "name": "本番同一データ",
@@ -5171,7 +5171,7 @@
             {
               "description": "開発者がrdc ceph snapshot create productionを実行。チケット不要。承認不要。",
               "icon": "terminal",
-              "title": "Run"
+              "title": "実行"
             },
             {
               "description": "本番環境の完全なコピーが60秒で起動。同じOS、設定、データ。",
@@ -5181,7 +5181,7 @@
             {
               "description": "すぐに開発を開始。セットアップ不要。設定不要。コードを書くだけ。",
               "icon": "code",
-              "title": "Work"
+              "title": "開発開始"
             }
           ],
           "title": "1コマンド。60秒。"
@@ -5190,7 +5190,7 @@
         "meta": {
           "description": "本番環境の完全なコピー（アプリケーション、データベース、設定）を開発・テスト用に即座に作成。チケット不要。待ち時間なし。",
           "keywords": "環境クローン, 本番クローン, 開発環境, 即時プロビジョニング, btrfsクローン, コピーオンライト, 一時環境",
-          "title": "環境クローン — 本番環境を60秒でクローン | Rediacc"
+          "title": "環境クローニング: 本番環境を素早くクローン | Rediacc"
         },
         "problem": {
           "description": "開発者がテスト環境を必要としています。チケットを発行します。運用チームがサーバーをプロビジョニングします。誰かが設定します。3日後、結局本番環境と一致しません。その間、開発者は月曜日からブロックされたままで、中断のたびに23分の回復時間がかかります。",
@@ -5210,13 +5210,13 @@
             {
               "number": "$50K/yr",
               "ref": 2,
-              "source": "Industry composite estimate",
+              "source": "業界複合推定値",
               "text": "コンテキストスイッチによる開発者1人あたりの年間損失"
             }
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": ["Run", "60s", "Done"],
+            "newSteps": ["実行", "60s", "完了"],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -5246,63 +5246,63 @@
         "references": {
           "items": [
             {
-              "text": "Atlassian, DX & Wakefield Research, \"State of Developer Experience Report,\" 2024. \"Sixty-nine percent of developers are losing eight hours or more per week to inefficiencies.\" \"For an organization with 500 developers, losing 8 hours per week costs roughly $6.9 million over the course of a year.\"",
+              "text": "Atlassian、DX & Wakefield Research『State of Developer Experience Report』2024年。「開発者の69%が週8時間以上を非効率で失っている」「500人の開発者をもつ組織が週8時間を失うと、年間およそ690万ドルのコストがかかる」",
               "url": "https://www.atlassian.com/blog/developer/developer-experience-report-2024"
             },
             {
-              "text": "Industry composite from vendor surveys and published benchmarks. \"Context switching costs $24K–$50K per developer per year in lost productivity.\"",
+              "text": "ベンダー調査と公表されたベンチマークから得た業界複合値。「コンテキスト切り替えは開発者1人当たり年24,000～50,000ドルの生産性損失をもたらす」",
               "url": "https://release.com/blog/hidden-costs-of-staging"
             },
             {
-              "text": "GitHub Codespaces creates a dedicated VM and clones the repository into a dev container for instant cloud development.",
+              "text": "GitHub Codespaces は専用の仮想マシンを作成し、リポジトリをクラウド開発用のコンテナに複製して、即座の環境構築を実現します。",
               "url": "https://docs.github.com/en/codespaces/developing-in-codespaces/creating-a-codespace"
             },
             {
-              "text": "Coder templates are Terraform-defined blueprints for creating identical, reproducible development workspaces.",
+              "text": "Coder のテンプレートは Terraform で定義されたブループリントで、同一で再現可能な開発ワークスペースを作成します。",
               "url": "https://coder.com/docs/admin/templates"
             },
             {
-              "text": "Vercel preview deployments create unique live URLs for every push/PR for isolated frontend review.",
+              "text": "Vercel のプレビューデプロイは、プッシュと PR ごとにユニークなライブ URL を生成し、フロントエンドのレビューを隔離した環境で行えます。",
               "url": "https://vercel.com/docs/deployments/preview-deployments"
             },
             {
-              "text": "Delphix Virtual Databases (VDBs) are full read-write copies from snapshots requiring only a fraction of traditional storage.",
+              "text": "Delphix Virtual Databases（VDB）はスナップショットから読み書き可能な完全なコピーを作成し、必要なストレージは従来のごく一部で済みます。",
               "url": "https://cd.delphix.com/docs/latest/virtual-database-vdb-management"
             },
             {
-              "text": "Neon branches are copy-on-write clones sharing pages with the parent until writes diverge.",
+              "text": "Neon ブランチは親との間でページを共有するコピーオンライトクローンで、書き込みが生じた時点で分岐します。",
               "url": "https://neon.com/docs/introduction/branching"
             },
             {
-              "text": "Delphix supports Oracle, SQL Server, PostgreSQL, MySQL, SAP ASE, IBM Db2, MariaDB, and CockroachDB.",
+              "text": "Delphix は Oracle、SQL Server、PostgreSQL、MySQL、SAP ASE、IBM Db2、MariaDB、CockroachDB をサポートしています。",
               "url": "https://cd.delphix.com/docs/latest/overview"
             },
             {
-              "text": "Codespaces prebuilds pre-assemble source code, extensions, and dependencies for substantially faster codespace creation.",
+              "text": "Codespaces プリビルドはソースコード、拡張機能、依存関係を事前に組み立て、Codespace 作成を大幅に高速化します。",
               "url": "https://docs.github.com/en/codespaces/prebuilding-your-codespaces/about-github-codespaces-prebuilds"
             },
             {
-              "text": "Coder prebuilt workspaces maintain a ready-to-use pool, reducing creation time from up to 20 minutes to under a minute.",
+              "text": "Coder の事前構築済みワークスペースは、すぐに使えるプールを維持することで、作成時間を最大20分から1分未満に短縮します。",
               "url": "https://coder.com/docs/admin/templates/extending-templates/prebuilt-workspaces"
             },
             {
-              "text": "Vercel deploys to its global edge network with apps going live within seconds of pushing code.",
+              "text": "Vercel はグローバルエッジネットワークにデプロイし、コードのプッシュから数秒でアプリがライブになります。",
               "url": "https://vercel.com/docs/deployments"
             },
             {
-              "text": "Delphix VDB provisioning completes in minutes rather than hours or days for traditional database copies.",
+              "text": "Delphix VDB のプロビジョニングは数時間から数日かかる従来のデータベースコピーに対し、数分で完了します。",
               "url": "https://cd.delphix.com/docs/latest/virtual-database-vdb-management"
             },
             {
-              "text": "Neon branch creation takes approximately 1 second regardless of database size.",
+              "text": "Neon ブランチ作成はデータベースサイズに関わらず、約1秒で完了します。",
               "url": "https://neon.com/docs/get-started/workflow-primer"
             },
             {
-              "text": "Delphix creates full read-write virtual copies from production data sources for application, AI, and ML teams.",
+              "text": "Delphix は本番データソースから、アプリケーション、AI、ML チーム向けに読み書き可能な完全な仮想コピーを作成します。",
               "url": "https://cd.delphix.com/docs/latest/overview"
             },
             {
-              "text": "Neon branches include all parent data by default providing instant production-identical copies.",
+              "text": "Neon ブランチは親データをすべて含んでいるため、デフォルトで本番そのものの瞬時コピーが得られます。",
               "url": "https://neon.com/docs/introduction/branching"
             }
           ]
@@ -5317,7 +5317,7 @@
             "beforeValue": "3日",
             "improvement": "99.97%高速化"
           },
-          "quote": "10分以内に12の本番環境同一のテスト環境を立ち上げました — それぞれ241 GBのPostgreSQLデータベース付き。以前のプロセスはステージングへの手動データベースダンプでした。1環境あたり3人のエンジニアと2日かかっていました。"
+          "quote": "本番と同一のテスト環境12個を10分足らずで立ち上げました。どれも241 GBのPostgreSQLデータベース付きです。以前は手動でデータベースをダンプしてステージングに流しており、1環境につきエンジニア3名で2日かかっていました。"
         },
         "techDiff": {
           "description": "Rediaccはファイルシステムレベルでbtrfsのコピーオンライトスナップショットを使用します。241 GBの本番環境のスナップショットはサブ秒で完了し、初期段階では追加ストレージを一切消費しません。開発によりクローンが分岐するにつれ、変更されたブロックのみが新しいスペースを使用します。241 GBのデータベースの10個のクローンでも、追加ストレージは12 GB未満で済みます。",
@@ -5352,17 +5352,17 @@
         "benefits": {
           "items": [
             {
-              "description": "本番に影響を与えずにフェイルオーバーをテスト。シミュレーションはbtrfsクローンに対して実行 — ライブサービスは停止しません。",
+              "description": "本番環境に触れずにフェイルオーバーをテストできます。テストは瞬時に作成したコピー上で実行され、ライブサービスは止まりません。",
               "icon": "shield",
               "title": "安全なシミュレーション"
             },
             {
-              "description": "リカバリ中の動作をステップごとに正確に確認。すべてのサービス、すべてのポート、すべてのヘルスチェック — 正確なタイムスタンプ付きで記録。",
+              "description": "復旧時に何が起きているかをステップごとに正確に把握。全サービス、全ポート、全ヘルスチェック、全て秒単位のタイムスタンプ付きで記録。",
               "icon": "eye",
               "title": "完全な可視性"
             },
             {
-              "description": "必要になる前に災害復旧計画が機能することを確認。フェイルオーバーテストはCIパイプラインに統合 — 失敗した場合は問題が発生する前にアラート。",
+              "description": "必要になる前に、計画が機能することを確認できます。テストはCIパイプラインにそのまま組み込めます。失敗はアラートで、問題になるずっと前に知らせてくれます。",
               "icon": "check-circle",
               "title": "混乱の前に自信を"
             }
@@ -5514,7 +5514,7 @@
               "title": "シミュレーション"
             },
             {
-              "description": "すべてのステップをリアルタイムで確認。RTO、RPO、サービスヘルス — すべて測定・記録。監視スタックに接続。",
+              "description": "すべての手順をリアルタイムで確認します。回復速度とデータ損失を測定。全サービスをロギング。既存の監視ツールに統合できます。",
               "icon": "eye",
               "title": "観察"
             },
@@ -5530,7 +5530,7 @@
         "meta": {
           "description": "災害シミュレーションを安全に実行。復旧が実際に機能することを事前に確認。最も重要な時にサプライズなしで対応可能。",
           "keywords": "フェイルオーバーテスト, 災害復旧テスト, DRシミュレーション, DRテスト自動化, 復旧検証, btrfsクローン, RTO RPOテスト",
-          "title": "フェイルオーバーテスト — DRプランを必要になる前にテスト | Rediacc"
+          "title": "フェイルオーバー検証、本番前にDR計画を確認 | Rediacc"
         },
         "problem": {
           "description": "災害復旧計画はあります。しかし、最後にテストしたのはいつですか？ほとんどのチームはテストしていません。機能すると仮定しています。そして災害が発生し、機能しないことがわかります。テストされていない計画は計画ではありません。希望です。",
@@ -5586,47 +5586,47 @@
         "references": {
           "items": [
             {
-              "text": "Veeam, “2024 Data Protection Trends Report — BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.” “Only 58% of servers met their recovery SLA during their last large-scale attack.” “Only 32% of organizations believe that they could recover 50 workloads within an entire business week.”",
+              "text": "Veeam, “2024 Data Protection Trends Report: BC/DR Trends,” 2024. “組織のわずか13%が災害復旧プロセスの一部として調整されたワークフローを活用しています。” “サーバーの58%のみが大規模攻撃時の復旧SLAを達成しました。” “50のワークロードを1ビジネスウィーク内で復旧できると信じている組織はわずか32%です。”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
-              "text": "Zerto test failovers spin up replica VMs on scratch disks in isolated bubble networks with zero production impact.",
+              "text": "Zertoのテストフェイルオーバーは、スクラッチディスク上のレプリカVMを分離されたバブルネットワークで起動し、本番への影響はありません。",
               "url": "https://help.zerto.com/bundle/DR.Test.VC.HTML/page/The_Failover_Test_Operation.htm"
             },
             {
-              "text": "Veeam SureBackup runs automated recovery verification in an isolated Virtual Lab with zero production impact.",
+              "text": "Veeam SureBackupは分離されたVirtual Lab内で自動復旧検証を実行し、本番への影響はありません。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/virtual_lab.html"
             },
             {
-              "text": "Zerto Orchestrator automates scheduled failover tests with zero production impact and generates compliance reports.",
+              "text": "Zerto Orchestratorは本番への影響ゼロでスケジュール済みフェイルオーバーテストを自動化し、コンプライアンスレポートを生成します。",
               "url": "https://www.zerto.com/the-platform/automated-disaster-recovery-testing/"
             },
             {
-              "text": "Druva DR plan testing spins up cloned resources on-demand without touching production for RTO/RPO validation.",
+              "text": "DruvaのDR計画テストはオンデマンドでクローンされたリソースを起動し、本番に触れずにRTO/RPO検証を実行します。",
               "url": "https://help.druva.com/en/articles/8806108-execute-test-vs-execute-failure-of-a-dr-plan"
             },
             {
-              "text": "Veeam ONE Reporter generates detailed DR readiness and compliance reports for audit and governance.",
+              "text": "Veeam ONE Reporterは監査とガバナンスのための詳細なDR対応状況とコンプライアンスレポートを生成します。",
               "url": "https://helpcenter.veeam.com/docs/one/reporter/about_reporter.html"
             },
             {
-              "text": "Zerto generates Recovery Reports after every failover test with up to 90 days of historical data for SLA validation.",
+              "text": "Zertoはフェイルオーバーテストのたびに復旧レポートを生成し、SLA検証のために最大90日分の履歴データを保持します。",
               "url": "https://help.zerto.com/bundle/Admin.VC.HTML/page/Recovery_Reports.htm"
             },
             {
-              "text": "Veeam SureBackup validates recoverability of cloud workloads including AWS and Azure VMs in isolated tests.",
+              "text": "Veeam SureBackupは分離されたテスト内で、AWSおよびAzureのVMを含むクラウドワークロードの復旧可能性を検証します。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Zerto supports cross-cloud test failovers (on-prem to Azure, AWS to Azure) using scratch disks in isolated networks.",
+              "text": "Zertoはクロスクラウドテストフェイルオーバー(オンプレミスからAzure、AWSからAzure)をサポートし、分離されたネットワーク内のスクラッチディスクを使用します。",
               "url": "https://help.zerto.com/bundle/Admin.Azure.HTML.10.0_U1/page/The_Test_Failover_Process.htm"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replicationはオンプレミスで Windows Server上にデプロイされ、お客様がインフラを完全に管理できます。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "ZertoはオンプレミスでZerto Virtual ManagerとホストごとのVirtual Replication Appliancesでデプロイされます。",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -5645,10 +5645,10 @@
             },
             "improvement": "12倍の頻度 · 初回実行で3つの重大ギャップを発見"
           },
-          "quote": "火曜日の朝に初めての自動フェイルオーバーテストを実行しました。3つの重大なギャップが見つかりました — 古いDNSレコード、セカンダリに不足していたSSL証明書、4分のデータベースレプリケーション遅延。3つすべてが実際の障害を引き起こしたでしょう。午後中に修正しました。今では毎月テストし、安心して眠れます。"
+          "quote": "火曜日の朝に初めての自動フェイルオーバーテストを実行しました。3つの重大な問題が見つかりました。古いDNSレコード、セカンダリに不足していたSSL証明書、4分のデータベースレプリケーション遅延です。3つとも実際の障害を引き起こしていたはずです。午後のうちに修正しました。今は毎月テストして、ぐっすり眠れています。"
         },
         "techDiff": {
-          "description": "従来のDRテストには本番のダウンタイム、エンジニアのチーム、数週間の計画が必要です。Rediaccはbtrfsコピーオンライトスナップショットを使用して、インフラ全体の分離クローンを数秒で作成します。テストはクローンに対して実行されます — 本番は停止しません。",
+          "description": "昔のDRテストは本番停止、エンジニアチーム、数週間の計画が必要。Rediaccがセットアップ全体を<span class=\"sp-emphasis\">数秒で</span>クローン化します。テストはそのコピー上で実行、本番は停止しません。",
           "rediaccLabel": "Rediacc DRテスト",
           "rows": [
             {
@@ -5660,12 +5660,12 @@
               "traditional": "計画、チーム集合、実行に3〜5日"
             },
             {
-              "rediacc": "毎月またはcron/CI経由 — デプロイと同じ頻度でテスト",
-              "traditional": "年1回テスト（実施していれば）— せいぜい四半期ごと"
+              "rediacc": "毎月、またはcron/CI経由、デプロイのたびにテスト",
+              "traditional": "年1回テスト（実施すれば）、頻繁にやっても四半期ごと"
             },
             {
-              "rediacc": "自動ヘルスチェック — 正確なRTO/RPO付きの合格/不合格",
-              "traditional": "手動検証 —「問題なさそう」という判断"
+              "rediacc": "自動ヘルスチェック、正確な数値での合格/不合格",
+              "traditional": "手動チェック、誰かが『大丈夫そう』と判断"
             },
             {
               "rediacc": "クラスタ全体を46秒でフォークし、複製上でドリルを実行",
@@ -5687,7 +5687,7 @@
         "calculator": {
           "annualLabel": "年間リスク額",
           "description": "スライダーをインフラに合わせてドラッグしてください。数字はすぐに膨れ上がります。",
-          "footnote": "リスク収益は$9,000/分の平均ダウンタイムコスト（Splunk/Oxford Economics 2024）に基づく。復旧人件費：6人のエンジニア×復旧時間×$200/時間の混合レート。評判コストは直接コストに対する割合として推定（業界推定）。Rediaccを使えば、イミュータブルスナップショットが5分以内に復元 — ダウンタイムはほぼゼロに。",
+          "footnote": "売上損失は、ダウンタイムのコスト $9,000/分（Splunk/Oxford Economics 2024）に基づいて計算。復旧コスト：エンジニア6名 × 復旧時間 × $200/時間。評判損失は直接コストの一定割合で推定（業界データ）。Rediaccを導入すれば、イミュータブルスナップショットが5分以内に復元でき、ダウンタイムをほぼゼロに削減できます。",
           "headerTitle": "ランサムウェア被害額を計算する",
           "results": {
             "downtime": "インシデントごとのダウンタイム",
@@ -5713,7 +5713,7 @@
         },
         "comparison": {
           "capabilityLabel": "機能",
-          "description": "従来のバックアップツールはソフトウェアロックによるイミュータビリティを約束します。Rediaccはカーネルレベルで強制します — ランサムウェアが到達できない場所で。",
+          "description": "従来のバックアップツールはソフトウェアロックで保護されたバックアップを約束します。ランサムウェアはそのロックを破ります。Rediaccはロックをストレージ層に組み込んでおり、ランサムウェアが到達できない場所にあります。",
           "features": [
             {
               "name": "イミュータブルバックアップ",
@@ -5743,7 +5743,7 @@
             {
               "name": "復旧時間",
               "refs": [14, 15, 16, 17, 18, 0],
-              "values": ["Minutes", "Minutes", "Hours", "Hours", "Seconds", "<5 min"]
+              "values": ["分", "分", "Hours", "Hours", "秒", "<5 min"]
             },
             {
               "name": "セルフホスティング / クラウド依存なし",
@@ -5762,7 +5762,7 @@
           "cloneVisual": {
             "arrow": {
               "icon": "lock-arrow",
-              "label": "Seal",
+              "label": "施錠",
               "time": ""
             },
             "clone": {
@@ -5824,7 +5824,7 @@
             {
               "description": "ファイルシステムレベルでイミュータビリティが発動。変更は一切不可。ランサムウェアにも。rootにも。",
               "icon": "lock",
-              "title": "Lock"
+              "title": "ロック"
             },
             {
               "description": "災害が発生した場合、クリーンなバックアップが待機しています。5分以内に環境全体をリストア。",
@@ -5838,7 +5838,7 @@
         "meta": {
           "description": "バックアップは作成された瞬間からイミュータブル（不変）です。ハッカーも、あなた自身も変更できません。",
           "keywords": "イミュータブルバックアップ, ランサムウェア保護, btrfsスナップショット, バックアップ検証, 災害復旧, コピーオンライト, 封印バックアップ",
-          "title": "イミュータブルバックアップ — ランサムウェアに強いバックアップ | Rediacc"
+          "title": "不変バックアップ、ランサムウェア対策済み | Rediacc"
         },
         "problem": {
           "description": "最新の攻撃者は、ファイルを暗号化する前にバックアップを見つけます。バックアップが変更可能なら、変更されます。従来のバックアップツールはドアを開けたままにしており、ランサムウェア被害者の94%が攻撃中にバックアップを標的にされました。作成された瞬間にロックされるバックアップが必要です。",
@@ -5867,15 +5867,15 @@
         "references": {
           "items": [
             {
-              "text": "Sophos, “The Impact of Compromised Backups on Ransomware Outcomes,” March 2024. “94% of organizations hit by ransomware in the past year said that the cybercriminals attempted to compromise their backups during the attack.”",
+              "text": "Sophos, “The Impact of Compromised Backups on Ransomware Outcomes,” 2024年3月。“過去1年間にランサムウェア被害を受けた組織の94%が、攻撃時に犯人がバックアップ破壊を試みたと報告。”",
               "url": "https://www.sophos.com/en-us/blog/the-impact-of-compromised-backups-on-ransomware-outcomes/"
             },
             {
-              "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024, as breaches grow more disruptive and further expand demands on cyber teams.”",
+              "text": "IBM Security, “Cost of a Data Breach Report 2024,” 2024年7月。“2024年のデータ侵害の世界平均コストは488万ドルに達し、侵害はより破壊的になり、サイバーチームへの要求も拡大しています。”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "Coveware, “Quarterly Ransomware Report Q2 2022,” July 2022. “In Q2, the average days of downtime was measured at 24 days, a decrease of 8% from Q1 2022.”",
+              "text": "Coveware, “Quarterly Ransomware Report Q2 2022,” 2022年7月。“Q2の平均ダウンタイムは24日で、Q1 2022から8%減少。”",
               "url": "https://www.coveware.com/blog/2022/7/27/fewer-ransomware-victims-pay-as-medium-ransom-falls-in-q2-2022"
             },
             {
@@ -5883,75 +5883,75 @@
               "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
             },
             {
-              "text": "Rubrik Atlas filesystem stores all backup data in proprietary append-only immutable format that cannot be modified or deleted.",
+              "text": "Rubrik Atlasファイルシステムは、すべてのバックアップデータを独自の追記専用イミュータブル形式で保存。変更・削除は不可。",
               "url": "https://www.rubrik.com/content/dam/rubrik/en/resources/white-paper/rwp-recovering-fast-from-ransomware-attacks.pdf"
             },
             {
-              "text": "Commvault supports WORM storage lock and compliance lock on disk libraries for immutable backups.",
+              "text": "CommvaultはディスクライブラリのWORMストレージロックとコンプライアンスロックをサポート。イミュータブルバックアップを実現。",
               "url": "https://documentation.commvault.com/2024e/software/configuring_worm_storage_mode_on_disk_libraries.html"
             },
             {
-              "text": "Druva's SaaS architecture stores backups in an air-gapped, immutable cloud decoupled from the customer's environment.",
+              "text": "DruvaのSaaS基盤はバックアップをエアギャップで隔離されたイミュータブルクラウドに保存。顧客環境から完全に分離。",
               "url": "https://www.druva.com/resources/solution-brief/solution-brief-druva-immutability"
             },
             {
-              "text": "Veeam SureBackup automatically verifies backup recoverability by booting VMs in an isolated Virtual Lab environment.",
+              "text": "Veeam SureBackupは独立したVirtual Lab環境でVMを起動して、バックアップの復旧可能性を自動検証。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Veeam Instant VM Recovery mounts backups directly on ESXi/Hyper-V hosts for near-instant VM recovery and testing.",
+              "text": "Veeam Instant VM RecoveryはESXi/Hyper-Vホストに直接バックアップをマウント。ほぼ瞬時のVM復旧とテストを実現。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Live Mount instantly mounts backup snapshots as live VMs or file shares for testing and recovery.",
+              "text": "Rubrik Live MountはバックアップスナップショットをライブなVMまたはファイル共有としてマウント。テストと復旧が即座に可能。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery boots VMs directly from backup via NFS export for instant testing and recovery.",
+              "text": "Commvault Live RecoveryはNFSエクスポート経由でバックアップから直接VMを起動。テストと復旧が即座に。",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore boots VMware VMs directly from backup cloud in under 5 minutes with live migration.",
+              "text": "Druva Instant Restoreはバックアップクラウドから直接VMware VMを起動。ライブマイグレーションで5分以内に復旧。",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Zerto continuous replication with journal-based recovery delivers near-zero RPO and minutes-level RTO for instant recovery.",
+              "text": "Zertoの継続的レプリケーション+ジャーナルベースの復旧により、RPOはほぼゼロ、RTOは分レベル。瞬時復旧を実現。",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam Instant VM Recovery enables sub-5-minute RTO by booting VMs directly from backup files.",
+              "text": "Veeam Instant VM Recoveryはバックアップファイルから直接VMを起動。5分以内のRTOを実現。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Instant Recovery enables sub-5-minute recovery by mounting VMs directly from immutable snapshots.",
+              "text": "Rubrik Instant Recoveryはイミュータブルスナップショットから直接VMをマウント。5分以内の復旧を実現。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery enables sub-5-minute RTO by mounting VMs from backup with background Storage vMotion.",
+              "text": "Commvault Live RecoveryはバックアップからVMをマウント。バックグラウンドStorage vMotionで5分以内のRTOを実現。",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore minimizes downtime with sub-5-minute VM recovery directly from backup cloud storage.",
+              "text": "Druva Instant Restoreはバックアップクラウドストレージから直接VM復旧。5分以内でダウンタイムを最小化。",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Zerto's always-on replication with sub-10-second RPOs and minute-level RTOs enables near-instant full-environment recovery.",
+              "text": "Zertoの常時レプリケーション（10秒以下のRPO、分レベルのRTO）により、環境全体をほぼ瞬時に復旧。",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replicationはオンプレミスで Windows Serverに導入。インフラの完全なコントロール権を保持。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrikはオンプレミスアプライアンス（r6000シリーズ）として導入。コンピュート・ストレージ・ソフトウェアを統合。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvaultは完全な自社ホスト型オンプレミス導入をサポート。CommServe、MediaAgent、Access Nodeコンポーネントで構成。",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zertoはオンプレミスで導入。Zerto Virtual Managerとホスト別Virtual Replication Appliancesで構成。",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -5970,22 +5970,22 @@
             },
             "improvement": "復旧4,800倍高速化"
           },
-          "quote": "土曜日の午前3時17分にランサムウェアに襲われました。攻撃者はバックアップリポジトリを含む14台のサーバーを暗号化しました — そう思いました。Rediaccのイミュータブルスナップショットは無傷でした。午前3時24分までに14台すべてのサーバーが封印済みバックアップから復元されました。データ損失：ゼロバイト。支払った身代金：ゼロドル。"
+          "quote": "土曜日の午前3時17分、ランサムウェアに襲われました。攻撃者はバックアップリポジトリを含む14台のサーバーを暗号化した、つもりでした。Rediaccのイミュータブルスナップショットは無傷でした。午前3時24分までに、14台すべてのサーバーが封印されたバックアップから復元されました。データ損失はゼロバイト。支払った身代金はゼロドルです。"
         },
         "techDiff": {
-          "description": "Rediaccはファイルシステムレベルでbtrfsの読み取り専用スナップショットを使用します。スナップショットが封印されると、カーネル自体が変更を防ぎます — マルウェアがバイパスできるソフトウェアロックではなく、ファイルシステムレベルのイミュータビリティです。root権限を持っていても、ランサムウェアは封印されたbtrfsスナップショットを暗号化、変更、削除できません。",
+          "description": "Rediaccは、ある瞬間のファイルを凍結した読み取り専用コピーを作成します。このコピーが封印されると、<span class=\"sp-emphasis\">ストレージ層自体があらゆる変更をブロック</span>します。マルウェアが破れるソフトウェアロックではありません。最上位の管理者パスワードがあっても、ランサムウェアは封印されたコピーを暗号化、変更、削除できません。",
           "rediaccLabel": "Rediacc（btrfsイミュータブル）",
           "rows": [
             {
-              "rediacc": "カーネル強制の読み取り専用スナップショット — rootでも変更不可",
-              "traditional": "ソフトウェアレベルの「イミュータビリティ」 — 管理者/root権限でバイパス可能"
+              "rediacc": "ストレージ層に守られた読み取り専用コピー。最上位の管理者パスワードがあっても安全。",
+              "traditional": "管理者パスワードで解除できるソフトウェアロック"
             },
             {
-              "rediacc": "スナップショットはファイルシステム層に存在 — ユーザースペースのマルウェアからは不可視",
-              "traditional": "バックアップファイルはディスク上の通常ファイルとして保存 — 可視で暗号化可能"
+              "rediacc": "ストレージレイヤーに格納。通常のマルウェアからは見えない。",
+              "traditional": "ディスク上の通常ファイルとして保存。簡単に見つかり、暗号化される。"
             },
             {
-              "rediacc": "毎日自動でクローン + 起動 + ヘルスチェック — 実際にリストアして検証",
+              "rediacc": "毎日クローンを起動してヘルスチェック。本当に復旧できることを検証済み。",
               "traditional": "検証 = 「バックアップ完了」ステータスメッセージのみ"
             },
             {
@@ -6265,12 +6265,12 @@
         "benefits": {
           "items": [
             {
-              "description": "サーバー、設定、データベース、ネットワーク設定 — スタック全体を1つのユニットとしてリストア。再構築、再設定、依存関係の見落としなし。",
+              "description": "サーバー、設定、データベース、ネットワーク。スタック全体が1ユニットとして戻ります。再構築も、再設定も不要で、取り残しもありません。Kubernetesを使っていますか？クラスタ全体も同じようにフォークして移動でき、アプリとデータが一緒に動きます。",
               "icon": "zap",
               "title": "ファイルではなく環境全体"
             },
             {
-              "description": "タイムラインの任意のスナップショットにロールバック。昨日、先週、3か月前。必要な正確な状態を選択 — どのファイルが変更されたか推測する必要なし。",
+              "description": "ヒストリの任意の時点にロールバック。昨日、先週、3か月前。必要な正確な状態を選択。ファイル変更の推測は不要。",
               "icon": "clock",
               "title": "任意の時点"
             },
@@ -6292,7 +6292,7 @@
         "calculator": {
           "annualLabel": "年間ダウンタイムコスト",
           "description": "スライダーを環境に合わせてドラッグしてください。ファイルレベル復旧の実際のコストをご覧ください。",
-          "footnote": "ファイルレベル復旧：サービスごとにプロビジョニング+再設定に2時間。収益損失：ダウンタイム時間×時間あたり収益。スタッフ人件費：エンジニア2名×復旧時間×$200/時間。離反：SLA違反による収益損失の20%。Rediacc：btrfsクローンが5分以内に環境全体を復元 — 1コマンド、再構築不要。",
+          "footnote": "ファイル復旧：サービスごと2時間のプロビ+再設定。売上損失：ダウンタイム時間×時間単価。人件費：エンジニア2人×復旧時間×$200/時間。離反：SLA違反による損失の20%。Rediacc：btrfsクローンなら環境全体が5分以内に復元、1コマンドで、再構築なし。",
           "headerTitle": "ダウンタイム被害額を計算する",
           "results": {
             "churn": "顧客離反の影響",
@@ -6362,7 +6362,7 @@
         },
         "hero": {
           "ctaLabel": "数分で復元",
-          "subtitle": "ファイルだけではありません。環境全体 — サーバー、設定、データベース — が数分で復元・稼働します。",
+          "subtitle": "ファイルだけではなく、環境全体。サーバー、設定、データベース。<span class=\"sp-emphasis\">数分で</span>復旧・稼働開始。",
           "title": "数分で環境全体を復旧"
         },
         "howItWorks": {
@@ -6443,12 +6443,12 @@
         },
         "label": "即時リカバリ",
         "meta": {
-          "description": "ファイルだけではありません。環境全体 — サーバー、設定、データベース — が数分で復元・稼働します。",
+          "description": "ファイルだけではありません。サーバー、設定、データベースを含む環境全体を、数分で復元して稼働させます。",
           "keywords": "即時復旧, 環境全体復元, btrfsクローン, 災害復旧, バックアップ復元, ポイントインタイム復旧, ヘルスチェック, 単一コマンド復旧",
           "title": "即時復旧 - 数分で環境全体を完全リストア | Rediacc"
         },
         "problem": {
-          "description": "個別ファイルの復元には数時間かかります。環境全体の再構築には数日かかります。本番サーバーがダウンした時、ファイルだけ戻せばいいわけではありません — すべてが必要です。サーバー、設定、データベース、ネットワーク設定。すべて。",
+          "description": "ファイルを1つずつ復元すると数時間かかります。環境全体を再構築するには数日かかります。メインのサーバーが落ちたとき、ファイルだけ戻っても足りません。すべてが戻る必要があります。サーバー、設定、データベース、ネットワーク。すべてが、再び動く状態に。",
           "statCallouts": [
             {
               "number": "3.4 weeks",
@@ -6509,7 +6509,7 @@
               "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
             },
             {
-              "text": "Veeam, “Data Protection Trends Report — BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.”",
+              "text": "Veeam, “Data Protection Trends Report: BC/DR Trends,” 2024. “組織のわずか13%が、災害復旧プロセスの一部としてオーケストレーションされたワークフローを活用しています。”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
@@ -6572,26 +6572,26 @@
             },
             "improvement": "270倍高速な復旧 · 導入後、週末インシデントゼロ"
           },
-          "quote": "土曜日の午前2時14分にプライマリデータベースサーバーが故障しました — ディスクコントローラーの破損です。以前のセットアップでは、11サービスのプロビジョニング、復元、再設定に丸一週末かかったでしょう。代わりに、スマートフォンから1コマンドを実行しました。午前2時18分までに、すべて復旧しました — MariaDB、API、Nginx、Redis、すべて。同じ設定、同じ状態、同じデータ。オンコールエンジニアは眠りに戻りました。"
+          "quote": "土曜日午前2時14分、プライマリデータベースサーバーが故障しました。原因はディスクコントローラーの破損です。以前のセットアップなら、11サービスのプロビジョニング、復元、再設定に丸一週末かかったでしょう。でも今回は、スマートフォンから1コマンド実行。午前2時18分には全復旧しました。MariaDB、API、Nginx、Redis、すべてです。同じ設定、同じ状態、同じデータ。オンコールエンジニアは眠りに戻りました。"
         },
         "techDiff": {
-          "description": "従来の復旧では、新しいサーバーのプロビジョニング、パッケージのインストール、ファイルの1つずつの復元、サービスの再設定、そして何も漏れていないことを祈ります。Rediaccはbtrfsスナップショットを使用して環境全体をクローンします — ボリューム、設定、コンテナ、ネットワーク設定 — 単一のアトミック操作で。",
+          "description": "昔のやり方：新しいサーバーをセットアップ。パッケージをインストール。ファイルを1つずつ復元。サービスを再設定。何も漏れていないことを祈る。Rediaccは違います。環境全体を一度にコピーします。ドライブ、設定、コンテナ、ネットワークまで、<span class=\"sp-emphasis\">すべて一度の操作で</span>。",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
-              "rediacc": "アトミックなbtrfsクローン — ボリューム、設定、コンテナ、ネットワークを1回の操作で",
-              "traditional": "ファイルを個別にリストア — 設定、権限、状態を見落とす"
+              "rediacc": "1回でコピー：ドライブ、設定、コンテナ、ネットワーク、すべて一緒に",
+              "traditional": "ファイルを個別に復元、設定、権限、状態は見落とされる"
             },
             {
-              "rediacc": "同じサーバー、同じマウント、同じDockerデーモン — すべてをインプレースでリストア",
+              "rediacc": "同じサーバー、同じマウント、同じDocker。すべてがそのまま復元される。",
               "traditional": "新しいサーバーをプロビジョニングし、パッケージをインストールし、手動で再設定"
             },
             {
-              "rediacc": "5分以内 — すべてのサービスが自動ヘルスチェック付きで一斉に起動",
-              "traditional": "数時間の手作業 — 各サービスを個別に再構築・テスト"
+              "rediacc": "5分以内。すべてのサービスが自動ヘルスチェック付きで一度に起動。",
+              "traditional": "数時間の手作業。各サービスを1つずつ再構築・テスト。"
             },
             {
-              "rediacc": "ポイントインタイムスナップショット — バックアップ時点の正確な状態、ドリフトなし",
+              "rediacc": "ある時点の完全なコピー。ズレなし。",
               "traditional": "バックアップと現在の状態の間の設定ドリフト"
             }
           ],
@@ -7819,7 +7819,7 @@
         },
         "comparison": {
           "capabilityLabel": "機能",
-          "description": "従来のバックアップツールはファイルを復元します。Rediaccは環境全体を復元します — コンテナ、設定、データベース — 数分で。",
+          "description": "従来のバックアップはファイル復元。Rediaccはシステム丸ごと数分で復旧、コンテナも設定もデータベースも一緒に。",
           "features": [
             {
               "name": "環境全体のリカバリ",
@@ -7943,7 +7943,7 @@
           "title": "迅速復旧 - 高速な災害復旧ソリューション | Rediacc"
         },
         "problem": {
-          "description": "ほとんどのチームはランサムウェア後の再構築に数日かかります。その間、顧客はアクセスできません。収益が停止します。信頼が崩れます。攻撃は1時間。復旧は1週間。それが本当の被害です — そしてランサムウェア復旧の平均は24日です。",
+          "description": "午前2時、ランサムウェアがサーバーをロックしました。これからゼロから再構築する日々が続きます。顧客はつながらず、売上は止まり、信頼は崩れます。攻撃は1時間で終わりましたが、復旧には1週間かかります。これが本当の被害です。ランサムウェアからの復旧には平均24日かかります。",
           "statCallouts": [
             {
               "number": "24日間",
@@ -7969,75 +7969,75 @@
         "references": {
           "items": [
             {
-              "text": "Coveware, \"Quarterly Ransomware Report Q2 2022,\" July 2022. \"In Q2, the average days of downtime was measured at 24 days, a decrease of 8% from Q1 2022.\"",
+              "text": "Coveware「Quarterly Ransomware Report Q2 2022」2022年7月。「Q2の平均ダウンタイムは24日間で、Q1 2022比8%削減。」",
               "url": "https://www.coveware.com/blog/2022/7/27/fewer-ransomware-victims-pay-as-medium-ransom-falls-in-q2-2022"
             },
             {
-              "text": "Splunk & Oxford Economics, \"The Hidden Costs of Downtime,\" June 2024. \"Each minute of downtime costs $9,000 or $540,000 per hour.\"",
+              "text": "Splunk & Oxford Economics「The Hidden Costs of Downtime」2024年6月。「ダウンタイム1分は9,000ドル、時間換算で540,000ドルのコストに相当。」",
               "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
             },
             {
-              "text": "Cybereason, \"Ransomware Attacks and the True Cost to Business 2022,\" 2022. \"80% of organizations that paid were hit by ransomware a second time, with 68% saying the second attack came less than a month later and threat actors demanded a higher ransom amount.\"",
+              "text": "Cybereason「Ransomware Attacks and the True Cost to Business 2022」2022年。「身代金を支払った組織の80%が2度目のランサムウェア攻撃を受け、そのうち68%は1ヶ月以内に2度目の攻撃を経験。犯人グループはより高い身代金を要求。」",
               "url": "https://www.cybereason.com/blog/report-ransomware-attacks-and-the-true-cost-to-business-2022"
             },
             {
-              "text": "Zerto continuous replication with journal-based recovery delivers near-zero RPO and minutes-level RTO for instant recovery.",
+              "text": "Zerto の継続的レプリケーションはジャーナルベースの復旧機構を備え、RPO がほぼゼロ、RTO が分単位の即座復旧を実現。",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam Instant VM Recovery enables sub-5-minute RTO by booting VMs directly from backup files.",
+              "text": "Veeam の Instant VM Recovery はバックアップファイルから VM を直接起動することで、5分未満の RTO を実現。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Instant Recovery enables sub-5-minute recovery by mounting VMs directly from immutable snapshots.",
+              "text": "Rubrik の Instant Recovery はイミュータブルスナップショットから VM を直接マウントして、5分未満の復旧を実現。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery enables sub-5-minute RTO by mounting VMs from backup with background Storage vMotion.",
+              "text": "Commvault の Live Recovery はバックアップから VM をマウントし、バックグラウンドで Storage vMotion を実行することで、5分未満の RTO を実現。",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore minimizes downtime with sub-5-minute VM recovery directly from backup cloud storage.",
+              "text": "Druva の Instant Restore はバックアップクラウドストレージから VM を直接復旧し、ダウンタイムを5分未満に最小化。",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Zerto's always-on replication with sub-10-second RPOs and minute-level RTOs enables near-instant full-environment recovery.",
+              "text": "Zerto の常時稼働レプリケーションは RPO が10秒未満、RTO が分単位で、ほぼ瞬時の環境全体復旧を実現。",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam supports per-VM snapshot-based restore points with configurable backup schedules and continuous data protection.",
+              "text": "Veeam は VM 単位のスナップショットベースのリストアポイント、構成可能なバックアップスケジュール、継続的なデータ保護に対応。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/cdp_replication.html"
             },
             {
-              "text": "Rubrik provides SLA-driven snapshot policies with configurable frequency for granular point-in-time recovery.",
+              "text": "Rubrik は SLA ドリブンのスナップショットポリシーと構成可能な実行頻度で、きめ細かいポイントインタイムリカバリを実現。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault supports point-in-time recovery using snapshots for VMs, file servers, databases, and applications.",
+              "text": "Commvault は VM、ファイルサーバー、データベース、アプリケーションのスナップショットを使用したポイントインタイムリカバリに対応。",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva maintains hot, warm, and cold recovery points enabling point-in-time restores of VMs, databases, and SaaS apps.",
+              "text": "Druva は hot、warm、cold のリカバリポイントを維持し、VM、データベース、SaaS アプリのポイントインタイムリストアを実現。",
               "url": "https://help.druva.com/en/articles/8651296-recovery-points-that-you-can-restore"
             },
             {
-              "text": "Zerto journal stores every block-level write creating crash-consistent checkpoints every 5-10 seconds for granular recovery.",
+              "text": "Zerto ジャーナルはすべてのブロックレベルの書き込みを記録し、5～10秒ごとにクラッシュコンシステントなチェックポイントを作成して細粒度な復旧を実現。",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/journal-based-recovery/"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam の Backup & Replication は Windows Server 上にオンプレミスで展開でき、インフラに対する完全なカスタマーコントロールを提供。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik はオンプレミスアプライアンス（r6000シリーズ）として展開でき、コンピュート、ストレージ、ソフトウェアが統合。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault は CommServe、MediaAgent、Access Node コンポーネントでオンプレミスの完全セルフホスト展開に対応。",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto はオンプレミスで Zerto Virtual Manager とホストごとの Virtual Replication Appliance でデプロイ。",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -8056,10 +8056,10 @@
             },
             "improvement": "復旧1,080倍高速化"
           },
-          "quote": "3日間の復旧プランから4分未満に短縮しました。午前2時の実際のランサムウェアインシデントで、オンコールエンジニアが1コマンドを実行し、午前2時4分までに8つの本番コンテナすべてがオンラインに復帰しました。以前のベンダーの見積もりは72時間 — 240秒で実現しました。"
+          "quote": "3日の復旧プランから4分未満に。午前2時の実際のランサムウェア攻撃で、オンコール担当が1コマンド実行。午前2時4分までに8つの本番コンテナすべてがオンラインに。前のベンダーは72時間の見積もり、240秒で実現しました。"
         },
         "techDiff": {
-          "description": "従来の復旧はゼロから再構築します — OSの再インストール、ファイルの復元、サービスの再設定。Rediaccはbtrfsスナップショットから復元します：ファイルシステムが単に保存された状態に切り替わります。再インストールなし、再設定なし、データ転送なし。スナップショットはすでにディスク上にあります — アクティブになるだけです。",
+          "description": "従来の復旧は、すべてをゼロから作り直します。システムの再インストール、ファイルの復元、サービスの再設定。Rediaccは違います。クリーンなコピーが<span class=\"sp-emphasis\">すでにディスク上にあります</span>。あとは切り替えるだけ。再インストールも、セットアップも、時間のかかるデータ転送も不要です。",
           "traditionalLabel": "従来の再構築",
           "rediaccLabel": "Rediacc（btrfs即時コピー）",
           "rows": [
@@ -8094,7 +8094,7 @@
         "calculator": {
           "annualLabel": "年間コンプライアンスコスト",
           "description": "スライダーを環境に合わせてドラッグしてください。手動保持管理の実際のコストをご覧ください。",
-          "footnote": "準備時間：監査回数×監査あたりの時間。ギャップ：手動管理データ5 TBあたり1件（控えめな見積もり）。ペナルティ：ギャップあたり$50K（中小企業向けGDPR罰金の中央値）。人件費：準備時間×$200/時間（シニアエンジニア）。平均データ侵害コストは$4.88M（IBM 2024）。Rediaccは監査対応レポートを即座に生成 — 監査あたり2時間、自動ポリシー適用。",
+          "footnote": "準備時間：監査回数×監査あたりの時間。ギャップ：手動で管理するデータ5 TBあたり1件（保守的な推定）。ペナルティ：ギャップあたり5万ドル（中小企業向けGDPR罰金の中央値）。人件費：準備時間×200ドル/時間（シニアエンジニア）。データ侵害の平均コストは488万ドル（IBM 2024）。Rediaccは監査対応レポートを即座に生成します。監査あたり2時間、ポリシーは自動で適用されます。",
           "headerTitle": "コンプライアンスリスク被害額を計算する",
           "results": {
             "gaps": "コンプライアンスギャップ（推定）",
@@ -8162,7 +8162,7 @@
         },
         "hero": {
           "ctaLabel": "保持ルールを設定",
-          "subtitle": "コンプライアンス要件を満たす設定可能な保持ポリシー。HIPAA、SOC2、GDPR — デフォルトで対応。",
+          "subtitle": "バックアップの保持期間を設定すれば、Rediaccがその期間保持し、その後クリーンアップします。HIPAA、SOC2、GDPRの要件は<span class=\"sp-emphasis\">初日からカバー</span>。",
           "title": "法律で求められる期間データを保持"
         },
         "howItWorks": {
@@ -8178,19 +8178,19 @@
               "footerRight": "監査対応済み",
               "items": [
                 {
-                  "detail": "2,555 backups",
+                  "detail": "バックアップ2,555個",
                   "name": "HIPAA"
                 },
                 {
-                  "detail": "1,825 backups",
+                  "detail": "バックアップ1,825個",
                   "name": "SOC2"
                 },
                 {
-                  "detail": "1,095 backups",
+                  "detail": "バックアップ1,095個",
                   "name": "GDPR"
                 },
                 {
-                  "detail": "365 backups",
+                  "detail": "バックアップ365個",
                   "name": "Internal"
                 }
               ],
@@ -8203,19 +8203,19 @@
               "footerRight": "自動クリーンアップ：ON",
               "items": [
                 {
-                  "detail": "7 years",
+                  "detail": "7年",
                   "name": "HIPAA"
                 },
                 {
-                  "detail": "5 years",
+                  "detail": "5年",
                   "name": "SOC2"
                 },
                 {
-                  "detail": "3 years",
+                  "detail": "3年",
                   "name": "GDPR"
                 },
                 {
-                  "detail": "1 year",
+                  "detail": "1年",
                   "name": "Internal"
                 }
               ],
@@ -8244,9 +8244,9 @@
         },
         "label": "保持期間コンプライアンス",
         "meta": {
-          "description": "コンプライアンス要件を満たす設定可能な保持ポリシー。HIPAA、SOC2、GDPR — デフォルトで対応。",
+          "description": "コンプライアンス要件を満たす設定可能な保持ポリシー。HIPAA、SOC2、GDPRはデフォルトで対応。",
           "keywords": "保持コンプライアンス, データ保持, HIPAAコンプライアンス, SOC2, GDPR, バックアップ保持, 監査対応, コンプライアンス自動化",
-          "title": "保持コンプライアンス — 法律で求められる期間データを保持 | Rediacc"
+          "title": "コンプライアンス対応のデータ保持ポリシー、法的要件を満たす | Rediacc"
         },
         "problem": {
           "description": "規制は特定の期間データを保持することを求めます。基準を満たせないと、罰金、監査、法的問題に直面します。ほとんどのバックアップツールは保持を後付けとして扱います。スプレッドシートと希望で手動管理することになります。",
@@ -8275,91 +8275,91 @@
         "references": {
           "items": [
             {
-              "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024.”",
+              "text": "IBM Security, “Cost of a Data Breach Report 2024,” 2024年7月。“データ侵害の世界的な平均コストは2024年に488万ドルに達しました。”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "U.S. Department of Health & Human Services, “HIPAA Enforcement Rule,” 2024. “Civil money penalties up to $2,134,831 per violation category per calendar year.”",
+              "text": "U.S. Department of Health & Human Services, “HIPAA Enforcement Rule,” 2024。“違反カテゴリーおよびカレンダー年ごとに213万4,831ドルまでの民事罰金。”",
               "url": "https://www.hhs.gov/hipaa/for-professionals/compliance-enforcement/index.html"
             },
             {
-              "text": "CMS Law, “GDPR Enforcement Tracker Report 2024/2025,” 2025. “An aggregate total of EUR 1.2 billion in fines was issued across Europe in 2024.”",
+              "text": "CMS Law, “GDPR Enforcement Tracker Report 2024/2025,” 2025。“2024年にはヨーロッパ全域で合計12億ユーロの罰金が科されました。”",
               "url": "https://cms.law/en/int/publication/gdpr-enforcement-tracker-report/numbers-and-figures"
             },
             {
-              "text": "Veeam provides configurable GFS (Grandfather-Father-Son) retention policies for daily, weekly, monthly, and yearly backups.",
+              "text": "Veeamは日次、週次、月次、年次バックアップ用の設定可能なGFS（Grandfather-Father-Son）保持ポリシーを提供します。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/gfs_retention_policy.html"
             },
             {
-              "text": "Rubrik SLA Domains provide automated retention with configurable local and archive retention periods.",
+              "text": "Rubrik SLA Domainは、設定可能なローカルおよびアーカイブ保持期間による自動保持を提供します。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault provides configurable retention policies with basic, extended (GFS), and infinite retention options.",
+              "text": "Commvaultは基本、拡張（GFS）、無制限保持オプションを含む設定可能な保持ポリシーを提供します。",
               "url": "https://documentation.commvault.com/v11/commcell-console/data_retention.html"
             },
             {
-              "text": "Druva supports GFS retention policies with daily/weekly/monthly/yearly schedules plus Long-Term Retention to cold storage.",
+              "text": "Druvaは日次/週次/月次/年次スケジュール付きのGFS保持ポリシー、およびコールドストレージへのロングターム保持をサポートしています。",
               "url": "https://docs.druva.com/CloudRanger/013_Manage_Backup_Policies/About_Backup_Policies_and_Backup_Types/About_Retention_for_Backup_Policies"
             },
             {
-              "text": "Veeam Scale-out Backup Repository automates data lifecycle with performance, capacity, and archive tiers.",
+              "text": "Veeam Scale-out Backup Repositoryは、パフォーマンス、容量、アーカイブティアを備えたデータライフサイクルを自動化します。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/backup_repository_sobr.html"
             },
             {
-              "text": "Rubrik SLA policies automate data lifecycle management with tiering from local to archive storage.",
+              "text": "Rubrik SLAポリシーは、ローカルからアーカイブストレージへのティアリングによるデータライフサイクル管理を自動化します。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault Data Aging automates data lifecycle by pruning expired backup data based on retention settings.",
+              "text": "Commvault Data Agingは、保持設定に基づいて期限切れバックアップデータを削除することでデータライフサイクルを自動化します。",
               "url": "https://documentation.commvault.com/v11/commcell-console/media_management_configuration_data_aging.html"
             },
             {
-              "text": "Druva automatically tiers data between S3, Glacier, and Deep Archive using ML-driven storage tiering.",
+              "text": "DruvaはML駆動型ストレージティアリングを使用してS3、Glacier、Deep Archiveの間でデータを自動的にティアリングします。",
               "url": "https://help.druva.com/en/articles/8651731-about-long-term-retention"
             },
             {
-              "text": "Veeam ONE provides built-in reporting and monitoring dashboards with compliance-ready audit reports.",
+              "text": "Veeam ONEは、コンプライアンス対応の監査レポート付きの組み込みレポーティングおよび監視ダッシュボードを提供します。",
               "url": "https://helpcenter.veeam.com/docs/one/reporter/about_reporter.html"
             },
             {
-              "text": "Rubrik provides compliance and activity reports through its Envision reporting engine for governance needs.",
+              "text": "Rubrikはガバナンスニーズに対応するため、Envisionレポーティングエンジンを通じてコンプライアンスおよびアクティビティレポートを提供します。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/envision_creating_reports.html"
             },
             {
-              "text": "Commvault Audit Trail Report displays all user operations across Critical, High, Medium, and Low severity levels.",
+              "text": "Commvault Audit Trail Reportは、Critical、High、Medium、Lowの重要度レベル全体のすべてのユーザー操作を表示します。",
               "url": "https://documentation.commvault.com/saas/audit_trail_report_01.html"
             },
             {
-              "text": "Druva maintains a three-year audit trail of every admin and user activity with downloadable HTML/CSV reports.",
+              "text": "Druvaは、ダウンロード可能なHTML/CSVレポート付きで、すべての管理者およびユーザーアクティビティの3年間の監査証跡を保持しています。",
               "url": "https://docs.druva.com/Cyber_Resilience/Audit_Trails/About_Audit_Trails"
             },
             {
-              "text": "Veeam Compliance Analyzer validates backup infrastructure against security and compliance best practices.",
+              "text": "Veeam Compliance Analyzerは、セキュリティおよびコンプライアンスベストプラクティスに対してバックアップインフラを検証します。",
               "url": "https://helpcenter.veeam.com/docs/one/reporter/compliance_analyzer.html"
             },
             {
-              "text": "Rubrik Security Cloud enables compliance monitoring with SOC2, HIPAA, and PCI-DSS reporting templates.",
+              "text": "Rubrik Security CloudはSOC2、HIPAA、およびPCI-DSSレポーティングテンプレートを使用してコンプライアンス監視を実現します。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/envision_creating_reports.html"
             },
             {
-              "text": "Commvault holds ISO 27001, SOC 2 Type II, HIPAA, PCI DSS, FedRAMP High, and IRAP certifications.",
+              "text": "CommvaultはISO 27001、SOC 2 Type II、HIPAA、PCI DSS、FedRAMP High、およびIRAP認定を保有しています。",
               "url": "https://documentation.commvault.com/saas/security_and_compliance.html"
             },
             {
-              "text": "Druva holds SOC 2 Type II, HIPAA, FedRAMP ATO, and FIPS 140-2 certifications with GDPR/CCPA monitoring templates.",
+              "text": "DruvaはSOC 2 Type II、HIPAA、FedRAMP ATO、およびFIPS 140-2認定を保有しており、GDPR/CCPA監視テンプレートを備えています。",
               "url": "https://www.druva.com/use-cases/compliance"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & ReplicationはWindows Server上にオンプレミスでデプロイされ、お客様がインフラを完全に管理できます。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrikは、コンピュート、ストレージ、ソフトウェアを統合したオンプレミスアプライアンス（r6000シリーズ）としてデプロイされます。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "CommvaultはCommServe、MediaAgent、およびAccess Nodeコンポーネントを含む、完全にセルフホストされたオンプレミスデプロイメントをサポートします。",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
           ]
@@ -8381,16 +8381,16 @@
           "quote": "SOC2監査人が3年間のバックアップ保持証明を要求しました。以前は、ログを2週間かけて掘り返し、スプレッドシートと照合する作業でした。Rediaccでは、rdc retention report --framework soc2 を実行し、4分で完全なレポートを提出しました。監査人はこれまで見た中で最もクリーンな証跡だと言いました。"
         },
         "techDiff": {
-          "description": "従来の保持管理とは、スプレッドシートでバックアップ日を追跡し、手動クリーンアップスクリプトを実行し、監査人が来る前に何も漏れていないことを祈ることです。Rediaccはbtrfsスナップショットのライフサイクル管理と自動ポリシー適用を使用 — バックアップは人手を介さずに保持、検証、クリーンアップされます。",
+          "description": "スプレッドシート対応は、バックアップ日を手で追跡し、クリーンアップスクリプトを実行し、監査人が来る前に何も漏れていないことを祈るもの。Rediaccは保持・確認・削除を<span class=\"sp-emphasis\">自動処理</span>。人手が必要ありません。",
           "rediaccLabel": "Rediaccの保持機能",
           "rows": [
             {
-              "rediacc": "ポリシーの自動適用 — 常に最新",
-              "traditional": "スプレッドシットで管理 — すぐに古くなる"
+              "rediacc": "ポリシーを自動実行、つねに最新",
+              "traditional": "スプレッドシート管理、すぐに古くなる"
             },
             {
-              "rediacc": "自動ライフサイクル管理 — 手動ステップゼロ",
-              "traditional": "手動クリーンアップスクリプト — ヒューマンエラーのリスク"
+              "rediacc": "自動クリーンアップ、手動作業ゼロ",
+              "traditional": "クリーンアップスクリプトの手動実行、ミスが起きやすい"
             },
             {
               "rediacc": "rdc retention reportで即座に監査対応レポート",
@@ -8587,7 +8587,7 @@
         "meta": {
           "description": "本番環境をクローンしてパッチを適用。何が壊れるか確認し、必要なら元に戻す。本番環境に一切触れずにテスト可能です。",
           "keywords": "安全なOSテスト, パッチテスト, OSアップデートテスト, btrfsクローン, 本番クローン, ゼロリスクパッチ, アップデート検証",
-          "title": "安全なOSテスト — リスクなしでアップデートをテスト | Rediacc"
+          "title": "OSアップデートをリスクなしでテスト | Rediacc"
         },
         "problem": {
           "description": "パッチを当てる必要があります。しかし、すべてのアップデートは賭けです。何かが壊れるでしょうか？本番に適用するまでわかりません。ほとんどのチームはパッチをスキップするか（リスク大）、本番と一致しない環境でテストします（無意味）。どちらも十分ではありません。",
@@ -8613,7 +8613,7 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": ["Clone", "60s", "パッチ & 検証"],
+            "newSteps": ["クローン作成", "60s", "パッチ & 検証"],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -8643,15 +8643,15 @@
         "references": {
           "items": [
             {
-              "text": "Verizon, “2024 Data Breach Investigations Report,” May 2024. “The exploitation of vulnerabilities as an initial point of entry almost tripled from the previous year, accounting for 14% of all breaches.”",
+              "text": "Verizon, “2024 Data Breach Investigations Report,” 2024年5月。“脆弱性の悪用を初期侵入ベクトルとする事例は前年比3倍近くに増加し、全侵害の14%を占めています。”",
               "url": "https://www.verizon.com/about/news/feed/2024-data-breach-investigations-report-vulnerability-exploitation-boom"
             },
             {
-              "text": "Uptime Institute, “Annual Outage Analysis 2023,” 2023. “The two most common causes of networking- and connectivity-related outages are configuration or change management failure (cited by 45% of respondents).”",
+              "text": "Uptime Institute, “Annual Outage Analysis 2023,” 2023. “ネットワーク・接続関連の障害で最も多い原因は設定または変更管理の失敗であり、回答者の45%が指摘しています。”",
               "url": "https://uptimeinstitute.com/resources/research-and-reports/annual-outage-analysis-2023"
             },
             {
-              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” June 2024. “Each minute of downtime costs $9,000 or $540,000 per hour.”",
+              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” 2024年6月。“ダウンタイムは1分あたり9,000ドル、時間あたり540,000ドルのコストがかかります。”",
               "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
             },
             {
@@ -8659,43 +8659,43 @@
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "Commvault Cleanroom Recovery creates Isolated Recovery Environments (IREs) with network isolation preventing outbound communication.",
+              "text": "Commvault Cleanroom Recovery は、ネットワーク分離によるアウトバウンド通信を防止した隔離復旧環境（IRE）を構築します。",
               "url": "https://documentation.commvault.com/11.42/commvault-user-guide/cleanroom_recovery_isolated_recovery_environments_ires_for_cyber_resilience.html"
             },
             {
-              "text": "Zerto test failovers run in isolated bubble networks that prevent interaction with production systems during testing.",
+              "text": "Zerto のテストフェイルオーバーは分離バブルネットワークで実行され、テスト中の本番システムとの相互作用を防止します。",
               "url": "https://help.zerto.com/bundle/DR.Test.VC.HTML/page/The_Failover_Test_Operation.htm"
             },
             {
-              "text": "Veeam SureBackup with Virtual Lab enables automated testing of patches and updates in isolated sandbox environments.",
+              "text": "Veeam SureBackup と Virtual Lab により、隔離されたサンドボックス環境でパッチとアップデートの自動テストが可能になります。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Rubrik Live Mount enables safe testing of patches by mounting clean snapshots in isolated environments.",
+              "text": "Rubrik Live Mount では、隔離環境でクリーンなスナップショットをマウントしてパッチを安全にテストできます。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Cleanroom Recovery enables testing patches in isolated cleanroom environments before applying to production.",
+              "text": "Commvault Cleanroom Recovery で、本番適用前にクリーンルーム環境でパッチをテストできます。",
               "url": "https://documentation.commvault.com/2024e/software/cleanroom_recovery_use_cases.html"
             },
             {
-              "text": "Zerto Orchestrator automates periodic failover tests validating VPG checkpoint health and recovery VM boot correctness.",
+              "text": "Zerto Orchestrator は定期的なフェイルオーバーテストを自動化し、VPG チェックポイントの健全性と復旧 VM のブート正確性を検証します。",
               "url": "https://help.zerto.com/bundle/Orchestrator.HTML.95/page/Automated_Failover_Testing_with_the_Zerto_Orchestrator.htm"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication は Windows Server のオンプレミスに展開され、インフラの完全な顧客管理を実現します。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik はオンプレミス アプライアンス（r6000 シリーズ）として、計算、ストレージ、ソフトウェアが統合された形で展開されます。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault は CommServe、MediaAgent、Access Node コンポーネントとともに、完全なオンプレミス自社ホスト環境をサポートします。",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto はオンプレミスに Zerto Virtual Manager とホストごとの Virtual Replication Appliance とともに展開されます。",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -8714,10 +8714,10 @@
             },
             "improvement": "1,680倍高速なパッチ検証"
           },
-          "quote": "前四半期に重大なOpenSSLパッチがありました。通常はメンテナンスウィンドウを予定して祈るところです。代わりに、22台の本番サーバーすべてをクローンし、パッチを適用し、フルテストスイートを実行し、リグレッションゼロを確認しました — すべて18分で。当日中に完全な自信を持って本番にパッチを適用しました。"
+          "quote": "前四半期にOpenSSLの重大パッチがありました。通常ならメンテナンスウィンドウを設けて祈るところです。代わりに、本番サーバー22台すべてをクローンし、パッチを適用し、フルテストスイートを実行して、リグレッションがゼロであることを確認しました。すべて18分です。その日のうちに、確信を持って本番にパッチを適用できました。"
         },
         "techDiff": {
-          "description": "Rediaccはbtrfsコピーオンライトスナップショットを使用して、本番環境全体をクローンします — OS、コンテナ、データベース、設定 — サブ秒で。クローンは独自のDockerデーモンを持つ分離されたネットワーク上で動作します。クローンに適用されたパッチは本番環境に一切影響しません。クローンが壊れたら削除します。動作すれば、同じパッチを本番環境に適用します。",
+          "description": "Rediaccは稼働中の環境全体を<span class=\"sp-emphasis\">数秒で</span>コピーします。OS、アプリ、データベース、すべての設定が対象です。コピーは独自のDockerを持つ隔離ネットワーク上で動作します。コピーに当てたパッチが本物のサーバーに影響することはありません。コピーが壊れたら削除します。うまく動けば、同じパッチを本番に適用します。",
           "rediaccLabel": "Rediacc（btrfs CoW）",
           "rows": [
             {
@@ -9084,7 +9084,7 @@
               "title": "当日修復"
             },
             {
-              "description": "すべてのパッチがCVE再スキャン、サービスヘルスチェック、リグレッションテスト、TLS検証を通過 — すべて実際の本番データで。",
+              "description": "すべてのパッチが完全なチェックを受けます。CVE再スキャン、サービスヘルスチェック、リグレッションテスト、TLS検証。すべて実際の本番データで実施します。",
               "icon": "check-circle",
               "title": "完全な検証"
             }
@@ -9128,7 +9128,7 @@
             "arrows": [
               {
                 "icon": "bolt",
-                "label": "47s + 2m"
+                "label": "47秒 + 2分"
               },
               {
                 "icon": "arrow-right-circle",
@@ -9137,34 +9137,34 @@
             ],
             "cards": [
               {
-                "footer": "CVSS 9.8 · 3 services affected",
+                "footer": "CVSS 9.8 · 3サービスが影響",
                 "items": [
-                  "OpenSSL 3.0.8 — VULN",
-                  "Keycloak :8443 — affected",
-                  "Nextcloud :443 — affected",
-                  "GitLab :443 — affected"
+                  "OpenSSL 3.0.8、脆弱性",
+                  "Keycloak :8443、影響あり",
+                  "Nextcloud :443、影響あり",
+                  "GitLab :443、影響あり"
                 ],
                 "status": "クリティカル",
                 "title": "CVE-2026-1234"
               },
               {
-                "footer": "2.1 GB CoW · disposable clone",
+                "footer": "2.1 GB CoW · 使い捨てクローン",
                 "items": [
-                  "OpenSSL → 3.0.15 — APPLIED",
-                  "Keycloak restart — healthy",
-                  "Nextcloud restart — healthy",
-                  "247 assertions — 0 failures"
+                  "OpenSSL → 3.0.15、適用済み",
+                  "Keycloak 再起動、正常",
+                  "Nextcloud 再起動、正常",
+                  "アサーション 247個、失敗 0件"
                 ],
                 "status": "テスト中",
                 "title": "クローン: パッチテスト"
               },
               {
-                "footer": "Total time: 3m 41s · zero downtime",
+                "footer": "実行時間: 3分41秒 · ダウンタイムなし",
                 "items": [
-                  "OpenSSL 3.0.15 — FIXED",
-                  "CVE-2026-1234 — PATCHED",
-                  "3/3 services — healthy",
-                  "0 regressions — verified"
+                  "OpenSSL 3.0.15、修正済み",
+                  "CVE-2026-1234、パッチ済み",
+                  "3/3 サービス、正常",
+                  "リグレッション 0件、検証済み"
                 ],
                 "status": "パッチ適用済み",
                 "title": "本番"
@@ -9173,7 +9173,7 @@
           },
           "steps": [
             {
-              "description": "自動スキャンが脆弱性を特定 — CVE、設定ミス、または露出したサービス。重要度順に優先度付け。",
+              "description": "スキャンが問題を見つけます。CVE、設定ミス、公開されたサービスなど。重大なものから先に対処します。",
               "icon": "eye",
               "title": "検出"
             },
@@ -9194,10 +9194,10 @@
         "meta": {
           "description": "安全なクローン上でセキュリティギャップを発見、テスト、パッチ適用。自信を持って本番環境にデプロイできます。",
           "keywords": "脆弱性管理, パッチ検証, CVE修復, クローンベースパッチ, 安全なパッチ適用, セキュリティテスト, 脆弱性修正検証",
-          "title": "脆弱性管理 — 攻撃者より先に脆弱性を修正 | Rediacc"
+          "title": "脆弱性管理: 先手を打つ修正 | Rediacc"
         },
         "problem": {
-          "description": "脆弱性を発見しました。パッチを当てる必要があります。しかし、パッチで何かが壊れませんか？本番でテストはできません。ステージング環境は3週間遅れています。パッチを急いで適用して祈るか、待って露出し続けるか。どちらも良い選択ではありません — どちらもコストがかかります。",
+          "description": "脆弱性が見つかりました。パッチを当てる必要があります。しかし、パッチで何かが壊れませんか？本番でテストするわけにはいきません。ステージング環境は3週間遅れています。そのため、修正を祈るような思いで急ぐか、待っている間も露出が続くかのどちらかです。どちらも良くありません。どちらもコストがかかります。",
           "statCallouts": [
             {
               "number": "30.6 days",
@@ -9250,15 +9250,15 @@
         "references": {
           "items": [
             {
-              "text": "Qualys, “TruRisk Research Report,” 2023. “On average, weaponized vulnerabilities are patched within 30.6 days yet only patched an average of 57.7% of the time.”",
+              "text": "Qualys, “TruRisk Research Report,” 2023. “悪用可能な脆弱性は平均30.6日でパッチが適用されますが、実際にパッチが適用されるのは平均57.7%にとどまります。”",
               "url": "https://www.qualys.com/forms/tru-research-report"
             },
             {
-              "text": "Verizon, “2024 Data Breach Investigations Report,” May 2024. “The exploitation of vulnerabilities as an initial point of entry almost tripled from the previous year, accounting for 14% of all breaches.”",
+              "text": "Verizon, “2024 Data Breach Investigations Report,” 2024年5月。“脆弱性の悪用が侵害の入口として使用される割合は前年比でほぼ3倍に増加し、全侵害の14%を占めています。”",
               "url": "https://www.verizon.com/about/news/feed/2024-data-breach-investigations-report-vulnerability-exploitation-boom"
             },
             {
-              "text": "IBM Security, “Cost of a Data Breach Report,” July 2024. “The global average cost of a data breach reached USD 4.88 million in 2024.”",
+              "text": "IBM Security, “Cost of a Data Breach Report,” 2024年7月。“データ侵害の世界平均コストは2024年に488万米ドルに達しました。”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             }
           ]
@@ -9277,7 +9277,7 @@
             },
             "improvement": "パッチ＋検証＋デプロイ時間"
           },
-          "quote": "金曜日の午後に重大なCVEが発生しました。土曜日の朝までに本番をクローンし、パッチを適用し、影響を受けた4つのサービスすべてで検証し、デプロイしました — ダウンタイムゼロ。以前のプロセスでは3週間と変更管理会議が必要でした。"
+          "quote": "金曜日の午後に重大なCVEが発生しました。土曜日の朝までに本番をクローンし、パッチを適用し、影響を受けた4つのサービスすべてで検証して、デプロイしました。ダウンタイムはゼロです。従来のプロセスでは3週間と変更管理会議が必要でした。"
         },
         "techDiff": {
           "description": "従来のパッチ適用には本番と一致するステージング環境が必要ですが、ステージングは数日で乖離します。Rediaccは実際の本番インフラのbtrfsコピーオンライトスナップショットを数秒で作成し、実データと実設定に対してパッチを適用・検証し、検証済みの修正を本番にデプロイします。パッチが検証に失敗したら、クローンを破棄します。本番は触れません。",
@@ -9292,7 +9292,7 @@
               "traditional": "数日〜数週間（ステージングセットアップ + テスト）"
             },
             {
-              "rediacc": "0% — 失敗はクローンで検出、破棄",
+              "rediacc": "0%、失敗はクローン上で検出、削除",
               "traditional": "未テストのパッチは意図しない障害のリスク"
             },
             {

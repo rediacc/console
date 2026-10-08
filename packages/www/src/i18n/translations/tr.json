@@ -3790,7 +3790,7 @@
               "title": "Varsayılan olarak çoklu bulut"
             },
             {
-              "description": "Move between clouds whenever you want. Open-format snapshots. No proprietary agents. Standard btrfs — available in every modern Linux kernel.",
+              "description": "İstediğiniz zaman bulutlar arasında geçin. Kayıtlı kopyalar açık bir format kullanır. Ajanlara bağımlılık yok. Standart btrfs, 2013'ten beri Linux'ta yerleşik.",
               "icon": "lock",
               "title": "Tedarikçi bağımlılığı yok"
             }
@@ -3938,7 +3938,7 @@
           },
           "steps": [
             {
-              "description": "rdc replicate production --target secondary komutunu çalıştırın. Artımlı senkronizasyon — yalnızca değişen bloklar aktarılır.",
+              "description": "Tek komut çalıştırın: rdc replicate production --target secondary. Yalnızca değişen veriler aktarılır, her şey değil. Böylece hızlı ve ucuz kalır.",
               "icon": "copy",
               "title": "Çoğalt"
             },
@@ -3967,13 +3967,13 @@
             {
               "number": "$300K+",
               "ref": 1,
-              "source": "ITIC 2024 Hourly Cost of Downtime Survey",
+              "source": "ITIC 2024 Kesinti Saatlik Maliyeti Anketi",
               "text": "orta-büyük ölçekli işletmelerin %90'ı için saat başı kesinti maliyeti"
             },
             {
               "number": "18%",
               "ref": 2,
-              "source": "Parametrix 2024 Cloud Outage Risk Report",
+              "source": "Parametrix 2024 Bulut Kesinti Risk Raporu",
               "text": "2024'te kritik bulut kesinti olaylarındaki artış"
             },
             {
@@ -4015,59 +4015,59 @@
         "references": {
           "items": [
             {
-              "text": "ITIC, “2024 Hourly Cost of Downtime Report,” 2024. “The average cost of a single hour of downtime now exceeds $300,000 for over 90% of mid-size and large enterprises.”",
+              "text": "ITIC, “2024 Hourly Cost of Downtime Report,” 2024. “Tek saatlik kesintinin ortalama maliyeti artık orta ve büyük ölçekli işletmelerin %90'ından fazlası için 300.000 doları aşıyor.”",
               "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
             },
             {
-              "text": "Parametrix, “2024 Cloud Outage Risk Report,” 2024. “Critical cloud service interruption events increased by 18.0% and lasted 18.7% longer in 2024 than in 2023. Human error accounted for 68% of incidents.”",
+              "text": "Parametrix, “2024 Cloud Outage Risk Report,” 2024. “Kritik bulut hizmeti kesintileri 2024'te 2023'e kıyasla %18,0 arttı ve %18,7 daha uzun sürdü. Olayların %68'ine insan hatası neden oldu.”",
               "url": "https://www.reinsurancene.ws/critical-cloud-service-outages-increase-in-2024-parametrix/"
             },
             {
-              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” 2024. “The total cost of downtime for Global 2000 companies is $400B annually, or 9 percent of profits, when digital environments fail unexpectedly.”",
+              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” 2024. “Dijital ortamlar beklenmedik şekilde çöktüğünde, Global 2000 şirketlerinin toplam kesinti maliyeti yılda 400 milyar dolara, yani karların %9'una ulaşıyor.”",
               "url": "https://www.splunk.com/en_us/newsroom/press-releases/2024/conf24-splunk-report-shows-downtime-costs-global-2000-companies-400-billion-annually.html"
             },
             {
-              "text": "Veeam supports cross-cloud backup and replication between VMware, Hyper-V, AWS, Azure, and Google Cloud.",
+              "text": "Veeam VMware, Hyper-V, AWS, Azure ve Google Cloud arasında bulutlar arası yedekleme ve çoğaltmayı destekler.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Zerto replicates workloads between VMware, Hyper-V, AWS, Azure, IBM Cloud, and 350+ cloud service providers.",
+              "text": "Zerto iş yüklerini VMware, Hyper-V, AWS, Azure, IBM Cloud ve 350+'dan fazla bulut hizmet sağlayıcısı arasında çoğaltır.",
               "url": "https://www.zerto.com/solutions/use-cases/cloud/hybrid-cloud-and-multi-cloud/"
             },
             {
-              "text": "Druva provides cross-cloud DR by storing backup data across AWS and Azure from a single console.",
+              "text": "Druva yedekleme verilerini AWS ve Azure arasında saklayarak tek konsoldan bulutlar arası kurtarma sağlar.",
               "url": "https://www.druva.com/solutions/accelerate-protect-cloud-projects"
             },
             {
-              "text": "Veeam uses incremental backup with Changed Block Tracking (CBT) to transfer only modified data blocks.",
+              "text": "Veeam yalnızca değişen veri bloklarını aktarmak için Değişen Blok İzlemesi (CBT) ile artımlı yedekleme kullanır.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/changed_block_tracking.html"
             },
             {
-              "text": "Zerto VRAs continuously replicate only changed data blocks at the hypervisor level in near-synchronous fashion.",
+              "text": "Zerto VRA'ları, hipervizör düzeyinde yalnızca değişen veri bloklarını sürekli ve neredeyse eşzamanlı olarak çoğaltır.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Druva uses incremental-forever backup with global variable-block deduplication achieving up to 90% bandwidth savings.",
+              "text": "Druva, küresel değişken bloklu veri tekilleştirmesiyle %90'a kadar bant genişliği tasarrufu sağlayan kalıcı artımlı yedekleme kullanır.",
               "url": "https://help.druva.com/en/articles/12158018-first-backup-vs-incremental-backups"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication, Windows Server üzerinde şirket içi konuşlandırılır ve müşteri altyapı üzerinde tam kontrol sahibi olur.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto, Zerto Virtual Manager ve ana bilgisayar başına Virtual Replication Appliances ile şirket içi konuşlandırılır.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             },
             {
-              "text": "Zerto provides automated Re-IP of recovered VMs during failover with pre/post recovery scripts for DNS updates.",
+              "text": "Zerto, yük devretme sırasında kurtarılan VM'lerin otomatik Re-IP'sini DNS güncellemeleri için ön/sonrası kurtarma komut dosyalarıyla sağlar.",
               "url": "https://help.zerto.com/kb/000002926"
             },
             {
-              "text": "Veeam Backup & Replication provides continuous replication of full application stacks with orchestrated failover.",
+              "text": "Veeam Backup & Replication, tam uygulama yığınlarının sürekli çoğaltılmasını düzenlenmiş yük devretmeyle sağlar.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/replica_job.html"
             },
             {
-              "text": "Zerto Virtual Protection Groups replicate multi-VM application stacks as a single consistent unit with write-order fidelity.",
+              "text": "Zerto Virtual Protection Groups, yazma sırası sadakatine sahip tek tutarlı bir birim olarak çok-VM uygulama yığınlarını çoğaltır.",
               "url": "https://help.zerto.com/bundle/Admin.VC.HTML/page/ProtectingVirtualMachinesfrom.htm"
             }
           ]
@@ -4089,7 +4089,7 @@
           "quote": "Geçen Mart ayındaki AWS us-east-1 kesintisinde 12 üretim hizmetimiz 22 saniyede ikincil veri merkezimize devredildi. Müşterilerimiz fark etmedi. Rakiplerimiz 6 saat kapalı kaldı. O hafta onların müşterilerinden üç yeni kurumsal sözleşme aldık."
         },
         "techDiff": {
-          "description": "Rediacc, dosya sistemi seviyesinde artımlı farkları hesaplamak için btrfs send/receive kullanır. Tam imajlar yerine yalnızca değişen bloklar siteler arasında taşınır. 2,4 GB günlük değişikliğe sahip 380 GB'lık bir ortam 2,4 GB transfer eder — 380 GB değil. Bu %98 bant genişliği tasarrufu demektir. Replikasyon sürekli veya zamanlı olarak çalışır.",
+          "description": "Rediacc sadece değişen verileri kopyalar. 380 GB'lık bir ortamda günde 2,4 GB değişirse, 380 GB değil, sadece 2,4 GB taşır. Böylece <span class=\"sp-emphasis\">bant genişliğini %98 azaltır</span>. İstediğiniz zaman veya zamanlı olarak çalışır.",
           "rediaccLabel": "Rediacc (btrfs send/receive)",
           "rows": [
             {
@@ -5025,7 +5025,7 @@
               "title": "Self-servis, Git entegreli"
             },
             {
-              "description": "Sadece kod değil — tam yığın. İşletim sistemi, konteynerler, veritabanları ve yapılandırma birlikte klonlanır. Hatalar 1x maliyetle yakalanır, üretimde 30-100x değil.",
+              "description": "Sadece kod değil, tam yığın. İşletim sistemi, konteynerler, veritabanları, yapılandırma birlikte klonlanır. Hatalar 1x maliyetle yakalanır, üretimde 30-100x değil.",
               "icon": "layers",
               "title": "Uygulama + veritabanı + yapılandırma"
             }
@@ -5042,7 +5042,7 @@
         "calculator": {
           "annualLabel": "Yıllık ekip maliyeti",
           "description": "Kaydırıcıları ekibinize göre ayarlayın. Rakamlar sizi şaşırtabilir.",
-          "footnote": "Ort. toplam $160K maaş ($92/saat tam yüklü) baz alınmıştır. Ortam bekleme maliyeti: bloke süre x %60 verimlilik etkisi. Bağlam değiştirme: geliştirici başına yıllık $24K-$50K. Geliştiricilerin %69'u haftada 8+ saat verimsizliklere kaybediyor (Atlassian 2024). Geliştiriciler beklerken tamamen boş değildir — ancak bağımlılık zincirleri sprintler boyunca büyür. Muhafazakâr tahminler — gerçek tasarruflar genellikle daha yüksektir.",
+          "footnote": "Ortalama toplam $160K maaş ($92/saat tam yüklü) esas alınmıştır. Ortam bekleme maliyeti: bloke süre × %60 verimlilik etkisi. Bağlam değiştirme: geliştirici başına yıllık $24K-$50K. Geliştiricilerin %69'u haftada 8+ saati verimsizliklere kaybediyor (Atlassian 2024). Geliştiriciler beklerken tamamen boş değildir; ancak bağımlılık zincirleri sprintler boyunca birikir. Muhafazakâr tahminler; gerçek tasarruflar genellikle daha yüksektir.",
           "headerTitle": "Ortam bekleme maliyetinizi hesaplayın",
           "results": {
             "blockedTime": "Sprint başına bloke süre",
@@ -5093,7 +5093,7 @@
             {
               "name": "Hazırlık süresi",
               "refs": [9, 10, 11, 12, 13, 0],
-              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<60s"]
+              "values": ["Dakika", "Dakika", "Dakika", "Dakika", "Saniye", "<60s"]
             },
             {
               "name": "Üretimle birebir aynı veriler",
@@ -5105,7 +5105,7 @@
         },
         "hero": {
           "ctaLabel": "Klonlamaya Başlayın",
-          "subtitle": "Üretim ortamının birebir kopyalarını oluşturun — uygulama, veritabanı ve yapılandırma — geliştirme ve test için. Talep açmadan. Beklemeden.",
+          "subtitle": "Üretim ortamının birebir kopyasını <span class=\"sp-emphasis\">saniyeler içinde</span> oluşturun. Uygulama, veritabanı ve yapılandırma. Talep açmak yok. Beklemek yok.",
           "title": "Üretim ortamını 60 saniyede klonlayın"
         },
         "howItWorks": {
@@ -5175,7 +5175,7 @@
             {
               "description": "Geliştirici rdc ceph snapshot create production komutunu çalıştırır. Bilet yok. Onay yok.",
               "icon": "terminal",
-              "title": "Run"
+              "title": "Çalıştır"
             },
             {
               "description": "Üretimin birebir kopyası 60 saniyede ayağa kalkar. Aynı işletim sistemi, yapılandırmalar, veriler.",
@@ -5185,19 +5185,19 @@
             {
               "description": "Hemen geliştirmeye başlayın. Kurulum yok. Yapılandırma yok. Sadece kod.",
               "icon": "code",
-              "title": "Work"
+              "title": "Geliştir"
             }
           ],
           "title": "Tek komut. Altmış saniye."
         },
         "label": "Ortam Klonlama",
         "meta": {
-          "description": "Üretim ortamının birebir kopyalarını oluşturun — uygulama, veritabanı ve yapılandırma — geliştirme ve test için. Talep açmadan. Beklemeden.",
+          "description": "Üretim ortamının birebir kopyalarını (uygulama, veritabanı ve yapılandırma) geliştirme ve test için hızla oluşturun. Talep açmadan. Beklemeden.",
           "keywords": "ortam klonlama, üretim klonu, geliştirme ortamı, anında hazırlama, btrfs klonu, copy-on-write, geçici ortamlar",
           "title": "Ortam Klonlama - Hızlı Üretim Kopyası | Rediacc"
         },
         "problem": {
-          "description": "Geliştiricinizin bir test ortamına ihtiyacı var. Talep açıyor. Operasyon ekibi sunucu hazırlıyor. Birisi yapılandırıyor. Üç gün sonra, yine de üretim ortamıyla eşleşmiyor. Bu arada geliştiriciniz Pazartesi'den beri bloke — ve her kesinti 23 dakikalık toparlanma süresine mal oluyor.",
+          "description": "Bir geliştiricinin test ortamına ihtiyacı var. Bu yüzden talep açıyor. Operasyon bir sunucu kuruyor. Biri yapılandırıyor. Üç gün sonra hâlâ üretim ortamıyla uyuşmuyor. Geliştirici Pazartesi'den beri takılı kalmış durumda. Üstelik her kesinti, yeniden odaklanmak için 23 dakikaya mal oluyor.",
           "statCallouts": [
             {
               "number": "69%",
@@ -5214,13 +5214,13 @@
             {
               "number": "$50K/yıl",
               "ref": 2,
-              "source": "Industry composite estimate",
+              "source": "Endüstri Ortalaması Tahmini",
               "text": "bağlam değiştirme nedeniyle geliştirici başına kayıp"
             }
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["Run", "60s", "Done"],
+            "newSteps": ["Başlat", "60s", "Hazır"],
             "oldLabel": "Eski yöntem",
             "oldSteps": [
               {
@@ -5250,63 +5250,63 @@
         "references": {
           "items": [
             {
-              "text": "Atlassian, DX & Wakefield Research, \"State of Developer Experience Report,\" 2024. \"Sixty-nine percent of developers are losing eight hours or more per week to inefficiencies.\" \"For an organization with 500 developers, losing 8 hours per week costs roughly $6.9 million over the course of a year.\"",
+              "text": "Atlassian, DX & Wakefield Research, \"State of Developer Experience Report,\" 2024. \"Geliştiricilerin %69'u haftada sekiz saat veya daha fazlasını verimsizliklere kaybediyor.\" \"500 geliştiricisi olan bir kuruluş için haftada 8 saat kaybetmek, bir yıl boyunca yaklaşık 6,9 milyon dolara mal oluyor.\"",
               "url": "https://www.atlassian.com/blog/developer/developer-experience-report-2024"
             },
             {
-              "text": "Industry composite from vendor surveys and published benchmarks. \"Context switching costs $24K–$50K per developer per year in lost productivity.\"",
+              "text": "Satıcı anketleri ve yayımlanmış kıyaslamalardan derlenmiş endüstri ortalaması. \"Bağlam değiştirme, geliştirici başına yılda $24K-$50K üretkenlik kaybıyla sonuçlanır.\"",
               "url": "https://release.com/blog/hidden-costs-of-staging"
             },
             {
-              "text": "GitHub Codespaces creates a dedicated VM and clones the repository into a dev container for instant cloud development.",
+              "text": "GitHub Codespaces, anlık bulut geliştirme için ayrılmış bir VM oluşturur ve depoyu bir dev container'a klonlar.",
               "url": "https://docs.github.com/en/codespaces/developing-in-codespaces/creating-a-codespace"
             },
             {
-              "text": "Coder templates are Terraform-defined blueprints for creating identical, reproducible development workspaces.",
+              "text": "Coder şablonları, birbirinin aynısı, yeniden üretilebilir geliştirme çalışma alanları oluşturmak için Terraform ile tanımlanan taslaklardır.",
               "url": "https://coder.com/docs/admin/templates"
             },
             {
-              "text": "Vercel preview deployments create unique live URLs for every push/PR for isolated frontend review.",
+              "text": "Vercel preview deployment'ları, her push/PR için özgün canlı URL'ler oluşturarak ön yüz incelemesini izole eder.",
               "url": "https://vercel.com/docs/deployments/preview-deployments"
             },
             {
-              "text": "Delphix Virtual Databases (VDBs) are full read-write copies from snapshots requiring only a fraction of traditional storage.",
+              "text": "Delphix Virtual Databases (VDB), snapshot'lardan oluşturulan tam okuma-yazma kopyalarıdır ve sadece geleneksel depolama ihtiyacının küçük bir bölümünü gerektirir.",
               "url": "https://cd.delphix.com/docs/latest/virtual-database-vdb-management"
             },
             {
-              "text": "Neon branches are copy-on-write clones sharing pages with the parent until writes diverge.",
+              "text": "Neon branch'ları, yazma işlemleri ayrılmaya başlayıncaya kadar ana veritabanı ile sayfaları paylaşan copy-on-write klonlarıdır.",
               "url": "https://neon.com/docs/introduction/branching"
             },
             {
-              "text": "Delphix supports Oracle, SQL Server, PostgreSQL, MySQL, SAP ASE, IBM Db2, MariaDB, and CockroachDB.",
+              "text": "Delphix Oracle, SQL Server, PostgreSQL, MySQL, SAP ASE, IBM Db2, MariaDB ve CockroachDB'yi destekler.",
               "url": "https://cd.delphix.com/docs/latest/overview"
             },
             {
-              "text": "Codespaces prebuilds pre-assemble source code, extensions, and dependencies for substantially faster codespace creation.",
+              "text": "Codespaces prebuilds özelliği, kaynak kod, uzantı ve bağımlılıkları önceden hazırlayarak codespace oluşturma süresini büyük ölçüde kısaltır.",
               "url": "https://docs.github.com/en/codespaces/prebuilding-your-codespaces/about-github-codespaces-prebuilds"
             },
             {
-              "text": "Coder prebuilt workspaces maintain a ready-to-use pool, reducing creation time from up to 20 minutes to under a minute.",
+              "text": "Coder önceden hazırlanmış çalışma alanları, kullanıma hazır bir havuz tutarak oluşturma süresini en fazla 20 dakikadan 1 dakikanın altına düşürür.",
               "url": "https://coder.com/docs/admin/templates/extending-templates/prebuilt-workspaces"
             },
             {
-              "text": "Vercel deploys to its global edge network with apps going live within seconds of pushing code.",
+              "text": "Vercel, küresel edge ağına dağıtarak uygulamalarınızın koddan canlıya saniyeler içinde gitmesini sağlar.",
               "url": "https://vercel.com/docs/deployments"
             },
             {
-              "text": "Delphix VDB provisioning completes in minutes rather than hours or days for traditional database copies.",
+              "text": "Delphix VDB hazırlanması, geleneksel kopyalama yönteminin saatler veya günler aldığı işi dakikalar içinde tamamlar.",
               "url": "https://cd.delphix.com/docs/latest/virtual-database-vdb-management"
             },
             {
-              "text": "Neon branch creation takes approximately 1 second regardless of database size.",
+              "text": "Neon branch oluşturma, veritabanı boyutundan bağımsız şekilde yaklaşık 1 saniye sürer.",
               "url": "https://neon.com/docs/get-started/workflow-primer"
             },
             {
-              "text": "Delphix creates full read-write virtual copies from production data sources for application, AI, and ML teams.",
+              "text": "Delphix, üretim veritabanınızdan uygulama, AI ve ML ekipleri için tam okuma-yazma sanal kopyalar oluşturur.",
               "url": "https://cd.delphix.com/docs/latest/overview"
             },
             {
-              "text": "Neon branches include all parent data by default providing instant production-identical copies.",
+              "text": "Neon branch'ları varsayılan olarak tüm üst veriyi içererek anlık olarak üretim ortamı eşi kopyalar sağlar.",
               "url": "https://neon.com/docs/introduction/branching"
             }
           ]
@@ -5356,17 +5356,17 @@
         "benefits": {
           "items": [
             {
-              "description": "Üretimi etkilemeden yük devretme testi yapın. Simülasyon btrfs klonuna karşı çalışır — canlı hizmetleriniz asla durmaz.",
+              "description": "Üretime dokunmadan failover testi yapın. Test anlık bir kopya üzerinde çalışır. Canlı hizmetleriniz asla durmaz.",
               "icon": "shield",
               "title": "Güvenli simülasyonlar"
             },
             {
-              "description": "Kurtarma sırasında tam olarak ne olduğunu adım adım görün. Her hizmet, her port, her sağlık kontrolü — kesin zaman damgalarıyla kaydedilir.",
+              "description": "Kurtarma sırasında tam olarak ne olduğunu adım adım görün. Her hizmet, her port, her sağlık kontrolü kesin zaman damgalarıyla kaydedilir.",
               "icon": "eye",
               "title": "Tam görünürlük"
             },
             {
-              "description": "Felaket planınızın ihtiyaç duymadan önce çalıştığını bilin. Yük devretme testi CI pipeline'ınıza entegre olur — başarısız mı? Önemli olmadan önce uyarı alırsınız.",
+              "description": "Planınızın işe yaradığını ihtiyaç duymadan önce bilin. Test, bir CI pipeline'ına doğrudan oturur. Bir hata olursa, iş işten geçmeden çok önce uyarı alırsınız.",
               "icon": "check-circle",
               "title": "Kaostan önce güven"
             }
@@ -5518,7 +5518,7 @@
               "title": "Simüle Et"
             },
             {
-              "description": "Her adımı gerçek zamanlı izleyin. RTO, RPO, hizmet sağlığı — hepsi ölçülür ve kaydedilir. İzleme yığınınıza bağlanır.",
+              "description": "Her adımı gerçek zamanlı izleyin. RTO, RPO ve hizmet sağlığı ölçülür, her hizmet kaydedilir. Mevcut izleme araçlarına bağlanır.",
               "icon": "eye",
               "title": "Gözlemle"
             },
@@ -5590,47 +5590,47 @@
         "references": {
           "items": [
             {
-              "text": "Veeam, “2024 Data Protection Trends Report — BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.” “Only 58% of servers met their recovery SLA during their last large-scale attack.” “Only 32% of organizations believe that they could recover 50 workloads within an entire business week.”",
+              "text": "Veeam, “2024 Data Protection Trends Report: BC/DR Trends,” 2024. “Kuruluşların yalnızca %13'ü felaket kurtarma süreçlerinin bir parçası olarak orkestrasyonlu iş akışlarını kullanmaktadır.” “Sunucuların yalnızca %58'i son büyük ölçekli saldırı sırasında kurtarma SLA'larını karşılamıştır.” “Kuruluşların yalnızca %32'si 50 iş yükünü bir iş haftası içinde kurtarabileceğine inanmaktadır.”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
-              "text": "Zerto test failovers spin up replica VMs on scratch disks in isolated bubble networks with zero production impact.",
+              "text": "Zerto test failover'ları replica VM'leri izole edilmiş bubble ağlarında scratch disklerde başlatır, sıfır üretim etkisiyle.",
               "url": "https://help.zerto.com/bundle/DR.Test.VC.HTML/page/The_Failover_Test_Operation.htm"
             },
             {
-              "text": "Veeam SureBackup runs automated recovery verification in an isolated Virtual Lab with zero production impact.",
+              "text": "Veeam SureBackup izole bir Virtual Lab'da otomatik kurtarma doğrulaması çalıştırır, sıfır üretim etkisiyle.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/virtual_lab.html"
             },
             {
-              "text": "Zerto Orchestrator automates scheduled failover tests with zero production impact and generates compliance reports.",
+              "text": "Zerto Orchestrator zamanlanmış failover testlerini otomatikleştirir, sıfır üretim etkisiyle ve uyumluluk raporları oluşturur.",
               "url": "https://www.zerto.com/the-platform/automated-disaster-recovery-testing/"
             },
             {
-              "text": "Druva DR plan testing spins up cloned resources on-demand without touching production for RTO/RPO validation.",
+              "text": "Druva DR planı testi klonlanmış kaynakları isteğe bağlı olarak başlatır, üretimi etkilemeden RTO/RPO doğrulaması için.",
               "url": "https://help.druva.com/en/articles/8806108-execute-test-vs-execute-failure-of-a-dr-plan"
             },
             {
-              "text": "Veeam ONE Reporter generates detailed DR readiness and compliance reports for audit and governance.",
+              "text": "Veeam ONE Reporter denetim ve yönetişim için ayrıntılı DR hazırlığı ve uyumluluk raporları oluşturur.",
               "url": "https://helpcenter.veeam.com/docs/one/reporter/about_reporter.html"
             },
             {
-              "text": "Zerto generates Recovery Reports after every failover test with up to 90 days of historical data for SLA validation.",
+              "text": "Zerto her failover testinden sonra SLA doğrulaması için 90 güne kadar geçmiş verilerle Kurtarma Raporları oluşturur.",
               "url": "https://help.zerto.com/bundle/Admin.VC.HTML/page/Recovery_Reports.htm"
             },
             {
-              "text": "Veeam SureBackup validates recoverability of cloud workloads including AWS and Azure VMs in isolated tests.",
+              "text": "Veeam SureBackup izole testlerde AWS ve Azure VM'ler dahil bulut iş yüklerinin kurtarılabilirliğini doğrular.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Zerto supports cross-cloud test failovers (on-prem to Azure, AWS to Azure) using scratch disks in isolated networks.",
+              "text": "Zerto çapraz bulut test failover'larını (on-prem'den Azure'e, AWS'den Azure'e) izole ağlarda scratch diskler kullanarak destekler.",
               "url": "https://help.zerto.com/bundle/Admin.Azure.HTML.10.0_U1/page/The_Test_Failover_Process.htm"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication on-premises Windows Server'da dağıtılır, altyapı üzerinde tam müşteri kontrolüyle.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto on-premises'de bir Zerto Virtual Manager ve konak başına Virtual Replication Appliances ile dağıtılır.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -5649,10 +5649,10 @@
             },
             "improvement": "12 kat daha sık · İlk çalıştırmada 3 kritik açık bulundu"
           },
-          "quote": "İlk otomatik yük devretme testimizi bir Salı sabahı çalıştırdık. 3 kritik açık buldu — eski bir DNS kaydı, ikincilde eksik bir SSL sertifikası ve 4 dakikalık veritabanı replikasyon gecikmesi. Üçü de gerçek bir kesintiye neden olurdu. Bir öğleden sonrada hepsini düzelttik. Artık aylık test yapıyoruz ve daha rahat uyuyoruz."
+          "quote": "İlk otomatik failover testimizi Salı sabahı çalıştırdık. Üç kritik açık buldu: eski bir DNS kaydı, ikincil sunucudaki eksik SSL sertifikası ve 4 dakikalık veritabanı replikasyon gecikmesi. Üçü de gerçek kesintiye neden olurdu. Öğleden sonra hepsini düzelttik. Artık aylık test yapıyoruz ve daha rahat uyuyoruz."
         },
         "techDiff": {
-          "description": "Geleneksel felaket kurtarma testleri üretim kesintisi, bir mühendis ekibi ve haftalarca planlama gerektirir. Rediacc, saniyeler içinde tüm altyapınızın izole bir klonunu oluşturmak için btrfs copy-on-write anlık görüntüleri kullanır. Test klona karşı çalışır — üretim asla durmaz.",
+          "description": "Eski usul felaket kurtarma testleri üretimde kesinti, odayı dolduran mühendisler ve haftalarca planlama gerektirir. Rediacc tüm sistemi <span class=\"sp-emphasis\">saniyeler içinde</span> klonlar. Test kopya üzerinde çalışır. Üretim hiç durmaz.",
           "rediaccLabel": "Rediacc Felaket Kurtarma Testi",
           "rows": [
             {
@@ -5664,12 +5664,12 @@
               "traditional": "Planlama, ekip toplama, yürütme için 3-5 gün"
             },
             {
-              "rediacc": "Aylık veya cron/CI ile — dağıttığınız kadar sık test edin",
-              "traditional": "Yılda bir test edilir (yapılırsa) — en iyi ihtimalle üç ayda bir"
+              "rediacc": "Aylık veya otomatik (cron/CI), her dağıtımla birlikte",
+              "traditional": "Yılda bir test edilir (edilirse), en iyi ihtimalle üç ayda bir"
             },
             {
-              "rediacc": "Otomatik sağlık kontrolleri — kesin RTO/RPO ile geçti/kaldı",
-              "traditional": "Manuel doğrulama — \"doğru görünüyor\" yargıları"
+              "rediacc": "Otomatik kontrol, kesin RTO/RPO, geçti ya da kaldı",
+              "traditional": "El ile kontrol, \"iyi görünüyor\" kararları"
             },
             {
               "rediacc": "Cluster'ın tamamını 46 saniyede fork'layın ve tatbikatı kopya üzerinde çalıştırın",
@@ -5691,7 +5691,7 @@
         "calculator": {
           "annualLabel": "Yıllık maruz kalma",
           "description": "Kaydırıcıları altyapınıza göre ayarlayın. Rakamlar hızla büyür.",
-          "footnote": "Risk altındaki gelir, $9,000/dk ortalama kesinti maliyetine (Splunk/Oxford Economics 2024) dayanmaktadır. Kurtarma işçiliği: 6 mühendis x kurtarma saatleri x $200/saat karma oran. İtibar maliyeti doğrudan maliyetlerin yüzdesi olarak tahmin edilmiştir (sektör tahmini). Rediacc ile: değiştirilemez anlık görüntüler 5 dakikadan kısa sürede geri yüklenir — kesinti süresi sıfıra yaklaşır.",
+          "footnote": "Risk altındaki gelir, $9.000/dk ortalama kesinti maliyetine (Splunk/Oxford Economics 2024) dayanıyor. Kurtarma maliyeti: 6 mühendis × kurtarma saatleri × $200/saat. İtibar kaybı, doğrudan maliyetlerin bir yüzdesi olarak tahmin ediliyor (sektör ortalaması). Rediacc ile: değiştirilemez anlık görüntüler 5 dakikada geri yükleniyor, kesinti süresi neredeyse sıfır.",
           "headerTitle": "Fidye yazılımı maruziyetinizi hesaplayın",
           "results": {
             "downtime": "Olay başına kesinti süresi",
@@ -5717,7 +5717,7 @@
         },
         "comparison": {
           "capabilityLabel": "Özellik",
-          "description": "Geleneksel yedekleme araçları yazılım kilitleriyle değiştirilemezlik vaat eder. Rediacc bunu çekirdek seviyesinde uygular — fidye yazılımının ulaşamayacağı yerde.",
+          "description": "Diğer araçlar yazılım kilitleriyle yedek koruyuşunu vaat eder. Fidye yazılımı bu kilitleri kırabilir. Rediacc kilidi depolama katmanına kurar, fidye yazılımının ulaşamayacağı yerde.",
           "features": [
             {
               "name": "Değiştirilemez yedekler",
@@ -5766,7 +5766,7 @@
           "cloneVisual": {
             "arrow": {
               "icon": "lock-arrow",
-              "label": "Seal",
+              "label": "Kilitle",
               "time": ""
             },
             "clone": {
@@ -5828,7 +5828,7 @@
             {
               "description": "Değiştirilemezlik dosya sistemi düzeyinde devreye girer. Değişikliğe izin verilmez. Fidye yazılımı tarafından da. Root tarafından da.",
               "icon": "lock",
-              "title": "Lock"
+              "title": "Kilitlendir"
             },
             {
               "description": "Felaket geldiğinde temiz yedeğiniz sizi bekliyor. Tam ortam 5 dakikadan kısa sürede geri yüklenir.",
@@ -5845,7 +5845,7 @@
           "title": "Değiştirilemez Yedekler - Fidye Dayanıklı | Rediacc"
         },
         "problem": {
-          "description": "Modern saldırganlar dosyalarınızı şifrelemeden önce yedeklemelerinizi bulur. Yedeklemeleriniz değiştirilebiliyorsa, değiştirilecektir. Geleneksel yedekleme araçları kapıyı açık bırakır — ve fidye yazılımı kurbanlarının %94'ünde saldırı sırasında yedeklemeler hedef alınmıştır. Oluşturuldukları anda kilitlenen yedeklemelere ihtiyacınız var.",
+          "description": "Şunu düşünün: Gece saat 3'te fidye yazılımı vurdu. Yedekler de şifrelenmiş. Nedeni şu: saldırganlar önce yedekleri avlar. Nitekim fidye yazılımı kurbanlarının %94'ünün yedekleri saldırı sırasında hedef alındı (Sophos 2024). Değiştirilebilen bir yedek, değiştirilir. Yedekler, oluşturuldukları anda kilitlenmek zorunda.",
           "statCallouts": [
             {
               "number": "94%",
@@ -5871,15 +5871,15 @@
         "references": {
           "items": [
             {
-              "text": "Sophos, “The Impact of Compromised Backups on Ransomware Outcomes,” March 2024. “94% of organizations hit by ransomware in the past year said that the cybercriminals attempted to compromise their backups during the attack.”",
+              "text": "Sophos, “The Impact of Compromised Backups on Ransomware Outcomes,” Mart 2024. “Geçen yıl fidye yazılımına maruz kalan kuruluşların %94'ü, saldırı sırasında siber suçluların yedeklerini tehlikeye atmaya çalıştığını söyledi.”",
               "url": "https://www.sophos.com/en-us/blog/the-impact-of-compromised-backups-on-ransomware-outcomes/"
             },
             {
-              "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024, as breaches grow more disruptive and further expand demands on cyber teams.”",
+              "text": "IBM Security, “Cost of a Data Breach Report 2024,” Temmuz 2024. “2024'te bir veri ihlalinin küresel ortalama maliyeti 4,88 milyon dolara ulaştı, ihlaller arttıkça, siber güvenlik ekiplerine gelen talep de büyüyor.”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "Coveware, “Quarterly Ransomware Report Q2 2022,” July 2022. “In Q2, the average days of downtime was measured at 24 days, a decrease of 8% from Q1 2022.”",
+              "text": "Coveware, “Quarterly Ransomware Report Q2 2022,” Temmuz 2022. “Q2'de ortalama kesinti süresi 24 gün olarak ölçüldü, Q1 2022'ye kıyasla %8 düşüş.”",
               "url": "https://www.coveware.com/blog/2022/7/27/fewer-ransomware-victims-pay-as-medium-ransom-falls-in-q2-2022"
             },
             {
@@ -5887,75 +5887,75 @@
               "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
             },
             {
-              "text": "Rubrik Atlas filesystem stores all backup data in proprietary append-only immutable format that cannot be modified or deleted.",
+              "text": "Rubrik Atlas dosya sistemi, tüm yedek verilerini tescilli, yalnızca eklemeye izin veren, değiştirilemez bir biçimde depolar; bu veriler değiştirilemez veya silinemez.",
               "url": "https://www.rubrik.com/content/dam/rubrik/en/resources/white-paper/rwp-recovering-fast-from-ransomware-attacks.pdf"
             },
             {
-              "text": "Commvault supports WORM storage lock and compliance lock on disk libraries for immutable backups.",
+              "text": "Commvault disk kütüphanelerinde WORM depolama kilidi ve uyumluluk kilidi destekliyor, değiştirilemez yedekler için.",
               "url": "https://documentation.commvault.com/2024e/software/configuring_worm_storage_mode_on_disk_libraries.html"
             },
             {
-              "text": "Druva's SaaS architecture stores backups in an air-gapped, immutable cloud decoupled from the customer's environment.",
+              "text": "Druva SaaS mimarisi, yedekleri hava boşluğuyla izole edilmiş, müşterinin ortamından ayrılmış değiştirilemez bulutta depolayıyor.",
               "url": "https://www.druva.com/resources/solution-brief/solution-brief-druva-immutability"
             },
             {
-              "text": "Veeam SureBackup automatically verifies backup recoverability by booting VMs in an isolated Virtual Lab environment.",
+              "text": "Veeam SureBackup, VM'leri izole bir Sanal Lab ortamında başlatarak yedek kurtarılabilirliğini otomatik doğruluyor.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Veeam Instant VM Recovery mounts backups directly on ESXi/Hyper-V hosts for near-instant VM recovery and testing.",
+              "text": "Veeam Instant VM Recovery, yedekleri doğrudan ESXi/Hyper-V hostlarına monte ederek neredeyse anında VM kurtarması ve testi sağlıyor.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Live Mount instantly mounts backup snapshots as live VMs or file shares for testing and recovery.",
+              "text": "Rubrik Live Mount, yedek anlık görüntülerini canlı VM'ler veya dosya paylaşımları olarak monte ediyor, test ve kurtarma için.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery boots VMs directly from backup via NFS export for instant testing and recovery.",
+              "text": "Commvault Live Recovery, VM'leri doğrudan NFS tarafından dışa aktarılan yedekten başlatıyor, anında test ve kurtarma.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore boots VMware VMs directly from backup cloud in under 5 minutes with live migration.",
+              "text": "Druva Instant Restore, VMware VM'lerini yedek bulutundan doğrudan başlatıyor, 5 dakikada, canlı taşıma ile.",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Zerto continuous replication with journal-based recovery delivers near-zero RPO and minutes-level RTO for instant recovery.",
+              "text": "Zerto'nun günlük tabanlı kurtarmayla sürekli çoğaltması, anında kurtarma için neredeyse sıfır RPO ve dakika düzeyinde RTO sunar.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam Instant VM Recovery enables sub-5-minute RTO by booting VMs directly from backup files.",
+              "text": "Veeam Instant VM Recovery, VM'leri doğrudan yedek dosyalarından başlatarak 5 dakikanın altında RTO sağlıyor.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Instant Recovery enables sub-5-minute recovery by mounting VMs directly from immutable snapshots.",
+              "text": "Rubrik Instant Recovery, VM'leri doğrudan değiştirilemez anlık görüntülerden monte ederek 5 dakikanın altında kurtarma sağlıyor.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery enables sub-5-minute RTO by mounting VMs from backup with background Storage vMotion.",
+              "text": "Commvault Live Recovery, VM'leri yedekten monte ederek arka planda Storage vMotion ile 5 dakikanın altında RTO sağlıyor.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore minimizes downtime with sub-5-minute VM recovery directly from backup cloud storage.",
+              "text": "Druva Instant Restore, VM'leri doğrudan yedek bulut depolamasından başlatarak 5 dakikanın altında kurtarma ile kesinti süresini azaltıyor.",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Zerto's always-on replication with sub-10-second RPOs and minute-level RTOs enables near-instant full-environment recovery.",
+              "text": "Zerto'nun her zaman açık çoğaltması, 10 saniyeden daha düşük RPO'lar ve dakika düzeyinde RTO'larla neredeyse anında tam ortam kurtarması sağlıyor.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication, Windows Server üzerinde şirket içi olarak konuşlandırılıyor, altyapı tamamen müşterinin kontrolünde.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik şirket içi cihazlar (r6000 serisi) olarak konuşlandırılıyor, hesaplama, depolama ve yazılımı bütünleştirilmiş.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault, CommServe, MediaAgent ve Access Node bileşenleriyle tamamen kendi kendine barındırılan şirket içi konuşlandırmaları destekler.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto şirket içi olarak konuşlandırılıyor, Zerto Virtual Manager ve host başına Sanal Çoğaltma Cihazları ile.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -5974,22 +5974,22 @@
             },
             "improvement": "4.800 kat daha hızlı kurtarma"
           },
-          "quote": "Bir Cumartesi sabahı saat 3:17'de fidye yazılımına yakalandık. Saldırganlar yedekleme depomuz dahil 14 sunucuyu şifreledi — ya da öyle sandılar. Rediacc'ın değiştirilemez anlık görüntüleri dokunulmamıştı. Saat 3:24'te tüm 14 sunucu mühürlü yedeklemelerden geri yüklendi. Toplam veri kaybı: sıfır bayt. Toplam ödenen fidye: sıfır dolar."
+          "quote": "Cumartesi sabahı saat 3:17'de fidye yazılımı saldırısı aldık. Saldırganlar yedekleme deposu dahil 14 sunucuyu şifreledi, ya da sandılar. Rediacc'ın değişmez anlık görüntüleri dokunulmamıştı. 3:24'te tüm 14 sunucu mühürlü yedeklemelerden geri yüklendi. Veri kaybı: sıfır bayt. Ödenen fidye: sıfır dolar."
         },
         "techDiff": {
-          "description": "Rediacc, dosya sistemi seviyesinde btrfs salt okunur anlık görüntüler kullanır. Bir anlık görüntü mühürlendikten sonra, çekirdeğin kendisi değişikliği engeller — kötü amaçlı yazılımın atlayabileceği yazılım kilitleri değil, dosya sistemi seviyesinde değiştirilemezlik. Root erişimiyle bile fidye yazılımı mühürlü bir btrfs anlık görüntüsünü şifreleyemez, değiştiremez veya silemez.",
+          "description": "Rediacc salt okunur bir kopya alır: dosyaların tek bir andaki dondurulmuş görüntüsü. Bu kopya mühürlendikten sonra <span class=\"sp-emphasis\">depolama katmanının kendisi her değişikliği engeller</span>. Bu, kötü amaçlı yazılımın atlayabileceği bir yazılım kilidi değildir. En yetkili yönetici parolasıyla bile fidye yazılımı mühürlü bir kopyayı şifreleyemez, değiştiremez veya silemez.",
           "rediaccLabel": "Rediacc (btrfs değiştirilemez)",
           "rows": [
             {
-              "rediacc": "Çekirdek tarafından zorlanan salt okunur anlık görüntüler — root ile bile değiştirilemez",
-              "traditional": "Yazılım düzeyinde \"değiştirilemezlik\" — yönetici/root erişimiyle atlanabilir"
+              "rediacc": "Depolama katmanı tarafından korunan salt okunur kopyalar, en yetkili yönetici parolasıyla bile güvende",
+              "traditional": "Bir yönetici parolasıyla kapatılabilen yazılım \"kilitleri\""
             },
             {
-              "rediacc": "Anlık görüntüler dosya sistemi katmanında bulunur — kullanıcı alanı kötü amaçlı yazılımlarına görünmez",
-              "traditional": "Yedek dosyaları diskte normal dosyalar olarak saklanır — görünür ve şifrelenebilir"
+              "rediacc": "Kopyalar depolama katmanında durur, sıradan kötü amaçlı yazılımlara görünmez",
+              "traditional": "Yedekler diskte normal dosya gibi duruyor, kolay bulunur ve şifrelenebilir"
             },
             {
-              "rediacc": "Otomatik günlük klon + başlatma + sağlık kontrolü — gerçekten geri yükler ve doğrular",
+              "rediacc": "Her gün otomatik klon, başlatma ve sağlık kontrolü, gerçekten doğruluyoruz",
               "traditional": "Doğrulama = yalnızca \"yedek tamamlandı\" durum mesajı"
             },
             {
@@ -6269,17 +6269,17 @@
         "benefits": {
           "items": [
             {
-              "description": "Sunucular, yapılandırmalar, veritabanları, ağ ayarları — tüm yığın tek birim olarak geri yüklenir. Yeniden oluşturma yok, yeniden yapılandırma yok, unutulan bağımlılık yok.",
+              "description": "Sunucular, yapılandırmalar, veritabanları, ağ. Tüm yığın tek bir birim olarak geri gelir. Yeniden kurma yok. Yeniden yapılandırma yok. Geride hiçbir şey kalmaz. Kubernetes mi kullanıyorsunuz? Tüm küme aynı şekilde çatallanır ve taşınır, uygulamalar ve veriler birlikte.",
               "icon": "zap",
               "title": "Tam ortamlar, dosyalar değil"
             },
             {
-              "description": "Zaman çizelgenizde herhangi bir anlık görüntüye geri dönün. Dün, geçen hafta, üç ay önce. İhtiyacınız olan tam durumu seçin — hangi dosyaların değiştiğini tahmin etmeye gerek yok.",
+              "description": "Geçmişteki kayıtlı herhangi bir kopyaya geri dönün. Dün, geçen hafta, üç ay önce. İhtiyacınız olan tam durumu seçin. Hangi dosyaların değiştiğini tahmin etmeye gerek yok.",
               "icon": "clock",
               "title": "Herhangi bir zaman noktası"
             },
             {
-              "description": "Her geri yükleme otomatik olarak sağlık kontrolünden geçer — HTTP uç noktaları, veritabanı bağlantıları, hizmet sağlığı. \"Dosyalar geri yüklendi\" değil — gerçekten çalışıyor ve yanıt veriyor.",
+              "description": "Her geri yüklemeyi sağlık kontrolünden geçiriyoruz. HTTP uç noktaları, veritabanı bağlantıları, hizmet sağlığı. Sadece “dosyalar geri yüklendi” değil, gerçekten çalışıyor ve yanıt veriyor.",
               "icon": "check-circle",
               "title": "Doğrulanmış kurtarma"
             }
@@ -6296,7 +6296,7 @@
         "calculator": {
           "annualLabel": "Yıllık kesinti maliyeti",
           "description": "Kaydırıcıları ortamınıza göre ayarlayın. Dosya seviyesinde kurtarmanın gerçek maliyetini görün.",
-          "footnote": "Dosya seviyesinde kurtarma: hizmet başına 2 saat hazırlama + yeniden yapılandırma. Kaybedilen gelir: kesinti saatleri x saatlik gelir. Personel işçiliği: 2 mühendis x kurtarma saatleri x $200/saat. Kayıp: SLA ihlallerinden kaynaklanan gelir kaybının %20'si. Rediacc: btrfs klonu tam ortamı 5 dakikadan kısa sürede geri yükler — tek komut, yeniden oluşturma yok.",
+          "footnote": "Dosya seviyesinde kurtarma: hizmet başına 2 saat hazırlama + yeniden konfigürasyon. Kaybedilen gelir: kesinti saatleri × saatlik gelir. Çalışan maliyeti: 2 mühendis × kurtarma saatleri × 200 $/saat. Müşteri kaybı: SLA ihlallerinden kaynaklanan gelir kaybının %20'si. Rediacc: btrfs klonu tam ortamı 5 dakikadan kısa sürede geri yükler, tek komut, yeniden kurulum yok.",
           "headerTitle": "Kesinti maruziyetinizi hesaplayın",
           "results": {
             "churn": "Müşteri kaybı etkisi",
@@ -6366,7 +6366,7 @@
         },
         "hero": {
           "ctaLabel": "Dakikalar İçinde Geri Yükleyin",
-          "subtitle": "Sadece dosyalar değil. Tüm ortamlar — sunucular, yapılandırmalar, veritabanları — dakikalar içinde geri yüklenir ve çalışır.",
+          "subtitle": "Sadece dosyalar değil. Sunucular, yapılandırmalar, veritabanları, hepsi <span class=\"sp-emphasis\">dakikalar içinde çalışır</span>.",
           "title": "Dakikalar içinde tam ortam kurtarma"
         },
         "howItWorks": {
@@ -6438,7 +6438,7 @@
               "title": "Geri Yükle"
             },
             {
-              "description": "Otomatik sağlık kontrolleri her hizmetin çalıştığını onaylar. Dosya sayısı değil — gerçek HTTP, SQL ve sağlık uç noktası kontrolleri.",
+              "description": "Otomatik sistem kontrolleri her hizmeti doğrular. Dosya sayısı değil, gerçek HTTP, SQL ve sağlık kontrolleri.",
               "icon": "check-circle",
               "title": "Doğrula"
             }
@@ -6447,12 +6447,12 @@
         },
         "label": "Anında Kurtarma",
         "meta": {
-          "description": "Sadece dosyalar değil. Tüm ortamlar — sunucular, yapılandırmalar, veritabanları — dakikalar içinde geri yüklenir ve çalışır.",
+          "description": "Sadece dosyalar değil, tüm ortamlar (sunucular, yapılandırmalar, veritabanları) dakikalar içinde çalışır.",
           "keywords": "anında kurtarma, tam ortam geri yükleme, btrfs klonu, felaket kurtarma, yedekleme geri yükleme, belirli zaman noktası kurtarma, sağlık kontrolleri, tek komutla kurtarma",
           "title": "Anında Kurtarma - Tam Ortam Geri Yükleme | Rediacc"
         },
         "problem": {
-          "description": "Tek tek dosyaları geri yüklemek saatler alır. Tüm ortamları yeniden oluşturmak günler alır. Üretim sunucunuz çöktüğünde sadece dosyaların geri gelmesine ihtiyacınız yok — her şeyin geri gelmesine ihtiyacınız var. Sunucu, yapılandırma, veritabanı, ağ ayarları. Hepsi.",
+          "description": "Dosyaları tek tek geri yüklemek saatler alır. Tüm sistemi yeniden kurmak günler sürer. Ana sunucu çöktüğünde yalnızca dosyalar yetmez. Her şeyin geri gelmesi gerekir. Sunucu, yapılandırmalar, veritabanı, ağ. Hepsi, yeniden çalışır durumda.",
           "statCallouts": [
             {
               "number": "3.4 weeks",
@@ -6505,59 +6505,59 @@
         "references": {
           "items": [
             {
-              "text": "Sophos, “The State of Ransomware 2024,” April 2024. “The average recovery time was 3.4 weeks; recovery costs averaged $2.73 million excluding ransom payments.”",
+              "text": "Sophos, “The State of Ransomware 2024,” Nisan 2024. “Ortalama kurtarma süresi 3,4 hafta idi; kurtarma maliyetleri fidye ödemeleri hariç ortalama 2,73 milyon $ oldu.”",
               "url": "https://www.sophos.com/en-us/blog/the-state-of-ransomware-2024"
             },
             {
-              "text": "ITIC, “2024 Hourly Cost of Downtime Report,” 2024. “The average cost of a single hour of downtime now exceeds $300,000 for over 90% of mid-size and large enterprises.”",
+              "text": "ITIC, “2024 Hourly Cost of Downtime Report,” 2024. “Orta ve büyük işletmelerin %90'ından fazlası için kesintinin saatlik maliyeti artık 300.000 $ 'yi aşıyor.”",
               "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
             },
             {
-              "text": "Veeam, “Data Protection Trends Report — BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.”",
+              "text": "Veeam, “Data Protection Trends Report: BC/DR Trends,” 2024. “Kuruluşların yalnızca %13'ü olağanüstü durum kurtarma süreçlerinde düzenlenmiş iş akışı kullanıyor.”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
-              "text": "Veeam Instant VM Recovery enables sub-5-minute RTO by booting VMs directly from backup files.",
+              "text": "Veeam Instant VM Recovery, VM'leri yedek dosyalarından doğrudan başlatarak 5 dakikadan az RTO sağlar.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Instant Recovery enables sub-5-minute recovery by mounting VMs directly from immutable snapshots.",
+              "text": "Rubrik Instant Recovery, VM'leri doğrudan değiştirilemez anlık görüntülerden bağlayarak 5 dakikanın altında kurtarma sağlar.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery enables sub-5-minute RTO by mounting VMs from backup with background Storage vMotion.",
+              "text": "Commvault Live Recovery, VM'leri yedekten bağlayarak ve arka planda Storage vMotion ile 5 dakikadan az RTO sağlar.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore minimizes downtime with sub-5-minute VM recovery directly from backup cloud storage.",
+              "text": "Druva Instant Restore, VM'leri doğrudan yedek bulut depolamasından kurtararak 5 dakikanın altında kurtarmayla kesinti süresini en aza indirir.",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Veeam supports per-VM snapshot-based restore points with configurable backup schedules and continuous data protection.",
+              "text": "Veeam yapılandırılabilir yedekleme zamanlamaları ve sürekli veri koruması ile VM başına anlık görüntü tabanlı geri yükleme noktalarını destekler.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/cdp_replication.html"
             },
             {
-              "text": "Rubrik provides SLA-driven snapshot policies with configurable frequency for granular point-in-time recovery.",
+              "text": "Rubrik, ayrıntılı noktasal kurtarma için SLA odaklı anlık görüntü ilkelerini yapılandırılabilir sıklıkla sunar.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault supports point-in-time recovery using snapshots for VMs, file servers, databases, and applications.",
+              "text": "Commvault, VM'ler, dosya sunucuları, veritabanları ve uygulamalar için anlık görüntüler kullanarak noktasal kurtarmayı destekler.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva maintains hot, warm, and cold recovery points enabling point-in-time restores of VMs, databases, and SaaS apps.",
+              "text": "Druva, sıcak, ılık ve soğuk kurtarma noktalarını tutarak VM'lerin, veritabanlarının ve SaaS uygulamalarının noktasal geri yüklenmesini sağlar.",
               "url": "https://help.druva.com/en/articles/8651296-recovery-points-that-you-can-restore"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication, Windows Server'da şirket içi olarak dağıtılır ve tam müşteri altyapı kontrolü sağlar.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik entegre işlem, depolama ve yazılımla şirket içi cihazlar (r6000 serisi) olarak dağıtılır.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault, CommServe, MediaAgent ve Access Node bileşenleriyle tamamen kendi kendine barındırılan şirket içi konuşlandırmaları destekler.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
           ]
@@ -6576,26 +6576,26 @@
             },
             "improvement": "270 kat daha hızlı kurtarma · Dağıtımdan bu yana sıfır hafta sonu olayı"
           },
-          "quote": "Ana veritabanı sunucumuz bir Cumartesi sabahı saat 2:14'te arıza yaptı — bozuk disk denetleyicisi. Eski kurulumumuzla bu, 11 hizmeti hazırlama, geri yükleme ve yeniden yapılandırma ile dolu bir hafta sonu olurdu. Bunun yerine telefonumdan tek bir komut çalıştırdım. Saat 2:18'de her şey geri geldi — MariaDB, API, Nginx, Redis, hepsi. Aynı yapılandırmalar, aynı durum, aynı veri. Nöbetçi mühendis tekrar uyumaya gitti."
+          "quote": "Ana veritabanı sunucumuz bir Cumartesi sabahı saat 2:14'te, bozulan bir disk denetleyicisi yüzünden çöktü. Eski kurulumumuzla bu, 11 hizmetin hazırlanması, geri yüklenmesi ve yeniden yapılandırılmasıyla geçen koca bir hafta sonu demekti. Bunun yerine telefonumdan tek komut çalıştırdım. 2:18'de her şey geri gelmişti: MariaDB, API, Nginx, Redis, hepsi. Aynı yapılandırmalar, aynı durum, aynı veriler. Nöbetçi mühendis uyumaya geri döndü."
         },
         "techDiff": {
-          "description": "Geleneksel kurtarma yeni bir sunucu hazırlamak, paketleri yüklemek, dosyaları tek tek geri yüklemek, hizmetleri yeniden yapılandırmak ve hiçbir şeyin atlanmadığını ummak anlamına gelir. Rediacc btrfs anlık görüntülerini kullanarak tüm ortamı klonlar — birimler, yapılandırmalar, konteynerler, ağ ayarları — tek bir atomik işlemde.",
+          "description": "Eski yöntem: yeni bir sunucu kur. Paketleri yükle. Dosyaları tek tek geri yükle. Hizmetleri yeniden yapılandır. Sonra hiçbir şeyin atlanmadığını um. Rediacc farklı çalışır. Tüm sistemi tek seferde kopyalar. Birimler, yapılandırmalar, konteynerler, ağ, <span class=\"sp-emphasis\">hepsi tek hamlede</span>.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
-              "rediacc": "Atomik btrfs klonu — birimler, yapılandırmalar, konteynerler, ağ tek işlemde",
-              "traditional": "Dosyaları tek tek geri yükle — yapılandırma, izinler, durum kaçırılır"
+              "rediacc": "Tek bir anlık kopya: birimler, yapılandırmalar, konteynerler, ağ, hepsi birlikte",
+              "traditional": "Dosyaları tek tek geri yükle, konfigürasyon, izinler, durum kaçırılır"
             },
             {
               "rediacc": "Aynı sunucu, aynı bağlama noktası, aynı Docker daemon — her şey yerinde geri yüklenir",
               "traditional": "Yeni sunucu hazırla, paketleri kur, manuel yapılandır"
             },
             {
-              "rediacc": "5 dakikadan az — tüm hizmetler otomatik sağlık kontrolleriyle birlikte ayağa kalkar",
-              "traditional": "Saatlerce manuel çalışma — her hizmet ayrı ayrı yeniden oluşturulup test edilir"
+              "rediacc": "5 dakikadan az, tüm hizmetler otomatik sağlık kontrolleriyle beraber ayağa kalkar",
+              "traditional": "Saatlerce manuel çalışma, her hizmet ayrı ayrı yeniden kurulur ve test edilir"
             },
             {
-              "rediacc": "Zaman noktası anlık görüntüsü — yedekleme anındaki tam durum, sapma yok",
+              "rediacc": "Tam bir andan kaydedilmiş kopya. Sapma yok.",
               "traditional": "Yedek ile mevcut durum arasında yapılandırma sapması"
             }
           ],
@@ -7829,7 +7829,7 @@
         },
         "comparison": {
           "capabilityLabel": "Özellik",
-          "description": "Geleneksel yedekleme araçları dosyaları geri yükler. Rediacc tüm ortamları geri yükler — konteynerler, yapılandırmalar, veritabanları — dakikalar içinde.",
+          "description": "Eski yedekleme araçları dosya geri yükler. Rediacc tüm sistemi dakikalar içinde geri yükler. Konteynerler, ayarlar, veritabanları, hepsi beraber geliyor.",
           "features": [
             {
               "name": "Tam ortam kurtarma",
@@ -7953,7 +7953,7 @@
           "title": "Hızlı Kurtarma - Felaket Müdahalesi | Rediacc"
         },
         "problem": {
-          "description": "Çoğu ekip fidye yazılımından sonra günlerce yeniden oluşturmayla geçirir. Bu arada müşteriler size ulaşamaz. Gelir durur. Güven kırılır. Saldırı bir saat sürer. Kurtarma bir hafta alır. Asıl hasar budur — ve ortalama fidye yazılımı kurtarması 24 gün sürer.",
+          "description": "Saat gece 2. Fidye yazılımı sunucuları az önce kilitledi. Şimdi günlerce sıfırdan yeniden kurulum başlıyor. Müşteriler ulaşamıyor. Gelir duruyor. Güven sarsılıyor. Saldırı bir saat sürdü. Temizlik bir hafta sürüyor. Asıl hasar bu. Ortalama bir fidye yazılımı kurtarması 24 gün sürer.",
           "statCallouts": [
             {
               "number": "24 gün",
@@ -7979,75 +7979,75 @@
         "references": {
           "items": [
             {
-              "text": "Coveware, \"Quarterly Ransomware Report Q2 2022,\" July 2022. \"In Q2, the average days of downtime was measured at 24 days, a decrease of 8% from Q1 2022.\"",
+              "text": "Coveware, \"Quarterly Ransomware Report Q2 2022,\" Temmuz 2022. \"2. çeyrekte ortalama kesinti süresi 24 gün olarak ölçülmüş, bir önceki çeyreğe göre %8 azalmış.\"",
               "url": "https://www.coveware.com/blog/2022/7/27/fewer-ransomware-victims-pay-as-medium-ransom-falls-in-q2-2022"
             },
             {
-              "text": "Splunk & Oxford Economics, \"The Hidden Costs of Downtime,\" June 2024. \"Each minute of downtime costs $9,000 or $540,000 per hour.\"",
+              "text": "Splunk & Oxford Economics, \"The Hidden Costs of Downtime,\" Haziran 2024. \"Kesintinin her dakikası 9.000 $ veya saatte 540.000 $ maliyete sebep oluyor.\"",
               "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
             },
             {
-              "text": "Cybereason, \"Ransomware Attacks and the True Cost to Business 2022,\" 2022. \"80% of organizations that paid were hit by ransomware a second time, with 68% saying the second attack came less than a month later and threat actors demanded a higher ransom amount.\"",
+              "text": "Cybereason, \"Ransomware Attacks and the True Cost to Business 2022,\" 2022. \"Fidye yazılımı saldırısında ödeme yapan kuruluşların %80'i tekrar hedef alındığını, %68'i ikinci saldırının bir aydan kısa bir süre sonra gerçekleştiğini ve tehditle aktörlerin daha yüksek fidye talep ettiğini bildirmiştir.\"",
               "url": "https://www.cybereason.com/blog/report-ransomware-attacks-and-the-true-cost-to-business-2022"
             },
             {
-              "text": "Zerto continuous replication with journal-based recovery delivers near-zero RPO and minutes-level RTO for instant recovery.",
+              "text": "Zerto'nun sürekli replikasyonu ve günlük tabanlı kurtarması, sıfıra yakın RPO ve dakika düzeyinde RTO ile anında kurtarma sağlar.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam Instant VM Recovery enables sub-5-minute RTO by booting VMs directly from backup files.",
+              "text": "Veeam Instant VM Recovery, VM'leri doğrudan yedek dosyalarından başlatarak 5 dakikanın altında RTO sağlar.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Instant Recovery enables sub-5-minute recovery by mounting VMs directly from immutable snapshots.",
+              "text": "Rubrik Instant Recovery, VM'leri doğrudan değiştirilemez anlık görüntülerden bağlayarak 5 dakikanın altında kurtarma sağlar.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery enables sub-5-minute RTO by mounting VMs from backup with background Storage vMotion.",
+              "text": "Commvault Live Recovery, VM'leri yedekten bağlayıp arka planda Storage vMotion çalıştırarak 5 dakikanın altında RTO sağlar.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore minimizes downtime with sub-5-minute VM recovery directly from backup cloud storage.",
+              "text": "Druva Instant Restore, VM'leri doğrudan yedek bulut depolamasından kurtararak 5 dakikanın altında kurtarmayla kesinti süresini en aza indirir.",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Zerto's always-on replication with sub-10-second RPOs and minute-level RTOs enables near-instant full-environment recovery.",
+              "text": "Zerto'nun sürekli aktif replikasyonu, 10 saniyenin altında RPO ve dakika düzeyinde RTO ile neredeyse anında tam ortam kurtarması sağlar.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam supports per-VM snapshot-based restore points with configurable backup schedules and continuous data protection.",
+              "text": "Veeam, VM başına anlık görüntü tabanlı geri yükleme noktalarını, yapılandırılabilir yedekleme zamanlamalarıyla ve sürekli veri korumasıyla destekler.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/cdp_replication.html"
             },
             {
-              "text": "Rubrik provides SLA-driven snapshot policies with configurable frequency for granular point-in-time recovery.",
+              "text": "Rubrik SLA tabanlı anlık görüntü politikaları ve yapılandırılabilir sıklık ile detaylı noktasal kurtarma sağlar.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault supports point-in-time recovery using snapshots for VMs, file servers, databases, and applications.",
+              "text": "Commvault VM'ler, dosya sunucuları, veritabanları ve uygulamalar için anlık görüntü kullanarak noktasal kurtarmayı destekler.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva maintains hot, warm, and cold recovery points enabling point-in-time restores of VMs, databases, and SaaS apps.",
+              "text": "Druva sıcak, ılık ve soğuk kurtarma noktaları tutarak VM'ler, veritabanları ve SaaS uygulamalarının noktasal geri yüklemesini sağlar.",
               "url": "https://help.druva.com/en/articles/8651296-recovery-points-that-you-can-restore"
             },
             {
-              "text": "Zerto journal stores every block-level write creating crash-consistent checkpoints every 5-10 seconds for granular recovery.",
+              "text": "Zerto günlüğü her blok düzeyindeki yazışı saklar ve her 5-10 saniyede kilitlenmeye karşı tutarlı kontrol noktaları oluşturarak detaylı kurtarma sağlar.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/journal-based-recovery/"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication, Windows Server üzerinde şirket içi konuşlandırılır ve altyapıda tam müşteri kontrolü sağlar.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik şirket içi cihazlar (r6000 serisi) olarak dağıtılır, entegre işlem, depolama ve yazılım ile birlikte.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault CommServe, MediaAgent ve Access Node bileşenleri ile tamamen kendi kendine barındırılan şirket içi dağıtımları destekler.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto, Zerto Virtual Manager ve konak başına Virtual Replication Appliances ile şirket içi konuşlandırılır.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -8066,10 +8066,10 @@
             },
             "improvement": "1.080 kat daha hızlı kurtarma"
           },
-          "quote": "3 günlük kurtarma planından 4 dakikanın altına indik. Sabah 2'de gerçek bir fidye yazılımı olayında nöbetçi mühendisimiz tek bir komut çalıştırdı ve saat 2:04'te tüm 8 üretim konteyneri tekrar çevrimiçiydi. Önceki sağlayıcımızın tahmini 72 saatti — biz 240 saniyede yaptık."
+          "quote": "3 günlük kurtarma planından 4 dakikanın altına indik. Saat 2'de gerçek bir fidye yazılımı saldırısında nöbetçi mühendisimiz tek komut çalıştırdı ve 2:04'te 8 üretim konteyneri yeniden online'daydı. Önceki sağlayıcımız 72 saati tahmin etmişti, biz 240 saniyede bitirdik."
         },
         "techDiff": {
-          "description": "Geleneksel kurtarma sıfırdan yeniden oluşturur — işletim sistemini yeniden kurun, dosyaları geri yükleyin, hizmetleri yeniden yapılandırın. Rediacc btrfs anlık görüntülerinden geri yükler: dosya sistemi basitçe kaydedilmiş duruma geçer. Yeniden kurulum yok, yeniden yapılandırma yok, veri transferi yok. Anlık görüntü zaten diskte — sadece aktif hale gelir.",
+          "description": "Geleneksel kurtarma sıfırdan başlar: sistemi yeniden kur, dosyaları geri yükle, servisleri yeniden ayarla. Rediacc farklı çalışır. Temiz bir kopya <span class=\"sp-emphasis\">zaten diskte var</span>. Biz sadece bunu aktif ediyoruz. Yeniden kurulum yok, ayarlama yok, yavaş veri transferi yok.",
           "traditionalLabel": "Geleneksel yeniden kurulum",
           "rediaccLabel": "Rediacc (anlık btrfs kopyaları)",
           "rows": [
@@ -8104,7 +8104,7 @@
         "calculator": {
           "annualLabel": "Yıllık uyumluluk maliyeti",
           "description": "Kaydırıcıları ortamınıza göre ayarlayın. Manuel saklama yönetiminin gerçek maliyetini görün.",
-          "footnote": "Hazırlık saatleri: denetimler x denetim başına saat. Açıklar: 5 TB elle yönetilen veri başına 1 açık (muhafazakâr tahmin). Ceza: açık başına $50K (KOBİ için medyan GDPR cezası). İşçilik: hazırlık saatleri x $200/saat (kıdemli mühendis). Ortalama veri ihlali maliyeti $4,88M'dir (IBM 2024). Rediacc anında denetim hazır raporlar oluşturur — denetim başına 2 saat, otomatik politika uygulaması.",
+          "footnote": "Hazırlık saatleri: denetimler × denetim başına saat. Açıklar: elle yönetilen her 5 TB veri için 1 açık (muhafazakâr tahmin). Ceza: her açık için 50.000 $ (KOBİ'ler için ortanca GDPR cezası). İşçilik: hazırlık saatleri × 200 $/saat (kıdemli mühendis). Ortalama veri ihlali maliyeti 4,88 milyon $ (IBM 2024). Rediacc denetim hazır raporları anında oluşturur: denetim başına 2 saat, otomatik politika uygulaması.",
           "headerTitle": "Uyumluluk maruziyetinizi hesaplayın",
           "results": {
             "gaps": "Uyumluluk açıkları (tahmini)",
@@ -8172,7 +8172,7 @@
         },
         "hero": {
           "ctaLabel": "Saklama Kurallarını Belirleyin",
-          "subtitle": "Uyumluluk gereksinimlerini karşılayan yapılandırılabilir saklama politikaları. HIPAA, SOC2, GDPR — varsayılan olarak kapsanır.",
+          "subtitle": "Yedeklemeleri ne kadar tutacağınızı belirleyin. Rediacc belirlediğiniz süreyi korur, sonra temizler. HIPAA, SOC2 ve GDPR kuralları <span class=\"sp-emphasis\">ilk günden itibaren</span> kapsamına alınır.",
           "title": "Verilerinizi yasanın gerektirdiği sürece saklayın"
         },
         "howItWorks": {
@@ -8188,19 +8188,19 @@
               "footerRight": "Denetim hazır",
               "items": [
                 {
-                  "detail": "2,555 backups",
+                  "detail": "2.555 yedek",
                   "name": "HIPAA"
                 },
                 {
-                  "detail": "1,825 backups",
+                  "detail": "1.825 yedek",
                   "name": "SOC2"
                 },
                 {
-                  "detail": "1,095 backups",
+                  "detail": "1.095 yedek",
                   "name": "GDPR"
                 },
                 {
-                  "detail": "365 backups",
+                  "detail": "365 yedek",
                   "name": "Internal"
                 }
               ],
@@ -8213,19 +8213,19 @@
               "footerRight": "Otomatik temizlik: AÇIK",
               "items": [
                 {
-                  "detail": "7 years",
+                  "detail": "7 yıl",
                   "name": "HIPAA"
                 },
                 {
-                  "detail": "5 years",
+                  "detail": "5 yıl",
                   "name": "SOC2"
                 },
                 {
-                  "detail": "3 years",
+                  "detail": "3 yıl",
                   "name": "GDPR"
                 },
                 {
-                  "detail": "1 year",
+                  "detail": "1 yıl",
                   "name": "Internal"
                 }
               ],
@@ -8254,7 +8254,7 @@
         },
         "label": "Saklama Uyumluluğu",
         "meta": {
-          "description": "Uyumluluk gereksinimlerini karşılayan yapılandırılabilir saklama politikaları. HIPAA, SOC2, GDPR — varsayılan olarak kapsanır.",
+          "description": "Uyumluluk gereksinimlerini karşılayan yapılandırılabilir saklama politikaları. HIPAA, SOC2, GDPR: varsayılan olarak kapsanır.",
           "keywords": "saklama uyumluluğu, veri saklama, HIPAA uyumluluğu, SOC2, GDPR, yedekleme saklama, denetim hazır, uyumluluk otomasyonu",
           "title": "Saklama Uyumluluğu - Yasal Veri Saklama | Rediacc"
         },
@@ -8285,91 +8285,91 @@
         "references": {
           "items": [
             {
-              "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024.”",
+              "text": "IBM Security, “Cost of a Data Breach Report 2024,” Temmuz 2024. “2024'te küresel ortalama veri ihlali maliyeti 4,88 milyon dolara ulaştı.”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "U.S. Department of Health & Human Services, “HIPAA Enforcement Rule,” 2024. “Civil money penalties up to $2,134,831 per violation category per calendar year.”",
+              "text": "U.S. Department of Health & Human Services, “HIPAA Enforcement Rule,” 2024. “İhlal kategorisi başına ve takvim yılı başına 2.134.831 dolara kadar medenî para cezası.”",
               "url": "https://www.hhs.gov/hipaa/for-professionals/compliance-enforcement/index.html"
             },
             {
-              "text": "CMS Law, “GDPR Enforcement Tracker Report 2024/2025,” 2025. “An aggregate total of EUR 1.2 billion in fines was issued across Europe in 2024.”",
+              "text": "CMS Law, “GDPR Enforcement Tracker Report 2024/2025,” 2025. “2024'te Avrupa genelinde toplam 1,2 milyar euro ceza kesildi.”",
               "url": "https://cms.law/en/int/publication/gdpr-enforcement-tracker-report/numbers-and-figures"
             },
             {
-              "text": "Veeam provides configurable GFS (Grandfather-Father-Son) retention policies for daily, weekly, monthly, and yearly backups.",
+              "text": "Veeam günlük, haftalık, aylık ve yıllık yedeklemeler için yapılandırılabilir GFS (Grandfather-Father-Son) saklama politikaları sunar.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/gfs_retention_policy.html"
             },
             {
-              "text": "Rubrik SLA Domains provide automated retention with configurable local and archive retention periods.",
+              "text": "Rubrik SLA Domains, yapılandırılabilir yerel ve arşiv saklama dönemleriyle otomatik saklama sağlar.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault provides configurable retention policies with basic, extended (GFS), and infinite retention options.",
+              "text": "Commvault temel, genişletilmiş (GFS) ve sonsuz saklama seçenekleriyle yapılandırılabilir saklama politikaları sunar.",
               "url": "https://documentation.commvault.com/v11/commcell-console/data_retention.html"
             },
             {
-              "text": "Druva supports GFS retention policies with daily/weekly/monthly/yearly schedules plus Long-Term Retention to cold storage.",
+              "text": "Druva, günlük/haftalık/aylık/yıllık planlamalarla GFS saklama politikalarını ve soğuk depolamaya Uzun Vadeli Saklama'yı destekler.",
               "url": "https://docs.druva.com/CloudRanger/013_Manage_Backup_Policies/About_Backup_Policies_and_Backup_Types/About_Retention_for_Backup_Policies"
             },
             {
-              "text": "Veeam Scale-out Backup Repository automates data lifecycle with performance, capacity, and archive tiers.",
+              "text": "Veeam Scale-out Backup Repository, performans, kapasite ve arşiv katmanlarıyla veri yaşam döngüsünü otomatikleştirir.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/backup_repository_sobr.html"
             },
             {
-              "text": "Rubrik SLA policies automate data lifecycle management with tiering from local to archive storage.",
+              "text": "Rubrik SLA politikaları, yerel depolamadan arşiv depolamasına katmanlama ile veri yaşam döngüsü yönetimini otomatikleştirir.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault Data Aging automates data lifecycle by pruning expired backup data based on retention settings.",
+              "text": "Commvault Data Aging, saklama ayarlarına göre süresi dolan yedek verilerini temizleyerek veri yaşam döngüsünü otomatikleştirir.",
               "url": "https://documentation.commvault.com/v11/commcell-console/media_management_configuration_data_aging.html"
             },
             {
-              "text": "Druva automatically tiers data between S3, Glacier, and Deep Archive using ML-driven storage tiering.",
+              "text": "Druva, makine öğrenmesi destekli depolama katmanlaması kullanarak verileri S3, Glacier ve Deep Archive arasında otomatik olarak katmanlandırır.",
               "url": "https://help.druva.com/en/articles/8651731-about-long-term-retention"
             },
             {
-              "text": "Veeam ONE provides built-in reporting and monitoring dashboards with compliance-ready audit reports.",
+              "text": "Veeam ONE, uyumluluğa hazır denetim raporlarıyla yerleşik raporlama ve izleme panoları sağlar.",
               "url": "https://helpcenter.veeam.com/docs/one/reporter/about_reporter.html"
             },
             {
-              "text": "Rubrik provides compliance and activity reports through its Envision reporting engine for governance needs.",
+              "text": "Rubrik yönetişim ihtiyaçları için Envision raporlama motoru aracılığıyla uyumluluk ve etkinlik raporları sağlar.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/envision_creating_reports.html"
             },
             {
-              "text": "Commvault Audit Trail Report displays all user operations across Critical, High, Medium, and Low severity levels.",
+              "text": "Commvault Audit Trail Report, Kritik, Yüksek, Orta ve Düşük önem seviyelerinde tüm kullanıcı işlemlerini gösterir.",
               "url": "https://documentation.commvault.com/saas/audit_trail_report_01.html"
             },
             {
-              "text": "Druva maintains a three-year audit trail of every admin and user activity with downloadable HTML/CSV reports.",
+              "text": "Druva, her yönetici ve kullanıcı etkinliğinin üç yıllık denetim izini, indirilebilir HTML/CSV raporlarıyla saklar.",
               "url": "https://docs.druva.com/Cyber_Resilience/Audit_Trails/About_Audit_Trails"
             },
             {
-              "text": "Veeam Compliance Analyzer validates backup infrastructure against security and compliance best practices.",
+              "text": "Veeam Compliance Analyzer, yedekleme altyapısını güvenlik ve uyumluluk en iyi uygulamalarına karşı doğrular.",
               "url": "https://helpcenter.veeam.com/docs/one/reporter/compliance_analyzer.html"
             },
             {
-              "text": "Rubrik Security Cloud enables compliance monitoring with SOC2, HIPAA, and PCI-DSS reporting templates.",
+              "text": "Rubrik Security Cloud, SOC2, HIPAA ve PCI-DSS raporlama şablonlarıyla uyumluluk izlemesini sağlar.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/envision_creating_reports.html"
             },
             {
-              "text": "Commvault holds ISO 27001, SOC 2 Type II, HIPAA, PCI DSS, FedRAMP High, and IRAP certifications.",
+              "text": "Commvault ISO 27001, SOC 2 Type II, HIPAA, PCI DSS, FedRAMP High ve IRAP sertifikasyonlarına sahiptir.",
               "url": "https://documentation.commvault.com/saas/security_and_compliance.html"
             },
             {
-              "text": "Druva holds SOC 2 Type II, HIPAA, FedRAMP ATO, and FIPS 140-2 certifications with GDPR/CCPA monitoring templates.",
+              "text": "Druva, SOC 2 Type II, HIPAA, FedRAMP ATO ve FIPS 140-2 sertifikasyonlarına ve GDPR/CCPA izleme şablonlarına sahiptir.",
               "url": "https://www.druva.com/use-cases/compliance"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication, Windows Server'da şirket içinde konuşlandırılır ve altyapı üzerinde tam müşteri kontrolüne sahiptir.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik, entegre işlem, depolama ve yazılımla şirket içi cihazlar (r6000 serisi) olarak dağıtılır.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault, CommServe, MediaAgent ve Access Node bileşenleriyle tamamen kendi kendine barındırılan şirket içi dağıtımları destekler.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
           ]
@@ -8391,16 +8391,16 @@
           "quote": "SOC2 denetçimiz 3 yıllık yedekleme saklama kanıtı istedi. Daha önce bu, 2 hafta boyunca günlükleri araştırmak ve elektronik tablolarla çapraz referans vermek anlamına geliyordu. Rediacc ile rdc retention report --framework soc2 çalıştırdım ve 4 dakikada eksiksiz bir rapor teslim ettim. Denetçi gördüğü en temiz kanıt olduğunu söyledi."
         },
         "techDiff": {
-          "description": "Geleneksel saklama yönetimi, yedekleme tarihlerini elektronik tablolarda takip etmek, manuel temizlik betikleri çalıştırmak ve denetçi gelmeden önce hiçbir şeyin atlanmadığını ummak anlamına gelir. Rediacc, otomatik politika uygulamasıyla btrfs anlık görüntü yaşam döngüsü yönetimi kullanır — yedeklemeler insan müdahalesi olmadan saklanır, doğrulanır ve temizlenir.",
+          "description": "Elektronik tablo uyumluluğu, yedekleme tarihlerini el ile takip etmek, temizlik betikleri çalıştırmak ve denetçi gelmeden hiçbir şeyin atlanmadığını ummak demektir. Rediacc bunları <span class=\"sp-emphasis\">otomatik olarak</span> yapıyor: yedeklemeleri saklar, doğrular ve temizler. İnsan müdahalesi sıfır.",
           "rediaccLabel": "Rediacc Saklama",
           "rows": [
             {
-              "rediacc": "Otomatik politika uygulaması — her zaman güncel",
-              "traditional": "Elektronik tablo takibi — kolayca güncelliğini yitirir"
+              "rediacc": "Otomatik kural uygulaması, her zaman güncel",
+              "traditional": "Elektronik tablo takibi, hızla güncelliğini yitirir"
             },
             {
-              "rediacc": "Otomatik yaşam döngüsü yönetimi — sıfır manuel adım",
-              "traditional": "Manuel temizlik betikleri — insan hatası riski"
+              "rediacc": "Otomatik temizlik, sıfır manuel adım",
+              "traditional": "Manuel temizlik betikleri, yanlışlık riski yüksek"
             },
             {
               "rediacc": "rdc retention report ile anında denetime hazır raporlar",
@@ -8583,7 +8583,7 @@
             {
               "description": "Yamalar, güncellemeler, çekirdek güncellemeleri uygulayın. Özgürce bozun. Üretim dokunulmaz kalır.",
               "icon": "flask",
-              "title": "Test"
+              "title": "Test et"
             },
             {
               "description": "Sağlık kontrolleri geçti mi? Güvenle üretime uygulayın. Başarısız mı? Klonu silin. Hiçbir şey olmadı.",
@@ -8623,7 +8623,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["Clone", "60s", "Yamala ve doğrula"],
+            "newSteps": ["Klonla", "60s", "Yamala ve doğrula"],
             "oldLabel": "Eski yöntem",
             "oldSteps": [
               {
@@ -8653,15 +8653,15 @@
         "references": {
           "items": [
             {
-              "text": "Verizon, “2024 Data Breach Investigations Report,” May 2024. “The exploitation of vulnerabilities as an initial point of entry almost tripled from the previous year, accounting for 14% of all breaches.”",
+              "text": "Verizon, “2024 Data Breach Investigations Report,” Mayıs 2024. “Güvenlik açıklarının ilk erişim noktası olarak istismarı bir önceki yıla kıyasla neredeyse üç katına çıkmış ve tüm ihlallerin %14'ünü oluşturmuştur.”",
               "url": "https://www.verizon.com/about/news/feed/2024-data-breach-investigations-report-vulnerability-exploitation-boom"
             },
             {
-              "text": "Uptime Institute, “Annual Outage Analysis 2023,” 2023. “The two most common causes of networking- and connectivity-related outages are configuration or change management failure (cited by 45% of respondents).”",
+              "text": "Uptime Institute, “Annual Outage Analysis 2023,” 2023. “Ağ ve bağlantı kaynaklı kesintilerin en yaygın iki nedeni yapılandırma veya değişiklik yönetimi hatasıdır (yanıtlayanların %45'i tarafından belirtilmiştir).”",
               "url": "https://uptimeinstitute.com/resources/research-and-reports/annual-outage-analysis-2023"
             },
             {
-              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” June 2024. “Each minute of downtime costs $9,000 or $540,000 per hour.”",
+              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” Haziran 2024. “Her bir dakikalık kesinti $9.000 veya saatte $540.000 maliyete neden olur.”",
               "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
             },
             {
@@ -8669,43 +8669,43 @@
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "Commvault Cleanroom Recovery creates Isolated Recovery Environments (IREs) with network isolation preventing outbound communication.",
+              "text": "Commvault Cleanroom Recovery, çıkış iletişimini engelleyen ağ izolasyonu ile İzole Kurtarma Ortamları (IRE'ler) oluşturur.",
               "url": "https://documentation.commvault.com/11.42/commvault-user-guide/cleanroom_recovery_isolated_recovery_environments_ires_for_cyber_resilience.html"
             },
             {
-              "text": "Zerto test failovers run in isolated bubble networks that prevent interaction with production systems during testing.",
+              "text": "Zerto test yük devretmeleri, test sırasında üretim sistemleriyle etkileşimi engelleyen izole ağlarda çalışır.",
               "url": "https://help.zerto.com/bundle/DR.Test.VC.HTML/page/The_Failover_Test_Operation.htm"
             },
             {
-              "text": "Veeam SureBackup with Virtual Lab enables automated testing of patches and updates in isolated sandbox environments.",
+              "text": "Virtual Lab ile Veeam SureBackup, yamaların ve güncellemelerin izole sandbox ortamlarında otomatik olarak test edilmesini sağlar.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Rubrik Live Mount enables safe testing of patches by mounting clean snapshots in isolated environments.",
+              "text": "Rubrik Live Mount, temiz anlık görüntüleri izole ortamlarda bağlayarak yamaların güvenli biçimde test edilmesini sağlar.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Cleanroom Recovery enables testing patches in isolated cleanroom environments before applying to production.",
+              "text": "Commvault Cleanroom Recovery, üretim sunucularına uygulamadan önce yamaların izole cleanroom ortamlarında test edilmesini sağlar.",
               "url": "https://documentation.commvault.com/2024e/software/cleanroom_recovery_use_cases.html"
             },
             {
-              "text": "Zerto Orchestrator automates periodic failover tests validating VPG checkpoint health and recovery VM boot correctness.",
+              "text": "Zerto Orchestrator, VPG checkpoint sağlığını ve kurtarma VM önyüklemesinin doğruluğunu doğrulayan periyodik yük devretme testlerini otomatikleştirir.",
               "url": "https://help.zerto.com/bundle/Orchestrator.HTML.95/page/Automated_Failover_Testing_with_the_Zerto_Orchestrator.htm"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication, Windows Server'da şirket içi olarak dağıtılır ve müşteriye altyapı üzerinde tam kontrol sağlar.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik şirket içi cihazlar (r6000 serisi) olarak dağıtılır ve entegre işlem, depolama ve yazılım ile gelir.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault CommServe, MediaAgent ve Access Node bileşenleriyle tam olarak kendi kendini yönetebilen şirket içi dağıtımları destekler.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto, Zerto Virtual Manager ve ana bilgisayar başına Virtual Replication Appliances ile şirket içi olarak dağıtılır.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -8724,10 +8724,10 @@
             },
             "improvement": "1.680 kat daha hızlı yama doğrulama"
           },
-          "quote": "Geçen çeyrekte kritik bir OpenSSL yamağı vardı. Normalde bir bakım penceresi planlayıp dua ederdik. Bunun yerine 22 üretim sunucusunun tamamını klonladık, yamayı uyguladık, tam test paketimizi çalıştırdık ve sıfır regresyon doğruladık — hepsi 18 dakikada. Aynı gün tam güvenle üretim ortamını yamaladık."
+          "quote": "Geçen çeyrekte kritik OpenSSL yamağı vardı. Normalde bakım penceresine girer, dua ederdik. Bunun yerine 22 üretim sunucusunu klonladık, yamayı yükledik, tam test paketini çalıştırdık ve sıfır regresyon doğruladık, hepsi 18 dakikada. Aynı gün tam güvenle üretim ortamını yamaladık."
         },
         "techDiff": {
-          "description": "Rediacc, tüm üretim ortamınızı — işletim sistemi, konteynerler, veritabanları, yapılandırma — saniyenin altında klonlamak için btrfs copy-on-write anlık görüntüleri kullanır. Klon, kendi Docker daemon'ıyla izole bir ağda çalışır. Klona uygulanan yamalar üretim ortamına asla dokunmaz. Klon bozulursa, silin. Çalışırsa, aynı yamayı üretim ortamına uygulayın.",
+          "description": "Rediacc tüm üretim ortamınızı, işletim sistemi, konteynerler, veritabanları, yapılandırma, <span class=\"sp-emphasis\">saniyeler içinde</span> klonlar. Klon, kendi Docker daemon'ıyla izole bir ağda çalışır. Klona uygulanan yamalar üretim ortamına asla dokunmaz. Klon bozulursa, silin. Çalışırsa, aynı yamayı üretim ortamına uygulayın.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -9094,7 +9094,7 @@
               "title": "Aynı gün giderme"
             },
             {
-              "description": "Her yama CVE yeniden tarama, hizmet sağlık kontrolleri, regresyon testleri ve TLS doğrulamasından geçer — hepsi gerçek üretim verilerinde.",
+              "description": "Her yama tam doğrulamadan geçer: CVE taraması, hizmet durumu, regresyon testleri ve TLS. Hepsi gerçek üretim verilerine karşı.",
               "icon": "check-circle",
               "title": "Tam doğrulama"
             }
@@ -9111,7 +9111,7 @@
         "calculator": {
           "annualLabel": "Yıllık iyileştirme maliyeti",
           "description": "Bir güvenlik açığının yamasız kaldığı her gün, maruz kaldığınız bir gündür. Her acele yama bir üretim olayı riski taşır.",
-          "footnote": "Model: Geleneksel iyileştirme işçiliği ort. $150/saat (güvenlik mühendisi süresi — etki değerlendirmesi, staging kurulumu, test, geri alma). Başarısız yamalar sektör deneyimine göre %25 olarak tahmin edilmiştir. Rediacc, klon tabanlı doğrulamayla düzeltme süresini <1 güne düşürür ve yama başarısızlıklarını ortadan kaldırır.",
+          "footnote": "Model: Geleneksel düzeltme maliyeti saatlik 150$ (güvenlik mühendisinin etki analizi, test ortamı kurulumu, test ve geri alma zamanı). Başarısız yamalar sektör deneyimlerine göre %25 olarak tahmin edilmiştir. Rediacc, klon tabanlı doğrulama sayesinde düzeltme süresini 1 günün altına indirir ve yama başarısızlıklarını tamamen ortadan kaldırır.",
           "headerTitle": "İyileştirme maliyet hesaplayıcı",
           "results": {
             "exposure": "Açık başına maruz kalma",
@@ -9138,7 +9138,7 @@
             "arrows": [
               {
                 "icon": "bolt",
-                "label": "47s + 2m"
+                "label": "47s + 2d"
               },
               {
                 "icon": "arrow-right-circle",
@@ -9147,34 +9147,34 @@
             ],
             "cards": [
               {
-                "footer": "CVSS 9.8 · 3 services affected",
+                "footer": "CVSS 9.8 · 3 hizmet etkilendi",
                 "items": [
-                  "OpenSSL 3.0.8 — VULN",
-                  "Keycloak :8443 — affected",
-                  "Nextcloud :443 — affected",
-                  "GitLab :443 — affected"
+                  "OpenSSL 3.0.8, ZAFIYET",
+                  "Keycloak :8443, etkilendi",
+                  "Nextcloud :443, etkilendi",
+                  "GitLab :443, etkilendi"
                 ],
                 "status": "Kritik",
                 "title": "CVE-2026-1234"
               },
               {
-                "footer": "2.1 GB CoW · disposable clone",
+                "footer": "2,1 GB CoW · tek kullanımlık klon",
                 "items": [
-                  "OpenSSL → 3.0.15 — APPLIED",
-                  "Keycloak restart — healthy",
-                  "Nextcloud restart — healthy",
-                  "247 assertions — 0 failures"
+                  "OpenSSL → 3.0.15, UYGULANDI",
+                  "Keycloak yeniden başlatıldı, sağlıklı",
+                  "Nextcloud yeniden başlatıldı, sağlıklı",
+                  "247 onay, 0 hata"
                 ],
                 "status": "Test ediliyor",
                 "title": "Klon: Yama Testi"
               },
               {
-                "footer": "Total time: 3m 41s · zero downtime",
+                "footer": "Toplam süre: 3d 41s · sıfır kesinti",
                 "items": [
-                  "OpenSSL 3.0.15 — FIXED",
-                  "CVE-2026-1234 — PATCHED",
-                  "3/3 services — healthy",
-                  "0 regressions — verified"
+                  "OpenSSL 3.0.15, DÜZELTİLDİ",
+                  "CVE-2026-1234, YAMALANDI",
+                  "3/3 hizmet, sağlıklı",
+                  "0 gerileme, kanıtlanmış"
                 ],
                 "status": "Yamalandı",
                 "title": "Üretim"
@@ -9183,7 +9183,7 @@
           },
           "steps": [
             {
-              "description": "Otomatik tarama bir güvenlik açığı tespit eder — CVE, yanlış yapılandırma veya açık hizmet. Önem derecesine göre önceliklendirilir.",
+              "description": "Tarama bir sorunu bulur: CVE, yanlış ayar ya da açık hizmet. En tehlikeli olanlar başa alınır.",
               "icon": "eye",
               "title": "Algıla"
             },
@@ -9207,7 +9207,7 @@
           "title": "Güvenlik Açığı Yönetimi - Proaktif Düzeltme | Rediacc"
         },
         "problem": {
-          "description": "Bir güvenlik açığı buldunuz. Şimdi yamanız gerekiyor. Ama yama bir şeyi bozacak mı? Üretimde test edemezsiniz. Ve staging ortamınız 3 hafta geride. Ya yamayı aceleyle yapıp umarsınız, ya da bekleyip maruz kalırsınız. İkisi de iyi bir seçenek değil — ve ikisi de para kaybettirir.",
+          "description": "Bir güvenlik açığı ortaya çıkıyor. Yamalanması gerekiyor. Ama yama bir şeyi bozacak mı? Üretim test edilecek bir yer değil, staging kopyası da 3 hafta geride. Yani düzeltme ya umuda güvenilerek aceleyle yapılıyor, ya da bekletiliyor ve açık sürüyor. İkisi de iyi değil. İkisi de paraya mal oluyor.",
           "statCallouts": [
             {
               "number": "30.6 days",
@@ -9260,15 +9260,15 @@
         "references": {
           "items": [
             {
-              "text": "Qualys, “TruRisk Research Report,” 2023. “On average, weaponized vulnerabilities are patched within 30.6 days yet only patched an average of 57.7% of the time.”",
+              "text": "Qualys, “TruRisk Research Report,” 2023. “Ortalama olarak, silahlandırılmış açıklar 30,6 gün içinde yamalanır ama sadece zamanın %57,7'sinde yamalanmaktadır.”",
               "url": "https://www.qualys.com/forms/tru-research-report"
             },
             {
-              "text": "Verizon, “2024 Data Breach Investigations Report,” May 2024. “The exploitation of vulnerabilities as an initial point of entry almost tripled from the previous year, accounting for 14% of all breaches.”",
+              "text": "Verizon, “2024 Data Breach Investigations Report,” Mayıs 2024. “Açıkların ilk saldırı vektörü olarak kullanılması geçen yıla göre neredeyse üç katına çıktı ve tüm ihlallerin %14'ünü oluşturdu.”",
               "url": "https://www.verizon.com/about/news/feed/2024-data-breach-investigations-report-vulnerability-exploitation-boom"
             },
             {
-              "text": "IBM Security, “Cost of a Data Breach Report,” July 2024. “The global average cost of a data breach reached USD 4.88 million in 2024.”",
+              "text": "IBM Security, “Cost of a Data Breach Report,” Temmuz 2024. “2024'te veri ihlalinin küresel ortalama maliyeti 4,88 milyon USD'ye ulaştı.”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             }
           ]
@@ -9290,7 +9290,7 @@
           "quote": "Bir Cuma öğleden sonra kritik bir CVE yayınlandı. Cumartesi sabahına kadar üretim ortamını klonladık, yamayı uyguladık, etkilenen 4 hizmetin tamamında doğruladık ve dağıttık — sıfır kesinti. Önceki sürecimiz 3 hafta ve bir değişiklik yönetimi toplantısı alırdı."
         },
         "techDiff": {
-          "description": "Geleneksel yamalama, üretim ortamıyla eşleşen bir staging ortamı gerektirir — ama staging günler içinde sapma gösterir. Rediacc, gerçek üretim altyapınızın btrfs copy-on-write anlık görüntüsünü saniyeler içinde oluşturur, yamayı gerçek veri ve gerçek yapılandırmalara karşı uygulamanıza ve doğrulamanıza izin verir, sonra doğrulanmış düzeltmeyi üretime dağıtır. Yama doğrulamayı geçemezse klonu silin. Üretim dokunulmaz kalır.",
+          "description": "Eski usul yamalama, üretimle eşleşen bir staging kopyası gerektirir. Ama staging günler içinde üretimden uzaklaşır. Rediacc, gerçek üretim ortamının anlık bir kopyasını <span class=\"sp-emphasis\">saniyeler içinde</span> oluşturur. Yamayı kopya üzerinde uygulayın. Gerçek veri ve gerçek ayarlarla test edin. İşe yararsa üretime dağıtın. Başarısız olursa kopyayı atın. Üretime hiç dokunulmaz.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -9302,7 +9302,7 @@
               "traditional": "Günlerden haftalara (hazırlık kurulumu + test)"
             },
             {
-              "rediacc": "%0 — başarısızlıklar klonda yakalanır, atılır",
+              "rediacc": "%0, başarısızlıklar klonda yakalanır, silinir",
               "traditional": "Test edilmemiş yamalar istenmeyen kesintilere neden olabilir"
             },
             {

@@ -266,7 +266,7 @@
       },
       "cloudOutageProtection": {
         "hero": {
-          "title": "Когда AWS падает, вы — нет"
+          "title": "Когда AWS падает, бизнес продолжает работать"
         }
       },
       "failoverTesting": {
