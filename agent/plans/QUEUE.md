@@ -52,13 +52,16 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Mode: stop_hook on; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; cadence on; agent_hint on; agent_pushback on; judge on.
 - Focus: off.
 - Branch: 1008-1, no PR yet.
-- Plans on the PR (1):
-  - agent/plans/PLAN-turbo-local-first.md -- 0 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-- Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 37 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 6 live of writer_cap 15 (session d778be9d): worker:ad1794ab802370456, worker:ad7e5cebebc5c0d55, worker:a4f044fb306aba3f4, worker:a09a4cd91b65a96ab, worker:adff4a88cfcc1b2b0, worker:a753297aaca3b46b2.
-- Leased items: 9: #0bd518e7 (worker:ad1794ab802370456, d778be9d), #1488cf3f (worker:ad154f530559a01d5, d778be9d), #16beb70b (worker:adff4a88cfcc1b2b0, d778be9d), #4864d43c (worker:abe63910ee7951b0d, d778be9d), #62c2389f (worker:a4f044fb306aba3f4, d778be9d), #7afa92f1 (worker:ad1794ab802370456, d778be9d), #a42c0ce2 (worker:a753297aaca3b46b2, d778be9d), #f302c712 (worker:ad7e5cebebc5c0d55, d778be9d), #fd730465 (worker:a09a4cd91b65a96ab, d778be9d).
-- Next plan: agent/plans/PLAN-gate-scheduling-learned.md, Promoted entry 2; starts after this branch's PR merges.
+- Plans on the PR (5):
+  - agent/plans/PLAN-ci-consolidation.md -- 22 of 22 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-gate-scheduling-learned.md -- 12 of 12 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-locale-techdiff-resync.md -- 0 of 5 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-cd-errors-in-ci.md -- 0 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-retire-bash-oracles.md -- 6 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+- Work outside the PR's plans: none.
+- Writers: 2 live of writer_cap 15 (session d778be9d): worker:aed783a521ac8db42, worker:a96aa6313380b1a1b.
+- Leased items: 4: #575d2992 (worker:a96aa6313380b1a1b, d778be9d), #9b4e7449 (worker:acb91b7c0d10abd91, d778be9d), #d6fbb434 (worker:aed783a521ac8db42, d778be9d), #dd4cb2e3 (worker:a82aa5d86793f5af1, d778be9d).
+- Next plan: agent/plans/PLAN-config-passkey-optional.md, Promoted entry 5; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
@@ -74,6 +77,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 9. agent/plans/PLAN-cd-errors-in-ci.md -- operator 2026-10-08: catch CD errors at CI level; W1 is the housekeeping root fix due before the 03:00Z run
 10. agent/plans/PLAN-scope-mirrors.md -- operator /ask 2026-10-04 (#e70faed1): queued after the Promoted entries; eight live drifts F1-F8 predicted
 11. agent/plans/PLAN-lessons-registry.md -- operator /ask 2026-10-04 (#077d85c1): extends TRAPS.md and check:ci-trap-registry with content-checked Documented-In anchors
+12. agent/plans/PLAN-inline-suppressions.md -- operator /ask 2026-10-08T10:48Z (#575d2992): ban inline lint/type suppressions; fix in code, deliberate patterns to linter config with BLOCKER reasons
 
 ## Generated
 
