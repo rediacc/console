@@ -1521,9 +1521,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 11,
+      "open_sigs": [],
+      "done_sigs": [
         "122d9351",
         "1a0d3473",
         "251bc0c0",
@@ -1535,8 +1536,7 @@
         "b33cfa20",
         "e786de74",
         "e95189bb"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-secret-namespace-migration.md": {
       "status": "executing",
