@@ -24,13 +24,6 @@
 import { mountPlayers, whenVideoAppears } from './tutorial-video-mount';
 import { openTheater } from './video-theater';
 
-/**
- * EVERY MOUNT IS CLICK-TO-LOAD. The Video.js skin plus the player is about 272 KB, and
- * it used to reach every visitor the moment the document parsed. A visibility observer
- * did not help: measured 2026-10-08, every solution, homepage and docs mount sits within
- * 600px of the fold, so the observer fired on load and deferred nothing. Both producers
- * now render a poster with `data-click-to-load`, and nothing builds before a press.
- */
 /** Build the player in place and start it. A blocked play() (the chunk fetch can outlast the gesture) leaves the built, paused player, which is the fallback worth having. */
 async function playInline(el: HTMLElement) {
   await mountPlayers([el]);
@@ -38,6 +31,24 @@ async function playInline(el: HTMLElement) {
   await video?.play().catch(() => {});
 }
 
+/** The press handler for a docs mount. A failed chunk fetch (offline, a blip) would otherwise leave a dead button, because the listener fires once: it is re-armed so the next press retries. */
+function armInline(el: HTMLElement) {
+  el.addEventListener(
+    'click',
+    () => {
+      playInline(el).catch(() => armInline(el));
+    },
+    { once: true }
+  );
+}
+
+/**
+ * EVERY MOUNT IS CLICK-TO-LOAD. The Video.js skin plus the player is about 272 KB, and
+ * it used to reach every visitor the moment the document parsed. A visibility observer
+ * did not help: measured 2026-10-08, every solution, homepage and docs mount sits within
+ * 600px of the fold, so the observer fired on load and deferred nothing. Both producers
+ * now render a poster with `data-click-to-load`, and nothing builds before a press.
+ */
 function scheduleHydration() {
   const containers = Array.from(
     document.querySelectorAll<HTMLElement>(
@@ -68,7 +79,7 @@ function scheduleHydration() {
 
   inline.forEach((el) => {
     el.dataset.observed = 'true';
-    el.addEventListener('click', () => void playInline(el), { once: true });
+    armInline(el);
   });
 }
 

@@ -1397,6 +1397,11 @@ for (const entry of toc as TocEntry[]) {
       cursor: pointer;
     }
 
+    /* The play control is absolutely positioned against the container, in every shell: the reservation rule above applies only inside the article shell and only before hydration. */
+    .article-content :global(.tutorial-video-container) {
+      position: relative;
+    }
+
     /* The server-rendered poster and play control from remark-tutorial-embed.ts. The player is
        built on the first press, so a visitor who only reads the page never downloads it. The
        classes are tutorial-video-* rather than the solution pages' video-poster-* because that
