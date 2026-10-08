@@ -124,7 +124,7 @@ def _writer_world(target):
 
 FIXTURES = {"live-writer-world": _writer_world}
 
-ENVS = [
+ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
     ("default", {}, {}),
     ("writers", {"CLAUDE_CONFIG_DIR": "{FIXTURE:live-writer-world}"}, {}),
 ]
