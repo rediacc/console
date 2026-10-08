@@ -704,3 +704,14 @@ def test_control_a_moved_plan_with_every_box_ticked_is_finished(tmp_path):
 def test_an_empty_plan_set_is_not_finished(tmp_path):
     """An empty set was vacuously finished, which would order a push for a batch of nothing."""
     assert wl_checks._set_finished(types.SimpleNamespace(plans=()), str(tmp_path)) is False
+
+
+def test_the_local_batch_advisory_names_the_plans_still_open(tmp_path):
+    """ "batch 3/3 finished" alone read as complete while two turbo-named plans were open; the advisory names them."""
+    state = _finished_world(tmp_path, open_box=True)
+    assert wl_checks._open_in_set(state, str(tmp_path)) == "PLAN-moved.md (1 open)"
+
+
+def test_control_a_ticked_batch_names_nothing_open(tmp_path):
+    state = _finished_world(tmp_path, open_box=False)
+    assert wl_checks._open_in_set(state, str(tmp_path)) == "none"
