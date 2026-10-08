@@ -2196,6 +2196,22 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // NO `paths:` DELIBERATELY: a deferral can land in any record-only push, so the entry is always selected. Lane quality-branch: PR head ref at fetch-depth 0 for the merge-base walk (rule iv); no `- id: setup`, so the step is hand-written (invariant 11). PLAN-deferred-findings-block-merge C4.
+    id: 'check:ci-review-resolutions',
+    env: {
+      GITHUB_BASE_REF: '${{ github.base_ref }}',
+    },
+    run: 'npm run check:ci-review-resolutions',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_review_resolutions.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-branch',
+      step: 'Review resolutions',
+    },
+  },
+  {
     // The five lint rules configured `off` everywhere are outside the liveness gate's universe BY CONSTRUCTION -- it can only observe a rule that fires -- so nothing in this repository ever executed them. A RuleTester harness is the only instrument that can, which is why this is a separate gate and not a wider net cast by the liveness one.
     id: 'check:ci-lint-rule-units',
     run: 'npm run check:ci-lint-rule-units',
