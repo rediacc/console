@@ -56,7 +56,7 @@
         "@opentelemetry/sdk-logs",
         "@opentelemetry/sdk-node"
       ],
-      "pinVersion": "^0.222.0"
+      "pinVersion": "^0.223.0"
     },
     {
       "label": "Pin the OpenTelemetry 2.x line in lockstep",
