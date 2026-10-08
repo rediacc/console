@@ -184,7 +184,6 @@
     "check:ci-domain-partition": "tsx scripts/gates/check-domain-partition.ts --selftest && tsx scripts/gates/check-domain-partition.ts",
     "check:ci-dead-python": ".ci/scripts/quality/check_dead_python.py",
     "check:ci-policy-inventory": ".ci/scripts/quality/check_policy_inventory.py",
-    "check:ci-w7p5a-real-run-blockers": ".ci/scripts/quality/check_w7p5a_real_run_blockers.py",
     "check:ci-bash-lib-ported": ".ci/scripts/quality/check_bash_lib_ported.py",
     "check:ci-container-build-context": ".ci/scripts/quality/check_container_build_context.py",
     "check:ci-proxy-image-smoke": ".ci/scripts/quality/check_proxy_image_smoke.py",

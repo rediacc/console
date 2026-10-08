@@ -5502,18 +5502,6 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    id: 'check:ci-w7p5a-real-run-blockers',
-    run: 'npm run check:ci-w7p5a-real-run-blockers',
-    gate: true,
-    leaves: ['.ci/scripts/quality/check_w7p5a_real_run_blockers.py'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
-      step: 'W7P5-a real-run blocklist',
-    },
-  },
-  {
     id: 'check:ci-bash-lib-ported',
     run: 'npm run check:ci-bash-lib-ported',
     gate: true,

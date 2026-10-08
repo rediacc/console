@@ -1,15 +1,12 @@
-"""The W7P5-a DRY-RUN ledgers, and the one thing they must never be read as saying.
+"""The W7P5-a DRY-RUN ledgers, and what keeps them evidence.
 
-W7P5-a's acceptance gives every deploy/release script two doors: a K=5 shadow-gate ledger, or a BLOCKER entry in `.ci/policy/.w7p5a-real-run-blocklist`. Thirty-two paths took the second door because their real-run leg needs Cloudflare, R2, GitHub or D1 credentials no session has.
+W7P5-a's acceptance gave every deploy/release script a K=5 shadow-gate ledger. The dry-run half -- bash twin against Python port, every external tool stubbed -- was reachable without touching production, and for the Cloudflare/R2 family it was driven and recorded under the `w7p5a-` pair namespace. The real-run BLOCKER register that once sat beside these ledgers is retired with the last bash twins.
 
-That blocker is about the REAL RUN and nothing else. The dry-run half -- bash twin against Python port, every external tool stubbed -- is reachable without touching production, and for the Cloudflare/R2 family it has been driven and recorded under the `w7p5a-` pair namespace.
-
-`.ci/shadow/w7p5a-status.json` carries that evidence as a `dry_run_ledger` field on a still-`blocked` row. This module is what stops the field decaying into a claim, in both directions:
+`.ci/shadow/w7p5a-status.json` carries that evidence as a `dry_run_ledger` field. This module is what stops the field decaying into a claim, in both directions:
 
   * THE EVIDENCE IS REAL. Each named ledger must hold at least five rows, every one EQUIVALENT, over at least five DISTINCT clean tree ids and at least five DISTINCT finding-set fingerprints -- `assertEquivalent`'s rule, restated where a pytest sweep runs it. Nothing in CI invokes `shadow-gate --assert` for these pairs, so without this the ledgers vouch for themselves.
   * THE EVIDENCE IS ABOUT THE RIGHT PAIR. Each row's `old.cmd` must name the bash path the row is filed under and its `new.cmd` the Python port. A ledger is a text file; a row copied from a neighbouring pair would otherwise satisfy every count above.
   * THE COMPARISON WAS WIDER THAN THE TWO STREAMS. Each row must agree on at least one `[call]` finding, which is the recording stub's log of the exact argv the run sent to `curl` or `aws`. Two implementations can print identical lines while issuing different requests, and a ledger that only compared stdout could not tell them apart.
-  * AND IT IS STILL ONLY A DRY RUN. A path carrying a `dry_run_ledger` must still be `status: "blocked"` and must still be listed in the blocklist. That is the assertion that matters most here: a future reader must not be able to promote stubbed evidence into "the real run happened" by deleting a line, and the blocklist's own liveness clause reads the same `status` field.
 
 THE PORTS ARE NOT RE-TESTED HERE. Every script named by a `dry_run_ledger` already has a permanent side-by-side differential of its own -- `test_deploy_cf_purge_urls.py` for the first of them, and one `test_<family>_<stem>.py` for each of the rest -- driving the twin and the port through recording fakes. Repeating them would buy nothing; what was missing is enforcement of the
 LEDGERS those runs produced.
@@ -28,13 +25,12 @@ from rediacc_ci import paths
 
 ROOT = paths.repo_root()
 STATUS = pathlib.Path(ROOT) / ".ci" / "shadow" / "w7p5a-status.json"
-BLOCKLIST = pathlib.Path(ROOT) / ".ci" / "policy" / ".w7p5a-real-run-blocklist"
 
 # The shadow-gate rule these ledgers were recorded to satisfy.
 K = 5
 
-# A path LEAVES this table in the same change that graduates its row to `status: "ledger"` (the real run happened, so the `dry_run_*` fields go with the BLOCKER); `verify-edge-endpoints`, `verify-stable-endpoints` and `assert-edge-tag-exists` graduated on 2026-09-23 without that edit and left this module red.
-# Every path whose dry-run half has been driven and recorded, and the external tool whose argv the row's `[call]` findings must therefore carry. The tool is the one named in that path's BLOCKER line, so this table is also the check that a ledger recorded the RIGHT script's traffic: `mark-production` agreeing only on `curl` lines would mean the fixture answered a neighbour's probes.
+# A path LEAVES this table in the same change that graduates its row to `status: "ledger"` (the real run happened, so the `dry_run_*` fields go with it); `verify-edge-endpoints`, `verify-stable-endpoints` and `assert-edge-tag-exists` graduated on 2026-09-23 without that edit and left this module red.
+# Every path whose dry-run half has been driven and recorded, and the external tool whose argv the row's `[call]` findings must therefore carry. The tool is the one the path's real-run branch reaches for, so this table is also the check that a ledger recorded the RIGHT script's traffic: `mark-production` agreeing only on `curl` lines would mean the fixture answered a neighbour's probes.
 #
 # Retired 2026-10-08: delete-r2-channel.sh (commit a9caf34b1) and assert-artifact-version.sh (commit 58aaa1604) were the last two rows, and both twins are deleted after their goldens froze. The ledgers stay under .ci/shadow as records; their status rows left w7p5a-status.json with the twins. A row recorded here again would restore the entries and the sweeps below.
 EXPECTED_DRY_RUN_PATHS: dict[str, tuple[str, ...]] = {}
@@ -162,39 +158,6 @@ def test_the_external_call_log_was_part_of_the_comparison(path: str) -> None:
         )
 
 
-@pytest.mark.parametrize("path", _ids())
-def test_a_dry_run_ledger_never_closes_the_real_run_leg(path: str) -> None:
-    """The load-bearing one. Stubbed evidence must not be readable as a real run: the row stays `blocked`, and the BLOCKER entry stays in the policy file that CI checks."""
-    row = _row_for(path)
-    assert row["status"] == "blocked", (
-        "%s carries a dry_run_ledger AND status %r. A stub run is a dry-run claim "
-        "only; flipping the status here would retire the real-run BLOCKER on evidence "
-        "that never touched Cloudflare, R2, GitHub or D1." % (path, row["status"])
-    )
-    assert row.get("blocker", "").startswith("BLOCKER:"), (
-        "%s is 'blocked' with no BLOCKER reason" % path
-    )
-    entries = [
-        line.strip()
-        for line in BLOCKLIST.read_text().splitlines()
-        if line.strip() and not line.lstrip().startswith("#")
-    ]
-    assert path in entries, (
-        "%s is 'blocked' in %s but carries no entry in %s. The blocklist gate reads "
-        "that file, not this one." % (path, STATUS.name, BLOCKLIST.name)
-    )
-
-
-@pytest.mark.parametrize("path", _ids())
-def test_the_note_does_not_claim_a_real_run(path: str) -> None:
-    """`check_w7p5a_real_run_blockers.py` treats the phrase "real run each done directly" in a `ledger`-status note as CONFIRMATION that the real leg ran. A dry-run note borrowing that wording would be a false confirmation waiting for the row's status to change."""
-    row = _row_for(path)
-    blob = " ".join(str(row.get(k, "")) for k in ("note", "dry_run_ledger_note"))
-    assert "real run each done directly" not in blob, (
-        "%s's dry-run note uses the phrase the blocklist gate reads as a confirmed real run" % path
-    )
-
-
 def test_no_ledgered_path_quietly_loses_its_field() -> None:
     """THE PARAMETERISATION CANNOT POLICE ITSELF. Dropping `dry_run_ledger` from a row removes that path from every `_ids()` sweep above, and the module stays green while one script's evidence is no longer checked at all. Recording a pair is an addition here, which is a one-line edit; losing one is a red."""
     missing = sorted(set(EXPECTED_DRY_RUN_PATHS) - set(_ids()))
@@ -208,7 +171,7 @@ def test_no_ledgered_path_quietly_loses_its_field() -> None:
 
 @pytest.mark.parametrize("path", sorted(EXPECTED_DRY_RUN_PATHS))
 def test_the_ledger_carries_the_tool_the_blocker_names(path: str) -> None:
-    """A ledger proves something about the RIGHT script only if the traffic it agreed on is that script's. Each path's BLOCKER names the external system its real-run leg reaches for, so the recorded call log must carry that tool's argv; a fixture wired to the wrong probes, or a row copied in from a neighbouring pair, agrees on somebody else's."""
+    """A ledger proves something about the RIGHT script only if the traffic it agreed on is that script's. Each path's real-run branch reaches an external system, so the recorded call log must carry that tool's argv; a fixture wired to the wrong probes, or a row copied in from a neighbouring pair, agrees on somebody else's."""
     rel = _row_for(path)["dry_run_ledger"]
     logged = {
         agreed.split("[call] ", 1)[1].split()[0]
@@ -218,7 +181,6 @@ def test_the_ledger_carries_the_tool_the_blocker_names(path: str) -> None:
     }
     for tool in EXPECTED_DRY_RUN_PATHS[path]:
         assert tool in logged, (
-            "%s agreed on no `[call] %s ...` line, yet %s's real-run branch is blocked "
-            "on exactly that tool. The recorded calls were %s."
-            % (rel, tool, path, sorted(logged) or "none")
+            "%s agreed on no `[call] %s ...` line, yet %s's real-run branch reaches "
+            "that tool. The recorded calls were %s." % (rel, tool, path, sorted(logged) or "none")
         )

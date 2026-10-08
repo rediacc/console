@@ -328,8 +328,6 @@ export const BLOCKER_FILES: readonly string[] = Object.freeze([
   '.profiler-coverage-allowlist',
   '.runner-advice-allowlist',
   '.unverified-download-allowlist',
-  '.w7p5a-real-run-blocklist',
-  '.w7p5a-real-run-leg-blocklist',
   '.ci/config/directive-quotes-allowlist.txt',
 ]);
 

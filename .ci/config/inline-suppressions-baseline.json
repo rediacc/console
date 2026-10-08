@@ -1083,9 +1083,6 @@
   ".ci/scripts/quality/check_vendored_blocker_derivation.py": {
    "noqa F401": 1
   },
-  ".ci/scripts/quality/check_w7p5a_real_run_blockers.py": {
-   "noqa F401": 1
-  },
   ".ci/scripts/quality/check_workflow_env_provision.py": {
    "noqa F401": 1
   },
