@@ -645,6 +645,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: npm run check:ci-agent-session-archival
 
+      # Hand-written for the same reason as its neighbours: quality-branch has no
+      # `- id: setup` (invariant 11). A deferred per-commit review finding, an open
+      # finding at block_at, or an unreadable resolution on the PR head's
+      # agent/reviews/<branch>/ fails here; waivers are listed in the step summary.
+      - name: Review resolutions
+        if: ${{ !cancelled() }}
+        run: npm run check:ci-review-resolutions
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+
       # HAND-WRITTEN, like its neighbours, and the reason is invariant 11:
       # quality-branch has no `- id: setup`, so `scripts/gate-bind.ts:289-300` refuses to
       # emit a region here. A generated step would carry a guard on a step that does not
