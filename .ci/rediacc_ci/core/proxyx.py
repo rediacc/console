@@ -34,6 +34,13 @@ YEL = "\033[1;33m"
 OFF = "\033[0m"
 
 
+def with_ci_pythonpath(root: pathlib.Path) -> dict[str, str]:
+    """This process's environment with the checkout's absolute `.ci` first on `PYTHONPATH`; a caller's own entries stay behind it rather than being discarded."""
+    inherited = os.environ.get("PYTHONPATH", "")
+    ci_dir = str(root / ".ci")
+    return {**os.environ, "PYTHONPATH": ci_dir + (os.pathsep + inherited if inherited else "")}
+
+
 @dataclass
 class Proxy:
     name: str

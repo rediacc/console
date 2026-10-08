@@ -671,6 +671,7 @@ def backfill(
                 continue
             written += append_rows(d, rs)
             mark_seen(d, [k])
+            folded.update(str(r["id"]) for r in rs if r.get("t") == "run")
             runs += 1
     dropped = rotate(d)
     out(
@@ -1026,7 +1027,8 @@ def fold_ci(
                 return None, "deadline", 0.0
             try:
                 return fetch_jobs(repo, int(run["id"])), "", clock() - t
-            except Exception as exc:  # noqa: BLE001
+            except (Exception, SystemExit) as exc:  # noqa: BLE001
+                # SystemExit too: left to the future it would re-raise in the reader and exit the folding process.
                 return None, str(exc)[:160], clock() - t
 
         pool = _DaemonPool(workers)

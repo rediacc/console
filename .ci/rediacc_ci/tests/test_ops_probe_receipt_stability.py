@@ -95,6 +95,18 @@ def test_delta_the_plant_is_removed_when_the_probe_dies_midway(tmp_path, monkeyp
     assert _leftovers(root) == []
 
 
+def test_delta_an_unwritable_plant_is_a_reported_failure_not_a_traceback(tmp_path, monkeypatch):
+    """Review 09ee66c6.2: when the plant cannot be written the run is killed and the probe says so, rather than raising OSError out of `run_probe`."""
+    root = _repo(tmp_path)
+    monkeypatch.setattr(probe, "plant_name", lambda _pid: "no-such-dir/STABILITY-PROBE-x")
+    out = io.StringIO()
+    command = (sys.executable, "-c", STAND_IN, "1", "1", "false")
+    rc = probe.run_probe(root, command=command, settle=0.2, out=out)
+    assert rc == 1
+    assert "FAIL: the probe could not run" in out.getvalue()
+    assert _leftovers(root) == []
+
+
 def test_delta_the_capture_file_is_removed(tmp_path, monkeypatch):
     seen = []
     real = probe.tempfile.mkstemp

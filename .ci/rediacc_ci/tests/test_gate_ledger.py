@@ -353,6 +353,24 @@ def test_backfill_after_a_crash_between_append_and_seen_adds_no_duplicates(
     assert batches[0][0] in L.read_seen(led)
 
 
+def test_backfill_does_not_append_a_run_id_twice_within_one_call(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 599bfb94.3: two batches carrying the same run id, in ONE backfill, append the run once."""
+    main = tmp_path / "main"
+    docs = [_receipt("t1", "2026-10-08T00:10:00.000Z", {"x:a": _entry("ok")}, root=str(main))]
+    _plant_root(main, docs)
+    rows = L.backfill_rows(docs, main)[0][0][1]
+    two = ([("k1", rows), ("k2", rows)], {"carried": 0, "no_diff": 0})
+    monkeypatch.setattr(L, "backfill_rows", lambda *_a, **_k: two)
+    led = tmp_path / "ledger"
+    out: list[str] = []
+    assert L.backfill(led, main, [], out=out.append) == 0
+    written = L.read_rows(led)[0]
+    assert sum(1 for r in written if r.get("t") == "run") == 1, "the second batch is the same run"
+    assert "1 new run(s)" in out[-1]
+
+
 def test_backfill_rows_drop_a_base_tree_git_cannot_diff(tmp_path: pathlib.Path) -> None:
     """A base_tree whose diff is unknown (`changed` None: an object this clone lacks) must not be recorded as if `changed` were relative to it. `tmp_path` is not a git repository, so no diff can be answered; the second receipt's base is dropped, the first never had one."""
     docs = [
@@ -744,6 +762,30 @@ def test_fold_ci_deadline_hits_the_futures_timeout_branch(tmp_path: pathlib.Path
     assert rc == 1, out
     assert "UNCHECKED" in out[-1], out[-1]
     assert any("UNCHECKED (deadline)" in m for m in prog), prog
+
+
+def test_fold_ci_reports_a_system_exit_from_a_job_read_as_unchecked(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review 1bd8b58d.1: a `sys.exit` inside a gh-calling worker is an UNCHECKED run, not an exit of the folding process."""
+
+    def fetch(*_a: Any) -> list[dict[str, Any]]:
+        raise SystemExit(3)
+
+    out: list[str] = []
+    rc = L.fold_ci(
+        tmp_path,
+        paths.repo_root(),
+        repo="o/r",
+        logs=False,
+        fetch_runs=lambda *_a, **_k: _fold_runs(1),
+        fetch_jobs=fetch,
+        out=out.append,
+        workers=1,
+        progress=lambda _m: None,
+    )
+    assert rc == 1, out
+    assert "UNCHECKED" in out[-1], out[-1]
 
 
 def test_fold_ci_leaves_no_joinable_worker_behind_a_deadline(tmp_path: pathlib.Path) -> None:

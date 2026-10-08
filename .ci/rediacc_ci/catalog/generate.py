@@ -55,7 +55,7 @@ FILE_TYPES = {
     "dockerfile": "dockerfile",
     "Dockerfile": "dockerfile",
 }
-H1 = re.compile(r"#[^#]")
+H1 = re.compile(r"#[ \t]")
 MARKER_FILES = ("README.md", "docker-compose.yaml", "Rediaccfile")
 
 
@@ -122,7 +122,7 @@ def load_skip_list(package_dir: pathlib.Path) -> list[str]:
     if not skiplist.is_file():
         return skips
     log_info("Loading skip list from .templates-skiplist")
-    for raw in skiplist.read_text(encoding="utf-8").split("\n"):
+    for raw in read_text(skiplist).split("\n"):
         line = raw.strip()
         if not line or line.startswith("#"):
             continue

@@ -153,6 +153,7 @@ class Battery:
         self.work = ""
         self.preexisted = False
         self.chain_backup = ""
+        self.chain_unbacked = False
         self.errexit = True
         self.label = ""
         self.failed: list[str] = []
@@ -174,6 +175,20 @@ class Battery:
         status = _exec([*self.sudo, *args]).returncode
         self._fatal(status)
         return status
+
+    def _back_up_chain_state(self) -> None:
+        """Copy the operator's chain state aside. `chain_backup` is set only once the copy exists, and `chain_unbacked` stays set until then, so a failed copy leaves the real file alone at cleanup instead of deleting it (review 797d99c0.1)."""
+        if not (self.preexisted and os.path.isfile(self.chain_state)):
+            return
+        self.chain_unbacked = True
+        backup = self.work + "/chain-state.backup.json"
+        # cp -p, not a copy through Python: renet writes this file 0600 root-owned, and the restore has to put back the same mode.
+        if self._sudo("cp", "-p", self.chain_state, backup) != 0:
+            log.warn("could not back up %s; it will be left in place on exit" % self.chain_state)
+            return
+        self.chain_backup = backup
+        self.chain_unbacked = False
+        log.info("Backed up the existing chain state; it is restored on exit")
 
     # ------------------------------------------------------------------ cleanup
 
@@ -213,6 +228,8 @@ class Battery:
                         "could not restore %s from %s (exit %d)"
                         % (self.chain_state, self.chain_backup, restored)
                     )
+            elif self.chain_unbacked:
+                log.warn("no backup of %s was made, so it is left as it is" % self.chain_state)
             else:
                 _exec([*self.sudo, "rm", "-f", self.chain_state])
         if self.work:
@@ -701,11 +718,7 @@ class Battery:
         os.makedirs("%s/ds-parent/repositories/%s" % (work, FORK_GUID), exist_ok=True)
         os.makedirs("%s/ds-fork/repositories/%s" % (work, FORK_GUID), exist_ok=True)
 
-        if self.preexisted and os.path.isfile(self.chain_state):
-            self.chain_backup = work + "/chain-state.backup.json"
-            # cp -p, not a copy through Python: renet writes this file 0600 root-owned, and the restore has to put back the same mode.
-            self._sudo("cp", "-p", self.chain_state, self.chain_backup)
-            log.info("Backed up the existing chain state; it is restored on exit")
+        self._back_up_chain_state()
 
         log.step("Building license-mint...")
         self.mint_bin = work + "/license-mint"

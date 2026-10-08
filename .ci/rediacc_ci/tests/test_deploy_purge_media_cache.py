@@ -306,6 +306,9 @@ def test_defect_a_transport_failure_is_a_silent_non_zero(tmp_path: pathlib.Path)
     assert new_calls == old_calls, "the request is unchanged"
     assert new.stderr.startswith(old.stderr)
     assert "Purge failed: curl exited 6" in new.stderr[len(old.stderr) :]
+    assert "no response from" not in new.stderr, (
+        "curl codes 18 and 56 follow a started response, so the line claims no cause"
+    )
 
 
 def test_extra_arguments_are_ignored_by_both(tmp_path: pathlib.Path) -> None:

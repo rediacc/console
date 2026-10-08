@@ -239,6 +239,32 @@ def test_build_runs_with_no_jq_on_the_path(tmp_path: pathlib.Path) -> None:
     assert proc.returncode == 0, proc.stdout + proc.stderr
 
 
+def test_a_hash_tag_line_is_not_the_title(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Review d1e160c5.2: `#tag` has no space, so it is not a `# heading`; the real heading below it is."""
+    files = {"README.md": "#tag\n\n# Real Title\n\nbody line\n", "Rediaccfile": ":\n"}
+    pkg = _package(tmp_path, {"a/one": files})
+    rc, _ = _build(pkg, capsys)
+    assert rc == 0
+    template = _read(pkg, "templates/a_one.json")
+    assert template["name"] == "Real Title"
+    assert template["description"] == "body line"
+
+
+def test_a_non_utf8_skiplist_is_a_reported_error_not_a_traceback(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Review d1e160c5.3: the bytes are rejected as a BuildError, so main prints `[ERROR]` and returns 1."""
+    files = {"README.md": "# T\n\nbody\n", "Rediaccfile": ":\n"}
+    pkg = _package(tmp_path, {"a/one": files})
+    (pkg / ".templates-skiplist").write_bytes(b"a/\xff\xfe\n")
+    rc, out = _build(pkg, capsys)
+    assert rc == 1
+    assert "[ERROR]" in out
+    assert ".templates-skiplist" in out
+
+
 def test_minify_matches_jq_for_the_cases_that_matter() -> None:
     assert generate.minify_text('{"a": 1,\n "b": [1.5, "x"]}\n') == '{"a":1,"b":[1.5,"x"]}\n'
     assert generate.minify_text('{"k": "\x7f é"}') == '{"k":"\\u007f é"}\n'

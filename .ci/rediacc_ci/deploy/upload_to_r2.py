@@ -34,7 +34,7 @@ THREE PROGRAMS ARE SPAWNED, EACH FOR A MEASURED REASON
 `basename` IS THE ONE EXTERNAL THE PORT DOES NOT SPAWN. `os.path.basename` differs from the binary only for a path with a trailing slash or an empty argument, and every argument here is a glob expansion of `<dir>/rdc-*`, which can be neither.
 
 --------------------------------------------------------------------------
-FOUR DEFECTS IN THE TWIN, ALL REPRODUCED RATHER THAN REPAIRED
+FOUR DEFECTS IN THE TWIN, ALL REPRODUCED RATHER THAN REPAIRED (the one behaviour NOT reproduced is the non-string tracker entry, named below)
 --------------------------------------------------------------------------
 This wave's acceptance rule is agreement with the LIVE twin, so each is carried, named as a constant so a test can pin it, and reported to the driver.
 

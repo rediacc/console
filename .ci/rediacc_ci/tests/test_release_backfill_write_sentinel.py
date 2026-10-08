@@ -138,3 +138,34 @@ def test_the_in_process_writer_leaves_the_working_directory_as_it_found_it(
     with pytest.raises(RuntimeError):
         subject.main([])
     assert os.getcwd() == str(tmp_path)
+
+
+def test_a_deleted_caller_directory_neither_blocks_the_writer_nor_masks_its_result(
+    tmp_path, monkeypatch
+) -> None:
+    """Review 74389ce3.1: `os.getcwd()` raises when the caller's directory is gone, and `os.chdir` back would raise over the writer's return value."""
+    for name, value in {
+        "VERSION": "v1.2.3",
+        "CHANNEL": "edge",
+        "COMMIT_SHA": "a" * 40,
+        "DRY_RUN": "false",
+    }.items():
+        monkeypatch.setenv(name, value)
+    gone = tmp_path / "gone"
+    gone.mkdir()
+    monkeypatch.chdir(gone)
+    gone.rmdir()
+    monkeypatch.setattr(write_release_sentinel, "main", lambda _args: 7)
+    assert subject.main([]) == 7
+
+    # The directory vanishes DURING the writer: the restore chdir fails and must not replace the result.
+    back = tmp_path / "back"
+    back.mkdir()
+    monkeypatch.chdir(back)
+
+    def vanish(_args):
+        back.rmdir()
+        return 9
+
+    monkeypatch.setattr(write_release_sentinel, "main", vanish)
+    assert subject.main([]) == 9
