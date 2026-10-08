@@ -171,17 +171,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 0,
+      "open": 2,
+      "done": 4,
       "open_sigs": [
+        "6de8b60b",
+        "de6e3d14"
+      ],
+      "done_sigs": [
         "0d548135",
         "13e24899",
         "2db56250",
-        "6de8b60b",
-        "c465bb53",
-        "de6e3d14"
-      ],
-      "done_sigs": []
+        "c465bb53"
+      ]
     },
     "agent/plans/PLAN-chunk-store-browse-DECISION.md": {
       "status": "compacted",
