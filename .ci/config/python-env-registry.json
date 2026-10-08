@@ -1041,6 +1041,11 @@
     ".ci/rediacc_ci/release/backfill_write_sentinel.py": [
       "*name"
     ],
+    ".ci/rediacc_ci/release/cd_preflight.py": [
+      "CLOUDFLARE_R2_ACCESS_KEY_ID",
+      "CLOUDFLARE_R2_ENDPOINT",
+      "CLOUDFLARE_R2_SECRET_ACCESS_KEY"
+    ],
     ".ci/rediacc_ci/release/check_edge_manifest.py": [
       "*name"
     ],
