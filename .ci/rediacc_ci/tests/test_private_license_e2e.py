@@ -762,3 +762,18 @@ def test_cleanup_is_not_registered_before_the_store_is_probed(tmp_path, monkeypa
     )
     assert battery.run() == 1
     assert not [c for c in called if "rm" in c], called
+
+
+def test_a_failed_chain_state_backup_inside_the_battery_records_no_backup(tmp_path):
+    """Inside the battery `_sudo` returns the failing status instead of raising, so the backup must not be recorded as taken."""
+    battery = _battery(tmp_path, preexisted=True, chain_backup=False)
+    (tmp_path / "lic" / "chain-state.json").write_text("operator")
+    battery.chain_state = str(tmp_path / "lic" / "chain-state.json")
+    battery.sudo = ["false"]
+    battery.errexit = False
+    battery._back_up_chain_state()
+    assert battery.chain_backup == "" or not battery.chain_backup
+    assert battery.chain_unbacked is True
+    battery.sudo = []
+    battery.cleanup()
+    assert (tmp_path / "lic" / "chain-state.json").read_text() == "operator"

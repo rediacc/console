@@ -57,12 +57,23 @@ def parse(gate, list_path) -> tuple[dict[str, str], dict[str, str]]:
     return allowed, blocker
 
 
+def verdict(gate, result: harness.RunResult) -> int:
+    if result.rc not in (0, 1) or "Traceback (most recent call last)" in result.err:
+        gate.log_fail("the validator crashed instead of giving a verdict", result)
+    return result.rc
+
+
 def validate(gate, ident: str, reason: str, source: str = "testfile") -> int:
-    return run_module(gate, "rediacc_ci.core.blocker_validator", "reason", ident, reason, source).rc
+    """The port's verdict: 0 accepted, 1 rejected. A crash (a traceback also exits 1) or a usage error is neither, so it fails the case instead of passing as a rejection."""
+    return verdict(
+        gate, run_module(gate, "rediacc_ci.core.blocker_validator", "reason", ident, reason, source)
+    )
 
 
 def verify(gate, list_path) -> int:
-    return run_module(gate, "rediacc_ci.core.blocker_validator", "verify", os.fspath(list_path)).rc
+    return verdict(
+        gate, run_module(gate, "rediacc_ci.core.blocker_validator", "verify", os.fspath(list_path))
+    )
 
 
 def low_effort_patterns(gate) -> list[str]:

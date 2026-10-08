@@ -342,3 +342,31 @@ def test_the_real_guard_stems_are_seen() -> None:
     assert "block_unverified_push" in stems
     assert real.guard_liveness("block_unverified_push") == ""
     assert real.anchor_root == paths.repo_root()
+
+
+def test_an_anchor_on_the_registry_file_cannot_match_its_own_documented_in_line(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review e2405948.1: `text:<corpus> <phrase>` must find the phrase in an entry's body, not in the `Documented-In:` line that carries it."""
+    phrase = "a lesson sentence that lives nowhere else"
+    entry = mod.anchored("self-anchor", "guard:block_ctl_tested", "text:corpus.md %s" % phrase)
+    reg = _anchor_registry(tmp_path, entry)
+    reg.anchor_root = reg.corpus.parent
+    # The corpus file must be reachable under the name the anchor gives.
+    named = reg.corpus.parent / "corpus.md"
+    named.write_text(reg.corpus.read_text(encoding="utf-8"), encoding="utf-8")
+    reg.corpus = named
+    assert "phrase not found" in reg.text_problem("corpus.md %s" % phrase)
+    named.write_text(
+        named.read_text(encoding="utf-8") + "\n%s, written in a body.\n" % phrase, encoding="utf-8"
+    )
+    assert reg.text_problem("corpus.md %s" % phrase) == ""
+
+
+def test_an_empty_sibling_suite_does_not_make_a_guard_live(tmp_path: pathlib.Path) -> None:
+    """Review e2405948.2: the sibling `test-<stem>.py` has to name the guard, so an empty file is not a suite."""
+    reg = _anchor_registry(tmp_path, mod.anchored("t", "guard:block_ctl_tested"))
+    sibling = reg.file_root / mod.GUARDS_PACKAGE_REL / "test-block_ctl_tested.py"
+    assert reg.guard_liveness("block_ctl_tested") == ""
+    sibling.write_text("", encoding="utf-8")
+    assert reg.guard_liveness("block_ctl_tested") != ""

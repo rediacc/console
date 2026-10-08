@@ -10,7 +10,7 @@ WHAT IS LIVE, AND WHERE EACH PIECE COMES FROM. A PreToolUse event carries no bac
   * its paths are `wl_roster.edit_paths` over its own transcript and every descendant's
     (`children_map` + `descendants`), since a writer's own sub-writers are part of its unfinished work.
 
-A FINISHED writer is never refused. Its files are exactly what the lead commits once the output is spot-checked, which is the normal flow (CLAUDE.md rule 1).
+A FINISHED writer's own files are never refused. They are exactly what the lead commits once the output is spot-checked, which is the normal flow (CLAUDE.md rule 1). The one exception is a finished sub-writer whose live ancestor is still running: its edits count as part of the ancestor's unfinished work, so they are refused until the ancestor ends.
 
 WHAT THE COMMIT TAKES. `commit_policy.judged_paths`, the parser `block_no_review_ineligible` and `block_commit_on_main` already share: the pathspecs expanded to the files git knows under them, else the index (and the modified tracked files under `-a`). Each named pathspec also counts as a prefix in its own right, so a directory pathspec covers a writer's file under it even where `git ls-files` would not list it. The reverse is deliberately NOT a match: `edit_paths` reads a `cp x .ci/` as a write to `.ci`, and letting a directory a writer once wrote INTO cover every file below it would refuse unrelated commits across a whole tree.
 
@@ -39,7 +39,7 @@ DEFECT = (
     "if False:",
 )
 
-# What a roster read can raise. Each one fails open with a stderr note; anything else is a bug in this guard, and the dispatcher reports a crash loudly rather than letting it pass as a clean answer.
+# What a roster read can raise, including TypeError and AttributeError for a transcript or meta file of an unexpected shape. Each one fails open, and the stderr note carries the exception text, so a bug in this guard's own code inside the same read is visible there rather than silent; any other exception type is reported as a crash by the dispatcher.
 ROSTER_ERRORS = (
     OSError,
     ValueError,
@@ -162,7 +162,8 @@ REFUSED = (
     "  - or drop these paths from this commit's pathspec and commit the rest now.\n"
     "\n"
     "Live means the writer's transcript exists, it edited these paths, and its last record has\n"
-    "not ended its turn (wl_roster.proven_finished). A finished writer's files are never refused.\n"
+    "not ended its turn (wl_roster.proven_finished). A finished writer's files are never refused,\n"
+    "unless its live parent writer is still running.\n"
 )
 
 UNREADABLE = (

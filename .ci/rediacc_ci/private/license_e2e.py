@@ -183,8 +183,10 @@ class Battery:
         self.chain_unbacked = True
         backup = self.work + "/chain-state.backup.json"
         # cp -p, not a copy through Python: renet writes this file 0600 root-owned, and the restore has to put back the same mode.
-        # Outside the battery a failed copy aborts the run (as the bash `set -e` did); `chain_unbacked` is what then keeps cleanup from touching the real file. No warn-and-continue branch exists because `_sudo` never returns non-zero here (review finding de62cb71.1).
-        self._sudo("cp", "-p", self.chain_state, backup)
+        # Outside the battery a failed copy aborts the run (as the bash `set -e` did). Inside it `_sudo` returns the status instead, so the status is checked here: `chain_unbacked` stays set after a failed copy, which keeps cleanup from touching the real file.
+        if self._sudo("cp", "-p", self.chain_state, backup) != 0:
+            log.warn("Could not back up the existing chain state; it is left untouched at exit")
+            return
         self.chain_backup = backup
         self.chain_unbacked = False
         log.info("Backed up the existing chain state; it is restored on exit")

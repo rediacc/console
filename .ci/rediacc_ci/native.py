@@ -133,7 +133,10 @@ def _stream(
 
 
 def _ci_env(root: pathlib.Path) -> dict[str, str]:
-    """This process's environment with `<root>/.ci` first on PYTHONPATH."""
+    """This process's environment with `<root>/.ci` first on PYTHONPATH.
+
+    A child that imports `rediacc_ci` by module path must find the checkout's copy, not whichever copy this process happened to be started from; the caller's own entries stay behind `.ci` (review finding 4a6641bf.4).
+    """
     inherited = os.environ.get("PYTHONPATH", "")
     return {
         **os.environ,
@@ -178,7 +181,7 @@ def build_and_install(root: pathlib.Path, built_plan: Plan) -> None:
             built_plan.sea_arch,
         ],
         cwd=root,
-        # The child imports rediacc_ci by module path: .ci leads PYTHONPATH (4a6641bf.4).
+        # The child imports rediacc_ci by module path: .ci leads PYTHONPATH (see _ci_env).
         env=_ci_env(root),
     )
     if not pathlib.Path(built_plan.built).is_file():

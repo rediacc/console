@@ -70,7 +70,7 @@ ROOT_DIR="$(cd "$MEDIA_DIR/../.." && pwd)"
 # named. Unset in every normal run.
 SUBJECT_DIR="${MEDIA_COVERAGE_MODULE_DIR:-$MEDIA_DIR}"
 # ONE CORPUS ROOT, the pytest ports. Until 2026-10-08 there were two: the bash gate tests
-# under .ci/scripts/test/gates and their Python ports here. W7 P5 census batch A4 retired
+# under the bash gate-test folder (since deleted) and their Python ports here. W7 P5 census batch A4 retired
 # ten of the eleven bash media tests, and PLAN-retire-bash-oracles section 12 (unit U2)
 # retired the last one, test-media-r2.sh, once its golden was frozen. A bash root kept
 # after that would be a glob that matches nothing, which is the shape that hides a
@@ -142,7 +142,8 @@ done
 # than fussy. Every one of these gate tests opens with a long header, and those headers
 # name sibling modules while arguing about scope -- test_gate_media_docs.py mentions pool.sh in
 # prose and drives none of it. Only `#` comment lines are excluded; a module named inside a
-# Python docstring still counts, which errs towards calling a module tested. Counting prose would let a module be "covered" by somebody
+# Python docstring still counts, which errs towards calling a module tested and is a known
+# leniency. Counting the `#` header lines as well would let a module be "covered" by somebody
 # writing its name in a paragraph, which is the cheapest possible way to satisfy a check
 # and the least useful. Code that names a module is code that reaches for it.
 #
@@ -252,6 +253,12 @@ for t in "$PORTS"/test_gate_media_$ONLY.py; do
         "$PYTEST_PY" -m pytest -q -p no:randomly "$t" >"$TRACE_DIR/$name.log" 2>&1) || rc=$?
     if [ "$rc" -eq 5 ]; then
         echo "coverage: pytest collected no test from $t, so its trace would measure nothing" >&2
+        exit 1
+    fi
+    # Exit 1 is a gate test that FAILED after running, which leaves a partial trace (a floor, reported below). Anything else (2 a collection or import error, 3 internal, 4 usage, or a signal) ran nothing of the port, so its zero row would be a measurement of nothing.
+    if [ "$rc" -gt 1 ]; then
+        echo "coverage: pytest exited $rc on $t before measuring it, so its trace would measure nothing" >&2
+        tail -n 15 "$TRACE_DIR/$name.log" >&2 || true
         exit 1
     fi
     [ "$rc" -eq 0 ] || failed+=("$name")

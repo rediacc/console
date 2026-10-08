@@ -307,7 +307,7 @@ const CLOSURES = {
       '.ci/rediacc_ci',
       // 348e25fcb (spec W T2.13) shards this job four ways off this manifest (ct-tests.yml:1965). Found by test_gate_greenlight_closure_trace.py.
       '.ci/config/shards/test-account-e2e.json',
-      // install-deps.sh below sources it.
+      // The composite action that restores node_modules and runs rediacc_ci.setup.install_deps (the Python port of the retired install-deps.sh).
       '.github/actions/setup-workspace',
       // Both jobs mint a submodule-capable token through it before checkout.
       '.github/actions/app-token',

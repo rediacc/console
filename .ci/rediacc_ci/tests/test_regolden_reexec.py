@@ -63,3 +63,13 @@ def test_an_override_that_names_no_python_is_refused_not_replaced(tmp_path, monk
     assert regolden._reexec_under_pytest() == 77
     assert calls == []
     assert "PYTEST_BIN" in capsys.readouterr().err
+
+
+def test_an_env_python_shebang_override_resolves_the_interpreter_on_path(tmp_path, monkeypatch):
+    calls = _world(tmp_path, monkeypatch)
+    own = _exe(tmp_path / "bin/python3")
+    monkeypatch.setenv("PATH", str(own.parent))
+    override = _exe(tmp_path / "elsewhere/pytest", "#!/usr/bin/env python3\n")
+    monkeypatch.setenv("PYTEST_BIN", str(override))
+    assert regolden._reexec_under_pytest() == 0
+    assert calls[0][0] == str(own)

@@ -16,7 +16,7 @@ REFUSES:
   * when the recording run is not green. A freeze taken from a red differential would enshrine the disagreement as the spec.
   * when no module names the twin, or the run recorded nothing for it: a regolden that touched no golden is not a regolden.
 
-`-k <expr>` narrows a re-record to the cases a Rule-T fix moved, so the reason is stamped only where it is true; every unselected record is carried over byte-for-byte. Without `-k` a key the run never asked for is dropped (and counted), because the run covered every case there is.
+`-k <expr>` narrows a re-record to the cases a Rule-T fix moved, so the reason is stamped only where it is true; every unselected record is carried over byte-for-byte. When the carried records were recorded from the other source, the header's `source` reads `mixed` rather than claiming the whole file for this run's source. Without `-k` a key the run never asked for is dropped (and counted), because the run covered every case there is.
 """
 
 from __future__ import annotations
@@ -25,6 +25,7 @@ import argparse
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 
@@ -70,7 +71,12 @@ def _reexec_under_pytest() -> int:
                 shebang = fh.readline().strip()
         except OSError:
             return ""
-        named = shebang[2:].split()[0] if shebang.startswith("#!") else ""
+        words = shebang[2:].split() if shebang.startswith("#!") else []
+        if words and os.path.basename(words[0]) == "env":
+            # `#!/usr/bin/env python3` names its interpreter in the next non-option, non-assignment word, resolved on PATH.
+            rest = [w for w in words[1:] if not w.startswith("-") and "=" not in w]
+            words = [shutil.which(rest[0]) or rest[0]] if rest else []
+        named = words[0] if words else ""
         return named if os.path.basename(named).startswith("python") else ""
 
     interpreter = shebang_python(override) if override else ""

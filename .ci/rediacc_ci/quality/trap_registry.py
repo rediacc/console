@@ -610,7 +610,9 @@ class Registry:
 
         Two-sided, as `hook:` is: a sibling `test-<stem>.py` (the dedicated per-guard suite, which carries its own refusing and admitting worlds), or BOTH a `check 2` and a `check 0 guards/<stem>.py` case in the hook suite. One direction alone cannot tell a guard that refuses everything from one that refuses nothing.
         """
-        if (self.file_root / GUARDS_PACKAGE_REL / ("test-%s.py" % stem)).is_file():
+        sibling = self.file_root / GUARDS_PACKAGE_REL / ("test-%s.py" % stem)
+        # A sibling suite counts only when it names the guard: an empty or stray file proves neither direction. Which directions its cases cover is the suite's own business (its DEFECT arm), not something a text read can settle.
+        if sibling.is_file() and stem in read_text(sibling):
             return ""
         cases = read_text(self.file_root / HOOKCASES_REL)
         fires = '"check 2 guards/%s.py"' % stem in cases
@@ -665,7 +667,13 @@ class Registry:
         target = self.anchor_root / path
         if not target.is_file():
             return "names %s, which does not exist under %s" % (path, self.anchor_root)
-        if phrase in collapse(read_text(target)):
+        text = read_text(target)
+        if target.resolve() == self.corpus.resolve():
+            # The registry's own `Documented-In:` lines hold every anchored phrase, so counting them would let an anchor on this file match itself after the lesson sentence is gone.
+            text = "\n".join(
+                line for line in text.splitlines() if not line.startswith(DOCUMENTED_IN)
+            )
+        if phrase in collapse(text):
             return ""
         skip = {target.resolve(), self.corpus.resolve()}
         elsewhere = [
@@ -1128,7 +1136,9 @@ def build_anchor_fixture(files: pathlib.Path) -> str:
     (guards / "__init__.py").write_text(CONTROL_GUARDS_INIT, encoding="utf-8")
     for stem in ("block_ctl_tested", "block_ctl_cased", "block_ctl_one_sided", "warn_ctl_bare"):
         (guards / ("%s.py" % stem)).write_text("def main():\n    return 0\n", encoding="utf-8")
-    (guards / "test-block_ctl_tested.py").write_text("print('ok')\n", encoding="utf-8")
+    (guards / "test-block_ctl_tested.py").write_text(
+        "print('block_ctl_tested ok')\n", encoding="utf-8"
+    )
     cases = files / HOOKCASES_REL
     cases.parent.mkdir(parents=True, exist_ok=True)
     cases.write_text(CONTROL_HOOKCASES, encoding="utf-8")

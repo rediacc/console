@@ -803,11 +803,17 @@ def write_recorded(
         answers = {k: (str(v[0]), v[1], v[2]) for k, v in RECORDED[stem].items()}
         silent, records, changed = goldenio.diff_and_mark(answers, old_silent, old_records, reason)
         dropped = (set(old_silent) | set(old_records)) - set(answers)
+        header_source = source
         if keep_unseen:
             # A selective re-record (`regolden.py -k`): the cases this run did not ask about keep exactly the record they had, marker and all.
+            carried = dropped & (set(old_silent) | set(old_records))
             silent |= dropped & set(old_silent)
             records.update({k: old_records[k] for k in dropped if k in old_records})
             dropped = set()
+            # The carried cases were recorded by whoever wrote the old header; when that was another source, the file is mixed and the header must not claim all of it for this run's source.
+            old_source = (old_header or {}).get("source", "")
+            if carried and old_source and old_source != source:
+                header_source = "mixed"
         if source == "bash":
             blob = blob_sha(twin)
         else:
@@ -819,7 +825,7 @@ def write_recorded(
             if source == "bash"
             else (old_header or {}).get("bash_version", ""),
             "case_count": len(silent) + len(records),
-            "source": source,
+            "source": header_source,
             "twin": twin,
             "twin_blob": blob,
         }
