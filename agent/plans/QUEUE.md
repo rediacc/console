@@ -33,7 +33,7 @@ A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turb
 
 ```stop-hook
 stop_hook: on -- operator 2026-10-06: back on once PLAN-fast-loop completed
-turbo: on -- operator 2026-10-07: enable turbo mode
+turbo: off
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
 writer_cap: 15 -- operator 2026-10-04: parallel limit 15
@@ -51,22 +51,15 @@ backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--focus`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: stop_hook on; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; cadence on; agent_hint on; agent_pushback on; judge on.
+- Mode: stop_hook on; turbo off; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; cadence on; agent_hint on; agent_pushback on; judge on.
 - Focus: off.
 - Branch: 1008-1, no PR yet.
-- Plans on the PR (7):
-  - agent/plans/PLAN-retire-bash-oracles.md -- 8 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-gate-scheduling-learned.md -- 12 of 12 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-locale-techdiff-resync.md -- 5 of 5 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-cd-errors-in-ci.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-plan-dependencies.md -- 10 of 12 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-lessons-registry.md -- 9 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+- Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-retire-bash-oracles.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 187 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 5 live of writer_cap 15 (session d778be9d): worker:ae2ed7d6f3fa6c95a, worker:ae8a35da97dd56226, worker:aa6140e62cb70c0f4, worker:ad7685e8488e9e96f, worker:aee8925b0007520b0.
-- Leased items: 5: #1a4d4455 (worker:ad7685e8488e9e96f, d778be9d), #20752ce3 (worker:aa6140e62cb70c0f4, d778be9d), #6e54c2b9 (worker:aee8925b0007520b0, d778be9d), #e70faed1 (worker:ae2ed7d6f3fa6c95a, d778be9d), #ec00a9ad (worker:ae8a35da97dd56226, d778be9d).
-- Next plan: agent/plans/PLAN-deferred-findings-block-merge.md, Promoted entry 2; starts after this branch's PR merges.
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 193 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a5647c9825dad4511, worker:aaab0bd0c0fa3ef4c, worker:ad01adb75cd722c61.
+- Leased items: 3: #180a91f1 (worker:ad01adb75cd722c61, d778be9d), #ae50572b (worker:aaab0bd0c0fa3ef4c, d778be9d), #ec00a9ad (worker:a5647c9825dad4511, d778be9d).
+- Next plan: agent/plans/PLAN-retire-bash-oracles.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
