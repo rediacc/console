@@ -2,6 +2,8 @@
 
 ONE SOURCE. `WK_CLAUDE_HAIKU_MODEL` in the well-known registry is the only place a model id is written: the Stop-hook judge (wl_judge.JUDGE_MODEL), the plan recommender that reuses it, and the per-commit reviewer (wl_review.load_config) all read it from here, so an upgrade is that one line. `check:ci-literal-sources` refuses the id typed out anywhere else.
 
+Read once per process at import, like every well-known value: a long-lived process keeps the id it started with, and the next hook process picks up an edit.
+
 Reached through the canonical `.claude` hop (`.claude/rediacc_hooks/syspath.py`), loaded by path because the stop directory is not inside the `rediacc_hooks` package.
 """
 

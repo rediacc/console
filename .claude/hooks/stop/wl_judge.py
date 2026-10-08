@@ -23,7 +23,7 @@ import worklist_messages as M
 from wl_models import HAIKU_MODEL
 
 # v5: no cap. Kept as a name so the counter file (used only to TELL the judge it is repeating itself) reads clearly.
-# ONE SOURCE: the model id is WK_CLAUDE_HAIKU_MODEL in .ci/config/well-known.env, which the per-commit reviewer reads too. No environment override: a second place to set it is a second place to forget on the next upgrade.
+# ONE SOURCE: the model id is WK_CLAUDE_HAIKU_MODEL in .ci/config/well-known.env, which the per-commit reviewer reads too. No WORKLIST_JUDGE_MODEL knob any more, and the Python reader ignores an exported WK_ value (only the bash projection honours one): a second place to set it is a second place to forget on the next upgrade.
 JUDGE_MODEL = HAIKU_MODEL
 # Measured on 2026-07-29 with --json-schema: haiku warm $0.011-$0.026 per call at 4.9-20.0s; sonnet $0.231 at 12.1s for the same judgement. Haiku it is. MEASURED, not guessed (2026-08-05): at $0.10 the judge died mid-run with
 # subtype=error_max_budget_usd at cost $0.1025, and reported it as the

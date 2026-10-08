@@ -20,6 +20,7 @@ import pytest
 
 from rediacc_hooks import lifecycle
 from rediacc_hooks.tests import wlfix
+from rediacc_hooks.wellknown import CLAUDE_HAIKU_MODEL
 
 R = wlfix.import_wl("wl_review")
 
@@ -1205,3 +1206,21 @@ def test_ledger_migrate_refuses_a_codec_that_drops_the_labels_why(tmp_path):
     assert R.ledger_migrate(tmp_path, write=True, codec=lossy, log=out.append) == 1
     assert any("round-trip mismatch on labels" in line for line in out), out
     assert _tree_bytes(tmp_path) == before
+
+
+def test_reviewer_model_is_the_well_known_id_and_config_cannot_override_it(tmp_path):
+    """ONE SOURCE (6d0246d67): the reviewer's model is WK_CLAUDE_HAIKU_MODEL, the value the Stop-hook judge reads; a `model` key left in commit-review.json is ignored, so the id cannot drift into a second place again."""
+    assert R.load_config()["model"] == CLAUDE_HAIKU_MODEL
+    cfg = tmp_path / ".ci" / "config"
+    cfg.mkdir(parents=True)
+    # CONTROL: a stale key that a merge would honour, if the config could still set the model.
+    (cfg / "commit-review.json").write_text(
+        json.dumps({"model": "stale-model", "budget_usd": 0.5}), encoding="utf-8"
+    )
+    loaded = R.load_config(tmp_path)
+    assert loaded["budget_usd"] == 0.5, (
+        "the fixture config was not read, so the control proves nothing"
+    )
+    assert loaded["model"] == CLAUDE_HAIKU_MODEL
+    wl_judge = wlfix.import_wl("wl_judge")
+    assert wl_judge.JUDGE_MODEL == CLAUDE_HAIKU_MODEL
