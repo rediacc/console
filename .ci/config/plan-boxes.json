@@ -697,29 +697,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-gate-scheduling-learned.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 12,
-      "open_sigs": [],
-      "done_sigs": [
-        "0001ff07",
-        "106a374f",
-        "1b842dc7",
-        "1d326aac",
-        "257e3ba1",
-        "74185959",
-        "77eded1a",
-        "995f01ea",
-        "a7d8572a",
-        "b0ad6ba7",
-        "c69dc069",
-        "f763f891"
-      ]
-    },
     "agent/plans/PLAN-gh-swallow-gates-audit.md": {
       "status": "compacted",
       "owner": "f4da5c2e",
@@ -953,22 +930,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-locale-techdiff-resync.md": {
-      "status": "done",
-      "owner": "unowned",
-      "folder": "agent/plans",
-      "moved_at": "2026-09-21",
-      "open": 0,
-      "done": 5,
-      "open_sigs": [],
-      "done_sigs": [
-        "30748c4a",
-        "65129ad2",
-        "6ff2ef5d",
-        "9cad8dae",
-        "b903a441"
-      ]
-    },
     "agent/plans/PLAN-localize-cheat-sheet-rendering.md": {
       "status": "compacted",
       "owner": "97604f47",
@@ -1102,22 +1063,6 @@
         "d03d7256"
       ],
       "done_sigs": []
-    },
-    "agent/plans/PLAN-plyr-to-videojs.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 5,
-      "open_sigs": [],
-      "done_sigs": [
-        "41fbf1cf",
-        "6c5976f0",
-        "81eaf513",
-        "c1b361ff",
-        "dd9c1004"
-      ]
     },
     "agent/plans/PLAN-prepush-full-cpu.md": {
       "status": "approved",
@@ -2159,23 +2104,6 @@
         "fde098b5"
       ]
     },
-    "agent/plans/PLAN-turbo-local-first.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 6,
-      "open_sigs": [],
-      "done_sigs": [
-        "166f8c38",
-        "16d5f486",
-        "3bc06e37",
-        "4b3fe5bd",
-        "6dd1be72",
-        "77b62eac"
-      ]
-    },
     "agent/plans/PLAN-typecheck-orphan-packages.md": {
       "status": "ready",
       "owner": "unowned",
@@ -3139,6 +3067,29 @@
         "fc15df5e"
       ]
     },
+    "agent/plans/_done/PLAN-gate-scheduling-learned.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-08",
+      "open": 0,
+      "done": 12,
+      "open_sigs": [],
+      "done_sigs": [
+        "0001ff07",
+        "106a374f",
+        "1b842dc7",
+        "1d326aac",
+        "257e3ba1",
+        "74185959",
+        "77eded1a",
+        "995f01ea",
+        "a7d8572a",
+        "b0ad6ba7",
+        "c69dc069",
+        "f763f891"
+      ]
+    },
     "agent/plans/_done/PLAN-gh-retry.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -3252,6 +3203,22 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
+    },
+    "agent/plans/_done/PLAN-locale-techdiff-resync.md": {
+      "status": "done",
+      "owner": "unowned",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-08",
+      "open": 0,
+      "done": 5,
+      "open_sigs": [],
+      "done_sigs": [
+        "30748c4a",
+        "65129ad2",
+        "6ff2ef5d",
+        "9cad8dae",
+        "b903a441"
+      ]
     },
     "agent/plans/_done/PLAN-major-upgrade-age-clock.md": {
       "status": "done",
@@ -3573,6 +3540,22 @@
         "c1b2dbf9",
         "c65d7dea",
         "f7e12115"
+      ]
+    },
+    "agent/plans/_done/PLAN-plyr-to-videojs.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-08",
+      "open": 0,
+      "done": 5,
+      "open_sigs": [],
+      "done_sigs": [
+        "41fbf1cf",
+        "6c5976f0",
+        "81eaf513",
+        "c1b361ff",
+        "dd9c1004"
       ]
     },
     "agent/plans/_done/PLAN-popup-reminder.md": {
@@ -3981,6 +3964,23 @@
         "d8dae661",
         "dd8a45ec",
         "ef0d8159"
+      ]
+    },
+    "agent/plans/_done/PLAN-turbo-local-first.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-08",
+      "open": 0,
+      "done": 6,
+      "open_sigs": [],
+      "done_sigs": [
+        "166f8c38",
+        "16d5f486",
+        "3bc06e37",
+        "4b3fe5bd",
+        "6dd1be72",
+        "77b62eac"
       ]
     },
     "agent/plans/_done/PLAN-w9p2-script-relocation.md": {

@@ -55,12 +55,12 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Plans on the PR (5):
   - agent/plans/PLAN-ci-consolidation.md -- 22 of 22 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-gate-scheduling-learned.md -- 12 of 12 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-locale-techdiff-resync.md -- 0 of 5 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-locale-techdiff-resync.md -- 5 of 5 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-cd-errors-in-ci.md -- 0 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-retire-bash-oracles.md -- 6 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans: none.
-- Writers: 2 live of writer_cap 15 (session d778be9d): worker:a96aa6313380b1a1b, worker:acfe8be539bdd86fa.
-- Leased items: 2: #575d2992 (worker:a96aa6313380b1a1b, d778be9d), #dd4cb2e3 (worker:acfe8be539bdd86fa, d778be9d).
+- Writers: 5 live of writer_cap 15 (session d778be9d): worker:a96aa6313380b1a1b, worker:a3511b39c415ab5c7, worker:a3ae93750fc7e4e55, worker:af74c4796b41a9d95, worker:accb1a5ce3a706c66.
+- Leased items: 5: #216083df (worker:af74c4796b41a9d95, d778be9d), #32c02543 (worker:accb1a5ce3a706c66, d778be9d), #575d2992 (worker:a96aa6313380b1a1b, d778be9d), #bafeabcb (worker:a3ae93750fc7e4e55, d778be9d), #dd4cb2e3 (worker:a3511b39c415ab5c7, d778be9d).
 - Next plan: agent/plans/PLAN-config-passkey-optional.md, Promoted entry 5; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
