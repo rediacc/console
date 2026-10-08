@@ -45,6 +45,7 @@ the schedule.
 | `npm run ci` | Full run at `availableParallelism() - 2` workers, keep-going |
 | `npm run ci:quick` | **The pre-push lane.** The fast subset of the manifest; `npm run ci -- --quick --list` prints the live set and its count. `git push` is REFUSED without a green receipt from it |
 | `npm run ci -- --quick` | The same selection without minting a receipt |
+| `npm run ci -- --quick --no-diff-slow` | The fast lane alone, without the slow gates the diff would add. A narrowing flag, so it never mints a receipt. Housekeeping's gate-cost capture uses it for its quick phase, because its rotation phase measures the slow set |
 | `npm run ci:serial` | The same set at `--jobs 1`. Use this to decide whether a red is caused by parallelism |
 | `npm run ci:list` | Every gate id and the exact command it runs |
 | `npm run ci -- --only 'check:ci-embed-*'` | Run a subset. Glob or comma-separated ids |
