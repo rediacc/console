@@ -30,13 +30,6 @@
       "message": "No overload variant of \"run\" matches argument types \"list[str]\", \"bool\", \"dict[str, object]\""
     },
     {
-      "id": "d9b157be8feeb294",
-      "file": ".ci/rediacc_ci/core/allowlist.py",
-      "code": "no-redef",
-      "count": 1,
-      "message": "Name \"failures\" already defined on line 513"
-    },
-    {
       "id": "b63ad461a3ca43a3",
       "file": ".ci/rediacc_ci/core/ports.py",
       "code": "assignment",

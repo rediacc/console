@@ -4332,7 +4332,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             wl_loopspeed.backup_push_due(
                 root, int(getattr(_loop, "backup_push_h", 0) or 0), branch=_loop.branch
             )
-            if local_batch(_loop)
+            if _loop is not None and local_batch(_loop)
             else None
         )
         if _bp:
