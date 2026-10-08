@@ -1730,7 +1730,8 @@ def main(argv: list[str] | None = None, root: pathlib.Path | None = None) -> int
         tree = pathlib.Path(args[i + 1]).resolve()
         del args[i : i + 2]
     target = ""
-    if "--repin" in args:
+    repinning = "--repin" in args
+    if repinning:
         i = args.index("--repin")
         if i + 1 >= len(args):
             print(USAGE, file=sys.stderr)
@@ -1746,7 +1747,7 @@ def main(argv: list[str] | None = None, root: pathlib.Path | None = None) -> int
     rc = controls_first("scope mirrors", lambda: selftest(verbose=False))
     if rc:
         return rc
-    if target:
+    if repinning:
         return repin(tree, target)
     if write:
         return write_baseline(tree, first_seed)

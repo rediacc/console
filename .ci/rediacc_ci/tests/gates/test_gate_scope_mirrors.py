@@ -6,7 +6,7 @@ EVERY PLANT GOES INTO A COPY under a temp root, passed with `--root`; no tracked
 
 BOTH DIRECTIONS. T1 is the untouched copy and must be green with counts at or above the floors the success line prints. T2 replays the 8ed69711c miss and asserts the UNTOUCHED mirrors stay silent; T3 asserts a changed canonical reports C2 and no C5/C6; T5 asserts a correctly marked cut is silent; T8 asserts an anchored restatement is C10 and not C9; T9 and T10 assert the write paths refuse and then admit.
 
-THE FLOORS ARE READ, NEVER TYPED: T1 parses `N clauses (floor F)` and `M mirror checks (floor G)` from the one success line, so the floors live in the registry and nowhere else.
+THE FLOORS ARE READ, NEVER TYPED: T1 parses `N clauses (floor F)` and `M mirror checks (floor G)` from the one success line, so the floors live in the registry and nowhere else, and requires N == F and M == G, so a floor can be neither lowered nor left behind a new clause.
 """
 
 import json
@@ -143,15 +143,16 @@ def test_t1_untouched_copy_is_green_at_or_above_the_floors(gate):
             gate.log_fail("T1: the success line carries no shape: %r" % result.out[-400:])
             return
         clauses, floor_c, mirrors, floor_m = (int(x) for x in shape.groups())
+        # A RATCHET, NOT A MINIMUM: each floor must EQUAL its measured count, so a floor lowered in the registry reds here, and a clause or mirror added without raising its floor reds too (review 169ccbe2.1).
         gate.assert_eq(
-            clauses >= floor_c >= 9,
-            True,
-            "T1: %d clauses against floor %d (plan C0: >= 9)" % (clauses, floor_c),
+            (clauses, floor_c >= 9),
+            (floor_c, True),
+            "T1: %d clauses, floor %d (plan C0: >= 9)" % (clauses, floor_c),
         )
         gate.assert_eq(
-            mirrors >= floor_m >= 25,
-            True,
-            "T1: %d mirror checks against floor %d (plan C0: >= 25)" % (mirrors, floor_m),
+            (mirrors, floor_m >= 25),
+            (floor_m, True),
+            "T1: %d mirror checks, floor %d (plan C0: >= 25)" % (mirrors, floor_m),
         )
 
 
