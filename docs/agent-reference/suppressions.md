@@ -91,8 +91,8 @@ Any other phrasing that pairs `revisit`, `lift`, `remove` or `drop` with `when`,
 
 A BLOCKER reason must be at least 30 characters (after normalization) and must not match any phrase in the banned-phrase list (`no fix`, `tbd`, `todo`, `ok`, `ack`, `later`, `will fix`, `dev only`, etc.).
 
-Full banned list + implementation: **`.ci/rediacc_ci/core/allowlist.py`, and nowhere else**. `.ci/scripts/lib/blocker-validator.sh` (bash) and `scripts/lib/blocker-validator.ts` (TypeScript) are CLIENTS of it as of 2026-09-09; there is nothing left to keep in sync, and adding a phrase to either of them changes no verdict. The bash file still carries the phrase array as a TEXT
-MIRROR, because `test_gate_breakpoint_portability.py` parses it out of that file to prove the vendored breakpoint copy is a subset; `.ci/rediacc_ci/tests/test_blocker_implementations.py` asserts the mirror equals the canonical in both directions, and asserts that no other file in the tree carries a table.
+Full banned list + implementation: **`.ci/rediacc_ci/core/allowlist.py`, and nowhere else**. `scripts/lib/blocker-validator.ts` (TypeScript) is its one remaining client, as of section 12 U1 (1a9adf506), which deleted the bash validator; adding a phrase there changes no verdict.
+`test_gate_breakpoint_portability.py` reads `LOW_EFFORT_PHRASES` from this module to prove the vendored breakpoint copy is a subset, and `.ci/rediacc_ci/tests/test_blocker_implementations.py` asserts that no other file in the tree carries a table.
 
 ### Liveness: is the entry still needed?
 
