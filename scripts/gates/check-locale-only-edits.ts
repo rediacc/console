@@ -215,6 +215,169 @@ const REF_MARKER_CONTROLS: { name: string; was: string; now: string; en: string;
     },
   ];
 
+/** A naturalization mask sentinel, `⟦0⟧`, as private/growth/i18n_pipeline/mask.py writes it. */
+const SENTINEL = /\u27e6\d+\u27e7/g;
+
+/** At most this many characters may stand where one sentinel stood. */
+const SENTINEL_REPLACEMENT_MAX = 40;
+
+/**
+ * True when the edit ONLY replaces leaked `⟦n⟧` mask sentinels with the words they stood
+ * for (or removes them), and changes no other byte.
+ *
+ * THE CASE, found 2026-10-08. The naturalization pipeline masks product names as `⟦n⟧`
+ * before the model call and restores them after; a sentinel the unit's own mask map did
+ * not know survived the restore and shipped. ja
+ * `pages.solutionPages.migrationSafety.techDiff.description` read "⟦0⟧は復号しません" and
+ * tr `pages.resourcesBrief.verifiedBackups.toc.items.5` read "⟦0⟧ vs rakipler", each a
+ * literal `⟦0⟧` on the page. check:ci-i18n-placeholders now refuses them, and the repair
+ * is a locale-only edit to a key the base ledger vouches for, which this gate refuses: the
+ * two gates were mutually unsatisfiable, exactly as with the em dash.
+ *
+ * NARROW BY CONSTRUCTION, like the reference-marker rule and unlike the em-dash one. The
+ * OLD value is split at its sentinels, and the NEW value must be those literal segments,
+ * byte for byte and in order, with only the gaps where the sentinels stood filled. Each
+ * gap holds at most SENTINEL_REPLACEMENT_MAX characters of a name, never a sentence: no
+ * sentence or clause punctuation, no line break, no sentinel. The English value must not
+ * carry the sentinel (a real one would be English's own text), and the NEW value must
+ * carry no leaked sentinel at all, so swapping `⟦0⟧` for `⟦1⟧` is not a repair. A rewrite
+ * that also drops a sentinel moves a byte outside the gaps and stays red.
+ */
+export function isSentinelRepair(was: string, now: string, en: string): boolean {
+  const enTokens = new Set(en.match(SENTINEL) ?? []);
+  const wasTokens = was.match(SENTINEL) ?? [];
+  if (wasTokens.length === 0) return false;
+  if (wasTokens.some((t) => enTokens.has(t))) return false;
+  if ((now.match(SENTINEL) ?? []).some((t) => !enTokens.has(t))) return false;
+  const segments = was.split(SENTINEL);
+  const escape = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const shape = new RegExp(
+    `^${segments.map(escape).join(`([^\\n]{0,${SENTINEL_REPLACEMENT_MAX}}?)`)}$`,
+    'u'
+  );
+  const m = shape.exec(now);
+  if (!m) return false;
+  return m
+    .slice(1)
+    .every((gap) => !/[.!?;:,\u3002\uff01\uff1f\uff1b\uff1a\uff0c\u3001\u27e6\u27e7<>]/u.test(gap));
+}
+
+/**
+ * True when the new locale value is BYTE-IDENTICAL to the English value at the same key,
+ * with English unchanged between base and HEAD.
+ *
+ * THE CASE, found 2026-10-08. An i18n audit restored translated source and report titles
+ * (`pages.solutionPages.kubernetesClusterMobility.problem.statCallouts.*.source`, 13 values
+ * in ar, es, pt, ru and zh) to the exact English string, because a cited title must stay
+ * findable under the name its publisher gave it. The keys were current at base, so the
+ * correct fix was refused.
+ *
+ * WHY THIS CANNOT CARRY A FABRICATION: the new bytes are English's own bytes at the same
+ * key, so no number, fact or word can enter that English does not already state. A string
+ * one word away from English is not exempt.
+ *
+ * WHAT IT DOES WIDEN, stated rather than hidden: a run that overwrites a GOOD translation
+ * with the English string passes here (the reference-marker rule above refused exactly
+ * that convergence). That is an untranslated value, not an invented one, and every use is
+ * printed as an advisory below so a wrongful revert is countable in the log.
+ */
+export function isRestoredToEnglish(
+  now: string,
+  enBase: string | undefined,
+  enNow: string | undefined
+): boolean {
+  return enNow !== undefined && enBase === enNow && now === enNow;
+}
+
+/** Controls for the restore-to-English exemption, run with `--selftest`. */
+const RESTORE_CONTROLS: {
+  name: string;
+  now: string;
+  enBase?: string;
+  enNow?: string;
+  want: boolean;
+}[] = [
+  {
+    name: 'the real case: a translated report title restored to the exact English title',
+    now: 'Flexera 2024 State of the Cloud Report',
+    enBase: 'Flexera 2024 State of the Cloud Report',
+    enNow: 'Flexera 2024 State of the Cloud Report',
+    want: true,
+  },
+  {
+    name: 'CONTROL: a near-English string (one word differs) is NOT exempt',
+    now: 'Flexera 2025 State of the Cloud Report',
+    enBase: 'Flexera 2024 State of the Cloud Report',
+    enNow: 'Flexera 2024 State of the Cloud Report',
+    want: false,
+  },
+  {
+    name: 'CONTROL: English absent at the key is NOT exempt',
+    now: 'Flexera 2024 State of the Cloud Report',
+    want: false,
+  },
+];
+
+/** Controls for the sentinel exemption, run with `--selftest` through the same function. */
+const SENTINEL_CONTROLS: { name: string; was: string; now: string; en: string; want: boolean }[] = [
+  {
+    name: 'the real tr case: ⟦0⟧ restored to the product name, nothing else moved',
+    was: '\u27e60\u27e7 vs rakipler: teknik bazında (fiyat değil)',
+    now: 'Rediacc vs rakipler: teknik bazında (fiyat değil)',
+    en: 'How we stack up against other vendors on the tech, not the price tag',
+    want: true,
+  },
+  {
+    name: 'the real ja case: ⟦0⟧ inside a sentence restored',
+    was: '露出ウィンドウを作ります。\u27e60\u27e7は復号しません。<span class="sp-emphasis">移行</span>。',
+    now: '露出ウィンドウを作ります。Rediaccは復号しません。<span class="sp-emphasis">移行</span>。',
+    en: 'That leaves a window. We never unlock anything. <span class="sp-emphasis">sealed blocks</span>.',
+    want: true,
+  },
+  {
+    name: 'a leaked sentinel removed outright, nothing else moved',
+    was: 'Kurulum \u27e61\u27e7tamamlandı',
+    now: 'Kurulum tamamlandı',
+    en: 'Setup complete',
+    want: true,
+  },
+  {
+    name: 'CONTROL: a rewrite that also drops the sentinel is NOT exempt',
+    was: '\u27e60\u27e7 vs rakipler: teknik bazında (fiyat değil)',
+    now: 'Rediacc ve rakipleri: fiyat değil',
+    en: 'How we stack up against other vendors on the tech, not the price tag',
+    want: false,
+  },
+  {
+    name: 'CONTROL: sentinel restored AND a number changed elsewhere is NOT exempt',
+    was: '\u27e60\u27e7 1 Floating-Lizenz',
+    now: 'Rediacc 10 Floating-Lizenz',
+    en: 'Rediacc 1 Floating license',
+    want: false,
+  },
+  {
+    name: 'CONTROL: a whole clause smuggled into the sentinel gap is NOT exempt',
+    was: '\u27e60\u27e7 vs rakipler',
+    now: 'Rediacc, 25 lisans dahil, vs rakipler',
+    en: 'How we stack up against other vendors',
+    want: false,
+  },
+  {
+    name: 'CONTROL: a sentinel swapped for another sentinel is NOT exempt',
+    was: '\u27e60\u27e7 vs rakipler',
+    now: '\u27e61\u27e7 vs rakipler',
+    en: 'How we stack up against other vendors',
+    want: false,
+  },
+  {
+    name: 'CONTROL: an edit with no sentinel at base is NOT exempt',
+    was: '1 플로팅 라이선스',
+    now: '10 플로팅 라이선스',
+    en: '1 Floating license',
+    want: false,
+  },
+];
+
 /**
  * True when the base ledger vouches for this (locale, key) against the base English.
  *
@@ -237,6 +400,8 @@ export interface LocaleScan {
   findings: string[];
   emDashRepairs: string[];
   refMarkerRepairs: string[];
+  sentinelRepairs: string[];
+  englishRestores: string[];
   checkedKeys: number;
 }
 
@@ -250,7 +415,14 @@ export function scanLocale(
   ledgerAtBase: Record<string, unknown>,
   enBaseHash: Record<string, string>
 ): LocaleScan {
-  const out: LocaleScan = { findings: [], emDashRepairs: [], refMarkerRepairs: [], checkedKeys: 0 };
+  const out: LocaleScan = {
+    findings: [],
+    emDashRepairs: [],
+    refMarkerRepairs: [],
+    sentinelRepairs: [],
+    englishRestores: [],
+    checkedKeys: 0,
+  };
   for (const key of Object.keys(now)) {
     if (was[key] === undefined || now[key] === was[key]) continue;
     out.checkedKeys++;
@@ -269,6 +441,16 @@ export function scanLocale(
     // rewrite that also changes wording is still reported.
     if (isRefMarkerRepair(was[key], now[key], enNow[key] ?? '')) {
       out.refMarkerRepairs.push(`  ${loc}  ${key}`);
+      continue;
+    }
+
+    if (isSentinelRepair(was[key], now[key], enNow[key] ?? '')) {
+      out.sentinelRepairs.push(`  ${loc}  ${key}`);
+      continue;
+    }
+
+    if (isRestoredToEnglish(now[key], enBase[key], enNow[key])) {
+      out.englishRestores.push(`  ${loc}  ${key}`);
       continue;
     }
 
@@ -358,6 +540,82 @@ function selftest(): number {
     if (!ok) bad++;
     process.stdout.write(`  ${ok ? 'PASS' : 'FAIL'}  ${c.name}\n`);
   }
+  for (const c of SENTINEL_CONTROLS) {
+    const got = isSentinelRepair(c.was, c.now, c.en);
+    const ok = got === c.want;
+    if (!ok) bad++;
+    process.stdout.write(`  ${ok ? 'PASS' : 'FAIL'}  ${c.name}\n`);
+  }
+  for (const c of RESTORE_CONTROLS) {
+    const got = isRestoredToEnglish(c.now, c.enBase, c.enNow);
+    const ok = got === c.want;
+    if (!ok) bad++;
+    process.stdout.write(`  ${ok ? 'PASS' : 'FAIL'}  ${c.name}\n`);
+  }
+  {
+    const key = 'pricing.license';
+    const vouched = { [key]: EN_HASH[key] };
+    const restore = scanLocale(
+      'xx',
+      { [key]: '1 플로팅 라이선스' },
+      { [key]: EN[key] },
+      EN,
+      EN,
+      vouched,
+      EN_HASH
+    );
+    const ok = restore.findings.length === 0 && restore.englishRestores.length === 1;
+    if (!ok) bad++;
+    process.stdout.write(
+      `  ${ok ? 'PASS' : 'FAIL'}  restore-to-English on a vouched key is exempted by scanLocale\n`
+    );
+    const near = scanLocale(
+      'xx',
+      { [key]: '1 플로팅 라이선스' },
+      { [key]: '10 Floating license' },
+      EN,
+      EN,
+      vouched,
+      EN_HASH
+    );
+    const red = near.findings.length === 1 && near.englishRestores.length === 0;
+    if (!red) bad++;
+    process.stdout.write(
+      `  ${red ? 'PASS' : 'FAIL'}  CONTROL: a near-English rewrite is still RED through scanLocale\n`
+    );
+  }
+  // Through scanLocale too: the exemption must be WIRED, not merely correct in isolation.
+  {
+    const key = 'pricing.license';
+    const wired = scanLocale(
+      'xx',
+      { [key]: '\u27e60\u27e7 1 플로팅 라이선스' },
+      { [key]: 'Rediacc 1 플로팅 라이선스' },
+      EN,
+      EN,
+      { [key]: EN_HASH[key] },
+      EN_HASH
+    );
+    const ok = wired.findings.length === 0 && wired.sentinelRepairs.length === 1;
+    if (!ok) bad++;
+    process.stdout.write(
+      `  ${ok ? 'PASS' : 'FAIL'}  sentinel repair on a key the base ledger vouches for is exempted by scanLocale\n`
+    );
+    const rewrite = scanLocale(
+      'xx',
+      { [key]: '\u27e60\u27e7 1 플로팅 라이선스' },
+      { [key]: 'Rediacc 10 플로팅 라이선스' },
+      EN,
+      EN,
+      { [key]: EN_HASH[key] },
+      EN_HASH
+    );
+    const red = rewrite.findings.length === 1 && rewrite.sentinelRepairs.length === 0;
+    if (!red) bad++;
+    process.stdout.write(
+      `  ${red ? 'PASS' : 'FAIL'}  CONTROL: sentinel restored plus a rewrite is still RED through scanLocale\n`
+    );
+  }
   for (const p of LEDGER_PROBES) {
     const r = scanLocale('xx', p.was, p.now, EN, EN, p.ledger, EN_HASH);
     const got = r.findings.map((f) => f.trim().split(/\s+/)[1]).sort();
@@ -369,7 +627,7 @@ function selftest(): number {
   }
   if (bad > 0) {
     process.stderr.write(
-      `check-locale-only-edits: ${bad} control(s) failed; the marker exemption or the base-ledger rule cannot be trusted\n`
+      `check-locale-only-edits: ${bad} control(s) failed; an exemption (marker, sentinel, restore-to-English) or the base-ledger rule cannot be trusted\n`
     );
     return 1;
   }
@@ -467,6 +725,8 @@ function main(argv: string[]): number {
   const findings: string[] = [];
   const emDashRepairs: string[] = [];
   const refMarkerRepairs: string[] = [];
+  const sentinelRepairs: string[] = [];
+  const englishRestores: string[] = [];
   let checkedKeys = 0;
 
   for (const loc of locales) {
@@ -479,6 +739,8 @@ function main(argv: string[]): number {
     findings.push(...r.findings);
     emDashRepairs.push(...r.emDashRepairs);
     refMarkerRepairs.push(...r.refMarkerRepairs);
+    sentinelRepairs.push(...r.sentinelRepairs);
+    englishRestores.push(...r.englishRestores);
     checkedKeys += r.checkedKeys;
   }
 
@@ -489,6 +751,27 @@ function main(argv: string[]): number {
         'reference-marker repairs\n(a locale-only `[n]` that English does not carry was ' +
         'removed, and nothing else changed):\n' +
         `${refMarkerRepairs.join('\n')}\n\n`
+    );
+  }
+
+  if (englishRestores.length > 0) {
+    // Printed: this is the widest of the exemptions, and a wrongful revert of a good
+    // translation to English would pass through it, so every use stays countable.
+    process.stdout.write(
+      `check-locale-only-edits: ${englishRestores.length} locale value(s) exempted as ` +
+        'restored to the exact English value at the same key\n(English unchanged; no byte ' +
+        'English does not already carry; confirm each is a title or name meant to stay English):\n' +
+        `${englishRestores.join('\n')}\n\n`
+    );
+  }
+
+  if (sentinelRepairs.length > 0) {
+    // Printed for the same reason as the two advisories around it.
+    process.stdout.write(
+      `check-locale-only-edits: ${sentinelRepairs.length} locale value(s) exempted as ` +
+        'mask-sentinel repairs\n(a leaked `\u27e6n\u27e7` was replaced by a name or removed, ' +
+        'and no other byte changed):\n' +
+        `${sentinelRepairs.join('\n')}\n\n`
     );
   }
 
@@ -525,4 +808,8 @@ function main(argv: string[]): number {
   return 0;
 }
 
-process.exit(main(process.argv.slice(2)));
+// Run only as the entry point: scanLocale and isProtectedAtBase are exported, and an
+// unguarded call here exited the importing process the moment it loaded this module.
+if (path.resolve(process.argv[1] ?? '') === path.resolve(fileURLToPath(import.meta.url))) {
+  process.exit(main(process.argv.slice(2)));
+}
