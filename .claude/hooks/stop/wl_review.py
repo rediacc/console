@@ -2833,6 +2833,7 @@ VERB_USAGE = """usage:
   worklist.py --review-commit <me>                                     commit the finished, unrecorded review files of the branch
   worklist.py --review-run <me> [<sha> [--repo <console|private/x>]]   list unreviewed commits, or review one now in the foreground
   worklist.py --prune-reviews <me> [--write]                           list (or, with --write, delete) agent/reviews/<branch>/ directories past retention
+  worklist.py --drop-foreign-reviews <me> [--write]                    list (or, with --write, delete) the branch's review records of a repository that is neither the project nor a .gitmodules checkout
 """
 
 # The archival gate owns the retention rule (`--prune-reviews` there, PLAN-per-commit-review section 9); this verb only runs it, so the rule has one home.
@@ -2853,12 +2854,68 @@ def prune_reviews(root, args):
     return res.returncode, (res.stdout + res.stderr).rstrip("\n")
 
 
+def registered_labels(root):
+    """`console` plus every checkout `.gitmodules` registers: the repositories this project's reviews may name."""
+    labels = {"console"}
+    rc, out = git(root, "config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$")
+    if rc == 0:
+        for line in out.splitlines():
+            parts = line.split(None, 1)
+            if len(parts) == 2:
+                labels.add(parts[1].strip())
+    return labels
+
+
+def drop_foreign_reviews(root, branch, write):
+    """(rc, text): the review records of `branch` naming a repository outside the project, listed, or deleted with `write`.
+
+    A repository that merely sits inside the tree (private/growth, a separate gitignored repo) is not the project's: the review hook once reviewed its commits into agent/reviews/, which filed the operator's private documents here (operator 2026-10-08, "Remove + fix the hook"). Only such records are touched; a record of the console or a submodule is never dropped, whatever its state.
+    """
+    d = branch_dir(root, branch)
+    members = registered_labels(root)
+    md = []
+    for path in sorted(d.glob("*.md")) if d.is_dir() else []:
+        review, _err = read_review(path)
+        if review is not None and review.repo not in members:
+            md.append((path, review.repo, review.sha))
+    ledger = d / LEDGER_NAME
+    kept, dropped = [], []
+    if ledger.is_file():
+        for line in ledger.read_text(encoding="utf-8").splitlines(True):
+            back, errors = parse_ledger(line.rstrip("\n"))
+            if not errors and len(back) == 1 and back[0].repo not in members:
+                dropped.append((back[0].repo, back[0].sha))
+            else:
+                kept.append(line)
+    rows = ["%s %s (%s)" % (path.name, repo, sha[:8]) for path, repo, sha in md]
+    rows += ["%s line %s (%s)" % (LEDGER_NAME, repo, sha[:8]) for repo, sha in dropped]
+    if not rows:
+        return 0, "no review records of a foreign repository on %s" % branch
+    head = "%d review record(s) of a repository outside the project (members: %s)" % (
+        len(rows),
+        ", ".join(sorted(members)),
+    )
+    if not write:
+        return 0, "\n".join([head + "; pass --write to delete them:", *("  " + r for r in rows)])
+    for path, _repo, _sha in md:
+        path.unlink()
+    if dropped:
+        ledger.write_text("".join(kept), encoding="utf-8")
+    return 0, "\n".join([head + "; deleted:", *("  " + r for r in rows)])
+
+
 def verb(name, me, args, root, items_loader, branch=None):
     """(rc, text) for one worklist review verb. `items_loader()` returns {item_id: (state, text)} from the worklist fold; it is called only when a deferral needs it."""
     root = pathlib.Path(root)
     if name == "--prune-reviews":
         return prune_reviews(root, args)
     branch = branch or current_branch(root)
+    if name == "--drop-foreign-reviews":
+        if any(a != "--write" for a in args):
+            return 2, VERB_USAGE
+        if not branch:
+            return 1, "refused: HEAD is on no branch, so no review directory applies"
+        return drop_foreign_reviews(root, branch, "--write" in args)
     if name == "--review-mark":
         if not args:
             if not branch:

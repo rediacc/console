@@ -1297,3 +1297,63 @@ def test_reviewer_model_is_the_well_known_id_and_config_cannot_override_it(tmp_p
     assert loaded["model"] == CLAUDE_HAIKU_MODEL
     wl_judge = wlfix.import_wl("wl_judge")
     assert wl_judge.JUDGE_MODEL == CLAUDE_HAIKU_MODEL
+
+
+def _finding(path):
+    return {
+        "severity": "low",
+        "file": path,
+        "line": 1,
+        "claim": "a claim long enough to be a real finding here",
+    }
+
+
+def test_drop_foreign_reviews_removes_only_records_of_a_repository_outside_the_project(world):
+    """The verb behind `worklist.py --drop-foreign-reviews` (operator 2026-10-08): records a reviewer filed for an unregistered nested repository go, records of the project and of a registered submodule stay."""
+    sub = _submodule(world, "registered")
+    other = world.repo / "growth"
+    other.mkdir()
+    world.init_repo(other)
+
+    def review(repo_dir, label, findings, name):
+        world.answer(findings)
+        sha = world.commit(name, repo=repo_dir)
+        cmd = [
+            sys.executable,
+            str(R.SELF),
+            "--run",
+            sha,
+            "--branch",
+            BRANCH,
+            "--root",
+            str(world.repo),
+        ]
+        if label != "console":
+            cmd += ["--repo", label]
+        done = subprocess.run(
+            cmd, capture_output=True, text=True, env=world.env, check=False, timeout=60
+        )
+        assert done.returncode == 0, done.stderr
+        return sha
+
+    keep_md = review(world.repo, "console", [_finding("a.py")], "a.py")
+    keep_sub = review(sub, "registered", [], "b.py")
+    drop_md = review(other, "growth", [_finding("c.py")], "c.py")
+    drop_line = review(other, "growth", [], "d.py")
+    assert world.review_file(drop_md).exists()
+    assert drop_line in world.ledger_shas()
+
+    rc, text = R.drop_foreign_reviews(world.repo, BRANCH, write=False)
+    assert rc == 0, text
+    assert "2 review record(s)" in text, text
+    assert world.review_file(drop_md).exists(), "a listing deletes nothing"
+
+    rc, text = R.drop_foreign_reviews(world.repo, BRANCH, write=True)
+    assert rc == 0, text
+    assert not world.review_file(drop_md).exists()
+    assert drop_line not in world.ledger_shas()
+    assert world.review_file(keep_md).exists()
+    assert keep_sub in world.ledger_shas()
+    assert R.drop_foreign_reviews(world.repo, BRANCH, write=False)[1].startswith(
+        "no review records"
+    )
