@@ -2286,8 +2286,42 @@ def vet_pointers_and_note(root, pointer_tokens, note):
     return pointers, resolved, n
 
 
-def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now=None):
+#: THE RETRO NOTE FLOOR, three times the live one. A retroactive row is written AFTER the work, so its note has to carry what the live verb's `head` would have carried for free: what the tree held BEFORE the implementing commit. Forty characters cannot say that and name the commit; a hundred and twenty can, barely.
+RETRO_NOTE_MIN = 120
+
+
+def _retro_commits(root, pointers):
+    """[(token, full_sha)] for every `commit:` pointer, each verified an ANCESTOR of HEAD. Raises RecordError.
+
+    A retro row describes work that already LANDED, so a commit it names must be reachable from the tree the row is written in. A sha that exists but sits on another branch (or a dangling one) would let the row cite work this branch never carried. The FIRST pointer is the implementing commit and is recorded as `retro_commit`.
+    """
+    out = []
+    for kind, tok in pointers:
+        if kind != "commit":
+            continue
+        full = _git_out(root, "rev-parse", "--verify", "--quiet", "%s^{commit}" % tok)
+        if not full or not _git_ok(root, "merge-base", "--is-ancestor", full, "HEAD"):
+            raise RecordError(
+                "--retro: `commit:%s` is not an ancestor of HEAD. A retroactive row names the "
+                "commit that IMPLEMENTED the box, and that commit must already be in this "
+                "branch's history; a sha from another branch would cite work this tree never "
+                "carried." % tok
+            )
+        out.append((tok, full))
+    if not out:
+        raise RecordError(
+            "--retro needs at least one `commit:<sha>` pointer naming the commit that "
+            "IMPLEMENTED the box (it must be an ancestor of HEAD). Without it a retroactive row "
+            "says nothing about WHEN the work landed, which is the one fact a late record owes."
+        )
+    return out
+
+
+def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now=None, retro=False):
     """(row, resolved) for one investigation. Raises RecordError. WRITES NOTHING.
+
+    `retro=True` IS THE HONEST LATE RECORD, and it is the only door for a box that was ticked without an investigation. It reaches ONLY a box that is already `[x]` (an open box is refused: it can still be investigated before the work, which is the whole point), requires a `commit:` pointer to the implementing commit that is an ancestor of HEAD, and a note of at least
+    RETRO_NOTE_MIN characters saying what the tree held before that commit. The row carries `"retro": true` and `retro_commit`, and check:ci-plan-implementation counts every such row on the branch in a visible advisory line on every run, so the shortcut never reads like the real order. Without `retro` nothing here changes.
 
     Every step is a re-derivation and none of it is trust:
 
@@ -2319,11 +2353,63 @@ def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now
     if is_record(text):
         raise RecordError("%s is a COMPACTED RECORD; its boxes are history, not work" % rel)
     boxes = open_boxes(text)
-    if not boxes:
-        raise RecordError("%s has no open boxes to investigate" % rel)
-    _i, _line, body, sig = select_box(boxes, selector)
+    if retro:
+        try:
+            still_open = select_box(boxes, selector) if boxes else None
+        except RecordError:
+            still_open = None
+        if still_open is not None:
+            raise RecordError(
+                "--retro refused: box %s of %s is still OPEN. A retroactive record exists only "
+                "for a box that was already ticked without one; an open box can still be "
+                "investigated BEFORE the work, which is the order this gate exists to keep. "
+                "Drop --retro:\n"
+                "    worklist.py --plan-investigate %s %s %s <absent|present|partial> "
+                "<kind>:<token> <kind>:<token> -- <note> --write"
+                % (still_open[3], rel, (me or "<me>")[:8], rel, still_open[3])
+            )
+        dones = done_boxes(text)
+        if not dones:
+            raise RecordError("%s has no ticked boxes, so --retro has nothing to describe" % rel)
+        _i, _line, body, sig = select_box(dones, selector, kind="DONE")
+    else:
+        dones = done_boxes(text)
+        try:
+            closed = select_box(dones, selector, kind="DONE") if dones else None
+        except RecordError:
+            closed = None
+        open_hit = None
+        if boxes:
+            try:
+                open_hit = select_box(boxes, selector)
+            except RecordError:
+                open_hit = None
+        if closed is not None and open_hit is None:
+            raise RecordError(
+                "box %s of %s is already TICKED, so it can no longer be investigated before "
+                "the work. The only honest record now is a retroactive one, which stays "
+                "visible in check:ci-plan-implementation's output on every run:\n"
+                "    worklist.py --plan-investigate %s %s %s <absent|present|partial> "
+                "commit:<implementing-sha> <kind>:<token> -- <what the tree held before that "
+                "commit, at least %d characters> --retro --write\n"
+                "Next time run --plan-investigate FIRST, then implement, then --plan-tick."
+                % (closed[3], rel, (me or "<me>")[:8], rel, closed[3], RETRO_NOTE_MIN)
+            )
+        if not boxes:
+            raise RecordError("%s has no open boxes to investigate" % rel)
+        _i, _line, body, sig = select_box(boxes, selector)
 
     pointers, resolved, n = vet_pointers_and_note(root, pointer_tokens, note)
+    retro_commit = ""
+    if retro:
+        if len(n) < RETRO_NOTE_MIN:
+            raise RecordError(
+                "--retro: the note is %d character(s); at least %d are required. A row written "
+                "AFTER the work must say what the tree held BEFORE the implementing commit -- "
+                "the fact a live row's `head` would have recorded for free -- and name what "
+                "that commit added." % (len(n), RETRO_NOTE_MIN)
+            )
+        retro_commit = _retro_commits(root, pointers)[0][1]
 
     head = _git_out(root, "rev-parse", "HEAD") or ""
     row = {
@@ -2339,6 +2425,10 @@ def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now
         "resolved": [[k, ok, d] for k, ok, d in resolved],
         "note": n[:600],
     }
+    if retro:
+        # PROVENANCE IN THE ROW. `head` stays the live HEAD, because that IS when this was written; `retro` says the ordering P-A4 checks never happened, and the gate prints it instead of judging it.
+        row["retro"] = True
+        row["retro_commit"] = retro_commit[:40]
     return row, resolved
 
 
@@ -2496,6 +2586,15 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
     # Measured corpus-wide before this was written: 13 `    (ticked) ` evidence lines across all four plan folders, all of them in ONE file, against 589 done boxes. `--plan-tick` has been used on about 2% of the boxes it was written for and the rest were flipped with the Edit tool carrying no evidence of any kind. There is nothing to re-check on them and never will be, so this
     # binds the NEXT tick and never a past one. Saying so here is what stops a later "strengthening" into a rule that reds 576 boxes it cannot possibly judge.
     inv_row = investigation_for(root, rel, sig)
+    if inv_row is not None and inv_row.get("retro"):
+        # A RETRO ROW DESCRIBES A PAST CLOSE and never licenses a new one. It can only exist for a box that was ticked, so reaching it here means the box was re-opened; the re-opened box gets a live investigation like any other.
+        raise RecordError(
+            "the latest investigation row for box %s of %s is a --retro row, written about an "
+            "earlier close. It does not license this tick. Investigate the re-opened box first:\n"
+            "    worklist.py --plan-investigate %s %s %s <absent|present|partial> "
+            "<kind>:<token> <kind>:<token> -- <note> --write"
+            % (sig, rel, (me or "<me>")[:8], rel, sig)
+        )
     if inv_row is None:
         raise RecordError(
             "no investigation row for box %s of %s.\n\n"

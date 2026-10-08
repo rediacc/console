@@ -254,16 +254,26 @@ After `executeInstalls` succeeds (`scripts/gates/check-deps.ts:2240`), `check-de
 
 ## Boxes
 
-- [ ] T1 W3: reproduce the fail-fast receipt hole (the guard accepts a `--quick --fail-fast` receipt with a carried red), fixture plus control; W2 adds the flags to `narrowingFlags`
-- [ ] T2 W1: `jsonl_append.py` lifted from wl_store, with wl_store importing it; concurrency and torn-tail tests with controls
-- [ ] T3 W1: `gate_ledger` append/backfill/fold-ci/rotation; backfill of the 50+ receipts here and in the push clone
-- [ ] T4 W1: path classes and the classification (real/flaky/clock/infra/chronic, per-finding descent); the replay fixture from 2026-10-08 passes with its controls
-- [ ] T5 W1: clusters, associations, companions; `model.json` v1; `refresh` with TTL, report, worklist items with token dedup
-- [ ] T6 W2: `ledger.ts` writing rows from `onFinish`; loud degradation
-- [ ] T7 W2: `rank.ts` plus the `pool.ts` two-key rank, the `sim.ts` `predictMakespan` safety check, preflight/stage 1 and the cold-start fallback; property test over the archived timelines with a control
-- [ ] T8 W2: RED streaming, the `--events` stream, `--stop-on-stage-red` (exit 3, no receipt), `--narrow [--print]`
-- [ ] T9: no gate id in gate_model.py, gate_ledger.py, ledger.ts or rank.ts; a test with a planted control
-- [ ] T10 W4: check-deps `--upgrade` moves the syncpack pinVersion groups (#3b831146); selftest plus control
+- [x] T1 W3: reproduce the fail-fast receipt hole (the guard accepts a `--quick --fail-fast` receipt with a carried red), fixture plus control; W2 adds the flags to `narrowingFlags`
+    (ticked) 2026-10-08T08:54:33Z by d778be9d: commit:f80b0e6be guard unjudged_blocked (143 cases rc0) and commit:ce902f2ed runner flags (run.ts --selftest 369 assertions ok)
+- [x] T2 W1: `jsonl_append.py` lifted from wl_store, with wl_store importing it; concurrency and torn-tail tests with controls
+    (ticked) 2026-10-08T08:54:34Z by d778be9d: commit:ce902f2ed jsonl_append.py loaded by wl_store.py:649; concurrency and torn-tail tests pass (test_gate_ledger.py)
+- [x] T3 W1: `gate_ledger` append/backfill/fold-ci/rotation; backfill of the 50+ receipts here and in the push clone
+    (ticked) 2026-10-08T08:54:35Z by d778be9d: commit:ce902f2ed gate_ledger append/backfill/fold-ci/rotation with tests; live ledger 357 rows
+- [x] T4 W1: path classes and the classification (real/flaky/clock/infra/chronic, per-finding descent); the replay fixture from 2026-10-08 passes with its controls
+    (ticked) 2026-10-08T08:54:37Z by d778be9d: commit:ce902f2ed test_gate_model_replay.py replays the 2026-10-08 receipts with controls (59 passed)
+- [x] T5 W1: clusters, associations, companions; `model.json` v1; `refresh` with TTL, report, worklist items with token dedup
+    (ticked) 2026-10-08T08:54:38Z by d778be9d: commit:ce902f2ed clusters/associations/companions, model.json v1, refresh TTL (gate_model.py:86); tests pass
+- [x] T6 W2: `ledger.ts` writing rows from `onFinish`; loud degradation
+    (ticked) 2026-10-08T08:54:39Z by d778be9d: commit:ce902f2ed ledger.ts writes rows from onFinish; runner and learned selftests rc0
+- [x] T7 W2: `rank.ts` plus the `pool.ts` two-key rank, the `sim.ts` `predictMakespan` safety check, preflight/stage 1 and the cold-start fallback; property test over the archived timelines with a control
+    (ticked) 2026-10-08T08:54:40Z by d778be9d: commit:ce902f2ed rank.ts + pool two-key rank + sim predictMakespan; 15/15 mixes ranked, control 10 slower unpinned
+- [x] T8 W2: RED streaming, the `--events` stream, `--stop-on-stage-red` (exit 3, no receipt), `--narrow [--print]`
+    (ticked) 2026-10-08T08:54:41Z by d778be9d: commit:ce902f2ed RED lines report.ts:475, --events, --stop-on-stage-red (run.ts:352), --narrow --print live rc0
+- [x] T9: no gate id in gate_model.py, gate_ledger.py, ledger.ts or rank.ts; a test with a planted control
+    (ticked) 2026-10-08T08:54:43Z by d778be9d: commit:ce902f2ed T9 scan test_gate_model.py:530 with planted-id control :563
+- [x] T10 W4: check-deps `--upgrade` moves the syncpack pinVersion groups (#3b831146); selftest plus control
+    (ticked) 2026-10-08T08:54:44Z by d778be9d: commit:e2db9a53c planPinSync/syncPinGroups in check-deps.ts, selftest section 13 with the skip-pin-sync mutant
 - [ ] T11 lead: the ci-trace fold-in hook, `prepush.sh` streaming plus `TRIAGE=1`, the pr-babysitter loop docs
 - [ ] T12 lead: a live run on the real tree. Backfill, refresh, then one triage pre-push. Record time-to-first-red against 10-08 (459-975 s) and confirm the receipt and guard behaviour
 

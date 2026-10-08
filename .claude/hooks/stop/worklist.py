@@ -771,7 +771,7 @@ def _plantick_cli(argv):
         sys.exit(2)
 
     if len(argv) < 2:
-        die(M.CLI_PLANTICK_USAGE)
+        die(M.CLI_PLAN_ORDER + M.CLI_PLANTICK_USAGE)
     me = argv[1]
     if not C.PREFIX_RE.match(me):
         die("bad prefix %r: pass YOUR session-id prefix first" % me)
@@ -793,7 +793,7 @@ def _plantick_cli(argv):
         print("  %d open box(es) can be ticked in place." % n)
         return
     if len(argv) < 5:
-        die(M.CLI_PLANTICK_USAGE)
+        die(M.CLI_PLAN_ORDER + M.CLI_PLANTICK_USAGE)
     rel, selector = argv[2], argv[3]
     rest = [a for a in argv[4:] if a != "--write"]
     write = "--write" in argv[4:]
@@ -843,8 +843,9 @@ def _planinvestigate_cli(argv):
         print(msg, file=sys.stderr)
         sys.exit(2)
 
+    usage = M.CLI_PLAN_ORDER + M.CLI_PLANINV_USAGE + M.CLI_PLANINV_RETRO_USAGE
     if len(argv) < 2:
-        die(M.CLI_PLANINV_USAGE)
+        die(usage)
     me = argv[1]
     if not C.PREFIX_RE.match(me):
         die("bad prefix %r: pass YOUR session-id prefix first" % me)
@@ -856,6 +857,14 @@ def _planinvestigate_cli(argv):
     rest = list(argv[2:])
     write = "--write" in rest
     rest = [a for a in rest if a != "--write"]
+    # `--retro` is a flag like `--write`, accepted anywhere BEFORE the bare `--` (after it, the word is note text).
+    cut_at = rest.index("--") if "--" in rest else len(rest)
+    retro = "--retro" in rest[:cut_at]
+    rest = [a for i, a in enumerate(rest) if not (i < cut_at and a == "--retro")]
+    if not retro and rest and rest[-1] == "--retro":
+        # `--retro` after `--` is note text by grammar, but a trailing `-- <note> --retro --write` is the natural spelling, so the last word is read as the flag.
+        retro = True
+        rest = rest[:-1]
     # THE NOTE IS EVERYTHING AFTER A BARE `--`, not "the last argument", because a note is a sentence and a sentence quoted as one argv entry is the shape nobody types correctly the first time.
     if "--" in rest:
         cut = rest.index("--")
@@ -863,19 +872,21 @@ def _planinvestigate_cli(argv):
     else:
         head_args, note = rest, ""
     if len(head_args) < 4:
-        die(M.CLI_PLANINV_USAGE)
+        die(usage)
     rel, selector, verdict = head_args[0], head_args[1], head_args[2]
     pointer_tokens = head_args[3:]
     for f in pointer_tokens:
         if f.startswith("--"):
-            die("unknown flag %r\n\n%s" % (f, M.CLI_PLANINV_USAGE))
+            die("unknown flag %r\n\n%s" % (f, usage))
     try:
         rel = str(pathlib.Path(rel).resolve().relative_to(pathlib.Path(root).resolve()))
     except ValueError:
         rel = rel.lstrip("./")
 
     try:
-        row, resolved = R.plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me)
+        row, resolved = R.plan_investigate(
+            root, rel, selector, verdict, pointer_tokens, note, me, retro=retro
+        )
     except R.RecordError as exc:
         die(M.CLI_PLANREC_REFUSED % exc)
         return
@@ -887,10 +898,17 @@ def _planinvestigate_cli(argv):
         "br": row["br"] or "(no branch)",
         "table": R.render_resolution(resolved),
         "ledger": "/".join(R.INVESTIGATION_REL),
-        "next": M.CLI_PLANINV_NEXT.get(row["verdict"], ""),
+        "next": (
+            M.CLI_PLANINV_RETRO_NEXT % {"retro_commit": row["retro_commit"][:12]}
+            if row.get("retro")
+            else M.CLI_PLANINV_NEXT.get(row["verdict"], "")
+        ),
     }
     if not write:
         sys.stdout.write(M.CLI_PLANINV_DRY % payload)
+        if row.get("retro"):
+            # A DRY RETRO MUST NOT LOOK LIKE A LIVE ONE: the paragraph saying it is a late record is printed here too, not only after --write.
+            print("\n" + payload["next"])
         return
     R.append_investigation(root, row)
     print(M.CLI_PLANINV_WROTE % payload)
