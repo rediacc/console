@@ -463,7 +463,7 @@ for rel, body in FILES.items():
 git("add", "-A")
 git("commit", "-q", "-m", "base")
 
-CFG = dict(R.DEFAULTS, slot_wait_s=5, max_concurrent=1)
+CFG = dict(R.load_config(), slot_wait_s=5, max_concurrent=1)
 
 
 def reviewer_for(finding):

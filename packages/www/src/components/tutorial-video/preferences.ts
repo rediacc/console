@@ -14,10 +14,10 @@
  */
 
 /** The localStorage key. Plyr's former key is migrated once, then removed. */
-export const PREFS_KEY = 'tvp-prefs';
+const PREFS_KEY = 'tvp-prefs';
 const LEGACY_PLYR_KEY = 'plyr-tutorial';
 
-export interface PlayerPrefs {
+interface PlayerPrefs {
   volume?: number;
   muted?: boolean;
   rate?: number;
@@ -61,7 +61,7 @@ function migrateLegacy(store: Storage): PlayerPrefs | null {
   }
 }
 
-export function readPrefs(): PlayerPrefs {
+function readPrefs(): PlayerPrefs {
   const store = storage();
   if (!store) return {};
   try {
@@ -78,7 +78,7 @@ export function readPrefs(): PlayerPrefs {
   return {};
 }
 
-export function writePrefs(patch: PlayerPrefs): void {
+function writePrefs(patch: PlayerPrefs): void {
   const store = storage();
   if (!store) return;
   try {

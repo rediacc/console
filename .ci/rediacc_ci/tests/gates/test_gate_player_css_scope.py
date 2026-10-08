@@ -37,7 +37,9 @@ def real_dist_skip_reason():
 
 
 # MUTANT 1. `.tvp-root` is the marker the gate's header records as MEASURED-AND-REJECTED: it appears in a non-player bundle too, so admitting it makes `a/other.css` a player stylesheet and `over.html` an offender. P4 is the plant that says it must not be.
-MARKERS_FIXED = "const MARKERS = ['.media-status-indicator-captions-off-icon', '.tvp-caption-word'];"
+MARKERS_FIXED = (
+    "const MARKERS = ['.media-status-indicator-captions-off-icon', '.tvp-caption-word'];"
+)
 MARKERS_WIDE = "const MARKERS = ['.media-status-indicator-captions-off-icon', '.tvp-caption-word', '.tvp-root'];"
 
 # MUTANT 2. F6 is the positive half of the assertion; with its condition dead, a build in which nothing loads the player's stylesheet reports a clean tree. P6 is the plant that says it must refuse.

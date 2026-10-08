@@ -13,7 +13,7 @@ THE FIXTURE IS A GIT REPOSITORY, and that is not scaffolding. The gate's corpus 
 import json
 
 from rediacc_ci import paths
-from rediacc_ci.core.bws_env import JSON_REQUIRED
+from rediacc_ci.core.bws_env import ARCHIVE_PATTERN, JSON_REQUIRED
 from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_bws_map.py")
@@ -117,6 +117,15 @@ def fixture(gate, directory) -> None:
     write(
         directory / "scripts/ops/secret-rename.py",
         'RENAMES: list[tuple[str, str]] = [\n    ("OLD_ALPHA", "ALPHA_TOKEN"),\n]\n',
+    )
+    # ASSERTION 15 reads the two files that pin the archive regex and refuses when either is unreadable or does not declare ARCHIVE_RE with bws_env.ARCHIVE_PATTERN, so the fixture carries a declaration in each, in the form the gate parses.
+    write(
+        directory / "private/account/scripts/rotation/consumers/bitwarden-sm.ts",
+        "export const ARCHIVE_RE = /%s/\n" % ARCHIVE_PATTERN,
+    )
+    write(
+        directory / "scripts/ops/bws-map-refresh.py",
+        'import re\n\nARCHIVE_RE = re.compile(r"%s")\n' % ARCHIVE_PATTERN,
     )
     write(directory / ".github/workflows/w.yml", WORKFLOW)
     harness.run([git, "add", "-A"], cwd=directory)
