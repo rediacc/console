@@ -28,6 +28,7 @@ from rediacc_ci import paths
 from rediacc_ci.core import local_common, stubfarm
 from rediacc_ci.core import local_common_actions_shadow_driver as actions_driver
 from rediacc_ci.core import local_common_shadow_driver as driver
+from rediacc_ci.tests import differential as diff
 
 TWIN = ".ci/lib/local-common.sh"
 PORT = ".ci/rediacc_ci/core/local_common.py"
@@ -675,13 +676,47 @@ ACTION_CASES = [
 ]
 
 
+# The cases whose bash side sources `.ci/lib/devbox.sh`: the whole `lane` scenario (the twin's `gate_lane_*` call `devbox_*`) and `_reset_docker_memo`, whose only effect is on a memo `devbox.sh` owns. That library is deleted (it is `core.devbox` now), so these cases answer from the golden frozen out of the twin while it still ran them; every other case still drives the live twin.
+DEVBOX_COUPLED_VERBS = {"reset-docker-memo"}
+
+
+def _devbox_coupled(scenario: str, case) -> bool:
+    return scenario == "lane" or case.verb in DEVBOX_COUPLED_VERBS
+
+
+def _old_actions(scenario: str, case, repo) -> list[str]:
+    """The twin's observation lines for one action case."""
+    if not _devbox_coupled(scenario, case):
+        return actions_driver.observe("old", repo, case)
+
+    def retired():
+        raise RuntimeError(
+            "devbox.sh is retired: re-record a Rule-T change with `%s %s --source port --reason ...`"
+            % (diff.REGOLDEN_VERB, TWIN)
+        )
+
+    def live():
+        return 0, "\n".join(actions_driver.observe("old", repo, case)), ""
+
+    def port():
+        return 0, "\n".join(actions_driver.observe("new", repo, case)), ""
+
+    out = diff.twin_call(
+        TWIN,
+        ["actions", scenario, case.name],
+        live if diff.regolden_mode(TWIN) == "bash" else retired,
+        port=port,
+    )[1]
+    return out.splitlines()
+
+
 @pytest.mark.parametrize(
     ("scenario", "case"), ACTION_CASES, ids=["%s/%s" % (s, c.name) for s, c in ACTION_CASES]
 )
 def test_actions_match_the_live_twin(scenario, case) -> None:
     repo = paths.repo_root()
     with actions_driver.locked():
-        old = actions_driver.observe("old", repo, case)
+        old = _old_actions(scenario, case, repo)
         new = actions_driver.observe("new", repo, case)
     if "%s/%s" % (scenario, case.name) in ACTION_DELTA_CASES:
         # Rule T fix C1 (`test_delta_c1`): an empty source tree hashes as nothing, where the twin hashed its own empty stdin. Compared on the two answers, so the case still proves the rest of the transcript moved no other line.

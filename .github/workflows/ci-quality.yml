@@ -2424,8 +2424,8 @@ jobs:
         # test_the_real_repository_agrees_in_table_format and its json twin fail
         # on the inventory never being built rather than on any disagreement.
         #
-        # build-packages: runs .ci/scripts/setup/build-packages.sh, whose line 20
-        # is `npm run build:packages` = `npm run build -w @rediacc/shared &&
+        # build-packages: runs rediacc_ci.setup.build_packages, which runs
+        # `npm run build:packages` = `npm run build -w @rediacc/shared &&
         # npm run build -w @rediacc/provisioning`. test_proxies_unit_tests drives
         # `npm run test:unit -w @rediacc/e2e-tests`, which imports
         # `@rediacc/provisioning/renet`; unbuilt, vitest reports

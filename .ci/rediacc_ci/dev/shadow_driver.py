@@ -84,7 +84,7 @@ SANDBOX_DIRS = (
 )
 
 # The file the sandbox replaces, and the only one. Chosen because it is the LAST file both preludes source, so these definitions win over the real ones without either implementation knowing a stub exists.
-STUB_TARGET = (".ci", "lib", "devbox.sh")
+STUB_TARGET = (".ci", "lib", "local-common.sh")
 
 STUB_DEVBOX = """#!/bin/bash
 # SANDBOX STUB, written by .ci/rediacc_ci/dev/shadow_driver.py. Not a library.
@@ -138,8 +138,6 @@ ROOT_DIR="$REDIACC_CI_ROOT"
 source "$ROOT_DIR/.ci/config/constants.sh"
 source "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"
 source "$ROOT_DIR/.ci/lib/local-common.sh"
-source "$ROOT_DIR/.ci/lib/service.sh"
-source "$ROOT_DIR/.ci/lib/devbox.sh"
 dev "$@"
 """
 
@@ -207,7 +205,9 @@ def build_sandbox(root: pathlib.Path, base: pathlib.Path) -> pathlib.Path:
     sandbox = base / "sandbox"
     for parts in SANDBOX_DIRS:
         shutil.copytree(root.joinpath(*parts), sandbox.joinpath(*parts), symlinks=False)
-    sandbox.joinpath(*STUB_TARGET).write_text(STUB_DEVBOX, encoding="utf-8")
+    # APPENDED to the sandbox copy of local-common.sh, the last library `bridge.PRELUDE` sources, so the stubs win over its own definitions. `devbox.sh`, which used to be the file replaced here, is `core.devbox` now and is no longer sourced.
+    target = sandbox.joinpath(*STUB_TARGET)
+    target.write_text(target.read_text(encoding="utf-8") + "\n" + STUB_DEVBOX, encoding="utf-8")
     (sandbox / "packages").mkdir(parents=True, exist_ok=True)
     for name in ROOT_FIXTURES:
         source = root / name

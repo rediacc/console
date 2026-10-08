@@ -1,6 +1,6 @@
 """The DETERMINISTIC half of `.ci/lib/account.sh`, ported function for function -- plus three more, `account_stop`, `account_rotation` and `account_bws_exec`, proved a different way. See below.
 
-PORTED FROM `.ci/lib/account.sh` (1046 lines, 21 functions). The twin still exists, is untouched by this file, and stays sourced at `.ci/legacy/run-legacy.sh:405` (the `account` verb) and `:443` (the `rotation` verb). Nothing is cut over here.
+PORTED FROM `.ci/lib/account.sh` (1046 lines, 21 functions), which is DELETED (PLAN-retire-bash-oracles B3): its answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/lib.account.jsonl`. Nothing sources it any more; `./run.sh account` and `rotation` are served by this module and `account_lifecycle`.
 This is a pre-cutover port on the same sequencing every other lib in this campaign used, and `.ci/lib/service.sh` is the worked precedent: its port `rediacc_ci/core/service.py` has carried a K=5 ledger since 2026-09-10 while `run-legacy.sh:48` still sources the bash.
 
 --------------------------------------------------------------------------

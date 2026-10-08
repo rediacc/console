@@ -2,8 +2,7 @@
 
 WHAT MOVED. `setup()` at `.ci/legacy/run-legacy.sh:543-715` (173 lines) and `setup_check()` at `:719-817` (99 lines), plus the nine functions in `.ci/lib/setup.sh` (845 lines) they drive. 1,117 lines of bash, measured 2026-09-09 with `wc -l` and `sed -n`.
 
-WHAT DID NOT MOVE, AND WHY THAT IS THE RIGHT SCOPE. Six of the fifteen phases live in `.ci/lib/local-common.sh` and `.ci/lib/devbox.sh`, which four other
-verbs also call. They are reached through `bridge.py`, so the same bytes run;
+WHAT DID NOT MOVE, AND WHY THAT IS THE RIGHT SCOPE. Six of the fifteen phases live in `.ci/lib/local-common.sh` (shell) and `core.devbox` (the port of the deleted `.ci/lib/devbox.sh`), which other verbs also call. They are reached through `bridge.py`;
 see that module's header. This file owns the ORCHESTRATION -- which phase, in what order, fatal or not -- and `host.py` owns the nine that were only ever `setup`'s.
 
 THE TWO CONTRACTS THIS FILE IS JUDGED ON.
@@ -54,15 +53,6 @@ Related: ./run.sh devbox [up|status|stop|remove|shell|logs]"""
 
 # `return 2` for an unknown option, `.ci/legacy/run-legacy.sh:578`. Named because 2 is this repository's usage-error code everywhere else too (`rediacc_ci/__main__.py:55`, `core/env.py`, `core/ports.py`).
 EXIT_USAGE = 2
-
-# The seven questions `setup_check()` asks `devbox.sh`, as ONE shell program. See `_devbox_facts` for why they are batched; held here as a constant so the program is readable next to the bash it mirrors and nothing can interpolate into it.
-DEVBOX_FACTS = """printf "worktree=%s\\n" "$(devbox_worktree 2>/dev/null || echo "")"
-if devbox_image_present; then printf "image=1\\n"; else printf "image=0\\n"; fi
-printf "base_port=%s\\n" "$(devbox_base_port 2>/dev/null || echo "")"
-if devbox_container_running; then printf "running=1\\n"; else printf "running=0\\n"; fi
-printf "container_id=%s\\n" "$(devbox_container_id 2>/dev/null || echo "")"
-printf "container_name=%s\\n" "$(devbox_container_name 2>/dev/null || echo "")"
-"""
 
 
 @dataclass(frozen=True)
@@ -139,21 +129,23 @@ def reexec_with_docker_group(root: pathlib.Path, argv: list[str], env: dict[str,
 
 
 def _devbox_facts(root: pathlib.Path, env: dict[str, str]) -> dict[str, str]:
-    """Everything `setup_check()` asks `devbox.sh`, in ONE bridged shell.
+    """Everything `setup_check()` asks `core.devbox`, one in-process call each.
 
-    SEVEN QUESTIONS, ONE PROCESS. The bash asks each of them with its own
-    function call inside one already-sourced shell; a Python port that bridged
-    each one separately would pay the whole prelude seven times, which on this host is about 0.2s each. Behaviour is identical, so this is the one place the port is deliberately not a line-for-line transcription.
-
-    EVERY VALUE IS A STRING AND AN ABSENT ONE IS "", never a raised error: this is a REPORT, and a report that dies because one row could not be computed is worse than a report with one row missing. `devbox_base_port` in particular is allowed to fail; see `_port_block_row`.
+    EVERY VALUE IS A STRING AND AN ABSENT ONE IS "", never a raised error: this is a REPORT, and a report that dies because one row could not be computed is worse than a report with one row missing. The value rows mirror the bash's `$(devbox_x 2>/dev/null || echo "")`: stderr is dropped and the stdout is kept whatever the status. The image and container rows are the status alone (`if devbox_image_present`), with stderr inherited.
     """
-    _, out = bridge.capture(DEVBOX_FACTS, root, env)
-    facts: dict[str, str] = {}
-    for line in out.split("\n"):
-        if "=" in line:
-            key, _, value = line.partition("=")
-            facts[key] = value
-    return facts
+
+    def value(name: str) -> str:
+        _, out = bridge.capture(name, root, env, quiet_err=True)
+        return out.rstrip("\n")
+
+    return {
+        "worktree": value("devbox_worktree"),
+        "image": "1" if bridge.call("devbox_image_present", root, env) == 0 else "0",
+        "base_port": value("devbox_base_port"),
+        "running": "1" if bridge.call("devbox_container_running", root, env) == 0 else "0",
+        "container_id": value("devbox_container_id"),
+        "container_name": value("devbox_container_name"),
+    }
 
 
 def _port_block_row(facts: dict[str, str], constants: dict[str, str]) -> str:

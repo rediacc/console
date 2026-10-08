@@ -1,18 +1,18 @@
 """The bash this port deliberately does NOT own, reached through one seam.
 
-WHY A BRIDGE AND NOT MORE PORT. `setup()` calls fifteen things. Nine of them are `.ci/lib/setup.sh` and are ported in `host.py`. The other six live in `.ci/lib/local-common.sh` and `.ci/lib/devbox.sh`, which this box does not touch and which other verbs (`devbox`, `account`, `service`, `rdc.sh`) still call:
+WHY A BRIDGE AND NOT MORE PORT. `setup()` calls fifteen things. Nine of them are `.ci/lib/setup.sh` and are ported in `host.py`. The other six are five functions in `.ci/lib/local-common.sh`, which this box does not touch and which `rdc.sh` and the media entry point still source, and the `devbox_*` functions, which are `core.devbox` now (the bash library was deleted under PLAN-retire-bash-oracles B3):
 
     check_node_version      .ci/lib/local-common.sh:418
     ensure_host_tools       .ci/lib/local-common.sh:587
     ensure_bashcov_sup      .ci/lib/local-common.sh:566
     ensure_deps             .ci/lib/local-common.sh:203
     ensure_docker_installed .ci/lib/local-common.sh:669
-    devbox_*                .ci/lib/devbox.sh
+    devbox_*                rediacc_ci.core.devbox, run in process by `_devbox_call`
 
-Porting those here would either DUPLICATE them, which is how two implementations drift, or move them, which is a different box with a much larger blast radius. So `setup` calls the same shell functions the same way, and the behaviour of those six is not merely preserved, it is IDENTICAL: the same bytes run. That is a stronger claim than any differential could make about a rewrite,
+Porting those here would either DUPLICATE them, which is how two implementations drift, or move them, which is a different box with a much larger blast radius. So `setup` calls the same functions the same way: the five shell ones as before, the `devbox_*` ones through their Python port. That is a stronger claim than any differential could make about a rewrite,
 and it is the honest scope of "port the setup verb".
 
-THE ENTRYPOINT IS ALWAYS THE SAME SHELL PROGRAM. The prelude sources `constants.sh`, `toolchain.sh`, `local-common.sh` and `service.sh` in that order, then `devbox.sh` on top. Until 2026-10-01 the first four arrived through `.ci/legacy/run-legacy.sh`, which sourced them and defined nothing else when sourced; that file is deleted, so the prelude names them itself.
+THE SHELL ENTRYPOINT IS ALWAYS THE SAME PROGRAM. The prelude sources `constants.sh`, `toolchain.sh` and `local-common.sh` in that order. Until 2026-10-01 they arrived through `.ci/legacy/run-legacy.sh`, which sourced them (with `service.sh` and `devbox.sh`) and defined nothing else when sourced; that file is deleted, and so are the two libraries, so the prelude names the three itself.
 
 STREAMS ARE NOT CAPTURED BY DEFAULT. `ensure_deps` compiles native modules and `devbox_up` prints a probed route table; both take minutes and both are the thing an operator watches. A bridge that captured them would turn a live install into a silent hang, so `call()` inherits the streams and only `capture()` does not. The two are different functions rather than a flag, because a
 flag is a thing a caller gets wrong once and never notices.
@@ -20,20 +20,23 @@ flag is a thing a caller gets wrong once and never notices.
 
 from __future__ import annotations
 
+import io
+import os
+import shlex
 import subprocess
 from typing import TYPE_CHECKING
+
+from rediacc_ci.core import devbox
 
 if TYPE_CHECKING:  # pragma: no cover - `pathlib` is only ever an annotation here
     import pathlib
 
-# Sourced in the order the deleted `.ci/legacy/run-legacy.sh` sourced them. Kept as data so the preamble is one string in one place and a reader can see the whole environment a bridged call runs in.
+# Sourced in the order the deleted `.ci/legacy/run-legacy.sh` sourced them, minus the two libraries (`service.sh`, `devbox.sh`) that moved to `core.service` and `core.devbox` and were deleted: a `devbox_*` body never reaches this shell, `_devbox_call` runs it in process. Kept as data so the preamble is one string in one place and a reader can see the whole environment a bridged call runs in.
 PRELUDE = (
     "set -euo pipefail",
     'source "$ROOT_DIR/.ci/config/constants.sh"',
     'source "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"',
     'source "$ROOT_DIR/.ci/lib/local-common.sh"',
-    'source "$ROOT_DIR/.ci/lib/service.sh"',
-    'source "$ROOT_DIR/.ci/lib/devbox.sh"',
 )
 
 # The names `setup()` and `setup_check()` read out of `.ci/config/constants.sh`. EXPORTED BY NAME rather than by dumping the whole environment: constants.sh defines around sixty readonly names and a dump would make this seam a place any of them could be reached from, which is how a seam stops being one.
@@ -65,27 +68,75 @@ def _quote(value: str) -> str:
     return "'" + value.replace("'", "'\\''") + "'"
 
 
+def _devbox_words(body: str) -> list[str] | None:
+    """`body` as an argv when it is ONE call of a `devbox.sh` function, else None.
+
+    The library is Python now (`core.devbox`), so a body naming one of its fifty-five functions runs there and never reaches bash. Anything else, including a multi-line program, goes to the shell.
+    """
+    if "\n" in body:
+        return None
+    try:
+        words = shlex.split(body)
+    except ValueError:
+        return None
+    return words if words and words[0] in devbox.BASH_NAMES else None
+
+
+def _devbox_call(
+    words: list[str],
+    root: pathlib.Path,
+    env: dict[str, str] | None,
+    *,
+    stdout=None,
+    stderr=None,
+) -> int:
+    """`( set -e; devbox_<name> args )` in process, over `env` (or this process's environment) with `root` as the checkout."""
+    box = devbox.Devbox(
+        env=dict(os.environ if env is None else env),
+        cwd=str(root),
+        repo_root=str(root),
+        stdout=stdout,
+        stderr=stderr,
+    )
+    return box.invoke(words[0], words[1:])
+
+
 def call(body: str, root: pathlib.Path, env: dict[str, str] | None = None) -> int:
     """Run `body` after the prelude, streams INHERITED. Returns its exit code.
 
     `check=False` and no capture: this is the path `ensure_deps` and `devbox_up`
     take, and both are long-running and chatty on purpose.
     """
+    words = _devbox_words(body)
+    if words is not None:
+        return _devbox_call(words, root, env)
     proc = subprocess.run(_program(body, root), cwd=str(root), env=env, check=False)
     return proc.returncode
 
 
-def capture(body: str, root: pathlib.Path, env: dict[str, str] | None = None) -> tuple[int, str]:
-    """Run `body`, return `(rc, stdout)`. STDERR IS INHERITED, not captured.
+def capture(
+    body: str,
+    root: pathlib.Path,
+    env: dict[str, str] | None = None,
+    *,
+    quiet_err: bool = False,
+) -> tuple[int, str]:
+    """Run `body`, return `(rc, stdout)`. STDERR IS INHERITED, not captured, unless `quiet_err` (`2>/dev/null`).
 
     A bridged function's stdout is its VALUE (`devbox_url` prints a URL, `devbox_base_port` prints a number) and its stderr is its LOG, because every `log_*` in `.ci/scripts/lib/common.sh:35-54` writes to stderr. Capturing both would merge a value with the progress text around it, which is the exact defect `rediacc_ci.log`'s header records. So stderr goes straight through to the
     operator and only stdout comes back.
     """
+    words = _devbox_words(body)
+    if words is not None:
+        sink = io.BytesIO()
+        rc = _devbox_call(words, root, env, stdout=sink, stderr=io.BytesIO() if quiet_err else None)
+        return rc, sink.getvalue().decode("utf-8", "replace")
     proc = subprocess.run(
         _program(body, root),
         cwd=str(root),
         env=env,
         stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL if quiet_err else None,
         text=True,
         check=False,
     )

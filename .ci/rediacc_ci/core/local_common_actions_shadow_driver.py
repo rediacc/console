@@ -44,7 +44,6 @@ import pathlib
 import shutil
 import subprocess
 import sys
-import tempfile
 from typing import TYPE_CHECKING
 
 from rediacc_ci.core import local_common
@@ -56,6 +55,7 @@ if TYPE_CHECKING:  # annotation-only import
 EXIT_CANNOT_RUN = 77
 BASE_NAME = "rediacc-lc-actions"
 LOGGED = (
+    "python3",
     "npm",
     "node",
     "go",
@@ -252,6 +252,7 @@ NPM_INSTALL_SH = (
     "ln -sfn ../../packages/cli node_modules/@rediacc/cli; "
     "printf '// buildcheck\\n' > node_modules/cpu-features/buildcheck.js"
 )
+BUILD_PACKAGES_GLOB = "-m rediacc_ci.setup.build_packages"
 BUILD_PACKAGES_SH = 'mkdir -p "$CONSOLE_ROOT_DIR/packages/shared/dist" "$CONSOLE_ROOT_DIR/packages/provisioning/dist"'
 BUNDLE_SH = "mkdir -p packages/cli/dist; printf 'bundle\\n' > packages/cli/dist/cli-bundle.cjs"
 RENET_BUILD_SH = (
@@ -380,7 +381,7 @@ SCENARIOS: dict[str, list[Case]] = {
             "packages-fresh",
             "ensure-packages-built",
             setup=("manifests", "packages"),
-            rows=[row("build-packages.sh", sh=BUILD_PACKAGES_SH)],
+            rows=[row("python3", BUILD_PACKAGES_GLOB, sh=BUILD_PACKAGES_SH)],
             env={"DEBUG": "true"},
             repeat=2,
         ),
@@ -388,13 +389,13 @@ SCENARIOS: dict[str, list[Case]] = {
             "packages-build-fails",
             "ensure-packages-built",
             setup=("manifests", "packages"),
-            rows=[row("build-packages.sh", rc=3, err="tsc failed\n")],
+            rows=[row("python3", BUILD_PACKAGES_GLOB, rc=3, err="tsc failed\n")],
         ),
         Case(
             "packages-missing-provisioning",
             "ensure-packages-built",
             setup=("manifests", "packages", "no_provisioning"),
-            rows=[row("build-packages.sh", sh=BUILD_PACKAGES_SH)],
+            rows=[row("python3", BUILD_PACKAGES_GLOB, sh=BUILD_PACKAGES_SH)],
         ),
     ],
     "cli": [
@@ -800,7 +801,8 @@ SCENARIOS: dict[str, list[Case]] = {
 
 
 def base_dir() -> pathlib.Path:
-    return pathlib.Path(tempfile.gettempdir()) / BASE_NAME
+    # A LITERAL /tmp, see `locked`.
+    return pathlib.Path("/tmp") / BASE_NAME
 
 
 def build_sandbox(repo: pathlib.Path, case: Case) -> tuple[pathlib.Path, Farm]:
@@ -821,7 +823,6 @@ def build_sandbox(repo: pathlib.Path, case: Case) -> tuple[pathlib.Path, Farm]:
     farm = Farm(base / "farm")
     farm.stub(*(n for n in LOGGED if n not in case.unstub))
     farm.stub(*UNLOGGED, logged=False)
-    farm.stub_at(root / ".ci" / "scripts" / "setup" / "build-packages.sh")
     farm.stub_at(root / "private" / "renet" / "build.sh")
     for spec in case.rows:
         fields = dict(spec)
@@ -886,7 +887,7 @@ def run_side(
         argv = ["bash", "-c", OLD_PROGRAM, "lc-old", str(root), FN[case.verb], *case.args]
     else:
         env = dict(env, PYTHONPATH=str(repo / ".ci"))
-        argv = ["python3", "-m", "rediacc_ci.core.local_common", case.verb, *case.args]
+        argv = [sys.executable, "-m", "rediacc_ci.core.local_common", case.verb, *case.args]
     return subprocess.run(
         argv,
         cwd=root,
@@ -954,7 +955,8 @@ def observe(side: str, repo: pathlib.Path, case: Case) -> list[str]:
 
 @contextlib.contextmanager
 def locked():
-    lock = pathlib.Path(tempfile.gettempdir()) / (BASE_NAME + ".lock")
+    """The machine-wide lock. The base is a literal /tmp and not `tempfile.gettempdir()`: `ensure_deps` hashes absolute paths into its stamp, and the frozen lane and memo transcripts in `goldens/twins/lib.local-common.jsonl` carry the hash for exactly this path, so a `TMPDIR` that differs between the recording machine and CI would fail every case that reads the stamp."""
+    lock = pathlib.Path("/tmp") / (BASE_NAME + ".lock")
     with open(lock, "w") as handle:
         fcntl.flock(handle, fcntl.LOCK_EX)
         try:
