@@ -20,9 +20,11 @@ import wl_defersettle as DS
 import wl_proc
 import wl_proofcheck as PF
 import worklist_messages as M
+from wl_models import HAIKU_MODEL
 
 # v5: no cap. Kept as a name so the counter file (used only to TELL the judge it is repeating itself) reads clearly.
-JUDGE_MODEL = os.environ.get("WORKLIST_JUDGE_MODEL", "claude-haiku-4-5-20251001")
+# ONE SOURCE: the model id is WK_CLAUDE_HAIKU_MODEL in .ci/config/well-known.env, which the per-commit reviewer reads too. No environment override: a second place to set it is a second place to forget on the next upgrade.
+JUDGE_MODEL = HAIKU_MODEL
 # Measured on 2026-07-29 with --json-schema: haiku warm $0.011-$0.026 per call at 4.9-20.0s; sonnet $0.231 at 12.1s for the same judgement. Haiku it is. MEASURED, not guessed (2026-08-05): at $0.10 the judge died mid-run with
 # subtype=error_max_budget_usd at cost $0.1025, and reported it as the
 # unactionable "judge exited 1: " because the envelope goes to stdout, which the failure path was not reading (see _explain_failed_exit). The cap is a post-hoc between-turns stop, not a ceiling, so it must sit clear of the real cost rather than at it: a trivial prompt in a project cwd already reached $0.1025, while the same prompt in the judge's isolated workdir cost $0.0205. $0.25
