@@ -27,7 +27,7 @@ import re
 import subprocess
 import sys
 
-from rediacc_hooks import commit_policy, hookio
+from rediacc_hooks import commit_policy, hookio, syspath
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -83,7 +83,7 @@ def _load_gate():
     quality = root / ".ci" / "scripts" / "quality"
     saved = list(sys.path)
     try:
-        sys.path.insert(0, str(quality))
+        syspath.on_sys_path(str(quality))
         spec = importlib.util.spec_from_file_location(
             "check_plan_boxes_for_guard", quality / "check_plan_boxes.py"
         )

@@ -1670,6 +1670,14 @@ raises(
     ),
     "run.ts:352",
 )
+# 57bc89ee.1: the checkable token sits only past the clip, so the written line carries nothing checkable and must be refused.
+_tail_only = "words " * (R.TICK_EVIDENCE_MAX // 6 - 2) + "\nwords " * 6 + "\ncommit %s rc=0" % AFTER
+truthy("PLANT shape: the sha lies past the clip", _tail_only.find(AFTER) > R.TICK_EVIDENCE_MAX)
+raises(
+    "evidence checkable only beyond the clip is refused, the written text is what is judged",
+    lambda: R.retro_evidence_text(ROOT, REL, _sig_done, _tail_only, _bf_note, "deadbeef"),
+    "nothing checkable",
+)
 
 _AMB_PLAN = "agent/PLAN-ambiguity-fixture.md"
 _amb_a = "Wire the ambiguity resolver into the first verb of this fixture plan"
@@ -1724,6 +1732,7 @@ try:
     R._citation_gate()
 finally:
     _after_path = list(sys.path)
+    R._CITATION_GATE[:] = _saved_gate
 control("loading the citation gate leaves sys.path as it found it", _after_path, _before_path)
 falsy("CONTROL: the quality dir is not left on sys.path", _qdir in _after_path)
 sys.path[:] = _before_path

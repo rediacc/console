@@ -45,6 +45,14 @@ def step_block(path: pathlib.Path, name: str = STEP_NAME) -> str:
     return "\n".join(out) + ("\n" if out else "")
 
 
+def own_lines(block: str) -> str:
+    """The step without the blank and comment lines that trail it: those are the NEXT step's preamble (the extractor stops at a `      - ` line, which a comment block ahead of that step precedes), so they say nothing about this step's condition. Measured 2026-10-08: the Create-version-tag comment after this step mentions `retry_mode` and reddened the assertion below although the `if:` never did."""
+    lines = block.splitlines()
+    while lines and (not lines[-1].strip() or lines[-1].lstrip().startswith("#")):
+        lines.pop()
+    return "\n".join(lines) + "\n"
+
+
 def test_the_extractor_matches_the_twins_awk(gate):
     """CONTROL FOR THE PORT ITSELF. The twin extracts with awk; this file extracts with a Python loop. A port that changes the extractor and does not compare it against the original has replaced a tested reader with an untested one, and every assertion below would then be about the new reader's idea of the step."""
     awk = harness.run(["awk", "-v", "name=" + STEP_NAME, AWK, str(WORKFLOW)])
@@ -65,7 +73,7 @@ def test_step_exists(gate):
 
 def test_retry_mode_no_longer_skips_it(gate):
     gate.log_test("retry mode does NOT skip the assertion")
-    block = step_block(WORKFLOW)
+    block = own_lines(step_block(WORKFLOW))
     gate.assert_not_contains(block, "retry_mode", "retry must not be excluded from the assertion")
     gate.log_pass("the assertion runs in retry mode")
 

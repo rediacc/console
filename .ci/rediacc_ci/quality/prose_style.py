@@ -1043,7 +1043,7 @@ def exempt_for(rel, exempts):
     """The reason `rel` is exempt, or None.
 
     SEGMENT BY SEGMENT, NOT `fnmatch` OVER THE WHOLE PATH. `fnmatch`'s `*` crosses `/` -- `agent/*/STATE.md` would match `agent/archive/x/y/STATE.md` under it -- so an exemption written to cover one directory level silently covers every level below it. An exemption that is wider than its author believes is the shape this whole mechanism exists to keep visible, so the glob is
-    matched the way a reader reads it: one segment at a time, and the depths must agree.
+    matched the way a reader reads it: one segment at a time (`*` is exactly one segment, `**` zero or more).
     """
     parts = rel.replace(os.sep, "/").split("/")
     for glob, reason in exempts:

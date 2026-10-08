@@ -34,7 +34,14 @@ runtmp = importlib.util.module_from_spec(_RUNTMP)
 _RUNTMP.loader.exec_module(runtmp)
 RUN_TMP = runtmp.run_dir("guard-turbo-early-push-")
 
-sys.path.insert(0, str(HERE.parents[1]))
+_SYSPATH = importlib.util.spec_from_file_location(
+    "_rediacc_syspath", HERE.parents[1] / "rediacc_hooks" / "syspath.py"
+)
+if _SYSPATH is None or _SYSPATH.loader is None:
+    raise SystemExit("%s: .claude/rediacc_hooks/syspath.py is missing" % __file__)
+syspath = importlib.util.module_from_spec(_SYSPATH)
+_SYSPATH.loader.exec_module(syspath)
+syspath.on_sys_path(syspath.CLAUDE_DIR)
 _SPEC = importlib.util.spec_from_file_location("turbo_guard_under_test", GUARD)
 if _SPEC is None or _SPEC.loader is None:
     raise SystemExit("cannot load %s" % GUARD)
@@ -564,14 +571,14 @@ BATCH_DEFECTS = (
         lambda root, want: root is BATCH_DONE and not want,
         "a complete batch admission flipped to refused",
     ),
-    # The stricter read: where the Stop hook's `first_box` read follows no `Moved-To:` stub (STUB_OPEN) or finds an empty set (GONE_OPEN), only the guard's own agreement test keeps the push refused.
+    # The stub and the empty set: `local_batch_open` now follows a `Moved-To:` stub and counts an empty set as unfinished, so the hook's own read already refuses STUB_OPEN and GONE_OPEN and the guard's agreement test is a second lock. Removing the whole completion expression must release them; removing the agreement test alone no longer can, and a control that planted only that would pass vacuously.
     (
         (
             "complete = hook_complete and bool(rows) and not disagree",
-            "complete = hook_complete",
+            "complete = True",
         ),
         lambda root, want: root in (STUB_OPEN, GONE_OPEN) and want,
-        "a refusal the Stop hook's box read alone would release flipped to allowed",
+        "a stub-open or empty-set refusal flipped to allowed",
     ),
 )
 for defect, pick, what in BATCH_DEFECTS:

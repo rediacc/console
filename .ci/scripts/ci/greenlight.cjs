@@ -240,6 +240,8 @@ const CLOSURES = {
       '.ci/rediacc_ci',
       // The shadow-run step this job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the closure must hold it or a change to the action does not re-run this key.
       '.github/actions/bws-secrets',
+      // Every leg of ci-ops-test.yml starts with this local composite (check:ci-profiler-coverage); it resolves from the WORKSPACE, so an edit to it must re-run this key.
+      '.github/actions/profiler',
       'packages/cli',
       'packages/shared',
       'packages/provisioning',

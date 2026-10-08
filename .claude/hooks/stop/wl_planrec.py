@@ -338,9 +338,13 @@ def _citation_gate():
             "cannot resolve citations: %s is missing, and a line written without that check "
             "is the one check:ci-plan-citations later reds" % gate
         )
-    inserted = str(qdir) not in sys.path
-    if inserted:
-        sys.path.insert(0, str(qdir))
+    hop = pathlib.Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
+    hop_spec = importlib.util.spec_from_file_location("_rediacc_syspath", hop)
+    if hop_spec is None or hop_spec.loader is None:
+        raise RecordError("cannot load %s" % hop)
+    syspath = importlib.util.module_from_spec(hop_spec)
+    hop_spec.loader.exec_module(syspath)
+    inserted = syspath.on_sys_path(str(qdir))
     try:
         spec = importlib.util.spec_from_file_location("_check_plan_citations_for_planrec", gate)
         if spec is None or spec.loader is None:
@@ -2772,13 +2776,14 @@ def retro_evidence_text(root, rel, selector, evidence, note, me, text=None, now=
         )
     import wl_checks as CK_EV  # noqa: PLC0415 -- see resolve()
 
+    # Lengthened like `plan_tick`'s line (#0241c97d), BEFORE the citations are resolved so the token judged is the token written.
+    ev = clip(citable_commit_refs(root, ev), TICK_EVIDENCE_MAX)
+    # Judged AFTER the clip, so the text checked is the text written: evidence only the clipped tail carried does not count.
     if not CK_EV.completion_evidence(root, ev):
         raise RecordError(
             "the evidence line carries nothing checkable. Name the real closing sha, a "
             "file:line that RESOLVES, a run id, an exit code, or a URL."
         )
-    # Lengthened like `plan_tick`'s line (#0241c97d), BEFORE the citations are resolved so the token judged is the token written.
-    ev = clip(citable_commit_refs(root, ev), TICK_EVIDENCE_MAX)
     refuse_unresolved_citations(root, ev, "the evidence line")
     # A PLAN WHOSE LAST LINE HAS NO NEWLINE would otherwise have the evidence spliced onto the end of its own box line.
     if not lines[i].endswith("\n"):

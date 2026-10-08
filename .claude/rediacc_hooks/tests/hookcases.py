@@ -1343,6 +1343,32 @@ STATIC: list[Case] = [
         ask_json("Should I describe how the branch guard works?"),
         "settled(how-clause passes)",
     ),
+    case(
+        "check 0 guards/block_settled_questions.py",
+        ask_json("How do I push to a fork?"),
+        "settled(push how-do mechanics passes)",
+    ),
+    case(
+        # The permission rule, not the timing rule, owns "can i push": a leading `how` does not make it a mechanics question.
+        "check 2 guards/block_settled_questions.py",
+        ask_json("How can I push a submodule commit?"),
+        "settled(push how-can is still a permission ask)",
+    ),
+    case(
+        "check 0 guards/block_settled_questions.py",
+        ask_json("We already pushed the first fix to origin."),
+        "settled(push statement with a time word passes)",
+    ),
+    case(
+        "check 2 guards/block_settled_questions.py",
+        ask_json("How should a finished turbo batch push?"),
+        "settled(push how-should timing refused)",
+    ),
+    case(
+        "check 2 guards/block_settled_questions.py",
+        ask_json("Should I push now?"),
+        "settled(push now question refused)",
+    ),
     # 2026-09-16, added live: the worktree/branch ROUTING class -- "shouldn't have asked ... it has big-bang answering usually" -- gets the same two-condition treatment as commit/branch/push/pr/merge.
     case(
         "check 2 guards/block_settled_questions.py",

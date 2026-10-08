@@ -701,6 +701,19 @@ def test_control_a_moved_plan_with_every_box_ticked_is_finished(tmp_path):
     assert wl_checks._set_finished(_finished_world(tmp_path, open_box=False), str(tmp_path)) is True
 
 
+def test_an_unreadable_plan_is_not_finished(tmp_path):
+    """A stub whose Moved-To points at a missing file cannot be read, and an unreadable plan is never finished."""
+    plans = tmp_path / "agent" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "PLAN-gone.md").write_text(
+        "# PLAN: gone (moved)\nStatus: moved\nMoved-To: agent/plans/_done/PLAN-missing.md\n",
+        encoding="utf-8",
+    )
+    state = types.SimpleNamespace(plans=("agent/plans/PLAN-gone.md",))
+    assert wl_checks._set_finished(state, str(tmp_path)) is False
+    assert wl_checks._open_in_set(state, str(tmp_path)) == "PLAN-gone.md (unreadable)"
+
+
 def test_an_empty_plan_set_is_not_finished(tmp_path):
     """An empty set was vacuously finished, which would order a push for a batch of nothing."""
     assert wl_checks._set_finished(types.SimpleNamespace(plans=()), str(tmp_path)) is False

@@ -2618,7 +2618,7 @@ def local_batch(state):
 
 def _open_in_set(state, root):
     """The batch plans that still carry an open box, each with its count, or "none". "Batch 3/3 finished" alone read as complete while two turbo-named plans were still open (2026-10-08)."""
-    plan_gate, _commit_policy = wl_prscope._hooks_pkg()
+    plan_gate = wl_prscope._hooks_pkg()[0]
     parts = []
     for rel in state.plans:
         open_n, _done, why = plan_gate.open_boxes(root, rel)
@@ -2636,7 +2636,7 @@ def _set_finished(state, root):
     """
     if not state.plans:
         return False
-    plan_gate, _commit_policy = wl_prscope._hooks_pkg()
+    plan_gate = wl_prscope._hooks_pkg()[0]
     for rel in state.plans:
         open_n, _done, why = plan_gate.open_boxes(root, rel)
         if why or open_n:
