@@ -29,10 +29,12 @@ import hashlib
 import json
 import os
 import pathlib
+import queue
 import re
 import sys
+import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future
 from concurrent.futures import TimeoutError as FuturesTimeout
 from typing import TYPE_CHECKING, Any
 
@@ -86,13 +88,52 @@ CHANGED_PATHS_MAX = 400
 CI_EVENTS = ("pull_request", "push", "schedule")
 CI_WORKFLOW = "ci.yml"
 CI_RUNS_PER_EVENT = 100
-# MEASURED 2026-10-08: one run's jobs read costs ~10 s (two paged `gh api` calls of ~160 jobs), serial; 230 unseen runs held `gate_model refresh --force` silent for 24+ min (rc 124, no model.json). A fold now reads the NEWEST unseen runs only, in parallel, inside a deadline.
+# MEASURED 2026-10-08: one run's jobs read costs ~10 s (two paged `gh api` calls of ~160 jobs), serial, so 230 unseen runs would take about 38 min; `gate_model refresh --force` sat silent for 24+ min on that backlog (rc 124, no model.json). A fold now reads the NEWEST unseen runs only, in parallel, inside a deadline.
 CI_FOLD_MAX_UNSEEN = 40
 CI_FOLD_WORKERS = 6
 CI_FOLD_DEADLINE_S = 600.0
 
 
 # ---------------------------------------------------------------------------- location
+
+
+class _DaemonPool:
+    """A small thread pool whose workers are DAEMON threads. `ThreadPoolExecutor` workers are joined by an interpreter-exit hook, so a worker still inside a `gh` call at the fold deadline would keep the process alive after `shutdown(wait=False)`; a daemon worker is abandoned instead. The submitted callable must not raise (`read_jobs` folds every failure into its return value); a raise would leave its future unresolved, which the reader sees as the deadline."""
+
+    def __init__(self, workers: int) -> None:
+        self._jobs: queue.Queue[tuple[Future[Any], Callable[[], Any]] | None] = queue.Queue()
+        self.threads = [
+            threading.Thread(target=self._work, daemon=True, name="gate-ledger-fold-%d" % i)
+            for i in range(max(1, workers))
+        ]
+        for t in self.threads:
+            t.start()
+
+    def _work(self) -> None:
+        while True:
+            item = self._jobs.get()
+            if item is None:
+                return
+            fut, call = item
+            if fut.set_running_or_notify_cancel():
+                fut.set_result(call())
+
+    def submit(self, fn: Callable[..., Any], *args: Any) -> Future[Any]:
+        fut: Future[Any] = Future()
+        self._jobs.put((fut, lambda: fn(*args)))
+        return fut
+
+    def shutdown(self) -> None:
+        """Cancel every queued job and tell idle workers to exit; a worker mid-call is left to die with the process."""
+        while True:
+            try:
+                item = self._jobs.get_nowait()
+            except queue.Empty:
+                break
+            if item is not None:
+                item[0].cancel()
+        for _ in self.threads:
+            self._jobs.put(None)
 
 
 def origin_slug(root: os.PathLike[str] | str | None = None) -> str:
@@ -970,7 +1011,7 @@ def fold_ci(
             except Exception as exc:  # noqa: BLE001
                 return None, str(exc)[:160], clock() - t
 
-        pool = ThreadPoolExecutor(max_workers=max(1, workers))
+        pool = _DaemonPool(workers)
         try:
             futs = [(sk, run, pool.submit(read_jobs, run)) for sk, run in todo]
             for sk, run, fut in futs:
@@ -1004,7 +1045,7 @@ def fold_ci(
                     % (run.get("id"), len(rows), took, folded, len(todo), clock() - t0)
                 )
         finally:
-            pool.shutdown(wait=False, cancel_futures=True)
+            pool.shutdown()
     rotate(d)
     out(
         "gate_ledger fold-ci: %d run(s) listed over %s, %d folded (%d row(s)), %d already folded, %d older unseen deferred, %d UNCHECKED"

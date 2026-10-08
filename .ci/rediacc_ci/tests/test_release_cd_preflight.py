@@ -20,6 +20,7 @@ import pytest
 from rediacc_ci.quality import release_state
 from rediacc_ci.release import cd_preflight as cp
 from rediacc_ci.release import retention_contract
+from rediacc_ci.well_known import RELEASES_ORIGIN, SITE_ORIGIN
 
 if TYPE_CHECKING:
     import pathlib
@@ -27,20 +28,20 @@ if TYPE_CHECKING:
 # The formula as private/homebrew-tap carries it (2026-10-08), so the rewrite is driven without the submodule.
 FORMULA = """class RediaccCli < Formula
   desc "Rediacc CLI - automation and scripting tool"
-  homepage "https://www.rediacc.com"
+  homepage "@SITE@"
   version "2.1.0"
   license "MIT"
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://releases.rediacc.com/cli/v#{version}/rdc-mac-arm64"
+      url "@REL@/cli/v#{version}/rdc-mac-arm64"
       sha256 "948dab8a0d5d9694695fef1142337660fa940bbea6333566555fba6c0d4fb69e"
 
       def install
         bin.install "rdc-mac-arm64" => "rdc"
       end
     else
-      url "https://releases.rediacc.com/cli/v#{version}/rdc-mac-x64"
+      url "@REL@/cli/v#{version}/rdc-mac-x64"
       sha256 "9abf481829b52777e99cb0946a5667aca6c92277ba67ca1b1452cbbaba725450"
 
       def install
@@ -51,14 +52,14 @@ FORMULA = """class RediaccCli < Formula
 
   on_linux do
     if Hardware::CPU.arm?
-      url "https://releases.rediacc.com/cli/v#{version}/rdc-linux-arm64"
+      url "@REL@/cli/v#{version}/rdc-linux-arm64"
       sha256 "e2367ed94fd44629fd7003521179d40b4d375f3d9323e62d77a1d27ac504c490"
 
       def install
         bin.install "rdc-linux-arm64" => "rdc"
       end
     else
-      url "https://releases.rediacc.com/cli/v#{version}/rdc-linux-x64"
+      url "@REL@/cli/v#{version}/rdc-linux-x64"
       sha256 "712673e49c0c8f2dce489d2a559a60e5a549572981afdc424c18f251e789de42"
 
       def install
@@ -71,7 +72,7 @@ FORMULA = """class RediaccCli < Formula
     assert_match version.to_s, shell_output("#{bin}/rdc --version")
   end
 end
-"""
+""".replace("@SITE@", SITE_ORIGIN).replace("@REL@", RELEASES_ORIGIN)
 
 
 @pytest.fixture(autouse=True)
@@ -429,6 +430,14 @@ def test_d_cd_a_short_or_upper_case_release_sha_matches_the_full_tag_sha(
     assert run(state, "2.2.0", "cd", root=root, release_sha="abcdef1")[1]["d"].status == cp.DRIFT
 
 
+def test_d_cd_a_stub_release_sha_is_unchecked_not_ok(root: pathlib.Path) -> None:
+    state = cd_10_08()
+    state["tags"]["v2.2.0"] = "abcdef0123" + "0" * 30
+    for stub in ("a", "abcdef", "zzzzzzzz"):
+        got = run(state, "2.2.0", "cd", root=root, release_sha=stub)[1]
+        assert got["d"].status == cp.UNCHECKED, stub
+
+
 def test_seen_sorts_an_unsorted_state_snapshot() -> None:
     state = healthy()
     state["sentinels"] = ["v1.4.21", "v1.4.3", "v1.4.20"]
@@ -465,6 +474,16 @@ def test_homebrew_a_failing_dry_run_is_drift(root: pathlib.Path) -> None:
     result = cp.check_homebrew(root, "1.4.21", "", failing)
     assert result.status == cp.DRIFT
     assert "uncommitted changes" in result.lines[0]
+
+
+def test_homebrew_a_tap_without_origin_main_is_unchecked(root: pathlib.Path) -> None:
+    def offline(version: str) -> subprocess.CompletedProcess:
+        del version
+        err = "fatal: ambiguous argument 'origin/main': unknown revision or path not in the tree\n"
+        return subprocess.CompletedProcess([], 128, "", err)
+
+    with pytest.raises(cp.UnreadableError, match="origin/main"):
+        cp.check_homebrew(root, "1.4.21", "", offline)
 
 
 def test_homebrew_a_formula_the_awk_misplaces_is_drift(root: pathlib.Path) -> None:
