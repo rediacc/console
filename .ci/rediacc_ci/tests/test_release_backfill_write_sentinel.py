@@ -10,9 +10,14 @@ asserts, which is the real, unmocked forward this port makes, stopped by the sam
 from __future__ import annotations
 
 import functools
+import os
 import pathlib
 
+import pytest
+
 from rediacc_ci import runtmp
+from rediacc_ci.deploy import write_release_sentinel
+from rediacc_ci.release import backfill_write_sentinel as subject
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import pathmask
 
@@ -101,3 +106,35 @@ def test_missing_dry_run_is_refused_and_names_the_variable() -> None:
     assert exit_code == 1
     assert "DRY_RUN" in err
     assert "must be set" in err
+
+
+def test_the_in_process_writer_leaves_the_working_directory_as_it_found_it(
+    tmp_path, monkeypatch
+) -> None:
+    """Review finding 67a505d6.2: the writer runs in process from the checkout root, and the caller's directory comes back afterwards, on a raise as well as a return."""
+    for name, value in {
+        "VERSION": "v1.2.3",
+        "CHANNEL": "edge",
+        "COMMIT_SHA": "a" * 40,
+        "DRY_RUN": "false",
+    }.items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.chdir(tmp_path)
+    seen = []
+
+    def fake(_args):
+        seen.append(os.getcwd())
+        return 7
+
+    monkeypatch.setattr(write_release_sentinel, "main", fake)
+    assert subject.main([]) == 7
+    assert seen == [str(subject._ROOT)]
+    assert os.getcwd() == str(tmp_path)
+
+    def boom(_args):
+        raise RuntimeError("writer failed")
+
+    monkeypatch.setattr(write_release_sentinel, "main", boom)
+    with pytest.raises(RuntimeError):
+        subject.main([])
+    assert os.getcwd() == str(tmp_path)
