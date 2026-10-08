@@ -567,7 +567,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-focus-mode.md` | draft | 352 | 0 | 8 | 36079 |
 | `agent/plans/PLAN-stop-hook-one-plan-scope.md` | approved | 179 | 1 | 14 | 42868 |
 | `agent/plans/PLAN-stop-hook-refactor-enforcement.md` | executing | 370 | 1 | 16 | 49955 |
-| `agent/plans/PLAN-stop-hook-retro-20260924.md` | ready | 615 | 1 | 22 | 66573 |
+| `agent/plans/PLAN-stop-hook-retro-20260924.md` | ready | 616 | 0 | 23 | 66773 |
 | `agent/plans/PLAN-stop-hook-retro-20260925.md` | ready | 259 | 0 | 10 | 25008 |
 | `agent/plans/PLAN-stop-hook-rulings-campaign.md` | draft | 103 | 16 | 1 | 9820 |
 | `agent/plans/PLAN-stop-hook-turbo.md` | approved | 189 | 0 | 23 | 30523 |

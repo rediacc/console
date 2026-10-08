@@ -333,7 +333,8 @@ The band-notice docstring rule "It does not instruct" (`.claude/hooks/context/ba
     (ticked) 2026-09-24T16:47:48Z by d778be9d: .claude/hooks/stop/wl_retro.py:101 sync writes tracked, dispatched and saved rows, called before run_stop at .claude/hooks/stop/worklist.py:2319, --retro-brief at .claude/hooks/stop/worklist.py:586; .claude/rediacc_hooks/tests/test_wl_retro.py:139 :167 :211 :234 fail on the pre-change copy and pass after
 - [x] **R20260924.14** Add box P3.1 to PLAN-stop-hook-continuity.md, pointing at R.11 to R.13, and document the band-notice "does not instruct" exception in its docstring.
     (ticked) 2026-09-24T16:47:48Z by d778be9d: agent/plans/PLAN-stop-hook-continuity.md:376 box P3.1 points at R.11 to R.13; the exception is documented at .claude/hooks/context/band-notice.py:13
-- [ ] **R20260924.15** After R.1 to R.13 land, re-count all seven frictions on the next session's `.blocklog` and record the before and after numbers in this plan's Status.
+- [x] **R20260924.15** After R.1 to R.13 land, re-count all seven frictions on the next session's `.blocklog` and record the before and after numbers in this plan's Status.
+    (ticked) 2026-10-08T20:03:26Z by d778be9d: commit:3e9283873 seven frictions re-counted in Status (#2, #3, #7 fixed; #5 share 23% to 14%; #1 not fixed; #4, #6 not countable); re-checked 2026-10-08
 
 ### Critical Files for Implementation
 - /home/developer/console/.claude/hooks/stop/wl_reggate.py
