@@ -242,7 +242,9 @@ export function mergeLaneCapabilities(
   for (const [path, text] of Object.entries(workflows)) {
     for (const [job, cap] of laneCapabilities(text)) {
       const already = out.get(job);
-      if (already !== undefined) {
+      // The same job id with an identical capability record is not ambiguous: the per-workflow
+      // `renet-embed-assets` stagers (check-lane-budget.ts check 8) repeat by design.
+      if (already !== undefined && JSON.stringify(already) !== JSON.stringify(cap)) {
         throw new Error(
           `mergeLaneCapabilities: job "${job}" is defined in more than one of the given ` +
             `workflows (at least one is "${path}"). Lane lookup by job name is ambiguous ` +
