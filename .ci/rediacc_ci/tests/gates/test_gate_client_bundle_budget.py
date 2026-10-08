@@ -137,7 +137,9 @@ def test_mutant_reverts_the_fix(gate, tmp_path):
 
 def test_mutant_quote_only_dynamic_imports(gate, tmp_path):
     """THE SECOND MUTANT. A dynamic matcher that cannot read backticks must turn the selftest red."""
-    gate.log_test("CONTROL: a quote-only dynamic import matcher must make the backtick plant go red")
+    gate.log_test(
+        "CONTROL: a quote-only dynamic import matcher must make the backtick plant go red"
+    )
     (tmp_path / "node_modules").symlink_to(paths.from_root("node_modules"))
     (tmp_path / "lib").symlink_to(paths.from_root("scripts", "lib"))
     (tmp_path / "gates").mkdir()
@@ -158,7 +160,9 @@ def test_mutant_quote_only_dynamic_imports(gate, tmp_path):
         "FAIL  PLANT: a backtick dynamic import",
         "naming the backtick plant",
     )
-    gate.log_pass("CONTROL: the backtick plant detects the matcher that read every build as 0 B deferred")
+    gate.log_pass(
+        "CONTROL: the backtick plant detects the matcher that read every build as 0 B deferred"
+    )
 
 
 def test_real_dist_has_the_shape(gate):

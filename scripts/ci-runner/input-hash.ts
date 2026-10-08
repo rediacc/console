@@ -219,12 +219,13 @@ export function computeGateHashes(
       gh.reason = 'forbidden-glob';
     } else if (hasFloat(entry)) {
       gh.reason = 'float-in-entry';
+    } else if (opts.exempt.has(id)) {
+      // Named in carry-exempt.json before the generic reasons: a gate that reads live state (and so declares no paths, or an env) is exempt BY NAME, and the report should say so.
+      gh.reason = 'exempt';
     } else if (paths.length === 0) {
       gh.reason = 'no-paths';
     } else if (entry.env !== undefined && Object.keys(entry.env).length > 0) {
       gh.reason = 'env';
-    } else if (opts.exempt.has(id)) {
-      gh.reason = 'exempt';
     } else if (leaf.capped) {
       gh.reason = 'leaf-cap';
     } else if (inProgress.has(id)) {

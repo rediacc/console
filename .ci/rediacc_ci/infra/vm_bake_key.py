@@ -10,7 +10,8 @@ WHAT IS HASHED. The files that decide what `renet ops image build` leaves on the
     ceph_root.go for DefaultFilesystem, pkg_install_procgroup_unix.go, gpu_drivers.go for
     the GPU driver installs of setup, kernel_modules.go for the kernel swap the AMD install
     runs on zypper, ceph_host_runner.go for the runner those installs use, setup_phase.go
-    for the phase markers and download bound pkg_install_retry.go uses);
+    for the phase markers and download bound pkg_install_retry.go uses, apt_acquire.go for the
+    apt.conf.d body writeAptConf writes);
   * pkg/config, pkg/infra/pkgset (the package registry), pkg/embed (its Go files only,
     so pkg/embed/proxy/** and the staged assets are out), pkg/infra/image;
   * pkg/infra/aptsources, the fragment setup_command.go's writeAptConf runs to move the stock
@@ -56,6 +57,8 @@ PACKAGES: dict[str, str | dict[str, str]] = {
         "pkg_install_retry.go": HASH,
         # Setup phase markers, heartbeats and the dnf/zypper download bound that pkg_install_retry.go calls (renet 2be6f4b).
         "setup_phase.go": HASH,
+        # aptAcquireOptions: writeAptConf renders aptConfBody into /etc/apt/apt.conf.d, a file the baked disk keeps (renet 5e396b7).
+        "apt_acquire.go": HASH,
         "image_build_command.go": HASH,
         "literals.go": HASH,
         "system_commands.go": HASH,

@@ -39,10 +39,7 @@ import path from 'node:path';
 import { NC, RED, YELLOW } from './console.js';
 import { envRoot, REPO_ROOT } from './repo-root.js';
 
-/** The environment variable a gate's test sets to relocate every submodule path. */
-export const SUBMODULE_ROOT_ENV = 'SUBMODULE_PRESENCE_ROOT';
-
-/** The root `private/<submodule>/...` paths resolve against: the repo, unless the seam moves it. */
+/** The root `private/<submodule>/...` paths resolve against: the repo, unless the SUBMODULE_PRESENCE_ROOT seam (set by a gate's test) moves it. */
 export const submoduleRoot = (): string => envRoot('SUBMODULE_PRESENCE_ROOT');
 
 /**

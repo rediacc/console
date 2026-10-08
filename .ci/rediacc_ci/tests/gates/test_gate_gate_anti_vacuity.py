@@ -40,7 +40,8 @@ ROOT = paths.repo_root()
 # `.sh` and `.py` entries are repo-root-relative; `.ts` entries are relative to `scripts/`. TRANSCRIBED FROM THE TWIN, and kept equal to it by `test_the_registry_agrees_with_the_twins`.
 REGISTRY: tuple[tuple[str, str], ...] = (
     ("check-translation-hashes.ts", "locale"),
-    ("check-translation-completeness.ts", "locale"),
+    # Since 2bc9b47a3 the gate loads submodule-presence.ts, which anchors through repo-root.ts at import. Against an empty tree that anchor refuses first ("VACUOUS anchor": no directory holds package.json and .ci), before any locale directory is read; the refusal is the vacuity diagnostic, so it is what this row pins.
+    ("check-translation-completeness.ts", "VACUOUS anchor"),
     # The probe gate's subject is a single library file. Against an empty tree that file is absent, and "nothing to check" must be a FAILURE: a liveness gate that silently passes when it cannot reach the probe would recreate the very class it exists to catch (a check that cannot tell absent from present). It also refuses when python3 is missing, because its control listener could
     # not fire.
     (".ci/scripts/quality/check_account_probes.py", "nothing to check"),
