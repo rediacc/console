@@ -32,6 +32,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.parse
 
@@ -1940,7 +1941,47 @@ def _record_final(root, ref, payload, verdict, args, diag=None):
                 )
         except (OSError, subprocess.SubprocessError) as exc:
             print("ci-trace: worklist --update failed: %s" % exc, file=sys.stderr)
+    _fold_into_gate_ledger(root)
     return record
+
+
+def _gate_model_refresh_argv(env):
+    """The detached `gate_model refresh` a final verdict starts, or None where it must not run: under CI (a disposable runner), or with CI_TRACE_NO_FOLD=1 (tests).
+
+    PLAN-gate-scheduling-learned T11: a traced run is the moment its gate outcomes exist, so the trace folds them into the outcome ledger. `refresh` backfills, folds CI and rebuilds model.json, and it returns at once while the model is younger than its TTL, so one call per final verdict is cheap.
+    """
+    if (
+        str(env.get("CI", "")).lower() in ("1", "true")
+        or env.get("CI_TRACE_NO_FOLD") == "1"
+        or "PYTEST_CURRENT_TEST" in env
+    ):
+        return None
+    return [sys.executable, "-m", "rediacc_ci.ci.gate_model", "refresh"]
+
+
+def _fold_into_gate_ledger(root):
+    """Start the refresh detached, its output in the ledger's own log. Never raises and never waits: the trace's verdict is the product."""
+    argv = _gate_model_refresh_argv(os.environ)
+    if argv is None:
+        return
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.pathsep.join(
+        p for p in (str(pathlib.Path(root) / ".ci"), env.get("PYTHONPATH", "")) if p
+    )
+    try:
+        log_path = pathlib.Path(tempfile.gettempdir()) / "rediacc-gate-model-refresh.log"
+        with open(log_path, "a", encoding="utf-8") as log_file:
+            subprocess.Popen(
+                argv,
+                cwd=str(root),
+                env=env,
+                stdin=subprocess.DEVNULL,
+                stdout=log_file,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+            )
+    except OSError as exc:
+        print("ci-trace: the gate ledger fold did not start: %s" % exc, file=sys.stderr)
 
 
 def _red_is_final(payload, wait, until_final):
@@ -1961,6 +2002,9 @@ def _selftest():
     """
     global _GH_NOTE_OFF  # noqa: PLW0603 -- the selftest's output must not depend on GitHub's weather
     _GH_NOTE_OFF = True
+    os.environ["CI_TRACE_NO_FOLD"] = (
+        "1"  # the selftest drives _record_final and must start no refresh
+    )
     ok = True
 
     def check(label, cond, detail=""):
@@ -1970,6 +2014,21 @@ def _selftest():
         print(
             "  %s  %s%s" % ("PASS" if cond else "FAIL", label, "" if cond else "  <- %s" % detail)
         )
+
+    # T11: a final verdict folds into the gate ledger, except on a CI runner or in tests.
+    check(
+        "a final verdict starts gate_model refresh",
+        _gate_model_refresh_argv({})[1:] == ["-m", "rediacc_ci.ci.gate_model", "refresh"],
+    )
+    check("CONTROL: no fold on a CI runner", _gate_model_refresh_argv({"CI": "true"}) is None)
+    check(
+        "CONTROL: no fold with CI_TRACE_NO_FOLD=1",
+        _gate_model_refresh_argv({"CI_TRACE_NO_FOLD": "1"}) is None,
+    )
+    check(
+        "CONTROL: no fold under pytest",
+        _gate_model_refresh_argv({"PYTEST_CURRENT_TEST": "x"}) is None,
+    )
 
     verdict_job = {"name": "CI Verdict", "conclusion": "failure"}
     real_failure_job = {"name": "Quality / Code", "conclusion": "failure"}
