@@ -24,17 +24,22 @@ Owns: .ci/config/language-policy-baseline.json
     (ticked) 2026-10-08T12:56:00Z by d778be9d: commit:8bca2ba93 agent/plans/PLAN-retire-bash-oracles.inventory.tsv holds one row per tracked .sh, 190 of 190 (plus 35 GONE); exempt trees re-judged per file; the DELETE verdict rechecked; check:ci-language-policy rc=0
 - [x] B1 Cut over the CUTOVER-READY live twins (assert-job-succeeded, detect-pointer-bump, initialize, then lib/common.sh and its 181+ source sites); retire run-legacy.sh as its verb table empties
     (ticked) 2026-10-08T19:34:43Z by d778be9d: commit:32b264edc common.sh deleted with its sourcers (also 6eb239b4d, 3bfab056e); check:ci-language-policy rc=0, .ci suite 13333 passed
-- [ ] B2 Port groups C and D-port in dependency order under rule T, each with a differential for right behaviour and intentional deltas for wrong behaviour, wired in the same change
-- [ ] B3 Golden-then-delete every twinned bash file (groups A and B after cutover), draining its bashFiles line, with the same regolden verb as A2
+- [x] B2 Port groups C and D-port in dependency order under rule T, each with a differential for right behaviour and intentional deltas for wrong behaviour, wired in the same change
+    (ticked) 2026-10-08T22:36:31Z by d778be9d: commit:1a9adf506 commit:d8bb04f2d commit:1674b82b3 commit:a6d794f1a -- no PORT row left without a port (section 12); check:ci-language-policy STRICT rc=0, 80 bash files all allowlisted
+- [x] B3 Golden-then-delete every twinned bash file (groups A and B after cutover), draining its bashFiles line, with the same regolden verb as A2
+    (ticked) 2026-10-08T22:36:34Z by d778be9d: commit:1a9adf506 commit:d8bb04f2d commit:1674b82b3 commit:a6d794f1a -- frozen goldens first, then deletion; check:ci-dead-bash, -language-policy, -bash-lib-ported rc=0
 - [x] B4 Rule-T fixes in the .ci ports: the 24 plan-named reproduced behaviours, the sweep's 8-13 bugs, and the promote retry gap #4175e786
     (ticked) 2026-10-04T17:20:45Z by d778be9d: commit:d2c44c127 landed in e07adce45 and d2c44c127; the full .ci suite re-covers those tests
 - [x] B5 Port the out-of-policy scripts (drills, ops, worktree, eslint-heap, json generator, backup-storage); prove the drills with a live run on the ops VMs
   - Amended 2026-10-08 (reviews 9d5f2639.2 and 9d5f2639.3): "the ops VMs" and "the local fleet" are the same machines (`./rdc.sh ops up` provisions them); the license drill ran there on the basic fleet, where legs needing .12 or Ceph are refused honestly, as 8422dd2ff records. "selftests rc 1" is the expected result, not a failure: every drill `--selftest` plants one assertion that cannot pass and MUST exit non-zero (`.ci/rediacc_ci/drills/lib.py`, PROVE THE INSTRUMENT).)
   - Amended 2026-10-09 (reviews 75ce6f00.2 and 75ce6f00.3): the tick names two runs. "license 44/44 (legs a-f)" is the full-fleet run that 68c262cbc and 9d5f26395 record, with every leg run and passed; the basic-fleet run in 8422dd2ff is a separate one, where the preflight refused the legs needing .12 or Ceph by name, so they never ran and are not counted in any pass total (leg f 5/5 there). The selftest rule is shown, not only asserted: `./run.sh drill license --legs f --selftest` exits 1 with "1 assertions: 0 passed, 1 failed" and "selftest fired as designed".)
     (ticked) 2026-10-08T19:52:42Z by d778be9d: commit:8422dd2ff live drills all green (universe 42/42, transfer 33/33, backup 86/86, license 44/44, backup_roundtrip 8/8), selftests rc 1, drill-verdicts rc=0
-- [ ] G1 Empty and delete .ci/config/language-policy-baseline.json (closes PLAN-tooling-transformation W1P6, ed0c365d); every remaining allowlist entry carries a BLOCKER reason
-- [ ] G2 Fix check:ci-bash-lib-ported (add log.py to its module list, recognise class methods), port its 8 real gaps, retire it with the last library
-- [ ] G3 Regenerate gates.lock.json, the gen-docs regions, gate-bind steps and the registries; correct the TRAPS.md and CLAUDE.md prose that calls the oracles the spec
+- [x] G1 Empty and delete .ci/config/language-policy-baseline.json (closes PLAN-tooling-transformation W1P6, ed0c365d); every remaining allowlist entry carries a BLOCKER reason
+    (ticked) 2026-10-08T22:36:36Z by d778be9d: commit:a6d794f1a -- baseline deleted; check:ci-language-policy STRICT rc=0 (80 bash files, all allowlisted); suppression-liveness rc=0; plants rc=1
+- [x] G2 Fix check:ci-bash-lib-ported (add log.py to its module list, recognise class methods), port its 8 real gaps, retire it with the last library
+    (ticked) 2026-10-08T22:36:39Z by d778be9d: commit:a6d794f1a commit:1a9adf506 -- check:ci-bash-lib-ported rc=0 (1 library, 17 functions); retirement waits on toolchain.sh, kept by operator D9 ASKED:2026-10-08T19:13Z
+- [x] G3 Regenerate gates.lock.json, the gen-docs regions, gate-bind steps and the registries; correct the TRAPS.md and CLAUDE.md prose that calls the oracles the spec
+    (ticked) 2026-10-08T22:36:42Z by d778be9d: commit:a6d794f1a -- check:ci-gates-lock, -gate-bind, -prose-style rc=0; breakpoint-blocker.sh repointed with its MANIFEST regenerated, check:ci-breakpoint-drift rc=0
 
 ## 0. Rulings this plan executes, and the one it supersedes
 

@@ -4183,7 +4183,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       a module AND a script, and `import _cipath` raises `ModuleNotFoundError` when such a
       file is imported by package name -- driven on a throwaway package, where
       `python3 pkg/sub/dualuse.py` loads and `from pkg.sub import dualuse` dies.
-- [ ] **W1P6 S, terminal** Delete `.ci/config/language-policy-baseline.json`. `read_baseline`
+- [x] **W1P6 S, terminal** Delete `.ci/config/language-policy-baseline.json`. `read_baseline`
       returning `None` IS strict mode (`:478`, `:788`) -- the flip is a file deletion and no code
       change. **Acceptance:** the gate exits 0 printing `language policy STRICT: N bash file(s)
       ... all M allowlisted`, N == M.
@@ -4193,6 +4193,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       gate, so it stays terminal and blocked by the port chain (W7P4-Q, W7P5-a/b/c). A new tracked `.sh` also
       counts against it: a session added one this week and the gate refused it, so new bash cases belong in an
       existing file.
+    (ticked) 2026-10-08T22:36:45Z by d778be9d: commit:a6d794f1a -- language-policy-baseline.json deleted; check:ci-language-policy STRICT rc=0
 
 ---
 
