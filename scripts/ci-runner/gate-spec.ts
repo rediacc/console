@@ -32,11 +32,10 @@ export interface GateSpec {
   /** Exact command to run, and the exact rerun line printed on failure. */
   run: string;
   /**
-   * false for prerequisite nodes (build:*) that validate nothing, and for the
-   * CI-side aggregate check:ci-quality-gates whose 62 constituents are
-   * scheduled individually. A false entry runs only when something that
-   * `needs` it is in the selected set, so an aggregate with no dependents
-   * never runs locally.
+   * false for prerequisite nodes (build:*) that validate nothing, and for
+   * CI-side aggregates whose constituents are scheduled individually. A false
+   * entry runs only when something that `needs` it is in the selected set, so an
+   * aggregate with no dependents never runs locally.
    */
   gate: boolean;
   /** Ordering edges: ids that must succeed first. */
@@ -50,7 +49,7 @@ export interface GateSpec {
    *
    * WHY THIS FIELD EXISTS AND WHY IT WAS MISSING. W2.4 declared isolation a
    * path-scoped contract and built BOTH readers -- `pool.ts` and the gate battery's
-   * `classify_from_lock` -- but the second claim it reads, `reads`, was never added
+   * `classify_from_lock` (now `.ci/rediacc_ci/xdist_groups.py`'s) -- but the second claim it reads, `reads`, was never added
    * here. So the 21 scanner gate tests were UNDECLARABLE by construction, the lock
    * carried no `reads` key on any of 456 entries, and the battery ran on its loud
    * fallback ("no 'tree:' isolation declared ... falling back to the hand-maintained
@@ -129,9 +128,6 @@ export interface GateSpec {
    * CI-ONLY: never run by the local pre-push lane, even when the change set touches it, and so never recorded as `droppedTouched` for the push guard. CI still runs it in its own workflow step. The value is the reason, which must say why the gate cannot run reliably beside the rest of ci:quick and where CI runs it. Requires `slow`. Operator ruling 2026-10-06 (/ask) for check:test:tutorial-player.
    */
   ciOnly?: string;
-  /** Set on the 62 entries flattened out of .ci/scripts/test/gates/. Their set
-   *  must equal the on-disk glob; see assertion 7 in section 6.3. */
-  qualityGateTest?: boolean;
   /** Leaf commands this gate ultimately executes. The parity oracle compares
    *  these, not the npm key, because CI frequently invokes the same underlying
    *  script under a different key or by bare path. */
@@ -180,9 +176,9 @@ export function retiredFieldFindings(specs: readonly unknown[]): string[] {
 export type CiCoverage =
   /** A workflow step runs it. Verified against the parsed workflow. */
   | { kind: 'step'; workflow: string; job: string; step: string }
-  /** A gate test under .ci/scripts/test/gates/ drives its REAL scan against the
-   *  REAL tree, and the battery runs in CI. Requires `test` plus a BLOCKER
-   *  reason naming the line that proves the real scan runs. Never inferred. */
+  /** A gate test (a pytest module collected by check:ci-pytest) drives its REAL
+   *  scan against the REAL tree. Requires `test` plus a BLOCKER reason naming
+   *  the line that proves the real scan runs. Never inferred. */
   | { kind: 'test'; test: string; blocker: string }
   /** Deliberately local-only. Requires a BLOCKER reason. */
   | { kind: 'local-only'; blocker: string };

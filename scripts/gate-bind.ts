@@ -2724,11 +2724,10 @@ function main(argv: string[]): void {
 
   const pkg = JSON.parse(read('package.json')) as { scripts: Record<string, string> };
   const manifest = read('scripts/ci-runner/manifest.ts');
-  // THE LOCK, not the manifest text, decides whether an id is a gate-test. `manifest.ts` is TypeScript and this file would have to re-implement a fragment of a TS parser to read `qualityGateTest` out of it, which is the exact archaeology gates.lock.json was committed to end.
+  // THE LOCK, not the manifest text, decides how an id is registered. `manifest.ts` is TypeScript and this file would have to re-implement a fragment of a TS parser to read it, which is the exact archaeology gates.lock.json was committed to end.
   const lock = JSON.parse(read('scripts/ci-runner/gates.lock.json')) as {
     id: string;
     run: string;
-    qualityGateTest?: boolean;
   }[];
   const lockById = new Map(lock.map((g) => [g.id, g]));
   const workflow = fs.readFileSync(path.join(genRoot, WORKFLOW), 'utf-8');
@@ -3000,7 +2999,7 @@ function main(argv: string[]): void {
       // `.py` TOO, and for the W7 P4 reason. A gate registered as a bare path with no package.json key keeps that shape when its path is repointed at a Python port; keying on `.sh` alone meant the checks below -- run must match the header's derived run, and no package.json key may exist -- silently stopped applying to a gate the moment it was ported. Same class as the `paths:`
       // glob that stops selecting its own gate once the leaf is a `.py`.
       (lockEntry.run.endsWith('.sh') || lockEntry.run.endsWith('.py'));
-    if (lockEntry?.qualityGateTest === true || runsScriptDirectly) {
+    if (runsScriptDirectly) {
       if (lockEntry.run !== b.run) {
         problems.push(
           `${b.file}: gates.lock.json runs "${lockEntry.run}" but its header derives "${b.run}"`

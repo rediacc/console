@@ -22,7 +22,7 @@
     "  6. an entry is malformed (no version 2, no findings, an empty list, '*'",
     "     beside keys for one gate) -- a schema error, never skipped silently.",
     "An entry whose reason is under 80 characters (160 for '*') carries nothing:",
-    "the same bar .dead-bash-allowlist applies and gate-test:dead-bash proves.",
+    "the same bar .dead-bash-allowlist applies and test_gate_dead_bash.py proves.",
     "",
     "A narrowed run (--only/--skip) is refused before any of this is consulted,",
     "so carrying cannot become a second way to launder a partial lane."

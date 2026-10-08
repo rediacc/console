@@ -539,30 +539,10 @@ def test_unknown_wrapper_is_not_transparent(gate):
     gate.log_pass("an unknown wrapper is not transparent (the transparency cannot leak)")
 
 
-def test_battery_equality_is_enforced(gate):
-    """Without this, flattening the battery recreates #549 once per test: a new test would run in CI via the battery and never locally."""
-    with harness.temp_dir() as d:
-        scaffold(
-            d,
-            "      - name: Quality-gate unit tests\n        run: .ci/rediacc_ci/battery.py\n"
-            + STEP_ALPHA,
-        )
-        (d / ".ci/scripts/test/gates").mkdir(parents=True, exist_ok=True)
-        (d / ".ci/scripts/test/gates/test-only-on-disk.sh").write_text("", encoding="utf-8")
-        manifest(d, MANIFEST_ALPHA)
-        result = run_gate(d)
-        gate.assert_exit(1, result, "a battery test on disk with no manifest entry must fail")
-        gate.assert_contains(
-            result.combined, "test-only-on-disk.sh", "names the unscheduled battery test"
-        )
-        gate.assert_contains(result.combined, "battery", "reports it as a battery-equality break")
-    gate.log_pass("a battery test on disk with no qualityGateTest entry fails")
-
-
 def test_the_subject_and_its_seams_still_exist(gate):
     """ADDED BY THE PORT, and it is the case that keeps every other one honest.
 
-    Every case above points the subject at a fixture through two environment variables. If the subject were renamed, or either seam removed, `npx tsx` would fail identically for all 23 cases and several of them EXPECT a non-zero exit -- so a subject that no longer exists would satisfy them. Naming the seams in the source is the cheap refutation of that.
+    Every case above points the subject at a fixture through two environment variables. If the subject were renamed, or either seam removed, `npx tsx` would fail identically for all 22 cases and several of them EXPECT a non-zero exit -- so a subject that no longer exists would satisfy them. Naming the seams in the source is the cheap refutation of that.
     """
     if not GATE.is_file():
         gate.log_fail(

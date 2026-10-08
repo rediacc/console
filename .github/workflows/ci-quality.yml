@@ -295,9 +295,6 @@ jobs:
       - name: Bash-lib port completeness
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_bash_lib_ported.py
-      - name: Battery clean-tree guard
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_battery_clean_tree.py
       - name: Capability-probe parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_probe_parity.py
@@ -2110,20 +2107,12 @@ jobs:
   # ============================================================================
   # L9 SECURITY -- split three ways (PLAN-ci-time-budget.md T2.15, 2026-09-26).
   # The two heavy suites this job used to carry sequentially, `Python package
-  # tests` (20.9-22.5 min, check:ci-pytest) and `Quality-gate unit tests`
-  # (10.1-12.9 min, the battery), each get their own job below (`quality-pytest`,
-  # `quality-gate-tests`) with their own checkout and setup, so a slow suite no
-  # longer blocks the other's start or borrows its timeout headroom. What is left
-  # here -- the gate-bind region's meta-gate checks, Audit and Suppression
-  # liveness -- measures about 4 minutes on its own.
-  #
-  # Splitting the general shard mechanism (lanes.ts capabilities, unit
-  # enumerators, the LPT balancer, the gate-bind shard-strategy region and
-  # receipt merge -- PLAN-ci-time-budget.md T2.7-T2.11) across quality-pytest and
-  # quality-gate-tests is NOT done here: those files are outside this change's
-  # scope. Each of the two new jobs below is therefore a single unsharded leg,
-  # so quality-pytest still runs at its full 20.9-22.5 min and does not yet meet
-  # the 15-minute per-job target; quality-gate-tests already does, at 10.1-12.9.
+  # tests` (20.9-22.5 min, check:ci-pytest) and the bash gate-test battery
+  # (10.1-12.9 min), each got their own job, so a slow suite no longer blocked
+  # the other's start or borrowed its timeout headroom. The battery's job was
+  # retired with the last bash gate test (2026-10-09); `quality-pytest` below
+  # runs the pytest ports. What is left here -- the gate-bind region's meta-gate
+  # checks, Audit and Suppression liveness -- measures about 4 minutes on its own.
   # ============================================================================
   quality-security:
     name: Security
@@ -2148,9 +2137,9 @@ jobs:
     permissions:
       contents: read
       actions: read # CI time budget freshness reads ci.yml and housekeeping.yml runs, jobs and artifacts
-    # No label opt-out at JOB level any more: that guard skipped four fully
-    # OFFLINE gates (overrides/syncpack reasons, suppression liveness, the
-    # quality-gate battery) along with the one external step it aimed at.
+    # No label opt-out at JOB level any more: that guard skipped fully OFFLINE
+    # gates (overrides/syncpack reasons, suppression liveness) along with the
+    # one external step it aimed at.
     # The Audit step below carries the external_quality skip itself.
     if: inputs.is_bot != 'true'
     steps:
@@ -2222,10 +2211,9 @@ jobs:
       # hit once, when it had no toolchain-pin step at all and pip's complaint arrived in
       # a step about secrets.
       #
-      # TWO GATES IN THIS LANE ARE DELIBERATELY NOT HERE. `Audit` declares `emit: false`
+      # ONE GATE IN THIS LANE IS DELIBERATELY NOT HERE. `Audit` declares `emit: false`
       # because its step carries an extra `if:` condition and a GH_TOKEN `env:` that a
-      # generated step cannot express, and both losses would be invisible in a diff. The
-      # gate-test battery below rides one hand-written step shared by 147 tests.
+      # generated step cannot express, and both losses would be invisible in a diff.
       - name: Account env files retired
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_account_env_retired.py
@@ -2534,94 +2522,6 @@ jobs:
           path: .ci/cache/quality-pytest/
           # `.ci` is a dot directory, which upload-artifact skips by default; with `if-no-files-found: ignore` below that skip would be silent and the lane's durations would vanish.
           include-hidden-files: true
-          retention-days: 3
-          if-no-files-found: ignore
-
-  # ============================================================================
-  # L9c GATE TESTS -- split out of quality-security (PLAN-ci-time-budget.md
-  # T2.15, 2026-09-26). One unsharded leg, the quality-gate battery
-  # (`.ci/rediacc_ci/battery.py`, 149 bash twins under
-  # `.ci/scripts/test/gates/`), measured at 10.1-12.9 min -- already under the
-  # 15-minute per-job target without sharding.
-  # ============================================================================
-  quality-gate-tests:
-    name: Gate tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Fetch secrets from Bitwarden
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
-            GITHUB_APP_ID > BWS_APP_ID
-
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
-          preset: readonly
-          repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # DEEP, for the same reason quality-security takes one: some of the
-          # battery's own tests (e.g. gate-test:toolchain's siblings) walk commit
-          # topology on the real tree.
-          fetch-depth: 0
-          filter: blob:none
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-      - id: setup
-        uses: ./.github/actions/setup-workspace
-        # DEFAULTS ONLY: the battery's 149 bash twins run `npm run <gate>` and
-        # `tsx` against the root workspace the bare setup already restores; none
-        # of them touches the account submodule's own npm trees or the built
-        # shared/provisioning packages (those are the pytest suite's, above).
-
-      - name: Load gate toolchain pins
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        # gate-test:toolchain (one of the battery's 149) asserts its resolver
-        # against the REAL pinned versions (e.g. `fake shfmt "v${SHFMT_VERSION}"`
-        # ), so this step has to run even though nothing here installs a real
-        # toolchain from it.
-        run: |
-          PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pairs >> "$GITHUB_ENV"
-          PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain report
-
-      # NO `env:` HERE, AND THE ABSENCE IS DELIBERATE. This step carried
-      # `PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}`, empty on push,
-      # schedule and the nightly dispatch. Nothing under `.ci/rediacc_ci/` reads
-      # PR_HEAD_REF from the ambient environment -- `branch_from_ci()`
-      # (gitx.py:235) has no production caller, and the battery's own tests
-      # either SCRUB the variable (test_gate_untagged_commit_branch.py:105,
-      # test-untagged-commit-branch.sh:66). Two of those modules were written
-      # precisely because a differential inheriting the developer's environment
-      # passes or fails on whether PR_HEAD_REF happens to be exported. So the
-      # key was dead, and adding a fallback clause would have re-created the
-      # exact ambient leak they defend against.
-      - name: Quality-gate unit tests
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-quality-gates
-
-      # T1.6 (PLAN-ci-time-budget): per-driver durations, for budget_report.py --refresh
-      # (T3.2) to read. `always()` and `ignore`, not `failure()`: T3.2 reads GREEN runs,
-      # so the run this artifact needs to exist on is exactly the one a failure-only
-      # condition would skip. battery.py writes this file itself before `main()`
-      # returns, win or lose, so `ignore` only covers the case where the step above
-      # never reached the battery at all (setup failing, or a control refusing the
-      # run before it starts).
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: always()
-        with:
-          name: unit-durations-quality-gate-tests-${{ github.sha }}
-          path: reports/quality-gate-tests/
           retention-days: 3
           if-no-files-found: ignore
 

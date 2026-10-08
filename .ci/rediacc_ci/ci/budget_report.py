@@ -56,13 +56,13 @@ T3.2/T3.3/T3.4 (PLAN-ci-time-budget spec W): `.ci/config/lane-durations.json`'s 
 `jobs` and `units` (plus `concurrency` and `defaultUnitMs`) are `scripts/gates/check-lane-budget.ts`'s `LaneDurations` interface EXACTLY -- that file is the consumer, already written and NOT owned by this box, so its existing `Record<string, number>` shapes are the contract this module writes TO rather than a schema invented here. A "lane id" is a job's YAML KEY (`quality-code`, `test-e2e-workers`, ...), the same string `scripts/ci-runner/lanes.ts`'s `laneCapabilities`/`TEST_LANE_WORKFLOWS` and `gates.lock.json`'s `ci.job` use -- NOT the Actions API's own job display name (`"Quality / Code (1)"`). `lane_display_patterns` below is what bridges the two.
 
 `job_p90_minutes` is T3.1's own addition, for check 2's 63 unpriced non-lane jobs (the gate's own `LaneDurations.job_p90_minutes` field exists and says "nothing writes it yet"). Keyed by Actions API DISPLAY NAME, not a lane id: unlike `jobs`/`units`, most of these jobs have no YAML-key alias to look one up by without re-walking `ci.yml`'s own `needs:`/`uses:` graph a second time. The CONSUMER maps names back to job ids: `check-lane-budget.ts`'s `displayNamePattern` walks `ci.yml` and its callees per call site and matches these keys, judging a priced lane's matrix legs in their lane and every other job in check 2. `--refresh` writes it from success-only wall-time samples over the SAME PR-full runs `jobs`/`units` already sample. A job that ran in NO sampled PR run (the main-push-only release chain) takes its p90 from the main-push runs the same refresh already samples for `job_max_seconds` (`main_push_only_p90`); a PR job's number never comes from main.
-A "unit id" is keyed exactly as `scripts/ci-runner/unit-enumerators.ts`'s `LANE_ENUMERATORS` name it (`e2e-workers:<file>`, `account-e2e:<file>`, a bare Go import path, `renet-integration:<file>`, `pytest:<file>`, `battery:<name>`, `tutorial:<slug>`) -- read-only there too.
+A "unit id" is keyed exactly as `scripts/ci-runner/unit-enumerators.ts`'s `LANE_ENUMERATORS` name it (`e2e-workers:<file>`, `account-e2e:<file>`, a bare Go import path, `renet-integration:<file>`, `pytest:<file>`, `tutorial:<slug>`) -- read-only there too.
 
-`gate_step_p90_seconds` is CI-representative timing for `scripts/gates/check-gate-manifest.ts`'s slow/pre-push tier verdict, keyed by a `scripts/ci-runner/gates.lock.json` gate `id`, SECONDS not minutes. A gate the lock marks `"ci": {"kind": "step", ...}` runs as its own named workflow step (`ci.job` a YAML job key, `ci.step` that job's own step `name`), and `--refresh` times it the same way `job_p90_minutes` times a whole job: success-only, over the SAME PR-full sample `jobs`/`units`/`job_p90_minutes` already walk (`load_gate_ci_steps` reads the lock, `lane_display_patterns` -- already general over every job inside a reusable workflow, not only the seven test lanes -- maps `ci.job` to the display-name pattern its own job matches, and the step is found by exact-name match inside that job's `steps` array, already present in `fetch_jobs`'s payload with no extra network call). A gate whose `ci.kind` is not `"step"` (`local-only`, a gate a `test` drives) carries no entry, matching WHY `units` stays scoped above: this is a different instrument for a different set of gates, not a gap. Nor does a gate whose step is a COMPOSITE shared with other gates (`ci-quality.yml`'s `i18n` step alone chains 27 gates' npm scripts into one hand-written `npm run check:i18n`): its wall time is their SUM, not any one gate's own cost, so `_exclusive_ci_steps` excludes every id sharing a `(job, step)` pair with another rather than mis-attributing the whole step's time to each. This is what lets `check-gate-manifest.ts` judge a gate's tier from CI's own timing instead of the local, checkout-dependent `.ci/cache/gate-durations.json` (large gitignored assets present in one checkout and not another used to give the identical gate contradictory verdicts, since CI itself keeps no such cache and never judged a tier at all).
+`gate_step_p90_seconds` is CI-representative timing for `scripts/gates/check-gate-manifest.ts`'s slow/pre-push tier verdict, keyed by a `scripts/ci-runner/gates.lock.json` gate `id`, SECONDS not minutes. A gate the lock marks `"ci": {"kind": "step", ...}` runs as its own named workflow step (`ci.job` a YAML job key, `ci.step` that job's own step `name`), and `--refresh` times it the same way `job_p90_minutes` times a whole job: success-only, over the SAME PR-full sample `jobs`/`units`/`job_p90_minutes` already walk (`load_gate_ci_steps` reads the lock, `lane_display_patterns` -- already general over every job inside a reusable workflow, not only the test lanes -- maps `ci.job` to the display-name pattern its own job matches, and the step is found by exact-name match inside that job's `steps` array, already present in `fetch_jobs`'s payload with no extra network call). A gate whose `ci.kind` is not `"step"` (`local-only`, a gate a `test` drives) carries no entry, matching WHY `units` stays scoped above: this is a different instrument for a different set of gates, not a gap. Nor does a gate whose step is a COMPOSITE shared with other gates (`ci-quality.yml`'s `i18n` step alone chains 27 gates' npm scripts into one hand-written `npm run check:i18n`): its wall time is their SUM, not any one gate's own cost, so `_exclusive_ci_steps` excludes every id sharing a `(job, step)` pair with another rather than mis-attributing the whole step's time to each. This is what lets `check-gate-manifest.ts` judge a gate's tier from CI's own timing instead of the local, checkout-dependent `.ci/cache/gate-durations.json` (large gitignored assets present in one checkout and not another used to give the identical gate contradictory verdicts, since CI itself keeps no such cache and never judged a tier at all).
 
 UNIT PARALLELISM (`unitParallelism`) IS DERIVED, NOT HAND-AUTHORED. quality-pytest's legs run `pytest -n <granted cores> --dist loadgroup` (check_pytest.py `jobs()`), so the worker count is the leg runner's core count. The measured source would be pytest-xdist's `N workers [M items]` header, but a PASSING leg never prints it (check_pytest.py echoes pytest's output only on a failure) and the junit artifact carries no per-worker field, so no measured source is reachable from the job payloads, step lists or artifacts this refresh already reads. `--refresh` therefore derives the count from the lane job's `runs-on` label (`lane_runner_labels`) and the label's documented vCPU count (`RUNNER_VCPUS`: GitHub-hosted standard runners of a public repository). A lane whose label is not in that table, or a refresh that finds no such lane, measures nothing and KEEPS the prior value, named on stderr: dropping the key would make check-lane-budget.ts price the lane as serial.
 
-WHY `units` STAYS SCOPED TO THE SEVEN T2.7/T2.8 TEST LANES, NOT `quality-code`'s OWN CHECK IDS. T1.6, whose artifacts feed `units` here, names exactly five sources -- Playwright JSON, pytest junit, gotestsum junit, the battery's own per-test timings, and an OPS tutorial JSON summary -- and every one of them is a TEST-RUNNER'S OWN report. `quality-code` has no such report: its "units" are individual `npm run check:*` invocations, each its OWN named workflow step, and T2.9's existing control
+WHY `units` STAYS SCOPED TO THE T2.7/T2.8 TEST LANES, NOT `quality-code`'s OWN CHECK IDS. T1.6, whose artifacts feed `units` here, named five sources -- Playwright JSON, pytest junit, gotestsum junit, the bash gate-test battery's own per-test timings (retired with that battery on 2026-10-09, leaving four), and an OPS tutorial JSON summary -- and every one of them is a TEST-RUNNER'S OWN report. `quality-code` has no such report: its "units" are individual `npm run check:*` invocations, each its OWN named workflow step, and T2.9's existing control
 ("`shardPlan(durations: {})` is byte-identical to `shardPlan()` with no durations
 argument") is what keeps that lane's shard plan stable on exactly that absence. Giving `quality-code` per-check-id costs is a DIFFERENT instrument (the steps API, not a test report) that no box here asks for; `--refresh` never populates it, and that is not a gap in this box, it is the box's stated scope.
 
@@ -79,8 +79,6 @@ THE UNIT-DURATION ARTIFACT CONTRACT (T1.6's producer side, defined HERE because 
   - `test-renet-go`: a `*.xml` member, `gotestsum --junitfile`'s shape (`<testcase
     classname=<go import path> time=...>`, seconds) -- keyed by the BARE package path,
     matching `renetGoUnits`.
-  - `quality-gate-tests`: a `*.json` member shaped `{"drivers": [{"name": str,
-    "duration_ms": number}, ...]}`, one entry per `battery.py --list` driver.
   - `ops-tutorials`: a `*.json` member shaped `{"tutorials": [{"slug": str,
     "duration_ms": number}, ...]}`, one entry per tutorial.
 
@@ -645,7 +643,6 @@ RUNNER_STEP_PATTERNS: dict[str, re.Pattern[str]] = {
         r"(?i)^run integration tests\b"
     ),  # ct-tests.yml "Run integration tests"
     "quality-pytest": re.compile(r"(?i)^python package tests\b"),
-    "quality-gate-tests": re.compile(r"(?i)^quality-gate unit tests\b"),
     "ops-tutorials": re.compile(
         r"(?i)^tutorial sequence\b"
     ),  # ci-ops-test.yml "Tutorial sequence (shard ...)"
@@ -665,14 +662,13 @@ def job_fixed_cost_minutes(job: dict[str, Any], runner_step_re: re.Pattern[str])
     return None
 
 
-# T3.2: the seven T2.7/T2.8 test lanes -- kept equal by hand to `scripts/ci-runner/unit-enumerators.ts`'s `LANE_ENUMERATORS` keys, read-only there.
+# T3.2: the T2.7/T2.8 test lanes (six since the bash gate-test battery's lane was retired, 2026-10-09) -- kept equal by hand to `scripts/ci-runner/unit-enumerators.ts`'s `LANE_ENUMERATORS` keys, read-only there.
 LANE_IDS: tuple[str, ...] = (
     "test-e2e-workers",
     "test-account-e2e",
     "test-renet-go",
     "test-renet-integration",
     "quality-pytest",
-    "quality-gate-tests",
     "ops-tutorials",
 )
 
@@ -683,7 +679,6 @@ LANE_ARTIFACT_FORMAT: dict[str, str] = {
     "test-renet-go": "gotestsum-junit",
     "test-renet-integration": "pytest-junit",
     "quality-pytest": "pytest-junit",
-    "quality-gate-tests": "battery-json",
     "ops-tutorials": "tutorial-json",
 }
 
@@ -691,12 +686,11 @@ _ARTIFACT_MEMBER_SUFFIX: dict[str, str] = {
     "playwright": ".json",
     "pytest-junit": ".xml",
     "gotestsum-junit": ".xml",
-    "battery-json": ".json",
     "tutorial-json": ".json",
 }
 
 
-# T3.2: the five T1.6 unit-duration formats, each a pure `text -> {unit id: milliseconds}`.
+# T3.2: the T1.6 unit-duration formats, each a pure `text -> {unit id: milliseconds}`.
 
 
 def _walk_playwright_suite(
@@ -822,7 +816,7 @@ def parse_gotestsum_junit_unit_ms(text: str) -> dict[str, float]:
 
 
 def _summary_unit_ms(text: str, list_key: str, name_key: str, id_prefix: str) -> dict[str, float]:
-    """The shared shape behind the battery and tutorial JSON summaries: `{list_key: [{name_key: str, "duration_ms": number}, ...]}` -> `{"<id_prefix>:<name>": ms}`."""
+    """The shape behind the tutorial JSON summary: `{list_key: [{name_key: str, "duration_ms": number}, ...]}` -> `{"<id_prefix>:<name>": ms}`."""
     try:
         data = json.loads(text)
     except json.JSONDecodeError as exc:
@@ -841,11 +835,6 @@ def _summary_unit_ms(text: str, list_key: str, name_key: str, id_prefix: str) ->
     return out
 
 
-def parse_battery_summary_unit_ms(text: str) -> dict[str, float]:
-    """`{"drivers": [{"name": str, "duration_ms": number}, ...]}` -> `battery:<name>` ids, matching `qualityGateTestsUnits`."""
-    return _summary_unit_ms(text, "drivers", "name", "battery")
-
-
 def parse_tutorial_summary_unit_ms(text: str) -> dict[str, float]:
     """`{"tutorials": [{"slug": str, "duration_ms": number}, ...]}` -> `tutorial:<slug>` ids, matching `opsTutorialUnits`."""
     return _summary_unit_ms(text, "tutorials", "slug", "tutorial")
@@ -861,8 +850,6 @@ def _parse_unit_duration_text(
         return parse_pytest_junit_unit_ms(text, lane)
     if fmt == "gotestsum-junit":
         return parse_gotestsum_junit_unit_ms(text)
-    if fmt == "battery-json":
-        return parse_battery_summary_unit_ms(text)
     if fmt == "tutorial-json":
         return parse_tutorial_summary_unit_ms(text)
     raise AssertionError(
@@ -1056,7 +1043,7 @@ def _exclusive_ci_steps(root: Path) -> dict[str, tuple[str, str]]:
     A SHARED PAIR IS A COMPOSITE STEP, and its wall time is the SUM of every gate chained into it, not any one gate's own cost.
     MEASURED 2026-09-28: `ci-quality.yml`'s `quality-i18n` job runs 27 gates' npm scripts through one hand-written `npm run check:i18n` step (its own comment: "composite npm chains with no gate file to carry a header") that measured 36.1s in CI, while five of those 27 ids' OWN standalone local costs (`.ci/cache/gate-durations.json`) were 2-9s each.
     Attributing the WHOLE step's time to each of them would have told every fast one to mark `slow: true`, pulling it out of the default pre-push lane for a cost it does not actually have.
-    Six other (job, step) pairs share the same shape (`quality-code`'s `Lint`, `quality-i18n`'s `i18n cross-locale`, `quality-www-build`'s `SEO` and `Redirects`, `quality-content`'s `Dead CSS`, `quality-gate-tests`'s `Quality-gate unit tests`).
+    Other (job, step) pairs share the same shape (`quality-code`'s `Lint`, `quality-i18n`'s `i18n cross-locale`, `quality-www-build`'s `SEO` and `Redirects`, `quality-content`'s `Dead CSS`).
     A pair occupied by exactly one gate has no such ambiguity: its own wall time IS that gate's cost, which is the premise `gate_step_seconds` needs to hold.
     """
     all_steps = load_gate_ci_steps(root)
@@ -1074,7 +1061,7 @@ def gate_step_seconds(
     jobs_by_run: Sequence[list[dict[str, Any]]],
 ) -> dict[str, float]:
     """`{gate id: p90 seconds}`, each gate's OWN step (`_exclusive_ci_steps` -- see there for why a step SHARED by several gates is excluded rather than mis-attributed), timed by `completed_at - started_at`, success-only (both the job and the step), over `jobs_by_run` -- the SAME PR-full sample `jobs`/`units`/`job_p90_minutes` already walk, so this costs no extra network call and inherits the same 14-day sample-age refusal `refresh_lane_durations` already applies to that sample.
-    `patterns` is `lane_display_patterns`'s own map (already general over every job inside a reusable workflow, not only the seven test lanes), keyed by the job's YAML id -- the same key `ci.job` names.
+    `patterns` is `lane_display_patterns`'s own map (already general over every job inside a reusable workflow, not only the test lanes), keyed by the job's YAML id -- the same key `ci.job` names.
     A gate whose job has no pattern yet, or whose named step never appears success-only in the sample, contributes no entry -- never a guessed number."""
     samples: dict[str, list[float]] = {}
     for gate_id, (job_id, step_name) in _exclusive_ci_steps(root).items():
@@ -1656,8 +1643,8 @@ UNIT_PREFIX_MANIFEST = {
 }
 
 
-# Unit-id prefix -> lane, for `unit_drift_findings`' per-lane sum. UNIT_PREFIX_MANIFEST names only the lanes with a shard manifest; battery and tutorial units are priced too, so they are named here.
-UNIT_PREFIX_LANE = {"battery": "quality-gate-tests", "tutorial": "ops-tutorials"}
+# Unit-id prefix -> lane, for `unit_drift_findings`' per-lane sum. UNIT_PREFIX_MANIFEST names only the lanes with a shard manifest; tutorial units are priced too, so they are named here.
+UNIT_PREFIX_LANE = {"tutorial": "ops-tutorials"}
 
 
 def unit_lane(unit_id: str) -> str:

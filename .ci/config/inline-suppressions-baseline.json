@@ -16,9 +16,6 @@
   ".ci/media/venv.sh": {
    "shellcheck-disable SC1091": 2
   },
-  ".ci/rediacc_ci/battery.py": {
-   "noqa PLC0415": 1
-  },
   ".ci/rediacc_ci/build/build_cli_executables.py": {
    "noqa N818": 1
   },
@@ -414,9 +411,6 @@
   ".ci/rediacc_ci/tests/gates/test_harness.py": {
    "noqa ARG001": 1
   },
-  ".ci/rediacc_ci/tests/gates/test_twin_parity.py": {
-   "noqa BLE001": 1
-  },
   ".ci/rediacc_ci/tests/regolden.py": {
    "noqa PLC0415": 2
   },
@@ -647,7 +641,7 @@
    "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/xdist_groups.py": {
-   "noqa PLC0415": 2,
+   "noqa PLC0415": 1,
    "noqa S311": 1
   },
   ".ci/scripts/ci/ci-trace.py": {
@@ -706,9 +700,6 @@
    "noqa F401": 1
   },
   ".ci/scripts/quality/check_bash_lib_ported.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_battery_clean_tree.py": {
    "noqa F401": 1
   },
   ".ci/scripts/quality/check_branch.py": {

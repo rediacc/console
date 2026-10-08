@@ -26,13 +26,14 @@
  * undeclarable rather than merely undeclared. Three shapes the manifest already records
  * have no step of their own to name:
  *
- *   - the 143 gate-tests, which ALL ride one hand-written battery step
- *     ("Quality-gate unit tests" in quality-security, ci-quality.yml:2191). None owns it,
- *     so `--extract` correctly refuses them one by one for a reason that is true and
- *     unfixable: `step "..." is shared by 143 entries; no one gate owns it`;
- *   - the 13 `ci.kind: 'test'` entries, whose CI coverage IS a named gate-test riding
- *     that same battery, and which carry a BLOCKER explaining why no lane can run them
- *     directly;
+ *   - the 143 gate-tests, which ALL rode one hand-written battery step
+ *     ("Quality-gate unit tests"; that step and its battery were retired on 2026-10-09).
+ *     None owned it, so `--extract` correctly refused them one by one for a reason that
+ *     was true and unfixable: `step "..." is shared by 143 entries; no one gate owns it`.
+ *     The same shape survives in the gates that ride a composite step such as `i18n`;
+ *   - the `ci.kind: 'test'` entries, whose CI coverage IS a named gate test (a pytest
+ *     module under check:ci-pytest), and which carry a BLOCKER explaining why no lane can
+ *     run them directly;
  *   - the 2 `ci.kind: 'local-only'` entries, which no CI step invokes at all.
  *
  * Demanding a step from those three forces the author to choose between lying (naming a

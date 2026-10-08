@@ -192,14 +192,6 @@
       "peak_rss_mb": 58,
       "rank": 272
     },
-    "check:ci-battery-clean-tree": {
-      "cpu_s": 0.197,
-      "wall_s": 0.186,
-      "eff_cores": 1.06,
-      "capped": false,
-      "peak_rss_mb": 57,
-      "rank": 223
-    },
     "check:ci-bootstrap-idempotency": {
       "cpu_s": 0.357,
       "wall_s": 0.325,

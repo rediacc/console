@@ -2,20 +2,6 @@
   "note": "SHRINK-ONLY and GENERATED. Every mypy finding, keyed by (file, code, message) so an id survives a MOVE, with occurrences as `count`. Only LOSING members or shrinking a count is allowed: a NEW id is refused even when the total falls. Drain with `check:ci-python-types --write-baseline` after fixing something, never to clear a red.",
   "findings": [
     {
-      "id": "9072b2fc7b126a6c",
-      "file": ".ci/rediacc_ci/battery.py",
-      "code": "arg-type",
-      "count": 2,
-      "message": "Argument 2 to \"_env_set\" has incompatible type \"dict[str, str] | None\"; expected \"dict[str, str]\""
-    },
-    {
-      "id": "5d25eaa4aa9514ca",
-      "file": ".ci/rediacc_ci/battery.py",
-      "code": "assignment",
-      "count": 1,
-      "message": "Incompatible types in assignment (expression has type \"_Environ[str] | dict[str, str]\", variable has type \"dict[str, str] | None\")"
-    },
-    {
       "id": "12f62ec54c555ccf",
       "file": ".ci/rediacc_ci/ci/scope_reconcile_shadow.py",
       "code": "call-overload",

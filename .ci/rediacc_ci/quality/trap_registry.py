@@ -210,7 +210,7 @@ SEAMS = {
 PROBE_FLAG = "--probe-payload"
 
 # THE RATCHET. A written number, moved by hand; see the header for why it is not derived and for the two occasions an unratcheted floor disarmed F1's control. Must equal the floor frozen in `goldens/twins/quality.check-trap-registry.jsonl` unless re-recorded with a reason.
-TRAP_FLOOR_DEFAULT = 108
+TRAP_FLOOR_DEFAULT = 109
 
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,48}$")
 
@@ -1699,7 +1699,7 @@ def main(argv: list[str] | None = None) -> int:
     if shape.entries > floor:
         log.info(
             "  ratchet: %d entries against a floor of %d. Bump TRAP_FLOOR to %d in this "
-            "commit, or gate-test:trap-registry (F1) reds in CI."
+            "commit, or test_gate_trap_registry.py's F1 case reds in check:ci-pytest."
             % (shape.entries, floor, shape.entries)
         )
     return 0

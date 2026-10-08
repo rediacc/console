@@ -237,7 +237,7 @@ def dirty_paths(
 ) -> list[str] | None:
     """Paths the working tree has changed. None when git could not be asked.
 
-    `untracked=False` reproduces the battery runner's `grep -v '^??'` -- a scratch file is not a change to the tree -- which `.ci/rediacc_ci/quality/battery_clean_tree.py` pins.
+    `untracked=False` drops `??` entries: a scratch file is not a change to the tree.
     """
     entries = status_entries(root)
     if entries is None:

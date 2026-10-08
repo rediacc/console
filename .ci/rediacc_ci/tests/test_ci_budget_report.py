@@ -249,16 +249,6 @@ def test_parse_gotestsum_junit_unit_ms_records_a_package_with_no_tests_at_its_su
     }
 
 
-def test_parse_battery_summary_unit_ms():
-    text = json.dumps({"drivers": [{"name": "W-writer1", "duration_ms": 4200}]})
-    assert br.parse_battery_summary_unit_ms(text) == {"battery:W-writer1": 4200.0}
-
-
-def test_parse_battery_summary_unit_ms_raises_without_the_drivers_array():
-    with pytest.raises(TypeError, match="drivers"):
-        br.parse_battery_summary_unit_ms(json.dumps({"nope": []}))
-
-
 def test_parse_tutorial_summary_unit_ms():
     text = json.dumps({"tutorials": [{"slug": "quickstart", "duration_ms": 90000}]})
     assert br.parse_tutorial_summary_unit_ms(text) == {"tutorial:quickstart": 90000.0}
@@ -848,8 +838,8 @@ def test_planted_sustained_lane_wide_drift_of_sub_floor_units_still_fails(tmp_pa
 
 
 def test_a_tiny_lane_sum_cannot_drift_on_the_ratio_alone():
-    """battery's five units sum to about 8.5 s: a 30% move (2.6 s) is under the absolute floor and is noise, the same rule a single unit gets."""
-    committed = {"battery:a.sh": 3000.0, "battery:b.sh": 2500.0, "battery:c.sh": 3000.0}
+    """Three small units summing to about 8.5 s: a 30% move (2.6 s) is under the absolute floor and is noise, the same rule a single unit gets."""
+    committed = {"tutorial:a": 3000.0, "tutorial:b": 2500.0, "tutorial:c": 3000.0}
     measured = {k: v * 1.30 for k, v in committed.items()}
     assert br.unit_drift_findings(committed, measured) == ([], 1)
 
@@ -954,7 +944,6 @@ def test_unit_lane_maps_every_unit_id_family():
     assert br.unit_lane("e2e-workers:x.test.ts") == "test-e2e-workers"
     assert br.unit_lane("renet-integration:x.py") == "test-renet-integration"
     assert br.unit_lane("github.com/rediacc/renet/pkg/x") == "test-renet-go"
-    assert br.unit_lane("battery:x.sh") == "quality-gate-tests"
     assert br.unit_lane("tutorial:x") == "ops-tutorials"
     assert br.unit_lane("newlane:x") == "newlane"
 
@@ -1742,12 +1731,12 @@ def test_prune_units_to_manifests_drops_ids_no_manifest_names(tmp_path):
         "pytest:/ci/a.py": 2,
         "example.com/p": 3,
         "example.com/gone": 4,
-        "battery:x": 5,
+        "tutorial:x": 5,
     }
     assert br.prune_units_to_manifests(units, tmp_path) == {
         "pytest:.ci/a.py": 1,
         "example.com/p": 3,
-        "battery:x": 5,
+        "tutorial:x": 5,
     }
 
 

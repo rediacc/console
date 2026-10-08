@@ -181,7 +181,6 @@ interface LockEntry {
   id: string;
   gate?: boolean;
   slow?: boolean;
-  qualityGateTest?: boolean;
   ci:
     | { kind: 'step'; job?: string; step?: string }
     | { kind: 'test'; test?: string }
@@ -262,12 +261,12 @@ const gateWhere = (g: LockEntry): string => {
 export const gatesProvider: Provider = {
   id: 'gates',
   scans: `${GATES_LOCK}, the committed projection of the manifest that \`check:ci-gates-lock\` keeps faithful`,
-  columns: ['Gate', 'Runs in CI as', 'Is gate', 'Slow', 'Gate test'],
+  columns: ['Gate', 'Runs in CI as', 'Is gate', 'Slow'],
   rows: (root) =>
     readGatesLock(root)
       .map((g) => ({
         key: g.id,
-        cells: [g.id, gateWhere(g), yn(g.gate), yn(g.slow), yn(g.qualityGateTest)],
+        cells: [g.id, gateWhere(g), yn(g.gate), yn(g.slow)],
       }))
       .sort((a, b) => byCodePoint(a.key, b.key)),
   missing: (root) => (fs.existsSync(path.join(root, GATES_LOCK)) ? [] : [GATES_LOCK]),
@@ -297,17 +296,15 @@ export const gatesProvider: Provider = {
 export const gatesSummaryProvider: Provider = {
   id: 'gates-summary',
   scans: `${GATES_LOCK}, folded to one row per CI lane`,
-  // "IS a gate test", not "has one", and the distinction was got wrong once here before the table was read against the lock. `qualityGateTest` marks an entry that IS one of the on-disk gate tests -- manifest.ts says so outright, and every one of the 144 rows carrying it has an id beginning `gate-test:`, with no `gate-test:` entry lacking it. A column headed "Has a gate test" would
-  // have told every reader that 86 quality-code gates are untested, which is a different and false claim.
-  columns: ['Where it runs', 'Registered', '`gate: true`', 'Slow', 'Is a gate test'],
+  // NO "Is a gate test" COLUMN SINCE 2026-10-09. It counted the lock's `qualityGateTest` entries, the bash gate tests the battery ran; that battery and the field were retired with the last of them, so the column could only ever read 0.
+  columns: ['Where it runs', 'Registered', '`gate: true`', 'Slow'],
   rows: (root) => {
-    const lanes = new Map<string, { n: number; gate: number; slow: number; test: number }>();
+    const lanes = new Map<string, { n: number; gate: number; slow: number }>();
     const bump = (key: string, g: LockEntry): void => {
-      const row = lanes.get(key) ?? { n: 0, gate: 0, slow: 0, test: 0 };
+      const row = lanes.get(key) ?? { n: 0, gate: 0, slow: 0 };
       row.n += 1;
       if (g.gate === true) row.gate += 1;
       if (g.slow === true) row.slow += 1;
-      if (g.qualityGateTest === true) row.test += 1;
       lanes.set(key, row);
     };
     for (const g of readGatesLock(root)) {
@@ -326,7 +323,7 @@ export const gatesSummaryProvider: Provider = {
       .sort((a, b) => byCodePoint(a[0], b[0]))
       .map(([key, v]) => ({
         key,
-        cells: [key, String(v.n), String(v.gate), String(v.slow), String(v.test)],
+        cells: [key, String(v.n), String(v.gate), String(v.slow)],
       }));
   },
   missing: (root) => (fs.existsSync(path.join(root, GATES_LOCK)) ? [] : [GATES_LOCK]),

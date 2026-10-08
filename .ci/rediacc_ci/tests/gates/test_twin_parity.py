@@ -320,7 +320,7 @@ def test_record_parity_writes_a_hash_keyed_row_and_never_raises(gate, tmp_path, 
     let a change on the other go unnoticed, which is the exact hole the skip must
     not have. So the control changes each side in turn and requires the key to move -- and requires the OTHER side's key to hold, because a digest that moved for both would prove nothing about which side it tracks.
 
-    AND IT MUST NEVER RAISE. A ledger that can fail a parity test turns a bookkeeping problem into what reads as a behavioural divergence, the confusion this whole module exists to prevent. `record_parity` swallows everything; nothing asserted that until now, so the `except` was as unfalsifiable as the controls this gate estate keeps finding.
+    AND IT MUST NEVER RAISE. A ledger that can fail a parity test turns a bookkeeping problem into what reads as a behavioural divergence, the confusion this whole module exists to prevent. `record_parity` swallows every error its body can raise (OSError from the filesystem, TypeError or ValueError from json.dumps); nothing asserted that until now, so the `except` was as unfalsifiable as the controls this gate estate keeps finding.
 
     THE LEDGER IS REDIRECTED, NOT MOCKED. `paths.from_root` is repointed at `tmp_path`, so the real writer runs -- its `mkdir`, its `open("a")`, its JSON -- against a scratch root. A fake writer would control the test's own code.
     """
@@ -359,16 +359,19 @@ def test_record_parity_writes_a_hash_keyed_row_and_never_raises(gate, tmp_path, 
     gate.assert_eq(third["agreed"], False, "a disagreement is recorded as one")
     gate.ok("control: the port side is tracked independently")
 
-    # UNREADABLE SIDE. A deleted twin must degrade to "cannot key this" rather than to a crash inside a test that is measuring something else.
+    # UNREADABLE SIDE. A deleted twin must degrade to "cannot key this" rather than to a crash inside a test that is measuring something else, and since 2026-10-09 it appends NOTHING: an empty key can never license a reuse, so a row for it was only churn in a tracked file.
     twin.unlink()
     record_parity("subject", twin_rel, port, agreed=True)
-    fourth = json.loads(ledger.read_text(encoding="utf-8").splitlines()[3])
-    gate.assert_eq(fourth["twin_sha"], "", "a missing file keys to empty, not an exception")
-    gate.ok("control: an absent side does not raise")
+    rows_after = ledger.read_text(encoding="utf-8").splitlines()
+    gate.assert_eq(len(rows_after), 3, "a deleted twin appends no row")
+    gate.ok("control: an absent side does not raise and is not recorded")
 
-    # UNWRITABLE LEDGER, driven for real: /proc rejects the mkdir. If the swallow is ever removed this line raises and the test says so.
-    monkeypatch.setattr(paths, "from_root", pathlib.Path("/proc/1").joinpath)
+    # UNWRITABLE LEDGER, driven for real: the ledger path is a DIRECTORY, so `open("a")` raises IsADirectoryError inside the writer. If the swallow is ever removed this line raises and the test says so. The twin is put back first and the root stays where it is, because an absent or unreadable twin now returns before the write is attempted and would leave the swallow unexercised (a `/proc` root, used here before, makes the twin unreadable too).
+    twin.write_text("echo three\n", encoding="utf-8")
+    ledger.unlink()
+    ledger.mkdir()
     record_parity("subject", twin_rel, port, agreed=True)
+    gate.assert_eq(ledger.is_dir(), True, "the planted directory is still where the ledger was")
     gate.ok("control: a ledger that cannot be written is swallowed, not raised")
 
     gate.tally_finish("parity ledger")
@@ -526,12 +529,16 @@ def record_parity(name: str, twin: str, module_path: pathlib.Path, agreed: bool)
 
     NEVER RAISES. A ledger that can fail a parity test would make a bookkeeping problem look like a behavioural divergence, which is precisely the confusion this module exists to prevent.
     """
+    # A DELETED TWIN IS NOT RECORDED. Its digest is "", `may_reuse` refuses an empty digest, so the row could never license a reuse; all it did was append to a TRACKED file on every pytest run (measured 2026-10-09: 11 such rows from one session's runs, every one `twin_sha: ""`, after the last bash gate test was deleted).
+    twin_sha = _digest(paths.from_root(*twin.split("/")))
+    if not twin_sha:
+        return
     try:
         row = {
             "at": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "subject": name,
             "twin": twin,
-            "twin_sha": _digest(paths.from_root(*twin.split("/"))),
+            "twin_sha": twin_sha,
             "port_sha": _digest(module_path),
             "agreed": bool(agreed),
         }
@@ -539,7 +546,8 @@ def record_parity(name: str, twin: str, module_path: pathlib.Path, agreed: bool)
         led.parent.mkdir(parents=True, exist_ok=True)
         with led.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(row, separators=(",", ":")) + "\n")
-    except Exception:  # noqa: BLE001 - bookkeeping must never fail a verdict
+    except (OSError, TypeError, ValueError):
+        # Bookkeeping must never fail a verdict. Named rather than `Exception`: the body can raise only an OSError (mkdir, open, write) or, from json.dumps, a TypeError or ValueError.
         pass
 
 

@@ -17,7 +17,7 @@ const PREFIX = '::finding::';
 const FINDING_LINE_RE = /^::finding::(.*)$/;
 /** Keys per gate. 512 x 200 characters is about 100 KB a gate; past it the value is `null` and the runner says so. */
 const FINDINGS_CAP = 512;
-/** The ESC byte built with fromCharCode, the idiom exec.ts PASS_LINE uses, so no control character sits in a regex literal. */
+/** The ESC byte built with fromCharCode, so no control character sits in a regex literal. */
 const ANSI_RE = new RegExp(`${String.fromCharCode(27)}\\[[0-9;?]*[A-Za-z]`, 'g');
 
 const byCodeUnit = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);

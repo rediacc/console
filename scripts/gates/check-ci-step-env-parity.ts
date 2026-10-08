@@ -23,10 +23,11 @@
  *   value-drift    both carry the key with different values, which is the shape that
  *                  survives longest because both halves look populated.
  *
- * SHARED STEPS TAKE THE UNION, and that is a deliberate weakening with a reason. One step
- * -- `Quality-gate unit tests` -- is ridden by 150 lock entries and OWNED by none, which
- * is what `kind: battery` means. Demanding `env` on all 150 would be 150 copies of one
- * fact and 150 chances to drift. So the expectation for a step is the UNION of every
+ * SHARED STEPS TAKE THE UNION, and that is a deliberate weakening with a reason. A shared
+ * step is ridden by several lock entries and OWNED by none, which is what `kind: battery`
+ * means (the bash gate-test battery's `Quality-gate unit tests` step was ridden by 150
+ * until it was retired on 2026-10-09). Demanding `env` on every rider would be N copies
+ * of one fact and N chances to drift. So the expectation for a step is the UNION of every
  * claimant's `env`, and two claimants declaring the SAME key with DIFFERENT values is
  * itself a finding. For the 249 single-claimant steps the union is that entry's own map,
  * so nothing is lost where nothing is shared.

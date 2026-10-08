@@ -229,7 +229,6 @@ function gates(n: number): string {
 function why(result: GateResult): string {
   if (result.timedOutMs !== undefined)
     return `TIMED OUT at its ${secs(result.timedOutMs)} limit, process group killed`;
-  if (result.vacuity !== undefined) return `exit 0 but ${result.vacuity}`;
   if (result.exitCode === null) return 'killed';
   return `exit ${result.exitCode}`;
 }
@@ -454,7 +453,7 @@ const ANSI = new RegExp(`${String.fromCharCode(27)}\\[[0-9;?]*[A-Za-z]`, 'g');
 
 /** The first `::finding::` key, else the first error-looking line, else the first non-empty line, else the exit; one line, cut at FIRST_ERROR_MAX. */
 export function firstError(
-  r: Pick<GateResult, 'id' | 'status' | 'stdout' | 'stderr' | 'exitCode' | 'timedOutMs' | 'vacuity'>
+  r: Pick<GateResult, 'id' | 'status' | 'stdout' | 'stderr' | 'exitCode' | 'timedOutMs'>
 ): string {
   const keys = receiptFindings([{ ...r, status: 'fail' }], () => {})[r.id];
   const cut = (t: string): string =>
