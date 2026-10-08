@@ -586,7 +586,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-wire-account-vitest-ci.md` | compacted | 39 | 0 | 0 | 3063 |
 | `agent/plans/PLAN-wl-report-liveness-oracle.md` | compacted | 52 | 0 | 7 | 3665 |
 | `agent/plans/PLAN-www-bundle-determinism.md` | compacted | 38 | 0 | 0 | 2592 |
-| `agent/plans/_done/PLAN-account-env-to-bws.md` | done | 130 | 0 | 20 | 26605 |
+| `agent/plans/_done/PLAN-account-env-to-bws.md` | done | 131 | 0 | 20 | 26581 |
 | `agent/plans/_done/PLAN-agent-session-archival.md` | done | 141 | 0 | 6 | 18555 |
 | `agent/plans/_done/PLAN-archival-tests-python-compliance.md` | done | 231 | 0 | 15 | 32101 |
 | `agent/plans/_done/PLAN-b2-emit-matrix.md` | done | 305 | 0 | 13 | 34443 |
@@ -611,7 +611,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-deflected-finding-check.md` | done | 74 | 0 | 6 | 7257 |
 | `agent/plans/_done/PLAN-devbox-toolchain-guard-extension.md` | done | 111 | 0 | 20 | 16709 |
 | `agent/plans/_done/PLAN-eliminate-worklist-report-per-stop-env.md` | done | 235 | 0 | 20 | 26813 |
-| `agent/plans/_done/PLAN-env-to-bitwarden-v2.md` | done | 508 | 0 | 10 | 52655 |
+| `agent/plans/_done/PLAN-env-to-bitwarden-v2.md` | done | 509 | 0 | 10 | 52656 |
 | `agent/plans/_done/PLAN-fix-console-ci-5day-failure.md` | superseded | 59 | 13 | 0 | 6602 |
 | `agent/plans/_done/PLAN-fix-guard-repo-context.md` | done | 226 | 0 | 10 | 28903 |
 | `agent/plans/_done/PLAN-fix-is-invoked-sh-alternation.md` | done | 40 | 0 | 4 | 5180 |
