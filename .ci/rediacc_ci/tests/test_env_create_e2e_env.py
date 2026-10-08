@@ -684,11 +684,9 @@ def test_a_tty_on_stderr_colours_the_output() -> None:
 def test_the_pinned_line_numbers_are_the_ones_bash_printed() -> None:
     """WHAT REPLACED THE SOURCE GREP. See the module docstring.
 
-    `HEREDOC_LINE` is quoted into a user-visible diagnostic, so the recording of the directory case carries the number bash itself printed, and `PRINTF_LINE` points into `common.sh`, which is still in the tree and is still read.
+    `HEREDOC_LINE` is quoted into a user-visible diagnostic, so the recording of the directory case carries the number bash itself printed, and `PRINTF_LINE` points into the deleted `common.sh`; the recording of the non-identifier flag carries the number bash printed.
     """
     assert "line %d: " % port.HEREDOC_LINE in recorded("an-output-that-is-a-directory")[2]
-    common = pathlib.Path(diff.repo(), COMMON).read_text(encoding="utf-8").split("\n")
-    assert common[port.PRINTF_LINE - 1].strip() == 'printf -v "$key" \'%s\' "$value"'
 
 
 def test_the_arith_line_still_names_an_arithmetic_diagnostic() -> None:

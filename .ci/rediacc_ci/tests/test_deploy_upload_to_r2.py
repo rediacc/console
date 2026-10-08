@@ -44,7 +44,6 @@ ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/deploy/upload-to-r2.sh"
 TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "upload_to_r2.py"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 VALIDATOR = ROOT / ".ci" / "scripts" / "lib" / "release-state-validator.sh"
 CONSTANTS = ROOT / ".ci" / "config" / "constants.sh"
 TOOLCHAIN = ROOT / ".devcontainer" / "toolchain.env"
@@ -175,7 +174,6 @@ def fixture(tmp_path: pathlib.Path, tree: dict[str, str] | None = None) -> pathl
         (root / relative).mkdir(parents=True, exist_ok=True)
     if TWIN.is_file():  # only a `regolden --source bash` run still reads the bash
         shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
-        shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
         shutil.copy2(VALIDATOR, root / ".ci" / "scripts" / "lib" / VALIDATOR.name)
         shutil.copy2(CONSTANTS, root / ".ci" / "config" / CONSTANTS.name)
         shutil.copy2(

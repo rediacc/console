@@ -204,13 +204,13 @@ media_assert_absent_from_origins() {
 # media_run_module <root-dir> <modules> <code>
 #
 # Runs <code> against the named .ci/media modules in a FRESH bash, with ROOT_DIR set to
-# <root-dir> and the real log_* helpers from .ci/scripts/lib/common.sh in scope. Output
+# <root-dir> and the log_* helpers (_media_log_prelude below) in scope. Output
 # (stdout and stderr merged) lands in LAST_OUT; the return value is the code's.
 #
 # A FRESH SHELL RATHER THAN A SUBSHELL, for two reasons that both bit during writing:
 # the functions under test call `exit`, which in a plain subshell ends the enclosing test
-# rather than the code under test; and common.sh sets `set -euo pipefail`, which is what
-# run.sh does too, so a fresh shell is also the honest environment rather than a
+# rather than the code under test; and the prelude sets `set -euo pipefail`, which is what
+# media-entry.sh does too, so a fresh shell is also the honest environment rather than a
 # convenient one.
 #
 # It inherits PATH, so a caller inside with_fake_bin gets the emptied PATH here too --
@@ -225,11 +225,23 @@ media_assert_absent_from_origins() {
 # green, and "this assertion would fail if the code were wrong" would be an assumption
 # rather than something the test file has watched happen.
 #
-# ONE COMMAND IS ALWAYS REQUIRED: common.sh runs `CI_OS="$(detect_os)"` at source time
-# (.ci/scripts/lib/common.sh:479), and detect_os shells out to `uname`. A caller inside
-# with_fake_bin must therefore admit `+uname`, or every run carries a stray
-# "uname: command not found" on stderr -- harmless to the code under test, and exactly
-# the kind of noise that makes a real failure hard to read.
+# THE PRELUDE RUNS NO EXTERNAL COMMAND. The deleted helper library ran `detect_os` at source
+# time, which shells out to `uname`, so every caller inside with_fake_bin had to admit
+# `+uname`. The admissions stay in the callers, harmless; nothing here needs them.
+#
+# _media_log_prelude -- the text spliced at the head of every fresh shell: strict mode and
+# the five log functions, with the glyphs and the stderr-only rule of the helper library
+# this suite used to source. Colour is always off: the shell's stderr is merged into a
+# command substitution, so it is never a terminal.
+_media_log_prelude() {
+    printf '%s' "set -euo pipefail
+        log_info() { echo -e \"✓ \$*\" >&2; }
+        log_warn() { echo -e \"⚠ \$*\" >&2; }
+        log_error() { echo -e \"✗ \$*\" >&2; }
+        log_step() { echo -e \"→ \$*\" >&2; }
+        log_debug() { if [[ \"\${DEBUG:-false}\" == \"true\" ]]; then echo -e \"[DEBUG] \$*\" >&2; fi; }"
+}
+
 # THE COVERAGE SEAM. When MEDIA_COVERAGE_FILE names a file, the two functions below turn
 # xtrace on INSIDE the shell that runs the module and send it to a descriptor opened onto
 # that file. Off by default and invisible when off.
@@ -247,7 +259,7 @@ media_assert_absent_from_origins() {
 # an environment, and inheriting it is precisely the thing that perturbs.
 _media_coverage_prelude() {
     [ -n "${MEDIA_COVERAGE_FILE:-}" ] || return 0
-    # ${BASH_SOURCE:-} AND NOT ${BASH_SOURCE}. common.sh sets `set -u`, and at the top level
+    # ${BASH_SOURCE:-} AND NOT ${BASH_SOURCE}. The prelude sets `set -u`, and at the top level
     # of a `bash -c` string BASH_SOURCE is unset, so the bare form makes the FIRST traced
     # command die with "BASH_SOURCE: unbound variable" -- an empty trace file and a failed
     # run, which is exactly what it did on 2026-09-06 before this default was added.
@@ -258,7 +270,7 @@ _media_coverage_prelude() {
 LAST_OUT=""
 media_run_module() {
     local root_dir="$1" modules="$2" code="$3"
-    local media_dir="${MEDIA_MODULE_DIR:-$MEDIA_VERIFY_DIR}" repo_root="$MEDIA_VERIFY_ROOT" srcs="" m rc=0
+    local media_dir="${MEDIA_MODULE_DIR:-$MEDIA_VERIFY_DIR}" srcs="" m rc=0
     # portable.sh ALWAYS, and always from the REAL folder rather than $media_dir. It is
     # the seam layer, not a subject: every module is entitled to media_mtime and
     # ${MEDIA_SHA256[@]} being in scope exactly as media-entry.sh guarantees, and a test
@@ -275,7 +287,7 @@ media_run_module() {
     # nothing the test did not name.
     LAST_OUT="$("$BASH" -c "
         ROOT_DIR='$root_dir'
-        source '$repo_root/.ci/scripts/lib/common.sh'
+        $(_media_log_prelude)
         $(_media_coverage_prelude)
         $srcs
         $code" 2>&1)" || rc=$?
@@ -458,8 +470,7 @@ media_chain_mutate() {
 #
 # Called from inside with_fake_bin, so PATH holds only what the test admitted -- which for
 # the whole chain is `uname` and `dirname` and nothing else. That is measured, not
-# assumed: run.sh resolves ROOT_DIR with dirname on its first line, and
-# .ci/scripts/lib/common.sh runs detect_os at source time. Everything else on the path to
+# assumed: run.sh resolves ROOT_DIR with dirname on its first line. Everything else on the path to
 # the marker is a bash builtin, which is why docker, node, npm, nvcc, aws and ssh being
 # absent is not a special arrangement here but the ordinary case.
 LAST_CHAIN=""

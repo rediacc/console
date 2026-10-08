@@ -38,7 +38,6 @@ SLUG = "build-json"
 
 TWIN_REL = ".ci/scripts/build/build-json.sh"
 PORT_REL = ".ci/rediacc_ci/build/build_json.py"
-COMMON_REL = ".ci/scripts/lib/common.sh"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
 GENERATED_REL = ".ci/config/well-known.generated.sh"  # common.sh sources this
 
@@ -85,9 +84,9 @@ CALLS_MARKER = "--- calls ---\n"
 def fixture(tmp_path: pathlib.Path, *, port_source: str | None = None) -> pathlib.Path:
     """A throwaway root holding the port and `common.sh`."""
     root = tmp_path / "repo"
-    for rel in (PORT_REL, COMMON_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
+    for rel in (PORT_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (COMMON_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
+    for rel in (WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     if port_source is None:
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)
@@ -328,16 +327,8 @@ def test_the_www_golden_names_a_different_twin() -> None:
     assert TWIN_REL not in header.split("\n", 1)[0]
 
 
-def test_the_port_and_the_twin_agree_about_the_repo_root_in_this_checkout() -> None:
-    proc = subprocess.run(
-        [BASH, "-c", 'source "$1" && get_repo_root', "bash", str(ROOT / COMMON_REL)],
-        capture_output=True,
-        text=True,
-        check=True,
-        timeout=60,
-    )
-    assert proc.stdout.strip() == str(port.repo_root())
-    assert proc.stdout.strip() == str(ROOT)
+def test_the_port_resolves_the_repo_root_in_this_checkout() -> None:
+    assert str(port.repo_root()) == str(ROOT)
 
 
 # --------------------------------------------------------------------------- The controls: these goldens can actually fail ---------------------------------------------------------------------------

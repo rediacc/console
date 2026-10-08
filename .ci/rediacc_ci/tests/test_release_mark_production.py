@@ -8,16 +8,16 @@ would not name the real repository.
 THE CALL LOG IS COMPARED, NOT JUST THE STREAMS. The observable effect of this script is four possible mutations (`PATCH` a ref, `POST` a ref, `release edit --latest`, and nothing at all), and two implementations can print identical text while making different requests. The dereference step is the sharpest example: a port that skipped it would print the same two lines and point
 `production` at a tag ANNOTATION instead of a commit.
 
-BOTH LOGGING WORLDS ARE DRIVEN. `source common.sh 2>/dev/null || { ... }` gives
-the script a second, private logger whose `log_info` writes to STDOUT with no glyph. `test_the_fallback_logger_world_...` copies each subject into a fixture tree that has no `.ci/scripts/lib/`, which is the only way to reach that branch, and compares the streams there too.
+ONE LOGGING WORLD. The twin had a second, private logger (info on STDOUT, no glyph) for a checkout without `common.sh`. `common.sh` is deleted and the port logs through `rediacc_ci.log` always (PLAN-retire-bash-oracles W11-B, a Rule-T fix). The three fixture-tree cases were re-recorded `--source port`; `test_a_tree_without_the_library_...` copies the port into a tree that has no `.ci/scripts/lib/` and proves the glyph and the stream are the same as anywhere else.
 
 THE ONE DELIBERATE DIVERGENCE IS ASSERTED, NOT HIDDEN.
-`test_divergence_common_sh_interprets_backslash_escapes_in_gh_error_text` drives a `gh` failure whose text contains a literal backslash-n and asserts that the twin (via `echo -e`) renders a newline while the port renders two characters. `rediacc_ci.log`'s module docstring already rules on this class; this pins it on the one script in the box that interpolates API text into a log
+`test_divergence_common_sh_interprets_backslash_escapes_in_gh_error_text` drives a `gh` failure whose text contains a literal backslash-n and asserts that `echo -e` (what the twin's loggers used) renders a newline while the port renders two characters. `rediacc_ci.log`'s module docstring already rules on this class; this pins it on the one script in the box that interpolates API text into a log
 message.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -128,15 +128,35 @@ def _bin(tmp_path: pathlib.Path, name: str, *, with_gh: bool = True) -> str:
 
 
 def _run(subject, *args, **kw):
-    """One side. The twin's answer comes from its golden (PLAN-retire-bash-oracles B3); `_run_live` is how it was recorded."""
-    if str(subject).endswith(".sh"):
-        return diff.twin_result(
-            TWIN_REL,
-            [repr(args), repr(sorted(kw.items()))],
-            lambda: _run_live(subject, *args, **kw),
-            work=diff.twin_work(args, kw),
-        )
-    return _run_live(subject, *args, **kw)
+    """One side. The twin's answer comes from its golden (PLAN-retire-bash-oracles B3); `_run_live` is how it was recorded.
+
+    `diff.twin_result` has no `port=`, and a Rule-T re-record needs one, so this is `twin_result`'s `proc+` shape spelled out over `twin_run`: the same keys and the same `more` record, so the existing goldens still answer.
+    """
+    if not str(subject).endswith(".sh"):
+        return _run_live(subject, *args, **kw)
+    box: dict[str, list[str]] = {}
+
+    def drive(who: pathlib.Path):
+        proc, calls = _run_live(who, *args, **kw)
+        box["calls"] = calls
+        return proc.returncode, proc.stdout, proc.stderr
+
+    def counterpart() -> pathlib.Path:
+        # The live twin's port: the real one, or the copy a fixture tree holds beside the twin's copy.
+        if subject == TWIN:
+            return PORT
+        return subject.parents[2] / "rediacc_ci" / "release" / PORT.name
+
+    rc, out, err, extra = diff.twin_run(
+        TWIN_REL,
+        [repr(args), repr(sorted(kw.items()))],
+        lambda: drive(subject),
+        extras={"more": lambda: json.dumps(diff._to_json(["proc+", box["calls"]]), sort_keys=True)},
+        port=lambda: drive(counterpart()),
+        work=diff.twin_work(args, kw),
+    )
+    _shape, calls = diff._from_json(json.loads(extra["more"]))
+    return subprocess.CompletedProcess([], rc, out, err), calls
 
 
 def _run_live(
@@ -429,56 +449,57 @@ def _fixture_tree(tmp_path: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path]:
     return twin_copy, port_copy
 
 
-def test_the_fallback_logger_world_puts_info_on_stdout_without_a_glyph(
+def test_a_tree_without_the_library_logs_exactly_like_any_other(
     tmp_path: pathlib.Path,
 ) -> None:
-    """THE BRANCH THAT ONLY EXISTS WHEN common.sh IS MISSING. `source ... ||
-    { log_info() { echo "$*"; }; ... }` moves every info line to STDOUT and
-    drops the glyph, and `log_error` keeps stderr but loses its `✗`. A port that implemented only the library path would be byte-identical in CI and wrong on exactly the machine the fallback was written for."""
+    """THE BRANCH THAT USED TO EXIST ONLY WHEN common.sh WAS MISSING, now gone. The twin's `source ... || { log_info() { echo "$*"; }; ... }` moved every info line to STDOUT and dropped the glyph; the port logs through `rediacc_ci.log` unconditionally, so a tree with no `.ci/scripts/lib/` behaves as every other tree does: stdout carries only what `gh release edit` printed, info goes to stderr with its glyph."""
     twin_copy, port_copy = _fixture_tree(tmp_path)
     old, old_calls = _run(twin_copy, tmp_path, ["v1.3.1"])
     new, new_calls = _run(port_copy, tmp_path, ["v1.3.1"])
     assert old.returncode == 0
-    assert old.stdout == (
-        "mark-production: v1.3.1 is a published release\n"
-        f"mark-production: moved the 'production' tag to v1.3.1 ({A40})\n"
-        "https://github.com/acme/widget/releases/tag/v1.3.1\n"
-        "mark-production: marked v1.3.1 as the latest GitHub Release\n"
+    assert old.stdout == "https://github.com/acme/widget/releases/tag/v1.3.1\n"
+    assert old.stderr == (
+        "✓ mark-production: v1.3.1 is a published release\n"
+        f"✓ mark-production: moved the 'production' tag to v1.3.1 ({A40})\n"
+        "✓ mark-production: marked v1.3.1 as the latest GitHub Release\n"
     )
-    assert old.stderr == "", f"the fallback world wrote to stderr: {old.stderr!r}"
-    assert "✓" not in old.stdout
-    _assert_agree(old, new, "fallback-logger", old_calls, new_calls)
+    _assert_agree(old, new, "no-library-logger", old_calls, new_calls)
 
 
-def test_the_fallback_world_error_path_also_agrees(tmp_path: pathlib.Path) -> None:
+def test_a_tree_without_the_library_also_has_the_glyph_on_errors(tmp_path: pathlib.Path) -> None:
     twin_copy, port_copy = _fixture_tree(tmp_path)
     old, old_calls = _run(twin_copy, tmp_path, ["nope"])
     new, new_calls = _run(port_copy, tmp_path, ["nope"])
     assert old.returncode == 1
-    assert old.stderr == "mark-production: 'vnope' is not strict semver (expected vX.Y.Z)\n"
+    assert old.stderr == "✗ mark-production: 'vnope' is not strict semver (expected vX.Y.Z)\n"
     assert old.stdout == ""
-    _assert_agree(old, new, "fallback-error", old_calls, new_calls)
+    _assert_agree(old, new, "no-library-error", old_calls, new_calls)
 
 
 def test_divergence_common_sh_interprets_backslash_escapes_in_gh_error_text(
     tmp_path: pathlib.Path,
 ) -> None:
-    """A DELIBERATE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE
-    "FIXED" BY ACCIDENT. common.sh's loggers use `echo -e`, which interprets backslash escapes IN THE MESSAGE, and this script interpolates gh's own output into that message. `rediacc_ci.log` formats the message as data (see its module docstring), so the twin turns a literal backslash-n in an API error into a newline and the port keeps the two characters. The FALLBACK world
-    uses a bare `echo` and does NOT interpret, which is asserted here too: the divergence belongs to common.sh, not to the script."""
+    """A DELIBERATE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE "FIXED" BY ACCIDENT. The twin's loggers used `echo -e`, which interprets backslash escapes IN THE MESSAGE, and this script interpolates gh's own output into that message. `rediacc_ci.log` formats the message as data (see its module docstring), so a literal backslash-n in an API error was a newline through the twin and stays two characters through the port.
+
+    The bash half is the live builtin, since the twin's file is gone: `echo -e` is what rendered it."""
     err = "HTTP 500: boom\\nline two\n"
-    old, new, _old_calls, _new_calls = run_both(
-        tmp_path, ["v1.3.1"], FAKE_GH_VIEW_RC="1", FAKE_GH_VIEW_ERR=err
+    echoed = subprocess.run(
+        [BASH, "-c", 'echo -e "$1"', "x", err.rstrip("\n")],
+        capture_output=True,
+        text=True,
+        check=True,
     )
-    assert old.returncode == new.returncode == 1
-    assert "boom\nline two" in old.stderr, "the twin no longer interprets escapes"
+    assert "boom\nline two" in echoed.stdout, "bash's echo -e no longer interprets escapes"
+
+    new, _calls = _run(PORT, tmp_path, ["v1.3.1"], FAKE_GH_VIEW_RC="1", FAKE_GH_VIEW_ERR=err)
+    assert new.returncode == 1
     assert "boom\\nline two" in new.stderr, "the port started interpreting escapes"
-    assert old.stderr != new.stderr
+    assert "boom\nline two" not in new.stderr
 
     twin_copy, port_copy = _fixture_tree(tmp_path)
     f_old, _ = _run(twin_copy, tmp_path, ["v1.3.1"], FAKE_GH_VIEW_RC="1", FAKE_GH_VIEW_ERR=err)
     f_new, _ = _run(port_copy, tmp_path, ["v1.3.1"], FAKE_GH_VIEW_RC="1", FAKE_GH_VIEW_ERR=err)
-    assert f_old.stderr == f_new.stderr, "the fallback world must NOT diverge"
+    assert f_old.stderr == f_new.stderr
     assert "boom\\nline two" in f_old.stderr
 
 

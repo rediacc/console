@@ -34,7 +34,6 @@ from rediacc_ci.tests import differential as diff
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "private" / "license-e2e.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "private" / "license_e2e.py"
 
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/private/license-e2e.sh")
@@ -284,12 +283,10 @@ def _fixture(tmp_path: pathlib.Path, cfg: dict) -> pathlib.Path:
     base = tmp_path.resolve()
     root = base / "tree"
     (root / ".ci" / "scripts" / "private" / "license-mint").mkdir(parents=True)
-    (root / ".ci" / "scripts" / "lib").mkdir(parents=True)
     (root / ".ci" / "rediacc_ci" / "private").mkdir(parents=True)
     (root / ".ci" / "config").mkdir(parents=True)
     if _recording():
         shutil.copy2(TWIN, root / TWIN_REL)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     for name in ("well-known.env", "well-known.generated.sh"):
         shutil.copy2(ROOT / ".ci" / "config" / name, root / ".ci" / "config" / name)
     shutil.copy2(PORT, root / PORT_REL)

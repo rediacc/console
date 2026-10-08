@@ -34,7 +34,6 @@ from rediacc_ci.tests.gates import harness
 
 LIB_DIR = paths.from_root(".ci", "scripts", "lib")
 EMIT = LIB_DIR / "emit-advisory.sh"
-COMMON = LIB_DIR / "common.sh"
 BLOCKER_VALIDATOR = LIB_DIR / "blocker-validator.sh"
 
 # The seven associative arrays emit_advisory reads. Declared EMPTY in the cases that are not about metadata, because bash under `set -u` would abort on an undeclared one and the abort would look like a rendering failure.
@@ -45,7 +44,7 @@ EMPTY_TABLES = (
 
 
 def bash_script(gate, script: str, *, env: dict[str, str]) -> harness.RunResult:
-    for required in (EMIT, COMMON, BLOCKER_VALIDATOR):
+    for required in (EMIT, BLOCKER_VALIDATOR):
         if not required.is_file():
             gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(required))
     return harness.run(["bash", "-c", script], env=env, env_replace=True)
@@ -129,37 +128,6 @@ def test_emit_returns_zero_even_with_empty_hints(gate):
     gate.assert_exit(0, result, "emit_advisory does not fail caller under set -e")
     gate.assert_contains(result.combined, "after-emit", "execution continues past emit_advisory")
     gate.log_pass("emit_advisory returns 0 (set -e safe)")
-
-
-def test_production_order_keeps_common_logger(gate):
-    gate.log_test("the production source order of the four affected gates, verbatim")
-    result = bash_script(
-        gate,
-        "source '%s'\nsource '%s'\nlog_info x\nlog_warn y\nlog_error a b\n"
-        % (COMMON, BLOCKER_VALIDATOR),
-        env=without_ci(),
-    )
-    gate.assert_exit(0, result, "production-order logging exits clean")
-    gate.assert_eq(result.out, "", "stdout stays empty while a gate logs")
-    gate.assert_contains(result.err, "x", "log_info reaches stderr, not stdout")
-    gate.assert_contains(result.err, "y", "log_warn reaches stderr, not stdout")
-    gate.assert_contains(result.err, "a", "log_error reaches stderr")
-    gate.assert_contains(result.err, "b", "log_error keeps arguments past the first")
-    gate.log_pass("common.sh logger survives blocker-validator's transitive source")
-
-
-def test_no_escape_bytes_on_stdout_off_tty(gate):
-    gate.log_test("off a tty, stdout must carry no colour escapes at all")
-    # log_success is the interesting one: common.sh does not define it, so it legitimately comes from this library even in production order. It must still honour the RED/GREEN/... that common.sh already emptied.
-    result = bash_script(
-        gate,
-        "source '%s'\nsource '%s'\nlog_info x\nlog_warn y\nlog_success z\nlog_error a b\n"
-        % (COMMON, BLOCKER_VALIDATOR),
-        env=without_ci(),
-    )
-    gate.assert_exit(0, result, "off-tty logging exits clean")
-    gate.assert_eq(result.out.count("\x1b"), 0, "zero ESC bytes on stdout when stderr is not a tty")
-    gate.log_pass("off a tty, stdout carries no colour escapes")
 
 
 def test_standalone_source_still_defines_logger(gate):

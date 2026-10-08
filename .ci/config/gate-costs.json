@@ -1792,14 +1792,6 @@
       "peak_rss_mb": 57,
       "rank": 239
     },
-    "check:ci-shell-declared-commands": {
-      "cpu_s": 0.374,
-      "wall_s": 0.332,
-      "eff_cores": 1.13,
-      "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 131
-    },
     "check:ci-shell-format": {
       "cpu_s": 0.26,
       "wall_s": 0.85,

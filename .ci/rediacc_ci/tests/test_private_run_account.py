@@ -33,7 +33,6 @@ from rediacc_ci.tests import frozen
 ROOT = paths.repo_root()
 SLUG = "run-account"
 TWIN = ROOT / ".ci" / "scripts" / "private" / "run-account.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "private" / "run_account.py"
 
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/private/run-account.sh")
@@ -106,7 +105,6 @@ def _fixture(
     if twin:
         # ONLY WHEN THE TWIN IS THE SUBJECT, which is the one-shot recorder and nothing else. The suite drives the port or a throwaway mutant of it, and the twin is no longer in the tree to copy.
         shutil.copy2(TWIN, root / TWIN_REL)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

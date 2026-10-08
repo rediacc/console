@@ -54,7 +54,6 @@ TREE_FILES = (
 # The bash side is frozen as a golden, so these exist only while the twin does and a recording needs them.
 TWIN_TREE_FILES = (
     TWIN_REL,
-    ".ci/scripts/lib/common.sh",
     ".ci/config/well-known.generated.sh",
 )
 

@@ -27,7 +27,6 @@ if typing.TYPE_CHECKING:
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/deploy/promote-docker-to-stable-hotfix.sh"
 TWIN = ROOT / TWIN_REL
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "promote_docker_to_stable_hotfix.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -87,7 +86,6 @@ def fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     (root / ".ci" / "rediacc_ci" / "deploy").mkdir(parents=True, exist_ok=True)
     if diff.regolden_mode(TWIN_REL) == "bash":
         shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

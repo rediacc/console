@@ -39,7 +39,6 @@ TWIN_REL = ".ci/scripts/deploy/upload-repos-to-r2.sh"
 TWIN = ROOT / TWIN_REL
 PURGE = ROOT / ".ci" / "scripts" / "deploy" / "cf-purge-urls.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "upload_repos_to_r2.py"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 BASH = shutil.which("bash") or "/bin/bash"
 
 BASE_ENV = {
@@ -232,7 +231,6 @@ def fixture(tmp_path: pathlib.Path, tree: dict[str, str] | None = None) -> pathl
     if diff.regolden_mode(TWIN_REL) == "bash":
         shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
         shutil.copy2(PURGE, root / ".ci" / "scripts" / "deploy" / PURGE.name)
-        shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

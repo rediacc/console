@@ -12,8 +12,8 @@
 # WK_* therefore beats the registry. Python reads the same file directly through
 # rediacc_ci.well_known.
 #
-# .ci/config/constants.sh and .ci/scripts/lib/common.sh do not call this: they
-# run where python3 is not guaranteed, so they source .ci/config/well-known.generated.sh,
+# .ci/config/constants.sh does not call this: it
+# runs where python3 is not guaranteed, so it sources .ci/config/well-known.generated.sh,
 # the bash projection check:ci-literal-sources renders from the same registry
 # with the same shell-wins rule and no python3 dependency.
 #

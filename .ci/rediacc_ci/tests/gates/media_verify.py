@@ -123,6 +123,15 @@ def _coverage_prelude() -> str:
     return "exec 9>>'%s'; BASH_XTRACEFD=9; PS4='+|${BASH_SOURCE:-}|${LINENO}|'; set -x;" % target
 
 
+# Strict mode and the five log functions, the head of every fresh shell: the same text as `_media_log_prelude` in `.ci/media/verify.sh`. Glyphs, stderr only, no colour (the shell's stderr is merged into a pipe, never a terminal).
+LOG_PRELUDE = """set -euo pipefail
+log_info() { echo -e "\u2713 $*" >&2; }
+log_warn() { echo -e "\u26a0 $*" >&2; }
+log_error() { echo -e "\u2717 $*" >&2; }
+log_step() { echo -e "\u2192 $*" >&2; }
+log_debug() { if [[ "${DEBUG:-false}" == "true" ]]; then echo -e "[DEBUG] $*" >&2; fi; }"""
+
+
 def media_run_module(
     root_dir: os.PathLike[str] | str,
     modules: str,
@@ -147,9 +156,7 @@ def media_run_module(
     entitled to `media_mtime` and `${MEDIA_SHA256[@]}` being in scope exactly as
     media-entry.sh guarantees, and a test naming its module without naming the seams would fail with "command not found" for a reason unrelated to what it asserts. From the real folder because `module_dir` points at a mutant directory holding one altered module and nothing else.
 
-    ONE COMMAND IS ALWAYS REQUIRED of the caller: common.sh runs
-    `CI_OS="$(detect_os)"` at source time, and `detect_os` shells out to `uname`.
-    A caller inside `fake_bin` must admit `+uname`, or every run carries a stray "uname: command not found" on stderr.
+    THE PRELUDE (`LOG_PRELUDE`) RUNS NO EXTERNAL COMMAND. The deleted helper library ran `detect_os` at source time, which shells out to `uname`, so callers inside `fake_bin` had to admit `+uname`. The admissions stay in the callers, harmless; nothing here needs them.
     """
     directory = MEDIA_DIR if module_dir is None else module_dir
     sources = ["source '%s/portable.sh';" % MEDIA_DIR]
@@ -157,7 +164,7 @@ def media_run_module(
     script = "\n".join(
         [
             "ROOT_DIR='%s'" % root_dir,
-            "source '%s/.ci/scripts/lib/common.sh'" % MEDIA_ROOT,
+            LOG_PRELUDE,
             _coverage_prelude(),
             " ".join(sources),
             code,

@@ -53,7 +53,6 @@ pytestmark = pytest.mark.xdist_group("deploy-fixed-tmp")
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/deploy/simulate-promotion.sh"
 TWIN = ROOT / TWIN_REL
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "simulate_promotion.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -291,7 +290,6 @@ def fixture(tmp_path: pathlib.Path, bucket: dict[str, str] | None = None) -> pat
     # The twin only while a regolden records from it; common.sh stays, because the twin sources it.
     if diff.regolden_mode(TWIN_REL) == "bash":
         shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

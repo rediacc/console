@@ -95,8 +95,8 @@ SHFMT_OPTS = ("-i", "4", "-ci", "-d")
 # Re-measured 2026-10-08 at 96 after PLAN-retire-bash-oracles wave 1 deleted 76 tracked .sh files as their goldens froze; the floor was lowered to that measured count in the same change.
 #
 # The floor stays well under the count, to catch a broken enumeration rather than today's file count, and is restated on each retirement batch so a closing margin is visible early.
-# Re-measured 2026-10-08 at 88 after W7 (six R2-state twins) and W11-A (local-common.sh, test-run-sh.sh).
-DEFAULT_MIN_FILES = "88"
+# Re-measured 2026-10-08 at 87 after W7 (six R2-state twins), W11-A (local-common.sh, test-run-sh.sh) and W11-B (lib/common.sh).
+DEFAULT_MIN_FILES = "87"
 
 # The three roots the floor counts, in the twin's argv order (order is irrelevant to a count and is kept so the two reads match on inspection).
 FLOOR_ROOTS = (".ci", ".claude", "scripts")

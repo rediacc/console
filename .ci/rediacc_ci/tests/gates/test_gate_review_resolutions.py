@@ -355,8 +355,7 @@ PARITY_CORPUS = (
 
 def _load_wl_review():
     hooks = WL_REVIEW.parent
-    if str(hooks) not in sys.path:
-        sys.path.insert(0, str(hooks))
+    paths.on_sys_path(hooks)
     spec = importlib.util.spec_from_file_location("wl_review_parity", WL_REVIEW)
     assert spec is not None
     assert spec.loader is not None

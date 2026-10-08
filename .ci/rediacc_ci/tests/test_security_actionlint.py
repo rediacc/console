@@ -65,7 +65,6 @@ ARCH_RE = re.compile(r"(?<![A-Za-z0-9])(?:amd64|arm64)(?![A-Za-z0-9])")
 
 # The minimum of the package a path-invoked port needs. Deliberately short: the fixture must not become a second copy of the repository.
 COPIED = (
-    ".ci/scripts/lib/common.sh",
     ".ci/config/well-known.generated.sh",
     ".ci/config/constants.sh",
     ".devcontainer/toolchain.env",
@@ -646,7 +645,7 @@ def test_path_version_of_a_binary_that_cannot_run_is_126(tmp_path: pathlib.Path)
 def test_cache_dir_ignores_ci_temp_because_common_sh_overwrites_it(monkeypatch) -> None:
     """THE SECOND DEFECT, as a unit. The twin's own `${CI_TEMP:-...}` was dead.
 
-    Driven against the BASH too, below, so this is not just an assertion about what the port chose to do.
+    The bash half (sourcing `common.sh` overwrote `CI_TEMP` with `RUNNER_TEMP`/`TMPDIR`/`/tmp`) went with the file; the Rule-T decision is the port's.
     """
     monkeypatch.delenv("CI_TEMP", raising=False)
     monkeypatch.delenv("RUNNER_TEMP", raising=False)
@@ -658,20 +657,6 @@ def test_cache_dir_ignores_ci_temp_because_common_sh_overwrites_it(monkeypatch) 
     assert str(port.cache_dir("1.0")) == "/t/actionlint-1.0"
     monkeypatch.setenv("RUNNER_TEMP", "/r")
     assert str(port.cache_dir("1.0")) == "/r/actionlint-1.0"
-
-
-def test_common_sh_really_does_overwrite_ci_temp() -> None:
-    """The bash half of the case above. Sourcing common.sh is the whole test."""
-    # `TMPDIR: None` REMOVES the key: BASE_ENV now carries a per-run TMPDIR (see differential._child_tmpdir), and the first case is about TMPDIR being UNSET.
-    for extra, expected in (({"TMPDIR": None}, "/tmp"), ({"TMPDIR": "/TMPD"}, "/TMPD")):
-        env = differential.env_for(CI_TEMP="/CALLER_SET", **extra)
-        code, out, _err = differential.bash_streams(
-            'source .ci/scripts/lib/common.sh; printf "%s" "$CI_TEMP"',
-            env=env,
-            cwd=str(ROOT),
-        )
-        assert code == 0
-        assert out == expected, "CI_TEMP survived as %r; the defect is gone" % out
 
 
 def test_the_arch_table_covers_exactly_the_twins_four_spellings() -> None:

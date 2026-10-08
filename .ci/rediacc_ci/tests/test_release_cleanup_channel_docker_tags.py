@@ -28,7 +28,6 @@ ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/release/cleanup-channel-docker-tags.sh"
 TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "release" / "cleanup_channel_docker_tags.py"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 BASH = shutil.which("bash") or "/bin/bash"
 
 # Records argv[1:] ONLY, never `$0`: the twin invokes the deleter through a path containing `/../` and the port through the normalised one, so a stub echoing its own name would manufacture a difference that is not one.
@@ -69,7 +68,6 @@ def _fixture(tmp_path: pathlib.Path, side: str, *, with_deleter: bool = True) ->
     # The twin is frozen (goldens/twins/release.cleanup-channel-docker-tags.jsonl); only a recording run still needs it and the library it sources.
     if TWIN.is_file():
         shutil.copy2(TWIN, root / ".ci" / "scripts" / "release" / TWIN.name)
-        shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
         (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
         for name in ("well-known.env", "well-known.generated.sh"):
             shutil.copy2(ROOT / ".ci" / "config" / name, root / ".ci" / "config" / name)

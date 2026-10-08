@@ -97,6 +97,7 @@ process.stdout.write(JSON.stringify({
     ['node'],
   ),
   lockSize: lock.length,
+  branchEntries: laneEntries('quality-branch').length,
   laneSets: {
     'quality-security': laneEntries('quality-security'),
     'quality-static': laneEntries('quality-static'),
@@ -110,7 +111,7 @@ process.stdout.write(JSON.stringify({
     static3: planned('quality-static', 3),
   },
   refusals: {
-    branch10: refusal('quality-branch', 10),
+    branchOver: refusal('quality-branch', laneEntries('quality-branch').length + 1),
     www5: refusal('quality-www-build', 5),
     submodule2: refusal('quality-submodule-branches', 2),
     nowhere2: refusal('quality-nowhere', 2),
@@ -530,11 +531,18 @@ def test_the_plan_is_deterministic(gate):
 
 
 def test_more_shards_than_gates_refuses(gate):
-    """THE REFUSAL THE BOX CALLS OUT BY NAME. quality-branch has grown from 6 gates to 9 across several unrelated commits since this fixture was written, so the ask has to keep sitting one past the live count rather than naming a number the lane has already grown past."""
+    """THE REFUSAL THE BOX CALLS OUT BY NAME. quality-branch has grown from 6 gates to 9 to 10 across several unrelated commits since this fixture was written, so the ask is derived: one past the live count, and the ceiling the message must name is the live count itself."""
     gate.log_test("more shards than gates must REFUSE, not emit an empty shard")
-    message = probe(gate)["refusals"]["branch10"]
+    result = probe(gate)
+    live = result["branchEntries"]
+    gate.assert_eq(
+        live >= 2, True, "quality-branch still holds gates (%d), so the ask is not vacuous" % live
+    )
+    message = result["refusals"]["branchOver"]
     gate.assert_contains(
-        message, "Ask for at most 9", "10 shards over quality-branch's 9 gates must refuse"
+        message,
+        "Ask for at most %d" % live,
+        "%d shards over quality-branch's %d gates must refuse" % (live + 1, live),
     )
     gate.log_pass("more shards than gates refuses, and the message names the ceiling")
 

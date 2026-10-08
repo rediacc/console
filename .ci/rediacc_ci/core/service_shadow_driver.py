@@ -21,7 +21,7 @@ A case is a verb, its arguments, a stub table, and optionally a seeded state fil
 
 NUMBERED because `shadow-gate` compares a finding multiset: without the index, two `sleep 2` calls and three would be the same set, and a port that skipped a probe would compare equal. The sandbox path is replaced by `<root>` on both sides before printing.
 
-The sandbox holds a COPY of `.ci/docker/service/env.sh` (the twin sources it from `$SERVICE_DOCKER_DIR`, which follows `CONSOLE_ROOT_DIR`) and a symlink `.ci/scripts` back to this checkout, because `env.sh` sources `common.sh` relative to itself.
+The sandbox holds a COPY of `.ci/docker/service/env.sh` (the twin sources it from `$SERVICE_DOCKER_DIR`, which follows `CONSOLE_ROOT_DIR`) and a symlink `.ci/config` back to this checkout, because `env.sh` sources `well-known.generated.sh` relative to the console root.
 
 STUBBED: `docker`, `curl`, `sleep`, `ss`, `node`, `openssl` (all logged) and `date` (NOT logged: it is a clock read the port makes in-process through `SERVICE_STATUS_NOW`, and it `exec`s the real `date` for every form but `+%s`). `ss` is how `rediacc_ci.core.ports` decides a port is busy, and it runs on BOTH sides (the twin reaches the same module through `python3 -m`), which makes the free-port search deterministic without holding a single real socket.
 
@@ -272,7 +272,7 @@ def build_sandbox(repo: pathlib.Path, work: pathlib.Path, case: Case) -> pathlib
     service_dir = root / ".ci" / "docker" / "service"
     service_dir.mkdir(parents=True)
     shutil.copy2(repo / ".ci" / "docker" / "service" / "env.sh", service_dir / "env.sh")
-    (root / ".ci" / "scripts").symlink_to(repo / ".ci" / "scripts")
+    (root / ".ci" / "config").symlink_to(repo / ".ci" / "config")
     (root / "home").mkdir()
     if case.state is not None:
         (root / ".service-state").write_text(case.state, encoding="utf-8")

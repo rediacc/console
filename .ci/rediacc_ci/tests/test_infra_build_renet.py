@@ -42,7 +42,6 @@ from rediacc_ci.tests import differential as diff
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci/scripts/infra/build-renet.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "infra" / "build_renet.py"
 
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/infra/build-renet.sh")
@@ -136,7 +135,6 @@ def _fixture(
     (root / ".ci" / "rediacc_ci" / "infra").mkdir(parents=True)
     if diff.regolden_mode(str(TWIN_REL)) == "bash":
         shutil.copy2(TWIN, root / TWIN_REL)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

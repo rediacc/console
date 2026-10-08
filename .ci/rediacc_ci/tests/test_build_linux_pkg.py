@@ -39,7 +39,6 @@ ROOT = paths.repo_root()
 
 TWIN_REL = ".ci/scripts/build/build-linux-pkg.sh"
 PORT_REL = ".ci/rediacc_ci/build/build_linux_pkg.py"
-COMMON_REL = ".ci/scripts/lib/common.sh"
 CONSTANTS_REL = ".ci/config/constants.sh"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
 TOOLCHAIN_REL = ".devcontainer/toolchain.env"
@@ -246,7 +245,6 @@ def fixture(
         TWIN_CANON_REL,
         CANON_REL,
         PORT_REL,
-        COMMON_REL,
         CONSTANTS_REL,
         WELL_KNOWN_REL,
         TOOLCHAIN_REL,
@@ -256,7 +254,6 @@ def fixture(
     twin_files = (TWIN_REL,) if recording else ()
     for rel in (
         *twin_files,
-        COMMON_REL,
         WELL_KNOWN_REL,
         CONSTANTS_REL,
         WELL_KNOWN_REL,

@@ -111,7 +111,7 @@ REPAIRS = (
         "the SBOM refuses to ship an empty graph",
     ),
     (
-        ".ci/scripts/lib/common.sh",
+        ".ci/rediacc_ci/core/common.py",
         "r2_count_objects: list-objects-v2 failed",
         "r2_count_objects reports an unreachable bucket",
     ),

@@ -1059,20 +1059,6 @@
     }
   },
   {
-    "id": "check:ci-shell-declared-commands",
-    "run": "npm run check:ci-shell-declared-commands",
-    "gate": true,
-    "leaves": [
-      "scripts/gates/check-shell-declared-commands.ts"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-code",
-      "step": "CI scripts declare the binaries they execute"
-    }
-  },
-  {
     "id": "check:ci-pr-epic-block",
     "env": {
       "GH_TOKEN": "${{ secrets.GITHUB_TOKEN }}",
@@ -1548,8 +1534,7 @@
       "**/package-lock.json",
       "**/package.json",
       "private/account",
-      ".ci/scripts/quality/check_lockfile.py",
-      ".ci/scripts/lib/common.sh"
+      ".ci/scripts/quality/check_lockfile.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
@@ -3779,7 +3764,6 @@
       "private/account",
       ".ci/scripts/quality/check_account_portal.py",
       ".ci/rediacc_ci/quality/account_portal.py",
-      ".ci/scripts/lib/common.sh",
       "packages/www/scripts/build-account-onboarding.ts",
       "packages/www/src/data/account-onboarding.json",
       "packages/www/src/data/tutorial-storyboard/**",
@@ -4483,7 +4467,6 @@
       "scripts/data/em-dash-surfaces-baseline.json",
       "scripts/data/locale-de-contamination-baseline.json",
       "scripts/data/docker-image-freshness-baseline.json",
-      "scripts/data/shell-declared-commands-baseline.json",
       "scripts/data/static-nowrap-baseline.json",
       "scripts/data/hook-coverage-baseline.json",
       "scripts/data/css-dom-refs-baseline.json",

@@ -43,7 +43,6 @@ if typing.TYPE_CHECKING:
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/deploy/clone-d1.sh"
 TWIN = ROOT / TWIN_REL
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "clone_d1.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -229,7 +228,6 @@ def fixture(tmp_path: pathlib.Path, *, sanitize_sql: bool = False) -> pathlib.Pa
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
     if TWIN.is_file():  # only a `regolden --source bash` run still reads the bash
         shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
-        shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

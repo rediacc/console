@@ -125,7 +125,7 @@ import time
 from collections.abc import Callable
 
 from rediacc_ci import paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, plant
 
 # The escapes, computed only when stdout is a tty and NO_COLOR is unset.
 _ANSI = {"RED": "\033[0;31m", "GREEN": "\033[0;32m", "NC": "\033[0m"}
@@ -136,6 +136,7 @@ FIXTURE_NOISE_RE = re.compile(r"(^|/)\.[a-z0-9-]+-fixture\.[0-9]+\.[a-z]+$")
 # The words a `setup --check` run must actually print. A check that prints nothing is indistinguishable from a check that did not run.
 # The Python port of the retired .ci/lib/devbox.sh: the subject of checks A (devbox_up, devbox_ensure_image), E and F.
 DEVBOX_PY_REL = ".ci/rediacc_ci/core/devbox.py"
+LOCAL_COMMON_PY_REL = ".ci/rediacc_ci/core/local_common.py"
 
 REQUIRED_ROWS = ("node", "docker", "deps", "image", "devbox", "port block")
 
@@ -234,7 +235,7 @@ def assert_guarded(
 ) -> bool:
     """A: the function either does not mutate, or carries a guard. True when ok.
 
-    `extract` is `function_body` for a bash library and `method_body` for a Python module.
+    `extract` is `function_body` for a bash library, `method_body` for a class method and `python_function_body` for a module-level function.
     """
     body = extract(read_text(file), fn)
     if body == "":
@@ -248,37 +249,45 @@ def assert_guarded(
     return True
 
 
-def check_a(report: Report, lib: pathlib.Path, devbox_py: pathlib.Path) -> bool:
-    """Every mutating setup step is guarded. The devbox steps are read from the Python port `devbox_py`."""
+def check_a(report: Report, local_common_py: pathlib.Path, devbox_py: pathlib.Path) -> bool:
+    """Every mutating setup step is guarded. Both libraries are read as their Python ports: `core/local_common.py` (the port of the deleted `.ci/lib/local-common.sh`) and `core/devbox.py`."""
     ok = True
     # Installing Go must be skipped when a good enough Go is present.
     ok &= assert_guarded(
         report,
-        lib / "local-common.sh",
+        local_common_py,
         "ensure_go_installed",
-        "tar -C /usr/local|curl -fL",
-        "_version_gte|command -v go",
+        r'"tar", "-C"|"curl", "-fL"',
+        r'version_gte|shutil\.which\("go"\)',
+        python_function_body,
     )
     # Installing Docker must be skipped when docker already works.
     ok &= assert_guarded(
         report,
-        lib / "local-common.sh",
+        local_common_py,
         "ensure_docker_installed",
-        "install-docker|ensure_go_installed",
-        "docker version",
+        r"install-docker|ensure_go_installed",
+        r'"docker", "version"',
+        python_function_body,
     )
     # Host tools must be skipped when already present.
     ok &= assert_guarded(
-        report, lib / "local-common.sh", "ensure_host_tools", "apt-get install", "command -v"
+        report,
+        local_common_py,
+        "ensure_host_tools",
+        r'"apt-get", "install"',
+        r"shutil\.which",
+        python_function_body,
     )
     # The costliest step: `npm install` plus the native rebuild, ~45s measured. It was
     # missing here, so invariant A promised more than it checked.
     ok &= assert_guarded(
         report,
-        lib / "local-common.sh",
+        local_common_py,
         "ensure_deps",
-        r"npm.*install|install:natives",
+        r'"npm", "install"|install:natives',
         "deps_are_current",
+        python_function_body,
     )
     # Creating the container must be skipped when one already runs.
     ok &= assert_guarded(
@@ -461,17 +470,16 @@ def check_c(report: Report, root: str) -> bool:
     return True
 
 
-# The four spellings that count as checking the build's exit code. An `if !`
-# around the subshell, a `) ||` suffix, or a `|| {` block opener.
+# What counts as checking the build's exit code in the Python port: the `_run(["./build.sh", "dev"], ...)` call compared against 0 in an `if`. (The bash twin accepted four spellings, `if ! (...)`, `) ||` and `|| {`; none exists in the port.)
 BUILD_GUARD_RE = re.compile(
-    r'if ! \(cd "\$renet_dir" && \./build\.sh dev\)|build\.sh dev\) \|\||\|\| \{[ \t]*$',
+    r'if _run\(\["\./build\.sh", "dev"\][^\n]*\)\s*!=\s*0:',
     re.MULTILINE,
 )
 
 
 def check_d(report: Report, file: pathlib.Path) -> bool:
     """D: `ensure_renet_built` checks the build's exit code, not just the file."""
-    body = function_body(read_text(file), "ensure_renet_built")
+    body = python_function_body(read_text(file), "ensure_renet_built")
     if body == "":
         report.fail("D: ensure_renet_built not found in %s" % file.name)
         return False
@@ -722,20 +730,20 @@ def main(argv: list[str] | None = None) -> int:
         return selftest()
 
     root = paths.repo_root()
-    lib = root / ".ci" / "lib"
+    local_common_py = root / LOCAL_COMMON_PY_REL
     devbox_py = root / DEVBOX_PY_REL
     setup_body_file = root / ".ci" / "legacy" / "run-legacy.sh"
     report = Report()
 
     print("check-setup-idempotency: guards, report-only check, port derivation, exit-code honesty")
 
-    if check_a(report, lib, devbox_py):
+    if check_a(report, local_common_py, devbox_py):
         report.ok("every mutating setup step is guarded")
     if check_b(report, root):
         report.ok("setup --check reports and mutates nothing")
     if check_c(report, str(root)):
         report.ok("port derivation is deterministic and per-worktree distinct")
-    if check_d(report, lib / "local-common.sh"):
+    if check_d(report, local_common_py):
         report.ok("ensure_renet_built checks the build's exit code")
     if check_e(report, str(root)):
         report.ok("no status label contradicts its HTTP code")
@@ -801,15 +809,16 @@ def main(argv: list[str] | None = None) -> int:
             control_fails = 1
 
         # D-control: restore the unchecked invocation.
-        lc_broken = tmpdir / "lc-broken.sh"
+        lc_broken = tmpdir / "lc-broken.py"
+        lc_text = read_text(local_common_py)
+        d_old = 'if _run(["./build.sh", "dev"], cwd=renet_dir) != 0:'
         lc_broken.write_text(
-            read_text(lib / "local-common.sh").replace(
-                'if ! (cd "$renet_dir" && ./build.sh dev); then',
-                '(cd "$renet_dir" && ./build.sh dev); if false; then',
-            ),
+            lc_text.replace(d_old, '_run(["./build.sh", "dev"], cwd=renet_dir)\n    if False:')
+            if d_old in lc_text
+            else lc_text,
             encoding="utf-8",
         )
-        if "if false; then" not in read_text(lc_broken):
+        if "if False:" not in read_text(lc_broken):
             print(
                 "%sCONTROL IS VACUOUS%s: D -- mutation did not apply." % (red, nc), file=sys.stderr
             )
@@ -1018,7 +1027,7 @@ def selftest() -> int:
             "CONTROL: a guarded `docker run` in a Python method passes A",
             assert_guarded(report, py_target, "up", up_mut, up_guard, method_body),
         )
-        py_target.write_text(py_src.replace("self.container_running()", "True"), encoding="utf-8")
+        py_target.write_text(plant(py_src, "self.container_running()", "True"), encoding="utf-8")
         ctl.falsy(
             "PLANT: the same method with the running-check REMOVED fails A",
             assert_guarded(report, py_target, "up", up_mut, up_guard, method_body),
@@ -1030,23 +1039,26 @@ def selftest() -> int:
 
         # -- check_d ---------------------------------------------------------
         report = Report(colour=plain)
-        good = tmpdir / "good.sh"
+        good = tmpdir / "good.py"
         good.write_text(
-            'ensure_renet_built() {\n  if ! (cd "$renet_dir" && ./build.sh dev); then\n'
-            "    return 1\n  fi\n}\n",
+            "def ensure_renet_built(env=None):\n"
+            '    if _run(["./build.sh", "dev"], cwd=renet_dir) != 0:\n'
+            "        return False\n"
+            "    return True\n",
             encoding="utf-8",
         )
         ctl.truthy("CONTROL: a guarded build passes D", check_d(report, good))
-        bad = tmpdir / "bad.sh"
+        bad = tmpdir / "bad.py"
         bad.write_text(
-            'ensure_renet_built() {\n  (cd "$renet_dir" && ./build.sh dev)\n'
-            '  [[ -f "$renet_bin" ]]\n}\n',
+            "def ensure_renet_built(env=None):\n"
+            '    _run(["./build.sh", "dev"], cwd=renet_dir)\n'
+            "    return os.path.isfile(renet_bin)\n",
             encoding="utf-8",
         )
         ctl.falsy("PLANT: the ORIGINAL unchecked invocation fails D", check_d(report, bad))
         ctl.falsy(
             "VACUITY: an absent ensure_renet_built is a FAILURE",
-            check_d(report, tmpdir / "nothing.sh"),
+            check_d(report, tmpdir / "nothing.py"),
         )
 
         # -- check_f ---------------------------------------------------------

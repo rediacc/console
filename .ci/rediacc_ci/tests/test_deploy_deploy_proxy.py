@@ -57,7 +57,6 @@ resolve_version.run = fake_resolve
 deploy_proxy.build_renet_argv = fake_build_argv
 sys.exit(deploy_proxy.main(sys.argv[1:]))
 """
-COMMON_SH = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 BASH = shutil.which("bash") or "/bin/bash"
 
 # `uname` and `dirname` are what `common.sh` needs at source time; `tr` is `to_upper` (common.sh:302), which every `parse_args` key goes through. `sed`, `head` and `cp` are the real deploy's renet staging and smoke-URL steps.
@@ -170,7 +169,6 @@ def _fixture_root(tmp_path: pathlib.Path, *, worker: str = "dir") -> pathlib.Pat
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     (root / "workers").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(COMMON_SH, root / ".ci" / "scripts" / "lib" / COMMON_SH.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

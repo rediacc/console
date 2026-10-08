@@ -50,7 +50,6 @@ if typing.TYPE_CHECKING:
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "verify-edge-endpoints.sh"
 STABLE_TWIN = ROOT / ".ci" / "scripts" / "deploy" / "verify-stable-endpoints.sh"
-COMMON_LIB = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "verify_edge_endpoints.py"
 REGIONS = ROOT / "regions.json"
 
@@ -262,7 +261,6 @@ def fixture_tree(tmp_path: pathlib.Path, *, with_regions: bool) -> pathlib.Path:
     if diff.regolden_mode() == "bash":
         shutil.copy2(TWIN, tree / ".ci" / "scripts" / "deploy" / TWIN.name)
         shutil.copy2(STABLE_TWIN, tree / ".ci" / "scripts" / "deploy" / STABLE_TWIN.name)
-        shutil.copy2(COMMON_LIB, tree / ".ci" / "scripts" / "lib" / COMMON_LIB.name)
     (tree / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", tree / ".ci" / "config" / "well-known.env"

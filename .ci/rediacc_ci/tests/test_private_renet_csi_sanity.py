@@ -33,7 +33,6 @@ from rediacc_ci.well_known import RENET_REPO
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "private" / "renet-csi-sanity.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "private" / "renet_csi_sanity.py"
 
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/private/renet-csi-sanity.sh")
@@ -156,7 +155,6 @@ def _fixture(tmp_path: pathlib.Path, *, renet: bool = True) -> pathlib.Path:
     (root / ".ci" / "rediacc_ci" / "private").mkdir(parents=True)
     if _recording():
         shutil.copy2(TWIN, root / TWIN_REL)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

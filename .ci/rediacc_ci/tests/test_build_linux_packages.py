@@ -36,7 +36,6 @@ from rediacc_ci.build import build_linux_packages
 from rediacc_ci.tests import frozen
 
 ROOT = paths.repo_root()
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "build" / "build_linux_packages.py"
 
 SLUG = "build-linux-packages"
@@ -115,7 +114,6 @@ def _fixture(
     (root / ".ci" / "scripts" / "build").mkdir(parents=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True)
     (root / ".ci" / "rediacc_ci" / "build").mkdir(parents=True)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

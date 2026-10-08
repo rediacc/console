@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 import pytest
 
+from rediacc_ci import well_known
 from rediacc_ci.drills import backup_roundtrip as rt
 
 if TYPE_CHECKING:
@@ -63,7 +64,7 @@ class FakeVm:
             return rt.VmResult(0, json.dumps(rows))
         if "sha256sum" in command:
             sha = self.src_sha if self.created and self.created[0] in command else self.tgt_sha
-            return rt.VmResult(0, "%s  /mnt/rediacc/repositories/x\n" % sha)
+            return rt.VmResult(0, "%s  %s/repositories/x\n" % (sha, well_known.DATASTORE_PATH))
         if "backup snapshot" in command:
             return rt.VmResult(0, self.snapshot_out)
         if "backup restore" in command:

@@ -51,6 +51,12 @@ log_step doing a thing
     % COMMON_SH
 )
 
+
+def twin_streams(script, **kw):
+    """What the bash `common.sh` answered for `script`, from `goldens/twins/lib.common.jsonl` (frozen before the `.sh` was deleted, PLAN-retire-bash-oracles W11-B)."""
+    return diff.twin_streams(COMMON_SH, script, **kw)
+
+
 PYTHON_CALLS = [
     ("info", "hello world"),
     ("warn", "careful now"),
@@ -72,7 +78,7 @@ def python_side(colour: bool) -> str:
 
 def test_off_tty_bytes_are_identical():
     """No tty anywhere: both sides print the glyph and the message, uncoloured."""
-    rc, _out, err = diff.bash_streams(BASH_CALLS, env=diff.env_for(CI=None, NO_COLOR=None))
+    rc, _out, err = twin_streams(BASH_CALLS, env=diff.env_for(CI=None, NO_COLOR=None))
     assert rc == 0
     assert err == python_side(colour=False)
 
@@ -82,7 +88,7 @@ def test_off_tty_stdout_stays_empty_on_both_sides():
 
     The bash side is the real regression: this is what `emit-advisory.sh` broke. The Python side is structural -- `Logger` has no stdout path at all -- but it is asserted rather than argued, because "it cannot happen" is what the bash library's author believed too.
     """
-    _, out, _ = diff.bash_streams(BASH_CALLS, env=diff.env_for(CI=None, NO_COLOR=None))
+    _, out, _ = twin_streams(BASH_CALLS, env=diff.env_for(CI=None, NO_COLOR=None))
     assert out == ""
     logger, buf = log.capture(colour=True)
     logger.info("x")
@@ -95,9 +101,7 @@ def test_on_a_stderr_tty_bytes_are_identical():
 
     This is the case that proves the palette matches. RED/GREEN/YELLOW/BLUE are each compared as raw bytes, so the `\\033[1;33m` versus `\\033[0;33m` disagreement between common.sh and .ci/bootstrap.sh cannot be inherited silently -- picking the wrong one turns this red.
     """
-    rc, out, err = diff.bash_streams(
-        BASH_CALLS, env=diff.env_for(CI=None, NO_COLOR=None), tty="stderr"
-    )
+    rc, out, err = twin_streams(BASH_CALLS, env=diff.env_for(CI=None, NO_COLOR=None), tty="stderr")
     assert rc == 0
     assert err == python_side(colour=True)
     assert out == ""
@@ -108,9 +112,7 @@ def test_on_a_stderr_tty_the_output_really_is_coloured():
 
     Without this, a pty that silently failed to attach would make both sides uncoloured, they would still match, and the comparison would prove nothing. Every differential needs the control that says the interesting branch was the one taken.
     """
-    _, _, err = diff.bash_streams(
-        BASH_CALLS, env=diff.env_for(CI=None, NO_COLOR=None), tty="stderr"
-    )
+    _, _, err = twin_streams(BASH_CALLS, env=diff.env_for(CI=None, NO_COLOR=None), tty="stderr")
     assert diff.escape_bytes(err) > 0
     assert log.GREEN in err
     assert log.YELLOW in err
@@ -121,7 +123,7 @@ def test_on_a_stderr_tty_the_output_really_is_coloured():
 def test_no_color_disables_it_on_both_sides_even_on_a_tty():
     """NO_COLOR is the cross-tool convention, and both sides honour it."""
     env = diff.env_for(CI=None, NO_COLOR="1")
-    _, _, err = diff.bash_streams(BASH_CALLS, env=env, tty="stderr")
+    _, _, err = twin_streams(BASH_CALLS, env=env, tty="stderr")
     assert diff.escape_bytes(err) == 0
     assert err == python_side(colour=False)
     assert log.colour_allowed(io.StringIO(), env) is False
@@ -132,9 +134,7 @@ def test_stdout_tty_with_a_piped_stderr_stays_uncoloured_on_both_sides():
 
     common.sh gates on `-t 2` and writes to fd 2, so a tty on stdout does not make it colour. `rediacc_ci.log` tests the stream it writes to, so neither does it. The eleven files listed in the module docstring WOULD colour here, and the next test plants that variant to show the difference is real.
     """
-    _, _, err = diff.bash_streams(
-        BASH_CALLS, env=diff.env_for(CI=None, NO_COLOR=None), tty="stdout"
-    )
+    _, _, err = twin_streams(BASH_CALLS, env=diff.env_for(CI=None, NO_COLOR=None), tty="stdout")
     assert diff.escape_bytes(err) == 0
     assert err == python_side(colour=False)
 
@@ -159,7 +159,7 @@ printf '%sx%s\n' "$RED" "$NC" >&2
 def test_ci_true_off_a_tty_agrees():
     """Under CI with no tty -- the real CI shape -- both sides are uncoloured."""
     env = diff.env_for(CI="true", NO_COLOR=None)
-    _, _, err = diff.bash_streams(BASH_CALLS, env=env)
+    _, _, err = twin_streams(BASH_CALLS, env=env)
     assert err == python_side(colour=False)
     assert diff.escape_bytes(err) == 0
 
@@ -173,7 +173,7 @@ def test_ci_true_is_the_one_deliberate_divergence():
     BOTH SIDES ARE ASSERTED so the divergence is a recorded decision. If someone later adds a CI clause to common.sh, this test fails and the two can be reconciled deliberately rather than drifting into agreement unnoticed.
     """
     env = diff.env_for(CI="true", NO_COLOR=None)
-    _, _, err = diff.bash_streams(BASH_CALLS, env=env, tty="stderr")
+    _, _, err = twin_streams(BASH_CALLS, env=env, tty="stderr")
     assert diff.escape_bytes(err) > 0, "common.sh still colours under CI on a tty"
     assert err != python_side(colour=False)
     assert err == python_side(colour=True), "the only difference is the CI decision itself"
@@ -187,7 +187,7 @@ def test_bash_interprets_escapes_in_the_message_and_python_does_not():
 
     Asserted in both directions so nobody "fixes" the Python to match bash.
     """
-    _, _, err = diff.bash_streams(
+    _, _, err = twin_streams(
         r"""source %s; log_error 'C:\tmp\new'""" % COMMON_SH,
         env=diff.env_for(CI=None, NO_COLOR=None),
     )
@@ -205,7 +205,7 @@ def test_debug_is_silent_unless_debug_is_the_string_true():
     script = "source %s; log_debug secret" % COMMON_SH
     for value, expect_output in (("true", True), ("1", False), (None, False)):
         env = diff.env_for(CI=None, NO_COLOR=None, DEBUG=value)
-        _, _, err = diff.bash_streams(script, env=env)
+        _, _, err = twin_streams(script, env=env)
         assert bool(err) is expect_output, "bash DEBUG=%r" % value
 
         buf = io.StringIO()
@@ -360,39 +360,33 @@ def test_capture_defaults_to_no_colour():
     assert logger.colour is False
 
 
-def test_the_palette_matches_common_sh_byte_for_byte():
-    """Read the escape sequences straight out of the bash file and compare.
+def test_the_palette_matches_the_frozen_common_sh_byte_for_byte():
+    """The escape sequences the bash file emitted on a stderr tty (frozen) against the module's constants.
 
-    This is a SECOND, independent check on the palette: the differential above compares rendered output, this compares the source constants. It catches the
-    case where both sides are wrong in the same way because someone edited them
-    together.
+    A SECOND, independent check on the palette: the differential above compares whole rendered lines, this names each constant. It catches the case where both sides are wrong in the same way because someone edited them together.
     """
-    with open("%s/%s" % (diff.repo(), COMMON_SH), encoding="utf-8") as handle:
-        text = handle.read()
-    block = text.split("log_info()")[0]
+    _, _, err = twin_streams(BASH_CALLS, env=diff.env_for(CI=None, NO_COLOR=None), tty="stderr")
     for name, value in (
         ("RED", log.RED),
         ("GREEN", log.GREEN),
         ("YELLOW", log.YELLOW),
         ("BLUE", log.BLUE),
-        ("CYAN", log.CYAN),
         ("NC", log.NC),
     ):
-        literal = "%s='%s'" % (name, value.replace("\033", "\\033"))
-        assert literal in block, "%s does not match %s" % (name, COMMON_SH)
+        assert value in err, "%s does not match the frozen %s" % (name, COMMON_SH)
 
 
-def test_common_sh_is_actually_there():
-    """ANTI-VACUITY. Every differential above sources this file.
+def test_the_frozen_common_sh_answers_are_not_empty():
+    """ANTI-VACUITY. Every differential above reads the golden of `common.sh`.
 
-    `source` of a missing file under `set -e` would abort the child, the child would print nothing, and a comparison against a Python side that also printed nothing... would not arise, because the Python side always prints. But the two DEBUG-off cases compare empty to empty, and those would pass on a tree where common.sh had been deleted. This is the base case under that.
+    The two DEBUG-off cases compare empty to empty, so a golden that recorded nothing for the file (the `source` aborted, the child printed nothing) would pass them. The base case under that: the same script with DEBUG=true must have logged.
     """
-    path = "%s/%s" % (diff.repo(), COMMON_SH)
-    with open(path, encoding="utf-8") as handle:
-        body = handle.read()
-    assert "log_info()" in body
-    assert "log_debug()" in body
-    assert body.count("log_") >= 10
+    env = diff.env_for(CI=None, NO_COLOR=None, DEBUG="true")
+    rc, _out, err = twin_streams("source %s; log_debug secret" % COMMON_SH, env=env)
+    assert rc == 0
+    assert "secret" in err
+    _, _, logged = twin_streams(BASH_CALLS, env=diff.env_for(CI=None, NO_COLOR=None))
+    assert logged.count("\n") == 4
 
 
 def test_bash_is_available_at_all():

@@ -254,21 +254,6 @@ def test_the_port_exists_where_this_file_says_it_does() -> None:
     assert PORT.is_file(), PORT
 
 
-def test_no_ghcr_helper_exists_to_share_because_common_sh_has_none() -> None:
-    """THE DUPLICATION CLAIM IN THE PORT'S DOCSTRING, MEASURED RATHER THAN ASSERTED.
-
-    The port says the GHCR-auth dance is duplicated and deliberately not factored, on the grounds that `common.sh` offers nothing to call. If a helper ever lands there, this goes red and that docstring becomes wrong in the same run. The surviving sibling twin is checked too: it still open-codes the same three lines.
-    """
-    common_sh = (ROOT / ".ci" / "scripts" / "lib" / "common.sh").read_text(encoding="utf-8")
-    assert "ghcr" not in common_sh.lower()
-    assert "docker login" not in common_sh
-    sibling = ROOT / ".ci" / "scripts" / "infra" / "ci-pull-images.sh"
-    assert "docker login ghcr.io" in sibling.read_text(encoding="utf-8"), sibling
-
-
-# --------------------------------------------------------------------------- The pure halves, driven directly. ---------------------------------------------------------------------------
-
-
 def test_resolve_prefers_the_flag_then_the_environment() -> None:
     env = {"GITHUB_TOKEN": "env-tok", "GITHUB_ACTOR": "env-actor"}
     assert dpg.resolve({"ARG_IMAGE": "i"}, env) == ("i", "env-tok", "env-actor", "false")

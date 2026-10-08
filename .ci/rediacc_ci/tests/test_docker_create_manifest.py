@@ -36,7 +36,6 @@ if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 CONSTANTS = ROOT / ".ci" / "config" / "constants.sh"
 TOOLCHAIN = ROOT / ".devcontainer" / "toolchain.env"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "docker" / "create_manifest.py"
@@ -114,7 +113,6 @@ def fixture(tmp_path: pathlib.Path, *, port_source: str | None = None) -> pathli
         ".ci/rediacc_ci/docker",
     ):
         (root / rel).mkdir(parents=True, exist_ok=True)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

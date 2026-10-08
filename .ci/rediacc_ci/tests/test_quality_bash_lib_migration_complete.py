@@ -32,8 +32,8 @@ def test_selftest_controls_pass() -> None:
 def test_real_tree_is_green_and_scans_every_library() -> None:
     found, scanned, aliased = g.scan(paths.repo_root())
     assert found == []
-    # 52 on 2026-10-08, after account.sh, devbox.sh and service.sh were deleted and then local-common.sh (W11-A). A floor, not an equality, so a ported-and-deleted function does not redden this; a collapse to a handful means the gate stopped seeing the libraries.
-    assert scanned >= 45
+    # 26 on 2026-10-08, after account.sh, devbox.sh and service.sh were deleted, then local-common.sh (W11-A, 52) and lib/common.sh (W11-B). A floor, not an equality, so a ported-and-deleted function does not redden this; a collapse to a handful means the gate stopped seeing the libraries.
+    assert scanned >= 24
     assert 0 < aliased < scanned
 
 

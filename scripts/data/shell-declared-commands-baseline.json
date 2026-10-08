@@ -1,5 +1,0 @@
-[
-  ".ci/scripts/lib/common.sh\taws",
-  ".ci/scripts/lib/common.sh\tgh",
-  ".ci/scripts/lib/common.sh\tjq"
-]

@@ -115,7 +115,6 @@
     "check:env-credential-drift": "tsx scripts/gates/check-env-credential-drift.ts --selftest && PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile credential-drift -- tsx scripts/gates/check-env-credential-drift.ts",
     "check:ci-pr-task-trailers": "tsx scripts/gates/check-pr-task-trailers.ts --selftest && tsx scripts/gates/check-pr-task-trailers.ts",
     "check:ci-pr-epic-block": "tsx scripts/gates/check-pr-epic-block.ts --selftest && tsx scripts/gates/check-pr-epic-block.ts",
-    "check:ci-shell-declared-commands": "tsx scripts/gates/check-shell-declared-commands.ts --selftest && tsx scripts/gates/check-shell-declared-commands.ts",
     "check:ci-merge-method-prose": "tsx scripts/gates/check-merge-method-prose.ts --selftest && tsx scripts/gates/check-merge-method-prose.ts",
     "check:ci-bootstrap-idempotency": "tsx scripts/gates/check-bootstrap-idempotency.ts --selftest && tsx scripts/gates/check-bootstrap-idempotency.ts",
     "check:ci-git-tool-safety": "tsx scripts/gates/check-git-tool-safety.ts --selftest && tsx scripts/gates/check-git-tool-safety.ts",

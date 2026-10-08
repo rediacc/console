@@ -1337,7 +1337,6 @@
     "check:ci-bootstrap-idempotency": 0.4,
     "check:ci-pr-task-trailers": 13.0,
     "check:ci-merge-method-prose": 1.0,
-    "check:ci-shell-declared-commands": 1.0,
     "check:ci-pr-epic-block": 1.0,
     "check:ci-control-vacuity": 1.0,
     "check:ci-devcontainer-scripts": 1.0,

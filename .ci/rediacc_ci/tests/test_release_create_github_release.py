@@ -38,7 +38,6 @@ ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/release/create-github-release.sh"
 TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "release" / "create_github_release.py"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 BASH = shutil.which("bash") or "/bin/bash"
 
 FAKE_GH = """#!/usr/bin/python3
@@ -89,7 +88,6 @@ def _fixture(tmp_path: pathlib.Path, side: str, assets: tuple[str, ...]) -> path
     if diff.regolden_mode(TWIN_REL) == "bash":
         shutil.copy2(TWIN, root / ".ci" / "scripts" / "release" / TWIN.name)
     shutil.copy2(PORT, root / ".ci" / "rediacc_ci" / "release" / PORT.name)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

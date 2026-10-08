@@ -5,13 +5,24 @@
 # Usage:
 #   source .ci/docker/service/env.sh
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONSOLE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
-# Source common utilities
-source "$CONSOLE_ROOT/.ci/scripts/lib/common.sh"
+# The well-known WK_* facts (WK_ADMIN_EMAIL_DEFAULT below): an exported WK_* is kept, nothing in the file executes.
+# shellcheck source=../../config/well-known.generated.sh
+source "$CONSOLE_ROOT/.ci/config/well-known.generated.sh"
+
+# The two log functions this file uses, with the glyphs, the stderr-only rule and the colour rule
+# (a terminal on fd 2 and no NO_COLOR) of the helper library this file used to source.
+if [[ -t 2 ]] && [[ -z "${NO_COLOR:-}" ]]; then
+    _green='\033[0;32m' _blue='\033[0;34m' _nc='\033[0m'
+else
+    _green='' _blue='' _nc=''
+fi
+log_info() { echo -e "${_green}✓${_nc} $*" >&2; }
+log_step() { echo -e "${_blue}→${_nc} $*" >&2; }
 
 # =============================================================================
 # SECRET GENERATION (same patterns as ci-env.sh)

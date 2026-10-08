@@ -248,9 +248,6 @@ def fixture_root(
     (root / "bin").mkdir(exist_ok=True)
     (root / "home").mkdir(exist_ok=True)
 
-    shutil.copyfile(
-        "%s/.ci/scripts/lib/common.sh" % diff.repo(), root / ".ci/scripts/lib/common.sh"
-    )
     (root / ".ci/config").mkdir(parents=True, exist_ok=True)
     shutil.copyfile(
         "%s/.ci/config/well-known.env" % diff.repo(), root / ".ci/config/well-known.env"

@@ -10,9 +10,9 @@
  * submodule) turns every such gate into a green tick over nothing, and the tick
  * reads exactly like a pass.
  *
- * THE CONTRACT is the one `.ci/scripts/lib/common.sh` `require_submodule` and
- * its Python port `.ci/rediacc_ci/core/common.py` `require_submodule` already
- * carry, three outcomes and not two:
+ * THE CONTRACT is the one `.ci/rediacc_ci/core/common.py` `require_submodule`
+ * (the port of the deleted bash `common.sh` function) already carries, three
+ * outcomes and not two:
  *
  *   present          -> true
  *   absent, in CI    -> a loud refusal naming the missing paths and the fix,

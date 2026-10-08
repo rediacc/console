@@ -63,7 +63,6 @@ def root(tmp_path: pathlib.Path) -> pathlib.Path:
         "scripts/drills/lib.sh",
         "scripts/drills/backup.sh",
         "scripts/drills/license.sh",
-        ".ci/scripts/lib/common.sh",
         ".ci/config/well-known.env",
         ".ci/config/well-known.generated.sh",
     ):

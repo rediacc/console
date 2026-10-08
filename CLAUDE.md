@@ -304,11 +304,11 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 
 | Where it runs | Registered | `gate: true` | Slow | Is a gate test |
 |---|---|---|---|---|
-| (all lanes) | 368 | 353 | 70 | 4 |
+| (all lanes) | 367 | 352 | 70 | 4 |
 | local-only (CI never runs it) | 19 | 11 | 6 | 0 |
 | step / build-renet | 1 | 1 | 0 | 0 |
 | step / quality-branch | 10 | 10 | 4 | 0 |
-| step / quality-code | 104 | 103 | 19 | 0 |
+| step / quality-code | 103 | 102 | 19 | 0 |
 | step / quality-content | 45 | 45 | 5 | 0 |
 | step / quality-gate-tests | 5 | 4 | 0 | 4 |
 | step / quality-go | 17 | 17 | 2 | 0 |

@@ -37,7 +37,6 @@ ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/deploy/test-d1-migrations.sh"
 TWIN = ROOT / TWIN_REL
 CLONE = ROOT / ".ci" / "scripts" / "deploy" / "clone-d1.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "test_d1_migrations.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -221,7 +220,6 @@ def fixture(
     if TWIN.is_file():  # only a `regolden --source bash` run still reads the bash
         shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
         shutil.copy2(CLONE, root / ".ci" / "scripts" / "deploy" / CLONE.name)
-        shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

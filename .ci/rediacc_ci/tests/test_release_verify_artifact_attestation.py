@@ -54,7 +54,6 @@ def _build_scratch_tree(tmp_path: pathlib.Path) -> None:
         shutil.copy(
             os.path.join(root, TWIN_REL), ci_scripts_release / "verify-artifact-attestation.sh"
         )
-        shutil.copy(os.path.join(root, ".ci/scripts/lib/common.sh"), ci_scripts_lib / "common.sh")
     (tmp_path / ".ci" / "config").mkdir(parents=True)
     shutil.copy(
         os.path.join(root, ".ci/config/well-known.env"),
@@ -78,6 +77,7 @@ def _build_scratch_tree(tmp_path: pathlib.Path) -> None:
     )
     # gh_retry (and what it imports) now sits between the port and `gh`.
     shutil.copy(os.path.join(root, ".ci/rediacc_ci/proc.py"), rediacc_ci / "proc.py")
+    shutil.copy(os.path.join(root, ".ci/rediacc_ci/log.py"), rediacc_ci / "log.py")
     shutil.copytree(
         os.path.join(root, ".ci/rediacc_ci/core"),
         rediacc_ci / "core",

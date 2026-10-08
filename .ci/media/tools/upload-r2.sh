@@ -56,10 +56,42 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # needed (.ci/scripts/deploy -> .ci/scripts -> .ci -> root), which is why nothing about
 # REPO_ROOT changed in the move.
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-# ABSOLUTE, not relative to SCRIPT_DIR. common.sh did not move and is not media; spelling
-# it from the repo root rather than from here means a future relocation of this file is
-# one line rather than a hunt for a `../..` that silently resolves to the wrong depth.
-source "$REPO_ROOT/.ci/scripts/lib/common.sh"
+# The well-known WK_* facts (WK_MEDIA_ORIGIN below), spelled from the repo root rather than from here
+# so a future relocation of this file is one line rather than a hunt for a `../..` that silently
+# resolves to the wrong depth.
+# shellcheck source=../../config/well-known.generated.sh
+source "$REPO_ROOT/.ci/config/well-known.generated.sh"
+# The log and require helpers this program uses, with the glyphs, the stderr-only rule and the
+# colour rule (a terminal on fd 2 and no NO_COLOR) of the helper library it used to source.
+if [[ -t 2 ]] && [[ -z "${NO_COLOR:-}" ]]; then
+    _red='\033[0;31m' _green='\033[0;32m' _blue='\033[0;34m' _nc='\033[0m'
+else
+    _red='' _green='' _blue='' _nc=''
+fi
+log_info() { echo -e "${_green}✓${_nc} $*" >&2; }
+log_error() { echo -e "${_red}✗${_nc} $*" >&2; }
+log_step() { echo -e "${_blue}→${_nc} $*" >&2; }
+require_var() {
+    local var_name
+    for var_name in "$@"; do
+        if [[ -z "${!var_name:-}" ]]; then
+            log_error "Required environment variable '$var_name' is not set"
+            exit 1
+        fi
+    done
+}
+require_cmd() {
+    if ! command -v "$1" &>/dev/null; then
+        log_error "Required command '$1' is not available"
+        exit 1
+    fi
+}
+require_file() {
+    if [[ ! -f "$1" ]]; then
+        log_error "Required file '$1' does not exist"
+        exit 1
+    fi
+}
 # The platform seams. This script is the one .ci/media program that runs standalone rather
 # than through media-entry.sh, so it sources them itself: `sha256sum` and `stat -c%s` are
 # both GNU spellings, and this is the file that publishes to a bucket, where a wrong hash

@@ -59,7 +59,6 @@ SELF = "<SELF>"
 FX = "<fx>"
 
 COPIED = (
-    ".ci/scripts/lib/common.sh",
     ".ci/config/well-known.generated.sh",
     ".ci/config/constants.sh",
     ".devcontainer/toolchain.env",

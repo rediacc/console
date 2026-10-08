@@ -49,7 +49,7 @@ ROOT_DIR="$(cd "$MEDIA_DIR/../.." && pwd)"
 source "$ROOT_DIR/.ci/config/constants.sh"
 
 # What this pipeline takes from the CI helpers, and nothing else: the five log functions
-# (the glyphs, stderr-only and colour rules of .ci/scripts/lib/common.sh) and the three
+# (the glyphs, stderr-only and colour rules of rediacc_ci.log) and the three
 # preparation steps, which are one-line calls into the Python port. A failing step
 # returns non-zero, so a bare call under `set -e` stops the script as the sourced
 # function did; every call site in tutorials.sh and bridge.sh is a bare statement or a

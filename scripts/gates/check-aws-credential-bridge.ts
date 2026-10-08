@@ -195,10 +195,8 @@ for (const rel of files) {
   }
 }
 
-// Anti-vacuity floor. Chosen below the 25 callers present on 2026-09-02 so
-// ordinary churn does not trip it, but high enough that a broken regex — which
-// would silently classify everything as 'not-a-caller' — cannot read as green.
-const FLOOR = 15;
+// Anti-vacuity floor. It was 15 against 25 callers on 2026-09-02. Re-measured 2026-10-08 at 2 console shell callers and 0 in the four submodules at their pinned commits (23 `.sh` files there, none invoking `aws`), after the bash retirement ported the rest to Python; lowered from 15 to the measured count. The margin is now zero on purpose: porting one of the two callers trips this floor, and the right response is to retire the gate with it rather than lower the floor to 1. A broken regex reads 0 and still fails.
+const FLOOR = 2;
 if (callers.length < FLOOR) {
   console.error(
     `✗ found only ${callers.length} aws-CLI caller(s), floor is ${FLOOR}. Either the\n` +
