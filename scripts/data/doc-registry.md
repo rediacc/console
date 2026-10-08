@@ -832,7 +832,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/dev | 5 | .py 5 |
 | .ci/rediacc_ci/diagnostics | 3 | .py 3 |
 | .ci/rediacc_ci/docker | 6 | .py 6 |
-| .ci/rediacc_ci/drills | 9 | .py 9 |
+| .ci/rediacc_ci/drills | 10 | .py 10 |
 | .ci/rediacc_ci/env | 2 | .py 2 |
 | .ci/rediacc_ci/housekeeping | 7 | .py 7 |
 | .ci/rediacc_ci/infra | 17 | .py 17 |

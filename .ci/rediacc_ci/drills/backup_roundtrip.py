@@ -18,11 +18,15 @@ THE THREE THINGS THAT MAKE IT WORK, none of them obvious:
 
 3. THE RESTORE TARGET NEEDS ITS OWN LICENCE. Without one, `resolveRestoreLicense` (cmd/renet/backup_restore.go:360) falls back to the FIRST installed licence carrying any renewalUrl, with no preference for one covering the lineage being restored. On a machine holding licences from an earlier session that is a DIFFERENT SUBSCRIPTION, and the restore dies on `404 BACKUP_MANIFEST_MISSING` -- an error that names the manifest, not the credential that was actually wrong. See docs/backup-storage/09-*.md.
 
-Prerequisites: worker VM at 192.168.111.11, docker on the host, a renet built from this tree already installed on the VM, and the local plane running.
+Prerequisites: worker VM at 192.168.111.11 reachable as SSH_USER (default $USER) with SSH_KEY (default the renet-staged id_rsa), docker on the host, a renet built from this tree already installed on the VM, and the local plane running.
 
 THE PROOF NEEDS THE VM, so it is run by an operator; the port's logic (ordering, the comparison, the control, the teardown, the exit status) is pinned in `test_drills_backup_roundtrip.py` against a scripted VM and a scripted account API.
 
 DELIBERATE DELTAS FROM THE BASH (Rule T), each with a test that fails on the bash behaviour:
+
+  * THE SOURCE LICENCE IS INSTALLED BEFORE `repository create`. The bash created the repo first (`local-roundtrip.sh:126` before `:133`), which only a nolicense renet accepts; an enforcing renet refuses a create with no installed licence for the guid.
+  * SSH GOES AS THE PROVISIONED USER WITH THE STAGED KEY. The bash ssh'd to a hardcoded account with no identity file; the fleet provisions `$USER` and authorizes only `~/.renet/staging/.ssh/id_rsa` (`vm_ssh`).
+  * AN SSH FAILURE IS NOT "renet missing". The bash's preflight read any non-zero exit, an auth refusal (255) included, as a missing binary.
 
   * THE TEARDOWN RUNS ON ANY FAILURE. The bash ran under `set -e` with the teardown as step 9, so a failing snapshot, restore, repo creation or API call exited the script mid-way and left two repos, their licences and `/tmp/rt_pass.txt` on the VM. Steps 1-8 now run under one `try` and step 9 is its `finally`.
   * A step that fails is a FAIL line and a non-zero exit. An unparseable snapshot output (the failure case) used to put a Python traceback where the verdict belongs, and the `SNAP=$(...)` assignment then killed the script before the teardown.
@@ -45,11 +49,11 @@ import uuid
 from typing import TYPE_CHECKING
 
 from rediacc_ci import well_known
+from rediacc_ci.drills import vm_ssh
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-SSH_OPTS = ["-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no"]
 SSH_TIMEOUT = 900
 HTTP_ERROR_FLOOR = 400
 SCOPES = [
@@ -76,11 +80,11 @@ class VmResult:
         self.stderr = stderr
 
 
-def ssh_vm(vm: str, command: str, stdin_data: str | None = None) -> VmResult:
-    """The real transport: `ssh muhammed@VM command`, with the 900 second ceiling."""
+def ssh_vm(user: str, key: str, vm: str, command: str, stdin_data: str | None = None) -> VmResult:
+    """The real transport: `ssh -i <key> <user>@VM command` with exactly that one identity (`vm_ssh`), under the 900 second ceiling."""
     try:
         proc = subprocess.run(
-            ["ssh", *SSH_OPTS, "muhammed@%s" % vm, command],
+            vm_ssh.ssh_argv(user, key, vm, command),
             input=stdin_data,
             stdin=None if stdin_data is not None else subprocess.DEVNULL,
             capture_output=True,
@@ -251,11 +255,9 @@ class Roundtrip:
             "rm -f /tmp/rt-lic.json" % (guid, target, target)
         )
 
-    def create_source(self) -> str:
-        """Step 2: a NEW repo with known content. Returns its guid."""
+    def create_source(self, src: str) -> None:
+        """Step 2: create the NEW repo `src` (its licence already installed) and plant known content."""
         ds = self.datastore
-        src = str(uuid.uuid4())
-        self.created.append(src)
         passphrase = uuid.uuid4().hex + uuid.uuid4().hex
         luks = self.work / "luks.txt"
         luks.write_text(passphrase + "\n", encoding="utf-8")
@@ -273,7 +275,6 @@ class Roundtrip:
             '  printf "nested content 1234567890" > %(ds)s/mounts/%(s)s/nested/dir/deep.txt\n'
             "  sync'" % {"ds": ds, "s": src}
         )
-        return src
 
     def source_status(self, src: str) -> str:
         listing = self.run_vm("sudo -n renet repository license-status --output json").stdout
@@ -349,9 +350,12 @@ class Roundtrip:
         self.step("1. account, subscription, api token")
         self.say("subscription %s" % self.account())
 
-        self.step("2. create a NEW repo and plant known content")
-        src = self.create_source()
+        self.step("2. licence a NEW repo, create it, and plant known content")
+        src = str(uuid.uuid4())
+        self.created.append(src)
+        # The licence comes FIRST: an enforcing renet refuses `repository create` for a guid with no installed licence (cmd/renet/repository_create.go, validateCreateSizeLimit).
         self.issue_license(src, src, "grand")
+        self.create_source(src)
         self.check("source repo licence is valid", "valid", self.source_status(src))
 
         self.step("3. quiesce and record the source image digest")
@@ -421,6 +425,21 @@ class Roundtrip:
             self.say("PASS  control fired: cmp detects the planted one-byte difference")
 
 
+def preflight_vm(vm: Callable[[str, str | None], VmResult], host: str, user: str, key: str) -> str:
+    """'' when the VM answers over ssh and has renet on PATH; otherwise the refusal, naming which of the two failed. ssh's own failure (255) is an authentication or reachability problem, and reporting it as "renet missing" sends the operator to rebuild a binary that was never the cause."""
+    probe = vm("command -v renet >/dev/null", None)
+    if probe.returncode == vm_ssh.SSH_FAILED:
+        why = probe.stderr.strip().splitlines()[-1] if probe.stderr.strip() else "no stderr"
+        return (
+            "cannot ssh to %s as %s with %s (exit 255: %s). The VMs authorize the key renet ops "
+            "provisioned them with; set SSH_KEY / SSH_USER if this fleet was built with others."
+            % (host, user, key, why)
+        )
+    if probe.returncode != 0:
+        return "renet missing on %s (command -v renet exited %d)" % (host, probe.returncode)
+    return ""
+
+
 def main(argv: list[str] | None = None) -> int:
     del argv  # no arguments: every knob is an environment variable
     environ = os.environ
@@ -440,11 +459,14 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    def vm(command: str, stdin_data: str | None = None) -> VmResult:
-        return ssh_vm(vm_host, command, stdin_data)
+    user, key = vm_ssh.default_user(environ), vm_ssh.default_key(environ)
 
-    if vm("command -v renet >/dev/null").returncode != 0:
-        print("renet missing on %s" % vm_host, file=sys.stderr)
+    def vm(command: str, stdin_data: str | None = None) -> VmResult:
+        return ssh_vm(user, key, vm_host, command, stdin_data)
+
+    refusal = preflight_vm(vm, vm_host, user, key)
+    if refusal:
+        print(refusal, file=sys.stderr)
         return 1
     return Roundtrip(
         vm,

@@ -19,13 +19,13 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
   3. THE MAX SEQUENCE OF AN EMPTY RESULT LIST IS 0. `Math.max(...[])` is `-Infinity`, which the bash then compared against 0 and accepted as a fresh sequence; `renewed_sequence` answers 0 and the assertion fails, as it should.
   4. A FAILED RESTORE OF THE SUBSCRIPTION IS REPORTED. The bash teardown discarded both the output and the exit code of the patch that puts the cap and the status back (`>/dev/null 2>&1 || true`), so a drill that left the subscription suspended said nothing; the failure is a warning naming what was left behind.
   5. A TRANSPORT FAILURE ENDS THE DRILL WITH ITS CAUSE (`OSError` naming the method and URL) where a failed `curl` in a pipeline stage was swallowed and read as an empty field.
+  6. CEPH IS ASKED OF THE WORKERS. The bash decided Ceph was available because VM .21 was running, which a default `ops up` satisfies with bare OS images that carry no client; leg a then died on `rbd: command not found`. `.21` running stays the first refusal, and `preflight_ceph` then requires `/etc/ceph/ceph.conf` and an `rbd` binary on each worker the selected legs use.
 """
 
 from __future__ import annotations
 
 import base64
 import contextlib
-import getpass
 import http.cookiejar
 import json
 import os
@@ -38,7 +38,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log
-from rediacc_ci.drills import lib, wire
+from rediacc_ci.drills import lib, vm_ssh, wire
 
 if TYPE_CHECKING:
     import pathlib
@@ -57,6 +57,11 @@ MACHINE2_NAME = "drill-lic-2"
 DATASTORE_NAME = "drill-ds"
 FORK_TAG = "remeter"
 REPO_NAME = "drill-repo"
+# Prints what is missing and exits 1, so a refusal names the gap rather than a bare exit code.
+CEPH_CLIENT_PROBE = (
+    "test -f /etc/ceph/ceph.conf || { echo 'no /etc/ceph/ceph.conf'; exit 1; }; "
+    "command -v rbd >/dev/null || { echo 'no rbd binary'; exit 1; }"
+)
 
 
 class Options:
@@ -66,14 +71,9 @@ class Options:
         self.net_base = os.environ.get("VM_NET_BASE") or "192.168.111"
         self.vm_ip = self.net_base + ".11"
         self.vm2_ip = self.net_base + ".12"
-        self.ssh_user = os.environ.get("SSH_USER") or os.environ.get("USER") or getpass.getuser()
-        # The ops VMs authorize the key `renet ops` itself provisions them with: id_rsa under the renet staging folder (rooted at RENET_DATA_DIR or ~/.renet), NOT ~/.ssh/id_ed25519. A plain `ssh` still connects with the wrong -i because OpenSSH falls through to its default identities, while the CLI (ssh2, one explicit key) fails with "All configured authentication methods failed".
-        renet_data = os.environ.get("RENET_DATA_DIR") or os.path.join(
-            os.environ.get("HOME", "~"), ".renet"
-        )
-        self.ssh_key = os.environ.get("SSH_KEY") or os.path.join(
-            renet_data, "staging", ".ssh", "id_rsa"
-        )
+        # The provisioned user and the one key the VMs authorize; see `vm_ssh` for why neither is ~/.ssh's default.
+        self.ssh_user = vm_ssh.default_user()
+        self.ssh_key = vm_ssh.default_key()
         # `renet` (in PATH) is the CLI's own default for a provisioned machine.
         self.vm_renet = os.environ.get("DRILL_RENET_PATH") or "renet"
 
@@ -206,6 +206,7 @@ class License:
         self.subscription_id = ""
         self.jar: http.cookiejar.CookieJar | None = None
         self.admin_jar: http.cookiejar.CookieJar | None = None
+        self.ceph_vms_running = False
         self.ceph_available = False
         self.subscription_lapsed = False
         self.cap_lowered = False
@@ -218,28 +219,8 @@ class License:
     # ------------------------------------------------------------------ plumbing
 
     def ssh_argv(self, host: str, command: str) -> list[str]:
-        """`ssh` with EXACTLY one identity. -F /dev/null, IdentitiesOnly and IdentityAgent=none are load-bearing: without them OpenSSH quietly tries the agent, ~/.ssh/config and its default identities after the -i key is refused, so the drill's own SSH could connect with a different key than the one it handed the CLI. That divergence is what made the first live run so confusing."""
-        return [
-            "ssh",
-            "-F",
-            "/dev/null",
-            "-i",
-            self.o.ssh_key,
-            "-o",
-            "IdentitiesOnly=yes",
-            "-o",
-            "IdentityAgent=none",
-            "-o",
-            "StrictHostKeyChecking=no",
-            "-o",
-            "UserKnownHostsFile=/dev/null",
-            "-o",
-            "ConnectTimeout=10",
-            "-o",
-            "LogLevel=ERROR",
-            "%s@%s" % (self.o.ssh_user, host),
-            command,
-        ]
+        """`ssh` with EXACTLY one identity (`vm_ssh.ssh_argv`): without that, OpenSSH quietly tries the agent, ~/.ssh/config and its default identities after the -i key is refused, so the drill's own SSH could connect with a different key than the one it handed the CLI. That divergence is what made the first live run so confusing."""
+        return vm_ssh.ssh_argv(self.o.ssh_user, self.o.ssh_key, host, command)
 
     def ssh_out(self, host: str, command: str, stdin: str | None = None) -> tuple[int, str]:
         """(exit code, stdout) of a remote command, stderr discarded (the bash `2>/dev/null` before a pipe)."""
@@ -422,8 +403,9 @@ class License:
             )
             log.error("Provision the full cluster:  ./rdc.sh ops up")
             raise SystemExit(1)
-        self.ceph_available = ("%s.21" % o.net_base) in running
-        if o.enabled("a") and not self.ceph_available:
+        # The Ceph VMs being up is necessary, not sufficient: `preflight_ceph` asks the workers, after the ssh preflight has proved the key.
+        self.ceph_vms_running = ("%s.21" % o.net_base) in running
+        if o.enabled("a") and not self.ceph_vms_running:
             log.error(
                 "Leg a (datastore fork re-meters) needs Ceph, and %s.21 is not running."
                 % o.net_base
@@ -434,7 +416,44 @@ class License:
             log.error("Provision the full cluster:  ./rdc.sh ops up")
             log.error("Or drop the leg:            ./run.sh drill license --legs b,c,d,e,f")
             raise SystemExit(1)
-        d.note("ceph available: %s" % ("yes" if self.ceph_available else "no"))
+        if not self.ceph_vms_running:
+            d.note("ceph available: no")
+
+    def ceph_client_gap(self, host: str) -> str:
+        """What `host` lacks to drive RBD ('' when nothing): the WORKER is the machine that runs `rbd map`, so it is the one to ask. HEALTH_OK and VM liveness are both silent about client distribution; on 2026-08-16 a worker whose `ceph-common` install was killed sat under a HEALTH_OK cluster and the suite died minutes later on "can't open ceph.conf"."""
+        code, out = self.ssh_out(host, CEPH_CLIENT_PROBE)
+        if code == vm_ssh.SSH_FAILED:
+            return "ssh to it failed (exit %d), so its Ceph client could not be checked" % code
+        if code != 0:
+            return out.strip() or "the Ceph client probe exited %d" % code
+        return ""
+
+    def preflight_ceph(self) -> None:
+        """Ceph is usable only where the workers carry `/etc/ceph/ceph.conf` and an `rbd` binary. Leg b ferries leg a's RBD datastore to the second worker, so that worker is asked too when leg b runs."""
+        d, o = self.d, self.o
+        if not o.needs_vm() or not self.ceph_vms_running:
+            return
+        d.step("Preflight: the Ceph client on the workers")
+        workers = [o.vm_ip, *([o.vm2_ip] if o.enabled("b") else [])]
+        gaps = [(host, self.ceph_client_gap(host)) for host in workers]
+        gaps = [(host, gap) for host, gap in gaps if gap]
+        self.ceph_available = not gaps
+        if self.ceph_available:
+            d.note("ceph available: yes (client on %s)" % " ".join(workers))
+            return
+        if o.enabled("a"):
+            log.error("Leg a (datastore fork re-meters) needs the Ceph client on the workers,")
+            log.error("and the Ceph VMs being up does not provide it:")
+            for host, gap in gaps:
+                log.error("    %s: %s" % (host, gap))
+            log.error(
+                "Provision Ceph with its client distribution (a stray PROVISION_CEPH_CLUSTER=false"
+            )
+            log.error("in a parent .env otherwise wins):")
+            log.error("    PROVISION_CEPH_CLUSTER=1 VM_CEPH_NODES='21 22 23' ./rdc.sh ops up")
+            log.error("Or drop the leg:            ./run.sh drill license --legs b,c,d,e,f")
+            raise SystemExit(1)
+        d.note("ceph available: no (%s)" % "; ".join("%s: %s" % (host, gap) for host, gap in gaps))
 
     # ------------------------------------------------------------------ setup
 
@@ -1078,6 +1097,7 @@ class License:
         self.preflight_tools()
         self.preflight_vms()
         self.preflight_ssh()
+        self.preflight_ceph()
         self.preflight_agent_overrides()
         self.setup_sandbox()
         self.setup_gateway_address()

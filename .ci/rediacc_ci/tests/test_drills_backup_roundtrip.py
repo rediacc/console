@@ -9,6 +9,7 @@ import http.server
 import json
 import re
 import stat
+import subprocess
 import threading
 from typing import TYPE_CHECKING, ClassVar
 
@@ -16,6 +17,7 @@ import pytest
 
 from rediacc_ci import well_known
 from rediacc_ci.drills import backup_roundtrip as rt
+from rediacc_ci.drills import vm_ssh
 
 if TYPE_CHECKING:
     import pathlib
@@ -37,6 +39,7 @@ class FakeVm:
         snapshot_out: str = SNAP_OK,
         restore_out: str = '{"status":"restored"}',
         fail_containing: str = "",
+        enforce_license: bool = True,
     ) -> None:
         self.src_sha = src_sha
         self.tgt_sha = tgt_sha
@@ -45,6 +48,9 @@ class FakeVm:
         self.snapshot_out = snapshot_out
         self.restore_out = restore_out
         self.fail_containing = fail_containing
+        # An enforcing renet: `repository create` is refused for a guid with no installed licence (cmd/renet/repository_create.go, validateCreateSizeLimit).
+        self.enforce_license = enforce_license
+        self.licensed: set[str] = set()
         self.commands: list[str] = []
         self.stdins: list[str | None] = []
         self.created: list[str] = []
@@ -54,8 +60,17 @@ class FakeVm:
         self.stdins.append(stdin_data)
         if self.fail_containing and self.fail_containing in command:
             return rt.VmResult(1, "", "boom")
+        installed = re.search(
+            r"cp /tmp/rt-lic\.json /var/lib/rediacc/license/repos/([^/\s]+)/", command
+        )
+        if installed:
+            self.licensed.add(installed.group(1))
         made = re.search(r"repository create --name (\S+)", command)
         if made:
+            if self.enforce_license and made.group(1) not in self.licensed:
+                return rt.VmResult(
+                    1, "", "license required: no installed licence for this repository"
+                )
             self.created.append(made.group(1))
         if "renet machine-id" in command:
             return rt.VmResult(0, "mid-1\r\n")
@@ -318,3 +333,71 @@ def test_api_http_errors_and_health(server: http.server.HTTPServer) -> None:
     assert dead.healthy() is False
     with pytest.raises(rt.StepError):
         dead.call("GET", "/anything")
+
+
+# ---------------------------------------------------------------------------- the U0 live-run defects
+
+
+def test_the_source_licence_is_installed_before_the_repo_is_created(tmp_path: pathlib.Path) -> None:
+    """Rule T: the bash ran `repository create` (local-roundtrip.sh:126) before installing the grand licence (:133), which an enforcing renet refuses; the scripted VM enforces, so the old order fails the run."""
+    vm = FakeVm()
+    rc, out, _ = _run(tmp_path, vm)
+    assert rc == 0, out
+    src = vm.created[0]
+    install = next(i for i, c in enumerate(vm.commands) if "license/repos/%s/" % src in c)
+    create = next(i for i, c in enumerate(vm.commands) if "repository create" in c)
+    assert install < create
+
+
+def test_an_enforcing_vm_refuses_a_create_without_a_licence() -> None:
+    """The scripted refusal itself: a create with nothing installed fails, so the ordering test above can go red."""
+    vm = FakeVm()
+    assert vm("sudo -n sh -c 'renet repository create --name g1 --size 1G'").returncode == 1
+    vm("sudo -n mkdir -p x && sudo -n cp /tmp/rt-lic.json /var/lib/rediacc/license/repos/g1/k.json")
+    assert vm("sudo -n sh -c 'renet repository create --name g1 --size 1G'").returncode == 0
+
+
+def test_ssh_goes_as_the_provisioned_user_with_exactly_the_staged_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The bash ssh'd to a hardcoded `muhammed@` with no identity; the fleet provisions $USER and authorizes only the renet-staged id_rsa."""
+    env = {"USER": "alice", "HOME": "/home/alice"}
+    assert vm_ssh.default_user(env) == "alice"
+    assert vm_ssh.default_key(env) == "/home/alice/.renet/staging/.ssh/id_rsa"
+    env_rd = env | {"RENET_DATA_DIR": "/data/renet"}
+    assert vm_ssh.default_key(env_rd) == "/data/renet/staging/.ssh/id_rsa"
+    assert vm_ssh.default_user(env | {"SSH_USER": "bob"}) == "bob"
+    assert vm_ssh.default_key(env | {"SSH_KEY": "/k"}) == "/k"
+
+    seen: list[list[str]] = []
+
+    def fake_run(argv: list[str], **_kw: object) -> subprocess.CompletedProcess[str]:
+        seen.append(argv)
+        return subprocess.CompletedProcess(argv, 0, "out", "")
+
+    monkeypatch.setattr(rt.subprocess, "run", fake_run)
+    result = rt.ssh_vm("alice", "/k/id_rsa", "192.168.111.11", "true")
+    assert result.returncode == 0
+    argv = seen[0]
+    assert "alice@192.168.111.11" in argv
+    assert not any("muhammed" in a for a in argv)
+    assert argv[argv.index("-i") + 1] == "/k/id_rsa"
+    for opt in ("IdentitiesOnly=yes", "IdentityAgent=none", "BatchMode=yes"):
+        assert opt in argv, opt
+    assert argv[argv.index("-F") + 1] == "/dev/null"
+
+
+def test_an_ssh_failure_is_not_reported_as_renet_missing() -> None:
+    """The bash preflight read every non-zero exit, an auth refusal (255) included, as "renet missing on <vm>"."""
+    denied = rt.preflight_vm(
+        lambda _c, _s: rt.VmResult(255, "", "alice@192.168.111.11: Permission denied (publickey)."),
+        "192.168.111.11",
+        "alice",
+        "/k/id_rsa",
+    )
+    assert "renet missing" not in denied
+    assert "cannot ssh to 192.168.111.11 as alice with /k/id_rsa" in denied
+    assert "Permission denied (publickey)" in denied
+    missing = rt.preflight_vm(lambda _c, _s: rt.VmResult(1), "192.168.111.11", "alice", "/k")
+    assert missing.startswith("renet missing on 192.168.111.11")
+    assert rt.preflight_vm(lambda _c, _s: rt.VmResult(0), "h", "u", "k") == ""
