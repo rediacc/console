@@ -630,6 +630,34 @@ def tick_findings(
     return out
 
 
+def _late_print_is_unconditional(source=None):
+    """True when main() prints `late_rows_line(...)` OUTSIDE every `if`/`for`/`while`/`try`, i.e. on every run (fe588087.1: it was indented under `if base_plans is not None:` and vanished on a run without a base)."""
+    import ast  # noqa: PLC0415
+
+    if source is None:
+        with open(__file__, encoding="utf-8") as fh:
+            source = fh.read()
+    tree = ast.parse(source)
+    main_fn = next(
+        (n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "main"), None
+    )
+    if main_fn is None:
+        return False
+
+    def is_print(node):
+        return (
+            isinstance(node, ast.Expr)
+            and isinstance(node.value, ast.Call)
+            and getattr(node.value.func, "id", "") == "print"
+            and any(
+                isinstance(a, ast.Call) and getattr(a.func, "id", "") == "late_rows_line"
+                for a in node.value.args
+            )
+        )
+
+    return any(is_print(n) for n in main_fn.body)
+
+
 def late_rows_line(late_rows):
     """The advisory printed on EVERY run, red or green: how many boxes this branch closed before investigating them.
 
@@ -1100,6 +1128,17 @@ def controls_fired(enforce, planfile, planrec=None):
     caught(
         "RETRO-d: an empty late list printed nothing countable",
         "0 box(es)" in late_rows_line([]),
+    )
+    caught(
+        "RETRO-f: the late-records advisory print sits under a conditional in main(), so it is skipped when no base ledger is available",
+        _late_print_is_unconditional(),
+    )
+    caught(
+        "RETRO-g: CONTROL: the probe cannot tell a nested print from a top-level one",
+        not _late_print_is_unconditional(
+            "def main():\n    if x:\n        print(late_rows_line(r))\n"
+        )
+        and _late_print_is_unconditional("def main():\n    print(late_rows_line(r))\n"),
     )
     got, late = judge_retro(dict(healthy_row, head="H-LATE"), False)
     caught(
@@ -1865,7 +1904,7 @@ def main(argv=None) -> int:
                 late_rows,
             )
         )
-        print(late_rows_line(late_rows))
+    print(late_rows_line(late_rows))
 
     # P-A1's scope, printed on red and green alike so a collapsed scope is visible rather than read as a drained corpus.
     if not scope_problem:

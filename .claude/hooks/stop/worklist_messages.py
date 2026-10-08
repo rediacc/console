@@ -2610,6 +2610,11 @@ CLI_PLANINV_DRY = (
     "\n---- NOTHING was written. Re-run with --write. ----\n"
 )
 
+CLI_PLANINV_EVIDENCE_KEPT = (
+    "NOTE: plan already carries an evidence line; --evidence ignored. The existing line was\n"
+    "kept byte for byte, so the plan file was not rewritten.\n"
+)
+
 CLI_PLANINV_WROTE = (
     "recorded one investigation of %(rel)s box %(sig)s [verdict: %(verdict)s]\n"
     "  head %(head)s on %(br)s\n"

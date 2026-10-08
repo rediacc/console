@@ -338,16 +338,21 @@ def _citation_gate():
             "cannot resolve citations: %s is missing, and a line written without that check "
             "is the one check:ci-plan-citations later reds" % gate
         )
-    if str(qdir) not in sys.path:
+    inserted = str(qdir) not in sys.path
+    if inserted:
         sys.path.insert(0, str(qdir))
-    spec = importlib.util.spec_from_file_location("_check_plan_citations_for_planrec", gate)
-    if spec is None or spec.loader is None:
-        raise RecordError("cannot load %s" % gate)
-    mod = importlib.util.module_from_spec(spec)
     try:
-        spec.loader.exec_module(mod)
-    except (SystemExit, ImportError) as exc:
-        raise RecordError("cannot load %s: %s" % (gate, exc)) from exc
+        spec = importlib.util.spec_from_file_location("_check_plan_citations_for_planrec", gate)
+        if spec is None or spec.loader is None:
+            raise RecordError("cannot load %s" % gate)
+        mod = importlib.util.module_from_spec(spec)
+        try:
+            spec.loader.exec_module(mod)
+        except (SystemExit, ImportError) as exc:
+            raise RecordError("cannot load %s: %s" % (gate, exc)) from exc
+    finally:
+        if inserted and str(qdir) in sys.path:
+            sys.path.remove(str(qdir))
     _CITATION_GATE.append(mod)
     return mod
 
@@ -2030,6 +2035,10 @@ def done_boxes(text):
     return out
 
 
+class AmbiguousBoxError(RecordError):
+    """`select_box` matched SEVERAL boxes. A subclass so a caller that probes for "is there a match" swallows only the no-match case (fe588087.3)."""
+
+
 def select_box(boxes, selector, kind="OPEN"):
     """The ONE box `selector` names. Raises RecordError on none and on several.
 
@@ -2060,7 +2069,7 @@ def select_box(boxes, selector, kind="OPEN"):
             )
         )
     if len(hits) > 1:
-        raise RecordError(
+        raise AmbiguousBoxError(
             "%r matches %d %s boxes, and picking one silently is how the wrong box gets "
             "ticked. Pass a signature instead:\n%s"
             % (
@@ -2413,6 +2422,8 @@ def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now
     if retro:
         try:
             still_open = select_box(boxes, selector) if boxes else None
+        except AmbiguousBoxError:
+            raise
         except RecordError:
             still_open = None
         if still_open is not None:
@@ -2431,16 +2442,23 @@ def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now
         _i, _line, body, sig = select_box(dones, selector, kind="DONE")
     else:
         dones = done_boxes(text)
+        closed_ambiguous = None
         try:
             closed = select_box(dones, selector, kind="DONE") if dones else None
+        except AmbiguousBoxError as exc:
+            closed, closed_ambiguous = None, exc
         except RecordError:
             closed = None
         open_hit = None
         if boxes:
             try:
                 open_hit = select_box(boxes, selector)
+            except AmbiguousBoxError:
+                raise
             except RecordError:
                 open_hit = None
+        if closed_ambiguous is not None and open_hit is None:
+            raise closed_ambiguous
         if closed is not None and open_hit is None:
             raise RecordError(
                 "box %s of %s is already TICKED, so it can no longer be investigated before "
@@ -2672,7 +2690,8 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
             raise RecordError(problem)
 
     # AN ALL-DIGIT `commit:<sha9>` IS WRITTEN LENGTHENED (#0241c97d), so the line this verb puts into the plan is read by every citation reader, `plan_lifecycle`'s --move remap included.
-    ev = citable_commit_refs(root, ev)
+    # CLIPPED BEFORE CHECKED: the citation cut at the clip boundary is the one written, so it is the one judged (49731139.1).
+    ev = clip(citable_commit_refs(root, ev), TICK_EVIDENCE_MAX)
     refuse_unresolved_citations(root, ev, "the evidence")
     lines = text.splitlines(keepends=True)
     eol = "\n" if lines[i].endswith("\n") else ""
@@ -2759,7 +2778,7 @@ def retro_evidence_text(root, rel, selector, evidence, note, me, text=None, now=
             "file:line that RESOLVES, a run id, an exit code, or a URL."
         )
     # Lengthened like `plan_tick`'s line (#0241c97d), BEFORE the citations are resolved so the token judged is the token written.
-    ev = citable_commit_refs(root, ev)
+    ev = clip(citable_commit_refs(root, ev), TICK_EVIDENCE_MAX)
     refuse_unresolved_citations(root, ev, "the evidence line")
     # A PLAN WHOSE LAST LINE HAS NO NEWLINE would otherwise have the evidence spliced onto the end of its own box line.
     if not lines[i].endswith("\n"):
