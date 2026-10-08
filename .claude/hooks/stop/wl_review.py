@@ -2855,14 +2855,22 @@ def prune_reviews(root, args):
 
 
 def registered_labels(root):
-    """`console` plus every checkout `.gitmodules` registers: the repositories this project's reviews may name."""
+    """`console` plus every checkout `.gitmodules` registers: the repositories this project's reviews may name.
+
+    FAILS CLOSED: a `.gitmodules` that exists but yields no submodule path (unreadable, malformed, or a failing `git config`) raises ValueError. Falling back to `{"console"}` would make every submodule look foreign, and `drop_foreign_reviews --write` would then delete their records (review 166c8fe1.1). Only a tree with no `.gitmodules` at all has the console alone.
+    """
     labels = {"console"}
+    if not (pathlib.Path(root) / ".gitmodules").exists():
+        return labels
     rc, out = git(root, "config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$")
-    if rc == 0:
-        for line in out.splitlines():
-            parts = line.split(None, 1)
-            if len(parts) == 2:
-                labels.add(parts[1].strip())
+    for line in out.splitlines() if rc == 0 else []:
+        parts = line.split(None, 1)
+        if len(parts) == 2:
+            labels.add(parts[1].strip())
+    if len(labels) == 1:
+        raise ValueError(
+            ".gitmodules exists but no submodule path could be read from it (git config rc=%d)" % rc
+        )
     return labels
 
 
@@ -2872,7 +2880,10 @@ def drop_foreign_reviews(root, branch, write):
     A repository that merely sits inside the tree (private/growth, a separate gitignored repo) is not the project's: the review hook once reviewed its commits into agent/reviews/, which filed the operator's private documents here (operator 2026-10-08, "Remove + fix the hook"). Only such records are touched; a record of the console or a submodule is never dropped, whatever its state.
     """
     d = branch_dir(root, branch)
-    members = registered_labels(root)
+    try:
+        members = registered_labels(root)
+    except ValueError as exc:
+        return 1, "refused: %s; nothing was listed or deleted" % exc
     md = []
     for path in sorted(d.glob("*.md")) if d.is_dir() else []:
         review, _err = read_review(path)
