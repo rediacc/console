@@ -16,12 +16,12 @@ The open PR for the branch then auto-flipped to MERGED, even though `ci.yml`'s l
 
 WHY "CHECK CI FIRST" WAS NOT THE FIX, and is still not the whole of it. A guard conditioned only on CI colour would have let this exact incident through: nothing asked GitHub what colour CI was, the push simply ran, from a script, with HEAD as its source. So the default stays a refusal of every direct push to `main`, in every spelling below, and normal landings go through `gh pr merge <n> --rebase --auto` (`.claude/commands/pr-merge.md`).
 
-THE ONE ADMITTED DIRECT PUSH, box M2 of PLAN-plan-per-pr-loop (operator ruling 2026-10-02, worklist #7c70e8b9). When GitHub cannot rebase the open PR ("This branch can't be rebased"), `main` may move by a fast-forward to the live branch's pushed tip. Every condition below must hold, and any one that cannot be READ is a refusal:
+THE ONE ADMITTED DIRECT PUSH, box M2 of PLAN-plan-per-pr-loop (operator ruling 2026-10-02, worklist #7c70e8b9). When GitHub cannot rebase the open PR ("This branch can't be rebased"), `main` may move by a fast-forward to that PR's pushed head. Every condition below must hold, and any one that cannot be READ is a refusal:
 
   (a) one `git push` in the command, to `origin`, with exactly one refspec `<src>:main` (or `:refs/heads/main`) and no flag but -q/-v: no --force, --force-with-lease, `+`, --delete, --tags, --follow-tags, --all or --mirror;
-  (b) `<src>` is the live branch (`<b>`, `origin/<b>`, their `refs/` spellings) or a commit sha, never `HEAD` (the incident's shape), and the checkout is the console's own, on its `MMDD-N` branch;
-  (c) the commit is exactly `origin/<b>`, the branch's pushed tip, and `origin/main` is its ancestor (`commit_policy.ff_fallback_refusal`, shared with the git-level `pre-push` hook);
-  (d) it is the head of the OPEN PR for `<b>` (`gh pr view`), and CI Complete is SUCCESS on it, read through `.ci/scripts/ci/ci-trace.py --json --ref <b>`, the sanctioned tracer, never a raw check read;
+  (b) `<src>` names an `MMDD-N` branch `<b>` (`<b>`, `origin/<b>`, their `refs/` spellings) or a commit sha, never `HEAD` (the incident's shape), and the push runs in the console's own checkout. The branch is read from `<src>`, NEVER from the checkout (worklist #c1474aae: on 2026-10-08, with 1007-1's commits parked onto 1008-1, `git push origin origin/1007-1:main` was refused as "not the live branch 1008-1" while PR #599's head met every condition); a sha names every `MMDD-N` branch whose pushed tip it is;
+  (c) the commit is exactly `origin/<b>`, the branch's pushed tip, and `origin/main` is its ancestor (`commit_policy.ff_fallback_refusal` and `commit_policy.pushed_live_branches`, shared with the git-level `pre-push` hook);
+  (d) it is the head of the OPEN PR for `<b>` (`gh pr view <b>`), and CI Complete is SUCCESS on it, read through `.ci/scripts/ci/ci-trace.py --json --ref <b>`, the sanctioned tracer, never a raw check read;
   (e) the plan gate (box L2, `plan_gate.plan_merge_refusal`, shared with `block_admin_merge`): the PR body's `Plan: agent/plans/PLAN-<slug>.md` line names a plan whose boxes are all ticked in the commit being pushed (with `turbo: on` in agent/plans/QUEUE.md in that same commit, any number of plans, each with every box ticked, agent/plans/PLAN-stop-hook-turbo.md D6), or the body carries an `Operational-Reason:` line. A body that cannot be read, or that names no plan and gives no reason, is refused.
 
 THE GITLAB MIRROR PUSH (operator ruling 2026-10-03, worklist #1cad85a1: "Allow the agent to push it"). Step 6b of `.claude/commands/pr-merge.md` copies GitHub's `main` to the self-hosted mirror after each merge. It is admitted only as:
@@ -135,7 +135,7 @@ MESSAGE = (
     "\n"
     "Refused in every spelling: explicit (`git push origin main`, `HEAD:main`, `refs/heads/main`, `:main`, `--delete main`, `--all`, with or without `-C`/`-c` before `push`) or implicit (a bare `git push` / `git push origin` / `git push origin HEAD` while this checkout is ON main).\n"
     "\n"
-    "Land through the PR: `gh pr merge <n> --rebase --auto` (.claude/commands/pr-merge.md). The GitLab mirror push of step 6b (operator ruling 2026-10-03) is admitted as `git push gitlab refs/heads/main:refs/heads/main --follow-tags` (or `main:main`), nothing forced, from the console checkout, where `gitlab` is the console mirror and local `main` is exactly `origin/main`. The ONE admitted direct push to GitHub (operator ruling 2026-10-02) is the fast-forward fallback for a PR GitHub cannot rebase: `git push origin origin/<live MMDD-N branch>:main` (or `<branch>:main`, or `<sha>:main`), one refspec, no force/lease/`+`/delete/tags, from the console checkout on that branch, where the commit is the branch's pushed tip AND the open PR's head, `origin/main` is its ancestor, CI Complete is SUCCESS on it (read through .ci/scripts/ci/ci-trace.py), and the PR body names its plan (`Plan: agent/plans/PLAN-<slug>.md`; several under `turbo: on` in agent/plans/QUEUE.md at that commit) with every box ticked, or carries an `Operational-Reason:` line."
+    "Land through the PR: `gh pr merge <n> --rebase --auto` (.claude/commands/pr-merge.md). The GitLab mirror push of step 6b (operator ruling 2026-10-03) is admitted as `git push gitlab refs/heads/main:refs/heads/main --follow-tags` (or `main:main`), nothing forced, from the console checkout, where `gitlab` is the console mirror and local `main` is exactly `origin/main`. The ONE admitted direct push to GitHub (operator ruling 2026-10-02) is the fast-forward fallback for a PR GitHub cannot rebase: `git push origin origin/<MMDD-N branch>:main` (or `<branch>:main`, or `<sha>:main`), one refspec, no force/lease/`+`/delete/tags, from the console checkout (on any branch: the PR is read from the source, not the checkout), where the commit is the branch's pushed tip AND its open PR's head, `origin/main` is its ancestor, CI Complete is SUCCESS on it (read through .ci/scripts/ci/ci-trace.py), and the PR body names its plan (`Plan: agent/plans/PLAN-<slug>.md`; several under `turbo: on` in agent/plans/QUEUE.md at that commit) with every box ticked, or carries an `Operational-Reason:` line."
 )
 
 EDGE_CASES = [
@@ -355,24 +355,65 @@ def ff_fallback_refusal(ev, cmd, scan, text_scan):
     top = commit_policy.toplevel(root)
     if not repo or not top or os.path.realpath(repo) != os.path.realpath(top):
         return "only the console checkout's own main has the fallback"
-    live = commit_policy.current_branch(repo)
-    named = (live, "refs/heads/" + live, "origin/" + live, "refs/remotes/origin/" + live)
-    if src not in named and not SHA.match(src):
-        return "the source `%s` is not the live branch `%s`, its pushed tip or a sha" % (
-            src,
-            live or "(detached)",
+    # THE BRANCH COMES FROM THE PUSHED SOURCE, NEVER FROM THE CHECKOUT (worklist #c1474aae). On 2026-10-08 the operator parked 1007-1's local commits onto a new branch 1008-1, and `git push origin origin/1007-1:main` was refused as "not the live branch 1008-1" although every condition held for PR #599's head 1861b2726. What moves `main` is the commit the refspec names, so that commit, and the PR whose head it is, are the whole question.
+    named = _source_branch(src)
+    if named is None and not SHA.match(src):
+        return (
+            "the source `%s` is not an MMDD-N branch, its pushed tip `origin/<branch>` or a sha"
+            % src
         )
     sha = commit_policy.git(["rev-parse", "--verify", "-q", src + "^{commit}"], cwd=repo)
     if not sha:
         return "`%s` does not resolve to a commit" % src
-    local = commit_policy.ff_fallback_refusal(repo, "origin", live, sha, "refs/remotes/origin/main")
+    pushed = commit_policy.pushed_live_branches(repo, "origin", sha)
+    if named is not None:
+        if named not in pushed:
+            tip = commit_policy.git(
+                ["rev-parse", "--verify", "-q", "refs/remotes/origin/%s^{commit}" % named], cwd=repo
+            )
+            if not tip:
+                return (
+                    "`origin/%s` does not exist here, so the branch's pushed tip is unknown" % named
+                )
+            return "`%s` is not the pushed tip of `%s` (`origin/%s` is `%s`)" % (
+                sha[:12],
+                named,
+                named,
+                tip[:12],
+            )
+        pushed = [named]
+    local = commit_policy.ff_fallback_refusal(
+        repo, "origin", named or "", sha, "refs/remotes/origin/main"
+    )
     if local:
         return local
-    pr, why = _gh_pr(live)
+    # A sha names no branch, so every MMDD-N branch whose pushed tip it is gets asked for its open PR; the first that passes every remaining condition admits the push.
+    reasons = []
+    for branch in pushed:
+        why = _pr_refusal(repo, branch, sha)
+        if not why:
+            return ""
+        reasons.append(why)
+    return "; ".join(reasons) or "`%s` is no MMDD-N branch's pushed tip" % sha[:12]
+
+
+def _source_branch(src):
+    """The `MMDD-N` branch a refspec source names (`<b>`, `refs/heads/<b>`, `origin/<b>`, `refs/remotes/origin/<b>`), None for anything else (a sha, `HEAD`, another name)."""
+    for prefix in ("refs/remotes/origin/", "refs/heads/", "origin/", ""):
+        if src.startswith(prefix):
+            rest = src[len(prefix) :]
+            if commit_policy.BRANCH_SHAPE.match(rest):
+                return rest
+    return None
+
+
+def _pr_refusal(repo, branch, sha):
+    """ "" when `sha` is the head of the open PR for `branch`, its plan gate holds, and CI Complete is SUCCESS on it, else why not."""
+    pr, why = _gh_pr(branch)
     if pr is None:
         return why
     if pr.get("state") != "OPEN":
-        return "PR #%s for `%s` is %s, not open" % (pr.get("number"), live, pr.get("state"))
+        return "PR #%s for `%s` is %s, not open" % (pr.get("number"), branch, pr.get("state"))
     if pr.get("headRefOid") != sha:
         return "`%s` is not the head of PR #%s (`%s`)" % (
             sha[:12],
@@ -382,7 +423,7 @@ def ff_fallback_refusal(ev, cmd, scan, text_scan):
     plan = plan_gate.plan_merge_refusal(repo, pr.get("body"), rev=sha)
     if plan:
         return "PR #%s fails the plan gate: %s" % (pr.get("number"), plan)
-    return _ci_green(live, pr.get("number"), sha)
+    return _ci_green(branch, pr.get("number"), sha)
 
 
 def run(ev):

@@ -101,10 +101,12 @@ QUEUE_REL = "agent/plans/QUEUE.md"
 QUEUE_TURBO = "# Plan queue\n\n## Settings\n\n```stop-hook\nturbo: %s\n```\n\n## Promoted\n\n"
 
 
-def _make_live(branch="0914-1", unpushed=False, main_moved=False, hooks=False, turbo=False):
+def _make_live(
+    branch="0914-1", unpushed=False, main_moved=False, hooks=False, turbo=False, parked=False
+):
     """A console-shaped checkout on `branch`, pushed to a real bare origin, one commit ahead of main.
 
-    `turbo` commits a QUEUE.md with `turbo: on` and a second finished plan, then leaves `turbo: off` in the working tree; `unpushed` adds a local commit `origin/<branch>` never saw; `main_moved` lands a commit on origin's main that the branch does not contain (a fast-forward is then impossible); `hooks` points `core.hooksPath` at the git-level hooks AFTER the fixture is built.
+    `turbo` commits a QUEUE.md with `turbo: on` and a second finished plan, then leaves `turbo: off` in the working tree; `unpushed` adds a local commit `origin/<branch>` never saw; `main_moved` lands a commit on origin's main that the branch does not contain (a fast-forward is then impossible); `parked` is the 2026-10-08 shape (worklist #c1474aae): the PR branch stays pushed while the checkout moves to a new, unpushed branch `PARKED_BRANCH` carrying one more commit; `hooks` points `core.hooksPath` at the git-level hooks AFTER the fixture is built.
     """
     bare = pathlib.Path(tempfile.mkdtemp(prefix="origin-", dir=RUN_TMP))
     _git(bare, "init", "-q", "--bare", "--initial-branch=main")
@@ -136,9 +138,16 @@ def _make_live(branch="0914-1", unpushed=False, main_moved=False, hooks=False, t
     _git(d, "fetch", "-q", "origin")
     if unpushed:
         _git(d, "commit", "-q", "--allow-empty", "-m", "local only")
+    if parked:
+        _git(d, "checkout", "-q", "-b", PARKED_BRANCH)
+        _git(d, "commit", "-q", "--allow-empty", "-m", "parked work on the next branch")
     if hooks:
         _git(d, "config", "core.hooksPath", str(HOOKS))
     return d
+
+
+# The branch the 2026-10-08 checkout moved to, while the PR's branch kept its pushed head.
+PARKED_BRANCH = "0914-2"
 
 
 def _tip(repo, ref):
@@ -151,6 +160,9 @@ LIVE_BEHIND = _make_live(main_moved=True)
 LIVE_SHA = _tip(LIVE, "origin/0914-1")
 LIVE_TURBO = _make_live(turbo=True)
 LIVE_TURBO_SHA = _tip(LIVE_TURBO, "origin/0914-1")
+PARKED = _make_live(parked=True)
+PARKED_SHA = _tip(PARKED, "origin/0914-1")
+PARKED_LOCAL_SHA = _tip(PARKED, PARKED_BRANCH)
 
 MIRROR_URL = "https://gitlab.rediacc.io/rediacc-org/github/console.git"
 
@@ -360,6 +372,52 @@ CASES = [
         LIVE,
         False,
         fx(extra="Review Complete"),
+    ),
+    # ---- M2: the PR is read from the pushed source, never the checkout (worklist #c1474aae) -
+    (
+        "M2 parked: origin/<PR branch> from a checkout on the next branch",
+        "git push origin origin/0914-1:%s" % MAIN,
+        PARKED,
+        False,
+        fx(head=PARKED_SHA),
+    ),
+    (
+        "M2 parked: the PR branch's own name from the next branch",
+        "git push origin 0914-1:%s" % MAIN,
+        PARKED,
+        False,
+        fx(head=PARKED_SHA),
+    ),
+    (
+        "M2 parked: the PR head's sha from the next branch",
+        "git push origin %s:%s" % (PARKED_SHA, MAIN),
+        PARKED,
+        False,
+        fx(head=PARKED_SHA),
+    ),
+    (
+        "M2 parked: a sha that is no branch's pushed tip",
+        "git push origin %s:%s" % (PARKED_LOCAL_SHA, MAIN),
+        PARKED,
+        True,
+        fx(head=PARKED_LOCAL_SHA),
+        "not the pushed tip of any MMDD-N branch",
+    ),
+    (
+        "M2 parked: a pushed tip that is not the PR's head",
+        "git push origin %s:%s" % (PARKED_SHA, MAIN),
+        PARKED,
+        True,
+        fx(head="f" * 40),
+        "is not the head of PR",
+    ),
+    (
+        "M2 parked: the checkout's own unpushed branch",
+        "git push origin %s:%s" % (PARKED_BRANCH, MAIN),
+        PARKED,
+        True,
+        fx(head=PARKED_LOCAL_SHA),
+        "does not exist here",
     ),
     # ---- M2: refused, one condition at a time --------------------------------------------
     ("M2 CI Complete failed", "git push origin 0914-1:%s" % MAIN, LIVE, True, fx(ci="FAILURE")),
@@ -679,6 +737,18 @@ GIT_CASES: list[tuple[str, dict[str, typing.Any], tuple[str, ...], bool]] = [
     # (name, fixture kwargs, push args, expect_refused)
     ("git-level: ff of the live branch's pushed tip", {}, ("origin", "0914-1:%s" % MAIN), False),
     ("git-level: ff of origin/<live>", {}, ("origin", "origin/0914-1:%s" % MAIN), False),
+    (
+        "git-level: ff of origin/<PR branch> from the next branch's checkout",
+        {"parked": True},
+        ("origin", "origin/0914-1:%s" % MAIN),
+        False,
+    ),
+    (
+        "git-level: the next branch's unpushed commit",
+        {"parked": True},
+        ("origin", "%s:%s" % (PARKED_BRANCH, MAIN)),
+        True,
+    ),
     (
         "git-level: a local commit origin never saw",
         {"unpushed": True},
