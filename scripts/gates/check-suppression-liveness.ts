@@ -11,6 +11,12 @@
  *   npx tsx scripts/gates/check-suppression-liveness.ts
  *   npx tsx scripts/gates/check-suppression-liveness.ts --probe overrides
  *   npx tsx scripts/gates/check-suppression-liveness.ts --json
+ *   npx tsx scripts/gates/check-suppression-liveness.ts --probe pr-conditions
+ *
+ * pr-conditions is the one probe that is not about existence: it fails an entry
+ * whose `REVISIT WHEN PR #<N> MERGES` clause names a PR the committed ledger
+ * .ci/config/merged-prs.json records as merged, and any loose phrasing of such a
+ * condition. See prConditionsProbe below.
  *
  * Env:
  *   SUPPRESSION_LIVENESS_ROOT  test seam — treat this dir as the repo root
@@ -36,13 +42,23 @@ import { parseDockerfileVersions } from '../lib/dockerfile-versions.js';
 import { EMBED_ASSET_SOURCES } from '../lib/embed-asset-sources.js';
 import { isPolicyFileName, policyPath } from '../lib/policy-paths.js';
 import {
+  BLOCKER_FILES,
   blockeredEntries,
+  blockerFileLocation,
+  type ConditionScan,
+  type Finding,
   findOrphanedBlockers,
   formatReport,
   isVacuous,
+  type LedgerRead,
+  MERGED_PRS_REL,
   type Probe,
+  prConditionFindings,
+  readMergedPrLedger,
   runProbes,
+  scanPrConditions,
   type Universe,
+  uncoveredPolicyLists,
 } from '../lib/suppression-liveness.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -772,6 +788,92 @@ function formatProbeInputs(inputs: ProbeInput[]): string {
   return out.join('\n');
 }
 
+// --------------------------------------------------------------------------- pr-conditions ---------------------------------------------------------------------------
+//
+// THE PROBE THE OTHER TWELVE CANNOT BE. Every probe above asks whether the suppressed thing still EXISTS. A hold written "REVISIT WHEN PR #589 MERGES" passed all of them for sixteen days after #589 merged, because k3s was still an embedded asset: the entry was live, and its reason was over. This one asks whether the event a clause waits on has happened.
+//
+// OFFLINE, like every other probe here. The oracle is the COMMITTED ledger .ci/config/merged-prs.json, so this verdict moves only when a commit moves it. Asking GitHub is check-pr-condition-ledger.ts's job, and that gate's only output is "the ledger is behind": it fails when a clause-named PR merged on GitHub and the ledger does not say so, and `--refresh` writes the record that then turns THIS probe red.
+//
+// It spans every BLOCKER file rather than one, so it is not a Probe (whose findings all cite one file). It runs beside them and prints its own shape line.
+
+const PR_CONDITIONS = 'pr-conditions';
+
+function prConditionsProbe(
+  root: string,
+  alone: boolean
+): {
+  findings: Finding[];
+  shape: string;
+  scan: ConditionScan;
+} {
+  const full = isFullCheckout(root);
+  const scan = scanPrConditions(root);
+  const ledger: LedgerRead = readMergedPrLedger(root);
+  const findings = prConditionFindings(scan, ledger);
+
+  // Zero files read is a refusal on a full checkout, or when this probe is the whole run. A FIXTURE root that carries only package.json (the overrides cases) is judged by the run-level vacuity check instead, because there the other probes are what assert something.
+  if (scan.filesRead === 0 && (full || alone)) {
+    findings.push({
+      probe: PR_CONDITIONS,
+      file: '.ci/policy',
+      entry: '(every BLOCKER file)',
+      line: 1,
+      tier: 'fail',
+      why: `none of the ${BLOCKER_FILES.length} BLOCKER files exists under this root, so the clause check read nothing; its green would mean nothing.`,
+      fix: ['point SUPPRESSION_LIVENESS_ROOT at a checkout, or restore .ci/policy/'],
+    });
+  }
+  if (full) {
+    for (const display of scan.filesAbsent) {
+      findings.push({
+        probe: PR_CONDITIONS,
+        file: display,
+        entry: '(the file itself)',
+        line: 1,
+        tier: 'fail',
+        why: `BLOCKER_FILES names ${display}, and it is not there, so any clause in it went unread.`,
+        fix: [
+          'if the list moved, update BLOCKER_FILES in scripts/lib/suppression-liveness.ts (and the policy seam); if it is gone, drop its row',
+        ],
+      });
+    }
+    for (const name of uncoveredPolicyLists(root)) {
+      findings.push({
+        probe: PR_CONDITIONS,
+        file: `.ci/policy/${name}`,
+        entry: '(the file itself)',
+        line: 1,
+        tier: 'fail',
+        why: `.ci/policy/${name} is a policy list that BLOCKER_FILES does not name, so neither the clause check nor the orphaned-BLOCKER check reads it.`,
+        fix: [`add '${name}' to BLOCKER_FILES in scripts/lib/suppression-liveness.ts`],
+      });
+    }
+    if (ledger.kind !== 'ok' && scan.conditions.length === 0) {
+      findings.push({
+        probe: PR_CONDITIONS,
+        file: MERGED_PRS_REL,
+        entry: '(the merged-PR ledger)',
+        line: 1,
+        tier: 'fail',
+        why:
+          ledger.kind === 'missing'
+            ? `${MERGED_PRS_REL} is absent from a full checkout; the next clause written would be judged against nothing.`
+            : `${MERGED_PRS_REL} is unreadable (${ledger.reason}).`,
+        fix: ['npx tsx scripts/gates/check-pr-condition-ledger.ts --refresh'],
+      });
+    }
+  }
+
+  const ledgerShape =
+    ledger.kind === 'ok'
+      ? `ledger ${Object.keys(ledger.ledger.prs).length} merged PR(s), refreshed ${ledger.ledger.refreshed_at}`
+      : `ledger ${ledger.kind}`;
+  const shape =
+    `${PR_CONDITIONS}: ${scan.filesRead}/${BLOCKER_FILES.length} BLOCKER file(s) read, ` +
+    `${scan.conditions.length} PR clause(s), ${scan.loose.length} loose phrasing(s); ${ledgerShape}`;
+  return { findings, shape, scan };
+}
+
 // ---------------------------------------------------------------------------
 
 function main(): void {
@@ -783,13 +885,14 @@ function main(): void {
   let probes = PROBES;
   if (only) {
     probes = PROBES.filter((p) => p.id === only);
-    if (probes.length === 0) {
+    if (probes.length === 0 && only !== PR_CONDITIONS) {
       console.error(
-        `${RED}✗${NC} unknown probe "${only}". Known: ${PROBES.map((p) => p.id).join(', ')}`
+        `${RED}✗${NC} unknown probe "${only}". Known: ${[...PROBES.map((p) => p.id), PR_CONDITIONS].join(', ')}`
       );
       process.exit(2);
     }
   }
+  const runPrConditions = !only || only === PR_CONDITIONS;
 
   // An override whose reason opens with "preventive" is a deliberate forward guard, not rot; honour that annotation instead of re-litigating it monthly.
   const preventive = new Set<string>();
@@ -845,21 +948,10 @@ function main(): void {
     }
   }
 
-  // Cross-cutting: a `# BLOCKER:` reason with no entries beneath it. Not dangerous, but it documents a suppression that is not actually in force — and verifyAllBlockers() cannot see it, because it walks entries.
-  const BLOCKER_FILES = [
-    '.deps-upgrade-blocklist',
-    '.go-deps-upgrade-blocklist',
-    '.embed-assets-upgrade-blocklist',
-    '.devcontainer-upgrade-blocklist',
-    '.unverified-download-allowlist',
-    '.actions-upgrade-blocklist',
-    '.cli-i18n-orphan-allowlist',
-    '.audit-allowlist',
-    '.audit-prod-allowlist',
-    '.ci/config/directive-quotes-allowlist.txt',
-  ];
+  // Cross-cutting: a `# BLOCKER:` reason with no entries beneath it. Not dangerous, but it documents a suppression that is not actually in force, and verifyAllBlockers() cannot see it, because it walks entries. BLOCKER_FILES lives in scripts/lib/suppression-liveness.ts, shared with the pr-conditions probe and check-pr-condition-ledger.ts.
   for (const rel of BLOCKER_FILES) {
-    for (const o of findOrphanedBlockers(inputPath(CONSOLE_ROOT, rel), policyRel(rel))) {
+    const loc = blockerFileLocation(CONSOLE_ROOT, rel);
+    for (const o of findOrphanedBlockers(loc.abs, loc.display)) {
       result.findings.push({
         probe: 'orphaned-blocker',
         file: o.file,
@@ -874,12 +966,31 @@ function main(): void {
     }
   }
 
+  let prShape: string | null = null;
+  let prScan: ConditionScan | null = null;
+  if (runPrConditions) {
+    const pr = prConditionsProbe(CONSOLE_ROOT, only === PR_CONDITIONS);
+    result.findings.push(...pr.findings);
+    prShape = pr.shape;
+    prScan = pr.scan;
+  }
+
   if (jsonMode) {
     console.log(
-      JSON.stringify({ ...result, probeInputs, vacuous: isVacuous(result, probes.length) }, null, 2)
+      JSON.stringify(
+        {
+          ...result,
+          probeInputs,
+          prConditions: prScan,
+          vacuous: isVacuous(result, probes.length),
+        },
+        null,
+        2
+      )
     );
   } else {
-    console.log(formatProbeInputs(probeInputs));
+    if (probeInputs.length > 0) console.log(formatProbeInputs(probeInputs));
+    if (prShape) console.log(`${prShape}\n`);
     console.log(formatReport(result, { ci: process.env.CI === 'true' }));
   }
 

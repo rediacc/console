@@ -22,6 +22,7 @@
     "build:www": "npm run build -w @rediacc/www",
     "check:actions": "tsx scripts/gates/check-actions.ts",
     "check:ci-suppression-liveness": "tsx scripts/gates/check-suppression-liveness.ts",
+    "check:ci-pr-condition-ledger": "tsx scripts/gates/check-pr-condition-ledger.ts --selftest && tsx scripts/gates/check-pr-condition-ledger.ts",
     "check:ci-dead-bash": "tsx scripts/gates/check-dead-bash.ts",
     "check:ci-doc-region-parity": "tsx scripts/gates/check-doc-region-parity.ts --selftest && tsx scripts/gates/check-doc-region-parity.ts",
     "check:ci-mutate-check": ".ci/scripts/quality/check_mutate_check.py",

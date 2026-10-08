@@ -65,7 +65,7 @@ import sys
 
 import pytest
 
-from rediacc_ci import paths
+from rediacc_ci import paths, well_known
 from rediacc_ci.core import allowlist
 from rediacc_ci.tests import differential as diff
 
@@ -828,6 +828,85 @@ def test_load_resolves_from_the_repo_root_while_the_bash_reader_needs_cwd(tmp_pa
     )
     docs, _ = _bash_pairs([name])
     assert docs[name] == allowlist.render_pairs(from_root)
+
+
+# ---------------------------------------------------------------------------
+# `conditions`: the "REVISIT WHEN PR #<N> MERGES" clause. A separate verb, so
+# nothing above (records, pairs, contract) moves; the goldens prove that.
+# ---------------------------------------------------------------------------
+
+_CONDITIONS_TEXT = (
+    "# header: REVISIT WHEN PR #1 MERGES\n"  # 1  a clause covering no entry
+    "\n"
+    "# BLOCKER: held for a reason long enough to clear the thirty-char floor\n"  # 3
+    "# revisit when pr acme/widgets#12 merges\n"  # 4  lower case, other repo
+    "a\n"  # 5
+    "b  # inline REVISIT WHEN PR #7 MERGES\n"  # 6  binds to b alone
+    "# BLOCKER: a second reason with no blank line before it opens a block\n"  # 7
+    "c\n"  # 8  must NOT inherit #12
+    "\n"
+    "# BLOCKER: loose wording; remove this once #44 lands, sometime soon\n"  # 10
+    "d\n"  # 11
+    "pkg  # BLOCKER: drop it after #9 ships to everyone who needs it\n"  # 12
+)
+
+
+def test_conditions_bind_clauses_to_their_block_and_qualify_every_ref():
+    found, loose = allowlist.parse_conditions(_CONDITIONS_TEXT, default_repo="o/r")
+    assert found == [
+        allowlist.Condition(1, "", "o/r#1", 1),
+        allowlist.Condition(5, "a", "acme/widgets#12", 4),
+        allowlist.Condition(6, "b", "acme/widgets#12", 4),
+        allowlist.Condition(6, "b", "o/r#7", 6),
+    ]
+    assert loose == [
+        allowlist.LooseCondition(10, "d", "remove this once #44"),
+        allowlist.LooseCondition(12, "pkg", "drop it after #9"),
+    ]
+
+
+def test_the_canonical_clause_is_never_also_loose():
+    """The clause itself ("REVISIT WHEN PR #589") matches the loose shape; it must be cut out first."""
+    found, loose = allowlist.parse_conditions(
+        "# BLOCKER: x\n# REVISIT WHEN PR #589 MERGES: delete this line\nk3s\n", default_repo="o/r"
+    )
+    assert [c.ref for c in found] == ["o/r#589"]
+    assert loose == []
+
+
+def test_a_bare_ref_resolves_to_the_registry_repo():
+    found, _ = allowlist.parse_conditions("# REVISIT WHEN PR #3 MERGES\nx\n")
+    assert [c.ref for c in found] == ["%s#3" % well_known.GH_REPO]
+
+
+def test_the_conditions_verb_rows_and_its_missing_file_exit(tmp_path):
+    """Run for real, as the TypeScript client runs it: the transport, and 2 for an absent list."""
+    listing = tmp_path / "hold.list"
+    listing.write_text(_CONDITIONS_TEXT, encoding="utf-8")
+    env = {**os.environ, "PYTHONPATH": str(paths.ci_dir())}
+    run = subprocess.run(
+        [sys.executable, "-m", "rediacc_ci.core.allowlist", "conditions", str(listing)],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=diff.repo(),
+        env=env,
+    )
+    assert run.returncode == 0, run.stderr
+    rows = run.stdout.splitlines()
+    assert "5\ta\tacme/widgets#12\t4" in rows
+    assert "10\td\t%s\tremove this once #44" % allowlist.LOOSE_MARK in rows
+    assert len(rows) == 6
+    absent = subprocess.run(
+        [sys.executable, "-m", "rediacc_ci.core.allowlist", "conditions", str(tmp_path / "nope")],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=diff.repo(),
+        env=env,
+    )
+    assert absent.returncode == 2
+    assert absent.stdout == ""
 
 
 # ---------------------------------------------------------------------------

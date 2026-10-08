@@ -69,6 +69,15 @@ ci-only  .ci/scripts/quality/check_branch.py
 `ci-only` means CI runs it and the local gate set deliberately does not; `local-only` is the reverse. The liveness oracle differs per direction, so the tag is load-bearing rather than documentation: a `ci-only` entry is live while some workflow still invokes it, and a `local-only` entry is live while the local gate set still runs it. The shared parser takes the first
 whitespace-separated token, so `scripts/gates/check-ci-parity.ts` and the liveness probe both split the second column off explicitly.
 
+**PR conditions.** A hold that waits on a PR says so in one machine-read spelling, anywhere in the entry's comment block or on the entry line:
+```
+# BLOCKER: <reason the hold exists>
+# REVISIT WHEN PR #589 MERGES
+k3s
+```
+A bare `#N` means this repository (`WK_GH_REPO`), and `owner/repo#N` names any other. The clause binds to every entry of its block, a blank line ends the block, and so does a `# BLOCKER:` line that follows an entry. `python3 -m rediacc_ci.core.allowlist conditions <file>` is the parser (`parseConditions()` in `scripts/lib/blocker-validator.ts` is its client).
+Any other phrasing that pairs `revisit`, `lift`, `remove` or `drop` with `when`, `once`, `after` or `until` and a `#N` is refused as loose wording, because a human reads it as a condition and no gate can; write an issue number as `issue 87`, without the `#`. The k3s hold above outlived PR #589 by sixteen days because its clause was free text.
+
 **JSONC files** (knip.jsonc) use real `// BLOCKER: <reason>` comments with the same group semantics as shell files: one BLOCKER covers the entries after it until a blank line or the end of the array. Staleness of knip ignore entries is enforced by knip itself (`--treat-config-hints-as-errors`), not by the BLOCKER validator.
 
 **JSON files** (no comment support) use a parallel `_reasons` object with identical keys:
@@ -100,6 +109,7 @@ whether the suppressed thing still existed.
 | `package.json` `overrides` | key resolves to a `package-lock.json` node | **warn only** |
 | `.ci/policy/.dead-bash-allowlist` | glob root exists / dispatch prefix matches a function / manual file exists | fail |
 | `.ci/policy/.ci-parity-exempt` | a `ci-only` entry is still invoked by some workflow | fail |
+| every BLOCKER file (`BLOCKER_FILES` in `scripts/lib/suppression-liveness.ts`) | `pr-conditions`: a `REVISIT WHEN PR #<N> MERGES` clause whose PR `.ci/config/merged-prs.json` records as merged fails, and so does loose wording of such a condition. A `.ci/policy/` dotfile missing from `BLOCKER_FILES` fails too | fail |
 | `.audit-*` | advisory present in `npm audit` | fail — owned by `audit.py` |
 | `knip.jsonc` | — | knip self-detects via `--treat-config-hints-as-errors` |
 
@@ -111,6 +121,10 @@ loudly when its oracle returns less than that — the generalization of the `tot
 prophylactic as much as reactive — it constrains what npm may resolve *tomorrow*. "Absent from the lockfile today" is not proof it is dead. Start its reason with `BLOCKER: preventive —` to opt out of the warning permanently.
 - **Offline by construction.** Every oracle is a fact about the current
 checkout, so a verdict can only change in the same commit that changes the repo. No probe may consult a registry, publish date, or version comparison — that is what the `.ci/config/release-age.json` deferral exists to prevent elsewhere.
+
+**The merged-PR ledger.** `pr-conditions` stays offline by reading `.ci/config/merged-prs.json`, a committed record (`{"format": 1, "refreshed_at", "prs": {"owner/repo#N": {"mergedAt"}}}`), so its verdict moves only with a commit. `npm run check:ci-pr-condition-ledger` (`scripts/gates/check-pr-condition-ledger.ts`) is the online half and asks GitHub about every PR a clause names plus every PR the ledger records.
+It fails when a clause-named PR merged and the ledger does not say so, and when a recorded row disagrees with GitHub. `--refresh` writes the merged PRs and stamps `refreshed_at`, refusing to write anything when a query went unanswered; `/pr-merge` runs it when it cuts the next branch, which turns `pr-conditions` red on every hold that just became liftable.
+With no token the online gate skips loudly on a workstation and fails in CI; a 401, 403 or 429 is the same; a network error or a 5xx is a `::warning`, exit 0, and every PR it could not ask is printed as UNCHECKED.
 
 ### Adding / extending
 

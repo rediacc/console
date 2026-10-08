@@ -388,6 +388,135 @@ def render_pairs(entries: list[Entry]) -> str:
     return "".join(rows)
 
 
+# --------------------------------------------------------------------------- PR conditions: "REVISIT WHEN PR #<N> MERGES" ---------------------------------------------------------------------------
+#
+# WHY THIS EXISTS. `.ci/policy/.embed-assets-upgrade-blocklist` held k3s back with "REVISIT WHEN PR #589 MERGES" for sixteen days after #589 merged (2026-09-22), and no gate noticed: `parse_text` above keeps only the `# BLOCKER:` line as the reason, so the condition never reached a checker, and every liveness probe asks only whether the suppressed thing still EXISTS. A hold whose lift
+# condition has already happened is still a live entry by that test.
+#
+# THE CLAUSE is one canonical spelling, case-insensitive, anywhere in an entry's comment block or on the entry line itself:
+#
+#     REVISIT WHEN PR #589 MERGES                      this repository (WK_GH_REPO)
+#     REVISIT WHEN PR rediacc/renet#12 MERGES          any other repository
+#
+# One spelling so a machine can read it. Every OTHER phrasing that pairs a lift verb with a PR number ("revisit once #589 lands", "drop after #12") is reported as LOOSE: it reads as a condition to a human and as nothing to the gate, which is the exact gap the clause closes.
+#
+# A BLOCK is a maximal run of non-blank lines, split again where a `# BLOCKER:` line follows an entry (the inline `.go-deps-upgrade-blocklist` shape, where two entries share no blank line but carry different reasons). A clause binds to every entry of its block. A clause in a block with no entry (a file header, an orphaned reason) is still emitted, with an EMPTY entry, because text that waits on a merged PR is
+# stale whether or not it covers anything.
+#
+# `records`, `pairs` and `contract()` are untouched by this: it is a separate verb with its own projection, so the allowlist goldens and the contract version stay byte-identical.
+
+CONDITION_CLAUSE = re.compile(
+    r"\bREVISIT\s+WHEN\s+PR\s+([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)?#(\d+)\s+MERGES\b",
+    re.IGNORECASE,
+)
+
+# A lift verb, then a timing word, then a PR-shaped number, on one line. Bounded windows rather than `.*` so a long comment line naming an issue at its far end is not read as a condition. Applied AFTER every canonical clause is cut out of the line, because the canonical clause itself ("REVISIT WHEN PR #589") matches this shape.
+LOOSE_CONDITION = re.compile(
+    r"\b(revisit|lift|remove|drop)\b[^\n]{0,120}?\b(when|once|after|until)\b[^\n]{0,120}?#\d+",
+    re.IGNORECASE,
+)
+
+# The third column of a LOOSE row. A real reference always contains `#`, so this cannot collide with one.
+LOOSE_MARK = "!loose"
+
+
+class Condition(NamedTuple):
+    """One clause bound to one entry. `entry` is "" for a clause that covers nothing."""
+
+    line: int  # the entry's line, or the clause's own line when there is no entry
+    entry: str
+    ref: str  # owner/repo#N, never bare
+    clause_line: int
+
+
+class LooseCondition(NamedTuple):
+    line: int
+    entry: str
+    text: str
+
+
+def _default_repo() -> str:
+    # Imported here, not at module top: every other verb in this file must keep working in a checkout that cannot load the registry, and only this one needs it.
+    from rediacc_ci import well_known  # noqa: PLC0415
+
+    return well_known.GH_REPO
+
+
+def parse_conditions(
+    text: str, comment_char: str = "#", default_repo: str | None = None
+) -> tuple[list[Condition], list[LooseCondition]]:
+    """Every PR clause bound to its entries, plus every loose phrasing. File order."""
+    blocker_re, comment_re, _ = _patterns(comment_char)
+    repo = default_repo if default_repo is not None else _default_repo()
+
+    def refs_in(line: str) -> list[str]:
+        return ["%s#%s" % (m.group(1) or repo, m.group(2)) for m in CONDITION_CLAUSE.finditer(line)]
+
+    def loose_in(line: str) -> str | None:
+        found = LOOSE_CONDITION.search(CONDITION_CLAUSE.sub(" ", line))
+        return found.group(0).strip() if found else None
+
+    class _Block:
+        def __init__(self) -> None:
+            self.clauses: list[tuple[int, str]] = []  # (clause line, ref), bind to every entry
+            self.loose: list[tuple[int, str, str]] = []  # (line, text, entry on that line or "")
+            # (entry line, token, inline refs) -- an entry line's own comment binds to it alone
+            self.entries: list[tuple[int, str, list[str]]] = []
+
+    blocks: list[_Block] = []
+    current: _Block | None = None
+    for number, raw in enumerate(text.split("\n"), start=1):
+        stripped = raw.strip()
+        if not stripped:
+            current = None
+            continue
+        is_comment = bool(comment_re.match(stripped))
+        if current is not None and current.entries and is_comment and blocker_re.match(stripped):
+            current = None  # a new reason after an entry opens a new block
+        if current is None:
+            current = _Block()
+            blocks.append(current)
+        token = ""
+        if not is_comment:
+            token = re.split(r"\s", stripped, maxsplit=1)[0]
+            cut = token.find(comment_char)
+            token = (token[:cut] if cut >= 0 else token).strip()
+        loose = loose_in(stripped)
+        if loose is not None:
+            current.loose.append((number, loose, token))
+        if token:
+            current.entries.append((number, token, refs_in(stripped)))
+        else:
+            current.clauses.extend((number, ref) for ref in refs_in(stripped))
+
+    conditions: list[Condition] = []
+    loose_rows: list[LooseCondition] = []
+    for block in blocks:
+        owner = block.entries[0][1] if block.entries else ""
+        loose_rows.extend(
+            LooseCondition(line, entry or owner, text) for line, text, entry in block.loose
+        )
+        if not block.entries:
+            conditions.extend(Condition(line, "", ref, line) for line, ref in block.clauses)
+            continue
+        for entry_line, token, inline in block.entries:
+            conditions.extend(
+                Condition(entry_line, token, ref, clause_line) for clause_line, ref in block.clauses
+            )
+            conditions.extend(Condition(entry_line, token, ref, entry_line) for ref in inline)
+    conditions.sort(key=lambda c: (c.line, c.clause_line, c.ref))
+    loose_rows.sort(key=lambda r: r.line)
+    return conditions, loose_rows
+
+
+def render_conditions(conditions: list[Condition], loose: list[LooseCondition]) -> str:
+    """`<line>\\t<entry>\\t<owner/repo#N>\\t<clauseLine>` per clause, then
+    `<line>\\t<entry>\\t!loose\\t<text>` per loose phrasing. Trailing newline."""
+    rows = ["%d\t%s\t%s\t%d\n" % (c.line, c.entry, c.ref, c.clause_line) for c in conditions]
+    rows += ["%d\t%s\t%s\t%s\n" % (r.line, r.entry, LOOSE_MARK, r.text) for r in loose]
+    return "".join(rows)
+
+
 # --------------------------------------------------------------------------- The BLOCKER quality contract ---------------------------------------------------------------------------
 
 
@@ -483,7 +612,7 @@ def main(argv: list[str]) -> int:
     if not argv:
         print(
             "usage: python3 -m rediacc_ci.core.allowlist "
-            "<records|pairs|verify|verify-rows|reason|contract> [args]",
+            "<records|pairs|verify|verify-rows|reason|contract|conditions> [args]",
             file=sys.stderr,
         )
         return 2
@@ -491,6 +620,20 @@ def main(argv: list[str]) -> int:
 
     if verb == "contract":
         print(json.dumps(contract(), ensure_ascii=True, sort_keys=True))
+        return 0
+
+    if verb == "conditions":
+        # `<line>\t<entry>\t<owner/repo#N>\t<clauseLine>` per bound clause, then `<line>\t<entry>\t!loose\t<text>` per loose phrasing. Exit 0 whatever it finds: judging a clause needs the merged-PR ledger, which is the caller's (scripts/lib/suppression-liveness.ts), and a missing list is 2 exactly as for `records`.
+        if not rest:
+            print("conditions needs a list path", file=sys.stderr)
+            return 2
+        path, comment_char = rest[0], (rest[1] if len(rest) > 1 and rest[1] else "#")
+        p = pathlib.Path(path)
+        if not p.is_file():
+            print("%s is not a readable list file" % p, file=sys.stderr)
+            return 2
+        found, loose = parse_conditions(p.read_text(encoding="utf-8"), comment_char)
+        sys.stdout.write(render_conditions(found, loose))
         return 0
 
     if verb in ("records", "pairs", "verify"):
