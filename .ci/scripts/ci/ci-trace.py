@@ -152,6 +152,32 @@ def _remote_tip(root, branch):
     return out.split()[0]
 
 
+def _origin_slug(root):
+    """OWNER/NAME of the checkout's `origin` remote (ssh or https form), or "" when it has none."""
+    rc, url = _git_out(root, "remote", "get-url", "origin")
+    if rc != 0:
+        return ""
+    m = re.search(r"[:/]([\w.-]+/[\w.-]+?)(?:\.git)?/?$", url)
+    return m.group(1) if m else ""
+
+
+def _checkout_for_repo(top, repo):
+    """The checkout whose `origin` is <repo>: <top> itself, else one of <top>'s submodules, else None.
+
+    `--repo rediacc/account` run from the console root used to read the branch and the pushed tip from the CONSOLE checkout: on 2026-10-08 the head-lag hold compared account#95's head with the console's origin/1007-1 and gave no verdict after 120 s.
+    """
+    if _origin_slug(top).lower() == repo.lower():
+        return top
+    rc, out = _git_out(top, "config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$")
+    if rc != 0:
+        return None
+    for line in out.splitlines():
+        sub = top / line.split(None, 1)[1]
+        if (sub / ".git").exists() and _origin_slug(sub).lower() == repo.lower():
+            return sub
+    return None
+
+
 def _local_unpushed_note(root, tip):
     """A one-line note when the local HEAD is not the pushed tip, else "". The verdict is then for the pushed tip, and saying so beats a reader assuming the local commits are being tested."""
     rc, local = _git_out(root, "rev-parse", "HEAD")
@@ -1049,6 +1075,14 @@ def main(argv=None):
             ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=False
         ).stdout.strip()
         root = pathlib.Path(top) if top else pathlib.Path.cwd()
+        if top:
+            found = _checkout_for_repo(root, args.repo)
+            if found is None:
+                ap.error(
+                    "--repo %s: neither %s nor any of its submodules has %s as origin; run it"
+                    " from that repository's checkout" % (args.repo, root, args.repo)
+                )
+            root = found
 
     if args.workflow and not args.scheduled:
         ap.error("--workflow needs --scheduled")
