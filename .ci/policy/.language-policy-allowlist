@@ -64,8 +64,9 @@ tree:.ci/tutorials/
 # drained it. The three entries below are W11-C's (820e53328): each is a
 # `set -euo pipefail` plus one `exec python3 -m rediacc_ci.infra.*` line. The
 # shim oracle (effective_lines in check_language_policy.py) skips the shebang,
-# comments, blanks and a bare `set -` line, so each counts exactly one effective
-# line, which is the claim that keeps them honest.
+# comments, blanks and any line starting `set -` (so `set -euo pipefail` too),
+# and each counts exactly one effective line, which is the claim that keeps them
+# honest.
 
 # BLOCKER: a one-line exec into rediacc_ci.infra.ci_pull_images; the path itself is the contract, spelled as PULLER at .ci/breakpoint/scripts/pull-service-images.sh:38, and that tree is vendored and byte-locked by check-breakpoint-drift.sh, so renaming or removing the file would fork code whose whole contract is that it ships identical downstream
 shim:.ci/scripts/infra/ci-pull-images.sh
