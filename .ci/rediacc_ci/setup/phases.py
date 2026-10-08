@@ -96,8 +96,8 @@ PHASES: tuple[Phase, ...] = (
         condition="SKIP_ENV_DRIFT_CHECK != 1",
     ),
     Phase("ensure_docker_installed", ".ci/lib/local-common.sh:669", True),
-    Phase("devbox_ensure_image", ".ci/lib/devbox.sh", True),
-    Phase("devbox_up", ".ci/lib/devbox.sh", True, condition="--no-start was not given"),
+    Phase("devbox_ensure_image", ".ci/rediacc_ci/core/devbox.py", True),
+    Phase("devbox_up", ".ci/rediacc_ci/core/devbox.py", True, condition="--no-start was not given"),
 )
 
 # Every key, for the readers below. A tuple so a caller cannot reorder it.

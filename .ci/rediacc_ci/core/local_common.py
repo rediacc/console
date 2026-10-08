@@ -791,7 +791,8 @@ def ensure_packages_built(env: dict[str, str] | None = None) -> bool:
         log.debug("Shared packages are up-to-date (stamp matched)")
         return True
     log.step("Building shared packages...")
-    _must([os.path.join(local_ci_dir(env), "scripts", "setup", "build-packages.sh")])
+    child_env = dict(os.environ if env is None else env, PYTHONPATH=local_ci_dir(env))
+    _must(["python3", "-m", "rediacc_ci.setup.build_packages"], env=child_env)
     write_stamp_hash(stamp, current)
     return True
 

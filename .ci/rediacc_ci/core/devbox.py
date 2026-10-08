@@ -1,8 +1,8 @@
 """`.ci/lib/devbox.sh`, ported function for function: all fifty-five of them.
 
 PORTED FROM `.ci/lib/devbox.sh` (1606 lines, 54 functions).
-The twin still exists, is untouched by this file, and is still sourced at `.ci/legacy/run-legacy.sh:456`, `.ci/rediacc_ci/setup/bridge.py:35` (inside the bridged `bash -c` prelude), `.ci/rediacc_ci/setup/shadow_driver.py:136`, `.ci/rediacc_ci/dev/shadow_driver.py:140` and `.ci/lib/account.sh:1090`. Those five are the real `source` sites; nothing is cut over here.
-This is a pre-cutover port on the same sequencing every other lib in this campaign used, and `.ci/rediacc_ci/core/local_common.py` is the worked precedent: its twin `.ci/lib/local-common.sh` is still sourced at five sites while the port carries a K=5 ledger.
+The twin, `.ci/lib/devbox.sh`, is DELETED (PLAN-retire-bash-oracles B3): its transcripts are frozen in `.ci/rediacc_ci/tests/goldens/twins/lib.devbox.jsonl`, and `.ci/rediacc_ci/setup/bridge.py` runs `devbox_*` bodies through this module in process.
+The sequencing note that stood here (a pre-cutover port beside a still-sourced twin) ended with the deletion of the twin.
 
 --------------------------------------------------------------------------
 WHAT IS HERE
@@ -48,7 +48,7 @@ Every sourcer runs this library under `set -euo pipefail`. Those three flags are
 --------------------------------------------------------------------------
 RULE T: ELEVEN TWIN DEFECTS FIXED (PLAN-retire-bash-oracles, task B4)
 --------------------------------------------------------------------------
-`.ci/lib/*.sh` is not edited by a port, so each of these is an INTENTIONAL DELTA: the twin still has the defect, `test_core_devbox.py` pins the twin's behaviour against the live twin (`SCENARIO_CLAIMS`) and the port's in its `test_delta_*` cases, and the live differential leaves exactly the labels in `DELTA_LABELS` out of its comparison.
+`.ci/lib/*.sh` is not edited by a port, so each of these is an INTENTIONAL DELTA: the twin had the defect, `test_core_devbox.py` pins the twin's behaviour against its frozen transcript (`SCENARIO_CLAIMS`) and the port's in its `test_delta_*` cases, and the live differential leaves exactly the labels in `DELTA_LABELS` out of its comparison.
 
   D1. `devbox_up` DIED SILENTLY ON A HOST WITH NO `docker` GROUP (`getent group docker | cut -d: -f3` under pipefail, so getent's status 2 reached errexit). It warns, passes no `--group-add` and carries on: the `${docker_gid:+...}` guards were written for exactly that.
   D2. `devbox_identity_ok` SUCCEEDED WHEN THE DEVBOX WAS NOT RUNNING (`|| true` swallowed the refusal). It fails with a message.

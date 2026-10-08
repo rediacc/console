@@ -84,8 +84,8 @@ jobs:
       # Native build steps (skip for musl — handled inside Docker)
       #
       # The explicit `--ignore-scripts` on Windows is gone, not lost:
-      # install-deps.sh adds it itself when CI_OS is windows (common.sh exports
-      # CI_OS), so the flag was already redundant at the call site. The cache key
+      # rediacc_ci.setup.install_deps adds it itself when the OS is windows
+      # (common.detect_os), so the flag was already redundant at the call site. The cache key
       # in setup-workspace carries runner.os, so the Windows tree (built with
       # --ignore-scripts) can never be served to a Linux job.
       - uses: ./.github/actions/setup-workspace

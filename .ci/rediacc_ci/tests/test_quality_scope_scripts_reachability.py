@@ -363,12 +363,12 @@ def test_python_dispatch_attribution_is_by_constant_name():
     assert gate.python_dispatch_targets(text, "account") == []
 
 
-def test_the_real_verb_module_names_no_drill_script_and_still_names_the_worktree_one():
-    """Every drill is a Python module and names no `scripts/` path (the bash twins of `license` and `backup` were frozen and deleted); `worktree` still names its bash twin, which proves the scanner reads the real module and the empty drill list is not a blind scan."""
+def test_the_real_verb_module_names_no_drill_or_worktree_script():
+    """Every drill and `worktree` are Python modules and name no `scripts/` path (their bash twins were frozen and deleted), so the scanner reads the real module and finds nothing for either verb."""
     root = gate.paths.repo_root()
     text = (root / ".ci/rediacc_ci/core/run_verbs.py").read_text(encoding="utf-8")
     assert gate.python_dispatch_targets(text, "drill") == []
-    assert gate.python_dispatch_targets(text, "worktree") == ["scripts/dev/worktree.sh"]
+    assert gate.python_dispatch_targets(text, "worktree") == []
 
 
 def test_the_verb_module_is_scanned_and_the_deleted_dispatcher_is_not_named():

@@ -327,7 +327,7 @@ ensure_packages_built() {
     fi
 
     log_step "Building shared packages..."
-    "$LOCAL_CI_DIR/scripts/setup/build-packages.sh"
+    PYTHONPATH="$LOCAL_CI_DIR" python3 -m rediacc_ci.setup.build_packages
     write_stamp_hash "$stamp_file" "$current_hash"
 }
 

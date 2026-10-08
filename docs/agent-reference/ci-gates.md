@@ -167,7 +167,7 @@ Two things follow that you will hit in practice:
 - **`ubuntu-slim` dies at 15 minutes, hard.** The job is marked CANCELLED with no
 failed step, which reads as neither pass nor fail and poisons `CI Complete`. Every slim job must therefore declare `timeout-minutes` of 14 or less; CHECK 3 in `.ci/scripts/security/check_workflow_gates.py` enforces it. A job that genuinely needs longer moves to `ubuntu-latest` -- the number is not a dial.
 
-Dependencies come from `./.github/actions/setup-workspace`, which restores a cached `node_modules` (200 MB, ~2.5s) instead of running `npm ci` per job. On a cache miss it falls back to `.ci/scripts/setup/install-deps.sh`, so a miss is slow, never broken.
+Dependencies come from `./.github/actions/setup-workspace`, which restores a cached `node_modules` (200 MB, ~2.5s) instead of running `npm ci` per job. On a cache miss it falls back to `rediacc_ci.setup.install_deps`, so a miss is slow, never broken.
 
 ### Runner profiling is an invariant, not a habit (`check:ci-profiler-coverage`)
 

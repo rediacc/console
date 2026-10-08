@@ -22,14 +22,15 @@ WHAT THE CASES ACTUALLY GUARD.
                      no package and the run must refuse with an EMPTY stdout,
                      because the alternative to refusing is answering with a
                      plausible wrong port.
-  the CALLER         `.ci/lib/devbox.sh` inherited the deleted shim's job, so it
+  the CALLER         `core.devbox` (the port of the retired `.ci/lib/devbox.sh`) inherited the deleted shim's job, so it
                      carries the delegation claim now: break the package COPY it
                      is pointed at and its slot must move with it, and against
                      the real package it must land on the slot this module
                      computes. Both halves, because either alone is passable by
-                     a devbox.sh that has simply stopped working.
+                     a devbox that has simply stopped working.
 """
 
+import io
 import shutil
 import socket
 import textwrap
@@ -37,7 +38,7 @@ import textwrap
 import pytest
 
 from rediacc_ci import paths, xdist_groups
-from rediacc_ci.core import ports
+from rediacc_ci.core import devbox, ports
 from rediacc_ci.tests import differential as diff
 
 # THE HOST'S PORT SPACE, SLICED PER WORKER (agent/plans/PLAN-prepush-full-cpu.md PF14, 2026-10-05). `_free_range_base` used to call `find_consecutive_free_ports(n, 20000, 30000)`, which returns the FIRST free run in the range -- deterministic by design, because a devbox URL a human bookmarked has to keep resolving to the same port -- so two xdist workers asking at the same instant both got 20000, both bound it, and one failed a race unrelated to the code under test. This module declared `XDIST_GROUP = "ports"` for that, which pinned it and three other modules to one worker. It now scans `xdist_groups.worker_port_range()`, this worker's disjoint slice of the same range, so two workers can never be handed the same run and no group is needed.
@@ -81,7 +82,6 @@ FROZEN_IS_PORT_IN_USE = textwrap.dedent("""
 # * "the value survives a FRESH interpreter" -> the module, run as a child * "an unreachable package REFUSES" -> the module, run as a child * the control for that refusal -> likewise * "the bash really delegates, it is not a second implementation" -> `.ci/lib/devbox.sh`, the caller that inherited the shim's job
 #
 # The last one is the load-bearing one and it is why this constant is a CALLER now rather than a shim. Deleting a shim is only safe if its callers reach the module for real, and a caller that quietly grew its own copy of the digest is exactly the regression this file must still be able to see.
-DEVBOX_LIB = ".ci/lib/devbox.sh"
 
 # Running the module as a CHILD, never importing it, is the whole point of the three cases that use this: an in-process call would read THIS interpreter's sys.path and could not observe either the fresh-interpreter property or a broken package copy.
 PORTS_MODULE = ["python3", "-m", "rediacc_ci.core.ports"]
@@ -290,19 +290,32 @@ def _broken_package_root(tmp_path) -> str:
     return str(root)
 
 
+def _devbox_call(name: str, root: str | None) -> tuple[int, str]:
+    """(rc, stdout) of one `core.devbox` function, run in process over the environment the bash library used to be sourced in."""
+    env = dict(diff.env_for() if root is None else diff.env_for(REDIACC_CI_ROOT=root))
+    out = io.BytesIO()
+    box = devbox.Devbox(
+        env=env,
+        cwd=str(paths.repo_root()),
+        repo_root=str(paths.repo_root()),
+        stdout=out,
+        stderr=io.BytesIO(),
+    )
+    rc = box.invoke(name)
+    return rc, out.getvalue().decode("utf-8", "replace")
+
+
 def _devbox_slot(root: str | None) -> tuple[int, str]:
-    """(rc, container name) from `source devbox.sh; devbox_container_name`.
+    """(rc, container name) from `devbox_container_name`.
 
     The name ends in the SLOT, so a devbox that stopped reaching the package shows up here as a name that does not move when the package is broken.
     """
-    lib = str(paths.from_root(DEVBOX_LIB))
-    env = diff.env_for() if root is None else diff.env_for(REDIACC_CI_ROOT=root)
-    rc, out, _ = diff.bash_streams(f"source {_q(lib)}; devbox_container_name", env=env)
+    rc, out = _devbox_call("devbox_container_name", root)
     return rc, out.strip()
 
 
 def test_devbox_delegation_is_real_not_a_reimplementation(tmp_path) -> None:
-    """Break the PYTHON and `.ci/lib/devbox.sh` must break with it.
+    """Break the PYTHON package and `core.devbox` must break with it.
 
     This used to assert that a shim was a shim. `find-port.sh` is gone (W7P5-b), so the same claim now points at the caller that inherited its job, and it is MORE load-bearing there than it was on the shim: deleting a shim is only safe while its callers reach the module for real, and a caller that quietly grew a local copy of the digest is exactly the regression this catches.
 
@@ -311,28 +324,25 @@ def test_devbox_delegation_is_real_not_a_reimplementation(tmp_path) -> None:
     # Built ONCE. The randomisation is in the planted line, which re-runs on every invocation; re-copying per sample would only re-plant the same line.
     broken = _broken_package_root(tmp_path)
     seen = {_devbox_slot(broken)[1] for _ in range(6)}
-    assert len(seen) > 1, "devbox.sh answered stably from a randomised module"
+    assert len(seen) > 1, "devbox answered stably from a randomised module"
 
 
 def test_control_devbox_is_stable_against_the_real_package() -> None:
     """CONTROL for the case above, and it is not a formality.
 
-    `len(seen) > 1` is satisfied by any devbox.sh that varies, INCLUDING one that has stopped working and is emitting a different error each run. This half pins the other direction: against the real package the answer is one value, non-empty, and the slot in it is the one the module computes for the same key. Together they say "it delegates", which neither says alone.
+    `len(seen) > 1` is satisfied by any devbox that varies, INCLUDING one that has stopped working and is emitting a different error each run. This half pins the other direction: against the real package the answer is one value, non-empty, and the slot in it is the one the module computes for the same key. Together they say "it delegates", which neither says alone.
     """
     seen = {_devbox_slot(None) for _ in range(6)}
-    assert len(seen) == 1, "devbox.sh is not deterministic against the real package: %r" % seen
+    assert len(seen) == 1, "devbox is not deterministic against the real package: %r" % seen
     rc, name = seen.pop()
-    assert rc == 0, "devbox.sh failed against the real package: %r" % name
+    assert rc == 0, "devbox failed against the real package: %r" % name
 
-    # The key devbox.sh itself uses, asked of devbox.sh rather than assumed: `paths.repo_root()` and `devbox_worktree` differ inside a git worktree, and hardcoding either would make this control fail for the wrong reason.
-    lib = str(paths.from_root(DEVBOX_LIB))
-    wt_rc, worktree, wt_err = diff.bash_streams(
-        f"source {_q(lib)}; devbox_worktree", env=diff.env_for()
-    )
-    assert wt_rc == 0, wt_err
+    # The key the devbox itself uses, asked of `core.devbox` rather than assumed: `paths.repo_root()` and `devbox_worktree` differ inside a git worktree, and hardcoding either would make this control fail for the wrong reason.
+    wt_rc, worktree = _devbox_call("devbox_worktree", None)
+    assert wt_rc == 0, worktree
     expected = ports.derive_slot(worktree.strip(), 100)
     assert name.startswith("rediacc-devbox-%d-" % expected), (
-        "devbox.sh derived a slot the module does not agree with: %r (expected slot %d)"
+        "devbox derived a slot the module does not agree with: %r (expected slot %d)"
         % (name, expected)
     )
 

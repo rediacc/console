@@ -1,4 +1,4 @@
-"""Differential: `rediacc_ci.setup.build_packages` against its twin `.ci/scripts/setup/build-packages.sh`.
+"""Differential: `rediacc_ci.setup.build_packages` against the answers frozen from its retired twin `.ci/scripts/setup/build-packages.sh` (`goldens/twins/setup.build-packages.jsonl`).
 
 NOTHING HERE RUNS A REAL BUILD. A recording fake `npm` on a scratch PATH logs its argv and, when the fixture asks it to, creates `packages/shared/dist` the way a real build would. `rm` is NOT faked: the deletion is half of what this script does and the only way to check it is to let it happen in a fixture tree and look at what survived.
 
@@ -24,6 +24,7 @@ THE LEDGER LINE. `shadow-gate.ts` classifies `→ ` and `✓ ` lines as CHATTER 
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -32,6 +33,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.setup import build_packages as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -39,17 +41,13 @@ if typing.TYPE_CHECKING:
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/setup/build-packages.sh"
 PORT_REL = ".ci/rediacc_ci/setup/build_packages.py"
-BASH = shutil.which("bash") or "/bin/bash"
 
 TREE_FILES = (
-    TWIN_REL,
-    ".ci/scripts/lib/common.sh",
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/log.py",
     ".ci/rediacc_ci/paths.py",
     ".ci/rediacc_ci/well_known.py",
     ".ci/config/well-known.env",
-    ".ci/config/well-known.generated.sh",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/common.py",
     ".ci/rediacc_ci/setup/__init__.py",
@@ -153,8 +151,7 @@ def _snapshot(tree: pathlib.Path) -> list[str]:
 
 
 def _run(subject: str, tree: pathlib.Path, args: list[str], **extra: str):
-    side = "old" if subject.endswith(".sh") else "new"
-    call_log = tree / f"{side}-calls.log"
+    call_log = tree / "new-calls.log"
     call_log.write_text("", encoding="utf-8")
     env = {
         "PATH": _bin(tree),
@@ -166,9 +163,8 @@ def _run(subject: str, tree: pathlib.Path, args: list[str], **extra: str):
         "FAKE_CALL_LOG": str(call_log),
     }
     env.update(extra)
-    runner = [BASH] if subject.endswith(".sh") else [sys.executable]
     proc = subprocess.run(
-        [*runner, subject, *args],
+        [sys.executable, subject, *args],
         cwd=tree,
         capture_output=True,
         text=True,
@@ -189,16 +185,29 @@ DEFAULT_SPEC = {
 
 
 def run_both(tmp_path: pathlib.Path, args: list[str] = (), *, spec=None, **kw):
+    """The twin's answer (from the golden frozen out of `build-packages.sh`) and the port's live one."""
     tree = _tree(tmp_path)
     layout = DEFAULT_SPEC if spec is None else spec
     emit = kw.pop("emit", True)
+    parts = [
+        json.dumps(list(args)),
+        json.dumps(layout, sort_keys=True),
+        json.dumps(sorted(kw.items())),
+        str(emit),
+    ]
     if emit:
         kw["FAKE_NPM_EMIT"] = str(tree / "packages/shared/dist")
+
+    def twin():
+        raise RuntimeError(
+            "%s is retired: re-record a Rule-T change with `%s %s --source port --reason ...`"
+            % (TWIN_REL, diff.REGOLDEN_VERB, TWIN_REL)
+        )
+
+    old3 = diff.twin_result(TWIN_REL, parts, twin, work=(tmp_path,))
     _layout(tree, layout)
-    old, old_calls, old_fs = _run(TWIN_REL, tree, list(args), **kw)
-    _layout(tree, layout)
-    new, new_calls, new_fs = _run(PORT_REL, tree, list(args), **kw)
-    return (old, old_calls, old_fs), (new, new_calls, new_fs)
+    new3 = _run(PORT_REL, tree, list(args), **kw)
+    return old3, new3
 
 
 def _assert_agree(old3, new3, label: str) -> None:

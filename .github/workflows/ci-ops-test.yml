@@ -233,7 +233,7 @@ jobs:
           cache: true
           cache-dependency-path: private/renet/go.sum
 
-      # account: this job checks out `submodules: recursive`, so install-deps.sh
+      # account: this job checks out `submodules: recursive`, so rediacc_ci.setup.install_deps
       # used to install private/account's tree here as a side effect. Keeping it
       # explicit preserves that; without it the account trees would silently stop
       # being installed.

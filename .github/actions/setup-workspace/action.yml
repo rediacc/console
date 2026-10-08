@@ -7,7 +7,7 @@ description: >
   of it setup rather than gate work: 24 of them ran node setup + deps for 1566s
   total (median 58s, max 165s) to reconstruct the SAME tree. Worse, the two
   halves fought each other -- `cache: 'npm'` restored a ~396 MB ~/.npm cache and
-  install-deps.sh then deleted it with `npm cache clean --force`, so every job
+  rediacc_ci.setup.install_deps then deleted it with `npm cache clean --force`, so every job
   re-downloaded all 1096 packages anyway.
 
   The tree itself is 200 MB compressed and untars in 2.5s, so caching
@@ -39,8 +39,8 @@ inputs:
     default: 'false'
   build-packages:
     description: >
-      'true' to run .ci/scripts/setup/build-packages.sh after install.
-      Deliberately NOT cached: build-packages.sh starts by removing
+      'true' to run rediacc_ci.setup.build_packages after install.
+      Deliberately NOT cached: rediacc_ci.setup.build_packages starts by removing
       packages/shared/dist on purpose, and a stale dist fails open.
     required: false
     default: 'false'
@@ -98,11 +98,11 @@ runs:
     # account trees (and vice versa) instead of redoing both.
     - if: steps.cache-root.outputs.cache-hit != 'true'
       shell: bash
-      run: .ci/scripts/setup/install-deps.sh --skip-account
+      run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_deps --skip-account
 
     - if: inputs.account == 'true' && steps.cache-account.outputs.cache-hit != 'true'
       shell: bash
-      run: .ci/scripts/setup/install-deps.sh --account-only
+      run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_deps --account-only
 
     # Outside the cache-miss guard on purpose: `npm rebuild` is idempotent and
     # cheap on a warm tree, and the natives flag is in the cache key, so this is
@@ -114,4 +114,4 @@ runs:
 
     - if: inputs.build-packages == 'true'
       shell: bash
-      run: .ci/scripts/setup/build-packages.sh
+      run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.build_packages

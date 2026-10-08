@@ -1,10 +1,9 @@
-"""`rediacc_ci.core.account` against the live `.ci/lib/account.sh`.
+"""`rediacc_ci.core.account` against the transcripts frozen from the retired `.ci/lib/account.sh` (`goldens/twins/lib.account.jsonl`).
 
-ALL TWENTY-TWO OF THE TWIN'S FUNCTIONS HAVE A PYTHON PORT, split across two modules, and the twin is still here.
-`.ci/legacy/run-legacy.sh:405` and `:443` still source it, nothing is cut over (that is W7P5-c), and this file drives the bash for real on every run, through THREE techniques:
-  * `rediacc_ci.core.shadow_driver` (pair `w7p5b-account`): the deterministic half of `rediacc_ci.core.account`, compared answer for answer inside one bash process per side.
-  * `rediacc_ci.core.account_lifecycle_shadow_driver` (pair `w7p5b-account-lifecycle`): the twelve side-effecting functions in `rediacc_ci.core.account_lifecycle`, each case its own process per side with the external programs stubbed, compared on rc, both streams, the ordered call transcript and the files left behind. See the "the lifecycle half" section at the end.
-  * REAL RUNS for `account_stop`, `account_rotation` and `account_bws_exec`, against a real tracked process, a real Docker daemon and the real credential-free `rotation` subcommands (the "stop and rotation" section).
+ALL TWENTY-TWO OF THE TWIN'S FUNCTIONS HAVE A PYTHON PORT, split across two modules, and the twin is deleted. While `account.sh` existed this file drove it for real through THREE techniques, and the bash side of the first two is now the golden:
+  * `rediacc_ci.core.shadow_driver` (pair `w7p5b-account`): the deterministic half of `rediacc_ci.core.account`, compared answer for answer.
+  * `rediacc_ci.core.account_lifecycle_shadow_driver` (pair `w7p5b-account-lifecycle`): the twelve side-effecting functions in `rediacc_ci.core.account_lifecycle`, each case its own process with the external programs stubbed, compared on rc, both streams, the ordered call transcript and the resulting tree.
+  * REAL RUNS for `account_stop`, `account_rotation` and `account_bws_exec`, against a real tracked process, a real Docker daemon and the real credential-free `rotation` subcommands (the "stop and rotation" section). Only the port side of those still runs.
 The twin's four `.env` writers are deleted from BOTH sides (`agent/plans/PLAN-account-env-to-bws.md`), so they appear in neither tuple below; the CI-only `mint-dev-keys` verb that replaced one of their uses has no twin and is tested directly at the end of this file.
 
 WHY SOME ITEMS CARRY AN XDIST GROUP. The driver pins FIXED port numbers on both sides, because the two sides run as two processes and an ephemeral port would differ between them and land in a message text, and the lifecycle driver runs at a fixed tmp path under a machine-wide lock. Only the items that run one of those drivers are grouped (see SHADOW_PORTS_GROUP below); the module as a whole is not, since 2026-10-05.
@@ -28,6 +27,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.core import account, account_lifecycle, shadow_driver, stubfarm
 from rediacc_ci.core import account_lifecycle_shadow_driver as lifecycle_driver
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import ACCOUNT_DEV_PORT
 
 # NO MODULE-LEVEL GROUP SINCE 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF14). The module used to declare `XDIST_GROUP = "ports"`, which put all 107 items (183 s of test time on 2026-10-03) and three other modules on one worker. Two resources here really are machine-wide, both fixed by the drivers rather than by these tests, so only the items that touch one carry a group, each named for its resource:
@@ -40,13 +40,14 @@ SHADOW_PORTS_GROUP = "account-shadow-fixed-ports"
 LIFECYCLE_GROUP = "account-lifecycle-fixed-tmp"
 
 TWIN = ".ci/lib/account.sh"
+DEVBOX_TWIN = ".ci/lib/devbox.sh"
 PORT = ".ci/rediacc_ci/core/account.py"
 DRIVER = ".ci/rediacc_ci/core/shadow_driver.py"
 # Invoked as a MODULE, never by path: see the driver's header for why the by-path form would need a hand-written sys.path hop that `test_canonical_sys_path_hop.py` refuses.
 DRIVER_MODULE = "rediacc_ci.core.shadow_driver"
 LEDGER = ".ci/shadow/w7p5b-account.observations.jsonl"
 
-SCENARIOS = sorted(shadow_driver.BASH_SCENARIOS)
+SCENARIOS = sorted(shadow_driver.SCENARIOS)
 
 # The floor each scenario must clear. Measured against the recorded ledger rows, then rounded DOWN so a real change to a message does not turn into a test edit; the point is to catch a transcript collapsing to nothing, not to pin a count.
 OBSERVATION_FLOOR = {
@@ -75,34 +76,48 @@ def _delta_comparable(out: str, scenario: str) -> list[str]:
     ]
 
 
-def drive(side: str, scenario: str) -> tuple[int, str, str]:
-    """One side of one scenario, run once per session and remembered.
+def _retired() -> tuple[int, str, str]:
+    raise RuntimeError(
+        "%s is retired: re-record a Rule-T change with `%s %s --source port --reason ...`"
+        % (TWIN, diff.REGOLDEN_VERB, TWIN)
+    )
 
-    Cached because every case below wants the same transcript and each run of the bash side sources `constants.sh`, `toolchain.sh`, `local-common.sh` and `account.sh` before it does anything at all.
-    """
+
+def _run_driver(side: str, scenario: str) -> tuple[int, str, str]:
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            DRIVER_MODULE,
+            "--side",
+            side,
+            "--port",
+            PORT,
+            scenario,
+        ],
+        cwd=str(paths.repo_root()),
+        env={**os.environ, "PYTHONPATH": ".ci"},
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=300,
+    )
+    return proc.returncode, proc.stdout, proc.stderr
+
+
+def drive(side: str, scenario: str) -> tuple[int, str, str]:
+    """One side of one scenario, run once per session and remembered. The bash side is the golden frozen from `account.sh` (`goldens/twins/lib.account.jsonl`)."""
     key = (side, scenario)
     if key not in _CACHE:
-        proc = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                DRIVER_MODULE,
-                "--side",
-                side,
-                "--twin",
+        if side == "old":
+            _CACHE[key] = diff.twin_call(
                 TWIN,
-                "--port",
-                PORT,
-                scenario,
-            ],
-            cwd=str(paths.repo_root()),
-            env={**os.environ, "PYTHONPATH": ".ci"},
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=300,
-        )
-        _CACHE[key] = (proc.returncode, proc.stdout, proc.stderr)
+                ["shadow", scenario],
+                _retired,
+                port=lambda: _run_driver("new", scenario),
+            )
+        else:
+            _CACHE[key] = _run_driver(side, scenario)
     return _CACHE[key]
 
 
@@ -168,10 +183,6 @@ def test_the_differential_can_fail() -> None:
 # -- the twin is still there, and still says what this file claims it says ----
 
 
-def twin_text() -> str:
-    return (paths.repo_root() / TWIN).read_text(encoding="utf-8")
-
-
 # The deterministic half and the three real-run functions, in `rediacc_ci.core.account`.
 PORTED_FUNCTIONS = (
     "account_allocate_ports",
@@ -215,29 +226,15 @@ DELETED_FUNCTIONS = (
 )
 
 
-def test_the_twin_still_defines_every_function_this_slice_names() -> None:
-    """Twenty-four, split twelve and twelve, measured rather than remembered.
-
-    The count is the twin's own definition count, so a function added to `account.sh` without being classified here fails this rather than slipping past both tables.
-    """
-    text = twin_text()
-    classified = set(PORTED_FUNCTIONS) | set(LIFECYCLE_FUNCTIONS)
-    for name in classified:
-        assert "\n%s() {" % name in text, "%s is gone from %s" % (name, TWIN)
-    defined = set(re.findall(r"^([A-Za-z_][A-Za-z0-9_]*)\(\) \{", text, flags=re.MULTILINE))
-    assert defined == classified, "unclassified: %s; classified but not defined: %s" % (
-        sorted(defined - classified),
-        sorted(classified - defined),
-    )
+def test_every_function_the_twin_defined_is_classified() -> None:
+    """Twenty-four, split twelve and twelve. The twin's own definition count was checked against these tables while `account.sh` existed; what is kept is that the two tables partition the twenty-four and name no function twice."""
     assert not set(PORTED_FUNCTIONS) & set(LIFECYCLE_FUNCTIONS)
     assert len(PORTED_FUNCTIONS) + len(LIFECYCLE_FUNCTIONS) == 24
 
 
-def test_the_env_writers_are_gone_from_both_sides() -> None:
+def test_the_env_writers_are_gone_from_the_port() -> None:
     """`private/account/.env` is retired, and with it every function that wrote it."""
-    text = twin_text()
     for name in DELETED_FUNCTIONS:
-        assert "\n%s() {" % name not in text, "%s is back in %s" % (name, TWIN)
         stem = name[len("account_") :]
         assert not hasattr(account, stem), "%s is back in the port" % stem
         assert name not in PORTED_FUNCTIONS
@@ -381,6 +378,10 @@ def test_parse_db_args_both_directions() -> None:
     assert second.value.code == 2
 
 
+def _tuple_of(proc: subprocess.CompletedProcess) -> tuple[int, str, str]:
+    return proc.returncode, proc.stdout, proc.stderr
+
+
 def test_a_missing_curl_degrades_on_both_sides_instead_of_raising(tmp_path) -> None:
     """THE CASE THAT FOUND A REAL PORT DEFECT, kept because a plant here did not fire.
 
@@ -408,16 +409,6 @@ def test_a_missing_curl_degrades_on_both_sides_instead_of_raising(tmp_path) -> N
 
     root = shadow_driver.build_sandbox(paths.repo_root())
     try:
-        script = (
-            'W="%s"\nset -euo pipefail\n'
-            'source "$W/.ci/config/constants.sh"\n'
-            'source "$W/.ci/scripts/lib/toolchain.sh"\n'
-            'source "$W/.ci/lib/local-common.sh"\n'
-            'source "$W/.ci/lib/account.sh"\n'
-            "set +e\n"
-            "( set -e; account_rustfs_alive %d )\n"
-            "exit $?\n" % (root, shadow_driver.DEAD_PORT)
-        )
         env = {
             "PATH": str(farm),
             "HOME": os.environ.get("HOME", "/tmp"),
@@ -425,10 +416,10 @@ def test_a_missing_curl_degrades_on_both_sides_instead_of_raising(tmp_path) -> N
             "CONSOLE_ROOT_DIR": str(root),
             "REDIACC_CI_ROOT": str(root),
         }
-        twin = subprocess.run(
-            ["bash", "-c", script], env=env, capture_output=True, text=True, check=False
+        twin_rc, _twin_out, twin_err = diff.twin_call(
+            TWIN, ["missing-curl"], _retired, work=(root, farm)
         )
-        assert twin.returncode == 1, "the twin did not reach the branch: %s" % twin.stderr
+        assert twin_rc == 1, "the twin did not reach the branch: %s" % twin_err
         port = subprocess.run(
             [
                 sys.executable,
@@ -445,7 +436,7 @@ def test_a_missing_curl_degrades_on_both_sides_instead_of_raising(tmp_path) -> N
         assert "Traceback" not in port.stderr, (
             "the port raised instead of answering: %s" % port.stderr
         )
-        assert port.returncode == twin.returncode
+        assert port.returncode == twin_rc
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
@@ -468,18 +459,13 @@ def test_devbox_state_get_matches_the_bash_it_duplicates(tmp_path) -> None:
     root.mkdir()
     state = root / ".devbox-state"
     env = {"CONSOLE_ROOT_DIR": str(root)}
-    twin = str(paths.repo_root() / ".ci/lib/devbox.sh")
 
     def bash(key: str) -> tuple[int, str]:
-        script = 'source "%s"\ndevbox_state_get "%s"\n' % (twin, key)
-        proc = subprocess.run(
-            ["bash", "-c", script],
-            env={"DEVBOX_STATE_FILE": str(state), "PATH": "/usr/bin:/bin"},
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        return proc.returncode, proc.stdout
+        """`devbox_state_get <key>` over the current state file, from the golden frozen out of `devbox.sh`."""
+        content = state.read_text(encoding="utf-8") if state.is_file() else None
+
+        rc, out, _ = diff.twin_call(DEVBOX_TWIN, ["state_get", key, repr(content)], _retired)
+        return rc, out
 
     assert bash("base_port") == (1, "")
     assert account.devbox_state_get("base_port", env) is None
@@ -543,7 +529,7 @@ def test_the_tools_the_scenarios_use_are_installed() -> None:
         )
 
 
-def test_the_driver_refuses_when_the_twin_is_not_there() -> None:
+def test_the_driver_refuses_when_the_port_is_not_there() -> None:
     """The driver's own control, driven rather than read."""
     proc = subprocess.run(
         [
@@ -551,11 +537,9 @@ def test_the_driver_refuses_when_the_twin_is_not_there() -> None:
             "-m",
             DRIVER_MODULE,
             "--side",
-            "old",
-            "--twin",
-            ".ci/lib/no-such-file.sh",
+            "new",
             "--port",
-            PORT,
+            ".ci/rediacc_ci/core/no-such-file.py",
             "probe",
         ],
         cwd=str(paths.repo_root()),
@@ -566,6 +550,19 @@ def test_the_driver_refuses_when_the_twin_is_not_there() -> None:
     )
     assert proc.returncode == shadow_driver.EXIT_CANNOT_RUN
     assert "attests to nothing" in proc.stderr
+
+
+def test_the_driver_has_no_bash_side() -> None:
+    proc = subprocess.run(
+        [sys.executable, "-m", DRIVER_MODULE, "--side", "old", "--port", PORT, "probe"],
+        cwd=str(paths.repo_root()),
+        env={**os.environ, "PYTHONPATH": ".ci"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 2
+    assert "invalid choice" in proc.stderr
 
 
 def test_the_paths_derive_from_console_root_and_nothing_else() -> None:
@@ -591,17 +588,13 @@ def test_the_ported_module_has_no_launch_on_its_argv_surface() -> None:
         assert account.main([name]) == 2, "%s must not be reachable from this port" % name
 
 
-def test_the_driver_scenarios_and_the_bash_bodies_line_up() -> None:
-    """Every scenario the driver offers has a bash body, which is what `old` runs."""
-    assert isinstance(shadow_driver.BASH_SCENARIOS, dict)
-    for name, body in shadow_driver.BASH_SCENARIOS.items():
-        assert body.strip(), "scenario %s has an empty bash body" % name
-        assert "step " in body or "banner " in body, "scenario %s calls nothing" % name
+def test_the_driver_offers_exactly_the_scenarios_with_a_floor() -> None:
+    assert isinstance(shadow_driver.SCENARIOS, tuple)
+    assert set(shadow_driver.SCENARIOS) == set(OBSERVATION_FLOOR)
 
 
-def test_the_repo_root_is_a_checkout_with_the_twin_in_it() -> None:
+def test_the_repo_root_is_a_checkout_with_the_port_in_it() -> None:
     """A last refusal: everything above is relative to this."""
-    assert (paths.repo_root() / TWIN).is_file()
     assert (paths.repo_root() / PORT).is_file()
     assert pathlib.Path(DRIVER).name == "shadow_driver.py"
 
@@ -732,99 +725,6 @@ def test_stop_real_run_kills_a_real_tracked_pid_and_a_real_port_occupant() -> No
         shutil.rmtree(work, ignore_errors=True)
 
 
-# `$W` is substituted with the sandbox path before this runs; every other `%` and `$` is bash's own. `set +e` / `set -e` around `account_stop` mirrors `shadow_driver.py`'s own `step()` helper -- see its comment on why the naive `if ( set -e; "$@"; )` spelling is wrong (errexit-rearmed-in-a-tested-command, `docs/agent-reference/TRAPS.md`).
-BASH_STOP_REAL_RUN = r"""
-W="%(work)s"
-set -euo pipefail
-source "$W/.ci/config/constants.sh"
-source "$W/.ci/scripts/lib/toolchain.sh"
-source "$W/.ci/lib/local-common.sh"
-source "$W/.ci/lib/account.sh"
-
-TRACKED_PID=""
-LISTENER_PID=""
-cleanup() {
-    set +e
-    [[ -n "$TRACKED_PID" ]] && kill -9 "$TRACKED_PID" 2>/dev/null
-    [[ -n "$LISTENER_PID" ]] && kill -9 "$LISTENER_PID" 2>/dev/null
-    return 0
-}
-trap cleanup EXIT
-
-sleep 20 &
-TRACKED_PID=$!
-disown
-
-PORT=$(python3 -c "import socket; s=socket.socket(); s.bind(('127.0.0.1',0)); s.listen(1); print(s.getsockname()[1])")
-python3 -c "
-import socket, time
-s = socket.socket()
-s.bind(('127.0.0.1', $PORT))
-s.listen(1)
-time.sleep(20)
-" &
-LISTENER_PID=$!
-disown
-sleep 0.3
-
-kill -0 "$TRACKED_PID" || { echo "CONTROL_FAILED_TRACKED_NOT_ALIVE"; exit 90; }
-kill -0 "$LISTENER_PID" || { echo "CONTROL_FAILED_LISTENER_NOT_ALIVE"; exit 91; }
-
-printf 'gateway_port=%%s\npids=%%s\nwriter=%%s\n' "$PORT" "$TRACKED_PID" "${SHADOW_WRITER:-$(account_writer_stamp)}" >"$ACCOUNT_STATE_FILE"
-
-set +e
-account_stop
-RC=$?
-set -e
-echo "STOP_RC=$RC"
-
-sleep 0.3
-kill -0 "$TRACKED_PID" 2>/dev/null && echo "TRACKED_STILL_ALIVE"
-kill -0 "$LISTENER_PID" 2>/dev/null && echo "LISTENER_STILL_ALIVE"
-[[ -f "$ACCOUNT_STATE_FILE" ]] && echo "STATE_FILE_STILL_EXISTS"
-exit "$RC"
-"""
-
-
-def test_stop_real_run_matches_the_twin_on_the_same_kind_of_real_target() -> None:
-    """REAL RUN, the twin's side. `account_stop` itself -- sourced through the same prelude the differential uses -- kills a real `sleep` and a real port listener it did not spawn as its own child (`disown`ed background jobs, the same shape `account_dev` leaves behind), which is what the real `pids=`/`lsof` code paths actually target.
-
-    Not compared byte-for-byte against `stop()`'s transcript (this is a real-run proof, not a differential row): both sides are asserted independently, against their OWN real tracked process and real port occupant, to the same three observable outcomes -- process dead, port occupant dead, state file gone -- which is what `test_stop_real_run_kills_a_real_tracked_pid_and_a_real_port_occupant` above already proved for the port.
-    """
-    _skip_if_a_real_dev_stack_is_running()
-    work = shadow_driver.build_sandbox(paths.repo_root())
-    try:
-        script = work / "stop_real_run.sh"
-        script.write_text(BASH_STOP_REAL_RUN % {"work": work}, encoding="utf-8")
-        proc = subprocess.run(
-            ["bash", str(script)],
-            capture_output=True,
-            text=True,
-            timeout=60,
-            check=False,
-        )
-        assert "CONTROL_FAILED" not in proc.stdout, (
-            "the bash-side control failed, so this run proves nothing: %r" % proc.stdout
-        )
-        assert proc.returncode == 0, "bash real run failed: rc=%d stdout=%r stderr=%r" % (
-            proc.returncode,
-            proc.stdout,
-            proc.stderr,
-        )
-        assert "STOP_RC=0" in proc.stdout, proc.stdout
-        assert "TRACKED_STILL_ALIVE" not in proc.stdout, (
-            "the twin's account_stop did not kill the real tracked pid: %r" % proc.stdout
-        )
-        assert "LISTENER_STILL_ALIVE" not in proc.stdout, (
-            "the twin's account_stop did not kill the real port occupant: %r" % proc.stdout
-        )
-        assert "STATE_FILE_STILL_EXISTS" not in proc.stdout, (
-            "the twin's account_stop left the state file behind: %r" % proc.stdout
-        )
-    finally:
-        shutil.rmtree(work, ignore_errors=True)
-
-
 FOREIGN_WRITER = "some-devbox/pid:[4026532999]"
 
 
@@ -874,53 +774,9 @@ def test_stop_real_run_leaves_pids_from_another_writer_alone(
         shutil.rmtree(work, ignore_errors=True)
 
 
-def test_stop_real_run_the_twin_leaves_pids_from_another_writer_alone(tmp_path) -> None:
-    """REAL RUN, the twin's side of the control above: `account_stop` over a state file stamped by another writer leaves the tracked process alive and says so. The port occupant is still ended, because `lsof` resolves it in THIS namespace at stop time. A failing `docker` shadows the real one, as above."""
-    work = shadow_driver.build_sandbox(paths.repo_root())
-    try:
-        script = work / "stop_real_run.sh"
-        script.write_text(BASH_STOP_REAL_RUN % {"work": work}, encoding="utf-8")
-        proc = subprocess.run(
-            ["bash", str(script)],
-            capture_output=True,
-            text=True,
-            timeout=60,
-            check=False,
-            env={
-                **os.environ,
-                "SHADOW_WRITER": FOREIGN_WRITER,
-                "PATH": _fake_docker(tmp_path / "bin") + ":/usr/local/bin:/usr/bin:/bin",
-            },
-        )
-        assert "CONTROL_FAILED" not in proc.stdout, proc.stdout
-        assert "STOP_RC=0" in proc.stdout, (proc.stdout, proc.stderr)
-        assert "TRACKED_STILL_ALIVE" in proc.stdout, (
-            "the twin's account_stop signalled a pid another writer recorded: %r" % proc.stdout
-        )
-        assert "LISTENER_STILL_ALIVE" not in proc.stdout, proc.stdout
-        assert "Not signalling the pids in" in proc.stderr, proc.stderr
-        assert "written by %s" % FOREIGN_WRITER in proc.stderr, proc.stderr
-    finally:
-        shutil.rmtree(work, ignore_errors=True)
-
-
-def test_the_writer_stamp_agrees_with_the_twin_and_names_this_pid_namespace() -> None:
-    """`account_writer_stamp` and `account.writer_stamp()` print the same identity, and it carries this process's own pid namespace, which is what tells the host from the devbox."""
-    work = shadow_driver.build_sandbox(paths.repo_root())
-    try:
-        script = (
-            'W="%s"; set -euo pipefail; source "$W/.ci/config/constants.sh"; '
-            'source "$W/.ci/scripts/lib/toolchain.sh"; source "$W/.ci/lib/local-common.sh"; '
-            'source "$W/.ci/lib/account.sh"; account_writer_stamp' % work
-        )
-        proc = subprocess.run(
-            ["bash", "-c", script], capture_output=True, text=True, timeout=60, check=False
-        )
-        assert proc.returncode == 0, proc.stderr
-        assert proc.stdout == account.writer_stamp() + "\n"
-        assert account.writer_stamp().endswith("/" + os.readlink("/proc/self/ns/pid"))
-    finally:
-        shutil.rmtree(work, ignore_errors=True)
+def test_the_writer_stamp_names_this_pid_namespace() -> None:
+    """`account.writer_stamp()` carries this process's own pid namespace, which is what tells the host from the devbox. (The twin's `account_writer_stamp` printed the same identity; the comparison went with the bash.)"""
+    assert account.writer_stamp().endswith("/" + os.readlink("/proc/self/ns/pid"))
 
 
 def _run_rotation_subcommand_via_bash(args: list[str]) -> subprocess.CompletedProcess:
@@ -1139,31 +995,41 @@ def _lifecycle_comparable(lines: list[str], scenario: str) -> list[str]:
     return kept
 
 
+def _run_lifecycle(side: str, scenario: str) -> tuple[int, str, str]:
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            LIFECYCLE_MODULE,
+            "--side",
+            side,
+            "--port",
+            LIFECYCLE_PORT,
+            scenario,
+        ],
+        cwd=str(paths.repo_root()),
+        env={**os.environ, "PYTHONPATH": ".ci"},
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=900,
+    )
+    return proc.returncode, proc.stdout, proc.stderr
+
+
 def drive_lifecycle(side: str, scenario: str) -> tuple[int, str, str]:
-    """One side of one lifecycle scenario, run once per session and remembered."""
+    """One side of one lifecycle scenario, run once per session and remembered. The bash side is the golden frozen from `account.sh`."""
     key = (side, scenario)
     if key not in _LIFECYCLE_CACHE:
-        proc = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                LIFECYCLE_MODULE,
-                "--side",
-                side,
-                "--twin",
+        if side == "old":
+            _LIFECYCLE_CACHE[key] = diff.twin_call(
                 TWIN,
-                "--port",
-                LIFECYCLE_PORT,
-                scenario,
-            ],
-            cwd=str(paths.repo_root()),
-            env={**os.environ, "PYTHONPATH": ".ci"},
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=900,
-        )
-        _LIFECYCLE_CACHE[key] = (proc.returncode, proc.stdout, proc.stderr)
+                ["lifecycle", scenario],
+                _retired,
+                port=lambda: _run_lifecycle("new", scenario),
+            )
+        else:
+            _LIFECYCLE_CACHE[key] = _run_lifecycle(side, scenario)
     return _LIFECYCLE_CACHE[key]
 
 
@@ -1222,7 +1088,6 @@ def test_the_lifecycle_corpus_covers_every_side_effecting_function() -> None:
         for case in cases
     }
     # `account_spawn` has no verb of its own: the `tree` cleanup case calls it directly, and every `dev` case reaches it for Astro and Vite.
-    assert "account_spawn " in lifecycle_driver.OLD_PROGRAM
     driven.add("account_spawn")
     assert driven == set(LIFECYCLE_FUNCTIONS), sorted(driven ^ set(LIFECYCLE_FUNCTIONS))
     assert set(lifecycle_driver.FN) == set(lifecycle_driver.INNER)
@@ -1300,12 +1165,16 @@ def _planted_repo(
 def test_a_planted_defect_in_the_lifecycle_port_is_caught(
     tmp_path, scenario, case_name, old, new
 ) -> None:
-    """PLANTED-DEFECT RUNS. The live twin against a copy of the port with one defect; the case's transcript must differ."""
+    """PLANTED-DEFECT RUNS. The frozen twin transcript against a copy of the port with one defect; the case's transcript must differ."""
     case = next(c for c in lifecycle_driver.SCENARIOS[scenario] if c.name == case_name)
     repo = paths.repo_root()
     fake = _planted_repo(tmp_path, old, new)
     with lifecycle_driver.locked():
-        twin = lifecycle_driver.observe("old", repo, case)
+        twin = [
+            line
+            for line in drive_lifecycle("old", scenario)[1].splitlines()
+            if line.startswith("obs %s " % case_name)
+        ]
         planted = lifecycle_driver.observe("new", fake, case)
         clean = lifecycle_driver.observe("new", repo, case)
     assert _lifecycle_comparable(clean, scenario) == _lifecycle_comparable(twin, scenario), (
@@ -1318,11 +1187,6 @@ def test_a_planted_defect_in_the_lifecycle_port_is_caught(
 
 # Worklist #e45fc13c: `account_cleanup` signalled only the pid it tracked, so a dev server behind `npx` could outlive `account dev` on its port. Each side WITHOUT the process-group kill must orphan the tree job's child; each side with it must not.
 UNGROUPED = {
-    "old": (
-        TWIN,
-        'kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true',
-        'kill "$pid" 2>/dev/null || true',
-    ),
     "new": (LIFECYCLE_PORT, "os.killpg(pid, signal.SIGTERM)", "os.kill(pid, signal.SIGTERM)"),
 }
 
@@ -1330,7 +1194,7 @@ UNGROUPED = {
 @pytest.mark.xdist_group(LIFECYCLE_GROUP)
 @pytest.mark.parametrize("side", sorted(UNGROUPED))
 def test_cleanup_without_the_group_kill_orphans_the_child(tmp_path, side) -> None:
-    """THE DIFFERENTIAL CASE THAT FAILS WITHOUT THE FIX, driven on each side separately."""
+    """THE CASE THAT FAILS WITHOUT THE FIX. The twin's side (a copy of `account.sh` minus the group kill) went with the bash; the port side is the fix."""
     case = next(c for c in lifecycle_driver.SCENARIOS["helpers"] if c.name == "cleanup-kills-tree")
     rel, old, new = UNGROUPED[side]
     fake = _planted_repo(tmp_path, old, new, target_rel=rel)

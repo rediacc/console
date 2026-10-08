@@ -1,6 +1,6 @@
 """The rediacc/web + RustFS local stack, ported from `.ci/lib/service.sh`.
 
-PORTED FROM `.ci/lib/service.sh` (225 lines). The twin still exists and is untouched by this file, and it has exactly ONE sourcer: `.ci/legacy/run-legacy.sh:48`, which is the pre-split body of the repo-root `run.sh`. Re-measured 2026-09-09.
+PORTED FROM `.ci/lib/service.sh` (225 lines), which is DELETED (PLAN-retire-bash-oracles B3): its answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/lib.service.jsonl`, and the one library that sourced it (the bridge prelude of `setup/bridge.py`) no longer does.
 
 --------------------------------------------------------------------------
 THREE DEFECTS THE PORT FOUND, ALL REPRODUCED HERE ON PURPOSE

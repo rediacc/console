@@ -1,7 +1,7 @@
 """The SIDE-EFFECTING half of `.ci/lib/account.sh`, ported function for function.
 
 PORTED FROM `.ci/lib/account.sh`, the twelve functions `rediacc_ci.core.account` left out because each one starts, stops or talks to real infrastructure: `account_load_defaults`, `account_state_gateway_port`, `account_spawn` (as `spawn_background()`), `account_cleanup`, `account_docker_ghost_clean`, `account_stripe_auto`, `account_dev`, `account_dev_credentials`, `account_test`, `account_test_e2e`, `account_reset` and `account_seed_demo`.
-With `rediacc_ci.core.account` this covers all twenty-two of the twin's functions. The twin still exists and is still what `.ci/legacy/run-legacy.sh:405` and `:443` source; nothing is cut over here (that is W7P5-c).
+With `rediacc_ci.core.account` this covers all twenty-two of the twin's functions. The twin, `.ci/lib/account.sh`, is DELETED (PLAN-retire-bash-oracles B3); its lifecycle transcripts are frozen in `.ci/rediacc_ci/tests/goldens/twins/lib.account.jsonl`.
 
 A SIBLING MODULE AND NOT MORE OF `account.py`, because that file is the deterministic half with its own K=5 ledger (`w7p5b-account`) and its own driver; this half is proved a different way, by `core/account_lifecycle_shadow_driver.py` under the pair `w7p5b-account-lifecycle`.
 
