@@ -29,6 +29,10 @@ FOREIGN = "4c3e095a"
 XDIST_GROUP = "wl-identity-l1"
 
 
+#: Exit codes an ACCEPTED run of a verb ends with when the git-less fixture makes it answer with a refusal of its own (see the 184 loop).
+ACCEPTED_RC = {"--batch-body": 1}
+
+
 def l1run(fix, *argv: str, peer: str = "") -> wlfix.Result:
     """The CLI under the fixture, with the STATE body on stdin so `--state` is drivable.
 
@@ -497,7 +501,7 @@ def drive_l1(fix) -> L1Drive:
         # Bare form: prints the effective settings and writes nothing; the write form runs the identical argv parse and _identity_or_die.
         ("--queue-set", "--queue-set @WHO@", "stop_hook: on"),
         # Read-only (PLAN-turbo-local-first D2): the fixture has no git branch, so the accepted run answers with the no-branch refusal after the same _identity_or_die a real run passes.
-        ("--batch-body", "--batch-body @WHO@", "no live branch is checked out", 1),
+        ("--batch-body", "--batch-body @WHO@", "no live branch is checked out"),
         # The per-commit review verbs (agent/plans/PLAN-per-commit-review.md section 6), each driven in its no-argument mode: the fixture has no git repository, so HEAD is on no branch and each verb answers without touching a review file, after the same argv parse and _identity_or_die its write modes run.
         ("--review-mark", "--review-mark @WHO@", "open per-commit review findings"),
         ("--review-commit", "--review-commit @WHO@", "no finished review file"),
@@ -514,9 +518,9 @@ def drive_l1(fix) -> L1Drive:
         'print("no agent/reviews/<branch>/ directory is past its retention")\n', encoding="utf-8"
     )
 
-    for verb, template, needle, *accepted in table:
-        # A row may name the exit code its ACCEPTED run ends with (a read-only verb whose fixture answer is a refusal of its own, after the identity check). Its needle then proves the identity check passed, and CONTROL C proves the refusal by the needle's ABSENCE, because a nonzero rc alone proves nothing there.
-        ok_rc = accepted[0] if accepted else 0
+    for verb, template, needle in table:
+        # A verb may name the exit code its ACCEPTED run ends with (a read-only verb whose fixture answer is a refusal of its own, after the identity check). Its needle then proves the identity check passed, and CONTROL C proves the refusal by the needle's ABSENCE, because a nonzero rc alone proves nothing there.
+        ok_rc = ACCEPTED_RC.get(verb, 0)
         drive.covered.add(verb)
         fire_args = template.replace("@WHO@", FOREIGN).split()
         good_args = template.replace("@WHO@", wlfix.ME).split()
