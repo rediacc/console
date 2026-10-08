@@ -158,8 +158,7 @@ Documented-In: trap:check-cannot-fail
 - [x] L9 Lead: a mutation proof on a disposable clone, never the shared tree. Delete each seeded anchor's target one at a time and confirm each turns red with that entry's id. Record the 10/10 count in the tick evidence.
   - Amended 2026-10-08 (review 27858c9d.2): the mutation proof covered all 14 documentation anchors the registry holds, which includes the ten seeded ones, so "14/14 red" is the box's count at its full width and not the "10/10" it names.)
     (ticked) 2026-10-08T19:27:10Z by d778be9d: commit:e24059486 check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
-- [?] L10 DEFAULT: defer. Move the shared resolver to `.ci/rediacc_ci/anchors.py` and teach `wl_planrec.resolve` the `text`/`doc`/`box` kinds through `wl_gh.import_ci` (the same pattern as `shacite`, `.claude/hooks/stop/wl_planrec.py:298-302`). Then migrate the 9 `file:CLAUDE.md:<N>` Sources in HINTS.md. WHY defer: it touches `.claude/hooks/stop` and HINTS.md's corpus gate, and the operator's request is met without it. HOW to undefer: operator says yes.
-- [?] L11 DEFAULT: defer. A pre-bash guard that reads `tool_input.timeout` on a `wl_wake.py` call and refuses one below `harness_timeout_ms` (`.claude/hooks/stop/wl_wake.py:115`). Doing this turns seed S1 from Residue into enforcement. WHY defer: it adds a new guard, and S1 is already documented and its anchor checked.
+- L10 and L11 moved on 2026-10-09 to agent/plans/PLAN-lessons-registry-followups.md, executing their recorded DEFAULT (defer). This PR's plan-implementation clock covers every plan the branch ticked, and a `[?]` box counts as open there.
 
 ## Seed lessons (L8)
 

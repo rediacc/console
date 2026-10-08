@@ -56,20 +56,20 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Branch: 1008-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-retire-bash-oracles.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 203 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 2 live of writer_cap 15 (session d778be9d): worker:afb0480b51769fb0a, worker:a558fadce0eebe79c.
-- Leased items: 6: #3adcbb61 (worker:afb0480b51769fb0a, d778be9d), #5c3709a5 (worker:afb0480b51769fb0a, d778be9d), #96d14b9d (worker:afb0480b51769fb0a, d778be9d), #9dd53bab (worker:afb0480b51769fb0a, d778be9d), #b4e94451 (worker:afb0480b51769fb0a, d778be9d), #e70faed1 (worker:afb0480b51769fb0a, d778be9d).
-- Next plan: agent/plans/PLAN-retire-bash-oracles.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 228 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 3 live of writer_cap 15 (session d778be9d): worker:ab4bd660fa9ac4892, worker:ae6156c3460cabb2b, worker:a7132ea1feaaf85af.
+- Leased items: 3: #05829121 (worker:a7132ea1feaaf85af, d778be9d), #17b29ee6 (worker:ab4bd660fa9ac4892, d778be9d), #9dd53bab (worker:ae6156c3460cabb2b, d778be9d).
+- Next plan: agent/plans/PLAN-deferred-findings-block-merge.md, Promoted entry 2; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 3 of 13 plans done, 124 of 172 boxes done (72%).
+Promoted: 6 of 13 plans done, 141 of 170 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
-| 1 | PLAN-retire-bash-oracles.md | 9/15 | 6 open |
+| 1 | PLAN-retire-bash-oracles.md | 15/15 | done |
 | 2 | PLAN-deferred-findings-block-merge.md | 16/17 | 1 open |
 | 3 | PLAN-ci-consolidation.md | 22/22 | done |
 | 4 | PLAN-config-team-scoping.md | 10/11 | 1 open |
@@ -79,8 +79,8 @@ Promoted: 3 of 13 plans done, 124 of 172 boxes done (72%).
 | 8 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
 | 9 | PLAN-stop-hook-retro-20260924.md | 23/23 | done |
 | 10 | PLAN-cd-errors-in-ci.md | 5/6 | 1 open |
-| 11 | PLAN-scope-mirrors.md | 0/11 | 11 open |
-| 12 | PLAN-lessons-registry.md | 9/11 | 2 open |
+| 11 | PLAN-scope-mirrors.md | 11/11 | done |
+| 12 | PLAN-lessons-registry.md | 9/9 | done |
 | 13 | PLAN-inline-suppressions.md | 0/11 | 11 open |
 <!-- queue:progress:end -->
 
@@ -110,17 +110,17 @@ Promoted: 3 of 13 plans done, 124 of 172 boxes done (72%).
 7. agent/plans/PLAN-secret-namespace-migration.md -- P1, executing, in progress (29 of 34 boxes ticked)
 8. agent/plans/PLAN-stop-hook-one-plan-scope.md -- P1, approved, in progress (14 of 15 boxes ticked)
 9. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
-10. agent/plans/PLAN-tooling-transformation.md -- P1, ready, in progress (151 of 154 boxes ticked)
+10. agent/plans/PLAN-tooling-transformation.md -- P1, ready, in progress (152 of 154 boxes ticked)
 11. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked), dep-blocked
 12. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (7 of 9 boxes ticked)
 13. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
-14. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
-15. agent/plans/PLAN-biome-only-lint.md -- P3, draft, in progress (10 of 29 boxes ticked)
-16. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (1 of 17 boxes ticked)
-17. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-18. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
-19. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-20. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
+14. agent/plans/PLAN-biome-only-lint.md -- P3, draft, in progress (10 of 29 boxes ticked)
+15. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (1 of 17 boxes ticked)
+16. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+17. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
+18. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+19. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
+20. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
 21. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
 22. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
 23. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
