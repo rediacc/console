@@ -1016,7 +1016,8 @@ def selftest() -> int:
                     else:
                         os.environ[k] = v
 
-        fresh = "2026-09-05T12:00:00+00:00"
+        # Relative to now: a fixed "fresh" date aged past the 33-day threshold on 2026-10-08 and turned this control red.
+        fresh = (now - dt.timedelta(days=2)).isoformat()
         stale = "2020-01-01T12:00:00+00:00"
 
         clean = build(
