@@ -23,10 +23,12 @@ import pathlib
 import re
 import shutil
 import subprocess
+from typing import Any
 
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import RENET_REPO
 
 ROOT = paths.repo_root()
@@ -35,6 +37,7 @@ COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "private" / "renet_csi_sanity.py"
 
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/private/renet-csi-sanity.sh")
+TWIN_STR = str(TWIN_REL)
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/private/renet_csi_sanity.py")
 
 # One recording fake serves every tool but `go`. It records the variable `go` is meant to receive as well, which is how the test proves the assignment is PER-COMMAND: every tool except `go` must report it unset.
@@ -98,6 +101,47 @@ def _mask(text: str, root: pathlib.Path, tmp: pathlib.Path) -> str:
     return text.replace(str(root), "<root>").replace(str(tmp), "<tmp>")
 
 
+def _recording() -> bool:
+    """True only while the twin's bytes are being recorded (`REDIACC_CI_REGOLDEN=bash`). Every other run reads the golden and the twin is not in the tree."""
+    return diff.regolden_mode(TWIN_STR) == "bash"
+
+
+def _twin_answer(
+    tmp_path: pathlib.Path,
+    root: pathlib.Path,
+    binder: str,
+    parts: list[str],
+    **run_kw,
+) -> dict[str, Any]:
+    """The twin's four observables: recorded from bash while recording, the golden otherwise."""
+    seen: dict[str, list[str]] = {"calls": []}
+
+    def drive(subject: pathlib.PurePosixPath) -> tuple[int, str, str]:
+        out = _run(subject, root, tmp_path, binder, **run_kw)
+        seen["calls"] = list(out["calls"])
+        return out["exit"], out["stdout"], out["stderr"]
+
+    rc, out, err, frozen = diff.twin_run(
+        TWIN_STR,
+        parts,
+        lambda: drive(TWIN_REL),
+        port=lambda: drive(PORT_REL),
+        extras={"calls": lambda: "\n".join(seen["calls"])},
+    )
+    return {
+        "exit": rc,
+        "stdout": out,
+        "stderr": err,
+        "calls": [line for line in frozen["calls"].split("\n") if line],
+    }
+
+
+def _subjects(tmp_path: pathlib.Path, root: pathlib.Path, binder: str, tag: str = "", **run_kw):
+    """`(subject path, observables)` for the twin (golden) and the port (live), in that order."""
+    yield TWIN_REL, _twin_answer(tmp_path, root, binder, ["subjects", tag], **run_kw)
+    yield PORT_REL, _run(PORT_REL, root, tmp_path, binder, **run_kw)
+
+
 def _fixture(tmp_path: pathlib.Path, *, renet: bool = True) -> pathlib.Path:
     """A tree shaped like the repository, holding COPIES of both subjects.
 
@@ -110,7 +154,8 @@ def _fixture(tmp_path: pathlib.Path, *, renet: bool = True) -> pathlib.Path:
     (root / ".ci" / "scripts" / "private").mkdir(parents=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True)
     (root / ".ci" / "rediacc_ci" / "private").mkdir(parents=True)
-    shutil.copy2(TWIN, root / TWIN_REL)
+    if _recording():
+        shutil.copy2(TWIN, root / TWIN_REL)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
@@ -201,7 +246,7 @@ def _run(
     binder: str,
     argv: tuple[str, ...] = (),
     env_extra: dict[str, str] | None = None,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """Drive one subject from a NEUTRAL cwd and collect all four observables.
 
     Neutral, because the datastore setup runs BEFORE the `cd` and the recorded cwd is what proves the ordering.
@@ -368,7 +413,7 @@ def test_port_and_twin_agree(tmp_path, fixture_kw, binder_kw, run_kw):
     root = _fixture(tmp_path, **fixture_kw)
     binder = _binder(tmp_path, root, **binder_kw)
 
-    old = _run(TWIN_REL, root, tmp_path, binder, **run_kw)
+    old = _twin_answer(tmp_path, root, binder, ["agree"], **run_kw)
     new = _run(PORT_REL, root, tmp_path, binder, **run_kw)
 
     for field in ("exit", "stdout", "stderr", "calls"):
@@ -431,8 +476,7 @@ def test_the_ginkgo_skip_expression_survives_as_one_argument(tmp_path):
     ]
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, root)
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
+    for subject, out in _subjects(tmp_path, root, binder, tag="root/binder"):
         go_line = next(line for line in out["calls"] if line.startswith("go\t"))
         assert go_line.split("\t")[3:] == expected, "%s built %r" % (
             subject.name,
@@ -446,8 +490,7 @@ def test_the_zero_spec_guard_is_the_reason_the_script_exists(tmp_path):
     binder = _binder(
         tmp_path, root, go_out=b"Ran 0 of 50 Specs in 0.1s\n--- PASS: TestCSISanity (0.1s)\n"
     )
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
+    for subject, out in _subjects(tmp_path, root, binder, tag="root/binder"):
         assert out["exit"] == 1, "%s exited %r on a zero-spec run" % (subject.name, out["exit"])
         assert "::error::csi-sanity ran zero specs" in out["stdout"], out["stdout"]
         assert "::error::" not in out["stderr"], (
@@ -460,8 +503,7 @@ def test_a_healthy_run_is_not_refused(tmp_path):
     """THE NEGATIVE CONTROL on both guards. A gate with only positive controls will happily refuse a run where nothing is wrong."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, root)
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
+    for subject, out in _subjects(tmp_path, root, binder, tag="root/binder"):
         assert out["exit"] == 0, "%s refused a passing suite" % subject.name
         assert "::error::" not in out["stdout"], out["stdout"]
         assert "csi-sanity conformance passed (48/50; 2 ruled deviations skipped" in out["stderr"]
@@ -472,8 +514,7 @@ def test_the_two_guards_fire_in_order_and_only_one_speaks(tmp_path):
     """The count guard is evaluated FIRST and returns immediately, so a run that fails both says only the first thing. A port that checked the PASS guard first, or reported both, would be more informative and would not be the same script."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, root, go_out=b"Ran 0 of 50 Specs in 0.1s\nFAIL\n")
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
+    for _subject, out in _subjects(tmp_path, root, binder, tag="root/binder"):
         assert out["stdout"].count("::error::") == 1, out["stdout"]
         assert "ran zero specs" in out["stdout"]
         assert "did not PASS" not in out["stdout"]
@@ -485,8 +526,7 @@ def test_a_failing_go_run_loses_its_exit_code(tmp_path):
     build failure (2) and a test failure (1) are indistinguishable to a caller. Both subjects are asserted; the day the twin propagates the real status, this goes red and names the decision."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, root, go_rc=2, go_out=b"build failed\n")
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
+    for subject, out in _subjects(tmp_path, root, binder, tag="root/binder"):
         assert out["exit"] == 1, "%s exited %r, not 1" % (subject.name, out["exit"])
         assert "build failed" in out["stdout"]
         assert "::error::" not in out["stdout"], "the guards must not run after a failed go"
@@ -496,8 +536,7 @@ def test_go_stderr_is_folded_into_stdout(tmp_path):
     """`2>&1` inside the capture. The script's own stderr must carry ONLY its three log lines; everything the toolchain wrote belongs on stdout. A port that let go's stderr through would split a caller's transcript in two."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, root, go_err=b"go: downloading something\n")
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
+    for _subject, out in _subjects(tmp_path, root, binder, tag="root/binder"):
         assert "go: downloading something" in out["stdout"], out["stdout"]
         assert "go: downloading something" not in out["stderr"], out["stderr"]
 
@@ -507,8 +546,7 @@ def test_the_install_arm_fires_once_for_either_missing_tool(tmp_path):
     root = _fixture(tmp_path)
     for missing in ("mkfs.btrfs", "cryptsetup"):
         binder = _binder(tmp_path, root, absent=(missing,))
-        for subject in (TWIN_REL, PORT_REL):
-            out = _run(subject, root, tmp_path, binder)
+        for subject, out in _subjects(tmp_path, root, binder, tag="root/binder"):
             apt = [line.split("\t")[3:] for line in out["calls"] if line.startswith("apt-get\t")]
             assert apt == [
                 ["update", "-qq"],
@@ -517,8 +555,7 @@ def test_the_install_arm_fires_once_for_either_missing_tool(tmp_path):
             assert "Installing btrfs-progs + cryptsetup..." in out["stderr"]
 
     binder = _binder(tmp_path, root)
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
+    for subject, out in _subjects(tmp_path, root, binder, tag="root/binder"):
         assert not [line for line in out["calls"] if line.startswith("apt-get\t")], (
             "%s installed packages that were already present" % subject.name
         )
@@ -536,8 +573,7 @@ def test_a_failing_apt_get_update_is_swallowed_and_that_is_a_defect(tmp_path):
     root = _fixture(tmp_path)
 
     swallowed = _binder(tmp_path, root, absent=("cryptsetup",), rc={"apt-get": {"update": 100}})
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, swallowed)
+    for subject, out in _subjects(tmp_path, root, swallowed, tag="root/swallowed"):
         assert out["exit"] == 0, "%s exited %r; the twin swallows this" % (
             subject.name,
             out["exit"],
@@ -553,8 +589,7 @@ def test_a_failing_apt_get_update_is_swallowed_and_that_is_a_defect(tmp_path):
         )
 
     fatal = _binder(tmp_path, root, absent=("cryptsetup",), rc={"apt-get": {"install": 100}})
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, fatal)
+    for subject, out in _subjects(tmp_path, root, fatal, tag="root/fatal"):
         assert out["exit"] == 100, "%s exited %r; a failing install must stop the run" % (
             subject.name,
             out["exit"],
@@ -574,8 +609,8 @@ def test_the_mask_does_not_hide_the_message(tmp_path):
 
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, root, absent=("truncate",))
-    raw = {}
-    for subject in (TWIN_REL, PORT_REL):
+
+    def drive(subject: pathlib.PurePosixPath) -> str:
         proc = subprocess.run(
             ["bash" if subject.suffix == ".sh" else "python3", str(root / subject)],
             capture_output=True,
@@ -590,7 +625,11 @@ def test_the_mask_does_not_hide_the_message(tmp_path):
             check=False,
             timeout=180,
         )
-        raw[subject.name] = proc.stderr
+        return proc.stderr
+
+    work = (root, tmp_path.resolve())
+    _, twin_raw, _ = diff.twin_call(TWIN_STR, ["raw"], lambda: (0, drive(TWIN_REL), ""), work=work)
+    raw = {TWIN_REL.name: twin_raw, PORT_REL.name: drive(PORT_REL)}
     assert raw[TWIN_REL.name] != raw[PORT_REL.name], (
         "the two prefixes are identical, so the mask is unnecessary and should be deleted"
     )

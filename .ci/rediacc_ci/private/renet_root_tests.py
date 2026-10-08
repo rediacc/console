@@ -2,7 +2,9 @@
 """Port of `.ci/scripts/private/renet-root-tests.sh`.
 
 Runs the three `//go:build root` repository-state tests in `private/renet` and
-refuses to report success unless each of them is seen to PASS by name.
+refuses to report success unless each of them is seen to PASS by name. The twin is deleted; its bytes survive as `goldens/twins/private.renet-root-tests.jsonl`.
+
+RULE T DELTAS FROM THE TWIN (each pinned by a test in `tests/test_private_renet_root_tests.py`): the by-name guard matches `--- PASS: <name>` ending at whitespace or end of line, where the twin's `grep -q` was a substring test (a renamed `TestLoadState_PreservesDataAndMore` satisfied the guard for the original name); and the `-run` pattern is derived from the one guarded tuple, where the twin spelled the three names twice.
 
 WHY THE BY-NAME GUARD IS THE WHOLE SCRIPT. `go test` exits 0 for a run in which every test SKIPPED, and it exits 0 for a `-run` pattern that matched nothing at all. Either would make this a gate that passes without running. The twin therefore greps its own captured output for `--- PASS: <name>` once per test and exits 1 on the first one it cannot find, and that loop is reproduced
 here exactly, including the fact that it reports only the FIRST missing test.
@@ -61,24 +63,33 @@ from __future__ import annotations
 import inspect
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
 
 from rediacc_ci import log
 
-# The twin's `ROOT_TESTS` variable, verbatim: a `go test -run` pattern, which is an unanchored RE2 alternation matched per test name.
-ROOT_TESTS = (
-    "TestSaveState_SetsOwnership|TestSaveState_OwnershipMatchesMountDir|TestLoadState_PreservesData"
-)
-
-# The twin's `for t in ...` list. It is spelled out a SECOND time in the twin rather than derived from ROOT_TESTS by splitting on `|`, and the duplication is kept here: the two lists answering to one name is precisely what would let a future edit add a test to the `-run` pattern while leaving the guard blind to it, and a port that quietly fixed that would no longer be the same
-# gate.
+# The guarded tests, spelled ONCE. The twin spelled them twice (the `-run` alternation and the `for t in` loop), so a test added to one and not the other ran unguarded (Rule T): the `-run` pattern is now derived from this tuple at call time.
 GUARDED_TESTS = (
     "TestSaveState_SetsOwnership",
     "TestSaveState_OwnershipMatchesMountDir",
     "TestLoadState_PreservesData",
 )
+
+
+def run_pattern() -> str:
+    """The `go test -run` alternation: an unanchored RE2 match per test name, built from `GUARDED_TESTS`."""
+    return "|".join(GUARDED_TESTS)
+
+
+def passed(name: str, transcript: bytes) -> bool:
+    """Whether `go test -v` printed `--- PASS: <name>` for exactly this test.
+
+    Rule T: the twin's `grep -q -- "--- PASS: $t"` is a substring test, so a renamed `TestLoadState_PreservesDataAndMore` kept the guard green for the original name. The name must now end at whitespace or end of line, which is how `go test -v` prints it (`--- PASS: Name (0.01s)`); a subtest line (`Name/sub`) does not count for its parent.
+    """
+    pattern = b"--- PASS: " + re.escape(name.encode("utf-8")) + rb"(?:\s|$)"
+    return re.search(pattern, transcript, re.MULTILINE) is not None
 
 
 def console_root() -> pathlib.Path:
@@ -129,7 +140,7 @@ def main(argv: list[str]) -> int:
         "-tags",
         "root",
         "-run",
-        ROOT_TESTS,
+        run_pattern(),
         "./pkg/repository/",
         "-v",
         "-count=1",
@@ -163,7 +174,7 @@ def main(argv: list[str]) -> int:
 
     # The loud guard. First miss wins, and it names the test rather than the count, so the annotation says which one to go and look at.
     for name in GUARDED_TESTS:
-        if b"--- PASS: " + name.encode("utf-8") not in out:
+        if not passed(name, out):
             print(
                 "::error::%s did not PASS (root-tagged repository test)" % name,
                 flush=True,

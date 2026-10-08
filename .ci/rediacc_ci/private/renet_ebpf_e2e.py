@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/private/renet-ebpf-e2e.sh`.
+"""Port of `.ci/scripts/private/renet-ebpf-e2e.sh`, which is deleted; its bytes survive as `goldens/twins/private.renet-ebpf-e2e.jsonl`.
 
 Mounts bpffs if it is not already there, runs the `ebpf_e2e`-tagged socket-isolation tests in `private/renet`, and refuses to report success unless at least one of them is seen to PASS.
 
@@ -15,7 +15,7 @@ SHELLED OUT, all three faked as recording binaries on a scratch PATH by `.ci/red
     used in its place: it does not report a filesystem TYPE at all on Linux, and
     the twin's decision turns on the exact string coreutils prints.
   * `mount -t bpf bpffs /sys/fs/bpf`, which needs root and is the reason this
-    script is invoked as `sudo .ci/scripts/private/renet-ebpf-e2e.sh`. Its
+    module is invoked as `sudo env PYTHONPATH=.ci python3 -m rediacc_ci.private.renet_ebpf_e2e`. Its
     stdout and stderr pass straight through on both sides; nothing is captured.
   * `go test`, once, with the twin's argv character for character.
 

@@ -3,8 +3,7 @@
 
 A thin wrapper: find `private/renet/scripts/ci-test.sh`, hand it an optional `--no-cleanup`, and report where the JUnit XML landed. It reimplements nothing that the submodule's own suite does.
 
-THE BASH TWIN REMAINS THE LIVE CALL SITE. `.github/workflows/ct-tests.yml:1762` spells `run: sudo .ci/scripts/private/renet-integration.sh --no-cleanup`, and nothing else in the tree invokes either subject. THIS MODULE CARRIES NO `---- gate ----` HEADER, and neither does the twin: this is a workflow step, not a registered gate, so `scripts/gate-bind.ts` has nothing to bind here.
-Cutover is a separate, later, driver-only step.
+THE BASH TWIN IS DELETED. The workflow step (`.github/workflows/ct-tests.yml`, Renet integration legs) runs `sudo env PYTHONPATH=.ci ... python3 -m rediacc_ci.private.renet_integration --no-cleanup`; the twin's bytes survive as `goldens/twins/private.renet-integration.jsonl`. This module carries no `---- gate ----` header: this is a workflow step, not a registered gate.
 
 -----------------------------------------------------------------------------
 THE SUBMODULE GUARD HAS TWO ARMS, AND THE MISSING THIRD ONE IS A REAL DEFECT

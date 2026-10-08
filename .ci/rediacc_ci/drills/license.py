@@ -8,7 +8,7 @@ LEGS, one licensing claim each. a: a DATASTORE FORK RE-METERS (the fork's datast
 
 COST. Legs b through e need the basic cluster (b needs the second worker, so the cluster is `ops up` without the Ceph trio at least); leg a needs Ceph (the full cluster); leg f needs no machine. The preflight reports which legs the machines present can support and refuses the rest by name.
 
-REUSE. The VM-less form of leg a is `.ci/scripts/private/license-e2e.sh` scenarios S8a-S8e: the cheap control. If a leg fails here and its S8 twin passes there, the difference is the machine, not the licence logic.
+REUSE. The VM-less form of leg a is `rediacc_ci.private.license_e2e` scenarios S8a-S8e: the cheap control. If a leg fails here and its S8 twin passes there, the difference is the machine, not the licence logic.
 
 SELFTEST. `--selftest` plants one assertion that cannot pass and stops before any VM work.
 
@@ -562,7 +562,7 @@ class License:
     # ------------------------------------------------------------------ shared probes
 
     def repo_status(self, host: str, field: str) -> str:
-        """One field of the repo's licence status, read the way license-e2e.sh's assert_status reads it: the JSON array from `repository license-status`, first entry that has a repositoryGuid, stdout only."""
+        """One field of the repo's licence status, read the way `rediacc_ci.private.license_e2e`'s `assert_status` reads it: the JSON array from `repository license-status`, first entry that has a repositoryGuid, stdout only."""
         _, out = self.ssh_out(
             host,
             "sudo %s repository license-status --all-datastores --output json" % self.o.vm_renet,
