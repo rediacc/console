@@ -10,17 +10,29 @@ vi.stubGlobal('document', {
 const mountPlayers = vi.fn();
 vi.mock('../tutorial-video-mount', () => ({
   mountPlayers: (...args: unknown[]) => mountPlayers(...args),
-  whenVideoAppears: async () => null,
+  whenVideoAppears: () => Promise.resolve(null),
 }));
 vi.mock('../video-theater', () => ({ openTheater: () => {} }));
 
-/** A stand-in element that records its click listeners, so a press can be fired by hand. */
+/**
+ * A stand-in element that keeps its LIVE click listeners and honors `{ once: true }` the way a
+ * DOM does: a once-listener leaves the list before it runs. Counting live listeners (not every
+ * add) is what makes "re-armed" mean a press can fire again.
+ */
 function fakeMount() {
-  const listeners: Array<() => void> = [];
+  let live: { fn: () => void; once: boolean }[] = [];
   return {
-    listeners,
-    addEventListener: (_type: string, fn: () => void) => {
-      listeners.push(fn);
+    get live() {
+      return live.length;
+    },
+    press() {
+      for (const l of [...live]) {
+        if (l.once) live = live.filter((x) => x !== l);
+        l.fn();
+      }
+    },
+    addEventListener: (_type: string, fn: () => void, opts?: { once?: boolean }) => {
+      live.push({ fn, once: opts?.once === true });
     },
   };
 }
@@ -35,10 +47,12 @@ describe('armInline', () => {
     const el = fakeMount();
     mountPlayers.mockRejectedValueOnce(new Error('chunk fetch failed'));
     armInline(el as unknown as HTMLElement);
-    expect(el.listeners).toHaveLength(1);
-    el.listeners[0]();
+    expect(el.live).toBe(1);
+    el.press();
+    // The once-listener is gone after the press; the retry listener is the only live one.
+    expect(el.live).toBe(0);
     await flush();
-    expect(el.listeners).toHaveLength(2);
+    expect(el.live).toBe(1);
   });
 
   it('CONTROL: a press that loads the player does not re-arm', async () => {
@@ -46,8 +60,9 @@ describe('armInline', () => {
     const el = fakeMount();
     mountPlayers.mockResolvedValueOnce(undefined);
     armInline(el as unknown as HTMLElement);
-    el.listeners[0]();
+    expect(el.live).toBe(1);
+    el.press();
     await flush();
-    expect(el.listeners).toHaveLength(1);
+    expect(el.live).toBe(0);
   });
 });
