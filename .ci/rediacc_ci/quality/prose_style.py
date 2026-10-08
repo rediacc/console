@@ -1047,12 +1047,22 @@ def exempt_for(rel, exempts):
     """
     parts = rel.replace(os.sep, "/").split("/")
     for glob, reason in exempts:
-        wanted = glob.split("/")
-        if len(wanted) != len(parts):
-            continue
-        if all(fnmatch.fnmatchcase(got, want) for got, want in zip(parts, wanted, strict=True)):
+        if _segments_match(parts, glob.split("/")):
             return reason
     return None
+
+
+def _segments_match(parts, wanted):
+    """`*` and every other pattern segment match exactly ONE path segment; `**` matches zero or more.
+
+    Measured 2026-10-08: with equal depths required, `agent/reviews/**` covered only `agent/reviews/<file>` and missed every record under `agent/reviews/<branch>/`, so a machine-written review quoting a second-person pronoun reddened the gate the exemption exists to quiet.
+    """
+    if not wanted:
+        return not parts
+    head, rest = wanted[0], wanted[1:]
+    if head == "**":
+        return any(_segments_match(parts[i:], rest) for i in range(len(parts) + 1))
+    return bool(parts) and fnmatch.fnmatchcase(parts[0], head) and _segments_match(parts[1:], rest)
 
 
 # --------------------------------------------------------------------------- Reflow ---------------------------------------------------------------------------
@@ -2214,6 +2224,25 @@ def selftest():
     """
     ctl = Controls("prose-style", floor=40, verbose=True)
     globals_, rules = load_rules(_MINI)
+
+    # ---- exemption globs: `*` is one segment, `**` is zero or more ------------
+    _ex = [("agent/reviews/**", "r"), ("agent/*/STATE.md", "s")]
+    ctl.check(
+        "exempt: `**` covers a record one level down",
+        exempt_for("agent/reviews/1008-1/x.md", _ex),
+        "r",
+    )
+    ctl.check(
+        "exempt: `**` covers a record at its own level", exempt_for("agent/reviews/x.md", _ex), "r"
+    )
+    ctl.check(
+        "CONTROL: `*` stays one segment deep", exempt_for("agent/archive/x/STATE.md", _ex), None
+    )
+    ctl.check(
+        "CONTROL: a sibling directory is not covered",
+        exempt_for("agent/reviewsX/1008-1/x.md", _ex),
+        None,
+    )
 
     # ---- loading --------------------------------------------------------
     ctl.check("loader: three rules", [r.id for r in rules], ["X1", "X2", "X3"])
