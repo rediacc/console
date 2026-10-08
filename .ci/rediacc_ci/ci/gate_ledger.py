@@ -99,7 +99,7 @@ CI_FOLD_DEADLINE_S = 600.0
 
 
 class _DaemonPool:
-    """A small thread pool whose workers are DAEMON threads. `ThreadPoolExecutor` workers are joined by an interpreter-exit hook, so a worker still inside a `gh` call at the fold deadline would keep the process alive after `shutdown(wait=False)`; a daemon worker is abandoned instead. A raising callable resolves its future with the exception, so the worker survives and the reader sees the error rather than a silent deadline."""
+    """A small thread pool whose workers are DAEMON threads. `ThreadPoolExecutor` workers are joined by an interpreter-exit hook, so a worker still inside a `gh` call at the fold deadline would keep the process alive after `shutdown(wait=False)`; a daemon worker is abandoned instead. A raising callable resolves its future with the exception, so the worker survives and the reader sees the error rather than a silent deadline. A BaseException that is not an Exception (SystemExit, KeyboardInterrupt) also resolves the future, then ends that worker thread; the other workers keep running."""
 
     def __init__(self, workers: int) -> None:
         self._jobs: queue.Queue[tuple[Future[Any], Callable[[], Any]] | None] = queue.Queue()
@@ -123,6 +123,11 @@ class _DaemonPool:
                     # Handed to the reader through the future; the debug record keeps the traceback.
                     logging.getLogger(__name__).debug("fold worker call raised", exc_info=True)
                     fut.set_exception(exc)
+                except BaseException as exc:
+                    # SystemExit and KeyboardInterrupt: hand them to the reader, then stop this worker.
+                    logging.getLogger(__name__).debug("fold worker call exited", exc_info=True)
+                    fut.set_exception(exc)
+                    return
                 else:
                     fut.set_result(result)
 

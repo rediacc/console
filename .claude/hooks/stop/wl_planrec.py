@@ -507,9 +507,13 @@ def resolve(root, kind, token):
             _git_ok(root, "merge-base", "--is-ancestor", got, ref)
             for ref in ("HEAD", "refs/remotes/origin/main")
         ):
+            has_main = bool(
+                _git_out(root, "rev-parse", "--verify", "--quiet", "refs/remotes/origin/main")
+            )
             return False, (
-                "%s exists in this clone but is not an ancestor of HEAD or origin/main (a rebase rewrote it), "
-                "so a fresh checkout will not have it" % got[:40]
+                "%s exists in this clone but is not an ancestor of %s (a rebase rewrote it), "
+                "so a fresh checkout will not have it"
+                % (got[:40], "HEAD or origin/main" if has_main else "HEAD")
             )
         return True, got[:40]
     if kind == "ancestor":

@@ -1124,6 +1124,16 @@ def _nested_negation(ci: dict, _cd: dict, _hk: dict) -> None:
     ci["jobs"]["cd-preflight"]["if"] = "always() && !((github.event_name == 'pull_request'))"
 
 
+def _enclosed_negation(ci: dict, _cd: dict, _hk: dict) -> None:
+    ci["jobs"]["cd-preflight"]["if"] = (
+        "always() && !(github.event_name == 'pull_request' || github.event_name == 'push')"
+    )
+
+
+def _no_job_if(ci: dict, _cd: dict, _hk: dict) -> None:
+    del ci["jobs"]["cd-preflight"]["if"]
+
+
 def _no_pr_job(ci: dict, _cd: dict, _hk: dict) -> None:
     del ci["jobs"]["cd-preflight"]
 
@@ -1178,6 +1188,7 @@ def _narrow_hk(_ci: dict, _cd: dict, hk: dict) -> None:
         (_job_pr_step_negated, ["cd-preflight-not-on-pr"]),
         (_spaced_negation, ["cd-preflight-not-on-pr"]),
         (_nested_negation, ["cd-preflight-not-on-pr"]),
+        (_enclosed_negation, ["cd-preflight-not-on-pr"]),
         (_no_pr_job, ["cd-preflight-no-pr-job"]),
         (_before_tag, ["cd-preflight-before-tag"]),
         (_other_job, ["cd-preflight-before-tag"]),
@@ -1195,6 +1206,19 @@ def test_each_preflight_pin_fires_on_exactly_its_plant(mutate, expected) -> None
     ci, cd, hk = preflight_trio()
     mutate(ci, cd, hk)
     assert preflight_kinds(ci, cd, hk) == expected
+
+
+def test_a_job_without_an_if_runs_on_pull_request_and_passes() -> None:
+    ci, cd, hk = preflight_trio()
+    _no_job_if(ci, cd, hk)
+    assert preflight_kinds(ci, cd, hk) == []
+
+
+def test_a_double_negation_and_a_closed_group_before_the_match_still_admit() -> None:
+    admits = ci_workflow_invariants._admits_pr
+    assert admits("!(!(github.event_name == 'pull_request'))")
+    assert admits("!(a) || github.event_name == 'pull_request'")
+    assert not admits("x && !(a && (github.event_name == 'pull_request'))")
 
 
 def test_a_preflight_without_checks_runs_all_and_is_not_narrowed() -> None:

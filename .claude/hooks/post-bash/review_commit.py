@@ -54,29 +54,30 @@ def commit_repos(cmd, cwd, root):
         top = R.git_out(where, "rev-parse", "--show-toplevel")
         # AN UNRESOLVABLE `-C` IS NOT "NO REPOSITORY" (#51e1c0cf). `git -C <dir>/$r commit` in a loop names a directory the lexer cannot expand, so rev-parse fails; skipping it left account 654d186 unreviewed until the push guard refused the push. Every project repository is checked instead: uncovered() is cheap, and a covered repository starts nothing.
         candidates = [top] if top else (_project_repos(root) if run.git_dir else [])
+        members = {real_root, *(os.path.realpath(p) for p in _submodule_paths(root))}
         for cand in candidates:
-            inside = cand and (
-                os.path.realpath(cand) == real_root
-                or os.path.realpath(cand).startswith(real_root + os.sep)
-            )
+            # MEMBERSHIP IS `.gitmodules`, NOT LOCATION (operator 2026-10-08). private/growth is a separate, gitignored repository inside the tree; reviewing its commits filed the operator's private documents into this project's agent/reviews/.
+            inside = bool(cand) and os.path.realpath(cand) in members
             if inside and cand not in repos:
                 repos.append(cand)
     return repos
 
 
-def _project_repos(root):
-    """The project and every repository directly inside it or under `private/` (its submodules), as top-level paths."""
+def _submodule_paths(root):
+    """The checkouts `.gitmodules` registers, as absolute paths; a repository that merely sits inside the tree (gitignored, cloned beside the submodules) is not one."""
     root = pathlib.Path(root)
-    found = [str(root)]
-    for parent in (root, root / "private"):
-        if not parent.is_dir():
-            continue
-        found.extend(
-            str(child)
-            for child in sorted(parent.iterdir())
-            if child.is_dir() and (child / ".git").exists()
-        )
-    return found
+    out = R.git_out(root, "config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$")
+    paths = []
+    for line in (out or "").splitlines():
+        parts = line.split(None, 1)
+        if len(parts) == 2 and (root / parts[1].strip() / ".git").exists():
+            paths.append(str(root / parts[1].strip()))
+    return paths
+
+
+def _project_repos(root):
+    """The project and its registered submodules, as top-level paths."""
+    return [str(pathlib.Path(root)), *_submodule_paths(root)]
 
 
 def trigger_lines(cmd, cwd, root, trigger=R.trigger):
