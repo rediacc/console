@@ -64,7 +64,7 @@ const VM_E2E_PATHS = [
   'packages/json',
   // The suites themselves, plus their playwright configs and .env target.
   'packages/e2e-tests',
-  // Step scripts, in workflow order. Each one is self-contained, verified by sweep.
+  // Step scripts, in workflow order. Each one sources exactly lib/common.sh and nothing else, verified by sweep.
   '.ci/rediacc_ci/setup/install_cli_global.py',
   '.ci/rediacc_ci/infra/docker_prepull.py',
   '.ci/rediacc_ci/infra/build_renet.py',
@@ -74,6 +74,7 @@ const VM_E2E_PATHS = [
   // The e2e runner and the account starter are `python3 -m rediacc_ci.testrun.e2e` and `rediacc_ci.testrun.start_account` since 3ed5836f7, so the `.ci/rediacc_ci` entry above carries them; their bash twins run-e2e.sh and start-account-for-e2e.sh are no longer invoked by any leg.
   // Used by ONE leg each and carried by all eight: the two private scripts by fork_isolation. Over-wide for the other seven, which is the safe direction and costs nothing extra: they are in the same listing. The concurrent-fork isolation test is `python3 -m rediacc_ci.private.concurrent_fork_isolation_test`, carried by the `.ci/rediacc_ci` entry above; its bash twin was retired under PLAN-retire-bash-oracles B3.
   '.ci/rediacc_ci/private/compose_healthcheck_smoke_test.py',
+  '.ci/scripts/lib/common.sh',
   // Added 4b5a52d9f (spec W T2.1-T2.3, T2.6): every VM/E2E leg now `uses:` this local composite before its build steps, which resolves from the WORKSPACE exactly like bws-secrets above, so a change to the action does not re-run these legs unless it is in the closure. Found by test_gate_greenlight_closure_trace.py.
   '.github/actions/free-disk-space',
   '.github/actions/setup-workspace',
@@ -203,6 +204,7 @@ const CLOSURES = {
       // T2.14's own shard manifests: each leg's `--shard-manifest`/`jq` argument picks its file list straight from these, so a manifest edit that moves work between legs is exactly the kind of console-side input rule 3 exists to catch.
       '.ci/config/shards/test-renet-go.json',
       '.ci/config/shards/test-renet-integration.json',
+      '.ci/scripts/lib/common.sh',
       '.ci/scripts/infra/ci-env.sh',
       // ADDED 2026-08-08, and it was a real hole rather than a tidy-up: this job mints its submodule-capable token through the composite action (ct-tests.yml:1473) exactly as account_e2e does, but only account_e2e declared it. An edit to the action would not have withdrawn a renet greenlight. Found by test_gate_greenlight_closure_trace.py on its first run, which is the case
       // that gate
@@ -243,6 +245,7 @@ const CLOSURES = {
       '.ci/tutorials',
       '.ci/rediacc_ci/infra/build_renet.py',
       '.ci/rediacc_ci/infra/verify_ssh.py',
+      '.ci/scripts/lib/common.sh',
       '.github/actions/setup-workspace',
       '.github/actions/app-token',
       'package.json',
@@ -274,6 +277,7 @@ const CLOSURES = {
       '.ci/scripts/build',
       '.ci/scripts/deploy',
       '.ci/rediacc_ci/ci/assert_install_methods_complete.py',
+      '.ci/scripts/lib/common.sh',
       // test-install-methods.sh:33 sources it for RELEASES_BASE_URL and the
       // package names the apt/dnf/apk/pacman legs install.
       '.ci/config/constants.sh',
@@ -308,6 +312,7 @@ const CLOSURES = {
       // 348e25fcb (spec W T2.13) shards this job four ways off this manifest (ct-tests.yml:1965). Found by test_gate_greenlight_closure_trace.py.
       '.ci/config/shards/test-account-e2e.json',
       // install-deps.sh below sources it.
+      '.ci/scripts/lib/common.sh',
       '.github/actions/setup-workspace',
       // Both jobs mint a submodule-capable token through it before checkout.
       '.github/actions/app-token',
@@ -341,6 +346,7 @@ const CLOSURES = {
       'rdc.sh',
       '.ci/config/constants.sh',
       '.ci/rediacc_ci/diagnostics/collect_drill_diagnostics.py',
+      '.ci/scripts/lib/common.sh',
       '.github/actions/setup-workspace',
       '.github/actions/app-token',
       'package.json',
@@ -375,6 +381,7 @@ const CLOSURES = {
       '.ci/scripts/infra/ci-stop-elite.sh',
       // ci-start-elite.sh:23 sources it.
       '.ci/scripts/infra/ci-env.sh',
+      '.ci/scripts/lib/common.sh',
       '.github/actions/app-token',
       'package.json',
       'package-lock.json',
@@ -400,6 +407,7 @@ const CLOSURES = {
       // rediacc_ci.private.license_e2e points MINT_SRC at it and `go build`s it; the job also caches on its go.sum (ct-tests.yml:1626).
       '.ci/scripts/private/license-mint',
       // license-e2e.sh:55 sources it.
+      '.ci/scripts/lib/common.sh',
       '.github/actions/app-token',
       '.github/workflows/ct-tests.yml',
     ],
@@ -421,6 +429,7 @@ const CLOSURES = {
       '.ci/scripts/build',
       // The runner, `python3 -m rediacc_ci.testrun.rdc_update` (the port of test-rdc-update.sh, which no job invokes any more), and everything it imports.
       '.ci/rediacc_ci',
+      '.ci/scripts/lib/common.sh',
       '.github/actions/setup-workspace',
       'package.json',
       'package-lock.json',
@@ -437,6 +446,7 @@ const CLOSURES = {
     submodules: [],
     paths: [
       '.ci/rediacc_ci',
+      '.ci/scripts/lib/common.sh',
       // Sourced by the build modules' bash bridges. It carries the nfpm version and its checksum, which rediacc_ci.build.ensure_nfpm is now the only reader of.
       '.ci/config/constants.sh',
       // rediacc_ci.build.build_linux_pkg renders packages from it.
@@ -470,6 +480,7 @@ const CLOSURES = {
       'workers',
       // The runner, `python3 -m rediacc_ci.testrun.unit`, and everything it imports.
       '.ci/rediacc_ci',
+      '.ci/scripts/lib/common.sh',
       '.github/actions/setup-workspace',
       'package.json',
       'package-lock.json',
