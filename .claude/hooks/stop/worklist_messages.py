@@ -1974,7 +1974,7 @@ regression surfaces and only the first is a check-*.ts:
   gates    a source-level invariant, wiring, or content shape. check:ci-* in
            ci-quality.yml, wired at package.json + ci-runner manifest + step.
   e2e      CLI or renet behaviour that only appears against a live machine.
-           packages/e2e-tests/tests/NN-<name>.test.ts, run by run-e2e.sh.
+           packages/e2e-tests/tests/NN-<name>.test.ts, run by rediacc_ci.testrun.e2e.
   ops      rdc ops, KVM/qemu provisioning, platform checks. A step in
            .github/workflows/ci-ops-test.yml. NOTHING enforces coverage here.
   install  install.sh, packaging, the updater, rdc.sh env. A case in the
@@ -2971,7 +2971,7 @@ V_LOOP_NEXT_BATCH_OPEN = (
     "    2. npm run ci:quick   (the receipt block_unverified_push reads), then the `--only` "
     "command of every entry in the receipt's droppedTouched (.ci/cache/prepush-receipt.json)\n"
     "    3. the e2e-local recipe for every touched E2E lane: "
-    ".ci/scripts/test/run-e2e.sh --workers 1 --test <suite>\n"
+    "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test <suite>\n"
     "    4. git push -u origin %(branch)s\n"
     '    5. f=$(mktemp) && python3 .claude/hooks/stop/worklist.py --batch-body %(me)s > "$f" '
     '&& gh pr create --draft --base main --head %(branch)s --body-file "$f"\n'
