@@ -52,8 +52,13 @@ def main(argv: list[str]) -> int:
 
     print(f"→ writing sentinel(s) for {version} on channel {channel} (commit {commit_sha})")
     sys.stdout.flush()
+    # The writer runs in process and resolves paths from the checkout root; the previous directory is restored so the cwd change does not outlive the call (review finding 67a505d6.2). An exception from the writer still ends the process with a traceback and status 1, which the workflow step reports as a failure.
+    previous = os.getcwd()
     os.chdir(_ROOT)
-    return write_release_sentinel.main(args)
+    try:
+        return write_release_sentinel.main(args)
+    finally:
+        os.chdir(previous)
 
 
 if __name__ == "__main__":

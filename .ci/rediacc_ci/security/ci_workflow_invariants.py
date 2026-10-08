@@ -312,7 +312,7 @@ def message_for(kind: str, name: str, workflow_file: str) -> str | None:
     if kind == "skip-release-not-passed":
         return (
             "INVARIANT-FAIL: skip-release: job '%s' does not pass `skip_release` in its "
-            "`with:`. upload-to-r2.sh's guard then never fires, and a bump-none commit advances "
+            "`with:`. upload_to_r2.py's guard then never fires, and a bump-none commit advances "
             "cli/<channel>/manifest.json to a version that will never be tagged." % name
         )
     if kind == "skip-release-validator-ungated":

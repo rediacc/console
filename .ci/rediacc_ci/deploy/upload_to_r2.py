@@ -38,6 +38,8 @@ FOUR DEFECTS IN THE TWIN, ALL REPRODUCED RATHER THAN REPAIRED
 --------------------------------------------------------------------------
 This wave's acceptance rule is agreement with the LIVE twin, so each is carried, named as a constant so a test can pin it, and reported to the driver.
 
+One neighbouring behaviour is NOT reproduced: a tracker that is valid JSON but holds a non-string entry keeps its other entries (a Rule-T delta, review finding 12f71bd1.1, at `update_versions_tracker`). Defect 4 below is the different case of a tracker that is not JSON at all.
+
 DEFECT 1, `AN_EMPTY_CLI_DIR_PUBLISHES_A_POINTER`. A `dist/cli/` that EXISTS and holds no `rdc-*` and no `manifest.json` uploads nothing, then still writes
 `cli/<channel>/latest.json` = `{"version":"<V>"}` and prints
 `CLI: uploaded to cli/v<V>/ + cli/<channel>/`. Every installer and every auto-updater on that channel then resolves to a version with zero binaries. The summary prints `Artifacts uploaded: 0` on the line below and nothing acts on it. This is the same harm the bump-none guard at the top of the same file exists to prevent, arriving by a different door. Driven 2026-09-13.
