@@ -2092,20 +2092,21 @@
       ]
     },
     "agent/plans/PLAN-turbo-local-first.md": {
-      "status": "approved",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 6,
+      "open_sigs": [],
+      "done_sigs": [
         "166f8c38",
         "16d5f486",
         "3bc06e37",
         "4b3fe5bd",
-        "6dd1be72"
-      ],
-      "done_sigs": []
+        "6dd1be72",
+        "77b62eac"
+      ]
     },
     "agent/plans/PLAN-typecheck-orphan-packages.md": {
       "status": "ready",

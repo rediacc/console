@@ -569,7 +569,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-retro-20260924.md` | ready | 615 | 1 | 22 | 66573 |
 | `agent/plans/PLAN-stop-hook-retro-20260925.md` | ready | 259 | 0 | 10 | 25008 |
 | `agent/plans/PLAN-stop-hook-rulings-campaign.md` | draft | 103 | 16 | 1 | 9820 |
-| `agent/plans/PLAN-stop-hook-turbo.md` | approved | 183 | 0 | 23 | 30337 |
+| `agent/plans/PLAN-stop-hook-turbo.md` | approved | 189 | 0 | 23 | 30523 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
 | `agent/plans/PLAN-submodule-branch-coordination-guard.md` | proposed | 109 | 8 | 0 | 18747 |
@@ -578,7 +578,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-token-ip-rebind.md` | draft | 416 | 1 | 9 | 38641 |
 | `agent/plans/PLAN-tooling-transformation.md` | ready | 7501 | 3 | 151 | 751317 |
-| `agent/plans/PLAN-turbo-local-first.md` | approved | 117 | 5 | 0 | 13584 |
+| `agent/plans/PLAN-turbo-local-first.md` | done | 124 | 0 | 6 | 15349 |
 | `agent/plans/PLAN-typecheck-orphan-packages.md` | ready | 84 | 0 | 5 | 7005 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
 | `agent/plans/PLAN-w7p4w-docker-cutover.md` | compacted | 62 | 0 | 12 | 4758 |
