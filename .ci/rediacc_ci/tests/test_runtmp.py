@@ -245,7 +245,6 @@ def test_a_bad_shell_tag_is_refused() -> None:
 # The bash files that carry the contract today. A KNOWN-POSITIVE set rather than a count: a scan that stops seeing them reports each one missing instead of a clean tree.
 _SHELL_USERS = {
     ".ci/media/coverage.sh",
-    ".ci/scripts/test/gates/test-toolchain.sh",
     ".ci/scripts/test/lib/test-helpers.sh",
     ".ci/tutorials/record.sh",
 }

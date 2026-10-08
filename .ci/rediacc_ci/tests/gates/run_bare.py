@@ -12,7 +12,7 @@ WHAT IS KEPT FROM THE FIXTURE, because a bare runner that dropped either refusal
 Two refusals pytest never needed, because collection gives them for free there:
 
   * a module with no `test_*` function at all is a failure, so an import that found nothing cannot report green;
-  * a test taking any argument other than `gate` is a failure, because this runner cannot provide `tmp_path` or `monkeypatch`, and skipping the argument would run a different test than the one written.
+  * a test taking any argument other than `gate` and `tmp_path` is a failure, because this runner provides only `gate` and `tmp_path` (a fresh `tempfile.TemporaryDirectory()` as a `pathlib.Path`, removed after the test), and skipping any other argument would run a different test than the one written.
 
 A failed assertion ends that test only. Any other exception is a defect in the test or the runner and propagates with its traceback, which exits 1.
 
@@ -24,7 +24,9 @@ from __future__ import annotations
 import importlib
 import inspect
 import os
+import pathlib
 import sys
+import tempfile
 import traceback
 from typing import TYPE_CHECKING
 
@@ -53,16 +55,21 @@ def collect(module: ModuleType) -> list[tuple[str, FunctionType]]:
 def refusal(function: Callable[..., object]) -> str | None:
     """Why this runner cannot run `function`, or None."""
     parameters = list(inspect.signature(function).parameters)
-    if parameters != ["gate"]:
-        return "takes %r; the bare runner provides only `gate`" % (parameters,)
+    if parameters not in (["gate"], ["gate", "tmp_path"]):
+        return "takes %r; the bare runner provides only `gate` and `tmp_path`" % (parameters,)
     return None
 
 
 def run_one(module_name: str, name: str, function: Callable[..., object]) -> str | None:
     """Run one test against a fresh Harness. None on a pass, else the failure text."""
     handle = harness.Harness(module_name, name, ledger=os.environ.get(harness.LEDGER_ENV))
+    wants_tmp = "tmp_path" in inspect.signature(function).parameters
     try:
-        function(handle)
+        if wants_tmp:
+            with tempfile.TemporaryDirectory() as scratch:
+                function(handle, pathlib.Path(scratch))
+        else:
+            function(handle)
     except AssertionError as exc:
         return "".join(traceback.format_exception(exc)).rstrip("\n")
     if handle.tally_fails:

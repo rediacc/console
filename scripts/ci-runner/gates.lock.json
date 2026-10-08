@@ -5390,21 +5390,6 @@
     }
   },
   {
-    "id": "gate-test:toolchain",
-    "run": ".ci/scripts/test/gates/test-toolchain.sh",
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-toolchain.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-gate-tests",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
     "id": "check:ci-pytest",
     "run": "npm run check:ci-pytest",
     "gate": true,

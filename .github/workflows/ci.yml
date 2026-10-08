@@ -627,7 +627,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.tests.gates.run_bare rediacc_ci.tests.gates.test_gate_run_sh
 
       - name: gate toolchain resolver controls
-        run: .ci/scripts/test/gates/test-toolchain.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.tests.gates.run_bare rediacc_ci.tests.gates.test_gate_toolchain
 
   # ============================================================================
   # REVIEW GATE: enforce review-thread hygiene (bot-agnostic)

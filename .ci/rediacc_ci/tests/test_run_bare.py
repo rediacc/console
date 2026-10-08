@@ -96,12 +96,54 @@ def test_a_module_with_no_tests_is_a_failure(tmp_path) -> None:
     assert "defines no test_* function" in proc.stderr
 
 
-@pytest.mark.parametrize("signature", ["gate, tmp_path", "tmp_path", ""])
+@pytest.mark.parametrize(
+    "signature",
+    ["tmp_path", "", "gate, monkeypatch", "gate, tmp_path, monkeypatch", "tmp_path, gate"],
+)
 def test_a_test_taking_anything_but_gate_is_refused(tmp_path, signature) -> None:
     proc = run_bare(tmp_path, "def test_odd(%s):\n    pass\n" % signature)
     assert proc.returncode == 1
     assert "refused" in proc.stderr
-    assert "only `gate`" in proc.stderr
+    assert "only `gate` and `tmp_path`" in proc.stderr
+
+
+TMP_PATH_MODULE = """
+import os, pathlib
+
+def test_scratch(gate, tmp_path):
+    assert isinstance(tmp_path, pathlib.Path) and tmp_path.is_dir()
+    (tmp_path / "f").write_text("x")
+    with open(os.environ["SEEN_FILE"], "w") as out:
+        out.write(str(tmp_path))
+    gate.log_pass("scratch")
+"""
+
+
+@pytest.mark.parametrize("block", [False, True])
+def test_tmp_path_is_supplied_as_a_directory_and_removed_after(tmp_path, block) -> None:
+    seen = tmp_path / "seen.txt"
+    (tmp_path / "bare_subject.py").write_text(TMP_PATH_MODULE, encoding="utf-8")
+    program = (
+        (BLOCK_PYTEST if block else "")
+        + "import sys; from rediacc_ci.tests.gates import run_bare; sys.exit(run_bare.main(['bare_subject']))"
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", program],
+        cwd=str(tmp_path),
+        env={
+            "PATH": "/usr/bin:/bin",
+            "PYTHONPATH": "%s:%s" % (CI_DIR, tmp_path),
+            "SEEN_FILE": str(seen),
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    )
+    assert proc.returncode == 0, proc.stderr
+    scratch = pathlib.Path(seen.read_text(encoding="utf-8"))
+    assert scratch != tmp_path
+    assert not scratch.exists()
 
 
 def test_imported_test_functions_are_not_collected(tmp_path) -> None:
