@@ -221,6 +221,27 @@ const SENTINEL = /\u27e6\d+\u27e7/g;
 /** The shape of a restored product name: one whitespace-free token that starts with a capital, so a lowercase common word (`lisanslar`, `rakipler`) is not a name. Apostrophe suffixes (`Rediacc'ın`) stay allowed. */
 const PRODUCT_NAME_TOKEN = /^\p{Lu}[\p{L}\p{N}'\u2019_-]*$/u;
 
+/**
+ * The masked invariants that CANNOT pass the capital-letter test, measured against the pipeline's
+ * `PROPER_NOUNS` (private/growth/www_pipeline/adapters/json_adapter.py) and `spans.py`: the
+ * lowercase and digit-bearing names, the two multi-word ones, a `{{var}}` placeholder and a
+ * typographic double quote, each of which the mask restores byte for byte. A closed list, not a
+ * looser shape, because a shape loose enough to take `btrfs` also takes `lisanslar`.
+ */
+const MASKED_LITERALS = new Set([
+  'btrfs',
+  'ext4',
+  'aes-xts',
+  'dm-crypt',
+  'rdc',
+  'renet',
+  'SOC 2',
+  'ISO 27001',
+  '\u201c',
+  '\u201d',
+]);
+const PLACEHOLDER_GAP = /^\{\{[\w.]+\}\}$/u;
+
 /** At most this many characters may stand where one sentinel stood. */
 const SENTINEL_REPLACEMENT_MAX = 40;
 
@@ -267,7 +288,11 @@ export function isSentinelRepair(was: string, now: string, en: string): boolean 
     .every(
       (gap) =>
         !/[.!?;:,\u3002\uff01\uff1f\uff1b\uff1a\uff0c\u3001\u27e6\u27e7<>]/u.test(gap) &&
-        (gap === '' || en.includes(gap) || PRODUCT_NAME_TOKEN.test(gap))
+        (gap === '' ||
+          en.includes(gap) ||
+          PRODUCT_NAME_TOKEN.test(gap) ||
+          MASKED_LITERALS.has(gap) ||
+          PLACEHOLDER_GAP.test(gap))
     );
 }
 
@@ -389,6 +414,34 @@ const SENTINEL_CONTROLS: { name: string; was: string; now: string; en: string; w
     name: 'CONTROL: one lowercase common word written into the sentinel gap is NOT exempt',
     was: '\u27e60\u27e7 vs rakipler',
     now: 'lisanslar vs rakipler',
+    en: 'How we stack up against other vendors',
+    want: false,
+  },
+  {
+    name: 'a masked lowercase product name (btrfs) restored is exempt',
+    was: '\u27e60\u27e7 vs rakipler',
+    now: 'btrfs vs rakipler',
+    en: 'How we stack up against other vendors',
+    want: true,
+  },
+  {
+    name: 'a masked multi-word proper noun (SOC 2) restored is exempt',
+    was: '\u27e60\u27e7 uyumluluğu',
+    now: 'SOC 2 uyumluluğu',
+    en: 'Compliance',
+    want: true,
+  },
+  {
+    name: 'a masked {{var}} placeholder restored is exempt',
+    was: '\u27e60\u27e7 lisans',
+    now: '{{count}} lisans',
+    en: 'licenses',
+    want: true,
+  },
+  {
+    name: 'CONTROL: a lowercase word that is not a masked noun (rdcx) is NOT exempt',
+    was: '\u27e60\u27e7 vs rakipler',
+    now: 'rdcx vs rakipler',
     en: 'How we stack up against other vendors',
     want: false,
   },
