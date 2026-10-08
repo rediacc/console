@@ -785,7 +785,7 @@ def validate(
             triage = (rec[2] if len(rec) > 2 else "") if rec else ""
             if rec is None or rec[0] == "~":
                 errors.append("F%d: worklist item #%s does not exist" % (n, item))
-            elif name not in (rec[1] if len(rec) > 1 else ""):
+            elif not wl_review.names_token(rec[1] if len(rec) > 1 else "", name):
                 errors.append(
                     "F%d: worklist item #%s does not name %s in its text" % (n, item, name)
                 )

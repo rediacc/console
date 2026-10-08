@@ -2785,6 +2785,11 @@ def rebased_copy_below(repo, pid, fix):
 WAIVE_ASKED_RE = re.compile(r"^ASKED:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(?::\d{2})?Z$")
 
 
+def names_token(text, token):
+    """True when `text` names `token` as a whole token: `71afd29f.1` is not named by `71afd29f.12`, nor `pr:8/F1` by `pr:8/F12` (findings b18d31bd.1 and b18d31bd.2)."""
+    return re.search(r"(?<![\w.])%s(?!\w)" % re.escape(token), text or "") is not None
+
+
 def deferral_refusal(finding):
     """The D5 plan-and-fix order `mark deferred` answers with: a deferral is no longer a resolution."""
     return "\n".join(
@@ -2811,7 +2816,7 @@ def _waive(finding_id, args, items, asked_ok):
         raise ValueError("worklist item #%s does not exist" % item)
     text = rec[1] if len(rec) > 1 else ""
     triage = rec[2] if len(rec) > 2 else ""
-    if finding_id not in (text or ""):
+    if not names_token(text, finding_id):
         raise ValueError("worklist item #%s does not name %s in its text" % (item, finding_id))
     if triage != "operator-only":
         raise ValueError(
