@@ -336,7 +336,10 @@ TROOT = pathlib.Path(runtmp.run_dir("depgate-tasks-"))
 )
 for tname, tdep in (("tx", "PLAN-ty.md#T3"), ("tdone", "PLAN-ty.md#T2")):
     write_plan(TROOT, tname, tdep)
-TGRAPH = PO.context(TROOT)[0].graph
+TCTX = PO.context(TROOT)[0]
+if TCTX is None:
+    raise SystemExit("FAIL: the task-edge fixture produced no plan order context")
+TGRAPH = TCTX.graph
 TITEM = "PLAN-tx.md [41f56150] port the tx box"
 tdeps = D.item_deps(TGRAPH, TITEM, [])
 check(
