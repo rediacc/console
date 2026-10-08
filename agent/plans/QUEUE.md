@@ -33,7 +33,7 @@ A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turb
 
 ```stop-hook
 stop_hook: on -- operator 2026-10-06: back on once PLAN-fast-loop completed
-turbo: off
+turbo: off -- operator 2026-10-08: "let's disable turbo mode"
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
 writer_cap: 15 -- operator 2026-10-04: parallel limit 15
@@ -56,9 +56,9 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Branch: 1008-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-retire-bash-oracles.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 193 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a5647c9825dad4511, worker:aaab0bd0c0fa3ef4c, worker:ad01adb75cd722c61.
-- Leased items: 3: #180a91f1 (worker:ad01adb75cd722c61, d778be9d), #ae50572b (worker:aaab0bd0c0fa3ef4c, d778be9d), #ec00a9ad (worker:a5647c9825dad4511, d778be9d).
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 203 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 2 live of writer_cap 15 (session d778be9d): worker:afb0480b51769fb0a, worker:a558fadce0eebe79c.
+- Leased items: 6: #3adcbb61 (worker:afb0480b51769fb0a, d778be9d), #5c3709a5 (worker:afb0480b51769fb0a, d778be9d), #96d14b9d (worker:afb0480b51769fb0a, d778be9d), #9dd53bab (worker:afb0480b51769fb0a, d778be9d), #b4e94451 (worker:afb0480b51769fb0a, d778be9d), #e70faed1 (worker:afb0480b51769fb0a, d778be9d).
 - Next plan: agent/plans/PLAN-retire-bash-oracles.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
