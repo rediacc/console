@@ -1060,3 +1060,18 @@ def test_real_queue_md_edit_outside_the_block_still_counts(tmp_path):
     path.write_text(text.replace("- a\n", "- a\n- b\n"), encoding="utf-8")
     assert not rg._hook_refresh_only(str(tmp_path), pq.QUEUE_REL)
     assert pq.QUEUE_REL in rg.fixset_files(str(tmp_path), [])[0]
+
+
+def test_progress_only_refresh_of_queue_md_is_not_fixset_work(tmp_path):
+    """The stop re-renders the `## Promoted` progress block too (wl_planqueue.with_fresh_progress), so a change confined to it asks nothing; a hand edit beside it still counts."""
+    pq, rg, path = _queue_repo(tmp_path, "# Queue\n\n## Promoted\n\n1. agent/plans/PLAN-a.md\n")
+    base = path.read_text(encoding="utf-8")
+    path.write_text(pq.with_progress(base, "Promoted: 0 of 1 plans done.\n"), encoding="utf-8")
+    assert rg._hook_refresh_only(str(tmp_path), pq.QUEUE_REL)
+    path.write_text(
+        pq.with_progress(base, "Promoted: 0 of 1 plans done.\n").replace(
+            "PLAN-a.md\n", "PLAN-a.md\n2. agent/plans/PLAN-b.md\n"
+        ),
+        encoding="utf-8",
+    )
+    assert not rg._hook_refresh_only(str(tmp_path), pq.QUEUE_REL)
