@@ -58,7 +58,7 @@ Old version strings stay as they are:
 **Clause.** `REVISIT WHEN PR #<N> MERGES`, case-insensitive. It also takes the form `<owner>/<repo>#N` and may sit anywhere in an entry's comment block.
 - It is parsed by a new canonical verb, `allowlist.py conditions <file>`, which emits `<line>\t<entry>\t<repo#N>\t<clauseLine>`. The `records` output and the contract version stay unchanged.
 - `blocker-validator.ts` gets `parseConditions()`.
-- A lint refuses loose wording that names a PR (`(revisit|lift|remove|drop)…(when|once|after|until)…#\d+`).
+- A lint refuses loose wording that names a PR (the regex `(?i)\b(revisit|lift|remove|drop)\b.*\b(when|once|after|until)\b.*#\d+`).
 
 **Offline.** check-suppression-liveness gets a fail-tier probe, `pr-conditions`, over every BLOCKER file. `BLOCKER_FILES` (:851-862) moves to `scripts/lib/suppression-liveness.ts`. The probe reads a committed `.ci/config/merged-prs.json` (`{format:1, refreshed_at, prs:{"rediacc/console#589":{mergedAt}}}`): an entry whose PR is listed fails, naming the clause and the merge time. This keeps the rule that a gate is offline by construction (`docs/agent-reference/suppressions.md:48,111`).
 
