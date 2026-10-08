@@ -59,8 +59,9 @@ def stub(body):
     return str(d)
 
 
-GH_OPEN = stub("#!/bin/sh\necho 599\n")
-GH_NONE = stub("#!/bin/sh\nexit 0\n")
+# Each stub answers the Stop hook's PR read (`gh api graphql`) and the red-fix check (`gh pr list`) as the guard module's own differential stubs do.
+GH_OPEN = stub(G.GH_OPEN_BODY)
+GH_NONE = stub(G.GH_NONE_BODY)
 GH_DOWN = stub("#!/bin/sh\necho 'gh: offline' >&2\nexit 1\n")
 
 OPEN_OLD = world()
@@ -97,6 +98,22 @@ WITH_SUB = world()
 G.world(WITH_SUB / "private" / "renet")
 # A repository outside the console.
 OUTSIDE = world()
+
+# ---- THE BATCH (operator ruling ASKED:2026-10-08T10:25Z): PLAN-fx-a is the queue head, so it is the branch's local batch; PLAN-fx-b is a later Promoted plan, still open, so condition (b) holds in every world below.
+TICKED = "- [x] FX1 a ticked box\n"
+FX_B = [("b", "- [ ] FX2 an open box\n")]
+# batch_size 1, the head ticked: the batch is complete, so a bare push and a bare `gh pr create` are admitted and logged as `batch-complete`.
+BATCH_DONE = world(box=TICKED, more=FX_B)
+# The same, batch_size 2: every plan of the set is ticked, but one of two is finished and PLAN-fx-b is eligible, so the batch must still take it.
+BATCH_SHORT = world(box=TICKED, more=FX_B, settings="batch_size: 2\n")
+# The head still open: the batch is not complete, and the refusal names the box.
+BATCH_OPEN = world(more=FX_B)
+# A complete batch under `turbo_push: pr`: no local batch fills there, so the old rules hold.
+BATCH_PR_MODE = world(box=TICKED, more=FX_B, settings="turbo_push: pr\n")
+# A complete batch whose branch has a LIVE PR: unchanged, red-fix and the rest still apply.
+BATCH_LIVE = world(box=TICKED, more=FX_B)
+# A complete batch whose PR read fails: the loop reads it `unreadable`, not a filling local batch.
+BATCH_GH_DOWN = world(box=TICKED, more=FX_B)
 
 WHY = "PLAN-fx-a FX1 needs the VM E2E matrix that only CI runs"
 R = "TURBO_PUSH_REASON='%s' "
@@ -304,6 +321,81 @@ CASES = [
         False,
         "unreadable",
     ),
+    # ---- a complete local batch needs no reason; an incomplete one names what remains
+    ("batch complete: a bare push", PUSH, BATCH_DONE, GH_NONE, False, ""),
+    ("batch complete: a bare gh pr create", "gh pr create --draft", BATCH_DONE, GH_NONE, False, ""),
+    (
+        "batch complete: push then PR in one command",
+        PUSH + " && gh pr create --draft -t x -b y",
+        BATCH_DONE,
+        GH_NONE,
+        False,
+        "",
+    ),
+    (
+        "batch complete: a refused backup PR is released",
+        (R % "backup: hours of local commits, no PR") + "gh pr create --draft",
+        BATCH_DONE,
+        GH_NONE,
+        False,
+        "",
+    ),
+    (
+        "batch short of batch_size: a bare push",
+        PUSH,
+        BATCH_SHORT,
+        GH_NONE,
+        True,
+        "batch still takes agent/plans/PLAN-fx-b.md",
+    ),
+    (
+        "batch head open: a bare push",
+        PUSH,
+        BATCH_OPEN,
+        GH_NONE,
+        True,
+        "agent/plans/PLAN-fx-a.md  1 open, 0 done; next box",
+    ),
+    (
+        "batch head open: gh pr create",
+        "gh pr create --draft",
+        BATCH_OPEN,
+        GH_NONE,
+        True,
+        "NOT complete",
+    ),
+    (
+        "batch complete under turbo_push: pr",
+        PUSH,
+        BATCH_PR_MODE,
+        GH_NONE,
+        True,
+        "`turbo_push: pr` opens the PR",
+    ),
+    (
+        "batch complete, live PR: unchanged",
+        PUSH,
+        BATCH_LIVE,
+        GH_OPEN,
+        True,
+        "reads this branch as `live`",
+    ),
+    (
+        "batch complete, live PR: red-fix still admitted",
+        (R % "red-fix: lint red on the live PR, fixed here") + PUSH,
+        BATCH_LIVE,
+        GH_OPEN,
+        False,
+        "",
+    ),
+    (
+        "batch complete, PR read down: unchanged",
+        PUSH,
+        BATCH_GH_DOWN,
+        GH_DOWN,
+        True,
+        "reads this branch as `unreadable`",
+    ),
 ]
 
 BROKEN_RUNNER = (
@@ -316,7 +408,7 @@ BROKEN_RUNNER = (
     " and any(isinstance(t, ast.Name) and t.id == 'DEFECT' for t in n.targets)]\n"
     "outside = '\\n'.join(l for i, l in enumerate(src.split('\\n'), 1)"
     " if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut))\n"
-    "assert cut and old in outside, 'DEFECT no longer applies outside its own declaration'\n"
+    "assert old in outside, 'the defect no longer applies outside the DEFECT declaration'\n"
     "ns = {'__name__': 'broken', '__file__': %r}\n"
     "exec(compile(src.replace(old, new), 'broken', 'exec'), ns)\n"
     "ev = hookio.Event(sys.stdin.read())\n"
@@ -331,8 +423,14 @@ def ledger_lines(root):
     return path.read_text(encoding="utf-8").splitlines() if path.is_file() else []
 
 
-def run(command, root, gh, broken=False):
-    env = dict(os.environ, CLAUDE_PROJECT_DIR=str(root), PATH="%s:%s" % (gh, os.environ["PATH"]))
+def run(command, root, gh, broken=None):
+    """(blocked, stderr) of one payload through the dispatcher, or through a copy of the guard with `broken` (an (old, new) defect) planted. TMPDIR is fresh per call: the Stop hook's PR read caches its answer per branch beside the worklist (TMPDIR/claude-worklist), and a cached answer from one case's `gh` stub would answer the next case's."""
+    env = dict(
+        os.environ,
+        CLAUDE_PROJECT_DIR=str(root),
+        PATH="%s:%s" % (gh, os.environ["PATH"]),
+        TMPDIR=tempfile.mkdtemp(prefix="tmp-", dir=RUN_TMP),
+    )
     env.pop("TURBO_PUSH_REASON", None)
     payload = json.dumps(
         {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(root)}
@@ -341,7 +439,7 @@ def run(command, root, gh, broken=False):
         argv = [
             sys.executable,
             "-c",
-            BROKEN_RUNNER % (str(HERE.parents[1]), str(GUARD), G.DEFECT, str(GUARD)),
+            BROKEN_RUNNER % (str(HERE.parents[1]), str(GUARD), broken, str(GUARD)),
         ]
     else:
         argv = [sys.executable, DISPATCH, STEM]
@@ -412,8 +510,36 @@ else:
             % (len(rows), last["act"], last["kind"])
         )
 
+# The batch admissions, read back: every act of every admitted BATCH_DONE command is one `batch-complete` line, and no refused batch world wrote any.
+want_batch = sum(
+    c.count("git push") + c.count("gh pr create") for n, c, r, g, w, _ in CASES if r is BATCH_DONE
+)
+got_batch = [json.loads(line) for line in ledger_lines(BATCH_DONE)]
+if len(got_batch) != want_batch or {r["kind"] for r in got_batch} != {G.BATCH_KIND}:
+    print(
+        "*** FAIL *** BATCH_DONE ledger: want %d `%s` line(s), got %r"
+        % (want_batch, G.BATCH_KIND, [(r["act"], r["kind"]) for r in got_batch])
+    )
+    fails += 1
+elif {r["act"] for r in got_batch} != {"push", "pr-create"} or "PLAN-fx-a.md" not in got_batch[0][
+    "why"
+]:
+    print("*** FAIL *** BATCH_DONE ledger lines are wrong: %r" % got_batch[:2])
+    fails += 1
+else:
+    print("batch ledger: %d `%s` line(s), push and pr-create" % (len(got_batch), G.BATCH_KIND))
+# The refusal names what remains and nothing that does not: a stub whose target is open is named as such, and is never reported as a batch that "still takes" a queued plan.
+_got, _err = run(PUSH, STUB_OPEN, GH_NONE)
+if not _got or "Moved-To:" not in _err or "batch still takes" in _err:
+    print("*** FAIL *** the STUB_OPEN refusal misnames what remains: %r" % _err[:900])
+    fails += 1
+for quiet in (BATCH_SHORT, BATCH_OPEN, BATCH_PR_MODE, BATCH_GH_DOWN):
+    if ledger_lines(quiet):
+        print("*** FAIL *** a refused batch world %s wrote %r" % (quiet, ledger_lines(quiet)))
+        fails += 1
+
 print()
-flipped = [n for n, c, r, g, w, _ in CASES if w and not run(c, r, g, broken=True)[0]]
+flipped = [n for n, c, r, g, w, _ in CASES if w and not run(c, r, g, broken=G.DEFECT)[0]]
 if flipped:
     print(
         "DEFECT control: planted %r; %d refusal(s) flipped to allowed, e.g. %r"
@@ -422,6 +548,45 @@ if flipped:
 else:
     print("*** FAIL *** DEFECT control: with %r planted, every refusal still refused" % (G.DEFECT,))
     fails += 1
+
+# THE BATCH DEFECTS, both directions. Completion read as always true must release a refused incomplete batch; the release switched off must refuse a complete one. A suite that passed either copy would not depend on the batch reading at all.
+BATCH_DEFECTS = (
+    (
+        (
+            "hook_complete = not wl_checks.local_batch_open(state, str(root))",
+            "hook_complete = True",
+        ),
+        lambda root, want: root in (BATCH_SHORT, BATCH_OPEN) and want,
+        "an incomplete batch refusal flipped to allowed",
+    ),
+    (
+        ("        if batch.complete:\n", "        if False:\n"),
+        lambda root, want: root is BATCH_DONE and not want,
+        "a complete batch admission flipped to refused",
+    ),
+    # The stricter read: where the Stop hook's `first_box` read follows no `Moved-To:` stub (STUB_OPEN) or finds an empty set (GONE_OPEN), only the guard's own agreement test keeps the push refused.
+    (
+        (
+            "complete = hook_complete and bool(rows) and not disagree",
+            "complete = hook_complete",
+        ),
+        lambda root, want: root in (STUB_OPEN, GONE_OPEN) and want,
+        "a refusal the Stop hook's box read alone would release flipped to allowed",
+    ),
+)
+for defect, pick, what in BATCH_DEFECTS:
+    chosen = [(n, c, r, g, w) for n, c, r, g, w, _ in CASES if pick(r, w)]
+    moved = [n for n, c, r, g, w in chosen if run(c, r, g, broken=defect)[0] != w]
+    if chosen and len(moved) == len(chosen):
+        print(
+            "BATCH DEFECT control %r: %s in all %d case(s)" % (defect[1].strip(), what, len(chosen))
+        )
+    else:
+        print(
+            "*** FAIL *** BATCH DEFECT control %r: %d of %d case(s) moved"
+            % (defect[1].strip(), len(moved), len(chosen))
+        )
+        fails += 1
 
 if blocked in (0, len(CASES)):
     print("*** FAIL *** the guard answered the same way on every case")
