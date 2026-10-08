@@ -98,6 +98,7 @@ lane: quality-security
 
 from __future__ import annotations
 
+import ast
 import datetime as dt
 import json
 import os
@@ -802,16 +803,48 @@ ARCHIVE_PIN_FILES = (
 
 
 def archive_pin_declaration(rel: str, pattern: str) -> str:
-    """The exact line prefix that declares the archive regex in a pinned file, by language."""
+    """The declaration that pins the archive regex in a pinned file, by language (the form a problem message names)."""
     if rel.endswith(".ts"):
         return f"export const ARCHIVE_RE = /{pattern}/"
     return f'ARCHIVE_RE = re.compile(r"{pattern}")'
 
 
+def archive_pin_declared(rel: str, text: str, pattern: str) -> bool:
+    """Does the file's CODE declare ARCHIVE_RE with exactly this pattern?
+
+    Python is parsed: a module-level `ARCHIVE_RE = re.compile(<str>)` whose string equals the pattern, so a comment or docstring can never count. TypeScript has no parser here, so `/* */` and `//` comments are stripped first and the declaration must then start a line. A file that does not parse pins nothing.
+    """
+    if rel.endswith(".ts"):
+        code = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+        code = re.sub(r"(?m)^\s*//.*$", "", code)
+        decl = archive_pin_declaration(rel, pattern)
+        return any(line.startswith(decl) for line in code.splitlines())
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return False
+    for node in tree.body:
+        if not (isinstance(node, ast.Assign) and isinstance(node.value, ast.Call)):
+            continue
+        if [getattr(t, "id", None) for t in node.targets] != ["ARCHIVE_RE"]:
+            continue
+        fn, args = node.value.func, node.value.args
+        if (
+            isinstance(fn, ast.Attribute)
+            and fn.attr == "compile"
+            and getattr(fn.value, "id", None) == "re"
+            and args
+            and isinstance(args[0], ast.Constant)
+            and args[0].value == pattern
+        ):
+            return True
+    return False
+
+
 def archive_clone_problems(
     secrets: dict, pattern: str = BWS_ENV_ARCHIVE_PATTERN, pins: dict[str, str] | None = None
 ) -> list[str]:
-    """Assertion 15. No mapped name matches the archive pattern, and each pinned file spells it verbatim.
+    """Assertion 15. No mapped name matches the archive pattern, and each pinned file's code declares ARCHIVE_RE with it.
 
     `pins` maps a label to that file's text (None reads ARCHIVE_PIN_FILES from the tree); a file that cannot be read is a problem, not a skip, because a pin nobody can read pins nothing.
     """
@@ -832,12 +865,11 @@ def archive_clone_problems(
                 pins[rel] = (ROOT / rel).read_text(encoding="utf-8")
             except OSError as exc:
                 problems.append(f"cannot read {rel} ({exc}); the archive pattern pin is blind")
-    # The pin is the regex DECLARATION each file matches with, at line start: a comment, docstring or trailing note quoting the literal pins nothing.
+    # The pin is the ARCHIVE_RE declaration in each file's CODE (archive_pin_declared): a comment, docstring or trailing note quoting the literal pins nothing.
     for rel, text in pins.items():
-        decl = archive_pin_declaration(rel, pattern)
-        if not any(line.startswith(decl) for line in text.splitlines()):
+        if not archive_pin_declared(rel, text, pattern):
             problems.append(
-                f"{rel} does not declare {decl!r} at line start; its ARCHIVE_RE has drifted from bws_env.ARCHIVE_PATTERN"
+                f"{rel} does not declare {archive_pin_declaration(rel, pattern)!r} in code; its ARCHIVE_RE has drifted from bws_env.ARCHIVE_PATTERN"
             )
     return problems
 
@@ -1381,6 +1413,18 @@ jobs:
                 for body in (
                     f"RX = re.compile(r'__ROTATED_\\d+')  # {pat}",
                     f'"""\n    {good_pins["b.py"]}\n"""',
+                    f'"""\n{good_pins["b.py"]}\n"""',
+                )
+            ),
+        ),
+        (
+            "15: a TS pin kept only inside a column-0 block comment is named",
+            lambda: any(
+                "a.ts" in m
+                for m in archive_clone_problems(
+                    {},
+                    pat,
+                    {"a.ts": "/*\n" + good_pins["a.ts"] + "\n*/", "b.py": good_pins["b.py"]},
                 )
             ),
         ),

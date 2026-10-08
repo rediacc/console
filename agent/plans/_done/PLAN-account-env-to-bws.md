@@ -6,7 +6,7 @@ First-Seen: 2026-09-24
 Date: 2026-09-24
 Parent: agent/plans/PLAN-env-to-bitwarden-v2.md (subsumes its open boxes "Seed the 4 admin credentials" and "Everything in v1's task list from 'Write .ci/lib/bws-env.sh' onward", except v1's `__ROTATED_` clone-protocol boxes v1:20-25, which are orthogonal and stay with v2)
 Scope: design. Measured read-only 2026-09-24 against `private/account/.env` (47 assigned names) and live BWS `ci-shared` (78 secrets, one project). No value was printed; comparisons ran in-process and emitted MATCH/MISMATCH/ABSENT/EMPTY only.
-Priority: P2 -- seed: Status draft, 1 open box(es), a recent operator order
+Priority: P2 -- closed 2026-10-08
 Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .ci/lib/account.sh, .ci/rediacc_ci/core/account.py, private/account/src/entry/dev-gateway.ts, scripts/ops/secret-rename.py
 
@@ -52,11 +52,12 @@ Owns: .ci/lib/account.sh, .ci/rediacc_ci/core/account.py, private/account/src/en
   - Separately, file a `private/growth` item for `publish-solutions.sh line 51 (growth repo)`
 - [x] T15 Public-key cache for offline builds: extend `cache-to` to accept `X_DEV > X` for the three `CACHEABLE` local names only (the allowlist stays on the LOCAL name, the store name comes from a hardcoded pair table). `./run.sh setup` writes `private/account/.cache/public-keys.env`, and the four build readers read that file. Without the alias, the cache would bake the PRODUCTION public key into dev renet and break every dev-signed licence.
     (ticked) 2026-09-24T08:12:45Z by d778be9d: 2026-09-24: CACHE_STORE_NAMES (.ci/rediacc_ci/core/bws_env.py:193); cache written and compare 2/2 MATCH; renet build.sh, local-common.sh/local_common.py, build_server.py read it; test_ops_build_server 27 passed
-- [x] T16 Retarget writers: (done 2026-10-08: c2ca68dfe with private/account 65b2332, review fixes 26466b9b2 / account 18f34f2; the .env writers are gone from account.py:11, updateEnvServerUrl is gone, consumers/local-env-file.ts was removed by account 3f1252f, and account_reset pushes the six _DEV names to Bitwarden at .ci/lib/account.sh:843)
+- [x] T16 Retarget writers:
   - `account_generate_fresh_env`, `account_ensure_env_keys` and `account_reset` (bash `.ci/lib/account.sh:222-330,890+` and `.ci/rediacc_ci/core/account.py:463-557`): reset generates a keypair and pushes the six `_DEV` names through `bws secret edit`, with a `compare` read-back, and warns that other machines' dev databases hold licences signed by the old key
   - `private/account/src/entry/dev-gateway.ts:150-170` `updateEnvServerUrl`: delete it
   - the rotation `local:` consumers: remove every `local:.env`/`local:.env.bench` ref from `config.ts` and `rotation-manifest.json`, then delete `consumers/local-env-file.ts` and the four branches in `rotate.ts` (:659, :870, :1055, :1881)
   - `scripts/ops/secret-rename.py` `EXTRA`
+    (ticked) 2026-10-08 by d778be9d: c2ca68dfe with private/account 65b2332, review fixes 26466b9b2 / account 18f34f2; the .env writers are gone from account.py:11, updateEnvServerUrl is gone, consumers/local-env-file.ts was removed by account 3f1252f, and account_reset pushes the six _DEV names to Bitwarden at .ci/lib/account.sh:843
 - [x] T17 Delete keys from `.env` in batches, each only after (i) its consumers are switched (T14) and (ii) `compare` reports MATCH for it. Before the first deletion, write `private/account/.env.pre-bws.bak` (0600). Order: the 24 (a) names first, then the 3 (e) names, then the (c) names once T8 lands, then the 11 (b) names after T10-T12. Remove `.env.bench` after T13.
     (ticked) 2026-09-24T08:24:05Z by d778be9d: 2026-09-24: keys removed with the files on the coordinator's ruling; every value covered first (pre-bws.bak byte-identical to ~/.config/rediacc/account.env.pre-bws.20260924T075642Z.bak; pre-rename.bak 42/50 MATCH, its 5 uncovered retired values kept as ~/.config/rediacc/account.env.pre-rename.bak); dotenv.names empty, ceiling 0 in .ci/config/account-env-retired-baseline.json:5; check:ci-secret-supply rc=0
 - [x] T18 Terminal state: remove `private/account/.env` and `.env.bench` entirely (the token now lives in the T1 file), remove `devbox-bws.sh`'s `.env` fallback, and shrink `secret-supply.json` `dotenv` to an empty `names` with `bootstrap_names: ["BWS_ACCESS_TOKEN"]` pointing at the token file. The operator deletes `.env.pre-bws.bak` after 14 days.
