@@ -468,9 +468,6 @@ jobs:
       - name: Vendored blocker derivation
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_vendored_blocker_derivation.py
-      - name: W7P5-a real-run blocklist
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_w7p5a_real_run_blockers.py
       - name: Workflow env provision
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: |

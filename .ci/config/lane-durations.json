@@ -1569,7 +1569,6 @@
     "check:test-e2e-unit": 2.0,
     "check:ci-install-table": 0.3,
     "check:ci-gen-manifest": 1.0,
-    "check:ci-w7p5a-real-run-blockers": 0.0,
     "check:ci-bash-lib-ported": 0.3,
     "check:ci-container-build-context": 1.0,
     "check:ci-cli-proxy-safe-output": 1.0,

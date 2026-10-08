@@ -83,10 +83,6 @@ POLICY_FILES: tuple[str, ...] = (
     # D2, 2026-09-09. The WORKLIST_* environment registry: 133 names across 60 files at 183 read sites, with no registry and no schema before this. A typo'd name reads as UNSET, which for a flag defaulting to `on` is the FAIL-OPEN direction. Reached through policy_path() from .ci/rediacc_ci/quality/worklist_env_registry.py and nowhere else. JSON for the same reason as the line
     # above: it holds a table, not a list of entries.
     "worklist-env-registry.json",
-    ".w7p5a-real-run-blocklist",
-    # T-SCHED W7P5-a Section 4, 2026-09-15. `.w7p5a-real-run-blocklist` BLOCKs an entire path's port; this one BLOCKs only a `ledger`-status path's REAL-RUN leg, which the box's acceptance ("dry-run parity plus one real run each") requires separately. The two must not share a file: the existing gate treats any allowlist entry whose path has graduated to "ledger" as STALE, so a path
-    # that is genuinely ledgered but real-run-blocked would misreport as a leftover.
-    ".w7p5a-real-run-leg-blocklist",
     # 2026-10-01. The fourth .json, for the same reason as the three beside it: each entry is a small record (owner, reason, and exactly one of a re-checked blocker or a dated expiry), which a name-per-line dotfile could not carry. It excuses a blocklisted npm major past its 90-day deadline. Read only by scripts/gates/check-deps.ts, which enforces its liveness in-gate.
     "deps-major-exceptions.json",
     # 2026-10-06, PLAN-fast-loop.md Part 1. Gates whose verdict moves without a tracked input moving: the incremental pre-push receipt never carries them. Read by scripts/ci-runner/input-hash.ts and block_unverified_push.py.

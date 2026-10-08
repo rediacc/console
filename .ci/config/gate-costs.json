@@ -2112,14 +2112,6 @@
       "peak_rss_mb": 58,
       "rank": 147
     },
-    "check:ci-w7p5a-real-run-blockers": {
-      "cpu_s": 0.106,
-      "wall_s": 0.096,
-      "eff_cores": 1.1,
-      "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 275
-    },
     "check:ci-watch-recipe": {
       "cpu_s": 0.317,
       "wall_s": 0.307,
