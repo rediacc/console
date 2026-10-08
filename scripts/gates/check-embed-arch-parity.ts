@@ -8,7 +8,7 @@
  * different piece of software from amd64 criu.
  *
  * THE FAILURE THIS EXISTS FOR: amd64 built criu from source at the pinned
- * version, while arm64 extracted Debian bookworm's package — 3.17.1 against a
+ * version, while arm64 extracted Debian bookworm's package: 3.17.1 against a
  * declared 4.2.x. Every gate stayed green. The freshness gate compared the
  * Dockerfile ARG against upstream and saw 4.2.x on both sides; the credits gate
  * compared inventories that both said 4.2.x. Nothing anywhere carried an
@@ -18,6 +18,9 @@
  *   - every component covers the same architecture set (no arch silently dropped)
  *   - every arch entry declares a build method
  *   - download-built arches pin an https url AND a sha256
+ *   - a download url carries the component's OWN version (v2.1.18 in the url
+ *     under a 2.1.22 version is a finding), and its sha256 equals the digest
+ *     the Dockerfile verifies at build time, ARG <NAME>_SHA256_<ARCH>
  *   - source/cross-built components pin an immutable commit, not just a tag
  *   - class is one of base|cluster (it decides which GOOS embeds the asset)
  *
@@ -27,10 +30,19 @@
  *
  * Path override (used by the gate test with fixtures):
  *   EMBED_PARITY_LOCKFILE
+ * The Dockerfile is read from BESIDE the lockfile (<dir>/Dockerfile), so a
+ * fixture copies both into one directory and a mutation of either is seen.
+ *
+ * THE SECOND FAILURE THIS EXISTS FOR: zot went 2.1.18 -> 2.1.20 -> 2.1.21 and
+ * the lockfile's version, upstream url, mirror url and the Dockerfile ARGs all
+ * moved, while arches.<arch>.url and .sha256 stayed at v2.1.18. The checks
+ * above only looked at digest SHAPE, and a stale digest is perfectly shaped.
  *
  * Exit codes:
  *   0 - parity holds, or the renet submodule is not checked out
- *   1 - a missing arch, an unpinned fetch, or an incoherent entry
+ *   1 - a missing arch, an unpinned fetch, an incoherent entry, a download
+ *       url or digest that disagrees with the version or the Dockerfile, or a
+ *       Dockerfile that cannot be read while a download arch needs it
  *
  * ---- gate ----
  * step: Check embed arch parity
@@ -51,6 +63,8 @@ const LOCKFILE =
   process.env.EMBED_PARITY_LOCKFILE ??
   path.join(CONSOLE_ROOT, 'private/renet/embed-assets.lock.json');
 
+const DOCKERFILE = path.join(path.dirname(LOCKFILE), 'Dockerfile');
+
 const VALID_CLASSES = new Set(['base', 'cluster']);
 const SHA256_RE = /^[0-9a-f]{64}$/;
 const COMMIT_RE = /^[0-9a-f]{40}$/;
@@ -68,9 +82,57 @@ interface Component {
   source?: { kind?: string; commit?: string; sha256?: string; url?: string };
 }
 
+/**
+ * Every `ARG NAME=value` the Dockerfile declares, by name. One name may be
+ * declared in several stages, so every value is kept: two stages disagreeing
+ * is itself a finding.
+ */
+function dockerfileArgs(text: string): Map<string, Set<string>> {
+  const args = new Map<string, Set<string>>();
+  for (const line of text.split('\n')) {
+    const m = /^\s*ARG\s+([A-Za-z_][A-Za-z0-9_]*)=(\S+)\s*$/.exec(line);
+    if (!m) continue;
+    const value = m[2].replace(/^(["'])(.*)\1$/, '$2');
+    const seen = args.get(m[1]) ?? new Set<string>();
+    seen.add(value);
+    args.set(m[1], seen);
+  }
+  return args;
+}
+
+/**
+ * The general mapping from a lockfile component to its Dockerfile ARG prefix:
+ * the component name upper-cased (zot -> ZOT_SHA256_AMD64, k3s ->
+ * K3S_SHA256_ARM64). Derived, not tabled, so a new download component is mapped
+ * on arrival, and one the rule cannot map is reported as such below.
+ */
+function argName(component: string, field: string, arch?: string): string {
+  const base = `${component.toUpperCase().replace(/[^A-Z0-9]/g, '_')}_${field}`;
+  return arch ? `${base}_${arch.toUpperCase()}` : base;
+}
+
+const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * True when the decoded url names `version` as a whole token, optionally
+ * v-prefixed. Bounded on both sides so 2.1.2 does not match inside v2.1.22 and
+ * 2.1.22 does not match inside 12.1.22. The url is decoded first so k3s's
+ * `+k3s1` matches whether the url spells it `+` or `%2B`.
+ */
+function urlCarriesVersion(url: string, version: string): boolean {
+  let decoded = url;
+  try {
+    decoded = decodeURIComponent(url);
+  } catch {
+    // A malformed escape leaves the raw url, which still matches a literal version.
+  }
+  const re = new RegExp(`(?<![0-9A-Za-z.+])v?${escapeRe(version)}(?![0-9A-Za-z+]|\\.[0-9])`);
+  return re.test(decoded);
+}
+
 function main(): void {
   if (!fs.existsSync(LOCKFILE)) {
-    console.log(`${YELLOW}⊘ embed lockfile not present — renet submodule not checked out${NC}`);
+    console.log(`${YELLOW}⊘ embed lockfile not present; renet submodule not checked out${NC}`);
     return;
   }
 
@@ -82,7 +144,7 @@ function main(): void {
 
   // Anti-vacuity: an empty lockfile must never report parity.
   if (components.length === 0) {
-    console.error(`${RED}✗ the embed lockfile declares no components — this gate is blind${NC}`);
+    console.error(`${RED}✗ the embed lockfile declares no components; this gate is blind${NC}`);
     process.exit(1);
   }
 
@@ -94,7 +156,26 @@ function main(): void {
     process.exit(1);
   }
 
+  // The Dockerfile is read lazily: a lockfile with no download arch needs none,
+  // and one that has a download arch and no readable Dockerfile is a finding.
+  let dockerArgs: Map<string, Set<string>> | null | undefined;
+  const loadDockerArgs = (): Map<string, Set<string>> | null => {
+    if (dockerArgs === undefined) {
+      try {
+        dockerArgs = dockerfileArgs(fs.readFileSync(DOCKERFILE, 'utf-8'));
+      } catch (e) {
+        errors.push(
+          `cannot read ${path.relative(CONSOLE_ROOT, DOCKERFILE)} (${(e as Error).message}); ` +
+            'the download digests cannot be cross-checked, so this is a failure, not a skip'
+        );
+        dockerArgs = null;
+      }
+    }
+    return dockerArgs;
+  };
+
   let archEntries = 0;
+  let downloadsCrossChecked = 0;
   for (const [name, c] of components) {
     if (!c.class || !VALID_CLASSES.has(c.class)) {
       errors.push(`${name}: class '${c.class ?? '<missing>'}' is not one of base|cluster`);
@@ -125,6 +206,50 @@ function main(): void {
         if (!entry.sha256 || !SHA256_RE.test(entry.sha256)) {
           errors.push(`${where}: build=download but sha256 is missing or malformed`);
         }
+        if (entry.url && c.version && !urlCarriesVersion(entry.url, c.version)) {
+          errors.push(
+            `${where}: url does not carry the component version: lockfile url '${entry.url}', ` +
+              `expected it to name version '${c.version}' (e.g. .../v${c.version}/...). ` +
+              'Fix the url AND the sha256 together; a stale url pins a stale digest.'
+          );
+        }
+        const args = loadDockerArgs();
+        if (args) {
+          const shaArg = argName(name, 'SHA256', arch);
+          const declared = args.get(shaArg);
+          if (!declared) {
+            errors.push(
+              `${where}: no 'ARG ${shaArg}=<digest>' in ${path.relative(CONSOLE_ROOT, DOCKERFILE)}; ` +
+                'the lockfile sha256 cannot be cross-checked against what the build verifies'
+            );
+          } else if (declared.size > 1) {
+            errors.push(
+              `${where}: ARG ${shaArg} is declared with ${declared.size} different values ` +
+                `(${[...declared].join(', ')}); the stages disagree`
+            );
+          } else {
+            const expected = [...declared][0];
+            if (entry.sha256 !== expected) {
+              errors.push(
+                `${where}: sha256 differs from the Dockerfile: lockfile '${entry.sha256 ?? '<missing>'}', ` +
+                  `expected '${expected}' (ARG ${shaArg})`
+              );
+            }
+          }
+          const versionArg = argName(name, 'VERSION');
+          const versions = args.get(versionArg);
+          if (versions && c.version) {
+            for (const v of versions) {
+              if (v !== c.version) {
+                errors.push(
+                  `${where}: version differs from the Dockerfile: lockfile '${c.version}', ` +
+                    `expected '${v}' (ARG ${versionArg})`
+                );
+              }
+            }
+          }
+          downloadsCrossChecked++;
+        }
       } else if (entry.build === 'source' || entry.build === 'cross') {
         needsCommit = true;
       } else {
@@ -154,7 +279,8 @@ function main(): void {
   }
 
   console.log(
-    `${GREEN}✓ ${components.length} components x [${reference.join(', ')}] = ${archEntries} arch entries, all pinned${NC}`
+    `${GREEN}✓ ${components.length} components x [${reference.join(', ')}] = ${archEntries} arch entries, all pinned; ` +
+      `${downloadsCrossChecked} download arch(es) match their version and the Dockerfile digest${NC}`
   );
 }
 
