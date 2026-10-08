@@ -2,8 +2,8 @@
 
 Re-reads R2 after a sentinel write and asserts the sentinel is really there. The writer short-circuits when a sentinel already exists and swallows several "nothing to do" cases, so trusting its exit code alone would let a backfill report success while the drift the operator ran it for is still present. This probes the live bucket instead.
 
-THE PROBE LIBRARY IS SHARED, NOT RE-DERIVED. The twin sources
-`.ci/scripts/lib/release-state-validator.sh` and calls `rsv_sentinel_exists`;
+THE PROBE LIBRARY IS SHARED, NOT RE-DERIVED. The twin sourced the bash library
+`release-state-validator.sh` (since deleted) and called `rsv_sentinel_exists`;
 this calls `rediacc_ci.core.release_state_validator.sentinel_exists`, which is that function's already-verified port, down to grepping the captured stderr for `404|Not Found|NoSuchKey` because the aws CLI returns 254 for both a 404 and an auth failure and the exit code genuinely cannot tell them apart.
 
 AND THE THIRD STATE IS DELIBERATELY FOLDED HERE, which is worth saying out loud because the library went to some trouble to keep it separate. `sentinel_exists` answers YES / NO / UNKNOWN; the twin's `if rsv_sentinel_exists ...; then` is a

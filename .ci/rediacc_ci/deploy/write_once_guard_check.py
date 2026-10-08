@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/test/test-write-once-guard.sh` (gate `test:write-once-guard`).
+"""Gate `test:write-once-guard`: unit tests for `rediacc_ci.deploy.write_once_guard`. Mocks `aws` so the test runs offline.
 
-Unit tests for the sentinel-aware `write_once_guard()` in `.ci/scripts/deploy/upload-to-r2.sh`. Mocks `aws` so the test runs offline.
-
-THIS FILE IS THE GATE'S RUN TARGET, so it carries the `---- gate ----` header the twin used to carry; the header moved here in the same change that deleted the twin, because a bare-path gate whose declarer is gone emits no step at all. `run:` is declared rather than derived for the reason `install_script_check.py` gives at its own header: `derivedRun` returns the bare path for a
-`.py`, nothing puts `.ci` on `sys.path` for a file inside the package, and `PYTHONPATH=.ci` is the exact form the K=5 ledger licensed.
+THIS FILE IS THE GATE'S RUN TARGET, so it carries the `---- gate ----` header the bash twin used to carry. `run:` is declared rather than derived for the reason `install_script_check.py` gives at its own header: `derivedRun` returns the bare path for a `.py`, nothing puts `.ci` on `sys.path` for a file inside the package, and `PYTHONPATH=.ci` is the exact form the K=5 ledger licensed.
 
 ---- gate ----
 id: test:write-once-guard
@@ -13,30 +10,19 @@ step: Write-once guard tests
 lane: quality-static
 ---- end gate ----
 
-The guard's behaviours (see `.ci/scripts/lib/release-state-validator.sh`):
+The guard's behaviours (see `write_once_guard.py`):
   1. sentinel exists + binaries present  -> return 10 (SKIP: idempotent rerun)
-  2. sentinel exists + NO binaries       -> exit 1 (FAIL: sealed-but-empty)
+  2. sentinel exists + NO binaries       -> refuse (FAIL: sealed-but-empty)
   3. no sentinel (clean OR orphan bytes) -> return 0 (PROCEED, overwrite in place)
-The guard NEVER runs `aws s3 rm` -- orphan cleanup is the nightly housekeeping job's responsibility, so a retried/cancelled release can't lose its binaries.
+The guard NEVER runs `aws s3 rm`: orphan cleanup is the nightly housekeeping job's responsibility, so a retried or cancelled release cannot lose its binaries.
 
-WHAT IS PORTED AND WHAT DELIBERATELY IS NOT. The HARNESS moves to Python: the temp dir, the fake `aws`, the bundle assembly, the four cases, the PASS/FAIL lines and the exit code. The SUBJECT stays bash and is still driven as bash -- `write_once_guard` is a bash function that is `sed`-extracted out of `upload-to-r2.sh` and sourced beside the real `release-state-validator.sh`. A
-Python reimplementation of the guard would be a second instrument certifying itself, which is the reason `.ci/scripts/test/lib/git-fixture.sh` and `mutate-check.sh` were allowlisted rather than ported; here only the wrapper around the instrument moves, so the same objection does not apply.
+THE SUBJECT IS THE PYTHON GUARD. It was bash (a function `sed`-extracted out of `upload-to-r2.sh`) until operator ruling D5 (2026-10-08); this harness is unchanged in what it asserts, and `tests/goldens/write-once-guard/` still holds the bytes it printed against the bash guard, which the port reproduces. The guard module is loaded BY PATH from `ROOT_DIR`, so the mutation tests in `tests/test_deploy_write_once_guard_check.py` can point `REDIACC_CI_ROOT` at a fixture holding a mutated copy of that one file.
 
-PORT NOTES.
+THE OUTPUT IS BYTE-IDENTICAL, ANSI ESCAPES AND `->` ARROWS INCLUDED. This is a registered gate whose stdout a human reads in a CI log, so `PASS:` is emitted with `\\033[0;32m` / `\\033[0m` rather than through any formatting helper.
 
-THE OUTPUT IS BYTE-IDENTICAL, ANSI ESCAPES AND `->` ARROWS INCLUDED. This is a registered gate whose stdout a human reads in a CI log, so `PASS:` is emitted
-with the twin's own `\\033[0;32m` / `\\033[0m` pair rather than through any
-formatting helper, and the messages are copied verbatim.
+`DRY_RUN`, `RELEASES_BUCKET` AND THE ENDPOINT ARE PASSED PER INVOCATION through the environment, so one case cannot leak state into the next.
 
-`VAR=x some_function` EXPORTS INTO THE FUNCTION'S ENVIRONMENT AND THEN VANISHES.
-Driven before this was written, because the whole fixture depends on it:
-`SENTINEL_EXISTS=true f` where `f` runs `bash -c '...'` DOES reach the
-grandchild (the fake `aws` sees `SENTINEL_EXISTS=true`), and the variable is
-UNSET again in the caller afterwards. Neither is obvious -- POSIX mode makes such assignments persist -- and a port that set them once on the process would leak state from one case into the next. Here they are passed per invocation.
-
-`grep -q ... && log_fail ...` DOES NOT ABORT WHEN THE GREP FAILS, even under `set -e`, because a command that is not the last in an `&&` list is exempt. So a clean `aws.log` means the scrub assertion simply does not fire; it is not a silent early exit. Ported as a plain `if`.
-
-THE ONE THING THIS PORT COULD NOT KEEP is the shell's own `mktemp -d` name; both sides make their own temp dir, so any output quoting a temp path would differ. Nothing in the twin's output quotes one, which is why the differential can compare bytes.
+`grep -q ... && log_fail ...` style checks are plain `if`s here.
 
 Exit: 0 all four cases pass, 1 the first case that does not.
 """
@@ -45,7 +31,6 @@ from __future__ import annotations
 
 import os
 import pathlib
-import re
 import shutil
 import subprocess
 import sys
@@ -55,14 +40,13 @@ from rediacc_ci import paths
 from rediacc_ci.well_known import RELEASES_BUCKET
 
 ROOT_DIR = paths.repo_root()
-GUARD_SCRIPT = ROOT_DIR / ".ci" / "scripts" / "deploy" / "upload-to-r2.sh"
-VALIDATOR_LIB = ROOT_DIR / ".ci" / "scripts" / "lib" / "release-state-validator.sh"
+GUARD_MODULE = ROOT_DIR / ".ci" / "rediacc_ci" / "deploy" / "write_once_guard.py"
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
 
-# Environment upload-to-r2.sh requires before we can source it.
+# Environment the guard reads.
 BASE_ENV = {
     "RELEASES_BUCKET": RELEASES_BUCKET,
     "CLOUDFLARE_R2_ENDPOINT": "https://example.invalid",
@@ -97,19 +81,25 @@ case "$1 $2" in
 esac
 """
 
-STUBS = """log_error() {{ echo "error: $*" >&2; }}
-log_warn()  {{ echo "warn: $*" >&2; }}
-log_info()  {{ echo "info: $*" >&2; }}
-SCRIPT_DIR="{root}/.ci/scripts/deploy"
-RELEASES_BUCKET="{bucket}"
-CLOUDFLARE_R2_ENDPOINT="{endpoint}"
-DRY_RUN=${{DRY_RUN:-false}}
+# Loads the guard module from ROOT_DIR by path, so a fixture can hold a mutated copy. A module with no `write_once_guard` is exit 127, the status a missing command has always had here.
+DRIVER = """import importlib.util, os, sys
+spec = importlib.util.spec_from_file_location("write_once_guard_under_test", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+guard = getattr(module, "write_once_guard", None)
+if guard is None:
+    raise SystemExit(127)
+try:
+    rc = guard(
+        sys.argv[2],
+        "test",
+        endpoint=os.environ["CLOUDFLARE_R2_ENDPOINT"],
+        dry_run=os.environ["DRY_RUN"] == "true",
+    )
+except module.SealedButEmptyError:
+    rc = 1
+raise SystemExit(rc)
 """
-
-# `sed -n '/^write_once_guard()/,/^}/p'`: from the definition line to the first
-# line that is exactly a closing brace at column 0.
-GUARD_START = re.compile(r"^write_once_guard\(\)")
-GUARD_END = re.compile(r"^\}")
 
 
 class CaseFailedError(Exception):
@@ -125,46 +115,15 @@ def log_pass(message: str) -> None:
     print("%sPASS:%s %s" % (GREEN, NC, message), flush=True)
 
 
-def extract_guard(text: str) -> str:
-    """`sed -n '/^write_once_guard()/,/^}/p'`, range semantics and all."""
-    out: list[str] = []
-    inside = False
-    for line in text.split("\n")[:-1] if text.endswith("\n") else text.split("\n"):
-        if not inside:
-            if GUARD_START.search(line):
-                inside = True
-                out.append(line)
-            continue
-        out.append(line)
-        if GUARD_END.search(line):
-            inside = False
-    return "".join(line + "\n" for line in out)
-
-
 class Harness:
     def __init__(self, temp: pathlib.Path) -> None:
         self.temp = temp
         self.log = temp / "aws.log"
-        self.bundle = temp / "bundle.sh"
 
     def build(self) -> None:
         aws = self.temp / "aws"
         aws.write_text(FAKE_AWS.format(temp=self.temp), encoding="utf-8")
         aws.chmod(0o755)
-
-        # Extract just the guard function + define stubs for log_* + pull in the validator library (which provides rsv_sentinel_exists / rsv_prefix_nonempty).
-        guard = extract_guard(GUARD_SCRIPT.read_text(encoding="utf-8"))
-        (self.temp / "guard.sh").write_text(guard, encoding="utf-8")
-        self.bundle.write_text(
-            STUBS.format(
-                root=ROOT_DIR,
-                bucket=BASE_ENV["RELEASES_BUCKET"],
-                endpoint=BASE_ENV["CLOUDFLARE_R2_ENDPOINT"],
-            )
-            + VALIDATOR_LIB.read_text(encoding="utf-8")
-            + guard,
-            encoding="utf-8",
-        )
 
     def reset_log(self) -> None:
         self.log.write_text("", encoding="utf-8")
@@ -178,12 +137,11 @@ class Harness:
         env.update(BASE_ENV)
         env.update(overrides)
         env["PATH"] = "%s:%s" % (self.temp, os.environ.get("PATH", ""))
+        # The gate runs with `PYTHONPATH=.ci`; the child inherits it. A copy of this file elsewhere falls back to its own package root.
+        env.setdefault("PYTHONPATH", str(pathlib.Path(__file__).resolve().parents[2]))
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
         return subprocess.run(
-            [
-                "bash",
-                "-c",
-                "source '%s/bundle.sh'; write_once_guard '%s' 'test'" % (self.temp, prefix),
-            ],
+            [sys.executable, "-c", DRIVER, str(GUARD_MODULE), prefix],
             env=env,
             stdout=None,
             stderr=subprocess.DEVNULL,

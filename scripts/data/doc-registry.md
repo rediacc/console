@@ -826,7 +826,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/ci | 31 | .py 31 |
 | .ci/rediacc_ci/ci_signal | 2 | .py 2 |
 | .ci/rediacc_ci/core | 36 | .py 36 |
-| .ci/rediacc_ci/deploy | 34 | .py 34 |
+| .ci/rediacc_ci/deploy | 35 | .py 35 |
 | .ci/rediacc_ci/dev | 5 | .py 5 |
 | .ci/rediacc_ci/diagnostics | 3 | .py 3 |
 | .ci/rediacc_ci/docker | 6 | .py 6 |
@@ -845,7 +845,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 13 | .py 13 |
 | .ci/rediacc_ci/testrun | 11 | .py 11 |
-| .ci/rediacc_ci/tests | 366 | .py 366 |
+| .ci/rediacc_ci/tests | 368 | .py 368 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures/ci_diagnose | 24 | .json 16, .log 8 |
 | .ci/rediacc_ci/tests/fixtures/gate_model/20261008 | 3 | .json 2, .jsonl 1 |
@@ -919,7 +919,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/goldens/shfmt | 11 | .golden 11 |
 | .ci/rediacc_ci/tests/goldens/staging-tag-guard | 12 | .golden 12 |
 | .ci/rediacc_ci/tests/goldens/standing-orders-brief | 16 | .golden 16 |
-| .ci/rediacc_ci/tests/goldens/twins | 111 | .jsonl 111 |
+| .ci/rediacc_ci/tests/goldens/twins | 116 | .jsonl 116 |
 | .ci/rediacc_ci/tests/goldens/validate-stage-artifacts | 3 | .golden 3 |
 | .ci/rediacc_ci/tests/goldens/verify-ssh | 16 | .golden 16 |
 | .ci/rediacc_ci/tests/goldens/version-bump | 28 | .golden 28 |
@@ -930,17 +930,17 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/build/sea-inject | 7 | .mjs 7 |
 | .ci/scripts/ci | 9 | .cjs 8, .py 1 |
 | .ci/scripts/ci/profiler | 3 | .py 2, .awk 1 |
-| .ci/scripts/deploy | 5 | .sh 5 |
+| .ci/scripts/deploy | 1 | .sh 1 |
 | .ci/scripts/docker | 4 | .py 4 |
 | .ci/scripts/docs | 2 | .mjs 2 |
 | .ci/scripts/housekeeping | 1 | .py 1 |
 | .ci/scripts/infra | 4 | .sh 4 |
-| .ci/scripts/lib | 5 | .sh 5 |
+| .ci/scripts/lib | 4 | .sh 4 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
 | .ci/scripts/quality | 159 | .py 157, .json 1, .mjs 1 |
 | .ci/scripts/quality/lib | 1 | .py 1 |
 | .ci/scripts/security | 2 | .py 2 |
-| .ci/scripts/test | 3 | .sh 2, .ts 1 |
+| .ci/scripts/test | 2 | .sh 1, .ts 1 |
 | .ci/scripts/test/fixtures/mutate-check | 2 | .py 1, .sh 1 |
 | .ci/scripts/test/gates | 5 | .sh 5 |
 | .ci/scripts/test/lib | 2 | .sh 2 |

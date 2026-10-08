@@ -1,34 +1,22 @@
 """Port of `.ci/scripts/test/gates/test-release-state-consistency.sh`, retired in W7 P5.
 
-Unit-tests `rsv_assert_bijection` and `rsv_assert_channel_pointer_tagged` in `.ci/scripts/lib/release-state-validator.sh` against synthetic version lists. The live R2 and git probes are exercised end to end by the quality gate itself during CI; this pins the pure assertion logic so drift detection stays correct even if callers refactor.
+Unit-tests the bijection and channel-pointer assertions of `rediacc_ci.core.release_state_validator` (formerly `rsv_assert_bijection` and `rsv_assert_channel_pointer_tagged` in the bash library `release-state-validator.sh`, deleted under operator ruling D5) against synthetic version lists. The live R2 and git probes are exercised end to end by the release-state gate itself.
 
-HOW A PYTHON FILE DRIVES A BASH LIBRARY, and why the two sides agree. The twin
-`source`s the library into its own shell ONCE and calls the functions directly;
-this module spawns one fresh `bash -c` per call that sources the same file and calls the same function with the same arguments. The library reads both of its knobs (`RSV_GRANDFATHER_BEFORE`, `RSV_FLOOR_FILE`) at CALL time rather than at source time -- checked in the file, at the two reads inside `rsv_pre_contract_floor` -- so a per-call source and a once-per-file source answer
-identically, and the per-call form additionally guarantees no case can leak state into the next one. Arguments are `shlex.quote`d, which is the same protection the twin gets from its `"$1"` quoting.
+HOW THE CASES DRIVE THE MODULE. One fresh child interpreter per call, through the module's CLI (`bijection` and `pointer`), so no case can leak state into the next. The two preparations the bash twin did at load time are done per call through `env`: `RSV_GRANDFATHER_BEFORE` is UNSET (`env -u`, because `harness.run` OVERLAYS `os.environ` and cannot unset one, and an inherited value would suppress exactly the findings these cases exist to see) and `RSV_FLOOR_FILE=/nonexistent/release-contract-floor.txt` keeps the unit cases independent of the production `.ci/config/release-contract-floor.txt` value.
 
-THE TWO ENVIRONMENT PREPARATIONS THE TWIN DOES AT LOAD TIME ARE DONE PER CALL
-HERE, in the script text rather than in the process environment:
-  * `unset RSV_GRANDFATHER_BEFORE`, so a value inherited from the operator's
-    shell cannot silence the drift cases;
-  * `RSV_FLOOR_FILE=/nonexistent/release-contract-floor.txt`, which keeps the
-    unit cases independent of the production
-    `.ci/config/release-contract-floor.txt` value.
-Doing it in the script rather than through `env=` is deliberate: `harness.run`
-OVERLAYS `os.environ`, so it can set a variable but cannot unset one, and an inherited `RSV_GRANDFATHER_BEFORE` would then suppress exactly the findings these cases exist to see.
-
-OUTPUT IS READ MERGED (`.combined`), because the twin captures `2>&1` and every assertion below is written against that merged text.
+OUTPUT IS READ MERGED (`.combined`), because the twin captured `2>&1` and every assertion below is written against that merged text.
 
 NO `xdist_group`. The ratchet cases write a single file inside pytest's own `tmp_path`; nothing else is written anywhere, no port is bound and no module global is mutated.
 """
 
 import pathlib
-import shlex
+import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-LIB = paths.from_root(".ci", "scripts", "lib", "release-state-validator.sh")
+MODULE = "rediacc_ci.core.release_state_validator"
+MODULE_FILE = paths.from_root(".ci", "rediacc_ci", "core", "release_state_validator.py")
 
 # The twin's load-time value: a path that does not exist, so the ratchet is inert unless a case names its own file.
 NO_FLOOR_FILE = "/nonexistent/release-contract-floor.txt"
@@ -43,21 +31,27 @@ def rsv(
     floor_file: str = NO_FLOOR_FILE,
     grandfather: str | None = None,
 ) -> harness.RunResult:
-    """`run_assert` / `run_pointer`: one call into the library, streams merged."""
-    if not LIB.is_file():
-        gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(LIB))
-    prelude = [
-        "set -uo pipefail",
-        "unset RSV_GRANDFATHER_BEFORE",
-        "export RSV_FLOOR_FILE=%s" % shlex.quote(floor_file),
-    ]
+    """`run_assert` / `run_pointer`: one call into the validator, streams merged.
+
+    `function` keeps the bash library's spelling (`rsv_assert_bijection`, `rsv_assert_channel_pointer_tagged`) and is mapped to the module's CLI verb. The knobs reach the module through the environment, as they reached the library: `RSV_GRANDFATHER_BEFORE` is UNSET first (`env -u`, because `harness.run` overlays `os.environ` and cannot unset one) so an inherited value cannot silence the drift cases, and `RSV_FLOOR_FILE` keeps the unit cases independent of the production `.ci/config/release-contract-floor.txt` value.
+    """
+    if not MODULE_FILE.is_file():
+        gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(MODULE_FILE))
+    if function == "rsv_assert_bijection":
+        cli, tags, in_flight = args
+        verb = ["bijection", "--cli", cli, "--tags", tags, "--in-flight", in_flight]
+    else:
+        channel, latest, manifest, tags, in_flight = args
+        verb = ["pointer", channel, latest, manifest, "--tags", tags, "--in-flight", in_flight]
+    command = ["env", "-u", "RSV_GRANDFATHER_BEFORE"]
+    command.append("RSV_FLOOR_FILE=%s" % floor_file)
+    command.append("PYTHONPATH=%s" % paths.from_root(".ci"))
+    command.append("PYTHONDONTWRITEBYTECODE=1")
     if grandfather is not None:
-        prelude.append("export RSV_GRANDFATHER_BEFORE=%s" % shlex.quote(grandfather))
-    prelude.append("source %s" % shlex.quote(str(LIB)))
-    prelude.append("rc=0")
-    prelude.append("%s %s 2>&1 || rc=$?" % (function, " ".join(shlex.quote(a) for a in args)))
-    prelude.append("exit $rc")
-    return harness.run(["bash", "-c", "\n".join(prelude)])
+        command.append("RSV_GRANDFATHER_BEFORE=%s" % grandfather)
+    command += [sys.executable, "-m", MODULE, *verb]
+    # The twin captured `2>&1`; every assertion below is written against `result.combined`.
+    return harness.run(command)
 
 
 def run_assert(gate, cli: str, tags: str, in_flight: str = "") -> harness.RunResult:

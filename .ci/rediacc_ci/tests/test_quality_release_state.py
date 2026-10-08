@@ -100,6 +100,9 @@ def test_the_greedy_match_is_deliberate() -> None:
     assert rs.pointer_version('{"version": "1.0.0", "tool": {"version": "9.9.9"}}') == "v9.9.9"
 
 
+VALIDATOR_REL = ".ci/scripts/lib/release-state-validator.sh"
+
+
 BIJECTION_CASES = [
     (["v1.0.0", "v1.0.1"], ["v1.0.0", "v1.0.1"], "", "a clean bijection"),
     (["v1.0.0", "v1.0.1"], ["v1.0.0"], "", "a sentinel with no tag"),
@@ -117,7 +120,7 @@ BIJECTION_CASES = [
 def test_assert_bijection_matches_the_bash_function(
     tmp_path: pathlib.Path, cli: list[str], tags: list[str], in_flight: str, why: str
 ) -> None:
-    """The real `rsv_assert_bijection`, sourced from the library it lives in.
+    """The bash `rsv_assert_bijection` (frozen: the library is deleted), against the port.
 
     THE RATCHET IS PINNED AWAY ON BOTH SIDES. `rsv_pre_contract_floor`'s second candidate is `<lib>/../../config/release-contract-floor.txt`, which does not move when a caller passes a fixture root, so an unpinned run computes its floor from whatever version the REAL repository is on and grandfathers every
     case here. `RSV_FLOOR_FILE` pointing at a path that does not exist is how
@@ -139,7 +142,7 @@ def test_assert_bijection_matches_the_bash_function(
         INF=in_flight,
         RSV_FLOOR_FILE=nofloor,
     )
-    code, out, err = diff.bash_streams(script, env=env)
+    code, out, err = diff.twin_streams(VALIDATOR_REL, script, env=env, work=(tmp_path,))
     assert code == 0, err
     bash_lines = [line for line in out.split("\n") if line != "" and not line.startswith("rc=")]
     bash_rc = int(out.strip().split("rc=")[-1])
@@ -199,7 +202,7 @@ def test_assert_channel_pointer_matches_the_bash_function(
         echo "rc=$rc"
     """
     env = diff.env_for(CH=channel, LAT=latest, MAN=manifest, TAGS="\n".join(tags), INF=in_flight)
-    code, out, err = diff.bash_streams(script, env=env)
+    code, out, err = diff.twin_streams(VALIDATOR_REL, script, env=env)
     assert code == 0, err
     bash_lines = [line for line in out.split("\n") if line != "" and not line.startswith("rc=")]
     bash_rc = int(out.strip().split("rc=")[-1])

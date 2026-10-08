@@ -1,7 +1,4 @@
 [
-  ".ci/scripts/deploy/clone-d1.sh\tjq",
-  ".ci/scripts/deploy/upload-to-r2.sh\taws",
-  ".ci/scripts/deploy/upload-to-r2.sh\tjq",
   ".ci/scripts/infra/ci-pull-images.sh\tdocker",
   ".ci/scripts/infra/ci-pull-images.sh\tjq",
   ".ci/scripts/lib/common.sh\taws",

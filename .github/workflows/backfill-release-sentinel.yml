@@ -4,7 +4,8 @@ name: Backfill Release Sentinel
 # Check Release State gate flags "DRIFT v<X.Y.Z>: git tag present, cli sentinel
 # missing" — the version was published (git tag + GitHub Release) but the R2
 # sentinel was lost (housekeeping race, manual scrub, etc.). This workflow
-# re-runs `.ci/scripts/deploy/write-release-sentinel.sh` for the named version
+# re-runs `rediacc_ci.deploy.write_release_sentinel` (through
+# `rediacc_ci.release.backfill_write_sentinel`) for the named version
 # so the bijection check stops failing without re-running the entire CI
 # pipeline.
 #

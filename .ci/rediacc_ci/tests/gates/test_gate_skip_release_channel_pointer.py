@@ -2,8 +2,8 @@
 
 Gate: on a `bump-none` merge the R2 uploaders must write NOTHING on a release channel, and must keep writing everything the moment the signal is absent.
 
-WHAT IS DRIVEN. `.ci/scripts/deploy/upload-to-r2.sh` is driven where it lives, in the real tree, because it takes every path it needs as an argument. `.ci/rediacc_ci/deploy/upload_repos_to_r2.py` (the port that replaced `upload-repos-to-r2.sh`) derives its root from its own file location and then `cd`s to it, so it is driven from a BYTE-IDENTICAL copy inside a sandbox, with the real `.ci` on `PYTHONPATH`; the sandbox's `.ci/scripts/lib`, `.ci/config` and
-`.devcontainer` are SYMLINKS to the real ones, for the bash uploader. The copy is `cmp`-checked against the original on every run: the sandbox exists to relocate a repo root, not to re-implement a script.
+WHAT IS DRIVEN. `.ci/rediacc_ci/deploy/upload_to_r2.py` and `.ci/rediacc_ci/deploy/upload_repos_to_r2.py` (the ports that replaced `upload-to-r2.sh` and `upload-repos-to-r2.sh`) derive their root from their own file location, so each is driven from a BYTE-IDENTICAL copy inside a sandbox, with the real `.ci` on `PYTHONPATH`; the sandbox's `.ci/scripts/lib`, `.ci/config` and
+`.devcontainer` are SYMLINKS to the real ones, as the sandbox's historical layout. The copy is `cmp`-checked against the original on every run: the sandbox exists to relocate a repo root, not to re-implement a script.
 
 THE MUTANTS ARE ASSEMBLED BY CONSTRUCTION, head-up-to-anchor plus a replacement block written literally in this file plus tail-after-anchor. No pattern substitution of any live source line, so a reworded guard cannot silently produce an identical "mutant". Three refusals guard the assembly and all three are the twin's: the anchors must be found, the anchor must be GONE from the
 output, and the output must differ from its source.
@@ -17,7 +17,7 @@ same number.
 
 THE TWIN IS FLAT (it declares no `test_*` functions), so `test_twin_parity.py` compares this module's control count against the twin's runtime `PASS:` count: six properties, six controls and one shape line, thirteen each side.
 
-NO `xdist_group`. The sandbox is module-scoped and built under pytest's own `tmp_path_factory`, which is per-worker, so two workers get two sandboxes and two recorders; within a worker pytest never runs two tests at once, so the single recorder log is written and read serially. Nothing outside the sandbox is written: the real `upload-to-r2.sh` is EXECUTED but never modified, and
+NO `xdist_group`. The sandbox is module-scoped and built under pytest's own `tmp_path_factory`, which is per-worker, so two workers get two sandboxes and two recorders; within a worker pytest never runs two tests at once, so the single recorder log is written and read serially. Nothing outside the sandbox is written: the real ports are EXECUTED (as copies) but never modified, and
 its mutants are assembled into the sandbox.
 """
 
@@ -31,7 +31,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-REAL_UPLOAD = paths.from_root(".ci", "scripts", "deploy", "upload-to-r2.sh")
+REAL_UPLOAD = paths.from_root(".ci", "rediacc_ci", "deploy", "upload_to_r2.py")
 REAL_REPOS = paths.from_root(".ci", "rediacc_ci", "deploy", "upload_repos_to_r2.py")
 VERSION = "9.9.9"
 
@@ -70,11 +70,9 @@ printf '%%s\\n' "$*" >>"%(purgelog)s"
 echo '{"success":true,"errors":[]}'
 """
 
-MUT_UNCONDITIONAL = """skip_release_requested() { return 0; }
-if skip_release_requested; then
-    echo "MUTANT: guard is unconditional"
-    exit 0
-fi"""
+MUT_UNCONDITIONAL = """    if True:
+        print("MUTANT: guard is unconditional")
+        return 0"""
 
 MUT_UNCONDITIONAL_PY = """    if True:
         print("MUTANT: guard is unconditional")
@@ -84,16 +82,9 @@ MUT_CHANNEL_BLIND_PY = """    if skip_release_requested(dict(os.environ)):
         print("MUTANT: guard ignores CHANNEL")
         return 0"""
 
-MUT_CHANNEL_BLIND = """skip_release_requested() {
-    case "${SKIP_RELEASE:-}" in
-        true | 1 | yes | y | on) return 0 ;;
-        *) return 1 ;;
-    esac
-}
-if skip_release_requested; then
-    echo "MUTANT: guard ignores CHANNEL"
-    exit 0
-fi"""
+MUT_CHANNEL_BLIND = """    if skip_release_requested(os.environ.get("SKIP_RELEASE", "")):
+        print("MUTANT: guard ignores CHANNEL")
+        return 0"""
 
 BEGIN_ANCHOR = "SKIP_RELEASE_GUARD_BEGIN"
 END_ANCHOR = "SKIP_RELEASE_GUARD_END"
@@ -166,14 +157,20 @@ class Sandbox:
                 "sandbox copy of upload_repos_to_r2.py is not byte-identical to the real port"
             )
 
-        deploy = self.root / ".ci" / "scripts" / "deploy"
         repos_dir = self.root / ".ci" / "rediacc_ci" / "deploy"
+        self.sandbox_upload = repos_dir / "upload_to_r2.py"
+        self.sandbox_upload.write_bytes(REAL_UPLOAD.read_bytes())
+        self.sandbox_upload.chmod(0o755)
+        if self.sandbox_upload.read_bytes() != REAL_UPLOAD.read_bytes():
+            raise Refusal("sandbox copy of upload_to_r2.py is not byte-identical to the real port")
         self.mutants = {
-            "a-noguard": self._assemble(REAL_UPLOAD, deploy / "mutant-a-noguard.sh", ""),
+            "a-noguard": self._assemble(self.sandbox_upload, repos_dir / "mutant_a_noguard.py", ""),
             "b-uncond": self._assemble(
-                REAL_UPLOAD, deploy / "mutant-b-uncond.sh", MUT_UNCONDITIONAL
+                self.sandbox_upload, repos_dir / "mutant_b_uncond.py", MUT_UNCONDITIONAL
             ),
-            "c-blind": self._assemble(REAL_UPLOAD, deploy / "mutant-c-blind.sh", MUT_CHANNEL_BLIND),
+            "c-blind": self._assemble(
+                self.sandbox_upload, repos_dir / "mutant_c_blind.py", MUT_CHANNEL_BLIND
+            ),
             "r-noguard": self._assemble(self.sandbox_repos, repos_dir / "mutant_r_noguard.py", ""),
             "r-uncond": self._assemble(
                 self.sandbox_repos, repos_dir / "mutant_r_uncond.py", MUT_UNCONDITIONAL_PY
@@ -215,6 +212,16 @@ class Sandbox:
 
     def _prove_live(self, mutant: pathlib.Path) -> None:
         """The probe is chosen to be independent of the plant: it exercises argument handling, which sits ABOVE the spliced region in both scripts."""
+        if mutant.name.startswith(("mutant_a", "mutant_b", "mutant_c")):
+            probe = self._env_run(
+                [sys.executable, str(mutant), "--help"], self._python_env(), unset=("SKIP_RELEASE",)
+            )
+            if probe.rc != 0 or "Usage:" not in probe.combined:
+                raise Refusal(
+                    "MUTANT IS NOT LIVE: %s --help exited %d without a usage line\n%s"
+                    % (mutant, probe.rc, harness.render_output(probe))
+                )
+            return
         if mutant.suffix == ".py":
             probe = self._env_run(
                 [sys.executable, str(mutant)], self._python_env(), unset=("CHANNEL", "SKIP_RELEASE")
@@ -279,9 +286,10 @@ class Sandbox:
         }
         if skip:
             assignments["SKIP_RELEASE"] = skip
+        assignments.update(self._python_env())
         return self._env_run(
             [
-                "bash",
+                sys.executable,
                 str(script),
                 "--version",
                 VERSION,
@@ -430,7 +438,7 @@ def test_1_skip_release_on_edge_writes_nothing(gate, sandbox):
         gate,
         sandbox,
         case_skip_writes_nothing,
-        REAL_UPLOAD,
+        sandbox.sandbox_upload,
         "1. --skip-release on edge writes NOTHING to R2",
     )
 
@@ -440,7 +448,7 @@ def test_2_clean_edge_still_writes_the_channel_pointer(gate, sandbox):
         gate,
         sandbox,
         case_clean_writes_pointer,
-        REAL_UPLOAD,
+        sandbox.sandbox_upload,
         "2. no flag on edge still writes the channel pointer + cli/v%s/" % VERSION,
     )
 
@@ -450,7 +458,7 @@ def test_3_skip_release_is_ignored_on_a_pr_channel(gate, sandbox):
         gate,
         sandbox,
         case_pr_channel_unaffected,
-        REAL_UPLOAD,
+        sandbox.sandbox_upload,
         "3. SKIP_RELEASE is ignored on pr-7",
     )
 

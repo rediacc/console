@@ -42,13 +42,11 @@ LIBS: dict[str, tuple[str, ...]] = {
         "../log.py",
     ),
     ".ci/scripts/lib/emit-advisory.sh": ("advisory.py",),
-    ".ci/scripts/lib/release-state-validator.sh": ("release_state_validator.py",),
     ".ci/scripts/lib/toolchain.sh": ("toolchain.py",),
 }
 
 # Extra name prefixes a library puts on its functions, beyond its own file stem; the twin drops them.
 PREFIXES: dict[str, tuple[str, ...]] = {
-    ".ci/scripts/lib/release-state-validator.sh": ("rsv_",),
     ".ci/scripts/lib/blocker-validator.sh": ("blocker_",),
 }
 

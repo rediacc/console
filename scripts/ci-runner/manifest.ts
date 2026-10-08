@@ -4883,7 +4883,11 @@ export const GATES: readonly GateSpec[] = [
     id: 'test:write-once-guard',
     run: 'PYTHONPATH=.ci python3 .ci/rediacc_ci/deploy/write_once_guard_check.py',
     gate: true,
-    leaves: ['.ci/rediacc_ci/deploy/write_once_guard_check.py'],
+    leaves: [
+      '.ci/rediacc_ci/deploy/write_once_guard_check.py',
+      '.ci/rediacc_ci/deploy/write_once_guard.py',
+      '.ci/rediacc_ci/core/release_state_validator.py',
+    ],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
