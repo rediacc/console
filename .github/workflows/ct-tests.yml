@@ -12,7 +12,8 @@ on:
     # (rediacc_ci.infra.build_renet); console is public, so a prebuilt
     # nolicense binary must never ship via artifacts. Only the embed-assets
     # staging is shared, via the renet-embed-assets cache (same key as
-    # ci-build-renet.yml).
+    # ci-build-renet.yml), and only the renet-embed-assets job stages it on a
+    # miss: every job that restores it needs that job.
     inputs:
       # The expensive suites run on PR and nightly only. This used to gate the
       # CALLER (ci.yml's `tests:` job), which is why migration-test could not
@@ -231,6 +232,87 @@ jobs:
           build-packages: 'true'
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.unit
 
+  # The ONE job here that stages renet's embed assets on a cache miss; every job
+  # below that restores the renet-embed-assets cache `needs:` it, so each of them
+  # restores a hit and its own "Build renet" is the ~30 s go build alone.
+  # Before this job each consumer staged on a miss itself: a lockfile change
+  # (zot 2.1.22, renet a4b0da6) put 11m34s of Docker builder staging inside
+  # E2E Ceph's 15-minute budget, the watchdog cancelled it at 15.0m with its
+  # test step at 1m56s (run 37720545287 attempt 1), and the force-cancel took
+  # 76 jobs with it, about 40 of which were restaging the same tree in parallel.
+  # On a hit this job only checks the key (lookup-only); on a miss its staging
+  # (9m50s to 11m34s measured) runs under its own budget instead of a test's.
+  # check-lane-budget.ts check 8 reds a consumer that loses the needs: edge.
+  renet-embed-assets:
+    name: Renet embed assets
+    # Checkout, with the private submodules on the readonly-preset App token,
+    # and Docker Hub pulls for the staging build. No ghcr, no GitHub API.
+    permissions:
+      contents: read
+    # A superset of every dependent's own `if:` (each also requires full_suite),
+    # so no dependent is ever skipped because this job was.
+    if: inputs.full_suite == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+            GITHUB_APP_ID > BWS_APP_ID
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      # lookup-only: a hit downloads nothing here; the dependents restore it.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+          lookup-only: true
+      # Everything below runs on a miss only, and is the consumers' own chain.
+      - name: Login to Docker Hub
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ env.BWS_DOCKERHUB_USERNAME }}
+          password: ${{ env.BWS_DOCKERHUB_TOKEN }}
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Stage renet embed assets
+        id: build-renet
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        # Only a tree this job staged itself and build.sh's receipt vouches for
+        # (rediacc_ci.infra.renet_embed_cache), as at every other save site.
+        if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+
   test-e2e-workers:
     name: E2E Workers (${{ matrix.os-image }}, ${{ matrix.shard }}/8)
     # Logs into ghcr with github.token and PULLS only (the credential is then
@@ -239,6 +321,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_workers != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 20 # budget cap, operator ruling #153aace7 (measured max 15.0)
@@ -545,6 +628,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_ceph != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -717,6 +801,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_ceph_workers != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 20 # budget cap, operator ruling #153aace7 (measured max 15.1)
@@ -1067,7 +1152,7 @@ jobs:
     permissions:
       contents: read
       packages: read
-    needs: [renet-pkg-scope]
+    needs: [renet-pkg-scope, renet-embed-assets]
     if: needs.renet-pkg-scope.outputs.hit == 'true'
     runs-on: ubuntu-latest
     # A named exemption from the 15-minute job budget, every matrix leg: p90 16
@@ -1236,6 +1321,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_k8s != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -1408,6 +1494,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_k8s_ceph != 'false'
     runs-on: ubuntu-latest
     # A named exemption from the 15-minute job budget: p90 20 / timeout-minutes
@@ -1589,6 +1676,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_k8s_multinode != 'false'
     runs-on: ubuntu-latest
     # 100 -> 30: a named exemption from the 15-minute job budget, p90 25 /
@@ -1824,6 +1912,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_migrate != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -2024,6 +2113,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_fork_isolation != 'false'
     runs-on: ubuntu-latest
     # 35 -> 15 (T4.1, PLAN-ci-time-budget): measured max 9.7 min since
@@ -2747,6 +2837,7 @@ jobs:
     # scope. Submodules ride the readonly-preset App token.
     permissions:
       contents: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_drills != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 7
