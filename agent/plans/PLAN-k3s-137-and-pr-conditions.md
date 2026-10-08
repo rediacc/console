@@ -92,10 +92,14 @@ Both get their own worklist item.
 
 ## Boxes
 
-- [ ] A: k3s 1.37.1 in the Dockerfile, embed.go, the lockfile and the credits; hold deleted; embed gates, renet tests and check:ci-renet green
-- [ ] B: `allowlist.py conditions`, the `pr-conditions` probe and the merged-PR file; corpus red/green, mutant and loose-wording controls
-- [ ] B: `check-pr-condition-ledger.ts` online gate with its fixture cases; wired by the lead
-- [ ] Sweep: worklist items for the two go-deps tag holds
+- [x] A: k3s 1.37.1 in the Dockerfile, embed.go, the lockfile and the credits; hold deleted; embed gates, renet tests and check:ci-renet green
+    (ticked) 2026-10-08T10:15:17Z by d778be9d: commit:9a6c21063 k3s 1.37.1+k3s1 in the Dockerfile, private/renet/pkg/embed/embed.go:61, lockfile and credits; hold deleted; embed freshness, arch-parity and credits gates rc0
+- [x] B: `allowlist.py conditions`, the `pr-conditions` probe and the merged-PR file; corpus red/green, mutant and loose-wording controls
+    (ticked) 2026-10-08T10:15:20Z by d778be9d: commit:f8461c539 parse_conditions at .ci/rediacc_ci/core/allowlist.py:445, the pr-conditions probe and .ci/config/merged-prs.json
+- [x] B: `check-pr-condition-ledger.ts` online gate with its fixture cases; wired by the lead
+    (ticked) 2026-10-08T10:15:25Z by d778be9d: commit:f8461c539 scripts/gates/check-pr-condition-ledger.ts wired; selftest 25 controls; its pytest assertion fixed in commit:a161facd5
+- [x] Sweep: worklist items for the two go-deps tag holds
+    (ticked) 2026-10-08T10:15:29Z by d778be9d: commit:abf9b53f0 kubelet hold lifted (renet 1dbe423); the grpc and go-landlock holds stay valid
 - [ ] CI: E2E K8s, K8s Ceph and K8s Multinode SUCCEEDED on the branch head (not skipped); in-place upgrade of a 1.36 data dir checked by hand or recorded as a gap
 
 ## Risks

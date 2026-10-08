@@ -518,7 +518,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
 | `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
-| `agent/plans/PLAN-k3s-137-and-pr-conditions.md` | approved | 107 | 5 | 0 | 8129 |
+| `agent/plans/PLAN-k3s-137-and-pr-conditions.md` | approved | 111 | 1 | 4 | 8855 |
 | `agent/plans/PLAN-lessons-registry.md` | approved | 176 | 11 | 0 | 20098 |
 | `agent/plans/PLAN-lint-css-ci-wiring.md` | compacted | 54 | 0 | 0 | 4377 |
 | `agent/plans/PLAN-lint-rule-matrix-probe.md` | compacted | 50 | 0 | 0 | 3583 |
@@ -531,7 +531,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-plan-per-pr-loop.md` | approved | 71 | 1 | 15 | 14314 |
 | `agent/plans/PLAN-plan-preflight.md` | approved | 127 | 9 | 0 | 23411 |
 | `agent/plans/PLAN-plan-verbs.md` | draft | 34 | 3 | 0 | 3707 |
-| `agent/plans/PLAN-plyr-to-videojs.md` | approved | 82 | 5 | 0 | 7352 |
+| `agent/plans/PLAN-plyr-to-videojs.md` | approved | 91 | 2 | 3 | 9156 |
 | `agent/plans/PLAN-prepush-full-cpu.md` | approved | 265 | 0 | 31 | 48426 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
 | `agent/plans/PLAN-program-state-in-repo.md` | approved | 47 | 0 | 5 | 6984 |
