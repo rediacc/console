@@ -342,7 +342,7 @@ async function main(): Promise<void> {
   // A prominent, copy-paste HOW-TO-FIX so a human or an AI agent can act without hunting: the exact upgrade command, then the follow-ups it can't do itself.
   console.error('');
   console.error(`${YELLOW}TO FIX — bump the Dockerfile pins:${NC}`);
-  console.error('    npm run check:ci-embed-asset-freshness -- --upgrade');
+  console.error('    npx tsx scripts/gates/check-embed-asset-freshness.ts --upgrade');
   console.error('  then, for each bumped component:');
   console.error('    1. rebuild the builder image so the new binaries are pulled:');
   errorLines(
