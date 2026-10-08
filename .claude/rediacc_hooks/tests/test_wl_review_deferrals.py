@@ -136,6 +136,8 @@ def test_the_pr_finish_review_box_stays_unticked_while_a_deferral_stands(tmp_pat
         ("operator-only: x71afd29f.1 needs a call", "71afd29f.1", False),
         ("operator-only: 71afd29f.1 needs a call", "71afd29f.1", True),
         ("operator-only: 71afd29f.1.", "71afd29f.1", True),
+        ("operator-only: 71afd29f.1.2 needs a call", "71afd29f.1", False),
+        ("operator-only: 71afd29f.1. Next sentence", "71afd29f.1", True),
         ("see pr:8/F12", "pr:8/F1", False),
         ("see pr:8/F1, the rest fixed", "pr:8/F1", True),
     ],

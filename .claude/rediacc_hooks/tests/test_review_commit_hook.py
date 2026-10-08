@@ -1508,3 +1508,84 @@ def test_the_worklist_arm_supplies_the_triage_verdict_and_the_transcript_check(
         "c0ffee00": (">", "y", ""),
     }
     assert seen["asked"] == (True, False)
+
+
+def test_a_gitmodules_listing_no_submodule_has_the_console_alone(world):
+    """Finding f3056b34.1: a well-formed `.gitmodules` with no submodule (git config rc 1, no output) is a legal tree, not an unreadable one: the console is the only member and a foreign record is still found."""
+    other = world.repo / "growth"
+    other.mkdir()
+    world.init_repo(other)
+    world.answer([_finding("c.py")])
+    sha = world.commit("c.py", repo=other)
+    done = subprocess.run(
+        [
+            sys.executable,
+            str(R.SELF),
+            "--run",
+            sha,
+            "--branch",
+            BRANCH,
+            "--root",
+            str(world.repo),
+            "--repo",
+            "growth",
+        ],
+        capture_output=True,
+        text=True,
+        env=world.env,
+        check=False,
+        timeout=60,
+    )
+    assert done.returncode == 0, done.stderr
+    (world.repo / ".gitmodules").write_text("", encoding="utf-8")
+    assert R.registered_labels(world.repo) == {"console"}
+    rc, text = R.drop_foreign_reviews(world.repo, BRANCH, write=False)
+    assert rc == 0, text
+    assert "growth" in text, text
+
+
+def test_drop_foreign_reviews_reports_a_partial_delete_and_rewrites_the_ledger_first(
+    world, monkeypatch
+):
+    """Finding 166c8fe1.3: each record was unlinked before the ledger rewrite, so an unlink that raised partway left a ledger naming records already gone, unreported. The ledger now goes first and a failed unlink is named with rc 1."""
+    other = world.repo / "growth"
+    other.mkdir()
+    world.init_repo(other)
+    shas = []
+    for name in ("c.py", "d.py"):
+        world.answer([_finding(name)])
+        sha = world.commit(name, repo=other)
+        subprocess.run(
+            [
+                sys.executable,
+                str(R.SELF),
+                "--run",
+                sha,
+                "--branch",
+                BRANCH,
+                "--root",
+                str(world.repo),
+                "--repo",
+                "growth",
+            ],
+            capture_output=True,
+            text=True,
+            env=world.env,
+            check=True,
+            timeout=60,
+        )
+        shas.append(sha)
+    real_unlink = pathlib.Path.unlink
+
+    def flaky(self, *a, **k):
+        if self.name == "%s.md" % shas[1]:
+            raise PermissionError("planted")
+        return real_unlink(self, *a, **k)
+
+    monkeypatch.setattr(pathlib.Path, "unlink", flaky)
+    rc, text = R.drop_foreign_reviews(world.repo, BRANCH, write=True)
+    assert rc == 1, text
+    assert "PARTIAL" in text, text
+    assert "%s.md" % shas[1] in text, text
+    assert not world.review_file(shas[0]).exists()
+    assert world.review_file(shas[1]).exists()

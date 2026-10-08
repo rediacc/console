@@ -127,6 +127,8 @@ PUSH_TIMING_AFTER = (
 PUSH_TIMING_CONDITION = r"^[^.?!;]*?(^|[^a-z])(once|until)([^a-z]|$)"
 # A mechanics lead before the action: "how do/does/can/could/would/did ... push" asks how the push is done, so a CONDITION after it (a fork push once a branch is rebased) is part of the mechanics and stays quiet. It never silences a time word or an "or wait" alternative: "how do we push the batch now or later?" still asks WHEN (review ef6e61d0.1). `how should/shall` is not here: that one asks WHEN, and PUSH_TIMING_BEFORE refuses it.
 PUSH_MECHANICS_LEAD = r"(^|[^a-z])how (do|does|did|can|could|would)([^a-z]|$)"
+# Under a mechanics lead, a time word that is part of the OBJECT noun phrase is not a timing ask: "the first commit" (a determiner directly before `first`) and "the fix I already committed" (a subject pronoun directly before `already`). "the batch first, or wait" has no determiner before `first` and stays a timing ask.
+PUSH_OBJECT_MODIFIER = r"(^|[^a-z])((the|a|an|my|our|your|this|that) first|(i|we|you|they|it|which|that) already)(?![a-z])"
 PUSH_BARE = (
     r"^[^a-z]*(push|open (a |the )?(pr|pull request)|create (a |the )?(pr|pull request))"
     r"( (it|this|that|these|them|now|the batch|the branch|the pr|to origin|yet|first))*"
@@ -424,6 +426,12 @@ def _push_timing(sentence, header_object):
         return choice.group(0)
     for m in re.finditer(PUSH_ACTION, sentence):
         before, after = sentence[: m.start()], sentence[m.end() :]
+        # `timing_after` is what the time-word rule reads; `after` itself stays whole for the other rules.
+        timing_after = (
+            re.sub(PUSH_OBJECT_MODIFIER, " ", after)
+            if re.search(PUSH_MECHANICS_LEAD, before)
+            else after
+        )
         if re.search(NOUN_MODIFIER, before) or re.search(PUSH_NOUN_AFTER, after):
             continue
         # A push to `main` is the protected-branch question, not a timing one: the permission rule answers it.
@@ -436,7 +444,7 @@ def _push_timing(sentence, header_object):
             or (
                 "?" in sentence
                 and (
-                    re.search(PUSH_TIMING_AFTER, after)
+                    re.search(PUSH_TIMING_AFTER, timing_after)
                     or (
                         not re.search(PUSH_MECHANICS_LEAD, before)
                         and re.search(PUSH_TIMING_CONDITION, after)

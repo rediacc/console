@@ -1403,6 +1403,17 @@ STATIC: list[Case] = [
         "settled(push how-do with a now-or-later choice is timing)",
     ),
     case(
+        # Review 53e2515a.1: a time word inside the object noun phrase of a mechanics question is not a timing ask.
+        "check 0 guards/block_settled_questions.py",
+        ask_json("How do I push the first commit to my fork?"),
+        "settled(push how-do with 'the first commit' is mechanics)",
+    ),
+    case(
+        "check 0 guards/block_settled_questions.py",
+        ask_json("How do I push the fix I already committed?"),
+        "settled(push how-do with 'I already committed' is mechanics)",
+    ),
+    case(
         "check 2 guards/block_settled_questions.py",
         ask_json("How do we push the branch first, or wait for the review?"),
         "settled(push how-do with an or-wait alternative is timing)",

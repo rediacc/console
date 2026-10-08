@@ -508,6 +508,12 @@ def drive_l1(fix) -> L1Drive:
         ("--review-run", "--review-run @WHO@", "unreviewed commits"),
         # --prune-reviews runs the archival gate from the project root (PLAN-per-commit-review T5), so the fixture plants a stand-in gate there: the identity check is this table's subject, and the real gate needs a git work tree the fixture does not have.
         ("--prune-reviews", "--prune-reviews @WHO@", "no agent/reviews/<branch>/ directory"),
+        # Listing mode (no --write): the fixture has no git branch, so the accepted run lists nothing, after the same _identity_or_die its --write mode runs.
+        (
+            "--drop-foreign-reviews",
+            "--drop-foreign-reviews @WHO@",
+            "no review records of a foreign repository",
+        ),
         # The stop-hook retro brief (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.13). It WRITES: the first accepted run orders the band and adds the tracking item, so a foreign `<me>` must be refused before either.
         ("--retro-brief", "--retro-brief @WHO@ early", "STOP-HOOK RETRO for session"),
     ]

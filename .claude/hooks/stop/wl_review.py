@@ -2525,6 +2525,7 @@ def check_state(root, branch, label="console", cfg=None, expected_tip=""):
                 branch,
             )
         )
+    # The pin applies to the console's tip only: a submodule label is walked at its own checkout's HEAD (branch_state's `walk_tip`), never at a console remote-tracking ref, and the PR head of a submodule PR is a commit of that other repository, which the console's tip cannot contain. block_admin_merge still passes it for private/* PRs; it is ignored there by design.
     if expected_tip and label in ("console", None):
         walked = git_out(root, "rev-parse", "-q", "--verify", "%s^{commit}" % tip)
         if not walked or git(root, "merge-base", "--is-ancestor", expected_tip, walked)[0] != 0:
@@ -2786,8 +2787,8 @@ WAIVE_ASKED_RE = re.compile(r"^ASKED:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(?::\d{2})?Z
 
 
 def names_token(text, token):
-    """True when `text` names `token` as a whole token: `71afd29f.1` is not named by `71afd29f.12`, nor `pr:8/F1` by `pr:8/F12` (findings b18d31bd.1 and b18d31bd.2)."""
-    return re.search(r"(?<![\w.])%s(?!\w)" % re.escape(token), text or "") is not None
+    """True when `text` names `token` as a whole token: `71afd29f.1` is not named by `71afd29f.12` or `71afd29f.1.2` (a dot before or after a word character joins tokens; a sentence-ending dot does not), nor `pr:8/F1` by `pr:8/F12` (findings b18d31bd.1 and b18d31bd.2)."""
+    return re.search(r"(?<![\w.])%s(?!\w|\.\w)" % re.escape(token), text or "") is not None
 
 
 def deferral_refusal(finding):
@@ -3019,9 +3020,9 @@ def prune_reviews(root, args):
 
 
 def registered_labels(root):
-    """`console` plus every checkout `.gitmodules` registers: the repositories this project's reviews may name.
+    """`console` plus every submodule path `.gitmodules` registers, checked out or not: the repositories this project's reviews may name.
 
-    FAILS CLOSED: a `.gitmodules` that exists but yields no submodule path (unreadable, malformed, or a failing `git config`) raises ValueError. Falling back to `{"console"}` would make every submodule look foreign, and `drop_foreign_reviews --write` would then delete their records (review 166c8fe1.1). Only a tree with no `.gitmodules` at all has the console alone.
+    FAILS CLOSED: a `.gitmodules` that exists but yields no submodule path (unreadable, malformed, or a failing `git config`) raises ValueError. Falling back to `{"console"}` would make every submodule look foreign, and `drop_foreign_reviews --write` would then delete their records (review 166c8fe1.1). A tree with no `.gitmodules`, or one that lists no submodule (`git config --get-regexp` rc 1 with no output), has the console alone.
     """
     labels = {"console"}
     if not (pathlib.Path(root) / ".gitmodules").exists():
@@ -3031,7 +3032,7 @@ def registered_labels(root):
         parts = line.split(None, 1)
         if len(parts) == 2:
             labels.add(parts[1].strip())
-    if len(labels) == 1:
+    if len(labels) == 1 and not (rc == 1 and not out.strip()):
         raise ValueError(
             ".gitmodules exists but no submodule path could be read from it (git config rc=%d)" % rc
         )
@@ -3072,10 +3073,23 @@ def drop_foreign_reviews(root, branch, write):
     )
     if not write:
         return 0, "\n".join([head + "; pass --write to delete them:", *("  " + r for r in rows)])
+    # The ledger goes first and each unlink is reported: a failure partway leaves records that the next run lists again (the ledger no longer names them), never a ledger that names records already gone with nothing said.
+    failed = []
+    try:
+        if dropped:
+            ledger.write_text("".join(kept), encoding="utf-8")
+    except OSError as exc:
+        return 1, "refused: could not rewrite %s (%s); nothing was deleted" % (LEDGER_NAME, exc)
     for path, _repo, _sha in md:
-        path.unlink()
-    if dropped:
-        ledger.write_text("".join(kept), encoding="utf-8")
+        try:
+            path.unlink()
+        except OSError as exc:
+            failed.append("%s (%s)" % (path.name, exc))
+    if failed:
+        return 1, "\n".join(
+            [head + "; PARTIAL, could not delete (run the verb again after fixing):"]
+            + ["  " + f for f in failed]
+        )
     return 0, "\n".join([head + "; deleted:", *("  " + r for r in rows)])
 
 
@@ -3089,6 +3103,9 @@ def verb(name, me, args, root, items_loader, branch=None, asked_ok=None):
         if any(a != "--write" for a in args):
             return 2, VERB_USAGE
         if not branch:
+            # Listing finds nothing to list, as --review-mark's bare form does; only a --write is refused.
+            if "--write" not in args:
+                return 0, "no review records of a foreign repository (HEAD is on no branch)"
             return 1, "refused: HEAD is on no branch, so no review directory applies"
         return drop_foreign_reviews(root, branch, "--write" in args)
     if name == "--review-mark":

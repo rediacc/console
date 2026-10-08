@@ -793,7 +793,9 @@ def with_progress(text: str, body: str) -> str:
     h = re.search(r"(?m)^%s[ \t]*$" % re.escape(PROMOTED_HEADING), text)
     if not h:
         return text
-    rest = text[h.end() :].lstrip("\n")
+    tail = text[h.end() :]
+    # Drop only the heading's own line break and the one blank line the block replaces: any further blank line belongs to the hand-written list.
+    rest = tail[min(len(tail) - len(tail.lstrip("\n")), 2) :]
     return text[: h.end()] + "\n\n" + block + "\n" + ("\n" + rest if rest else "")
 
 

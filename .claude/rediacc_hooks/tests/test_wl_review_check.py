@@ -179,30 +179,44 @@ def test_check_refuses_a_branch_that_is_not_checked_out(tmp_path):
     assert "not-checked-out" in got.stdout, got.stdout
 
 
+def _refusals(repo, branch=BRANCH):
+    """review_refusals with the PR head the way the guard passes it: the fixture's own HEAD."""
+    return merge_guard.review_refusals(repo, branch, GH_REPO, _git(repo, "rev-parse", "HEAD"))
+
+
 def test_merge_arm_refuses_the_open_finding_and_passes_the_clean_branch(tmp_path):
-    reasons, lines = merge_guard.review_refusals(_world(tmp_path / "a", "open"), BRANCH, GH_REPO)
+    reasons, lines = _refusals(_world(tmp_path / "a", "open"))
     assert reasons == ["blocking"], (reasons, lines)
     assert any("OPEN [high]" in line for line in lines), lines
-    reasons, lines = merge_guard.review_refusals(
-        _world(tmp_path / "b", "resolved"), BRANCH, GH_REPO
-    )
+    reasons, lines = _refusals(_world(tmp_path / "b", "resolved"))
     assert reasons == [], (reasons, lines)
+
+
+def test_merge_arm_refuses_when_the_pr_head_sha_is_missing(tmp_path):
+    """Finding b18d31bd.5: an empty headRefOid once skipped the stale-tip pin and judged a possibly stale tip silently."""
+    repo = _world(tmp_path, "resolved")
+    reasons, lines = merge_guard.review_refusals(repo, BRANCH, GH_REPO, "")
+    assert reasons == ["unverifiable"], (reasons, lines)
+    assert any("headRefOid" in line for line in lines), lines
+    # CONTROL: the same clean branch with the head sha passes, so the refusal is the missing sha's doing.
+    assert _refusals(repo)[0] == []
 
 
 def test_merge_arm_fails_closed_when_the_reviewer_does_not_import(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "wl_review", None)
-    reasons, lines = merge_guard.review_refusals(tmp_path, BRANCH, GH_REPO)
+    reasons, lines = merge_guard.review_refusals(tmp_path, BRANCH, GH_REPO, "a" * 40)
     assert reasons == ["unverifiable"], (reasons, lines)
+    assert any("ImportError" in line or "could not run" in line for line in lines), lines
 
 
 def test_merge_arm_fails_closed_on_an_unreadable_head_branch(tmp_path):
-    reasons, _lines = merge_guard.review_refusals(_world(tmp_path, "resolved"), "", GH_REPO)
+    reasons, _lines = _refusals(_world(tmp_path, "resolved"), "")
     assert reasons, "an empty headRefName must refuse, never pass"
 
 
 GH_STUB = """#!/bin/sh
 case "$1 $2" in
-  "pr view") printf '%s\\n' '{"number":7,"headRefName":"0930-1","statusCheckRollup":[{"name":"CI Complete","conclusion":"SUCCESS"}],"body":"Operational-Reason: the plan gate is a separate suite"}' ;;
+  "pr view") printf '%s\\n' '{"number":7,"headRefName":"0930-1","headRefOid":"@HEAD@","statusCheckRollup":[{"name":"CI Complete","conclusion":"SUCCESS"}],"body":"Operational-Reason: the plan gate is a separate suite"}' ;;
   "api graphql") echo 0 ;;
   "auth token") echo token ;;
   *) exit 1 ;;
@@ -216,7 +230,7 @@ def test_the_guard_end_to_end_reads_the_head_branch(tmp_path, record, denied):
     stub_bin = tmp_path / "bin"
     stub_bin.mkdir()
     gh = stub_bin / "gh"
-    gh.write_text(GH_STUB, encoding="utf-8")
+    gh.write_text(GH_STUB.replace("@HEAD@", _git(repo, "rev-parse", "HEAD")), encoding="utf-8")
     gh.chmod(0o755)
     payload = json.dumps(
         {
@@ -294,11 +308,9 @@ def test_a_rebased_copy_whose_patch_id_is_in_the_ledger_counts_as_covered(tmp_pa
 
 
 def test_merge_arm_passes_the_ledger_branch_and_refuses_it_without_the_line(tmp_path):
-    reasons, lines = merge_guard.review_refusals(_world(tmp_path / "a", "ledger"), BRANCH, GH_REPO)
+    reasons, lines = _refusals(_world(tmp_path / "a", "ledger"))
     assert reasons == [], (reasons, lines)
-    reasons, lines = merge_guard.review_refusals(
-        _world(tmp_path / "b", "ledger-empty"), BRANCH, GH_REPO
-    )
+    reasons, lines = _refusals(_world(tmp_path / "b", "ledger-empty"))
     assert reasons == ["uncovered"], (reasons, lines)
 
 
@@ -418,12 +430,10 @@ def test_a_deferral_refuses_whatever_its_item_state_and_a_lease_changes_no_refus
 
 
 def test_merge_arm_refuses_the_deferral_and_passes_the_fixed_branch(tmp_path):
-    reasons, lines = merge_guard.review_refusals(
-        _world(tmp_path / "a", "deferred"), BRANCH, GH_REPO
-    )
+    reasons, lines = _refusals(_world(tmp_path / "a", "deferred"))
     assert reasons == ["deferred"], (reasons, lines)
     assert any(line.startswith("DEFERRED [high]") for line in lines), lines
-    reasons, lines = merge_guard.review_refusals(_world(tmp_path / "b", "fixed"), BRANCH, GH_REPO)
+    reasons, lines = _refusals(_world(tmp_path / "b", "fixed"))
     assert reasons == [], (reasons, lines)
 
 
@@ -510,12 +520,7 @@ def test_the_guard_end_to_end_refuses_a_head_oid_the_clone_lacks(tmp_path):
     stub_bin = tmp_path / "bin"
     stub_bin.mkdir()
     gh = stub_bin / "gh"
-    gh.write_text(
-        GH_STUB.replace(
-            '"headRefName":"0930-1"', '"headRefName":"0930-1","headRefOid":"%s"' % ("0" * 40)
-        ),
-        encoding="utf-8",
-    )
+    gh.write_text(GH_STUB.replace("@HEAD@", "0" * 40), encoding="utf-8")
     gh.chmod(0o755)
     payload = json.dumps(
         {
@@ -540,3 +545,13 @@ def test_the_guard_end_to_end_refuses_a_head_oid_the_clone_lacks(tmp_path):
     )
     assert got.returncode != 0, got.stderr
     assert "stale-tip" in got.stderr, got.stderr
+
+
+def test_a_submodule_label_ignores_the_console_tip_pin(tmp_path):
+    """Finding b18d31bd.4, by design: a submodule is walked at its own HEAD, so the PR head sha (a commit of ANOTHER repository) is never compared with the console's tip; the console label with the same sha is refused."""
+    repo, _sha = _submodule_world(tmp_path)
+    foreign = "0" * 40
+    reasons, _lines = R.check_state(repo, BRANCH, label="private/sub", expected_tip=foreign)
+    assert "stale-tip" not in reasons, reasons
+    reasons, _lines = R.check_state(repo, BRANCH, label="console", expected_tip=foreign)
+    assert reasons == ["stale-tip"], reasons

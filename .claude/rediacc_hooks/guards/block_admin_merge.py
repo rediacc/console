@@ -159,7 +159,15 @@ EDGE_CASES = [
 
 
 def review_refusals(root, branch, repo, head_sha=""):
-    """(reasons, lines) of the per-commit review precondition for the PR head `branch` of `repo`. Fails CLOSED: an import or runtime error is itself a refusal. No network call of its own: `head_sha` is the PR's `headRefOid` from the `gh pr view` already made, and pins the walked tip to it (`stale-tip` when this clone's ref lacks it, finding 71afd29f.3)."""
+    """(reasons, lines) of the per-commit review precondition for the PR head `branch` of `repo`. Fails CLOSED: an import or runtime error, or an empty `head_sha`, is itself a refusal. No network call of its own: `head_sha` is the PR's `headRefOid` from the `gh pr view` already made, and pins the walked tip to it (`stale-tip` when this clone's ref lacks it, finding 71afd29f.3)."""
+    if not head_sha:
+        # The pin is not optional: without the PR's headRefOid the walked tip could be stale and the gate would judge it silently.
+        return (
+            ["unverifiable"],
+            [
+                "the PR head sha (headRefOid) is missing from the `gh pr view` answer, so the walked tip cannot be pinned to it"
+            ],
+        )
     try:
         syspath.on_sys_path(STOP_DIR)
         import wl_review  # noqa: PLC0415 -- loaded only for a merge, never for the rest of the chain
