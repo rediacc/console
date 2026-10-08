@@ -11,6 +11,20 @@ Owns: .claude/hooks/stop/*.py, .claude/rediacc_hooks/tests/*.py, .claude/setting
 
 **Scope.** This retro covers the friction the Stop hook caused lead session d778be9d on 2026-09-24, from 03:50Z to 15:26Z. That window holds 118 blocked stops, 18 judge calls (10 `continue`, 8 `stop`) and 94 `--tick` calls. Where it helps to show a trend, counts across the whole 9-day transcript (2026-09-15 to 09-24) are given too. It also designs worklist #6e834f1a, the retro that runs at the moment before compaction.
 
+**Status record, R.15 (re-count of the seven frictions, 2026-10-08).** Source: `/tmp/claude-worklist/home_developer_console.blocklog-d778be9d.jsonl`, 155 blocked stops from 2026-10-05T10:05Z to 2026-10-08T07:13Z (written since R.10, every block exit of `run_stop`), plus the beside-it `judge-d778be9d.jsonl` (211 calls, 46 `continue`) and `tick-refusals-d778be9d.jsonl` (28 rows). The log belongs to the same lead id, not a fresh session, and its window is 3 days against the 11.6 hours counted before, so the comparison is by share, not by raw count.
+
+| Friction | Before (2026-09-24, 118 blocks) | After (blocklog, 155 blocks) | Verdict |
+|---|---|---|---|
+| #1 judge sweep or proof demand | 10 of 10 judge blocks carried one (6 misfired) | 31 of 46 judge blocks (67%): 29 sweep, 5 proof, 2 STILL OWED | Not fixed: the demand rate is still high; misfires are not separable from the log |
+| #3 `no-remaining` on a short progress reply | 6 blocks | 0 led, 0 named | Fixed |
+| #2 queue leases as "a slot is free now" | 6 blocks carried queue lines | 0 `queue-slot` rows, led or named | Fixed |
+| #4 interim [SILENT] reports | 3 blocks | 7 report blocks (3 `bg-report`, 4 `unread-reports`); the log has no [SILENT] flag | Not isolable from the log |
+| #7 judge next-action grep does not match | 3 of 10 judge blocks | 0 of 46 judge `continue` reasons mention DROPPED, next action, grep or post-tool | Fixed by proxy only; the blocklog does not record the grep |
+| #5 `--tick` evidence refusals | 22 refused of 94 tick calls (23%) | 28 refused of 200 attempts (172 closes + 28 refusals, 14%) | Share fell, still 28 retries |
+| #6 ladder advisories starve the digest | 9 of 9 digests were identical ladder lines; 0 of 52 delivered | 2 `ladder-gone` blocks led (1 more named); digest delivery is not logged | Not measurable from the log |
+
+Commands: `python3` over the three JSONL files above, counting `key`, `named` and `judge.sweep`/`judge.proof` per row; the tick denominator is the `state` events with `s:x` in `agent/worklist/d778be9d.jsonl` since 2026-10-05T10:05Z (172). Of the seven, two fell to zero (#3, #2), one fell by share (#5), #1 did not fall, and three (#4, #6, #7) cannot be re-counted from the blocklog because it records no [SILENT] flag, no digest outcome and no grep text.
+
 **Line numbers.** They refer to the working tree at about 15:30Z on 2026-09-24. The continuity work is still uncommitted, so every citation also names a function or constant to re-anchor on.
 
 **Not re-proposed.** PLAN-stop-hook-continuity.md already landed P0.1 to P2.7 (all except P2.6). Several of today's blocks predate those boxes and are already fixed:
