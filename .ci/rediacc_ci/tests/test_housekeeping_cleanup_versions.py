@@ -1289,6 +1289,38 @@ def test_delta_phase_2_an_unanswered_sentinel_probe_deletes_no_tag(head: list, e
     assert b"::error title=Release tag unchecked::" in new[1]
 
 
+FORBIDDEN_HEAD = rule(
+    "head-object",
+    rc=254,
+    stderr="An error occurred (403) when calling the HeadObject operation: Forbidden\n",
+)
+
+
+def test_delta_phase_2_asks_r2_only_after_the_delete_budget() -> None:
+    """With the budget spent (`MAX_DELETES_PER_RUN=0`) no tag can be deleted this run, so R2 is not asked about any: the probe used to come first and could latch the run as failed for a tag nothing was going to touch. The CONTROL is the same run with budget, which does ask."""
+    env = dict(R2_ENV, GITHUB_ACTIONS="true", MAX_DELETES_PER_RUN="0")
+    _old, new = _twin_and_port("cleanup_tags", (), _incident_fixture([FORBIDDEN_HEAD]), env)
+    assert not calls_of(new[3], "aws"), "R2 was probed with no budget left"
+    assert b"Phase 2: hit MAX_DELETES_PER_RUN=0" in new[2]
+    assert b"::error title=Release tag unchecked::" not in new[1]
+    _old, funded = _twin_and_port(
+        "cleanup_tags", (), _incident_fixture([FORBIDDEN_HEAD]), dict(R2_ENV, GITHUB_ACTIONS="true")
+    )
+    assert calls_of(funded[3], "aws"), "the control moved: with budget R2 is asked"
+
+
+def test_delta_phase_2_a_dry_run_does_not_latch_an_unanswered_probe() -> None:
+    """A dry run deletes nothing, so an unanswered probe is named but must not latch the run as failed (no `::error`, no failed latch). The CONTROL is the live run, which still latches."""
+    env = dict(R2_ENV, GITHUB_ACTIONS="true")
+    _old, dry = _twin_and_port(
+        "cleanup_tags", ("--dry-run",), _incident_fixture([FORBIDDEN_HEAD]), env
+    )
+    assert b"::error title=Release tag unchecked::" not in dry[1]
+    assert b"Tag v1.3.1 kept UNCHECKED" in dry[2]
+    _old, live = _twin_and_port("cleanup_tags", (), _incident_fixture([FORBIDDEN_HEAD]), env)
+    assert b"::error title=Release tag unchecked::" in live[1], "the control moved"
+
+
 def test_delta_phase_2_a_pointer_tag_does_not_take_a_release_slot() -> None:
     """`--versions 2`: the twin indexes `production` with the releases, so v1.0.0 is third and goes. The port indexes releases among releases, so v2.0.0 and v1.0.0 both keep their slots and `production` keeps its own."""
     fixture = _tags_fixture(

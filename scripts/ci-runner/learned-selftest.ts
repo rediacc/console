@@ -21,8 +21,11 @@ const REPO_ROOT = path.resolve(HERE, '..', '..');
 /** The archived receipts the property test replays: the newest by mtime. Each is about a second of simulation per order tried, and the newest carry this machine's current gate set; older ones add runtime, not shapes. */
 const ARCHIVE_SAMPLE = 12;
 
-/** The floor on T7's simulated mixes: the seeded ones always exist, so fewer means the property was checked over nothing (VACUOUS). */
-const MIN_MIXES = 3;
+/** The seeded mixes T7 always replays. */
+const SEEDED_MIXES = [20261008, 7, 42];
+
+/** The floor on T7's NON-EMPTY mixes: every seeded one must carry gates to schedule, so fewer means the property was checked over nothing (VACUOUS). */
+const MIN_MIXES = SEEDED_MIXES.length;
 
 /** This machine's shape, as sim.ts P24 states it: 24 cores, C 23, K 46, M 29 GB. */
 const P24 = { machineCores: 24, jobs: 22, heavyLimit: 5 };
@@ -317,12 +320,13 @@ export async function learnedSelftest(): Promise<{
     }
     const mixes: Mix[] = [
       ...archived.map(mixFromReceipt).filter((m): m is Mix => m !== undefined),
-      ...[20261008, 7, 42].map(seededMix),
+      ...SEEDED_MIXES.map(seededMix),
     ];
-    const fromArchive = mixes.length - MIN_MIXES;
+    const fromArchive = mixes.length - SEEDED_MIXES.length;
+    const nonEmpty = mixes.filter((m) => m.specs.length > 0).length;
     check(
-      mixes.length >= MIN_MIXES,
-      `T7 must simulate at least the ${MIN_MIXES} seeded mixes, got ${mixes.length}`
+      nonEmpty >= MIN_MIXES,
+      `T7 must simulate at least ${MIN_MIXES} mixes that carry gates to schedule, got ${nonEmpty} of ${mixes.length}`
     );
     let on = 0;
     let slowerUnpinned = 0;
@@ -362,7 +366,7 @@ export async function learnedSelftest(): Promise<{
       );
     }
     table.push(
-      `ranking property: ${mixes.length} mix(es) (${fromArchive} archived, 3 seeded), ${on} ranked ON, ${slowerUnpinned} slower with pinning disabled`
+      `ranking property: ${mixes.length} mix(es) (${fromArchive} archived, ${SEEDED_MIXES.length} seeded), ${on} ranked ON, ${slowerUnpinned} slower with pinning disabled`
     );
     check(
       on > 0,

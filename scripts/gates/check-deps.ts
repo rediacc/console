@@ -2011,11 +2011,13 @@ function syncPinGroups(steps: InstallStep[]): boolean {
     return false;
   }
   const plan = planPinSync(text, moved, syncpackSourceDirs().map(readDeclaredRanges));
+  // A plan with no text rewrote nothing (it carries only errors), so it neither prints nor counts rewrites it did not make.
+  const written = plan.text !== null ? plan.rewrites : [];
   if (plan.text !== null) fs.writeFileSync(SYNCPACK_RC, plan.text);
   console.log(
-    `\n${BLUE}syncpack pin groups:${NC} ${plan.groups} groups, ${plan.involved} hold a moved package, ${plan.rewrites.length} rewritten`
+    `\n${BLUE}syncpack pin groups:${NC} ${plan.groups} groups, ${plan.involved} hold a moved package, ${written.length} rewritten`
   );
-  for (const r of plan.rewrites) console.log(`  .syncpackrc.json ${r}`);
+  for (const r of written) console.log(`  .syncpackrc.json ${r}`);
   if (plan.errors.length === 0) return true;
   console.error(
     `${RED}✗${NC} ${plan.errors.length} syncpack pin group(s) not moved (check:version stays red until each is):`
@@ -4262,6 +4264,12 @@ function selftest(): void {
       oddRun.syncpackrc === oddRc &&
       oddRun.output.includes('not in the two-space JSON form'),
     `${oddRun.output}\n${oddRun.syncpackrc}`
+  );
+  expect(
+    'pin groups: a refused rewrite (no text) prints no rewrite line and counts 0 rewritten',
+    oddRun.output.includes('hold a moved package, 0 rewritten') &&
+      !oddRun.output.includes('.syncpackrc.json group'),
+    oddRun.output
   );
   const realPin: NodeJS.ProcessEnv = { ...process.env, CHECK_DEPS_MUTANT: 'skip-pin-sync' };
   delete realPin.CHECK_DEPS_ROOT;

@@ -1233,7 +1233,7 @@ class Housekeeping:
         INTENTIONAL DELTA (Rule T, worklist #a5a1f981). Two pruners used to own one release's lifetime: the edge R2 upload keeps 20 CLI versions and removes `cli/v<old>/` WITH its sentinel, and this file kept the newest 20 tags by date. The windows differed by one slot (the non-semver `production` tag took one of the 20), so the scheduled run of 2026-10-07 deleted tag v1.3.1 while `cli/v1.3.1/.released` was still in R2, and the release-state bijection went red on main. The sentinel now decides: a strict-semver
         tag of RELEASE_REPO is deleted only once R2 has removed its sentinel.
 
-        Asked per tag with `rsv.sentinel_exists`, the library's tri-state probe, and NOT with `rsv.list_sentinels`: the list reader folds a failed listing into an empty bucket (its DEFECT 2), which here would read as "every sentinel is gone" and release every tag. A probe that cannot answer (unset credentials, AccessDenied, a 5xx) KEEPS the tag and latches the run as failed: an unchecked tag is not a deletable one.
+        Asked per tag with `rsv.sentinel_exists`, the library's tri-state probe, and NOT with `rsv.list_sentinels`: the list reader folds a failed listing into an empty bucket (its DEFECT 2), which here would read as "every sentinel is gone" and release every tag. A probe that cannot answer (unset credentials, AccessDenied, a 5xx) KEEPS the tag and latches the run as failed (a dry run names it without latching, since it deletes nothing): an unchecked tag is not a deletable one. The probe is asked only after the delete budget, so a tag that could not be deleted this run is never probed.
 
         Other repos (renet writes no sentinels; `write_release_sentinel.PRODUCT` is `cli` only) and non-semver tags (outside the bijection contract) are not held.
         """
@@ -1255,6 +1255,13 @@ class Housekeeping:
             log.info(
                 "  Keeping tag %s: %s/%s/%s still exists in R2, which owns this release's "
                 "lifetime" % (tag, SENTINEL_PRODUCT, tag, rsv.SENTINEL_KEY)
+            )
+            return True
+        if self.dry_run:
+            # A dry run deletes nothing, so an unanswered probe is named but does not latch the run as failed.
+            log.warn(
+                "  [DRY-RUN] Tag %s kept UNCHECKED: could not read %s/%s/%s from R2"
+                % (tag, SENTINEL_PRODUCT, tag, rsv.SENTINEL_KEY)
             )
             return True
         self.housekeeping_fail(
@@ -1532,15 +1539,16 @@ class Housekeeping:
 
                 if self.should_retain(tag_date, index):
                     log.debug("  Keeping tag: %s" % tag_name)
-                elif self.release_tag_held_by_r2(full_repo, tag_name):
-                    continue
                 else:
+                    # The budget is asked BEFORE R2: a tag that cannot be deleted this run is not worth a probe (and an unanswered probe would latch the run as failed for a tag nothing was going to touch).
                     if not self.deletes_budget_ok():
                         log.warn(
                             "  Phase 2: hit MAX_DELETES_PER_RUN=%s; remaining tags "
                             "deferred to next run" % self.max_deletes
                         )
                         break
+                    if self.release_tag_held_by_r2(full_repo, tag_name):
+                        continue
                     if self.dry_run:
                         log.warn("  [DRY-RUN] Would delete tag: %s (%s)" % (tag_name, tag_date))
                         # INTENTIONAL DELTA (Rule T): counted, so the summary is true. Not charged to the budget, as in Phases 3 and 4.

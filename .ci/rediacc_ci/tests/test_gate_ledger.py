@@ -88,6 +88,28 @@ def test_append_takes_the_exclusive_lock(tmp_path: pathlib.Path) -> None:
     assert calls == [jsonl_append.LOCK_EX]
 
 
+def test_append_lines_loops_over_partial_writes(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`os.write` may take fewer bytes than offered; the rest of the line must still land, and the return is the total. The fake writes at most 7 bytes a call."""
+    real = os.write
+    calls: list[int] = []
+
+    def chunked(fd: int, data: Any) -> int:
+        n = real(fd, bytes(data)[:7])
+        calls.append(n)
+        return n
+
+    monkeypatch.setattr(os, "write", chunked)
+    path = tmp_path / "x.jsonl"
+    payloads = [{"k": "v" * 40}, {"k": 2}]
+    got = jsonl_append.append_lines(path, str(path) + ".lock", payloads)
+    expect = jsonl_append.encode(payloads)
+    assert path.read_bytes() == expect
+    assert got == len(expect) == sum(calls)
+    assert len(calls) > 1
+
+
 def test_torn_tail_is_healed(tmp_path: pathlib.Path) -> None:
     p = tmp_path / "t.jsonl"
     p.write_bytes(b'{"ok":1}\n{"torn":')
@@ -309,6 +331,18 @@ def test_backfill_finds_judged_roots_and_is_idempotent(tmp_path: pathlib.Path) -
     assert "0 new run(s)" in out[-1]
     assert "2 already folded" in out[-1]
     assert len(L.read_rows(led)[0]) == len(rows)
+
+
+def test_backfill_rows_drop_a_base_tree_git_cannot_diff(tmp_path: pathlib.Path) -> None:
+    """A base_tree whose diff is unknown (`changed` None: an object this clone lacks) must not be recorded as if `changed` were relative to it. `tmp_path` is not a git repository, so no diff can be answered; the second receipt's base is dropped, the first never had one."""
+    docs = [
+        _receipt("t1", "2026-10-08T00:10:00.000Z", {"x:a": _entry("ok")}),
+        _receipt("t2", "2026-10-08T01:10:00.000Z", {"x:a": _entry("fail")}),
+    ]
+    out, counts = L.backfill_rows(docs, tmp_path)
+    runs = [rows[0] for _key, rows in out]
+    assert [r["base_tree"] for r in runs] == [None, None]
+    assert counts["no_diff"] == 2
 
 
 def test_backfill_with_no_receipts_is_a_failure(tmp_path: pathlib.Path) -> None:

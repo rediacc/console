@@ -809,36 +809,51 @@ def archive_pin_declaration(rel: str, pattern: str) -> str:
     return f'ARCHIVE_RE = re.compile(r"{pattern}")'
 
 
+# One pass over TypeScript source: string, template and regex literals are matched FIRST so a `//` or `/*` inside one is never read as a comment start (a `"/*"` string used to swallow the real declaration up to the next `*/`). Group 1 = a literal (kept), the rest are comments (dropped). A regex literal is a `/` not preceded by a word char, `)` or `]`, so a division is mostly passed over; a misread only keeps text, never drops it.
+_TS_TOKEN_RE = re.compile(
+    r"""("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`"""
+    r"""|(?<![\w)\]])/(?![/*])(?:\\.|\[(?:\\.|[^\]\\\n])*\]|[^/\\\n\[])+/[a-z]*)"""
+    r"""|/\*.*?\*/|//[^\n]*""",
+    re.DOTALL,
+)
+
+
+def strip_ts_comments(text: str) -> str:
+    """`text` with every TypeScript comment removed and every string, template and regex literal left whole."""
+    return _TS_TOKEN_RE.sub(lambda m: m.group(1) or "", text)
+
+
 def archive_pin_declared(rel: str, text: str, pattern: str) -> bool:
     """Does the file's CODE declare ARCHIVE_RE with exactly this pattern?
 
     Python is parsed: a module-level `ARCHIVE_RE = re.compile(<str>)` whose string equals the pattern, so a comment or docstring can never count. TypeScript has no parser here, so `/* */` and `//` comments are stripped first and the declaration must then start a line. A file that does not parse pins nothing.
     """
     if rel.endswith(".ts"):
-        code = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
-        code = re.sub(r"(?m)^\s*//.*$", "", code)
+        code = strip_ts_comments(text)
         decl = archive_pin_declaration(rel, pattern)
         return any(line.startswith(decl) for line in code.splitlines())
     try:
         tree = ast.parse(text)
     except SyntaxError:
         return False
+    # The LAST module-level assignment wins at import time, so it alone is compared: an earlier correct pin followed by a drifted reassignment is a drifted pin.
+    last: ast.expr | None = None
     for node in tree.body:
-        if not (isinstance(node, ast.Assign) and isinstance(node.value, ast.Call)):
-            continue
-        if [getattr(t, "id", None) for t in node.targets] != ["ARCHIVE_RE"]:
-            continue
-        fn, args = node.value.func, node.value.args
-        if (
-            isinstance(fn, ast.Attribute)
-            and fn.attr == "compile"
-            and getattr(fn.value, "id", None) == "re"
-            and args
-            and isinstance(args[0], ast.Constant)
-            and args[0].value == pattern
-        ):
-            return True
-    return False
+        if isinstance(node, ast.Assign) and [getattr(t, "id", None) for t in node.targets] == [
+            "ARCHIVE_RE"
+        ]:
+            last = node.value
+    if not isinstance(last, ast.Call):
+        return False
+    fn, args = last.func, last.args
+    return bool(
+        isinstance(fn, ast.Attribute)
+        and fn.attr == "compile"
+        and getattr(fn.value, "id", None) == "re"
+        and args
+        and isinstance(args[0], ast.Constant)
+        and args[0].value == pattern
+    )
 
 
 def archive_clone_problems(
@@ -1435,6 +1450,55 @@ jobs:
                 for m in archive_clone_problems(
                     {}, pat, {"a.ts": good_pins["a.ts"], "b.py": f"# {pat}\nRX = r'__ROTATED_\\d+'"}
                 )
+            ),
+        ),
+        (
+            "15: a later drifted reassignment of ARCHIVE_RE wins over an earlier verbatim pin",
+            lambda: any(
+                "b.py" in m
+                for m in archive_clone_problems(
+                    {},
+                    pat,
+                    {
+                        "a.ts": good_pins["a.ts"],
+                        "b.py": good_pins["b.py"] + "\nARCHIVE_RE = re.compile(r'__ROTATED_\\d+')",
+                    },
+                )
+            ),
+        ),
+        (
+            "15: a later verbatim pin wins over an earlier drifted one",
+            lambda: (
+                archive_clone_problems(
+                    {},
+                    pat,
+                    {
+                        "a.ts": good_pins["a.ts"],
+                        "b.py": "ARCHIVE_RE = re.compile(r'x')\n" + good_pins["b.py"],
+                    },
+                )
+                == []
+            ),
+        ),
+        (
+            "15: a `/*` inside a TS string does not swallow the real declaration",
+            lambda: (
+                archive_clone_problems(
+                    {},
+                    pat,
+                    {
+                        "a.ts": 'const g = "/*";\n' + good_pins["a.ts"] + "\n/* end */",
+                        "b.py": good_pins["b.py"],
+                    },
+                )
+                == []
+            ),
+        ),
+        (
+            "15: `//` inside a TS string or regex literal is not a comment",
+            lambda: (
+                strip_ts_comments('const a = "x//y", b = /p\\/\\/q/; // gone\nrest')
+                == 'const a = "x//y", b = /p\\/\\/q/; \nrest'
             ),
         ),
     ]

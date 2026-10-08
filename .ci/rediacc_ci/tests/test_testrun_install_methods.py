@@ -689,8 +689,12 @@ def test_the_dnf_install_bounds_a_stalled_download_and_stays_visible() -> None:
     twin = (
         pathlib.Path(__file__).resolve().parents[2] / "scripts" / "test" / "test-install-methods.sh"
     ).read_text()
-    assert "dnf install -y --setopt=timeout=" in twin
-    assert "dnf install -y --setopt=timeout=30 --setopt=minrate=1048576 --setopt=retries=3 " in line
+    # The CLI RPM is ~364 MB, so a 1 MB/s floor lets a 6-minute crawl run; 2 MB/s aborts it. The port and the shell twin carry the identical option string.
+    opts = "dnf install -y --setopt=timeout=30 --setopt=minrate=2097152 --setopt=retries=3 "
+    assert opts in line
+    twin_line = next(ln for ln in twin.splitlines() if "dnf install" in ln)
+    assert opts in twin_line
+    assert "/dev/null" not in twin_line
 
 
 def _job_budget(text: str, job: str) -> int:

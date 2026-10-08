@@ -7,6 +7,8 @@ THE SEAM. `SUBMODULE_PRESENCE_ROOT` relocates every `private/...` path the guard
 BOTH DIRECTIONS FOR EACH GATE. The CI arm proves the refusal fires; the local arm proves the same plant is a skip and not a crash, which is also the evidence that the CI arm's red is the guard's and not an unrelated error. The partial-scope gates (`aws-credential-bridge`) keep scanning the present tree after naming what is missing, so their local arm also proves the rest of the real tree is still green.
 """
 
+import json
+
 import pytest
 
 from rediacc_ci import paths
@@ -68,3 +70,36 @@ def test_absent_submodule_skips_outside_ci(gate, tmp_path, script):
         "%s: the skip says it would fail in CI" % script,
     )
     gate.log_pass("%s skips an absent submodule loudly outside CI" % script)
+
+
+# `inCi` is the guard's one decision, so it is driven over every spelling of the variable rather than only `true`: any SET value other than an explicit off is CI (`CI=1` counts), an explicit off or an empty/blank value is not, and an unset variable is not. The value is trimmed.
+IN_CI_CASES = [
+    ({"CI": "1"}, True),
+    ({"CI": "true"}, True),
+    ({"CI": " true "}, True),
+    ({"GITHUB_ACTIONS": "true"}, True),
+    ({"CI": "false"}, False),
+    ({"CI": " false "}, False),
+    ({"CI": "0"}, False),
+    ({"CI": ""}, False),
+    ({"CI": "  "}, False),
+    ({}, False),
+]
+
+
+def test_in_ci_reads_every_spelling_of_the_variable(gate):
+    npx = harness.require_tool("npx", "install node; inCi is TypeScript")
+    script = (
+        "import { inCi } from './scripts/lib/submodule-presence.ts';"
+        "const cases = JSON.parse(process.argv[1]);"
+        "console.log(JSON.stringify(cases.map(([env]) => inCi(env))));"
+    )
+    result = harness.run(
+        [npx, "tsx", "--input-type=module", "-e", script, json.dumps(IN_CI_CASES)],
+        cwd=paths.repo_root(),
+        timeout=120,
+    )
+    gate.assert_exit(0, result, "inCi driver ran")
+    got = json.loads(result.out.strip().splitlines()[-1])
+    assert got == [want for _env, want in IN_CI_CASES], (got, IN_CI_CASES)
+    gate.log_pass("inCi agrees on all %d spellings" % len(IN_CI_CASES))

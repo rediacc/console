@@ -429,7 +429,8 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
       video.removeEventListener('seeked', stepOnce);
       video.removeEventListener('loadedmetadata', stepOnce);
     };
-  }, [wordsDoc]);
+    // `activeSrc`, `activeLang` and `usePortrait` build the root's `key`, so a change puts a NEW <video> behind videoRef; the listeners must be rebound to it even when `wordsDoc` is unchanged (the same cue file serves both cuts). They are not read inside.
+  }, [wordsDoc, activeSrc, activeLang, usePortrait]);
 
   const raw = activeLang.split('-')[0].toLowerCase();
   const isSiteLocale = (SUPPORTED_LANGUAGES as readonly string[]).includes(raw);

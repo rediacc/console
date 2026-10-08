@@ -520,4 +520,7 @@ def test_pr_freshness_step_runs_on_pull_requests_only() -> None:
         text,
     )
     assert m, "the CI time budget freshness step moved or lost its if:"
-    assert "github.event_name == 'pull_request'" in m.group("cond")
+    assert (
+        m.group("cond")
+        == "${{ !cancelled() && steps.setup.outcome == 'success' && github.event_name == 'pull_request' }}"
+    )
