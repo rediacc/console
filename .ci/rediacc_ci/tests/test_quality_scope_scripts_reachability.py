@@ -249,7 +249,7 @@ def test_the_green_case_is_not_vacuously_equal() -> None:
 def test_the_dispatch_floor_refusal_exits_127(tmp_path):
     """The `log_fail` defect, pinned so a one-sided repair is a disagreement.
 
-    The twin never sourced `.ci/scripts/lib/common.sh`, and `log_fail` is defined only in `.ci/scripts/test/lib/test-helpers.sh` and four test scripts. Under `set -euo pipefail` the unknown command exited 127 at that line, so the three explanatory `echo`s and the `exit 1` beneath it never ran. The identical defect is already on the record for the pool-writer-safety gate's own
+    The twin never sourced `.ci/scripts/lib/common.sh`, and `log_fail` was defined only in `.ci/scripts/test/lib/test-helpers.sh` (deleted in PLAN-retire-bash-oracles section 12 U3 step 2) and four test scripts. Under `set -euo pipefail` the unknown command exited 127 at that line, so the three explanatory `echo`s and the `exit 1` beneath it never ran. The identical defect is already on the record for the pool-writer-safety gate's own
     bash twin, the since-retired shell battery runner.
 
     NOT IN THE LEDGER: both sides printed one shell diagnostic and no finding, so the comparator scored it VACUOUS_BOTH_EMPTY and refused to record it. Byte equality can rule on it, which is why the case lives here.

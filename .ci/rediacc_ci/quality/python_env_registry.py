@@ -57,7 +57,7 @@ OPAQUE READS ARE BANKED VISIBLY, NEVER DROPPED. 19 sites read a name held in a l
 into fine: an opaque read is an entry like any other, and a new one reds like any other.
 
 WHY `.ci/config/` AND NOT `.ci/policy/`. Clause 1 of `.ci/policy/README.md` section 1: a policy file is a DECISION, a set of entries someone chose to exempt, each carrying a BLOCKER reason. This file is a MEASUREMENT, generated wholesale by `--write-baseline`, with no reasons in it and none possible. It fails clause 1 and clause 2 for exactly the reasons
-`language-policy-baseline.json`, `secret-scope-baseline.json` and `tracked-credentials-baseline.json` do, and it sits beside them. There is also a hard mechanical reason: `.ci/policy/` is under four-way set equality (`check:ci-policy-inventory`), so a file landing there without a matching edit to two POLICY_FILES tuples and the README reds.
+`secret-scope-baseline.json` and `tracked-credentials-baseline.json` do (and the language-policy baseline did until the strict flip deleted it), and it sits beside them. There is also a hard mechanical reason: `.ci/policy/` is under four-way set equality (`check:ci-policy-inventory`), so a file landing there without a matching edit to two POLICY_FILES tuples and the README reds.
 
 WHAT THIS DOES NOT CLAIM, so nobody reads more into a green than is there:
 

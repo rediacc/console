@@ -99,8 +99,8 @@ measured figure at HEAD) and a Bash tool call from 456 process executions to 35,
 
 **Corrected again 2026-09-21.** The first of those four deliverables is closed by deletion rather than by sharding: `gate-test:claude-hooks` is no longer a manifest entry at all. Its subject, `.claude/hooks/test-hooks.sh`, was ported to pytest under `.claude/rediacc_hooks/tests/`, and the 785 s local floor it set went with it. The other three are still open and still unstaffed.
 
-THE BASH TWINS WERE MOVED TO `.claude/oracles/`, NOT DELETED, and a future sweep must not "finish the job" by removing them: they are what `test_guards_differential.py` compares each port against, 5,844 cases and the only proof a port answers what its twin answered. They sit at `.claude/oracles/` and not one level deeper inside the package because a third of these guards derive the
-repo root as `dirname/../../..`; at the deeper path the differential reported 30 divergences across five guards.
+THE BASH TWINS WERE MOVED TO `.claude/oracles/` AT THE TIME, NOT DELETED: they were what `test_guards_differential.py` compared each port against, 5,844 cases, while no other proof existed that a port answered what its twin answered. They sat at `.claude/oracles/` and not one level deeper inside the package because a third of these guards derived the repo root as
+`dirname/../../..`; at the deeper path the differential reported 30 divergences across five guards. **Superseded:** once every guard was judged by its own suite and goldens, d5d296dea retired the oracle tree (PLAN-retire-bash-oracles), so `.claude/oracles/` no longer exists.
 
 Two things it found that outlive the phase. A port read the clock as UTC where its twin's `date +%m%d` is LOCAL, and the differential could never have caught it because the harness pins `TZ=UTC` for both sides; `time.tzset()` had to be added before the harness even honoured a per-case TZ. And `check_guard_feature_completeness.py` had NO vacuity floor, reporting "every called
 feature resolves" on a corpus that had lost 46 of its 80 files.

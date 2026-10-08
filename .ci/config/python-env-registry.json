@@ -1334,6 +1334,9 @@
     ".ci/rediacc_ci/tests/gates/test_gate_mark_production.py": [
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/gates/test_gate_media_helpers.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/gates/test_gate_nightly_retry_filters.py": [
       "PATH"
     ],

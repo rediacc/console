@@ -273,11 +273,11 @@ const ANSI = new RegExp(`${ESC}\\[[0-?]*[ -/]*[@-~]`, 'g');
  *
  *   `✗ `        log_error, stderr           .ci/rediacc_ci/log.py (was common.sh:44)
  *   `⚠ `        log_warn, stderr            .ci/rediacc_ci/log.py (was common.sh:40)
- *   `::error::` ci_error under CI=true      .ci/scripts/lib/emit-advisory.sh:86
- *   `::warning::` ci_warn under CI=true     .ci/scripts/lib/emit-advisory.sh:87
- *   `ERROR:`    the gate-test helper        .ci/scripts/test/lib/test-helpers.sh:35
- *   `FAIL:`     the gate-test helper        .ci/scripts/test/lib/test-helpers.sh:25
- *   `FAIL  `    the control tally           .ci/scripts/lib/gate-controls.sh:23
+ *   `::error::` ci_error under CI=true      .ci/rediacc_ci/core/advisory.py (was emit-advisory.sh:86)
+ *   `::warning::` ci_warn under CI=true     .ci/rediacc_ci/core/advisory.py (was emit-advisory.sh:87)
+ *   `ERROR:`    the gate-test helper        .ci/rediacc_ci/tests/gates/harness.py (was test-helpers.sh:35)
+ *   `FAIL:`     the gate-test helper        .ci/rediacc_ci/tests/gates/harness.py (was test-helpers.sh:25)
+ *   `FAIL  `    the control tally           was .ci/scripts/lib/gate-controls.sh:23 (deleted)
  *
  * `common.sh` was the canonical logger (48 quality gates sourced it and none
  * sourced `emit-advisory.sh` directly) and `.ci/rediacc_ci/log.py` is its
