@@ -64,9 +64,9 @@ const MAJOR_EXCEPTIONS_REL = path
   .relative(CONSOLE_ROOT, MAJOR_EXCEPTIONS_FILE)
   .split(path.sep)
   .join('/');
-// The selftest's mutant seam: `ignore-clock` skips the held-major clock, so the selftest can prove its 91-day control goes green WITHOUT the clock (i.e. the control depends on it); `split-update` restores the pre-2026-10-02 planner, one `npm update` per manifest instead of one per lockfile, so the selftest can prove its lockstep case goes red without the grouping. Honoured only under CHECK_DEPS_ROOT; on a real tree it is refused loudly, so it can never weaken a real run.
+// The selftest's mutant seam: `ignore-clock` skips the held-major clock, so the selftest can prove its 91-day control goes green WITHOUT the clock (i.e. the control depends on it); `split-update` restores the pre-2026-10-02 planner, one `npm update` per manifest instead of one per lockfile, so the selftest can prove its lockstep case goes red without the grouping; `update-first` restores the pre-2026-10-08 step order, every lockfile's `npm update` before its out-of-range `npm install` steps, so the selftest can prove its exact-pinned-sibling case goes red without the reorder. Honoured only under CHECK_DEPS_ROOT; on a real tree it is refused loudly, so it can never weaken a real run.
 const MUTANT = process.env.CHECK_DEPS_MUTANT;
-const MUTANTS = ['ignore-clock', 'split-update'];
+const MUTANTS = ['ignore-clock', 'split-update', 'update-first'];
 const DAY_MS = 86_400_000;
 /** A blocklisted major fails at this age, measured from the first release of the first line past `current`. */
 const HOLD_DEADLINE_DAYS = 90;
@@ -359,12 +359,20 @@ function loadMajorAllow(): MajorAllowEntry[] {
 }
 
 /** The `packages` map of a manifest's package-lock.json, or null when there is none. */
-function readLockPackages(dir: string): Record<string, { version?: string }> | null {
+/** One `packages` entry of a package-lock.json: the resolved version and the ranges that installed copy itself declares. */
+interface LockEntry {
+  version?: string;
+  dependencies?: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+}
+
+function readLockPackages(dir: string): Record<string, LockEntry> | null {
   const lockPath = path.join(dir, 'package-lock.json');
   if (!fs.existsSync(lockPath)) return null;
   try {
     const lock = JSON.parse(fs.readFileSync(lockPath, 'utf-8')) as {
-      packages?: Record<string, { version?: string }>;
+      packages?: Record<string, LockEntry>;
     };
     return lock.packages ?? null;
   } catch {
@@ -1610,6 +1618,8 @@ function freshnessCutoffMs(nowMs: number, minReleaseAgeMs: number): number | nul
  *
  * ONE `npm update` PER LOCKFILE (2026-10-02). Each manifest's packages are still judged against that manifest's own range, but every in-range bump of one npm project (the console root and its workspaces, or one private/ manifest) runs as a SINGLE `npm update -w=<every workspace holding one> [--include-workspace-root] <every name>`. The per-workspace split this replaced (`npm update -w=packages/cli vitest @vitest/ui ...`, then `-w=packages/www ...`, one call each) could never move a family that moves in lockstep: @vitest/coverage-v8@5.0.2 and @vitest/ui@5.0.2 declare an EXACT peer `vitest@"5.0.2"`, npm had nested a coverage-v8 copy in four workspaces, and a `-w` call does not touch another workspace's nested copy, so each per-workspace call met the other workspaces' pins and failed ERESOLVE (6 of 9 steps on 2026-10-02, while the one combined call resolved in 7 s on npm 11.20.0). A lockfile is one ideal tree, so the coupling is decided by npm's resolver over the whole of it, not re-derived here from peer ranges: any grouping finer than the lockfile would have to reproduce that resolver (transitive peers, nesting, hoisting), and one call per lockfile is a superset of every such group. An `-w` scope does not stop a named update moving a HOISTED copy anyway (measured on npm 11.20.0: `npm update -w=packages/a picomatch` moved a picomatch only packages/b declares), so the split never isolated the workspaces it claimed to. Out-of-range targets stay per manifest (`npm install -w=packages/<ws> name@exact`), because `install` adds the package to every workspace it is given.
  *
+ * INSTALL BEFORE UPDATE, PER LOCKFILE (2026-10-08). Within one project the out-of-range `npm install` steps run first and the project's single `npm update` after them. The reverse order, which this replaced, ran the update while the OLD version of an allow-listed sibling was still installed: @opentelemetry/sdk-node 0.222.0 (and its 0.x experimental family) pins @opentelemetry/core, resources and sdk-metrics EXACTLY at 2.11.0, so `npm update -w=packages/cli @opentelemetry/core ...` kept 2.11.0, the freshness guard failed the step (judged 2.12.0, installed 2.11.0) in the console root and in private/account alike, and only the install of sdk-node@0.223.0 that ran after it released the pin. Installing first moves the pinning sibling, so the update then resolves the judged version in the same run. When no allow entry moves the sibling, the update still cannot land; verifyUpdatedVersions then names the lockfile entry that pins it (a held-back package, not a freshness breach).
+ *
  * AN OVERRIDE DECIDES WHAT NPM RESOLVES (worklist #d8fef08a). A package the project's `overrides` pins to a range that excludes the judged version cannot move by `npm update` or `npm install`: on 2026-10-01 the root pinned fast-xml-parser to 5.11.1, `npm update -w=packages/www fast-xml-parser` stayed on 5.11.1, and the freshness guard failed the step. Such a package leaves the ordinary steps. When the override is an exact version and every declaring manifest's range admits the target, the step moves the override to the judged version (applyOverrideBump) and runs `npm update <name>` in the project root, which re-resolves every copy the override governs (measured on npm 11.20.0: `npm update` honours a changed override, while `npm install --package-lock-only` exits 0 without applying it). Any other override that excludes the target (a bounded range, a range this gate cannot read, a declared range that excludes the target too) is a refused step: moving it is a decision about the bound, not a freshness bump. An override that admits the target, or a `$name` reference to the root's own range, changes nothing here.
  */
 function planInstalls(
@@ -1637,8 +1647,10 @@ function planInstalls(
       checks: Array<{ pkg: PackageInfo; workspace?: string }>;
     }
   >();
-  /** Out-of-range bumps, one `install` step per manifest, emitted after the project's update. */
+  /** Out-of-range bumps, one `install` step per manifest, emitted BEFORE the project's update (see the INSTALL BEFORE UPDATE note above). */
   const installs: InstallStep[] = [];
+  /** Every project (`cwd`) in the order its first manifest was planned, so the steps keep the root-then-private/ order. */
+  const cwdOrder: string[] = [];
   /** One manifest's packages: in-range targets join the project's single `update`, the rest become an `install` step. */
   const plan = (
     cwd: string,
@@ -1648,6 +1660,7 @@ function planInstalls(
     allPkgs: PackageInfo[],
     workspace?: string
   ) => {
+    if (!cwdOrder.includes(cwd)) cwdOrder.push(cwd);
     const ranges = readDeclaredRanges(manifestDir);
     const overrides = readDirectOverrides(cwd);
     const pkgs = allPkgs.filter((p) => {
@@ -1731,10 +1744,11 @@ function planInstalls(
     if (packages.length === 0) continue;
     plan(dir, dir, [], name, packages);
   }
+  const updateSteps: InstallStep[] = [];
   for (const { cwd, label, workspaces, root: withRoot, checks } of updates.values()) {
     const wsFlags = [...new Set(workspaces)].sort().map((ws) => `-w=${ws}`);
     const names = [...new Set(checks.map((c) => c.pkg.name))];
-    steps.push({
+    updateSteps.push({
       cwd,
       args: [
         'update',
@@ -1747,7 +1761,15 @@ function planInstalls(
       checks,
     });
   }
-  steps.push(...installs);
+  if (MUTANT === 'update-first' && FIXTURE_ROOT) {
+    // The update-first mutant (fixture runs only, see MUTANTS): every update, then every install, the order this replaced.
+    steps.push(...updateSteps, ...installs);
+  } else {
+    for (const cwd of cwdOrder) {
+      steps.push(...installs.filter((st) => st.cwd === cwd));
+      steps.push(...updateSteps.filter((st) => st.cwd === cwd));
+    }
+  }
   const finish = (all: InstallStep[]): InstallStep[] => {
     if (beforeMs === null) return all;
     const flag = `--before=${new Date(beforeMs).toISOString()}`;
@@ -1793,21 +1815,69 @@ function upgradeChildEnv(base: NodeJS.ProcessEnv = process.env): NodeJS.ProcessE
  */
 function verifyUpdatedVersions(
   step: InstallStep,
-  lock: Record<string, { version?: string }> | null
+  lock: Record<string, LockEntry> | null
 ): string[] {
-  const problems: string[] = [];
+  return updateMismatches(step, lock).map((m) => m.line);
+}
+
+/**
+ * The installed copies in `lock` whose own declared range for `name` admits the version npm kept but not the judged one, as `<name>@<version> requires "<range>"`. This is how an exact-pinning sibling shows up: @opentelemetry/sdk-node@0.222.0 requires @opentelemetry/core "2.11.0", so no `npm update` of core can reach 2.12.0 while that sdk-node is installed. Pure, so the selftest drives it directly.
+ */
+function pinningHolders(
+  lock: Record<string, LockEntry> | null,
+  name: string,
+  kept: string,
+  judged: string
+): string[] {
+  const out: string[] = [];
+  for (const [key, entry] of Object.entries(lock ?? {})) {
+    const holder = key.slice(key.lastIndexOf('node_modules/') + 'node_modules/'.length);
+    if (!key.includes('node_modules/') || holder === name) continue;
+    for (const deps of [entry.dependencies, entry.optionalDependencies, entry.peerDependencies]) {
+      const range = deps?.[name];
+      if (range === undefined) continue;
+      const sets = parseRange(range);
+      if (sets && rangeAdmits(sets, kept) && !rangeAdmits(sets, judged)) {
+        out.push(`${holder}@${entry.version ?? '?'} requires "${range}"`);
+      }
+    }
+  }
+  return [...new Set(out)];
+}
+
+/**
+ * Every checked package of an `(update)` step that did not resolve to its judged version, split by what that means. `held` is a package npm left on an OLDER version than judged: nothing unjudged landed, the update simply could not move it, and `holders` names the installed copies whose declared range pins it (pinningHolders). Anything else (a newer version, or a package missing from the lockfile) is a freshness-window breach.
+ */
+function updateMismatches(
+  step: InstallStep,
+  lock: Record<string, LockEntry> | null
+): Array<{ line: string; held: boolean }> {
+  const out: Array<{ line: string; held: boolean }> = [];
+  const seen = new Set<string>();
   const checks: Array<{ pkg: PackageInfo; workspace?: string }> =
     step.checks ?? step.packages.map((p) => ({ pkg: p }));
   for (const { pkg, workspace } of checks) {
     const nested = workspace ? lock?.[`${workspace}/node_modules/${pkg.name}`] : undefined;
     const resolved = (nested ?? lock?.[`node_modules/${pkg.name}`])?.version;
-    if (resolved !== pkg.latest) {
-      problems.push(
-        `${pkg.name}: judged ${pkg.latest}, installed ${resolved ?? '<not in package-lock.json>'}${nested ? ` (nested in ${workspace})` : ''}`
-      );
-    }
+    if (resolved === pkg.latest) continue;
+    const held =
+      resolved !== undefined &&
+      parseVersion(resolved) !== null &&
+      parseVersion(pkg.latest) !== null &&
+      compareVersions(resolved, pkg.latest) < 0;
+    const holders = held ? pinningHolders(lock, pkg.name, resolved, pkg.latest) : [];
+    const line =
+      `${pkg.name}: judged ${pkg.latest}, installed ${resolved ?? '<not in package-lock.json>'}${nested ? ` (nested in ${workspace})` : ''}` +
+      (held
+        ? holders.length > 0
+          ? `; held back by ${holders.join(', ')}`
+          : "; held back, and no installed copy in package-lock.json pins it, so npm's own output above is the reason"
+        : '');
+    if (seen.has(line)) continue;
+    seen.add(line);
+    out.push({ line, held });
   }
-  return [...new Set(problems)];
+  return out;
 }
 
 /** Run the planned steps, printing what each one takes, and name every step that failed with its exact command and exit status. An `(update)` step that exits 0 still fails when verifyUpdatedVersions finds a version the gate did not judge. */
@@ -1863,13 +1933,22 @@ function executeInstalls(steps: InstallStep[]): boolean {
       continue;
     }
     if (step.args[0] !== 'update') continue;
-    const mismatches = verifyUpdatedVersions(step, readLockPackages(step.cwd));
-    if (mismatches.length > 0) {
+    const mismatches = updateMismatches(step, readLockPackages(step.cwd));
+    const stepRef = `${step.label}: \`npm ${step.args.join(' ')}\` in ${path.relative(CONSOLE_ROOT, step.cwd) || '.'}`;
+    const unjudged = mismatches.filter((m) => !m.held);
+    const heldBack = mismatches.filter((m) => m.held);
+    if (unjudged.length > 0) {
       failures.push(
-        `  ${step.label}: \`npm ${step.args.join(' ')}\` in ${path.relative(CONSOLE_ROOT, step.cwd) || '.'} ` +
-          'resolved a version the gate did not judge (freshness-window guard, .ci/config/release-age.json):\n' +
-          mismatches.map((m) => `      ${m}`).join('\n') +
+        `  ${stepRef} resolved a version the gate did not judge (freshness-window guard, .ci/config/release-age.json):\n` +
+          unjudged.map((m) => `      ${m.line}`).join('\n') +
           '\n    package.json and package-lock.json in that directory now hold the unjudged version; revert them there before committing.'
+      );
+    }
+    if (heldBack.length > 0) {
+      failures.push(
+        `  ${stepRef} left ${heldBack.length} package(s) below the judged version (npm kept the installed one, so nothing unjudged landed):\n` +
+          heldBack.map((m) => `      ${m.line}`).join('\n') +
+          `\n    A package an installed sibling pins exactly moves only with that sibling: take the sibling's bump (an allow entry in ${MAJOR_ALLOW_REL} when it is a held major, which --upgrade installs before this update), or wait for a sibling release that admits the judged version.`
       );
     }
   }
@@ -1954,15 +2033,17 @@ async function checkDependencies(): Promise<void> {
   if (MUTANT !== undefined && MUTANT !== '') {
     if (!FIXTURE_ROOT || !MUTANTS.includes(MUTANT)) {
       console.error(
-        `${RED}✗${NC} CHECK_DEPS_MUTANT=${MUTANT} refused: the mutants are ${MUTANTS.map((m) => `"${m}"`).join(' and ')}, honoured only under ` +
-          'CHECK_DEPS_ROOT (a selftest fixture). On a real tree they would switch the held-major clock off or split a lockstep update, so they are never honoured there.'
+        `${RED}✗${NC} CHECK_DEPS_MUTANT=${MUTANT} refused: the mutants are ${MUTANTS.map((m) => `"${m}"`).join(', ')}, honoured only under ` +
+          'CHECK_DEPS_ROOT (a selftest fixture). On a real tree they would switch the held-major clock off, split a lockstep update or run an update before the install that unpins it, so they are never honoured there.'
       );
       process.exit(1);
     }
     console.log(
       MUTANT === 'ignore-clock'
         ? `${YELLOW}MUTANT ignore-clock: the held-major clock is OFF for this fixture run${NC}\n`
-        : `${YELLOW}MUTANT split-update: one npm update per manifest for this fixture run${NC}\n`
+        : MUTANT === 'split-update'
+          ? `${YELLOW}MUTANT split-update: one npm update per manifest for this fixture run${NC}\n`
+          : `${YELLOW}MUTANT update-first: every npm update runs before the npm install steps for this fixture run${NC}\n`
     );
   }
   const clockOff = MUTANT === 'ignore-clock';
@@ -2247,14 +2328,19 @@ async function checkDependencies(): Promise<void> {
 interface FixtureSpec {
   /** Canned `npm outdated --json` per manifest, keyed '' for the root or 'private/account/web'. */
   outdated: Record<string, RawOutdated>;
-  /** Lockfile `packages` maps per manifest, same keys. */
-  locks: Record<string, Record<string, { version: string }>>;
+  /** Lockfile `packages` maps per manifest, same keys. An entry's `dependencies` is the range that installed copy declares; an EXACT one pins the named package for the stub `npm update` (see bin/exact-pins.cjs in buildFixture). */
+  locks: Record<string, Record<string, { version: string; dependencies?: Record<string, string> }>>;
   allow?: Record<string, string>;
   blocklist?: string;
   /** package.json content per manifest, same keys; '{}' when absent. */
   manifests?: Record<string, object>;
   /** Lockfile `packages` map the stub `npm update` writes per manifest, same keys: what npm "resolved". */
   updateLocks?: Record<string, Record<string, { version: string }>>;
+  /** Lockfile entries the stub `npm install` merges in per manifest, same keys: what npm "resolved" for the install, e.g. the new sibling and the range it now declares. */
+  installLocks?: Record<
+    string,
+    Record<string, { version: string; dependencies?: Record<string, string> }>
+  >;
   /** Extra environment for the gate process (the npm_config_loglevel control, the clock mutant). */
   env?: NodeJS.ProcessEnv;
   /** Registry documents by package name, served from `<root>/.fixture-registry/`. */
@@ -2327,6 +2413,11 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
         path.join(rel, '.fixture-update-lock.json'),
         JSON.stringify({ packages: spec.updateLocks[rel] })
       );
+    if (spec.installLocks?.[rel])
+      write(
+        path.join(rel, '.fixture-install-lock.json'),
+        JSON.stringify({ packages: spec.installLocks[rel] })
+      );
   }
   const log = path.join(root, 'npm-install.log');
   // What real npm does with an exact-version `overrides` entry, measured 2026-10-01 on npm 11.20.0: `npm update` of an overridden package resolves the override's version, whatever newer version the declared range allows. The stub applies the same clamp after it writes the "resolved" lockfile, so a plan that ignores the override fails here exactly as it failed on the real tree.
@@ -2360,6 +2451,42 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
       '',
     ].join('\n')
   );
+  // What real npm did on 2026-10-08 (npm 11.20.0) with a package an installed sibling pins EXACTLY: @opentelemetry/sdk-node@0.222.0 requires @opentelemetry/core "2.11.0", and `npm update @opentelemetry/core` kept 2.11.0 and exited 0. `pre` snapshots the lockfile before the stub update writes its "resolved" one; `post` then rebuilds it as the snapshot plus every resolved entry whose package no snapshot entry pins exactly to another version, so a pinned package stays where it was. Both are no-ops unless the snapshot carries a `dependencies` map, so every fixture without one keeps the plain copy. `install` merges `.fixture-install-lock.json` into the lockfile, so an install that moves the pinning sibling releases the pin for a later update.
+  write(
+    'bin/exact-pins.cjs',
+    [
+      "const fs = require('node:fs');",
+      "const read = (f) => (fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')).packages || {} : {});",
+      "const save = (pkgs) => fs.writeFileSync('package-lock.json', JSON.stringify({ packages: pkgs }));",
+      'const [mode, ...args] = process.argv.slice(2);',
+      "const names = args.filter((a) => !a.startsWith('-'));",
+      "if (mode === 'install') {",
+      "  if (fs.existsSync('.fixture-install-lock.json')) save({ ...read('package-lock.json'), ...read('.fixture-install-lock.json') });",
+      '  process.exit(0);',
+      '}',
+      "if (mode === 'pre') {",
+      "  const lock = read('package-lock.json');",
+      "  if (Object.values(lock).some((e) => e.dependencies)) fs.writeFileSync('.fixture-pre-update-lock.json', JSON.stringify({ packages: lock }));",
+      '  process.exit(0);',
+      '}',
+      "if (!fs.existsSync('.fixture-pre-update-lock.json')) process.exit(0);",
+      "const before = read('.fixture-pre-update-lock.json');",
+      "fs.rmSync('.fixture-pre-update-lock.json');",
+      "const resolved = read('package-lock.json');",
+      'const out = { ...before };',
+      'for (const [key, entry] of Object.entries(resolved)) {',
+      "  const name = key.slice(key.lastIndexOf('node_modules/') + 'node_modules/'.length);",
+      '  const pinned = names.includes(name) && Object.values(before).some((e) => {',
+      '    const r = (e.dependencies || {})[name];',
+      "    return typeof r === 'string' && /^\\d+\\.\\d+\\.\\d+$/.test(r) && r !== entry.version;",
+      '  });',
+      '  if (!pinned) out[key] = entry;',
+      '}',
+      'save(out);',
+      '',
+    ].join('\n')
+  );
+  const pins = `"${process.execPath}" "${path.join(root, 'bin', 'exact-pins.cjs')}"`;
   write(
     'bin/npm',
     [
@@ -2367,7 +2494,7 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
       'case "$1" in',
       '  outdated) if [ -f .fixture-outdated.json ]; then cat .fixture-outdated.json; else echo "{}"; fi; exit 1 ;;',
       // Every install/update is recorded with the loglevel the child inherited, and a spec naming `fail-me` exits 7, so the selftest can see both the verb chosen and the failure report.
-      `  install|update) echo "$(pwd) :: $* :: loglevel=\${npm_config_loglevel:-}" >> "${log}"; case "$*" in *fail-me*) echo "fixture npm: refusing $*" >&2; exit 7 ;; esac; if [ "$1" = update ]; then "${process.execPath}" "${path.join(root, 'bin', 'check-lockstep.cjs')}" "$@" || exit 1; fi; if [ "$1" = update ] && [ -f .fixture-update-lock.json ]; then cp .fixture-update-lock.json package-lock.json; fi; if [ "$1" = update ]; then "${process.execPath}" "${path.join(root, 'bin', 'clamp-overrides.cjs')}" "$@"; fi; exit 0 ;;`,
+      `  install|update) echo "$(pwd) :: $* :: loglevel=\${npm_config_loglevel:-}" >> "${log}"; case "$*" in *fail-me*) echo "fixture npm: refusing $*" >&2; exit 7 ;; esac; if [ "$1" = update ]; then "${process.execPath}" "${path.join(root, 'bin', 'check-lockstep.cjs')}" "$@" || exit 1; fi; if [ "$1" = install ]; then ${pins} install "$@"; fi; if [ "$1" = update ]; then ${pins} pre "$@"; fi; if [ "$1" = update ] && [ -f .fixture-update-lock.json ]; then cp .fixture-update-lock.json package-lock.json; fi; if [ "$1" = update ]; then ${pins} post "$@"; "${process.execPath}" "${path.join(root, 'bin', 'clamp-overrides.cjs')}" "$@"; fi; exit 0 ;;`,
       '  *) echo "fixture npm stub: unexpected: $*" >&2; exit 2 ;;',
       'esac',
       '',
@@ -3105,6 +3232,123 @@ function selftest(): void {
     splitDetail
   );
 
+  // 10c. AN EXACT-PINNING SIBLING MOVES FIRST (2026-10-08). @opentelemetry/sdk-node@0.222.0 pins @opentelemetry/core EXACTLY at 2.11.0, so the in-range `npm update` of core kept 2.11.0 while that sdk-node was installed, and the allow-listed install of sdk-node@0.223.0 that would release the pin ran only after it. The stub npm keeps a pinned package exactly as real npm did (exit 0, old version); the update-first mutant restores the old order and must go red, naming the pinning sibling rather than calling it a freshness breach.
+  const otelCore = '@opentelemetry/core';
+  const otelNode = '@opentelemetry/sdk-node';
+  const otelCase = (over: Partial<FixtureSpec> = {}): FixtureSpec => ({
+    outdated: {
+      '': {
+        [otelCore]: { current: '2.11.0', wanted: '2.12.0', latest: '2.12.0' },
+        [otelNode]: { current: '0.222.0', wanted: '0.222.0', latest: '0.223.0' },
+      },
+      'private/account': {},
+    },
+    locks: {
+      '': {
+        [`node_modules/${otelCore}`]: { version: '2.11.0' },
+        [`node_modules/${otelNode}`]: {
+          version: '0.222.0',
+          dependencies: { [otelCore]: '2.11.0' },
+        },
+      },
+      'private/account': {},
+    },
+    installLocks: {
+      '': {
+        [`node_modules/${otelNode}`]: {
+          version: '0.223.0',
+          dependencies: { [otelCore]: '2.12.0' },
+        },
+      },
+    },
+    updateLocks: { '': { [`node_modules/${otelCore}`]: { version: '2.12.0' } } },
+    manifests: {
+      '': { workspaces: ['packages/cli'] },
+      'packages/cli': { dependencies: { [otelCore]: '^2.11.0', [otelNode]: '^0.222.0' } },
+    },
+    allow: {
+      [`${otelNode}@0.223`]: 'the 0.223 experimental family is taken with core 2.12 in one change',
+    },
+    ...over,
+  });
+  const otel = runFixture(otelCase(), 'upgrade');
+  const otelDetail = `installs:\n${otel.installs.join('\n')}\noutput:\n${otel.output}`;
+  expect(
+    'e2e --upgrade: the allow-listed sibling that pins an in-range package exactly is installed BEFORE the npm update of its lockfile, and the update lands the judged version',
+    otel.status === 0 &&
+      otel.installs.length === 2 &&
+      otel.installs[0].startsWith(`<root> :: install -w=packages/cli ${otelNode}@0.223.0 ::`) &&
+      otel.installs[1].startsWith(`<root> :: update -w=packages/cli ${otelCore} ::`) &&
+      otel.output.includes('Upgrades completed'),
+    otelDetail
+  );
+  const updFirst = runFixture(otelCase({ env: { CHECK_DEPS_MUTANT: 'update-first' } }), 'upgrade');
+  const updFirstDetail = `installs:\n${updFirst.installs.join('\n')}\noutput:\n${updFirst.output}`;
+  expect(
+    'e2e --upgrade: CONTROL: the update-first mutant (every update before the installs) leaves core on the pinned 2.11.0 and fails, naming the pinning sibling',
+    updFirst.status === 1 &&
+      updFirst.installs.length === 2 &&
+      updFirst.installs[0].startsWith(`<root> :: update -w=packages/cli ${otelCore} ::`) &&
+      updFirst.output.includes('MUTANT update-first') &&
+      updFirst.output.includes(
+        `${otelCore}: judged 2.12.0, installed 2.11.0; held back by ${otelNode}@0.222.0 requires "2.11.0"`
+      ) &&
+      updFirst.output.includes('below the judged version') &&
+      !updFirst.output.includes('freshness-window guard'),
+    updFirstDetail
+  );
+  // Without the allow entry the sibling is a held major, so nothing in the run releases the pin: the update must still fail, and must say WHY (the held sibling), not claim an unjudged version landed.
+  const heldSib = runFixture(otelCase({ allow: {} }), 'upgrade');
+  const heldSibDetail = `installs:\n${heldSib.installs.join('\n')}\noutput:\n${heldSib.output}`;
+  expect(
+    'e2e --upgrade: with the pinning sibling held, the in-range update fails naming that sibling, and asks for no revert',
+    heldSib.status === 1 &&
+      heldSib.installs.length === 1 &&
+      heldSib.installs[0].startsWith(`<root> :: update -w=packages/cli ${otelCore} ::`) &&
+      heldSib.output.includes(`held back by ${otelNode}@0.222.0 requires "2.11.0"`) &&
+      heldSib.output.includes(`take the sibling's bump (an allow entry in ${MAJOR_ALLOW_REL}`) &&
+      !heldSib.output.includes('revert them there'),
+    heldSibDetail
+  );
+  const pinLock: Record<string, LockEntry> = {
+    'node_modules/core': { version: '2.11.0' },
+    'node_modules/exact': { version: '0.222.0', dependencies: { core: '2.11.0' } },
+    'node_modules/caret': { version: '1.0.0', dependencies: { core: '^2.11.0' } },
+    'packages/cli/node_modules/peer': { version: '3.0.0', peerDependencies: { core: '~2.11.0' } },
+  };
+  expect(
+    'guard: pinningHolders names every copy whose range admits the kept version but not the judged one, and never a caret range that admits both',
+    pinningHolders(pinLock, 'core', '2.11.0', '2.12.0').join() ===
+      'exact@0.222.0 requires "2.11.0",peer@3.0.0 requires "~2.11.0"',
+    pinningHolders(pinLock, 'core', '2.11.0', '2.12.0').join('\n')
+  );
+  expect(
+    'guard: CONTROL: a newer-than-judged version is a freshness breach, never a held-back package',
+    updateMismatches(
+      {
+        cwd: '/x',
+        args: ['update', 'core'],
+        label: 'root (update)',
+        packages: [{ name: 'core', current: '2.11.0', latest: '2.12.0' }],
+      },
+      { ...pinLock, 'node_modules/core': { version: '2.13.0' } }
+    ).every((m) => !m.held)
+  );
+  const realUpd: NodeJS.ProcessEnv = { ...process.env, CHECK_DEPS_MUTANT: 'update-first' };
+  delete realUpd.CHECK_DEPS_ROOT;
+  delete realUpd.CHECK_DEPS_FORCE_PROBE_FAILURE;
+  const realUpdRun = spawnSync(process.execPath, [...process.execArgv, process.argv[1]], {
+    cwd: CONSOLE_ROOT,
+    encoding: 'utf-8',
+    env: realUpd,
+  });
+  expect(
+    'mutant: CONTROL: update-first without CHECK_DEPS_ROOT is refused',
+    realUpdRun.status === 1 &&
+      `${realUpdRun.stdout}${realUpdRun.stderr}`.includes('CHECK_DEPS_MUTANT=update-first refused'),
+    `${realUpdRun.stdout}${realUpdRun.stderr}`
+  );
+
   // 11. THE HELD-MAJOR CLOCK (operator ruling 2026-10-01). A blocklisted major used to be excused forever; it now fails 90 days after the first release of its clock line unless an exception excuses it. Each case has its control, and the mutant proves the 91-day control depends on the clock rather than failing for another reason.
   const ago = (days: number) => new Date(Date.now() - days * DAY_MS).toISOString();
   const dateIn = (days: number) => isoDate(utcDay(Date.now()) + days * DAY_MS);
@@ -3744,7 +3988,10 @@ function selftest(): void {
       'private devDependency is judged from lockfile and registry (and refused when they cannot answer) while an ',
       'installed one is left to npm, and an uninstalled root refuses the run; an exact-pin override is moved to the ',
       'judged version before a root npm update, while an admitting override is left alone and a bounding one is refused; ',
-      'a lockstep family moves in one npm update per lockfile, and the split-update mutant fails ERESOLVE; every step carries --before=<the freshness cutoff>, which agrees with the window rule at its boundary'
+      'a lockstep family moves in one npm update per lockfile, and the split-update mutant fails ERESOLVE; an allow-listed ',
+      'sibling that pins an in-range package exactly is installed before its lockfile is updated, the update-first mutant ',
+      'leaves that package held back, and a held-back package names its pinning sibling instead of a freshness breach; ',
+      'every step carries --before=<the freshness cutoff>, which agrees with the window rule at its boundary'
     )
   );
   process.exit(0);
