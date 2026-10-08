@@ -502,9 +502,13 @@ def resolve(root, kind, token):
         if not got:
             return False, "no such commit"
         # PRESENCE IS THE WRONG QUESTION FOR A COMMIT (finding #27a05a50). A rebase leaves the rewritten commit in the local object store as an orphan, so `rev-parse` alone records a pointer a fresh checkout cannot resolve. Twin of check_plan_citations.commit_is_reachable (same rule, the read side, commit cfea06ead); restated here, not imported, because this directory must not import from `.ci/`.
-        if not _git_ok(root, "merge-base", "--is-ancestor", got, "HEAD"):
+        # origin/main counts as well: main is never rewritten, so a commit CD pushed there survives every rebase-merge (same rule as check_plan_citations.commit_is_reachable, 2026-10-08).
+        if not any(
+            _git_ok(root, "merge-base", "--is-ancestor", got, ref)
+            for ref in ("HEAD", "refs/remotes/origin/main")
+        ):
             return False, (
-                "%s exists in this clone but is not an ancestor of HEAD (a rebase rewrote it), "
+                "%s exists in this clone but is not an ancestor of HEAD or origin/main (a rebase rewrote it), "
                 "so a fresh checkout will not have it" % got[:40]
             )
         return True, got[:40]
