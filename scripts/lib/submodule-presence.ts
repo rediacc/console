@@ -22,9 +22,8 @@
  *                       then false. The caller skips (or, for a gate that
  *                       scans several submodules, scans the rest).
  *
- * CI IS `CI=true` OR `GITHUB_ACTIONS=true`, the literal string in both. GitHub
- * Actions exports both on every runner. `CI=1` from some unrelated tool is not
- * CI here, which matches the shell twin's literal comparison.
+ * CI IS ANY SET `CI` OR `GITHUB_ACTIONS` VALUE THAT IS NOT AN EXPLICIT OFF (see
+ * `inCi`). GitHub Actions exports both as `true` on every runner.
  *
  * THE SEAM. `SUBMODULE_PRESENCE_ROOT` replaces the repository root when a gate
  * builds a submodule path through `submodulePath()`. A gate's own test points it
@@ -50,14 +49,13 @@ export const submoduleRoot = (): string => envRoot('SUBMODULE_PRESENCE_ROOT');
 export const submodulePath = (...segments: string[]): string =>
   path.resolve(submoduleRoot(), ...segments);
 
-/** True on a CI runner: `CI=true` or `GITHUB_ACTIONS=true`, the literal string. */
 /**
- * CI is any SET value other than an explicit off (`CI=1` counts too). check-account-email-templates failed on any truthy `CI` before this helper existed (review 2bc9b47a.1), so the
+ * True on a CI runner: CI is any SET value other than an explicit off (`CI=1` counts too, and the value is trimmed). check-account-email-templates failed on any truthy `CI` before this helper existed (review 2bc9b47a.1), so the
  * literal-`true` reading would have turned a missing submodule on a `CI=1` runner into a silent skip.
  */
 export function inCi(env: NodeJS.ProcessEnv = process.env): boolean {
   const on = (v: string | undefined): boolean =>
-    v !== undefined && v !== '' && !/^(0|false|no|off)$/i.test(v);
+    v !== undefined && v.trim() !== '' && !/^(0|false|no|off)$/i.test(v.trim());
   return on(env.CI) || on(env.GITHUB_ACTIONS);
 }
 

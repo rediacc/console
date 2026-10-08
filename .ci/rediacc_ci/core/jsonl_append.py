@@ -63,6 +63,11 @@ def append_lines(
             if size and os.pread(fd, 1, size - 1) != b"\n":
                 blob = b"\n"
             blob += encode(payloads)
-            return os.write(fd, blob)
+            view = memoryview(blob)
+            written = 0
+            while written < len(view):
+                # os.write may write fewer bytes than asked (a signal, a full pipe, a quota edge); the remainder is a torn line unless it is looped.
+                written += os.write(fd, view[written:])
+            return written
         finally:
             os.close(fd)

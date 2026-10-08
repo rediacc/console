@@ -198,6 +198,9 @@ D1_BOOKMARK_RE = re.compile(
     r"\b[0-9a-f]{8}-[0-9a-f]{8}-[0-9a-f]{8}-([0-9a-f]{32})\b", re.IGNORECASE
 )
 
+#: The marker that licenses the D1_BOOKMARK_RE exemption, on the same line.
+D1_MARKER_RE = re.compile(r"bookmark|time-travel", re.IGNORECASE)
+
 #: A REGISTRY DIGEST IS NEVER A GIT OBJECT, and it is the same false-positive
 #: class as the UUID tail above: a long hex run that satisfies HEXTOK_RE purely
 #: by coincidence of shape, sitting behind an unambiguous marker that says what
@@ -443,7 +446,9 @@ def citations(text):
     take(R.PLAN_REF_RE, "plan")
     take(R.GATE_RE, "gate")
     uuid_tail_spans = [u.span(1) for u in UUID_TAIL_RE.finditer(text or "")]
-    uuid_tail_spans += [d.span(1) for d in D1_BOOKMARK_RE.finditer(text or "")]
+    # The shape alone is not enough: the same line must also name it a bookmark (or time-travel), as a verbatim deploy record does.
+    if D1_MARKER_RE.search(text or ""):
+        uuid_tail_spans += [d.span(1) for d in D1_BOOKMARK_RE.finditer(text or "")]
     digest_spans = [d.span(1) for d in DIGEST_RE.finditer(text or "")]
     agent_id_spans = [a.span(1) for a in AGENT_ID_RE.finditer(text or "")]
     fingerprint_spans = [f.span(1) for f in FINGERPRINT_RE.finditer(text or "")]
@@ -928,6 +933,22 @@ def selftest(root):
             k == "object"
             for k, _t in citations(
                 "bookmark 00000ba5-00000000-000050fe-515e0bc093a659f43819fc1ade215212 recorded"
+            )
+        ),
+    )
+    ck(
+        "a D1-bookmark-shaped token WITHOUT a bookmark/time-travel marker on the line IS judged",
+        any(
+            k == "object"
+            for k, _t in citations("id 00000ba5-00000000-000050fe-515e0bc093a659f43819fc1ade215212")
+        ),
+    )
+    ck(
+        "a time-travel marker alone licenses the D1 exemption",
+        not any(
+            k == "object"
+            for k, _t in citations(
+                "wrangler d1 time-travel restore at 00000ba5-00000000-000050fe-515e0bc093a659f43819fc1ade215212"
             )
         ),
     )

@@ -494,7 +494,9 @@ def backfill_rows(
             for e in (doc.get("gates") or {}).values()
             if isinstance(e, dict) and e.get("carriedFrom")
         )
-        rows = receipt_rows(doc, base_tree=base, changed=changed, lock_sha=lock_sha)
+        rows = receipt_rows(
+            doc, base_tree=base if changed is not None else None, changed=changed, lock_sha=lock_sha
+        )
         if rows:
             out.append(("receipt:%s:%s" % (tree, doc.get("finishedAt")), rows))
         last_tree[who] = tree
