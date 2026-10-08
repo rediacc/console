@@ -73,3 +73,22 @@ def test_an_env_python_shebang_override_resolves_the_interpreter_on_path(tmp_pat
     monkeypatch.setenv("PYTEST_BIN", str(override))
     assert regolden._reexec_under_pytest() == 0
     assert calls[0][0] == str(own)
+
+
+def test_an_env_python_shebang_with_no_python_on_path_is_a_clear_refusal(
+    tmp_path, monkeypatch, capsys
+):
+    """Review 9928d5bc.3: `env python3` resolves on PATH exactly as the kernel would run it; none on PATH is rc 77 with the fix, never a crash or the tool venv."""
+    calls = _world(tmp_path, monkeypatch)
+    _exe(tmp_path / ".ci/cache/toolchain/uv-tools/pytest/bin/python")
+    empty = tmp_path / "emptybin"
+    empty.mkdir()
+    monkeypatch.setenv("PATH", str(empty))
+    monkeypatch.chdir(tmp_path)
+    override = _exe(tmp_path / "elsewhere/pytest", "#!/usr/bin/env python3\n")
+    monkeypatch.setenv("PYTEST_BIN", str(override))
+    assert regolden._reexec_under_pytest() == 77
+    assert calls == []
+    err = capsys.readouterr().err
+    assert "no bootstrap pytest interpreter" in err, err
+    assert "bash .ci/bootstrap.sh" in err, err

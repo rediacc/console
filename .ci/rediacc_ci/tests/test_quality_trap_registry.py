@@ -370,3 +370,15 @@ def test_an_empty_sibling_suite_does_not_make_a_guard_live(tmp_path: pathlib.Pat
     assert reg.guard_liveness("block_ctl_tested") == ""
     sibling.write_text("", encoding="utf-8")
     assert reg.guard_liveness("block_ctl_tested") != ""
+
+
+def test_a_longer_guard_name_in_the_sibling_suite_does_not_make_a_guard_live(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review 9928d5bc.2: `block_ctl_tested_extra` in the suite is a different name, not `block_ctl_tested`."""
+    reg = _anchor_registry(tmp_path, mod.anchored("t", "guard:block_ctl_tested"))
+    sibling = reg.file_root / mod.GUARDS_PACKAGE_REL / "test-block_ctl_tested.py"
+    sibling.write_text("# covers block_ctl_tested_extra only\n", encoding="utf-8")
+    assert reg.guard_liveness("block_ctl_tested") != ""
+    sibling.write_text("# covers block_ctl_tested_extra and block_ctl_tested.\n", encoding="utf-8")
+    assert reg.guard_liveness("block_ctl_tested") == ""

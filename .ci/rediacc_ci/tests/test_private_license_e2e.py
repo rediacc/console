@@ -772,7 +772,7 @@ def test_a_failed_chain_state_backup_inside_the_battery_records_no_backup(tmp_pa
     battery.sudo = ["false"]
     battery.errexit = False
     battery._back_up_chain_state()
-    assert battery.chain_backup == "" or not battery.chain_backup
+    assert battery.chain_backup == ""
     assert battery.chain_unbacked is True
     battery.sudo = []
     battery.cleanup()

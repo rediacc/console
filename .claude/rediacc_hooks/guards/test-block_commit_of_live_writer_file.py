@@ -47,7 +47,15 @@ GIT_ENV = dict(
     GIT_CONFIG_GLOBAL="/dev/null",
     GIT_CONFIG_SYSTEM="/dev/null",
 )
-SEEDED = ("src/live.ts", "src/done.ts", "src/other.ts", "lib/child.py", "docs/a.md", "out/x.txt")
+SEEDED = (
+    "src/live.ts",
+    "src/done.ts",
+    "src/other.ts",
+    "lib/child.py",
+    "lib/grand.py",
+    "docs/a.md",
+    "out/x.txt",
+)
 
 
 def git(repo, *argv):
@@ -77,6 +85,7 @@ for repo in (REPO, OUTSIDE):
 SESSION = "c0ffee00-live-writer-suite-000000000000"
 CONFIG = pathlib.Path(tempfile.mkdtemp(prefix="config-", dir=RUN_TMP))
 LIVE, DONE, CHILD = "asuitelivewriter00001", "asuitedonewriter00002", "asuitechildwriter0003"
+GRAND = "asuitegrandwriter0004"
 guard.write_session(
     CONFIG,
     REPO,
@@ -86,6 +95,8 @@ guard.write_session(
         (DONE, "suite finished writer", [str(REPO / "src/done.ts")], False, ""),
         # Finished, but its parent is live: its edit is part of unfinished work.
         (CHILD, "suite sub-writer", [str(REPO / "lib/child.py")], False, LIVE),
+        # Finished under a finished parent, two levels below the live writer.
+        (GRAND, "suite grand-writer", [str(REPO / "lib/grand.py")], False, CHILD),
     ],
 )
 # A session directory with no subagents is an honest empty roster, not an unreadable one.
@@ -167,6 +178,22 @@ CASES = [
         None,
         True,
         "lib/child.py",
+        SESSION,
+    ),
+    (
+        "a finished grandchild under a live grandparent",
+        "git commit -F m -- lib/grand.py",
+        None,
+        True,
+        "lib/grand.py",
+        SESSION,
+    ),
+    (
+        "the refusal text names the whole spawn chain",
+        "git commit -F m -- lib/grand.py",
+        None,
+        True,
+        "spawn chain (parent, grandparent",
         SESSION,
     ),
     (

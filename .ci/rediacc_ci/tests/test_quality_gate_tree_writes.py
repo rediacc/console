@@ -103,6 +103,21 @@ def test_a_runner_file_variable_is_outside_and_an_arbitrary_key_is_not(tmp_path)
     ]
 
 
+def test_a_runner_variable_key_on_a_non_environment_mapping_is_still_unresolved(tmp_path):
+    """Review aae50fd5.1: only an environment-named receiver is trusted; a plain dict under the same key stays UNRESOLVED."""
+    sites = scan(
+        tmp_path,
+        {
+            "g.py": "def run(cfg, env):\n"
+            "    with open(cfg.get('GITHUB_OUTPUT'), 'a') as fh:\n        fh.write('x')\n"
+            "    with open(env.get('GITHUB_OUTPUT'), 'a') as fh:\n        fh.write('x')\n\n\n"
+            "run({}, {})\n"
+        },
+        "g.py",
+    )
+    assert [s.origin for s in sorted(sites, key=lambda s: s.line)] == ["UNRESOLVED", "OUTSIDE"]
+
+
 def test_scratch_is_ci_cache_only(tmp_path):
     sites = scan(
         tmp_path,
