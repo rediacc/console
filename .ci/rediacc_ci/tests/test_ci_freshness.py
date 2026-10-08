@@ -510,3 +510,14 @@ def test_package_json_budget_freshness_runs_the_registry_at_pr_cadence():
     assert "rediacc_ci.ci.freshness --check --cadence pr" in cmd, cmd
     for old in OLD_CALLS:
         assert old not in cmd, "check:ci-budget-freshness calls %s directly: %s" % (old, cmd)
+
+
+def test_pr_freshness_step_runs_on_pull_requests_only() -> None:
+    """The rolling-sample check reds on main/scheduled runs with no PR to refresh the file (nightly Console CI red 2026-10-06..08, PLAN-plan-per-pr-loop R1); housekeeping's nightly budget-check covers those events."""
+    text = (REAL_ROOT / ".github/workflows/ci-quality.yml").read_text(encoding="utf-8")
+    m = re.search(
+        r"- name: CI time budget freshness\n\s+if: (?P<cond>[^\n]+)\n\s+run: npm run check:ci-budget-freshness",
+        text,
+    )
+    assert m, "the CI time budget freshness step moved or lost its if:"
+    assert "github.event_name == 'pull_request'" in m.group("cond")

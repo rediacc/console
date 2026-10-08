@@ -2292,8 +2292,16 @@ jobs:
       # gate-costs.json are compared with the newest runs and captures on every
       # PR, not only in housekeeping's nightly budget-check. Drift fails the
       # open PR, which refreshes the file (budget_report / gate_costs --refresh).
+      #
+      # PULL REQUESTS ONLY (PLAN-plan-per-pr-loop R1). The check compares the committed
+      # file with a ROLLING sample of the newest runs, so on main's push and scheduled
+      # runs it reds as the sample moves, with no commit to blame and no PR open to
+      # refresh it: the nightly Console CI was red on this step on 2026-10-06/07/08
+      # (runs 37101760904, 37583863183, 37740799683), which kept
+      # nightly_tested_edge's waiver from ever firing. Nobody is left unwatched:
+      # housekeeping's budget-check job runs the same registry nightly and posts an issue.
       - name: CI time budget freshness
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && github.event_name == 'pull_request' }}
         run: npm run check:ci-budget-freshness
         env:
           GH_TOKEN: ${{ github.token }}
