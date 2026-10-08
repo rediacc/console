@@ -93,8 +93,10 @@ def replace_once(gate, text: str, old: str, new: str) -> str:
 
 def dockerfile_arg(gate, text: str, name: str) -> str:
     match = re.search(r"^ARG %s=(\S+)$" % re.escape(name), text, re.MULTILINE)
-    if not match:
-        gate.log_fail("the real Dockerfile declares no ARG %s; the digest cases need it" % name)
+    if match is None:
+        msg = "the real Dockerfile declares no ARG %s; the digest cases need it" % name
+        gate.log_fail(msg)
+        raise AssertionError(msg)
     return match.group(1)
 
 
