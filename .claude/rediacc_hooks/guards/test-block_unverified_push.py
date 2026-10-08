@@ -1120,7 +1120,7 @@ def drive_v2_off(where, cmd):
 
 
 # --- a gate the run STOPPED before is not judged (PLAN-gate-scheduling-learned T1) ---------------
-# The runner writes `blocked` both for a gate that exited 77 and for one the pool skipped (run.ts receiptGates). A `--fail-fast` run whose only red is carried still writes `whole: true`, and every gate it never launched read as judged. Reproduced 2026-10-08 against this guard before the fix: rc=0, and silent, because the top-level `blocked` list holds only exit-77 gates.
+# The runner writes `blocked` both for a gate that exited 77 and for one the pool skipped (run.ts receiptGates). A `--fail-fast` run whose only red is carried still writes `whole: true`, and every gate it never launched read as judged. Reproduced 2026-10-08 against this guard before the fix: rc=0 with only the carried-red note, because the top-level `blocked` list holds only exit-77 gates.
 FF_RED = "check:fixture-red"
 FF_PRE = "build:fixture-pre"
 FF_LOCK = [

@@ -295,8 +295,15 @@ CASES = [
     ("a moved stub, target ticked", PUSH, STUB_DONE, GH_NONE, False, ""),
     ("a moved stub, target open", PUSH, STUB_OPEN, GH_NONE, True, ""),
     ("an entry only under _done/, open", PUSH, GONE_OPEN, GH_NONE, True, ""),
-    # plan_gate._read reads a non-UTF-8 QUEUE.md as absent, so settings fall back to turbo off and the push passes with no note.
-    ("an unreadable QUEUE.md reads as turbo off", PUSH, UNREADABLE, GH_NONE, False, ""),
+    # settings_at falls back to defaults for a non-UTF-8 QUEUE.md and reports it as a problem: the push is allowed and the guard says it went UNEXAMINED.
+    (
+        "an unreadable QUEUE.md is allowed with a note",
+        PUSH,
+        UNREADABLE,
+        GH_NONE,
+        False,
+        "unreadable",
+    ),
 ]
 
 BROKEN_RUNNER = (

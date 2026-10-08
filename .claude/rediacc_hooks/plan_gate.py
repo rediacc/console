@@ -169,7 +169,7 @@ def _planqueue():
 
 
 def settings_at(root: str, rev: str = ""):
-    """(Settings, problems) of agent/plans/QUEUE.md's `## Settings` block at `rev` ("" = the working tree), parsed by `wl_planqueue.settings` (agent/plans/PLAN-stop-hook-turbo.md D2), so the hook, the guards and CI read one switchboard through one parser. A file that does not exist is all defaults; a rev that cannot be read is all defaults and a problem; a parser that will not import is all defaults and a problem. Every default is the fail-safe one: hook on, turbo off, batch 1."""
+    """(Settings, problems) of agent/plans/QUEUE.md's `## Settings` block at `rev` ("" = the working tree), parsed by `wl_planqueue.settings` (agent/plans/PLAN-stop-hook-turbo.md D2), so the hook, the guards and CI read one switchboard through one parser. A file that does not exist is all defaults; one that exists but cannot be read is all defaults and a problem; a rev that cannot be read is all defaults and a problem; a parser that will not import is all defaults and a problem. Every default is the fail-safe one: hook on, turbo off, batch 1."""
     try:
         pq = _planqueue()
     except ImportError as exc:
@@ -178,6 +178,9 @@ def settings_at(root: str, rev: str = ""):
     if text is None:
         if rev:
             return pq.Settings(), ["%s at %s is unreadable" % (QUEUE_REL, rev)]
+        # `_read` also answers None for a file that exists but cannot be read (permissions, not UTF-8): defaults, with the problem said so callers that warn on problems do.
+        if (pathlib.Path(root) / QUEUE_REL).exists():
+            return pq.Settings(), ["%s is unreadable (not UTF-8 or not readable)" % QUEUE_REL]
         return pq.Settings(), []
     return pq.settings(text)
 

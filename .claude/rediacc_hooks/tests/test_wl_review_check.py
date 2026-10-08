@@ -368,3 +368,10 @@ def test_control_a_branch_with_no_pushed_ref_still_refuses_when_not_checked_out(
     _git(repo, "checkout", "-q", "-b", "elsewhere")
     reasons, _lines = R.check_state(repo, BRANCH, label="console")
     assert reasons == ["not-checked-out"], reasons
+
+
+def test_an_unchecked_out_main_keeps_the_not_checked_out_refusal(tmp_path):
+    """71afd29f.1: `origin/main` always exists, so the pushed-tip stand-in must not apply to main; judged at its own pushed tip, main walks an empty range and reads as clean."""
+    repo = _world(tmp_path, "resolved")
+    reasons, _lines = R.check_state(repo, "main", label="console")
+    assert reasons == ["not-checked-out"], reasons

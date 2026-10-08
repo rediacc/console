@@ -313,6 +313,21 @@ def test_a_filling_local_batch_silences_the_early_receipt_note(filling, held, mo
         assert json.loads(out)["hookSpecificOutput"]["additionalContext"] == M.N_RECEIPT_EARLY
 
 
+def test_an_unreadable_loop_state_keeps_the_early_receipt_note(held, monkeypatch):
+    """218bef67.1: the advisory fails open to the note when the loop state raises, so a broken state cannot silence it."""
+    import wl_prscope  # noqa: PLC0415
+
+    def boom(*_a, **_k):
+        raise RuntimeError("loop state unreadable")
+
+    root, *_ = held
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(root))
+    monkeypatch.setattr(wl_prscope, "loop_state", boom)
+    rc, out = run_member("npm run ci:quick", root)
+    assert rc == 0
+    assert json.loads(out)["hookSpecificOutput"]["additionalContext"] == M.N_RECEIPT_EARLY
+
+
 @pytest.mark.parametrize(
     "command",
     [

@@ -146,10 +146,11 @@ def _head_corpus(repo, exclude):
             check=False,
             timeout=30,
         )
-    except (OSError, subprocess.TimeoutExpired):
-        return {}
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError("git cat-file --batch failed: %s" % exc) from exc
     if proc.returncode != 0:
-        return {}
+        # An empty corpus would read every box as lost-nowhere; the outer handler warns UNEXAMINED and allows.
+        raise RuntimeError("git cat-file --batch exited %d" % proc.returncode)
     out, data, pos = {}, proc.stdout, 0
     for rel in rels:
         nl = data.find(b"\n", pos)

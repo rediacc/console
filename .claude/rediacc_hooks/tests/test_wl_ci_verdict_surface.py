@@ -537,3 +537,48 @@ def test_the_real_worklist_accepts_the_item_and_the_lease(armenv, monkeypatch):
 def test_a_push_spelled_with_git_global_options_still_counts(cmd, is_push):
     """2026-10-02: `git -C /home/developer/console push ...` armed no watcher and cancelled no older run, because the post-bash hooks looked for the literal `git push`; they normalize first now."""
     assert hookio.grep_q_line("git push", hookio.normalize_git_push(cmd)) is is_push
+
+
+# --------------------------------------------------------------------------- 8ed69711: gh pr create arms, open_pr_exists fails open
+
+
+@pytest.mark.parametrize(
+    ("cmd", "starts"),
+    [
+        ("git push origin b", True),
+        ("gh pr create --draft --base main --head b --body-file x", True),
+        ("git push -u origin b && gh pr create --draft", True),
+        ("gh pr view 5", False),
+        ("gh pr list --head b", False),
+        ('git commit -m "run gh pr create later" -- a', False),
+        ("ls -la", False),
+    ],
+)
+def test_gh_pr_create_starts_ci_like_a_push(cmd, starts):
+    """8ed69711.1: a branch pushed before its PR existed armed nothing at the push; the create is the moment CI starts."""
+    assert AW.starts_ci(cmd) is starts
+
+
+class _Proc:
+    def __init__(self, rc, out):
+        self.returncode = rc
+        self.stdout = out
+
+
+@pytest.mark.parametrize(
+    ("rc", "out", "want"), [(0, "0\n", False), (0, "1\n", True), (1, "", True)]
+)
+def test_open_pr_exists_reads_gh_count_and_fails_open_on_a_nonzero_rc(
+    monkeypatch, tmp_path, rc, out, want
+):
+    monkeypatch.setattr(AW.subprocess, "run", lambda *_a, **_k: _Proc(rc, out))
+    assert AW.open_pr_exists(tmp_path, "b") is want
+
+
+@pytest.mark.parametrize("exc", [OSError("no gh"), subprocess.TimeoutExpired(cmd="gh", timeout=30)])
+def test_open_pr_exists_fails_open_when_gh_cannot_answer(monkeypatch, tmp_path, exc):
+    def boom(*_a, **_k):
+        raise exc
+
+    monkeypatch.setattr(AW.subprocess, "run", boom)
+    assert AW.open_pr_exists(tmp_path, "b") is True

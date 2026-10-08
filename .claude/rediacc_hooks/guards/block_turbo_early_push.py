@@ -377,8 +377,7 @@ def run(ev):
         return hookio.ALLOW
     try:
         settings, problems = plan_gate.settings_at(root)
-    except (OSError, UnicodeDecodeError, ValueError) as exc:
-        # plan_gate._read catches OSError only, so a QUEUE.md that is not UTF-8 raises out of settings_at (measured 2026-10-08).
+    except (OSError, ValueError) as exc:
         ev.warn(UNREAD % ("%s could not be parsed (%s: %s)" % (QUEUE_REL, type(exc).__name__, exc)))
         return hookio.ALLOW
     for problem in problems:
