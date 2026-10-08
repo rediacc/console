@@ -1,6 +1,6 @@
 # Plan queue
 
-The ordered queue of plans the plan-per-PR loop pulls from (box L2 of agent/plans/PLAN-plan-per-pr-loop.md). One plan per PR by default; with `turbo: on` in `## Settings` the live PR keeps taking queued plans (agent/plans/PLAN-stop-hook-turbo.md). The first entry is the plan the live `MMDD-N` branch works: `.claude/hooks/post-bash/refresh_pr_body.py` writes it as the PR body's `Plan:` line once, and `rediacc_hooks.plan_gate.plan_merge_refusal` refuses the merge while that plan has an open box, unless the body carries an `Operational-Reason:` line.
+The ordered queue of plans the plan-per-PR loop pulls from (box L2 of agent/plans/PLAN-plan-per-pr-loop.md). One plan per PR by default; with `turbo: on` in `## Settings` the live PR keeps taking queued plans (agent/plans/PLAN-stop-hook-turbo.md), and with `turbo_push: batch-end` (the default) that batch is built and verified locally, then pushed once with one PR when it completes (agent/plans/PLAN-turbo-local-first.md). The first entry is the plan the live `MMDD-N` branch works: `.claude/hooks/post-bash/refresh_pr_body.py` writes it as the PR body's `Plan:` line once, and `rediacc_hooks.plan_gate.plan_merge_refusal` refuses the merge while that plan has an open box, unless the body carries an `Operational-Reason:` line.
 
 Two lists, read in this order. `## Promoted` is hand-ordered by the operator and wins; no tool writes it, and an entry leaves it by hand when its PR merges. `## Generated` is rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` from live tracked plans with at least one open box: prerequisites first (`Depends-On:`, task refs and sub-plans like `PLAN-x.A0.md`, each prerequisite pulled ahead to the rank of what needs it), then held plans after unheld ones, prerequisites excepted, then in-progress plans before not-started ones, then operator Priority, AI Priority and path. Plans with no open box are listed under `### Not queued` with the reason, never as entries. Regenerate with `npm run check:ci-plan-record -- --update`; the same gate fails while the section is stale.
 
@@ -24,6 +24,8 @@ What each key does (default in brackets):
 - `agent_hint` (on): names a specialist agent (`.claude/agents/*.md`) that matches the open work, including once after each compaction.
 - `agent_pushback` (on): blocks a stop that declares work out of reach ("cannot be done here"), once per claim, and names the specialist agent that fits it when one clears the hint's confidence floor.
 - `judge` (on): the LLM judge that reviews a stop when work remains. The env var `WORKLIST_JUDGE=on|off` overrides it, for tests.
+- `turbo_push` (batch-end): under turbo, when the push and the PR happen. `batch-end` verifies the batch locally and pushes once when it completes, so the branch has no PR and no CI run until then. `pr` keeps the earlier behaviour: the PR opens at the first push and the batch joins it.
+- `backup_push_h` (4): under `turbo_push: batch-end`, the age in hours of the oldest unpushed commit that makes the hook advise a backup push (`git push -u origin <branch>`, no PR, so no CI run). `0` turns the advice off.
 
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
@@ -38,6 +40,8 @@ agent_hint: on
 agent_pushback: on
 judge: on
 commit_remind_min: 15 -- operator 2026-10-06: PLAN-fast-loop Part 2 default
+turbo_push: batch-end -- operator 2026-10-08: turbo completes plans locally, one push per batch
+backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
 ```
 
 ## In flight
@@ -45,15 +49,16 @@ commit_remind_min: 15 -- operator 2026-10-06: PLAN-fast-loop Part 2 default
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--focus`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: stop_hook on; turbo on; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; cadence on; agent_hint on; agent_pushback on; judge on.
+- Mode: stop_hook on; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; cadence on; agent_hint on; agent_pushback on; judge on.
 - Focus: off.
 - Branch: 1008-1, no PR yet.
-- Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-gate-scheduling-learned.md, as its `Plan:` line unless the body names a plan first.
+- Plans on the PR (1):
+  - agent/plans/PLAN-turbo-local-first.md -- 0 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 26 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:abe63910ee7951b0d.
-- Leased items: 1: #4864d43c (worker:abe63910ee7951b0d, d778be9d).
-- Next plan: agent/plans/PLAN-gate-scheduling-learned.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 37 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 6 live of writer_cap 15 (session d778be9d): worker:ad1794ab802370456, worker:ad7e5cebebc5c0d55, worker:a4f044fb306aba3f4, worker:a09a4cd91b65a96ab, worker:adff4a88cfcc1b2b0, worker:a753297aaca3b46b2.
+- Leased items: 9: #0bd518e7 (worker:ad1794ab802370456, d778be9d), #1488cf3f (worker:ad154f530559a01d5, d778be9d), #16beb70b (worker:adff4a88cfcc1b2b0, d778be9d), #4864d43c (worker:abe63910ee7951b0d, d778be9d), #62c2389f (worker:a4f044fb306aba3f4, d778be9d), #7afa92f1 (worker:ad1794ab802370456, d778be9d), #a42c0ce2 (worker:a753297aaca3b46b2, d778be9d), #f302c712 (worker:ad7e5cebebc5c0d55, d778be9d), #fd730465 (worker:a09a4cd91b65a96ab, d778be9d).
+- Next plan: agent/plans/PLAN-gate-scheduling-learned.md, Promoted entry 2; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted

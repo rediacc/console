@@ -2600,8 +2600,57 @@ def _first_box_text(root, rel):
     return "%s  %s" % (got[0], got[1][:120]) if got else M.LOOP_NEXT_NO_BOX
 
 
-def loop_next_text(state, root, state_doc, pr_finish_fired):
-    """(text, blocking): the loop-next message for this stop, or ("", False) (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7): merged / on-main / no-pr / live with every box ticked / unreadable. Never fires on an empty queue. The unreadable arm counts its stops per error signature in `state_doc["loopnext"]` and stops blocking after wl_ci.CI_MAX_BLOCKS of them (the text then rides the advisory queue); any other arm resets the count."""
+def turbo_push_mode(state):
+    """`state.turbo_push` ("batch-end" or "pr"), read defensively: a LoopState that predates the field, or any other value, reads as "pr", today's behaviour (agent/plans/PLAN-turbo-local-first.md)."""
+    mode = getattr(state, "turbo_push", "pr")
+    return mode if mode in ("batch-end", "pr") else "pr"
+
+
+def local_batch(state):
+    """True when `state` is a turbo batch filling on a no-PR branch (agent/plans/PLAN-turbo-local-first.md D1): turbo on, `turbo_push: batch-end`, and wl_prscope's `local_batch` set."""
+    return bool(
+        state is not None
+        and getattr(state, "turbo", False)
+        and getattr(state, "local_batch", False)
+        and turbo_push_mode(state) == "batch-end"
+    )
+
+
+def _set_finished(state, root):
+    """True when no plan of `state`'s set has an open box (vacuously true for an empty set)."""
+    return not any(wl_planenforce.first_box(root, rel) for rel in state.plans)
+
+
+def local_batch_open(state, root):
+    """True while a local batch is still filling (D2/D4/D6): `local_batch` and not `wl_prscope.batch_ready`. Unpushed commits and no PR are the intended state then."""
+    return local_batch(state) and not wl_prscope.batch_ready(state, _set_finished(state, root))
+
+
+def live_batch_ready(state, finished_all):
+    """`wl_prscope.batch_ready` for a LIVE PR. Under `turbo_push: batch-end` the PR opened with its batch complete and turbo-next is silent on it (D3), so its batch is closed: every plan of the set finished is the whole condition. Without this a queue that gained an eligible plan after the PR opened (`turbo_more`) would hold the merge forever with nothing left to name."""
+    if (
+        state is not None
+        and getattr(state, "turbo", False)
+        and turbo_push_mode(state) == "batch-end"
+    ):
+        return bool(finished_all)
+    return wl_prscope.batch_ready(state, finished_all)
+
+
+def _judge_local_batch(state, root):
+    """The judge's `local_batch` argument (agent/plans/PLAN-turbo-local-first.md D6): `{"finished", "batch"}` while a local batch fills, else None. A failed read is None, today's prompt."""
+    try:
+        if local_batch_open(state, root):
+            return {"finished": int(state.finished), "batch": int(state.batch_size)}
+    except Exception:  # noqa: BLE001 -- the judge still runs on today's prompt
+        pass
+    return None
+
+
+def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
+    """(text, blocking): the loop-next message for this stop, or ("", False) (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7): merged / on-main / no-pr / live with every box ticked / unreadable. Never fires on an empty queue. The unreadable arm counts its stops per error signature in `state_doc["loopnext"]` and stops blocking after wl_ci.CI_MAX_BLOCKS of them (the text then rides the advisory queue); any other arm resets the count.
+
+    A no-PR local batch (agent/plans/PLAN-turbo-local-first.md D2, `local_batch`) never gets "Open it": while the batch fills it is the N_TURBO_LOCAL advisory, and once it is ready the V_LOOP_NEXT_BATCH_OPEN block names the verify-push-open sequence, `me` filling its `--batch-body` line."""
     kind, branch = state.kind, state.branch
     if kind != wl_prscope.UNREADABLE:
         state_doc.pop("loopnext", None)
@@ -2632,6 +2681,14 @@ def loop_next_text(state, root, state_doc, pr_finish_fired):
     if kind == wl_prscope.NO_PR:
         ahead = C._git(root, "rev-list", "--count", "origin/main..HEAD")
         fields["ahead"] = int(ahead) if str(ahead or "").strip().isdigit() else 0
+        if local_batch(state):
+            fields["finished"] = int(state.finished)
+            fields["batch"] = int(state.batch_size)
+            fields["me"] = me
+            if not wl_prscope.batch_ready(state, _set_finished(state, root)):
+                return M.N_TURBO_LOCAL % fields, False
+            if fields["ahead"] > 0:
+                return M.V_LOOP_NEXT_BATCH_OPEN % fields, True
         if fields["ahead"] > 0:
             return M.V_LOOP_NEXT_NO_PR_OPEN % fields, True
         if not nxt:
@@ -2642,8 +2699,8 @@ def loop_next_text(state, root, state_doc, pr_finish_fired):
             return "", False
         if any(wl_planenforce.first_box(root, rel) for rel in state.plans):
             return "", False
-        # Under turbo the merge waits for the batch (D8): `batch_size` plans finished, or nothing eligible left to take.
-        if not wl_prscope.batch_ready(state, True):
+        # Under turbo the merge waits for the batch (D8): `batch_size` plans finished, or nothing eligible left to take. Under batch-end the batch closed when the PR opened (live_batch_ready).
+        if not live_batch_ready(state, True):
             return "", False
         return M.V_LOOP_NEXT_MERGE % fields, True
     if kind == wl_prscope.UNREADABLE:
@@ -2669,14 +2726,26 @@ TURBO_KEEPS = frozenset({"turbo-next"})
 
 
 def turbo_next_text(state, root, writers):
-    """The turbo arm's text for this stop, "" when nothing is named (agent/plans/PLAN-stop-hook-turbo.md D8): turbo on, a live PR, and picks for free writer slots. Each pick is numbered by the slot it takes after the `writers` already live."""
-    if not state.turbo or state.kind != wl_prscope.LIVE or not state.turbo_picks:
+    """The turbo arm's text for this stop, "" when nothing is named (agent/plans/PLAN-stop-hook-turbo.md D8): turbo on, picks for free writer slots, and either a live PR under `turbo_push: pr` or a no-PR local batch (agent/plans/PLAN-turbo-local-first.md D1/D3). A live PR under `batch-end` is silent: its batch closed when the PR opened, so no plan joins it during its CI cycle. Each pick is numbered by the slot it takes after the `writers` already live."""
+    if not state.turbo or not state.turbo_picks:
+        return ""
+    local = state.kind == wl_prscope.NO_PR and local_batch(state)
+    if not local and (state.kind != wl_prscope.LIVE or turbo_push_mode(state) == "batch-end"):
         return ""
     cap = int(state.writer_cap)
     lines = [
         M.TURBO_NEXT_PICK % (rel, int(writers) + i + 1, cap, _first_box_text(root, rel))
         for i, rel in enumerate(state.turbo_picks)
     ]
+    if local:
+        return M.V_TURBO_NEXT_LOCAL % {
+            "branch": state.branch,
+            "free": max(0, cap - int(writers)),
+            "cap": cap,
+            "picks": "\n".join(lines),
+            "finished": state.finished,
+            "batch": state.batch_size,
+        }
     return M.V_TURBO_NEXT % {
         "pr": state.pr,
         "free": max(0, cap - int(writers)),
@@ -4252,8 +4321,35 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
     except Exception:  # noqa: BLE001 -- advisory: a broken reminder read is silence, never a failed stop
         pass
+    #   backup-push     a no-PR local batch whose oldest unpushed commit is older than `backup_push_h` hours (agent/plans/PLAN-turbo-local-first.md D4).
+    # While a local batch fills, receipt-behind is silent: no push is due until the batch completes (D4).
     try:
-        _rb = wl_loopspeed.receipt_behind(root)
+        _lb_open = local_batch_open(_loop, root)
+    except Exception:  # noqa: BLE001 -- advisory: an unreadable batch reads as no batch
+        _lb_open = False
+    try:
+        _bp = (
+            wl_loopspeed.backup_push_due(
+                root, int(getattr(_loop, "backup_push_h", 0) or 0), branch=_loop.branch
+            )
+            if local_batch(_loop)
+            else None
+        )
+        if _bp:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "backup-push",
+                M.N_BACKUP_PUSH % _bp,
+                1,
+                refresh_min=60,
+                on_change=False,
+            )
+    except Exception:  # noqa: BLE001 -- advisory: a broken read is silence
+        pass
+    try:
+        _rb = None if _lb_open else wl_loopspeed.receipt_behind(root)
         if _rb:
             outq_add(
                 worklist,
@@ -4424,11 +4520,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         _prf_log = wl_roundlog.roundlog_path(projects_dir, _prf_branch) if projects_dir else None
         # Under turbo the finish line is offered only once the batch is ready (agent/plans/PLAN-stop-hook-turbo.md D8): every plan of the set finished and `batch_size` of them done, or no queued plan left to take. Turbo off: always.
         _prf_batch = (
-            _loop is None
-            or not _loop.turbo
-            or wl_prscope.batch_ready(
-                _loop, not any(wl_planenforce.first_box(root, rel) for rel in _loop.plans)
-            )
+            _loop is None or not _loop.turbo or live_batch_ready(_loop, _set_finished(_loop, root))
         )
         if _prf_batch and _prf_num and _prf_branch and _prf_log is not None and _prf_log.is_file():
             _prf_green = cistate == "ok"
@@ -4493,7 +4585,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     if _on_loop:
         try:
             _ln_text, _ln_block = loop_next_text(
-                _loop, root, state_doc, any(k == "pr-finish" for k, _a, _t in violations)
+                _loop, root, state_doc, any(k == "pr-finish" for k, _a, _t in violations), me=me8
             )
             if _ln_text and _ln_block and not live_bg and cistate != "pending":
                 vadd("loop-next", False, _ln_text)
@@ -5659,6 +5751,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 fixset_instance=(
                     (str(root), list(reg_ids)) if reg_fixset_provenance == "diff-tree" else None
                 ),
+                local_batch=_judge_local_batch(_loop, root),
             )
         if err is not None:
             # FAIL CLOSED, by operator instruction. A judge that cannot answer must not become the way out.

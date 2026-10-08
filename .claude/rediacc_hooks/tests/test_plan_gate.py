@@ -1087,3 +1087,34 @@ def test_tip_readers_see_the_pushed_tip_and_queue_head_still_sees_the_working_tr
     # The Stop hook's readers are the working tree's, unchanged.
     assert plan_gate.queue_head(root) == "agent/plans/PLAN-local.md"
     assert plan_gate.queue(root)[0] == "agent/plans/PLAN-local.md"
+
+
+# ---- LF-W1 of agent/plans/PLAN-turbo-local-first.md: the batch body and the local-first defaults ----
+
+
+def test_batch_body_names_the_queue_head_and_every_named_plan(tmp_path, monkeypatch):
+    monkeypatch.setenv("TMPDIR", str(tmp_path / "tmp"))
+    (tmp_path / "tmp").mkdir()
+    root = _turbo_root(tmp_path, {n: _xplan() for n in "abc"}, ["a", "b", "c"])
+    # CONTROL: nothing named yet is the head alone, the write-once link.
+    assert plan_gate.batch_body(root, "1008-1") == "Plan: %s\n" % _t("a")
+    plan_gate.record_turbo_named(root, "1008-1", [_t("c"), _t("a")])
+    plan_gate.record_turbo_named(root, "1008-2", [_t("b")])
+    body = plan_gate.batch_body(root, "1008-1")
+    assert body == "Plan: %s, %s\n" % (_t("a"), _t("c"))
+    assert plan_gate.body_plans(body) == [_t("a"), _t("c")]
+    # Another branch's record stays out of this branch's body.
+    assert plan_gate.body_plans(plan_gate.batch_body(root, "1008-2")) == [_t("a"), _t("b")]
+    # No head and nothing named is no body at all.
+    (tmp_path / "agent" / "plans" / "QUEUE.md").write_text("# Plan queue\n", encoding="utf-8")
+    assert plan_gate.batch_body(root, "1008-9") == ""
+
+
+def test_the_fail_safe_settings_carry_the_local_first_defaults():
+    got = plan_gate._default_settings()
+    assert (got.turbo_push, got.backup_push_h) == ("batch-end", 4)
+    pq = plan_gate._planqueue()
+    assert (got.turbo_push, got.backup_push_h) == (
+        pq.Settings().turbo_push,
+        pq.Settings().backup_push_h,
+    )

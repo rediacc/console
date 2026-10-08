@@ -41,10 +41,12 @@ def block(body: str) -> str:
 ALL_KEYS = (
     "stop_hook",
     "turbo",
+    "turbo_push",
     "batch_size",
     "plan_concurrency",
     "writer_cap",
     "commit_remind_min",
+    "backup_push_h",
     "cadence",
     "agent_hint",
     "agent_pushback",
@@ -110,6 +112,13 @@ def test_an_unknown_key_is_a_problem_and_the_rest_still_parse():
         "batch_size: 1.5",
         "writer_cap: 0",
         "judge: ON",
+        "turbo_push: batch_end",
+        "turbo_push: PR",
+        "turbo_push: on",
+        "turbo_push:",
+        "backup_push_h: -1",
+        "backup_push_h: 2.5",
+        "backup_push_h: four",
     ],
 )
 def test_a_bad_value_falls_back_to_that_keys_default(line):
@@ -119,6 +128,29 @@ def test_a_bad_value_falls_back_to_that_keys_default(line):
     assert key in problems[0], problems
     assert getattr(got, key) == getattr(PQ.Settings(), key)
     assert got.cadence is False  # the rest still parses
+
+
+def test_lf7_turbo_push_and_backup_push_h_parse_render_and_default():
+    """LF7 of agent/plans/PLAN-turbo-local-first.md: the two local-first keys parse, keep their notes, render in the mode line in SETTINGS_KEYS order, and default to batch-end and 4 hours."""
+    assert (PQ.Settings().turbo_push, PQ.Settings().backup_push_h) == ("batch-end", 4)
+    for push, hours in (("pr", "0"), ("batch-end", "12")):
+        got, problems = PQ.settings(
+            block("turbo: on\nturbo_push: %s -- why\nbackup_push_h: %s" % (push, hours))
+        )
+        assert problems == []
+        assert (got.turbo_push, got.backup_push_h) == (push, int(hours))
+        assert got.notes == {"turbo_push": "why"}
+        line = PQ.mode_line(got)
+        assert "turbo on; turbo_push %s; batch_size 1;" % push in line, line
+        assert "commit_remind_min 15; backup_push_h %s; cadence on" % hours in line, line
+    # 0 is a value for backup_push_h (the advisory is off) and still a typo for every other integer key.
+    assert PQ.settings(block("backup_push_h: 0"))[1] == []
+    assert PQ.settings(block("writer_cap: 0"))[1] != []
+    # The writer accepts what the reader accepts and refuses what it refuses.
+    new = PQ.set_settings(block("turbo: on"), {"turbo_push": "pr", "backup_push_h": "0"})
+    assert (PQ.settings(new)[0].turbo_push, PQ.settings(new)[0].backup_push_h) == ("pr", 0)
+    with pytest.raises(ValueError, match="turbo_push"):
+        PQ.set_settings(block("turbo: on"), {"turbo_push": "later"})
 
 
 def test_a_duplicate_key_falls_back_to_the_default():
@@ -514,7 +546,7 @@ def test_inflight_turbo_on_shows_the_switch_batch_and_a_turbo_claim():
     text = rendered(inf)
     assert_mode_matches(text, settings)
     body = PQ.inflight_text(text)
-    assert "turbo on; batch_size 3; plan_concurrency 5; writer_cap 15" in body
+    assert "turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15" in body
     assert (
         "  - agent/plans/PLAN-two.md -- 0 of 3 boxes ticked, a turbo batch claim on the `Plan:` line"
         in body

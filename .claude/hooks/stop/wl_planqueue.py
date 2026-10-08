@@ -83,15 +83,21 @@ def ordered(text: str) -> list[str]:
 SETTINGS_HEADING = "## Settings"
 SETTINGS_FENCE = "stop-hook"
 BOOL_KEYS = ("stop_hook", "turbo", "cadence", "agent_hint", "agent_pushback", "judge")
-INT_KEYS = ("batch_size", "plan_concurrency", "writer_cap", "commit_remind_min")
+INT_KEYS = ("batch_size", "plan_concurrency", "writer_cap", "commit_remind_min", "backup_push_h")
+# Integer keys for which 0 is a value (it turns the feature off) rather than a typo.
+ZERO_OK_KEYS = ("backup_push_h",)
+# Keys whose value is one word from a fixed set (agent/plans/PLAN-turbo-local-first.md LF-W1).
+CHOICE_KEYS = {"turbo_push": ("batch-end", "pr")}
 # The render order of a new block.
 SETTINGS_KEYS = (
     "stop_hook",
     "turbo",
+    "turbo_push",
     "batch_size",
     "plan_concurrency",
     "writer_cap",
     "commit_remind_min",
+    "backup_push_h",
     "cadence",
     "agent_hint",
     "agent_pushback",
@@ -108,11 +114,15 @@ class Settings:
 
     stop_hook: bool = True
     turbo: bool = False
+    # Under turbo, when the batch is pushed (agent/plans/PLAN-turbo-local-first.md): `batch-end` holds every commit locally until the batch completes, then pushes and opens the PR once; `pr` is the earlier behaviour, a PR open while the batch fills. Read only when turbo is on.
+    turbo_push: str = "batch-end"
     batch_size: int = 1
     plan_concurrency: int = 1
     writer_cap: int = 4
     # Minutes without a commit, with this session's own edits still uncommitted, before the commit reminder speaks (PLAN-fast-loop.md Part 2). A reminder, never a block.
     commit_remind_min: int = 15
+    # Hours the oldest unpushed commit may age before the hook advises a backup push with no PR (PLAN-turbo-local-first.md D4); 0 turns the advisory off.
+    backup_push_h: int = 4
     cadence: bool = True
     agent_hint: bool = True
     agent_pushback: bool = True
@@ -131,9 +141,14 @@ def _value(key: str, raw: str):
             raise ValueError("%s: expected on|off, got %r" % (key, raw))
         return raw == "on"
     if key in INT_KEYS:
-        if not re.fullmatch(r"[0-9]+", raw) or int(raw) < 1:
-            raise ValueError("%s: expected an integer >= 1, got %r" % (key, raw))
+        floor = 0 if key in ZERO_OK_KEYS else 1
+        if not re.fullmatch(r"[0-9]+", raw) or int(raw) < floor:
+            raise ValueError("%s: expected an integer >= %d, got %r" % (key, floor, raw))
         return int(raw)
+    if key in CHOICE_KEYS:
+        if raw not in CHOICE_KEYS[key]:
+            raise ValueError("%s: expected %s, got %r" % (key, "|".join(CHOICE_KEYS[key]), raw))
+        return raw
     raise ValueError("unknown key %r (known: %s)" % (key, ", ".join(SETTINGS_KEYS)))
 
 

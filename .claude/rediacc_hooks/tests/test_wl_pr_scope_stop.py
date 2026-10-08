@@ -576,7 +576,7 @@ def test_inflight_turbo_on_shows_turbo_and_the_named_picks(wl):  # noqa: F811
     _own, one, two = LN.turbo_world(wl)
     LN.stop(wl)
     body = inflight_of(wl)
-    assert "turbo on; batch_size 2; plan_concurrency 9; writer_cap 4" in body, body
+    assert "turbo on; turbo_push pr; batch_size 2; plan_concurrency 9; writer_cap 4" in body, body
     assert mode_ok(wl), body
     for rel in (one, two):
         assert "  - %s -- 0 of 2 boxes ticked, a turbo pick named by the Stop hook" % rel in body, (

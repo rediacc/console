@@ -810,8 +810,11 @@ def run_judge(
     fixset_provenance=None,
     transcript=None,
     fixset_instance=None,
+    local_batch=None,
 ):
     """(verdict_dict, error_string). Exactly one is non-None.
+
+    `local_batch` is `{"finished": k, "batch": n}` while a turbo batch fills on a no-PR branch (agent/plans/PLAN-turbo-local-first.md D6), else None: the prompt then carries M.JUDGE_LOCAL_BATCH and the sanitiser also strips an order to open a PR (LOCAL_BATCH_ORDERS).
 
     `transcript` is the lead's transcript path: an outstanding sweep or proof demand it already answers is discharged before the prompt is built (wl_classsweep.discharge_if_evidenced, wl_proofcheck.discharge_if_evidenced).
 
@@ -871,6 +874,12 @@ def run_judge(
         "citations": citations or "  (none cited)",
         "traps": "\n".join("  - " + h for h in (traps or [])) or "  (none recorded)",
     } + (extra or "")
+    if local_batch:
+        # After `extra`, never inside it: is_fix_stop and judge_schema_for read `extra`, and this paragraph asks for no schema field.
+        prompt += M.JUDGE_LOCAL_BATCH % {
+            "finished": int(local_batch.get("finished") or 0),
+            "batch": int(local_batch.get("batch") or 1),
+        }
     env = dict(os.environ)
     # THE RECURSION GUARD. `claude -p` fires this very hook; --settings does not suppress it. Without this line the hook forks itself forever.
     env["STOPHOOK_CHILD"] = "1"
@@ -1002,7 +1011,7 @@ def run_judge(
             ]
     if not fired:
         out = settle_wait_only_continue(out)
-    return sanitize_next_action(out), None
+    return sanitize_next_action(out, local_batch=bool(local_batch)), None
 
 
 # A `continue` whose ONLY order is to wait contradicts itself: waiting on background work is what a legitimate stop does, and the harness wakes the session when that work exits. Seen 2026-10-05: verdict "continue", reason "Stop gate confirms pure background wait is legitimate; wake timer armed", next_action "Await worker output or timer expiry", which blocked a stop the judge's own reason allowed. Applied only when no rule placed an order this stop (a rule's order is real work and must survive), and only on the model's own next_action.
@@ -1044,8 +1053,15 @@ FORBIDDEN_ORDERS = (
 DS.check_catalog(FORBIDDEN_ORDERS)
 
 
-def sanitize_next_action(out):
-    """Strip an operator-only directive from a judge verdict, in place.
+# The orders a filling turbo batch forbids (agent/plans/PLAN-turbo-local-first.md D6): the PR opens once, when the batch completes, and the hook's own LOOP NEXT block says when. Applied only while `local_batch` is set, so under `turbo_push: pr` (and turbo off) "open the draft PR" stays a legitimate next action.
+LOCAL_BATCH_ORDERS = (
+    (re.compile(r"\bgh\s+pr\s+create\b", re.IGNORECASE), "opening a PR"),
+    (re.compile(r"\bopen\s+(?:a|the)\s+(?:draft\s+)?PR\b", re.IGNORECASE), "opening a PR"),
+)
+
+
+def sanitize_next_action(out, local_batch=False):
+    """Strip an operator-only directive from a judge verdict, in place, and with `local_batch` an order to open a PR before the batch completes (LOCAL_BATCH_ORDERS).
 
     Matches on the ORDER, not on politeness: "merge 563" and "you should probably merge 563" are the same instruction. Deliberately narrow about `release`, since "release notes" and "the release channel" are ordinary nouns a legitimate next action may name, while "cut the release" is an order.
     """
@@ -1056,4 +1072,9 @@ def sanitize_next_action(out):
         if pattern.search(action):
             out["next_action"] = M.V_JUDGE_ORDER_REJECTED % (label, action[:120])
             return out
+    if local_batch:
+        for pattern, _label in LOCAL_BATCH_ORDERS:
+            if pattern.search(action):
+                out["next_action"] = M.V_JUDGE_BATCH_ORDER_REJECTED % (action[:120],)
+                return out
     return out
