@@ -5164,19 +5164,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Quality-gate unit tests',
     },
   },
-  {
-    id: 'gate-test:media-r2',
-    run: '.ci/scripts/test/gates/test-media-r2.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-media-r2.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-gate-tests',
-      step: 'Quality-gate unit tests',
-    },
-  },
+  // RETIRED WITH ITS SUBJECT (section 12 U2): gate-test:media-r2 ran .ci/scripts/test/gates/test-media-r2.sh, deleted with the then-dead .ci/media/verify.sh. Its pytest port `.ci/rediacc_ci/tests/gates/test_gate_media_r2.py` is collected by check:ci-pytest and answers its frozen golden.
   {
     id: 'gate-test:runner-advice',
     run: '.ci/scripts/test/gates/test-runner-advice.sh',

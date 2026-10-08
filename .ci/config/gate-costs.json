@@ -2272,14 +2272,6 @@
       "peak_rss_mb": 40,
       "rank": 45
     },
-    "gate-test:media-r2": {
-      "cpu_s": 0.456,
-      "wall_s": 0.443,
-      "eff_cores": 1.03,
-      "capped": false,
-      "peak_rss_mb": 12,
-      "rank": 114
-    },
     "gate-test:runner-advice": {
       "cpu_s": 1.544,
       "wall_s": 1.53,
