@@ -36,10 +36,9 @@ finds it.
 THIS GATE'S OWN TEST WAS IN THE BASELINE, and that is worth stating rather than hoping nobody notices. `.ci/scripts/test/gates/test-language-policy.sh` was bash, in a tree this gate says should be Python, and it was written on the same day. It was there because the battery that runs gate tests in CI discovers `test-*.sh` by glob
 (`.ci/rediacc_ci/battery.py`, whose `DEFAULT_PATTERN` and `discover()` are the two halves of it), so a Python gate test would not have run in CI at all -- and a test that does not run is worth less than one written in the wrong language. It drained in W7 P5 when `test_gate_language_policy.py` took over under `check:ci-pytest`, and it was deliberately never allowlisted.
 
-THE BLOCKER VALIDATOR IS CALLED, NOT REIMPLEMENTED. The rule "a BLOCKER reason must be substantive" already has three implementations in this tree and `.ci/scripts/test/gates/test-blocker-golden-corpus.sh` exists to hold them to one behaviour while they collapse into one. A fourth, in a fourth language, would make that collapse harder for no gain, so this gate shells out to the
-canonical `.ci/scripts/lib/blocker-validator.sh` and prints what it says.
+THE BLOCKER VALIDATOR IS CALLED, NOT REIMPLEMENTED. The rule "a BLOCKER reason must be substantive" lives in `rediacc_ci.core.allowlist`, and this gate calls `rediacc_ci.core.blocker_validator` and prints what it says.
 
-Exit 0 clean, 1 on a finding or a vacuous corpus, 2 on a failed control, 77 when the gate CANNOT RUN (no git, no bash, no validator). 77 is never a verdict.
+Exit 0 clean, 1 on a finding or a vacuous corpus, 2 on a failed control, 77 when the gate CANNOT RUN (no git). 77 is never a verdict.
 
 ---- gate ----
 step: Language policy
@@ -52,6 +51,8 @@ why: ruling 7 makes .ci, .claude and the scripts/{ops,drills,dev} trees Python; 
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import os
 import pathlib
@@ -61,7 +62,7 @@ import tempfile
 
 import _cipath  # noqa: F401
 from rediacc_ci.controls import Controls, git_isolated
-from rediacc_ci.core import allowlist
+from rediacc_ci.core import allowlist, blocker_validator
 from rediacc_ci.policy_paths import policy_path
 
 ROOT = pathlib.Path(
@@ -75,17 +76,6 @@ BASELINE = pathlib.Path(
 ALLOWLIST = pathlib.Path(
     os.environ.get("LANGUAGE_POLICY_ALLOWLIST") or policy_path(".language-policy-allowlist", ROOT)
 )
-# ANCHORED ON THIS FILE, NOT ON `ROOT`, and the difference is the whole point of the seam. `ROOT` is the tree being JUDGED and a test points it at a fixture; the validator is part of the INSTRUMENT and travels with the gate. Written the other way it read the fixture's non-existent copy and answered every fixture run with exit 77, which is a cannot-run that is really a bug in the
-# gate. Caught 2026-09-07 by the gate test's very first case.
-VALIDATOR = pathlib.Path(
-    os.environ.get("LANGUAGE_POLICY_VALIDATOR")
-    or pathlib.Path(__file__).resolve().parents[3]
-    / ".ci"
-    / "scripts"
-    / "lib"
-    / "blocker-validator.sh"
-)
-
 # The trees ruling 7 assigns to Python. Not configurable: a gate whose scope can be narrowed by an environment variable has a scope nobody can state.
 #
 # WIDENED 2026-09-21 BY OPERATOR RULING, and a widening is its own wave rather than a drain. `scripts/ops/`, `scripts/drills/` and `scripts/dev/` hold 17 tracked bash files (7,244 lines) that source six libraries under `.ci/scripts/lib/`, `.ci/lib/` and `.ci/scripts/test/lib/`. While those callers sat outside the corpus the libraries they source could not retire: porting a
@@ -249,55 +239,21 @@ def parse_allowlist(text: str) -> tuple[list[tuple[str, str, str]], list[str]]:
 
 
 def blocker_quality_problem(entry: str, reason: str) -> str | None:
-    """Ask the CANONICAL validator whether this reason is substantive.
+    """Ask the canonical validator, `rediacc_ci.core.blocker_validator`, whether this reason is substantive.
 
-    Shelled out on purpose. `.ci/scripts/lib/blocker-validator.sh` holds the 30-character floor and the banned-phrase list, its TypeScript twin holds the same rule, and .ci/scripts/test/gates/test-blocker-golden-corpus.sh exists to keep them agreeing while they collapse into one implementation. A fourth copy, in Python, would be one more thing for that collapse to reconcile and one
-    more place for the banned list to lose a phrase without anything breaking.
+    Called in process rather than reimplemented: the 30-character floor and the banned-phrase tables live in `rediacc_ci.core.allowlist`, the TypeScript twin `scripts/lib/blocker-validator.ts` holds the same rule, and `.ci/rediacc_ci/tests/gates/test_gate_blocker_golden_corpus.py` keeps them agreeing. The validator writes its message to the two standard streams, so both are captured and returned as one text.
     """
     if not reason:
         return (
             "%s is missing a '# BLOCKER: <reason>' line above it. An exemption with no "
             "stated reason is indistinguishable from one nobody decided on." % entry
         )
-    if not VALIDATOR.is_file():
-        raise CannotRun(
-            "the canonical BLOCKER validator is missing at %s, so no exemption reason in\n"
-            "  %s can be judged. Restore the file; do not lower the bar to get past this."
-            % (VALIDATOR, ALLOWLIST.name)
-        )
-    try:
-        proc = subprocess.run(
-            [
-                "bash",
-                "-c",
-                'source "$1"; validate_blocker_quality "$2" "$3" "$4"',
-                "bash",
-                str(VALIDATOR),
-                entry,
-                reason,
-                str(ALLOWLIST),
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except FileNotFoundError as exc:
-        raise CannotRun(
-            "bash is not on PATH, so the canonical BLOCKER validator\n"
-            "  (.ci/scripts/lib/blocker-validator.sh) cannot be consulted and no exemption\n"
-            "  reason can be judged. Install bash, or run this gate where bash exists."
-        ) from exc
-    # Exit 2 is the library refusing to LOAD (its bash 4.3 precondition), which is a cannot-run rather than a verdict about the reason. Exit 1 is a real rejection.
-    if proc.returncode not in {0, 1}:
-        raise CannotRun(
-            "the BLOCKER validator exited %d rather than judging the reason for %s.\n"
-            "  Its bash 4.3 precondition is the usual cause; a validator that fails to\n"
-            "  load parses every allowlist as EMPTY, which is why this is not a pass.\n"
-            "  It said: %s" % (proc.returncode, entry, (proc.stdout + proc.stderr).strip())
-        )
-    if proc.returncode == 0:
+    captured = io.StringIO()
+    with contextlib.redirect_stdout(captured), contextlib.redirect_stderr(captured):
+        accepted = blocker_validator.validate_blocker_quality(entry, reason, str(ALLOWLIST))
+    if accepted:
         return None
-    return (proc.stdout + proc.stderr).strip()
+    return captured.getvalue().strip()
 
 
 def exemption_for(rel: str, entries: list[tuple[str, str, str]]) -> tuple[str, str] | None:

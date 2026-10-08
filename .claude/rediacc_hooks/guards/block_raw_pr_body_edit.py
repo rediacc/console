@@ -7,7 +7,7 @@ THE SAME CLASS ALREADY BIT THIS REPO ONCE, one level down: .ci/scripts/autopilot
 hands.
 
 NOT BLOCKED, deliberately:
-  - the sanctioned tool itself, .ci/scripts/pr/sync-epic-block.sh, which
+  - the sanctioned tool itself, `python3 -m rediacc_ci.pr.sync_epic_block`, which
     strips and rebuilds only its own markers;
   - `gh pr create` whose body ALREADY carries the block, and `gh pr create`
     with no body flag at all -- create is the one call with no block to
@@ -82,7 +82,7 @@ Use the tool, which strips and rebuilds only its own markers and leaves your
 prose alone:
 
   worklist.py --publish <me> <branch>          # refresh the snapshot
-  .ci/scripts/pr/sync-epic-block.sh <pr> <branch>   # sync it into the PR
+  PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block <pr> <branch>   # sync it into the PR
 
 To change the narrative part of the description, keep EVERY marker in the body
 you write -- a body that already carries them all is not refused, because it
@@ -100,7 +100,7 @@ a path behind a shell variable is unreadable here and is refused, not trusted:
 """
 
 EDGE_CASES = [
-    ("the sanctioned tool", ".ci/scripts/pr/sync-epic-block.sh 42 0831-1"),
+    ("the sanctioned tool", "PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block 42 0831-1"),
     ("an edit with no body flag", "gh pr edit 42 --add-label ci"),
     ("an edit dropping every block", 'gh pr edit 42 --body "prose with no block at all"'),
     # The 2026-09-03 correction: the epic block ALONE is not enough.
@@ -251,7 +251,7 @@ def _slug(repo):
 def _blockless_repos(root):
     """The repos whose PR bodies carry NO generated block: this checkout's submodules.
 
-    Every generated section is written by console tooling into the CONSOLE PR: `worklist-epics` by sync-epic-block.sh from `agent/pr/<branch>.md`, which only the console tree has, and `pushed-head` by the post-bash refresh hook, which resolves the PR from the project root's own `gh repo view`. The autopilot's `autopilot-submodule-prs` block went with the autopilot (PLAN-remove-autopilot). So a
+    Every generated section is written by console tooling into the CONSOLE PR: `worklist-epics` by `rediacc_ci.pr.sync_epic_block` from `agent/pr/<branch>.md`, which only the console tree has, and `pushed-head` by the post-bash refresh hook, which resolves the PR from the project root's own `gh repo view`. The autopilot's `autopilot-submodule-prs` block went with the autopilot (PLAN-remove-autopilot). So a
     submodule PR's body is ordinary prose, and a whole-body write to it is not the hazard this guard exists for. Measured 2026-09-30: `gh api repos/rediacc/renet/pulls/113 -X PATCH -F body=@<file>` was refused for dropping blocks renet#113 never had.
 
     A DENY-LIST, NOT AN ALLOW-LIST, and deliberately so: a repo this cannot name (`repos/{owner}/{repo}/...`, a fork, an unreadable `.gitmodules`) keeps the guard, because the failure the other way is a silently destroyed console block. Derived from `.gitmodules` rather than typed here, so a new submodule is covered the day it is added.
@@ -599,7 +599,7 @@ def run(ev):
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
 
     # The sanctioned tool is allowed to do exactly what it exists to do.
-    if hookio.grep_q("sync-epic-block.sh", cmd, fixed=True):
+    if hookio.grep_q("rediacc_ci.pr.sync_epic_block", cmd, fixed=True):
         return hookio.ALLOW
 
     # ORDER MATTERS: the edit arm runs FIRST. One command can do both, and the create arm below exits 0 on a body that already carries the block -- so with create checked first, `gh pr create --fill && gh pr edit N --body-file b.md` would take that exit and never reach the edit refusal, which applies whether or not the block is there. THE FLAG BELONGS TO ITS OWN INVOCATION, and
@@ -738,7 +738,7 @@ def run(ev):
             "\n"
             "  .claude/hooks/stop/worklist.py --publish <me> <branch>   # refresh the snapshot\n"
             '  gh pr create --draft --title "..." --body "..."          # your prose\n'
-            "  .ci/scripts/pr/sync-epic-block.sh <pr> <branch>          # add the block\n"
+            "  PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block <pr> <branch>   # add the block\n"
             "\n"
             "A body that already contains the block is NOT refused, so building the body\n"
             "from the snapshot first works too.\n" % BEGIN_MARKER

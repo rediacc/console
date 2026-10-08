@@ -1259,7 +1259,7 @@ def judge(corpus: Corpus, allowed: dict[str, str], debt: dict[str, str]) -> Shel
             "VACUOUS: zero workflow run: blocks read from %s; the YAML reader has rotted."
             % ", ".join(WORKFLOW_GLOBS)
         )
-    # THE DETECTOR FLOORS read the dead twins too: they prove the detectors still SEE the tree, not that the live tree holds a given shape. The tree's one live shell GitHub write went when sync-epic-block.sh became an exec of its Python port, so a live-only floor could no longer pass.
+    # THE DETECTOR FLOORS read the dead twins too: they prove the detectors still SEE the tree, not that the live tree holds a given shape. The tree's one live shell GitHub write went when the epic-block sync became a Python module, so a live-only floor could no longer pass.
     seen = [*sites, *dead]
     if corpus.scripts and blocks:
         if not any(s.tool == "curl" for s in seen):

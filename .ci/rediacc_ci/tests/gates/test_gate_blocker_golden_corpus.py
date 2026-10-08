@@ -256,7 +256,8 @@ def test_three_way_reproduction(gate, tmp_path):
     if problems:
         gate.log_fail(
             "the golden corpus no longer reproduces. If the change was deliberate, "
-            "re-record with: bash %s --emit\n%s" % (BASH_TWIN, "\n".join(problems))
+            "edit the recorded CORPUS rows in %s\n%s"
+            % (paths.relative_to_root(pathlib.Path(__file__)), "\n".join(problems))
         )
     # Nothing may land in the UNCLASSIFIED bucket: that is a rejection whose message stopped naming its own reason, which is how a validator turns into something an author cannot act on.
     if any("UNCLASSIFIED" in column for column in columns):

@@ -203,7 +203,7 @@ STATIC: list[Case] = [
     ),
     case(
         "check 0 guards/block_raw_pr_body_edit.py",
-        bash_json(".ci/scripts/pr/sync-epic-block.sh 42 0826-1"),
+        bash_json("PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block 42 0826-1"),
         "raw-pr-body(tool passes)",
     ),
     # The edit arm requires EVERY generated marker, not just the epic one. This case asserted the opposite for a few hours on 2026-09-03 and was WRONG: the edit form writes the WHOLE body, and these PR bodies carry a second machine-written section, pushed-head. A body carrying only the epic block therefore passes a one-marker check and silently destroys the other section -- the

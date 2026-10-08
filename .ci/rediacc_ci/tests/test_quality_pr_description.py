@@ -29,7 +29,7 @@ def test_the_advice_block_still_protects_the_generated_sections():
     assert "WITHOUT dropping its generated sections" in text
     assert "<!-- worklist-epics -->" in text
     assert "<!-- pushed-head -->" in text
-    assert "sync-epic-block.sh 553" in text
+    assert "rediacc_ci.pr.sync_epic_block 553" in text
     assert '--body "new body"' not in text
     assert "pr edit --body" not in text
 

@@ -5,9 +5,9 @@
 THE BEHAVIOUR THAT MATTERS IS THE ABSENT-CREDENTIALS ONE. Regenerating narration costs real TTS GPU time, which is why this cache exists at all; but a developer without R2 credentials must still be able to run the pipeline, so both functions WARN and RETURN 0 rather than failing. Get that backwards and a fresh checkout either cannot generate tutorials at all, or silently re-pays
 for every mp3.
 
-Both directions are driven here with aws, curl and the network absent, and the sync scripts replaced by RECORDERS at the fixture root. No bucket is touched and no credential is read: the three CLOUDFLARE_R2_MEDIA_* variables are set to obvious placeholders in the credentials-present case.
+Both directions are driven here with aws, curl and the network absent, and the sync modules replaced by RECORDERS at the fixture root. No bucket is touched and no credential is read: the three CLOUDFLARE_R2_MEDIA_* variables are set to obvious placeholders in the credentials-present case.
 
-WHY THE SEAM IS A FIXTURE TREE AND NOT A FAKE BINARY. The two functions call the sync scripts by ABSOLUTE path under `$ROOT_DIR`, not through PATH, so shadowing a name on PATH would shadow nothing. The recorder is written into `<fixture>/.ci/scripts/deploy/` and `ROOT_DIR` points at the fixture.
+WHY THE SEAM IS A FIXTURE TREE AND NOT A FAKE BINARY. The two functions run the sync modules with `PYTHONPATH=$ROOT_DIR/.ci`, not through a PATH name, so shadowing a binary would shadow nothing. The recorders are written as modules into `<fixture>/.ci/rediacc_ci/deploy/` and `ROOT_DIR` points at the fixture.
 
 THE OWNERSHIP ASSERTION replaced a byte-identity check against run.sh's copy. run.sh has no copy now, so the question became ownership: exactly one file defines each name, it is this module, run.sh and media.sh define neither, and media-entry.sh resolves both names here.
 
@@ -17,7 +17,6 @@ per-call ARGUMENT here rather than the environment variable it is in bash.
 """
 
 import pathlib
-import stat
 
 from rediacc_ci.tests.gates import harness, media_verify
 
@@ -28,7 +27,7 @@ MOVED = ("www_tutorial_audio_restore", "www_tutorial_audio_upload")
 
 # `+uname` is REQUIRED: common.sh runs `CI_OS="$(detect_os)"` at source time and
 # detect_os shells out to uname. `+cat` matches the twin's spec.
-BASE_SPEC = "+cat +uname"
+BASE_SPEC = "+cat +uname +python3"
 
 CREDENTIALS = (
     "export CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=placeholder-key\n"
@@ -43,20 +42,24 @@ NO_CREDENTIALS = (
 
 
 def stage_sync_scripts(root: pathlib.Path, code: int = 0) -> pathlib.Path:
-    """Replace both sync scripts with recorders under the FIXTURE root.
+    """Replace both sync modules with recorders under the FIXTURE root.
 
     Returns the path of the call log. Truncated on every call, so a case reads only its own invocations.
     """
-    deploy = root / ".ci" / "scripts" / "deploy"
+    package = root / ".ci" / "rediacc_ci"
+    deploy = package / "deploy"
     deploy.mkdir(parents=True, exist_ok=True)
+    (package / "__init__.py").write_text("", encoding="utf-8")
+    (deploy / "__init__.py").write_text("", encoding="utf-8")
     calls = root / "sync-calls"
-    for name in ("sync-media-from-r2.sh", "sync-media-to-r2.sh"):
-        target = deploy / name
-        target.write_text(
-            '#!/bin/bash\nprintf "%%s\\n" "%s $*" >>"%s"\nexit %d\n' % (name, calls, code),
+    for name in ("sync_media_from_r2", "sync_media_to_r2"):
+        (deploy / (name + ".py")).write_text(
+            "import sys\n"
+            "with open(%r, 'a', encoding='utf-8') as fh:\n"
+            "    fh.write('%s ' + ' '.join(sys.argv[1:]) + '\\n')\n"
+            "sys.exit(%d)\n" % (str(calls), name, code),
             encoding="utf-8",
         )
-        target.chmod(target.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     calls.write_text("", encoding="utf-8")
     return calls
 
@@ -95,8 +98,8 @@ def test_a_planted_mutation_is_visible_to_the_behaviour_cases(gate):
             media_verify.media_assert_mutation_swapped(
                 gate,
                 calls.read_text(encoding="utf-8"),
-                "sync-media-from-r2.sh --audio-only",
-                "sync-media-from-r2.sh --all",
+                "sync_media_from_r2 --audio-only",
+                "sync_media_from_r2 --all",
                 "flag",
             )
     gate.log_pass(
@@ -141,12 +144,12 @@ def test_the_cache_is_optional_in_both_directions(gate):
             recorded = calls.read_text(encoding="utf-8")
             gate.assert_contains(
                 recorded,
-                "sync-media-from-r2.sh --audio-only",
+                "sync_media_from_r2 --audio-only",
                 "restore pulls only the audio prefix",
             )
             gate.assert_contains(
                 recorded,
-                "sync-media-to-r2.sh --audio-only",
+                "sync_media_to_r2 --audio-only",
                 "upload pushes only the audio prefix",
             )
     gate.log_pass(
