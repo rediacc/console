@@ -118,6 +118,26 @@ def test_a_runner_variable_key_on_a_non_environment_mapping_is_still_unresolved(
     assert [s.origin for s in sorted(sites, key=lambda s: s.line)] == ["UNRESOLVED", "OUTSIDE"]
 
 
+def test_a_copy_of_the_environment_is_still_an_environment_receiver(tmp_path):
+    """Review 239e74cb.1: `os.environ.copy().get(...)` and `dict(os.environ).get(...)` read the environment; a copy of a plain dict does not."""
+    sites = scan(
+        tmp_path,
+        {
+            "g.py": "import os\n\n\ndef run(cfg):\n"
+            "    with open(os.environ.copy().get('GITHUB_OUTPUT'), 'a') as fh:\n        fh.write('x')\n"
+            "    with open(dict(os.environ).get('GITHUB_ENV'), 'a') as fh:\n        fh.write('x')\n"
+            "    with open(cfg.copy().get('GITHUB_OUTPUT'), 'a') as fh:\n        fh.write('x')\n\n\n"
+            "run({})\n"
+        },
+        "g.py",
+    )
+    assert [s.origin for s in sorted(sites, key=lambda s: s.line)] == [
+        "OUTSIDE",
+        "OUTSIDE",
+        "UNRESOLVED",
+    ]
+
+
 def test_scratch_is_ci_cache_only(tmp_path):
     sites = scan(
         tmp_path,

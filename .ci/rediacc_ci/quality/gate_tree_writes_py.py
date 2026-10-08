@@ -304,10 +304,19 @@ ENV_SEEDS.update(dict.fromkeys(RUNNER_FILE_VARS, OUTSIDE))
 
 
 def _env_receiver(func: ast.expr) -> bool:
-    """True when `func` is `<x>.get` and `<x>` is spelled like an environment mapping (`env`, `environ`, `os.environ`, `self.env`, `environment`)."""
+    """True when `func` is `<x>.get` and `<x>` is spelled like an environment mapping (`env`, `environ`, `os.environ`, `self.env`, `environment`).
+
+    A copy of one counts too: `os.environ.copy().get(...)` and `dict(os.environ).get(...)` read the same environment.
+    """
     if not isinstance(func, ast.Attribute):
         return False
     recv = func.value
+    if isinstance(recv, ast.Call):
+        if isinstance(recv.func, ast.Attribute) and recv.func.attr == "copy" and not recv.args:
+            return _env_receiver(ast.Attribute(value=recv.func.value, attr="get"))
+        if isinstance(recv.func, ast.Name) and recv.func.id == "dict" and len(recv.args) == 1:
+            return _env_receiver(ast.Attribute(value=recv.args[0], attr="get"))
+        return False
     name = (
         recv.id
         if isinstance(recv, ast.Name)
@@ -1563,7 +1572,8 @@ class Evaluator:
         # An INJECTED environment mapping (`def run(root, env)`, `env.get(...)`) is how a testable gate reads its environment. Only the runner FILE variables are trusted through an arbitrary receiver: their names mean nothing else, while `HOME` or `TMPDIR` on a dict that is not the environment could, so those keep the os.environ spelling.
         # The receiver is judged by its NAME only (the analyzer does not track which mapping a parameter holds): `env`, `environ`, `os.environ`, `self.env`, `environment` count, `cfg` or `data` do not, so a plain dict under a runner-variable key still falls through to UNRESOLVED.
         if (
-            last == "get"
+            isinstance(e.func, ast.Attribute)
+            and e.func.attr == "get"
             and _const_str(args[0] if args else None) in RUNNER_FILE_VARS
             and _env_receiver(e.func)
         ):
