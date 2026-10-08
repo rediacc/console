@@ -55,31 +55,32 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Focus: off.
 - Branch: 1008-1, no PR yet.
 - Plans on the PR (7):
-  - agent/plans/PLAN-retire-bash-oracles.md -- 7 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-retire-bash-oracles.md -- 8 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-gate-scheduling-learned.md -- 12 of 12 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-locale-techdiff-resync.md -- 5 of 5 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-cd-errors-in-ci.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-plan-dependencies.md -- 3 of 12 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-plan-dependencies.md -- 10 of 12 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-lessons-registry.md -- 0 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-- Work outside the PR's plans: none.
-- Writers: not counted at this refresh.
-- Leased items: 0.
+  - agent/plans/PLAN-lessons-registry.md -- 9 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+- Work outside the PR's plans (1 epic(s)):
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 187 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 5 live of writer_cap 15 (session d778be9d): worker:ae2ed7d6f3fa6c95a, worker:ae8a35da97dd56226, worker:aa6140e62cb70c0f4, worker:ad7685e8488e9e96f, worker:aee8925b0007520b0.
+- Leased items: 5: #1a4d4455 (worker:ad7685e8488e9e96f, d778be9d), #20752ce3 (worker:aa6140e62cb70c0f4, d778be9d), #6e54c2b9 (worker:aee8925b0007520b0, d778be9d), #e70faed1 (worker:ae2ed7d6f3fa6c95a, d778be9d), #ec00a9ad (worker:ae8a35da97dd56226, d778be9d).
 - Next plan: agent/plans/PLAN-deferred-findings-block-merge.md, Promoted entry 2; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 1 of 13 plans done, 120 of 172 boxes done (69%).
+Promoted: 2 of 13 plans done, 123 of 172 boxes done (71%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
-| 1 | PLAN-retire-bash-oracles.md | 8/15 | 7 open |
+| 1 | PLAN-retire-bash-oracles.md | 9/15 | 6 open |
 | 2 | PLAN-deferred-findings-block-merge.md | 16/17 | 1 open |
 | 3 | PLAN-ci-consolidation.md | 22/22 | done |
 | 4 | PLAN-config-team-scoping.md | 10/11 | 1 open |
-| 5 | PLAN-plan-dependencies.md | 10/12 | 2 open |
+| 5 | PLAN-plan-dependencies.md | 12/12 | done |
 | 6 | PLAN-remove-cross-session-messaging.md | 0/13 | 13 open |
 | 7 | PLAN-config-passkey-optional.md | 3/4 | 1 open |
 | 8 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
