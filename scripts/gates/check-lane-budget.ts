@@ -3448,6 +3448,32 @@ async function selftest(): Promise<number> {
       })(),
     },
     {
+      name: 'mergeLaneCapabilities accepts an identical job repeated across workflows (the renet-embed-assets stagers)',
+      ok: (() => {
+        const wf = (extra: string): string =>
+          `jobs:\n  stage-assets:\n    runs-on: ubuntu-latest\n    timeout-minutes: 10${extra}\n`;
+        try {
+          const m = mergeLaneCapabilities({ 'a.yml': wf(''), 'b.yml': wf('') });
+          return m.size === 1 && m.get('stage-assets')?.timeoutMinutes === 10;
+        } catch {
+          return false;
+        }
+      })(),
+    },
+    {
+      name: 'CONTROL: mergeLaneCapabilities throws when the same job id differs between workflows',
+      ok: (() => {
+        const wf = (timeout: number): string =>
+          `jobs:\n  stage-assets:\n    runs-on: ubuntu-latest\n    timeout-minutes: ${timeout}\n`;
+        try {
+          mergeLaneCapabilities({ 'a.yml': wf(10), 'b.yml': wf(20) });
+          return false;
+        } catch (e) {
+          return e instanceof Error && e.message.includes('"stage-assets"');
+        }
+      })(),
+    },
+    {
       name: 'CONTROL: the live rebalanceConstraints names both hand-kept rules (18/19 together, 06 off leg 1)',
       ok: (() => {
         const c = liveDurations.rebalanceConstraints ?? {};

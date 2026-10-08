@@ -316,13 +316,6 @@ const RESTORE_CONTROLS: {
     now: 'Flexera 2024 State of the Cloud Report',
     want: false,
   },
-  {
-    name: 'CONTROL: a line break smuggled into the sentinel gap is NOT exempt',
-    was: '\u27e60\u27e7 vs rakipler',
-    now: 'Rediacc\r vs rakipler',
-    en: 'How we stack up against other vendors',
-    want: false,
-  },
 ];
 
 /** Controls for the sentinel exemption, run with `--selftest` through the same function. */
@@ -381,6 +374,13 @@ const SENTINEL_CONTROLS: { name: string; was: string; now: string; en: string; w
     was: '1 플로팅 라이선스',
     now: '10 플로팅 라이선스',
     en: '1 Floating license',
+    want: false,
+  },
+  {
+    name: 'CONTROL: a line break smuggled into the sentinel gap is NOT exempt',
+    was: '\u27e60\u27e7 vs rakipler',
+    now: 'Rediacc\r vs rakipler',
+    en: 'How we stack up against other vendors',
     want: false,
   },
 ];
