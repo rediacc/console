@@ -665,7 +665,7 @@ def main(argv: list[str]) -> int:
             print("verify-rows needs a list path (used only in the message)", file=sys.stderr)
             return 2
         file = rest[0]
-        failures: list[str] = []
+        row_failures: list[str] = []
         for raw in sys.stdin.read().split("\n"):
             if raw == "":
                 continue
@@ -674,16 +674,16 @@ def main(argv: list[str]) -> int:
                 print("verify-rows: row %r carries no TAB separator" % raw, file=sys.stderr)
                 return 2
             if not reason:
-                failures.append(missing_reason(entry, file))
+                row_failures.append(missing_reason(entry, file))
                 continue
             rejection = validate_reason(entry, reason, file)
             if rejection is not None:
-                failures.append(rejection.message)
-        for message in failures:
+                row_failures.append(rejection.message)
+        for message in row_failures:
             lines = message.split("\n")
             sys.stdout.write("\x1e%d\n" % len(lines))
             sys.stdout.write("".join(line + "\n" for line in lines))
-        return 1 if failures else 0
+        return 1 if row_failures else 0
 
     if verb == "reason":
         if len(rest) < 3:
