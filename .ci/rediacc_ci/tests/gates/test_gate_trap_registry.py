@@ -27,6 +27,8 @@ import re
 import sys
 
 from rediacc_ci import paths
+from rediacc_ci.quality import plan_lifecycle
+from rediacc_ci.quality import trap_registry as registry_mod
 from rediacc_ci.tests.gates import harness
 
 # The real-tree case runs the subject seam-free, and every scan resolves pointers against the live manifest, dispatcher, hook suite and settings; reads need no group. See the docstring.
@@ -439,3 +441,161 @@ def test_a_guard_the_dispatcher_globs_is_live():
     assert registry.file_is_live(".claude/rediacc_hooks/guards/block_raw_ci_read.py")
     assert not registry.file_is_live(".claude/rediacc_hooks/guards/test-block_raw_ci_read.py")
     assert not registry.file_is_live(".claude/rediacc_hooks/guards/no_such_guard.py")
+
+
+# --------------------------------------------------------------------------- PLAN-lessons-registry L6: Documented-In anchors against the REAL documents. ---------------------------------------------------------------------------
+#
+# Each anchored document is COPIED into a scratch `TRAP_ANCHOR_ROOT` and mutated there, never in the shared tree, and the scan runs on the real corpus with the real resolvers. The two probe entries below are planted only when the corpus does not already carry them, so the cases run before the lead seeds TRAPS.md and keep running, against the seeded entry, after.
+
+WAKE_ID = "wake-timer-timeout-above-sleep"
+WAKE_PHRASE = "a `timeout` above its sleep"
+WAKE_PLANT = (
+    "## (gate-test plant) the wake timer's Bash timeout must exceed its sleep\n"
+    "Trap-Id: %s\n"
+    "Enforced-By: JUDGMENT-ONLY\n"
+    "Residue: nothing reads the Bash call's timeout.\n"
+    "Documented-In: text:CLAUDE.md %s\n" % (WAKE_ID, WAKE_PHRASE)
+)
+HEADING_ID = "gate-test-ci-quick-lane-heading"
+HEADING = "The pre-push lane (`npm run ci:quick`)"
+HEADING_PLANT = (
+    "## (gate-test plant) the ci:quick lane heading\n"
+    "Trap-Id: %s\n"
+    "Enforced-By: JUDGMENT-ONLY\n"
+    "Residue: a probe entry for the doc: anchor case.\n"
+    "Documented-In: doc:docs/agent-reference/ci-gates.md#%s\n" % (HEADING_ID, HEADING)
+)
+
+
+def anchored_corpus(gate) -> str:
+    """The real corpus, plus each probe entry it does not already carry."""
+    text = corpus_text(gate)
+    if "Trap-Id: %s\n" % WAKE_ID not in text:
+        text = text.rstrip("\n") + "\n\n" + WAKE_PLANT
+    if "Trap-Id: %s\n" % HEADING_ID not in text:
+        text = text.rstrip("\n") + "\n\n" + HEADING_PLANT
+    return text
+
+
+def anchor_targets(anchor: str) -> list[str]:
+    """The repo-relative documents one Documented-In value reads; [] for `trap:`."""
+    kind, _, rest = anchor.partition(":")
+    if kind == "text":
+        return [rest.split(" ", 1)[0]]
+    if kind == "doc":
+        return [rest.split("#", 1)[0]]
+    if kind == "box":
+        slug = rest.split("#", 1)[0]
+        return [
+            "%s/%s.md" % (folder, slug)
+            for folder in plan_lifecycle.PLAN_DIRS
+            if paths.from_root(*folder.split("/"), "%s.md" % slug).is_file()
+        ]
+    return []
+
+
+def anchor_world(gate, d) -> tuple:
+    """(corpus path, anchor root): every Documented-In target copied, by its repo-relative path.
+
+    Anti-vacuity on the copy: both probed documents must have been copied, or the green below would be a scan over nothing.
+    """
+    text = anchored_corpus(gate)
+    corpus = d / "TRAPS.md"
+    corpus.write_text(text, encoding="utf-8")
+    root = d / "anchors"
+    copied = set()
+    for entry in registry_mod.parse_corpus(text):
+        for _line, anchor in entry.documented_in:
+            for rel in anchor_targets(anchor):
+                source = paths.from_root(*rel.split("/"))
+                if not source.is_file():
+                    gate.log_fail("Documented-In target %s is not in the tree" % rel)
+                target = root / rel
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(source.read_bytes())
+                copied.add(rel)
+    if not {"CLAUDE.md", "docs/agent-reference/ci-gates.md"} <= copied:
+        gate.log_fail("the anchor world copied %s, missing a probed document" % sorted(copied))
+    return corpus, root
+
+
+def scan_anchors(gate, corpus, root) -> harness.RunResult:
+    """`--scan-only` over the real corpus copy, with anchors resolved under the scratch root."""
+    python = require_gate(gate)
+    return harness.run(
+        [python, os.fspath(GATE), "--scan-only"],
+        cwd=paths.repo_root(),
+        env={"TRAP_CORPUS": os.fspath(corpus), "TRAP_ANCHOR_ROOT": os.fspath(root)},
+        timeout=GATE_TIMEOUT,
+    )
+
+
+def mutate(gate, path, transform) -> None:
+    """Apply `transform` to one copied document, refusing a plant that did not land."""
+    before = path.read_text(encoding="utf-8")
+    after = transform(before)
+    if after == before:
+        gate.log_fail("the plant did not land: %s is unchanged" % path)
+    path.write_text(after, encoding="utf-8")
+
+
+def phrase_re(phrase: str):
+    """The phrase as the gate matches it: any whitespace run between its words."""
+    return re.compile(r"\s+".join(re.escape(w) for w in phrase.split()))
+
+
+def test_anchors_an_unchanged_copy_is_green(gate):
+    """(a) THE CONVERSE: every real anchor, copied as it is, resolves."""
+    with harness.temp_dir() as d:
+        corpus, root = anchor_world(gate, d)
+        result = scan_anchors(gate, corpus, root)
+        gate.assert_exit(0, result, "an unchanged copy of every anchored document must stay green")
+        gate.log_pass("CONTROL: every Documented-In anchor resolves on an unchanged copy")
+
+
+def test_anchors_a_deleted_wake_timer_sentence_reds(gate):
+    """(b) The lesson's sentence is deleted from CLAUDE.md: red, naming the entry. Green first."""
+    with harness.temp_dir() as d:
+        corpus, root = anchor_world(gate, d)
+        gate.assert_exit(0, scan_anchors(gate, corpus, root), "CONTROL: green before the deletion")
+        mutate(gate, root / "CLAUDE.md", lambda t: phrase_re(WAKE_PHRASE).sub("", t, count=1))
+        result = scan_anchors(gate, corpus, root)
+        gate.assert_exit(1, result, "a deleted lesson sentence must red")
+        gate.assert_contains(result.combined, "'%s'" % WAKE_ID, "the red must name the entry")
+        gate.assert_contains(
+            result.combined, "phrase not found in CLAUDE.md", "the red must say what is missing"
+        )
+        gate.log_pass("a deleted CLAUDE.md lesson sentence reds and names %s" % WAKE_ID)
+
+
+def test_anchors_a_moved_and_rewrapped_sentence_stays_green(gate):
+    """(c) Lines inserted above and the phrase re-wrapped: the lesson is still there, so green. A `file:CLAUDE.md:<N>` pointer gets this case wrong in the other direction."""
+    with harness.temp_dir() as d:
+        corpus, root = anchor_world(gate, d)
+        gate.assert_exit(0, scan_anchors(gate, corpus, root), "CONTROL: green before the move")
+
+        def move(text: str) -> str:
+            rewrapped = phrase_re(WAKE_PHRASE).sub(WAKE_PHRASE.replace(" ", "\n"), text, count=1)
+            return "".join("inserted line %d\n" % i for i in range(40)) + rewrapped
+
+        mutate(gate, root / "CLAUDE.md", move)
+        result = scan_anchors(gate, corpus, root)
+        gate.assert_exit(0, result, "a moved, re-wrapped lesson sentence must stay green")
+        gate.log_pass("a moved and re-wrapped CLAUDE.md sentence stays green")
+
+
+def test_anchors_a_renamed_ci_gates_heading_reds(gate):
+    """(d) The ci-gates heading is renamed: red, naming the entry and the nearest heading. Green first."""
+    with harness.temp_dir() as d:
+        corpus, root = anchor_world(gate, d)
+        gate.assert_exit(0, scan_anchors(gate, corpus, root), "CONTROL: green before the rename")
+        doc = root / "docs" / "agent-reference" / "ci-gates.md"
+        renamed = "The pre-push lane, renamed (`npm run ci:quick`)"
+        mutate(gate, doc, lambda t: t.replace("## %s\n" % HEADING, "## %s\n" % renamed))
+        result = scan_anchors(gate, corpus, root)
+        gate.assert_exit(1, result, "a renamed anchored heading must red")
+        gate.assert_contains(result.combined, "'%s'" % HEADING_ID, "the red must name the entry")
+        gate.assert_contains(
+            result.combined, "'%s'" % renamed, "the red must suggest the nearest heading"
+        )
+        gate.log_pass("a renamed ci-gates heading reds, naming the entry and the nearest heading")
