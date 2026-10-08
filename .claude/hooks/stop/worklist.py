@@ -2695,6 +2695,7 @@ def main():
         "--review-commit",
         "--review-run",
         "--prune-reviews",
+        "--drop-foreign-reviews",
     ):
         _review_cli(sys.argv[1:])
         return
