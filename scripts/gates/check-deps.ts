@@ -1970,7 +1970,7 @@ function planPinSync(
     if (globPast) {
       out.involved++;
       out.errors.push(
-        `group "${label}" covers ${globMoved.map((n) => `${n}@${moved.get(n)}`).join(', ')} through a glob entry, which is not expanded, so its pin ${pin} is not moved; set its pinVersion by hand`
+        `group "${label}" covers ${globMoved.map((n) => `${n}@${moved.get(n)}`).join(', ')} through a glob entry, which is not expanded, so its pin ${pin} is not moved${movedMembers.length > 0 ? ` (its literal members ${movedMembers.map((n) => `${n}@${moved.get(n)}`).join(', ')} moved too, and are not rewritten either)` : ''}; set its pinVersion by hand`
       );
     }
     if (movedMembers.length === 0) return;
@@ -4355,6 +4355,8 @@ function selftest(): void {
       mixed.text === null &&
         mixed.errors.length === 1 &&
         mixed.errors[0].includes('group "Pin OpenTelemetry mixed"') &&
+        mixed.errors[0].includes('@opentelemetry/sdk-node@0.224.0') &&
+        mixed.errors[0].includes('@opentelemetry/api@0.223.0') &&
         mixed.rewrites.length === 0,
       JSON.stringify(mixed)
     );

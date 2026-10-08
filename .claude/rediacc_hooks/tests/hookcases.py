@@ -1414,6 +1414,22 @@ STATIC: list[Case] = [
         "settled(push how-do with 'I already committed' is mechanics)",
     ),
     case(
+        # Review cae71925.1: the determiner or pronoun must modify a following word; at the end of the clause it is the timing ask.
+        "check 2 guards/block_settled_questions.py",
+        ask_json("How do we push this first?"),
+        "settled(push how-do ending in 'this first' is timing)",
+    ),
+    case(
+        "check 2 guards/block_settled_questions.py",
+        ask_json("How do I push it already?"),
+        "settled(push how-do ending in 'it already' is timing)",
+    ),
+    case(
+        "check 2 guards/block_settled_questions.py",
+        ask_json("How do I push that already, or wait for the review?"),
+        "settled(push how-do with 'that already, or wait' is timing)",
+    ),
+    case(
         "check 2 guards/block_settled_questions.py",
         ask_json("How do we push the branch first, or wait for the review?"),
         "settled(push how-do with an or-wait alternative is timing)",

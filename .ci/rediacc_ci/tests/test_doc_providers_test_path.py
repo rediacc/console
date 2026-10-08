@@ -36,6 +36,9 @@ def test_tests_are_test_paths():
         "packages/www/scripts/test-tutorial-player-release-gate.js",
         ".ci/breakpoint/scripts/test-breakpoint-lifecycle.sh",
         "test/foo.ts",
+        ".ci/rediacc_ci/private/compose_healthcheck_smoke_test.py",
+        "conftest.py",
+        "packages/x/conftest.py",
     ]:
         assert is_test_path(path), path
 
@@ -49,5 +52,7 @@ def test_programs_named_test_are_not_test_paths():
         "scripts/gates/check-pr-condition-ledger.ts",
         "scripts/lib/contest/x.ts",
         "scripts/lib/latest.ts",
+        "scripts/lib/conftest.ts",
+        "scripts/lib/my_test.ts",
     ]:
         assert not is_test_path(path), path
