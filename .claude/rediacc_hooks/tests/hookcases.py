@@ -734,7 +734,7 @@ STATIC: list[Case] = [
         bash_json("echo start; git worktree add ../x"),
         "worktree-add: after a command separator",
     ),
-    # THE WRAPPER FORMS. `./run.sh worktree create` runs `git worktree add -b` inside scripts/dev/worktree.sh, so it is the same decision -- but the text this hook sees never contains "git worktree add", and the literal block matched nothing. It now also starts a devbox, so the bypass costs an image pull and a port block.
+    # THE WRAPPER FORMS. `./run.sh worktree create` runs `git worktree add -b` inside `rediacc_ci.dev.worktree.cmd_create`, so it is the same decision -- but the text this hook sees never contains "git worktree add", and the literal block matched nothing. It now also starts a devbox, so the bypass costs an image pull and a port block.
     case(
         "check 2 guards/block_worktree_add.py",
         bash_json("./run.sh worktree create"),
@@ -747,8 +747,54 @@ STATIC: list[Case] = [
     ),
     case(
         "check 2 guards/block_worktree_add.py",
-        bash_json("bash scripts/dev/worktree.sh create"),
+        bash_json("bash run.sh worktree create"),
         "worktree-add: interpreter prefix puts bash in command position, not the script",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("/home/x/console/run.sh worktree create"),
+        "worktree-add: run.sh by absolute path",
+    ),
+    # THE PYTHON PORT, reached without run.sh. scripts/dev/worktree.sh became `.ci/rediacc_ci/dev/worktree.py` and was deleted, and chain-head.sh allowed each spelling below with rc 0 on 2026-10-09 because neither arm named it.
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("PYTHONPATH=.ci python3 -m rediacc_ci worktree create x"),
+        "worktree-add: the package entry run.sh execs",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("PYTHONPATH=.ci python3 -m rediacc_ci.dev.worktree create x"),
+        "worktree-add: the port's module",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("python3 .ci/rediacc_ci/dev/worktree.py create x"),
+        "worktree-add: the port by path",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("PYTHONPATH=.ci python3 .ci/rediacc_ci worktree create x"),
+        "worktree-add: the package directory by path",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("PYTHONPATH=.ci python3 -m rediacc_ci.dev.worktree list"),
+        "worktree-add: the port's list is not create",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("PYTHONPATH=.ci python3 -m rediacc_ci worktree list"),
+        "worktree-add: the package's worktree list is not create",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("grep -n create .ci/rediacc_ci/dev/worktree.py"),
+        "worktree-add: reading the port is not running it",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("echo the docs say never to run rediacc_ci.dev.worktree create here"),
+        "worktree-add: an unquoted sentence naming the port is not running it",
     ),
     case(
         "check 2 guards/block_worktree_add.py",

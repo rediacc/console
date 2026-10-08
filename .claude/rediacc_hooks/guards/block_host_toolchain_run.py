@@ -68,23 +68,17 @@ NEEDS = (
 # A session ran `.ci/scripts/release/assert-edge-tag-exists.sh` on the HOST, read `Required command 'aws' is not available`, and began evaluating an `awscli` install on the host. The devbox has carried aws-cli 2.36.40 the whole time (`.devcontainer/Dockerfile:467-490`). Neither table above could see the command: it names no gate key, and the tool it needs appears nowhere in the
 # command line -- the script reaches `aws` from inside itself. So the SCRIPT is what has to be matched.
 #
-# Twelve of these `require_cmd aws` (a hard refusal without the binary) and two call `aws` directly under `set -euo pipefail` with no guard at all, which fails the same way with a worse message. Counted 2026-09-23, not estimated. Two rows left on 2026-10-02 with their scripts (PLAN-retire-bash-oracles B3): the sentinel scrub, now the Python module `rediacc_ci.ops.scrub_sentinel`, and the one-shot R2 scrub, retired. `upload-to-r2.sh` is the one direct caller left.
+# Twelve of these `require_cmd aws` (a hard refusal without the binary) and two call `aws` directly under `set -euo pipefail` with no guard at all, which fails the same way with a worse message. Counted 2026-09-23, not estimated. Two rows left on 2026-10-02 with their scripts (PLAN-retire-bash-oracles B3): the sentinel scrub, now the Python module `rediacc_ci.ops.scrub_sentinel`, and the one-shot R2 scrub, retired.
+#
+# NINE MORE LEFT ON 2026-10-09. Every `.sh` row but `upload-r2.sh` named a script B3 had already deleted, so those rows matched a file nothing can run any more, and the only thing keeping them was test cases that named the deleted paths. Their ports carry the routing now, by module. A row here must name something that exists: the harness asserts every `.sh` key is a tracked basename and every `rediacc_ci.` key a module file, so a row cannot outlive its script again.
 #
 # `.ci/breakpoint/scripts/publish-endpoints.sh:96` is DELIBERATELY ABSENT, on the same precedent as `check:ci-actionlint` above: it degrades to skipping a notification rather than failing, so routing it would send a working path into the fix-the-image branch for nothing.
 #
 # MATCHED WITH `_is_invoked`, NEVER A SUBSTRING TEST. Every key here is a path a session has a real reason to grep, sed or cat, and `NEEDS`'s older `grep_q(..., fixed=True)` is exactly the "reading a script is mistaken for running it" bug `_is_invoked` was written to end for `NEEDS_ENV`.
 NEEDS_SCRIPT = (
-    ("assert-edge-tag-exists.sh", "aws"),
-    ("write-release-sentinel.sh", "aws"),
-    ("delete-r2-channel.sh", "aws"),
-    ("promote-r2-to-stable.sh", "aws"),
-    ("promote-r2-to-stable-hotfix.sh", "aws"),
-    ("simulate-promotion.sh", "aws"),
-    ("upload-repos-to-r2.sh", "aws"),
-    ("cleanup-versions.sh", "aws"),
+    # `.ci/media/tools/upload-r2.sh`, the one bash caller left. The media pipeline stays bash by design (run.sh's router comment says why).
     ("upload-r2.sh", "aws"),
-    ("upload-to-r2.sh", "aws"),
-    # THE PYTHON PORTS, by module. `python3 -m <module>` runs the same aws calls its bash original did, and `_is_invoked` reads the module after `-m` as the command's target. The harness asserts every row above whose port exists has its module here.
+    # THE PYTHON PORTS, by module. `python3 -m <module>` runs the same aws calls its bash original did, and `_is_invoked` reads the module after `-m` (or the module a `.py` script path names) as the command's target.
     ("rediacc_ci.release.assert_edge_tag_exists", "aws"),
     ("rediacc_ci.deploy.write_release_sentinel", "aws"),
     ("rediacc_ci.deploy.delete_r2_channel", "aws"),
@@ -211,7 +205,7 @@ EDGE_CASES = [
     ("npx on an npm package is not this guard's business", "npx tsx scripts/gen/gen-docs.ts"),
     # The bare-tool arm.
     ("a bare shfmt", "shfmt -w run.sh"),
-    ("a bare shellcheck", "shellcheck .ci/scripts/quality/check-python-lint.sh"),
+    ("a bare shellcheck", "shellcheck .ci/media/tools/upload-r2.sh"),
     ("a bare actionlint", "actionlint"),
     ("a bare tool after a separator", "cd packages/cli && shfmt -d ."),
     ("a tool named in prose", "echo 'run shfmt -w on it'"),
@@ -220,26 +214,26 @@ EDGE_CASES = [
     ("the longer gate key matches both", "npm run check:ci-renet-tiers"),
     # The host-bound arm.
     ("a host-bound pipeline", "shfmt -w private/growth/video_pipeline/run.sh"),
-    ("a host-bound submodule", "shellcheck private/account/scripts/rotation/rotate.sh"),
+    ("a host-bound submodule", "shellcheck private/account/scripts/ops.sh"),
     # The python -m arm: a port's module is its target, and the same key handed to pytest is a mention.
     ("a python -m port", "PYTHONPATH=.ci python3 -m rediacc_ci.ops.scrub_sentinel v1.0.5"),
     ("a python -m port by script path", "python3 .ci/rediacc_ci/deploy/upload_to_r2.py"),
     ("a port named to pytest", "python3 -m pytest -k rediacc_ci.ops.scrub_sentinel"),
     # Parse-only shells and text bash never runs (2026-10-02): judged by run, not by text.
-    ("a parse-only bash -n", "bash -n .ci/scripts/deploy/promote-r2-to-stable.sh"),
-    ("a parse-only -o noexec", "sh -o noexec .ci/scripts/deploy/upload-to-r2.sh"),
+    ("a parse-only bash -n", "bash -n .ci/media/tools/upload-r2.sh"),
+    ("a parse-only -o noexec", "sh -o noexec .ci/media/tools/upload-r2.sh"),
     ("a noexec shell's -c payload", "bash -n -c 'aws s3 ls'"),
     ("a tool named in a comment", "echo hi # then; aws s3 ls"),
     (
         "a heredoc comment, then a syntax check",
         (
             "python3 - <<'EOF'\n# aws matches the whole key\nEOF\n"
-            "bash -n .ci/scripts/deploy/promote-r2-to-stable.sh"
+            "bash -n .ci/media/tools/upload-r2.sh"
         ),
     ),
     (
         "a script run after a parse-only one",
-        "bash -n x.sh && bash .ci/scripts/deploy/upload-to-r2.sh",
+        "bash -n x.sh && bash .ci/media/tools/upload-r2.sh",
     ),
     ("a tool in a -c payload", "bash -c 'aws s3 ls'"),
 ]
@@ -578,7 +572,7 @@ def run(ev):
             bare = True
             break
     if hit == "":
-        # `bare = True` HERE TOO, and it is not a detail. The label branch below turns a non-bare hit into "npm run <hit>", and `npm run assert-edge-tag-exists.sh` is not a command that exists -- the same reading error that made the bare-tool arm need its own label in the first place. What the reader needs is "this command needs 'aws'", followed by the command they typed.
+        # `bare = True` HERE TOO, and it is not a detail. The label branch below turns a non-bare hit into "npm run <hit>", and `npm run upload-r2.sh` is not a command that exists -- the same reading error that made the bare-tool arm need its own label in the first place. What the reader needs is "this command needs 'aws'", followed by the command they typed.
         for key, tool in NEEDS_SCRIPT:
             if not _is_invoked(key, cmd, runs):
                 continue
@@ -705,8 +699,8 @@ def run(ev):
                 "     the other tools there are pinned (an unpinned tool that decides a CI\n"
                 "     verdict is a different verdict on every rebuild)\n"
                 '  2. REBUILD THE IMAGE, not just the container. "devbox remove" removes the\n'
-                "     CONTAINER; devbox_ensure_image then short-circuits on the image it\n"
-                "     already has (.ci/lib/devbox.sh:367), and if you delete the image it\n"
+                "     CONTAINER; ensure_image (.ci/rediacc_ci/core/devbox.py) then short-\n"
+                "     circuits on the image it already has, and if you delete the image it\n"
                 "     PULLS from the registry first -- so a local Dockerfile edit reaches the\n"
                 "     box by neither route. Measured 2026-08-27: GO_VERSION was bumped to\n"
                 "     1.26.6 and the container still reported go1.26.4. What actually works:\n"

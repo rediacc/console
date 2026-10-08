@@ -1,6 +1,6 @@
 """Block edits that add a fat inline `run:` block to a GitHub workflow.
 
-The rule (enforced in CI by .ci/scripts/quality/check-workflows.sh): a workflow `run:` block scalar whose shell logic exceeds 8 non-blank/non-comment lines does not belong inline. CI step logic lives in .ci/scripts/<area>/<name>.sh so it is locally runnable and shareable across CI systems; the workflow step is env wiring + one script call.
+The rule (enforced in CI by `check:ci-workflows`, .ci/scripts/quality/check_workflows.py): a workflow `run:` block scalar whose shell logic exceeds 8 non-blank/non-comment lines does not belong inline. CI step logic lives in .ci/scripts/<area>/<name>.sh so it is locally runnable and shareable across CI systems; the workflow step is env wiring + one script call.
 
 This is the fast local nudge for that rule: it fires only for .github/workflows/*.yml|yaml edits, only when the new content introduces a `run:` block that already crosses the threshold within the edited fragment. The CI gate remains the source of truth: it parses whole files, so a fat block assembled across several edits still fails there even if no single fragment trips this hook.
 
@@ -45,10 +45,11 @@ RUN_BLOCK = hookio.rx(r"^[{S}]*run:[{S}]*[|>]")
 
 MESSAGE = (
     "❌ BLOCKED: this edit puts a %s-line inline 'run:' block in %s (limit is %s logic "
-    "lines). Do not add shell logic inline in a workflow. Extract it to "
-    ".ci/scripts/<area>/<name>.sh (the script header documents required env + how to run "
-    "it locally), and make the workflow step env wiring + one call to that script. CI "
-    "enforces this via check-workflows.sh and there is no exemption list: the 52 legacy "
+    "lines). Do not add shell logic inline in a workflow. Extract it to a Python module "
+    "under .ci/rediacc_ci/<area>/ (its docstring documents required env + how to run it "
+    "locally; a new .sh is refused by check:ci-language-policy), and make the workflow step "
+    "env wiring + one `PYTHONPATH=.ci python3 -m rediacc_ci.<area>.<name>` call. CI "
+    "enforces this via check:ci-workflows and there is no exemption list: the 52 legacy "
     "blocks that used to be grandfathered have all been extracted and the baseline file "
     "was deleted, so the rule now holds for every workflow without exception."
 )
