@@ -238,7 +238,9 @@ const SENTINEL_REPLACEMENT_MAX = 40;
  * OLD value is split at its sentinels, and the NEW value must be those literal segments,
  * byte for byte and in order, with only the gaps where the sentinels stood filled. Each
  * gap holds at most SENTINEL_REPLACEMENT_MAX characters of a name, never a sentence: no
- * sentence or clause punctuation, no line break, no sentinel. The English value must not
+ * sentence or clause punctuation, no line break, no sentinel, and it is either a span of
+ * the English value verbatim or one whitespace-free token (a product name, which the mask
+ * map restores and the English may not carry), so no run of words is written in. The English value must not
  * carry the sentinel (a real one would be English's own text), and the NEW value must
  * carry no leaked sentinel at all, so swapping `⟦0⟧` for `⟦1⟧` is not a repair. A rewrite
  * that also drops a sentinel moves a byte outside the gaps and stays red.
@@ -259,7 +261,11 @@ export function isSentinelRepair(was: string, now: string, en: string): boolean 
   if (!m) return false;
   return m
     .slice(1)
-    .every((gap) => !/[.!?;:,\u3002\uff01\uff1f\uff1b\uff1a\uff0c\u3001\u27e6\u27e7<>]/u.test(gap));
+    .every(
+      (gap) =>
+        !/[.!?;:,\u3002\uff01\uff1f\uff1b\uff1a\uff0c\u3001\u27e6\u27e7<>]/u.test(gap) &&
+        (gap === '' || en.includes(gap) || !/\s/u.test(gap))
+    );
 }
 
 /**
@@ -361,6 +367,20 @@ const SENTINEL_CONTROLS: { name: string; was: string; now: string; en: string; w
     now: 'Rediacc, 25 lisans dahil, vs rakipler',
     en: 'How we stack up against other vendors',
     want: false,
+  },
+  {
+    name: 'CONTROL: words that are not in the English written into the sentinel gap are NOT exempt',
+    was: '\u27e60\u27e7 vs rakipler',
+    now: 'Rediacc 25 lisans dahil vs rakipler',
+    en: 'How we stack up against other vendors',
+    want: false,
+  },
+  {
+    name: 'a multi-word gap that is a verbatim span of the English is exempt',
+    was: '\u27e60\u27e7 vs rakipler',
+    now: 'other vendors vs rakipler',
+    en: 'How we stack up against other vendors',
+    want: true,
   },
   {
     name: 'CONTROL: a sentinel swapped for another sentinel is NOT exempt',

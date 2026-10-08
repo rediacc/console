@@ -1901,8 +1901,18 @@ function syncpackSourceDirs(): string[] {
 /**
  * Move the `pinVersion` of every .syncpackrc.json versionGroup whose literal `dependencies` include a package the upgrade moved (worklist #3b831146: on 2026-10-08 --upgrade took @opentelemetry 0.222 -> 0.223 and left the "0.x line in lockstep" group at ^0.222.0, so check:version failed on the next run). `moved` maps a package to the version the upgrade installed; `declared` is the dependency ranges of each source manifest. Pure, so the selftest drives it without a file.
  *
- * Refuses (an error, no text) a rc file that is not in the exact form it would rewrite (JSON.stringify two-space plus a trailing newline), a pin that is not a plain caret range, and a group whose members do not all sit on the moved line: a member the manifests declare that did not move (or whose range this gate cannot read) is named as a laggard, because pinning the group would only trade one syncpack failure for another. Glob entries in `dependencies` are not expanded: only literal names count, which is every group that pins a lockstep family today. The group `label` is never touched (check-syncpack-reasons.ts keys on it).
+ * Refuses (an error, no text) a rc file that is not in the exact form it would rewrite (JSON.stringify two-space plus a trailing newline), a pin that is not a plain caret range, and a group whose members do not all sit on the moved line: a member the manifests declare that did not move (or whose range this gate cannot read) is named as a laggard, because pinning the group would only trade one syncpack failure for another. Glob entries in `dependencies` are not expanded: only literal names are synced, and a caret-pinned group whose glob entry covers a package that moved past the pin is an error naming the group (a hand edit), never a silent skip. The group `label` is never touched (check-syncpack-reasons.ts keys on it).
  */
+function globToRegExp(glob: string): RegExp {
+  const body = glob
+    .split(/([*?])/)
+    .map((part) =>
+      part === '*' ? '.*' : part === '?' ? '.' : part.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    )
+    .join('');
+  return new RegExp(`^${body}$`);
+}
+
 function planPinSync(
   text: string,
   moved: Map<string, string>,
@@ -1930,9 +1940,32 @@ function planPinSync(
     if (typeof pin !== 'string' || !Array.isArray(deps)) return;
     const members = deps.filter((d): d is string => typeof d === 'string' && !/[*?!]/.test(d));
     const movedMembers = members.filter((d) => moved.has(d));
-    if (movedMembers.length === 0) return;
-    out.involved++;
     const label = typeof group.label === 'string' ? group.label : `versionGroups[${i}]`;
+    const globs = deps.filter(
+      (d): d is string => typeof d === 'string' && /[*?]/.test(d) && !d.startsWith('!')
+    );
+    const globMoved = [...moved.keys()].filter((name) =>
+      globs.some((g) => globToRegExp(g).test(name))
+    );
+    if (movedMembers.length === 0) {
+      // A glob entry cannot be expanded against the manifests here, so a moved package it covers is named for a hand edit; a group pinned to anything but a caret range (a `*` group) holds no line to keep.
+      const gm = pin.match(SYNCPACK_PIN_RE);
+      const best = globMoved.reduce<string | null>(
+        (a, n) =>
+          a === null || compareVersions(moved.get(n) as string, a) > 0
+            ? (moved.get(n) as string)
+            : a,
+        null
+      );
+      if (gm && best !== null && compareVersions(best, gm[1]) > 0) {
+        out.involved++;
+        out.errors.push(
+          `group "${label}" covers ${globMoved.map((n) => `${n}@${moved.get(n)}`).join(', ')} through a glob entry, which is not expanded, so its pin ${pin} is not moved; set its pinVersion by hand`
+        );
+      }
+      return;
+    }
+    out.involved++;
     const m = pin.match(SYNCPACK_PIN_RE);
     if (!m) {
       out.errors.push(
@@ -4255,6 +4288,34 @@ function selftest(): void {
       idleRun.output.includes('1 groups, 0 hold a moved package, 0 rewritten'),
     `${idleRun.output}\n${idleRun.syncpackrc}`
   );
+  // A glob entry covering a moved package: nothing is rewritten and the group is named.
+  {
+    const globGroup = (label: string, pinVersion: string) => ({
+      label,
+      packages: ['**'],
+      dependencies: ['@opentelemetry/*'],
+      pinVersion,
+    });
+    const globRc = `${JSON.stringify(
+      {
+        versionGroups: [
+          globGroup('Pin OpenTelemetry by glob', '^0.222.0'),
+          globGroup('Any version of the api', '*'),
+        ],
+      },
+      null,
+      2
+    )}\n`;
+    const plan = planPinSync(globRc, new Map([['@opentelemetry/api', '0.223.0']]), []);
+    expect(
+      'pin groups: a glob entry covering a moved package is an error naming the group, with no rewrite, and a non-caret pin stays silent',
+      plan.text === null &&
+        plan.errors.length === 1 &&
+        plan.errors[0].includes('group "Pin OpenTelemetry by glob"') &&
+        plan.rewrites.length === 0,
+      JSON.stringify(plan)
+    );
+  }
   // A file the rewrite cannot reproduce byte for byte is refused, not reformatted.
   const oddRc = startRc.replace(/\n/g, '\r\n');
   const oddRun = runFixture(pinCase(oddRc), 'upgrade');
