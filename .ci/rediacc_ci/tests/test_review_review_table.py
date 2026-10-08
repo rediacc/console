@@ -77,6 +77,7 @@ def fixed(n: int) -> str:
 
 NAB = "not-a-bug | the guard at src/a.py:12 already refuses this case | %s %s" % (ME, AT)
 DEFERRED = "deferred #76a0eaaf | %s %s" % (ME, AT)
+WAIVED = "waived #76a0eaaf ASKED:2026-10-08T09:14Z | %s %s" % (ME, AT)
 
 
 class FakeGh:
@@ -563,3 +564,36 @@ def test_a_persistent_5xx_on_the_marker_lookup_posts_nothing(monkeypatch):
     assert T.upsert(GH_REPO, "7", "body", gh) is False
     assert gh.writes() == []
     assert slept == [5.0, 15.0]
+
+
+def test_waived_is_its_own_resolution_kind(tmp_path):
+    """A waiver is counted and shown as `waived` (PLAN-deferred-findings-block-merge D3), so it is visible on the PR; it is not folded into `open` or into a resolved bucket with no name."""
+    plant(
+        tmp_path,
+        make(
+            1, verdict="findings", findings=[("high", WAIVED), ("low", DEFERRED), ("low", "open")]
+        ),
+    )
+    rec = T.load_records(tmp_path, BRANCH)[0]
+    assert [f.resolution_kind for f in rec.findings] == ["waived", "deferred", "open"]
+    body = render_dir(tmp_path)
+    assert "waived 1, deferred 1, open 1" in body
+    assert "3 finding(s), 1 open." in body
+
+
+def test_an_unknown_resolution_word_is_malformed_never_open(tmp_path):
+    """Rule iii's display half: an unknown first word used to map to `open`, which counted a typo or a hand edit as an ordinary open finding. It is `malformed` now, and the header says so."""
+    finding = T.Finding(id="aaaaaaaa.1", severity="low", path="a.py", line=1)
+    finding.resolution = "postponed #76a0eaaf | %s %s" % (ME, AT)
+    assert finding.resolution_kind == T.MALFORMED_RESOLUTION
+    for word in T.RESOLUTION_KINDS:
+        finding.resolution = word
+        assert finding.resolution_kind == word
+    plant(tmp_path, make(1, verdict="findings", findings=[("low", "open")]))
+    path = tmp_path / "agent" / "reviews" / BRANCH / ("%s.md" % sha(1))
+    text = path.read_text(encoding="utf-8")
+    assert text.count("Resolution: open\n") == 1
+    path.write_text(text.replace("Resolution: open\n", "Resolution: postponed\n"), encoding="utf-8")
+    body = render_dir(tmp_path)
+    assert "malformed 1" in body
+    assert "1 finding(s), 0 open, 1 with a malformed resolution." in body
