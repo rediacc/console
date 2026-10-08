@@ -25,7 +25,9 @@ SHAPE_RE = re.compile(
 )
 REAPER = sh.REAPER_REL
 REAPER_CURL = 'resp="$(curl -sS -w'
-TWIN = ".ci/scripts/release/resolve-ci-run.sh"
+# A synthetic dead twin, planted into each copy: the real tree's dead twins are being retired (PLAN-retire-bash-oracles B3), so a test that named one of them would break with the deletion it is meant to survive.
+TWIN = ".ci/scripts/release/synthetic-dead-twin.sh"
+TWIN_BODY = '#!/usr/bin/env bash\nset -euo pipefail\ngh api "repos/rediacc/console/pulls" --jq ".[0].number"\n'
 
 
 def _shell(root: pathlib.Path) -> harness.RunResult:
@@ -83,9 +85,10 @@ def test_real_tree_is_green_and_not_vacuous(gate):
     )
     gate.assert_eq(new, 0, "new shell findings on the real tree")
     collapsed = "shell counts collapsed (%s): the gate is not seeing the tree" % m.group(0)
-    assert scripts > 100, collapsed
-    assert live > 40, collapsed
-    assert dead > 20, collapsed
+    # Floors, not equalities: every retired bash twin lowers `scripts` and `dead`, so the floors sit well under the tree and above a walk that found nothing. `dead` carries no floor of its own, since the dead twins are the files being deleted; the dead-twin exclusion is exercised on a planted twin below.
+    assert scripts > 40, collapsed
+    assert live > 25, collapsed
+    assert dead >= 0, collapsed
     assert workflows > 20, collapsed
     assert blocks > 300, collapsed
     assert curl >= 1, collapsed
@@ -113,7 +116,6 @@ def test_real_tree_is_green_and_not_vacuous(gate):
         len(sh.SHELL_DEBT),
         "one visible DEBT line per frozen read",
     )
-    assert "  TWIN   " in result.out, "no TWIN line: the dead-twin exclusion is no longer printed"
     gate.ok(
         "all three in-run shell plants fired, every frozen read and every unjudged twin is printed"
     )
@@ -186,8 +188,11 @@ def test_a_one_shot_read_in_a_workflow_run_block_reds(gate, tmp_path):
 
 def test_wiring_a_dead_twin_makes_its_reads_findings(gate, tmp_path):
     root = _copy(tmp_path / "tree")
+    twin = root / TWIN
+    twin.parent.mkdir(parents=True, exist_ok=True)
+    twin.write_text(TWIN_BODY, encoding="utf-8")
     green = _shell(root)
-    gate.assert_exit(0, green, "the unplanted copy")
+    gate.assert_exit(0, green, "the copy holding only the planted dead twin")
     gate.assert_contains(green.out, "  TWIN   %s:" % TWIN)
     gate.ok("%s is reported as an unjudged dead twin on the clean copy" % TWIN)
 

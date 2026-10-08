@@ -19,12 +19,14 @@ import sys
 import typing
 
 from rediacc_ci import paths
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "release" / "cleanup-channel-docker-tags.sh"
+TWIN_REL = ".ci/scripts/release/cleanup-channel-docker-tags.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "release" / "cleanup_channel_docker_tags.py"
 COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 BASH = shutil.which("bash") or "/bin/bash"
@@ -64,17 +66,14 @@ def _fixture(tmp_path: pathlib.Path, side: str, *, with_deleter: bool = True) ->
     ):
         (root / os.path.join(*rel)).mkdir(parents=True, exist_ok=True)
 
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "release" / TWIN.name)
+    # The twin is frozen (goldens/twins/release.cleanup-channel-docker-tags.jsonl); only a recording run still needs it and the library it sources.
+    if TWIN.is_file():
+        shutil.copy2(TWIN, root / ".ci" / "scripts" / "release" / TWIN.name)
+        shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
+        (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+        for name in ("well-known.env", "well-known.generated.sh"):
+            shutil.copy2(ROOT / ".ci" / "config" / name, root / ".ci" / "config" / name)
     shutil.copy2(PORT, root / ".ci" / "rediacc_ci" / "release" / PORT.name)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
-    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
-    )
-    shutil.copy2(
-        ROOT / ".ci" / "config" / "well-known.generated.sh",
-        root / ".ci" / "config" / "well-known.generated.sh",
-    )
     if with_deleter:
         deleter = root / ".ci" / "scripts" / "docker" / "cleanup_staging.py"
         deleter.write_text(FAKE_CLEANUP_STAGING, encoding="utf-8")
@@ -83,6 +82,21 @@ def _fixture(tmp_path: pathlib.Path, side: str, *, with_deleter: bool = True) ->
 
 
 def _run(
+    tmp_path: pathlib.Path, side: str, **kw: typing.Any
+) -> tuple[int, str, str, list[str], str | None]:
+    """The twin's answer comes from its golden; the port runs live."""
+    if side != "old":
+        return _run_live(tmp_path, side, **kw)
+    result = diff.twin_tuple(
+        TWIN_REL,
+        [repr(sorted((k, v) for k, v in kw.items()))],
+        lambda: _run_live(tmp_path, side, **kw),
+        work=(tmp_path,),
+    )
+    return typing.cast("tuple[int, str, str, list[str], str | None]", tuple(result))
+
+
+def _run_live(
     tmp_path: pathlib.Path,
     side: str,
     *,
@@ -185,7 +199,6 @@ def test_the_fixture_carries_a_stub_deleter_not_the_real_one(tmp_path: pathlib.P
 
 
 def test_both_subjects_exist() -> None:
-    assert TWIN.is_file(), "the bash twin moved: %s" % TWIN
     assert PORT.is_file(), "the port moved: %s" % PORT
 
 
