@@ -464,7 +464,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
-| `agent/plans/PLAN-account-env-to-bws.md` | draft | 130 | 1 | 19 | 26381 |
 | `agent/plans/PLAN-add-chunkstore-backup-verb.md` | compacted | 64 | 0 | 0 | 5643 |
 | `agent/plans/PLAN-add-js-extensions-shared.md` | compacted | 50 | 0 | 0 | 4285 |
 | `agent/plans/PLAN-agent-hints-implementation.md` | compacted | 60 | 0 | 0 | 4623 |
@@ -494,7 +493,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3909 |
 | `agent/plans/PLAN-config-handoff-relay-only.md` | draft | 419 | 2 | 9 | 40429 |
 | `agent/plans/PLAN-config-networkid-sync.md` | draft | 278 | 8 | 0 | 30701 |
-| `agent/plans/PLAN-config-passkey-optional.md` | approved | 128 | 1 | 3 | 13691 |
+| `agent/plans/PLAN-config-passkey-optional.md` | approved | 132 | 1 | 3 | 15085 |
 | `agent/plans/PLAN-config-sync-hardening.md` | draft | 475 | 1 | 18 | 57866 |
 | `agent/plans/PLAN-config-team-scoping.md` | draft | 244 | 1 | 10 | 31097 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
@@ -503,7 +502,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
-| `agent/plans/PLAN-env-to-bitwarden-v2.md` | draft | 508 | 1 | 9 | 52575 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
 | `agent/plans/PLAN-fast-loop.md` | approved | 112 | 0 | 19 | 17363 |
 | `agent/plans/PLAN-fix-ci-contention-aware-timeouts.md` | compacted | 38 | 0 | 0 | 3425 |
@@ -568,7 +566,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-focus-mode.md` | draft | 352 | 0 | 8 | 36079 |
 | `agent/plans/PLAN-stop-hook-one-plan-scope.md` | approved | 179 | 1 | 14 | 42868 |
 | `agent/plans/PLAN-stop-hook-refactor-enforcement.md` | executing | 370 | 1 | 16 | 49955 |
-| `agent/plans/PLAN-stop-hook-retro-20260924.md` | ready | 601 | 1 | 22 | 64281 |
+| `agent/plans/PLAN-stop-hook-retro-20260924.md` | ready | 615 | 1 | 22 | 66573 |
 | `agent/plans/PLAN-stop-hook-retro-20260925.md` | ready | 259 | 0 | 10 | 25008 |
 | `agent/plans/PLAN-stop-hook-rulings-campaign.md` | draft | 103 | 16 | 1 | 9820 |
 | `agent/plans/PLAN-stop-hook-turbo.md` | approved | 183 | 0 | 23 | 30337 |
@@ -588,6 +586,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-wire-account-vitest-ci.md` | compacted | 39 | 0 | 0 | 3063 |
 | `agent/plans/PLAN-wl-report-liveness-oracle.md` | compacted | 52 | 0 | 7 | 3665 |
 | `agent/plans/PLAN-www-bundle-determinism.md` | compacted | 38 | 0 | 0 | 2592 |
+| `agent/plans/_done/PLAN-account-env-to-bws.md` | done | 130 | 0 | 20 | 26605 |
 | `agent/plans/_done/PLAN-agent-session-archival.md` | done | 141 | 0 | 6 | 18555 |
 | `agent/plans/_done/PLAN-archival-tests-python-compliance.md` | done | 231 | 0 | 15 | 32101 |
 | `agent/plans/_done/PLAN-b2-emit-matrix.md` | done | 305 | 0 | 13 | 34443 |
@@ -612,6 +611,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-deflected-finding-check.md` | done | 74 | 0 | 6 | 7257 |
 | `agent/plans/_done/PLAN-devbox-toolchain-guard-extension.md` | done | 111 | 0 | 20 | 16709 |
 | `agent/plans/_done/PLAN-eliminate-worklist-report-per-stop-env.md` | done | 235 | 0 | 20 | 26813 |
+| `agent/plans/_done/PLAN-env-to-bitwarden-v2.md` | done | 508 | 0 | 10 | 52655 |
 | `agent/plans/_done/PLAN-fix-console-ci-5day-failure.md` | superseded | 59 | 13 | 0 | 6602 |
 | `agent/plans/_done/PLAN-fix-guard-repo-context.md` | done | 226 | 0 | 10 | 28903 |
 | `agent/plans/_done/PLAN-fix-is-invoked-sh-alternation.md` | done | 40 | 0 | 4 | 5180 |

@@ -49,11 +49,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Focus: off.
 - Branch: 1008-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-gate-scheduling-learned.md, as its `Plan:` line unless the body names a plan first.
-- Work outside the PR's plans (2 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 20 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-  - epic c965ea99, no plan, 0 commit(s) on the branch, 1 open item(s): Post-merge of PR #599 (1007-1): verification runs after the merge
-- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a40b37f6489e9ffde, worker:ace67f676a211687a, worker:a1d8ed7fcb39b8972.
-- Leased items: 7: #4b15e1e7 (worker:bxlf959m1, d778be9d), #5f43e8c8 (worker:a0c89329e62a8df02, d778be9d), #a52fea04 (worker:a1d8ed7fcb39b8972, d778be9d), #a5a1f981 (worker:a40b37f6489e9ffde, d778be9d), #cba857c9 (worker:a0c89329e62a8df02, d778be9d), #dd4cb2e3 (worker:a40b37f6489e9ffde, d778be9d), #dd977508 (worker:ace67f676a211687a, d778be9d).
+- Work outside the PR's plans (1 epic(s)):
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 26 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 1 live of writer_cap 15 (session d778be9d): worker:abe63910ee7951b0d.
+- Leased items: 1: #4864d43c (worker:abe63910ee7951b0d, d778be9d).
 - Next plan: agent/plans/PLAN-gate-scheduling-learned.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
@@ -65,12 +64,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 4. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: the 9 open boxes
 5. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: Step 12
 6. agent/plans/PLAN-config-passkey-optional.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 4 boxes open, T4 pre-deploy production query then eu deploy and Bitwarden walk-through (unblocks the org-selection chain)
-7. agent/plans/PLAN-account-env-to-bws.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 20 boxes open, T16 retarget the env writers (account.sh/account.py, dev-gateway updateEnvServerUrl, rotation local: consumers, secret-rename EXTRA)
-8. agent/plans/PLAN-env-to-bitwarden-v2.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 10 boxes open, the v1:20-25 __ROTATED_ archive trio, naming convention and vitest rotation harness
-9. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 16 boxes open, R1 root-cause the nightly Console CI failure on main (PLAN-ci-verdict is done, so ci-trace works)
-10. agent/plans/PLAN-stop-hook-retro-20260924.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 23 boxes open, R20260924.15 re-count the seven frictions on .blocklog and record before/after in Status
-11. agent/plans/PLAN-locale-techdiff-resync.md -- operator 2026-10-08 melt-the-list: EASY, 5 of 5 boxes open, mechanical i18n pipeline re-translation of nine solutionPages groups x 12 locales at haiku default (gate #583 has merged)
-12. agent/plans/PLAN-cd-errors-in-ci.md -- operator 2026-10-08: catch CD errors at CI level; W1 is the housekeeping root fix due before the 03:00Z run
+7. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 16 boxes open, R1 root-cause the nightly Console CI failure on main (PLAN-ci-verdict is done, so ci-trace works)
+8. agent/plans/PLAN-stop-hook-retro-20260924.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 23 boxes open, R20260924.15 re-count the seven frictions on .blocklog and record before/after in Status
+9. agent/plans/PLAN-locale-techdiff-resync.md -- operator 2026-10-08 melt-the-list: EASY, 5 of 5 boxes open, mechanical i18n pipeline re-translation of nine solutionPages groups x 12 locales at haiku default (gate #583 has merged)
+10. agent/plans/PLAN-cd-errors-in-ci.md -- operator 2026-10-08: catch CD errors at CI level; W1 is the housekeeping root fix due before the 03:00Z run
 ## Generated
 
 <!-- queue:generated:begin -->
