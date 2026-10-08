@@ -21,10 +21,24 @@
  * If English did not change, nothing downstream justified touching the
  * translation, and the edit is either an unrequested rewrite or a fabrication.
  *
- * WHAT IT DELIBERATELY ALLOWS. A key that was never naturalized may change
- * freely: that is backlog catch-up, not drift. Only keys the ledger already
- * considers naturalized are protected, because those are the ones a pipeline
- * has no business rewriting on its own.
+ * WHAT IT DELIBERATELY ALLOWS. Backlog catch-up, which is not drift. A key is
+ * protected only when the naturalization ledger AT THE BASE holds an entry for
+ * it that is CURRENT for the base's English: the recorded CRC32 equals the hash
+ * of the base English value, computed by the same `flattenAndHash` that
+ * check:ci-i18n-naturalization uses. Two shapes are therefore free to change:
+ *
+ *   - ABSENT at the base: the key was never naturalized. A run that stamps it
+ *     in this same diff does not make it protected, because the HEAD ledger is
+ *     the thing a resync rewrites and cannot be the witness for its own edit.
+ *   - STALE at the base: English moved in an earlier merged PR and the locale
+ *     was never resynced, so the translation is known to lag. Refusing its
+ *     resync because English is "unchanged between base and HEAD" made the
+ *     catch-up unshippable: the nine `pages.solutionPages.*.techDiff.description`
+ *     keys x 12 locales (agent/plans/PLAN-locale-techdiff-resync.md) had their
+ *     English change already in origin/main.
+ *
+ * Only a translation the base ledger vouches for, against the English it still
+ * shows, is one a pipeline has no business rewriting on its own.
  *
  * Usage:
  *   npx tsx scripts/gates/check-locale-only-edits.ts [--base <ref>]
@@ -48,11 +62,12 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { flattenAndHash } from '../lib/crc32.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..');
 const DIR = 'packages/www/src/i18n/translations';
-const LEDGER = path.join(REPO, DIR, '.naturalized-hashes.json');
+const LEDGER_REL = `${DIR}/.naturalized-hashes.json`;
 
 type Flat = Record<string, string>;
 
@@ -200,6 +215,141 @@ const REF_MARKER_CONTROLS: { name: string; was: string; now: string; en: string;
     },
   ];
 
+/**
+ * True when the base ledger vouches for this (locale, key) against the base English.
+ *
+ * Same comparison check:ci-i18n-naturalization makes (`current[key] !== recordedCrc` is
+ * its "stale"), applied to the BASE: the ledger's recorded CRC must equal the CRC32 of the
+ * base English value. Absent entry, absent English, or a different hash all mean the
+ * translation is not one the ledger currently stands behind, so changing it is catch-up.
+ */
+export function isProtectedAtBase(
+  ledgerAtBase: Record<string, unknown>,
+  key: string,
+  enBaseHash: Record<string, string>
+): boolean {
+  const recorded = ledgerAtBase[key];
+  const want = enBaseHash[key];
+  return typeof recorded === 'string' && want !== undefined && recorded === want;
+}
+
+export interface LocaleScan {
+  findings: string[];
+  emDashRepairs: string[];
+  refMarkerRepairs: string[];
+  checkedKeys: number;
+}
+
+/** The per-locale verdict, shared by the real scan and the selftest probes. */
+export function scanLocale(
+  loc: string,
+  was: Flat,
+  now: Flat,
+  enBase: Flat,
+  enNow: Flat,
+  ledgerAtBase: Record<string, unknown>,
+  enBaseHash: Record<string, string>
+): LocaleScan {
+  const out: LocaleScan = { findings: [], emDashRepairs: [], refMarkerRepairs: [], checkedKeys: 0 };
+  for (const key of Object.keys(now)) {
+    if (was[key] === undefined || now[key] === was[key]) continue;
+    out.checkedKeys++;
+    const englishChanged = enNow[key] !== enBase[key];
+    if (englishChanged) continue; // the whole point of a re-naturalization
+    if (!isProtectedAtBase(ledgerAtBase, key, enBaseHash)) continue; // absent or stale at base: backlog catch-up, allowed
+
+    // Backlog catch-up the LEDGER lied about. A key whose base value is byte-identical to its base English was never actually translated, whatever the ledger claims, and the ledger does make that claim: 369 keys across 12 locales were stamped naturalized while still holding the English string. Trusting the stamp over the data turns "translate the untranslated" into a gate
+    // failure, which is the exact opposite of this gate's stated allowance in the header.
+    //
+    // This cannot hide a fabrication. A fabricated rewrite replaces a REAL translation, so its base value is not English and this check does not apply to it. Proven on the run that motivated it: 411 genuine rewrites were still reported and reverted
+    // while these passed.
+    if (was[key] === enBase[key]) continue;
+
+    // An edit that ONLY removes an em dash is required by check:ci-em-dash-surfaces, which is a blocking gate in the same chain. Without this the two gates are mutually unsatisfiable: one demands the dash go, the other calls its removal an unjustified rewrite. Deliberately narrow -- the values must be identical once the dash and its surrounding spaces are normalised away, so a
+    // rewrite that also changes wording is still reported.
+    if (isRefMarkerRepair(was[key], now[key], enNow[key] ?? '')) {
+      out.refMarkerRepairs.push(`  ${loc}  ${key}`);
+      continue;
+    }
+
+    if (isEmDashRepair(was[key], now[key])) {
+      out.emDashRepairs.push(`  ${loc}  ${key}`);
+      continue;
+    }
+    out.findings.push(
+      `  ${loc}  ${key}\n` +
+        `      en (unchanged): ${JSON.stringify(enNow[key] ?? '<absent>').slice(0, 100)}\n` +
+        `      was:            ${JSON.stringify(was[key]).slice(0, 100)}\n` +
+        `      now:            ${JSON.stringify(now[key]).slice(0, 100)}`
+    );
+  }
+  return out;
+}
+
+/**
+ * Probes for the base-ledger rule, run with `--selftest` through `scanLocale` itself.
+ * Each names the keys it expects reported; anything else reported, or missing, fails.
+ */
+const EN = {
+  'pricing.license': '1 Floating license',
+  'pages.solutionPages.failoverTesting.techDiff.description':
+    'Rediacc clones a whole setup in seconds. The test runs on the copy.',
+  'pages.solutionPages.migrationSafety.techDiff.description': 'Move a whole setup safely.',
+};
+const EN_PREV_TECHDIFF =
+  'Rediacc uses btrfs copy-on-write snapshots to clone your whole infrastructure in seconds.';
+const EN_HASH = flattenAndHash(EN);
+const STALE_HASH = flattenAndHash({ k: EN_PREV_TECHDIFF }).k;
+const FAILOVER = 'pages.solutionPages.failoverTesting.techDiff.description';
+const MIGRATION = 'pages.solutionPages.migrationSafety.techDiff.description';
+
+const LEDGER_PROBES: {
+  name: string;
+  was: Flat;
+  now: Flat;
+  ledger: Record<string, unknown>;
+  want: string[];
+}[] = [
+  {
+    name: 'the 2026-07-28 shape: ledger current at base, English unchanged, locale rewritten -> RED',
+    was: { 'pricing.license': '1 플로팅 라이선스' },
+    now: { 'pricing.license': '10 플로팅 라이선스' },
+    ledger: { 'pricing.license': EN_HASH['pricing.license'] },
+    want: ['pricing.license'],
+  },
+  {
+    name: 'ledger STALE at base (English moved in an earlier PR) + locale resync -> silent',
+    was: { [FAILOVER]: 'Rediacc nutzt btrfs Copy-on-Write-Snapshots, um in Sekunden zu klonen.' },
+    now: {
+      [FAILOVER]: 'Rediacc klont ein ganzes Setup in Sekunden. Der Test läuft auf der Kopie.',
+    },
+    ledger: { [FAILOVER]: STALE_HASH },
+    want: [],
+  },
+  {
+    name: 'ledger ABSENT at base (never naturalized) + locale change -> silent',
+    was: { [FAILOVER]: 'Rediacc nutzt btrfs Copy-on-Write-Snapshots, um in Sekunden zu klonen.' },
+    now: {
+      [FAILOVER]: 'Rediacc klont ein ganzes Setup in Sekunden. Der Test läuft auf der Kopie.',
+    },
+    ledger: {},
+    want: [],
+  },
+  {
+    name: 'CONTROL: one key stale at base, but the edit is to a DIFFERENT key that is current -> RED on that key only',
+    was: {
+      [FAILOVER]: 'Rediacc nutzt btrfs Copy-on-Write-Snapshots, um in Sekunden zu klonen.',
+      [MIGRATION]: 'Ein ganzes Setup sicher umziehen.',
+    },
+    now: {
+      [FAILOVER]: 'Rediacc nutzt btrfs Copy-on-Write-Snapshots, um in Sekunden zu klonen.',
+      [MIGRATION]: 'Ein ganzes Setup mit 25 Klicks sicher umziehen.',
+    },
+    ledger: { [FAILOVER]: STALE_HASH, [MIGRATION]: EN_HASH[MIGRATION] },
+    want: [MIGRATION],
+  },
+];
+
 function selftest(): number {
   let bad = 0;
   for (const c of REF_MARKER_CONTROLS) {
@@ -208,9 +358,18 @@ function selftest(): number {
     if (!ok) bad++;
     process.stdout.write(`  ${ok ? 'PASS' : 'FAIL'}  ${c.name}\n`);
   }
+  for (const p of LEDGER_PROBES) {
+    const r = scanLocale('xx', p.was, p.now, EN, EN, p.ledger, EN_HASH);
+    const got = r.findings.map((f) => f.trim().split(/\s+/)[1]).sort();
+    const ok = JSON.stringify(got) === JSON.stringify([...p.want].sort());
+    if (!ok) bad++;
+    process.stdout.write(
+      `  ${ok ? 'PASS' : 'FAIL'}  ${p.name}${ok ? '' : ` (reported ${JSON.stringify(got)})`}\n`
+    );
+  }
   if (bad > 0) {
     process.stderr.write(
-      `check-locale-only-edits: ${bad} control(s) failed; the marker exemption cannot be trusted\n`
+      `check-locale-only-edits: ${bad} control(s) failed; the marker exemption or the base-ledger rule cannot be trusted\n`
     );
     return 1;
   }
@@ -250,15 +409,24 @@ function main(argv: string[]): number {
   const enNow = flatten(JSON.parse(enNowRaw));
   const enBase = flatten(JSON.parse(enBaseRaw));
 
+  // The ledger is read AT THE BASE, not from the working tree: the question is whether the base vouched for a translation, and a resync rewrites the HEAD ledger in the same diff, so the HEAD copy would witness its own edit.
   // The ledger nests under `languages`, alongside a `$meta` block. Reading the top level directly yields undefined for every locale, which silently makes the protected set EMPTY and the gate incapable of firing. That is exactly what happened on the first draft of this file, and only a planted control caught it, so the shape is asserted rather than assumed.
   let ledger: Record<string, Record<string, unknown>> = {};
+  const ledgerRaw = gitShow(base, LEDGER_REL);
+  if (!ledgerRaw) {
+    process.stderr.write(
+      `check-locale-only-edits: cannot read the naturalization ledger ${LEDGER_REL} at ${base}.\n` +
+        'Refusing to run without it: an absent ledger protects nothing.\n'
+    );
+    return 1;
+  }
   try {
-    const raw = JSON.parse(fs.readFileSync(LEDGER, 'utf8')) as {
+    const raw = JSON.parse(ledgerRaw) as {
       languages?: Record<string, Record<string, unknown>>;
     };
     if (!raw.languages || typeof raw.languages !== 'object') {
       process.stderr.write(
-        `check-locale-only-edits: ${LEDGER} has no "languages" object.\n` +
+        `check-locale-only-edits: ${LEDGER_REL} at ${base} has no "languages" object.\n` +
           'The ledger shape changed. Refusing to run, because with no protected keys\n' +
           'this gate reports OK on everything, including fabricated values.\n'
       );
@@ -267,9 +435,26 @@ function main(argv: string[]): number {
     ledger = raw.languages;
   } catch (e) {
     process.stderr.write(
-      `check-locale-only-edits: cannot read the naturalization ledger at ${LEDGER}: ${
+      `check-locale-only-edits: cannot parse the naturalization ledger ${LEDGER_REL} at ${base}: ${
         (e as Error).message
-      }\n` + 'Refusing to run without it: an absent ledger protects nothing.\n'
+      }\n` + 'Refusing to run without it: an unreadable ledger protects nothing.\n'
+    );
+    return 1;
+  }
+  const enBaseHash = flattenAndHash(JSON.parse(enBaseRaw) as Record<string, unknown>);
+  let protectedAtBase = 0;
+  let staleAtBase = 0;
+  for (const entries of Object.values(ledger)) {
+    for (const [k, v] of Object.entries(entries ?? {})) {
+      if (enBaseHash[k] === undefined) continue; // orphan, as check:ci-i18n-naturalization counts it
+      if (v === enBaseHash[k]) protectedAtBase++;
+      else staleAtBase++;
+    }
+  }
+  if (protectedAtBase === 0) {
+    process.stderr.write(
+      `check-locale-only-edits: the ledger at ${base} vouches for ZERO keys against its English.\n` +
+        'Refusing to run: with nothing protected this gate passes every rewrite, fabrications included.\n'
     );
     return 1;
   }
@@ -290,40 +475,11 @@ function main(argv: string[]): number {
     if (!baseRaw) continue; // new locale file: nothing to compare against
     const now = flatten(JSON.parse(fs.readFileSync(path.join(REPO, rel), 'utf8')));
     const was = flatten(JSON.parse(baseRaw));
-    const naturalized = (ledger[loc] ?? {}) as Record<string, unknown>;
-
-    for (const key of Object.keys(now)) {
-      if (was[key] === undefined || now[key] === was[key]) continue;
-      checkedKeys++;
-      const englishChanged = enNow[key] !== enBase[key];
-      if (englishChanged) continue; // the whole point of a re-naturalization
-      if (!(key in naturalized)) continue; // backlog catch-up, allowed
-
-      // Backlog catch-up the LEDGER lied about. A key whose base value is byte-identical to its base English was never actually translated, whatever the ledger claims, and the ledger does make that claim: 369 keys across 12 locales were stamped naturalized while still holding the English string. Trusting the stamp over the data turns "translate the untranslated" into a gate
-      // failure, which is the exact opposite of this gate's stated allowance two paragraphs up.
-      //
-      // This cannot hide a fabrication. A fabricated rewrite replaces a REAL translation, so its base value is not English and this check does not apply to it. Proven on the run that motivated it: 411 genuine rewrites were still reported and reverted
-      // while these passed.
-      if (was[key] === enBase[key]) continue;
-
-      // An edit that ONLY removes an em dash is required by check:ci-em-dash-surfaces, which is a blocking gate in the same chain. Without this the two gates are mutually unsatisfiable: one demands the dash go, the other calls its removal an unjustified rewrite. Deliberately narrow -- the values must be identical once the dash and its surrounding spaces are normalised away, so a
-      // rewrite that also changes wording is still reported.
-      if (isRefMarkerRepair(was[key], now[key], enNow[key] ?? '')) {
-        refMarkerRepairs.push(`  ${loc}  ${key}`);
-        continue;
-      }
-
-      if (isEmDashRepair(was[key], now[key])) {
-        emDashRepairs.push(`  ${loc}  ${key}`);
-        continue;
-      }
-      findings.push(
-        `  ${loc}  ${key}\n` +
-          `      en (unchanged): ${JSON.stringify(enNow[key] ?? '<absent>').slice(0, 100)}\n` +
-          `      was:            ${JSON.stringify(was[key]).slice(0, 100)}\n` +
-          `      now:            ${JSON.stringify(now[key]).slice(0, 100)}`
-      );
-    }
+    const r = scanLocale(loc, was, now, enBase, enNow, ledger[loc] ?? {}, enBaseHash);
+    findings.push(...r.findings);
+    emDashRepairs.push(...r.emDashRepairs);
+    refMarkerRepairs.push(...r.refMarkerRepairs);
+    checkedKeys += r.checkedKeys;
   }
 
   if (refMarkerRepairs.length > 0) {
@@ -363,7 +519,8 @@ function main(argv: string[]): number {
 
   process.stdout.write(
     `check-locale-only-edits: OK - ${checkedKeys} changed locale value(s) vs ${base}, ` +
-      'each either backed by an English change or not yet naturalized.\n'
+      'each backed by an English change or catch-up on a key the base ledger did not vouch for ' +
+      `(${protectedAtBase} (locale, key) pairs protected at base, ${staleAtBase} stale there).\n`
   );
   return 0;
 }
