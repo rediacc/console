@@ -178,7 +178,7 @@ def build_and_install(root: pathlib.Path, built_plan: Plan) -> None:
             built_plan.sea_arch,
         ],
         cwd=root,
-        # The child imports rediacc_ci by module path, so the checkout's .ci goes first on PYTHONPATH (a caller's entries stay behind it) rather than relying on how this process found the package (review finding 4a6641bf.4).
+        # The child imports rediacc_ci by module path: .ci leads PYTHONPATH (4a6641bf.4).
         env=_ci_env(root),
     )
     if not pathlib.Path(built_plan.built).is_file():

@@ -61,8 +61,8 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-cd-errors-in-ci.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-retire-bash-oracles.md -- 7 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans: none.
-- Writers: 0 live of writer_cap 15 (session d778be9d).
-- Leased items: 5: #01c5225d (worker:a253a4466464c40cc, d778be9d), #1420d4b8 (worker:afb300d84c0419737, d778be9d), #7de60352 (worker:a38c681a317cbe9de, d778be9d), #9e7a546f (worker:a3202f4410d645cb9, d778be9d), #e8070172 (worker:a38c681a317cbe9de, d778be9d).
+- Writers: 5 live of writer_cap 15 (session d778be9d): worker:a2fbc462f3ded10e1, worker:acd43849a9810ef2b, worker:a9a94a562f0a003df, worker:a8ec77a60449ad97d, worker:a42476e3b288defe1.
+- Leased items: 6: #01be3381 (worker:a8ec77a60449ad97d, d778be9d), #1ad45cb5 (worker:a2fbc462f3ded10e1, d778be9d), #26b94888 (worker:acd43849a9810ef2b, d778be9d), #5f59e9f9 (worker:a9a94a562f0a003df, d778be9d), #643fd0ad (worker:aa78b67b5c937587d, d778be9d), #73374548 (worker:a42476e3b288defe1, d778be9d).
 - Next plan: agent/plans/PLAN-config-passkey-optional.md, Promoted entry 5; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
