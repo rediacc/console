@@ -33,15 +33,15 @@
     "docs/backup-storage/07-execution-record.md": 1,
     "docs/caption-sync-flat-cues.md": 2,
     "packages/www/src/content/docs/en/siem-integration.md": 1,
-    "private/account/CLAUDE.md": 2,
+    "private/account/CLAUDE.md": 1,
     "private/account/docs/runtime/deployment.md": 1,
-    "private/account/docs/secrets/rotation.md": 4,
-    "private/account/scripts/rotation/commands/check.ts": 2,
+    "private/account/docs/secrets/rotation.md": 3,
+    "private/account/scripts/rotation/commands/check.ts": 1,
     "private/account/src/services/backup-chunk-store.ts": 1,
-    "private/account/tests/integration/rotation-bitwarden-names.test.ts": 3,
+    "private/account/tests/integration/rotation-bitwarden-names.test.ts": 1,
     "scripts/dev/bws-rotate.py": 1,
     "scripts/gates/check-env-credential-drift.ts": 1,
     "scripts/lib/env-file.sh": 2,
-    "scripts/ops/secret-rename.py": 3
+    "scripts/ops/secret-rename.py": 2
   }
 }
