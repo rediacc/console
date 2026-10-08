@@ -73,6 +73,9 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 8. agent/plans/PLAN-stop-hook-retro-20260924.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 23 boxes open, R20260924.15 re-count the seven frictions on .blocklog and record before/after in Status
 9. agent/plans/PLAN-locale-techdiff-resync.md -- operator 2026-10-08 melt-the-list: EASY, 5 of 5 boxes open, mechanical i18n pipeline re-translation of nine solutionPages groups x 12 locales at haiku default (gate #583 has merged)
 10. agent/plans/PLAN-cd-errors-in-ci.md -- operator 2026-10-08: catch CD errors at CI level; W1 is the housekeeping root fix due before the 03:00Z run
+11. agent/plans/PLAN-scope-mirrors.md -- operator /ask 2026-10-04 (#e70faed1): queued after the Promoted entries; eight live drifts F1-F8 predicted
+12. agent/plans/PLAN-lessons-registry.md -- operator /ask 2026-10-04 (#077d85c1): extends TRAPS.md and check:ci-trap-registry with content-checked Documented-In anchors
+
 ## Generated
 
 <!-- queue:generated:begin -->

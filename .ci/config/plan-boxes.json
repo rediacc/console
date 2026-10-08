@@ -889,6 +889,28 @@
       ],
       "done_sigs": []
     },
+    "agent/plans/PLAN-lessons-registry.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 11,
+      "done": 0,
+      "open_sigs": [
+        "0b714aa1",
+        "15f3badd",
+        "1de18745",
+        "5df45c33",
+        "5f6fcaec",
+        "9bb8848a",
+        "beb18c04",
+        "c39f24c1",
+        "c5fee6fc",
+        "e371147a",
+        "f2666cc1"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-lint-css-ci-wiring.md": {
       "status": "compacted",
       "owner": "e6500e92",
@@ -1495,6 +1517,28 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-scope-mirrors.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 11,
+      "done": 0,
+      "open_sigs": [
+        "122d9351",
+        "1a0d3473",
+        "251bc0c0",
+        "4151c3b5",
+        "7eae01bf",
+        "839fe455",
+        "99f2af33",
+        "9fd938a1",
+        "b33cfa20",
+        "e786de74",
+        "e95189bb"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-secret-namespace-migration.md": {
