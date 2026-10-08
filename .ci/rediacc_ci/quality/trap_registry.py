@@ -612,7 +612,10 @@ class Registry:
         """
         sibling = self.file_root / GUARDS_PACKAGE_REL / ("test-%s.py" % stem)
         # A sibling suite counts only when it names the guard: an empty or stray file proves neither direction. Which directions its cases cover is the suite's own business (its DEFECT arm), not something a text read can settle.
-        if sibling.is_file() and stem in read_text(sibling):
+        # Whole-token: `_` and alphanumerics belong to a name, so `block_x_extra` does not name `block_x`.
+        if sibling.is_file() and re.search(
+            r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])" % re.escape(stem), read_text(sibling)
+        ):
             return ""
         cases = read_text(self.file_root / HOOKCASES_REL)
         fires = '"check 2 guards/%s.py"' % stem in cases
