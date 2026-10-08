@@ -491,6 +491,22 @@ def test_lf1_the_advisory_names_the_plan_that_is_still_open(lrepo):
     assert "still open: PLAN-batch-open.md (1 open)" in text, text
 
 
+def test_lf1_the_open_boxes_are_read_only_where_the_advisory_renders_them(lrepo, monkeypatch):
+    """The plan reads behind `still open:` are paid by the advisory arm alone, not by the ready batch."""
+    calls: list[tuple] = []
+    real = wl_checks._open_in_set
+
+    def spy(*a):
+        calls.append(a)
+        return real(*a)
+
+    monkeypatch.setattr(wl_checks, "_open_in_set", spy)
+    wl_checks.loop_next_text(ready(lrepo), lrepo, {}, False, me="d778be9d")
+    assert calls == [], calls
+    wl_checks.loop_next_text(lstate(lrepo), lrepo, {}, False, me="d778be9d")
+    assert len(calls) == 1, calls
+
+
 def test_lf1_an_empty_set_does_not_read_as_complete(lrepo):
     text, blocking = wl_checks.loop_next_text(
         lstate(lrepo, plans=()), lrepo, {}, False, me="d778be9d"

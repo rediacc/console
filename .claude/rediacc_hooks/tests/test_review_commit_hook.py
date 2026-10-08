@@ -701,6 +701,22 @@ def test_mark_fixed_follows_a_moved_to_stub_to_the_moved_file(world):
     assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % fix)
 
 
+def test_mark_fixed_reads_the_stub_from_the_fix_commit_not_the_working_tree(world):
+    """The stub is read from the fix commit's tree: deleting it in a later commit leaves the mark valid, and a fix touching neither file is still refused."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    world.commit("done/f.py", body="a = 1\nb = 2\nc = 3\n", msg="docs: move")
+    world.commit("f.py", body="Status: moved\nMoved-To: done/f.py\n", msg="docs: stub")
+    fix = world.commit("done/f.py", body="a = 1\nb = 2\nc = 4\n")
+    world.git("rm", "-q", "--", "f.py")
+    world.git("commit", "-q", "-m", "docs: drop the stub", "--", "f.py")
+    assert not (world.repo / "f.py").exists()
+    R.mark(world.repo, BRANCH, fid, "fixed", [fix], "deadbeef")
+    review = R.parse(world.review_file(sha).read_text())
+    assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % fix)
+
+
 def test_mark_not_a_bug_needs_a_resolvable_citation(world):
     sha = world.commit()
     world.run_child(sha)
