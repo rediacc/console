@@ -19,6 +19,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from unittest import mock
 
 HERE = pathlib.Path(__file__).resolve().parent
 GUARD = HERE / "block_plan_box_rewrite.py"
@@ -459,18 +460,16 @@ def main():
                     raise subprocess.TimeoutExpired(argv, 30)
                 return _f(argv, k_)
 
-            setattr(subprocess, "run", flaky)  # noqa: B010 -- a module attribute swap mypy cannot type
+            # mock.patch.object, not setattr: typed, self-restoring, and no inline suppression (operator 2026-10-08 banned those).
             try:
-                got_ = good["_head_corpus"](str(root), set())
+                with mock.patch.object(subprocess, "run", flaky):
+                    got_ = good["_head_corpus"](str(root), set())
             except RuntimeError:
                 print("%-72s ok" % ("_head_corpus raises RuntimeError on a git error (%s)" % label))
             else:
                 print("*** FAIL *** _head_corpus returned %r on a git error (%s)" % (got_, label))
                 fails += 1
-            finally:
-                setattr(subprocess, "run", real_run)  # noqa: B010 -- a module attribute swap mypy cannot type
     finally:
-        setattr(subprocess, "run", real_run)  # noqa: B010 -- a module attribute swap mypy cannot type
         os.environ.clear()
         os.environ.update(saved_env)
 
