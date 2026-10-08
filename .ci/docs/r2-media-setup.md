@@ -59,7 +59,7 @@ gh secret set CLOUDFLARE_R2_MEDIA_ENDPOINT --org rediacc --body "https://fa51e4a
 ```
 
 **These three no longer come from GitHub org secrets in CI.** The `gh secret set` lines above are kept because they are still how you would seed a fresh account, but the live reader is Bitwarden: `.github/workflows/ci-quality.yml` fetches all three through `./.github/actions/bws-secrets` as `BWS_CLOUDFLARE_R2_MEDIA_*` and hands them to its "Restore tutorial-narration audio cache
-from R2" step, which runs `.ci/scripts/deploy/sync-media-from-r2.sh --audio-only`. That step is deliberately not held by the `media_quality` label, because it is setup rather than a gate.
+from R2" step, which runs `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_from_r2 --audio-only`. That step is deliberately not held by the `media_quality` label, because it is setup rather than a gate.
 
 Re-derive the wiring rather than trusting this paragraph:
 
@@ -129,7 +129,7 @@ Also see `packages/www/public/_headers`: the CSP's `media-src` and `connect-src`
 affects the R2 *origin* response for future cache misses; anything already `HIT`-cached keeps serving the pre-CORS response until it's purged or expires. After applying/changing the CORS policy (or republishing a file that needs the fix to actually be visible), purge the CDN cache for the hostname:
 
 ```bash
-.ci/scripts/deploy/purge-media-cache.sh
+PYTHONPATH=.ci python3 -m rediacc_ci.deploy.purge_media_cache
 ```
 
 (Needs `CLOUDFLARE_API_TOKEN`, or `CF_GLOBAL_API_KEY` + `CF_EMAIL`.)
@@ -138,14 +138,14 @@ Confirm with the same `curl -sI -H "Origin: ..."` check above — look for `cf-c
 
 ## 6. Syncing media
 
-Use `.ci/scripts/deploy/sync-media-to-r2.sh` — wraps `aws s3 sync`, which is incremental by default (only uploads files whose size/mtime differ from what's already in the bucket). Safe to re-run any time a tutorial or solution video is re-recorded; it will only push what changed.
+Use `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_to_r2` — wraps `aws s3 sync`, which is incremental by default (only uploads files whose size/mtime differ from what's already in the bucket). Safe to re-run any time a tutorial or solution video is re-recorded; it will only push what changed.
 
 ```bash
 export CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=... CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY=... CLOUDFLARE_R2_MEDIA_ENDPOINT=...
-.ci/scripts/deploy/sync-media-to-r2.sh                  # sync everything
-.ci/scripts/deploy/sync-media-to-r2.sh --dry-run        # preview only
-.ci/scripts/deploy/sync-media-to-r2.sh --tutorials-only # just tutorials/video/
-.ci/scripts/deploy/sync-media-to-r2.sh --solutions-only # just videos/solutions/
+PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_to_r2                  # sync everything
+PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_to_r2 --dry-run        # preview only
+PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_to_r2 --tutorials-only # just tutorials/video/
+PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_to_r2 --solutions-only # just videos/solutions/
 ```
 
 The URL builders (`src/utils/solution-video.ts`,
@@ -189,15 +189,15 @@ print(len(deep), "deep,", sum(1 for x in deep if x.get("filter")=="blob:none"), 
 
 The media itself is not in the working tree either way, which is what the rest of this section is for.
 
-`.ci/scripts/deploy/sync-media-from-r2.sh` is the download counterpart — restores `packages/www/public/assets/tutorials/video/` and `packages/www/public/assets/videos/` from R2 into a local checkout. Same incremental behavior as the upload script (only pulls what's missing or changed locally), and needs the same `R2_MEDIA_*` credentials (the S3 API is used to list/diff the bucket;
+`rediacc_ci.deploy.sync_media_from_r2` is the download counterpart — restores `packages/www/public/assets/tutorials/video/` and `packages/www/public/assets/videos/` from R2 into a local checkout. Same incremental behavior as the upload script (only pulls what's missing or changed locally), and needs the same `R2_MEDIA_*` credentials (the S3 API is used to list/diff the bucket;
 the public `media.rediacc.com` domain doesn't expose a listing endpoint, only individual file GETs).
 
 ```bash
 export CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=... CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY=... CLOUDFLARE_R2_MEDIA_ENDPOINT=...
-.ci/scripts/deploy/sync-media-from-r2.sh                  # restore everything
-.ci/scripts/deploy/sync-media-from-r2.sh --dry-run        # preview only
-.ci/scripts/deploy/sync-media-from-r2.sh --tutorials-only
-.ci/scripts/deploy/sync-media-from-r2.sh --solutions-only
+PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_from_r2                  # restore everything
+PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_from_r2 --dry-run        # preview only
+PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_from_r2 --tutorials-only
+PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_from_r2 --solutions-only
 ```
 
 Once the media directories are removed from git (see §6), this is the way to populate a local working copy — needed for pipeline development / offline work / local ffmpeg operations (`--tutorials-only` / `--solutions-only`), and for the tutorial-audio cache specifically (`--audio-only`, always needed — see §9). **Not** needed for normal `npm run dev` browsing of tutorial/solution
@@ -220,7 +220,7 @@ uses. This document said "Qwen3-TTS" flatly until 2026-09-06, which mattered mor
 Unlike `tutorials/video/` and `videos/solutions/`, this is **not** a runtime-served asset — nothing in the browser player ever fetches a `.mp3`. `generate-tutorial-video.ts` / `scripts/lib/ffmpeg-video.ts` mux these files into the final tutorial `.mp4` at build time, then they're done; the mp4 already has audio embedded.
 
 It's synced to the same `rediacc-www-media` bucket under `tutorials/audio/` purely as a **build-time cache** — regenerating narration costs real TTS GPU/electricity, so losing the local copy on a fresh checkout shouldn't mean paying that cost again. It is not covered by the Cache Rule in §5 (no reason to CDN-cache something nothing fetches over HTTP) and is only reachable via the
-S3 API (`sync-media-to-r2.sh` / `sync-media-from-r2.sh --audio-only`), never via `media.rediacc.com`.
+S3 API (`rediacc_ci.deploy.sync_media_to_r2` / `rediacc_ci.deploy.sync_media_from_r2 --audio-only`), never via `media.rediacc.com`.
 
 Restore/upload for this cache is wired into the tutorial pipeline directly. `www_tutorial_audio_restore` and `www_tutorial_audio_upload` are defined in `.ci/media/r2.sh`, and `.ci/media/tutorials.sh` calls them from `www_tutorials_generate` and `www_tutorials_video`. Both are best-effort, so local iteration without `R2_MEDIA_*` set still works, just without the cache (narration
 gets re-synthesized instead of restored).
@@ -231,6 +231,6 @@ the file already being present locally by the time it runs.
 
 ```bash
 export CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=... CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY=... CLOUDFLARE_R2_MEDIA_ENDPOINT=...
-.ci/scripts/deploy/sync-media-to-r2.sh --audio-only     # backup
-.ci/scripts/deploy/sync-media-from-r2.sh --audio-only   # restore
+PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_to_r2 --audio-only     # backup
+PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_from_r2 --audio-only   # restore
 ```

@@ -20,7 +20,7 @@ written, nor in sorted order: it visits them in the order bash's hash table yiel
 Measured on bash 5.3.9 on this host, and hard-coded below in exactly that order rather than sorted:
 
     NEEDS      check:ci-python-lint, check:ci-renet, check:ci-renet-tiers
-    NEEDS_ENV  sync-media-from-r2, sync-media-to-r2, --publish-www
+    NEEDS_ENV  rediacc_ci.deploy.sync_media_from_r2, rediacc_ci.deploy.sync_media_to_r2, --publish-www
 
 A different bash could hash differently. That is a property of the ORIGINAL, not of this port, and the differential is what would report it: the two sides would disagree on `$HIT` for a command naming two keys, on the machine where the hash order differs. Recorded here so such a report is read as what it is.
 
@@ -83,8 +83,6 @@ NEEDS_SCRIPT = (
     ("upload-repos-to-r2.sh", "aws"),
     ("cleanup-versions.sh", "aws"),
     ("upload-r2.sh", "aws"),
-    ("sync-media-to-r2.sh", "aws"),
-    ("sync-media-from-r2.sh", "aws"),
     ("upload-to-r2.sh", "aws"),
     # THE PYTHON PORTS, by module. `python3 -m <module>` runs the same aws calls its bash original did, and `_is_invoked` reads the module after `-m` as the command's target. The harness asserts every row above whose port exists has its module here.
     ("rediacc_ci.release.assert_edge_tag_exists", "aws"),
@@ -109,10 +107,8 @@ NEEDS_SCRIPT = (
 #
 # Extend the table when another command grows a credential dependency. Match on something specific to that command, never on a bare tool name.
 NEEDS_ENV = (
-    ("sync-media-from-r2", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
-    ("sync-media-to-r2", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
     ("--publish-www", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
-    # The Python ports of the two sync scripts, by module (see NEEDS_SCRIPT for how `python3 -m` is read).
+    # The two sync scripts, by module (see NEEDS_SCRIPT for how `python3 -m` is read).
     ("rediacc_ci.deploy.sync_media_from_r2", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
     ("rediacc_ci.deploy.sync_media_to_r2", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
 )

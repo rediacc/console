@@ -44,15 +44,16 @@ run_r2() {
 
 # stage_sync_scripts <fixture-root> [exit-code]
 #
-# The two functions call the sync scripts by ABSOLUTE path under $ROOT_DIR, not through
-# PATH, so the seam is a fixture tree rather than a fake binary.
+# The two functions run the sync modules with PYTHONPATH=$ROOT_DIR/.ci, so the seam is a
+# fixture tree holding recorder modules rather than a fake binary.
 stage_sync_scripts() {
     local d="$1" code="${2:-0}" name
-    mkdir -p "$d/.ci/scripts/deploy"
-    for name in sync-media-from-r2.sh sync-media-to-r2.sh; do
-        printf '#!/bin/bash\nprintf "%%s\\n" "%s $*" >>"%s/sync-calls"\nexit %s\n' \
-            "$name" "$d" "$code" >"$d/.ci/scripts/deploy/$name"
-        chmod +x "$d/.ci/scripts/deploy/$name"
+    mkdir -p "$d/.ci/rediacc_ci/deploy"
+    : >"$d/.ci/rediacc_ci/__init__.py"
+    : >"$d/.ci/rediacc_ci/deploy/__init__.py"
+    for name in sync_media_from_r2 sync_media_to_r2; do
+        printf "import sys\nwith open('%s/sync-calls', 'a', encoding='utf-8') as fh:\n    fh.write('%s ' + ' '.join(sys.argv[1:]) + '\\\\n')\nsys.exit(%s)\n" \
+            "$d" "$name" "$code" >"$d/.ci/rediacc_ci/deploy/$name.py"
     done
     : >"$d/sync-calls"
 }
@@ -84,7 +85,7 @@ _case_a_mutated_module_changes_what_the_behaviour_cases_see() {
     assert_exit_code 0 "$rc" "the mutated copy still runs; only its flag changed"
     local calls
     calls="$(<"$d/sync-calls")"
-    media_assert_mutation_swapped "$calls" "sync-media-from-r2.sh --audio-only" "sync-media-from-r2.sh --all" "flag"
+    media_assert_mutation_swapped "$calls" "sync_media_from_r2 --audio-only" "sync_media_from_r2 --all" "flag"
 }
 
 test_a_planted_mutation_is_visible_to_the_behaviour_cases() {
@@ -93,7 +94,7 @@ test_a_planted_mutation_is_visible_to_the_behaviour_cases() {
     sed 's/--audio-only/--all/' "$MODULE" >"$d/mutant/r2.sh"
     grep -q -- "--all" "$d/mutant/r2.sh" || log_fail "the mutation did not apply, so this control would pass for the wrong reason"
     stage_sync_scripts "$d"
-    with_fake_bin "+cat +uname" _case_a_mutated_module_changes_what_the_behaviour_cases_see "$d"
+    with_fake_bin "+cat +uname +python3" _case_a_mutated_module_changes_what_the_behaviour_cases_see "$d"
     log_pass "swapping --audio-only for --all in r2.sh changes what the behaviour cases observe"
 }
 
@@ -120,8 +121,8 @@ _case_credentials_present_syncs_audio_only() {
     assert_exit_code 0 "$rc" "the credentialed path must succeed (output: $LAST_OUT)"
     local calls
     calls="$(<"$d/sync-calls")"
-    assert_contains "$calls" "sync-media-from-r2.sh --audio-only" "restore pulls only the audio prefix"
-    assert_contains "$calls" "sync-media-to-r2.sh --audio-only" "upload pushes only the audio prefix"
+    assert_contains "$calls" "sync_media_from_r2 --audio-only" "restore pulls only the audio prefix"
+    assert_contains "$calls" "sync_media_to_r2 --audio-only" "upload pushes only the audio prefix"
 }
 
 _case_a_failing_sync_is_a_warning_not_a_death() {
@@ -140,15 +141,15 @@ _case_a_failing_sync_is_a_warning_not_a_death() {
 test_the_cache_is_optional_in_both_directions() {
     local d="$1"
     stage_sync_scripts "$d"
-    with_fake_bin "+cat +uname" _case_no_credentials_skips_without_failing "$d"
-    with_fake_bin "+cat +uname" _case_credentials_present_syncs_audio_only "$d"
+    with_fake_bin "+cat +uname +python3" _case_no_credentials_skips_without_failing "$d"
+    with_fake_bin "+cat +uname +python3" _case_credentials_present_syncs_audio_only "$d"
     log_pass "no credentials skips both directions; credentials sync the audio prefix and nothing else"
 }
 
 test_a_broken_sync_never_fails_the_pipeline() {
     local d="$1"
     stage_sync_scripts "$d" 1
-    with_fake_bin "+cat +uname" _case_a_failing_sync_is_a_warning_not_a_death "$d"
+    with_fake_bin "+cat +uname +python3" _case_a_failing_sync_is_a_warning_not_a_death "$d"
     log_pass "a sync script that exits non-zero produces a warning and a zero exit"
 }
 

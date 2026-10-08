@@ -308,15 +308,15 @@ if os.path.exists(os.path.join(REPO, "private/account/package.json")):
     cases.append(
         (
             0,
-            run("grep -n R2 run.sh .ci/scripts/deploy/sync-media-to-r2.sh", REAL),
+            run("grep -n R2 run.sh .ci/media/tools/upload-r2.sh", REAL),
             "CONTROL: two .sh paths handed to grep run neither",
         )
     )
     cases.append(
         (
             2,
-            run("cd . && bash .ci/scripts/deploy/sync-media-to-r2.sh", REAL),
-            "an interpreter after a separator still runs the key",
+            run("cd . && ./run.sh --publish-www --langs en", REAL),
+            "a command after a separator still runs the key",
         )
     )
     # THE PYTHON PORT OF THE SAME UPLOAD, by module. aws is put on PATH so the toolchain arm cannot be what refuses: the refusal has to be the credential one, and the control has to clear both.
@@ -457,7 +457,7 @@ if aws_in_box:
         )
     )
 
-    # READING A SCRIPT IS NOT RUNNING IT, and this is the exact bug class `_is_invoked` was built for: `grep -n assets/videos .ci/scripts/deploy/sync-media-to-r2.sh` was once refused with a message about credentials a grep does not need.
+    # READING A SCRIPT IS NOT RUNNING IT, and this is the exact bug class `_is_invoked` was built for: `grep -n assets/videos .ci/scripts/deploy/sync-media-to-r2.sh` (a script since deleted) was once refused with a message about credentials a grep does not need.
     # Every NEEDS_SCRIPT key is a path a session has a real reason to open, so the regression is re-asserted for the new table rather than inherited from the old one.
     cases.extend(
         (
@@ -472,13 +472,13 @@ if aws_in_box:
         )
     )
 
-    # THE TWO TABLES COMPOSE, IN THIS ORDER. sync-media-to-r2.sh is in NEEDS_ENV as well, so satisfying the credential arm must not satisfy the toolchain one: the credentials being in the shell says nothing about whether aws is on PATH.
+    # THE TWO TABLES COMPOSE, IN THIS ORDER. The sync_media_to_r2 module is in NEEDS_ENV as well, so satisfying the credential arm must not satisfy the toolchain one: the credentials being in the shell says nothing about whether aws is on PATH.
     # The inline form is used rather than the profile form because the profile form runs the key under another interpreter, and the composition under test is about the key being invoked directly.
     cases.append(
         (
             2,
             run(
-                "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=x .ci/scripts/deploy/sync-media-to-r2.sh",
+                "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=x PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_to_r2",
                 AWS_ABSENT,
             ),
             "two-stage: NEEDS_ENV satisfied, NEEDS_SCRIPT still catches the missing aws",

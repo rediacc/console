@@ -1351,21 +1351,32 @@ export const jobGraphProvider: Provider = {
 
 /* ---------------------------------------------------------------- the media */
 
-const MEDIA_PUSH_SEAM = '.ci/scripts/deploy/sync-media-to-r2.sh';
-const MEDIA_PULL_SEAM = '.ci/scripts/deploy/sync-media-from-r2.sh';
+const MEDIA_PUSH_SEAM = '.ci/rediacc_ci/deploy/sync_media_to_r2.py';
+const MEDIA_PULL_SEAM = '.ci/rediacc_ci/deploy/sync_media_from_r2.py';
 const WWW_GITIGNORE = 'packages/www/.gitignore';
 const WWW_PREFIX = 'packages/www/';
 
-/** `<local>` -> `<r2 prefix>` pairs, from whichever argument order the script uses. */
+/**
+ * `<local>` -> `<r2 prefix>` pairs, from whichever argument order the script uses.
+ *
+ * Two spellings are read: a `sync_dir "<a>" "<b>"` / `restore_dir "<a>" "<b>"` call, and a Python
+ * module-level pair `NAME = ("<a>", "<b>")` as the ports write their three legs. `a` and `b` are the
+ * script's first and second argument either way, and `localFirst` says which one is the local path.
+ */
 export function mediaPairs(source: string, localFirst: boolean): Map<string, string> {
   const out = new Map<string, string>();
-  const re = /^\s*(?:sync_dir|restore_dir)\s+"([^"]+)"\s+"([^"]+)"/gm;
-  for (const m of source.matchAll(re)) {
-    const a = (m[1] ?? '').replace('$REPO_ROOT/', '');
-    const b = (m[2] ?? '').replace('$REPO_ROOT/', '');
-    const local = localFirst ? a : b;
-    const prefix = localFirst ? b : a;
-    out.set(local.replace(/\/$/, ''), prefix.replace(/\/$/, ''));
+  const res = [
+    /^\s*(?:sync_dir|restore_dir)\s+"([^"]+)"\s+"([^"]+)"/gm,
+    /^[A-Z][A-Z_]*\s*=\s*\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,?\s*\)\s*$/gm,
+  ];
+  for (const re of res) {
+    for (const m of source.matchAll(re)) {
+      const a = (m[1] ?? '').replace('$REPO_ROOT/', '');
+      const b = (m[2] ?? '').replace('$REPO_ROOT/', '');
+      const local = localFirst ? a : b;
+      const prefix = localFirst ? b : a;
+      out.set(local.replace(/\/$/, ''), prefix.replace(/\/$/, ''));
+    }
   }
   return out;
 }

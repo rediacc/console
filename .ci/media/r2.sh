@@ -29,7 +29,7 @@ www_tutorial_audio_restore() {
         return 0
     fi
     log_step "Restoring tutorial-audio cache from R2..."
-    "$ROOT_DIR/.ci/scripts/deploy/sync-media-from-r2.sh" --audio-only || log_warn "Audio cache restore failed, continuing without it"
+    PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.deploy.sync_media_from_r2 --audio-only || log_warn "Audio cache restore failed, continuing without it"
 }
 
 www_tutorial_audio_upload() {
@@ -40,5 +40,5 @@ www_tutorial_audio_upload() {
         return 0
     fi
     log_step "Backing up tutorial-audio cache to R2..."
-    "$ROOT_DIR/.ci/scripts/deploy/sync-media-to-r2.sh" --audio-only || log_warn "Audio cache upload failed"
+    PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.deploy.sync_media_to_r2 --audio-only || log_warn "Audio cache upload failed"
 }
