@@ -232,7 +232,7 @@ def test_the_real_store_is_untouched(gate):
     gate.log_pass("a hook run leaves the real agent/worklist store byte-count identical")
 
 
-STALE_INFLIGHT = "<!-- queue:inflight:start -->\nSTALE\n<!-- queue:inflight:end -->\n"
+STALE_INFLIGHT = "<!-- queue:inflight:begin -->\nSTALE\n<!-- queue:inflight:end -->\n"
 
 
 def test_the_hook_renders_the_fixture_queue_not_the_real_one(gate, tmp_path):
@@ -245,9 +245,15 @@ def test_the_hook_renders_the_fixture_queue_not_the_real_one(gate, tmp_path):
     fixture_queue.parent.mkdir(parents=True)
     fixture_queue.write_text(STALE_INFLIGHT, encoding="utf-8")
     drive(hook, "late", BUDGET)
-    assert fixture_queue.read_text(encoding="utf-8") != STALE_INFLIGHT, (
+    rendered = fixture_queue.read_text(encoding="utf-8")
+    assert "STALE" not in rendered, (
         "the fixture root's QUEUE.md was not re-rendered, so the hook resolved another root (the real checkout's)"
     )
+    for marker in ("<!-- queue:inflight:begin -->", "<!-- queue:inflight:end -->"):
+        assert rendered.count(marker) == 1, "want the one block replaced in place, %s:\n%s" % (
+            marker,
+            rendered,
+        )
     gate.log_pass(
         "the hook re-renders the fixture root's QUEUE.md, so the real one is out of its reach"
     )
