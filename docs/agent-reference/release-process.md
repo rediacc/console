@@ -73,6 +73,16 @@ What can still split the pair: `init` failing before its tag step, or the dispat
 
 `check:ci-workflow-invariants` (`.ci/rediacc_ci/security/ci_workflow_invariants.py`, release-order phase) enforces the shape on the job graph. It refuses a version-tag step behind any job other than `init`, a tag step or job whose `if:` reads `retry_mode`, a dispatch that does not immediately follow the seal under the same `if:`, `contents: write` anywhere in cd-v2, an inline `git push` in a cd-v2 `run:` step that is not on the `preset: cd` App token, and a `cd` preset that stops requesting `workflows: write`.
 
+### CD preflight: CD failures predicted before the merge
+
+`rediacc_ci.release.cd_preflight` is read-only and judges the live release state: (a) the sentinel/tag bijection now, (b) the bijection after the next housekeeping runs and this release, (c) the contract floor and channel pointers, (d) the version under release, and the Validate Promotion budget. An unreadable answer (no `aws`, no credentials, R2 or `git ls-remote` unreachable, zero sentinels) is UNCHECKED and exits non-zero like DRIFT. It runs at three sites:
+
+- `ci.yml` job `cd-preflight` (CD Preflight), on same-repo PRs and on pushes to `main`, with `--phase pr --release-version <initialize next_version> --checks a,b,c,d,promotion`. Fork PRs skip it (no secrets). `homebrew` is deselected because its dry run needs the private tap submodule and real checksums. CI Complete aggregates it in the soft tier.
+- `cd-v2.yml` `init`, step `CD preflight`, with `--phase cd --checks a,c,d`, AFTER `Create version tag`: before that step v<V> is sealed and untagged, so an earlier preflight would red every release.
+- `housekeeping.yml` `cleanup`, step `Release-state preflight`, with `--checks a,c`, after the retry step and before `cleanup_versions`, which has no status function and is skipped when the preflight is red.
+
+`check:ci-workflow-invariants` pins all three sites, their check lists, the PR arm of the job's `if:` and the step order. Locally: `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile r2-artifacts -- python3 -m rediacc_ci.release.cd_preflight --phase pr --release-version X.Y.Z`, with the `aws` CLI on `PATH`.
+
 The `release` PR label sets `publish_stable` on the automatic dispatch. When the merged PR carries the exact label `release` and not `bump-none`, `initialize` records `publish_stable=true` and finalize-release-sentinel dispatches cd-v2 with `-f publish_stable=true`, so the merge publishes to edge AND stable with no soak (operator ruling 2026-09-30). A failed PR lookup still releases, to edge only. The decision lives in `.ci/rediacc_ci/ci/dispatch_release.py`.
 
 ## Release to Production (`promote-stable.yml`)

@@ -68,6 +68,8 @@ SOFT_REQUIRED = (
     "BREAKPOINT_LIFECYCLE",
     "CHECK_RELEASE_STATE",
     "E2E_DEPENDENCY_PROBE",
+    # cd-preflight runs on push-to-main and same-repo PRs only; a fork PR and the nightly skip it.
+    "CD_PREFLIGHT",
 )
 
 # The pointer-bump fast path (see `.ci/rediacc_ci/ci/detect_pointer_bump.py`): the three build jobs are DELIBERATELY skipped by ci.yml, so their skips must read as green. Soft still blocks on "failure", so a genuine build failure is not forgiven. RUN_SH_TESTS is NOT skipped on that path, and unlike the twin this list judges it -- see the delta documented above.

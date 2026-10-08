@@ -99,6 +99,9 @@ jobs:
             GITHUB_APP_ID > BWS_APP_ID
             GIT_BOT_NAME > BWS_GIT_BOT_NAME
             GIT_BOT_EMAIL > BWS_GIT_BOT_EMAIL
+            CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
+            CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
+            CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
 
       - uses: ./.github/actions/app-token
         id: app-token
@@ -262,6 +265,29 @@ jobs:
           git -c user.name="$GIT_BOT_NAME" -c user.email="$GIT_BOT_EMAIL" tag -a "v${VERSION}" -m "v${VERSION}" "$CI_SHA"
           git push origin "v${VERSION}"
           echo "::notice::Created tag v${VERSION} at ${CI_SHA}"
+
+      # PLAN-cd-errors-in-ci W4: the release state is judged before anything
+      # is published. rediacc_ci.release.cd_preflight is read-only and runs (a)
+      # the bijection excluding v<V>, (c) the floor and channel pointers and (d)
+      # v<V> is sealed and its tag sits at the CI commit. It sits AFTER `Create
+      # version tag` on purpose: v<V> is sealed by ci.yml and untagged until
+      # that step, so a preflight before it judged a state CD itself was about
+      # to fix and would red every release. An UNCHECKED read is red too.
+      # retry_mode passes no --release-sha: the tag step above already accepts
+      # a retry's existing tag wherever it points.
+      # ci_workflow_invariants pins this step behind the tag step.
+      - name: CD preflight
+        if: steps.skip-check.outputs.workers_only != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.next_version || steps.init.outputs.next_version }}
+          CI_SHA: ${{ steps.skip-check.outputs.retry_mode != 'true' && steps.resolve.outputs.ci_sha || '' }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.release.cd_preflight
+          --phase cd --release-version "$VERSION" --release-sha "$CI_SHA"
+          --checks a,c,d
 
   # ============================================================================
   # PUBLISH
@@ -687,16 +713,16 @@ jobs:
       success() &&
       needs.init.outputs.workers_only != 'true'
     steps:
-      # Patch run: everything is owed. Retry run: owed only when the GitHub
-      # Release for this version is missing (a run whose validation went red
-      # after init tagged it). A `gh release view` that fails for any reason
-      # other than "release not found" is UNKNOWN and refused, never read as
-      # "missing" or as "present".
       # Checked out first, unconditionally: the decision below reads GitHub through
       # common.sh's gh_retry, so one 5xx on `gh release view` retries instead of
       # failing the retry run.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # Patch run: everything is owed. Retry run: owed only when the GitHub
+      # Release for this version is missing (a run whose validation went red
+      # after init tagged it). A `gh release view` that fails for any reason
+      # other than "release not found" is UNKNOWN and refused, never read as
+      # "missing" or as "present".
       - name: Decide what this run still owes
         id: owed
         env:

@@ -83,6 +83,7 @@ TWIN_BASELINE_NAMES = frozenset(
         "SMOKE_TEST_PREVIEW",
         "BREAKPOINT_LIFECYCLE",
         "E2E_DEPENDENCY_PROBE",
+        "CD_PREFLIGHT",
     }
 )
 

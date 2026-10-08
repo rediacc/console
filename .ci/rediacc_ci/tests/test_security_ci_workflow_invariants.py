@@ -1034,3 +1034,217 @@ def test_a_real_dispatch_guard_that_differs_from_the_seal_is_refused(
     assert proc.returncode == 1, proc.stderr
     assert "INVARIANT-FAIL: release-order:" in proc.stderr
     assert "Write release sentinels" in proc.stderr
+
+
+# ---- the cd-preflight pins (PLAN-cd-errors-in-ci W4) ----
+
+PF_PR = 'PYTHONPATH=.ci python3 -m rediacc_ci.release.cd_preflight --phase pr --release-version "$V" --checks a,b,c,d,promotion'
+PF_CD = 'PYTHONPATH=.ci python3 -m rediacc_ci.release.cd_preflight --phase cd --release-version "$V" --checks a,c,d'
+PF_HK = "PYTHONPATH=.ci python3 -m rediacc_ci.release.cd_preflight --phase pr --release-version 0.0.0 --checks a,c"
+
+
+def preflight_trio() -> tuple[dict, dict, dict]:
+    """A conformant (ci, cd, housekeeping) triple; every red case below breaks exactly one thing in a fresh copy."""
+    ci = {
+        "jobs": {
+            "cd-preflight": {
+                "needs": ["initialize"],
+                "if": "always() && (github.event_name == 'push' || github.event_name == 'pull_request')",
+                "steps": [{"uses": "actions/checkout@abc"}, {"name": "Predict", "run": PF_PR}],
+            }
+        }
+    }
+    cd = {
+        "jobs": {
+            "init": {
+                "steps": [
+                    {"uses": "actions/checkout@abc"},
+                    {"name": "Create version tag", "run": TAG_RUN},
+                    {"name": "CD preflight", "run": PF_CD},
+                ]
+            }
+        }
+    }
+    hk = {
+        "jobs": {
+            "cleanup": {
+                "steps": [
+                    {
+                        "name": "Retry",
+                        "run": "python3 -m rediacc_ci.housekeeping.retry_failed_runs",
+                    },
+                    {"name": "Preflight", "run": PF_HK},
+                    {
+                        "name": "Cleanup",
+                        "run": "python3 -m rediacc_ci.housekeeping.cleanup_versions",
+                    },
+                    {"name": "Reap", "if": "${{ !cancelled() }}", "run": "reap.sh"},
+                ]
+            }
+        }
+    }
+    return ci, cd, hk
+
+
+def preflight_kinds(ci: dict, cd: dict, hk: dict) -> list[str]:
+    return [k for k, _n in ci_workflow_invariants.analyse_preflight(ci, cd, hk)[0]]
+
+
+def test_a_conformant_preflight_trio_is_clean_and_reports_its_shape() -> None:
+    """The NEGATIVE direction, so each red case below is red for the thing it planted."""
+    findings, shape = ci_workflow_invariants.analyse_preflight(*preflight_trio())
+    assert findings == []
+    assert shape == [
+        "ci.yml job cd-preflight runs it on pull_request",
+        "cd-v2 init step 3 after the tag step 2",
+        "housekeeping cleanup step 2 before cleanup step 3",
+    ]
+
+
+def _push_only(ci: dict, _cd: dict, _hk: dict) -> None:
+    ci["jobs"]["cd-preflight"]["if"] = "always() && github.event_name == 'push'"
+
+
+def _no_pr_job(ci: dict, _cd: dict, _hk: dict) -> None:
+    del ci["jobs"]["cd-preflight"]
+
+
+def _before_tag(_ci: dict, cd: dict, _hk: dict) -> None:
+    steps = cd["jobs"]["init"]["steps"]
+    steps[1], steps[2] = steps[2], steps[1]
+
+
+def _other_job(_ci: dict, cd: dict, _hk: dict) -> None:
+    cd["jobs"]["preflight"] = {"steps": [cd["jobs"]["init"]["steps"].pop()]}
+
+
+def _no_cd_step(_ci: dict, cd: dict, _hk: dict) -> None:
+    cd["jobs"]["init"]["steps"].pop()
+
+
+def _no_hk_step(_ci: dict, _cd: dict, hk: dict) -> None:
+    del hk["jobs"]["cleanup"]["steps"][1]
+
+
+def _hk_after(_ci: dict, _cd: dict, hk: dict) -> None:
+    steps = hk["jobs"]["cleanup"]["steps"]
+    steps[1], steps[2] = steps[2], steps[1]
+
+
+def _hk_always(_ci: dict, _cd: dict, hk: dict) -> None:
+    hk["jobs"]["cleanup"]["steps"][2]["if"] = "always()"
+
+
+def _hk_guarded_preflight(_ci: dict, _cd: dict, hk: dict) -> None:
+    hk["jobs"]["cleanup"]["steps"][1]["if"] = "inputs.dry_run != true"
+
+
+def _no_cleanup(_ci: dict, _cd: dict, hk: dict) -> None:
+    del hk["jobs"]["cleanup"]["steps"][2]
+
+
+def _narrow_cd(_ci: dict, cd: dict, _hk: dict) -> None:
+    cd["jobs"]["init"]["steps"][2]["run"] = PF_CD.replace("a,c,d", "a,c")
+
+
+def _narrow_hk(_ci: dict, _cd: dict, hk: dict) -> None:
+    hk["jobs"]["cleanup"]["steps"][1]["run"] = PF_HK.replace("a,c", "c")
+
+
+@pytest.mark.parametrize(
+    ("mutate", "expected"),
+    [
+        (_push_only, ["cd-preflight-not-on-pr"]),
+        (_no_pr_job, ["cd-preflight-no-pr-job"]),
+        (_before_tag, ["cd-preflight-before-tag"]),
+        (_other_job, ["cd-preflight-before-tag"]),
+        (_no_cd_step, ["cd-preflight-no-cd-step"]),
+        (_no_hk_step, ["cd-preflight-no-housekeeping-step"]),
+        (_hk_after, ["cd-preflight-no-housekeeping-step"]),
+        (_hk_always, ["cd-preflight-housekeeping-bypassed"]),
+        (_hk_guarded_preflight, ["cd-preflight-housekeeping-bypassed"]),
+        (_no_cleanup, ["cd-preflight-no-housekeeping-step"]),
+        (_narrow_cd, ["cd-preflight-narrowed"]),
+        (_narrow_hk, ["cd-preflight-narrowed"]),
+    ],
+)
+def test_each_preflight_pin_fires_on_exactly_its_plant(mutate, expected) -> None:
+    ci, cd, hk = preflight_trio()
+    mutate(ci, cd, hk)
+    assert preflight_kinds(ci, cd, hk) == expected
+
+
+def test_a_preflight_without_checks_runs_all_and_is_not_narrowed() -> None:
+    ci, cd, hk = preflight_trio()
+    hk["jobs"]["cleanup"]["steps"][1]["run"] = PF_HK.replace(" --checks a,c", "")
+    assert preflight_kinds(ci, cd, hk) == []
+
+
+def test_every_preflight_kind_has_a_message() -> None:
+    files = {"ci": "ci.yml", "cd": "cd.yml", "housekeeping": "hk.yml"}
+    for kind in ci_workflow_invariants.PREFLIGHT_KINDS:
+        assert ci_workflow_invariants.preflight_message_for(kind, "j", files) is not None, kind
+    assert ci_workflow_invariants.preflight_message_for("invented", "j", files) is None
+
+
+REAL_HK = ROOT / ".github/workflows/housekeeping.yml"
+
+
+def test_a_push_only_preflight_on_the_real_ci_is_refused(tmp_path: pathlib.Path) -> None:
+    """The plan's W4 control on the real ci.yml: drop the same-repo pull_request arm."""
+    text = cut_once(
+        REAL_CI.read_text(encoding="utf-8"),
+        "      ((github.event_name == 'push' && github.ref == 'refs/heads/main') ||\n"
+        "      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))\n",
+        "      github.event_name == 'push' && github.ref == 'refs/heads/main'\n",
+    )
+    proc = run_real(
+        tmp_path, WORKFLOW_FILE=text, CD_WORKFLOW_FILE=REAL_CD.read_text(encoding="utf-8")
+    )
+    assert proc.returncode == 1, proc.stderr
+    assert "INVARIANT-FAIL: cd-preflight:" in proc.stderr
+    assert (
+        "job cd-preflight runs the preflight but its `if:` never admits pull_request" in proc.stderr
+    )
+
+
+def test_the_real_cd_preflight_moved_before_the_tag_is_refused(tmp_path: pathlib.Path) -> None:
+    """Swap the real init's last two steps: the preflight lands before `Create version tag`."""
+    source = REAL_CD.read_text(encoding="utf-8")
+    head, sep, rest = source.partition("\n  publish:\n")
+    assert sep, "the init/publish boundary moved"
+    tag_at = head.index("      - name: Create version tag\n")
+    pf_at = head.index("      - name: CD preflight\n")
+    assert tag_at < pf_at
+    # Comments between the two steps belong to the preflight; carry the block from its comment header.
+    pf_start = head.rindex("\n\n", tag_at, pf_at) + 2
+    tag_block, pf_block = head[tag_at:pf_start], head[pf_start:].rstrip("\n") + "\n\n"
+    mutated = head[:tag_at] + pf_block + tag_block.rstrip("\n") + "\n" + sep + rest
+    proc = run_real(tmp_path, CD_WORKFLOW_FILE=mutated)
+    assert proc.returncode == 1, proc.stderr
+    assert "is not after the version tag step in the same job" in proc.stderr
+
+
+def test_the_real_housekeeping_cleanup_running_past_a_red_preflight_is_refused(
+    tmp_path: pathlib.Path,
+) -> None:
+    text = cut_once(
+        REAL_HK.read_text(encoding="utf-8"),
+        "      - name: Cleanup old releases, tags, packages, previews, R2 orphans, branches\n",
+        "      - name: Cleanup old releases, tags, packages, previews, R2 orphans, branches\n"
+        "        if: always()\n",
+    )
+    proc = run_real(tmp_path, HOUSEKEEPING_WORKFLOW_FILE=text)
+    assert proc.returncode == 1, proc.stderr
+    assert "Housekeeping must fail closed" in proc.stderr
+
+
+def test_the_real_housekeeping_without_its_preflight_is_refused(tmp_path: pathlib.Path) -> None:
+    text = cut_once(
+        REAL_HK.read_text(encoding="utf-8"),
+        "          PYTHONPATH=.ci python3 -m rediacc_ci.release.cd_preflight\n",
+        "          PYTHONPATH=.ci python3 -m rediacc_ci.release.removed\n",
+    )
+    proc = run_real(tmp_path, HOUSEKEEPING_WORKFLOW_FILE=text)
+    assert proc.returncode == 1, proc.stderr
+    assert "deletes releases, tags and R2 objects with no" in proc.stderr

@@ -52,6 +52,18 @@ CD run 37749637824 is the case: the tag lived in `tag-and-release`, behind post-
     tag over a range that touches .github/workflows is then refused (v1.3.11,
     v1.3.8).
 
+THE CD-PREFLIGHT PINS (PLAN-cd-errors-in-ci W4) ride the same phase and read a fourth file, `housekeeping.yml` (`HOUSEKEEPING_WORKFLOW_FILE` overrides it). `rediacc_ci.release.cd_preflight` must run at three sites, each with at least the checks `PREFLIGHT_REQUIRED_CHECKS` names (`cd-preflight-narrowed` otherwise):
+
+  * `cd-preflight-no-pr-job` / `cd-preflight-not-on-pr` -- a ci.yml job runs
+    `--phase pr`, and its `if:` admits pull_request. A push-only preflight is the
+    main-only blind spot that let the 10-07 drift reach main.
+  * `cd-preflight-no-cd-step` / `cd-preflight-before-tag` -- a cd-v2 step runs
+    `--phase cd` in the version tag step's job, AFTER it: v<V> is sealed and
+    untagged until that step, so a preflight before it reds every release.
+  * `cd-preflight-no-housekeeping-step` / `cd-preflight-housekeeping-bypassed` --
+    a preflight step precedes every `cleanup_versions` step in its job, and
+    neither carries an `if:` that would run the cleanup past a red preflight.
+
 WHEN IT RUNS. Only when the ci.yml under test IS the real one, or when `CD_WORKFLOW_FILE` is set explicitly. The recorded fixture cases point `WORKFLOW_FILE` at a synthetic ci.yml; judging the live cd-v2.yml beside a synthetic ci.yml would mix two worlds, and adding bytes to those runs would falsify the twin's goldens. `npm run check:ci-workflow-invariants` and the gate test both drive the real ci.yml, so both run this phase,
 and its success line prints the shape (tag job, its ancestors, job count, push count) so a collapse is visible.
 
@@ -577,6 +589,182 @@ def release_message_for(kind: str, name: str, files: dict[str, str]) -> str | No
     return None
 
 
+# --------------------------------------------------------------------------- the cd-preflight pins (PLAN-cd-errors-in-ci W4)
+
+PREFLIGHT_KINDS = (
+    "cd-preflight-no-pr-job",
+    "cd-preflight-not-on-pr",
+    "cd-preflight-no-cd-step",
+    "cd-preflight-before-tag",
+    "cd-preflight-no-housekeeping-step",
+    "cd-preflight-housekeeping-bypassed",
+    "cd-preflight-narrowed",
+)
+
+PREFLIGHT_MODULE = "rediacc_ci.release.cd_preflight"
+HOUSEKEEPING_DESTRUCTIVE = "rediacc_ci.housekeeping.cleanup_versions"
+
+# The checks each site must run. A site may run more; dropping one is a finding, so a narrowed `--checks` cannot quietly turn a site into a partial check. `homebrew` is deliberately absent everywhere: the PR job deselects it (ci.yml says why), and CD runs update_homebrew_tap itself.
+PREFLIGHT_REQUIRED_CHECKS = {
+    "pr": frozenset({"a", "b", "c", "d", "promotion"}),
+    "cd": frozenset({"a", "c", "d"}),
+    "housekeeping": frozenset({"a", "c"}),
+}
+
+# A status function in a step `if:` runs the step after an earlier one failed, which is exactly how a red preflight would stop nothing.
+_STATUS_FN_RE = re.compile(r"\b(always|failure|cancelled)\s*\(")
+_CHECKS_RE = re.compile(r"--checks[=\s]+\"?([A-Za-z0-9_,]+)")
+_PHASE_RE = re.compile(r"--phase[=\s]+\"?([a-z]+)")
+
+
+def preflight_steps(doc: object) -> list[tuple[str, int, dict, str]]:
+    """Every (job, index, step, phase) whose `run:` invokes the preflight module."""
+    jobs = doc.get("jobs") if isinstance(doc, dict) else None
+    out = []
+    for name, job in (jobs if isinstance(jobs, dict) else {}).items():
+        for i, st in enumerate(_steps(job)):
+            run = _text(st.get("run"))
+            if PREFLIGHT_MODULE in run:
+                match = _PHASE_RE.search(run)
+                out.append((str(name), i, st, match.group(1) if match else ""))
+    return out
+
+
+def _narrowed(site: str, label: str, step: dict) -> list[tuple[str, str]]:
+    match = _CHECKS_RE.search(_text(step.get("run")))
+    if match is None:
+        return []  # no --checks runs every check
+    missing = PREFLIGHT_REQUIRED_CHECKS[site] - set(match.group(1).split(","))
+    if not missing:
+        return []
+    return [("cd-preflight-narrowed", "%s drops %s" % (label, ",".join(sorted(missing))))]
+
+
+def analyse_preflight(
+    ci_doc: object, cd_doc: object, hk_doc: object
+) -> tuple[list[tuple[str, str]], list[str]]:
+    """(findings, shape lines) for the three preflight sites. Pure; the tests drive it with literal dicts.
+
+    ci.yml: a job runs `--phase pr` and its `if:` admits pull_request (a push-only job is the main-only blind spot that let the 10-07 drift reach main). cd-v2.yml: a `--phase cd` step sits in the version tag step's job, AFTER it. housekeeping.yml: a preflight step precedes every cleanup_versions step in the same job, and that cleanup step carries no status function that would run it past a red preflight.
+    """
+    out: list[tuple[str, str]] = []
+    shape: list[str] = []
+
+    pr = [s for s in preflight_steps(ci_doc) if s[3] == "pr"]
+    if not pr:
+        out.append(("cd-preflight-no-pr-job", "<none>"))
+    jobs = ci_doc.get("jobs") if isinstance(ci_doc, dict) else None
+    ci_jobs: dict[str, typing.Any] = jobs if isinstance(jobs, dict) else {}
+    for job, i, st, _phase in pr:
+        cond = _text(ci_jobs[job].get("if")) + " " + _text(st.get("if"))
+        if "pull_request" not in cond:
+            out.append(("cd-preflight-not-on-pr", job))
+        out += _narrowed("pr", _step_label(job, i, st), st)
+        shape.append("ci.yml job %s runs it on pull_request" % job)
+
+    tags = version_tag_steps(cd_doc)
+    cd = [s for s in preflight_steps(cd_doc) if s[3] == "cd"]
+    if not cd:
+        out.append(("cd-preflight-no-cd-step", "<none>"))
+    for job, i, st, _phase in cd:
+        after = [t for t in tags if t[0] == job and t[1] < i]
+        if not after:
+            out.append(("cd-preflight-before-tag", _step_label(job, i, st)))
+        else:
+            shape.append("cd-v2 %s step %d after the tag step %d" % (job, i + 1, after[0][1] + 1))
+        out += _narrowed("cd", _step_label(job, i, st), st)
+
+    hk_jobs = hk_doc.get("jobs") if isinstance(hk_doc, dict) else None
+    destructive = [
+        (str(name), i, st)
+        for name, job in (hk_jobs if isinstance(hk_jobs, dict) else {}).items()
+        for i, st in enumerate(_steps(job))
+        if HOUSEKEEPING_DESTRUCTIVE in _text(st.get("run"))
+    ]
+    if not destructive:
+        out.append(("cd-preflight-no-housekeeping-step", "<no %s step>" % HOUSEKEEPING_DESTRUCTIVE))
+    hk_pre = preflight_steps(hk_doc)
+    for job, i, st in destructive:
+        before = [p for p in hk_pre if p[0] == job and p[1] < i]
+        if not before:
+            out.append(("cd-preflight-no-housekeeping-step", _step_label(job, i, st)))
+            continue
+        _j, pi, pst, _ph = before[-1]
+        if _STATUS_FN_RE.search(_text(st.get("if"))) or _text(pst.get("if")).strip():
+            out.append(("cd-preflight-housekeeping-bypassed", _step_label(job, i, st)))
+        out += _narrowed("housekeeping", _step_label(job, pi, pst), pst)
+        shape.append("housekeeping %s step %d before cleanup step %d" % (job, pi + 1, i + 1))
+    return out, shape
+
+
+def preflight_message_for(kind: str, name: str, files: dict[str, str]) -> str | None:
+    ci, cd, hk = files["ci"], files["cd"], files["housekeeping"]
+    if kind == "cd-preflight-no-pr-job":
+        return (
+            "INVARIANT-FAIL: cd-preflight: no step in %s runs `%s --phase pr`, so a PR merges "
+            "without the CD failures it causes being predicted (PLAN-cd-errors-in-ci W4). "
+            "Restore the cd-preflight job." % (ci, PREFLIGHT_MODULE)
+        )
+    if kind == "cd-preflight-not-on-pr":
+        return (
+            "INVARIANT-FAIL: cd-preflight: %s job %s runs the preflight but its `if:` never "
+            "admits pull_request. A main-only check is how the 10-07 bijection drift was first "
+            "seen after PR #599 merged. Keep the same-repo pull_request arm." % (ci, name)
+        )
+    if kind == "cd-preflight-no-cd-step":
+        return (
+            "INVARIANT-FAIL: cd-preflight: no step in %s runs `%s --phase cd`, so CD publishes "
+            "without judging the release state first. Restore it in init, after `Create version "
+            "tag`." % (cd, PREFLIGHT_MODULE)
+        )
+    if kind == "cd-preflight-before-tag":
+        return (
+            "INVARIANT-FAIL: cd-preflight: %s %s is not after the version tag step in the same "
+            "job. v<V> is sealed by ci.yml and untagged until that step, so a preflight before it "
+            "reds every release. Move it after `Create version tag`." % (cd, name)
+        )
+    if kind == "cd-preflight-no-housekeeping-step":
+        return (
+            "INVARIANT-FAIL: cd-preflight: %s %s deletes releases, tags and R2 objects with no "
+            "`%s` step before it in its job, so a broken or unreadable release state is pruned "
+            "further instead of refused. Add the read-only preflight step before it."
+            % (hk, name, PREFLIGHT_MODULE)
+        )
+    if kind == "cd-preflight-housekeeping-bypassed":
+        return (
+            "INVARIANT-FAIL: cd-preflight: %s %s runs even when the preflight before it is red "
+            "(a status function in its `if:`, or an `if:` on the preflight step). Housekeeping "
+            "must fail closed: drop the status function." % (hk, name)
+        )
+    if kind == "cd-preflight-narrowed":
+        return (
+            "INVARIANT-FAIL: cd-preflight: %s. A narrowed --checks prints SKIPPED where a check "
+            "used to run. Restore the check, or change PREFLIGHT_REQUIRED_CHECKS in %s on "
+            "purpose." % (name, "ci_workflow_invariants.py")
+        )
+    return None
+
+
+def _preflight_phase(ci_file: str, cd_file: str, hk_file: str) -> tuple[list[str], list[str]]:
+    """(errors, info lines) for the cd-preflight pins. A missing file is an error, never a pass."""
+    files = {"ci": ci_file, "cd": cd_file, "housekeeping": hk_file}
+    docs = {}
+    for key, path in files.items():
+        if not os.path.isfile(path):
+            return [
+                "INVARIANT-FAIL: cd-preflight: no file at %s (nothing to check cannot pass)" % path
+            ], []
+        try:
+            docs[key] = load_workflow(path)
+        except SetupExit as exc:
+            return ["INVARIANT-FAIL: cd-preflight: %s" % exc.message.strip()], []
+    findings, shape = analyse_preflight(docs["ci"], docs["cd"], docs["housekeeping"])
+    errors = [m for k, n in findings if (m := preflight_message_for(k, n, files)) is not None]
+    if errors:
+        return errors, []
+    return [], ["cd-preflight holds: " + "; ".join(shape)]
+
+
 def _release_phase(ci_file: str, cd_file: str, action_file: str) -> tuple[list[str], list[str]]:
     """(errors, info lines). Missing or unparseable inputs are errors: unread is never fine."""
     files = {"ci": ci_file, "cd": cd_file, "action": action_file}
@@ -644,6 +832,9 @@ def main(argv: list[str]) -> int:
     action_file = os.environ.get("APP_TOKEN_ACTION_FILE") or os.path.join(
         root_dir, ".github", "actions", "app-token", "action.yml"
     )
+    hk_file = os.environ.get("HOUSEKEEPING_WORKFLOW_FILE") or os.path.join(
+        root_dir, ".github", "workflows", "housekeeping.yml"
+    )
 
     # Anti-vacuity: a missing workflow means the gate checked nothing, and nothing checked must never read as green.
     if not os.path.isfile(workflow_file):
@@ -680,7 +871,9 @@ def main(argv: list[str]) -> int:
     release_info: list[str] = []
     if release_phase:
         release_errors, release_info = _release_phase(workflow_file, cd_file, action_file)
-        for message in release_errors:
+        preflight_errors, preflight_info = _preflight_phase(workflow_file, cd_file, hk_file)
+        release_info += preflight_info
+        for message in release_errors + preflight_errors:
             log.error(message)
             failed = 1
 
