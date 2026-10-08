@@ -2,11 +2,13 @@
 
 The ordered queue of plans the plan-per-PR loop pulls from (box L2 of agent/plans/PLAN-plan-per-pr-loop.md). One plan per PR by default; with `turbo: on` in `## Settings` the live PR keeps taking queued plans (agent/plans/PLAN-stop-hook-turbo.md), and with `turbo_push: batch-end` (the default) that batch is built and verified locally, then pushed once with one PR when it completes (agent/plans/PLAN-turbo-local-first.md). The first entry is the plan the live `MMDD-N` branch works: `.claude/hooks/post-bash/refresh_pr_body.py` writes it as the PR body's `Plan:` line once, and `rediacc_hooks.plan_gate.plan_merge_refusal` refuses the merge while that plan has an open box, unless the body carries an `Operational-Reason:` line.
 
-Two lists, read in this order. `## Promoted` is hand-ordered by the operator and wins; no tool writes it, and an entry leaves it by hand when its PR merges. `## Generated` is rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` from live tracked plans with at least one open box: prerequisites first (`Depends-On:`, task refs and sub-plans like `PLAN-x.A0.md`, each prerequisite pulled ahead to the rank of what needs it), then held plans after unheld ones, prerequisites excepted, then in-progress plans before not-started ones, then operator Priority, AI Priority and path. Plans with no open box are listed under `### Not queued` with the reason, never as entries. Regenerate with `npm run check:ci-plan-record -- --update`; the same gate fails while the section is stale.
+Two lists, read in this order. `## Promoted` is hand-ordered by the operator and wins; no tool writes its entries, and an entry leaves it by hand when its PR merges. `## Generated` is rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` from live tracked plans with at least one open box: prerequisites first (`Depends-On:`, task refs and sub-plans like `PLAN-x.A0.md`, each prerequisite pulled ahead to the rank of what needs it), then held plans after unheld ones, prerequisites excepted, then in-progress plans before not-started ones, then operator Priority, AI Priority and path. Plans with no open box are listed under `### Not queued` with the reason, never as entries. Regenerate with `npm run check:ci-plan-record -- --update`; the same gate fails while the section is stale.
 
 `## In flight`, between `## Settings` and `## Promoted`, says what the loop is working on now: the effective switches, every active focus, the live branch and its PR, each plan in the PR's plan set with its box progress and how it joined (the `Plan:` line, a turbo batch claim, an `Operational-Reason:` addition, a prerequisite), the branch's epics outside that set, live writers, leased items, and the next plan with its reason. The Stop hook and the `--queue-set` and `--focus` verbs render it between its markers from runtime state; no gate compares it, and no number in it is a list entry.
 
-Entry format: `1. agent/plans/PLAN-<slug>.md`, optionally followed by ` -- <note>`. Only numbered entries inside the two sections are read.
+The progress block directly under `## Promoted` is generated, between the `queue:progress` markers: an overall line (plans done, boxes done, percentage) and one row per entry, keyed by the entry's own number, with its done/total box ratio. The counts come from the plan files by the merge gate's rule (`rediacc_hooks.plan_gate.open_boxes`, a `Moved-To:` stub followed), which check:ci-plan-boxes holds equal to `.ci/config/plan-boxes.json`. The Stop hook re-renders it on every run, as do `--queue-set`, `--focus` and the plan verbs (`--plan-tick`, `--plan-investigate`, `--plan-compact`, `--plan-revive`); `npm run check:ci-plan-record` fails while it disagrees with the plans, and `npm run check:ci-plan-record -- --update` rewrites it. Edit the entries below the block, never the block.
+
+Entry format: `1. agent/plans/PLAN-<slug>.md`, optionally followed by ` -- <note>`. Only numbered entries inside the two sections are read; the progress block holds table rows, never entries.
 
 ## Settings
 
@@ -56,15 +58,33 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-ci-consolidation.md -- 22 of 22 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-gate-scheduling-learned.md -- 12 of 12 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-locale-techdiff-resync.md -- 5 of 5 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-cd-errors-in-ci.md -- 0 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-retire-bash-oracles.md -- 6 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-cd-errors-in-ci.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-retire-bash-oracles.md -- 7 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans: none.
-- Writers: 5 live of writer_cap 15 (session d778be9d): worker:a96aa6313380b1a1b, worker:a3511b39c415ab5c7, worker:a3ae93750fc7e4e55, worker:af74c4796b41a9d95, worker:accb1a5ce3a706c66.
-- Leased items: 5: #216083df (worker:af74c4796b41a9d95, d778be9d), #32c02543 (worker:accb1a5ce3a706c66, d778be9d), #575d2992 (worker:a96aa6313380b1a1b, d778be9d), #bafeabcb (worker:a3ae93750fc7e4e55, d778be9d), #dd4cb2e3 (worker:a3511b39c415ab5c7, d778be9d).
+- Writers: 0 live of writer_cap 15 (session d778be9d).
+- Leased items: 5: #01c5225d (worker:a253a4466464c40cc, d778be9d), #1420d4b8 (worker:afb300d84c0419737, d778be9d), #7de60352 (worker:a38c681a317cbe9de, d778be9d), #9e7a546f (worker:a3202f4410d645cb9, d778be9d), #e8070172 (worker:a38c681a317cbe9de, d778be9d).
 - Next plan: agent/plans/PLAN-config-passkey-optional.md, Promoted entry 5; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
+
+<!-- queue:progress:begin -->
+Promoted: 1 of 11 plans done, 80 of 140 boxes done (57%).
+
+| # | Plan | Boxes done | State |
+|---|---|---|---|
+| 1 | PLAN-ci-consolidation.md | 22/22 | done |
+| 2 | PLAN-config-team-scoping.md | 10/11 | 1 open |
+| 3 | PLAN-plan-dependencies.md | 3/12 | 9 open |
+| 4 | PLAN-remove-cross-session-messaging.md | 0/13 | 13 open |
+| 5 | PLAN-config-passkey-optional.md | 3/4 | 1 open |
+| 6 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
+| 7 | PLAN-stop-hook-retro-20260924.md | 22/23 | 1 open |
+| 8 | PLAN-cd-errors-in-ci.md | 5/6 | 1 open |
+| 9 | PLAN-scope-mirrors.md | 0/11 | 11 open |
+| 10 | PLAN-lessons-registry.md | 0/11 | 11 open |
+| 11 | PLAN-inline-suppressions.md | 0/11 | 11 open |
+<!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; candidates 1, 3, 4, 6, 7 of agent/reports/consolidation-investigation-2026-10-04.md in one plan, one PR -- solo
 2. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: T9 (the enforced matrix in DESIGN-CONFIG-STORAGE.md) and T10 (live smoke)
@@ -95,19 +115,20 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 12. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (7 of 9 boxes ticked)
 13. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
 14. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
-15. agent/plans/PLAN-retire-bash-oracles.md -- P2, approved, in progress (6 of 15 boxes ticked), dep-blocked
+15. agent/plans/PLAN-retire-bash-oracles.md -- P2, approved, in progress (7 of 15 boxes ticked), dep-blocked
 16. agent/plans/PLAN-biome-only-lint.md -- P3, draft, in progress (10 of 29 boxes ticked)
 17. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (1 of 17 boxes ticked)
 18. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
 19. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
-20. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-21. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-22. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
-23. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
-24. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-25. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-26. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-27. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+20. agent/plans/PLAN-deferred-findings-block-merge.md -- P1, approved, not started
+21. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+22. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
+23. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
+24. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
+25. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
+26. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+27. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+28. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 

@@ -307,7 +307,9 @@ def test_regenerate_preserves_promoted_byte_for_byte(qroot):
     assert pq.problems(qroot), "a queue with no generated section must be reported"
     assert pq.refresh(qroot) is True
     text = (qroot / pq.QUEUE_REL).read_text(encoding="utf-8")
-    assert text.startswith(PROMOTED), text
+    # The hand-written bytes survive; the one addition under `## Promoted` is the generated progress block.
+    assert pq.without_progress(text).startswith(PROMOTED), text
+    assert pq.progress_text(text) is not None
     assert pq.refresh(qroot) is False
     # A hand edit to Promoted survives the next regenerate untouched.
     edited = text.replace("the operator's pick", "re-noted by hand")
@@ -371,7 +373,9 @@ def test_refresh_index_also_refreshes_the_queue(qroot):
     assert pq.problems(qroot)
     wl_planrec.refresh_index(str(qroot), wl_checks.plan_records, wl_checks.plan_box_census)
     assert pq.problems(qroot) == []
-    assert (qroot / pq.QUEUE_REL).read_text(encoding="utf-8").startswith(PROMOTED)
+    after = (qroot / pq.QUEUE_REL).read_text(encoding="utf-8")
+    assert pq.without_progress(after).startswith(PROMOTED)
+    assert pq.progress_text(after) is not None
 
 
 # ---------------------------------------------------------------- the progress order (operator rulings 2026-10-02)

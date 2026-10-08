@@ -1,6 +1,7 @@
 """wl_planqueue: the format of `agent/plans/QUEUE.md` and the render of its generated half (operator rulings, /ask 2026-10-02, worklist #0f45b81d).
 
-THE FILE HAS TWO LISTS. `## Promoted` is the operator's hand-ordered list: it comes first, in its own order, and no tool ever writes it. `## Generated` sits between GEN_BEGIN and GEN_END and is rendered here from the canonical plan order, so the loop always has a next plan even when nobody has promoted one. `rediacc_hooks.plan_gate.queue` reads Promoted, then Generated, through `entries`; this module is the one place that
+THE FILE HAS TWO LISTS.
+`## Promoted` is the operator's hand-ordered list: it comes first, in its own order, and no tool ever writes its entries. The one generated part of that section is the progress block between PROGRESS_BEGIN and PROGRESS_END directly under its heading (operator 2026-10-08, worklist #1420d4b8): an overall line and a done/total box ratio per entry, keyed by the entry's own number, so the hand-written lines are never touched and `entries` never reads a progress row. `## Generated` sits between GEN_BEGIN and GEN_END and is rendered here from the canonical plan order, so the loop always has a next plan even when nobody has promoted one. `rediacc_hooks.plan_gate.queue` reads Promoted, then Generated, through `entries`; this module is the one place that
 knows the headings, the markers and the entry shape.
 
 THE RENDER REPLACES ONLY THE MARKED BLOCK. Every byte outside GEN_BEGIN..GEN_END is copied through unchanged, which is how the Promoted list and the header prose survive every regeneration. A file without the markers gets a `## Generated` section appended, never a rewrite of what is already there.
@@ -17,6 +18,8 @@ Reads no environment variable. Heavy imports are lazy so `plan_gate` can read th
 from __future__ import annotations
 
 import dataclasses
+import importlib
+import importlib.util
 import pathlib
 import re
 
@@ -41,6 +44,12 @@ _HEADING = re.compile(r"(?m)^## ")
 _BLOCK = re.compile(
     r"(?ms)^%s[ \t]*$\n?(.*?)^%s[ \t]*$" % (re.escape(GEN_BEGIN), re.escape(GEN_END))
 )
+# The generated progress block under `## Promoted`. Its rows are table lines, never numbered entries, and `promoted_text` drops the whole block before any entry is read.
+PROGRESS_BEGIN = "<!-- queue:progress:begin -->"
+PROGRESS_END = "<!-- queue:progress:end -->"
+_PROG_BLOCK = re.compile(
+    r"(?ms)^%s[ \t]*$\n?(.*?)^%s[ \t]*$" % (re.escape(PROGRESS_BEGIN), re.escape(PROGRESS_END))
+)
 
 
 def promoted_text(text: str) -> str:
@@ -48,7 +57,7 @@ def promoted_text(text: str) -> str:
     m = re.search(r"(?m)^%s[ \t]*$" % re.escape(PROMOTED_HEADING), text)
     if not m:
         return ""
-    rest = text[m.end() :]
+    rest = _PROG_BLOCK.sub("", text[m.end() :])
     stops = [s.start() for s in (_HEADING.search(rest), re.search(re.escape(GEN_BEGIN), rest)) if s]
     return rest[: min(stops)] if stops else rest
 
@@ -594,13 +603,13 @@ SKELETON = (
 
 
 def want(root) -> tuple[str, str]:
-    """(on-disk text, rendered text). An absent file renders from SKELETON."""
+    """(on-disk text, rendered text): the generated block and the Promoted progress block both rendered. An absent file renders from SKELETON."""
     path = pathlib.Path(root) / QUEUE_REL
     try:
         got = path.read_text(encoding="utf-8")
     except OSError:
         got = ""
-    return got, render(got or SKELETON, live_plans(root))
+    return got, render(with_fresh_progress(root, got or SKELETON), live_plans(root))
 
 
 def refresh(root) -> bool:
@@ -628,12 +637,181 @@ def problems(root, update: bool = False) -> list[str]:
         R.write_atomic(pathlib.Path(root) / QUEUE_REL, new)
         print("✓ wrote %s" % QUEUE_REL)
         return []
-    what = "is absent" if not got else "has a generated section that differs from the render"
+    if not got:
+        what = "is absent"
+    else:
+        stale = []
+        if progress_text(got) != progress_text(new):
+            stale.append(
+                "a Promoted progress block that disagrees with the plans' boxes (a box was ticked or reopened, an entry was added or removed, or the block was edited by hand)"
+            )
+        if generated_text(got) != generated_text(new):
+            stale.append(
+                "a generated section that differs from the render (the plan order changed)"
+            )
+        what = "has " + " and ".join(stale or ["a rendered part that differs from the render"])
     return [
-        "%s %s (the plan order changed, or the section was edited by hand). Regenerate and commit it:\n"
+        "%s %s. Regenerate and commit it:\n"
         "      npm run check:ci-plan-record -- --update\n"
         "      git add %s" % (QUEUE_REL, what, QUEUE_REL)
     ]
+
+
+# ------------------------------------------------------------ the Promoted progress block
+# Operator order 2026-10-08 (worklist #1420d4b8): the `## Promoted` section shows the general progress of all its plans and a completed/all box ratio per plan, and the Stop hook keeps it current. The block sits directly under the `## Promoted` heading, between PROGRESS_BEGIN and PROGRESS_END: one overall line, then one table row per numbered entry carrying that entry's own number, its
+# done/total box ratio and its state. Every count is read from the plan files by `rediacc_hooks.plan_gate.open_boxes`, the merge gate's rule (parser count against raw line count, a `Moved-To:` stub followed); an entry whose file is gone is looked for under `agent/plans/_done/`, the rule `block_turbo_early_push` uses. `.ci/config/plan-boxes.json` is the committed second reading of the same boxes and
+# check:ci-plan-boxes holds it equal to the files, so the block cannot disagree with the registry without one of the two gates going red.
+#
+# A LEDGER, NOT RUNTIME STATE. Its inputs are tracked files, so a clean CI checkout reproduces it: `want` renders it and `problems` (check:ci-plan-record RQ) compares it, so a hand edit or a missed render is a finding. It self-heals locally: `refresh` (the plan verbs, through `wl_planrec.refresh_index`) and `refresh_inflight` (every Stop-hook run, `--queue-set` and `--focus`) both re-render it.
+
+PROGRESS_DONE_DIR = "agent/plans/_done/"
+
+
+@dataclasses.dataclass(frozen=True)
+class EntryProgress:
+    """One numbered Promoted entry: its number as written, its plan path, its open and done box counts, and `why` ("" when the counts are real, else why they could not be read)."""
+
+    num: str
+    rel: str
+    opened: int
+    done: int
+    why: str = ""
+
+    @property
+    def total(self) -> int:
+        return self.opened + self.done
+
+    @property
+    def finished(self) -> bool:
+        """Every box ticked. A plan with no box is not finished: nothing proves it."""
+        return not self.why and self.opened == 0 and self.done > 0
+
+
+_ENTRY_NUM = re.compile(r"^[ \t]*(\d+)[.)]")
+
+
+def promoted_numbered(text: str) -> list[tuple[str, str]]:
+    """[(entry number as written, plan path)] of the Promoted entries in file order."""
+    out = []
+    for m in ENTRY.finditer(promoted_text(text)):
+        num = _ENTRY_NUM.match(m.group(0))
+        out.append((num.group(1) if num else "?", m.group(1)))
+    return out
+
+
+def _plan_gate():
+    """`rediacc_hooks.plan_gate`, reached through the canonical `.claude` sys.path hop (`.claude/rediacc_hooks/syspath.py`, loaded by file because this module lives outside that package)."""
+    helper = pathlib.Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
+    spec = importlib.util.spec_from_file_location("_rediacc_syspath", helper)
+    if spec is None or spec.loader is None:
+        msg = "cannot load %s" % helper
+        raise ImportError(msg)
+    syspath = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(syspath)
+    syspath.on_sys_path(syspath.CLAUDE_DIR)
+    return importlib.import_module("rediacc_hooks.plan_gate")
+
+
+def entry_counts(root, rel: str, gate=None) -> tuple[int, int, str]:
+    """(open, done, why) for one Promoted plan by `plan_gate.open_boxes`, with the `_done/` fallback for an entry whose file was moved out of agent/plans. A plan with no boxes reads as (0, 0, "") so it renders as "no boxes", not as unreadable."""
+    pg = gate or _plan_gate()
+    opened, done, why = pg.open_boxes(str(root), rel)
+    if why and not (pathlib.Path(root) / rel).is_file():
+        moved = PROGRESS_DONE_DIR + rel.rsplit("/", 1)[-1]
+        if (pathlib.Path(root) / moved).is_file():
+            opened, done, why = pg.open_boxes(str(root), moved)
+    if why and "has no boxes" in why:
+        return 0, 0, ""
+    return opened, done, why
+
+
+def promoted_progress(root, text: str) -> tuple[EntryProgress, ...]:
+    """The progress of every numbered Promoted entry of `text`, counted against the plan files under `root`."""
+    numbered = promoted_numbered(text)
+    if not numbered:
+        return ()
+    gate = _plan_gate()
+    cache: dict[str, tuple[int, int, str]] = {}
+    out = []
+    for num, rel in numbered:
+        if rel not in cache:
+            cache[rel] = entry_counts(root, rel, gate)
+        opened, done, why = cache[rel]
+        out.append(EntryProgress(num, rel, opened, done, why))
+    return tuple(out)
+
+
+def _state(row: EntryProgress) -> str:
+    if row.why:
+        return "unreadable: %s" % row.why.replace("|", "/")
+    if row.total == 0:
+        return "no boxes"
+    if row.opened == 0:
+        return "done"
+    return "%d open" % row.opened
+
+
+def render_progress(rows) -> str:
+    """The lines between the progress markers: the overall line, then one table row per entry. Each plan counts once in the overall line, however many entries name it."""
+    rows = tuple(rows)
+    if not rows:
+        return "Promoted: no entries.\n"
+    unique: dict[str, EntryProgress] = {}
+    for row in rows:
+        unique.setdefault(row.rel, row)
+    plans_done = sum(1 for r in unique.values() if r.finished)
+    boxes_done = sum(r.done for r in unique.values() if not r.why)
+    boxes_all = sum(r.total for r in unique.values() if not r.why)
+    pct = "%d%%" % (boxes_done * 100 // boxes_all) if boxes_all else "no boxes"
+    out = [
+        "Promoted: %d of %d plans done, %d of %d boxes done (%s).\n"
+        % (plans_done, len(unique), boxes_done, boxes_all, pct),
+        "\n",
+        "| # | Plan | Boxes done | State |\n",
+        "|---|---|---|---|\n",
+    ]
+    for row in rows:
+        ratio = "-" if row.why else "%d/%d" % (row.done, row.total)
+        out.append(
+            "| %s | %s | %s | %s |\n" % (row.num, row.rel.rsplit("/", 1)[-1], ratio, _state(row))
+        )
+    return "".join(out)
+
+
+def progress_text(text: str) -> str | None:
+    """The text between the progress markers, None when the block is absent."""
+    m = _PROG_BLOCK.search(text)
+    return m.group(1) if m else None
+
+
+def with_progress(text: str, body: str) -> str:
+    """`text` with its progress block holding `body`. A file without the block gains it directly under `## Promoted`, followed by one blank line; a file without that heading is returned unchanged. Every byte outside the block is kept, the hand-written entries included."""
+    block = "%s\n%s%s" % (PROGRESS_BEGIN, body, PROGRESS_END)
+    m = _PROG_BLOCK.search(text)
+    if m:
+        return text[: m.start()] + block + text[m.end() :]
+    h = re.search(r"(?m)^%s[ \t]*$" % re.escape(PROMOTED_HEADING), text)
+    if not h:
+        return text
+    rest = text[h.end() :].lstrip("\n")
+    return text[: h.end()] + "\n\n" + block + "\n" + ("\n" + rest if rest else "")
+
+
+def without_progress(text: str) -> str:
+    """`text` with its progress block and the blank line after it removed: the inverse of `with_progress`'s insertion, so the hand-written remainder can be compared byte for byte."""
+    m = _PROG_BLOCK.search(text)
+    if not m:
+        return text
+    end = m.end()
+    end += 2 if text[end : end + 2] == "\n\n" else (1 if text[end : end + 1] == "\n" else 0)
+    return text[: m.start()] + text[end:]
+
+
+def with_fresh_progress(root, text: str) -> str:
+    """`text` with its progress block re-rendered from the plan files under `root`."""
+    if not re.search(r"(?m)^%s[ \t]*$" % re.escape(PROMOTED_HEADING), text):
+        return text
+    return with_progress(text, render_progress(promoted_progress(root, text)))
 
 
 # ------------------------------------------------------------ the in-flight block
@@ -1030,7 +1208,7 @@ def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=No
 
 
 def refresh_inflight(root, worklist, session_id, fold=None, loop=None, writers=None) -> bool:
-    """Rewrite the in-flight block of an EXISTING queue file when its content changed; True when it wrote. A root with no queue file is left without one. The write re-reads the file just before replacing it and starts over (once) when another writer changed it in between, so a concurrent `--update` of the generated block is not undone by a stale copy."""
+    """Rewrite the in-flight block of an EXISTING queue file, and re-render its existing Promoted progress block from the plan files, when either changed; True when it wrote. A root with no queue file is left without one. The write re-reads the file just before replacing it and starts over (once) when another writer changed it in between, so a concurrent `--update` of the generated block is not undone by a stale copy."""
     path = pathlib.Path(root) / QUEUE_REL
     if not path.is_file():
         return False
@@ -1039,7 +1217,10 @@ def refresh_inflight(root, worklist, session_id, fold=None, loop=None, writers=N
 
     for _attempt in range(2):
         got = path.read_text(encoding="utf-8")
+        # The Promoted progress block rides the same write, so every stop re-renders it from the plan files before anything judges the tree. An existing block only: the first insertion is the gate's `--update` or a plan verb's `refresh`, so a stop never adds a section to a file that has none.
         new = with_inflight(got, body)
+        if progress_text(new) is not None:
+            new = with_fresh_progress(root, new)
         if new == got:
             return False
         if path.read_text(encoding="utf-8") == got:
