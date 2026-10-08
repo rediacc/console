@@ -137,8 +137,7 @@ interface Family {
 const FAMILIES: readonly Family[] = [
   { pathspec: 'scripts/gates/check-*.ts', floor: 100 },
   // THE `.ci/scripts/quality/check-*.sh` FAMILY IS GONE, the same way the hook family below went: PLAN-retire-bash-oracles B3 retired its last file (`check-submodule-branches.sh`) on 2026-10-01, so the pathspec matches nothing and a row would carry a floor no deletion could breach. Its Python spelling, `.ci/scripts/quality/check_*.py`, is in ADVISORY_FAMILIES below.
-  // Re-measured 2026-10-08 at 4 after W11-A (0327ab26b) deleted test-run-sh.sh, lowered from 5 to the measured count.
-  { pathspec: '.ci/scripts/test/gates/test-*.sh', floor: 4 },
+  // THE `.ci/scripts/test/gates/test-*.sh` FAMILY IS GONE too, and this note replaces its row for the same reason: W11-A/B/C and section 12 U1-U3 (2026-10-08) deleted its last four files once their pytest ports under `.ci/rediacc_ci/tests/gates/` carried every case, so `git ls-files` on the pathspec prints nothing and a floor of zero could never be breached. Its Python spelling, `.ci/rediacc_ci/tests/gates/test_gate_*.py`, is in ADVISORY_FAMILIES below.
   // THE `.claude/hooks/pre-bash/block-*.sh` FAMILY IS GONE, and this note stands in its place rather than a row with a floor of zero, which no deletion could ever breach. It held 43 guards; W5 ported 42 to `.claude/rediacc_hooks/guards/block_*.py` and left one bash file, and W7 P6 ported that one too, so the pathspec now matches nothing and `git ls-files` on it would refuse the
   // floor it used to carry. THE PYTHON SPELLING IS STILL NOT HERE, deliberately and with the cost measured: adding `.claude/rediacc_hooks/guards/block_*.py` on 2026-09-08 reported 26 new shapes, because the guards carry a shared scaffold of their own, so the widening is an extraction job like the quality half above and belongs in a commit of its own.
 ];
@@ -2095,8 +2094,9 @@ async function main(): Promise<void> {
   // `check-swallowed-failures.sh` -- taking the quality family from 8 to 4 and the corpus from 138 to 136. ONE MORE UNIT CAME FROM A CONCURRENT PEER, not from that wave, and the split is recorded rather than absorbed silently: the same session saw `.ci/scripts/test/gates/test-bws-rotate.sh` retired alongside its `scripts/dev/bws-rotate.py` port by another writer in the same tree,
   // and then `test-agent-session-archival.sh` the same way, taking the gate-test family from 7 to 5 and the corpus from 136 to 134. THE SPLIT IS RECORDED RATHER THAN ABSORBED, because a floor re-measured inside a live tree otherwise reconstructs as one writer's work: TWO of the four units are the quality-twin wave above, and TWO belong to a concurrent bash-retirement wave that was
   // landing gate-test deletions in this same tree while it ran. W7P5-c then retired `check-python-lint.sh` against recorded goldens once its fixture was made hermetic, taking the quality family from 4 to 3 and the corpus from 134 to 133. Measured against the tracked tree rather than subtracted from the previous line: 126 `scripts/gates/check-*.ts` + 3 + 5, minus the opted-out
-  // file, which is the same 133 the gate itself counts.
-  if (files.length < 133) {
+  // file, which is the same 133 the gate itself counts. On 2026-10-08 W11-A/B/C and section 12 U1-U3 deleted the last four `.ci/scripts/test/gates/test-*.sh` and B3 had already emptied the quality family, so both bash rows are gone; measured against the tracked tree that day: 130 `scripts/gates/check-*.ts`, minus the
+  // opted-out file, is 129, the count the gate itself printed when the old floor of 133 refused it.
+  if (files.length < 129) {
     console.error(
       `${RED}✗${NC} only ${files.length} file(s) in the corpus; the globs are broken or the tree moved`
     );

@@ -155,7 +155,6 @@
     "check:ci-quality-gates": ".ci/rediacc_ci/battery.py",
     "check:ci-security-audit": "PYTHONPATH=.ci python3 -m rediacc_ci.security.audit",
     "check:ci-shell-commands": "PYTHONPATH=.ci python3 -m rediacc_ci.security.check_commands",
-    "check:ci-gate-id-convention": ".ci/scripts/quality/check_gate_id_convention.py",
     "check:ci-pool-writer-safety": ".ci/scripts/quality/check_pool_writer_safety.py",
     "check:ci-gate-tree-writes": ".ci/scripts/quality/check_gate_tree_writes.py",
     "check:ci-gate-reachability-coverage": ".ci/scripts/quality/check_gate_reachability_coverage.py",

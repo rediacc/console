@@ -101,8 +101,6 @@ import tempfile
 # from `.ci/scripts/build/`; this module is one directory deeper.
 _ROOT_PARENT_INDEX = 3
 
-# `.ci/scripts/build/ensure-nfpm.sh:32`.
-_BIN_RELPATH = (".ci", "cache", "bin")
 
 # `.ci/scripts/build/ensure-nfpm.sh:30`.
 _CONSTANTS_RELPATH = (".ci", "config", "constants.sh")
@@ -122,7 +120,7 @@ def repo_root() -> pathlib.Path:
 
 def bin_dir(root: pathlib.Path) -> pathlib.Path:
     """`BIN_DIR="$REPO_ROOT/.ci/cache/bin"` (:32)."""
-    return root.joinpath(*_BIN_RELPATH)
+    return root / ".ci" / "cache" / "bin"
 
 
 def tarball_name(version: str) -> str:

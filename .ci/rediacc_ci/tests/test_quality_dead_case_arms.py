@@ -77,8 +77,11 @@ def test_extraction_matches_the_twins_grep(tmp_path: pathlib.Path) -> None:
 
 
 def test_extraction_matches_on_the_real_test_tree() -> None:
-    """The corpus the gate actually judges. A recogniser that narrowed would still pass a hand-built fixture and go quiet here."""
-    root = paths.repo_root() / ".ci" / "scripts" / "test"
+    """The corpus the gate actually judges. A recogniser that narrowed would still pass a hand-built fixture and go quiet here.
+
+    `.ci/media` SINCE 2026-10-08. This read `.ci/scripts/test`, which held the bash gate tests and their arms; with the last of them deleted it yields zero arms, so the comparison moved to the gate's other scan root, the one that still has an arm to compare.
+    """
+    root = paths.repo_root() / ".ci" / "media"
     assert root.is_dir(), "the test scan root moved; retarget the gate deliberately"
     got = sorted(dca.extract_case_keys([str(root)], paths.repo_root()))
     want = sorted(_bash_extract(root))

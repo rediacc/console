@@ -308,10 +308,8 @@ COUNTER_TIMEOUT_S = 60
 
 # The corpus signature, so an unchanged tree costs a stat sweep rather than 1.1s of tsx. Measured 2026-09-01: the counter is ~1.10s wall over 320 files / 39,447 windows, and the Stop hook fires on every poll. mtime+size rather than content: any edit moves it, so this can make the rule LATE by nothing and can never silently switch it off.
 # `.ci/scripts/quality/check-*.sh` left with the counter's family of that name (PLAN-retire-bash-oracles B3 retired its last file), so the two literals stay equal.
-CORPUS_GLOBS = (
-    "scripts/gates/check-*.ts",
-    ".ci/scripts/test/gates/test-*.sh",
-)
+# `.ci/scripts/test/gates/test-*.sh` left the same way on 2026-10-08, when W11-A/B/C and section 12 U1-U3 deleted that family's last file and the counter's row with it.
+CORPUS_GLOBS = ("scripts/gates/check-*.ts",)
 
 
 def corpus_sig(root, globs=CORPUS_GLOBS):

@@ -493,12 +493,7 @@
       "DRILL_STORE_KEY",
       "DRILL_STORE_REGION",
       "DRILL_STORE_SECRET",
-      "HOME",
-      "RENET_DATA_DIR",
       "RUSTFS_PORT",
-      "SSH_KEY",
-      "SSH_USER",
-      "USER",
       "VM_NET_BASE"
     ],
     ".ci/rediacc_ci/drills/backup_local_plane.py": [
@@ -530,14 +525,9 @@
       "CURSOR_TRACE_ID",
       "DRILL_RENET_PATH",
       "GEMINI_CLI",
-      "HOME",
       "REDIACC_AGENT",
       "REDIACC_ALLOW_CLUSTER_OPS",
       "REDIACC_ALLOW_GRAND_REPO",
-      "RENET_DATA_DIR",
-      "SSH_KEY",
-      "SSH_USER",
-      "USER",
       "VM_NET_BASE"
     ],
     ".ci/rediacc_ci/drills/transfer.py": [
@@ -909,7 +899,6 @@
     ],
     ".ci/rediacc_ci/quality/pool_writer_safety.py": [
       "*name",
-      "POOL_SAFETY_GATES_DIR",
       "POOL_SAFETY_LOCK",
       "POOL_SAFETY_PORTS_DIR"
     ],

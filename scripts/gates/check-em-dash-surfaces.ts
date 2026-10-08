@@ -139,7 +139,8 @@ const SURFACES: readonly Surface[] = [
   // Re-measured 2026-10-08 at 192 after PLAN-retire-bash-oracles wave 1 deleted its bash twins, and lowered from 200 to the measured count: the margin is zero, so the next batch lowers it again in the same change.
   // Re-measured 2026-10-08 at 184 after W11-A deleted test-run-sh.sh and W11-B deleted lib/common.sh, and lowered from 187 to the measured count.
   // Re-measured 2026-10-08 at 183 after section 12 U3 deleted test-toolchain.sh, then at 182 after U2 deleted test-media-r2.sh, then at 178 after section 12 U1 deleted blocker-validator.sh, emit-advisory.sh, test-blocker-golden-corpus.sh and test-runner-advice.sh.
-  { dir: '.ci/scripts', kind: 'source', exts: ['.sh', '.py'], minFiles: 178 },
+  // Re-measured 2026-10-08 at 177 after the retirement of check:ci-gate-id-convention deleted .ci/scripts/quality/check_gate_id_convention.py (its subject, every manifest entry running a .ci/scripts/test/gates/test-*.sh, was gone).
+  { dir: '.ci/scripts', kind: 'source', exts: ['.sh', '.py'], minFiles: 177 },
   { dir: '.ci/rediacc_ci', kind: 'source', exts: ['.py'], minFiles: 200 },
   // `.ci/lib` was retired as a surface on 2026-10-08: W11-A deleted local-common.sh, its last file, and the directory is gone.
   // packages/cli. The first two join at ZERO (measured clean when they were added); the third rides the baseline, because 93 percent of its findings are prose inside JSDoc where the dash often does real syntactic work, and a mechanical pass over that changes documented meaning.

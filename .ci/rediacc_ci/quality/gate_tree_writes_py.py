@@ -298,6 +298,9 @@ TEMPFILE_FNS = {
 RUNTMP_FNS = {"run_dir", "shared", "shell_mktemp"}
 # Environment variables that name a place: the temp dir, and the user's home (outside the tree).
 ENV_SEEDS = {"TMPDIR": TEMP, "HOME": OUTSIDE}
+# The GitHub Actions runner FILE variables. Each names a file the runner creates under its own `_temp` directory, never inside the checkout, so a write through one is OUTSIDE. Added 2026-10-08 when check:ci-review-resolutions appended its step summary through `env.get("GITHUB_STEP_SUMMARY")` and read as UNRESOLVED.
+RUNNER_FILE_VARS = ("GITHUB_STEP_SUMMARY", "GITHUB_OUTPUT", "GITHUB_ENV", "GITHUB_PATH")
+ENV_SEEDS.update(dict.fromkeys(RUNNER_FILE_VARS, OUTSIDE))
 # The `rediacc_ci.paths` root helpers and the repo-root finders, and the path each names.
 ROOT_SEEDS = {
     "repo_root": "",
@@ -1540,6 +1543,9 @@ class Evaluator:
         if canon in ("os.environ.get", "os.getenv"):
             seed = ENV_SEEDS.get(_const_str(args[0] if args else None) or "")
             return seed if seed is not None else self.env_default(e, scope)
+        # An INJECTED environment mapping (`def run(root, env)`, `env.get(...)`) is how a testable gate reads its environment. Only the runner FILE variables are trusted through an arbitrary receiver: their names mean nothing else, while `HOME` or `TMPDIR` on a dict that is not the environment could, so those keep the os.environ spelling.
+        if last == "get" and _const_str(args[0] if args else None) in RUNNER_FILE_VARS:
+            return OUTSIDE
         if last in ROOT_SEEDS:
             return self.root_seed(e, last, scope)
         if canon in (

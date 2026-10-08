@@ -53,14 +53,14 @@
  * ---- end gate ----
  */
 
-import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
+const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 
-const SCHEMA = "private/account/src/types/env.ts";
+const SCHEMA = 'private/account/src/types/env.ts';
 
 /**
  * The four builders and the fewest keys each is known to push (measured
@@ -78,10 +78,10 @@ const SCHEMA = "private/account/src/types/env.ts";
  * a deliberate deletion rather than a broken extractor.
  */
 const BUILDERS: { file: string; floor: number }[] = [
-  { file: ".ci/rediacc_ci/deploy/set_account_worker_secrets.py", floor: 20 },
-  { file: ".ci/rediacc_ci/deploy/set_www_worker_secrets.py", floor: 15 },
-  { file: ".ci/rediacc_ci/deploy/set_preview_worker_secrets.py", floor: 10 },
-  { file: ".ci/rediacc_ci/ops/deploy_bench.py", floor: 20 },
+  { file: '.ci/rediacc_ci/deploy/set_account_worker_secrets.py', floor: 20 },
+  { file: '.ci/rediacc_ci/deploy/set_www_worker_secrets.py', floor: 15 },
+  { file: '.ci/rediacc_ci/deploy/set_preview_worker_secrets.py', floor: 10 },
+  { file: '.ci/rediacc_ci/ops/deploy_bench.py', floor: 20 },
 ];
 
 /** `        KEY: $var,` inside a `jq -n '{ ... }'` object — the payload shape. */
@@ -100,11 +100,11 @@ const PY_PUSHED_KEY = /^\s+"([A-Z][A-Z0-9_]*)":/gm;
  * reads as zero keys, which the floor turns into a refusal.
  */
 export function pythonPayloadKeys(text: string): string[] {
-  const def = text.indexOf("\ndef secrets_payload(");
+  const def = text.indexOf('\ndef secrets_payload(');
   if (def < 0) return [];
-  const start = text.indexOf("\n    return {\n", def);
+  const start = text.indexOf('\n    return {\n', def);
   if (start < 0) return [];
-  const end = text.indexOf("\n    }\n", start);
+  const end = text.indexOf('\n    }\n', start);
   if (end < 0) return [];
   return [...text.slice(start, end).matchAll(PY_PUSHED_KEY)].map((m) => m[1]);
 }
@@ -123,16 +123,14 @@ const TUPLE_ROW = /^\s+\("([A-Z][A-Z0-9_]*)",/gm;
 export function pythonTupleKeys(text: string): string[] {
   const start = text.search(/^KEYS\b[^\n]*=\s*\(\n/m);
   if (start < 0) return [];
-  const end = text.indexOf("\n)\n", start);
+  const end = text.indexOf('\n)\n', start);
   if (end < 0) return [];
   return [...text.slice(start, end).matchAll(TUPLE_ROW)].map((m) => m[1]);
 }
 
 function keysOf(file: string, text: string): string[] {
-  if (!file.endsWith(".py")) return pushedKeys(text);
-  return text.includes("\ndef secrets_payload(")
-    ? pythonPayloadKeys(text)
-    : pythonTupleKeys(text);
+  if (!file.endsWith('.py')) return pushedKeys(text);
+  return text.includes('\ndef secrets_payload(') ? pythonPayloadKeys(text) : pythonTupleKeys(text);
 }
 
 /** `  KEY: z.` or `  KEY: boolFromEnv` — a declared schema key. */
@@ -184,50 +182,44 @@ export function schemaKeys(text: string): Set<string> {
  * that merely mention it; a `KEY: $var` line alone matches any jq object. A file
  * doing both is piping a hand-built payload at a Worker, which is the class.
  */
-export function looksLikeBuilder(text: string, file = ""): boolean {
-  if (file.endsWith(".py")) {
+export function looksLikeBuilder(text: string, file = ''): boolean {
+  if (file.endsWith('.py')) {
     // A Python builder spells the command as an argv list, and the file must also
     // carry a payload the extractors can read: a test that only quotes the argv has none.
-    return (
-      /"wrangler",\s*"secret",\s*"bulk"/.test(text) &&
-      keysOf(file, text).length > 0
-    );
+    return /"wrangler",\s*"secret",\s*"bulk"/.test(text) && keysOf(file, text).length > 0;
   }
-  return text.includes("wrangler secret bulk") && pushedKeys(text).length > 0;
+  return text.includes('wrangler secret bulk') && pushedKeys(text).length > 0;
 }
 
 // ── Control: both extractors, before either is trusted ─────────────────────
 {
   const jq =
-    "jq -n \\\n  --arg a \"$A\" \\\n  '{\n        ED25519_PRIVATE_KEY: $a,\n        API_KEY: $b,\n        lower_case: $c,\n  }'";
+    'jq -n \\\n  --arg a "$A" \\\n  \'{\n        ED25519_PRIVATE_KEY: $a,\n        API_KEY: $b,\n        lower_case: $c,\n  }\'';
   const got = pushedKeys(jq);
-  if (got.join(",") !== "ED25519_PRIVATE_KEY,API_KEY") {
+  if (got.join(',') !== 'ED25519_PRIVATE_KEY,API_KEY') {
     console.error(
-      `✗ instrument control: pushed-key extractor read ${JSON.stringify(got)} from a fixture that pushes ED25519_PRIVATE_KEY and API_KEY (and a lowercase decoy). Every verdict below would be meaningless.`,
+      `✗ instrument control: pushed-key extractor read ${JSON.stringify(got)} from a fixture that pushes ED25519_PRIVATE_KEY and API_KEY (and a lowercase decoy). Every verdict below would be meaningless.`
     );
     process.exit(1);
   }
   const schema =
-    "export const envSchema = z.object({\n  ED25519_PRIVATE_KEY: z.string().min(1),\n  CI_MODE: boolFromEnv.optional(),\n    NESTED_NOT_A_KEY: z.string(),\n  // API_KEY: z.string()  (a comment)\n});";
+    'export const envSchema = z.object({\n  ED25519_PRIVATE_KEY: z.string().min(1),\n  CI_MODE: boolFromEnv.optional(),\n    NESTED_NOT_A_KEY: z.string(),\n  // API_KEY: z.string()  (a comment)\n});';
   const keys = schemaKeys(schema);
   if (
-    !keys.has("ED25519_PRIVATE_KEY") ||
-    !keys.has("CI_MODE") ||
-    keys.has("NESTED_NOT_A_KEY") ||
-    keys.has("API_KEY")
+    !keys.has('ED25519_PRIVATE_KEY') ||
+    !keys.has('CI_MODE') ||
+    keys.has('NESTED_NOT_A_KEY') ||
+    keys.has('API_KEY')
   ) {
     console.error(
-      `✗ instrument control: schema-key extractor read ${JSON.stringify([...keys])}; expected exactly ED25519_PRIVATE_KEY and CI_MODE (not a 4-space nested line, not a commented one).`,
+      `✗ instrument control: schema-key extractor read ${JSON.stringify([...keys])}; expected exactly ED25519_PRIVATE_KEY and CI_MODE (not a 4-space nested line, not a commented one).`
     );
     process.exit(1);
   }
   // The failure direction: a pushed name the schema lacks MUST be reportable.
-  if (
-    pushedKeys("        RENAMED_KEY: $x,\n").length !== 1 ||
-    keys.has("RENAMED_KEY")
-  ) {
+  if (pushedKeys('        RENAMED_KEY: $x,\n').length !== 1 || keys.has('RENAMED_KEY')) {
     console.error(
-      "✗ instrument control did not fire: a pushed key absent from the schema was not detectable.",
+      '✗ instrument control did not fire: a pushed key absent from the schema was not detectable.'
     );
     process.exit(1);
   }
@@ -235,9 +227,9 @@ export function looksLikeBuilder(text: string, file = ""): boolean {
   const py =
     'HELP = {\n    "DECOY_TOP": 1,\n}\n\ndef secrets_payload() -> dict[str, str]:\n    signing = {\n        "SIGNING_DECOY": os.environ.get("X") or "",\n    }\n    return {\n        "API_KEY": signing["X"],\n        "ROOT_EMAIL": "",\n    }\n\nOTHER = {\n    "DECOY_AFTER": 2,\n}\n';
   const pyGot = pythonPayloadKeys(py);
-  if (pyGot.join(",") !== "API_KEY,ROOT_EMAIL") {
+  if (pyGot.join(',') !== 'API_KEY,ROOT_EMAIL') {
     console.error(
-      `✗ instrument control: the Python payload extractor read ${JSON.stringify(pyGot)} from a fixture whose secrets_payload() returns API_KEY and ROOT_EMAIL (with a signing dict and two module dicts as decoys). Every verdict on deploy_bench.py would be meaningless.`,
+      `✗ instrument control: the Python payload extractor read ${JSON.stringify(pyGot)} from a fixture whose secrets_payload() returns API_KEY and ROOT_EMAIL (with a signing dict and two module dicts as decoys). Every verdict on deploy_bench.py would be meaningless.`
     );
     process.exit(1);
   }
@@ -245,9 +237,9 @@ export function looksLikeBuilder(text: string, file = ""): boolean {
   const port =
     'HELP = (\n    ("DECOY_TOP", "x"),\n)\n\nKEYS: tuple[tuple[str, str], ...] = (\n    ("API_KEY", "api"),\n    ("ROOT_EMAIL", "root"),\n)\n\nREQUIRED_NONEMPTY = (\n    ("DECOY_AFTER", "y"),\n)\n';
   const portGot = pythonTupleKeys(port);
-  if (portGot.join(",") !== "API_KEY,ROOT_EMAIL") {
+  if (portGot.join(',') !== 'API_KEY,ROOT_EMAIL') {
     console.error(
-      `✗ instrument control: the port tuple extractor read ${JSON.stringify(portGot)} from a fixture whose KEYS tuple holds API_KEY and ROOT_EMAIL (with a tuple before it and one after it as decoys). Every verdict on the set_*_worker_secrets ports would be meaningless.`,
+      `✗ instrument control: the port tuple extractor read ${JSON.stringify(portGot)} from a fixture whose KEYS tuple holds API_KEY and ROOT_EMAIL (with a tuple before it and one after it as decoys). Every verdict on the set_*_worker_secrets ports would be meaningless.`
     );
     process.exit(1);
   }
@@ -256,64 +248,58 @@ export function looksLikeBuilder(text: string, file = ""): boolean {
   // NOTE ON THE FIXTURE: a chain wrapped as `KEY:\n z.string()` is NOT the defect shape -- SCHEMA_KEY's `\s*` crosses the newline, so it reads that fine, and the historical `MIN_CLI_VERSION: z` case is covered by the `z$` alternative. The shape that still defeats it is a value that is neither `z.` nor `boolFromEnv`: a new helper added to env.ts. That is what this plants, because a
   // control must plant the defect the comparison can actually catch.
   const helper =
-    "export const envSchema = z.object({\n  GOOD_KEY: z.string(),\n  HELPER_KEY: portFromEnv(8080),\n    NESTED_NOT_A_KEY: z.string(),\n});";
+    'export const envSchema = z.object({\n  GOOD_KEY: z.string(),\n  HELPER_KEY: portFromEnv(8080),\n    NESTED_NOT_A_KEY: z.string(),\n});';
   const strict = schemaKeys(helper);
   const loose = schemaLineKeys(helper);
-  if (loose.has("NESTED_NOT_A_KEY")) {
+  if (loose.has('NESTED_NOT_A_KEY')) {
     console.error(
-      `✗ instrument control: the schema-line oracle counted a FOUR-space nested line, so it would inflate every comparison. Read ${JSON.stringify([...loose])}.`,
+      `✗ instrument control: the schema-line oracle counted a FOUR-space nested line, so it would inflate every comparison. Read ${JSON.stringify([...loose])}.`
     );
     process.exit(1);
   }
-  if (!loose.has("HELPER_KEY") || strict.has("HELPER_KEY")) {
+  if (!loose.has('HELPER_KEY') || strict.has('HELPER_KEY')) {
     console.error(
-      "✗ instrument control did not fire: a key declared with a helper the strict regex does not know must be seen by the oracle and MISSED by the extractor, or the comparison below proves nothing.",
+      '✗ instrument control did not fire: a key declared with a helper the strict regex does not know must be seen by the oracle and MISSED by the extractor, or the comparison below proves nothing.'
     );
     process.exit(1);
   }
   // The discovery predicate, in BOTH directions. A predicate that never says yes makes the sweep below unable to find an unlisted builder; one that never says no reports every doc that merely mentions wrangler as one.
-  const builder =
-    "jq -n --arg a \"$A\" '{\n  API_KEY: $a,\n}' | npx wrangler secret bulk --name x";
+  const builder = 'jq -n --arg a "$A" \'{\n  API_KEY: $a,\n}\' | npx wrangler secret bulk --name x';
   if (!looksLikeBuilder(builder)) {
     console.error(
-      "✗ instrument control: the discovery predicate did not recognise a file that pipes a hand-built payload into `wrangler secret bulk`. The sweep below could not find an unlisted builder.",
+      '✗ instrument control: the discovery predicate did not recognise a file that pipes a hand-built payload into `wrangler secret bulk`. The sweep below could not find an unlisted builder.'
     );
     process.exit(1);
   }
   const pyBuilder =
     'KEYS = (\n    ("API_KEY", "api"),\n)\n\ndef argv(n):\n    return ["npx", "wrangler", "secret", "bulk", "--name", n]\n';
-  if (!looksLikeBuilder(pyBuilder, "x.py")) {
+  if (!looksLikeBuilder(pyBuilder, 'x.py')) {
     console.error(
-      "✗ instrument control: the discovery predicate did not recognise a Python port that carries a KEYS tuple and a `wrangler secret bulk` argv. The sweep below could not find an unlisted Python builder.",
+      '✗ instrument control: the discovery predicate did not recognise a Python port that carries a KEYS tuple and a `wrangler secret bulk` argv. The sweep below could not find an unlisted Python builder.'
     );
     process.exit(1);
   }
   if (
-    looksLikeBuilder(
-      "# see `npx wrangler secret bulk` for how deploys push secrets\n",
-    ) ||
+    looksLikeBuilder('# see `npx wrangler secret bulk` for how deploys push secrets\n') ||
     looksLikeBuilder("jq -n '{\n  API_KEY: $a,\n}' > payload.json\n") ||
-    looksLikeBuilder(
-      'assert argv("n") == ["npx", "wrangler", "secret", "bulk"]\n',
-      "test_x.py",
-    ) ||
-    looksLikeBuilder('KEYS = (\n    ("API_KEY", "api"),\n)\n', "y.py")
+    looksLikeBuilder('assert argv("n") == ["npx", "wrangler", "secret", "bulk"]\n', 'test_x.py') ||
+    looksLikeBuilder('KEYS = (\n    ("API_KEY", "api"),\n)\n', 'y.py')
   ) {
     console.error(
-      "✗ instrument control: the discovery predicate said yes to a file that only MENTIONS wrangler, to a jq object that is not piped at a Worker, to a Python test that only quotes the argv, or to a Python file with a KEYS tuple and no `wrangler secret bulk` argv. It would report prose as an unlisted builder.",
+      '✗ instrument control: the discovery predicate said yes to a file that only MENTIONS wrangler, to a jq object that is not piped at a Worker, to a Python test that only quotes the argv, or to a Python file with a KEYS tuple and no `wrangler secret bulk` argv. It would report prose as an unlisted builder.'
     );
     process.exit(1);
   }
 }
 
-const schemaText = readFileSync(join(ROOT, SCHEMA), "utf8");
+const schemaText = readFileSync(join(ROOT, SCHEMA), 'utf8');
 const schema = schemaKeys(schemaText);
 const schemaLines = schemaLineKeys(schemaText);
 // 80, not 40. The old floor was half the population, which is a guard against the extractor finding NOTHING and nothing else -- it sat happily at 84 of 85 while a prettier-wrapped chain silently dropped a key. A floor guards against finding
 // nothing; only the comparison below guards against finding ALMOST everything.
 if (schema.size < 80) {
   console.error(
-    `✗ ${SCHEMA} yielded only ${schema.size} keys. The schema extractor lost the file; refusing a verdict.`,
+    `✗ ${SCHEMA} yielded only ${schema.size} keys. The schema extractor lost the file; refusing a verdict.`
   );
   process.exit(1);
 }
@@ -327,11 +313,11 @@ const lost = [...schemaLines].filter((k) => !schema.has(k));
 if (lost.length > 0) {
   console.error(
     `✗ ${SCHEMA} declares ${schemaLines.size} key(s) but the extractor read only ${schema.size}.\n` +
-      `  Missed: ${lost.join(", ")}\n` +
+      `  Missed: ${lost.join(', ')}\n` +
       `  The extractor has silently lost a key, which is a latent FALSE POSITIVE: the day\n` +
       `  a builder pushes one of these names, this gate calls a correct push line\n` +
       `  undeclared. Check whether a long zod chain wrapped onto a second line, which is\n` +
-      `  exactly how it lost MIN_CLI_VERSION -- SCHEMA_KEY must tolerate the new shape.`,
+      `  exactly how it lost MIN_CLI_VERSION -- SCHEMA_KEY must tolerate the new shape.`
   );
   process.exit(1);
 }
@@ -341,31 +327,31 @@ if (lost.length > 0) {
 // classified, and one that builds a payload without being listed is a failure.
 let tracked: string[];
 try {
-  tracked = execFileSync("git", ["ls-files", "-z", "*.sh", "*.py"], {
+  tracked = execFileSync('git', ['ls-files', '-z', '*.sh', '*.py'], {
     cwd: ROOT,
-    encoding: "utf8",
+    encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
   })
-    .split("\0")
+    .split('\0')
     .filter(Boolean);
 } catch (err) {
   console.error(
     `✗ could not list tracked shell and Python sources: \`git ls-files\` failed (${err instanceof Error ? err.message : String(err)}).\n` +
-      "  The builder list cannot be re-derived from the tree, so this gate cannot tell a\n" +
-      "  complete check from a partial one. Run it inside the repository with git on PATH.",
+      '  The builder list cannot be re-derived from the tree, so this gate cannot tell a\n' +
+      '  complete check from a partial one. Run it inside the repository with git on PATH.'
   );
   process.exit(1);
 }
 if (tracked.length === 0) {
   console.error(
-    "✗ `git ls-files *.sh *.py` returned nothing. The gate is not seeing the tree, so its green would mean nothing.",
+    '✗ `git ls-files *.sh *.py` returned nothing. The gate is not seeing the tree, so its green would mean nothing.'
   );
   process.exit(1);
 }
 const listed = new Set(BUILDERS.map((b) => b.file));
 const discovered = tracked.filter((f) => {
   try {
-    return looksLikeBuilder(readFileSync(join(ROOT, f), "utf8"), f);
+    return looksLikeBuilder(readFileSync(join(ROOT, f), 'utf8'), f);
   } catch {
     return false;
   }
@@ -373,8 +359,8 @@ const discovered = tracked.filter((f) => {
 if (discovered.length === 0) {
   console.error(
     `✗ swept ${tracked.length} tracked shell and Python source(s) and found ZERO that build a \`wrangler secret bulk\` payload.\n` +
-      "  Four are known to exist, so the discovery predicate has stopped recognising the\n" +
-      "  shape it is looking for. Refusing a verdict rather than reporting a clean sweep.",
+      '  Four are known to exist, so the discovery predicate has stopped recognising the\n' +
+      '  shape it is looking for. Refusing a verdict rather than reporting a clean sweep.'
   );
   process.exit(1);
 }
@@ -382,10 +368,10 @@ const unlisted = discovered.filter((f) => !listed.has(f));
 if (unlisted.length > 0) {
   console.error(
     `✗ ${unlisted.length} source file(s) build a \`wrangler secret bulk\` payload and are not in BUILDERS:\n` +
-      unlisted.map((f) => `    ${f}`).join("\n") +
-      "\n\n  Nothing checks their key names against the Worker schema, so a rename in one is\n" +
-      "  silent exactly the way this gate exists to prevent. Add each to BUILDERS with a\n" +
-      "  floor a little under its current key count. Do not narrow the sweep to get past this.",
+      unlisted.map((f) => `    ${f}`).join('\n') +
+      '\n\n  Nothing checks their key names against the Worker schema, so a rename in one is\n' +
+      '  silent exactly the way this gate exists to prevent. Add each to BUILDERS with a\n' +
+      '  floor a little under its current key count. Do not narrow the sweep to get past this.'
   );
   process.exit(1);
 }
@@ -395,17 +381,17 @@ let checked = 0;
 for (const { file, floor } of BUILDERS) {
   let text: string;
   try {
-    text = readFileSync(join(ROOT, file), "utf8");
+    text = readFileSync(join(ROOT, file), 'utf8');
   } catch {
     problems.push(
-      `    ${file}: MISSING — a builder this gate knows about is gone; update BUILDERS or restore it`,
+      `    ${file}: MISSING — a builder this gate knows about is gone; update BUILDERS or restore it`
     );
     continue;
   }
   const keys = keysOf(file, text);
   if (keys.length < floor) {
     problems.push(
-      `    ${file}: extracted only ${keys.length} pushed key(s), floor is ${floor} — the payload moved or the regex broke`,
+      `    ${file}: extracted only ${keys.length} pushed key(s), floor is ${floor} — the payload moved or the regex broke`
     );
     continue;
   }
@@ -414,12 +400,10 @@ for (const { file, floor } of BUILDERS) {
     if (!schema.has(k)) {
       const line =
         text
-          .split("\n")
-          .findIndex((l) =>
-            new RegExp(`^\\s+(?:${k}:\\s*\\$|"${k}":|\\("${k}",)`).test(l),
-          ) + 1;
+          .split('\n')
+          .findIndex((l) => new RegExp(`^\\s+(?:${k}:\\s*\\$|"${k}":|\\("${k}",)`).test(l)) + 1;
       problems.push(
-        `    ${file}:${line}  pushes ${k}, which ${SCHEMA} does not declare — zod will STRIP it silently`,
+        `    ${file}:${line}  pushes ${k}, which ${SCHEMA} does not declare — zod will STRIP it silently`
       );
     }
   }
@@ -427,11 +411,11 @@ for (const { file, floor } of BUILDERS) {
 
 if (problems.length > 0) {
   console.error(
-    `✗ worker secret names disagree with the schema (${problems.length}):\n${problems.join("\n")}\n\n` +
-      "  A name pushed to a Worker that its env schema does not read is not an error\n" +
+    `✗ worker secret names disagree with the schema (${problems.length}):\n${problems.join('\n')}\n\n` +
+      '  A name pushed to a Worker that its env schema does not read is not an error\n' +
       "  anywhere: zod v4 strips unknown keys, and 79 of the schema's 85 keys are\n" +
-      "  optional, so the value is discarded and the feature quietly turns itself off.\n" +
-      "  Fix the builder to push the declared name, or declare the key in env.ts.",
+      '  optional, so the value is discarded and the feature quietly turns itself off.\n' +
+      '  Fix the builder to push the declared name, or declare the key in env.ts.'
   );
   process.exit(1);
 }
@@ -440,7 +424,7 @@ console.log(
   `✓ worker secret names: ${checked} pushed key(s) across ${BUILDERS.length} builder(s) are all\n` +
     `  declared in ${SCHEMA} (${schema.size} schema keys; extractor controls fired both ways).\n` +
     `  Swept ${tracked.length} tracked shell and Python source(s) for payload builders: found ${discovered.length}, all listed.\n` +
-    "  Blind spot: this proves the NAMES agree. It cannot see an empty VALUE, which zod\n" +
+    '  Blind spot: this proves the NAMES agree. It cannot see an empty VALUE, which zod\n' +
     "  normalises to undefined and validates — that is the deploy scripts' non-empty\n" +
-    "  guards, not this gate.",
+    '  guards, not this gate.'
 );
