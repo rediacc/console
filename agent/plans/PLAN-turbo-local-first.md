@@ -1,6 +1,6 @@
 # PLAN: turbo = local-first (one push, one PR, one CI cycle per batch)
 
-Status: approved -- operator 2026-10-08: "when turbo is enabled, I'd lean to complete the plans locally since CI checks slow downs. Let's check the current system and adjust it." and, on the same day, "there should be a plan to implement, implement it first!" <!-- style-ok -->
+Status: done -- 2026-10-08, every box ticked; was approved -- operator 2026-10-08: "when turbo is enabled, I'd lean to complete the plans locally since CI checks slow downs. Let's check the current system and adjust it." and, on the same day, "there should be a plan to implement, implement it first!" <!-- style-ok -->
 Depends-On: no-dep -- extends agent/plans/PLAN-stop-hook-turbo.md (all boxes ticked) rather than waiting on it
 Owner: d778be9d
 First-Seen: 2026-10-08
@@ -13,11 +13,18 @@ The design below is the opus Plan agent's (2026-10-08). Its line citations were 
 
 ## Tasks
 
-- [ ] LF-min W2+W1: the minimal first step. wl_checks.loop_next_text's no-PR arm returns the N_TURBO_LOCAL advisory under turbo while the batch is not ready, and wl_prscope.done() computes the no-PR plan set under turbo (D1). Tests LF1 and LF3 with their controls.
-- [ ] LF-W1 settings and model: `turbo_push: batch-end|pr` and `backup_push_h` in wl_planqueue SETTINGS_KEYS, plan_gate defaults, and `plan_gate.batch_body`. Tests LF3 and LF7 in test_wl_queue_settings.py and test_wl_prscope.py.
-- [ ] LF-W2 stop arms: D2 (N_TURBO_LOCAL / V_LOOP_NEXT_BATCH_OPEN with the batch-end checklist), D3 (turbo-next silent on a live batch-end PR, firing on a no-PR branch), D4 (receipt-behind and N_RECEIPT_EARLY silent on a no-PR batch, plus the new backup-push advisory in wl_loopspeed), D6 (the judge paragraph and the conditional FORBIDDEN_ORDERS), and `worklist.py --batch-body <me>`. Tests LF1, LF2, LF4, LF5 and LF8, plus the mutation control.
-- [ ] LF-W3 post-bash and prose: D5 (arm_ci_watch arms nothing with no open PR, test LF6) and D7 (the CLAUDE.md rule-1 sentence and its mirrors, the block_settled_questions MESSAGE with its re-frozen golden, QUEUE.md header and Settings bullets, the PLAN-stop-hook-turbo D5/D8 "superseded under batch-end" note). The lead runs gen:docs.
-- [ ] LF-live: on branch 1008-1 with no PR, a real Stop shows the N_TURBO_LOCAL advisory rather than "Open it", and `worklist.py --batch-body d778be9d` prints a body whose `Plan:` line names the batch.
+- [x] LF-min W2+W1: the minimal first step. wl_checks.loop_next_text's no-PR arm returns the N_TURBO_LOCAL advisory under turbo while the batch is not ready, and wl_prscope.done() computes the no-PR plan set under turbo (D1). Tests LF1 and LF3 with their controls.
+    (ticked) 2026-10-08 by d778be9d: 6224a6102 (wl_prscope no-PR batch + N_TURBO_LOCAL advisory; LF1/LF3 with controls)
+- [x] LF-W1 settings and model: `turbo_push: batch-end|pr` and `backup_push_h` in wl_planqueue SETTINGS_KEYS, plan_gate defaults, and `plan_gate.batch_body`. Tests LF3 and LF7 in test_wl_queue_settings.py and test_wl_prscope.py.
+    (ticked) 2026-10-08 by d778be9d: 6224a6102 (settings keys, plan_gate.batch_body, LoopState fields; LF3/LF7) and d6721e073 (plan_gate._read non-UTF-8)
+- [x] LF-W2 stop arms: D2 (N_TURBO_LOCAL / V_LOOP_NEXT_BATCH_OPEN with the batch-end checklist), D3 (turbo-next silent on a live batch-end PR, firing on a no-PR branch), D4 (receipt-behind and N_RECEIPT_EARLY silent on a no-PR batch, plus the new backup-push advisory in wl_loopspeed), D6 (the judge paragraph and the conditional FORBIDDEN_ORDERS), and `worklist.py --batch-body <me>`. Tests LF1, LF2, LF4, LF5 and LF8, plus the mutation control.
+    (ticked) 2026-10-08 by d778be9d: 6224a6102 (D2/D3/D4/D6, --batch-body; LF1/LF2/LF4/LF5/LF8 + mutation; 431 passed), 7670a1908 (mypy narrowing), 218bef67b (N_RECEIPT_EARLY quiet in post-bash)
+- [x] LF-W3 post-bash and prose: D5 (arm_ci_watch arms nothing with no open PR, test LF6) and D7 (the CLAUDE.md rule-1 sentence and its mirrors, the block_settled_questions MESSAGE with its re-frozen golden, QUEUE.md header and Settings bullets, the PLAN-stop-hook-turbo D5/D8 "superseded under batch-end" note). The lead runs gen:docs.
+    (ticked) 2026-10-08 by d778be9d: 8ed69711c (arm_ci_watch no-PR skip, LF6 41 passed; rule-1 sentence and its mirrors; golden 104 passed)
+- [x] LF-guard (operator 2026-10-08): a pre-bash guard `block_turbo_early_push` refuses `git push` and `gh pr create` while (a) `turbo: on` and (b) any plan under QUEUE.md `## Promoted` still has an open box, unless (c) the command declares an operational reason (`TURBO_PUSH_REASON=<kind>:<why>` prefix; kinds: `ci-cd` the plan needs a CI/CD-only check, `red-fix` a fix for a red on the live PR, `deadline` production or CD state that cannot wait, `backup` only when the oldest unpushed commit is older than `backup_push_h`, verified by the guard). Each admitted reason is appended to agent/ledgers/turbo-push-reasons.jsonl; a bare or unknown reason is refused.
+    (ticked) 2026-10-08 by d778be9d: d6721e073 (block_turbo_early_push, 44 cases, planted defect red; refuses git push origin 1008-1 on the real tree)
+- [x] LF-live: on branch 1008-1 with no PR, a real Stop shows the N_TURBO_LOCAL advisory rather than "Open it", and `worklist.py --batch-body d778be9d` prints a body whose `Plan:` line names the batch.
+    (ticked) 2026-10-08 by d778be9d: the real Stop hook on 1008-1 printed "TURBO LOCAL-FIRST: 37 commit(s) on 1008-1 are held locally; batch 0/3 finished" instead of "Open it", and worklist.py --batch-body d778be9d printed "Plan: agent/plans/PLAN-turbo-local-first.md" (2026-10-08)
 
 ## Evidence: what forces or nudges an early push
 
