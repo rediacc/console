@@ -2617,8 +2617,18 @@ def local_batch(state):
 
 
 def _set_finished(state, root):
-    """True when no plan of `state`'s set has an open box (vacuously true for an empty set)."""
-    return not any(wl_planenforce.first_box(root, rel) for rel in state.plans)
+    """True when the set is non-empty and none of its plans has an open box.
+
+    Read through plan_gate.open_boxes, which follows a `Moved-To:` stub, so a plan moved to `_done/` is judged by its real text; wl_planenforce.first_box reads the stub and saw nothing open. An empty set is NOT finished, and neither is a plan whose boxes cannot be read: either would otherwise order a push for a batch of nothing, or one that block_turbo_early_push then refuses.
+    """
+    if not state.plans:
+        return False
+    plan_gate, _commit_policy = wl_prscope._hooks_pkg()
+    for rel in state.plans:
+        open_n, _done, why = plan_gate.open_boxes(root, rel)
+        if why or open_n:
+            return False
+    return True
 
 
 def local_batch_open(state, root):
