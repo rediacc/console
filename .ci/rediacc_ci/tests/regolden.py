@@ -59,12 +59,17 @@ def _reexec_under_pytest() -> int:
     candidate = os.environ.get("PYTEST_BIN") or str(
         ROOT / ".ci/cache/toolchain/uv-tools/bin/pytest"
     )
-    try:
-        with open(candidate, encoding="utf-8") as fh:
-            shebang = fh.readline().strip()
-    except OSError:
-        shebang = ""
-    interpreter = shebang[2:].split()[0] if shebang.startswith("#!") else ""
+    # The bootstrap's `bin/pytest` is a bash core-lease WRAPPER (`#!/usr/bin/env bash`), so its shebang names `env`, not python (2026-10-08: `env: unexpected argument '-m'`). The tool venv's own interpreter comes first; a shebang counts only when it names a python.
+    venv_py = ROOT / ".ci/cache/toolchain/uv-tools/pytest/bin/python"
+    interpreter = str(venv_py) if os.access(venv_py, os.X_OK) else ""
+    if not interpreter:
+        try:
+            with open(candidate, encoding="utf-8") as fh:
+                shebang = fh.readline().strip()
+        except OSError:
+            shebang = ""
+        named = shebang[2:].split()[0] if shebang.startswith("#!") else ""
+        interpreter = named if os.path.basename(named).startswith("python") else ""
     if not interpreter or not os.access(interpreter, os.X_OK) or interpreter == sys.executable:
         print(
             "regolden: pytest is not importable and no bootstrap pytest was found at %s.\n"

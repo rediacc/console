@@ -19,10 +19,28 @@ import importlib.util
 import json
 import os
 import pathlib
+import subprocess
+import sys
 import tempfile
 import time
 
 _HERE = pathlib.Path(__file__).resolve()
+
+# PYTEST LIVES IN THE BOOTSTRAP'S TOOL VENV, not on the system python3 this script is launched with, and the differentials it imports need it. Re-exec under that venv's interpreter instead of dying with ModuleNotFoundError (2026-10-08, hit by three writers).
+if importlib.util.find_spec("pytest") is None:
+    _VENV_PY = _HERE.parents[3] / ".ci/cache/toolchain/uv-tools/pytest/bin/python"
+    # A venv's `python` is a symlink to the base interpreter, so the binary cannot tell them apart; sys.prefix can.
+    if (
+        os.access(_VENV_PY, os.X_OK)
+        and pathlib.Path(sys.prefix).resolve() != _VENV_PY.parents[1].resolve()
+    ):
+        raise SystemExit(
+            subprocess.run([str(_VENV_PY), str(_HERE), *sys.argv[1:]], check=False).returncode
+        )
+    raise SystemExit(
+        "regolden: pytest is not importable and %s is missing.\n  fix: bash .ci/bootstrap.sh"
+        % _VENV_PY
+    )
 # The canonical `.claude` hop, rediacc_hooks/syspath.py, loaded BY PATH: run as a script, only this file's own directory is on sys.path, so `rediacc_hooks` is not importable by name until the hop is made.
 _SYSPATH = importlib.util.spec_from_file_location(
     "rediacc_hooks_syspath", _HERE.parents[1] / "syspath.py"
