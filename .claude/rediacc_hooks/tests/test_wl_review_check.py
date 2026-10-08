@@ -347,3 +347,24 @@ def test_status_names_a_submodule_review_in_flight_while_the_console_is_clean(tm
     assert got.returncode == 0, got.stdout + got.stderr
     assert "IN FLIGHT private/sub %s" % sha[:8] in got.stdout, got.stdout
     assert "clean" not in got.stdout, got.stdout
+
+
+def test_a_pushed_branch_not_checked_out_is_judged_at_its_pushed_tip(tmp_path):
+    """2026-10-08: the operator parked 1007-1's local commits on 1008-1, and block_admin_merge then refused PR #599 as `not-checked-out`. A PR merges what was pushed, so the walk reads origin/<branch>; an unreviewed commit that exists only on the parking branch must not count."""
+    for name, record, want in (("clean", "resolved", []), ("unreviewed", None, ["uncovered"])):
+        repo = _world(tmp_path / name, record)
+        _git(repo, "push", "-q", "origin", BRANCH)
+        _git(repo, "fetch", "-q", "origin")
+        _git(repo, "checkout", "-q", "-b", "parked")
+        (repo / "later.py").write_text("x = 1\n", encoding="utf-8")
+        _git(repo, "add", "later.py")
+        _git(repo, "commit", "-q", "-m", "feat(x): parked, never pushed")
+        reasons, lines = R.check_state(repo, BRANCH, label="console")
+        assert reasons == want, (name, reasons, lines)
+
+
+def test_control_a_branch_with_no_pushed_ref_still_refuses_when_not_checked_out(tmp_path):
+    repo = _world(tmp_path, "resolved")
+    _git(repo, "checkout", "-q", "-b", "elsewhere")
+    reasons, _lines = R.check_state(repo, BRANCH, label="console")
+    assert reasons == ["not-checked-out"], reasons
