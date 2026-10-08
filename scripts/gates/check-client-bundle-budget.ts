@@ -135,12 +135,8 @@ function importSpecifiers(source: string): Edge[] {
   const out: Edge[] = [];
   for (const m of source.matchAll(/\bfrom\s*["']([^"']+)["']/g))
     out.push({ spec: m[1], dynamic: false });
-  // BACKTICKS TOO, and their absence was worth every deferred byte on the page. The bundler
-  // emits dynamic imports as template literals -- import(`./TutorialVideoPlayer.<hash>.js`)
-  // -- and this matcher once accepted only `"` and `'`, so phase 2 below never started and
-  // "deferred" printed 0 B on every build, the plyr one included, against a ceiling that was
-  // therefore never consulted. A template with `${...}` in it names no file; it is returned
-  // as `interpolated` so the caller can refuse it rather than score it zero.
+  // BACKTICKS TOO, and their absence was worth every deferred byte on the page. The bundler emits dynamic imports as template literals -- import(`./TutorialVideoPlayer.<hash>.js`) -- and this matcher once accepted only `"` and `'`, so phase 2 below never started and "deferred" printed 0 B on every build, the plyr one included, against a ceiling that was therefore never consulted.
+  // A template with `${...}` in it names no file; it is returned as `interpolated` so the caller can refuse it rather than score it zero.
   for (const m of source.matchAll(/\bimport\s*\(\s*(["'`])([^"'`]+)\1/g))
     out.push({ spec: m[2], dynamic: true, interpolated: m[1] === '`' && m[2].includes('${') });
   // `\s*`, NOT `\s+`, and the difference was worth 124,673 B. Rollup emits bare side-effect imports with no whitespace at all -- `import"./x.js";import"./y.js";` -- and `\s+` matched none of them. The homepage's script entry is a 129-BYTE FACADE whose only three edges are all of that form, so this walk dead-ended there and the gate reported 451,621 B while the page shipped 576,294
@@ -516,9 +512,7 @@ function selftest(): boolean {
     measurePage(dist, 'en/broken.html').missing.includes('/assets/gone.js')
   );
 
-  // BACKTICK DYNAMIC IMPORTS AND LOCALE ALTERNATIVES. Every edge out of loc-entry.js into the
-  // deferred graph is a template literal, which is what the real bundler emits; under the
-  // quote-only matcher this page measured 0 B deferred, exactly as every real build did.
+  // BACKTICK DYNAMIC IMPORTS AND LOCALE ALTERNATIVES. Every edge out of loc-entry.js into the deferred graph is a template literal, which is what the real bundler emits; under the quote-only matcher this page measured 0 B deferred, exactly as every real build did.
   const size = (rel: string) => fs.statSync(path.join(dist, rel)).size;
   write('assets/loc-entry.js', 'import"./fr.js";const go=()=>import(`./loc-player.js`);');
   write(

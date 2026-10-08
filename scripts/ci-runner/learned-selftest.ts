@@ -21,6 +21,9 @@ const REPO_ROOT = path.resolve(HERE, '..', '..');
 /** The archived receipts the property test replays: the newest by mtime. Each is about a second of simulation per order tried, and the newest carry this machine's current gate set; older ones add runtime, not shapes. */
 const ARCHIVE_SAMPLE = 12;
 
+/** The floor on T7's simulated mixes: the seeded ones always exist, so fewer means the property was checked over nothing (VACUOUS). */
+const MIN_MIXES = 3;
+
 /** This machine's shape, as sim.ts P24 states it: 24 cores, C 23, K 46, M 29 GB. */
 const P24 = { machineCores: 24, jobs: 22, heavyLimit: 5 };
 const P24_BUDGET: CoreBudget = { cores: 23, epsilon: 0.1, maxProcs: 46, memMb: 29 * 1024 };
@@ -316,8 +319,11 @@ export async function learnedSelftest(): Promise<{
       ...archived.map(mixFromReceipt).filter((m): m is Mix => m !== undefined),
       ...[20261008, 7, 42].map(seededMix),
     ];
-    const fromArchive = mixes.length - 3;
-    check(mixes.length >= 3, `T7 must simulate at least the 3 seeded mixes, got ${mixes.length}`);
+    const fromArchive = mixes.length - MIN_MIXES;
+    check(
+      mixes.length >= MIN_MIXES,
+      `T7 must simulate at least the ${MIN_MIXES} seeded mixes, got ${mixes.length}`
+    );
     let on = 0;
     let slowerUnpinned = 0;
     for (const [i, mix] of mixes.entries()) {

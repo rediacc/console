@@ -4440,6 +4440,9 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-pr-condition-ledger',
+    env: {
+      GITHUB_TOKEN: '${{ github.token }}',
+    },
     run: 'npm run check:ci-pr-condition-ledger',
     gate: true,
     leaves: ['scripts/gates/check-pr-condition-ledger.ts'],

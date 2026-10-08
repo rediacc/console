@@ -518,7 +518,12 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
                 )}
               </Video>
               {activeWords && (
-                <div ref={captionRef} className="tvp-caption" aria-live="polite" aria-atomic="true" />
+                <div
+                  ref={captionRef}
+                  className="tvp-caption"
+                  aria-live="polite"
+                  aria-atomic="true"
+                />
               )}
               {toolbar && <div className="tvp-toolbar-overlay">{toolbar}</div>}
             </VideoSkin>

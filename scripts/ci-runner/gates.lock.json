@@ -4782,6 +4782,9 @@
   },
   {
     "id": "check:ci-pr-condition-ledger",
+    "env": {
+      "GITHUB_TOKEN": "${{ github.token }}"
+    },
     "run": "npm run check:ci-pr-condition-ledger",
     "gate": true,
     "leaves": [
