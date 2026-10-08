@@ -309,7 +309,7 @@ const selftest = (
     );
   fires(
     'MUTANT: the hydrator building its own root instead of calling mountPlayers is caught',
-    mutate(hydrate, 'void mountPlayers(observed);', 'createRoot(observed[0]);'),
+    mutate(hydrate, 'await mountPlayers([el]);', 'createRoot(el);'),
     routing('hydrator')
   );
   fires(

@@ -1392,6 +1392,42 @@ for (const entry of toc as TocEntry[]) {
       aspect-ratio: 16 / 9;
       border-radius: var(--radius-md);
       background: var(--color-bg-light);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    /* The server-rendered poster and play control from remark-tutorial-embed.ts. The player is
+       built on the first press, so a visitor who only reads the page never downloads it. The
+       classes are tutorial-video-* rather than the solution pages' video-poster-* because that
+       stylesheet is not loaded on docs and a shared global name would be an implicit export. */
+    .article-content :global(.tutorial-video-poster) {
+      display: block;
+      inline-size: 100%;
+      block-size: 100%;
+      object-fit: cover;
+    }
+
+    .article-content :global(.tutorial-video-play) {
+      position: absolute;
+      inset-block-start: 50%;
+      inset-inline-start: 50%;
+      translate: -50% -50%;
+      inline-size: 4rem;
+      block-size: 4rem;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      cursor: pointer;
+      background: var(--color-primary);
+      color: #fff;
+    }
+
+    .article-content :global(.tutorial-video-play svg) {
+      inline-size: 1.75rem;
+      block-size: 1.75rem;
+      fill: currentColor;
     }
 
     /* Fallback Notice */
