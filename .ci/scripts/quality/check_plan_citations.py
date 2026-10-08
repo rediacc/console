@@ -535,16 +535,32 @@ def commit_is_reachable(root, token) -> bool:
 
     SAFE ON THIS REPOSITORY'S CI because `quality-branch` checks out with `fetch-depth: 0` (full COMMIT history) and `filter: blob:none` (blobs lazily fetched). Ancestry needs commits, which are all present; it never needs a blob.
     """
-    if not R.resolve(root, "commit", token)[0]:
+    if not commit_exists(root, token):
         return False
+    # origin/main counts too: main is never rewritten, so a commit CD pushed there (a release-state or tap-pointer commit) survives every rebase-merge, and CI's fetch-depth 0 checkout carries the ref.
+    for ref in ("HEAD", "refs/remotes/origin/main"):
+        r = subprocess.run(
+            ["git", "-C", str(root), "merge-base", "--is-ancestor", token, ref],
+            capture_output=True,
+            text=True,
+            check=False,
+            env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
+        )
+        if r.returncode == 0:
+            return True
+    return False
+
+
+def commit_exists(root, token) -> bool:
+    """Is `token` a commit object in this clone, reachable or not? `R.resolve`'s commit kind also demands ancestry of HEAD, so it cannot tell an orphan from a typo; the orphan message below needs exactly that difference."""
     r = subprocess.run(
-        ["git", "-C", str(root), "merge-base", "--is-ancestor", token, "HEAD"],
+        ["git", "-C", str(root), "rev-parse", "--verify", "--quiet", token + "^{commit}"],
         capture_output=True,
         text=True,
         check=False,
         env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
     )
-    return r.returncode == 0
+    return r.returncode == 0 and bool(r.stdout.strip())
 
 
 def unresolved(root, kind, token):
@@ -562,9 +578,9 @@ def unresolved(root, kind, token):
             or R.resolve(root, "tree", token)[0]
         ):
             return False, ""
-        if R.resolve(root, "commit", token)[0]:
+        if commit_exists(root, token):
             return True, (
-                "is a commit that EXISTS in this clone but is not an ancestor of HEAD, so "
+                "is a commit that EXISTS in this clone but is not an ancestor of HEAD or origin/main, so "
                 "a fresh checkout will not have it at all. That is what a rewrite leaves "
                 "behind -- `filter-branch`, a rebase, or `gh pr merge --rebase` -- and it "
                 "is why this passes locally and reds in CI. Cite the commit it became, or "
@@ -579,6 +595,8 @@ def unresolved(root, kind, token):
             "which is never an object in this repository -- name the submodule beside it "
             "so a reader knows where to look; (c) a typo"
         )
+    if kind == "commit" and commit_is_reachable(root, token):
+        return False, ""
     ok, why = R.resolve(root, kind, token)
     # `why` names the path the resolver actually found (`path:line`), which may differ from the token: a legacy flat `agent/PLAN-x.md` resolves to its current folder.
     if ok and kind == "fileline" and is_gitignored(root, why.rsplit(":", 1)[0]):

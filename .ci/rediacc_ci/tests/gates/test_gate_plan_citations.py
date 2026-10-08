@@ -210,3 +210,50 @@ def test_a_bare_digit_run_is_still_not_judged(gate, tmp_path):
     result = _gate(root, base)
     gate.assert_exit(0, result, "an unprefixed digit run is not a citation")
     gate.log_pass("a bare all-digit run id is still skipped")
+
+
+# A COMMIT ON origin/main (2026-10-08). CD pushes release-state and tap-pointer commits straight to main, and a plan written on a branch cut before them cites them. main is never rewritten, so such a commit survives every rebase-merge; the gate refused it with "names neither a blob nor a commit in this clone", which was also false: the "exists but not an ancestor" branch had become unreachable once the commit resolver began demanding ancestry of HEAD.
+
+
+def _side_commit(root: pathlib.Path, branch: str) -> str:
+    """A commit on `branch`, off the base and NOT an ancestor of the checked-out branch."""
+    head = _git(root, "rev-parse", "--abbrev-ref", "HEAD").strip()
+    _git(root, "checkout", "-qb", branch)
+    _write(root, "side-%s.txt" % branch, "side\n")
+    sha = _commit(root, "chore: on %s" % branch)
+    _git(root, "checkout", "-q", head)
+    return sha
+
+
+def _cited_plan(tmp_path, cite_from) -> tuple[pathlib.Path, str, str]:
+    root = _init(tmp_path)
+    _write(root, "agent/PLAN-main.md", "# PLAN: main\nStatus: in-progress\n\n- [ ] T1 a box\n")
+    base = _commit(root, "base")
+    sha = cite_from(root)
+    _write(
+        root,
+        "agent/PLAN-main.md",
+        "# PLAN: main\nStatus: in-progress\n\n- [ ] T1 a box\n\nThe release ran (%s).\n" % sha[:9],
+    )
+    _commit(root, "cite")
+    return root, base, sha
+
+
+def test_a_commit_on_origin_main_resolves(gate, tmp_path):
+    def on_main(root):
+        sha = _side_commit(root, "mainline")
+        _git(root, "update-ref", "refs/remotes/origin/main", sha)
+        return sha
+
+    root, base, _ = _cited_plan(tmp_path, on_main)
+    result = _gate(root, base)
+    gate.assert_exit(0, result, "a commit reachable from origin/main is a live citation")
+    gate.log_pass("a commit on origin/main, not yet in the branch, resolves")
+
+
+def test_an_orphan_commit_is_named_as_one(gate, tmp_path):
+    root, base, _ = _cited_plan(tmp_path, lambda root: _side_commit(root, "orphan"))
+    result = _gate(root, base)
+    gate.assert_exit(1, result, "a commit reachable from neither HEAD nor origin/main is a finding")
+    gate.assert_contains(result.err, "EXISTS in this clone", "and the message says it exists")
+    gate.log_pass("an orphan commit gets the orphan message, not 'names neither'")
