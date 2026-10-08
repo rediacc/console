@@ -533,7 +533,7 @@ def commit_is_reachable(root, token) -> bool:
     for a rewritten commit is "cite the blob id instead" -- a blob survives the
     rewrite the commit does not.
 
-    SAFE ON THIS REPOSITORY'S CI because `quality-branch` checks out with `fetch-depth: 0` (full COMMIT history) and `filter: blob:none` (blobs lazily fetched). Ancestry needs commits, which are all present; it never needs a blob.
+    SAFE ON THIS REPOSITORY'S CI because `quality-branch` checks out with `fetch-depth: 0` (full COMMIT history) and `filter: blob:none` (blobs lazily fetched). Ancestry needs commits, which are all present; it never needs a blob. The `origin/main` half also relies on `refs/remotes/origin/main` being present in that checkout: a `fetch-depth: 0` checkout of a pull request fetches every branch head, so the ref exists (the checkout step is `.github/workflows/ci-quality.yml` job `quality-branch`, lines 547-571). A clone without the ref falls back to HEAD alone, and `reachability_refs` names only the refs that exist.
     """
     if not commit_exists(root, token):
         return False
@@ -549,6 +549,30 @@ def commit_is_reachable(root, token) -> bool:
         if r.returncode == 0:
             return True
     return False
+
+
+def reachability_refs(root) -> str:
+    """The refs a commit citation is tested against, as prose: `HEAD or origin/main`, or `HEAD` alone in a clone that has no `origin/main` ref, so a message never points a reader at a ref that is not there."""
+    r = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "--verify", "--quiet", "refs/remotes/origin/main"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
+    )
+    return "HEAD or origin/main" if r.returncode == 0 and r.stdout.strip() else "HEAD"
+
+
+def orphan_message(root) -> str:
+    """The finding for a commit that exists in this clone yet is reachable from none of the refs it is tested against."""
+    return (
+        "is a commit that EXISTS in this clone but is not an ancestor of %s, so "
+        "a fresh checkout will not have it at all. That is what a rewrite leaves "
+        "behind -- `filter-branch`, a rebase, or `gh pr merge --rebase` -- and it "
+        "is why this passes locally and reds in CI. Cite the commit it became, or "
+        "the blob id (`git hash-object <file>`), which is content-addressed and "
+        "survives the rewrite" % reachability_refs(root)
+    )
 
 
 def commit_exists(root, token) -> bool:
@@ -579,14 +603,7 @@ def unresolved(root, kind, token):
         ):
             return False, ""
         if commit_exists(root, token):
-            return True, (
-                "is a commit that EXISTS in this clone but is not an ancestor of HEAD or origin/main, so "
-                "a fresh checkout will not have it at all. That is what a rewrite leaves "
-                "behind -- `filter-branch`, a rebase, or `gh pr merge --rebase` -- and it "
-                "is why this passes locally and reds in CI. Cite the commit it became, or "
-                "the blob id (`git hash-object <file>`), which is content-addressed and "
-                "survives the rewrite"
-            )
+            return True, orphan_message(root)
         return True, (
             "names neither a blob nor a commit in this clone. Three things it could be, "
             "and the fix differs: (a) a commit sha on a branch, which `gh pr merge "
@@ -595,8 +612,11 @@ def unresolved(root, kind, token):
             "which is never an object in this repository -- name the submodule beside it "
             "so a reader knows where to look; (c) a typo"
         )
-    if kind == "commit" and commit_is_reachable(root, token):
-        return False, ""
+    if kind == "commit":
+        if commit_is_reachable(root, token):
+            return False, ""
+        if commit_exists(root, token):
+            return True, orphan_message(root)
     ok, why = R.resolve(root, kind, token)
     # `why` names the path the resolver actually found (`path:line`), which may differ from the token: a legacy flat `agent/PLAN-x.md` resolves to its current folder.
     if ok and kind == "fileline" and is_gitignored(root, why.rsplit(":", 1)[0]):

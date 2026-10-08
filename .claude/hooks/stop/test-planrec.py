@@ -357,6 +357,15 @@ truthy(
     "resolve commit: the refusal names the sha and the ancestry",
     _orphan[:40] in _why and "not an ancestor of HEAD" in _why,
 )
+# The refusal names only refs that exist: this clone has no origin/main yet, so the message must not point at it; once the ref exists (carrying the base), it is named.
+falsy("resolve commit: no origin/main ref, so the refusal does not name it", "origin/main" in _why)
+sh(_orph, "git", "update-ref", "refs/remotes/origin/main", _base)
+_ok2, _why2 = R.resolve(_orph, "commit", _orphan)
+truthy(
+    "resolve commit: with an origin/main ref the refusal names HEAD or origin/main",
+    (not _ok2) and "not an ancestor of HEAD or origin/main" in _why2,
+)
+sh(_orph, "git", "update-ref", "-d", "refs/remotes/origin/main")
 # 2026-10-08: the same commit, once origin/main carries it (a CD push to main the branch has not merged yet), resolves; main is never rewritten.
 sh(_orph, "git", "update-ref", "refs/remotes/origin/main", _orphan)
 truthy("resolve commit: a commit on origin/main resolves", R.resolve(_orph, "commit", _orphan)[0])

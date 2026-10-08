@@ -808,3 +808,17 @@ def test_daemon_pool_worker_survives_a_raising_callable() -> None:
         bad.result(timeout=5)
     assert pool.submit(lambda: 7).result(timeout=5) == 7
     assert all(t.is_alive() for t in pool.threads)
+
+
+def test_daemon_pool_resolves_the_future_on_a_base_exception_and_ends_that_worker() -> None:
+    """SystemExit is not an Exception: the future still resolves, so the reader never hangs, and the worker thread ends."""
+    pool = L._DaemonPool(1)
+
+    def quit_() -> None:
+        raise SystemExit(3)
+
+    fut = pool.submit(quit_)
+    with pytest.raises(SystemExit):
+        fut.result(timeout=5)
+    pool.threads[0].join(timeout=5)
+    assert not pool.threads[0].is_alive()

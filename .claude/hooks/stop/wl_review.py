@@ -2699,7 +2699,13 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None):
         )
         # A plan closed by `check_plan_folders.py --move` leaves a `Moved-To:` stub at the old path, which `--follow` cannot see through: the fix lands in the moved file.
         # Read from the fix commit's tree, not the working tree: a stub deleted by a later commit must not unmark the fix.
-        moved = wl_store.stub_target_of_text(git(repo, "show", "%s:%s" % (fix, finding.file))[1])
+        # A stub the fix tree does not hold (retired flat-layout stub, or never committed there) is recovered from the slug alone, as every other stub reader does.
+        stub_rc, stub_text = git(repo, "show", "%s:%s" % (fix, finding.file))
+        moved = (
+            wl_store.stub_target_of_text(stub_text)
+            if stub_rc == 0
+            else wl_store.plan_stub_target(str(pathlib.Path(repo) / finding.file))
+        )
         if (
             finding.file not in touched
             and not set(renamed.splitlines()) & set(touched)

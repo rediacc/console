@@ -640,22 +640,39 @@ def _narrowed(site: str, label: str, step: dict) -> list[tuple[str, str]]:
     return [("cd-preflight-narrowed", "%s drops %s" % (label, ",".join(sorted(missing))))]
 
 
-# `event_name == 'pull_request'` (either operand order). `!=` never matches because the operator must be `==`, and a text-only "contains pull_request" test would pass `github.event_name != 'pull_request'`, the main-only blind spot. A match preceded by `!` through any run of spaces and `(` is a negation and does not count.
+# `event_name == 'pull_request'` (either operand order). `!=` never matches because the operator must be `==`, and a text-only "contains pull_request" test would pass `github.event_name != 'pull_request'`, the main-only blind spot. A match preceded by `!` through any run of spaces and `(`, or enclosed by a parenthesised group that itself follows `!`, is a negation and does not count.
 _PR_EQ_RE = re.compile(
     r"github\.event_name\s*==\s*['\"]pull_request['\"]"
     r"|['\"]pull_request['\"]\s*==\s*github\.event_name"
 )
 
 
+def _is_negated(cond: str, start: int) -> bool:
+    """True when the test beginning at `start` sits under an odd number of `!` negations: a `!` directly before it (through spaces), or one before any parenthesised group that encloses it, at any distance."""
+    i = start - 1
+    while i >= 0 and cond[i] in " \t\n":
+        i -= 1
+    negations = 1 if i >= 0 and cond[i] == "!" else 0
+    depth = 0
+    for j in range(start - 1, -1, -1):
+        ch = cond[j]
+        if ch == ")":
+            depth += 1
+        elif ch == "(":
+            if depth:
+                depth -= 1
+                continue
+            k = j - 1
+            while k >= 0 and cond[k] in " \t\n":
+                k -= 1
+            if k >= 0 and cond[k] == "!":
+                negations += 1
+    return negations % 2 == 1
+
+
 def _admits_pr(cond: str) -> bool:
     """True when `cond` holds a positive, non-negated `event_name == 'pull_request'` test."""
-    for m in _PR_EQ_RE.finditer(cond):
-        i = m.start() - 1
-        while i >= 0 and cond[i] in " \t\n(":
-            i -= 1
-        if i < 0 or cond[i] != "!":
-            return True
-    return False
+    return any(not _is_negated(cond, m.start()) for m in _PR_EQ_RE.finditer(cond))
 
 
 def _step_excludes_pr(cond: str) -> bool:
@@ -679,7 +696,9 @@ def analyse_preflight(
     jobs = ci_doc.get("jobs") if isinstance(ci_doc, dict) else None
     ci_jobs: dict[str, typing.Any] = jobs if isinstance(jobs, dict) else {}
     for job, i, st, _phase in pr:
-        if not _admits_pr(_text(ci_jobs[job].get("if"))) or _step_excludes_pr(_text(st.get("if"))):
+        job_if = _text(ci_jobs[job].get("if")).strip()
+        # A job with no `if:` runs on every event, pull_request included.
+        if (job_if and not _admits_pr(job_if)) or _step_excludes_pr(_text(st.get("if"))):
             out.append(("cd-preflight-not-on-pr", job))
         out += _narrowed("pr", _step_label(job, i, st), st)
         shape.append("ci.yml job %s runs it on pull_request" % job)

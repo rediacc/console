@@ -471,10 +471,18 @@ def test_a_malformed_cost_line_is_refused():
         R.parse(text.replace("Cost: (none)", "Cost: about a dime"))
 
 
-def test_a_commit_in_a_nested_repo_records_its_repo(world):
-    sub = world.repo / "sub"
+def _submodule(world, name="sub"):
+    """A nested repository REGISTERED in `.gitmodules`: the review hook triggers only for the project and its submodules (operator 2026-10-08)."""
+    sub = world.repo / name
     sub.mkdir()
     world.init_repo(sub)
+    with (world.repo / ".gitmodules").open("a", encoding="utf-8") as fh:
+        fh.write('[submodule "%s"]\n\tpath = %s\n\turl = ./%s\n' % (name, name, name))
+    return sub
+
+
+def test_a_commit_in_a_nested_repo_records_its_repo(world):
+    sub = _submodule(world)
     sha = world.commit("f.py", repo=sub)
     rc, out, err, _t = world.hook("git -C sub commit -m x -- f.py")
     assert rc == 0, err
@@ -487,9 +495,7 @@ def test_a_commit_in_a_nested_repo_records_its_repo(world):
 def test_check_without_a_repo_judges_the_submodule_reviews_too(world):
     """`wl_review.py --check` passes no repo and must judge every repository a review names: scoped to the console it printed "clean" while a submodule commit's review was unsettled, which the push guard then refused (renet 3ca4821f, 2026-10-02)."""
     world.answer([])  # a clean review, so only coverage can make the branch unclean
-    sub = world.repo / "sub"
-    sub.mkdir()
-    world.init_repo(sub)
+    sub = _submodule(world)
     sha = world.commit("f.py", repo=sub)
     rc, _out, err, _t = world.hook("git -C sub commit -m x -- f.py")
     assert rc == 0, err
@@ -508,14 +514,28 @@ def test_check_without_a_repo_judges_the_submodule_reviews_too(world):
 
 def test_a_commit_behind_an_unresolvable_dash_c_still_starts_its_review(world):
     """#51e1c0cf: `git -C <dir>/$r commit` (a loop variable) is a path the lexer cannot expand; the commit's repository must still be reviewed, not skipped."""
-    sub = world.repo / "sub"
-    sub.mkdir()
-    world.init_repo(sub)
+    sub = _submodule(world)
     sha = world.commit("f.py", repo=sub)
     rc, out, err, _t = world.hook('for r in sub; do git -C "$r" commit -m x -- f.py; done')
     assert rc == 0, err
     assert "started for sub %s" % sha[:8] in _context(out)
     assert world.wait_for(world.review_file(sha))
+
+
+def test_a_commit_in_a_nested_repo_that_is_not_a_submodule_starts_nothing(world):
+    """2026-10-08: private/growth is a separate, gitignored repository inside the tree. Its commits were reviewed into this project's agent/reviews/, which filed the operator's private documents here; the operator ruled it excluded. Membership is `.gitmodules`, not location."""
+    _submodule(world, "registered")
+    other = world.repo / "growth"
+    other.mkdir()
+    world.init_repo(other)
+    sha = world.commit("f.py", repo=other)
+    rc, out, err, _t = world.hook("git -C growth commit -m x -- f.py")
+    assert rc == 0, err
+    assert "started for" not in _context(out)
+    assert not world.review_file(sha).exists()
+    rc, out, err, _t = world.hook('for r in growth; do git -C "$r" commit -m x -- f.py; done')
+    assert rc == 0, err
+    assert "growth" not in _context(out)
 
 
 def test_a_commit_in_a_repository_outside_the_project_starts_nothing(world):
@@ -709,9 +729,30 @@ def test_mark_fixed_reads_the_stub_from_the_fix_commit_not_the_working_tree(worl
     world.commit("done/f.py", body="a = 1\nb = 2\nc = 3\n", msg="docs: move")
     world.commit("f.py", body="Status: moved\nMoved-To: done/f.py\n", msg="docs: stub")
     fix = world.commit("done/f.py", body="a = 1\nb = 2\nc = 4\n")
+    unrelated = world.commit("other.py", body="z = 1\n")
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(world.repo, BRANCH, fid, "fixed", [unrelated], "deadbeef")
     world.git("rm", "-q", "--", "f.py")
     world.git("commit", "-q", "-m", "docs: drop the stub", "--", "f.py")
     assert not (world.repo / "f.py").exists()
+    R.mark(world.repo, BRANCH, fid, "fixed", [fix], "deadbeef")
+    review = R.parse(world.review_file(sha).read_text())
+    assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % fix)
+
+
+def test_mark_fixed_falls_back_to_the_flat_legacy_stub_when_the_fix_tree_has_none(world):
+    """A retired flat `agent/PLAN-<slug>.md` stub is absent from the fix commit's tree; the mark still follows the slug to the moved plan, and a fix touching neither file is refused."""
+    world.answer([{"severity": "high", "file": "agent/PLAN-x.md", "line": 1, "claim": "stale"}])
+    sha = world.commit("agent/PLAN-x.md", body="a = 1\nb = 2\nc = 3\n", msg="docs: plan")
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    world.git("rm", "-q", "--", "agent/PLAN-x.md")
+    world.git("commit", "-q", "-m", "docs: retire the flat stub", "--", "agent/PLAN-x.md")
+    world.commit("agent/plans/PLAN-x.md", body="a = 1\nb = 2\nc = 3\n", msg="docs: move")
+    unrelated = world.commit("other.py", body="z = 1\n")
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(world.repo, BRANCH, fid, "fixed", [unrelated], "deadbeef")
+    fix = world.commit("agent/plans/PLAN-x.md", body="a = 1\nb = 2\nc = 4\n")
     R.mark(world.repo, BRANCH, fid, "fixed", [fix], "deadbeef")
     review = R.parse(world.review_file(sha).read_text())
     assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % fix)
