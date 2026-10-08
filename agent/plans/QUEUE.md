@@ -46,22 +46,23 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 
 <!-- queue:inflight:begin -->
 - Mode: stop_hook on; turbo on; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; cadence on; agent_hint on; agent_pushback on; judge on.
-- Focus: off.
-- Branch: 1007-1, no PR yet.
-- Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ci-consolidation.md, as its `Plan:` line unless the body names a plan first.
-- Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 2 commit(s) on the branch, 4 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 4 live of writer_cap 15 (session d778be9d): worker:a1474581826cb011f, worker:a887594fdb8b21678, worker:a9b39b8838290468d, worker:accb982cb88bb41be.
-- Leased items: 5: #46c361ff (worker:a887594fdb8b21678, d778be9d), #6487a641 (worker:a1474581826cb011f, d778be9d), #941045f1 (worker:accb982cb88bb41be, d778be9d), #f5a63576 (worker:3223342, d778be9d), #fbce68a5 (worker:a9b39b8838290468d, d778be9d).
-- Next plan: agent/plans/PLAN-ci-consolidation.md, Promoted entry 1 (solo); starts when this branch's PR binds it on its first push.
+- Focus: merge on PR #599 (branch 1007-1, session d778be9d, since 2026-10-07T18:32:30Z).
+- Branch: 1007-1, PR #599 open.
+- Plans on the PR (1):
+  - agent/plans/PLAN-ci-consolidation.md -- 22 of 22 boxes ticked, the PR body's `Plan:` line
+- Work outside the PR's plans: none.
+- Writers: 0 live of writer_cap 15 (session d778be9d).
+- Leased items: 3: #03455bb3 (worker:2038203, d778be9d), #3b831146 (worker:a581ffe0914890fe6, d778be9d), #a072b246 (worker:b08oafvew, d778be9d).
+- Next plan: agent/plans/PLAN-config-passkey-optional.md, Generated entry 1 (no Promoted entry ahead of it has an open box); a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
-1. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; candidates 1, 3, 4, 6, 7 of agent/reports/consolidation-investigation-2026-10-04.md in one plan, one PR -- solo
-2. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: T9 (the enforced matrix in DESIGN-CONFIG-STORAGE.md) and T10 (live smoke)
-3. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: the 9 open boxes
-4. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: Step 12
+1. agent/plans/PLAN-gate-scheduling-learned.md -- operator 2026-10-08: implement now, first plan of the branch after PR #599 (learned gate ledger, red classification, ranked scheduler, narrow re-run, upgrade companions)
+2. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; candidates 1, 3, 4, 6, 7 of agent/reports/consolidation-investigation-2026-10-04.md in one plan, one PR -- solo
+3. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: T9 (the enforced matrix in DESIGN-CONFIG-STORAGE.md) and T10 (live smoke)
+4. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: the 9 open boxes
+5. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: Step 12
 
 ## Generated
 
