@@ -56,7 +56,7 @@ twin has a byte-exact answer for.
 -----------------------------------------------------------------------------
 RULE T: THE OPERATOR-SUPPLIED COUNTS ARE NO LONGER BASH ARITHMETIC WORDS
 -----------------------------------------------------------------------------
-`--days`, `--versions`, `BRANCH_MAX_AGE_DAYS` and `MAX_DELETES_PER_RUN` are validated at startup (`_whole_number`): ASCII digits only, read in base 10, anything else refused with exit 2 naming the flag and the value. That closes the octal trap below at its source for the four values an operator can set (`010` keeps ten, `08` keeps eight, `08x` is refused), and with it HAZARD 8 (`BRANCH_MAX_AGE_DAYS=08` unwinding the run mid-Phase 9). HAZARD 9 (a failed cache listing doubling the stream and unwinding the run) is fixed in `cleanup_actions_cache`: the failure is named and nothing is evicted. Phase 10 carries four more (see `cleanup_workflow_runs`): a workflow whose file is gone from the default branch loses the keep-newest floor, whatever its state; the workflow listing is read past its first page; a workflow's summary line names the retention that applied to it; and every page of a workflow's runs is listed before the first delete. Phase 11 lists every page of artifacts before its first delete for the same reason. The sections below describe the TWIN; `arith` keeps emulating it for the values that still reach it (epochs, API numbers), and the `test_delta_*` cases pin each change against the live twin as the control.
+`--days`, `--versions`, `BRANCH_MAX_AGE_DAYS` and `MAX_DELETES_PER_RUN` are validated at startup (`_whole_number`): ASCII digits only, read in base 10, anything else refused with exit 2 naming the flag and the value. That closes the octal trap below at its source for the four values an operator can set (`010` keeps ten, `08` keeps eight, `08x` is refused), and with it HAZARD 8 (`BRANCH_MAX_AGE_DAYS=08` unwinding the run mid-Phase 9). HAZARD 9 (a failed cache listing doubling the stream and unwinding the run) is fixed in `cleanup_actions_cache`: the failure is named and nothing is evicted. Phase 10 carries four more (see `cleanup_workflow_runs`): a workflow whose file is gone from the default branch loses the keep-newest floor, whatever its state; the workflow listing is read past its first page; a workflow's summary line names the retention that applied to it; and every page of a workflow's runs is listed before the first delete. Phase 11 lists every page of artifacts before its first delete for the same reason. Phases 1, 2 and 8d carry the release-tag lifetime fix (worklist #a5a1f981, see `release_tag_held_by_r2`): a strict-semver tag of the console repo is never deleted while R2 still holds `cli/<tag>/.released` or cannot say whether it does (that keeps the tag and fails the run), non-semver tags such as `production` no longer occupy a KEEP_VERSIONS slot, and 8d deletes an orphan prefix only after a direct probe of its sentinel answers a definite NO. The sections below describe the TWIN; `arith` keeps emulating it for the values that still reach it (epochs, API numbers), and the `test_delta_*` cases pin each change against the live twin as the control.
 
 -----------------------------------------------------------------------------
 BASH ARITHMETIC IS EMULATED, INCLUDING THE OCTAL TRAP
@@ -81,7 +81,7 @@ Every one of these is preserved byte for byte, because a port that improves the 
 HAZARD 1 -- "COULD NOT LIST" READS AS "NOTHING TO DELETE", IN NINE PHASES. `gh release list ... 2>/dev/null || echo "[]"` (Phase 1) and its eight siblings turn an expired token, a 5xx, a rate limit and a genuinely empty account into the same empty list, and the phase then reports `deleted 0 of 0` and returns 0. Phase 5b is the one that gets this right, and its banner says why: it
 FAILS CLOSED because its worst case is deleting a live preview. Phases 1, 2, 3, 4, 5, 6, 7, 7b, 9 and 11 all fail OPEN. Phase 10 is the only other one that says anything at all ("No active workflows listed (API error?)").
 
-HAZARD 2 -- PHASE 3 COUNTS A DRY-RUN DELETE AND PHASE 1 DOES NOT. Phase 1's dry-run arm logs `[DRY-RUN] Would delete release` and leaves `deleted` alone, so its summary always reads `would delete 0 of N`. Phase 3, 4, 6, 7, 7b, 9, 10, 11 and 12 all increment. So `--dry-run` under-reports exactly one phase, and it is the first one in the run.
+HAZARD 2 -- PHASE 3 COUNTS A DRY-RUN DELETE AND PHASES 1 AND 2 DO NOT. The twin's Phase 1 and Phase 2 dry-run arms log `[DRY-RUN] Would delete ...` and leave `deleted` alone, so their summaries always read `would delete 0 of N`. REPAIRED IN THE PORT (Rule T, below): both now count, so the summary equals the number of would-delete lines.
 
 HAZARD 3 -- PHASE 5b NEVER CALLS `record_delete`. It deletes Workers through the Cloudflare API and does not charge them to the global budget, so a run that deletes 40 Workers still believes it has deleted zero. Every other destructive arm in the file records. Pinned by `test_phase_5b_does_not_charge_the_delete_budget`.
 
@@ -142,6 +142,9 @@ DEFAULT_BRANCH_MAX_AGE_DAYS = "30"
 
 RELEASE_REPO = GH_REPO
 CF_PAGES_PROJECT = "rediacc"
+
+# The one product that writes `.released` sentinels (`write_release_sentinel.PRODUCT`). A strict-semver tag of RELEASE_REPO lives exactly as long as `<this>/<tag>/.released` does; see `release_tag_held_by_r2`.
+SENTINEL_PRODUCT = "cli"
 
 # `R2_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"`. constants.sh has already
 # defaulted RELEASES_BUCKET by the time the twin reads it, so the two `:-` defaults are the same value twice.
@@ -1209,6 +1212,58 @@ class Housekeeping:
             ]
         )
 
+    def r2_credentials_exported(self) -> bool:
+        """Export the R2 credentials as the aws CLI's own variables; False when any of the three is unset.
+
+        Phase 8's preamble, shared so that Phases 1 and 2 can ask R2 about a release before deleting its tag. Exporting is idempotent: the same three values every time.
+        """
+        access_key = os.environ.get("CLOUDFLARE_R2_ACCESS_KEY_ID", "")
+        secret_key = os.environ.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY", "")
+        endpoint = os.environ.get("CLOUDFLARE_R2_ENDPOINT", "")
+        if not access_key or not secret_key or not endpoint:
+            return False
+        os.environ["AWS_ACCESS_KEY_ID"] = access_key
+        os.environ["AWS_SECRET_ACCESS_KEY"] = secret_key
+        os.environ["AWS_DEFAULT_REGION"] = "auto"
+        return True
+
+    def release_tag_held_by_r2(self, full_repo: str, tag: str) -> bool:
+        """True = KEEP this git tag, because R2 still holds (or may hold) `cli/<tag>/.released`.
+
+        INTENTIONAL DELTA (Rule T, worklist #a5a1f981). Two pruners used to own one release's lifetime: the edge R2 upload keeps 20 CLI versions and removes `cli/v<old>/` WITH its sentinel, and this file kept the newest 20 tags by date. The windows differed by one slot (the non-semver `production` tag took one of the 20), so the scheduled run of 2026-10-07 deleted tag v1.3.1 while `cli/v1.3.1/.released` was still in R2, and the release-state bijection went red on main. The sentinel now decides: a strict-semver
+        tag of RELEASE_REPO is deleted only once R2 has removed its sentinel.
+
+        Asked per tag with `rsv.sentinel_exists`, the library's tri-state probe, and NOT with `rsv.list_sentinels`: the list reader folds a failed listing into an empty bucket (its DEFECT 2), which here would read as "every sentinel is gone" and release every tag. A probe that cannot answer (unset credentials, AccessDenied, a 5xx) KEEPS the tag and latches the run as failed: an unchecked tag is not a deletable one.
+
+        Other repos (renet writes no sentinels; `write_release_sentinel.PRODUCT` is `cli` only) and non-semver tags (outside the bijection contract) are not held.
+        """
+        if full_repo != RELEASE_REPO or not _STRICT_SEMVER_RE.match(tag):
+            return False
+        if not self.r2_credentials_exported():
+            state = rsv.Probe.UNKNOWN
+            log.warn(
+                "  R2 credentials unset: cannot read %s/%s/%s"
+                % (SENTINEL_PRODUCT, tag, rsv.SENTINEL_KEY)
+            )
+        else:
+            state = rsv.sentinel_exists(
+                SENTINEL_PRODUCT, tag, os.environ.get("CLOUDFLARE_R2_ENDPOINT", "")
+            )
+        if state is rsv.Probe.NO:
+            return False
+        if state is rsv.Probe.YES:
+            log.info(
+                "  Keeping tag %s: %s/%s/%s still exists in R2, which owns this release's "
+                "lifetime" % (tag, SENTINEL_PRODUCT, tag, rsv.SENTINEL_KEY)
+            )
+            return True
+        self.housekeeping_fail(
+            "Release tag unchecked",
+            "Tag %s kept UNCHECKED: could not read %s/%s/%s from R2, and an unanswered "
+            "probe is not an absent sentinel" % (tag, SENTINEL_PRODUCT, tag, rsv.SENTINEL_KEY),
+        )
+        return True
+
     def _cutoff_epoch(self) -> str:
         """`date -d "$RETENTION_DAYS days ago" +%s || date -v-${D}d +%s`, both quiet.
 
@@ -1310,22 +1365,25 @@ class Housekeeping:
                     break
                 if self.dry_run:
                     log.warn("[DRY-RUN] Would delete release: %s (created: %s)" % (tag, created_at))
+                    # INTENTIONAL DELTA (Rule T): HAZARD 2 repaired, so "would delete N of M" counts the lines above it. Not charged to the budget, as in Phases 3 and 4.
+                    deleted += 1
                 elif retry_with_backoff(
                     3,
                     2,
                     ["gh", "release", "delete", tag, "--repo", RELEASE_REPO, "--yes"],
                     quiet=False,
                 ):
-                    # Best-effort tag cleanup (may already be gone).
-                    run_quiet_err(
-                        [
-                            "gh",
-                            "api",
-                            "-X",
-                            "DELETE",
-                            "repos/%s/git/refs/tags/%s" % (RELEASE_REPO, tag),
-                        ]
-                    )
+                    # Best-effort tag cleanup (may already be gone), unless R2 still holds the release's sentinel: the tag then outlives the release, and Phase 2 reaps it once R2 has.
+                    if not self.release_tag_held_by_r2(RELEASE_REPO, tag):
+                        run_quiet_err(
+                            [
+                                "gh",
+                                "api",
+                                "-X",
+                                "DELETE",
+                                "repos/%s/git/refs/tags/%s" % (RELEASE_REPO, tag),
+                            ]
+                        )
                     # A delete that exits 0 is not a deleted release: draft v1.2.21 (a tag that never existed) survived 57 nightly "deleted 1 of 21" runs until 2026-10-04. So the release must be gone afterwards; if not, it is deleted by id, and a survivor of both fails the run instead of being counted.
                     view = ["release", "view", tag, "--repo", RELEASE_REPO]
                     if release_state(view) != "gone":
@@ -1463,12 +1521,19 @@ class Housekeeping:
 
             deleted = 0
 
-            for index, entry in enumerate(tag_data):
+            # INTENTIONAL DELTA (Rule T, worklist #a5a1f981): a strict-semver tag is indexed among strict-semver tags only, and every other tag (`production`, a pre-release) among the others, so a moving pointer tag no longer takes one of the KEEP_VERSIONS release slots. The twin indexed them all together.
+            group_index = {True: 0, False: 0}
+            for entry in tag_data:
                 tag_name = jq_text(entry.get("name"))
                 tag_date = jq_text(entry.get("date"))
+                is_release = bool(_STRICT_SEMVER_RE.match(tag_name))
+                index = group_index[is_release]
+                group_index[is_release] += 1
 
                 if self.should_retain(tag_date, index):
                     log.debug("  Keeping tag: %s" % tag_name)
+                elif self.release_tag_held_by_r2(full_repo, tag_name):
+                    continue
                 else:
                     if not self.deletes_budget_ok():
                         log.warn(
@@ -1478,6 +1543,8 @@ class Housekeeping:
                         break
                     if self.dry_run:
                         log.warn("  [DRY-RUN] Would delete tag: %s (%s)" % (tag_name, tag_date))
+                        # INTENTIONAL DELTA (Rule T): counted, so the summary is true. Not charged to the budget, as in Phases 3 and 4.
+                        deleted += 1
                     elif retry_with_backoff(
                         3,
                         2,
@@ -2403,19 +2470,12 @@ class Housekeeping:
         """
         log.step("Phase 8: Cleaning up R2 orphans")
 
-        access_key = os.environ.get("CLOUDFLARE_R2_ACCESS_KEY_ID", "")
-        secret_key = os.environ.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY", "")
-        endpoint = os.environ.get("CLOUDFLARE_R2_ENDPOINT", "")
-        if not access_key or not secret_key or not endpoint:
+        if not self.r2_credentials_exported():
             log.warn(
                 "  CLOUDFLARE_R2_ACCESS_KEY_ID / CLOUDFLARE_R2_SECRET_ACCESS_KEY / "
                 "CLOUDFLARE_R2_ENDPOINT not set, skipping R2 cleanup"
             )
             return
-
-        os.environ["AWS_ACCESS_KEY_ID"] = access_key
-        os.environ["AWS_SECRET_ACCESS_KEY"] = secret_key
-        os.environ["AWS_DEFAULT_REGION"] = "auto"
 
         now_epoch = arith(now_epoch_utc())
         dryrun_max_age = R2_RETENTION_DAYS * 86400
@@ -2578,6 +2638,18 @@ class Housekeeping:
                         "  orphan %s/%s: skipping (younger than %dd or undatable "
                         "\u2014 may be an in-flight release)"
                         % (directory, ver, R2_ORPHAN_VERSION_AGE_DAYS)
+                    )
+                    continue
+                # INTENTIONAL DELTA (Rule T): `sentinel_set` came from `rsv.list_sentinels`, which reads a FAILED listing as an empty bucket (its DEFECT 2), and that would make a sealed release whose tag is gone look like an orphan and remove it. So the one destructive arm re-asks the tri-state probe for this key and deletes only on a definite NO.
+                probe = rsv.sentinel_exists(
+                    directory, ver, os.environ.get("CLOUDFLARE_R2_ENDPOINT", "")
+                )
+                if probe is not rsv.Probe.NO:
+                    self.housekeeping_fail(
+                        "Orphan check unanswered",
+                        "8d: %s/%s kept: the sentinel listing did not show %s/%s/%s, but the "
+                        "direct probe answered %s, so it is not an orphan"
+                        % (directory, ver, directory, ver, rsv.SENTINEL_KEY, probe.value),
                     )
                     continue
                 self.r2_rm_recursive(
