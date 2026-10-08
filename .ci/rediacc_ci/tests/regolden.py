@@ -57,24 +57,33 @@ def _reexec_under_pytest() -> int:
 
     pytest is not on the system python here; the bootstrap installs it as a uv tool (`$PYTEST_BIN`, else `.ci/cache/toolchain/uv-tools/bin/pytest`), and that script's shebang names the interpreter whose site-packages hold it. A missing tool is a loud failure with the fix, never a traceback.
     """
-    candidate = os.environ.get("PYTEST_BIN") or str(
-        ROOT / ".ci/cache/toolchain/uv-tools/bin/pytest"
-    )
-    # The bootstrap's `bin/pytest` is a bash core-lease WRAPPER (`#!/usr/bin/env bash`), so its shebang names `env`, not python (2026-10-08: `env: unexpected argument '-m'`). The tool venv's own interpreter comes first; a shebang counts only when it names a python.
+    override = os.environ.get("PYTEST_BIN", "")
+    wrapper = str(ROOT / ".ci/cache/toolchain/uv-tools/bin/pytest")
+    # The bootstrap's `bin/pytest` is a bash core-lease WRAPPER (`#!/usr/bin/env bash`), so its shebang names `env`, not python (2026-10-08: `env: unexpected argument '-m'`). An explicit $PYTEST_BIN wins (review finding b0d7fcf0.1), then the tool venv's own interpreter, then the wrapper's shebang; a shebang counts only when it names a python.
     venv_py = ROOT / ".ci/cache/toolchain/uv-tools/pytest/bin/python"
-    interpreter = str(venv_py) if os.access(venv_py, os.X_OK) else ""
-    if not interpreter:
+    tried: list[str] = []
+
+    def shebang_python(path: str) -> str:
+        tried.append(path)
         try:
-            with open(candidate, encoding="utf-8") as fh:
+            with open(path, encoding="utf-8") as fh:
                 shebang = fh.readline().strip()
         except OSError:
-            shebang = ""
+            return ""
         named = shebang[2:].split()[0] if shebang.startswith("#!") else ""
-        interpreter = named if os.path.basename(named).startswith("python") else ""
+        return named if os.path.basename(named).startswith("python") else ""
+
+    interpreter = shebang_python(override) if override else ""
+    if not interpreter:
+        tried.append(str(venv_py))
+        interpreter = str(venv_py) if os.access(venv_py, os.X_OK) else ""
+    if not interpreter and not override:
+        interpreter = shebang_python(wrapper)
     if not interpreter or not os.access(interpreter, os.X_OK) or interpreter == sys.executable:
+        # Every path looked at is named, so the message never points at only the wrapper when the venv is what is missing (b0d7fcf0.2).
         print(
-            "regolden: pytest is not importable and no bootstrap pytest was found at %s.\n"
-            "  fix: bash .ci/bootstrap.sh   (then re-run this command)" % candidate,
+            "regolden: pytest is not importable and no bootstrap pytest interpreter was found (looked at: %s).\n"
+            "  fix: bash .ci/bootstrap.sh   (then re-run this command)" % ", ".join(tried),
             file=sys.stderr,
         )
         return 77
