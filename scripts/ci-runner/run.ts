@@ -77,7 +77,18 @@ import {
   scriptsMapOf,
 } from './input-hash';
 import { stepDurationsMs } from './lanes';
+import { learnedSelftest } from './learned-selftest';
 import { grantFromEnv, leaseClientSelftest, openLease, type RunnerLease } from './lease-client';
+import {
+  cappedChanged,
+  type GateLedger,
+  inputKey,
+  ledgerDir,
+  ledgerSelftest,
+  ledgerWanted,
+  openLedger,
+  outcomeOf,
+} from './ledger';
 import { GATES, type GateSpec } from './manifest';
 import {
   buildGraph,
@@ -85,6 +96,7 @@ import {
   type GateCost,
   type GateResult,
   type PoolLease,
+  planAdmission,
   runPool,
   type Sched,
 } from './pool';
@@ -98,17 +110,37 @@ import {
   touchedSlow,
 } from './quick-select';
 import {
+  type Anchor,
+  ASSOC_MIN_P,
+  anchorsFrom,
+  classesOf,
+  coldStart,
+  type ModelV1,
+  parseModel,
+  planRanking,
+  type RankingDecision,
+  rankSelftest,
+} from './rank';
+import {
+  type CarriedEntry,
   type CpuTick,
+  coveredByCarried,
   createReporter,
+  createStream,
   criticalPath,
+  type EventSink,
   type GateTiming,
+  openEventSink,
+  parseCarried,
+  type StageStop,
+  streamSelftest,
   timelineOf,
   type Utilisation,
   utilisation,
 } from './report';
 import { type ChangeSet, ChangeSetRefusal, selectChanged } from './select';
 import { legIds, parseShardManifest, shardManifestPath } from './shard-manifest';
-import { schedulerSelftest } from './sim';
+import { predictMakespan, schedulerSelftest } from './sim';
 import { unitsFrom } from './unit-enumerators';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -173,6 +205,14 @@ interface Options {
   gateTimeoutMs?: number;
   /** `--slow-rotation i/N`: run only bucket i of the slow set split N ways by cost (`rotationBucket`), for housekeeping's gate-cost capture. */
   slowRotation?: { index: number; of: number };
+  /** `--stop-on-stage-red[=preflight|1]`: stop, with no receipt and exit 3, once that stage settles with a red carried-reds.json does not cover. Bare means stage 1. */
+  stopOnStageRed?: 'preflight' | '1';
+  /** `--narrow`: run the last receipt's non-carried fails, their learned clusters, the gates the fix touched and the gates associated with the changed classes; never a receipt. */
+  narrow: boolean;
+  /** `--narrow --print`: print the narrow set and its command, run nothing. */
+  narrowPrint: boolean;
+  /** `--events <abs>`: the machine stream (run-start, gate-red, stage-done, run-end). Default for a --quick run: <receipt dir>/ci-quick-events/<runId>.jsonl. */
+  events?: string;
 }
 
 /** Every flag off. Selftest-only, so a control states the flag it exercises
@@ -187,6 +227,8 @@ const EMPTY_OPTS: Options = {
   mergeOutput: false,
   selftest: false,
   verbose: false,
+  narrow: false,
+  narrowPrint: false,
 };
 
 /** A scheduler name, refused loudly when misspelt: a typo that silently fell back to the default would make an A/B compare slots with slots. */
@@ -205,6 +247,8 @@ function parseArgs(argv: readonly string[]): Options {
     mergeOutput: false,
     selftest: false,
     verbose: false,
+    narrow: false,
+    narrowPrint: false,
     manifest: process.env.CI_RUNNER_MANIFEST,
   };
   const value = (i: number, flag: string): string => {
@@ -305,6 +349,30 @@ function parseArgs(argv: readonly string[]): Options {
         opts.gateTimeoutMs = number(value(i, arg), arg) * 1000;
         i += 1;
         break;
+      case '--stop-on-stage-red':
+        opts.stopOnStageRed = '1';
+        break;
+      case '--stop-on-stage-red=1':
+        opts.stopOnStageRed = '1';
+        break;
+      case '--stop-on-stage-red=preflight':
+        opts.stopOnStageRed = 'preflight';
+        break;
+      case '--narrow':
+        opts.narrow = true;
+        break;
+      case '--print':
+        opts.narrowPrint = true;
+        break;
+      case '--events': {
+        // ABSOLUTE ONLY, as --receipt-out: npm runs scripts from whichever directory it chose.
+        const out = value(i, arg);
+        if (!path.isAbsolute(out))
+          throw new Error(`ci-runner: ${arg} needs an absolute path, got '${out}'`);
+        opts.events = out;
+        i += 1;
+        break;
+      }
       case '--receipt-out': {
         // A CLEAN-SNAPSHOT RECEIPT. The gates judge the worktree they run in, and the push carries HEAD^{tree}. In a tree shared with live writers, their uncommitted edits turn a receipt red for a tree that does not contain them (2026-09-24: 14 writers, python-lint red on two files in nobody's HEAD). Running ci:quick in a clean clone checked out at HEAD
         // and writing the receipt into the pushing checkout's cache judges exactly the pushed tree. Nothing is trusted: the receipt still records the clone's own HEAD^{tree}, and block_unverified_push refuses unless that equals the pushing HEAD^{tree}. ABSOLUTE ONLY, because a relative path would resolve against whichever cwd npm happened to use.
@@ -316,6 +384,10 @@ function parseArgs(argv: readonly string[]): Options {
         break;
       }
       default:
+        if (arg.startsWith('--stop-on-stage-red='))
+          throw new Error(
+            `ci-runner: --stop-on-stage-red takes =preflight or =1, got '${arg.slice('--stop-on-stage-red='.length)}'`
+          );
         throw new Error(`ci-runner: unknown flag '${arg}'`);
     }
   }
@@ -340,6 +412,19 @@ function parseArgs(argv: readonly string[]): Options {
   if ((opts.lane === undefined) !== (opts.shard === undefined)) {
     throw new Error('ci-runner: --lane and --shard are both required together, or neither.');
   }
+  if (opts.narrowPrint && !opts.narrow)
+    throw new Error('ci-runner: --print goes with --narrow, which it prints instead of running.');
+  if (
+    opts.narrow &&
+    (opts.only !== undefined ||
+      opts.skip !== undefined ||
+      opts.changed ||
+      opts.lane !== undefined ||
+      opts.slowRotation !== undefined)
+  )
+    throw new Error(
+      'ci-runner: --narrow is its own selection; it does not combine with --only, --skip, --changed, --lane or --slow-rotation.'
+    );
   return opts;
 }
 
@@ -520,6 +605,8 @@ interface Selection {
   pushBase?: PushBaseRecord;
   /** Tree-writing slow gates admitted because this is a clean, disposable clone; named by the stable-tree warning. */
   treeWritersAdmitted?: string[];
+  /** The `--quick` change set since the last push, for the ledger's run row and the diff's path classes; undefined when not quick or unresolved. */
+  changedFiles?: string[];
 }
 
 /**
@@ -709,6 +796,7 @@ function select(
   let droppedTouched: DroppedTouched[] | undefined;
   let pushBase: PushBaseRecord | undefined;
   let treeWritersAdmitted: string[] | undefined;
+  let changedFilesQuick: string[] | undefined;
   // gate:false nodes are prerequisites, never selected on their own. They enter the run only through the needs-closure in buildGraph.
   let chosen = specs.filter((spec) => spec.gate);
 
@@ -769,6 +857,7 @@ function select(
     droppedTouched = verdict.droppedTouched;
     pushBase = verdict.pushBase;
     treeWritersAdmitted = verdict.treeWritersAdmitted;
+    changedFilesQuick = verdict.changedFiles;
     const admittedSet = new Set(admitted);
     chosen = chosen.filter((spec) => !slow.has(spec.id) || admittedSet.has(spec.id));
     notes.push(
@@ -799,6 +888,7 @@ function select(
     droppedTouched,
     pushBase,
     treeWritersAdmitted: treeWritersAdmitted?.filter((id) => ids.has(id)),
+    changedFiles: changedFilesQuick,
   };
 }
 
@@ -837,6 +927,7 @@ function quickDiffAdmit(
   droppedTouched: DroppedTouched[];
   pushBase?: PushBaseRecord;
   treeWritersAdmitted: string[];
+  changedFiles?: string[];
 } {
   const deps = injected ?? realQuickDiffDeps(opts);
   const diff = deps.diff();
@@ -899,6 +990,7 @@ function quickDiffAdmit(
     droppedTouched,
     pushBase: diff.pushBase,
     treeWritersAdmitted,
+    changedFiles: diff.files,
   };
 }
 
@@ -1326,6 +1418,7 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
   const env = { ...process.env };
   delete env.CI_RUNNER_CACHE;
   delete env.CI_RUNNER_MANIFEST;
+  delete env.REDIACC_GATE_LEDGER_DIR;
   const runner = (
     manifest: object[],
     name: string,
@@ -1752,6 +1845,57 @@ async function selftest(): Promise<number> {
   require_(
     narrowingFlags(EMPTY_OPTS).length === 0,
     'CONTROL: an unnarrowed quick run must still report the whole lane, or the three above prove nothing'
+  );
+  // THE FAIL-FAST HOLE (agent/plans/PLAN-gate-scheduling-learned.md T1): gates --fail-fast never launched are written `blocked`, which the push guard reads as a verdict, so a --fail-fast receipt must not claim the whole lane. A stage stop and --narrow run less than the lane by design.
+  require_(
+    narrowingFlags(parseArgs(['--quick', '--fail-fast'])).includes('--fail-fast'),
+    '--fail-fast must narrow the receipt: the gates it skips are written blocked'
+  );
+  require_(
+    narrowingFlags(parseArgs(['--quick', '--stop-on-stage-red'])).includes('--stop-on-stage-red') &&
+      narrowingFlags(parseArgs(['--quick', '--stop-on-stage-red=preflight'])).includes(
+        '--stop-on-stage-red'
+      ),
+    '--stop-on-stage-red (bare and =preflight) must narrow the receipt'
+  );
+  require_(
+    narrowingFlags(parseArgs(['--quick', '--narrow'])).includes('--narrow'),
+    '--narrow must narrow the receipt'
+  );
+  require_(
+    narrowingFlags(parseArgs(['--quick', '--verbose', '--json'])).length === 0,
+    'CONTROL: flags that only change output must not narrow, or the three above prove nothing'
+  );
+  require_(
+    parseArgs(['--stop-on-stage-red']).stopOnStageRed === '1' &&
+      parseArgs(['--stop-on-stage-red=preflight']).stopOnStageRed === 'preflight' &&
+      parseArgs(['--stop-on-stage-red=1']).stopOnStageRed === '1',
+    'bare --stop-on-stage-red means stage 1; =preflight and =1 parse'
+  );
+  const refusedArgs = (argv: string[]): boolean => {
+    try {
+      parseArgs(argv);
+      return false;
+    } catch {
+      return true;
+    }
+  };
+  require_(
+    refusedArgs(['--stop-on-stage-red=2']),
+    'an unknown stage must be refused, not read as stage 1'
+  );
+  require_(refusedArgs(['--print']), '--print without --narrow must be refused');
+  require_(refusedArgs(['--events', 'rel/ev.jsonl']), '--events must refuse a relative path');
+  require_(
+    refusedArgs(['--narrow', '--only', 'x']),
+    '--narrow must refuse --only, being its own selection'
+  );
+  require_(!refusedArgs(['--quick', '--narrow', '--print']), 'CONTROL: --narrow --print parses');
+  require_(
+    receiptDue(parseArgs(['--quick']), false) &&
+      !receiptDue(parseArgs(['--quick', '--narrow']), false) &&
+      !receiptDue(parseArgs(['--quick']), true),
+    'a --quick run writes the receipt; --narrow and a dropped-gate merge do not'
   );
 
   // THE RECEIPT NAMES THE TREE JUDGED FROM THE START, OR NONE.
@@ -2667,6 +2811,17 @@ async function selftest(): Promise<number> {
     require_(refused, '--slow-rotation with --quick must be refused, not silently combined');
   }
 
+  // THE LEARNED SCHEDULER (agent/plans/PLAN-gate-scheduling-learned.md T6-T9): the order, the ledger writer, the stream, and the cross-module controls (the property over archived timelines, the stage stop through a real runner, no gate id in the learned half).
+  const rankCheck = rankSelftest();
+  for (const f of rankCheck.failures) require_(false, `rank: ${f}`);
+  const ledgerCheck = await ledgerSelftest(os.tmpdir());
+  for (const f of ledgerCheck.failures) require_(false, `ledger: ${f}`);
+  const streamCheck = streamSelftest();
+  for (const f of streamCheck.failures) require_(false, `stream: ${f}`);
+  const learned = await learnedSelftest();
+  for (const f of learned.failures) require_(false, `learned: ${f}`);
+  for (const row of learned.table) process.stdout.write(`ci-runner: ${row}\n`);
+
   const timeoutAssertions = gateTimeoutSelftest();
   const proc = await processCheck;
   failures.push(...proc.failures);
@@ -2679,7 +2834,7 @@ async function selftest(): Promise<number> {
     return 1;
   }
   process.stdout.write(
-    `ci-runner: selftest ok (${9 + 1 + keyed.assertions + 3 + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2 + qs.assertions + 10 + 5 + 9 + 10 + 4 + leaseCheck.assertions + 12 + inc.assertions + (process.platform !== 'win32' ? 2 : 0) + timeoutAssertions + proc.assertions + 4} assertions)\n`
+    `ci-runner: selftest ok (${9 + 1 + keyed.assertions + 3 + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2 + qs.assertions + 10 + 5 + 9 + 10 + 4 + leaseCheck.assertions + 12 + inc.assertions + (process.platform !== 'win32' ? 2 : 0) + timeoutAssertions + proc.assertions + 4 + 11 + rankCheck.assertions + ledgerCheck.assertions + streamCheck.assertions + learned.assertions} assertions)\n`
   );
   return 0;
 }
@@ -2833,6 +2988,10 @@ function narrowingFlags(opts: Options): string[] {
   if (opts.skip !== undefined) flags.push('--skip');
   if (opts.changed) flags.push('--changed');
   if (opts.slowRotation !== undefined) flags.push('--slow-rotation');
+  // A gate --fail-fast never launched is a `skipped` result, which receiptGates writes with verdict `blocked`, and the push guard accepts `blocked` as a verdict: a --fail-fast receipt whose only red was carried claimed a whole lane with unjudged gates (agent/plans/PLAN-gate-scheduling-learned.md, the push-guard hole, T1). A stage stop and --narrow run less than the lane by design.
+  if (opts.failFast) flags.push('--fail-fast');
+  if (opts.stopOnStageRed !== undefined) flags.push('--stop-on-stage-red');
+  if (opts.narrow) flags.push('--narrow');
   return flags;
 }
 
@@ -3373,20 +3532,23 @@ function incrementalSelftest(tmpDir: string): { failures: string[]; assertions: 
   return { failures, assertions };
 }
 
-function writeReceipt(receipt: Receipt, dest: string, warn: (text: string) => void): void {
+/** Writes the receipt; true when it landed. */
+function writeReceipt(receipt: Receipt, dest: string, warn: (text: string) => void): boolean {
   if (narrowedWouldReplaceWhole(dest, receipt.whole)) {
     warn(
       `ci-runner: a narrowed run does not replace the whole-lane receipt at ${dest}; that receipt is kept\n`
     );
-    return;
+    return false;
   }
   try {
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.writeFileSync(dest, `${JSON.stringify(receipt, null, 2)}\n`);
     if (receipt.whole) archiveReceipt(receipt, dest);
+    return true;
   } catch (err) {
     // LOUD, unlike the duration cache. That cache is an optimisation and is deliberately non-load-bearing; this authorises a push, so a silent failure to write it would present as "you never ran the gates".
     warn(`ci-runner: could not write the push receipt: ${(err as Error).message}\n`);
+    return false;
   }
 }
 
@@ -3459,19 +3621,88 @@ function grantsOf(results: readonly GateResult[]): Record<string, number> {
 }
 
 /**
+ * What the main run hands runGraph beyond the graph (agent/plans/PLAN-gate-scheduling-learned.md T6-T8): the ledger, the events stream, the model and the diff's classes for ranking, the stage stop. An advance's readers run without one, exactly as before it existed.
+ */
+interface RunContext {
+  runId: string;
+  ledger: GateLedger;
+  events: EventSink;
+  /** The ledger's input key for one gate (ledger.ts inputKey). */
+  keyOf: (id: string) => { key: string; kind: string };
+  /** model.json parsed, or why there is none. */
+  model: { model: ModelV1 } | { error: string };
+  /** The diff's path classes (rank.ts classesOf). */
+  classes: string[];
+  carried: CarriedEntry[];
+  stopAt?: 'preflight' | '1';
+}
+
+/** The narrow re-run's two commands, printed by a stage stop. */
+const NARROW_HINT = 'npm run ci:quick -- --narrow --print   (then without --print to run it)';
+
+/** Machine cores, for the safety simulation's processor sharing. */
+function machineCores(): number {
+  return Math.max(1, os.availableParallelism());
+}
+
+/**
+ * THE RANKING DECISION for one graph: cold start, then the safety simulation (rank.ts planRanking over sim.ts predictMakespan). Never throws: a simulation that fails turns ranking off with the reason.
+ */
+function decideRanking(
+  graph: readonly GateSpec[],
+  ctx: RunContext,
+  plan: {
+    jobs: number;
+    heavyLimit: number;
+    durations: Map<string, number>;
+    sched: Sched;
+    budget?: CoreBudget;
+    costs?: Map<string, GateCost>;
+  }
+): RankingDecision {
+  if ('error' in ctx.model) return { on: false, reason: ctx.model.error };
+  const model = ctx.model.model;
+  const gateIds = graph.filter((s) => s.gate).map((s) => s.id);
+  const cold = coldStart(model, gateIds);
+  if (!cold.on) return cold;
+  try {
+    const { byId } = planAdmission(graph, plan);
+    const inGraph = new Set(graph.map((s) => s.id));
+    return planRanking(
+      {
+        model,
+        ids: graph.map((s) => s.id),
+        gates: new Set(gateIds),
+        needs: new Map(graph.map((s) => [s.id, (s.needs ?? []).filter((n) => inGraph.has(n))])),
+        mutex: new Map(graph.map((s) => [s.id, s.mutex ?? []])),
+        wallMs: (id) => plan.durations.get(id),
+        width: (id) => byId.get(id)?.cores ?? 1,
+        cores: plan.budget?.cores ?? plan.jobs,
+        classes: ctx.classes,
+      },
+      (order) => predictMakespan(graph, { ...plan, order }, machineCores())
+    );
+  } catch (e) {
+    return { on: false, reason: `the safety simulation failed (${(e as Error).message})` };
+  }
+}
+
+/**
  * Schedule one graph through the pool and print it: the budget, the lease, the per-gate lines and the footer. Shared by the lane and by an advance's readers, so both draw from the same lease and report the same shape.
  */
 async function runGraph(
   graph: readonly GateSpec[],
   opts: Options,
   description: string | undefined,
-  humanOut: (text: string) => void
+  humanOut: (text: string) => void,
+  ctx?: RunContext
 ): Promise<{
   results: GateResult[];
   exitCode: number;
   wallMs: number;
   util?: Utilisation;
   startedAt: number;
+  ranking?: RankingDecision;
 }> {
   // A runner nested inside a gate sizes itself from the grant it was launched with, never from the whole machine.
   const jobs = opts.jobs ?? grantFromEnv() ?? Math.max(1, os.availableParallelism() - 2);
@@ -3524,6 +3755,113 @@ async function runGraph(
     );
   }
   if (lease !== undefined) humanOut(`ci-runner: ${lease.note}\n`);
+  const costs =
+    sched === 'cores'
+      ? costsFrom(loadDurationRecords(cachePath), loadFailCosts(cachePath))
+      : undefined;
+  // THE LEARNED ORDER (rank.ts), decided before the first launch and printed, ON or OFF with the reason.
+  const ranking =
+    ctx === undefined
+      ? undefined
+      : decideRanking(graph, ctx, { jobs, heavyLimit, durations: estimates, sched, budget, costs });
+  const order = ranking?.on === true ? ranking.order : undefined;
+  let stream: ReturnType<typeof createStream> | undefined;
+  let stopping = false;
+  if (ctx !== undefined && ranking !== undefined) {
+    humanOut(
+      `ci-runner: pid ${process.pid}; \`kill -TERM ${process.pid}\` stops this run without a receipt\n`
+    );
+    humanOut(
+      ranking.on
+        ? `ranking: ON (${'model' in ctx.model ? `model ${ctx.model.model.built_at}, ${ctx.model.model.runs} run(s)` : ''}; pinned ${ranking.order.pinned.size}, preflight ${ranking.order.preflight.length}, stage1 ${ranking.order.stage1.length}; simulated ${(ranking.rankedMs / 1000).toFixed(0)}s against ${(ranking.baseMs / 1000).toFixed(0)}s today${ranking.pinsAdded.length > 0 ? `; safety pins: ${ranking.pinsAdded.join(', ')}` : ''})\n` +
+            (ranking.order.preflight.length > 0
+              ? `  preflight: ${ranking.order.preflight.join(', ')}\n`
+              : '')
+        : `ranking: OFF for this run (${ranking.reason}); today's order runs\n`
+    );
+    if (ctx.stopAt !== undefined && !ranking.on)
+      humanOut(
+        `ci-runner: --stop-on-stage-red has no stage to stop at, since ranking is OFF; this run goes to the end\n`
+      );
+    ctx.events.emit({
+      ev: 'run-start',
+      run: ctx.runId,
+      at: new Date().toISOString(),
+      pid: process.pid,
+      gates: graph.length,
+      sched,
+      ranking: ranking.on
+        ? {
+            on: true,
+            base_ms: ranking.baseMs,
+            ranked_ms: ranking.rankedMs,
+            pins_added: ranking.pinsAdded,
+          }
+        : {
+            on: false,
+            reason: ranking.reason,
+            base_ms: ranking.baseMs ?? null,
+            ranked_ms: ranking.rankedMs ?? null,
+          },
+      pinned: ranking.on ? [...ranking.order.pinned] : [],
+      preflight: ranking.on ? ranking.order.preflight : [],
+      stage1: ranking.on ? ranking.order.stage1 : [],
+      stop_on_stage_red: ctx.stopAt ?? null,
+    });
+    stream = createStream({
+      run: ctx.runId,
+      out: humanOut,
+      events: ctx.events,
+      stages: ranking.on
+        ? { preflight: ranking.order.preflight, stage1: ranking.order.stage1 }
+        : undefined,
+      carried: ctx.carried,
+      stopAt: ranking.on ? ctx.stopAt : undefined,
+    });
+  }
+  // THE STAGE STOP: no new launches, every live gate killed (SIGTERM, SIGKILL after the grace), the reds and the narrow command printed, the run-end event and the ledger's end row written, exit 3. main() never reaches the receipt.
+  const stopRun = (stop: StageStop, atMs: number): void => {
+    if (stopping || ctx === undefined) return;
+    stopping = true;
+    refuseNewGates();
+    const live = liveGates();
+    humanOut(
+      `ci-runner: STOPPED after ${stop.stage === 'preflight' ? 'PREFLIGHT' : 'STAGE1'} (--stop-on-stage-red): ${stop.reds.length} red(s) carried-reds.json does not cover: ${stop.reds.join(', ')}\n` +
+        `  killing ${live.length} live gate(s)${live.length > 0 ? `: ${live.map((g) => g.id).join(', ')}` : ''}; NO receipt is written; exit 3\n` +
+        `  narrow re-run: ${NARROW_HINT}\n`
+    );
+    ctx.events.emit({
+      ev: 'run-end',
+      run: ctx.runId,
+      t_ms: atMs,
+      exit: 3,
+      receipt: 'none',
+      why: `stop-on-stage-red ${stop.stage}`,
+      reds: stop.reds,
+    });
+    // The end row goes last, after the killed gates' cancel rows.
+    const finish = (): void => {
+      ctx.ledger.write({
+        t: 'end',
+        run: ctx.runId,
+        wall_ms: Date.now() - started,
+        exit: 3,
+        cut: true,
+      });
+      void ctx.ledger.close().then(() => process.exit(3));
+    };
+    if (killLiveGates('SIGTERM') === 0) {
+      finish();
+      return;
+    }
+    const deadline = Date.now() + KILL_GRACE_MS;
+    const poll = setInterval(() => {
+      if (liveGates().length > 0 && Date.now() < deadline) return;
+      clearInterval(poll);
+      killLiveGates('SIGKILL');
+      finish();
+    }, 50);
+  };
   const cpuSampler = startCpuSampler();
   let pooled: GateResult[];
   try {
@@ -3534,10 +3872,8 @@ async function runGraph(
       durations: estimates,
       sched,
       budget,
-      costs:
-        sched === 'cores'
-          ? costsFrom(loadDurationRecords(cachePath), loadFailCosts(cachePath))
-          : undefined,
+      costs,
+      order,
       lease,
       exec: (spec, grant: Grant) =>
         execGate(spec, {
@@ -3559,7 +3895,42 @@ async function runGraph(
             }
           : undefined,
       onFinish: (result) => {
+        const atMs = Date.now() - started;
+        // A gate the stage stop killed has no verdict: recorded as a cancel, never printed as a FAIL.
+        if (stopping) {
+          ctx?.ledger.write({
+            t: 'g',
+            run: ctx.runId,
+            gate: result.id,
+            outcome: 'cancel',
+            wall_ms: result.ms,
+            t0_ms: result.startAt === undefined ? null : result.startAt - started,
+            ...ledgerKey(ctx, result.id),
+            findings: null,
+            attr: 'own',
+          });
+          return;
+        }
+        const stop = stream?.finish(result, atMs);
         reporter.finish(result);
+        if (ctx !== undefined) {
+          const findings =
+            result.status === 'fail'
+              ? (receiptFindings([result], () => {})[result.id] ?? null)
+              : null;
+          ctx.ledger.write({
+            t: 'g',
+            run: ctx.runId,
+            gate: result.id,
+            outcome: outcomeOf(result),
+            wall_ms: result.ms,
+            t0_ms: result.startAt === undefined ? null : result.startAt - started,
+            ...ledgerKey(ctx, result.id),
+            findings,
+            attr: 'own',
+          });
+        }
+        if (stop !== undefined) stopRun(stop, atMs);
       },
     });
   } finally {
@@ -3586,7 +3957,13 @@ async function runGraph(
       humanOut(
         `ci-runner: ${r.id} ran on ${r.overLease.granted} core(s) holding ${r.overLease.held} lease token(s): its lease hold reached its bound\n`
       );
-  return { results, exitCode, wallMs: meta.wallMs, util, startedAt: started };
+  return { results, exitCode, wallMs: meta.wallMs, util, startedAt: started, ranking };
+}
+
+/** One gate's `key` and `key_kind` for its ledger row. */
+function ledgerKey(ctx: RunContext, id: string): { key: string; key_kind: string } {
+  const k = ctx.keyOf(id);
+  return { key: k.key, key_kind: k.kind };
 }
 
 /**
@@ -3794,6 +4171,9 @@ async function runAdvance(
 /**
  * THE RUNNER'S OWN SIGTERM AND SIGINT. Every gate runs in its own process group (exec.ts LIVE), so a signal to the runner no longer reaches the gates by itself, and before this handler existed the runner died on it with no word and left them running: `kill -TERM <runner>` exited 143 with the planted gate still alive (2026-10-07). Now the runner names every gate still running and how long it has run, stops launching, SIGTERMs each group, SIGKILLs what is left after KILL_GRACE_MS, and exits 128+n. A second signal skips the grace. No footer and no --json document are written (exec.ts never settles a gate it refused): a run cut short has no verdict, and an empty stdout is what a capture's validator refuses by name. A gate that WAS running still gets its FAIL block with everything it printed before the kill, which is the evidence of where it hung.
  */
+/** Run once, synchronously, by the signal handler before it exits: the events stream's run-end, so a reader sees `receipt: none` rather than a stream that just stops. */
+const abortHooks: (() => void)[] = [];
+
 let signalsInstalled = false;
 function installSignalHandlers(): void {
   if (signalsInstalled) return;
@@ -3802,6 +4182,14 @@ function installSignalHandlers(): void {
   const onSignal = (signal: NodeJS.Signals): void => {
     caught += 1;
     const code = 128 + (os.constants.signals[signal] ?? 15);
+    if (caught === 1)
+      for (const hook of abortHooks.splice(0)) {
+        try {
+          hook();
+        } catch {
+          /* an abort hook never stands between a signal and the exit */
+        }
+      }
     refuseNewGates();
     const running = liveGates();
     process.stderr.write(
@@ -3827,6 +4215,226 @@ function installSignalHandlers(): void {
   };
   process.on('SIGTERM', onSignal);
   process.on('SIGINT', onSignal);
+}
+
+const LOCK_PATH = path.join(REPO_ROOT, 'scripts', 'ci-runner', 'gates.lock.json');
+
+/** The lock's entries, or [] when unreadable (classes then fall back to ~<two segments>, which only weakens ranking). */
+function readLock(): LockEntry[] {
+  try {
+    const doc: unknown = JSON.parse(fs.readFileSync(LOCK_PATH, 'utf8'));
+    return Array.isArray(doc) ? (doc as LockEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** The path-class anchors from the lock on disk (rank.ts anchorsFrom). */
+function lockAnchors(lock: readonly LockEntry[]): Anchor[] {
+  return anchorsFrom(lock as Parameters<typeof anchorsFrom>[0], (rel) => {
+    if (path.isAbsolute(rel) || rel.includes('..')) return false;
+    try {
+      return fs.statSync(path.join(REPO_ROOT, rel)).isFile();
+    } catch {
+      return false;
+    }
+  });
+}
+
+/** The ledger directory this run reads model.json from and writes rows to. */
+function ledgerDirHere(): string {
+  return ledgerDir(process.env, gitTry(['remote', 'get-url', 'origin']), REPO_ROOT);
+}
+
+/** The paths changed since the tree the previous receipt at this destination judged (tree to tree), plus the dirty and untracked paths now; undefined when there is no such receipt or git cannot answer. */
+function changedSincePreviousRun(
+  opts: Options,
+  synthetic: boolean
+): { base: string; files: string[] } | undefined {
+  if (synthetic) return undefined;
+  let base = '';
+  try {
+    base =
+      (JSON.parse(fs.readFileSync(receiptPathFor(opts), 'utf8')) as Partial<Receipt>).headTree ??
+      '';
+  } catch {
+    return undefined;
+  }
+  if (base === '') return undefined;
+  const between = gitTry(['diff', '--name-only', '--no-renames', base, 'HEAD^{tree}']);
+  const dirty = gitTry(['diff', '--name-only', '--no-renames', 'HEAD']);
+  const untracked = gitTry(['ls-files', '--others', '--exclude-standard']);
+  if (between === undefined || dirty === undefined) return undefined;
+  const files = [
+    ...new Set([between, dirty, untracked ?? ''].flatMap((t) => t.split('\n')).filter(Boolean)),
+  ];
+  return { base, files: expandGitlinks(files, (t) => process.stderr.write(t)) };
+}
+
+/** model.json from the ledger, or why ranking cannot use one. A run that may not touch the ledger (CI, a synthetic manifest without an explicit directory) does not read it either. */
+function loadModel(synthetic: boolean): { model: ModelV1 } | { error: string } {
+  const wanted = ledgerWanted(process.env, synthetic);
+  if (!wanted.on) return { error: `no ledger for this run (${wanted.why})` };
+  const file = path.join(ledgerDirHere(), 'model.json');
+  let text: string;
+  try {
+    text = fs.readFileSync(file, 'utf8');
+  } catch {
+    return {
+      error: `cold start: no model at ${file} (python3 -m rediacc_ci.ci.gate_model refresh writes it)`,
+    };
+  }
+  return parseModel(text);
+}
+
+/** carried-reds.json as HEAD carries it (the push guard reads the same copy), else the worktree's; [] when neither reads. */
+function carriedAtHead(): CarriedEntry[] {
+  const atHead = gitTry(['show', 'HEAD:.ci/config/carried-reds.json']);
+  if (atHead !== undefined) return parseCarried(atHead);
+  try {
+    return parseCarried(
+      fs.readFileSync(path.join(REPO_ROOT, '.ci', 'config', 'carried-reds.json'), 'utf8')
+    );
+  } catch {
+    return [];
+  }
+}
+
+/** How many `ci-quick-events/*.jsonl` the default events directory keeps, the receipt archive's count for the same reason: one per run for about two days of pushes. */
+const EVENTS_KEEP = 50;
+
+/** The default events file for a --quick run, with the directory pruned to the newest EVENTS_KEEP. */
+function defaultEventsFile(opts: Options, runId: string): string {
+  const dir = path.join(path.dirname(receiptPathFor(opts)), 'ci-quick-events');
+  try {
+    const aged = fs
+      .readdirSync(dir)
+      .filter((n) => n.endsWith('.jsonl'))
+      .map((n) => ({ n, m: fs.statSync(path.join(dir, n)).mtimeMs }))
+      .sort((a, b) => b.m - a.m);
+    // tree-write: safe the directory is <receipt dir>/ci-quick-events, the scratch cache beside the push receipt
+    for (const old of aged.slice(EVENTS_KEEP - 1))
+      fs.rmSync(path.join(dir, old.n), { force: true });
+  } catch {
+    /* no directory yet */
+  }
+  return path.join(dir, `${runId}.jsonl`);
+}
+
+/**
+ * THE NARROW SET (agent/plans/PLAN-gate-scheduling-learned.md section 5): F, the last receipt's fails carried-reds.json does not cover; C, the learned clusters holding any of them; T, the gates whose inputs the fix touched, quick-select.ts rules 1-3 against receipt.head..worktree (rule 4, "no paths means touched", is excluded on purpose: it would select every path-less gate on any edit); A, the gates the changed classes are associated with. Pure over its inputs except the git and file reads it names.
+ */
+function narrowPlan(
+  specs: readonly GateSpec[],
+  opts: Options,
+  model: { model: ModelV1 } | { error: string },
+  anchors: readonly Anchor[],
+  carried: readonly CarriedEntry[]
+): { ids?: Set<string>; lines: string[]; error?: string } {
+  const dest = receiptPathFor(opts);
+  let receipt: Partial<Receipt>;
+  try {
+    receipt = JSON.parse(fs.readFileSync(dest, 'utf8')) as Partial<Receipt>;
+  } catch {
+    return {
+      lines: [],
+      error: `ci-runner: --narrow needs the last receipt at ${dest}; run \`npm run ci:quick\` first`,
+    };
+  }
+  const gates = specs.filter((s) => s.gate);
+  const known = new Set(gates.map((s) => s.id));
+  const findings = receipt.findings ?? {};
+  const failed = Array.isArray(receipt.failed) ? receipt.failed : [];
+  const F = failed.filter(
+    (id) => known.has(id) && !coveredByCarried(id, findings[id] ?? null, carried)
+  );
+  const carriedF = failed.filter((id) => !F.includes(id));
+  const C = new Set<string>();
+  const A = new Set<string>();
+  let modelNote = '';
+  if ('model' in model) {
+    for (const cluster of model.model.clusters)
+      if (cluster.some((id) => F.includes(id)))
+        for (const id of cluster) if (known.has(id)) C.add(id);
+  } else modelNote = ` (no model: ${model.error})`;
+  const head = typeof receipt.head === 'string' ? receipt.head : '';
+  let changed: string[] | undefined;
+  let T: string[] = [];
+  if (head !== '') {
+    const named = gitTry(['diff', '--name-only', head]);
+    if (named !== undefined) {
+      const untracked = (gitTry(['ls-files', '--others', '--exclude-standard']) ?? '')
+        .split('\n')
+        .filter(Boolean);
+      changed = expandGitlinks(
+        [...new Set([...named.split('\n').filter(Boolean), ...untracked])],
+        (t) => process.stderr.write(t)
+      );
+    }
+  }
+  if (changed !== undefined) {
+    let scriptsBase: Record<string, string> | undefined;
+    try {
+      const raw = gitTry(['show', `${head}:package.json`]);
+      scriptsBase =
+        raw === undefined
+          ? undefined
+          : (JSON.parse(raw) as { scripts?: Record<string, string> }).scripts;
+    } catch {
+      scriptsBase = undefined;
+    }
+    T = touchedSlow(
+      // Rules 1-3 only: an absent `paths` becomes an empty one, which rule 1 never matches and rule 4 never sees.
+      gates.map((s) => ({
+        id: s.id,
+        run: s.run,
+        paths: s.paths ?? [],
+        leaves: s.leaves,
+        ciOnly: s.ciOnly,
+      })),
+      {
+        root: REPO_ROOT,
+        changed,
+        matches: matchesAny,
+        scriptsNow: realQuickDiffDeps(opts).scriptsNow(),
+        scriptsBase,
+      }
+    ).map((t) => t.id);
+    if ('model' in model)
+      for (const c of classesOf(changed, anchors))
+        for (const [id, p] of Object.entries(model.model.associations[c] ?? {}))
+          if (p >= ASSOC_MIN_P && known.has(id)) A.add(id);
+  }
+  const ids = new Set([...F, ...C, ...T, ...A]);
+  const list = (xs: Iterable<string>): string => {
+    const a = [...xs];
+    return a.length === 0 ? '0' : `${a.length}: ${a.join(', ')}`;
+  };
+  const lines = [
+    `ci-runner: --narrow from ${dest} (tree ${(receipt.headTree ?? '').slice(0, 9) || '(none)'}, head ${head.slice(0, 9) || '(none)'}, ${failed.length} failed, ${carriedF.length} of them carried):\n`,
+    `  F  non-carried fails ${list(F)}\n`,
+    `  C  their learned clusters ${list(C)}${modelNote}\n`,
+    changed === undefined
+      ? `  T  UNKNOWN: git could not list what changed since the receipt's head '${head || '(none)'}', so no touched gate is in the set\n`
+      : `  T  inputs the fix touched (quick-select rules 1-3, ${changed.length} changed file(s) since ${head.slice(0, 9)}) ${list(T)}\n`,
+    `  A  associated with the changed classes ${list(A)}${modelNote}\n`,
+    `  narrow set: ${ids.size} gate(s)\n`,
+  ];
+  if (ids.size === 0)
+    return {
+      lines,
+      error:
+        'ci-runner: --narrow found nothing to run: no non-carried fail, no touched gate, no cluster or association. Run the whole lane: npm run ci:quick',
+    };
+  lines.push(
+    `  run it: npm run ci:quick -- --narrow   (the same set: npx tsx scripts/ci-runner/run.ts --only ${[...ids].join(',')})\n`
+  );
+  return { ids, lines };
+}
+
+/** Whether this run writes the push receipt: a --quick run on the real manifest that is not a dropped-gate merge and not --narrow. A stage stop never reaches the question: it exits 3 from inside the run. */
+function receiptDue(opts: Options, merged: boolean): boolean {
+  return opts.quick && !opts.manifest && !merged && !opts.narrow;
 }
 
 async function main(): Promise<number> {
@@ -3889,9 +4497,30 @@ async function main(): Promise<number> {
 
   // `--list` USED TO RETURN BEFORE `select()` RAN, so `--list --changed` printed all 314 specs whatever the scoping did. That is worse than unhelpful: it is an instrument that answers a question it never asked, and it is how --changed stayed inert without anyone noticing. Measured 2026-08-27 -- a reader (me) concluded from it that --changed scoped nothing, on evidence that could
   // not have shown otherwise.
+  // THE NARROW RE-RUN: its own selection, printed in full, and with --print nothing runs.
+  const synthetic = opts.manifest !== undefined;
+  const model = loadModel(synthetic);
+  const lock = synthetic ? [] : readLock();
+  const anchors = lockAnchors(lock);
+  const carried = carriedAtHead();
+  let narrowed: Set<string> | undefined;
+  if (opts.narrow) {
+    const n = narrowPlan(specs, opts, model, anchors, carried);
+    humanOut(n.lines.join(''));
+    if (n.error !== undefined || n.ids === undefined) {
+      process.stderr.write(`${n.error ?? 'ci-runner: --narrow produced no set'}\n`);
+      return 1;
+    }
+    if (opts.narrowPrint) return 0;
+    narrowed = n.ids;
+  }
+
   let selection: Selection;
   try {
-    selection = select(specs, opts, humanOut);
+    selection =
+      narrowed !== undefined
+        ? { ids: narrowed, description: `--narrow (${narrowed.size} gate(s))` }
+        : select(specs, opts, humanOut);
   } catch (err) {
     // A REFUSAL IS NOT A CRASH, and it must not read as one. `--changed` with a change set it cannot trust exits 1 with the reason and the fix on stderr, rather than selecting the 418 gates that happen to declare no `paths` and reporting a green over the 46 it dropped.
     if (err instanceof ChangeSetRefusal) {
@@ -3913,7 +4542,7 @@ async function main(): Promise<number> {
   const headTreeAtStart = headTreeNow();
 
   // THE INCREMENTAL RECEIPT (agent/plans/PLAN-fast-loop.md Part 1). A whole `--quick` run in a clean disposable clone keeps the prior receipt's verdict for every gate whose inputs hash the same, and removes it from the graph before the pool sees it. Carried ids leave `needs` too, or buildGraph would pull them back in as prerequisites.
-  const recording = opts.quick && !opts.manifest && opts.lane === undefined;
+  const recording = opts.quick && !opts.manifest && opts.lane === undefined && !opts.narrow;
   const disposable = recording && isDisposableClone(opts);
   let carry = new Map<string, PriorGate>();
   let hashes = new Map<string, GateHash>();
@@ -3972,7 +4601,94 @@ async function main(): Promise<number> {
     return 1;
   }
 
-  const { results, exitCode, wallMs, util, startedAt } =
+  // THE LEDGER AND THE STREAM (agent/plans/PLAN-gate-scheduling-learned.md T6, T8): one run row now, a row per gate as it settles, an end row below; the events stream beside the receipt for a --quick run, or wherever --events says.
+  const runId = `${new Date().toISOString().replace(/[-:.]/g, '').replace('T', '-').slice(0, 15)}-${process.pid}`;
+  const events = openEventSink(
+    opts.events ?? (opts.quick && !synthetic ? defaultEventsFile(opts, runId) : undefined),
+    humanOut
+  );
+  // WHAT CHANGED, as gate_ledger.py defines it: since the previous run of this checkout (the tree its receipt judged), plus what is dirty now, since the gates judge the worktree. With no prior receipt, since the last push. The same set names the diff's classes for ranking, so what the model learned from and what it is asked about mean the same thing.
+  const since = changedSincePreviousRun(opts, synthetic);
+  const changedNow =
+    since?.files ??
+    selection.changedFiles ??
+    (synthetic ? undefined : changedSinceLastPush().files);
+  const classes = classesOf(changedNow ?? [], anchors);
+  const wantLedger = ledgerWanted(process.env, synthetic);
+  const ledger: GateLedger = wantLedger.on
+    ? openLedger({ root: REPO_ROOT, dir: ledgerDirHere(), warn: humanOut })
+    : {
+        on: false,
+        note: `gate ledger: off (${wantLedger.why})`,
+        write: () => {},
+        close: async () => {},
+      };
+  const clean = gitTry(['status', '--porcelain']) === '';
+  const lockById = new Map(lock.map((e) => [e.id, e]));
+  if (ledger.on) {
+    const mergeBase = selection.pushBase?.mergeBase;
+    ledger.write({
+      t: 'run',
+      id: runId,
+      // `prepush` is the push clone's shape (isDisposableClone), not any run that names --receipt-out.
+      src: !synthetic && isDisposableClone(opts) ? 'prepush' : 'quick',
+      at: new Date().toISOString(),
+      branch: gitTry(['branch', '--show-current']) ?? '',
+      head: gitTry(['rev-parse', 'HEAD']) ?? '',
+      tree: headTreeAtStart,
+      salt,
+      clean,
+      base_tree:
+        since?.base ??
+        (mergeBase === undefined || mergeBase === null
+          ? null
+          : (gitTry(['rev-parse', `${mergeBase}^{tree}`]) ?? null)),
+      ...cappedChanged(changedNow ?? []),
+      lock_sha: (() => {
+        try {
+          return createHash('sha256').update(fs.readFileSync(LOCK_PATH)).digest('hex');
+        } catch {
+          return '';
+        }
+      })(),
+      classes,
+      whole: narrowingFlags(opts).length === 0,
+      narrowed_by: narrowingFlags(opts),
+      ci: null,
+    });
+  }
+  const ctx: RunContext = {
+    runId,
+    ledger,
+    events,
+    keyOf: (id) => {
+      const h = hashes.get(id);
+      const paths = lockById.get(id)?.paths;
+      return inputKey({
+        parts:
+          h === undefined
+            ? { inputHash: null, defHash: '', filesHash: '', hasPaths: false }
+            : {
+                inputHash: h.inputHash,
+                defHash: h.defHash,
+                filesHash: h.filesHash,
+                hasPaths: Array.isArray(paths) && paths.length > 0,
+              },
+        tree: headTreeAtStart,
+        dirty: dirtyAtStart,
+        salt,
+      });
+    },
+    model,
+    classes,
+    carried,
+    stopAt: opts.stopOnStageRed,
+  };
+  abortHooks.push(() => {
+    events.emit({ ev: 'run-end', run: runId, exit: null, receipt: 'none', why: 'signal' });
+  });
+
+  const { results, exitCode, wallMs, util, startedAt, ranking } =
     graph.length === 0
       ? {
           results: [] as GateResult[],
@@ -3980,8 +4696,9 @@ async function main(): Promise<number> {
           wallMs: 0,
           util: undefined,
           startedAt: Date.now(),
+          ranking: undefined,
         }
-      : await runGraph(graph, opts, selection.description, humanOut);
+      : await runGraph(graph, opts, selection.description, humanOut, ctx);
 
   // THE RECEIPT IS MINTED ONLY BY A RUNNER THAT PROVED IT CAN FAIL.
   //
@@ -4040,11 +4757,12 @@ async function main(): Promise<number> {
     }
   }
 
-  if (opts.quick && !opts.manifest && !merged) {
+  let receiptWritten = false;
+  if (receiptDue(opts, merged)) {
     const freshFindings = receiptFindings(results, humanOut);
     const verdicts = mergeVerdicts(results, exitCode, freshFindings, carry);
     const receiptTreeNow = receiptTree(headTreeAtStart, headTreeNow());
-    writeReceipt(
+    receiptWritten = writeReceipt(
       {
         schema: SCHEMA,
         saltHash: salt,
@@ -4105,8 +4823,25 @@ async function main(): Promise<number> {
       receiptPathFor(opts),
       humanOut
     );
+  } else if (opts.narrow) {
+    humanOut(
+      'ci-runner: --narrow writes no receipt; run the whole lane (npm run ci:quick) when a push is due\n'
+    );
   }
-  return mergeVerdicts(results, exitCode, {}, carry).exitCode;
+  const finalExit = mergeVerdicts(results, exitCode, {}, carry).exitCode;
+  events.emit({
+    ev: 'run-end',
+    run: runId,
+    t_ms: wallMs,
+    exit: finalExit,
+    receipt: receiptWritten || merged ? 'written' : 'none',
+    wall_ms: wallMs,
+    simulated_ms:
+      ranking === undefined ? null : ranking.on ? ranking.rankedMs : (ranking.baseMs ?? null),
+  });
+  ledger.write({ t: 'end', run: runId, wall_ms: wallMs, exit: finalExit, cut: false });
+  await ledger.close();
+  return finalExit;
 }
 
 main()

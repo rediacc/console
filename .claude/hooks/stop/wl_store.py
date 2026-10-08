@@ -646,25 +646,48 @@ def save_state(worklist, session_id, doc):
 # ---- the event log ----------------------------------------------------------
 
 
+_JSONL_APPEND_REL = (".ci", "rediacc_ci", "core", "jsonl_append.py")
+_JSONL_APPEND = None
+
+
+def _jsonl_append():
+    """`rediacc_ci.core.jsonl_append`, loaded BY FILE (a hook takes no `.ci` sys.path hop; test_canonical_sys_path_hop.py freezes them), once per process.
+
+    Looked for above this file first; then above the live `.claude/rediacc_hooks` a last-known-good snapshot links in (wl_lkg.snapshot); then above the working directory, because several suites copy this directory into a temp root (test_wl_lkg, test_wl_roster) while the process still runs from the checkout. None found is a loud refusal, never a silent dropped write.
+    """
+    global _JSONL_APPEND  # noqa: PLW0603 -- a per-process module cache
+    if _JSONL_APPEND is not None:
+        return _JSONL_APPEND
+    import importlib.util  # noqa: PLC0415 -- only the write path needs it
+
+    here = pathlib.Path(__file__).resolve()
+    linked = pathlib.Path(__file__).absolute().parents[2] / "rediacc_hooks"
+    cwd = pathlib.Path.cwd().resolve()
+    starts = [*here.parents]
+    if linked.is_dir():
+        starts += [*linked.resolve().parents]
+    starts += [cwd, *cwd.parents]
+    for base in starts:
+        cand = base.joinpath(*_JSONL_APPEND_REL)
+        if cand.is_file():
+            spec = importlib.util.spec_from_file_location("rediacc_jsonl_append", cand)
+            if spec is not None and spec.loader is not None:
+                mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(mod)
+                _JSONL_APPEND = mod
+                return mod
+    raise RuntimeError(
+        "worklist WRITES need %s, which is not above %s, its linked .claude/rediacc_hooks, or the working directory %s"
+        % ("/".join(_JSONL_APPEND_REL), here, cwd)
+    )
+
+
 def _append_lines(path, lock_path, payloads):
     """Append JSONL lines under a blocking flock, healing a torn tail first.
 
-    One os.write per batch. The heal: if the file's last byte is not a newline (a writer crashed mid-line), prepend one, so the torn fragment stays its own unparseable line instead of corrupting this event too.
+    The one implementation is `rediacc_ci.core.jsonl_append.append_lines` (one os.write per batch; a last byte that is not a newline gets one prepended, so a torn fragment stays its own unparseable line). `_flock` is passed so a lockless platform still gets the worklist's own refusal.
     """
-    with open(lock_path, "w") as lock:
-        _flock(lock, LOCK_EX)
-        fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_APPEND, 0o644)
-        try:
-            size = os.fstat(fd).st_size
-            blob = b""
-            if size and os.pread(fd, 1, size - 1) != b"\n":
-                blob = b"\n"
-            blob += "".join(json.dumps(p, separators=(",", ":")) + "\n" for p in payloads).encode(
-                "utf-8"
-            )
-            os.write(fd, blob)
-        finally:
-            os.close(fd)
+    _jsonl_append().append_lines(path, lock_path, payloads, lock=_flock)
 
 
 # --------------------------------------------------------------------------- THE TRACKED STORE. agent/worklist/<writer8>.jsonl, one append-only file per WRITER identity, committed like every other artifact under agent/.
