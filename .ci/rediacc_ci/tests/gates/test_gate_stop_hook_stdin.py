@@ -78,6 +78,11 @@ def _isolated_store(tmp_path, monkeypatch):
         target = tmp_path / name.lower()
         target.mkdir()
         monkeypatch.setenv(name, str(target))
+    # NO REAL REPO ROOT. The hook resolves its root from CLAUDE_PROJECT_DIR before its own location, and on that root it re-renders agent/plans/QUEUE.md's in-flight block (wl_planqueue.refresh_inflight), so without this every run rewrote the tracked QUEUE.md of the checkout under test. A root with no QUEUE.md makes that refresh a no-op.
+    fixture_root = tmp_path / "root"
+    fixture_root.mkdir()
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(fixture_root))
+    monkeypatch.chdir(fixture_root)
     # NO LLM JUDGE. This file measures stdin handling, and the judge is a paid call that runs whenever the real working tree carries uncommitted fix-shaped changes (regression-gate signals): on 2026-10-04 two writers' uncommitted files sent the late-payload case into a judge call and past its 40 s budget, while the same test on a clean tree passed in 2 s.
     monkeypatch.setenv("WORKLIST_JUDGE", "off")
 
