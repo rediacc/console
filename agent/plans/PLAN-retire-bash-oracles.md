@@ -22,7 +22,8 @@ Owns: .ci/config/language-policy-baseline.json
 - [ ] A5 Phase A acceptance: full .claude hook suite, DEFECT control over all guards, language-policy, hook-integrity, docs-gen and dead-python gates, the live chain on real commands, wall time measured before and after
 - [x] B0 Inventory every tracked .sh into agent/plans/PLAN-retire-bash-oracles.inventory.tsv; close the 15 unclassified C/D files, re-check group D DELETE verdicts against naming tests, re-judge the media/breakpoint/tutorials tree exemptions file by file
     (ticked) 2026-10-08T12:56:00Z by d778be9d: commit:8bca2ba93 agent/plans/PLAN-retire-bash-oracles.inventory.tsv holds one row per tracked .sh, 190 of 190 (plus 35 GONE); exempt trees re-judged per file; the DELETE verdict rechecked; check:ci-language-policy rc=0
-- [ ] B1 Cut over the CUTOVER-READY live twins (assert-job-succeeded, detect-pointer-bump, initialize, then lib/common.sh and its 181+ source sites); retire run-legacy.sh as its verb table empties
+- [x] B1 Cut over the CUTOVER-READY live twins (assert-job-succeeded, detect-pointer-bump, initialize, then lib/common.sh and its 181+ source sites); retire run-legacy.sh as its verb table empties
+    (ticked) 2026-10-08T19:34:43Z by d778be9d: commit:32b264edc common.sh deleted with its sourcers (also 6eb239b4d, 3bfab056e); check:ci-language-policy rc=0, .ci suite 13333 passed
 - [ ] B2 Port groups C and D-port in dependency order under rule T, each with a differential for right behaviour and intentional deltas for wrong behaviour, wired in the same change
 - [ ] B3 Golden-then-delete every twinned bash file (groups A and B after cutover), draining its bashFiles line, with the same regolden verb as A2
 - [x] B4 Rule-T fixes in the .ci ports: the 24 plan-named reproduced behaviours, the sweep's 8-13 bugs, and the promote retry gap #4175e786

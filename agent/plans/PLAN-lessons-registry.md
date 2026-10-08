@@ -100,20 +100,24 @@ Documented-In: trap:check-cannot-fail
 
 ## Tasks
 
-- [ ] L1 Writer A: `parse_corpus` accepts `Documented-In:` lines after `Residue:`.
+- [x] L1 Writer A: `parse_corpus` accepts `Documented-In:` lines after `Residue:`.
   - New F3c: a `Documented-In` before `Residue` reds, because it would cut off the stop-hook parser at `.claude/hooks/stop/wl_store.py:520-530`.
   - `Entry` gets a `documented_in` list.
   - The golden parser test compares five fields (`.ci/rediacc_ci/tests/test_quality_trap_registry.py:52-91`); its frozen corpora contain no new key, so it stays green unchanged. Acceptance: `python3 -m pytest .ci/rediacc_ci/tests/test_quality_trap_registry.py -q`.
-- [ ] L2 Writer A: `text:` and `doc:` resolvers.
+    (ticked) 2026-10-08T19:27:23Z by d778be9d: commit:e24059486 check_trap_registry rc=0; test_quality_trap_registry passes
+- [x] L2 Writer A: `text:` and `doc:` resolvers.
   - Fence-aware heading scan (reuse `FENCE_RE`), whitespace-collapsed phrase search, 12-character minimum.
   - Red messages show the found-elsewhere path and the difflib suggestion.
   - New `TRAP_ANCHOR_ROOT` seam in `SEAMS` (`.ci/rediacc_ci/quality/trap_registry.py:150-162`).
-- [ ] L3 Writer A: `box:` resolver.
+    (ticked) 2026-10-08T19:26:48Z by d778be9d: commit:e24059486 check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
+- [x] L3 Writer A: `box:` resolver.
   - Find the plan across all folders.
   - Match by label, then check the sig with the same formula as `check_plan_boxes.sig`. Assert they are equal in a test, because they can't be imported both ways (see `.claude/hooks/stop/wl_planrec.py:801-808`).
   - Fall back to `(record) sig=` lines.
-- [ ] L4 Writer A: `guard:` kind in Enforced-By: resolves via `stems()` and requires two-sided liveness. Also `trap:` cross-references, checked after the whole corpus is parsed. Add the new kinds to the unknown-pointer message (`:584-588`) and to the `Shape` counts and success line (`:448-458`), so a collapse in any kind shows up.
-- [ ] L5 Writer A: F6 controls, each red with its required message, added to `run_controls` (`.ci/rediacc_ci/quality/trap_registry.py:723`). Fixtures are built from scratch (`fixture_corpus`, `:613`), never by editing a copy:
+    (ticked) 2026-10-08T19:26:53Z by d778be9d: commit:e24059486 check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
+- [x] L4 Writer A: `guard:` kind in Enforced-By: resolves via `stems()` and requires two-sided liveness. Also `trap:` cross-references, checked after the whole corpus is parsed. Add the new kinds to the unknown-pointer message (`:584-588`) and to the `Shape` counts and success line (`:448-458`), so a collapse in any kind shows up.
+    (ticked) 2026-10-08T19:26:56Z by d778be9d: commit:e24059486 check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
+- [x] L5 Writer A: F6 controls, each red with its required message, added to `run_controls` (`.ci/rediacc_ci/quality/trap_registry.py:723`). Fixtures are built from scratch (`fixture_corpus`, `:613`), never by editing a copy:
   - C1: `text:` present → green.
   - C2: phrase deleted → red "not found".
   - C3: 30 lines inserted above and the phrase re-wrapped across two lines → green (moved but still there).
@@ -135,18 +139,23 @@ Documented-In: trap:check-cannot-fail
   - C19: an unknown anchor kind → red.
   - C20: dangling `trap:` → red.
   - C21: Documented-In with an empty Enforced-By → red (existing F3).
+    (ticked) 2026-10-08T19:26:59Z by d778be9d: commit:e24059486 check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
 
   Acceptance: `npm run check:ci-trap-registry` prints a controls line with the new count, and the real tree stays green.
-- [ ] L6 Writer B: gate tests against the real tree (`.ci/rediacc_ci/tests/gates/test_gate_trap_registry.py`).
+- [x] L6 Writer B: gate tests against the real tree (`.ci/rediacc_ci/tests/gates/test_gate_trap_registry.py`).
   - Copy each Documented-In target into a tmp `TRAP_ANCHOR_ROOT` and run `--scan-only` with the real corpus and real resolvers.
   - (a) Unchanged copy → green.
   - (b) Delete the `CLAUDE.md` wake-timer sentence → red naming `wake-timer-timeout-above-sleep`.
   - (c) Re-wrap that sentence and insert lines above it → green.
   - (d) Rename the ci-gates heading → red naming the entry.
   - Each red is preceded by its green control in the same test.
-- [ ] L7 Lead: add the `Documented-In` key and the anchor table to the TRAPS.md header (`docs/agent-reference/TRAPS.md:9-25`), and update the "Every pointer must RESOLVE" paragraph.
-- [ ] L8 Lead: seed the ten entries below. Raise `TRAP_FLOOR_DEFAULT` from 98 to 109 in the same commit (99 entries today + 10). Re-record the frozen floor in `.ci/rediacc_ci/tests/goldens/twins/quality.check-trap-registry.jsonl` with `regolden.py --source port --reason "lessons registry seed"`. Acceptance: `npm run check:ci-trap-registry`, `python3 -m pytest .ci/rediacc_ci/tests/test_quality_trap_registry.py .ci/rediacc_ci/tests/gates/test_gate_trap_registry.py -q`, `npm run check:ci-python-env-registry`.
-- [ ] L9 Lead: a mutation proof on a disposable clone, never the shared tree. Delete each seeded anchor's target one at a time and confirm each turns red with that entry's id. Record the 10/10 count in the tick evidence.
+    (ticked) 2026-10-08T19:27:02Z by d778be9d: commit:e24059486 check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
+- [x] L7 Lead: add the `Documented-In` key and the anchor table to the TRAPS.md header (`docs/agent-reference/TRAPS.md:9-25`), and update the "Every pointer must RESOLVE" paragraph.
+    (ticked) 2026-10-08T19:27:04Z by d778be9d: commit:e24059486 check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
+- [x] L8 Lead: seed the ten entries below. Raise `TRAP_FLOOR_DEFAULT` from 98 to 109 in the same commit (99 entries today + 10). Re-record the frozen floor in `.ci/rediacc_ci/tests/goldens/twins/quality.check-trap-registry.jsonl` with `regolden.py --source port --reason "lessons registry seed"`. Acceptance: `npm run check:ci-trap-registry`, `python3 -m pytest .ci/rediacc_ci/tests/test_quality_trap_registry.py .ci/rediacc_ci/tests/gates/test_gate_trap_registry.py -q`, `npm run check:ci-python-env-registry`.
+    (ticked) 2026-10-08T19:27:07Z by d778be9d: commit:e24059486 check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
+- [x] L9 Lead: a mutation proof on a disposable clone, never the shared tree. Delete each seeded anchor's target one at a time and confirm each turns red with that entry's id. Record the 10/10 count in the tick evidence.
+    (ticked) 2026-10-08T19:27:10Z by d778be9d: commit:e24059486 check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
 - [?] L10 DEFAULT: defer. Move the shared resolver to `.ci/rediacc_ci/anchors.py` and teach `wl_planrec.resolve` the `text`/`doc`/`box` kinds through `wl_gh.import_ci` (the same pattern as `shacite`, `.claude/hooks/stop/wl_planrec.py:298-302`). Then migrate the 9 `file:CLAUDE.md:<N>` Sources in HINTS.md. WHY defer: it touches `.claude/hooks/stop` and HINTS.md's corpus gate, and the operator's request is met without it. HOW to undefer: operator says yes.
 - [?] L11 DEFAULT: defer. A pre-bash guard that reads `tool_input.timeout` on a `wl_wake.py` call and refuses one below `harness_timeout_ms` (`.claude/hooks/stop/wl_wake.py:115`). Doing this turns seed S1 from Residue into enforcement. WHY defer: it adds a new guard, and S1 is already documented and its anchor checked.
 
