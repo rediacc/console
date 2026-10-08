@@ -63,13 +63,22 @@ Disjoint file sets; W1 publishes the selector and i18n-key contract first.
 - **V3 gates and tests:**
   - Owns: the four gate scripts, the py test, the release gate and its two lib helpers, and `manifest.ts` (comment only).
 
+## 5. Spike record and the size ruling (2026-10-08)
+
+- **Spike.** The language picker lives in the toolbar only: the Video.js 10 skin has no settings pane to extend, and ejecting the skin would mean owning about 2,786 lines plus a Tailwind 4.3 build. The skin stays un-ejected and is themed through its custom properties. The selector and i18n-key contract is recorded in the header of `packages/www/src/components/TutorialVideoPlayer.tsx`.
+- **Size ruling.** The deferred player chunk measures 272,103 B raw (277,296 B as the bundle gate counts it), against the 150,000 B this plan first set. The operator ruled on 2026-10-08 to raise the ceiling to 300 KB (`DEFERRED_CEILING` 300,000 in `scripts/gates/check-client-bundle-budget.ts`, e711b890a). The cost is paid only on the first press: docs, solution and home pages load 424 B of player code before it (e0d86ac1d).
+- **Measured portrait rect.** Both the Plyr and the Video.js builds give 351x624 at 390x844, the same 9:16 shape as the "about 327x581" estimated above.
+
 ## Boxes
 
 - [ ] V1: spike (language picker placement, skin eject or not) recorded here; selector and i18n-key contract published
-- [ ] V1: player core on @videojs/react, plyr removed with its hold; chunk ≤ 150,000 B measured from a build
-- [ ] V2: CSS on the skin's custom properties; `video.player.*` in 13 locales (naturalized); comments updated
+- [x] V1: player core on @videojs/react, plyr removed with its hold; chunk ≤ 150,000 B measured from a build
+    (ticked) 2026-10-08T10:15:03Z by d778be9d: commit:e711b890a @videojs/react player core, plyr and its hold removed; chunk 272,103 B raw under the operator's 300 KB ceiling ruling (section 5); docs/solution/home load 424 B before the press (commit:e0d86ac1d)
+- [x] V2: CSS on the skin's custom properties; `video.player.*` in 13 locales (naturalized); comments updated
+    (ticked) 2026-10-08T10:15:06Z by d778be9d: commit:e711b890a skin custom properties; video.player.chapters in all 13 locales (commit:a4fc5f2be fingerprinted it)
 - [ ] V3: invariant, css-scope, dead-css and release gates moved to the new skin, each with a control
-- [ ] Browser-probe measurement before and after: four pages × 1440x900 and 390x844. Measures deferred bytes, click-to-playing, portrait rect (about 327x581 at 390), chapter segments, captions in fullscreen, `currentTime` kept across a language switch and a resize, keyboard and the Escape order, and console errors
+- [x] Browser-probe measurement before and after: four pages × 1440x900 and 390x844. Measures deferred bytes, click-to-playing, portrait rect (about 327x581 at 390), chapter segments, captions in fullscreen, `currentTime` kept across a language switch and a resize, keyboard and the Escape order, and console errors
+    (ticked) 2026-10-08T10:15:13Z by d778be9d: browser-probe 2026-10-08, 4 pages x 1440x900 and 390x844, harness in the session scratchpad: deferred 424 B before interaction; behaviour (captions, chapters, keys, fullscreen captions, language switch keeps time, resize, Escape order) all pass; docs eager-load regression found and fixed in commit:e0d86ac1d
 
 ## Risks
 

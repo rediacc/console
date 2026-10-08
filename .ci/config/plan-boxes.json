@@ -878,16 +878,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 0,
+      "open": 1,
+      "done": 4,
       "open_sigs": [
+        "794425ab"
+      ],
+      "done_sigs": [
         "16ada8cb",
         "40e414ac",
         "4e01e86d",
-        "794425ab",
         "f66674d0"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-lessons-registry.md": {
       "status": "approved",
@@ -1086,16 +1087,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 0,
+      "open": 2,
+      "done": 3,
       "open_sigs": [
         "41fbf1cf",
+        "81eaf513"
+      ],
+      "done_sigs": [
         "6c5976f0",
-        "81eaf513",
         "c1b361ff",
         "dd9c1004"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-prepush-full-cpu.md": {
       "status": "approved",
