@@ -2091,6 +2091,22 @@
         "fde098b5"
       ]
     },
+    "agent/plans/PLAN-turbo-local-first.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 5,
+      "done": 0,
+      "open_sigs": [
+        "166f8c38",
+        "16d5f486",
+        "3bc06e37",
+        "4b3fe5bd",
+        "6dd1be72"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-typecheck-orphan-packages.md": {
       "status": "ready",
       "owner": "unowned",
