@@ -775,6 +775,10 @@ def homebrew_dry_run(root: pathlib.Path) -> DryRun:
     def run(version: str) -> subprocess.CompletedProcess:
         env = dict(os.environ)
         env["PYTHONPATH"] = str(root / ".ci")
+        # The caller matches git's English "unknown revision" text, so the locale is pinned.
+        env["LC_ALL"] = "C"
+        env["LANG"] = "C"
+        env.pop("LANGUAGE", None)
         argv = [sys.executable, "-m", "rediacc_ci.release.update_homebrew_tap"]
         return run_process([*argv, "--version", bare(version), "--dry-run"], env)
 

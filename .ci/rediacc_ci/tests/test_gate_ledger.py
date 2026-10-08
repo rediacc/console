@@ -794,3 +794,17 @@ def test_the_pytest_host_is_derived_from_the_key_emitter() -> None:
         and all(any(gate_model.match_glob(g, p) for g in e["paths"]) for p in tests.values())
     }
     assert hosts < by_coverage
+
+
+def test_daemon_pool_worker_survives_a_raising_callable() -> None:
+    """A raising callable resolves its future with the error and leaves the worker alive for the next job."""
+    pool = L._DaemonPool(1)
+
+    def boom() -> None:
+        raise RuntimeError("boom")
+
+    bad = pool.submit(boom)
+    with pytest.raises(RuntimeError, match="boom"):
+        bad.result(timeout=5)
+    assert pool.submit(lambda: 7).result(timeout=5) == 7
+    assert all(t.is_alive() for t in pool.threads)

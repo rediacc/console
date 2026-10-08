@@ -27,6 +27,7 @@ import contextlib
 import datetime
 import hashlib
 import json
+import logging
 import os
 import pathlib
 import queue
@@ -98,7 +99,7 @@ CI_FOLD_DEADLINE_S = 600.0
 
 
 class _DaemonPool:
-    """A small thread pool whose workers are DAEMON threads. `ThreadPoolExecutor` workers are joined by an interpreter-exit hook, so a worker still inside a `gh` call at the fold deadline would keep the process alive after `shutdown(wait=False)`; a daemon worker is abandoned instead. The submitted callable must not raise (`read_jobs` folds every failure into its return value); a raise would leave its future unresolved, which the reader sees as the deadline."""
+    """A small thread pool whose workers are DAEMON threads. `ThreadPoolExecutor` workers are joined by an interpreter-exit hook, so a worker still inside a `gh` call at the fold deadline would keep the process alive after `shutdown(wait=False)`; a daemon worker is abandoned instead. A raising callable resolves its future with the exception, so the worker survives and the reader sees the error rather than a silent deadline."""
 
     def __init__(self, workers: int) -> None:
         self._jobs: queue.Queue[tuple[Future[Any], Callable[[], Any]] | None] = queue.Queue()
@@ -116,7 +117,14 @@ class _DaemonPool:
                 return
             fut, call = item
             if fut.set_running_or_notify_cancel():
-                fut.set_result(call())
+                try:
+                    result = call()
+                except Exception as exc:
+                    # Handed to the reader through the future; the debug record keeps the traceback.
+                    logging.getLogger(__name__).debug("fold worker call raised", exc_info=True)
+                    fut.set_exception(exc)
+                else:
+                    fut.set_result(result)
 
     def submit(self, fn: Callable[..., Any], *args: Any) -> Future[Any]:
         fut: Future[Any] = Future()

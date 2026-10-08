@@ -640,11 +640,27 @@ def _narrowed(site: str, label: str, step: dict) -> list[tuple[str, str]]:
     return [("cd-preflight-narrowed", "%s drops %s" % (label, ",".join(sorted(missing))))]
 
 
-# A positive `event_name == 'pull_request'` (either operand order), not preceded by `!` or `!(`. `!=` never matches because the operator must be `==`, and a text-only "contains pull_request" test would pass `github.event_name != 'pull_request'`, the main-only blind spot.
-_ADMITS_PR_RE = re.compile(
-    r"(?<!!)(?<!!\()(?:github\.event_name\s*==\s*['\"]pull_request['\"]"
-    r"|['\"]pull_request['\"]\s*==\s*github\.event_name)"
+# `event_name == 'pull_request'` (either operand order). `!=` never matches because the operator must be `==`, and a text-only "contains pull_request" test would pass `github.event_name != 'pull_request'`, the main-only blind spot. A match preceded by `!` through any run of spaces and `(` is a negation and does not count.
+_PR_EQ_RE = re.compile(
+    r"github\.event_name\s*==\s*['\"]pull_request['\"]"
+    r"|['\"]pull_request['\"]\s*==\s*github\.event_name"
 )
+
+
+def _admits_pr(cond: str) -> bool:
+    """True when `cond` holds a positive, non-negated `event_name == 'pull_request'` test."""
+    for m in _PR_EQ_RE.finditer(cond):
+        i = m.start() - 1
+        while i >= 0 and cond[i] in " \t\n(":
+            i -= 1
+        if i < 0 or cond[i] != "!":
+            return True
+    return False
+
+
+def _step_excludes_pr(cond: str) -> bool:
+    """A step-level `if:` that tests the event yet does not admit pull_request; an `if:` that never names the event (`always()`, `success()`) leaves the job's verdict alone."""
+    return "event_name" in cond and not _admits_pr(cond)
 
 
 def analyse_preflight(
@@ -663,8 +679,7 @@ def analyse_preflight(
     jobs = ci_doc.get("jobs") if isinstance(ci_doc, dict) else None
     ci_jobs: dict[str, typing.Any] = jobs if isinstance(jobs, dict) else {}
     for job, i, st, _phase in pr:
-        cond = _text(ci_jobs[job].get("if")) + " " + _text(st.get("if"))
-        if not _ADMITS_PR_RE.search(cond):
+        if not _admits_pr(_text(ci_jobs[job].get("if"))) or _step_excludes_pr(_text(st.get("if"))):
             out.append(("cd-preflight-not-on-pr", job))
         out += _narrowed("pr", _step_label(job, i, st), st)
         shape.append("ci.yml job %s runs it on pull_request" % job)

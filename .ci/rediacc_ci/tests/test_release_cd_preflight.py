@@ -486,6 +486,25 @@ def test_homebrew_a_tap_without_origin_main_is_unchecked(root: pathlib.Path) -> 
         cp.check_homebrew(root, "1.4.21", "", offline)
 
 
+def test_homebrew_dry_run_pins_the_git_locale(
+    root: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The caller matches git's English text, so the subprocess env must carry the C locale."""
+    seen: dict[str, str] = {}
+
+    def fake(argv: list[str], env: dict[str, str] | None) -> subprocess.CompletedProcess:
+        seen.update(env or {})
+        return subprocess.CompletedProcess(argv, 0, "", "")
+
+    monkeypatch.setenv("LC_ALL", "de_DE.UTF-8")
+    monkeypatch.setenv("LANGUAGE", "de")
+    monkeypatch.setattr(cp, "run_process", fake)
+    cp.homebrew_dry_run(root)("1.4.21")
+    assert seen["LC_ALL"] == "C"
+    assert seen["LANG"] == "C"
+    assert "LANGUAGE" not in seen
+
+
 def test_homebrew_a_formula_the_awk_misplaces_is_drift(root: pathlib.Path) -> None:
     """Without the linux `if Hardware::CPU.arm?` line the real awk writes the linux checksums into the wrong slots. The oracle is url-then-sha256 adjacency, not the awk's own state machine, so it sees that."""
     broken = FORMULA.replace(
