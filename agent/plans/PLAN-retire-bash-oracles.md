@@ -37,6 +37,7 @@ Owns: .ci/config/language-policy-baseline.json
 - [x] G1 Empty and delete .ci/config/language-policy-baseline.json (closes PLAN-tooling-transformation W1P6, ed0c365d); every remaining allowlist entry carries a BLOCKER reason
     (ticked) 2026-10-08T22:36:36Z by d778be9d: commit:a6d794f1a -- baseline deleted; check:ci-language-policy STRICT rc=0 (80 bash files, all allowlisted); suppression-liveness rc=0; plants rc=1
 - [x] G2 Fix check:ci-bash-lib-ported (add log.py to its module list, recognise class methods), port its 8 real gaps, retire it with the last library
+  - Amended 2026-10-09 (review 0d29362c.1): "retire it with the last library" has not come due. The last library is `.ci/scripts/lib/toolchain.sh`, which operator ruling D9 keeps ("Keep the gate for toolchain (Recommended)", ASKED:2026-10-08T19:13Z), so the gate stays alive to guard it. The box closes on the fix and the 0-gap port, and the retirement is owed only when toolchain.sh goes.)
     (ticked) 2026-10-08T22:36:39Z by d778be9d: commit:a6d794f1a commit:1a9adf506 -- check:ci-bash-lib-ported rc=0 (1 library, 17 functions); retirement waits on toolchain.sh, kept by operator D9 ASKED:2026-10-08T19:13Z
 - [x] G3 Regenerate gates.lock.json, the gen-docs regions, gate-bind steps and the registries; correct the TRAPS.md and CLAUDE.md prose that calls the oracles the spec
     (ticked) 2026-10-08T22:36:42Z by d778be9d: commit:a6d794f1a -- check:ci-gates-lock, -gate-bind, -prose-style rc=0; breakpoint-blocker.sh repointed with its MANIFEST regenerated, check:ci-breakpoint-drift rc=0
