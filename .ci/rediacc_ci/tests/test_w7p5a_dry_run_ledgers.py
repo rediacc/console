@@ -2,7 +2,7 @@
 
 W7P5-a's acceptance gave every deploy/release script a K=5 shadow-gate ledger. The dry-run half -- bash twin against Python port, every external tool stubbed -- was reachable without touching production, and for the Cloudflare/R2 family it was driven and recorded under the `w7p5a-` pair namespace. The real-run BLOCKER register that once sat beside these ledgers is retired with the last bash twins.
 
-`.ci/shadow/w7p5a-status.json` carries that evidence as a `dry_run_ledger` field. This module is what stops the field decaying into a claim, in both directions:
+`.ci/shadow/w7p5a-status.json` carries that evidence as a `dry_run_ledger` field. This module is what stops the field decaying into a claim. The three sweeps below police the evidence itself; the set is empty today, and `test_the_dry_run_evidence_set_is_retired` is the floor that keeps it so until a pair is recorded again:
 
   * THE EVIDENCE IS REAL. Each named ledger must hold at least five rows, every one EQUIVALENT, over at least five DISTINCT clean tree ids and at least five DISTINCT finding-set fingerprints -- `assertEquivalent`'s rule, restated where a pytest sweep runs it. Nothing in CI invokes `shadow-gate --assert` for these pairs, so without this the ledgers vouch for themselves.
   * THE EVIDENCE IS ABOUT THE RIGHT PAIR. Each row's `old.cmd` must name the bash path the row is filed under and its `new.cmd` the Python port. A ledger is a text file; a row copied from a neighbouring pair would otherwise satisfy every count above.

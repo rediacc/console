@@ -96,7 +96,7 @@ def scaffold(
                     needs_list.append(phantom_need)
                 lines.append("    needs: [%s]" % ", ".join(needs_list))
             lines.append("    steps:")
-            lines.append("      - run: .ci/scripts/ci/assert_ci_complete.py")
+            lines.append("      - run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_ci_complete")
             lines.append("        env:")
             for k in aggregated:
                 if k == drop_result:

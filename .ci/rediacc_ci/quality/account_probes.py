@@ -53,6 +53,9 @@ PROBE_FN = "rustfs_alive"
 # The child's exit status for "the module loaded but the function is not there". Three, not one, because one is what a healthy probe returns for a closed port and the two must never be confused. See the port notes.
 LOAD_FAILED_RC = 3
 
+# The child's exit status for "the function loaded and then raised". Four, distinct from both the DEAD answer (1) and the load failure (3): an uncaught exception would exit 1 and read as DEAD, so a broken probe would satisfy the dead-port assertion for the wrong reason.
+PROBE_RAISED_RC = 4
+
 # The readiness loop, in the twin's numbers: `for _ in $(seq 1 50)` with `sleep 0.1` between attempts, i.e. up to five seconds for a local listener.
 READY_ATTEMPTS = 50
 READY_DELAY = 0.1
@@ -77,14 +80,18 @@ PROBE_SCRIPT = (
     "    from rediacc_ci.core.account import %s as probe\n"
     "except Exception:\n"
     "    sys.exit(%d)\n"
-    "sys.exit(0 if probe(int(sys.argv[1])) else 1)\n"
-) % (PROBE_FN, LOAD_FAILED_RC)
+    "try:\n"
+    "    alive = probe(int(sys.argv[1]))\n"
+    "except Exception:\n"
+    "    sys.exit(%d)\n"
+    "sys.exit(0 if alive else 1)\n"
+) % (PROBE_FN, LOAD_FAILED_RC, PROBE_RAISED_RC)
 
 
 def probe_rc(root: pathlib.Path, port: int) -> int:
     """Run the probe against `port` from `root`. Returns the child's status.
 
-    Zero means the probe said ALIVE, LOAD_FAILED_RC means the function was never importable, and anything else means it said DEAD. The caller must keep those three apart; collapsing the last two is the vacuous green the header describes.
+    Zero means the probe said ALIVE, LOAD_FAILED_RC means the function was never importable, PROBE_RAISED_RC means it raised, and 1 means it said DEAD. The caller must keep those apart; collapsing the last two is the vacuous green the header describes.
     """
     env = dict(os.environ)
     ci_dir = str(root / ".ci")
@@ -203,7 +210,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     # Fail loudly if the library cannot be loaded at all: a gate that cannot reach its subject must not report on it. Port 1 is closed, so a HEALTHY probe returns non-zero here; only LOAD_FAILED_RC means the load failed.
-    if probe_rc(root, 1) == LOAD_FAILED_RC:
+    if probe_rc(root, 1) in (LOAD_FAILED_RC, PROBE_RAISED_RC):
         log.error("Could not import %s from %s." % (PROBE_FN, PROBE_LIB))
         log.error("Refusing to report on a probe this gate cannot actually call.")
         return 1
@@ -212,7 +219,14 @@ def main(argv: list[str] | None = None) -> int:
 
     # --- 1. THE DEFECT: a closed port must read as dead ---------------------
     dead_port = free_port()
-    if probe_says_alive(root, dead_port):
+    dead_rc = probe_rc(root, dead_port)
+    if dead_rc not in (0, 1):
+        log.error(
+            "%s neither said ALIVE nor DEAD for closed port %d (rc=%d)."
+            % (PROBE_FN, dead_port, dead_rc)
+        )
+        failures += 1
+    elif dead_rc == 0:
         log.error("%s reported ALIVE for closed port %d." % (PROBE_FN, dead_port))
         log.error("This is the 2026-08-04 defect: check for a reintroduced")
         log.error("`|| echo 000` in the curl capture %s curl already prints 000 on a" % DASH)
@@ -294,6 +308,9 @@ FIXTURE_ALWAYS_DEAD = FIXTURE_HEALTHY.replace(
     '    return proc.stdout not in {"", "000"}', "    return False"
 )
 
+# A probe that loads and then raises. Its child must exit PROBE_RAISED_RC, not 1, or a broken probe would read as a correctly dead one.
+FIXTURE_RAISES = "def rustfs_alive(port):\n    raise RuntimeError('boom')\n"
+
 # A module that loads and defines nothing. The load probe must see this, or "not alive" would read as "correctly dead".
 FIXTURE_NO_FUNCTION = "def something_else():\n    return True\n"
 
@@ -313,7 +330,7 @@ def selftest() -> int:
 
     A gate with only positive controls will happily flag the whole tree, so every plant below has a mirror: the defective library must be caught AND the healthy one must be cleared, a closed port must read dead AND a live one alive, a missing function must be seen AND a present one must not be mistaken for missing.
     """
-    ctl = Controls("account-probes", floor=18, verbose=True)
+    ctl = Controls("account-probes", floor=23, verbose=True)
 
     # -- free_port ---------------------------------------------------------
     port_a = free_port()
@@ -365,6 +382,7 @@ def selftest() -> int:
         root_defect = fixture_root(pathlib.Path(tmp) / "defect", FIXTURE_DEFECTIVE)
         root_dead = fixture_root(pathlib.Path(tmp) / "dead", FIXTURE_ALWAYS_DEAD)
         root_nofn = fixture_root(pathlib.Path(tmp) / "nofn", FIXTURE_NO_FUNCTION)
+        root_raises = fixture_root(pathlib.Path(tmp) / "raises", FIXTURE_RAISES)
 
         closed = free_port()
         # -- assertion 1, both directions ----------------------------------
@@ -409,6 +427,17 @@ def selftest() -> int:
             probe_rc(root_healthy, 1) == LOAD_FAILED_RC,
         )
 
+        ctl.check(
+            "PLANT: a probe that raises exits with the raised status, not the DEAD one",
+            probe_rc(root_raises, 1),
+            PROBE_RAISED_RC,
+        )
+        ctl.check(
+            "MIRROR: a healthy probe says DEAD (rc 1) for a closed port",
+            probe_rc(root_healthy, closed),
+            1,
+        )
+
         # -- the whole gate, over each fixture ------------------------------
         def run(root: pathlib.Path) -> int:
             saved = os.environ.get(paths.ROOT_ENV)
@@ -425,6 +454,7 @@ def selftest() -> int:
         ctl.check("PLANT: the 2026-08-04 library reds the whole gate", run(root_defect), 1)
         ctl.check("PLANT: an always-dead probe reds the whole gate", run(root_dead), 1)
         ctl.check("PLANT: a library with no probe function reds the whole gate", run(root_nofn), 1)
+        ctl.check("PLANT: a probe that raises reds the whole gate", run(root_raises), 1)
 
         # An ABSENT library is a failure, never a pass: "a probe library that vanished cannot be verified."
         bare = pathlib.Path(tmp) / "bare"

@@ -61,20 +61,43 @@ def source(gate) -> str:
 def phase_body(gate) -> list[str]:
     """`cleanup_preview_workers`'s body, as lines. Empty is a REFUSAL.
 
-    A method is closed by the next `    def ` at the same indent, since a Python body has no closing brace to anchor on.
+    A Python body has no closing brace to anchor on, so the method is closed by the first non-blank line after the opener indented no deeper than the opener itself: the next `    def `, a decorator, or the end of the class. A body that ran to end of file would let the DELETE and DRY_RUN checks match code outside the phase.
     """
-    body: list[str] = []
-    collecting = False
-    for line in source(gate).splitlines():
-        if not collecting and line.startswith(PHASE_OPENER):
-            collecting = True
-        elif collecting and line.startswith("    def "):
-            break
-        if collecting:
-            body.append(line)
+    body = extract_body(source(gate))
     if not body:
         gate.log_fail("could not extract cleanup_preview_workers from the subject")
     return body
+
+
+def extract_body(text: str) -> list[str]:
+    """The lines of `PHASE_OPENER`'s method in `text`; empty when it is absent."""
+    body: list[str] = []
+    collecting = False
+    opener_indent = len(PHASE_OPENER) - len(PHASE_OPENER.lstrip())
+    for line in text.splitlines():
+        if not collecting and line.startswith(PHASE_OPENER):
+            collecting = True
+        elif collecting and line.strip() and len(line) - len(line.lstrip()) <= opener_indent:
+            break
+        if collecting:
+            body.append(line)
+    return body
+
+
+def test_phase_body_stops_at_the_end_of_its_class(gate):
+    """The phase as the LAST method of its class: the body must not run on into top-level code, which could satisfy the ordering checks from outside the phase."""
+    text = (
+        "class Reaper:\n"
+        + PHASE_OPENER
+        + "\n        self.go()\n\n        # tail comment\n        self.stop()\n"
+        + "\n\ndef later():\n    client.delete(DELETE)\n"
+    )
+    body = extract_body(text)
+    if any("later" in ln or "DELETE" in ln for ln in body):
+        gate.log_fail("the body ran past the end of its class: %r" % body)
+    if not any("self.stop()" in ln for ln in body):
+        gate.log_fail("the body lost its own tail: %r" % body)
+    gate.log_pass("the phase body ends where its class does")
 
 
 def first_line_with(body: list[str], needle: str) -> int:

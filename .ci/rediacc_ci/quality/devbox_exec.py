@@ -36,7 +36,7 @@ SITE_RE = re.compile(r"\*(?:d|words)\b")
 # B2: a `-u` argv element whose value is anything but the literal "vscode", or a `-u <value>` inside one string.
 NUMERIC_RE = re.compile(r"\"-u\",\s*(?!\s|\"vscode\")|[\"']-u[ =]")
 
-# The floor under B1's enumeration: core/devbox.py carries about forty splat sites, so a count below this means the enumeration broke.
+# The floor under B1's enumeration: core/devbox.py carries 34 splat sites (measured), so a count below this means the enumeration broke.
 MIN_SITES = 10
 
 
@@ -167,7 +167,7 @@ def main(argv: list[str] | None = None) -> int:
 
 def selftest() -> int:
     """Both directions for both detectors, plus the floor and the comment filter."""
-    ctl = Controls("devbox-exec", floor=18, verbose=True)
+    ctl = Controls("devbox-exec", floor=21, verbose=True)
 
     ctl.truthy("PLANT: a one-element docker argv is detected", find(BUG_RE, code_of(CONTROL_BAD)))
     ctl.truthy(

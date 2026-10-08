@@ -85,10 +85,12 @@ def test_real_tree_is_green_and_not_vacuous(gate):
     )
     gate.assert_eq(new, 0, "new shell findings on the real tree")
     collapsed = "shell counts collapsed (%s): the gate is not seeing the tree" % m.group(0)
-    # Floors, not equalities: every retired bash twin lowers `scripts` and `dead`, so the floors sit well under the tree and above a walk that found nothing. `dead` carries no floor of its own, since the dead twins are the files being deleted; the dead-twin exclusion is exercised on a planted twin below.
+    # Floors, not equalities: every retired bash twin lowers `scripts` and `dead`, so the floors sit well under the tree and above a walk that found nothing. The dead-twin exclusion is exercised on a planted twin below.
     assert scripts > 40, collapsed
     assert live > 25, collapsed
-    assert dead >= 0, collapsed
+    # `dead` carries a floor of one: the tree still holds dead twins (30 when measured), and a classifier that put every script in `live` would read 0 here. The sum is an invariant, so a script counted in neither or both halves also reds.
+    assert dead >= 1, collapsed
+    assert live + dead == scripts, collapsed
     assert workflows > 20, collapsed
     assert blocks > 300, collapsed
     assert curl >= 1, collapsed
@@ -100,10 +102,19 @@ def test_real_tree_is_green_and_not_vacuous(gate):
         % (scripts, live, dead, blocks, curl, gh, debt)
     )
     # The dead-twin plant needs a real dead script holding an unretried read; the tree has none left, so it reports "skipped" (the rule itself is driven on a planted twin by `test_wiring_a_dead_twin_makes_its_reads_findings`). Each of the three is either red or an explicit skip, never silent, and the two that need no dead script must be red.
+    skipped = result.out.count("shell plant skipped:")
     gate.assert_eq(
-        result.out.count("shell plant red:") + result.out.count("shell plant skipped:"),
+        result.out.count("shell plant red:") + skipped,
         3,
         "every shell real-tree plant reported red or skipped",
+    )
+    # A skip is honest only when the tree really has nothing for the dead-twin plant to hide: the gate's own count of reads left unjudged in dead twins must be zero. Otherwise the plant machinery rotted and "skipped" is a red wearing a skip's label.
+    unjudged = re.search(r"(\d+) unjudged in dead twins", result.out)
+    assert unjudged is not None, "no unjudged-in-dead-twins count in: %r" % result.out[-400:]
+    assert skipped <= 1, "more than the dead-twin plant was skipped"
+    assert skipped == 0 or int(unjudged.group(1)) == 0, (
+        "the dead-twin plant was skipped while %s read(s) sit unjudged in dead twins"
+        % unjudged.group(1)
     )
     gate.assert_eq(
         len(

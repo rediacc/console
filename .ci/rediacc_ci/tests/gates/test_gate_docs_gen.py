@@ -336,17 +336,30 @@ def test_the_write_target_set_is_wider_than_the_file_this_gate_names(gate):
     )
 
 
+# The seven rows fe97b255 reclassified from a test owner to a program. Each is read or written by a program and merely named by a test as a fixture, so a hand-edit back to the test, or a namer that ranks tests first again, reds the row.
+PROGRAM_OWNED_JSON_ROWS = (
+    "knip.jsonc",
+    ".ci/config/bws-unrequested.json",
+    ".ci/config/carried-reds.json",
+    ".ci/config/merged-prs.json",
+    ".ci/config/secret-reachability.json",
+    "scripts/data/doc-registry-preport.json",
+    "scripts/data/shape-duplication-seed-advisory.json",
+)
+
+
 def test_the_json_inventory_names_a_program_before_a_test(gate):
-    """Review finding f8461c53.1: a test names a file as a fixture, so the json-inventory row for a ledger a program reads must name that program. `.ci/config/merged-prs.json` is read by `scripts/lib/suppression-liveness.ts` and written by `scripts/gates/check-pr-condition-ledger.ts`, and tests name it too."""
-    rows = [
-        line
-        for line in (ROOT / "scripts/data/doc-registry.md").read_text(encoding="utf-8").splitlines()
-        if line.startswith("| `.ci/config/merged-prs.json` |")
-    ]
-    if len(rows) != 1:
-        gate.log_fail("expected one json-inventory row for merged-prs.json, found %d" % len(rows))
-        return
-    if "/tests/" in rows[0] or "test_" in rows[0]:
-        gate.log_fail("the merged-prs.json row names a test as its owner: %s" % rows[0])
-        return
-    gate.log_pass("the merged-prs.json row names a program: %s" % rows[0].split("|")[3].strip())
+    """Review findings f8461c53.1 and fe97b255.3: a test names a file as a fixture, so the json-inventory row for a ledger a program reads must name that program, for every one of the seven reclassified rows. `.ci/config/merged-prs.json` is read by `scripts/lib/suppression-liveness.ts` and written by `scripts/gates/check-pr-condition-ledger.ts`, and tests name it too."""
+    text = (ROOT / "scripts/data/doc-registry.md").read_text(encoding="utf-8")
+    for name in PROGRAM_OWNED_JSON_ROWS:
+        rows = [line for line in text.splitlines() if line.startswith("| `%s` |" % name)]
+        if len(rows) != 1:
+            gate.log_fail("expected one json-inventory row for %s, found %d" % (name, len(rows)))
+            return
+        owner = rows[0].split("|")[3]
+        if "/tests/" in owner or "test_" in owner or "/test-" in owner:
+            gate.log_fail("the %s row names a test as its owner: %s" % (name, rows[0]))
+            return
+    gate.log_pass(
+        "all %d reclassified json-inventory rows name a program" % len(PROGRAM_OWNED_JSON_ROWS)
+    )
