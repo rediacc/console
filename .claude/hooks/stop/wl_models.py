@@ -44,7 +44,12 @@ def _load():
         raise ImportError("wl_models: cannot load the well-known reader from %s" % path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[_NAME] = module
-    spec.loader.exec_module(module)
+    try:
+        spec.loader.exec_module(module)
+    except BaseException:
+        # A failed import must not leave a half-initialised module for the next caller to take from the cache.
+        sys.modules.pop(_NAME, None)
+        raise
     return module
 
 

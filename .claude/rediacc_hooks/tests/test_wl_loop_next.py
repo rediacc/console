@@ -661,3 +661,13 @@ def test_lf1_live_hook_control_pr_mode_says_open_it(wl):  # noqa: F811
     got = stop(wl)
     assert "loop-next" in keys_of(wl, got), reason(got)[:1500]
     assert "Open it" in reason(got), reason(got)[:1500]
+
+
+def test_lf9_a_filling_local_batch_with_nothing_ahead_works_the_queue_head(lrepo):
+    """6224a610.2: N_TURBO_LOCAL names the commits on the branch, so with none ahead of origin/main it was a lie; the arm falls through to the queue-head order."""
+    _git(lrepo, "update-ref", "refs/remotes/origin/main", _git(lrepo, "rev-parse", "HEAD"))
+    text, blocking = wl_checks.loop_next_text(lstate(lrepo), lrepo, {}, False, me="d778be9d")
+    assert "TURBO LOCAL-FIRST" not in text, text
+    assert blocking is True, text
+    assert "0 commit" not in text, text
+    assert text.strip(), text

@@ -2415,14 +2415,14 @@ CHECK_COMMAND = "python3 .claude/hooks/stop/wl_review.py --check"
 def check_state(root, branch, label="console", cfg=None):
     """(reasons, lines) for the merge-and-ready precondition: every commit since the base has a review record in `agent/reviews/<branch>/` with no open finding at or above `block_at`, and every record is committed. Empty `reasons` means the branch is clean. Local only: no network call.
 
-    The coverage walk reads `merge-base(origin/main, HEAD)..HEAD`, so a console branch that is not the one checked out at `root` cannot be judged here, and that case refuses rather than judging the wrong commits. `label` names the repository whose commits are walked (the console, or a submodule whose review records live in the console's directory for the same branch).
+    The coverage walk reads `merge-base(origin/main, tip)..tip`. A console branch that is not checked out at `root` is judged at its pushed tip `origin/<branch>` (a PR merges what was pushed); only a branch with no pushed ref refuses (`not-checked-out`), rather than judging the wrong commits. `main` is never judged at its pushed tip, so an unchecked-out main keeps the refusal. `label` names the repository whose commits are walked (the console, or a submodule whose review records live in the console's directory for the same branch).
     """
     if not branch:
         return ["no-branch"], [
             "no branch to judge: pass --branch, or check out the PR's head branch"
         ]
     tip = "HEAD"
-    if label in ("console", None) and current_branch(root) != branch:
+    if label in ("console", None) and branch != "main" and current_branch(root) != branch:
         # THE PUSHED TIP STANDS IN. A PR merges what was pushed, so a branch that is not checked out (parked work moved onto the next branch, 2026-10-08) is judged at origin/<branch>; only a branch with no pushed ref still refuses.
         pushed = "origin/%s" % branch
         if git_out(root, "rev-parse", "-q", "--verify", "%s^{commit}" % pushed):

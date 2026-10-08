@@ -432,6 +432,48 @@ def main():
 
     good: dict = {"__name__": "good_guard", "__file__": str(GUARD)}
     exec(compile(SOURCE, str(GUARD), "exec"), good)  # noqa: S102
+    # 2eaeda7b.1: a git error while reading the corpus must raise (the outer handler warns UNEXAMINED and allows), never read as an empty corpus.
+    root = build(world())
+    env_ = dict(GIT_ENV, CLAUDE_PROJECT_DIR=str(root))
+    saved_env = dict(os.environ)
+    os.environ.clear()
+    os.environ.update(env_)
+    real_run = subprocess.run
+    try:
+        control = good["_head_corpus"](str(root), set())
+        if not control:
+            print("*** FAIL *** CONTROL: _head_corpus read no plan from a healthy checkout")
+            fails += 1
+        for label, failure in (
+            ("rc 1", lambda a_, _k: subprocess.CompletedProcess(a_, 1, b"", b"fatal")),
+            ("OSError", None),
+            ("timeout", "timeout"),
+        ):
+
+            def flaky(argv, *a_, _f=failure, **k_):
+                if list(argv[:2]) != ["git", "cat-file"]:
+                    return real_run(argv, *a_, **k_)
+                if _f is None:
+                    raise OSError("no git")
+                if _f == "timeout":
+                    raise subprocess.TimeoutExpired(argv, 30)
+                return _f(argv, k_)
+
+            setattr(subprocess, "run", flaky)  # noqa: B010 -- a module attribute swap mypy cannot type
+            try:
+                got_ = good["_head_corpus"](str(root), set())
+            except RuntimeError:
+                print("%-72s ok" % ("_head_corpus raises RuntimeError on a git error (%s)" % label))
+            else:
+                print("*** FAIL *** _head_corpus returned %r on a git error (%s)" % (got_, label))
+                fails += 1
+            finally:
+                setattr(subprocess, "run", real_run)  # noqa: B010 -- a module attribute swap mypy cannot type
+    finally:
+        setattr(subprocess, "run", real_run)  # noqa: B010 -- a module attribute swap mypy cannot type
+        os.environ.clear()
+        os.environ.update(saved_env)
+
     old, new = good["DEFECT"]
     if old not in _outside_defect(SOURCE):
         print(
