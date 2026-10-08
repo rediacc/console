@@ -230,3 +230,24 @@ def test_the_real_store_is_untouched(gate):
         set(after) - set(before)
     )
     gate.log_pass("a hook run leaves the real agent/worklist store byte-count identical")
+
+
+STALE_INFLIGHT = "<!-- queue:inflight:start -->\nSTALE\n<!-- queue:inflight:end -->\n"
+
+
+def test_the_hook_renders_the_fixture_queue_not_the_real_one(gate, tmp_path):
+    """The second leak (finding #02335d81): the hook re-rendered the in-flight block of the checkout's own agent/plans/QUEUE.md on every run.
+
+    A byte comparison of the real file cannot catch it, because the render is idempotent: once any run has rendered the block, the next leaves the same bytes. So this asserts the positive side instead: a stale block planted in the FIXTURE root's QUEUE.md is re-rendered, which only happens when the hook resolved the fixture root.
+    """
+    hook = _require_hook(gate)
+    fixture_queue = tmp_path / "root" / "agent" / "plans" / "QUEUE.md"
+    fixture_queue.parent.mkdir(parents=True)
+    fixture_queue.write_text(STALE_INFLIGHT, encoding="utf-8")
+    drive(hook, "late", BUDGET)
+    assert fixture_queue.read_text(encoding="utf-8") != STALE_INFLIGHT, (
+        "the fixture root's QUEUE.md was not re-rendered, so the hook resolved another root (the real checkout's)"
+    )
+    gate.log_pass(
+        "the hook re-renders the fixture root's QUEUE.md, so the real one is out of its reach"
+    )
