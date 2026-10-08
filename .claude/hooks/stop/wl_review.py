@@ -964,14 +964,14 @@ def acquire_slot(cfg, sleep=time.sleep, clock=time.monotonic):
 # --------------------------------------------------------------------------- coverage (section 3.1)
 
 
-def base_range(repo, branch):
-    """The branch's own commits: `origin/main..HEAD` on main (a hotfix), else `merge-base(origin/main, HEAD)..HEAD`. "" when origin/main is unknown."""
+def base_range(repo, branch, tip="HEAD"):
+    """The branch's own commits: `origin/main..<tip>` on main (a hotfix), else `merge-base(origin/main, <tip>)..<tip>`. "" when origin/main is unknown. `tip` is HEAD unless the branch is judged at its pushed ref (check_state)."""
     if not git_out(repo, "rev-parse", "-q", "--verify", "origin/main^{commit}"):
         return ""
     if branch == "main":
-        return "origin/main..HEAD"
-    base = git_out(repo, "merge-base", "origin/main", "HEAD")
-    return "%s..HEAD" % base if base else ""
+        return "origin/main..%s" % tip
+    base = git_out(repo, "merge-base", "origin/main", tip)
+    return "%s..%s" % (base, tip) if base else ""
 
 
 def branch_commits(repo, rng, limit):
@@ -1054,13 +1054,13 @@ def patch_id(repo, sha):
     return out.split()[0] if rc == 0 and out.split() else ""
 
 
-def uncovered(root, repo, branch, cfg=None):
+def uncovered(root, repo, branch, cfg=None, tip="HEAD"):
     """Commits of the branch, newest first, that have no review record (a `.md` file or a ledger line, by sha or patch-id) and no live reviewer.
 
     Dropped before the question is asked: merge commits, commits that touch only `agent/reviews/` (no review of reviews), empty commits and commits authored before `review_epoch`.
     """
     cfg = cfg or load_config(root)
-    commits = branch_commits(repo, base_range(repo, branch), int(cfg["max_uncovered_scan"]))
+    commits = branch_commits(repo, base_range(repo, branch, tip), int(cfg["max_uncovered_scan"]))
     by_sha, by_patch = review_index(root, branch)
     out = []
     for c in commits:
@@ -1074,10 +1074,10 @@ def uncovered(root, repo, branch, cfg=None):
     return out
 
 
-def in_scope_shas(root, repo, branch, cfg=None):
+def in_scope_shas(root, repo, branch, cfg=None, tip="HEAD"):
     """Every commit of the branch the review applies to (the same filter as `uncovered`, without the coverage test)."""
     cfg = cfg or load_config(root)
-    commits = branch_commits(repo, base_range(repo, branch), int(cfg["max_uncovered_scan"]))
+    commits = branch_commits(repo, base_range(repo, branch, tip), int(cfg["max_uncovered_scan"]))
     return [
         c["sha"]
         for c in commits
@@ -2229,7 +2229,7 @@ def _untracked_or_modified(root, d):
     return names
 
 
-def branch_state(root, branch, cfg=None, items=None, repos=None, extra_repos=()):
+def branch_state(root, branch, cfg=None, items=None, repos=None, extra_repos=(), tip="HEAD"):
     """Everything a reader needs about the branch's reviews, computed once.
 
     `items`, when given, is {item_id: state} from the worklist fold: a `deferred #<item>` whose item is gone reopens its finding. Without it a deferral counts as resolved (the mark verb checked the item when it was written).
@@ -2285,10 +2285,11 @@ def branch_state(root, branch, cfg=None, items=None, repos=None, extra_repos=())
             continue
         if current_branch(repo) != branch and label != "console":
             continue
-        for sha in in_scope_shas(root, repo, branch, cfg):
+        walk_tip = tip if label == "console" else "HEAD"
+        for sha in in_scope_shas(root, repo, branch, cfg, walk_tip):
             if lock_live(sha):
                 st["in_flight"].append((label, sha))
-        for sha in uncovered(root, repo, branch, cfg):
+        for sha in uncovered(root, repo, branch, cfg, walk_tip):
             st["uncovered"].append((label, sha))
     return st
 
@@ -2420,7 +2421,13 @@ def check_state(root, branch, label="console", cfg=None):
         return ["no-branch"], [
             "no branch to judge: pass --branch, or check out the PR's head branch"
         ]
+    tip = "HEAD"
     if label in ("console", None) and current_branch(root) != branch:
+        # THE PUSHED TIP STANDS IN. A PR merges what was pushed, so a branch that is not checked out (parked work moved onto the next branch, 2026-10-08) is judged at origin/<branch>; only a branch with no pushed ref still refuses.
+        pushed = "origin/%s" % branch
+        if git_out(root, "rev-parse", "-q", "--verify", "%s^{commit}" % pushed):
+            tip = pushed
+    if label in ("console", None) and tip == "HEAD" and current_branch(root) != branch:
         return (
             ["not-checked-out"],
             [
@@ -2433,9 +2440,9 @@ def check_state(root, branch, label="console", cfg=None):
     # passes it: with `{"console"}` it printed "clean" while a submodule commit's review was still in flight (2026-10-02, renet
     # 3ca4821f), which block_unverified_push then refused.
     if label is None:
-        st = branch_state(root, branch, cfg, extra_repos=branch_repos(root, branch))
+        st = branch_state(root, branch, cfg, extra_repos=branch_repos(root, branch), tip=tip)
     else:
-        st = branch_state(root, branch, cfg, repos={label})
+        st = branch_state(root, branch, cfg, repos={label}, tip=tip)
     return push_refusals(st), describe(st, limit=8)
 
 
