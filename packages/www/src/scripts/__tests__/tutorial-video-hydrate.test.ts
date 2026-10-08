@@ -49,9 +49,10 @@ describe('armInline', () => {
     armInline(el as unknown as HTMLElement);
     expect(el.live).toBe(1);
     el.press();
-    // The once-listener is gone after the press; the retry listener is the only live one.
+    // The once-listener is gone after the press, and nothing is live until the rejection lands.
     expect(el.live).toBe(0);
     await flush();
+    // The failed load re-armed the press: the retry listener is the only live one.
     expect(el.live).toBe(1);
   });
 
