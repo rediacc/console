@@ -37,10 +37,12 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.core import bash_dialect, ghx
 from rediacc_ci.housekeeping import cleanup_versions as cv
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import CF_API_BASE, GH_REPO, RELEASES_BUCKET, RENET_REPO
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "housekeeping" / "cleanup-versions.sh"
+TWIN_REL = ".ci/scripts/housekeeping/cleanup-versions.sh"
+TWIN = ROOT / TWIN_REL
 PORT = pathlib.Path(cv.__file__).resolve()
 BASH = shutil.which("bash") or "/bin/bash"
 JQ = shutil.which("jq")
@@ -226,7 +228,57 @@ def _write_fixture(base: pathlib.Path, fixture: dict) -> pathlib.Path:
     return path
 
 
+# A timestamp in a fixture or an argv moves with the wall clock (`ago(...)`), and the golden key hashes its parts, so the instants are masked out of the KEY only. Every fixture is built far from a decision boundary (see the module docstring), so the recorded answer does not depend on the instant.
+_INSTANT_RE = re.compile(r"\d{4}-\d\d-\d\d[T ]\d\d:\d\d:\d\d(?:Z|\.\d+Z)?")
+_EPOCH_RE = re.compile(r"\b1[5-9]\d{8}\b")
+
+
+def _mask_instants(text: str) -> str:
+    """A fixture instant echoed into a stream or a call line (`Would delete: 5 (pr-9, 2026-10-07T02:02:56Z)`) moves with the wall clock, so it is folded to `<TS>` on BOTH sides of every comparison and in the recording itself."""
+    return _INSTANT_RE.sub("<TS>", text)
+
+
+def _mask_result(
+    result: tuple[int, bytes, bytes, list[str]],
+) -> tuple[int, bytes, bytes, list[str]]:
+    code, out, err, calls = result
+    return (
+        code,
+        _mask_instants(out.decode("utf-8")).encode("utf-8"),
+        _mask_instants(err.decode("utf-8")).encode("utf-8"),
+        [_mask_instants(c) for c in calls],
+    )
+
+
+def _stable(value: object) -> str:
+    text = json.dumps(value, sort_keys=True, default=str)
+    return _EPOCH_RE.sub("<EPOCH>", _INSTANT_RE.sub("<TS>", text))
+
+
 def _run(
+    side: str,
+    phase: str,
+    argv: tuple[str, ...],
+    fixture: dict,
+    extra_env: dict,
+    base: pathlib.Path,
+) -> tuple[int, bytes, bytes, list[str]]:
+    """The twin's answer comes from its golden (`twin_tuple`); the port runs live."""
+    if side != "bash":
+        return _mask_result(_run_live(side, phase, argv, fixture, extra_env, base))
+    parts = [phase, _stable(list(argv)), _stable(fixture), _stable(extra_env)]
+
+    def live() -> tuple[int, str, str, list[str]]:
+        code, out, err, calls = _mask_result(
+            _run_live(side, phase, argv, fixture, dict(extra_env), base)
+        )
+        return code, out.decode("utf-8"), err.decode("utf-8"), calls
+
+    code, out, err, calls = diff.twin_tuple(TWIN_REL, parts, live, work=(base.parent,))
+    return _mask_result((code, out.encode("utf-8"), err.encode("utf-8"), calls))
+
+
+def _run_live(
     side: str,
     phase: str,
     argv: tuple[str, ...],
@@ -421,15 +473,9 @@ def calls_of(calls: list[str], tool: str) -> list[list[str]]:
 # --------------------------------------------------------------------------- CONTROLS. A fake that is not reached proves nothing, and a differential that cannot fail proves less. ---------------------------------------------------------------------------
 
 
-def test_both_subjects_exist_where_this_file_says_they_do() -> None:
-    assert TWIN.is_file(), TWIN
+def test_the_port_exists_where_this_file_says_it_does() -> None:
     assert PORT.is_file(), PORT
     assert os.access(PORT, os.X_OK), "%s is not executable" % PORT
-
-
-def test_the_twin_parses_under_bash() -> None:
-    proc = subprocess.run([BASH, "-n", str(TWIN)], capture_output=True, check=False)
-    assert proc.returncode == 0, proc.stderr
 
 
 def test_neither_side_can_reach_a_real_gh_curl_aws_or_sleep() -> None:

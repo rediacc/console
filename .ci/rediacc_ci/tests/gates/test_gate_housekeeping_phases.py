@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-housekeeping-phases.sh`, retired in W7 P5.
 
-Both-ways test for `.ci/scripts/housekeeping/cleanup-versions.sh`, specifically for the parts of it that had never executed anywhere.
+Both-ways test for `rediacc_ci.housekeeping.cleanup_versions` (the port that replaced `.ci/scripts/housekeeping/cleanup-versions.sh`), specifically for the parts of it that had never executed anywhere.
 
 WHY THIS GATE EXISTS. A single `return 1` in Phase 8d, placed inside that phase's own `set +e` region, produced three failures at once and every one of them was silent:
 
@@ -17,22 +17,21 @@ Nothing caught any of that because nothing ever ran the script's failure paths. 
 HOW. The script is driven as a real program with `gh` and `aws` replaced by routing fakes on PATH, so no case can reach GitHub or R2. Every fake records its argv, and every assertion that a call was NOT made is PAIRED with a control proving the recorder does capture that call when it happens. Without the pairing, "no DELETE was issued" would also pass against a fake that recorded
 nothing at all.
 
-THE ONE STATIC CASE IS THE ONE THAT NAMES THE BUG.
-`test_no_return_inside_the_errexit_relaxed_region` is lexical rather than behavioural, because a `set +e` region spanning ~340 lines cannot be exercised into every early exit. Its control plants the exact defect into a COPY under `tmp_path` and requires it to be reported; the real subject is never written to.
+THE LEXICAL CASE IS RETIRED WITH THE BASH. `test_no_return_inside_the_errexit_relaxed_region` read the `set +e` / `set -e` bracket of the retired `cleanup-versions.sh`, a construct Python has no counterpart for. What it protected survives as behaviour: `test_drift_does_not_skip_phase_8f` and `test_drift_does_not_skip_phases_9_to_12` fail if a drift finding cuts the run short, whatever the mechanism.
 """
 
 import datetime
 import os
 import pathlib
-import re
 import shutil
 import stat
+import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 from rediacc_ci.well_known import GH_REPO
 
-UNDER_TEST = paths.from_root(".ci", "scripts", "housekeeping", "cleanup-versions.sh")
+UNDER_TEST = paths.from_root(".ci", "rediacc_ci", "housekeeping", "cleanup_versions.py")
 
 FAKE_AWS = r"""#!/bin/bash
 # Routing fake for the four aws shapes cleanup_r2 uses. Anything unrouted returns
@@ -238,8 +237,13 @@ class World:
             "NO_COLOR": "1",
         }
         overlay.update(env or {})
-        bash = harness.require_tool("bash", "install bash; the subject is a bash script")
-        result = harness.run([bash, str(UNDER_TEST), *args], env=overlay, timeout=300)
+        overlay["PYTHONPATH"] = str(paths.from_root(".ci"))
+        overlay["PYTHONDONTWRITEBYTECODE"] = "1"
+        result = harness.run(
+            [sys.executable, "-m", "rediacc_ci.housekeeping.cleanup_versions", *args],
+            env=overlay,
+            timeout=300,
+        )
         self.out = result.combined
         self.rc = result.rc
 
@@ -248,31 +252,11 @@ class World:
 
 
 def make_world(gate, tmp_path) -> World:
-    if not os.access(UNDER_TEST, os.X_OK):
-        gate.log_fail("%s is not executable" % paths.relative_to_root(UNDER_TEST))
+    if not UNDER_TEST.is_file():
+        gate.log_fail("%s is missing" % paths.relative_to_root(UNDER_TEST))
     world = World(tmp_path)
     world.setup()
     return world
-
-
-def returns_in_relaxed_region(path: pathlib.Path) -> list[str]:
-    """One entry per `return`/`exit` lexically between `set +e` and the `set -e` that closes it; empty means clean.
-
-    A PURE FUNCTION over the file's text, exported so the control below can run the IDENTICAL code path against a planted copy. The twin shells out to an inline `python3` heredoc twice; this is the same predicate, called twice.
-    """
-    lines = path.read_text(encoding="utf-8").split("\n")
-    start = next((i for i, ln in enumerate(lines) if ln.strip() == "set +e"), None)
-    end = None
-    if start is not None:
-        end = next((i for i, ln in enumerate(lines) if i > start and ln.strip() == "set -e"), None)
-    if start is None or end is None:
-        return ["could not locate the set +e / set -e bracket in cleanup_r2 at all"]
-    found = []
-    for i in range(start + 1, end):
-        body = lines[i].split("#", 1)[0]
-        if re.search(r"(^|[;&|{(\s])(return|exit)(\s|$)", body):
-            found.append("line %d leaves the region early: %s" % (i + 1, lines[i].strip()))
-    return found
 
 
 # --- 8d: drift must fail the run, and must not cost the phases after it -----
@@ -355,29 +339,6 @@ def test_drift_does_not_skip_phases_9_to_12(gate, tmp_path):
         world.out, "Housekeeping complete", "and the run reached its own end marker"
     )
     gate.log_pass("a drift finding is latched, not thrown: Phases 9-12 all still run")
-
-
-def test_no_return_inside_the_errexit_relaxed_region(gate, tmp_path):
-    """STATIC. The `set +e` / `set -e` bracket spans ~340 lines and guards SIGPIPE on `aws | awk` pipes. ANY early exit out of that span leaves errexit off for the rest of the script, which is the bug this file is named for."""
-    found = returns_in_relaxed_region(UNDER_TEST)
-    if found:
-        gate.log_fail("cleanup_r2 leaves its set +e region early: %s" % "; ".join(found))
-
-    # CONTROL: plant the exact defect on a COPY under tmp_path and require a report. The real subject is never written to.
-    lines = UNDER_TEST.read_text(encoding="utf-8").split("\n")
-    start = next(i for i, ln in enumerate(lines) if ln.strip() == "set +e")
-    end = next(i for i, ln in enumerate(lines) if i > start and ln.strip() == "set -e")
-    lines.insert((start + end) // 2, "    return 1  # planted control")
-    planted = tmp_path / "planted.sh"
-    planted.write_text("\n".join(lines), encoding="utf-8")
-    if not returns_in_relaxed_region(planted):
-        gate.log_fail(
-            "CONTROL FAILED: the planted 'return 1' inside the set +e region was not "
-            "reported, so this check cannot detect the original bug"
-        )
-    gate.log_pass(
-        "no early exit inside cleanup_r2's set +e region (control: a planted return IS reported)"
-    )
 
 
 # --- Phase 9: the delete arm ------------------------------------------------

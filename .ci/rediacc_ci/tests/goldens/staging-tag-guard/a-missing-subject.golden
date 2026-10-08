@@ -2,4 +2,4 @@
 exit: 1
 --- stdout ---
 --- stderr ---
-✗ <root>/.ci/scripts/docker/cleanup-staging.sh not found -- nothing was verified
+✗ <root>/.ci/rediacc_ci/docker/cleanup_staging.py not found -- nothing was verified

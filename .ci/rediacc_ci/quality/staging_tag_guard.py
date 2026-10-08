@@ -102,7 +102,8 @@ from rediacc_ci.controls import Controls
 # The seams, spelled exactly as the twin spells them.
 ROOT_ENV = "STAGING_GUARD_ROOT"
 TARGET_ENV = "STAGING_GUARD_TARGET"
-DEFAULT_TARGET_REL = ".ci/scripts/docker/cleanup-staging.sh"
+# The deleter is the Python port. `.ci/scripts/docker/cleanup_staging.py` is a headerless forwarder; the rail lives in the package module it forwards to, so that is the file whose rail is counted.
+DEFAULT_TARGET_REL = ".ci/rediacc_ci/docker/cleanup_staging.py"
 
 # The two trees scanned, and the two basename globs, from the twin's grep line.
 SCAN_DIRS = (".ci", ".github")
@@ -113,11 +114,13 @@ SCAN_SUFFIXES = (".sh", ".yml")
 # scanning ALL of `.ci` for `.py` -- was tried first and turned 1 real call site into 18: `.ci/rediacc_ci` is this package's OWN implementation, tests and regex constants, and it is FULL of self-referential mentions of this exact needle (this module's own NEEDLE_RE/CALL_RE source, the synthetic caller fixtures in test_quality_staging_tag_guard.py, the `cleanup-staging.sh` mention
 # in `cleanup_staging.py`'s own docstring, the cleanup_channel_docker_tags.py port's prose). That is the SAME "extension-shaped matcher" class of bug this gate's own header warns about, just for `.py` instead of `.sh`. `.ci/scripts` is the directory that actually holds executable entry points and release forwarders (mirroring what `.sh` already is for the twin), so `.py` scanning
 # is scoped there and nowhere else in `.ci`.
-PY_SCAN_DIR = ".ci/scripts"
+#
+# A SECOND DIRECTORY IS SCANNED SINCE THE BASH CALLER WAS RETIRED. `.ci/scripts/release/cleanup-channel-docker-tags.sh` was the one executing caller; its Python port `.ci/rediacc_ci/release/cleanup_channel_docker_tags.py` is the caller now, and `.ci/rediacc_ci/release` holds only release entry points, not this package's regex constants or fixtures, so scanning it does not reopen the 18-hit problem above.
+PY_SCAN_DIRS = (".ci/scripts", ".ci/rediacc_ci/release")
 PY_SUFFIX = ".py"
 
-# The safety rail itself, as it appears in the subject: an escaped caret in ERE, so a LITERAL "^staging-" anywhere in the line.
-RAIL_RE = re.compile(r"\^staging-")
+# The safety rail itself, as it appears in the subject: the anchored prefix match `re.match(r"staging-", tag)` (the bash twin spelled it `=~ ^staging-`). A mention in a docstring does not match, so a rail edited out of the code cannot hide behind prose.
+RAIL_RE = re.compile(r"re\.match\(r[\"']staging-[\"']")
 
 # `grep -vE ':[0-9]+:[[:space:]]*#'` -- a grep hit whose matched line is a comment. Unanchored, exactly as the twin's is.
 COMMENT_HIT_RE = re.compile(r":[0-9]+:[ \t\n\r\f\v]*#")
@@ -125,8 +128,13 @@ COMMENT_HIT_RE = re.compile(r":[0-9]+:[ \t\n\r\f\v]*#")
 # `grep -E 'cleanup[-_]staging\.(sh|py)["\']?[[:space:]]+(--tag|"\$)'` -- an EXECUTING call, not a mention in prose. Widened to match either the bash twin's name or the Python port's, per agent/plans/PLAN-w7p4w-docker-cutover.md §3.
 CALL_RE = re.compile(r"cleanup[-_]staging\.(sh|py)[\"']?[ \t\n\r\f\v]+(--tag|\"\$)")
 
+# A Python caller names the entry point as a path literal handed to `os.path.join(...)` or `pathlib`, and appends `--tag` where it spawns the child, so the call and the file name are never on one line. The quoted file name closing a call is the executing-reference shape; prose and comments never close a call that way.
+PY_CALL_RE = re.compile(r"[\"']cleanup_staging\.py[\"']\s*\)")
+
 # `grep -qE '\^staging-|--tag[[:space:]]+["\']?staging-'` -- a caller proves it cannot pass a tag the guard rejects, either by testing the prefix itself or by passing a literal.
-GUARDED_RE = re.compile(r"\^staging-|--tag[ \t\n\r\f\v]+[\"']?staging-")
+GUARDED_RE = re.compile(
+    r"\^staging-|--tag[ \t\n\r\f\v]+[\"']?staging-|re\.match\(r[\"']staging-[\"']"
+)
 
 # The needle the recursive scan looks for, `grep -rn 'cleanup[-_]staging\.(sh|py)'`.
 NEEDLE_RE = re.compile(r"cleanup[-_]staging\.(sh|py)")
@@ -198,7 +206,7 @@ def grep_hits(root: pathlib.Path) -> tuple[list[str], int]:
     """
     hits: list[str] = []
     files_read = 0
-    py_scan_base = root / PY_SCAN_DIR
+    py_scan_bases = tuple(root / rel for rel in PY_SCAN_DIRS)
     for scan_dir in SCAN_DIRS:
         base = root / scan_dir
         if not base.is_dir():
@@ -212,10 +220,8 @@ def grep_hits(root: pathlib.Path) -> tuple[list[str], int]:
             if path.suffix in SCAN_SUFFIXES:
                 pass
             elif path.suffix == PY_SUFFIX:
-                # Scoped to PY_SCAN_DIR regardless of which SCAN_DIRS entry this walk is under -- see PY_SCAN_DIR's own comment for why.
-                try:
-                    path.relative_to(py_scan_base)
-                except ValueError:
+                # Scoped to PY_SCAN_DIRS regardless of which SCAN_DIRS entry this walk is under -- see the PY_SCAN_DIRS comment for why.
+                if not any(base in path.parents for base in py_scan_bases):
                     continue
             else:
                 continue
@@ -240,7 +246,7 @@ def executing_calls(hits: list[str], target: pathlib.Path) -> tuple[list[str], i
     for hit in hits:
         if COMMENT_HIT_RE.search(hit):
             continue
-        if not CALL_RE.search(hit):
+        if not (CALL_RE.search(hit) or PY_CALL_RE.search(hit)):
             continue
         path = hit.split(":", 1)[0]  # `${hit%%:*}`
         if path == str(target):
@@ -328,14 +334,14 @@ def main(argv: list[str] | None = None) -> int:
 
 
 # The subject, reduced to the one line this gate rules on. Used to build fixture trees in the selftest; the real file is 100+ lines of GHCR plumbing that has nothing to do with the assertion.
-RAIL_LINE = '[[ "$TAG" =~ ^staging- ]] || exit 1\n'
+RAIL_LINE = '    return re.match(r"staging-", tag) is not None\n'
 
 
 def selftest() -> int:
     """Plant a defect in BOTH directions and require the gate to notice."""
-    # floor=16 rather than 0: the floor is the only thing that catches a selftest
-    # whose cases stopped executing, and a default of zero is a floor that cannot fail. See rediacc_ci.controls for the five drifted copies that taught it. It tracks the case count below (16), so deleting a case reds the gate.
-    ctl = Controls("staging-tag-guard", floor=16, verbose=True)
+    # floor=19 rather than 0: the floor is the only thing that catches a selftest
+    # whose cases stopped executing, and a default of zero is a floor that cannot fail. See rediacc_ci.controls for the five drifted copies that taught it. It tracks the case count below (19), so deleting a case reds the gate.
+    ctl = Controls("staging-tag-guard", floor=19, verbose=True)
     saved_env = dict(os.environ)
 
     guarded_caller = (
@@ -348,6 +354,18 @@ def selftest() -> int:
         '#!/bin/bash\n"$SCRIPT_DIR/../docker/cleanup-staging.sh" --tag staging-abc123\n'
     )
     unguarded_caller = '#!/bin/bash\n"$SCRIPT_DIR/../docker/cleanup-staging.sh" --tag "$CHANNEL"\n'
+    py_guarded = (
+        "import re\n"
+        'TARGET = os.path.join(ROOT, ".ci", "scripts", "docker", "cleanup_staging.py")\n'
+        "def go(channel):\n"
+        '    if re.match(r"staging-", channel):\n'
+        '        subprocess.run([TARGET, "--tag", channel])\n'
+    )
+    py_unguarded = (
+        'TARGET = os.path.join(ROOT, ".ci", "scripts", "docker", "cleanup_staging.py")\n'
+        "def go(channel):\n"
+        '    subprocess.run([TARGET, "--tag", channel])\n'
+    )
 
     def run(files: dict[str, str], rail: str = RAIL_LINE, target: str | None = None) -> int:
         with tempfile.TemporaryDirectory() as tmp:
@@ -356,7 +374,9 @@ def selftest() -> int:
                 subject = root / DEFAULT_TARGET_REL
                 subject.parent.mkdir(parents=True, exist_ok=True)
                 subject.write_text(
-                    "#!/bin/bash\n# usage: cleanup-staging.sh --tag X\n" + rail, encoding="utf-8"
+                    '"""usage: cleanup_staging.py --tag X"""\nimport re\n\n\ndef is_staging_tag(tag):\n'
+                    + rail,
+                    encoding="utf-8",
                 )
             for rel, content in files.items():
                 path = root / rel
@@ -406,6 +426,23 @@ def selftest() -> int:
         1,
     )
 
+    # The Python caller shape, which is what replaced the bash forwarder.
+    ctl.check(
+        "CONTROL: a Python caller that pre-checks the prefix passes",
+        run({".ci/rediacc_ci/release/cleanup_channel_docker_tags.py": py_guarded}),
+        0,
+    )
+    ctl.check(
+        "PLANT: an unguarded Python caller is the 2026-09-06 defect too",
+        run({".ci/rediacc_ci/release/cleanup_channel_docker_tags.py": py_unguarded}),
+        1,
+    )
+    ctl.check(
+        "VACUITY: a Python caller outside the scanned directories is not seen",
+        run({".ci/rediacc_ci/quality/noise.py": py_unguarded}),
+        1,
+    )
+
     # The rail itself, both directions. Widening the guard is the tempting "fix" this gate exists to refuse.
     ctl.check(
         "PLANT: the rail removed from cleanup-staging.sh fails",
@@ -448,7 +485,7 @@ def selftest() -> int:
     )
 
     # The pure helpers, driven directly, so the two filter greps are pinned.
-    target = pathlib.Path("/repo/.ci/scripts/docker/cleanup-staging.sh")
+    target = pathlib.Path("/repo/.ci/rediacc_ci/docker/cleanup_staging.py")
     hits = [
         '/repo/.ci/scripts/release/a.sh:66:  "$D/cleanup-staging.sh" --tag "$CHANNEL"',
         '/repo/.ci/scripts/release/a.sh:15:# cleanup-staging.sh --tag "$CHANNEL" is refused',
