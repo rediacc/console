@@ -252,7 +252,7 @@ export function isSentinelRepair(was: string, now: string, en: string): boolean 
   const segments = was.split(SENTINEL);
   const escape = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const shape = new RegExp(
-    `^${segments.map(escape).join(`([^\\n]{0,${SENTINEL_REPLACEMENT_MAX}}?)`)}$`,
+    `^${segments.map(escape).join(`([^\\n\\r\\u2028\\u2029]{0,${SENTINEL_REPLACEMENT_MAX}}?)`)}$`,
     'u'
   );
   const m = shape.exec(now);
@@ -314,6 +314,13 @@ const RESTORE_CONTROLS: {
   {
     name: 'CONTROL: English absent at the key is NOT exempt',
     now: 'Flexera 2024 State of the Cloud Report',
+    want: false,
+  },
+  {
+    name: 'CONTROL: a line break smuggled into the sentinel gap is NOT exempt',
+    was: '\u27e60\u27e7 vs rakipler',
+    now: 'Rediacc\r vs rakipler',
+    en: 'How we stack up against other vendors',
     want: false,
   },
 ];

@@ -706,7 +706,8 @@ def main(argv: list[str]) -> int:
     if release_phase:
         log.info(
             "  Blind spot: the release-order phase reads the job GRAPH. It cannot see a tag "
-            "step that exits 0 without pushing, nor init failing before its tag step; "
+            "step that exits 0 without pushing, nor init failing before its tag step, "
+            "nor a push made inside a script a cd-v2 step runs; "
             "Check Release State covers the live state."
         )
     return 0

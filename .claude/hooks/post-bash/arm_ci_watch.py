@@ -45,7 +45,7 @@ _SYSPATH.on_sys_path(_SYSPATH.CLAUDE_DIR)
 _SYSPATH.on_sys_path(_SYSPATH.STOP_DIR)
 
 import wl_core as C  # noqa: E402
-from rediacc_hooks import hookio  # noqa: E402
+from rediacc_hooks import hookio, shellscan  # noqa: E402
 
 TRACE = pathlib.Path(".ci") / "scripts" / "ci" / "ci-trace.py"
 WORKLIST = HOOKS / "stop" / "worklist.py"
@@ -145,34 +145,20 @@ def spawn_watch(root, sid, branch, item, log_path):
     return proc.pid
 
 
-def open_pr_exists(root, branch):
-    """False only when `gh pr list` ANSWERED that `branch` has no open PR. A plain push of a PR-less branch starts no CI (ci.yml runs on push to main and on pull_request), so a watcher would only wait out its timeout. A lookup that fails (no gh, network, auth) is unknown, not "no PR", and keeps the watch (fail open)."""
-    try:
-        proc = subprocess.run(
-            [
-                "gh",
-                "pr",
-                "list",
-                "--head",
-                branch,
-                "--state",
-                "open",
-                "--json",
-                "number",
-                "--jq",
-                "length",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=30,
-            cwd=str(root),
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
+def open_pr_exists(root, branch, read=None):
+    """False only when `gh pr list` ANSWERED that `branch` has no open PR. A plain push of a PR-less branch starts no CI (ci.yml runs on push to main and on pull_request), so a watcher would only wait out its timeout. A lookup that fails (no gh, network, auth) is unknown, not "no PR", and keeps the watch (fail open). The read goes through wl_gh.read_raw, the hooks' one bounded read with its transient retry."""
+    if read is None:
+        import wl_gh  # noqa: PLC0415 -- stop-dir sibling, on sys.path through the hop above
+
+        read = wl_gh.read_raw
+    out, _why = read(
+        ["pr", "list", "--head", branch, "--state", "open", "--json", "number", "--jq", "length"],
+        cwd=root,
+        timeout=30,
+    )
+    if out is None:
         return True
-    if proc.returncode != 0:
-        return True
-    return proc.stdout.strip() != "0"
+    return out.strip() != "0"
 
 
 def arm(root, sid, cli=worklist_cli, spawn=spawn_watch, alive=watcher_alive, has_pr=open_pr_exists):
@@ -238,13 +224,12 @@ def _kill(pid):
         os.killpg(int(pid), 15)
 
 
-GH_PR_CREATE_RE = re.compile(r"(?:^|[;&|(\n])\s*gh\s+pr\s+create\b")
-
-
 def starts_ci(cmd):
     """True for a command after which CI may have just started: a `git push`, or the `gh pr create` that opens the PR (a branch pushed before its PR existed armed nothing at the push, and `pull_request` CI starts at the create)."""
     text = hookio.normalize_git_push(cmd)
-    return hookio.grep_q_line("git push", text) or bool(GH_PR_CREATE_RE.search(text))
+    return hookio.grep_q_line("git push", text) or shellscan.gh_pr_at_command_pos(
+        shellscan.scan_target(text), "create"
+    )
 
 
 def main():

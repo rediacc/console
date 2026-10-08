@@ -163,6 +163,11 @@ LIVE_TURBO_SHA = _tip(LIVE_TURBO, "origin/0914-1")
 PARKED = _make_live(parked=True)
 PARKED_SHA = _tip(PARKED, "origin/0914-1")
 PARKED_LOCAL_SHA = _tip(PARKED, PARKED_BRANCH)
+# One sha as the pushed tip of TWO MMDD-N branches: a sha names no branch, so the guard asks each branch's PR in turn.
+TWIN = _make_live()
+_git(TWIN, "push", "-q", "origin", "0914-1:refs/heads/0914-2")
+_git(TWIN, "fetch", "-q", "origin")
+TWIN_SHA = _tip(TWIN, "origin/0914-1")
 
 MIRROR_URL = "https://gitlab.rediacc.io/rediacc-org/github/console.git"
 
@@ -217,7 +222,7 @@ if mode == "down":
     sys.stderr.write("gh: could not connect\n")
     sys.exit(1)
 if a[:2] == ["pr", "view"]:
-    if mode == "nopr":
+    if mode == "nopr" or a[2] == os.environ.get("FX_NOPR_FOR"):
         sys.stderr.write('no pull requests found for branch "%s"\n' % a[2])
         sys.exit(1)
     pr = {"number": 7, "state": "OPEN", "headRefOid": head, "body": body}
@@ -418,6 +423,21 @@ CASES = [
         True,
         fx(head=PARKED_LOCAL_SHA),
         "does not exist here",
+    ),
+    # ---- M2: one sha, the pushed tip of two MMDD-N branches: the first branch has no PR, the second passes -------
+    (
+        "M2 twin tips: the first branch has no PR, the second's PR admits",
+        "git push origin %s:%s" % (TWIN_SHA, MAIN),
+        TWIN,
+        False,
+        fx(head=TWIN_SHA, nopr_for="0914-1"),
+    ),
+    (
+        "M2 twin tips control: neither branch has an open PR",
+        "git push origin %s:%s" % (TWIN_SHA, MAIN),
+        TWIN,
+        True,
+        fx(head=TWIN_SHA, gh="nopr"),
     ),
     # ---- M2: refused, one condition at a time --------------------------------------------
     ("M2 CI Complete failed", "git push origin 0914-1:%s" % MAIN, LIVE, True, fx(ci="FAILURE")),

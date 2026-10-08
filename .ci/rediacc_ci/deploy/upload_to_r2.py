@@ -26,7 +26,7 @@ THREE OTHER PROGRAMS ARE SPAWNED, EACH FOR A MEASURED REASON
   * `aws`, because it is the credentialed tool with a real remote side. Faked on
     `PATH` in the differential, never reimplemented.
   * `jq`, because THE TRACKER IS jq'S BYTES. `update_versions_tracker` uploads
-    `jq ".[:20]"`'s output verbatim to `cli/versions.json`, and jq's default
+    the output of `jq -n --argjson ... plan.kept` verbatim to `cli/versions.json`, and jq's default
     pretty-printer emits two-space indent with `[` on its own line. `json.dumps`
     is a second answer to a question the twin has already answered, and the
     difference would be uploaded rather than printed.

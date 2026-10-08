@@ -809,18 +809,18 @@ def archive_pin_declaration(rel: str, pattern: str) -> str:
     return f'ARCHIVE_RE = re.compile(r"{pattern}")'
 
 
-# One pass over TypeScript source: string, template and regex literals are matched FIRST so a `//` or `/*` inside one is never read as a comment start (a `"/*"` string used to swallow the real declaration up to the next `*/`). Group 1 = a literal (kept), the rest are comments (dropped). A regex literal is a `/` not preceded by a word char, `)` or `]`, so a division is mostly passed over; a misread only keeps text, never drops it.
+# One pass over TypeScript source: string, template and regex literals are matched FIRST so a `//` or `/*` inside one is never read as a comment start (a `"/*"` string used to swallow the real declaration up to the next `*/`). Group 1 = a literal (kept), the rest are comments (dropped). A regex literal is a `/` that follows `= ( , : ; ! & | ? { } [` or the line start (whitespace between allowed), so a division (`a / b; /* x */`) is passed over; a misread only keeps text, never drops it.
 _TS_TOKEN_RE = re.compile(
-    r"""("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`"""
-    r"""|(?<![\w)\]])/(?![/*])(?:\\.|\[(?:\\.|[^\]\\\n])*\]|[^/\\\n\[])+/[a-z]*)"""
+    r"""("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`)"""
+    r"""|((?:[=(,:;!&|?{}\[]|^)[ \t]*)(/(?![/*])(?:\\.|\[(?:\\.|[^\]\\\n])*\]|[^/\\\n\[])+/[a-z]*)"""
     r"""|/\*.*?\*/|//[^\n]*""",
-    re.DOTALL,
+    re.DOTALL | re.MULTILINE,
 )
 
 
 def strip_ts_comments(text: str) -> str:
     """`text` with every TypeScript comment removed and every string, template and regex literal left whole."""
-    return _TS_TOKEN_RE.sub(lambda m: m.group(1) or "", text)
+    return _TS_TOKEN_RE.sub(lambda m: m.group(1) or (m.group(2) + m.group(3) if m.group(3) else ""), text)
 
 
 def archive_pin_declared(rel: str, text: str, pattern: str) -> bool:
@@ -1500,6 +1500,11 @@ jobs:
                 strip_ts_comments('const a = "x//y", b = /p\\/\\/q/; // gone\nrest')
                 == 'const a = "x//y", b = /p\\/\\/q/; \nrest'
             ),
+        ),
+        (
+            "16: a division is not a regex literal, so a block comment after it is still stripped",
+            lambda: strip_ts_comments("const a = x / b; /* c */ const d = 1 / 2; /* e */ z")
+            == "const a = x / b;  const d = 1 / 2;  z",
         ),
     ]
     for label, probe15 in checks15:

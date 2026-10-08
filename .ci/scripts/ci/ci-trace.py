@@ -1945,6 +1945,9 @@ def _record_final(root, ref, payload, verdict, args, diag=None):
     return record
 
 
+_FOLD_LOG_MAX_BYTES = 1_000_000
+
+
 def _gate_model_refresh_argv(env):
     """The detached `gate_model refresh` a final verdict starts, or None where it must not run: under CI (a disposable runner), or with CI_TRACE_NO_FOLD=1 (tests).
 
@@ -1970,7 +1973,12 @@ def _fold_into_gate_ledger(root):
     )
     try:
         log_path = pathlib.Path(tempfile.gettempdir()) / "rediacc-gate-model-refresh.log"
-        with open(log_path, "a", encoding="utf-8") as log_file:
+        # The log is append-only for the run's life; past ~1 MB it restarts so it cannot grow without bound.
+        try:
+            mode = "w" if log_path.stat().st_size > _FOLD_LOG_MAX_BYTES else "a"
+        except OSError:
+            mode = "a"
+        with open(log_path, mode, encoding="utf-8") as log_file:
             subprocess.Popen(
                 argv,
                 cwd=str(root),
@@ -2029,6 +2037,53 @@ def _selftest():
         "CONTROL: no fold under pytest",
         _gate_model_refresh_argv({"PYTEST_CURRENT_TEST": "x"}) is None,
     )
+
+    # T11: _fold_into_gate_ledger itself, with Popen stubbed and the suppressing env cleared.
+    saved_env = dict(os.environ)
+    os.environ.pop("CI", None)
+    os.environ.pop("CI_TRACE_NO_FOLD", None)
+    os.environ.pop("PYTEST_CURRENT_TEST", None)
+    real_popen = subprocess.Popen
+    calls = []
+
+    class _FakePopen:
+        def __init__(self, argv, **kw):
+            calls.append((argv, kw))
+
+    def _raising_popen(*_a, **_kw):
+        raise OSError("boom")
+
+    try:
+        setattr(subprocess, "Popen", _FakePopen)  # noqa: B010 -- a module attribute swap mypy cannot type
+        _fold_into_gate_ledger("/tmp/ci-trace-root")
+        argv_ok = bool(calls) and calls[0][0][1:] == ["-m", "rediacc_ci.ci.gate_model", "refresh"]
+        kw = calls[0][1] if calls else {}
+        check(
+            "the fold spawns gate_model refresh detached",
+            argv_ok and kw.get("start_new_session") is True,
+            repr(calls),
+        )
+        check(
+            "the fold's PYTHONPATH carries <root>/.ci",
+            "/tmp/ci-trace-root/.ci" in kw.get("env", {}).get("PYTHONPATH", "").split(os.pathsep),
+        )
+        setattr(subprocess, "Popen", _raising_popen)  # noqa: B010 -- a module attribute swap mypy cannot type
+        err = io.StringIO()
+        raised = False
+        try:
+            with contextlib.redirect_stderr(err):
+                _fold_into_gate_ledger("/tmp/ci-trace-root")
+        except Exception:  # noqa: BLE001 -- the control is that nothing escapes
+            raised = True
+        check(
+            "CONTROL: an OSError from Popen prints one line and raises nothing",
+            not raised and "the gate ledger fold did not start" in err.getvalue(),
+            err.getvalue(),
+        )
+    finally:
+        setattr(subprocess, "Popen", real_popen)  # noqa: B010 -- a module attribute swap mypy cannot type
+        os.environ.clear()
+        os.environ.update(saved_env)
 
     verdict_job = {"name": "CI Verdict", "conclusion": "failure"}
     real_failure_job = {"name": "Quality / Code", "conclusion": "failure"}

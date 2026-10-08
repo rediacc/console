@@ -551,6 +551,9 @@ def test_a_push_spelled_with_git_global_options_still_counts(cmd, is_push):
         ("gh pr view 5", False),
         ("gh pr list --head b", False),
         ('git commit -m "run gh pr create later" -- a', False),
+        ('git commit -m "x; gh pr create" -- a', False),
+        ("git commit -m 'x && gh pr create --draft' -- a", False),
+        ('sh -c "gh pr create --draft"', True),
         ("ls -la", False),
     ],
 )
@@ -559,26 +562,29 @@ def test_gh_pr_create_starts_ci_like_a_push(cmd, starts):
     assert AW.starts_ci(cmd) is starts
 
 
-class _Proc:
-    def __init__(self, rc, out):
-        self.returncode = rc
-        self.stdout = out
-
-
 @pytest.mark.parametrize(
-    ("rc", "out", "want"), [(0, "0\n", False), (0, "1\n", True), (1, "", True)]
+    ("answer", "want"), [(("0\n", ""), False), (("1\n", ""), True), ((None, "gh: 502"), True)]
 )
-def test_open_pr_exists_reads_gh_count_and_fails_open_on_a_nonzero_rc(
-    monkeypatch, tmp_path, rc, out, want
-):
-    monkeypatch.setattr(AW.subprocess, "run", lambda *_a, **_k: _Proc(rc, out))
-    assert AW.open_pr_exists(tmp_path, "b") is want
+def test_open_pr_exists_reads_gh_count_and_fails_open_when_unanswered(tmp_path, answer, want):
+    """A count of 0 is the only "no PR"; an unanswered read (no gh, network, auth, a 5xx past the retry) keeps the watch."""
+    assert AW.open_pr_exists(tmp_path, "b", read=lambda *_a, **_k: answer) is want
 
 
-@pytest.mark.parametrize("exc", [OSError("no gh"), subprocess.TimeoutExpired(cmd="gh", timeout=30)])
-def test_open_pr_exists_fails_open_when_gh_cannot_answer(monkeypatch, tmp_path, exc):
-    def boom(*_a, **_k):
-        raise exc
+def test_open_pr_exists_reads_through_the_shared_bounded_read(monkeypatch, tmp_path):
+    """The default read is wl_gh.read_raw, the hooks' one gh read with the transient retry (check:ci-gh-retry-reads), not a one-shot subprocess."""
+    import wl_gh  # noqa: PLC0415
 
-    monkeypatch.setattr(AW.subprocess, "run", boom)
+    seen = []
+
+    def fake(argv, **kw):
+        seen.append((argv, kw.get("cwd")))
+        return "1\n", ""
+
+    monkeypatch.setattr(wl_gh, "read_raw", fake)
     assert AW.open_pr_exists(tmp_path, "b") is True
+    assert seen == [
+        (
+            ["pr", "list", "--head", "b", "--state", "open", "--json", "number", "--jq", "length"],
+            tmp_path,
+        )
+    ]
