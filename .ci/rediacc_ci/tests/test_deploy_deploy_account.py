@@ -3,10 +3,7 @@
 RECORDING FAKE `npx` AND `npm` ON A SCRATCH PATH, AND A FIXTURE REPO ROOT. Nothing here reaches Cloudflare and nothing installs anything: the fakes log their exact argv, their cwd, and the value of `CLOUDFLARE_API_TOKEN` they were handed. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity
 ledger is a separate, achievable piece of work. This is that piece.
 
-HOW THE TWO SIDES ARE MADE TO AGREE ABOUT THE REPO ROOT, since they answer the question differently and a differential that let them answer it differently would be comparing two trees. The twin's `get_repo_root` is
-`${BASH_SOURCE[0]}/../../..` from `common.sh`, so a COPY of `common.sh` and a
-COPY of the script inside `tmp_path` resolve to the fixture. The port's `common.repo_root()` delegates to `paths.repo_root()`, which honours `$REDIACC_CI_ROOT`, so the port is the REAL file under test and the variable points it at the same fixture. `test_the_copied_twin_is_the_real_twin` asserts the copy is byte-identical, so the differential cannot drift onto a stale twin, and
-`test_the_twin_ignores_the_root_override` asserts the variable is not secretly steering the bash side as well.
+HOW THE TWO SIDES ARE MADE TO AGREE ABOUT THE REPO ROOT: the port's `common.repo_root()` delegates to `paths.repo_root()`, which honours `$REDIACC_CI_ROOT`, so the port is the REAL file under test and the variable points it at the fixture. The twin resolved its root from a copy of `common.sh` inside `tmp_path`; its answers are frozen in `goldens/twins/deploy.deploy-account.jsonl`, so the twin file is not needed to run this module, and `test_the_twin_ignores_the_root_override` asserts the variable did not steer the bash side.
 
 THE HAPPY PATH SAYS PLENTY, so the streams carry real evidence here, unlike the `set-www-worker-secrets` sibling. What the streams CANNOT show is which database got migrated with which config and which token reached the child, so every case that gets that far compares the recorded call log too.
 
@@ -24,12 +21,14 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_account as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "deploy-account.sh"
+TWIN_REL = ".ci/scripts/deploy/deploy-account.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "deploy_account.py"
 COMMON_SH = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 BASH = shutil.which("bash") or "/bin/bash"
@@ -91,7 +90,9 @@ def _fixture_root(tmp_path: pathlib.Path, *, configs: dict[str, str] | None = No
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     worker = root / "workers" / "account"
     worker.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(COMMON_SH, root / ".ci" / "scripts" / "lib" / COMMON_SH.name)
+    if TWIN.exists():  # the bash side is recorded only while the twin is on disk
+        shutil.copy2(COMMON_SH, root / ".ci" / "scripts" / "lib" / COMMON_SH.name)
+        shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
@@ -100,7 +101,6 @@ def _fixture_root(tmp_path: pathlib.Path, *, configs: dict[str, str] | None = No
         ROOT / ".ci" / "config" / "well-known.generated.sh",
         root / ".ci" / "config" / "well-known.generated.sh",
     )
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
     for name, body in (configs or {"wrangler.eu.toml": FIXTURE_TOML}).items():
         (worker / name).write_text(body, encoding="utf-8")
     return root
@@ -130,6 +130,40 @@ def _bin(tmp_path: pathlib.Path, name: str, *, with_wrangler: bool = False) -> s
 
 
 def _run(
+    subject: pathlib.Path,
+    tmp_path: pathlib.Path,
+    root: pathlib.Path,
+    args: tuple[str, ...],
+    *,
+    with_wrangler: bool = False,
+    drop_env: tuple[str, ...] = (),
+    **extra: str,
+):
+    """The port runs live; the bash side is answered from its frozen golden."""
+    if subject.suffix != ".sh":
+        return _run_live(
+            subject, tmp_path, root, args, with_wrangler=with_wrangler, drop_env=drop_env, **extra
+        )
+    worker = root / "workers" / "account"
+    parts = [
+        *args,
+        "--",
+        "wrangler=%s" % with_wrangler,
+        "drop=%s" % ",".join(drop_env),
+        "configs=%s" % ",".join(sorted(p.name for p in worker.iterdir())),
+        *("%s=%s" % kv for kv in sorted(extra.items())),
+    ]
+    return diff.twin_result(
+        TWIN_REL,
+        parts,
+        lambda: _run_live(
+            subject, tmp_path, root, args, with_wrangler=with_wrangler, drop_env=drop_env, **extra
+        ),
+        work=(tmp_path,),
+    )
+
+
+def _run_live(
     subject: pathlib.Path,
     tmp_path: pathlib.Path,
     root: pathlib.Path,
@@ -193,19 +227,7 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
         )
 
 
-def _twin_source() -> str:
-    return TWIN.read_text(encoding="utf-8")
-
-
 # --------------------------------------------------------------------------- The harness itself, which is a claim before it is a tool ---------------------------------------------------------------------------
-
-
-def test_the_copied_twin_is_the_real_twin(tmp_path: pathlib.Path) -> None:
-    """THE COPY IS THE SUBJECT, so a stale copy would silently pass everything."""
-    root = _fixture_root(tmp_path)
-    copied = (root / ".ci" / "scripts" / "deploy" / TWIN.name).read_bytes()
-    assert copied == TWIN.read_bytes()
-    assert (root / ".ci" / "scripts" / "lib" / "common.sh").read_bytes() == COMMON_SH.read_bytes()
 
 
 def test_the_twin_ignores_the_root_override(tmp_path: pathlib.Path) -> None:
@@ -221,7 +243,6 @@ def test_the_twin_ignores_the_root_override(tmp_path: pathlib.Path) -> None:
         REDIACC_CI_ROOT=str(decoy),
     )
     assert old.returncode == 0, old.stderr
-    assert "REDIACC_CI_ROOT" not in _twin_source()
 
 
 # --------------------------------------------------------------------------- The happy path ---------------------------------------------------------------------------
@@ -293,8 +314,6 @@ def test_the_token_is_stripped_of_carriage_returns_before_the_child_sees_it(
 
 def test_the_account_id_is_not_stripped(tmp_path: pathlib.Path) -> None:
     """THE ASYMMETRY IS THE TWIN'S: only the token is cleaned (:41), so a carriage return in the account id survives into wrangler's environment."""
-    assert _twin_source().count("tr -d '\\r\\n'") == 1
-    assert 'CLOUDFLARE_ACCOUNT_ID="$(printf' not in _twin_source()
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(
         tmp_path, root, "--region", "eu", CLOUDFLARE_ACCOUNT_ID="acct\r"
@@ -473,7 +492,7 @@ def test_a_wrangler_on_path_skips_the_install(tmp_path: pathlib.Path) -> None:
     assert old.returncode == 0, old.stderr
     assert "npm\tinstall" not in old_calls
     assert not port.needs_npm_install(
-        root / "workers" / "account", {"PATH": str(tmp_path / "old-bin")}
+        root / "workers" / "account", {"PATH": str(tmp_path / "new-bin")}
     )
     _assert_agree(old, new, "global-wrangler", old_calls, new_calls)
 
@@ -505,27 +524,3 @@ def test_a_failed_migration_stops_before_the_deploy(tmp_path: pathlib.Path) -> N
     assert old_calls.count("npx\t") == 1
     assert "Migrations applied" not in old.stderr
     _assert_agree(old, new, "migration-failed", old_calls, new_calls)
-
-
-# --------------------------------------------------------------------------- Staleness alarms: the port copies three things out of the twin ---------------------------------------------------------------------------
-
-
-def test_the_sed_program_and_the_needle_are_still_the_twins(tmp_path: pathlib.Path) -> None:
-    """THE PIPELINE IS A COPY, so the day someone rewrites it in the twin this fails instead of the port quietly reading a different key."""
-    del tmp_path
-    source = _twin_source()
-    assert port.SED_PROGRAM in source
-    assert "grep '%s'" % port.DB_NAME_NEEDLE in source
-    assert "head -1" in source
-
-
-def test_the_worker_directory_and_config_family_are_still_the_twins(
-    tmp_path: pathlib.Path,
-) -> None:
-    del tmp_path
-    source = _twin_source()
-    assert "workers/%s" % port.WORKER_SUBDIR[1] in source
-    assert 'CONFIG="wrangler.edge-${REGION}.toml"' in source
-    assert 'CONFIG="wrangler.${REGION}.toml"' in source
-    assert 'TARGET="${ARG_TARGET:-%s}"' % port.DEFAULT_TARGET in source
-    assert '"$TARGET" == "%s"' % port.EDGE_TARGET in source

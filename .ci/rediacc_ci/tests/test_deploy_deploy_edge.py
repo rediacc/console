@@ -1,17 +1,13 @@
 """Differential: `rediacc_ci.deploy.deploy_edge` against its twin `.ci/scripts/deploy/deploy-edge.sh`.
 
-RECORDING FAKE `npx` AND `npm` ON A SCRATCH PATH, AND A FIXTURE REPO ROOT. Nothing here reaches Cloudflare and nothing installs anything. The root is made to agree across the two implementations the same way the `deploy_account` differential does it, and for the same reason: the twin's `get_repo_root` resolves from a COPY of `common.sh` inside `tmp_path`, and the port's
-`common.repo_root()` is pointed at the same directory with `$REDIACC_CI_ROOT`. `test_the_copied_twin_is_the_real_twin` keeps the copy honest.
+RECORDING FAKE `npx` AND `npm` ON A SCRATCH PATH, AND A FIXTURE REPO ROOT. Nothing here reaches Cloudflare and nothing installs anything. The port's `common.repo_root()` is pointed at the fixture directory with `$REDIACC_CI_ROOT`. The bash side of every case is answered from its frozen golden (`goldens/twins/deploy.deploy-edge.jsonl`), so the twin file is not needed to run this module.
 
-THIS SCRIPT IS NOT ITS SIBLING WITH THE MIGRATIONS REMOVED, and three tests exist only to hold that line, because "the account file, shorter" is the assumption that would port it wrong:
+THIS SCRIPT IS NOT ITS SIBLING WITH THE MIGRATIONS REMOVED, and two tests exist only to hold that line, because "the account file, shorter" is the assumption that would port it wrong:
 
   * `test_every_argument_is_ignored` drives `--foo.bar x`, which exits 2 in the
     account sibling and exits 0 here, because there is no `parse_args` call.
   * `test_a_global_wrangler_does_not_skip_the_install` drives the case where the
     two conditions genuinely disagree.
-  * `test_the_install_condition_is_still_the_one_condition_form` re-derives the
-    condition from the twin's own source, so the day the two files are
-    harmonised this fails rather than the port quietly keeping the old shape.
 
 `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 """
@@ -26,6 +22,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_edge as port
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import EDGE_ORIGIN
 
 EDGE_HOST = EDGE_ORIGIN.removeprefix("https://")
@@ -35,8 +32,8 @@ if typing.TYPE_CHECKING:
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "deploy-edge.sh"
+TWIN_REL = ".ci/scripts/deploy/deploy-edge.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "deploy_edge.py"
-ACCOUNT_TWIN = ROOT / ".ci" / "scripts" / "deploy" / "deploy-account.sh"
 COMMON_SH = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -101,7 +98,8 @@ def _fixture_root(tmp_path: pathlib.Path, *, config: bool = True) -> pathlib.Pat
         ROOT / ".ci" / "config" / "well-known.generated.sh",
         root / ".ci" / "config" / "well-known.generated.sh",
     )
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
+    if TWIN.exists():  # the bash side is recorded only while the twin is on disk
+        shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
     if config:
         (worker / port.CONFIG).write_text('name = "rediacc-www-edge"\n', encoding="utf-8")
     return root
@@ -131,6 +129,41 @@ def _bin(tmp_path: pathlib.Path, name: str, *, with_wrangler: bool = False) -> s
 
 
 def _run(
+    subject: pathlib.Path,
+    tmp_path: pathlib.Path,
+    root: pathlib.Path,
+    args: tuple[str, ...],
+    *,
+    with_wrangler: bool = False,
+    drop_env: tuple[str, ...] = (),
+    **extra: str,
+):
+    """The port runs live; the bash side is answered from its frozen golden."""
+    if subject.suffix != ".sh":
+        return _run_live(
+            subject, tmp_path, root, args, with_wrangler=with_wrangler, drop_env=drop_env, **extra
+        )
+    worker = root / "workers" / "www"
+    parts = [
+        *args,
+        "--",
+        "wrangler=%s" % with_wrangler,
+        "drop=%s" % ",".join(drop_env),
+        "config=%s" % (worker / port.CONFIG).exists(),
+        "node_modules=%s" % (worker / "node_modules").exists(),
+        *("%s=%s" % kv for kv in sorted(extra.items())),
+    ]
+    return diff.twin_result(
+        TWIN_REL,
+        parts,
+        lambda: _run_live(
+            subject, tmp_path, root, args, with_wrangler=with_wrangler, drop_env=drop_env, **extra
+        ),
+        work=(tmp_path,),
+    )
+
+
+def _run_live(
     subject: pathlib.Path,
     tmp_path: pathlib.Path,
     root: pathlib.Path,
@@ -194,18 +227,6 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
         )
 
 
-def _twin_source() -> str:
-    return TWIN.read_text(encoding="utf-8")
-
-
-def test_the_copied_twin_is_the_real_twin(tmp_path: pathlib.Path) -> None:
-    """THE COPY IS THE SUBJECT, so a stale copy would silently pass everything."""
-    root = _fixture_root(tmp_path)
-    copied = root / ".ci" / "scripts" / "deploy" / TWIN.name
-    assert copied.read_bytes() == TWIN.read_bytes()
-    assert (root / ".ci" / "scripts" / "lib" / "common.sh").read_bytes() == COMMON_SH.read_bytes()
-
-
 def test_the_one_wrangler_call_is_pinned_in_full(tmp_path: pathlib.Path) -> None:
     """ONE DEPLOY, no migrations, from inside `workers/www`, carrying the token."""
     root = _fixture_root(tmp_path)
@@ -232,7 +253,6 @@ def test_every_argument_is_ignored(tmp_path: pathlib.Path) -> None:
     old, new, old_calls, new_calls = run_both(tmp_path, root, "--region", "eu", "--foo.bar", "x")
     assert old.returncode == 0, old.stderr
     assert port.ARGUMENTS_ARE_IGNORED
-    assert "parse_args" not in _twin_source()
     _assert_agree(old, new, "arguments-ignored", old_calls, new_calls)
 
 
@@ -274,9 +294,6 @@ def test_an_empty_credential_is_refused_like_an_absent_one(tmp_path: pathlib.Pat
 
 def test_the_account_id_is_demanded_and_then_never_used(tmp_path: pathlib.Path) -> None:
     """THE VACUITY CLASS, NAMED: `CLOUDFLARE_ACCOUNT_ID` is required at :25 and read by nothing in the file. A WRONG one passes every check here."""
-    source = _twin_source()
-    assert source.count("CLOUDFLARE_ACCOUNT_ID") == 2, "one header mention, one require_var"
-    assert "$CLOUDFLARE_ACCOUNT_ID" not in source
     assert port.THE_ACCOUNT_ID_IS_CHECKED_AND_UNUSED
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(tmp_path, root, CLOUDFLARE_ACCOUNT_ID="wrong-account")
@@ -300,14 +317,6 @@ def test_the_token_is_stripped_of_carriage_returns_before_the_child_sees_it(
     _assert_agree(old, new, "token-strip", old_calls, new_calls)
 
 
-def test_the_two_strip_lines_still_agree_across_the_siblings(tmp_path: pathlib.Path) -> None:
-    """WHY THE PORT DOES NOT SHARE ONE HELPER. The line is duplicated in both twins today; this asserts that, so the duplication in the ports is a checked fact rather than an assumption, and so a change to one twin shows up here."""
-    del tmp_path
-    line = "CLOUDFLARE_API_TOKEN=\"$(printf '%s' \"$CLOUDFLARE_API_TOKEN\" | tr -d '\\r\\n')\""
-    assert line in _twin_source()
-    assert line in ACCOUNT_TWIN.read_text(encoding="utf-8")
-
-
 def test_an_existing_node_modules_skips_the_install(tmp_path: pathlib.Path) -> None:
     root = _fixture_root(tmp_path)
     (root / "workers" / "www" / "node_modules").mkdir()
@@ -327,15 +336,6 @@ def test_a_global_wrangler_does_not_skip_the_install(tmp_path: pathlib.Path) -> 
     _assert_agree(old, new, "global-wrangler", old_calls, new_calls)
 
 
-def test_the_install_condition_is_still_the_one_condition_form(tmp_path: pathlib.Path) -> None:
-    """STALENESS ALARM for the test above: the day someone harmonises the two scripts, this fails instead of the port keeping a condition nobody has."""
-    del tmp_path
-    source = _twin_source()
-    assert 'if [[ ! -d "node_modules" ]]; then' in source
-    assert "command -v wrangler" not in source
-    assert "command -v wrangler" in ACCOUNT_TWIN.read_text(encoding="utf-8")
-
-
 def test_a_failed_install_ends_the_run_with_npms_status(tmp_path: pathlib.Path) -> None:
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(tmp_path, root, FAKE_NPM_RC="9")
@@ -352,14 +352,3 @@ def test_a_failed_deploy_propagates_wranglers_status(tmp_path: pathlib.Path) -> 
     assert old.returncode == 3
     assert "Edge worker deployed" not in old.stderr
     _assert_agree(old, new, "deploy-failed", old_calls, new_calls)
-
-
-def test_the_config_name_and_worker_directory_are_still_the_twins(tmp_path: pathlib.Path) -> None:
-    """STALENESS ALARM: the port holds three literals copied out of the twin."""
-    del tmp_path
-    source = _twin_source()
-    assert source.count(port.CONFIG) == 3, "the test at :17, its message at :18, the deploy at :36"
-    assert "workers/%s" % port.WORKER_SUBDIR[1] in source
-    assert "npx wrangler deploy --config %s" % port.CONFIG in source
-    for name in port.REQUIRED_VARS:
-        assert "require_var %s" % name in source

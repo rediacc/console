@@ -85,10 +85,10 @@ REGIONS="eu us"           # any of: eu us asia
 
 `deploy_account` applies the region's D1 migrations (`wrangler d1 migrations apply --remote`), then `wrangler deploy`. Record the `Current Version ID` it prints for each region: that id is the rollback handle.
 
-**The www Worker (global).** Stable uses `.ci/scripts/deploy/deploy-www.sh` (no arguments), edge uses `.ci/scripts/deploy/deploy-edge.sh`:
+**The www Worker (global).** Stable uses `rediacc_ci.deploy.deploy_www` (no arguments), edge uses `rediacc_ci.deploy.deploy_edge`:
 
 ```bash
-WWW_SCRIPT=deploy-edge.sh # or: deploy-www.sh  (stable)
+WWW_MODULE=deploy_edge    # or: deploy_www  (stable)
 ./run.sh devbox exec -- env PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers -- bash -c '
   set -euo pipefail
   npm run build:packages
@@ -100,7 +100,7 @@ WWW_SCRIPT=deploy-edge.sh # or: deploy-www.sh  (stable)
   grep -rqF -- "$TURNSTILE_SITE_KEY" workers/www/dist/account/assets \
     || { echo "portal build has no Turnstile key: refusing to deploy"; exit 1; }
   ( cd workers/www && npm install )
-  .ci/scripts/deploy/'"$WWW_SCRIPT"''
+  PYTHONPATH=.ci python3 -m rediacc_ci.deploy.'"$WWW_MODULE"''
 ```
 
 `APP_VERSION` puts the release version in the footer; without it the site shows `0.0.0-dev` and `verify_edge_endpoints` fails. The Turnstile check is not optional. On 2026-09-24 a portal built without the key reached production and nobody could log in.
