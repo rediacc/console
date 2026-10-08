@@ -547,7 +547,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rest-graphql-guard-parity.md` | compacted | 54 | 0 | 8 | 4010 |
 | `agent/plans/PLAN-resumable-rebase-executor.md` | compacted | 36 | 0 | 0 | 2212 |
 | `agent/plans/PLAN-retire-bash-oracles.A0.md` | executing | 270 | 7 | 0 | 30596 |
-| `agent/plans/PLAN-retire-bash-oracles.md` | approved | 310 | 8 | 7 | 34009 |
+| `agent/plans/PLAN-retire-bash-oracles.md` | approved | 473 | 8 | 7 | 60489 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
 | `agent/plans/PLAN-scope-gate-sort-collation.md` | compacted | 38 | 0 | 0 | 2784 |
@@ -642,7 +642,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-plan-path-migration.md` | done | 152 | 0 | 9 | 22702 |
 | `agent/plans/_done/PLAN-plan-priority-concurrency.md` | done | 472 | 0 | 12 | 40745 |
 | `agent/plans/_done/PLAN-plyr-css-on-demand-loading.md` | done | 143 | 0 | 11 | 17544 |
-| `agent/plans/_done/PLAN-plyr-to-videojs.md` | done | 93 | 0 | 5 | 10188 |
+| `agent/plans/_done/PLAN-plyr-to-videojs.md` | done | 93 | 0 | 5 | 10205 |
 | `agent/plans/_done/PLAN-popup-reminder.md` | done | 30 | 0 | 2 | 2952 |
 | `agent/plans/_done/PLAN-prose-style-under-wrap.md` | done | 249 | 0 | 13 | 24886 |
 | `agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md` | done | 59 | 0 | 9 | 8213 |
