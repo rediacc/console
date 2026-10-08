@@ -6,22 +6,29 @@ FIXTURE ROOT, NOT THE REAL REPOSITORY. Both subjects derive the console root
 from their own file location (`BASH_SOURCE[0]` / `__file__`, three directories
 up from where each actually lives -- `.ci/scripts/infra/` for the twin, `.ci/rediacc_ci/infra/` for the port). Driving the TRACKED files directly would point both at this real checkout's `private/elite`, so each case COPIES both subjects into a fresh tree at the right relative depth and runs the copies.
 
+THE TWIN IS A SHIM NOW (W11-C). Every `old` answer comes from `goldens/twins/infra.ci-stop-elite.jsonl` through `differential.twin_run`: both streams and the docker call log, as the original bash produced them on the fixture each case builds.
+
 K=5 LEDGER: `.ci/shadow/w7p6-ci-stop-elite.observations.jsonl`, recorded
 against a disposable scratch git repo built outside this checkout (this checkout's own working tree is not clean; `shadow-gate.ts --record` refuses a dirty tree). See that file's own header for the exact recording commands.
 """
 
 from __future__ import annotations
 
+import importlib
 import os
 import pathlib
 import shutil
 import subprocess
 import tempfile
 
+import pytest
+
 from rediacc_ci import paths
+from rediacc_ci.tests import differential as diff
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "infra" / "ci-stop-elite.sh"
+TWIN_REL = ".ci/scripts/infra/ci-stop-elite.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "infra" / "ci_stop_elite.py"
 
 # A recording `docker`, written as Python per ruling 7 (new instruments are Python, not bash) and generated per case so its configuration lives in its own text rather than in an environment two processes deep.
@@ -55,7 +62,9 @@ def _fixture(tmp_path: pathlib.Path, *, elite_dir: bool) -> pathlib.Path:
     root = tmp_path / "tree"
     (root / ".ci" / "scripts" / "infra").mkdir(parents=True)
     (root / ".ci" / "rediacc_ci" / "infra").mkdir(parents=True)
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "infra" / TWIN.name)
+    # Only the freeze runs the bash; compare mode never does.
+    if diff.regolden_mode(TWIN_REL) == "bash":
+        shutil.copy2(TWIN, root / ".ci" / "scripts" / "infra" / TWIN.name)
     shutil.copy2(PORT, root / ".ci" / "rediacc_ci" / "infra" / PORT.name)
     if elite_dir:
         (root / "private" / "elite").mkdir(parents=True)
@@ -86,7 +95,7 @@ def _bin_with_fake_docker(
     return where
 
 
-def _run(
+def _run_live(
     subject: pathlib.Path,
     root: pathlib.Path,
     *,
@@ -125,6 +134,57 @@ def _run(
     return proc, calls
 
 
+def _run_old(
+    root: pathlib.Path,
+    tag: str,
+    *,
+    compose_rc: int = 0,
+    ps_names: tuple[str, ...] = (),
+    verb_rc: int = 0,
+) -> tuple[subprocess.CompletedProcess[str], list[str]]:
+    """The twin's answer for one fixture, from the golden (or, in a freeze, from the live bash)."""
+    cell: dict[str, tuple] = {}
+
+    def side(subject: pathlib.Path):
+        def run():
+            cell["v"] = _run_live(
+                subject, root, compose_rc=compose_rc, ps_names=ps_names, verb_rc=verb_rc
+            )
+            return cell["v"][0].returncode, cell["v"][0].stdout, cell["v"][0].stderr
+
+        return run
+
+    rc, out, err, got = diff.twin_run(
+        TWIN_REL,
+        [
+            "old",
+            tag,
+            "compose_rc=%s" % compose_rc,
+            "ps_names=%s" % (ps_names,),
+            "verb_rc=%s" % verb_rc,
+        ],
+        side(TWIN),
+        port=side(PORT),
+        extras={"calls": lambda: "".join("%s\n" % c for c in cell["v"][1])},
+        work=(str(root.parent),),
+    )
+    return (
+        subprocess.CompletedProcess(["bash", TWIN_REL], rc, out, err),
+        [line for line in got["calls"].splitlines() if line],
+    )
+
+
+def _run(
+    subject: pathlib.Path,
+    root: pathlib.Path,
+    *,
+    compose_rc: int = 0,
+    ps_names: tuple[str, ...] = (),
+    verb_rc: int = 0,
+) -> tuple[subprocess.CompletedProcess[str], list[str]]:
+    return _run_live(subject, root, compose_rc=compose_rc, ps_names=ps_names, verb_rc=verb_rc)
+
+
 CASES = [
     ("no-elite-dir-no-container", False, 0, (), 0),
     ("happy-container-present", True, 0, ("rediacc-web",), 0),
@@ -140,13 +200,16 @@ def test_port_and_twin_agree() -> None:
     for name, elite, compose_rc, ps_names, verb_rc in CASES:
         with tempfile.TemporaryDirectory() as td:
             tmp_path = pathlib.Path(td)
-            kw = {"compose_rc": compose_rc, "ps_names": ps_names, "verb_rc": verb_rc}
 
             root_a = _fixture(tmp_path / "a", elite_dir=elite)
-            old, old_calls = _run(TWIN, root_a, **kw)
+            old, old_calls = _run_old(
+                root_a, name, compose_rc=compose_rc, ps_names=ps_names, verb_rc=verb_rc
+            )
 
             root_b = _fixture(tmp_path / "b", elite_dir=elite)
-            new, new_calls = _run(PORT, root_b, **kw)
+            new, new_calls = _run(
+                PORT, root_b, compose_rc=compose_rc, ps_names=ps_names, verb_rc=verb_rc
+            )
 
             assert new.returncode == old.returncode, "%s: exit code diverged: %r vs %r" % (
                 name,
@@ -198,3 +261,33 @@ def test_compose_down_failure_does_not_skip_force_removal() -> None:
         _, calls = _run(PORT, root, compose_rc=1, ps_names=("rediacc-web",))
         verbs = [c.split("\t")[0] for c in calls]
         assert "rm" in verbs, "compose failing must not skip force removal: %r" % verbs
+
+
+# --------------------------------------------------------------------------- The shim contract (W11-C). ---------------------------------------------------------------------------
+
+SHIM_MODULE = "rediacc_ci.infra.ci_stop_elite"
+
+
+@pytest.fixture
+def shim_only():
+    """A freeze runs against the original bash, which is not a shim yet."""
+    if diff.regolden_mode(TWIN_REL) == "bash":
+        pytest.skip("freezing from the original bash")
+
+
+@pytest.mark.usefixtures("shim_only")
+def test_the_shim_is_one_effective_line_naming_the_port() -> None:
+    lines = [
+        line.strip()
+        for line in TWIN.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.strip().startswith("#") and line.strip() != "set -euo pipefail"
+    ]
+    assert len(lines) == 1, lines
+    assert lines[0].endswith('exec python3 -m %s "$@"' % SHIM_MODULE), lines[0]
+    assert os.access(TWIN, os.X_OK), "the breakpoint scripts test -x on this path"
+
+
+def test_the_shim_parses_under_bash_and_names_an_importable_module() -> None:
+    proc = subprocess.run(["bash", "-n", str(TWIN)], capture_output=True, check=False)
+    assert proc.returncode == 0, proc.stderr
+    assert importlib.import_module(SHIM_MODULE).__file__ == str(PORT)

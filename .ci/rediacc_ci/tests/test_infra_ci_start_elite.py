@@ -15,12 +15,15 @@ can never silently stop applying and leave a case that waits three real minutes,
 
 ONE LINE IS NORMALIZED, and only one: ` load average (1m 5m 15m): ...`. Both sides read the real `/proc/loadavg`, seconds apart, so the numbers legitimately differ. `_normalize` masks the values and `test_the_load_line_is_really_there` asserts both sides printed a well-formed one, so the mask cannot hide its absence.
 
+THE TWIN IS A SHIM NOW (W11-C). Every `old` answer comes from `goldens/twins/infra.ci-start-elite.jsonl` through `differential.twin_run`: both streams (the load line masked), the docker/curl/run.sh call log and the written `.env`, as the original bash produced them on the fixture each case builds. The shim itself is held by `test_the_shim_*`.
+
 K=5 LEDGER: `.ci/shadow/w7p6-ci-start-elite.observations.jsonl`, recorded
 against a disposable git repo built outside this checkout (this checkout is never clean and `shadow-gate.ts --record` refuses a dirty tree). See that file's own recording notes in the wave report.
 """
 
 from __future__ import annotations
 
+import importlib
 import os
 import pathlib
 import re
@@ -31,11 +34,13 @@ import tempfile
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests.wkloader import copy_loader, docker_less_path
 from rediacc_ci.well_known import IMAGE_REGISTRY
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "infra" / "ci-start-elite.sh"
+TWIN_REL = ".ci/scripts/infra/ci-start-elite.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "infra" / "ci_start_elite.py"
 CI_ENV = ROOT / ".ci" / "scripts" / "infra" / "ci-env.sh"
 
@@ -143,9 +148,11 @@ def _fixture(
     (root / ".ci" / "rediacc_ci" / "infra").mkdir(parents=True)
     (root / ".ci" / "docker" / "ci").mkdir(parents=True)
 
-    (root / ".ci" / "scripts" / "infra" / TWIN.name).write_text(
-        _null_sleep_bash(TWIN.read_text(encoding="utf-8")), encoding="utf-8"
-    )
+    # Only the freeze runs the bash; compare mode never does.
+    if diff.regolden_mode(TWIN_REL) == "bash":
+        (root / ".ci" / "scripts" / "infra" / TWIN.name).write_text(
+            _null_sleep_bash(TWIN.read_text(encoding="utf-8")), encoding="utf-8"
+        )
     shutil.copy2(CI_ENV, root / ".ci" / "scripts" / "infra" / CI_ENV.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
@@ -203,7 +210,65 @@ def _normalize(text: str, root: pathlib.Path) -> str:
     return LOAD_LINE.sub("  load average (1m 5m 15m): <masked>, cores: <masked>", text)
 
 
+def _mask_load(text: str) -> str:
+    return LOAD_LINE.sub("  load average (1m 5m 15m): <masked>, cores: <masked>", text)
+
+
+def _signature(root: pathlib.Path) -> list[str]:
+    """What distinguishes one fixture from another, with no path in it: the fakes' text with this root folded out, and which files exist."""
+    parts = []
+    for rel in ("fxbin/curl", "fxbin/docker", "private/elite/run.sh"):
+        path = root / rel
+        parts.append(
+            "%s=%s" % (rel, path.read_text(encoding="utf-8").replace(str(root), "<root>"))
+            if path.exists()
+            else "%s=absent" % rel
+        )
+    return parts
+
+
 def _run(
+    which: str, root: pathlib.Path
+) -> tuple[subprocess.CompletedProcess[str], list[str], str | None]:
+    if which != "old":
+        return _live(which, root)
+    cell: dict[str, tuple] = {}
+
+    def side(which: str):
+        def run():
+            cell["v"] = _live(which, root)
+            proc = cell["v"][0]
+            # The load-average line is a live host reading, never compared (`_normalize`); recorded masked so a re-record does not mistake a different load for a change.
+            return proc.returncode, _mask_load(proc.stdout), _mask_load(proc.stderr)
+
+        return run
+
+    def extra(i: int):
+        def read() -> str:
+            value = cell["v"][i]
+            if i == 1:
+                return "".join("%s\n" % c for c in value)
+            return diff.ABSENT if value is None else value
+
+        return read
+
+    rc, out, err, got = diff.twin_run(
+        TWIN_REL,
+        ["old", *_signature(root)],
+        side("old"),
+        port=side("new"),
+        extras={"calls": extra(1), "env": extra(2)},
+        work=(str(root),),
+    )
+    proc = subprocess.CompletedProcess(["bash", TWIN_REL], rc, out, err)
+    return (
+        proc,
+        [line for line in got["calls"].splitlines() if line],
+        None if got["env"] == diff.ABSENT else got["env"],
+    )
+
+
+def _live(
     which: str, root: pathlib.Path
 ) -> tuple[subprocess.CompletedProcess[str], list[str], str | None]:
     env = dict(os.environ)
@@ -300,19 +365,17 @@ def test_the_load_line_is_really_there() -> None:
         base = pathlib.Path(td)
         old, _, _ = _run("old", _fixture(base / "a", curl_never=True))
         new, _, _ = _run("new", _fixture(base / "b", curl_never=True))
-        assert LOAD_LINE.search(old.stdout), "the twin printed no load line:\n%s" % old.stdout
+        assert "  load average (1m 5m 15m): <masked>, cores: <masked>" in old.stdout, (
+            "the twin printed no load line:\n%s" % old.stdout
+        )
         assert LOAD_LINE.search(new.stdout), "the port printed no load line:\n%s" % new.stdout
 
 
 def test_the_null_sleep_anchors_still_exist() -> None:
-    """The rewrite the fixture performs must still have exactly one target on each side, and the two files must still agree on the real budget."""
-    twin = TWIN.read_text(encoding="utf-8")
+    """The rewrite the fixture performs must still have exactly one target in the port, and the port must still carry the real budget the frozen twin ran (180 s at 2 s)."""
     port = PORT.read_text(encoding="utf-8")
-    assert twin.count(BASH_SLEEP_ANCHOR) == 1, "the bash sleep anchor moved"
     assert port.count(PY_SLEEP_ANCHOR) == 1, "the Python sleep anchor moved"
-    assert twin.count("    local timeout=%d\n" % REAL_TIMEOUT) == 1
     assert port.count("TIMEOUT_SECONDS = %d\n" % REAL_TIMEOUT) == 1
-    assert "    local interval=2\n" in twin
     assert "INTERVAL_SECONDS = 2\n" in port
 
 
@@ -347,6 +410,36 @@ def test_missing_elite_dir_is_a_named_divergence() -> None:
         assert "line 45" not in new.stderr, "the port must not forge a bash line number"
 
 
+def _shape(returncode: int, root: pathlib.Path) -> tuple[int, list[str], list[str]]:
+    body = (root / "private" / "elite" / ".env").read_text(encoding="utf-8")
+    names = [ln.split("=", 1)[0] for ln in body.splitlines() if "=" in ln]
+    values_nonempty = [ln.split("=", 1)[0] for ln in body.splitlines() if ln.endswith("=")]
+    return (returncode, names, values_nonempty)
+
+
+def _generated_old(root: pathlib.Path) -> tuple[int, list[str], list[str]]:
+    """The twin's generating-arm shape, from the golden (values are random, so only names are recorded)."""
+
+    def live():
+        env = dict(os.environ)
+        for key in DETERMINISTIC_SECRETS:
+            env.pop(key, None)
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
+        env["PATH"] = "%s:%s" % (root / "fxbin", env.get("PATH", ""))
+        env.pop("GITHUB_ACTIONS", None)
+        env.pop("GITHUB_ENV", None)
+        script = str(root / ".ci" / "scripts" / "infra" / TWIN.name)
+        proc = subprocess.run(
+            ["bash", script], capture_output=True, text=True, env=env, check=False, timeout=180
+        )
+        return (proc.returncode, "", "", *_shape(proc.returncode, root)[1:])
+
+    rc, _o, _e, names, values = diff.twin_tuple(
+        TWIN_REL, ["old", "generated-secrets"], live, work=(str(root),)
+    )
+    return (rc, names, values)
+
+
 def test_generated_secrets_path_agrees_on_shape() -> None:
     """The OTHER arm of ci-env.sh: with nothing pre-set it generates a fresh key pair per run, so the values cannot be compared -- but the NAMES written into `.env`, and the exit code, still must agree."""
     if not all(shutil.which(t) for t in ("node", "jq", "openssl")):
@@ -356,6 +449,9 @@ def test_generated_secrets_path_agrees_on_shape() -> None:
         results = []
         for side, sub in (("old", "a"), ("new", "b")):
             root = _fixture(base / sub)
+            if side == "old":
+                results.append(_generated_old(root))
+                continue
             env = dict(os.environ)
             for key in DETERMINISTIC_SECRETS:
                 env.pop(key, None)
@@ -363,18 +459,11 @@ def test_generated_secrets_path_agrees_on_shape() -> None:
             env["PATH"] = "%s:%s" % (root / "fxbin", env.get("PATH", ""))
             env.pop("GITHUB_ACTIONS", None)
             env.pop("GITHUB_ENV", None)
-            cmd = (
-                ["bash", str(root / ".ci" / "scripts" / "infra" / TWIN.name)]
-                if side == "old"
-                else ["python3", str(root / ".ci" / "rediacc_ci" / "infra" / PORT.name)]
-            )
+            cmd = ["python3", str(root / ".ci" / "rediacc_ci" / "infra" / PORT.name)]
             proc = subprocess.run(
                 cmd, capture_output=True, text=True, env=env, check=False, timeout=180
             )
-            body = (root / "private" / "elite" / ".env").read_text(encoding="utf-8")
-            names = [ln.split("=", 1)[0] for ln in body.splitlines() if "=" in ln]
-            values_nonempty = [ln.split("=", 1)[0] for ln in body.splitlines() if ln.endswith("=")]
-            results.append((proc.returncode, names, values_nonempty))
+            results.append(_shape(proc.returncode, root))
         assert results[0] == results[1], "the generating arm diverged: %r" % (results,)
         assert results[0][0] == 0, "both sides failed: %r" % (results,)
 
@@ -409,3 +498,33 @@ def test_planted_defect_is_caught_by_this_differential() -> None:
         old, _, _ = _run("old", _fixture(base / "a", curl_never=True, logs_rc=42))
         new, _, _ = _run("new", _fixture(base / "b", curl_never=True, logs_rc=42))
         assert new.returncode == old.returncode == 42
+
+
+# --------------------------------------------------------------------------- The shim contract (W11-C). ---------------------------------------------------------------------------
+
+SHIM_MODULE = "rediacc_ci.infra.ci_start_elite"
+
+
+@pytest.fixture
+def shim_only():
+    """A freeze runs against the original bash, which is not a shim yet."""
+    if diff.regolden_mode(TWIN_REL) == "bash":
+        pytest.skip("freezing from the original bash")
+
+
+@pytest.mark.usefixtures("shim_only")
+def test_the_shim_is_one_effective_line_naming_the_port() -> None:
+    lines = [
+        line.strip()
+        for line in TWIN.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.strip().startswith("#") and line.strip() != "set -euo pipefail"
+    ]
+    assert len(lines) == 1, lines
+    assert lines[0].endswith('exec python3 -m %s "$@"' % SHIM_MODULE), lines[0]
+    assert os.access(TWIN, os.X_OK), "the breakpoint scripts test -x on this path"
+
+
+def test_the_shim_parses_under_bash_and_names_an_importable_module() -> None:
+    proc = subprocess.run(["bash", "-n", str(TWIN)], capture_output=True, check=False)
+    assert proc.returncode == 0, proc.stderr
+    assert importlib.import_module(SHIM_MODULE).__file__ == str(PORT)

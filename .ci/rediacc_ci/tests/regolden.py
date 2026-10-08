@@ -12,6 +12,7 @@ answer; the goldens are written once pytest returns. A gate-test `BASH_TWIN` (`t
 REFUSES:
   * without `--reason`, unconditionally. It is stamped as `intentional: <reason>` on every record whose value moved; a first freeze moves nothing and writes no marker.
   * `--source bash` for a twin whose `.sh` is gone: there is nothing left to freeze from.
+  * `--source bash` for a SHIMMED twin (`differential.SHIMMED_TWINS`): its `.sh` is a one-line shim over the port, so a bash freeze would record the port as bash.
   * when the recording run is not green. A freeze taken from a red differential would enshrine the disagreement as the spec.
   * when no module names the twin, or the run recorded nothing for it: a regolden that touched no golden is not a regolden.
 
@@ -111,6 +112,13 @@ def main(argv: list[str] | None = None) -> int:
 
     files: list[str] = []
     for twin in args.twins:
+        if args.source == "bash" and twin in diff.SHIMMED_TWINS:
+            print(
+                "regolden: %s is a shim over its port; its bash is frozen and gone, so "
+                "--source bash would record the port as bash. Use --source port." % twin,
+                file=sys.stderr,
+            )
+            return 2
         if args.source == "bash" and not (ROOT / twin).is_file():
             print(
                 "regolden: %s does not exist; there is no bash left to freeze" % twin,

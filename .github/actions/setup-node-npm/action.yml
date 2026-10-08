@@ -25,14 +25,13 @@ runs:
         node-version: ${{ inputs.node-version }}
         cache: ${{ inputs.cache }}
 
-    # The pin is read through toolchain.sh, the same reader the devbox and the gates
+    # The pin is read through rediacc_ci.core.toolchain, the same reader the devbox and the gates
     # use, and the result is verified: a global install that silently kept npm 10
     # would otherwise reach every later `npm ci` unnoticed.
     - name: Install the pinned npm
       shell: bash
       run: |
-        . .ci/scripts/lib/toolchain.sh
-        pin="$(toolchain_pin_for npm)"
+        pin="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pin npm)"
         [[ -n "$pin" ]] || { echo "::error::NPM_VERSION is not pinned in .devcontainer/toolchain.env"; exit 1; }
         npm install -g "npm@${pin}" --no-audit --no-fund
         actual="$(npm --version)"

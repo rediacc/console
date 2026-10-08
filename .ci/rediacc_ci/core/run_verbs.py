@@ -493,7 +493,9 @@ def quality_all() -> int:
     for message in verdict.messages:
         print("    %s" % message, file=sys.stderr)
     log.info("Run them in the devbox instead: ./run.sh devbox exec -- ./run.sh quality shell")
-    log.info("Or see what every lane has: .ci/scripts/lib/toolchain.sh --report")
+    log.info(
+        "Or see what every lane has: PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain report"
+    )
     return 1
 
 
@@ -536,7 +538,9 @@ def fix_shell() -> int:
         print(line, file=sys.stderr)
     if binary is None:
         log.error("shfmt is unusable, so formatting would not match the gate")
-        log.info("Every lane's toolchain: .ci/scripts/lib/toolchain.sh --report")
+        log.info(
+            "Every lane's toolchain: PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain report"
+        )
         return 1
     base = root()
     targets: list[str] = []
