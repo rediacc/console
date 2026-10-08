@@ -18,7 +18,7 @@ writes `write_once_guard ... || guard_rc=$?`, and a function whose status is
 consumed by a `||` list runs with errexit SUPPRESSED THROUGHOUT ITS BODY. That suppression is what produces defect 2 below. A runner that called the function bare would abort where the twin continues, and the two would disagree on exactly the path that matters most.
 
 `RELEASES_BUCKET` AND `DRY_RUN` REACH THE CHILD THROUGH THE ENVIRONMENT rather than by sourcing `.ci/config/constants.sh`. constants.sh hard-requires `.devcontainer/toolchain.env` and `return 1 2>/dev/null || exit 1`s without it, which would make the guard's availability depend on a file the guard does not read. The two values it needs are computed here from the same defaults
-(`BUCKET_DEFAULT`, `MAX_RELEASE_VERSIONS`) and pinned against constants.sh by `test_the_constants_are_the_twins_constants`.
+(`BUCKET_DEFAULT`, and `retention_contract.KEEP_RELEASES` for the window) and pinned against constants.sh by `test_the_max_release_versions_is_the_twins`.
 
 --------------------------------------------------------------------------
 THREE OTHER PROGRAMS ARE SPAWNED, EACH FOR A MEASURED REASON
@@ -119,16 +119,15 @@ import sys
 
 from rediacc_ci import log
 from rediacc_ci.deploy import channel_snapshot
-from rediacc_ci.release import check_soak_period, check_stable_manifest
+from rediacc_ci.release import check_stable_manifest, retention_contract
 from rediacc_ci.well_known import RELEASES_BUCKET
 
 # The twin's own name. Used for nothing the twin prints (it prints `$0`), only
 # for this port's own refusals, which the twin has no analogue for.
 SELF = "upload-to-r2.sh"
 
-# `.ci/config/constants.sh:201` and `:213`. Restated rather than sourced, for the reason in the docstring, and pinned against constants.sh by a staleness alarm.
+# `.ci/config/constants.sh` `RELEASES_BUCKET`, from the registry. The keep count is not restated here: it is `retention_contract.KEEP_RELEASES`, the one constant housekeeping's tag retention reads too, and constants.sh's `R2_MAX_RELEASE_VERSIONS` (the twin's) is pinned to it by a staleness alarm.
 BUCKET_DEFAULT = RELEASES_BUCKET
-MAX_RELEASE_VERSIONS = 20
 
 # `CACHE_CONTROL_MUTABLE` / `CACHE_CONTROL_IMMUTABLE` (:176-177). The immutable policy is legitimate HERE, unlike in `upload-repos-to-r2.sh`, because the URL itself carries the version: `cli/v1.2.3/rdc-linux-x64` never serves other bytes.
 CACHE_CONTROL_MUTABLE = "no-cache"
@@ -512,47 +511,38 @@ class Uploader:
             ["jq", "--arg", "v", new_version, "if index($v) then . else [$v] + . end"],
             existing + "\n",
         )
-        pruned = _jq(["jq", "-r", ".[%d:][]" % max_versions], updated + "\n")
-        kept = _jq(["jq", ".[:%d]" % max_versions], updated + "\n")
-        # Every run that reaches here is a release channel's, and `cli/versions.json` is one file for both of them; the keep rule therefore does not wait for a snapshot (#32c67de3).
-        if pruned.strip():
-            pruned, kept = self._keep_candidates(prefix, pruned, kept, max_versions)
+        # THE KEEP RULE IS `retention_contract`'s, the one housekeeping's tag retention reads too, so the two pruners agree by construction (#a5a1f981). jq stays the parser of record: a tracker it cannot read leaves `updated` empty, and the twin then writes an EMPTY tracker (DEFECT 4, reproduced: anything that is not a JSON array of strings takes that path).
+        try:
+            versions = json.loads(updated) if updated else None
+        except ValueError:
+            versions = None
+        if not isinstance(versions, list) or not all(isinstance(v, str) for v in versions):
+            self.r2_put("", tracker_path, quiet=True)
+            return ""
+        plan = retention_contract.tracker_retention_plan(versions, new_version, "", max_versions)
+        # Every run that reaches here is a release channel's, and `cli/versions.json` is one file for both of them; the keep rule therefore does not wait for a snapshot (#32c67de3). Stable is read only when something fell outside the window, which is the one extra call the twin comparison declares.
+        if plan.held:
+            stable = self._stable_version()
+            plan = retention_contract.tracker_retention_plan(
+                versions, new_version, stable, max_versions
+            )
+            for ver, why in plan.held:
+                log.info(
+                    "keeping %s/v%s/ outside the %d-version window: %s"
+                    % (prefix, ver, max_versions, why)
+                )
+        # jq's bytes, not `json.dumps`'s: the tracker is uploaded verbatim (module docstring).
+        kept = _jq(["jq", "-n", "--argjson", "v", json.dumps(list(plan.kept)), "$v"], "")
         # THE LAST COMMAND IS THE ONE THAT CAN STILL ABORT THE SCRIPT. A command substitution takes the status of its final command, so a failing `r2_put` here DOES become the assignment's status and errexit fires in the caller, while every jq above it is swallowed. That asymmetry is bash's, not this port's, and it is defect 4's other half.
         self.r2_put(kept, tracker_path, quiet=True)
-        # `$( )` strips the trailing newlines of the whole function's stdout.
-        return pruned.rstrip("\n")
+        return "\n".join(plan.pruned)
 
-    def _keep_candidates(
-        self, prefix: str, pruned: str, kept: str, max_versions: int
-    ) -> tuple[str, str]:
-        """Move every pruned version `check_soak_period` may still select back into the tracker (the module docstring's tracker delta). Returns the new (pruned, kept)."""
+    def _stable_version(self) -> str:
+        """`cli/stable/manifest.json`'s version, or "" when it cannot be read (which `in_walk` reads as "hold everything")."""
         try:
-            stable = check_stable_manifest.manifest_version(self.r2_get("cli/stable/manifest.json"))
+            return check_stable_manifest.manifest_version(self.r2_get("cli/stable/manifest.json"))
         except (ValueError, AttributeError):
-            stable = ""
-        candidates: list[str] = []
-        rest: list[str] = []
-        for ver in pruned.split("\n"):
-            if not ver:
-                continue
-            if not check_soak_period.in_walk(ver, stable):
-                rest.append(ver)
-                continue
-            candidates.append(ver)
-            why = (
-                "newer than stable v%s, a promotion candidate" % stable
-                if check_soak_period.semver(stable) is not None
-                else "the stable version is unknown (cli/stable/manifest.json unreadable)"
-            )
-            log.info(
-                "keeping %s/v%s/ outside the %d-version window: %s"
-                % (prefix, ver, max_versions, why)
-            )
-        if candidates:
-            kept = _jq(
-                ["jq", "--argjson", "extra", json.dumps(candidates), ". + $extra"], kept + "\n"
-            )
-        return "\n".join(rest), kept
+            return ""
 
     def sealed_manifest(self, manifest: str) -> str | None:
         """The manifest text to publish for a SEALED version (the module docstring's sealed-rerun delta), or None when `manifest` already names the sealed checksums. Raises `BashExitError(1)` when a sealed checksum cannot be read."""
@@ -855,7 +845,9 @@ def main(argv: list[str]) -> int:
         if os.path.isdir(cli_dir):
             _upload_cli(run, cli_dir)
             if channel in RELEASE_CHANNELS:
-                cli_pruned = run.update_versions_tracker("cli", version, MAX_RELEASE_VERSIONS)
+                cli_pruned = run.update_versions_tracker(
+                    "cli", version, retention_contract.KEEP_RELEASES
+                )
         else:
             log.warn("CLI directory not found: %s" % cli_dir)
 

@@ -56,7 +56,7 @@ twin has a byte-exact answer for.
 -----------------------------------------------------------------------------
 RULE T: THE OPERATOR-SUPPLIED COUNTS ARE NO LONGER BASH ARITHMETIC WORDS
 -----------------------------------------------------------------------------
-`--days`, `--versions`, `BRANCH_MAX_AGE_DAYS` and `MAX_DELETES_PER_RUN` are validated at startup (`_whole_number`): ASCII digits only, read in base 10, anything else refused with exit 2 naming the flag and the value. That closes the octal trap below at its source for the four values an operator can set (`010` keeps ten, `08` keeps eight, `08x` is refused), and with it HAZARD 8 (`BRANCH_MAX_AGE_DAYS=08` unwinding the run mid-Phase 9). HAZARD 9 (a failed cache listing doubling the stream and unwinding the run) is fixed in `cleanup_actions_cache`: the failure is named and nothing is evicted. Phase 10 carries four more (see `cleanup_workflow_runs`): a workflow whose file is gone from the default branch loses the keep-newest floor, whatever its state; the workflow listing is read past its first page; a workflow's summary line names the retention that applied to it; and every page of a workflow's runs is listed before the first delete. Phase 11 lists every page of artifacts before its first delete for the same reason. Phases 1, 2 and 8d carry the release-tag lifetime fix (worklist #a5a1f981, see `release_tag_held_by_r2`): a strict-semver tag of the console repo is never deleted while R2 still holds `cli/<tag>/.released` or cannot say whether it does (that keeps the tag and fails the run), non-semver tags such as `production` no longer occupy a KEEP_VERSIONS slot, and 8d deletes an orphan prefix only after a direct probe of its sentinel answers a definite NO. The sections below describe the TWIN; `arith` keeps emulating it for the values that still reach it (epochs, API numbers), and the `test_delta_*` cases pin each change against the live twin as the control.
+`--days`, `--versions`, `BRANCH_MAX_AGE_DAYS` and `MAX_DELETES_PER_RUN` are validated at startup (`_whole_number`): ASCII digits only, read in base 10, anything else refused with exit 2 naming the flag and the value. That closes the octal trap below at its source for the four values an operator can set (`010` keeps ten, `08` keeps eight, `08x` is refused), and with it HAZARD 8 (`BRANCH_MAX_AGE_DAYS=08` unwinding the run mid-Phase 9). HAZARD 9 (a failed cache listing doubling the stream and unwinding the run) is fixed in `cleanup_actions_cache`: the failure is named and nothing is evicted. Phase 10 carries four more (see `cleanup_workflow_runs`): a workflow whose file is gone from the default branch loses the keep-newest floor, whatever its state; the workflow listing is read past its first page; a workflow's summary line names the retention that applied to it; and every page of a workflow's runs is listed before the first delete. Phase 11 lists every page of artifacts before its first delete for the same reason. Phases 1, 2 and 8d carry the release-tag lifetime fix (worklist #a5a1f981, see `release_tag_held_by_r2`): a strict-semver tag of the console repo is never deleted while R2 still holds `cli/<tag>/.released` or cannot say whether it does (that keeps the tag and fails the run), non-semver tags such as `production` no longer occupy a KEEP_VERSIONS slot, and 8d deletes an orphan prefix only after a direct probe of its sentinel answers a definite NO. Phases 1 and 2 take their count arm from `retention_contract.tag_retention_plan`, the rule (and the one `KEEP_RELEASES`) the R2 tracker prune in `upload_to_r2` shares, and so also never delete a Release or tag `check_soak_period.in_walk` may still promote: `cli/stable/manifest.json` is read once, lazily, and an unreadable one keeps every such tag UNCHECKED and latches the run as failed (PLAN-cd-errors-in-ci W1/W2). The sections below describe the TWIN; `arith` keeps emulating it for the values that still reach it (epochs, API numbers), and the `test_delta_*` cases pin each change against the live twin as the control.
 
 -----------------------------------------------------------------------------
 BASH ARITHMETIC IS EMULATED, INCLUDING THE OCTAL TRAP
@@ -119,16 +119,17 @@ from rediacc_ci import log
 from rediacc_ci.core import common, gh_retry
 from rediacc_ci.core import release_state_validator as rsv
 from rediacc_ci.housekeeping.cleanup_pr_environments import PrStateReader
+from rediacc_ci.release import check_stable_manifest, retention_contract
 from rediacc_ci.well_known import CF_API_BASE, GH_REPO, RELEASES_BUCKET
 
 # =============================================================================
 # CONFIGURATION -- the twin's block at :21-124, constant for constant.
 # =============================================================================
 
-# `RETENTION_DAYS="${ARG_DAYS:-14}"` / `KEEP_VERSIONS="${ARG_VERSIONS:-20}"`.
+# `RETENTION_DAYS="${ARG_DAYS:-14}"` / `KEEP_VERSIONS="${ARG_VERSIONS:-20}"`. The keep count is the retention contract's, the one the R2 tracker prune reads too (#a5a1f981), never a restated 20.
 # Held as STRINGS because that is what bash holds: they reach `date` as text and `[[ -lt ]]` as an arithmetic word, and both of those care about the spelling.
 DEFAULT_RETENTION_DAYS = "14"
-DEFAULT_KEEP_VERSIONS = "20"
+DEFAULT_KEEP_VERSIONS = str(retention_contract.KEEP_RELEASES)
 
 GITHUB_ORG = "rediacc"
 TAG_REPOS = ("console", "renet")
@@ -1131,6 +1132,8 @@ class Housekeeping:
             "--versions", args.get("ARG_VERSIONS") or DEFAULT_KEEP_VERSIONS
         )
         self.dry_run_text = args.get("ARG_DRY_RUN") or "false"
+        # `stable_version`'s once-per-run cache: None until read.
+        self._stable: str | None = None
 
         # :58, :49, :124. Read HERE because the twin reads them here, at source time: a caller that exports one of these after sourcing gets the old value in bash, and must get the old value here too.
         self.r2_bucket = os.environ.get("RELEASES_BUCKET") or DEFAULT_R2_BUCKET
@@ -1271,6 +1274,60 @@ class Housekeeping:
         )
         return True
 
+    def stable_version(self) -> str:
+        """`cli/stable/manifest.json`'s version, read from R2 once per run, or "" when it cannot be read.
+
+        `retention_contract.tag_retention_plan` holds every release tag outside the window that `check_soak_period.in_walk` may still select for promotion, and "" (unset credentials, a failed read, a manifest that is not JSON) makes `in_walk` answer True for all of them: an unread stable bound holds, it never releases. Read lazily, only once a tag outside the window has passed the age and budget checks, so a run with nothing to delete never asks.
+        """
+        if self._stable is not None:
+            return self._stable
+        stable = ""
+        if self.r2_credentials_exported():
+            code, text = capture_quiet(
+                [
+                    "aws",
+                    "s3",
+                    "cp",
+                    "s3://%s/%s/stable/manifest.json" % (rsv.bucket(), SENTINEL_PRODUCT),
+                    "-",
+                    "--endpoint-url",
+                    os.environ.get("CLOUDFLARE_R2_ENDPOINT", ""),
+                ]
+            )
+            if code == 0:
+                try:
+                    stable = check_stable_manifest.manifest_version(text)
+                except (ValueError, AttributeError):
+                    stable = ""
+        self._stable = stable
+        return stable
+
+    def release_plan(self, names: list[str], *, contract: bool, stable: str):
+        """`retention_contract.tag_retention_plan` at this run's `--versions`."""
+        return retention_contract.tag_retention_plan(
+            names, stable=stable, keep=int(self.keep_versions), contract=contract
+        )
+
+    def held_by_plan(self, what: str, verdict) -> bool:
+        """True = KEEP `what` (a tag, or a release and its tag) because the retention contract holds it outside the window.
+
+        A hold on an UNKNOWN stable version is not a settled keep: it is named UNCHECKED and latches the run as failed, exactly as an unanswered sentinel probe does (a dry run names it without latching).
+        """
+        if verdict.kind != retention_contract.HELD:
+            return False
+        if verdict.reason != retention_contract.REASON_STABLE_UNKNOWN:
+            log.info("  Keeping %s: %s" % (what, verdict.reason))
+            return True
+        message = (
+            "%s kept UNCHECKED: could not read %s/stable/manifest.json from R2, so it may still "
+            "be a promotion candidate" % (what[0].upper() + what[1:], SENTINEL_PRODUCT)
+        )
+        if self.dry_run:
+            log.warn("  [DRY-RUN] %s" % message)
+            return True
+        self.housekeeping_fail("Release tag unchecked", message)
+        return True
+
     def _cutoff_epoch(self) -> str:
         """`date -d "$RETENTION_DAYS days ago" +%s || date -v-${D}d +%s`, both quiet.
 
@@ -1314,6 +1371,10 @@ class Housekeeping:
         """
         if arith_cmp(index, "lt", self.keep_versions):
             return True
+        return self.retained_by_age(created_at)
+
+    def retained_by_age(self, created_at: str) -> bool:
+        """`should_retain`'s second arm alone: inside the retention window, or undatable (kept, and said so). Phases 1 and 2 ask it after `retention_contract.tag_retention_plan` has answered the count arm."""
         created_epoch = date_epoch(created_at)
         cutoff_epoch = self._cutoff_epoch()
         if arith_cmp(created_epoch, "eq", 0):
@@ -1352,15 +1413,23 @@ class Housekeeping:
 
         deleted = 0
 
+        rows = blob_array(releases)
+        names = [jq_text(jq_get(release, "tagName")) for release in rows]
+        # INTENTIONAL DELTA (Rule T, worklist #a5a1f981): the count arm is `retention_contract.tag_retention_plan`'s, the rule the R2 tracker prune shares. Releases are counted among strict-semver releases, and a release outside the window that `in_walk` may still promote is held with its tag. Computed with stable unknown first; R2 is asked for stable only if that matters.
+        plan = self.release_plan(names, contract=True, stable="")
+        stable_read = False
+
         # `index` is the twin's `index=$((index + 1))` at the tail of the loop.
         # It is `enumerate` here and not a counter because the only other exit is `break`, which the twin also takes before incrementing. Phase 5 keeps a hand-rolled counter: it increments in two places and is not this shape.
-        for index, release in enumerate(blob_array(releases)):
-            tag = jq_text(jq_get(release, "tagName"))
+        for index, release in enumerate(rows):
+            tag = names[index]
             created_at = jq_text(jq_get(release, "createdAt"))
 
             is_draft = jq_text(jq_get(release, "isDraft")) == "true"
-            if (not is_draft or not self.draft_is_stale(created_at)) and self.should_retain(
-                created_at, index
+            stale_draft = is_draft and self.draft_is_stale(created_at)
+            if not stale_draft and (
+                plan.verdicts[index].kind == retention_contract.KEEP
+                or self.retained_by_age(created_at)
             ):
                 log.debug("Keeping release: %s (index=%d)" % (tag, index))
             else:
@@ -1370,6 +1439,13 @@ class Housekeeping:
                         "deferred to next run" % self.max_deletes
                     )
                     break
+                if plan.needs_stable and not stable_read:
+                    stable_read = True
+                    plan = self.release_plan(names, contract=True, stable=self.stable_version())
+                verdict = plan.verdicts[index]
+                # A stale draft is a release step that never finished, so the RELEASE goes whatever the plan says; its tag still answers to the plan below.
+                if not stale_draft and self.held_by_plan("release %s and its tag" % tag, verdict):
+                    continue
                 if self.dry_run:
                     log.warn("[DRY-RUN] Would delete release: %s (created: %s)" % (tag, created_at))
                     # INTENTIONAL DELTA (Rule T): HAZARD 2 repaired, so "would delete N of M" counts the lines above it. Not charged to the budget, as in Phases 3 and 4.
@@ -1380,8 +1456,10 @@ class Housekeeping:
                     ["gh", "release", "delete", tag, "--repo", RELEASE_REPO, "--yes"],
                     quiet=False,
                 ):
-                    # Best-effort tag cleanup (may already be gone), unless R2 still holds the release's sentinel: the tag then outlives the release, and Phase 2 reaps it once R2 has.
-                    if not self.release_tag_held_by_r2(RELEASE_REPO, tag):
+                    # Best-effort tag cleanup (may already be gone), unless the retention contract holds the tag (a stale draft's promotion candidate) or R2 still holds the release's sentinel: the tag then outlives the release, and Phase 2 reaps it once R2 has.
+                    if not self.held_by_plan(
+                        "tag %s" % tag, verdict
+                    ) and not self.release_tag_held_by_r2(RELEASE_REPO, tag):
                         run_quiet_err(
                             [
                                 "gh",
@@ -1528,16 +1606,18 @@ class Housekeeping:
 
             deleted = 0
 
-            # INTENTIONAL DELTA (Rule T, worklist #a5a1f981): a strict-semver tag is indexed among strict-semver tags only, and every other tag (`production`, a pre-release) among the others, so a moving pointer tag no longer takes one of the KEEP_VERSIONS release slots. The twin indexed them all together.
-            group_index = {True: 0, False: 0}
-            for entry in tag_data:
-                tag_name = jq_text(entry.get("name"))
+            # INTENTIONAL DELTA (Rule T, worklist #a5a1f981): the count arm is `retention_contract.tag_retention_plan`'s, the rule the R2 tracker prune shares. A strict-semver tag is indexed among strict-semver tags only, and every other tag (`production`, a pre-release) among the others, so a moving pointer tag no longer takes one of the KEEP_VERSIONS release slots (the twin indexed them all together); and a console release tag outside the window that `in_walk` may still promote is held. renet has no release contract (no sentinels, no promotion walk).
+            names = [jq_text(entry.get("name")) for entry in tag_data]
+            contract = full_repo == RELEASE_REPO
+            plan = self.release_plan(names, contract=contract, stable="")
+            stable_read = False
+            for index, entry in enumerate(tag_data):
+                tag_name = names[index]
                 tag_date = jq_text(entry.get("date"))
-                is_release = bool(_STRICT_SEMVER_RE.match(tag_name))
-                index = group_index[is_release]
-                group_index[is_release] += 1
 
-                if self.should_retain(tag_date, index):
+                if plan.verdicts[index].kind == retention_contract.KEEP or self.retained_by_age(
+                    tag_date
+                ):
                     log.debug("  Keeping tag: %s" % tag_name)
                 else:
                     # The budget is asked BEFORE R2: a tag that cannot be deleted this run is not worth a probe (and an unanswered probe would latch the run as failed for a tag nothing was going to touch).
@@ -1547,6 +1627,13 @@ class Housekeeping:
                             "deferred to next run" % self.max_deletes
                         )
                         break
+                    if plan.needs_stable and not stable_read:
+                        stable_read = True
+                        plan = self.release_plan(
+                            names, contract=contract, stable=self.stable_version()
+                        )
+                    if self.held_by_plan("tag %s" % tag_name, plan.verdicts[index]):
+                        continue
                     if self.release_tag_held_by_r2(full_repo, tag_name):
                         continue
                     if self.dry_run:
