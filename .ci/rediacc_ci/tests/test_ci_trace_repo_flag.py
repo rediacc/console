@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import subprocess
 
 import pytest
 
@@ -32,6 +33,9 @@ def _record_gh(ct, monkeypatch):
 
     def fake_run(cmd, **_kw):
         calls.append(list(cmd))
+        # tmp_path is not a git checkout: git answers like one, so --repo keeps the cwd as its root.
+        if cmd[0] == "git":
+            return subprocess.CompletedProcess(cmd, 128, "", "fatal: not a git repository")
         return _Done()
 
     monkeypatch.setattr(ct.subprocess, "run", fake_run)
@@ -118,3 +122,33 @@ def test_zero_context_pr_inside_grace_stays_running(ct, monkeypatch):
 def test_zero_context_pr_with_a_pending_run_stays_running(ct, monkeypatch):
     runs = [(1, "Console CI", "push", "in_progress", 1, "", "")]
     assert _zero_verdict(ct, monkeypatch, "2020-01-01T00:00:00Z", runs)["verdict"] == "running"
+
+
+def _git(*args):
+    subprocess.run(["git", *args], check=True, capture_output=True)
+
+
+def _checkout(path, origin):
+    _git("init", "-q", str(path))
+    _git("-C", str(path), "remote", "add", "origin", origin)
+
+
+def test_checkout_for_repo_finds_the_submodule_whose_origin_matches(ct, tmp_path):
+    # 2026-10-08: --repo rediacc/account from the console root compared account#95's head with the CONSOLE's origin/1007-1 and gave no verdict.
+    top = tmp_path / "console"
+    _checkout(top, "git@github.com:rediacc/console.git")
+    _checkout(top / "private" / "account", "https://github.com/rediacc/account.git")
+    (top / ".gitmodules").write_text(
+        '[submodule "private/account"]\n\tpath = private/account\n\turl = x\n'
+    )
+    assert ct._checkout_for_repo(top, "rediacc/account") == top / "private" / "account"
+    assert ct._checkout_for_repo(top, "rediacc/console") == top
+    assert ct._checkout_for_repo(top, "rediacc/renet") is None
+
+
+def test_repo_flag_without_a_matching_checkout_is_refused(ct, monkeypatch, tmp_path):
+    top = tmp_path / "console"
+    _checkout(top, "git@github.com:rediacc/console.git")
+    monkeypatch.chdir(top)
+    with pytest.raises(SystemExit):
+        ct.main(["--repo", ACCOUNT_REPO, "--run", "7"])
