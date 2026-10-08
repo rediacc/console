@@ -357,6 +357,10 @@ truthy(
     "resolve commit: the refusal names the sha and the ancestry",
     _orphan[:40] in _why and "not an ancestor of HEAD" in _why,
 )
+# 2026-10-08: the same commit, once origin/main carries it (a CD push to main the branch has not merged yet), resolves; main is never rewritten.
+sh(_orph, "git", "update-ref", "refs/remotes/origin/main", _orphan)
+truthy("resolve commit: a commit on origin/main resolves", R.resolve(_orph, "commit", _orphan)[0])
+sh(_orph, "git", "update-ref", "-d", "refs/remotes/origin/main")
 falsy(
     "resolve_pointers: an orphaned commit pointer fails",
     R.resolve_pointers(_orph, [("commit", _orphan)])[0][1],
