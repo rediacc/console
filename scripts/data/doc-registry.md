@@ -840,7 +840,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/pr | 2 | .py 2 |
 | .ci/rediacc_ci/private | 10 | .py 10 |
 | .ci/rediacc_ci/proxies | 10 | .py 10 |
-| .ci/rediacc_ci/quality | 111 | .py 111 |
+| .ci/rediacc_ci/quality | 112 | .py 112 |
 | .ci/rediacc_ci/release | 30 | .py 30 |
 | .ci/rediacc_ci/review | 7 | .py 7 |
 | .ci/rediacc_ci/review/prompts | 2 | .md 2 |
@@ -851,7 +851,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures/ci_diagnose | 24 | .json 16, .log 8 |
 | .ci/rediacc_ci/tests/fixtures/gate_model/20261008 | 3 | .json 2, .jsonl 1 |
-| .ci/rediacc_ci/tests/gates | 177 | .py 176, .fixture 1 |
+| .ci/rediacc_ci/tests/gates | 178 | .py 177, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/actionlint | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/bash-pairs | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/corpus | 17 | .list 17 |
@@ -939,7 +939,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/infra | 4 | .sh 4 |
 | .ci/scripts/lib | 5 | .sh 5 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
-| .ci/scripts/quality | 158 | .py 156, .json 1, .mjs 1 |
+| .ci/scripts/quality | 159 | .py 157, .json 1, .mjs 1 |
 | .ci/scripts/quality/lib | 1 | .py 1 |
 | .ci/scripts/security | 2 | .py 2 |
 | .ci/scripts/test | 3 | .sh 2, .ts 1 |

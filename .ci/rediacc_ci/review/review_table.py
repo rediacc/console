@@ -50,7 +50,9 @@ FINDING_HEAD = re.compile(r"^### ([0-9a-f]{8})\.(\d+) \[(high|medium|low)\] (\S.
 DIFF_RE = re.compile(r"^(\d+) bytes, (\d+) files, truncated: (yes|no)$")
 LABELS_RE = re.compile(r"^bump=(none|patch|minor|major) kind=([a-z,]+) why=(.*)$")
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
-RESOLUTION_KINDS = ("fixed", "not-a-bug", "deferred", "open")
+# `waived` is the operator-ruled escape (PLAN-deferred-findings-block-merge D3) and gets its own count so a waiver is visible on the PR; `deferred` is the retired kind, still shown so a reader sees what `check:ci-review-resolutions` refuses. A first word outside these is MALFORMED_RESOLUTION, never `open`: mapping an unknown word to `open` hid it from the one page a reader looks at.
+RESOLUTION_KINDS = ("fixed", "not-a-bug", "waived", "deferred", "open")
+MALFORMED_RESOLUTION = "malformed"
 SEVERITIES = ("high", "medium", "low")
 
 Runner = Callable[[list[str]], tuple[int, str]]
@@ -68,7 +70,7 @@ class Finding:
     @property
     def resolution_kind(self) -> str:
         head = self.resolution.split(" ", 1)[0]
-        return head if head in RESOLUTION_KINDS else "open"
+        return head if head in RESOLUTION_KINDS else MALFORMED_RESOLUTION
 
 
 @dataclasses.dataclass
@@ -233,7 +235,8 @@ def severities(rec: Record) -> str:
 
 def resolutions(rec: Record) -> str:
     counts = collections.Counter(f.resolution_kind for f in rec.findings)
-    return ", ".join("%s %d" % (k, counts[k]) for k in RESOLUTION_KINDS if counts[k]) or "-"
+    kinds = (*RESOLUTION_KINDS, MALFORMED_RESOLUTION)
+    return ", ".join("%s %d" % (k, counts[k]) for k in kinds if counts[k]) or "-"
 
 
 def coverage(rec: Record) -> str:
@@ -354,17 +357,21 @@ def render(ctx: Context, records: list[Record], branch_verdicts: list[dict] | No
             superseded = [r for r in _order(console) if r.sha not in in_pr]
     findings_total = sum(len(r.findings) for r in records)
     open_total = sum(1 for r in records for f in r.findings if f.resolution_kind == "open")
+    malformed_total = sum(
+        1 for r in records for f in r.findings if f.resolution_kind == MALFORMED_RESOLUTION
+    )
     head = [
         "%s %s -->" % (MARKER_PREFIX, ctx.head or "local"),
         "## Per-commit reviews: `%s`" % ctx.branch,
         "",
         bump_line(records, branch_verdicts),
         "",
-        "%d record(s), %d finding(s), %d open. Records: [`%s/%s/`](%s)%s."
+        "%d record(s), %d finding(s), %d open%s. Records: [`%s/%s/`](%s)%s."
         % (
             len(records),
             findings_total,
             open_total,
+            ", %d with a malformed resolution" % malformed_total if malformed_total else "",
             REVIEWS_REL,
             branch_slug(ctx.branch),
             dir_url(ctx),
