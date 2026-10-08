@@ -319,8 +319,15 @@ class Fakes:
     def alive(self, pid):
         return any(p == pid for _b, _i, p in self.spawned) and pid not in self.killed
 
-    def arm(self, root):
-        return AW.arm(root, SID, cli=self.cli, spawn=self.spawn, alive=self.alive)
+    def arm(self, root, has_pr=True):
+        return AW.arm(
+            root,
+            SID,
+            cli=self.cli,
+            spawn=self.spawn,
+            alive=self.alive,
+            has_pr=lambda _root, _branch: has_pr,
+        )
 
 
 @pytest.fixture
@@ -408,6 +415,17 @@ def test_a_push_that_did_not_move_the_branch_arms_nothing(armenv):
     assert f.cli_calls == []
 
 
+def test_lf6_a_branch_without_an_open_pr_arms_nothing(armenv):
+    # LF6: a plain backup push with no PR starts no CI, so no watcher and no worklist item.
+    f = Fakes()
+    assert f.arm(armenv, has_pr=False) == ""
+    assert f.spawned == []
+    assert f.cli_calls == []
+    # Control: the same head with an open PR arms.
+    assert "CI watch armed" in f.arm(armenv, has_pr=True)
+    assert len(f.spawned) == 1
+
+
 def test_main_is_never_watched(armenv):
     subprocess.run(["git", "-C", str(armenv), "checkout", "-q", "-b", "main"], check=True)
     f = Fakes()
@@ -488,7 +506,7 @@ def test_the_real_worklist_accepts_the_item_and_the_lease(armenv, monkeypatch):
         spawned.append(item)
         return 999999
 
-    line = AW.arm(armenv, SID, spawn=spawn, alive=lambda _pid: False)
+    line = AW.arm(armenv, SID, spawn=spawn, alive=lambda _pid: False, has_pr=lambda _r, _b: True)
     assert line.startswith("CI watch armed"), line
     rc, out = AW.worklist_cli(armenv, SID, "--list", "--open", "deadbeef")
     assert rc == 0, out

@@ -34,5 +34,5 @@ CLAUDE.md rule 1 commits each verified unit as it lands, and the chain in [SKILL
 - **One unit, one epic.** A unit that spans two epics is two commits. Above 20 files it needs a proof line anyway, which is the signal to split it.
 - **The lead commits.** A writer's output is committed by the lead after the spot-check, with the epic of the item the writer was given.
 - **A tick with no commit says why**: `nocommit:<no-tracked-change|research|operator-deferred>`.
-- **Pushing is separate**: at an epic milestone, at least every 2 hours of committed work, and before a stop that leaves unpushed commits, each with its `ci:quick` receipt.
+- **Pushing is separate**: at an epic milestone, at least every 2 hours of committed work, and before a stop that leaves unpushed commits, each with its `ci:quick` receipt. Under `turbo: on` with `turbo_push: batch-end` (the default) the batch is verified locally and pushed once when it completes; until then only a backup push with no PR is allowed, when `backup_push_h` fires.
 - **A `[hotfix]` on `main` carries no `PR-TASK:`** (there is no `agent/pr/main.md`); its `Hotfix-Evidence:` trailer takes the place of the epic.

@@ -111,7 +111,9 @@ a rule the operator has written down twice.
   Session default 1: "Verified work is committed right away, in small
   reviewable commits on the single current branch." Pushes run on a cadence
   ("at an epic milestone, at least every 2 hours of committed work, and before
-  a stop that leaves unpushed commits"), and "a second branch or PR is the
+  a stop that leaves unpushed commits"; under `turbo: on` with `turbo_push:
+  batch-end` (the default) the batch is pushed once when it completes, with
+  only a backup push and no PR until then), and "a second branch or PR is the
   operator's own `!` command; there is nothing to ask for."
 
   Findings rule: "Ask for the big-bang, not for permission to patch one thing...
