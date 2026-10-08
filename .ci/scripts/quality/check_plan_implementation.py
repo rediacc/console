@@ -517,7 +517,7 @@ def tick_findings(
     REBASE. `successor_of` (see make_successor_of) maps a sha the branch's rebase rewrote to the commit that replaced it. A P-A3 `commit:` pointer that does not resolve is re-resolved through it before it is a finding, and a P-A4 head that is not an ancestor of the ticking commit is judged by its successor when it was rewritten. A head that was NOT rewritten (still reachable from HEAD) is judged as recorded, so an investigation genuinely written after the tick still fails.
           A rewritten head NO record maps (the branch tip at investigation time is usually a `chore(reviews)` commit, which is never itself reviewed, and the rebase leaves no child record behind it) falls back to time: the row's own `at` must precede the ticking commit's AUTHOR date, the one date a rebase preserves (`authored_of`). Neither readable is a finding.
 
-    LATE ROWS. A row written with `--plan-investigate --retro` (`"retro": true`) or `--plan-backfill` (a `backfill` field) is the honest record of a box closed BEFORE it was investigated. P-A2 accepts it, P-A3 still re-resolves its pointers, and P-A4 is not run on a retro row because the row itself already says the ordering never happened. What it is NOT is silent: every such box is appended to `late_rows` as (rel, sig, "retro"|"backfill") and the caller prints them on every run, red or green. A retro row with no `commit:` pointer is a P-A2 finding: the verb refuses to write one, so its presence means the ledger was hand-edited.
+    LATE ROWS. A row written with `--plan-investigate --retro` (`"retro": true`) or a legacy `--plan-backfill` row (a `backfill` field; that verb is gone, its rows stay as history and keep counting) is the honest record of a box closed BEFORE it was investigated. P-A2 accepts it, P-A3 still re-resolves its pointers, and P-A4 is not run on a retro row because the row itself already says the ordering never happened. What it is NOT is silent: every such box is appended to `late_rows` as (rel, sig, "retro"|"backfill") and the caller prints them on every run, red or green. A retro row with no `commit:` pointer is a P-A2 finding: the verb refuses to write one, so its presence means the ledger was hand-edited.
 
     Every oracle is a parameter. That is not abstraction for its own sake: it is what lets the controls drive THIS function -- the one the real run calls -- against planted inputs, rather than a copy of it that could pass while the real one is broken.
     """
@@ -638,7 +638,7 @@ def late_rows_line(late_rows):
     if not late_rows:
         return (
             "  P-A2 late records: 0 box(es) on this branch were closed before investigation "
-            "(no --retro or --plan-backfill row among the judged boxes)"
+            "(no --retro row, and no legacy backfill row, among the judged boxes)"
         )
     kinds: dict[str, int] = {}
     for _rel, _sig, kind in late_rows:

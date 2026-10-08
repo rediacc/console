@@ -319,6 +319,62 @@ def shacite() -> Any:
     return wl_gh.import_ci("rediacc_ci.shacite")
 
 
+_CITATION_GATE = []
+
+
+def _citation_gate():
+    """The `check_plan_citations.py` module, loaded once by file. Raises RecordError when it cannot be loaded.
+
+    THE GATE'S OWN EXTRACTOR AND RESOLVER, imported rather than re-derived: `citations()` knows which tokens are pointers (fenced hex, digests, agent ids and fingerprints are not) and `unresolved()` knows what each kind has to land on. A second copy here would be a second opinion about what a dead citation is, which is how a bare `run.ts:352` reached a plan and only the gate caught it. Loaded lazily because the gate itself imports this module.
+    """
+    if _CITATION_GATE:
+        return _CITATION_GATE[0]
+    import importlib.util  # noqa: PLC0415
+
+    qdir = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "quality"
+    gate = qdir / "check_plan_citations.py"
+    if not gate.is_file():
+        raise RecordError(
+            "cannot resolve citations: %s is missing, and a line written without that check "
+            "is the one check:ci-plan-citations later reds" % gate
+        )
+    if str(qdir) not in sys.path:
+        sys.path.insert(0, str(qdir))
+    spec = importlib.util.spec_from_file_location("_check_plan_citations_for_planrec", gate)
+    if spec is None or spec.loader is None:
+        raise RecordError("cannot load %s" % gate)
+    mod = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(mod)
+    except (SystemExit, ImportError) as exc:
+        raise RecordError("cannot load %s: %s" % (gate, exc)) from exc
+    _CITATION_GATE.append(mod)
+    return mod
+
+
+def refuse_unresolved_citations(root, text, what):
+    """Raises RecordError naming every citation in `text` that `check:ci-plan-citations` would refuse, in its own words. Silent when each lands.
+
+    Run BEFORE a verb writes `text` into a plan (`what` names the field: "the evidence line", "the note"). The message for each is the resolver's own, and it says what to write instead (a submodule-qualified path, a blob id for a rebased commit).
+    """
+    gate = _citation_gate()
+    skip = gate.absent_submodules(root)
+    bad = []
+    for kind, token in gate.citations(text):
+        if kind in ("fileline", "plan") and any(token.startswith(p + "/") for p in skip):
+            continue
+        dead, why = gate.unresolved(root, kind, token)
+        if dead:
+            bad.append("%s citation `%s` %s" % (kind, token, why))
+    if bad:
+        raise RecordError(
+            "%s carries %d citation(s) that do not resolve, so check:ci-plan-citations would "
+            "red the plan they are written into:\n  %s\n\nWrite the full repo-relative path "
+            "(`scripts/ci-runner/run.ts:352`, not `run.ts:352`)."
+            % (what, len(bad), "\n  ".join(bad))
+        )
+
+
 def citable_commit_refs(root, text, repos=None):
     """`text` with every all-digit `commit:<sha>` lengthened until it carries a letter (`shacite.citable_token`), so the tick evidence a verb writes is read by every citation reader, including `plan_lifecycle.unfenced_tokens`, which still skips digit runs whatever their prefix.
 
@@ -1959,7 +2015,7 @@ def open_boxes(text):
 def done_boxes(text):
     """[(line_index, line, body, sig)] for every DONE box the real parser resolves.
 
-    `open_boxes`'s mirror image, and it exists for exactly one caller: `plan_backfill_investigation`, whose whole subject is a box that is ALREADY `[x]`. Written as a separate function rather than as a flag on `open_boxes`, because a flag would let a mistyped argument hand the tick verbs a done box, and the two verbs must never be able to reach each other's set.
+    `open_boxes`'s mirror image, and it exists for the late-record writers (`plan_investigate(retro=True)`, `retro_evidence_text`), whose whole subject is a box that is ALREADY `[x]`. Written as a separate function rather than as a flag on `open_boxes`, because a flag would let a mistyped argument hand the tick verbs a done box, and the two verbs must never be able to reach each other's set.
     """
     _open_t, done_t = PF.plan_boxes(text)
     out = []
@@ -1980,7 +2036,7 @@ def select_box(boxes, selector, kind="OPEN"):
     Two spellings, and both are needed. A signature is what the ledger and the record speak, so it is what a machine will pass; a substring is what a person has in front of them. AMBIGUITY IS A REFUSAL rather than a first-match, because the whole point of the verb is that it edits a file nobody is watching -- picking one of two candidates silently is how the wrong box gets ticked
     and the evidence lands under it.
 
-    `kind` NAMES THE SET IN THE REFUSAL and changes nothing else. It defaults to `OPEN` so every existing caller's message is byte-identical; `plan_backfill_investigation` passes `DONE`, because a refusal that offered "the open boxes are:" while listing ticked ones would send the reader looking for a box that is not in the list.
+    `kind` NAMES THE SET IN THE REFUSAL and changes nothing else. It defaults to `OPEN` so every existing caller's message is byte-identical; the late-record writers pass `DONE`, because a refusal that offered "the open boxes are:" while listing ticked ones would send the reader looking for a box that is not in the list.
     """
     sel = (selector or "").strip()
     if not sel:
@@ -2249,7 +2305,7 @@ def render_resolution(resolved):
 def vet_pointers_and_note(root, pointer_tokens, note):
     """(pointers, resolved, note) once every bar an investigation row must clear is cleared.
 
-    EXTRACTED RATHER THAN COPIED, on the day a second writer of these rows arrived. `plan_investigate` and `plan_backfill_investigation` must hold a row to the SAME four bars -- the pointer count, the distinct-kind count, live re-resolution of every pointer, and the note floor -- and two copies of that block would be two opinions about what a row has to carry. A backfill whose
+    EXTRACTED RATHER THAN COPIED, on the day a second writer of these rows arrived. `plan_investigate` live and `plan_investigate(retro=True)` must hold a row to the SAME four bars -- the pointer count, the distinct-kind count, live re-resolution of every pointer, and the note floor -- and two copies of that block would be two opinions about what a row has to carry. A late record whose
     bars had quietly drifted below the live verb's is exactly the shape that makes a retroactive record worth less than the one it imitates.
     """
     pointers = parse_pointers(pointer_tokens)
@@ -2283,6 +2339,7 @@ def vet_pointers_and_note(root, pointer_tokens, note):
             "%d-character floor is the mistake being corrected here, not copied. Say what was "
             "looked at and what was found." % (len(n), INV_NOTE_MIN, TICK_EVIDENCE_MIN)
         )
+    refuse_unresolved_citations(root, citable_commit_refs(root, n), "the note")
     return pointers, resolved, n
 
 
@@ -2616,6 +2673,7 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
 
     # AN ALL-DIGIT `commit:<sha9>` IS WRITTEN LENGTHENED (#0241c97d), so the line this verb puts into the plan is read by every citation reader, `plan_lifecycle`'s --move remap included.
     ev = citable_commit_refs(root, ev)
+    refuse_unresolved_citations(root, ev, "the evidence")
     lines = text.splitlines(keepends=True)
     eol = "\n" if lines[i].endswith("\n") else ""
     # ONE CHARACTER, at one offset. `line.replace("[ ]", "[x]", 1)` would also rewrite a `[ ]` that appears in the task TEXT of a box about checkboxes, and this repo has plans about checkboxes.
@@ -2660,39 +2718,15 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
     return out, merge_ledger(doc, rel, row), note
 
 
-# --------------------------------------------------------------------------- THE RETROACTIVE BACKFILL, and the one divergence it makes from `plan_investigate` is stated in the open rather than buried.
-#
-# WHY A SECOND WRITER OF INVESTIGATION ROWS EXISTS AT ALL. `plan_investigate` and `plan_tick` both reach their box through `open_boxes`, which returns only boxes whose mark is not `x`. A box that a sub-agent already flipped with the Edit tool is therefore unreachable by both verbs FOR EVER: the live pipeline structurally refuses to speak about a box that is already closed, which
-# is correct for its own job -- investigate, then implement, then tick -- and leaves no way at all to repair a trail that was skipped. Measured on branch `0923-1`: 316 boxes across 31 plans were closed by real, verified work and carry no ledger row, and re-running the live verbs on any one of them refuses outright.
-#
-# THE DIVERGENCE, AND IT IS THE ONLY ONE. `plan_investigate` stamps `head` with `git rev-parse HEAD` at write time, which is what makes the row an assertion about a tree rather than a story: Clause 1 then demands that the tick's own commit DESCEND from that head, and an investigation written after the work cannot satisfy it. A backfill has no such head to offer honestly -- the
-# work is already committed, and stamping the live HEAD would assert an ordering that never happened. So `head` here is `done_commit^`, the immediate parent of the commit that ticked the box. That is a real commit, it is unconditionally an ancestor of `done_commit`, and it is the LAST tree in which the question "is this box's work already present?" was still open. Nothing is
-# invented and no ordering is claimed that the history does not already carry.
-#
-# WHAT IS DELIBERATELY NOT AVAILABLE HERE. There is no verdict argument: `present` is the only honest answer a backfill can give, because the box is closed and the work is in the tree by construction. There is no box-mark write: the mark is already `x` and this verb never touches it. And there is no way in: an open box is refused, so this never becomes a shortcut past a live
-# investigation.
-
-#: The single verdict a backfill may record. See the block above: a retroactive row about an already-closed box cannot honestly say `absent`, and `partial` would contradict the `[x]` it is describing.
-BACKFILL_VERDICT = "present"
+# --------------------------------------------------------------------------- THE LATE RECORD'S PLAN HALF. There is ONE late-record writer, `plan_investigate(retro=True)`, and the row it writes is always marked `"retro": true`. A box closed without an evidence line owes the plan a second half, which this function produces.
 
 
-def plan_backfill_investigation(
-    root, rel, selector, pointer_tokens, note, me, evidence=None, text=None, history=None, now=None
-):
-    """(row, resolved, new_text) for ONE already-ticked box. Raises RecordError. WRITES NOTHING.
+def retro_evidence_text(root, rel, selector, evidence, note, me, text=None, now=None):
+    """The plan's text with a `    (ticked) ` line beneath ONE already-ticked box. Raises RecordError. WRITES NOTHING.
 
-    The caller writes both halves, the same contract `plan_tick` keeps and for the same reason: a refusal on the second must not be able to leave the first half applied. The ledger half goes through `append_investigation` and nothing else, so there is exactly one piece of row-writing code in this module.
+    The plan half of `--plan-investigate ... --retro --write`: P-A2 wants an evidence line beneath the box AND a ledger row, and the row alone (`plan_investigate`) leaves the first finding standing. The line is inserted only if ABSENT, so a contemporaneous line is never overwritten by a reconstruction, and a second run is a no-op on the text. `evidence` defaults to `note`.
 
-    `text` lets a caller CHAIN insertions through one plan file without re-reading it, which is what makes a batch over a plan's twenty boxes safe: each call recomputes line indices from the text it was handed, so an earlier insertion cannot shift a later one onto the wrong line.
-
-    Every bar `plan_investigate` holds a row to is held here too, through the shared `vet_pointers_and_note`. Two extra refusals are specific to the retroactive case and both are LOUD rather than silent skips:
-
-      * a box that is still OPEN -- it belongs to the live pipeline, which can
-        still answer the question honestly, and a backfill row for it would be a
-        pre-dated investigation nobody performed.
-      * a box whose `done_commit` is "" -- the ledger walk found no commit that
-        attests it, which is the `abandoned` vocabulary of this module. A trail
-        must not be manufactured for a box no commit ever closed.
+    `text` lets a caller chain insertions through one plan file without re-reading it. The line is held to the floors `--plan-tick` holds its own to (length, checkable, every citation resolving), so a late line is never a weaker record wearing the same grammar. It must move NOTHING: the box was done before and is done after.
     """
     root = pathlib.Path(root)
     p = root / rel
@@ -2702,122 +2736,47 @@ def plan_backfill_investigation(
         text = p.read_text(encoding="utf-8", errors="replace")
     if is_record(text):
         raise RecordError("%s is a COMPACTED RECORD; its boxes are history, not work" % rel)
-
-    # THE OPEN-BOX DOOR IS CHECKED FIRST and refuses before anything else is computed, so the refusal names the real problem rather than "no DONE box matches".
-    opens = open_boxes(text)
-    try:
-        still_open = select_box(opens, selector)
-    except RecordError:
-        still_open = None
-    if still_open is not None:
-        raise RecordError(
-            "box %s of %s is still OPEN, and a backfill may only describe a box that is already "
-            "closed. Backfilling an open box would record an investigation nobody performed and "
-            "would license the very tick it was invented to excuse. Use the live pipeline, which "
-            "can still answer this honestly:\n"
-            "    worklist.py --plan-investigate %s %s %s <absent|present|partial> "
-            "<kind>:<token> <kind>:<token> -- <note> --write"
-            % (still_open[3], rel, (me or "<me>")[:8], rel, still_open[3])
-        )
-
     dones = done_boxes(text)
     if not dones:
-        raise RecordError(
-            "%s has no ticked boxes, so there is no closed box to backfill a record for" % rel
-        )
-    i, _line, body, sig = select_box(dones, selector, kind="DONE")
-
-    # `done=` COMES FROM HISTORY, NEVER FROM A CLAIM -- the same ledger walk `derive` and the gate both use. The commit this finds is the first one whose committed `.ci/config/plan-boxes.json` attests the signature as done, which no working tree can rewrite.
-    commit = done_commit(history if history is not None else ledger_history(root), rel, sig)
-    if not commit:
-        raise RecordError(
-            "box %s of %s is ticked in the tree but NO commit's %s attests it as done, so the "
-            "ledger walk reads it as abandoned. Refusing rather than skipping it quietly: a "
-            "backfill exists to record what really happened, and there is no commit here to "
-            "record. Either the tick has not been committed yet -- commit the plan and the box "
-            "ledger together, then run this again -- or the box was flipped without the ledger "
-            "and check:ci-plan-boxes owns that remedy." % (sig, rel, LEDGER_REL)
-        )
-
-    # `done_commit^`, NOT `git rev-parse HEAD`. The block above this function states why at length; the short version is that the parent is the last tree in which this box's question was genuinely open, and it is an ancestor of `done_commit` by construction rather than by assertion.
-    head = _git_out(root, "rev-parse", "--verify", "--quiet", "%s^" % commit) or ""
-    if not head:
-        raise RecordError(
-            "%s has no parent commit, so there is no tree in which box %s of %s was still open "
-            "and no honest `head` to record. A root commit cannot carry a backfilled "
-            "investigation." % (commit[:12], sig, rel)
-        )
-    # BELT AND BRACES, and cheap: P-A4 re-derives exactly this with `merge-base --is-ancestor`, so asserting it here means a refusal costs a message instead of a red gate.
-    if not _git_ok(root, "merge-base", "--is-ancestor", head, commit):
-        raise RecordError(
-            "%s is not an ancestor of %s, which cannot happen for a parent and its child. "
-            "Refusing rather than writing a row the gate would reject." % (head[:12], commit[:12])
-        )
-
-    pointers, resolved, n = vet_pointers_and_note(root, pointer_tokens, note)
-
-    ev = (evidence if evidence is not None else n).strip()
+        raise RecordError("%s has no ticked boxes, so --retro has nothing to describe" % rel)
+    i, _line, body, _sig = select_box(dones, selector, kind="DONE")
+    lines = text.splitlines(keepends=True)
+    slot = _evidence_slot(lines, i)
+    if slot < len(lines) and TICK_LINE_RE.match(lines[slot]):
+        return text
+    ev = (evidence if evidence is not None else note or "").strip()
     if len(ev) < TICK_EVIDENCE_MIN:
         raise RecordError(
-            "the evidence line is %d character(s) and at least %d are required. A backfilled "
-            "line is held to the SAME floor a live `--plan-tick` line is, because the next "
-            "reader cannot tell the two apart and must not have to." % (len(ev), TICK_EVIDENCE_MIN)
+            "the evidence line is %d character(s) and at least %d are required. A late line is "
+            "held to the SAME floor a live `--plan-tick` line is, because the next reader cannot "
+            "tell the two apart and must not have to." % (len(ev), TICK_EVIDENCE_MIN)
         )
     import wl_checks as CK_EV  # noqa: PLC0415 -- see resolve()
 
     if not CK_EV.completion_evidence(root, ev):
         raise RecordError(
-            "the evidence line carries nothing checkable. `--plan-tick` has demanded this since "
-            "the two tick verbs were reconciled, and a retroactive line that fell short of it "
-            "would be a weaker record wearing the same grammar. Name the real closing sha, a "
+            "the evidence line carries nothing checkable. Name the real closing sha, a "
             "file:line that RESOLVES, a run id, an exit code, or a URL."
         )
-
-    row = {
-        "at": now or C.stamp_now(),
-        "by": (me or "?")[:8],
-        "plan": rel,
-        "sig": sig,
-        "box": body[:200],
-        "verdict": BACKFILL_VERDICT,
-        "head": head[:40],
-        "br": C.git_branch(root) or "",
-        "pointers": [[k, t] for k, t in pointers],
-        "resolved": [[k, ok, d] for k, ok, d in resolved],
-        "note": n[:600],
-        # PROVENANCE, IN THE ROW ITSELF. A later reader must be able to tell a row written before the work from one reconstructed after it, and a field is the only place that fact survives. `head_is` spells out the derivation rather than naming it, so the divergence is legible without opening this file.
-        "backfill": {"done_commit": commit[:40], "head_is": "done_commit^"},
-    }
-
-    # THE EVIDENCE LINE IS INSERTED ONLY IF ABSENT. 95 of the 316 boxes this was written for already carry a well-formed one citing real commits; overwriting those would replace a contemporaneous record with a reconstruction, which is strictly worse. Idempotent for the same reason: a second run over a plan must be a no-op on its text.
-    lines = text.splitlines(keepends=True)
-    slot = _evidence_slot(lines, i)
-    already = slot < len(lines) and TICK_LINE_RE.match(lines[slot])
-    if already:
-        out = text
-    else:
-        # A PLAN WHOSE LAST LINE HAS NO NEWLINE would otherwise have the evidence spliced onto the end of its own box line, which rewrites the box. Terminating it first is what keeps the insertion a whole line at a whole offset.
-        if not lines[i].endswith("\n"):
-            lines[i] = lines[i] + "\n"
-        stamp = now or C.stamp_now()
-        # Lengthened like `plan_tick`'s line (#0241c97d).
-        ev = citable_commit_refs(root, ev)
-        note_line = TICK_EVIDENCE % (stamp, (me or "?")[:8], clip(ev, TICK_EVIDENCE_MAX))
-        lines.insert(_evidence_slot(lines, i), note_line + "\n")
-        out = "".join(lines)
-
-    # THE INVARIANT, the same one `plan_tick` checks at the same point and for the same reason. A backfill must move NOTHING: the box was done before and is done after, the open set is untouched, and the inserted line must stay invisible to `wl_planfid.BULLET_RE`. Anything else is indistinguishable to check_plan_boxes.py's A1 from a box being deleted, and the whole point of this
-    # verb is that it can be run over 31 plans without perturbing a single signature.
+    # Lengthened like `plan_tick`'s line (#0241c97d), BEFORE the citations are resolved so the token judged is the token written.
+    ev = citable_commit_refs(root, ev)
+    refuse_unresolved_citations(root, ev, "the evidence line")
+    # A PLAN WHOSE LAST LINE HAS NO NEWLINE would otherwise have the evidence spliced onto the end of its own box line.
+    if not lines[i].endswith("\n"):
+        lines[i] = lines[i] + "\n"
+    note_line = TICK_EVIDENCE % (now or C.stamp_now(), (me or "?")[:8], clip(ev, TICK_EVIDENCE_MAX))
+    lines.insert(_evidence_slot(lines, i), note_line + "\n")
+    out = "".join(lines)
     before_o, before_d = PF.plan_boxes(text)
     after_o, after_d = PF.plan_boxes(out)
     if sorted(before_o) != sorted(after_o) or sorted(before_d) != sorted(after_d):
         raise RecordError(
-            "REFUSED: backfilling %r moved a box. before open=%d done=%d, after open=%d done=%d. "
-            "check_plan_boxes.py's A1 cannot tell this apart from a box being deleted, so it "
-            "would red the tree."
+            "REFUSED: the late evidence line for %r moved a box. before open=%d done=%d, after "
+            "open=%d done=%d. check_plan_boxes.py's A1 cannot tell this apart from a box being "
+            "deleted, so it would red the tree."
             % (body[:60], len(before_o), len(before_d), len(after_o), len(after_d))
         )
-    return row, resolved, out
+    return out
 
 
 def revive(root, rel):

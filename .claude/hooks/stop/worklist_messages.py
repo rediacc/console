@@ -2670,6 +2670,11 @@ CLI_PLANINV_RETRO_USAGE = (
     '            existed). The row carries `"retro": true`, the gate does not\n'
     "            pretend it preceded the work, and it prints every retro row on\n"
     "            this branch on every run.\n"
+    "--evidence <text>\n"
+    "            with --retro --write: the `    (ticked) ` line inserted beneath the\n"
+    "            box when it has none (default: the note). A box that already\n"
+    "            carries one keeps it. Every citation in it must resolve, the\n"
+    "            same bar `--plan-tick` holds its evidence to.\n"
 )
 
 #: The `next` paragraph of CLI_PLANINV_DRY/WROTE for a --retro row, in place of CLI_PLANINV_NEXT's per-verdict advice (a retro row licenses no tick).
@@ -2677,7 +2682,10 @@ CLI_PLANINV_RETRO_NEXT = (
     "--retro row about the commit %(retro_commit)s: it records a box closed BEFORE it was\n"
     "investigated. P-A2 accepts it and check:ci-plan-implementation lists it on every\n"
     "run as `closed before investigation`. It licenses no tick: a re-opened box is\n"
-    "investigated live like any other."
+    "investigated live like any other.\n"
+    "\n"
+    "With --write the plan (an evidence line beneath the box, when it had none) and\n"
+    "agent/INDEX.md changed too: `git add` them beside the ledger."
 )
 
 CLI_PLANREC_REVIVED = (

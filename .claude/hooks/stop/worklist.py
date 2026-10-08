@@ -865,6 +865,20 @@ def _planinvestigate_cli(argv):
         # `--retro` after `--` is note text by grammar, but a trailing `-- <note> --retro --write` is the natural spelling, so the last word is read as the flag.
         retro = True
         rest = rest[:-1]
+    # `--evidence <text>` is the `    (ticked) ` line a --retro write inserts beneath a box that has none (default: the note). Like --retro it is read BEFORE the bare `--`.
+    evidence = None
+    cut_at = rest.index("--") if "--" in rest else len(rest)
+    if "--evidence" in rest[:cut_at]:
+        k = rest.index("--evidence")
+        if k + 1 >= cut_at:
+            die("--evidence takes the line to insert\n\n%s" % usage)
+        if not retro:
+            die(
+                "--evidence belongs to --retro: a live investigation writes no plan line\n\n%s"
+                % usage
+            )
+        evidence = rest[k + 1]
+        rest = rest[:k] + rest[k + 2 :]
     # THE NOTE IS EVERYTHING AFTER A BARE `--`, not "the last argument", because a note is a sentence and a sentence quoted as one argv entry is the shape nobody types correctly the first time.
     if "--" in rest:
         cut = rest.index("--")
@@ -886,6 +900,10 @@ def _planinvestigate_cli(argv):
     try:
         row, resolved = R.plan_investigate(
             root, rel, selector, verdict, pointer_tokens, note, me, retro=retro
+        )
+        # THE PLAN HALF of a late record, computed BEFORE anything is written so a refusal on it leaves the ledger untouched.
+        retro_text = (
+            R.retro_evidence_text(root, rel, selector, evidence, note, me) if retro else None
         )
     except R.RecordError as exc:
         die(M.CLI_PLANREC_REFUSED % exc)
@@ -910,142 +928,11 @@ def _planinvestigate_cli(argv):
             # A DRY RETRO MUST NOT LOOK LIKE A LIVE ONE: the paragraph saying it is a late record is printed here too, not only after --write.
             print("\n" + payload["next"])
         return
+    if retro_text is not None:
+        R.write_atomic(pathlib.Path(root) / rel, retro_text)
+        R.refresh_index(root, CK.plan_records, CK.plan_box_census)
     R.append_investigation(root, row)
     print(M.CLI_PLANINV_WROTE % payload)
-
-
-# The three strings below live HERE rather than in worklist_messages.py beside their --plan-investigate siblings, and the reason is scope rather than taste: the session that added this verb owned worklist.py and did not own that file. Moving them across is a one-commit tidy-up for whoever next edits both.
-CLI_PLANBACKFILL_USAGE = (
-    "usage: worklist.py --plan-backfill <me> <agent/plans/PLAN-x.md> <box>\n"
-    "                   <kind>:<token> <kind>:<token>... -- <note...>\n"
-    "                   [--evidence <text>] [--write]\n"
-    "\n"
-    "RETROACTIVE ONLY, for a box that is ALREADY ticked and carries no row in\n"
-    "agent/ledgers/plan-investigation.jsonl. An OPEN box is refused: the live\n"
-    "--plan-investigate can still answer that one honestly, and this verb must\n"
-    "not become a way around it.\n"
-    "\n"
-    "The verdict is not an argument. `present` is the only honest answer about a\n"
-    "box that is already closed, so it is hard-coded.\n"
-    "\n"
-    "`head` is the PARENT of the commit that ticked the box, never the live HEAD:\n"
-    "the parent is the last tree in which the box's question was still open, and\n"
-    "it is an ancestor of the closing commit by construction. The row records\n"
-    "that derivation in a `backfill` field, so a later reader can tell a\n"
-    "reconstruction from a contemporaneous record.\n"
-    "\n"
-    "<box>       an 8-hex box signature, or text matching exactly one DONE box.\n"
-    "<kind>:<token>\n"
-    "            at least TWO pointers of at least TWO DISTINCT kinds, held to\n"
-    "            exactly the bars --plan-investigate holds its own to and\n"
-    "            re-resolved by this process rather than trusted.\n"
-    "            Kinds: blob, tree, commit, ancestor, fileline, gate, plan, trap.\n"
-    "<note>      after a bare `--`, at least 40 characters.\n"
-    "--evidence  the `    (ticked) ` line to insert beneath the box when it has\n"
-    "            none. Defaults to the note. A box that already carries one keeps\n"
-    "            it: a contemporaneous line is worth more than a reconstruction.\n"
-)
-
-CLI_PLANBACKFILL_DRY = (
-    "would backfill one investigation of %(rel)s box %(sig)s [verdict: %(verdict)s]\n"
-    "  head %(head)s (the parent of %(commit)s, which ticked this box) on %(br)s\n"
-    "  evidence line: %(evidence)s\n"
-    "  every pointer re-resolved just now, none taken from the text:\n"
-    "%(table)s\n"
-    "\n---- NOTHING was written. Re-run with --write. ----\n"
-)
-
-CLI_PLANBACKFILL_WROTE = (
-    "backfilled one investigation of %(rel)s box %(sig)s [verdict: %(verdict)s]\n"
-    "  head %(head)s (the parent of %(commit)s, which ticked this box) on %(br)s\n"
-    "  appended to %(ledger)s\n"
-    "  evidence line: %(evidence)s\n"
-    "%(table)s\n"
-    "\n"
-    "NOT COMMITTED. The plan, the ledger and agent/INDEX.md (whose plan census\n"
-    "this run rewrote) must land in the SAME commit.\n"
-    "\n"
-    "  git add %(rel)s %(ledger)s agent/INDEX.md\n"
-)
-
-
-def _planbackfill_cli(argv):
-    """--plan-backfill <me> <path> <box> <kind>:<tok>... -- <note...> [--evidence <t>] [--write].
-
-    THE REPAIR VERB. The live pipeline is structurally unable to speak about a box that is already `[x]`: `plan_investigate` and `plan_tick` both reach their box through `open_boxes`, so a box a sub-agent flipped with the Edit tool cannot be given the trail it should have had. Everything this refuses is listed in wl_planrec.plan_backfill_investigation, and the refusals are what
-    keep it a repair rather than a bypass.
-
-    NEVER COMMITS, same as every verb in this file. Two files change and both must ride one commit, for the reason --plan-tick's own message states.
-    """
-
-    def die(msg):
-        print(msg, file=sys.stderr)
-        sys.exit(2)
-
-    if len(argv) < 2:
-        die(CLI_PLANBACKFILL_USAGE)
-    me = argv[1]
-    if not C.PREFIX_RE.match(me):
-        die("bad prefix %r: pass YOUR session-id prefix first" % me)
-    _identity_or_die(me, die)
-
-    import wl_planrec as R  # noqa: PLC0415 -- sibling, probed not assumed
-
-    root = C.project_root(C.project_start())
-    rest = list(argv[2:])
-    write = "--write" in rest
-    rest = [a for a in rest if a != "--write"]
-    evidence = None
-    if "--evidence" in rest:
-        cut = rest.index("--evidence")
-        if cut + 1 >= len(rest):
-            die("--evidence takes the line to insert\n\n%s" % CLI_PLANBACKFILL_USAGE)
-        evidence = rest[cut + 1]
-        rest = rest[:cut] + rest[cut + 2 :]
-    # THE NOTE IS EVERYTHING AFTER A BARE `--`, the same shape --plan-investigate takes, so the two verbs are typed identically.
-    if "--" in rest:
-        cut = rest.index("--")
-        head_args, note = rest[:cut], " ".join(rest[cut + 1 :]).strip()
-    else:
-        head_args, note = rest, ""
-    if len(head_args) < 3:
-        die(CLI_PLANBACKFILL_USAGE)
-    rel, selector = head_args[0], head_args[1]
-    pointer_tokens = head_args[2:]
-    for f in pointer_tokens:
-        if f.startswith("--"):
-            die("unknown flag %r\n\n%s" % (f, CLI_PLANBACKFILL_USAGE))
-    try:
-        rel = str(pathlib.Path(rel).resolve().relative_to(pathlib.Path(root).resolve()))
-    except ValueError:
-        rel = rel.lstrip("./")
-
-    try:
-        row, resolved, text = R.plan_backfill_investigation(
-            root, rel, selector, pointer_tokens, note, me, evidence=evidence
-        )
-    except R.RecordError as exc:
-        die(M.CLI_PLANREC_REFUSED % exc)
-        return
-    payload = {
-        "rel": rel,
-        "sig": row["sig"],
-        "verdict": row["verdict"],
-        "head": (row["head"] or "(no HEAD)")[:12],
-        "commit": (row["backfill"]["done_commit"] or "")[:12],
-        "br": row["br"] or "(no branch)",
-        "evidence": (evidence if evidence is not None else row["note"])[:120],
-        "table": R.render_resolution(resolved),
-        "ledger": "/".join(R.INVESTIGATION_REL),
-    }
-    if not write:
-        sys.stdout.write(CLI_PLANBACKFILL_DRY % payload)
-        return
-    # THE PLAN FIRST, THEN THE LEDGER, the same ordering --plan-tick uses and for the same reason: a crash between them leaves a plan with an evidence line and a ledger without its row, which one more run of this verb finishes.
-    R.write_atomic(pathlib.Path(root) / rel, text)
-    R.append_investigation(root, row)
-    R.refresh_index(root, CK.plan_records, CK.plan_box_census)
-    print(CLI_PLANBACKFILL_WROTE % payload)
 
 
 def _lead_transcript(me):
@@ -2794,9 +2681,6 @@ def main():
         return
     if sys.argv[1:2] == ["--plan-investigate"]:
         _planinvestigate_cli(sys.argv[1:])
-        return
-    if sys.argv[1:2] == ["--plan-backfill"]:
-        _planbackfill_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--hint-propose"]:
         _hint_propose_cli(sys.argv[1:])
