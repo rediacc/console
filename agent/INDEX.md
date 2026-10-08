@@ -548,7 +548,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rest-graphql-guard-parity.md` | compacted | 54 | 0 | 8 | 4010 |
 | `agent/plans/PLAN-resumable-rebase-executor.md` | compacted | 36 | 0 | 0 | 2212 |
 | `agent/plans/PLAN-retire-bash-oracles.A0.md` | executing | 270 | 7 | 0 | 30596 |
-| `agent/plans/PLAN-retire-bash-oracles.md` | approved | 927 | 6 | 9 | 105946 |
+| `agent/plans/PLAN-retire-bash-oracles.md` | approved | 932 | 1 | 14 | 107020 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
 | `agent/plans/PLAN-scope-gate-sort-collation.md` | compacted | 38 | 0 | 0 | 2784 |
@@ -578,7 +578,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-test-advisor.md` | compacted | 39 | 0 | 0 | 2731 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-token-ip-rebind.md` | draft | 416 | 1 | 9 | 38641 |
-| `agent/plans/PLAN-tooling-transformation.md` | ready | 7501 | 3 | 151 | 751317 |
+| `agent/plans/PLAN-tooling-transformation.md` | ready | 7502 | 2 | 152 | 751460 |
 | `agent/plans/PLAN-typecheck-orphan-packages.md` | ready | 84 | 0 | 5 | 7005 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
 | `agent/plans/PLAN-w7p4w-docker-cutover.md` | compacted | 62 | 0 | 12 | 4758 |
