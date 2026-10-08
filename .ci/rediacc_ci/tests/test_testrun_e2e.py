@@ -28,7 +28,7 @@ def both(
     tmp_path: pathlib.Path, args: list[str], env: dict[str, str] | None = None
 ) -> tuple[ts.Outcome, ts.Outcome]:
     base = {"CI": "", "GITHUB_ACTIONS": "", "GITLAB_CI": "", **(env or {})}
-    old = ts.run_side(ts.bash_cmd(TWIN, *args), tmp_path / "bash", TOOLS, base)
+    old = ts.twin_run(TWIN, ts.bash_cmd(TWIN, *args), tmp_path / "bash", TOOLS, base)
     new = ts.run_side(ts.py_cmd(MODULE, *args), tmp_path / "py", TOOLS, ts.py_env(base))
     return old, new
 

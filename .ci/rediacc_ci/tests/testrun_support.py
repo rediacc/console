@@ -122,10 +122,11 @@ def twin_run(
     timeout: float = 120,
     bodies: dict[str, str] | None = None,
     files: typing.Iterable[pathlib.Path] = (),
+    fold: typing.Iterable[str] = (),
 ) -> Outcome:
     """What the retired bash twin `twin` answered for this case, from `goldens/twins/` (PLAN-retire-bash-oracles B3).
 
-    `files` are paths the twin writes (a `$GITHUB_OUTPUT`): a re-freeze records them, every other run writes the frozen text back (or removes the path when the twin wrote none), so the caller reads them as it did live. Only a re-freeze (`REDIACC_CI_REGOLDEN=bash`, while the `.sh` still exists) runs `argv`; every other run reads the stored exit code, streams and fake-binary call log. The key is the argv, the environment and the tool list, with the scratch parent folded.
+    `files` are paths the twin writes (a `$GITHUB_OUTPUT`): a re-freeze records them, every other run writes the frozen text back (or removes the path when the twin wrote none), so the caller reads them as it did live. Only a re-freeze (`REDIACC_CI_REGOLDEN=bash`, while the `.sh` still exists) runs `argv`; every other run reads the stored exit code, streams and fake-binary call log. The key is the argv, the environment and the tool list, with the scratch parent folded; `fold` names further literals that differ per run (a local server's `http://127.0.0.1:<port>`) and are folded the same way.
     """
     tools = list(tools)
     cell: dict[str, Outcome] = {}
@@ -145,7 +146,7 @@ def twin_run(
         go,
         files=tuple(str(f) for f in files),
         extras={"calls": lambda: json.dumps(cell["o"].calls)},
-        work=(str(directory.parent),),
+        work=(str(directory.parent), *fold),
     )
     return Outcome(rc, out, err, json.loads(got["calls"]))
 

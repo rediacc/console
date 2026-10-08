@@ -42,7 +42,7 @@ gpg IS DRIVEN, NEVER REIMPLEMENTED. Every control here is a claim about what gpg
 THE `awk` WELDER IS TRANSLITERATED WITH ITS `getline`, and the `NR>3` is the part worth stating: `gpg --armor --export-secret-keys` emits the BEGIN line, a blank line, then base64, so the first weldable pair is lines 4 and 5. A rewrite that welded "the first two body lines" would produce a different fixture and a different control. The `/^-----/` rule fires only on a line the main
 loop reads, NOT on a line pulled in by `getline`, which is why the footer can in principle be welded onto the last body line and why `done` is set on the first weld.
 
-TWO `grep -c` CONTROLS COUNT LINES IN build-linux-pkg.sh, and the twin's comment on the first is the reason it is a pipeline rather than one grep: "Count CODE, not prose: the same idiom appears in the comment that explains it, and a naive grep -c reads 2 and fails on a correct file."
+TWO `grep -c` CONTROLS COUNT LINES IN build_linux_pkg.py (they counted the bash build-linux-pkg.sh when this gate was ported, and were retargeted when that script was retired, PLAN-retire-bash-oracles B3), and the twin's comment on the first is the reason it is a pipeline rather than one grep: "Count CODE, not prose: the same idiom appears in the comment that explains it, and a naive grep -c reads 2 and fails on a correct file."
 
 THE TWO ARE ASYMMETRIC WHEN THE FILE IS ABSENT, and reproducing that asymmetry is the reason they are two functions rather than one. Measured on this host (ugrep 7.8.4, 2026-09-06):
 
@@ -75,8 +75,8 @@ import tempfile
 from rediacc_ci.controls import Controls
 
 # The two files under test, relative to ROOT.
-CANON_REL = (".ci", "scripts", "build", "canonicalise-gpg-key.sh")
-BUILD_PKG_REL = (".ci", "scripts", "build", "build-linux-pkg.sh")
+CANON_REL = (".ci", "rediacc_ci", "build", "canonicalise_gpg_key.py")
+BUILD_PKG_REL = (".ci", "rediacc_ci", "build", "build_linux_pkg.py")
 
 # The twin's own seam, kept by name so one harness drives either implementation.
 ROOT_ENV = "RELEASE_KEY_ROOT"
@@ -92,12 +92,11 @@ ARMOR_COLUMNS = 64
 # `gate_finish 8` in the twin. A battery that did not run is not a green one.
 MIN_CONTROLS = 8
 
-# `grep -c '|| canon_rc=\$?'` -- a BRE whose `\$` is a literal dollar, so this is
-# a FIXED string. See the port notes.
-GUARD_LITERAL = "|| canon_rc=$?"
+# The line of `build_linux_pkg.py` that handles the canonicaliser's REPAIRED exit (10) as a signal instead of letting it end the build. The bash twin spelled it `|| canon_rc=$?`, a guard against `set -e`; the module has no errexit, and the equivalent hazard is a non-zero exit being raised, so the census is of the branch that names the signal. A FIXED string, counted in code lines.
+GUARD_LITERAL = "canon_rc == CANON_REPAIRED"
 
-# `grep -c 'canonicalise-gpg-key.sh'` -- likewise fixed.
-CANON_LITERAL = "canonicalise-gpg-key.sh"
+# The build module's one mention of the canonicaliser's path (`CANONICALISER_REL`), counted in every line, comments included, as a direct `grep -c` would. Likewise fixed.
+CANON_LITERAL = "canonicalise_gpg_key.py"
 
 # `grep -v '^\s*#'`, with the POSIX class written out. Python's `\s` would also match U+00A0, which would drop a line grep keeps.
 COMMENT_LINE_RE = re.compile(r"^[ \t\v\f\r]*#")
@@ -286,10 +285,8 @@ def main(argv: list[str] | None = None) -> int:
     canon = root.joinpath(*CANON_REL)
     build_pkg = root.joinpath(*BUILD_PKG_REL)
 
-    if not (canon.is_file() and os.access(canon, os.X_OK)):
-        print(
-            "✗ %s is missing or not executable -- the build depends on it" % canon, file=sys.stderr
-        )
+    if not canon.is_file():
+        print("✗ %s is missing -- the build depends on it" % canon, file=sys.stderr)
         return 1
     if shutil.which("gpg") is None:
         # A MISSING TOOL IS A LOUD FAILURE WITH THE FIX IN THE MESSAGE, and this wording is also the comparator's refusal vocabulary: "nothing here was verified" suspends a differential rather than scoring it.
@@ -384,9 +381,11 @@ def main(argv: list[str] | None = None) -> int:
         good_rc = _run_canon(canon, good_probe, PASSPHRASE)
         tally.check("CONTROL: an already-canonical key reports 0, not 10", str(good_rc), "0")
 
-        # The caller runs under `set -e`, so a BARE call to a script exiting 10 aborts the whole build -- which is exactly the production case the signal exists for.
+        # The build must not treat the canonicaliser's exit 10 as a failure -- which is exactly the production case the signal exists for (the bash build aborted on it under `set -e`).
         tally.check(
-            "build-linux-pkg.sh guards that non-zero exit", guard_count_field(build_pkg), "1"
+            "build_linux_pkg.py handles the REPAIRED exit as a signal",
+            guard_count_field(build_pkg),
+            "1",
         )
 
         if canon_rc in (0, 10):
@@ -424,7 +423,7 @@ def main(argv: list[str] | None = None) -> int:
 
         # The build must actually CALL it, or this gate proves a function nothing uses.
         tally.check(
-            "build-linux-pkg.sh calls the canonicaliser",
+            "build_linux_pkg.py calls the canonicaliser",
             call_count_field(build_pkg),
             "1",
         )
@@ -436,9 +435,9 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _run_canon(canon: pathlib.Path, target: pathlib.Path, passphrase: str) -> int:
-    """`"$CANON" <file> <pass> >/dev/null 2>&1 || canon_rc=$?`. Returns the code."""
+    """`python canonicalise_gpg_key.py <file> <pass> >/dev/null 2>&1`. Returns the code."""
     completed = subprocess.run(
-        [str(canon), str(target), passphrase],
+        [sys.executable, str(canon), str(target), passphrase],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         check=False,
@@ -562,22 +561,24 @@ def selftest() -> int:
     # -- guard_count: COUNT CODE, NOT PROSE ----------------------------------
     ctl.check(
         "CONTROL: one real guard counts once",
-        guard_count('canon.sh "$K" || canon_rc=$?\n'),
+        guard_count("    elif canon_rc == CANON_REPAIRED:\n"),
         1,
     )
     ctl.check(
         "PLANT: the same idiom in a COMMENT is not counted",
-        guard_count("# `|| canon_rc=$?` rather than a bare call\ncanon.sh || canon_rc=$?\n"),
+        guard_count(
+            "# `canon_rc == CANON_REPAIRED` explains it\nelif canon_rc == CANON_REPAIRED:\n"
+        ),
         1,
     )
     ctl.check(
         "MIRROR: an INDENTED comment is a comment too",
-        guard_count("    # || canon_rc=$?\n"),
+        guard_count("    # canon_rc == CANON_REPAIRED\n"),
         0,
     )
     ctl.check(
         "MIRROR: a TRAILING comment is not a comment line, so its code still counts",
-        guard_count("canon.sh || canon_rc=$?  # note\n"),
+        guard_count("elif canon_rc == CANON_REPAIRED:  # note\n"),
         1,
     )
     ctl.check("VACUITY: an absent build script counts 0, not blank", guard_count(""), 0)
@@ -585,23 +586,23 @@ def selftest() -> int:
     # -- literal_count: MATCHING LINES, not occurrences -----------------------
     ctl.check(
         "CONTROL: one mention on one line",
-        literal_count("a canonicalise-gpg-key.sh b\n", CANON_LITERAL),
+        literal_count("a canonicalise_gpg_key.py b\n", CANON_LITERAL),
         1,
     )
     ctl.check(
         "MIRROR: TWO mentions on ONE line still count one, as grep -c does",
-        literal_count("canonicalise-gpg-key.sh canonicalise-gpg-key.sh\n", CANON_LITERAL),
+        literal_count("canonicalise_gpg_key.py canonicalise_gpg_key.py\n", CANON_LITERAL),
         1,
     )
     ctl.check(
         "CONTROL: two mentions on two lines count two",
-        literal_count("canonicalise-gpg-key.sh\ncanonicalise-gpg-key.sh\n", CANON_LITERAL),
+        literal_count("canonicalise_gpg_key.py\ncanonicalise_gpg_key.py\n", CANON_LITERAL),
         2,
     )
     ctl.check("VACUITY: no mention counts 0", literal_count("nothing here\n", CANON_LITERAL), 0)
 
     # -- THE ASYMMETRY OVER A MISSING FILE, both halves ----------------------
-    absent = pathlib.Path("/nonexistent/definitely-not-here-build-linux-pkg.sh")
+    absent = pathlib.Path("/nonexistent/definitely-not-here-build_linux_pkg.py")
     ctl.check("ABSENT: the PIPELINE control still reports a number", guard_count_field(absent), "0")
     ctl.check("ABSENT: the DIRECT control reports the empty string", call_count_field(absent), "")
 

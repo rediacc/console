@@ -21,6 +21,7 @@ import pytest
 
 from rediacc_ci.testrun import install_methods as port
 from rediacc_ci.testrun import install_scripts
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import testrun_support as ts
 from rediacc_ci.well_known import IMAGE_REGISTRY
 
@@ -100,7 +101,16 @@ def both(
         **(env or {}),
     }
     od, nd = tmp_path / "bash", tmp_path / "py"
-    old = ts.run_side(ts.bash_cmd(TWIN, *args), od, tools, base, timeout=300)
+    # The bash twin is retired: its answer comes from the golden (PLAN-retire-bash-oracles B3).
+    old = ts.twin_run(
+        TWIN,
+        ts.bash_cmd(TWIN, *args),
+        od,
+        tools,
+        base,
+        timeout=300,
+        fold=(url, *diff.pytest_tmp_roots(*args, *base.values())),
+    )
     new = ts.run_side(ts.py_cmd(MODULE, *args), nd, tools, ts.py_env(base), timeout=300)
     return old, new, od, nd
 
@@ -271,18 +281,37 @@ def test_a_missing_docker_is_refused_the_same_way(tmp_path: pathlib.Path) -> Non
         }
         if name == "py":
             env["PYTHONPATH"] = str(ts.ROOT / ".ci")
-        results.append(
-            subprocess.run(
+
+        def live(
+            runner: list[str] = runner, env: dict[str, str] = env, where: pathlib.Path = directory
+        ) -> subprocess.CompletedProcess[str]:
+            return subprocess.run(
                 runner,
                 env=env,
                 capture_output=True,
                 text=True,
                 check=False,
-                cwd=str(directory),
+                cwd=str(where),
                 stdin=subprocess.DEVNULL,
                 timeout=60,
             )
-        )
+
+        def streams(
+            live: typing.Callable[[], subprocess.CompletedProcess[str]] = live,
+        ) -> tuple[int, str, str]:
+            proc = live()
+            return proc.returncode, proc.stdout, proc.stderr
+
+        if name == "bash":
+            rc, out, err = diff.twin_call(
+                TWIN,
+                ["missing-docker", repr(sorted(env.items()))],
+                streams,
+                work=(str(tmp_path),),
+            )
+            results.append(subprocess.CompletedProcess([], rc, out, err))
+        else:
+            results.append(live())
     old, new = results
     assert old.returncode == new.returncode == 1
     assert "Required command 'docker' is not available" in old.stderr
@@ -292,61 +321,37 @@ def test_a_missing_docker_is_refused_the_same_way(tmp_path: pathlib.Path) -> Non
 # ---- verify_version ----------------------------------------------------------------------------------------------------------
 
 
-def bash_verify(output: str, expected: str) -> int:
-    text = (ts.ROOT / TWIN).read_text()
-    func = text[
-        text.index("verify_version() {") : text.index("\n}\n", text.index("verify_version() {")) + 3
-    ]
-    script = f'source "{ts.ROOT}/.ci/scripts/lib/common.sh"\n{func}\nverify_version "$1" "$2"'
-    return subprocess.run(
-        [ts.BASH, "-c", script, "x", output, expected],
-        capture_output=True,
-        text=True,
-        check=False,
-        stdin=subprocess.DEVNULL,
-    ).returncode
-
-
+# Each row is the retired twin's `verify_version` verdict (exit 0 means accepted), measured while `test-install-methods.sh` still existed (PLAN-retire-bash-oracles B3).
 CASES = [
-    ("1.2.3", "1.2.3"),
-    ("v1.2.3", "1.2.3"),
-    ("rdc 1.2.3 (build)", "1.2.3"),
-    ("1.2.30", "1.2.3"),
-    ("11.2.3", "1.2.3"),
-    ("1.2.3.4", "1.2.3"),
-    ("1x2y3", "1.2.3"),
-    ("", "1.2.3"),
-    ("1.2.3", ""),
-    ("1.2.3", "latest"),
-    ("v10.20.30-rc.1", "latest"),
-    ("not a version", "latest"),
-    ("1.2", "latest"),
-    ("banner\n1.2.3", "latest"),
-    ("banner\nrdc 1.2.3", "1.2.3"),
-    ("1.2.3-rc.1", "1.2.3-rc.1"),
-    ("1.2.3-rc.10", "1.2.3-rc.1"),
+    ("1.2.3", "1.2.3", True),
+    ("v1.2.3", "1.2.3", True),
+    ("rdc 1.2.3 (build)", "1.2.3", True),
+    ("1.2.30", "1.2.3", False),
+    ("11.2.3", "1.2.3", False),
+    ("1.2.3.4", "1.2.3", False),
+    ("1x2y3", "1.2.3", False),
+    ("", "1.2.3", False),
+    ("1.2.3", "", False),
+    ("1.2.3", "latest", True),
+    ("v10.20.30-rc.1", "latest", True),
+    ("not a version", "latest", False),
+    ("1.2", "latest", False),
+    ("banner\n1.2.3", "latest", True),
+    ("banner\nrdc 1.2.3", "1.2.3", True),
+    ("1.2.3-rc.1", "1.2.3-rc.1", True),
+    ("1.2.3-rc.10", "1.2.3-rc.1", False),
 ]
 
 
-@pytest.mark.parametrize(("output", "expected"), CASES)
-def test_verify_version_matches_the_twin(output: str, expected: str) -> None:
-    assert port.verify_version(output, expected) == (bash_verify(output, expected) == 0)
+@pytest.mark.parametrize(("output", "expected", "accepted"), CASES)
+def test_verify_version_matches_the_twin(output: str, expected: str, accepted: bool) -> None:
+    assert port.verify_version(output, expected) is accepted
 
 
 def test_fence_extraction_matches_the_twin() -> None:
     transcript = "install noise 1.2.3\nstuff__RDC_VERSION_BEGIN__\n1.2.3\nmore\n__RDC_VERSION_END__\ntrailing 9.9.9"
-    text = (ts.ROOT / TWIN).read_text()
-    func = text[
-        text.index("extract_fenced_version() {") : text.index(
-            "\n}\n", text.index("extract_fenced_version() {")
-        )
-        + 3
-    ]
-    script = f'VERSION_FENCE_BEGIN="__RDC_VERSION_BEGIN__"\nVERSION_FENCE_END="__RDC_VERSION_END__"\n{func}\nextract_fenced_version "$1"'
-    done = subprocess.run(
-        [ts.BASH, "-c", script, "x", transcript], capture_output=True, text=True, check=False
-    )
-    assert port.extract_fenced_version(transcript) == done.stdout.rstrip("\n")
+    # The retired twin's `extract_fenced_version` printed the text between the fences, measured while it existed: the line after BEGIN through the line before END.
+    assert port.extract_fenced_version(transcript) == "1.2.3\nmore"
 
 
 # ---- channel tests against the local channel ---------------------------------------------------------------------------------
@@ -522,7 +527,7 @@ def test_delta_an_unresolvable_latest_is_a_failure(tmp_path: pathlib.Path) -> No
 
 
 def test_delta_a_plus_in_the_version_can_match_its_own_output() -> None:
-    assert bash_verify("1.2.3+build.5", "1.2.3+build.5") != 0, "bash read + as an ERE quantifier"
+    # The retired twin rejected this pair (measured while it existed): it read the `+` as an ERE quantifier.
     assert port.verify_version("1.2.3+build.5", "1.2.3+build.5")
     assert not port.verify_version("1.2.3+build.6", "1.2.3+build.5")
 
@@ -541,7 +546,7 @@ def test_delta_the_promotion_test_skips_without_a_channel(
 
 
 def test_delta_no_jq_is_needed(tmp_path: pathlib.Path, channel: str) -> None:
-    """A PATH without jq: the twin skips the update check (77), the port still verifies the manifest."""
+    """A PATH without jq: the retired twin skipped the update check (77), the port still verifies the manifest."""
     old_dir, new_dir = tmp_path / "bash", tmp_path / "py"
     outcomes = []
     for directory, runner, py in (
@@ -580,20 +585,26 @@ def test_delta_no_jq_is_needed(tmp_path: pathlib.Path, channel: str) -> None:
         }
         if py:
             env["PYTHONPATH"] = str(ts.ROOT / ".ci")
-        done = subprocess.run(
-            runner,
-            env=env,
-            capture_output=True,
-            text=True,
-            check=False,
-            cwd=str(directory),
-            stdin=subprocess.DEVNULL,
+            done = subprocess.run(
+                runner,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+                cwd=str(directory),
+                stdin=subprocess.DEVNULL,
+            )
+            outcomes.append(ts.Outcome(done.returncode, done.stdout, done.stderr, []))
+            continue
+        # The bash twin is retired: its answer comes from the golden (PLAN-retire-bash-oracles B3).
+        outcomes.append(
+            ts.twin_run(TWIN, runner, directory, (), env, timeout=120, bodies=None, fold=(channel,))
         )
-        outcomes.append(done)
-    assert "jq not available" in outcomes[0].stderr
-    assert "SKIP: Update Check" in outcomes[0].stderr
-    assert outcomes[1].returncode == 0
-    assert "Manifest version verified" in outcomes[1].stderr
+    old, new = outcomes
+    assert "jq not available" in old.err
+    assert "SKIP: Update Check" in old.err
+    assert new.code == 0
+    assert "Manifest version verified" in new.err
 
 
 def test_delta_a_failing_docker_pull_is_named(tmp_path: pathlib.Path) -> None:
@@ -686,15 +697,9 @@ def test_the_dnf_install_bounds_a_stalled_download_and_stays_visible() -> None:
     for opt in ("--setopt=timeout=", "--setopt=minrate=", "--setopt=retries="):
         assert opt in line, opt
     assert "/dev/null" not in line
-    twin = (
-        pathlib.Path(__file__).resolve().parents[2] / "scripts" / "test" / "test-install-methods.sh"
-    ).read_text()
-    # The CLI RPM is ~364 MB, so a 1 MB/s floor lets a 6-minute crawl run; 2 MB/s aborts it. The port and the shell twin carry the identical option string.
+    # The CLI RPM is ~364 MB, so a 1 MB/s floor lets a 6-minute crawl run; 2 MB/s aborts it.
     opts = "dnf install -y --setopt=timeout=30 --setopt=minrate=2097152 --setopt=retries=3 "
     assert opts in line
-    twin_line = next(ln for ln in twin.splitlines() if "dnf install" in ln)
-    assert opts in twin_line
-    assert "/dev/null" not in twin_line
 
 
 def _job_budget(text: str, job: str) -> int:
@@ -715,7 +720,24 @@ def test_the_container_timeout_fits_inside_every_callers_budget() -> None:
     assert promote - 8 * 60 >= port.CONTAINER_TIMEOUT * 2, promote
     callers = [p for p in workflows.glob("*.yml") if "testrun.install_methods" in p.read_text()]
     assert callers, "no workflow runs the install tests: this check would be vacuous"
+    jobs_checked = 0
     for path in callers:
-        for minutes in re.findall(r"^    timeout-minutes:\s*(\d+)", path.read_text(), re.MULTILINE):
-            if int(minutes) >= 10:
-                assert int(minutes) * 60 >= port.CONTAINER_TIMEOUT * 2, (path.name, minutes)
+        text = path.read_text()
+        for job in re.finditer(
+            r"^  ([A-Za-z0-9_-]+):\n(.*?)(?=^  [A-Za-z0-9_-]+:\n|\Z)",
+            text,
+            re.MULTILINE | re.DOTALL,
+        ):
+            # Only the jobs that RUN the install tests: a sibling job in the same workflow has its own budget and its own business.
+            if "testrun.install_methods" not in job.group(2):
+                continue
+            minutes = re.search(r"^    timeout-minutes:\s*(\d+)", job.group(2), re.MULTILINE)
+            if minutes is None:
+                continue
+            jobs_checked += 1
+            assert int(minutes.group(1)) * 60 >= port.CONTAINER_TIMEOUT * 2, (
+                path.name,
+                job.group(1),
+                minutes.group(1),
+            )
+    assert jobs_checked, "no calling job declares a timeout: this check would be vacuous"

@@ -1,0 +1,10 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 10, "source": "bash", "twin": ".ci/scripts/build/canonicalise-gpg-key.sh", "twin_blob": "cf4de0f2752f43c3181e23fef12e963160a0acd5"}}
+{"_silent": ["test_clean_key_is_untouched_in_substance#290a49781adb5d50", "test_planted_defect_is_caught#526d7e0a8590ef12"]}
+{"_key": "test_empty_file#ad379e0983e358ff", "err": "canonicalise-gpg-key: <WORK0>/empty.asc is missing or empty\n", "out": "", "rc": "1"}
+{"_key": "test_garbage_key_cannot_import#008a292794680803", "err": "canonicalise-gpg-key: gpg could not import the key\n", "out": "", "rc": "1"}
+{"_key": "test_gpg_not_installed#4a8e4f5d479c13c5", "err": "canonicalise-gpg-key: gpg is not installed\n", "out": "", "rc": "1"}
+{"_key": "test_missing_file#849987af175612d7", "err": "canonicalise-gpg-key: <WORK0>/does-not-exist.asc is missing or empty\n", "out": "", "rc": "1"}
+{"_key": "test_no_arguments#1601c62a62c977c9", "err": "<REPO>/.ci/scripts/build/canonicalise-gpg-key.sh: line 43: 1: usage: canonicalise-gpg-key.sh <key-file> [passphrase]\n", "out": "", "rc": "1"}
+{"_key": "test_public_key_only_has_no_secret_key#cfac205efc65d49d", "err": "canonicalise-gpg-key: no secret key after import\n", "out": "", "rc": "1"}
+{"_key": "test_welded_key_is_repaired#60063b2541417153", "err": "", "out": "", "rc": "10"}
+{"_key": "test_wrong_passphrase_export_fails#da59b10fee97e277", "err": "canonicalise-gpg-key: re-export produced nothing\n", "out": "", "rc": "1"}

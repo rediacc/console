@@ -2,7 +2,7 @@
 
 Sibling of `test_proxies_ensure_nfpm.py`; see that file for why the two invocations are compared byte for byte rather than as a finding set.
 
-MOST CASES BUILD NO PACKAGES. Only `test_real_tree_agrees_byte_for_byte` runs the genuine `test-linux-packages.sh --dry-run` (nfpm really builds four formats, build-pkg-repo.sh really generates APT/RPM/APK/Arch metadata, ~1 s on this host). The rest run against a fixture root whose SUBJECT is a stub with the same SHAPE -- `^run_test "` call sites, `TEST: ` banners on stderr,
+MOST CASES BUILD NO PACKAGES. Only `test_real_tree_agrees_byte_for_byte` runs the genuine `rediacc_ci.testrun.linux_packages --dry-run` (nfpm really builds four formats, build-pkg-repo.sh really generates APT/RPM/APK/Arch metadata, ~1 s on this host). The rest run against a fixture root whose SUBJECT is a stub with the same SHAPE -- `plan()` entries, `TEST: ` banners on stderr,
 `[DRY-RUN] Would` stub lines, a `Results:` summary -- which is the only way to drive the marker-rename defect at all: the real subject cannot be asked to rename its own stub text.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-linux-packages.observations.jsonl` (6 rows,
@@ -44,41 +44,49 @@ FIXTURE_FILES = (
 # The toolchain the twin's preflight declares (`:52-56`). Named here so the skip below reports which one is missing rather than a bare "cannot run".
 NEEDED = ("dpkg-deb", "rpmbuild", "createrepo_c", "gpg")
 
-# A stub SUBJECT with the real one's SHAPE and none of its cost: four `^run_test "` call sites (which is what the proxy derives its expectation
+# A stub SUBJECT with the real one's SHAPE and none of its cost: four entries in a `plan()` body (which is what the proxy derives its expectation
 # from), `TEST: ` banners and `[DRY-RUN] Would` lines on stderr, and the
 # `Results:` summary the proxy parses.
-STUB_SUBJECT = """#!/usr/bin/env bash
-set -uo pipefail
-DRY=0
-[[ "${1:-}" == "--dry-run" ]] && DRY=1
-PASSED=0
-FAILED=0
-TOTAL=0
-run_test() {
-    echo "TEST: $1" >&2
-    if [[ "$2" == "stub" && $DRY -eq 1 ]]; then
-        echo "MARKER $1" >&2
-    fi
-    TOTAL=$((TOTAL + 1))
-    if [[ "$2" == "boom" ]]; then FAILED=$((FAILED + 1)); else PASSED=$((PASSED + 1)); fi
-}
-run_test "one" real
-run_test "two" real
-run_test "three" stub
-run_test "four" stub
-echo "Results: $PASSED passed, $FAILED failed (total $TOTAL)" >&2
-[[ $FAILED -eq 0 ]]
+STUB_SUBJECT = """import sys
+
+DRY = sys.argv[1:] == ["--dry-run"]
+passed = failed = 0
+
+
+def run_test(name, mode):
+    global passed, failed
+    print("TEST: " + name, file=sys.stderr)
+    if mode == "stub" and DRY:
+        print("MARKER " + name, file=sys.stderr)
+    if mode == "boom":
+        failed += 1
+    else:
+        passed += 1
+
+
+def plan():
+    return [
+        ("one", "real"),
+        ("two", "real"),
+        ("three", "stub"),
+        ("four", "stub"),
+    ]
+
+
+for entry in plan():
+    run_test(*entry)
+print("Results: %d passed, %d failed (total %d)" % (passed, failed, passed + failed), file=sys.stderr)
+raise SystemExit(0 if failed == 0 else 1)
 """
 
-# A stub ensure-nfpm.sh, so the fixture never reaches the network. The twin calls it at `:47` whenever nfpm is not already on PATH, which on this host it is not.
-STUB_ENSURE_NFPM = """#!/usr/bin/env bash
-set -euo pipefail
-root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-d="$root/.ci/cache/bin"
-mkdir -p "$d"
-printf '%s\\n' '#!/bin/bash' 'echo "nfpm version 2.45.0"' >"$d/nfpm"
-chmod +x "$d/nfpm"
-printf '%s\\n' "$d"
+# A stub ensure_nfpm.py, so the fixture never reaches the network. The proxy calls it whenever nfpm is not already on PATH, which on this host it is not.
+STUB_ENSURE_NFPM = """import pathlib
+
+d = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "cache" / "bin"
+d.mkdir(parents=True, exist_ok=True)
+(d / "nfpm").write_text('#!/bin/bash\\necho "nfpm version 2.45.0"\\n', encoding="utf-8")
+(d / "nfpm").chmod(0o755)
+print(d)
 """
 
 
@@ -110,14 +118,13 @@ def build_fixture(
         (fixture / TWIN_REL).chmod(0o755)
     if port_source is not None:
         (fixture / PORT_REL).write_text(port_source, encoding="utf-8")
-    subj = fixture / ".ci" / "scripts" / "test" / "test-linux-packages.sh"
+    subj = fixture / linux_packages.SUBJECT_REL
     subj.parent.mkdir(parents=True, exist_ok=True)
+    (subj.parent / "__init__.py").write_text("", encoding="utf-8")
     subj.write_text(subject, encoding="utf-8")
-    subj.chmod(0o755)
-    ensure = fixture / ".ci" / "scripts" / "build" / "ensure-nfpm.sh"
+    ensure = fixture / linux_packages.ENSURE_NFPM_REL
     ensure.parent.mkdir(parents=True, exist_ok=True)
     ensure.write_text(STUB_ENSURE_NFPM, encoding="utf-8")
-    ensure.chmod(0o755)
     return fixture
 
 
@@ -137,18 +144,29 @@ def run_both(
 ) -> tuple[subprocess.CompletedProcess[str], subprocess.CompletedProcess[str]]:
     env = _env(fixture, path)
     kwargs = {"env": env, "cwd": str(fixture), "capture_output": True, "text": True}
-    old = diff.twin_result(
+
+    def port_side() -> subprocess.CompletedProcess[str]:
+        return subprocess.run(  # type: ignore[call-overload]
+            ["python3", "-m", PORT_MODULE, *args], timeout=300, check=False, **kwargs
+        )
+
+    def port_streams() -> tuple[int, str, str]:
+        proc = port_side()
+        return proc.returncode, proc.stdout, proc.stderr
+
+    def retired_bash() -> tuple[int, str, str]:
+        raise RuntimeError("proxy-linux-packages.sh is retired; only its golden answers")
+
+    # The bash proxy is retired, so its answer comes from the golden. A case whose output names the subject was re-recorded from the port after the subject moved to the Python module (Rule T, PLAN-retire-bash-oracles).
+    rc, out, err = diff.twin_call(
         TWIN_REL,
         [repr(["bash", str(fixture / TWIN_REL), *args])],
-        lambda: subprocess.run(  # type: ignore[call-overload]
-            ["bash", str(fixture / TWIN_REL), *args], timeout=300, check=False, **kwargs
-        ),
+        retired_bash,
+        port=port_streams,
         work=(fixture.parent,),
     )
-    new = subprocess.run(  # type: ignore[call-overload]
-        ["python3", "-m", PORT_MODULE, *args], timeout=300, check=False, **kwargs
-    )
-    return old, new
+    old = subprocess.CompletedProcess([], rc, out, err)
+    return old, port_side()
 
 
 def assert_same(
@@ -253,9 +271,22 @@ def test_a_stub_subject_reports_its_real_versus_stubbed_split(tmp_path: pathlib.
     assert_same(old, new)
 
 
+def test_the_banner_names_the_python_subject_not_the_retired_bash_one(
+    tmp_path: pathlib.Path,
+) -> None:
+    """RULE T: the proxy drives `rediacc_ci.testrun.linux_packages`, the module CI runs. The retired bash proxy announced `test-linux-packages.sh`, a file that no longer exists."""
+    fixture = build_fixture(tmp_path, subject=STUB_SUBJECT.replace("MARKER", "[DRY-RUN] Would"))
+    _old, new = run_both(fixture)
+    assert (
+        "proxy linux-packages: local stand-in for "
+        ".ci/rediacc_ci/testrun/linux_packages.py --dry-run\n" in new.stdout
+    )
+    assert "test-linux-packages.sh" not in new.stdout + new.stderr
+
+
 def test_a_failing_subtest_is_reported_by_both_sides(tmp_path: pathlib.Path) -> None:
     subject = STUB_SUBJECT.replace("MARKER", "[DRY-RUN] Would").replace(
-        'run_test "two" real', 'run_test "two" boom'
+        '("two", "real")', '("two", "boom")'
     )
     fixture = build_fixture(tmp_path, subject=subject)
     old, new = run_both(fixture)
@@ -267,7 +298,7 @@ def test_a_failing_subtest_is_reported_by_both_sides(tmp_path: pathlib.Path) -> 
 def test_zero_run_test_call_sites_is_refused_not_passed(tmp_path: pathlib.Path) -> None:
     """The corpus-derived expectation collapsing must be LOUD, never a pass."""
     subject = STUB_SUBJECT.replace("MARKER", "[DRY-RUN] Would").replace(
-        '\nrun_test "', '\n# run_test "'
+        '\n        ("', '\n        # ("'
     )
     fixture = build_fixture(tmp_path, subject=subject)
     old, new = run_both(fixture)
@@ -311,7 +342,7 @@ def test_a_renamed_dry_run_marker_is_now_a_loud_refusal(
     old, new = run_both(fixture)
     assert old.returncode == 1, "the rename must not be able to exit 0 any more"
     assert "VACUOUS: the dry-run stub marker '[DRY-RUN] Would' appears 0 times" in old.stderr
-    assert ".ci/scripts/test/test-linux-packages.sh" in old.stderr
+    assert ".ci/rediacc_ci/testrun/linux_packages.py" in old.stderr
     assert "which means it was renamed" in old.stderr
     # And the claim it used to make is GONE, not merely accompanied by a red.
     assert "4 of 4 subtests really executed" not in old.stdout
@@ -327,8 +358,8 @@ def test_a_present_marker_with_no_stub_lines_is_not_a_refusal(
     """
     subject = (
         STUB_SUBJECT.replace("MARKER", "[DRY-RUN] Would")
-        .replace('run_test "three" stub', 'run_test "three" real')
-        .replace('run_test "four" stub', 'run_test "four" real')
+        .replace('("three", "stub")', '("three", "real")')
+        .replace('("four", "stub")', '("four", "real")')
     )
     assert "[DRY-RUN] Would" in subject, "the marker must survive in the SOURCE"
     fixture = build_fixture(tmp_path, subject=subject)
@@ -374,7 +405,17 @@ def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
     assert_same(old_g, new_g)
 
     bad = build_fixture(tmp_path / "bad", subject=subject, port_source=planted)
-    old_b, new_b = run_both(bad)
+    # The expected answer is the unplanted one, already read above for the same subject and arguments.
+    old_b = old_g
+    new_b = subprocess.run(
+        ["python3", "-m", PORT_MODULE],
+        timeout=300,
+        check=False,
+        env=_env(bad),
+        cwd=str(bad),
+        capture_output=True,
+        text=True,
+    )
     assert old_b.stdout != new_b.stdout, "THE PLANT DID NOT FIRE"
     assert "2 of 4 subtests really executed" in old_b.stdout
     assert "4 of 4 subtests really executed" in new_b.stdout
@@ -384,11 +425,17 @@ def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
 
 
 def test_expected_tests_counts_lines_not_matches() -> None:
-    assert linux_packages.expected_tests('run_test "a"\nrun_test "b"\n') == 2
-    # Anchored: an indented call site does not count, matching `grep -cE '^run_test "'`.
-    assert linux_packages.expected_tests('    run_test "a"\n') == 0
-    # One line, two call sites, still ONE line.
-    assert linux_packages.expected_tests('run_test "a" ; run_test "b"\n') == 1
+    head = "def other():\n    return [(1, 2)]\n\n\ndef plan(s):\n    return [\n"
+    tail = '    ]\n\n\ndef later():\n    return [\n        ("z", 3),\n    ]\n'
+    assert (
+        linux_packages.expected_tests(head + '        ("a", 1),\n        ("b", 2),\n' + tail) == 2
+    )
+    # Anchored: a deeper-indented entry does not count.
+    assert linux_packages.expected_tests(head + '            ("a", 1),\n' + tail) == 0
+    # One line, two entries, still ONE line.
+    assert linux_packages.expected_tests(head + '        ("a", 1), ("b", 2),\n' + tail) == 1
+    # Only the plan() body is read: entries of later functions do not count.
+    assert linux_packages.expected_tests(head + tail) == 0
     assert linux_packages.expected_tests("") == 0
 
 

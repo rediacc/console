@@ -42,7 +42,7 @@ from rediacc_ci.core import platform as plat
 # The install root the CLI's own updater uses. Not derived and not configurable: `packages/cli/src/utils/platform.ts` hard-codes the same path, and a second spelling here would install somewhere the CLI does not look.
 INSTALL_SUBDIR = (".local", "share", "rediacc", "bin")
 
-# `dist/cli/rdc-<platform>-<arch><exe>`, which is where `.ci/scripts/build/build-cli-executables.sh` writes and nowhere else.
+# `dist/cli/rdc-<platform>-<arch><exe>`, which is where `rediacc_ci.build.build_cli_executables` writes and nowhere else.
 BUILD_SUBDIR = ("dist", "cli")
 
 USAGE = """usage: python3 -m rediacc_ci.native [--print-plan [--system S] [--machine M]]
@@ -64,7 +64,7 @@ class NativeError(RuntimeError):
 class Plan:
     """Every path and name the build/install sequence needs, and no side effects.
 
-    Frozen and pure so a gate can compare three of these against a table without a Mac, a Windows box, or a build. `sea_platform` and `sea_arch` are the exact strings `build-cli-executables.sh` takes for `--platform` and `--arch`.
+    Frozen and pure so a gate can compare three of these against a table without a Mac, a Windows box, or a build. `sea_platform` and `sea_arch` are the exact strings `rediacc_ci.build.build_cli_executables` takes for `--platform` and `--arch`.
     """
 
     sea_platform: str
@@ -161,7 +161,7 @@ def prepare_toolchain(root: pathlib.Path) -> None:
 
 def build_and_install(root: pathlib.Path, built_plan: Plan) -> None:
     """Steps 1-3 of the sequence `rdc.sh`'s header documented, in that order."""
-    # 1. Cross-build renet for BOTH linux arches into the slots build-cli-executables.sh embeds (private/bin/renet-linux-<arch>). The SEA embeds linux renet binaries for remote provisioning and a remote machine may be amd64 or arm64, so both must be present. Delegated to build.sh's stage_linux so the per-arch cross-compile lives in exactly one place.
+    # 1. Cross-build renet for BOTH linux arches into the slots rediacc_ci.build.build_cli_executables embeds (private/bin/renet-linux-<arch>). The SEA embeds linux renet binaries for remote provisioning and a remote machine may be amd64 or arm64, so both must be present. Delegated to build.sh's stage_linux so the per-arch cross-compile lives in exactly one place.
     log.step("Cross-building renet (both linux arches) -> private/bin")
     _stream(
         ["./build.sh", "stage_linux", str(root / "private" / "bin")], cwd=root / "private" / "renet"
@@ -171,8 +171,9 @@ def build_and_install(root: pathlib.Path, built_plan: Plan) -> None:
     log.step("Building SEA for %s/%s" % (built_plan.sea_platform, built_plan.sea_arch))
     _stream(
         [
-            "bash",
-            str(root / ".ci" / "scripts" / "build" / "build-cli-executables.sh"),
+            sys.executable,
+            "-m",
+            "rediacc_ci.build.build_cli_executables",
             "--platform",
             built_plan.sea_platform,
             "--arch",

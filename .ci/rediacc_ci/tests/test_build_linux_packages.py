@@ -43,7 +43,8 @@ SLUG = "build-linux-packages"
 
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/build/build-linux-packages.sh")
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/build/build_linux_packages.py")
-DELEGATE_REL = pathlib.PurePosixPath(".ci/scripts/build/build-linux-pkg.sh")
+DELEGATE_REL = pathlib.PurePosixPath(".ci/rediacc_ci/build/build_linux_pkg.py")
+TWIN_DELEGATE = ".ci/scripts/build/build-linux-pkg.sh"
 
 # The recording delegate. Stands in for the real build-linux-pkg.sh, which runs nfpm and signs packages. `FAIL_ON` is a 1-based call index so a case can fail the third of eight and the comparison can check that the remaining five never happened.
 #
@@ -429,17 +430,27 @@ def test_an_unset_next_version_names_the_program_that_refused(tmp_path):
 def test_a_missing_delegate_agrees_on_127_and_not_on_the_diagnostic(tmp_path):
     """Same treatment for the other interpreter-owned message.
 
-    `build-linux-pkg.sh` absent: bash reported "No such file or directory" against its own path and line and exited 127. The port takes the same status and prints the same shape against its own. The status is what the workflow step branches on, so it is asserted equal; the text is asserted DIFFERENT so the divergence stays visible.
+    The delegate absent: bash reported "No such file or directory" against its own path and line and exited 127. The port takes the same status and prints the same shape against its own. The status is what the workflow step branches on, so it is asserted equal; the text is asserted DIFFERENT so the divergence stays visible.
     """
     old = recorded("a-missing-delegate")
     new = drive(tmp_path, "a-missing-delegate")
 
     assert old["exit"] == 127, old
     assert new["exit"] == 127, new
-    assert LINE_PREFIX.sub("<prog>: line N: ", new["stderr"]) == LINE_PREFIX.sub(
-        "<prog>: line N: ", old["stderr"]
-    ), "masked stderr diverged:\n twin: %r\n port: %r" % (old["stderr"], new["stderr"])
-    assert old["stderr"] != new["stderr"], "the mask is hiding nothing"
+    old_err, new_err = str(old["stderr"]), str(new["stderr"])
+    # The delegate was renamed when its bash script became a module, so the path it is reported under is masked too (Rule T: the status is unchanged, the name is the new one).
+    assert TWIN_DELEGATE in old_err
+    assert str(DELEGATE_REL) in new_err
+    assert TWIN_DELEGATE not in new_err
+    masked_new = LINE_PREFIX.sub("<prog>: line N: ", new_err).replace(
+        str(DELEGATE_REL), "<delegate>"
+    )
+    masked_old = LINE_PREFIX.sub("<prog>: line N: ", old_err).replace(TWIN_DELEGATE, "<delegate>")
+    assert masked_new == masked_old, "masked stderr diverged:\n twin: %r\n port: %r" % (
+        old_err,
+        new_err,
+    )
+    assert old_err != new_err, "the mask is hiding nothing"
 
 
 def test_binary_for_is_the_twins_parameter_expansion():

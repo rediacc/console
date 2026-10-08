@@ -27,6 +27,7 @@ import subprocess
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.tests import differential as diff
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "version" / "inject-env.sh"
@@ -34,6 +35,7 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "version" / "inject_env.py"
 
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/version/inject-env.sh")
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/version/inject_env.py")
+RESOLVER_PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/version/resolve_version.py")
 
 # The four names, in the twin's own export order.
 NAMES = ("APP_VERSION", "VITE_APP_VERSION", "CLI_VERSION", "TAG")
@@ -84,18 +86,26 @@ def _fixture(
     `.resolve()` on the root: bash's `cd X && pwd` reports the LOGICAL path while `pathlib.resolve()` follows symlinks. Nothing here prints the root, but the two subjects must agree on WHICH resolver they found, and an unresolved root on a host whose tmpdir is a symlink makes that a coin toss.
     """
     root = where.resolve() / "tree"
-    (root / ".ci" / "scripts" / "version").mkdir(parents=True)
     (root / ".ci" / "rediacc_ci" / "version").mkdir(parents=True)
-    shutil.copy2(TWIN, root / TWIN_REL)
     shutil.copy2(PORT, root / PORT_REL)
+    stub_text = FAKE_RESOLVER % {
+        "log": str(root.parent / "resolverlog.txt"),
+        "rc": resolver_rc,
+        "out": resolver_out,
+    }
     if resolver:
-        stub = root / ".ci" / "scripts" / "version" / "resolve-version.sh"
-        stub.write_text(
-            FAKE_RESOLVER
-            % {"log": str(root.parent / "resolverlog.txt"), "rc": resolver_rc, "out": resolver_out},
-            encoding="utf-8",
-        )
-        stub.chmod(0o755 if resolver_exec else 0o644)
+        # The port runs its resolver through the interpreter, so the mode bit does not matter to it.
+        port_stub = root / RESOLVER_PORT_REL
+        port_stub.write_text(stub_text, encoding="utf-8")
+        port_stub.chmod(0o755)
+    if diff.regolden_mode(str(TWIN_REL)) == "bash":
+        # Only a re-freeze runs the retired twin, and the twin finds ITS resolver beside itself.
+        (root / ".ci" / "scripts" / "version").mkdir(parents=True)
+        shutil.copy2(TWIN, root / TWIN_REL)
+        if resolver:
+            twin_stub = root / ".ci" / "scripts" / "version" / "resolve-version.sh"
+            twin_stub.write_text(stub_text, encoding="utf-8")
+            twin_stub.chmod(0o755 if resolver_exec else 0o644)
     return root
 
 
@@ -109,15 +119,27 @@ def _drain_log(root: pathlib.Path) -> list[str]:
 
 
 def _cli_twin(root, argv, env_extra):
-    proc = subprocess.run(
-        ["bash", str(root / TWIN_REL), *argv],
-        capture_output=True,
-        text=True,
-        env={**BASE_ENV, **env_extra},
-        check=False,
-        timeout=60,
+    """The retired twin's answer, and the resolver log it left, from the golden (PLAN-retire-bash-oracles B3)."""
+
+    def live():
+        proc = subprocess.run(
+            ["bash", str(root / TWIN_REL), *argv],
+            capture_output=True,
+            text=True,
+            env={**BASE_ENV, **env_extra},
+            check=False,
+            timeout=60,
+        )
+        return proc.returncode, proc.stdout, proc.stderr
+
+    rc, out, err, _ = diff.twin_run(
+        str(TWIN_REL),
+        ["cli", repr(argv), repr(sorted(env_extra.items()))],
+        live,
+        files=(str(root.parent / "resolverlog.txt"),),
+        work=(str(root.parent),),
     )
-    return proc.returncode, proc.stdout, proc.stderr
+    return rc, out, err
 
 
 def _cli_port(root, argv, env_extra):
@@ -133,6 +155,22 @@ def _cli_port(root, argv, env_extra):
 
 
 def _exports_twin(root, argv, env_extra):
+    """The retired twin's exported set, from the golden (PLAN-retire-bash-oracles B3); `_exports_twin_live` is how it was recorded."""
+
+    def live():
+        code, exported, extra = _exports_twin_live(root, argv, env_extra)
+        return code, "", "", exported, extra
+
+    code, _out, _err, exported, extra = diff.twin_tuple(
+        str(TWIN_REL),
+        ["exports", repr(argv), repr(sorted(env_extra.items()))],
+        live,
+        work=(str(root.parent),),
+    )
+    return code, exported, extra
+
+
+def _exports_twin_live(root, argv, env_extra):
     """Source the twin in a throwaway shell and read the environment back.
 
     THREE THINGS HERE ARE LOAD-BEARING, and the first two were each a wrong first draft:
@@ -235,7 +273,6 @@ CASES = [
     ),
     pytest.param({"resolver_rc": 1}, ("--strict",), {}, id="resolver-fails-under-strict"),
     pytest.param({"resolver": False}, ("--print",), {}, id="resolver-missing"),
-    pytest.param({"resolver_exec": False}, ("--print",), {}, id="resolver-not-executable"),
     pytest.param({"resolver_out": "2.0.0\n\n\n"}, ("--print",), {}, id="resolver-trailing-blanks"),
     pytest.param({"resolver_out": "2.0.0\n3.0.0\n"}, ("--print",), {}, id="resolver-two-lines"),
     pytest.param(
@@ -338,30 +375,33 @@ def test_a_flag_swallowed_as_a_version_is_a_twin_defect(tmp_path):
         )
 
 
-def test_sourcing_the_twin_leaks_set_euo_pipefail_into_the_caller(tmp_path):
-    """A SECOND REAL DEFECT IN THE TWIN, and one the port cannot have.
+def test_delta_a_resolver_without_the_exec_bit_still_answers(tmp_path):
+    """RULE T. The retired twin ran `resolve-version.sh` by path, so a resolver whose mode bit was off failed to start and the twin fell back to `0.0.0-dev`, silently, on a release path. The port runs the resolver through the interpreter: the mode bit is not part of the contract, and the answer is the resolver's."""
+    root_a = _fixture(tmp_path / "a", resolver_exec=False)
+    old = _cli_twin(root_a, ("--print",), {})
+    assert old == (0, "0.0.0-dev\n", ""), "the bash behaviour this fixes: %r" % (old,)
+    root_b = _fixture(tmp_path / "b", resolver_exec=False)
+    new = _cli_port(root_b, ("--print",), {})
+    assert new == (0, "1.2.3\n", "")
 
-    inject-env.sh's own header says "All logic is wrapped in a function so `set -euo pipefail` stays scoped to this script and does not leak into the caller shell". That is false in bash: `set` options are SHELL-GLOBAL, not
-    function-scoped, so sourcing the file turns errexit, nounset and pipefail on
-    in whatever shell sourced it and leaves them on.
 
-    Latent rather than active today -- both production sourcing callers (build-cli-executables.sh:18, build-cli-musl.sh:14) already set the same three at the top -- so this is recorded, not repaired. The port hands back a mapping and has no shell options to leak, which is why the observable does not appear in the comparison above.
-    """
-    root = _fixture(tmp_path / "leak")
-    script = "set +euo pipefail; . '%s' --print >/dev/null; set -o" % (root / TWIN_REL)
+def test_the_port_cannot_leak_shell_options_into_a_caller():
+    """The retired twin's header claimed `set -euo pipefail` stayed scoped to it, which was false in bash (shell options are global, so sourcing it turned errexit, nounset and pipefail on in the sourcing shell). The port hands back a mapping and has no shell to leak into: the only observable is that `inject()` returns plain data."""
+    spec_path = str(PORT)
+    code = (
+        "import importlib.util, sys\n"
+        "spec = importlib.util.spec_from_file_location('m', sys.argv[1])\n"
+        "mod = importlib.util.module_from_spec(spec)\n"
+        "spec.loader.exec_module(mod)\n"
+        "result = mod.inject(['--version', '9.9.9'])\n"
+        "assert isinstance(result[1], dict)\n"
+    )
     proc = subprocess.run(
-        ["bash", "-c", script],
+        ["python3", "-c", code, spec_path],
         capture_output=True,
         text=True,
         env=dict(BASE_ENV),
         check=False,
         timeout=60,
     )
-    on = {
-        line.split()[0]
-        for line in proc.stdout.splitlines()
-        if line.split()[1:2] == ["on"]  # `set -o` prints "<name>\ton|off"
-    }
-    assert {"errexit", "nounset", "pipefail"} <= on, (
-        "the leak is gone and this test is stale; options on: %r" % sorted(on)
-    )
+    assert proc.returncode == 0, proc.stderr

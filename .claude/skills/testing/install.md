@@ -8,12 +8,12 @@ This was wrong here until 2026-08-24 and it would have sent you to watch a job t
 
 | what changed | script in `.ci/scripts/test/` | job to watch |
 |---|---|---|
-| install.sh across the platform matrix | `test-install-methods.sh` | `validate-install` (`ci.yml:1270`) |
+| install.sh across the platform matrix | `rediacc_ci.testrun.install_methods` | `validate-install` (`ci.yml:1270`) |
 | install.sh itself | `test-install-script.sh` | `quality-static` (`ci-quality.yml:331`) |
 | the config install.sh writes | `rediacc_ci.release.install_sh_config_check` | `quality-static` (`ci-quality.yml:338`) |
 | `./rdc.sh` flags and env (`--dev`, `--native`, `--config`) | `rediacc_ci.security.rdc_sh_env_check` | `quality-static` (`ci-quality.yml:345`) |
-| deb/rpm packaging | `test-linux-packages.sh` | `package-tests` (`ci.yml:753`) |
-| the updater, channels, binary swap | `test-rdc-update.sh` | `update-flow-test` (`ct-update-flow.yml:63`) |
+| deb/rpm packaging | `rediacc_ci.testrun.linux_packages` | `package-tests` (`ci.yml:753`) |
+| the updater, channels, binary swap | `rediacc_ci.testrun.rdc_update` | `update-flow-test` (`ct-update-flow.yml:63`) |
 
 Add a case to the script that already owns that surface. A NEW script needs its workflow step too, or it joins the orphans.
 

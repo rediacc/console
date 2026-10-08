@@ -1,0 +1,22 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 20, "source": "bash", "twin": ".ci/scripts/build/ensure-nfpm.sh", "twin_blob": "fd4d6e9fe4b94739547447be2a609de8eae9c8ea"}}
+{"_silent": []}
+{"_key": "test_a_checksum_mismatch_aborts_before_extracting#5f7d4dfa3986c7f5", "err": "ensure-nfpm: fetching nfpm 2.45.0 for x86_64\nsha256sum: WARNING: 1 computed checksum did NOT match\n", "out": "", "rc": "1"}
+{"_key": "test_a_checksum_mismatch_aborts_before_extracting#5f7d4dfa3986c7f5|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
+{"_key": "test_a_failing_curl_exits_with_curls_own_status#5f7d4dfa3986c7f5", "err": "ensure-nfpm: fetching nfpm 2.45.0 for x86_64\n", "out": "", "rc": "22"}
+{"_key": "test_a_failing_curl_exits_with_curls_own_status#5f7d4dfa3986c7f5|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
+{"_key": "test_a_missing_toolchain_env_is_constants_shs_own_refusal#5f7d4dfa3986c7f5", "err": "constants.sh: gate toolchain pins missing: <WORK0>/.devcontainer/toolchain.env\n", "out": "", "rc": "1"}
+{"_key": "test_a_missing_toolchain_env_is_constants_shs_own_refusal#5f7d4dfa3986c7f5|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
+{"_key": "test_a_planted_fix_of_defect_1_is_caught_by_the_differential#5f7d4dfa3986c7f5", "err": "", "out": "<WORK0>/.ci/cache/bin\n", "rc": "0"}
+{"_key": "test_a_planted_fix_of_defect_1_is_caught_by_the_differential#5f7d4dfa3986c7f5|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
+{"_key": "test_an_unpinned_architecture_is_refused_through_a_path_shim#5f7d4dfa3986c7f5", "err": "ensure-nfpm: no pinned checksum for riscv64 in .ci/config/constants.sh -- add one rather than downloading unverified bytes\n", "out": "", "rc": "1"}
+{"_key": "test_an_unpinned_architecture_is_refused_through_a_path_shim#5f7d4dfa3986c7f5|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
+{"_key": "test_cold_cache_downloads_verifies_and_prints_the_cache_dir#5f7d4dfa3986c7f5", "err": "ensure-nfpm: fetching nfpm 2.45.0 for x86_64\n", "out": "<WORK0>/.ci/cache/bin\n", "rc": "0"}
+{"_key": "test_cold_cache_downloads_verifies_and_prints_the_cache_dir#5f7d4dfa3986c7f5|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
+{"_key": "test_defect_1_a_warm_cache_is_never_checked_against_the_pin#5f7d4dfa3986c7f5", "err": "", "out": "<WORK0>/.ci/cache/bin\n", "rc": "0"}
+{"_key": "test_defect_1_a_warm_cache_is_never_checked_against_the_pin#5f7d4dfa3986c7f5|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
+{"_key": "test_defect_2_any_nfpm_on_path_wins_over_the_pin#5f7d4dfa3986c7f5", "err": "", "out": "<WORK0>/elsewhere\n", "rc": "0"}
+{"_key": "test_defect_2_any_nfpm_on_path_wins_over_the_pin#5f7d4dfa3986c7f5|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
+{"_key": "test_real_constants_agree_byte_for_byte#5f7d4dfa3986c7f5", "err": "ensure-nfpm: fetching nfpm 2.45.0 for x86_64\n", "out": "", "rc": "22"}
+{"_key": "test_real_constants_agree_byte_for_byte#5f7d4dfa3986c7f5|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
+{"_key": "test_unpinned_version_exits_1_without_forging_bash_text#5f7d4dfa3986c7f5", "err": "<WORK0>/.ci/scripts/build/ensure-nfpm.sh: line 54: NFPM_VERSION: unbound variable\n", "out": "", "rc": "1"}
+{"_key": "test_unpinned_version_exits_1_without_forging_bash_text#5f7d4dfa3986c7f5|more", "err": "", "out": "[\"proc\"]", "rc": "0"}
