@@ -485,3 +485,20 @@ def test_the_untested_module_report_can_fail(gate, tmp_path):
         "the untested-module report names a planted module, ignores a prose-only mention, "
         "passes when every module is named in code, and refuses an empty corpus"
     )
+
+
+def test_a_port_that_cannot_be_collected_makes_the_probe_exit_non_zero(gate, tmp_path):
+    # A pytest exit of 2 (an import error in the port) used to land in the "failed" list, print a zero row and exit 0, which is a report of nothing that looks like a report.
+    gates = tmp_path / "gates"
+    gates.mkdir(parents=True, exist_ok=True)
+    (gates / "test_gate_media_broken.py").write_text(
+        'import zz_no_such_module_zz\nMODULE = "covered.sh"\n', encoding="utf-8"
+    )
+    result = harness.run(
+        [str(COVERAGE), "--only", "broken"],
+        env={"MEDIA_COVERAGE_GATES_DIR": str(gates)},
+        timeout=600,
+    )
+    gate.assert_exit(1, result, "a port pytest cannot collect must fail the probe")
+    gate.assert_contains(result.combined, "exited 2", "the refusal must name pytest's exit code")
+    gate.log_pass("the probe refuses a port that cannot be collected")

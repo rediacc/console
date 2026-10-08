@@ -118,4 +118,3 @@ file:.claude/hooks/chain-head.sh
 
 # BLOCKER: BASH_ENV is a bash-only mechanism, so the file the harness points BASH_ENV at has to be sourceable bash (header lines 1-8)
 file:.claude/hooks/profile/bash_env.sh
-

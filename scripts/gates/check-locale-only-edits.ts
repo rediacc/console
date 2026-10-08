@@ -224,8 +224,7 @@ const PRODUCT_NAME_TOKEN = /^\p{Lu}[\p{L}\p{N}'\u2019_-]*$/u;
 /**
  * The masked invariants that CANNOT pass the capital-letter test, measured against the pipeline's
  * `PROPER_NOUNS` (private/growth/www_pipeline/adapters/json_adapter.py) and `spans.py`: the
- * lowercase and digit-bearing names, the two multi-word ones, a `{{var}}` placeholder and a
- * typographic double quote, each of which the mask restores byte for byte. A closed list, not a
+ * lowercase and digit-bearing names, the two multi-word ones and a typographic double quote, each of which the mask restores byte for byte. A closed list, not a
  * looser shape, because a shape loose enough to take `btrfs` also takes `lisanslar`.
  */
 const MASKED_LITERALS = new Set([
@@ -240,7 +239,6 @@ const MASKED_LITERALS = new Set([
   '\u201c',
   '\u201d',
 ]);
-const PLACEHOLDER_GAP = /^\{\{[\w.]+\}\}$/u;
 
 /** At most this many characters may stand where one sentinel stood. */
 const SENTINEL_REPLACEMENT_MAX = 40;
@@ -288,11 +286,7 @@ export function isSentinelRepair(was: string, now: string, en: string): boolean 
     .every(
       (gap) =>
         !/[.!?;:,\u3002\uff01\uff1f\uff1b\uff1a\uff0c\u3001\u27e6\u27e7<>]/u.test(gap) &&
-        (gap === '' ||
-          en.includes(gap) ||
-          PRODUCT_NAME_TOKEN.test(gap) ||
-          MASKED_LITERALS.has(gap) ||
-          PLACEHOLDER_GAP.test(gap))
+        (gap === '' || en.includes(gap) || PRODUCT_NAME_TOKEN.test(gap) || MASKED_LITERALS.has(gap))
     );
 }
 
@@ -435,8 +429,15 @@ const SENTINEL_CONTROLS: { name: string; was: string; now: string; en: string; w
     name: 'a masked {{var}} placeholder restored is exempt',
     was: '\u27e60\u27e7 lisans',
     now: '{{count}} lisans',
-    en: 'licenses',
+    en: '{{count}} licenses',
     want: true,
+  },
+  {
+    name: 'CONTROL: a {{var}} placeholder the English never had is NOT exempt',
+    was: '\u27e60\u27e7 lisans',
+    now: '{{evil}} lisans',
+    en: '{{count}} licenses',
+    want: false,
   },
   {
     name: 'CONTROL: a lowercase word that is not a masked noun (rdcx) is NOT exempt',

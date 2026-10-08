@@ -98,7 +98,7 @@ def test_the_header_names_its_twin(path) -> None:
         path.name,
         header.get("twin_blob"),
     )
-    assert header.get("source") in ("bash", "port"), "%s: source %r" % (
+    assert header.get("source") in ("bash", "port", "mixed"), "%s: source %r" % (
         path.name,
         header.get("source"),
     )
