@@ -215,3 +215,15 @@ def test_constant_values_accepts_string_collections_only() -> None:
     assert sm.constant_values({"k": 1}) == ["k"]
     assert sm.constant_values(("a", 1)) is None
     assert sm.constant_values("abc") is None
+
+
+def test_an_empty_repin_target_is_refused_and_writes_nothing() -> None:
+    """`--repin ""` dispatches to repin, which refuses an unknown clause with rc 2 before any write."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        reg = root / sm.REGISTRY_REL
+        reg.parent.mkdir(parents=True)
+        reg.write_text('{"clauses": {"pr.x": {"sha": "abc"}}}\n', encoding="utf-8")
+        before = reg.read_bytes()
+        assert sm.main(["--repin", ""], root=root) == 2
+        assert reg.read_bytes() == before

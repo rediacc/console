@@ -4,7 +4,7 @@ WHAT IT GUARDS. CLAUDE.md's PR-scope clauses are anchored and pinned; seven othe
 
 EVERY PLANT GOES INTO A COPY under a temp root, passed with `--root`; no tracked file is written (`check:ci-gate-test-real-file-plants`). The copy carries what the gate reads: the canonical file, the C9 corpus directories, the oracle and quote-source modules and the two `.ci/config` files. Each plant is built with `rediacc_ci.controls.plant`, which raises when the needle is absent, so a drifted anchor reads as a broken CONTROL rather than as a gate that stayed green.
 
-BOTH DIRECTIONS. T1 is the untouched copy and must be green with counts at or above the floors the success line prints. T2 replays the 8ed69711c miss and asserts the UNTOUCHED mirrors stay silent; T3 asserts a changed canonical reports C2 and no C5/C6; T5 asserts a correctly marked cut is silent; T8 asserts an anchored restatement is C10 and not C9; T9 and T10 assert the write paths refuse and then admit.
+BOTH DIRECTIONS. T1 is the untouched copy and must be green with each count EQUAL to the floor the success line prints. T2 replays the 8ed69711c miss and asserts the UNTOUCHED mirrors stay silent; T3 asserts a changed canonical reports C2 and no C5/C6; T5 asserts a correctly marked cut is silent; T8 asserts an anchored restatement is C10 and not C9; T9 and T10 assert the write paths refuse and then admit.
 
 THE FLOORS ARE READ, NEVER TYPED: T1 parses `N clauses (floor F)` and `M mirror checks (floor G)` from the one success line, so the floors live in the registry and nowhere else, and requires N == F and M == G, so a floor can be neither lowered nor left behind a new clause.
 """
