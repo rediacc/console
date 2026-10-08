@@ -91,6 +91,11 @@ NEEDS_SCRIPT = (
     ("rediacc_ci.deploy.sync_media_from_r2", "aws"),
     ("rediacc_ci.deploy.upload_to_r2", "aws"),
     ("rediacc_ci.ops.scrub_sentinel", "aws"),
+    # PLAN-cd-errors-in-ci W4: ci.yml and cd-v2.yml run it as a module, and it lists R2 through `aws s3api` (cd_preflight.py:286).
+    ("rediacc_ci.release.cd_preflight", "aws"),
+    # The module spellings of check:ci-release-state (NEEDS above routes the gate key only): release_state.py:141 and release_state_validator.py:251 run `aws s3api` directly.
+    ("rediacc_ci.quality.release_state", "aws"),
+    ("rediacc_ci.core.release_state_validator", "aws"),
 )
 
 # CREDENTIALS THAT LIVE IN A FILE, NOT IN YOUR SHELL. Measured 2026-08-28.

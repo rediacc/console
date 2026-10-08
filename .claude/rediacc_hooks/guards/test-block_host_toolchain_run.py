@@ -11,6 +11,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -578,9 +579,8 @@ cases.extend(
 )
 
 # EVERY NEEDS_SCRIPT ROW NAMES SOMETHING THAT EXISTS. Until 2026-10-09 this loop asserted that every `.sh` row whose port existed also had its module row, which kept nine rows alive for scripts PLAN-retire-bash-oracles B3 had deleted: a row for a file nothing can run routes nothing, and its only readers were the cases that named the deleted paths. The rule now is the one that would have caught them: a `.sh` key is the basename of a tracked file, and a `rediacc_ci.` key is a module file under `.ci/`.
-_TRACKED = subprocess.run(
-    ["git", "-C", REPO, "ls-files"], capture_output=True, text=True, check=True
-).stdout.split("\n")
+_LS = subprocess.run(["git", "-C", REPO, "ls-files"], capture_output=True, text=True, check=False)
+_TRACKED = _LS.stdout.split("\n") if _LS.returncode == 0 else []
 _BASENAMES = {path.rsplit("/", 1)[-1] for path in _TRACKED if path}
 cases.append((True, len(_BASENAMES) > 1000, "liveness: git ls-files saw the tree"))
 for key, _tool in GUARD.NEEDS_SCRIPT:
@@ -601,6 +601,36 @@ cases.append(
         (SCRUB, "aws") in GUARD.NEEDS_SCRIPT,
         "python -m: the scrub_sentinel port is in NEEDS_SCRIPT",
     )
+)
+
+# THE OTHER DIRECTION (review 276a69db.1): every runnable module under .ci/rediacc_ci that puts `aws` at the head of an argv has its row, so a new aws-calling port cannot ship without the routing. A module counts as runnable when it carries `if __name__ == "__main__"`. The exemptions are named, each with its reason.
+_AWS_ARGV = re.compile(r'\[\s*"aws"|\("aws",')
+_AWS_EXEMPT = {
+    # A multi-verb library CLI: aws is one verb (s3api list-objects-v2) of many, so a module row would refuse every other verb on a host without aws.
+    "rediacc_ci.core.common",
+    # A shadow-run driver for tests; it replays the bash common.sh, it is not run against R2.
+    "rediacc_ci.core.common_stub_shadow_driver",
+}
+_MODULE_ROWS = {
+    key for key, tool in GUARD.NEEDS_SCRIPT if tool == "aws" and key.startswith("rediacc_ci.")
+}
+_AWS_MODULES = set()
+for rel in _TRACKED:
+    if not (rel.startswith(".ci/rediacc_ci/") and rel.endswith(".py")) or "/tests/" in rel:
+        continue
+    text = pathlib.Path(REPO, rel).read_text(encoding="utf-8", errors="replace")
+    if "__main__" in text and _AWS_ARGV.search(text):
+        _AWS_MODULES.add(rel[len(".ci/") : -len(".py")].replace("/", "."))
+cases.append(
+    (
+        True,
+        len(_AWS_MODULES) >= 5,
+        "coverage: the aws-argv scan found the ports (%d)" % len(_AWS_MODULES),
+    )
+)
+cases.extend(
+    (True, mod in _MODULE_ROWS, f"coverage: aws-calling module {mod} has its NEEDS_SCRIPT row")
+    for mod in sorted(_AWS_MODULES - _AWS_EXEMPT)
 )
 
 if aws_in_box:
