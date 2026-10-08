@@ -107,7 +107,7 @@ LINT_ROOT_SCRIPTS = ("check:lint", "fix:lint", "lint")
 LINT_CI_SCRIPT = "check:lint"
 
 # The wrapper the roots are positional arguments to. Its first argument is a heap size in MB, so the roots begin two tokens later.
-ESLINT_RUNNER = "eslint-heap.sh"
+ESLINT_RUNNER = "eslint_heap.py"
 
 # `npm run <key>` inside a lint script. See script_roots() for why the links are followed rather than treated as opaque.
 NPM_RUN = re.compile(r"\bnpm\s+run\s+([^\s&|;]+)")
@@ -186,7 +186,7 @@ class LintScope(typing.NamedTuple):
 
 
 def segment_roots(segment):
-    """The positional roots one `&&`-segment hands to eslint-heap.sh."""
+    """The positional roots one `&&`-segment hands to eslint_heap.py."""
     tokens = segment.split()
     start = next(i for i, t in enumerate(tokens) if ESLINT_RUNNER in t) + 2
     roots = []

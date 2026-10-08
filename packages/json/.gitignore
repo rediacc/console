@@ -2,7 +2,7 @@
 /build/
 /dist/
 
-# Diagnostics written by test-templates.sh on every failing stage, plus its
+# Diagnostics written by the lifecycle suite (.ci/rediacc_ci/catalog/lifecycle.py) on every failing stage, plus its
 # results file. Generated output, never source: running the suite once creates
 # both, and they were previously untracked-but-not-ignored, so a single run
 # left them staged for whoever committed next.
