@@ -318,7 +318,7 @@ def test_the_body_is_invisible_to_the_review_gate(tmp_path):
     # Control: the same body without the marker line WOULD be selected once it carries the fence.
     loud = {
         "user": {"login": "github-actions[bot]"},
-        "body": "json:review-findings\n",
+        "body": "```json:review-findings\n",
         "created_at": "x",
     }
     assert review_comments.newest_summary([loud]) is loud

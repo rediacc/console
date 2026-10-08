@@ -335,7 +335,10 @@ def newest_summary(comments: list[dict]) -> dict | None:
             continue
         if body.startswith("<!--"):
             continue
-        if FENCE_NEEDLE in body or VERDICT_HEADING.search(body):
+        # A fence OPENER line, never the bare needle: the bot's wrapper comment names `json:review-findings` in prose and, being newer, outranked the real review on PR #599 (#51ec5215).
+        if any(FENCE_OPENER.match(line) for line in body.split("\n")) or VERDICT_HEADING.search(
+            body
+        ):
             matches.append(comment)
     if not matches:
         return None
@@ -654,8 +657,26 @@ def selftest() -> int:
     summary_cases = [
         (
             "the fence identifies a summary",
-            [{"id": 1, "user": bot, "created_at": "t1", "body": "x ```json:review-findings\n[]"}],
+            [{"id": 1, "user": bot, "created_at": "t1", "body": "x\n```json:review-findings\n[]"}],
             1,
+        ),
+        (
+            "a newer bot comment naming the fence in prose does NOT outrank the review (#51ec5215)",
+            [
+                {
+                    "id": 7,
+                    "user": bot,
+                    "created_at": "t1",
+                    "body": "x\n```json:review-findings\n[]\n```",
+                },
+                {
+                    "id": 8,
+                    "user": bot,
+                    "created_at": "t2",
+                    "body": "The review ends with a json:review-findings fence.",
+                },
+            ],
+            7,
         ),
         (
             "a verdict heading identifies one too",
@@ -724,8 +745,9 @@ def selftest() -> int:
         ctl.check("verdict: %s" % verdict_label, summary_verdict(planted)[0], want_verdict)
 
     # NEWEST WINS on the summary too.
-    older = {"id": 10, "user": bot, "created_at": "2026-08-01T00:00:00Z", "body": FENCE_NEEDLE}
-    newer = {"id": 11, "user": bot, "created_at": "2026-08-02T00:00:00Z", "body": FENCE_NEEDLE}
+    fenced = "```%s\n[]\n```" % FENCE_NEEDLE
+    older = {"id": 10, "user": bot, "created_at": "2026-08-01T00:00:00Z", "body": fenced}
+    newer = {"id": 11, "user": bot, "created_at": "2026-08-02T00:00:00Z", "body": fenced}
     ctl.check("only the newest summary is gated", newest_summary([older, newer])["id"], 11)
 
     # THE SUMMARY REPLY RULE, all four clauses, in both directions.
@@ -733,7 +755,7 @@ def selftest() -> int:
         "id": 5189236393,
         "user": bot,
         "created_at": "2026-08-05T10:00:00Z",
-        "body": FENCE_NEEDLE,
+        "body": fenced,
     }
     long_reply = "y" * SUMMARY_LONGFORM_CHARS
     ctl.check(
