@@ -2238,6 +2238,11 @@ jobs:
       - name: GitHub Actions variables
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_actions_vars.py
+      - name: PR-condition ledger is current
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run check:ci-pr-condition-ledger
       - name: Release key canonical
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_release_key_canonical.py

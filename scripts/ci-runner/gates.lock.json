@@ -4781,6 +4781,20 @@
     }
   },
   {
+    "id": "check:ci-pr-condition-ledger",
+    "run": "npm run check:ci-pr-condition-ledger",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-pr-condition-ledger.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "PR-condition ledger is current"
+    }
+  },
+  {
     "id": "check:ci-dead-bash",
     "run": "npm run check:ci-dead-bash",
     "slow": true,

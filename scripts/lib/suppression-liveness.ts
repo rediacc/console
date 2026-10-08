@@ -26,12 +26,20 @@
  * that changes it.
  */
 
-import { existsSync as fsExistsSync, readFileSync } from 'node:fs';
+import { existsSync as fsExistsSync, readdirSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import { DIM, GREEN, NC, RED, YELLOW } from './console.js';
+import { isPolicyFileName, policyPath } from './policy-paths.js';
 
 const readFileUtf8 = (p: string): string => readFileSync(p, 'utf-8');
 
-import { type BlockeredEntry, parseBlockeredList } from './blocker-validator.js';
+import {
+  type BlockeredEntry,
+  type LooseCondition,
+  type PrCondition,
+  parseBlockeredList,
+  parseConditions,
+} from './blocker-validator.js';
 
 /** The set of facts that keep entries alive, plus enough context to explain it. */
 export interface Universe {
@@ -78,7 +86,7 @@ export interface Probe {
   fix(entry: string, e: BlockeredEntry): string[];
 }
 
-interface Finding {
+export interface Finding {
   probe: string;
   file: string;
   entry: string;
@@ -286,5 +294,210 @@ export function findOrphanedBlockers(
     sawEntry = true;
   }
   flush();
+  return out;
+}
+
+// --------------------------------------------------------------------------- Every BLOCKER file, and the PR-condition clause ---------------------------------------------------------------------------
+
+/**
+ * Every list in the tree that speaks the `# BLOCKER:` grammar, by the name the
+ * policy seam answers to (or a repo-relative path for the two under .ci/config).
+ *
+ * Moved here from check-suppression-liveness.ts on 2026-10-08 so the offline
+ * `pr-conditions` probe there and the online check-pr-condition-ledger.ts read ONE
+ * list. It was ten names and is now every `.ci/policy/` dotfile:
+ * uncoveredPolicyLists() below fails the probe on a dotfile this array does not
+ * name, so a new list cannot quietly sit outside the clause check the way the k3s
+ * hold sat outside every check for sixteen days.
+ */
+export const BLOCKER_FILES: readonly string[] = Object.freeze([
+  '.actions-upgrade-blocklist',
+  '.audit-allowlist',
+  '.audit-prod-allowlist',
+  '.ci-parity-exempt',
+  '.cli-i18n-orphan-allowlist',
+  '.dead-bash-allowlist',
+  '.deps-upgrade-blocklist',
+  '.devcontainer-upgrade-blocklist',
+  '.e2e-coverage-allowlist',
+  '.embed-assets-upgrade-blocklist',
+  '.go-deps-upgrade-blocklist',
+  '.host-toolchain-exceptions',
+  '.language-policy-allowlist',
+  '.plan-housekeeping-allowlist',
+  '.profiler-coverage-allowlist',
+  '.runner-advice-allowlist',
+  '.unverified-download-allowlist',
+  '.w7p5a-real-run-blocklist',
+  '.w7p5a-real-run-leg-blocklist',
+  '.ci/config/directive-quotes-allowlist.txt',
+]);
+
+/** Absolute path and display path of one BLOCKER file, through the policy seam. */
+export function blockerFileLocation(root: string, rel: string): { abs: string; display: string } {
+  if (isPolicyFileName(rel)) {
+    const abs = policyPath(rel, root);
+    return { abs, display: path.relative(root, abs).split(path.sep).join('/') };
+  }
+  return { abs: path.join(root, rel), display: rel };
+}
+
+/**
+ * `.ci/policy/` dotfiles BLOCKER_FILES does not name. Empty when the directory is
+ * absent (a fixture root), because the presence floors elsewhere own that case.
+ */
+export function uncoveredPolicyLists(root: string): string[] {
+  const dir = path.join(root, '.ci', 'policy');
+  if (!fsExistsSync(dir)) return [];
+  const covered = new Set(BLOCKER_FILES);
+  return readdirSync(dir)
+    .filter((n) => n.startsWith('.') && !covered.has(n))
+    .sort();
+}
+
+/** The committed merged-PR ledger. Read offline; written only by check-pr-condition-ledger.ts --refresh. */
+export const MERGED_PRS_REL = '.ci/config/merged-prs.json';
+
+export interface MergedPrLedger {
+  format: 1;
+  refreshed_at: string;
+  prs: Record<string, { mergedAt: string }>;
+}
+
+const REF_RE = /^[\w.-]+\/[\w.-]+#\d+$/;
+const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
+
+/**
+ * Validate a parsed ledger. null when it is well formed, else the reason, naming
+ * the field. An unknown `format` is refused rather than read: a reader that found
+ * `prs` renamed would see zero merged PRs and pass every stale clause.
+ */
+export function ledgerProblem(raw: unknown): string | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return 'not a JSON object';
+  const o = raw as Record<string, unknown>;
+  if (o.format !== 1) return `format is ${JSON.stringify(o.format)}, this reader understands 1`;
+  if (typeof o.refreshed_at !== 'string' || !ISO_RE.test(o.refreshed_at)) {
+    return `refreshed_at ${JSON.stringify(o.refreshed_at)} is not a UTC ISO timestamp`;
+  }
+  if (!o.prs || typeof o.prs !== 'object' || Array.isArray(o.prs)) return 'prs is not an object';
+  for (const [ref, rec] of Object.entries(o.prs as Record<string, unknown>)) {
+    if (!REF_RE.test(ref)) return `prs key ${JSON.stringify(ref)} is not owner/repo#N`;
+    const m = (rec as { mergedAt?: unknown } | null)?.mergedAt;
+    if (typeof m !== 'string' || !ISO_RE.test(m)) {
+      return `prs["${ref}"].mergedAt ${JSON.stringify(m)} is not a UTC ISO timestamp`;
+    }
+  }
+  return null;
+}
+
+export type LedgerRead =
+  | { kind: 'ok'; ledger: MergedPrLedger }
+  | { kind: 'missing' }
+  | { kind: 'invalid'; reason: string };
+
+export function readMergedPrLedger(root: string): LedgerRead {
+  const p = path.join(root, MERGED_PRS_REL);
+  if (!fsExistsSync(p)) return { kind: 'missing' };
+  let raw: unknown;
+  try {
+    raw = JSON.parse(readFileUtf8(p));
+  } catch (err) {
+    return { kind: 'invalid', reason: `not JSON (${(err as Error).message})` };
+  }
+  const problem = ledgerProblem(raw);
+  return problem
+    ? { kind: 'invalid', reason: problem }
+    : { kind: 'ok', ledger: raw as MergedPrLedger };
+}
+
+export interface LocatedCondition extends PrCondition {
+  file: string;
+}
+export interface LocatedLoose extends LooseCondition {
+  file: string;
+}
+
+export interface ConditionScan {
+  filesRead: number;
+  filesAbsent: string[];
+  conditions: LocatedCondition[];
+  loose: LocatedLoose[];
+}
+
+/** Every clause and loose phrasing across BLOCKER_FILES. One subprocess per present file. */
+export function scanPrConditions(root: string): ConditionScan {
+  const scan: ConditionScan = { filesRead: 0, filesAbsent: [], conditions: [], loose: [] };
+  for (const rel of BLOCKER_FILES) {
+    const { abs, display } = blockerFileLocation(root, rel);
+    if (!fsExistsSync(abs)) {
+      scan.filesAbsent.push(display);
+      continue;
+    }
+    scan.filesRead++;
+    const parsed = parseConditions(abs);
+    for (const c of parsed.conditions) scan.conditions.push({ ...c, file: display });
+    for (const l of parsed.loose) scan.loose.push({ ...l, file: display });
+  }
+  return scan;
+}
+
+/**
+ * The offline verdicts. PURE: the scan and the ledger in, findings out, so the
+ * gate's selftest and its fixture cases exercise the same function.
+ *
+ *   - a clause whose PR the ledger records as merged          FAIL (the hold is over)
+ *   - a loose phrasing that names a PR                        FAIL (no machine can read it)
+ *   - clauses present while the ledger is missing or invalid  FAIL (cannot judge = unchecked)
+ */
+export function prConditionFindings(scan: ConditionScan, ledger: LedgerRead): Finding[] {
+  const out: Finding[] = [];
+  if (ledger.kind !== 'ok' && scan.conditions.length > 0) {
+    out.push({
+      probe: 'pr-conditions',
+      file: MERGED_PRS_REL,
+      entry: '(the merged-PR ledger)',
+      line: 1,
+      tier: 'fail',
+      why:
+        ledger.kind === 'missing'
+          ? `${scan.conditions.length} PR clause(s) wait on a merge, and ${MERGED_PRS_REL} is absent, so none of them can be judged. Unchecked is not clean.`
+          : `${MERGED_PRS_REL} is unreadable (${ledger.reason}), so ${scan.conditions.length} PR clause(s) cannot be judged.`,
+      fix: ['npx tsx scripts/gates/check-pr-condition-ledger.ts --refresh'],
+    });
+  }
+  const prs = ledger.kind === 'ok' ? ledger.ledger.prs : {};
+  for (const c of scan.conditions) {
+    const merged = prs[c.ref];
+    if (!merged) continue;
+    const what = c.entry ? `"${c.entry}"` : 'this comment (it covers no entry)';
+    out.push({
+      probe: 'pr-conditions',
+      file: c.file,
+      entry: c.entry || `(clause at line ${c.clauseLine})`,
+      line: c.line,
+      tier: 'fail',
+      why: `the clause at ${c.file}:${c.clauseLine} holds ${what} until PR ${c.ref} merges, and it merged at ${merged.mergedAt} (${MERGED_PRS_REL}). The condition the hold waited on has happened.`,
+      fix: [
+        c.entry
+          ? `lift the hold: delete "${c.entry}" and its BLOCKER block from ${c.file}, then run the gate that reads it`
+          : `delete the stale clause at ${c.file}:${c.clauseLine}`,
+        `or, if a NEW reason still holds it, rewrite the BLOCKER with that reason and drop the clause`,
+      ],
+    });
+  }
+  for (const l of scan.loose) {
+    out.push({
+      probe: 'pr-conditions',
+      file: l.file,
+      entry: l.entry || '(comment)',
+      line: l.line,
+      tier: 'fail',
+      why: `"${l.text}" reads as a lift condition naming a PR, but only the spelling "REVISIT WHEN PR #<N> MERGES" (or owner/repo#N) is machine-checked; this one would sit unnoticed after the PR merged.`,
+      fix: [
+        `rewrite it as "REVISIT WHEN PR #<N> MERGES" at ${l.file}:${l.line}`,
+        `or, if the number is an issue rather than a PR, write "issue <N>" without the #`,
+      ],
+    });
+  }
   return out;
 }

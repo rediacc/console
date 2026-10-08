@@ -278,3 +278,77 @@ export function verifyAllBlockers(entries: BlockeredEntry[], file: string): stri
   }
   return failures;
 }
+
+/** One `REVISIT WHEN PR #<N> MERGES` clause bound to one entry. */
+export interface PrCondition {
+  /** The entry's line, or the clause's own line when it covers no entry. */
+  line: number;
+  /** '' when the clause sits in a block with no entry (a header, an orphaned reason). */
+  entry: string;
+  /** Always qualified: `owner/repo#N`. A bare `#N` resolves to WK_GH_REPO in the canonical. */
+  ref: string;
+  clauseLine: number;
+}
+
+/** A phrasing that pairs a lift verb with a PR number but is not the canonical clause. */
+export interface LooseCondition {
+  line: number;
+  entry: string;
+  text: string;
+}
+
+/** The canonical's marker for a loose row; a real ref always contains `#`, so it cannot collide. */
+const LOOSE_MARK = '!loose';
+
+/**
+ * Every PR condition in a BLOCKER-gated list, from `allowlist.py conditions`.
+ *
+ * The grammar (one canonical spelling, block binding, the loose-wording shape) is
+ * `rediacc_ci.core.allowlist.parse_conditions`; this only splits the transport,
+ * `<line>\t<entry>\t<ref|!loose>\t<clauseLine|text>`. The entry is a
+ * whitespace-free token and the ref cannot hold a TAB, so the first three TABs are
+ * unambiguous and the loose text keeps any TAB of its own.
+ *
+ * Unlike parseBlockeredList, a MISSING FILE THROWS. The caller is a liveness probe
+ * that must tell "no clauses" from "did not look", and the permissive default exists
+ * only for the thirteen gates that pass an optional allowlist path.
+ */
+export function parseConditions(
+  filePath: string,
+  commentChar = '#'
+): { conditions: PrCondition[]; loose: LooseCondition[] } {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(
+      `blocker-validator: parseConditions was handed ${filePath}, which does not exist`
+    );
+  }
+  const out = canonical(['conditions', filePath, commentChar]);
+  const conditions: PrCondition[] = [];
+  const loose: LooseCondition[] = [];
+  for (const row of out.split('\n')) {
+    if (row === '') continue;
+    const t1 = row.indexOf('\t');
+    const t2 = row.indexOf('\t', t1 + 1);
+    const t3 = row.indexOf('\t', t2 + 1);
+    if (t1 < 0 || t2 < 0 || t3 < 0) {
+      throw new Error(
+        `blocker-validator: ${MODULE} conditions emitted a row with fewer than three TABs: ${JSON.stringify(row)}`
+      );
+    }
+    const line = Number(row.slice(0, t1));
+    const entry = row.slice(t1 + 1, t2);
+    const ref = row.slice(t2 + 1, t3);
+    const last = row.slice(t3 + 1);
+    if (ref === LOOSE_MARK) {
+      loose.push({ line, entry, text: last });
+    } else if (/^[\w.-]+\/[\w.-]+#\d+$/.test(ref)) {
+      conditions.push({ line, entry, ref, clauseLine: Number(last) });
+    } else {
+      throw new Error(
+        `blocker-validator: ${MODULE} conditions emitted an unqualified ref ${JSON.stringify(ref)}; ` +
+          `every ref must read owner/repo#N, or a ledger lookup would silently miss it.`
+      );
+    }
+  }
+  return { conditions, loose };
+}
