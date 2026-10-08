@@ -1,7 +1,6 @@
 {
   "$comment": "Per-commit review (agent/plans/PLAN-per-commit-review.md, approved by the operator ruling of 2026-10-02 that replaced the PR-level Claude review). Read by .claude/hooks/stop/wl_review.py, the post-bash trigger .claude/hooks/post-bash/review_commit.py and the push guard block_push_with_unrecorded_reviews.py. Every knob lives here and not in an environment variable, so the threshold can be raised with a one-line diff and no code change.",
-  "model": "claude-haiku-4-5-20251001",
-  "$model": "The dated haiku build the Stop-hook judge already pins (wl_judge.JUDGE_MODEL). Operator ruling 2026-10-02: the reviewer is haiku.",
+  "$model": "Not set here: the reviewer model is WK_CLAUDE_HAIKU_MODEL in .ci/config/well-known.env, the one place the Stop-hook judge reads too (wl_models.py). Operator ruling 2026-10-02: the reviewer is haiku.",
   "budget_usd": 0.3,
   "$budget_usd": "Per call. A measured warm haiku call with this schema costs about $0.02; the cap is a post-hoc stop, so it sits well clear of the real cost.",
   "$measured": "Live smoke 2026-10-02T07:45Z (PLAN-per-commit-review T13), the post-bash member driven by a recorded PostToolUse event on a scratch commit that planted a values[1:] bug: the hook returned in 0.06s, one haiku call took 18.3s and cost $0.029, the file landed 19.1s after the commit with that bug as its one [high] finding, and the next Bash call surfaced it.",

@@ -1429,7 +1429,7 @@ def ask_why(plan_text):
     Stop hook is this file's own process tree; without `STOPHOOK_CHILD=1` the
     child blocks on the parent's open items and the call hangs until the timeout. Every other model call in this directory carries it (`wl_shapedup.ask`, `wl_judge.run_triage`, `run_judge`), and this is the fourth.
 
-    The model, the budget and the timeout are wl_judge's -- `WORKLIST_JUDGE_MODEL` defaults to haiku. Not a new knob: a second model setting is a second thing to calibrate, and CLAUDE.md's i18n section already records what happens when the cheap default is not the one that gets used.
+    The model, the budget and the timeout are wl_judge's -- the model is WK_CLAUDE_HAIKU_MODEL (wl_models.py). Not a new knob: a second model setting is a second thing to calibrate, and CLAUDE.md's i18n section already records what happens when the cheap default is not the one that gets used.
     """
     import wl_judge  # noqa: PLC0415 -- see resolve()
 

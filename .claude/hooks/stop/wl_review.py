@@ -32,6 +32,8 @@ import sys
 import tempfile
 import time
 
+from wl_models import HAIKU_MODEL
+
 HERE = pathlib.Path(__file__).resolve().parent
 CONSOLE_ROOT = HERE.parents[2]
 CONFIG_REL = ".ci/config/commit-review.json"
@@ -40,7 +42,6 @@ SELF = HERE / "wl_review.py"
 WORKLIST = HERE / "worklist.py"
 
 DEFAULTS = {
-    "model": "claude-haiku-4-5-20251001",
     "budget_usd": 0.3,
     "timeout_s": 240,
     "max_concurrent": 2,
@@ -198,6 +199,8 @@ def load_config(root=None):
         cfg.update({k: v for k, v in doc.items() if k in DEFAULTS})
     if cfg.get("block_at") not in SEV_RANK:
         cfg["block_at"] = "high"
+    # Not a config key: the model id is WK_CLAUDE_HAIKU_MODEL in .ci/config/well-known.env, the one place an upgrade edits (the Stop-hook judge reads it too).
+    cfg["model"] = HAIKU_MODEL
     return cfg
 
 

@@ -427,14 +427,6 @@
         "'30'"
       ]
     },
-    "WORKLIST_JUDGE_MODEL": {
-      "kind": "corpus",
-      "class": "harness",
-      "defaults": [
-        "'claude-haiku-4-5-20251001'"
-      ],
-      "why": "The model id for the judge call, wl_judge.py:24. Pinned to a dated haiku build rather than an alias, because cost and latency were measured against that build ($0.011-$0.026 warm) and an alias would silently move both."
-    },
     "WORKLIST_JUDGE_TIMEOUT_S": {
       "kind": "tuning",
       "class": "harness",

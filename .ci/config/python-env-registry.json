@@ -1951,7 +1951,6 @@
       "WORKLIST_JUDGE",
       "WORKLIST_JUDGE_BUDGET_USD",
       "WORKLIST_JUDGE_CACHE_MIN",
-      "WORKLIST_JUDGE_MODEL",
       "WORKLIST_JUDGE_TIMEOUT_S"
     ],
     ".claude/hooks/stop/wl_liveness.py": [
