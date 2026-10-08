@@ -497,7 +497,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-config-sync-hardening.md` | draft | 475 | 1 | 18 | 57866 |
 | `agent/plans/PLAN-config-team-scoping.md` | draft | 244 | 1 | 10 | 31097 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
-| `agent/plans/PLAN-deferred-findings-block-merge.md` | approved | 248 | 1 | 16 | 28103 |
+| `agent/plans/PLAN-deferred-findings-block-merge.md` | approved | 248 | 1 | 16 | 28151 |
 | `agent/plans/PLAN-deletion-budget.md` | draft | 386 | 28 | 0 | 53190 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2750 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
@@ -548,7 +548,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rest-graphql-guard-parity.md` | compacted | 54 | 0 | 8 | 4010 |
 | `agent/plans/PLAN-resumable-rebase-executor.md` | compacted | 36 | 0 | 0 | 2212 |
 | `agent/plans/PLAN-retire-bash-oracles.A0.md` | executing | 270 | 7 | 0 | 30596 |
-| `agent/plans/PLAN-retire-bash-oracles.md` | approved | 933 | 1 | 14 | 107411 |
+| `agent/plans/PLAN-retire-bash-oracles.md` | approved | 933 | 1 | 14 | 108231 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
 | `agent/plans/PLAN-scope-gate-sort-collation.md` | compacted | 38 | 0 | 0 | 2784 |
@@ -587,7 +587,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-wire-account-vitest-ci.md` | compacted | 39 | 0 | 0 | 3063 |
 | `agent/plans/PLAN-wl-report-liveness-oracle.md` | compacted | 52 | 0 | 7 | 3665 |
 | `agent/plans/PLAN-www-bundle-determinism.md` | compacted | 38 | 0 | 0 | 2592 |
-| `agent/plans/_done/PLAN-account-env-to-bws.md` | done | 131 | 0 | 20 | 26601 |
+| `agent/plans/_done/PLAN-account-env-to-bws.md` | done | 131 | 0 | 20 | 26622 |
 | `agent/plans/_done/PLAN-agent-session-archival.md` | done | 141 | 0 | 6 | 18555 |
 | `agent/plans/_done/PLAN-archival-tests-python-compliance.md` | done | 231 | 0 | 15 | 32101 |
 | `agent/plans/_done/PLAN-b2-emit-matrix.md` | done | 305 | 0 | 13 | 34443 |

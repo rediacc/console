@@ -98,7 +98,7 @@ Owns: .ci/rediacc_ci/quality/review_resolutions.py, .ci/scripts/quality/check_re
 - **D7. Migration.**
   - Only `agent/reviews/1008-1/` is migrated, by fixing the findings. The records themselves are append-only and nobody edits them by hand.
   - `agent/reviews/1007-1/` and every other merged directory are history and are not judged. The open item `#9e7a546f` still tracks the 1007-1 finding as ordinary worklist work.
-  - Finding `71afd29f.3` (`wl_review.py:2427`) is inside W2's ownership, so W2 fixes it.
+  - Finding `71afd29f.3` (`.claude/hooks/stop/wl_review.py:2427`) is inside W2's ownership, so W2 fixes it.
   - The two highs stay with their live leased writers (`#894643cf`, part of `#d72223aa`).
   - The local enabling commits (W1 gate wiring, W2 `push_refusals`) and the migration land before the next push. Under `turbo_push: batch-end` that push is one batch-end push; otherwise the first push after W1/W2 waits for M1-M3.
 
@@ -147,7 +147,7 @@ Owns: .ci/rediacc_ci/quality/review_resolutions.py, .ci/scripts/quality/check_re
   - `deferred` is refused with the D5 order text.
   - `waived` is added with checks (a), (b) and (c) from D3.
   - `verb()` and `worklist._review_cli` pass `items` as `{id: (state, text, triage_v)}` and an `asked_ok(text)` built from `wl_checks._asked_in_transcript` and `worklist._lead_transcript`.
-  - Update `mark_commands`, `VERB_USAGE` (line 2832), `worklist_messages` lines 467 and 2198, `REVIEWS_MESSAGE` in `block_admin_merge.py:69-74` (name the deferral, and the next command `python3 .claude/hooks/stop/wl_review.py --status`), and the `stop_texts` block text.
+  - Update `mark_commands`, `VERB_USAGE` (line 2832), `worklist_messages` lines 467 and 2198, `REVIEWS_MESSAGE` in `.claude/rediacc_hooks/guards/block_admin_merge.py:69-74` (name the deferral, and the next command `python3 .claude/hooks/stop/wl_review.py --status`), and the `stop_texts` block text.
     (ticked) 2026-10-08T15:54:24Z by d778be9d: commit:b18d31bda test_wl_review_deferrals.py rc=0
 
   Acceptance (tests): `deferred` is refused; `waived` is refused with no item, a non-operator-only triage, or an `ASKED:` minute with no matching AskUserQuestion answer in a fixture transcript (and one 6 minutes off); `waived` is accepted when all three hold.
