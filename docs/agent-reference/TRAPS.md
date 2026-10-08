@@ -12,9 +12,21 @@ Each `## ` entry is followed immediately by three lines, and a new entry without
 Trap-Id: stable-kebab-case-id      never renumbered, never reused after retirement
 Enforced-By: <pointer>[, <pointer>...]   or the single token JUDGMENT-ONLY
 Residue: <what the instruments do not reach>   mandatory when JUDGMENT-ONLY
+Documented-In: <anchor>            optional, 0..n lines, one anchor each, only after Residue:
 ```
 
-A pointer is `gate:<npm check id>`, `hook:<trapguard rule id>`, or `file:<path>` / `file:<path>:<line>`. Every pointer must RESOLVE and must be LIVE, because the cheapest thing to name under a coverage gate is an instrument that cannot fire.
+A pointer is `gate:<npm check id>`, `hook:<trapguard rule id>`, `guard:<guard stem>`, or `file:<path>` / `file:<path>:<line>`. Every pointer must RESOLVE and must be LIVE, because the cheapest thing to name under a coverage gate is an instrument that cannot fire. A `guard:` pointer is live when the guard has its own `test-<stem>.py` suite, or both a firing and a silent case in `hookcases.py`.
+
+`Documented-In:` names where a lesson is written down. It never counts as enforcement, and each anchor must resolve to the lesson's text, not merely to a place:
+
+```
+text:<path> <phrase>        the phrase (12+ characters, whitespace collapsed) is in the file
+doc:<path>#<heading>        a heading at any level, outside fences, matches exactly
+box:<slug>#<label>@<sig8>   the labelled box in any plan folder still signs as sig8
+trap:<id>                   an id elsewhere in this corpus
+```
+
+`file:` is refused in `Documented-In:`, because `file:<path>:<N>` proves only that some non-blank line sits at N, so deleting the sentence leaves it green. Anchor the distinctive clause rather than the whole sentence, so a rewrap or a neighbouring edit does not redden it.
 
 `JUDGMENT-ONLY` is deliberately cheap to declare and is never counted against anything. Its count is the honest size of the unprotected surface, and it is the number worth reviewing:
 
@@ -1568,7 +1580,7 @@ Two things make the redo safe, and the first alone is not enough. Anchor the pat
 
 ## A title-deriving function fails SILENTLY and at scale
 Trap-Id: derived-title-silent-fallback
-Enforced-By: file:.claude/hooks/stop/test-planrec.py:216
+Enforced-By: file:.claude/hooks/stop/test-planrec.py:226
 Residue: The control pins ONE of the three failure modes (H1 vs the `Status:` header block). The fenced-code case and the `Word:`-header-guard case are unpinned, so either could regress and the corpus would look fine.
 
 `title_of()` in `.claude/hooks/stop/wl_planrec.py:1547` derives a plan record's title from the plan. It has a FALLBACK, and that is the whole problem: a derivation with a fallback never fails, it just quietly produces the wrong answer for a subset it cannot report. Three separate defects hid in it, and each one produced titles that looked plausible:
@@ -1869,3 +1881,87 @@ The check: before running `update-ref` or `symbolic-ref` against a ref that coul
 so in the same report that discloses the workaround, because the workaround's own safety is now the reader's problem, not the guard's.
 
 ---
+
+## The wake timer dies before it fires when its Bash timeout is not above its sleep
+Trap-Id: wake-timer-timeout-above-sleep
+Enforced-By: file:.claude/hooks/stop/wl_checks.py
+Residue: nothing reads the Bash call's timeout, so a wake timer started with the harness default is killed before it fires.
+Documented-In: text:CLAUDE.md a `timeout` above its sleep
+Documented-In: text:CLAUDE.md as a background Bash call
+
+The wake timer exists because the harness re-invokes a session only when a background task exits. Started with the harness's own 30-minute default timeout around a 30-minute sleep, the call is killed just before it would have fired, so a stop that waits on hung work never ends. The `timeout` passed to the Bash call has to sit above the timer's sleep (2400000 ms for the default).
+
+## ci:quick drops a touched slow gate and the push goes out unverified
+Trap-Id: ci-quick-drops-touched-slow-gate
+Enforced-By: guard:block_unverified_push
+Residue:
+Documented-In: text:docs/agent-reference/ci-gates.md A touched slow gate that ci:quick drops is recorded, and the push waits for it.
+Documented-In: box:PLAN-gate-drop-receipt-verify#G4@cb4c0152
+
+`ci:quick` selects slow gates from the change set, and a slow gate it drops is not run. Before the receipt recorded the drop, a push could go out with a touched slow gate never having run, and the green receipt read as full coverage. The receipt now names the dropped gate and the push guard waits for it.
+
+## A new test module without a shard leg is never collected in CI
+Trap-Id: new-test-module-needs-shard-leg
+Enforced-By: gate:check:ci-shard-manifest-coverage
+Residue:
+Documented-In: text:docs/agent-reference/ci-gates.md places each missing unit and drops the ids of units that no longer exist
+
+CI collects pytest units by shard manifest, not by directory. A new test module with no shard leg runs locally and in the full suite, and is silently absent from every CI lane until something places it. `shard:place` places the missing unit, and the coverage gate fails while one is unplaced.
+
+## An environment read registered in one registry and not the other
+Trap-Id: env-read-needs-both-registries
+Enforced-By: gate:check:ci-python-env-registry, gate:check:ci-worklist-env-registry
+Residue:
+Documented-In: text:docs/agent-reference/ci-gates.md A new environment variable is registered with one command
+
+An environment read is registered twice: the Python env registry for `.ci`, and the worklist env registry for the hook side. A read added to only one passes its own gate and fails the other's on the next run, often in a different session that never touched it.
+
+## Manifest paths without pathsOrigin
+Trap-Id: manifest-paths-needs-paths-origin
+Enforced-By: gate:check:ci-paths-origin
+Residue:
+Documented-In: text:scripts/ci-runner/manifest.ts pathsOrigin: 'declared'
+
+A manifest gate with `paths:` selects itself only when those paths change. Without `pathsOrigin`, nothing says whether the list was declared by hand or derived from the gate's real inputs, and a hand list drifts as the gate grows new inputs. The gate refuses an entry with paths and no origin.
+
+## Tick evidence written into a box line re-signs the box
+Trap-Id: tick-text-resigns-the-box
+Enforced-By: guard:block_plan_box_rewrite, gate:check:ci-plan-boxes
+Residue:
+Documented-In: trap:bare-basename-citation
+
+Writing tick evidence into a box line changes the box text, and the box signature is a hash of that text. The ledger then sees one box vanish and a new one appear, which reads as a deleted task, not a ticked one. Evidence goes into the plan's record or the investigation ledger through the plan verbs, never into the box line by hand.
+
+## A bare-basename citation resolves nowhere
+Trap-Id: bare-basename-citation
+Enforced-By: gate:check:ci-plan-citations, file:.claude/hooks/stop/wl_planrec.py
+Residue:
+Documented-In: text:.claude/hooks/stop/wl_planrec.py Write the full repo-relative path
+
+A citation of a bare file name resolves against nothing once the file moves or a second file with that name appears, and the reader cannot tell which file was meant. A citation names the full repo-relative path, and the plan record refuses one that does not resolve.
+
+## -p no:cacheprovider under --strict-config collects nothing
+Trap-Id: no-cacheprovider-vs-strict-config
+Enforced-By: JUDGMENT-ONLY
+Residue: a nested pytest run against the repo's ini with `-p no:cacheprovider` exits 4 and collects nothing; nothing refuses it.
+Documented-In: text:.ci/rediacc_ci/tests/gates/test_twin_parity.py Disabling that plugin UNREGISTERS the `cache_dir` ini key
+Documented-In: text:pyproject.toml --strict-config  an unknown key in THIS table is an error
+
+Disabling pytest's cacheprovider plugin also unregisters its `cache_dir` ini key. Under the repo's `--strict-config`, the ini's `cache_dir` then counts as an unknown key, so a nested pytest run with `-p no:cacheprovider` exits 4 and collects nothing. The empty run looks like a pass to anything that reads only the exit status of a later step.
+
+## gh -F and -f are different flags
+Trap-Id: gh-field-typed-vs-raw
+Enforced-By: JUDGMENT-ONLY
+Residue: `-F` converts true and numbers and reads @file; `-f` sends a literal string. No guard judges which one was meant.
+Documented-In: text:.claude/rediacc_hooks/shellscan.py "raw-field": ("f", True),
+Documented-In: text:.claude/rediacc_hooks/guards/block_raw_pr_body_edit.py (-F|-f|--field|--raw-field)
+
+`gh api -F` is typed: it converts `true` and numbers and reads `@file` as file content. `-f` sends the raw string. A `-f body=@file` posted the literal text `@file` as a PR comment. The two flags differ by one letter and nothing judges which one was meant.
+
+## --retro in the middle of a note is note text
+Trap-Id: retro-flag-after-bare-dashdash
+Enforced-By: file:.claude/hooks/stop/worklist.py
+Residue: only a trailing --retro is recovered; one in the middle of the note is silent note text.
+Documented-In: text:.claude/hooks/stop/worklist.py accepted anywhere BEFORE the bare
+
+The worklist verbs accept `--retro` and `--evidence` anywhere before a bare `--`. After it, only a trailing `--retro` is recovered; one in the middle of a note becomes part of the note text, and the flag silently does nothing.

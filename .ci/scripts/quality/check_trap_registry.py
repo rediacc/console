@@ -19,7 +19,10 @@ NO `id:` IS CORRECT HERE: `derivedId` (`gate-header.ts:260`) maps this basename 
 
 THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files. Both infer `[]` and both resolve to the empty set `needs: none` declares.
 
-`TRAP_FLOOR` IS NOT TOUCHED BY THIS CHANGE. It is 79, it lives in BOTH `.ci/scripts/quality/check-trap-registry.sh` and `.ci/rediacc_ci/quality/trap_registry.py`, and `.ci/rediacc_ci/tests/test_quality_trap_registry.py` asserts the two agree. Neither number was edited here; this entry point adds no third copy.
+`TRAP_FLOOR` IS NOT HELD HERE. It lives in `.ci/rediacc_ci/quality/trap_registry.py` (`TRAP_FLOOR_DEFAULT`) and, since the bash twin's retirement, in the frozen golden `.ci/rediacc_ci/tests/goldens/twins/quality.check-trap-registry.jsonl`, whose agreement `.ci/rediacc_ci/tests/test_quality_trap_registry.py` asserts. This entry point adds no third copy.
+
+DOCUMENTED-IN ANCHORS (PLAN-lessons-registry, 2026-10-08). An entry may carry 0..n `Documented-In:` lines after `Residue:`, each naming where the lesson is WRITTEN (`text:`, `doc:`, `box:`, `trap:`), and `guard:<stem>` joins the Enforced-By kinds. The anchors resolve under the `TRAP_ANCHOR_ROOT` seam (default: the repo root), which exists so the gate test can mutate copies of the anchored documents rather than the shared tree. The step, the
+lane, `needs` and the deliberate absence of `paths` are unchanged: an edit to CLAUDE.md or a plan can now dangle an anchor, which is one more reason the gate runs on every change.
 
 PINNED BY PATH IN TWO PLACES, split across two arms:
 

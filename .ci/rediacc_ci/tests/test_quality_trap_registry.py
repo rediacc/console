@@ -4,16 +4,20 @@ WHY A DIFFERENTIAL ON THE PARSER. It is a fence-tracking state machine whose who
 fail
 for the right reason.
 
-The whole gate, including F6's twenty-one planted controls, is covered by `.ci/shadow/w7p2-trap-registry.observations.jsonl` over five distinct trees.
+The whole gate, including F6's planted controls (the gate prints their count), is covered by `.ci/shadow/w7p2-trap-registry.observations.jsonl` over five distinct trees.
 
 THE TWIN IS RETIRED (PLAN-retire-bash-oracles B3). Its awk parser's answers, its floor and its two summary lines are frozen in `goldens/twins/quality.check-trap-registry.jsonl` through `differential.twin_call`; the extraction below runs only when that golden is re-frozen from a live twin (`regolden.py --source bash`).
 """
 
+import importlib.util
 import pathlib
 import subprocess
+import sys
 
 import pytest
 
+from rediacc_ci import paths
+from rediacc_ci.quality import plan_lifecycle
 from rediacc_ci.quality import trap_registry as mod
 from rediacc_ci.tests import differential as diff
 
@@ -167,6 +171,7 @@ def _probe_registry(tmp_path: pathlib.Path, lifecycle: str, settings: str) -> "m
             "TRAP_SETTINGS": tmp_path / "settings.json",
             "TRAP_LIFECYCLE": tmp_path / "lifecycle.py",
             "TRAP_FILE_ROOT": files,
+            "TRAP_ANCHOR_ROOT": files,
         }
     )
 
@@ -204,3 +209,136 @@ def test_the_controls_include_the_probe_plant_and_pass(tmp_path: pathlib.Path) -
     real = mod.Registry(mod.resolve_seams(mod.paths.repo_root(), env={}))
     for reg in (real.settings, real.lifecycle):
         assert mod.PROBE_FLAG not in mod.read_text(reg), reg
+
+
+# --- PLAN-lessons-registry: Documented-In anchors and guard: pointers ---
+
+
+def _check_plan_boxes():
+    """`.ci/scripts/quality/check_plan_boxes.py`, loaded by path: the formula `box_sig` restates."""
+    scripts = paths.from_root(".ci", "scripts", "quality")
+    # The script's own `import _cipath` shim lives beside it.
+    paths.on_sys_path(scripts)
+    spec = importlib.util.spec_from_file_location(
+        "check_plan_boxes_for_trap_registry", scripts / "check_plan_boxes.py"
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_box_sig_is_the_plan_box_gates_sig_on_every_real_box() -> None:
+    """THE FORMULA EXISTS TWICE (L3), so the copies are compared on the real corpus, not on one example.
+
+    `check_plan_boxes.sig` is fed what `wl_planfid.plan_tasks` hands it; `box_sig` reads the raw box body. Every box `plan_boxes` finds must sign as one of the gate's own task sigs. Anti-vacuity: the corpus must hold boxes, or the equality was asserted over nothing.
+    """
+    cpb = _check_plan_boxes()
+    planfid = sys.modules["wl_planfid"]
+    compared = 0
+    root = paths.repo_root()
+    for rel_dir in plan_lifecycle.PLAN_DIRS:
+        for plan in sorted((root / rel_dir).glob("PLAN-*.md")):
+            text = plan.read_text(encoding="utf-8", errors="replace")
+            theirs = {cpb.sig(task) for task in planfid.plan_tasks(text)}
+            for label, sig, _record in mod.plan_boxes(text):
+                compared += 1
+                assert sig in theirs, (plan, label, sig)
+    assert compared >= 100, "only %d boxes compared; the plan corpus was not seen" % compared
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "G4 The guard refuses outstanding `droppedTouched` and fails closed.",
+        "L1 Writer A: `parse_corpus` accepts **Documented-In:** lines after snake_case_name.",
+        "  trailing and   inner   whitespace  ",
+    ],
+)
+def test_box_sig_matches_the_gate_on_awkward_text(body: str) -> None:
+    """Backticks, emphasis and underscores are where a restated normaliser drifts first."""
+    cpb = _check_plan_boxes()
+    planfid = sys.modules["wl_planfid"]
+    (task,) = planfid.plan_tasks("- [ ] %s\n" % body)
+    assert mod.box_sig(body) == cpb.sig(task)
+
+
+def test_documented_in_does_not_move_the_five_golden_fields() -> None:
+    """L1: the trailer gains a key after Residue, and the five fields the frozen golden compares are unchanged by it."""
+    plain = "## a\nTrap-Id: a-trap\nEnforced-By: JUDGMENT-ONLY\nResidue: r.\n\nbody\n"
+    with_anchor = plain.replace("Residue: r.\n", "Residue: r.\nDocumented-In: trap:a-trap\n")
+
+    def five(corpus: str):
+        return [
+            (e.line, e.trap_id, e.enforced_by, e.residue, e.residue_seen)
+            for e in mod.parse_corpus(corpus)
+        ]
+
+    assert five(with_anchor) == five(plain)
+    assert mod.parse_corpus(with_anchor)[0].documented_in == [(5, "trap:a-trap")]
+    assert mod.parse_corpus(plain)[0].documented_in == []
+
+
+def test_the_anchor_controls_are_in_run_controls(tmp_path: pathlib.Path) -> None:
+    """L5: the C-controls ship INSIDE the gate's F6 run, so every real invocation proves them, not only this suite."""
+    assert mod.run_controls(tmp_path)
+    for name in ("c1.md", "c2.md", "c6.md", "c9.md", "c14.md", "c16.md", "c21.md"):
+        assert (tmp_path / name).is_file(), name
+
+
+def _anchor_registry(tmp_path: pathlib.Path, corpus: str) -> "mod.Registry":
+    files = tmp_path / "files"
+    files.mkdir()
+    mod.build_anchor_fixture(files)
+    reg = _probe_registry(tmp_path / "base", mod.CONTROL_LIFECYCLE, '{ "hooks": {} }\n')
+    reg.file_root = files
+    reg.anchor_root = files
+    reg.corpus.write_text(mod.fixture_corpus(corpus, 5), encoding="utf-8")
+    return reg
+
+
+def test_a_reworded_phrase_reds_and_names_the_entry(tmp_path: pathlib.Path) -> None:
+    """Both directions over ONE fixture: the phrase as written is green, and after the rewording the same anchor reds naming its entry."""
+    entry = mod.anchored(
+        "reworded-lesson", "guard:block_ctl_tested", "text:docs/lesson.md a timeout above its sleep"
+    )
+    reg = _anchor_registry(tmp_path, entry)
+    assert _probe_findings(reg) == []
+    lesson = tmp_path / "files" / "docs" / "lesson.md"
+    lesson.write_text(
+        lesson.read_text(encoding="utf-8").replace("timeout above", "limit beyond"),
+        encoding="utf-8",
+    )
+    found = _probe_findings(reg)
+    assert len(found) == 1, found
+    assert "'reworded-lesson'" in found[0]
+    assert "phrase not found in docs/lesson.md" in found[0]
+
+
+def test_the_shape_counts_every_new_kind(tmp_path: pathlib.Path) -> None:
+    """L4: a collapse in any kind must show in the success line, so each kind is counted."""
+    sig = mod.box_sig(mod.CONTROL_BOX)
+    entry = mod.anchored(
+        "counted-lesson",
+        "guard:block_ctl_tested",
+        "text:docs/lesson.md a timeout above its sleep",
+        "doc:docs/headings.md#Deep Moved Heading",
+        "box:PLAN-ctl-box#G4@%s" % sig,
+        "trap:filler-trap-1",
+    )
+    reg = _anchor_registry(tmp_path, entry)
+    shape = mod.Shape()
+    assert mod.scan(reg, 5, shape, report=lambda _m: None) == 0
+    assert shape.guard == 1
+    assert shape.anchors == {"text": 1, "doc": 1, "box": 1, "trap": 1}
+
+
+def test_the_real_guard_stems_are_seen() -> None:
+    """Anti-vacuity for guard: pointers: an empty stem list would make every guard: red for the wrong reason, or a loader bug read as a clean tree."""
+    real = mod.Registry(mod.resolve_seams(paths.repo_root(), env={}))
+    stems = real.guard_stems()
+    assert len(stems) >= 30, stems
+    assert "block_unverified_push" in stems
+    assert real.guard_liveness("block_unverified_push") == ""
+    assert real.anchor_root == paths.repo_root()
