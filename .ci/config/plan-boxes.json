@@ -538,6 +538,35 @@
         "f7d91e90"
       ]
     },
+    "agent/plans/PLAN-deferred-findings-block-merge.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 7,
+      "done": 10,
+      "open_sigs": [
+        "09b758d1",
+        "2802d853",
+        "6edef2b1",
+        "7a098130",
+        "9b5d7a01",
+        "bdf14dbb",
+        "e79aa82e"
+      ],
+      "done_sigs": [
+        "02f04831",
+        "3d43a568",
+        "3e40c2e9",
+        "531ee97c",
+        "545fa7e7",
+        "5789fd01",
+        "67a9f1a5",
+        "8d42baa3",
+        "b235b09e",
+        "df739172"
+      ]
+    },
     "agent/plans/PLAN-deletion-budget.md": {
       "status": "draft",
       "owner": "d778be9d",
@@ -826,9 +855,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 10,
+      "open": 11,
       "done": 0,
       "open_sigs": [
+        "054be3a6",
         "21ec1969",
         "273478dd",
         "4ac71b3f",
