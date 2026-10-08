@@ -32,6 +32,7 @@ import calendar
 import contextlib
 import glob as _glob
 import hashlib
+import importlib
 import json
 import os
 import pathlib
@@ -44,6 +45,7 @@ from typing import Any
 
 import wl_core as C
 import wl_leasehelp as LH
+import wl_plandeps as PD
 
 # Kept as module constants so the lock sites read the same with or without the module present. The values are POSIX's and are only ever passed to _flock.
 LOCK_EX = getattr(fcntl, "LOCK_EX", 2)
@@ -1416,7 +1418,9 @@ def deferral_justification(rec):
 # ---- classification ---------------------------------------------------------
 
 
-def classify_items(fold, session_id, live_worker_ids=None, order_key=None, in_scope=None):
+def classify_items(
+    fold, session_id, live_worker_ids=None, order_key=None, in_scope=None, dep_graph=None
+):
     """(open_items, others, deferred, in_flight, queued) as display strings / recs, the v2-v9 state machine unchanged: open blocks, [?] is reported, fresh [>] is allowed-and-reported, an expired or invalid lease fails closed into an open item.
 
     v14 gap 4: an EXPIRED (never invalid) lease whose worker id appears in `live_worker_ids` (the OS-verified running background tasks) is tolerated as in-flight instead of failing closed, with `lease_tolerated` stamped on the rec so displays can say so. A long job outliving the lease cap while its watcher is demonstrably alive is supervision, not abandonment; the moment the
@@ -1425,7 +1429,9 @@ def classify_items(fold, session_id, live_worker_ids=None, order_key=None, in_sc
     `order_key(rec)` ranks the OPEN list (agent/plans/PLAN-plan-priority-concurrency.md section 2: `wl_planorder.item_key`, dependencies, then operator priority, then AI priority, then age), so open-items and idle-stall name the most urgent work first. Without it the open list keeps fold order. `others` and `deferred` always keep fold order: the oldest-first deferral checks rely on it.
 
     `in_scope(rec)` is the live PR's item scope (agent/plans/PLAN-stop-hook-one-plan-scope.md, Design 2): in production `rec["id"] in loop_state.epic_items`. A plain open `[ ]` of this session that fails it goes to `queued` (its records, ranked like the open list) instead of `open_items`, so every consumer of the open list is scoped by construction. Two shapes stay in
-    `open_items` whatever the predicate says, because a dead claim is a loop duty (ruling 1d): a fail-closed lease and a `worker:lead` item with nothing live. `[?]` and `[>]` are never queued either: an expired DEFAULT and a live lease are the loop's own business. `in_scope=None` puts everything in scope, which is today's behaviour and the `off-loop` state."""
+    `open_items` whatever the predicate says, because a dead claim is a loop duty (ruling 1d): a fail-closed lease and a `worker:lead` item with nothing live. `[?]` and `[>]` are never queued either: an expired DEFAULT and a live lease are the loop's own business. `in_scope=None` puts everything in scope, which is today's behaviour and the `off-loop` state.
+
+    `dep_graph` is the plan graph (`wl_plandeps.Graph`, agent/plans/PLAN-plan-dependencies.md section 2c). With it, an open item linked to a plan (`PLAN-x.md [<sig>]`) whose dependencies are unfinished is `waiting` (left out of `open_items`, `rec["waiting_plans"]` names the roots) ONLY when every root is tracked by some open, deferred or leased item; an untracked root or a Depends-On cycle fails closed to open and the display line says where to start. Without it no plan wait exists, which is today's behaviour."""
     open_items, others, deferred, in_flight = [], {}, [], []
     # (rank, display) pairs for this session's open list, sorted once at the end.
     ranked: list[tuple[Any, str]] = []
@@ -1444,8 +1450,19 @@ def classify_items(fold, session_id, live_worker_ids=None, order_key=None, in_sc
         if state == " ":
             # BLOCKED_BY (agent/plans/PLAN-stop-hook-continuity.md P2.4): an open item waiting on items that are still open is `waiting`, not open work in hand. The chain's root is an ordinary item, so it still blocks; nothing is hidden, only counted once.
             rec["waiting_on"] = LH.waiting_on(rec, by_id) if mine else []
-            if mine and rec["waiting_on"]:
+            rec["waiting_plans"] = LH.plan_wait(rec, dep_graph, by_id) if mine else []
+            if mine and (rec["waiting_on"] or rec["waiting_plans"]):
                 continue
+            if mine and dep_graph is not None:
+                # THE FAIL-CLOSED SUFFIX: a dependency nothing tracks (or a cycle) cannot be waited for, so the item stays open and says where the work is. The shape of the worker:lead suffix below.
+                _dd = PD.item_deps(dep_graph, rec.get("text") or "", by_id.values())
+                if _dd is not None:
+                    _msgs = importlib.import_module("worklist_messages")
+                    disp += (
+                        _msgs.N_DEP_CYCLE % _dd.plan
+                        if _dd.cyclic
+                        else _msgs.N_DEP_UNTRACKED % (_dd.plan, ", ".join(_dd.untracked))
+                    )
             if mine and in_scope is not None and not in_scope(rec):
                 queued_ranked.append((order_key(rec) if order_key is not None else 0, rec))
             elif mine:

@@ -16,6 +16,7 @@ import json
 import pathlib
 import re
 
+import wl_planorder as PO
 import wl_planrec as R
 
 #: The clock, committed, read by BOTH halves. `.ci/scripts/quality/check_plan_implementation.py` reads this same file through this same loader, which is what makes the CI gate and the Stop hook incapable of disagreeing about the number. plan-lifecycle.json's own $comment states the rule being obeyed: duplicating a number into two scripts is exactly what creates a deadlock.
@@ -154,8 +155,32 @@ def after_merge(body):
     return bool(AFTER_MERGE.search(body or ""))
 
 
-def render(rows, scope, session_id):
-    """The body: the plan set's open counts, then the one named box and the commands that close it. NO LIVE COUNTER, so the advisory delivery's content signature keeps it from repeating while nothing changes."""
+def dependency_box(root, rows):
+    """(rel, (sig, body), waiting plan basename) when the first row's plan has an unfinished dependency whose own first open box can be named, else None (agent/plans/PLAN-plan-dependencies.md section 3): the block then names the ROOT's box, because that is the work that has to land first. The plan graph is read through `wl_planorder.context`, memoised per stat signature, and any failure leaves the block naming the row's own box."""
+    if not rows:
+        return None
+    try:
+        ctx, _problem = PO.context(root)
+        if ctx is None:
+            return None
+        graph = ctx.graph
+        rel = rows[0][0]
+        if rel not in graph.plans:
+            return None
+        for plan in graph.roots(rel):
+            target = graph.resolve(plan)
+            if target.state != "live":
+                continue
+            box = first_box(root, target.rel)
+            if box is not None:
+                return target.rel, box, rel.rsplit("/", 1)[-1]
+    except (OSError, ValueError, KeyError, AttributeError, TypeError):
+        return None
+    return None
+
+
+def render(rows, scope, session_id, named=None):
+    """The body: the plan set's open counts, then the one named box and the commands that close it. NO LIVE COUNTER, so the advisory delivery's content signature keeps it from repeating while nothing changes. `named` is `dependency_box`'s answer: the dependency root's box replaces the first row's, with `(PLAN-x.md waits on it)`."""
     me8 = (session_id or "")[:8]
     lines = [
         "PR PLAN SET OPEN -- %d open box(es) across %d of its %d plan(s), prerequisites first:"
@@ -163,10 +188,14 @@ def render(rows, scope, session_id):
     ]
     lines.extend("    %s  %d open" % (rel, n) for rel, n, _f in rows)
     rel, _n, (sig, body) = rows[0]
+    waits = ""
+    if named is not None:
+        rel, (sig, body), waiter = named
+        waits = " (%s waits on it)" % waiter
     lines.extend(
         [
             "",
-            "  THE NEXT BOX (%s):" % rel,
+            "  THE NEXT BOX (%s)%s:" % (rel, waits),
             "    %s  %s" % (sig, body[:120]),
             "",
             "  Real work: do it (inline or through a writer), then tick it. Already landed? Investigate, then tick:",
@@ -200,4 +229,8 @@ def evaluate(root, scope, session_id, live=False, read_text=None):
     if not rows:
         detail["reason"] = "every plan of the PR's set is ticked"
         return SILENT, "", detail
-    return (ADVISORY if live else BLOCK), render(rows, scope, session_id), detail
+    return (
+        (ADVISORY if live else BLOCK),
+        render(rows, scope, session_id, dependency_box(root, rows)),
+        detail,
+    )

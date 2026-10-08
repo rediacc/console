@@ -673,7 +673,11 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     live_ids = {str(b.get("id") or "") for b in running}
     by_id = {r["id"]: r for r in getattr(fold, "items", []) or []}
     # A `waiting` item (BLOCKED_BY, P2.4) is not open work in hand; its chain's root is, and it is counted.
-    open_ids = [r["id"] for r in mine if r.get("state") == " " and not LH.waiting_on(r, by_id)]
+    open_ids = [
+        r["id"]
+        for r in mine
+        if r.get("state") == " " and not LH.waiting_on(r, by_id) and not r.get("waiting_plans")
+    ]
     leases: dict[Any, Any] = {}
     for r in mine:
         if r.get("state") != ">":

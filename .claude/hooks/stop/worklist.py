@@ -105,6 +105,8 @@ for _name in (
     "wl_roundlog",
     "wl_defersettle",
     "wl_leasehelp",
+    "wl_plandeps",
+    "wl_planorder",
     "wl_retro",
     "worklist_messages",
 ):
@@ -132,6 +134,8 @@ H = _MODS["wl_hints"]
 RL = _MODS["wl_roundlog"]
 DS = _MODS["wl_defersettle"]
 LH = _MODS["wl_leasehelp"]
+PD = _MODS["wl_plandeps"]
+PO = _MODS["wl_planorder"]
 RT = _MODS["wl_retro"]
 
 # Re-exported for direct importers (the suite drives these two as library functions; keeping them on this module is part of the compatibility surface). Absent when their module is broken, which is correct: a caller gets an AttributeError naming this module instead of a silent stub.
@@ -770,6 +774,37 @@ def _review_cli(argv):
     sys.exit(rc)
 
 
+def _plantick_dep_gate(planrec, root, rel, selector, evidence):
+    """REFUSE (exit 2) a box tick in a plan whose dependencies are unfinished, unless the box holds a `present` investigation row (the work was already in the tree, so recording it starts nothing) or the evidence carries `DEPS-WAIVED: <reason>` (agent/plans/PLAN-plan-dependencies.md section 2c)."""
+    graph = _dep_graph(root)
+    if graph is None or rel not in graph.plans or not graph.roots(rel):
+        return
+    reason, bad = PD.waiver(evidence)
+    if reason:
+        return
+    sig = None
+    with contextlib.suppress(OSError, planrec.RecordError):
+        text = (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace")
+        sig = planrec.select_box(planrec.open_boxes(text), selector)[3]
+    if sig is not None:
+        row = planrec.investigation_for(root, rel, sig)
+        if (
+            row is not None
+            and not row.get("retro")
+            and str(row.get("verdict") or "").strip().lower() == "present"
+        ):
+            return
+    deps = PD.ItemDeps(
+        rel.rsplit("/", 1)[-1],
+        rel,
+        tuple(graph.roots(rel)),
+        {},
+        {r: tuple(graph.chain(rel, r)) for r in graph.roots(rel)},
+        False,
+    )
+    _dep_refuse(root, deps, "a box of %s" % rel, "--plan-tick", bad)
+
+
 def _plantick_cli(argv):
     """--plan-tick <me> <path> <box> <evidence...> [--write].
 
@@ -818,6 +853,7 @@ def _plantick_cli(argv):
     except ValueError:
         rel = rel.lstrip("./")
 
+    _plantick_dep_gate(R, root, rel, selector, evidence)
     try:
         text, doc, note = R.plan_tick(root, rel, selector, evidence, me)
     except R.RecordError as exc:
@@ -1025,6 +1061,90 @@ def citable_tick_evidence(root, text):
     return R.citable_commit_refs(root, text, repos)
 
 
+def _dep_graph(root):
+    """The plan graph (`wl_plandeps.Graph`) the start-time gates judge against, or None when the plans cannot be read: the gates then do not apply, the way every plan read in this file fails soft. The graph is memoised by the plan files' stat signature (`wl_planorder.context`)."""
+    try:
+        ctx, _problem = PO.context(root)
+    except RuntimeError:
+        return None
+    return ctx.graph if ctx is not None else None
+
+
+def _dep_describe(root, deps):
+    """[(root plan, chain text, 'Status: x', first open box text)] for each unfinished root of an `ItemDeps`: what a refusal or a NOTE names."""
+    out = []
+    graph = _dep_graph(root)
+    for plan in deps.roots:
+        target = graph.resolve(plan) if graph is not None else None
+        status = (
+            graph.plans[target.rel].header.status
+            if graph is not None and target is not None and target.rel in graph.plans
+            else "unresolved"
+        )
+        box = None
+        if target is not None and target.rel:
+            with contextlib.suppress(OSError, ValueError, RuntimeError):
+                box = CK.wl_planenforce.first_box(root, target.rel)
+            # A task edge names that one box (`Depends-On: PLAN-y.md#T3`).
+            task = deps.tasks.get(plan)
+            if task and graph is not None and target.rel in graph.plans:
+                found = graph.task_verdict(target.rel, task).box
+                if found is not None:
+                    box = (found.sig, found.body)
+        out.append(
+            (
+                plan,
+                " -> ".join(deps.chains.get(plan) or (deps.plan, plan)),
+                status,
+                "%s %s" % (box[0], box[1][:100]) if box else "(no open box found)",
+            )
+        )
+    return out
+
+
+def _dep_gate(root, fold, rec, rest, verb):
+    """REFUSE (exit 2) a start-time verb on an item whose linked plan has unfinished dependencies (agent/plans/PLAN-plan-dependencies.md section 2c). The exits are named in the text: finish the root, fix the edge in the header, or a `DEPS-WAIVED: <reason>` token (12+ chars) in the lease note or tick evidence, read from the item's own line too so a waiver given at lease time stands at tick time."""
+    graph = _dep_graph(root)
+    deps = PD.item_deps(graph, rec.get("text") or "", fold.items)
+    if deps is None or not deps.roots:
+        return
+    reason, bad = PD.waiver("%s %s" % (rec.get("line") or "", rest))
+    if reason:
+        return
+    _dep_refuse(root, deps, "#%s" % rec["id"], verb, bad)
+
+
+def _dep_refuse(root, deps, what, verb, bad=""):
+    rows = _dep_describe(root, deps)
+    text = M.CLI_DEPS_REFUSED % {
+        "what": what,
+        "verb": verb,
+        "plan": deps.plan,
+        "roots": "\n".join(
+            M.CLI_DEPS_ROOT % {"root": r, "chain": c, "status": st, "box": b}
+            for r, c, st, b in rows
+        ),
+        "first": rows[0][0] if rows else "",
+        "rel": deps.rel,
+    }
+    if bad:
+        text += "\n" + M.CLI_DEPS_WAIVER_BAD % bad
+    print(text, file=sys.stderr)
+    sys.exit(2)
+
+
+def _dep_note(root, text, fold, what):
+    """A stderr NOTE naming the chain when `text` (a new item) or a plan (an adoption) implements a plan whose dependencies are unfinished: allowed, since adding or adopting is ownership and not implementation, but the item will classify as waiting or fail closed."""
+    deps = PD.item_deps(_dep_graph(root), text, fold.items)
+    if deps is None or not deps.roots:
+        return
+    for r, c, st, b in _dep_describe(root, deps):
+        print(
+            M.CLI_DEPS_NOTE % {"what": what, "chain": c, "root": r, "status": st, "box": b},
+            file=sys.stderr,
+        )
+
+
 def _item_cli(argv, worklist):
     """--add / --triage / --tick / --defer / --lease / --update / --list: the v10 item verbs. Exits non-zero on misuse, so a rejected write cannot be mistaken for a delivered one."""
 
@@ -1103,6 +1223,7 @@ def _item_cli(argv, worklist):
         hit = PF.match_item(text, PF.prepare(mine))
         rid = S.add_item(worklist, me, text)
         print("added #%s: %s" % (rid, text))
+        _dep_note(C.project_root(C.project_start()), text, fold, "#%s" % rid)
         if hit is not None:
             print(
                 "WARNING: similar open item: #%s -- tick one if they track the same work" % hit[0],
@@ -1150,6 +1271,7 @@ def _item_cli(argv, worklist):
     rest = " ".join(argv[3:]).replace("\n", " ").strip()
     root = C.project_root(C.project_start())
     if mode == "--tick":
+        _dep_gate(root, fold, rec, rest, "--tick")
         if not rest or not CK.completion_evidence(root, rest, _lead_transcript(me)):
             _log_tick_refusal(worklist, me, item_id, rest, "no-evidence")
             die(M.CLI_TICK_NO_EVIDENCE % (item_id, CK.tick_refusal_hint(_lead_transcript(me))))
@@ -1266,6 +1388,7 @@ def _item_cli(argv, worklist):
                 "claimed by no worker" % _rid
             )
             return
+        _dep_gate(root, fold, rec, rest, "--lease")
         until_arg = argv[3]
         if until_arg.startswith("+") and until_arg[1:].isdigit():
             minutes = min(int(until_arg[1:]), C.MAX_LEASE_MIN)
@@ -1648,6 +1771,23 @@ def _migrate_cli(argv):
                 "\n".join(lines) + ("\n" if text.endswith("\n") else ""), encoding="utf-8"
             )
             print("adopted %s (was %s, %d open box(es))" % (rel, owner or "unowned", open_n))
+            _graph = _dep_graph(root)
+            if _graph is not None and rel in _graph.plans and _graph.roots(rel):
+                _roots = tuple(_graph.roots(rel))
+                _deps = PD.ItemDeps(
+                    rel.rsplit("/", 1)[-1],
+                    rel,
+                    _roots,
+                    {},
+                    {r: tuple(_graph.chain(rel, r)) for r in _roots},
+                    False,
+                )
+                for _r, _c, _st, _b in _dep_describe(root, _deps):
+                    print(
+                        M.CLI_DEPS_NOTE
+                        % {"what": rel, "chain": _c, "root": _r, "status": _st, "box": _b},
+                        file=sys.stderr,
+                    )
             any_written = True
         if any_written:
             print("\nnow: npm run check:ci-plan-record -- --update")

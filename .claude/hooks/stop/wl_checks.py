@@ -38,6 +38,7 @@ import wl_judge
 import wl_leasehelp
 import wl_liveness
 import wl_loopspeed
+import wl_plandeps
 import wl_planenforce
 import wl_planfid
 import wl_planfile
@@ -1533,6 +1534,83 @@ def queue_held_lines(verdict, fold, root):
     return "".join(out)
 
 
+# How many plans a FIRST row group may name before the rest are counted (agent/plans/PLAN-plan-dependencies.md section 3).
+FIRST_ROOTS_MAX = 3
+
+
+def dep_first_rows(fold, session_id, me_arg, root, graph):
+    """The priority-0 `FIRST` rows: one per unfinished plan some open item of this session has to wait for (agent/plans/PLAN-plan-dependencies.md section 3, "push what is needed to go first"). Each names the chain, the items waiting on it, who tracks it, its first open box and the command that starts it. At most FIRST_ROOTS_MAX rows, then one line counting the rest. [] when nothing waits on a plan.
+
+    The rows carry the sort key `()`, which orders before every real rank, so they lead the band ahead of the waiting items' own rows."""
+    if graph is None:
+        return []
+    groups: dict[str, list[tuple[dict, Any]]] = {}
+    for rec in fold.items:
+        if rec.get("state") != " " or not C.owned_by_me(rec.get("owner"), session_id):
+            continue
+        deps = wl_plandeps.item_deps(graph, rec.get("text") or "", fold.items)
+        if deps is None:
+            continue
+        for plan in deps.roots:
+            groups.setdefault(plan, []).append((rec, deps))
+    rows = []
+    for plan, members in list(groups.items())[:FIRST_ROOTS_MAX]:
+        target = graph.resolve(plan)
+        status = graph.plans[target.rel].header.status if target.rel in graph.plans else ""
+        box, n_open = None, 0
+        if target.rel in graph.plans:
+            with contextlib.suppress(Exception):
+                box = wl_planenforce.first_box(root, target.rel)
+                n_open = len(
+                    wl_planenforce.R.open_boxes(wl_planenforce._read_text(root, target.rel))
+                )
+        deps0 = members[0][1]
+        # A TASK EDGE (`Depends-On: PLAN-y.md#T3`) names that one box, not the plan's first open one.
+        task = deps0.tasks.get(plan)
+        if task and target.rel in graph.plans:
+            found = graph.task_verdict(target.rel, task).box
+            if found is not None:
+                box = (found.sig, found.body)
+        holders = deps0.tracked.get(plan) or ()
+        mine = [
+            h for h in holders if C.owned_by_me((fold.by_id.get(h) or {}).get("owner"), session_id)
+        ]
+        if mine:
+            tracked = ", ".join("#" + h for h in holders)
+            nxt = "work #%s first; the items above reopen when %s is finished" % (mine[0], plan)
+        elif holders:
+            tracked = ", ".join(
+                "#%s owner %s" % (h, str((fold.by_id.get(h) or {}).get("owner") or "?")[:8])
+                for h in holders
+            )
+            nxt = "nothing for this session; the items above reopen when %s is finished" % plan
+        else:
+            tracked = "nothing yet"
+            body = box[1][:80] if box else "<first open box>"
+            sig = box[0] if box else "<sig>"
+            nxt = '--add %s "%s [%s] %s"' % (me_arg, plan, sig, body)
+        lines = [
+            "  - FIRST %s [Status: %s], %d open box(es)" % (plan, status or "unresolved", n_open),
+            "        chain: %s" % " -> ".join(deps0.chains.get(plan) or (deps0.plan, plan)),
+            "        waiting on it: %s" % ", ".join("#" + r["id"] for r, _d in members),
+            "        tracked by: %s" % tracked,
+        ]
+        if box:
+            lines.append("        next box: %s  %s" % (box[0], box[1][:100]))
+        lines.append("        NEXT: %s" % nxt)
+        rows.append((0, (), "\n".join(lines)))
+    if len(groups) > FIRST_ROOTS_MAX:
+        rows.append(
+            (
+                0,
+                (),
+                "  - +%d more plan(s) must land first; worklist.py --list --open shows them"
+                % (len(groups) - FIRST_ROOTS_MAX),
+            )
+        )
+    return rows
+
+
 def guided_slice(
     fold, session_id, verdicts=None, me=None, root=None, full=False, live_plans=None, in_scope=None
 ):
@@ -1563,6 +1641,9 @@ def guided_slice(
     order_ctx, order_problem = PO.context(root)
     rank = PO.item_key(order_ctx)
     xinfo = PO.xinfo_for(root) if live_plans is not None else None
+    dep_graph = order_ctx.graph if order_ctx is not None else None
+    # The plans that must land first lead the slice (section 3); they are appended before any item row and carry the key `()`.
+    rows.extend(dep_first_rows(fold, session_id, me_arg, root, dep_graph))
     for rec in fold.items:
         if session_id and not C.owned_by_me(rec["owner"], session_id):
             continue
@@ -1573,10 +1654,13 @@ def guided_slice(
             st == " "
             and in_scope is not None
             and not in_scope(rec)
-            and not wl_leasehelp.waiting_on(rec, by_id)
+            and not wl_leasehelp.waiting_on(rec, by_id, dep_graph)
         ):
             continue
         txt = S.brief_text(rec, GUIDE_TEXT_CHARS)
+        _waived = wl_plandeps.waiver(rec.get("line") or "")[0]
+        if _waived:
+            txt += " (deps waived: %s)" % _waived[:80]
         upd = C.stamp_age_min(rec.get("upd", ""))
         age = "?" if upd is None else "%dm" % upd
         rid = rec["id"]
@@ -1607,14 +1691,24 @@ def guided_slice(
             and rec.get("worker") == wl_leasehelp.QUEUE_WORKER
             and C.lease_state(rec["line"]) == "expired"
         )
-        waiting = wl_leasehelp.waiting_on(rec, by_id) if st == " " or queue_wait else []
+        waiting = wl_leasehelp.waiting_on(rec, by_id, dep_graph) if st == " " or queue_wait else []
         if waiting:
+            plans_w = [w for w in waiting if w.startswith("PLAN-")]
             rows.append(
                 (
                     3,
                     key,
-                    "  - [%s] #%s waiting (%s) %s\n        NEXT: nothing until they close; it reopens by itself"
-                    % (st, rid_t, ", ".join("#" + w for w in waiting), txt),
+                    "  - [%s] #%s waiting (%s) %s\n        NEXT: %s"
+                    % (
+                        st,
+                        rid_t,
+                        ", ".join(w if w in plans_w else "#" + w for w in waiting),
+                        txt,
+                        "nothing until %s is finished (a Status in FINISHED_STATES); it reopens by itself"
+                        % ", ".join(plans_w)
+                        if plans_w
+                        else "nothing until they close; it reopens by itself",
+                    ),
                 )
             )
         elif st == " ":
@@ -2984,6 +3078,11 @@ def run_stop(event, event_ok, worklist, hook_file):
             live_bg + _wakers, wl_liveness.verify_background(live_bg + _wakers)
         ):
             _live_worker_ids.add(wl_leasehelp.LEAD_WORKER)
+    # THE PLAN ORDER, built once per stop and shared by auto-lease, classification and the guide: the `Depends-On` graph (agent/plans/PLAN-plan-dependencies.md section 2c). A plan read that fails leaves no plan wait at all: every item classifies exactly as before.
+    _order_ctx = None
+    with contextlib.suppress(Exception):
+        _order_ctx = wl_planorder.context(root)[0]
+    _dep_graph = _order_ctx.graph if _order_ctx is not None else None
     # AUTO-LEASE FROM A LIVE TASK'S OWN WORDS (P2.2): an open item this session owns, named `#<id>` in a live agent's first prompt or a live shell's description, is leased to that task here, at stop time, against the live event. It replaces the hand `--lease` every spawn used to need, and it also closes the lease-time blindness to a just-spawned worker (PLAN-parallel-writer-roster F3).
     with contextlib.suppress(Exception):
         _metas = wl_roster.load_metas(wl_roster.session_subagents_dir(event.get("cwd"), session_id))
@@ -2999,6 +3098,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             lambda r: C.owned_by_me(r.get("owner"), session_id),
             _prompt_texts,
             _live_worker_ids,
+            _dep_graph,
         )
         if _auto:
             _until = C.stamp_ahead(wl_leasehelp.AUTO_LEASE_MIN)[:16] + "Z"
@@ -3016,7 +3116,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # THE PLAN RANK (agent/plans/PLAN-plan-priority-concurrency.md section 2), built once per stop and shared by every picker below: the open list, the guide, queue-slot, the backlog nomination and the plan-unimplemented named box. A plan read that fails leaves age order, and the guide prints why.
     _order_key = None
     with contextlib.suppress(Exception):
-        _order_key = wl_planorder.item_key(wl_planorder.context(root)[0])
+        _order_key = wl_planorder.item_key(_order_ctx)
     # THE LOOP STATE (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 1), computed ONCE per stop: which PR, which plan set, which epic items, what comes next. A resolver that raises leaves the checkout off the loop (the full battery) and says so as a hook bug.
     _loop, _loop_err = None, ""
     try:
@@ -3030,7 +3130,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # THE PR'S ITEM SCOPE (Design 2). On the loop an open item blocks only while it is on an epic of the PR's plan set; off the loop None puts every item in scope. The same predicate scopes the guide below.
     # Bound once with functools.partial so both classify calls below carry it and each call keeps the exact shape the order-key mutation control (test_wl_plan_priority m4) edits.
     _in_scope = (lambda rec: rec["id"] in _scope_ids) if _on_loop else None
-    _classify = functools.partial(S.classify_items, in_scope=_in_scope)
+    _classify = functools.partial(S.classify_items, in_scope=_in_scope, dep_graph=_dep_graph)
     open_items, _others, deferred_recs, in_flight_recs, _queued_recs = _classify(
         fold, session_id, live_worker_ids=_live_worker_ids, order_key=_order_key
     )
@@ -3052,20 +3152,30 @@ def run_stop(event, event_ok, worklist, hook_file):
                 )
     # UNBLOCKED (P2.4): an item that was `waiting` on the last stop and is open now has had every blocker close. One sticky line says so, because the item re-enters `open-items` without any other sign of why.
     with contextlib.suppress(Exception):
-        _waiting_now = sorted(r["id"] for r in fold.items if r.get("waiting_on"))
+        _waiting_now = sorted(
+            r["id"] for r in fold.items if r.get("waiting_on") or r.get("waiting_plans")
+        )
+        _plans_before = state_doc.get("waiting_plans") or {}
         for _rid in sorted(set(state_doc.get("waiting") or []) - set(_waiting_now)):
             _rec = fold.by_id.get(_rid)
             if _rec is not None and _rec.get("state") == " ":
-                outq_add(
-                    worklist,
-                    session_id,
-                    state_doc,
-                    "unblocked",
-                    M.N_UNBLOCKED % (_rid, S.brief_text(_rec, GUIDE_TEXT_CHARS)),
-                    1,
-                    sticky=True,
-                )
+                _roots = _plans_before.get(_rid) or []
+                if _roots and _dep_graph is not None:
+                    # A PLAN WAIT ENDS TWO WAYS: the root finished (this line), or nothing tracks it any more and the item failed closed to open (its display suffix says so, and a "finished" line would be false).
+                    if not all(_dep_graph.is_complete(_p) for _p in _roots):
+                        continue
+                    _text = M.N_UNBLOCKED_PLAN % (
+                        _rid,
+                        ", ".join(_roots),
+                        S.brief_text(_rec, GUIDE_TEXT_CHARS),
+                    )
+                else:
+                    _text = M.N_UNBLOCKED % (_rid, S.brief_text(_rec, GUIDE_TEXT_CHARS))
+                outq_add(worklist, session_id, state_doc, "unblocked", _text, 1, sticky=True)
         state_doc["waiting"] = _waiting_now
+        state_doc["waiting_plans"] = {
+            r["id"]: list(r["waiting_plans"]) for r in fold.items if r.get("waiting_plans")
+        }
     # THE PARALLEL-WRITER ROSTER (wl_roster), computed ONCE here from the RAW event rather than the pruned `live_bg`: a reaped id whose transcript is not proven finished is still a live writer, and the cap must see it. Read by the bg-report predicate below; its defects are added after the ladder, and its HONEST verdict is applied just before the cadence gate. None means it could not be
     # computed, and then nothing roster-shaped happens: no suppression, no roster key, the battery exactly as before.
     _roster = None
