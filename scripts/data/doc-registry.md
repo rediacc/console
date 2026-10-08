@@ -1080,7 +1080,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.syncpackrc.json` | root | wiring: `package.json` | yes -- repoint in `package.json` |
 | `biome.json` | root | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `css-custom-data.json` | root | wiring: `.vscode/settings.json` | yes -- repoint in `.vscode/settings.json` |
-| `knip.jsonc` | root | code: `.ci/rediacc_ci/tests/gates/test_gate_knip_blockers.py` | no -- hardcoded in `.ci/rediacc_ci/tests/gates/test_gate_knip_blockers.py` |
+| `knip.jsonc` | root | code: `.ci/scripts/ci/scope-map.cjs` | no -- hardcoded in `.ci/scripts/ci/scope-map.cjs` |
 | `package-lock.json` | root | wiring: `.github/actions/setup-workspace/action.yml` | yes -- repoint in `.github/actions/setup-workspace/action.yml` |
 | `package.json` | root | wiring: `.github/workflows/ci-quality.yml` | yes -- repoint in `.github/workflows/ci-quality.yml` |
 | `regions.json` | root | wiring: `.github/workflows/cd-deploy-account.yml` | yes -- repoint in `.github/workflows/cd-deploy-account.yml` |
@@ -1092,8 +1092,8 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/agent-session-archival.json` | .ci/config | code: `.ci/rediacc_ci/quality/agent_session_archival.py` | no -- hardcoded in `.ci/rediacc_ci/quality/agent_session_archival.py` |
 | `.ci/config/bulk-transform-proof-baseline.json` | .ci/config | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
 | `.ci/config/bws-secret-map.json` | .ci/config | wiring: `.github/actions/bws-secrets/action.yml` | yes -- repoint in `.github/actions/bws-secrets/action.yml` |
-| `.ci/config/bws-unrequested.json` | .ci/config | code: `.ci/rediacc_ci/tests/gates/test_gate_bws_map.py` | no -- hardcoded in `.ci/rediacc_ci/tests/gates/test_gate_bws_map.py` |
-| `.ci/config/carried-reds.json` | .ci/config | code: `.claude/hooks/stop/test-ci-carried.py` | no -- hardcoded in `.claude/hooks/stop/test-ci-carried.py` |
+| `.ci/config/bws-unrequested.json` | .ci/config | code: `.ci/scripts/quality/check_bws_map.py` | no -- hardcoded in `.ci/scripts/quality/check_bws_map.py` |
+| `.ci/config/carried-reds.json` | .ci/config | code: `.claude/hooks/stop/wl_checks.py` | no -- hardcoded in `.claude/hooks/stop/wl_checks.py` |
 | `.ci/config/ci-alerts.json` | .ci/config | wiring: `.github/workflows/nightly-status.yml` | yes -- repoint in `.github/workflows/nightly-status.yml` |
 | `.ci/config/commit-attributions.json` | .ci/config | code: `scripts/gates/check-pr-task-trailers.ts` | no -- hardcoded in `scripts/gates/check-pr-task-trailers.ts` |
 | `.ci/config/commit-identity.json` | .ci/config | code: `.ci/rediacc_ci/quality/commit_identity.py` | no -- hardcoded in `.ci/rediacc_ci/quality/commit_identity.py` |
@@ -1108,7 +1108,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/inline-suppressions-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/inline_suppressions.py` | no -- hardcoded in `.ci/rediacc_ci/quality/inline_suppressions.py` |
 | `.ci/config/lane-durations.json` | .ci/config | wiring: `.github/workflows/ci-quality.yml` | yes -- repoint in `.github/workflows/ci-quality.yml` |
 | `.ci/config/language-policy-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/python_env_registry.py` | no -- hardcoded in `.ci/rediacc_ci/quality/python_env_registry.py` |
-| `.ci/config/merged-prs.json` | .ci/config | code: `.ci/rediacc_ci/tests/gates/test_gate_policy_liveness_floors.py` | no -- hardcoded in `.ci/rediacc_ci/tests/gates/test_gate_policy_liveness_floors.py` |
+| `.ci/config/merged-prs.json` | .ci/config | code: `scripts/gates/check-pr-condition-ledger.ts` | no -- hardcoded in `scripts/gates/check-pr-condition-ledger.ts` |
 | `.ci/config/plan-boxes.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `.ci/config/plan-implementation.json` | .ci/config | code: `.ci/scripts/quality/check_plan_implementation.py` | no -- hardcoded in `.ci/scripts/quality/check_plan_implementation.py` |
 | `.ci/config/plan-lifecycle.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
@@ -1119,7 +1119,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/python-types-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/python_types.py` | no -- hardcoded in `.ci/rediacc_ci/quality/python_types.py` |
 | `.ci/config/release-age.json` | .ci/config | code: `.ci/rediacc_ci/core/release_age.py` | no -- hardcoded in `.ci/rediacc_ci/core/release_age.py` |
 | `.ci/config/rubric-calibration.json` | .ci/config | code: `.ci/rediacc_ci/quality/rubric_calibration.py` | no -- hardcoded in `.ci/rediacc_ci/quality/rubric_calibration.py` |
-| `.ci/config/secret-reachability.json` | .ci/config | code: `.ci/rediacc_ci/tests/gates/test_gate_bws_map.py` | no -- hardcoded in `.ci/rediacc_ci/tests/gates/test_gate_bws_map.py` |
+| `.ci/config/secret-reachability.json` | .ci/config | code: `.ci/scripts/quality/check_bws_map.py` | no -- hardcoded in `.ci/scripts/quality/check_bws_map.py` |
 | `.ci/config/secret-scope-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/python_env_registry.py` | no -- hardcoded in `.ci/rediacc_ci/quality/python_env_registry.py` |
 | `.ci/config/secret-supply.json` | .ci/config | code: `.ci/rediacc_ci/core/bws_env.py` | no -- hardcoded in `.ci/rediacc_ci/core/bws_env.py` |
 | `.ci/config/syncpack-source-exclusions.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
@@ -1128,7 +1128,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `scripts/data/css-dom-refs-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `scripts/data/dead-css-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `scripts/data/dead-translation-keys-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
-| `scripts/data/doc-registry-preport.json` | scripts/data | code: `.ci/rediacc_ci/tests/gates/test_gate_docs_gen.py` | no -- hardcoded in `.ci/rediacc_ci/tests/gates/test_gate_docs_gen.py` |
+| `scripts/data/doc-registry-preport.json` | scripts/data | code: `scripts/gen/gen-docs.ts` | no -- hardcoded in `scripts/gen/gen-docs.ts` |
 | `scripts/data/docker-image-freshness-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `scripts/data/domain-layout-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `scripts/data/domains.json` | scripts/data | code: `.ci/rediacc_ci/ops/__init__.py` | no -- hardcoded in `.ci/rediacc_ci/ops/__init__.py` |
@@ -1148,7 +1148,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `scripts/data/nis2-directive-2022-2555-pt.manifest.json` | scripts/data | code: `scripts/gates/check-directive-quotes.ts` | no -- hardcoded in `scripts/gates/check-directive-quotes.ts` |
 | `scripts/data/package-key-budget-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `scripts/data/sentence-wrapping-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
-| `scripts/data/shape-duplication-seed-advisory.json` | scripts/data | code: `.claude/hooks/stop/test-judge-schema.py` | no -- hardcoded in `.claude/hooks/stop/test-judge-schema.py` |
+| `scripts/data/shape-duplication-seed-advisory.json` | scripts/data | code: `.claude/hooks/stop/wl_shapedup.py` | no -- hardcoded in `.claude/hooks/stop/wl_shapedup.py` |
 | `scripts/data/shape-duplication-seed.json` | scripts/data | code: `.ci/scripts/ci/scope-map.cjs` | no -- hardcoded in `.ci/scripts/ci/scope-map.cjs` |
 | `scripts/data/shell-declared-commands-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `scripts/data/static-nowrap-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |

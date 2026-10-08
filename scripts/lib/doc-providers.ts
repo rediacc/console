@@ -1790,6 +1790,20 @@ const wiringRank = (f: string): number => {
 };
 
 /**
+ * A TEST NAMES A FILE AS A FIXTURE, NOT AS ITS OWNER, so a code namer that is a test ranks after
+ * every program. By path alone `.ci/rediacc_ci/tests/...` sorts before `scripts/lib/...`, and
+ * `.ci/config/merged-prs.json` was reported as hardcoded in a gate test when
+ * `scripts/lib/suppression-liveness.ts` reads it (review finding f8461c53.1). A test still names a
+ * file that no program names.
+ */
+const isTestPath = (f: string): boolean =>
+  /(?:^|\/)(?:tests?|__tests__)\//.test(f) ||
+  /(?:^|\/)test[_-][^/]*$/.test(f) ||
+  /\.(?:test|spec)\.[^/]+$/.test(f);
+
+const codeRank = (f: string): number => (isTestPath(f) ? 1 : 0);
+
+/**
  * A WILDCARD TOKEN NEEDS THIS MANY LITERAL CHARACTERS BEFORE IT COUNTS AS A NAME.
  *
  * `packages/json/src/_config.yml:14` holds `"*.json"`. Treated as a name, that one line
@@ -1906,7 +1920,7 @@ export const jsonInventoryProvider: Provider = {
       );
     }
     wiring.sort((a, b) => wiringRank(a.file) - wiringRank(b.file) || byCodePoint(a.file, b.file));
-    code.sort((a, b) => byCodePoint(a.file, b.file));
+    code.sort((a, b) => codeRank(a.file) - codeRank(b.file) || byCodePoint(a.file, b.file));
 
     const rows: ProviderRow[] = [];
     for (const { home, dir } of JSON_HOMES) {
