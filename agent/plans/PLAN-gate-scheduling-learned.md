@@ -274,7 +274,8 @@ After `executeInstalls` succeeds (`scripts/gates/check-deps.ts:2240`), `check-de
     (ticked) 2026-10-08T08:54:43Z by d778be9d: commit:ce902f2ed T9 scan .ci/rediacc_ci/tests/test_gate_model.py:530 with planted-id control :563
 - [x] T10 W4: check-deps `--upgrade` moves the syncpack pinVersion groups (#3b831146); selftest plus control
     (ticked) 2026-10-08T08:54:44Z by d778be9d: commit:e2db9a53c planPinSync/syncPinGroups in check-deps.ts, selftest section 13 with the skip-pin-sync mutant
-- [ ] T11 lead: the ci-trace fold-in hook, `prepush.sh` streaming plus `TRIAGE=1`, the pr-babysitter loop docs
+- [x] T11 lead: the ci-trace fold-in hook, `prepush.sh` streaming plus `TRIAGE=1`, the pr-babysitter loop docs
+    (ticked) 2026-10-08T09:12:23Z by d778be9d: commit:1d279161d ci-trace folds a final verdict into the gate ledger (detached gate_model refresh; selftest probes) and commit:1564b8c7d pr-babysitter narrow-then-full loop; the scratchpad pre-push wrapper streams RED/STAGE lines and TRIAGE=1 exits 3 with no receipt
 - [ ] T12 lead: a live run on the real tree. Backfill, refresh, then one triage pre-push. Record time-to-first-red against 10-08 (459-975 s) and confirm the receipt and guard behaviour
 
 ## Risks

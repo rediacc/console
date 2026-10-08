@@ -701,11 +701,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 10,
+      "open": 1,
+      "done": 11,
       "open_sigs": [
-        "1b842dc7",
-        "c69dc069"
+        "1b842dc7"
       ],
       "done_sigs": [
         "0001ff07",
@@ -717,6 +716,7 @@
         "995f01ea",
         "a7d8572a",
         "b0ad6ba7",
+        "c69dc069",
         "f763f891"
       ]
     },
