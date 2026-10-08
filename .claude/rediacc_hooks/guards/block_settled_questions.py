@@ -113,17 +113,19 @@ PUSH_NOUN_AFTER = (
     r"guard|guards|rule|rules|hook|hooks|policy|path|step|steps|run|runs|receipt|receipts|"
     r"cadence|ledger|matrix)(?![a-z])"
 )
-# THE TIMING, in the same sentence as the action (an AFTER hit needs a `?` in that sentence, so "we already pushed the first fix to origin." is a statement; `how` leads only as "how should/shall", so a how-do question about pushing to a fork is mechanics, and a mechanics lead ("how do/does/can/could/would/did ... push") also silences the AFTER branch, so the same question with a rebase clause passes while a should-question with a CI-green clause is refused): a when/whether/how lead before it, a time word or an "or wait" alternative after it, a "(time|ready) to" or modal-passive lead ("should the batch be pushed"), or a sentence that is nothing but the action ("open the pr?").
+# THE TIMING, in the same sentence as the action (an AFTER hit needs a `?` in that sentence, so "we already pushed the first fix to origin." is a statement; `how` leads only as "how should/shall", so a how-do question about pushing to a fork is mechanics, and a mechanics lead ("how do/does/can/could/would/did ... push") silences only a once/until condition after it, so the same question with a rebase clause passes while a should-question with a CI-green clause is refused): a when/whether/how lead before it, a time word or an "or wait" alternative after it, a "(time|ready) to" or modal-passive lead ("should the batch be pushed"), or a sentence that is nothing but the action ("open the pr?").
 PUSH_TIMING_BEFORE = (
     r"(^|[^a-z])((when|whether) (should|shall|do|does|will|would|can|must|to|is|are)|how (should|shall))"
     r"([^a-z]|$)|(^|[^a-z])(time|ready|ok|okay|safe) to $|"
     r"(^|[^a-z])(should|shall|can|may|must) (the|this|that|these|it|they) [a-z_ ]{0,40}be $"
 )
 PUSH_TIMING_AFTER = (
-    r"^[^.?!;]*?((^|[^a-z])(now|yet|first|later|already|today|tonight|once|until)([^a-z]|$)|"
+    r"^[^.?!;]*?((^|[^a-z])(now|yet|first|later|already|today|tonight)([^a-z]|$)|"
     r"(^|[^a-z])or (keep|wait|continue|hold|finish|not)([^a-z]|$))"
 )
-# A mechanics lead before the action: "how do/does/can/could/would/did ... push" asks how the push is done, so a time clause after it (a fork push once a branch is rebased) is part of the mechanics and the AFTER branch stays quiet. `how should/shall` is not here: that one asks WHEN, and PUSH_TIMING_BEFORE refuses it.
+# A CONDITION after the action ("... once the review is in", "... until ci is green"): a timing ask after a modal lead, but only a precondition of the mechanics after a mechanics lead.
+PUSH_TIMING_CONDITION = r"^[^.?!;]*?(^|[^a-z])(once|until)([^a-z]|$)"
+# A mechanics lead before the action: "how do/does/can/could/would/did ... push" asks how the push is done, so a CONDITION after it (a fork push once a branch is rebased) is part of the mechanics and stays quiet. It never silences a time word or an "or wait" alternative: "how do we push the batch now or later?" still asks WHEN (review ef6e61d0.1). `how should/shall` is not here: that one asks WHEN, and PUSH_TIMING_BEFORE refuses it.
 PUSH_MECHANICS_LEAD = r"(^|[^a-z])how (do|does|did|can|could|would)([^a-z]|$)"
 PUSH_BARE = (
     r"^[^a-z]*(push|open (a |the )?(pr|pull request)|create (a |the )?(pr|pull request))"
@@ -433,8 +435,13 @@ def _push_timing(sentence, header_object):
             re.search(PUSH_TIMING_BEFORE, before)
             or (
                 "?" in sentence
-                and not re.search(PUSH_MECHANICS_LEAD, before)
-                and re.search(PUSH_TIMING_AFTER, after)
+                and (
+                    re.search(PUSH_TIMING_AFTER, after)
+                    or (
+                        not re.search(PUSH_MECHANICS_LEAD, before)
+                        and re.search(PUSH_TIMING_CONDITION, after)
+                    )
+                )
             )
             or re.match(PUSH_BARE, sentence)
         ):

@@ -1396,6 +1396,17 @@ STATIC: list[Case] = [
         ask_json("Should I push once CI is green?"),
         "settled(push should with a once clause is timing)",
     ),
+    case(
+        # Review ef6e61d0.1: a mechanics lead silences only a once/until condition, never a time choice.
+        "check 2 guards/block_settled_questions.py",
+        ask_json("How do we push the batch now or later?"),
+        "settled(push how-do with a now-or-later choice is timing)",
+    ),
+    case(
+        "check 2 guards/block_settled_questions.py",
+        ask_json("How do we push the branch first, or wait for the review?"),
+        "settled(push how-do with an or-wait alternative is timing)",
+    ),
     # 2026-09-16, added live: the worktree/branch ROUTING class -- "shouldn't have asked ... it has big-bang answering usually" -- gets the same two-condition treatment as commit/branch/push/pr/merge.
     case(
         "check 2 guards/block_settled_questions.py",
