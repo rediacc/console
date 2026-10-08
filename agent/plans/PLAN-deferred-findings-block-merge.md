@@ -179,11 +179,14 @@ Owns: .ci/rediacc_ci/quality/review_resolutions.py, .ci/scripts/quality/check_re
 ### Migration wave M (after W1-W3; lead-run, writers per triage verdict, Sonnet unless the triage says otherwise)
 
 - [x] M1 Triage all 15 deferrals on 1008-1, one `--triage` per finding (D5 step 1). Record each verdict in the round log. Acceptance: `worklist.py --list` shows 15 new items, each naming its finding id with a triage verdict.
+  - Amended 2026-10-08 (review 634e856c.1): no per-finding triage items were created. Each of the 15 deferrals was fixed directly under the existing items #f32c08e6, #fd310a8a, #280670a3 and #7de60352. The acceptance actually met is that `check_review_resolutions.py` reports 0 deferred, so this box records that outcome and not the 15-item listing.
     (ticked) 2026-10-08T16:16:49Z by d778be9d: check_review_resolutions.py rc=0, 0 deferred; triaged and fixed under #f32c08e6 #fd310a8a #280670a3 #7de60352 (no separate per-finding items)
 - [x] M2 Fix every INLINE and PLAN+SUBAGENT finding this session, then mark it `fixed <sha>` or `not-a-bug <evidence>`. The PLAN+SUBAGENT ones get a committed `agent/plans/PLAN-<slug>.md` first. `71afd29f.3` belongs to W2. `58aaa160.1` and `94934de4.2` close through their leased writers under `#d72223aa`. Acceptance: `grep -h '^Resolution: deferred' agent/reviews/1008-1/*.md | wc -l` prints 0.
+  - Amended 2026-10-08 (review 634e856c.3): the acceptance was rewritten from `grep -c ... totals 0` to `grep -h ... | wc -l` prints 0 in the same commit that ticked M2 (634e856c9). `grep -c` prints one count per file, so the old wording could not be read as a total (finding 9a2a6c2c.1). Both forms give 0 on 1008-1.
     (ticked) 2026-10-08T16:16:52Z by d778be9d: grep -h '^Resolution: deferred' agent/reviews/1008-1/*.md | wc -l -> 0; check_review_resolutions.py rc=0
 - [ ] M3 Operator-only findings: ask in one AskUserQuestion batch (the `/ask` skill), then `waived ... ASKED:<minute>Z`. Acceptance: `python3 .claude/hooks/stop/wl_review.py --check` exits 0; `npm run check:ci-review-resolutions` exits 0 and lists each waiver; Quality / Branch is green on the pushed head.
 - [x] M4 Close the legacy items `#f32c08e6` and `#fd310a8a` with `commit:<sha>` evidence naming the per-finding items that replaced them. Acceptance: both are `[x]` in `worklist.py --list`.
+  - Amended 2026-10-08 (review 634e856c.2): there are no per-finding replacement items (see M1), so the ticks of #f32c08e6 and #fd310a8a cite the fixing commits (599bfb94e, 1eec20058, 71aadcd38, 67a505d64, b18d31bda, fe97b255f) and the gate result.
     (ticked) 2026-10-08T16:16:56Z by d778be9d: worklist #f32c08e6 and #fd310a8a ticked with commit:599bfb94e .. commit:fe97b255f evidence
 
 ## 4. Controls summary (one planted deferral must fail every layer)

@@ -149,3 +149,26 @@ def test_the_sea_child_gets_the_checkout_ci_first_on_pythonpath(monkeypatch, tmp
     assert env["PYTHONPATH"] == "%s%s/caller/site" % (tmp_path / ".ci", os.pathsep)
     monkeypatch.delenv("PYTHONPATH")
     assert native._ci_env(tmp_path)["PYTHONPATH"] == str(tmp_path / ".ci")
+
+
+def test_the_sea_build_step_runs_from_the_checkout_with_its_ci_env(monkeypatch, tmp_path):
+    """Review finding f4a0873d.1: the SEA build call site itself passes cwd=root and the .ci-first env, not only the helper."""
+    seen = []
+
+    class StopError(Exception):
+        pass
+
+    def fake_stream(argv, cwd=None, env=None):
+        seen.append((argv, cwd, env))
+        if "rediacc_ci.build.build_cli_executables" in argv:
+            raise StopError
+
+    monkeypatch.setattr(native, "_stream", fake_stream)
+    monkeypatch.setenv("PYTHONPATH", "/caller/site")
+    plan = native.plan(tmp_path, tmp_path, "Linux", "x86_64")
+    with pytest.raises(StopError):
+        native.build_and_install(tmp_path, plan)
+    argv, cwd, env = seen[-1]
+    assert "rediacc_ci.build.build_cli_executables" in argv
+    assert cwd == tmp_path
+    assert env["PYTHONPATH"].split(os.pathsep)[0] == str(tmp_path / ".ci")
