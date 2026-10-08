@@ -7,7 +7,7 @@ import subprocess
 import pytest
 
 from rediacc_ci import paths
-from rediacc_ci.well_known import ACCOUNT_REPO
+from rediacc_ci.well_known import ACCOUNT_REPO, GH_ORIGIN, GH_REPO, RENET_REPO
 
 TRACE = paths.from_root(".ci", "scripts", "ci", "ci-trace.py")
 
@@ -136,19 +136,19 @@ def _checkout(path, origin):
 def test_checkout_for_repo_finds_the_submodule_whose_origin_matches(ct, tmp_path):
     # 2026-10-08: --repo rediacc/account from the console root compared account#95's head with the CONSOLE's origin/1007-1 and gave no verdict.
     top = tmp_path / "console"
-    _checkout(top, "git@github.com:rediacc/console.git")
-    _checkout(top / "private" / "account", "https://github.com/rediacc/account.git")
+    _checkout(top, "git@github.com:%s.git" % GH_REPO)
+    _checkout(top / "private" / "account", "%s/%s.git" % (GH_ORIGIN, ACCOUNT_REPO))
     (top / ".gitmodules").write_text(
         '[submodule "private/account"]\n\tpath = private/account\n\turl = x\n'
     )
-    assert ct._checkout_for_repo(top, "rediacc/account") == top / "private" / "account"
-    assert ct._checkout_for_repo(top, "rediacc/console") == top
-    assert ct._checkout_for_repo(top, "rediacc/renet") is None
+    assert ct._checkout_for_repo(top, ACCOUNT_REPO) == top / "private" / "account"
+    assert ct._checkout_for_repo(top, GH_REPO) == top
+    assert ct._checkout_for_repo(top, RENET_REPO) is None
 
 
 def test_repo_flag_without_a_matching_checkout_is_refused(ct, monkeypatch, tmp_path):
     top = tmp_path / "console"
-    _checkout(top, "git@github.com:rediacc/console.git")
+    _checkout(top, "git@github.com:%s.git" % GH_REPO)
     monkeypatch.chdir(top)
     with pytest.raises(SystemExit):
         ct.main(["--repo", ACCOUNT_REPO, "--run", "7"])
