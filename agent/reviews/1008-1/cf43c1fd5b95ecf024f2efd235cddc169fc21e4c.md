@@ -21,19 +21,19 @@ Body-Sig: c2bd4ef237116a51
 ### cf43c1fd.1 [low] .ci/rediacc_ci/native.py:181
 Anchor: in-diff
 Claim: The call-site comment is cut to '# The child imports rediacc_ci by module path: .ci leads PYTHONPATH (4a6641bf.4).', dropping why the old comment mattered (not relying on how this process found the package) and that caller entries follow .ci, so a later editor loses the reason for env=_ci_env(root).
-Resolution: open
+Resolution: fixed 9928d5bcf10d763987a14e5bf8f5f9105cd8f294 | d778be9d 2026-10-08T21:58:19Z
 
 ### cf43c1fd.2 [low] agent/plans/PLAN-deferred-findings-block-merge.md:182
 Anchor: in-diff
 Claim: M1 stays '- [x]' with its original acceptance ('worklist.py --list shows 15 new items') unchanged on the box line, while the amendment below says that acceptance was not met; the box now reads as passed against a criterion the note says was replaced.
-Resolution: open
+Resolution: not-a-bug | M1 and M4 already carry the house-style Amended lines (agent/plans/PLAN-deferred-findings-block-merge.md:181-190); box text stays because the signature depends on it | d778be9d 2026-10-08T21:58:28Z
 
 ### cf43c1fd.3 [low] agent/plans/PLAN-deferred-findings-block-merge.md:189
 Anchor: in-diff
 Claim: M4 stays '- [x]' with its original acceptance ('naming the per-finding items that replaced them') unchanged, while the amendment says no replacement items exist, so the ticked box and its acceptance text now contradict each other.
-Resolution: open
+Resolution: not-a-bug | same as cf43c1fd.2: agent/plans/PLAN-deferred-findings-block-merge.md:181-190 carry the Amended lines | d778be9d 2026-10-08T21:58:28Z
 
 ### cf43c1fd.4 [low] agent/plans/QUEUE.md:64
 Anchor: in-diff
 Claim: Generated queue ledger is hand-committed with live session state (5 writers, worker IDs, 6 leased items); these values go stale as soon as the session changes, adding churn to the PR.
-Resolution: open
+Resolution: not-a-bug | the QUEUE.md in-flight block is runtime state re-rendered each stop and compared by no gate (agent/plans/QUEUE.md intro); leases come from the fold, not the writer count (.claude/hooks/stop/wl_planqueue.py:1143 and :1160) | d778be9d 2026-10-08T21:58:27Z
