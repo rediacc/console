@@ -2854,6 +2854,20 @@ def revive(root, rel):
                 "cannot carry %s over into %s: %s" % (", ".join(carry), rel, exc)
             ) from exc
         note += "; carried %s over from the record" % ", ".join(carry)
+    # ... AND IT OWES `Depends-On:` (agent/plans/PLAN-plan-dependencies.md T4). A blob that already carries a valid line keeps it; otherwise the record's own line is carried over, and a plan with neither is refused, because a live plan with no declared order is the gap the field closes.
+    if PD.parse_header(body).depends is None:
+        carried = rec.get("depends") or ""
+        if not carried:
+            raise RecordError(
+                "%s would come back live without a `Depends-On:` line, which every live plan "
+                'carries. Set it on the record first -- `.ci/scripts/quality/check_plan_deps.py --set %s "no-dep -- <reason>" --write` '
+                "(or the plans it needs) -- then revive." % (rel, rel)
+            )
+        try:
+            body = PD.set_header(body, carried)
+        except ValueError as exc:
+            raise RecordError("cannot carry Depends-On over into %s: %s" % (rel, exc)) from exc
+        note += "; carried Depends-On over from the record"
     missing = [k for k in PD.X_FIELDS if k not in x_values(body)]
     if missing:
         raise RecordError(

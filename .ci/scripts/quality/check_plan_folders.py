@@ -46,12 +46,13 @@ why: a plan lives under agent/plans/, moves exactly once at close into _done/ or
 """
 
 import datetime as dt
+import importlib
 import json
 import pathlib
 import sys
 
 import _cipath  # noqa: F401
-from rediacc_ci import controls, gitx
+from rediacc_ci import controls, gitx, paths
 from rediacc_ci.controls import plant
 from rediacc_ci.quality import plan_lifecycle as PL
 
@@ -503,6 +504,13 @@ def _write_tombstones(root: pathlib.Path, rows: list[PL.Tombstone]) -> None:
     path.write_text((head + "\n" + PL.render_tombstones(rows)).lstrip("\n"), encoding="utf-8")
 
 
+def _dependents(root: pathlib.Path, rel: str) -> list[str]:
+    """Required plans whose `Depends-On:` names `rel`, from the one grammar in the Stop hook (`wl_plandeps`). Imported by name at call time: only a move into `_removed/` asks, and a tree without the hook directory must still move other plans."""
+    paths.on_sys_path(paths.hooks_stop_dir())
+    graph = importlib.import_module("wl_plandeps").Graph.load(root)
+    return list(graph.dependents(rel))
+
+
 def move(root: pathlib.Path, rel: str, config: dict) -> int:
     """`git mv` one plan into its folder, leave a stub, stamp both clocks."""
     source = root / rel
@@ -519,6 +527,23 @@ def move(root: pathlib.Path, rel: str, config: dict) -> int:
     if new_rel == rel:
         print("✓ %s is already in %s/" % (rel, target_dir))
         return 0
+    if target_dir == PL.REMOVED_DIR:
+        waiting = _dependents(root, rel)
+        if waiting:
+            print(
+                "✗ %s cannot move into %s/ while %d required plan(s) still depend on it:\n%s\n"
+                '  Point each at something else first (`check_plan_deps.py --set <plan> "<value>" '
+                "--write`), or finish %s instead of withdrawing it."
+                % (
+                    rel,
+                    target_dir,
+                    len(waiting),
+                    "\n".join("    %s" % w for w in waiting),
+                    rel.rsplit("/", 1)[-1],
+                ),
+                file=sys.stderr,
+            )
+            return 1
     if target_dir in PL.TERMINAL_DIRS and rel not in PL.ledger_rows(root):
         print(
             "✗ %s has no row in %s, so the move would record no moved_at and the %d-day "

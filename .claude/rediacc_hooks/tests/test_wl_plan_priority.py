@@ -159,8 +159,9 @@ def test_o1s_the_stop_hooks_own_open_rows_carry_the_order(wl):  # noqa: F811
     dependency_world(wl, with_z=True)
     wl.say("stopping here\n\n## Remaining\n- nothing")
     got = wl.run()
-    assert "ITEM_X" in got.out, got.out[:1500]
-    assert order_of(got.out, ["ITEM_X", "ITEM_Y", "ITEM_Z"]) == ["ITEM_Y", "ITEM_Z", "ITEM_X"]
+    # X depends on Y and Y's item is open, so X's item WAITS on the plan (agent/plans/PLAN-plan-dependencies.md section 2c) and is no open row; the two that remain keep the plan order.
+    assert "ITEM_X" not in got.out.split("OPEN worklist item(s)", 1)[1], got.out[:1500]
+    assert order_of(got.out, ["ITEM_Y", "ITEM_Z"]) == ["ITEM_Y", "ITEM_Z"], got.out[:1500]
 
 
 # ---- o2: operator beats AI (ruling D1, literal) ---------------------------------------------------
@@ -324,14 +325,15 @@ def test_m2_with_the_op_and_ai_terms_swapped_o2_fails(wl):  # noqa: F811
 
 
 def test_m3_without_the_guides_rank_term_the_guide_falls_back_to_fold_order(wl):  # noqa: F811
-    dependency_world(wl)
+    # The operator world, not the dependency world: there X's item WAITS on Y's plan and lands in a later band whatever the rank term says.
+    operator_world(wl, "P2 (operator)")
     mutated_stop(
         wl,
         "wl_checks.py",
         "    rows.sort(key=lambda r: (r[0], r[1]))\n",
         "    rows.sort(key=lambda r: r[0])\n",
     )
-    assert order_of(guide(wl), ["ITEM_X", "ITEM_Y"]) == ["ITEM_X", "ITEM_Y"], (
+    assert order_of(guide(wl), ["ITEM_A", "ITEM_B"]) == ["ITEM_B", "ITEM_A"], (
         "m3: the guide's order does not depend on its rank term"
     )
 
@@ -348,7 +350,7 @@ def test_m4_without_the_stops_order_key_its_open_rows_fall_back_to_fold_order(wl
     )
     wl.say("stopping here\n\n## Remaining\n- nothing")
     got = wl.run()
-    assert order_of(got.out, ["ITEM_X", "ITEM_Y", "ITEM_Z"]) == ["ITEM_X", "ITEM_Z", "ITEM_Y"], (
+    assert order_of(got.out, ["ITEM_Y", "ITEM_Z"]) == ["ITEM_Z", "ITEM_Y"], (
         "m4: o1s does not depend on run_stop passing the order key"
     )
 

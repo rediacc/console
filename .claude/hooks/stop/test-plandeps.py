@@ -30,7 +30,7 @@ def _by_file(name):
 controls = _by_file("controls")
 runtmp = _by_file("runtmp")
 
-CONTROL_FLOOR = 215  # 90 before PLAN-plan-priority-concurrency T1/T2 added the X grammar, set_x, linked_plan (now read by wl_planconc.item_plan), the overlap table, spawn_verdict and order_key controls; 216 before the X_FIELDS_REQUIRED migration flag and its "not judged before the migration" control were deleted
+CONTROL_FLOOR = 253  # 90 before PLAN-plan-priority-concurrency T1/T2 added the X grammar, set_x, linked_plan (now read by wl_planconc.item_plan), the overlap table, spawn_verdict and order_key controls; 216 before the X_FIELDS_REQUIRED migration flag and its "not judged before the migration" control were deleted
 T = controls.Controls("plandeps", floor=CONTROL_FLOOR)
 check = T.check
 
@@ -847,5 +847,215 @@ check(
 )
 check("x_findings: D15 universal parallel", xcodes(GOOD.replace("Owns: a/**", "Owns: **")), ["D15"])
 check("x_findings: D14 a bad glob", xcodes(GOOD.replace("Owns: a/**", "Owns: ../a")), ["D14"])
+
+# --------------------------------------------------------------------------- task edges (operator ruling 2026-09-24, T12): a stable id, D9, task-level completion.
+
+Y_BOXES = (
+    "\n## Tasks\n\n"
+    "- [x] T1 a box ticked with evidence\n    (ticked) 2026-10-08T00:00Z by cafe0000: abc1234\n"
+    "- [x] T2 a box ticked by hand with no evidence line\n"
+    "- [ ] T3 the open box another plan waits for\n"
+    "- [ ] **R20260924.3** a retro-style id on the box\n"
+)
+
+
+def ytext(boxes=Y_BOXES, status="in-progress"):
+    return (
+        "# PLAN: y\n\nStatus: %s\nOwner: cafe0000\nDepends-On: no-dep -- the task fixture stands alone\n%s"
+        % (
+            status,
+            boxes,
+        )
+    )
+
+
+def tgraph(dep, boxes=Y_BOXES, ystatus="in-progress"):
+    return D.Graph.from_texts(
+        {
+            "agent/plans/PLAN-x.md": plan(dep=dep),
+            "agent/plans/PLAN-y.md": ytext(boxes, ystatus),
+        }
+    )
+
+
+def tstate(dep, **kw):
+    return tgraph(dep, **kw).resolve(dep.split(",")[0].strip()).state
+
+
+check("task: an open box keeps the edge live", tstate("PLAN-y.md#T3"), D.LIVE)
+check("task: a box ticked with evidence completes the edge", tstate("PLAN-y.md#T1"), D.COMPLETE)
+check(
+    "task: a box ticked by hand with no evidence line does not",
+    tstate("PLAN-y.md#T2"),
+    D.LIVE,
+)
+check("task: the whole-plan twin of the open box is live too", tstate("PLAN-y.md"), D.LIVE)
+check("task: a retro-style id resolves", tstate("PLAN-y.md#R20260924.3"), D.LIVE)
+sig_t3 = next(b.sig for b in D.plan_boxes(ytext()) if b.id == "T3")
+check("task: an edge by content signature resolves", tstate("PLAN-y.md#%s" % sig_t3), D.LIVE)
+check(
+    "task: a finished plan completes any task edge",
+    tstate("PLAN-y.md#T3", ystatus="done"),
+    D.COMPLETE,
+)
+check(
+    "task: roots name the plan and remember the task",
+    tgraph("PLAN-y.md#T3").roots_with_tasks("agent/plans/PLAN-x.md"),
+    (["PLAN-y.md"], {"PLAN-y.md": "T3"}),
+)
+check(
+    "task: a completed task edge leaves no root",
+    tgraph("PLAN-y.md#T1").roots("agent/plans/PLAN-x.md"),
+    [],
+)
+check(
+    "task: the chain names the task",
+    tgraph("PLAN-y.md#T3").chain("agent/plans/PLAN-x.md", "PLAN-y.md"),
+    ["PLAN-x.md", "PLAN-y.md#T3"],
+)
+check("task: a present edge is not D9", codes(tgraph("PLAN-y.md#T3"), "agent/plans/PLAN-x.md"), [])
+reworded = Y_BOXES.replace("T3 the open box another plan waits for", "T4 a renumbered box")
+check(
+    "task D9: a renumbered box is reported",
+    codes(tgraph("PLAN-y.md#T3", boxes=reworded), "agent/plans/PLAN-x.md"),
+    ["D9"],
+)
+d9 = [
+    m for c, m in tgraph("PLAN-y.md#T3", boxes=reworded).check("agent/plans/PLAN-x.md") if c == "D9"
+]
+check(
+    "task D9: the message names the closest box by id and text",
+    "T4 a renumbered box" in d9[0],
+    True,
+)
+check(
+    "task id: an id edge survives a reworded body",
+    codes(
+        tgraph(
+            "PLAN-y.md#T3",
+            boxes=Y_BOXES.replace("the open box another plan waits for", "reworded entirely"),
+        ),
+        "agent/plans/PLAN-x.md",
+    ),
+    [],
+)
+reword_sig = Y_BOXES.replace("the open box another plan waits for", "reworded entirely")
+check(
+    "task id: ...while the signature edge breaks on the same reword, and says so",
+    codes(tgraph("PLAN-y.md#%s" % sig_t3, boxes=reword_sig), "agent/plans/PLAN-x.md"),
+    ["D9"],
+)
+check(
+    "task D9: a finished plan's missing box is not reported",
+    codes(tgraph("PLAN-y.md#T9", ystatus="done"), "agent/plans/PLAN-x.md"),
+    [],
+)
+check(
+    "task: box ids are the first token only",
+    [
+        D.box_id(b)
+        for b in ("T3 a box", "R20260924.3 retro", "W11-B port", "write the T3 part", "a box")
+    ],
+    ["T3", "R20260924.3", "W11-B", "", ""],
+)
+
+# --------------------------------------------------------------------------- tracked_by, waiver, item_deps (section 2c; T1, T6).
+
+DG = D.Graph.from_texts(
+    {
+        "agent/plans/PLAN-x.md": plan(dep="PLAN-y.md"),
+        "agent/plans/PLAN-y.md": plan(dep="PLAN-z.md"),
+        "agent/plans/PLAN-z.md": plan(dep="no-dep -- the root stands alone"),
+        "agent/plans/PLAN-f.md": plan(status="done", dep="PLAN-z.md"),
+        "agent/plans/PLAN-free.md": plan(dep="no-dep -- the plan stands alone"),
+        "agent/plans/PLAN-ca.md": plan(dep="PLAN-cb.md"),
+        "agent/plans/PLAN-cb.md": plan(dep="PLAN-ca.md"),
+    }
+)
+
+
+def rec(rid, text, state=" "):
+    return {"id": rid, "state": state, "text": text}
+
+
+F_ZOPEN = [rec("a1a1a1a1", "PLAN-z.md [41f56150] port it")]
+check(
+    "tracked_by: an open item naming the plan tracks it",
+    D.tracked_by("PLAN-z.md", F_ZOPEN),
+    ["a1a1a1a1"],
+)
+check(
+    "tracked_by: a leased item tracks it",
+    D.tracked_by("PLAN-z.md", [rec("b2", "PLAN-z.md x", ">")]),
+    ["b2"],
+)
+check(
+    "tracked_by: a deferred item tracks it",
+    D.tracked_by("PLAN-z.md", [rec("b3", "PLAN-z.md x", "?")]),
+    ["b3"],
+)
+check(
+    "tracked_by: a ticked item does not",
+    D.tracked_by("PLAN-z.md", [rec("c3", "PLAN-z.md x", "x")]),
+    [],
+)
+check(
+    "tracked_by: a longer basename is another plan",
+    D.tracked_by("PLAN-z.md", [rec("d4", "PLAN-zz.md x")]),
+    [],
+)
+check("tracked_by: a task suffix is dropped", D.tracked_by("PLAN-z.md#T3", F_ZOPEN), ["a1a1a1a1"])
+check("waiver: absent", D.waiver("PLAN-z.md x"), ("", ""))
+check(
+    "waiver: a real reason",
+    D.waiver("DEPS-WAIVED: the order is moot, z is replaced"),
+    ("the order is moot, z is replaced", ""),
+)
+check("waiver: a short reason is an error", D.waiver("DEPS-WAIVED: skip")[0], "")
+check("waiver: a short reason names why", bool(D.waiver("DEPS-WAIVED: skip")[1]), True)
+LINK_X = "PLAN-x.md [41f56150] a box of x"
+idp = D.item_deps(DG, LINK_X, F_ZOPEN)
+check("item_deps: the root of the chain is z", None if idp is None else idp.roots, ("PLAN-z.md",))
+check("item_deps: a tracked root is waiting", None if idp is None else idp.waiting, True)
+check(
+    "item_deps: the chain is x -> y -> z",
+    None if idp is None else idp.chains["PLAN-z.md"],
+    ("PLAN-x.md", "PLAN-y.md", "PLAN-z.md"),
+)
+idu = D.item_deps(DG, LINK_X, [])
+check("item_deps: an untracked root is not waiting", None if idu is None else idu.waiting, False)
+check(
+    "item_deps: an untracked root is named", None if idu is None else idu.untracked, ("PLAN-z.md",)
+)
+check("item_deps: an unlinked item is free", D.item_deps(DG, "write PLAN-x.md", []), None)
+check(
+    "item_deps: a plan with no dependencies is free",
+    D.item_deps(DG, "PLAN-free.md [41f56150] b", []),
+    None,
+)
+check(
+    "item_deps: a finished linked plan is free", D.item_deps(DG, "PLAN-f.md [41f56150] b", []), None
+)
+check(
+    "item_deps: a dependency that is complete does not block",
+    D.item_deps(
+        D.Graph.from_texts(
+            {
+                "agent/plans/PLAN-x.md": plan(dep="PLAN-y.md"),
+                "agent/plans/PLAN-y.md": plan(status="done", dep="no-dep -- the plan is finished"),
+            }
+        ),
+        LINK_X,
+        [],
+    ),
+    None,
+)
+idc = D.item_deps(DG, "PLAN-ca.md [41f56150] b", [rec("e5", "PLAN-cb.md y")])
+check(
+    "item_deps: a cycle in the chain is cyclic and not waiting",
+    None if idc is None else (idc.cyclic, idc.waiting),
+    (True, False),
+)
+check("item_deps: no graph is no verdict", D.item_deps(None, LINK_X, []), None)
 
 T.exit()

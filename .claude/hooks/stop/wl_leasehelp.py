@@ -14,6 +14,8 @@ Pure helpers only: no environment reads, no store writes. The callers (worklist.
 import json
 import re
 
+import wl_plandeps as PD
+
 # The in-session lead's own worker name. Not a background task id, so the roster never counts it as a writer.
 LEAD_WORKER = "lead"
 # The placeholder worker of a queued item: writer work the cap forbids starting (wl_roster.QUEUE_WORKER re-exports it). Here so wl_store.classify_items can tell a queued item waiting on a BLOCKED_BY blocker from a dead lease without importing the roster.
@@ -61,18 +63,41 @@ def resolve(ref, by_id):
     return hits[0] if len(hits) == 1 else None
 
 
-def waiting_on(rec, by_id):
-    """The blocker ids of an item that are still NOT closed, or [] when it is not waiting."""
+def plan_wait(rec, graph, by_id):
+    """The plan roots an open item waits on, or [] (agent/plans/PLAN-plan-dependencies.md section 2c). An item linked (`PLAN-x.md [<sig>]`) to a plan whose dependencies are unfinished waits ONLY when every root is tracked by some open, deferred or leased item and no Depends-On cycle runs through its chain; an untracked root or a cycle fails closed to open, so the item stays visible and the guide's FIRST row says where to start."""
+    if graph is None or rec.get("state") != " ":
+        return []
+    deps = PD.item_deps(graph, rec.get("text") or "", by_id.values())
+    return list(deps.roots) if deps is not None and deps.waiting else []
+
+
+def waiting_on(rec, by_id, graph=None):
+    """What an item waits on that is still NOT closed: the BLOCKED_BY blocker ids, then (with a plan `graph`) the plan roots of `plan_wait`. [] when it is not waiting."""
     out = []
     for ref in blocked_by(rec.get("text") or ""):
         rid = resolve(ref, by_id)
         if rid is not None and by_id[rid].get("state") not in CLOSED_STATES:
             out.append(rid)
+    out.extend(plan_wait(rec, graph, by_id))
     return out
 
 
-def blocker_error(item_id, text, by_id):
-    """Why a BLOCKED_BY token in `text` is refused for `item_id`, or "". Refused: an unknown or ambiguous blocker, a closed one, the item itself, and a cycle through existing items."""
+def _successors(rec, by_id, graph):
+    """The item ids an item waits on: its BLOCKED_BY blockers, and (with a plan `graph`) the items that track each plan root it waits on, because those are what a plan wait really holds it behind."""
+    text = (rec or {}).get("text") or ""
+    out = []
+    for ref in blocked_by(text):
+        rid = resolve(ref, by_id)
+        if rid is not None:
+            out.append(rid)
+    if graph is not None:
+        for root in plan_wait(dict(rec or {}, state=" "), graph, by_id):
+            out.extend(PD.tracked_by(root, by_id.values()))
+    return out
+
+
+def blocker_error(item_id, text, by_id, graph=None):
+    """Why a BLOCKED_BY token in `text` is refused for `item_id`, or "". Refused: an unknown or ambiguous blocker, a closed one, the item itself, and a cycle through existing items, plan edges included: with a `graph`, a plan node's successors are the items that track it, so `BLOCKED_BY:#b` is refused when #b waits, through a plan, on the item being edited."""
     for ref in blocked_by(text):
         rid = resolve(ref, by_id)
         if rid is None:
@@ -87,10 +112,7 @@ def blocker_error(item_id, text, by_id):
             if cur in seen:
                 continue
             seen.add(cur)
-            for nxt in blocked_by((by_id.get(cur) or {}).get("text") or ""):
-                nid = resolve(nxt, by_id)
-                if nid is None:
-                    continue
+            for nid in _successors(by_id.get(cur), by_id, graph):
                 if item_id and nid == item_id:
                     return "BLOCKED_BY #%s would close a cycle back to this item" % rid
                 stack.append(nid)
@@ -136,8 +158,8 @@ def first_prompt(jsonl):
     return ""
 
 
-def auto_lease_candidates(items, owned, named, live_ids):
-    """[(item_id, task_id)] to lease: an item owned by this session that is open (and not waiting) or leased to a worker no longer live, named by exactly one live task.
+def auto_lease_candidates(items, owned, named, live_ids, graph=None):
+    """[(item_id, task_id)] to lease: an item owned by this session that is open (and not waiting) or leased to a worker no longer live, named by exactly one live task. With a plan `graph`, an item whose linked plan has unfinished dependencies is skipped, tracked or not: leasing is the start, and the verbs refuse it.
 
     `items` is the fold's item list, `owned(rec)` the ownership predicate, `named` {task_id: text naming items}, `live_ids` the live worker ids. An item named by two tasks is left alone: which one is working it is not a fact the hook has.
     """
@@ -154,6 +176,9 @@ def auto_lease_candidates(items, owned, named, live_ids):
         if len(tids) != 1 or not owned(rec):
             continue
         tid = next(iter(tids))
+        deps = PD.item_deps(graph, rec.get("text") or "", items)
+        if deps is not None and deps.roots:
+            continue
         open_now = rec.get("state") == " " and not waiting_on(rec, by_id)
         orphaned_lease = (
             rec.get("state") == ">"

@@ -129,6 +129,7 @@ PLAN = (
     "# A fixture plan\n"
     "Status: executing\n"
     "Owner: deadbeef\n"
+    "Depends-On: no-dep -- the fixture plan stands alone\n"
     # The X lines every live plan carries (PLAN-plan-priority-concurrency T11), so revive() round-trips this plan.
     "Priority: P2 -- the fixture plan\n"
     "Concurrency: parallel\n"
@@ -601,13 +602,19 @@ _xl = RECORD.splitlines()
 _sig = next(i for i, ln in enumerate(_xl) if ln.startswith("Record-Sig:"))
 control(
     "render: the X lines follow Record-Sig, in order",
-    _xl[_sig + 1 : _sig + 4],
+    _xl[_sig + 2 : _sig + 5],
     ["Priority: P2 -- the fixture plan", "Concurrency: parallel", "Owns: docs/fixture/**"],
+)
+control(
+    "render: Depends-On follows Record-Sig, ahead of the X lines",
+    _xl[_sig + 1],
+    "Depends-On: no-dep -- the fixture plan stands alone",
 )
 truthy("render: Record-Sig stays inside HEADER_LINES", _sig + 1 <= R.HEADER_LINES)
 control(
     "render: every X line parses inside the X window",
-    sorted(R.PD.parse_header(RECORD).fields) == sorted(["Priority", "Concurrency", "Owns"]),
+    sorted(R.PD.parse_header(RECORD).fields)
+    == sorted(["Depends-On", "Priority", "Concurrency", "Owns"]),
     True,
 )
 control(
@@ -633,7 +640,11 @@ control(
     R.PD.parse_header(R.render(R.parse(RENET_SHAPED))).depends is not None,
     True,
 )
-control("render: a record without one renders none", RECORD.count("Depends-On:"), 0)
+control(
+    "render: a record without one renders none",
+    R.render(dict(REC, depends="")).count("Depends-On:"),
+    0,
+)
 # A LEGACY BLOB: a plan compacted before the X lines existed. Its record carries them (the migration writes them into the record's header), the blob does not.
 LEGACY = PLAN.replace(
     "Priority: P2 -- the fixture plan\nConcurrency: parallel\nOwns: docs/fixture/**\n", ""
@@ -656,14 +667,42 @@ control(
 )
 control(
     "revive: the carried lines sit right after the header block",
-    xbody.splitlines()[3:6],
-    _xl[_sig + 1 : _sig + 4],
+    xbody.splitlines()[4:7],
+    _xl[_sig + 2 : _sig + 5],
 )
 (ROOT / REL).write_text(R.render(dict(REC, blob=_legacy_blob, x={})), encoding="utf-8")
 raises(
     "revive: a record and blob carrying no X lines is refused with the fix",
     lambda: R.revive(ROOT, REL),
     "--set-x",
+)
+# A BLOB THAT PREDATES `Depends-On:` (PLAN-plan-dependencies T4): the record carries it over, and a record with none is refused.
+NODEP = PLAN.replace("Depends-On: no-dep -- the fixture plan stands alone\n", "")
+_nodep_blob = subprocess.run(
+    ["git", "-C", str(ROOT), "hash-object", "-w", "--stdin"],
+    input=NODEP,
+    capture_output=True,
+    text=True,
+    check=True,
+).stdout.strip()
+(ROOT / REL).write_text(R.render(dict(REC, blob=_nodep_blob)), encoding="utf-8")
+dbody, dnote = R.revive(ROOT, REL)
+control(
+    "revive: carries the record's Depends-On into a blob that lacks it",
+    R.PD.parse_header(dbody).depends is not None,
+    True,
+)
+truthy("revive: ...and says so", "carried Depends-On" in dnote)
+control(
+    "revive: a blob that has the line is returned byte for byte",
+    R.revive(ROOT, REL)[0] == dbody and dbody.count("Depends-On:"),
+    1,
+)
+(ROOT / REL).write_text(R.render(dict(REC, blob=_nodep_blob, depends="")), encoding="utf-8")
+raises(
+    "revive: a record and blob carrying no Depends-On is refused with the fix",
+    lambda: R.revive(ROOT, REL),
+    "check_plan_deps.py --set",
 )
 (ROOT / REL).write_text(PLAN, encoding="utf-8")
 
@@ -712,7 +751,7 @@ truthy("CONTROL: an unparseable status is still in scope", F.in_scope_status("UN
 # drops a trailing blank line, and the revived file then no longer hashes to the blob it came from -- which contradicts the single claim the whole design rests on. One plan in the real tree already ends that way. ---------------------------------------------------------------------------
 EDGE = "agent/PLAN-edge.md"
 EDGE_TEXT = (
-    "# Edge\nStatus: executing\nPriority: P3\nConcurrency: parallel\nOwns: docs/edge/**\n\n## Why\nA reason.\n\n"
+    "# Edge\nStatus: executing\nDepends-On: no-dep -- the edge fixture stands alone\nPriority: P3\nConcurrency: parallel\nOwns: docs/edge/**\n\n## Why\nA reason.\n\n"
     + PAD
     + "\n## Tasks\n- [x] "
     + TASK_DONE

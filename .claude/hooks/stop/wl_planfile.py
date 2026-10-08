@@ -91,6 +91,7 @@ WHICH DIRECTION A WRONG ANSWER COSTS MORE. A false "untracked" sends a session t
 BLINDNESS IS REPORTED, NEVER PASSED. A plan holding raw `- [ ]` lines that the parser resolves to zero open tasks is named as unreadable rather than counted as clean, per the V_PR_UNREADABLE convention: a check that cannot see must say so.
 """
 
+import importlib
 import os
 import pathlib
 import re
@@ -641,6 +642,15 @@ def _quote(t):
     return t if len(t) <= TASK_QUOTE_CHARS else t[: TASK_QUOTE_CHARS - 3] + "..."
 
 
+def _linked_task(rel, text):
+    """`PLAN-x.md [<sig>] <text>`: the link convention (agent/plans/PLAN-plan-dependencies.md section 3) that ties a worklist item to its plan box, so a recipe copied from the hook gives an item the start-time gates and the rank can read. `wl_planrec` imports this module, so it is reached by name at call time; without it the bare text is returned."""
+    try:
+        sig = importlib.import_module("wl_planrec").box_sig(text)
+    except (ImportError, AttributeError):
+        return text
+    return "%s [%s] %s" % (str(rel).rsplit("/", 1)[-1], sig, text)
+
+
 def render(row, n_more_plans=0, unread=0, budget=None):
     """The advisory body for ONE plan, or "" when there is nothing to say.
 
@@ -687,7 +697,10 @@ def render(row, n_more_plans=0, unread=0, budget=None):
             "  record, and a box with no item is untraceable the moment this context\n"
             "  ends -- nobody can tell which of them are live. Track them:" % n
         )
-        lines.extend('    worklist.py --add <me> "%s"' % _quote(t) for t in row["untracked"][:show])
+        lines.extend(
+            '    worklist.py --add <me> "%s"' % _quote(_linked_task(row["rel"], t))
+            for t in row["untracked"][:show]
+        )
         rest = n - min(n, show)
         if rest:
             lines.append("    + %d more open task(s) in that file, same verdict" % rest)

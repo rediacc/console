@@ -1332,6 +1332,33 @@ N_OUTQ_LADDER_LINE = "%d quiet in-flight subject(s) (%s); the full ping releases
 # P2.4: an item whose every BLOCKED_BY blocker has closed is open work again.
 N_UNBLOCKED = "UNBLOCKED #%s: every item it was waiting on has closed, so it is open work again: %s"
 
+# agent/plans/PLAN-plan-dependencies.md section 2c: the display suffix of an open item whose plan waits on another plan that nothing tracks, or whose chain runs through a Depends-On cycle (the wait fails closed to open, the shape of the worker:lead suffix).
+N_DEP_UNTRACKED = "   <- blocked: %s needs %s finished first, and nothing tracks it; start there (see FIRST in the guide)"
+N_DEP_CYCLE = "   <- blocked: %s sits on a Depends-On cycle, so no order exists; fix the headers (check_plan_deps.py --check names the cycle)"
+# The UNBLOCKED line when the last wait was a plan: the root is finished, so the item is open work again.
+N_UNBLOCKED_PLAN = "UNBLOCKED #%s: %s is finished, so it is open work again: %s"
+
+# agent/plans/PLAN-plan-dependencies.md section 2c: the start-time gate of the item verbs. REFUSED is exit 2 on --lease, --tick and --plan-tick; the NOTE is the stderr line --add and --migrate --plan print. Substitutions are named so the text can be reordered.
+CLI_DEPS_REFUSED = (
+    "REFUSED: %(what)s implements %(plan)s, which cannot start yet: plans it depends on are not "
+    "finished, and %(verb)s is the start of that work.\n%(roots)s\n"
+    "Exits, in order of preference:\n"
+    "  1. finish %(first)s first (the guide's FIRST row carries the --add recipe), then retry\n"
+    "  2. if the edge is wrong, change the header (visible in the diff, validated):\n"
+    '     .ci/scripts/quality/check_plan_deps.py --set %(rel)s "<Depends-On value>" --write\n'
+    "  3. DEPS-WAIVED: <reason, 12+ characters> in the note or the evidence (registered in "
+    "docs/agent-reference/suppressions.md; the waiver is stored verbatim and shown in the guide)"
+)
+CLI_DEPS_ROOT = (
+    "  needs %(root)s [Status: %(status)s]  chain: %(chain)s\n    first open box: %(box)s"
+)
+CLI_DEPS_WAIVER_BAD = "The DEPS-WAIVED token was refused: %s"
+CLI_DEPS_NOTE = (
+    "NOTE: %(what)s implements a plan that waits on %(root)s [Status: %(status)s] "
+    "(chain: %(chain)s; first open box: %(box)s). It is allowed, but --lease, --tick and "
+    "--plan-tick are refused until %(root)s is finished."
+)
+
 N_ONBOARD_DELIVERED = "(Onboarding notice: delivered this session, epoch %s.)"
 
 # ---- the specialist-agent hint (wl_agents) ---------------------------------- NAMING THE MATCHED TERMS is what makes a wrong hint self-refuting: a reader who sees "Matched on: fork, cap" dismisses it in one second instead of opening a 9 KB agent file to find out why it was suggested. It is also what makes the matcher debuggable in the field without a debug flag.
@@ -1586,6 +1613,8 @@ CLI_ITEM_USAGE = (
     "       --defer <my-prefix> <id> <question... DEFAULT: <action> WHY: <why you cannot settle it> HOW: <what resolves it>>\n"
     "                                (optional: TRIED:, NEEDS:, BLOCKED_ON: <person|system|run-id>)\n"
     "       --lease <my-prefix> <id>[,<id>...] <+minutes|until-ISO8601Z> worker:<bg-task-id|lead> [note...]\n"
+    "                                (--lease and --tick are refused on an item of a plan whose Depends-On are unfinished;\n"
+    "                                 DEPS-WAIVED: <reason> in the note or evidence is the registered exit)\n"
     "       --relay <my-prefix> <old-worker> <new-worker>   move every lease on one worker to another\n"
     "       --update <my-prefix> <id> <what moved...>\n"
     "       --reopen <my-prefix> <id> <note...>   move a [?] back to [ ] (refused from any other state)\n"
@@ -2158,6 +2187,11 @@ inbox and is synced in, but the verbs are the first-class interface):
   (item text) BLOCKED_BY:#id[,#id]
                                 waiting on those items: reported `waiting`,
                                 not open, until every blocker closes
+  (item text) PLAN-x.md [<sig>] ...
+                                links the item to a plan box; while the plan's
+                                Depends-On are unfinished, --lease/--tick are
+                                refused and the item waits when the dependency
+                                is tracked (waive: DEPS-WAIVED: <reason>)
   --update <me> <id> <text...>  record progress (resets the liveness ladder)
   --reopen <me> <id> <note...>  move a [?] back to open work (from [?] only)
   --list                        render every item with ids and ages
