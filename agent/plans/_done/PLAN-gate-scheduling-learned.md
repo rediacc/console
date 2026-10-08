@@ -1,6 +1,6 @@
 # PLAN: pre-push and CI gate scheduling that learns from recorded outcomes
 
-Status: done -- 2026-10-08, every box ticked; was approved -- operator 2026-10-08: implement now, in this session, with no deferral; the brief makes it the first plan of the branch after PR #599, started the moment #599 merges
+Status: done -- 2026-10-08, every box ticked (T12's live triage run stopped at its first RED by design, so the plan shows the early-red path and not a green receipt; the 12 reds it found are tracked as separate pre-push work); was approved -- operator 2026-10-08: implement now, in this session, with no deferral; the brief makes it the first plan of the branch after PR #599, started the moment #599 merges
 Depends-On: no-dep -- builds on the ci-runner, receipt and push guard already on main; no open plan has to finish first
 Owner: d778be9d
 First-Seen: 2026-10-08
@@ -278,6 +278,10 @@ After `executeInstalls` succeeds (`scripts/gates/check-deps.ts:2240`), `check-de
     (ticked) 2026-10-08T09:12:23Z by d778be9d: commit:1d279161d ci-trace folds a final verdict into the gate ledger (detached gate_model refresh; selftest probes) and commit:1564b8c7d pr-babysitter narrow-then-full loop; the scratchpad pre-push wrapper streams RED/STAGE lines and TRIAGE=1 exits 3 with no receipt
 - [x] T12 lead: a live run on the real tree. Backfill, refresh, then one triage pre-push. Record time-to-first-red against 10-08 (459-975 s) and confirm the receipt and guard behaviour
     (ticked) 2026-10-08T10:17:44Z by d778be9d: commit:62b7359e6 made the refresh finish (3m51s; model.json 12 clusters, 158 runs); then a TRIAGE=1 pre-push at 2026-10-08T12:08Z: ranking ON, first RED check:ci-pr-task-trailers at 7.0s into ci:quick (10-08 baseline 459-975 s); stopped rc=3, prepush-receipt.json mtime unchanged (no receipt written)
+
+## Record corrections
+
+- The T12 tick cites a pre-push at "2026-10-08T12:08Z". That clock reading is local time (+0200, commit 62b7359e6 is dated 12:08:25 +0200), so the run was at 10:08Z, before the 10:17:44Z tick.
 
 ## Risks
 
