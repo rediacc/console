@@ -87,6 +87,28 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
+      # PLAN-cd-errors-in-ci W4: refuse to delete anything from a release state
+      # that is already broken or cannot be read. rediacc_ci.release.cd_preflight
+      # is read-only; (a) is the sentinel/tag bijection and (c) the floor and
+      # channel pointers. DRIFT or an UNCHECKED read (R2 or `git ls-remote`
+      # unreachable, zero sentinels) exits non-zero, and the cleanup below has
+      # no status function, so it is skipped: housekeeping refuses, never heals.
+      # No version is under release at 03:00, and --release-version is
+      # required, so 0.0.0 is passed: it has no sentinel and no tag, so the
+      # exclusion it buys excludes nothing and no pointer is excused.
+      # AFTER the retry step on purpose: rerunning a failed CD run is how a
+      # sentinel left without its tag gets its tag, and this check must not
+      # block that repair. The tunnel reaper below still runs (`!cancelled()`);
+      # it touches no release state.
+      - name: Release-state preflight (read-only, fails closed)
+        env:
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.release.cd_preflight
+          --phase pr --release-version 0.0.0 --checks a,c
+
       - name: Cleanup old releases, tags, packages, previews, R2 orphans, branches
         run: PYTHONPATH=.ci python3 -m rediacc_ci.housekeeping.cleanup_versions ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
         env:

@@ -1027,6 +1027,84 @@ jobs:
         run: .ci/scripts/quality/check_release_state.py
 
   # ============================================================================
+  # CD PREFLIGHT: the CD failures a merge would cause, predicted before it
+  # PLAN-cd-errors-in-ci W4. rediacc_ci.release.cd_preflight is READ-ONLY: it
+  # reads live R2 sentinels, pointers and the tracker plus `git ls-remote
+  # --tags`, and judges (a) the bijection now, (b) the bijection after the next
+  # housekeeping runs and this release, (c) the floor and channel pointers, (d)
+  # that the version this merge releases is neither tagged nor sealed, and the
+  # Validate Promotion budget. An unreadable answer is UNCHECKED and red.
+  #
+  # Runs on same-repo PRs AND on main. Check Release State runs on main only,
+  # which is how the 10-07 drift (v1.3.1 sentinel, tag deleted by housekeeping)
+  # first surfaced AFTER PR #599 merged. Fork PRs skip: they get no secrets,
+  # and an R2 read without credentials is UNCHECKED, never a verdict.
+  #
+  # The version is initialize's next_version: initialize checks out with
+  # fetch-tags, and a checkout without the newest tag predicts the wrong one.
+  #
+  # `homebrew` is deselected, so it prints SKIPPED. Its dry run needs the
+  # private homebrew-tap submodule (an App-token checkout this read-only job
+  # should not mint) and real checksums, which exist only after build-cli;
+  # the formula rewrite is exercised by test_release_cd_preflight.py and by
+  # CD's own update_homebrew_tap.
+  #
+  # Aggregated soft in ci-complete: success or skipped (forks, schedule).
+  # ============================================================================
+  cd-preflight:
+    name: CD Preflight
+    # Checkout plus R2 reads with the bws-secrets credentials, and `git
+    # ls-remote` on the persisted github.token. No GitHub API.
+    permissions:
+      contents: read
+    needs: [initialize]
+    # ubuntu-latest, not ubuntu-slim: the image ships the aws CLI the R2
+    # readers call; slim does not, and a missing aws is UNCHECKED (red).
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: >-
+      always() &&
+      needs.initialize.result == 'success' &&
+      needs.initialize.outputs.is_bot != 'true' &&
+      ((github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # .ci/config holds release-contract-floor.txt (the ratchet) and the
+          # constants the release modules read; .github/actions the two local
+          # actions below. Driven in a cone of exactly these three on
+          # 2026-10-08: same verdict as a full checkout.
+          sparse-checkout: |
+            .ci/rediacc_ci
+            .ci/config
+            .github/actions
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
+            CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
+            CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
+
+      - name: Predict CD failures
+        env:
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+          NEXT_VERSION: ${{ needs.initialize.outputs.next_version }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.release.cd_preflight
+          --phase pr --release-version "$NEXT_VERSION"
+          --checks a,b,c,d,promotion
+
+  # ============================================================================
   # COLUMN 3B: DEPLOY DRY-RUN
   # Jobs: stage-artifacts (reusable workflow)
   # Dependencies: build-docker, build-cli, quality, review-gate, check-release-state
@@ -1872,7 +1950,7 @@ jobs:
     # `CI Complete` reports success while a release-state assertion failed on
     # main. It is soft-required, because it legitimately skips on every PR
     # (it is gated on push-to-main plus a release channel).
-    needs: [duplicate-run, initialize, label-guide, run-sh-tests, quality, review-gate, stripe-sandbox, build-docker, build-devcontainer, build-docker-fast, build-cli, package-tests, check-release-state, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle, e2e-dependency-probe]
+    needs: [duplicate-run, initialize, label-guide, run-sh-tests, quality, review-gate, stripe-sandbox, build-docker, build-devcontainer, build-docker-fast, build-cli, package-tests, check-release-state, cd-preflight, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle, e2e-dependency-probe]
     timeout-minutes: 5
     # Job-level permissions REPLACE the workflow defaults, so contents and
     # packages are restated. actions: read is for the shadow reconciliation
@@ -1918,6 +1996,7 @@ jobs:
           RESULT_STRIPE_SANDBOX: ${{ needs.stripe-sandbox.result }}
           RESULT_PACKAGE_TESTS: ${{ needs.package-tests.result }}
           RESULT_CHECK_RELEASE_STATE: ${{ needs.check-release-state.result }}
+          RESULT_CD_PREFLIGHT: ${{ needs.cd-preflight.result }}
           RESULT_STAGE_ARTIFACTS: ${{ needs.stage-artifacts.result }}
           RESULT_VALIDATE_INSTALL: ${{ needs.validate-install.result }}
           RESULT_VALIDATE_PROMOTE: ${{ needs.validate-promote.result }}

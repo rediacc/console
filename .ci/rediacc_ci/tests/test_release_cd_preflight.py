@@ -176,12 +176,53 @@ def healthy() -> dict[str, Any]:
 
 
 def test_the_10_07_replay_is_red_on_check_a(root: pathlib.Path) -> None:
-    rc, results = run(replay_10_07(), "1.3.21", root=root)
+    """No release follows: housekeeping's own call (`--release-version 0.0.0 --checks a,c`)."""
+    rc, results = run(replay_10_07(), "0.0.0", root=root, checks=("a", "c"))
     assert rc == 1
     assert results["a"].status == cp.DRIFT
     assert "DRIFT v1.3.1: cli sentinel present, git tag missing" in results["a"].lines
+    assert results["c"].status == cp.OK, results["c"].lines
+
+
+def test_the_10_07_replay_with_a_release_that_prunes_v1_3_1_is_a_warning(
+    root: pathlib.Path,
+) -> None:
+    """The release of v1.3.21 prunes v1.3.1 itself, so the drift heals in the very run (a) would otherwise refuse (2026-10-08: v1.3.2 and the release of v2.2.1)."""
+    rc, results = run(replay_10_07(), "1.3.21", root=root)
+    assert rc == 0, {k: (r.status, r.lines) for k, r in results.items()}
+    assert results["a"].status == cp.WARN
+    assert "DRIFT v1.3.1: cli sentinel present, git tag missing" in results["a"].lines
+    assert results["a"].lines[-1] == (
+        "the release of v1.3.21 prunes v1.3.1 itself, so this drift heals in that release"
+    )
     for other in ("c", "d", "homebrew", "promotion"):
         assert results[other].status == cp.OK, (other, results[other].lines)
+
+
+def test_mirror_drift_on_a_version_the_release_keeps_stays_red(root: pathlib.Path) -> None:
+    """The heal is of the pruned version only: v1.3.10 untagged survives the release of v1.3.21, so (a) still refuses it."""
+    sealed = series("1.3", 1, 20)
+    state = snapshot(
+        sealed,
+        [v for v in sealed if v != "1.3.10"],
+        edge="1.3.20",
+        stable="1.3.18",
+        ratchet="1.3.1",
+    )
+    rc, results = run(state, "1.3.21", root=root)
+    assert rc == 1
+    assert results["a"].status == cp.DRIFT
+    assert "DRIFT v1.3.10: cli sentinel present, git tag missing" in results["a"].lines
+    assert not any("heals" in line for line in results["a"].lines)
+
+
+def test_mirror_an_unreadable_tracker_keeps_the_drift_blocking(root: pathlib.Path) -> None:
+    """The heal needs the tracker to say what the release prunes; when it cannot be read, (a) fails closed."""
+    state = replay_10_07()
+    state["tracker"] = {"unchecked": "aws exited 255: Could not connect to the endpoint URL"}
+    rc, results = run(state, "1.3.21", root=root, checks=("a",))
+    assert rc == 1
+    assert results["a"].status == cp.DRIFT
 
 
 def test_the_10_08_cd_state_is_green_with_the_version_under_release_excluded(
@@ -235,13 +276,13 @@ def test_planted_with_check_a_disabled_the_10_07_replay_goes_green(
     root: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """THE TEST BITES. First the control fires; then (a) is replaced by a check that always passes, and the same replay exits 0. If this went red, the replay's red was coming from somewhere other than (a)."""
-    assert run(replay_10_07(), "1.3.21", root=root)[0] == 1
+    assert run(replay_10_07(), "0.0.0", root=root, checks=("a", "c"))[0] == 1
 
     def always_ok(*_: object) -> cp.Result:
         return cp.Result("a", cp.OK, ("off",))
 
     monkeypatch.setitem(cp.STATE_CHECKS, "a", always_ok)
-    rc, results = run(replay_10_07(), "1.3.21", root=root)
+    rc, results = run(replay_10_07(), "0.0.0", root=root, checks=("a", "c"))
     assert rc == 0, {k: (r.status, r.lines) for k, r in results.items()}
 
 
@@ -379,6 +420,22 @@ def test_d_cd_an_unsealed_version_is_drift(root: pathlib.Path) -> None:
     assert any("is not sealed" in line for line in results["d"].lines)
 
 
+def test_d_cd_a_short_or_upper_case_release_sha_matches_the_full_tag_sha(
+    root: pathlib.Path,
+) -> None:
+    state = cd_10_08()
+    state["tags"]["v2.2.0"] = "abcdef0123" + "0" * 30
+    assert run(state, "2.2.0", "cd", root=root, release_sha="ABCDEF0")[1]["d"].status == cp.OK
+    assert run(state, "2.2.0", "cd", root=root, release_sha="abcdef1")[1]["d"].status == cp.DRIFT
+
+
+def test_seen_sorts_an_unsorted_state_snapshot() -> None:
+    state = healthy()
+    state["sentinels"] = ["v1.4.21", "v1.4.3", "v1.4.20"]
+    got = cp._seen(cp.State(cp.replay_readers(state)))[0]
+    assert got == ["v1.4.3", "v1.4.20", "v1.4.21"]
+
+
 def test_d_cd_a_tag_at_another_commit_is_drift_and_at_the_release_commit_is_fine(
     root: pathlib.Path,
 ) -> None:
@@ -446,7 +503,7 @@ def test_homebrew_checksums_from_a_directory(root: pathlib.Path, tmp_path: pathl
 
 @pytest.mark.parametrize(
     ("objects", "status"),
-    [(1000, cp.OK), (1279, cp.OK), (1280, cp.WARN), (1599, cp.WARN), (1600, cp.DRIFT)],
+    [(1000, cp.OK), (1199, cp.OK), (1200, cp.WARN), (1499, cp.WARN), (1500, cp.DRIFT)],
 )
 def test_promotion_thresholds(root: pathlib.Path, objects: int, status: str) -> None:
     state = healthy()
@@ -611,7 +668,8 @@ def test_cli_replays_the_10_07_state_from_a_json_snapshot(
     monkeypatch.setenv("REDIACC_CI_ROOT", str(root))
     state_file = tmp_path / "state.json"
     state_file.write_text(json.dumps({"state": replay_10_07()}), encoding="utf-8")
-    argv = ["--phase", "pr", "--release-version", "v1.3.21", "--state", str(state_file)]
+    argv = ["--phase", "pr", "--release-version", "0.0.0", "--checks", "a,c"]
+    argv += ["--state", str(state_file)]
     assert cp.main(argv, dry_run=ok_dry_run) == 1
     out = capsys.readouterr().out
     assert "[a] DRIFT: bijection now" in out
@@ -619,7 +677,7 @@ def test_cli_replays_the_10_07_state_from_a_json_snapshot(
         "::error title=cd-preflight (a)::DRIFT v1.3.1: cli sentinel present, git tag missing\n"
         in out
     )
-    assert out.rstrip().endswith("1 DRIFT, 0 UNCHECKED, 0 SKIPPED -> FAIL")
+    assert out.rstrip().endswith("1 DRIFT, 0 UNCHECKED, 4 SKIPPED -> FAIL")
 
 
 def test_cli_json_round_trips_into_a_replay(

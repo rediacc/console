@@ -1,6 +1,6 @@
 """Predict, BEFORE a merge or a release, the CD failures that today only show up after one (PLAN-cd-errors-in-ci W3).
 
-READ-ONLY. Nothing here writes to R2, to git or to GitHub. It reads live state through injected READERS and judges it with pure functions:
+READ-ONLY. Nothing here writes to R2, to git or to GitHub, except the homebrew dry-run's fetch of origin main in the tap. It reads live state through injected READERS and judges it with pure functions:
 
   (a) the release-state bijection NOW, live R2 sentinels against `git ls-remote --tags`, through the gate's own `release_state.assert_bijection`;
   (b) the bijection AFTER the next housekeeping runs and the release this merge triggers, from THIS checkout's keep rules (`retention_contract.tag_retention_plan` and `tracker_retention_plan`) applied to live state;
@@ -68,9 +68,9 @@ FAILING = (DRIFT, UNCHECKED)
 
 PHASES = ("pr", "cd")
 
-# Validate Promotion: 1,123 objects took 11.2-14.6 min on main (4c8669b29), so 80 objects/min is the measured lower bound; the watchdog cap is 20 min (`JOB_BUDGET_CAPS`, `validate-promote`).
+# Validate Promotion: 1,123 objects took 11.2-14.6 min on main (4c8669b29), so 75 objects/min is the measured lower bound (1,123 objects in 14.6 min is 77/min); the watchdog cap is 20 min (`JOB_BUDGET_CAPS`, `validate-promote`).
 PROMOTION_CHANNEL = "edge"
-PROMOTION_RATE_PER_MIN = 80
+PROMOTION_RATE_PER_MIN = 75
 PROMOTION_CAP_MIN = 20.0
 PROMOTION_WARN_FRACTION = 0.8
 
@@ -455,11 +455,29 @@ def _seen(state: State) -> tuple[list[str], list[str]]:
             "tags",
             "the remote listed ZERO release tags; the preflight is not seeing the release state",
         )
-    return sentinels, tags
+    return release_state.sort_unique_versions(sentinels), tags
+
+
+def healed_by_release(state: State, sentinels: Sequence[str], version: str) -> set[str]:
+    """The sentinel versions the release of `version` prunes itself (`tracker_retention_plan`, the rule upload_to_r2 applies). Empty when no release follows: `version` must be newer than every other sentinel, which housekeeping's `0.0.0` never is. Empty too when the tracker or the stable pointer cannot be read, so the drift stays blocking."""
+    others = [tag(v) for v in sentinels if tag(v) != tag(version)]
+    if not others or release_state.sort_unique_versions([*others, tag(version)])[-1] != tag(
+        version
+    ):
+        return set()
+    try:
+        plan = retention_contract.tracker_retention_plan(
+            [bare(v) for v in state.tracker()], bare(version), state.stable()
+        )
+    except UnreadableError:
+        return set()
+    return {tag(v) for v in plan.pruned}
 
 
 def check_a(state: State, version: str, phase: str, release_sha: str) -> Result:
-    """The bijection now, excluding the version under release (module docstring)."""
+    """The bijection now, excluding the version under release (module docstring).
+
+    Drift the release itself heals is a WARNING, not a DRIFT: a sentinel without its tag that the release's own prune removes would otherwise refuse the one run that repairs it (measured 2026-10-08: v1.3.2, and (b) projecting "holds" after the release of v2.2.1). Drift on any version the release keeps stays blocking."""
     del phase, release_sha
     sentinels, tags = _seen(state)
     ratchet = state.ratchet()
@@ -473,6 +491,17 @@ def check_a(state: State, version: str, phase: str, release_sha: str) -> Result:
             tag(version),
         )
     )
+    if code:
+        healed = healed_by_release(state, sentinels, version)
+        if healed:
+            kept = [v for v in sentinels if tag(v) not in healed]
+            _, kept_code = bijection(kept, tags, tag(version), ratchet)
+            if not kept_code:
+                note = "the release of %s prunes %s itself, so this drift heals in that release" % (
+                    tag(version),
+                    ", ".join(release_state.sort_unique_versions(sorted(healed))),
+                )
+                return Result("a", WARN, (shape, *lines, note))
     return Result("a", DRIFT if code else OK, (shape, *lines))
 
 
@@ -640,10 +669,11 @@ def check_d(state: State, version: str, phase: str, release_sha: str) -> Result:
                 "finalize-release-sentinel never ran for it" % (name, name)
             )
             status = DRIFT
-        if has_tag and release_sha and remote[name] != release_sha:
+        if has_tag and release_sha and not remote[name].lower().startswith(release_sha.lower()):
             lines.append(
                 "DRIFT %s already exists at %s, not at the release commit %s; init's Create "
-                "version tag will refuse" % (name, remote[name], release_sha)
+                "version tag refuses one version from two commits"
+                % (name, remote[name], release_sha)
             )
             status = DRIFT
         elif not has_tag:

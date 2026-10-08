@@ -252,6 +252,8 @@ completed-success → 0, unreadable → 2).
 
 Main-only surfaces in this repo: `finalize-release-sentinel`, `pipeline-sentinel`, `check-release-state`, `build-devcontainer-manifest` (all gated `github.event_name == 'push'` / `refs/heads/main`), the entire Release workflow (`cd-v2.yml`, dispatch-only), and Docker, which PR CI only DRY-RUNS while `main` does the real build+push.
 
+The release state is no longer main-only. `cd-preflight` (CD Preflight in `ci.yml`) runs on every same-repo PR as well as on `main` and predicts the bijection, floor, pointer, version and Validate Promotion failures that `check-release-state` and cd-v2 used to surface only after the merge (docs/agent-reference/release-process.md *CD preflight*). A red CD Preflight on the PR is therefore a PR fix, not a `[hotfix]`; a DRIFT it names in live R2 state (a sentinel with no tag) is repaired with the remediation it prints, and a `check-release-state` red on `main` that CD Preflight passed on the PR is the main-only case above.
+
   So: commit on `main` as a hotfix, and hand the push to the operator. The commit shape is what `block_commit_on_main` admits (docs/agent-reference/ci-gates.md *Commit policy*):
   - the subject ends in `[hotfix]` (`fix(ci): <what> [hotfix]`), and the message carries a `Hotfix-Evidence: <red main run id or actions/runs URL>` trailer;
   - at most 5 files, named by pathspec: `git commit -F <msg> -- <paths>` (`git add -A` is still banned); no `PR-TASK:` trailer, since `main` has no epic;
