@@ -430,7 +430,8 @@ def _hook_refresh_only(root, rel):
         return False
 
     # Both sides get the same placeholder body: a HEAD that predates the section gains `## In flight` and its intro from `with_inflight`, exactly as the refresh did.
-    return Q.with_inflight(now, "").rstrip("\n") == Q.with_inflight(head, "").rstrip("\n")
+    # The progress block is re-rendered from the plans on every stop, so it is masked the same way (wl_planqueue.without_progress).
+    return Q.without_progress(Q.with_inflight(now, "")).rstrip("\n") == Q.without_progress(Q.with_inflight(head, "")).rstrip("\n")
 
 
 def _covers(paths, rel):

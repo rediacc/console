@@ -1433,16 +1433,61 @@ def selftest():
         # RQ: agent/plans/QUEUE.md's generated section EQUALS THE RENDER, red first. The Promoted list is the operator's and must survive the --update byte for byte.
         queue_path = root / PQ.QUEUE_REL
         ck("RQ: an absent agent/plans/QUEUE.md is reported", PQ.problems(root) != [])
+        # The Promoted entry is a real plan with one ticked and one open box, so the progress block has a ratio to get wrong. It stays untracked, which keeps it out of the generated half.
+        picked = root / "agent/plans/PLAN-hand-picked.md"
+        picked_text = "# Picked\n\nStatus: approved\n\n## Tasks\n\n- [x] T1 the first box\n- [ ] T2 the second box\n"
+        picked.write_text(picked_text, encoding="utf-8")
         promoted = PQ.SKELETON + "1. agent/plans/PLAN-hand-picked.md -- the operator's pick\n\n"
         R.write_atomic(queue_path, promoted)
         ck("RQ: a queue with no generated section is reported", PQ.problems(root) != [])
         PQ.problems(root, update=True)
         fresh = queue_path.read_text(encoding="utf-8")
         ck(
-            "RQ CONTROL: --update keeps the Promoted list byte for byte",
-            fresh.startswith(promoted),
-            f"{fresh[:240]!r}",
+            "RQ CONTROL: --update keeps the Promoted list byte for byte (the progress block aside)",
+            PQ.without_progress(fresh).startswith(promoted)
+            and PQ.entries(fresh)[0] == ["agent/plans/PLAN-hand-picked.md"],
+            f"{fresh[:400]!r}",
         )
+        # RQ-PROGRESS: the block under `## Promoted` carries the plan's real ratio, and a planted stale ratio, a missed render after a tick, and a deleted block are each a finding.
+        ck(
+            "RQ-PROGRESS CONTROL: the rendered block carries the overall line and the entry's 1/2 ratio",
+            "Promoted: 0 of 1 plans done, 1 of 2 boxes done (50%)."
+            in (PQ.progress_text(fresh) or "")
+            and "| 1 | PLAN-hand-picked.md | 1/2 | 1 open |" in (PQ.progress_text(fresh) or ""),
+            f"{PQ.progress_text(fresh)!r}",
+        )
+        planted = fresh.replace("| 1/2 | 1 open |", "| 2/2 | done |", 1)
+        ck("RQ-PROGRESS CONTROL: the planted ratio actually changes the file", planted != fresh)
+        R.write_atomic(queue_path, planted)
+        ck(
+            "RQ-PROGRESS: a planted stale ratio is reported",
+            any("progress block" in p for p in PQ.problems(root)),
+            f"got {PQ.problems(root)}",
+        )
+        R.write_atomic(queue_path, PQ.without_progress(fresh))
+        ck(
+            "RQ-PROGRESS: a deleted progress block is reported",
+            any("progress block" in p for p in PQ.problems(root)),
+            f"got {PQ.problems(root)}",
+        )
+        R.write_atomic(queue_path, fresh)
+        picked.write_text(picked_text.replace("- [ ] T2", "- [x] T2"), encoding="utf-8")
+        ck(
+            "RQ-PROGRESS: a tick with no re-render is reported",
+            any("progress block" in p for p in PQ.problems(root)),
+            f"got {PQ.problems(root)}",
+        )
+        PQ.problems(root, update=True)
+        ticked = queue_path.read_text(encoding="utf-8")
+        ck(
+            "RQ-PROGRESS CONTROL: --update re-renders the ratio and the queue is silent again",
+            "| 1 | PLAN-hand-picked.md | 2/2 | done |" in (PQ.progress_text(ticked) or "")
+            and "Promoted: 1 of 1 plans done" in (PQ.progress_text(ticked) or "")
+            and PQ.problems(root) == [],
+            f"{PQ.progress_text(ticked)!r} {PQ.problems(root)}",
+        )
+        picked.write_text(picked_text, encoding="utf-8")
+        R.write_atomic(queue_path, fresh)
         ck(
             "RQ CONTROL: the regenerated queue is silent",
             PQ.problems(root) == [],
@@ -1483,6 +1528,7 @@ def selftest():
             f"{queue_path.read_text(encoding='utf-8')[:200]!r}",
         )
         queue_path.unlink()
+        picked.unlink()
 
         # THE ANTI-VACUITY CONTROL FOR THE WHOLE GATE: a plain plan is not a record and must produce NOTHING. Without this, a parse() that returned a record for every file would look identical to a clean tree.
         ck(
