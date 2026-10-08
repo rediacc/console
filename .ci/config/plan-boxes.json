@@ -923,10 +923,13 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 0,
+      "open": 2,
+      "done": 9,
       "open_sigs": [
         "0b714aa1",
+        "e371147a"
+      ],
+      "done_sigs": [
         "15f3badd",
         "1de18745",
         "5df45c33",
@@ -935,10 +938,8 @@
         "beb18c04",
         "c39f24c1",
         "c5fee6fc",
-        "e371147a",
         "f2666cc1"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-lint-css-ci-wiring.md": {
       "status": "compacted",
@@ -1013,23 +1014,23 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 9,
-      "done": 3,
+      "open": 2,
+      "done": 10,
       "open_sigs": [
         "18cf4e21",
-        "3ebe1a27",
-        "3f856ff4",
-        "66945bc7",
-        "6af8e266",
-        "9308736d",
-        "95bfe222",
-        "98e8fe4f",
-        "cd2f60ac"
+        "66945bc7"
       ],
       "done_sigs": [
         "1deb6b06",
+        "3ebe1a27",
+        "3f856ff4",
+        "6af8e266",
         "8aaedd93",
-        "99fbddd7"
+        "9308736d",
+        "95bfe222",
+        "98e8fe4f",
+        "99fbddd7",
+        "cd2f60ac"
       ]
     },
     "agent/plans/PLAN-plan-per-pr-loop.md": {
@@ -1454,14 +1455,13 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 7,
+      "open": 7,
+      "done": 8,
       "open_sigs": [
         "11d978d4",
         "c14e269f",
         "c49d4542",
         "ca00e010",
-        "d1884e0d",
         "da8d5503",
         "deedaf92",
         "e8e6ee5e"
@@ -1471,6 +1471,7 @@
         "169ff148",
         "3d6bae40",
         "4711b23b",
+        "d1884e0d",
         "d6905e03",
         "f16cdba4",
         "f2c1e8d4"
