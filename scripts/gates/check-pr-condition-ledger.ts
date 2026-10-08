@@ -66,6 +66,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WK_GH_API_BASE } from '../../packages/shared/src/config/well-known.generated.js';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { summarizeControls } from '../lib/controls.js';
 import { githubToken } from '../lib/github-token.js';
 import {
   BLOCKER_FILES,
@@ -246,7 +247,7 @@ async function githubState(ref: string, token: string): Promise<PrState> {
 // --------------------------------------------------------------------------- Selftest ---------------------------------------------------------------------------
 
 function selftest(): number {
-  const cases: Array<[string, boolean]> = [];
+  const cases: [string, boolean][] = [];
   const check = (name: string, ok: boolean): void => {
     cases.push([name, ok]);
   };
@@ -316,10 +317,7 @@ function selftest(): number {
     judge('o/r#1', { kind: 'denied', detail: 'x' }, undefined, off).unchecked
   );
 
-  check(
-    'pullsPath maps a ref',
-    pullsPath('acme/widgets#589') === '/repos/acme/widgets/pulls/589'
-  );
+  check('pullsPath maps a ref', pullsPath('acme/widgets#589') === '/repos/acme/widgets/pulls/589');
   let threw = false;
   try {
     pullsPath('#589');
@@ -345,14 +343,7 @@ function selftest(): number {
     ledgerProblem({ format: 1, refreshed_at: at, prs: { 'o/r#1': {} } }) !== null
   );
 
-  const failed = cases.filter(([, ok]) => !ok);
-  for (const [name] of failed) console.error(`${RED}selftest FAIL${NC}  ${name}`);
-  if (failed.length > 0) {
-    console.error(`${RED}✗${NC} selftest: ${failed.length}/${cases.length} case(s) failed`);
-    return 1;
-  }
-  console.log(`${GREEN}✓${NC} selftest: ${cases.length} case(s) passed`);
-  return 0;
+  return summarizeControls(cases.map(([name, ok]) => ({ name, ok })));
 }
 
 // --------------------------------------------------------------------------- Main ---------------------------------------------------------------------------
