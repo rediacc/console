@@ -305,6 +305,169 @@ The TRAPS.md and CLAUDE.md prose that calls the oracles the spec is corrected in
   - Goldens remove the bash side's fixture needs entirely.
 - **Scope.** About 40k lines of bash across groups A to D, plus scripts/. The change is ONE plan on one PR branch, landing in the order A, B0, B1 to B5, with each phase green before the next. Descoping is forbidden; any piece that genuinely cannot be done is named out loud with its reason.
 
+
+## 10. Writer fan-out, 2026-10-08 (opus Plan agent; the lead verified the load-bearing claims before spawning)
+
+This plan is ready to run, but read section 2 first. Eleven inventory rows are classified wrong in ways that would break the cutover. Five boxes also depend on operator decisions (D1-D7 in section 6), so four units cannot start until those are made.
+
+### 1. How a golden-then-delete works in this repo today
+
+**The golden machinery is built, and the regolden verb the plan asks for already exists.**
+
+- **Seam.** `.ci/rediacc_ci/tests/differential.py:224-237` defines three modes, chosen by `REDIACC_CI_REGOLDEN`:
+  - unset (compare): the answer comes from the golden, and the `.sh` is never read;
+  - `bash`: record from the twin while it still exists;
+  - `port`: record from the port, for a Rule-T delta.
+- **Where goldens live.** `GOLDEN_DIR = .ci/rediacc_ci/tests/goldens/twins` (`:254`). Files are named `golden_stem` (`:280-285`), for example `release.check-edge-manifest.jsonl`.
+- **Call shapes.**
+  - `twin_call` / `twin_run` (`:529-591`) wrap any harness, including written files and extras.
+  - `twin_tuple` / `twin_result` (`:619-688`) cover harnesses that return extra values.
+  - `twin_streams` (`:691-722`) replaces a direct `bash_streams` call.
+- **Format.** It is shared with the hooks: `goldenio.py` is loaded by path from `.claude/rediacc_hooks/tests/goldenio.py` (`:240-252`). `write_recorded` (`:737-786`) stamps the header with `twin` and `twin_blob` (the `git hash-object` from `:725`), and marks every moved record `intentional: <reason>` through `diff_and_mark`.
+- **Regolden verb.** `.ci/rediacc_ci/tests/regolden.py` is invoked as `PYTHONPATH=.ci python3 -m rediacc_ci.tests.regolden <twin.sh>... --source bash|port --reason "<why>" [-k expr]` (`:1-20`). It refuses:
+  - a missing `--reason`;
+  - `--source bash` when the `.sh` is gone;
+  - a recording run that is not green;
+  - a twin that no module names.
+
+  `modules_naming` (`:38-51`) finds test modules through `SEAM_RE`. It also finds gate tests through `BASH_TWIN = "<path>"`, which routes to `gates/test_twin_parity.py`.
+- **Gate-test twins.** `.ci/rediacc_ci/tests/gates/harness.py:525-579` freezes a `BASH_TWIN`'s verdict, its PASS count and its case set. While the twin still exists, a golden that disagrees with it fails as stale. Once the twin is gone, the golden answers instead.
+- **Drift controls.**
+  - `.ci` side: `.ci/rediacc_ci/tests/test_twin_goldens.py`.
+  - Hook side: `.claude/rediacc_hooks/tests/test_golden_drift.py`.
+- **Switching a test to port-vs-golden.** Replace `old = diff.bash_streams("bash %s" % TWIN, ...)` with `old = diff.twin_call(TWIN, ["bash"], lambda: diff.bash_streams(...), work=(repo.parent,))`.
+  - Worked example: commit 0866fa941, in `test_release_check_existing_release.py`.
+  - Tests that read `TWIN.read_text()` must be deleted or salvaged into plain assertions, using the rules in `agent/plans/PLAN-deletion-budget.md:145-152` (DB16).
+- **Reference commits.** 6eb239b4d (14 twins), 50dd86fb0 (15) and 0866fa941 (12). Each one in the same change:
+  - drains `language-policy-baseline.json`;
+  - lowers the shfmt floor (`.ci/rediacc_ci/security/shfmt.py:97`, now `"167"`);
+  - drains the `.dead-bash-allowlist`, em-dash, shell-declared-commands, python-types and secret-supply entries.
+- **Baseline.** `.ci/config/language-policy-baseline.json` holds 89 `bashFiles`: 45 GOLDEN-THEN-DELETE, 33 CUTOVER-READY, 10 PORT and 1 KEEP-BASH, which is `upload-media-to-r2.sh`.
+  - It is read by `.ci/scripts/quality/check_language_policy.py:70-72`.
+  - It is drained with `--write-baseline`, which refuses to absorb new paths (`:366-410`).
+  - A deleted file that is still baselined is a red (`:782-790`).
+  - Deleting the file switches the gate to STRICT mode (`:748-768`), which is G1 with no further code change.
+- **Hidden dependency.** That gate shells out to `.ci/scripts/lib/blocker-validator.sh` (`:251-300`). It has to be repointed to `rediacc_ci.core.blocker_validator` before that library can go.
+- **Already frozen.** 26 twins have goldens, and every `twin_blob` matches the file today (checked with `git hash-object`). They are the 15 `release/*.sh`, 9 deploy scripts, `build-cli`, `build-pkg-repo` and `test-media-r2`.
+- **Why they were not deleted.** 0866fa941 says: "Every .ci/scripts/release/*.sh stays on disk ... those ports wait for the operator's real cd-v2, promote-stable and backfill-release-sentinel runs (operator rule, 2026-10-01)". `agent/plans/PLAN-deletion-budget.md:143` repeats the rule.
+
+### 2. Inventory corrections that change the work
+
+| Row | Inventory says | Code says |
+|---|---|---|
+| `run-e2e.sh`, `test-install-methods.sh`, `test-linux-packages.sh`, `test-rdc-update.sh` | PORT ("carried") | Already ported under `.ci/rediacc_ci/testrun/` and wired: `.github/workflows/ci.yml:978,1896`, `.github/workflows/ct-tests.yml:568`, `.github/workflows/ct-update-flow.yml:70`. What is left are readers of the dead text: `.ci/rediacc_ci/ci/budget_report.py:1015-1033` still parses `run-e2e.sh`'s `E2E_SHARD_GREP_BUCKETS` (a live Rule-T bug); `.ci/rediacc_ci/proxies/linux_packages.py:57` and `.ci/rediacc_ci/proxies/rdc_update.py:51` still read the .sh. These are golden-then-delete. |
+| `test-blocker-golden-corpus.sh`, `test-media-r2.sh`, `test-runner-advice.sh`, `test-run-sh.sh` | PORT | Python ports carry `BASH_TWIN` (`.ci/rediacc_ci/tests/gates/test_gate_blocker_golden_corpus.py:34`, `.ci/rediacc_ci/tests/gates/test_gate_media_r2.py:24`, `.ci/rediacc_ci/tests/gates/test_gate_runner_advice.py:41`, `.ci/rediacc_ci/tests/gates/test_gate_run_sh.py:32`). `scripts/ci-runner/manifest.ts:5174-5210` still runs the .sh. These are golden-then-delete. |
+| `scripts/dev/worktree.sh` | PORT | Port `.ci/rediacc_ci/dev/worktree.py` exists; `.ci/rediacc_ci/core/run_verbs.py:42` still routes to the .sh. This is a cutover. |
+| `upload-to-r2.sh` | GOLDEN-THEN-DELETE, "No .sh caller" | **Wrong.** The live port sources it at runtime: `.ci/rediacc_ci/deploy/upload_to_r2.py:7-14,442-460` runs `write_once_guard` as bash, together with `common.sh` and `release-state-validator.sh`. `write_once_guard_check.py` drives the same function. Not porting it was a deliberate ruling (the v1.1.16/17 sealed-but-empty incident). Decision D5. |
+| `lib/toolchain.sh` | CUTOVER-READY | Two KEEP-BASH files source it: `.ci/bootstrap.sh:87`, which runs before the Python toolchain exists, and `.ci/scripts/test/gates/test-toolchain.sh:25` (bare runner). It is also used at `.github/actions/setup-node-npm/action.yml:34` and `.github/workflows/ci-quality.yml:247-248` (4 sites). It should be KEEP-BASH. Decision D2. |
+| `lib/common.sh` | CUTOVER-READY, "181+ sites" | 76 files really source it (`git grep -E '^\s*(source|\.)\s+.*lib/common\.sh'`), and about 67 of those die in this plan. The remaining consumers: KEEP-BASH `.ci/docker/service/env.sh:14`, `.ci/media/tools/upload-r2.sh:62` and `.ci/media/verify.sh:278`; workflow steps `.github/workflows/cd-v2.yml:734` and `.github/workflows/promote-stable.yml:173` (`gh_retry`). No Python CLI offers gh-retry: neither `.ci/rediacc_ci/core/ghx.py:561-597` nor `.ci/rediacc_ci/core/common.py:640-658` has the verb. Decision D3. |
+| `.ci/lib/local-common.sh` | CUTOVER-READY | KEEP-BASH `rdc.sh:18` sources it (uses `check_node_version`, `ensure_deps` and `log_*`), and so does `.ci/media/media-entry.sh:50`. Also `.ci/rediacc_ci/setup/bridge.py:31-38` PRELUDE (which also sources `devbox.sh`, `service.sh` and `toolchain.sh`), `.ci/scripts/test/gates/test-run-sh.sh:117-119`, and 4 `*_shadow_driver.py`. Deletable, but rdc.sh and media-entry.sh need edits. |
+| `ci-pull-images.sh`, `ci-start-elite.sh`, `ci-stop-elite.sh` | CUTOVER-READY | They are a path contract for the vendored breakpoint tree: `.ci/breakpoint/scripts/start-origin.sh:88`, `.ci/breakpoint/scripts/pull-service-images.sh:38` and `.ci/breakpoint/scripts/stop-breakpoint.sh:240` test `-x` on these exact paths. The tree is drift-locked by `MANIFEST.sha256` and copied downstream. Decision D4. |
+| `test/lib/test-helpers.sh` | GOLDEN-THEN-DELETE | KEEP-BASH `.ci/media/verify.sh:141` sources it. |
+| `version/inject-env.sh` | KEEP-BASH | Its BLOCKER names only bash sourcers that die in W2 (`build-cli-executables.sh`, `build-cli-musl.sh`). A Python twin exists (`version/inject_env.py`), and `.ci/rediacc_ci/build/build_cli_musl.py:90` can call it, since the alpine container installs python3 (`build_cli_musl.py` line 22 of its script: `apk add ... python3`). Challenge it: delete it in W2. |
+| `probe-receipt-stability.sh` | GOLDEN-THEN-DELETE | There is no port and no test drives it, so nothing can be frozen. Port it (42 lines) or delete it with operator OK. |
+| `test-run-sh.sh` | PORT | Runs on the bare `ubuntu-slim` job (`.github/workflows/ci.yml:602-630`) next to KEEP `test-toolchain.sh`. Section 4 of it tests `local-common.sh`'s `gate_lane_decide`. Decision D6. |
+
+### 3. Writer units (sonnet), with disjoint ownership
+
+Every writer follows the same per-file recipe:
+
+1. If no golden exists, convert the call sites to `diff.twin_*` and freeze with `regolden ... --source bash --reason "B3 freeze"`.
+2. Run the module in compare mode.
+3. Repoint every live caller.
+4. Delete the `.sh` (`rm`; no git verbs).
+5. Re-run the module.
+6. Report a drain list for the lead-owned files below.
+
+Rule-T deltas use `--source port -k <expr> --reason`. No writer edits a lead-reserved file.
+
+**Lead-reserved (serial passes L1/L2/L3):**
+- `.ci/config/language-policy-baseline.json`, `.ci/policy/.language-policy-allowlist`, `.ci/policy/.dead-bash-allowlist`, `tests/goldens/allowlist/**`
+- `.ci/policy/.w7p5a-real-run-blocklist`, `-leg-blocklist`, `.ci/shadow/w7p5a-status.json`, `.ci/shadow/twin-parity.ledger.jsonl`, `tests/test_w7p4b_ledgers.py`, `test_w7p5a_dry_run_ledgers.py`
+- `security/shfmt.py` (the floor), `quality/bash_lib_migration_complete.py` (LIBS/ALIASES), `quality/pipefail_grep_q.py`, `quality/scope_scripts_reachability.py`
+- `.ci/config/{secret-supply,inline-suppressions-baseline,python-types-baseline,python-env-registry,env-manifest}.json`, `.ci/config/shards/quality-pytest.json`
+- `scripts/data/{em-dash-surfaces-baseline,shell-declared-commands-baseline,literal-sources}.json`
+- `.ci/scripts/ci/greenlight.cjs`, `tests/gates/trace_checker.cjs.fixture`
+- `scripts/ci-runner/manifest.ts`, `gates.lock.json`, root `package.json` (after W10), `.ci/policy/README.md`, `scripts/data/doc-registry.md`, `.ci/README.md`, CLAUDE.md, TRAPS.md
+
+| Unit | Wave | .sh deleted | Also owns (edits) | Drop |
+|---|---|---|---|---|
+| **W1** blocker, gate twins, hooks, media seam | 1 | `lib/blocker-validator.sh`, `test/gates/test-blocker-golden-corpus.sh`, `test/gates/test-runner-advice.sh`, `pr/sync-epic-block.sh`, `test/manual/probe-receipt-stability.sh` (ported), `deploy/sync-media-from-r2.sh`, `deploy/sync-media-to-r2.sh`, `test/gates/test-media-r2.sh`, `test/lib/test-helpers.sh` | `scripts/quality/check_language_policy.py` (validator becomes `core.blocker_validator`); `.ci/rediacc_ci/quality/vendored_blocker_derivation.py:66`; `.ci/rediacc_ci/quality/pr_description.py:179,360`; `quality/gh_retry_shell.py`; `scripts/gates/check-pr-epic-block.ts`; `.claude/skills/pr-epics/{SKILL,body}.md`; hook guards `block_raw_pr_body_edit.py` (`:10,85,103,602,741`) and `.claude/rediacc_hooks/guards/block_host_toolchain_run.py:77-80` (all rows to module spellings) plus `test-block_host_toolchain_run.py`, their `.claude/.../goldens/<stem>.jsonl` and `hookcases.py` (`--regolden <stem> --reason`); `.ci/media/r2.sh:32,43`; `.ci/media/verify.sh:141`; `scripts/lib/doc-providers.ts:1354-1355`; the tests `test_gate_{blocker_golden_corpus,runner_advice,media_r2,media_helpers}.py`, `test_runtmp.py`, `test_pr_sync_epic_block.py`, `test_core_blocker_validator.py`, `test_deploy_sync_media_{from,to}_r2.py` | 9 |
+| **W2** build and testrun twins | 1 | `build/{build-cli-executables,build-cli-musl,build-cli,build-linux-pkg,build-pkg-repo,build-renet,canonicalise-gpg-key,ensure-nfpm,prepare-cli-assets}.sh`, `test/{test-linux-packages,run-e2e,test-install-methods,test-rdc-update}.sh`, `version/inject-env.sh` | `.ci/rediacc_ci/build/build_cli_executables.py:694`, `.ci/rediacc_ci/build/build_linux_packages.py:96`, `.ci/rediacc_ci/build/build_linux_pkg.py:387,397`, `.ci/rediacc_ci/build/build_cli_musl.py:90,113` (the container script runs the modules); `.ci/media/bridge.sh:123`; `.ci/rediacc_ci/ci/budget_report.py:1015-1033` (read the bucket table from `testrun/e2e.py`, Rule-T fix with a test); `.ci/rediacc_ci/proxies/linux_packages.py:57`, `.ci/rediacc_ci/proxies/rdc_update.py:51`; `test_build_*`, `test_testrun_*`, `test_proxies_{linux_packages,rdc_update,ensure_nfpm}.py`, `test_version_inject_env.py`, `test_ci_budget_report.py`, `gates/test_gate_installmethods_*`, `test_gate_releaseversion_{inject_env,build_version,closure_untagged}.py`, `test_gate_e2e_coverage.py` | 14 |
+| **W3** ci/version | 1 | `ci/{generate-tag,assert-ci-complete,dispatch-release}.sh`, `version/{resolve-version,detect-bump-type}.sh`, `deploy/deploy-proxy.sh` | `.ci/rediacc_ci/ci/initialize.py:126-150,523-533` (run the modules; drop the `*_LINE` constants; `ci.initialize.jsonl` regolden `--source port`); `.ci/rediacc_ci/ci/generate_tag.py:123,136,158` (drop build-cli/musl from the path lists; changing the list moves closure tags, so this is an intentional delta); `.ci/rediacc_ci/deploy/deploy_proxy.py:138`; `.ci/rediacc_ci/quality/ci_job_aggregation.py:267` (target `assert_ci_complete.py`); `test_ci_{generate_tag,initialize,assert_ci_complete,dispatch_release}.py`, `test_version_*`, `test_deploy_deploy_proxy.py`, `gates/test_gate_{ci_complete_tiers,ci_job_aggregation,generate_tag_inputs,detect_bump_type,dispatch_release}.py` | 6 |
+| **W4** Worker deploys | 1 | `deploy/{deploy-edge,deploy-www,deploy-account,set-account-worker-secrets,set-preview-worker-secrets,set-www-worker-secrets,resolve-account-deploy-config}.sh` | `.github/workflows/cd-deploy-worker.yml:182` and `.ci/rediacc_ci/deploy/resolve_www_deploy_target.py:42,44` (emit module names); `scripts/gates/check-worker-secret-names.ts:83-85`, `scripts/gates/check-builder-env-contract.ts:125-139`, `scripts/gates/check-backup-bucket-conformance.ts:26` (parse the `.py` ports); their tests | 7 |
+| **W5** release tree (only after D1 = yes) | 1 | the 15 `release/*.sh`, `docker/cleanup-staging.sh`, `housekeeping/cleanup-versions.sh` | `.ci/rediacc_ci/quality/staging_tag_guard.py:105-110,378-395` (scan `.py` callers; the target becomes `cleanup_staging.py`); `.github/workflows/housekeeping.yml`; `release/backfill_*` excluded (W7); `test_release_*`, `test_docker_cleanup_staging.py`, `test_quality_staging_tag_guard.py`, `test_housekeeping_cleanup_versions.py` (freeze needed, 2073 lines), `gates/test_gate_{assert_edge_tag_exists,mark_production,releaseversion_attestation,housekeeping_phases,preview_worker_reaping}.py` | 17 |
+| **W6** promote, purge, verify | 1 | `deploy/{promote-r2-to-stable,promote-r2-to-stable-hotfix,promote-docker-to-stable-hotfix,simulate-promotion,verify-edge-endpoints,verify-stable-endpoints,wait-for-preview-worker,cf-purge-urls,delete-r2-channel,purge-media-cache,upload-repos-to-r2}.sh` | `PURGE_SCRIPT*` in `.ci/rediacc_ci/deploy/promote_r2_to_stable.py:212`, `.ci/rediacc_ci/deploy/promote_r2_to_stable_hotfix.py:69`, `.ci/rediacc_ci/deploy/simulate_promotion.py:149`, `.ci/rediacc_ci/deploy/upload_repos_to_r2.py:135` (call `cf_purge_urls` in process); `.ci/rediacc_ci/tests/gates/test_gate_simulate_promotion_serverside.py:28-83`; `.github/workflows/cleanup-r2-staging.yml:29` comment; the matching `test_deploy_*`, `test_gate_skip_release_channel_pointer.py`, `test_gate_edge_verify_retries.py` | 11 |
+| **W7** R2 state (wave 2, after W1 and W5; D5) | 2 | `deploy/{upload-to-r2,write-release-sentinel,clone-d1,test-d1-migrations}.sh`, `lib/{release-state-validator,emit-advisory}.sh`, `test/assert-r2-sentinel.sh` | `deploy/upload_to_r2.py` (port `write_once_guard`, freezing goldens over `write_once_guard_check`'s 4 cases first), `deploy/write_once_guard_check.py`, `.ci/rediacc_ci/release/backfill_write_sentinel.py:28`, `.ci/rediacc_ci/deploy/test_d1_migrations.py:116`, `core/release_state_validator.py` docstrings, `.github/workflows/backfill-release-sentinel.yml:7`; their tests plus `test_core_advisory.py`, `gates/test_gate_emit_advisory.py` | 7 |
+| **W8** .ci/lib, setup, dev | 1 | `.ci/lib/{account,devbox,local-common,service}.sh`, `setup/{build-packages,install-deps}.sh`, `scripts/dev/worktree.sh`, `test/gates/test-run-sh.sh` (per D6) | `setup/bridge.py` (call `core.local_common` and `core.devbox` directly), `setup/shadow_driver.py`, `dev/shadow_driver.py`, `core/{account_lifecycle,devbox,local_common,local_common_actions,service,common_stub}_shadow_driver.py`, `.ci/rediacc_ci/core/local_common.py:794`, `.ci/rediacc_ci/core/run_verbs.py:42`, `.ci/rediacc_ci/native.py:137`; `rdc.sh:18,48,72` (`python3 -m rediacc_ci.core.local_common` verbs; keep within the `check:ci-rdc-native` ceiling); `.ci/media/media-entry.sh:50`; `.github/actions/setup-workspace/action.yml:101,105,117`; `.github/workflows/ci.yml:627`; `test_core_{account,devbox,local_common,service}.py`, `test_setup_*`, `test_dev_worktree.py`, `gates/test_gate_run_sh.py` | 8 |
+| **W9** private renet and licence | 1 | `private/{renet-csi-sanity,renet-ebpf-e2e,renet-integration,renet-root-tests,license-e2e}.sh` | `.github/workflows/ct-tests.yml:2462,2470,2478,2559,2659` (`sudo env PYTHONPATH=.ci python3 -m ...`; sudo drops PYTHONPATH); a new `private/license_e2e.py`; `.ci/rediacc_ci/proxies/license_e2e.py:37-39`, `.ci/rediacc_ci/drills/license.py:11`; `test_private_*`, `test_proxies_license_e2e.py` | 5 |
+| **W10** B5, out of policy | 1 | `packages/json/{generate,test-templates}.sh`, `scripts/eslint-heap.sh`, `programs/backup-storage/{local-roundtrip,start-local-plane}.sh`, `packages/www/scripts/measure-page-density.sh` | `packages/json/package.json:6-7`; root `package.json:339-342` (W10 owns it until it finishes, then the lead); `.ci/scripts/quality/check_lint_scope_coverage.py:110`, `.ci/rediacc_ci/quality/env_file_adoption.py:68,370`; `docs/backup-storage/09-local-roundtrip-proof.md:144`; `docs/agent-reference/TRAPS.md:952` is lead-owned, so W10 reports it | 6 |
+
+Wave 1 has 9 live writers, inside the writer cap of 10. W7 runs alone in wave 2.
+
+**Ordering constraints:**
+- W7 depends on W1 (removes `blocker-validator.sh`, the other sourcer of `emit-advisory.sh`).
+- W7 depends on W5 (removes `.ci/scripts/housekeeping/cleanup-versions.sh:1337` and `.ci/scripts/release/advance-contract-floor.sh:49`, sourcers of `release-state-validator.sh`).
+- W2 and W3 are coupled only through `generate_tag.py`, which only W3 edits.
+- W3's `deploy-proxy.sh` calls W2's `build-renet.sh`. Either order works, because the state is consistent at the end of the wave.
+
+**Wave 3 (only after D2/D3/D4, small):** a W11 owns:
+- `lib/common.sh`: add a `gh-retry` verb to `core/common.py`; repoint `.github/workflows/cd-v2.yml:734` and `.github/workflows/promote-stable.yml:173`; inline `log_*` into `.ci/docker/service/env.sh` and the media `upload-r2.sh` / `.ci/media/verify.sh:278` (W1 has finished with `verify.sh` by then);
+- `toolchain.sh` and the elite trio, per their decisions.
+
+**Lead passes:**
+- **L0 (now, parallel with wave 1).** A5: full `.claude/rediacc_hooks/tests`, `test_guards_differential.py::test_the_differential_can_fail` (DEFECT), `test_bash_semantics.py`, `test_golden_drift.py`, `npm run check:ci-language-policy check:ci-hook-integrity check:ci-dead-python check:ci-guard-mention-anchoring`, `test_gate_docs_gen.py`, real events piped through `.claude/hooks/chain-head.sh`, and wall time against the recorded 294.65 s floor (plan section 1). Also run `/ask` for D1-D7.
+- **L1 (after wave 1).** `check_language_policy.py --write-baseline`, then every lead-reserved registry from the writers' drain lists. Lower the shfmt floor to the measured count. Drop the LIBS rows for deleted libraries. Remove `manifest.ts` entries for the 4 gate twins, then `npm run gen:gates-lock`, `npx tsx scripts/gate-bind.ts --write`, and `npx tsx scripts/gen/gen-docs.ts --write`.
+- **L2 (after wave 2).** The same steps for W7.
+- **L3 (G1/G2/G3, after wave 3).**
+  - Allowlist the survivors with `BLOCKER:` (`upload-media-to-r2.sh`, plus `toolchain.sh` / `common.sh` / the elite shims if kept), then delete the baseline file to enter strict mode.
+  - G2: retire `check:ci-bash-lib-ported` (`.github/workflows/ci-quality.yml:297`, `package.json:188`) only if no library remains. Otherwise shrink it.
+  - G3: CLAUDE.md and TRAPS.md already have no oracle-as-spec prose (grep is empty). The sweep is the about 18 stale `.claude/oracles` mentions (`git grep -l '\.claude/oracles' -- ':!agent'`) and comment repoints.
+
+### 4. Acceptance per unit
+
+The common prefix is `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q -n 16`. Every unit also runs `.ci/rediacc_ci/tests/test_twin_goldens.py` and `.ci/rediacc_ci/tests/gates/test_twin_parity.py`, plus ruff on the files it touched. Writers should expect `check:ci-language-policy`, `check:ci-shell-format` and the registry gates to be red on drained-but-not-yet-ratcheted entries until L1; they report those, they do not fix them.
+
+| Unit | Named tests (plus the module tests listed above) | Gates | `git ls-files '*.sh' \| wc -l` |
+|---|---|---|---|
+| W1 | `test_gate_blocker_golden_corpus.py`, `test_gate_runner_advice.py`, `test_gate_media_r2.py`, `test_core_blocker_validator.py`, `test_quality_pr_description.py`, `.claude/rediacc_hooks/tests/test_guards_differential.py -k "raw_pr_body or host_toolchain"` | `check:ci-vendored-blocker-derivation`, `check:ci-pr-epic-block`, `check:ci-guard-mention-anchoring`, `check:ci-breakpoint-drift` | 190 -> 181 |
+| W2 | `test_build_*.py`, `test_testrun_*.py`, `test_ci_budget_report.py` | `check:ci-proxy-linux-packages`, `check:ci-proxy-rdc-update`, `check:ci-release-key-canonical` | -14 |
+| W3 | `test_ci_initialize.py`, `test_ci_generate_tag.py`, `gates/test_gate_ci_complete_tiers.py` | `check:ci-job-aggregation` | -6 |
+| W4 | `test_deploy_{deploy_*,set_*,resolve_*}.py` | `check:ci-worker-secret-names`, `check:ci-builder-env-contract`, `check:ci-backup-bucket-conformance` | -7 |
+| W5 | `test_release_*.py`, `test_housekeeping_cleanup_versions.py`, `test_quality_staging_tag_guard.py` | `check:ci-staging-tag-guard` | -17 |
+| W6 | `test_deploy_{promote_*,simulate_promotion,verify_*,wait_for_preview_worker,cf_purge_urls,delete_r2_channel,purge_media_cache,upload_repos_to_r2}.py`, `gates/test_gate_simulate_promotion_serverside.py` | `check:ci-gh-retry-reads` | -11 |
+| W7 | `test_deploy_upload_to_r2.py`, `test_deploy_write_once_guard_check.py`, `test_core_release_state_validator.py`, `test_core_advisory.py` | `test:write-once-guard` | -7 |
+| W8 | `test_core_{account,devbox,local_common,service}.py`, `test_setup_*.py`, `gates/test_gate_run_sh.py` | `check:ci-rdc-native`, `check:ci-scope-scripts-reachability` | -8 |
+| W9 | `test_private_*.py`, `test_proxies_license_e2e.py` | - | -5 |
+| W10 | `test_quality_page_density.py`, plus new tests for each port | `check:ci-lint-scope-coverage`, `check:ci-env-file-adoption` | -6 |
+
+**Totals.** 190 -> 100 after waves 1 and 2 (90 removed). The remainder is the 96 KEEP-BASH rows (with `inject-env.sh` moved out) plus the 5 decision-pending files and `upload-media-to-r2.sh`. If D2-D4 all choose "delete", the floor is about 94.
+
+The lead's final check is `npm run ci`, plus `check:ci-{language-policy,dead-bash,policy-inventory,w7p5a-real-run-blockers,secret-supply,em-dash-surfaces,shell-declared-commands,inline-suppressions,python-types,python-env-registry,dead-python,gate-bind,gates-lock,parity,suppression-liveness,greenlight-closures,pipefail-grep-q}`.
+
+### 5. What needs real machines
+
+- **B5 drills.** The ports exist (50dd86fb0), but the live run on the ops VMs is still owed. It is operator-run.
+- **W9.** The renet sudo suites and `license-e2e` cannot run locally (they need `private/renet`, sudo and `/var/lib/rediacc`). They are proven by a dispatched full-suite ct-tests run (`ct-tests.yml` License Enforcement job, `inputs.full_suite == 'true'`) on GitHub-hosted runners, not on the ops VMs.
+- **W4, W5, W6 and W7 touch production paths.** These are cd-deploy-worker, cd-v2, promote-stable, cd-stage and backfill. They are the 19 operator-run rows of `agent/plans/PLAN-w7p5a-real-run-dispatch.md:76`. Deleting the twins does not change what runs (the modules already run), but W4 and W7 change live code paths. Their proof is the next real edge deploy and release, with a rollback step named first.
+
+### 6. Operator decisions, with a recommended default for each
+
+- **D1. Lift the 2026-10-01 hold on the release twins?** Default: yes. v1.3.2's CD already ran the Python modules (3ce2c1994, 82700f4a0). The 13 blocklist entries go in L1 together with their `w7p5a-status.json` rows.
+- **D2. `toolchain.sh`.** Default: KEEP-BASH, with the BLOCKER "sourced by bootstrap.sh before the Python toolchain exists". Moves the 4 `ci-quality.yml` sites and the `setup-node-npm` site to `python3 -m rediacc_ci.core.toolchain`.
+- **D3. `common.sh`.** Default: delete in wave 3 (W11). This costs a new `gh-retry` verb and edits to 3 KEEP-BASH files, plus churn across 57 test files that reference it.
+- **D4. Elite trio.** Default: keep 3-line exec shims, allowlisted with "path contract of the vendored breakpoint tree". Do not edit the drift-locked breakpoint tree.
+- **D5. `write_once_guard`.** Default: port it to Python, behind goldens frozen from the bash. This reverses an explicit earlier ruling, so it needs the operator's yes.
+- **D6. `test-run-sh.sh` on the bare runner.** Default: point the job step at a stdlib-only Python entry, or move the step into a bootstrapped job. Otherwise it stays KEEP like `test-toolchain.sh`, and then `local-common.sh` cannot be deleted.
+- **D7. `upload-media-to-r2.sh` and `probe-receipt-stability.sh`.** Default: allowlist the first, port the second.
+
+### 7. What not to do
+
+- Do not delete `upload-to-r2.sh`, `release-state-validator.sh` or `emit-advisory.sh` in wave 1.
+- Do not touch `.ci/breakpoint/**`.
+- Do not hand-edit `language-policy-baseline.json` to absorb anything. Drain it only with `--write-baseline`.
+- Do not tick G2 as "retired" if any library is kept. The box wording needs an operator re-ruling to "shrink".
+
 ## Remaining (operator)
 
 The plan's only open decision is whether to run it as described. A few individual Rule T fixes will surface in B4 as `[?]` items with a default, the first being `assert_channel_for_event` failing open (`DEFAULT: fail closed`).
