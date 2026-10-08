@@ -29,6 +29,7 @@ Owns: .ci/config/language-policy-baseline.json
 - [x] B4 Rule-T fixes in the .ci ports: the 24 plan-named reproduced behaviours, the sweep's 8-13 bugs, and the promote retry gap #4175e786
     (ticked) 2026-10-04T17:20:45Z by d778be9d: commit:d2c44c127 landed in e07adce45 and d2c44c127; the full .ci suite re-covers those tests
 - [x] B5 Port the out-of-policy scripts (drills, ops, worktree, eslint-heap, json generator, backup-storage); prove the drills with a live run on the ops VMs
+  - Amended 2026-10-08 (reviews 9d5f2639.2 and 9d5f2639.3): "the ops VMs" and "the local fleet" are the same machines (`./rdc.sh ops up` provisions them); the license drill ran there on the basic fleet, where legs needing .12 or Ceph are refused honestly, as 8422dd2ff records. "selftests rc 1" is the expected result, not a failure: every drill `--selftest` plants one assertion that cannot pass and MUST exit non-zero (`.ci/rediacc_ci/drills/lib.py`, PROVE THE INSTRUMENT).)
     (ticked) 2026-10-08T19:52:42Z by d778be9d: commit:8422dd2ff live drills all green (universe 42/42, transfer 33/33, backup 86/86, license 44/44, backup_roundtrip 8/8), selftests rc 1, drill-verdicts rc=0
 - [ ] G1 Empty and delete .ci/config/language-policy-baseline.json (closes PLAN-tooling-transformation W1P6, ed0c365d); every remaining allowlist entry carries a BLOCKER reason
 - [ ] G2 Fix check:ci-bash-lib-ported (add log.py to its module list, recognise class methods), port its 8 real gaps, retire it with the last library
@@ -751,7 +752,7 @@ Every count below was measured on this tree with W11-B uncommitted. The B5 ports
 - **Goldens whose twin still exists:** `infra.ci-{pull-images,start-elite,stop-elite}` (shims, carved out by `differential.py:727` `SHIMMED_TWINS`) and `test.gates.test-{blocker-golden-corpus,media-r2,runner-advice}`.
 - **Not frozen yet:** there is no `lib.blocker-validator.jsonl` and no `lib.emit-advisory.jsonl`. The seams are `test_core_blocker_validator.py:36` and `test_core_advisory.py:19`.
 
-### The 10 remaining baseline entries (working tree)
+### The 11 remaining baseline entries (working tree)
 
 | Entry | Verdict | Evidence |
 |---|---|---|

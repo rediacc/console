@@ -334,6 +334,7 @@ The band-notice docstring rule "It does not instruct" (`.claude/hooks/context/ba
 - [x] **R20260924.14** Add box P3.1 to PLAN-stop-hook-continuity.md, pointing at R.11 to R.13, and document the band-notice "does not instruct" exception in its docstring.
     (ticked) 2026-09-24T16:47:48Z by d778be9d: agent/plans/PLAN-stop-hook-continuity.md:376 box P3.1 points at R.11 to R.13; the exception is documented at .claude/hooks/context/band-notice.py:13
 - [x] **R20260924.15** After R.1 to R.13 land, re-count all seven frictions on the next session's `.blocklog` and record the before and after numbers in this plan's Status.
+  - Amended 2026-10-08 (review 9ee11153.1): the count is on the lead id's own `.blocklog` for 2026-10-05 to 2026-10-08, written after R.10 landed, not on a later session's log; the Status record at the top of this plan says so (the log "belongs to the same lead id, not a fresh session"). A count on a following session's log repeats the same commands after the merge.)
     (ticked) 2026-10-08T20:03:26Z by d778be9d: commit:3e9283873 seven frictions re-counted in Status (#2, #3, #7 fixed; #5 share 23% to 14%; #1 not fixed; #4, #6 not countable); re-checked 2026-10-08
 
 ### Critical Files for Implementation
