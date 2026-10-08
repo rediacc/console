@@ -112,6 +112,12 @@ export function stampPath(step: TscStep): string {
   return (step.args[at + 1] ?? '').replace(/\.tsbuildinfo$/, '.stamp.json');
 }
 
+/** The step's tsbuildinfo, or undefined for a step that keeps none (`tsc -b`). */
+export function buildInfoPath(step: TscStep): string | undefined {
+  const at = step.args.indexOf('--tsBuildInfoFile');
+  return at === -1 ? undefined : step.args[at + 1];
+}
+
 const sha1 = (buf: Buffer): string => createHash('sha1').update(buf).digest('hex');
 
 function fingerprint(abs: string): FileStamp | null {
@@ -442,7 +448,24 @@ async function runChecked(
   if (staleReason(cwd, tsc, step) === undefined) {
     return { step, code: 0, ms: Date.now() - started, output: '', unchanged: true };
   }
-  const r = await runner(tsc, { ...step, args: [...step.args, '--listFiles'] }, cwd);
+  const listing = { ...step, args: [...step.args, '--listFiles'] };
+  const buildInfo = buildInfoPath(step);
+  // Read BEFORE the run: tsc writes a tsbuildinfo even when it fails, so afterwards every red would look cached.
+  const fromCache = buildInfo !== undefined && fs.existsSync(buildInfo);
+  let r = await runner(tsc, listing, cwd);
+  if (r.code !== 0 && buildInfo !== undefined && fromCache) {
+    // A RED IS NEVER JUDGED FROM THE CACHE ALONE. On 2026-10-08 tsc --incremental kept reporting TS1192 for plyr's default import after the package moved from packages/www/node_modules to the hoisted node_modules, while the same tsc without the tsbuildinfo found 0 errors. A failure is retried once from no tsbuildinfo: it stands only if a clean program reproduces it.
+    // tree-write: safe the tsbuildinfo sits in CACHE_DIR, under the home directory (the selftest passes a temp dir)
+    fs.rmSync(buildInfo, { force: true });
+    const clean = await runner(tsc, listing, cwd);
+    r =
+      clean.code === 0
+        ? {
+            ...clean,
+            output: `typecheck-incremental: ${step.config ?? 'step'} failed from its tsbuildinfo and passed from none; the cache was stale and is rebuilt\n${clean.output}`,
+          }
+        : clean;
+  }
   if (r.code === 0) {
     writeStamp(cwd, tsc, step, r.output, started);
   } else if (step.config !== undefined) {
@@ -734,6 +757,61 @@ async function selftest(): Promise<number> {
       );
     } finally {
       fs.rmSync(sdir, { recursive: true, force: true });
+    }
+  }
+
+  // A red from the cache is retried from no tsbuildinfo (2026-10-08, the plyr TS1192). The fake runner fails exactly while a tsbuildinfo exists, so it models a poisoned cache without a real tsc.
+  {
+    const rdir = fs.mkdtempSync(path.join(os.tmpdir(), 'tci-retry-'));
+    try {
+      const step = checkStep('retry', 'tsconfig.json', rdir);
+      const info = buildInfoPath(step) ?? '';
+      let calls = 0;
+      const fake =
+        (fails: (poisoned: boolean) => boolean): TscRunner =>
+        (_tsc, s) => {
+          calls += 1;
+          const poisoned = fs.existsSync(info);
+          fs.writeFileSync(info, 'built');
+          return Promise.resolve({ step: s, code: fails(poisoned) ? 1 : 0, ms: 0, output: '' });
+        };
+      fs.writeFileSync(info, 'stale');
+      const healed = await runChecked(
+        tsc ?? '',
+        step,
+        rdir,
+        fake((p) => p)
+      );
+      check(
+        healed.code === 0 && calls === 2 && healed.output.includes('the cache was stale'),
+        `retry: a red from a poisoned tsbuildinfo must be retried from none and pass, got exit ${healed.code} after ${calls} call(s)`
+      );
+      calls = 0;
+      fs.writeFileSync(info, 'stale');
+      const real = await runChecked(
+        tsc ?? '',
+        step,
+        rdir,
+        fake(() => true)
+      );
+      check(
+        real.code === 1 && calls === 2,
+        `retry: a red that a clean program reproduces must stand, got exit ${real.code} after ${calls} call(s)`
+      );
+      calls = 0;
+      fs.rmSync(info, { force: true });
+      const uncached = await runChecked(
+        tsc ?? '',
+        step,
+        rdir,
+        fake(() => true)
+      );
+      check(
+        uncached.code === 1 && calls === 1,
+        `retry CONTROL: a red with no tsbuildinfo to blame runs once, got ${calls} call(s)`
+      );
+    } finally {
+      fs.rmSync(rdir, { recursive: true, force: true });
     }
   }
 
