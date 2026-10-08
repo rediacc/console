@@ -308,7 +308,7 @@ The TRAPS.md and CLAUDE.md prose that calls the oracles the spec is corrected in
 
 ## 10. Writer fan-out, 2026-10-08 (opus Plan agent; the lead verified the load-bearing claims before spawning)
 
-This plan is ready to run, but read section 2 first. Eleven inventory rows are classified wrong in ways that would break the cutover. Five boxes also depend on operator decisions (D1-D7 in section 6), so four units cannot start until those are made.
+This plan is ready to run, but read section 2 first. Twelve rows of the section 2 table correct inventory verdicts that are wrong in ways that would break the cutover. Five boxes also depend on operator decisions (D1-D7 in section 6), so four units cannot start until those are made.
 
 ### 1. How a golden-then-delete works in this repo today
 
@@ -348,7 +348,7 @@ This plan is ready to run, but read section 2 first. Eleven inventory rows are c
   - A deleted file that is still baselined is a red (`:782-790`).
   - Deleting the file switches the gate to STRICT mode (`:748-768`), which is G1 with no further code change.
 - **Hidden dependency.** That gate shells out to `.ci/scripts/lib/blocker-validator.sh` (`:251-300`). It has to be repointed to `rediacc_ci.core.blocker_validator` before that library can go.
-- **Already frozen.** 26 twins have goldens, and every `twin_blob` matches the file today (checked with `git hash-object`). They are the 15 `release/*.sh`, 9 deploy scripts, `build-cli`, `build-pkg-repo` and `test-media-r2`.
+- **Already frozen.** 26 twins have goldens, and every `twin_blob` matches the file today (checked with `git hash-object`). They are 14 of the `release/*.sh`, 9 deploy scripts, `build-cli`, `build-pkg-repo` and `test-media-r2`.
 - **Why they were not deleted.** 0866fa941 says: "Every .ci/scripts/release/*.sh stays on disk ... those ports wait for the operator's real cd-v2, promote-stable and backfill-release-sentinel runs (operator rule, 2026-10-01)". `agent/plans/PLAN-deletion-budget.md:143` repeats the rule.
 
 ### 2. Inventory corrections that change the work
