@@ -929,8 +929,13 @@ def _planinvestigate_cli(argv):
             print("\n" + payload["next"])
         return
     if retro_text is not None:
-        R.write_atomic(pathlib.Path(root) / rel, retro_text)
-        R.refresh_index(root, CK.plan_records, CK.plan_box_census)
+        current = (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace")
+        if retro_text == current:
+            # The plan half was a no-op: a (ticked) line already sits under the box, and whatever --evidence said was dropped.
+            print(M.CLI_PLANINV_EVIDENCE_KEPT)
+        else:
+            R.write_atomic(pathlib.Path(root) / rel, retro_text)
+            R.refresh_index(root, CK.plan_records, CK.plan_box_census)
     R.append_investigation(root, row)
     print(M.CLI_PLANINV_WROTE % payload)
 

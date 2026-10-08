@@ -1639,6 +1639,151 @@ _rc3, _o3, _e3 = hook(
 truthy("CONTROL: a different session speaks again", "additionalContext" in _o3)
 (ROOT / R.INDEX_REL).unlink()
 
+# --------------------------------------------------------------------------- 14c3. CLIP FIRST, THEN CHECK (49731139.1), AMBIGUITY IS NOT "NO MATCH" (fe588087.3), AND THE sys.path INSERT IS UNDONE (49731139.3).
+# ---------------------------------------------------------------------------
+(ROOT / REL).write_text(PLAN, encoding="utf-8")
+_first = ("verified at commit %s rc=0 " % AFTER) + "x" * 20
+_first = _first + " padding" * ((R.TICK_EVIDENCE_MAX - len(_first)) // 8 - 1)
+_clip_ev = _first + "\nsee also run.ts:352 which is past the clip"
+truthy(
+    "PLANT shape: the first line fits the clip and the whole text does not",
+    len(_first) < R.TICK_EVIDENCE_MAX < len(_clip_ev),
+)
+_clip_out = R.retro_evidence_text(ROOT, REL, _sig_done, _clip_ev, _bf_note, "deadbeef")
+truthy(
+    "a citation beyond the clip is not judged: it is not what gets written",
+    "run.ts:352" not in _clip_out,
+)
+truthy(
+    "...and the written line still carries the closing commit",
+    AFTER[:9] in _evidence_beneath(_clip_out, _sig_done),
+)
+raises(
+    "CONTROL: the same bare basename INSIDE the clip is still refused",
+    lambda: R.retro_evidence_text(
+        ROOT,
+        REL,
+        _sig_done,
+        "verified at commit %s rc=0 see run.ts:352" % AFTER,
+        _bf_note,
+        "deadbeef",
+    ),
+    "run.ts:352",
+)
+
+_AMB_PLAN = "agent/PLAN-ambiguity-fixture.md"
+_amb_a = "Wire the ambiguity resolver into the first verb of this fixture plan"
+_amb_b = "Wire the ambiguity resolver into the second verb of this fixture plan"
+(ROOT / _AMB_PLAN).write_text(
+    "# A\nStatus: executing\nOwner: deadbeef\n\n## Tasks\n- [ ] %s\n- [ ] %s\n- [x] Wire the ambiguity resolver into the third verb of this fixture plan\n"
+    % (_amb_a, _amb_b),
+    encoding="utf-8",
+)
+_amb_ptrs = ["fileline:%s:1" % REL, "commit:%s" % AFTER]
+_amb_note = (
+    "an ambiguity fixture note, long enough to clear the floor, citing %s and nothing else" % AFTER
+)
+_amb_open = R.open_boxes((ROOT / _AMB_PLAN).read_text(encoding="utf-8"))
+try:
+    R.select_box(_amb_open, "Wire the ambiguity resolver")
+    _amb_cls = None
+except R.RecordError as exc:
+    _amb_cls = type(exc).__name__
+control("select_box raises a DISTINCT ambiguity error", _amb_cls, "AmbiguousBoxError")
+try:
+    R.select_box(_amb_open, "no such text anywhere")
+    _nomatch_cls = None
+except R.RecordError as exc:
+    _nomatch_cls = type(exc).__name__
+control("CONTROL: a no-match stays a plain RecordError", _nomatch_cls, "RecordError")
+for _retro in (True, False):
+    raises(
+        "an ambiguous selector over OPEN boxes is refused as ambiguous (retro=%s), not swallowed into another message"
+        % _retro,
+        lambda _retro=_retro: R.plan_investigate(
+            ROOT,
+            _AMB_PLAN,
+            "Wire the ambiguity resolver",
+            "present",
+            _amb_ptrs,
+            _amb_note,
+            "deadbeef",
+            retro=_retro,
+        ),
+        "matches 2",
+    )
+(ROOT / _AMB_PLAN).unlink()
+
+_qdir = str(pathlib.Path(R.__file__).resolve().parents[3] / ".ci" / "scripts" / "quality")
+while _qdir in sys.path:
+    sys.path.remove(_qdir)
+_before_path = list(sys.path)
+_saved_gate = list(R._CITATION_GATE)
+R._CITATION_GATE.clear()
+try:
+    R._citation_gate()
+finally:
+    _after_path = list(sys.path)
+control("loading the citation gate leaves sys.path as it found it", _after_path, _before_path)
+falsy("CONTROL: the quality dir is not left on sys.path", _qdir in _after_path)
+sys.path[:] = _before_path
+
+# --------------------------------------------------------------------------- 14c4. THE CLI SAYS SO when --evidence is dropped because a (ticked) line already sits under the box (49731139.2).
+# ---------------------------------------------------------------------------
+import contextlib  # noqa: E402
+import io  # noqa: E402
+
+import wl_core as _C  # noqa: E402
+import worklist as _W  # noqa: E402
+
+_cli_note = (
+    "retro fixture: before the closing commit the tree held nothing here, and %s added it" % AFTER
+)
+
+
+def _run_retro_cli(evidence):
+    argv = [
+        "--plan-investigate",
+        "deadbeef",
+        REL,
+        _sig_done,
+        "present",
+        "commit:%s" % AFTER,
+        "fileline:%s:1" % REL,
+    ]
+    argv += ["--evidence", evidence, "--", _cli_note, "--retro", "--write"]
+    out = io.StringIO()
+    saved = (_C.project_root, _W._identity_or_die)
+    _C.project_root = lambda _s: str(ROOT)
+    _W._identity_or_die = lambda _me, _die: None
+    try:
+        with contextlib.redirect_stdout(out):
+            _W._planinvestigate_cli(argv)
+    finally:
+        _C.project_root, _W._identity_or_die = saved
+    return out.getvalue()
+
+
+(ROOT / REL).write_text(_bftext, encoding="utf-8")
+_cli_out = _run_retro_cli("verified at commit %s rc=0 through a different line" % AFTER)
+truthy("the CLI tells the operator --evidence was ignored", "--evidence ignored" in _cli_out)
+control(
+    "...and the plan file is byte for byte what it was",
+    (ROOT / REL).read_text(encoding="utf-8"),
+    _bftext,
+)
+(ROOT / REL).write_text(PLAN, encoding="utf-8")
+_cli_out2 = _run_retro_cli("verified at commit %s rc=0 through a fresh line" % AFTER)
+falsy(
+    "CONTROL: a box with no line yet gets one written and no ignore note",
+    "--evidence ignored" in _cli_out2,
+)
+truthy(
+    "...and that line is the one --evidence named",
+    "through a fresh line" in (ROOT / REL).read_text(encoding="utf-8"),
+)
+(ROOT / REL).write_text(PLAN, encoding="utf-8")
+
 # --------------------------------------------------------------------------- 11. THE CONTROL FOR THE CONTROLS. ---------------------------------------------------------------------------
 control("the fixture plan really does parse as two tasks", len(P.plan_tasks(PLAN)), 2)
 falsy("a plain plan is not a record", R.is_record(PLAN))
