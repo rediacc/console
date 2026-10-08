@@ -57,13 +57,14 @@ The 10-07 scheduled run 37604651929 deleted tag v1.3.1 while `cli/v1.3.1/.releas
   It also runs `update_homebrew_tap --dry-run` against the PR's checksums, and projects Validate Promotion's object count times copy rate against its 20-minute cap.
 
   Control: today's live snapshot (v1.3.1 sentinel, no tag) goes red.
-- [ ] W4 wiring (opus):
+- [x] W4 wiring (opus):
   - A `cd-preflight` job on same-repo PRs and on main, aggregated into ci-complete.
   - housekeeping.yml gets a refusal pre-step.
   - cd-v2.yml init runs preflight before any write.
   - Pins in ci_workflow_invariants.py: the cd preset requests `workflows`, every cd-v2 `git push` uses the app token, and tag-and-release has no `contents: write`.
   - Docs: release-process.md, and the main-only list in pr-merge.md.
   - Controls: a push-only preflight `if:` reds the reachability check, and dropping `permission-workflows` reds the pin.
+    (ticked) 2026-10-08T12:14:58Z by d778be9d: commit:4fac14b2f ci.yml cd-preflight job (soft tier of CI Complete), cd-v2 init --phase cd after Create version tag, housekeeping --checks a,c before cleanup_versions; ci_workflow_invariants pins all three; check:ci-workflow-invariants rc=0
 - [x] W5 release order (found 2026-10-08, CD run 37749637824): "Tag & Release" wrote the R2 sentinel cli/v2.2.0/.released and deployed edge, then "Validate Install (post-publish) / Linux (x64)" went red on the Rocky 9 DNF stall and the git tag job "Tag & GitHub Release" was skipped, so a sentinel existed with no tag: the bijection drift that reddened main on 10-07, created by CD itself. Make the tag and the sentinel one unit (tag before or with the sentinel, never gated behind post-publish validation), or have a validation red roll the sentinel back; add a test over the cd-v2.yml job graph that refuses a sentinel writer whose tag job can be skipped.
     (ticked) 2026-10-08T11:57:26Z by d778be9d: commit:41231edb6 the version tag is the cd-v2 init job's last step, before anything that can fail after the seal; ci_workflow_invariants refuses the old cd-v2.yml (rc 1)
 - [ ] A live run on a PR: cd-preflight green on the head, and red on a replay of the 10-07 state.
