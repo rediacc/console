@@ -334,3 +334,19 @@ def test_the_write_target_set_is_wider_than_the_file_this_gate_names(gate):
     gate.log_pass(
         "the write target set holds %d file(s), not just the one this gate names" % len(names)
     )
+
+
+def test_the_json_inventory_names_a_program_before_a_test(gate):
+    """Review finding f8461c53.1: a test names a file as a fixture, so the json-inventory row for a ledger a program reads must name that program. `.ci/config/merged-prs.json` is read by `scripts/lib/suppression-liveness.ts` and written by `scripts/gates/check-pr-condition-ledger.ts`, and tests name it too."""
+    rows = [
+        line
+        for line in (ROOT / "scripts/data/doc-registry.md").read_text(encoding="utf-8").splitlines()
+        if line.startswith("| `.ci/config/merged-prs.json` |")
+    ]
+    if len(rows) != 1:
+        gate.log_fail("expected one json-inventory row for merged-prs.json, found %d" % len(rows))
+        return
+    if "/tests/" in rows[0] or "test_" in rows[0]:
+        gate.log_fail("the merged-prs.json row names a test as its owner: %s" % rows[0])
+        return
+    gate.log_pass("the merged-prs.json row names a program: %s" % rows[0].split("|")[3].strip())
