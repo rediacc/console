@@ -35,6 +35,7 @@ import sys
 import tempfile
 import time
 import urllib.parse
+from unittest import mock
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 
@@ -2043,7 +2044,6 @@ def _selftest():
     os.environ.pop("CI", None)
     os.environ.pop("CI_TRACE_NO_FOLD", None)
     os.environ.pop("PYTEST_CURRENT_TEST", None)
-    real_popen = subprocess.Popen
     calls = []
 
     class _FakePopen:
@@ -2053,9 +2053,10 @@ def _selftest():
     def _raising_popen(*_a, **_kw):
         raise OSError("boom")
 
+    # mock.patch.object, not setattr: the swap is typed, restores itself on every exit path, and needs no inline suppression (operator 2026-10-08 banned those).
     try:
-        setattr(subprocess, "Popen", _FakePopen)  # noqa: B010 -- a module attribute swap mypy cannot type
-        _fold_into_gate_ledger("/tmp/ci-trace-root")
+        with mock.patch.object(subprocess, "Popen", _FakePopen):
+            _fold_into_gate_ledger("/tmp/ci-trace-root")
         argv_ok = bool(calls) and calls[0][0][1:] == ["-m", "rediacc_ci.ci.gate_model", "refresh"]
         kw = calls[0][1] if calls else {}
         check(
@@ -2067,11 +2068,13 @@ def _selftest():
             "the fold's PYTHONPATH carries <root>/.ci",
             "/tmp/ci-trace-root/.ci" in kw.get("env", {}).get("PYTHONPATH", "").split(os.pathsep),
         )
-        setattr(subprocess, "Popen", _raising_popen)  # noqa: B010 -- a module attribute swap mypy cannot type
         err = io.StringIO()
         raised = False
         try:
-            with contextlib.redirect_stderr(err):
+            with (
+                mock.patch.object(subprocess, "Popen", _raising_popen),
+                contextlib.redirect_stderr(err),
+            ):
                 _fold_into_gate_ledger("/tmp/ci-trace-root")
         except Exception:  # noqa: BLE001 -- the control is that nothing escapes
             raised = True
@@ -2081,7 +2084,6 @@ def _selftest():
             err.getvalue(),
         )
     finally:
-        setattr(subprocess, "Popen", real_popen)  # noqa: B010 -- a module attribute swap mypy cannot type
         os.environ.clear()
         os.environ.update(saved_env)
 
