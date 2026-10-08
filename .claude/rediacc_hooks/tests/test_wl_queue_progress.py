@@ -11,6 +11,8 @@ from rediacc_hooks.tests import test_wl_pr_scope_stop as PS
 from rediacc_hooks.tests import wlfix
 
 PQ = wlfix.import_wl("wl_planqueue")
+PF = wlfix.import_wl("wl_planfile")
+PFID = wlfix.import_wl("wl_planfid")
 
 HAND = (
     "# Plan queue\n\nHand prose, kept   as typed.\n\n"
@@ -186,7 +188,6 @@ def test_the_stop_hook_adds_no_block_to_a_queue_without_one(hook):
 
 def test_a_short_checkbox_is_still_a_box():
     """A checkbox counts at any length: "- [ ] WC1: e2e." normalises to 7 characters, under the plain-bullet floor, and was dropped, so PLAN-inline-suppressions read 0/10 instead of 0/11."""
-    PF = wlfix.import_wl("wl_planfile")
     text = "# P\n\n## Tasks\n\n- [ ] WA1: the long first box.\n- [ ] WC1: e2e.\n- [x] W2: ok.\n"
     opened, done = PF.plan_boxes(text)
     assert [t[:4] for t in opened] == ["WA1:", "WC1:"], opened
@@ -195,6 +196,5 @@ def test_a_short_checkbox_is_still_a_box():
 
 def test_a_short_plain_bullet_stays_screened_out():
     """CONTROL for the case above: the 8-character floor still drops a short plain bullet under an action heading."""
-    PFID = wlfix.import_wl("wl_planfid")
     tasks = PFID.plan_tasks("# P\n\n## Tasks\n\n- tiny.\n- a plain bullet long enough to count\n")
     assert tasks == ["a plain bullet long enough to count"], tasks
