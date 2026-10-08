@@ -26,6 +26,8 @@ from rediacc_ci.tests import differential as diff
 if typing.TYPE_CHECKING:
     import pathlib
 
+    import pytest
+
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "deploy-account.sh"
 TWIN_REL = ".ci/scripts/deploy/deploy-account.sh"
@@ -153,11 +155,12 @@ def _run(
         "configs=%s" % ",".join(sorted(p.name for p in worker.iterdir())),
         *("%s=%s" % kv for kv in sorted(extra.items())),
     ]
+    # The twin is deleted, so a re-record (`regolden --source port`) must run the PORT: handing the dead `.sh` path to a live bash would record "No such file" as the twin's answer (review ca8d42f5.2).
     return diff.twin_result(
         TWIN_REL,
         parts,
         lambda: _run_live(
-            subject, tmp_path, root, args, with_wrangler=with_wrangler, drop_env=drop_env, **extra
+            PORT, tmp_path, root, args, with_wrangler=with_wrangler, drop_env=drop_env, **extra
         ),
         work=(tmp_path,),
     )
@@ -230,8 +233,10 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
 # --------------------------------------------------------------------------- The harness itself, which is a claim before it is a tool ---------------------------------------------------------------------------
 
 
-def test_the_twin_ignores_the_root_override(tmp_path: pathlib.Path) -> None:
-    """$REDIACC_CI_ROOT STEERS ONLY THE PORT, and the two must still land on the same tree. Pointed at a decoy, the bash side keeps resolving from its own location, so a differential that relied on the variable for both would be comparing nothing."""
+def test_the_twin_ignores_the_root_override(
+    tmp_path: pathlib.Path,
+) -> None:
+    """$REDIACC_CI_ROOT STEERS ONLY THE PORT. The frozen golden records the bash twin resolving from its own location, so pointed at a decoy it still deployed (exit 0); the live port, pointed at the same decoy, resolves the decoy and finds no worker config. Both halves run: the golden half pins what bash did, the live half proves the override reaches the port, so the fixture root really is what the port reads."""
     root = _fixture_root(tmp_path)
     decoy = tmp_path / "decoy"
     (decoy / "workers" / "account").mkdir(parents=True)
@@ -243,6 +248,27 @@ def test_the_twin_ignores_the_root_override(tmp_path: pathlib.Path) -> None:
         REDIACC_CI_ROOT=str(decoy),
     )
     assert old.returncode == 0, old.stderr
+    new, _ = _run(PORT, tmp_path, root, ("--region", "eu"), REDIACC_CI_ROOT=str(decoy))
+    assert new.returncode != 0, "the override did not reach the port"
+
+
+def test_a_rerecord_of_the_twin_runs_the_port_not_the_deleted_script(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review ca8d42f5.2: the callable handed to the recorder is what `regolden --source port` runs; with the twin deleted it must be the port, never a bash run of the missing `.sh`."""
+    root = _fixture_root(tmp_path)
+    ran: list[tuple[int, str, str]] = []
+
+    def recorder(_twin, _parts, fn, **_kw):
+        proc, calls = fn()
+        ran.append((proc.returncode, proc.stderr, calls))
+        return proc, calls
+
+    monkeypatch.setattr(diff, "twin_result", recorder)
+    _run(root / ".ci" / "scripts" / "deploy" / TWIN.name, tmp_path, root, ("--region", "eu"))
+    rc, err, calls = ran[0]
+    assert rc == 0, err
+    assert "wrangler\tdeploy" in calls, "the port did not run"
 
 
 # --------------------------------------------------------------------------- The happy path ---------------------------------------------------------------------------

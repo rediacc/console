@@ -8,9 +8,15 @@ BOTH DIRECTIONS, same shape as the bash `proxy_lib_selftest` it is porting: a pr
 
 from __future__ import annotations
 
+import os
+from typing import TYPE_CHECKING
+
 import pytest
 
 from rediacc_ci.core import proxyx
+
+if TYPE_CHECKING:
+    import pathlib
 
 
 def test_a_normal_proxy_passes() -> None:
@@ -75,3 +81,14 @@ def test_expect_exit_accepts_a_comma_list() -> None:
 def test_run_selftest_passes_both_directions() -> None:
     # The permanent differential twin lives in test_proxies_cli_manifest.py / test_proxies_docker_prepull.py, which check this function's OUTPUT is byte-identical to `proxy_lib_selftest`'s. This asserts its return code directly, over a real PATH removal for the 77 case (see run_selftest's own docstring for why that case forks a real subprocess).
     assert proxyx.run_selftest() == 0
+
+
+def test_ci_pythonpath_prepends_and_keeps_the_callers_entries(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    monkeypatch.setenv("PYTHONPATH", "/caller/one")
+    env = proxyx.with_ci_pythonpath(tmp_path)
+    assert env["PYTHONPATH"] == str(tmp_path / ".ci") + os.pathsep + "/caller/one"
+
+    monkeypatch.delenv("PYTHONPATH")
+    assert proxyx.with_ci_pythonpath(tmp_path)["PYTHONPATH"] == str(tmp_path / ".ci")

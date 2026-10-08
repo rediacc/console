@@ -132,7 +132,12 @@ def run_probe(
     fd, capture = tempfile.mkstemp(prefix="receipt-probe-")
     os.close(fd)
     try:
-        visible = _run_with_plant(root, command, settle, capture, out)
+        try:
+            visible = _run_with_plant(root, command, settle, capture, out)
+        except OSError as exc:
+            # A read-only checkout (the plant cannot be written) or an unrunnable command is a failed control, reported, not a traceback.
+            print("FAIL: the probe could not run: %s" % exc, file=out)
+            return 1
         text = pathlib.Path(capture).read_text(encoding="utf-8", errors="replace")
     finally:
         with contextlib.suppress(FileNotFoundError):

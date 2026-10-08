@@ -155,7 +155,7 @@ def run() -> int:
         text=True,
         check=False,
         cwd=str(root),
-        env={**os.environ, "PYTHONPATH": str(root / ".ci")},
+        env=proxyx.with_ci_pythonpath(root),
     )
     rc = sub.returncode
 

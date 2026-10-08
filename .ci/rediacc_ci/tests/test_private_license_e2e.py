@@ -728,6 +728,19 @@ def test_cleanup_deletes_a_chain_state_the_run_created(tmp_path):
     assert not (tmp_path / "lic" / "chain-state.json").exists()
 
 
+def test_a_failed_chain_state_backup_never_deletes_the_operators_chain_state(tmp_path):
+    """Review 797d99c0.1: the copy fails, so there is no backup file; cleanup must leave the real chain state, not take the run-created branch and `rm` it."""
+    battery = _battery(tmp_path, preexisted=True, chain_backup=False)
+    (tmp_path / "lic" / "chain-state.json").write_text("operator")
+    battery.chain_state = str(tmp_path / "lic" / "chain-state.json")
+    battery.sudo = ["false"]
+    with pytest.raises(port_module._AbortError):
+        battery._back_up_chain_state()
+    battery.sudo = []
+    battery.cleanup()
+    assert (tmp_path / "lic" / "chain-state.json").read_text() == "operator"
+
+
 def test_cleanup_removes_the_whole_store_only_when_the_run_created_it(tmp_path):
     battery = _battery(tmp_path, preexisted=False, chain_backup=False)
     battery.cleanup()

@@ -11,6 +11,7 @@ The twin printed its own "-> writing sentinel(s) ..." line BEFORE invoking the w
 
 from __future__ import annotations
 
+import contextlib
 import os
 import shlex
 import sys
@@ -53,12 +54,18 @@ def main(argv: list[str]) -> int:
     print(f"→ writing sentinel(s) for {version} on channel {channel} (commit {commit_sha})")
     sys.stdout.flush()
     # The writer runs in process and resolves paths from the checkout root; the previous directory is restored so the cwd change does not outlive the call (review finding 67a505d6.2). An exception from the writer still ends the process with a traceback and status 1, which the workflow step reports as a failure.
-    previous = os.getcwd()
+    # A caller whose directory was deleted has nothing to come back to: the writer still runs, and the restore is skipped rather than raised over the writer's own result (review 74389ce3.1).
+    try:
+        previous: str | None = os.getcwd()
+    except OSError:
+        previous = None
     os.chdir(_ROOT)
     try:
         return write_release_sentinel.main(args)
     finally:
-        os.chdir(previous)
+        if previous is not None:
+            with contextlib.suppress(OSError):
+                os.chdir(previous)
 
 
 if __name__ == "__main__":

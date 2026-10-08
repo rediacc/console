@@ -15,7 +15,6 @@ K=5 LEDGER: `.ci/shadow/w7p6-proxy-license-e2e.observations.jsonl`.
 
 from __future__ import annotations
 
-import os
 import re
 import subprocess
 import sys
@@ -59,7 +58,7 @@ def run() -> int:
         capture_output=True,
         text=True,
         check=False,
-        env={**os.environ, "PYTHONPATH": str(root / ".ci")},
+        env=proxyx.with_ci_pythonpath(root),
     )
     rc = proc.returncode
     both = proc.stdout + proc.stderr

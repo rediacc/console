@@ -56,8 +56,6 @@ CF_API_BASE = WK_CF_API_BASE
 # than by jq, SPACE AFTER THE COLON INCLUDED, so it is a literal here too: the fake curl records argv, and a body compacted differently is a different request even though Cloudflare would accept either.
 PURGE_BODY = '{"hosts": ["%s"]}' % PURGE_HOSTNAME
 
-# The two defects named in the module docstring, as constants so the tests can assert them by name rather than by restating the sentences.
-
 # The one message that interpolates REMOTE text (:46). common.sh logs through `echo -e`, which interprets backslash escapes in the message, while `rediacc_ci.log` formats the message as data. A Cloudflare error containing a literal backslash-n therefore renders as a newline through the twin and as two characters here. The differential asserts BOTH directions so nobody "fixes" it.
 PURGE_FAILED_PREFIX = "Purge failed: "
 
@@ -146,7 +144,7 @@ def main(argv: list[str]) -> int:
     except BashExitError as exc:
         # RULE-T DELTA: the twin exited here with nothing on stderr (`curl -s`, no `-S`), so a failed step carried no reason. The exit status and the request stay the twin's.
         log.error(
-            "%scurl exited %d (no response from the Cloudflare API)"
+            "%scurl exited %d before a complete Cloudflare API response arrived"
             % (PURGE_FAILED_PREFIX, exc.code)
         )
         return exc.code

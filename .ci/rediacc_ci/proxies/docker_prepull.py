@@ -47,7 +47,7 @@ def run() -> int:
     # The licensed command form from the subject's own ledger, `python3 <path>` with `PYTHONPATH=.ci`. The interpreter is spelled `python3` rather than `sys.executable` so that this proxy and its bash twin build the same argv.
     subject = ["python3", subject_path]
     # ABSOLUTE, and set for both proxies alike: the subject imports `rediacc_ci`, and a relative `.ci` would depend on the directory the proxy happened to be started from.
-    os.environ["PYTHONPATH"] = str(root / ".ci")
+    os.environ.update(proxyx.with_ci_pythonpath(root))
 
     p = proxyx.Proxy("docker-prepull", SUBJECT_REL)
     p.need_exec(subject_path, "the subject script is missing from this checkout")

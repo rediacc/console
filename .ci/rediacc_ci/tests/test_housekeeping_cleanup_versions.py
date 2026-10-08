@@ -238,6 +238,17 @@ def _mask_instants(text: str) -> str:
     return _INSTANT_RE.sub("<TS>", text)
 
 
+def _assert_instants_come_from_the_inputs(
+    result: tuple[int, bytes, bytes, list[str]], fixture_text: str, argv: list[str], env_text: str
+) -> None:
+    """Masking folds every instant to `<TS>` on both sides, so a port that echoed the wrong instant (a wrong field, a wrong cutoff) would still equal the golden. Every instant the PORT prints must therefore be one the case supplied, verbatim (review 58aaa160.7)."""
+    _code, out, err, calls = result
+    supplied = set(_INSTANT_RE.findall(fixture_text + " " + " ".join(argv) + " " + env_text))
+    printed = out.decode("utf-8") + "\n" + err.decode("utf-8") + "\n" + "\n".join(calls)
+    strangers = sorted(set(_INSTANT_RE.findall(printed)) - supplied)
+    assert not strangers, "the port printed instants no input supplied: %r" % strangers
+
+
 def _mask_result(
     result: tuple[int, bytes, bytes, list[str]],
 ) -> tuple[int, bytes, bytes, list[str]]:
@@ -265,7 +276,10 @@ def _run(
 ) -> tuple[int, bytes, bytes, list[str]]:
     """The twin's answer comes from its golden (`twin_tuple`); the port runs live."""
     if side != "bash":
-        return _mask_result(_run_live(side, phase, argv, fixture, extra_env, base))
+        env_text = json.dumps(extra_env, sort_keys=True)
+        raw = _run_live(side, phase, argv, fixture, extra_env, base)
+        _assert_instants_come_from_the_inputs(raw, json.dumps(fixture), list(argv), env_text)
+        return _mask_result(raw)
     parts = [phase, _stable(list(argv)), _stable(fixture), _stable(extra_env)]
 
     def live() -> tuple[int, str, str, list[str]]:
