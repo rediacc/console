@@ -81,9 +81,10 @@ nothing would have noticed a nineteenth that was a real omission. Three more ass
      the copy to Trash at once. A clone that survived a crash and then a map
      refresh would be a plaintext credential with a UUID every workflow could
      fetch, so no mapped name may match `bws_env.ARCHIVE_PATTERN`, and the
-     literal must appear verbatim in bitwarden-sm.ts (the archiver and the
-     sweeper) and in scripts/ops/bws-map-refresh.py (the exclusion), so the three
-     cannot drift into three different shapes.
+     literal must be the `ARCHIVE_RE` declaration, at line start, in
+     bitwarden-sm.ts (the sweeper) and in scripts/ops/bws-map-refresh.py (the
+     exclusion), so the three cannot drift into three different shapes. A
+     comment or docstring quoting it does not count.
 
 Control-first: the parser is proven on synthetic input in both directions before any verdict, and the failure direction is proven by a planted name.
 
@@ -800,6 +801,13 @@ ARCHIVE_PIN_FILES = (
 )
 
 
+def archive_pin_declaration(rel: str, pattern: str) -> str:
+    """The exact line prefix that declares the archive regex in a pinned file, by language."""
+    if rel.endswith(".ts"):
+        return f"export const ARCHIVE_RE = /{pattern}/"
+    return f'ARCHIVE_RE = re.compile(r"{pattern}")'
+
+
 def archive_clone_problems(
     secrets: dict, pattern: str = BWS_ENV_ARCHIVE_PATTERN, pins: dict[str, str] | None = None
 ) -> list[str]:
@@ -824,15 +832,12 @@ def archive_clone_problems(
                 pins[rel] = (ROOT / rel).read_text(encoding="utf-8")
             except OSError as exc:
                 problems.append(f"cannot read {rel} ({exc}); the archive pattern pin is blind")
-    # A comment that quotes the literal pins nothing, so only a code line counts.
-    comment_marks = ("#", "//", "*", "/*")
+    # The pin is the regex DECLARATION each file matches with, at line start: a comment, docstring or trailing note quoting the literal pins nothing.
     for rel, text in pins.items():
-        if not any(
-            pattern in line and not line.lstrip().startswith(comment_marks)
-            for line in text.splitlines()
-        ):
+        decl = archive_pin_declaration(rel, pattern)
+        if not any(line.startswith(decl) for line in text.splitlines()):
             problems.append(
-                f"{rel} does not spell the archive pattern {pattern!r} verbatim on a code line; it has drifted from bws_env.ARCHIVE_PATTERN"
+                f"{rel} does not declare {decl!r} at line start; its ARCHIVE_RE has drifted from bws_env.ARCHIVE_PATTERN"
             )
     return problems
 
@@ -1323,7 +1328,10 @@ jobs:
 
     # ---- assertion 15: no archive clone mapped, and the pattern pinned verbatim ----
     pat = BWS_ENV_ARCHIVE_PATTERN
-    good_pins = {"a.ts": f"x {pat} y", "b.py": f"x {pat} y"}
+    good_pins = {
+        "a.ts": archive_pin_declaration("a.ts", pat) + ";",
+        "b.py": archive_pin_declaration("b.py", pat),
+    }
     checks15 = [
         (
             "CONTROL: a map without clones and with verbatim pins is silent",
@@ -1351,7 +1359,29 @@ jobs:
             "15: a pinned file that drifted from the pattern is named",
             lambda: any(
                 "b.py" in m
-                for m in archive_clone_problems({}, pat, {"a.ts": pat, "b.py": r"__ROTATED_\d+"})
+                for m in archive_clone_problems(
+                    {},
+                    pat,
+                    {
+                        "a.ts": good_pins["a.ts"],
+                        "b.py": r"ARCHIVE_RE = re.compile(r'__ROTATED_\d+')",
+                    },
+                )
+            ),
+        ),
+        (
+            "15: a pin kept only in a trailing comment or a docstring is named",
+            lambda: all(
+                any(
+                    "b.py" in m
+                    for m in archive_clone_problems(
+                        {}, pat, {"a.ts": good_pins["a.ts"], "b.py": body}
+                    )
+                )
+                for body in (
+                    f"RX = re.compile(r'__ROTATED_\\d+')  # {pat}",
+                    f'"""\n    {good_pins["b.py"]}\n"""',
+                )
             ),
         ),
         (
@@ -1359,7 +1389,7 @@ jobs:
             lambda: any(
                 "b.py" in m
                 for m in archive_clone_problems(
-                    {}, pat, {"a.ts": pat, "b.py": f"# {pat}\nRX = r'__ROTATED_\\d+'"}
+                    {}, pat, {"a.ts": good_pins["a.ts"], "b.py": f"# {pat}\nRX = r'__ROTATED_\\d+'"}
                 )
             ),
         ),
@@ -1520,7 +1550,7 @@ def main() -> int:
     )
     print(
         f"✓ archive clones: no mapped name matches {BWS_ENV_ARCHIVE_PATTERN}, and "
-        f"{len(ARCHIVE_PIN_FILES)} file(s) spell it verbatim"
+        f"{len(ARCHIVE_PIN_FILES)} file(s) declare it as ARCHIVE_RE"
     )
     print("  Blind spot: this proves NAMES resolve. Liveness in Bitwarden is proven at run time,")
     print(
