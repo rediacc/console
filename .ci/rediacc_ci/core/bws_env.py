@@ -210,6 +210,9 @@ CACHEABLE = (
     "UPSTREAM_PUBLIC_KEY",
 )
 
+# The suffix a rotation's pre-rotation archive clone carries. The SAME literal is pinned in private/account/scripts/rotation/consumers/bitwarden-sm.ts and scripts/ops/bws-map-refresh.py; `check:ci-bws-map` assertion 15 asserts all three agree and that no mapped name matches it.
+ARCHIVE_PATTERN = r"__ROTATED_\d{8}T\d{6}Z$"
+
 # The STORE names each cacheable LOCAL name may be read from (PLAN-account-env-to-bws T15). Hardcoded for the same reason as CACHEABLE: the allowlist is on the LOCAL name, and without a fixed pair table an alias would turn `cache-to` into `ANY_SECRET > ACCOUNT_ED25519_PUBLIC_KEY`.
 #
 # The `_DEV` spellings are why this exists. Local development signs licences with the DEV keypair, so a dev renet must bake the DEV public key; caching the unsuffixed store entry would bake the PRODUCTION key and break every dev-signed licence.
