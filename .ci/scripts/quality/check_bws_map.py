@@ -824,10 +824,15 @@ def archive_clone_problems(
                 pins[rel] = (ROOT / rel).read_text(encoding="utf-8")
             except OSError as exc:
                 problems.append(f"cannot read {rel} ({exc}); the archive pattern pin is blind")
+    # A comment that quotes the literal pins nothing, so only a code line counts.
+    comment_marks = ("#", "//", "*", "/*")
     for rel, text in pins.items():
-        if pattern not in text:
+        if not any(
+            pattern in line and not line.lstrip().startswith(comment_marks)
+            for line in text.splitlines()
+        ):
             problems.append(
-                f"{rel} does not spell the archive pattern {pattern!r} verbatim; it has drifted from bws_env.ARCHIVE_PATTERN"
+                f"{rel} does not spell the archive pattern {pattern!r} verbatim on a code line; it has drifted from bws_env.ARCHIVE_PATTERN"
             )
     return problems
 
@@ -1347,6 +1352,15 @@ jobs:
             lambda: any(
                 "b.py" in m
                 for m in archive_clone_problems({}, pat, {"a.ts": pat, "b.py": r"__ROTATED_\d+"})
+            ),
+        ),
+        (
+            "15: a pin kept only in a comment is named",
+            lambda: any(
+                "b.py" in m
+                for m in archive_clone_problems(
+                    {}, pat, {"a.ts": pat, "b.py": f"# {pat}\nRX = r'__ROTATED_\\d+'"}
+                )
             ),
         ),
     ]
