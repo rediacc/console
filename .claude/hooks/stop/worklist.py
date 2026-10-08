@@ -732,7 +732,7 @@ def _retro_brief_cli(argv):
 def _review_cli(argv):
     """--review-mark / --review-commit / --review-run / --prune-reviews <me> ...: the per-commit review verbs (agent/plans/PLAN-per-commit-review.md sections 5 and 6).
 
-    The logic is wl_review's; this arm parses and checks `<me>` like every other verb and supplies the worklist fold, which a `deferred #<item>` resolution is checked against. A bare verb prints the usage and exits 2 rather than falling through to the Stop path.
+    The logic is wl_review's; this arm parses and checks `<me>` like every other verb and supplies the two things a `waived #<item> ASKED:<minute>Z` resolution is checked against (agent/plans/PLAN-deferred-findings-block-merge.md D3): the worklist fold with each item's latest triage verdict, and `asked_ok`, the `ASKED:` check against this session's own transcript (wl_checks._asked_in_transcript), so wl_review never imports wl_checks. A bare verb prints the usage and exits 2 rather than falling through to the Stop path.
     """
 
     def die(msg):
@@ -751,9 +751,21 @@ def _review_cli(argv):
 
     def items():
         fold = S.load(C.worklist_for(start), sync=False)
-        return {r["id"]: (r.get("state", " "), r.get("text", "")) for r in fold.items}
+        return {
+            r["id"]: (
+                r.get("state", " "),
+                r.get("text", ""),
+                str((r.get("triage") or {}).get("v") or ""),
+            )
+            for r in fold.items
+        }
 
-    rc, text = RV.verb(argv[0], me, argv[2:], pathlib.Path(C.project_root(start)), items)
+    def asked_ok(text):
+        return CK._asked_in_transcript(text, _lead_transcript(me))
+
+    rc, text = RV.verb(
+        argv[0], me, argv[2:], pathlib.Path(C.project_root(start)), items, asked_ok=asked_ok
+    )
     print(text, file=sys.stderr if rc else sys.stdout)
     sys.exit(rc)
 

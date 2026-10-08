@@ -782,13 +782,12 @@ def test_mark_not_a_bug_needs_a_resolvable_citation(world):
     assert R.parse(world.review_file(sha).read_text()).findings[0].resolution_kind() == "not-a-bug"
 
 
-def test_mark_deferred_needs_an_open_item_naming_the_finding_and_reopens_when_it_goes(world):
+def test_mark_deferred_is_refused_with_the_plan_and_fix_order(world):
+    """PLAN-deferred-findings-block-merge D1/D5: `deferred` is no longer a resolution, even with an open item that names the finding; the refusal carries the triage command and the order."""
     sha = world.commit()
     world.run_child(sha)
     fid = "%s.1" % sha[:8]
-    with pytest.raises(ValueError, match="does not exist"):
-        R.mark(world.repo, BRANCH, fid, "deferred", ["#abcdef12"], "deadbeef", items={})
-    with pytest.raises(ValueError, match="does not name"):
+    with pytest.raises(ValueError, match="deferred is retired") as err:
         R.mark(
             world.repo,
             BRANCH,
@@ -796,20 +795,108 @@ def test_mark_deferred_needs_an_open_item_naming_the_finding_and_reopens_when_it
             "deferred",
             ["#abcdef12"],
             "deadbeef",
-            items={"abcdef12": (" ", "other work")},
+            items={"abcdef12": (" ", "fix %s later" % fid, "")},
         )
-    R.mark(
-        world.repo,
-        BRANCH,
-        fid,
-        "deferred",
-        ["#abcdef12"],
+    assert "worklist.py --triage <me> '%s " % fid in str(err.value)
+    assert "PLAN+SUBAGENT" in str(err.value)
+    assert "waived #<triage-item> ASKED:" in str(err.value)
+    assert R.parse(world.review_file(sha).read_text()).findings[0].resolution == "open"
+
+
+ASKED_MINUTE = "2026-10-08T10:00"
+
+
+def _transcript(tmp_path, answered_at):
+    """A lead transcript holding one AskUserQuestion and its tool_result at `answered_at` (ISO, Z)."""
+    path = tmp_path / "lead.jsonl"
+    rows = [
+        {
+            "timestamp": answered_at,
+            "message": {
+                "content": [{"type": "tool_use", "name": "AskUserQuestion", "id": "toolu_ask1"}]
+            },
+        },
+        {
+            "timestamp": answered_at,
+            "message": {"content": [{"type": "tool_result", "tool_use_id": "toolu_ask1"}]},
+        },
+    ]
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    return path
+
+
+def _asked_ok(transcript):
+    checks = wlfix.import_wl("wl_checks")
+    return lambda text: checks._asked_in_transcript(text, str(transcript))
+
+
+def test_mark_waived_needs_the_item_its_operator_only_triage_and_a_matching_answer(world, tmp_path):
+    """D3 (a)-(c), each refused on its own; the accepted call differs from each refusal in exactly the condition under test."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    good_items = {"abcdef12": (" ", "%s needs the operator" % fid, "operator-only")}
+    args = ["#abcdef12", "ASKED:%sZ" % ASKED_MINUTE]
+
+    def waive(items, asked_ok, a=args):
+        return R.mark(
+            world.repo, BRANCH, fid, "waived", a, "deadbeef", items=items, asked_ok=asked_ok
+        )
+
+    (tmp_path / "a").mkdir(exist_ok=True)
+    (tmp_path / "b").mkdir(exist_ok=True)
+    on_time = _asked_ok(_transcript(tmp_path / "a", "2026-10-08T10:00:40+00:00"))
+    late = _asked_ok(_transcript(tmp_path / "b", "2026-10-08T10:06:01+00:00"))
+    with pytest.raises(ValueError, match="does not exist"):
+        waive({}, on_time)
+    with pytest.raises(ValueError, match="does not name"):
+        waive({"abcdef12": (" ", "other work", "operator-only")}, on_time)
+    with pytest.raises(ValueError, match="not operator-only"):
+        waive({"abcdef12": (" ", "%s needs the operator" % fid, "inline")}, on_time)
+    with pytest.raises(ValueError, match="not operator-only"):
+        waive({"abcdef12": (" ", "%s needs the operator" % fid, "")}, on_time)
+    with pytest.raises(ValueError, match="AskUserQuestion"):
+        waive(good_items, late)
+    with pytest.raises(ValueError, match="AskUserQuestion"):
+        waive(good_items, None)
+    with pytest.raises(ValueError, match="ASKED:"):
+        waive(good_items, on_time, ["#abcdef12", "2026-10-08T10:00Z"])
+    assert R.parse(world.review_file(sha).read_text()).findings[0].resolution == "open"
+    waive(good_items, on_time)
+    finding = R.parse(world.review_file(sha).read_text()).findings[0]
+    assert finding.resolution_kind() == "waived", finding.resolution
+    assert finding.resolution.startswith("waived #abcdef12 ASKED:%sZ | deadbeef " % ASKED_MINUTE)
+    st = R.branch_state(world.repo, BRANCH, repos=())
+    assert st["deferred"] == [], st
+    assert all(f.id != fid for _p, f in st["blocking"] + st["advisory"]), st
+
+
+def test_the_verb_hands_the_items_and_the_asked_check_to_a_waiver(world, tmp_path):
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    (tmp_path / "a").mkdir(exist_ok=True)
+    asked_ok = _asked_ok(_transcript(tmp_path / "a", "2026-10-08T10:00:10+00:00"))
+    items = {"abcdef12": (" ", "%s needs the operator" % fid, "operator-only")}
+    args = [fid, "waived", "#abcdef12", "ASKED:%sZ" % ASKED_MINUTE]
+    rc, text = R.verb("--review-mark", "deadbeef", args, world.repo, lambda: items, branch=BRANCH)
+    assert rc == 1, text
+    assert "AskUserQuestion" in text, text
+    rc, text = R.verb(
+        "--review-mark",
         "deadbeef",
-        items={"abcdef12": (" ", "fix %s later" % fid)},
+        args,
+        world.repo,
+        lambda: items,
+        branch=BRANCH,
+        asked_ok=asked_ok,
     )
-    assert R.branch_state(world.repo, BRANCH, repos=(), items={"abcdef12": " "})["blocking"] == []
-    reopened = R.branch_state(world.repo, BRANCH, repos=(), items={})["blocking"]
-    assert [f.id for _p, f in reopened] == [fid], "a deferral whose item is gone must reopen"
+    assert rc == 0, text
+    rc, text = R.verb(
+        "--review-mark", "deadbeef", [fid, "deferred", "#abcdef12"], world.repo, dict, branch=BRANCH
+    )
+    assert rc == 1, text
+    assert "deferred is retired" in text, text
 
 
 def test_review_commit_records_only_finished_files_with_the_trailer(world):
@@ -1385,3 +1472,39 @@ def test_drop_foreign_reviews_refuses_when_gitmodules_cannot_be_read(world):
     assert rc == 1, text
     assert "refused" in text
     assert sha in world.ledger_shas(), "the submodule record survives"
+
+
+def test_the_worklist_arm_supplies_the_triage_verdict_and_the_transcript_check(
+    tmp_path, monkeypatch
+):
+    """worklist._review_cli hands wl_review.verb the fold as (state, text, triage verdict) and an `asked_ok` reading the lead transcript, so wl_review never imports wl_checks (PLAN-deferred-findings-block-merge L2)."""
+    wl = wlfix.import_wl("worklist")
+    transcript = _transcript(tmp_path, "2026-10-08T10:00:30+00:00")
+    fold = types.SimpleNamespace(
+        items=[
+            {"id": "abcdef12", "state": " ", "text": "x", "triage": {"v": "operator-only"}},
+            {"id": "c0ffee00", "state": ">", "text": "y"},
+        ]
+    )
+    seen = {}
+
+    def fake_verb(*args, asked_ok=None):
+        seen["items"] = args[4]()
+        seen["asked"] = (asked_ok("ASKED:%sZ" % ASKED_MINUTE), asked_ok("ASKED:2026-10-08T11:00Z"))
+        return 0, "ok"
+
+    monkeypatch.setattr(wl, "_identity_or_die", lambda *_a: None)
+    monkeypatch.setattr(wl, "_lead_transcript", lambda *_a: str(transcript))
+    monkeypatch.setattr(wl.C, "project_start", lambda *_a, **_k: str(tmp_path))
+    monkeypatch.setattr(wl.C, "project_root", lambda *_a, **_k: str(tmp_path))
+    monkeypatch.setattr(wl.C, "worklist_for", lambda *_a, **_k: tmp_path / "wl.jsonl")
+    monkeypatch.setattr(wl.S, "load", lambda *_a, **_k: fold)
+    monkeypatch.setattr(R, "verb", fake_verb)
+    with pytest.raises(SystemExit) as code:
+        wl._review_cli(["--review-mark", "deadbeef", "x.1", "waived", "#abcdef12", "ASKED:x"])
+    assert code.value.code == 0
+    assert seen["items"] == {
+        "abcdef12": (" ", "x", "operator-only"),
+        "c0ffee00": (">", "y", ""),
+    }
+    assert seen["asked"] == (True, False)

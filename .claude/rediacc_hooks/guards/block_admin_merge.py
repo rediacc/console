@@ -9,11 +9,12 @@
   3. Review hygiene = the per-commit review precondition AND zero unresolved
      review threads. The precondition: every commit since the base has a
      per-commit review record in agent/reviews/<branch>/ with no open finding
-     at or above block_at, and every record is committed
-     (`python3 .claude/hooks/stop/wl_review.py --check`). It is judged on the
-     PR's head branch (`headRefName`) by `wl_review.check_state`, locally and
-     with no network call, and it fails CLOSED when the reviewer module does
-     not import. Threads are human review threads; nothing posts bot threads
+     at or above block_at and no deferred finding at any severity, and every
+     record is committed (`python3 .claude/hooks/stop/wl_review.py --check`).
+     It is judged on the PR's head branch (`headRefName`) by
+     `wl_review.check_state`, locally and with no network call of its own,
+     pinned to the PR's `headRefOid` from the same `gh pr view`, and it fails
+     CLOSED when the reviewer module does not import. Threads are human review threads; nothing posts bot threads
      since the PR-level review was retired on 2026-10-02.
   4. The plan gate, console PR only (box L2 of PLAN-plan-per-pr-loop,
      `plan_gate.plan_merge_refusal`, shared with the fast-forward fallback in
@@ -69,8 +70,11 @@ NOT_GREEN_MESSAGE = (
 REVIEWS_MESSAGE = (
     "❌ BLOCKED: %s#%s (head branch %s) fails the per-commit review precondition: every "
     "commit since the base has a per-commit review record in agent/reviews/<branch>/ with no "
-    "open finding at or above block_at, and every record is committed. Refused: %s. Settle "
-    "each line below, then re-check with 'python3 .claude/hooks/stop/wl_review.py --check'."
+    "open finding at or above block_at and no deferred finding at any severity, and every "
+    "record is committed. Refused: %s. A deferred finding is unfinished work: triage it, fix "
+    "it this session, or, for an operator-only triage, waive it with the operator's ASKED: "
+    "answer. Settle each line below ('python3 .claude/hooks/stop/wl_review.py --status' lists "
+    "them), then re-check with 'python3 .claude/hooks/stop/wl_review.py --check'."
 )
 
 PLAN_MESSAGE = (
@@ -154,14 +158,14 @@ EDGE_CASES = [
 ]
 
 
-def review_refusals(root, branch, repo):
-    """(reasons, lines) of the per-commit review precondition for the PR head `branch` of `repo`. Fails CLOSED: an import or runtime error is itself a refusal. No network call."""
+def review_refusals(root, branch, repo, head_sha=""):
+    """(reasons, lines) of the per-commit review precondition for the PR head `branch` of `repo`. Fails CLOSED: an import or runtime error is itself a refusal. No network call of its own: `head_sha` is the PR's `headRefOid` from the `gh pr view` already made, and pins the walked tip to it (`stale-tip` when this clone's ref lacks it, finding 71afd29f.3)."""
     try:
         syspath.on_sys_path(STOP_DIR)
         import wl_review  # noqa: PLC0415 -- loaded only for a merge, never for the rest of the chain
 
         label = "console" if repo == GH_REPO else "private/" + repo.rsplit("/", 1)[-1]
-        return wl_review.check_state(pathlib.Path(root), branch, label=label)
+        return wl_review.check_state(pathlib.Path(root), branch, label=label, expected_tip=head_sha)
     except Exception as exc:  # noqa: BLE001 -- unverifiable is refused, never allowed
         return (
             ["unverifiable"],
@@ -193,6 +197,16 @@ def _jq_head_ref(text):
         return ""
     value = doc.get("headRefName") if isinstance(doc, dict) else None
     return value if isinstance(value, str) else ""
+
+
+def _jq_head_oid(text):
+    """`.headRefOid // empty` over PRDATA, "" unless it is a full sha."""
+    try:
+        doc = json.loads(text) if text else None
+    except ValueError:
+        return ""
+    value = doc.get("headRefOid") if isinstance(doc, dict) else None
+    return value if isinstance(value, str) and re.fullmatch(r"[0-9a-f]{40}", value) else ""
 
 
 def _jq_body(text):
@@ -321,7 +335,7 @@ def run(ev):
         view = ["timeout", "20", "gh", "pr", "view"]
         if sel != "":
             view.append(sel)
-        view += ["--repo", repo, "--json", "number,statusCheckRollup,headRefName,body"]
+        view += ["--repo", repo, "--json", "number,statusCheckRollup,headRefName,headRefOid,body"]
         prdata = hookio.run_out(view)
         num = _jq_number(prdata)
         if num == "":
@@ -351,7 +365,7 @@ def run(ev):
                 return hookio.DENY
 
         # The per-commit review precondition (both --auto and immediate), judged on the PR's head branch from the local tree. An unreadable head branch or a reviewer module that does not import refuses: the precondition is unverifiable, and unverifiable never merges.
-        reasons, lines = review_refusals(root, head, repo)
+        reasons, lines = review_refusals(root, head, repo, _jq_head_oid(prdata))
         if reasons:
             ev.warn(REVIEWS_MESSAGE % (repo, num, head or "unknown", ", ".join(reasons)))
             ev.warn_raw("".join("  %s\n" % line for line in lines))
