@@ -2480,6 +2480,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // CLAUDE.md is the one written source of the PR-scope rules (push cadence, one branch and one PR, the merge condition, the plan set), and seven other files restate them by hand; agent/plans/PLAN-scope-mirrors.md measured eight live drifts before this existed. The canonical spans carry `<!-- scope: pr.* -->` anchors pinned by sha in .ci/config/scope-mirrors.json, and every registered mirror is located and judged. No `paths`, deliberately: an edit to CLAUDE.md, a mirror, a guard constant or the C9 corpus can each break agreement, and a half-populated path table would drop the gate from --changed exactly then.
+    id: 'check:ci-scope-mirrors',
+    run: 'npm run check:ci-scope-mirrors',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_scope_mirrors.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'PR scope rules agree with their CLAUDE.md source',
+    },
+  },
+  {
     id: 'check:ci-e2e-case-blind',
     run: 'npm run check:ci-e2e-case-blind',
     gate: true,

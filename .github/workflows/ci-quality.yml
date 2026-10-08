@@ -1475,6 +1475,9 @@ jobs:
       - name: Lint rule unit specs
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-lint-rule-units
+      - name: PR scope rules agree with their CLAUDE.md source
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_scope_mirrors.py
       - name: Pricing consistency
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-pricing-consistency

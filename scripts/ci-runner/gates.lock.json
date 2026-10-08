@@ -2583,6 +2583,20 @@
     }
   },
   {
+    "id": "check:ci-scope-mirrors",
+    "run": "npm run check:ci-scope-mirrors",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_scope_mirrors.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "PR scope rules agree with their CLAUDE.md source"
+    }
+  },
+  {
     "id": "check:ci-e2e-case-blind",
     "run": "npm run check:ci-e2e-case-blind",
     "gate": true,

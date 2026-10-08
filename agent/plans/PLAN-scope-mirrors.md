@@ -228,6 +228,29 @@ W-gate and the lead's CLAUDE.md anchoring run in parallel; the D1 grammar is the
   Accept: both gates rc 0.
 - [ ] **SM9: live plant proof on the real tree, two passes in one script (TRAPS `mutation-needs-both-directions`, `docs/agent-reference/TRAPS.md:230`).** Pass 1: `npm run the ci-scope-mirrors gate` rc 0 on the clean tree. Pass 2: the T2 plant applied to a copy with `--root` gives rc 1, and the stderr line names the trailers mirror. Tick with both exit codes.
 
+## First run
+
+Measured 2026-10-08 in a scratch clone of 03a5af1a9. Stdout and stderr were read separately on every run.
+
+**Run 0: CLAUDE.md anchored, registry unpinned, mirrors untouched.** rc 1, 72 findings. Every one of the 31 registered mirror spans was C4, because no mirror was anchored yet. Each of the ten clauses was C2 (unpinned). C7 at `.claude/rediacc_hooks/guards/block_settled_questions.py:174` was F4. C9 named every unanchored restatement, plus the side hits listed as F9 and F10 below.
+
+**Run 1: mirrors anchored and fixed, `--repin --all`.** rc 0, all 10 clauses repinned. The gate printed rc 0: `10 clauses (floor 10), 31 mirror checks (floor 31) over 31 spans (2 verbatim, 29 terms, 0 ref), 6 quote fragments from 1 source(s), 2 oracle(s), C9 swept 51 files / 3670 blocks, 0 baselined`.
+
+**Predictions, each replayed.** The pre-fix text was planted into a `--root` copy of the fixed tree, with the anchors kept, and the gate's own finding was read (rc 1 on every replay):
+
+- **F1, confirmed and wider.** `C6 .claude/output-styles/standing-orders.md:15 [pr.merge-condition]` was missing `wl_review.py --check`, Review Complete and `Operational-Reason:`. The same line also missed the fallback's conditions: `[pr.ff-fallback]` was missing `:main`, CI Complete and `Operational-Reason:`.
+- **F2, confirmed.** `C6 .claude/skills/pr-epics/SKILL.md:26 [pr.plan-set]` was missing `Operational-Reason:`.
+- **F3, confirmed.** `C6 .claude/commands/pr-babysit.md:118`: `[pr.one-plan-per-pr]` was missing `turbo: on`, and `[pr.plan-set]` was missing `Operational-Reason:`.
+- **F4, confirmed.** `C7 .claude/rediacc_hooks/guards/block_settled_questions.py:175 [quote]` quoted CLAUDE.md as "put the whole cluster into a single plan and ask to run it", which it does not say. The quote now reads `single plan ... and ask`. The golden was re-recorded: 18 records changed, `err` only, 0 rc changes.
+- **F5, confirmed.** `C8 CLAUDE.md:61 [pr.queue-switches]`: the backticked keys differ from `SETTINGS_KEYS` at `.claude/hooks/stop/wl_planqueue.py:101`, missing `backup_push_h`, `plan_concurrency` and `turbo_push`.
+- **F6, confirmed on both sides.** Canonical: `C8 CLAUDE.md:22 [pr.turbo-batch-end]`, the span lacks the `KINDS` values ci-cd, deadline and red-fix from `.claude/rediacc_hooks/guards/block_turbo_early_push.py:46`. Mirror: `C6 .claude/agents/pr-babysitter.md:101 [pr.turbo-batch-end]` was missing `TURBO_PUSH_REASON`. CLAUDE.md:22 now names the guard, `TURBO_PUSH_REASON` and the four kinds, and keeps the rule that a `backup` push opens no PR. Turbo has been off since the operator's ruling of 2026-10-08; the sentence still describes the setting. DECISION for post-hoc veto: it documents operator-ordered code that already exists, and adds no new rule.
+- **F7, confirmed in the code, and undetectable as predicted (D9).** In `.claude/rediacc_hooks/plan_gate.py`, `plan_merge_refusal` returns "" on `has_operational_reason` before any box is read. The canonical now names the exception, so `Operational-Reason:` is a merge-condition atom: replaying the old canonical gives C3 (atom not in span) plus C2, and a mirror that drops it gives `C6 .claude/agents/pr-babysitter.md:106 [pr.merge-condition]`. DECISION for post-hoc veto, for the same reason as F6.
+- **F8, confirmed by reading; outside the gate.** `.claude/commands/pr-babysit.md:110` hard-coded `/home/muhammed/monorepo/console/.claude/agents/pr-babysitter.md` and now reads `.claude/agents/pr-babysitter.md`. The gate does not check paths, so this was a fix by hand.
+- **F9 (new), gate configuration.** The proposed sentinel "fast-forward fallback" fired C9 on five REFERENCES to the fallback in `/pr-merge`: `.claude/agents/pr-babysitter.md:131,158,227`, `.claude/commands/pr-babysit.md:106` and `.claude/commands/pr-merge.md:262`. None of them restates its conditions. The sentinels were narrowed to phrases that only a restatement carries, each measured over the corpus before it was chosen: "one direct push", "works one plan per PR", "one plan per PR, or", "An epic carries its plan", and the batch-end key in its "(the default)" form, so that the QUEUE.md `## Settings` key docs (lines 20 and 30, outside the one line this plan edits there) are not read as restatements. `pr.merge-condition` has no sentinel: `wl_review.py --check` appears in 12 corpus blocks that are finish-line instructions, not restatements.
+- **F10 (new), a gate parser defect, fixed.** `md_blocks` read a CommonMark indented code block as prose, and C9 called the `worklist.py --epic <me> new --plan` listing at `.claude/skills/pr-epics/SKILL.md:20` a restatement. A block indented four spaces is now code when it opens after a blank line or a heading outside a list. Selftest controls cover both directions, and the indented-code control was seen to FAIL with the fix switched off.
+
+Also fixed on the way, unpredicted: the entry point `.ci/scripts/quality/check_scope_mirrors.py` had no exec bit. package.json invokes it by bare path, and the SM6 gate test refused it (`gate not executable`). Its mode is now 100755.
+
 ## Risks
 
 - **Other sessions editing rule 1 hit C2 at once.** That is the purpose. The red message must list every mirror as path:line plus the repin command, so a reader who has never seen this plan can act on it.
