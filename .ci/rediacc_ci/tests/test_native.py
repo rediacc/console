@@ -140,3 +140,12 @@ def test_help_exits_zero_and_names_the_flag(tmp_path):
     done = _run(["--help"], tmp_path)
     assert done.returncode == 0
     assert "--print-plan" in done.stdout
+
+
+def test_the_sea_child_gets_the_checkout_ci_first_on_pythonpath(monkeypatch, tmp_path):
+    """Review finding 4a6641bf.4: the SEA build child imports rediacc_ci by module path, so `<root>/.ci` leads its PYTHONPATH and a caller's entries follow."""
+    monkeypatch.setenv("PYTHONPATH", "/caller/site")
+    env = native._ci_env(tmp_path)
+    assert env["PYTHONPATH"] == "%s%s/caller/site" % (tmp_path / ".ci", os.pathsep)
+    monkeypatch.delenv("PYTHONPATH")
+    assert native._ci_env(tmp_path)["PYTHONPATH"] == str(tmp_path / ".ci")

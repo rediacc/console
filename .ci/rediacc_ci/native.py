@@ -118,14 +118,27 @@ def plan(
     )
 
 
-def _stream(argv: list[str], cwd: str | os.PathLike[str] | None = None) -> None:
+def _stream(
+    argv: list[str],
+    cwd: str | os.PathLike[str] | None = None,
+    env: dict[str, str] | None = None,
+) -> None:
     """Run a build step with the terminal attached, and raise on failure.
 
     NOT `rediacc_ci.proc.run`, and the reason is not style. `proc.run` captures both streams and bounds the command at 60 seconds; a two-arch Go cross-compile plus an esbuild bundle plus a SEA injection is minutes of output a person watches to know it is alive. Swallowing that and killing it at 60 seconds would both be wrong.
     """
-    completed = subprocess.run(argv, cwd=None if cwd is None else str(cwd), check=False)
+    completed = subprocess.run(argv, cwd=None if cwd is None else str(cwd), env=env, check=False)
     if completed.returncode != 0:
         raise NativeError("%s exited %d" % (argv[0], completed.returncode))
+
+
+def _ci_env(root: pathlib.Path) -> dict[str, str]:
+    """This process's environment with `<root>/.ci` first on PYTHONPATH."""
+    inherited = os.environ.get("PYTHONPATH", "")
+    return {
+        **os.environ,
+        "PYTHONPATH": str(root / ".ci") + (os.pathsep + inherited if inherited else ""),
+    }
 
 
 def prepare_toolchain(root: pathlib.Path) -> None:
@@ -163,7 +176,10 @@ def build_and_install(root: pathlib.Path, built_plan: Plan) -> None:
             built_plan.sea_platform,
             "--arch",
             built_plan.sea_arch,
-        ]
+        ],
+        cwd=root,
+        # The child imports rediacc_ci by module path, so the checkout's .ci goes first on PYTHONPATH (a caller's entries stay behind it) rather than relying on how this process found the package (review finding 4a6641bf.4).
+        env=_ci_env(root),
     )
     if not pathlib.Path(built_plan.built).is_file():
         raise NativeError("Built SEA not found at %s" % built_plan.built)
