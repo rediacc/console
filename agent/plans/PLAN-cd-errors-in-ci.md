@@ -11,16 +11,16 @@ Worklist: #dd4cb2e3
 
 ## Why (2026-10-08)
 
-Housekeeping Phase 2 (`.ci/rediacc_ci/housekeeping/cleanup_versions.py:1460-1500`) keeps the newest 20 tags. That count includes the non-semver `production` tag (`mark_production.py:120`), so only 19 semver tags survive. The R2 tracker prune (`.ci/rediacc_ci/deploy/upload_to_r2.py:131,492-540`) keeps 20 semver versions plus promotion candidates.
+Housekeeping Phase 2 (`.ci/rediacc_ci/housekeeping/cleanup_versions.py:1460-1500`) keeps the newest 20 tags. That count includes the non-semver `production` tag (`.ci/rediacc_ci/release/mark_production.py:120`), so only 19 semver tags survive. The R2 tracker prune (`.ci/rediacc_ci/deploy/upload_to_r2.py:131,492-540`) keeps 20 semver versions plus promotion candidates.
 
-The 10-07 scheduled run 37604651929 deleted tag v1.3.1 while `cli/v1.3.1/.released` stayed. Console CI's `check-release-state` (`ci.yml:989-1027`) runs on pushes to main only, so the drift surfaced first on main, in run 37736104945. That run cancelled itself, and CD did not release edge v2.2.0.
+The 10-07 scheduled run 37604651929 deleted tag v1.3.1 while `cli/v1.3.1/.released` stayed. Console CI's `check-release-state` (`.github/workflows/ci.yml:989-1027`) runs on pushes to main only, so the drift surfaced first on main, in run 37736104945. That run cancelled itself, and CD did not release edge v2.2.0.
 
 ## Failure catalogue (design: opus Plan agent, file:line in its report)
 
 | Class | Evidence | Catchable pre-merge |
 |---|---|---|
 | C1 two pruners whose retention windows disagree, one of them scheduled | today, #a5a1f981 | yes: property test, and a projection against live state |
-| C2 the tag/Release keep rule ignores `in_walk` promotion candidates (check_soak_period.py:88) | not hit yet | yes: the same property test |
+| C2 the tag/Release keep rule ignores `in_walk` promotion candidates (.ci/rediacc_ci/release/check_soak_period.py:88) | not hit yet | yes: the same property test |
 | C3 the retention window starves stable | d99774c83, bfaf3db8c | yes (tests exist) |
 | C4 bump-none still moved the channel pointer | 11e0262cd | yes: logic plus projection |
 | C5 sparse checkout missing a config file | ca2dabca9 | yes: check:ci-checkout-cone (782fda27e) |
@@ -43,7 +43,7 @@ The 10-07 scheduled run 37604651929 deleted tag v1.3.1 while `cli/v1.3.1/.releas
   - A property test over generated states asserts two things:
     - surviving tags equal surviving sentinels at or above the contract floor;
     - every `in_walk` version keeps its tag, Release, sentinel and snapshot.
-  - The oracle is `release_state.assert_bijection` (release_state.py:238).
+  - The oracle is `release_state.assert_bijection` (.ci/rediacc_ci/quality/release_state.py:238).
   - Controls: a planted non-semver tag, and an in_walk version outside the top 20, each go red under the pre-W1 rule.
 - [ ] W3 cd_preflight (opus): `.ci/rediacc_ci/release/cd_preflight.py` and its test. It is read-only and runs four checks:
   - (a) the bijection against live R2 and `git ls-remote --tags`;
@@ -65,7 +65,7 @@ The 10-07 scheduled run 37604651929 deleted tag v1.3.1 while `cli/v1.3.1/.releas
 
 ## What stays post-merge, and how it fails loudly
 
-- **Scheduled jobs:** housekeeping runs the projection first and refuses any deletion that would break the bijection. It refuses, never auto-heals, matching Phase 8d (cleanup_versions.py:2611).
+- **Scheduled jobs:** housekeeping runs the projection first and refuses any deletion that would break the bijection. It refuses, never auto-heals, matching Phase 8d (.ci/rediacc_ci/housekeeping/cleanup_versions.py:2611).
 - **Drift between merge and release:** preflight (a), (c) and (d) run as cd-v2's first step.
 - **Credentials, outages and mid-run merges:** these stay with retry-then-refuse and the all-or-nothing app token.
 

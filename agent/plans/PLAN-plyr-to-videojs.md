@@ -11,7 +11,7 @@ Worklist: #da951a5c
 
 ## Why
 
-plyr 3.8.5 (2026-10-06) marks the Plyr class `@deprecated` ("security updates only, use Video.js 10"), which fails `@typescript-eslint/no-deprecated` at `TutorialVideoPlayer.tsx:226,341`. The tree holds plyr at 3.8.4. The upstream migration guide is https://videojs.org/docs/framework/html/guides/migrate-from-plyr; its React twin is under `/docs/framework/react/`.
+plyr 3.8.5 (2026-10-06) marks the Plyr class `@deprecated` ("security updates only, use Video.js 10"), which fails `@typescript-eslint/no-deprecated` at `packages/www/src/components/TutorialVideoPlayer.tsx:226,341`. The tree holds plyr at 3.8.4. The upstream migration guide is https://videojs.org/docs/framework/html/guides/migrate-from-plyr; its React twin is under `/docs/framework/react/`.
 
 ## 1. Package
 
@@ -34,13 +34,13 @@ plyr 3.8.5 (2026-10-06) marks the Plyr class `@deprecated` ("security updates on
 - **Fullscreen:**
   - The skin's `requestFullscreen` is used.
   - On iOS, `webkitbeginfullscreen` turns the subtitles track to `showing`.
-  - The theater's Escape-yields-to-fullscreen order (video-theater.ts:65) is unchanged.
+  - The theater's Escape-yields-to-fullscreen order (packages/www/src/scripts/video-theater.ts:65) is unchanged.
 - **Hotkeys:** the preset hotkeys, scoped to the player.
 - **Persistence:** a new `tutorial-video/preferences.ts` (key `tvp-prefs`) holds volume, rate and captions. It migrates once from `plyr-tutorial`, and `alignPlyrCaptionLanguage` is deleted (:173-201, :582-589).
 - **Kept as is:** snapshot and restore (:204-262, :418-435).
 - **Removed:** `public/assets/plyr.svg`.
 - **Control labels:** `I18nProvider` with `video.player.*` keys in all 13 locales. Today every label is English in all of them.
-- **Loading:** the placeholder plus `import()` stays, as does `?url` runtime CSS (tutorial-video-styles.ts:32,56). The deferred chunk must stay ≤ 150,000 B (check-client-bundle-budget.ts:78; it is 122,110 B today).
+- **Loading:** the placeholder plus `import()` stays, as does `?url` runtime CSS (packages/www/src/scripts/tutorial-video-styles.ts:32,56). The deferred chunk must stay ≤ 150,000 B (scripts/gates/check-client-bundle-budget.ts:78; it is 122,110 B today).
 
 ## 3. Gates that change
 
@@ -48,9 +48,9 @@ plyr 3.8.5 (2026-10-06) marks the Plyr class `@deprecated` ("security updates on
   - `qualityPaneFaults` (:52-62) is retired.
   - `placementFaults` (:72-90) follows the spike's outcome.
   - Also: `chromeFaults` (:136), the styles list (:226), the mutant (:345-346) and the sanity check (:432).
-- **`check-player-css-scope.ts:49`** MARKERS, together with `test_gate_player_css_scope.py:40-41` in the same commit.
-- **`check-dead-css.ts:66-79,244-245`:** the vendor prefix.
-- **Release gate `test-tutorial-player-release-gate.js`** (:228, 247, 252, 445, 461, 471), plus `scripts/lib/tutorial-player-diagnostics.js:129,164` and `dev-server-process.js:175-177`.
+- **`scripts/gates/check-player-css-scope.ts:49`** MARKERS, together with `.ci/rediacc_ci/tests/gates/test_gate_player_css_scope.py:40-41` in the same commit.
+- **`scripts/gates/check-dead-css.ts:66-79,244-245`:** the vendor prefix.
+- **Release gate `test-tutorial-player-release-gate.js`** (:228, 247, 252, 445, 461, 471), plus `packages/www/scripts/lib/tutorial-player-diagnostics.js:129,164` and `packages/www/scripts/lib/dev-server-process.js:175-177`.
 
 ## 4. Writers
 

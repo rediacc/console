@@ -21,4 +21,4 @@ Body-Sig: 383a821a3a248ec3
 ### 31d2c28c.1 [low] agent/plans/_done/PLAN-account-env-to-bws.md:9
 Anchor: in-diff
 Claim: The moved plan, now marked `Status: done`, still carries the seed header `Priority: P2 -- seed: Status draft, 1 open box(es)`, which contradicts the new status and the zero open boxes in plan-boxes.json.
-Resolution: open
+Resolution: fixed 026b5c06601dec13a5fb5cd68225e5e22dc42bf2 | d778be9d 2026-10-08T07:37:50Z

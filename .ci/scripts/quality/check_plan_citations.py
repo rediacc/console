@@ -193,6 +193,11 @@ UUID_TAIL_RE = re.compile(
     r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-([0-9a-f]{12})", re.IGNORECASE
 )
 
+#: A CLOUDFLARE D1 TIME-TRAVEL BOOKMARK IS NEVER A GIT OBJECT: `wrangler d1 time-travel info` prints `<8hex>-<8hex>-<8hex>-<32hex>`, and a deploy record must quote it verbatim to be restorable. Its 32-hex tail satisfies HEXTOK_RE by shape alone, the UUID tail's class. Measured 2026-10-08: agent/plans/PLAN-config-passkey-optional.md:118 reported `515e0bc0...` as an unresolvable object.
+D1_BOOKMARK_RE = re.compile(
+    r"\b[0-9a-f]{8}-[0-9a-f]{8}-[0-9a-f]{8}-([0-9a-f]{32})\b", re.IGNORECASE
+)
+
 #: A REGISTRY DIGEST IS NEVER A GIT OBJECT, and it is the same false-positive
 #: class as the UUID tail above: a long hex run that satisfies HEXTOK_RE purely
 #: by coincidence of shape, sitting behind an unambiguous marker that says what
@@ -438,6 +443,7 @@ def citations(text):
     take(R.PLAN_REF_RE, "plan")
     take(R.GATE_RE, "gate")
     uuid_tail_spans = [u.span(1) for u in UUID_TAIL_RE.finditer(text or "")]
+    uuid_tail_spans += [d.span(1) for d in D1_BOOKMARK_RE.finditer(text or "")]
     digest_spans = [d.span(1) for d in DIGEST_RE.finditer(text or "")]
     agent_id_spans = [a.span(1) for a in AGENT_ID_RE.finditer(text or "")]
     fingerprint_spans = [f.span(1) for f in FINGERPRINT_RE.finditer(text or "")]
@@ -914,6 +920,22 @@ def selftest(root):
         not any(
             k == "object"
             for k, _t in citations("Stripe secret 8f14e45f-ceea-467e-b7a1-3fda6dabc123 leaked")
+        ),
+    )
+    ck(
+        "the 32-hex tail of a D1 bookmark is NOT treated as an object",
+        not any(
+            k == "object"
+            for k, _t in citations(
+                "bookmark 00000ba5-00000000-000050fe-515e0bc093a659f43819fc1ade215212 recorded"
+            )
+        ),
+    )
+    ck(
+        "CONTROL: the same 32 hex characters bare ARE",
+        any(
+            k == "object"
+            for k, _t in citations("bookmark 515e0bc093a659f43819fc1ade215212 recorded")
         ),
     )
     ck(
