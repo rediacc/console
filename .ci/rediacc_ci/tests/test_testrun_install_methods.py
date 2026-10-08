@@ -680,6 +680,19 @@ def test_delta_trace_lines_never_reach_the_version_fence(
     assert runner.container("APK (Alpine)", ["sh", "-c", silent]) == 1
 
 
+def test_the_dnf_install_bounds_a_stalled_download_and_stays_visible() -> None:
+    """Run 37736104945 (and 37437282770 before it): Rocky Linux 9's `dnf install` of the ~360 MB package printed nothing for the whole 360 s because its output went to /dev/null with no transfer bounds. dnf must abort-and-retry a crawling transfer (timeout+minrate+retries) and its output must reach the transcript."""
+    line = next(ln for ln in install_scripts.DNF.splitlines() if "dnf install" in ln)
+    for opt in ("--setopt=timeout=", "--setopt=minrate=", "--setopt=retries="):
+        assert opt in line, opt
+    assert "/dev/null" not in line
+    twin = (
+        pathlib.Path(__file__).resolve().parents[2] / "scripts" / "test" / "test-install-methods.sh"
+    ).read_text()
+    assert "dnf install -y --setopt=timeout=" in twin
+    assert "dnf install -y --setopt=timeout=30 --setopt=minrate=1048576 --setopt=retries=3 " in line
+
+
 def _job_budget(text: str, job: str) -> int:
     block = re.search(
         rf"^  {re.escape(job)}:\n(.*?)(?=^  [A-Za-z0-9_-]+:\n|\Z)", text, re.MULTILINE | re.DOTALL
