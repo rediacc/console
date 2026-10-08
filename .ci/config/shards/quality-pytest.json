@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-08T20:46:05.340Z",
+  "generatedAt": "2026-10-08T22:15:42.520Z",
   "legs": [
     {
       "index": 1,
@@ -324,6 +324,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_write_once_guard_check.py",
         "pytest:.ci/rediacc_ci/tests/test_dev_measure_page_density.py",
         "pytest:.ci/rediacc_ci/tests/test_dev_www.py",
+        "pytest:.ci/rediacc_ci/tests/test_differential_write_recorded.py",
         "pytest:.ci/rediacc_ci/tests/test_doc_env_manifest_region.py",
         "pytest:.ci/rediacc_ci/tests/test_docker_run_in_image.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_local_plane.py",
