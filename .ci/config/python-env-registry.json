@@ -1,11 +1,6 @@
 {
   "note": "SHRINK-ONLY, AND GENERATED -- do not hand-edit except to re-key a moved module. Every `<module>: [NAME, ...]` here is one environment variable a tracked Python module reads, derived from the AST by .ci/scripts/quality/check_python_env_registry.py. A `*` prefix means the name is not a literal at the call site and the EXPRESSION is recorded instead. The gate asserts SET EQUALITY with the tree in both directions: a read missing from here reds, and so does an entry here that nothing reads -- so this file can neither be trimmed to escape a finding nor pre-loaded with one. Drain it with `--write-baseline`, which refuses any reseed that would ADD a pair even when the total shrinks. A genuinely new read must be typed: `--write-baseline --allow-new <module>:<NAME>`.",
   "modules": {
-    ".ci/rediacc_ci/battery.py": [
-      "CI",
-      "RUN_ALL_GATES_DIR",
-      "RUN_ALL_JOBS"
-    ],
     ".ci/rediacc_ci/build/build_cli.py": [
       "ARG_BUNDLE",
       "ARG_VERIFY"
@@ -753,9 +748,6 @@
     ],
     ".ci/rediacc_ci/quality/audit_coverage.py": [
       "REDIACC_CI_ROOT"
-    ],
-    ".ci/rediacc_ci/quality/battery_clean_tree.py": [
-      "BATTERY_CLEAN_TREE_ROOT"
     ],
     ".ci/rediacc_ci/quality/branch.py": [
       "*k",

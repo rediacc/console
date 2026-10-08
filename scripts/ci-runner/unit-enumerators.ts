@@ -304,44 +304,13 @@ export async function qualityPytestUnits(repoRoot: string): Promise<Unit[]> {
   });
 }
 
-const BATTERY_LIST_RE = /^([WST])\s+(\S+)\s*$/;
-
-/**
- * `quality-gate-tests`. One unit per driver file `.ci/rediacc_ci/battery.py --list` names
- * (its own enumeration of `.ci/scripts/test/gates/*`, verified live 2026-09-26: 5 drivers,
- * no pytest needed -- the battery is not a pytest suite). Its `W`/`S` bucket is the exact
- * isolation contract `scripts/ci-runner/pool.ts`'s own header documents for gate `mutex` and
- * `reads`: a writer mutates shared tree state and a scanner reads it, so neither may
- * overlap with a writer OR with each other's writer -- one mutex group covers every `W` and
- * `S` unit; `T` units carry none.
- */
-export async function qualityGateTestsUnits(repoRoot: string): Promise<Unit[]> {
-  const out = run('python3', ['.ci/rediacc_ci/battery.py', '--list'], repoRoot);
-  const units: Unit[] = [];
-  for (const line of out.split('\n')) {
-    const m = BATTERY_LIST_RE.exec(line);
-    if (m === null) continue;
-    const bucket = m[1] as string;
-    const name = m[2] as string;
-    units.push({
-      id: `battery:${name}`,
-      mutex: bucket === 'T' ? undefined : 'battery-exclusive',
-    });
-  }
-  if (units.length === 0) {
-    throw new Error('VACUOUS: qualityGateTestsUnits: "battery.py --list" named zero drivers.');
-  }
-  return units;
-}
-
-/** The 7 T2.7 test lanes, each to its enumerator. A lane absent here has no enumerator yet. */
+/** The T2.7 test lanes, each to its enumerator. A lane absent here has no enumerator yet. */
 export const LANE_ENUMERATORS: Readonly<Record<string, UnitEnumerator>> = {
   'test-e2e-workers': e2eWorkersUnits,
   'test-account-e2e': accountE2eUnits,
   'test-renet-go': renetGoUnits,
   'test-renet-integration': renetIntegrationUnits,
   'quality-pytest': qualityPytestUnits,
-  'quality-gate-tests': qualityGateTestsUnits,
   'ops-tutorials': opsTutorialUnits,
 };
 

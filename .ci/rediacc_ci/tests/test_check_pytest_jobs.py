@@ -11,7 +11,7 @@ import os
 
 import pytest
 
-from rediacc_ci import battery, check_pytest, core_lease, log
+from rediacc_ci import check_pytest, core_lease, log
 from rediacc_ci.quality import literal_sources
 
 #: Larger than the old cap of 8 on purpose, so a cap restored anywhere in the chain is visible as a smaller number.
@@ -66,15 +66,7 @@ def test_no_static_cap_survives_in_the_module() -> None:
     assert not hasattr(check_pytest, "PYTEST_JOBS_CAP")
 
 
-# --------------------------------------------------------------------------- PF6: the two other gate-side pools read the same grant ---------------------------------------------------------------------------
-
-
-def test_battery_default_width_is_the_grant(wide_host) -> None:
-    """`battery._default_jobs()` was `min(8, os.cpu_count())`; restoring that cap makes 12 come out as 8."""
-    wide_host.setenv(core_lease.ENV, "12")
-    assert battery._default_jobs() == 12
-    wide_host.delenv(core_lease.ENV)
-    assert battery._default_jobs() == WIDE
+# --------------------------------------------------------------------------- PF6: the other gate-side pool reads the same grant (the battery runner's was retired with it) ---------------------------------------------------------------------------
 
 
 def test_literal_sources_pool_width_is_the_grant(wide_host) -> None:

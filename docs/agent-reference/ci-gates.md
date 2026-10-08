@@ -36,9 +36,7 @@ uncommitted work — do not route around it and do not edit their file. Ask the 
 
 The gate set lives in `scripts/ci-runner/manifest.ts`, which is also the input to `npm run check:ci-parity`. Every individual `check:*` npm key still exists and still works on its own; the manifest schedules them.
 
-The CI-side quality-gate battery (`.ci/rediacc_ci/battery.py`, the "Quality-gate unit tests" step) is ALSO parallel since 2026-08-08, with a W/S/T schedule: two tests write fixtures into the real tree, so they run as a serial chain while temp-isolated tests pool, and the real-tree scanners are held back until the writers finish. Triage notes: `RUN_ALL_JOBS=1
-.ci/rediacc_ci/battery.py` reproduces the exact serial behavior through the same code path; a "no result recorded" failure means the scheduler lost a test, which is a runner bug, never a skip; and a failure that appears parallel-only but not under `RUN_ALL_JOBS=1` is a real isolation leak in that test, not battery flakiness -- see the W/S/T header in battery.py before touching
-the schedule.
+Gate tests are pytest modules under `.ci/rediacc_ci/tests/gates/`, collected by `npm run check:ci-pytest` and run in CI by the `quality-pytest` job. The bash gate-test battery (`.ci/rediacc_ci/battery.py` over `.ci/scripts/test/gates/test-*.sh`, the `quality-gate-tests` job) was retired on 2026-10-09 once its last test was ported. A module that shares a resource the scheduler cannot see declares `XDIST_GROUP`, and a lock entry claiming `tree:` under `mutex` or `reads` groups the ported module it names; `.ci/rediacc_ci/xdist_groups.py` derives both.
 
 | Command | What it does |
 |---|---|

@@ -14,8 +14,10 @@
  * path has to start in the first wave.
  *
  * ---------------------------------------------------------------------------
- * THE ISOLATION CONTRACT (W2.4b). Defined here ONCE and implemented identically
- * by the other scheduler in this repo, `.ci/rediacc_ci/battery.py`.
+ * THE ISOLATION CONTRACT (W2.4b). Defined here ONCE. The bash gate-test battery
+ * runner `.ci/rediacc_ci/battery.py` implemented it identically until it was
+ * retired with the last bash gate test (2026-10-09); `.ci/rediacc_ci/xdist_groups.py`
+ * still reads the same `tree:` claims to group pytest modules.
  *
  *   A gate names the shared resources it touches. `mutex: [r]` is an EXCLUSIVE
  *   claim on r; `reads: [r]` is a SHARED claim on the same r. Two gates may
@@ -101,8 +103,6 @@ export interface GateResult {
   rerun: string;
   /** On a skip: which dependency killed it, or that --fail-fast stopped the run. */
   reason?: string;
-  /** On a zero-exit gate the runner failed anyway; see exec.ts vacuityCheck. */
-  vacuity?: string;
   /** CPU of the gate's reaped process tree (exec.ts RUSAGE_WRAPPER); run.ts may raise it from the /proc sampler. */
   cpuMs?: number;
   /** Peak summed RSS of the gate's tree from the /proc sampler capture, when one exists. */
@@ -1266,9 +1266,8 @@ export async function runPool(
     inFlight.delete(id);
     if (lease !== undefined && sched === 'cores') await lease.reconcile(coresInUse());
 
-    // A vacuity finding always means `fail`, even at CANNOT_RUN: a gate that claims it cannot run AND trips the anti-vacuity oracle is not a machine missing a tool, it is a gate lying about what it did.
-    const cannotRun = outcome.code === CANNOT_RUN && outcome.vacuity === undefined;
-    const failed = !cannotRun && (outcome.code !== 0 || outcome.vacuity !== undefined);
+    const cannotRun = outcome.code === CANNOT_RUN;
+    const failed = !cannotRun && outcome.code !== 0;
     record({
       id,
       gate: spec.gate,
@@ -1278,7 +1277,6 @@ export async function runPool(
       stdout: outcome.stdout,
       stderr: outcome.stderr,
       rerun: spec.run,
-      vacuity: outcome.vacuity,
       cpuMs: outcome.cpuMs,
       readyAt: readyAt.get(id),
       startAt: startAt.get(id),

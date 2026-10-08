@@ -104,8 +104,8 @@ Test scripts locally before CI:
 # Check if common utilities work
 PYTHONPATH=.ci python3 -c "from rediacc_ci.core import common; print(common.detect_os())"  # linux, macos, or windows
 
-# Run the shell-gate suite the way CI does
-npm run test:quality-gates
+# Run the gate-test suite (pytest) the way CI does
+npm run check:ci-pytest
 ```
 
 ## Adding New Scripts

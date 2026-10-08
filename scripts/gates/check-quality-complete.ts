@@ -475,9 +475,6 @@ export const DECLARED_HAND_WRITTEN_LANES: Readonly<Record<string, string>> = {
   'quality-pytest':
     'split out of quality-security (PLAN-ci-time-budget T2.15) to run the one hand-written ' +
     'Python package test step, which no gate-bind region emits; T2.8 unit sharding replaces it',
-  'quality-gate-tests':
-    'split out of quality-security (PLAN-ci-time-budget T2.15) to run the one hand-written ' +
-    '"Quality-gate unit tests" battery step, which no gate-bind region emits by its own header',
   [AGGREGATOR_JOB]:
     'runs the receipts half of this same gate, downstream of every sharded lane; a ' +
     'region there would conjunct the judge onto one leg of the matrix it is judging, ' +

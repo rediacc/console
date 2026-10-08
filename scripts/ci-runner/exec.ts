@@ -26,11 +26,6 @@ export interface ExecOutcome {
    * User+system CPU of every descendant the gate's shell reaped (bash `times`, second line: RUSAGE_CHILDREN). Absent on Windows-native, where the wrapper is not used, and when the wrapper itself died before reporting (a signal to the outer shell). A descendant that was reparented away (a daemon) is NOT counted; run.ts cross-checks against the /proc sampler for that.
    */
   cpuMs?: number;
-  /**
-   * Set when the process exited 0 but the runner still counts it a failure.
-   * Carries the diagnostic to print in place of an exit code.
-   */
-  vacuity?: string;
   /** Set when the runner killed the gate at its limit (gate-timeout.ts): the limit in ms. `code` is null and stderr carries a TIMED OUT line. */
   timedOutMs?: number;
 }
@@ -162,28 +157,6 @@ export function killLiveGates(signal: NodeJS.Signals): number {
   let n = 0;
   for (const g of LIVE.values()) if (signalGroup(g.pgid, signal)) n += 1;
   return n;
-}
-
-/**
- * A PASS: line, optionally wrapped in the green escape that log_pass() emits.
- * Mirrors PASS_RE in .ci/rediacc_ci/battery.py, including the real ESC
- * byte: an earlier version of that pattern spelled the byte '\x1b', which
- * POSIX ERE reads as the literal text "x1b", so the summary matched nothing at
- * all and every colour-emitting gate test contributed zero visible evidence.
- * Built through fromCharCode so the source carries no raw control character.
- */
-const PASS_LINE = new RegExp(`^(?:${String.fromCharCode(27)}\\[0;32m)?PASS:`, 'm');
-
-/**
- * The battery counts a gate test that exits 0 without emitting a single
- * PASS: line as a FAILURE, because it asserted nothing. Flattening the battery
- * into the pool would silently drop that rule and leave those 57 tests weaker
- * locally than they are in CI, so the runner carries it instead.
- */
-function vacuityCheck(spec: GateSpec, code: number | null, output: string): string | undefined {
-  if (spec.qualityGateTest !== true || code !== 0) return undefined;
-  if (PASS_LINE.test(output)) return undefined;
-  return 'exited 0 without a single PASS: line (asserted nothing)';
 }
 
 /**
@@ -339,7 +312,6 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
         stderr,
         ms: Date.now() - started,
         cpuMs: wrapped ? parseTimes(rusage.join('')) : undefined,
-        vacuity: vacuityCheck(spec, code, stdout + stderr),
       });
     };
 

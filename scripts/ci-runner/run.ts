@@ -12,10 +12,11 @@ import { createHash } from 'node:crypto';
  *     chains 19 leaf gates that way. CI fixed the same defect at lane level by
  *     putting `!cancelled()` on every quality step; the runner defaults to
  *     keep-going for the same reason, and --fail-fast is the opt-in.
- *   - check:ci-quality-gates was 443 s of that total, 43%, as one opaque unit
- *     wrapping the battery. Scheduling it whole caps the speedup at 2.4x no
- *     matter how many cores exist, which is why its 57 tests are individually
- *     scheduled manifest entries.
+ *   - the bash gate-test battery's aggregate was 443 s of that total, 43%, as
+ *     one opaque unit. Scheduling it whole capped the speedup at 2.4x no matter
+ *     how many cores existed, which is why its tests became individually
+ *     scheduled entries (and later pytest modules; the battery was retired
+ *     2026-10-09).
  *
  * Usage:
  *   tsx scripts/ci-runner/run.ts [--jobs N] [--heavy-limit N] [--sched slots|cores] [--fail-fast]

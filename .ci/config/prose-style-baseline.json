@@ -15,16 +15,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2830,
- "files": 695,
+ "count": 2826,
+ "files": 692,
  "by_rule": {
-  "R1": 1545,
+  "R1": 1544,
   "R11": 149,
   "R14": 1,
   "R18": 13,
   "R19": 62,
-  "R2": 608,
-  "R7": 452
+  "R2": 607,
+  "R7": 450
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -107,11 +107,6 @@
    ],
    "R11": [
     "f883d5130a7c73a9"
-   ]
-  },
-  ".ci/rediacc_ci/battery.py": {
-   "R1": [
-    "1a898dfadde23b12"
    ]
   },
   ".ci/rediacc_ci/check_pytest.py": {
@@ -602,11 +597,6 @@
     "60602da684a982ca"
    ]
   },
-  ".ci/rediacc_ci/tests/gates/test_gate_run_all_parallel.py": {
-   "R7": [
-    "3242aef84384834c"
-   ]
-  },
   ".ci/rediacc_ci/tests/gates/test_gate_scope_engine.py": {
    "R7": [
     "20145c481d16bd9d",
@@ -689,9 +679,6 @@
   ".ci/rediacc_ci/tests/test_canonical_sys_path_hop.py": {
    "R1": [
     "4be39c117b778ea1"
-   ],
-   "R7": [
-    "85e8fcbfb5eccd98"
    ]
   },
   ".ci/rediacc_ci/tests/test_core_age.py": {
@@ -1926,11 +1913,6 @@
    ],
    "R7": [
     "678c68bae879115e"
-   ]
-  },
-  ".claude/rediacc_hooks/guards/block_worktree_add.py": {
-   "R2": [
-    "f1d9886778085c51"
    ]
   },
   ".claude/rediacc_hooks/guards/test-block_destructive_git_restore.py": {

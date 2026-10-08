@@ -2983,24 +2983,6 @@
     }
   },
   {
-    "id": "check:ci-battery-clean-tree",
-    "run": "npm run check:ci-battery-clean-tree",
-    "cores": {
-      "min": 1,
-      "max": "all"
-    },
-    "gate": true,
-    "leaves": [
-      ".ci/scripts/quality/check_battery_clean_tree.py"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-static",
-      "step": "Battery clean-tree guard"
-    }
-  },
-  {
     "id": "check:ci-workflow-env-provision",
     "run": "npm run check:ci-workflow-env-provision",
     "gate": true,
@@ -5345,24 +5327,6 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-go",
       "step": "Shard manifest coverage"
-    }
-  },
-  {
-    "id": "check:ci-quality-gates",
-    "run": "npm run check:ci-quality-gates",
-    "cores": {
-      "min": 1,
-      "max": "all"
-    },
-    "gate": false,
-    "leaves": [
-      ".ci/rediacc_ci/battery.py"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-gate-tests",
-      "step": "Quality-gate unit tests"
     }
   },
   {
