@@ -111,6 +111,11 @@ read across both revisions, naming them or how many in the same paragraph
 nothing and is not proof.
 """
 
+BLOCK_UNREAD_HEAD = """BLOCKED: `gh pr create --head` names a branch that %s has no local or origin/ ref for, so the commits this PR carries cannot be checked for proof.
+
+Fetch or push that branch in this checkout (`git fetch origin <branch>`), then retry.
+"""
+
 BLOCK_RANGE = """BLOCKED: %s carries %d commit(s) this proof obligation has not seen cleared,
 including %s (%d files, no proof quoted in its own message).
 
@@ -133,7 +138,8 @@ def _proof_shown(text):
 
 
 # A per-commit review record (`agent/reviews/<branch>/<sha>.md` and the branch's ledger) is written by wl_review.py, one file per reviewed commit, and `worklist.py --review-commit` commits them together. Their number tracks how many commits were reviewed, not how far a script reached, so they never count toward scale: 033a35227 (32 records) refused a PR on 2026-10-09 with no transform in it.
-REVIEW_RECORD = re.compile(r"^agent/reviews/[^/]+/[^/]+$")
+# The branch segment may itself hold slashes (`feat/x`); review 833dc9af.3.
+REVIEW_RECORD = re.compile(r"^agent/reviews/.+/[^/]+$")
 
 
 def _counted(files):
@@ -686,26 +692,40 @@ def _pr_base(cmd, cwd):
     return "origin/%s" % ref if remote is not None else ref
 
 
-SUBMODULE_REPO = re.compile(r"rediacc/(renet|account|elite|homebrew-tap)")
+def _submodule_trees(root):
+    """{lowercase OWNER/REPO: checkout path} for every submodule `.gitmodules` names that has a checkout here."""
+    out = hookio.git_out(
+        ["config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.(path|url)$"], cwd=root
+    )
+    paths: dict[str, str] = {}
+    urls: dict[str, str] = {}
+    for line in (out or "").splitlines():
+        key, _, value = line.partition(" ")
+        name, _, field = key[len("submodule.") :].rpartition(".")
+        (paths if field == "path" else urls)[name] = value.strip()
+    trees = {}
+    for name, rel in paths.items():
+        tree = pathlib.Path(root) / rel
+        if name in urls and (tree / ".git").exists():
+            trees[shellscan.gh_repo_name(urls[name])] = str(tree)
+    return trees
 
 
 def _pr_tree(repo, root, cwd):
     """The local checkout holding the commits a PR on `repo` carries, or None when this tree has none.
 
-    The range used to be read from `cwd` whatever `--repo` named, so a renet or account PR was judged on the console's own 276 commits (2026-10-09, `gh pr create --repo rediacc/account --head 1008-1`). A repo the walk cannot evaluate is judged on `cwd`, the strictest reading.
+    The range used to be read from `cwd` whatever `--repo` named, so a renet or account PR was judged on the console's own 276 commits (2026-10-09, `gh pr create --repo rediacc/account --head 1008-1`). A submodule is found by the url `.gitmodules` gives it, so every checked-out submodule is judged in its own tree (review 833dc9af.1: a fixed name list skipped any other). A repo the walk cannot evaluate is judged on `cwd`, the strictest reading. A repo with neither a submodule checkout nor cwd's origin has no commits here to walk.
     """
     if repo == shellscan.UNRESOLVED_REPO or repo == shellscan._origin_repo(cwd).lower():
         return cwd
-    m = SUBMODULE_REPO.fullmatch(repo or "")
-    if m:
-        tree = pathlib.Path(root) / "private" / m.group(1)
-        if (tree / ".git").exists():
-            return str(tree)
-    return None
+    return _submodule_trees(root).get(repo)
 
 
 def _pr_head(run, tree):
-    """The ref the PR's commits end at: `--head` (an `owner:branch` form read as its branch) when this checkout knows it, else HEAD."""
+    """The ref the PR's commits end at: `--head` (an `owner:branch` form read as its branch), HEAD when no `--head` is given, or None when `--head` names a ref this checkout cannot read.
+
+    None is refused by the caller. Falling back to HEAD judged whatever branch the checkout had out, a range that can be clean while the PR's own is not (review 833dc9af.2).
+    """
     argv = run.xargv if getattr(run, "xargv", None) is not None else run.argv
     head = shellscan.gh_args(argv).last("head")
     if not head:
@@ -714,7 +734,7 @@ def _pr_head(run, tree):
     for ref in (head, "origin/%s" % head):
         if hookio.git_out(["rev-parse", "--verify", "-q", ref], cwd=tree, want_rc=True) is not None:
             return ref
-    return "HEAD"
+    return None
 
 
 def _pr_targets(cmd, ev, root, cwd):
@@ -835,6 +855,9 @@ def run(ev):
 
     if shellscan.gh_pr_at_command_pos(scan, "create"):
         for tree, head in _pr_targets(cmd, ev, root, cwd):
+            if head is None:
+                ev.warn(BLOCK_UNREAD_HEAD % tree)
+                return hookio.DENY
             base = _pr_base(cmd, tree)
             shas = _range_commits(base, head, tree)
             if shas:
