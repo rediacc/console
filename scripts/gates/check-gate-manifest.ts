@@ -686,9 +686,14 @@ function main(): number {
     );
   }
 
+  // Only ids the manifest declares: the local cache keeps timings for gates since retired (gate-test:renet-pipefail-grep-q, 2026-10-09).
+  const declared = new Set(GATES.map((g) => g.id));
   const unjudged = Object.entries(samples).filter(
     ([id, n]) =>
-      n < MIN_SAMPLES_TO_TIER && typeof dur[id] === 'number' && typeof ciDur[id] !== 'number'
+      declared.has(id) &&
+      n < MIN_SAMPLES_TO_TIER &&
+      typeof dur[id] === 'number' &&
+      typeof ciDur[id] !== 'number'
   );
   if (unjudged.length > 0) {
     process.stdout.write(
