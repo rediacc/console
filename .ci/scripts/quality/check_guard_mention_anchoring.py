@@ -1111,7 +1111,8 @@ def fragment_controls(td: Path) -> None:
         "vanished": ((guard.name, "GONE"), "no matcher-shaped constant"),
         "anchored": ((guard.name, "PAT"), "anchored at command position"),
         "worded": (("short_mixed.py", "OTHER"), "renders a worded instance"),
-        "no guard": (("no_such_guard.py", "OTHER"), "no longer exists"),
+        # A name no other control uses: this file is live, and the trap registry reads a guard named in a live file as live, so reusing test_gate_trap_registry's dead-control name made that control read live.
+        "no guard": (("retired_guard_fixture.py", "OTHER"), "no longer exists"),
         "short reason": ((guard.name, "OTHER"), "too short"),
         "no prefix": ((guard.name, "OTHER"), "must start with 'BLOCKER:'"),
     }
