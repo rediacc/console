@@ -157,7 +157,10 @@ def run() -> int:
             os.environ["PATH"] = f"{nfpm_dir}:{os.environ.get('PATH', '')}"
 
     p.need_file(subject, "the subject script is missing from this checkout")
-    p.need_cmd("nfpm", "python3 -m rediacc_ci.build.ensure_nfpm (needs network on first run)")
+    p.need_cmd(
+        "nfpm",
+        "PYTHONPATH=.ci python3 -m rediacc_ci.build.ensure_nfpm (needs network on first run)",
+    )
     p.need_cmd("dpkg-deb", "sudo apt-get install -y dpkg-dev")
     p.need_cmd("rpmbuild", "sudo apt-get install -y rpm")
     p.need_cmd("createrepo_c", "sudo apt-get install -y createrepo-c")

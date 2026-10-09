@@ -245,7 +245,7 @@ def main(argv: list[str] | None = None) -> int:
     log.error("through a pipeline. Under `set -eo pipefail` the script will")
     log.error("abort silently. Either:")
     log.error("  - Add `|| true` / `|| echo 0` to the pipeline.")
-    log.error("  - Use `python3 -m rediacc_ci.core.common r2-count-objects`.")
+    log.error("  - Use `PYTHONPATH=.ci python3 -m rediacc_ci.core.common r2-count-objects`.")
     log.error("  - Add `# silent-failure-ok: <reason>` on the line above if")
     log.error("    aborting is actually the intended behaviour.")
     return 1

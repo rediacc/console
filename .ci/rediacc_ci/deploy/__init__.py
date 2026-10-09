@@ -5,8 +5,8 @@ WHY THIS SUBPACKAGE EXISTS. `deploy/` held 27 bash scripts and zero Python befor
 asserting `equivalence holds` at K=5 against the bash twin, exactly as
 `.ci/rediacc_ci/quality/*` did for the 78 quality-gate ports, using the same `scripts/lib/shadow-gate.ts` comparator, an `--old`/`--new` pair rather than a registered `--pair` id.
 
-WORKFLOW CUTOVER IS A LATER BOX. `.github/workflows/**` still invokes the bash twin (`run: .ci/scripts/deploy/<name>.sh`) for every path in this package. Flipping a call site to `python3 -m rediacc_ci.deploy.<name>` is W7P4-W, gated on the ledger this box produces; it is not done here, and no manifest.ts entry follows from a module living here (these are `run:` targets, never
-gates).
+WORKFLOW CUTOVER IS DONE. `.github/workflows/**` runs each path in this package as `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.<name>`; the bash twins under `.ci/scripts/deploy/` are deleted (W7P4-W, then PLAN-retire-bash-oracles). No manifest.ts entry follows from a module living here: these are `run:` targets, never
+gates.
 
 TWO MODULES HERE ARE NOT PORTS OF A `.ci/scripts/deploy/*.sh`. `write_once_guard` is the sentinel-aware write guard that used to be a bash function inside `upload-to-r2.sh`; it was ported behind goldens frozen from the bash (operator ruling D5, 2026-10-08) and `upload_to_r2` calls it. `write_once_guard_check` is the registered gate `test:write-once-guard` (formerly `.ci/scripts/test/test-write-once-guard.sh`), whose subject is that guard; it is filed here by what it tests, because a `tests/` home would put a non-pytest program under a pytest root. Its gate registration is in `scripts/ci-runner/manifest.ts` and `.github/workflows/ci-quality.yml`.
 
