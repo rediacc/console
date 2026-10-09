@@ -86,4 +86,5 @@ def test_control_a_clean_report_prints_no_key(gate, tmp_path):
         gate.log_fail("private/renet is not checked out, so the subject is missing")
     result = run_security(tmp_path, [])
     gate.assert_eq(keys(result), [], "CONTROL: no finding, no key")
+    gate.assert_eq(result.rc, 0, "CONTROL: a clean report passes:\n" + result.combined[-800:])
     gate.log_pass("CONTROL: a clean report prints no key")
