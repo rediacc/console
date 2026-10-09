@@ -33,7 +33,6 @@
       "gate": "check:ci-pytest",
       "findings": [
         "pytest-skip:.ci.rediacc_ci.tests.test_core_account::test_stop_real_run_kills_a_real_tracked_pid_and_a_real_port_occupant",
-        "pytest-skip:.ci.rediacc_ci.tests.test_core_account::test_stop_real_run_matches_the_twin_on_the_same_kind_of_real_target",
         "pytest-skip:.ci.rediacc_ci.tests.test_quality_python_lint::test_port_matches_the_twins_recorded_output#a#shebang#with#git#mode#100644#is#EXE001#",
         "pytest-skip:.ci.rediacc_ci.tests.test_quality_python_lint::test_port_matches_the_twins_recorded_output#no#shebang#with#git#mode#100755#is#EXE002#"
       ],

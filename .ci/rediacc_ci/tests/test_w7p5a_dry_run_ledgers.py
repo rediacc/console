@@ -19,8 +19,6 @@ from __future__ import annotations
 import json
 import pathlib
 
-import pytest
-
 from rediacc_ci import paths
 
 ROOT = paths.repo_root()
@@ -68,96 +66,6 @@ def test_the_dry_run_evidence_set_is_retired() -> None:
     assert not EXPECTED_DRY_RUN_PATHS
 
 
-@pytest.mark.parametrize("path", _ids())
-def test_named_ledger_exists_and_holds_k_equivalent_rows(path: str) -> None:
-    row = _row_for(path)
-    rel = row["dry_run_ledger"]
-    ledger = pathlib.Path(ROOT) / rel
-    assert ledger.is_file(), "%s names %s, which does not exist" % (path, rel)
-
-    rows = _ledger_rows(rel)
-    assert len(rows) >= K, "%s holds %d row(s); K=%d is required" % (rel, len(rows), K)
-
-    verdicts = sorted({r["verdict"] for r in rows})
-    assert verdicts == ["EQUIVALENT"], (
-        "%s carries non-EQUIVALENT verdict(s) %s. A ledger is evidence only while "
-        "every row agrees; a disagreeing tree is never cleared by a later one." % (rel, verdicts)
-    )
-
-    # `tree.clean` is the whole point of rule 4: a row from a dirty tree is not reproducible and is not evidence.
-    dirty = [r["tree"]["id"][:12] for r in rows if not r["tree"].get("clean")]
-    assert not dirty, "%s carries row(s) recorded on a DIRTY tree: %s" % (rel, dirty)
-
-    trees = {r["tree"]["id"] for r in rows}
-    assert len(trees) >= K, "%s spans %d distinct tree(s); K=%d is required" % (
-        rel,
-        len(trees),
-        K,
-    )
-
-    # Distinct finding sets, so five repetitions of one scenario cannot pass for five observations.
-    prints = {r["old"]["fingerprint"] for r in rows}
-    assert len(prints) >= K, (
-        "%s spans only %d distinct finding set(s) over %d rows: the same scenario "
-        "recorded on five trees is one observation, not five." % (rel, len(prints), len(rows))
-    )
-
-
-@pytest.mark.parametrize("path", _ids())
-def test_every_row_names_the_pair_it_is_filed_under(path: str) -> None:
-    row = _row_for(path)
-    rel = row["dry_run_ledger"]
-    pair = row["dry_run_pair"]
-    stem = pathlib.PurePath(path).stem.replace("-", "_")
-    # THE FAMILY IS READ OFF THE PATH, NOT ASSUMED. This was `deploy` verbatim while every ledgered pair happened to be a deploy script; the first release/ pair would have been asserted against a port path that does not exist, and the red would have named a missing module rather than the wrong constant.
-    family = pathlib.PurePath(path).parent.name
-    port = ".ci/rediacc_ci/%s/%s.py" % (family, stem)
-
-    for n, r in enumerate(_ledger_rows(rel), 1):
-        assert r["pair"] == pair, "%s row %d is filed under pair %r, not %r" % (
-            rel,
-            n,
-            r["pair"],
-            pair,
-        )
-        assert path in r["old"]["cmd"], (
-            "%s row %d does not invoke %s on the old side; the row attests to a "
-            "different script than the one it is filed under" % (rel, n, path)
-        )
-        assert port in r["new"]["cmd"], "%s row %d does not invoke %s on the new side" % (
-            rel,
-            n,
-            port,
-        )
-        assert "PYTHONDONTWRITEBYTECODE=1" in r["new"]["cmd"], (
-            "%s row %d ran the port without PYTHONDONTWRITEBYTECODE=1, which drops "
-            "__pycache__ into the recorded tree and makes the NEXT row's clean-tree "
-            "check a coin toss" % (rel, n)
-        )
-
-
-@pytest.mark.parametrize("path", _ids())
-def test_the_external_call_log_was_part_of_the_comparison(path: str) -> None:
-    """A run that agreed on stdout while calling Cloudflare differently is the failure this prefix exists to catch, so at least one row must actually carry a `[call]` finding. Rows with none are scenarios that refused before reaching a tool, which is legitimate -- a ledger with none is not."""
-    row = _row_for(path)
-    rel = row["dry_run_ledger"]
-    rows = _ledger_rows(rel)
-
-    with_calls = [r for r in rows if any("[call] " in a for a in r["agreed"])]
-    assert with_calls, (
-        "no row in %s agreed on a single `[call]` line. Either every scenario refused "
-        "before invoking a tool, or the call log was never folded into the finding "
-        "set -- in both cases the external requests are uncompared." % rel
-    )
-
-    for n, r in enumerate(rows, 1):
-        assert r["agreed"], "%s row %d agreed on nothing; that is VACUOUS_BOTH_EMPTY" % (rel, n)
-        assert any(a.startswith("[error] [exit] ") for a in r["agreed"]), (
-            "%s row %d carries no `[exit]` line, so the two sides' status codes were "
-            "never re-emitted into the compared set" % (rel, n)
-        )
-
-
 def test_no_ledgered_path_quietly_loses_its_field() -> None:
     """THE PARAMETERISATION CANNOT POLICE ITSELF. Dropping `dry_run_ledger` from a row removes that path from every `_ids()` sweep above, and the module stays green while one script's evidence is no longer checked at all. Recording a pair is an addition here, which is a one-line edit; losing one is a red."""
     missing = sorted(set(EXPECTED_DRY_RUN_PATHS) - set(_ids()))
@@ -167,20 +75,3 @@ def test_no_ledgered_path_quietly_loses_its_field() -> None:
         "the same change rather than leaving this module asserting nothing about it."
         % (missing, STATUS.name)
     )
-
-
-@pytest.mark.parametrize("path", sorted(EXPECTED_DRY_RUN_PATHS))
-def test_the_ledger_carries_the_tool_the_blocker_names(path: str) -> None:
-    """A ledger proves something about the RIGHT script only if the traffic it agreed on is that script's. Each path's real-run branch reaches an external system, so the recorded call log must carry that tool's argv; a fixture wired to the wrong probes, or a row copied in from a neighbouring pair, agrees on somebody else's."""
-    rel = _row_for(path)["dry_run_ledger"]
-    logged = {
-        agreed.split("[call] ", 1)[1].split()[0]
-        for row in _ledger_rows(rel)
-        for agreed in row["agreed"]
-        if "[call] " in agreed and agreed.split("[call] ", 1)[1].split()
-    }
-    for tool in EXPECTED_DRY_RUN_PATHS[path]:
-        assert tool in logged, (
-            "%s agreed on no `[call] %s ...` line, yet %s's real-run branch reaches "
-            "that tool. The recorded calls were %s." % (rel, tool, path, sorted(logged) or "none")
-        )
