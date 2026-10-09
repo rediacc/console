@@ -132,12 +132,21 @@ def _proof_shown(text):
     )
 
 
+# A per-commit review record (`agent/reviews/<branch>/<sha>.md` and the branch's ledger) is written by wl_review.py, one file per reviewed commit, and `worklist.py --review-commit` commits them together. Their number tracks how many commits were reviewed, not how far a script reached, so they never count toward scale: 033a35227 (32 records) refused a PR on 2026-10-09 with no transform in it.
+REVIEW_RECORD = re.compile(r"^agent/reviews/[^/]+/[^/]+$")
+
+
+def _counted(files):
+    """The files that count toward scale: every path but a review record."""
+    return [f for f in files if not REVIEW_RECORD.match(f)]
+
+
 def _bulk_unproven(files, message):
     """THE ONE RULE, which the commit arm and the range arm both apply to one commit: bulk scale with no proof in its own message.
 
     The range arm additionally clears a commit by a follow-up proof or the baseline; neither exists yet at commit time, so they cannot make the commit arm stricter than the push arm, only the push arm more lenient.
     """
-    return len(files) >= BULK_FILE_THRESHOLD and not _proof_shown(message)
+    return len(_counted(files)) >= BULK_FILE_THRESHOLD and not _proof_shown(message)
 
 
 def _name_only(args, cwd, want_rc=False):
@@ -636,7 +645,7 @@ def _first_unproven(shas, cwd):
             continue
         if _proven_by_a_later_commit(sha, messages[:i]):
             continue
-        return sha, len(files)
+        return sha, len(_counted(files))
     return None
 
 
@@ -675,6 +684,51 @@ def _pr_base(cmd, cwd):
         return ref
     remote = hookio.git_out(["rev-parse", "--verify", "origin/%s" % ref], cwd=cwd, want_rc=True)
     return "origin/%s" % ref if remote is not None else ref
+
+
+SUBMODULE_REPO = re.compile(r"rediacc/(renet|account|elite|homebrew-tap)")
+
+
+def _pr_tree(repo, root, cwd):
+    """The local checkout holding the commits a PR on `repo` carries, or None when this tree has none.
+
+    The range used to be read from `cwd` whatever `--repo` named, so a renet or account PR was judged on the console's own 276 commits (2026-10-09, `gh pr create --repo rediacc/account --head 1008-1`). A repo the walk cannot evaluate is judged on `cwd`, the strictest reading.
+    """
+    if repo == shellscan.UNRESOLVED_REPO or repo == shellscan._origin_repo(cwd).lower():
+        return cwd
+    m = SUBMODULE_REPO.fullmatch(repo or "")
+    if m:
+        tree = pathlib.Path(root) / "private" / m.group(1)
+        if (tree / ".git").exists():
+            return str(tree)
+    return None
+
+
+def _pr_head(run, tree):
+    """The ref the PR's commits end at: `--head` (an `owner:branch` form read as its branch) when this checkout knows it, else HEAD."""
+    argv = run.xargv if getattr(run, "xargv", None) is not None else run.argv
+    head = shellscan.gh_args(argv).last("head")
+    if not head:
+        return "HEAD"
+    head = head.split(":", 1)[-1]
+    for ref in (head, "origin/%s" % head):
+        if hookio.git_out(["rev-parse", "--verify", "-q", ref], cwd=tree, want_rc=True) is not None:
+            return ref
+    return "HEAD"
+
+
+def _pr_targets(cmd, ev, root, cwd):
+    """(tree, head) for each `gh pr create` in `cmd`; the session tree at HEAD when the walk finds no create call."""
+    runs = shellscan.gh_pr_runs(cmd, "create")
+    if not runs:
+        return [(cwd, "HEAD")]
+    out = []
+    for run_ in runs:
+        repo = shellscan.gh_run_repo(run_, cwd, ev.env("GH_REPO"))
+        tree = _pr_tree(repo, root, cwd)
+        if tree is not None:
+            out.append((tree, _pr_head(run_, tree)))
+    return out
 
 
 def run(ev):
@@ -780,15 +834,16 @@ def run(ev):
         return hookio.ALLOW
 
     if shellscan.gh_pr_at_command_pos(scan, "create"):
-        base = _pr_base(cmd, cwd)
-        shas = _range_commits(base, "HEAD", cwd)
-        if shas:
-            hit = _first_unproven(shas, cwd)
-            if hit:
-                sha, count = hit
-                _warn_range_split(ev, cmd, "gh pr create")
-                ev.warn(BLOCK_RANGE % (base, len(shas), sha[:10], count))
-                return hookio.DENY
+        for tree, head in _pr_targets(cmd, ev, root, cwd):
+            base = _pr_base(cmd, tree)
+            shas = _range_commits(base, head, tree)
+            if shas:
+                hit = _first_unproven(shas, tree)
+                if hit:
+                    sha, count = hit
+                    _warn_range_split(ev, cmd, "gh pr create")
+                    ev.warn(BLOCK_RANGE % (base, len(shas), sha[:10], count))
+                    return hookio.DENY
         return hookio.ALLOW
 
     return hookio.ALLOW
