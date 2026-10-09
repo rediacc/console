@@ -1,21 +1,17 @@
-## SESSION d778be9d 2026-10-08T22:47:18Z
+## SESSION d778be9d 2026-10-09T00:03:46Z
 
-# STATE d778be9d (2026-10-09 ~00:00Z), branch 1008-1, no PR yet, nothing pushed this stretch
+# STATE d778be9d (written 2026-10-09 ~00:45Z), branch 1008-1, no PR yet, nothing pushed
 
-## Landed this stretch (all local, review records committed, wl_review --check clean)
-- Reds unit aae50fd5d (14/17 ci:quick reds, gate-id-convention retired, CAPTURE_DIR -> RUNNER_TEMP): #96d14b9d #b4e94451 ticked.
-- Review-findings units 9928d5bcf, 75ce6f005, a272cea5d (renet pointer, renet 6599204 + e288b6e), 239e74cb5, 8c028ed39, a22410efd, 2e010c28f: #3adcbb61 #2a70dc78 ticked; every per-commit finding settled.
-- Scope-mirrors 169ccbe2b + ticks 992fe1ffc + fixes 4ae6c9579, 9a89fe816: #e70faed1 ticked, PLAN-scope-mirrors closed.
-- Shard placement 0ffc39f04; stop-hook stdin test root 3f5d7f5d6/7c115edab/91da9c6dd (#02335d81 ticked).
-- rbclone a6d794f1a (test-helpers.sh + language-policy-baseline.json deleted, strict language policy), ticks 0d29362ce (B2 B3 G1 G2 G3 + tooling W1P6), follow-ups fb7c44b9c a5069c362 87619fe3c.
+## Landed since the last state (all local; per-commit reviews clean, every finding settled)
+- Battery retirement 5fd150446 (#17b29ee6 ticked); worktree guard bypass 276a69db9 + ae63f0462 + 361421eaa (cd_preflight/release_state rows, reverse coverage check).
+- Citations b67108713 (#a71ee2c6 ticked); A5 22c21c938 -> PLAN-retire-bash-oracles has 0 open boxes (#5c3709a5 ticked).
+- L10/L11 moved to PLAN-lessons-registry-followups 639131c9c; stale-advice sweeps 2d7364e0c, 2db5637b9, e24777a1d; hook-suite fixes 99486bd56 (full hook suite 10991 passed).
 
-## In flight (leased)
-- #17b29ee6 battery retirement: opus gate-author ab4bd660fa9ac4892, live tree (.ci, scripts, workflows, package.json, ci-gates.md).
-- #a71ee2c6 plan citations: sonnet a9382204753801c89, three agent/plans files only.
-- #9dd53bab worktree guard bypass + dead NEEDS_SCRIPT rows: opus ae6156c3460cabb2b, .claude/rediacc_hooks only. The 85 STALE-PROSE rows (scratchpad/sweep-classified.md) follow after these land; pipefail_grep_q .ci/lib prefix is dead (finding, same sweep).
-- #5c3709a5 A5: scratchpad/a5.sh on a clone of HEAD 87619fe3c, bg b2uh3b4mf; tick A5 with times vs 294.65 s before.
+## In flight
+- ci:quick full lane (bg b4pbwnfcu, log scratchpad/ciquick2.log), item #05829121.
 
-## Next action
-1. As each writer reports: spot-check, regenerate (gates.lock, gate-bind, shard:place, gen-docs) on the commit's own tree, commit per unit with literal paths, settle its reviews.
-2. Then a full ci:quick on the tree; with a green receipt, push 1008-1 and open the PR (gh pr create, Plan: PLAN-retire-bash-oracles + PLAN-deferred-findings-block-merge), then watch CI with ci-trace.py --wait.
-3. On the first CI run: tick M3 and #de6e3d14, #fcd7316f, #2b786259, #9e7a546f; post-merge items #3f17f69c (stop-hook recount) and the POST-MERGE set stay queued.
+## Next action (the push sequence)
+1. Read ciquick2.log. Fix any red. For check:ci-plan-implementation P-A1, add a carry to .ci/config/carried-reds.json (v2: gate, findings [P-A1:<key from .ci/cache/prepush-receipt.json>], reason >=80 chars: boxes that close only on this PR's own CI or belong to PLAN-w7p5a-real-run-dispatch). Commit it, rerun ci:quick, and confirm a receipt the push guard accepts.
+2. #e5bd01f3: push private/account and private/renet branch 1008-1 and open their PRs (same branch name, submodule-first).
+3. Push console 1008-1, then gh pr create --draft with Plan: PLAN-retire-bash-oracles + PLAN-deferred-findings-block-merge and an Operational-Reason: line (cd-errors W?, k3s CI proof, M3 close on this run; tooling W7P5-a/c are tracked as #dccf10ab).
+4. Watch with ci-trace.py --wait; tick M3 (#5571c346), de6e3d14, #fcd7316f, #2b786259, #9e7a546f, then the cd-errors and k3s boxes; remove the carry once P-A1 is green.
