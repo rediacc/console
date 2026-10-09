@@ -2079,13 +2079,22 @@ function selftest(endToEnd = false): number {
     })()
   );
   ck(
-    'UPLOAD_ARTIFACT_PIN is the pin every .github workflow uses, so a bump there cannot leave the emitter behind',
+    'UPLOAD_ARTIFACT_PIN is the pin every .github workflow and composite action uses, so a bump there cannot leave the emitter behind',
     (() => {
-      const dir = path.join(ROOT, '.github', 'workflows');
+      // Every file under .github, as `check:actions` rewrites the pin: composite actions under .github/actions/** carry it too.
+      const files: string[] = [];
+      const walk = (dir: string): void => {
+        for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+          const full = path.join(dir, e.name);
+          if (e.isDirectory()) walk(full);
+          else if (/\.ya?ml$/.test(e.name)) files.push(full);
+        }
+      };
+      walk(path.join(ROOT, '.github'));
       const pins = new Set<string>();
-      for (const f of fs.readdirSync(dir).filter((n) => /\.ya?ml$/.test(n))) {
+      for (const f of files) {
         for (const m of fs
-          .readFileSync(path.join(dir, f), 'utf-8')
+          .readFileSync(f, 'utf-8')
           .matchAll(/actions\/upload-artifact@([0-9a-f]{40})/g)) {
           pins.add(m[1]);
         }

@@ -606,39 +606,9 @@ def test_the_repo_root_is_a_checkout_with_the_port_in_it() -> None:
 #
 # `rotation()`'s mutating subcommands (`rotate`, `check`, `deactivate`, `delete`, `sweep`, `init`) need live production credentials at AWS IAM / Cloudflare / GitHub and are NEVER invoked by anything below, or by anything else in this repository's test suite: only `list`, `status` and `history`, which read the committed, non-secret manifest and touch no platform.
 
-REAL_RUN_LIVE_CONTAINER_NAMES = (
-    "account-server",
-    "account-config-rustfs",
-    "rediacc-config-rustfs-dev",
-)
-
 ROTATION_CREDENTIAL_FREE_SUBCOMMANDS = ("list", "status", "history")
 
 ROTATION_MUTATING_SUBCOMMANDS = ("rotate", "check", "deactivate", "delete", "sweep", "init")
-
-
-def _skip_if_a_real_dev_stack_is_running() -> None:
-    """Refuse to run the `stop()` real-run test anywhere a real container by these names already exists.
-
-    `account_stop`'s Docker teardown targets these exact names with no scoping to this test's own sandbox -- it is a real `docker stop`/`docker rm` against the host's real Docker daemon -- so if a genuine `./run.sh account dev` is live elsewhere on this machine, running this test would actually tear it down.
-    Skipping is the only sound choice: this is a real-run test, and there is no mock arm to fall back to.
-    """
-    proc = subprocess.run(
-        ["docker", "ps", "-a", "--format", "{{.Names}}"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if proc.returncode != 0:
-        return
-    names = set(proc.stdout.split("\n"))
-    live = names & set(REAL_RUN_LIVE_CONTAINER_NAMES)
-    if live:
-        pytest.skip(
-            "a real container named %s already exists on this Docker daemon; account_stop's teardown "
-            "is unscoped, so running it here would tear down what looks like someone's real dev stack "
-            "instead of this test's own throwaway processes" % sorted(live)
-        )
 
 
 def _alive(pid: int) -> bool:
@@ -663,12 +633,16 @@ def _spawn_reaped(argv: list[str], **kwargs) -> subprocess.Popen:
     return proc
 
 
-def test_stop_real_run_kills_a_real_tracked_pid_and_a_real_port_occupant() -> None:
+def test_stop_real_run_kills_a_real_tracked_pid_and_a_real_port_occupant(
+    monkeypatch, tmp_path
+) -> None:
     """REAL RUN. A real `sleep` process and a real port listener are spawned -- not mocked -- `stop()` is pointed at them through a real state file, and the kill is confirmed with `kill -0` and the real socket bind, not by trusting the return code.
 
     Runs inside `shadow_driver.build_sandbox()`, the same isolated `CONSOLE_ROOT_DIR` the differential uses: `stop()` also runs `docker compose down --remove-orphans` in `$ACCOUNT_DIR`, and the sandbox's `private/account` is a real, empty, un-symlinked directory (`shadow_driver.build_sandbox`'s own docstring), so that call finds no compose file and cannot reach whatever the real `private/account` submodule has running.
+
+    A failing `docker` is put first on `PATH` (the real `lsof` stays reachable), so `stop()`'s unscoped container teardown never touches the host's daemon and the case runs on every host, whether or not a real `./run.sh account dev` stack is up. It used to skip on such a host, which turned `check:ci-pytest` red wherever that stack ran.
     """
-    _skip_if_a_real_dev_stack_is_running()
+    monkeypatch.setenv("PATH", _fake_docker(tmp_path / "bin") + os.pathsep + os.environ["PATH"])
     work = shadow_driver.build_sandbox(paths.repo_root())
     tracked = listener = None
     try:
