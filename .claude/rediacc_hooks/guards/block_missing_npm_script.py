@@ -56,6 +56,20 @@ EDGE_CASES = [
     ("a bare npm run only lists", "npm run"),
     ("prose is not a run", "echo 'npm run does-not-exist-example'"),
     ("a remote operand is not this tree", "ssh host 'npm run does-not-exist-example'"),
+    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
+    ("an npm run launched by npx -c", "npx -c 'npm run does-not-exist-example'"),
+    (
+        "find -exec runs npm in its own cwd",
+        r"find packages -maxdepth 1 -name cli -exec npm run does-not-exist-example \;",
+    ),
+    (
+        "find -execdir runs npm elsewhere, open",
+        r"find packages -maxdepth 1 -name cli -execdir npm run does-not-exist-example \;",
+    ),
+    (
+        "npx -w runs npm in another package, open",
+        "npx -w packages/cli -c 'npm run does-not-exist-example'",
+    ),
 ]
 
 MESSAGE = """BLOCKED: `npm run %(name)s` names a script that %(file)s does not define.
@@ -206,8 +220,11 @@ def run(ev):
     cmd = ev.field("tool_input", "command")
     if "npm" not in cmd:
         return hookio.ALLOW
-    for item in shellscan._analyse(cmd).runs:
+    for item in shellscan.every_run(cmd):
         if shellscan._base(item.name) != "npm":
+            continue
+        # A LAUNCHED npm (#503f0ba8) is judged where it runs: `npx -c '...'` and `find -exec` keep this run's cwd. One that runs ELSEWHERE is left open (`shellscan.Launch`): `find -execdir` runs it in each match's own directory and `npx -w/--prefix` in another package, neither of which this walk can name, and judging it against this cwd would refuse a script that exists where it really runs.
+        if item.launch is not None and item.launch.elsewhere:
             continue
         name, prefix, ws, fail_open = _parse(item.argv)
         if fail_open or _dynamic(name):

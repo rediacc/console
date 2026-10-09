@@ -208,6 +208,9 @@ EDGE_CASES = [
     ("pkill in a heredoc body is text", "cat <<'EOF' > n.md\npkill -f wl_wait.py\nEOF"),
     # Not refused: the pattern cannot match the command that carries it.
     ("an anchored pattern", "pkill -f '^python3 lead_run'"),
+    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
+    ("a pkill -f launched by find -exec", r"find . -maxdepth 0 -exec pkill -f sleep \;"),
+    ("prose naming a launched pkill", "echo find . -maxdepth 0 -exec pkill -f sleep"),
 ]
 
 
@@ -289,7 +292,8 @@ def _full_pattern(base, argv):
 
 def _judge_used(ev, cmd):
     """The 2026-09-24 widening: a self-matching `pgrep -f` whose result is USED, and every self-matching `pkill -f`. See SCOPE in the module docstring."""
-    for run in shellscan._analyse(cmd).runs:
+    # A pkill that `find -exec` or `npx -c` starts still kills the shell whose command line names its pattern (#503f0ba8), so the walk is `shellscan.every_run`.
+    for run in shellscan.every_run(cmd):
         base = run.name.rsplit("/", 1)[-1]
         if base not in ("pgrep", "pkill"):
             continue

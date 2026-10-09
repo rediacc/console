@@ -131,6 +131,14 @@ FRAGMENTS: dict[tuple[str, str], str] = {
         "BLOCKER: the end-of-clause tail (`$`, a separator or a redirect) concatenated after the anchored GIT_ADD prefix; "
         "only the composed BLANKET_* patterns are matchers, and they are anchored."
     ),
+    ("block_review_file_shell_write.py", "_WRITE_MODE"): (
+        "BLOCKER: a one-character class tested against the mode argument of an open() call found by ast in a Python "
+        "program; it reads a parsed string value, never the command text."
+    ),
+    ("block_worktree_add.py", "QUOTE_LIKE"): (
+        "BLOCKER: extracts the body of perl q{}/qq{}/qw and ruby %q()/%w() literals from interpreter program text for "
+        "the static scan, beside LITERAL; bracket shapes with no word, applied to program text, never to the command."
+    ),
     ("block_blanket_git_add.py", "BARE_DDASH"): (
         "BLOCKER: an optional ` -- ` concatenated between GIT_ADD's anchored prefix and END; it is a piece of the composed "
         "BLANKET_* patterns, never searched on its own."

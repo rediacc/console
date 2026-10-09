@@ -83,6 +83,14 @@ EDGE_CASES = [
     ("biome over staged files", "npx biome check --write --staged"),
     ("prose is not a run", "echo 'ruff format'"),
     ("a commit message is not a run", 'git commit -m "ruff format" -- a.py'),
+    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
+    ("find -exec runs ruff format with no path", r"find . -maxdepth 0 -exec ruff format \;"),
+    ("npx -c runs eslint --fix on the root", "npx -c 'eslint --fix .'"),
+    ("find -exec naming {} is scoped", "find . -name '*.py' -exec ruff format {} +"),
+    (
+        "find -execdir's . is each match's directory",
+        r"find packages -name cli -execdir ruff format . \;",
+    ),
 ]
 
 # --------------------------------------------------------------------------- the tool table ---------------------------------------------------------------------------
@@ -639,6 +647,9 @@ def _verdict(ev, cmd, run, assigns, loop_vars):
             return tool, shown, safe, WHY_XARGS
         return tool, shown, safe, WHY_VANISH % ", ".join(p.text for p in paths)
     base = _base_dir(ev, run)
+    # A run that executes ELSEWHERE (`find -execdir`, `npx -w/--prefix`, see `shellscan.Launch`) reads `.` as each match's directory or another package, never as this cwd, so the root test is not asked of it; the empty-set test above still is.
+    if run.launch is not None and run.launch.elsewhere:
+        return None
     for p in paths:
         root = None if p.vanishes or p.text == XARGS_INPUT else _root_hit(p.text, base)
         if root is not None:
@@ -669,7 +680,8 @@ def run(ev):
         return hookio.ALLOW
     assigns = _assignments(cmd)
     loop_vars = set(FOR_VAR.findall(cmd))
-    for item in shellscan._analyse(cmd).runs:
+    # `find . -exec ruff format \;` and `npx -c 'ruff format'` run the formatter with no path just as the bare run does (#503f0ba8), so the walk is `shellscan.every_run`. `find ... -exec ruff format {} +` names `{}`, a path that is never empty, and stays allowed.
+    for item in shellscan.every_run(cmd):
         verdict = _verdict(ev, cmd, item, assigns, loop_vars)
         if verdict is None:
             continue

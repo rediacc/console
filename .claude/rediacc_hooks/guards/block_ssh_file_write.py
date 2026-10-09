@@ -33,45 +33,20 @@ BRIDGE = r"192\.168\.111\."
 
 # RULE T (PLAN-retire-bash-oracles A4, A0 L13): THE REDIRECT LOCALITY WAS BACKWARDS. `ssh h cat f > /etc/x` is refused above, yet its `>` is performed by the LOCAL shell and writes a local file. The real remote writes are the ones whose redirect ssh CARRIES: `ssh h 'cat > /etc/x' < f` and `ssh h "echo hi > /etc/x"` hand the remote shell a command containing the redirect, and the prose-stripped scan deletes exactly that quoted span, so both passed with rc 0 (measured 2026-09-24).
 #
-# `ssh` joins every word after the host with single spaces and the REMOTE shell parses the result, so the quote removal the local shell already did is the right starting point: `_remote_command` rebuilds that string from the quote-removed argv, and `shellscan.write_targets` then asks the same lexer every guard now shares where the remote shell would redirect. A `tee` with a file operand is a write the same way. The local-redirect over-block is KEPT, deliberately: relaxing it would weaken a deny, and the task that found it (Rule T) only licenses tightening where bash really runs something.
+# `ssh` joins every word after the host with single spaces and the REMOTE shell parses the result, so the quote removal the local shell already did is the right starting point, and `shellscan.write_targets` then asks the same lexer every guard now shares where the remote shell would redirect. A `tee` with a file operand is a write the same way. The local-redirect over-block is KEPT, deliberately: relaxing it would weaken a deny, and the task that found it (Rule T) only licenses tightening where bash really runs something.
 #
-# ssh's options that consume the next word. A bundle (`-tt`, `-p22`, `-i key`) takes a value only when its LAST letter is one of these, which is how ssh's own getopt reads it.
-SSH_VALUE_OPTIONS = frozenset("BbcDEeFIiJLlmOopQRSWw")
+# ONE ssh PARSER (#503f0ba8). This file carried its own copy of ssh's option table and its own remote-command reader, which read only the `ssh` runs on `_analyse(cmd).runs`: an ssh that `find -exec` or `npx -c` starts was never judged (`find . -exec ssh prod-1 'cat > /etc/x' ';'` ran with rc 0, measured 2026-10-09). `shellscan.ssh_remote_commands` is the reader `block_ssh_docker` uses; it walks launched commands, strips `sshpass`, and yields every hop.
 
 # A remote redirect onto one of these is plumbing, not a file write -- the same set PLUMBING strips above.
 REMOTE_PLUMBING = frozenset(("/dev/null", "/dev/stdout", "/dev/stderr"))
 
 
-def _remote_command(argv):
-    """The command string ssh sends, or "" when there is none (an interactive login writes nothing)."""
-    k = 0
-    while k < len(argv):
-        arg = argv[k]
-        if arg == "--":
-            k += 1
-            break
-        if arg.startswith("-") and len(arg) > 1:
-            if arg[-1] in SSH_VALUE_OPTIONS and not any(
-                ch in SSH_VALUE_OPTIONS for ch in arg[1:-1]
-            ):
-                k += 1
-            k += 1
-            continue
-        break
-    return " ".join(argv[k + 1 :])
-
-
 def remote_write(cmd):
-    """True when some `ssh` in `cmd` makes the remote shell write a file."""
-    for run in shellscan._analyse(cmd).runs:
-        if run.name.rsplit("/", 1)[-1] != "ssh":
-            continue
-        remote = _remote_command(run.argv)
-        if remote == "":
-            continue
+    """True when some `ssh` in `cmd` makes the remote shell write a file. An interactive login names no remote command and writes nothing."""
+    for _destination, remote in shellscan.ssh_remote_commands(cmd):
         if any(target not in REMOTE_PLUMBING for target in shellscan.write_targets(remote)):
             return True
-        for inner in shellscan._analyse(remote).runs:
+        for inner in shellscan.every_run(remote):
             if inner.name.rsplit("/", 1)[-1] == "tee" and any(
                 a not in REMOTE_PLUMBING and not a.startswith("-") for a in inner.argv
             ):
@@ -108,6 +83,15 @@ EDGE_CASES = [
     ("remote stderr plumbing is not a write", "ssh prod-1 'journalctl -u x 2>&1 >/dev/null'"),
     ("a quoted mention of a remote write is prose", "echo \"ssh prod-1 'cat > /etc/x'\""),
     ("the bridge VM may take a quoted remote write", "ssh 192.168.111.10 'cat > /etc/x' < f"),
+    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
+    (
+        "an ssh remote write launched by find -exec",
+        r"find . -maxdepth 0 -exec ssh prod-1 'cat > /etc/x' \;",
+    ),
+    ("-P takes a value, so the remote command is the tee", "ssh -P tag prod-1 tee /etc/x < f"),
+    ("an option after the destination is ssh's", "ssh prod-1 -t tee /etc/x < f"),
+    ("a remote write one hop further in", 'ssh jump "ssh prod-1 tee /etc/x"'),
+    ("a ProxyCommand redirect is local", 'ssh prod-1 -o "ProxyCommand=nc %h %p 2>/tmp/err" uptime'),
 ]
 
 

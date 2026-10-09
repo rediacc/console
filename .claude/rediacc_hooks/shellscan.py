@@ -662,39 +662,90 @@ _FIND_EXEC = frozenset(("-exec", "-execdir", "-ok", "-okdir"))
 _SSH_VALUE_LETTERS = frozenset("BbcDEeFIiJLlmOoPpQRSWw")
 
 
-def _launched(base, argv):
-    """The commands a launcher run starts: a list of `("argv", [word, ...])` or `("text", payload)`, empty for anything that is not a launcher."""
+# npx options that run the command in ANOTHER package (#503f0ba8): an `npm run` it launches reads that package's scripts, and a `.` it names is that package's directory, not this cwd.
+_NPX_ELSEWHERE = frozenset(("-w", "--workspace", "--prefix", "--workspaces", "-ws", "--ws"))
+# The `find -exec` family members that run the command in each MATCH'S directory instead of find's own cwd.
+_FIND_IN_MATCH_DIR = frozenset(("-execdir", "-okdir"))
+# `find` options that come BEFORE its starting points; `-D` and `-O<n>` aside, they take no value.
+_FIND_LEADING = frozenset(("-H", "-L", "-P"))
+
+
+class Launch(typing.NamedTuple):
+    """Where a launched command runs (#503f0ba8), on `_Run.launch` for every run a launcher started, and for every run nested under one.
+
+    `launcher` is "npx" or "find". `action` is find's `-exec`/`-execdir`/`-ok`/`-okdir`, "" for npx. `starts` are find's starting points, quote-removed (`(".",)` when it names none), and () for npx: what `{}` stands for lies under them. `elsewhere` is True when the command does not run in the launcher's own cwd and package: `-execdir`/`-okdir` run it in each match's directory, and `npx -w/--workspace/--prefix/--workspaces` in another package. A guard that resolves a path or a package.json against `run.cwd` leaves an `elsewhere` run unjudged rather than judging it against the wrong directory.
+    """
+
+    launcher: str
+    action: str
+    starts: tuple
+    elsewhere: bool
+
+
+def _find_starts(argv):
+    """find's starting points: the words after its leading options and before the first expression word."""
+    k = 0
+    while k < len(argv) and (argv[k] in _FIND_LEADING or argv[k].startswith("-O")):
+        k += 1
+    starts = []
+    while k < len(argv):
+        word = argv[k]
+        if word == "-D":
+            k += 2
+            continue
+        if word.startswith(("-", "(", "!", ")", ",")):
+            break
+        starts.append(word)
+        k += 1
+    return tuple(starts) or (".",)
+
+
+def _launches(base, argv):
+    """The commands a launcher run starts, each with its `Launch`: a list of `(how, what, Launch)`, `how` "argv" (`what` a word list) or "text" (`what` a shell string), empty for anything that is not a launcher."""
     if base == "npx":
         k = 0
+        elsewhere = False
         while k < len(argv):
             arg = argv[k]
             if arg == "--":
                 k += 1
                 break
+            if arg in _NPX_ELSEWHERE or arg.split("=", 1)[0] in _NPX_ELSEWHERE:
+                elsewhere = True
+            launch = Launch("npx", "", (), elsewhere)
             if arg in _NPX_CALL:
-                return [("text", argv[k + 1])] if k + 1 < len(argv) else []
+                return [("text", argv[k + 1], launch)] if k + 1 < len(argv) else []
             if arg.startswith(("--call=", "-c=")):
-                return [("text", arg.split("=", 1)[1])]
+                return [("text", arg.split("=", 1)[1], launch)]
             if arg.startswith("-") and len(arg) > 1:
                 k += 2 if arg in _NPX_VALUE else 1
                 continue
             break
-        return [("argv", argv[k:])] if k < len(argv) else []
+        launch = Launch("npx", "", (), elsewhere)
+        return [("argv", argv[k:], launch)] if k < len(argv) else []
     if base == "find":
         out = []
+        starts = _find_starts(argv)
         k = 0
         while k < len(argv):
             if argv[k] not in _FIND_EXEC:
                 k += 1
                 continue
+            action = argv[k]
             j = k + 1
             while j < len(argv) and argv[j] not in (";", "+"):
                 j += 1
             if j > k + 1:
-                out.append(("argv", argv[k + 1 : j]))
+                launch = Launch("find", action, starts, action in _FIND_IN_MATCH_DIR)
+                out.append(("argv", argv[k + 1 : j], launch))
             k = j + 1
         return out
     return []
+
+
+def _launched(base, argv):
+    """The commands a launcher run starts: a list of `("argv", [word, ...])` or `("text", payload)`, empty for anything that is not a launcher. `_launches` carries each one's `Launch` too."""
+    return [(how, what) for how, what, _launch in _launches(base, argv)]
 
 
 def _ssh_remote(argv):
@@ -1352,6 +1403,7 @@ class _Run:
         "feed",
         "git_dir",
         "git_sub",
+        "launch",
         "launched",
         "name",
         "remote",
@@ -1381,6 +1433,8 @@ class _Run:
         self.writes = []
         # A LAUNCHER'S COMMANDS (#ec63ff8c): one `_Analysis` per command `npx` or `find -exec` starts (see `_launched`). Kept OFF `_Analysis.runs` so every guard walking the runs keeps reading `npx` as `npx`; `lifted_commands` and `every_run` descend into them.
         self.launched = []
+        # WHERE A LAUNCHED COMMAND RUNS (#503f0ba8): a `Launch` when a launcher started this command (or one this command is nested under), else None.
+        self.launch = None
         # `(destination, remote command)` when this is an `ssh` naming a remote command (`_ssh_remote`), else None. The remote command is NOT walked into `runs` or lifted into the view: it runs on another machine, and a guard judging this checkout's git or files must not read it as local. `ssh_remote_commands` hands it to the guards that police remote commands.
         self.remote = None
         # WHAT ARRIVES ON STDIN, AS TEXT (#ec63ff8c): the literal words of the pipeline stages before this command (`_stage_feed`) and its own here-string or heredoc body, None when there are none. For a command a `find -exec` runs, `find`'s own words, since `{}` is replaced by what they name. What a producer PRINTS is not computed, so every word counts. Policy stays with the guard: `xargs rm` turns this text into operands and `cat` only reads it.
@@ -1958,7 +2012,7 @@ class _Walker:
         if feed:
             run.feed = " ".join(feed)
         self.analysis.runs.append(run)
-        for how, launched in _launched(base, argv):
+        for how, launched, launch in _launches(base, argv):
             sub = _Analysis()
             src = launched if how == "text" else _quote_argv(launched)
             _Walker(sub, self.depth + 1).text(src, state[0], persist=False, shell=state[1])
@@ -1966,6 +2020,12 @@ class _Walker:
                 for inner_run in sub.runs:
                     inner_run.via = (*inner_run.via, "find")
                     inner_run.feed = " ".join(f for f in (inner_run.feed, " ".join(argv)) if f)
+            # The innermost launcher names the run; an outer `elsewhere` still holds for everything nested under it (`find -execdir npx -c '...'`).
+            for inner_run in _every_run(sub):
+                if inner_run.launch is None:
+                    inner_run.launch = launch
+                elif launch.elsewhere and not inner_run.launch.elsewhere:
+                    inner_run.launch = inner_run.launch._replace(elsewhere=True)
             run.launched.append(sub)
         if base == "ssh":
             run.remote = _ssh_remote(argv)

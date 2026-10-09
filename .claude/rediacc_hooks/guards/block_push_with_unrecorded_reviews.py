@@ -132,11 +132,15 @@ EDGE_CASES = [
     ("a delete-only push", "git push origin --delete old-branch"),
     ("prose naming a push", "echo 'git push later'"),
     ("not a push", "git status"),
+    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
+    ("a push launched by npx -c", "npx -c 'git push origin 0930-1'"),
+    ("prose naming a launched push", "echo npx -c git push origin 0930-1"),
 ]
 
 
 def _push_runs(cmd):
-    return [r for r in shellscan._analyse(cmd).runs if r.git_sub == "push"]
+    """Every `git push` bash would run, including one `npx -c` or `find -exec` starts (#503f0ba8): it publishes the same commits."""
+    return [r for r in shellscan.every_run(cmd) if r.git_sub == "push"]
 
 
 def _publishes(run):

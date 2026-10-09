@@ -241,6 +241,9 @@ EDGE_CASES = [
         "bash -n x.sh && bash .ci/media/tools/upload-r2.sh",
     ),
     ("a tool in a -c payload", "bash -c 'aws s3 ls'"),
+    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
+    ("npx ruff launched by find -exec", "find . -name '*.py' -exec npx ruff format {} +"),
+    ("prose naming a launched npx ruff", "echo find . -name x -exec npx ruff format {} +"),
 ]
 
 
@@ -281,17 +284,19 @@ def _runs(cmd):
 
     A PARSE-ONLY SHELL RUNS NOTHING. `bash -n` (also `sh`/`zsh`/`dash`/`ksh`, a `-n` inside a bundle such as `-nv`, or `-o noexec`) reads its script and executes none of it. On 2026-10-02 `bash -n .ci/scripts/deploy/promote-r2-to-stable.sh`, a syntax check after an edit, was refused as an aws run twice, once at the tail of a python heredoc whose comment the writer then blamed. The walk
     still lists the commands of a noexec shell's `-c` payload after it, so those are dropped here too. A noexec shell fed a heredoc keeps its body's commands: the walk does not tie a body to its reader, and judging them is the fail-closed direction.
+
+    LAUNCHED COMMANDS ARE RUNS (#503f0ba8): `find . -exec shellcheck {} +` runs shellcheck and `find . -exec npx ruff format {} +` runs `npx ruff`, so the walk is `shellscan.every_run`, which lists what `npx` and `find -exec` start right after the launcher. The skip below counts the payload the same way.
     """
     out = []
     skip = 0
-    for run_ in shellscan._analyse(cmd).runs:
+    for run_ in shellscan.every_run(cmd):
         if skip:
             skip -= 1
             continue
         if _noexec_shell(run_):
             mode, payload = shellscan._shell_payload(list(run_.argv))
             if mode == "c" and payload:
-                skip = len(shellscan._analyse(payload).runs)
+                skip = len(shellscan.every_run(payload))
             continue
         out.append(run_)
     return out
