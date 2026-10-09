@@ -604,7 +604,7 @@ cases.append(
 )
 
 # THE OTHER DIRECTION (review 276a69db.1): every runnable module under .ci/rediacc_ci that puts `aws` at the head of an argv has its row, so a new aws-calling port cannot ship without the routing. A module counts as runnable when it carries `if __name__ == "__main__"`. The exemptions are named, each with its reason.
-_AWS_ARGV = re.compile(r'\[\s*"aws"|\("aws",')
+_AWS_ARGV = re.compile(r"""[\[(]\s*["']aws["']\s*[,\]]""")
 _AWS_EXEMPT = {
     # A multi-verb library CLI: aws is one verb (s3api list-objects-v2) of many, so a module row would refuse every other verb on a host without aws.
     "rediacc_ci.core.common",
@@ -618,7 +618,10 @@ _AWS_MODULES = set()
 for rel in _TRACKED:
     if not (rel.startswith(".ci/rediacc_ci/") and rel.endswith(".py")) or "/tests/" in rel:
         continue
-    text = pathlib.Path(REPO, rel).read_text(encoding="utf-8", errors="replace")
+    path = pathlib.Path(REPO, rel)
+    if not path.is_file():  # tracked but absent from the working tree (mid-rename): nothing to scan
+        continue
+    text = path.read_text(encoding="utf-8", errors="replace")
     if "__main__" in text and _AWS_ARGV.search(text):
         _AWS_MODULES.add(rel[len(".ci/") : -len(".py")].replace("/", "."))
 cases.append(
