@@ -38,6 +38,18 @@
         "pytest-skip:.ci.rediacc_ci.tests.test_quality_python_lint::test_port_matches_the_twins_recorded_output#no#shebang#with#git#mode#100755#is#EXE002#"
       ],
       "reason": "On this WSL host check:ci-pytest reports 21294 passed and 4 skipped: test_quality_python_lint's two EXE001/EXE002 cases (WSL disables those ruff rules natively) and test_core_account's two teardown cases, which refuse because a real account-config-rustfs dev container is running here. CI runs on Linux with no such container and passes all four. Since 2026-10-05 the gate keys each failure and each skip outside the CANNOT RUN contract, so these four are carried by name and any other red is refused."
+    },
+    {
+      "gate": "check:ci-plan-implementation",
+      "findings": [
+        "P-A1:0c9ea2c3e2ce"
+      ],
+      "reason": "P-A1 lists open boxes that close only on this PR's own CI run or belong to another campaign: PLAN-cd-errors-in-ci:70 (a live run on a PR), PLAN-k3s-137-and-pr-conditions:103 (E2E K8s legs green on the branch head), PLAN-deferred-findings-block-merge M3 (Quality / Branch green on the pushed head), and PLAN-tooling-transformation W7P5-a/W7P5-c (per-path K=5 ledgers, PLAN-w7p5a-real-run-dispatch, worklist #dccf10ab). The PR body carries Operational-Reason: for CI; this carry is dropped once the first run ticks the CI-only boxes."
+    },
+    {
+      "gate": "check:ci-renet",
+      "findings": "*",
+      "reason": "govulncheck reports GO-2026-6599/6600/6603/6604/6605/6607-6613/6617, fixed only by go1.26.9 (published 2026-10-08T15:41Z) and golang.org/x/net v0.60.0 (2026-10-08T17:22Z). Both are inside the 24h release-age window that .ci/config/release-age.json sets and is_release_deferred enforces, so the fix cannot be taken before 2026-10-10T00:00Z. The gate emits no ::finding:: keys yet, hence '*'. Worklist #d40141c3 bumps .devcontainer/toolchain.env:45, .devcontainer/Dockerfile:13, private/renet/go.mod:3 and license-mint go.mod:6 at that time and removes this carry."
     }
   ]
 }
