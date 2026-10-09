@@ -26,7 +26,7 @@
  * Flags: --report  (verbose per-language breakdown; same exit semantics)
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: i18n
  * needs: node
  * lane: quality-i18n

@@ -94,14 +94,14 @@ const SUBJECT = /\.(py|sh|ts)$/;
  *      because the header twin was retired in W7 P5, test-gate-anti-vacuity.sh
  *      followed it on 2026-09-21, and test-claude-hooks.sh followed THEM when its
  *      own subject (.claude/hooks/test-hooks.sh) was ported to pytest: it parses
- *      as kind battery riding "Quality-gate unit tests", which is true of it.
+ *      as kind shared-step riding "Quality-gate unit tests", which is true of it.
  *      THE CONTROL'S SUBJECT KEEPS MOVING BECAUSE THE FAMILY KEEPS SHRINKING, and
  *      a control naming a deleted file is a control that tests a string literal
  *      rather than a tree -- it would go on passing over an empty directory.
  *   2. WAS: all gate-tests share the single step 'Quality-gate unit tests' and none owns
  *      it, so none could legitimately declare one, and excluding the tree said that once
  *      instead of per file.
- *      NOW: `kind: battery` says exactly that, per file, in the file. All 148 declare it.
+ *      NOW: `kind: shared-step` says exactly that, per file, in the file. All 148 declare it.
  *
  * WHY THIS MATTERED ENOUGH TO CHANGE. While the exclusion stood, every header in that
  * tree was invisible to the only instrument that checks headers. Proved by planting a
@@ -249,7 +249,7 @@ export interface Bound {
    * three declare, bind and are checked, and the binder writes no workflow step for them.
    */
   kind: GateKind;
-  /** The step it owns (`step`) or rides (`battery`). Absent for `test` and `local-only`. */
+  /** The step it owns (`step`) or rides (`shared-step`). Absent for `test` and `local-only`. */
   step?: string;
   /** `false` when the gate owns a HAND-WRITTEN step a region must never take over. */
   emit?: boolean;
@@ -388,7 +388,7 @@ export function stepInJob(workflow: string, job: string, step: string): boolean 
 /**
  * Every job of the workflow carrying a step with this name.
  *
- * A `battery` gate does not CHOOSE its lane -- it rides a hand-written step, and that
+ * A `shared-step` gate does not CHOOSE its lane -- it rides a hand-written step, and that
  * step is where it runs whatever its own needs would have preferred. Placement must
  * therefore be read out of the workflow rather than computed from `needs`, or the lane
  * check below judges a lane the gate never runs in. Returns every match so a step name
@@ -1418,10 +1418,10 @@ function selftest(endToEnd = false): number {
   );
   // THIS CONTROL WAS INVERTED ON 2026-09-06 AND THE INVERSION IS THE POINT. It used to
   // assert that a gate-test is OUT of scope, which was true and was also the reason all
-  // 148 of their headers were unread. W2.3 gave every one of them a `kind: battery`
+  // 148 of their headers were unread. W2.3 gave every one of them a `kind: shared-step`
   // declaration, so they are subjects now and this asserts the new truth.
   ck(
-    'a gate-test IS in scope: it declares kind battery, so its header is read like any other',
+    'a gate-test IS in scope: it declares kind shared-step, so its header is read like any other',
     !NOT_SUBJECT.test('.ci/scripts/test/gates/test-regions-sync.sh')
   );
   ck(
@@ -1641,16 +1641,16 @@ function selftest(endToEnd = false): number {
 
   // --- kind discriminant (parser v2) ---------------------------------------------
   // These controls exist because the drain hit the same wall 143 times: a gate-test
-  // cannot own the one battery step every gate-test rides, so under v1 it could not
+  // cannot own the one shared step every gate-test rides, so under v1 it could not
   // declare at all. What must hold now is that it CAN declare and STILL not be emitted.
-  const battery = [
+  const sharedStep = [
     '# ---- gate ----',
-    '# kind: battery',
+    '# kind: shared-step',
     '# step: Quality-gate unit tests',
     '# ---- end gate ----',
   ].join('\n');
-  const bBat = bind('.ci/scripts/test/gates/test-a.sh', battery);
-  ck('a battery gate binds, carrying the step it rides', bBat?.kind === 'battery', bBat);
+  const bBat = bind('.ci/scripts/test/gates/test-a.sh', sharedStep);
+  ck('a shared-step gate binds, carrying the step it rides', bBat?.kind === 'shared-step', bBat);
   ck('CONTROL: and a region never emits it', bBat !== null && !emits(bBat));
   const stepish = bind(
     '.ci/scripts/quality/check_a.py',
@@ -1710,7 +1710,7 @@ function selftest(endToEnd = false): number {
     jobsWithStep(TWO_JOBS, 'Only here').join() === 'b'
   );
   ck(
-    'CONTROL: a step name in two jobs returns BOTH, so a battery gate is refused rather than resolved to the first',
+    'CONTROL: a step name in two jobs returns BOTH, so a shared-step gate is refused rather than resolved to the first',
     jobsWithStep(TWO_JOBS, 'Shared').join() === 'a,b'
   );
   ck(
@@ -2778,7 +2778,7 @@ function main(argv: string[]): void {
   if (write) {
     const byLane = new Map<string, Emitting[]>();
     const handRegistered: string[] = [];
-    // ONLY `kind: step` IS EMITTED. A battery gate rides a hand-written step it does not own, and a `test` or `local-only` gate has no step at all; emitting any of them would write 143 duplicate copies of one battery step into a region. HELD OUT BY THEIR OWN DECLARATION, and NAMED. `emit: false` means the gate owns a hand-written step a region must not take over; not saying so
+    // ONLY `kind: step` IS EMITTED. A shared-step gate rides a hand-written step it does not own, and a `test` or `local-only` gate has no step at all; emitting any of them would write 143 duplicate copies of one battery step into a region. HELD OUT BY THEIR OWN DECLARATION, and NAMED. `emit: false` means the gate owns a hand-written step a region must not take over; not saying so
     // would make "declared and deliberately not emitted" look identical to "declared and forgotten", which is the exact confusion the import guard above exists to end.
     const declaredHoldouts = declared.filter((b) => b.kind === 'step' && b.emit === false);
     if (declaredHoldouts.length > 0) {
@@ -3031,14 +3031,14 @@ function main(argv: string[]): void {
     );
     if (!entry) problems.push(`${b.file}: no manifest entry with id '${b.id}'`);
 
-    // WHERE THIS GATE ACTUALLY RUNS. For `step` and the two stepless kinds that is what placement derives from `needs`. For `battery` it is a FACT OF THE WORKFLOW: the job holding the step it rides. Deriving it from needs instead would check a lane the gate never enters, and pass.
+    // WHERE THIS GATE ACTUALLY RUNS. For `step` and the two stepless kinds that is what placement derives from `needs`. For `shared-step` it is a FACT OF THE WORKFLOW: the job holding the step it rides. Deriving it from needs instead would check a lane the gate never enters, and pass.
     let job: string;
-    if (b.kind === 'battery') {
+    if (b.kind === 'shared-step') {
       const owners = jobsWithStep(workflow, b.step as string);
       if (owners.length !== 1) {
         problems.push(
-          `${b.file}: kind battery rides step "${b.step}", which ${WORKFLOW} has in ` +
-            `${owners.length} job(s) (${owners.join(', ') || 'none'}). A battery step must ` +
+          `${b.file}: kind shared-step rides step "${b.step}", which ${WORKFLOW} has in ` +
+            `${owners.length} job(s) (${owners.join(', ') || 'none'}). A shared step must ` +
             'exist exactly once, or "the lane it runs in" has no answer.'
         );
         continue;
@@ -3046,7 +3046,7 @@ function main(argv: string[]): void {
       job = owners[0];
       if (b.lane !== undefined && b.lane !== job) {
         problems.push(
-          `${b.file}: pins lane '${b.lane}' but its battery step "${b.step}" lives in '${job}'`
+          `${b.file}: pins lane '${b.lane}' but its shared step "${b.step}" lives in '${job}'`
         );
         continue;
       }
@@ -3071,7 +3071,7 @@ function main(argv: string[]): void {
     if (!satisfies(lane, b.needs)) {
       problems.push(`${b.file}: lane '${job}' does not provide all of ${JSON.stringify(b.needs)}`);
     }
-    // A NON-EMITTING GATE IS CHECKED UP TO HERE AND NO FURTHER, and each of the three remaining checks says why. They are all statements about a region this gate is never written into, so applying them to a battery gate reports a defect in a step somebody else owns -- the shape that produced six false lane mismatches during the drain, once per gate, for one hand-written step.
+    // A NON-EMITTING GATE IS CHECKED UP TO HERE AND NO FURTHER, and each of the three remaining checks says why. They are all statements about a region this gate is never written into, so applying them to a shared-step gate reports a defect in a step somebody else owns -- the shape that produced six false lane mismatches during the drain, once per gate, for one hand-written step.
     if (!emits(b)) continue;
     if (!regionAfterSetup(workflow, job)) {
       problems.push(

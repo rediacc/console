@@ -37,7 +37,7 @@
  * Exit: 0 clean, 1 finding (or a floor breach), 2 usage error.
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: Dead CSS
  * needs: node
  * run: tsx scripts/gates/check-viewport-unit-mixing.ts --selftest

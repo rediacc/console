@@ -49,7 +49,7 @@
  *   2 - usage error
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: i18n
  * needs: node
  * id: check:ci-i18n-locale-only

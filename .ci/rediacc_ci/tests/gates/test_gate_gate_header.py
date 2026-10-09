@@ -139,8 +139,8 @@ ck(
   parseGateHeader(blk('step: X'))?.kind === 'step'
 );
 ck(
-  'kind: battery declares the shared step it RIDES',
-  parseGateHeader(blk('kind: battery', 'step: Quality-gate unit tests'))?.step ===
+  'kind: shared-step declares the shared step it RIDES',
+  parseGateHeader(blk('kind: shared-step', 'step: Quality-gate unit tests'))?.step ===
     'Quality-gate unit tests'
 );
 ck(
@@ -156,9 +156,9 @@ ck(
     undefined
 );
 ck(
-  'CONTROL: kind: battery with no step is refused -- it must name what it rides',
-  parseGateHeader(blk('kind: battery')) === null &&
-    headerError(blk('kind: battery'))?.includes('shared step it rides') === true
+  'CONTROL: kind: shared-step with no step is refused -- it must name what it rides',
+  parseGateHeader(blk('kind: shared-step')) === null &&
+    headerError(blk('kind: shared-step'))?.includes('shared step it rides') === true
 );
 ck(
   'CONTROL: a stepless kind that names a step is refused',

@@ -24,7 +24,7 @@
  *                  survives longest because both halves look populated.
  *
  * SHARED STEPS TAKE THE UNION, and that is a deliberate weakening with a reason. A shared
- * step is ridden by several lock entries and OWNED by none, which is what `kind: battery`
+ * step is ridden by several lock entries and OWNED by none, which is what `kind: shared-step`
  * means (the bash gate-test battery's `Quality-gate unit tests` step was ridden by 150
  * until it was retired on 2026-10-09). Demanding `env` on every rider would be N copies
  * of one fact and N chances to drift. So the expectation for a step is the UNION of every

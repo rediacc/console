@@ -19,7 +19,7 @@
  *   1 - Issues found in strict mode
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: i18n
  * needs: node
  * id: check:ci-i18n-hardcoded-strings

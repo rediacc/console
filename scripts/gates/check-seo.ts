@@ -7,7 +7,7 @@
  * Run: npx tsx scripts/gates/check-seo.ts
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: SEO
  * needs: node
  * id: check:ci-seo-core

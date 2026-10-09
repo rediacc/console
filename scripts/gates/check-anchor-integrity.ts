@@ -32,7 +32,7 @@
  *   tsx scripts/gates/check-anchor-integrity.ts [--dist <dir>] [--selftest] [--max-report N]
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: Redirects
  * needs: node
  * lane: quality-www-build

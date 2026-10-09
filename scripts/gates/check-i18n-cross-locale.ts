@@ -47,7 +47,7 @@
  *   tsx scripts/gates/check-i18n-cross-locale.ts [--root <dir>] [--selftest]
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: i18n cross-locale
  * needs: node, submodules
  * id: check:ci-i18n-cross-locale-core
