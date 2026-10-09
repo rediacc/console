@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-09T09:48:15.737Z",
+  "generatedAt": "2026-10-09T10:18:00.370Z",
   "legs": [
     {
       "index": 1,
@@ -38,6 +38,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_media_portable.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_media_r2.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_media_shims.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_model_invocation_agreement.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_nightly_retry_filters.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_paths_exist.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_plan_boxes_never_delete.py",
