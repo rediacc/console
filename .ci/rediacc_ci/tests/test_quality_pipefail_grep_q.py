@@ -132,7 +132,7 @@ def test_the_builtin_mechanism_control_reproduces_on_this_host(tmp_path: pathlib
 @pytest.mark.parametrize(
     ("rel", "hits"),
     [
-        pytest.param(".ci/lib/devbox.sh", 1, id="under-an-inheriting-prefix"),
+        pytest.param("sourced-lib/devbox.sh", 1, id="under-an-inheriting-prefix"),
         pytest.param("scripts/dev/thing.sh", 0, id="anywhere-else"),
         pytest.param(None, 0, id="a-fixture-has-no-path"),
     ],
@@ -140,13 +140,20 @@ def test_the_builtin_mechanism_control_reproduces_on_this_host(tmp_path: pathlib
 def test_inherited_pipefail_is_decided_by_path(rel: str | None, hits: int) -> None:
     """Identical bytes, classified by PATH alone.
 
-    `.ci/lib/devbox.sh:1082` sets no pipefail of its own and inherits it from every sourcer (scripts/dev/worktree.sh:12, .ci/lib/local-common.sh:937,983 via rdc.sh:11), which is why the gate could not see the sweep's strongest finding.
+    The retired `.ci/lib/devbox.sh:1082` set no pipefail of its own and inherited it from every sourcer, which is why the gate could not see the sweep's strongest finding. `INHERITS_PIPEFAIL_PREFIXES` is empty now that `.ci/lib/` is gone, so the case passes a synthetic prefix through the `prefixes` parameter; the logic under test is the same.
     """
     text = (
         'lib_detect() { git -C "$1" status --porcelain; }\n'
         'if printf "%%s" "$out" | %s dubious; then :; fi\n' % GQ
     )
-    assert len(gate.offenders_in(text, rel)) == hits
+    assert len(gate.offenders_in(text, rel, ("sourced-lib/",))) == hits
+
+
+def test_no_inheriting_prefix_is_configured_for_a_path_that_does_not_exist() -> None:
+    """A prefix that matches no tracked file guards nothing, which is how `.ci/lib/` stayed in the tuple after the directory was deleted."""
+    root = paths.repo_root()
+    for prefix in gate.INHERITS_PIPEFAIL_PREFIXES:
+        assert (root / prefix).is_dir(), prefix
 
 
 def test_the_live_corpus_is_not_empty() -> None:

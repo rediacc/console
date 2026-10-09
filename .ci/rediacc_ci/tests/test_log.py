@@ -1,4 +1,4 @@
-"""`rediacc_ci.log` against `.ci/scripts/lib/common.sh`, byte for byte.
+"""`rediacc_ci.log` against the frozen answers of the retired `.ci/scripts/lib/common.sh`, byte for byte.
 
 THE THING BEING REPLACED is `.ci/scripts/lib/common.sh:18-55`: the colour block and the five `log_*` functions. It is the canonical bash logger -- 47 files under
 `.ci` assign their own `RED=`, but common.sh's is the one every library in

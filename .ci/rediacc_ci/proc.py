@@ -19,9 +19,9 @@ here, because that file has another writer:
 
 `.ci/breakpoint/lib/breakpoint-common.sh:27-29` states the same ban for its own vendored corpus -- "no seq(1), no timeout(1), no mapfile" -- so the intent is consistent; only the enforcement is broken.
 
-`common.sh:run_with_timeout`. `.ci/scripts/lib/common.sh:233-262` already carries a portable bash replacement, and it is the one this module is checked against. It backgrounds the command, backgrounds a watchdog that sleeps then SIGTERMs it, and maps the resulting 143 to 124.
+`common.sh:run_with_timeout`. The retired `.ci/scripts/lib/common.sh:233-262` carried a portable bash replacement, and this module was checked against the frozen answers of it. It backgrounds the command, backgrounds a watchdog that sleeps then SIGTERMs it, and maps the resulting 143 to 124.
 
-`retry_with_backoff`. `.ci/scripts/lib/common.sh:187-210`: exponential base 2, no jitter, no cap, delay taken from the caller, sleeps only BETWEEN attempts, retries on ANY non-zero exit. 8 call sites in two parameterisations (`3 2` in `cleanup-versions.sh` x6, `3 10` in `install-deps.sh` x2, `6 2` in `run-account-e2e.sh:194`). Beside it live seven hand-rolled loops with three
+`retry_with_backoff`. The retired `.ci/scripts/lib/common.sh:187-210`: exponential base 2, no jitter, no cap, delay taken from the caller, sleeps only BETWEEN attempts, retries on ANY non-zero exit. 8 call sites in two parameterisations (`3 2` in `cleanup-versions.sh` x6, `3 10` in `install-deps.sh` x2, `6 2` in `run-account-e2e.sh:194`). Beside it live seven hand-rolled loops with three
 different shapes -- linear `attempt * k` for k in {5, 15, 30}, and constant-delay
 -- in `docker_prepull.py`'s retry loop, `simulate-promotion.sh:79` and `:159`, `initialize.sh:233`, `verify-edge-endpoints.sh:63`, `test-install-methods.sh:840` and `wait-for-preview-worker.sh:99`.
 

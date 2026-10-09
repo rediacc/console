@@ -406,7 +406,7 @@ _ADVICE = {
         "the docker engine is running and this user cannot talk to its socket.\n"
         "  this run only:  sg docker -c '<command>'\n"
         "  permanently:    sudo usermod -aG docker $USER, then log out and back in\n"
-        "  the group is applied automatically by ./run.sh (.ci/lib/local-common.sh:630-653)."
+        "  the group is applied automatically by ./run.sh (rediacc_ci/setup/machine.py reexec_with_docker_group)."
     ),
     STATE_UNKNOWN: (
         "the docker probe did not answer and this module could not classify why.\n"

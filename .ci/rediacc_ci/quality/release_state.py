@@ -495,7 +495,7 @@ def main(argv: list[str] | None = None) -> int:
 
     log.error("release-state gate: FAIL — drift between R2 sentinels and git tags")
     log.error("  the findings above indicate an incomplete release or a missing tag")
-    log.error("  see .ci/scripts/lib/release-state-validator.sh for the invariant")
+    log.error("  see rediacc_ci/core/release_state_validator.py for the invariant")
     return 1
 
 

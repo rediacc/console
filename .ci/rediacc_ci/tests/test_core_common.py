@@ -1,6 +1,6 @@
-"""`rediacc_ci.core.common` against the live `.ci/scripts/lib/common.sh`.
+"""`rediacc_ci.core.common` against the frozen answers of the retired `.ci/scripts/lib/common.sh`.
 
-THE TWIN IS LIVE, AND IT IS THE MOST LIVE FILE IN THE TREE: 208 files source `.ci/scripts/lib/common.sh` (re-derived 2026-09-10). Every comparison below sources the real file, so a change to it turns these red rather than leaving a port drifting quietly beside it.
+THE TWIN IS DELETED. `.ci/scripts/lib/common.sh` was the base library of the bash tree; its answers are frozen in `goldens/twins/lib.common.jsonl`, so every comparison below reads the recorded bash answer rather than sourcing the file.
 
 WHAT IS COMPARED. Both sides run through their own CLI, with stdout and stderr kept SEPARATE, because the twin's whole logging contract is that messages go to stderr and data goes to stdout. A harness that merged them could not tell a correct port from one that put a diagnostic on the data stream, which is consequence 1 of the incident `rediacc_ci.log`'s docstring records.
 
@@ -244,7 +244,7 @@ def test_ci_env_agrees_with_the_twins_exported_variables():
 def test_the_twins_require_input_passes_on_an_empty_path_list():
     """QUIRK 1. The anti-vacuity helper, passing vacuously.
 
-    If this ever goes red, `.ci/scripts/lib/common.sh` has been repaired and `REQUIRE_INPUT_VACUOUS_IS_A_PASS` plus this module's divergence should be retired in the same change.
+    If the recorded answer ever changes, the retired `.ci/scripts/lib/common.sh` has been repaired and `REQUIRE_INPUT_VACUOUS_IS_A_PASS` plus this module's divergence should be retired in the same change.
     """
     rc, out, err = twin("require_input -f 'missing {}' 'why'\necho reached")
     assert (rc, out, err) == (0, "reached\n", "")

@@ -33,7 +33,7 @@ TWO FUNCTIONS THE TWIN BORROWS FROM ITS SOURCER
 --------------------------------------------------------------------------
 RULE T: FOUR TWIN DEFECTS FIXED, ONE NOT A DEFECT (PLAN-retire-bash-oracles, task B4)
 --------------------------------------------------------------------------
-Each is an INTENTIONAL DELTA from `.ci/lib/account.sh`, which still has the defect; `test_core_account.py` pins the port's behaviour in its `test_delta_*` cases and excludes exactly those scenario cases from the live differential.
+Each is an INTENTIONAL DELTA from the retired `.ci/lib/account.sh`, which had the defect; `test_core_account.py` pins the port's behaviour in its `test_delta_*` cases and excludes exactly those scenario cases from the live differential.
   A1. `account_totp` used to DIE SILENTLY on a state file with no `gateway_port=` line (a bare `$(grep | cut)` assignment under `pipefail` and `errexit`). It now says "Could not read gateway port" and returns 1.
   A2. `account_banner_row` padded by BYTES (`printf '%-63s'`), so a multibyte glyph shifted the closing bar left. `banner_row()` pads by characters.
   A3. `cut -d= -f2` truncated a state value containing `=`. `grep_cut()` keeps everything after the first `=`.
@@ -906,7 +906,7 @@ USAGE = """rediacc_ci.core.account -- the deterministic half of .ci/lib/account.
                     $GITHUB_ENV, for a CI job with no Bitwarden access
 
 The dev, stop, test, reset and seed-demo verbs are NOT here: they live in
-.ci/lib/account.sh and start long-running infrastructure. See the module
+rediacc_ci.core.account_lifecycle and start long-running infrastructure. See the module
 docstring for why they are a separate slice."""
 
 

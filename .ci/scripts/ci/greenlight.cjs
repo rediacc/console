@@ -299,7 +299,7 @@ const CLOSURES = {
     submodules: ['private/account'],
     // Steps: setup-workspace with account: 'true', `npm run build:packages`, and `python3 -m rediacc_ci.testrun.account_e2e` (the port of run-account-e2e.sh, which no job invokes any more).
     //
-    // NOT in this list, and the absence is derived rather than overlooked: .ci/scripts/setup/build-packages.sh. setup-workspace only runs it when its `build-packages` input is 'true' (action.yml:91-93) and this job leaves that input unset, calling `npm run build:packages` directly instead. The script is therefore not an input to this job.
+    // NOT in this list, and the absence is derived rather than overlooked: rediacc_ci.setup.build_packages. setup-workspace only runs it when its `build-packages` input is 'true' (action.yml:91-93) and this job leaves that input unset, calling `npm run build:packages` directly instead. The script is therefore not an input to this job.
     paths: [
       // The shadow-run step this job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the closure must hold it or a change to the action does not re-run this key.
       '.github/actions/bws-secrets',

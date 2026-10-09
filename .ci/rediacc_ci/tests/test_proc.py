@@ -1,14 +1,14 @@
-"""`rediacc_ci.proc` against GNU `timeout(1)` and against `common.sh`, three ways.
+"""`rediacc_ci.proc` against GNU `timeout(1)` and against the frozen answers of the retired `common.sh`, three ways.
 
-THE THINGS BEING REPLACED, and every case below runs the real one:
+THE THINGS BEING REPLACED (the bash functions are retired and frozen as goldens):
 
   * GNU `timeout(1)` -- 12 live invocation sites in 4 files, none of which guards
     for its absence, and all of which are already forbidden by
     `.ci/scripts/security/check-commands.sh:38` under a matcher that does not
     fire (see `rediacc_ci.proc`'s docstring for the two reasons).
-  * `.ci/scripts/lib/common.sh:233-262` `run_with_timeout` -- the portable bash
-    replacement that already exists.
-  * `.ci/scripts/lib/common.sh:187-210` `retry_with_backoff` -- 8 call sites.
+  * the retired `.ci/scripts/lib/common.sh:233-262` `run_with_timeout` -- the portable
+    bash replacement, frozen as goldens.
+  * the retired `.ci/scripts/lib/common.sh:187-210` `retry_with_backoff` -- 8 call sites.
 
 HOW THE RETRY SCHEDULE IS OBSERVED WITHOUT WAITING FOR IT. `retry_with_backoff` calls `sleep "$delay"`, and a bash FUNCTION named `sleep` shadows the binary. The differential defines one that prints its argument instead of sleeping, so the exact schedule the bash implementation would follow is read out in milliseconds rather than in the 6 to 62 seconds the real call sites take. The
 Python side gets

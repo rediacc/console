@@ -175,7 +175,7 @@ def capture(
 ) -> tuple[int, str]:
     """Run `body`, return `(rc, stdout)`. STDERR IS INHERITED, not captured, unless `quiet_err` (`2>/dev/null`).
 
-    A bridged function's stdout is its VALUE (`devbox_url` prints a URL, `devbox_base_port` prints a number) and its stderr is its LOG, because every `log_*` in `.ci/scripts/lib/common.sh:35-54` writes to stderr. Capturing both would merge a value with the progress text around it, which is the exact defect `rediacc_ci.log`'s header records. So stderr goes straight through to the
+    A bridged function's stdout is its VALUE (`devbox_url` prints a URL, `devbox_base_port` prints a number) and its stderr is its LOG, because every `log_*` of the retired bash (now `rediacc_ci.log`) writes to stderr. Capturing both would merge a value with the progress text around it, which is the exact defect `rediacc_ci.log`'s header records. So stderr goes straight through to the
     operator and only stdout comes back.
     """
     words = _devbox_words(body)

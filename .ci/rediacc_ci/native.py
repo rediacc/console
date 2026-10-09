@@ -8,8 +8,8 @@ package already owns: `rediacc_ci.core.platform`'s module docstring cites
 THE SEAM, WHICH IS THE POINT OF THE PORT AND NOT A SIDE EFFECT. `plan()` takes `system` and `machine` as arguments and defaults them to the real `uname`. Nothing below the argv layer calls `uname` itself. That is what makes the three platform arms -- linux, mac, win -- checkable from one Linux box: `--print-plan --system Darwin --machine arm64` answers what the macOS arm WOULD do,
 and a gate can hold that answer against the artefact names the deleted bash produced. In bash the same question needed a Mac, so the mac and win arms of `rdc.sh` were never once executed by anything in CI.
 
-WHAT IS DELIBERATELY NOT REIMPLEMENTED. `check_node_version`, `ensure_deps` and `ensure_packages_built` stay in `.ci/lib/local-common.sh` and are reached through one `bash -c` that sources it. They are shared with `rdc.sh`'s ordinary path, they are several hundred lines between them, and a second copy here would be the "two implementations kept in sync" failure the whole
-transformation exists to remove. One process, not three, so the sourcing cost is paid once.
+WHAT IS DELIBERATELY NOT REIMPLEMENTED. `check_node_version`, `ensure_deps` and `ensure_packages_built` are Python in `rediacc_ci.core.local_common` (the code below calls `prepare_node_deps_packages`). They are shared with `rdc.sh`'s ordinary path, they are several hundred lines between them, and a second copy here would be the "two implementations kept in sync" failure the whole
+transformation exists to remove.
 
 TWO BEHAVIOURS CHANGED ON PURPOSE, both stated here rather than discovered later:
 

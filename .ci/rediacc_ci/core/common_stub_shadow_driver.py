@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Both sides of the stub-farm half of the `core.common` differential: `r2_count_objects` against a STUB `aws`, and `wait_for` against a stub probe and `sleep`.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.common_stub_shadow_driver --side old --twin .ci/scripts/lib/common.sh --port .ci/rediacc_ci/core/common.py <scenario>
     PYTHONPATH=.ci python3 -m rediacc_ci.core.common_stub_shadow_driver --side new --twin .ci/scripts/lib/common.sh --port .ci/rediacc_ci/core/common.py <scenario>
+
+The `--side old` form (the bash twin) can no longer run: `common.sh` is deleted and its recorded answers are frozen goldens. `--twin` still names the deleted path because the argument is required.
 
 WHY A STUB. `r2_count_objects` shells out to `aws s3api list-objects-v2` and this machine has no `aws`, which is why the 2026-09-10 port of `common.sh` left it out. `core/stubfarm.py` puts a scripted `aws` first on PATH for both sides, so the comparison covers rc, both streams and the exact argv the function builds, which is where its bugs would live (the optional `--endpoint-url`, the JMESPath query, the empty-versus-failed split). RUN AS A MODULE, never by path.
 

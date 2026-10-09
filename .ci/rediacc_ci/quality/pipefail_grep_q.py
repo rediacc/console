@@ -72,7 +72,7 @@ THE PIPEFAIL TEST IS PER-FILE, AND IT IS WRONG IN BOTH DIRECTIONS. It greps the 
   at 937 and 983, itself sourced by `rdc.sh:11`. It is a live, user-facing
   detector -- `devbox_identity_ok` hunting "dubious ownership" -- and losing the
   race makes it return SUCCESS. INHERITS_PIPEFAIL_PREFIXES below is the narrow
-  answer. A general source-graph analyser is not proportionate: measured over
+  answer (emptied once `.ci/lib/` was ported to Python and deleted). A general source-graph analyser is not proportionate: measured over
   every tracked shell file that lacks its own pipefail and is sourced by one that
   has it, this is the ONLY such site in the repository.
 
@@ -147,20 +147,24 @@ from rediacc_ci.controls import Controls
 # The corpus, as git pathspecs. Handed to `git ls-files` verbatim; see the port notes for why this is not rewritten as a glob walk. `:(glob)` IS LOAD-BEARING: without it git reads `**` as demanding a slash, so these matched nothing at depth 1 and the corpus silently skipped six tracked shell files. Measured 2026-09-08: 471 before, 477 after. Kept BYTE-EQUAL to the twin's spelling
 # at `check-pipefail-grep-q.sh`, since the shadow ledger compares the two verdicts and a corpus difference would read as a behavioural divergence.
 #
-# THE LAST THREE ROOTS WERE ADDED 2026-09-16 and cost 26 files for two findings, both real: `.ci/lib/devbox.sh:1082` (a silent-miss detector, and the reason `.ci/lib/` is also in INHERITS_PIPEFAIL_PREFIXES) and `.devcontainer/start-kvm.sh:216`, which offended the rule as it stood and was invisible only because nothing looked there. `.ci/media/**` came in with them and is clean; it
+# THE LAST THREE ROOTS WERE ADDED 2026-09-16 and cost 26 files for two findings, both real: `.ci/lib/devbox.sh:1082` (a silent-miss detector, and the reason `.ci/lib/` was also in INHERITS_PIPEFAIL_PREFIXES; both files are gone with the bash libraries) and `.devcontainer/start-kvm.sh:216`, which offended the rule as it stood and was invisible only because nothing looked there. `.ci/media/**` came in with them and is clean; it
 # is listed so the next shell script written there is covered rather than discovered by the sweep after next.
 PATHSPECS = (
     ":(glob).ci/scripts/**/*.sh",
     ":(glob)scripts/**/*.sh",
     ":(glob).claude/hooks/**/*.sh",
-    ":(glob).ci/lib/**/*.sh",
     ":(glob).devcontainer/**/*.sh",
     ":(glob).ci/media/**/*.sh",
 )
 
-# A SOURCED LIBRARY INHERITS ITS SOURCER'S OPTIONS, and the per-file pipefail test cannot see that. These repo-relative prefixes are treated as pipefail-bearing whatever the file itself sets; see the FALSE NEGATIVE note in the docstring. One prefix, because one site in the whole repository needs it: building a source-graph analyser for `.ci/lib/devbox.sh:1082` would be the wrong
-# size of answer.
-INHERITS_PIPEFAIL_PREFIXES = (".ci/lib/",)
+# A SOURCED LIBRARY INHERITS ITS SOURCER'S OPTIONS, and the per-file pipefail test cannot see that. These repo-relative prefixes are treated as pipefail-bearing whatever the file itself sets; see the FALSE NEGATIVE note in the docstring. The tuple is EMPTY today: its one entry, `.ci/lib/`, covered the one site that needed it (`.ci/lib/devbox.sh:1082`), and that directory is gone with the bash libraries. The mechanism stays so a future sourced library is a one-line addition, and the selftest controls drive it through the `prefixes` parameter, so they prove the logic without depending on a real prefix.
+# A source-graph analyser would be the wrong size of answer.
+INHERITS_PIPEFAIL_PREFIXES: tuple[str, ...] = ()
+
+# Synthetic inputs for the inherited-pipefail controls. The real tuple is empty, so the controls hand `offenders_in` their own prefix through its `prefixes` parameter; the logic under test is the same.
+SYNTH_PREFIXES = ("sourced-lib/",)
+SYNTH_INHERITING_PATH = "sourced-lib/inherited.sh"
+SYNTH_OTHER_PATH = "scripts/dev/inherited.sh"
 
 # `grep -qE 'set -[a-z]*o pipefail|set -o pipefail'`. Only a script that actually sets pipefail can have the bug; without it the pipeline reports grep's status and the match stands.
 PIPEFAIL_RE = re.compile(r"set -[a-z]*o pipefail|set -o pipefail")
@@ -245,12 +249,15 @@ SCALING_PRODUCERS = (
 )
 
 
-def inherits_pipefail(rel: str | None) -> bool:
+def inherits_pipefail(rel: str | None, prefixes: tuple[str, ...] | None = None) -> bool:
     """The twin's `inherits_pipefail`. An EMPTY path is false.
+
+    `prefixes` overrides INHERITS_PIPEFAIL_PREFIXES, which is empty today; the selftest controls pass a synthetic one.
 
     Fixture controls have no repo-relative identity, so they keep testing the ordinary per-file rule.
     """
-    return bool(rel) and str(rel).startswith(INHERITS_PIPEFAIL_PREFIXES)
+    use = INHERITS_PIPEFAIL_PREFIXES if prefixes is None else prefixes
+    return bool(rel) and str(rel).startswith(use)
 
 
 def strip_code(line: str) -> str:
@@ -304,14 +311,16 @@ def producer_names(text: str) -> list[str]:
     return sorted(set(local_functions(text)) | set(SCALING_PRODUCERS))
 
 
-def offenders_in(text: str, rel: str | None = None) -> list[str]:
+def offenders_in(
+    text: str, rel: str | None = None, prefixes: tuple[str, ...] | None = None
+) -> list[str]:
     """`offenders <file> [<rel>]` -- one `<line>:<text>` per racing pipeline.
 
-    Empty is clean. `rel` is the REPO-RELATIVE path, used only to ask `inherits_pipefail()`; it is None for a fixture, which then takes the ordinary per-file test.
+    Empty is clean. `rel` is the REPO-RELATIVE path, used only to ask `inherits_pipefail()` (with `prefixes`, see there); it is None for a fixture, which then takes the ordinary per-file test.
 
     The order is the twin's: producer names in sorted order, and within each name the file's own line order, because the twin runs one `grep -n` per name. A line naming two different producers is therefore reported TWICE, which is real and is preserved.
     """
-    if not inherits_pipefail(rel) and not PIPEFAIL_RE.search(text):
+    if not inherits_pipefail(rel, prefixes) and not PIPEFAIL_RE.search(text):
         return []
     names = producer_names(text)
     if not names:
@@ -524,14 +533,16 @@ def main(argv: list[str] | None = None) -> int:
             'lib_detect() { git -C "$1" status --porcelain; }\n'
             'if printf "%%s" "$out" | %s dubious; then :; fi\n' % _GQ
         )
-        if offenders_in(inherited, ".ci/lib/inherited.sh"):
-            report.ok("control: a file under .ci/lib/ with no pipefail of its OWN is still scanned")
+        if offenders_in(inherited, SYNTH_INHERITING_PATH, SYNTH_PREFIXES):
+            report.ok(
+                "control: a file under an inheriting prefix with no pipefail of its OWN is still scanned"
+            )
         else:
             report.fail(
-                "CONTROL DID NOT FIRE: .ci/lib/devbox.sh:1082 is exactly this shape and would be "
-                "invisible again"
+                "CONTROL DID NOT FIRE: a sourced library with no pipefail of its own (the shape of "
+                "the retired .ci/lib/devbox.sh:1082) would be invisible again"
             )
-        if not offenders_in(inherited, "scripts/dev/inherited.sh"):
+        if not offenders_in(inherited, SYNTH_OTHER_PATH, SYNTH_PREFIXES):
             report.ok("control: the same bytes OUTSIDE the inheriting prefixes are not flagged")
         else:
             report.fail(
@@ -554,7 +565,7 @@ def main(argv: list[str] | None = None) -> int:
 
         # THE `tee` AND `docker` CASES, FROM THE SAME 2026-09-16 WIDENING, and here
         # for the same reason as the pair above: a widening whose revert is silent
-        # is a widening that will be reverted. `docker` had THREE live offenders in this repo, all under `.ci/lib/`'s inherited pipefail; `tee` had none here and one in private/renet, whose copy of this gate must stay a SUPERSET of this list, so losing `tee` here would also un-pin it there.
+        # is a widening that will be reverted. `docker` had THREE live offenders in this repo, all under the retired `.ci/lib/`'s inherited pipefail; `tee` had none here and one in private/renet, whose copy of this gate must stay a SUPERSET of this list, so losing `tee` here would also un-pin it there.
         teeprod = 'set -o pipefail\nif cmd 2>&1 | tee "$LOG" | %s ok; then :; fi\n' % _GQ
         if offenders_in(teeprod):
             report.ok("control: a `tee` pass-through piped into grep -q is detected")
@@ -648,7 +659,7 @@ def main(argv: list[str] | None = None) -> int:
             print("  includes printf, echo, tee and docker. What it still cannot see is an INNER")
             print("  shell's options: the pipefail test is per-FILE, so a docker/ssh heredoc that")
             print("  sets only 'set -e' reads as pipefail-bearing, and a sourced library reads as")
-            print("  clean unless its prefix is in INHERITS_PIPEFAIL_PREFIXES.")
+            print("  clean unless its prefix is in INHERITS_PIPEFAIL_PREFIXES (empty today).")
             return 0
         print("%s✗%s pipefail/grep -q: %d failure(s)." % (report.red, report.nc, report.fails))
         return 1
@@ -695,19 +706,19 @@ def selftest() -> int:
         [],
     )
 
-    # INHERITED PIPEFAIL: identical bytes, classified by PATH alone. `.ci/lib/` files set no pipefail of their own and get it from every sourcer, which is how `.ci/lib/devbox.sh:1082` stayed invisible.
+    # INHERITED PIPEFAIL: identical bytes, classified by PATH alone. A sourced library sets no pipefail of its own and gets it from every sourcer, which is how the retired `.ci/lib/devbox.sh:1082` stayed invisible.
     _inherited = (
         'lib_detect() { git -C "$1" status --porcelain; }\n'
         'if printf "%%s" "$out" | %s dubious; then :; fi\n' % _GQ
     )
     ctl.check(
-        "CONTROL: a .ci/lib/ file with no pipefail of its own IS scanned",
-        len(offenders_in(_inherited, ".ci/lib/inherited.sh")),
+        "CONTROL: a file under an inheriting prefix with no pipefail of its own IS scanned",
+        len(offenders_in(_inherited, SYNTH_INHERITING_PATH, SYNTH_PREFIXES)),
         1,
     )
     ctl.check(
         "MIRROR: the same bytes elsewhere, with no pipefail, are not",
-        offenders_in(_inherited, "scripts/dev/inherited.sh"),
+        offenders_in(_inherited, SYNTH_OTHER_PATH, SYNTH_PREFIXES),
         [],
     )
     # THE 2026-09-16 `tee`/`docker` WIDENING, driven here as well as in main() so a revert reds the selftest too rather than only the live run.

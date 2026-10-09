@@ -9,7 +9,7 @@ LIVE CALLERS, none repointed by this port. Four workflow steps, two amd64 and tw
   * `:287`  `Build & push (amd64)`, `build-server-docker`,       PLATFORM=linux/amd64
   * `:387`  the arm64 twin of it,   `build-server-docker-arm64`, PLATFORM=linux/arm64
   * plus the two later variant jobs that reach it through the same step name.
-`.ci/scripts/ci/generate-tag.sh:220` and `rediacc_ci/ci/generate_tag.py:162` name the path in the change-detection table; neither EXECUTES it.
+`rediacc_ci/ci/generate_tag.py:162` (the port of the deleted `generate-tag.sh`) names the path in the change-detection table; neither EXECUTES it.
 
 -----------------------------------------------------------------------------
 IT PUSHES TO ghcr.io, SO THE DIFFERENTIAL NEVER RUNS `docker`

@@ -194,7 +194,7 @@ def test_allowlisted_with_good_reason_passes(gate):
 
 
 def test_low_effort_blocker_rejected(gate):
-    """The rejection is INHERITED from .ci/scripts/lib/blocker-validator.sh, not re-implemented here: 'tbd' is on the shared banned-phrase list."""
+    """The rejection is INHERITED from rediacc_ci.core.allowlist, not re-implemented here: 'tbd' is on the shared banned-phrase list."""
     with harness.temp_dir() as d:
         scaffold(gate, d)
         wf, allow = one_profiled_one_bare(gate, d)

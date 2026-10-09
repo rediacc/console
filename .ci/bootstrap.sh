@@ -151,7 +151,8 @@ uv_target() { # -> "<arch>-<os-triple> <SHA_VAR_SUFFIX>"
 # name there does not report "cannot verify", it reports a checksum MISMATCH
 # that never happened. Third copy of this shim in the repo, and the siblings are
 # named so the next reader knows it is a pattern: _toolchain_sha256sum in
-# .ci/scripts/lib/toolchain.sh and _sha256sum in .ci/lib/local-common.sh.
+# .ci/scripts/lib/toolchain.sh and _sha256_file in .ci/rediacc_ci/setup/host.py (the
+# Python port of the deleted .ci/lib/local-common.sh _sha256sum).
 sha256_of() {
     if command -v sha256sum >/dev/null 2>&1; then
         sha256sum "$1" | cut -d' ' -f1

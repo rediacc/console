@@ -293,7 +293,7 @@ def extract_ci_refs(target: pathlib.Path) -> list[str]:
 def ci_invoked_runsh_subcommands(root: pathlib.Path) -> list[str]:
     """`./run.sh <sub>` names a WORKFLOW actually invokes.
 
-    "run.sh dispatches many subcommands; only the ones a WORKFLOW actually invokes are reachable from a gated job. `./run.sh drill ...` appears in ct-tests.yml, `./run.sh worktree` does not, so scripts/dev/worktree.sh is legitimately narrowable even though run.sh names it."
+    "run.sh dispatches many subcommands; only the ones a WORKFLOW actually invokes are reachable from a gated job. `./run.sh drill ...` appears in ct-tests.yml, `./run.sh worktree` does not, so rediacc_ci/dev/worktree.py is legitimately narrowable even though run.sh names it."
     """
     out: set[str] = set()
     for text in walk_text(root / ".github" / "workflows"):

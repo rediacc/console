@@ -53,7 +53,7 @@ is therefore UNREACHABLE. Measured 2026-09-06 with a `gh` stub that exits 1: the
 
 The port reproduces both statuses, because invariant 5 says the twin is not edited in the change that ports it and the differential rules on behaviour, not on intent. It is reported as a defect in the twin.
 
-A SECOND, QUIETER ONE: this gate calls `gh` DIRECTLY rather than through `gh_json` from `.ci/scripts/lib/common.sh`, so it gets no retry and no body-parses-as-JSON check. `gh_json`'s own comment says why that matters: "gh api graphql can exit 0 while returning a truncated or malformed body, so an exit-code check alone misses it." Eight other call sites across the review gates were
+A SECOND, QUIETER ONE: the twin called `gh` DIRECTLY rather than through `gh_json` from the retired `.ci/scripts/lib/common.sh`, so it got no retry and no body-parses-as-JSON check. The port reads through `core.gh_retry` and parses the body in Python. `gh_json`'s own comment says why that matters: "gh api graphql can exit 0 while returning a truncated or malformed body, so an exit-code check alone misses it." Eight other call sites across the review gates were
 moved onto it; this one was left behind.
 
 -----------------------------------------------------------------------------

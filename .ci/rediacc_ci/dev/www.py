@@ -3,8 +3,7 @@
 WHAT MOVED. `dev()` at `.ci/legacy/run-legacy.sh:73-84` and its dispatch arm. Four statements, and the reason the port is worth its own file rather than an inline branch in the router is that three of the four are the parts a transcription gets wrong: which stream the step line lands on, whether a failing precondition still reaches `npm`, and whose process the dev server ends up
 being.
 
-WHAT DID NOT MOVE, AND WHY THAT IS THE RIGHT SCOPE. `check_node_version` and `ensure_deps` live in `.ci/lib/local-common.sh`, which `devbox`, `account`, `service` and `rdc.sh` also call. They are reached through `rediacc_ci.setup.bridge`, so the same bytes run and the behaviour is not merely preserved, it is identical. That module's own header names these two functions among the
-six it exists for; this is the second verb through the same seam rather than a second seam.
+WHAT DID NOT MOVE, AND WHY THAT IS THE RIGHT SCOPE. `check_node_version` and `ensure_deps` are Python in `rediacc_ci.core.local_common` (the port of the deleted `.ci/lib/local-common.sh`), which `devbox`, `account`, `service` and `rdc.sh` also call. They are reached through `core.local_common` directly, not through a bash bridge, so every caller runs the same code.
 
 -----------------------------------------------------------------------------
 THE FOUR THINGS THIS FILE IS JUDGED ON

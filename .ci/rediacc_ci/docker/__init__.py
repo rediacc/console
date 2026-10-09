@@ -12,9 +12,8 @@ NONE OF THE THREE IS A GATE, and two of them are workflow `run:` targets. The ca
     `--push-latest --skip-if-exists`) and `.github/workflows/cd-stage.yml:242-247`.
     Both drive `--image` twice and `--image-path ghcr.io/rediacc/server` once,
     which is the slash-decides-the-mode path the differential covers on purpose.
-  * `cleanup-staging.sh`: no workflow reaches it. It is forwarded to by
-    `.ci/scripts/release/cleanup-channel-docker-tags.sh` and by that script's
-    own port, `rediacc_ci.release.cleanup_channel_docker_tags`.
+  * `cleanup-staging.sh`: no workflow reaches it. The `.sh` forwarder is gone: it is
+    called by `rediacc_ci.release.cleanup_channel_docker_tags` only.
 
 So no `scripts/ci-runner/manifest.ts` entry follows from a module living here (these are `run:` targets and plumbing, never gates), and every one of those call sites still names the BASH twin. Flipping them is the cutover box, not this one.
 

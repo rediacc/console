@@ -1,7 +1,6 @@
-"""The refuse-early half of `.ci/scripts/lib/common.sh`, the tree's base library.
+"""The refuse-early half of the retired bash base library `.ci/scripts/lib/common.sh`.
 
-`.ci/scripts/lib/common.sh` is 772 lines and **208 files source it** (re-derived 2026-09-10 with `grep -rlP '^\\s*(source|\\.)\\s+.*lib/common\\.sh'`, excluding `node_modules` and `.git`, minus the one `.md` mention: 206 `.sh` plus two `.py` test files that emit a source line). The plan's "251" and the later "209" both counted files rather than real sourcers; the number to quote is
-208.
+`.ci/scripts/lib/common.sh` was 772 lines. It was ported to Python and deleted; this module keeps the refuse-early half, and `tests/test_core_common.py` pins it against the frozen answers of that file.
 
 It is NOT one library. It is seven, stacked in one file, and five of them were already ported by earlier waves under names that describe what they do:
 
@@ -637,7 +636,7 @@ def _indent_detail(blob: bytes) -> None:
     sys.stderr.write(out)
 
 
-USAGE = """common -- the refuse-early half of .ci/scripts/lib/common.sh.
+USAGE = """common -- the refuse-early half of the retired bash library common.sh.
 
   require-cmd <name>              refuse unless the command resolves
   require-file <path>             refuse unless it is a regular file
