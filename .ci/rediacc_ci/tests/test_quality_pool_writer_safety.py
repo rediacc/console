@@ -104,3 +104,11 @@ def test_selftest_passes_and_is_not_vacuous(capsys) -> None:
     out = capsys.readouterr().out
     assert "control(s) passed" in out
     assert int(out.strip().split("\n")[-1].split()[0]) >= 45
+
+
+def test_diagnostics_are_prefixed_with_the_module_name(tmp_path, monkeypatch, capsys) -> None:
+    """The twin's `check-pool-writer-safety.sh` is deleted, so the prefix names the module a reader can run and find."""
+    monkeypatch.setenv(gate.LOCK_ENV, str(tmp_path / "no-such-lock.json"))
+    assert gate.main([]) != 0
+    out = capsys.readouterr()
+    assert "rediacc_ci.quality.pool_writer_safety: gate lock not found" in out.out + out.err

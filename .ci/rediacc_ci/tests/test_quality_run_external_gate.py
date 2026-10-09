@@ -23,6 +23,7 @@ import pytest
 
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import frozen
+from rediacc_ci.tests.twin_names import as_twin
 
 SLUG = "run-external-gate"
 MODULE = "rediacc_ci.quality.run_external_gate"
@@ -198,7 +199,7 @@ def test_port_matches_the_twins_recorded_output(
     assert summary == want_summary, "%s: the step summary diverged" % name
     if how == COMPARE_STDOUT:
         return
-    assert stderr == want_err, "%s: stderr diverged from the twin's recorded bytes" % name
+    assert as_twin(stderr) == want_err, "%s: stderr diverged from the twin's recorded bytes" % name
 
 
 def test_every_case_has_a_golden_and_no_golden_is_orphaned() -> None:
@@ -299,3 +300,9 @@ def test_planted_defect_is_caught_by_the_goldens(tmp_path: pathlib.Path) -> None
     # And the real, unmutated file still agrees against the same case.
     assert run_port(tmp_path / "real", command, mode="hard")[0] == recorded_exit
     assert PORT.read_text(encoding="utf-8") == source
+
+
+def test_diagnostics_are_prefixed_with_the_module_name(tmp_path: pathlib.Path) -> None:
+    """The twin's `run-external-gate.sh` is deleted, so the prefix names the module a reader can run and find."""
+    _code, _out, err, _summary = run_port(tmp_path, PASSING, mode="Soft")
+    assert err.startswith("rediacc_ci.quality.run_external_gate: unknown EXTERNAL_QUALITY_MODE")

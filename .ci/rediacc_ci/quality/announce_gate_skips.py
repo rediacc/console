@@ -55,7 +55,8 @@ def main(argv: list[str]) -> int:
 
     if mode not in MODES:
         print(
-            "announce-gate-skips: unknown GATE_SKIP_MODE '%s' (expected hard|skip)" % mode,
+            "rediacc_ci.quality.announce_gate_skips: unknown GATE_SKIP_MODE '%s' (expected hard|skip)"
+            % mode,
             file=sys.stderr,
         )
         return 2

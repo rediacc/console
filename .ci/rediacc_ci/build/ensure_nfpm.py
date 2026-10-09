@@ -141,14 +141,14 @@ def is_pinned_arch(arch: str) -> bool:
 def unpinned_arch_message(arch: str) -> str:
     """`:58`, verbatim, minus the trailing newline `echo` adds."""
     return (
-        "ensure-nfpm: no pinned checksum for %s in .ci/config/constants.sh -- "
+        "rediacc_ci.build.ensure_nfpm: no pinned checksum for %s in .ci/config/constants.sh -- "
         "add one rather than downloading unverified bytes" % arch
     )
 
 
 def fetching_message(version: str, arch: str) -> str:
     """`:66`, verbatim, minus the trailing newline `echo` adds."""
-    return "ensure-nfpm: fetching nfpm %s for %s" % (version, arch)
+    return "rediacc_ci.build.ensure_nfpm: fetching nfpm %s for %s" % (version, arch)
 
 
 def _binary_answers(binary: str | pathlib.Path) -> bool:

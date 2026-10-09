@@ -75,6 +75,20 @@ _ELSEWHERE = {
     "release.validate_stage_artifacts": None,
     "release.verify_artifact_attestation": None,
     "release.verify_release_assets": None,
+    "release.mark_production": "mark-production",
+    "build.ensure_nfpm": "ensure-nfpm",
+    "core.bws_env": "bws-env",
+    "core.blocker_validator": "blocker-validator",
+    "review.standing_orders_brief": "standing-orders-brief",
+    "quality.announce_gate_skips": "announce-gate-skips",
+    "quality.run_external_gate": "run-external-gate",
+    "quality.eslint_heap": "eslint-heap",
+    "quality.mutate_check": "check-mutate-check",
+    "quality.pool_writer_safety": "check-pool-writer-safety",
+    "quality.devcontainer_scripts": "check-devcontainer-scripts",
+    "quality.setup_idempotency": "check-setup-idempotency",
+    "quality.control_vacuity": "check-control-vacuity",
+    "quality.gate_tree_writes": "check-gate-tree-writes",
 }
 
 

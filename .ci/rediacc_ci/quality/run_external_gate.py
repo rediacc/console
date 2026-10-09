@@ -42,7 +42,7 @@ THREE DIVERGENCES, ALL IN MESSAGE TEXT AND NONE IN AN EXIT CODE, driven 2026-09-
      the shell's `$0`, and hardcoding the twin's `.sh` path would print a path
      that did not run. The differential masks the program token.
   2. Spawn failures. bash prints `<script>: line 49: <cmd>: command not found`;
-     this prints `run-external-gate: <cmd>: command not found`. Both exit 127.
+     this prints `rediacc_ci.quality.run_external_gate: <cmd>: command not found`. Both exit 127.
   3. A SIGNALLED CHILD. bash's job-control notice
      `Terminated                 "$@"` lands on the twin's stderr and has no
      Python equivalent. The exit code is 143 on both sides, which is the part
@@ -82,7 +82,8 @@ def main(argv: list[str]) -> int:
 
     if mode not in MODES:
         print(
-            "run-external-gate: unknown EXTERNAL_QUALITY_MODE '%s' (expected hard|soft)" % mode,
+            "rediacc_ci.quality.run_external_gate: unknown EXTERNAL_QUALITY_MODE '%s' (expected hard|soft)"
+            % mode,
             file=sys.stderr,
         )
         return 2
@@ -94,11 +95,15 @@ def main(argv: list[str]) -> int:
         rc = _shell_status(completed.returncode)
     except FileNotFoundError:
         # bash: `<script>: line 49: <cmd>: command not found`, status 127.
-        print("run-external-gate: %s: command not found" % argv[0], file=sys.stderr)
+        print(
+            "rediacc_ci.quality.run_external_gate: %s: command not found" % argv[0], file=sys.stderr
+        )
         rc = 127
     except PermissionError:
         # bash: `<script>: line 49: <cmd>: Permission denied`, status 126.
-        print("run-external-gate: %s: Permission denied" % argv[0], file=sys.stderr)
+        print(
+            "rediacc_ci.quality.run_external_gate: %s: Permission denied" % argv[0], file=sys.stderr
+        )
         rc = 126
 
     if rc == 0:
