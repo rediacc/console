@@ -411,6 +411,22 @@ STATIC: list[Case] = [
         bash_json("scp host:/var/log/renet.log ./logs/"),
         "binary-deploy CONTROL: pulling a log back is diagnosis, not a deploy",
     ),
+    # scp AT COMMAND POSITION, 2026-10-09 (#ecb59527). `(^|[{B}])scp[{B}]` matched after any blank, so a sentence ending in a host spec read as an upload. The launcher the guard names (sshpass) is pinned beside the two prose controls, so the narrowing cannot drift into letting a real upload through.
+    case(
+        "check 0 guards/block_binary_deploy.py",
+        bash_json("echo never run scp bin/renet host:/usr/local/bin/renet"),
+        "binary-deploy CONTROL: an unquoted sentence naming scp is not an upload",
+    ),
+    case(
+        "check 0 guards/block_binary_deploy.py",
+        bash_json("git commit -m 'docs: scp x h:/p'"),
+        "binary-deploy CONTROL: a commit message naming scp is not an upload",
+    ),
+    case(
+        "check 2 guards/block_binary_deploy.py",
+        bash_json("sshpass -p x scp x h:/p"),
+        "binary-deploy: a launcher before scp is still at command position",
+    ),
     case(
         "check 0 guards/block_protected_files.py",
         bash_json("git checkout main && cat .claude/settings.json"),

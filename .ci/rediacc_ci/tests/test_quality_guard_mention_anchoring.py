@@ -2,6 +2,9 @@
 
 THE FINDING THIS FILE PINS (worklist #d53494b0, from the writer of 276a69db9). A draft block_worktree_add pattern `(rediacc_ci(\\.__main__)?[{S}]+worktree|rediacc_ci\\.dev\\.worktree|(^|[^A-Za-z0-9_])worktree\\.py)[{S}]+create` passed the gate at rc 0 while the guard refused `echo the docs say never to run rediacc_ci.dev.worktree create in this repo` at rc 2. Three things let it through: the instantiator rendered each alternation through its FIRST branch only,
 it rendered `[{S}]+` as a literal `x` so that branch's probe could not match anything, and the static tier's anchor test was a substring search for `(^|` that one alternative satisfied for all of them.
+
+THE SECOND FINDING (worklist #ecb59527). A four-character floor in `probes_of` dropped every short instance, so block_binary_deploy's unanchored `(^|[{B}])scp[{B}]` was never probed, and its plain probe could not have reached the guard's `host:` destination test anyway. The tests at the end pin the worded-or-fragment provenance, the argument-shaped second template, and the
+three-way rule (anchored, worded and silent, or a declared FRAGMENTS entry that is not stale).
 """
 
 import importlib.util
@@ -115,7 +118,10 @@ def test_a_prose_target_reports_every_refused_sentence(
     monkeypatch.setitem(gma.PROSE_TARGETS, guard.name, "BLOCKER: a planted prose target")
     got, detail = gma.assess(guard, "command", "")
     assert got == "prose"
-    assert set(detail.split(gma.PROSE_SEP)) == {"frobnicate widgets", "grommet gadgets"}
+    assert set(detail.split(gma.PROSE_SEP)) == {
+        gma.sentence("frobnicate widgets"),
+        gma.sentence("grommet gadgets"),
+    }
 
 
 def test_an_unlisted_guard_still_stops_at_the_first_refusal(tmp_path: pathlib.Path) -> None:
@@ -126,3 +132,92 @@ def test_an_unlisted_guard_still_stops_at_the_first_refusal(tmp_path: pathlib.Pa
     got, detail = gma.assess(guard, "command", "")
     assert got == "prose"
     assert gma.PROSE_SEP not in detail
+
+
+@pytest.mark.parametrize(
+    ("pattern", "want"),
+    [
+        (r"(^|[ \t])scp[ \t]", {"scp": True}),
+        (r"go|gofmt", {"go": True, "gofmt": True}),
+        # Fragments: every word character was CHOSEN by the renderer, or the literal run is one character long.
+        (r"\$[A-Za-z_]+", {"$x": False}),
+        (r"--dry-run|-n", {"--dry-run": True, "-n": False}),
+        (r"\bP([0-3])\b", {"P1": False}),
+        (r"[0-9a-f]{7,40}", {"aaaaaaa": False}),
+    ],
+)
+def test_provenance_separates_words_from_fragments(pattern: str, want: dict) -> None:
+    assert dict(gma.expand_marked(pattern)[0]) == want
+
+
+def test_a_planted_scp_style_guard_is_refused_through_the_second_template(
+    tmp_path: pathlib.Path,
+) -> None:
+    # The block_binary_deploy shape: a short command name at a word boundary that refuses only when the last field is a `host:` spec.
+    guard = tmp_path / "argshape.py"
+    guard.write_text(gma._ARGSHAPE_FIXTURE.format(pattern=r"(^|[ \t])zcp[ \t]"))
+    assert not gma.fires(guard, gma.sentence("zcp")), "the plain template must not reach it"
+    assert gma.fires(guard, "zcp a.sh host:/dst/a.sh"), "the fixture must refuse its own command"
+    assert gma.assess(guard, "command", "") == ("prose", gma.argument_sentence("zcp"))
+    # The other direction: anchored, the same guard is silent through both templates and still refuses the real command.
+    anchored = tmp_path / "argshape_anchored.py"
+    anchored.write_text(gma._ARGSHAPE_FIXTURE.format(pattern=r"(^|[;&|(])[ \t]*zcp[ \t]"))
+    assert gma.assess(anchored, "command", "") == ("clean", "")
+    assert gma.fires(anchored, "true && zcp a.sh host:/dst/a.sh")
+
+
+def test_a_short_worded_instance_is_probed_not_unprobed(tmp_path: pathlib.Path) -> None:
+    probes = gma.probes_of([r"(^|[;&|(])[ \t]*(ab|cd+)"])
+    assert set(probes.instances) == {"ab", "cd"}
+    assert probes.fragments == 0
+    assert gma.sentences_of("ab") == [gma.sentence("ab"), gma.argument_sentence("ab")]
+    assert gma.sentences_of("abcd") == [gma.sentence("abcd")]
+    guard = tmp_path / "short.py"
+    guard.write_text(gma._COMMAND_FIXTURE.format(pattern=r"(^|[;&|(])[ \t]*(ab|cd+)", extra=""))
+    assert gma.assess(guard, "command", "")[0] == "clean"
+
+
+def test_an_undeclared_unworded_pattern_is_red_and_a_declared_one_is_not(
+    tmp_path: pathlib.Path,
+) -> None:
+    guard = tmp_path / "fragment.py"
+    guard.write_text(
+        gma._COMMAND_FIXTURE.format(
+            pattern=r"(^|[;&|(])[ \t]*frobnicate[ \t]+widgets",
+            extra='OTHER = re.compile(r"\\$[A-Za-z_]+")',
+        )
+    )
+    assert gma.assess(guard, "command", "", {}) == ("unprobed", "OTHER")
+    declared = {(guard.name, "OTHER"): gma._FIXTURE_FRAGMENT}
+    assert gma.assess(guard, "command", "", declared) == ("clean", "")
+
+
+@pytest.mark.parametrize(
+    ("key", "reason", "want"),
+    [
+        (("fragment.py", "GONE"), None, "no matcher-shaped constant"),
+        (("fragment.py", "PAT"), None, "anchored at command position"),
+        (("fragment.py", "WORDY"), None, "renders a worded instance"),
+        (("missing.py", "OTHER"), None, "no longer exists"),
+        (("fragment.py", "OTHER"), "BLOCKER: too short", "too short"),
+        (("fragment.py", "OTHER"), "a reason without the prefix, long enough", "BLOCKER:"),
+    ],
+)
+def test_a_stale_or_malformed_fragments_entry_is_red(
+    tmp_path: pathlib.Path, key: tuple, reason: str | None, want: str
+) -> None:
+    (tmp_path / "fragment.py").write_text(
+        gma._COMMAND_FIXTURE.format(
+            pattern=r"(^|[;&|(])[ \t]*frobnicate[ \t]+widgets",
+            extra='OTHER = re.compile(r"\\$[A-Za-z_]+")\nWORDY = re.compile(r"(^|[ \\t])zcp[ \\t]+")',
+        )
+    )
+    # The valid declaration is the control: it must produce nothing, or every row below proves nothing.
+    assert gma.fragment_findings({("fragment.py", "OTHER"): gma._FIXTURE_FRAGMENT}, tmp_path) == []
+    found = gma.fragment_findings({key: reason or gma._FIXTURE_FRAGMENT}, tmp_path)
+    assert len(found) == 1
+    assert want in found[0]
+
+
+def test_the_live_fragments_declarations_are_not_stale() -> None:
+    assert gma.fragment_findings(gma.FRAGMENTS) == []

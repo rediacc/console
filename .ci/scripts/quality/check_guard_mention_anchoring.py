@@ -53,6 +53,7 @@ import _cipath  # noqa: F401
 # into a NameError on the timeout path -- the path least likely to be exercised.
 from rediacc_ci import core_lease
 from rediacc_ci import proc as ci_proc
+from rediacc_ci.core import allowlist
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 # THE LIVE GUARD PACKAGE, not the retired oracle tree (PLAN-retire-bash-oracles A2). Patterns and the guard both come from here now, so there is exactly one copy of each guard's matcher to keep anchored.
@@ -110,6 +111,87 @@ PROSE_TARGETS = {
 
 # Joins the refused instances of a PROSE_TARGETS guard in `assess`'s detail. A control character, because an instance is rendered from a regex and may contain any printable one.
 PROSE_SEP = "\x1f"
+
+# THE THIRD WAY A PATTERN PASSES. Every module-level pattern of a scanned guard is exactly one of: anchored at command position (`command_anchored`); WORDED, so every worded instance is rendered into the probe sentences and each one stays silent; or declared here as a FRAGMENT, a pattern with no literal word for a sentence to mention, because it parses a piece of a command the guard has
+# already located by other means. Keyed by (guard file, constant name). Printed on every run, and red as STALE when the constant is gone, is anchored, has grown a word (and so is probed), or sits in a guard that is exempt anyway: a declaration that excuses nothing is how an exemption outlives its reason. A new unworded pattern that is not listed here is red, never silently skipped.
+FRAGMENTS: dict[tuple[str, str], str] = {
+    ("block_bash_write_to_running_script.py", "NOT_ARROW"): (
+        "BLOCKER: a one-character lookbehind stand-in `(^|[^->])` that only stops a quoted `->` arrow scoring as a redirect; "
+        "it is concatenated into REDIR_TARGET and matches nothing a sentence could name."
+    ),
+    ("block_bash_write_to_running_script.py", "REDIR_TARGET"): (
+        "BLOCKER: harvests the file a `>`/`>>` redirect opens (`> x.sh`); its words are the user's file name, never the guard's, "
+        "and the harvest only matters for a path a live process is interpreting."
+    ),
+    ("block_bash_write_to_running_script.py", "ANY_TAIL"): (
+        "BLOCKER: extracts the `name.ext` tail from REDIR_TARGET and ASSIGN_TARGET matches; a file-name shape with no literal "
+        "word, applied to text the anchored harvest already selected."
+    ),
+    ("block_blanket_git_add.py", "END"): (
+        "BLOCKER: the end-of-clause tail (`$`, a separator or a redirect) concatenated after the anchored GIT_ADD prefix; "
+        "only the composed BLANKET_* patterns are matchers, and they are anchored."
+    ),
+    ("block_binary_deploy.py", "_LAUNCHER_FLAGS"): (
+        "BLOCKER: the optional flags (and one value each) a launcher such as sudo or sshpass takes before scp; it is "
+        "concatenated into the anchored SCP_CLAUSE and never searched on its own."
+    ),
+    ("block_blanket_git_add.py", "BARE_DDASH"): (
+        "BLOCKER: an optional ` -- ` concatenated between GIT_ADD's anchored prefix and END; it is a piece of the composed "
+        "BLANKET_* patterns, never searched on its own."
+    ),
+    ("block_commit_meta.py", "SHELL_VAR"): (
+        "BLOCKER: a `$name`/`${name}` expansion parser used by `.sub()` to resolve variables in a commit message file name; "
+        "it rewrites text, it never decides a refusal."
+    ),
+    ("block_pathspecless_git_commit.py", "DDASH_PATHSPEC"): (
+        "BLOCKER: an ALLOW exemption (`-- <path>` after an anchored GIT_COMMIT), consulted only after the anchored commit "
+        "matcher fired; a mention of it can only let a command through, never refuse one."
+    ),
+    ("block_prose_style_commit.py", "PARAM"): (
+        "BLOCKER: a `$name`/`${name}` expansion parser used by `.sub()` to substitute assigned values into the commit "
+        "text before linting; it rewrites text and decides nothing itself."
+    ),
+    ("block_roundlog_truncate.py", "SEG"): (
+        "BLOCKER: `[^;|&]*`, the in-clause gap concatenated between an inline verb pattern and the round-log path; it "
+        "matches any text and has no word, so only the composed patterns could be probed."
+    ),
+    ("block_suppressions_shell_write.py", "_SED_SUB"): (
+        "BLOCKER: parses a sed `s<d>pat<d>rep<d>` expression from argv of an in-place sed already aimed at a suppression "
+        "file; the delimiter is any punctuation, so there is no literal word to mention."
+    ),
+    ("block_suppressions_shell_write.py", "_SED_TEXT"): (
+        "BLOCKER: parses sed `a`/`i`/`c` text commands from the same in-place sed argv as _SED_SUB; a one-letter command "
+        "plus an address, applied after the file target was resolved."
+    ),
+    ("block_unlinked_commit_author.py", "IDENT_EMAIL"): (
+        "BLOCKER: fullmatches `Name <email>` in a git identity value read back from git config, to extract the address; "
+        "it parses a config value, not the command text."
+    ),
+    ("block_unproven_bulk_transform.py", "PATHSPEC_TAIL"): (
+        "BLOCKER: collects the pathspec operands after ` -- ` from a commit already matched by the anchored commit "
+        "pattern, to count files; it measures a command, it does not detect one."
+    ),
+    ("block_unproven_bulk_transform.py", "MANUAL_PATH"): (
+        "BLOCKER: recognises a file name inside the commit message's own proof paragraph; its subject is prose by "
+        "design and a match can only ACCEPT a proof, never refuse a command."
+    ),
+    ("block_unproven_bulk_transform.py", "PARAM"): (
+        "BLOCKER: a `$name`/`${name}` expansion parser used by `.sub()` to resolve variables in pathspecs and message "
+        "files before counting; it rewrites text and decides nothing itself."
+    ),
+    ("block_unproven_bulk_transform.py", "_HEX_WORD"): (
+        "BLOCKER: finds 7 to 40 character hex words in a follow-up proof message to compare with a commit sha; a class "
+        "run with no literal word, whose match can only accept a proof."
+    ),
+    ("block_unscoped_formatter_run.py", "ASSIGN"): (
+        "BLOCKER: parses `NAME=value` shell assignments so a later `$NAME` operand can be resolved; it records values "
+        "and never refuses, and the refusal itself is TOOL_WORD's, which is probed."
+    ),
+    ("block_worktree_add.py", "LITERAL"): (
+        "BLOCKER: extracts quoted string literals from interpreter program text (`python -c`, `node -e`) for a static "
+        "scan; quote characters around any content, with no literal word."
+    ),
+}
 
 # The structure declaration (see the module docstring): `ANCHORING = "structure: <reason>"` as a module-level string constant, read by `ast` like every other constant here.
 ANCHORING_NAME = "ANCHORING"
@@ -223,6 +305,33 @@ def _class_char(av: list) -> str:
     return "x"
 
 
+# PROVENANCE OF A RENDERED CHARACTER. A word character the renderer CHOSE (for a class, `.` or a negated literal) is not a word the guard wrote, so it is carried through rendering as a private-use code point at a fixed offset and decoded only when the instance leaves `expand`. While marked it is a non-word character, so it splits a literal run instead of
+# extending one: `\$[A-Za-z_]+` renders `$x`, and its `x` cannot make the instance look like a word. Plane 15 is private use, so no guard's own literal collides with it.
+_MARK_BASE = 0xF0000
+_MARK_END = _MARK_BASE + 0xFFFF
+# A WORDED instance keeps a run of at least this many LITERAL alphanumerics: `go`, `scp`, `pdf` are words a sentence can mention, while `$x`, `x=x`, `-n` and `''` are fragments of a parser with nothing to mention. The floor this replaced was a LENGTH (`len(inst) < 4`), which dropped `scp` and `go` with the fragments and so left the one real mention matcher it hid unprobed.
+MIN_WORD_RUN = 2
+_WORD_RUN = re.compile(r"[^\W_]{%d,}" % MIN_WORD_RUN)
+
+
+def _mark(ch: str) -> str:
+    """`ch` as a renderer-chosen character: marked when it is a word character, unchanged otherwise (a space or punctuation is never part of a word either way)."""
+    if (ch.isalnum() or ch == "_") and ord(ch) <= 0xFFFF:
+        return chr(_MARK_BASE + ord(ch))
+    return ch
+
+
+def _unmark(text: str) -> str:
+    return "".join(
+        chr(ord(c) - _MARK_BASE) if _MARK_BASE <= ord(c) <= _MARK_END else c for c in text
+    )
+
+
+def worded(marked: str) -> bool:
+    """Does this MARKED rendering keep a run of MIN_WORD_RUN literal alphanumerics?"""
+    return bool(_WORD_RUN.search(marked))
+
+
 def _render_seq(items: list, groups: dict) -> list[str]:
     """Every rendering of a node sequence that varies ONE element from its default, the all-default rendering first.
 
@@ -241,11 +350,11 @@ def _render(op: object, av: Any, groups: dict) -> list[str]:
     if op is sre.LITERAL:
         return [chr(av)]
     if op is sre.NOT_LITERAL:
-        return ["y" if av == ord("x") else "x"]
+        return [_mark("y" if av == ord("x") else "x")]
     if op is sre.ANY:
-        return ["x"]
+        return [_mark("x")]
     if op is sre.IN:
-        return [_class_char(av)]
+        return [_mark(_class_char(av))]
     if op is sre.BRANCH:
         out: list[str] = []
         for alt in av[1]:
@@ -285,17 +394,31 @@ def _prose_safe(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def expand(pattern: str) -> tuple[list[str], int]:
-    """(instances, how many MAX_INSTANCES dropped) for one pattern; ([], 0) when `re` cannot parse it."""
+def expand_marked(pattern: str) -> tuple[list[tuple[str, bool]], int]:
+    """([(instance, worded)], how many MAX_INSTANCES dropped) for one pattern; ([], 0) when `re` cannot parse it.
+
+    Deduplicated on the decoded text. When one text is reached both as a word and as a fragment, it is a word: the guard did write those letters on some path.
+    """
     tree = _parse(pattern)
     if tree is None:
         return [], 0
-    out: list[str] = []
+    order: list[str] = []
+    flags: dict[str, bool] = {}
     for raw in _render_seq(tree, {}):
-        text = _prose_safe(raw)
-        if text not in out:
-            out.append(text)
+        marked = _prose_safe(raw)
+        text = _unmark(marked)
+        if text not in flags:
+            order.append(text)
+            flags[text] = False
+        flags[text] = flags[text] or worded(marked)
+    out = [(text, flags[text]) for text in order]
     return out[:MAX_INSTANCES], max(0, len(out) - MAX_INSTANCES)
+
+
+def expand(pattern: str) -> tuple[list[str], int]:
+    """(instances, how many MAX_INSTANCES dropped) for one pattern, worded or not; ([], 0) when `re` cannot parse it."""
+    found, dropped = expand_marked(pattern)
+    return [text for text, _ in found], dropped
 
 
 def instances(pattern: str) -> list[str]:
@@ -380,8 +503,10 @@ def _const_eval(node: ast.AST, table: dict[str, str]) -> str | None:
     return None
 
 
-def patterns_of(path: Path) -> list[str]:
-    """Every command-matcher-shaped string this guard module resolves to a constant.
+def named_patterns(path: Path) -> list[tuple[str, str]]:
+    """(constant name, pattern) for every command-matcher-shaped string this guard module resolves to a constant, in source order.
+
+    NAMED, because a FRAGMENTS declaration is keyed by the constant that holds the pattern, and a value alone cannot be declared. Not deduplicated: two constants holding one value are two names a declaration may use. `patterns_of` is the value view.
 
     Read from the AST, not the source TEXT: PLAN-retire-bash-oracles A2 retargeted this file from grepping quoted strings out of a frozen bash original to reading the LIVE Python guard's own regex constants, and those are not always one quoted literal on one line -- `hookio.rx(...)`, `re.compile(...)`, string-literal concatenation split across lines, and a constant built from
     another constant defined earlier in the same file all have to resolve exactly as the interpreter resolves them, or a real edit to a pattern goes on being invisible here for a different reason than the one this file used to name. The INTERESTING filter is what keeps ordinary message strings and non-matcher constants (`CHAIN`, `TWIN`, a file path) out.
@@ -401,14 +526,17 @@ def patterns_of(path: Path) -> list[str]:
         value = _const_eval(node.value, table)
         if value is not None:
             table[node.targets[0].id] = value
-    seen: set[str] = set()
-    uniq: list[str] = []
-    for x in table.values():
-        if x not in seen:
-            seen.add(x)
-            uniq.append(x)
     # PARSEABLE, TOO. A string `re` cannot compile is not a matcher the guard can be running (block_suppressions.py's refusal FOOTER looks regex-shaped and is not), so it is neither probed nor asked to carry an anchor.
-    return [p for p in uniq if INTERESTING.search(p) and _parse(p) is not None]
+    return [(n, p) for n, p in table.items() if INTERESTING.search(p) and _parse(p) is not None]
+
+
+def patterns_of(path: Path) -> list[str]:
+    """The distinct pattern values of `named_patterns`, first occurrence first."""
+    uniq: list[str] = []
+    for _, pat in named_patterns(path):
+        if pat not in uniq:
+            uniq.append(pat)
+    return uniq
 
 
 def payload_for(kind: str, text: str, file_path: str) -> str:
@@ -491,6 +619,24 @@ def sentence(instance: str) -> str:
     return f"echo the docs say never to run {instance} in this repo"
 
 
+# A worded instance shorter than this is ALSO probed with `argument_sentence`. A short word is usually a command name (`scp`, `go`, `cp`), and a command-name matcher often decides on the ARGUMENTS too: block_binary_deploy refuses an `scp` clause only when its last field is a `host:` spec, so `sentence("scp")`, which ends in `repo`, can never reach that test. Measured 2026-10-09:
+# `echo avoid scp x h:/p` is refused at rc 2 while the plain probe is silent.
+SHORT_INSTANCE = 4
+
+
+def argument_sentence(instance: str) -> str:
+    """The second template: the instance followed by a source and a remote-looking destination, still inside an `echo`."""
+    return f"echo the docs say never to run {instance} src/a.sh host:/dst/a.sh"
+
+
+def sentences_of(instance: str) -> list[str]:
+    """Every probe sentence for one instance: the plain template, and the argument-shaped one for a short instance."""
+    out = [sentence(instance)]
+    if len(instance) < SHORT_INSTANCE:
+        out.append(argument_sentence(instance))
+    return out
+
+
 def anchoring_of(path: Path) -> str | None:
     """The module's `ANCHORING` string constant, or None when it declares nothing. Read by `ast`, never imported."""
     tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"), filename=str(path))
@@ -547,7 +693,7 @@ def baseline_candidates(fp: str) -> list[Path]:
 
 
 def structure_probe(guard: Path, kind: str, instances: list[str], fp: str) -> tuple[str, str]:
-    """The structure-neutral probe. ("clean", <baseline>), ("prose", <instance>) or ("nobase", <why>).
+    """The structure-neutral probe. ("clean", <baseline>), ("prose", <refused sentence>) or ("nobase", <why>).
 
     A baseline qualifies only when the guard REFUSES the bare sentence at its path (so the path reaches the guard's judgement rather than an early out-of-scope allow) and ACCEPTS the document unmodified (so appending prose is the only change). Then the sentence is appended; a structure judge accepts the result and a mention matcher refuses it.
     """
@@ -562,9 +708,10 @@ def structure_probe(guard: Path, kind: str, instances: list[str], fp: str) -> tu
         if fires(guard, body, kind, str(doc)):
             continue
         for inst in instances:
-            appended = body.rstrip("\n") + "\n\n" + sentence(inst) + "\n"
-            if fires(guard, appended, kind, str(doc)):
-                return "prose", inst
+            for text in sentences_of(inst):
+                appended = body.rstrip("\n") + "\n\n" + text + "\n"
+                if fires(guard, appended, kind, str(doc)):
+                    return "prose", text
         return "clean", str(doc)
     return "nobase", (
         "no in-scope document the guard accepts unmodified was found beside %s, so the "
@@ -573,22 +720,34 @@ def structure_probe(guard: Path, kind: str, instances: list[str], fp: str) -> tu
 
 
 class Probes:
-    """The probe set for one guard: every instance of every pattern, and how it was built."""
+    """The probe set for one guard: every probed instance of every pattern, and how it was built."""
 
     def __init__(self) -> None:
         self.instances: list[str] = []
         # Instances the pattern they were rendered from actually matches. Printed every run: the old instantiator's figure was 21 of 171, and a probe its own pattern rejects is a probe that cannot fire.
         self.self_matching = 0
         self.dropped = 0
+        # Unworded instances too short to probe: `$x`, `-n`, `''`. Counted and printed, never silently dropped; the pattern they came from is judged by `pattern_verdicts`.
+        self.fragments = 0
+
+    def sentences(self) -> int:
+        return sum(len(sentences_of(inst)) for inst in self.instances)
 
 
 def probes_of(pats: list[str]) -> Probes:
+    """WORDED instances of any length, plus unworded ones at least SHORT_INSTANCE long.
+
+    The unworded long ones (`> x.x`, `-- x`) were probed under the old length floor and still are, so dropping the floor cannot shrink coverage. The unworded short ones are fragments: a sentence carrying `>` or `''` is a probe of the shell, not of a mention.
+    """
     out = Probes()
     for pat in pats:
-        found, dropped = expand(pat)
+        found, dropped = expand_marked(pat)
         out.dropped += dropped
-        for inst in found:
-            if len(inst) < 4 or inst in out.instances:
+        for inst, is_worded in found:
+            if inst in out.instances:
+                continue
+            if not is_worded and len(inst) < SHORT_INSTANCE:
+                out.fragments += 1
                 continue
             out.instances.append(inst)
             if re.search(pat, inst):
@@ -596,26 +755,50 @@ def probes_of(pats: list[str]) -> Probes:
     return out
 
 
-def assess(guard: Path, kind: str, fp: str) -> tuple[str, str]:
+def pattern_is_worded(pattern: str) -> bool:
+    return any(w for _, w in expand_marked(pattern)[0])
+
+
+def undeclared_fragments(
+    guard: Path, named: list[tuple[str, str]], fragments: dict[tuple[str, str], str]
+) -> list[str]:
+    """The constants of `guard` that fit NONE of the three ways: not anchored, no worded instance, not in `fragments`."""
+    return [
+        name
+        for name, pat in named
+        if not command_anchored(pat)
+        and not pattern_is_worded(pat)
+        and (guard.name, name) not in fragments
+    ]
+
+
+def assess(
+    guard: Path, kind: str, fp: str, fragments: dict[tuple[str, str], str] | None = None
+) -> tuple[str, str]:
     """One guard's verdict: (outcome, detail).
 
-    outcome is "clean", "static" (no renderable instance, anchored or nothing to anchor), "unprobed", "prose" (detail = the offending instance), "invalid" (a malformed declaration), or "nobase". Structure-judged verdicts carry the reason in the detail of "clean" as `<reason> | <baseline>`.
+    outcome is "clean", "static" (nothing to probe, every pattern anchored or a declared fragment), "unprobed" (detail = the undeclared fragment constants, comma-joined), "prose" (detail = the refused sentence), "invalid" (a malformed declaration), "nobase" or "allowed". Structure-judged verdicts carry the reason in the detail of "clean" as `<reason> | <baseline>`.
     """
+    if fragments is None:
+        fragments = FRAGMENTS
     declared = anchoring_of(guard)
     reason = None
     if declared is not None:
         reason, why = structure_reason(declared, kind)
         if reason is None:
             return "invalid", why
+    named = named_patterns(guard)
     pats = patterns_of(guard)
     instances = probes_of(pats).instances
+    # THE STRICT RULE, per pattern. Before 2026-10-09 this asked whether EVERY pattern was anchored only when no instance of four characters survived, so a short worded matcher (`scp`) beside long anchored siblings was never asked anything at all. And EVERY pattern, never any: an earlier `any` let one anchored constant vouch for an unanchored sibling it shared a module with. Structure judges, prose targets and ALLOW_UNPROBED guards stay exempt: the first two are probed whole by their own route, the third by reason.
+    exempt = reason is not None or guard.name in PROSE_TARGETS or guard.name in ALLOW_UNPROBED
+    missing = [] if exempt else undeclared_fragments(guard, named, fragments)
     if not instances:
         if guard.name in ALLOW_UNPROBED:
             return "allowed", ""
-        # EVERY pattern, not any. `any` let one anchored pattern vouch for an unanchored sibling it shares a module with, and the anchor test itself was a substring search that a `(^|` inside one alternative satisfied.
-        if all(command_anchored(x) for x in pats):
-            return "static", reason or ""
-        return "unprobed", ""
+        if missing:
+            return "unprobed", ", ".join(missing)
+        return "static", reason or ""
     if reason is not None:
         outcome, detail = structure_probe(guard, kind, instances, fp)
         if outcome == "clean":
@@ -624,12 +807,61 @@ def assess(guard: Path, kind: str, fp: str) -> tuple[str, str]:
     # NO CAP. This read `instances[:40]`, a silent cut: block_settled_questions alone renders 137 instances once every alternative is expanded, and the 41st is as able to refuse prose as the first.
     # A PROSE TARGET IS PROBED IN FULL. Its exemption is per guard, so stopping at the first refused sentence would let every later one ride on it unseen, including a genuine mention-matcher added to the same module next month. Every refused sentence comes back, joined by PROSE_SEP, and each is printed.
     if guard.name in PROSE_TARGETS:
-        hits = [inst for inst in instances if fires(guard, sentence(inst), kind, fp)]
+        hits = [
+            text
+            for inst in instances
+            for text in sentences_of(inst)
+            if fires(guard, text, kind, fp)
+        ]
         return ("prose", PROSE_SEP.join(hits)) if hits else ("clean", "")
     for inst in instances:
-        if fires(guard, sentence(inst), kind, fp):
-            return "prose", inst
+        for text in sentences_of(inst):
+            if fires(guard, text, kind, fp):
+                return "prose", text
+    # PROSE FIRST, THEN THE UNDECLARED FRAGMENT: a guard refusing a sentence is the more urgent finding, and reporting "unprobed" alone would hide it.
+    if missing:
+        return "unprobed", ", ".join(missing)
     return "clean", ""
+
+
+def fragment_findings(
+    fragments: dict[tuple[str, str], str], guards_dir: Path = GUARDS
+) -> list[str]:
+    """Every FRAGMENTS entry that is malformed or stale, one message each. Empty when every declaration still excuses a real, unanchored, unworded pattern."""
+    out: list[str] = []
+    for (gname, const), why in sorted(fragments.items()):
+        key = f"{gname}::{const}"
+        if not why.startswith("BLOCKER:"):
+            out.append(f"FRAGMENTS[{key}]: the reason must start with 'BLOCKER:'")
+            continue
+        rejection = allowlist.validate_reason(key, why[len("BLOCKER:") :], "FRAGMENTS")
+        if rejection is not None:
+            out.append(rejection.message)
+            continue
+        path = guards_dir / gname
+        if not path.is_file():
+            out.append(f"STALE FRAGMENTS[{key}]: the guard {gname} no longer exists")
+            continue
+        named = dict(named_patterns(path))
+        if const not in named:
+            out.append(
+                f"STALE FRAGMENTS[{key}]: {gname} has no matcher-shaped constant {const} any more"
+            )
+            continue
+        pat = named[const]
+        if command_anchored(pat):
+            out.append(
+                f"STALE FRAGMENTS[{key}]: {const} is anchored at command position now, so it needs no declaration"
+            )
+        elif pattern_is_worded(pat):
+            out.append(
+                f"STALE FRAGMENTS[{key}]: {const} renders a worded instance now, so it is probed and needs no declaration"
+            )
+        elif gname in PROSE_TARGETS or gname in ALLOW_UNPROBED or anchoring_of(path) is not None:
+            out.append(
+                f"STALE FRAGMENTS[{key}]: {gname} is exempt from the per-pattern rule already, so the declaration excuses nothing"
+            )
+    return out
 
 
 def controls() -> None:
@@ -713,6 +945,8 @@ def controls() -> None:
             fail(f"instantiate() leaked lookaround syntax into the instance: {lookaround!r}")
 
         alternation_controls(Path(td))
+        argument_controls(Path(td))
+        fragment_controls(Path(td))
         structure_controls(Path(td))
 
 
@@ -754,24 +988,51 @@ _ALTERNATION_ROWS = [
         "short_partial.py",
         r"(^|[;&|(])[ \t]*ab|cd+",
         "",
-        "unprobed",
-        "too short to render, and only one alternative anchored: the static tier must not vouch for it",
+        "prose",
+        "a SHORT WORDED instance (`cd`) is probed like any other word; the old four-character floor called this unprobed and never asked the guard",
     ),
     (
         "short_anchored.py",
         r"(^|[;&|(])[ \t]*(ab|cd+)",
         "",
-        "static",
-        "too short to render, and every alternative anchored: the static tier passes it",
+        "clean",
+        "short worded instances under an anchor that governs every alternative: probed, and silent",
     ),
     (
         "short_mixed.py",
         r"(^|[;&|(])[ \t]*(ab|cd+)",
-        'OTHER = re.compile(r"ef+")',
+        # The sibling is CONSULTED, joined into the matcher at run time (an expression `ast` does not fold, so the module constant PAT stays the anchored one). A sibling the guard never reads would be probed and rightly found silent.
+        'OTHER = re.compile(r"ef+")\nPAT = re.compile(PAT.pattern + "|" + OTHER.pattern)',
+        "prose",
+        "one anchored matcher must not vouch for an unanchored short worded sibling in the same module",
+    ),
+    (
+        "undeclared_fragment.py",
+        r"(^|[;&|(])[ \t]*frobnicate[ \t]+widgets",
+        'OTHER = re.compile(r"\\$[A-Za-z_]+")',
         "unprobed",
-        "one anchored matcher must not vouch for an unanchored sibling in the same module",
+        "an unanchored pattern with NO worded instance (`$x`) and no FRAGMENTS declaration fits none of the three ways",
     ),
 ]
+
+# The fragment declaration `fragment_controls` grants `undeclared_fragment.py`, so the same fixture is judged both ways.
+_FIXTURE_FRAGMENT = "BLOCKER: a planted variable-expansion parser with no literal word, declared to prove the third way passes"
+
+# The planted argument-shaped guard: the block_binary_deploy shape, a command-name matcher at a word boundary that refuses only when the clause's LAST field is a `host:` spec. `sentence()` ends in `repo`, so only `argument_sentence()` can reach the second test.
+_ARGSHAPE_FIXTURE = """import json
+import re
+import sys
+
+ZCP = re.compile(r"{pattern}")
+HOST = re.compile(r"^[A-Za-z0-9_.-]+:")
+
+doc = json.load(sys.stdin).get("tool_input") or {{}}
+for clause in re.split(r"[;&|]", str(doc.get("command") or "")):
+    fields = clause.split()
+    if ZCP.search(clause) and fields and HOST.search(fields[-1]):
+        sys.exit(2)
+sys.exit(0)
+"""
 
 
 def alternation_controls(td: Path) -> None:
@@ -801,6 +1062,64 @@ def alternation_controls(td: Path) -> None:
     # The fully anchored fixture must still refuse the REAL command on its second alternative, or its "clean" is a guard that refuses nothing.
     if not fires(td / "every_branch_anchored.py", "grommet gadgets --now"):
         fail("the anchored alternation fixture missed its own second alternative as a real command")
+
+
+def argument_controls(td: Path) -> None:
+    """The second template reaches a matcher that decides on the arguments, and an anchored twin stays clean through it."""
+    loose = td / "argshape_loose.py"
+    loose.write_text(_ARGSHAPE_FIXTURE.format(pattern=r"(^|[ \t])zcp[ \t]"))
+    tight = td / "argshape_anchored.py"
+    tight.write_text(_ARGSHAPE_FIXTURE.format(pattern=r"(^|[;&|(])[ \t]*zcp[ \t]"))
+    # The control on the control: the plain sentence must NOT reach it, or this proves nothing about the second template.
+    if fires(loose, sentence("zcp")):
+        fail(
+            "the argument-shaped fixture refuses the PLAIN sentence; it cannot prove the second template"
+        )
+    if not fires(loose, "zcp a.sh host:/dst/a.sh"):
+        fail("the argument-shaped fixture misses its own real upload; the control proves nothing")
+    got, detail = assess(loose, "command", "")
+    if got != "prose" or detail != argument_sentence("zcp"):
+        fail(
+            "an unanchored short command-name matcher that needs a host argument was not refused "
+            f"through argument_sentence() ({got}: {detail}); short worded instances are not reaching it"
+        )
+    got, detail = assess(tight, "command", "")
+    if got != "clean":
+        fail(f"the ANCHORED argument-shaped fixture was not clean ({got}: {detail})")
+    if not fires(tight, "true && zcp a.sh host:/dst/a.sh"):
+        fail("the anchored argument-shaped fixture misses the real command after a separator")
+
+
+def fragment_controls(td: Path) -> None:
+    """Both directions of the FRAGMENTS declaration, and each way a declaration goes stale."""
+    guard = td / "undeclared_fragment.py"
+    if not guard.exists():
+        fail("fragment_controls ran before alternation_controls wrote undeclared_fragment.py")
+    declared = {(guard.name, "OTHER"): _FIXTURE_FRAGMENT}
+    got, detail = assess(guard, "command", "", declared)
+    if got != "clean":
+        fail(
+            f"a DECLARED unworded fragment was not passed ({got}: {detail}); the third way does not work"
+        )
+    if fragment_findings(declared, td):
+        fail(f"a valid FRAGMENTS declaration was reported: {fragment_findings(declared, td)}")
+    stale_rows = {
+        "vanished": ((guard.name, "GONE"), "no matcher-shaped constant"),
+        "anchored": ((guard.name, "PAT"), "anchored at command position"),
+        "worded": (("short_mixed.py", "OTHER"), "renders a worded instance"),
+        "no guard": (("no_such_guard.py", "OTHER"), "no longer exists"),
+        "short reason": ((guard.name, "OTHER"), "too short"),
+        "no prefix": ((guard.name, "OTHER"), "must start with 'BLOCKER:'"),
+    }
+    for label, (key, want) in stale_rows.items():
+        why = _FIXTURE_FRAGMENT
+        if label == "short reason":
+            why = "BLOCKER: too short"
+        elif label == "no prefix":
+            why = why[len("BLOCKER: ") :]
+        found = fragment_findings({key: why}, td)
+        if len(found) != 1 or want not in found[0]:
+            fail(f"a {label} FRAGMENTS entry was not reported as {want!r}: {found}")
 
 
 # The planted structure-declaration fixtures. One Python guard body, parameterised by what it refuses and what it declares, so the three controls differ in exactly the property under test.
@@ -892,7 +1211,7 @@ def main() -> int:
 
     probed = 0
     static_ok = 0
-    unprobed: list[str] = []
+    unprobed: list[tuple[str, str]] = []
     offenders: list[tuple[str, str]] = []
 
     guards: list[tuple[Path, str, str]] = []
@@ -913,21 +1232,22 @@ def main() -> int:
         verdicts = list(pool.map(lambda g: assess(g[0], g[1], file_path_for(g[0])), guards))
 
     probe_total = 0
+    probe_sentences = 0
     probe_self = 0
     probe_dropped = 0
+    probe_fragments = 0
     invalid: list[tuple[str, str]] = []
     stale: list[str] = []
     for (guard, _kind, chain), (outcome, detail) in zip(guards, verdicts, strict=True):
         name = guard.name
         shape = probes_of(patterns_of(guard))
         probe_total += len(shape.instances)
+        probe_sentences += shape.sentences()
         probe_self += shape.self_matching
         probe_dropped += shape.dropped
-        # TIER 2, STATIC, inside `assess`. A guard with no renderable instance is not automatically a defect, and treating it as one would demand that guards be rewritten to suit this instantiator rather than to match commands correctly. Two legitimate shapes exist and both were measured here:
-        #
-        # * ALREADY ANCHORED -- every pattern carries a `(^|[;&|(]|\$\(|`)`-style prefix that governs EVERY alternative (`command_anchored`), and none renders to a literal of four characters or more. * NOT A PHRASE MATCHER AT ALL -- block_long_sleep.py extracts a NUMBER and compares it. There is no phrase to find inside prose, so the class does not apply.
-        #
-        # So: pass if every pattern is anchored at command position, or there is nothing to anchor. Fail when any phrase pattern has no probe and no anchor of its own -- the case where nothing at all is checking it. Before 2026-10-09 this asked whether ANY pattern contained `(^|`, so one anchored constant vouched for its unanchored siblings.
+        probe_fragments += shape.fragments
+        # TIER 2, STATIC, inside `assess`. A guard with nothing to probe is not automatically a defect, and treating it as one would demand that guards be rewritten to suit this instantiator rather than to match commands correctly. Every pattern is judged on its own, three ways: ANCHORED (`command_anchored`, every alternative at command position), WORDED (a literal word a sentence can
+        # mention, so it is probed at any length), or a declared FRAGMENT (a parser for a piece of a command the guard already located, in FRAGMENTS with a reason). A pattern fitting none of the three is red by name. Before 2026-10-09 the question was asked of the whole guard, only when no instance of four characters survived, and short words such as `scp` were dropped with the fragments.
         #
         # PROSE FIRING IS SELF-EVIDENT: nothing else has to be true for a guard refusing a sentence to be a defect. Requiring a POSITIVE probe to also fire before trusting silence was tried and rejected -- most extracted instances are one fragment of a multi-part trigger (a roundlog guard needs BOTH a matching file_path AND a write call; no single instantiated substring can satisfy
         # that alone), so demanding per-instance reachability reported 37 of 42 guards as inconclusive even though most were already known-clean from the pre-bash-only scan. The signal this check needs is the one that is unconditionally trustworthy: does prose trip the guard.
@@ -937,7 +1257,7 @@ def main() -> int:
             static_ok += 1
             continue
         if outcome == "unprobed":
-            unprobed.append(name)
+            unprobed.append((name, detail))
             continue
         if outcome == "invalid":
             invalid.append((f"{chain}/{name}", detail))
@@ -948,8 +1268,8 @@ def main() -> int:
                 refused = detail.split(PROSE_SEP)
                 print(f"PROSE-TARGET {chain}/{name}: {PROSE_TARGETS[name]}")
                 print(f"    {len(refused)} probe sentence(s) refused, as its rule intends:")
-                for inst in refused:
-                    print(f"      {sentence(inst)}")
+                for text in refused:
+                    print(f"      {text}")
             else:
                 stale.append(f"{chain}/{name}")
             continue
@@ -977,20 +1297,28 @@ def main() -> int:
         )
         return 1
 
-    for name, inst in offenders:
+    for name, text in offenders:
         print(f"{RED}✗{NC} {name} refuses PROSE, not a command.", file=sys.stderr)
-        print(f"    sentence: {sentence(inst)}", file=sys.stderr)
+        print(f"    sentence: {text}", file=sys.stderr)
         print(
             "    Anchor the match to command position -- (^|[;&|(]) and friends --", file=sys.stderr
         )
         print("    rather than deleting or narrowing the pattern.", file=sys.stderr)
 
-    for name in unprobed:
+    for name, consts in unprobed:
         print(
-            f"{RED}✗{NC} {name}: no pattern could be instantiated, so it cannot be", file=sys.stderr
+            f"{RED}✗{NC} {name}: {consts} is not anchored at command position and renders no "
+            "word a sentence could mention, so nothing probes it.",
+            file=sys.stderr,
         )
-        print("    probed and its silence proves nothing. Give it an inline grep", file=sys.stderr)
-        print("    pattern, or add it to ALLOW_UNPROBED with a BLOCKER reason.", file=sys.stderr)
+        print(
+            "    Anchor it with (^|[;&|(]) and friends, or, if it parses a piece of a command the guard",
+            file=sys.stderr,
+        )
+        print(
+            f"    already located, declare (guard, constant) in FRAGMENTS in {Path(__file__).name} with a BLOCKER reason.",
+            file=sys.stderr,
+        )
 
     for name, why in invalid:
         print(f"{RED}✗{NC} {name}: {why}", file=sys.stderr)
@@ -999,6 +1327,13 @@ def main() -> int:
             f"(>= {MIN_REASON} chars) and needs an accepted in-scope document to append to.",
             file=sys.stderr,
         )
+
+    # PRINTED EVERY RUN, like a structure declaration: a FRAGMENTS entry is an exemption from the probe, and a quiet one is how the gate stops meaning what its name says.
+    for (gname, const), why in sorted(FRAGMENTS.items()):
+        print(f"FRAGMENT {gname}::{const}: {why}")
+    fragment_problems = fragment_findings(FRAGMENTS)
+    for problem in fragment_problems:
+        print(f"{RED}✗{NC} {problem}", file=sys.stderr)
 
     for name in stale:
         print(
@@ -1009,8 +1344,10 @@ def main() -> int:
 
     # THE SHAPE, every run. A collapse in the instance count or in how many instances their own pattern matches is how a broken instantiator shows itself before it shows up as a false green.
     print(
-        f"probes: {probe_total} sentence(s) rendered from every alternative of every pattern; "
-        f"{probe_self} match the pattern they came from; {probe_dropped} past the "
+        f"probes: {probe_total} instance(s) rendered from every alternative of every pattern, "
+        f"as {probe_sentences} sentence(s); {probe_self} match the pattern they came from; "
+        f"{probe_fragments} unworded fragment instance(s) under {SHORT_INSTANCE} chars not probed; "
+        f"{len(FRAGMENTS)} declared FRAGMENTS constant(s); {probe_dropped} past the "
         f"{MAX_INSTANCES}-per-pattern bound"
     )
     if probe_dropped:
@@ -1021,11 +1358,12 @@ def main() -> int:
         )
         return 1
 
-    if offenders or unprobed or invalid or stale:
+    if offenders or unprobed or invalid or stale or fragment_problems:
         print(
-            f"\n{RED}✗{NC} {len(offenders)} guard(s) refuse prose; {len(unprobed)} could not be "
-            f"probed; {len(invalid)} structure declaration(s) invalid or unprobeable; "
-            f"{len(stale)} stale PROSE_TARGETS entr(y/ies).",
+            f"\n{RED}✗{NC} {len(offenders)} guard(s) refuse prose; {len(unprobed)} hold an "
+            f"unprobed pattern; {len(invalid)} structure declaration(s) invalid or unprobeable; "
+            f"{len(stale)} stale PROSE_TARGETS entr(y/ies); {len(fragment_problems)} FRAGMENTS "
+            "problem(s).",
             file=sys.stderr,
         )
         return 1
@@ -1033,7 +1371,8 @@ def main() -> int:
     print(
         f"{GREEN}✓{NC} {probed} guard(s) across {len(CHAINS)} chain(s) refuse commands, not "
         f"sentences about them; {static_ok} anchored or not phrase-matching; "
-        f"{len(PROSE_TARGETS)} prose-target exemption(s), printed above"
+        f"{len(PROSE_TARGETS)} prose-target exemption(s) and {len(FRAGMENTS)} declared "
+        "fragment(s), printed above"
     )
     return 0
 
