@@ -10,6 +10,8 @@ So this exists, and it is run BY HAND when the rubric changes:
 
 Each fixture is a real defect from this repo's own history (the five the operator supplied for the class-sweep rule, and the four measured timid defaults), paired with the answer the rule must give. A fixture that flips is the rubric drifting, and the fix is the PROMPT, not the fixture.
 
+HELD OUT FROM THE RUBRIC, since 2026-10-09 (review 18700a76.4). The rubrics teach by worked example, and those examples ARE the measured defects, so a fixture worded as its example is scored on whether the model can match a quoted sentence, not whether it applies the rule. The brave defaults and the typo control are therefore the same defects in different words, and `check:ci-rubric-calibration` refuses any fixture string that shares a five-word run with a calibrated rubric, so the next example added to a prompt cannot quietly become its own test.
+
 ONE SAMPLE PER FIXTURE, ON PURPOSE. Production asks once: wl_judge.run_judge and wl_shapedup.ask each make a single call and retry only when no verdict arrived at all, never to vote. A majority over N samples here would score a rule production does not run, so a fixture that flips between runs is read as a boundary the rubric or the fixture leaves open, and the fix is to close it, not to average it away.
 
 WHAT A FAILURE HERE MEANS, and it is not the same as a red gate: an over-firing rule is a rule that gets skimmed, so a SILENT fixture that fires is at least as serious as a FIRE fixture that stays quiet.
@@ -86,12 +88,26 @@ SWEEP_CASES = [
             "it. Fixed the heredoc path so the name is only matched as a redirect target."
         ),
     ),
+    # ADDED 2026-10-09 for review 18700a76.1. SWEEP_PROMPT's two-paths example says a guard's siblings are its OTHER INPUT PATHS as well as the other guards, and until this fixture nothing asked the judge to apply the first half: every guard fixture either searched nothing or searched both. This one reports a real search across the other guards and none inside its own guard, so the redirect, tee and cp paths of the same script are left unexamined, and the rubric says that is not a sweep.
+    (
+        "guard: the other guards searched, its own other paths not",
+        "fire",
+        ["fix(hooks): the write-guard false-fired on a python heredoc"],
+        [".claude/hooks/block-bash-write-to-running-script.sh"],
+        (
+            "The guard treated a python heredoc containing the script's name as a write to "
+            "it. Fixed the heredoc branch so the name only counts as a write target there. "
+            "Then grepped every other guard for the same unanchored-name idiom "
+            "(`grep -rln 'basename' .claude/rediacc_hooks/guards/`): 51 searched, none had it."
+        ),
+    ),
+    # HELD OUT FROM THE RUBRIC 2026-10-09 (review 18700a76.4's class). It used to be the operator's own worked example, which SWEEP_PROMPT quotes word for word ("The error message said 'reposiotry'..."), so the fixture could pass by matching the example rather than by applying the rule. It is now a different misspelling with the same mechanism-free shape, and check:ci-rubric-calibration refuses any fixture that shares a five-word run with a calibrated rubric.
     (
         "CONTROL: a typo in one string",
         "silent",
-        ["fix(cli): typo in the repo-not-found error message"],
+        ["fix(cli): typo in the machine usage line"],
         ["packages/cli/src/i18n/locales/en.json"],
-        "The error message said 'reposiotry'. Fixed the spelling in that one string.",
+        "The usage line for `rdc machine` read 'machien'. Corrected that one word.",
     ),
     (
         "CONTROL: the class was swept, with a count",
@@ -117,52 +133,63 @@ SWEEP_CASES = [
         [".claude/rediacc_hooks/guards/block_roundlog_truncate.py"],
         (
             # REWORDED 2026-10-09. It read "51 guards, and this is the only other one", which says a SECOND instance exists; three of five live runs that day read it that way and fired, correctly for the words. The control tests a reported search that found no sibling, so it now says that and nothing else.
+            # EXTENDED the same day for review 18700a76.1: SWEEP_PROMPT now names a guard's other input paths as siblings, and this message searched only the other guards, so silence was no longer the rubric's answer. It now reports the search inside the guard too, which is what the file really holds: every truncating verb arm in block_roundlog_truncate.py anchors to the round-log path, and its EDGE_CASES carry a mention-only case.
             "Fixed block_roundlog_truncate.py. I then grepped every guard under "
             "`.claude/rediacc_hooks/guards/` for the same unanchored-name pattern "
             "(`grep -rn 'basename' .claude/rediacc_hooks/guards/`): 51 guards searched, and "
             "block_roundlog_truncate.py was the only one with it. The other 50 already anchor "
-            "on the redirect target, so there was no sibling to fix."
+            "on the redirect target, so there was no sibling to fix. Inside the guard I read "
+            "every write arm as well (`>`, cp, mv, truncate, dd, sed -i, tee): each one is "
+            "anchored to the round-log path in the same command segment, and EDGE_CASES has "
+            "a mention-only command for the listing case that passes."
         ),
     ),
 ]
 
 # -- the brave-default corpus ------------------------------------------------ (label, expected, the remaining line as the judge sees it)
 BRAVE_CASES = [
+    # HELD OUT 2026-10-09 (review 18700a76.4). Each of the four fire fixtures used to be one of the measured defaults BRAVE_PROMPT quotes as its worked examples, and the second was quoted WITH its question and its answer, so the run could pass by recognising the sentence. Each is now the same defect reworded: the same question shape, a default that only continues, and the same boundary the original sat on. The label keeps the measured original it stands for.
     (
-        "MEASURED: keep carrying it",
+        "HELD-OUT (measured: keep carrying it)",
         "fire",
         (
-            "[?] - [?] (9d92) should the sweep rule ride this PR or its own branch? "
-            "DEFAULT: keep carrying it."
+            "[?] - [?] (9d92) should the anchoring fix go out with this PR or wait for "
+            "its own? DEFAULT: keep it parked with the others."
         ),
     ),
     (
-        "MEASURED: leave it on its branch",
+        # The boundary 18700a769 closed: the QUESTION names main, the default names and declines nothing.
+        "HELD-OUT (measured: leave it on its branch)",
         "fire",
         (
-            "[?] - [?] (9d92) land the hook change on main or leave it? "
-            "DEFAULT: leave it on its branch."
+            "[?] - [?] (9d92) get the guard rewrite onto main this week, or not yet? "
+            "DEFAULT: let it sit where it is for now."
         ),
     ),
     (
-        "MEASURED: hold until CI green",
-        "fire",
-        "[?] - [?] (9d92) flip the gate on now or wait? DEFAULT: hold until CI green.",
-    ),
-    (
-        "MEASURED: hold and report the numbers",
+        "HELD-OUT (measured: hold until CI green)",
         "fire",
         (
-            "[?] - [?] (84f1) publish the regenerated teasers and locales when the pass "
-            "finishes, or hold? Yours; DEFAULT: hold and report the numbers."
+            "[?] - [?] (9d92) make the new lint rule blocking today, or later? "
+            "DEFAULT: wait for the next green run first."
+        ),
+    ),
+    (
+        # The boundary on reversibility: publishing regenerated pages to this project's own site.
+        "HELD-OUT (measured: hold and report the numbers)",
+        "fire",
+        (
+            "[?] - [?] (84f1) put the re-rendered solution pages live once the render "
+            "finishes, or hold off? Yours; DEFAULT: stand by and post the page counts."
         ),
     ),
     (
         "CONTROL: a default that acts",
         "silent",
         (
+            # REWORDED 2026-10-09: it read "DEFAULT: land it on the open PR with the rest of the hook work.", and landing on a PR is a commit and a push, two of the acts BRAVE_PROMPT says a default never orders. One full run in four that day fired on it with the braver form "write it into the tree and leave the commit to the cadence", which is the rubric's own answer for those words. The control is a default that ACTS, so it now names an act the rubric counts and no reserved one.
             "[?] - [?] (9d92) which branch for the sweep rule? "
-            "DEFAULT: land it on the open PR with the rest of the hook work."
+            "DEFAULT: write it into the tree beside the rest of the hook work."
         ),
     ),
     (
@@ -236,7 +263,8 @@ def run_shape_case(expected, instances):
     out, err = SD.ask(instances)
     if out is None:
         return "ERROR", err, None
-    kind, _payload = SD.read_verdict(out)
+    # The instances too, as apply_verdict passes them, so the on-disk `already` check production runs is the one calibrated.
+    kind, _payload = SD.read_verdict(out, None, instances)
     got = "fire" if kind == "fire" else ("silent" if kind == "silent" else kind)
     return ("OK" if got == expected else "MISS"), got, out.get("shape_dup")
 
@@ -280,7 +308,89 @@ def _runtmp():
     return mod
 
 
+def _shape_case(label):
+    return next(c[2] for c in SHAPE_CASES if c[0] == label)
+
+
+def selftest():
+    """OFFLINE controls for the mechanical checks the live fixtures lean on; no model call, no cost.
+
+    THE `already` EXCLUSION (review 18700a76.2). SHAPE_PROMPT says copies that all import the named module are consolidated, and wl_shapedup.instances_import checks that on disk. These controls drive read_verdict with the answer the run_gate control drew on one live run in five (`already`, naming harness.py) over that fixture's real coordinates, and with its mirrors, so the exclusion is proven where it is enforced rather than left to the prompt.
+    """
+    root = str(pathlib.Path(__file__).resolve().parents[3])
+    run_gate = _shape_case("CONTROL: run_gate has three incompatible return contracts")
+    closure = _shape_case("the assertion closure, 12 files, 8 byte-identical")
+
+    def sd(harness, verdict="already"):
+        return {
+            "shape_dup": {
+                "applicable": True,
+                "shape": "a local wrapper around a shared call",
+                "harness": harness,
+                "consolidatable": verdict,
+                "divergence": "",
+                "instruction": "adopt it",
+            }
+        }
+
+    harness = ".ci/rediacc_ci/tests/gates/harness.py"
+    checks = [
+        (
+            "already, naming a module every instance imports, is silent",
+            SD.read_verdict(sd(harness), root, run_gate)[0],
+            "silent",
+        ),
+        (
+            "the same with a `module:function` harness is silent",
+            SD.read_verdict(sd(harness + ":run_gate"), root, run_gate)[0],
+            "silent",
+        ),
+        (
+            "MIRROR: already, naming a module NO instance imports, still fires",
+            SD.read_verdict(sd("scripts/lib/controls.ts"), root, closure)[0],
+            "fire",
+        ),
+        (
+            "MIRROR: one instance that does not import it keeps the fire",
+            SD.read_verdict(sd(harness), root, [*run_gate[:2], closure[0]])[0],
+            "fire",
+        ),
+        (
+            "MIRROR: a module that is not on disk keeps the fire",
+            SD.read_verdict(sd(".ci/rediacc_ci/tests/gates/no_such_harness.py"), root, run_gate)[0],
+            "fire",
+        ),
+        (
+            "MIRROR: `yes` is never silenced by the import check",
+            SD.read_verdict(sd(harness, "yes"), root, run_gate)[0],
+            "fire",
+        ),
+        (
+            "MIRROR: with no instances given, the check is skipped and the fire stands",
+            SD.read_verdict(sd(harness), root)[0],
+            "fire",
+        ),
+        (
+            "every sweep fixture carries the file list production passes",
+            all(isinstance(c[3], list) and c[3] for c in SWEEP_CASES),
+            True,
+        ),
+    ]
+    fails = 0
+    for label, got, want in checks:
+        ok = got == want
+        fails += not ok
+        print(
+            "%-4s %s%s"
+            % ("ok" if ok else "FAIL", label, "" if ok else ": got %r, wanted %r" % (got, want))
+        )
+    print("%d/%d offline control(s) passed" % (len(checks) - fails, len(checks)))
+    return 1 if fails else 0
+
+
 def main():
+    if "--selftest" in sys.argv:
+        return selftest()
     if "--live" not in sys.argv:
         print(__doc__)
         print("Refusing to run: this calls the real model and costs money. Pass --live.")

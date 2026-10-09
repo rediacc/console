@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-09T03:07:30.790Z",
+  "generatedAt": "2026-10-09T05:28:28.106Z",
   "legs": [
     {
       "index": 1,
@@ -153,6 +153,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_prose_style.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_release_key_canonical.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_release_signing_coverage.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_rubric_calibration.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_scope_mirrors.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_script_exec_bit.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_setup_idempotency.py",
