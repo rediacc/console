@@ -1190,53 +1190,96 @@ def test_ssh_docker_edge_case_headings_match_verdicts():
     assert checked >= 10, "only %d rows sat under the headings" % checked
 
 
-# --------------------------------------------------------------------------- npx's own argument loop ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- npm's own argument parse ---------------------------------------------------------------------------
 
-# WHERE AN NPX LAUNCH STARTS IS NPX'S ANSWER, NOT A LIST'S (#32e75fa4, review 4aad4597.2). `shellscan._launched` skips npx's options to find the program, and `_NPX_VALUE` names the ones that take the next word. `--loglevel` was missing, so `npx --loglevel silent node packages/cli/dist/cli.js` read `silent` as the program and block_cli_bundle allowed it (rc 0, 2026-10-09).
-# The oracle is the pinned npm itself, in its two passes, with `lib/cli.js` stubbed so nothing runs. `bin/npx-cli.js` rewrites argv to `npm exec <options> -- <program> ...`, and then `@npmcli/config` hands that argv to `nopt` with npm's own option types; the first operand nopt leaves after `exec` is the program. Both passes are needed: for `--no-yes` (and the `-no`/`-local` shorthands
-# that expand to a `--no-` option) npx skips the next word as a value while nopt reads it as the program. Every option npm KNOWS is asked (its config definitions, its shorthands, npx's own value options), each spelled with one dash and with two, because both passes strip the dashes before they look.
-_NPX_ORACLE_JS = r"""
+# WHERE AN npm LAUNCH STARTS IS npm's ANSWER, NOT A LIST'S (#32e75fa4, review 4aad4597.2; #31ed6c5f). `shellscan._launches` finds the program `npx`, `npm exec`, `npm exe` and `npm x` run by porting npm's two argument passes (`_npx_argv`, `_nopt`) over npm's option table. Two lists came before it: seven value options that missed `--loglevel`, then the full table, which still read `silent` as the program in
+# `npx --logl silent node packages/cli/dist/cli.js` because nopt accepts any unique prefix of an option name (442 `--` prefixes take a value). Both were allowed by block_cli_bundle (rc 0, 2026-10-09), and so was `npm exec -- node packages/cli/dist/cli.js`, which was no launcher at all.
+# The oracle is the pinned npm itself, with `lib/cli.js` stubbed so nothing runs. For `npx`, `bin/npx-cli.js` rewrites its argv to `npm exec <options> -- <program> ...` and calls the stub; for `npm`, the argv goes to the stub as it stands. Either way `nopt` then parses it with npm's own option types, as `@npmcli/config` does, and `lib/utils/cmd-list.js` resolves the command word: what runs is the operands after
+# `exec`, or the `--call` string. Every spelling npm accepts is asked: every option name, shorthand and unique prefix, with one dash and two, with its value as the next word, after `=`, as `true`/`false`, and as a word that looks like an option, behind `npx`, `npm exec` and `npm x`, and with the option in front of `exec`.
+_NPM_ORACLE_JS = r"""
 const fs = require('fs')
 const path = require('path')
 const target = process.argv[1]
+const from = { paths: [path.dirname(target)] }
 const src = fs.readFileSync(target, 'utf8')
 const words = (name) => {
   const m = src.match(new RegExp('const ' + name + ' = new Set\\(\\[([\\s\\S]*?)\\]\\)'))
   if (!m) { process.stderr.write('npx-cli.js no longer declares ' + name + '\n'); process.exit(3) }
   return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1])
 }
-const defs = require(require.resolve('@npmcli/config/lib/definitions', { paths: [path.dirname(target)] }))
-const keys = [...new Set([...Object.keys(defs.definitions), ...Object.keys(defs.shorthands), ...words('opts'), ...words('removedOpts')])]
-const config = require(require.resolve('@npmcli/config', { paths: [path.dirname(target)] }))
-const nopt = require(require.resolve('nopt', { paths: [require.resolve('@npmcli/config', { paths: [path.dirname(target)] })] }))
+const defs = require(require.resolve('@npmcli/config/lib/definitions', from))
+const configPath = require.resolve('@npmcli/config', from)
+const config = require(configPath)
+const nopt = require(require.resolve('nopt', { paths: [configPath] }))
+const abbrev = require(require.resolve('abbrev', { paths: [require.resolve('nopt', { paths: [configPath] })] }))
+const cmdList = require(path.join(path.dirname(target), '..', 'lib', 'utils', 'cmd-list.js'))
 const { types } = config.getTypesFromDefinitions(defs.definitions)
+// The table shellscan carries, in its own spelling: "B" Boolean, "S" String, "V" any other single type, and for a list of types "A" then "b" (Boolean), "n" (null), "s" (String), "N" (Number) and "|literal" for each literal string.
+const kind = (t) => {
+  if (Array.isArray(t) && t.length === 1) t = t[0]
+  if (t === Boolean) return 'B'
+  if (t === String) return 'S'
+  if (!Array.isArray(t)) {
+    if (t === null) throw new Error('a lone null type, which shellscan does not model')
+    return 'V'
+  }
+  const has = (x, f) => (t.includes(x) ? f : '')
+  return 'A' + has(Boolean, 'b') + has(null, 'n') + has(String, 's') + has(Number, 'N') + t.filter((x) => typeof x === 'string').map((x) => '|' + x).join('')
+}
+const table = {}
+for (const key of Object.keys(types)) table[key] = kind(types[key])
+// `local-address` lists this machine's own addresses; shellscan spells them "|<address>".
+table['local-address'] = table['local-address'].replace(/\|.*/, '|<address>')
+const shorthands = {}
+for (const key of Object.keys(defs.shorthands)) shorthands[key] = defs.shorthands[key].join(' ')
+const commandWords = [...new Set([...Object.keys(abbrev(cmdList.commands.concat(Object.keys(cmdList.aliases)))), ...Object.keys(cmdList.aliases)])]
+const execWords = commandWords.filter((w) => cmdList.deref(w) === 'exec')
+const npx = { removedSwitches: words('removedSwitches'), removedOpts: words('removedOpts'), opts: words('opts') }
+const switchExtras = words('switches')
 const cliPath = require.resolve(path.join(path.dirname(target), '..', 'lib', 'cli.js'))
 let got = null
 require.cache[cliPath] = { id: cliPath, filename: cliPath, loaded: true, exports: (proc) => { got = proc.argv.slice(2) } }
-const out = {}
-for (const key of keys) {
+const run = (argv) => {
+  const conf = nopt(types, defs.shorthands, argv, 0)
+  const remain = conf.argv.remain
+  if (!remain.length || cmdList.deref(remain[0]) !== 'exec') return null
+  if (typeof conf.call === 'string' && conf.call) return { call: conf.call }
+  return remain.length > 1 ? { argv: remain.slice(1) } : null
+}
+const spellings = new Set([
+  ...Object.keys(abbrev(Object.keys(types))), ...Object.keys(abbrev(Object.keys(defs.shorthands))),
+  ...npx.opts, ...npx.removedOpts, ...npx.removedSwitches, ...switchExtras,
+])
+const answers = []
+for (const key of spellings) {
   for (const dash of ['-', '--']) {
-    process.argv = [process.argv[0], target, dash + key, 'zzval', 'zzprog', 'zzarg']
-    delete require.cache[require.resolve(target)]
-    got = null
-    require(target)
-    const remain = got ? nopt(types, defs.shorthands, got, 0).argv.remain : []
-    out[dash + key] = remain[0] === 'exec' && remain.length > 1 ? remain[1] : null
+    const opt = dash + key
+    const samples = [
+      [opt, 'zzval', 'zzprog', 'zzarg'], [opt + '=zzval', 'zzprog', 'zzarg'],
+      [opt, 'false', 'zzprog'], [opt, '-zzdash', 'zzprog'], ['--no-' + key, 'zzval', 'zzprog'],
+    ]
+    for (const sample of samples) {
+      process.argv = [process.argv[0], target, ...sample]
+      delete require.cache[require.resolve(target)]
+      got = null
+      require(target)
+      answers.push(['npx', sample, got ? run(got) : null])
+      answers.push(['npm', ['exec', ...sample], run(['exec', ...sample])])
+    }
+    answers.push(['npm', ['x', opt, 'zzval', 'zzprog'], run(['x', opt, 'zzval', 'zzprog'])])
+    answers.push(['npm', [opt, 'zzval', 'exec', 'zzprog'], run([opt, 'zzval', 'exec', 'zzprog'])])
   }
 }
-process.stdout.write(JSON.stringify(out) + '\n')
+process.stdout.write(JSON.stringify({ table, shorthands, execWords, npx, switchExtras, answers }) + '\n')
 """
 
-# `-c`/`--call` carry a shell string, which `_launched` reads through `_NPX_CALL` before it ever consults `_NPX_VALUE`.
-_NPX_CALL_SPELLINGS = frozenset(("-c", "--c", "-call", "--call"))
 
-
-def _npx_oracle():
+def _npm_oracle():
     npx = shutil.which("npx")
     node = shutil.which("node")
     if npx is None or node is None:
         pytest.fail(
-            "no npx/node on PATH: this test asks the pinned npm where an npx launch starts. "
+            "no npx/node on PATH: this test asks the pinned npm where an npm launch starts. "
             "fix: install npm at NPM_VERSION from .devcontainer/toolchain.env"
         )
     assert npx is not None
@@ -1255,44 +1298,72 @@ def _npx_oracle():
             % (meta.get("version"), pin.group(1), env_file, pin.group(1))
         )
     proc = subprocess.run(
-        [node, "-e", _NPX_ORACLE_JS, str(cli)],
+        [node, "-e", _NPM_ORACLE_JS, str(cli)],
         capture_output=True,
         text=True,
-        timeout=120,
+        timeout=300,
         check=False,
     )
-    assert proc.returncode == 0, "the npx oracle failed (rc %d): %s" % (
+    assert proc.returncode == 0, "the npm oracle failed (rc %d): %s" % (
         proc.returncode,
         proc.stderr[-400:],
     )
     return json.loads(proc.stdout.strip().splitlines()[-1])
 
 
-def test_npx_value_options_match_npx():
-    answers = _npx_oracle()
-    # Anti-vacuity: the oracle has to have seen npm's whole option table, and both answers have to occur in it.
-    assert len(answers) > 200, "the npx oracle asked about only %d spellings" % len(answers)
-    odd = {opt: prog for opt, prog in answers.items() if prog not in ("zzval", "zzprog")}
-    assert odd == {}, "npx put the program somewhere this test does not model: %r" % odd
-    takes_value = {opt for opt, prog in answers.items() if prog == "zzprog"}
-    assert "--loglevel" in takes_value, "the oracle cannot see the option the review found"
-    assert "--yes" not in takes_value, "the oracle reads a switch as taking a value"
-    want = takes_value - _NPX_CALL_SPELLINGS
-    have = set(shellscan._NPX_VALUE)
-    assert have == want, "missing from _NPX_VALUE: %s; not a value option to npx: %s" % (
-        sorted(want - have),
-        sorted(have - want),
+@pytest.fixture(scope="module")
+def npm_oracle():
+    return _npm_oracle()
+
+
+def test_npm_tables_match_npm(npm_oracle):
+    table = dict(shellscan._NPM_TYPE)
+    assert npm_oracle["table"] == table, (
+        "shellscan._NPM_TYPES differs from npm's option types: %s"
+        % sorted(set(table.items()) ^ set(npm_oracle["table"].items()))
     )
-    for opt, prog in sorted(answers.items()):
-        if opt in _NPX_CALL_SPELLINGS:
-            continue
-        launched = shellscan._launched("npx", [opt, "zzval", "zzprog", "zzarg"])
-        program = launched[0][1][0] if launched else None
-        assert program == prog, "npx %s zzval zzprog: npm runs %s, the walk %r" % (
-            opt,
-            prog,
-            launched,
-        )
+    assert npm_oracle["shorthands"] == shellscan._NPM_SHORTHANDS
+    assert set(npm_oracle["execWords"]) == shellscan._NPM_EXEC_WORDS
+    npx = npm_oracle["npx"]
+    assert set(npx["removedSwitches"]) == shellscan._NPX_REMOVED_SWITCHES
+    assert set(npx["removedOpts"]) == shellscan._NPX_REMOVED_OPTS
+    assert set(npx["opts"]) == shellscan._NPX_OPTS
+    npm_switches = {k for k, v in table.items() if v == "B" or v.startswith("Ab")}
+    want = npm_switches | set(npx["removedSwitches"]) | set(npm_oracle["switchExtras"])
+    assert want == shellscan._NPX_SWITCHES
+
+
+def test_npm_launch_matches_npm(npm_oracle):
+    answers = npm_oracle["answers"]
+    # Anti-vacuity: npm's whole option table was asked, and every kind of answer occurs in it.
+    assert len(answers) > 20000, "the npm oracle asked about only %d argvs" % len(answers)
+    programs = {a[2]["argv"][0] for a in answers if a[2] and "argv" in a[2]}
+    assert {"zzval", "zzprog"} <= programs, (
+        "the oracle never ran one of the two words: %r" % programs
+    )
+    assert any(a[2] and "call" in a[2] for a in answers), "the oracle never ran a --call string"
+    assert any(a[2] is None for a in answers), "the oracle always ran something"
+    assert [
+        "npx",
+        ["--logl", "zzval", "zzprog", "zzarg"],
+        {"argv": ["zzprog", "zzarg"]},
+    ] in answers, "the oracle cannot see the abbreviation the review found"
+    wrong = []
+    for base, argv, want in answers:
+        got = shellscan._launches(base, argv)
+        if want is None:
+            ok = got == []
+        elif "call" in want:
+            ok = len(got) == 1 and got[0][0] == "text" and got[0][1] == want["call"]
+        else:
+            ok = len(got) == 1 and got[0][0] == "argv" and got[0][1] == want["argv"]
+        if not ok:
+            wrong.append((base, argv, want, [(g[0], g[1]) for g in got]))
+    assert wrong == [], "%d of %d argvs launch something other than npm runs, first: %r" % (
+        len(wrong),
+        len(answers),
+        wrong[:5],
+    )
 
 
 def _git(cwd, *args):

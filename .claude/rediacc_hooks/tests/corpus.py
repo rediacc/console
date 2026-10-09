@@ -406,6 +406,17 @@ EDGE_CASES = [
     ("4aad npx --loglevel takes a value", "npx --loglevel silent gh pr merge 1 --admin"),
     ("4aad npx -C is --prefix and takes a value", "npx -C . gh pr merge 1 --admin"),
     ("4aad npx --no-yes takes none", "npx --no-yes gh pr merge 1 --admin"),
+    # -- #31ed6c5f: a wrapper is a command the walk found; npm's own parse finds a launch ----------
+    ("31ed a quoted sh -c is an echo argument", """echo "sh -c 'gh pr merge 1 --admin'" x"""),
+    ("31ed a quoted eval is an echo argument", 'echo "eval gh pr merge 1 --admin"'),
+    (
+        "31ed a real wrapper after a quoted mention",
+        """echo "sh -c x"; sh -c 'gh pr merge 1 --admin'""",
+    ),
+    ("31ed a payload stops at its own command", 'sh -c true && echo "x; gh pr merge 1 --admin"'),
+    ("31ed npx with an abbreviated value option", "npx --logl silent gh pr merge 1 --admin"),
+    ("31ed npm exec is a launcher", "npm exec -- gh pr merge 1 --admin"),
+    ("31ed an npm option before x", "npm --logl silent x gh pr merge 1 --admin"),
 ]
 
 
