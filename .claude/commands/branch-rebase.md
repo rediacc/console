@@ -1,7 +1,6 @@
 ---
-description: Rebase the current branch (console + every submodule that has a matching branch) onto its base branch, submodule-first, resolving the gitlink conflicts that plain `git rebase` gets wrong. Rebase and verify ONLY - merges nothing, lands nothing, and never force-pushes. Use to refresh a long-running branch onto a moved main before or during a PR.
+description: Rebase the current branch (console + every submodule that has a matching branch) onto its base branch, submodule-first, resolving the gitlink conflicts that plain `git rebase` gets wrong. Rebase and verify, then republish only through step 5's guarded lease push - merges nothing, lands nothing, opens no PR. Use to refresh a long-running branch onto a moved main before or during a PR.
 argument-hint: "[base]  (optional; defaults to main. A feature branch is legal: see below)"
-disable-model-invocation: true
 allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(git log:*), Bash(git rev-parse:*), Bash(git rev-list:*), Bash(git ls-tree:*), Bash(git remote:*), Bash(gh pr list:*)
 ---
 
@@ -99,7 +98,7 @@ Never rebase, add, or bump one. Report if any is dirty and move on.
 
   ```bash
   cb="$(git branch --show-current)"; git ls-remote --exit-code --heads origin "$cb" >/dev/null 2>&1 \
-    && echo "PUSHED: rebase will require a force-push the assistant cannot perform" \
+    && echo "PUSHED: republish with the lease push of step 5 after the rebase" \
     || echo "LOCAL ONLY: a plain push will work after the rebase"
   ```
 
@@ -133,8 +132,8 @@ the tip anyway.
 gitlink may still conflict in step 3 (if the base moved it); resolve that by **ancestry**, not by preference. See step 3's second table.
 - **Conflicts inside a submodule are real code conflicts.** Resolve them there, commit,
 and only then continue. Do not `--skip`: it silently DROPS the commit being replayed.
-- If a submodule branch was already pushed, its rebase also needs a force-push it
-cannot do. Note it for step 5; do not attempt it.
+- If a submodule branch was already pushed, its rebase needs the step 5 lease push,
+submodule before console. Note it for step 5; nothing pushes before step 4 verifies.
 
 ### 3. Rebase the console branch
 
@@ -264,4 +263,4 @@ the commit-count comparison.
 - The push status: pushed, or the exact operator commands still outstanding.
 - Anything left dirty and whose it is.
 
-**Do not** merge, open, flip, or land anything. The branch is rebased and verified; the next move is the operator's.
+**Do not** merge, open, flip, or land anything. The branch is rebased and verified; the next move belongs to whoever invoked this command (`/pr-babysit`, `/pr-merge`, or the operator).
