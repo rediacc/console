@@ -26,7 +26,9 @@ SUT = paths.from_root(".ci", "rediacc_ci", "release", "mark_production.py")
 
 # The two anchors the CONTROL cuts between. Named at module level because the control's whole value is that it fails LOUDLY when they move, rather than performing a no-op excision and reporting that the guard is not what refuses.
 GUARD_START = '    rc, text = _capture_merged(["release", "view", version, "--json", "tagName"])'
-GUARD_END = '    out.info("mark-production: %s is a published release" % version)'
+GUARD_END = (
+    '    out.info("rediacc_ci.release.mark_production: %s is a published release" % version)'
+)
 
 MALFORMED = ("", "1.3", "v1.3.1-rc1", "latest", "v1.3.1; rm -rf /")
 

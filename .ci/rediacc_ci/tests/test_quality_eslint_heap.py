@@ -195,3 +195,17 @@ def test_available_mb_reads_memavailable(tmp_path: pathlib.Path) -> None:
     meminfo.write_text("MemTotal: 100 kB\n", encoding="utf-8")
     assert eh.available_mb(meminfo) is None
     assert eh.available_mb(tmp_path / "absent") is None
+
+
+def test_diagnostics_are_prefixed_with_the_module_name() -> None:
+    """The twin's `scripts/eslint-heap.sh` is deleted, so the prefix names the module a reader can run and find."""
+    proc = subprocess.run(
+        [sys.executable, "-m", "rediacc_ci.quality.eslint_heap"],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "PYTHONPATH": str(paths.from_root(".ci"))},
+        check=False,
+        timeout=60,
+    )
+    assert proc.returncode == 1
+    assert proc.stderr.startswith("rediacc_ci.quality.eslint_heap: requested heap in MB")

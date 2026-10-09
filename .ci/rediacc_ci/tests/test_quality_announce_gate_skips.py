@@ -22,6 +22,7 @@ import pytest
 
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import frozen
+from rediacc_ci.tests.twin_names import as_twin
 
 SLUG = "announce-gate-skips"
 MODULE = "rediacc_ci.quality.announce_gate_skips"
@@ -142,7 +143,7 @@ def test_port_matches_the_twins_recorded_output(
 ) -> None:
     actual = run_port(tmp_path, **kwargs)  # type: ignore[arg-type]
     expected = frozen.read(SLUG, name)
-    assert actual == expected, "%s diverged from the twin's recorded bytes:\n%s\n%s" % (
+    assert as_twin(actual) == expected, "%s diverged from the twin's recorded bytes:\n%s\n%s" % (
         name,
         expected,
         actual,
@@ -203,3 +204,11 @@ def test_planted_defect_is_caught_by_the_goldens(tmp_path: pathlib.Path) -> None
     # And the real, unmutated file still agrees against the same case.
     assert run_port(tmp_path / "real", **kwargs) == expected
     assert PORT.read_text(encoding="utf-8") == source
+
+
+def test_diagnostics_are_prefixed_with_the_module_name(tmp_path: pathlib.Path) -> None:
+    """The twin's `announce-gate-skips.sh` is deleted, so the prefix names the module a reader can run and find."""
+    result = run_port(tmp_path, ["label", "gate"], mode="Soft")
+    assert "rediacc_ci.quality.announce_gate_skips: unknown GATE_SKIP_MODE" in "".join(
+        part for part in result if isinstance(part, str)
+    )

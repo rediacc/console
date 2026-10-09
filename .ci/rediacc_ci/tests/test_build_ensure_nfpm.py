@@ -27,6 +27,7 @@ import typing
 from rediacc_ci import paths
 from rediacc_ci.build import ensure_nfpm
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -213,7 +214,7 @@ def assert_same(
         old.stderr,
     )
     assert new.stdout == old.stdout, (old.stdout, new.stdout)
-    assert new.stderr == old.stderr, (old.stderr, new.stderr)
+    assert as_twin(new.stderr) == old.stderr, (old.stderr, new.stderr)
 
 
 # --------------------------------------------------------------------------- The real tree ---------------------------------------------------------------------------
@@ -444,3 +445,10 @@ def test_the_pin_names_are_the_ones_constants_sh_defines() -> None:
 def test_bin_dir_is_the_twins_cache_path() -> None:
     assert ensure_nfpm.bin_dir(ROOT) == ROOT / ".ci" / "cache" / "bin"
     assert ensure_nfpm.repo_root() == ROOT
+
+
+def test_diagnostics_are_prefixed_with_the_module_name() -> None:
+    """The twin's `ensure-nfpm.sh` is deleted, so the prefix names the module a reader can run and find."""
+    assert ensure_nfpm.fetching_message("2.45.0", "x86_64").startswith(
+        "rediacc_ci.build.ensure_nfpm: "
+    )

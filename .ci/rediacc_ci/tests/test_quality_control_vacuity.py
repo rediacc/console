@@ -197,3 +197,8 @@ def test_the_real_tree_passes_and_the_port_keeps_its_streams_apart() -> None:
     assert new.returncode == 0, new.stderr
     assert new.stdout != "", "a green run still reports what it scanned"
     assert "CONTROL DID NOT FIRE" not in new.stdout
+
+
+def test_the_banner_is_prefixed_with_the_module_name() -> None:
+    """The twin's `check-control-vacuity.sh` is deleted, so the banner names the module a reader can run and find."""
+    assert cv.BANNER.startswith("rediacc_ci.quality.control_vacuity: ")

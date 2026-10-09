@@ -474,7 +474,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if not lock.is_file():
         return _log_fail(
-            "check-pool-writer-safety: gate lock not found at %s; refusing to pass while "
+            "rediacc_ci.quality.pool_writer_safety: gate lock not found at %s; refusing to pass while "
             "measuring nothing" % lock
         )
 
@@ -489,13 +489,13 @@ def main(argv: list[str] | None = None) -> int:
     # THE ANTI-VACUITY REFUSAL. An empty corpus would make "no module declares the group" true of nothing.
     if scanned == 0:
         return _log_fail(
-            "check-pool-writer-safety: found no test_*.py module under %s; the gate is not "
+            "rediacc_ci.quality.pool_writer_safety: found no test_*.py module under %s; the gate is not "
             "seeing the pytest corpus, so 'no module declares the %r group' would mean nothing"
             % (", ".join(str(d) for d in port_dirs), REAL_TREE_GROUP)
         )
     if ports:
         return _log_fail(
-            "check-pool-writer-safety: %d test module(s) declare the %r xdist group, which "
+            "rediacc_ci.quality.pool_writer_safety: %d test module(s) declare the %r xdist group, which "
             "means they write the tracked tree while they run: %s. Zero modules may (operator "
             "ruling 2026-10-05, agent/plans/PLAN-prepush-full-cpu.md PF15): plant into a copy of "
             "the directories the gate scans, the way test_gate_gate_anti_vacuity.py's "
@@ -505,7 +505,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     if lane_claims_tree_exclusively(lock_text, PYTEST_LANE_ID):
         return _log_fail(
-            "check-pool-writer-safety: %s declares an EXCLUSIVE tree: resource in %s, but no "
+            "rediacc_ci.quality.pool_writer_safety: %s declares an EXCLUSIVE tree: resource in %s, but no "
             "pytest module writes the tracked tree any more (zero declare the %r group, and the "
             "session tripwire enforces it). The claim holds every other tree: gate out of the "
             "pool for the whole pytest wall. Drop mutex: ['tree:repo'] and writesTree from %s "

@@ -735,7 +735,9 @@ def main(argv: list[str] | None = None) -> int:
     setup_body_file = root / ".ci" / "legacy" / "run-legacy.sh"
     report = Report()
 
-    print("check-setup-idempotency: guards, report-only check, port derivation, exit-code honesty")
+    print(
+        "rediacc_ci.quality.setup_idempotency: guards, report-only check, port derivation, exit-code honesty"
+    )
 
     if check_a(report, local_common_py, devbox_py):
         report.ok("every mutating setup step is guarded")

@@ -407,3 +407,21 @@ def test_planted_defect_is_caught_by_the_goldens() -> None:
 
     # The tracked file is byte-identical to what was read at the top.
     assert PORT.read_text(encoding="utf-8") == source
+
+
+def test_diagnostics_are_prefixed_with_the_module_name(tmp_path) -> None:
+    """The twin's `standing-orders-brief.sh` is deleted, so the prefix names the module a reader can run and find."""
+    env = {k: v for k, v in os.environ.items() if k != "CLAUDE_CODE_SESSION_ID"}
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    proc = subprocess.run(
+        ["python3", str(PORT)],
+        cwd=str(tmp_path),
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+        timeout=120,
+    )
+    assert proc.stderr.startswith(
+        "rediacc_ci.review.standing_orders_brief: CLAUDE_CODE_SESSION_ID: unbound variable"
+    )

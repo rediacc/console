@@ -32,6 +32,7 @@ from rediacc_ci import paths
 from rediacc_ci.core import allowlist
 from rediacc_ci.core import blocker_validator as bv
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 TWIN = ".ci/scripts/lib/blocker-validator.sh"
 PORT = ".ci/rediacc_ci/core/blocker_validator.py"
@@ -378,7 +379,7 @@ def test_replay_agrees_with_the_twins_reader(tmp_path, case, stream):
     target = tmp_path / "framed"
     target.write_text(stream, encoding="utf-8")
     old, new = twin(BASH_REPLAY, "replay", str(target))
-    assert old == new, "case %s: %r != %r" % (case, old, new)
+    assert old == as_twin(new), "case %s: %r != %r" % (case, old, new)
 
 
 def test_the_zero_frame_message_is_unreachable_on_both_sides(tmp_path, capsys):
@@ -508,3 +509,10 @@ def test_the_differential_itself_can_fail(listfile):
     assert old != (new[0], new[1], new[2] + "x"), "the comparison ignores stderr"
     assert old[0] == 1, "this case produced no failure to compare"
     assert old[2] != "", "this case wrote nothing to stderr, so there is nothing to compare"
+
+
+def test_diagnostics_are_prefixed_with_the_module_name(capsys):
+    """The twin's `blocker-validator.sh` is deleted, so the prefix names the module a reader can run and find."""
+    assert bv.replay_frames("") is False
+    out = capsys.readouterr()
+    assert "rediacc_ci.core.blocker_validator: unframed output" in out.out + out.err

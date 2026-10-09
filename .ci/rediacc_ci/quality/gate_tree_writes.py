@@ -1057,7 +1057,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if refusals:
         for r in refusals:
-            log.error("check-gate-tree-writes: refusing to pass: %s" % r)
+            log.error("rediacc_ci.quality.gate_tree_writes: refusing to pass: %s" % r)
         return 1
     if res.findings:
         for f in res.findings:

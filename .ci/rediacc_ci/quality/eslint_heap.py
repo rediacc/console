@@ -79,7 +79,8 @@ def _int_env(env: dict[str, str], name: str, default: int) -> int:
         return default
     if not raw.isdigit():
         raise UsageError(
-            "eslint-heap: %s must be a whole number of megabytes, got %r" % (name, raw)
+            "rediacc_ci.quality.eslint_heap: %s must be a whole number of megabytes, got %r"
+            % (name, raw)
         )
     return int(raw)
 
@@ -93,7 +94,7 @@ def plan_heap(requested_mb: int, avail_mb: int | None, reserve_mb: int) -> tuple
         return requested_mb, None
     cap = max(cap, HEAP_FLOOR_MB)
     note = (
-        "eslint-heap: %dMB available; clamping the requested %dMB heap to %dMB (reserving %dMB) "
+        "rediacc_ci.quality.eslint_heap: %dMB available; clamping the requested %dMB heap to %dMB (reserving %dMB) "
         "so eslint is not OOM-killed. CI is unaffected -- the request is never raised."
         % (avail_mb, requested_mb, cap, reserve_mb)
     )
@@ -118,13 +119,13 @@ def plan_workers(
     if avail_mb is not None and avail_mb > 0:
         worker_mb = _int_env(env, "ESLINT_WORKER_MB", DEFAULT_WORKER_MB)
         if worker_mb == 0:
-            raise UsageError("eslint-heap: ESLINT_WORKER_MB must be above zero")
+            raise UsageError("rediacc_ci.quality.eslint_heap: ESLINT_WORKER_MB must be above zero")
         # Truncation toward zero, as the shell's integer division does: a negative budget is zero workers, not minus one.
         budget = avail_mb - reserve_mb
         mem_workers = -(-budget // worker_mb) if budget < 0 else budget // worker_mb
         if mem_workers < workers:
             note = (
-                "eslint-heap: %dMB available; capping eslint workers from the granted %d to %d "
+                "rediacc_ci.quality.eslint_heap: %dMB available; capping eslint workers from the granted %d to %d "
                 "(about %dMB each)." % (avail_mb, grant, max(mem_workers, 1), worker_mb)
             )
             workers = mem_workers
@@ -144,10 +145,13 @@ def plan(
 ) -> tuple[list[str], dict[str, str], list[str]]:
     """Everything the run needs: (command, child environment, notices for stderr)."""
     if not argv or argv[0] == "":
-        raise UsageError("eslint-heap: requested heap in MB is required", EXIT_MISSING_HEAP)
+        raise UsageError(
+            "rediacc_ci.quality.eslint_heap: requested heap in MB is required", EXIT_MISSING_HEAP
+        )
     if not argv[0].isdigit():
         raise UsageError(
-            "eslint-heap: requested heap must be a whole number of MB, got %r" % argv[0]
+            "rediacc_ci.quality.eslint_heap: requested heap must be a whole number of MB, got %r"
+            % argv[0]
         )
     requested = int(argv[0])
     eslint_args = argv[1:]
@@ -178,7 +182,10 @@ def main(argv: list[str]) -> int:
     try:
         proc = subprocess.run(cmd, env=child, check=False)
     except OSError as exc:
-        print("eslint-heap: cannot run %s: %s" % (cmd[0], exc.strerror), file=sys.stderr)
+        print(
+            "rediacc_ci.quality.eslint_heap: cannot run %s: %s" % (cmd[0], exc.strerror),
+            file=sys.stderr,
+        )
         return EXIT_NOT_FOUND
     return exit_status(proc.returncode)
 

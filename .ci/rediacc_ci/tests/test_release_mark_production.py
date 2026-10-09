@@ -27,6 +27,7 @@ import typing
 from rediacc_ci import paths
 from rediacc_ci.release import mark_production as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 from rediacc_ci.well_known import GH_API_BASE
 
 if typing.TYPE_CHECKING:
@@ -206,11 +207,11 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
     )
-    assert new.stdout == old.stdout, (
-        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new.stdout!r}"
+    assert as_twin(new.stdout) == old.stdout, (
+        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {as_twin(new.stdout)!r}"
     )
-    assert new.stderr == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
+    assert as_twin(new.stderr) == old.stderr, (
+        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
     )
     if old_calls is not None:
         assert new_calls == old_calls, (
@@ -499,7 +500,7 @@ def test_divergence_common_sh_interprets_backslash_escapes_in_gh_error_text(
     twin_copy, port_copy = _fixture_tree(tmp_path)
     f_old, _ = _run(twin_copy, tmp_path, ["v1.3.1"], FAKE_GH_VIEW_RC="1", FAKE_GH_VIEW_ERR=err)
     f_new, _ = _run(port_copy, tmp_path, ["v1.3.1"], FAKE_GH_VIEW_RC="1", FAKE_GH_VIEW_ERR=err)
-    assert f_old.stderr == f_new.stderr
+    assert f_old.stderr == as_twin(f_new.stderr)
     assert "boom\\nline two" in f_old.stderr
 
 
@@ -540,7 +541,7 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
 
     good, good_calls = _run(PORT, tmp_path, ["v1.3.1"], **kw)
     assert good_calls == old_calls, "restored port no longer agrees with the twin"
-    assert good.stderr == old.stderr
+    assert as_twin(good.stderr) == old.stderr
     assert PORT.read_text(encoding="utf-8") == original, (
         "port source must be restored byte-identical"
     )
@@ -669,3 +670,12 @@ def test_a_404_on_the_production_probe_posts_without_retry(monkeypatch) -> None:
     assert port.main(["v1.3.1"]) == 0
     assert fake.writes[0][:3] == ["api", "--method", "POST"]
     assert fake.slept == []
+
+
+def test_diagnostics_are_prefixed_with_the_module_name(tmp_path: pathlib.Path) -> None:
+    """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
+    new, _calls = _run(PORT, tmp_path, [])
+    assert new.returncode == 1
+    assert new.stderr == (
+        "✗ rediacc_ci.release.mark_production: no version given (argv[1] or $VERSION)\n"
+    )

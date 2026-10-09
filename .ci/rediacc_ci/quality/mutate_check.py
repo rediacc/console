@@ -194,7 +194,7 @@ def main(argv: list[str] | None = None) -> int:
     # The twin exits at the FIRST missing file, so the loop order is part of the message a reader gets. Kept.
     for required in (runner, suite, target):
         if not required.is_file():
-            print("check-mutate-check: missing %s" % required, file=sys.stderr)
+            print("rediacc_ci.quality.mutate_check: missing %s" % required, file=sys.stderr)
             return 1
 
     tally = _Tally()

@@ -159,7 +159,7 @@ def parse_blockered_list(file: str | pathlib.Path, comment_char: str = "#") -> T
     except (OSError, UnicodeDecodeError) as exc:
         # `blocker-validator.sh:205-209`. The twin sees a non-zero exit from the canonical module; here the same failures (unreadable file, undecodable bytes) arrive as exceptions. The words are the twin's.
         advisory.ci_error(
-            "blocker-validator: rediacc_ci.core.allowlist could not parse %s (%s)"
+            "rediacc_ci.core.blocker_validator: rediacc_ci.core.allowlist could not parse %s (%s)"
             % (path, type(exc).__name__)
         )
         print(
@@ -228,7 +228,8 @@ def replay_frames(stream: str, *, out=None) -> bool:
         index += 1
         if not line.startswith(BLOCKER_VALIDATOR_RS):
             advisory.ci_error(
-                "blocker-validator: unframed output from rediacc_ci.core.allowlist: %s" % line
+                "rediacc_ci.core.blocker_validator: unframed output from rediacc_ci.core.allowlist: %s"
+                % line
             )
             return False
         count_text = line[len(BLOCKER_VALIDATOR_RS) :]
@@ -250,7 +251,7 @@ def replay_frames(stream: str, *, out=None) -> bool:
     if frames == 0:
         # UNREACHABLE, and kept. See behaviour 3 in the module docstring.
         advisory.ci_error(
-            "blocker-validator: the canonical validator reported a failure but emitted no message"
+            "rediacc_ci.core.blocker_validator: the canonical validator reported a failure but emitted no message"
         )
         return False
     return True

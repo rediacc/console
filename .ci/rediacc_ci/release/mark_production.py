@@ -120,47 +120,56 @@ def main(argv: list[str]) -> int:
     # `VERSION="${1:-${VERSION:-}}"`: argv[1] if it is non-empty, else $VERSION.
     version = argv[0] if argv and argv[0] else os.environ.get("VERSION", "")
     if not version:
-        out.error("mark-production: no version given (argv[1] or $VERSION)")
+        out.error("rediacc_ci.release.mark_production: no version given (argv[1] or $VERSION)")
         return 1
 
     version = normalise_version(version)
     if not is_semver(version):
-        out.error("mark-production: '%s' is not strict semver (expected vX.Y.Z)" % version)
+        out.error(
+            "rediacc_ci.release.mark_production: '%s' is not strict semver (expected vX.Y.Z)"
+            % version
+        )
         return 1
 
     rc, text = _capture_merged(["release", "view", version, "--json", "tagName"])
     if rc != 0:
         if looks_missing(text):
             out.error(
-                "mark-production: no GitHub Release for %s; refusing to mark a version "
+                "rediacc_ci.release.mark_production: no GitHub Release for %s; refusing to mark a version "
                 "that was never published" % version
             )
         else:
             out.error(
-                "mark-production: could not read the release for %s, so the check did "
+                "rediacc_ci.release.mark_production: could not read the release for %s, so the check did "
                 "NOT run: %s" % (version, text)
             )
         return 1
 
-    out.info("mark-production: %s is a published release" % version)
+    out.info("rediacc_ci.release.mark_production: %s is a published release" % version)
 
     repo = os.environ.get("GITHUB_REPOSITORY") or DEFAULT_REPO
 
     rc, sha = _capture_merged(["api", ref_path(repo, version), "--jq", ".object.sha"])
     if rc != 0:
-        out.error("mark-production: could not resolve %s to a commit: %s" % (version, sha))
+        out.error(
+            "rediacc_ci.release.mark_production: could not resolve %s to a commit: %s"
+            % (version, sha)
+        )
         return 1
 
     rc, obj_type = _capture_merged(["api", ref_path(repo, version), "--jq", ".object.type"])
     if rc != 0:
-        out.error("mark-production: could not resolve %s's object type: %s" % (version, obj_type))
+        out.error(
+            "rediacc_ci.release.mark_production: could not resolve %s's object type: %s"
+            % (version, obj_type)
+        )
         return 1
 
     if obj_type == "tag":
         rc, sha = _capture_merged(["api", tag_object_path(repo, sha), "--jq", ".object.sha"])
         if rc != 0:
             out.error(
-                "mark-production: could not dereference the annotated tag object for "
+                "rediacc_ci.release.mark_production: could not dereference the annotated tag object for "
                 "%s: %s" % (version, sha)
             )
             return 1
@@ -169,7 +178,7 @@ def main(argv: list[str]) -> int:
     if not probe.ok and gh_retry.is_transient(probe.stderr):
         # A probe that failed TRANSIENTLY did not say the tag is absent. Falling to POST would try to create a ref that exists (422) or, worse, act on a wrong picture; the twin's one-shot `||` branch did exactly that. Refuse and let the run retry.
         out.error(
-            "mark-production: could not tell whether the 'production' tag exists, so it was "
+            "rediacc_ci.release.mark_production: could not tell whether the 'production' tag exists, so it was "
             "NOT moved: %s" % probe.stderr.strip()
         )
         return 1
@@ -203,13 +212,15 @@ def main(argv: list[str]) -> int:
         # `set -e`: the script dies HERE, with the failing command's status and without the "moved the tag" line. No message of its own is invented.
         return rc
 
-    out.info("mark-production: moved the 'production' tag to %s (%s)" % (version, sha))
+    out.info(
+        "rediacc_ci.release.mark_production: moved the 'production' tag to %s (%s)" % (version, sha)
+    )
 
     rc = _inherit(["release", "edit", version, "--latest"])
     if rc != 0:
         return rc
 
-    out.info("mark-production: marked %s as the latest GitHub Release" % version)
+    out.info("rediacc_ci.release.mark_production: marked %s as the latest GitHub Release" % version)
     return 0
 
 

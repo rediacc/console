@@ -174,7 +174,7 @@ def main(argv: list[str]) -> int:
     if raw is None:
         # THE UNSET CASE. See the module docstring: the twin dies here under `set -u` before its own guard can run, and the guard below is unreachable for it. bash's own `line 21:` prefix is not forged.
         print(
-            "standing-orders-brief: CLAUDE_CODE_SESSION_ID: unbound variable",
+            "rediacc_ci.review.standing_orders_brief: CLAUDE_CODE_SESSION_ID: unbound variable",
             file=sys.stderr,
             flush=True,
         )
