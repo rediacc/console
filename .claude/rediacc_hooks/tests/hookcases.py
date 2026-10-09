@@ -823,6 +823,166 @@ STATIC: list[Case] = [
         bash_json('echo "run.sh worktree create is blocked"'),
         "worktree-add: prose is not an invocation",
     ),
+    # THE INTERPRETER FORMS. Every one ran with rc 0 through chain-head.sh on 2026-10-09: a program text handed to python (-c, a heredoc, a here-string, a pipe), node, perl or ruby is one opaque argument to the shell walk, so the three arms above never saw the command inside it.
+    case(
+        "check_out 2 guards/block_worktree_add.py",
+        bash_json(
+            "python3 -c \"import subprocess; subprocess.run(['git','worktree','add','/tmp/x'])\""
+        ),
+        "worktree-add: python -c with a git argv list",
+        "program text",
+    ),
+    case(
+        "check_out 2 guards/block_worktree_add.py",
+        bash_json("python3 -c 'from rediacc_ci.dev import worktree; worktree.main([\"create\"])'"),
+        "worktree-add: python -c calling the port's main with create",
+        "worktree port",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "PYTHONPATH=.ci python3 -c 'from rediacc_ci.dev.worktree import cmd_create; cmd_create([\"x\"])'"
+        ),
+        "worktree-add: python -c calling cmd_create",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            'python3 -c \'from rediacc_ci.__main__ import main; main(["worktree", "create", "x"])\''
+        ),
+        "worktree-add: python -c through the package entry",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("python3 -c 'import os; os.system(\"git worktree add /tmp/x\")'"),
+        "worktree-add: python -c with a shell string",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "python3 -c \"import subprocess; subprocess.run('cd /r && git worktree add /tmp/x', shell=True)\""
+        ),
+        "worktree-add: python -c with a compound shell string",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "python3 -c \"import subprocess; subprocess.run(['python3','-m','rediacc_ci.dev.worktree','create','x'])\""
+        ),
+        "worktree-add: python -c spawning the port",
+    ),
+    case(
+        "check_out 2 guards/block_worktree_add.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport subprocess\nsubprocess.run(['git', 'worktree', 'add', '/tmp/x'])\nEOF"
+        ),
+        "worktree-add: python reading a heredoc",
+        "program text",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("python3 <<'EOF'\nimport os\nos.system('git worktree add /tmp/x')\nEOF"),
+        "worktree-add: python with no target reads the heredoc",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("python3 - <<< 'import os; os.system(\"git worktree add /tmp/x\")'"),
+        "worktree-add: python reading a here-string",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("echo 'import os; os.system(\"git worktree add /tmp/x\")' | python3"),
+        "worktree-add: python fed by echo through a pipe",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("timeout 30 python3 -c \"import os; os.system('git worktree add /tmp/x')\""),
+        "worktree-add: python -c behind timeout",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "sh -c \"python3 - <<'EOF'\nimport os; os.system('git worktree add /tmp/x')\nEOF\""
+        ),
+        "worktree-add: a python heredoc inside sh -c",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "x=$(python3 - <<'EOF'\nimport subprocess; subprocess.run(['git','worktree','add','/tmp/x'])\nEOF\n)"
+        ),
+        "worktree-add: a python heredoc inside a substitution",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            'PYTHONPATH=.ci python3 -c \'from rediacc_ci.core import git; git.run("worktree", "add", "/tmp/x")\''
+        ),
+        "worktree-add: python -c handing a helper worktree add",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json('node -e \'require("child_process").execSync("git worktree add /tmp/x")\''),
+        "worktree-add: node -e",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("perl -le 'print `git worktree add /tmp/x`'"),
+        "worktree-add: perl backticks in a bundled -le",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("ruby -e 'system \"git worktree add /tmp/x\"'"),
+        "worktree-add: ruby -e",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("bash -c 'git worktree add /tmp/x'"),
+        "worktree-add: bash -c (caught before the interpreter arm)",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            "python3 -c \"import subprocess; print(subprocess.run(['git','worktree','list'],capture_output=True).stdout)\""
+        ),
+        "worktree-add: python -c listing worktrees is allowed",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("python3 -c 'from rediacc_ci.dev import worktree; worktree.main([\"list\"])'"),
+        "worktree-add: python -c calling the port's list is allowed",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("python3 -c 'print(\"never run git worktree add here\")'"),
+        "worktree-add: python printing a sentence naming it is allowed",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            "python3 - <<'EOF'\nprint(open('.ci/rediacc_ci/dev/worktree.py').read().count('create'))\nEOF"
+        ),
+        "worktree-add: python reading the port's source is allowed",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            "python3 -c 'from rediacc_ci.dev import worktree; print(worktree.cmd_create.__doc__)'"
+        ),
+        "worktree-add: python reading cmd_create's docstring is allowed",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("perl -ne 'print if /git worktree add/' docs/x.md"),
+        "worktree-add: perl grepping for the command is allowed",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            "cat > n.md <<'EOF'\npython3 -c \"import os; os.system('git worktree add x')\"\nEOF"
+        ),
+        "worktree-add: a heredoc into a file naming a python -c is data",
+    ),
     case(
         "check 2 guards/block_blanket_git_add.py",
         bash_json("git add -A"),
