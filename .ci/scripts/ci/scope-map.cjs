@@ -176,7 +176,7 @@ const RULES = [
     full: 'harness',
   },
 
-  // Runs INSIDE the executable build (.ci/scripts/build/prepare-cli-assets.sh:190, reached from build-cli-executables.sh:123) and its output ships in the CLI binary. A throw reds the ungated build job, but a silently-WRONG credits file is only caught by install_methods/package_tests, which ARE gated.
+  // Runs INSIDE the executable build (rediacc_ci.build.prepare_cli_assets, reached from build_cli_executables) and its output ships in the CLI binary. A throw reds the ungated build job, but a silently-WRONG credits file is only caught by install_methods/package_tests, which ARE gated.
   {
     name: 'scripts-license-gen',
     match: (p) => p === 'scripts/gen/generate-third-party-licenses.ts',

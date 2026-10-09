@@ -20,7 +20,7 @@ PYTHONPATH=.ci python3 -m rediacc_ci.version.resolve_version --bump-type major  
 | CLI binary | `CLI_VERSION` env → esbuild `--define:__CLI_VERSION__` | `packages/cli/bundle.mjs:94` |
 | CLI Docker | Same as CLI binary (bundle built with the env set) | same |
 | www footer | `APP_VERSION` env → `__APP_VERSION__`, falls back to `0.0.0-dev` | `packages/www/astro.config.mjs:5-8,184` |
-| renet (Go) | `-ldflags="-s -w -X main.Version=$VERSION ..."` | `.ci/scripts/build/build-renet.sh:215,224` (Python port: `.ci/rediacc_ci/build/build_renet.py:318-327`) |
+| renet (Go) | `-ldflags="-s -w -X main.Version=$VERSION ..."` | `.ci/rediacc_ci/build/build_renet.py:318-327` |
 
 renet's ldflags also bakes in the server's public key (`$KEY_LDFLAGS`) in the same `-ldflags` word — Go 1.18+ records `-ldflags` in `.go.buildinfo`, which is why the two values travel together rather than as separate flags.
 

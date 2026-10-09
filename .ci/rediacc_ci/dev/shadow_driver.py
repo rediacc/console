@@ -12,7 +12,7 @@ WHAT THIS IS FOR. `scripts/lib/shadow-gate.ts` compares two commands and rules o
 ONE FILE AND NOT TWO, on the `rediacc_ci/setup/shadow_driver.py` precedent and for the reason that file records: `.ci/rediacc_ci/quality/dead_python.py:280` admits a pre-cutover port as alive only when it is named as the NEW side of a `.ci/shadow/*.jsonl` record, and the OLD side's command is scanned for a live `.sh` twin rather than for a Python file. A separate old-side module
 would be reported dead the day it landed.
 
-WHY IT IS DRIVEN AGAINST THE FUNCTION AND NEVER THROUGH `./run.sh dev`. `.ci/scripts/test/gates/test-run-sh.sh` section 6 emits `overlap <verb>` when a verb sits in both `PORTED_VERBS` and the legacy dispatcher, so the flip is atomic: the router table gains `dev` in the same change that deletes the arm and the body. After that change there is no bash side left to drive, so this
+WHY IT IS DRIVEN AGAINST THE FUNCTION AND NEVER THROUGH `./run.sh dev`. `rediacc_ci/tests/gates/test_gate_run_sh.py` emits `overlap <verb>` when a verb sits in both `PORTED_VERBS` and the legacy dispatcher, so the flip is atomic: the router table gains `dev` in the same change that deletes the arm and the body. After that change there is no bash side left to drive, so this
 ledger is recorded BEFORE the flip and it reaches the bash by sourcing the file, which keeps working right up to the moment the body is deleted and stops working loudly the moment after.
 
 -----------------------------------------------------------------------------

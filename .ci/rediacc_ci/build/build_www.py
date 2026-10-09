@@ -9,8 +9,8 @@ LIVE CALLERS, none repointed by this port:
     uploads `packages/www/dist/` as the `build-www-<sha>` artifact, so this
     script's output-verification step is the last thing standing between an
     empty build and a server image with no marketing site in it.
-  * `.ci/scripts/ci/generate-tag.sh:217` and its port
-    `rediacc_ci/ci/generate_tag.py:159` name the path in the change-detection
+  * `rediacc_ci/ci/generate_tag.py:159` (the port of the deleted
+    `generate-tag.sh`) names the path in the change-detection
     table; neither EXECUTES it.
 
 -----------------------------------------------------------------------------

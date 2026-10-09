@@ -111,8 +111,7 @@ THE AWK PROGRAM IS TRANSLATED FUNCTION BY FUNCTION, with the original regex quot
 THE PARENTHESIS BALANCE IS COUNTED OVER THE WHOLE LOGICAL LINE INCLUDING QUOTED
 TEXT, so a `(` inside a string keeps the folder swallowing lines. That is the twin's behaviour and the reason the END block has to flush an unterminated buffer at all.
 
-`validate_blocker_quality` IS RE-IMPLEMENTED HERE from `.ci/scripts/lib/blocker-validator.sh`, with both banned-phrase lists and the 30-character floor copied verbatim, for the same reason `_gh_probe` is copied in `submodule_branches`: the port does not source `common.sh` and the exact messages are what a reader greps for. `rediacc_ci.core.allowlist` is the typed home this should
-eventually move to.
+`validate_blocker_quality` IS A THIN WRAPPER HERE. The rule (both banned-phrase lists, the 30-character floor) lives in `rediacc_ci.core.allowlist.validate_reason`, which the wrapper calls; it was once copied in from the retired `.ci/scripts/lib/blocker-validator.sh`. The wrapper keeps only the stream split.
 
 `ci_error` PRINTS `::error::<msg>` ON STDOUT UNDER CI=true AND `✗ <msg>` ON
 STDERR OTHERWISE. Both are reproduced, because `scripts/lib/shadow-gate.ts` strips either prefix to the same normalized finding and a port that always used one would still be equivalent, but a human reading a CI log would lose the annotation.

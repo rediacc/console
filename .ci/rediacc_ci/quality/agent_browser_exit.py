@@ -10,7 +10,7 @@ THE TWIN'S OWN HEADER, carried over because the measurement IS the gate and a pa
       agent-browser open "$URL"                    -> rc=0
       agent-browser open "$URL" >/dev/null 2>&1    -> rc=1
 
-  packages/www/scripts/measure-page-density.sh runs under `set -euo pipefail` and
+  packages/www/scripts/measure-page-density.sh (since ported to rediacc_ci.dev.measure_page_density) ran under `set -euo pipefail` and
   redirects that call, so `set -e` killed it at its FIRST page. The symptom was not
   an error: an empty log, and a CSV containing only its header row. It read as "the
   harness produced nothing" rather than "the harness was shot".

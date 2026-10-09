@@ -22,14 +22,14 @@
 # differs from this in two ways that are the entire point:
 #
 #   1. `source` EXECUTES the file. A `$(...)` in a value runs. .env files here
-#      are written by .ci/lib/account.sh, but they are also hand-edited, and
+#      are written by .ci/rediacc_ci/core/account.py (port of the retired .ci/lib/account.sh), but they are also hand-edited, and
 #      rdc.sh:240-245 already refuses to source this exact file for this exact
 #      reason.
 #   2. `set -a; source` lets the FILE overwrite the SHELL. Every override this
 #      repo ships arrives through the environment -- a workflow `env:` block, a
 #      GITHUB_ENV append, a developer typing `PORT=4900 ./run.sh` -- and
 #      file-wins discards all of them in favour of a value written to disk
-#      months ago, silently. .ci/lib/account.sh:432-440 is the live case:
+#      months ago, silently. .ci/lib/account.sh:432-440 (retired) was the live case:
 #      account_allocate_ports computes GATEWAY_PORT and four lines later the
 #      file was free to overwrite it.
 #
@@ -75,7 +75,7 @@ _env_file_py() {
 #
 # Exports every key in <path> that the environment does not already carry, or
 # only the named ones. Absent file: nothing happens, exit 0 (absence is a normal
-# state meaning "not generated yet", .ci/lib/account.sh:311-313). Unreadable
+# state meaning "not generated yet", as .ci/rediacc_ci/core/account.py treats it). Unreadable
 # file, or a parse error: exit non-zero WITHOUT exporting anything.
 #
 # The output is captured and its status checked BEFORE the eval. Piping the

@@ -676,7 +676,7 @@ function selftest(): number {
     verbs.join(',') === 'devbox,provision,setup',
     verbs
   );
-  // The trap .ci/scripts/test/gates/test-run-sh.sh:177-179 names: an inner `case` whose arms sit at the SAME indent as a real subcommand. An indentation rule
+  // The trap rediacc_ci/tests/gates/test_gate_run_sh.py names: an inner `case` whose arms sit at the SAME indent as a real subcommand. An indentation rule
   // reports `1` and `shell` as verbs; a depth rule cannot.
   ck('CONTROL: an INNER case arm is not a top-level verb', !verbs.includes('shell'), verbs);
   ck('CONTROL: a numeric inner arm is not a verb', !verbs.includes('1'), verbs);

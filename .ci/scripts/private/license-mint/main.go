@@ -1,5 +1,5 @@
 // Command license-mint forges repo-license blobs for the licensing enforcement
-// battery (.ci/scripts/private/license-e2e.sh).
+// battery (rediacc_ci.private.license_e2e).
 //
 // It deliberately imports renet's REAL github.com/rediacc/renet/pkg/license and
 // .../pkg/subscription packages rather than re-encoding the wire format by hand.

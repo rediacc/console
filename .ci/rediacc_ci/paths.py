@@ -171,7 +171,7 @@ def on_sys_path(directory: os.PathLike[str] | str) -> str:
 #
 # `.git` and `node_modules` are here because every gate in this package scans TRACKED SOURCE, and both are invisible to `git ls-files`. A gate that reads them is judging content CI will never see.
 #
-# `.worktrees` is the same argument for a directory that holds whole CHECKOUTS: `scripts/dev/worktree.sh` puts them at `$ROOT_DIR/.worktrees` and `.gitignore:146` excludes them.
+# `.worktrees` is the same argument for a directory that holds whole CHECKOUTS: `rediacc_ci.dev.worktree` puts them at `$ROOT_DIR/.worktrees` and `.gitignore:146` excludes them.
 PRUNED_DIR_NAMES = (".git", "node_modules", ".worktrees")
 
 # Pruned as a (parent, name) PAIR rather than by name alone. `worktrees` is far too common a word to prune wherever it appears -- doing so would silently drop a real `docs/worktrees/` or `scripts/worktrees/` from a gate's corpus, which is the same class of invisible-corpus-loss this module exists to prevent. Only `.claude/worktrees` is a checkout holder.

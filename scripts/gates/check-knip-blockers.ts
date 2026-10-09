@@ -6,7 +6,7 @@
  * and `ignoreUnresolved` arrays, both top-level and per-workspace. `entry` /
  * `project` globs are configuration, not suppressions, and are exempt.
  *
- * Comment semantics mirror .ci/scripts/lib/blocker-validator.sh's
+ * Comment semantics mirror rediacc_ci/core/allowlist.py's
  * parse_blockered_list: a `// BLOCKER: <reason>` line covers every entry
  * after it until a blank line or the end of the array; an inline
  * `"entry", // BLOCKER: <reason>` form is also accepted. Reason quality is

@@ -223,7 +223,7 @@ def test_pathspec_warning_names_the_narrowing_spelling():
 def test_a_staged_change_is_dirty_but_git_diff_quiet_calls_it_clean(repo):
     """THE ASYMMETRY, in both directions.
 
-    `scripts/dev/worktree.sh` pairs `diff --quiet` with `diff --cached --quiet` at four sites; a tree with only staged changes needs the second to be seen at all.
+    The retired `scripts/dev/worktree.sh` paired `diff --quiet` with `diff --cached --quiet` at four sites; a tree with only staged changes needs the second to be seen at all.
     """
     (repo / "tracked.txt").write_text("two\n")
     sh("git add tracked.txt", repo)

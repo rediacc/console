@@ -254,7 +254,7 @@ def is_dirty(root: os.PathLike[str] | str | None = None, *, untracked: bool = Tr
 def has_staged_changes(root: os.PathLike[str] | str | None = None) -> bool | None:
     """`git diff --cached --quiet` inverted. None when git failed.
 
-    Separate from `is_dirty` because they are genuinely different questions, and because `scripts/dev/worktree.sh` needs both at all four of its sites.
+    Separate from `is_dirty` because they are genuinely different questions, and because the retired `scripts/dev/worktree.sh` needed both at all four of its sites (its port, `rediacc_ci.dev.worktree`, asks `git status --porcelain` instead).
     """
     result = git(["diff", "--cached", "--quiet"], root=root)
     if result.returncode in (0, 1):
