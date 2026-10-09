@@ -187,17 +187,52 @@ def test_bulk_guard_does_not_count_review_records(tmp_path, monkeypatch):
     """A commit of 25 review records is not a transform; 25 source files with no proof still is (033a35227, 2026-10-09)."""
     repo = _pr_world(tmp_path / "r")
     _branch_with(repo, ["agent/reviews/feat/%02d.md" % i for i in range(25)], "chore(reviews): x")
+    # A branch name holding a slash puts the records one level deeper (review 833dc9af.3).
+    _branch_with(repo, ["agent/reviews/feat/x/%02d.md" % i for i in range(25)], "chore(reviews): y")
     rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
     assert rc == 0, err
     _branch_with(repo, ["src/f%02d.ts" % i for i in range(25)], "refactor: x")
     rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
     assert rc == 2
-    assert "25 file" in err or "(25" in err or " 25" in err, err
+    assert "(25 files" in err, err
+
+
+def _gitmodules(root, subs):
+    """Write `.gitmodules` naming each `path: OWNER/REPO` submodule with a GitHub url."""
+    text = "".join(
+        '[submodule "%s"]\n\tpath = %s\n\turl = https://github.com/%s.git\n' % (path, path, repo)
+        for path, repo in subs.items()
+    )
+    (root / ".gitmodules").write_text(text, encoding="utf-8")
+
+
+def test_bulk_guard_finds_any_submodule_by_its_gitmodules_url(tmp_path, monkeypatch):
+    """A submodule outside the four the guard once listed is still judged in its own tree (review 833dc9af.1)."""
+    root = _pr_world(tmp_path / "console")
+    _gitmodules(root, {"vendor/newsub": "rediacc/newsub"})
+    sub = _pr_world(root / "vendor" / "newsub")
+    _branch_with(sub, ["pkg/f%02d.go" % i for i in range(25)], "refactor: newsub bulk")
+    cmd = "gh pr create --repo rediacc/newsub --base main --head feat -t x"
+    rc, _out, err = _run("block_unproven_bulk_transform", cmd, root, monkeypatch)
+    assert rc == 2
+    assert _git(sub, "rev-parse", "HEAD")[:10] in err, err
+
+
+def test_bulk_guard_refuses_a_head_it_cannot_read(tmp_path, monkeypatch):
+    """`--head` naming a branch the checkout has no ref for is refused, never judged as the checked-out branch (review 833dc9af.2)."""
+    root = _pr_world(tmp_path / "console")
+    _gitmodules(root, {"private/renet": "rediacc/renet"})
+    _pr_world(root / "private" / "renet")
+    cmd = "gh pr create --repo rediacc/renet --base main --head not-here -t x"
+    rc, _out, err = _run("block_unproven_bulk_transform", cmd, root, monkeypatch)
+    assert rc == 2
+    assert "no local or origin/ ref" in err, err
 
 
 def test_bulk_guard_judges_a_submodule_pr_in_its_own_checkout(tmp_path, monkeypatch):
     """`gh pr create --repo rediacc/renet --head feat` walks private/renet, not the console's range (2026-10-09)."""
     root = _pr_world(tmp_path / "console")
+    _gitmodules(root, {"private/renet": "rediacc/renet"})
     _branch_with(root, ["src/f%02d.ts" % i for i in range(25)], "refactor: console bulk")
     renet = _pr_world(root / "private" / "renet")
     _branch_with(renet, ["one.go"], "fix: one file")
