@@ -665,7 +665,8 @@ export const RECEIPT_STEP_NAMES = ['Write shard receipt', 'Upload shard receipt'
  * there leaves this copy behind; `--write` then emits the old pin and check:ci-gate-bind reports ci-quality.yml stale (2026-10-09,
  * after 0cb2df6b0). Bump it with every upload-artifact bump.
  */
-export const UPLOAD_ARTIFACT_PIN = 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2';
+export const UPLOAD_ARTIFACT_PIN =
+  'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2';
 
 export function emitReceiptStep(
   job: string,
