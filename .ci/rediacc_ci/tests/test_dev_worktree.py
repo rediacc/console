@@ -359,12 +359,26 @@ def diff_pair(
     return a, b, ra, rb, (calls_a, b.call_log(*tools))
 
 
+DAY_BRANCH = re.compile(r"^\d{4}-(?=\d+$)")
+
+
+def undated(state: dict[str, object]) -> dict[str, object]:
+    """The state with the day prefix of `MMDD-N` branch and directory names masked on both sides. The golden froze the branch names of the day it was recorded, and the port names today's, so a raw comparison fails after the first midnight."""
+
+    def one(name: object) -> object:
+        return DAY_BRANCH.sub("<TODAY>-", name) if isinstance(name, str) else name
+
+    return {
+        key: [one(v) for v in value] if isinstance(value, list) else one(value)
+        for key, value in state.items()
+    }
+
+
 def assert_same(a: Fixture, b: Fixture, ra: Result, rb: Result, calls) -> None:
     assert rb.rc == ra.rc
     assert rb.err == ra.err
     assert rb.out == ra.out
-    sa, sb = a.state(), b.state()
-    assert sa == sb
+    assert undated(a.state()) == undated(b.state())
     assert calls[0] == calls[1]
 
 
