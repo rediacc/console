@@ -34,6 +34,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import simulate_promotion as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 from rediacc_ci.tests.wkloader import copy_loader
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
@@ -413,13 +414,13 @@ def _agree(old, new, label: str) -> None:
     new_proc, new_calls = new
     assert new_proc.returncode == old_proc.returncode, (
         f"{label}: exit diverged: {old_proc.returncode!r} vs {new_proc.returncode!r}\n"
-        f"old stderr: {old_proc.stderr!r}\nnew stderr: {new_proc.stderr!r}"
+        f"old stderr: {old_proc.stderr!r}\nnew stderr: {as_twin(new_proc.stderr)!r}"
     )
-    assert sorted(new_proc.stdout.splitlines()) == sorted(old_proc.stdout.splitlines()), (
-        f"{label}: stdout diverged:\n{old_proc.stdout!r}\n{new_proc.stdout!r}"
+    assert sorted(as_twin(new_proc.stdout).splitlines()) == sorted(old_proc.stdout.splitlines()), (
+        f"{label}: stdout diverged:\n{old_proc.stdout!r}\n{as_twin(new_proc.stdout)!r}"
     )
-    assert sorted(new_proc.stderr.splitlines()) == sorted(old_proc.stderr.splitlines()), (
-        f"{label}: stderr diverged:\n{old_proc.stderr!r}\n{new_proc.stderr!r}"
+    assert sorted(as_twin(new_proc.stderr).splitlines()) == sorted(old_proc.stderr.splitlines()), (
+        f"{label}: stderr diverged:\n{old_proc.stderr!r}\n{as_twin(new_proc.stderr)!r}"
     )
     assert _normalise(new_calls) == _normalise(old_calls), (
         f"{label}: call log diverged:\n{old_calls}\n---\n{new_calls}"
@@ -670,7 +671,7 @@ def test_fact_an_unset_zone_is_an_unbound_variable_at_the_end(tmp_path) -> None:
         old_proc.stderr
     )
     assert new_proc.stderr.endswith(
-        "simulate-promotion.sh: CLOUDFLARE_ZONE_ID: unbound variable\n"
+        "rediacc_ci.deploy.simulate_promotion: CLOUDFLARE_ZONE_ID: unbound variable\n"
     ), repr(new_proc.stderr)
 
     # THE PROMOTION HAS ALREADY HAPPENED, on both sides.
@@ -935,3 +936,9 @@ def test_inverse_normalise_still_sees_a_missing_retry() -> None:
     first = "call: aws s3 ls x\ncall: aws s3api copy-object A\ncall: sleep 5\ncall: aws s3api copy-object A\n"
     second = "call: aws s3 ls x\ncall: aws s3api copy-object A\ncall: aws s3api copy-object A\n"
     assert _normalise(first) != _normalise(second)
+
+
+def test_diagnostics_are_prefixed_with_the_module_name() -> None:
+    """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
+    assert port.SELF == "rediacc_ci.deploy.simulate_promotion"
+    assert port.__name__ == port.SELF

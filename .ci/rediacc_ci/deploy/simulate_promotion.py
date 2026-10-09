@@ -102,8 +102,8 @@ from rediacc_ci.core import common
 from rediacc_ci.deploy import cf_purge_urls
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
-# The twin's own name, used in the bash-diagnostic stand-ins.
-SELF = "simulate-promotion.sh"
+# This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
+SELF = "rediacc_ci.deploy.simulate_promotion"
 
 # `BUCKET="rediacc-releases"` (twin :51) and the public host (twin :202, :213),
 # both hard-coded in the twin.

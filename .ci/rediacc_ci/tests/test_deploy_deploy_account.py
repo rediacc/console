@@ -22,6 +22,7 @@ import typing
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_account as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -216,11 +217,11 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
     )
-    assert new.stdout == old.stdout, (
-        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new.stdout!r}"
+    assert as_twin(new.stdout) == old.stdout, (
+        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {as_twin(new.stdout)!r}"
     )
-    assert new.stderr == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
+    assert as_twin(new.stderr) == old.stderr, (
+        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
     )
     if old_calls is not None:
         assert new_calls == old_calls, (
@@ -432,7 +433,10 @@ def test_a_flag_that_is_not_a_shell_identifier_exits_two(tmp_path: pathlib.Path)
     assert old.returncode == 2
     assert new.returncode == 2
     assert old.stderr.endswith("printf: `ARG_FOO.BAR': not a valid identifier\n")
-    assert new.stderr == "deploy-account.sh: printf: `ARG_FOO.BAR': not a valid identifier\n"
+    assert (
+        new.stderr
+        == "rediacc_ci.deploy.deploy_account: printf: `ARG_FOO.BAR': not a valid identifier\n"
+    )
     assert old_calls == new_calls == ""
 
 
@@ -548,3 +552,9 @@ def test_a_failed_migration_stops_before_the_deploy(tmp_path: pathlib.Path) -> N
     assert old_calls.count("npx\t") == 1
     assert "Migrations applied" not in old.stderr
     _assert_agree(old, new, "migration-failed", old_calls, new_calls)
+
+
+def test_diagnostics_are_prefixed_with_the_module_name() -> None:
+    """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
+    assert port.SELF == "rediacc_ci.deploy.deploy_account"
+    assert port.__name__ == port.SELF

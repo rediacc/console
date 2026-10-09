@@ -22,6 +22,7 @@ from rediacc_ci import paths
 from rediacc_ci.deploy import set_preview_worker_secrets as sibling
 from rediacc_ci.deploy import set_www_worker_secrets as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -164,11 +165,11 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
     )
-    assert new.stdout == old.stdout, (
-        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new.stdout!r}"
+    assert as_twin(new.stdout) == old.stdout, (
+        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {as_twin(new.stdout)!r}"
     )
-    assert new.stderr == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
+    assert as_twin(new.stderr) == old.stderr, (
+        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
     )
     if old_calls is not None:
         assert new_calls == old_calls, (
@@ -324,7 +325,10 @@ def test_divergence_a_missing_worker_name_is_bashs_own_unbound_variable(
     assert old.stderr.endswith(
         "line 54: WORKER_NAME: set-www-worker-secrets.sh: WORKER_NAME must be set\n"
     )
-    assert new.stderr == "WORKER_NAME: set-www-worker-secrets.sh: WORKER_NAME must be set\n"
+    assert (
+        new.stderr
+        == "WORKER_NAME: rediacc_ci.deploy.set_www_worker_secrets: WORKER_NAME must be set\n"
+    )
     assert old.stderr != new.stderr
     assert old.stdout == new.stdout == ""
     assert old_calls == new_calls == ""
@@ -370,7 +374,7 @@ def test_the_two_sibling_scripts_are_not_the_same_script() -> None:
 
 
 def test_pure_helpers() -> None:
-    assert port.SELF == "set-www-worker-secrets.sh"
+    assert port.SELF == "rediacc_ci.deploy.set_www_worker_secrets"
 
     argv = port.jq_argv({"SELLER_CITY": "Delft"})
     assert argv[:2] == ["jq", "-n"]
@@ -392,7 +396,7 @@ def test_pure_helpers() -> None:
 
     guard = port.GuardError("SELLER_EMAIL", "www-edge")
     assert guard.lines()[0] == (
-        "set-www-worker-secrets.sh: SELLER_EMAIL is EMPTY for WORKER_NAME=www-edge."
+        "rediacc_ci.deploy.set_www_worker_secrets: SELLER_EMAIL is EMPTY for WORKER_NAME=www-edge."
     )
     assert len(guard.lines()) == 3
 

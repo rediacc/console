@@ -22,6 +22,7 @@ import typing
 from rediacc_ci import paths
 from rediacc_ci.deploy import set_preview_worker_secrets as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -165,11 +166,11 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
     )
-    assert new.stdout == old.stdout, (
-        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new.stdout!r}"
+    assert as_twin(new.stdout) == old.stdout, (
+        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {as_twin(new.stdout)!r}"
     )
-    assert new.stderr == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
+    assert as_twin(new.stderr) == old.stderr, (
+        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
     )
     if old_calls is not None:
         assert new_calls == old_calls, (
@@ -374,7 +375,7 @@ def test_the_closing_line_counts_what_is_actually_sent() -> None:
 
 
 def test_pure_helpers() -> None:
-    assert port.SELF == "set-preview-worker-secrets.sh"
+    assert port.SELF == "rediacc_ci.deploy.set_preview_worker_secrets"
     assert port.worker_name("42") == "pr-42"
     assert len(port.KEYS) == 15
     assert len(port.REQUIRED_NONEMPTY) == 11
@@ -401,7 +402,7 @@ def test_pure_helpers() -> None:
 
     guard = port.GuardError("ROOT_EMAIL", "pr-7")
     assert guard.lines()[0] == (
-        "set-preview-worker-secrets.sh: ROOT_EMAIL is EMPTY for WORKER_NAME=pr-7."
+        "rediacc_ci.deploy.set_preview_worker_secrets: ROOT_EMAIL is EMPTY for WORKER_NAME=pr-7."
     )
     assert len(guard.lines()) == 3
 

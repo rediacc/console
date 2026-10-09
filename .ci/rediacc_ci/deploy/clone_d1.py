@@ -119,8 +119,8 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common
 
-# The twin's own name, carried in its usage line and in the bash-diagnostic stand-ins.
-SELF = "clone-d1.sh"
+# This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
+SELF = "rediacc_ci.deploy.clone_d1"
 
 # `EXPORT_ATTEMPTS=3` (twin :90) and the `sleep 10` between them (twin :99).
 # RETRIED because `d1 export` stages through R2 and R2 fails transiently in ways that have nothing to do with the database; the twin's header records the two distinct R2 errors seen on 2026-08-07 that motivated it. A database that genuinely cannot be exported still fails, three times over.
@@ -153,7 +153,7 @@ FK_RESULTS_JQ = ".[0].results"
 FK_COMMAND = "PRAGMA foreign_key_check"
 
 # The usage line (twin :50), which is also the only place `--wrangler-config` is documented. `--sanitize` is absent from it; see DEFECT D.
-USAGE = "Usage: clone-d1.sh --source <db-name> --target <db-name> [--wrangler-config <path>]"
+USAGE = "Usage: python3 -m rediacc_ci.deploy.clone_d1 --source <db-name> --target <db-name> [--wrangler-config <path>]"
 
 # The one variable `require_var` demands (twin :54). The header claims two; see
 # DEFECT C.

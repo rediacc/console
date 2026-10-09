@@ -26,6 +26,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_www as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -301,13 +302,13 @@ def _agree(old, new, label: str) -> None:
     new_proc, new_calls, new_config = new
     assert new_proc.returncode == old_proc.returncode, (
         f"{label}: exit diverged: {old_proc.returncode!r} vs {new_proc.returncode!r}\n"
-        f"old stderr: {old_proc.stderr!r}\nnew stderr: {new_proc.stderr!r}"
+        f"old stderr: {old_proc.stderr!r}\nnew stderr: {as_twin(new_proc.stderr)!r}"
     )
-    assert new_proc.stdout == old_proc.stdout, (
-        f"{label}: stdout diverged:\n{old_proc.stdout!r}\n{new_proc.stdout!r}"
+    assert as_twin(new_proc.stdout) == old_proc.stdout, (
+        f"{label}: stdout diverged:\n{old_proc.stdout!r}\n{as_twin(new_proc.stdout)!r}"
     )
-    assert new_proc.stderr == old_proc.stderr, (
-        f"{label}: stderr diverged:\n{old_proc.stderr!r}\n{new_proc.stderr!r}"
+    assert as_twin(new_proc.stderr) == old_proc.stderr, (
+        f"{label}: stderr diverged:\n{old_proc.stderr!r}\n{as_twin(new_proc.stderr)!r}"
     )
     assert new_calls == old_calls, f"{label}: call log diverged:\n{old_calls}\n---\n{new_calls}"
     assert new_config == old_config, (
@@ -567,9 +568,10 @@ def test_a_flag_that_is_not_an_identifier_exits_two_on_both_sides(tmp_path) -> N
     assert old_calls == ""
     assert new_calls == ""
     assert "not a valid identifier" in old_proc.stderr
-    assert new_proc.stderr == "deploy-www.sh: printf: `ARG_FOO.BAR': not a valid identifier\n", (
-        repr(new_proc.stderr)
-    )
+    assert (
+        new_proc.stderr
+        == "rediacc_ci.deploy.deploy_www: printf: `ARG_FOO.BAR': not a valid identifier\n"
+    ), repr(new_proc.stderr)
 
 
 def test_the_root_variable_steers_the_port(tmp_path) -> None:
@@ -690,3 +692,9 @@ def test_both_credentials_are_read_with_literal_keys() -> None:
     for name in ("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"):
         assert 'os.environ.get("%s"' % name in source, name
     assert source.index("CLOUDFLARE_API_TOKEN") < source.index("CLOUDFLARE_ACCOUNT_ID")
+
+
+def test_diagnostics_are_prefixed_with_the_module_name() -> None:
+    """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
+    assert port.SELF == "rediacc_ci.deploy.deploy_www"
+    assert port.__name__ == port.SELF

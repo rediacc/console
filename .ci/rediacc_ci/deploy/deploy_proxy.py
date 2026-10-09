@@ -55,8 +55,8 @@ from rediacc_ci import log
 from rediacc_ci.core import common
 from rediacc_ci.version import resolve_version
 
-# The twin's own name, used only in the `printf -v` stand-in.
-SELF = "deploy-proxy.sh"
+# This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
+SELF = "rediacc_ci.deploy.deploy_proxy"
 
 # The `${CLOUDFLARE_API_TOKEN:?...}` stand-in named in the docstring. The twin's
 # message already begins with the variable name, so this reads it twice; kept, because that is the text.

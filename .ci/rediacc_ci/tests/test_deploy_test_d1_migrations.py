@@ -29,6 +29,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import test_d1_migrations as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -354,13 +355,13 @@ def _agree(old, new, label: str) -> None:
     new_proc, new_calls = new
     assert new_proc.returncode == old_proc.returncode, (
         f"{label}: exit diverged: {old_proc.returncode!r} vs {new_proc.returncode!r}\n"
-        f"old stderr: {old_proc.stderr!r}\nnew stderr: {new_proc.stderr!r}"
+        f"old stderr: {old_proc.stderr!r}\nnew stderr: {as_twin(new_proc.stderr)!r}"
     )
-    assert _mask(new_proc.stdout) == _mask(old_proc.stdout), (
-        f"{label}: stdout diverged:\n{old_proc.stdout!r}\n{new_proc.stdout!r}"
+    assert _mask(as_twin(new_proc.stdout)) == _mask(old_proc.stdout), (
+        f"{label}: stdout diverged:\n{old_proc.stdout!r}\n{as_twin(new_proc.stdout)!r}"
     )
-    assert _mask(new_proc.stderr) == _mask(old_proc.stderr), (
-        f"{label}: stderr diverged:\n{old_proc.stderr!r}\n{new_proc.stderr!r}"
+    assert _mask(as_twin(new_proc.stderr)) == _mask(old_proc.stderr), (
+        f"{label}: stderr diverged:\n{old_proc.stderr!r}\n{as_twin(new_proc.stderr)!r}"
     )
     assert _mask(new_calls) == _mask(old_calls), (
         f"{label}: call log diverged:\n{old_calls}\n---\n{new_calls}"
@@ -732,3 +733,9 @@ def test_the_guard_table_and_the_literal_reads_cannot_drift() -> None:
     source = inspect.getsource(port.require_env)
     for name, _message in port.REQUIRED_ENV:
         assert 'os.environ.get("%s"' % name in source, name
+
+
+def test_diagnostics_are_prefixed_with_the_module_name() -> None:
+    """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
+    assert port.SELF == "rediacc_ci.deploy.test_d1_migrations"
+    assert port.__name__ == port.SELF

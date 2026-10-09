@@ -48,8 +48,8 @@ import tempfile
 from rediacc_ci.core import common
 from rediacc_ci.deploy import cf_purge_urls, channel_stamp, promote_r2_to_stable, r2_promote
 
-# The twin's own name, carried in its three guard messages. A literal, because the bytes must survive the port.
-SELF = "promote-r2-to-stable-hotfix.sh"
+# This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
+SELF = "rediacc_ci.deploy.promote_r2_to_stable_hotfix"
 
 # `for dir in cli apt rpm apk archlinux` (twin :64). ORDER MATTERS to the call log and the purge list.
 CHANNEL_DIRS = ("cli", "apt", "rpm", "apk", "archlinux")
