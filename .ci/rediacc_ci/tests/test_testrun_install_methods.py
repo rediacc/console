@@ -115,10 +115,23 @@ def both(
     return old, new, od, nd
 
 
+# The npm cutoff is the UTC midnight of the day the run happens, so the frozen golden holds the day it was recorded and the port computes today's. Both sides are masked here; `release_age.npm_before` has its own tests for the value.
+NPM_BEFORE_VALUE = re.compile(r"--before '\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ'")
+
+
 def calls(outcome: ts.Outcome) -> list[tuple]:
-    """The call log, script text compared. The port's one argv delta, the trace preamble in front of each `-c` script (Rule T 8), is stripped here and nowhere else; `test_delta_every_container_script_is_traced` proves it is there."""
+    """The call log, script text compared. The port's one argv delta, the trace preamble in front of each `-c` script (Rule T 8), is stripped here and nowhere else; `test_delta_every_container_script_is_traced` proves it is there. The day-dependent npm `--before` cutoff is masked."""
     return [
-        (call["tool"], [strip_comments(a.removeprefix(port.TRACE_PREAMBLE)) for a in call["argv"]])
+        (
+            call["tool"],
+            [
+                NPM_BEFORE_VALUE.sub(
+                    "--before '<NPM_BEFORE>'",
+                    strip_comments(a.removeprefix(port.TRACE_PREAMBLE)),
+                )
+                for a in call["argv"]
+            ],
+        )
         for call in outcome.calls
     ]
 
