@@ -520,67 +520,74 @@ def staged_deletions(repo):
 # What made it cost a round trip on 2026-08-28 is that git names the PATHS and not the OWNER, so the one party who can clear the block is absent from the message. Rewording a single commit on 0827-1 stalled until a peer was asked by hand to commit their own document. The owner is right there in the path.
 VOLATILE_STATE_RE = re.compile(r"^agent/([^/]+)/STATE\.md$")
 
-# The REST of the tracked paths the stop hook and the worklist verbs rewrite on their own schedule: per-repo ledgers and event logs, the queue and the review and regression-gate records. Volatile in the same sense as a STATE.md, but owned by no one session, so `classify_dirt` above does not read them; block_rebase_over_foreign_dirt asks `is_session_state` whether a dirty path is somebody's work or this machinery's.
+# The REST of the tracked paths the stop hook and the worklist verbs rewrite on their own schedule: per-repo ledgers and event logs, the queue and the review and regression-gate records. Volatile in the same sense as a STATE.md, but owned by no one session, so `classify_dirt` names them apart from the per-session documents; it and block_rebase_over_foreign_dirt both ask `is_session_state` whether a dirty path is somebody's work or this machinery's.
 HOOK_STATE_RE = re.compile(
     r"^agent/(?:ledgers/[^/]+\.jsonl|worklist/[^/]+\.jsonl|plans/QUEUE\.md|reviews/.+|reggate/.+)$"
 )
 
 
+# The harness's own permission file, tracked and rewritten whenever a permission is granted. /branch-rebase and /pr-merge both read "nothing but `.claude/settings.local.json`" as a clean tree.
+SETTINGS_LOCAL = ".claude/settings.local.json"
+
+
 def is_session_state(path):
-    """Whether a repo-relative path is volatile session state rather than somebody's work."""
-    return bool(VOLATILE_STATE_RE.match(path) or HOOK_STATE_RE.match(path))
+    """Whether a repo-relative path is volatile session state rather than somebody's work: a STATE.md, the hook's own records, or the harness's settings.local.json. THE ONE DEFINITION: `dirt_verdict` below and block_rebase_over_foreign_dirt both ask it."""
+    return bool(
+        path == SETTINGS_LOCAL or VOLATILE_STATE_RE.match(path) or HOOK_STATE_RE.match(path)
+    )
 
 
 def dirty_paths(repo):
-    """Every path git reports as changed, or None when the PROBE ITSELF failed.
+    """The paths `git rebase` refuses to start over, or None when the PROBE ITSELF failed.
+
+    WHAT GIT COUNTS, measured on git 2.53.0 against a fixture with each kind of dirt alone (#a234b06e): a modified tracked file refused (`You have unstaged changes`), a staged one refused, and a modified tracked STATE.md, ledger or settings.local.json refused like any other file. An untracked file and an untracked symlink (the `.ci/cache` link a fresh clone carries) did not, nor did a submodule whose work tree moved or holds edits. A STAGED gitlink passed git's up-front check and then stopped the rebase partway (`your local changes would be overwritten by rebase`, `.git/rebase-merge` left behind), so it counts. Until #a234b06e this read a bare `git status --porcelain`, which counted every untracked path and every submodule as uncommitted work.
+
+    So: the work tree against the index with submodules ignored and untracked files left out, plus the index against HEAD with submodules included. `--no-renames` lists both sides of a rename.
 
     None is not "clean". An unreadable probe is never a pass -- the same rule `staged_deletions` had to learn after `if dels:` let a failed probe through on two of its three call sites.
     """
-    rc, out, _ = run_git(["status", "--porcelain", "-z"], cwd=repo)
-    if rc != 0:
-        return None
-    fields = [f for f in out.split("\0") if f]
-    paths, i = [], 0
-    while i < len(fields):
-        entry = fields[i]
-        i += 1
-        if len(entry) < 4:
-            continue
-        xy, path = entry[:2], entry[3:]
-        paths.append(path)
-        # A rename/copy entry is followed by its ORIGIN path as a separate NUL-terminated field. Consuming it HERE is what keeps the loop in phase -- treating it as its own entry would read the origin path's first two characters as a status code and mis-split every path after it.
-        if ("R" in xy or "C" in xy) and i < len(fields):
-            paths.append(fields[i])
-            i += 1
-    return sorted(set(paths))
+    paths: set[str] = set()
+    for args in (
+        ["diff", "--name-only", "-z", "--no-renames", "--ignore-submodules=all"],
+        ["diff", "--cached", "--name-only", "-z", "--no-renames", "--ignore-submodules=none"],
+    ):
+        rc, out, _ = run_git(args, cwd=repo)
+        if rc != 0:
+            return None
+        paths.update(p for p in out.split("\0") if p)
+    return sorted(paths)
 
 
 def classify_dirt(paths):
-    """Split dirty paths into volatile per-session state and everything else.
+    """Split dirty paths into volatile session state and everything else.
 
-    Returns (owners, real): `owners` maps a session id to its document, `real` is every path that is somebody's actual work. The split is what turns "the tree is dirty" into "ask e580532b to commit theirs".
+    Returns (owners, hook, real): `owners` maps a session id to its STATE.md, `hook` lists the rest of `is_session_state`'s paths (the hook's records, settings.local.json), `real` is every path that is somebody's actual work. The split is what turns "the tree is dirty" into "ask e580532b to commit theirs".
     """
-    owners, real = {}, []
+    owners, hook, real = {}, [], []
     for path in paths:
         match = VOLATILE_STATE_RE.match(path)
         if match:
             owners[match.group(1)] = path
+        elif is_session_state(path):
+            hook.append(path)
         else:
             real.append(path)
-    return owners, real
+    return owners, hook, real
 
 
 def dirt_verdict(repo, me=None):
     """One line saying whether a rebase can start here, and who must act.
 
     Deliberately does NOT decide for the caller. A refusal that says only "not clean" is what sent a session hunting; a refusal naming the sessions whose documents are in the way is actionable by the only people who can act.
+
+    TRUE ONLY WHEN GIT WOULD START. Session state is not somebody's work, and the message says so, but git refuses a rebase over a modified tracked STATE.md or ledger exactly as over a source file (`dirty_paths` has the measurement). A verdict of clean there would send /branch-rebase through its submodule rebases and into git's refusal at the console, so it stays a refusal that names what to commit.
     """
     paths = dirty_paths(repo)
     if paths is None:
         return False, "could not read the working tree state (probe failed)"
     if not paths:
         return True, "clean"
-    owners, real = classify_dirt(paths)
+    owners, hook, real = classify_dirt(paths)
     if real:
         return False, "%d path(s) of real work are uncommitted, first: %s" % (
             len(real),
@@ -593,9 +600,13 @@ def dirt_verdict(repo, me=None):
         parts.append("commit your own (%s)" % ", ".join(owners[k] for k in mine))
     if theirs:
         parts.append("ask %s to commit theirs" % ", ".join(theirs))
+    if hook:
+        parts.append(
+            "commit the hook's own state (%d path(s), first: %s)" % (len(hook), ", ".join(hook[:3]))
+        )
     return False, (
-        "the only uncommitted paths are volatile per-session STATE.md documents; "
-        + "; ".join(parts)
+        "no real work is in the way, but git refuses a rebase over any modified tracked file "
+        "and the only ones here are session state; " + "; ".join(parts)
     )
 
 
@@ -1719,6 +1730,142 @@ def selftest():
             globals()["repo_root"] = real_repo_root
     finally:
         shutil.rmtree(_fixture_root, ignore_errors=True)
+
+    # DIRT_VERDICT AGREES WITH GIT, asked of git itself (#a234b06e). Each case plants one kind of dirt on a fresh fixture, reads the verdict, then runs the real `git rebase` and checks the verdict said yes exactly when git rebased. Until #a234b06e the verdict counted an untracked `.ci/cache` symlink and the hook's own ledgers as "real work".
+    _dirt_root = tempfile.mkdtemp()
+    try:
+        _g = ["git", "-c", "user.email=s@example.invalid", "-c", "user.name=selftest"]
+        _g += ["-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null"]
+
+        def _sh(cwd, *argv):
+            return subprocess.run([*_g, *argv], cwd=cwd, capture_output=True, check=False)
+
+        def _write(repo, rel, text, mode="w"):
+            os.makedirs(os.path.dirname(os.path.join(repo, rel)), exist_ok=True)
+            with open(os.path.join(repo, rel), mode, encoding="utf-8") as fh:
+                fh.write(text)
+
+        _up = os.path.join(_dirt_root, "up")
+        _sh(_dirt_root, "init", "-q", "-b", "main", _up)
+        _write(_up, "s", "1\n")
+        _sh(_up, "add", "--", "s")
+        _sh(_up, "commit", "-qm", "s1")
+        _write(_up, "s", "2\n")
+        _sh(_up, "commit", "-qam", "s2")
+        _s1 = run_git(["rev-parse", "HEAD~1"], _up)[1]
+        _tracked = (
+            "src/a.ts",
+            "agent/ledgers/x.jsonl",
+            "agent/worklist/x.jsonl",
+            "agent/plans/QUEUE.md",
+            "agent/abcd1234/STATE.md",
+            "agent/ffff0000/STATE.md",
+            SETTINGS_LOCAL,
+        )
+
+        def _fixture(name):
+            repo = os.path.join(_dirt_root, name)
+            _sh(_dirt_root, "init", "-q", "-b", "main", repo)
+            for rel in _tracked:
+                _write(repo, rel, "x\n")
+            _sh(repo, "clone", "-q", _up, "sm")
+            _sh(os.path.join(repo, "sm"), "checkout", "-q", _s1)
+            _sh(repo, "add", "--", *_tracked)
+            _sh(repo, "update-index", "--add", "--cacheinfo", "160000,%s,sm" % _s1)
+            _sh(repo, "commit", "-qm", "base")
+            _sh(repo, "checkout", "-q", "-b", "feat")
+            _write(repo, "src/feat.ts", "f\n")
+            _sh(repo, "add", "--", "src/feat.ts")
+            _sh(repo, "commit", "-qm", "feat")
+            _sh(repo, "checkout", "-q", "main")
+            _write(repo, "src/main.ts", "m\n")
+            _sh(repo, "add", "--", "src/main.ts")
+            _sh(repo, "commit", "-qm", "main2")
+            _sh(repo, "checkout", "-q", "feat")
+            return repo
+
+        def _symlink(repo):
+            os.makedirs(os.path.join(repo, ".ci"), exist_ok=True)
+            os.symlink(_dirt_root, os.path.join(repo, ".ci", "cache"))
+            _write(repo, "src/untracked.ts", "u\n")
+
+        def _session_state(repo):
+            _symlink(repo)
+            for rel in ("agent/ledgers/x.jsonl", "agent/worklist/x.jsonl", "agent/plans/QUEUE.md"):
+                _write(repo, rel, "more\n", "a")
+            _write(repo, SETTINGS_LOCAL, "more\n", "a")
+
+        def _states(repo):
+            _write(repo, "agent/abcd1234/STATE.md", "more\n", "a")
+            _write(repo, "agent/ffff0000/STATE.md", "more\n", "a")
+
+        # (label, plant, the verdict's text must contain, and must not contain)
+        _dirt_cases = (
+            ("nothing planted", lambda _r: None, "clean", "real work"),
+            ("an untracked .ci/cache symlink and file", _symlink, "clean", "real work"),
+            (
+                "the symlink plus ledgers, worklist, QUEUE.md and settings.local.json",
+                _session_state,
+                "commit the hook's own state (4 path(s)",
+                "real work are uncommitted",
+            ),
+            ("two sessions' STATE.md", _states, "ask ffff0000 to commit theirs", "real work are"),
+            (
+                "a modified tracked source file",
+                lambda r: _write(r, "src/a.ts", "more\n", "a"),
+                "1 path(s) of real work are uncommitted, first: src/a.ts",
+                "session state",
+            ),
+            (
+                "a submodule whose work tree moved",
+                lambda r: _sh(os.path.join(r, "sm"), "checkout", "-q", "main"),
+                "clean",
+                "real work",
+            ),
+            (
+                "a STAGED gitlink",
+                lambda r: (
+                    _sh(os.path.join(r, "sm"), "checkout", "-q", "main"),
+                    _sh(r, "add", "--", "sm"),
+                ),
+                "real work are uncommitted, first: sm",
+                "clean",
+            ),
+        )
+        _git_rcs = []
+        for _n, (_label, _plant, _want, _unwanted) in enumerate(_dirt_cases):
+            _repo = _fixture("d%d" % _n)
+            _plant(_repo)
+            _ok, _why = dirt_verdict(_repo, "abcd")
+            _git_rc = _sh(_repo, "rebase", "main").returncode
+            _git_rcs.append(_git_rc)
+            check(
+                "dirt_verdict on %s says %r (got %r)" % (_label, _want, _why),
+                _want in _why and _unwanted not in _why,
+            )
+            check(
+                "dirt_verdict on %s agrees with a real `git rebase` (verdict %s, git rc %d)"
+                % (_label, _ok, _git_rc),
+                _ok == (_git_rc == 0),
+            )
+        check(
+            "CONTROL: the fixture's git refused at least one case and rebased at least one",
+            0 in _git_rcs and any(_rc != 0 for _rc in _git_rcs),
+        )
+        check(
+            "an unreadable probe is a refusal, not clean",
+            dirt_verdict(os.path.join(_dirt_root, "no-such-repo"))
+            == (False, "could not read the working tree state (probe failed)"),
+        )
+        check(
+            "is_session_state: settings.local.json and the hook's records are; a source file is not",
+            is_session_state(SETTINGS_LOCAL)
+            and is_session_state("agent/reggate/1008-1.jsonl")
+            and not is_session_state("src/a.ts")
+            and not is_session_state("agent/plans/PLAN-x.md"),
+        )
+    finally:
+        shutil.rmtree(_dirt_root, ignore_errors=True)
     return 0 if fail == 0 else 1
 
 

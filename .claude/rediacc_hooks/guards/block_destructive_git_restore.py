@@ -1,4 +1,4 @@
-"""Block the four commands that DISCARD uncommitted work: `git checkout <path>`, `git restore`, `git stash`, `git clean`.
+"""Block the git commands that DISCARD uncommitted work: `git checkout <path>`, `git restore`, `git stash`, `git clean`, and the forced and index-rewriting forms the 2026-10-09 widenings name below.
 
 WHY. This checkout is shared by several live sessions and the deliverable is an UNCOMMITTED working tree, so there is no safety net underneath these. They do not undo "your" change to a file, they discard every uncommitted change to it, including work you cannot see and did not write.
 
@@ -19,11 +19,23 @@ DELIBERATELY NOT BLOCKED, because these do not discard anything:
   - `git stash list` / `show`: read-only.
   - `git stash create` / `store`: `create` only writes a dangling commit object and `store` only records an existing commit in the stash reflog (`git help stash`); neither touches the working tree or the index.
   - `git clean -n` / `--dry-run`: prints what it would remove.
+  - `git rm <path>` without `-f`, `git mv` without `-f`, `git checkout-index` without `-f`, and `git submodule update` / `deinit` without `--force`: git refuses each of them by itself over a modified or staged file (see THE 2026-10-09 SECOND WIDENING below for the measurement).
+  - `git rm --cached <one literal path>`: it stages one deletion and keeps the file on disk, and git refuses it when the staged content differs from both HEAD and the file.
 The escape for a genuine need is a human: ask the operator, who can run it themselves with the `!` prefix and knows what else is in the tree.
 
 NO CROSS-TALK with block-protected-files.sh, which blocks restore/checkout/rm aimed at the hook files specifically. This guard is about the shared tree in general; that one is about protecting the guards themselves. Both may match a single command, which is fine: the first to fire wins and both messages are true.
 
 THE 2026-10-09 WIDENING (#18c7e53c, operator ruling 2026-10-09: /branch-rebase became AI-invocable, and where something is not covered, a guard covers it instead of the skill's prose). A read-only audit drove 100 spellings through the live pre-bash chain and found these discarding forms answering rc 0: `git checkout -f [<ref>]`, `git checkout <tree-ish> <path>` without a `--`, `git checkout --ours|--theirs <path>`, `git switch -f|--discard-changes`, `git reset --hard|--merge|--keep`, and the autostash family (`--autostash` on rebase, pull and merge, `-c rebase.autoStash=true`, `git config rebase.autoStash true`). Each walked `git` command is now read by `shellscan.git_args`, the way `_destructive_clean` reads a clean, rather than by a regex over the text. The text patterns stay beside the walk, and on a command both match, the text pattern's label still names it, so every refusal recorded before this widening reads as it did.
+
+THE 2026-10-09 SECOND WIDENING (#a234b06e). The same audit's B38-B49 still answered rc 0 after the first: `git rm -f`, `git rm --cached -r .`, `git read-tree --reset -u HEAD`, `git checkout-index -f -a`, `git submodule update --init --force` and `git submodule foreach git clean -fd`. Each decision below was measured on git 2.53.0 in a scratch repository holding a modified tracked file, a staged modification, a staged new file and an untracked file, and in a superproject whose submodule held a modified file:
+  - `git rm -f` / `--force` lost the modified file; plain `git rm` refused it (rc 1, "has local modifications") and refused the staged one, and `git rm -r <dir>` left the untracked file in it alone. So `-f` is refused and plain `git rm` is not.
+  - `git rm --cached -r .` (and a wildcard `--cached`) lost no file content but emptied the shared index (4 entries to 0): every peer's staged new file dropped out, and the whole tree was staged for deletion, which the next commit that reads the index (`git rebase --continue`, a merge commit, `--amend`) records. A `--cached` that is recursive, carries a wildcard or pathspec magic, or reads `--pathspec-from-file` is refused; one literal path stages one deletion and is not.
+  - `git read-tree` replaces the shared index wholesale, and with `-u` the work tree too: `--reset -u HEAD` lost the modified and the staged file, and so did `-m -u HEAD`, so `-u` is no protection. No session flow runs it (neither /branch-rebase nor /pr-merge does), and the index-only spelling a session needs is `git reset`. Refused unless it is `-n`/`--dry-run`, or writes `--index-output=<file>` without `-u`.
+  - `git checkout-index -f` lost the modified file; without `-f` git skipped it ("already exists", rc 1). `-f` is refused unless `--temp` or a `--prefix` outside the repository sends the files elsewhere, which is the documented export idiom.
+  - `git mv -f` lost the modified destination; plain `git mv` refused ("destination exists", rc 128). The class sibling found by this sweep.
+  - `git submodule update --force` / `-f` and `git submodule deinit -f` lost the submodule's modified file; without it git refused (rc 1 and rc 128). The script's own loop reads `-f|--force` by exact spelling and only before the first operand (`--forc` and `update sm --force` are usage errors that run nothing), and the guard reads it the same way. `git submodule--helper update|deinit`, the parse-options helper the script calls, takes the same `--force` and is read by git's prefix rules.
+  - `git submodule foreach <command>` runs `<command>` in every submodule, so the payload is judged as a command run in each submodule the repository lists (`.gitmodules`, nested ones too under `--recursive`), by this whole guard. `foreach git clean -fd` deleted the submodule's untracked file and `foreach git checkout -- .` its modified one. A `foreach --` is a usage error and runs nothing.
+  Every one of them is also judged under `git -C <sm>` and behind a `cd`, because the walk resolves the repository each command runs in.
 
 A LONE CHECKOUT OPERAND IS A PATH UNTIL IT RESOLVES AS A REF, and that is the fail-closed direction on purpose. git itself reads `git checkout X` as a branch or commit when X resolves, then as a remote-tracking branch to create when exactly that name exists under `refs/remotes/<remote>/`, and otherwise as a PATHSPEC, which overwrites every uncommitted change to the files it matches. So the guard asks the repository the command runs in (`git rev-parse --verify -q X^{commit}`, then the remote-tracking refs) and refuses whatever answers neither. The cost of a false refusal is one retyped command: a typo'd branch name that git would have rejected anyway, or a commit not yet fetched, and `git switch [--detach] X` is the spelling that never takes a path. The cost of the other direction is a peer's uncommitted file, which is why the guard does not guess.
 
@@ -33,6 +45,7 @@ PORT NOTE ON THE SIX SEQUENTIAL TESTS. The bash runs all six greps unconditional
 import os
 import pathlib
 import re
+import shlex
 
 from rediacc_hooks import commit_policy, hookio, shellscan
 
@@ -135,7 +148,176 @@ NOTES = {
         "`--no-autostash` stays allowed. A dirty tree is reported by git itself: the work "
         "there is committed by its owner first."
     ),
+    "git rm --force": (
+        "`-f` overrides git's own up-to-date check, so a file with uncommitted or staged "
+        "changes is deleted with them. Plain `git rm <path>` stays allowed: git refuses it "
+        "over a modified or staged file, and that refusal is the protection."
+    ),
+    "git rm --cached <many>": (
+        "A recursive, wildcard or file-listed `--cached` rewrites the shared index for every "
+        "path it matches: each peer's staged new file drops out of it, and the matched tree is "
+        "staged for deletion, which the next commit that reads the index records. "
+        "`git rm --cached <one path>` stays allowed."
+    ),
+    "git read-tree": (
+        "`git read-tree` replaces the shared index wholesale, and with `-u` the work tree "
+        "too (`-m -u` included: measured, it overwrote a staged file). Unstage a path with "
+        "`git reset -- <path>`; `-n` and `--index-output=<file>` without `-u` stay allowed."
+    ),
+    "git checkout-index --force": (
+        "`-f` overwrites the tracked files that already exist with their index version. "
+        "Without it git skips them, and `--temp` or a `--prefix` outside the repository "
+        "writes elsewhere; those stay allowed."
+    ),
+    "git mv --force": (
+        "`-f` overwrites an existing destination, uncommitted changes and all. Without it git "
+        "refuses (`destination exists`)."
+    ),
+    "git submodule --force": (
+        "`git submodule update --force` and `deinit --force` throw away the submodule's "
+        "uncommitted changes (`git help submodule`); without it git refuses over them. "
+        "`git submodule update --init --recursive`, which /pr-merge runs, stays allowed."
+    ),
+    "git submodule foreach": (
+        "`foreach` runs its command in every submodule, so the command is judged as if run "
+        "in each of them: %(inner)s"
+    ),
 }
+
+# The option tables of the verbs `shellscan.GIT_VERBS` does not describe, read by `shellscan._gh_parse` in git mode so a bundle, a unique prefix and a `--no-` negation resolve the way git resolves them (`git <verb> -h` on git 2.53.0). Each pair is `(table, noneg)` in GIT_VERBS's shape.
+# One `(table, noneg)` pair: long name -> (short letter, takes a value), and the names with no `--no-` form.
+Spec = tuple[dict[str, tuple[str, bool | str]], frozenset[str]]
+
+READ_TREE: Spec = (
+    {
+        "index-output": ("", True),
+        "empty": ("", False),
+        "verbose": ("v", False),
+        "m": ("m", False),
+        "trivial": ("", False),
+        "aggressive": ("", False),
+        "reset": ("", False),
+        "prefix": ("", True),
+        "u": ("u", False),
+        "exclude-per-directory": ("", True),
+        "i": ("i", False),
+        "dry-run": ("n", False),
+        "no-sparse-checkout": ("", False),
+        "debug-unpack": ("", False),
+        "recurse-submodules": ("", "opt"),
+        "quiet": ("q", False),
+    },
+    frozenset(("m", "u", "i", "prefix", "exclude-per-directory", "index-output")),
+)
+CHECKOUT_INDEX: Spec = (
+    {
+        "all": ("a", False),
+        "ignore-skip-worktree-bits": ("", False),
+        "force": ("f", False),
+        "quiet": ("q", False),
+        "no-create": ("n", False),
+        "index": ("u", False),
+        "z": ("z", False),
+        "stdin": ("", False),
+        "temp": ("", False),
+        "prefix": ("", True),
+        "stage": ("", True),
+    },
+    frozenset(("z", "stage", "no-create")),
+)
+MV: Spec = (
+    {
+        "verbose": ("v", False),
+        "dry-run": ("n", False),
+        "force": ("f", False),
+        "k": ("k", False),
+        "sparse": ("", False),
+    },
+    frozenset(("k",)),
+)
+# `git submodule--helper update -h` / `deinit -h`: the C helper, parse-options rules.
+HELPER_UPDATE: Spec = (
+    {
+        "force": ("f", False),
+        "init": ("", False),
+        "remote": ("", False),
+        "recursive": ("", False),
+        "no-fetch": ("N", False),
+        "checkout": ("", False),
+        "merge": ("m", False),
+        "rebase": ("r", False),
+        "reference": ("", True),
+        "ref-format": ("", True),
+        "dissociate": ("", False),
+        "depth": ("", True),
+        "jobs": ("j", True),
+        "recommend-shallow": ("", False),
+        "quiet": ("q", False),
+        "progress": ("", False),
+        "require-init": ("", False),
+        "single-branch": ("", False),
+        "filter": ("", True),
+    },
+    frozenset(),
+)
+HELPER_DEINIT: Spec = (
+    {"force": ("f", False), "quiet": ("q", False), "all": ("", False)},
+    frozenset(),
+)
+
+# The `git submodule` script's own option loops (git-submodule.sh, git 2.53.0): exact spellings only, the options end at the first operand or `--`, and any other word starting `-` is a usage error that runs nothing. The update options that take the NEXT word as their value are listed so that value is not read as the operand that ends the loop.
+SUBMODULE_TOP = frozenset(("-q", "--quiet", "--cached"))
+SUBMODULE_UPDATE_BOOL = frozenset(
+    (
+        "-q",
+        "--quiet",
+        "-v",
+        "--verbose",
+        "--progress",
+        "-i",
+        "--init",
+        "--require-init",
+        "--remote",
+        "-N",
+        "--no-fetch",
+        "-f",
+        "--force",
+        "-r",
+        "--rebase",
+        "--dissociate",
+        "-m",
+        "--merge",
+        "--recursive",
+        "--checkout",
+        "--recommend-shallow",
+        "--no-recommend-shallow",
+        "--single-branch",
+        "--no-single-branch",
+    )
+)
+SUBMODULE_UPDATE_VALUED = frozenset(
+    ("--ref-format", "--reference", "--depth", "-j", "--jobs", "--filter")
+)
+SUBMODULE_UPDATE_JOINED = (
+    "--ref-format=",
+    "--reference=",
+    "--depth=",
+    "--jobs=",
+    "--filter=",
+    "-j",
+)
+SUBMODULE_DEINIT_BOOL = frozenset(("-f", "--force", "-q", "--quiet", "--all"))
+FOREACH_OPTS = frozenset(("-q", "--quiet", "--recursive"))
+# How deep a `foreach` inside a `foreach` payload is read before the guard stops guessing and refuses.
+FOREACH_DEPTH = 3
+
+# What makes one `git rm --cached` operand match more than one path: a glob character, or a leading `:` (pathspec magic, `:/`, `:(glob)`).
+GLOB_CHARS = frozenset("*?[")
+
+
+def _wide_pathspec(op):
+    return op.startswith(":") or any(c in GLOB_CHARS for c in op)
+
 
 # The `git reset` options parse-options accepts (git 2.53.0 `git reset -h`), for the unique-prefix rule `shellscan._lookup` documents. Only the mode options decide anything; the rest are listed so a prefix is resolved the way git resolves it.
 RESET_LONG = (
@@ -254,6 +436,53 @@ EDGE_CASES = [
     ("C control: git config set to false", "git config rebase.autoStash false"),
     ("C control: reading the key", "git config rebase.autoStash"),
     ("C control: a plain rebase", "git rebase origin/main"),
+    # #a234b06e: the second widening, refuse half (audit B38, B39, B45, B46, B48, B49 and their siblings).
+    ("B38 a forced rm", "git rm -f packages/cli/x.ts"),
+    ("B38 a forced recursive rm in a submodule", "git -C private/renet rm -rf pkg"),
+    ("B39 a recursive cached rm", "git rm --cached -r ."),
+    ("B39 a wildcard cached rm", "git rm --cached '*.ts'"),
+    ("B39 a file-listed cached rm", "git rm --cached --pathspec-from-file=list.txt"),
+    ("B45 a resetting read-tree", "git read-tree --reset -u HEAD"),
+    ("B45 a merging read-tree with -u", "git read-tree -m -u HEAD"),
+    ("B45 an index-only read-tree", "git read-tree HEAD"),
+    ("B45 an emptying read-tree", "git read-tree --empty"),
+    ("B46 a forced checkout-index", "git checkout-index -f -a"),
+    ("B46 a forced checkout-index by prefix", "git checkout-index --forc -a"),
+    ("B46 a forced checkout-index into the tree", "git checkout-index -fa --prefix=sub/"),
+    ("sibling: a forced mv", "git mv -f a.txt b.txt"),
+    ("B48 a forced submodule update", "git submodule update --init --force"),
+    ("B48 -f on update", "git submodule --quiet update -f"),
+    ("B48 a forced deinit", "git submodule deinit -f private/renet"),
+    ("B48 the helper's update by prefix", "git submodule--helper update --forc"),
+    ("B49 foreach clean", "git submodule foreach git clean -fd"),
+    ("B49 foreach a quoted stash", "git submodule foreach 'git stash; git status'"),
+    ("B49 foreach a hard reset, recursive", "git submodule foreach --recursive git reset --hard"),
+    ("B49 foreach under -C", "git -C private/renet submodule foreach git checkout -- ."),
+    ("B49 foreach of a foreach", "git submodule foreach git submodule foreach git clean -fd"),
+    ("B49 the helper's foreach", "git submodule--helper foreach -- git clean -fd"),
+    (
+        "B49 a foreign foreach still writes the global config",
+        "git -C /tmp submodule foreach git config --global rebase.autoStash true",
+    ),
+    # The allow half: git refuses each of these over uncommitted work by itself.
+    ("B38 control: a plain rm", "git rm packages/cli/x.ts"),
+    ("B38 control: a dry-run forced rm", "git rm -rf -n packages"),
+    ("B39 control: one cached path", "git rm --cached packages/cli/x.ts"),
+    ("B45 control: a dry-run read-tree", "git read-tree -n --reset -u HEAD"),
+    ("B45 control: read-tree into another index file", "git read-tree --index-output=i.idx HEAD"),
+    ("B46 control: checkout-index without -f", "git checkout-index -a"),
+    ("B46 control: an export outside the tree", "git checkout-index -f -a --prefix=/tmp/export/"),
+    ("B46 control: temp files", "git checkout-index -f --temp -a"),
+    ("sibling control: a plain mv", "git mv a.txt b.txt"),
+    ("B48 control: /pr-merge's update", "git submodule update --init --recursive"),
+    ("B48 control: --force after an operand is a pathspec", "git submodule update x --force"),
+    ("B48 control: --forc is a usage error", "git submodule update --forc"),
+    ("B48 control: a plain deinit", "git submodule deinit private/renet"),
+    ("B49 control: foreach a read", "git submodule foreach git status"),
+    ("B49 control: foreach a fetch", "git submodule foreach 'git fetch origin --prune'"),
+    ("B49 control: foreach -- is a usage error", "git submodule foreach -- git clean -fd"),
+    ("B49 control: foreach a dry-run clean", "git submodule foreach git clean -n"),
+    ("B49 control: a foreign foreach clean", "git -C /tmp submodule foreach git clean -fd"),
 ]
 
 
@@ -410,7 +639,160 @@ def _checkout_refusal(args, repo, where):
     return None
 
 
-def _walked_refusal(cmd, root, base):
+def _parse(spec, args):
+    """`shellscan.ParsedArgs` for `args` against a local `(table, noneg)` pair, by git's parse-options rules."""
+    table, noneg = spec
+    flags, operands, _ = shellscan._gh_parse(
+        list(args), table, False, git=True, noneg=noneg, problems=[]
+    )
+    return shellscan.ParsedArgs((), flags, operands, True)
+
+
+def _rm_refusal(args):
+    """The label for a walked `git rm` that discards, else None (see THE 2026-10-09 SECOND WIDENING)."""
+    parsed = shellscan.git_args("rm", args)
+    if parsed.on("dry-run"):
+        return None
+    if parsed.on("force"):
+        return "git rm --force"
+    if parsed.on("cached") and (
+        parsed.on("r")
+        or parsed.values("pathspec-from-file")
+        or any(_wide_pathspec(op) for op in parsed.operands)
+    ):
+        return "git rm --cached <many>"
+    return None
+
+
+def _read_tree_refusal(args):
+    """The label for a walked `git read-tree` that writes the shared index or the work tree, else None."""
+    parsed = _parse(READ_TREE, args)
+    if parsed.on("dry-run"):
+        return None
+    if parsed.values("index-output") and not parsed.on("u"):
+        return None
+    return "git read-tree"
+
+
+def _checkout_index_refusal(args, repo):
+    """The label for a walked `git checkout-index -f` that overwrites files in `repo`, else None."""
+    parsed = _parse(CHECKOUT_INDEX, args)
+    if not parsed.on("force") or parsed.on("temp"):
+        return None
+    prefix = parsed.last("prefix")
+    if prefix and not commit_policy.is_inside(os.path.join(repo, prefix), repo):
+        return None
+    return "git checkout-index --force"
+
+
+def _plain_refusal(sub, args, repo):
+    """The label for a walked `git rm|read-tree|checkout-index|mv` that discards in `repo`, else None."""
+    if sub == "rm":
+        return _rm_refusal(args)
+    if sub == "read-tree":
+        return _read_tree_refusal(args)
+    if sub == "checkout-index":
+        return _checkout_index_refusal(args, repo)
+    parsed = _parse(MV, args)
+    return "git mv --force" if parsed.on("force") and not parsed.on("dry-run") else None
+
+
+def _submodule_paths(repo, depth=0):
+    """The submodule directories a `foreach` could visit from `repo`: every `.gitmodules` path that exists, and the nested ones too, whether or not `--recursive` was given (judging one directory too many costs nothing, and missing one is the hole)."""
+    out = commit_policy.git(
+        ["config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$"], cwd=repo
+    )
+    found = []
+    for line in (out or "").split("\n"):
+        rel = line.split(" ", 1)[1] if " " in line else ""
+        path = os.path.join(repo, rel)
+        if rel and os.path.isdir(path):
+            found.append(path)
+            if depth < FOREACH_DEPTH:
+                found.extend(_submodule_paths(path, depth + 1))
+    return found
+
+
+def _foreach_refusal(words, repo, root, depth):
+    """`(label, note, wide)` for a `foreach` whose payload `words` discards in any submodule of `repo`, else None. `wide` is the payload's: a `git config --global` write reaches this checkout from a foreign repository's submodules too.
+
+    The payload is judged by `_judge`, this whole guard, as a command run in each submodule directory. One payload word is a shell command line (git runs it with `sh -c`); several are an argv, re-quoted so the walk reads the same words. With no submodule present, the payload is judged in `repo` itself rather than not at all.
+    """
+    if not words:
+        return None
+    if depth >= FOREACH_DEPTH:
+        return (
+            "git submodule foreach",
+            NOTES["git submodule foreach"]
+            % {
+                "inner": "a `foreach` nested this deep is not read, and is refused rather than guessed."
+            },
+            False,
+        )
+    payload = words[0] if len(words) == 1 else shlex.join(words)
+    for where in _submodule_paths(repo) or [repo]:
+        hit = _judge(payload, root, where, depth + 1)
+        if hit is not None:
+            label, note, wide = hit
+            inner = "`%s` would be refused there as `%s`." % (payload, label)
+            text = NOTES["git submodule foreach"] % {"inner": inner}
+            return "git submodule foreach", text + ("\n\n" + note if note else ""), wide
+    return None
+
+
+def _submodule_refusal(sub, args, repo, root, depth):
+    """`(label, note, wide)` for a walked `git submodule ...` or `git submodule--helper ...` that discards, else None; only a `foreach` payload can be wide."""
+    if sub == "submodule--helper":
+        verb, rest = (args[0], args[1:]) if args else ("", [])
+        if verb == "update" and _parse(HELPER_UPDATE, rest).on("force"):
+            return "git submodule --force", NOTES["git submodule --force"], False
+        if verb == "deinit" and _parse(HELPER_DEINIT, rest).on("force"):
+            return "git submodule --force", NOTES["git submodule --force"], False
+        if verb == "foreach":
+            words = list(rest)
+            while words and words[0] != "--" and words[0].startswith("-"):
+                words.pop(0)
+            if words and words[0] == "--":
+                words.pop(0)
+            return _foreach_refusal(words, repo, root, depth)
+        return None
+    k = 0
+    while k < len(args) and args[k] in SUBMODULE_TOP:
+        k += 1
+    if k >= len(args):
+        return None
+    verb, rest = args[k], args[k + 1 :]
+    if verb == "foreach":
+        j = 0
+        while j < len(rest) and rest[j].startswith("-"):
+            if rest[j] not in FOREACH_OPTS:
+                return None  # a usage error, `--` included: git runs nothing
+            j += 1
+        return _foreach_refusal(rest[j:], repo, root, depth)
+    if verb == "update":
+        bools, valued = SUBMODULE_UPDATE_BOOL, SUBMODULE_UPDATE_VALUED
+    elif verb == "deinit":
+        bools, valued = SUBMODULE_DEINIT_BOOL, frozenset()
+    else:
+        return None
+    j = 0
+    while j < len(rest):
+        word = rest[j]
+        if word == "--" or not word.startswith("-"):
+            break
+        if word in ("-f", "--force"):
+            return "git submodule --force", NOTES["git submodule --force"], False
+        if word in valued:
+            j += 2
+            continue
+        if word in bools or (verb == "update" and word.startswith(SUBMODULE_UPDATE_JOINED)):
+            j += 1
+            continue
+        return None  # a usage error: git runs nothing
+    return None
+
+
+def _walked_refusal(cmd, root, base, depth=0):
     """`(label, note, wide)` for the last walked git command in `cmd` that discards uncommitted work in this checkout, else None.
 
     Each command is judged in the repository it runs in (`commit_policy.scoped_repo`); one outside this checkout is not this guard's business, and one inside it that names no repository is judged as this checkout. A `git config --global`/`--system` write is judged wherever it runs, since it reaches this checkout from anywhere.
@@ -426,7 +808,9 @@ def _walked_refusal(cmd, root, base):
         else:
             wide = False
         repo = commit_policy.scoped_repo(run, base, root, created)
-        if repo and not commit_policy.is_inside(repo, root) and not wide:
+        foreign = bool(repo) and not commit_policy.is_inside(repo, root)
+        # A foreign `foreach` is still read, for a payload whose write is wide; nothing else of a foreign repository is this guard's business.
+        if foreign and not wide and sub not in ("submodule", "submodule--helper"):
             continue
         repo = repo or root
         where = (
@@ -445,6 +829,14 @@ def _walked_refusal(cmd, root, base):
                 hit = ("git switch --discard-changes", {})
         elif sub == "reset" and _reset_mode(args) in RESET_DISCARDS:
             hit = ("git reset --hard", {})
+        elif sub in ("rm", "read-tree", "checkout-index", "mv"):
+            label = _plain_refusal(sub, args, repo)
+            hit = (label, {}) if label else None
+        elif sub in ("submodule", "submodule--helper"):
+            # Already a finished note: a foreach note carries the payload's own verdict.
+            got = _submodule_refusal(sub, args, repo, root, depth)
+            if got is not None and (not foreign or got[2]):
+                hit, wide = (got[0], got[1]), wide or got[2]
         if hit is not None:
             found = (*hit, wide)
     if found is None:
@@ -452,21 +844,17 @@ def _walked_refusal(cmd, root, base):
     label, detail, wide = found
     if detail is None:
         return label, "", wide
+    if isinstance(detail, str):
+        return label, detail, wide
     return label, (NOTES[label] % detail if detail else NOTES[label]), wide
 
 
-def run(ev):
-    cmd = ev.field("tool_input", "command")
-    if cmd == "":
-        return hookio.ALLOW
-
-    root = shellscan.repo_root_env()
-    base = ev.field("cwd") or root
-    walked = _walked_refusal(cmd, root, base)
+def _judge(cmd, root, base, depth=0):
+    """`(label, note, wide)` when `cmd`, run from `base`, discards uncommitted work in this checkout, else None. The whole guard: the walked check, the scope test and the text patterns, in that order. A `foreach` payload comes back through here."""
+    walked = _walked_refusal(cmd, root, base, depth)
     # A user-wide or system-wide config write reaches this checkout from wherever it runs, so it is judged before the scope test below lets a foreign repository through.
     if walked is not None and walked[2]:
-        ev.warn(MESSAGE % walked[0] + "\n\n" + walked[1] + "\n\n" + RULING)
-        return hookio.DENY
+        return walked
 
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
 
@@ -480,9 +868,9 @@ def run(ev):
     # which repos the new predicate had just stopped protecting.
     #
     # Empty target means "this root, or unresolvable", so the guard keeps guarding by default; a resolvable target under the project directory keeps guarding too.
-    _target = shellscan.target_root(scan, shellscan.repo_root_env())
-    if _target != "" and not _is_inside(_target, shellscan.repo_root_env()):
-        return hookio.ALLOW
+    _target = shellscan.target_root(scan, root)
+    if _target != "" and not _is_inside(_target, root):
+        return None
 
     blocked = ""
     if hookio.grep_q(RESTORE, scan):
@@ -499,10 +887,19 @@ def run(ev):
         blocked = "git checkout <path>"
 
     if blocked != "":
-        ev.warn(MESSAGE % blocked)
-        return hookio.DENY
-    if walked is not None:
-        label, note, _wide = walked
-        ev.warn(MESSAGE % label + ("\n\n" + note + "\n\n" + RULING if note else ""))
-        return hookio.DENY
-    return hookio.ALLOW
+        return blocked, "", False
+    return walked
+
+
+def run(ev):
+    cmd = ev.field("tool_input", "command")
+    if cmd == "":
+        return hookio.ALLOW
+
+    root = shellscan.repo_root_env()
+    hit = _judge(cmd, root, ev.field("cwd") or root)
+    if hit is None:
+        return hookio.ALLOW
+    label, note, _wide = hit
+    ev.warn(MESSAGE % label + ("\n\n" + note + "\n\n" + RULING if note else ""))
+    return hookio.DENY
