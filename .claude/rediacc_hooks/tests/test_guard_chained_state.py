@@ -186,17 +186,30 @@ def _pr_world(path):
 def test_bulk_guard_does_not_count_review_records(tmp_path, monkeypatch):
     """A commit of 25 review records is not a transform; 25 source files with no proof still is (033a35227, 2026-10-09)."""
     repo = _pr_world(tmp_path / "r")
-    _branch_with(repo, ["agent/reviews/feat/%040x.md" % i for i in range(25)], "chore(reviews): x")
+    for i in range(25):
+        _branch_with(repo, ["c%02d" % i], "fix: c%02d" % i)
+    real = _git(repo, "rev-list", "-25", "HEAD").split()
+    _branch_with(repo, ["agent/reviews/feat/%s.md" % sha for sha in real], "chore(reviews): x")
     # A branch name holding a slash puts the records one level deeper (review 833dc9af.3).
-    _branch_with(
-        repo, ["agent/reviews/feat/x/%040x.md" % (i + 100) for i in range(25)], "chore(reviews): y"
-    )
+    _branch_with(repo, ["agent/reviews/feat/x/%s.md" % sha for sha in real], "chore(reviews): y")
     rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
     assert rc == 0, err
     # Only the record shapes are exempt: 25 other files under agent/reviews/ still count (review c2e51651.1).
-    rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
-    assert rc == 0, err
     _branch_with(repo, ["agent/reviews/feat/x/s%02d.ts" % i for i in range(25)], "refactor: y")
+    rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
+    assert rc == 2, err
+
+
+def test_bulk_guard_counts_a_record_name_that_is_not_a_commit(tmp_path, monkeypatch):
+    """25 files named like records, whose shas are no commit, and 25 ledgers in one commit still count (review 265f32ef.1)."""
+    repo = _pr_world(tmp_path / "r")
+    _branch_with(repo, ["agent/reviews/feat/%040x.md" % i for i in range(25)], "chore(reviews): x")
+    rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
+    assert rc == 2, err
+    repo = _pr_world(tmp_path / "r2")
+    _branch_with(
+        repo, ["agent/reviews/b%02d/clean.jsonl" % i for i in range(25)], "chore(reviews): y"
+    )
     rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
     assert rc == 2, err
     _branch_with(repo, ["src/f%02d.ts" % i for i in range(25)], "refactor: x")
@@ -224,6 +237,23 @@ def test_bulk_guard_finds_any_submodule_by_its_gitmodules_url(tmp_path, monkeypa
     rc, _out, err = _run("block_unproven_bulk_transform", cmd, root, monkeypatch)
     assert rc == 2
     assert _git(sub, "rev-parse", "HEAD")[:10] in err, err
+
+
+def test_bulk_guard_refuses_a_project_repo_it_has_no_checkout_of(tmp_path, monkeypatch):
+    """A rediacc repository with no checkout here is refused; another owner's is outside the guard (review 265f32ef.3)."""
+    root = _pr_world(tmp_path / "console")
+    rc, _out, err = _run(
+        "block_unproven_bulk_transform",
+        "gh pr create --repo rediacc/nowhere -t x",
+        root,
+        monkeypatch,
+    )
+    assert rc == 2
+    assert "no checkout of" in err, err
+    rc, _out, err = _run(
+        "block_unproven_bulk_transform", "gh pr create --repo someone/other -t x", root, monkeypatch
+    )
+    assert rc == 0, err
 
 
 def test_bulk_guard_refuses_a_head_it_cannot_read(tmp_path, monkeypatch):

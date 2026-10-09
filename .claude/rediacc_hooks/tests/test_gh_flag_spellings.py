@@ -753,11 +753,11 @@ REPO_VARIABLE = [
         "R=%s; gh pr edit 113 -R $R --body 'prose only'" % RENET_REPO,
         ("gh pr edit 113 -R $R --body 'prose only'", 2),
     ),
-    # The fixture's ranges carry no bulk commit, so every spelling allows; test_guard_chained_state pins the range each repo selects.
+    # The fixture holds no renet checkout, so a renet create, named or through a variable, is a project repo it cannot read and is refused. An unresolvable repo is judged on the fixture's own clean range. test_guard_chained_state pins the range each repo selects.
     (
         "block_unproven_bulk_transform",
         "gh pr create --repo %s -t x" % RENET_REPO,
-        0,
+        2,
         "R=%s; gh pr create -R $R -t x" % RENET_REPO,
         ("gh pr create -R $R -t x", 0),
     ),
