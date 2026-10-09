@@ -733,6 +733,27 @@ def _retro_brief_cli(argv):
     print(RT.brief(worklist, root, me8, band, item))
 
 
+def _prune_scratch_cli(argv):
+    """--prune-scratch <me> [--write] [--older-than <min>]: list, or delete, the finished directories under this session's scratchpad (worklist #edd646a8). The rules are wl_scratch's; this arm checks `<me>` like every verb and hands it the store's folded items, from which it reads every live lease. Loaded here rather than in the sibling probe above: no other path needs it."""
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    scratch = __import__("wl_scratch")
+    if len(argv) < 2:
+        die(scratch.USAGE)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+    start = C.project_start()
+    fold = S.load(C.worklist_for(start), sync=False)
+    rc, text = scratch.verb(C.project_root(start), me, C.resolve_session_id(), argv[2:], fold.items)
+    print(text, file=sys.stdout if rc == 0 else sys.stderr)
+    sys.exit(rc)
+
+
 def _review_cli(argv):
     """--review-mark / --review-commit / --review-run / --prune-reviews <me> ...: the per-commit review verbs (agent/plans/PLAN-per-commit-review.md sections 5 and 6).
 
@@ -2853,6 +2874,9 @@ def main():
         return
     if sys.argv[1:2] == ["--retro-brief"]:
         _retro_brief_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--prune-scratch"]:
+        _prune_scratch_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--queue-set"]:
         _queue_set_cli(sys.argv[1:])

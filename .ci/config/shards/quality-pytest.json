@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-09T06:12:44.067Z",
+  "generatedAt": "2026-10-09T09:48:15.737Z",
   "legs": [
     {
       "index": 1,
@@ -190,6 +190,7 @@
         "pytest:.ci/rediacc_ci/tests/test_testrun_e2e.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_rdc_update.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_seed_smoke.py",
+        "pytest:.ci/rediacc_ci/tests/test_tmp_capacity.py",
         "pytest:.ci/rediacc_ci/tests/test_version_bump.py",
         "pytest:.ci/rediacc_ci/tests/test_version_inject_env.py",
         "pytest:.claude/rediacc_hooks/tests/test_gh_flag_spellings.py",
@@ -437,6 +438,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_review_check.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_roster.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_schedred.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_scratch.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_stuck_and_blockers.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_tick_evidence_shapes.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_wake.py"
