@@ -101,6 +101,43 @@ EDGE_CASES = [
         "git restore of stdin with no protected path",
         "echo packages/x.ts | git restore --pathspec-from-file=-",
     ),
+    # A shell payload xargs or find -exec launches inherits the feed (#32e75fa4): each refusal was allowed before.
+    (
+        "an xargs-fed sh -c payload removes $0",
+        """echo .claude/settings.json | xargs sh -c 'rm "$0"'""",
+    ),
+    (
+        "an xargs-fed bash -c payload removes $@",
+        """echo .claude/settings.json | xargs bash -c 'rm "$@"' _""",
+    ),
+    ("xargs -I into a sh -c payload", "echo .claude/settings.json | xargs -I{} sh -c 'rm {}'"),
+    (
+        "a nested shell inside the fed payload",
+        """echo .claude/settings.json | xargs sh -c 'bash -c "git checkout -- \\"\\$0\\"" "$0"'""",
+    ),
+    ("find -exec sh -c removes $0", r"""find .claude/settings.json -exec sh -c 'rm "$0"' {} \;"""),
+    (
+        "an xargs-fed sh -c payload that only reads",
+        """echo .claude/settings.json | xargs sh -c 'cat "$0"'""",
+    ),
+    (
+        "an xargs-fed sh -c rm of an unprotected path",
+        """echo packages/x.ts | xargs sh -c 'rm "$0"'""",
+    ),
+    (
+        "a piped sh -c payload names no fed command",
+        """echo .claude/settings.json | sh -c 'rm -f /tmp/x'""",
+    ),
+    (
+        "a piped sh -c payload's xargs rm reads its stdin",
+        "echo .claude/settings.json | sh -c 'xargs rm'",
+    ),
+    ("through cat inside the payload", "echo .claude/settings.json | bash -c 'cat | xargs rm'"),
+    (
+        "a piped sh -c payload's xargs only reads",
+        "echo .claude/settings.json | bash -c 'xargs cat'",
+    ),
+    ("a compound consumer is out of reach", "echo .claude/settings.json | (xargs rm)"),
 ]
 
 
@@ -129,16 +166,34 @@ def _pathspec_from_stdin(argv):
     )
 
 
+def _destructive(run_):
+    """`(is rm or a destructive git verb, is that git verb)` for one run."""
+    base = run_.name.rsplit("/", 1)[-1]
+    git_verb = base == "git" and run_.git_sub in DESTRUCTIVE_GIT
+    return base == "rm" or git_verb, git_verb
+
+
+# A SHELL PAYLOAD INHERITS THE FEED (#32e75fa4, review 4aad4597.1), in both of the ways a shell hands it on. `echo .claude/settings.json | xargs sh -c 'rm "$0"'` deletes the file: xargs appends the fed words to `sh -c P` as P's positional parameters (`$0`, `$1`, `$@`; test_bash_semantics W19), and `-I{}` writes them into P itself. The fed run is the `sh`, the `rm` inside P has no feed
+# of its own, so it was allowed (rc 0, 2026-10-09). So when xargs or `find -exec` launches a shell's `-c` payload with a protected path in its feed, any rm or destructive git verb in it, at any depth, is refused. Whether the payload really names `$0` is not asked, the direction a guard fails safe in; one that only reads (`cat "$0"`) stays allowed.
+# The second way is stdin itself: `echo .claude/settings.json | sh -c 'xargs rm'` gives the payload's `xargs` the shell's own stdin (allowed at rc 0 the same day). So every payload command is judged as if the shell's feed reached it, whatever its own pipeline puts in front of it (`cat | xargs rm` passes it through, and what a stage prints is not computed), the direction a guard fails safe in. Out of reach, because shellscan hands a pipeline's feed to a simple command only: a compound consumer (`| (xargs rm)`, `| { xargs rm; }`) and a
+# `while read f; do rm "$f"; done` loop, which turns the feed into a variable.
+def _takes_feed(run_):
+    """True when a protected path on this run's stdin becomes a destructive command's operands."""
+    operands_fed = any(v in run_.via for v in OPERAND_FEEDERS)
+    if run_.name.rsplit("/", 1)[-1] in shellscan.SHELL_NAMES:
+        mode, payload = shellscan._shell_payload(run_.argv)
+        if mode == "c" and payload:
+            inner_runs = shellscan.every_run(payload)
+            if operands_fed and any(_destructive(inner)[0] for inner in inner_runs):
+                return True
+            if any(_takes_feed(inner) for inner in inner_runs):
+                return True
+    destructive, git_verb = _destructive(run_)
+    return destructive and (operands_fed or (git_verb and _pathspec_from_stdin(run_.argv)))
+
+
 def fed_by_stdin(cmd):
-    for run_ in shellscan.every_run(cmd):
-        if run_.feed is None or not re.search(PROTECTED, run_.feed):
-            continue
-        base = run_.name.rsplit("/", 1)[-1]
-        git_verb = base == "git" and run_.git_sub in DESTRUCTIVE_GIT
-        if not (base == "rm" or git_verb):
-            continue
-        if any(v in run_.via for v in OPERAND_FEEDERS) or (
-            git_verb and _pathspec_from_stdin(run_.argv)
-        ):
-            return True
-    return False
+    return any(
+        run_.feed is not None and re.search(PROTECTED, run_.feed) and _takes_feed(run_)
+        for run_ in shellscan.every_run(cmd)
+    )

@@ -402,6 +402,10 @@ EDGE_CASES = [
         r"find . -name x -exec true {} \; -exec gh pr edit 3 --body x \;",
     ),
     ("ec63 a quoted ssh remote command stays remote", 'ssh prod-1 "gh pr merge 1 --admin"'),
+    # -- #32e75fa4 (review 4aad4597.2): every npm option that takes a value is skipped with it ----
+    ("4aad npx --loglevel takes a value", "npx --loglevel silent gh pr merge 1 --admin"),
+    ("4aad npx -C is --prefix and takes a value", "npx -C . gh pr merge 1 --admin"),
+    ("4aad npx --no-yes takes none", "npx --no-yes gh pr merge 1 --admin"),
 ]
 
 

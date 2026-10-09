@@ -118,9 +118,10 @@ def test_a_prose_target_reports_every_refused_sentence(
     monkeypatch.setitem(gma.PROSE_TARGETS, guard.name, "BLOCKER: a planted prose target")
     got, detail = gma.assess(guard, "command", "")
     assert got == "prose"
+    # Both templates for both instances: a worded instance is probed with the argument-shaped sentence too (#32e75fa4), and each sentence still carries the phrase.
     assert set(detail.split(gma.PROSE_SEP)) == {
-        gma.sentence("frobnicate widgets"),
-        gma.sentence("grommet gadgets"),
+        *gma.sentences_of("frobnicate widgets"),
+        *gma.sentences_of("grommet gadgets"),
     }
 
 
@@ -166,12 +167,32 @@ def test_a_planted_scp_style_guard_is_refused_through_the_second_template(
     assert gma.fires(anchored, "true && zcp a.sh host:/dst/a.sh")
 
 
+@pytest.mark.parametrize("name", ["zsync", "zftps"])
+def test_a_long_command_name_that_needs_a_host_is_probed_with_arguments(
+    tmp_path: pathlib.Path, name: str
+) -> None:
+    # #32e75fa4 (review a2d44aa4.3): the second template was gated on `len(instance) < SHORT_INSTANCE`, so an `rsync`/`sftp`-shaped matcher of four or more characters that refuses only on a `host:` last field was never asked an argument-shaped sentence, and was clean.
+    guard = tmp_path / "argshape_long.py"
+    guard.write_text(gma._ARGSHAPE_FIXTURE.format(pattern=r"(^|[ \t])%s[ \t]" % name))
+    assert not gma.fires(guard, gma.sentence(name)), "the plain template must not reach it"
+    assert gma.fires(guard, "%s a.sh host:/dst/a.sh" % name), (
+        "the fixture must refuse its own command"
+    )
+    assert gma.assess(guard, "command", "") == ("prose", gma.argument_sentence(name))
+    anchored = tmp_path / "argshape_long_anchored.py"
+    anchored.write_text(gma._ARGSHAPE_FIXTURE.format(pattern=r"(^|[;&|(])[ \t]*%s[ \t]" % name))
+    assert gma.assess(anchored, "command", "") == ("clean", "")
+    assert gma.fires(anchored, "true && %s a.sh host:/dst/a.sh" % name)
+
+
 def test_a_short_worded_instance_is_probed_not_unprobed(tmp_path: pathlib.Path) -> None:
     probes = gma.probes_of([r"(^|[;&|(])[ \t]*(ab|cd+)"])
     assert set(probes.instances) == {"ab", "cd"}
     assert probes.fragments == 0
     assert gma.sentences_of("ab") == [gma.sentence("ab"), gma.argument_sentence("ab")]
-    assert gma.sentences_of("abcd") == [gma.sentence("abcd")]
+    # Every WORDED instance gets both templates, whatever its length (#32e75fa4); an unworded one, never shorter than SHORT_INSTANCE here, gets only the plain one.
+    assert gma.sentences_of("abcd") == [gma.sentence("abcd"), gma.argument_sentence("abcd")]
+    assert gma.sentences_of("> x.x", worded=False) == [gma.sentence("> x.x")]
     guard = tmp_path / "short.py"
     guard.write_text(gma._COMMAND_FIXTURE.format(pattern=r"(^|[;&|(])[ \t]*(ab|cd+)", extra=""))
     assert gma.assess(guard, "command", "")[0] == "clean"

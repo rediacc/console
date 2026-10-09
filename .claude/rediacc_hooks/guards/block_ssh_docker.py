@@ -65,14 +65,7 @@ EDGE_CASES = [
         "the bridge carve-out is per ssh, not per line",
         "ssh 192.168.111.10 uptime; ssh prod-1 docker ps",
     ),
-    # ... and what the payload reading must not refuse.
-    ("a quoted remote command on the bridge VM", 'ssh 192.168.111.10 "docker ps"'),
-    ("a remote command that only names docker", "ssh prod-1 'echo docker'"),
-    ("a quoted remote command with no docker", 'ssh prod-1 "uptime"'),
-    (
-        "an option value is not the remote command",
-        "ssh -o 'ProxyCommand=ssh -W %h:%p jump' prod-1 uptime",
-    ),
+    # ... and the argv shapes ssh_remote_commands has to parse to find the remote command; every one runs docker on prod-1 and is refused.
     ("an ssh option after the destination", 'ssh prod-1 -t "docker ps"'),
     ("a double dash before the destination", 'ssh -- prod-1 "docker ps"'),
     ("a shell payload inside the remote command", """ssh prod-1 'bash -lc "docker ps"'"""),
@@ -81,6 +74,14 @@ EDGE_CASES = [
     ("an ssh hop inside the remote command", 'ssh bastion ssh prod-1 "docker ps"'),
     ("inside a command substitution", 'X=$(ssh prod-1 "docker ps")'),
     ("sshpass -e takes no value", 'sshpass -e ssh prod-1 "docker ps"'),
+    # What the payload reading must NOT refuse: none of these runs docker on a managed machine.
+    ("a quoted remote command on the bridge VM", 'ssh 192.168.111.10 "docker ps"'),
+    ("a remote command that only names docker", "ssh prod-1 'echo docker'"),
+    ("a quoted remote command with no docker", 'ssh prod-1 "uptime"'),
+    (
+        "an option value is not the remote command",
+        "ssh -o 'ProxyCommand=ssh -W %h:%p jump' prod-1 uptime",
+    ),
     ("a remote command that only prints docker", """ssh prod-1 'echo "docker ps"'"""),
     ("a control command names no remote command", "ssh -O check prod-1"),
     ("scp of a compose file", "scp docker-compose.yml prod-1:/srv/"),

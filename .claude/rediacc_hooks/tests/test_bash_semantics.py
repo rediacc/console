@@ -815,6 +815,23 @@ FACTS = [
         check="xargs_feed",
         extra={"feed": "echo a b"},
     ),
+    # #32e75fa4 (review 4aad4597.1): what block_protected_files' payload inheritance rests on.
+    Fact(
+        "W19",
+        "xargs hands the fed words to a sh -c payload as $0, $1, ...",
+        """echo a b | xargs sh -c 'zzargv "$0" "$@"'""",
+        "<a><b>\n",
+        relies_on=((SS, "_shell_payload"), (SS, "_stage_feed")),
+        source="xargs sh -c feed",
+    ),
+    Fact(
+        "W20",
+        "a sh -c payload reads the shell's own stdin, so an xargs inside it gets the piped words",
+        "echo a b | sh -c 'xargs zzargv'",
+        "<a><b>\n",
+        relies_on=((SS, "_shell_payload"), (SS, "_stage_feed")),
+        source="sh -c stdin feed",
+    ),
 ]
 
 
@@ -1065,6 +1082,32 @@ VERDICTS = [
     ("ec63 ssh remote control", "block_ssh_docker", "ssh prod-1 'echo docker'", 0),
     ("ec63 xargs feed", "block_protected_files", "echo .claude/settings.json | xargs rm", 2),
     ("ec63 xargs feed control", "block_protected_files", "echo .claude/settings.json | cat", 0),
+    # #32e75fa4 (review 4aad4597.1): the fed words are a `sh -c` payload's positional parameters (W19), so its rm deletes them.
+    (
+        "4aad xargs sh -c",
+        "block_protected_files",
+        """echo .claude/settings.json | xargs sh -c 'rm "$0"'""",
+        2,
+    ),
+    (
+        "4aad xargs sh -c control",
+        "block_protected_files",
+        """echo .claude/settings.json | xargs sh -c 'cat "$0"'""",
+        0,
+    ),
+    # The payload's own commands read the shell's stdin (W20), so an xargs inside a piped sh -c is fed too.
+    (
+        "4aad sh -c stdin",
+        "block_protected_files",
+        "echo .claude/settings.json | sh -c 'xargs rm'",
+        2,
+    ),
+    (
+        "4aad sh -c stdin control",
+        "block_protected_files",
+        "echo .claude/settings.json | sh -c 'xargs cat'",
+        0,
+    ),
     ("ec63 launcher", "block_cli_bundle", "npx -y node packages/cli/dist/cli.js", 2),
     ("ec63 launcher", "block_git_force_push", "npx -c '%s'" % FORCE, 2),
     ("ec63 launcher", "block_git_force_push", "find . -maxdepth 0 -exec %s \\;" % FORCE, 2),
@@ -1096,6 +1139,160 @@ def test_rule_t_verdict(item, stem, cmd, want):
         want,
         err[:200],
     )
+
+
+# A COMMENT THAT SORTS ROWS IS A CLAIM ABOUT VERDICTS (#32e75fa4, review 4aad4597.3). block_ssh_docker's EDGE_CASES once headed a run of rows "what the payload reading must not refuse" while three of them were refused, so a reader trusting the heading would take a deny for a regression. Each heading below names the verdict of every row up to the next comment line.
+_SSH_DOCKER_GROUPS = (
+    ("# ... and the argv shapes ssh_remote_commands has to parse", 2),
+    ("# What the payload reading must NOT refuse", 0),
+)
+
+
+def test_ssh_docker_edge_case_headings_match_verdicts():
+    path = HOOKS / "guards" / "block_ssh_docker.py"
+    src = path.read_text()
+    lines = src.splitlines()
+    tree = ast.parse(src)
+    rows = next(
+        node.value
+        for node in tree.body
+        if isinstance(node, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id == "EDGE_CASES" for t in node.targets)
+    )
+    assert isinstance(rows, ast.List)
+    checked = 0
+    for heading, want in _SSH_DOCKER_GROUPS:
+        start = next(
+            (i + 1 for i, line in enumerate(lines) if line.strip().startswith(heading)), None
+        )
+        assert start is not None, "block_ssh_docker.py lost the heading %r" % heading
+        end = next(
+            (i + 1 for i, line in enumerate(lines) if i >= start and line.strip().startswith("#")),
+            len(lines) + 1,
+        )
+        group = [row for row in rows.elts if start < row.lineno < end]
+        assert group, "no EDGE_CASES row under %r" % heading
+        for row in group:
+            assert isinstance(row, ast.Tuple)
+            name, cmd = (ast.literal_eval(e) for e in row.elts)
+            rc, _out, _err = dispatch.run_one(
+                "block_ssh_docker",
+                json.dumps({"tool_input": {"command": cmd}}),
+                cwd=str(HOOKS.parents[1]),
+            )
+            assert rc == want, "%r sits under %r, which says rc %d; the guard answers %d" % (
+                name,
+                heading,
+                want,
+                rc,
+            )
+            checked += 1
+    assert checked >= 10, "only %d rows sat under the headings" % checked
+
+
+# --------------------------------------------------------------------------- npx's own argument loop ---------------------------------------------------------------------------
+
+# WHERE AN NPX LAUNCH STARTS IS NPX'S ANSWER, NOT A LIST'S (#32e75fa4, review 4aad4597.2). `shellscan._launched` skips npx's options to find the program, and `_NPX_VALUE` names the ones that take the next word. `--loglevel` was missing, so `npx --loglevel silent node packages/cli/dist/cli.js` read `silent` as the program and block_cli_bundle allowed it (rc 0, 2026-10-09).
+# The oracle is the pinned npm itself, in its two passes, with `lib/cli.js` stubbed so nothing runs. `bin/npx-cli.js` rewrites argv to `npm exec <options> -- <program> ...`, and then `@npmcli/config` hands that argv to `nopt` with npm's own option types; the first operand nopt leaves after `exec` is the program. Both passes are needed: for `--no-yes` (and the `-no`/`-local` shorthands
+# that expand to a `--no-` option) npx skips the next word as a value while nopt reads it as the program. Every option npm KNOWS is asked (its config definitions, its shorthands, npx's own value options), each spelled with one dash and with two, because both passes strip the dashes before they look.
+_NPX_ORACLE_JS = r"""
+const fs = require('fs')
+const path = require('path')
+const target = process.argv[1]
+const src = fs.readFileSync(target, 'utf8')
+const words = (name) => {
+  const m = src.match(new RegExp('const ' + name + ' = new Set\\(\\[([\\s\\S]*?)\\]\\)'))
+  if (!m) { process.stderr.write('npx-cli.js no longer declares ' + name + '\n'); process.exit(3) }
+  return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1])
+}
+const defs = require(require.resolve('@npmcli/config/lib/definitions', { paths: [path.dirname(target)] }))
+const keys = [...new Set([...Object.keys(defs.definitions), ...Object.keys(defs.shorthands), ...words('opts'), ...words('removedOpts')])]
+const config = require(require.resolve('@npmcli/config', { paths: [path.dirname(target)] }))
+const nopt = require(require.resolve('nopt', { paths: [require.resolve('@npmcli/config', { paths: [path.dirname(target)] })] }))
+const { types } = config.getTypesFromDefinitions(defs.definitions)
+const cliPath = require.resolve(path.join(path.dirname(target), '..', 'lib', 'cli.js'))
+let got = null
+require.cache[cliPath] = { id: cliPath, filename: cliPath, loaded: true, exports: (proc) => { got = proc.argv.slice(2) } }
+const out = {}
+for (const key of keys) {
+  for (const dash of ['-', '--']) {
+    process.argv = [process.argv[0], target, dash + key, 'zzval', 'zzprog', 'zzarg']
+    delete require.cache[require.resolve(target)]
+    got = null
+    require(target)
+    const remain = got ? nopt(types, defs.shorthands, got, 0).argv.remain : []
+    out[dash + key] = remain[0] === 'exec' && remain.length > 1 ? remain[1] : null
+  }
+}
+process.stdout.write(JSON.stringify(out) + '\n')
+"""
+
+# `-c`/`--call` carry a shell string, which `_launched` reads through `_NPX_CALL` before it ever consults `_NPX_VALUE`.
+_NPX_CALL_SPELLINGS = frozenset(("-c", "--c", "-call", "--call"))
+
+
+def _npx_oracle():
+    npx = shutil.which("npx")
+    node = shutil.which("node")
+    if npx is None or node is None:
+        pytest.fail(
+            "no npx/node on PATH: this test asks the pinned npm where an npx launch starts. "
+            "fix: install npm at NPM_VERSION from .devcontainer/toolchain.env"
+        )
+    assert npx is not None
+    assert node is not None
+    cli = pathlib.Path(npx).resolve()
+    if cli.name != "npx-cli.js":
+        pytest.fail("npx on PATH resolves to %s, not npm's bin/npx-cli.js" % cli)
+    # The table is npm's at the PINNED version: another npm's answer would quietly re-key it.
+    env_file = HOOKS.parents[1] / ".devcontainer" / "toolchain.env"
+    pin = re.search(r"^NPM_VERSION=(\S+)$", env_file.read_text(), re.MULTILINE)
+    assert pin is not None, "%s no longer pins NPM_VERSION" % env_file
+    meta = json.loads((cli.parents[1] / "package.json").read_text())
+    if meta.get("version") != pin.group(1):
+        pytest.fail(
+            "npx on PATH is npm %s, the pin is %s (%s). fix: npm install -g npm@%s"
+            % (meta.get("version"), pin.group(1), env_file, pin.group(1))
+        )
+    proc = subprocess.run(
+        [node, "-e", _NPX_ORACLE_JS, str(cli)],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    assert proc.returncode == 0, "the npx oracle failed (rc %d): %s" % (
+        proc.returncode,
+        proc.stderr[-400:],
+    )
+    return json.loads(proc.stdout.strip().splitlines()[-1])
+
+
+def test_npx_value_options_match_npx():
+    answers = _npx_oracle()
+    # Anti-vacuity: the oracle has to have seen npm's whole option table, and both answers have to occur in it.
+    assert len(answers) > 200, "the npx oracle asked about only %d spellings" % len(answers)
+    odd = {opt: prog for opt, prog in answers.items() if prog not in ("zzval", "zzprog")}
+    assert odd == {}, "npx put the program somewhere this test does not model: %r" % odd
+    takes_value = {opt for opt, prog in answers.items() if prog == "zzprog"}
+    assert "--loglevel" in takes_value, "the oracle cannot see the option the review found"
+    assert "--yes" not in takes_value, "the oracle reads a switch as taking a value"
+    want = takes_value - _NPX_CALL_SPELLINGS
+    have = set(shellscan._NPX_VALUE)
+    assert have == want, "missing from _NPX_VALUE: %s; not a value option to npx: %s" % (
+        sorted(want - have),
+        sorted(have - want),
+    )
+    for opt, prog in sorted(answers.items()):
+        if opt in _NPX_CALL_SPELLINGS:
+            continue
+        launched = shellscan._launched("npx", [opt, "zzval", "zzprog", "zzarg"])
+        program = launched[0][1][0] if launched else None
+        assert program == prog, "npx %s zzval zzprog: npm runs %s, the walk %r" % (
+            opt,
+            prog,
+            launched,
+        )
 
 
 def _git(cwd, *args):

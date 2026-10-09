@@ -671,6 +671,48 @@ STATIC: list[Case] = [
         bash_json(r"find .claude/settings.json -exec cat {} \;"),
         "protected-files CONTROL: find -exec cat reads it",
     ),
+    # #32e75fa4 (review 4aad4597.1, 2026-10-09): xargs hands the fed words to a `sh -c` payload as its positional parameters, so the rm inside it deletes the path. Each refusal was allowed (rc 0) before.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("""echo .claude/settings.json | xargs sh -c 'rm "$0"'"""),
+        "protected-files: an xargs-fed sh -c payload removes $0",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("""echo .claude/settings.json | xargs bash -c 'rm "$@"' _"""),
+        "protected-files: an xargs-fed bash -c payload removes $@",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | xargs -I{} sh -c 'rm {}'"),
+        "protected-files: xargs -I substitutes the path into a sh -c payload",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("""echo .claude/settings.json | xargs sh -c 'cat "$0"'"""),
+        "protected-files CONTROL: an xargs-fed sh -c payload that only reads",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("""echo packages/x.ts | xargs sh -c 'rm "$0"'"""),
+        "protected-files CONTROL: an xargs-fed sh -c rm of an unprotected path",
+    ),
+    # The other way a payload inherits the feed: its own commands read the shell's stdin, so the xargs inside it is fed. Allowed (rc 0) before.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | sh -c 'xargs rm'"),
+        "protected-files: a piped sh -c payload's xargs rm reads the shell's stdin",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | bash -c 'cat | xargs rm'"),
+        "protected-files: a piped bash -c payload passes its stdin through cat to xargs rm",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | bash -c 'xargs cat'"),
+        "protected-files CONTROL: a piped bash -c payload that only reads",
+    ),
     case(
         "check 2 guards/block_cli_bundle.py",
         bash_json("npx -c 'node cli-bundle.js'"),
