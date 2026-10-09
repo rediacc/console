@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-08T22:56:51.041Z",
+  "generatedAt": "2026-10-09T01:00:06.851Z",
   "legs": [
     {
       "index": 1,
@@ -52,6 +52,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_releaseversion_inject_env.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_renet_pipefail_grep_q.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_renet_security_keys.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_run_sh.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_schema_coverage.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_scope_baseline_attest.py",
