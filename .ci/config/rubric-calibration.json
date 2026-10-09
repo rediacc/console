@@ -7,9 +7,9 @@
     },
     "REGGATE_PROMPT": {
       "calibrated": "2026-10-09",
-      "note": "Measured only through the sweep fixtures, which run in one prompt with SWEEP_PROMPT, so `rides` records the SWEEP_PROMPT text of the same runs and the gate refuses this pass once that text moves (review 18700a76.5). Re-measured with SWEEP_PROMPT 6a61e798bf79351e (review fdb82cba.4): three full runs matched 19/19, the ten sweep fixtures included (.ci/cache/calibrate-20261009-lead6a.log, -lead6b.log, -lead6c.log).",
+      "note": "Measured only through the sweep fixtures, which run in one prompt with SWEEP_PROMPT, so `rides` records the SWEEP_PROMPT text of the same runs and the gate refuses this pass once that text moves (review 18700a76.5). Re-measured with SWEEP_PROMPT bb6fe194c884ae4d: the 11 sweep fixtures matched in all four runs (.ci/cache/calibrate-20261009-lead7a..d.log).",
       "rides": {
-        "SWEEP_PROMPT": "6a61e798bf79351e"
+        "SWEEP_PROMPT": "bb6fe194c884ae4d"
       },
       "sha": "2b8cbd5b3ccdd640"
     },
@@ -20,11 +20,11 @@
     },
     "SWEEP_PROMPT": {
       "calibrated": "2026-10-09",
-      "note": "Re-calibrated 2026-10-09 (reviews 18700a76.1, fdb82cba.4). A guard has two places to sweep, its own other input paths and the other guards; a reported check that the guard has no other path counts as sweeping it, and two fixtures pin both halves. The writer's runs scored 19/19, 18/19, 19/19 (-fix5a..c.log, the miss a SHAPE control) and were not recorded. Three fresh full runs matched 19/19 (.ci/cache/calibrate-20261009-lead6a..c.log). `rides` records REGGATE_PROMPT, which shares the prompt.",
+      "note": "Re-calibrated 2026-10-09 (reviews 18700a76.1, fdb82cba.4, 071b7987.2). A guard has two places to sweep, its own other input paths and the other guards; a statement that the guard has no other path covers that half only when it NAMES the input, and fixtures pin both the named and the bare form. Four full runs (.ci/cache/calibrate-20261009-lead7a..d.log): all 11 sweep fixtures matched in every run; runs a and d each missed one BRAVE held-out fixture on an unchanged BRAVE_PROMPT, tracked as its own item. `rides` records REGGATE_PROMPT, which shares the prompt.",
       "rides": {
         "REGGATE_PROMPT": "2b8cbd5b3ccdd640"
       },
-      "sha": "6a61e798bf79351e"
+      "sha": "bb6fe194c884ae4d"
     }
   }
 }

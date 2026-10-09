@@ -158,6 +158,20 @@ SWEEP_CASES = [
             "it. The guard itself reads only the ssh remote command."
         ),
     ),
+    # ADDED 2026-10-09 for review 071b7987.2. The same message with the guard's own half answered by a bare claim that names nothing: an assertion, so the own-paths half is unswept and the rule fires.
+    (
+        "the other guards searched, and the guard's own half only asserted",
+        "fire",
+        ["fix(hooks): block_ssh_docker refused an ssh command that only echoed the word docker"],
+        [".claude/rediacc_hooks/guards/block_ssh_docker.py"],
+        (
+            "Fixed block_ssh_docker.py: it refused `ssh host echo docker` because it looked "
+            "for the word anywhere after the host. It now reads the first word of the remote "
+            "command. Then grepped every other guard for the same idiom "
+            "(`grep -rln 'remote_words' .claude/rediacc_hooks/guards/`): 51 searched, none had "
+            "it. Nothing else in this guard needs a look."
+        ),
+    ),
 ]
 
 # -- the brave-default corpus ------------------------------------------------ (label, expected, the remaining line as the judge sees it)

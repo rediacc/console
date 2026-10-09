@@ -191,8 +191,10 @@ guards. A message that reports looking in only ONE of them, and says nothing
 of the other, has not swept the class, so swept=false and `instruction` names
 the place it skipped. A message that covers BOTH has swept it. A place is
 covered by a reported search, or by a statement that it holds nothing to
-sweep: a guard said to read a single input has no other paths of its own, and
-that statement covers its half. This is about which places were looked in,
+sweep that NAMES what makes it so: a guard said to read one input, with that
+input named (the field, the chain, the file:line), has no other paths of its
+own, and that statement covers its half. A bare "it reads a single input" with
+nothing named is an assertion, and covers nothing. This is about which places were looked in,
 never about the pattern: do not discount a reported search because you would
 have written a broader one.
 
