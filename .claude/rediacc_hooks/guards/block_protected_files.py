@@ -137,7 +137,42 @@ EDGE_CASES = [
         "a piped sh -c payload's xargs only reads",
         "echo .claude/settings.json | bash -c 'xargs cat'",
     ),
-    ("a compound consumer is out of reach", "echo .claude/settings.json | (xargs rm)"),
+    # A group's stdin is every member's, and a read loop turns the feed into a variable (#31ed6c5f): each refusal was allowed before.
+    ("a subshell consumer is fed", "echo .claude/settings.json | (xargs rm)"),
+    ("a brace-group consumer is fed", "echo .claude/settings.json | { xargs rm; }"),
+    ("a here-string on a subshell feeds it", "(xargs rm) <<< .claude/settings.json"),
+    (
+        "a read loop removes the read variable",
+        'echo .claude/settings.json | while read f; do rm "$f"; done',
+    ),
+    (
+        "a read loop restores REPLY",
+        'echo .claude/settings.json | while read; do git restore "${REPLY}"; done',
+    ),
+    (
+        "a read loop that only reads",
+        'echo .claude/settings.json | while read -r f; do cat "$f"; done',
+    ),
+    ("a subshell consumer fed an unprotected path", "echo packages/x.ts | (xargs rm)"),
+    (
+        "a read loop removing another path",
+        "echo .claude/settings.json | while read f; do rm /tmp/x; done",
+    ),
+    # KNOWN GAP: a loop fed through `done` deletes the file and is allowed (see `_fed_read_loop`).
+    (
+        "a read loop fed through done is out of reach",
+        'while read f; do rm "$f"; done <<< .claude/settings.json',
+    ),
+    # A wrapper is a command the walk found, not a quoted word that spells one (#31ed6c5f): both were refused before.
+    (
+        "a quoted sh -c is an echo argument",
+        """echo "sh -c 'rm x'" "x .claude/settings.json | y\"""",
+    ),
+    ("a quoted eval is an echo argument", """echo "eval rm" ".claude/settings.json\""""),
+    (
+        "a real sh -c after a quoted mention",
+        """echo "sh -c 'rm x'"; sh -c 'rm .claude/settings.json'""",
+    ),
 ]
 
 
@@ -175,8 +210,7 @@ def _destructive(run_):
 
 # A SHELL PAYLOAD INHERITS THE FEED (#32e75fa4, review 4aad4597.1), in both of the ways a shell hands it on. `echo .claude/settings.json | xargs sh -c 'rm "$0"'` deletes the file: xargs appends the fed words to `sh -c P` as P's positional parameters (`$0`, `$1`, `$@`; test_bash_semantics W19), and `-I{}` writes them into P itself. The fed run is the `sh`, the `rm` inside P has no feed
 # of its own, so it was allowed (rc 0, 2026-10-09). So when xargs or `find -exec` launches a shell's `-c` payload with a protected path in its feed, any rm or destructive git verb in it, at any depth, is refused. Whether the payload really names `$0` is not asked, the direction a guard fails safe in; one that only reads (`cat "$0"`) stays allowed.
-# The second way is stdin itself: `echo .claude/settings.json | sh -c 'xargs rm'` gives the payload's `xargs` the shell's own stdin (allowed at rc 0 the same day). So every payload command is judged as if the shell's feed reached it, whatever its own pipeline puts in front of it (`cat | xargs rm` passes it through, and what a stage prints is not computed), the direction a guard fails safe in. Out of reach, because shellscan hands a pipeline's feed to a simple command only: a compound consumer (`| (xargs rm)`, `| { xargs rm; }`) and a
-# `while read f; do rm "$f"; done` loop, which turns the feed into a variable.
+# The second way is stdin itself: `echo .claude/settings.json | sh -c 'xargs rm'` gives the payload's `xargs` the shell's own stdin (allowed at rc 0 the same day). So every payload command is judged as if the shell's feed reached it, whatever its own pipeline puts in front of it (`cat | xargs rm` passes it through, and what a stage prints is not computed), the direction a guard fails safe in. A compound consumer (`| (xargs rm)`, `| { xargs rm; }`) is fed too, because shellscan hands a group's stdin to every command in it (#31ed6c5f); a read loop is `_fed_read_loop` below.
 def _takes_feed(run_):
     """True when a protected path on this run's stdin becomes a destructive command's operands."""
     operands_fed = any(v in run_.via for v in OPERAND_FEEDERS)
@@ -192,8 +226,56 @@ def _takes_feed(run_):
     return destructive and (operands_fed or (git_verb and _pathspec_from_stdin(run_.argv)))
 
 
+# A READ LOOP TURNS THE FEED INTO A VARIABLE (#31ed6c5f), and it is in reach: `echo .claude/settings.json | while read f; do rm "$f"; done` deletes the file, and was allowed (rc 0, 2026-10-09). The walk does not model the loop's body as a body (`do` and `done` are words in front of commands), so the rule is the over-reading one: a `read` that is a `while`/`until` condition, with a
+# protected path in its feed, makes every LATER destructive command that names one of its variables (`$f`, `${f}`, `$REPLY` when it names none, an `-a` array) a deletion of that path. Out of reach, and pinned by an allow row: a loop fed through `done` (`done <<< .claude/settings.json`, `done < <(...)`), whose redirect sits on a word the walk does not keep as a command.
+# `read`'s options that take a value: the rest of the bundle (`-n1`), or the next word when the letter ends it (`-rp prompt`). `-a`'s value is an array it assigns.
+_READ_VALUE_LETTERS = frozenset("adinNptu")
+
+
+def _read_variables(argv):
+    """The variables a `read` assigns: its operands, an `-a` array, or REPLY when there are neither."""
+    names = []
+    k = 0
+    while k < len(argv):
+        arg = argv[k]
+        k += 1
+        if arg == "--":
+            names.extend(argv[k:])
+            break
+        if not (arg.startswith("-") and len(arg) > 1):
+            names.append(arg)
+            continue
+        for at, letter in enumerate(arg[1:], 1):
+            if letter not in _READ_VALUE_LETTERS:
+                continue
+            value = arg[at + 1 :]
+            if not value and k < len(argv):
+                value = argv[k]
+                k += 1
+            if letter == "a" and value:
+                names.append(value)
+            break
+    return names or ["REPLY"]
+
+
+def _fed_read_loop(runs):
+    for at, run_ in enumerate(runs):
+        if run_.name.rsplit("/", 1)[-1] != "read" or "status" not in run_.usage:
+            continue
+        if run_.feed is None or not re.search(PROTECTED, run_.feed):
+            continue
+        refs = re.compile(
+            r"\$\{?(%s)\b" % "|".join(re.escape(n) for n in _read_variables(run_.argv))
+        )
+        for later in runs[at + 1 :]:
+            if _destructive(later)[0] and any(refs.search(a) for a in later.argv):
+                return True
+    return False
+
+
 def fed_by_stdin(cmd):
-    return any(
+    runs = shellscan.every_run(cmd)
+    return _fed_read_loop(runs) or any(
         run_.feed is not None and re.search(PROTECTED, run_.feed) and _takes_feed(run_)
-        for run_ in shellscan.every_run(cmd)
+        for run_ in runs
     )

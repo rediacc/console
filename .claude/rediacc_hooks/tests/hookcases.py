@@ -718,6 +718,87 @@ STATIC: list[Case] = [
         bash_json("npx -c 'node cli-bundle.js'"),
         "cli-bundle: npx -c runs a shell string",
     ),
+    # #31ed6c5f, 2026-10-09: a wrapper is a command the walk found, not a quoted word that spells one. Both refusals below were rc 2 before, the second on the lead's own worklist note.
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("""echo "sh -c 'rm x'" "x .claude/settings.json | y\""""),
+        "protected-files CONTROL: a quoted sh -c is an echo argument, not a wrapper",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json(
+            """python3 .claude/hooks/stop/worklist.py --add d778be9d "sh -c 'rm x' then .claude/settings.json | y\""""
+        ),
+        "protected-files CONTROL: a worklist note quoting sh -c rm and the settings path",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("""echo "sh -c 'rm x'"; sh -c 'rm .claude/settings.json'"""),
+        "protected-files: a real sh -c after a quoted mention is still read",
+    ),
+    # #31ed6c5f: a group's stdin is every member's, and a read loop turns the feed into a variable. All three were allowed (rc 0) before.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | (xargs rm)"),
+        "protected-files: a subshell consumer is fed",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | { xargs rm; }"),
+        "protected-files: a brace-group consumer is fed",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('echo .claude/settings.json | while read f; do rm "$f"; done'),
+        "protected-files: a read loop removes the read variable",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('echo .claude/settings.json | while read -r f; do cat "$f"; done'),
+        "protected-files CONTROL: a read loop that only reads",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("echo packages/x.ts | (xargs rm)"),
+        "protected-files CONTROL: a subshell consumer fed an unprotected path",
+    ),
+    # KNOWN GAP, pinned so a change in it is seen: a loop fed through `done` puts its redirect on a word the walk does not keep as a command. This deletes the file and is allowed.
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('while read f; do rm "$f"; done <<< .claude/settings.json'),
+        "protected-files KNOWN GAP: a read loop fed through done is out of reach",
+    ),
+    # #31ed6c5f: npm's own parse finds the program, abbreviations included, and `npm exec`/`npm x` launch like npx. Each was allowed (rc 0) before.
+    case(
+        "check 2 guards/block_cli_bundle.py",
+        bash_json("npx --logl silent node packages/cli/dist/cli.js"),
+        "cli-bundle: an abbreviated npx value option",
+    ),
+    case(
+        "check 2 guards/block_cli_bundle.py",
+        bash_json("npm exec -- node packages/cli/dist/cli.js"),
+        "cli-bundle: npm exec launches node",
+    ),
+    case(
+        "check 2 guards/block_cli_bundle.py",
+        bash_json("npm x node packages/cli/dist/cli.js"),
+        "cli-bundle: npm x launches node",
+    ),
+    case(
+        "check 2 guards/block_cli_bundle.py",
+        bash_json("npm --logl silent exe -- node packages/cli/dist/cli.js"),
+        "cli-bundle: an npm option before an abbreviated exec",
+    ),
+    case(
+        "check 0 guards/block_cli_bundle.py",
+        bash_json("npm exec -- prettier --check packages/cli/dist/cli.js"),
+        "cli-bundle CONTROL: npm exec running another program over the bundle path",
+    ),
+    case(
+        "check 0 guards/block_cli_bundle.py",
+        bash_json("npm run build -- packages/cli/dist/cli.js"),
+        "cli-bundle CONTROL: npm run is not a launcher",
+    ),
     # AND THE OTHER DIRECTION, which is the half that makes the narrowing safe. The scanner extracts shell-wrapper payloads, so hiding a banned command inside `sh -c` / `eval` must still be caught. Without these, "we stopped matching prose" and "we stopped matching" look identical from the outside.
     case(
         "check 2 guards/block_ci_polling.py",

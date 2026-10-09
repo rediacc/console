@@ -130,6 +130,9 @@ def _tr(text, frm, to):
 # alternatives. `env bash -c` was already fine (`env` isn't a shell name, so the scan naturally advances to the next bare `bash` token) -- only direct path-qualification broke it.
 #
 # Round-44 review finding: the basename strip alone left a QUOTED path broken -- `"/bin/bash"` has its last `/` INSIDE the quotes, so the greedy path-strip left `bash"` (trailing quote intact), which still failed the exact-match test. Fixed by also stripping quote characters from the name copy (either order works: quotes and the basename separator never overlap).
+#
+# A WRAPPER IS A COMMAND BASH RUNS, NOT A WORD THAT SPELLS ONE (#31ed6c5f). The token scan above splits on blanks, so it read `"sh` -- the opening of a quoted ARGUMENT, `echo "sh -c 'rm x'" "x .claude/settings.json | y"` -- as a shell, and handed every later token of the line to the scan as code: block_protected_files refused that echo (rc 2, 2026-10-09), and the session's own
+# `worklist.py --add` quoting it. So a token is a wrapper only when it is the NAME of a command the walk found (`_Analysis.names`: a top-level or substituted command, or one a launcher there starts), and its payload stops where that command's words stop, so a later clause's prose is not lifted with it. A shell word with no `-c` among its own words falls through to the next candidate, as it always did. Every command a payload runs is still lifted by `lifted_commands`, which reads the command itself rather than this line.
 def _wrapper_payload(text):
     records, _ = _records(text)
     for record in records:
@@ -137,9 +140,13 @@ def _wrapper_payload(text):
         # default " " separator it does NOT trim: a leading blank yields an empty tok[1], and that empty token is why the join below can emit a leading space. Python's re.split on "" would give one empty field where awk gives zero, hence the guard.
         tok = re.split(r"[ \t]+", record) if record != "" else []
         n = len(tok)
+        names = _command_names(record, tok)
         for i in range(n):
+            last = names.get(i)
+            if last is None:
+                continue
             if tok[i] == "eval":
-                out = "".join(tok[j] + (" " if j < n - 1 else "") for j in range(i + 1, n))
+                out = "".join(tok[j] + (" " if j < n - 1 else "") for j in range(i + 1, last + 1))
                 # awk `print` then `exit`: one record, ORS appended, and the whole input abandoned -- later records are never read.
                 return out + "\n"
             name = tok[i]
@@ -148,13 +155,37 @@ def _wrapper_payload(text):
             # place; count=1 keeps it a `sub` and not a `gsub`.
             name = re.sub(r".*/", "", name, count=1)
             if re.search(r"^(sh|bash|dash|zsh|ash|ksh)$", name):
-                for j in range(i + 1, n):
+                for j in range(i + 1, last + 1):
                     t = tok[j]
                     if t == "-c" or re.search(r"^-[^-].*c$", t):
-                        out = "".join(tok[m] + (" " if m < n - 1 else "") for m in range(j + 1, n))
+                        out = "".join(
+                            tok[m] + (" " if m < n - 1 else "") for m in range(j + 1, last + 1)
+                        )
                         return out + "\n"
                 # NO `exit` HERE, and that is load-bearing: a shell name whose token run carries no -c selector falls back to the OUTER loop, so `bash script.sh; sh -c 'gh pr merge'` still finds the second one.
     return ""
+
+
+def _command_names(record, tok):
+    """`{token index: index of the command's last token}` for every token of `record` that is, whole, the name of a command the walk of `record` found (`_Analysis.names`). A token that only begins a word (`"sh` of `"sh -c 'x'"`) is not one."""
+    spans = []
+    at = 0
+    for word in tok:
+        spans.append((at, at + len(word)))
+        gap = _BLANKS.match(record, at + len(word))
+        at = gap.end() if gap else at + len(word)
+    first = {span: k for k, span in enumerate(spans)}
+    out = {}
+    for start, end, words_end in _analyse(record).names:
+        k = first.get((start, end))
+        if k is None:
+            continue
+        # The payload runs through the token holding the command's last word.
+        out[k] = next((j for j in range(k, len(spans)) if spans[j][1] >= words_end), len(spans) - 1)
+    return out
+
+
+_BLANKS = re.compile(r"[ \t]+")
 
 
 # Drop heredoc bodies: from a line introducing `<< [-] ['"]?MARKER['"]?` up to the line that is exactly MARKER (optionally tab-indented for <<-). Keeps the introducing line (which may itself hold the real command) and the rest.
@@ -649,47 +680,106 @@ _PREFIX_COMMANDS = {
 }
 # A prefix command that takes one positional operand before the command it runs.
 _PREFIX_OPERAND = frozenset(("timeout",))
-# LAUNCHERS (#ec63ff8c, 2026-10-09): `npx` and `find -exec` run another command named in their own argv, and are NOT stripped like the prefixes above, because the launcher itself is a run other guards judge. `block_unscoped_formatter_run` reads `npx prettier --write` as an `npx` run and `block_host_toolchain_run` refuses `npx --yes ruff` on that shape, so `npx` has to stay the run's name.
+# LAUNCHERS (#ec63ff8c, 2026-10-09): `npx` (with `npm exec`, `npm exe` and `npm x`, #31ed6c5f) and `find -exec` run another command named in their own argv, and are NOT stripped like the prefixes above, because the launcher itself is a run other guards judge. `block_unscoped_formatter_run` reads `npx prettier --write` as an `npx` run and `block_host_toolchain_run` refuses `npx --yes ruff` on that shape, so `npx` has to stay the run's name.
 # (`sshpass` has no such reader and is a plain prefix above.) The launched command is walked into an analysis of its own (`_Run.launched`): `lifted_commands` puts it on a line of its own, where every anchored text guard sees it at command position, while `_analyse(cmd).runs` stays the list it always was. Before this, three guards named `npx`, `sshpass` and `find -exec` inside their own anchors (`(npx[S]+)?`, `(sshpass ...)?`, `(find ... -exec ...)?`), three copies that still missed: `npx -y node packages/cli/dist/cli.js` and `find . -exec node cli-bundle.js \;` were both allowed (measured 2026-10-09).
-# `npx` options that take the next word as their value; `-c`/`--call` is a SHELL STRING, walked as a payload.
-# THE WHOLE TABLE, NOT THE ONES SOMEBODY REMEMBERED (#32e75fa4, review 4aad4597.2). Seven names were listed, so `npx --loglevel silent node packages/cli/dist/cli.js` read `silent` as the program and block_cli_bundle allowed it (rc 0, 2026-10-09). These are the options the pinned npm (11.20.0) runs with a value: every config definition whose type is not Boolean, npx's own `-p`, `--shell`,
-# `--npm`, `--node-arg` and `-n`, and the shorthands that expand to one of them (`-C`, `-L`, `-m`, `-w`, `--reg`, `--enjoy-by`). Each is spelled with one dash and with two, because npx and npm strip the dashes before they look. `test_bash_semantics.py::test_npx_value_options_match_npx` asks npx-cli.js and npm's own nopt pass where the program starts for every option npm knows, and fails when this
-# table and npm disagree in either direction.
-# OUT OF THIS TABLE'S REACH, measured against the same npm 2026-10-09. nopt also accepts any unique PREFIX of an option name, so `npx --logl silent node packages/cli/dist/cli.js` runs `node` while this walk reads `silent` as the program (rc 0 at block_cli_bundle); 442 such `--` prefixes take a value, too many to list, and only a prefix-aware `_launched` closes them.
-# And `npm exec` / `npm x` are not launchers here at all, so `npm exec -- node packages/cli/dist/cli.js` is allowed too (rc 0).
-_NPX_VALUE = frozenset(
-    dash + name
-    for dash in ("-", "--")
-    for name in (
-        "C", "L", "_auth", "access", "allow-directory", "allow-file", "allow-git", "allow-remote",
-        "allow-scripts", "also", "audit-level", "auth-type", "before", "ca", "cache", "cache-max",
-        "cache-min", "cafile", "cert", "cidr", "cpu", "depth", "diff", "diff-dst-prefix",
-        "diff-src-prefix", "diff-unified", "editor", "enjoy-by", "expect-result-count", "expires",
-        "fetch-retries", "fetch-retry-factor", "fetch-retry-maxtimeout", "fetch-retry-mintimeout",
-        "fetch-timeout", "git", "globalconfig", "heading", "https-proxy", "include",
-        "init-author-email", "init-author-name", "init-author-url", "init-license", "init-module",
-        "init-type", "init-version", "init.author.email", "init.author.name", "init.author.url",
-        "init.license", "init.module", "init.version", "install-strategy", "key", "libc",
-        "local-address", "location", "lockfile-version", "loglevel", "logs-dir", "logs-max", "m",
-        "maxsockets", "message", "min-release-age", "min-release-age-exclude", "n", "name",
-        "node-arg", "node-gyp", "node-options", "noproxy", "npm", "omit", "only", "orgs",
-        "orgs-permission", "os", "otp", "p", "pack-destination", "package", "packages",
-        "packages-and-scopes-permission", "password", "prefix", "preid", "provenance-file", "proxy",
-        "reg", "registry", "replace-registry-host", "save-prefix", "sbom-format", "sbom-type",
-        "scope", "scopes", "script-shell", "searchexclude", "searchlimit", "searchopts",
-        "searchstaleness", "shell", "tag", "tag-version-prefix", "token-description", "umask",
-        "user-agent", "userconfig", "viewer", "w", "which", "workspace",
+# WHERE AN npm LAUNCH STARTS IS npm's OWN PARSE, PORTED (#31ed6c5f). `npx`, `npm exec`, `npm exe` and `npm x` all run the program named by the first operand npm's option parser leaves after `exec`, so the walk asks the same parser. Two lists of value options came before this one and both lost: a hand-picked seven missed `--loglevel` (#32e75fa4), and the complete table that replaced it could not see that npm's
+# parser, `nopt`, accepts any unique PREFIX of an option name, so `npx --logl silent node packages/cli/dist/cli.js` read `silent` as the program and block_cli_bundle allowed it (rc 0, 2026-10-09; 442 `--` prefixes take a value). `npm exec -- node ...` and `npm x node ...` were not launchers at all (rc 0 the same day).
+# So the port is of npm's two passes, not of their answers. `_npx_argv` is `bin/npx-cli.js`'s loop (it splices `--` in front of the first word it takes for the program, expanding shorthands and skipping a value it guesses at), and `_nopt` is `nopt`'s `parse` with npm's option types: unique-prefix abbreviations, shorthand bundles, `--no-`, `--key=value`, and the per-type rule for whether the next word is a value. The tables below are npm 11.20.0's, the version
+# `.devcontainer/toolchain.env` pins. `tests/test_bash_semantics.py::test_npm_launch_matches_npm` asks that npm, with its `lib/cli.js` stubbed so nothing runs, what it would execute for every option spelling it accepts (every name, every unique prefix, one dash and two, `=value` and a separate word, behind `npx`, `npm exec` and `npm x`), and fails when the walk answers differently or when a table here and npm's own disagree.
+# An option's type, as nopt reads it: "B" Boolean (a switch, which takes the next word only when that word is `true` or `false`), "S" String (it takes the next word unless that word looks like an option), "V" any other single type (it takes the next word whatever it is), and for a list of types "A" followed by "b" (Boolean: a switch that may still take a value), "n" (null: a following `false` makes it a switch), "s" (String), "N" (Number) and one "|x" per literal string x. `local-address` lists this machine's own addresses, which no table can carry, so it is spelled "|<address>" and any address-shaped word matches it.
+_NPM_TYPES = {
+    "B": (
+        "all allow-same-version allow-scripts-pending allow-scripts-pin audit bin-links bypass-2fa "
+        "commit-hooks dangerously-allow-all-scripts description dev diff-ignore-all-space "
+        "diff-name-only diff-no-prefix diff-text dry-run engine-strict force foreground-scripts "
+        "format-package-lock fund git-tag-version global global-style if-present ignore-scripts "
+        "include-attestations include-staged include-workspace-root init-private install-links json "
+        "legacy-bundling legacy-peer-deps link long offline omit-lockfile-registry-resolved "
+        "package-lock package-lock-only packages-all parseable prefer-dedupe prefer-offline "
+        "prefer-online progress provenance read-only rebuild-bundle save save-bundle save-dev "
+        "save-exact save-optional save-peer save-prod shrinkwrap sign-git-commit sign-git-tag "
+        "strict-allow-scripts strict-peer-deps strict-ssl timing unicode update-notifier usage "
+        "version versions workspaces-update"
+    ),
+    "S": (
+        "call diff-dst-prefix diff-src-prefix editor git heading init-author-email init-author-name "
+        "init-license init-type init.author.email init.author.name init.license message "
+        "pack-destination preid save-prefix scope searchexclude searchopts shell tag "
+        "tag-version-prefix user-agent viewer"
+    ),
+    "V": (
+        "cache cache-max cache-min cafile diff-unified fetch-retries fetch-retry-factor "
+        "fetch-retry-maxtimeout fetch-retry-mintimeout fetch-timeout globalconfig init-module "
+        "init-version init.module init.version logs-max maxsockets node-gyp prefix provenance-file "
+        "registry searchlimit searchstaleness umask userconfig"
+    ),
+    "Ans": (
+        "_auth ca cert cidr cpu key libc name node-options orgs os otp packages password scopes "
+        "script-shell token-description"
+    ),
+    "As": "allow-scripts diff min-release-age-exclude noproxy package workspace",
+    "Abn": "expect-results optional production workspaces yes",
+    "AnN": "depth expect-result-count expires min-release-age which",
+    "An": "before https-proxy logs-dir proxy",
+    "A|all|none|root": "allow-directory allow-file allow-git allow-remote",
+    "A|": "init-author-url init.author.url",
+    "Abns": "browser",
+    "Ab|always": "color",
+    "An|<address>": "local-address",
+    "An|1|2|3": "lockfile-version",
+    "An|dev|development": "also",
+    "An|info|low|moderate|high|critical|none": "audit-level",
+    "An|prod|production": "only",
+    "An|read-only|read-write|no-access": "orgs-permission",
+    "An|read-only|read-write|read-write-stage-only|no-access": "packages-and-scopes-permission",
+    "An|restricted|public|private": "access",
+    "As|npmjs|never|always": "replace-registry-host",
+    "A|cyclonedx|spdx": "sbom-format",
+    "A|dev|optional|peer": "omit",
+    "A|global|user|project": "location",
+    "A|hoisted|nested|shallow|linked": "install-strategy",
+    "A|legacy|web": "auth-type",
+    "A|library|application|framework": "sbom-type",
+    "A|prod|dev|optional|peer": "include",
+    "A|silent|error|warn|notice|http|info|verbose|silly": "loglevel",
+}  # fmt: skip
+_NPM_SHORTHANDS = {
+    "?": "--usage", "B": "--save-bundle", "C": "--prefix", "D": "--save-dev", "E": "--save-exact",
+    "H": "--usage", "L": "--location", "O": "--save-optional", "P": "--save-prod", "S": "--save",
+    "a": "--all", "c": "--call", "d": "--loglevel info", "dd": "--loglevel verbose", "ddd":
+    "--loglevel silly", "desc": "--description", "enjoy-by": "--before", "f": "--force", "g":
+    "--global", "h": "--usage", "help": "--usage", "iwr": "--include-workspace-root", "l": "--long",
+    "local": "--no-global", "m": "--message", "n": "--no-yes", "no": "--no-yes", "p": "--parseable",
+    "porcelain": "--parseable", "q": "--loglevel warn", "quiet": "--loglevel warn", "readonly":
+    "--read-only", "reg": "--registry", "s": "--loglevel silent", "silent": "--loglevel silent",
+    "v": "--version", "verbose": "--loglevel verbose", "w": "--workspace", "ws": "--workspaces",
+    "y": "--yes",
+}  # fmt: skip
+_NPM_TYPE = {key: kind for kind, keys in _NPM_TYPES.items() for key in keys.split()}
+_NPM_SHORT = {key: value.split() for key, value in _NPM_SHORTHANDS.items()}
+# `bin/npx-cli.js`'s own sets: the options it removed (it drops them, and the value of a removed one), and the ones it always treats as taking the next word.
+_NPX_REMOVED_SWITCHES = frozenset(("always-spawn", "ignore-existing", "shell-auto-fallback"))
+_NPX_REMOVED_OPTS = frozenset(("npm", "node-arg", "n"))
+_NPX_OPTS = frozenset(
+    (*_NPX_REMOVED_OPTS, "package", "p", "cache", "userconfig", "call", "c", "shell")
+)
+_NPX_SWITCHES = frozenset(
+    (
+        *_NPX_REMOVED_SWITCHES,
+        *(key for key, kind in _NPM_TYPE.items() if kind == "B" or kind.startswith("Ab")),
+        *("no-install", "quiet", "q", "version", "v", "help", "h"),
     )
-)  # fmt: skip
-_NPX_CALL = frozenset(("-c", "--call"))
+)
+# The npm command words that resolve to `exec` (`lib/utils/cmd-list.js` `deref`: the command, its one unique abbreviation, its alias).
+_NPM_EXEC_WORDS = frozenset(("exec", "exe", "x"))
 # `find` actions whose operands up to a lone `;` or `+` are a command it runs, once per match.
 _FIND_EXEC = frozenset(("-exec", "-execdir", "-ok", "-okdir"))
 # `ssh` short options that take a value (OpenSSH 9, `ssh(1)` SYNOPSIS); every other letter is a flag. The value is either the rest of the bundle (`-p22`) or the next word.
 _SSH_VALUE_LETTERS = frozenset("BbcDEeFIiJLlmOoPpQRSWw")
 
 
-# npx options that run the command in ANOTHER package (#503f0ba8): an `npm run` it launches reads that package's scripts, and a `.` it names is that package's directory, not this cwd.
-_NPX_ELSEWHERE = frozenset(("-w", "--workspace", "--prefix", "--workspaces", "-ws", "--ws"))
+# npm options that run the command in ANOTHER package (#503f0ba8): an `npm run` it launches reads that package's scripts, and a `.` it names is that package's directory, not this cwd. Named as `_nopt` resolves them, so `-w`, `-C`, `--ws` and every abbreviation (`--workspa`) count.
+_NPM_ELSEWHERE = frozenset(("workspace", "workspaces", "prefix"))
 # The `find -exec` family members that run the command in each MATCH'S directory instead of find's own cwd.
 _FIND_IN_MATCH_DIR = frozenset(("-execdir", "-okdir"))
 # `find` options that come BEFORE its starting points; `-D` and `-O<n>` aside, they take no value.
@@ -699,7 +789,7 @@ _FIND_LEADING = frozenset(("-H", "-L", "-P"))
 class Launch(typing.NamedTuple):
     """Where a launched command runs (#503f0ba8), on `_Run.launch` for every run a launcher started, and for every run nested under one.
 
-    `launcher` is "npx" or "find". `action` is find's `-exec`/`-execdir`/`-ok`/`-okdir`, "" for npx. `starts` are find's starting points, quote-removed (`(".",)` when it names none), and () for npx: what `{}` stands for lies under them. `elsewhere` is True when the command does not run in the launcher's own cwd and package: `-execdir`/`-okdir` run it in each match's directory, and `npx -w/--workspace/--prefix/--workspaces` in another package. A guard that resolves a path or a package.json against `run.cwd` leaves an `elsewhere` run unjudged rather than judging it against the wrong directory.
+    `launcher` is "npx" (also for `npm exec`, `npm exe` and `npm x`, which are the same launch) or "find". `action` is find's `-exec`/`-execdir`/`-ok`/`-okdir`, "" for npx. `starts` are find's starting points, quote-removed (`(".",)` when it names none), and () for npx: what `{}` stands for lies under them. `elsewhere` is True when the command does not run in the launcher's own cwd and package: `-execdir`/`-okdir` run it in each match's directory, and `npx -w/--workspace/--prefix/--workspaces` in another package. A guard that resolves a path or a package.json against `run.cwd` leaves an `elsewhere` run unjudged rather than judging it against the wrong directory.
     """
 
     launcher: str
@@ -726,29 +816,203 @@ def _find_starts(argv):
     return tuple(starts) or (".",)
 
 
-def _launches(base, argv):
-    """The commands a launcher run starts, each with its `Launch`: a list of `(how, what, Launch)`, `how` "argv" (`what` a word list) or "text" (`what` a shell string), empty for anything that is not a launcher."""
-    if base == "npx":
-        k = 0
-        elsewhere = False
-        while k < len(argv):
-            arg = argv[k]
-            if arg == "--":
-                k += 1
-                break
-            if arg in _NPX_ELSEWHERE or arg.split("=", 1)[0] in _NPX_ELSEWHERE:
-                elsewhere = True
-            launch = Launch("npx", "", (), elsewhere)
-            if arg in _NPX_CALL:
-                return [("text", argv[k + 1], launch)] if k + 1 < len(argv) else []
-            if arg.startswith(("--call=", "-c=")):
-                return [("text", arg.split("=", 1)[1], launch)]
-            if arg.startswith("-") and len(arg) > 1:
-                k += 2 if arg in _NPX_VALUE else 1
-                continue
+def _js_abbrev(words):
+    """The `abbrev` package nopt builds its tables with: every word maps to itself, and every prefix that starts exactly one of the words maps to that word."""
+    counts: dict[str, int] = {}
+    for word in words:
+        for k in range(1, len(word)):
+            counts[word[:k]] = counts.get(word[:k], 0) + 1
+    out = {word[:k]: word for word in words for k in range(1, len(word)) if counts[word[:k]] == 1}
+    out.update((word, word) for word in words)
+    return out
+
+
+_NPM_ABBREVS = _js_abbrev(sorted(_NPM_TYPE))
+_NPM_SHORT_ABBREVS = _js_abbrev(sorted(_NPM_SHORT))
+_NPM_SINGLES = frozenset(key for key in _NPM_SHORT if len(key) == 1)
+
+
+def _nopt_short(arg):
+    """nopt's `resolveShort`: the words an option spelling expands to, or None when it is an option name (or a prefix of one) and not a shorthand."""
+    key = re.sub(r"^-+", "", arg)
+    if _NPM_ABBREVS.get(key) == key:
+        return None
+    if key in _NPM_SHORT:
+        return _NPM_SHORT[key]
+    # A bundle of single-letter shorthands (`-gS`); the empty name is a bundle of none.
+    if all(ch in _NPM_SINGLES for ch in key):
+        return [word for ch in key for word in _NPM_SHORT[ch]]
+    if key in _NPM_ABBREVS:
+        return None
+    return _NPM_SHORT.get(_NPM_SHORT_ABBREVS.get(key, key))
+
+
+# JavaScript's `isNaN` is false for these strings (`Number(s)` is a number); `Number("")` is 0.
+_JS_NUMBER = re.compile(
+    r"[+-]?(Infinity|(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?)|0[xX][0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+|"
+)
+_ADDRESS = re.compile(r"[0-9]+(\.[0-9]+){3}|[0-9A-Fa-f:]*:[0-9A-Fa-f:.%a-z]*")
+
+
+def _nopt_listed_value(ahead, flags, literals):
+    """Whether a switch whose type is a list takes `ahead` as its value: one of its literals, `null` when it is nullable, a number when it lists Number, any word not shaped like a short option when it lists String."""
+    if ahead in literals or ("<address>" in literals and _ADDRESS.fullmatch(ahead)):
+        return True
+    if ahead == "null" and "n" in flags:
+        return True
+    if "N" in flags and not re.match(r"^-{2,}[^-]", ahead) and _JS_NUMBER.fullmatch(ahead.strip()):
+        return True
+    return "s" in flags and not re.match(r"^-[^-]", ahead)
+
+
+def _nopt(args):
+    """nopt's `parse` over `args`, a list of `(word, argv index)`: `(options, operands)`, `options` mapping each resolved option name to the values it got, `operands` the words left, each still carrying its index. Every branch below is one of `nopt-lib.js`'s, in its order."""
+    args = list(args)
+    data: dict[str, list] = {}
+    remain: list = []
+    i = 0
+    while i < len(args):
+        arg, at = args[i]
+        if re.fullmatch(r"-{2,}", arg):
+            remain.extend(args[i + 1 :])
             break
-        launch = Launch("npx", "", (), elsewhere)
-        return [("argv", argv[k:], launch)] if k < len(argv) else []
+        if not (arg.startswith("-") and len(arg) > 1):
+            remain.append(args[i])
+            i += 1
+            continue
+        had_eq = "=" in arg
+        if had_eq:
+            arg, value = arg.split("=", 1)
+            args[i : i + 1] = [(arg, at), (value, at)]
+        expanded = _nopt_short(arg)
+        if expanded is not None:
+            args[i : i + 1] = [(word, at) for word in expanded]
+            if not expanded or expanded[0] != arg:
+                continue
+        key = re.sub(r"^-+", "", arg)
+        negated = None
+        while key.lower().startswith("no-"):
+            negated = not negated
+            key = key[3:]
+        key = _NPM_ABBREVS.get(key, key)
+        kind = _NPM_TYPE.get(key)
+        ahead = args[i + 1][0] if i + 1 < len(args) else None
+        listed = kind is not None and kind[0] == "A"
+        flags, *literals = kind[1:].split("|") if listed and kind else ("",)
+        switch = (
+            negated is not None
+            or kind == "B"
+            or "b" in flags
+            or (kind is None and not had_eq)
+            or (ahead == "false" and "n" in flags)
+        )
+        if switch:
+            value = not negated
+            if ahead in ("true", "false"):
+                value = ahead == "true"
+                ahead = None
+                i += 1
+            if listed and ahead and _nopt_listed_value(ahead, flags, literals):
+                value = ahead
+                i += 1
+            data.setdefault(key, []).append(value)
+            i += 1
+            continue
+        step = 2
+        if kind == "S":
+            if ahead is None:
+                ahead = ""
+            elif re.match(r"^-{1,2}[^-]+", ahead):
+                ahead = ""
+                step = 1
+        if ahead is not None and re.fullmatch(r"-{2,}", ahead):
+            ahead = None
+            step = 1
+        data.setdefault(key, []).append(True if ahead is None else ahead)
+        i += step
+    return data, remain
+
+
+def _npx_argv(args):
+    """`bin/npx-cli.js`'s loop over its own arguments (`(word, argv index)` pairs), before it hands them to `npm exec`: shorthands expanded, removed options dropped, and a `--` spliced in front of the first word it takes for the program."""
+    args = list(args)
+    i = 0
+    while i < len(args):
+        arg, at = args[i]
+        if arg == "--":
+            break
+        if not arg.startswith("-"):
+            args.insert(i, ("--", None))
+            break
+        key, *value = re.sub(r"^-+", "", arg).split("=")
+        if key == "p":
+            args[i] = ("=".join(["--package", *value]), at)
+        elif key == "shell":
+            args[i] = ("=".join(["--script-shell", *value]), at)
+        elif key == "no-install":
+            args[i] = ("--yes=false", at)
+        elif key in _NPM_SHORT and key not in _NPX_REMOVED_SWITCHES | _NPX_REMOVED_OPTS:
+            args[i : i + 1] = [
+                (word, at) for word in [*_NPM_SHORT[key], *(["=".join(value)] if value else [])]
+            ]
+            continue
+        removed = key in _NPX_REMOVED_SWITCHES | _NPX_REMOVED_OPTS
+        if removed:
+            del args[i]
+            i -= 1
+        ahead = args[i + 1][0] if 0 <= i + 1 < len(args) else "undefined"
+        if (
+            not value
+            and key not in _NPX_SWITCHES
+            and (key in _NPX_OPTS or not ahead.startswith("-"))
+        ):
+            if removed:
+                del args[i + 1 : i + 2]
+            else:
+                i += 1
+        i += 1
+    return args
+
+
+def _npm_launch(base, argv):
+    """`(launched, Launch)` for an `npx` or `npm exec` argv, None when npm would run nothing: `launched` is `("text", call)` for `-c`/`--call`, else `("argv", words, span)`, `span` the argv indexes of the first and last word or None."""
+    words = list(zip(argv, range(len(argv)), strict=True))
+    if base == "npx":
+        data, remain = _nopt([("exec", None), *_npx_argv(words)])
+    else:
+        data, remain = _nopt(words)
+    if not remain or remain[0][0] not in _NPM_EXEC_WORDS:
+        return None
+    if base == "npx" and remain[0][1] is not None:
+        return None
+    elsewhere = any(
+        value not in (False, "", None) for key in _NPM_ELSEWHERE for value in data.get(key, ())
+    )
+    launch = Launch("npx", "", (), elsewhere)
+    call = data.get("call", [None])[-1]
+    # nopt's `clean` turns a switch value given to a String option into text: `--no-call` is the call `false`.
+    if isinstance(call, bool):
+        call = "true" if call else "false"
+    if isinstance(call, str) and call:
+        return ("text", call), launch
+    operands = remain[1:]
+    if not operands:
+        return None
+    # A word npx itself inserted, or one a shorthand expanded to, has no place of its own in the argv.
+    span = (operands[0][1], operands[-1][1])
+    return ("argv", [word for word, _at in operands], None if None in span else span), launch
+
+
+def _launches(base, argv):
+    """The commands a launcher run starts, each with its `Launch`: a list of `(how, what, Launch, span)`, `how` "argv" (`what` a word list) or "text" (`what` a shell string), empty for anything that is not a launcher. `span` is `(first, last)`, the argv indexes of the launched words, None for a shell string."""
+    if base in ("npx", "npm"):
+        found = _npm_launch(base, argv)
+        if found is None:
+            return []
+        launched, launch = found
+        if launched[0] == "text":
+            return [("text", launched[1], launch, None)]
+        return [("argv", launched[1], launch, launched[2])]
     if base == "find":
         out = []
         starts = _find_starts(argv)
@@ -763,7 +1027,7 @@ def _launches(base, argv):
                 j += 1
             if j > k + 1:
                 launch = Launch("find", action, starts, action in _FIND_IN_MATCH_DIR)
-                out.append(("argv", argv[k + 1 : j], launch))
+                out.append(("argv", argv[k + 1 : j], launch, (k + 1, j - 1)))
             k = j + 1
         return out
     return []
@@ -771,7 +1035,7 @@ def _launches(base, argv):
 
 def _launched(base, argv):
     """The commands a launcher run starts: a list of `("argv", [word, ...])` or `("text", payload)`, empty for anything that is not a launcher. `_launches` carries each one's `Launch` too."""
-    return [(how, what) for how, what, _launch in _launches(base, argv)]
+    return [(how, what) for how, what, _launch, _span in _launches(base, argv)]
 
 
 def _ssh_remote(argv):
@@ -1472,12 +1736,15 @@ class _Run:
 class _Analysis:
     """What one walk found: `runs` in execution order, `heredocs` read, and `writes`, every output redirect bash performs as `(operator, target)` with the target quote-removed."""
 
-    __slots__ = ("heredocs", "runs", "writes")
+    __slots__ = ("heredocs", "names", "root", "runs", "writes")
 
     def __init__(self):
         self.runs: list = []
         self.heredocs: list = []
         self.writes: list = []
+        # WHERE EACH RUN'S NAME SITS IN THE TEXT THAT WAS WALKED, for `_wrapper_payload` (#31ed6c5f): `(name start, name end, end of the run's last word)` for every command whose words the root lexer read (the top level and its substitutions), and for a command a launcher there starts. A run nested in a payload was lexed from another string, so it has no place in this one and is left out.
+        self.names: list = []
+        self.root = None
 
 
 # The redirect operators that open their target for WRITING. `>|` is here because it truncates even under `set -C`, which is exactly when a guard might have assumed `>` could not (A0 L14); `>&` only when its target is a file rather than a descriptor, which `write_targets` decides.
@@ -1918,13 +2185,16 @@ class _Walker:
             return cwd, shell
         lexer = _Lexer(src)
         toks = lexer.tokens()
+        if self.depth == 0:
+            self.analysis.root = lexer
         self.analysis.heredocs.extend(lexer.heredocs)
         inner = _Walker(self.analysis, self.depth + 1)
         state = [cwd, shell]
         inner.items(_parse(toks), state, lexer)
         return (state[0], state[1]) if persist else (cwd, shell)
 
-    def items(self, items, state, lexer):
+    def items(self, items, state, lexer, inherited=None):
+        """Walk a parsed list. `inherited` is the text a group's stdin carries (`echo x | (xargs rm)`), handed to every command in it."""
         runs = self.analysis.runs
         for idx, item in enumerate(items):
             if item[0] == "sep":
@@ -1950,6 +2220,7 @@ class _Walker:
                     stages[pos - 1] if pos else None,
                     tested=tested and pos == len(stages) - 1,
                     producers=stages[:pos],
+                    inherited=inherited,
                 )
                 spans.append((start, len(runs)))
             # `pgrep -f x | xargs kill`: a later stage that kills consumes every earlier stage's output as pids.
@@ -1958,14 +2229,20 @@ class _Walker:
                     for r in runs[spans[0][0] : spans[pos][0]]:
                         r.usage.add("kill")
 
-    def element(self, stage, state, lexer, upstream, tested=False, producers=()):
+    def element(self, stage, state, lexer, upstream, tested=False, producers=(), inherited=None):
         kind = stage[0]
-        if kind == "sub":
-            self.items(stage[1], [state[0], state[1]], lexer)
-            self.redirs(stage[2], state, lexer)
-            return
-        if kind == "brace":
-            self.items(stage[1], state, lexer)
+        if kind in ("sub", "brace"):
+            # A GROUP'S STDIN IS EVERY MEMBER'S (#31ed6c5f). `echo .claude/settings.json | (xargs rm)` and `| { xargs rm; }` delete the file exactly as `| xargs rm` does, and the feed used to stop at the group, so both were allowed (rc 0, 2026-10-09). The earlier stages' words and the group's own here-string or heredoc reach every command inside it, whatever its own pipeline puts in front, the over-reading direction (what a stage prints is not computed).
+            fed = " ".join(
+                f
+                for f in [inherited or ""]
+                + [_stage_feed(p, lexer) for p in producers]
+                + [_redir_feed(r, lexer) for r in stage[2]]
+                if f
+            )
+            self.items(
+                stage[1], [state[0], state[1]] if kind == "sub" else state, lexer, fed or None
+            )
             self.redirs(stage[2], state, lexer)
             return
         words = [t for t in stage[1] if isinstance(t, _Word)]
@@ -2031,14 +2308,21 @@ class _Walker:
         run.via = via
         feed = [
             f
-            for f in [_stage_feed(p, lexer) for p in producers]
+            for f in [inherited or ""]
+            + [_stage_feed(p, lexer) for p in producers]
             + [_redir_feed(r, lexer) for r in redirs]
             if f
         ]
         if feed:
             run.feed = " ".join(feed)
         self.analysis.runs.append(run)
-        for how, launched, launch in _launches(base, argv):
+        at_root = lexer is self.analysis.root
+        if at_root:
+            self.analysis.names.append((words[0].start, words[0].end, words[-1].end))
+        for how, launched, launch, span in _launches(base, argv):
+            if at_root and span is not None:
+                first, last = words[1 + span[0]], words[1 + span[1]]
+                self.analysis.names.append((first.start, first.end, last.end))
             sub = _Analysis()
             src = launched if how == "text" else _quote_argv(launched)
             _Walker(sub, self.depth + 1).text(src, state[0], persist=False, shell=state[1])
