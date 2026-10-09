@@ -35,7 +35,6 @@ from __future__ import annotations
 
 import ast
 import json
-import os
 import re
 
 # The `re` module's own parser, so a pattern is read exactly as the guard's `re.compile` reads it. `re._parser`/`re._constants` are the 3.11+ homes of the deprecated `sre_parse`/`sre_constants`.
@@ -52,6 +51,7 @@ import _cipath  # noqa: F401
 # ALIASED: `proc` is the name this file's own code reaches for when it holds a completed process, and it did until these call sites were routed. Keeping the
 # runner under a distinct name means a future local `proc =` cannot shadow it
 # into a NameError on the timeout path -- the path least likely to be exercised.
+from rediacc_ci import core_lease
 from rediacc_ci import proc as ci_proc
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -909,7 +909,7 @@ def main() -> int:
         guards.append((path, kind, chain))
 
     # CONCURRENT ACROSS GUARDS, sequential within one. Probing every alternative raised the probe count from 171 to about 630, each a guard subprocess of ~0.2 s, which serial would be over two minutes. One guard's probes stay in one worker so a guard with a side effect (block_settled_questions appends a refusal ledger) never races itself.
-    with ThreadPoolExecutor(max_workers=max(1, min(16, os.cpu_count() or 1))) as pool:
+    with ThreadPoolExecutor(max_workers=core_lease.granted_cores()) as pool:
         verdicts = list(pool.map(lambda g: assess(g[0], g[1], file_path_for(g[0])), guards))
 
     probe_total = 0
