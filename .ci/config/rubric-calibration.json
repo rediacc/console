@@ -7,7 +7,7 @@
     },
     "REGGATE_PROMPT": {
       "calibrated": "2026-09-24",
-      "note": "Re-hashed 2026-10-09 (the `rehashed` field) WITHOUT a full pass; `calibrated` stays at the last full pass, 2026-09-24, stated here rather than hidden. 2d7364e0c changed one example inside the prompt (run-e2e.sh -> rediacc_ci.testrun.e2e, worklist_messages.py:1977), making the guidance true. Two live runs scored the sweep fixtures (which REGGATE rides) 7/8 (.ci/cache/calibrate-20261009.log: MISS \"guard matched a mention, not a target\") and 6/8 (.ci/cache/calibrate-20261009b.log: MISS \"guard false positive on one of its paths\", MISS \"CONTROL: searched, and it is the only instance\"). The misses differ between runs and the same fixtures ride the UNCHANGED SWEEP_PROMPT, last calibrated 8/8, which is consistent with run-to-run variance in the judge rather than this edit (the cause is not yet measured); worklist #455e5cef carries re-establishing a full pass for SWEEP, BRAVE and SHAPE.",
+      "note": "Re-hashed 2026-10-09 without a full pass after 2d7364e0c changed one example inside the prompt. Two live runs scored the sweep fixtures it rides 7/8 and 6/8 with different misses (.ci/cache/calibrate-20261009.log, -20261009b.log) on the unchanged SWEEP_PROMPT, last calibrated 8/8, which is consistent with run-to-run judge variance rather than this edit; the cause is not yet measured. `calibrated` stays at the last full pass; #455e5cef restores one.",
       "sha": "2b8cbd5b3ccdd640",
       "rehashed": "2026-10-09"
     },
