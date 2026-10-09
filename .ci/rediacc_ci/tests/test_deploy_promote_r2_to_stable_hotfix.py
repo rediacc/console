@@ -27,6 +27,7 @@ from rediacc_ci.deploy import r2_promote
 from rediacc_ci.quality import python_env_registry
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import r2_promote_fake as fake
+from rediacc_ci.tests.twin_names import as_twin
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
 if typing.TYPE_CHECKING:
@@ -450,7 +451,7 @@ def test_each_required_variable_refuses_as_the_twin_does(tmp_path, missing) -> N
     tail = "%s: %s: %s must be set\n" % (missing, port.SELF, missing)
     assert old.returncode == proc.returncode == 1
     assert old.stdout == proc.stdout == ""
-    assert old.stderr.endswith(tail), repr(old.stderr)
+    assert old.stderr.endswith(as_twin(tail)), repr(old.stderr)
     assert proc.stderr == tail, repr(proc.stderr)
     assert records == []
 
@@ -578,3 +579,9 @@ def test_an_empty_edge_tree_deletes_nothing_from_stable(tmp_path) -> None:
     assert "VACUOUS: apt/edge/ lists 0 object(s)" in proc.stderr
     assert fake.ops(records, "DELETE") == []
     assert "%s/apt/stable/pool/rdc_0.9.0.deb" % fake.BUCKET in fake.bucket_keys(root, "")
+
+
+def test_diagnostics_are_prefixed_with_the_module_name() -> None:
+    """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
+    assert port.SELF == "rediacc_ci.deploy.promote_r2_to_stable_hotfix"
+    assert port.__name__ == port.SELF

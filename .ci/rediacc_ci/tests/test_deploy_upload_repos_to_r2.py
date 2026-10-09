@@ -31,6 +31,7 @@ from rediacc_ci import paths
 from rediacc_ci.deploy import channel_snapshot, r2_promote
 from rediacc_ci.deploy import upload_repos_to_r2 as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 from rediacc_ci.tests.wkloader import copy_loader
 from rediacc_ci.well_known import CF_API_BASE, RELEASES_BUCKET, RELEASES_ORIGIN
 
@@ -351,12 +352,12 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
     )
-    new_stdout = _without_prune_lines(new.stdout)
+    new_stdout = _without_prune_lines(as_twin(new.stdout))
     assert new_stdout == old.stdout, (
         f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new_stdout!r}"
     )
-    assert new.stderr == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
+    assert as_twin(new.stderr) == old.stderr, (
+        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
     )
     if old_calls is not None:
         assert _without_prune(new_calls) == old_calls, (
@@ -523,7 +524,7 @@ def test_divergence_each_of_the_five_guards_is_bashs_own_unbound_variable(
         dropped = tuple(n for n, _m in port.REQUIRED_ENV[index:])
         old, new, old_calls, new_calls = run_both(case, drop_env=dropped)
         assert old.returncode == new.returncode == 1, name
-        assert old.stderr.rstrip("\n").endswith("%s: %s" % (name, message)), old.stderr
+        assert old.stderr.rstrip("\n").endswith(as_twin("%s: %s" % (name, message))), old.stderr
         assert ": line " in old.stderr, "bash stopped naming a line; re-read this divergence"
         assert new.stderr == "%s: %s\n" % (name, message)
         assert old.stdout == new.stdout == ""
@@ -536,7 +537,7 @@ def test_an_empty_channel_refuses_exactly_as_an_absent_one_does(
     """`:?` IS AN UNSET-OR-EMPTY TEST. A port testing `"CHANNEL" in os.environ` would sail past this and sync every format to `s3://rediacc-releases/apt//`, which is every channel's parent prefix."""
     old, new, old_calls, new_calls = run_both(tmp_path, CHANNEL="")
     assert old.returncode == new.returncode == 1
-    assert new.stderr == "CHANNEL: upload-repos-to-r2.sh: CHANNEL must be set\n"
+    assert new.stderr == "CHANNEL: rediacc_ci.deploy.upload_repos_to_r2: CHANNEL must be set\n"
     assert old_calls == new_calls == "", "an empty channel still reached aws"
 
 
@@ -653,7 +654,7 @@ def test_the_r2_credentials_are_bridged_into_the_aws_names(tmp_path: pathlib.Pat
 
 
 def test_pure_helpers() -> None:
-    assert port.SELF == "upload-repos-to-r2.sh"
+    assert port.SELF == "rediacc_ci.deploy.upload_repos_to_r2"
     assert port.FORMATS == ("apt", "rpm", "apk", "archlinux")
     assert port.CC_MUTABLE == "no-cache"
     assert not hasattr(port, "PURGE_SCRIPT")
@@ -720,8 +721,10 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     assert bad.returncode == old.returncode == 0, (
         "the plant is invisible in the exit code, which is why the calls are compared"
     )
-    assert _without_prune_lines(bad.stdout) == old.stdout, "the plant is invisible on stdout"
-    assert bad.stderr == old.stderr, "the plant is invisible on stderr too"
+    assert _without_prune_lines(as_twin(bad.stdout)) == old.stdout, (
+        "the plant is invisible on stdout"
+    )
+    assert as_twin(bad.stderr) == old.stderr, "the plant is invisible on stderr too"
     assert "--cache-control\timmutable" in bad_calls
     assert _without_prune(bad_calls) != old_calls, "the mutant's calls matched the twin's"
 

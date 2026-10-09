@@ -24,6 +24,7 @@ import typing
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_proxy as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -274,11 +275,11 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
     )
-    assert new.stdout == old.stdout, (
-        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new.stdout!r}"
+    assert as_twin(new.stdout) == old.stdout, (
+        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {as_twin(new.stdout)!r}"
     )
-    assert new.stderr == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
+    assert as_twin(new.stderr) == old.stderr, (
+        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
     )
     if old_calls is not None:
         assert new_calls == old_calls, (
@@ -518,7 +519,10 @@ def test_a_flag_that_is_not_a_shell_identifier_exits_two(tmp_path: pathlib.Path)
     assert old.returncode == 2
     assert new.returncode == 2
     assert old.stderr.endswith("printf: `ARG_FOO.BAR': not a valid identifier\n")
-    assert new.stderr == "deploy-proxy.sh: printf: `ARG_FOO.BAR': not a valid identifier\n"
+    assert (
+        new.stderr
+        == "rediacc_ci.deploy.deploy_proxy: printf: `ARG_FOO.BAR': not a valid identifier\n"
+    )
     assert old_calls == new_calls == ""
 
 
@@ -689,3 +693,9 @@ def test_an_unreachable_proxy_fails_the_smoke_with_curls_own_code(tmp_path: path
     assert "curl: (6) Could not resolve host\n" in old.stderr
     assert "✗ Smoke test failed: /v1/health answered 000, expected 200\n" in old.stderr
     _assert_agree(old, new, "smoke-unreachable", old_calls, new_calls)
+
+
+def test_diagnostics_are_prefixed_with_the_module_name() -> None:
+    """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
+    assert port.SELF == "rediacc_ci.deploy.deploy_proxy"
+    assert port.__name__ == port.SELF

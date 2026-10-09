@@ -20,6 +20,7 @@ import typing
 from rediacc_ci import paths
 from rediacc_ci.deploy import cf_purge_urls as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 from rediacc_ci.well_known import CF_API_BASE as WK_CF_API_BASE
 
 if typing.TYPE_CHECKING:
@@ -155,11 +156,11 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
     )
-    assert new.stdout == old.stdout, (
-        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new.stdout!r}"
+    assert as_twin(new.stdout) == old.stdout, (
+        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {as_twin(new.stdout)!r}"
     )
-    assert new.stderr == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
+    assert as_twin(new.stderr) == old.stderr, (
+        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
     )
     if old_calls is not None:
         assert new_calls == old_calls, (
@@ -456,7 +457,7 @@ def test_divergence_a_trailing_zone_flag_is_bashs_own_unbound_variable(
     old, new, old_calls, new_calls = run_both(tmp_path, ["--zone"])
     assert old.returncode == new.returncode == 1
     assert old.stderr.endswith("line 43: $2: unbound variable\n")
-    assert new.stderr == "cf-purge-urls.sh: --zone requires a value\n"
+    assert new.stderr == "rediacc_ci.deploy.cf_purge_urls: --zone requires a value\n"
     assert old.stderr != new.stderr
     assert old.stdout == new.stdout == ""
     assert old_calls == new_calls == []
@@ -464,7 +465,7 @@ def test_divergence_a_trailing_zone_flag_is_bashs_own_unbound_variable(
 
 def test_pure_helpers() -> None:
     assert port.BATCH_SIZE == 30
-    assert port.SELF == "cf-purge-urls.sh"
+    assert port.SELF == "rediacc_ci.deploy.cf_purge_urls"
     assert port.CF_API_BASE == WK_CF_API_BASE
 
     assert port.parse_argv(["--zone", "Z", "a", "-x"]) == ("Z", ["a", "-x"])
@@ -523,13 +524,13 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     assert bad.returncode == old.returncode, (
         "the plant is invisible in the exit code, which is why the call log is compared"
     )
-    assert bad.stdout == old.stdout, (
+    assert as_twin(bad.stdout) == old.stdout, (
         "the plant is invisible on stdout too: both say 'purged 31 URL(s) successfully'"
     )
 
     good, good_calls = _run(PORT, tmp_path, args)
     assert good_calls == old_calls, "restored port no longer agrees with the twin"
-    assert good.stdout == old.stdout
+    assert as_twin(good.stdout) == old.stdout
     assert PORT.read_text(encoding="utf-8") == original, (
         "port source must be restored byte-identical"
     )
@@ -542,8 +543,11 @@ def test_a_missing_curl_ends_the_run_with_127_and_names_the_tool(tmp_path: pathl
     """RULE T DELTA (PLAN-retire-bash-oracles B3). bash ends the run with status 127 and `<tool>: command not found` when `curl` is not on PATH. The port used to let `FileNotFoundError` escape as a traceback with status 1, which an in-process caller could not tell from a purge failure. It now keeps the status and names the tool. Only the sentence differs from bash's, which carries the bash file and line."""
     new, calls = _run(PORT, tmp_path, ["--zone", ZONE, "https://a"], drop="curl")
     assert new.returncode == 127
-    assert new.stderr == "cf-purge-urls.sh: curl: command not found\n"
-    assert new.stdout == "cf-purge-urls.sh: purging 1 URL(s) from CF zone zone-fixture\n"
+    assert new.stderr == "rediacc_ci.deploy.cf_purge_urls: curl: command not found\n"
+    assert (
+        new.stdout
+        == "rediacc_ci.deploy.cf_purge_urls: purging 1 URL(s) from CF zone zone-fixture\n"
+    )
     assert "Traceback" not in new.stderr
     assert calls == []
 
@@ -551,7 +555,7 @@ def test_a_missing_curl_ends_the_run_with_127_and_names_the_tool(tmp_path: pathl
 def test_a_missing_jq_ends_the_run_with_127_and_names_the_tool(tmp_path: pathlib.Path) -> None:
     new, _calls = _run(PORT, tmp_path, ["--zone", ZONE, "https://a"], drop="jq")
     assert new.returncode == 127
-    assert new.stderr == "cf-purge-urls.sh: jq: command not found\n"
+    assert new.stderr == "rediacc_ci.deploy.cf_purge_urls: jq: command not found\n"
 
 
 def _in_process(
@@ -578,8 +582,8 @@ def test_purge_reads_its_payload_as_the_scripts_stdin_and_returns_the_status(
     assert port.purge(ZONE, "https://a\nhttps://b\n") == 0
     captured = capfd.readouterr()
     assert captured.out == (
-        "cf-purge-urls.sh: purging 2 URL(s) from CF zone zone-fixture\n"
-        "cf-purge-urls.sh: purged 2 URL(s) successfully\n"
+        "rediacc_ci.deploy.cf_purge_urls: purging 2 URL(s) from CF zone zone-fixture\n"
+        "rediacc_ci.deploy.cf_purge_urls: purged 2 URL(s) successfully\n"
     )
     assert captured.err == ""
     assert call_log.read_text(encoding="utf-8").splitlines() == [
@@ -593,7 +597,7 @@ def test_purge_drops_a_final_line_without_a_newline_and_skips_empty_lines(
     """The stdin rules survive the move in process: `read` never delivers a partial last line, and an empty line is skipped."""
     call_log = _in_process(monkeypatch, tmp_path)
     assert port.purge(ZONE, "https://a\n\nhttps://b") == 0
-    assert capfd.readouterr().out.startswith("cf-purge-urls.sh: purging 1 URL(s) ")
+    assert capfd.readouterr().out.startswith("rediacc_ci.deploy.cf_purge_urls: purging 1 URL(s) ")
     assert call_log.read_text(encoding="utf-8").splitlines() == [purge_call(["https://a"])]
 
 
@@ -605,7 +609,10 @@ def test_purge_returns_the_transport_failure_status_instead_of_raising(
     assert port.purge(ZONE, "https://a\n") == 6
     captured = capfd.readouterr()
     assert captured.err == "curl: (6) Could not resolve host: api.cloudflare.com\n"
-    assert captured.out == "cf-purge-urls.sh: purging 1 URL(s) from CF zone zone-fixture\n"
+    assert (
+        captured.out
+        == "rediacc_ci.deploy.cf_purge_urls: purging 1 URL(s) from CF zone zone-fixture\n"
+    )
 
 
 def test_purge_with_an_empty_zone_refuses_before_any_request(
@@ -615,7 +622,9 @@ def test_purge_with_an_empty_zone_refuses_before_any_request(
     call_log = _in_process(monkeypatch, tmp_path)
     assert port.purge("", "https://a\n") == 1
     captured = capfd.readouterr()
-    assert captured.err == "::error::cf-purge-urls.sh: --zone <ZONE_ID> is required\n"
+    assert (
+        captured.err == "::error::rediacc_ci.deploy.cf_purge_urls: --zone <ZONE_ID> is required\n"
+    )
     assert captured.out == ""
     assert call_log.read_text(encoding="utf-8") == ""
 

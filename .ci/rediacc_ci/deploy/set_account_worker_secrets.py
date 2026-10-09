@@ -96,8 +96,8 @@ import sys
 
 from rediacc_ci.core import common
 
-# The twin's own name, printed in every message it emits. A literal rather than argv[0], because the bytes must survive the port and argv[0] here is a `.py`.
-SELF = "set-account-worker-secrets.sh"
+# This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
+SELF = "rediacc_ci.deploy.set_account_worker_secrets"
 
 # The channel that takes Stripe. Every other value of TARGET is the edge
 # channel: the twin tests `[[ "$TARGET" == "stable" ]]` and has no third arm.

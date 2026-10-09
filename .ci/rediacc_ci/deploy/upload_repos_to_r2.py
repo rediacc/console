@@ -114,8 +114,8 @@ from rediacc_ci.deploy.promote_r2_to_stable import META_EXCLUDES
 from rediacc_ci.release import check_soak_period, check_stable_manifest
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
-# The twin's own name, printed in its five guard messages and its one non-release-channel notice. A literal, because the bytes must survive the port.
-SELF = "upload-repos-to-r2.sh"
+# This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
+SELF = "rediacc_ci.deploy.upload_repos_to_r2"
 
 # `for dir in apt rpm apk archlinux` (:114). ORDER MATTERS to both the call log and the purge list, which is how this port is proved equivalent.
 FORMATS = ("apt", "rpm", "apk", "archlinux")

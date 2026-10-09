@@ -28,6 +28,7 @@ from rediacc_ci.deploy import set_account_worker_secrets as port
 from rediacc_ci.deploy import set_preview_worker_secrets as preview
 from rediacc_ci.deploy import set_www_worker_secrets as www
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -201,11 +202,11 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
     )
-    assert new.stdout == old.stdout, (
-        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new.stdout!r}"
+    assert as_twin(new.stdout) == old.stdout, (
+        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {as_twin(new.stdout)!r}"
     )
-    assert new.stderr == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
+    assert as_twin(new.stderr) == old.stderr, (
+        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
     )
     if old_calls is not None:
         assert new_calls == old_calls, (
@@ -463,9 +464,9 @@ def test_divergence_a_the_three_control_variables_are_bashs_own_refusals(
         old, new, old_calls, new_calls = run_both(case, drop_env=(name,))
         expected = f"{name}: set-account-worker-secrets.sh: {name} must be set"
         assert old.returncode == new.returncode == 1
-        assert old.stderr.endswith(f"line {line}: {expected}\n"), old.stderr
+        assert old.stderr.endswith(f"line {line}: {as_twin(expected)}\n"), old.stderr
         assert old.stderr.startswith(str(TWIN)), "bash stopped naming its own file"
-        assert new.stderr == expected + "\n"
+        assert new.stderr == expected.replace("set-account-worker-secrets.sh", port.SELF) + "\n"
         assert old.stderr != new.stderr
         assert old.stdout == new.stdout == ""
         assert old_calls == new_calls == ""
@@ -478,7 +479,10 @@ def test_the_first_missing_control_variable_wins(tmp_path: pathlib.Path) -> None
     )
     assert old.returncode == new.returncode == 1
     assert old.stderr.endswith("WORKER_NAME must be set\n")
-    assert new.stderr == "WORKER_NAME: set-account-worker-secrets.sh: WORKER_NAME must be set\n"
+    assert (
+        new.stderr
+        == "WORKER_NAME: rediacc_ci.deploy.set_account_worker_secrets: WORKER_NAME must be set\n"
+    )
     assert old.stderr.count("must be set") == new.stderr.count("must be set") == 1
     assert old_calls == new_calls == ""
 
@@ -493,7 +497,7 @@ def test_an_empty_control_variable_refuses_exactly_as_an_absent_one(
         old, new, old_calls, new_calls = run_both(case, **{name: ""})
         assert old.returncode == new.returncode == 1
         assert new.stderr == message + "\n"
-        assert old.stderr.endswith(message + "\n")
+        assert old.stderr.endswith(as_twin(message) + "\n")
         assert old_calls == new_calls == "", f"{name}: an empty value still reached wrangler"
 
 
@@ -596,7 +600,7 @@ def test_the_guard_label_defect_has_no_third_occurrence(tmp_path: pathlib.Path) 
 
 
 def test_pure_helpers() -> None:
-    assert port.SELF == "set-account-worker-secrets.sh"
+    assert port.SELF == "rediacc_ci.deploy.set_account_worker_secrets"
 
     # apply_jurisdiction, all four arms.
     plain = "https://acct.r2.cloudflarestorage.com"
@@ -633,7 +637,7 @@ def test_pure_helpers() -> None:
 
     guard = port.GuardError("OBS_OTLP_CREDENTIALS", "w", "stable", "US")
     assert guard.lines[0] == (
-        "set-account-worker-secrets.sh: OBS_OTLP_CREDENTIALS is EMPTY for "
+        "rediacc_ci.deploy.set_account_worker_secrets: OBS_OTLP_CREDENTIALS is EMPTY for "
         "WORKER_NAME=w TARGET=stable SUFFIX=US."
     )
     assert len(guard.lines) == 3

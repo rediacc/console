@@ -83,8 +83,8 @@ from rediacc_ci import log
 from rediacc_ci.core import common
 from rediacc_ci.deploy import clone_d1
 
-# The twin's own name, carried in its two guard messages and in the two bash-diagnostic stand-ins.
-SELF = "test-d1-migrations.sh"
+# This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
+SELF = "rediacc_ci.deploy.test_d1_migrations"
 
 # `jq -r '.regions[].edgeD1.name' regions.json` and `.regions[].d1.name` (twin :55, :59). EDGE FIRST: edge is the release soak environment, so a regression should surface there before it can reach stable on the next promotion. The order is observable in the call log and is the twin's design.
 REGIONS_FILE = "regions.json"

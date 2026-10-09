@@ -55,8 +55,8 @@ from rediacc_ci.well_known import RELEASES_ORIGIN
 
 RELEASES_HOST = RELEASES_ORIGIN.removeprefix("https://")
 
-# The twin's own name, printed in every message it emits (:53, :66, :83, :104). A literal rather than argv[0], because the messages must stay byte-identical through the port and argv[0] here is a `.py` path.
-SELF = "cf-purge-urls.sh"
+# This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
+SELF = "rediacc_ci.deploy.cf_purge_urls"
 
 # `${URLS[@]:$i:30}` (:88). The Cloudflare purge_cache endpoint accepts at most
 # 30 files per request, which is why the loop exists at all.
@@ -66,7 +66,7 @@ BATCH_SIZE = 30
 CF_API_BASE = WK_CF_API_BASE
 
 # The `$2: unbound variable` stand-in named in divergence 1 above.
-MISSING_ZONE_VALUE = "cf-purge-urls.sh: --zone requires a value"
+MISSING_ZONE_VALUE = "%s: --zone requires a value" % SELF
 
 # The two paths that break the header's "always exits 0" promise. Named as a constant so the differential can assert the defect by name rather than by restating the sentence.
 ALWAYS_EXITS_ZERO_IS_FALSE = True
@@ -78,8 +78,8 @@ HELP = (
     """Purge a list of URLs from Cloudflare cache.
 
 Usage:
-  cf-purge-urls.sh --zone <ZONE_ID> url1 url2 ...
-  printf '%s\\n' url1 url2 url3 | cf-purge-urls.sh --zone <ZONE_ID>
+  python3 -m rediacc_ci.deploy.cf_purge_urls --zone <ZONE_ID> url1 url2 ...
+  printf '%s\\n' url1 url2 url3 | python3 -m rediacc_ci.deploy.cf_purge_urls --zone <ZONE_ID>
 
 Auth (in order tried):
   1. $CLOUDFLARE_API_TOKEN  -> Authorization: Bearer

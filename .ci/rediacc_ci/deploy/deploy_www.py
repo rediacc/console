@@ -75,7 +75,7 @@ The first `get_d1_uuid` only decides whether to delete. After `d1 create` the lo
 ONE DIVERGENCE, IN TEXT NOBODY PARSES
 -----------------------------------------------------------------------------
 An argument whose flag is not a valid shell identifier (`--foo.bar=x`) is
-`printf -v`'s own failure inside `common.sh:341`, exit 2, and bash names common.sh's path and line. This port prints `deploy-www.sh: printf: ...` with the same status, on the same stream, following `deploy/deploy_account.py` and `autopilot/sweep_collect.py`.
+`printf -v`'s own failure inside `common.sh:341`, exit 2, and bash names common.sh's path and line. This port prints `rediacc_ci.deploy.deploy_www: printf: ...` with the same status, on the same stream, following `deploy/deploy_account.py` and `autopilot/sweep_collect.py`.
 
 K=5 LEDGER: `.ci/shadow/w7p6-deploy-www.observations.jsonl`.
 """
@@ -95,8 +95,8 @@ from rediacc_ci.well_known import APEX_DOMAIN, INFRA_DOMAIN
 if typing.TYPE_CHECKING:
     import pathlib
 
-# The twin's own name, used only in the one bash-diagnostic stand-in.
-SELF = "deploy-www.sh"
+# This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
+SELF = "rediacc_ci.deploy.deploy_www"
 
 # `WORKER_DIR="$REPO_ROOT/workers/www"` (twin :17), relative to the repo root
 # `common.sh`'s own location resolves to. NOT cwd: the twin can be invoked from anywhere and `.ci/legacy/run-legacy.sh:245` does exactly that.

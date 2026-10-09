@@ -41,12 +41,12 @@ import sys
 
 from rediacc_ci.core import common
 
-# The twin's own name, printed in every guard message it emits (:67). A literal rather than argv[0], because the bytes must survive the port.
-SELF = "set-www-worker-secrets.sh"
+# This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
+SELF = "rediacc_ci.deploy.set_www_worker_secrets"
 
 # The `${WORKER_NAME:?...}` stand-in named in the docstring's divergence note.
 # The twin's message repeats the script name; kept, because that is the text.
-MISSING_WORKER_NAME = "WORKER_NAME: set-www-worker-secrets.sh: WORKER_NAME must be set"
+MISSING_WORKER_NAME = "WORKER_NAME: %s: WORKER_NAME must be set" % SELF
 
 # The twenty-four `--arg <var> "${<ENV>:-}"` pairs (:92-115) in the twin's ORDER,
 # which is also the key order of the object it builds (:116-140). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin. The differential re-derives this list from the twin's source and compares.
