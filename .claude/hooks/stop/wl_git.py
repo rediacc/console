@@ -520,6 +520,16 @@ def staged_deletions(repo):
 # What made it cost a round trip on 2026-08-28 is that git names the PATHS and not the OWNER, so the one party who can clear the block is absent from the message. Rewording a single commit on 0827-1 stalled until a peer was asked by hand to commit their own document. The owner is right there in the path.
 VOLATILE_STATE_RE = re.compile(r"^agent/([^/]+)/STATE\.md$")
 
+# The REST of the tracked paths the stop hook and the worklist verbs rewrite on their own schedule: per-repo ledgers and event logs, the queue and the review and regression-gate records. Volatile in the same sense as a STATE.md, but owned by no one session, so `classify_dirt` above does not read them; block_rebase_over_foreign_dirt asks `is_session_state` whether a dirty path is somebody's work or this machinery's.
+HOOK_STATE_RE = re.compile(
+    r"^agent/(?:ledgers/[^/]+\.jsonl|worklist/[^/]+\.jsonl|plans/QUEUE\.md|reviews/.+|reggate/.+)$"
+)
+
+
+def is_session_state(path):
+    """Whether a repo-relative path is volatile session state rather than somebody's work."""
+    return bool(VOLATILE_STATE_RE.match(path) or HOOK_STATE_RE.match(path))
+
 
 def dirty_paths(repo):
     """Every path git reports as changed, or None when the PROBE ITSELF failed.
