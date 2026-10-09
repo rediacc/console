@@ -11,6 +11,7 @@ THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-
 
 import ast
 import re
+import shlex
 
 from rediacc_hooks import hookio, shellscan
 
@@ -29,10 +30,17 @@ SANCTIONED = ("wl_review.py", "worklist.py")
 COPIERS = ("cp", "mv", "install", "rsync", "ln")
 INPLACE = ("sed", "perl", "gsed")
 INTERPRETERS = ("python", "python3", "node", "perl", "ruby")
-# Code that opens a file for writing, replaces or removes one.
+# Code that opens a file for writing, replaces or removes one. `.open('w')` is pathlib's spelling, whose mode is the FIRST argument (e30f1ad1.1).
 WRITE_CODE = re.compile(
-    r"open\([^)]*,\s*(mode\s*=\s*)?['\"][^'\"]*[wax+]|write_text|write_bytes|os\.replace|os\.rename|shutil\.(copy|move)|unlink|writeFileSync|appendFileSync"
+    r"open\([^)]*,\s*(mode\s*=\s*)?['\"][^'\"]*[wax+]|\.open\(\s*(mode\s*=\s*)?['\"][^'\"]*[wax+]|O_WRONLY|O_RDWR|O_APPEND|O_CREAT|O_TRUNC|write_text|write_bytes|os\.replace|os\.rename|shutil\.(copy|move)|unlink|writeFileSync|appendFileSync"
 )
+# Code that hands a string to a shell or starts a program (e30f1ad1.2): its string literals are commands, judged by this guard's own shell reading rather than by the line-scoped write test, which a redirect inside `os.system('echo x > ...')` never meets.
+SHELL_CALL = re.compile(
+    r"\b(system|popen|exec(Sync|File|FileSync)?|spawn(Sync)?|subprocess|check_output|check_call|getoutput|getstatusoutput|qx|Popen3?|Open3)\b|`"
+)
+_LITERAL = re.compile(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"|`([^`\n]*)`")
+# How deep a command handed to a shell from inside a program is followed; a program that runs a program that runs a shell is two.
+MAX_DEPTH = 4
 
 MESSAGE = (
     "BLOCKED: this command writes a per-commit review record by hand (%s).\n"
@@ -111,6 +119,18 @@ EDGE_CASES = [
         "a target built from a review path",
         "python3 - <<'EOF'\nimport pathlib\nT = 'agent/reviews/feat/%02d.md'\npathlib.Path(T % 1).write_text('x')\nEOF",
     ),
+    # e30f1ad1.1: pathlib's `.open` takes its mode first, `os.open` takes flags.
+    ("Path.open for write", "python3 -c \"import pathlib; pathlib.Path('%s').open('w')\"" % R),
+    ("Path.open for read", "python3 -c \"import pathlib; pathlib.Path('%s').open().read()\"" % R),
+    ("os.open for write", "python3 -c \"import os; os.open('%s', os.O_WRONLY)\"" % R),
+    # e30f1ad1.2: a command a program hands to a shell is judged as the shell line it is.
+    ("os.system redirect", "python3 -c \"import os; os.system('echo x > %s')\"" % R),
+    ("subprocess argv tee", "python3 -c \"import subprocess; subprocess.run(['tee', '%s'])\"" % R),
+    ("node execSync redirect", "node -e \"require('child_process').execSync('echo x > %s')\"" % R),
+    (
+        "os.system reading the directory",
+        "python3 -c \"import os; os.system('cat %s > /tmp/x')\"" % R,
+    ),
 ]
 
 
@@ -137,8 +157,16 @@ def _run_operands(run, argv):
     return out
 
 
-def _offending(cmd):
-    """A short description of the first hand write to a review file in `cmd`, or ""."""
+def _offending(cmd, depth=0):
+    """A short description of the first hand write to a review file in `cmd`, or "". `depth` counts the programs a shell command was handed down through (`os.system`, `subprocess.run`, `execSync`), so a command quoting itself cannot recurse forever.
+
+    PAST THE CAP IT REFUSES. A command is only handed down when it names the review directory, so one nested deeper than MAX_DEPTH is a review path this guard stopped reading, and allowing it would let depth alone carry a write past the guard.
+    """
+    if depth > MAX_DEPTH:
+        return (
+            "a command nested more than %d programs deep that names the review directory"
+            % MAX_DEPTH
+        )
     hits = [t for t in shellscan.write_targets(cmd) if _is_review(t)]
     if hits:
         return "redirect into %s" % hits[0]
@@ -171,21 +199,28 @@ def _offending(cmd):
             if reads_stdin:
                 code += "\n" + "\n".join(_heredoc_bodies(cmd, analysis))
             program = _python_program(name, argv, reads_stdin, cmd, analysis)
-            verdict = _python_writes_review(program) if program is not None else None
+            verdict = _python_writes_review(program, depth) if program is not None else None
             if verdict is None:
-                verdict = _code_writes_review(code)
+                verdict = _code_writes_review(code, depth)
             if verdict:
                 return "%s code that writes into the review directory" % name
     return ""
 
 
-def _code_writes_review(code):
-    """Interpreter code that writes a review path: a write on a line naming the directory, or through a name bound to such a path.
+def _code_writes_review(code, depth=0):
+    """Interpreter code that writes a review path: a write on a line naming the directory, or through a name bound to such a path, or a shell command on a line that hands one to a shell.
 
     LINE-SCOPED, measured on its first live run: a python heredoc that patched an unrelated module, whose replacement text merely MENTIONED the directory in a comment, was refused when any write anywhere plus any mention anywhere was enough. A write and a path LITERAL (a quote followed by path characters, not prose) have to meet on one line, or through a variable assigned from such a literal.
+    A SHELL CALL IS A THIRD WAY (e30f1ad1.2): on a line that hands a string to a shell (`system(...)`, `execSync(...)`, backticks), each string literal is read as a command by `_offending`, so `system("echo x > agent/reviews/a.md")` is the redirect it spells, while a literal that only names the directory is a command that writes nothing.
     """
     if REVIEW_TEXT not in code:
         return False
+    for line in code.splitlines():
+        if REVIEW_TEXT in line and SHELL_CALL.search(line):
+            for m in _LITERAL.finditer(line):
+                text = next(g for g in m.groups() if g is not None)
+                if REVIEW_TEXT in text and _offending(text, depth + 1):
+                    return True
     names = {
         m.group(1)
         for m in re.finditer(r"\b([A-Za-z_]\w*)\s*=\s*([^\n=]*)", code)
@@ -232,8 +267,83 @@ def _is_review_string(value):
     )
 
 
-def _write_targets(tree):
-    """The target expressions of every write call in a Python tree."""
+def _imports(tree):
+    """Each imported local name -> what it names: `import subprocess as sp` gives `sp -> subprocess`, `from os import system` gives `system -> os.system`."""
+    names: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for a in node.names:
+                if a.asname:
+                    names[a.asname] = a.name
+                else:
+                    head = a.name.split(".")[0]
+                    names[head] = head
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            for a in node.names:
+                names[a.asname or a.name] = "%s.%s" % (node.module, a.name)
+    return names
+
+
+def _qualified(func, imports):
+    """The dotted name a call's function spells after resolving import aliases (`sp.run` -> `subprocess.run`), or ""."""
+    parts = []
+    while isinstance(func, ast.Attribute):
+        parts.append(func.attr)
+        func = func.value
+    if not isinstance(func, ast.Name):
+        return ""
+    parts.append(imports.get(func.id, func.id))
+    return ".".join(reversed(parts))
+
+
+# `os.open`'s flags: anything but these read-only bits (a write flag, a variable, a number with a write bit) can write.
+_READ_FLAGS = frozenset(
+    (
+        "os",
+        "O_RDONLY",
+        "O_CLOEXEC",
+        "O_NOFOLLOW",
+        "O_DIRECTORY",
+        "O_NONBLOCK",
+        "O_NOCTTY",
+        "O_BINARY",
+        "O_PATH",
+        "O_NOATIME",
+        "O_LARGEFILE",
+    )
+)
+
+
+def _flags_can_write(expr):
+    for n in ast.walk(expr):
+        if isinstance(n, ast.Name) and n.id not in _READ_FLAGS:
+            return True
+        if isinstance(n, ast.Attribute) and n.attr not in _READ_FLAGS:
+            return True
+        if isinstance(n, ast.Constant) and isinstance(n.value, int) and n.value & 0o3:
+            return True
+    return False
+
+
+def _mode_can_write(mode):
+    """An `open` mode argument: absent is a read, a constant is read by its letters, and anything else (a variable, `*args`) is assumed to write."""
+    if mode is None:
+        return False
+    if isinstance(mode, ast.Constant):
+        return isinstance(mode.value, str) and _WRITE_MODE.search(mode.value) is not None
+    return True
+
+
+def _keyword(node, name):
+    return next((k.value for k in node.keywords if k.arg == name), None)
+
+
+def _write_targets(tree, imports=None):
+    """The target expressions of every write call in a Python tree.
+
+    `open` has three shapes (e30f1ad1.1): the builtin and a module function (`io.open`, `codecs.open`, `gzip.open`) take the path first and the mode second; `os.open` takes FLAGS second; and a method on a path object (`Path(p).open('w')`) takes the mode FIRST, the receiver being the target.
+    """
+    imports = _imports(tree) if imports is None else imports
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
@@ -246,19 +356,25 @@ def _write_targets(tree):
             else ""
         )
         if attr == "open":
-            mode = (
-                node.args[1]
-                if len(node.args) > 1
-                else next((k.value for k in node.keywords if k.arg == "mode"), None)
+            qualified = _qualified(func, imports)
+            on_module = isinstance(func, ast.Name) or (
+                isinstance(func, ast.Attribute)
+                and isinstance(func.value, ast.Name)
+                and func.value.id in imports
             )
-            if (
-                isinstance(mode, ast.Constant)
-                and isinstance(mode.value, str)
-                and _WRITE_MODE.search(mode.value)
-            ):
-                if node.args:
-                    yield node.args[0]
-                elif isinstance(func, ast.Attribute):
+            if qualified == "os.open":
+                flags = node.args[1] if len(node.args) > 1 else _keyword(node, "flags")
+                path = node.args[0] if node.args else _keyword(node, "path")
+                if flags is not None and path is not None and _flags_can_write(flags):
+                    yield path
+            elif on_module:
+                mode = node.args[1] if len(node.args) > 1 else _keyword(node, "mode")
+                path = node.args[0] if node.args else _keyword(node, "file")
+                if path is not None and _mode_can_write(mode):
+                    yield path
+            elif isinstance(func, ast.Attribute):
+                mode = node.args[0] if node.args else _keyword(node, "mode")
+                if _mode_can_write(mode):
                     yield func.value
             continue
         # `os.replace(a, b)` and `str.replace(old, new)` share a name: a module call counts only when `os` or `shutil` qualifies it, and the receiver form only with Path's single argument.
@@ -281,8 +397,68 @@ def _write_targets(tree):
             yield node.args[0]
 
 
-def _python_writes_review(program):
-    """True or False for a Python program that parses, by its write targets; None when it does not parse, so the regex reading answers instead."""
+# Calls that hand a command to a shell or start a program (e30f1ad1.2), by qualified name: the first argument (or `args=`/`cmd=`) is the command, a string for a shell and a list for an argv.
+_SHELL_CALLS = frozenset(
+    (
+        "os.system",
+        "os.popen",
+        "subprocess.run",
+        "subprocess.call",
+        "subprocess.check_call",
+        "subprocess.check_output",
+        "subprocess.Popen",
+        "subprocess.getoutput",
+        "subprocess.getstatusoutput",
+    )
+)
+# Text standing in for a piece of a command the ast cannot spell: a name bound to a review path renders as one, anything else as an inert word.
+_UNKNOWN = "_"
+_UNKNOWN_REVIEW = "agent/reviews/_"
+
+
+def _render(expr, bound, review_names, seen=frozenset()):
+    """The text a string expression evaluates to, as near as the ast spells it: constants, f-strings, `+` and `%` joins, and names bound once to such an expression."""
+    if isinstance(expr, ast.Constant):
+        return expr.value if isinstance(expr.value, str) else str(expr.value)
+    if isinstance(expr, ast.JoinedStr):
+        return "".join(_render(v, bound, review_names, seen) for v in expr.values)
+    if isinstance(expr, ast.FormattedValue):
+        return _render(expr.value, bound, review_names, seen)
+    if isinstance(expr, ast.BinOp) and isinstance(expr.op, ast.Add):
+        return _render(expr.left, bound, review_names, seen) + _render(
+            expr.right, bound, review_names, seen
+        )
+    if isinstance(expr, ast.BinOp) and isinstance(expr.op, ast.Mod):
+        return _render(expr.left, bound, review_names, seen)
+    if isinstance(expr, ast.Name):
+        values = bound.get(expr.id, [])
+        if len(values) == 1 and expr.id not in seen:
+            return _render(values[0], bound, review_names, seen | {expr.id})
+        return _UNKNOWN_REVIEW if expr.id in review_names else _UNKNOWN
+    return _UNKNOWN
+
+
+def _shell_commands(tree, imports, bound, review_names):
+    """Every command a Python tree hands to a shell or starts, rendered as one shell line."""
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if _qualified(node.func, imports) not in _SHELL_CALLS:
+            continue
+        arg = node.args[0] if node.args else _keyword(node, "args") or _keyword(node, "cmd")
+        if arg is None:
+            continue
+        if isinstance(arg, (ast.List, ast.Tuple)):
+            yield shlex.join(_render(e, bound, review_names) for e in arg.elts)
+        else:
+            yield _render(arg, bound, review_names)
+
+
+def _python_writes_review(program, depth=0):
+    """True or False for a Python program that parses, by its write targets and the shell commands it runs; None when it does not parse, so the regex reading answers instead.
+
+    THE SHELL COMMANDS ARE ADDITIVE (e30f1ad1.2): a program whose only write is `os.system('echo x > agent/reviews/a.md')` names no write target, so each command it hands to a shell is rendered and judged by `_offending` as the shell line it is. A review path in written CONTENT is still data: only a string that reaches a shell is read as a command.
+    """
     if REVIEW_TEXT.rstrip("/") not in program:
         return False
     try:
@@ -316,7 +492,13 @@ def _python_writes_review(program):
             if name not in review_names and any(holds_review(v) for v in values):
                 review_names.add(name)
                 changed = True
-    return any(holds_review(t) for t in _write_targets(tree))
+    imports = _imports(tree)
+    if any(holds_review(t) for t in _write_targets(tree, imports)):
+        return True
+    return any(
+        REVIEW_TEXT.rstrip("/") in c and _offending(c, depth + 1)
+        for c in _shell_commands(tree, imports, bound, review_names)
+    )
 
 
 def _heredoc_bodies(cmd, analysis):

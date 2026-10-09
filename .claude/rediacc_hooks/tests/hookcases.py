@@ -194,6 +194,13 @@ def run_guard(
 
 
 # The corpus. Every entry below is one case of the bash suite, in file order, with the comment that explained it. Cases whose payload needs a FIXTURE -- a temporary git repo, a PATH stub, a live process -- are not here: they cannot be data, so they live in test_hooks_fixtures.py beside the code that builds what they need.
+def _handed_down(cmd: str, times: int) -> str:
+    """`cmd` wrapped `times` times in `python3 -c "import os; os.system(...)"`: each layer is one program handing a command down, which is what block_review_file_shell_write's depth counts."""
+    for _ in range(times):
+        cmd = "python3 -c " + json.dumps("import os; os.system(%s)" % json.dumps(cmd))
+    return cmd
+
+
 STATIC: list[Case] = [
     # --- should BLOCK (exit 2) --- The PR body is generated, so a hand-written whole-body write silently drops the worklist-epics block and CI fails minutes later naming nothing useful.
     case(
@@ -967,6 +974,74 @@ STATIC: list[Case] = [
             "(root / 'b' / 'x.md').write_text('x')\nEOF"
         ),
         "review-file-shell-write: a write under a name bound to the directory itself",
+    ),
+    # Review findings e30f1ad1.1-.2 on block_review_file_shell_write: pathlib's `.open` takes its mode FIRST and `os.open` takes flags, and a command a program hands to a shell is a command. Each deny row was allowed on the base (rc 0).
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import pathlib; pathlib.Path('agent/reviews/x.md').open('w').write('x')\""
+        ),
+        "review-file-shell-write: Path.open with its mode as the first argument (e30f1ad1.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; os.open('agent/reviews/x.md', os.O_WRONLY | os.O_CREAT)\""
+        ),
+        "review-file-shell-write: os.open with write flags (e30f1ad1.1)",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import pathlib; print(pathlib.Path('agent/reviews/x.md').open().read())\""
+        ),
+        "review-file-shell-write CONTROL: Path.open with no mode reads (e30f1ad1.1)",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("python3 -c \"import os; os.open('agent/reviews/x.md', os.O_RDONLY)\""),
+        "review-file-shell-write CONTROL: os.open read-only (e30f1ad1.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("python3 -c \"import os; os.system('echo x > agent/reviews/a.md')\""),
+        "review-file-shell-write: a redirect inside os.system (e30f1ad1.2)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import subprocess as sp; sp.call(['sh', '-c', 'echo x > agent/reviews/a.md'])\""
+        ),
+        "review-file-shell-write: an sh -c argv through an aliased subprocess (e30f1ad1.2)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("python3 -c \"import os; p = 'agent/reviews/a.md'; os.system(f'echo x > {p}')\""),
+        "review-file-shell-write: an f-string shell command through a bound review path (e30f1ad1.2)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("perl -e 'system(\"echo x > agent/reviews/a.md\")'"),
+        "review-file-shell-write: a redirect inside perl system, read by the line fallback (e30f1ad1.2)",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; os.system('grep -rn high agent/reviews/ > /tmp/hits')\""
+        ),
+        "review-file-shell-write CONTROL: a shell command that reads the directory and writes elsewhere (e30f1ad1.2)",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"open('/tmp/x', 'w').write('os.system(\\\"echo > agent/reviews/a\\\")')\""
+        ),
+        "review-file-shell-write CONTROL: a shell command that is only written CONTENT (e30f1ad1.2)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(_handed_down("echo x > agent/reviews/a.md", 6)),
+        "review-file-shell-write: a write handed down six programs deep is refused, not dropped at the depth cap",
     ),
     case(
         "check 2 guards/block_ssh_docker.py",
