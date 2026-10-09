@@ -440,7 +440,7 @@ def check_inline_run_blocks(
             body.append(detail[name].rstrip("\n"))
         body.append(
             "  Fix:  extract each over-threshold block to a Python module, "
-            ".ci/rediacc_ci/<area>/<name>.py run as `python3 -m rediacc_ci.<area>.<name>`; "
+            ".ci/rediacc_ci/<area>/<name>.py run as `PYTHONPATH=.ci python3 -m rediacc_ci.<area>.<name>`; "
             "the workflow step becomes env wiring + one module call, and the module "
             "docstring documents its required env + how to run it locally."
         )

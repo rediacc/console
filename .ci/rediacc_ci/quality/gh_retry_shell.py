@@ -95,7 +95,7 @@ FIX_CURL = (
     "add `--retry 2 --retry-delay 5`; curl then retries a timeout, 408, 429 and 5xx only, so a single 5xx is retried and a 4xx still fails at once. "
     "Do not add it to SHELL_DEBT, and do not add it to ALLOWED unless the read genuinely cannot be retried, and then say why as a BLOCKER."
 )
-FIX_GH = "move the read into Python through rediacc_ci.core.gh_retry (`python3 -m rediacc_ci.core.gh_retry` from a shell step). Do not add it to SHELL_DEBT, and do not add it to ALLOWED unless the read genuinely cannot be retried, and then say why as a BLOCKER."
+FIX_GH = "move the read into Python through rediacc_ci.core.gh_retry (`PYTHONPATH=.ci python3 -m rediacc_ci.core.gh_retry` from a shell step). Do not add it to SHELL_DEBT, and do not add it to ALLOWED unless the read genuinely cannot be retried, and then say why as a BLOCKER."
 
 # ---------------------------------------------------------------------------
 # The lexer.
