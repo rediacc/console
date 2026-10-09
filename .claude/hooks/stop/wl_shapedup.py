@@ -66,6 +66,10 @@ Three answers, and the middle one is a real answer rather than a hedge:
   already   a shared module for this ALREADY exists and these copies simply do not use
             it. Name it in `harness`. This is checked against the disk: a module that
             does not exist, or that the instances do not import, is treated as `yes`.
+            NOT `already` when every instance already CALLS that module: then the
+            consolidation has happened, and what repeats is a thin local wrapper
+            around the call. If those wrappers take different arguments or return
+            different things, answer `no` and cite the differing signatures.
   no        they look alike and are not one thing. `divergence` is REQUIRED and must be
             CONCRETE: a behavioural difference visible in the instances listed above,
             such as differing return values, error handling or side effects, cited by

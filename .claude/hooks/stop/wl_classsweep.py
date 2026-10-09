@@ -96,7 +96,10 @@ one of these:
 
   - TWO PATHS THROUGH ONE GUARD. A guard matched a MENTION of a filename
     where it needed the filename as a command TARGET; the identical line in
-    a second guard was found minutes later.
+    a second guard was found minutes later. A false positive fixed on one
+    input path of a guard (a heredoc) left the same hole on its other paths
+    (a redirect), found only when it fired again: siblings are the guard's
+    other paths and the other guards, even when the fix names one guard.
   - A DIRECTORY WRITTEN FROM ONE TEMPLATE. A CI script died on a PATH
     assumption; patching it moved the failure to the next script, and four
     scripts in that directory had it.

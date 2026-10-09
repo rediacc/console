@@ -10,6 +10,8 @@ So this exists, and it is run BY HAND when the rubric changes:
 
 Each fixture is a real defect from this repo's own history (the five the operator supplied for the class-sweep rule, and the four measured timid defaults), paired with the answer the rule must give. A fixture that flips is the rubric drifting, and the fix is the PROMPT, not the fixture.
 
+ONE SAMPLE PER FIXTURE, ON PURPOSE. Production asks once: wl_judge.run_judge and wl_shapedup.ask each make a single call and retry only when no verdict arrived at all, never to vote. A majority over N samples here would score a rule production does not run, so a fixture that flips between runs is read as a boundary the rubric or the fixture leaves open, and the fix is to close it, not to average it away.
+
 WHAT A FAILURE HERE MEANS, and it is not the same as a red gate: an over-firing rule is a rule that gets skimmed, so a SILENT fixture that fires is at least as serious as a FIRE fixture that stays quiet.
 """
 
@@ -26,12 +28,15 @@ import wl_judge
 import wl_shapedup as SD
 import worklist_messages as M
 
-# -- the class-sweep corpus -------------------------------------------------- (label, expected, fix-set commit subjects, the session's final message)
+# -- the class-sweep corpus -------------------------------------------------- (label, expected, fix-set commit subjects, the files git shows the fix-set touched, the session's final message)
+#
+# THE FILE LIST IS PRODUCTION'S INPUT, and it was missing here until 2026-10-09. wl_checks hands run_judge `fixset_files` (git's own list, rendered as M.FIXSET_GROUND_TRUTH), and SWEEP_PROMPT anchors its search to "the ACTUAL FILES list ... or, when that list is empty, a change the message explicitly quotes". Without the list, a fire fixture whose message names a guard but quotes no line gave the model a rubric-sanctioned way out: five runs on 2026-10-09 scored "guard false positive on one of its paths" 3/5 and "guard matched a mention, not a target" 4/5, and each miss said the file list was empty and nothing could be anchored. Calibration has to judge the prompt production builds.
 SWEEP_CASES = [
     (
         "guard matched a mention, not a target",
         "fire",
         ["fix(hooks): block-bash-write-to-running-script matched a mention, not a target"],
+        [".claude/hooks/block-bash-write-to-running-script.sh"],
         (
             "Fixed block-bash-write-to-running-script.sh: it grepped for the script name "
             "anywhere on the command line, so a command that merely MENTIONED the script "
@@ -43,6 +48,7 @@ SWEEP_CASES = [
         "GOPATH assumption in one CI script",
         "fire",
         ["fix(ci): format.sh died at exit 127 because go install writes to GOPATH/bin"],
+        ["private/renet/.ci/scripts/quality/format.sh"],
         (
             "private/renet/.ci/scripts/quality/format.sh exited 127: it ran gofumpt straight "
             "after `go install`, which puts the binary in $(go env GOPATH)/bin, not on PATH. "
@@ -53,6 +59,7 @@ SWEEP_CASES = [
         "one row of a routing table",
         "fire",
         ["fix(gates): the check:ci-actionlint routing entry pointed at the wrong runner"],
+        ["scripts/ci-runner/gates.lock.json"],
         (
             "The routing table sent check:ci-actionlint to the shell runner instead of the "
             "workflow runner, so it never ran. Corrected that entry and confirmed the gate "
@@ -63,6 +70,7 @@ SWEEP_CASES = [
         "two test cases hardcoded one machine's path",
         "fire",
         ["fix(tests): two agent-browser cases hardcoded /home/muhammed paths"],
+        ["packages/e2e-tests/tests/agent-browser.test.ts"],
         (
             "Two agent-browser cases failed on this machine because they hardcoded "
             "/home/muhammed/monorepo. Replaced both with $REPO_ROOT. Both cases pass now."
@@ -72,6 +80,7 @@ SWEEP_CASES = [
         "guard false positive on one of its paths",
         "fire",
         ["fix(hooks): the write-guard false-fired on a python heredoc"],
+        [".claude/hooks/block-bash-write-to-running-script.sh"],
         (
             "The guard treated a python heredoc containing the script's name as a write to "
             "it. Fixed the heredoc path so the name is only matched as a redirect target."
@@ -81,12 +90,19 @@ SWEEP_CASES = [
         "CONTROL: a typo in one string",
         "silent",
         ["fix(cli): typo in the repo-not-found error message"],
+        ["packages/cli/src/i18n/locales/en.json"],
         "The error message said 'reposiotry'. Fixed the spelling in that one string.",
     ),
     (
         "CONTROL: the class was swept, with a count",
         "silent",
         ["fix(ci): four quality scripts assumed go install lands on PATH"],
+        [
+            "private/renet/.ci/scripts/quality/deadcode.sh",
+            "private/renet/.ci/scripts/quality/format.sh",
+            "private/renet/.ci/scripts/quality/lint.sh",
+            "private/renet/.ci/scripts/quality/run-tests.sh",
+        ],
         (
             "format.sh exited 127 because `go install` writes to $(go env GOPATH)/bin. "
             "I grepped the whole directory for the same shape -- `grep -rln 'go install' "
@@ -98,11 +114,14 @@ SWEEP_CASES = [
         "CONTROL: searched, and it is the only instance",
         "silent",
         ["fix(hooks): the roundlog guard matched a mention, not a target"],
+        [".claude/rediacc_hooks/guards/block_roundlog_truncate.py"],
         (
+            # REWORDED 2026-10-09. It read "51 guards, and this is the only other one", which says a SECOND instance exists; three of five live runs that day read it that way and fired, correctly for the words. The control tests a reported search that found no sibling, so it now says that and nothing else.
             "Fixed block_roundlog_truncate.py. I then grepped every guard under "
             "`.claude/rediacc_hooks/guards/` for the same unanchored-name pattern "
-            "(`grep -rn 'basename' .claude/rediacc_hooks/guards/`) -- 51 guards, and this is the "
-            "only other one; the rest already anchor on the redirect target."
+            "(`grep -rn 'basename' .claude/rediacc_hooks/guards/`): 51 guards searched, and "
+            "block_roundlog_truncate.py was the only one with it. The other 50 already anchor "
+            "on the redirect target, so there was no sibling to fix."
         ),
     ),
 ]
@@ -222,12 +241,20 @@ def run_shape_case(expected, instances):
     return ("OK" if got == expected else "MISS"), got, out.get("shape_dup")
 
 
-def run_case(expected, extra, message, remaining):
+def run_case(expected, extra, message, remaining, files=None):
     # Each fixture is a FRESH stop. Without this, the demand a firing fixture banks would carry into the next one -- the class-sweep follow-up section would be appended to a brave-default fixture, and the cap would silence the fourth timid default. Cross-contamination between fixtures would make this harness measure itself rather than the rubric.
     CS.clear_outstanding()
     BD.BRAVE_DEMAND.clear()
     verdict, err = wl_judge.run_judge(
-        remaining, 0, message, 0, "none declared", citations=None, extra=extra
+        remaining,
+        0,
+        message,
+        0,
+        "none declared",
+        citations=None,
+        extra=extra,
+        fixset_files=files,
+        fixset_provenance="diff-tree" if files is not None else None,
     )
     if err:
         return "ERROR", err, None
@@ -266,10 +293,10 @@ def main():
     if "--only" in sys.argv:
         only = sys.argv[sys.argv.index("--only") + 1]
     fails = 0
-    for label, expected, fixset, message in SWEEP_CASES:
+    for label, expected, fixset, files, message in SWEEP_CASES:
         if only and only not in label:
             continue
-        status, got, obj = run_case(expected, sweep_extra(fixset), message, [])
+        status, got, obj = run_case(expected, sweep_extra(fixset), message, [], files)
         fails += status != "OK"
         print(
             "%-5s %-9s want=%-7s got=%-9s  %s" % (status, "sweep", expected, got, label),
