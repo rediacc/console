@@ -716,3 +716,14 @@ def test_status_reports_the_live_run_count(tmp_path: pathlib.Path) -> None:
         assert json.loads(lease.run("status", "--json").stdout)["runs"] == 1
     finally:
         lease.close()
+
+
+@pytest.mark.parametrize("raw", [None, "", "0", "-3", "abc", " "])
+def test_granted_cores_is_never_below_one(raw: str | None) -> None:
+    """A pool sized `ThreadPoolExecutor(max_workers=granted_cores())` raises ValueError at 0, so no env value, hostile or absent, may yield less than 1; the ungranted case is every core this process may run on."""
+    env = {} if raw is None else {core_lease.ENV: raw}
+    assert core_lease.granted_cores(env) == core_lease.available_cores() >= 1
+
+
+def test_granted_cores_follows_the_runner_grant() -> None:
+    assert core_lease.granted_cores({core_lease.ENV: "3"}) == 3
