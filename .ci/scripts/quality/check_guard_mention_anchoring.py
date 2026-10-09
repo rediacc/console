@@ -135,6 +135,11 @@ FRAGMENTS: dict[tuple[str, str], str] = {
         "BLOCKER: a one-character class tested against the mode argument of an open() call found by ast in a Python "
         "program; it reads a parsed string value, never the command text."
     ),
+    ("block_review_file_shell_write.py", "_LITERAL"): (
+        "BLOCKER: extracts the body of each quoted or backticked literal on a line of interpreter program text that "
+        "already names the review directory beside a shell call (SHELL_CALL); quote shapes with no word, applied to "
+        "program text, never to the command, and each body is judged as a command by the guard's own shell reading."
+    ),
     ("block_worktree_add.py", "QUOTE_LIKE"): (
         "BLOCKER: extracts the body of perl q{}/qq{}/qw and ruby %q()/%w() literals from interpreter program text for "
         "the static scan, beside LITERAL; bracket shapes with no word, applied to program text, never to the command."

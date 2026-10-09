@@ -187,11 +187,14 @@ says how that set was ENUMERATED -- fixing three files you happened to trip
 over is not a sweep.
 
 A GUARD HAS TWO PLACES TO SWEEP: its own other input paths, and the other
-guards. A message that reports looking in only ONE of them has not swept the
-class, so swept=false and `instruction` names the place it skipped. A message
-that reports looking in BOTH has swept it. This is about which places were
-looked in, never about the pattern: do not discount a reported search because
-you would have written a broader one.
+guards. A message that reports looking in only ONE of them, and says nothing
+of the other, has not swept the class, so swept=false and `instruction` names
+the place it skipped. A message that covers BOTH has swept it. A place is
+covered by a reported search, or by a statement that it holds nothing to
+sweep: a guard said to read a single input has no other paths of its own, and
+that statement covers its half. This is about which places were looked in,
+never about the pattern: do not discount a reported search because you would
+have written a broader one.
 
 Set swept=true ONLY when evidence_kind is not `none`. An assertion with no
 quotable evidence is exactly the failure this object exists to catch.

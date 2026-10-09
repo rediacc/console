@@ -144,6 +144,20 @@ SWEEP_CASES = [
             "a mention-only command for the listing case that passes."
         ),
     ),
+    # ADDED 2026-10-09 for review fdb82cba.4. The two-places rule read as absolute, so a guard with ONE input had no way to pass it. The mirror of the fire fixture above: the other guards searched, and the guard's own side answered by a statement that it reads a single input. Measured on the rule's old wording before the fix: this message fired two runs in three (the judge invented heredoc and redirect paths for the guard), while a longer one reporting a read of the guard for other input paths, with none found, was already silent three in three, so the gap was the plain statement.
+    (
+        "CONTROL: the other guards searched, and the guard has a single input",
+        "silent",
+        ["fix(hooks): block_ssh_docker refused an ssh command that only echoed the word docker"],
+        [".claude/rediacc_hooks/guards/block_ssh_docker.py"],
+        (
+            "Fixed block_ssh_docker.py: it refused `ssh host echo docker` because it looked "
+            "for the word anywhere after the host. It now reads the first word of the remote "
+            "command. Then grepped every other guard for the same idiom "
+            "(`grep -rln 'remote_words' .claude/rediacc_hooks/guards/`): 51 searched, none had "
+            "it. The guard itself reads only the ssh remote command."
+        ),
+    ),
 ]
 
 # -- the brave-default corpus ------------------------------------------------ (label, expected, the remaining line as the judge sees it)
@@ -369,6 +383,45 @@ def selftest():
             "MIRROR: with no instances given, the check is skipped and the fire stands",
             SD.read_verdict(sd(harness), root)[0],
             "fire",
+        ),
+        # Review fdb82cba.1: an import is a statement, read by `ast`, so a comment or a docstring naming the module is not one.
+        (
+            "MIRROR: a trailing comment naming the module is not an import",
+            SD._imports_module("from helpers import run  # see harness\n", "harness"),
+            False,
+        ),
+        (
+            "MIRROR: an import inside a docstring is not an import",
+            SD._imports_module('"""\nfrom x import harness\n"""\n', "harness"),
+            False,
+        ),
+        (
+            "an import split over parenthesized lines is an import",
+            SD._imports_module("from x import (\n    a,\n    harness,\n)\n", "harness"),
+            True,
+        ),
+        (
+            "a module path, a relative import and an alias are imports",
+            all(
+                SD._imports_module(t, "harness")
+                for t in (
+                    "from a.harness import run\n",
+                    "from . import harness\n",
+                    "import harness as h\n",
+                )
+            ),
+            True,
+        ),
+        (
+            "MIRROR: a TS line comment naming the module is not an import",
+            SD._imports_module('import { run } from "./x"; // from "./harness"\n', "harness"),
+            False,
+        ),
+        (
+            "a TS specifier and a shell source are imports",
+            SD._imports_module('import { run } from "./harness";\n', "harness")
+            and SD._imports_module("source lib/harness.sh\n", "harness"),
+            True,
         ),
         (
             "every sweep fixture carries the file list production passes",

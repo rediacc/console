@@ -68,7 +68,7 @@ SOURCES = {
     "SHAPE_PROMPT": ".claude/hooks/stop/wl_shapedup.py",
 }
 
-# {rubric: the rubrics whose text is in the same prompt as its fixtures}. Both directions, because both passes come from the same eight sweep fixtures: an edit to either text leaves the OTHER's recorded pass describing a prompt that no longer exists. See the module docstring.
+# {rubric: the rubrics whose text is in the same prompt as its fixtures}. Both directions, because both passes come from the same sweep fixtures (SWEEP_CASES, every entry): an edit to either text leaves the OTHER's recorded pass describing a prompt that no longer exists. See the module docstring.
 RIDES = {
     "REGGATE_PROMPT": ("SWEEP_PROMPT",),
     "SWEEP_PROMPT": ("REGGATE_PROMPT",),
@@ -126,8 +126,15 @@ def _strings(value: object) -> list[str]:
     return []
 
 
+class FixtureShapeError(ValueError):
+    """A fixture entry the gate does not know how to read, named by list and index."""
+
+
 def fixtures(source: str) -> dict[str, list[tuple[str, list[str]]]]:
-    """{list name: [(label, the strings it sends to the model)]} for each FIXTURE_LISTS assignment found in the calibrator's source. A list that is absent or not a literal is absent here, and the caller's floor refuses that."""
+    """{list name: [(label, the strings it sends to the model)]} for each FIXTURE_LISTS assignment found in the calibrator's source. A list that is absent or not a literal is absent here, and the caller's floor refuses that.
+
+    EVERY ENTRY IS READ OR REFUSED (review fdb82cba.2). A tuple and a list are the same fixture to the calibrator, so both are read; any other entry (a dict, a bare string, a sequence too short to send anything) raises FixtureShapeError naming it. Dropping it silently was a fixture the held-out scan never saw, so a list-shaped fixture could quote its rubric under a green gate.
+    """
     out: dict[str, list[tuple[str, list[str]]]] = {}
     for node in ast.parse(source).body:
         if not (isinstance(node, ast.Assign) and len(node.targets) == 1):
@@ -139,12 +146,26 @@ def fixtures(source: str) -> dict[str, list[tuple[str, list[str]]]]:
             cases = ast.literal_eval(node.value)
         except ValueError:
             continue
-        out[target.id] = [
-            (str(case[0]), _strings(list(case[FIXTURE_SENT_FROM:])))
-            for case in cases
-            if isinstance(case, tuple) and len(case) > FIXTURE_SENT_FROM
-        ]
+        if not isinstance(cases, (list, tuple)):
+            raise FixtureShapeError(
+                "%s is a %s, not a list of fixtures" % (target.id, type(cases).__name__)
+            )
+        entries: list[tuple[str, list[str]]] = []
+        for index, case in enumerate(cases):
+            if not isinstance(case, (list, tuple)) or len(case) <= FIXTURE_SENT_FROM:
+                raise FixtureShapeError(
+                    "%s[%d] is %s; a fixture is a tuple or list of (label, expected, what it sends...)"
+                    % (target.id, index, _shape(case))
+                )
+            entries.append((str(case[0]), _strings(list(case[FIXTURE_SENT_FROM:]))))
+        out[target.id] = entries
     return out
+
+
+def _shape(case: object) -> str:
+    if isinstance(case, (list, tuple)):
+        return "a %s of %d element(s)" % (type(case).__name__, len(case))
+    return "a %s" % type(case).__name__
 
 
 def _words(text: str) -> list[str]:
@@ -261,7 +282,15 @@ def check_held_out(root: pathlib.Path, rubrics: dict[str, str]) -> tuple[int, in
     if not path.is_file():
         print("✗ no calibrator at %s; the fixtures cannot be read" % CALIBRATOR, file=sys.stderr)
         return 1, 0
-    cases = fixtures(path.read_text(encoding="utf-8"))
+    try:
+        cases = fixtures(path.read_text(encoding="utf-8"))
+    except FixtureShapeError as exc:
+        print(
+            "✗ %s: %s. The held-out check cannot scan it, and dropping it would let it quote"
+            " its rubric under a green gate." % (CALIBRATOR, exc),
+            file=sys.stderr,
+        )
+        return 1, 0
     missing = [name for name in FIXTURE_LISTS if not cases.get(name)]
     if missing:
         print(
@@ -392,7 +421,7 @@ def selftest() -> int:
 
     The manifest plants run against the real tree's rubric text. The ride-along and held-out plants run against a COPY of the real rubric files and calibrator in a temporary root, edited the way a session would edit them, so they prove the gate reads the real shapes rather than a fixture written to suit it.
     """
-    ctl = Controls("rubric-calibration", floor=16, verbose=True)
+    ctl = Controls("rubric-calibration", floor=19, verbose=True)
     real = paths.repo_root()
     live = hashes(real)
 
@@ -521,6 +550,45 @@ def selftest() -> int:
             "CONTROL: the same words in a LABEL are not a leak",
             run(copy, manifest(_truthful(edited))),
             0,
+        )
+        # A LIST-SHAPED FIXTURE IS A FIXTURE (review fdb82cba.2): the same quote, in a fixture written with brackets, is still caught, and an entry of no known shape is refused rather than dropped.
+        cal.write_text(
+            plant(
+                clean_cal,
+                "BRAVE_CASES = [\n",
+                "BRAVE_CASES = [\n    ['as a list', 'fire', %r],\n" % ("x? " + (quote or "x")),
+                1,
+            ),
+            encoding="utf-8",
+        )
+        ctl.check(
+            "PLANT: a list-shaped fixture quoting its rubric is caught",
+            run(copy, manifest(_truthful(edited))),
+            1,
+        )
+        # The mirror, so a gate that refused every list would fail here rather than pass the plant above for the wrong reason.
+        cal.write_text(
+            plant(
+                clean_cal,
+                "BRAVE_CASES = [\n",
+                "BRAVE_CASES = [\n    ['as a list', 'silent', 'a clean question, held out'],\n",
+                1,
+            ),
+            encoding="utf-8",
+        )
+        ctl.check(
+            "MIRROR: a list-shaped fixture that quotes nothing passes",
+            run(copy, manifest(_truthful(edited))),
+            0,
+        )
+        cal.write_text(
+            plant(clean_cal, "BRAVE_CASES = [\n", "BRAVE_CASES = [\n    {'label': 'x'},\n", 1),
+            encoding="utf-8",
+        )
+        ctl.check(
+            "PLANT: a fixture of no known shape is refused",
+            run(copy, manifest(_truthful(edited))),
+            1,
         )
         # ZERO FIXTURES IS A FAILURE: a renamed list must not read as "nothing quoted".
         cal.write_text(

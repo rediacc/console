@@ -7,9 +7,9 @@
     },
     "REGGATE_PROMPT": {
       "calibrated": "2026-10-09",
-      "note": "Measured only through the sweep fixtures, which run in one prompt with SWEEP_PROMPT, so `rides` records the SWEEP_PROMPT text of the same runs and the gate refuses this pass once that text moves (review 18700a76.5). Three full runs matched 18/18, the nine sweep fixtures included (.ci/cache/calibrate-20261009-fix4h.log, -fix4i.log, -fix4j.log).",
+      "note": "Measured only through the sweep fixtures, which run in one prompt with SWEEP_PROMPT, so `rides` records the SWEEP_PROMPT text of the same runs and the gate refuses this pass once that text moves (review 18700a76.5). Re-measured with SWEEP_PROMPT 6a61e798bf79351e (review fdb82cba.4): three full runs matched 19/19, the ten sweep fixtures included (.ci/cache/calibrate-20261009-lead6a.log, -lead6b.log, -lead6c.log).",
       "rides": {
-        "SWEEP_PROMPT": "7ec87ff3898ce5e3"
+        "SWEEP_PROMPT": "6a61e798bf79351e"
       },
       "sha": "2b8cbd5b3ccdd640"
     },
@@ -20,11 +20,11 @@
     },
     "SWEEP_PROMPT": {
       "calibrated": "2026-10-09",
-      "note": "Re-calibrated 2026-10-09 (review 18700a76.1). A new fire fixture reports a search of the other guards and none of the guard's own paths; the first run scored it silent (-fix4a.log), so the prompt now says a guard has two places to sweep and a search of one leaves the other, without discounting a reported search's pattern (a first wording did that and fired the only-instance control three runs in three, -fix4b..d.log). That control now reports both places, and the typo control is held out from the example this prompt quotes. Three full runs matched 18/18 (.ci/cache/calibrate-20261009-fix4h.log, -fix4i.log, -fix4j.log); `rides` records the REGGATE_PROMPT text in the same prompt.",
+      "note": "Re-calibrated 2026-10-09 (reviews 18700a76.1, fdb82cba.4). A guard has two places to sweep, its own other input paths and the other guards; a reported check that the guard has no other path counts as sweeping it, and two fixtures pin both halves. The writer's runs scored 19/19, 18/19, 19/19 (-fix5a..c.log, the miss a SHAPE control) and were not recorded. Three fresh full runs matched 19/19 (.ci/cache/calibrate-20261009-lead6a..c.log). `rides` records REGGATE_PROMPT, which shares the prompt.",
       "rides": {
         "REGGATE_PROMPT": "2b8cbd5b3ccdd640"
       },
-      "sha": "7ec87ff3898ce5e3"
+      "sha": "6a61e798bf79351e"
     }
   }
 }

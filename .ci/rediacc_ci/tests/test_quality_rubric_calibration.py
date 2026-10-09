@@ -9,6 +9,8 @@ import re
 import subprocess
 import sys
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.quality import rubric_calibration as gate
 
@@ -55,3 +57,41 @@ def test_the_calibrator_offline_controls_pass() -> None:
     assert match, proc.stdout
     assert match.group(1) == match.group(2), proc.stdout
     assert int(match.group(1)) >= 8, proc.stdout
+
+
+# Review fdb82cba.2: `fixtures()` kept only tuple entries, so a fixture written as a list was never scanned, and a quote in it passed.
+RUBRIC = {"R": "Examples: DEFAULT: leave it on its branch. Then more."}
+LEAK = "x? DEFAULT: leave it on its branch."
+
+
+def test_a_list_shaped_fixture_is_scanned() -> None:
+    cases = gate.fixtures("SWEEP_CASES = [\n    ['as a list', 'fire', %r],\n]\n" % LEAK)
+    assert cases == {"SWEEP_CASES": [("as a list", [LEAK])]}
+    assert [f[1] for f in gate.quoted(RUBRIC, cases)] == ["as a list"]
+
+
+def test_a_tuple_shaped_fixture_is_still_scanned() -> None:
+    cases = gate.fixtures("BRAVE_CASES = [\n    ('as a tuple', 'fire', %r),\n]\n" % LEAK)
+    assert cases == {"BRAVE_CASES": [("as a tuple", [LEAK])]}
+
+
+@pytest.mark.parametrize(
+    "entry", ["{'label': 'x', 'sends': %r}" % LEAK, repr(LEAK), "('label only', 'fire')"]
+)
+def test_an_unknown_fixture_shape_is_refused_loudly(entry: str) -> None:
+    with pytest.raises(gate.FixtureShapeError, match=r"SHAPE_CASES\[0\]"):
+        gate.fixtures("SHAPE_CASES = [\n    %s,\n]\n" % entry)
+
+
+def test_the_gate_refuses_an_unknown_fixture_shape_on_a_copy(tmp_path, capsys) -> None:
+    real = paths.repo_root()
+    source = (real / gate.CALIBRATOR).read_text(encoding="utf-8")
+    planted = source.replace(
+        "SHAPE_CASES = [\n", "SHAPE_CASES = [\n    {'not': 'a sequence'},\n", 1
+    )
+    assert planted != source, "the plant did not apply; SHAPE_CASES moved"
+    (tmp_path / gate.CALIBRATOR).parent.mkdir(parents=True)
+    (tmp_path / gate.CALIBRATOR).write_text(planted, encoding="utf-8")
+    rc, _ = gate.check_held_out(tmp_path, gate.texts(real))
+    assert rc == 1
+    assert "SHAPE_CASES[0]" in capsys.readouterr().err

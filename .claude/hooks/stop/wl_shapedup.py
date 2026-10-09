@@ -15,6 +15,7 @@ from the counter and is not read back off the model, so it cannot be fabricated.
 THE WIDE TIER at the foot of this file is the same question over the counter's `advisory` profile, and it is ADVISORY ONLY: it queues one allow-report section and never blocks. It reports duplication in the Stop hook's own `wl_*.py` files, some of which is deliberate parallel rule structure; its section comment says why that is expected and how a `no` verdict settles.
 """
 
+import ast
 import fnmatch
 import glob
 import hashlib
@@ -121,16 +122,31 @@ def _module_stem(harness):
 
 
 def _imports_module(text, stem):
-    """Does this source text IMPORT a module named `stem`? An import statement, a TS/JS `from`/`import`/`require` specifier, or a shell `source`. A bare mention of the word is not an import: counting a comment as adoption would silence a real `already`."""
+    """Does this source text IMPORT a module named `stem`? An import statement, a TS/JS `from`/`import`/`require` specifier, or a shell `source`. A bare mention of the word is not an import: counting a comment as adoption would silence a real `already`.
+
+    PYTHON IS READ BY `ast` (review fdb82cba.1). A line regex counted `from helpers import run  # see harness` and an import quoted in a docstring, and missed one split over parenthesized lines. Text that parses as Python is answered from its Import/ImportFrom nodes alone. Anything else (TS, JS, shell) has its comments stripped before the specifier and `source` patterns run, so `// from "./harness"` is not one either.
+    """
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError, RecursionError, MemoryError):
+        tree = None
+    if tree is not None:
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import) and any(stem in a.name.split(".") for a in node.names):
+                return True
+            if isinstance(node, ast.ImportFrom) and (
+                stem in (node.module or "").split(".") or any(a.name == stem for a in node.names)
+            ):
+                return True
+        return False
     s = re.escape(stem)
+    code = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+    code = re.sub(r"(?m)(?:^|(?<=\s))(?://|#).*$", "", code)
     return bool(
-        re.search(r"^\s*from\s+[\w.]*\b%s\b[\w.]*\s+import\b" % s, text, re.MULTILINE)
-        or re.search(r"^\s*from\s+[\w.]+\s+import\s+[^\n]*\b%s\b" % s, text, re.MULTILINE)
-        or re.search(r"^\s*import\s+[\w., ]*\b%s\b" % s, text, re.MULTILINE)
-        or re.search(
-            r"""(?:\bfrom|\bimport|\brequire\()\s*['"][^'"]*\b%s(?:\.[a-z]+)?['"]""" % s, text
+        re.search(
+            r"""(?:\bfrom|\bimport|\brequire\()\s*['"][^'"]*\b%s(?:\.[a-z]+)?['"]""" % s, code
         )
-        or re.search(r"^\s*(?:source|\.)\s+\S*\b%s\.sh\b" % s, text, re.MULTILINE)
+        or re.search(r"^\s*(?:source|\.)\s+\S*\b%s\.sh\b" % s, code, re.MULTILINE)
     )
 
 
