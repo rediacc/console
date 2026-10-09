@@ -652,9 +652,35 @@ _PREFIX_OPERAND = frozenset(("timeout",))
 # LAUNCHERS (#ec63ff8c, 2026-10-09): `npx` and `find -exec` run another command named in their own argv, and are NOT stripped like the prefixes above, because the launcher itself is a run other guards judge. `block_unscoped_formatter_run` reads `npx prettier --write` as an `npx` run and `block_host_toolchain_run` refuses `npx --yes ruff` on that shape, so `npx` has to stay the run's name.
 # (`sshpass` has no such reader and is a plain prefix above.) The launched command is walked into an analysis of its own (`_Run.launched`): `lifted_commands` puts it on a line of its own, where every anchored text guard sees it at command position, while `_analyse(cmd).runs` stays the list it always was. Before this, three guards named `npx`, `sshpass` and `find -exec` inside their own anchors (`(npx[S]+)?`, `(sshpass ...)?`, `(find ... -exec ...)?`), three copies that still missed: `npx -y node packages/cli/dist/cli.js` and `find . -exec node cli-bundle.js \;` were both allowed (measured 2026-10-09).
 # `npx` options that take the next word as their value; `-c`/`--call` is a SHELL STRING, walked as a payload.
+# THE WHOLE TABLE, NOT THE ONES SOMEBODY REMEMBERED (#32e75fa4, review 4aad4597.2). Seven names were listed, so `npx --loglevel silent node packages/cli/dist/cli.js` read `silent` as the program and block_cli_bundle allowed it (rc 0, 2026-10-09). These are the options the pinned npm (11.20.0) runs with a value: every config definition whose type is not Boolean, npx's own `-p`, `--shell`,
+# `--npm`, `--node-arg` and `-n`, and the shorthands that expand to one of them (`-C`, `-L`, `-m`, `-w`, `--reg`, `--enjoy-by`). Each is spelled with one dash and with two, because npx and npm strip the dashes before they look. `test_bash_semantics.py::test_npx_value_options_match_npx` asks npx-cli.js and npm's own nopt pass where the program starts for every option npm knows, and fails when this
+# table and npm disagree in either direction.
+# OUT OF THIS TABLE'S REACH, measured against the same npm 2026-10-09. nopt also accepts any unique PREFIX of an option name, so `npx --logl silent node packages/cli/dist/cli.js` runs `node` while this walk reads `silent` as the program (rc 0 at block_cli_bundle); 442 such `--` prefixes take a value, too many to list, and only a prefix-aware `_launched` closes them.
+# And `npm exec` / `npm x` are not launchers here at all, so `npm exec -- node packages/cli/dist/cli.js` is allowed too (rc 0).
 _NPX_VALUE = frozenset(
-    ("-p", "--package", "-w", "--workspace", "--prefix", "--registry", "--cache")
-)
+    dash + name
+    for dash in ("-", "--")
+    for name in (
+        "C", "L", "_auth", "access", "allow-directory", "allow-file", "allow-git", "allow-remote",
+        "allow-scripts", "also", "audit-level", "auth-type", "before", "ca", "cache", "cache-max",
+        "cache-min", "cafile", "cert", "cidr", "cpu", "depth", "diff", "diff-dst-prefix",
+        "diff-src-prefix", "diff-unified", "editor", "enjoy-by", "expect-result-count", "expires",
+        "fetch-retries", "fetch-retry-factor", "fetch-retry-maxtimeout", "fetch-retry-mintimeout",
+        "fetch-timeout", "git", "globalconfig", "heading", "https-proxy", "include",
+        "init-author-email", "init-author-name", "init-author-url", "init-license", "init-module",
+        "init-type", "init-version", "init.author.email", "init.author.name", "init.author.url",
+        "init.license", "init.module", "init.version", "install-strategy", "key", "libc",
+        "local-address", "location", "lockfile-version", "loglevel", "logs-dir", "logs-max", "m",
+        "maxsockets", "message", "min-release-age", "min-release-age-exclude", "n", "name",
+        "node-arg", "node-gyp", "node-options", "noproxy", "npm", "omit", "only", "orgs",
+        "orgs-permission", "os", "otp", "p", "pack-destination", "package", "packages",
+        "packages-and-scopes-permission", "password", "prefix", "preid", "provenance-file", "proxy",
+        "reg", "registry", "replace-registry-host", "save-prefix", "sbom-format", "sbom-type",
+        "scope", "scopes", "script-shell", "searchexclude", "searchlimit", "searchopts",
+        "searchstaleness", "shell", "tag", "tag-version-prefix", "token-description", "umask",
+        "user-agent", "userconfig", "viewer", "w", "which", "workspace",
+    )
+)  # fmt: skip
 _NPX_CALL = frozenset(("-c", "--call"))
 # `find` actions whose operands up to a lone `;` or `+` are a command it runs, once per match.
 _FIND_EXEC = frozenset(("-exec", "-execdir", "-ok", "-okdir"))

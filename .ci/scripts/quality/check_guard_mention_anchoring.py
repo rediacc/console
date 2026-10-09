@@ -628,9 +628,11 @@ def sentence(instance: str) -> str:
     return f"echo the docs say never to run {instance} in this repo"
 
 
-# A worded instance shorter than this is ALSO probed with `argument_sentence`. A short word is usually a command name (`scp`, `go`, `cp`), and a command-name matcher often decides on the ARGUMENTS too: block_binary_deploy refuses an `scp` clause only when its last field is a `host:` spec, so `sentence("scp")`, which ends in `repo`, can never reach that test. Measured 2026-10-09:
-# `echo avoid scp x h:/p` is refused at rc 2 while the plain probe is silent.
+# An unworded instance shorter than this is a fragment (`$x`, `-n`, `''`) and is not probed; see `probes_of`.
 SHORT_INSTANCE = 4
+
+# EVERY WORDED INSTANCE IS ALSO PROBED WITH `argument_sentence`. A word is often a command name, and a command-name matcher often decides on the ARGUMENTS too: block_binary_deploy refused an `scp` clause only when its last field was a `host:` spec, so `sentence("scp")`, which ends in `repo`, could never reach that test (measured 2026-10-09: `echo avoid scp x h:/p` refused at rc 2 while the plain
+# probe was silent). The second template was first gated on `len(instance) < SHORT_INSTANCE`, so an `rsync` or `sftp` matcher of the same shape was never asked it and stayed green (#32e75fa4, review a2d44aa4.3). Length says nothing about whether a word is a command name. An unworded instance (`> x.x`, `-- x`) keeps the plain template alone: followed by arguments it would be a real redirect, not a mention.
 
 
 def argument_sentence(instance: str) -> str:
@@ -638,10 +640,10 @@ def argument_sentence(instance: str) -> str:
     return f"echo the docs say never to run {instance} src/a.sh host:/dst/a.sh"
 
 
-def sentences_of(instance: str) -> list[str]:
-    """Every probe sentence for one instance: the plain template, and the argument-shaped one for a short instance."""
+def sentences_of(instance: str, worded: bool = True) -> list[str]:
+    """Every probe sentence for one instance: the plain template, and the argument-shaped one for a worded instance of any length."""
     out = [sentence(instance)]
-    if len(instance) < SHORT_INSTANCE:
+    if worded:
         out.append(argument_sentence(instance))
     return out
 
@@ -701,11 +703,12 @@ def baseline_candidates(fp: str) -> list[Path]:
     return out[:MAX_BASELINES]
 
 
-def structure_probe(guard: Path, kind: str, instances: list[str], fp: str) -> tuple[str, str]:
+def structure_probe(guard: Path, kind: str, probes: Probes, fp: str) -> tuple[str, str]:
     """The structure-neutral probe. ("clean", <baseline>), ("prose", <refused sentence>) or ("nobase", <why>).
 
     A baseline qualifies only when the guard REFUSES the bare sentence at its path (so the path reaches the guard's judgement rather than an early out-of-scope allow) and ACCEPTS the document unmodified (so appending prose is the only change). Then the sentence is appended; a structure judge accepts the result and a mention matcher refuses it.
     """
+    instances = probes.instances
     probe = sentence(instances[0])
     for doc in baseline_candidates(fp):
         try:
@@ -717,7 +720,7 @@ def structure_probe(guard: Path, kind: str, instances: list[str], fp: str) -> tu
         if fires(guard, body, kind, str(doc)):
             continue
         for inst in instances:
-            for text in sentences_of(inst):
+            for text in probes.texts(inst):
                 appended = body.rstrip("\n") + "\n\n" + text + "\n"
                 if fires(guard, appended, kind, str(doc)):
                     return "prose", text
@@ -738,9 +741,14 @@ class Probes:
         self.dropped = 0
         # Unworded instances too short to probe: `$x`, `-n`, `''`. Counted and printed, never silently dropped; the pattern they came from is judged by `pattern_verdicts`.
         self.fragments = 0
+        # The probed instances that carry a word, which earn the argument-shaped template too.
+        self.worded: set[str] = set()
+
+    def texts(self, inst: str) -> list[str]:
+        return sentences_of(inst, inst in self.worded)
 
     def sentences(self) -> int:
-        return sum(len(sentences_of(inst)) for inst in self.instances)
+        return sum(len(self.texts(inst)) for inst in self.instances)
 
 
 def probes_of(pats: list[str]) -> Probes:
@@ -759,6 +767,8 @@ def probes_of(pats: list[str]) -> Probes:
                 out.fragments += 1
                 continue
             out.instances.append(inst)
+            if is_worded:
+                out.worded.add(inst)
             if re.search(pat, inst):
                 out.self_matching += 1
     return out
@@ -798,7 +808,8 @@ def assess(
             return "invalid", why
     named = named_patterns(guard)
     pats = patterns_of(guard)
-    instances = probes_of(pats).instances
+    probes = probes_of(pats)
+    instances = probes.instances
     # THE STRICT RULE, per pattern. Before 2026-10-09 this asked whether EVERY pattern was anchored only when no instance of four characters survived, so a short worded matcher (`scp`) beside long anchored siblings was never asked anything at all. And EVERY pattern, never any: an earlier `any` let one anchored constant vouch for an unanchored sibling it shared a module with. Structure judges, prose targets and ALLOW_UNPROBED guards stay exempt: the first two are probed whole by their own route, the third by reason.
     exempt = reason is not None or guard.name in PROSE_TARGETS or guard.name in ALLOW_UNPROBED
     missing = [] if exempt else undeclared_fragments(guard, named, fragments)
@@ -809,7 +820,7 @@ def assess(
             return "unprobed", ", ".join(missing)
         return "static", reason or ""
     if reason is not None:
-        outcome, detail = structure_probe(guard, kind, instances, fp)
+        outcome, detail = structure_probe(guard, kind, probes, fp)
         if outcome == "clean":
             return "clean", "%s | baseline %s" % (reason, detail)
         return outcome, detail
@@ -819,12 +830,12 @@ def assess(
         hits = [
             text
             for inst in instances
-            for text in sentences_of(inst)
+            for text in probes.texts(inst)
             if fires(guard, text, kind, fp)
         ]
         return ("prose", PROSE_SEP.join(hits)) if hits else ("clean", "")
     for inst in instances:
-        for text in sentences_of(inst):
+        for text in probes.texts(inst):
             if fires(guard, text, kind, fp):
                 return "prose", text
     # PROSE FIRST, THEN THE UNDECLARED FRAGMENT: a guard refusing a sentence is the more urgent finding, and reporting "unprobed" alone would hide it.
@@ -1074,29 +1085,35 @@ def alternation_controls(td: Path) -> None:
 
 
 def argument_controls(td: Path) -> None:
-    """The second template reaches a matcher that decides on the arguments, and an anchored twin stays clean through it."""
-    loose = td / "argshape_loose.py"
-    loose.write_text(_ARGSHAPE_FIXTURE.format(pattern=r"(^|[ \t])zcp[ \t]"))
-    tight = td / "argshape_anchored.py"
-    tight.write_text(_ARGSHAPE_FIXTURE.format(pattern=r"(^|[;&|(])[ \t]*zcp[ \t]"))
-    # The control on the control: the plain sentence must NOT reach it, or this proves nothing about the second template.
-    if fires(loose, sentence("zcp")):
-        fail(
-            "the argument-shaped fixture refuses the PLAIN sentence; it cannot prove the second template"
-        )
-    if not fires(loose, "zcp a.sh host:/dst/a.sh"):
-        fail("the argument-shaped fixture misses its own real upload; the control proves nothing")
-    got, detail = assess(loose, "command", "")
-    if got != "prose" or detail != argument_sentence("zcp"):
-        fail(
-            "an unanchored short command-name matcher that needs a host argument was not refused "
-            f"through argument_sentence() ({got}: {detail}); short worded instances are not reaching it"
-        )
-    got, detail = assess(tight, "command", "")
-    if got != "clean":
-        fail(f"the ANCHORED argument-shaped fixture was not clean ({got}: {detail})")
-    if not fires(tight, "true && zcp a.sh host:/dst/a.sh"):
-        fail("the anchored argument-shaped fixture misses the real command after a separator")
+    """The second template reaches a matcher that decides on the arguments, at any length, and an anchored twin stays clean through it."""
+    # `zcp` is the block_binary_deploy shape; `zsync` is the same matcher at five characters, which the old `len < SHORT_INSTANCE` gate never asked the second template (#32e75fa4).
+    for name in ("zcp", "zsync"):
+        loose = td / f"argshape_loose_{name}.py"
+        loose.write_text(_ARGSHAPE_FIXTURE.format(pattern=rf"(^|[ \t]){name}[ \t]"))
+        tight = td / f"argshape_anchored_{name}.py"
+        tight.write_text(_ARGSHAPE_FIXTURE.format(pattern=rf"(^|[;&|(])[ \t]*{name}[ \t]"))
+        # The control on the control: the plain sentence must NOT reach it, or this proves nothing about the second template.
+        if fires(loose, sentence(name)):
+            fail(
+                f"the argument-shaped {name} fixture refuses the PLAIN sentence; it cannot prove the second template"
+            )
+        if not fires(loose, f"{name} a.sh host:/dst/a.sh"):
+            fail(
+                f"the argument-shaped {name} fixture misses its own real upload; the control proves nothing"
+            )
+        got, detail = assess(loose, "command", "")
+        if got != "prose" or detail != argument_sentence(name):
+            fail(
+                f"an unanchored command-name matcher ({name}) that needs a host argument was not refused "
+                f"through argument_sentence() ({got}: {detail}); worded instances are not reaching it"
+            )
+        got, detail = assess(tight, "command", "")
+        if got != "clean":
+            fail(f"the ANCHORED argument-shaped {name} fixture was not clean ({got}: {detail})")
+        if not fires(tight, f"true && {name} a.sh host:/dst/a.sh"):
+            fail(
+                f"the anchored argument-shaped {name} fixture misses the real command after a separator"
+            )
 
 
 def fragment_controls(td: Path) -> None:
