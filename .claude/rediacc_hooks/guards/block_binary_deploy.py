@@ -85,6 +85,8 @@ EDGE_CASES = [
     ("an assigned destination is read", "D=host:/p; scp bin/renet $D"),
     # A host source makes an unreadable local destination a download (review e69e9a3f.1).
     ("a download into a run-time path", 'scp host:/var/log/x "$DIR/"'),
+    # One local source among host sources can still be the upload (review 70f58ef3.1).
+    ("a mixed source list with a run-time destination", "scp bin/renet host:/x $(cat dest.txt)"),
 ]
 
 
@@ -133,8 +135,8 @@ def run(ev):
         if len(operands) < 2:
             continue
         dest = operands[-1]
-        # A destination built at run time (`$(...)`, an unset variable) cannot be read here. It is an upload unless a source names a host, which makes the copy a download into that local path (review f212d159.2, e69e9a3f.1).
-        unread_upload = shellscan.unresolved(dest) and not any(
+        # A destination built at run time (`$(...)`, an unset variable) cannot be read here. It is an upload unless EVERY source names a host, which makes the copy a download into that local path; one local source can still be going up (review f212d159.2, e69e9a3f.1, 70f58ef3.1).
+        unread_upload = shellscan.unresolved(dest) and not all(
             hookio.grep_q(HOST_SPEC, src) for src in operands[:-1]
         )
         if unread_upload or hookio.grep_q(HOST_SPEC, dest):
