@@ -94,11 +94,14 @@ BASE64_LINE_RE = re.compile(r"^[A-Za-z0-9+/=]{20,}$")
 # of a literal apostrophe inside a single-quoted shell pattern.
 BASIC_LITERAL_RE = re.compile(r"[\"']Basic [A-Za-z0-9+/=]{20,}[\"']")
 
-# The em dash in NO_RENET_WARN is the TWIN'S BYTE, not authored prose, and that string is still compared against the twin's recorded stdout. It is written as an escape so this source file carries none. NO_RENET_HINT departs from the twin on purpose: it names the Python port of the deleted build-renet.sh.
+# The em dash in NO_RENET_WARN is the TWIN'S BYTE, not authored prose, and the string is kept identical to what the retired twin printed (the committed ledger `.ci/shadow/w7p2-otlp-creds.observations.jsonl` records that stdout); no differential runs against it any more. It is written as an escape so this source file carries none. NO_RENET_HINT departs from the twin on purpose: it names the Python port of the deleted build-renet.sh.
 NO_RENET_WARN = (
     "no renet binaries found at private/renet/bin or private/bin \u2014 skipping renet checks"
 )
-NO_RENET_HINT = "build with ./build.sh dev or PYTHONPATH=.ci python3 -m rediacc_ci.build.build_renet before running this check"
+NO_RENET_HINT = (
+    "build with ./build.sh dev or PYTHONPATH=.ci python3 -m rediacc_ci.build.build_renet "
+    "before running this check"
+)
 
 
 def renet_binaries(root: pathlib.Path) -> list[pathlib.Path]:

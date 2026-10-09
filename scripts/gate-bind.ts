@@ -101,7 +101,7 @@ const SUBJECT = /\.(py|sh|ts)$/;
  *   2. WAS: all gate-tests share the single step 'Quality-gate unit tests' and none owns
  *      it, so none could legitimately declare one, and excluding the tree said that once
  *      instead of per file.
- *      NOW: `kind: shared-step` says exactly that, per file, in the file. All 148 declare it.
+ *      NOW: `kind: shared-step` says exactly that, per file, in the file. Every gate-test header declares it.
  *
  * WHY THIS MATTERED ENOUGH TO CHANGE. While the exclusion stood, every header in that
  * tree was invisible to the only instrument that checks headers. Proved by planting a
@@ -662,8 +662,8 @@ export const RECEIPT_STEP_NAMES = ['Write shard receipt', 'Upload shard receipt'
 
 /**
  * The upload-artifact pin the receipt step emits. check:actions and its upgrade recipe rewrite pins under .github only, so a bump
- * there leaves this copy behind; `--write` then emits the old pin and check:ci-gate-bind reports ci-quality.yml stale (2026-10-09,
- * after 0cb2df6b0). Bump it with every upload-artifact bump.
+ * there leaves this copy behind and `--write` would emit the old pin. Bump it with every upload-artifact bump; the selftest compares
+ * it against every pin under .github/workflows and fails on a difference.
  */
 export const UPLOAD_ARTIFACT_PIN =
   'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2';
@@ -2079,6 +2079,22 @@ function selftest(endToEnd = false): number {
     })()
   );
   ck(
+    'UPLOAD_ARTIFACT_PIN is the pin every .github workflow uses, so a bump there cannot leave the emitter behind',
+    (() => {
+      const dir = path.join(ROOT, '.github', 'workflows');
+      const pins = new Set<string>();
+      for (const f of fs.readdirSync(dir).filter((n) => /\.ya?ml$/.test(n))) {
+        for (const m of fs
+          .readFileSync(path.join(dir, f), 'utf-8')
+          .matchAll(/actions\/upload-artifact@([0-9a-f]{40})/g)) {
+          pins.add(m[1]);
+        }
+      }
+      // A non-empty set of one sha, equal to the constant's: an empty scan would pass a mere `every`.
+      return pins.size === 1 && UPLOAD_ARTIFACT_PIN.includes(`@${[...pins][0]}`);
+    })()
+  );
+  ck(
     'CONTROL: the receipt writer the emitted step names is a file that really exists',
     fs.existsSync(path.join(ROOT, RECEIPT_WRITER))
   );
@@ -2779,7 +2795,7 @@ function main(argv: string[]): void {
   if (write) {
     const byLane = new Map<string, Emitting[]>();
     const handRegistered: string[] = [];
-    // ONLY `kind: step` IS EMITTED. A shared-step gate rides a hand-written step it does not own, and a `test` or `local-only` gate has no step at all; emitting any of them would write 143 duplicate copies of one battery step into a region. HELD OUT BY THEIR OWN DECLARATION, and NAMED. `emit: false` means the gate owns a hand-written step a region must not take over; not saying so
+    // ONLY `kind: step` IS EMITTED. A shared-step gate rides a hand-written step it does not own, and a `test` or `local-only` gate has no step at all; emitting any of them would write one duplicate copy of the shared step per gate into a region. HELD OUT BY THEIR OWN DECLARATION, and NAMED. `emit: false` means the gate owns a hand-written step a region must not take over; not saying so
     // would make "declared and deliberately not emitted" look identical to "declared and forgotten", which is the exact confusion the import guard above exists to end.
     const declaredHoldouts = declared.filter((b) => b.kind === 'step' && b.emit === false);
     if (declaredHoldouts.length > 0) {

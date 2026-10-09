@@ -619,9 +619,8 @@ for rel in _TRACKED:
     if not (rel.startswith(".ci/rediacc_ci/") and rel.endswith(".py")) or "/tests/" in rel:
         continue
     source = pathlib.Path(REPO, rel)
-    if (
-        not source.is_file()
-    ):  # tracked but absent from the working tree (mid-rename): nothing to scan
+    # Tracked but absent from the working tree (mid-rename): nothing to scan.
+    if not source.is_file():
         continue
     text = source.read_text(encoding="utf-8", errors="replace")
     if "__main__" in text and _AWS_ARGV.search(text):

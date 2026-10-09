@@ -162,6 +162,25 @@ const median = (xs: readonly number[]): number => {
  */
 type CiDur = Record<string, number>;
 
+/**
+ * The gates whose cost is not judged yet: a thin window, a local timing, no CI timing.
+ * Only ids the manifest declares count, because the local timing cache keeps entries for gates since retired.
+ */
+function unjudgedTier(
+  declared: ReadonlySet<string>,
+  samples: Record<string, number>,
+  dur: Record<string, number>,
+  ciDur: CiDur
+): [string, number][] {
+  return Object.entries(samples).filter(
+    ([id, n]) =>
+      declared.has(id) &&
+      n < MIN_SAMPLES_TO_TIER &&
+      typeof dur[id] === 'number' &&
+      typeof ciDur[id] !== 'number'
+  );
+}
+
 function tierFindings(
   specs: readonly GateSpec[],
   dur: Record<string, number>,
@@ -462,6 +481,14 @@ function selftest(tracked: readonly string[]): number {
     tierFindings([spec({})], { x: 60_000 }, { x: MIN_SAMPLES_TO_TIER }).length === 1
   );
   check(
+    'unjudged advisory: a declared gate with a thin window is listed',
+    unjudgedTier(new Set(['x']), { x: 3 }, { x: 100 }, {}).length === 1
+  );
+  check(
+    'unjudged advisory CONTROL: an id the manifest no longer declares is NOT listed',
+    unjudgedTier(new Set(['x']), { gone: 3 }, { gone: 100 }, {}).length === 0
+  );
+  check(
     'tier CONTROL: a gate with no recorded window at all tiers as it always did',
     tierFindings([spec({})], { x: 60_000 }, {}).length === 1
   );
@@ -686,15 +713,7 @@ function main(): number {
     );
   }
 
-  // Only ids the manifest declares: the local cache keeps timings for gates since retired (gate-test:renet-pipefail-grep-q, 2026-10-09).
-  const declared = new Set(GATES.map((g) => g.id));
-  const unjudged = Object.entries(samples).filter(
-    ([id, n]) =>
-      declared.has(id) &&
-      n < MIN_SAMPLES_TO_TIER &&
-      typeof dur[id] === 'number' &&
-      typeof ciDur[id] !== 'number'
-  );
+  const unjudged = unjudgedTier(new Set(GATES.map((g) => g.id)), samples, dur, ciDur);
   if (unjudged.length > 0) {
     process.stdout.write(
       `- tier oracle: ${unjudged.length} gate(s) have fewer than ${MIN_SAMPLES_TO_TIER} ` +
