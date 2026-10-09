@@ -6,9 +6,9 @@
       "sha": "c477771292a2d767"
     },
     "REGGATE_PROMPT": {
-      "calibrated": "2026-09-24",
-      "note": "Re-calibrated 2026-09-24 riding the SWEEP call as always: eight of eight sweep fixtures matched in the first full run and again in the final full run (.ci/cache/calibrate-final-20260924.log), so the reggate wording changes since 2026-09-05 hold.",
-      "sha": "c033e12aa0d69e93"
+      "calibrated": "2026-10-09",
+      "note": "Re-calibrated 2026-10-09 riding the SWEEP call: six of six sweep fixtures matched in a full live run (.ci/cache/calibrate-20261009.log) after 2d7364e0c changed one example inside the prompt (run-e2e.sh -> rediacc_ci.testrun.e2e, worklist_messages.py:1977), so the reggate wording holds.",
+      "sha": "2b8cbd5b3ccdd640"
     },
     "SHAPE_PROMPT": {
       "calibrated": "2026-09-24",
