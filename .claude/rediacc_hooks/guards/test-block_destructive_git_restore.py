@@ -57,6 +57,31 @@ BLOCK = [
     "git clean -fdx packages/",
     "cd no-such-subdir && git checkout -- foo.txt",  # after a ;/&& chain
     "echo hi; git restore src/",  # command position after ;
+    # #18c7e53c (operator ruling 2026-10-09: /branch-rebase is AI-invocable, and a guard covers what its prose forbids). Every one of these answered rc 0 through the live pre-bash chain in the audit that opened the item.
+    "git checkout -f",
+    "git checkout -f main",
+    "git -C private/renet checkout --force HEAD",
+    "git checkout HEAD packages/cli/x.ts",  # a tree-ish and a path, no `--`
+    "git checkout origin/main packages/cli/x.ts",
+    # A lone operand that resolves as no ref is a PATHSPEC to git. Until #18c7e53c this name sat in ALLOW as "branch switching", which it is only in a checkout that has the branch; here it has none, so git would read it as a path.
+    "git checkout backup-storage",
+    "git switch -f main",
+    "git switch --discard-changes main",
+    "git checkout --ours private/renet",
+    "git checkout --theirs private/renet",
+    "git reset --hard",
+    "git reset --hard origin/main",
+    "git -C private/renet reset --hard origin/main",
+    "git reset --merge",
+    "git reset --keep HEAD",
+    "git rebase --autostash origin/main",
+    "git -c rebase.autoStash=true rebase origin/main",
+    "git -c rebase.autostash=true pull --rebase",
+    "git pull --rebase --autostash",
+    "git merge --autostash origin/main",
+    "git config rebase.autoStash true",
+    "git config --global rebase.autoStash true",
+    "git -C private/renet pull --rebase --autostash",
 ]
 
 # MUST NOT BLOCK: branch work, read-only inspection, and unrelated commands.
@@ -67,7 +92,20 @@ ALLOW = [
     "git checkout main",
     "git checkout -b feature/x",
     "git checkout -B backup-storage origin/main",
-    "git checkout backup-storage",
+    # #18c7e53c's allow half: a lone operand that RESOLVES is a switch, and the /branch-rebase steps stay open.
+    "git checkout HEAD",
+    "git checkout --detach HEAD",
+    "git -C private/renet checkout HEAD",
+    "git switch main",
+    "git reset --soft HEAD~1",
+    "git reset --mixed",
+    "git reset -- packages/cli/x.ts",
+    "git rebase origin/main",
+    "git rebase --no-autostash origin/main",
+    "git -c rebase.autostash=false rebase origin/main",
+    "git config rebase.autoStash false",
+    "git rebase --continue",
+    "git rebase --abort",
     "git stash list",
     "git stash show -p",
     "git stash create",  # writes a dangling commit only

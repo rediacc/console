@@ -10,6 +10,14 @@ THE LEASE EXCEPTION, box M3 of PLAN-plan-per-pr-loop (operator ruling 2026-10-02
 
 Everything else stays refused, `main` above all: `main` is never an `MMDD-N` name, so no lease reaches it.
 
+REMOTE BRANCH DELETION, since #18c7e53c (operator ruling 2026-10-09: /branch-rebase is AI-invocable, and a guard, not the skill's prose, covers what the prose forbids). `git push --delete origin <b>`, `-d`, the empty-source refspec `:<b>` and `--prune` forced nothing and passed this guard at rc 0, in the console and under `git -C private/<sm>`. Deleting a PR's head branch CLOSES the PR (GitHub records `head_ref_deleted`; measured 2026-09-24 when a branch rename closed account#87 and renet#111), so a rebase that "cleaned up" its own remote branch would end its own PR. Refused here:
+
+  * a deletion of the branch checked out in the repository the push runs in, or of the console's checked-out branch from any submodule (step 3 of /branch-rebase leaves a submodule DETACHED at its gitlink, where its own checkout names no branch);
+  * a deletion whose name the walk cannot evaluate (`--delete "$B"`);
+  * `--prune`, which deletes every remote branch its refspecs do not match locally, a set no command line shows.
+
+Allowed, because pr-merge step 7 depends on it: the post-merge cleanup `git push origin --delete <merged branch>` after `git switch main`, when no checkout names that branch any more.
+
 THE ORIGINAL RULE, unchanged for every other form:
 
 The first three flags are the obvious spelling. The other two were a HOLE, found 2026-08-23 while an agent was carrying out an operator-approved history rewrite: this guard refused the rewrite push, and the agent noticed that dropping the word --force would have slipped the identical non-fast-forward push straight past the regex. A --mirror git push forces every ref and deletes
@@ -160,10 +168,85 @@ EDGE_CASES = [
     ("M3 lease in a repository outside", "git -C /tmp push --force-with-lease origin 0831-1"),
     ("M3 lease with --all", "git push --force-with-lease --all origin"),
     ("M3 lease through -C to the live branch", "git -C . push --force-with-lease origin 0831-1"),
+    # #18c7e53c A-1: deleting the checked-out branch. Refused in the `live-branch` world, where `0831-1` is checked out; in the `default` world (on main) the same line is pr-merge step 7's post-merge cleanup and stays allowed. The two worlds are the two directions.
+    ("A1 --delete of the checked-out branch", "git push origin --delete 0831-1"),
+    ("A1 --delete before the remote", "git push --delete origin 0831-1"),
+    ("A1 -d of the checked-out branch", "git push -d origin 0831-1"),
+    ("A1 an empty-source refspec deletes", "git push origin :0831-1"),
+    ("A1 the refs/heads spelling", "git push origin :refs/heads/0831-1"),
+    ("A1 --delete beside the lease", "git push --force-with-lease --delete origin 0831-1"),
+    ("A1 a deletion behind a cd", "cd . && git push origin --delete 0831-1"),
+    ("A1 --prune deletes what no line shows", "git push --prune origin"),
+    ("A1 a deleted name the walk cannot read", 'git push origin --delete "$B"'),
+    ("A1 control: --no-delete undoes -d", "git push -d --no-delete origin 0831-1"),
+    ("A1 control: a branch no checkout names", "git push origin --delete 0101-9"),
+    ("A1 control: the matching refspec is no deletion", "git push origin :"),
+    ("A1 control: a plain push of the live branch", "git push origin 0831-1"),
     # A global option between `git` and `push` matched nothing until 2026-10-02 (both measured rc 0 then).
     ("a -C global option before push", "git -C . push --force origin main"),
     ("a -c global option before push", "git -c a=b push -f origin x"),
 ]
+
+
+DELETE_MESSAGE = (
+    "BLOCKED: this push deletes a remote branch that is still in use (%s). Deleting a pull "
+    "request's head branch CLOSES the pull request: GitHub records `head_ref_deleted`, and on "
+    "2026-09-24 exactly that closed account#87 and renet#111. A live branch's remote ref is "
+    "removed only by GitHub's delete-on-merge.\n"
+    "\n"
+    "THE ALLOWED CLEANUP (pr-merge step 7): once the PR has merged, `git switch main` first, "
+    "then `git push origin --delete <merged branch>`; a branch no checkout names any more is "
+    "not refused. A rebase republishes its branch with the lease push "
+    "(`git push --force-with-lease origin <live MMDD-N branch>`), never by deleting and "
+    "re-pushing it.\n"
+    "\n"
+    "Operator ruling 2026-10-09: /branch-rebase is AI-invocable, and what its prose forbids a "
+    "guard refuses. Deleting a live head deliberately is the operator's `!` command."
+)
+
+
+def _deleted_refs(run):
+    """`(names, prunes)` for one walked `git push`: the remote branches it deletes, as written (`--delete`/`-d` makes every refspec a deletion; otherwise a refspec with an empty source, `:<b>`, is one), and whether it carries `--prune`. Read from the EXPANDED argv, so a name the walk cannot evaluate carries `shellscan._UNRESOLVED`."""
+    argv = run.xargv if run.xargv is not None else run.argv
+    _, _, args = commit_policy.git_split(argv)
+    parsed = shellscan.git_push_args(args)
+    refspecs = parsed.operands[1:]
+    if parsed.on("delete"):
+        names = list(refspecs)
+    else:
+        names = []
+        for spec in refspecs:
+            src, colon, dst = spec.lstrip("+").partition(":")
+            if colon and src == "" and dst:
+                names.append(dst)
+    return names, parsed.on("prune")
+
+
+def deletion_refusal(ev, cmd):
+    """ "" unless a walked push in this checkout deletes a branch still in use, else why."""
+    root = ev.project_dir
+    base = ev.field("cwd") or root
+    created = commit_policy.created_dirs(cmd, base)
+    top = commit_policy.toplevel(root)
+    console = commit_policy.current_branch(top, foreign=True) if top else ""
+    for run in commit_policy.git_runs(cmd, "push"):
+        names, prunes = _deleted_refs(run)
+        if not names and not prunes:
+            continue
+        repo = commit_policy.scoped_repo(run, base, root, created)
+        if repo and not commit_policy.is_inside(repo, root):
+            continue
+        if prunes:
+            return "`--prune` deletes every remote branch its refspecs do not match locally"
+        here = commit_policy.current_branch(repo) if repo else console
+        in_use = {b for b in (here, console) if b}
+        for name in names:
+            short = name.removeprefix("refs/heads/")
+            if shellscan._UNRESOLVED in short or "$" in short:
+                return "a deleted branch name this guard cannot evaluate"
+            if short in in_use or short == "HEAD":
+                return "`%s` is the branch checked out here" % short
+    return ""
 
 
 def _count(pattern, text):
@@ -257,6 +340,10 @@ def run(ev):
     # SCOPE: this policy is about THIS checkout and its submodules. A push in a repository outside it (a `/tmp` fixture, even one the same command `git init`s) is not its business (finding #5810a9f3).
     if commit_policy.foreign_only(ev, cmd, ("push",)):
         return hookio.ALLOW
+    deleting = deletion_refusal(ev, cmd)
+    if deleting:
+        ev.warn(DELETE_MESSAGE % deleting)
+        return hookio.DENY
     text_scan = scan = shellscan._command_substitution(shellscan.scan_target(cmd))
     # `git -C <dir> push --force` put a word between `git` and `push` and matched nothing here until 2026-10-02; the lexer's canonical spelling of each push closes that (commit_policy.push_texts).
     canon = commit_policy.push_texts(cmd)

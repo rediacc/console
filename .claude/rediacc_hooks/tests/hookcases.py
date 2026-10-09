@@ -1331,6 +1331,72 @@ STATIC: list[Case] = [
         bash_json('eval "git push origin +main:main"'),
         "force-push: eval wrapper bypass, refspec form",
     ),
+    # #18c7e53c A-1 and C-3 (operator ruling 2026-10-09). The checked-out-branch and dirty-tree directions depend on the checkout, so they live in each guard's EDGE_CASES against fixture worlds; the rows here answer the same in any checkout.
+    case(
+        "check 2 guards/block_git_force_push.py",
+        bash_json("git push --prune origin"),
+        "force-push #18c7e53c: --prune deletes remote branches no line names",
+    ),
+    case(
+        "check 2 guards/block_git_force_push.py",
+        bash_json('git push origin --delete "$B"'),
+        "force-push #18c7e53c: a deleted branch name the walk cannot read",
+    ),
+    case(
+        "check 2 guards/block_git_force_push.py",
+        bash_json("git -C private/renet push --force-with-lease --delete origin 0101-9"),
+        "force-push #18c7e53c: --delete is never part of the lease form",
+    ),
+    case(
+        "check 0 guards/block_git_force_push.py",
+        bash_json("git push origin --delete 0101-9"),
+        "force-push #18c7e53c: deleting a branch no checkout names (pr-merge step 7)",
+    ),
+    case(
+        "check 0 guards/block_git_force_push.py",
+        bash_json("git push origin :"),
+        "force-push #18c7e53c: the matching refspec deletes nothing",
+    ),
+    case(
+        "check 2 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("git --work-tree=. rebase origin/main"),
+        "rebase-dirt #18c7e53c: --work-tree hides the tree the rebase touches",
+    ),
+    case(
+        "check 2 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("GIT_DIR=.git git rebase origin/main"),
+        "rebase-dirt #18c7e53c: GIT_DIR on the command line is refused, not guessed",
+    ),
+    case(
+        "check 2 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("git --git-dir=.git merge origin/main"),
+        "rebase-dirt #18c7e53c: --git-dir on a merge",
+    ),
+    case(
+        "check 0 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("git rebase --continue"),
+        "rebase-dirt #18c7e53c: --continue starts nothing",
+    ),
+    case(
+        "check 0 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("git rebase --abort"),
+        "rebase-dirt #18c7e53c: --abort starts nothing",
+    ),
+    case(
+        "check 0 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("git pull --ff-only"),
+        "rebase-dirt #18c7e53c: a fast-forward pull (pr-merge step 7)",
+    ),
+    case(
+        "check 0 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("git merge --ff-only origin/main"),
+        "rebase-dirt #18c7e53c: a fast-forward merge",
+    ),
+    case(
+        "check 0 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("echo 'git rebase origin/main later'"),
+        "rebase-dirt #18c7e53c: prose naming a rebase",
+    ),
     case(
         "check 2 guards/block_git_empty_commit.py",
         bash_json("git commit --allow-empty -m x"),
@@ -1924,6 +1990,122 @@ STATIC: list[Case] = [
         "check 0 guards/block_destructive_git_restore.py",
         bash_json("git status"),
         "destructive-git: unrelated git command",
+    ),
+    # #18c7e53c, operator ruling 2026-10-09: /branch-rebase is AI-invocable, and what its prose forbids a guard refuses. Every BLOCK row below answered rc 0 through the live pre-bash chain in the audit that opened the item. Each payload answers the same in any checkout: no row depends on which branch is checked out or what is dirty.
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git checkout -f"),
+        "destructive-git #18c7e53c: a forced checkout overwrites every modified file",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git checkout -f main"),
+        "destructive-git #18c7e53c: a forced checkout of a branch",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git checkout HEAD packages/cli/x.ts"),
+        "destructive-git #18c7e53c: a tree-ish and a path without --",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git checkout origin/main packages/cli/x.ts"),
+        "destructive-git #18c7e53c: a remote ref and a path without --",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git checkout zz-no-such-ref-q9"),
+        "destructive-git #18c7e53c: a lone operand that resolves as no ref is a pathspec",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git checkout --ours private/renet"),
+        "destructive-git #18c7e53c: --ours on a gitlink drops the branch's submodule work",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git checkout --theirs private/renet"),
+        "destructive-git #18c7e53c: --theirs on a gitlink pins an orphaned commit",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git -C private/renet switch -f main"),
+        "destructive-git #18c7e53c: a forced switch in a submodule",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git switch --discard-changes main"),
+        "destructive-git #18c7e53c: a discarding switch",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git reset --hard origin/main"),
+        "destructive-git #18c7e53c: a hard reset",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git -C private/renet reset --hard origin/main"),
+        "destructive-git #18c7e53c: a hard reset in a submodule",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git reset --keep HEAD"),
+        "destructive-git #18c7e53c: a keep reset rewrites the tree too",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git rebase --autostash origin/main"),
+        "destructive-git #18c7e53c: --autostash stashes peers' work",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git -c rebase.autoStash=true rebase origin/main"),
+        "destructive-git #18c7e53c: -c rebase.autoStash is the same stash",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git -C private/renet pull --rebase --autostash"),
+        "destructive-git #18c7e53c: pull --autostash in a submodule",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git merge --autostash origin/main"),
+        "destructive-git #18c7e53c: merge --autostash",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git config --global rebase.autoStash true"),
+        "destructive-git #18c7e53c: a global autoStash write",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git checkout HEAD"),
+        "destructive-git #18c7e53c: a lone operand that resolves is a switch",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git -C private/renet checkout --detach HEAD"),
+        "destructive-git #18c7e53c: setting a gitlink by commit stays open",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git reset --soft HEAD~1"),
+        "destructive-git #18c7e53c: a soft reset keeps the tree",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git reset -- packages/cli/x.ts"),
+        "destructive-git #18c7e53c: a path reset only unstages",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git rebase --no-autostash origin/main"),
+        "destructive-git #18c7e53c: --no-autostash is allowed",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git config rebase.autoStash false"),
+        "destructive-git #18c7e53c: turning autoStash off is allowed",
     ),
     case(
         "check 2 guards/block_blanket_git_add.py",
