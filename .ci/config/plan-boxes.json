@@ -918,6 +918,19 @@
         "f66674d0"
       ]
     },
+    "agent/plans/PLAN-lessons-registry-followups.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 2,
+      "done": 0,
+      "open_sigs": [
+        "0b714aa1",
+        "e371147a"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-lessons-registry.md": {
       "status": "approved",
       "owner": "d778be9d",
