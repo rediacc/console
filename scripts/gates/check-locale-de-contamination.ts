@@ -48,7 +48,7 @@
  *   tsx scripts/gates/check-locale-de-contamination.ts --write-baseline   (drain/reseed)
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: i18n cross-locale
  * needs: node, submodules
  * lane: quality-i18n

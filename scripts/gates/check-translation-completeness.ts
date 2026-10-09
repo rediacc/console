@@ -18,7 +18,7 @@
  *   1 - Some translations are missing or untranslated
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: i18n
  * needs: node, submodules
  * id: check:ci-i18n-completeness

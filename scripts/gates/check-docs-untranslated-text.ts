@@ -34,7 +34,7 @@
  *   1 - Untranslated text detected (blocking)
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: i18n
  * needs: node
  * id: check:ci-i18n-docs-untranslated

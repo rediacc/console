@@ -114,10 +114,10 @@ function serialise(leaf: string, h: GateHeader, workflow: string): string {
   L.push('    gate: true,', `    leaves: [${q(leaf)}],`);
   if (h.when) L.push(`    when: ${q(h.when as string)},`);
 
-  // A `battery` header RIDES a shared step, which the manifest records as `step`.
-  const kind = h.kind === 'battery' ? 'step' : (h.kind as string);
+  // A `shared-step` header RIDES a shared step, which the manifest records as `step`.
+  const kind = h.kind === 'shared-step' ? 'step' : (h.kind as string);
   L.push('    ci: {', `      kind: ${q(kind)},`);
-  if (h.kind === 'step' || h.kind === 'battery') {
+  if (h.kind === 'step' || h.kind === 'shared-step') {
     L.push(
       `      workflow: ${q(workflow)},`,
       `      job: ${q(job ?? '')},`,

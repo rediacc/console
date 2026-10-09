@@ -34,7 +34,7 @@
  *   tsx scripts/gates/check-client-bundle-budget.ts [--dist <dir>] [--budget <bytes>] [--selftest]
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: SEO
  * needs: node
  * lane: quality-www-build

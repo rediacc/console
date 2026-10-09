@@ -18,7 +18,7 @@
  *   1 - Hash mismatch detected (need to run i18n:generate-hashes)
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: i18n
  * needs: node, submodules
  * id: check:ci-i18n-hashes

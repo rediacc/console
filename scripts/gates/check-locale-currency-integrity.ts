@@ -16,7 +16,7 @@
  * nearly all of them correct translations.
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: i18n
  * needs: node
  * id: check:ci-locale-currency

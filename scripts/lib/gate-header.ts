@@ -46,7 +46,7 @@
  * CLASS: still bound, still checked against package.json and the manifest, still
  * required to state their needs -- but never written into a gate-bind region.
  */
-export type GateKind = 'step' | 'battery' | 'test' | 'local-only';
+export type GateKind = 'step' | 'shared-step' | 'test' | 'local-only';
 
 /** One gate's declaration. Everything except `step` has a convention default. */
 export interface GateHeader {
@@ -55,7 +55,7 @@ export interface GateHeader {
   /**
    * The workflow step name.
    *
-   * Present for `step` (which OWNS it) and for `battery` (which RIDES it and must not
+   * Present for `step` (which OWNS it) and for `shared-step` (which RIDES it and must not
    * emit it). Absent for `test` and `local-only`, which have no step at all.
    */
   step?: string;
@@ -141,7 +141,7 @@ const ENV_FIELD = /^\s*(?:#|\/\/|\*)?\s*env-([A-Z][A-Z0-9_]*)\s*:\s*(.*?)\s*$/;
 /** Strip a trailing `# ...` note, which is prose about the value, not the value. */
 const value = (raw: string): string => raw.replace(/\s+#\s.*$/, '').trim();
 
-const KINDS: readonly GateKind[] = ['step', 'battery', 'test', 'local-only'];
+const KINDS: readonly GateKind[] = ['step', 'shared-step', 'test', 'local-only'];
 
 /** A present block that does not yield a declaration, and the reason it does not. */
 export interface HeaderProblem {
@@ -197,12 +197,12 @@ export function analyzeGateHeader(source: string): GateHeader | HeaderProblem | 
   const kind = rawKind as GateKind;
 
   const step = fields.get('step');
-  const owns = kind === 'step' || kind === 'battery';
+  const owns = kind === 'step' || kind === 'shared-step';
   if (owns && (step === undefined || step === '')) {
     return {
       error:
         `kind: ${kind} needs a \`step:\`` +
-        (kind === 'battery' ? ' naming the shared step it rides' : ' naming the step it owns'),
+        (kind === 'shared-step' ? ' naming the shared step it rides' : ' naming the step it owns'),
     };
   }
   if (!owns && step !== undefined) {

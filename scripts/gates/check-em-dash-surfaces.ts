@@ -34,7 +34,7 @@
  *   tsx scripts/gates/check-em-dash-surfaces.ts --selftest
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: i18n
  * needs: node
  * lane: quality-i18n

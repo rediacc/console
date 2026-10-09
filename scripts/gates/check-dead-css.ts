@@ -26,7 +26,7 @@
  *   npx tsx scripts/gates/check-dead-css.ts [--write-baseline] [--selftest] [--list]
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: Dead CSS
  * needs: node
  * selftest: true
