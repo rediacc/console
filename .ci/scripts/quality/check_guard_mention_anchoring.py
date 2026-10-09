@@ -35,10 +35,17 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import re
+
+# The `re` module's own parser, so a pattern is read exactly as the guard's `re.compile` reads it. `re._parser`/`re._constants` are the 3.11+ homes of the deprecated `sre_parse`/`sre_constants`.
+import re._constants as sre
+import re._parser as sre_parse
 import sys
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Any
 
 import _cipath  # noqa: F401
 
@@ -90,6 +97,20 @@ NC = "\033[0m"
 # all -- found live by this A2 retarget, whose ast-based reader surfaces both as string constants where the old text search never reached them. Neither is the "refuses a mention instead of a target" class this file exists to catch, because there is no prose to confuse with a target: a file is either the one running or it is not.
 ALLOW_UNPROBED = {"block_adhoc_sanctioned.py", "block_edit_of_running_script.py"}
 
+# Guards whose TARGET is prose, so a probe sentence they refuse is the rule working, not a mention mistaken for a command. Each one is still probed on every run, the refused sentence is PRINTED, and an entry whose guard stops refusing every probe is red as stale: an exemption nobody can see, or one that outlived its reason, is how a gate stops meaning what its name says.
+PROSE_TARGETS = {
+    "block_settled_questions.py": (
+        "BLOCKER: a pre-ask guard reads a QUESTION, which is prose by construction, and push "
+        "timing is a topic it refuses in any wording (operator ruling ASKED:2026-10-08T10:25Z, "
+        '"It should not be even askable"), naming the TURBO_PUSH_REASON kind too. Every '
+        "probe it refuses (`push now ?`, `which turbo_push_reason ?`, measured 12 of 133 on "
+        "2026-10-09) is that topic, so the refusal is the target, not a mention."
+    ),
+}
+
+# Joins the refused instances of a PROSE_TARGETS guard in `assess`'s detail. A control character, because an instance is rendered from a regex and may contain any printable one.
+PROSE_SEP = "\x1f"
+
 # The structure declaration (see the module docstring): `ANCHORING = "structure: <reason>"` as a module-level string constant, read by `ast` like every other constant here.
 ANCHORING_NAME = "ANCHORING"
 STRUCTURE_PREFIX = "structure:"
@@ -100,65 +121,196 @@ MAX_BASELINES = 25
 # A pattern must look like a command matcher before it is worth instantiating. Tuned for PYTHON `re` syntax rather than POSIX bracket expressions, since A2 retargeted the source from bash originals to the live guard modules: an anchor prefix, a character class built around the command separators, a word boundary, a non-capturing group, or a quantifier.
 INTERESTING = re.compile(r"\(\^\||\[;&|\\b|\(\?:|[+*]")
 
-# Evidence the author constrained the match to command POSITION rather than accepting it anywhere in the line. Unchanged by the A2 retarget: guards write this anchor idiom identically in bash and in Python, since it is a regex fragment, not a shell construct.
-ANCHORED = re.compile(r"\(\^\||\^\(|\[;&\|\(|\[;&\|]")
+# THE COMMAND-POSITION SEPARATORS. A pattern is anchored at command position only when every alternative it matches begins at the start of the subject or right after one of these: `;`, `&`, `|`, `(`, a backtick, a newline, `{`, `!`, or the two-character `$(`. Whitespace is deliberately NOT one of them: `(^|[ \t])rm` matches `rm` after any space, which is inside every sentence.
+CMD_SEPARATORS = frozenset(map(ord, ";&|(`\n{!"))
 
-CLASS_SUB = [
-    # Backslash character classes, Python's own spelling of what the bash originals wrote as POSIX bracket expressions. Collapsed the same way: a run of the class to one representative character, so the instance stays a short, readable literal rather than a soup of metacharacters.
-    (re.compile(r"\\s[+*]?"), " "),
-    (re.compile(r"\\S[+*]?"), "x"),
-    (re.compile(r"\\d[+*]?"), "1"),
-    (re.compile(r"\\D[+*]?"), "x"),
-    (re.compile(r"\\w[+*]?"), "x"),
-    (re.compile(r"\\W[+*]?"), " "),
-    (re.compile(r"\[\^[^\]]*\][+*]"), " "),
-    (re.compile(r"\[\^[^\]]*\]"), "x"),
-    (re.compile(r"\[[^\]]*\][+*]?"), "x"),
-]
+_REPEATS = (sre.MAX_REPEAT, sre.MIN_REPEAT, sre.POSSESSIVE_REPEAT)
+
+# The most instances one pattern is expanded into. Every alternative is meant to be probed (see `instances`), so a pattern that would exceed this is COUNTED and printed, never silently cut.
+MAX_INSTANCES = 64
 
 
-def instantiate(pattern: str) -> str:
-    """The shortest literal string a pattern would match, best-effort.
+def _parse(pattern: str) -> list | None:
+    """The pattern's top-level node list, or None when `re` cannot compile it (a message string that merely looked regex-shaped)."""
+    try:
+        return list(sre_parse.parse(pattern))
+    except (re.error, OverflowError, RecursionError):
+        return None
 
-    Best-effort is enough: a probe that fails to trigger a guard is reported as UNPROBED rather than silently counted as clean, so an imperfect instance costs coverage that is visible, never a false green.
+
+def _at_command_position(items: list) -> bool:
+    """Does this node sequence begin at command position, on EVERY alternative it can take?
+
+    THE OLD CHECK WAS A SUBSTRING. `ANCHORED` searched the pattern text for `(^|` or a separator class, so `(alpha|beta|(^|[^A-Za-z0-9_])gamma)` read as anchored: the `(^|` was there, inside ONE alternative of three, and the anchor it introduced was a word boundary rather than a separator. Walking the parse tree answers the real question: an alternation is anchored only when
+    every branch is, a group only when its body is, an optional prefix never is, and a character class only when every member is a separator.
     """
-    text = pattern
-    # DROP A LEADING ANCHOR GROUP FIRST. `(^|[;&|(]|&&|\|\|)[\s]*` is a POSITION assertion, not text, and it must contribute nothing to the literal. Left in, it survives as junk: the branch-picker below cannot split it (its character class contains parentheses, so `[^()|]*` fails) and the class then collapses to a literal `x`, yielding `x git commit --allow-empty`. That string is
-    # not at command position, so a correctly-anchored guard does NOT fire on it -- and the positive probe then reports every anchored guard as unreachable. Measured: 0 of 42 probed.
-    text = re.sub(r"^\((?=[^)]*\^)[^)]*\)(\\s[*+])?", "", text)
-    # LOOKAROUNDS CONTRIBUTE NO TEXT. `(?=$|[\s;&|])` (`block_prose_style_commit.GIT_COMMIT`'s trailing assertion) is a zero-width constraint, not a branch of real content, and running it through the branch-picker below would leak assertion syntax ("?=$") into the literal instance -- traced through by hand rather than measured, since a Python guard using a lookaround is new with
-    # this A2 retarget. Stripped whole, in a fixed-point loop for the rare pattern carrying more than one, and BEFORE the branch-picker so it never sees one.
-    for _ in range(5):
-        prev = text
-        text = re.sub(r"\(\?(?:=|!|<=|<!)(?:[^()]|\([^()]*\))*\)", "", text)
-        if text == prev:
-            break
-    # An alternation: take the first branch, which is what a real command does. RESOLVED INNERMOST-FIRST, in a fixed-point loop. The single-pass version only matched a group with NO nested parens (`[^()]*`), so a pattern like `\bssh\b...\b(cat|echo|printf)\b` -- an alternation with a NESTED one inside its second branch -- left the outer group untouched and the whole instance
-    # collapsed to a stray `>`. Measured against block-ssh-file-write.sh, which is why this exists.
-    text = re.sub(r"\(\?:", "(", text)
-    # ESCAPE-AWARE: `[^()|]` treats a literal `\|` (an ESCAPED pipe, i.e. the two characters backslash-then-pipe, matching a real `|` in a command) as the alternation delimiter, because the character class excludes bare `|` regardless of what precedes it. That misread block-ssh-file-write.sh's `\|\s*\bssh\b...` down to a single stray `>`. `(?:[^()|\\]|\\.)` consumes a
-    # backslash-escaped pair as ONE unit first, so only a genuine, unescaped `|` ends a branch.
-    for _ in range(10):
-        prev = text
-        text = re.sub(r"\(((?:[^()|\\]|\\.)*)\|(?:[^()\\]|\\.)*\)", r"\1", text)
-        if text == prev:
-            break
-    for rx, rep in CLASS_SUB:
-        text = rx.sub(rep, text)
-    # A TOP-LEVEL alternation, with no enclosing parens at all. The loop above only resolves a `|` sitting inside `(...)`; block-ssh-file-write.sh's pattern is a bare `BRANCH1|BRANCH2` at the top, so nothing caught it and the second branch leaked into the instance. Escape-aware, same as the parenthesized case: an escaped `\|` (a literal pipe target) must not be read as the
-    # delimiter.
-    m = re.match(r"^((?:[^|\\]|\\.)*)\|", text)
-    if m:
-        text = m.group(1)
-    text = text.replace("(", "").replace(")", "")
-    text = re.sub(r"\\b|\\B|\^|\$", "", text)
-    text = re.sub(r"([A-Za-z0-9_./-])[+*]", r"\1", text)
-    text = re.sub(r"\\(.)", r"\1", text)
-    text = re.sub(r"[?]", "", text)
-    # A PROBE MUST STAY PROSE. An instance carrying a real command separator creates a genuine command POSITION inside the sentence, and the guard is then right to fire -- which reads as a finding and is not one. Measured: an instance ending in a backgrounding operator was reported against block-shell-background-waiter.sh, whose natural-sentence probe is silent.
+    i = 0
+    # A lookahead is zero-width: it constrains what follows without moving the position, so the anchor question passes through it.
+    while i < len(items) and items[i][0] is sre.ASSERT and items[i][1][0] == 1:
+        i += 1
+    if i >= len(items):
+        return False
+    op, av = items[i]
+    if op is sre.AT:
+        return av in (sre.AT_BEGINNING, sre.AT_BEGINNING_STRING)
+    if op is sre.SUBPATTERN:
+        return _at_command_position(list(av[3]))
+    if op is sre.ATOMIC_GROUP:
+        return _at_command_position(list(av))
+    if op is sre.BRANCH:
+        return all(_at_command_position(list(alt)) for alt in av[1])
+    if op is sre.IN:
+        return bool(av) and all(o is sre.LITERAL and c in CMD_SEPARATORS for o, c in av)
+    if op is sre.LITERAL:
+        if av in CMD_SEPARATORS:
+            return True
+        return av == ord("$") and i + 1 < len(items) and items[i + 1] == (sre.LITERAL, ord("("))
+    if op in _REPEATS:
+        return av[0] >= 1 and _at_command_position(list(av[2]))
+    return False
+
+
+def command_anchored(pattern: str) -> bool:
+    """True when every alternative of `pattern` is constrained to command position. An unparsable pattern is not anchored."""
+    tree = _parse(pattern)
+    return tree is not None and _at_command_position(tree)
+
+
+def _category_admits(cat: object, ch: str) -> bool:
+    word = ch.isalnum() or ch == "_"
+    if cat is sre.CATEGORY_SPACE:
+        return ch.isspace()
+    if cat is sre.CATEGORY_NOT_SPACE:
+        return not ch.isspace()
+    if cat is sre.CATEGORY_DIGIT:
+        return ch.isdigit()
+    if cat is sre.CATEGORY_NOT_DIGIT:
+        return not ch.isdigit()
+    if cat is sre.CATEGORY_WORD:
+        return word
+    if cat is sre.CATEGORY_NOT_WORD:
+        return not word
+    return False
+
+
+def _class_admits(av: list, ch: str) -> bool:
+    negate = bool(av) and av[0][0] is sre.NEGATE
+    hit = any(
+        (op is sre.LITERAL and arg == ord(ch))
+        or (op is sre.RANGE and arg[0] <= ord(ch) <= arg[1])
+        or (op is sre.CATEGORY and _category_admits(arg, ch))
+        for op, arg in (av[1:] if negate else av)
+    )
+    return hit != negate
+
+
+def _class_char(av: list) -> str:
+    """One character the class admits, chosen so the instance reads like a command line.
+
+    WHITESPACE FIRST, when the class admits it and not a letter. The old regex-surgery instantiator turned every bracket expression into `x`, so `hookio.rx()`'s `[{S}]+`, the spelling most guards use for "some whitespace", rendered `git worktree add` as `xgitx-xx worktreexaddx`. That string matches nothing, so the probe could not fire and its silence was counted clean: 150 of 171
+    instances on the 2026-10-09 tree did not match their own pattern.
+    """
+    if _class_admits(av, " ") and not _class_admits(av, "x"):
+        return " "
+    for ch in "xa1-_./ ":
+        if _class_admits(av, ch):
+            return ch
+    for op, arg in av:
+        if op is sre.LITERAL:
+            return chr(arg)
+        if op is sre.RANGE:
+            return chr(arg[0])
+    return "x"
+
+
+def _render_seq(items: list, groups: dict) -> list[str]:
+    """Every rendering of a node sequence that varies ONE element from its default, the all-default rendering first.
+
+    One element at a time, rather than the full product, keeps this linear in the number of alternatives while still putting every alternative of every alternation into at least one instance.
+    """
+    parts = [_render(op, av, groups) for op, av in items]
+    defaults = [p[0] for p in parts]
+    out = ["".join(defaults)]
+    for i, variants in enumerate(parts):
+        head, tail = "".join(defaults[:i]), "".join(defaults[i + 1 :])
+        out.extend(head + v + tail for v in variants[1:])
+    return out
+
+
+def _render(op: object, av: Any, groups: dict) -> list[str]:
+    if op is sre.LITERAL:
+        return [chr(av)]
+    if op is sre.NOT_LITERAL:
+        return ["y" if av == ord("x") else "x"]
+    if op is sre.ANY:
+        return ["x"]
+    if op is sre.IN:
+        return [_class_char(av)]
+    if op is sre.BRANCH:
+        out: list[str] = []
+        for alt in av[1]:
+            out.extend(_render_seq(list(alt), groups))
+        return out
+    if op is sre.SUBPATTERN:
+        rendered = _render_seq(list(av[3]), groups)
+        if av[0] is not None:
+            groups[av[0]] = rendered[0]
+        return rendered
+    if op is sre.ATOMIC_GROUP:
+        return _render_seq(list(av), groups)
+    if op in _REPEATS:
+        low = min(av[0], 50)
+        inner = _render_seq(list(av[2]), groups)
+        if low == 0:
+            # An optional run of a class that admits a space renders as one space, so `git\b[^;&|]*commit` reads `git commit` rather than `gitcommit`.
+            item = list(av[2])
+            if len(item) == 1 and item[0][0] is sre.IN and _class_admits(item[0][1], " "):
+                return [" ", *inner[1:]]
+            # The empty default keeps an optional prefix out of the way; one copy of each variant still reaches every alternative inside it.
+            return ["", *inner]
+        return [v + inner[0] * (low - 1) for v in inner]
+    if op is sre.GROUPREF:
+        return [groups.get(av, "")]
+    # AT, ASSERT, ASSERT_NOT, GROUPREF_EXISTS: zero-width, no text.
+    return [""]
+
+
+def _prose_safe(text: str) -> str:
+    """A PROBE MUST STAY PROSE.
+
+    An instance carrying a real command separator creates a genuine command POSITION inside the sentence, and the guard is then right to fire, which reads as a finding and is not one. Measured: an instance ending in a backgrounding operator was reported against block-shell-background-waiter.sh, whose natural-sentence probe is silent.
+    """
     text = re.sub(r"[&;|`]", " ", text)
     text = text.replace("$(", " ").replace("(", " ").replace(")", " ")
     return re.sub(r"\s+", " ", text).strip()
+
+
+def expand(pattern: str) -> tuple[list[str], int]:
+    """(instances, how many MAX_INSTANCES dropped) for one pattern; ([], 0) when `re` cannot parse it."""
+    tree = _parse(pattern)
+    if tree is None:
+        return [], 0
+    out: list[str] = []
+    for raw in _render_seq(tree, {}):
+        text = _prose_safe(raw)
+        if text not in out:
+            out.append(text)
+    return out[:MAX_INSTANCES], max(0, len(out) - MAX_INSTANCES)
+
+
+def instances(pattern: str) -> list[str]:
+    """A concrete literal for EVERY alternative of the pattern, the first-branch rendering first.
+
+    EVERY ALTERNATIVE, NOT THE FIRST. The old instantiator resolved each alternation to its first branch, "which is what a real command does", so an alternation whose first branch was anchored and whose later branches were not was only ever probed through the anchored one, and the unanchored branch refused prose unseen. Built from the `re` parse tree rather than by rewriting
+    the pattern text, so nesting, escapes and lookarounds resolve exactly as the guard's own `re.compile` resolves them.
+    """
+    return expand(pattern)[0]
+
+
+def instantiate(pattern: str) -> str:
+    """The first-branch literal: the shortest command the pattern names, or "" when it cannot be rendered."""
+    found = instances(pattern)
+    return found[0] if found else ""
 
 
 def _shellscan_placeholders() -> tuple[str, str]:
@@ -255,7 +407,8 @@ def patterns_of(path: Path) -> list[str]:
         if x not in seen:
             seen.add(x)
             uniq.append(x)
-    return [p for p in uniq if INTERESTING.search(p)]
+    # PARSEABLE, TOO. A string `re` cannot compile is not a matcher the guard can be running (block_suppressions.py's refusal FOOTER looks regex-shaped and is not), so it is neither probed nor asked to carry an anchor.
+    return [p for p in uniq if INTERESTING.search(p) and _parse(p) is not None]
 
 
 def payload_for(kind: str, text: str, file_path: str) -> str:
@@ -408,7 +561,7 @@ def structure_probe(guard: Path, kind: str, instances: list[str], fp: str) -> tu
             continue
         if fires(guard, body, kind, str(doc)):
             continue
-        for inst in instances[:40]:
+        for inst in instances:
             appended = body.rstrip("\n") + "\n\n" + sentence(inst) + "\n"
             if fires(guard, appended, kind, str(doc)):
                 return "prose", inst
@@ -417,6 +570,30 @@ def structure_probe(guard: Path, kind: str, instances: list[str], fp: str) -> tu
         "no in-scope document the guard accepts unmodified was found beside %s, so the "
         "structure-neutral probe cannot run" % fp
     )
+
+
+class Probes:
+    """The probe set for one guard: every instance of every pattern, and how it was built."""
+
+    def __init__(self) -> None:
+        self.instances: list[str] = []
+        # Instances the pattern they were rendered from actually matches. Printed every run: the old instantiator's figure was 21 of 171, and a probe its own pattern rejects is a probe that cannot fire.
+        self.self_matching = 0
+        self.dropped = 0
+
+
+def probes_of(pats: list[str]) -> Probes:
+    out = Probes()
+    for pat in pats:
+        found, dropped = expand(pat)
+        out.dropped += dropped
+        for inst in found:
+            if len(inst) < 4 or inst in out.instances:
+                continue
+            out.instances.append(inst)
+            if re.search(pat, inst):
+                out.self_matching += 1
+    return out
 
 
 def assess(guard: Path, kind: str, fp: str) -> tuple[str, str]:
@@ -431,11 +608,12 @@ def assess(guard: Path, kind: str, fp: str) -> tuple[str, str]:
         if reason is None:
             return "invalid", why
     pats = patterns_of(guard)
-    instances = [i for i in (instantiate(p) for p in pats) if len(i) >= 4]
+    instances = probes_of(pats).instances
     if not instances:
         if guard.name in ALLOW_UNPROBED:
             return "allowed", ""
-        if not pats or any(ANCHORED.search(x) for x in pats):
+        # EVERY pattern, not any. `any` let one anchored pattern vouch for an unanchored sibling it shares a module with, and the anchor test itself was a substring search that a `(^|` inside one alternative satisfied.
+        if all(command_anchored(x) for x in pats):
             return "static", reason or ""
         return "unprobed", ""
     if reason is not None:
@@ -443,7 +621,12 @@ def assess(guard: Path, kind: str, fp: str) -> tuple[str, str]:
         if outcome == "clean":
             return "clean", "%s | baseline %s" % (reason, detail)
         return outcome, detail
-    for inst in instances[:40]:
+    # NO CAP. This read `instances[:40]`, a silent cut: block_settled_questions alone renders 137 instances once every alternative is expanded, and the 41st is as able to refuse prose as the first.
+    # A PROSE TARGET IS PROBED IN FULL. Its exemption is per guard, so stopping at the first refused sentence would let every later one ride on it unseen, including a genuine mention-matcher added to the same module next month. Every refused sentence comes back, joined by PROSE_SEP, and each is printed.
+    if guard.name in PROSE_TARGETS:
+        hits = [inst for inst in instances if fires(guard, sentence(inst), kind, fp)]
+        return ("prose", PROSE_SEP.join(hits)) if hits else ("clean", "")
+    for inst in instances:
         if fires(guard, sentence(inst), kind, fp):
             return "prose", inst
     return "clean", ""
@@ -529,7 +712,95 @@ def controls() -> None:
         if "?=" in lookaround or "?!" in lookaround:
             fail(f"instantiate() leaked lookaround syntax into the instance: {lookaround!r}")
 
+        alternation_controls(Path(td))
         structure_controls(Path(td))
+
+
+# The planted command-guard fixture. One Python guard body parameterised only by its pattern, so the alternation controls differ in exactly the property under test: where the anchor sits.
+_COMMAND_FIXTURE = """import json
+import re
+import sys
+
+PAT = re.compile(r"{pattern}")
+{extra}
+doc = json.load(sys.stdin).get("tool_input") or {{}}
+sys.exit(2 if PAT.search(str(doc.get("command") or "")) else 0)
+"""
+
+# Each row: (fixture name, the guard's pattern, a second module-level matcher or "", the outcome `assess` must give, why). Every row whose outcome is not "clean" was "clean" or "static" under the first-branch instantiator and the substring ANCHORED test, which is what the row is there to keep from coming back.
+_ALTERNATION_ROWS = [
+    (
+        "first_branch_anchored.py",
+        r"(^|[;&|(])[ \t]*frobnicate[ \t]+widgets|grommet[ \t]+gadgets",
+        "",
+        "prose",
+        "the anchor covers the FIRST alternative only, and the unanchored second one refuses prose",
+    ),
+    (
+        "boundary_in_one_branch.py",
+        r"(frobnicate[ \t]+widgets|grommet\.gadgets|(^|[^A-Za-z0-9_])sprocket\.py)[ \t]+create([ \t]|$)",
+        "",
+        "prose",
+        "the 2026-10-09 block_worktree_add draft's shape: a `(^|` word boundary inside one alternative of three",
+    ),
+    (
+        "every_branch_anchored.py",
+        r"(^|[;&|(])[ \t]*(frobnicate[ \t]+widgets|grommet[ \t]+gadgets)",
+        "",
+        "clean",
+        "the anchor governs the whole alternation, so no alternative can match inside a sentence",
+    ),
+    (
+        "short_partial.py",
+        r"(^|[;&|(])[ \t]*ab|cd+",
+        "",
+        "unprobed",
+        "too short to render, and only one alternative anchored: the static tier must not vouch for it",
+    ),
+    (
+        "short_anchored.py",
+        r"(^|[;&|(])[ \t]*(ab|cd+)",
+        "",
+        "static",
+        "too short to render, and every alternative anchored: the static tier passes it",
+    ),
+    (
+        "short_mixed.py",
+        r"(^|[;&|(])[ \t]*(ab|cd+)",
+        'OTHER = re.compile(r"ef+")',
+        "unprobed",
+        "one anchored matcher must not vouch for an unanchored sibling in the same module",
+    ),
+]
+
+
+def alternation_controls(td: Path) -> None:
+    """Every alternative is probed, and an anchor counts only where it governs every alternative."""
+    # The renderer, directly: every alternative appears, and `[{S}]`-style whitespace classes render as a space rather than the `x` that made 150 of 171 old instances unmatchable.
+    every = instances(r"(alpha|beta|(^|[^A-Za-z0-9_])gamma)[ \t\n]+widgets")
+    for alternative in ("alpha widgets", "beta widgets", "gamma widgets"):
+        if alternative not in every:
+            fail(f"instances() did not render the alternative {alternative!r}: {every!r}")
+    for pattern, anchored in (
+        (r"(^|[;&|(]|\$\(|`)[ \t]*git[ \t]+worktree", True),
+        (r"(^|[;&|(])\s*(frob|grom)", True),
+        (r"(^|[;&|(])\s*frob|grom", False),
+        (r"(alpha|beta|(^|[^A-Za-z0-9_])gamma)\.py", False),
+        (r"(^|[ \t])rm[ \t]", False),
+        (r"((bash|sh)\s+)?(^|;)run", False),
+    ):
+        if command_anchored(pattern) is not anchored:
+            fail(f"command_anchored({pattern!r}) is {not anchored}, expected {anchored}")
+
+    for name, pattern, extra, want, why in _ALTERNATION_ROWS:
+        guard = td / name
+        guard.write_text(_COMMAND_FIXTURE.format(pattern=pattern, extra=extra))
+        got, detail = assess(guard, "command", "")
+        if got != want:
+            fail(f"{name}: assess() gave {got!r} ({detail}), expected {want!r}: {why}")
+    # The fully anchored fixture must still refuse the REAL command on its second alternative, or its "clean" is a guard that refuses nothing.
+    if not fires(td / "every_branch_anchored.py", "grommet gadgets --now"):
+        fail("the anchored alternation fixture missed its own second alternative as a real command")
 
 
 # The planted structure-declaration fixtures. One Python guard body, parameterised by what it refuses and what it declares, so the three controls differ in exactly the property under test.
@@ -637,20 +908,29 @@ def main() -> int:
             continue
         guards.append((path, kind, chain))
 
+    # CONCURRENT ACROSS GUARDS, sequential within one. Probing every alternative raised the probe count from 171 to about 630, each a guard subprocess of ~0.2 s, which serial would be over two minutes. One guard's probes stay in one worker so a guard with a side effect (block_settled_questions appends a refusal ledger) never races itself.
+    with ThreadPoolExecutor(max_workers=max(1, min(16, os.cpu_count() or 1))) as pool:
+        verdicts = list(pool.map(lambda g: assess(g[0], g[1], file_path_for(g[0])), guards))
+
+    probe_total = 0
+    probe_self = 0
+    probe_dropped = 0
     invalid: list[tuple[str, str]] = []
-    for guard, kind, chain in guards:
+    stale: list[str] = []
+    for (guard, _kind, chain), (outcome, detail) in zip(guards, verdicts, strict=True):
         name = guard.name
+        shape = probes_of(patterns_of(guard))
+        probe_total += len(shape.instances)
+        probe_self += shape.self_matching
+        probe_dropped += shape.dropped
         # TIER 2, STATIC, inside `assess`. A guard with no renderable instance is not automatically a defect, and treating it as one would demand that guards be rewritten to suit this instantiator rather than to match commands correctly. Two legitimate shapes exist and both were measured here:
         #
-        # * ALREADY ANCHORED -- block_blanket_git_add.py and
-        #     block_worktree_add.py carry `(^|[;&|(]|\$\(|`)` prefixes;
-        # the pattern is simply too gnarly to render into a literal. * NOT A PHRASE MATCHER AT ALL -- block_long_sleep.py extracts a NUMBER and compares it. There is no phrase to find inside prose, so the class does not apply.
+        # * ALREADY ANCHORED -- every pattern carries a `(^|[;&|(]|\$\(|`)`-style prefix that governs EVERY alternative (`command_anchored`), and none renders to a literal of four characters or more. * NOT A PHRASE MATCHER AT ALL -- block_long_sleep.py extracts a NUMBER and compares it. There is no phrase to find inside prose, so the class does not apply.
         #
-        # So: pass if the guard shows an anchor, or has nothing to anchor. Fail only when it phrase-matches with no anchor and no probe -- the case where nothing at all is checking it.
+        # So: pass if every pattern is anchored at command position, or there is nothing to anchor. Fail when any phrase pattern has no probe and no anchor of its own -- the case where nothing at all is checking it. Before 2026-10-09 this asked whether ANY pattern contained `(^|`, so one anchored constant vouched for its unanchored siblings.
         #
         # PROSE FIRING IS SELF-EVIDENT: nothing else has to be true for a guard refusing a sentence to be a defect. Requiring a POSITIVE probe to also fire before trusting silence was tried and rejected -- most extracted instances are one fragment of a multi-part trigger (a roundlog guard needs BOTH a matching file_path AND a write call; no single instantiated substring can satisfy
         # that alone), so demanding per-instance reachability reported 37 of 42 guards as inconclusive even though most were already known-clean from the pre-bash-only scan. The signal this check needs is the one that is unconditionally trustworthy: does prose trip the guard.
-        outcome, detail = assess(guard, kind, file_path_for(guard))
         if outcome == "allowed":
             continue
         if outcome == "static":
@@ -663,6 +943,16 @@ def main() -> int:
             invalid.append((f"{chain}/{name}", detail))
             continue
         probed += 1
+        if name in PROSE_TARGETS:
+            if outcome == "prose":
+                refused = detail.split(PROSE_SEP)
+                print(f"PROSE-TARGET {chain}/{name}: {PROSE_TARGETS[name]}")
+                print(f"    {len(refused)} probe sentence(s) refused, as its rule intends:")
+                for inst in refused:
+                    print(f"      {sentence(inst)}")
+            else:
+                stale.append(f"{chain}/{name}")
+            continue
         if outcome == "prose":
             offenders.append((f"{chain}/{name}", detail))
         elif outcome == "nobase":
@@ -710,17 +1000,40 @@ def main() -> int:
             file=sys.stderr,
         )
 
-    if offenders or unprobed or invalid:
+    for name in stale:
+        print(
+            f"{RED}✗{NC} {name} is listed in PROSE_TARGETS but refused no probe sentence. The "
+            "exemption is stale: delete the entry and let the plain probe judge the guard.",
+            file=sys.stderr,
+        )
+
+    # THE SHAPE, every run. A collapse in the instance count or in how many instances their own pattern matches is how a broken instantiator shows itself before it shows up as a false green.
+    print(
+        f"probes: {probe_total} sentence(s) rendered from every alternative of every pattern; "
+        f"{probe_self} match the pattern they came from; {probe_dropped} past the "
+        f"{MAX_INSTANCES}-per-pattern bound"
+    )
+    if probe_dropped:
+        print(
+            f"{RED}✗{NC} {probe_dropped} instance(s) were dropped by MAX_INSTANCES, so those "
+            "alternatives were never probed. Raise the bound; never let it cut silently.",
+            file=sys.stderr,
+        )
+        return 1
+
+    if offenders or unprobed or invalid or stale:
         print(
             f"\n{RED}✗{NC} {len(offenders)} guard(s) refuse prose; {len(unprobed)} could not be "
-            f"probed; {len(invalid)} structure declaration(s) invalid or unprobeable.",
+            f"probed; {len(invalid)} structure declaration(s) invalid or unprobeable; "
+            f"{len(stale)} stale PROSE_TARGETS entr(y/ies).",
             file=sys.stderr,
         )
         return 1
 
     print(
         f"{GREEN}✓{NC} {probed} guard(s) across {len(CHAINS)} chain(s) refuse commands, not "
-        f"sentences about them; {static_ok} anchored or not phrase-matching"
+        f"sentences about them; {static_ok} anchored or not phrase-matching; "
+        f"{len(PROSE_TARGETS)} prose-target exemption(s), printed above"
     )
     return 0
 

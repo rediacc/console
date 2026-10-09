@@ -24,7 +24,15 @@ DEFECT = (r")[^;&|]*", r").*")
 
 PROTECTED = r"(\.claude/settings\.json|scripts/pre-commit-check\.sh)"
 
-VERB_AND_PATH = hookio.rx(r"(git restore|git checkout|(^|[{S};|&])rm[{S}])[^;&|]*") + PROTECTED
+# COMMAND POSITION ON EVERY ARM. The verb group used to be `(git restore|git checkout|(^|[{S};|&])rm[{S}])`, which anchored only the `rm` arm, and that to any whitespace: `echo the docs say never to run git restore .claude/settings.json in this repo` was refused, and so was `echo never rm .claude/settings.json here` (found by check:ci-guard-mention-anchoring, 2026-10-09).
+# Now the whole alternation sits behind one anchor, the line start or a separator, then an optional directory on the program (`/bin/rm`). `git` admits global flags before its verb the way block_worktree_add's GIT_AT_CMD does, so `git -C . restore` and `git  restore` are reached; both were ALLOWED before, because the verb was the literal `git restore`. Prefix commands
+# (`sudo`, `xargs`, `time`, an assignment, `if ... then`) reach it through `shellscan.lifted_commands`. `find ... -exec` is not one shellscan unwraps, so the anchor admits it by name: `find . -exec rm .claude/settings.json \;` was refused through the whitespace arm and is kept refused.
+VERB_AND_PATH = (
+    hookio.rx(
+        r"(^|[;&|(`{!])[{S}]*(find[{S}][^;&|]*[{S}]-(exec|execdir|ok|okdir)[{S}]+)?([^{S};|&()`]*/)?(git([{S}]+-[A-Za-z-]+([{S}]+[^{S};&|-][^{S};&|]*)?)*[{S}]+(restore|checkout)[{S}]|rm[{S}])[^;&|]*"
+    )
+    + PROTECTED
+)
 
 MESSAGE = "❌ BLOCKED: Cannot delete or restore protected hook files"
 
@@ -41,6 +49,18 @@ EDGE_CASES = [
     ("reading the file on its own", "cat .claude/settings.json"),
     ("a restore of an unprotected path", "git restore packages/cli/src/x.ts"),
     ("a wrapper payload is still scanned", "sh -c 'git restore .claude/settings.json'"),
+    # Command position on every arm: these sentences were refused before 2026-10-09.
+    (
+        "a sentence naming the restore is not running it",
+        "echo the docs say never to run git restore .claude/settings.json in this repo",
+    ),
+    ("a sentence naming rm is not running it", "echo never rm .claude/settings.json here"),
+    ("git global flags before the verb", "git -C . restore .claude/settings.json"),
+    ("a prefix command still reaches rm", "sudo rm .claude/settings.json"),
+    (
+        "find -exec is a launcher shellscan does not unwrap",
+        r"find . -exec rm .claude/settings.json \;",
+    ),
 ]
 
 

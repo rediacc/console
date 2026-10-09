@@ -16,8 +16,11 @@ ORDER = 9
 # The bridge-VM carve-out. Without it every `ssh 192.168.111.x docker ...` is refused, and that address range is the one machine where raw docker over ssh is the sanctioned thing to do.
 DEFECT = ("and not hookio.grep_q(BRIDGE, scan)", "and True")
 
-SSH_DOCKER = hookio.rx(r"\bssh\b[{S}][^|;&]*\bdocker\b")
-BRIDGE = hookio.rx(r"\bssh\b[{S}][^|;&]*192\.168\.111\.")
+# COMMAND POSITION, NOT A WORD BOUNDARY. `\bssh\b` matched `ssh` anywhere, so `echo the docs say never to run ssh docker in this repo` was refused (found by check:ci-guard-mention-anchoring, 2026-10-09). Now `ssh` must open a command: the line start or a separator, then optional blanks, then an optional directory (`/usr/bin/ssh`). `sudo`, `timeout`, an assignment and the other prefix
+# commands reach it through `shellscan.lifted_commands`. `sshpass` is not one shellscan unwraps, so the anchor admits it and its flags by name: `sshpass -p x ssh prod-1 docker ps` was refused through `\bssh\b` and is kept refused. BRIDGE keeps the same anchor so the carve-out answers about the same ssh the refusal found.
+SSH_AT_CMD = r"(^|[;&|(`{!])[{S}]*(sshpass([{S}]+-[^{S};|&]+([{S}]+[^-{S};|&][^{S};|&]*)?)*[{S}]+)?([^{S};|&()`]*/)?ssh[{S}]"
+SSH_DOCKER = hookio.rx(SSH_AT_CMD + r"[^|;&]*\bdocker\b")
+BRIDGE = hookio.rx(SSH_AT_CMD + r"[^|;&]*192\.168\.111\.")
 
 MESSAGE = (
     "❌ BLOCKED: Do not run raw ssh+docker on a rediacc-managed machine. Use: ./rdc.sh "
@@ -39,6 +42,14 @@ EDGE_CASES = [
     ("a separator ends the clause before docker", "ssh prod-1 true; docker ps"),
     ("ssh with no docker", "ssh prod-1 uptime"),
     ("docker with no ssh", "docker ps"),
+    # Command position: `\bssh\b` refused this sentence before 2026-10-09.
+    (
+        "a sentence naming the command is not running it",
+        "echo the docs say never to run ssh docker in this repo",
+    ),
+    ("a prefix command still reaches it", "sudo ssh prod-1 docker ps"),
+    ("an ssh by path", "/usr/bin/ssh prod-1 docker ps"),
+    ("sshpass is a launcher shellscan does not unwrap", "sshpass -p x ssh prod-1 docker ps"),
 ]
 
 

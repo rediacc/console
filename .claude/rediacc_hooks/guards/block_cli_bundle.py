@@ -30,8 +30,11 @@ ORDER = 8
 # Re-inserting the `.*` between the program slot and the bundle name is exactly the original defect this guard's header is about: the path stops having to be the program and goes back to being any substring of the line, so `node scripts/x.mjs --outdir packages/cli/dist/out.js` is refused again.
 DEFECT = (r"]*(cli-bundle[^", r"]*.*(cli-bundle[^")
 
+# COMMAND POSITION, NOT ANY WHITESPACE. The anchor used to be `(^|[;&|(]|[{S}])`, and the `[{S}]` arm admits `node` after any space, which is inside every sentence: `echo the docs say never to run node cli-bundle.js in this repo` was refused (found by check:ci-guard-mention-anchoring, 2026-10-09). Now `node` must open a command: the line start or a separator, then
+# optional blanks, then an optional directory (`/usr/bin/node`). The prefixes the whitespace arm used to tolerate (`sudo`, `time`, `env`, `xargs`, an assignment, a leading redirect, `!`, `if ... then`) still reach it, because `scan_target` lifts every command bash runs onto a line of its own (`shellscan.lifted_commands`). `npx` is not one of the prefixes shellscan unwraps, so it is
+# named here: `npx node cli-bundle.js` was refused through the whitespace arm and is kept refused, measured both ways while anchoring.
 NODE_BUNDLE = hookio.rx(
-    r"(^|[;&|(]|[{S}])node[{S}]+(-[^{S};|&]+[{S}]+)*[^{S};|&]*(cli-bundle[^{S};|&]*\.[cm]?js|packages/cli/dist/[^{S};|&]*)"
+    r"(^|[;&|(`{!])[{S}]*(npx[{S}]+)?([^{S};|&()`]*/)?node[{S}]+(-[^{S};|&]+[{S}]+)*[^{S};|&]*(cli-bundle[^{S};|&]*\.[cm]?js|packages/cli/dist/[^{S};|&]*)"
 )
 
 MESSAGE = "❌ BLOCKED: Do not run the CLI bundle directly via node. Use ./rdc.sh instead."
@@ -49,6 +52,14 @@ EDGE_CASES = [
     ("prose merely quoting the banned command", "echo 'node packages/cli/dist/cli.js'"),
     ("a wrapper payload is still scanned", "sh -c 'node packages/cli/dist/cli.js'"),
     ("node with an unrelated program", "node scripts/dev/x.mjs"),
+    # Command position: the whitespace arm of the old anchor refused this sentence.
+    (
+        "a sentence naming the command is not running it",
+        "echo the docs say never to run node cli-bundle.js in this repo",
+    ),
+    ("a prefix command still reaches it", "sudo node cli-bundle.js"),
+    ("npx is a launcher shellscan does not unwrap", "npx node cli-bundle.js"),
+    ("after && still reaches it", "cd x && node cli-bundle.js"),
 ]
 
 
