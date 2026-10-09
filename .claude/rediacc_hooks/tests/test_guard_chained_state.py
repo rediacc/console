@@ -20,6 +20,7 @@ from rediacc_hooks import dispatch, shellscan
 from rediacc_hooks.guards import block_unverified_push as PUSH
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
+from rediacc_hooks.wellknown import GH_ORIGIN, RENET_REPO
 
 STALE_UNRELATED = 60
 TS_FILES = 25
@@ -221,7 +222,7 @@ def test_bulk_guard_counts_a_record_name_that_is_not_a_commit(tmp_path, monkeypa
 def _gitmodules(root, subs):
     """Write `.gitmodules` naming each `path: OWNER/REPO` submodule with a GitHub url."""
     text = "".join(
-        '[submodule "%s"]\n\tpath = %s\n\turl = https://github.com/%s.git\n' % (path, path, repo)
+        '[submodule "%s"]\n\tpath = %s\n\turl = %s/%s.git\n' % (path, path, GH_ORIGIN, repo)
         for path, repo in subs.items()
     )
     (root / ".gitmodules").write_text(text, encoding="utf-8")
@@ -259,9 +260,9 @@ def test_bulk_guard_refuses_a_project_repo_it_has_no_checkout_of(tmp_path, monke
 def test_bulk_guard_refuses_a_head_it_cannot_read(tmp_path, monkeypatch):
     """`--head` naming a branch the checkout has no ref for is refused, never judged as the checked-out branch (review 833dc9af.2)."""
     root = _pr_world(tmp_path / "console")
-    _gitmodules(root, {"private/renet": "rediacc/renet"})
+    _gitmodules(root, {"private/renet": RENET_REPO})
     _pr_world(root / "private" / "renet")
-    cmd = "gh pr create --repo rediacc/renet --base main --head not-here -t x"
+    cmd = "gh pr create --repo %s --base main --head not-here -t x" % RENET_REPO
     rc, _out, err = _run("block_unproven_bulk_transform", cmd, root, monkeypatch)
     assert rc == 2
     assert "no local or origin/ ref" in err, err
@@ -270,11 +271,11 @@ def test_bulk_guard_refuses_a_head_it_cannot_read(tmp_path, monkeypatch):
 def test_bulk_guard_judges_a_submodule_pr_in_its_own_checkout(tmp_path, monkeypatch):
     """`gh pr create --repo rediacc/renet --head feat` walks private/renet, not the console's range (2026-10-09)."""
     root = _pr_world(tmp_path / "console")
-    _gitmodules(root, {"private/renet": "rediacc/renet"})
+    _gitmodules(root, {"private/renet": RENET_REPO})
     _branch_with(root, ["src/f%02d.ts" % i for i in range(25)], "refactor: console bulk")
     renet = _pr_world(root / "private" / "renet")
     _branch_with(renet, ["one.go"], "fix: one file")
-    cmd = "gh pr create --repo rediacc/renet --base main --head feat -t x"
+    cmd = "gh pr create --repo %s --base main --head feat -t x" % RENET_REPO
     rc, _out, err = _run("block_unproven_bulk_transform", cmd, root, monkeypatch)
     assert rc == 0, err
     # The console's own create still sees the console's bulk commit.
