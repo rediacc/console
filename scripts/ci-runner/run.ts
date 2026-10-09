@@ -1,5 +1,5 @@
 #!/usr/bin/env tsx
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 /**
  * `npm run ci`, as a parallel worker pool over the gate manifest.
@@ -4460,12 +4460,52 @@ function receiptDue(opts: Options, merged: boolean): boolean {
   return opts.quick && !opts.manifest && !merged && !opts.narrow;
 }
 
+/**
+ * THE TEMP FILESYSTEM'S CAPACITY, refused before a single gate is selected (worklist #edd646a8). On 2026-10-09 /tmp (a tmpfs capped at 1,048,576 inodes) filled twice in one session, and `ci:quick` broke at 93% inode use with failures that named nothing about inodes. `rediacc_ci.core.tmp_capacity` owns the floor, the message and the fix, so this runs it rather than keeping a second copy
+ * of either; the repo-root conftest.py runs the same check for pytest. Undefined means the run may start; a string is the one line to print before exiting 1. A python3 that cannot be started is a refusal too: a check that did not run has verified nothing.
+ */
+function tmpCapacityRefusal(okOut: (text: string) => void): string | undefined {
+  const pythonPath = [path.join(REPO_ROOT, '.ci'), process.env.PYTHONPATH]
+    .filter(Boolean)
+    .join(path.delimiter);
+  const probe = spawnSync(
+    'python3',
+    ['-m', 'rediacc_ci.core.tmp_capacity', '--path', os.tmpdir()],
+    {
+      cwd: REPO_ROOT,
+      env: { ...process.env, PYTHONPATH: pythonPath },
+      encoding: 'utf8',
+      timeout: 60_000,
+    }
+  );
+  if (probe.error !== undefined)
+    return `tmp-capacity: REFUSING to start: could not run \`python3 -m rediacc_ci.core.tmp_capacity\` (${probe.error.message}); put python3 on PATH and rerun`;
+  if (probe.status === 0) {
+    okOut(probe.stdout);
+    return undefined;
+  }
+  const said = `${probe.stderr}${probe.stdout}`.trim();
+  return said !== ''
+    ? said
+    : `tmp-capacity: REFUSING to start: the check exited ${probe.status ?? probe.signal} with no output`;
+}
+
 async function main(): Promise<number> {
   installSignalHandlers();
   // `--list-units <lane>` prints the lane's test units, one JSON object per line (PLAN-ci-time-budget T2.8): the input to a shard manifest and to the per-unit durations T1.6/T3.2 measure. Handled before parseArgs, which knows only gate flags.
   const listUnitsAt = process.argv.indexOf('--list-units');
   if (listUnitsAt >= 0) return listUnits(process.argv[listUnitsAt + 1]);
   const opts = parseArgs(process.argv.slice(2));
+  // Before the selftest too: `ci:quick` runs `--selftest` first, and that is the step that broke on a full /tmp. `--list` only prints, and the selftest drives it in-process several times, so it is the one mode that skips the probe.
+  if (!opts.list) {
+    const refusal = tmpCapacityRefusal((text) =>
+      (opts.json ? process.stderr : process.stdout).write(text)
+    );
+    if (refusal !== undefined) {
+      process.stderr.write(`${refusal}\n`);
+      return 1;
+    }
+  }
   if (opts.selftest) return selftest();
 
   const specs = await loadManifest(opts.manifest);

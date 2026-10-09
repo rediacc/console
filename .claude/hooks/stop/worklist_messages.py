@@ -2240,6 +2240,14 @@ Per-commit reviews (agent/reviews/<branch>/: clean.jsonl, plus <sha40>.md per ot
   --prune-reviews <me> [--write] list review directories past retention;
                                 --write deletes them
 
+Session scratchpad (<tmp>/claude-<uid>/<project>/<session>/scratchpad):
+  --prune-scratch <me> [--write] [--older-than <min>]
+                                list the scratchpad's directories and why each
+                                is kept or deletable (idle under 120 min, named
+                                by a live lease, a process inside, or a git
+                                tree with undelivered changes all keep);
+                                --write deletes the deletable ones
+
 Plan queue switchboard (agent/plans/QUEUE.md `## Settings`):
   --queue-set <me> [key=value ...] [--note "<text>"]
                                 write stop_hook, turbo, turbo_push, batch_size,

@@ -514,6 +514,8 @@ def drive_l1(fix) -> L1Drive:
             "--drop-foreign-reviews @WHO@",
             "no review records of a foreign repository",
         ),
+        # Listing mode (no --write): the fixture's TMPDIR holds no scratchpad, so the accepted run says so and deletes nothing, after the same _identity_or_die its --write mode runs.
+        ("--prune-scratch", "--prune-scratch @WHO@", "nothing to prune"),
         # The stop-hook retro brief (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.13). It WRITES: the first accepted run orders the band and adds the tracking item, so a foreign `<me>` must be refused before either.
         ("--retro-brief", "--retro-brief @WHO@ early", "STOP-HOOK RETRO for session"),
     ]

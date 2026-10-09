@@ -307,6 +307,9 @@
       "HOME",
       "PATH"
     ],
+    ".ci/rediacc_ci/core/tmp_capacity.py": [
+      "TMP_CAPACITY_MIN_FREE_INODES"
+    ],
     ".ci/rediacc_ci/core_lease.py": [
       "CI_CORE_LEASE_HELD",
       "PYTEST_ADDOPTS"
