@@ -18,8 +18,8 @@ ORDER = 7
 
 # Dropping the host-spec test restores the `^scp ` behaviour the 2026-08-27 change removed: every scp is a deploy again, downloads included. It is the one line that separates "uploading a binary" from "pulling a log back".
 DEFECT = (
-    "if len(argv) > 1 and hookio.grep_q(HOST_SPEC, argv[-1]):",
-    "if len(argv) > 1:",
+    "if shellscan.unresolved(dest) or hookio.grep_q(HOST_SPEC, dest):",
+    "if True:",
 )
 
 MESSAGE = (
@@ -74,7 +74,44 @@ EDGE_CASES = [
     ("timeout N still reaches the upload", "timeout 30 scp x h:/p"),
     # xargs appends its input last, so this copies FROM the host: a download.
     ("xargs-appended sources make a download", "echo bin/renet | xargs scp host:/d"),
+    # Options are set aside the way getopt reads them (review f212d159.1).
+    ("a trailing option does not hide the upload", "scp bin/renet host:/usr/local/bin/renet -q"),
+    ("a value option before the operands", "scp -P 2222 -o BatchMode=yes bin/renet host:/p"),
+    ("an attached value option", "scp -P2222 bin/renet host:/p"),
+    ("a trailing option after a download", "scp host:/var/log/renet.log ./logs/ -q"),
+    ("a value that looks like a host is the option's", "scp -J jump:22 a.txt b.txt"),
+    # A destination built at run time is judged as an upload (review f212d159.2).
+    ("a substituted destination is judged strictly", "scp bin/renet $(cat dest.txt)"),
+    ("an assigned destination is read", "D=host:/p; scp bin/renet $D"),
 ]
+
+
+# The scp options that take a value (OpenSSH scp(1)): -c cipher, -D sftp_server_path, -F ssh_config, -i identity_file, -J destination, -l limit, -o ssh_option, -P port, -S program, -X sftp_option.
+SCP_VALUE_LETTERS = frozenset("cDFiJloPSX")
+
+
+def _scp_destination(args):
+    """scp's destination: the last operand once the options are set aside, or None with fewer than two operands.
+
+    glibc's getopt permutes, so an option may follow the operands (`scp a host:/p -q` uploads), and the last WORD is not the destination (review f212d159.1). Options are read the way getopt reads them: a bundle of letters, where a value letter takes the rest of its word or the next word, and `--` ends the options.
+    """
+    operands = []
+    i = 0
+    while i < len(args):
+        word = args[i]
+        i += 1
+        if word == "--":
+            operands.extend(args[i:])
+            break
+        if word.startswith("-") and len(word) > 1 and not shellscan.unresolved(word):
+            for j, letter in enumerate(word[1:], start=1):
+                if letter in SCP_VALUE_LETTERS:
+                    if j == len(word) - 1:
+                        i += 1
+                    break
+            continue
+        operands.append(word)
+    return operands[-1] if len(operands) >= 2 else None
 
 
 def run(ev):
@@ -89,9 +126,12 @@ def run(ev):
     for run_ in shellscan.every_run(cmd):
         if run_.name.rsplit("/", 1)[-1] != "scp":
             continue
-        argv = run_.xargv if getattr(run_, "xargv", None) is not None else run_.argv
-        # The destination is scp's last operand; a host spec there is an upload.
-        if len(argv) > 1 and hookio.grep_q(HOST_SPEC, argv[-1]):
+        args = run_.argv if run_.xargv is None else run_.xargv
+        dest = _scp_destination(args)
+        if dest is None:
+            continue
+        # A destination built at run time (`$(...)`, an unset variable) cannot be read here, so it is judged the strict way: as an upload (review f212d159.2).
+        if shellscan.unresolved(dest) or hookio.grep_q(HOST_SPEC, dest):
             ev.warn(MESSAGE)
             return hookio.DENY
     return hookio.ALLOW
