@@ -2,23 +2,29 @@
   "rubrics": {
     "BRAVE_PROMPT": {
       "calibrated": "2026-10-09",
-      "note": "Re-calibrated 2026-10-09 (#455e5cef) after five runs scored 'leave it on its branch' 1/5, 'hold and report the numbers' 2/5 and 'keep carrying it' 4/5. The reserved-act hold now needs the DEFAULT itself to name and decline the act, changes_state is judged on the default as written rather than the braver form, and the sentence calling any audience-reaching step irreversible, which contradicted 'republishing regenerated content' being reversible, is gone. Three full runs matched 17/17 (.ci/cache/calibrate-20261009-fix1.log, -fix2.log, -fix3.log).",
+      "note": "Re-measured 2026-10-09 (review 18700a76.4) with the text unchanged and the fixtures held out: the four fire fixtures were the measured defaults this prompt quotes as its examples, one of them with its question and answer, so each is now the same defect reworded. The 'default that acts' control read 'land it on the open PR', a commit and a push the prompt says a default never orders, and fired on one full run in four (-fix4g.log); it now names an uncommitted write. Three full runs over the final fixtures matched 18/18 (.ci/cache/calibrate-20261009-fix4h.log, -fix4i.log, -fix4j.log).",
       "sha": "03ba09e5eb7343e2"
     },
     "REGGATE_PROMPT": {
       "calibrated": "2026-10-09",
-      "note": "Full pass 2026-10-09 (#455e5cef) over the text 2d7364e0c changed: three full runs matched 17/17, the eight sweep fixtures REGGATE rides included (.ci/cache/calibrate-20261009-fix1.log, -fix2.log, -fix3.log). The earlier 7/8 and 6/8 sweep scores were a fixture worded against its label and a calibrator that omitted the fixset_files list production passes, not this text.",
+      "note": "Measured only through the sweep fixtures, which run in one prompt with SWEEP_PROMPT, so `rides` records the SWEEP_PROMPT text of the same runs and the gate refuses this pass once that text moves (review 18700a76.5). Three full runs matched 18/18, the nine sweep fixtures included (.ci/cache/calibrate-20261009-fix4h.log, -fix4i.log, -fix4j.log).",
+      "rides": {
+        "SWEEP_PROMPT": "7ec87ff3898ce5e3"
+      },
       "sha": "2b8cbd5b3ccdd640"
     },
     "SHAPE_PROMPT": {
       "calibrated": "2026-10-09",
-      "note": "Re-calibrated 2026-10-09 (#455e5cef) after the run_gate control fired 1 run in 5 as `already`, naming harness.py, which all three instances already call. `already` now excludes copies that already call the module, and thin wrappers with different signatures answer `no`. Three full runs matched 17/17 (.ci/cache/calibrate-20261009-fix1.log, -fix2.log, -fix3.log).",
-      "sha": "53812efd8e4ae407"
+      "note": "Re-calibrated 2026-10-09 (review 18700a76.2, .3). The prompt says an `already` naming a module that every instance's file imports is consolidated, and wl_shapedup.instances_import now checks that on disk, so read_verdict answers silent for it whatever the model chose; the prompt no longer claims an import check the code did not run. The run_gate control, which drew `already` naming harness.py one run in five before, is covered by both. calibrate-judge-rules.py --selftest proves the check offline. Three full runs matched 18/18 (.ci/cache/calibrate-20261009-fix4h.log, -fix4i.log, -fix4j.log).",
+      "sha": "3566612d3c625e41"
     },
     "SWEEP_PROMPT": {
       "calibrated": "2026-10-09",
-      "note": "Re-calibrated 2026-10-09 (#455e5cef) after five runs scored the only-instance control 2/5, 'guard false positive on one of its paths' 3/5 and 'guard matched a mention' 4/5. The control said 'this is the only other one', which states a sibling exists, and now says none was found; the calibrator now passes each fixture's fixset_files as production does; the two-paths example names a guard's other input paths. Three full runs matched 17/17 (.ci/cache/calibrate-20261009-fix1.log, -fix2.log, -fix3.log).",
-      "sha": "014b4bae1e0a5a8c"
+      "note": "Re-calibrated 2026-10-09 (review 18700a76.1). A new fire fixture reports a search of the other guards and none of the guard's own paths; the first run scored it silent (-fix4a.log), so the prompt now says a guard has two places to sweep and a search of one leaves the other, without discounting a reported search's pattern (a first wording did that and fired the only-instance control three runs in three, -fix4b..d.log). That control now reports both places, and the typo control is held out from the example this prompt quotes. Three full runs matched 18/18 (.ci/cache/calibrate-20261009-fix4h.log, -fix4i.log, -fix4j.log); `rides` records the REGGATE_PROMPT text in the same prompt.",
+      "rides": {
+        "REGGATE_PROMPT": "2b8cbd5b3ccdd640"
+      },
+      "sha": "7ec87ff3898ce5e3"
     }
   }
 }

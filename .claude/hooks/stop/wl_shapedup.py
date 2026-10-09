@@ -65,11 +65,11 @@ Three answers, and the middle one is a real answer rather than a hedge:
             module that should, in `harness` -- an existing one if there is one.
   already   a shared module for this ALREADY exists and these copies simply do not use
             it. Name it in `harness`. This is checked against the disk: a module that
-            does not exist, or that the instances do not import, is treated as `yes`.
-            NOT `already` when every instance already CALLS that module: then the
-            consolidation has happened, and what repeats is a thin local wrapper
-            around the call. If those wrappers take different arguments or return
-            different things, answer `no` and cite the differing signatures.
+            does not exist is treated as `yes`, and one that EVERY instance's file
+            already imports is treated as consolidated and answers nothing, because
+            then what repeats is a thin local wrapper around a shared call. If those
+            wrappers take different arguments or return different things, answer `no`
+            and cite the differing signatures.
   no        they look alike and are not one thing. `divergence` is REQUIRED and must be
             CONCRETE: a behavioural difference visible in the instances listed above,
             such as differing return values, error handling or side effects, cited by
@@ -113,8 +113,52 @@ def harness_is_real(harness, root=None):
     return bool(cand) and os.path.exists(os.path.join(root, cand))
 
 
-def read_verdict(out, root=None):
+def _module_stem(harness):
+    """`a/b/harness.py:run_gate` -> `harness`. The name an import of the module would carry."""
+    cand = (harness or "").split(":")[0].strip()
+    base = os.path.basename(cand.rstrip("/"))
+    return base.split(".")[0] if base else ""
+
+
+def _imports_module(text, stem):
+    """Does this source text IMPORT a module named `stem`? An import statement, a TS/JS `from`/`import`/`require` specifier, or a shell `source`. A bare mention of the word is not an import: counting a comment as adoption would silence a real `already`."""
+    s = re.escape(stem)
+    return bool(
+        re.search(r"^\s*from\s+[\w.]*\b%s\b[\w.]*\s+import\b" % s, text, re.MULTILINE)
+        or re.search(r"^\s*from\s+[\w.]+\s+import\s+[^\n]*\b%s\b" % s, text, re.MULTILINE)
+        or re.search(r"^\s*import\s+[\w., ]*\b%s\b" % s, text, re.MULTILINE)
+        or re.search(
+            r"""(?:\bfrom|\bimport|\brequire\()\s*['"][^'"]*\b%s(?:\.[a-z]+)?['"]""" % s, text
+        )
+        or re.search(r"^\s*(?:source|\.)\s+\S*\b%s\.sh\b" % s, text, re.MULTILINE)
+    )
+
+
+def instances_import(harness, instances, root=None):
+    """True only when EVERY instance's file exists and imports the named module.
+
+    SHAPE_PROMPT says `already` means the copies do not use the module, and that a module every instance already imports is consolidated. This is that sentence checked against the disk rather than left to the model: measured 2026-10-09, the run_gate calibration control answered `already` naming harness.py on one run of five, while all three of its files import it. Strict on purpose (all instances, an import statement, a file that exists): a wrong True silences a real finding, a wrong False only leaves the fire the model asked for.
+    """
+    stem = _module_stem(harness)
+    if not stem or not instances:
+        return False
+    root = root or os.getcwd()
+    for inst in instances:
+        path = os.path.join(root, str(inst).rsplit(":", 1)[0])
+        try:
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                text = fh.read()
+        except OSError:
+            return False
+        if not _imports_module(text, stem):
+            return False
+    return True
+
+
+def read_verdict(out, root=None, instances=None):
     """(kind, payload). kind is 'silent', 'fire' or 'degraded'.
+
+    `instances` are the counter's file:line list. Given, an `already` naming a module every instance already imports is SILENT (see instances_import); omitted, that check is skipped, which only ever leaves a fire standing.
 
     FAIL SEMANTICS are wl_classsweep's, not the regression gate's: a missing or malformed object NEVER fails closed. Degrading loses a demand; it can never grant an exit that was otherwise refused.
     """
@@ -145,6 +189,13 @@ def read_verdict(out, root=None):
         if len(divergence) < 20:
             return "degraded", "consolidatable=no with no concrete divergence named"
         return "silent", "not one thing: %s" % divergence[:160]
+    # THE OTHER HALF OF `already`'s DEFINITION, checked on disk: copies that all import the named module already use it, so there is nothing to adopt. Silent rather than degraded, because the disk has answered the question, not failed to.
+    if (
+        verdict == "already"
+        and harness_is_real(harness, root)
+        and instances_import(harness, instances, root)
+    ):
+        return "silent", "already consolidated: every instance imports %s" % harness[:120]
     # `already` USED TO RETURN SILENT HERE, and that was backwards. Operator ruling 2026-09-02, after the calibration fixture and this line had contradicted each other for a full run: "Make it FIRE".
     #
     # The rubric asks whether these copies should become one thing, and reads `already` as "yes, and the thing already exists". Answering that with silence made the MOST actionable case the quietest one -- a helper is on disk, N copies ignore it, and adopting it is a mechanical edit with no design left to do. V_ACTION already carried the right order for it ("Extract the shared
@@ -290,7 +341,7 @@ def apply_verdict(out, instances, shape_hash, root=None, path=None):
     without a prior the count is pinned at 1 forever, and `load` returns None only once the cap is ALREADY reached, so the guard could not fire while a live demand existed. The rule blocked on the same shape indefinitely. Caught by the control below, not by reading the code.
     """
     demand = demand_for(shape_hash)
-    kind, payload = read_verdict(out, root)
+    kind, payload = read_verdict(out, root, instances)
     if kind != "fire":
         demand.clear(path)
         return kind, payload if isinstance(payload, str) else ""
@@ -621,7 +672,7 @@ def wide_report(root, findings, err, branch):
         if out is None:
             note = "wide shape_dup not judged: %s" % err2
         else:
-            kind, payload = read_verdict(out, root)
+            kind, payload = read_verdict(out, root, instances)
             if kind == "fire":
                 desc = payload["shape"]
                 action = V_ACTION_WIDE % (
