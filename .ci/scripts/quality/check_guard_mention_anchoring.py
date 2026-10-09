@@ -135,6 +135,14 @@ FRAGMENTS: dict[tuple[str, str], str] = {
         "BLOCKER: a one-character class tested against the mode argument of an open() call found by ast in a Python "
         "program; it reads a parsed string value, never the command text."
     ),
+    ("block_review_file_shell_write.py", "_PERCENT_SPEC"): (
+        "BLOCKER: a printf conversion matched inside a `%` template string that ast found in a Python program, so the "
+        "guard can substitute the argument; it rewrites a parsed string value and never reads the command text."
+    ),
+    ("block_review_file_shell_write.py", "_FORMAT_FIELD"): (
+        "BLOCKER: a `str.format` replacement field matched inside a template string that ast found in a Python program, "
+        "so the guard can substitute the argument; it rewrites a parsed string value and never reads the command text."
+    ),
     ("block_review_file_shell_write.py", "_LITERAL"): (
         "BLOCKER: extracts the body of each quoted or backticked literal on a line of interpreter program text that "
         "already names the review directory beside a shell call (SHELL_CALL); quote shapes with no word, applied to "

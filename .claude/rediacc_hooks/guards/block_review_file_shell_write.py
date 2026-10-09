@@ -411,25 +411,88 @@ _SHELL_CALLS = frozenset(
         "subprocess.getstatusoutput",
     )
 )
-# Text standing in for a piece of a command the ast cannot spell: a name bound to a review path renders as one, anything else as an inert word.
-_UNKNOWN = "_"
+# Text standing in for a piece of a command the ast cannot spell: a name bound to a review path renders as one, anything else as an unknown path segment.
+# The unknown ends in `/` so text glued after it still starts a segment: `f"{root}agent/reviews/a.md"` renders `_/agent/reviews/a.md`, which REVIEW_WORD matches. A bare `_` made it `_agent/reviews/a.md`, which it did not (review 071b7987.1).
+_UNKNOWN = "_/"
 _UNKNOWN_REVIEW = "agent/reviews/_"
+# A printf-style conversion in a `%` template: `%s`, `%-10r`, `%(name)s`, `%%` (a literal percent).
+_PERCENT_SPEC = re.compile(r"%(\([^)]*\))?[-#0 +]*(\*|\d+)?(\.(\*|\d+))?[a-zA-Z%]")
+# A replacement field in a `str.format` template: `{}`, `{0}`, `{name!r:>10}`; `{{`/`}}` are literal braces.
+_FORMAT_FIELD = re.compile(r"\{\{|\}\}|\{[^{}]*\}")
+_PATH_CTORS = frozenset(("Path", "PurePath", "PosixPath", "PurePosixPath"))
+
+
+def _is_path_join(func):
+    """`os.path.join` or `posixpath.join`, spelled as the call names it."""
+    if not (isinstance(func, ast.Attribute) and func.attr == "join"):
+        return False
+    owner = func.value
+    if isinstance(owner, ast.Name):
+        return owner.id == "posixpath"
+    return (
+        isinstance(owner, ast.Attribute)
+        and owner.attr == "path"
+        and isinstance(owner.value, ast.Name)
+        and owner.value.id == "os"
+    )
+
+
+def _is_path_ctor(func):
+    """`Path(...)` and its siblings, bare or as `pathlib.Path`."""
+    if isinstance(func, ast.Name):
+        return func.id in _PATH_CTORS
+    return isinstance(func, ast.Attribute) and func.attr in _PATH_CTORS
 
 
 def _render(expr, bound, review_names, seen=frozenset()):
-    """The text a string expression evaluates to, as near as the ast spells it: constants, f-strings, `+` and `%` joins, and names bound once to such an expression."""
+    """The text a string expression evaluates to, as near as the ast spells it: constants, f-strings, `+`, `%` and `str.format`, `os.path.join`, `Path(...)` and `/`, and names bound once to such an expression."""
+
+    def sub(node):
+        return _render(node, bound, review_names, seen)
+
     if isinstance(expr, ast.Constant):
         return expr.value if isinstance(expr.value, str) else str(expr.value)
     if isinstance(expr, ast.JoinedStr):
-        return "".join(_render(v, bound, review_names, seen) for v in expr.values)
+        return "".join(sub(v) for v in expr.values)
     if isinstance(expr, ast.FormattedValue):
-        return _render(expr.value, bound, review_names, seen)
+        return sub(expr.value)
     if isinstance(expr, ast.BinOp) and isinstance(expr.op, ast.Add):
-        return _render(expr.left, bound, review_names, seen) + _render(
-            expr.right, bound, review_names, seen
-        )
+        return sub(expr.left) + sub(expr.right)
+    if isinstance(expr, ast.BinOp) and isinstance(expr.op, ast.Div):
+        return sub(expr.left).rstrip("/") + "/" + sub(expr.right)
     if isinstance(expr, ast.BinOp) and isinstance(expr.op, ast.Mod):
-        return _render(expr.left, bound, review_names, seen)
+        # Each conversion takes the next argument (or the mapping's value, unknown); `%%` stays a percent (review 071b7987.1 sibling).
+        args = iter(
+            [sub(e) for e in expr.right.elts]
+            if isinstance(expr.right, ast.Tuple)
+            else [sub(expr.right)]
+        )
+        return _PERCENT_SPEC.sub(
+            lambda m: "%" if m.group(0) == "%%" else next(args, _UNKNOWN), sub(expr.left)
+        )
+    if isinstance(expr, ast.Call):
+        func = expr.func
+        if (
+            isinstance(func, ast.Attribute)
+            and func.attr == "format"
+            and isinstance(func.value, ast.Constant)
+            and isinstance(func.value.value, str)
+        ):
+            args = iter([sub(a) for a in expr.args])
+            return _FORMAT_FIELD.sub(
+                lambda m: m.group(0)[0] if m.group(0) in ("{{", "}}") else next(args, _UNKNOWN),
+                func.value.value,
+            )
+        if _is_path_join(func) or _is_path_ctor(func):
+            return "/".join(sub(a).rstrip("/") for a in expr.args) if expr.args else _UNKNOWN
+        if (
+            isinstance(func, ast.Name)
+            and func.id in ("str", "os.fspath", "fspath")
+            and len(expr.args) == 1
+        ):
+            return sub(expr.args[0])
+        if isinstance(func, ast.Attribute) and func.attr == "fspath" and len(expr.args) == 1:
+            return sub(expr.args[0])
     if isinstance(expr, ast.Name):
         values = bound.get(expr.id, [])
         if len(values) == 1 and expr.id not in seen:

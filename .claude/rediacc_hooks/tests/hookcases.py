@@ -1061,6 +1061,56 @@ STATIC: list[Case] = [
         bash_json("python3 -c \"import os; p = 'agent/reviews/a.md'; os.system(f'echo x > {p}')\""),
         "review-file-shell-write: an f-string shell command through a bound review path (e30f1ad1.2)",
     ),
+    # Review 071b7987.1 and its siblings: a review path glued after a value the ast cannot spell, in every way Python builds a string.
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; root = os.environ['R']; os.system(f'echo x > {root}agent/reviews/a.md')\""
+        ),
+        "review-file-shell-write: an f-string review path after an unbound prefix (071b7987.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; os.system('echo x > %sagent/reviews/a.md' % os.environ['R'])\""
+        ),
+        "review-file-shell-write: a %-template review path after an unbound prefix (071b7987.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; os.system('echo x > {}agent/reviews/a.md'.format(os.environ['R']))\""
+        ),
+        "review-file-shell-write: a str.format review path after an unbound prefix (071b7987.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; os.system('echo x > ' + os.path.join(os.environ['R'], 'agent/reviews/a.md'))\""
+        ),
+        "review-file-shell-write: an os.path.join review path (071b7987.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; from pathlib import Path; os.system('echo x > ' + str(Path(os.environ['R']) / 'agent/reviews/a.md'))\""
+        ),
+        "review-file-shell-write: a Path / review path through str() (071b7987.1)",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; os.system('echo %s > /tmp/out' % 'agent/reviews/a.md')\""
+        ),
+        "review-file-shell-write CONTROL: a %-template that only echoes a review path into another file (071b7987.1)",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; os.system('cat {}agent/reviews/a.md > /tmp/out'.format(os.environ['R']))\""
+        ),
+        "review-file-shell-write CONTROL: a str.format review path that is only read (071b7987.1)",
+    ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
         bash_json("perl -e 'system(\"echo x > agent/reviews/a.md\")'"),
