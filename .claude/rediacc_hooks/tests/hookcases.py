@@ -2107,6 +2107,57 @@ STATIC: list[Case] = [
         bash_json("git config rebase.autoStash false"),
         "destructive-git #18c7e53c: turning autoStash off is allowed",
     ),
+    # #a234b06e, the second widening: the audit's B38-B49 forms. With no submodule present a foreach payload is judged in the repository itself, so these rows too answer the same in any checkout.
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git rm -f packages/cli/x.ts"),
+        "destructive-git #a234b06e: a forced rm deletes a modified file",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git rm --cached -r ."),
+        "destructive-git #a234b06e: a recursive cached rm empties the shared index",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git read-tree --reset -u HEAD"),
+        "destructive-git #a234b06e: read-tree -u rewrites the work tree",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git checkout-index -f -a"),
+        "destructive-git #a234b06e: a forced checkout-index overwrites modified files",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git submodule update --init --force"),
+        "destructive-git #a234b06e: a forced submodule update discards submodule work",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git submodule foreach git clean -fd"),
+        "destructive-git #a234b06e: a foreach payload is judged as a command in each submodule",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git rm packages/cli/x.ts"),
+        "destructive-git #a234b06e: a plain rm stays open, git refuses it over a modified file",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git rm --cached packages/cli/x.ts"),
+        "destructive-git #a234b06e: one cached path stays open",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git submodule update --init --recursive"),
+        "destructive-git #a234b06e: /pr-merge's submodule update stays open",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git submodule foreach git status"),
+        "destructive-git #a234b06e: a read-only foreach payload stays open",
+    ),
     case(
         "check 2 guards/block_blanket_git_add.py",
         bash_json("cd private/account && git add -A"),
