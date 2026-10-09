@@ -2614,6 +2614,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-model-invocable-commands',
+    run: 'npm run check:ci-model-invocable-commands',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_model_invocable_commands.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Model-invocable commands',
+    },
+  },
+  {
     id: 'check:ci-i18n-value-types',
     run: 'npm run check:ci-i18n-value-types',
     gate: true,
