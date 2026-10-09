@@ -1,13 +1,13 @@
 ---
 description: Land the current branch's stacked PRs: rebase-merge submodule PRs first, bump the console pointers to the merged commits, wait for the fast-path CI run and auto-merge the console PR (flipping it ready first if needed), check out main, watch the release pipeline (Console CI on main + CD edge deploy) to green, then RE-SYNC main because CD pushes a homebrew-tap pointer bump and a release-state commit back to main after the merge. Invoked by the per-PR loop (or the operator) when every plan box is ticked, the console PR is ready and green, its per-commit reviews are clean, Review Complete is green with the PR review answered and its threads are resolved; then cuts the next branch and starts the next queued plan.
 argument-hint: "[branch]  (optional; defaults to the current branch)"
-# Model-invocable since 2026-09-01; operator ruling 2026-10-02 (PLAN-plan-per-pr-loop M1):
+# Model-invocable, as every command is (operator ruling 2026-10-09: no command or skill is
+# user-only). Operator ruling 2026-10-02 (PLAN-plan-per-pr-loop M1):
 # the per-PR loop invokes this itself once its finish condition holds (every plan box
 # ticked, CI Complete and Review Complete green on the head, wl_review.py --check and
 # wl_prreview.py --check rc 0). The guardrails are
-# the hooks, not this flag: block_admin_merge, block_push_to_protected_branch and
-# block_premature_ready decide what a merge may do.
-disable-model-invocation: false
+# the hooks: block_admin_merge, block_push_to_protected_branch and block_premature_ready
+# decide what a merge may do.
 allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(gh pr list:*), Bash(gh pr view:*)
 ---
 

@@ -1,10 +1,10 @@
 ---
 description: Drive the commit → coordinated PRs (submodule-first) → CI-all-green loop for the current tree. Default: run the loop IN THIS SESSION per .claude/agents/pr-babysitter.md (delegating bulky fix implementation to worker sub-agents). Pass `bg` as the first argument to instead spawn a background pr-babysitter teammate and supervise it. The console PR rides as a draft until green. At the finish condition (every plan box ticked, CI Complete SUCCESS on the head, per-commit reviews clean, Review Complete green with the PR review answered, threads resolved) the loop invokes /pr-merge, which merges, cuts the next branch and starts the next queued plan.
 argument-hint: "[bg] [short summary of the change to seed intent/PR titles]"
-# Model-invocable since 2026-08-15 (operator authorisation), and the per-PR loop's own entry
-# point since the operator ruling of 2026-10-02 (PLAN-plan-per-pr-loop M1): the AI starts it
-# for the next queued plan without being asked. `true` would reserve it for a human typing it.
-disable-model-invocation: false
+# Model-invocable, as every command is (operator ruling 2026-10-09: no command or skill is
+# user-only; a hook and check:ci-model-invocable-commands refuse the flag), and the per-PR
+# loop's own entry point since the operator ruling of 2026-10-02 (PLAN-plan-per-pr-loop M1):
+# the AI starts it for the next queued plan without being asked.
 allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(gh pr list:*), Bash(date:*)
 ---
 
