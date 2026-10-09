@@ -143,7 +143,7 @@ def _proof_shown(text):
 
 
 # A per-commit review record (`agent/reviews/<branch>/<sha>.md` and the branch's ledger) is written by wl_review.py, one file per reviewed commit, and `worklist.py --review-commit` commits them together. Their number tracks how many commits were reviewed, not how far a script reached, so they never count toward scale: 033a35227 (32 records) refused a PR on 2026-10-09 with no transform in it.
-# The branch segment may itself hold slashes (`feat/x`; review 833dc9af.3). Only the two shapes wl_review.py writes are records (review c2e51651.1), and a name alone proves nothing (review 265f32ef.1): a `<sha>.md` is a record only when that sha is a commit of the repository, and one commit carries at most one `clean.jsonl` ledger, the branch's own.
+# The branch segment may itself hold slashes (`feat/x`; review 833dc9af.3). Only the two shapes wl_review.py writes are records (review c2e51651.1), and a name alone proves nothing (review 265f32ef.1): a `<sha>.md` is a record only when that sha is a commit of the repository, and one commit carries at most one exempt `clean.jsonl` ledger, whichever branch directory holds it. What makes a file at these paths a real record is that nothing else can write there: block_review_file_edit and block_review_file_shell_write refuse every hand write under agent/reviews/, leaving wl_review.py and `worklist.py --review-mark` as the only writers (review 7ef6d5a4.1, .2).
 SHA_RECORD = re.compile(r"^agent/reviews/.+/([0-9a-f]{40})\.md$")
 LEDGER_RECORD = re.compile(r"^agent/reviews/.+/clean\.jsonl$")
 
@@ -784,18 +784,18 @@ def _pr_head(run, tree):
 
 
 def _pr_targets(cmd, ev, root, cwd):
-    """(tree, head) for each `gh pr create` in `cmd`; the session tree at HEAD when the walk finds no create call."""
+    """(tree, repo, head) for each `gh pr create` in `cmd`; the session tree at HEAD when the walk finds no create call. An UNSEEN tree carries no head."""
     runs = shellscan.gh_pr_runs(cmd, "create")
     if not runs:
-        return [(cwd, "HEAD")]
+        return [(cwd, None, "HEAD")]
     out = []
     for run_ in runs:
         repo = shellscan.gh_run_repo(run_, cwd, ev.env("GH_REPO"))
         tree = _pr_tree(repo, root, cwd)
         if tree == UNSEEN:
-            out.append((UNSEEN, repo))
+            out.append((UNSEEN, repo, None))
         elif tree is not None:
-            out.append((tree, _pr_head(run_, tree)))
+            out.append((tree, repo, _pr_head(run_, tree)))
     return out
 
 
@@ -902,9 +902,9 @@ def run(ev):
         return hookio.ALLOW
 
     if shellscan.gh_pr_at_command_pos(scan, "create"):
-        for tree, head in _pr_targets(cmd, ev, root, cwd):
+        for tree, repo, head in _pr_targets(cmd, ev, root, cwd):
             if tree == UNSEEN:
-                ev.warn(BLOCK_UNSEEN_REPO % head)
+                ev.warn(BLOCK_UNSEEN_REPO % repo)
                 return hookio.DENY
             if head is None:
                 ev.warn(BLOCK_UNREAD_HEAD % tree)

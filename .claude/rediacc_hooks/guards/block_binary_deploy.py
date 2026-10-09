@@ -18,7 +18,7 @@ ORDER = 7
 
 # Dropping the host-spec test restores the `^scp ` behaviour the 2026-08-27 change removed: every scp is a deploy again, downloads included. It is the one line that separates "uploading a binary" from "pulling a log back".
 DEFECT = (
-    "if shellscan.unresolved(dest) or hookio.grep_q(HOST_SPEC, dest):",
+    "if unread_upload or hookio.grep_q(HOST_SPEC, dest):",
     "if True:",
 )
 
@@ -83,6 +83,8 @@ EDGE_CASES = [
     # A destination built at run time is judged as an upload (review f212d159.2).
     ("a substituted destination is judged strictly", "scp bin/renet $(cat dest.txt)"),
     ("an assigned destination is read", "D=host:/p; scp bin/renet $D"),
+    # A host source makes an unreadable local destination a download (review e69e9a3f.1).
+    ("a download into a run-time path", 'scp host:/var/log/x "$DIR/"'),
 ]
 
 
@@ -90,8 +92,8 @@ EDGE_CASES = [
 SCP_VALUE_LETTERS = frozenset("cDFiJloPSX")
 
 
-def _scp_destination(args):
-    """scp's destination: the last operand once the options are set aside, or None with fewer than two operands.
+def _scp_operands(args):
+    """scp's operands, the options set aside; the last one is the destination.
 
     glibc's getopt permutes, so an option may follow the operands (`scp a host:/p -q` uploads), and the last WORD is not the destination (review f212d159.1). Options are read the way getopt reads them: a bundle of letters, where a value letter takes the rest of its word or the next word, and `--` ends the options.
     """
@@ -111,7 +113,7 @@ def _scp_destination(args):
                     break
             continue
         operands.append(word)
-    return operands[-1] if len(operands) >= 2 else None
+    return operands
 
 
 def run(ev):
@@ -127,11 +129,15 @@ def run(ev):
         if run_.name.rsplit("/", 1)[-1] != "scp":
             continue
         args = run_.argv if run_.xargv is None else run_.xargv
-        dest = _scp_destination(args)
-        if dest is None:
+        operands = _scp_operands(args)
+        if len(operands) < 2:
             continue
-        # A destination built at run time (`$(...)`, an unset variable) cannot be read here, so it is judged the strict way: as an upload (review f212d159.2).
-        if shellscan.unresolved(dest) or hookio.grep_q(HOST_SPEC, dest):
+        dest = operands[-1]
+        # A destination built at run time (`$(...)`, an unset variable) cannot be read here. It is an upload unless a source names a host, which makes the copy a download into that local path (review f212d159.2, e69e9a3f.1).
+        unread_upload = shellscan.unresolved(dest) and not any(
+            hookio.grep_q(HOST_SPEC, src) for src in operands[:-1]
+        )
+        if unread_upload or hookio.grep_q(HOST_SPEC, dest):
             ev.warn(MESSAGE)
             return hookio.DENY
     return hookio.ALLOW
