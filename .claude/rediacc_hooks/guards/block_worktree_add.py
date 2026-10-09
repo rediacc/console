@@ -15,7 +15,11 @@ Found live 2026-08-01: a session created a throwaway worktree+branch for a small
 create and easy to forget, and each one is a place uncommitted work can silently strand outside the one tree everyone actually watches.
 """
 
+import ast
+import itertools
 import re
+import shlex
+from typing import Any
 
 from rediacc_hooks import hookio, shellscan
 
@@ -54,6 +58,8 @@ RUN_SH_CREATE = hookio.rx(
 PYTHON = re.compile(r"^python[0-9.]*$")
 # Interpreter options that consume the next word as their value (`python3 -X dev -m ...`).
 PYTHON_VALUE_OPTIONS = ("-W", "-X", "-Q")
+# `-c`/`-m` closing a bundle of argument-less flags, with the value attached or in the next word.
+PYTHON_BUNDLE = re.compile(r"^-[bBdEhiIOPqRsSuvx]*([cm])(.*)$")
 # The package entry run.sh execs: `-m rediacc_ci`, `-m rediacc_ci.__main__`, or the package directory / its `__main__.py` by path. Its first argument is the verb.
 PACKAGE_TARGETS = ("rediacc_ci", "rediacc_ci.__main__")
 # The port itself: its first argument is the command.
@@ -73,24 +79,38 @@ def _python_argv(run_):
     return None
 
 
-def _target(args):
-    """(target, the target's own arguments) for a python command line, or (None, []) for `-c`, `-` or no target."""
+def _python_program(args):
+    """What a Python command line runs: `("c", code)`, `("stdin", None)`, or `("target", target, its own arguments)` for `-m <module>` or a script path.
+
+    `-c` and `-m` may close a bundle of argument-less flags (`-Ic code`, `-Im mod`) and may carry their value attached (`-cCODE`, `-mrediacc_ci`). No target at all, or `-`, is a program read from stdin.
+    """
     i = 0
     while i < len(args):
         word = args[i]
-        if word == "-m":
-            return (args[i + 1], args[i + 2 :]) if i + 1 < len(args) else (None, [])
-        if word.startswith("-m"):
-            return word[2:], args[i + 1 :]
-        if word in ("-c", "-") or word.startswith("-c"):
-            return None, []
+        if word == "-":
+            return ("stdin", None)
+        if word == "--":
+            return ("target", args[i + 1], args[i + 2 :]) if i + 1 < len(args) else ("stdin", None)
+        m = PYTHON_BUNDLE.match(word)
+        if m:
+            value = m.group(2) or (args[i + 1] if i + 1 < len(args) else None)
+            rest = args[i + 1 :] if m.group(2) else args[i + 2 :]
+            if value is None:
+                return ("stdin", None)
+            return ("c", value) if m.group(1) == "c" else ("target", value, rest)
         if word in PYTHON_VALUE_OPTIONS:
             i += 2
             continue
         if not word.startswith("-"):
-            return word, args[i + 1 :]
+            return ("target", word, args[i + 1 :])
         i += 1
-    return None, []
+    return ("stdin", None)
+
+
+def _target(args):
+    """(target, the target's own arguments) for a python command line, or (None, []) for `-c`, `-` or no target."""
+    program = _python_program(args)
+    return (program[1], program[2]) if program[0] == "target" else (None, [])
 
 
 def runs_port_create(cmd):
@@ -110,6 +130,312 @@ def runs_port_create(cmd):
         if (package and rest[:2] == ["worktree", "create"]) or (port and rest[:1] == ["create"]):
             return True
     return False
+
+
+# THE INTERPRETER SAILED PAST ALL THREE ARMS, the way the wrapper sailed past the literal one and the port past the wrapper. Measured 2026-10-09 through chain-head.sh before this arm existed, every one rc 0:
+#
+#   python3 -c "import subprocess; subprocess.run(['git','worktree','add','/tmp/x'])"
+#   python3 -c 'from rediacc_ci.dev import worktree; worktree.main(["create"])'
+#   python3 - <<'EOF' (a body running `git worktree add`) EOF
+#   python3 - <<< 'import os; os.system("git worktree add /tmp/x")'
+#
+# `bash -c` / `sh -c` / `bash <<EOF` were already refused (rc 2): shellscan unwraps a SHELL's payload, because a shell payload is shell. A Python, node, perl or ruby program is not, so the walk leaves it as one opaque argument and every arm above saw only an interpreter with a string.
+#
+# THE BOUNDARY. A program text is refused when it RUNS the banned thing, judged by what the program does with its strings rather than by whether it names them:
+#   - a string literal that, read as a shell command, is refused by the arms above (`os.system("git worktree add x")`, `"cd x && git worktree add y"`, `"python3 -m rediacc_ci worktree create"`); a literal in which `git` is not at a command position, such as a sentence, is not;
+#   - an argument list (a list or tuple literal, or a call's positional arguments) that, joined into a command, is refused, or that holds `"worktree", "add"` back to back, the shape the port itself hands its git helper;
+#   - an in-process call of the port: a program that imports `rediacc_ci.dev.worktree` (or names it for runpy) AND calls `cmd_create` or passes a literal `"create"`, or that reaches the `rediacc_ci` package entry with `"worktree", "create"` back to back.
+# Reading the port (`open(".../worktree.py")`, `print(worktree.__doc__)`), `worktree list`, and a `print` of a sentence naming the command stay allowed. A Python body is read with `ast`; a non-Python body, or Python that does not parse, gets the same three questions asked of its quoted literals by regex.
+#
+# THE EDGE, the same one shellscan draws: a string BUILT at run time (`"work" + "tree"`, base64, a file read and exec'd) is outside a static scanner's reach and is not claimed here.
+INTERPRETERS = ("node", "perl", "ruby")
+# The flags that hand each non-Python interpreter its program text as the next word.
+EVAL_FLAGS = {
+    "node": ("-e", "--eval", "-p", "--print"),
+    "perl": ("-e", "-E"),
+    "ruby": ("-e",),
+}
+# How deep a program may hand another program a shell command (`os.system("python3 -c ...")`) before the rest is left unread. Real payloads nest once or twice; the cap only bounds a pathological input.
+MAX_PROGRAM_DEPTH = 4
+# A string or backtick literal in a program read by regex: Python's, node's, perl's and ruby's quoting share these three shapes.
+LITERAL = re.compile(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"|`((?:[^`\\]|\\.)*)`")
+ARGV_WORKTREE_ADD = re.compile(r"""['"]worktree['"]\s*,\s*['"]add['"]""")
+ARGV_WORKTREE_CREATE = re.compile(r"""['"]worktree['"]\s*,\s*['"]create['"]""")
+TEXT_PORT = re.compile(
+    r"rediacc_ci[./]dev[./]worktree|rediacc_ci\.dev\s+import\s+(\([^)]*)?\bworktree\b"
+)
+TEXT_PORT_CREATE = re.compile(r"""['"]create['"]|\bcmd_create\b""")
+
+
+def _interpreter_name(name):
+    """`python`, one of INTERPRETERS, or None, for a command word."""
+    base = name.rsplit("/", 1)[-1]
+    if PYTHON.match(base):
+        return "python"
+    return base if base in INTERPRETERS else None
+
+
+def _eval_program(family, args):
+    """`("c", code)`, `("stdin", None)` or `("file", None)` for a node/perl/ruby argv. Perl and ruby bundle `-e` (`-ne`, `-le`) and take several, which run as one program."""
+    codes = []
+    i = 0
+    while i < len(args):
+        word = args[i]
+        bundled = family != "node" and re.match(r"^-[A-Za-z]*[eE]$", word) is not None
+        if word in EVAL_FLAGS[family] or bundled:
+            if i + 1 < len(args):
+                codes.append(args[i + 1])
+            i += 2
+            continue
+        if word == "-":
+            break
+        if not word.startswith("-"):
+            return ("c", "\n".join(codes)) if codes else ("file", None)
+        i += 1
+    if codes:
+        return ("c", "\n".join(codes))
+    return ("stdin", None)
+
+
+def _program_of(name, args):
+    """`(family, mode, code)` for an interpreter command, or None when `name` is no interpreter. `mode` is "c" (the code is in argv), "stdin" (the code arrives on stdin) or anything else (a file or module, which the arms above judge)."""
+    family = _interpreter_name(name)
+    if family is None:
+        if name.rsplit("/", 1)[-1] == "uv" and args[:1] == ["run"]:
+            for k, word in enumerate(args[1:], 1):
+                if PYTHON.match(word.rsplit("/", 1)[-1]):
+                    return _program_of(word, args[k + 1 :])
+        return None
+    if family == "python":
+        program = _python_program(args)
+        return (family, program[0], program[1] if program[0] == "c" else None)
+    mode, code = _eval_program(family, args)
+    return (family, mode, code)
+
+
+def _stdin_texts(redirs, upstream):
+    """What a command reads on stdin, as far as the command line itself supplies it: a heredoc body, a here-string, or the output of a `cat <<EOF` / `cat <<<` / `echo` / `printf` feeding it through a pipe. The same sources shellscan's walker hands a shell reading stdin."""
+    out: list[tuple[Any, str | None]] = []
+    for redir in redirs:
+        hd = redir.heredoc
+        if hd is not None and hd.body_start is not None:
+            out.append((hd, None))
+        elif redir.op == "<<<" and redir.target is not None:
+            out.append((None, shellscan._word_value(redir.target)))
+    if upstream is None or upstream[0] != "cmd":
+        return out
+    words, _ = shellscan._strip_prefixes([t for t in upstream[1] if isinstance(t, shellscan._Word)])
+    if not words:
+        return out
+    feeder = shellscan._word_value(words[0]).rsplit("/", 1)[-1]
+    if feeder == "cat":
+        out.extend(_stdin_texts([t for t in upstream[1] if isinstance(t, shellscan._Redir)], None))
+    elif feeder in ("echo", "printf"):
+        argv = [shellscan._word_value(w) for w in words[1:]]
+        while argv and feeder == "echo" and re.match(r"^-[neE]+$", argv[0]):
+            argv = argv[1:]
+        out.append((None, " ".join(argv)))
+    return out
+
+
+def interpreter_programs(cmd, depth=0):
+    """Every `(family, program text)` `cmd` hands an interpreter: `python3 -c`, `node -e`, `perl -e`, `ruby -e`, and each of them reading a heredoc, a here-string or a piped `cat`/`echo` as its program.
+
+    It walks the same token structure `shellscan._analyse` walks (subshells, brace groups, pipelines, `$(...)`, the prefix commands `_strip_prefixes` drops), and descends into a shell's own payload (`sh -c`, `bash <<EOF`, `eval`), because `sh -c "python3 - <<EOF ..."` is the same program one level down. `_Run` records argv but not redirects, which is why this cannot read `_analyse(cmd).runs` alone: a heredoc is a redirect.
+    """
+    out: list[tuple[str, str]] = []
+    if depth > MAX_PROGRAM_DEPTH or cmd == "":
+        return out
+    lexer = shellscan._Lexer(cmd)
+    toks = lexer.tokens()
+
+    def text_of(item):
+        hd, text = item
+        return lexer.src[hd.body_start : hd.body_end] if hd is not None else text
+
+    def words_subs(parts):
+        for part in parts:
+            if part.sub is not None:
+                walk(shellscan._parse(part.sub))
+            if part.parts:
+                words_subs(part.parts)
+
+    def element(stage, upstream):
+        if stage[0] in ("sub", "brace"):
+            walk(stage[1])
+            return
+        words = [t for t in stage[1] if isinstance(t, shellscan._Word)]
+        redirs = [t for t in stage[1] if isinstance(t, shellscan._Redir)]
+        for word in words:
+            words_subs(word.parts)
+        words, _ = shellscan._strip_prefixes(words)
+        if not words:
+            return
+        name = shellscan._word_value(words[0])
+        argv = [shellscan._word_value(w) for w in words[1:]]
+        base = name.rsplit("/", 1)[-1]
+        program = _program_of(name, argv)
+        if program is not None:
+            family, mode, code = program
+            if mode == "c" and code is not None:
+                out.append((family, code))
+            elif mode == "stdin":
+                out.extend((family, text_of(item)) for item in _stdin_texts(redirs, upstream))
+        elif base in shellscan.SHELL_NAMES:
+            mode, payload = shellscan._shell_payload(argv)
+            if mode == "c" and payload is not None:
+                out.extend(interpreter_programs(payload, depth + 1))
+            elif mode == "stdin":
+                for item in _stdin_texts(redirs, upstream):
+                    out.extend(interpreter_programs(text_of(item), depth + 1))
+        elif base == "eval":
+            out.extend(interpreter_programs(" ".join(argv), depth + 1))
+
+    def walk(items):
+        for item in items:
+            if item[0] == "sep":
+                continue
+            stages = item[1]
+            for pos, stage in enumerate(stages):
+                element(stage, stages[pos - 1] if pos else None)
+
+    walk(shellscan._parse(toks))
+    return out
+
+
+def _const_str(node):
+    if isinstance(node, ast.Constant) and isinstance(node.value, (str, bytes)):
+        value = node.value
+        return value.decode("utf-8", "replace") if isinstance(value, bytes) else value
+    return None
+
+
+def _sequences(tree):
+    """Every argument list a Python program writes down: list, tuple and set literals, and each call's positional arguments. A non-literal element is `None`."""
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+            yield [_const_str(e) for e in node.elts]
+        elif isinstance(node, ast.Call) and node.args:
+            yield [_const_str(a) for a in node.args]
+
+
+def _adjacent(seq, first, second):
+    return any(a == first and b == second for a, b in itertools.pairwise(seq))
+
+
+def _joined(seq):
+    """An argv list as the shell command it spells; a non-literal element stands in as one opaque word."""
+    return " ".join(shlex.quote(e) if e is not None else "X" for e in seq)
+
+
+def _python_verdict(code, depth):
+    """The arm a Python program text trips, or None. Python that does not parse runs nothing, but this module's own reading of a shell word may differ from bash's, so it falls back to the regex reading rather than to an allow."""
+    try:
+        tree = ast.parse(code)
+    except (SyntaxError, ValueError):
+        return _text_verdict(code, depth)
+    strings = []
+    for node in ast.walk(tree):
+        value = _const_str(node)
+        if value is not None:
+            strings.append(value)
+    for value in dict.fromkeys(strings):
+        verdict = shell_verdict(value, depth)
+        if verdict:
+            return verdict
+    sequences = list(_sequences(tree))
+    for seq in sequences:
+        if _adjacent(seq, "worktree", "add"):
+            return "git"
+        if any(e is not None for e in seq) and len(seq) > 1:
+            verdict = shell_verdict(_joined(seq), depth)
+            if verdict:
+                return verdict
+    modules = set(strings)
+    called = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            modules.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            modules.add(node.module)
+            modules.update("%s.%s" % (node.module, alias.name) for alias in node.names)
+        elif isinstance(node, ast.Call):
+            func = node.func
+            called.add(
+                func.attr
+                if isinstance(func, ast.Attribute)
+                else func.id
+                if isinstance(func, ast.Name)
+                else ""
+            )
+    port = any(m == PORT_TARGETS[0] or m.startswith(PORT_TARGETS[0] + ".") for m in modules)
+    if port and (
+        "cmd_create" in called
+        or "cmd_create" in strings
+        or any("create" in seq for seq in sequences)
+    ):
+        return "port"
+    package = any(m == "rediacc_ci" or m.startswith("rediacc_ci.") for m in modules)
+    if package and any(_adjacent(seq, "worktree", "create") for seq in sequences):
+        return "port"
+    return None
+
+
+def _text_verdict(code, depth):
+    """The arm a program text trips, read by regex: for a node/perl/ruby program, and for Python that `ast` cannot parse."""
+    for m in LITERAL.finditer(code):
+        literal = next(g for g in m.groups() if g is not None)
+        verdict = shell_verdict(literal, depth)
+        if verdict:
+            return verdict
+    if ARGV_WORKTREE_ADD.search(code):
+        return "git"
+    if TEXT_PORT.search(code) and TEXT_PORT_CREATE.search(code):
+        return "port"
+    if "rediacc_ci" in code and ARGV_WORKTREE_CREATE.search(code):
+        return "port"
+    return None
+
+
+def _direct_verdict(cmd):
+    """The arm that refuses `cmd` as the shell reads it, before any program text is opened: "git", "run.sh", "port", or None."""
+    scan = shellscan._command_substitution(shellscan.scan_target(cmd))
+    if hookio.grep_q(WORKTREE_ADD, scan):
+        return "git"
+    if hookio.grep_q(RUN_SH_CREATE, scan):
+        return "run.sh"
+    if runs_port_create(cmd):
+        return "port"
+    return None
+
+
+def _program_verdict(cmd, depth):
+    """The arm a program `cmd` hands an interpreter trips, to MAX_PROGRAM_DEPTH programs deep."""
+    if depth >= MAX_PROGRAM_DEPTH:
+        return None
+    for family, code in interpreter_programs(cmd):
+        verdict = (
+            _python_verdict(code, depth + 1)
+            if family == "python"
+            else _text_verdict(code, depth + 1)
+        )
+        if verdict:
+            return verdict
+    return None
+
+
+def shell_verdict(cmd, depth=0):
+    """Which arm refuses the shell command `cmd`: "git", "run.sh", "port", or None, counting what any program inside it runs.
+
+    Inside a program (depth > 0) a string that cannot spell `worktree` and one of `add`/`create` once quotes and backslashes are gone is skipped without a walk: every arm needs that word and one of those verbs, and a Python heredoc holds thousands of strings that are not commands (3,000 list literals naming `worktree list` took 2.9 s before the verb joined the filter).
+    """
+    if cmd == "":
+        return None
+    if depth > 0:
+        bare = re.sub(r"[\"'\\]", "", cmd)
+        if "worktree" not in bare or ("add" not in bare and "create" not in bare):
+            return None
+    return _direct_verdict(cmd) or _program_verdict(cmd, depth)
 
 
 GIT_MESSAGE = (
@@ -140,6 +466,12 @@ PORT_MESSAGE = (
     "through chat and then run it yourself, and never in an autonomous/cron-fired continuation "
     "with no live operator to ask. Prefer the current checkout or an existing worktree. The "
     "port's `list`, `switch`, `remove` and `prune` are unaffected."
+)
+
+PROGRAM_NOTE = (
+    "It was found inside the program text this command hands an interpreter (`python3 -c`, "
+    "a heredoc or here-string on stdin, `node -e`, `perl -e`, `ruby -e`): code an "
+    "interpreter runs is the same decision as the command typed at the shell."
 )
 
 EDGE_CASES = [
@@ -181,6 +513,45 @@ EDGE_CASES = [
         "control: a quoted heredoc naming the command is data",
         "cat > n.md <<'EOF'\ngit worktree add /tmp/wt main\nEOF",
     ),
+    # The interpreter arm: a program text handed to python, node, perl or ruby, through -c/-e, a heredoc, a here-string or a pipe.
+    (
+        "python -c with a git argv list",
+        "python3 -c \"import subprocess; subprocess.run(['git','worktree','add','/tmp/x'])\"",
+    ),
+    (
+        "python -c calling the port in-process",
+        "python3 -c 'from rediacc_ci.dev import worktree; worktree.main([\"create\"])'",
+    ),
+    (
+        "python reading a heredoc",
+        "python3 - <<'EOF'\nimport os\nos.system('git worktree add /tmp/x')\nEOF",
+    ),
+    (
+        "python reading a here-string",
+        "python3 - <<< 'import os; os.system(\"git worktree add /tmp/x\")'",
+    ),
+    (
+        "python fed by a piped cat heredoc",
+        "cat <<'EOF' | python3\nimport os; os.system('git worktree add x')\nEOF",
+    ),
+    ("node -e", 'node -e \'require("child_process").execSync("git worktree add /tmp/x")\''),
+    ("perl -e with an argv list", 'perl -e \'system("git", "worktree", "add", "/tmp/x")\''),
+    (
+        "control: python -c listing worktrees",
+        "python3 -c \"import subprocess; subprocess.run(['git','worktree','list'])\"",
+    ),
+    (
+        "control: python printing a sentence",
+        "python3 -c 'print(\"never run git worktree add here\")'",
+    ),
+    (
+        "control: python reading the port's source",
+        "python3 - <<'EOF'\nprint(open('.ci/rediacc_ci/dev/worktree.py').read().count('create'))\nEOF",
+    ),
+    (
+        "control: python reading the port's docstring",
+        "python3 -c 'from rediacc_ci.dev import worktree; print(worktree.cmd_create.__doc__)'",
+    ),
 ]
 
 
@@ -188,18 +559,13 @@ def run(ev):
     cmd = ev.field("tool_input", "command")
     if cmd == "":
         return hookio.ALLOW
-
-    scan = shellscan._command_substitution(shellscan.scan_target(cmd))
-
-    if hookio.grep_q(WORKTREE_ADD, scan):
-        ev.warn(GIT_MESSAGE)
+    messages = {"git": GIT_MESSAGE, "run.sh": RUN_SH_MESSAGE, "port": PORT_MESSAGE}
+    verdict = _direct_verdict(cmd)
+    if verdict:
+        ev.warn(messages[verdict])
         return hookio.DENY
-
-    if hookio.grep_q(RUN_SH_CREATE, scan):
-        ev.warn(RUN_SH_MESSAGE)
-        return hookio.DENY
-
-    if runs_port_create(cmd):
-        ev.warn(PORT_MESSAGE)
+    verdict = _program_verdict(cmd, 0)
+    if verdict:
+        ev.warn(messages[verdict] + " " + PROGRAM_NOTE)
         return hookio.DENY
     return hookio.ALLOW
