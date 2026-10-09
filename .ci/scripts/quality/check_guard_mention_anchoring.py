@@ -131,10 +131,6 @@ FRAGMENTS: dict[tuple[str, str], str] = {
         "BLOCKER: the end-of-clause tail (`$`, a separator or a redirect) concatenated after the anchored GIT_ADD prefix; "
         "only the composed BLANKET_* patterns are matchers, and they are anchored."
     ),
-    ("block_binary_deploy.py", "_LAUNCHER_FLAGS"): (
-        "BLOCKER: the optional flags (and one value each) a launcher such as sudo or sshpass takes before scp; it is "
-        "concatenated into the anchored SCP_CLAUSE and never searched on its own."
-    ),
     ("block_blanket_git_add.py", "BARE_DDASH"): (
         "BLOCKER: an optional ` -- ` concatenated between GIT_ADD's anchored prefix and END; it is a piece of the composed "
         "BLANKET_* patterns, never searched on its own."

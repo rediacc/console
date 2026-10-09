@@ -8,23 +8,18 @@ That is the opposite of deploying a binary, and refusing it pushes the work onto
 
 The direction is decidable: scp's LAST argument is its destination, and a destination naming a remote host (`host:path`, `user@host:path`) is an upload. Anything else is a download.
 
-PORT NOTE ON THE LOOP THE BASH HAD TO GET RIGHT TWICE. The original's second arm reads:
-
-    while IFS= read -r clause; do ... done <<<"$(printf '%s' "$CMD" | tr ';&|' '\\n\\n\\n')"
-
-and its comment records both mistakes in one line. Piping put the loop in a subshell where `exit 2` could not leave the script; and `printf '%s'` gave the clauses no trailing newline, so `read` returned non-zero on the only line and the body never ran at all -- the guard reported every upload as ALLOWED while its block case went green on a no-op. Neither hazard exists in Python, so
-the prose above is the only surviving record of them, which is exactly what section 5c of the driver contract is about. What DOES survive as behaviour is the here-string's newline: `<<<` terminates its subject, so a command with no trailing newline still yields one final clause. `_here_string` supplies it.
+THE CLAUSE LOOP IS GONE (review a2d44aa4.1). The bash original split the command on `;&|` and read each clause with a here-string loop; its own comment recorded two ways that loop silently allowed every upload. The guard now reads shellscan's runs, so neither the split nor the loop exists, and scp's operands come from the shell's own word splitting instead of the last blank-separated field of a clause.
 """
 
-from rediacc_hooks import hookio
+from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 ORDER = 7
 
 # Dropping the host-spec test restores the `^scp ` behaviour the 2026-08-27 change removed: every scp is a deploy again, downloads included. It is the one line that separates "uploading a binary" from "pulling a log back".
 DEFECT = (
-    "if not hookio.grep_q(HOST_SPEC, dest):\n            continue",
-    "if False:\n            continue",
+    "if len(argv) > 1 and hookio.grep_q(HOST_SPEC, argv[-1]):",
+    "if len(argv) > 1:",
 )
 
 MESSAGE = (
@@ -36,21 +31,8 @@ MESSAGE = (
 # blocks the real command, at line start and after a separator.
 SUDO_CP = hookio.rx(r"(^|[;&|(])[{B}]*sudo cp[^;&|]*/usr/local/bin/renet")
 
-# COMMAND POSITION FOR scp TOO, 2026-10-09 (#ecb59527). `(^|[{B}])scp[{B}]` matched `scp` after any blank, so a sentence whose last word happened to be a host spec was refused as an upload: `echo never run scp bin/renet host:/usr/local/bin/renet` and `git commit -m 'docs: scp x h:/p'` both came back rc 2. The clauses are already split on `;&|`, so a real scp
-# starts its clause by construction and this narrows prose only. This guard reads the raw command, not `shellscan.lifted_commands`, so the launchers a real upload hides behind are named here: `sudo`, `nohup`, `time`, `exec`, `command`, `env` and `sshpass` (each with its flags), `timeout N`, and `VAR=value` assignments, in any chain, then an optional directory (`/usr/bin/scp`).
-_LAUNCHER_FLAGS = r"([{B}]+-[^{B};|&]+([{B}]+[^-{B};|&][^{B};|&]*)?)*"
-SCP_CLAUSE = hookio.rx(
-    r"(^|[;&|(`{!]|\$\()[{B}]*"
-    r"(("
-    r"(sudo|nohup|time|exec|command|env|sshpass)"
-    + _LAUNCHER_FLAGS
-    + r"|timeout"
-    + _LAUNCHER_FLAGS
-    + r"[{B}]+[0-9][^{B};|&]*"
-    + r"|[A-Za-z_][A-Za-z0-9_]*=[^{B};|&]*"
-    r")[{B}]+)*"
-    r"([^{B};|&()`]*/)?scp[{B}]"
-)
+# EVERY scp RUN, WHATEVER LAUNCHED IT (review a2d44aa4.1, #ecb59527). The guard once matched `scp` after any blank in the raw text, so a sentence naming scp was refused as an upload. Then it matched only at command position with the launchers listed by hand, which let `xargs scp bin/renet host:/p` and `find . -exec scp {} host:/p \;` through. It now asks shellscan for every run the shell would start (`every_run`: the prefix commands stripped, `xargs`, `find -exec`, `npx`, `sh -c` and command substitutions walked) and judges each one named scp by its destination. A sentence that names scp is an `echo` or `git` run, so it never reaches the test.
+
 
 # A host spec: a hostname (optionally user@) followed by a colon. A local path containing a colon has a slash before it, so it cannot match here.
 HOST_SPEC = r"^[A-Za-z0-9_.-]+(@[A-Za-z0-9_.-]+)?:"
@@ -83,6 +65,15 @@ EDGE_CASES = [
         "echo never run scp bin/renet host:/usr/local/bin/renet",
     ),
     ("a commit message naming scp is not an upload", "git commit -m 'docs: scp x h:/p'"),
+    # Launchers the command-position text pattern missed (review a2d44aa4.1).
+    ("xargs still reaches the upload", "xargs scp bin/renet host:/usr/local/bin/renet"),
+    ("find -exec still reaches the upload", "find . -name renet -exec scp {} host:/d \\;"),
+    ("xargs -I still reaches the upload", "xargs -I{} scp {} host:/d"),
+    ("npx still reaches the upload", "npx -y scp x h:/p"),
+    ("sh -c still reaches the upload", "bash -c 'scp x h:/p'"),
+    ("timeout N still reaches the upload", "timeout 30 scp x h:/p"),
+    # xargs appends its input last, so this copies FROM the host: a download.
+    ("xargs-appended sources make a download", "echo bin/renet | xargs scp host:/d"),
 ]
 
 
@@ -95,19 +86,12 @@ def run(ev):
         ev.warn(MESSAGE)
         return hookio.DENY
 
-    # Each scp clause, judged by where it is sending things. `tr ';&|' '\n\n\n'` is a byte map, not a split: the separator becomes a newline, so a clause never carries the character that ended it.
-    clauses = cmd
-    for sep in ";&|":
-        clauses = hookio._tr(clauses, sep, "\n")
-    records, _ = hookio._records(hookio._here_string(clauses))
-    for clause in records:
-        if not hookio.grep_q(SCP_CLAUSE, clause):
+    for run_ in shellscan.every_run(cmd):
+        if run_.name.rsplit("/", 1)[-1] != "scp":
             continue
-        # `awk '{print $NF}'` over one record: the last whitespace-separated
-        # field, or nothing at all when the record is empty.
-        dest = hookio._command_substitution(hookio.awk_field(clause, -1))
-        if not hookio.grep_q(HOST_SPEC, dest):
-            continue
-        ev.warn(MESSAGE)
-        return hookio.DENY
+        argv = run_.xargv if getattr(run_, "xargv", None) is not None else run_.argv
+        # The destination is scp's last operand; a host spec there is an upload.
+        if len(argv) > 1 and hookio.grep_q(HOST_SPEC, argv[-1]):
+            ev.warn(MESSAGE)
+            return hookio.DENY
     return hookio.ALLOW
