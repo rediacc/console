@@ -180,6 +180,14 @@ FRAGMENTS: dict[tuple[str, str], str] = {
         "BLOCKER: parses sed `a`/`i`/`c` text commands from the same in-place sed argv as _SED_SUB; a one-letter command "
         "plus an address, applied after the file target was resolved."
     ),
+    ("block_user_only_command_shell_write.py", "_SED_SUB"): (
+        "BLOCKER: parses a sed `s<d>pat<d>rep<d>` expression from argv of an in-place sed already aimed at a command "
+        "or skill file; the delimiter is any punctuation, so there is no literal word to mention."
+    ),
+    ("block_user_only_command_shell_write.py", "_SED_TEXT"): (
+        "BLOCKER: parses sed `a`/`i`/`c` text commands from the same in-place sed argv as _SED_SUB; a one-letter command "
+        "plus an address, applied after the file target was resolved."
+    ),
     ("block_unlinked_commit_author.py", "IDENT_EMAIL"): (
         "BLOCKER: fullmatches `Name <email>` in a git identity value read back from git config, to extract the address; "
         "it parses a config value, not the command text."
