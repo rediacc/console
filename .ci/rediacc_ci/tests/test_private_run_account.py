@@ -405,7 +405,7 @@ def test_deploy_refuses_with_all_five_lines_and_names_the_real_script():
     assert out["stderr"].count("✗") == 5, out["stderr"]
     assert "wrangler.{eu,us,asia}.toml" in out["stderr"]
     assert (
-        ".ci/scripts/deploy/deploy-account.sh --region <eu|us|asia> [--target edge]"
+        "PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region <eu|us|asia> [--target edge]"
         in (out["stderr"])
     )
 

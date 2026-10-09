@@ -91,7 +91,7 @@ DEPLOY_REFUSAL = (
     "Production and edge are the seven configs under workers/account/:",
     "  wrangler.{eu,us,asia}.toml, wrangler.edge-{eu,us,asia}.toml, wrangler.bench.toml",
     "Deploy through the script that resolves them:",
-    "  .ci/scripts/deploy/deploy-account.sh --region <eu|us|asia> [--target edge]",
+    "  PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region <eu|us|asia> [--target edge]",
 )
 
 
