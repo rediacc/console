@@ -3,9 +3,10 @@
 
 Builds the Astro marketing site in `packages/www` by shelling out to `npm run build:www` from the REPO ROOT, then refuses unless the build actually left `packages/www/dist/index.html` behind. Nine executable lines; every one of them is load-bearing and three of them are surprising, which is why this docstring is longer than the twin.
 
-LIVE CALLERS, none repointed by this port:
-  * `.github/workflows/ci-build-docker.yml:123`  `- run: .ci/scripts/build/build-www.sh`
-    with `APP_VERSION` and `GITHUB_TOKEN` in its `env:` block. That job then
+LIVE CALLERS:
+  * `.github/workflows/ci-build-docker.yml:144`  `- run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_www`
+    with `APP_VERSION` and `GITHUB_TOKEN` in its `env:` block (the bash
+    `build-www.sh` it once ran is deleted). That job then
     uploads `packages/www/dist/` as the `build-www-<sha>` artifact, so this
     script's output-verification step is the last thing standing between an
     empty build and a server image with no marketing site in it.

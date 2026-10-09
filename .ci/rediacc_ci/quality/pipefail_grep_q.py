@@ -144,8 +144,8 @@ import tempfile
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 
-# The corpus, as git pathspecs. Handed to `git ls-files` verbatim; see the port notes for why this is not rewritten as a glob walk. `:(glob)` IS LOAD-BEARING: without it git reads `**` as demanding a slash, so these matched nothing at depth 1 and the corpus silently skipped six tracked shell files. Measured 2026-09-08: 471 before, 477 after. Kept BYTE-EQUAL to the twin's spelling
-# at `check-pipefail-grep-q.sh`, since the shadow ledger compares the two verdicts and a corpus difference would read as a behavioural divergence.
+# The corpus, as git pathspecs. Handed to `git ls-files` verbatim; see the port notes for why this is not rewritten as a glob walk. `:(glob)` IS LOAD-BEARING: without it git reads `**` as demanding a slash, so these matched nothing at depth 1 and the corpus silently skipped six tracked shell files. Measured 2026-09-08: 471 before, 477 after. It was kept byte-equal to the twin's spelling
+# at `check-pipefail-grep-q.sh` while a shadow ledger compared the two verdicts; the `.ci/lib/**/*.sh` entry is gone since that tree was ported and deleted.
 #
 # THE LAST THREE ROOTS WERE ADDED 2026-09-16 and cost 26 files for two findings, both real: `.ci/lib/devbox.sh:1082` (a silent-miss detector, and the reason `.ci/lib/` was also in INHERITS_PIPEFAIL_PREFIXES; both files are gone with the bash libraries) and `.devcontainer/start-kvm.sh:216`, which offended the rule as it stood and was invisible only because nothing looked there. `.ci/media/**` came in with them and is clean; it
 # is listed so the next shell script written there is covered rather than discovered by the sweep after next.
@@ -528,7 +528,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             report.fail("GATE IS OVER-BROAD: the sanctioned fix for an echo producer was flagged")
 
-        # INHERITED PIPEFAIL, both directions. The SAME bytes are classified twice, once under a repo-relative path inside INHERITS_PIPEFAIL_PREFIXES and once outside it, so the control cannot pass by accident of the file's own content: the content is identical and only the path differs.
+        # INHERITED PIPEFAIL, both directions. The SAME bytes are classified twice, once under a path inside a synthetic inheriting prefix passed as `prefixes` (INHERITS_PIPEFAIL_PREFIXES is empty since .ci/lib was deleted) and once outside it, so the control cannot pass by accident of the file's own content: the content is identical and only the path differs.
         inherited = (
             'lib_detect() { git -C "$1" status --porcelain; }\n'
             'if printf "%%s" "$out" | %s dubious; then :; fi\n' % _GQ
