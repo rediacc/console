@@ -91,9 +91,35 @@ def with_stubs(env):
     return env
 
 
+def make_clean_index():
+    """A private git index holding exactly HEAD, so no staged path can differ from the work tree.
+
+    ROOT CAUSE OF THE FLAKE (2026-10-09, `test_verdict_set_is_unchanged[pre-bash-09]`, payload `check@1984`, a `git commit` with no pathspec). `warn_stale_index` reads the LIVE index (`git diff --cached` against `git diff`) and prints a STALE INDEX warning when a path is staged and then edited. The differential runs each payload twice, a moment apart, so a session staging and editing a file in the checkout between the two runs made one side warn and the other not. The collapsed runner emits that warning exactly as the members do (proved by `test_stale_index_is_pinned_out_of_the_verdict_env`); the comparison was reading the operator's index, not the collapse.
+
+    `GIT_INDEX_FILE` pins both sides to a throwaway index. Work-tree edits cannot show up as staged-and-edited against it, and every other guard that reads the index sees the same deterministic HEAD state.
+    """
+    holder = tempfile.mkdtemp(prefix="collapse-index-")
+    atexit.register(shutil.rmtree, holder, ignore_errors=True)
+    index = os.path.join(holder, "index")
+    env = {k: v for k, v in os.environ.items() if k != "GIT_INDEX_FILE"}
+    env["GIT_INDEX_FILE"] = index
+    subprocess.run(
+        ["git", "-C", str(ROOT), "read-tree", "HEAD"],
+        check=True,
+        capture_output=True,
+        env=env,
+        timeout=60,
+    )
+    return index
+
+
+CLEAN_INDEX = make_clean_index()
+
+
 def hook_env():
     env = dict(os.environ)
     env["CLAUDE_PROJECT_DIR"] = str(ROOT)
+    env["GIT_INDEX_FILE"] = CLEAN_INDEX
     return with_stubs(env)
 
 
@@ -330,6 +356,55 @@ def test_the_network_commands_are_stubbed_for_both_sides():
         ["bash", "-c", "gh api x"], capture_output=True, text=True, check=False, env=env, timeout=30
     )
     assert "HTTP 502" in gh.stderr
+
+
+def stale_index_file(tmp_path):
+    """A private index in which README.md is staged AND differs from the work tree: the STALE INDEX condition, built without touching the live index."""
+    index = str(tmp_path / "dirty-index")
+    env = {k: v for k, v in os.environ.items() if k != "GIT_INDEX_FILE"}
+    env["GIT_INDEX_FILE"] = index
+    target = "README.md" if (ROOT / "README.md").exists() else "CLAUDE.md"
+
+    def git(*args, stdin=None):
+        return subprocess.run(
+            ["git", "-C", str(ROOT), *args],
+            input=stdin,
+            check=True,
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=60,
+        ).stdout.strip()
+
+    git("read-tree", "HEAD")
+    blob = git(
+        "hash-object", "-w", "--stdin", stdin="a version that is neither HEAD nor the disk\n"
+    )
+    git("update-index", "--cacheinfo", "100644,%s,%s" % (blob, target))
+    return index, target
+
+
+def test_stale_index_is_pinned_out_of_the_verdict_env(tmp_path, monkeypatch):
+    """Regression for the 2026-10-09 flake: the verdict env must not read the ambient index.
+
+    CONTROL: with a stale index in the ambient env, the collapsed runner DOES print the STALE INDEX warning, so the collapse is not what drops it. The hermetic env must then show no warning on either side and agree across the two.
+    """
+    index, target = stale_index_file(tmp_path)
+    payload = json.dumps(
+        {"tool_name": "Bash", "tool_input": {"command": "git commit -m x"}, "session_id": "idx"}
+    )
+    monkeypatch.setenv("GIT_INDEX_FILE", index)
+    ambient = with_stubs({**os.environ, "CLAUDE_PROJECT_DIR": str(ROOT)})
+    _, _, err = run_collapsed("pre-bash", payload, ambient)
+    assert "STALE INDEX" in err, "the control did not build a stale index"
+    assert target in err
+    env = hook_env()
+    assert env["GIT_INDEX_FILE"] == CLEAN_INDEX
+    members = lifecycle.flat_commands("pre-bash")
+    old = run_separately(members, payload, env)
+    new = run_collapsed("pre-bash", payload, env)
+    assert "STALE INDEX" not in old[2] + new[2]
+    assert old == new
 
 
 def test_the_corpus_is_large_enough_to_mean_something():
