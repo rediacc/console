@@ -660,6 +660,13 @@ export const RECEIPT_WRITER = 'scripts/ci/write-shard-receipt.cjs';
 /** The two steps below, named once: the `--write` strip guard has to know they come back. */
 export const RECEIPT_STEP_NAMES = ['Write shard receipt', 'Upload shard receipt'] as const;
 
+/**
+ * The upload-artifact pin the receipt step emits. check:actions and its upgrade recipe rewrite pins under .github only, so a bump
+ * there leaves this copy behind; `--write` then emits the old pin and check:ci-gate-bind reports ci-quality.yml stale (2026-10-09,
+ * after 0cb2df6b0). Bump it with every upload-artifact bump.
+ */
+export const UPLOAD_ARTIFACT_PIN = 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2';
+
 export function emitReceiptStep(
   job: string,
   of: number,
@@ -681,7 +688,7 @@ export function emitReceiptStep(
     `        run: node ${RECEIPT_WRITER}`,
     `      - name: ${RECEIPT_STEP_NAMES[1]}`,
     '        if: always()',
-    '        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1',
+    `        uses: ${UPLOAD_ARTIFACT_PIN}`,
     '        with:',
     `          name: quality-shard-\${{ matrix.shard }}`,
     `          path: ${receiptFile}`,
@@ -2053,7 +2060,7 @@ function selftest(endToEnd = false): number {
         text.includes('Upload shard receipt') &&
         text.includes(`GATE_STEP_LOCK_MAP: ${jsonEnvValue(jobLockIdMap([base]))}`) &&
         text.includes("SHARD_OF: '4'") &&
-        text.includes('actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a') &&
+        text.includes(UPLOAD_ARTIFACT_PIN) &&
         text.includes('name: quality-shard-${{ matrix.shard }}')
       );
     })()
