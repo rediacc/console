@@ -17,6 +17,7 @@ import pathlib
 import subprocess
 
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 TWIN = ".ci/scripts/version/resolve-version.sh"
 MODULE = "resolve_version"
@@ -169,4 +170,4 @@ def test_unknown_flag_prints_usage(tmp_path: pathlib.Path) -> None:
         "",
         "Usage: resolve-version.sh [--current | --bump-type patch|minor|major]\n",
     )
-    assert new == old
+    assert as_twin(new) == old

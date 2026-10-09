@@ -23,6 +23,7 @@ from rediacc_ci.testrun import install_methods as port
 from rediacc_ci.testrun import install_scripts
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import testrun_support as ts
+from rediacc_ci.tests.twin_names import as_twin
 from rediacc_ci.well_known import IMAGE_REGISTRY
 
 TWIN = ".ci/scripts/test/test-install-methods.sh"
@@ -144,7 +145,7 @@ def same(
     url: str = "http://127.0.0.1:1",
 ) -> None:
     assert calls(new) == calls(old)
-    assert (new.code, mask(new.out, nd, url), mask(new.err, nd, url)) == (
+    assert (new.code, mask(as_twin(new.out), nd, url), mask(as_twin(new.err), nd, url)) == (
         old.code,
         mask(old.out, od, url),
         mask(old.err, od, url),

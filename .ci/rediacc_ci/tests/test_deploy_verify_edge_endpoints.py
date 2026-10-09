@@ -715,7 +715,7 @@ def test_version_unset_refuses_on_both_sides_reworded(tmp_path: pathlib.Path) ->
     assert new.rc == 1
     assert "VERSION" in old.err
     assert "VERSION must be set" in old.err
-    assert new.err == "verify-edge-endpoints.py: VERSION must be set\n"
+    assert new.err == "rediacc_ci.deploy.verify_edge_endpoints: VERSION must be set\n"
     assert old.out == ""
     assert new.out == ""
     assert old.log == "", "neither side may reach the network without a VERSION"

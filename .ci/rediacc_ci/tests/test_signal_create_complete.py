@@ -24,6 +24,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import frozen
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -156,8 +157,8 @@ def compare(tmp_path: pathlib.Path, name: str) -> tuple[int, str, str, str]:
     want = recorded(name)
     got = port(tmp_path, name)
     assert got[0] == want[0], "%s: the twin exited %d, the port %d" % (name, want[0], got[0])
-    assert got[1] == want[1], "%s: stdout diverged: %r vs %r" % (name, want[1], got[1])
-    assert got[2] == want[2], "%s: stderr diverged: %r vs %r" % (name, want[2], got[2])
+    assert as_twin(got[1]) == want[1], "%s: stdout diverged: %r vs %r" % (name, want[1], got[1])
+    assert as_twin(got[2]) == want[2], "%s: stderr diverged: %r vs %r" % (name, want[2], got[2])
     assert got[3] == want[3], "%s: the files diverged: %s vs %s" % (name, want[3], got[3])
     return got
 

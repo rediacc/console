@@ -319,14 +319,20 @@ class Sampler:
             head = args[0]
             if head == "--out":
                 if len(args) < 2:
-                    print("sampler-linux.sh: --out requires a value", file=sys.stderr, flush=True)
+                    print(
+                        "rediacc_ci.ci.profiler_sampler_linux: --out requires a value",
+                        file=sys.stderr,
+                        flush=True,
+                    )
                     return 2
                 self.out = args[1]
                 del args[:2]
             elif head == "--interval":
                 if len(args) < 2:
                     print(
-                        "sampler-linux.sh: --interval requires a value", file=sys.stderr, flush=True
+                        "rediacc_ci.ci.profiler_sampler_linux: --interval requires a value",
+                        file=sys.stderr,
+                        flush=True,
                     )
                     return 2
                 self.interval_raw = args[1]
@@ -338,13 +344,18 @@ class Sampler:
                 usage()
                 return 0
             else:
-                print("sampler-linux.sh: unknown argument: %s" % head, file=sys.stderr, flush=True)
+                print(
+                    "rediacc_ci.ci.profiler_sampler_linux: unknown argument: %s" % head,
+                    file=sys.stderr,
+                    flush=True,
+                )
                 return 2
 
         raw = self.interval_raw
         if not is_num(raw):
             print(
-                "sampler-linux.sh: --interval must be a whole number of seconds, got '%s'" % raw,
+                "rediacc_ci.ci.profiler_sampler_linux: --interval must be a whole number of seconds, got '%s'"
+                % raw,
                 file=sys.stderr,
                 flush=True,
             )
@@ -357,7 +368,8 @@ class Sampler:
         self.interval_raw = str(self.interval)
         if self.interval < 1:
             print(
-                "sampler-linux.sh: --interval must be >= 1, got '%s'" % self.interval_raw,
+                "rediacc_ci.ci.profiler_sampler_linux: --interval must be >= 1, got '%s'"
+                % self.interval_raw,
                 file=sys.stderr,
                 flush=True,
             )
@@ -370,7 +382,7 @@ class Sampler:
         raw = self.max_seconds_raw
         if not is_num(raw):
             print(
-                "sampler-linux.sh: PROFILER_MAX_SECONDS must be a whole number of seconds, "
+                "rediacc_ci.ci.profiler_sampler_linux: PROFILER_MAX_SECONDS must be a whole number of seconds, "
                 "got '%s'" % raw,
                 file=sys.stderr,
                 flush=True,
@@ -889,7 +901,7 @@ class Sampler:
 
         if not self.out:
             print(
-                "sampler-linux.sh: --out <file> (or PROFILER_OUT) is required",
+                "rediacc_ci.ci.profiler_sampler_linux: --out <file> (or PROFILER_OUT) is required",
                 file=sys.stderr,
                 flush=True,
             )
@@ -921,13 +933,21 @@ class Sampler:
                     )
             except OSError:
                 pass
-            print("sampler-linux.sh: %s" % self.host_leak_msg, file=sys.stderr, flush=True)
+            print(
+                "rediacc_ci.ci.profiler_sampler_linux: %s" % self.host_leak_msg,
+                file=sys.stderr,
+                flush=True,
+            )
             return 3
 
         try:
             work_dir = tempfile.mkdtemp()
         except OSError:
-            print("sampler-linux.sh: cannot create work dir", file=sys.stderr, flush=True)
+            print(
+                "rediacc_ci.ci.profiler_sampler_linux: cannot create work dir",
+                file=sys.stderr,
+                flush=True,
+            )
             return 2
 
         try:
@@ -978,7 +998,11 @@ class Sampler:
                 with open(self.out, "w", encoding="utf-8"):
                     pass
             except OSError:
-                print("sampler-linux.sh: cannot write %s" % self.out, file=sys.stderr, flush=True)
+                print(
+                    "rediacc_ci.ci.profiler_sampler_linux: cannot write %s" % self.out,
+                    file=sys.stderr,
+                    flush=True,
+                )
                 return 2
 
             out_fh = open(self.out, "a", encoding="utf-8")  # noqa: SIM115 - the twin's `exec 8>>`
@@ -1067,7 +1091,7 @@ class Sampler:
 
                     if _idiv(self.now_us - start_us, 1000000) >= max_seconds:
                         print(
-                            "sampler-linux.sh: reached PROFILER_MAX_SECONDS=%s, stopping"
+                            "rediacc_ci.ci.profiler_sampler_linux: reached PROFILER_MAX_SECONDS=%s, stopping"
                             % self.max_seconds_raw,
                             file=sys.stderr,
                             flush=True,

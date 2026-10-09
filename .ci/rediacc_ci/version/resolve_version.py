@@ -20,7 +20,7 @@ import io
 import subprocess
 import sys
 
-USAGE = "Usage: resolve-version.sh [--current | --bump-type patch|minor|major]"
+USAGE = "Usage: python3 -m rediacc_ci.version.resolve_version [--current | --bump-type patch|minor|major]"
 
 
 def _split_version_core(core: str) -> tuple[str, str, str]:

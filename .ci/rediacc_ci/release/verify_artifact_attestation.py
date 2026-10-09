@@ -15,7 +15,7 @@ import sys
 
 from rediacc_ci.core import gh_retry
 
-SELF = "verify-artifact-attestation.py"
+SELF = "rediacc_ci.release.verify_artifact_attestation"
 DIST_DIRS = ("dist/cli", "dist/packages")
 
 # `.ci/rediacc_ci/release/verify_artifact_attestation.py` -> `.ci` -> repo root, exactly as the twin's `get_repo_root()` (`.ci/scripts/lib/../../..`, called from `.ci/scripts/release/`) is the same three levels up.

@@ -91,10 +91,12 @@ from rediacc_ci.core import common, gh_retry
 MAX_GENERATIONS = 22
 
 # Divergence 2/3 stand-ins for bash's `${VAR:?}` and `$2: unbound variable`.
-MISSING_RUN_ID = "dispatch-watchdog.sh: RUN_ID: --run-id is required"
-MISSING_GENERATION = "dispatch-watchdog.sh: GENERATION: --generation is required"
-MISSING_REPOSITORY = "dispatch-watchdog.sh: GITHUB_REPOSITORY: GITHUB_REPOSITORY is required"
-MISSING_VALUE = "dispatch-watchdog.sh: %s requires a value"
+MISSING_RUN_ID = "rediacc_ci.ci.dispatch_watchdog: RUN_ID: --run-id is required"
+MISSING_GENERATION = "rediacc_ci.ci.dispatch_watchdog: GENERATION: --generation is required"
+MISSING_REPOSITORY = (
+    "rediacc_ci.ci.dispatch_watchdog: GITHUB_REPOSITORY: GITHUB_REPOSITORY is required"
+)
+MISSING_VALUE = "rediacc_ci.ci.dispatch_watchdog: %s requires a value"
 
 # `^[0-9]+$` from the twin, as a fullmatch. ASCII-only in both engines under
 # LC_ALL=C, and fullmatch because Python's `$` also matches before a trailing

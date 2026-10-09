@@ -31,6 +31,7 @@ from rediacc_ci.ci import detect_pointer_bump as port
 from rediacc_ci.core import gh_retry as _gh_retry
 from rediacc_ci.core import ghx as _ghx
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -411,10 +412,10 @@ def _agree(old, new, label: str) -> None:
         f"old stdout: {old_proc.stdout!r}\nold stderr: {old_proc.stderr!r}\n"
         f"new stdout: {new_proc.stdout!r}\nnew stderr: {new_proc.stderr!r}"
     )
-    assert _mask(new_proc.stdout) == _mask(old_proc.stdout), (
+    assert _mask(as_twin(new_proc.stdout)) == _mask(old_proc.stdout), (
         f"{label}: stdout diverged:\n{old_proc.stdout!r}\n{new_proc.stdout!r}"
     )
-    assert _mask(new_proc.stderr) == _mask(old_proc.stderr), (
+    assert _mask(as_twin(new_proc.stderr)) == _mask(old_proc.stderr), (
         f"{label}: stderr diverged:\n{old_proc.stderr!r}\n{new_proc.stderr!r}"
     )
     assert new_calls == old_calls, f"{label}: call log diverged:\n{old_calls}\n---\n{new_calls}"

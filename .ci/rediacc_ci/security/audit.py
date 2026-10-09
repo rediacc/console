@@ -1091,7 +1091,7 @@ class Audit:
             # `age_fail=1`, so the exit code and the loop behaviour match and
             # the stderr text does not. No differential case claims otherwise.
             print(
-                "age-check.sh: unreadable verdict '' for %s/%s" % (file, entry),
+                "rediacc_ci.security.audit: unreadable verdict '' for %s/%s" % (file, entry),
                 file=sys.stderr,
                 flush=True,
             )

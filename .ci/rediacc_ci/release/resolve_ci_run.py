@@ -28,7 +28,7 @@ import sys
 
 from rediacc_ci.core import gh_retry, ghx
 
-SELF = "resolve-ci-run.py"
+SELF = "rediacc_ci.release.resolve_ci_run"
 
 # `<caller job name> / <reusable workflow job name>`: ci.yml `stage-artifacts` calls cd-stage.yml `stage`, both named "Stage Artifacts".
 STAGE_JOB_NAME = "Stage Artifacts / Stage Artifacts"

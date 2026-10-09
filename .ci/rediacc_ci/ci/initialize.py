@@ -518,7 +518,7 @@ def run(check_only: str, output_file: str) -> int:
     # In process: the detector is `rediacc_ci.ci.detect_pointer_bump`, no longer the bash twin. Stdout is flushed first so its `key=value` lines keep their place among this module's own.
     sys.stdout.flush()
     if detect_pointer_bump.main(forwarded) != 0:
-        log.warn("detect-pointer-bump.sh errored; running full CI")
+        log.warn("rediacc_ci.ci.detect_pointer_bump errored; running full CI")
         write_output("pointer_bump_only", "false", output_file)
 
     # ----------------------------------------------------------------------- Step 5: the three image tags -----------------------------------------------------------------------

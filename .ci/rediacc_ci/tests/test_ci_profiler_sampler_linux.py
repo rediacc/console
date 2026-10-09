@@ -49,6 +49,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.ci import profiler_sampler_linux as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/ci/profiler/sampler-linux.sh"
@@ -122,8 +123,8 @@ def run_both(
 
 def assert_same(old: tuple[int, str, str], new: tuple[int, str, str]) -> None:
     assert new[0] == old[0], "exit: twin %s, port %s" % (old[0], new[0])
-    assert new[1] == old[1], "stdout:\n--- twin\n%s--- port\n%s" % (old[1], new[1])
-    assert new[2] == old[2], "stderr:\n--- twin\n%s--- port\n%s" % (old[2], new[2])
+    assert as_twin(new[1]) == old[1], "stdout:\n--- twin\n%s--- port\n%s" % (old[1], new[1])
+    assert as_twin(new[2]) == old[2], "stderr:\n--- twin\n%s--- port\n%s" % (old[2], new[2])
 
 
 # --------------------------------------------------------------------------- Layer 1: --help is a slice of the file's own source ---------------------------------------------------------------------------
@@ -1063,7 +1064,11 @@ def test_a_planted_regression_of_the_dangling_flag_guard_is_caught(
     before = PORT.read_bytes()
     guard = (
         "                if len(args) < 2:\n"
-        '                    print("sampler-linux.sh: --out requires a value", file=sys.stderr, flush=True)\n'
+        "                    print(\n"
+        '                        "rediacc_ci.ci.profiler_sampler_linux: --out requires a value",\n'
+        "                        file=sys.stderr,\n"
+        "                        flush=True,\n"
+        "                    )\n"
         "                    return 2\n"
         "                self.out = args[1]\n"
     )
@@ -1087,7 +1092,7 @@ def test_the_port_file_on_disk_is_untouched_by_this_module() -> None:
     case that forgets to copy first.
     """
     text = PORT.read_text(encoding="utf-8")
-    assert 'print("sampler-linux.sh: --out requires a value"' in text, (
+    assert '"rediacc_ci.ci.profiler_sampler_linux: --out requires a value"' in text, (
         "the dangling-flag guard was removed from the real port file"
     )
     assert "self.mem_bytes = c - i if c > i else c" in text, (

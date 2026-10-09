@@ -19,7 +19,7 @@ from rediacc_ci.well_known import EDGE_ORIGIN, SITE_ORIGIN
 EDGE_HOST = EDGE_ORIGIN.removeprefix("https://")
 SITE_HOST = SITE_ORIGIN.removeprefix("https://")
 
-SELF = "resolve-www-deploy-target.py"
+SELF = "rediacc_ci.deploy.resolve_www_deploy_target"
 
 
 def _require(name: str) -> str:

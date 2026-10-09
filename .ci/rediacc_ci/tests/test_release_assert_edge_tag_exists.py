@@ -24,6 +24,7 @@ from rediacc_ci import paths
 from rediacc_ci.core import ghx
 from rediacc_ci.release import assert_edge_tag_exists as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 from rediacc_ci.well_known import GH_REPO
 
 if typing.TYPE_CHECKING:
@@ -201,11 +202,11 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
     )
-    assert new.stdout == old.stdout, (
-        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new.stdout!r}"
+    assert as_twin(new.stdout) == old.stdout, (
+        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {as_twin(new.stdout)!r}"
     )
-    assert new.stderr == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
+    assert as_twin(new.stderr) == old.stderr, (
+        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
     )
     if old_calls is not None:
         assert new_calls == old_calls, (
@@ -514,7 +515,7 @@ def test_each_required_credential_is_demanded_in_order(tmp_path: pathlib.Path) -
         assert "must be set" in old.stderr, name
         assert "must be set" in new.stderr, name
         assert old_calls == [] == new_calls, f"{name}: an oracle ran without credentials"
-        assert new.stderr.startswith("assert-edge-tag-exists.py: "), (
+        assert new.stderr.startswith("rediacc_ci.release.assert_edge_tag_exists: "), (
             f"{name}: the port stopped naming itself"
         )
         assert "line 8" in old.stderr, (

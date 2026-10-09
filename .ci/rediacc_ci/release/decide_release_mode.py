@@ -14,7 +14,7 @@ from __future__ import annotations
 import os
 import sys
 
-SELF = "decide-release-mode.py"
+SELF = "rediacc_ci.release.decide_release_mode"
 
 
 def _require(name: str) -> str:

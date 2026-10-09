@@ -34,6 +34,7 @@ from typing import TYPE_CHECKING
 from rediacc_ci.ci import generate_tag
 from rediacc_ci.ci import initialize as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 from rediacc_ci.well_known import GH_ORIGIN, GH_REPO, IMAGE_REGISTRY
 from rediacc_ci.well_known import GH_ORIGIN as WK_GH_ORIGIN
 
@@ -433,8 +434,11 @@ def calls_of(files: dict[str, str | None]) -> str:
 
 def assert_identical(old, new, files) -> None:
     assert new[0] == old[0], "exit code: %r vs %r" % (old, new)
-    assert new[1] == old[1], "stdout:\n%s\n---\n%s" % (old[1], new[1])
-    assert strip_prog(new[2]) == strip_prog(old[2]), "stderr:\n%s\n---\n%s" % (old[2], new[2])
+    assert as_twin(new[1]) == old[1], "stdout:\n%s\n---\n%s" % (old[1], new[1])
+    assert strip_prog(as_twin(new[2])) == strip_prog(old[2]), "stderr:\n%s\n---\n%s" % (
+        old[2],
+        new[2],
+    )
     for key, value in files.items():
         if key.startswith("old_"):
             assert files["new_" + key[4:]] == value, "%s diverged:\n%r\n---\n%r" % (
@@ -833,7 +837,7 @@ def test_a_failing_pointer_bump_detector_degrades_to_a_full_run(
     monkeypatch.setattr(port.common, "repo_root", lambda: tmp_path)
     port.run("false", str(out))
     assert seen == [["--output", str(out)]]
-    assert "detect-pointer-bump.sh errored; running full CI" in capsys.readouterr().err
+    assert "rediacc_ci.ci.detect_pointer_bump errored; running full CI" in capsys.readouterr().err
     assert out.read_text(encoding="utf-8").count("pointer_bump_only=false") == 2
 
 

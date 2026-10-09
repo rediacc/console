@@ -44,7 +44,7 @@ TWO DIVERGENCES, BOTH IN REFUSAL TEXT NOBODY PARSES:
      CLOUDFLARE_R2_ACCESS_KEY_ID: advance-contract-floor.sh:
      CLOUDFLARE_R2_ACCESS_KEY_ID must be set`). Reproducing a line number would
      pin this port to the twin's layout, so it prints
-     `advance-contract-floor.py: <VAR> must be set`. Same stream, same exit 1,
+     `rediacc_ci.release.advance_contract_floor: <VAR> must be set`. Same stream, same exit 1,
      same order. Identical ruling to `release/tag_submodules.py`.
   2. `${VAR:?}` fires on set-but-EMPTY as well as unset, and so does this.
 
@@ -63,7 +63,7 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import release_state_validator as rsv
 
-SELF = "advance-contract-floor.py"
+SELF = "rediacc_ci.release.advance_contract_floor"
 
 # `.ci/config/release-contract-floor.txt`, relative to the repository root (:50). Spelled here rather than imported from `release_state_validator` (which carries the same path as `FLOOR_FILE_REL`) because the twin spells it locally too, and the two files agreeing is a fact a test should be able to assert rather than a fact the code assumes.
 FLOOR_FILE = ".ci/config/release-contract-floor.txt"

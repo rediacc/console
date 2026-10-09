@@ -49,7 +49,7 @@ RELEASES_HOST = WK_RELEASES_ORIGIN.removeprefix("https://")
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-SELF = "verify-edge-endpoints.py"
+SELF = "rediacc_ci.deploy.verify_edge_endpoints"
 
 # The twin's hard-coded hosts. Named constants so a reader can see at a glance that this program has no configurable target, which is the fact that decided the fake-`curl` design above.
 EDGE = EDGE_ORIGIN

@@ -30,7 +30,7 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common
 
-SELF = "create-github-release.py"
+SELF = "rediacc_ci.release.create_github_release"
 
 # The twin `cd "$(get_repo_root)"`s, and `get_repo_root` (common.sh:205-210) resolves three levels up from `.ci/scripts/lib`. This file sits at `.ci/rediacc_ci/release/`, which is the same three levels.
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))

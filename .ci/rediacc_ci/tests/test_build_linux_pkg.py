@@ -30,6 +30,7 @@ import typing
 from rediacc_ci import paths
 from rediacc_ci.build import build_linux_pkg as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 from rediacc_ci.well_known import PKG_MAINTAINER_EMAIL, PKG_SIGNING_KEY_NAME, SITE_ORIGIN
 
 if typing.TYPE_CHECKING:
@@ -412,10 +413,10 @@ def _agree(old_t, new_t, label: str, *, lines: bool = False) -> None:
         "%s: exit diverged: %r vs %r\nold stderr: %r\nnew stderr: %r"
         % (label, old.returncode, new.returncode, old.stderr, new.stderr)
     )
-    assert _mask(new.stdout, lines=lines) == _mask(old.stdout, lines=lines), (
+    assert _mask(as_twin(new.stdout), lines=lines) == _mask(old.stdout, lines=lines), (
         "%s: stdout diverged:\n%r\n%r" % (label, old.stdout, new.stdout)
     )
-    assert _mask(new.stderr, lines=lines) == _mask(old.stderr, lines=lines), (
+    assert _mask(as_twin(new.stderr), lines=lines) == _mask(old.stderr, lines=lines), (
         "%s: stderr diverged:\n%r\n%r" % (label, old.stderr, new.stderr)
     )
     assert new_calls == old_calls, "%s: call log diverged:\n%s---\n%s" % (
