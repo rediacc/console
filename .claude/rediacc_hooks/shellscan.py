@@ -644,9 +644,126 @@ _PREFIX_COMMANDS = {
     "xargs": frozenset(
         ("-I", "-L", "-n", "-P", "-d", "-E", "-s", "-a", "--max-args", "--delimiter")
     ),
+    # `sshpass` (#ec63ff8c): the password, its file, its descriptor and the prompt take the next word; `-e` reads SSHPASS and takes none, so it must not swallow the `ssh` after it. Stripped like `sudo`, because no guard judges an `sshpass` run by that name and both ssh guards need the `ssh` behind it.
+    "sshpass": frozenset(("-p", "-f", "-d", "-P")),
 }
 # A prefix command that takes one positional operand before the command it runs.
 _PREFIX_OPERAND = frozenset(("timeout",))
+# LAUNCHERS (#ec63ff8c, 2026-10-09): `npx` and `find -exec` run another command named in their own argv, and are NOT stripped like the prefixes above, because the launcher itself is a run other guards judge. `block_unscoped_formatter_run` reads `npx prettier --write` as an `npx` run and `block_host_toolchain_run` refuses `npx --yes ruff` on that shape, so `npx` has to stay the run's name.
+# (`sshpass` has no such reader and is a plain prefix above.) The launched command is walked into an analysis of its own (`_Run.launched`): `lifted_commands` puts it on a line of its own, where every anchored text guard sees it at command position, while `_analyse(cmd).runs` stays the list it always was. Before this, three guards named `npx`, `sshpass` and `find -exec` inside their own anchors (`(npx[S]+)?`, `(sshpass ...)?`, `(find ... -exec ...)?`), three copies that still missed: `npx -y node packages/cli/dist/cli.js` and `find . -exec node cli-bundle.js \;` were both allowed (measured 2026-10-09).
+# `npx` options that take the next word as their value; `-c`/`--call` is a SHELL STRING, walked as a payload.
+_NPX_VALUE = frozenset(
+    ("-p", "--package", "-w", "--workspace", "--prefix", "--registry", "--cache")
+)
+_NPX_CALL = frozenset(("-c", "--call"))
+# `find` actions whose operands up to a lone `;` or `+` are a command it runs, once per match.
+_FIND_EXEC = frozenset(("-exec", "-execdir", "-ok", "-okdir"))
+# `ssh` short options that take a value (OpenSSH 9, `ssh(1)` SYNOPSIS); every other letter is a flag. The value is either the rest of the bundle (`-p22`) or the next word.
+_SSH_VALUE_LETTERS = frozenset("BbcDEeFIiJLlmOoPpQRSWw")
+
+
+def _launched(base, argv):
+    """The commands a launcher run starts: a list of `("argv", [word, ...])` or `("text", payload)`, empty for anything that is not a launcher."""
+    if base == "npx":
+        k = 0
+        while k < len(argv):
+            arg = argv[k]
+            if arg == "--":
+                k += 1
+                break
+            if arg in _NPX_CALL:
+                return [("text", argv[k + 1])] if k + 1 < len(argv) else []
+            if arg.startswith(("--call=", "-c=")):
+                return [("text", arg.split("=", 1)[1])]
+            if arg.startswith("-") and len(arg) > 1:
+                k += 2 if arg in _NPX_VALUE else 1
+                continue
+            break
+        return [("argv", argv[k:])] if k < len(argv) else []
+    if base == "find":
+        out = []
+        k = 0
+        while k < len(argv):
+            if argv[k] not in _FIND_EXEC:
+                k += 1
+                continue
+            j = k + 1
+            while j < len(argv) and argv[j] not in (";", "+"):
+                j += 1
+            if j > k + 1:
+                out.append(("argv", argv[k + 1 : j]))
+            k = j + 1
+        return out
+    return []
+
+
+def _ssh_remote(argv):
+    """`(destination, remote command)` for an `ssh` argv, or None when it names no remote command (an interactive login, `-N`, a malformed line).
+
+    ssh joins every word after the destination with single spaces and hands that string to the remote login shell, which parses it again. So `ssh h "docker ps"` and `ssh h docker ps` send the same command, and a quoted remote command is a shell PAYLOAD exactly as `sh -c '...'` is, not prose: the view drops it with every other quoted span, which is why `ssh prod-1 "docker ps"` was allowed (rc 0, 2026-10-09).
+    """
+    k, ended = _ssh_options(argv, 0)
+    if k >= len(argv):
+        return None
+    destination = argv[k]
+    # OpenSSH reads options AFTER the destination too, unless `--` came first: `ssh prod-1 -t docker ps` sends `docker ps`. The first word that is not an option opens the command, so in `ssh h ls -la` the `-la` is the remote command's.
+    k = k + 1 if ended else _ssh_options(argv, k + 1)[0]
+    if k >= len(argv):
+        return None
+    return destination, " ".join(argv[k:])
+
+
+def _ssh_options(argv, k):
+    """Skip ssh options from `argv[k]`: `(index of the first non-option, whether a `--` ended them)`. A bundle takes a value when a value letter is in it: the rest of the bundle (`-p22`), or the next word when the letter is last (`-vp 22`)."""
+    while k < len(argv):
+        arg = argv[k]
+        if arg == "--":
+            return k + 1, True
+        if not (arg.startswith("-") and len(arg) > 1):
+            break
+        letters = arg[1:]
+        for at, letter in enumerate(letters):
+            if letter in _SSH_VALUE_LETTERS:
+                if at == len(letters) - 1:
+                    k += 1
+                break
+        k += 1
+    return k, False
+
+
+def _quote_argv(argv):
+    """Words already quote-removed, re-quoted so a nested walk reads them as the SAME words: `{}` stays one argument, and a value holding a blank is not split."""
+    return " ".join(
+        a if re.fullmatch(r"[A-Za-z0-9_@%+=:,./-]+", a) else "'" + a.replace("'", "'\"'\"'") + "'"
+        for a in argv
+    )
+
+
+def _stage_feed(stage, lexer):
+    """The literal text a pipeline stage could write to its stdout: every word of it, quote-removed, plus the here-strings and heredoc bodies it reads. What the words PRINT is not known here, so all of them count."""
+    out: list[str] = []
+    if stage[0] in ("sub", "brace"):
+        for item in stage[1]:
+            if item[0] == "pipe":
+                out.extend(_stage_feed(s, lexer) for s in item[1])
+        return " ".join(out)
+    for tok in stage[1]:
+        if isinstance(tok, _Word):
+            out.append(_word_value(tok))
+        elif isinstance(tok, _Redir):
+            out.append(_redir_feed(tok, lexer))
+    return " ".join(o for o in out if o)
+
+
+def _redir_feed(redir, lexer):
+    """What a redirect hands a command on stdin as TEXT: a here-string's word, a heredoc's body, nothing for a file."""
+    if redir.heredoc is not None and redir.heredoc.body_start is not None:
+        return lexer.src[redir.heredoc.body_start : redir.heredoc.body_end]
+    if redir.op == "<<<" and redir.target is not None:
+        return _word_value(redir.target)
+    return ""
+
+
 # How deep substitutions and payloads may nest before the rest is treated as opaque. Real commands nest two or three deep; the cap only exists so that a pathological input cannot exhaust the interpreter's stack inside a guard.
 _MAX_DEPTH = 24
 
@@ -1232,11 +1349,15 @@ class _Run:
         "canonical",
         "cwd",
         "env",
+        "feed",
         "git_dir",
         "git_sub",
+        "launched",
         "name",
+        "remote",
         "usage",
         "vars",
+        "via",
         "writes",
         "xargv",
     )
@@ -1258,6 +1379,14 @@ class _Run:
         self.usage = set()
         # The files this command's own output redirects write, in order, quote-removed. `earlier_mutators` reads them: a `printf ... > msg` before a `git commit -F msg` changes what a guard judging the commit reads.
         self.writes = []
+        # A LAUNCHER'S COMMANDS (#ec63ff8c): one `_Analysis` per command `npx` or `find -exec` starts (see `_launched`). Kept OFF `_Analysis.runs` so every guard walking the runs keeps reading `npx` as `npx`; `lifted_commands` and `every_run` descend into them.
+        self.launched = []
+        # `(destination, remote command)` when this is an `ssh` naming a remote command (`_ssh_remote`), else None. The remote command is NOT walked into `runs` or lifted into the view: it runs on another machine, and a guard judging this checkout's git or files must not read it as local. `ssh_remote_commands` hands it to the guards that police remote commands.
+        self.remote = None
+        # WHAT ARRIVES ON STDIN, AS TEXT (#ec63ff8c): the literal words of the pipeline stages before this command (`_stage_feed`) and its own here-string or heredoc body, None when there are none. For a command a `find -exec` runs, `find`'s own words, since `{}` is replaced by what they name. What a producer PRINTS is not computed, so every word counts. Policy stays with the guard: `xargs rm` turns this text into operands and `cat` only reads it.
+        self.feed = None
+        # The prefix commands `_strip_prefixes` dropped in front of this command, in order (`("sudo", "xargs")`), plus `"find"` for a command a `find -exec` launched. A guard reads `"xargs" in run.via` to know the feed became arguments.
+        self.via = ()
 
 
 class _Analysis:
@@ -1740,6 +1869,7 @@ class _Walker:
                     lexer,
                     stages[pos - 1] if pos else None,
                     tested=tested and pos == len(stages) - 1,
+                    producers=stages[:pos],
                 )
                 spans.append((start, len(runs)))
             # `pgrep -f x | xargs kill`: a later stage that kills consumes every earlier stage's output as pids.
@@ -1748,7 +1878,7 @@ class _Walker:
                     for r in runs[spans[0][0] : spans[pos][0]]:
                         r.usage.add("kill")
 
-    def element(self, stage, state, lexer, upstream, tested=False):
+    def element(self, stage, state, lexer, upstream, tested=False, producers=()):
         kind = stage[0]
         if kind == "sub":
             self.items(stage[1], [state[0], state[1]], lexer)
@@ -1787,9 +1917,15 @@ class _Walker:
                 old, exp = shell.get(var, (_INHERITED, None))
                 shell[var] = (_append(old, value) if append else value, exp)
             state[1] = shell
+        prefix_words = words
         words, _prefixed = _strip_prefixes(words)
         if not words:
             return
+        via = tuple(
+            _base(_word_value(w))
+            for w in prefix_words[: len(prefix_words) - len(words)]
+            if _base(_word_value(w)) in _PREFIX_COMMANDS
+        )
         name = _word_value(words[0])
         if name == "" or any(ch in name for ch in " \t\n"):
             return
@@ -1812,7 +1948,27 @@ class _Walker:
         if base == "kill":
             for inner in self.analysis.runs[first_inner:]:
                 inner.usage.add("kill")
+        run.via = via
+        feed = [
+            f
+            for f in [_stage_feed(p, lexer) for p in producers]
+            + [_redir_feed(r, lexer) for r in redirs]
+            if f
+        ]
+        if feed:
+            run.feed = " ".join(feed)
         self.analysis.runs.append(run)
+        for how, launched in _launched(base, argv):
+            sub = _Analysis()
+            src = launched if how == "text" else _quote_argv(launched)
+            _Walker(sub, self.depth + 1).text(src, state[0], persist=False, shell=state[1])
+            if base == "find":
+                for inner_run in sub.runs:
+                    inner_run.via = (*inner_run.via, "find")
+                    inner_run.feed = " ".join(f for f in (inner_run.feed, " ".join(argv)) if f)
+            run.launched.append(sub)
+        if base == "ssh":
+            run.remote = _ssh_remote(argv)
         if base in ("cd", "pushd"):
             operands = [a for a in argv if not (a.startswith("-") and len(a) > 1)]
             # `cd` with no operand, `cd -` and `cd ~` land somewhere this walk cannot name; an unresolvable directory makes every caller keep judging its own root, the direction the guards fail safe in.
@@ -1946,14 +2102,42 @@ def _visible(canonical, segments):
     return False
 
 
+def _every_run(analysis):
+    for run in analysis.runs:
+        yield run
+        for sub in run.launched:
+            yield from _every_run(sub)
+
+
+def every_run(cmd):
+    """`_analyse(cmd).runs` plus every command a launcher among them starts (`_Run.launched`), each right after its launcher: `npx node x.js` yields the `npx` run and then the `node` run. For a guard that wants the launched commands too; the plain `runs` list leaves them out on purpose (see `_launched`)."""
+    return list(_every_run(_analyse(cmd)))
+
+
+def ssh_remote_commands(cmd, depth=0):
+    """`(destination, remote command)` for every `ssh` that `cmd` runs with a remote command, behind any prefix (`sshpass -p x ssh ...`) or launcher, and the hops inside each remote command after it (`ssh a "ssh b docker ps"` yields both).
+
+    The remote command is a shell string the far side parses again, so a guard policing what runs THERE walks it with `every_run(remote)`.
+    """
+    out: list[tuple[str, str]] = []
+    if depth >= _MAX_DEPTH:
+        return out
+    for run in every_run(cmd):
+        if run.remote is None:
+            continue
+        out.append(run.remote)
+        out.extend(ssh_remote_commands(run.remote[1], depth + 1))
+    return out
+
+
 def lifted_commands(cmd, view):
     """The canonical line of every command bash runs in `cmd` that `view` does not already show at a command position.
 
-    `view` is whatever text the caller's regexes run over. `scan_target` passes its own prose-stripped line plus wrapper payload; `block_git_amend`, which builds its own view, passes that. The lines come back in the order bash would run the commands, each once.
+    `view` is whatever text the caller's regexes run over. `scan_target` passes its own prose-stripped line plus wrapper payload; `block_git_amend`, which builds its own view, passes that. The lines come back in the order bash would run the commands, each once. A launcher's commands (`npx`, `find -exec`, see `_launched`) are lifted too, right after the launcher's own line.
     """
     segments = _anchored_segments(view)
     out: list[str] = []
-    for run in _analyse(cmd).runs:
+    for run in _every_run(_analyse(cmd)):
         line = run.canonical
         if line in out or _visible(line, segments):
             continue

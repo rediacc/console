@@ -528,6 +528,147 @@ STATIC: list[Case] = [
         bash_json("timeout 9 ssh prod-1 docker ps"),
         "ssh-docker: a prefix command is still at command position",
     ),
+    # #ec63ff8c, 2026-10-09: a quoted ssh remote command, a protected path arriving on stdin through xargs, sshpass stripped as a prefix, and the launchers shellscan now walks (npx, find -exec). Every deny row here was allowed before; every CONTROL row was allowed before and after.
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json('ssh prod-1 "docker ps"'),
+        "ssh-docker: a quoted remote command is a payload the far side runs",
+    ),
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json("ssh -p 2222 -i key prod-1 'sudo docker ps'"),
+        "ssh-docker: the remote command behind ssh flags and sudo",
+    ),
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json('sshpass -p x ssh prod-1 "docker ps"'),
+        "ssh-docker: a quoted remote command behind sshpass",
+    ),
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json("ssh -t prod-1 'cd /srv && docker compose up -d'"),
+        "ssh-docker: docker after a separator inside the remote command",
+    ),
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json("ssh 192.168.111.10 uptime; ssh prod-1 docker ps"),
+        "ssh-docker: the bridge carve-out is per ssh, not per line",
+    ),
+    case(
+        "check 0 guards/block_ssh_docker.py",
+        bash_json('ssh 192.168.111.10 "docker ps"'),
+        "ssh-docker CONTROL: a quoted remote command on the bridge VM",
+    ),
+    case(
+        "check 0 guards/block_ssh_docker.py",
+        bash_json("ssh prod-1 'echo docker'"),
+        "ssh-docker CONTROL: a remote command that only names docker",
+    ),
+    case(
+        "check 0 guards/block_ssh_docker.py",
+        bash_json("ssh -o 'ProxyCommand=ssh -W %h:%p jump' prod-1 uptime"),
+        "ssh-docker CONTROL: an option value is not the remote command",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | xargs rm"),
+        "protected-files: xargs rm fed the path on stdin",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("printf '%s' scripts/pre-commit-check.sh | xargs git restore"),
+        "protected-files: xargs git restore fed the path on stdin",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | sort | xargs git checkout --"),
+        "protected-files: an earlier stage of the pipe feeds xargs too",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json(r"find . -name x -exec true {} \; -exec rm .claude/settings.json \;"),
+        "protected-files: every find -exec is walked, not only the first",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | cat"),
+        "protected-files CONTROL: piping the path to cat reads it",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | xargs cat"),
+        "protected-files CONTROL: xargs cat reads it",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json; ls | xargs rm"),
+        "protected-files CONTROL: a separator ends the pipe before xargs",
+    ),
+    case(
+        "check 2 guards/block_cli_bundle.py",
+        bash_json("npx -y node packages/cli/dist/cli.js"),
+        "cli-bundle: npx with its own flag before node",
+    ),
+    case(
+        "check 2 guards/block_cli_bundle.py",
+        bash_json(r"find packages -maxdepth 0 -exec node cli-bundle.js \;"),
+        "cli-bundle: find -exec running node",
+    ),
+    case(
+        "check 0 guards/block_cli_bundle.py",
+        bash_json("npx -y prettier --check packages/cli/dist/cli.js"),
+        "cli-bundle CONTROL: npx running another program over the bundle path",
+    ),
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json('ssh prod-1 -t "docker ps"'),
+        "ssh-docker: an ssh option after the destination",
+    ),
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json('ssh bastion ssh prod-1 "docker ps"'),
+        "ssh-docker: an ssh hop inside the remote command",
+    ),
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json('sshpass -e ssh prod-1 "docker ps"'),
+        "ssh-docker: sshpass -e takes no value",
+    ),
+    case(
+        "check 0 guards/block_ssh_docker.py",
+        bash_json("ssh -O check prod-1"),
+        "ssh-docker CONTROL: a control command names no remote command",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | git restore --pathspec-from-file=-"),
+        "protected-files: git reads its pathspec from stdin",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json(r"find .claude/settings.json -exec rm {} \;"),
+        "protected-files: find -exec rm of the path find names",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("git ls-files .claude/settings.json | xargs git rm"),
+        "protected-files: xargs git rm",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | xargs ls -l"),
+        "protected-files CONTROL: xargs ls lists it",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json(r"find .claude/settings.json -exec cat {} \;"),
+        "protected-files CONTROL: find -exec cat reads it",
+    ),
+    case(
+        "check 2 guards/block_cli_bundle.py",
+        bash_json("npx -c 'node cli-bundle.js'"),
+        "cli-bundle: npx -c runs a shell string",
+    ),
     # AND THE OTHER DIRECTION, which is the half that makes the narrowing safe. The scanner extracts shell-wrapper payloads, so hiding a banned command inside `sh -c` / `eval` must still be caught. Without these, "we stopped matching prose" and "we stopped matching" look identical from the outside.
     case(
         "check 2 guards/block_ci_polling.py",
