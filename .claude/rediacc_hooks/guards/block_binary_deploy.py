@@ -36,7 +36,21 @@ MESSAGE = (
 # blocks the real command, at line start and after a separator.
 SUDO_CP = hookio.rx(r"(^|[;&|(])[{B}]*sudo cp[^;&|]*/usr/local/bin/renet")
 
-SCP_CLAUSE = hookio.rx(r"(^|[{B}])scp[{B}]")
+# COMMAND POSITION FOR scp TOO, 2026-10-09 (#ecb59527). `(^|[{B}])scp[{B}]` matched `scp` after any blank, so a sentence whose last word happened to be a host spec was refused as an upload: `echo never run scp bin/renet host:/usr/local/bin/renet` and `git commit -m 'docs: scp x h:/p'` both came back rc 2. The clauses are already split on `;&|`, so a real scp
+# starts its clause by construction and this narrows prose only. This guard reads the raw command, not `shellscan.lifted_commands`, so the launchers a real upload hides behind are named here: `sudo`, `nohup`, `time`, `exec`, `command`, `env` and `sshpass` (each with its flags), `timeout N`, and `VAR=value` assignments, in any chain, then an optional directory (`/usr/bin/scp`).
+_LAUNCHER_FLAGS = r"([{B}]+-[^{B};|&]+([{B}]+[^-{B};|&][^{B};|&]*)?)*"
+SCP_CLAUSE = hookio.rx(
+    r"(^|[;&|(`{!]|\$\()[{B}]*"
+    r"(("
+    r"(sudo|nohup|time|exec|command|env|sshpass)"
+    + _LAUNCHER_FLAGS
+    + r"|timeout"
+    + _LAUNCHER_FLAGS
+    + r"[{B}]+[0-9][^{B};|&]*"
+    + r"|[A-Za-z_][A-Za-z0-9_]*=[^{B};|&]*"
+    r")[{B}]+)*"
+    r"([^{B};|&()`]*/)?scp[{B}]"
+)
 
 # A host spec: a hostname (optionally user@) followed by a colon. A local path containing a colon has a slash before it, so it cannot match here.
 HOST_SPEC = r"^[A-Za-z0-9_.-]+(@[A-Za-z0-9_.-]+)?:"
@@ -55,6 +69,20 @@ EDGE_CASES = [
         "echo 'never sudo cp renet /usr/local/bin/renet'",
     ),
     ("scp in a later clause of a chain", "echo hi && scp bin/renet host:/tmp/renet"),
+    # Command position, not a blank (#ecb59527). Every launcher a real upload can hide behind still reaches the host-spec test, and a sentence that merely names scp does not.
+    ("sudo still reaches the upload", "sudo scp bin/renet root@10.0.0.1:/p"),
+    ("scp after && is at command position", "true && scp x h:/p"),
+    ("nohup still reaches the upload", "nohup scp x h:/p"),
+    ("an assignment prefix still reaches the upload", "FOO=1 scp x h:/p"),
+    ("sshpass still reaches the upload", "sshpass -p x scp x h:/p"),
+    # Two shapes the blank-anchored pattern let through, refused since the anchor learned a directory and the `(` / `$(` separators.
+    ("scp by its full path", "/usr/bin/scp x h:/p"),
+    ("scp inside a command substitution", "echo $(scp x h:/p)"),
+    (
+        "an unquoted sentence naming scp is not an upload",
+        "echo never run scp bin/renet host:/usr/local/bin/renet",
+    ),
+    ("a commit message naming scp is not an upload", "git commit -m 'docs: scp x h:/p'"),
 ]
 
 
