@@ -15,6 +15,7 @@ import pytest
 
 from rediacc_ci.testrun import e2e, shard
 from rediacc_ci.tests import testrun_support as ts
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -35,7 +36,7 @@ def both(
 
 def same(old: ts.Outcome, new: ts.Outcome) -> None:
     assert new.calls == old.calls
-    assert (new.code, new.out, new.err) == (old.code, old.out, old.err)
+    assert (new.code, as_twin(new.out), as_twin(new.err)) == (old.code, old.out, old.err)
 
 
 def write_manifest(path: pathlib.Path, ids: list[str], of: int = 8, index: int = 1) -> str:

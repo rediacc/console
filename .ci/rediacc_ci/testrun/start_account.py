@@ -42,9 +42,7 @@ console.log(JSON.stringify({
 }));
 """
 SCOPES = ["license:read", "license:activate", "subscription:read"]
-USAGE = (
-    "usage: start-account-for-e2e.sh [--port <n>] [--email <addr>] [--plan <code>] [--name <label>]"
-)
+USAGE = "usage: python3 -m rediacc_ci.testrun.start_account [--port <n>] [--email <addr>] [--plan <code>] [--name <label>]"
 
 
 class LegError(Exception):

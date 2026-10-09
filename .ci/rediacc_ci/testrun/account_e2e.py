@@ -33,7 +33,7 @@ from rediacc_ci.testrun import shard
 MIN_WEBAUTHN_TESTS = 20
 LISTEN_TIMEOUT = 90
 DEFAULT_WEBHOOK_FIXTURE = "whsec_e2e_test_webhook_secret_for_simulation_only"
-USAGE = 'usage: run-account-e2e.sh [--projects "chromium firefox"] [--grep TAG] [--skip-setup] [--workers N] [--shard-manifest PATH --shard I/N]'
+USAGE = 'usage: python3 -m rediacc_ci.testrun.account_e2e [--projects "chromium firefox"] [--grep TAG] [--skip-setup] [--workers N] [--shard-manifest PATH --shard I/N]'
 REQUIRED_SECRETS = (
     "ACCOUNT_ED25519_PRIVATE_KEY",
     "ACCOUNT_ED25519_PUBLIC_KEY",

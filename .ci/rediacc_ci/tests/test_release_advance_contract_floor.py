@@ -442,7 +442,7 @@ def test_each_required_variable_is_demanded_in_order(tmp_path: pathlib.Path) -> 
         assert "must be set" in old.stderr, name
         assert "must be set" in new.stderr, name
         assert old_calls == [] == new_calls, f"{name}: a tool ran without its input"
-        assert new.stderr.startswith("advance-contract-floor.py: "), (
+        assert new.stderr.startswith("rediacc_ci.release.advance_contract_floor: "), (
             f"{name}: the port stopped naming itself"
         )
         assert ": line " in old.stderr, (

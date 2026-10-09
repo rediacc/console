@@ -69,7 +69,7 @@ from rediacc_ci import log
 from rediacc_ci.core import common
 from rediacc_ci.well_known import CF_API_BASE as WK_CF_API_BASE
 
-USAGE = "Usage: cleanup-cf-preview.sh --branch <branch_name> [--dry-run]"
+USAGE = "Usage: python3 -m rediacc_ci.housekeeping.cleanup_cf_preview --branch <branch_name> [--dry-run]"
 
 # `true`, exactly -- see parse_args quirk 2. `--dry-run false` is NOT a dry run.
 DRY_RUN_ON = "true"

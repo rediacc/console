@@ -16,7 +16,7 @@ import sys
 
 from rediacc_ci.core import gh_retry
 
-SELF = "verify-release-assets.py"
+SELF = "rediacc_ci.release.verify_release_assets"
 
 
 def _require(name: str) -> str:

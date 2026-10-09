@@ -34,6 +34,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.build import build_linux_packages
 from rediacc_ci.tests import frozen
+from rediacc_ci.tests.twin_names import as_twin
 
 ROOT = paths.repo_root()
 PORT = ROOT / ".ci" / "rediacc_ci" / "build" / "build_linux_packages.py"
@@ -413,7 +414,7 @@ def test_an_unset_next_version_names_the_program_that_refused(tmp_path):
         assert new["exit"] == 1, new
         assert old["calls"] == [], "the twin delegated without a version"
         assert new["calls"] == [], "the port delegated without a version"
-        assert LINE_PREFIX.sub("<prog>: line N: ", new["stderr"]) == LINE_PREFIX.sub(
+        assert LINE_PREFIX.sub("<prog>: line N: ", as_twin(new["stderr"])) == LINE_PREFIX.sub(
             "<prog>: line N: ", old["stderr"]
         ), "masked stderr diverged:\n twin: %r\n port: %r" % (old["stderr"], new["stderr"])
         assert "NEXT_VERSION: build-linux-packages.sh: NEXT_VERSION must be set" in old["stderr"], (

@@ -112,10 +112,10 @@ def main(argv: list[str]) -> int:  # noqa: ARG001 -- the twin ignores its argume
     max_panel_bytes = _env("PROFILER_MAX_PANEL_BYTES", DEFAULT_MAX_PANEL_BYTES)
 
     if sample_file == "":
-        print("panel.sh: PROFILER_SAMPLE_FILE must be set", file=sys.stderr)
+        print("rediacc_ci.ci.profiler_panel: PROFILER_SAMPLE_FILE must be set", file=sys.stderr)
         return 2
     if not os.access(REPORT_AWK, os.R_OK):
-        print("panel.sh: missing aggregator: %s" % REPORT_AWK, file=sys.stderr)
+        print("rediacc_ci.ci.profiler_panel: missing aggregator: %s" % REPORT_AWK, file=sys.stderr)
         return 2
 
     sample = pathlib.Path(sample_file)
@@ -188,10 +188,12 @@ def main(argv: list[str]) -> int:  # noqa: ARG001 -- the twin ignores its argume
                 # No awk on PATH. The twin gets bash's `command not found` and
                 # RC=127, which its own `-gt 1` turns into the named refusal
                 # below; a Python traceback here would read as flake instead.
-                print("panel.sh: awk not found on PATH", file=sys.stderr)
+                print("rediacc_ci.ci.profiler_panel: awk not found on PATH", file=sys.stderr)
                 rc = 127
         if rc > 1:
-            print("panel.sh: aggregator failed with exit %d" % rc, file=sys.stderr)
+            print(
+                "rediacc_ci.ci.profiler_panel: aggregator failed with exit %d" % rc, file=sys.stderr
+            )
             return 2
 
         body = panel.read_bytes()

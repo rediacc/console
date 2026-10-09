@@ -4,7 +4,7 @@ Picks the Worker name / domain / sandbox flag for one region of an account deplo
 
 REWORDED ON PURPOSE, NOT BYTE-IDENTICAL: the bash twin's missing-env-var
 message is `${VAR:?msg}`, which bash renders as
-`<script>: line N: VAR: <script-name>: VAR must be set` -- the line number is an artifact of bash's own diagnostics, not a fact worth reproducing. This port prints `resolve-account-deploy-config.py: VAR must be set` to stderr and exits
+`<script>: line N: VAR: <script-name>: VAR must be set` -- the line number is an artifact of bash's own diagnostics, not a fact worth reproducing. This port prints `rediacc_ci.deploy.resolve_account_deploy_config: VAR must be set` to stderr and exits
 1. `scripts/lib/shadow-gate.ts` rule 1 ("a port is allowed to reword; it is not
 allowed to change WHICH things it objects to") is what the ledger checks, via
 `--finding-re 'must be set|^(region|worker|domain|sandbox)='`, which extracts
@@ -18,7 +18,7 @@ from __future__ import annotations
 import os
 import sys
 
-SELF = "resolve-account-deploy-config.py"
+SELF = "rediacc_ci.deploy.resolve_account_deploy_config"
 
 
 def _require(name: str) -> str:

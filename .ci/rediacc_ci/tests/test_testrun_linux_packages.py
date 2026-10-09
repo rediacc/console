@@ -21,6 +21,7 @@ import pytest
 from rediacc_ci.testrun import linux_packages as port
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import testrun_support as ts
+from rediacc_ci.tests.twin_names import as_twin
 from rediacc_ci.well_known import RELEASES_ORIGIN
 
 TWIN_REL = ".ci/scripts/test/test-linux-packages.sh"
@@ -114,7 +115,7 @@ def test_dry_run_matches_the_twin() -> None:
         env={**os.environ, "PYTHONPATH": str(ts.ROOT / ".ci")},
     )
     assert old.returncode == 0, old.stderr
-    assert (new.returncode, mask_paths(new.stdout), mask_paths(new.stderr)) == (
+    assert (new.returncode, mask_paths(as_twin(new.stdout)), mask_paths(as_twin(new.stderr))) == (
         old.returncode,
         mask_paths(old.stdout),
         mask_paths(old.stderr),

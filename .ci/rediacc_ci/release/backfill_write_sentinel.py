@@ -18,7 +18,7 @@ import sys
 
 from rediacc_ci.deploy import write_release_sentinel
 
-SELF = "backfill-write-sentinel.py"
+SELF = "rediacc_ci.release.backfill_write_sentinel"
 
 # `.ci/rediacc_ci/release/backfill_write_sentinel.py` -> `.ci` -> repo root, exactly as the twin's `SCRIPT_DIR/../../..` (`.ci/scripts/release/../../..`) is the same three levels up, even though the two files live in different directories.
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))

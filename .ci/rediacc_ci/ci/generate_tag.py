@@ -87,7 +87,7 @@ GITHUB_OUTPUT_IS_SILENTLY_OPTIONAL = True
 UNREACHABLE_BARE_COMMIT_TAG = True
 
 # Divergence 2's stand-in for bash's `$2: unbound variable`.
-MISSING_VALUE = "generate-tag.sh: %s requires a value"
+MISSING_VALUE = "rediacc_ci.ci.generate_tag: %s requires a value"
 
 # `sha256sum | cut -c1-8` per file, then `... | cut -c1-12` over the
 # concatenation (twin :143, :152). 12 hex chars = 48 bits; the twin records at

@@ -70,7 +70,7 @@ def _max_body_line_length(key_file: pathlib.Path) -> int:
 def main(argv: list[str]) -> int:
     if not argv or argv[0] == "":
         print(
-            "canonicalise-gpg-key: usage: canonicalise-gpg-key.sh <key-file> [passphrase]",
+            "rediacc_ci.build.canonicalise_gpg_key: usage: python3 -m rediacc_ci.build.canonicalise_gpg_key <key-file> [passphrase]",
             file=sys.stderr,
         )
         return 1
@@ -79,11 +79,14 @@ def main(argv: list[str]) -> int:
     passphrase = argv[1] if len(argv) > 1 else ""
 
     if not key_file.is_file() or key_file.stat().st_size == 0:
-        print(f"canonicalise-gpg-key: {key_file} is missing or empty", file=sys.stderr)
+        print(
+            f"rediacc_ci.build.canonicalise_gpg_key: {key_file} is missing or empty",
+            file=sys.stderr,
+        )
         return 1
 
     if shutil.which("gpg") is None:
-        print("canonicalise-gpg-key: gpg is not installed", file=sys.stderr)
+        print("rediacc_ci.build.canonicalise_gpg_key: gpg is not installed", file=sys.stderr)
         return 1
 
     home_dir = tempfile.mkdtemp()
@@ -109,7 +112,10 @@ def main(argv: list[str]) -> int:
             check=False,
         )
         if imported.returncode != 0:
-            print("canonicalise-gpg-key: gpg could not import the key", file=sys.stderr)
+            print(
+                "rediacc_ci.build.canonicalise_gpg_key: gpg could not import the key",
+                file=sys.stderr,
+            )
             return 1
 
         listed = subprocess.run(
@@ -122,7 +128,9 @@ def main(argv: list[str]) -> int:
         )
         fpr = _fpr_from_colons(listed.stdout or "")
         if not fpr:
-            print("canonicalise-gpg-key: no secret key after import", file=sys.stderr)
+            print(
+                "rediacc_ci.build.canonicalise_gpg_key: no secret key after import", file=sys.stderr
+            )
             return 1
 
         out_path = pathlib.Path(home_dir) / "canonical.asc"
@@ -145,7 +153,9 @@ def main(argv: list[str]) -> int:
                 check=False,
             )
         if exported.returncode != 0 or not out_path.is_file() or out_path.stat().st_size == 0:
-            print("canonicalise-gpg-key: re-export produced nothing", file=sys.stderr)
+            print(
+                "rediacc_ci.build.canonicalise_gpg_key: re-export produced nothing", file=sys.stderr
+            )
             return 1
 
         # JUDGE THE INPUT, NOT A DIFF AGAINST THE OUTPUT -- see the twin's own comment. gpg re-encrypts with fresh salt on every export, so the body differs every time even for a canonical key; the weld leaves a structural signature (one armor line over 64 columns) instead.

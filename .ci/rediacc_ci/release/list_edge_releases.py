@@ -16,7 +16,7 @@ import sys
 
 from rediacc_ci.core import gh_retry
 
-SELF = "list-edge-releases.py"
+SELF = "rediacc_ci.release.list_edge_releases"
 RELEASE_TAG_RE = re.compile(r"^v([0-9]+)\.([0-9]+)\.([0-9]+)$")
 # The walk back never needs more than the releases since the last stable one; 100 is a generous ceiling on that.
 LIST_LIMIT = "100"

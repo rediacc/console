@@ -26,7 +26,7 @@ from rediacc_ci import log
 from rediacc_ci.core import common
 from rediacc_ci.core import release_state_validator as rsv
 
-SELF = "reprobe-r2-sentinel.py"
+SELF = "rediacc_ci.release.reprobe_r2_sentinel"
 
 # BLOCKER: the single-element tuple is deliberate and carried over verbatim from the twin (`for product in cli`), which took it verbatim from backfill-release-sentinel.yml -- cli is the only product with `.released` sentinels today, and keeping the loop shape means adding the next one is a one-word edit rather than a restructure.
 PRODUCTS = ("cli",)

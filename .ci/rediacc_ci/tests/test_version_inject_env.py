@@ -28,6 +28,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "version" / "inject-env.sh"
@@ -295,7 +296,7 @@ def test_cli_port_and_twin_agree(tmp_path, fixture_kw, argv, env_extra):
     new = _cli_port(root_b, argv, env_extra)
     new_calls = _drain_log(root_b)
 
-    assert new == old, "CLI diverged for %r:\n twin: %r\n port: %r" % (argv, old, new)
+    assert as_twin(new) == old, "CLI diverged for %r:\n twin: %r\n port: %r" % (argv, old, new)
     assert new_calls == old_calls, "resolver calls diverged: %r vs %r" % (old_calls, new_calls)
 
 

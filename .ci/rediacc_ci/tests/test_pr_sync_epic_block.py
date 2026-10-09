@@ -20,6 +20,7 @@ import tempfile
 
 from rediacc_ci import paths
 from rediacc_ci.core import gh_retry, ghx
+from rediacc_ci.tests.twin_names import as_twin
 
 ROOT = paths.repo_root()
 # The oracle is the bash body the port replaced (its one-shot `gh pr view` read was the PLAN-gh-retry class). It is kept HERE, verbatim, and written into each case's tmp dir. Not a tracked `.sh`, because the language policy baseline refuses a new bash path.
@@ -251,11 +252,11 @@ def _assert_agree(old, new, label: str) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
     )
-    assert new.stdout == old.stdout, (
-        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new.stdout!r}"
+    assert as_twin(new.stdout) == old.stdout, (
+        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {as_twin(new.stdout)!r}"
     )
-    assert new.stderr == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
+    assert as_twin(new.stderr) == old.stderr, (
+        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
     )
 
 

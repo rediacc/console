@@ -96,7 +96,7 @@ def parse_args(argv: list[str]) -> tuple[str, bool, bool, bool]:
         arg = argv[i]
         if arg == "--version":
             if i + 1 >= len(argv):
-                raise UsageError("inject-env.sh: --version requires an argument")
+                raise UsageError("rediacc_ci.version.inject_env: --version requires an argument")
             # THE DEFECT IN THE MODULE DOCSTRING LIVES HERE: the next word is taken whatever it is, including another flag.
             override = argv[i + 1]
             given = True
@@ -108,10 +108,10 @@ def parse_args(argv: list[str]) -> tuple[str, bool, bool, bool]:
             want_print = True
             i += 1
         else:
-            raise UsageError("inject-env.sh: unknown arg: %s" % arg)
+            raise UsageError("rediacc_ci.version.inject_env: unknown arg: %s" % arg)
 
     if given and not override:
-        raise UsageError("inject-env.sh: --version was given an empty value")
+        raise UsageError("rediacc_ci.version.inject_env: --version was given an empty value")
 
     return override, given, strict, want_print
 
@@ -160,15 +160,15 @@ def strict_refusal(version: str) -> str | None:
     Three and not one: the twin's own comment says the original check compared only against the literal `0.0.0-dev`, so an EMPTY version sailed through it, and anything non-numeric (a curl error page, "none", "latest") reached a build define.
     """
     if not version:
-        return "inject-env.sh: version is empty under --strict"
+        return "rediacc_ci.version.inject_env: version is empty under --strict"
     if version == DEV_VERSION:
         return (
-            "inject-env.sh: version resolved to 0.0.0-dev under --strict "
+            "rediacc_ci.version.inject_env: version resolved to 0.0.0-dev under --strict "
             "(did the checkout include tags?)"
         )
     if not PUBLISHABLE_RE.fullmatch(version):
         return (
-            "inject-env.sh: version '%s' is not a dotted numeric version, "
+            "rediacc_ci.version.inject_env: version '%s' is not a dotted numeric version, "
             "refusing under --strict" % version
         )
     return None

@@ -17,7 +17,7 @@ import shutil
 import subprocess
 import sys
 
-SELF = "resolve-backfill-commit.py"
+SELF = "rediacc_ci.release.resolve_backfill_commit"
 
 
 def _require(name: str) -> str:

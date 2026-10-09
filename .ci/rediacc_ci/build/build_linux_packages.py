@@ -155,7 +155,7 @@ def main() -> int:
     version = os.environ.get("NEXT_VERSION", "")
     if not version:
         print(
-            "%s: line %d: NEXT_VERSION: build-linux-packages.sh: NEXT_VERSION must be set"
+            "%s: line %d: NEXT_VERSION: rediacc_ci.build.build_linux_packages: NEXT_VERSION must be set"
             % (__file__, sys._getframe().f_lineno),
             file=sys.stderr,
             flush=True,

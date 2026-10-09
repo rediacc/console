@@ -72,7 +72,7 @@ import sys
 
 from rediacc_ci import log
 
-SELF = "verify-ssh.py"
+SELF = "rediacc_ci.infra.verify_ssh"
 
 # The twin's own default, kept as a named constant so the differential can cite it rather than repeat the literal.
 DEFAULT_ATTEMPTS = 15

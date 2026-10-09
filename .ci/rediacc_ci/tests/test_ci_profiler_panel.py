@@ -33,6 +33,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.ci import profiler_panel
 from rediacc_ci.tests import frozen
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -257,7 +258,7 @@ def compare(tmp_path: pathlib.Path, name: str) -> tuple[int, str, str, str]:
     got = run(PORT, tmp_path / "port", name)
     labels = ("exit code", "stdout", "stderr", "the summary")
     for label, a, b in zip(labels, want, got, strict=True):
-        assert a == b, "%s: %s diverged:\n--- recorded ---\n%r\n--- port ---\n%r" % (
+        assert a == as_twin(b), "%s: %s diverged:\n--- recorded ---\n%r\n--- port ---\n%r" % (
             name,
             label,
             a,
