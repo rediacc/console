@@ -13,10 +13,12 @@ WHAT MAKES THE GREEN MEAN SOMETHING. A differential between two runs of the same
 
 import atexit
 import contextlib
+import functools
 import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 
 import pytest
@@ -94,9 +96,13 @@ def with_stubs(env):
 def make_clean_index():
     """A private git index holding exactly HEAD, so no staged path can differ from the work tree.
 
-    ROOT CAUSE OF THE FLAKE (2026-10-09, `test_verdict_set_is_unchanged[pre-bash-09]`, payload `check@1984`, a `git commit` with no pathspec). `warn_stale_index` reads the LIVE index (`git diff --cached` against `git diff`) and prints a STALE INDEX warning when a path is staged and then edited. The differential runs each payload twice, a moment apart, so a session staging and editing a file in the checkout between the two runs made one side warn and the other not. The collapsed runner emits that warning exactly as the members do (proved by `test_stale_index_is_pinned_out_of_the_verdict_env`); the comparison was reading the operator's index, not the collapse.
+    ROOT CAUSE OF THE FLAKE (2026-10-09, `test_verdict_set_is_unchanged[pre-bash-09]`, payload `check@1984`, a `git commit` with no pathspec). `warn_stale_index` reads the LIVE index (`git diff --cached` against `git diff`) and prints a STALE INDEX warning when a path is staged and then edited. The differential runs each payload twice, a moment apart, so a session staging and editing a file in the checkout between the two runs made one side warn and the other not. The collapsed runner and the members both emit that warning under a stale index (proved by `test_stale_index_is_pinned_out_of_the_verdict_env`, which runs each against one); the comparison was reading the operator's index, not the collapse.
 
     `GIT_INDEX_FILE` pins both sides to a throwaway index. Work-tree edits cannot show up as staged-and-edited against it, and every other guard that reads the index sees the same deterministic HEAD state.
+
+    COVERAGE LOST ON PURPOSE: with the index pinned to HEAD, no differential case can see a guard whose verdict depends on STAGED content. Those guards are driven by their own fixtures (`test_hooks_fixtures.py`, which builds the staged state it needs), and `test_the_clean_index_is_exactly_head` pins that this index really is HEAD, so the loss cannot widen quietly.
+
+    Called lazily through `clean_index()`, never at import: a checkout with no HEAD commit fails the tests that need the index, not the collection of the whole module.
     """
     holder = tempfile.mkdtemp(prefix="collapse-index-")
     atexit.register(shutil.rmtree, holder, ignore_errors=True)
@@ -113,13 +119,16 @@ def make_clean_index():
     return index
 
 
-CLEAN_INDEX = make_clean_index()
+@functools.cache
+def clean_index():
+    """The one private HEAD-only index of this run, built on first use."""
+    return make_clean_index()
 
 
 def hook_env():
     env = dict(os.environ)
     env["CLAUDE_PROJECT_DIR"] = str(ROOT)
-    env["GIT_INDEX_FILE"] = CLEAN_INDEX
+    env["GIT_INDEX_FILE"] = clean_index()
     return with_stubs(env)
 
 
@@ -387,7 +396,7 @@ def stale_index_file(tmp_path):
 def test_stale_index_is_pinned_out_of_the_verdict_env(tmp_path, monkeypatch):
     """Regression for the 2026-10-09 flake: the verdict env must not read the ambient index.
 
-    CONTROL: with a stale index in the ambient env, the collapsed runner DOES print the STALE INDEX warning, so the collapse is not what drops it. The hermetic env must then show no warning on either side and agree across the two.
+    CONTROL: with a stale index in the ambient env, the collapsed runner AND the members run one by one both print the STALE INDEX warning, so the collapse is not what drops it. The hermetic env must then show no warning on either side and agree across the two.
     """
     index, target = stale_index_file(tmp_path)
     payload = json.dumps(
@@ -398,13 +407,46 @@ def test_stale_index_is_pinned_out_of_the_verdict_env(tmp_path, monkeypatch):
     _, _, err = run_collapsed("pre-bash", payload, ambient)
     assert "STALE INDEX" in err, "the control did not build a stale index"
     assert target in err
-    env = hook_env()
-    assert env["GIT_INDEX_FILE"] == CLEAN_INDEX
     members = lifecycle.flat_commands("pre-bash")
+    _, _, member_err = run_separately(members, payload, ambient)
+    assert "STALE INDEX" in member_err, "the members do not warn under a stale index"
+    assert target in member_err
+    env = hook_env()
+    assert env["GIT_INDEX_FILE"] == clean_index()
     old = run_separately(members, payload, env)
     new = run_collapsed("pre-bash", payload, env)
     assert "STALE INDEX" not in old[2] + new[2]
     assert old == new
+
+
+def test_the_clean_index_is_exactly_head():
+    """The pinned index holds HEAD's tree and nothing else, so the verdict env hides staged edits and never invents any."""
+    env = {k: v for k, v in os.environ.items() if k != "GIT_INDEX_FILE"}
+    env["GIT_INDEX_FILE"] = clean_index()
+
+    def git(*args):
+        return subprocess.run(
+            ["git", "-C", str(ROOT), *args],
+            check=True,
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=60,
+        ).stdout.strip()
+
+    assert git("write-tree") == git("rev-parse", "HEAD^{tree}")
+
+
+def test_the_clean_index_is_built_lazily(tmp_path, monkeypatch):
+    """Regression: a missing HEAD must fail the tests that need the index, not the import of this module."""
+    assert "CLEAN_INDEX" not in globals(), "the index is built at import again"
+    monkeypatch.setattr(sys.modules[__name__], "ROOT", tmp_path)
+    clean_index.cache_clear()
+    try:
+        with pytest.raises(subprocess.CalledProcessError):
+            clean_index()
+    finally:
+        clean_index.cache_clear()
 
 
 def test_the_corpus_is_large_enough_to_mean_something():

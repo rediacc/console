@@ -405,7 +405,8 @@ def run() -> int:
     p.need_cmd("jq", "sudo apt-get install -y jq")
     p.need_exec(
         renet_bin,
-        "PYTHONPATH=.ci python3 -m rediacc_ci.build.build_renet, or export RENET_BINARY=/path/to/renet",
+        "PYTHONPATH=.ci python3 -m rediacc_ci.build.build_renet, "
+        "or export RENET_BINARY=/path/to/renet",
     )
     p.preflight()
 
