@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-09T01:00:06.851Z",
+  "generatedAt": "2026-10-09T03:07:30.790Z",
   "legs": [
     {
       "index": 1,
@@ -367,6 +367,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_git_op_conditionals.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_go_deps.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_go_tool_path.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_guard_mention_anchoring.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_hook_integrity.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_host_toolchain_coverage.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_inline_suppressions.py",

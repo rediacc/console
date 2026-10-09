@@ -476,6 +476,42 @@ STATIC: list[Case] = [
         bash_json("echo 'git restore .claude/settings.json'"),
         "protected-files CONTROL: echoing it is not restoring",
     ),
+    # THE UNQUOTED SENTENCE, for the three guards check:ci-guard-mention-anchoring found refusing it on 2026-10-09. Each matched its command word after any whitespace (or anywhere, for `\bssh\b`), so a doc line or worklist note naming the command was refused; each now anchors at command position. The deny cases after them are what anchoring must not have cost.
+    case(
+        "check 0 guards/block_cli_bundle.py",
+        bash_json("echo the docs say never to run node cli-bundle.js in this repo"),
+        "cli-bundle CONTROL: an unquoted sentence naming it is not running it",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("echo the docs say never to run git restore .claude/settings.json in this repo"),
+        "protected-files CONTROL: an unquoted sentence naming the restore is not restoring",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("echo never rm .claude/settings.json here"),
+        "protected-files CONTROL: an unquoted sentence naming rm is not deleting",
+    ),
+    case(
+        "check 0 guards/block_ssh_docker.py",
+        bash_json("echo the docs say never to run ssh docker in this repo"),
+        "ssh-docker CONTROL: an unquoted sentence naming it is not running it",
+    ),
+    case(
+        "check 2 guards/block_cli_bundle.py",
+        bash_json("cd packages/cli && sudo node cli-bundle.js"),
+        "cli-bundle: a prefix command after && is still at command position",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("git -C . restore .claude/settings.json"),
+        "protected-files: git global flags before the verb are still reached",
+    ),
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json("timeout 9 ssh prod-1 docker ps"),
+        "ssh-docker: a prefix command is still at command position",
+    ),
     # AND THE OTHER DIRECTION, which is the half that makes the narrowing safe. The scanner extracts shell-wrapper payloads, so hiding a banned command inside `sh -c` / `eval` must still be caught. Without these, "we stopped matching prose" and "we stopped matching" look identical from the outside.
     case(
         "check 2 guards/block_ci_polling.py",
