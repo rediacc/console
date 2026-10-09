@@ -32,7 +32,7 @@ What each key does (default in brackets):
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-stop_hook: on -- operator 2026-10-06: back on once PLAN-fast-loop completed
+stop_hook: off -- operator 2026-10-09: "let's disable the stop hook for now and wait/complete the remaining sub-agents. pause pr-babysit for now as well."
 turbo: off -- operator 2026-10-08: "let's disable turbo mode"
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
@@ -51,14 +51,14 @@ backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--focus`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: stop_hook on; turbo off; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; cadence on; agent_hint on; agent_pushback on; judge on.
+- Mode: stop_hook off; turbo off; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; cadence on; agent_hint on; agent_pushback on; judge on.
 - Focus: off.
 - Branch: 1008-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-retire-bash-oracles.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 228 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 3 live of writer_cap 15 (session d778be9d): worker:ab4bd660fa9ac4892, worker:ae6156c3460cabb2b, worker:a7132ea1feaaf85af.
-- Leased items: 3: #05829121 (worker:a7132ea1feaaf85af, d778be9d), #17b29ee6 (worker:ab4bd660fa9ac4892, d778be9d), #9dd53bab (worker:ae6156c3460cabb2b, d778be9d).
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 304 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 4 live of writer_cap 15 (session d778be9d): worker:a4c676124dc523379, worker:a6fb10222d3c9e395, worker:ad5c42ea218e7977d, worker:ad63e32576c1d296d.
+- Leased items: 8: #05829121 (worker:byku24n4g, d778be9d), #18c7e53c (worker:a4c676124dc523379, d778be9d), #31ed6c5f (worker:ad5c42ea218e7977d, d778be9d), #95b24b7e (worker:btop4t8ko, d778be9d), #a234b06e (worker:ad63e32576c1d296d, d778be9d), #a6e077ac (worker:byku24n4g, d778be9d), #d4ffa6d0 (worker:byku24n4g, d778be9d), #edd646a8 (worker:a6fb10222d3c9e395, d778be9d).
 - Next plan: agent/plans/PLAN-deferred-findings-block-merge.md, Promoted entry 2; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
