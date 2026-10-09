@@ -163,6 +163,57 @@ def test_bulk_guard_never_calls_the_shared_index_the_commits_own(tmp_path, monke
     assert "shared index" not in err, err
 
 
+def _branch_with(repo, names, subject):
+    """Commit `names` (paths under `repo`) as one commit on the current branch."""
+    for name in names:
+        path = repo / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("r\n", encoding="utf-8")
+    _git(repo, "add", "--", *names)
+    _git(repo, "commit", "-q", "-m", subject)
+
+
+def _pr_world(path):
+    """A repo whose `main` holds one seed commit and whose `feat` branch is checked out on top of it."""
+    repo = _repo(path)
+    (repo / "seed").write_text("s\n", encoding="utf-8")
+    _git(repo, "add", "--", "seed")
+    _git(repo, "commit", "-q", "-m", "seed")
+    _git(repo, "checkout", "-q", "-b", "feat")
+    return repo
+
+
+def test_bulk_guard_does_not_count_review_records(tmp_path, monkeypatch):
+    """A commit of 25 review records is not a transform; 25 source files with no proof still is (033a35227, 2026-10-09)."""
+    repo = _pr_world(tmp_path / "r")
+    _branch_with(repo, ["agent/reviews/feat/%02d.md" % i for i in range(25)], "chore(reviews): x")
+    rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
+    assert rc == 0, err
+    _branch_with(repo, ["src/f%02d.ts" % i for i in range(25)], "refactor: x")
+    rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
+    assert rc == 2
+    assert "25 file" in err or "(25" in err or " 25" in err, err
+
+
+def test_bulk_guard_judges_a_submodule_pr_in_its_own_checkout(tmp_path, monkeypatch):
+    """`gh pr create --repo rediacc/renet --head feat` walks private/renet, not the console's range (2026-10-09)."""
+    root = _pr_world(tmp_path / "console")
+    _branch_with(root, ["src/f%02d.ts" % i for i in range(25)], "refactor: console bulk")
+    renet = _pr_world(root / "private" / "renet")
+    _branch_with(renet, ["one.go"], "fix: one file")
+    cmd = "gh pr create --repo rediacc/renet --base main --head feat -t x"
+    rc, _out, err = _run("block_unproven_bulk_transform", cmd, root, monkeypatch)
+    assert rc == 0, err
+    # The console's own create still sees the console's bulk commit.
+    rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", root, monkeypatch)
+    assert rc == 2, err
+    # And a bulk commit in renet is caught on the renet create.
+    _branch_with(renet, ["pkg/f%02d.go" % i for i in range(25)], "refactor: renet bulk")
+    rc, _out, err = _run("block_unproven_bulk_transform", cmd, root, monkeypatch)
+    assert rc == 2
+    assert _git(renet, "rev-parse", "HEAD")[:10] in err, err
+
+
 # --------------------------------------------------------------------------- V_SPLIT ---------------------------------------------------------------------------
 
 

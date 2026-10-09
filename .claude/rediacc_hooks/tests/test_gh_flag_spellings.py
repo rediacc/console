@@ -707,6 +707,7 @@ CONSUMERS = (
     "block_premature_ready",
     "block_raw_pr_body_edit",
     "block_second_open_pr",
+    "block_unproven_bulk_transform",
 )
 REPO_VARIABLE = [
     # (stem, control, its rc, the variable spelling resolved by the walk, the unresolvable spelling's rc)
@@ -751,6 +752,14 @@ REPO_VARIABLE = [
         0,
         "R=%s; gh pr edit 113 -R $R --body 'prose only'" % RENET_REPO,
         ("gh pr edit 113 -R $R --body 'prose only'", 2),
+    ),
+    # The fixture's ranges carry no bulk commit, so every spelling allows; test_guard_chained_state pins the range each repo selects.
+    (
+        "block_unproven_bulk_transform",
+        "gh pr create --repo %s -t x" % RENET_REPO,
+        0,
+        "R=%s; gh pr create -R $R -t x" % RENET_REPO,
+        ("gh pr create -R $R -t x", 0),
     ),
 ]
 
