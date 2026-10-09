@@ -111,6 +111,11 @@ read across both revisions, naming them or how many in the same paragraph
 nothing and is not proof.
 """
 
+BLOCK_UNSEEN_REPO = """BLOCKED: `gh pr create` targets %s, a project repository this tree has no checkout of, so the commits the PR carries cannot be checked for proof.
+
+Run the create from a tree that holds that repository (a submodule checkout under this one), then retry.
+"""
+
 BLOCK_UNREAD_HEAD = """BLOCKED: `gh pr create --head` names a branch that %s has no local or origin/ ref for, so the commits this PR carries cannot be checked for proof.
 
 Fetch or push that branch in this checkout (`git fetch origin <branch>`), then retry.
@@ -138,21 +143,53 @@ def _proof_shown(text):
 
 
 # A per-commit review record (`agent/reviews/<branch>/<sha>.md` and the branch's ledger) is written by wl_review.py, one file per reviewed commit, and `worklist.py --review-commit` commits them together. Their number tracks how many commits were reviewed, not how far a script reached, so they never count toward scale: 033a35227 (32 records) refused a PR on 2026-10-09 with no transform in it.
-# The branch segment may itself hold slashes (`feat/x`; review 833dc9af.3), and only the two record shapes wl_review.py writes count as records: `<full sha>.md` and the `clean.jsonl` ledger. Any other file there is counted (review c2e51651.1).
-REVIEW_RECORD = re.compile(r"^agent/reviews/.+/([0-9a-f]{40}\.md|clean\.jsonl)$")
+# The branch segment may itself hold slashes (`feat/x`; review 833dc9af.3). Only the two shapes wl_review.py writes are records (review c2e51651.1), and a name alone proves nothing (review 265f32ef.1): a `<sha>.md` is a record only when that sha is a commit of the repository, and one commit carries at most one `clean.jsonl` ledger, the branch's own.
+SHA_RECORD = re.compile(r"^agent/reviews/.+/([0-9a-f]{40})\.md$")
+LEDGER_RECORD = re.compile(r"^agent/reviews/.+/clean\.jsonl$")
 
 
-def _counted(files):
-    """The files that count toward scale: every path but a review record."""
-    return [f for f in files if not REVIEW_RECORD.match(f)]
+def _commit_shas(shas, cwd):
+    """The subset of `shas` that name a commit object in the repository at `cwd` (one `git cat-file --batch-check` call)."""
+    if not shas:
+        return set()
+    ordered = sorted(shas)
+    done = subprocess.run(
+        ["git", "cat-file", "--batch-check=%(objecttype)"],
+        input="".join("%s\n" % sha for sha in ordered),
+        capture_output=True,
+        text=True,
+        cwd=cwd,
+        check=False,
+    )
+    if done.returncode != 0:
+        return set()
+    return {
+        sha for sha, kind in zip(ordered, done.stdout.splitlines(), strict=True) if kind == "commit"
+    }
 
 
-def _bulk_unproven(files, message):
+def _counted(files, cwd=None):
+    """The files that count toward scale: every path but a real review record."""
+    named = {f: m.group(1) for f in files if (m := SHA_RECORD.match(f))}
+    real = _commit_shas(set(named.values()), cwd)
+    out = []
+    ledger_seen = False
+    for f in files:
+        if f in named and named[f] in real:
+            continue
+        if LEDGER_RECORD.match(f) and not ledger_seen:
+            ledger_seen = True
+            continue
+        out.append(f)
+    return out
+
+
+def _bulk_unproven(files, message, cwd=None):
     """THE ONE RULE, which the commit arm and the range arm both apply to one commit: bulk scale with no proof in its own message.
 
     The range arm additionally clears a commit by a follow-up proof or the baseline; neither exists yet at commit time, so they cannot make the commit arm stricter than the push arm, only the push arm more lenient.
     """
-    return len(_counted(files)) >= BULK_FILE_THRESHOLD and not _proof_shown(message)
+    return len(_counted(files, cwd)) >= BULK_FILE_THRESHOLD and not _proof_shown(message)
 
 
 def _name_only(args, cwd, want_rc=False):
@@ -647,11 +684,11 @@ def _first_unproven(shas, cwd):
         if sha in grandfathered:
             continue
         files = _commit_files(sha, cwd)
-        if not _bulk_unproven(files, messages[i]):
+        if not _bulk_unproven(files, messages[i], cwd):
             continue
         if _proven_by_a_later_commit(sha, messages[:i]):
             continue
-        return sha, len(_counted(files))
+        return sha, len(_counted(files, cwd))
     return None
 
 
@@ -692,6 +729,11 @@ def _pr_base(cmd, cwd):
     return "origin/%s" % ref if remote is not None else ref
 
 
+# A project repository the session holds no checkout of: its PR range cannot be read here.
+UNSEEN = "<unseen>"
+PROJECT_OWNER = "rediacc/"
+
+
 def _submodule_trees(root):
     """{lowercase OWNER/REPO: checkout path} for every submodule `.gitmodules` names that has a checkout here."""
     out = hookio.git_out(
@@ -712,13 +754,17 @@ def _submodule_trees(root):
 
 
 def _pr_tree(repo, root, cwd):
-    """The local checkout holding the commits a PR on `repo` carries, or None when this tree has none.
+    """The local checkout holding the commits a PR on `repo` carries; None for a repository outside this project; UNSEEN for a project repository this tree has no checkout of.
 
-    The range used to be read from `cwd` whatever `--repo` named, so a renet or account PR was judged on the console's own 276 commits (2026-10-09, `gh pr create --repo rediacc/account --head 1008-1`). A submodule is found by the url `.gitmodules` gives it, so every checked-out submodule is judged in its own tree (review 833dc9af.1: a fixed name list skipped any other). A repo the walk cannot evaluate is judged on `cwd`, the strictest reading. A repo with neither a submodule checkout nor cwd's origin has no commits here to walk: None, and `_pr_targets` leaves that create out, so it is allowed without a range check.
+    The range used to be read from `cwd` whatever `--repo` named, so a renet or account PR was judged on the console's own 276 commits (2026-10-09, `gh pr create --repo rediacc/account --head 1008-1`). A submodule is found by the url `.gitmodules` gives it, so every checked-out submodule is judged in its own tree (review 833dc9af.1).
+    Three outcomes for what is left (review 265f32ef.2 and .3). A repo the walk cannot evaluate is judged on `cwd`, the strictest reading. A rediacc repository with no checkout here is UNSEEN and refused: its commits cannot be read, and this project's PRs all come from a tree that has them. Any other owner's repository is outside this guard and allowed.
     """
     if repo == shellscan.UNRESOLVED_REPO or repo == shellscan._origin_repo(cwd).lower():
         return cwd
-    return _submodule_trees(root).get(repo)
+    tree = _submodule_trees(root).get(repo)
+    if tree is None and (repo or "").startswith(PROJECT_OWNER):
+        return UNSEEN
+    return tree
 
 
 def _pr_head(run, tree):
@@ -746,7 +792,9 @@ def _pr_targets(cmd, ev, root, cwd):
     for run_ in runs:
         repo = shellscan.gh_run_repo(run_, cwd, ev.env("GH_REPO"))
         tree = _pr_tree(repo, root, cwd)
-        if tree is not None:
+        if tree == UNSEEN:
+            out.append((UNSEEN, repo))
+        elif tree is not None:
             out.append((tree, _pr_head(run_, tree)))
     return out
 
@@ -855,6 +903,9 @@ def run(ev):
 
     if shellscan.gh_pr_at_command_pos(scan, "create"):
         for tree, head in _pr_targets(cmd, ev, root, cwd):
+            if tree == UNSEEN:
+                ev.warn(BLOCK_UNSEEN_REPO % head)
+                return hookio.DENY
             if head is None:
                 ev.warn(BLOCK_UNREAD_HEAD % tree)
                 return hookio.DENY
