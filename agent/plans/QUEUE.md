@@ -124,9 +124,10 @@ Promoted: 6 of 13 plans done, 141 of 170 boxes done (82%).
 21. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
 22. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
 23. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-24. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-25. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-26. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+24. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+25. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+26. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+27. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 
