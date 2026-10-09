@@ -1347,6 +1347,9 @@
     ".ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py": [
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/gates/test_gate_renet_security_keys.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/gates/test_gate_scope_engine.py": [
       "PATH"
     ],
