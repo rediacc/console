@@ -138,8 +138,8 @@ def _proof_shown(text):
 
 
 # A per-commit review record (`agent/reviews/<branch>/<sha>.md` and the branch's ledger) is written by wl_review.py, one file per reviewed commit, and `worklist.py --review-commit` commits them together. Their number tracks how many commits were reviewed, not how far a script reached, so they never count toward scale: 033a35227 (32 records) refused a PR on 2026-10-09 with no transform in it.
-# The branch segment may itself hold slashes (`feat/x`); review 833dc9af.3.
-REVIEW_RECORD = re.compile(r"^agent/reviews/.+/[^/]+$")
+# The branch segment may itself hold slashes (`feat/x`; review 833dc9af.3), and only the two record shapes wl_review.py writes count as records: `<full sha>.md` and the `clean.jsonl` ledger. Any other file there is counted (review c2e51651.1).
+REVIEW_RECORD = re.compile(r"^agent/reviews/.+/([0-9a-f]{40}\.md|clean\.jsonl)$")
 
 
 def _counted(files):
@@ -714,7 +714,7 @@ def _submodule_trees(root):
 def _pr_tree(repo, root, cwd):
     """The local checkout holding the commits a PR on `repo` carries, or None when this tree has none.
 
-    The range used to be read from `cwd` whatever `--repo` named, so a renet or account PR was judged on the console's own 276 commits (2026-10-09, `gh pr create --repo rediacc/account --head 1008-1`). A submodule is found by the url `.gitmodules` gives it, so every checked-out submodule is judged in its own tree (review 833dc9af.1: a fixed name list skipped any other). A repo the walk cannot evaluate is judged on `cwd`, the strictest reading. A repo with neither a submodule checkout nor cwd's origin has no commits here to walk.
+    The range used to be read from `cwd` whatever `--repo` named, so a renet or account PR was judged on the console's own 276 commits (2026-10-09, `gh pr create --repo rediacc/account --head 1008-1`). A submodule is found by the url `.gitmodules` gives it, so every checked-out submodule is judged in its own tree (review 833dc9af.1: a fixed name list skipped any other). A repo the walk cannot evaluate is judged on `cwd`, the strictest reading. A repo with neither a submodule checkout nor cwd's origin has no commits here to walk: None, and `_pr_targets` leaves that create out, so it is allowed without a range check.
     """
     if repo == shellscan.UNRESOLVED_REPO or repo == shellscan._origin_repo(cwd).lower():
         return cwd

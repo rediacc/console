@@ -186,11 +186,19 @@ def _pr_world(path):
 def test_bulk_guard_does_not_count_review_records(tmp_path, monkeypatch):
     """A commit of 25 review records is not a transform; 25 source files with no proof still is (033a35227, 2026-10-09)."""
     repo = _pr_world(tmp_path / "r")
-    _branch_with(repo, ["agent/reviews/feat/%02d.md" % i for i in range(25)], "chore(reviews): x")
+    _branch_with(repo, ["agent/reviews/feat/%040x.md" % i for i in range(25)], "chore(reviews): x")
     # A branch name holding a slash puts the records one level deeper (review 833dc9af.3).
-    _branch_with(repo, ["agent/reviews/feat/x/%02d.md" % i for i in range(25)], "chore(reviews): y")
+    _branch_with(
+        repo, ["agent/reviews/feat/x/%040x.md" % (i + 100) for i in range(25)], "chore(reviews): y"
+    )
     rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
     assert rc == 0, err
+    # Only the record shapes are exempt: 25 other files under agent/reviews/ still count (review c2e51651.1).
+    rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
+    assert rc == 0, err
+    _branch_with(repo, ["agent/reviews/feat/x/s%02d.ts" % i for i in range(25)], "refactor: y")
+    rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
+    assert rc == 2, err
     _branch_with(repo, ["src/f%02d.ts" % i for i in range(25)], "refactor: x")
     rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
     assert rc == 2
