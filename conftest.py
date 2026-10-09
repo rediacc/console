@@ -262,8 +262,21 @@ def _mode(strict: bool) -> str:
     )
 
 
+# --------------------------------------------------------------------------- The harness's project root, dropped before the first test module is imported (worklist #04a74a81).
+#
+# Claude Code exports `CLAUDE_PROJECT_DIR` to every hook it runs, and `wl_core.project_start` (with its twin `worklist._local_project_start`, `shellscan.repo_root_env` and `hookio`'s `${CLAUDE_PROJECT_DIR:-.}`) takes it as the project root AHEAD of every other rung, by design: it is how a hook finds the repo, and how a fixture pins its own. A suite launched with it set therefore hands
+# the REAL checkout to every hook a test spawns with an inherited environment. Measured 2026-10-09 in a scratch clone: 201 hook tests failed, and `--queue-set` rewrote `agent/plans/QUEUE.md`'s settings block while `--hint-propose` and the retro rows appended to two `agent/ledgers/*.jsonl`. Unset, the same run is clean, and unset is what CI has.
+#
+# WHY HERE AND NOT IN A FIXTURE. A session-scoped fixture runs after collection, and a module that reads the variable at import time would already have its answer; `pytest_configure` runs before collection, in the controller and in every xdist worker. A test that WANTS a root still sets one explicitly (`monkeypatch.setenv`, or an `env=` it builds), which this does not touch.
+#
+# `.claude/rediacc_hooks/tests/test_project_dir_containment.py` is the control: it runs a nested suite with the variable aimed at a sentinel tree and requires the tree to come back byte-identical.
+HARNESS_ROOT_ENV = ("CLAUDE_PROJECT_DIR",)
+
+
 def pytest_configure(config: pytest.Config) -> None:
-    """Install the write record once per process, rooted at the rootdir."""
+    """Drop the harness's project root, then install the write record once per process, rooted at the rootdir."""
+    for name in HARNESS_ROOT_ENV:
+        os.environ.pop(name, None)
     if os.environ.get(SNAPSHOT_ENV) == "0" or _AUDIT["root"] is not None:
         return
     _AUDIT["root"] = os.path.realpath(str(config.rootpath))

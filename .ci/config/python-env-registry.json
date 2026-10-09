@@ -1460,7 +1460,8 @@
       "GIT_INDEX_FILE"
     ],
     ".ci/rediacc_ci/tests/test_core_account.py": [
-      "HOME"
+      "HOME",
+      "PATH"
     ],
     ".ci/rediacc_ci/tests/test_core_devbox.py": [
       "PATH"
@@ -2212,6 +2213,9 @@
     ".claude/rediacc_hooks/tests/test_proc.py": [
       "HOME",
       "PATH"
+    ],
+    ".claude/rediacc_hooks/tests/test_project_dir_containment.py": [
+      "CLAUDE_PROJECT_DIR"
     ],
     ".claude/rediacc_hooks/tests/test_settings_collapse.py": [
       "PATH"
