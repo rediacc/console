@@ -578,7 +578,7 @@ jobs:
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-workers-${{ matrix.os-image }}-s${{ matrix.shard }}" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-e2e-workers-${{ matrix.os-image }}-s${{ matrix.shard }}-${{ github.sha }}
@@ -598,7 +598,7 @@ jobs:
       # reporter (packages/e2e-tests/playwright.config.ts) writes `unit-durations*.json` -- all of them are
       # globbed into this one artifact, and parse_unit_duration_artifact sums the
       # durations of same-named units across every member it finds.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: unit-durations-test-e2e-workers-${{ matrix.os-image }}-s${{ matrix.shard }}-${{ github.sha }}
@@ -766,7 +766,7 @@ jobs:
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-ceph" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-e2e-ceph-${{ github.sha }}
@@ -953,7 +953,7 @@ jobs:
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-ceph-workers" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-e2e-ceph-workers-${{ github.sha }}
@@ -1304,7 +1304,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.diagnostics.collect_vm_diagnostics
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-ceph-workers-${{ matrix.os-image }}" --status ${{ job.status }}
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-e2e-ceph-workers-${{ matrix.os-image }}-${{ github.sha }}
@@ -1466,7 +1466,7 @@ jobs:
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-k8s" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-e2e-k8s-${{ github.sha }}
@@ -1648,7 +1648,7 @@ jobs:
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-k8s-ceph" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-e2e-k8s-ceph-${{ github.sha }}
@@ -1883,7 +1883,7 @@ jobs:
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-k8s-multinode" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-e2e-k8s-multinode-${{ github.sha }}
@@ -2085,7 +2085,7 @@ jobs:
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-migrate" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-e2e-migrate-${{ github.sha }}
@@ -2283,7 +2283,7 @@ jobs:
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "fork-isolation" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-fork-isolation-${{ github.sha }}
@@ -2415,7 +2415,7 @@ jobs:
           RENET_TEST_EXTRA_TIERS: ${{ matrix.shard == 1 && 'true' || 'false' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet test --shard-manifest .ci/config/shards/test-renet-go.json --shard "${{ matrix.shard }}/2"
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-renet-coverage-s${{ matrix.shard }}-${{ github.sha }}
@@ -2423,7 +2423,7 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-renet-results-s${{ matrix.shard }}-${{ github.sha }}
@@ -2436,7 +2436,7 @@ jobs:
       # --refresh (T3.2) matches on -- the artifact above is named for a human
       # reading the Actions UI, not for T3.2's prefix match, so it needed a
       # sibling rather than a rename.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: unit-durations-test-renet-go-s${{ matrix.shard }}-${{ github.sha }}
@@ -2558,7 +2558,7 @@ jobs:
           # sudo resets the environment, so the switches ride in explicitly. RENET_PYTEST_JUNIT=1 makes ci-test.sh write the --junit-xml the unit-durations and results uploads below read (before it, both found no file on every run). CI itself stays unset: under root it turns on LUKS/fstab Go integration tests this runner cannot pass. RENET_SKIP_GO_UNIT_TESTS=1: the Renet (go, i/2) legs already run ./pkg/..., so these legs do not repeat it.
           sudo env PYTHONPATH=.ci "RENET_PYTEST_JUNIT=1" "RENET_SKIP_GO_UNIT_TESTS=1" "RENET_INTEGRATION_FILES=$FILES" python3 -m rediacc_ci.private.renet_integration --no-cleanup
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-renet-integration-s${{ matrix.shard }}-${{ github.sha }}
@@ -2571,7 +2571,7 @@ jobs:
       # which GitHub Actions sets by default), uploaded a second time under the
       # `unit-durations-<lane>-` name budget_report.py --refresh (T3.2) matches
       # on -- see the identical comment on test-renet-go, above.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: unit-durations-test-renet-integration-s${{ matrix.shard }}-${{ github.sha }}
@@ -2764,7 +2764,7 @@ jobs:
           STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
           STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ env.BWS_STRIPE_SANDBOX_WEBHOOK_SECRET }}
       - name: Upload E2E report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: failure()
         with:
           name: account-e2e-report-s${{ matrix.shard }}-${{ github.sha }}
@@ -2781,7 +2781,7 @@ jobs:
       # (private/account/e2e/playwright.config.ts) writes results.json whether the
       # run passed or failed, so `always()` + `ignore` here only covers a crash
       # before Playwright ever started.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: unit-durations-test-account-e2e-s${{ matrix.shard }}-${{ github.sha }}
@@ -2955,7 +2955,7 @@ jobs:
         if: failure()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.diagnostics.collect_drill_diagnostics
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: failure()
         with:
           name: test-drills-${{ github.sha }}

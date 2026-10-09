@@ -351,7 +351,7 @@ jobs:
           ROTATION_RC: ${{ steps.rotation.outputs.rc }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.capture_gate_costs merge
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: gate-costs-${{ github.sha }}
           path: ${{ runner.temp }}/gate-costs.json
@@ -360,7 +360,7 @@ jobs:
 
       # The runner's stderr, kept whatever happened above. NOT named gate-costs-*:
       # gate_costs.collect_captures reads the first artifact with that prefix as a capture.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: capture-logs-${{ github.sha }}-${{ github.run_attempt }}
