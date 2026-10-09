@@ -566,7 +566,7 @@ def test_lf2_a_ready_local_batch_blocks_with_the_batch_open_sequence(lrepo):
         "npm run ci   ",
         "npm run ci:quick",
         "droppedTouched",
-        "run-e2e.sh",
+        "rediacc_ci.testrun.e2e --workers 1",
         "git push -u origin %s" % BRANCH,
         "worklist.py --batch-body d778be9d",
         "gh pr create --draft --base main --head %s --body-file" % BRANCH,
