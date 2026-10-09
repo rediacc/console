@@ -13,6 +13,8 @@ NOT REFUSED: `--continue`, `--abort`, `--skip`, `--quit` (they finish or undo a 
 FAIL CLOSED: a status probe that fails, and a command that moves git's idea of the work tree (`--git-dir`, `--work-tree`, `GIT_DIR=`, `GIT_WORK_TREE=` on the command line) are refused, because the tree the guard would read is not the tree the rebase would touch.
 """
 
+import functools
+import importlib
 import os
 import subprocess
 
@@ -198,18 +200,16 @@ EDGE_CASES = [
     ("blind: --git-dir", "git --git-dir=.git merge origin/main"),
 ]
 
-_STATE = None
+
+@functools.cache
+def _session_state_reader():
+    """wl_git.py's own reading of the stop hook's volatile paths, loaded once and only for a rebase, pull or merge (never for other commands); importlib keeps it lazy without a late import statement or a module global."""
+    syspath.on_sys_path(syspath.STOP_DIR)
+    return importlib.import_module("wl_git").is_session_state
 
 
 def _session_state(path):
-    """wl_git.py's own reading of the stop hook's volatile paths, loaded once."""
-    global _STATE  # noqa: PLW0603 -- a one-time import cache, as block_agent_cap keeps its own
-    if _STATE is None:
-        syspath.on_sys_path(syspath.STOP_DIR)
-        import wl_git  # noqa: PLC0415 -- loaded only for a rebase, pull or merge, never for other commands
-
-        _STATE = wl_git.is_session_state
-    return _STATE(path)
+    return _session_state_reader()(path)
 
 
 def exempt(path):
