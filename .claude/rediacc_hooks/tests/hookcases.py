@@ -706,6 +706,268 @@ STATIC: list[Case] = [
         bash_json("bash <<EOF\nsleep 300\nEOF"),
         "long-sleep: a heredoc fed to bash is still scanned",
     ),
+    # #503f0ba8, 2026-10-09: the commands `npx` and `find -exec` LAUNCH, judged through `shellscan.every_run`. Every deny row below was allowed on the base (rc 0, measured); every CONTROL row was allowed before and after. A launched run that executes ELSEWHERE (`find -execdir`, `npx -w/--prefix`, `shellscan.Launch.elsewhere`) is left unjudged by the guards that resolve a cwd or a package.
+    case(
+        "check 2 guards/block_long_sleep.py",
+        bash_json(r"find . -maxdepth 0 -exec sleep 900 \;"),
+        "long-sleep: a sleep that find -exec launches",
+    ),
+    case(
+        "check 2 guards/block_long_sleep.py",
+        bash_json("npx sleep 900"),
+        "long-sleep: a sleep that npx launches",
+    ),
+    case(
+        "check 0 guards/block_long_sleep.py",
+        bash_json("echo find . -maxdepth 0 -exec sleep 900"),
+        "long-sleep CONTROL: prose naming a launched sleep",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(r"find . -maxdepth 0 -exec python3 -m rediacc_ci.dev.worktree create x \;"),
+        "worktree-add: the port's create launched by find -exec",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "find . -maxdepth 0 -exec python3 -c \"import os; os.system('git worktree add /tmp/x')\" \\;"
+        ),
+        "worktree-add: a python program launched by find -exec",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            r"find . -maxdepth 0 -exec python3 -c 'print(\"never run git worktree add here\")' \;"
+        ),
+        "worktree-add CONTROL: a launched python printing a sentence",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("echo find . -exec python3 -m rediacc_ci.dev.worktree create x"),
+        "worktree-add CONTROL: prose naming a launched create",
+    ),
+    case(
+        "check 2 guards/block_host_toolchain_run.py",
+        bash_json("find . -name '*.py' -exec npx ruff format {} +"),
+        "host-toolchain: npx ruff launched by find -exec",
+    ),
+    case(
+        "check 0 guards/block_host_toolchain_run.py",
+        bash_json("echo find . -name x -exec npx ruff format {} +"),
+        "host-toolchain CONTROL: prose naming a launched npx ruff",
+    ),
+    case(
+        "check 2 guards/block_self_matching_pgrep.py",
+        bash_json(r"find . -maxdepth 0 -exec pkill -f sleep \;"),
+        "self-matching-pgrep: a pkill -f that find -exec launches",
+    ),
+    case(
+        "check 0 guards/block_self_matching_pgrep.py",
+        bash_json("echo find . -maxdepth 0 -exec pkill -f sleep"),
+        "self-matching-pgrep CONTROL: prose naming a launched pkill",
+    ),
+    case(
+        "check 2 guards/block_missing_npm_script.py",
+        bash_json("npx -c 'npm run does-not-exist-example'"),
+        "missing-npm-script: an npm run that npx -c launches",
+    ),
+    case(
+        "check 2 guards/block_missing_npm_script.py",
+        bash_json(r"find packages -maxdepth 1 -name cli -exec npm run does-not-exist-example \;"),
+        "missing-npm-script: find -exec runs npm in find's own cwd",
+    ),
+    case(
+        "check 0 guards/block_missing_npm_script.py",
+        bash_json(
+            r"find packages -maxdepth 1 -name cli -execdir npm run does-not-exist-example \;"
+        ),
+        "missing-npm-script CONTROL: find -execdir runs npm in each match's directory",
+    ),
+    case(
+        "check 0 guards/block_missing_npm_script.py",
+        bash_json("npx -w packages/cli -c 'npm run does-not-exist-example'"),
+        "missing-npm-script CONTROL: npx -w runs npm in another package",
+    ),
+    case(
+        "check 0 guards/block_missing_npm_script.py",
+        bash_json("npx -c 'npm run check:ci-python-lint'"),
+        "missing-npm-script CONTROL: a launched npm run of a real script",
+    ),
+    case(
+        "check 2 guards/block_raw_ci_read.py",
+        bash_json("npx -c 'gh pr checks 591'"),
+        "raw-ci-read: a gh read that npx -c launches",
+    ),
+    case(
+        "check 2 guards/block_raw_ci_read.py",
+        bash_json(r"find . -maxdepth 0 -exec gh run list --limit 1 \;"),
+        "raw-ci-read: a gh read that find -exec launches",
+    ),
+    case(
+        "check 0 guards/block_raw_ci_read.py",
+        bash_json("echo npx -c gh pr checks 591"),
+        "raw-ci-read CONTROL: prose naming a launched read",
+    ),
+    case(
+        "check 2 guards/block_unscoped_formatter_run.py",
+        bash_json(r"find . -maxdepth 0 -exec ruff format \;"),
+        "unscoped-formatter: find -exec runs ruff format with no path",
+    ),
+    case(
+        "check 2 guards/block_unscoped_formatter_run.py",
+        bash_json("npx -c 'eslint --fix .'"),
+        "unscoped-formatter: npx -c runs eslint --fix on the root",
+    ),
+    case(
+        "check 0 guards/block_unscoped_formatter_run.py",
+        bash_json("find . -name '*.py' -exec ruff format {} +"),
+        "unscoped-formatter CONTROL: find -exec naming {} is scoped",
+    ),
+    case(
+        "check 0 guards/block_unscoped_formatter_run.py",
+        bash_json(r"find packages -name cli -execdir ruff format . \;"),
+        "unscoped-formatter CONTROL: find -execdir's . is each match's directory",
+    ),
+    case(
+        "check 2 guards/block_suppressions_shell_write.py",
+        bash_json("find . -name '*.py' -exec sed -i 's/$/  # " + "no" + "qa: E501/' {} +"),
+        "suppressions-shell-write: sed -i launched by find -exec on the *.py it names",
+    ),
+    case(
+        "check 0 guards/block_suppressions_shell_write.py",
+        bash_json("find . -name '*.py' -exec grep -n " + "no" + "qa {} +"),
+        "suppressions-shell-write CONTROL: a launched grep reads, never writes",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("find agent/reviews -name '*.md' -exec sed -i s/high/low/ {} +"),
+        "review-file-shell-write: sed -i launched by find under agent/reviews",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(r"find agent/reviews -name '*.md' -exec cp /tmp/x.md {} \;"),
+        "review-file-shell-write: a launched cp onto the files find names",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(r"find agent/reviews -name '*.md' -exec cp {} /tmp/ \;"),
+        "review-file-shell-write CONTROL: a launched copy OUT of the directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("echo find agent/reviews -exec sed -i s/high/low/ {} +"),
+        "review-file-shell-write CONTROL: prose naming a launched sed -i",
+    ),
+    case(
+        "check 2 guards/block_ssh_file_write.py",
+        bash_json(r"find . -maxdepth 0 -exec ssh prod-1 'cat > /etc/x' \;"),
+        "ssh-file-write: an ssh remote write that find -exec launches",
+    ),
+    case(
+        "check 2 guards/block_ssh_file_write.py",
+        bash_json("npx -c \"ssh prod-1 'tee /etc/x'\""),
+        "ssh-file-write: an ssh remote tee that npx -c launches",
+    ),
+    case(
+        "check 0 guards/block_ssh_file_write.py",
+        bash_json("echo \"find . -exec ssh prod-1 'cat > /etc/x' ;\""),
+        "ssh-file-write CONTROL: prose naming a launched remote write",
+    ),
+    # The shared ssh parser (`shellscan.ssh_remote_commands`) replaced this guard's own copy, and four answers moved ON PURPOSE: the old option table had no `P` (a typo), it stopped at the destination although OpenSSH reads options after it, and it never walked a hop.
+    case(
+        "check 2 guards/block_ssh_file_write.py",
+        bash_json("ssh -P tag prod-1 tee /etc/x < f"),
+        "ssh-file-write: -P takes a value, so the remote command is the tee",
+    ),
+    case(
+        "check 2 guards/block_ssh_file_write.py",
+        bash_json("ssh prod-1 -t tee /etc/x < f"),
+        "ssh-file-write: an option after the destination is ssh's, not the remote command",
+    ),
+    case(
+        "check 2 guards/block_ssh_file_write.py",
+        bash_json('ssh jump "ssh prod-1 tee /etc/x"'),
+        "ssh-file-write: a remote write one hop further in",
+    ),
+    case(
+        "check 0 guards/block_ssh_file_write.py",
+        bash_json('ssh prod-1 -o "ProxyCommand=nc %h %p 2>/tmp/err" uptime'),
+        "ssh-file-write CONTROL: a ProxyCommand's redirect is local, and the remote command is uptime",
+    ),
+    # Review findings fa5d11be.1-.4 on block_worktree_add: an option's value is not the script, `-e` takes attached code, a program too deep for `ast` is read by regex instead of crashing the guard, and bracket-delimited quote-like literals are read. Each deny row was allowed on the base (rc 0, or rc 1 from a traceback for the deep one).
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json('perl -I lib -e \'system("git","worktree","add","x")\''),
+        "worktree-add: perl -I's value is not the script, so the -e after it runs (fa5d11be.1)",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("perl -I lib script.pl git worktree add x"),
+        "worktree-add CONTROL: words after perl's script are its arguments (fa5d11be.1)",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("perl '-esystem(\"git worktree add x\")'"),
+        "worktree-add: perl -e with its code attached (fa5d11be.2)",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("perl -Iexample -e 'system(\"git worktree add x\")'"),
+        "worktree-add: an attached -I value holding an e is not an eval (fa5d11be.2)",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("perl -x /tmp -e 'print 1'"),
+        "worktree-add CONTROL: a perl one-liner with no worktree in it (fa5d11be.2)",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "python3 -c \"import os; os.system('git worktree add /tmp/x'); x = %s1\""
+            % ("-" * 10000)
+        ),
+        "worktree-add: a program too deep for ast is read by regex, not crashed on (fa5d11be.3)",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json('python3 -c "x = %s1"' % ("-" * 10000)),
+        "worktree-add CONTROL: a deep program that runs nothing (fa5d11be.3)",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("perl -e 'system qw(git worktree add x)'"),
+        "worktree-add: a perl qw() word list spells the command (fa5d11be.4)",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("perl -e 'print qw(never run git worktree add here)'"),
+        "worktree-add CONTROL: a qw() sentence is not a command (fa5d11be.4)",
+    ),
+    # block_review_file_shell_write judges a Python program by its write TARGETS (2026-10-09): a review path that only flows into written content was refused live, and a target built from a review path through a name was allowed.
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport pathlib\np = pathlib.Path('/tmp/scratchpad/fix833t.py')\n"
+            "s = p.read_text()\ns = s.replace('X', 'agent/reviews/feat/%02d.md')\np.write_text(s)\nEOF"
+        ),
+        "review-file-shell-write CONTROL: a review path that is only written CONTENT",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport pathlib\nT = 'agent/reviews/feat/%02d.md'\n"
+            "p = pathlib.Path(T % 1)\np.write_text('x')\nEOF"
+        ),
+        "review-file-shell-write: a write whose target is built from a review path",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport pathlib\nroot = pathlib.Path('agent/reviews')\n"
+            "(root / 'b' / 'x.md').write_text('x')\nEOF"
+        ),
+        "review-file-shell-write: a write under a name bound to the directory itself",
+    ),
     case(
         "check 2 guards/block_ssh_docker.py",
         bash_json("ssh host docker ps"),

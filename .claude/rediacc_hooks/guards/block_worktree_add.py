@@ -114,8 +114,8 @@ def _target(args):
 
 
 def runs_port_create(cmd):
-    """Does `cmd` run the worktree port's `create`, through any Python spelling?"""
-    for run_ in shellscan._analyse(cmd).runs:
+    """Does `cmd` run the worktree port's `create`, through any Python spelling? A Python that `npx` or `find -exec` starts runs it just the same (#503f0ba8), so the walk is `shellscan.every_run`."""
+    for run_ in shellscan.every_run(cmd):
         args = _python_argv(run_)
         if args is None:
             continue
@@ -157,8 +157,13 @@ EVAL_FLAGS = {
 }
 # How deep a program may hand another program a shell command (`os.system("python3 -c ...")`) before the rest is left unread. Real payloads nest once or twice; the cap only bounds a pathological input.
 MAX_PROGRAM_DEPTH = 4
-# A string or backtick literal in a program read by regex: Python's, node's, perl's and ruby's quoting share these three shapes.
+# The literals a program read by regex is searched for (fa5d11be.4). The three plain shapes, `'...'`, `"..."` and a backtick span, are common to all four languages; a node template literal's `${...}` is read as its raw text, never interpolated.
 LITERAL = re.compile(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"|`((?:[^`\\]|\\.)*)`")
+# Perl's `q`/`qq`/`qw` and ruby's `%q`/`%Q`/`%w`/`%W`/`%` with a BRACKET delimiter, unnested: `system qw(git worktree add x)` hands the same words as a list literal. A word list's words are joined with spaces, so it reads as the command it spells.
+# OUT OF REACH, stated so a green is not read as more: these forms with any other delimiter (`q!...!`, `%w|...|`), nested brackets inside one, heredocs inside the program, and every string built at run time.
+QUOTE_LIKE = re.compile(
+    r"(?:\bq[qw]?|%[qQwWiI]?)\s*(?:\(([^()]*)\)|\[([^\[\]]*)\]|\{([^{}]*)\}|<([^<>]*)>)"
+)
 ARGV_WORKTREE_ADD = re.compile(r"""['"]worktree['"]\s*,\s*['"]add['"]""")
 ARGV_WORKTREE_CREATE = re.compile(r"""['"]worktree['"]\s*,\s*['"]create['"]""")
 TEXT_PORT = re.compile(
@@ -175,23 +180,82 @@ def _interpreter_name(name):
     return base if base in INTERPRETERS else None
 
 
+# OPTION GRAMMAR (fa5d11be.1/.2). An option's VALUE is not the script: `perl -I lib -e '...'` runs the `-e` program, and stopping at `lib` hid it. Perl (measured, 5.40.1) and ruby (`ruby(1)`) bundle single letters (`-wle`); a letter in the first set takes a value, attached (`-Ilib`) or as the next word when it ends the bundle (`-I lib`); one in the second takes only an attached value; an eval letter takes the rest of the word as code (`-esystem(...)`) or the next word.
+_NEXT_VALUE = {"perl": frozenset("IMm"), "ruby": frozenset("IrCE")}
+_ATTACHED_VALUE = {"perl": frozenset("xidDFC0"), "ruby": frozenset("xFKTW0")}
+_EVAL_LETTERS = {"perl": frozenset("eE"), "ruby": frozenset("e")}
+# node options that take the next word as their value.
+_NODE_VALUE = frozenset(
+    (
+        "-r",
+        "--require",
+        "--import",
+        "-C",
+        "--conditions",
+        "--input-type",
+        "--loader",
+        "--experimental-loader",
+        "--title",
+    )
+)
+
+
+def _bundle(family, word, following):
+    """`(codes, consumed_next)` for one perl/ruby option word: the program texts it carries and whether it took the next word as a value."""
+    codes: list[str] = []
+    letters = word[1:]
+    k = 0
+    while k < len(letters):
+        letter = letters[k]
+        rest = letters[k + 1 :]
+        if letter in _EVAL_LETTERS[family]:
+            if rest:
+                return [*codes, rest], False
+            return ([*codes, following] if following is not None else codes), following is not None
+        if letter in _NEXT_VALUE[family]:
+            return codes, not rest and following is not None
+        if letter in _ATTACHED_VALUE[family]:
+            return codes, False
+        if letter == "l":
+            k += 1
+            while k < len(letters) and letters[k] in "01234567":
+                k += 1
+            continue
+        k += 1
+    return codes, False
+
+
 def _eval_program(family, args):
-    """`("c", code)`, `("stdin", None)` or `("file", None)` for a node/perl/ruby argv. Perl and ruby bundle `-e` (`-ne`, `-le`) and take several, which run as one program."""
-    codes = []
+    """`("c", code)`, `("stdin", None)` or `("file", None)` for a node/perl/ruby argv. Perl and ruby bundle `-e` (`-ne`, `-le`, `-esystem(...)`) and take several, which run as one program."""
+    codes: list[str] = []
     i = 0
     while i < len(args):
         word = args[i]
-        bundled = family != "node" and re.match(r"^-[A-Za-z]*[eE]$", word) is not None
-        if word in EVAL_FLAGS[family] or bundled:
-            if i + 1 < len(args):
-                codes.append(args[i + 1])
-            i += 2
-            continue
+        following = args[i + 1] if i + 1 < len(args) else None
+        if word == "--":
+            if codes or following is None:
+                break
+            return ("file", None)
         if word == "-":
             break
         if not word.startswith("-"):
             return ("c", "\n".join(codes)) if codes else ("file", None)
-        i += 1
+        if family == "node":
+            if word in EVAL_FLAGS["node"]:
+                if following is not None:
+                    codes.append(following)
+                i += 2
+                continue
+            if word.split("=", 1)[0] in ("--eval", "--print") and "=" in word:
+                codes.append(word.split("=", 1)[1])
+            i += 2 if word in _NODE_VALUE else 1
+            continue
+        if word.startswith("--"):
+            i += 1
+            continue
+        found, consumed = _bundle(family, word, following)
+        codes.extend(found)
+        i += 2 if consumed else 1
     if codes:
         return ("c", "\n".join(codes))
     return ("stdin", None)
@@ -290,6 +354,11 @@ def interpreter_programs(cmd, depth=0):
                     out.extend(interpreter_programs(text_of(item), depth + 1))
         elif base == "eval":
             out.extend(interpreter_programs(" ".join(argv), depth + 1))
+        else:
+            # A LAUNCHER'S COMMAND (#503f0ba8): `find . -exec python3 -c '...' \;` and `npx -c '...'` hand an interpreter its program one level down, so the launched command is walked as a command line of its own, quoted back so its program text stays one word.
+            for how, launched in shellscan._launched(base, argv):
+                src = launched if how == "text" else shellscan._quote_argv(launched)
+                out.extend(interpreter_programs(src, depth + 1))
 
     def walk(items):
         for item in items:
@@ -332,7 +401,8 @@ def _python_verdict(code, depth):
     """The arm a Python program text trips, or None. Python that does not parse runs nothing, but this module's own reading of a shell word may differ from bash's, so it falls back to the regex reading rather than to an allow."""
     try:
         tree = ast.parse(code)
-    except (SyntaxError, ValueError):
+    except (SyntaxError, ValueError, RecursionError, MemoryError):
+        # fa5d11be.3: a program nested past the parser's recursion limit, or too large for it, is read like Python that does not parse: by the regex reading, which neither recurses nor allocates a tree. Not fail-open (its literals and argv shapes are still judged) and not a blanket refusal (a deep data structure is not a worktree add).
         return _text_verdict(code, depth)
     strings = []
     for node in ast.walk(tree):
@@ -383,8 +453,8 @@ def _python_verdict(code, depth):
 
 def _text_verdict(code, depth):
     """The arm a program text trips, read by regex: for a node/perl/ruby program, and for Python that `ast` cannot parse."""
-    for m in LITERAL.finditer(code):
-        literal = next(g for g in m.groups() if g is not None)
+    for m in itertools.chain(LITERAL.finditer(code), QUOTE_LIKE.finditer(code)):
+        literal = " ".join(next(g for g in m.groups() if g is not None).split())
         verdict = shell_verdict(literal, depth)
         if verdict:
             return verdict
@@ -552,6 +622,30 @@ EDGE_CASES = [
         "control: python reading the port's docstring",
         "python3 -c 'from rediacc_ci.dev import worktree; print(worktree.cmd_create.__doc__)'",
     ),
+    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
+    (
+        "the port launched by find -exec",
+        r"find . -maxdepth 0 -exec python3 -m rediacc_ci.dev.worktree create x \;",
+    ),
+    (
+        "a python program launched by npx -c",
+        'npx -c "python3 -c \\"import os; os.system(\'git worktree add /tmp/x\')\\""',
+    ),
+    (
+        "control: prose naming a launched create",
+        "echo find . -exec python3 -m rediacc_ci.dev.worktree create x",
+    ),
+    # fa5d11be.1-.4: option values, attached -e code, a program too deep for ast, quote-like literals.
+    ("perl -I value then -e", 'perl -I lib -e \'system("git","worktree","add","x")\''),
+    ("control: words after perl's script", "perl -I lib script.pl git worktree add x"),
+    ("perl -e with attached code", "perl '-esystem(\"git worktree add x\")'"),
+    (
+        "a deep program read by regex",
+        "python3 -c \"import os; os.system('git worktree add /tmp/x'); x = %s1\"" % ("-" * 10000),
+    ),
+    ("control: a deep program running nothing", 'python3 -c "x = %s1"' % ("-" * 10000)),
+    ("a perl qw() word list", "perl -e 'system qw(git worktree add x)'"),
+    ("control: a qw() sentence", "perl -e 'print qw(never run git worktree add here)'"),
 ]
 
 

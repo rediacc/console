@@ -241,6 +241,21 @@ cases.append((2, run("npx -y shfmt -l .", REAL), "npx misuse, short flag form"))
 cases.append(
     (0, run("npx --yes tsx scripts/foo.ts", REAL), "CONTROL: npx running a real npm package")
 )
+# #503f0ba8: an `npx <tool>` that `find -exec` launches is the same misuse, judged on `shellscan.every_run`; the base allowed it (rc 0, measured 2026-10-09).
+cases.append(
+    (
+        2,
+        run("find . -name '*.py' -exec npx ruff format {} +", REAL),
+        "npx misuse launched by find -exec",
+    )
+)
+cases.append(
+    (
+        0,
+        run("echo find . -name x -exec npx ruff format {} +", REAL),
+        "CONTROL: prose naming a find -exec npx run",
+    )
+)
 
 # --------------------------------------------------------------------------- Submodule / non-submodule split, and the credential file. Both added 2026-08-28 after each failed for real.
 #

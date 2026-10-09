@@ -114,6 +114,12 @@ EDGE_CASES = [
     ),
     ("an unrelated redirect", "echo hello > /tmp/out.txt"),
     ("a heredoc python file with no marker", "cat > /r/x.py <<'EOF'\nimport os\nEOF"),
+    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
+    (
+        "sed -i launched by find -exec on the *.py it names",
+        "find . -name '*.py' -exec sed -i 's/$/  %s: E501/' {} +" % _NQ,
+    ),
+    ("a launched grep only reads", "find . -name '*.py' -exec grep -n '%s' {} +" % _NQ),
 ]
 
 
@@ -156,6 +162,19 @@ def _operands(argv):
     return [a for a in argv if not (a.startswith("-") and len(a) > 1)]
 
 
+def _run_operands(run, argv):
+    """`_operands`, with a `find -exec` run's `{}` read as what the find names (#503f0ba8): `find . -name '*.py' -exec sed -i ... {} +` edits the `*.py` files, so the find's own words (`run.feed`) stand in for `{}`. Every word counts, which over-reads, never under-reads, the files touched."""
+    ops = _operands(argv)
+    if (
+        run.launch is not None
+        and run.launch.launcher == "find"
+        and run.feed
+        and any("{}" in a for a in ops)
+    ):
+        ops = [a for a in ops if "{}" not in a] + run.feed.split()
+    return ops
+
+
 def _render(engine, grew):
     return ", ".join(engine.render_marker(kind, code) for kind, code, _b, _a in grew)
 
@@ -170,10 +189,12 @@ def _offending(engine, cmd, cwd):
     ]
     appends = {target for op, target in analysis.writes if op in (">>", "&>>")}
     # What a `tee` writes is its UPSTREAM stage's output; read as every writer's arguments in the command, plus the heredocs.
+    # THE LAUNCHED COMMANDS TOO (#503f0ba8): a `sed -i` or an interpreter that `find -exec` or `npx -c` starts writes the same files, so the runs are `shellscan.every_run`.
+    runs = shellscan.every_run(cmd)
     piped = "\n".join(
-        bodies + [a for r in analysis.runs if r.name.rsplit("/", 1)[-1] in WRITERS for a in r.argv]
+        bodies + [a for r in runs if r.name.rsplit("/", 1)[-1] in WRITERS for a in r.argv]
     )
-    for run in analysis.runs:
+    for run in runs:
         name = run.name.rsplit("/", 1)[-1]
         argv = list(run.argv)
         targets = [(t, "\n".join(bodies + (argv if name in WRITERS else []))) for t in run.writes]
@@ -193,7 +214,11 @@ def _offending(engine, cmd, cwd):
                 if grew:
                     return "%s into %s" % (_render(engine, grew), target)
         in_place = any(a == "-i" or a.startswith(("-i", "--in-place")) for a in argv)
-        if name in INPLACE and in_place and any(engine.language_for(a) for a in _operands(argv)):
+        if (
+            name in INPLACE
+            and in_place
+            and any(engine.language_for(a) for a in _run_operands(run, argv))
+        ):
             exprs = [a for a in argv if not a.startswith("-") and not engine.language_for(a)]
             for expr in exprs:
                 pattern = "\n".join(m.group("pat") for m in _SED_SUB.finditer(expr))
