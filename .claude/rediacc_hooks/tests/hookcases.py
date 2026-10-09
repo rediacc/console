@@ -1073,6 +1073,59 @@ STATIC: list[Case] = [
         bash_json("perl -e 'print qw(never run git worktree add here)'"),
         "worktree-add CONTROL: a qw() sentence is not a command (fa5d11be.4)",
     ),
+    # block_user_only_command and its shell twin (operator ruling 2026-10-09, #18c7e53c): no slash command or skill is user-only, except a file on the operator's exception list.
+    case(
+        "check 2 guards/block_user_only_command.py",
+        tool_json(
+            "Write",
+            ".claude/commands/zz-probe.md",
+            "content",
+            "---\ndescription: x\ndisable-model-invocation: true\n---\n",
+        ),
+        "user-only-command: a Write that adds the key",
+    ),
+    case(
+        "check 2 guards/block_user_only_command.py",
+        tool_json("Write", ".ci/config/model-invocation-exceptions.json", "content", "{}"),
+        "user-only-command: a Write of the exception list",
+    ),
+    case(
+        "check 0 guards/block_user_only_command.py",
+        tool_json(
+            "Write",
+            ".claude/commands/zz-probe.md",
+            "content",
+            "---\ndescription: x\n---\n\nNever set `disable-model-invocation: true`.\n",
+        ),
+        "user-only-command CONTROL: a body that only mentions the key",
+    ),
+    case(
+        "check 0 guards/block_user_only_command.py",
+        tool_json(
+            "Write", "docs/zz-probe.md", "content", "---\ndisable-model-invocation: true\n---\n"
+        ),
+        "user-only-command CONTROL: a file outside the command directories",
+    ),
+    case(
+        "check 2 guards/block_user_only_command_shell_write.py",
+        bash_json("echo 'disable-model-invocation: true' >> .claude/commands/zz-probe.md"),
+        "user-only-command-shell-write: an append of the key",
+    ),
+    case(
+        "check 2 guards/block_user_only_command_shell_write.py",
+        bash_json("echo '{}' > .ci/config/model-invocation-exceptions.json"),
+        "user-only-command-shell-write: a redirect into the exception list",
+    ),
+    case(
+        "check 0 guards/block_user_only_command_shell_write.py",
+        bash_json("sed -i '/^disable-model-invocation:/d' .claude/commands/zz-probe.md"),
+        "user-only-command-shell-write CONTROL: sed -i deleting the key line",
+    ),
+    case(
+        "check 0 guards/block_user_only_command_shell_write.py",
+        bash_json("echo 'disable-model-invocation: true is banned'"),
+        "user-only-command-shell-write CONTROL: echo to the terminal",
+    ),
     # block_review_file_shell_write judges a Python program by its write TARGETS (2026-10-09): a review path that only flows into written content was refused live, and a target built from a review path through a name was allowed.
     case(
         "check 0 guards/block_review_file_shell_write.py",

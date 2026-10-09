@@ -611,9 +611,20 @@ def _emit(lines, text, lineno, piece, markers):
 
 
 # JSON string values whose key marks them as an IDENTIFIER or a QUOTED EXAMPLE rather than prose about the work. `patterns`/`exceptions` are regex text; `text` is a rule's own bad/good exemplar (the JSON analogue of `BAD_EXAMPLE`, since a JSON example's `kind: "bad"` marker sits on a DIFFERENT physical line than its `text`, so the character-level BAD_EXAMPLE match cannot see it);
-# `id`/`glob`/`schema`/`$schema`/`format`/`version` are short machine-facing tokens, never a sentence about the work.
+# `id`/`glob`/`schema`/`$schema`/`format`/`version` are short machine-facing tokens, never a sentence about the work. `quote` is an operator ruling quoted VERBATIM (`.ci/config/model-invocation-exceptions.json` `ruling.quote`): somebody else's words, which the module docstring already places out of this gate's reach, and restyling them would falsify the ruling.
 JSON_SKIP_KEYS = frozenset(
-    ("patterns", "exceptions", "text", "id", "glob", "schema", "$schema", "format", "version")
+    (
+        "patterns",
+        "exceptions",
+        "text",
+        "id",
+        "glob",
+        "schema",
+        "$schema",
+        "format",
+        "version",
+        "quote",
+    )
 )
 
 _JSON_KEYED_STRING = re.compile(r'^\s*"((?:[^"\\]|\\.)*)"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,?\s*$')
