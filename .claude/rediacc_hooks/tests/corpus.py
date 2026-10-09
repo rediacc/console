@@ -393,6 +393,15 @@ EDGE_CASES = [
     ("L12 a gh after a -C is not in the submodule", "git -C private/renet fetch; gh pr merge 3"),
     ("S1 a space-indented marker does not close", "cat <<EOF\n  EOF\ngh pr merge 1 --admin\nEOF"),
     ("S2 a marker with a dash is the whole word", "cat <<END-X\nEND\ngh pr merge 1 --admin\nEND-X"),
+    # -- #ec63ff8c (2026-10-09): launchers are walked, an ssh remote command is not lifted --------
+    ("ec63 npx with a flag launches gh", "npx -y gh pr merge 1 --admin"),
+    ("ec63 npx -c is a shell string", "npx -c 'gh pr ready 2'"),
+    ("ec63 sshpass launches ssh", "sshpass -p x ssh prod-1 docker ps"),
+    (
+        "ec63 every find -exec is lifted",
+        r"find . -name x -exec true {} \; -exec gh pr edit 3 --body x \;",
+    ),
+    ("ec63 a quoted ssh remote command stays remote", 'ssh prod-1 "gh pr merge 1 --admin"'),
 ]
 
 

@@ -795,6 +795,26 @@ FACTS = [
         source="blank line",
         sees=("zzrun X",),
     ),
+    # #ec63ff8c, 2026-10-09: the launchers shellscan walks and the stdin xargs turns into operands.
+    Fact(
+        "W17",
+        "find runs every -exec command, each up to its own escaped semicolon",
+        'find "{T}" -maxdepth 0 -exec zzrun X {} \\; -exec zzrun Y \\;',
+        "RAN:X|{T}\nRAN:Y\n",
+        relies_on=((SS, "_launched"), (SS, "lifted_commands")),
+        source="find -exec",
+        sees=("zzrun X", "zzrun Y"),
+    ),
+    Fact(
+        "W18",
+        "xargs turns the text on its stdin into the operands of the command it runs",
+        "echo a b | xargs zzargv",
+        "<a><b>\n",
+        relies_on=((SS, "_stage_feed"),),
+        source="xargs feed",
+        check="xargs_feed",
+        extra={"feed": "echo a b"},
+    ),
 ]
 
 
@@ -976,6 +996,10 @@ def scanner_mismatch(fact, tmp, monkeypatch):
     elif fact.check == "unresolvable_cd":
         if shellscan.target_root("cd /nonexistent-q && git push", str(tmp)) != "":
             problems.append("a cd bash cannot perform resolved to a root")
+    elif fact.check == "xargs_feed":
+        fed = [(r.name, r.feed, r.via) for r in runs if r.feed is not None]
+        if fed != [("zzargv", fact.extra["feed"], ("xargs",))]:
+            problems.append("fed runs %r" % fed)
     elif fact.check == "ssh_locality":
         problems.append(_check_ssh_locality(tmp))
     elif fact.check == "command_v":
@@ -1035,6 +1059,21 @@ VERDICTS = [
     ("L13", "block_ssh_file_write", 'ssh prod-1 "echo hi > /etc/x"', 2),
     ("L13 control", "block_ssh_file_write", "echo \"ssh prod-1 'cat > /etc/x'\"", 0),
     ("L13 control", "block_ssh_file_write", "ssh prod-1 'journalctl 2>&1 >/dev/null'", 0),
+    # #ec63ff8c, 2026-10-09: each refusal here was allowed before; each control was allowed before and after.
+    ("ec63 ssh remote", "block_ssh_docker", 'ssh prod-1 "docker ps"', 2),
+    ("ec63 ssh remote", "block_ssh_docker", 'sshpass -e ssh prod-1 "docker ps"', 2),
+    ("ec63 ssh remote control", "block_ssh_docker", "ssh prod-1 'echo docker'", 0),
+    ("ec63 xargs feed", "block_protected_files", "echo .claude/settings.json | xargs rm", 2),
+    ("ec63 xargs feed control", "block_protected_files", "echo .claude/settings.json | cat", 0),
+    ("ec63 launcher", "block_cli_bundle", "npx -y node packages/cli/dist/cli.js", 2),
+    ("ec63 launcher", "block_git_force_push", "npx -c '%s'" % FORCE, 2),
+    ("ec63 launcher", "block_git_force_push", "find . -maxdepth 0 -exec %s \\;" % FORCE, 2),
+    (
+        "ec63 launcher control",
+        "block_git_force_push",
+        "find . -name '*.md' -exec grep -l '%s' {} +" % FORCE,
+        0,
+    ),
     ("prose control", "block_git_force_push", "echo '%s'" % FORCE, 0),
     ("heredoc control", "block_git_force_push", "cat > R.md <<'EOF'\n%s\nEOF" % FORCE, 0),
 ]

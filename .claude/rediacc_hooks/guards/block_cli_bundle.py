@@ -31,10 +31,10 @@ ORDER = 8
 DEFECT = (r"]*(cli-bundle[^", r"]*.*(cli-bundle[^")
 
 # COMMAND POSITION, NOT ANY WHITESPACE. The anchor used to be `(^|[;&|(]|[{S}])`, and the `[{S}]` arm admits `node` after any space, which is inside every sentence: `echo the docs say never to run node cli-bundle.js in this repo` was refused (found by check:ci-guard-mention-anchoring, 2026-10-09). Now `node` must open a command: the line start or a separator, then
-# optional blanks, then an optional directory (`/usr/bin/node`). The prefixes the whitespace arm used to tolerate (`sudo`, `time`, `env`, `xargs`, an assignment, a leading redirect, `!`, `if ... then`) still reach it, because `scan_target` lifts every command bash runs onto a line of its own (`shellscan.lifted_commands`). `npx` is not one of the prefixes shellscan unwraps, so it is
-# named here: `npx node cli-bundle.js` was refused through the whitespace arm and is kept refused, measured both ways while anchoring.
+# optional blanks, then an optional directory (`/usr/bin/node`). The prefixes the whitespace arm used to tolerate (`sudo`, `time`, `env`, `xargs`, an assignment, a leading redirect, `!`, `if ... then`) still reach it, because `scan_target` lifts every command bash runs onto a line of its own (`shellscan.lifted_commands`), and so do the launchers shellscan walks (`shellscan._launched`, #ec63ff8c):
+# `npx node cli-bundle.js`, `npx -y node packages/cli/dist/cli.js` and `find . -exec node cli-bundle.js \;` each lift `node ...` onto its own line. The last two were allowed before.
 NODE_BUNDLE = hookio.rx(
-    r"(^|[;&|(`{!])[{S}]*(npx[{S}]+)?([^{S};|&()`]*/)?node[{S}]+(-[^{S};|&]+[{S}]+)*[^{S};|&]*(cli-bundle[^{S};|&]*\.[cm]?js|packages/cli/dist/[^{S};|&]*)"
+    r"(^|[;&|(`{!])[{S}]*([^{S};|&()`]*/)?node[{S}]+(-[^{S};|&]+[{S}]+)*[^{S};|&]*(cli-bundle[^{S};|&]*\.[cm]?js|packages/cli/dist/[^{S};|&]*)"
 )
 
 MESSAGE = "❌ BLOCKED: Do not run the CLI bundle directly via node. Use ./rdc.sh instead."
@@ -58,7 +58,16 @@ EDGE_CASES = [
         "echo the docs say never to run node cli-bundle.js in this repo",
     ),
     ("a prefix command still reaches it", "sudo node cli-bundle.js"),
-    ("npx is a launcher shellscan does not unwrap", "npx node cli-bundle.js"),
+    ("npx is a launcher shellscan walks", "npx node cli-bundle.js"),
+    # Launchers walked by shellscan (#ec63ff8c): both were allowed before 2026-10-09.
+    ("npx with its own flag before node", "npx -y node packages/cli/dist/cli.js"),
+    ("find -exec running node", r"find packages -maxdepth 0 -exec node cli-bundle.js \;"),
+    (
+        "npx running another program over the bundle path",
+        "npx -y prettier --check packages/cli/dist/cli.js",
+    ),
+    ("npx -c runs a shell string", "npx -c 'node cli-bundle.js'"),
+    ("npx running tsx", "npx tsx scripts/gen/gen-docs.ts"),
     ("after && still reaches it", "cd x && node cli-bundle.js"),
 ]
 
