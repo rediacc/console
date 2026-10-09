@@ -348,8 +348,8 @@ def same_major(have: str, want: str) -> bool:
 # --------------------------------------------------------------------------- THE PROBING AND ACQUISITION HALF (W7P5-b, 2026-09-10)
 #
 # Everything above this line was ported in W6P2 and covers `toolchain_load`, `toolchain_pairs`, `toolchain_keys`, `toolchain_pin_for` and the comparison. Everything below is the REST OF THE TWIN: `toolchain_probe_version`, `toolchain_check`, `toolchain_lane`, `toolchain_report`, `toolchain_cache_dir` and the whole acquisition apparatus (`_toolchain_need_checksums`,
-# `_toolchain_sha256sum`, `_toolchain_os`, `_toolchain_download_shfmt`, `_toolchain_acquire_shfmt`, `_toolchain_acquire_shellcheck`, `toolchain_acquire`). Six real sourcers of the twin, re-measured 2026-09-10
-# with `grep -rnP '^\s*(source|\.)\s+.*\btoolchain\.sh'`:
+# `_toolchain_sha256sum`, `_toolchain_os`, `_toolchain_download_shfmt`, `_toolchain_acquire_shfmt`, `_toolchain_acquire_shellcheck`, `toolchain_acquire`). Six real sourcers of the twin when that grep was
+# re-measured on 2026-09-10 (`grep -rnP '^\s*(source|\.)\s+.*\btoolchain\.sh'`); on today's tree it returns only the first:
 # `.ci/bootstrap.sh` (still a sourcer) and five scripts since ported and deleted (`run-legacy.sh`, `check-python-lint.sh`, `shellcheck.sh`, `shfmt.sh`, `test-toolchain.sh`). NOT the "466" in the programme plan, which is this file's LINE COUNT.
 #
 # -------------------------------------------------------------------------- DEFECT 1, REPRODUCED NOT FIXED, AND IT IS THE CONSEQUENTIAL ONE: `toolchain.sh --verify` CANNOT FAIL. -------------------------------------------------------------------------- `.ci/scripts/lib/toolchain.sh:167` states the contract in the file's own words: "toolchain.sh --verify exit 1 if any pinned tool

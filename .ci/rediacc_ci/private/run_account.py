@@ -85,7 +85,7 @@ DEPLOY_STAGE = "deploy"
 # `[[ "${CI:-}" == "true" ]]`: the literal, not `is_ci()`.
 CI_TRUE = "true"
 
-# The five lines the `deploy` stage refuses with, verbatim from the twin including the two-space continuation indents.
+# The five lines the `deploy` stage refuses with, verbatim from the twin including the two-space continuation indents, except the last, which names the Python port rediacc_ci.deploy.deploy_account in place of the deleted deploy-account.sh (the delta its golden header records).
 DEPLOY_REFUSAL = (
     "This stage cannot deploy the account server.",
     "Production and edge are the seven configs under workers/account/:",

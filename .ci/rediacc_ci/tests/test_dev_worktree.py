@@ -379,6 +379,19 @@ def assert_same(a: Fixture, b: Fixture, ra: Result, rb: Result, calls) -> None:
     assert rb.err == ra.err
     assert rb.out == ra.out
     assert undated(a.state()) == undated(b.state())
+
+    # The mask hides the day on both sides, so the port's own day is pinned here (review 1650ad7f.1): every dated name it creates carries TODAY, the clock the output masking above already uses.
+    # A name both sides hold verbatim is fixture setup (a pre-created `0101-1`), not stamped by the run, so only the port's names the golden lacks are checked.
+    def names(state: dict[str, object]) -> set[str]:
+        return {
+            n
+            for v in state.values()
+            for n in (v if isinstance(v, list) else [v])
+            if isinstance(n, str) and DAY_BRANCH.match(n)
+        }
+
+    for name in sorted(names(b.state()) - names(a.state())):
+        assert name.startswith(TODAY + "-"), "dated name %r is not stamped %s" % (name, TODAY)
     assert calls[0] == calls[1]
 
 
