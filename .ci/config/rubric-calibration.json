@@ -1,25 +1,24 @@
 {
   "rubrics": {
     "BRAVE_PROMPT": {
-      "calibrated": "2026-10-02",
-      "note": "Re-calibrated 2026-10-02 after the M5 wording (4e22d6014: merging and pushing main have their own guarded path, operator ruling 2026-10-02) and the COMMITTING sentence rewritten to the commit-as-you-go standing order. The first full run matched 15/17; the two brave misses ('leave it on its branch', 'hold until CI green') matched 4/4 on two --only reruns, so they were sampling noise. The final full run over the current text matched 17/17 (.ci/cache/calibrate-final-20261002.log).",
-      "sha": "c477771292a2d767"
+      "calibrated": "2026-10-09",
+      "note": "Re-calibrated 2026-10-09 (#455e5cef) after five runs scored 'leave it on its branch' 1/5, 'hold and report the numbers' 2/5 and 'keep carrying it' 4/5. The reserved-act hold now needs the DEFAULT itself to name and decline the act, changes_state is judged on the default as written rather than the braver form, and the sentence calling any audience-reaching step irreversible, which contradicted 'republishing regenerated content' being reversible, is gone. Three full runs matched 17/17 (.ci/cache/calibrate-20261009-fix1.log, -fix2.log, -fix3.log).",
+      "sha": "03ba09e5eb7343e2"
     },
     "REGGATE_PROMPT": {
-      "calibrated": "2026-09-24",
-      "note": "Re-hashed 2026-10-09 without a full pass after 2d7364e0c changed one example inside the prompt. Two live runs scored the sweep fixtures it rides 7/8 and 6/8 with different misses (.ci/cache/calibrate-20261009.log, -20261009b.log) on the unchanged SWEEP_PROMPT, last calibrated 8/8, which is consistent with run-to-run judge variance rather than this edit; the cause is not yet measured. `calibrated` stays at the last full pass; #455e5cef restores one.",
-      "sha": "2b8cbd5b3ccdd640",
-      "rehashed": "2026-10-09"
+      "calibrated": "2026-10-09",
+      "note": "Full pass 2026-10-09 (#455e5cef) over the text 2d7364e0c changed: three full runs matched 17/17, the eight sweep fixtures REGGATE rides included (.ci/cache/calibrate-20261009-fix1.log, -fix2.log, -fix3.log). The earlier 7/8 and 6/8 sweep scores were a fixture worded against its label and a calibrator that omitted the fixset_files list production passes, not this text.",
+      "sha": "2b8cbd5b3ccdd640"
     },
     "SHAPE_PROMPT": {
-      "calibrated": "2026-09-24",
-      "note": "Re-calibrated 2026-09-24. The first live run's two shapedup misses were stale fixtures, not the rubric: the assertion-closure coordinates had drifted and the mktemp+trap fixture cited three bash suites since ported to Python. Coordinates re-derived, that fixture retired, and the findings-report control retired after firing on five consecutive runs at re-pointed coordinates because the report loop around the prose is a real shared scaffold (tracked separately). Three of three remaining shape fixtures matched in the final full run.",
-      "sha": "5a4d4dba40bac331"
+      "calibrated": "2026-10-09",
+      "note": "Re-calibrated 2026-10-09 (#455e5cef) after the run_gate control fired 1 run in 5 as `already`, naming harness.py, which all three instances already call. `already` now excludes copies that already call the module, and thin wrappers with different signatures answer `no`. Three full runs matched 17/17 (.ci/cache/calibrate-20261009-fix1.log, -fix2.log, -fix3.log).",
+      "sha": "53812efd8e4ae407"
     },
     "SWEEP_PROMPT": {
-      "calibrated": "2026-09-24",
-      "note": "Re-calibrated 2026-09-24: eight of eight sweep fixtures matched in the first full live run and again in the final full run (.ci/cache/calibrate-final-20260924.log) over the current text.",
-      "sha": "1248d21ae592ce73"
+      "calibrated": "2026-10-09",
+      "note": "Re-calibrated 2026-10-09 (#455e5cef) after five runs scored the only-instance control 2/5, 'guard false positive on one of its paths' 3/5 and 'guard matched a mention' 4/5. The control said 'this is the only other one', which states a sibling exists, and now says none was found; the calibrator now passes each fixture's fixset_files as production does; the two-paths example names a guard's other input paths. Three full runs matched 17/17 (.ci/cache/calibrate-20261009-fix1.log, -fix2.log, -fix3.log).",
+      "sha": "014b4bae1e0a5a8c"
     }
   }
 }
