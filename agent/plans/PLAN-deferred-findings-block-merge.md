@@ -30,9 +30,9 @@ Owns: .ci/rediacc_ci/quality/review_resolutions.py, .ci/scripts/quality/check_re
   - It is rendered as "deferred to worklist item #x" at line 761.
   - `review_comments.summary_verdict` (`.ci/rediacc_ci/quality/review_comments.py:380-393`) counts any long reply as `answered`. The same rule is copied in `.claude/hooks/stop/wl_prreview.py:240-250`.
 - **Live counts** (`grep -h '^Resolution: deferred' agent/reviews/*/*.md`):
-  - 1008-1 holds 15 deferrals, 2 of them high: `50ebe57f1.1` and `ec17cce72.2`, both on item `#d72223aa`, whose sub-items are leased to live writers.
+  - 1008-1 holds 15 deferrals, 2 of them high: `58aaa160.1` and `94934de4.2`, both on item `#d72223aa`, whose sub-items are leased to live writers.
   - Of the other 13, 10 are on `#f32c08e6` and 3 are on `#fd310a8a`.
-  - 1007-1 holds 1 (`7f9c30578.1` on `#9e7a546f`). It merged as PR #599 carrying it, which shows that no gate refused a deferral.
+  - 1007-1 holds 1 (`9a6c2106.1` on `#9e7a546f`). It merged as PR #599 carrying it, which shows that no gate refused a deferral.
 - **The pieces the design reuses:**
   - The `ASKED:` evidence rule: `ASKED_RE`, `ASKED_WINDOW_S = 300` and `_asked_in_transcript()` at `.claude/hooks/stop/wl_checks.py:288-364`, plus `_lead_transcript()` at `.claude/hooks/stop/worklist.py:943-948`.
   - The triage verdicts `inline | plan-subagent | operator-only` (`.claude/hooks/stop/wl_judge.py:173`), recorded on the item as `triage.v` (`.claude/hooks/stop/wl_store.py:1312-1327`, read at `.claude/hooks/stop/wl_planconc.py:471`).
@@ -98,7 +98,7 @@ Owns: .ci/rediacc_ci/quality/review_resolutions.py, .ci/scripts/quality/check_re
 - **D7. Migration.**
   - Only `agent/reviews/1008-1/` is migrated, by fixing the findings. The records themselves are append-only and nobody edits them by hand.
   - `agent/reviews/1007-1/` and every other merged directory are history and are not judged. The open item `#9e7a546f` still tracks the 1007-1 finding as ordinary worklist work.
-  - Finding `4045c4543.3` (`.claude/hooks/stop/wl_review.py:2427`) is inside W2's ownership, so W2 fixes it.
+  - Finding `71afd29f.3` (`.claude/hooks/stop/wl_review.py:2427`) is inside W2's ownership, so W2 fixes it.
   - The two highs stay with their live leased writers (`#894643cf`, part of `#d72223aa`).
   - The local enabling commits (W1 gate wiring, W2 `push_refusals`) and the migration land before the next push. Under `turbo_push: batch-end` that push is one batch-end push; otherwise the first push after W1/W2 waits for M1-M3.
 
@@ -179,14 +179,14 @@ Owns: .ci/rediacc_ci/quality/review_resolutions.py, .ci/scripts/quality/check_re
 ### Migration wave M (after W1-W3; lead-run, writers per triage verdict, Sonnet unless the triage says otherwise)
 
 - [x] M1 Triage all 15 deferrals on 1008-1, one `--triage` per finding (D5 step 1). Record each verdict in the round log. Acceptance: `worklist.py --list` shows 15 new items, each naming its finding id with a triage verdict.
-  - Amended 2026-10-08 (review 6ee9b1a95.1): no per-finding triage items were created. Each of the 15 deferrals was fixed directly under the existing items #f32c08e6, #fd310a8a, #280670a3 and #7de60352. The acceptance actually met is that `check_review_resolutions.py` reports 0 deferred, so this box records that outcome and not the 15-item listing.
+  - Amended 2026-10-08 (review 634e856c.1): no per-finding triage items were created. Each of the 15 deferrals was fixed directly under the existing items #f32c08e6, #fd310a8a, #280670a3 and #7de60352. The acceptance actually met is that `check_review_resolutions.py` reports 0 deferred, so this box records that outcome and not the 15-item listing.
     (ticked) 2026-10-08T16:16:49Z by d778be9d: check_review_resolutions.py rc=0, 0 deferred; triaged and fixed under #f32c08e6 #fd310a8a #280670a3 #7de60352 (no separate per-finding items)
-- [x] M2 Fix every INLINE and PLAN+SUBAGENT finding this session, then mark it `fixed <sha>` or `not-a-bug <evidence>`. The PLAN+SUBAGENT ones get a committed `agent/plans/PLAN-<slug>.md` first. `4045c4543.3` belongs to W2. `50ebe57f1.1` and `ec17cce72.2` close through their leased writers under `#d72223aa`. Acceptance: `grep -h '^Resolution: deferred' agent/reviews/1008-1/*.md | wc -l` prints 0.
-  - Amended 2026-10-08 (review 6ee9b1a95.3): the acceptance was rewritten from `grep -c ... totals 0` to `grep -h ... | wc -l` prints 0 in the same commit that ticked M2 (6ee9b1a95). `grep -c` prints one count per file, so the old wording could not be read as a total (finding c1dc9dfcb.1). Both forms give 0 on 1008-1.
+- [x] M2 Fix every INLINE and PLAN+SUBAGENT finding this session, then mark it `fixed <sha>` or `not-a-bug <evidence>`. The PLAN+SUBAGENT ones get a committed `agent/plans/PLAN-<slug>.md` first. `71afd29f.3` belongs to W2. `58aaa160.1` and `94934de4.2` close through their leased writers under `#d72223aa`. Acceptance: `grep -h '^Resolution: deferred' agent/reviews/1008-1/*.md | wc -l` prints 0.
+  - Amended 2026-10-08 (review 634e856c.3): the acceptance was rewritten from `grep -c ... totals 0` to `grep -h ... | wc -l` prints 0 in the same commit that ticked M2 (6ee9b1a95). `grep -c` prints one count per file, so the old wording could not be read as a total (finding 9a2a6c2c.1). Both forms give 0 on 1008-1.
     (ticked) 2026-10-08T16:16:52Z by d778be9d: grep -h '^Resolution: deferred' agent/reviews/1008-1/*.md | wc -l -> 0; check_review_resolutions.py rc=0
 - [ ] M3 Operator-only findings: ask in one AskUserQuestion batch (the `/ask` skill), then `waived ... ASKED:<minute>Z`. Acceptance: `python3 .claude/hooks/stop/wl_review.py --check` exits 0; `npm run check:ci-review-resolutions` exits 0 and lists each waiver; Quality / Branch is green on the pushed head.
 - [x] M4 Close the legacy items `#f32c08e6` and `#fd310a8a` with `commit:<sha>` evidence naming the per-finding items that replaced them. Acceptance: both are `[x]` in `worklist.py --list`.
-  - Amended 2026-10-08 (review 6ee9b1a95.2): there are no per-finding replacement items (see M1), so the ticks of #f32c08e6 and #fd310a8a cite the fixing commits (aefc7ff44, 3998d07c9, 121392521, 0c05c1622, fe028539d, 1b749af5b) and the gate result.
+  - Amended 2026-10-08 (review 634e856c.2): there are no per-finding replacement items (see M1), so the ticks of #f32c08e6 and #fd310a8a cite the fixing commits (aefc7ff44, 3998d07c9, 121392521, 0c05c1622, fe028539d, 1b749af5b) and the gate result.
     (ticked) 2026-10-08T16:16:56Z by d778be9d: worklist #f32c08e6 and #fd310a8a ticked with commit:aefc7ff44 .. commit:1b749af5b evidence
 
 ## 4. Controls summary (one planted deferral must fail every layer)
