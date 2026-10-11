@@ -401,7 +401,7 @@ def read_event():
 
 
 def project_of(start):
-    """The project a directory belongs to: the OUTERMOST git checkout holding it, or the directory itself, absolute, when it is in none. The stdlib twin of `rediacc_hooks.hookio.project_root`, kept here because importing the guard package costs every context hook the shell lexer; `test_project_dir_fallback` holds the two to one answer."""
+    """The project a directory belongs to: the git checkout holding it, climbed through its superprojects to the top (never into an unrelated outer clone), or the directory itself, absolute, when it is in none. The stdlib twin of `rediacc_hooks.hookio.project_root`, kept here because importing the guard package costs every context hook the shell lexer; `test_project_dir_fallback` holds the two to one answer."""
     here = os.path.abspath(start)
 
     def git(where, *args):

@@ -484,9 +484,9 @@ def git_out(args, cwd=None, want_rc=False):
 
 
 def project_root(start):
-    """The project a directory belongs to, as Claude Code names one in `CLAUDE_PROJECT_DIR`: the OUTERMOST git checkout holding `start` (a submodule's superproject, climbed to the top), or `start` itself, made absolute, when it is in none.
+    """The project a directory belongs to, as Claude Code names one in `CLAUDE_PROJECT_DIR`: the git checkout holding `start`, climbed through its superprojects to the top, or `start` itself, made absolute, when it is in none.
 
-    Outermost because the session's project is the console even when its shell stands inside `private/renet`, and a guard reading `CLAUDE_PROJECT_DIR` there has always been handed the console.
+    Climbed because the session's project is the console even when its shell stands inside `private/renet`, and a guard reading `CLAUDE_PROJECT_DIR` there has always been handed the console. Only SUPERPROJECT links are climbed (review 67459d36.1): a standalone clone that merely sits inside another checkout's tree, like a writer's scratch clone, is its own project, not the outer one's.
     """
     here = os.path.abspath(start)
     top = git_out(["rev-parse", "--show-toplevel"], cwd=here, want_rc=True)

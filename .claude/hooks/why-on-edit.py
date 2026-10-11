@@ -247,11 +247,13 @@ def main():
     if not raw_path:
         return 0
 
-    # The event cwd's PROJECT, not the cwd (#f32d3604): with the variable unset a session in `.claude/` read its plans under `.claude/agent` and let a near-duplicate plan through (rc 0 against rc 2 from the root). `ctx_budget.project_of` climbs to the outermost checkout.
+    # The event cwd's PROJECT, not the cwd (#f32d3604): with the variable unset a session in `.claude/` read its plans under `.claude/agent` and let a near-duplicate plan through (rc 0 against rc 2 from the root). `ctx_budget.project_of` climbs to the top superproject.
+    # The variable wins when it is set, so the climb (git subprocesses on every edit) runs only without it (review 67459d36.2).
+    root_env = os.environ.get("CLAUDE_PROJECT_DIR")
     cwd = event.get("cwd")
-    if cwd:
+    if cwd and not root_env:
         cwd = _project_of(cwd)
-    root = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR") or cwd or HERE.parents[1])
+    root = pathlib.Path(root_env or cwd or HERE.parents[1])
     try:
         rel = str(pathlib.Path(raw_path).resolve().relative_to(root.resolve()))
     except (ValueError, OSError):
