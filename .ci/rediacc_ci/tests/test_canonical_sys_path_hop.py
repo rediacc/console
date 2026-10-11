@@ -498,12 +498,15 @@ def test_the_growth_check_fires_on_a_plant_and_not_on_the_baseline() -> None:
 PRINTED_ROOT = ".ci/rediacc_ci"
 # EVERY INTERPRETER SPELLING, not only `python3` (review findings f6733156.1 and f6733156.3): `python`, `python3`, `python3.N`, each optionally behind a path (`/usr/bin/python3`, `.venv/bin/python`), and the package itself (`-m rediacc_ci`) as well as a dotted module. Each fails the same way from the repository root.
 INTERPRETER = r"(?:[\w.~/-]*/)?python(?:3(?:\.\d+)?)?"
-BARE_M = re.compile(r"(?<![\w./~-])(?<!PYTHONPATH=\.ci )%s -m (rediacc_ci(?:\.\w+)*)" % INTERPRETER)
+# `\b` CLOSES THE MODULE NAME (review finding 9edcb111.3): without it `rediacc_cix` and `rediacc_ci_old` read as the package followed by junk.
+BARE_M = re.compile(
+    r"(?<![\w./~-])(?<!PYTHONPATH=\.ci )%s -m (rediacc_ci(?:\.\w+)*)\b" % INTERPRETER
+)
 RUNNABLE_M = re.compile(
-    r"((?:[A-Z_]+=\S+ )*)PYTHONPATH=\.ci (%s) -m (rediacc_ci(?:\.\w+)*)" % INTERPRETER
+    r"((?:[A-Z_]+=\S+ )*)PYTHONPATH=\.ci (%s) -m (rediacc_ci(?:\.\w+)*)\b" % INTERPRETER
 )
 
-#: (module path, a fragment of the string constant) -> (how many bare commands the strings carrying that fragment hold, why they are not commands printed for a reader to run). THE COUNT IS PART OF THE KEY (review finding f6733156.2): a fragment alone exempted every string in the module that carried it, so a new bare line added inside one of those strings passed in silence. A count that moves either way is red.
+#: (module path, a fragment of the string constant) -> (how many bare commands the strings carrying that fragment hold, why they are not commands printed for a reader to run). The key is (module, fragment); the VALUE carries the declared count beside the reason (review finding f6733156.2, the structure stated as built per 9edcb111.2): a fragment alone exempted every string in the module that carried it, so a new bare line added inside one of those strings passed in silence. Each key's count is summed over every string carrying its fragment, and a count that moves either way is red.
 NOT_A_PRINTED_COMMAND: dict[tuple[str, str], tuple[int, str]] = {
     (".ci/rediacc_ci/ci/gate_ledger.py", "backfill --export <dir>"): (
         1,
@@ -539,12 +542,9 @@ NOT_A_PRINTED_COMMAND: dict[tuple[str, str], tuple[int, str]] = {
 }
 
 
-def _exemption(rel: str, text: str, exemptions: dict) -> tuple[str, str] | None:
-    """The exemption key whose fragment this string carries, or None."""
-    for key in exemptions:
-        if key[0] == rel and key[1] in text:
-            return key
-    return None
+def _exemptions(rel: str, text: str, exemptions: dict) -> list[tuple[str, str]]:
+    """EVERY exemption key whose fragment this string carries (review finding 9edcb111.1): a string holding two fragments counts toward both keys, so neither reads as stale and both declared counts are checked against it."""
+    return [key for key in exemptions if key[0] == rel and key[1] in text]
 
 
 def _docstring_nodes(tree: ast.AST) -> set[int]:
@@ -590,11 +590,11 @@ def bare_commands(texts: list[tuple[str, int, str]], exemptions: dict | None = N
     counted = dict.fromkeys(exemptions, 0)
     seen = dict.fromkeys(exemptions, False)
     for rel, line, text in texts:
-        key = _exemption(rel, text, exemptions)
+        keys = _exemptions(rel, text, exemptions)
         found = ["%s:%d: %s" % (rel, line, m.group(0)) for m in BARE_M.finditer(text)]
-        if key is None:
+        if not keys:
             bad += found
-        else:
+        for key in keys:
             seen[key] = True
             counted[key] += len(found)
     for key, (want, _why) in exemptions.items():
@@ -612,7 +612,7 @@ def runnable_commands(texts: list[tuple[str, int, str]]) -> list[tuple[str, str]
     """(module path, the printed command up to its module) for every hop-spelled command, one per (path, module)."""
     seen: dict[tuple[str, str], str] = {}
     for rel, _line, text in texts:
-        if _exemption(rel, text, NOT_A_PRINTED_COMMAND) is not None:
+        if _exemptions(rel, text, NOT_A_PRINTED_COMMAND):
             continue
         for m in RUNNABLE_M.finditer(text):
             seen.setdefault((rel, m.group(3)), m.group(0))
@@ -646,8 +646,13 @@ def test_every_printed_python_m_command_spells_the_hop() -> None:
         "run: cpython3 -m rediacc_ci.a",
         "run: PYTHONPATH=.ci python3.12 -m rediacc_ci.a",
         "python3 -m pytest",
+        "run: python3 -m rediacc_cix",
+        "run: python3 -m rediacc_ci_old.a",
     ):
         assert bare_commands([("x.py", 1, text)], {}) == [], text
+    # 9edcb111.3, the other side of the boundary: the package still matches when punctuation, not a word character, follows it.
+    for text in ("run `python3 -m rediacc_ci`.", "run python3 -m rediacc_ci."):
+        assert bare_commands([("x.py", 1, text)], {}) == ["x.py:1: python3 -m rediacc_ci"], text
     # f6733156.2: an exemption is counted, so a new bare line inside an exempt string is red, and so is a stale one.
     fixture = {("x.py", "FIXTURE"): (1, "a planted exemption")}
     assert bare_commands([("x.py", 1, "FIXTURE python3 -m rediacc_ci.a")], fixture) == []
@@ -657,6 +662,17 @@ def test_every_printed_python_m_command_spells_the_hop() -> None:
     assert grown == ["x.py: exemption 'FIXTURE' covers 2 bare command(s), declared 1"], grown
     assert bare_commands([("x.py", 1, "nothing here")], fixture) == [
         "x.py: exemption 'FIXTURE' matches no string any more"
+    ]
+    # 9edcb111.1: one string carrying two fragments counts toward BOTH keys; neither is stale, and each declared count is checked.
+    pair = {
+        ("x.py", "ONE"): (1, "a planted exemption"),
+        ("x.py", "TWO"): (1, "a planted exemption"),
+    }
+    both = [("x.py", 1, "ONE TWO python3 -m rediacc_ci.a")]
+    assert bare_commands(both, pair) == []
+    pair[("x.py", "TWO")] = (2, "a planted exemption")
+    assert bare_commands(both, pair) == [
+        "x.py: exemption 'TWO' covers 1 bare command(s), declared 2"
     ]
     assert len(_RUNNABLE) >= 40, (
         "CONTROL: only %d printed commands found; the corpus is not being read" % len(_RUNNABLE)
