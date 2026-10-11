@@ -16,11 +16,11 @@
       "kind": "embedded-binary",
       "asset": "csiprovisioner",
       "name": "csi-provisioner (kubernetes-csi/external-provisioner)",
-      "version": "6.3.0",
+      "version": "6.4.0",
       "spdx": "Apache-2.0",
       "license": "Apache License 2.0 (Copyright The Kubernetes Authors); conveyed as an unmodified upstream binary, run as a host process in --node-deployment mode (spec 09 §1), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
-      "upstreamSourceUrl": "https://github.com/kubernetes-csi/external-provisioner/archive/v6.3.0/external-provisioner-6.3.0.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/external-provisioner-6.3.0.tar.gz"
+      "upstreamSourceUrl": "https://github.com/kubernetes-csi/external-provisioner/archive/v6.4.0/external-provisioner-6.4.0.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/external-provisioner-6.4.0.tar.gz"
     },
     {
       "kind": "embedded-binary",

@@ -187,3 +187,197 @@ def test_blocklist_accepts_valid_reason(gate, tmp_path):
         0, result, "a blocklist entry with a substantive BLOCKER reason must be accepted"
     )
     gate.log_pass("well-formed blocklist entry is accepted")
+
+
+# ---- --upgrade moves every pin tied to a component -----------------------------------
+#
+# The tool used to rewrite only `ARG <BASE>_VERSION`. csi-provisioner 6.3.0 -> 6.4.0 left `ARG CSIPROVISIONER_COMMIT` at the 6.3.0 commit, so the Dockerfile's own clone check failed the build. These cases drive `--upgrade` against a FIXTURE renet tree (EMBED_RENET_DIR) with pins resolved from a fixture (EMBED_PIN_FIXTURE), never the network and never the real submodule.
+
+OLD_SHA = "34c6fc2149a354cea116724d1836262516f83225"
+NEW_SHA = "72f13ee46fb93c11a72ef91549e70158283c03af"
+ZOT_OLD = {"amd64": "a" * 64, "arm64": "b" * 64}
+ZOT_NEW = {"amd64": "c" * 64, "arm64": "d" * 64}
+RSYNC_SHA = "e" * 64
+ZOT_SUMS_URL = "https://github.com/project-zot/zot/releases/download/v2.2.0/checksums.sha256.txt"
+
+FIXTURE_DOCKERFILE = f"""FROM golang:1.26 AS csi-builder
+ARG CSIPROVISIONER_VERSION=6.3.0
+ARG CSIPROVISIONER_COMMIT={OLD_SHA}
+RUN [ "$actual" = "${{CSIPROVISIONER_COMMIT}}" ]
+FROM ubuntu AS zot-amd64
+ARG ZOT_VERSION=2.1.22
+ARG ZOT_SHA256_AMD64={ZOT_OLD["amd64"]}
+FROM ubuntu AS zot-arm64
+ARG ZOT_VERSION=2.1.22
+ARG ZOT_SHA256_ARM64={ZOT_OLD["arm64"]}
+FROM ubuntu AS rsync
+ARG RSYNC_VERSION=3.5.1
+ARG RSYNC_SHA256={RSYNC_SHA}
+"""
+
+FIXTURE_LOCK = {
+    "components": {
+        "csiprovisioner": {
+            "version": "6.3.0",
+            "upstreamSourceUrl": "https://github.com/x/external-provisioner/archive/v6.3.0/external-provisioner-6.3.0.tar.gz",
+            "plannedMirrorUrl": "https://releases.example/external-provisioner-6.3.0.tar.gz",
+            "source": {"kind": "git", "tag": "v6.3.0", "commit": OLD_SHA},
+            "notes": "attribution text naming v6.3.0 stays verbatim",
+        },
+        "zot": {
+            "version": "2.1.22",
+            "upstreamSourceUrl": "https://github.com/project-zot/zot/archive/v2.1.22/zot-2.1.22.tar.gz",
+            "plannedMirrorUrl": "https://releases.example/zot-2.1.22.tar.gz",
+            "source": {"kind": "release-binary"},
+            "arches": {
+                arch: {
+                    "url": f"https://github.com/project-zot/zot/releases/download/v2.1.22/zot-linux-{arch}",
+                    "sha256": digest,
+                }
+                for arch, digest in ZOT_OLD.items()
+            },
+        },
+        "rsync": {
+            "version": "3.5.1",
+            "upstreamSourceUrl": "https://example/rsync-3.5.1.tar.gz",
+            "plannedMirrorUrl": "https://example/rsync-3.5.1.tar.gz",
+            "source": {
+                "kind": "tarball",
+                "url": "https://example/rsync-3.5.1.tar.gz",
+                "sha256": RSYNC_SHA,
+            },
+        },
+    }
+}
+
+FIXTURE_UNITS = 'const (\n\tProvisionerVersion        = "v6.3.0"\n)\n'
+FIXTURE_GOLDEN = "[Unit]\nDescription=Rediacc CSI external-provisioner (v6.3.0, node-deployment)\n"
+UNITS = "pkg/kube/csidriver/units.go"
+GOLDEN = "pkg/kube/csidriver/testdata/rediacc-csi-provisioner.service"
+
+
+def make_renet(tmp_path):
+    renet = tmp_path / "renet"
+    (renet / "pkg/kube/csidriver/testdata").mkdir(parents=True)
+    (renet / "Dockerfile").write_text(FIXTURE_DOCKERFILE, encoding="utf-8")
+    (renet / "embed-assets.lock.json").write_text(
+        json.dumps(FIXTURE_LOCK, indent=2) + "\n", encoding="utf-8"
+    )
+    (renet / UNITS).write_text(FIXTURE_UNITS, encoding="utf-8")
+    (renet / GOLDEN).write_text(FIXTURE_GOLDEN, encoding="utf-8")
+    return renet
+
+
+def run_upgrade(gate, tmp_path, renet, **overrides) -> harness.RunResult:
+    pins = {
+        "commits": {"kubernetes-csi/external-provisioner@v6.4.0": NEW_SHA},
+        "texts": {
+            ZOT_SUMS_URL: "".join(
+                f"{digest}  zot-linux-{arch}\n" for arch, digest in ZOT_NEW.items()
+            )
+        },
+    }
+    pins.update(overrides.pop("pins", {}))
+    pin_file = tmp_path / "pins.json"
+    pin_file.write_text(json.dumps(pins), encoding="utf-8")
+    fixture = tmp_path / "upstream.json"
+    fixture.write_text(json.dumps(upstream_map(gate, **overrides)), encoding="utf-8")
+    blocklist = tmp_path / "blocklist"
+    blocklist.write_text("# no holds\n", encoding="utf-8")
+    npx = harness.require_tool("npx", "install node; the subject is driven through tsx")
+    return harness.run(
+        [npx, "tsx", str(VALIDATOR), "--upgrade"],
+        cwd=paths.repo_root(),
+        env={
+            "EMBED_FRESHNESS_FIXTURE": str(fixture),
+            "EMBED_PIN_FIXTURE": str(pin_file),
+            "EMBED_BLOCKLIST_FILE": str(blocklist),
+            "EMBED_RENET_DIR": str(renet),
+        },
+    )
+
+
+OLD_CSI = {"version": "6.4.0", "publishedAt": "2020-01-01T00:00:00Z"}
+
+
+def test_upgrade_moves_the_commit_with_the_version(gate, tmp_path):
+    """THE REGRESSION: the version moved and the commit pin stayed, so the Dockerfile could never build."""
+    require_submodule(gate)
+    renet = make_renet(tmp_path)
+    result = run_upgrade(gate, tmp_path, renet, csiprovisioner=OLD_CSI)
+    gate.assert_exit(0, result, "a resolvable csi-provisioner bump should succeed")
+    dockerfile = (renet / "Dockerfile").read_text(encoding="utf-8")
+    gate.assert_contains(dockerfile, "ARG CSIPROVISIONER_VERSION=6.4.0", "version moved")
+    gate.assert_contains(dockerfile, "ARG CSIPROVISIONER_COMMIT=" + NEW_SHA, "commit moved with it")
+    gate.assert_not_contains(dockerfile, OLD_SHA, "no stale commit left behind")
+    gate.log_pass("the COMMIT pin moves with the VERSION pin")
+
+
+def test_upgrade_moves_lockfile_and_go_constants(gate, tmp_path):
+    require_submodule(gate)
+    renet = make_renet(tmp_path)
+    result = run_upgrade(gate, tmp_path, renet, csiprovisioner=OLD_CSI)
+    gate.assert_exit(0, result, "bump should succeed")
+    comp = json.loads((renet / "embed-assets.lock.json").read_text(encoding="utf-8"))["components"][
+        "csiprovisioner"
+    ]
+    gate.assert_eq(comp["version"], "6.4.0", "lock version")
+    gate.assert_eq(comp["source"]["tag"], "v6.4.0", "lock tag")
+    gate.assert_eq(comp["source"]["commit"], NEW_SHA, "lock commit")
+    gate.assert_contains(comp["upstreamSourceUrl"], "6.4.0", "lock source URL")
+    gate.assert_contains(comp["plannedMirrorUrl"], "6.4.0", "lock mirror URL")
+    gate.assert_contains(comp["notes"], "v6.3.0", "free-text attribution is NOT rewritten")
+    gate.assert_contains((renet / UNITS).read_text(encoding="utf-8"), '"v6.4.0"', "Go constant")
+    gate.assert_contains((renet / GOLDEN).read_text(encoding="utf-8"), "(v6.4.0,", "golden unit")
+    gate.log_pass("lockfile entry, Go constant and golden move with the Dockerfile")
+
+
+def test_upgrade_moves_published_sha256_pins(gate, tmp_path):
+    require_submodule(gate)
+    renet = make_renet(tmp_path)
+    result = run_upgrade(
+        gate, tmp_path, renet, zot={"version": "2.2.0", "publishedAt": "2020-01-01T00:00:00Z"}
+    )
+    gate.assert_exit(0, result, "zot publishes checksums.sha256.txt, so the bump resolves")
+    dockerfile = (renet / "Dockerfile").read_text(encoding="utf-8")
+    for arch, digest in ZOT_NEW.items():
+        gate.assert_contains(
+            dockerfile, f"ARG ZOT_SHA256_{arch.upper()}={digest}", f"{arch} digest"
+        )
+    gate.assert_not_contains(dockerfile, ZOT_OLD["amd64"], "no stale digest left behind")
+    lock = json.loads((renet / "embed-assets.lock.json").read_text(encoding="utf-8"))
+    gate.assert_eq(
+        lock["components"]["zot"]["arches"]["arm64"]["sha256"], ZOT_NEW["arm64"], "lock digest"
+    )
+    gate.log_pass("SHA256 pins move with the version")
+
+
+def test_upgrade_refuses_an_unresolvable_commit(gate, tmp_path):
+    require_submodule(gate)
+    renet = make_renet(tmp_path)
+    result = run_upgrade(gate, tmp_path, renet, csiprovisioner=OLD_CSI, pins={"commits": {}})
+    gate.assert_exit(1, result, "an unresolvable commit pin must refuse, not half-upgrade")
+    gate.assert_contains(result.combined, "REFUSED", "the refusal is named")
+    gate.assert_eq(
+        (renet / "Dockerfile").read_text(encoding="utf-8"),
+        FIXTURE_DOCKERFILE,
+        "Dockerfile untouched",
+    )
+    gate.log_pass("an unresolvable commit pin refuses and leaves the tree alone")
+
+
+def test_upgrade_refuses_a_pin_with_no_published_checksum(gate, tmp_path):
+    """rsync publishes no checksum file; its digest is verified by a GPG signature a human checks."""
+    require_submodule(gate)
+    renet = make_renet(tmp_path)
+    result = run_upgrade(
+        gate, tmp_path, renet, rsync={"version": "9.0.0", "publishedAt": "2020-01-01T00:00:00Z"}
+    )
+    gate.assert_exit(1, result, "an rsync bump cannot resolve its sha256 and must refuse")
+    gate.assert_contains(result.combined, "sha256 pin cannot be resolved", "reason names the pin")
+    gate.assert_eq(
+        (renet / "Dockerfile").read_text(encoding="utf-8"),
+        FIXTURE_DOCKERFILE,
+        "Dockerfile untouched",
+    )
+    gate.log_pass("a digest with no published source refuses instead of going stale")

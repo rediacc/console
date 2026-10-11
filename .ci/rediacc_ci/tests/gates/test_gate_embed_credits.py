@@ -122,3 +122,29 @@ def test_embed_credits_absent_submodule_skips_outside_ci(gate, tmp_path):
         result.combined, "under CI this is a hard failure", "the skip says it would fail in CI"
     )
     gate.log_pass("absent submodule outside CI skips loudly")
+
+
+def test_rejects_commit_pin_drift(gate, tmp_path):
+    """The version pair agreed while `ARG CSIPROVISIONER_COMMIT` sat at the previous release (2026-10-11), so a build failed its own clone check with every gate green. Plant exactly that."""
+    require_submodule(gate)
+    lines = DOCKERFILE.read_text(encoding="utf-8").splitlines(keepends=True)
+    drifted = []
+    replaced = 0
+    for line in lines:
+        if line.startswith("ARG CSIPROVISIONER_COMMIT="):
+            drifted.append("ARG CSIPROVISIONER_COMMIT=" + "0" * 40 + "\n")
+            replaced += 1
+        else:
+            drifted.append(line)
+    if replaced == 0:
+        gate.log_fail(
+            "no `ARG CSIPROVISIONER_COMMIT=` line in %s, so the planted drift was never "
+            "planted and this case would be judging an unmodified Dockerfile"
+            % paths.relative_to_root(DOCKERFILE)
+        )
+    fixture = tmp_path / "Dockerfile"
+    fixture.write_text("".join(drifted), encoding="utf-8")
+    result = run_gate(gate, env={"EMBED_CREDITS_DOCKERFILE": str(fixture)})
+    gate.assert_exit(1, result, "a Dockerfile commit pin drifting from the lockfile should fail")
+    gate.assert_contains(result.combined, "CSIPROVISIONER_COMMIT", "error names the drifted ARG")
+    gate.log_pass("a Dockerfile commit pin that drifts from the lockfile is rejected")
