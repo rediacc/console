@@ -854,6 +854,57 @@ STATIC: list[Case] = [
         bash_json("rm .claude/settings.local.json"),
         "protected-files CONTROL: a neighbouring file",
     ),
+    # Review c093f0f3.2: a word the guard cannot evaluate (`$(...)`, a backtick, an unresolved `$NAME`) is a wildcard; it is refused when a literal segment is a protected path's and the pattern can reach a protected file. Each refusal was allowed (rc 0) before.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/$(echo settings.json)"),
+        "protected-files: a substitution after the protected directory",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm $(echo .claude)/settings.json"),
+        "protected-files: a substitution before the protected basename",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm `echo .claude`/settings.json"),
+        "protected-files: a backtick substitution before the protected basename",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm .claude/"$NAME"'),
+        "protected-files: an unresolved variable after the protected directory",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm -rf $(pwd)/.claude"),
+        "protected-files: a recursive rm of the protected directory under a substitution",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm "$(mktemp)"'),
+        "protected-files CONTROL: a substitution with no protected segment",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm -rf "$(mktemp -d)/x"'),
+        "protected-files CONTROL: a substitution beside an unrelated segment",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm "$X".json'),
+        "protected-files CONTROL: a variable beside a partial basename",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm .claude/$(echo tmp)/x.log"),
+        "protected-files CONTROL: a protected segment whose pattern cannot reach a protected file",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm -rf "$S/w2clone"'),
+        "protected-files CONTROL: a recursive rm of an unrelated directory under a variable",
+    ),
     # A prefix command's option VALUE is not the command (cac47d16.1 sweep, shellscan._prefix_option): each refusal was allowed (rc 0) before, the value read as the command.
     case(
         "check 2 guards/block_protected_files.py",
@@ -1183,6 +1234,21 @@ STATIC: list[Case] = [
             "python3 - <<'EOF'\nimport pathlib\np = pathlib.Path('agent/reviews/0930-1/a.md')\np.write_text('x')\nEOF"
         ),
         "review-file-shell-write: a heredoc writing a review file through Path",
+    ),
+    # Review c093f0f3.1: more auto-numbered fields than positionals (`*row`) rendered by raising StopIteration inside the guard. An unknown field renders as a placeholder.
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport os\nrow = ['a', 'b', 'c']\nos.system('{} {} {} > agent/reviews/a.md'.format(*row))\nEOF"
+        ),
+        "review-file-shell-write: more auto fields than positionals before a review redirect",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport os\nrow = ['a', 'b', 'c']\nos.system('echo {} {} {} > /tmp/x'.format(*row))\nprint('agent/reviews/a.md')\nEOF"
+        ),
+        "review-file-shell-write CONTROL: more auto fields than positionals, written elsewhere",
     ),
     case(
         "check 2 guards/block_ssh_file_write.py",
