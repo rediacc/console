@@ -37,7 +37,6 @@ import os
 import re
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import block_bash_write_to_running_script as BW
 from rediacc_hooks.guards import block_worktree_add as WT
 
 CHAIN = "pre-bash"
@@ -165,11 +164,11 @@ def _is_log(path):
 
 
 def _copy_writes_log(run_, cwd):
-    """Does this `cp` put a file at a round-log path? Where the copy lands is `copy_landings`' reading (block_bash_write_to_running_script), over the words as bash expands them, the xargs feed included (review 0bbd6471.3: `echo <log> | xargs cp /tmp/bak.md` copies onto the log).
+    """Does this `cp` put a file at a round-log path? Where the copy lands is `shellscan.copy_landings`' reading, over the words as bash expands them, the xargs feed included (review 0bbd6471.3: `echo <log> | xargs cp /tmp/bak.md` copies onto the log).
 
     A copy INTO a directory lands under the source's own name, so `cp <log> /backup/` writes `/backup/<log name>`: a backup, which this guard has always read as a read. Such a landing counts only where a round log lives (a directory named `agent`) or where one already exists, which is the restore-over-the-log shape (`cp /tmp/<log name> agent/`).
     """
-    for path, into in BW.copy_landings(run_, cwd, ("cp",), run_.xargv):
+    for path, into in shellscan.copy_landings(run_, cwd, ("cp",), run_.xargv):
         if not _is_log(path):
             continue
         if not into or os.path.exists(path) or os.path.basename(os.path.dirname(path)) == "agent":

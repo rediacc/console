@@ -1632,3 +1632,121 @@ def test_copy_destination_reads_no_copy_where_there_is_none():
     assert shellscan.copy_destination("install", ["-d", "a", "b"]) is None
     assert shellscan.copy_destination("cp", ["a"]) is None
     assert shellscan.copy_destination("cat", ["a", "b"]) is None
+
+
+# --------------------------------------------------------------------------- where an xargs-fed copy lands ---------------------------------------------------------------------------
+
+# WHERE A FED WORD LANDS IS THE TOOL'S ANSWER TOO (#5077391c). xargs APPENDS what it reads to the command's own arguments, so under `-t` a fed word is a SOURCE and without it the last fed word is the destination. `shellscan.run_copies` once read every fed word as a destination, `-t` or not, and answered "into a directory" for a fed file. Each row runs the real pipeline in the world `test_copy_destination_matches_the_tool` builds, and
+# `shellscan.copy_landings` must name exactly the files that appeared. The EXACT rows have a literal producer (an `echo`, a here-string) and an xargs that appends once, so the port places every word; the FAIL-SAFE rows (a `-n1` split, a producer whose output is not computed) must name every file that appeared, and may name more.
+FED_EXACT = [
+    "echo a | xargs cp -t d",
+    "echo b | xargs cp -t d a",
+    "echo e | xargs cp a",
+    "echo b d | xargs cp a",
+    "echo d | xargs cp a b",
+    "echo a b | xargs -r cp -t d",
+    "echo e | xargs mv a",
+    "echo b | xargs mv -t d a",
+    "echo b | xargs install -t d a",
+    "echo e | xargs install -m 644 a",
+    "xargs cp a <<< e",
+    "xargs cp -t d <<< 'a b'",
+]
+FED_FAIL_SAFE = [
+    "echo e f | xargs -n1 cp a",
+    "printf '%s\\n' e | xargs cp a",
+    "ls | grep -x b | xargs cp -t d",
+]
+
+
+def _fed_world(tmp_path):
+    world = tmp_path / "w"
+    (world / "d").mkdir(parents=True)
+    (world / "src").mkdir()
+    for rel in ("a", "b", "src/f"):
+        (world / rel).write_text(rel, encoding="utf-8")
+    return world
+
+
+def _fed_landed(bash, world, cmd):
+    """The files the real pipeline wrote, as paths relative to `world`: new ones, and old ones whose bytes changed."""
+    before = {p: p.read_bytes() for p in world.rglob("*") if p.is_file()}
+    done = subprocess.run(
+        [bash, "--norc", "--noprofile", "-c", cmd],
+        cwd=world,
+        capture_output=True,
+        text=True,
+        check=False,
+        env={"PATH": "/usr/bin:/bin", "LC_ALL": "C", "HOME": str(world)},
+        timeout=30,
+    )
+    assert done.returncode == 0, "%s: %s" % (cmd, done.stderr)
+    return {
+        p.relative_to(world)
+        for p in world.rglob("*")
+        if p.is_file() and (p not in before or p.read_bytes() != before[p])
+    }
+
+
+def _fed_claimed(world, cmd):
+    copier = [r for r in shellscan.every_run(cmd) if r.name in shellscan.COPIERS]
+    assert len(copier) == 1, "%s: expected one copier run, the walk found %d" % (cmd, len(copier))
+    return {
+        pathlib.Path(path).relative_to(world)
+        for path, _into in shellscan.copy_landings(copier[0], str(world))
+    }
+
+
+@pytest.mark.parametrize("cmd", FED_EXACT)
+def test_fed_copy_lands_where_the_tool_puts_it(bash, tmp_path, cmd):
+    world = _fed_world(tmp_path)
+    claimed = _fed_claimed(world, cmd)
+    landed = _fed_landed(bash, world, cmd)
+    assert landed == claimed, "%s wrote %s; shellscan says %s" % (
+        cmd,
+        sorted(landed),
+        sorted(claimed),
+    )
+
+
+@pytest.mark.parametrize("cmd", FED_FAIL_SAFE)
+def test_fed_copy_fails_safe_where_the_words_are_unknown(bash, tmp_path, cmd):
+    world = _fed_world(tmp_path)
+    claimed = _fed_claimed(world, cmd)
+    landed = _fed_landed(bash, world, cmd)
+    assert landed <= claimed, "%s wrote %s; shellscan names only %s" % (
+        cmd,
+        sorted(landed),
+        sorted(claimed),
+    )
+
+
+def _old_run_copies(run, argv=None):
+    """The placement before #5077391c, kept only as the plant below: every fed word a destination, `-t` or not, and "into a directory" for the fed-only shape."""
+    name = run.name.rsplit("/", 1)[-1]
+    if name not in shellscan.COPIERS:
+        return None
+    argv = list(run.argv if argv is None else argv)
+    found = shellscan.copy_destination(name, argv)
+    fed = run.feed.split() if run.feed and "xargs" in run.via else []
+    if found is None:
+        return ([a for a in argv if not a.startswith("-")], fed, True) if fed else None
+    sources, dest, into = found
+    if fed:
+        return [*sources, dest], [dest, *fed], into
+    return sources, [dest], into
+
+
+def test_the_fed_copy_rows_can_fail(bash, tmp_path, monkeypatch):
+    """The plant: the old feed placement put back, and the exact rows that read the feed through `-t` or a fed destination go red."""
+    monkeypatch.setattr(shellscan, "run_copies", _old_run_copies)
+    red = []
+    for k, cmd in enumerate(
+        ("echo b | xargs cp -t d a", "echo e | xargs cp a", "echo a | xargs cp -t d")
+    ):
+        world = _fed_world(tmp_path / str(k))
+        if _fed_claimed(world, cmd) != _fed_landed(bash, world, cmd):
+            red.append(cmd)
+    assert len(red) == 3, "the old placement still matched the tool on: %s" % sorted(
+        {"echo b | xargs cp -t d a", "echo e | xargs cp a", "echo a | xargs cp -t d"} - set(red)
+    )

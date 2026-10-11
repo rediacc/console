@@ -83,6 +83,23 @@ EDGE_CASES = [
     ),
     ("sed -i adding the key", "sed -i 's/^description:/%s: true\\ndescription:/' %s" % (_K, _C)),
     ("sed -i appending the key", "sed -i '1a %s: true' %s" % (_K, _C)),
+    # #5077391c: xargs appends its feed, so under `-t` a fed word is a SOURCE (the commands directory once read as the source here, and a flagged command copied into a skill passed).
+    (
+        "xargs feeds a flagged command to cp -t a skill",
+        "echo .claude/commands/handoff.md | xargs cp -t .claude/skills/demo",
+    ),
+    (
+        "xargs feeds a flagged command to cp -t elsewhere",
+        "echo .claude/commands/handoff.md | xargs cp -t /tmp",
+    ),
+    (
+        "xargs feeds the exception list to cp -t elsewhere",
+        "echo .ci/config/model-invocation-exceptions.json | xargs cp -t /tmp",
+    ),
+    (
+        "xargs feeds cp the exception list as its destination",
+        "echo /tmp/x.json .ci/config/model-invocation-exceptions.json | xargs cp",
+    ),
     (
         "python writing the key",
         "python3 - <<'EOF'\nimport pathlib\npathlib.Path('%s').write_text('---\\n%s: true\\n---\\n')\nEOF"

@@ -68,6 +68,17 @@ EDGE_CASES = [
     ("cp onto the directory", "cp /tmp/x.md agent/reviews/0930-1/"),
     ("mv onto a review file", "mv /tmp/x.md %s" % R),
     ("cp -t names the directory", "cp -t agent/reviews/0930-1 /tmp/x.md"),
+    # #5077391c: xargs appends its feed, so under `-t` a fed word is a source and without it the last one is the destination.
+    ("xargs feeds a review file to cp -t elsewhere", "echo %s | xargs cp -t /tmp" % R),
+    (
+        "xargs feeds cp -t the review directory a source",
+        "echo /tmp/x.md | xargs cp -t agent/reviews/0930-1",
+    ),
+    ("xargs feeds cp a review file as its destination", "echo %s | xargs cp /tmp/x.md" % R),
+    (
+        "xargs feeds a review file then a destination elsewhere",
+        "echo %s /tmp/out.md | xargs cp" % R,
+    ),
     ("a copy OUT through cp -t", "cp -t /tmp %s" % R),
     ("truncate", "truncate -s 0 %s" % R),
     ("python -c open for write", "python3 -c \"open('%s','w').write('x')\"" % R),
