@@ -38,7 +38,7 @@ The 10-07 scheduled run 37604651929 deleted tag v1.3.1 while `cli/v1.3.1/.releas
   - The dry-run counter tells the truth.
   - It extracts `tag_retention_plan()` as a pure function.
   - Control: the pre-fix rule replayed on today's state (19 semver tags plus `production`) goes red.
-    (ticked) 2026-10-08T11:57:21Z by d778be9d: commit:44d27a849 the R2 sentinel guard and semver-only slots; commit:12f71bd14 Phases 1 and 2 count through retention_contract.tag_retention_plan (sentinel and in_walk held), 186 housekeeping tests
+    (ticked) 2026-10-08T11:57:21Z by d778be9d: commit:6a9ccad10 the R2 sentinel guard and semver-only slots; commit:3514ed5dd Phases 1 and 2 count through retention_contract.tag_retention_plan (sentinel and in_walk held), 186 housekeeping tests
 - [x] W2 retention contract (opus): `.ci/rediacc_ci/release/retention_contract.py` and its test.
   - `tracker_retention_plan()` is extracted from upload_to_r2.py.
   - A property test over generated states asserts two things:
@@ -46,13 +46,13 @@ The 10-07 scheduled run 37604651929 deleted tag v1.3.1 while `cli/v1.3.1/.releas
     - every `in_walk` version keeps its tag, Release, sentinel and snapshot.
   - The oracle is `release_state.assert_bijection` (.ci/rediacc_ci/quality/release_state.py:238).
   - Controls: a planted non-semver tag, and an in_walk version outside the top 20, each go red under the pre-W1 rule.
-    (ticked) 2026-10-08T11:57:23Z by d778be9d: commit:12f71bd14 .ci/rediacc_ci/release/retention_contract.py with KEEP_RELEASES, tracker_retention_plan and tag_retention_plan; a property test over 400 histories through release_state.assert_bijection, with the 10-07 replay red
+    (ticked) 2026-10-08T11:57:23Z by d778be9d: commit:3514ed5dd .ci/rediacc_ci/release/retention_contract.py with KEEP_RELEASES, tracker_retention_plan and tag_retention_plan; a property test over 400 histories through release_state.assert_bijection, with the 10-07 replay red
 - [x] W3 cd_preflight (opus): `.ci/rediacc_ci/release/cd_preflight.py` and its test. It is read-only and runs four checks:
   - (a) the bijection against live R2 and `git ls-remote --tags`;
   - (b) the bijection after the next housekeeping run, from the PR head's keep rules applied to live state;
   - (c) floor and pointer consistency;
   - (d) the PR's predicted next_version is neither tagged nor released.
-    (ticked) 2026-10-08T11:57:24Z by d778be9d: commit:631638ba5 .ci/rediacc_ci/release/cd_preflight.py checks a-d plus homebrew and promotion, fail-closed readers; 48 tests with the 10-07 replay red and the 10-08 CD state green
+    (ticked) 2026-10-08T11:57:24Z by d778be9d: commit:d2a424fda .ci/rediacc_ci/release/cd_preflight.py checks a-d plus homebrew and promotion, fail-closed readers; 48 tests with the 10-07 replay red and the 10-08 CD state green
 
   It also runs `update_homebrew_tap --dry-run` against the PR's checksums, and projects Validate Promotion's object count times copy rate against its 20-minute cap.
 
@@ -64,9 +64,9 @@ The 10-07 scheduled run 37604651929 deleted tag v1.3.1 while `cli/v1.3.1/.releas
   - Pins in ci_workflow_invariants.py: the cd preset requests `workflows`, every cd-v2 `git push` uses the app token, and tag-and-release has no `contents: write`.
   - Docs: release-process.md, and the main-only list in pr-merge.md.
   - Controls: a push-only preflight `if:` reds the reachability check, and dropping `permission-workflows` reds the pin.
-    (ticked) 2026-10-08T12:14:58Z by d778be9d: commit:4fac14b2f ci.yml cd-preflight job (soft tier of CI Complete), cd-v2 init --phase cd after Create version tag, housekeeping --checks a,c before cleanup_versions; ci_workflow_invariants pins all three; check:ci-workflow-invariants rc=0
+    (ticked) 2026-10-08T12:14:58Z by d778be9d: commit:8f5ed0ca2 ci.yml cd-preflight job (soft tier of CI Complete), cd-v2 init --phase cd after Create version tag, housekeeping --checks a,c before cleanup_versions; ci_workflow_invariants pins all three; check:ci-workflow-invariants rc=0
 - [x] W5 release order (found 2026-10-08, CD run 37749637824): "Tag & Release" wrote the R2 sentinel cli/v2.2.0/.released and deployed edge, then "Validate Install (post-publish) / Linux (x64)" went red on the Rocky 9 DNF stall and the git tag job "Tag & GitHub Release" was skipped, so a sentinel existed with no tag: the bijection drift that reddened main on 10-07, created by CD itself. Make the tag and the sentinel one unit (tag before or with the sentinel, never gated behind post-publish validation), or have a validation red roll the sentinel back; add a test over the cd-v2.yml job graph that refuses a sentinel writer whose tag job can be skipped.
-    (ticked) 2026-10-08T11:57:26Z by d778be9d: commit:41231edb6 the version tag is the cd-v2 init job's last step, before anything that can fail after the seal; ci_workflow_invariants refuses the old cd-v2.yml (rc 1)
+    (ticked) 2026-10-08T11:57:26Z by d778be9d: commit:b7930d482 the version tag is the cd-v2 init job's last step, before anything that can fail after the seal; ci_workflow_invariants refuses the old cd-v2.yml (rc 1)
 - [ ] A live run on a PR: cd-preflight green on the head, and red on a replay of the 10-07 state.
 
 ## What stays post-merge, and how it fails loudly

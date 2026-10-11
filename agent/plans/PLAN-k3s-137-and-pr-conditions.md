@@ -11,7 +11,7 @@ Worklist: #9b4e7449
 
 ## Why
 
-`.ci/policy/.embed-assets-upgrade-blocklist` (lines 15-28 at 1861b2726, before 9a6c21063 lifted the hold) held k3s at 1.36.4+k3s1 with "REVISIT WHEN PR #589 MERGES". PR #589 merged 2026-09-22T08:22:16Z.
+`.ci/policy/.embed-assets-upgrade-blocklist` (lines 15-28 at 1861b2726, before 7f9c30578 lifted the hold) held k3s at 1.36.4+k3s1 with "REVISIT WHEN PR #589 MERGES". PR #589 merged 2026-09-22T08:22:16Z.
 
 The list parser (`.ci/rediacc_ci/core/allowlist.py` `parse_text` ~300-321) uses only the `# BLOCKER:` line as the reason, so the condition never reaches a checker. The liveness probes ask only whether the entry still exists (`scripts/gates/check-suppression-liveness.ts:339-348`).
 
@@ -93,13 +93,13 @@ Both get their own worklist item.
 ## Boxes
 
 - [x] A: k3s 1.37.1 in the Dockerfile, embed.go, the lockfile and the credits; hold deleted; embed gates, renet tests and check:ci-renet green
-    (ticked) 2026-10-08T10:15:17Z by d778be9d: commit:9a6c21063 k3s 1.37.1+k3s1 in the Dockerfile, private/renet/pkg/embed/embed.go:61, lockfile and credits; hold deleted; embed freshness, arch-parity and credits gates rc0
+    (ticked) 2026-10-08T10:15:17Z by d778be9d: commit:7f9c30578 k3s 1.37.1+k3s1 in the Dockerfile, private/renet/pkg/embed/embed.go:61, lockfile and credits; hold deleted; embed freshness, arch-parity and credits gates rc0
 - [x] B: `allowlist.py conditions`, the `pr-conditions` probe and the merged-PR file; corpus red/green, mutant and loose-wording controls
-    (ticked) 2026-10-08T10:15:20Z by d778be9d: commit:f8461c539 parse_conditions at .ci/rediacc_ci/core/allowlist.py:445, the pr-conditions probe and .ci/config/merged-prs.json
+    (ticked) 2026-10-08T10:15:20Z by d778be9d: commit:fec6008c2 parse_conditions at .ci/rediacc_ci/core/allowlist.py:445, the pr-conditions probe and .ci/config/merged-prs.json
 - [x] B: `check-pr-condition-ledger.ts` online gate with its fixture cases; wired by the lead
-    (ticked) 2026-10-08T10:15:25Z by d778be9d: commit:f8461c539 scripts/gates/check-pr-condition-ledger.ts wired; selftest 25 controls; its pytest assertion fixed in commit:a161facd5
+    (ticked) 2026-10-08T10:15:25Z by d778be9d: commit:fec6008c2 scripts/gates/check-pr-condition-ledger.ts wired; selftest 25 controls; its pytest assertion fixed in commit:1364da26c
 - [x] Sweep: worklist items for the two go-deps tag holds
-    (ticked) 2026-10-08T10:15:29Z by d778be9d: commit:abf9b53f0 kubelet hold lifted (renet 1dbe423); the grpc and go-landlock holds stay valid
+    (ticked) 2026-10-08T10:15:29Z by d778be9d: commit:d93a1be4c kubelet hold lifted (renet 1dbe423); the grpc and go-landlock holds stay valid
 - [ ] CI: E2E K8s, K8s Ceph and K8s Multinode SUCCEEDED on the branch head (not skipped); in-place upgrade of a 1.36 data dir checked by hand or recorded as a gap
 
 ## Risks

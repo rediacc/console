@@ -885,8 +885,8 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       | `release/reprobe-r2-sentinel.sh` | none found | none | .github/workflows/backfill-release-sentinel.yml:182 |
       | `release/tag-submodules.sh` | git push | push credential for the target repo | .github/workflows/cd-v2.yml:673 |
       | `release/update-homebrew-tap.sh` | curl, git push | none unless the URL is private; push credential for the target repo | .github/workflows/cd-v2.yml:680 |
-    (ticked) 2026-10-09T01:31:28Z by d778be9d: commit:58aaa1604 commit:67a505d64 -- 48 of 48 paths carry a K=5 EQUIVALENT ledger (16 w7p5a- only, 19 w7p6- only, 13 both; 842 rows, 0 non-EQUIVALENT), so the ledger leg of the acceptance is met for every path and no third state exists; twins deleted; the one-real-run-each clause is NOT met for 19 M-live paths and assert-artifact-version, owned by PLAN-w7p5a-real-run-dispatch boxes at :75-76
-     (tick withdrawn 2026-10-09, review 07060999.1: the ledger leg is met for all 48 paths, but the box title requires one real run each, unmet for 19 M-live paths and assert-artifact-version; it closes with PLAN-w7p5a-real-run-dispatch:75-76)
+    (ticked) 2026-10-09T01:31:28Z by d778be9d: commit:50ebe57f1 commit:0c05c1622 -- 48 of 48 paths carry a K=5 EQUIVALENT ledger (16 w7p5a- only, 19 w7p6- only, 13 both; 842 rows, 0 non-EQUIVALENT), so the ledger leg of the acceptance is met for every path and no third state exists; twins deleted; the one-real-run-each clause is NOT met for 19 M-live paths and assert-artifact-version, owned by PLAN-w7p5a-real-run-dispatch boxes at :75-76
+     (tick withdrawn 2026-10-09, review 673fe9cf2.1: the ledger leg is met for all 48 paths, but the box title requires one real run each, unmet for 19 M-live paths and assert-artifact-version; it closes with PLAN-w7p5a-real-run-dispatch:75-76)
 - [x] **W7P5-b S, the true long pole** The 13 real bash libs, **6,840 lines**. `common.sh` has
     (ticked) 2026-09-24T14:30:00Z by d778be9d: evidence from its investigation row of 2026-09-24 (verdict present): .ci/rediacc_ci/core/account_lifecycle.py:811, check:ci-dead-python; account.sh's last 11 functions are ported in core/account_lifecycle.py and proved by the w7p5b-account-lifecycle stub-farm ledger (8 trees, K=5 assert rc=0); with that all 14 bash libs are ported (9) or deleted (5).
       **251 sourcers** -- the highest fan-in file in the programme. Order by fan-in ascending:
@@ -4195,7 +4195,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       gate, so it stays terminal and blocked by the port chain (W7P4-Q, W7P5-a/b/c). A new tracked `.sh` also
       counts against it: a session added one this week and the gate refused it, so new bash cases belong in an
       existing file.
-    (ticked) 2026-10-08T22:36:45Z by d778be9d: commit:a6d794f1a -- language-policy-baseline.json deleted; check:ci-language-policy STRICT rc=0
+    (ticked) 2026-10-08T22:36:45Z by d778be9d: commit:05e9225bb -- language-policy-baseline.json deleted; check:ci-language-policy STRICT rc=0
 
 ---
 
