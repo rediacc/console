@@ -18,7 +18,7 @@ On 2026-10-08 the operator banned inline suppressions and chose "Fix code + cent
 
 Part 1 adds the shrink-only gate and the edit guard. This plan drains the baseline to zero, then switches the gate to "no baseline allowed".
 
-### Measured 2026-10-08 on 25390b7d3 (renet 1dbe423)
+### Measured 2026-10-08 on 43f0e6358 (renet 1dbe423)
 
 - **Python `# noqa`:** 1983 by `git grep`, in 471 files.
   - Tokenized, 1961 are COMMENT tokens. The other 16 sit inside string literals: planted source in tests, for example `.ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py:304,344,345,792`, plus docstrings.
