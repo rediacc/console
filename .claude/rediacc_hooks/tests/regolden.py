@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """Freeze or refresh a hook golden from the current port (PLAN-retire-bash-oracles A1/A2/A3).
 
-    regolden.py <stem|guards|shellscan|post-bash|all> --reason "<why>"
+    regolden.py <stem|guards|shellscan|post-bash|all> --reason "<why>" [--out-dir <dir>]
+
+`--out-dir` writes each golden into that directory instead of over the committed one (still diffing against the committed one), so a recording can be compared without touching the tree.
+
+THE SUMMARY COUNTS EVERY REWRITTEN LINE (queued item #c2a39bea). `N changed` is the records whose value moved under a key both sides hold; `L line(s) rewritten` is the diff a reviewer sees, moved, added and dropped keys included. A run that rewrote lines while no record changed value used to print "0 changed" and look like a no-op.
 
 REFUSES WITHOUT A REASON, unconditionally: `--reason` is a required argument, not a flag that only bites when something changed. The reason is stamped as `intentional: <reason>` on every record whose value differs from what the existing golden already said; a first-time recording changes nothing relative to a golden that did not exist, so it writes no markers at all, and re-running this with no port change reproduces the byte-identical file (the diff review IS the proof that nothing moved).
 
@@ -66,7 +70,12 @@ from rediacc_hooks.tests import test_post_bash_differential as pd  # noqa: E402
 from rediacc_hooks.tests import test_shellscan_differential as sd  # noqa: E402
 
 
-def _record_guard(stem, reason):
+def _write_path(path, out_dir):
+    """Where a recording lands: the committed golden, or the same file name under `--out-dir`."""
+    return path if out_dir is None else out_dir / path.name
+
+
+def _record_guard(stem, reason, out_dir=None):
     cases = [c for c in gd.CASES if c[0] == stem]
     if not cases:
         raise SystemExit("no cases found for guard %s" % stem)
@@ -81,16 +90,29 @@ def _record_guard(stem, reason):
             return fields["rc"], fields["out"], fields["err"]
 
         answers = {}
-        for i, (_stem, label, payload, _env, extra, stubs) in enumerate(cases):
-            rc, out, err = one(i)
+        carried = []
+        for i, (_stem, label, payload, env_label, extra, stubs) in enumerate(cases):
             key = gd.golden_case_key(label, payload, extra, stubs)
+            # A CASE THE DIFFERENTIAL NEVER COMPARES (`gd.GOLDEN_UNSTABLE_ENVS`: its answer quotes a live PID minted per run) keeps the row it already has. Re-recording it rewrote the PID on every regolden, a "change" in a record nothing reads, which the line count below now reports instead of hiding.
+            if (stem, env_label) in gd.GOLDEN_UNSTABLE_ENVS and (
+                key in old_records or key in old_silent
+            ):
+                carried.append(key)
+                continue
+            rc, out, err = one(i)
             answers[key] = (rc, goldenio.normalize(out, work), goldenio.normalize(err, work))
     silent, records, changed = goldenio.diff_and_mark(answers, old_silent, old_records, reason)
+    for key in carried:
+        if key in old_silent:
+            silent.add(key)
+        else:
+            records[key] = old_records[key]
     header = {
         "bash_version": goldenio.bash_version_line(),
         "case_count": len(cases),
         "source": "port",
     }
+    path = _write_path(path, out_dir)
     goldenio.write_golden(path, header, silent, records)
     return path, len(cases), changed
 
@@ -112,7 +134,7 @@ def _merge_shellscan_record(key, fields, old_records, reason, records, changed):
     records[key] = row
 
 
-def _record_shellscan(reason):
+def _record_shellscan(reason, out_dir=None):
     _old_header, _old_silent, old_records = goldenio.read_golden(goldenio.golden_path("shellscan"))
     records: dict[str, dict] = {}
     changed: list[str] = []
@@ -129,12 +151,12 @@ def _record_shellscan(reason):
         "case_count": len(sd.CASES) + len(sd.JSON_CASES),
         "source": "port",
     }
-    path = goldenio.golden_path("shellscan")
+    path = _write_path(goldenio.golden_path("shellscan"), out_dir)
     goldenio.write_golden(path, header, set(), records)
     return path, len(sd.CASES) + len(sd.JSON_CASES), changed
 
 
-def _record_post_bash(reason):
+def _record_post_bash(reason, out_dir=None):
     path = goldenio.golden_path("post-bash")
     _old_header, _old_silent, old_records = goldenio.read_golden(path)
     records: dict[str, dict] = {}
@@ -161,6 +183,7 @@ def _record_post_bash(reason):
         "case_count": len(pd.CASES),
         "source": "port",
     }
+    path = _write_path(path, out_dir)
     goldenio.write_golden(path, header, set(), records)
     return path, len(pd.CASES), changed
 
@@ -195,23 +218,35 @@ def main(argv=None):
     parser.add_argument(
         "--reason", required=True, help="why this recording ran; stamped on every changed record"
     )
+    parser.add_argument(
+        "--out-dir",
+        type=pathlib.Path,
+        help="write the goldens here instead of over the committed ones (diffed against the committed ones)",
+    )
     args = parser.parse_args(argv)
+    out_dir = args.out_dir.resolve() if args.out_dir else None
+    if out_dir is not None:
+        out_dir.mkdir(parents=True, exist_ok=True)
 
     for kind, name in _targets(args.target):
         started = time.monotonic()
+        committed = goldenio.golden_path(name if kind == "guard" else kind)
+        before = committed.read_text(encoding="utf-8") if committed.is_file() else ""
         if kind == "guard":
-            path, n, changed = _record_guard(name, args.reason)
+            path, n, changed = _record_guard(name, args.reason, out_dir)
             label = name
         elif kind == "shellscan":
-            path, n, changed = _record_shellscan(args.reason)
+            path, n, changed = _record_shellscan(args.reason, out_dir)
             label = "shellscan"
         else:
-            path, n, changed = _record_post_bash(args.reason)
+            path, n, changed = _record_post_bash(args.reason, out_dir)
             label = "post-bash"
+        lines = goldenio.rewritten_lines(before, path.read_text(encoding="utf-8"))
         elapsed = time.monotonic() - started
+        shown = path.relative_to(gd.ROOT) if path.is_relative_to(gd.ROOT) else path
         print(
-            "%s: %d case(s) -> %s (%d changed, %.1fs)"
-            % (label, n, path.relative_to(gd.ROOT), len(changed), elapsed)
+            "%s: %d case(s) -> %s (%d changed, %d line(s) rewritten, %.1fs)"
+            % (label, n, shown, len(changed), lines, elapsed)
         )
     return 0
 
