@@ -15,7 +15,7 @@ TWO CLOCKS, AND NEITHER OF THEM IS `git log` ALONE.
 
   * TERMINAL, `terminal_days` (40). Measured from `moved_at`, the date the move
     was made, carried in the plan-boxes ledger row. It is CROSS-CHECKED against
-    `git log -1 --format=%cI` of the new path, and a disagreement beyond one day
+    the AUTHOR date (`%aI`) of the first commit at the new path, and a disagreement beyond one day
     is finding F6 rather than a silent preference for one of the two. Without
     that check `moved_at` is a number the mover types, and a typed number is not
     a clock.
@@ -524,7 +524,7 @@ def finding_f6(plans: list[Plan], *, slack_days: int = 1) -> list[Finding]:
             Finding(
                 "F6",
                 plan.rel,
-                "%s records moved_at %s but its first commit at this path is %s, %d day(s) "
+                "%s records moved_at %s but its first commit at this path was authored %s, %d day(s) "
                 "apart. The retention clock reads moved_at, so a drift this size is a clock "
                 "nobody set by moving the file."
                 % (plan.rel, plan.moved_at, plan.move_commit, drift),
@@ -731,14 +731,18 @@ def enumerate_plans(root: pathlib.Path) -> tuple[list[str], str]:
 
 
 def git_dates(root: pathlib.Path, rel: str) -> tuple[str, str]:
-    """(last commit touching `rel`, first commit at `rel`) as ISO dates.
+    """(last commit touching `rel` by COMMITTER date, first commit at `rel` by AUTHOR date) as ISO dates.
 
-    The SECOND one is what F6 cross-checks `moved_at` against, and it is the LAST line of `git log --format=%cI -- <path>` rather than a second invocation: git prints newest first, so the oldest entry is the move that created the path.
+    The SECOND one is what F6 cross-checks `moved_at` against, and it is the LAST line of one `git log -- <path>` rather than a second invocation: git prints newest first, so the oldest entry is the move that created the path.
+
+    TWO DATES, ONE PER QUESTION. The first half feeds the backlog clock, "when did this plan last see activity", which is the committer date `plan_housekeeping` chose on measurement. F6 asks a different question: does `moved_at`, typed when the move was AUTHORED, agree with the move commit. A rebase rewrites every committer date and keeps every author date, so a committer date there turned each `_done/` plan into an F6 finding on the first rebase (2026-10-11: moved_at 2026-10-08, author date 2026-10-08, committer date the rebase's 2026-10-11).
     """
-    out = gitx.git(["log", "--format=%cI", "--", rel], root=root).stdout.strip().splitlines()
+    out = gitx.git(["log", "--format=%cI %aI", "--", rel], root=root).stdout.strip().splitlines()
     if not out:
         return "", ""
-    return out[0].strip(), out[-1].strip()
+    last_committed = out[0].split()[0]
+    first_authored = out[-1].split()[-1]
+    return last_committed, first_authored
 
 
 def blob_resolves(root: pathlib.Path, blobs: set[str]) -> set[str]:
