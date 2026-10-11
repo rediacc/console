@@ -63,6 +63,7 @@ NAMES. The bash `hook_` prefix existed because bash has one namespace. Here the 
 
 import ast
 import glob
+import itertools
 import json
 import os
 import posixpath
@@ -3046,55 +3047,117 @@ def _appends_once(options):
 _FED_EXPANSION_CAP = 64
 
 
-def _brace_alternatives(word, depth=0):
-    """Bash's brace expansion of one word, for the fail-safe reading: `a{b,c}d` -> abd, acd; `{1..3}` -> 1, 2, 3; a brace bash leaves alone (`x{y`, `{z}`) is the word itself."""
-    if depth > 8 or "{" not in word:
-        return [word]
-    start = word.find("{")
-    level = 0
-    commas = []
-    end = -1
-    for k in range(start, len(word)):
-        ch = word[k]
-        if ch == "{":
-            level += 1
-        elif ch == "}":
-            level -= 1
-            if level == 0:
-                end = k
-                break
-        elif ch == "," and level == 1:
-            commas.append(k)
-    if end < 0:
-        return [word]
-    head, body, tail = word[:start], word[start + 1 : end], word[end + 1 :]
-    if commas:
-        cuts = [start, *commas, end]
-        parts = [word[cuts[i] + 1 : cuts[i + 1]] for i in range(len(cuts) - 1)]
-    else:
-        m = re.fullmatch(r"(-?\d+)\.\.(-?\d+)|([A-Za-z])\.\.([A-Za-z])", body)
-        if m and m.group(1) is not None:
-            lo, hi = int(m.group(1)), int(m.group(2))
-            step = 1 if hi >= lo else -1
-            parts = [str(n) for n in range(lo, hi + step, step)][:_FED_EXPANSION_CAP]
-        elif m:
-            lo, hi = ord(m.group(3)), ord(m.group(4))
-            step = 1 if hi >= lo else -1
-            parts = [chr(n) for n in range(lo, hi + step, step)]
-        else:
-            rest = _brace_alternatives(tail, depth + 1)
-            return [word[: end + 1] + r for r in rest][:_FED_EXPANSION_CAP]
-    out: list[str] = []
-    for part in parts:
-        out.extend(_brace_alternatives(head + part + tail, depth + 1))
-        if len(out) >= _FED_EXPANSION_CAP:
-            break
-    return out[:_FED_EXPANSION_CAP]
+# BRACE EXPANSION, AS BASH DOES IT (reviews 8ae5b370.1, .2, .4), measured on bash 5.3 with `printf '[%s]' <word>`:
+#   an unmatched `{` is literal and a later brace still expands (`x{y{a,b}` -> x{ya x{yb), and so is a matched one with neither a comma nor a range (`{b}{x,y}` -> {b}x {b}y);
+#   a range is `{m..n}` or `{m..n..step}` over integers or single letters; the step's sign is ignored and 0 counts as 1 (`{1..3..-1}`, `{1..2..0}` -> 1 2 3, 1 2), a letter range walks code points across case (`{a..C}` runs through `` ` `` and `[`), and an integer range pads to the wider operand when either is written with a leading zero (`{-01..2}` -> -01 000 001 002);
+#   `{1...3}`, `{ab..c}` and `{1..a}` are literal.
+# GENERATED LAZILY AND CAPPED: every alternative is produced on demand and `_brace_alternatives` takes the first `_FED_EXPANSION_CAP` of the whole product, so `{1..9999999999}` or several ranges in one word cost at most that many words, never the full list.
+_RANGE = re.compile(r"(-?\d+)\.\.(-?\d+)(?:\.\.(-?\d+))?|([A-Za-z])\.\.([A-Za-z])(?:\.\.(-?\d+))?")
+_MAX_BRACE_DEPTH = 16
 
 
-def _fed_candidates(words):
-    """Every word an unknown producer's text may stand for, for the fail-safe reading: each word itself, its brace alternatives, its tilde forms (a leading `~`, or one after `=` or `:`, as `os.path.expanduser` reads them for the user this hook runs as, who is the user bash runs as), and what an absolute glob matches on disk (review 126f2a9f.1). Adding words only widens what the fail-safe reading claims."""
+def _brace_range(body):
+    """A lazy iterator over a range body's words, or None when `body` is not a range bash expands."""
+    m = _RANGE.fullmatch(body)
+    if m is None:
+        return None
+    if m.group(1) is not None:
+        lo_text, hi_text, step_text = m.group(1), m.group(2), m.group(3)
+        lo, hi = int(lo_text), int(hi_text)
+        step = abs(int(step_text)) if step_text else 1
+        step = step or 1
+        padded = any(re.match(r"-?0\d", t) for t in (lo_text, hi_text))
+        width = max(len(lo_text), len(hi_text)) if padded else 0
+        numbers = range(lo, hi + 1, step) if hi >= lo else range(lo, hi - 1, -step)
+        return ("%0*d" % (width, n) for n in numbers)
+    lo, hi = ord(m.group(4)), ord(m.group(5))
+    step = abs(int(m.group(6))) if m.group(6) else 1
+    step = step or 1
+    codes = range(lo, hi + 1, step) if hi >= lo else range(lo, hi - 1, -step)
+    # A letter range that passes the backslash (code point 92) makes a word of one backslash, which quote removal then empties (`{a..C}`, measured).
+    return ("" if n == 92 else chr(n) for n in codes)
+
+
+def _first_brace(word, start=0):
+    """`(open, close, alternatives)` for the first brace bash expands in `word` at or after `start`, else None. A `{` with no matching `}`, and a matched one holding neither a top-level comma nor a range, are literal; the scan moves past them."""
+    i = word.find("{", start)
+    while i >= 0:
+        level = 0
+        commas = []
+        close = -1
+        for k in range(i, len(word)):
+            ch = word[k]
+            if ch == "{":
+                level += 1
+            elif ch == "}":
+                level -= 1
+                if level == 0:
+                    close = k
+                    break
+            elif ch == "," and level == 1:
+                commas.append(k)
+        if close >= 0:
+            if commas:
+                cuts = [i, *commas, close]
+                return i, close, (word[cuts[n] + 1 : cuts[n + 1]] for n in range(len(cuts) - 1))
+            words = _brace_range(word[i + 1 : close])
+            if words is not None:
+                return i, close, words
+        i = word.find("{", i + 1)
+    return None
+
+
+def _brace_words(word, start=0, depth=0):
+    """Every word bash's brace expansion makes of `word`, lazily, left to right."""
+    found = _first_brace(word, start) if depth < _MAX_BRACE_DEPTH else None
+    if found is None:
+        yield word
+        return
+    i, close, alternatives = found
+    head, tail = word[:i], word[close + 1 :]
+    for part in alternatives:
+        # The head holds no brace bash expands (the scan passed it), so the rescan starts where the part does: a nested brace in the part, and every later one in the tail, are still read.
+        yield from _brace_words(head + part + tail, i, depth + 1)
+
+
+def _brace_alternatives(word):
+    """The first `_FED_EXPANSION_CAP` words bash's brace expansion makes of `word` (the word itself when it has none), empty words dropped as bash drops them (`{a,}x` -> ax x, `{,}` -> nothing)."""
+    if "{" not in word:
+        return [word]
+    return [w for w in itertools.islice(_brace_words(word), _FED_EXPANSION_CAP) if w != ""]
+
+
+# Bash's glob characters; a fed word holding one is a pattern bash matches against the directory the producer runs in.
+_GLOB_CHARS = frozenset("*?[")
+
+
+def _glob_shape(pattern):
+    """One name in the pattern's shape, for when the directory it is matched in is unknown: `*` and `?` become `x`, a bracket class its first listed character (`x` for a negated one)."""
+    out = re.sub(
+        r"\[(!|\^)?([^]]?[^]]*)\]",
+        lambda m: "x" if m.group(1) or not m.group(2) else m.group(2)[0],
+        pattern,
+    )
+    return out.replace("*", "x").replace("?", "x")
+
+
+def _glob_forms(form, directory):
+    """What bash's pathname expansion makes of `form`: its matches on disk, read from `directory` for a relative pattern (review 8ae5b370.3). With the directory unknown (None), the pattern is kept and one name in its shape is added, so a guard reading names still sees a name of that shape."""
+    if not any(ch in form for ch in _GLOB_CHARS):
+        return []
+    if form.startswith("/"):
+        return sorted(glob.glob(form))[:_FED_EXPANSION_CAP]
+    if directory is None:
+        return [_glob_shape(form)]
+    return sorted(glob.glob(form, root_dir=directory))[:_FED_EXPANSION_CAP]
+
+
+def _fed_candidates(words, directory=None):
+    """Every word an unknown producer's text may stand for, for the fail-safe reading: each word itself, its brace alternatives, its tilde forms (a leading `~`, or one after `=` or `:`, as `os.path.expanduser` reads them for the user this hook runs as, who is the user bash runs as), and what a glob matches (`_glob_forms`; `directory` is where the producer runs, absolute, or None when unknown). Adding words only widens what the fail-safe reading claims."""
     out: list[str] = []
+    # A producer that changes directory itself (`(cd x; ls) | xargs ...`) matches its globs somewhere this walk did not follow.
+    if "cd" in words or "pushd" in words:
+        directory = None
     for word in words:
         for alt in _brace_alternatives(word):
             forms = [alt]
@@ -3105,13 +3168,27 @@ def _fed_candidates(words):
             if alt.startswith("~"):
                 forms.append(os.path.expanduser(alt))
             for form in list(forms):
-                if form.startswith("/") and any(ch in form for ch in "*?["):
-                    forms.extend(sorted(glob.glob(form))[:_FED_EXPANSION_CAP])
+                forms.extend(_glob_forms(form, directory))
             out.extend(f for f in forms if f not in out)
     return out
 
 
-def run_copies(run, argv=None):
+def _run_directory(run, cwd):
+    """The absolute directory `run` executes in, from the hook's `cwd` and the `cd`s that persist to it, or None when `cwd` is not given or the `cd` target cannot be read (`cd "$D"`, `cd ~`, `cd -`)."""
+    if cwd is None:
+        return None
+    if run.cwd is None:
+        return os.path.normpath(cwd)
+    if (
+        run.cwd.startswith(("~", "-"))
+        or any(ch in run.cwd for ch in "$`")
+        or _UNRESOLVED in run.cwd
+    ):
+        return None
+    return os.path.normpath(os.path.join(cwd, run.cwd))
+
+
+def run_copies(run, argv=None, cwd=None):
     """`(sources, [destination, ...], into)` for a walked copier run, or None: `copy_destination` over its argv, with what the run's launcher or feed adds. `argv` replaces the run's own words (a caller passes `_Run.xargv` to read `$F` as bash expands it). `into` is True only when the command names its destination a directory (`-t`), never for a fed word.
 
     A `{}` destination is what a `find -exec` walks (`Launch.starts`). xargs APPENDS what it reads to the command's own arguments (measured with cp, mv and install, #5077391c), so where a fed word lands is the tool's own parse of `argv + fed`: under `-t` every fed word is a SOURCE, and without it the last one is the destination and the argv's own last operand a source. That is read exactly when the words are known (`_Run.feed_words`, a literal producer) and xargs appends them in one invocation (`_appends_once`).
@@ -3130,7 +3207,8 @@ def run_copies(run, argv=None):
         sources, dest, into = found
         return sources, [dest], into
     found = copy_destination(name, argv)
-    fed = _fed_candidates(run.feed.split()) if fed_by_xargs else []
+    # `cwd`, when a caller knows it, is where the hook's command starts: a relative glob in the feed is matched in the directory this run executes in.
+    fed = _fed_candidates(run.feed.split(), _run_directory(run, cwd)) if fed_by_xargs else []
     # FAIL-SAFE: with the words unknown, any fed word may be a source as well as the destination (`echo {b,d} | xargs cp a` runs `cp a b d`, which copies `b` into `d`).
     if found is None:
         return ([a for a in argv if not a.startswith("-")] + fed, fed, False) if fed else None
@@ -3161,7 +3239,7 @@ def copy_landings(run, cwd, names=COPIERS, argv=None):
         return []
     if argv is None and run.xargv is not None:
         argv = run.xargv
-    copies = run_copies(run, argv)
+    copies = run_copies(run, argv, cwd)
     if copies is None:
         return []
     sources, dests, into = copies
