@@ -10,7 +10,7 @@ allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status
 - Working tree: !`git status --short | grep -v '.claude/settings.local.json' || echo '(clean aside from settings.local.json)'`
 - Submodule pointers: !`git submodule status private/renet private/account private/elite private/homebrew-tap 2>/dev/null || echo '(unavailable)'`
 - Base: !`echo "origin/${ARGUMENTS:-main}" | tr -d ' '`
-- Branch vs base (left=base-only, right=branch-only): !`b="origin/${ARGUMENTS:-main}"; b="$(echo "$b" | tr -d " ")"; git rev-list --left-right --count "$b"...HEAD 2>/dev/null || echo '(unavailable -- does that base exist? `git fetch origin` first)'`
+- Branch vs base (left=base-only, right=branch-only): !`b="origin/${ARGUMENTS:-main}"; b="$(echo "$b" | tr -d " ")"; git rev-list --left-right --count "$b"...HEAD 2>/dev/null || echo '(unavailable -- does that base exist? run git fetch origin first)'`
 - Matching branches in submodules: !`cb="$(git branch --show-current)"; for d in private/renet private/account private/elite private/homebrew-tap; do [ -e "$d/.git" ] || continue; if git -C "$d" show-ref --verify --quiet "refs/heads/$cb" || git -C "$d" ls-remote --exit-code --heads origin "$cb" >/dev/null 2>&1; then echo "  $d: HAS $cb"; else echo "  $d: none"; fi; done; true`
 
 ## Task: rebase the current branch onto `origin/$ARGUMENTS` (default `main`)
