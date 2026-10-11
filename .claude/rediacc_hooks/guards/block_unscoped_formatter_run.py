@@ -95,6 +95,11 @@ EDGE_CASES = [
     ("npm x eats a flag before --", "npm x prettier --write"),
     ("npm exec eats a flag before -- too", "npm exec prettier --write"),
     ("a workspace run's dot is that package", "npx -w packages/cli eslint --fix ."),
+    # Review 0bbd6471.2: a versioned package spec, under every npm spelling.
+    ("npm exec runs a versioned spec", "npm exec -- prettier@3 --write"),
+    ("npm exe runs a versioned spec", "npm exe -- prettier@3 --write"),
+    ("npm x runs a versioned spec", "npm x -- prettier@3 --write"),
+    ("npm x runs a scoped versioned spec", "npm x -- @biomejs/biome@2 check --write"),
     ("an unquoted variable npx hands on", "npx prettier --write $files"),
     (
         "a quoted substitution npx hands on is one word",
@@ -640,6 +645,7 @@ def _xargs_fed(tool, cmd):
 
 def _verdict(ev, cmd, run, assigns, loop_vars, launcher=""):
     """`launcher` is the canonical line of the npx/npm run that started `run`, if one did: shellscan re-quotes a launched argv word (`_quote_argv`), so the launched run's own canonical shows `$files` as quoted, and the quoted/unquoted test below reads the launcher's line, where the word stands as it was typed."""
+    # EVERY npm launcher, not npx alone: shellscan names `npx`, `npm exec`, `npm exe` and `npm x` launches alike (`Launch("npx", ...)` in `_npm_launch`), so a versioned spec (`prettier@3`) is unwrapped for each spelling (review 0bbd6471.2, pinned in EDGE_CASES).
     by_npx = run.launch is not None and run.launch.launcher == "npx"
     found = _tool_argv(run.name, run.argv, assigns, by_npx)
     if found is None:

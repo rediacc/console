@@ -33,9 +33,11 @@ failing loudly, because it made the line look tested when the controls were pass
 as an array subscript to shellcheck (SC1087, an error not a warning), and here the bracket opens a character class in the regex rather than an index. Python has no such ambiguity, which is why the braces are gone and the reason is not.
 """
 
+import os
 import re
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.guards import block_bash_write_to_running_script as BW
 from rediacc_hooks.guards import block_worktree_add as WT
 
 CHAIN = "pre-bash"
@@ -101,6 +103,19 @@ EDGE_CASES = [
     ),
     ("a verb operand set by an earlier statement", "F=agent/pr-babysit-0831-1.md; mv $F /tmp/"),
     ("cp -t a backup directory is a read", "cp -t /backup agent/pr-babysit-0831-1.md"),
+    # Review 0bbd6471.3: xargs appends the log as cp's destination.
+    (
+        "xargs feeds the log to cp as its destination",
+        "echo agent/pr-babysit-0831-1.md | xargs cp /tmp/bak.md",
+    ),
+    ("xargs feeds the log to sed -i", "echo agent/pr-babysit-0831-1.md | xargs sed -i s/a/b/"),
+    ("xargs feeds the log to tee", "echo agent/pr-babysit-0831-1.md | xargs tee"),
+    ("a cp destination set by an earlier statement", "F=agent/pr-babysit-0831-1.md; cp /tmp/x $F"),
+    ("a copy back into agent/ lands on the log", "cp /tmp/pr-babysit-0831-1.md agent/"),
+    (
+        "xargs feeds the log to cp -t a backup directory",
+        "echo agent/pr-babysit-0831-1.md | xargs cp -t /backup",
+    ),
     ("a here-string python write", "python3 <<< \"open('agent/pr-babysit-0831-1.md', 'w')\""),
     # Appends cannot truncate, so they pass.
     ("append redirection", "echo x >> agent/pr-babysit-0831-1.md"),
@@ -149,30 +164,17 @@ def _is_log(path):
     return re.fullmatch(RL, base) is not None and re.fullmatch(BRIEFING, base) is None
 
 
-def _copy_destination(args):
-    """`cp`'s destination: the `-t` directory when given, else the last operand. A directory destination is judged as the directory, with or without `-t`, which is how the arm always read `cp <log> /backup/`: copying INTO a directory never names the log as the file written."""
-    target = None
-    words = []
-    i = 0
-    while i < len(args):
-        word = args[i]
-        i += 1
-        if word == "--":
-            words.extend(args[i:])
-            break
-        if word.startswith("--target-directory="):
-            target = word.split("=", 1)[1]
-        elif word in ("-t", "--target-directory", "-S", "--suffix"):
-            if word in ("-t", "--target-directory") and i < len(args):
-                target = args[i]
-            i += 1
-        elif word.startswith("-t") and len(word) > 2:
-            target = word[2:]
-        elif not (word.startswith("-") and len(word) > 1):
-            words.append(word)
-    if target is not None:
-        return [target]
-    return words[-1:] if len(words) >= 2 else []
+def _copy_writes_log(run_, cwd):
+    """Does this `cp` put a file at a round-log path? Where the copy lands is `copy_landings`' reading (block_bash_write_to_running_script), over the words as bash expands them, the xargs feed included (review 0bbd6471.3: `echo <log> | xargs cp /tmp/bak.md` copies onto the log).
+
+    A copy INTO a directory lands under the source's own name, so `cp <log> /backup/` writes `/backup/<log name>`: a backup, which this guard has always read as a read. Such a landing counts only where a round log lives (a directory named `agent`) or where one already exists, which is the restore-over-the-log shape (`cp /tmp/<log name> agent/`).
+    """
+    for path, into in BW.copy_landings(run_, cwd, ("cp",), run_.xargv):
+        if not _is_log(path):
+            continue
+        if not into or os.path.exists(path) or os.path.basename(os.path.dirname(path)) == "agent":
+            return True
+    return False
 
 
 def _appends(args):
@@ -182,8 +184,8 @@ def _appends(args):
     )
 
 
-def _verb_truncates(run_):
-    """Does this run's verb replace a round log wholesale? `mv` and `truncate` on any operand, `cp` onto its destination, `dd of=`, `sed -i`, and `tee` without an append flag. xargs appends its input as operands, so the fed words count as operands."""
+def _verb_truncates(run_, cwd):
+    """Does this run's verb replace a round log wholesale? `mv` and `truncate` on any operand, `cp` onto where `_copy_writes_log` lands it, `dd of=`, `sed -i`, and `tee` without an append flag. xargs appends its input as operands, so the fed words count as operands in every arm."""
     base = run_.name.rsplit("/", 1)[-1]
     # The words as bash hands them over (`_Run.xargv`): `F=<log>; mv $F /tmp/` names the log through a variable an earlier statement set.
     args = list(run_.argv if run_.xargv is None else run_.xargv)
@@ -193,7 +195,7 @@ def _verb_truncates(run_):
     if base in ("mv", "truncate"):
         hits = operands
     elif base == "cp":
-        hits = _copy_destination(args)
+        return _copy_writes_log(run_, cwd)
     elif base == "dd":
         hits = [a[3:] for a in args if a.startswith("of=")]
     elif base == "sed":
@@ -248,7 +250,8 @@ def run(ev):
         for op, target in shellscan._analyse(cmd).writes
     )
     # The verbs it runs, behind any prefix, xargs, sh -c or find -exec.
-    truncating = truncating or any(_verb_truncates(r) for r in shellscan.every_run(cmd))
+    cwd = ev.field("cwd") or str(hookio.repo_root())
+    truncating = truncating or any(_verb_truncates(r, cwd) for r in shellscan.every_run(cmd))
     # An in-process write from python, node, perl or ruby. NOT anchorable the way the shell verbs are: the 2026-08-19 incident was a heredoc where the path sat on a DIFFERENT LINE from the write call. NAMED RESIDUAL: a program that writes an UNNAMED target while the command merely mentions a round-log path elsewhere is still refused; that is the one over-block left standing, and it is deliberate, because it is the exact shape that destroyed the appendix.
     truncating = truncating or any(
         _program_truncates(code) for _family, code in WT.interpreter_programs(cmd)
