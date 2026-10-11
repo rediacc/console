@@ -356,6 +356,14 @@ EDGE_CASES = [
     ),
     ("copying a script into its directory by -t", "cp -t %s /tmp/x/bash-side-suite.sh" % WORLD),
     ("copying a script into its existing directory", "cp /tmp/x/bash-side-suite.sh %s" % WORLD),
+    # Review 88362611.1: the destination as bash expands it.
+    ("a copy onto a variable set to the running script", "F=%s; cp /tmp/x.sh $F" % LIVE_SCRIPT),
+    # Review 126f2a9f.1: bash expands `~` and braces in an echo word before xargs reads it.
+    (
+        "a fed tilde word is read as unknown, not as a literal path",
+        "echo ~/x.sh | xargs cp /tmp/y.sh",
+    ),
+    ("a fed brace word is read as unknown", "echo {/tmp/z,%s} | xargs cp /tmp/y.sh" % LIVE_SCRIPT),
     # Review 0bbd6471.4: xargs appends its feed, so a fed running script is the operand or the destination.
     ("xargs feeds the running script to cp", "echo %s | xargs cp /tmp/x.sh" % LIVE_SCRIPT),
     ("xargs feeds the running script to sed -i", "echo %s | xargs sed -i s/a/b/" % LIVE_SCRIPT),

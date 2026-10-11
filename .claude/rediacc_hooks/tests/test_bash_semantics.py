@@ -1651,11 +1651,23 @@ FED_EXACT = [
     "echo e | xargs install -m 644 a",
     "xargs cp a <<< e",
     "xargs cp -t d <<< 'a b'",
+    # Review 126f2a9f.4: `c` holds the same bytes as `a`, so only its stat shows this overwrite.
+    "echo c | xargs cp a",
+    # Review 126f2a9f.1: a heredoc body is not brace-, tilde- or glob-expanded, quoted delimiter or not, so these names reach cp as written.
+    "xargs cp a <<'EOF'\n{e}\nEOF",
+    "xargs cp a <<EOF\n{e,f}\nEOF",
+    # Review 126f2a9f.3: a producer whose stdout goes to a file feeds xargs nothing.
+    "echo e > /dev/null | xargs -r cp a",
 ]
 FED_FAIL_SAFE = [
     "echo e f | xargs -n1 cp a",
     "printf '%s\\n' e | xargs cp a",
     "ls | grep -x b | xargs cp -t d",
+    # Review 126f2a9f.1: bash expands these before xargs reads them, so their words are unknown here and read fail-safe.
+    "echo {b,d} | xargs cp a",
+    "echo ~/e | xargs cp a",
+    "xargs cp a <<< ~/e",
+    "echo /T/[w]/[d] | xargs cp a",
 ]
 
 
@@ -1665,12 +1677,22 @@ def _fed_world(tmp_path):
     (world / "src").mkdir()
     for rel in ("a", "b", "src/f"):
         (world / rel).write_text(rel, encoding="utf-8")
+    (world / "c").write_text("a", encoding="utf-8")
+    # Every seed starts at mtime 1ns, so a copy that rewrites a file with the bytes it already held still moves its stat (review 126f2a9f.4).
+    for path in world.rglob("*"):
+        if path.is_file():
+            os.utime(path, ns=(1, 1))
     return world
 
 
+def _stamp(path):
+    st = path.stat()
+    return st.st_ino, st.st_mtime_ns, path.read_bytes()
+
+
 def _fed_landed(bash, world, cmd):
-    """The files the real pipeline wrote, as paths relative to `world`: new ones, and old ones whose bytes changed."""
-    before = {p: p.read_bytes() for p in world.rglob("*") if p.is_file()}
+    """The files the real pipeline wrote, as paths relative to `world`: new ones, and old ones whose inode, mtime or bytes changed."""
+    before = {p: _stamp(p) for p in world.rglob("*") if p.is_file()}
     done = subprocess.run(
         [bash, "--norc", "--noprofile", "-c", cmd],
         cwd=world,
@@ -1684,22 +1706,25 @@ def _fed_landed(bash, world, cmd):
     return {
         p.relative_to(world)
         for p in world.rglob("*")
-        if p.is_file() and (p not in before or p.read_bytes() != before[p])
+        if p.is_file() and (p not in before or _stamp(p) != before[p])
     }
 
 
 def _fed_claimed(world, cmd):
     copier = [r for r in shellscan.every_run(cmd) if r.name in shellscan.COPIERS]
     assert len(copier) == 1, "%s: expected one copier run, the walk found %d" % (cmd, len(copier))
+    # A claim outside the world (an unexpanded glob, a home directory elsewhere) names no file the pipeline could write here.
     return {
         pathlib.Path(path).relative_to(world)
         for path, _into in shellscan.copy_landings(copier[0], str(world))
+        if pathlib.Path(path).is_relative_to(world)
     }
 
 
 @pytest.mark.parametrize("cmd", FED_EXACT)
-def test_fed_copy_lands_where_the_tool_puts_it(bash, tmp_path, cmd):
+def test_fed_copy_lands_where_the_tool_puts_it(bash, tmp_path, cmd, monkeypatch):
     world = _fed_world(tmp_path)
+    monkeypatch.setenv("HOME", str(world))
     claimed = _fed_claimed(world, cmd)
     landed = _fed_landed(bash, world, cmd)
     assert landed == claimed, "%s wrote %s; shellscan says %s" % (
@@ -1710,8 +1735,11 @@ def test_fed_copy_lands_where_the_tool_puts_it(bash, tmp_path, cmd):
 
 
 @pytest.mark.parametrize("cmd", FED_FAIL_SAFE)
-def test_fed_copy_fails_safe_where_the_words_are_unknown(bash, tmp_path, cmd):
+def test_fed_copy_fails_safe_where_the_words_are_unknown(bash, tmp_path, cmd, monkeypatch):
     world = _fed_world(tmp_path)
+    # bash runs with HOME=<world> (`_fed_landed`), and the fail-safe reading expands `~` for the user the hook runs as.
+    monkeypatch.setenv("HOME", str(world))
+    cmd = cmd.replace("/T/", "%s/" % tmp_path)
     claimed = _fed_claimed(world, cmd)
     landed = _fed_landed(bash, world, cmd)
     assert landed <= claimed, "%s wrote %s; shellscan names only %s" % (
@@ -1750,3 +1778,58 @@ def test_the_fed_copy_rows_can_fail(bash, tmp_path, monkeypatch):
     assert len(red) == 3, "the old placement still matched the tool on: %s" % sorted(
         {"echo b | xargs cp -t d a", "echo e | xargs cp a", "echo a | xargs cp -t d"} - set(red)
     )
+
+
+# WHEN THE FED WORDS COUNT AS EXACT (review 126f2a9f.1-.3). Exact only where bash expands nothing before xargs reads the text (the measurements above `_PLAIN_WORD` in shellscan), only from the stdin bash really connects (the command's own heredoc or here-string wins over the pipe, and one it cannot read leaves the feed unknown), and an `echo` whose stdout goes elsewhere feeds nothing.
+FEED_WORDS = [
+    ("echo b | xargs cp -t d", ["b"]),
+    ("echo 'a b' | xargs cp -t d", ["a", "b"]),
+    ("echo ~/x | xargs cp -t d", None),
+    ("echo a=~/x | xargs cp -t d", None),
+    ("echo {x,y} | xargs cp -t d", None),
+    ("echo g* | xargs cp -t d", None),
+    ("echo <(true) | xargs cp -t d", None),
+    ("echo $HOME | xargs cp -t d", None),
+    ("xargs cp -t d <<< ~/x", None),
+    ("xargs cp -t d <<< a:~/x", None),
+    ("xargs cp -t d <<'EOF'\n~/x {a,b} g*\nEOF", ["~/x", "{a,b}", "g*"]),
+    ("xargs cp -t d <<EOF\n$HOME\nEOF", None),
+    ("echo a | xargs cp -t d <<'EOF'\nb\nEOF", ["b"]),
+    ("echo a | xargs cp -t d < list.txt", None),
+    ("echo a | xargs cp -t d <<EOF", None),
+    ("echo a > f | xargs cp -t d", []),
+    ("echo a >&2 | xargs cp -t d", []),
+    ("echo a &> f | xargs cp -t d", []),
+    ("echo a 2>/dev/null | xargs cp -t d", ["a"]),
+    ("echo a >&1 | xargs cp -t d", ["a"]),
+]
+
+
+@pytest.mark.parametrize(("cmd", "want"), FEED_WORDS)
+def test_fed_words_are_exact_only_where_bash_expands_nothing(cmd, want):
+    copier = [r for r in shellscan.every_run(cmd) if r.name == "cp"]
+    assert len(copier) == 1, cmd
+    assert copier[0].feed_words == want, "%s: feed_words %r, want %r" % (
+        cmd,
+        copier[0].feed_words,
+        want,
+    )
+
+
+def _old_literal_word(raw):
+    """The literal test before review 126f2a9f.1, kept only as the plant below: `~` and braces counted as literal."""
+    return None if re.search(r"[$`*?\[\]'\"\\]", raw) else raw.strip("'\"").split()
+
+
+def test_the_expansion_rows_can_fail(bash, tmp_path, monkeypatch):
+    """The plant: the old literal test put back, and the brace and tilde rows under-claim (bash writes a file the walk does not name)."""
+    monkeypatch.setattr(shellscan, "_literal_word", _old_literal_word)
+    shellscan._ANALYSIS_CACHE.clear()
+    red = []
+    for k, cmd in enumerate(("echo {b,d} | xargs cp a", "echo ~/e | xargs cp a")):
+        world = _fed_world(tmp_path / str(k))
+        monkeypatch.setenv("HOME", str(world))
+        if not _fed_landed(bash, world, cmd) <= _fed_claimed(world, cmd):
+            red.append(cmd)
+    shellscan._ANALYSIS_CACHE.clear()
+    assert len(red) == 2, "the old literal test still covered: %s" % red

@@ -62,6 +62,7 @@ NAMES. The bash `hook_` prefix existed because bash has one namespace. Here the 
 """
 
 import ast
+import glob
 import json
 import os
 import posixpath
@@ -1220,34 +1221,69 @@ def _stage_feed(stage, lexer):
     return " ".join(o for o in out if o)
 
 
-# A word xargs reads exactly as written: no expansion bash would perform first, no glob, and no quote or backslash xargs would interpret itself.
-_NOT_LITERAL = re.compile(r"[$`*?\[\]'\"\\]")
+# WHEN THE WORDS ON xargs's STDIN ARE KNOWN EXACTLY (#5077391c, review 126f2a9f.1). Measured on bash 5.3 by piping each spelling into `xargs printf '[%s]'`:
+#   an unquoted `echo` word expands `~` at its start and after `=` (`a=~/r`), braces (`{x,y}`, `{1..2}`), globs (`*`, `?`, `[ab]`), `$`, backticks and `<(...)`;
+#   a here-string word expands `~` at its start and after `:` (`a:~/r`, but not `a=~/r`), `$`, backticks and `<(...)`, and neither braces nor globs;
+#   a heredoc body expands only `$`, backticks and backslashes, so `~/r.sh`, `{x,y}` and `g*` reach xargs as written.
+# Rather than port each rule, an unquoted word is exact only when it is made of characters none of them touches (`_PLAIN_WORD`: no `~`, brace, glob, `$`, backtick, parenthesis or `<`/`>`), and a single-quoted word, where bash expands nothing, is exact as its content. Either way a quote or a backslash left in the text is not exact, because xargs reads quotes and backslashes itself.
+_PLAIN_WORD = re.compile(r"[A-Za-z0-9_./,+@%=:-]+")
+_XARGS_QUOTING = re.compile(r"['\"\\]")
+_EXPANDS_IN_HEREDOC = re.compile(r"[$`\\'\"]")
+# The operators that point a producer's stdout somewhere other than the pipe. `>&` counts only when its target is not stdout itself.
+_STDOUT_AWAY = frozenset((">", ">>", ">|", "&>", "&>>", ">&", "<>"))
 
 
-def _literal_words(text):
-    return None if _NOT_LITERAL.search(text) else text.split()
+def _literal_word(raw):
+    """The words xargs reads from one shell word printed as written, or None when bash would expand it first."""
+    if len(raw) >= 2 and raw[0] == raw[-1] == "'":
+        inner = raw[1:-1]
+        return None if _XARGS_QUOTING.search(inner) else inner.split()
+    return raw.split() if _PLAIN_WORD.fullmatch(raw) else None
+
+
+def _stdout_away(redirs):
+    """Does one of these redirects send the command's stdout away from the pipe (`echo a > f | xargs ...` feeds xargs nothing)?"""
+    for redir in redirs:
+        if redir.op not in _STDOUT_AWAY or redir.fd not in (None, "1"):
+            continue
+        target = _word_value(redir.target) if redir.target is not None else ""
+        if redir.op == ">&" and target in ("1", ""):
+            continue
+        if redir.op == "<>" and redir.fd is None:
+            continue
+        return True
+    return False
 
 
 def _literal_feed(producers, redirs, lexer):
-    """The exact words on a command's stdin (`_Run.feed_words`), or None. Its own here-string or heredoc wins over the pipe, as bash's redirection does; else the stage right in front must be an `echo` of literal words."""
+    """The exact words on a command's stdin (`_Run.feed_words`), or None. Its own stdin redirect wins over the pipe, as bash's redirection does, and any input redirect this cannot read exactly (a heredoc whose body was not found, a here-string with no word, a file, a descriptor) makes the feed unknown. Else the stage right in front must be an `echo` of literal words; one whose stdout goes elsewhere feeds nothing."""
     for redir in reversed(redirs):
-        if redir.heredoc is not None and redir.heredoc.body_start is not None:
-            return _literal_words(lexer.src[redir.heredoc.body_start : redir.heredoc.body_end])
-        if redir.op == "<<<" and redir.target is not None:
-            return _literal_words(lexer.src[redir.target.start : redir.target.end].strip("'\""))
-        if redir.op in ("<", "<>"):
+        if redir.heredoc is not None:
+            hd = redir.heredoc
+            if hd.body_start is None:
+                return None
+            body = lexer.src[hd.body_start : hd.body_end]
+            return None if _EXPANDS_IN_HEREDOC.search(body) else body.split()
+        if redir.op == "<<<":
+            if redir.target is None:
+                return None
+            return _literal_word(lexer.src[redir.target.start : redir.target.end])
+        if redir.op in ("<", "<>", "<&") and redir.fd in (None, "0"):
             return None
     if not producers or producers[-1][0] != "cmd":
         return None
-    words, _ = _strip_prefixes([t for t in producers[-1][1] if isinstance(t, _Word)])
+    stage = producers[-1][1]
+    words, _ = _strip_prefixes([t for t in stage if isinstance(t, _Word)])
     if not words or _base(_word_value(words[0])) != "echo":
         return None
+    if _stdout_away([t for t in stage if isinstance(t, _Redir)]):
+        return []
     raw = [lexer.src[w.start : w.end] for w in words[1:]]
     while raw and re.fullmatch(r"-[neE]+", raw[0]):
         raw = raw[1:]
     out: list[str] = []
     for text in raw:
-        got = _literal_words(text)
+        got = _literal_word(text)
         if got is None:
             return None
         out.extend(got)
@@ -1331,12 +1367,14 @@ class _Heredoc:
 
 
 class _Redir:
-    __slots__ = ("heredoc", "op", "target")
+    # `fd` is the descriptor written in front of the operator (`2` of `2>`, `{x}` of `{x}>`), None when there is none.
+    __slots__ = ("fd", "heredoc", "op", "target")
 
-    def __init__(self, op, target, heredoc=None):
+    def __init__(self, op, target, heredoc=None, fd=None):
         self.op = op
         self.target = target
         self.heredoc = heredoc
+        self.fd = fd
 
 
 def _decode_ansi(body):
@@ -1472,7 +1510,7 @@ class _Lexer:
             heredoc = _Heredoc(_word_value(target), quoted, op == "<<-")
             self.pending.append(heredoc)
             self.heredocs.append(heredoc)
-        toks.append(_Redir(op, target, heredoc))
+        toks.append(_Redir(op, target, heredoc, m.group(1)))
         return j
 
     def _bodies(self, i, limit):
@@ -3004,6 +3042,75 @@ def _appends_once(options):
     return all(o in _XARGS_APPENDS_ONCE or re.fullmatch(r"-[rtx]+", o) is not None for o in options)
 
 
+# How many words one fed word may stand for before the expansion below stops; a pathological brace cannot exhaust the hook.
+_FED_EXPANSION_CAP = 64
+
+
+def _brace_alternatives(word, depth=0):
+    """Bash's brace expansion of one word, for the fail-safe reading: `a{b,c}d` -> abd, acd; `{1..3}` -> 1, 2, 3; a brace bash leaves alone (`x{y`, `{z}`) is the word itself."""
+    if depth > 8 or "{" not in word:
+        return [word]
+    start = word.find("{")
+    level = 0
+    commas = []
+    end = -1
+    for k in range(start, len(word)):
+        ch = word[k]
+        if ch == "{":
+            level += 1
+        elif ch == "}":
+            level -= 1
+            if level == 0:
+                end = k
+                break
+        elif ch == "," and level == 1:
+            commas.append(k)
+    if end < 0:
+        return [word]
+    head, body, tail = word[:start], word[start + 1 : end], word[end + 1 :]
+    if commas:
+        cuts = [start, *commas, end]
+        parts = [word[cuts[i] + 1 : cuts[i + 1]] for i in range(len(cuts) - 1)]
+    else:
+        m = re.fullmatch(r"(-?\d+)\.\.(-?\d+)|([A-Za-z])\.\.([A-Za-z])", body)
+        if m and m.group(1) is not None:
+            lo, hi = int(m.group(1)), int(m.group(2))
+            step = 1 if hi >= lo else -1
+            parts = [str(n) for n in range(lo, hi + step, step)][:_FED_EXPANSION_CAP]
+        elif m:
+            lo, hi = ord(m.group(3)), ord(m.group(4))
+            step = 1 if hi >= lo else -1
+            parts = [chr(n) for n in range(lo, hi + step, step)]
+        else:
+            rest = _brace_alternatives(tail, depth + 1)
+            return [word[: end + 1] + r for r in rest][:_FED_EXPANSION_CAP]
+    out: list[str] = []
+    for part in parts:
+        out.extend(_brace_alternatives(head + part + tail, depth + 1))
+        if len(out) >= _FED_EXPANSION_CAP:
+            break
+    return out[:_FED_EXPANSION_CAP]
+
+
+def _fed_candidates(words):
+    """Every word an unknown producer's text may stand for, for the fail-safe reading: each word itself, its brace alternatives, its tilde forms (a leading `~`, or one after `=` or `:`, as `os.path.expanduser` reads them for the user this hook runs as, who is the user bash runs as), and what an absolute glob matches on disk (review 126f2a9f.1). Adding words only widens what the fail-safe reading claims."""
+    out: list[str] = []
+    for word in words:
+        for alt in _brace_alternatives(word):
+            forms = [alt]
+            for sep in ("=", ":"):
+                head, mark, rest = alt.partition(sep)
+                if mark and rest.startswith("~"):
+                    forms.append(head + sep + os.path.expanduser(rest))
+            if alt.startswith("~"):
+                forms.append(os.path.expanduser(alt))
+            for form in list(forms):
+                if form.startswith("/") and any(ch in form for ch in "*?["):
+                    forms.extend(sorted(glob.glob(form))[:_FED_EXPANSION_CAP])
+            out.extend(f for f in forms if f not in out)
+    return out
+
+
 def run_copies(run, argv=None):
     """`(sources, [destination, ...], into)` for a walked copier run, or None: `copy_destination` over its argv, with what the run's launcher or feed adds. `argv` replaces the run's own words (a caller passes `_Run.xargv` to read `$F` as bash expands it). `into` is True only when the command names its destination a directory (`-t`), never for a fed word.
 
@@ -3023,9 +3130,10 @@ def run_copies(run, argv=None):
         sources, dest, into = found
         return sources, [dest], into
     found = copy_destination(name, argv)
-    fed = run.feed.split() if fed_by_xargs else []
+    fed = _fed_candidates(run.feed.split()) if fed_by_xargs else []
+    # FAIL-SAFE: with the words unknown, any fed word may be a source as well as the destination (`echo {b,d} | xargs cp a` runs `cp a b d`, which copies `b` into `d`).
     if found is None:
-        return ([a for a in argv if not a.startswith("-")], fed, False) if fed else None
+        return ([a for a in argv if not a.startswith("-")] + fed, fed, False) if fed else None
     sources, dest, into = found
     dests = [dest]
     if run.launch is not None and run.launch.launcher == "find" and "{}" in dest:
@@ -3037,16 +3145,22 @@ def run_copies(run, argv=None):
         if "{}" in dest:
             return sources, fed, into
         return [*sources, *fed], dests, into
-    return [*sources, dest], [d for d in dests if "{}" not in d] + fed, into
+    return [*sources, dest, *fed], [d for d in dests if "{}" not in d] + fed, into
 
 
 def copy_landings(run, cwd, names=COPIERS, argv=None):
     """`(path, into a directory)` for every file a run of one of `names` writes, absolute, or [] for any other run.
 
-    Placed by `run_copies` and then the way the tool places a file: a destination is a DIRECTORY when the command says so (`-t`), when it is written with a trailing slash, or when the filesystem says so, and then each source lands inside it under its own name; anything else is the file written. Relative paths are read from `cwd` joined with the run's own `cd`. block_bash_write_to_running_script, block_roundlog_truncate and block_binary_deploy judge copies by this.
+    Placed by `run_copies` and then the way the tool places a file: a destination is a DIRECTORY when the command says so (`-t`), when it is written with a trailing slash, or when the filesystem says so, and then each source lands inside it under its own name; anything else is the file written. Relative paths are read from `cwd` joined with the run's own `cd`.
+
+    THE WORDS ARE THE EXPANDED ONES BY DEFAULT (review 88362611.1): `argv` None reads `_Run.xargv`, so `F=<path>; cp /tmp/x $F` lands on `<path>`, as bash makes it. A word this walk cannot expand stays `_UNRESOLVED` and names no file.
+
+    This function calls nothing in the guards; three guards call it: block_bash_write_to_running_script (`cp`/`mv` onto a running script), block_roundlog_truncate (`cp` onto a round log) and block_binary_deploy (every copier onto the installed renet).
     """
     if _base(run.name) not in names:
         return []
+    if argv is None and run.xargv is not None:
+        argv = run.xargv
     copies = run_copies(run, argv)
     if copies is None:
         return []

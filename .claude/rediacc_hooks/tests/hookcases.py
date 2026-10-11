@@ -3694,6 +3694,17 @@ STATIC: list[Case] = [
         bash_json("sudo cp bin/rdc /usr/local/bin/rdc"),
         "binary-deploy CONTROL: another binary in the install directory",
     ),
+    # Review 126f2a9f.1 and 88362611.1: a fed word bash brace-expands is not a literal (allowed at 126f2a9fc), and a destination a variable holds is read expanded.
+    case(
+        "check 2 guards/block_binary_deploy.py",
+        bash_json("echo {/tmp/x,/usr/local/bin/renet} | sudo xargs cp bin/renet"),
+        "binary-deploy: a brace-expanded fed destination is the binary",
+    ),
+    case(
+        "check 2 guards/block_binary_deploy.py",
+        bash_json("D=/usr/local/bin/renet; sudo cp bin/renet $D"),
+        "binary-deploy: a destination set by an earlier statement",
+    ),
     case(
         "check 0 guards/block_roundlog_truncate.py",
         bash_json("echo 'echo x | tee --output-error=warn agent/pr-babysit-0831-1.md'"),
@@ -3726,6 +3737,17 @@ STATIC: list[Case] = [
         "check 0 guards/block_roundlog_truncate.py",
         bash_json("cp agent/pr-babysit-0831-1.md /backup/"),
         "roundlog-truncate CONTROL: a copy into a backup directory is a read",
+    ),
+    # Review 126f2a9f.1: a fed word bash brace-expands is not a literal (allowed at 126f2a9fc).
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("echo {/tmp/x,agent/pr-babysit-0831-1.md} | xargs cp /tmp/y.md"),
+        "roundlog-truncate: a brace-expanded fed destination is the log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("echo {/tmp/x,/tmp/z} | xargs cp /tmp/y.md"),
+        "roundlog-truncate CONTROL: a brace-expanded fed destination elsewhere",
     ),
     # --- warn-hook-change.sh: warning only, ALWAYS exit 0 ------------------------ The operator chose warn over block for hook edits (2026-08-25) because a hard block would have fired six times that day on legitimate work. These pin that it can never block: a warn hook that can block is a block hook nobody reviewed.
     case(

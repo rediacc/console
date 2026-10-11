@@ -110,6 +110,11 @@ EDGE_CASES = [
     ("xargs feeds the log to sed -i", "echo agent/pr-babysit-0831-1.md | xargs sed -i s/a/b/"),
     ("xargs feeds the log to tee", "echo agent/pr-babysit-0831-1.md | xargs tee"),
     ("a cp destination set by an earlier statement", "F=agent/pr-babysit-0831-1.md; cp /tmp/x $F"),
+    # Review 126f2a9f.1: bash brace-expands the fed word before xargs reads it.
+    (
+        "a brace-expanded fed destination",
+        "echo {/tmp/x,agent/pr-babysit-0831-1.md} | xargs cp /tmp/y.md",
+    ),
     ("a copy back into agent/ lands on the log", "cp /tmp/pr-babysit-0831-1.md agent/"),
     (
         "xargs feeds the log to cp -t a backup directory",
@@ -168,7 +173,7 @@ def _copy_writes_log(run_, cwd):
 
     A copy INTO a directory lands under the source's own name, so `cp <log> /backup/` writes `/backup/<log name>`: a backup, which this guard has always read as a read. Such a landing counts only where a round log lives (a directory named `agent`) or where one already exists, which is the restore-over-the-log shape (`cp /tmp/<log name> agent/`).
     """
-    for path, into in shellscan.copy_landings(run_, cwd, ("cp",), run_.xargv):
+    for path, into in shellscan.copy_landings(run_, cwd, ("cp",)):
         if not _is_log(path):
             continue
         if not into or os.path.exists(path) or os.path.basename(os.path.dirname(path)) == "agent":

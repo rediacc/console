@@ -75,6 +75,13 @@ EDGE_CASES = [
     ("xargs feeds the destination", "echo /usr/local/bin/renet | sudo xargs cp bin/renet"),
     ("xargs feeds scp a host destination", "echo host:/usr/local/bin/renet | xargs scp bin/renet"),
     ("install -d copies nothing", "sudo install -d /usr/local/bin/"),
+    # Review 88362611.1: the destination as bash expands it.
+    ("a destination set by an earlier statement", "D=/usr/local/bin/renet; sudo cp bin/renet $D"),
+    # Review 126f2a9f.1: bash brace-expands the fed word before xargs reads it.
+    (
+        "a brace-expanded fed destination",
+        "echo {/tmp/x,/usr/local/bin/renet} | sudo xargs cp bin/renet",
+    ),
     ("sudo cp of another binary", "sudo cp bin/rdc /usr/local/bin/rdc"),
     ("scp in a later clause of a chain", "echo hi && scp bin/renet host:/tmp/renet"),
     # Command position, not a blank (#ecb59527). Every launcher a real upload can hide behind still reaches the host-spec test, and a sentence that merely names scp does not.
@@ -153,7 +160,7 @@ def _sudo_copy_deploy(run_, cwd):
         return False
     return any(
         os.path.dirname(path) == INSTALL_DIR and INSTALLED_NAME.fullmatch(os.path.basename(path))
-        for path, _into in shellscan.copy_landings(run_, cwd, shellscan.COPIERS, run_.xargv)
+        for path, _into in shellscan.copy_landings(run_, cwd, shellscan.COPIERS)
     )
 
 
