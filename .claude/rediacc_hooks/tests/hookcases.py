@@ -905,7 +905,7 @@ STATIC: list[Case] = [
         bash_json('rm -rf "$S/w2clone"'),
         "protected-files CONTROL: a recursive rm of an unrelated directory under a variable",
     ),
-    # Review cd8ccb11.1-.2: a wildcarded operand is normalised segment by segment (`.` dropped, `//` collapsed, `..` popping a literal segment, a `..` popping a substitution reaching anything under the literal prefix). Each refusal but the literal row was allowed (rc 0) before, and the third control was refused.
+    # Review cd8ccb11.1-.2: a wildcarded operand is normalised segment by segment (`.` dropped, `//` collapsed, `..` popping a literal segment, a `..` popping a substitution reaching anything under the literal prefix). Measured on cd8ccb112, 7 rows were wrong: 6 refusals were allowed (rc 0), namely the `./`, `//` and literal-`..` rows before a substitution, the `./` row after one, `"$D"/.claude/..` and the unnormalised substitution text; and the `"$(mktemp -d)"/..` control was refused. The other 4 refusals and 3 controls were already right, and stay as pins.
     case(
         "check 2 guards/block_protected_files.py",
         bash_json("rm .claude/./$(echo settings.json)"),
@@ -975,6 +975,72 @@ STATIC: list[Case] = [
         "check 0 guards/block_protected_files.py",
         bash_json("rm .claude/./$(echo tmp)/x.log"),
         "protected-files CONTROL: a ./ protected-directory path that cannot reach a protected file",
+    ),
+    # Review f12404e0.1-.2: a glob (`*`, `?`, `[`) is a pattern matched segment by segment against the protected set, in a plain word and inside a substitution's text; and a word whose `..` pops a substitution is skipped only where rm itself refuses it. Rows run from `.claude/` carry that `cwd`.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm $(echo .claude/settings.json*)"),
+        "protected-files: a glob inside a substitution names the protected file",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/settings.js*"),
+        "protected-files: a glob names the protected file",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/*"),
+        "protected-files: a glob over the protected directory",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm "$(ls .claude/settings.j?on)"'),
+        "protected-files: a ? glob inside a quoted substitution",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm -rf .cl*"),
+        "protected-files: a recursive rm of a glob naming the protected directory",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm *.log"),
+        "protected-files CONTROL: a glob that cannot cross into a directory",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm .claude/*.log"),
+        "protected-files CONTROL: a glob in the protected directory that cannot name a protected file",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm -rf /tmp/zz-*"),
+        "protected-files CONTROL: a recursive glob elsewhere",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm -rf .claude/*/"),
+        "protected-files CONTROL: a trailing slash makes a glob expand to directories, never the protected file",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm -f */settings.json"),
+        "protected-files CONTROL: a glob never matches a leading dot, so */ cannot reach .claude/",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm -rf scr*/"),
+        "protected-files: a directory-only glob over the directory holding a protected file",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        _j({"tool_input": {"command": 'rm -rf "$(echo x)/.."'}, "cwd": str(ROOT / ".claude")}),
+        "protected-files CONTROL: from .claude/, rm refuses a last component of .. (GNU rm 9.7, measured)",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        _j({"tool_input": {"command": 'git rm -r "$(echo x)/.."'}, "cwd": str(ROOT / ".claude")}),
+        "protected-files: from .claude/, git rm -r normalises x/.. to the directory holding the protected file",
     ),
     # A prefix command's option VALUE is not the command (cac47d16.1 sweep, shellscan._prefix_option): each refusal was allowed (rc 0) before, the value read as the command.
     case(
@@ -1280,6 +1346,17 @@ STATIC: list[Case] = [
         "check 0 guards/block_suppressions_shell_write.py",
         bash_json("find . -name '*.py' -exec grep -n " + "no" + "qa {} +"),
         "suppressions-shell-write CONTROL: a launched grep reads, never writes",
+    ),
+    # #f3f36655: a script run BY PATH is read like a heredoc; the refusals need a scratch script on disk and live in test-block_suppressions.py. These pin the two allow paths: a TRACKED script whose own source carries markers (worklist.py: reading it would refuse every run), and a script that cannot be read, which fails open.
+    case(
+        "check 0 guards/block_suppressions_shell_write.py",
+        bash_json("python3 .claude/hooks/stop/worklist.py --list --open x"),
+        "suppressions-shell-write CONTROL: a tracked script whose source carries markers",
+    ),
+    case(
+        "check 0 guards/block_suppressions_shell_write.py",
+        bash_json("python3 /nonexistent/zz-never-written.py"),
+        "suppressions-shell-write CONTROL: a script that cannot be read fails open",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",

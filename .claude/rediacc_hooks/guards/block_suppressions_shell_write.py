@@ -6,13 +6,15 @@ THE SHAPES, read by `shellscan`'s lexer rather than a regex over the text, so `e
 
   1. A REDIRECT or `tee` into a code file (`cat > a.py <<EOF`, `echo ... >> a.sh`, `printf ... | tee a.ts`). The text written (the heredoc bodies and the writer's own arguments) is counted in the target's language and compared with the file on disk: an overwrite must not raise any (kind, code) count above the file's current one, and an append must not carry any marker at all.
   2. `sed -i` / `perl -i` on a code file. A substitution may not put more markers in its REPLACEMENT than its PATTERN removes, and an `a`/`i`/`c` text command may not carry one.
-  3. An INTERPRETER program (`python3 -c`, `python3 - <<EOF`, `node -e`, `perl -e`, `ruby -e`) that writes files and whose source holds a marker anywhere. Its STRINGS are what it writes, so the source is read RAW, strings included.
+  3. An INTERPRETER program (`python3 -c`, `python3 - <<EOF`, `node -e`, `perl -e`, `ruby -e`, or a script passed BY PATH) that writes files and whose source holds a marker anywhere. Its STRINGS are what it writes, so the source is read RAW, strings included.
+
+A SCRIPT BY PATH IS READ LIKE A HEREDOC (#f3f36655). `python3 scratch/edit.py` wrote a marker unrefused on 2026-10-11 while the same program through `python3 - <<EOF` was refused: the command text named no marker, so the pre-filter allowed it before the lexer started. The script's own text is now its program, with two limits. A script TRACKED in this checkout is not read: its markers are reviewed code the CI gate already judges, and reading them would refuse every run of `worklist.py` (50 markers, 94 write calls). And a script that cannot be read at hook time FAILS OPEN: one written earlier in the same command by a redirect or heredoc is judged by shape 1 as it is written, one that does not exist makes the interpreter fail, and refusing every chained `make && python3 out.py` would teach routing around the guard while `check:ci-inline-suppressions` reads the tree either way.
 
 SHAPE 3 OVER-REFUSES, and says so. A program that REMOVES markers names them too, and a static read cannot tell `s.replace(MARKER, "")` from `s.replace("", MARKER)`. The refusal names the Edit tool, which `block_suppressions.py` judges exactly (the whole file before and after). A removal script that must run in the shell spells the token with a character class (`noq[a]`), the convention both guards' sources use.
 
 EVERY HEREDOC IN THE COMMAND IS READ AS CONTENT for a redirect or `tee`, because the lexer records heredoc bodies without the command that consumes them. A command that writes a code file AND carries an unrelated heredoc naming a marker (a commit message, say) is refused; split it into two commands.
 
-WHAT IT DOES NOT SEE: `cp`/`mv` of a file that already carries markers, `git apply`/`patch`, and code assembled at run time. `check:ci-inline-suppressions` sees all of them, because it reads the tree rather than the command.
+WHAT IT DOES NOT SEE: `cp`/`mv` of a file that already carries markers, `git apply`/`patch`, a script it cannot read at hook time, and code assembled at run time. `check:ci-inline-suppressions` sees all of them, because it reads the tree rather than the command.
 
 THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`); it is judged by `test-block_suppressions.py` (the shared harness for both halves) and against its own DEFECT.
 
@@ -175,6 +177,46 @@ def _run_operands(run, argv):
     return ops
 
 
+# The interpreter options that put the program on the command line, so no operand is a script.
+_INLINE = ("-c", "-e", "-E", "-p", "--eval", "--print")
+# The largest script read; a bigger file is not a hand-written edit script.
+_SCRIPT_MAX = 1 << 20
+
+
+def _script_text(argv, run_cwd, cwd):
+    """The program text of a script an interpreter run executes BY PATH, or None: an inline program (`-c`, `-e`, stdin), a module (`-m`), a file it cannot read, or a file this checkout tracks (see the module docstring)."""
+    if any(a in _INLINE or (a[:2] in ("-c", "-e") and len(a) > 2) for a in argv) or "-m" in argv:
+        return None
+    ops = _operands(argv)
+    if not ops or ops[0] == "-":
+        return None
+    path = pathlib.Path(_abs(ops[0], run_cwd, cwd))
+    try:
+        if not path.is_file() or path.stat().st_size > _SCRIPT_MAX:
+            return None
+        tracked = hookio.git_out(
+            ["ls-files", "--error-unmatch", "--", path.name], cwd=str(path.parent), want_rc=True
+        )
+        if tracked is not None:
+            return None
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+
+
+def _scripts(cmd, cwd):
+    """The program text of every script an interpreter in `cmd` runs by path (`_script_text`); the lexer runs only when an interpreter is named at all."""
+    if not re.search(r"python|node|perl|ruby|deno|bun|tsx", cmd):
+        return []
+    out = []
+    for run in shellscan.every_run(cmd):
+        if run.name.rsplit("/", 1)[-1].startswith(INTERPRETERS):
+            text = _script_text(list(run.argv), run.cwd, cwd)
+            if text is not None:
+                out.append(text)
+    return out
+
+
 def _render(engine, grew):
     return ", ".join(engine.render_marker(kind, code) for kind, code, _b, _a in grew)
 
@@ -235,6 +277,9 @@ def _offending(engine, cmd, cwd):
             code = " ".join(argv)
             if not ops or ops[0] == "-":
                 code += "\n" + "\n".join(bodies)
+            script = _script_text(argv, run.cwd, cwd)
+            if script is not None:
+                code += "\n" + script
             if WRITE_CODE.search(code):
                 grew = engine.growth(engine.count_any_language(""), engine.count_any_language(code))
                 if grew:
@@ -247,7 +292,13 @@ def _offending(engine, cmd, cwd):
 
 def run(ev):
     cmd = ev.field("tool_input", "command")
-    if not cmd or not _PREFILTER.search(cmd):
+    if not cmd:
+        return hookio.ALLOW
+    # A script run by path names no marker in the command text (#f3f36655), so such a command is let through only when a script it runs names one; the scanner is loaded for nothing else.
+    if not _PREFILTER.search(cmd) and not any(
+        _PREFILTER.search(text)
+        for text in _scripts(cmd, ev.default(("cwd",), str(hookio.repo_root())))
+    ):
         return hookio.ALLOW
     try:
         root, engine = _engine()
