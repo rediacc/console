@@ -88,16 +88,20 @@ def package_test_files(workspace: str | None = None) -> list[pathlib.Path]:
 GENERATED = re.compile(r"(^|/)(dist|build|out|coverage|node_modules|\.cache)(/|$)")
 
 
-def referenced_repo_files(text: str) -> list[pathlib.Path]:
-    """Repo-relative paths named in a command that actually exist on disk."""
+def referenced_repo_files(text: str, repo: pathlib.Path | None = None) -> list[pathlib.Path]:
+    """Repo-relative paths named in a command that actually exist on disk, resolved, and INSIDE the repository.
+
+    A TOKEN IS JOINED ONTO THE REPO, AND A JOIN CAN LEAVE IT. `REPO / "/tmp/x.sh"` is `/tmp/x.sh` (pathlib drops the left side for an absolute right side), and `REPO / "../x.sh"` climbs out. Either one that happened to exist on disk was walked, and its label (`relative_to(REPO)`) raised `ValueError`, crashing the gate: hookcases.py names `/tmp/rediacc-guard-bashwrite/bash-side-suite.sh`, which the hook tests leave behind (2026-10-11). A file outside the repo is not a repo file a job reads, so it is not a candidate. `repo` is the root to read against (the repository by default; the controls pass their own).
+    """
+    root = (repo or REPO).resolve()
     out: list[pathlib.Path] = []
     for token in re.findall(r"[\w./-]+\.(?:sh|ts|tsx|js|mjs|cjs|py)", text):
         # NOT lstrip("./"): that strips a CHARACTER SET, so ".ci/scripts/x.sh" became "ci/scripts/x.sh", resolved to nothing, and the whole reachability walk stopped at the step text. The gate then passed a replay of the very bug it was written for.
         rel = token.removeprefix("./")
         if GENERATED.search(rel):
             continue
-        candidate = REPO / rel
-        if candidate.is_file():
+        candidate = (root / rel).resolve()
+        if candidate.is_relative_to(root) and candidate.is_file():
             out.append(candidate)
     return out
 
@@ -321,6 +325,21 @@ def run_controls(subs: list[str], scripts: dict[str, str]) -> list[str]:
     failures: list[str] = []
     if not subs:
         return [".gitmodules named no submodules, so the rule matches nothing and passes forever"]
+
+    # A path OUTSIDE the repository is never a repo file, however it is spelled (2026-10-11: an absolute `/tmp/...sh` token that existed on disk crashed the gate). Planted outside a fake repo root that holds one real script, so the in-repo direction is asserted too.
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp) / "repo"
+        (root / "scripts").mkdir(parents=True)
+        (root / "scripts" / "inside.sh").write_text("echo in\n")
+        outside = pathlib.Path(tmp) / "outside.sh"
+        outside.write_text("echo out\n")
+        named = f"bash {outside} && bash ../outside.sh && bash scripts/inside.sh"
+        got = referenced_repo_files(named, root)
+        if got != [(root / "scripts" / "inside.sh").resolve()]:
+            failures.append(
+                "an absolute or `..` path outside the repo was read as a repo file, or the one "
+                f"inside was missed: {[str(g) for g in got]}"
+            )
 
     sub = subs[0]
     with tempfile.TemporaryDirectory() as tmp:

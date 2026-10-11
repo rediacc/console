@@ -292,6 +292,19 @@ def _run(
     return _mask_result((code, out.encode("utf-8"), err.encode("utf-8"), calls))
 
 
+# THE CONTRACT FLOOR IS THE FIXTURE'S, NEVER THE REPOSITORY'S. Phase 8d prints the floor `rsv.pre_contract_floor` computes, and its ratchet candidate is `<root>/.ci/config/release-contract-floor.txt`. The twin's goldens were recorded while the repository's file read this value; every release advances that file (v1.3.1 -> v1.3.2 with 3ce2c1994 reddened 14 cases on 2026-10-11, as v1.2.21 -> v1.2.22 had on 2026-09-30), so a case that read the real file judged the release chain's progress rather than the port.
+# The port runs with `REDIACC_CI_ROOT` at its own fixture directory, which holds its own copy of the file at this value, so the floor comes through the port's real candidate search, from a root the test owns. A case that sets `RSV_FLOOR_FILE` or `RSV_GRANDFATHER_BEFORE` still overrides it, as the library documents.
+FIXTURE_CONTRACT_FLOOR = "v1.3.1"
+
+
+def _fixture_root(base: pathlib.Path) -> pathlib.Path:
+    """`base` as a repository root for the port: `.ci/config/release-contract-floor.txt` pinned to `FIXTURE_CONTRACT_FLOOR`."""
+    floor = base / ".ci" / "config" / "release-contract-floor.txt"
+    floor.parent.mkdir(parents=True, exist_ok=True)
+    floor.write_text(FIXTURE_CONTRACT_FLOOR + "\n", encoding="utf-8")
+    return base
+
+
 def _run_live(
     side: str,
     phase: str,
@@ -314,6 +327,7 @@ def _run_live(
         "FAKE_LOG": str(log),
         "FAKE_FIXTURE": str(_write_fixture(base, fixture)),
         "GH_TOKEN": GH_TOKEN,
+        "REDIACC_CI_ROOT": str(_fixture_root(base)),
     }
     for key, value in list(extra_env.items()):
         # An EMPTY value means UNSET, because half the twin's branches are
@@ -2465,7 +2479,7 @@ def test_phase_8d_latches_the_run_as_failed_on_drift_in_either_direction() -> No
 
 
 def test_phase_8d_grandfathers_a_version_below_the_pre_contract_floor() -> None:
-    """`.ci/config/release-contract-floor.txt` is the ratchet, and drift below it is not actionable. Both sides read the same file, through different code."""
+    """`.ci/config/release-contract-floor.txt` is the ratchet, and drift below it is not actionable. The port reads the fixture root's copy (`_fixture_root`), pinned at the value the twin's goldens were recorded with."""
     result = sides(
         "cleanup_r2",
         fixture=r2_fixture(
@@ -2476,11 +2490,8 @@ def test_phase_8d_grandfathers_a_version_below_the_pre_contract_floor() -> None:
         env=R2_ENV,
     )
     err = result[2].decode()
-    # Read, not pinned: every release advances this file (v1.2.21 -> v1.2.22 with v1.4.0 on 2026-09-30 reddened the pinned form).
-    floor = (
-        (ROOT / ".ci" / "config" / "release-contract-floor.txt").read_text(encoding="utf-8").strip()
-    )
-    assert floor.startswith("v"), "release-contract-floor.txt holds no version: %r" % floor
+    # PINNED IN THE FIXTURE, not read from the repository: every release advances the repository's file, and a test that followed it judged the release chain (see FIXTURE_CONTRACT_FLOOR).
+    floor = FIXTURE_CONTRACT_FLOOR
     assert "8d: pre-contract floor = %s (versions below this are grandfathered)" % floor in err
     assert "drift:" not in err
     assert "found 0 drift finding(s)" in err
