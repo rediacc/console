@@ -70,7 +70,7 @@ def _max_body_line_length(key_file: pathlib.Path) -> int:
 def main(argv: list[str]) -> int:
     if not argv or argv[0] == "":
         print(
-            "rediacc_ci.build.canonicalise_gpg_key: usage: python3 -m rediacc_ci.build.canonicalise_gpg_key <key-file> [passphrase]",
+            "rediacc_ci.build.canonicalise_gpg_key: usage: PYTHONPATH=.ci python3 -m rediacc_ci.build.canonicalise_gpg_key <key-file> [passphrase]",
             file=sys.stderr,
         )
         return 1

@@ -167,7 +167,10 @@ def run_probe(
 
 def main(argv: list[str]) -> int:
     if argv:
-        print("usage: python3 -m rediacc_ci.ops.probe_receipt_stability", file=sys.stderr)
+        print(
+            "usage: PYTHONPATH=.ci python3 -m rediacc_ci.ops.probe_receipt_stability",
+            file=sys.stderr,
+        )
         return 2
     return run_probe(paths.repo_root())
 

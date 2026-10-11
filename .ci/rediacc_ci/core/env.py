@@ -318,7 +318,7 @@ def _unescape_double(body: str) -> str:
 
 def main(argv: list[str]) -> int:
     if not argv:
-        print("usage: python3 -m rediacc_ci.core.env <verb> [args]", file=sys.stderr)
+        print("usage: PYTHONPATH=.ci python3 -m rediacc_ci.core.env <verb> [args]", file=sys.stderr)
         return 2
     verb, rest = argv[0], argv[1:]
 

@@ -53,7 +53,7 @@ from rediacc_ci.core import gh_retry
 BEGIN = "<!-- worklist-epics:begin -->"
 END = "<!-- worklist-epics:end -->"
 
-USAGE = """usage: python3 -m rediacc_ci.pr.sync_epic_block <pr-number> <branch> [--dry-run]
+USAGE = """usage: PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block <pr-number> <branch> [--dry-run]
 
 Rebuilds the worklist epic block in a PR description from
 agent/pr/<branch>.md. With --dry-run the new body goes to stdout and

@@ -43,7 +43,7 @@ INSTALL_SUBDIR = (".local", "share", "rediacc", "bin")
 # `dist/cli/rdc-<platform>-<arch><exe>`, which is where `rediacc_ci.build.build_cli_executables` writes and nowhere else.
 BUILD_SUBDIR = ("dist", "cli")
 
-USAGE = """usage: python3 -m rediacc_ci.native [--print-plan [--system S] [--machine M]]
+USAGE = """usage: PYTHONPATH=.ci python3 -m rediacc_ci.native [--print-plan [--system S] [--machine M]]
 
 Reached as `./rdc.sh --native`. With no arguments it builds the SEA for this host
 and installs it over ~/.local/share/rediacc/bin/rdc.

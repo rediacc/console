@@ -623,5 +623,7 @@ if __name__ == "__main__":
     elif sys.argv[1:] == ["help"]:
         sys.stdout.write(help_text())
     else:
-        print("usage: python3 -m rediacc_ci.core.run_verbs arms|help", file=sys.stderr)
+        print(
+            "usage: PYTHONPATH=.ci python3 -m rediacc_ci.core.run_verbs arms|help", file=sys.stderr
+        )
         sys.exit(2)

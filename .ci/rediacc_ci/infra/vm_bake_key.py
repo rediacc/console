@@ -411,7 +411,7 @@ def _relative(files: Iterable[pathlib.Path], root: pathlib.Path) -> list[str]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="python3 -m rediacc_ci.infra.vm_bake_key",
+        prog="PYTHONPATH=.ci python3 -m rediacc_ci.infra.vm_bake_key",
         description="Print the pre-baked VM image key for one distro.",
     )
     parser.add_argument("--distro", help="ops image name, e.g. ubuntu-24.04")

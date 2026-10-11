@@ -613,7 +613,7 @@ def unreasoned(entries: list[Entry]) -> list[Entry]:
 def main(argv: list[str]) -> int:
     if not argv:
         print(
-            "usage: python3 -m rediacc_ci.core.allowlist "
+            "usage: PYTHONPATH=.ci python3 -m rediacc_ci.core.allowlist "
             "<records|pairs|verify|verify-rows|reason|contract|conditions> [args]",
             file=sys.stderr,
         )

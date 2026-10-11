@@ -89,7 +89,7 @@ LATEST_SUFFIX = ":latest"
 USE_CI_TRUE = "true"
 USE_CI_FALSE = "false"
 
-USAGE = "Usage: python3 -m rediacc_ci.infra.docker_pull_ghcr --image <ghcr.io/org/repo:tag> [--token <token>] [--actor <actor>]"
+USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_pull_ghcr --image <ghcr.io/org/repo:tag> [--token <token>] [--actor <actor>]"
 
 # The three-line refusal, shared by the `USE_CI_IMAGES=true` arm and the legacy
 # arm, which differ only in their middle line.

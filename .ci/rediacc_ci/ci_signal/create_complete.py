@@ -50,7 +50,7 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common
 
-USAGE = "Usage: python3 -m rediacc_ci.ci_signal.create_complete --name <signal_name> [--output <dir>] [--status <status>]"
+USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name <signal_name> [--output <dir>] [--status <status>]"
 
 
 def main(argv: list[str]) -> int:

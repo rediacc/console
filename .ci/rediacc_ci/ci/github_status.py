@@ -745,7 +745,7 @@ def exit_code(st: Status) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
-        prog="python3 -m rediacc_ci.ci.github_status",
+        prog="PYTHONPATH=.ci python3 -m rediacc_ci.ci.github_status",
         description="GitHub service status for the components this repo depends on (cached 15 min per machine).",
         epilog="Exit 0 ok, 1 degraded, 3 unknown, 4 recovering. --wait-recovery: 0 recovered, 4 recovered with an incident still open, 2 timed out.",
     )

@@ -200,7 +200,7 @@ def main(argv: list[str]) -> int:
     script_key = argv[1] if len(argv) > 1 else ""
     if not workspace or not script_key:
         print(
-            "usage: python3 -m rediacc_ci.proxies.unit_tests <workspace> <npm script key>",
+            "usage: PYTHONPATH=.ci python3 -m rediacc_ci.proxies.unit_tests <workspace> <npm script key>",
             file=sys.stderr,
         )
         return 2

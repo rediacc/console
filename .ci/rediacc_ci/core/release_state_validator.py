@@ -101,23 +101,23 @@ A Python `dict` is a `dict` on every interpreter this repo supports, so there is
 --------------------------------------------------------------------------
 COMMAND-LINE ENTRY POINT (what a bash caller can reach)
 --------------------------------------------------------------------------
-    python3 -m rediacc_ci.core.release_state_validator bijection \\
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator bijection \\
         --cli <file|-> --tags <file|-> [--in-flight vX.Y.Z]
         the DRIFT/OK lines on stdout, exit 0 on bijection and 1 on drift.
 
-    python3 -m rediacc_ci.core.release_state_validator pointer \\
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator pointer \\
         <channel> <latest> <manifest> --tags <file|-> [--in-flight vX.Y.Z]
         the DRIFT/OK lines on stdout, exit 0 when the pointer is tagged.
 
-    python3 -m rediacc_ci.core.release_state_validator floor --cli <file|->
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator floor --cli <file|->
         the pre-contract floor, or nothing at all when there is none.
 
-    python3 -m rediacc_ci.core.release_state_validator sentinels <product>
-    python3 -m rediacc_ci.core.release_state_validator tags
-    python3 -m rediacc_ci.core.release_state_validator binary-count <prefix>
-    python3 -m rediacc_ci.core.release_state_validator sentinel-exists <p> <v>
-    python3 -m rediacc_ci.core.release_state_validator prefix-nonempty <prefix>
-    python3 -m rediacc_ci.core.release_state_validator payload <product> <ver>
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator sentinels <product>
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator tags
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator binary-count <prefix>
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator sentinel-exists <p> <v>
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator prefix-nonempty <prefix>
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator payload <product> <ver>
         the live probes. Each exits with the twin's shell code, so
         `sentinel-exists` is 0 sealed / 1 absent / 2 could not tell.
 """

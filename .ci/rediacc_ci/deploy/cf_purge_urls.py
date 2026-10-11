@@ -78,8 +78,8 @@ HELP = (
     """Purge a list of URLs from Cloudflare cache.
 
 Usage:
-  python3 -m rediacc_ci.deploy.cf_purge_urls --zone <ZONE_ID> url1 url2 ...
-  printf '%s\\n' url1 url2 url3 | python3 -m rediacc_ci.deploy.cf_purge_urls --zone <ZONE_ID>
+  PYTHONPATH=.ci python3 -m rediacc_ci.deploy.cf_purge_urls --zone <ZONE_ID> url1 url2 ...
+  printf '%s\\n' url1 url2 url3 | PYTHONPATH=.ci python3 -m rediacc_ci.deploy.cf_purge_urls --zone <ZONE_ID>
 
 Auth (in order tried):
   1. $CLOUDFLARE_API_TOKEN  -> Authorization: Bearer
