@@ -1000,7 +1000,7 @@ def _strip_comment_lines(text: str, kind: str) -> str:
     return "\n".join(ln for ln in text.split("\n") if not pat.match(ln))
 
 
-# Calls that FORMAT or REPORT a string rather than run it: `assert_edge_tag_exists.TWIN` names its twin only to print it (2026-10-07).
+# Calls that FORMAT or REPORT a string rather than run it: a port that names its twin's path only to print it (`assert_edge_tag_exists.TWIN` did until its 2026-10-11 removal) runs nothing.
 _MESSAGE_CALLS = frozenset(
     {
         "print",

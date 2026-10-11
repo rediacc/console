@@ -209,6 +209,5 @@ def test_planted_defect_is_caught_by_the_goldens(tmp_path: pathlib.Path) -> None
 def test_diagnostics_are_prefixed_with_the_module_name(tmp_path: pathlib.Path) -> None:
     """The twin's `announce-gate-skips.sh` is deleted, so the prefix names the module a reader can run and find."""
     result = run_port(tmp_path, ["label", "gate"], mode="Soft")
-    assert "rediacc_ci.quality.announce_gate_skips: unknown GATE_SKIP_MODE" in "".join(
-        part for part in result if isinstance(part, str)
-    )
+    assert isinstance(result, str), type(result)
+    assert "rediacc_ci.quality.announce_gate_skips: unknown GATE_SKIP_MODE" in result

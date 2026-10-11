@@ -202,7 +202,7 @@ def test_bws_exits_non_zero_is_the_second_deliberate_divergence(tmp_path) -> Non
         "the first line of the refusal is the twin's, up to the prefix"
     )
     assert new[2].splitlines()[0] == bws_env.LIST_FAILED[0], (
-        "the first line of the refusal is the twin's, verbatim"
+        "the first line of the refusal is the port's own LIST_FAILED line, which carries the module-name prefix"
     )
 
     assert "bws-token-expiry.json" in old[2], "the recording names the file it named that day"

@@ -611,7 +611,7 @@ def _emit(lines, text, lineno, piece, markers):
 
 
 # JSON string values whose key marks them as an IDENTIFIER or a QUOTED EXAMPLE rather than prose about the work. `patterns`/`exceptions` are regex text; `text` is a rule's own bad/good exemplar (the JSON analogue of `BAD_EXAMPLE`, since a JSON example's `kind: "bad"` marker sits on a DIFFERENT physical line than its `text`, so the character-level BAD_EXAMPLE match cannot see it);
-# `id`/`glob`/`schema`/`$schema`/`format`/`version` are short machine-facing tokens, never a sentence about the work. `quote` is an operator ruling quoted VERBATIM (`.ci/config/model-invocation-exceptions.json` `ruling.quote`): somebody else's words, which the module docstring already places out of this gate's reach, and restyling them would falsify the ruling.
+# `id`/`glob`/`schema`/`$schema`/`format`/`version` are short machine-facing tokens, never a sentence about the work.
 JSON_SKIP_KEYS = frozenset(
     (
         "patterns",
@@ -623,15 +623,30 @@ JSON_SKIP_KEYS = frozenset(
         "$schema",
         "format",
         "version",
-        "quote",
     )
 )
+
+# KEYS SKIPPED IN ONE FILE ONLY. `quote` in the model-invocation exception list is an operator ruling quoted VERBATIM (`ruling.quote`): somebody else's words, which the module docstring already places out of this gate's reach, and restyling them would falsify the ruling. A `quote` key anywhere else (the www translations carry testimonial `quote` strings) is prose like any other value, so the skip is keyed by the file, not global (review finding cac47d16.3).
+JSON_FILE_SKIP_KEYS = {
+    ".ci/config/model-invocation-exceptions.json": frozenset(("quote",)),
+}
+
+
+def json_skip_keys_for(path):
+    """The keys whose values `path` keeps out of the prose scan: the global `JSON_SKIP_KEYS` plus that file's own entry in `JSON_FILE_SKIP_KEYS`, matched on the repo-relative tail whether `path` is relative or absolute."""
+    posix = pathlib.PurePath(path).as_posix()
+    keys = JSON_SKIP_KEYS
+    for rel, extra in JSON_FILE_SKIP_KEYS.items():
+        if posix == rel or posix.endswith("/" + rel):
+            keys = keys | extra
+    return keys
+
 
 _JSON_KEYED_STRING = re.compile(r'^\s*"((?:[^"\\]|\\.)*)"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,?\s*$')
 _JSON_ARRAY_STRING = re.compile(r'^\s*"((?:[^"\\]|\\.)*)"\s*,?\s*$')
 
 
-def json_prose_lines(text, markers=DEFAULT_MARKERS):
+def json_prose_lines(text, markers=DEFAULT_MARKERS, skip_keys=JSON_SKIP_KEYS):
     """Prose lines of a `.json` file: PHYSICAL LINE, decoded string VALUES only.
 
     NOT A PARSED WALK. `json.load` gives no line numbers, so a `Finding` (which is anchored to a line) could not be built from one, and a decoded-string-length measure would let a 380-char value sitting at 300 columns of indentation pass while the file is unreadable as text. R18 measures what a reader of the FILE sees, the same contract `Line.raw` already keeps for every other
@@ -648,7 +663,7 @@ def json_prose_lines(text, markers=DEFAULT_MARKERS):
         keyed = _JSON_KEYED_STRING.match(raw)
         if keyed:
             key, value = keyed.groups()
-            if key in JSON_SKIP_KEYS:
+            if key in skip_keys:
                 continue
         else:
             arrayed = _JSON_ARRAY_STRING.match(raw)
@@ -681,7 +696,7 @@ def extract(path, text, markers=DEFAULT_MARKERS):
         except (tokenize.TokenError, IndentationError, SyntaxError) as exc:
             return [], "%s did not tokenize as Python (%s), so NOTHING was extracted" % (path, exc)
     if suffix == ".json":
-        return json_prose_lines(text, markers), None
+        return json_prose_lines(text, markers, json_skip_keys_for(path)), None
     return cstyle_comment_lines(text, markers), None
 
 

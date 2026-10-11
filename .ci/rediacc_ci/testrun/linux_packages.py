@@ -33,7 +33,7 @@ DEFAULT_RELEASES = RELEASES_ORIGIN
 PUBLISHED_KEY_REL = ".ci/keys/gpg-public.asc"
 APK_KEY_NAME = ".SIGN.RSA.releases@rediacc.com.rsa.pub"
 DUMMY_BINARY = '#!/bin/sh\necho "rdc version 99.0.0"\n'
-USAGE = "usage: python3 -m rediacc_ci.testrun.linux_packages [--dry-run]"
+USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.linux_packages [--dry-run]"
 
 
 def version_token_re(version: str) -> str:
