@@ -184,11 +184,14 @@ class Event:
 
     @property
     def project_dir(self):
-        """`${CLAUDE_PROJECT_DIR:-.}`, the root nearly every guard cd's into.
+        """`CLAUDE_PROJECT_DIR`, the root nearly every guard cd's into, and when it is unset or EMPTY the checkout the event stands in (`project_root`).
 
-        `:-` and not `-`: an EMPTY variable takes the fallback too, which is what the guards spell and what a harness that exports the variable as "" would otherwise defeat.
+        NOT `.` (#f32d3604). The bash spelled `${CLAUDE_PROJECT_DIR:-.}`, and `.` is the hook PROCESS's directory, which is the project only when the process happens to stand at its root. Run from `.claude/` with the variable unset, block_git_force_push judged `.claude/` as the project and allowed `git push --prune origin` (rc 0 against rc 2 from the root, 2026-10-11), and test_hooks_static failed those two cases. The same class was fixed for `shellscan.repo_root_env` in fae7c16a2. The answer with the variable set is unchanged.
         """
-        return self._env.get("CLAUDE_PROJECT_DIR") or "."
+        got = self._env.get("CLAUDE_PROJECT_DIR")
+        if got:
+            return got
+        return project_root(self.field("cwd") or self.cwd)
 
     @property
     def cwd(self):
@@ -478,6 +481,23 @@ def have(name):
 def git_out(args, cwd=None, want_rc=False):
     """`git ... 2>/dev/null` as a command substitution."""
     return run_out(["git", *args], cwd=cwd, want_rc=want_rc)
+
+
+def project_root(start):
+    """The project a directory belongs to, as Claude Code names one in `CLAUDE_PROJECT_DIR`: the OUTERMOST git checkout holding `start` (a submodule's superproject, climbed to the top), or `start` itself, made absolute, when it is in none.
+
+    Outermost because the session's project is the console even when its shell stands inside `private/renet`, and a guard reading `CLAUDE_PROJECT_DIR` there has always been handed the console.
+    """
+    here = os.path.abspath(start)
+    top = git_out(["rev-parse", "--show-toplevel"], cwd=here, want_rc=True)
+    if not top:
+        return here
+    for _depth in range(8):
+        outer = git_out(["rev-parse", "--show-superproject-working-tree"], cwd=top, want_rc=True)
+        if not outer:
+            break
+        top = outer
+    return top
 
 
 def repo_root():
