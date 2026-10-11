@@ -35,6 +35,7 @@ import typing
 from rediacc_ci import paths
 from rediacc_ci.build import build_cli_executables as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -357,6 +358,10 @@ def _mask(text: str, *, lines: bool = False) -> str:
 def _agree(old_t, new_t, label: str, *, lines: bool = False) -> None:
     old, old_calls, old_files = old_t
     new, new_calls, new_files = new_t
+    # The port's diagnostics carry its own module name (35e3dd03b) where the recorded twin printed its script name; `as_twin` maps one back to the other, as every twin differential does.
+    new = subprocess.CompletedProcess(
+        new.args, new.returncode, as_twin(new.stdout), as_twin(new.stderr)
+    )
     assert new.returncode == old.returncode, (
         "%s: exit diverged: %r vs %r\nold stderr: %r\nnew stderr: %r"
         % (label, old.returncode, new.returncode, old.stderr, new.stderr)

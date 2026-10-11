@@ -4473,7 +4473,8 @@ function tmpCapacityRefusal(okOut: (text: string) => void): string | undefined {
     ['-m', 'rediacc_ci.core.tmp_capacity', '--path', os.tmpdir()],
     {
       cwd: REPO_ROOT,
-      env: { ...process.env, PYTHONPATH: pythonPath },
+      // No bytecode: the probe runs before any gate, inside the tree the run then judges, and a `__pycache__` it left would read as a dirty checkout.
+      env: { ...process.env, PYTHONPATH: pythonPath, PYTHONDONTWRITEBYTECODE: '1' },
       encoding: 'utf8',
       timeout: 60_000,
     }
