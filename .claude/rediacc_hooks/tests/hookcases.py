@@ -3749,6 +3749,32 @@ STATIC: list[Case] = [
         bash_json("echo {/tmp/x,/tmp/z} | xargs cp /tmp/y.md"),
         "roundlog-truncate CONTROL: a brace-expanded fed destination elsewhere",
     ),
+    # Review 8ae5b370.1: a ten-billion range is capped, not built; the guard answers inside the case timeout.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("echo {1..9999999999} pr-babysit-0831-1.md | xargs cp /tmp/x.md"),
+        "roundlog-truncate: a huge fed brace range is capped and the log still read",
+    ),
+    # Review 8ae5b370.2 and .4: bash expands a brace after an unmatched `{`, and a stepped range (both allowed at 8ae5b3706).
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("echo x{y{/tmp/a,agent/pr-babysit-0831-1.md} | xargs cp /tmp/x.md"),
+        "roundlog-truncate: a brace after an unmatched one still expands to the log",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "cat agent/pr-babysit-0831-1.md; echo agent/pr-babysit-0831-{1..3..2}.md | xargs cp /tmp/x.md"
+        ),
+        "roundlog-truncate: a stepped fed range expands to the log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "cat agent/pr-babysit-0831-1.md; echo /tmp/pr-babysit-0831-{2..4..2}.txt | xargs cp /tmp/x.md"
+        ),
+        "roundlog-truncate CONTROL: a stepped fed range that names no log",
+    ),
     # --- warn-hook-change.sh: warning only, ALWAYS exit 0 ------------------------ The operator chose warn over block for hook edits (2026-08-25) because a hard block would have fired six times that day on legitimate work. These pin that it can never block: a warn hook that can block is a block hook nobody reviewed.
     case(
         "check 0 guards/warn_hook_change.py",

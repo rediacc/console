@@ -18,6 +18,7 @@ import pathlib
 import re
 import shutil
 import subprocess
+import time
 import uuid
 from dataclasses import dataclass, field
 
@@ -1668,6 +1669,11 @@ FED_FAIL_SAFE = [
     "echo ~/e | xargs cp a",
     "xargs cp a <<< ~/e",
     "echo /T/[w]/[d] | xargs cp a",
+    # Review 8ae5b370.3: a relative glob is matched in the directory the producer runs in, here the `cd` before the pipeline.
+    "cd src && echo f* | xargs cp ../a",
+    # Review 8ae5b370.1/.2/.4: an unmatched `{` before a brace, a stepped range, a letter range.
+    "echo x{y{d,e}x | xargs -n1 cp a",
+    "echo {b..d..2} | xargs cp a",
 ]
 
 
@@ -1749,8 +1755,10 @@ def test_fed_copy_fails_safe_where_the_words_are_unknown(bash, tmp_path, cmd, mo
     )
 
 
-def _old_run_copies(run, argv=None):
+def _old_run_copies(run, argv=None, cwd=None):
     """The placement before #5077391c, kept only as the plant below: every fed word a destination, `-t` or not, and "into a directory" for the fed-only shape."""
+    # The old reading matched no glob anywhere, so the directory `copy_landings` now hands over is set aside.
+    del cwd
     name = run.name.rsplit("/", 1)[-1]
     if name not in shellscan.COPIERS:
         return None
@@ -1833,3 +1841,85 @@ def test_the_expansion_rows_can_fail(bash, tmp_path, monkeypatch):
             red.append(cmd)
     shellscan._ANALYSIS_CACHE.clear()
     assert len(red) == 2, "the old literal test still covered: %s" % red
+
+
+# BRACE EXPANSION, MEASURED (reviews 8ae5b370.1, .2, .4). Each word is expanded by the real bash (`printf '%s\\n' <word>`, empty words dropped as the shell drops them) and by `shellscan._brace_alternatives`, which must agree on the first `_FED_EXPANSION_CAP` words.
+BRACE_WORDS = [
+    "x{y{a,b}",
+    "x{{a,b}",
+    "{a,b",
+    "{a,b}}",
+    "x}{a,b}",
+    "a{b}c",
+    "{b}{x,y}",
+    "{x{a,b}}",
+    "{a,b}{1,2}",
+    "{a,}x",
+    "{,}",
+    "x{a,b{c,d}}y",
+    "a{1..3}b{x,y}",
+    "{1..9..2}",
+    "{9..1..3}",
+    "{1..10..3}",
+    "{1..3..-1}",
+    "{1..2..0}",
+    "{-2..2}",
+    "{01..03}",
+    "{001..10}",
+    "{-01..2}",
+    "{1..1}",
+    "{a..e}",
+    "{a..e..2}",
+    "{e..a}",
+    "{z..a..5}",
+    "{a..a}",
+    "{a..C}",
+    "{1..a}",
+    "{1...3}",
+    "{ab..c}",
+    "{1..200}",
+]
+
+
+@pytest.mark.parametrize("word", BRACE_WORDS)
+def test_brace_expansion_matches_bash(bash, word):
+    done = subprocess.run(
+        [bash, "--norc", "--noprofile", "-c", "printf '%s\\n' " + word],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={"PATH": "/usr/bin:/bin", "LC_ALL": "C"},
+        timeout=30,
+    )
+    assert done.returncode == 0, done.stderr
+    real = [w for w in done.stdout.split("\n")[:-1] if w != ""][: shellscan._FED_EXPANSION_CAP]
+    assert shellscan._brace_alternatives(word) == real, word
+
+
+def test_a_huge_brace_expansion_stays_capped_and_fast():
+    """Review 8ae5b370.1: a range of ten billion, or several ranges in one word, produce at most the cap, and quickly; the old code built the whole list first."""
+    started = time.monotonic()
+    one = shellscan._brace_alternatives("{1..9999999999}")
+    product = shellscan._brace_alternatives("{1..99999999}{1..99999999}{a..z}x")
+    cmd = "echo {1..9999999999} {1..9999999999} | xargs cp a b"
+    copier = [r for r in shellscan.every_run(cmd) if r.name == "cp"]
+    landed = shellscan.copy_landings(copier[0], "/nonexistent-root")
+    elapsed = time.monotonic() - started
+    assert len(one) == shellscan._FED_EXPANSION_CAP
+    assert one[:3] == ["1", "2", "3"]
+    assert len(product) == shellscan._FED_EXPANSION_CAP
+    assert product[0] == "11ax"
+    assert landed, "the capped words still reach the copy reader"
+    assert elapsed < 2.0, "brace expansion took %.2fs" % elapsed
+
+
+def test_a_glob_in_an_unknown_directory_keeps_a_name_of_its_shape():
+    """Review 8ae5b370.3: with the producer's directory unknown, the pattern stays and one name of its shape is added, so a guard that reads names (a round log's, a running script's) still sees one."""
+    assert "pr-babysit-x.md" in shellscan._fed_candidates(["pr-babysit-*.md"], None)
+    assert "rex" in shellscan._fed_candidates(["re*"], None)
+    assert "rexet" in shellscan._fed_candidates(["[r]e?et"], None)
+    assert "xx.sh" in shellscan._fed_candidates(["[!a]?.sh"], None)
+    cmd = 'cd "$D" && echo pr-babysit-*.md | xargs cp /tmp/x.md'
+    copier = [r for r in shellscan.every_run(cmd) if r.name == "cp"]
+    names = {pathlib.Path(p).name for p, _into in shellscan.copy_landings(copier[0], "/tmp")}
+    assert "pr-babysit-x.md" in names, names
