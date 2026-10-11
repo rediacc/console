@@ -343,32 +343,96 @@ def _unjudgeable(word, base, root, recursive):
 _GLOB_CHARS = "*?["
 
 
-def _segment_regex(seg):
-    out = "(?!\\.)" if seg[:1] in ("*", "?", "[") else ""
+# A BRACKET CLASS IS READ, NEVER COMPILED FROM RAW TEXT (review 63ee61e3.2). Handing `[z-a]` or `jso[!]` to `re.compile` raised inside the guard (rc 1, 2026-10-11), and `[[:alpha:]]` was read as the class `[:alpha:` followed by `]`, which allowed `rm .claude/s[[:alpha:]]ttings.json`. `_glob_tokens` reads a segment the way bash 5.3 does (measured): `!` or `^` negates, a `]` first is a member, `a-z` is a range and an INVERTED range matches
+# nothing, a POSIX class is a member set, and a `[` with no closing `]` is a literal. An unknown POSIX class also matches nothing in bash, but class names are the locale's, so it is read as ANY character here, toward refusing.
+_POSIX_CLASSES = {
+    "alpha": str.isalpha,
+    "digit": str.isdigit,
+    "alnum": str.isalnum,
+    "upper": str.isupper,
+    "lower": str.islower,
+    "space": str.isspace,
+    "blank": lambda c: c in " \t",
+    "punct": lambda c: c.isprintable() and not c.isalnum() and not c.isspace(),
+    "xdigit": lambda c: c in "0123456789abcdefABCDEF",
+    "print": str.isprintable,
+    "graph": lambda c: c.isprintable() and not c.isspace(),
+    "cntrl": lambda c: not c.isprintable(),
+    "word": lambda c: c.isalnum() or c == "_",
+}
+
+
+def _bracket(seg, k):
+    """`(member test, index after the class)` for the class opening at `seg[k]`, or None when no `]` closes it."""
+    j = k + 1
+    negate = j < len(seg) and seg[j] in "!^"
+    j += negate
+    tests: list = []
+    first = True
+    while j < len(seg) and (seg[j] != "]" or first):
+        first = False
+        if seg.startswith("[:", j) and ":]" in seg[j + 2 :]:
+            end = seg.index(":]", j + 2)
+            name = seg[j + 2 : end]
+            tests.append(_POSIX_CLASSES.get(name, lambda _c: True))
+            j = end + 2
+        elif j + 2 < len(seg) and seg[j + 1] == "-" and seg[j + 2] != "]":
+            low, high = seg[j], seg[j + 2]
+            tests.append(lambda c, low=low, high=high: low <= c <= high)
+            j += 3
+        else:
+            tests.append(lambda c, ch=seg[j]: c == ch)
+            j += 1
+    if j >= len(seg):
+        return None
+    if negate:
+        return (lambda c: not any(t(c) for t in tests)), j + 1
+    return (lambda c: any(t(c) for t in tests)), j + 1
+
+
+def _glob_tokens(seg):
+    out: list = []
     k = 0
     while k < len(seg):
         ch = seg[k]
         if ch == _WILD:
-            out += ".*"
+            out.append(("wild",))
         elif ch == "*":
-            out += "[^/]*"
+            out.append(("star",))
         elif ch == "?":
-            out += "[^/]"
-        elif ch == "[" and "]" in seg[k + 2 :]:
-            end = seg.index("]", k + 2)
-            body = seg[k + 1 : end]
-            body = "^" + body[1:] if body[:1] in ("!", "^") else body
-            out += "[%s]" % body.replace("\\", "\\\\")
-            k = end
+            out.append(("one", lambda _c: True))
+        elif ch == "[" and (found := _bracket(seg, k)) is not None:
+            out.append(("one", found[0]))
+            k = found[1]
+            continue
         else:
-            out += re.escape(ch)
+            out.append(("one", lambda c, ch=ch: c == ch))
         k += 1
-    return re.compile(out)
+    return out
+
+
+def _segment_matches(seg, name):
+    """Whether glob segment `seg` (with `_WILD` for an unevaluated part) can expand to the path segment `name`. A leading `.` is matched only by a literal dot (dotglob is off)."""
+    tokens = _glob_tokens(seg)
+    if name.startswith(".") and seg[:1] in ("*", "?", "["):
+        return False
+    reach = {0}
+    for t in tokens:
+        nxt: set = set()
+        for at in reach:
+            if t[0] in ("star", "wild"):
+                nxt.update(range(at, len(name) + 1))
+            elif at < len(name) and t[1](name[at]):
+                nxt.add(at + 1)
+        reach = nxt
+        if not reach:
+            return False
+    return len(name) in reach
 
 
 def _segments_match(pattern, path):
     return len(pattern) == len(path) and all(
-        _segment_regex(p).fullmatch(q) for p, q in zip(pattern, path, strict=True)
+        _segment_matches(p, q) for p, q in zip(pattern, path, strict=True)
     )
 
 

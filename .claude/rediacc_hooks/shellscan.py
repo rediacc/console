@@ -4622,3 +4622,211 @@ def gh_api_endpoint(parsed, repo=None):
         owner, name = repo.split("/", 1)
         path = path.replace("{owner}", owner).replace("{repo}", name)
     return path.strip("/")
+
+
+# --------------------------------------------------------------------------- the program an interpreter runs (worklist #c4542b69) ---------------------------------------------------------------------------
+#
+# A SCRIPT RUN BY PATH IS A PROGRAM, LIKE A HEREDOC (#f3f36655, #c4542b69). Three shell-write guards read an interpreter's program to judge what it writes, and each spelled "the program" its own way: the `-c` value, the heredoc bodies when it reads stdin, and (block_suppressions_shell_write only) a script passed by path. So `python3 scratch/edit.py` wrote a review file or a model-invocation key that
+# the same program through `python3 - <<EOF` was refused for (rc 0 against rc 2, 2026-10-11). `interpreter_program` is the one reading. A script TRACKED by the checkout holding it is not read: its text is reviewed code the CI gates already judge, and reading it would refuse every run of a tool that names the thing it guards (`worklist.py` carries 50 lint markers and writes files). A script that cannot be read at hook time
+# FAILS OPEN: one written earlier in the same command by a redirect or heredoc is judged as it is written, a missing one makes the interpreter fail, and the CI gates read the tree either way, while refusing every chained `make && python3 out.py` would teach routing around the guards. `interpreter_scripts` is the cheap form a guard's pre-filter reads: it starts the lexer only when an interpreter is named, and runs one `git ls-files` per script.
+INTERPRETER_NAMES = ("python", "node", "perl", "ruby", "deno", "bun", "tsx")
+# THE INTERPRETER'S OWN OPTIONS, PARSED AS IT PARSES THEM (review 63ee61e3.1). The first reading looked for `-c`, `-e` or `-E` anywhere in the argv, so python's `-E` (ignore PYTHON* variables, a plain flag) read as perl's inline program and `python3 -E scratch.py` wrote its marker unread, a `-c` among the SCRIPT's own arguments read as the interpreter's, and `-X dev` handed `dev` over as the script. Each family below
+# is `(inline letters, module letters, letters taking a value, letters taking only an ATTACHED value, long options taking a value, long options that are the program)`, and the parse stops at the first operand, which is the script. Measured 2026-10-11 on Python 3.13, node v24.21.0 and perl 5.40.1: python `-E -I -B -u -q -s -P -OO` are flags, `-W`/`-X` take a value attached or as the next word; node takes the next word for every string option `node --help` lists with
+# `=...` (a V8 flag such as `--stack-size` needs `=`); perl's `-I`/`-M`/`-m` take the next word and `-0 -l -i -F -C -x -d -D` only an attached one. Ruby's table is from its documentation (no ruby on this host); deno, bun and tsx skip a leading `run` and otherwise read like node.
+_NODE_VALUE_LONG = frozenset(
+    [
+        "allow-fs-read",
+        "allow-fs-write",
+        "build-snapshot-config",
+        "conditions",
+        "cpu-prof-dir",
+        "cpu-prof-interval",
+        "cpu-prof-name",
+        "diagnostic-dir",
+        "disable-proto",
+        "disable-warning",
+        "dns-result-order",
+        "env-file",
+        "env-file-if-exists",
+        "experimental-config-file",
+        "experimental-loader",
+        "loader",
+        "experimental-package-map",
+        "experimental-sea-config",
+        "experimental-test-tag-filter",
+        "heap-prof-dir",
+        "heap-prof-interval",
+        "heap-prof-name",
+        "heapsnapshot-near-heap-limit",
+        "heapsnapshot-signal",
+        "icu-data-dir",
+        "import",
+        "input-type",
+        "inspect-publish-uid",
+        "localstorage-file",
+        "max-http-header-size",
+        "max-old-space-size-percentage",
+        "network-family-autoselection-attempt-timeout",
+        "openssl-config",
+        "redirect-warnings",
+        "report-dir",
+        "report-filename",
+        "report-signal",
+        "require",
+        "run",
+        "secure-heap",
+        "secure-heap-min",
+        "snapshot-blob",
+        "test-concurrency",
+        "test-coverage-branches",
+        "test-coverage-exclude",
+        "test-coverage-functions",
+        "test-coverage-include",
+        "test-coverage-lines",
+        "test-global-setup",
+        "test-isolation",
+        "test-name-pattern",
+        "test-random-seed",
+        "test-reporter",
+        "test-reporter-destination",
+        "test-rerun-failures",
+        "test-shard",
+        "test-skip-pattern",
+        "test-timeout",
+        "title",
+        "tls-cipher-list",
+        "tls-keylog",
+        "trace-event-categories",
+        "trace-event-file-pattern",
+        "trace-require-module",
+        "unhandled-rejections",
+        "use-largepages",
+        "v8-pool-size",
+        "watch-kill-signal",
+        "watch-path",
+    ]
+)
+# The seventh field is the letters whose attached value is DIGITS only, after which the bundle goes on: perl's `-l0e` and `-0777e` run the program after `e` (measured).
+_PROGRAM_OPTIONS = {
+    "python": ("c", "m", "WX", "", frozenset(("check-hash-based-pycs",)), frozenset(), ""),
+    "node": ("ep", "", "rC", "", _NODE_VALUE_LONG, frozenset(("eval", "print")), ""),
+    "perl": ("eE", "", "IMm", "iFCxdD", frozenset(), frozenset(), "0l"),
+    "ruby": (
+        "e",
+        "",
+        "IrCEF",
+        "xK",
+        frozenset(("encoding", "external-encoding", "internal-encoding")),
+        frozenset(),
+        "0WT",
+    ),
+}
+_RUNNERS = ("deno", "bun", "tsx")
+_SCRIPT_MAX = 1 << 20
+
+
+def _program_parse(base, argv):
+    """`(kind, value)` for an interpreter's argv as the interpreter reads it: ("inline", program), ("module", None), ("stdin", None) or ("file", script path)."""
+    family = next((f for f in _PROGRAM_OPTIONS if base.startswith(f)), "node")
+    inline, module, value, attached, value_long, inline_long, digits = _PROGRAM_OPTIONS[family]
+    k = 0
+    if base.startswith(_RUNNERS) and argv[:1] == ["run"]:
+        k = 1
+    while k < len(argv):
+        arg = argv[k]
+        k += 1
+        if arg == "--":
+            break
+        if arg == "-":
+            return "stdin", None
+        if arg.startswith("--"):
+            name, eq, given = arg[2:].partition("=")
+            if name in inline_long:
+                return "inline", given if eq else (argv[k] if k < len(argv) else "")
+            if name in value_long and not eq:
+                k += 1
+            continue
+        if arg.startswith("-") and len(arg) > 1:
+            at = 1
+            while at < len(arg):
+                letter = arg[at]
+                rest = arg[at + 1 :]
+                at += 1
+                if letter in digits:
+                    while at < len(arg) and arg[at].isdigit():
+                        at += 1
+                    continue
+                if letter in inline:
+                    return "inline", rest or (argv[k] if k < len(argv) else "")
+                if letter in module:
+                    return "module", None
+                if letter in value:
+                    k += 0 if rest else 1
+                    break
+                if letter in attached:
+                    break
+            continue
+        k -= 1
+        break
+    if k >= len(argv):
+        return "stdin", None
+    return "file", argv[k]
+
+
+def _script_file_text(path, run_cwd, cwd):
+    """The text of a script file an interpreter runs by path, or None when it cannot be read or the checkout holding it tracks it."""
+    base = cwd or os.getcwd()
+    if run_cwd is not None:
+        base = os.path.join(base, run_cwd)
+    target = path if os.path.isabs(path) else os.path.normpath(os.path.join(base, path))
+    try:
+        if not os.path.isfile(target) or os.path.getsize(target) > _SCRIPT_MAX:
+            return None
+        tracked = subprocess.run(
+            ["git", "ls-files", "--error-unmatch", "--", os.path.basename(target)],
+            cwd=os.path.dirname(target) or ".",
+            capture_output=True,
+            check=False,
+        )
+        if tracked.returncode == 0:
+            return None
+        with open(target, encoding="utf-8", errors="replace") as handle:
+            return handle.read()
+    except OSError:
+        return None
+
+
+def interpreter_program(run, cmd, cwd=None):
+    """`(text, kind)` for the program an interpreter run executes, or `(None, None)`.
+
+    `kind` is "inline" (`-c`/`-e` and their spellings), "stdin" (every heredoc body of `cmd`, when the run reads its program from stdin: no operand, or `-`) or "file" (a script passed by path, read under the rules above). A module run (`python -m x`) and a script that cannot be read are `(None, None)`. `cwd` is the directory the command runs in; a run that `cd`'d is resolved from its own `run.cwd` under it.
+    """
+    if not run.name.rsplit("/", 1)[-1].startswith(INTERPRETER_NAMES):
+        return None, None
+    kind, value = _program_parse(run.name.rsplit("/", 1)[-1], list(run.argv))
+    if kind == "inline":
+        return value, "inline"
+    if kind == "module":
+        return None, None
+    if kind == "stdin":
+        analysis = _analyse(cmd)
+        bodies = [
+            cmd[doc.body_start : doc.body_end]
+            for doc in analysis.heredocs
+            if doc.body_start is not None and doc.body_end is not None
+        ]
+        return "\n".join(bodies), "stdin"
+    text = _script_file_text(value, run.cwd, cwd)
+    return (text, "file") if text is not None else (None, None)
+
+
+def interpreter_scripts(cmd, cwd=None):
+    """The text of every script `cmd` runs BY PATH (`interpreter_program`'s "file" kind), for a guard's pre-filter: a command naming no interpreter never starts the lexer."""
+    if not re.search(r"python|node|perl|ruby|deno|bun|tsx", cmd):
+        return []
+    out = []
+    for run in every_run(cmd):
+        text, kind = interpreter_program(run, cmd, cwd)
+        if kind == "file":
+            out.append(text)
+    return out
