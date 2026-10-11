@@ -238,7 +238,7 @@ def _list_write(runs, analysis, cmd, cwd):
         in_place = any(a == "-i" or a.startswith(("-i", "--in-place")) for a in argv)
         if on_list and (name in ("tee", "truncate") or (name in INPLACE and in_place)):
             return "%s on %s" % (name, on_list[0])
-        copies = shellscan.run_copies(run)
+        copies = shellscan.run_copies(run, None, cwd)
         if copies is not None:
             sources, dests, into = copies
             for dest in dests:
@@ -342,7 +342,8 @@ def _offending(cmd, cwd):
                         listed[0],
                     ),
                 )
-        copies = shellscan.run_copies(run)
+        # `cwd` places a relative fed glob in the run's own directory (#e5b0540a).
+        copies = shellscan.run_copies(run, None, cwd)
         for dest in copies[1] if copies is not None else []:
             if not _is_target(dest, run.cwd):
                 continue

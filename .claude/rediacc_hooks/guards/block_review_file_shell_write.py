@@ -199,7 +199,8 @@ def _offending(cmd, depth=0, cwd=None):
         if name in INPLACE and in_place and any(_is_review(a, run.cwd) for a in operands):
             return "%s -i on a review file" % name
         # Where a copy lands is `shellscan.run_copies`' getopt reading, not the last operand (review cac47d16.1 sweep): `cp -t agent/reviews/x /tmp/a.md` left the source last.
-        copies = shellscan.run_copies(run)
+        # `cwd` places a relative fed glob in the run's own directory (#e5b0540a); a command handed down by a program runs where that program does, unknown here, so it gets the shape reading.
+        copies = shellscan.run_copies(run, None, cwd)
         if copies is not None and any(_is_review(d, run.cwd) for d in copies[1]):
             return "%s onto the review directory" % name
         if name == "truncate" and any(_is_review(a, run.cwd) for a in operands):

@@ -1708,6 +1708,22 @@ STATIC: list[Case] = [
         bash_json("echo /tmp/x.json .ci/config/model-invocation-exceptions.json | xargs cp"),
         "user-only-command-shell-write: xargs feeds cp the exception list as its destination",
     ),
+    # #e5b0540a: a relative fed glob is matched in the run's own directory (allowed before: only a name of its shape was read).
+    case(
+        "check 2 guards/block_user_only_command_shell_write.py",
+        bash_json("cd .claude && echo command?/handoff.md | xargs cp -t skills/demo"),
+        "user-only-command-shell-write: a relative fed glob names the flagged command copied into a skill",
+    ),
+    case(
+        "check 2 guards/block_user_only_command_shell_write.py",
+        bash_json("cd .ci && echo /tmp/x.json conf?g/model-invocation-exceptions.json | xargs cp"),
+        "user-only-command-shell-write: a relative fed glob names the exception list as the destination",
+    ),
+    case(
+        "check 0 guards/block_user_only_command_shell_write.py",
+        bash_json("cd .claude && echo command?/handoff.md | xargs cp -t /tmp"),
+        "user-only-command-shell-write CONTROL: the same glob copied out of the tree",
+    ),
     # block_review_file_shell_write judges a Python program by its write TARGETS (2026-10-09): a review path that only flows into written content was refused live, and a target built from a review path through a name was allowed.
     case(
         "check 0 guards/block_review_file_shell_write.py",
@@ -1861,6 +1877,17 @@ STATIC: list[Case] = [
         "check 2 guards/block_review_file_shell_write.py",
         bash_json("echo /tmp/a.md | xargs cp -t agent/reviews/1008-1"),
         "review-file-shell-write: xargs feeds a source to cp -t the review directory",
+    ),
+    # #e5b0540a: a relative fed glob is matched in the run's own directory, so `revi*s/...` from agent/ is the review directory (allowed before: only a name of its shape was read).
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("cd agent && echo revi*s/1008-1/026b*.md | xargs cp /tmp/x.md; ls reviews"),
+        "review-file-shell-write: a relative fed glob from agent/ lands in the review directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("cd agent && echo plan*/QUEUE.md | xargs cp /tmp/x.md; ls reviews"),
+        "review-file-shell-write CONTROL: a relative fed glob elsewhere in agent/",
     ),
     case(
         "check 2 guards/block_ssh_docker.py",
@@ -3832,6 +3859,32 @@ STATIC: list[Case] = [
             "cat agent/pr-babysit-0831-1.md; echo /tmp/pr-babysit-0831-{2..4..2}.txt | xargs cp /tmp/x.md"
         ),
         "roundlog-truncate CONTROL: a stepped fed range that names no log",
+    ),
+    # #e5b0540a: a glob or brace that could spell a round-log name passes the prefilter (it allowed all of these before the walk ran), and every arm reads it expanded.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json('cd "$D" && echo pr-babysit-*.md | xargs cp /tmp/x.md'),
+        "roundlog-truncate: a fed log glob in an unknown directory",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("mv agent/pr-babysit-{0831-1,x}.md /tmp/"),
+        "roundlog-truncate: mv a brace that spells the log",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("echo x > agent/pr-babysit-*.md"),
+        "roundlog-truncate: a redirect onto a log glob",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json('cd "$D" && echo notes-*.md | xargs cp /tmp/x.md'),
+        "roundlog-truncate CONTROL: a fed glob that cannot spell a log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("ls agent/pr-babysit-*.md"),
+        "roundlog-truncate CONTROL: listing a log glob is a read",
     ),
     # --- warn-hook-change.sh: warning only, ALWAYS exit 0 ------------------------ The operator chose warn over block for hook edits (2026-08-25) because a hard block would have fired six times that day on legitimate work. These pin that it can never block: a warn hook that can block is a block hook nobody reviewed.
     case(

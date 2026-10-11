@@ -18,7 +18,6 @@ import pathlib
 import re
 import shutil
 import subprocess
-import time
 import uuid
 from dataclasses import dataclass, field
 
@@ -1671,6 +1670,10 @@ FED_FAIL_SAFE = [
     "echo /T/[w]/[d] | xargs cp a",
     # Review 8ae5b370.3: a relative glob is matched in the directory the producer runs in, here the `cd` before the pipeline.
     "cd src && echo f* | xargs cp ../a",
+    # Review a165575f.1: the producer's own `cd`, inside its subshell, decides where its glob matches.
+    "(cd src; echo f*) | xargs -I{} cp a src/{}",
+    # Review a165575f.2: a failed `cd` leaves the shell where it was, and the glob matches there.
+    "cd nosuch; echo b* | xargs cp a",
     # Review 8ae5b370.1/.2/.4: an unmatched `{` before a brace, a stepped range, a letter range.
     "echo x{y{d,e}x | xargs -n1 cp a",
     "echo {b..d..2} | xargs cp a",
@@ -1878,6 +1881,8 @@ BRACE_WORDS = [
     "{1...3}",
     "{ab..c}",
     "{1..200}",
+    # Review a165575f.3: seventeen braces, more than the old depth limit of sixteen, still all expand.
+    "{a,b}" * 17,
 ]
 
 
@@ -1892,25 +1897,75 @@ def test_brace_expansion_matches_bash(bash, word):
         timeout=30,
     )
     assert done.returncode == 0, done.stderr
+    # Empty words dropped FIRST, then the cap, exactly as `_brace_expand` does (review a165575f.4).
     real = [w for w in done.stdout.split("\n")[:-1] if w != ""][: shellscan._FED_EXPANSION_CAP]
     assert shellscan._brace_alternatives(word) == real, word
 
 
-def test_a_huge_brace_expansion_stays_capped_and_fast():
-    """Review 8ae5b370.1: a range of ten billion, or several ranges in one word, produce at most the cap, and quickly; the old code built the whole list first."""
-    started = time.monotonic()
+def test_a_huge_brace_expansion_stays_capped(monkeypatch):
+    """Review 8ae5b370.1: a range of ten billion, or several ranges in one word, produce at most the cap; the old code built the whole list first. Judged by the WORK done (review a165575f.5): every range iterator is counted as it is read, so the bound holds however loaded the machine is."""
+    pulled = []
+    real_range = shellscan._brace_range
+
+    def counted(body):
+        words = real_range(body)
+        if words is None:
+            return None
+
+        def tally():
+            for w in words:
+                pulled.append(w)
+                yield w
+
+        return tally()
+
+    monkeypatch.setattr(shellscan, "_brace_range", counted)
+    shellscan._ANALYSIS_CACHE.clear()
     one = shellscan._brace_alternatives("{1..9999999999}")
+    assert len(one) == shellscan._FED_EXPANSION_CAP
+    assert one[:3] == ["1", "2", "3"]
+    assert len(pulled) <= shellscan._FED_EXPANSION_CAP + 1
+    pulled.clear()
     product = shellscan._brace_alternatives("{1..99999999}{1..99999999}{a..z}x")
+    assert len(product) == shellscan._FED_EXPANSION_CAP
+    assert product[0] == "11ax"
+    assert len(pulled) <= 4 * (shellscan._FED_EXPANSION_CAP + 1)
+    pulled.clear()
     cmd = "echo {1..9999999999} {1..9999999999} | xargs cp a b"
     copier = [r for r in shellscan.every_run(cmd) if r.name == "cp"]
     landed = shellscan.copy_landings(copier[0], "/nonexistent-root")
-    elapsed = time.monotonic() - started
-    assert len(one) == shellscan._FED_EXPANSION_CAP
-    assert one[:3] == ["1", "2", "3"]
-    assert len(product) == shellscan._FED_EXPANSION_CAP
-    assert product[0] == "11ax"
     assert landed, "the capped words still reach the copy reader"
-    assert elapsed < 2.0, "brace expansion took %.2fs" % elapsed
+    assert len(pulled) <= 4 * (shellscan._FED_EXPANSION_CAP + 1)
+    shellscan._ANALYSIS_CACHE.clear()
+
+
+def test_a_truncated_brace_expansion_falls_back_to_a_glob():
+    """Review a165575f.3: when the cap leaves words unread, the fail-safe reading adds the word with every brace as `*`, and that glob's shape, rather than leaving later braces literal."""
+    word = "{a,b}" * 17
+    words, truncated = shellscan._brace_expand(word)
+    assert truncated
+    assert len(words) == shellscan._FED_EXPANSION_CAP
+    assert "{" not in "".join(words)
+    candidates = shellscan._fed_candidates([word], None)
+    assert "*" * 17 in candidates
+    assert "x" * 17 in candidates
+    assert not any("{" in c for c in candidates)
+
+
+def test_the_producer_directory_and_a_failed_cd(tmp_path):
+    """Reviews a165575f.1, .2: a subshell's own `cd` is where its glob matches, and a `cd` to a directory that is not there leaves the shell in the starting one, read as uncertain so the shape fallback stays."""
+    (tmp_path / "src").mkdir()
+    sub = next(r for r in shellscan.every_run("(cd src; echo f*) | xargs cp a") if r.name == "cp")
+    assert "src" in sub.feed_cwds
+    directories, uncertain = shellscan._feed_directories(sub, str(tmp_path))
+    assert str(tmp_path / "src") in directories
+    failed = next(
+        r for r in shellscan.every_run("cd nosuch; echo b* | xargs cp a") if r.name == "cp"
+    )
+    directories, uncertain = shellscan._feed_directories(failed, str(tmp_path))
+    assert directories == [str(tmp_path)]
+    assert uncertain
+    assert "x" in shellscan._fed_candidates(["*"], directories, True)
 
 
 def test_a_glob_in_an_unknown_directory_keeps_a_name_of_its_shape():
@@ -1923,3 +1978,32 @@ def test_a_glob_in_an_unknown_directory_keeps_a_name_of_its_shape():
     copier = [r for r in shellscan.every_run(cmd) if r.name == "cp"]
     names = {pathlib.Path(p).name for p, _into in shellscan.copy_landings(copier[0], "/tmp")}
     assert "pr-babysit-x.md" in names, names
+
+
+def test_a_redirect_onto_a_glob_writes_the_one_file_it_matches(bash, tmp_path):
+    """#e5b0540a: bash pathname-expands a redirect's target, so `> agent/pr-babysit-*.md` truncates the one log it matches. block_roundlog_truncate reads a redirect target through its expansions for this reason. With two matches bash refuses the redirect as ambiguous, and with none it creates the literal name."""
+    (tmp_path / "agent").mkdir()
+    log = tmp_path / "agent" / "pr-babysit-0831-1.md"
+    log.write_text("history\n", encoding="utf-8")
+    env = {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "HOME": str(tmp_path)}
+    one = subprocess.run(
+        [bash, "--norc", "--noprofile", "-c", "echo x > agent/pr-babysit-*.md"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+    assert one.returncode == 0, one.stderr
+    assert log.read_text(encoding="utf-8") == "x\n"
+    (tmp_path / "agent" / "pr-babysit-0831-2.md").write_text("other\n", encoding="utf-8")
+    two = subprocess.run(
+        [bash, "--norc", "--noprofile", "-c", "echo y > agent/pr-babysit-*.md"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+    assert two.returncode != 0
+    assert log.read_text(encoding="utf-8") == "x\n"

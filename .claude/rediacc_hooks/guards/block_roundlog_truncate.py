@@ -33,6 +33,7 @@ failing loudly, because it made the line look tested when the controls were pass
 as an array subscript to shellcheck (SC1087, an error not a warning), and here the bracket opens a character class in the regex rather than an index. Python has no such ambiguity, which is why the braces are gone and the reason is not.
 """
 
+import fnmatch
 import os
 import re
 
@@ -115,6 +116,19 @@ EDGE_CASES = [
         "a brace-expanded fed destination",
         "echo {/tmp/x,agent/pr-babysit-0831-1.md} | xargs cp /tmp/y.md",
     ),
+    # #e5b0540a: a glob or brace that could spell a log reaches the walk, and every arm reads it expanded.
+    (
+        "a fed log glob in an unknown directory",
+        'cd "$D" && echo pr-babysit-*.md | xargs cp /tmp/x.md',
+    ),
+    ("a fed glob that cannot spell a log", 'cd "$D" && echo notes-*.md | xargs cp /tmp/x.md'),
+    ("mv a brace that spells the log", "mv agent/pr-babysit-{0831-1,x}.md /tmp/"),
+    ("truncate a log glob", "truncate -s 0 agent/pr-babysit-*.md"),
+    ("a redirect onto a log glob", "echo x > agent/pr-babysit-*.md"),
+    ("cp onto a log glob", "cp /tmp/x agent/pr-babysit-*.md"),
+    ("listing a log glob is a read", "ls agent/pr-babysit-*.md"),
+    ("a log glob piped with no blank", 'cd "$D" && echo pr-babysit-*.md|xargs cp /tmp/x.md'),
+    ("appending to a log glob", "echo x >> agent/pr-babysit-*.md"),
     ("a copy back into agent/ lands on the log", "cp /tmp/pr-babysit-0831-1.md agent/"),
     (
         "xargs feeds the log to cp -t a backup directory",
@@ -168,13 +182,56 @@ def _is_log(path):
     return re.fullmatch(RL, base) is not None and re.fullmatch(BRIEFING, base) is None
 
 
+# The characters with which bash makes one word into other names: globs, braces, a leading tilde.
+_EXPANDING = frozenset("*?[{~")
+_GLOB = frozenset("*?[")
+# Round-log names a glob is tried against by the prefilter: any pattern that matches one of these could spell a log.
+_LOG_PROBES = ("pr-babysit-0831-1.md", "pr-babysit-1008-1.md", "pr-babysit-x.md")
+# The prefilter's words: the command with separators, redirect and grouping marks and quotes turned into blanks, then split on blanks. An over-approximate word is all a prefilter needs; the walk reads the real ones.
+_TOKEN_BREAKS = str.maketrans(";&|<>()'\"`", " " * 10)
+
+
+def _names_log(word, directory=None):
+    """Could `word` name a round log once bash expands it? A literal name is read as it stands; a word bash brace-, tilde- or glob-expands is read through `shellscan._fed_candidates` (its matches on disk in `directory`, the run's own, when known) and, for a glob, through one name of its shape too (`shellscan._glob_shape`), so `pr-babysit-*.md` in a directory this walk cannot read still counts (#e5b0540a)."""
+    if _is_log(word):
+        return True
+    if not any(ch in word for ch in _EXPANDING):
+        return False
+    forms = shellscan._fed_candidates([word], directory)
+    forms += [
+        shellscan._glob_shape(f) for f in forms if any(ch in f.rsplit("/", 1)[-1] for ch in _GLOB)
+    ]
+    return any(_is_log(f) for f in forms)
+
+
+def _could_name_log(cmd):
+    """The prefilter: a literal round-log name, or a word holding a glob or brace that could spell one. A command with neither (nearly all of them) never reaches the walk; a glob is tried against a few log names by `fnmatch`, never against the disk."""
+    if hookio.grep_q_line(RL, cmd):
+        return True
+    if not any(ch in cmd for ch in "*?[{"):
+        return False
+    for token in cmd.translate(_TOKEN_BREAKS).split():
+        if not any(ch in token for ch in "*?[{"):
+            continue
+        for alt in shellscan._brace_alternatives(token):
+            if re.search(RL, alt):
+                return True
+            base = alt.rsplit("/", 1)[-1]
+            if any(ch in base for ch in _GLOB) and any(
+                fnmatch.fnmatchcase(probe, base) for probe in _LOG_PROBES
+            ):
+                return True
+    return False
+
+
 def _copy_writes_log(run_, cwd):
     """Does this `cp` put a file at a round-log path? Where the copy lands is `shellscan.copy_landings`' reading, over the words as bash expands them, the xargs feed included (review 0bbd6471.3: `echo <log> | xargs cp /tmp/bak.md` copies onto the log).
 
     A copy INTO a directory lands under the source's own name, so `cp <log> /backup/` writes `/backup/<log name>`: a backup, which this guard has always read as a read. Such a landing counts only where a round log lives (a directory named `agent`) or where one already exists, which is the restore-over-the-log shape (`cp /tmp/<log name> agent/`).
     """
     for path, into in shellscan.copy_landings(run_, cwd, ("cp",)):
-        if not _is_log(path):
+        # A landing is absolute, so a glob in it is matched on disk; its shape counts too (`_names_log`).
+        if not _names_log(path):
             continue
         if not into or os.path.exists(path) or os.path.basename(os.path.dirname(path)) == "agent":
             return True
@@ -213,7 +270,9 @@ def _verb_truncates(run_, cwd):
         hits = [] if _appends(args) else operands
     else:
         hits = []
-    return any(_is_log(h) for h in hits)
+    # Each operand as bash expands it in the run's own directory: `mv agent/pr-babysit-{0831-1,x}.md /tmp/` and `truncate -s0 agent/pr-babysit-*.md` name the log (#e5b0540a).
+    directory = shellscan._run_directory(run_, cwd)
+    return any(_names_log(h, directory) for h in hits)
 
 
 def _program_truncates(code):
@@ -244,13 +303,14 @@ def _program_truncates(code):
 def run(ev):
     cmd = ev.field("tool_input", "command")
 
-    # A round-log path must appear at all, which is also what keeps the walk below off every command that cannot touch one.
-    if not hookio.grep_q_line(RL, cmd):
+    # A round-log path must appear at all, literally or as a glob or brace that could spell one (#e5b0540a: `echo pr-babysit-*.md | xargs cp /tmp/x.md` was allowed here before the walk ran), which is also what keeps the walk below off every command that cannot touch one.
+    if not _could_name_log(cmd):
         return hookio.ALLOW
 
     # The redirects bash performs, with their operator: `>` truncates, `>>` appends (`2>&1`-style descriptor plumbing names no file).
+    # A redirect target is expanded by bash too (`> agent/pr-babysit-*.md` truncates the one log it matches), and its run's directory is not on the write record, so a glob there is read by its shape.
     truncating = any(
-        op in TRUNCATING_OPS and _is_log(target) and not re.fullmatch(r"\d+|-", target)
+        op in TRUNCATING_OPS and _names_log(target) and not re.fullmatch(r"\d+|-", target)
         for op, target in shellscan._analyse(cmd).writes
     )
     # The verbs it runs, behind any prefix, xargs, sh -c or find -exec.
