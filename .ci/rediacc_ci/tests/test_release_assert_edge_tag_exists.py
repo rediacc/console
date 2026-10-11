@@ -722,3 +722,17 @@ def test_a_404_is_still_absent_after_one_call_on_either_stream(monkeypatch) -> N
     _patch(monkeypatch, fake_out)
     assert port.probe_gh_release("v1.0.0") == port.ABSENT
     assert len(fake_out.calls) == 1
+
+
+def test_every_diagnostic_carries_the_modules_own_name(capsys) -> None:
+    """Review finding 35e3dd03.1: the port has ONE name, `SELF`, its `python3 -m` module path; the twin's `.sh` name is restored only inside the differential by `as_twin`. A second constant that claimed to be the twin's name while holding the module's is gone."""
+    assert port.SELF == "rediacc_ci.release.assert_edge_tag_exists"
+    assert not hasattr(port, "TWIN")
+    for argv, tail in (
+        (["--wat"], "unknown option: --wat"),
+        ([], "a version is required (--version 1.3.0)"),
+        (["--version", "x.y"], "'x.y' is not a semver version"),
+    ):
+        assert port.main(argv) == 1
+        err = capsys.readouterr().err
+        assert "%s: %s" % (port.SELF, tail) in err, err

@@ -36,7 +36,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import clone_d1 as port
 from rediacc_ci.tests import differential as diff
-from rediacc_ci.tests.twin_names import as_twin
+from rediacc_ci.tests.twin_names import as_twin, usage_command
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -798,3 +798,18 @@ def test_diagnostics_are_prefixed_with_the_module_name() -> None:
     """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
     assert port.SELF == "rediacc_ci.deploy.clone_d1"
     assert port.__name__ == port.SELF
+
+
+def test_the_usage_line_runs_as_printed_from_the_repository_root() -> None:
+    """Review finding 08928e86.2: the usage line is a command a reader runs from the repository root, so it must import there. Control first: the same command without its `PYTHONPATH=.ci` cannot find `rediacc_ci`."""
+    assigned, argv = usage_command(port.USAGE)
+    assert assigned == {"PYTHONPATH": ".ci"}, port.USAGE
+    argv = [sys.executable, *argv[1:]]
+    bare = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    control = subprocess.run(argv, cwd=ROOT, env=bare, capture_output=True, text=True, check=False)
+    assert "No module named 'rediacc_ci'" in control.stderr, control.stderr
+    proc = subprocess.run(
+        argv, cwd=ROOT, env={**bare, **assigned}, capture_output=True, text=True, check=False
+    )
+    assert proc.returncode == 1, proc.stderr
+    assert proc.stderr == "✗ %s\n" % port.USAGE

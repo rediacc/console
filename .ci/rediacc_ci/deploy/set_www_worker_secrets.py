@@ -45,7 +45,7 @@ from rediacc_ci.core import common
 SELF = "rediacc_ci.deploy.set_www_worker_secrets"
 
 # The `${WORKER_NAME:?...}` stand-in named in the docstring's divergence note.
-# The twin's message repeats the script name; kept, because that is the text.
+# The twin's message repeated its script name after the variable; the port repeats its own module name (`SELF`) in that place, and the differential's `as_twin` maps it back to the twin's name before comparing.
 MISSING_WORKER_NAME = "WORKER_NAME: %s: WORKER_NAME must be set" % SELF
 
 # The twenty-four `--arg <var> "${<ENV>:-}"` pairs (:92-115) in the twin's ORDER,

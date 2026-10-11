@@ -8,7 +8,7 @@ THE AMENDMENT (operator, 2026-10-09), verbatim:
 
 So there is ONE exception list, `.ci/config/model-invocation-exceptions.json`, and it holds only operator rulings, never a BLOCKER entry: an exception needs a new operator ruling (its date and verbatim quote in the entry), and the hooks refuse any AI edit to the list, so the operator adds one with `!`. This gate refuses an entry with no ruling, a BLOCKER entry, a duplicate, a listed file that is not tracked, and a listed file whose key is no longer exactly what the list says (a stale entry).
 
-ONE PREDICATE, ONE LOADER. What a command or skill file is, what "disables model invocation" means (every spelling of `disable-model-invocation`; an explicit `false` is refused as well as a truthy value, because a present key is one word from a user-only command), how the list is found and parsed, and the per-file decision are all `.claude/rediacc_hooks/model_invocation.py` (`in_scope`, `findings`, `load_exceptions`, `exceptions_for`, `verdict`), imported here through the documented `.claude` hop. The hooks import the same module, so the two halves cannot disagree, and `.ci/rediacc_ci/tests/gates/test_gate_model_invocation_agreement.py` drives the real guards and this gate over one set of planted fixtures (a listed file and unlisted ones) to prove it.
+ONE PREDICATE, ONE LOADER. What a command or skill file is, what "disables model invocation" means (every spelling of `disable-model-invocation`; an explicit `false` is refused as well as a truthy value, because a present key is one word from a user-only command), how the list is found and parsed, and the per-file decision are all `.claude/rediacc_hooks/model_invocation.py` (`in_scope`, `findings`, `load_exceptions`, `exceptions_for`, `verdict`), imported here through the documented `.claude` hop. The hooks import the same module, so the two halves cannot disagree, and `.ci/rediacc_ci/tests/gates/test_gate_model_invocation_agreement.py` drives the real guards and this gate over one set of planted fixtures (a listed file and unlisted ones) and fails on any case where they disagree; it checks agreement on those fixtures, not on every possible file.
 
 NOT IN SCOPE: `user-invocable:` in `.claude/skills/*/SKILL.md`. That key decides whether a skill is in the USER's slash menu, not whether the model may invoke it.
 
@@ -131,14 +131,21 @@ def check_tree(root: pathlib.Path, scope=SCOPE) -> Report:
     return report
 
 
+def _checkout_fix(label: str) -> str:
+    """The remediation for one unread repository. The console is the root, not a submodule, so `git submodule update` cannot repair it."""
+    if label == "console":
+        return "run the gate from a git checkout of the console, or pass --root <checkout>"
+    return "git submodule update --init %s" % label
+
+
 def render(report: Report) -> tuple[list[str], list[str]]:
     """(stdout lines, stderr lines) for a report."""
     shape = ", ".join("%s %d" % (label, n) for label, n in report.scanned.items())
     out = ["exceptions honoured (operator rulings): %d" % len(report.honoured)]
     out += ["  %s" % line for line in report.honoured]
     err = [
-        "NOT CHECKED: %s is not checked out, so its commands and skills went unjudged. "
-        "Fix: git submodule update --init %s" % (label, label)
+        "NOT CHECKED: %s is not checked out, so its commands and skills went unjudged. Fix: %s"
+        % (label, _checkout_fix(label))
         for label in report.not_checked
     ]
     if report.scanned.get("console", 0) == 0 and "console" not in report.not_checked:
@@ -247,6 +254,12 @@ SELFTEST = [
         True,
     ),
     (
+        "a duplicate entry fails",
+        {".claude/commands/h.md": _FLAG % "true"},
+        [_entry(".claude/commands/h.md"), _entry(".claude/commands/h.md")],
+        True,
+    ),
+    (
         "an unlisted flagged file beside a listed one fails",
         {".claude/commands/h.md": _FLAG % "true", ".claude/commands/b.md": _FLAG % "true"},
         [_entry(".claude/commands/h.md")],
@@ -281,7 +294,9 @@ def selftest(quiet: bool = False) -> int:
         fails += not ok
         if not quiet or not ok:
             print("%s an absent submodule fails" % ("ok  " if ok else "FAIL"))
-    print("selftest: %d control(s), %d failure(s)" % (len(SELFTEST) + 2, fails))
+    # QUIET MEANS SILENT ON A PASS: every gate run calls this first, and a passing control has nothing to tell its log.
+    if not quiet or fails:
+        print("selftest: %d control(s), %d failure(s)" % (len(SELFTEST) + 2, fails))
     return 1 if fails else 0
 
 

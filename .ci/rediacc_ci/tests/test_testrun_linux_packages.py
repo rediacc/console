@@ -21,7 +21,7 @@ import pytest
 from rediacc_ci.testrun import linux_packages as port
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import testrun_support as ts
-from rediacc_ci.tests.twin_names import as_twin
+from rediacc_ci.tests.twin_names import as_twin, usage_command
 from rediacc_ci.well_known import RELEASES_ORIGIN
 
 TWIN_REL = ".ci/scripts/test/test-linux-packages.sh"
@@ -245,3 +245,19 @@ def test_a_missing_docker_is_a_clean_refusal(
     monkeypatch.setattr(port.common, "require_cmd", refuse)
     assert port.main([]) == 1
     assert "Required command 'docker' is not available" in capsys.readouterr().err
+
+
+def test_the_usage_line_runs_as_printed_from_the_repository_root() -> None:
+    """Review finding 08928e86.2's sibling: the usage line is a command a reader runs from the repository root, so it must import there. Control first: the same command without its `PYTHONPATH=.ci` cannot find `rediacc_ci`."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    assigned, argv = usage_command(port.USAGE)
+    assert assigned == {"PYTHONPATH": ".ci"}, port.USAGE
+    argv = [sys.executable, *argv[1:], "--not-an-option"]
+    bare = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    control = subprocess.run(argv, cwd=root, env=bare, capture_output=True, text=True, check=False)
+    assert "No module named 'rediacc_ci'" in control.stderr, control.stderr
+    proc = subprocess.run(
+        argv, cwd=root, env={**bare, **assigned}, capture_output=True, text=True, check=False
+    )
+    assert proc.returncode == 2, proc.stderr
+    assert port.USAGE in proc.stderr.splitlines(), proc.stderr

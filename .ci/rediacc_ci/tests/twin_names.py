@@ -103,11 +103,15 @@ _MODULES = tuple(("rediacc_ci.deploy.%s" % stem, _twin_of(stem, None)) for stem 
 # A name a port prints for ANOTHER deleted script, rewritten to the name the golden holds.
 _REFERENCES = (("npm run check:ci-release-signing-coverage", "check-release-signing-coverage.sh"),)
 
-# Longest module name first (one module name can prefix another), and the `python3 -m <module>` usage spelling before the bare name.
+# Longest module name first (one module name can prefix another), and the usage spellings before the bare name: `PYTHONPATH=.ci python3 -m <module>` (the line that runs from the repository root, where a usage line is read) before `python3 -m <module>`.
 _PAIRS = _REFERENCES + tuple(
     pair
     for module, twin in sorted(_MODULES, key=lambda item: -len(item[0]))
-    for pair in (("python3 -m %s" % module, twin), (module, twin))
+    for pair in (
+        ("PYTHONPATH=.ci python3 -m %s" % module, twin),
+        ("python3 -m %s" % module, twin),
+        (module, twin),
+    )
 )
 
 
@@ -120,3 +124,18 @@ def as_twin(value):
     if isinstance(value, (list, tuple)):
         return type(value)(as_twin(item) for item in value)
     return value
+
+
+def usage_command(usage):
+    """(environment assignments, argv) of the command a port's usage line spells, cut before its first option or placeholder: `Usage: PYTHONPATH=.ci python3 -m rediacc_ci.x --a <b>` gives `({"PYTHONPATH": ".ci"}, ["python3", "-m", "rediacc_ci.x"])`. A usage line is run as printed, so a test can run it."""
+    words = usage.split(":", 1)[1].split()
+    env = {}
+    while words and "=" in words[0] and not words[0].startswith("-"):
+        key, _, value = words.pop(0).partition("=")
+        env[key] = value
+    argv = []
+    for word in words:
+        if word != "-m" and word.startswith(("-", "[", "<")):
+            break
+        argv.append(word)
+    return env, argv

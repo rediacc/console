@@ -204,3 +204,66 @@ def test_the_comparison_fires_on_a_planted_divergence(tmp_path):
     diverged = {d[0] for d in compare(tmp_path, ignores_the_list)}
     assert "LISTED file keeping its key" in diverged
     assert "LISTED file with the key removed" in diverged
+
+
+# ---- the gate module's own controls and messages (review findings 77997287.1-.4) ----
+
+
+def test_a_duplicate_entry_is_a_planted_control_and_fails(tmp_path):
+    """77997287.1: the docstring says the gate refuses a duplicate entry, so a SELFTEST control plants one. Control first: the same entry listed once passes."""
+    names = {case[0] for case in gate.SELFTEST}
+    assert "a duplicate entry fails" in names
+    once = tmp_path / "once"
+    gate._plant(
+        once,
+        {**gate.BASE, ".claude/commands/h.md": gate._FLAG % "true"},
+        [gate._entry(".claude/commands/h.md")],
+    )
+    assert not gate.check_tree(once, gate.CONSOLE_ONLY).failed()
+    twice = tmp_path / "twice"
+    gate._plant(
+        twice,
+        {**gate.BASE, ".claude/commands/h.md": gate._FLAG % "true"},
+        [gate._entry(".claude/commands/h.md"), gate._entry(".claude/commands/h.md")],
+    )
+    report = gate.check_tree(twice, gate.CONSOLE_ONLY)
+    assert report.failed()
+    assert any("listed twice" in why for _path, why in report.refusals), report.refusals
+
+
+def test_an_unread_console_is_not_told_to_init_a_submodule():
+    """77997287.2: the console is the root, so `git submodule update --init console` repairs nothing. Control: a real submodule label still gets that fix."""
+    _out, err = gate.render(gate.Report(not_checked=["console", "private/renet"]))
+    text = "\n".join(err)
+    assert "git submodule update --init private/renet" in text
+    assert "--init console" not in text
+    assert "git checkout of the console" in text
+
+
+def test_a_quiet_selftest_prints_nothing_when_every_control_passes(capsys):
+    """77997287.3: quiet mode is the per-run controls-first call; on a pass it prints nothing. Control: the loud mode prints the summary."""
+    assert gate.selftest(quiet=False) == 0
+    assert (
+        "selftest: %d control(s), 0 failure(s)" % (len(gate.SELFTEST) + 2)
+        in capsys.readouterr().out
+    )
+    assert gate.selftest(quiet=True) == 0
+    assert capsys.readouterr().out == ""
+
+
+def test_the_registry_names_the_loader_as_the_lists_reader():
+    """77997287.4: the json-inventory row for the exception list names the module that binds and loads it, not the gate that only mentions it. The generator (`scripts/lib/doc-providers.ts`, `BINDING`) ranks a binder above a mention; a generator without that rank writes the gate module here."""
+    rel = gate.predicate().EXCEPTIONS_REL
+    text = paths.from_root("scripts", "data", "doc-registry.md").read_text(encoding="utf-8")
+    rows = [line for line in text.splitlines() if line.startswith("| `%s` |" % rel)]
+    assert len(rows) == 1, rows
+    assert "code: `.claude/rediacc_hooks/model_invocation.py`" in rows[0], rows[0]
+
+
+def test_a_model_invoked_standing_orders_records_no_operator_hint():
+    """Review finding 36e7118d.1: `/standing-orders` is model-invocable under the ruling, and its arguments are persisted as OPERATOR hints in channels that outlive compaction, so the command states that a run the model starts itself opens none of its doors. The description and the absorbing section both carry it; dropping either reds this."""
+    text = paths.from_root(".claude", "commands", "standing-orders.md").read_text(encoding="utf-8")
+    front, _, body = text.partition("\n---\n")
+    assert "a run the model starts itself absorbs nothing" in front
+    assert "**A hint is the operator's words, never the model's.**" in body
+    assert "opens none of the three doors, writes nothing" in body

@@ -1576,3 +1576,18 @@ def test_a_plan_moved_by_check_plan_folders_keeps_its_baselined_debt(tmp_path, f
     # MIRROR: the same move with no stub left behind is a different document to the baseline.
     (root / old_rel).unlink()
     assert ps.run_check(root, GLOBALS, RULES, [new_rel], as_json=True) == 1
+
+
+def test_a_quote_key_is_skipped_only_in_the_exception_list():
+    """Review finding cac47d16.3: `quote` is skipped as an operator's verbatim ruling in the model-invocation exception list ALONE; a `quote` value in any other JSON file is prose and is scanned. Control first: the same line in the list is skipped, absolute path included."""
+    line = '  "quote": "a sentence about the work that the gate reads as prose"\n'
+    listed = next(iter(ps.JSON_FILE_SKIP_KEYS))
+    for path in (listed, str(ROOT / listed)):
+        lines, why = ps.extract(path, line)
+        assert why is None, path
+        assert lines == [], path
+    for path in ("packages/www/src/i18n/translations/en.json", ".ci/config/other.json"):
+        lines, why = ps.extract(path, line)
+        assert why is None, path
+        assert [ln.lineno for ln in lines] == [1], path
+    assert "quote" not in ps.JSON_SKIP_KEYS

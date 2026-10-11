@@ -152,8 +152,8 @@ FK_JQ = ".[0].results | length"
 FK_RESULTS_JQ = ".[0].results"
 FK_COMMAND = "PRAGMA foreign_key_check"
 
-# The usage line (twin :50), which is also the only place `--wrangler-config` is documented. `--sanitize` is absent from it; see DEFECT D.
-USAGE = "Usage: python3 -m rediacc_ci.deploy.clone_d1 --source <db-name> --target <db-name> [--wrangler-config <path>]"
+# The usage line (twin :50), which is also the only place `--wrangler-config` is documented. `--sanitize` is absent from it; see DEFECT D. `PYTHONPATH=.ci` is part of the command: run from the repository root without it, `python3 -m` cannot find `rediacc_ci` (review finding 08928e86.2).
+USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.clone_d1 --source <db-name> --target <db-name> [--wrangler-config <path>]"
 
 # The one variable `require_var` demands (twin :54). The header claims two; see
 # DEFECT C.

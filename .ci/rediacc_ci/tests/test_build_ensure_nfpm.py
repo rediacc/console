@@ -452,3 +452,16 @@ def test_diagnostics_are_prefixed_with_the_module_name() -> None:
     assert ensure_nfpm.fetching_message("2.45.0", "x86_64").startswith(
         "rediacc_ci.build.ensure_nfpm: "
     )
+
+
+def test_the_two_messages_are_the_twins_text_up_to_the_prefix() -> None:
+    """Review findings db7749af.1 and db7749af.2: the docstrings say each message is the twin's `:58`/`:66` text with the port's prefix in place of `ensure-nfpm:`. Both halves pinned: the port's prefix, and the twin's bytes once `as_twin` maps it back."""
+    unpinned = ensure_nfpm.unpinned_arch_message("arm64")
+    fetching = ensure_nfpm.fetching_message("2.45.0", "x86_64")
+    for message in (unpinned, fetching):
+        assert message.startswith("rediacc_ci.build.ensure_nfpm: "), message
+    assert as_twin(unpinned) == (
+        "ensure-nfpm: no pinned checksum for arm64 in .ci/config/constants.sh -- "
+        "add one rather than downloading unverified bytes"
+    )
+    assert as_twin(fetching) == "ensure-nfpm: fetching nfpm 2.45.0 for x86_64"

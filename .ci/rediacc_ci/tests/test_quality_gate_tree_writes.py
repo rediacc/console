@@ -255,3 +255,23 @@ def test_selftest_is_green():
     )
     assert proc.returncode == 0, proc.stderr[-2000:]
     assert "control(s) passed" in proc.stdout
+
+
+def test_a_refusal_names_the_module_a_reader_can_run(tmp_path, capsys):
+    """Review finding db7749af.5: the twin `check-gate-tree-writes.sh` is deleted, so a refusal is prefixed with the module that prints it. Control first: the same fixture with a list-shaped lock prints no "not a JSON list" refusal, so the line below is the planted shape's alone."""
+    gate.build_fixture(tmp_path, ROOT)
+    lock_path = tmp_path / "lock.json"
+    lock_path.write_text(
+        json.dumps([{"id": "w", "run": "c2m/gate.py", "gate": True}]), encoding="utf-8"
+    )
+    gate.main(["--root", str(tmp_path), "--lock", str(lock_path)])
+    assert "is not a JSON list" not in capsys.readouterr().err
+    lock_path.write_text(json.dumps({"not": "a list"}), encoding="utf-8")
+    assert gate.main(["--root", str(tmp_path), "--lock", str(lock_path)]) == 1
+    err = capsys.readouterr().err
+    assert (
+        "rediacc_ci.quality.gate_tree_writes: refusing to pass: the gate lock at %s is not a JSON list"
+        % lock_path
+        in err
+    ), err
+    assert "check-gate-tree-writes" not in err

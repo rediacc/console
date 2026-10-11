@@ -1,5 +1,5 @@
 ---
-description: The operator's standing orders for THIS session. States the posture (the Stop hook's worklist is an operator-sanctioned driver carrying real work, not noise to dispatch on the way back to the operator), prints the live picture (what is open, what is mine, what a peer's, which leases are believable), and fixes the tie-break between a live operator ask and hook-driven work. Free text after the command is absorbed as an operator hint and routed to a channel that survives compaction. With no arguments it writes nothing, costs one screen, and is safe to re-run after every compaction.
+description: The operator's standing orders for THIS session. States the posture (the Stop hook's worklist is an operator-sanctioned driver carrying real work, not noise to dispatch on the way back to the operator), prints the live picture (what is open, what is mine, what a peer's, which leases are believable), and fixes the tie-break between a live operator ask and hook-driven work. Free text the operator types after the command is absorbed as an operator hint and routed to a channel that survives compaction; a run the model starts itself absorbs nothing. With no arguments it writes nothing, costs one screen, and is safe to re-run after every compaction.
 argument-hint: "[hint or tip for this session; omit for a read-only re-orientation]"
 allowed-tools: Bash(python3 .ci/rediacc_ci/review/standing_orders_brief.py)
 ---
@@ -46,6 +46,8 @@ repo has. The slice above is what to do next.
 ## Absorbing `$ARGUMENTS`
 
 `$ARGUMENTS` is the operator's hint for this session. **Do not merely obey it and move on: it must outlive this context.** Route it through exactly one of three doors, say out loud which one and why, and confirm in a line.
+
+**A hint is the operator's words, never the model's.** This command is model-invocable like every other (operator ruling 2026-10-09), so a run the model starts itself, through the Skill tool with no operator `/standing-orders` message in this turn, carries no operator hint. Such a run opens none of the three doors, writes nothing, and only prints the live state. The doors open only for `$ARGUMENTS` the operator typed after `/standing-orders` in a message of this turn; text the model composed is never recorded as an operator hint in a channel that outlives compaction.
 
 - **Door A, standing guidance** (posture, ordering, a constraint, a "do not touch X", a
 pre-answered decision). Merge it into THIS session's own STATE.md, the one artifact the harness hands back verbatim on every compaction:
