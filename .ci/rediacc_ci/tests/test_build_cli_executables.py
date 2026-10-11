@@ -358,7 +358,7 @@ def _mask(text: str, *, lines: bool = False) -> str:
 def _agree(old_t, new_t, label: str, *, lines: bool = False) -> None:
     old, old_calls, old_files = old_t
     new, new_calls, new_files = new_t
-    # The port's diagnostics carry its own module name (35e3dd03b) where the recorded twin printed its script name; `as_twin` maps one back to the other, as every twin differential does.
+    # The port's diagnostics carry its own module name where the recorded twin printed its script name; `as_twin` maps one back to the other, as every twin differential does.
     new = subprocess.CompletedProcess(
         new.args, new.returncode, as_twin(new.stdout), as_twin(new.stderr)
     )

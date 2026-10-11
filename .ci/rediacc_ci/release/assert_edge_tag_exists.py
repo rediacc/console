@@ -46,7 +46,7 @@ FOUR DIVERGENCES, ALL IN REFUSAL TEXT NOBODY PARSES, NONE IN A VERDICT:
      therefore prints a newline through the twin and two characters here. The
      differential asserts BOTH directions so nobody "fixes" it later.
 
-DEFECT IN THE SELF, REPRODUCED AND REPORTED RATHER THAN FIXED (the acceptance rule for this wave is agreement with the live script):
+DEFECT IN THE TWIN, REPRODUCED AND REPORTED RATHER THAN FIXED (the acceptance rule for this wave is agreement with the live script):
 
   `assert-edge-tag-exists.sh --version` WITH NO VALUE EXITS 1 IN TOTAL SILENCE.
   The arm is `VERSION="${2:-}"; shift 2`, and with only one argument left

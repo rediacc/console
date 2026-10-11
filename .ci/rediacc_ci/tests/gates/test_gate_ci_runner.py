@@ -861,7 +861,7 @@ def _fixture_repo(gate, work, gates: list[dict], extra_files: dict | None = None
     shutil.copy(
         RUNNER.parents[1] / "lib" / "policy-paths.ts", repo / "scripts" / "lib" / "policy-paths.ts"
     )
-    # run.ts refuses to start until `python3 -m rediacc_ci.core.tmp_capacity` answers from REPO_ROOT/.ci (worklist #edd646a8); that module imports only the standard library, so the package skeleton around it is all the copy needs.
+    # run.ts refuses to start until `python3 -m rediacc_ci.core.tmp_capacity` answers from REPO_ROOT/.ci; that module imports only the standard library, so the package skeleton around it is all the copy needs.
     for rel in ("__init__.py", "core/__init__.py", "core/tmp_capacity.py"):
         dest = repo / ".ci" / "rediacc_ci" / rel
         dest.parent.mkdir(parents=True, exist_ok=True)

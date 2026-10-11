@@ -33,6 +33,10 @@ _FOREIGN_DIR = tempfile.mkdtemp(prefix="foreign-", dir=RUN_TMP)
 subprocess.run(["git", "init", "-q", _FOREIGN_DIR], check=True, capture_output=True)
 pathlib.Path(_FOREIGN_DIR, "a.txt").write_text("hi\n", encoding="utf-8")
 pathlib.Path(_FOREIGN_DIR, "sub").mkdir()
+# Listed, so a `foreach` there really visits `sub` and its payload is judged from it (review fae7c16a.1).
+pathlib.Path(_FOREIGN_DIR, ".gitmodules").write_text(
+    '[submodule "sub"]\n\tpath = sub\n\turl = ./sub\n', encoding="utf-8"
+)
 _ROOT = str(pathlib.Path(__file__).resolve().parents[3])
 
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
@@ -186,6 +190,9 @@ CWD_CASES = [
     (_FOREIGN_DIR, "git -C sub checkout -- . && git -C %s checkout -- ." % _ROOT, 2),
     # An unexpanded variable names no directory that exists, so the cwd's "" cannot be trusted as foreign.
     (_FOREIGN_DIR, 'cd "$X" && git restore .', 2),
+    # A nested payload aimed back at this checkout is refused whichever stand-down the top level reaches (review fae7c16a.1): the ambiguous "" of a foreign cwd, and a top-level target resolved outside.
+    (_FOREIGN_DIR, "git submodule foreach 'git -C %s reset --hard'" % _ROOT, 2),
+    (_FOREIGN_DIR, "git -C sub submodule foreach 'git -C %s reset --hard'" % _ROOT, 2),
 ]
 
 
