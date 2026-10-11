@@ -271,18 +271,23 @@ def build_baseline(
 ) -> dict[str, Any]:
     agg = aggregate(captures)
     gates = agg["gates"]
+    unmeasured = agg["unmeasured"]
+    # A capture can come from a run whose manifest still had a gate this tree retired (a main run read while a branch drops a gate, or the reverse). Writing it would produce a baseline `--check` refuses on its first line ("in gate-costs.json but not in the manifest"), so a refresh keeps only the manifest's gates.
+    if lock_ids is not None:
+        gates = {g: v for g, v in gates.items() if g in lock_ids}
+        unmeasured = {g: v for g, v in unmeasured.items() if g in lock_ids}
     carried: dict[str, str] = {}
     if prior is not None and lock_ids is not None and sampled is not None:
         carried = carry_forward(prior, agg, lock_ids, sampled)
         for gid in carried:
             gates[gid] = dict(prior["gates"][gid])
-        _rank(gates)
+    _rank(gates)
     return {
         "$comment": comment if comment is not None else DEFAULT_COMMENT,
         "refreshed_at": refreshed_at,
         "source": {"runner": CAPTURE_RUNNER, "cores": agg["cores"], "runs": list(sources)},
         "gates": dict(sorted(gates.items())),
-        "unmeasured": agg["unmeasured"],
+        "unmeasured": unmeasured,
         "carried": carried,
     }
 

@@ -171,6 +171,26 @@ def test_gate_absent_from_the_manifest_is_reported():
     assert "not in the manifest" in findings[0]
 
 
+def test_a_refresh_keeps_only_the_manifest_gates_so_its_own_check_passes():
+    """A capture from a run whose manifest still had a since-retired gate (2026-10-11: nine of them, read from main's runs) must not reach the refreshed file, or `--check` refuses the refresh's own output."""
+    caps = [
+        capture(
+            [
+                gate("kept", 2000, 2000),
+                gate("retired", 2000, 2000),
+                gate("gone-unmeasured", None, 5),
+            ]
+        )
+    ]
+    built = gc.build_baseline(
+        caps, [{"id": 1}], None, "2026-10-01T00:00:00Z", prior={}, lock_ids={"kept"}, sampled=set()
+    )
+    assert set(built["gates"]) == {"kept"}
+    assert "gone-unmeasured" not in built["unmeasured"]
+    assert built["gates"]["kept"]["rank"] == 1
+    assert gc.check_findings(built, gc.aggregate(caps), {"kept"}) == []
+
+
 def test_new_gate_missing_from_the_file_is_reported():
     committed = baseline_from([capture([gate("old", 2000, 2000)])])
     fresh = gc.aggregate([capture([gate("old", 2000, 2000), gate("new", 2000, 2000)])])
