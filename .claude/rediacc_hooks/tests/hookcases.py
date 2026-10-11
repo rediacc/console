@@ -1260,6 +1260,17 @@ STATIC: list[Case] = [
         bash_json("npx prettier --write $files"),
         "unscoped-formatter: an unquoted variable npx hands on may vanish",
     ),
+    # Review 0bbd6471.2: a versioned spec under the npm spellings, which shellscan launches as npx does.
+    case(
+        "check 2 guards/block_unscoped_formatter_run.py",
+        bash_json("npm exec -- prettier@3 --write"),
+        "unscoped-formatter: npm exec with a versioned spec",
+    ),
+    case(
+        "check 2 guards/block_unscoped_formatter_run.py",
+        bash_json("npm x -- prettier@3 --write"),
+        "unscoped-formatter: npm x with a versioned spec",
+    ),
     case(
         "check 2 guards/block_suppressions_shell_write.py",
         bash_json("find . -name '*.py' -exec sed -i 's/$/  # " + "no" + "qa: E501/' {} +"),
@@ -3558,6 +3569,22 @@ STATIC: list[Case] = [
         bash_json("sudo cp /usr/local/bin/renet /tmp/renet.bak"),
         "binary-deploy CONTROL: backing up the installed binary is a read",
     ),
+    # Review 0bbd6471.1: a renet-named sibling in the install directory is the two-step deploy, and every copier counts.
+    case(
+        "check 2 guards/block_binary_deploy.py",
+        bash_json("sudo cp bin/renet /usr/local/bin/renet.new"),
+        "binary-deploy: a staged renet sibling is refused",
+    ),
+    case(
+        "check 2 guards/block_binary_deploy.py",
+        bash_json("sudo install -m 755 bin/renet /usr/local/bin/renet"),
+        "binary-deploy: sudo install onto the binary is refused",
+    ),
+    case(
+        "check 0 guards/block_binary_deploy.py",
+        bash_json("sudo cp bin/rdc /usr/local/bin/rdc"),
+        "binary-deploy CONTROL: another binary in the install directory",
+    ),
     case(
         "check 0 guards/block_roundlog_truncate.py",
         bash_json("echo 'echo x | tee --output-error=warn agent/pr-babysit-0831-1.md'"),
@@ -3579,6 +3606,17 @@ STATIC: list[Case] = [
         "check 0 guards/block_roundlog_truncate.py",
         bash_json("echo x >> agent/pr-babysit-0831-1.md"),
         "roundlog-truncate CONTROL: an append cannot truncate",
+    ),
+    # Review 0bbd6471.3: xargs appends the log as cp's destination.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("echo agent/pr-babysit-0831-1.md | xargs cp /tmp/bak.md"),
+        "roundlog-truncate: xargs feeds the log to cp as its destination",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("cp agent/pr-babysit-0831-1.md /backup/"),
+        "roundlog-truncate CONTROL: a copy into a backup directory is a read",
     ),
     # --- warn-hook-change.sh: warning only, ALWAYS exit 0 ------------------------ The operator chose warn over block for hook edits (2026-08-25) because a hard block would have fired six times that day on legitimate work. These pin that it can never block: a warn hook that can block is a block hook nobody reviewed.
     case(

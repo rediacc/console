@@ -30,6 +30,7 @@ import os
 import signal
 import subprocess
 import tempfile
+import types
 
 from rediacc_hooks import hookio, proc, runningscript, shellscan
 from rediacc_hooks.guards import block_worktree_add as WT
@@ -349,6 +350,22 @@ EDGE_CASES = [
     ("sed -i on a running script", "sed -i 's/a/b/' %s" % LIVE_SCRIPT),
     ("a copy into the running script's directory", "cp /tmp/x/bash-side-suite.sh %s/" % WORLD),
     ("copying the running script AWAY is a read", "cp %s /tmp/backup.sh" % LIVE_SCRIPT),
+    # Review 0bbd6471.5: a destination without `.sh` is a FILE unless `-t`, a trailing slash or the filesystem makes it a directory.
+    (
+        "copying it to a file with no suffix is a read",
+        "cp %s /tmp/rediacc-bashwrite-backup" % LIVE_SCRIPT,
+    ),
+    ("copying a script into its directory by -t", "cp -t %s /tmp/x/bash-side-suite.sh" % WORLD),
+    ("copying a script into its existing directory", "cp /tmp/x/bash-side-suite.sh %s" % WORLD),
+    # Review 0bbd6471.4: xargs appends its feed, so a fed running script is the operand or the destination.
+    ("xargs feeds the running script to cp", "echo %s | xargs cp /tmp/x.sh" % LIVE_SCRIPT),
+    ("xargs feeds the running script to sed -i", "echo %s | xargs sed -i s/a/b/" % LIVE_SCRIPT),
+    ("xargs feeds the running script to tee", "echo %s | xargs tee" % LIVE_SCRIPT),
+    ("xargs feeds the running script to truncate", "echo %s | xargs truncate -s 0" % LIVE_SCRIPT),
+    (
+        "xargs feeds a script to cp -t its directory",
+        "echo /tmp/x/bash-side-suite.sh | xargs cp -t %s" % WORLD,
+    ),
     ("a redirect inside sh -c", "sh -c 'echo x > %s'" % LIVE_SCRIPT),
     ("a python -c write", "python3 -c \"open('%s', 'w').write('x')\"" % LIVE_SCRIPT),
     ("a python here-string write", "python3 <<< \"open('%s', 'w').write('x')\"" % LIVE_SCRIPT),
@@ -407,61 +424,69 @@ def _targets(cmd):
     return targets
 
 
-# GNU cp/mv options that take the next word as their value; `-t DIR` names the destination directory.
-_COPY_VALUE_OPTS = frozenset(("-t", "--target-directory", "-S", "--suffix"))
+def _operands(run_):
+    """A write verb's operands: its own non-option words, then what xargs appends from its feed (`echo a.sh | xargs sed -i s/x/y/` edits `a.sh`). What a producer prints is not computed, so every fed word counts, the direction this guard fails safe in (review 0bbd6471.4)."""
+    words = [a for a in run_.argv if not (a.startswith("-") and len(a) > 1)]
+    if run_.feed and "xargs" in run_.via:
+        words += run_.feed.split()
+    return words
 
 
-def _operands(args):
-    return [a for a in args if not (a.startswith("-") and len(a) > 1)]
+def copy_landings(run_, cwd, names=("cp", "mv"), argv=None):
+    """`(path, into a directory)` for every file a run of one of `names` writes, absolute. `argv` replaces the run's own words (a caller passes `_Run.xargv` to read `$F` as bash expands it).
+
+    Read by `shellscan.run_copies` (getopt's options, a `find -exec` `{}`, the words xargs feeds as destinations) and placed the way the tool places it: a destination is a DIRECTORY only when `-t` names it, it is written with a trailing slash, or the filesystem says so, and then each source lands inside it under its own name. Anything else is the file written (review 0bbd6471.5: `cp <running>.sh /tmp/backup` writes `/tmp/backup`, and it used to be read as a directory). `run_copies` answers "into" for an xargs-fed destination too, which is right for its directory-shaped callers and not for a file, so the target-directory option is read back from `copy_destination` here. block_roundlog_truncate and block_binary_deploy share this.
+    """
+    if shellscan._base(run_.name) not in names:
+        return []
+    if argv is not None:
+        run_ = types.SimpleNamespace(
+            name=run_.name,
+            argv=list(argv),
+            feed=run_.feed,
+            via=run_.via,
+            launch=run_.launch,
+            cwd=run_.cwd,
+        )
+    copies = shellscan.run_copies(run_)
+    if copies is None:
+        return []
+    sources, dests, _into = copies
+    found = shellscan.copy_destination(shellscan._base(run_.name), list(run_.argv))
+    option_dir = found[1] if found is not None and found[2] else None
+    # Under a target-directory option the words xargs appends are more SOURCES (`echo bin/x | xargs cp -t DIR`), while `run_copies` reads every fed word as a destination.
+    if option_dir is not None and run_.feed and "xargs" in run_.via:
+        sources, dests = [*found[0], *run_.feed.split()], [option_dir]
+    base = cwd if run_.cwd is None else os.path.join(cwd, run_.cwd)
+    out = []
+    for dest in dests:
+        dest_abs = os.path.normpath(os.path.join(base, dest))
+        if dest == option_dir or dest.endswith("/") or os.path.isdir(dest_abs):
+            out += [
+                (os.path.join(dest_abs, os.path.basename(src.rstrip("/"))), True) for src in sources
+            ]
+        else:
+            out.append((dest_abs, False))
+    return out
 
 
-def _copy_destination(args):
-    """`cp`/`mv`'s destination and sources: the `-t` directory when given, else the last operand; a `.sh` source copied into a directory lands at that directory plus its basename."""
-    target = None
-    words = []
-    i = 0
-    while i < len(args):
-        word = args[i]
-        i += 1
-        if word == "--":
-            words.extend(args[i:])
-            break
-        if word.startswith("--target-directory="):
-            target = word.split("=", 1)[1]
-        elif word in _COPY_VALUE_OPTS:
-            if word in ("-t", "--target-directory") and i < len(args):
-                target = args[i]
-            i += 1
-        elif word.startswith("-t") and len(word) > 2:
-            target = word[2:]
-        elif not (word.startswith("-") and len(word) > 1):
-            words.append(word)
-    if target is None:
-        if len(words) < 2:
-            return []
-        target, words = words[-1], words[:-1]
-    if target.endswith(".sh"):
-        return [target]
-    return [target.rstrip("/") + "/" + w.rsplit("/", 1)[-1] for w in words if w.endswith(".sh")]
-
-
-def _verb_targets(run_):
-    """The `.sh` files one run's write verb writes, read off its argv: `tee`, `truncate`, `shfmt -w` and `sed -i` write their operands, `cp`/`mv` their destination, `dd` its `of=`. Anything else writes nothing here."""
-    base = run_.name.rsplit("/", 1)[-1]
+def _verb_targets(run_, cwd):
+    """The `.sh` files one run's write verb writes: `tee`, `truncate`, `shfmt -w` and `sed -i` write their operands, `cp`/`mv` where `copy_landings` puts the copy, `dd` its `of=`. Every arm reads the xargs feed as `_operands` does. Anything else writes nothing here."""
+    base = shellscan._base(run_.name)
     args = list(run_.argv)
     if base in ("tee", "truncate"):
-        found = _operands(args)
+        found = _operands(run_)
     elif base == "shfmt":
-        found = _operands(args) if any(a in ("-w", "--write") for a in args) else []
+        found = _operands(run_) if any(a in ("-w", "--write") for a in args) else []
     elif base == "sed":
         in_place = any(
             a.startswith("--in-place")
             or (not a.startswith("--") and a.startswith("-") and "i" in a[1:])
             for a in args
         )
-        found = _operands(args) if in_place else []
+        found = _operands(run_) if in_place else []
     elif base in ("cp", "mv"):
-        found = _copy_destination(args)
+        found = [path for path, _into in copy_landings(run_, cwd)]
     elif base == "dd":
         found = [a[3:] for a in args if a.startswith("of=")]
     else:
@@ -476,8 +501,9 @@ def run(ev):
 
     # The redirects bash really performs onto a `.sh` (see the Rule T note at NOT_ARROW), then the write verbs it runs, then what each interpreter program writes.
     cands = [t for t in shellscan.write_targets(cmd) if t.endswith(".sh")]
+    cwd = ev.field("cwd") or str(hookio.repo_root())
     for run_ in shellscan.every_run(cmd):
-        cands += _verb_targets(run_)
+        cands += _verb_targets(run_, cwd)
     for _family, code in WT.interpreter_programs(cmd):
         if hookio.grep_q(WRITE_INTENT, code):
             cands += _targets(code).split()
