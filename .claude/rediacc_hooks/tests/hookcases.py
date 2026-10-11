@@ -1552,6 +1552,27 @@ STATIC: list[Case] = [
         ),
         "user-only-command-shell-write: a heredoc writing the list through Path",
     ),
+    # #5077391c: the fed words under `-t` are SOURCES. The deny row was allowed (the commands directory read as the source) and both controls refused (a fed word read as the destination).
+    case(
+        "check 2 guards/block_user_only_command_shell_write.py",
+        bash_json("echo .claude/commands/handoff.md | xargs cp -t .claude/skills/demo"),
+        "user-only-command-shell-write: xargs feeds a flagged command to cp -t a skill",
+    ),
+    case(
+        "check 0 guards/block_user_only_command_shell_write.py",
+        bash_json("echo .claude/commands/handoff.md | xargs cp -t /tmp"),
+        "user-only-command-shell-write CONTROL: xargs feeds a flagged command to cp -t another directory",
+    ),
+    case(
+        "check 0 guards/block_user_only_command_shell_write.py",
+        bash_json("echo .ci/config/model-invocation-exceptions.json | xargs cp -t /tmp"),
+        "user-only-command-shell-write CONTROL: xargs feeds the exception list to cp -t another directory",
+    ),
+    case(
+        "check 2 guards/block_user_only_command_shell_write.py",
+        bash_json("echo /tmp/x.json .ci/config/model-invocation-exceptions.json | xargs cp"),
+        "user-only-command-shell-write: xargs feeds cp the exception list as its destination",
+    ),
     # block_review_file_shell_write judges a Python program by its write TARGETS (2026-10-09): a review path that only flows into written content was refused live, and a target built from a review path through a name was allowed.
     case(
         "check 0 guards/block_review_file_shell_write.py",
@@ -1694,6 +1715,17 @@ STATIC: list[Case] = [
         "check 2 guards/block_review_file_shell_write.py",
         bash_json(_handed_down("echo x > agent/reviews/a.md", 6)),
         "review-file-shell-write: a write handed down six programs deep is refused, not dropped at the depth cap",
+    ),
+    # #5077391c: xargs appends its feed to cp's own words, so under `-t` a fed word is a SOURCE. The control was refused while every fed word read as a destination.
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/1008-1/x.md | xargs cp -t /tmp"),
+        "review-file-shell-write CONTROL: xargs feeds a review file to cp -t another directory",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("echo /tmp/a.md | xargs cp -t agent/reviews/1008-1"),
+        "review-file-shell-write: xargs feeds a source to cp -t the review directory",
     ),
     case(
         "check 2 guards/block_ssh_docker.py",

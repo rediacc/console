@@ -30,7 +30,6 @@ import os
 import signal
 import subprocess
 import tempfile
-import types
 
 from rediacc_hooks import hookio, proc, runningscript, shellscan
 from rediacc_hooks.guards import block_worktree_add as WT
@@ -432,46 +431,8 @@ def _operands(run_):
     return words
 
 
-def copy_landings(run_, cwd, names=("cp", "mv"), argv=None):
-    """`(path, into a directory)` for every file a run of one of `names` writes, absolute. `argv` replaces the run's own words (a caller passes `_Run.xargv` to read `$F` as bash expands it).
-
-    Read by `shellscan.run_copies` (getopt's options, a `find -exec` `{}`, the words xargs feeds as destinations) and placed the way the tool places it: a destination is a DIRECTORY only when `-t` names it, it is written with a trailing slash, or the filesystem says so, and then each source lands inside it under its own name. Anything else is the file written (review 0bbd6471.5: `cp <running>.sh /tmp/backup` writes `/tmp/backup`, and it used to be read as a directory). `run_copies` answers "into" for an xargs-fed destination too, which is right for its directory-shaped callers and not for a file, so the target-directory option is read back from `copy_destination` here. block_roundlog_truncate and block_binary_deploy share this.
-    """
-    if shellscan._base(run_.name) not in names:
-        return []
-    if argv is not None:
-        run_ = types.SimpleNamespace(
-            name=run_.name,
-            argv=list(argv),
-            feed=run_.feed,
-            via=run_.via,
-            launch=run_.launch,
-            cwd=run_.cwd,
-        )
-    copies = shellscan.run_copies(run_)
-    if copies is None:
-        return []
-    sources, dests, _into = copies
-    found = shellscan.copy_destination(shellscan._base(run_.name), list(run_.argv))
-    option_dir = found[1] if found is not None and found[2] else None
-    # Under a target-directory option the words xargs appends are more SOURCES (`echo bin/x | xargs cp -t DIR`), while `run_copies` reads every fed word as a destination.
-    if option_dir is not None and run_.feed and "xargs" in run_.via:
-        sources, dests = [*found[0], *run_.feed.split()], [option_dir]
-    base = cwd if run_.cwd is None else os.path.join(cwd, run_.cwd)
-    out = []
-    for dest in dests:
-        dest_abs = os.path.normpath(os.path.join(base, dest))
-        if dest == option_dir or dest.endswith("/") or os.path.isdir(dest_abs):
-            out += [
-                (os.path.join(dest_abs, os.path.basename(src.rstrip("/"))), True) for src in sources
-            ]
-        else:
-            out.append((dest_abs, False))
-    return out
-
-
 def _verb_targets(run_, cwd):
-    """The `.sh` files one run's write verb writes: `tee`, `truncate`, `shfmt -w` and `sed -i` write their operands, `cp`/`mv` where `copy_landings` puts the copy, `dd` its `of=`. Every arm reads the xargs feed as `_operands` does. Anything else writes nothing here."""
+    """The `.sh` files one run's write verb writes: `tee`, `truncate`, `shfmt -w` and `sed -i` write their operands, `cp`/`mv` where `shellscan.copy_landings` puts the copy, `dd` its `of=`. Every arm reads the xargs feed as `_operands` does. Anything else writes nothing here."""
     base = shellscan._base(run_.name)
     args = list(run_.argv)
     if base in ("tee", "truncate"):
@@ -486,7 +447,7 @@ def _verb_targets(run_, cwd):
         )
         found = _operands(run_) if in_place else []
     elif base in ("cp", "mv"):
-        found = [path for path, _into in copy_landings(run_, cwd)]
+        found = [path for path, _into in shellscan.copy_landings(run_, cwd, ("cp", "mv"))]
     elif base == "dd":
         found = [a[3:] for a in args if a.startswith("of=")]
     else:

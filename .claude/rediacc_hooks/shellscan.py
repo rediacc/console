@@ -1220,6 +1220,40 @@ def _stage_feed(stage, lexer):
     return " ".join(o for o in out if o)
 
 
+# A word xargs reads exactly as written: no expansion bash would perform first, no glob, and no quote or backslash xargs would interpret itself.
+_NOT_LITERAL = re.compile(r"[$`*?\[\]'\"\\]")
+
+
+def _literal_words(text):
+    return None if _NOT_LITERAL.search(text) else text.split()
+
+
+def _literal_feed(producers, redirs, lexer):
+    """The exact words on a command's stdin (`_Run.feed_words`), or None. Its own here-string or heredoc wins over the pipe, as bash's redirection does; else the stage right in front must be an `echo` of literal words."""
+    for redir in reversed(redirs):
+        if redir.heredoc is not None and redir.heredoc.body_start is not None:
+            return _literal_words(lexer.src[redir.heredoc.body_start : redir.heredoc.body_end])
+        if redir.op == "<<<" and redir.target is not None:
+            return _literal_words(lexer.src[redir.target.start : redir.target.end].strip("'\""))
+        if redir.op in ("<", "<>"):
+            return None
+    if not producers or producers[-1][0] != "cmd":
+        return None
+    words, _ = _strip_prefixes([t for t in producers[-1][1] if isinstance(t, _Word)])
+    if not words or _base(_word_value(words[0])) != "echo":
+        return None
+    raw = [lexer.src[w.start : w.end] for w in words[1:]]
+    while raw and re.fullmatch(r"-[neE]+", raw[0]):
+        raw = raw[1:]
+    out: list[str] = []
+    for text in raw:
+        got = _literal_words(text)
+        if got is None:
+            return None
+        out.extend(got)
+    return out
+
+
 def _procsub(word):
     """The `<(...)`/`>(...)` part a word is made of alone, else None."""
     if word is not None and len(word.parts) == 1 and word.parts[0].kind == "procsub":
@@ -1832,6 +1866,7 @@ class _Run:
         "cwd",
         "env",
         "feed",
+        "feed_words",
         "git_dir",
         "git_sub",
         "launch",
@@ -1843,6 +1878,7 @@ class _Run:
         "vars",
         "via",
         "writes",
+        "xargs",
         "xargv",
     )
 
@@ -1871,6 +1907,10 @@ class _Run:
         self.remote = None
         # WHAT ARRIVES ON STDIN, AS TEXT (#ec63ff8c): the literal words of the pipeline stages before this command (`_stage_feed`) and its own here-string or heredoc body, None when there are none. For a command a `find -exec` runs, `find`'s own words, since `{}` is replaced by what they name. What a producer PRINTS is not computed, so every word counts. Policy stays with the guard: `xargs rm` turns this text into operands and `cat` only reads it.
         self.feed = None
+        # THE WORDS xargs WOULD READ, EXACTLY, or None when they are not known (#5077391c). Only a literal producer is exact: the pipeline stage in front is an `echo` whose words carry no expansion, or the command reads its own here-string or heredoc with none. Any other producer (`find`, `git`, a group, a loop's feed) prints what this walk cannot compute, so its words are in `feed` alone, read in the fail-safe direction. Words holding a quote or a backslash are not exact either, because xargs reads quotes itself.
+        self.feed_words = None
+        # The option words an `xargs` in front of this command was given, in order (`("-r",)`, `("-n", "1")`), or None when no xargs ran it. `-n`, `-L`, `-I`, `-d`, `-0` and the like change which words reach which invocation, so a reader placing the feed (`run_copies`) needs them.
+        self.xargs = None
         # The prefix commands `_strip_prefixes` dropped in front of this command, in order (`("sudo", "xargs")`), plus `"find"` for a command a `find -exec` launched. A guard reads `"xargs" in run.via` to know the feed became arguments.
         self.via = ()
         # THE VARIABLES AN ENCLOSING `for`/`select` LOOP ASSIGNS (review e085085d.1 sweep): `NAME -> [word, ...]`, the list it walks, innermost loop first. `for f in .claude/settings.json; do rm "$f"; done` removes that path, and the shell state (`vars`) cannot say so, because the variable holds each word in turn. Empty outside a loop and for a loop over the positionals.
@@ -1994,6 +2034,10 @@ def _strip_prefixes(words, found=None):
                 used, option, value = _prefix_option(
                     name, [_word_value(w) for w in words[k : k + 2]], 0
                 )
+                if found is not None and name == "xargs":
+                    found.setdefault("xargs", []).extend(
+                        _word_value(w) for w in words[k : k + used]
+                    )
                 if found is not None and value is not None:
                     if (name, option) in _PREFIX_CHDIR:
                         found["chdir"] = value
@@ -2002,6 +2046,8 @@ def _strip_prefixes(words, found=None):
                 k += used
                 continue
             break
+        if found is not None and name == "xargs":
+            found.setdefault("xargs", [])
         if name in _PREFIX_OPERAND and k < len(words):
             k += 1
     return words[k:], prefixed
@@ -2428,6 +2474,7 @@ class _Walker:
                         for inner in _runs_within(runs[first:start]):
                             if fed and fed not in (inner.feed or ""):
                                 inner.feed = " ".join(f for f in (inner.feed, fed) if f)
+                                inner.feed_words = None
                             if binding is not None:
                                 inner.loop_vars.setdefault(binding[0], binding[1])
                 spans.append((start, len(runs)))
@@ -2529,6 +2576,10 @@ class _Walker:
         ]
         if feed:
             run.feed = " ".join(feed)
+            if not inherited:
+                run.feed_words = _literal_feed(producers, redirs, lexer)
+        if "xargs" in found:
+            run.xargs = tuple(found["xargs"])
         self.analysis.runs.append(run)
         at_root = lexer is self.analysis.root
         if at_root:
@@ -2544,6 +2595,7 @@ class _Walker:
                 for inner_run in sub.runs:
                     inner_run.via = (*inner_run.via, "find")
                     inner_run.feed = " ".join(f for f in (inner_run.feed, " ".join(argv)) if f)
+                    inner_run.feed_words = None
             # The innermost launcher names the run; an outer `elsewhere` still holds for everything nested under it (`find -execdir npx -c '...'`).
             for inner_run in _every_run(sub):
                 if inner_run.launch is None:
@@ -2944,26 +2996,72 @@ def copy_destination(name, argv):
     return None
 
 
-def run_copies(run):
-    """`(sources, [destination, ...], into)` for a walked copier run, or None: `copy_destination` over its argv, with what the run's launcher or feed adds.
+# The xargs option words that leave one invocation with every fed word appended last: `-r` (run nothing on empty input), `-t` (print the command), `-x` (exit on an oversized line) and their long names. Anything else (`-n`, `-L`, `-I`, `-d`, `-0`, `-P`, `-s`, `-a`, `-E`) splits, replaces, re-reads or re-delimits the feed.
+_XARGS_APPENDS_ONCE = frozenset(("-r", "--no-run-if-empty", "-t", "--verbose", "-x", "--exit"))
 
-    A `{}` destination is what a `find -exec` walks (`Launch.starts`). An xargs-fed copier takes words from its feed AFTER its own argv (`echo .claude/commands/ | xargs cp x.md`), so every fed word may be the destination, and the argv's own last operand is then a source; a `-I {}` destination is a fed word. What a producer prints is not computed, so every word of the feed counts, the direction a guard fails safe in.
+
+def _appends_once(options):
+    return all(o in _XARGS_APPENDS_ONCE or re.fullmatch(r"-[rtx]+", o) is not None for o in options)
+
+
+def run_copies(run, argv=None):
+    """`(sources, [destination, ...], into)` for a walked copier run, or None: `copy_destination` over its argv, with what the run's launcher or feed adds. `argv` replaces the run's own words (a caller passes `_Run.xargv` to read `$F` as bash expands it). `into` is True only when the command names its destination a directory (`-t`), never for a fed word.
+
+    A `{}` destination is what a `find -exec` walks (`Launch.starts`). xargs APPENDS what it reads to the command's own arguments (measured with cp, mv and install, #5077391c), so where a fed word lands is the tool's own parse of `argv + fed`: under `-t` every fed word is a SOURCE, and without it the last one is the destination and the argv's own last operand a source. That is read exactly when the words are known (`_Run.feed_words`, a literal producer) and xargs appends them in one invocation (`_appends_once`).
+    Otherwise what the producer prints is not computed, so the reading fails safe: under `-t` every fed word is a source, and without it every fed word may be the destination. Before #5077391c the fed words were destinations even under `-t`, so `echo /tmp/flagged.md | xargs cp -t .claude/commands` read the commands directory as the source, and the fed-only shape answered "into a directory" for what is a file.
     """
     name = run.name.rsplit("/", 1)[-1]
     if name not in COPIERS:
         return None
-    argv = list(run.argv)
+    argv = list(run.argv if argv is None else argv)
+    fed_by_xargs = bool(run.feed) and "xargs" in run.via
+    options = run.xargs if run.xargs is not None else ()
+    if fed_by_xargs and run.feed_words is not None and _appends_once(options):
+        found = copy_destination(name, [*argv, *run.feed_words])
+        if found is None:
+            return None
+        sources, dest, into = found
+        return sources, [dest], into
     found = copy_destination(name, argv)
-    fed = run.feed.split() if run.feed and "xargs" in run.via else []
+    fed = run.feed.split() if fed_by_xargs else []
     if found is None:
-        return ([a for a in argv if not a.startswith("-")], fed, True) if fed else None
+        return ([a for a in argv if not a.startswith("-")], fed, False) if fed else None
     sources, dest, into = found
     dests = [dest]
     if run.launch is not None and run.launch.launcher == "find" and "{}" in dest:
         dests = list(run.launch.starts)
-    if fed:
-        return [*sources, dest], [d for d in dests if "{}" not in d] + fed, into
-    return sources, dests, into
+    if not fed:
+        return sources, dests, into
+    if into:
+        # `-t DIR`: the fed words are more sources, unless `-I {}` puts them in the directory's place.
+        if "{}" in dest:
+            return sources, fed, into
+        return [*sources, *fed], dests, into
+    return [*sources, dest], [d for d in dests if "{}" not in d] + fed, into
+
+
+def copy_landings(run, cwd, names=COPIERS, argv=None):
+    """`(path, into a directory)` for every file a run of one of `names` writes, absolute, or [] for any other run.
+
+    Placed by `run_copies` and then the way the tool places a file: a destination is a DIRECTORY when the command says so (`-t`), when it is written with a trailing slash, or when the filesystem says so, and then each source lands inside it under its own name; anything else is the file written. Relative paths are read from `cwd` joined with the run's own `cd`. block_bash_write_to_running_script, block_roundlog_truncate and block_binary_deploy judge copies by this.
+    """
+    if _base(run.name) not in names:
+        return []
+    copies = run_copies(run, argv)
+    if copies is None:
+        return []
+    sources, dests, into = copies
+    base = cwd if run.cwd is None else os.path.join(cwd, run.cwd)
+    out: list[tuple[str, bool]] = []
+    for dest in dests:
+        dest_abs = os.path.normpath(os.path.join(base, dest))
+        if into or dest.endswith("/") or os.path.isdir(dest_abs):
+            out.extend(
+                (os.path.join(dest_abs, os.path.basename(src.rstrip("/"))), True) for src in sources
+            )
+        else:
+            out.append((dest_abs, False))
+    return out
 
 
 # --------------------------------------------------------------------------- where a Python program writes ---------------------------------------------------------------------------

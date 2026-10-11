@@ -15,7 +15,6 @@ import os
 import re
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards.block_bash_write_to_running_script import copy_landings
 
 CHAIN = "pre-bash"
 ORDER = 7
@@ -148,13 +147,13 @@ def _scp_operands(args):
 def _sudo_copy_deploy(run_, cwd):
     """Is this a copy that `sudo` runs whose file lands in the install directory under a renet name?
 
-    Every copier counts (`cp`, `mv`, `install`, `ln`, `rsync`), read where the copy LANDS (`copy_landings`, so `-t`, a directory destination and the words xargs feeds are placed as the tool places them). A renet-named sibling (`renet.new`, `renet-v2`) counts too: `sudo cp bin/renet /usr/local/bin/renet.new` and then `mv` over the binary is the two-step deploy, and the old text match refused it because the text reached `/usr/local/bin/renet` (review 0bbd6471.1).
+    Every copier counts (`cp`, `mv`, `install`, `ln`, `rsync`), read where the copy LANDS (`shellscan.copy_landings`, so `-t`, a directory destination and the words xargs feeds are placed as the tool places them). A renet-named sibling (`renet.new`, `renet-v2`) counts too: `sudo cp bin/renet /usr/local/bin/renet.new` and then `mv` over the binary is the two-step deploy, and the old text match refused it because the text reached `/usr/local/bin/renet` (review 0bbd6471.1).
     """
     if "sudo" not in run_.via:
         return False
     return any(
         os.path.dirname(path) == INSTALL_DIR and INSTALLED_NAME.fullmatch(os.path.basename(path))
-        for path, _into in copy_landings(run_, cwd, shellscan.COPIERS, run_.xargv)
+        for path, _into in shellscan.copy_landings(run_, cwd, shellscan.COPIERS, run_.xargv)
     )
 
 
