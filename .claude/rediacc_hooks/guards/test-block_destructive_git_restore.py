@@ -34,7 +34,7 @@ subprocess.run(["git", "init", "-q", _FOREIGN_DIR], check=True, capture_output=T
 pathlib.Path(_FOREIGN_DIR, "a.txt").write_text("hi\n", encoding="utf-8")
 pathlib.Path(_FOREIGN_DIR, "sub").mkdir()
 # Listed, so the guard's `_submodule_paths`, which reads `.gitmodules` and deliberately visits one directory too many rather than one too few, judges a `foreach` payload from `sub` (review fae7c16a.1).
-# git itself visits only a populated gitlink in the index, which this fixture does not build; there the payload runs in the same directory and gets the same verdict (review 88ab93d6.1).
+# git itself visits only a populated gitlink in the index, which this fixture does not build; with one, git runs the payload inside `sub` too, the directory the guard judged it from, and its absolute `-C` gets the same verdict (reviews 88ab93d6.1, de0fadbc.1).
 pathlib.Path(_FOREIGN_DIR, ".gitmodules").write_text(
     '[submodule "sub"]\n\tpath = sub\n\turl = ./sub\n', encoding="utf-8"
 )
