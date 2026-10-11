@@ -269,7 +269,7 @@ def test_bulk_guard_refuses_a_head_it_cannot_read(tmp_path, monkeypatch):
 
 
 def test_bulk_guard_judges_a_submodule_pr_in_its_own_checkout(tmp_path, monkeypatch):
-    """`gh pr create --repo rediacc/renet --head feat` walks private/renet, not the console's range (2026-10-09)."""
+    """`gh pr create --repo <RENET_REPO> --head feat` walks private/renet, not the console's range (2026-10-09)."""
     root = _pr_world(tmp_path / "console")
     _gitmodules(root, {"private/renet": RENET_REPO})
     _branch_with(root, ["src/f%02d.ts" % i for i in range(25)], "refactor: console bulk")
@@ -380,3 +380,59 @@ def test_publish_explicit_branch_still_wins(wl, tmp_path):  # noqa: F811
     assert got.rc == 0, got.out + got.err
     assert (repo / "agent" / "pr" / "other-2.md").is_file()
     assert not (pathlib.Path(repo) / "agent" / "pr" / "t-1.md").exists()
+
+
+# --------------------------------------------------------------------------- block_rebase_over_foreign_dirt: the tree it reads ---------------------------------------------------------------------------
+
+
+def _rebase_guard(cmd, cwd, env=None):
+    payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": cmd}})
+    return dispatch.run_one(
+        "block_rebase_over_foreign_dirt", payload, cwd=str(cwd), env=env or dict(os.environ)
+    )
+
+
+def test_rebase_guard_refuses_a_start_when_the_project_dir_cannot_be_named(tmp_path, monkeypatch):
+    """REVIEW 72e7ac97.1: with `CLAUDE_PROJECT_DIR` unset and the hook outside every checkout, `repo_root_env()` is empty and the guard used to ALLOW, against its own FAIL CLOSED rule. A starting rebase, pull or merge is now BLIND; every other command, `--abort` included, still passes."""
+    monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+    for name in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.chdir(tmp_path)
+    # The control on the control: inside any checkout the root resolves and this case would test nothing.
+    probe = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=False
+    )
+    assert probe.returncode != 0, "tmp_path sits in a checkout (%s)" % probe.stdout
+    assert shellscan.repo_root_env() == ""
+    for cmd in ("git rebase origin/main", "git pull", "git merge origin/main", "git rebase --skip"):
+        rc, _out, err = _rebase_guard(cmd, tmp_path)
+        assert rc == 2, (cmd, err)
+        assert "the shared checkout is unknown" in err, (cmd, err)
+    for cmd in ("git status", "git rebase --abort", "git pull --ff-only", "ls"):
+        rc, _out, err = _rebase_guard(cmd, tmp_path)
+        assert rc == 0, (cmd, err)
+
+
+def test_rebase_guard_names_a_path_that_is_not_utf8(tmp_path):
+    """The guard reads dirt through `wl_git.dirty_paths` now (worklist #dbbed0b6), whose strict decode raised UnicodeDecodeError on a non-UTF-8 file name. Driven through the real dispatcher process, so the refusal's own write to stderr is exercised too."""
+    repo = _repo(tmp_path / "console")
+    name = os.path.join(os.fsencode(repo), b"b\xffad.txt")
+    pathlib.Path(os.fsdecode(name)).write_bytes(b"a")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "seed")
+    pathlib.Path(os.fsdecode(name)).write_bytes(b"b")
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    proc = subprocess.run(
+        ["python3", str(pathlib.Path(dispatch.__file__)), "block_rebase_over_foreign_dirt"],
+        input=json.dumps({"tool_input": {"command": "git rebase origin/main"}}).encode(),
+        capture_output=True,
+        cwd=str(repo),
+        env=env,
+        check=False,
+        timeout=60,
+    )
+    err = proc.stderr.decode("utf-8", "replace")
+    assert proc.returncode == 2, err
+    assert "would start over uncommitted tracked work" in err, err
+    assert "ad.txt" in err, err

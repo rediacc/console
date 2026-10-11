@@ -345,7 +345,7 @@ RESET_DISCARDS = frozenset(("hard", "merge", "keep"))
 
 # The two config keys whose truth makes a rebase or merge stash the tree. Compared lowercased: git folds the section and the key name, so `rebase.AUTOSTASH` is the same key.
 AUTOSTASH_KEYS = frozenset(("rebase.autostash", "merge.autostash"))
-# git's false spellings for a boolean (`git config --type=bool`); anything else, including a bare `-c rebase.autoStash`, is true.
+# git's false spellings for a boolean (`git config --type=bool`), plus the EMPTY value (`-c rebase.autoStash=`, measured false on git 2.53.0); anything else, including a bare `-c rebase.autoStash` with no `=`, is true.
 GIT_FALSE = frozenset(("false", "no", "off", "0"))
 CONFIG_KEY_VAR = re.compile(r"^GIT_CONFIG_KEY_([0-9]+)$")
 
@@ -412,6 +412,24 @@ EDGE_CASES = [
         "C1 the GIT_CONFIG_* environment",
         "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=rebase.autoStash GIT_CONFIG_VALUE_0=true git rebase origin/main",
     ),
+    # Review 72e7ac97.2/.3: GIT_CONFIG_PARAMETERS is read per key, and an empty value is git's false (measured with `git config --type=bool` on git 2.53.0).
+    (
+        "C1 GIT_CONFIG_PARAMETERS sets it",
+        """GIT_CONFIG_PARAMETERS="'rebase.autostash'='true'" git rebase origin/main""",
+    ),
+    (
+        "C1 a bare GIT_CONFIG_PARAMETERS key",
+        """GIT_CONFIG_PARAMETERS="'Merge.AutoStash'" git merge origin/main""",
+    ),
+    (
+        "C control: GIT_CONFIG_PARAMETERS false",
+        """GIT_CONFIG_PARAMETERS="'rebase.autostash'='false'" git rebase origin/main""",
+    ),
+    (
+        "C control: a key that only contains the word",
+        """GIT_CONFIG_PARAMETERS="'foo.autostash-note'='x'" git rebase origin/main""",
+    ),
+    ("C control: an empty -c value", "git -c rebase.autostash= rebase origin/main"),
     ("C2 git config sets it", "git config rebase.autoStash true"),
     ("C2 git config --global sets it", "git config --global rebase.autoStash true"),
     (
@@ -559,7 +577,24 @@ def _pull_autostash(args):
 
 
 def _truthy(value):
-    return value is None or value.strip().lower() not in GIT_FALSE
+    """git's reading of a boolean config value: `None` is a bare key with no `=`, which is true; an empty value is false (review 72e7ac97.3)."""
+    if value is None:
+        return True
+    word = value.strip().lower()
+    return word != "" and word not in GIT_FALSE
+
+
+def _params_autostash(params):
+    """Whether `GIT_CONFIG_PARAMETERS` sets an autostash key true. Its entries are shell-quoted, `'key'='value'` or a bare `'key'` (the older `'key=value'` reads the same once unquoted), so each is split on its first `=` and judged like a `-c`; a value that does not parse is one git itself rejects, and is refused rather than guessed (review 72e7ac97.2: a substring test refused `'rebase.autostash'='false'` and any key containing the word)."""
+    try:
+        entries = shlex.split(params)
+    except ValueError:
+        return "autostash" in params.lower()
+    for entry in entries:
+        key, eq, value = entry.partition("=")
+        if key.lower() in AUTOSTASH_KEYS and _truthy(value if eq else None):
+            return True
+    return False
 
 
 def _config_autostash(globs, env):
@@ -581,8 +616,7 @@ def _config_autostash(globs, env):
             flag == "--config-env" or _truthy(value if eq else None)
         ):
             return True
-    params = env.get("GIT_CONFIG_PARAMETERS") or ""
-    if "autostash" in params.lower():
+    if _params_autostash(env.get("GIT_CONFIG_PARAMETERS") or ""):
         return True
     for name, value in env.items():
         match = CONFIG_KEY_VAR.match(name)
@@ -868,7 +902,9 @@ def _judge(cmd, root, base, depth=0):
     # which repos the new predicate had just stopped protecting.
     #
     # Empty target means "this root, or unresolvable", so the guard keeps guarding by default; a resolvable target under the project directory keeps guarding too.
-    _target = shellscan.target_root(scan, root)
+    #
+    # RESOLVED FROM `base`, THE DIRECTORY THE COMMAND RUNS IN, as `_walked_refusal` already does. For a `foreach` payload that is the submodule, and a relative `-C` there is relative to it: `git submodule foreach git -C ../.. reset --hard` resets THIS checkout from private/renet. Resolved from the root instead, `../..` landed outside the project and the guard stood down (review 9849764b.1). At the top level `base` is the event's cwd, which this harness keeps at the project root.
+    _target = shellscan.target_root(scan, base or root)
     if _target != "" and not _is_inside(_target, root):
         return None
 

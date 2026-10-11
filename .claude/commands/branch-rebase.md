@@ -131,7 +131,7 @@ the tip anyway.
 - A submodule with **no matching branch** is not rebased and not checked out. Its
 gitlink may still conflict in step 3 (if the base moved it); resolve that by **ancestry**, not by preference. See step 3's second table.
 - **Conflicts inside a submodule are real code conflicts.** Resolve them there, commit,
-and only then continue. Do not `--skip`: it silently DROPS the commit being replayed.
+and only then continue. Do not `--skip`: it silently DROPS the commit being replayed, and `block_rebase_over_foreign_dirt` refuses it.
 - If a submodule branch was already pushed, its rebase needs the step 5 lease push,
 submodule before console. Note it for step 5; nothing pushes before step 4 verifies.
 
@@ -182,7 +182,7 @@ git add <sm>
 git rebase --continue
 ```
 
-**Never `git rebase --skip`.** It drops the commit outright. If the branch is unrecoverable, `git rebase --abort` returns to the pre-rebase state recorded in step 0.
+**Never `git rebase --skip`.** It drops the commit outright, and `.claude/rediacc_hooks/guards/block_rebase_over_foreign_dirt.py` refuses it in this checkout and its submodules, pointing to `--abort`. If the branch is unrecoverable, `git rebase --abort` returns to the pre-rebase state recorded in step 0.
 
 ### 4. Verify: a rebase that "succeeded" can still be wrong
 
@@ -235,6 +235,8 @@ broken (your branch and the base each edited around the other). At minimum `npx 
 
 A rebase rewrites history, so an already-pushed branch can only be updated with a force-push. `.claude/rediacc_hooks/guards/block_git_force_push.py` refuses `--force`, `-f`, `--mirror` and `+refspec` unconditionally, and since the operator ruling of 2026-10-02 (PLAN-plan-per-pr-loop M3) it admits exactly one form: `git push --force-with-lease origin <branch>` on the repository's one live `MMDD-N` branch. `warn_remote_drift` lets that lease push through when every remote-only commit is patch-equivalent to a rebased local one, and refuses it, naming the commit, when the remote holds work the rebase never saw. Do not try other variants; do not "temporarily" edit either guard.
 
+The push is deliberately absent from this command's `allowed-tools`, which pre-approves read-only probes only, as `pr-merge.md` and `pr-babysit.md` do. Whether a force-push prompts is the session's permission mode, the same as for the fetch and rebase of steps 1-3, and under every mode the guard above admits no other form.
+
 - **Branch never pushed** → a plain `git push -u origin <branch>` is fine; do it and
 say so.
 - **Branch already pushed** → republish it with the lease push, or with the mediated verb
@@ -263,4 +265,4 @@ the commit-count comparison.
 - The push status: pushed, or the exact operator commands still outstanding.
 - Anything left dirty and whose it is.
 
-**Do not** merge, open, flip, or land anything. The branch is rebased and verified; the next move belongs to whoever invoked this command (`/pr-babysit`, `/pr-merge`, or the operator).
+**Do not** merge, open, flip, or land anything. The branch is rebased and verified, and the next move belongs to whoever invoked this command. No command file calls it by name: it is reached from the `REBASE LOCALLY` notice `block_unverified_push` prints, by the operator, or at the two points the per-PR loop rebases onto `origin/main` (`.claude/agents/pr-babysitter.md` step 2, and `.claude/commands/pr-merge.md` step 3 when the branch is not a pure fast-forward).

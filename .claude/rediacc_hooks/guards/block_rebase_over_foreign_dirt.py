@@ -4,13 +4,17 @@ WHY. This checkout is shared by several live sessions and their work stays uncom
 
 WHY A HOOK AND NOT THE SKILL'S PROSE. Operator ruling 2026-10-09 made /branch-rebase AI-invocable and said where something is not covered, a guard covers it instead of the skill's prose. Step 0 of .claude/commands/branch-rebase.md already says "working tree clean, and if it is not, report whose work it is and stop". A read-only audit of 100 spellings through the live pre-bash chain found nothing enforcing it: `git rebase origin/main`, `git pull --rebase`, `git merge origin/main` and `git -C private/renet rebase origin/main` all answered rc 0 on a dirty tree. git's own refusal names paths but not owners, and the next move a session reaches for after it is `--autostash` or `git stash`, which block_destructive_git_restore refuses as the discard they are.
 
-THE RULE, deliberately the simple one the audit proposed: any modified tracked path refuses, in the console or in the submodule the command runs in, except the paths the stop hook and the worklist verbs rewrite on their own schedule. Those are `.claude/hooks/stop/wl_git.py`'s definition (`is_session_state`: `agent/<session>/STATE.md`, `agent/ledgers/*.jsonl`, `agent/worklist/*.jsonl`, `agent/plans/QUEUE.md`, `agent/reviews/**`, `agent/reggate/**`), read from there rather than copied, plus `.claude/settings.local.json`. Untracked files and submodule pointers are not counted, because `git rebase` does not count them either (it checks the index and the work tree with submodules ignored).
+THE RULE, deliberately the simple one the audit proposed: any modified tracked path refuses, in the console or in the submodule the command runs in, except the paths the stop hook and the worklist verbs rewrite on their own schedule. Those are `.claude/hooks/stop/wl_git.py`'s definition (`is_session_state`: `agent/<session>/STATE.md`, `agent/ledgers/*.jsonl`, `agent/worklist/*.jsonl`, `agent/plans/QUEUE.md`, `agent/reviews/**`, `agent/reggate/**`, `.claude/settings.local.json`), read from there rather than copied.
+
+WHICH PATHS ARE DIRTY IS wl_git's ANSWER TOO (`dirty_paths`), not a second probe. It reads the work tree with submodules ignored and the index with them INCLUDED, because a STAGED gitlink passes git's up-front check and then stops the rebase partway with `.git/rebase-merge` left behind (measured on git 2.53.0, recorded on that function). This guard's own `git status --ignore-submodules=all` dropped exactly that case (worklist #dbbed0b6). Untracked files and a submodule whose work tree merely moved are not counted, because git does not count them either.
 
 THE EXEMPTION IS NOT A PROMISE. git itself refuses a rebase while ANY tracked file is modified, volatile session state included, so a tree whose only dirt is a STATE.md passes this guard and is still stopped by git. `.claude/hooks/stop/worklist.py --git rebase-preflight <me>` is the verb that names whose document is in the way; the refusal points there.
 
-NOT REFUSED: `--continue`, `--abort`, `--skip`, `--quit` (they finish or undo a rebase already started), `git merge --ff-only` and `git pull --ff-only` (a fast-forward cannot conflict, and git refuses it on its own when a modified file is in the way; pr-merge step 7 runs `git pull --ff-only` on `main`), and any repository outside this checkout.
+`git rebase --skip` IS REFUSED in this checkout on any tree, clean or not: it DROPS the commit being replayed, and /branch-rebase forbids it (its conflict steps). The refusal points to `git rebase --abort`, which returns to the pre-rebase tip.
 
-FAIL CLOSED: a status probe that fails, and a command that moves git's idea of the work tree (`--git-dir`, `--work-tree`, `GIT_DIR=`, `GIT_WORK_TREE=` on the command line) are refused, because the tree the guard would read is not the tree the rebase would touch.
+NOT REFUSED: `--continue`, `--abort`, `--quit` (they finish or undo a rebase already started), `git merge --ff-only` and `git pull --ff-only` (a fast-forward cannot conflict, and git refuses it on its own when a modified file is in the way; pr-merge step 7 runs `git pull --ff-only` on `main`), and any repository outside this checkout.
+
+FAIL CLOSED: a status probe that fails, a command that moves git's idea of the work tree (`--git-dir`, `--work-tree`, `GIT_DIR=`, `GIT_WORK_TREE=` on the command line), and a project directory that cannot be named (`CLAUDE_PROJECT_DIR` unset and the hook outside every checkout) are refused, because the tree the guard would read is not known to be the tree the rebase would touch. Every other command is still allowed then: only a rebase, pull or merge that would start is judged.
 """
 
 import functools
@@ -25,13 +29,11 @@ ORDER = 60
 
 # The exemption decides everything this guard allows on a dirty tree. Planting `True` there exempts every path, so a peer's modified file stops refusing the rebase that would carry it.
 DEFECT = (
-    "    return path == SETTINGS_LOCAL or _session_state(path)\n",
+    "    return _wl_git().is_session_state(path)\n",
     "    return True\n",
 )
 
-SETTINGS_LOCAL = ".claude/settings.local.json"
-
-# The subcommand flags that continue or undo an integration already in progress, and so start nothing.
+# The subcommand flags that continue or undo an integration already in progress, and so start nothing. `skip` is among them, and is refused on its own (SKIP) because what it finishes it finishes by dropping a commit.
 REBASE_CONTROL = ("continue", "abort", "skip", "quit", "edit-todo", "show-current-patch")
 MERGE_CONTROL = ("continue", "abort", "quit")
 PULL_CONTROL_WORDS = frozenset(("--ff-only",))
@@ -64,6 +66,26 @@ MESSAGE = (
     "\n"
     "Operator ruling 2026-10-09: /branch-rebase is AI-invocable, and what its prose forbids "
     "(step 0: report whose work it is and stop) a guard refuses. The hook is the guarantee."
+)
+
+SKIP = (
+    "BLOCKED: `%(verb)s` would DROP the commit being replayed in %(where)s. `--skip` discards "
+    "that commit's changes outright, and nothing afterwards says it is gone; /branch-rebase "
+    "forbids it for that reason.\n"
+    "\n"
+    "To leave a rebase that cannot be finished, run `git rebase --abort`: it returns the branch "
+    "to its pre-rebase tip. To finish it, resolve the conflict and run `git rebase --continue`. "
+    "If the replayed commit is genuinely empty after resolution (its change already in the "
+    "base), say so to the operator; dropping it is theirs to run with `!`.\n"
+    "\n"
+    "Operator ruling 2026-10-09: /branch-rebase is AI-invocable, and what its prose forbids a "
+    "guard refuses."
+)
+
+# The `why` of a BLIND refusal when the project directory itself cannot be named.
+NO_ROOT = (
+    "the shared checkout is unknown (`CLAUDE_PROJECT_DIR` is unset and the hook does not run "
+    "inside a git checkout), so the tree this would touch cannot be read"
 )
 
 BLIND = (
@@ -156,11 +178,21 @@ def _staged(path):
     return path
 
 
+def _gitlink(path):
+    """Only a STAGED submodule pointer moved: git's up-front check passes it and the rebase then stops partway, so it refuses (worklist #dbbed0b6). `--ignore-submodules=all` hid it from the old probe."""
+    _seeded(path)
+    _fixture_git(path, "update-index", "--add", "--cacheinfo", "160000,%s,private/sub" % ("1" * 40))
+    _fixture_git(path, "commit", "-qm", "pin a submodule")
+    _fixture_git(path, "update-index", "--cacheinfo", "160000,%s,private/sub" % ("2" * 40))
+    return path
+
+
 FIXTURES = {
     "rebase-clean": _clean,
     "rebase-volatile": _volatile,
     "rebase-dirty": _dirty,
     "rebase-staged": _staged,
+    "rebase-gitlink": _gitlink,
 }
 
 ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
@@ -168,7 +200,7 @@ ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
 ]
 
 EDGE_CASES = [
-    # Refused in `rebase-dirty` and `rebase-staged`, allowed in `rebase-clean` and `rebase-volatile`: the worlds are the two directions.
+    # Refused in `rebase-dirty`, `rebase-staged` and `rebase-gitlink`, allowed in `rebase-clean` and `rebase-volatile`: the worlds are the two directions.
     ("a rebase onto origin/main", "git rebase origin/main"),
     ("an interactive rebase", "git rebase -i origin/main"),
     ("a rebase with --onto", "git rebase --onto origin/main HEAD~3"),
@@ -184,7 +216,11 @@ EDGE_CASES = [
     # Never refused: continuing or undoing, a fast-forward, prose, and other commands.
     ("control: --continue", "git rebase --continue"),
     ("control: --abort", "git rebase --abort"),
-    ("control: --skip", "git rebase --skip"),
+    # Refused in every world, clean included: `--skip` drops the commit being replayed (worklist #dbbed0b6).
+    ("refused: --skip drops the replayed commit", "git rebase --skip"),
+    ("refused: --skip by unique prefix", "git rebase --sk"),
+    ("refused: --skip behind a wrapper", "sh -c 'git rebase --skip'"),
+    ("control: --skip outside this checkout", "git -C /tmp rebase --skip"),
     ("control: --quit", "git rebase --quit"),
     ("control: merge --abort", "git merge --abort"),
     ("control: merge --continue", "git merge --continue"),
@@ -202,19 +238,15 @@ EDGE_CASES = [
 
 
 @functools.cache
-def _session_state_reader():
-    """wl_git.py's own reading of the stop hook's volatile paths, loaded once and only for a rebase, pull or merge (never for other commands); importlib keeps it lazy without a late import statement or a module global."""
+def _wl_git():
+    """wl_git.py, the one definition of what is dirty and what is session state, loaded once and only for a rebase, pull or merge (never for other commands); importlib keeps it lazy without a late import statement or a module global."""
     syspath.on_sys_path(syspath.STOP_DIR)
-    return importlib.import_module("wl_git").is_session_state
-
-
-def _session_state(path):
-    return _session_state_reader()(path)
+    return importlib.import_module("wl_git")
 
 
 def exempt(path):
-    """Whether a modified tracked path is the hook's own churn rather than somebody's work."""
-    return path == SETTINGS_LOCAL or _session_state(path)
+    """Whether a modified tracked path is the hook's own churn rather than somebody's work. `is_session_state` already covers `.claude/settings.local.json` (worklist #dbbed0b6)."""
+    return _wl_git().is_session_state(path)
 
 
 def starts_integration(sub, args):
@@ -234,41 +266,8 @@ def starts_integration(sub, args):
 
 
 def dirty_paths(repo):
-    """Modified tracked paths (index or work tree) in `repo`, submodules and untracked files left out as `git rebase` leaves them out; None when the probe itself fails."""
-    try:
-        proc = subprocess.run(
-            [
-                "git",
-                "-C",
-                repo,
-                "status",
-                "--porcelain=v1",
-                "-z",
-                "--untracked-files=no",
-                "--ignore-submodules=all",
-            ],
-            capture_output=True,
-            check=False,
-            timeout=30,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        return None
-    if proc.returncode != 0:
-        return None
-    fields = [f for f in proc.stdout.decode("utf-8", "surrogateescape").split("\0") if f]
-    paths, i = [], 0
-    while i < len(fields):
-        entry = fields[i]
-        i += 1
-        if len(entry) < 4:
-            continue
-        xy, path = entry[:2], entry[3:]
-        paths.append(path)
-        # A rename or copy entry carries its origin as the NEXT field; consuming it keeps the parse in phase.
-        if ("R" in xy or "C" in xy) and i < len(fields):
-            paths.append(fields[i])
-            i += 1
-    return sorted(set(paths))
+    """The tracked paths `git rebase` would refuse or stop on in `repo`, staged gitlinks included; None when the probe itself fails. wl_git's answer, so the guard and `--git rebase-preflight` never disagree."""
+    return _wl_git().dirty_paths(repo)
 
 
 def _blind(run, globs):
@@ -284,22 +283,29 @@ def _blind(run, globs):
 
 def refusal(cmd, root, base):
     """`(template, fields)` for the first walked rebase, pull or merge that would start over foreign dirt, else None."""
-    created = commit_policy.created_dirs(cmd, base)
+    created = None
     for run in commit_policy.git_runs(cmd):
         argv = run.xargv if run.xargv is not None else run.argv
         globs, sub, args = commit_policy.git_split(argv)
-        if not starts_integration(sub, args):
+        skip = sub == "rebase" and shellscan.git_args("rebase", args).on("skip")
+        if not skip and not starts_integration(sub, args):
             continue
         verb = " ".join(["git", sub, *args]).strip()
+        if not root:
+            return BLIND, {"verb": verb, "why": NO_ROOT}
         why = _blind(run, globs)
-        if why:
+        if why and not skip:
             return BLIND, {"verb": verb, "why": why}
+        if created is None:
+            created = commit_policy.created_dirs(cmd, base)
         repo = commit_policy.scoped_repo(run, base, root, created)
-        if repo and not commit_policy.is_inside(repo, root):
+        if repo and not commit_policy.is_inside(repo, root) and not why:
             continue
         repo = repo or root
         same = os.path.realpath(repo) == os.path.realpath(root)
         where = "this checkout" if same else os.path.relpath(repo, root)
+        if skip:
+            return SKIP, {"verb": verb, "where": where}
         paths = dirty_paths(repo)
         if paths is None:
             return BLIND, {"verb": verb, "why": "`git status` failed in %s" % where}
@@ -317,9 +323,8 @@ def run(ev):
     cmd = ev.field("tool_input", "command")
     if cmd == "":
         return hookio.ALLOW
+    # An unnamed root is not a pass (review 72e7ac97.1): `refusal` refuses a starting rebase, pull or merge as BLIND then, and lets every other command through.
     root = shellscan.repo_root_env()
-    if not root:
-        return hookio.ALLOW
     base = ev.field("cwd") or root
     found = refusal(cmd, root, base)
     if found is None:

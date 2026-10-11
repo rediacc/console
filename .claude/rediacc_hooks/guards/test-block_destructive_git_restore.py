@@ -103,6 +103,13 @@ BLOCK = [
     "cd private/renet && git submodule foreach git rm -f x",
     # A wide write in a foreach payload reaches this checkout from a foreign repository's submodules too.
     "git -C %s submodule foreach git config --global rebase.autoStash true" % _FOREIGN_DIR,
+    # Review 9849764b.1: a payload's `-C` is relative to the SUBMODULE it runs in, so `../..` from private/renet is this checkout. It was resolved from the project root instead, landed outside the tree, and the guard stood down.
+    "git submodule foreach git -C ../.. reset --hard",
+    "git -C private/renet submodule foreach 'git -C ../.. checkout -- .'",
+    # Review 72e7ac97.2: GIT_CONFIG_PARAMETERS is parsed per key, so a true value still refuses, in any case and beside other keys.
+    "GIT_CONFIG_PARAMETERS=\"'rebase.autostash'='true'\" git rebase origin/main",
+    "GIT_CONFIG_PARAMETERS=\"'user.x'='1' 'Merge.AutoStash'='yes'\" git merge origin/main",
+    "GIT_CONFIG_PARAMETERS=\"'rebase.autostash'\" git rebase origin/main",
 ]
 
 # MUST NOT BLOCK: branch work, read-only inspection, and unrelated commands.
@@ -125,6 +132,14 @@ ALLOW = [
     "git rebase --no-autostash origin/main",
     "git -c rebase.autostash=false rebase origin/main",
     "git config rebase.autoStash false",
+    # Review 72e7ac97.2/.3, measured on git 2.53.0 with `git config --type=bool`: a false value, an EMPTY value and an unrelated key that merely contains the word all read as no autostash.
+    "GIT_CONFIG_PARAMETERS=\"'rebase.autostash'='false'\" git rebase origin/main",
+    "GIT_CONFIG_PARAMETERS=\"'foo.autostash-note'='x'\" git rebase origin/main",
+    "GIT_CONFIG_PARAMETERS=\"'rebase.autostash'=''\" git rebase origin/main",
+    "git -c rebase.autostash= rebase origin/main",
+    "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=rebase.autostash GIT_CONFIG_VALUE_0= git rebase origin/main",
+    # The allow half of 9849764b.1: a payload whose `-C` leaves the project tree from the submodule is still foreign.
+    "git submodule foreach git -C %s reset --hard" % _FOREIGN_DIR,
     "git rebase --continue",
     "git rebase --abort",
     # #a234b06e's allow half: git refuses each of these over uncommitted work by itself, and /pr-merge runs the submodule update.
