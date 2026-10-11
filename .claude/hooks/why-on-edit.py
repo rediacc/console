@@ -248,7 +248,7 @@ def main():
         return 0
 
     # The event cwd's PROJECT, not the cwd (#f32d3604): with the variable unset a session in `.claude/` read its plans under `.claude/agent` and let a near-duplicate plan through (rc 0 against rc 2 from the root). `ctx_budget.project_of` climbs to the top superproject.
-    # The variable wins when it is set, so the climb (git subprocesses on every edit) runs only without it (review 67459d36.2).
+    # The variable wins when it is set, so the climb (git subprocesses on every edit) runs only without it.
     root_env = os.environ.get("CLAUDE_PROJECT_DIR")
     cwd = event.get("cwd")
     if cwd and not root_env:
