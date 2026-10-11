@@ -43,25 +43,6 @@
         "P-A1:0c9ea2c3e2ce"
       ],
       "reason": "P-A1 lists open boxes that close only on this PR's own CI run or belong to another campaign: PLAN-cd-errors-in-ci:70 (a live run on a PR), PLAN-k3s-137-and-pr-conditions:103 (E2E K8s legs green on the branch head), PLAN-deferred-findings-block-merge M3 (Quality / Branch green on the pushed head), and PLAN-tooling-transformation W7P5-a/W7P5-c (per-path K=5 ledgers, PLAN-w7p5a-real-run-dispatch, worklist #dccf10ab). The PR body carries Operational-Reason: for CI; this carry is dropped once the first run ticks the CI-only boxes."
-    },
-    {
-      "gate": "check:ci-renet",
-      "findings": [
-        "govuln:GO-2026-6599",
-        "govuln:GO-2026-6600",
-        "govuln:GO-2026-6603",
-        "govuln:GO-2026-6604",
-        "govuln:GO-2026-6605",
-        "govuln:GO-2026-6607",
-        "govuln:GO-2026-6608",
-        "govuln:GO-2026-6609",
-        "govuln:GO-2026-6610",
-        "govuln:GO-2026-6611",
-        "govuln:GO-2026-6612",
-        "govuln:GO-2026-6613",
-        "govuln:GO-2026-6617"
-      ],
-      "reason": "govulncheck reports GO-2026-6599/6600/6603/6604/6605/6607-6613/6617, fixed only by go1.26.9 (published 2026-10-08T15:41Z) and golang.org/x/net v0.60.0 (2026-10-08T17:22Z). Both are inside the release-age window that .ci/config/release-age.json sets; is_release_deferred counts it in whole UTC days, so both stay deferred through 2026-10-09T23:59Z and clear at 2026-10-10T00:00Z (measured on both publish times). Each advisory is carried by its own key (renet security.sh prints govuln:<GO-ID>), so a new advisory is refused. Worklist #d40141c3 bumps .devcontainer/toolchain.env:45, .devcontainer/Dockerfile:13, private/renet/go.mod:3 and license-mint go.mod:6 at that time and removes this carry."
     }
   ]
 }
