@@ -61,6 +61,7 @@ WHERE THE PYTHON LOOKS UNIDIOMATIC, IT IS ON PURPOSE. Four bash behaviours have 
 NAMES. The bash `hook_` prefix existed because bash has one namespace. Here the module supplies it: `hook_scan_target` is `shellscan.scan_target`, `_hook_wrapper_payload` is `shellscan._wrapper_payload`, and so on. The differential maps them pair by pair, so the mapping is checked and not merely asserted here.
 """
 
+import ast
 import json
 import os
 import posixpath
@@ -658,25 +659,149 @@ _RESERVED_PREFIX = frozenset(
     ("!", "then", "do", "else", "elif", "if", "while", "until", "fi", "done", "esac", "}", "coproc")
 )
 _NOT_A_COMMAND = frozenset(("for", "select", "case", "function", "[[", "]]", "in"))
-# Prefix commands that run the NEXT word as the command, with the options each one takes a value for. `command -v`/`-V` only prints, so it is handled apart.
+# Prefix commands that run the NEXT word as the command, with each one's options as its own parser reads them: `(short letters that take a value, {long option: "r" required value | "o" optional value | "n" none}, unique prefixes accepted)`. `command -v`/`-V` only prints, so it is handled apart.
+# AN OPTION'S VALUE IS NOT THE COMMAND (review cac47d16.1 sweep). This table used to list the exact option words that take a value, so a value option it did not list, a bundle ending in a value letter, or an abbreviated long option left the VALUE read as the command: `xargs --max-procs 2 rm`, `xargs -rP 2 rm`, `xargs --max-p 2 rm`, `sudo --user root rm` and
+# `stdbuf --output L rm` each walked as a command named `2`, `root` or `L`, and block_protected_files allowed every one of them fed or naming `.claude/settings.json` (rc 0, 2026-10-11) while the real tool ran `rm`. `_prefix_option` reads one option the way getopt_long does. An OPTIONAL value is only ever attached (`--eof=x`): measured, `xargs --max-lines 1 echo` runs `1`, so `--max-lines` is "o" whatever `--help` prints. The
+# long tables are GNU findutils 4.10's and coreutils 9.7's `--help` merged with uutils 0.8.0's (the coreutils on this host), whose `timeout --sig KILL` also resolves an abbreviation; sudo's is its own `--help`. An option no table lists is read as taking no value.
 _PREFIX_COMMANDS = {
-    "command": frozenset(),
-    "builtin": frozenset(),
-    "exec": frozenset(("-a",)),
-    "time": frozenset(),
-    "nohup": frozenset(),
-    "setsid": frozenset(),
-    "env": frozenset(("-u", "--unset", "-C", "--chdir", "-S", "--split-string")),
-    "sudo": frozenset(("-u", "-g", "-h", "-p", "-C", "-D", "-r", "-t", "-U", "-T", "-R")),
-    "nice": frozenset(("-n", "--adjustment")),
-    "timeout": frozenset(("-s", "--signal", "-k", "--kill-after")),
-    "stdbuf": frozenset(("-i", "-o", "-e")),
-    "xargs": frozenset(
-        ("-I", "-L", "-n", "-P", "-d", "-E", "-s", "-a", "--max-args", "--delimiter")
+    "command": ("", {}, False),
+    "builtin": ("", {}, False),
+    "exec": ("a", {}, False),
+    "time": ("", {}, False),
+    "nohup": ("", {"help": "n", "version": "n"}, True),
+    "setsid": ("", {"ctty": "n", "fork": "n", "wait": "n", "help": "n", "version": "n"}, True),
+    "env": (
+        "uCSaf",
+        {
+            "ignore-environment": "n",
+            "null": "n",
+            "unset": "r",
+            "chdir": "r",
+            "split-string": "r",
+            "argv0": "r",
+            "file": "r",
+            "block-signal": "o",
+            "default-signal": "o",
+            "ignore-signal": "o",
+            "list-signal-handling": "n",
+            "debug": "n",
+            "help": "n",
+            "version": "n",
+        },
+        True,
+    ),
+    "sudo": (
+        "CDghprRtTuU",
+        {
+            "askpass": "n",
+            "background": "n",
+            "bell": "n",
+            "chdir": "r",
+            "chroot": "r",
+            "close-from": "r",
+            "command-timeout": "r",
+            "edit": "n",
+            "group": "r",
+            "help": "n",
+            "host": "r",
+            "list": "n",
+            "login": "n",
+            "non-interactive": "n",
+            "other-user": "r",
+            "preserve-env": "o",
+            "preserve-groups": "n",
+            "prompt": "r",
+            "remove-timestamp": "n",
+            "reset-timestamp": "n",
+            "role": "r",
+            "set-home": "n",
+            "shell": "n",
+            "stdin": "n",
+            "type": "r",
+            "user": "r",
+            "validate": "n",
+            "version": "n",
+        },
+        True,
+    ),
+    "nice": ("n", {"adjustment": "r", "help": "n", "version": "n"}, True),
+    "timeout": (
+        "sk",
+        {
+            "signal": "r",
+            "kill-after": "r",
+            "foreground": "n",
+            "preserve-status": "n",
+            "verbose": "n",
+            "help": "n",
+            "version": "n",
+        },
+        True,
+    ),
+    "stdbuf": (
+        "ioe",
+        {"input": "r", "output": "r", "error": "r", "help": "n", "version": "n"},
+        True,
+    ),
+    "xargs": (
+        "aIdELnPs",
+        {
+            "null": "n",
+            "arg-file": "r",
+            "delimiter": "r",
+            "eof": "o",
+            "replace": "o",
+            "max-lines": "o",
+            "max-args": "r",
+            "open-tty": "n",
+            "max-procs": "r",
+            "interactive": "n",
+            "process-slot-var": "r",
+            "no-run-if-empty": "n",
+            "max-chars": "r",
+            "show-limits": "n",
+            "verbose": "n",
+            "exit": "n",
+            "help": "n",
+            "version": "n",
+        },
+        True,
     ),
     # `sshpass` (#ec63ff8c): the password, its file, its descriptor and the prompt take the next word; `-e` reads SSHPASS and takes none, so it must not swallow the `ssh` after it. Stripped like `sudo`, because no guard judges an `sshpass` run by that name and both ssh guards need the `ssh` behind it.
-    "sshpass": frozenset(("-p", "-f", "-d", "-P")),
+    "sshpass": ("pfdP", {}, False),
 }
+
+
+# The prefix options that move the command (`env -C dir rm x` removes `dir/x`) or ARE the command (`env -S "rm x"` runs `rm x`).
+_PREFIX_CHDIR = frozenset((("env", "C"), ("env", "chdir"), ("sudo", "D"), ("sudo", "chdir")))
+_PREFIX_SPLIT = frozenset((("env", "S"), ("env", "split-string")))
+
+
+def _prefix_option(name, vals, k):
+    """`(words used, option, value)` for the option word `vals[k]` of prefix command `name`: `option` is a short letter or a canonical long name taking a value (None when nothing in the word does), `value` its value or None."""
+    letters, longs, abbreviations = _PREFIX_COMMANDS[name]
+    arg = vals[k]
+    if arg.startswith("--"):
+        key, eq, value = arg[2:].partition("=")
+        full = key if key in longs else None
+        if full is None and abbreviations:
+            hits = [n for n in longs if n.startswith(key)]
+            full = hits[0] if len(hits) == 1 else None
+        kind = longs.get(full, "n") if full else "n"
+        if eq:
+            return 1, full, value
+        if kind == "r" and k + 1 < len(vals):
+            return 2, full, vals[k + 1]
+        return 1, None, None
+    for at, letter in enumerate(arg[1:], 1):
+        if letter in letters:
+            rest = arg[at + 1 :]
+            if rest:
+                return 1, letter, rest
+            return (2, letter, vals[k + 1]) if k + 1 < len(vals) else (1, letter, None)
+    return 1, None, None
+
+
 # A prefix command that takes one positional operand before the command it runs.
 _PREFIX_OPERAND = frozenset(("timeout",))
 # LAUNCHERS (#ec63ff8c, 2026-10-09): `npx` (with `npm exec`, `npm exe` and `npm x`, #31ed6c5f) and `find -exec` run another command named in their own argv, and are NOT stripped like the prefixes above, because the launcher itself is a run other guards judge. `block_unscoped_formatter_run` reads `npx prettier --write` as an `npx` run and `block_host_toolchain_run` refuses `npx --yes ruff` on that shape, so `npx` has to stay the run's name.
@@ -1095,12 +1220,27 @@ def _stage_feed(stage, lexer):
     return " ".join(o for o in out if o)
 
 
+def _procsub(word):
+    """The `<(...)`/`>(...)` part a word is made of alone, else None."""
+    if word is not None and len(word.parts) == 1 and word.parts[0].kind == "procsub":
+        return word.parts[0]
+    return None
+
+
 def _redir_feed(redir, lexer):
-    """What a redirect hands a command on stdin as TEXT: a here-string's word, a heredoc's body, nothing for a file."""
+    """What a redirect hands a command on stdin as TEXT: a here-string's word, a heredoc's body, every word a `< <(...)` substitution's commands carry (what they print is not computed, as for a pipeline stage), nothing for a file."""
     if redir.heredoc is not None and redir.heredoc.body_start is not None:
         return lexer.src[redir.heredoc.body_start : redir.heredoc.body_end]
     if redir.op == "<<<" and redir.target is not None:
         return _word_value(redir.target)
+    sub = _procsub(redir.target)
+    if redir.op == "<" and sub is not None and sub.sub is not None:
+        return " ".join(
+            _stage_feed(stage, lexer)
+            for item in _parse(sub.sub)
+            if item[0] == "pipe"
+            for stage in item[1]
+        )
     return ""
 
 
@@ -1288,7 +1428,9 @@ class _Lexer:
         while j < limit and src[j] in " \t":
             j += 1
         target = None
-        if j < limit and src[j] not in "\n;&|()<>":
+        # A PROCESS SUBSTITUTION IS A TARGET (review e085085d.1): `done < <(echo x)` reads the substitution's output, so `<(...)` is the redirect's word, not an argument of the command. Read as an argument, `xargs rm < <(...)` handed `rm` the substitution's source text and the loop's feed was lost.
+        procsub = op not in ("<<", "<<-") and src.startswith(("<(", ">("), j)
+        if j < limit and (src[j] not in "\n;&|()<>" or procsub):
             target, j = self._word(j, limit)
         heredoc = None
         if op in ("<<", "<<-") and target is not None:
@@ -1694,6 +1836,7 @@ class _Run:
         "git_sub",
         "launch",
         "launched",
+        "loop_vars",
         "name",
         "remote",
         "usage",
@@ -1730,6 +1873,8 @@ class _Run:
         self.feed = None
         # The prefix commands `_strip_prefixes` dropped in front of this command, in order (`("sudo", "xargs")`), plus `"find"` for a command a `find -exec` launched. A guard reads `"xargs" in run.via` to know the feed became arguments.
         self.via = ()
+        # THE VARIABLES AN ENCLOSING `for`/`select` LOOP ASSIGNS (review e085085d.1 sweep): `NAME -> [word, ...]`, the list it walks, innermost loop first. `for f in .claude/settings.json; do rm "$f"; done` removes that path, and the shell state (`vars`) cannot say so, because the variable holds each word in turn. Empty outside a loop and for a loop over the positionals.
+        self.loop_vars = {}
 
 
 class _Analysis:
@@ -1807,10 +1952,12 @@ def _shell_payload(argv):
     return ("stdin", None)
 
 
-def _strip_prefixes(words):
+def _strip_prefixes(words, found=None):
     """Drop reserved words, assignments and prefix commands from the front of a simple command.
 
     Returns `(words, prefixed)`; `words` is empty when nothing runs (a bare assignment, `command -v x`, a `for` clause). A0 L9: every one of these puts a word between the command position and the command, and every anchor in every guard stops there.
+
+    `found`, a dict when given, receives what a prefix does to the command beyond naming it: `"chdir"`, the directory `env -C` or `sudo -D` runs it in, and `"split"`, the string `env -S` splits into the command itself (then the words returned are its trailing arguments).
     """
     prefixed = False
     k = 0
@@ -1833,7 +1980,6 @@ def _strip_prefixes(words):
             break
         if name == "command" and any(_word_value(w) in ("-v", "-V") for w in words[k + 1 : k + 3]):
             return [], prefixed
-        takes = _PREFIX_COMMANDS[name]
         prefixed = True
         k += 1
         while k < len(words):
@@ -1845,7 +1991,15 @@ def _strip_prefixes(words):
                 k += 1
                 continue
             if arg.startswith("-") and len(arg) > 1:
-                k += 2 if arg in takes else 1
+                used, option, value = _prefix_option(
+                    name, [_word_value(w) for w in words[k : k + 2]], 0
+                )
+                if found is not None and value is not None:
+                    if (name, option) in _PREFIX_CHDIR:
+                        found["chdir"] = value
+                    elif (name, option) in _PREFIX_SPLIT:
+                        found["split"] = value
+                k += used
                 continue
             break
         if name in _PREFIX_OPERAND and k < len(words):
@@ -1999,7 +2153,6 @@ def _call_env(words, shell=None):
         return k > start, ops
     while k < len(vals) and vals[k] in _PREFIX_COMMANDS:
         name = vals[k]
-        takes = _PREFIX_COMMANDS[name]
         k += 1
         while k < len(vals):
             arg = vals[k]
@@ -2035,7 +2188,7 @@ def _call_env(words, shell=None):
                     k += 1
                     continue
             if arg.startswith("-") and len(arg) > 1:
-                k += 2 if arg in takes else 1
+                k += _prefix_option(name, vals, k)[0]
                 continue
             break
         if name in _PREFIX_OPERAND and k < len(vals):
@@ -2156,6 +2309,43 @@ def _base(name):
     return name.rsplit("/", 1)[-1]
 
 
+# A LOOP'S STDIN IS WHAT ITS `done` REDIRECTS, AND WHAT FEEDS THE LOOP FEEDS ITS BODY (review e085085d.1). `while read f; do rm "$f"; done <<< .claude/settings.json` deletes the file: bash applies the redirect after `done` to the whole compound command, condition and body. The parse keeps `while`, `do` and `done` as words in front of commands rather than as a structure, so that redirect sat on a
+# command that runs nothing and reached no command's feed, and a loop on the consumer side of a pipe fed only its condition (`echo x | while true; do xargs rm; done` ran an unfed `xargs`). `_loop_word` reads the keywords a command starts with; `_Walker.items` opens a frame at each loop keyword and, at the matching `done`, hands every command walked inside it the frame's feed (the pipeline in front of the opener and the
+# `done`'s own here-string, heredoc or `< <(...)`) and the variable a `for`/`select` assigns. A loop that never reaches its `done` is a syntax error bash runs nothing of, so an unclosed frame hands nothing on.
+_LOOP_OPENERS = frozenset(("while", "until", "for", "select"))
+
+
+def _loop_word(stage):
+    """`[("open", binding) | ("close", None), ...]` for the loop keywords a pipeline stage starts with, in order. `binding` is `(name, [word, ...])` for `for NAME in WORDS`/`select NAME in WORDS`, else None."""
+    if stage[0] != "cmd":
+        return []
+    words = [t for t in stage[1] if isinstance(t, _Word)]
+    out: list = []
+    for k, word in enumerate(words):
+        value = _word_value(word)
+        if value == "done":
+            out.append(("close", None))
+        elif value in ("for", "select"):
+            rest = [_word_value(w) for w in words[k + 1 :]]
+            binding = None
+            if len(rest) >= 2 and rest[1] == "in":
+                binding = (rest[0], rest[2:])
+            out.append(("open", binding))
+            break
+        elif value in _LOOP_OPENERS:
+            out.append(("open", None))
+        elif value not in _RESERVED_PREFIX:
+            break
+    return out
+
+
+def _runs_within(runs):
+    for run in runs:
+        yield run
+        for sub in run.launched:
+            yield from _every_run(sub)
+
+
 def _reads_status(item):
     """Whether a parsed list item reads `$?` anywhere in its own words: the clause after `pgrep ...;` that tests what it returned."""
     if item[0] != "pipe":
@@ -2195,6 +2385,8 @@ class _Walker:
     def items(self, items, state, lexer, inherited=None):
         """Walk a parsed list. `inherited` is the text a group's stdin carries (`echo x | (xargs rm)`), handed to every command in it."""
         runs = self.analysis.runs
+        # The loops open at this level, innermost last: `[first run index, the feed in front of the opener, binding]`.
+        loops: list = []
         for idx, item in enumerate(items):
             if item[0] == "sep":
                 continue
@@ -2212,6 +2404,11 @@ class _Walker:
             for pos, stage in enumerate(stages):
                 own = [state[0], state[1]] if isolated else state
                 start = len(runs)
+                keywords = _loop_word(stage)
+                for kind, binding in keywords:
+                    if kind == "open":
+                        before = [inherited or ""] + [_stage_feed(p, lexer) for p in stages[:pos]]
+                        loops.append([start, " ".join(f for f in before if f), binding])
                 self.element(
                     stage,
                     own,
@@ -2221,6 +2418,18 @@ class _Walker:
                     producers=stages[:pos],
                     inherited=inherited,
                 )
+                for kind, _binding in keywords:
+                    if kind == "close" and loops:
+                        first, fed, binding = loops.pop()
+                        own_feed = [
+                            _redir_feed(t, lexer) for t in stage[1] if isinstance(t, _Redir)
+                        ]
+                        fed = " ".join(f for f in [fed, *own_feed] if f)
+                        for inner in _runs_within(runs[first:start]):
+                            if fed and fed not in (inner.feed or ""):
+                                inner.feed = " ".join(f for f in (inner.feed, fed) if f)
+                            if binding is not None:
+                                inner.loop_vars.setdefault(binding[0], binding[1])
                 spans.append((start, len(runs)))
             # `pgrep -f x | xargs kill`: a later stage that kills consumes every earlier stage's output as pids.
             for pos in range(1, len(spans)):
@@ -2274,7 +2483,13 @@ class _Walker:
                 shell[var] = (_append(old, value) if append else value, exp)
             state[1] = shell
         prefix_words = words
-        words, _prefixed = _strip_prefixes(words)
+        found: dict = {}
+        words, _prefixed = _strip_prefixes(words, found)
+        if "split" in found:
+            # `env -S "rm x" y` runs `rm x y`: the string is split into the command, the words after it are its arguments.
+            rest = _quote_argv([_word_value(w) for w in words])
+            self.nested(" ".join(f for f in (found["split"], rest) if f), state[0], False, state[1])
+            return
         if not words:
             return
         via = tuple(
@@ -2291,7 +2506,7 @@ class _Walker:
             name,
             argv,
             " ".join([name, *rendered]),
-            state[0],
+            _join_dir(state[0], found["chdir"]) if "chdir" in found else state[0],
             _apply_env(_exported(before), env_ops),
         )
         run.xargv = [x for x in (_expand_word(w, before) for w in words[1:]) if x is not None]
@@ -2401,7 +2616,8 @@ class _Walker:
         for redir in redirs:
             if redir.target is not None:
                 self.parts(redir.target.parts, state, lexer)
-                if redir.op in _WRITE_OPS:
+                # `> >(tee x)` writes into a command, not a file; that command is walked like any other.
+                if redir.op in _WRITE_OPS and _procsub(redir.target) is None:
                     self.analysis.writes.append((redir.op, _word_value(redir.target)))
             if redir.heredoc is not None:
                 self.parts(redir.heredoc.substs, state, lexer)
@@ -2481,6 +2697,466 @@ def _every_run(analysis):
 def every_run(cmd):
     """`_analyse(cmd).runs` plus every command a launcher among them starts (`_Run.launched`), each right after its launcher: `npx node x.js` yields the `npx` run and then the `node` run. For a guard that wants the launched commands too; the plain `runs` list leaves them out on purpose (see `_launched`)."""
     return list(_every_run(_analyse(cmd)))
+
+
+# --------------------------------------------------------------------------- where a copy lands (review cac47d16.1) ---------------------------------------------------------------------------
+#
+# A COPY'S DESTINATION IS getopt's ANSWER, NOT THE LAST WORD. Two guards read `operands[-1]` (at three sites) of a `cp`/`mv`/`install`/`ln`/`rsync` as the place it writes, with `operands` every word not starting with a dash. GNU's target option names the directory instead and makes every operand a source, so `cp -t .claude/commands src/x.md` left `src/x.md` last and a flagged copy into a command
+# directory was allowed; GNU getopt also PERMUTES, so a value option written after the operands (`cp src .claude/commands/ -S .bak`) put its value last. `copy_destination` reads the argv the way each tool's own parser does: its value-taking short letters, its long options with their argument kind and getopt_long's unique-prefix rule, `--` ending options. The tables are
+# coreutils 9.7's and rsync 3.4.1's `--help` (rsync parses with popt, which has no `-t` target option and no abbreviations; its `-t` keeps times). An option a table does not list is read as taking no value, so a word after it stays an operand and is still judged.
+_COPY_SHORT_VALUES = {"cp": "St", "mv": "St", "install": "gmoSt", "ln": "St", "rsync": "BefTM@"}
+_COPY_LONG = {
+    "cp": {
+        "no-preserve": "r",
+        "sparse": "r",
+        "suffix": "r",
+        "target-directory": "r",
+        "backup": "o",
+        "context": "o",
+        "preserve": "o",
+        "reflink": "o",
+        "update": "o",
+        **dict.fromkeys(
+            [
+                "archive",
+                "attributes-only",
+                "copy-contents",
+                "debug",
+                "dereference",
+                "force",
+                "help",
+                "interactive",
+                "keep-directory-symlink",
+                "link",
+                "no-clobber",
+                "no-dereference",
+                "no-target-directory",
+                "one-file-system",
+                "parents",
+                "recursive",
+                "remove-destination",
+                "strip-trailing-slashes",
+                "symbolic-link",
+                "verbose",
+                "version",
+            ],
+            "n",
+        ),
+    },
+    "mv": {
+        "suffix": "r",
+        "target-directory": "r",
+        "backup": "o",
+        "update": "o",
+        **dict.fromkeys(
+            [
+                "context",
+                "debug",
+                "exchange",
+                "force",
+                "help",
+                "interactive",
+                "no-clobber",
+                "no-copy",
+                "no-target-directory",
+                "strip-trailing-slashes",
+                "verbose",
+                "version",
+            ],
+            "n",
+        ),
+    },
+    "install": {
+        "group": "r",
+        "mode": "r",
+        "owner": "r",
+        "strip-program": "r",
+        "suffix": "r",
+        "target-directory": "r",
+        "backup": "o",
+        "context": "o",
+        **dict.fromkeys(
+            [
+                "compare",
+                "directory",
+                "help",
+                "no-target-directory",
+                "preserve-context",
+                "preserve-timestamps",
+                "strip",
+                "unprivileged",
+                "verbose",
+                "version",
+            ],
+            "n",
+        ),
+    },
+    "ln": {
+        "suffix": "r",
+        "target-directory": "r",
+        "backup": "o",
+        **dict.fromkeys(
+            [
+                "force",
+                "help",
+                "interactive",
+                "logical",
+                "no-dereference",
+                "no-target-directory",
+                "physical",
+                "relative",
+                "symbolic",
+                "verbose",
+                "version",
+            ],
+            "n",
+        ),
+    },
+    "rsync": dict.fromkeys(
+        [
+            "info",
+            "debug",
+            "stderr",
+            "backup-dir",
+            "suffix",
+            "chmod",
+            "checksum-choice",
+            "block-size",
+            "rsh",
+            "rsync-path",
+            "max-delete",
+            "max-size",
+            "min-size",
+            "max-alloc",
+            "partial-dir",
+            "usermap",
+            "groupmap",
+            "chown",
+            "timeout",
+            "contimeout",
+            "modify-window",
+            "temp-dir",
+            "compare-dest",
+            "copy-dest",
+            "link-dest",
+            "compress-choice",
+            "compress-level",
+            "skip-compress",
+            "filter",
+            "exclude",
+            "exclude-from",
+            "include",
+            "include-from",
+            "files-from",
+            "copy-as",
+            "address",
+            "port",
+            "sockopts",
+            "outbuf",
+            "remote-option",
+            "out-format",
+            "log-file",
+            "log-file-format",
+            "password-file",
+            "early-input",
+            "bwlimit",
+            "stop-after",
+            "stop-at",
+            "write-batch",
+            "only-write-batch",
+            "read-batch",
+            "protocol",
+            "iconv",
+            "checksum-seed",
+        ],
+        "r",
+    ),
+}
+COPIERS = tuple(_COPY_SHORT_VALUES)
+
+
+def _copy_long(table, name, abbreviations):
+    """`(canonical name, argument kind)` for a long option as getopt_long resolves it: an exact name, else a unique prefix. An unknown or ambiguous name is read as taking no value."""
+    if name in table:
+        return name, table[name]
+    if abbreviations:
+        hits = [full for full in table if full.startswith(name)]
+        if len(hits) == 1:
+            return hits[0], table[hits[0]]
+    return name, "n"
+
+
+def copy_destination(name, argv):
+    """`(sources, destination, into)` for a `cp`/`mv`/`install`/`ln`/`rsync` argv (the command name excluded), or None when the command copies nothing onto a path. `into` is True when the destination is a directory by the command's own spelling, so each source lands inside it under its own name.
+
+    A target-directory option (`-t DIR`, `-tDIR`, a bundle ending in `t`, `--target-directory=DIR`, `--target-directory DIR`, or a unique prefix of it) names the destination, and then every operand is a source. Otherwise the destination is the last operand. `ln` with one operand links it into the current directory, so its destination is `.`. `install -d` creates directories and copies nothing.
+    """
+    base = name.rsplit("/", 1)[-1]
+    if base not in _COPY_SHORT_VALUES:
+        return None
+    short_values = _COPY_SHORT_VALUES[base]
+    table = _COPY_LONG[base]
+    abbreviations = base != "rsync"
+    operands: list[str] = []
+    target = None
+    creates_dirs = False
+    k = 0
+    while k < len(argv):
+        arg = argv[k]
+        k += 1
+        if arg == "--":
+            operands.extend(argv[k:])
+            break
+        if arg.startswith("--"):
+            key, eq, value = arg[2:].partition("=")
+            full, kind = _copy_long(table, key, abbreviations)
+            if kind == "r" and not eq and k < len(argv):
+                value = argv[k]
+                k += 1
+            if full == "target-directory":
+                target = value
+            elif full == "directory" and base == "install":
+                creates_dirs = True
+            continue
+        if arg.startswith("-") and len(arg) > 1:
+            for at, letter in enumerate(arg[1:], 1):
+                if base == "install" and letter == "d":
+                    creates_dirs = True
+                if letter not in short_values:
+                    continue
+                value = arg[at + 1 :]
+                if not value and k < len(argv):
+                    value = argv[k]
+                    k += 1
+                if letter == "t" and base != "rsync":
+                    target = value
+                break
+            continue
+        operands.append(arg)
+    if creates_dirs:
+        return None
+    if target:
+        return operands, target, True
+    if len(operands) >= 2:
+        return operands[:-1], operands[-1], False
+    if base == "ln" and len(operands) == 1:
+        return operands, ".", True
+    return None
+
+
+def run_copies(run):
+    """`(sources, [destination, ...], into)` for a walked copier run, or None: `copy_destination` over its argv, with what the run's launcher or feed adds.
+
+    A `{}` destination is what a `find -exec` walks (`Launch.starts`). An xargs-fed copier takes words from its feed AFTER its own argv (`echo .claude/commands/ | xargs cp x.md`), so every fed word may be the destination, and the argv's own last operand is then a source; a `-I {}` destination is a fed word. What a producer prints is not computed, so every word of the feed counts, the direction a guard fails safe in.
+    """
+    name = run.name.rsplit("/", 1)[-1]
+    if name not in COPIERS:
+        return None
+    argv = list(run.argv)
+    found = copy_destination(name, argv)
+    fed = run.feed.split() if run.feed and "xargs" in run.via else []
+    if found is None:
+        return ([a for a in argv if not a.startswith("-")], fed, True) if fed else None
+    sources, dest, into = found
+    dests = [dest]
+    if run.launch is not None and run.launch.launcher == "find" and "{}" in dest:
+        dests = list(run.launch.starts)
+    if fed:
+        return [*sources, dest], [d for d in dests if "{}" not in d] + fed, into
+    return sources, dests, into
+
+
+# --------------------------------------------------------------------------- where a Python program writes ---------------------------------------------------------------------------
+#
+# A PYTHON PROGRAM IS JUDGED BY ITS WRITE TARGETS, NOT BY THE PATHS IT NAMES. block_review_file_shell_write learned it first (2026-10-09: a heredoc whose written CONTENT named a review path was refused). block_user_only_command_shell_write still refused any program that named the exception list and wrote anything anywhere, so a heredoc reading the list beside a scratch write was "a python3 program writing the exception
+# list" (coordinator finding 2026-10-11, and this writer's own edit of the test corpus was refused that way the same day). The reading moved here so both guards share it: `python_write_targets` yields each write call's target expression, and `python_writes_to` answers whether one of them holds a string the caller's predicate accepts, directly or through a name bound to one, transitively. A mention, an open for read and a `json.load` are data.
+_PY_WRITE_MODE = re.compile(r"[wax+]")
+_PY_RECEIVER_WRITES = frozenset(
+    ("write_text", "write_bytes", "unlink", "touch", "rmdir", "symlink_to", "hardlink_to")
+)
+_PY_RECEIVER_MOVES = frozenset(("rename", "replace"))
+_PY_DEST_CALLS = frozenset(
+    ("replace", "rename", "move", "copy", "copy2", "copyfile", "copytree", "link", "symlink")
+)
+_PY_REMOVE_CALLS = frozenset(("remove", "unlink", "rmtree", "truncate"))
+
+
+def python_imports(tree):
+    """Each imported local name -> what it names: `import subprocess as sp` gives `sp -> subprocess`, `from os import system` gives `system -> os.system`."""
+    names: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for a in node.names:
+                if a.asname:
+                    names[a.asname] = a.name
+                else:
+                    head = a.name.split(".")[0]
+                    names[head] = head
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            for a in node.names:
+                names[a.asname or a.name] = "%s.%s" % (node.module, a.name)
+    return names
+
+
+def python_qualified(func, imports):
+    """The dotted name a call's function spells after resolving import aliases (`sp.run` -> `subprocess.run`), or ""."""
+    parts = []
+    while isinstance(func, ast.Attribute):
+        parts.append(func.attr)
+        func = func.value
+    if not isinstance(func, ast.Name):
+        return ""
+    parts.append(imports.get(func.id, func.id))
+    return ".".join(reversed(parts))
+
+
+# `os.open`'s flags: anything but these read-only bits (a write flag, a variable, a number with a write bit) can write.
+_PY_READ_FLAGS = frozenset(
+    (
+        "os",
+        "O_RDONLY",
+        "O_CLOEXEC",
+        "O_NOFOLLOW",
+        "O_DIRECTORY",
+        "O_NONBLOCK",
+        "O_NOCTTY",
+        "O_BINARY",
+        "O_PATH",
+        "O_NOATIME",
+        "O_LARGEFILE",
+    )
+)
+
+
+def _py_flags_can_write(expr):
+    for n in ast.walk(expr):
+        if isinstance(n, ast.Name) and n.id not in _PY_READ_FLAGS:
+            return True
+        if isinstance(n, ast.Attribute) and n.attr not in _PY_READ_FLAGS:
+            return True
+        if isinstance(n, ast.Constant) and isinstance(n.value, int) and n.value & 0o3:
+            return True
+    return False
+
+
+def _py_mode_can_write(mode):
+    """An `open` mode argument: absent is a read, a constant is read by its letters, and anything else (a variable, `*args`) is assumed to write."""
+    if mode is None:
+        return False
+    if isinstance(mode, ast.Constant):
+        return isinstance(mode.value, str) and _PY_WRITE_MODE.search(mode.value) is not None
+    return True
+
+
+def python_keyword(node, name):
+    return next((k.value for k in node.keywords if k.arg == name), None)
+
+
+def python_write_targets(tree, imports=None):
+    """The target expressions of every write call in a Python tree.
+
+    `open` has three shapes (e30f1ad1.1): the builtin and a module function (`io.open`, `codecs.open`, `gzip.open`) take the path first and the mode second; `os.open` takes FLAGS second; and a method on a path object (`Path(p).open('w')`) takes the mode FIRST, the receiver being the target.
+    """
+    imports = python_imports(tree) if imports is None else imports
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        attr = (
+            func.attr
+            if isinstance(func, ast.Attribute)
+            else func.id
+            if isinstance(func, ast.Name)
+            else ""
+        )
+        if attr == "open":
+            qualified = python_qualified(func, imports)
+            on_module = isinstance(func, ast.Name) or (
+                isinstance(func, ast.Attribute)
+                and isinstance(func.value, ast.Name)
+                and func.value.id in imports
+            )
+            if qualified == "os.open":
+                flags = node.args[1] if len(node.args) > 1 else python_keyword(node, "flags")
+                path = node.args[0] if node.args else python_keyword(node, "path")
+                if flags is not None and path is not None and _py_flags_can_write(flags):
+                    yield path
+            elif on_module:
+                mode = node.args[1] if len(node.args) > 1 else python_keyword(node, "mode")
+                path = node.args[0] if node.args else python_keyword(node, "file")
+                if path is not None and _py_mode_can_write(mode):
+                    yield path
+            elif isinstance(func, ast.Attribute):
+                mode = node.args[0] if node.args else python_keyword(node, "mode")
+                if _py_mode_can_write(mode):
+                    yield func.value
+            continue
+        # `os.replace(a, b)` and `str.replace(old, new)` share a name: a module call counts only when `os` or `shutil` qualifies it, and the receiver form only with Path's single argument.
+        module = (
+            isinstance(func, ast.Attribute)
+            and isinstance(func.value, ast.Name)
+            and func.value.id in ("os", "shutil")
+        )
+        receiver_write = attr in _PY_RECEIVER_WRITES or (
+            attr in _PY_RECEIVER_MOVES and len(node.args) == 1
+        )
+        if isinstance(func, ast.Attribute) and not module and receiver_write:
+            yield func.value
+            yield from node.args[:1] if attr in _PY_RECEIVER_MOVES else ()
+        if module and attr in _PY_DEST_CALLS and len(node.args) > 1:
+            if attr in ("replace", "rename", "move"):
+                yield node.args[0]
+            yield node.args[1]
+        if module and attr in _PY_REMOVE_CALLS and node.args:
+            yield node.args[0]
+
+
+def python_bindings(tree):
+    """`{name: [value expression, ...]}` for every assignment, annotated or augmented assignment and walrus in a Python tree."""
+    bound: dict = {}
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)) and node.value is not None:
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for t in targets:
+                for n in ast.walk(t):
+                    if isinstance(n, ast.Name):
+                        bound.setdefault(n.id, []).append(node.value)
+        elif isinstance(node, ast.NamedExpr):
+            bound.setdefault(node.target.id, []).append(node.value)
+    return bound
+
+
+def python_holds(expr, holds, names):
+    """Whether `expr` carries a string constant `holds` accepts, or one of `names`."""
+    for n in ast.walk(expr):
+        if isinstance(n, ast.Constant) and isinstance(n.value, str) and holds(n.value):
+            return True
+        if isinstance(n, ast.Name) and n.id in names:
+            return True
+    return False
+
+
+def python_matching_names(bound, holds):
+    """The names bound, transitively, to an expression carrying a string `holds` accepts."""
+    names: set = set()
+    changed = True
+    while changed:
+        changed = False
+        for name, values in bound.items():
+            if name not in names and any(python_holds(v, holds, names) for v in values):
+                names.add(name)
+                changed = True
+    return names
+
+
+def python_writes_to(program, holds):
+    """True or False for a Python program that parses: does a write target hold a string `holds` accepts? None when it does not parse, so the caller's text reading answers instead."""
+    try:
+        tree = ast.parse(program)
+    except (SyntaxError, ValueError, RecursionError, MemoryError):
+        return None
+    names = python_matching_names(python_bindings(tree), holds)
+    return any(python_holds(t, holds, names) for t in python_write_targets(tree))
 
 
 def ssh_remote_commands(cmd, depth=0):

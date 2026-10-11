@@ -185,6 +185,15 @@ def test_a_long_command_name_that_needs_a_host_is_probed_with_arguments(
     assert gma.fires(anchored, "true && %s a.sh host:/dst/a.sh" % name)
 
 
+@pytest.mark.parametrize("order", [(r"\w\w\w\w\w", "xxxxx"), ("xxxxx", r"\w\w\w\w\w")])
+def test_a_text_any_pattern_spells_as_a_word_is_worded_in_either_order(order: tuple) -> None:
+    """Review 5aa562c3.2: `\\w\\w\\w\\w\\w` renders `xxxxx` as a fragment and the literal pattern renders it as a word. The instance is probed once, and it earns the argument-shaped template whichever pattern came first; it did only when the literal came first."""
+    probes = gma.probes_of(list(order))
+    assert probes.instances == ["xxxxx"]
+    assert probes.worded == {"xxxxx"}
+    assert probes.texts("xxxxx") == [gma.sentence("xxxxx"), gma.argument_sentence("xxxxx")]
+
+
 def test_a_short_worded_instance_is_probed_not_unprobed(tmp_path: pathlib.Path) -> None:
     probes = gma.probes_of([r"(^|[;&|(])[ \t]*(ab|cd+)"])
     assert set(probes.instances) == {"ab", "cd"}

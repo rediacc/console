@@ -832,6 +832,116 @@ FACTS = [
         relies_on=((SS, "_shell_payload"), (SS, "_stage_feed")),
         source="sh -c stdin feed",
     ),
+    # Review e085085d.1: what shellscan's loop frames (`_loop_word`) and `< <(...)` feed rest on, and so block_protected_files' loop refusals.
+    Fact(
+        "W21",
+        "a redirect after done feeds the whole loop, condition and body",
+        'while read f; do zzargv "$f"; done <<< a',
+        "<a>\n",
+        relies_on=((SS, "_loop_word"), (SS, "_redir_feed")),
+        source="done <<< feed",
+        check="fed_zzargv",
+        extra={"feed": "a"},
+    ),
+    Fact(
+        "W22",
+        "< <(...) is a redirect whose target is a process substitution, read as the loop's stdin",
+        'while read f; do zzargv "$f"; done < <(echo a)',
+        "<a>\n",
+        relies_on=((SS, "_procsub"), (SS, "_redir_feed")),
+        source="done < <(...) feed",
+        check="fed_zzargv",
+        extra={"feed": "echo a"},
+    ),
+    Fact(
+        "W23",
+        "a loop on the consumer side of a pipe hands its stdin to the commands in its body",
+        "echo a b | while true; do xargs zzargv; break; done",
+        "<a><b>\n",
+        relies_on=((SS, "_loop_word"), (SS, "_stage_feed")),
+        source="piped loop body feed",
+        check="fed_zzargv",
+        extra={"feed": "echo a b"},
+    ),
+    Fact(
+        "W24",
+        "a for loop assigns its variable each word of its list in turn",
+        'for f in a b; do zzargv "$f"; done',
+        "<a>\n<b>\n",
+        relies_on=((SS, "_loop_word"),),
+        source="for list binding",
+        check="loop_vars",
+        extra={"loop_vars": {"f": ["a", "b"]}},
+    ),
+    # Review cac47d16.1: what `shellscan.run_copies` rests on for an xargs-fed copier.
+    Fact(
+        "W25",
+        "xargs appends the fed words AFTER the command's own arguments",
+        "echo d | xargs zzargv a",
+        "<a><d>\n",
+        relies_on=((SS, "run_copies"),),
+        source="xargs appends",
+    ),
+    # An option's value is not the command (review cac47d16.1 sweep, `shellscan._prefix_option`): each of these walked as a command named by the VALUE before.
+    Fact(
+        "W26",
+        "xargs's --max-procs takes the next word as its value",
+        "echo a | xargs --max-procs 2 zzargv",
+        "<a>\n",
+        relies_on=((SS, "_prefix_option"), (SS, "_strip_prefixes")),
+        source="xargs long value option",
+        check="run_names",
+        extra={"names": ["echo", "zzargv"]},
+    ),
+    Fact(
+        "W27",
+        "a bundle ending in a value letter takes the next word (-rP 2)",
+        "echo a | xargs -rP 2 zzargv",
+        "<a>\n",
+        relies_on=((SS, "_prefix_option"),),
+        source="xargs bundled value option",
+        check="run_names",
+        extra={"names": ["echo", "zzargv"]},
+    ),
+    Fact(
+        "W28",
+        "xargs resolves a unique prefix of a long option (--max-p)",
+        "echo a | xargs --max-p 2 zzargv",
+        "<a>\n",
+        relies_on=((SS, "_prefix_option"),),
+        source="xargs abbreviated option",
+        check="run_names",
+        extra={"names": ["echo", "zzargv"]},
+    ),
+    Fact(
+        "W29",
+        "an OPTIONAL value is only ever attached: xargs --max-lines 1 runs 1",
+        "echo a | xargs --max-lines 1 zzargv",
+        rc_nonzero=True,
+        relies_on=((SS, "_prefix_option"),),
+        source="xargs optional value",
+        check="run_names",
+        extra={"names": ["echo", "1"]},
+    ),
+    Fact(
+        "W30",
+        "stdbuf's --output takes the next word as its value",
+        "stdbuf --output L zzargv a",
+        "<a>\n",
+        relies_on=((SS, "_prefix_option"),),
+        source="stdbuf long value option",
+        check="run_names",
+        extra={"names": ["zzargv"]},
+    ),
+    Fact(
+        "W31",
+        "env --chdir runs the command in that directory",
+        "env --chdir {T} sh -c 'zzargv \"$PWD\"'",
+        "<{T}>\n",
+        relies_on=((SS, "_PREFIX_CHDIR"),),
+        source="env --chdir",
+        check="chdir",
+    ),
 ]
 
 
@@ -1017,6 +1127,20 @@ def scanner_mismatch(fact, tmp, monkeypatch):
         fed = [(r.name, r.feed, r.via) for r in runs if r.feed is not None]
         if fed != [("zzargv", fact.extra["feed"], ("xargs",))]:
             problems.append("fed runs %r" % fed)
+    elif fact.check == "fed_zzargv":
+        fed = [r.feed for r in runs if r.name == "zzargv"]
+        if not fed or any(f is None or fact.extra["feed"] not in f for f in fed):
+            problems.append("zzargv feeds %r, want each to carry %r" % (fed, fact.extra["feed"]))
+    elif fact.check == "chdir":
+        if [r.cwd for r in runs[:1]] != [_subst("{T}", tmp)]:
+            problems.append("the first run's directory %r" % [r.cwd for r in runs[:1]])
+    elif fact.check == "run_names":
+        if [r.name for r in runs] != fact.extra["names"]:
+            problems.append("runs %r" % [r.name for r in runs])
+    elif fact.check == "loop_vars":
+        bound = [r.loop_vars for r in runs if r.name == "zzargv"]
+        if bound != [fact.extra["loop_vars"]]:
+            problems.append("zzargv loop variables %r" % bound)
     elif fact.check == "ssh_locality":
         problems.append(_check_ssh_locality(tmp))
     elif fact.check == "command_v":
@@ -1439,3 +1563,72 @@ def test_the_rows_are_unique_and_cover_the_tables():
     assert len(ids) == len(set(ids)), "duplicate row ids"
     tables = {re.sub(r"\d+[a-z]?$", "", i) for i in ids}
     assert tables == {"W", "E", "H", "Q", "SEP", "R", "C", "P", "X"}, tables
+
+
+# --------------------------------------------------------------------------- where a copy lands ---------------------------------------------------------------------------
+
+# WHERE A COPY LANDS IS THE TOOL'S ANSWER (review cac47d16.1). `shellscan.copy_destination` ports each copier's own option parse, and two guards judge a copy by it. Each row runs the real tool in a scratch directory holding files `a`, `b`, a directory `d` and a directory `src` (with `src/f`), and the files that appear must be exactly where the port says each source lands: inside the destination when the command
+# names it a directory (`into`, or a directory on disk), else the destination itself. `ln a` runs from `sub/`, where `.` is not where `a` lives.
+COPIES = [
+    "cp -t d a",
+    "cp --target-directory=d a b",
+    "cp --target d a",
+    "cp --t d a",
+    "cp -rt d src",
+    "cp -at d a",
+    "cp a d -S .bak",
+    "cp -S .bak a e",
+    "cp a b -t d",
+    "cp --no-preserve mode a e",
+    "cp -T a e",
+    "cp -- a e",
+    "mv -t d a",
+    "mv a d -S x",
+    "install -m 644 -t d a",
+    "install -t d a b",
+    "install -ma+r a e",
+    "ln -t d a",
+    "ln ../a",
+    "ln -s a e",
+    "rsync a d/ --exclude x",
+    "rsync -t a e",
+    "rsync -e ssh a e",
+    "rsync -rt src d/",
+]
+
+
+@pytest.mark.parametrize("cmd", COPIES)
+def test_copy_destination_matches_the_tool(tmp_path, cmd):
+    argv = cmd.split()
+    if shutil.which(argv[0]) is None:
+        pytest.fail("%s is not installed; this row asks the real tool where a copy lands" % argv[0])
+    world = tmp_path / "w"
+    (world / "d").mkdir(parents=True)
+    (world / "src").mkdir()
+    (world / "sub").mkdir()
+    for rel in ("a", "b", "src/f"):
+        (world / rel).write_text(rel, encoding="utf-8")
+    run_in = world / "sub" if cmd == "ln ../a" else world
+    before = {p.relative_to(world) for p in world.rglob("*")}
+    done = subprocess.run(argv, cwd=run_in, capture_output=True, text=True, check=False)
+    assert done.returncode == 0, "%s: %s" % (cmd, done.stderr)
+    new = {p.relative_to(world) for p in world.rglob("*")} - before
+    landed = {p for p in new if not any(q != p and q in p.parents for q in new)}
+    found = shellscan.copy_destination(argv[0], argv[1:])
+    assert found is not None, "%s copies, and the port says it does not" % cmd
+    sources, dest, into = found
+    target = pathlib.Path(os.path.normpath(run_in / dest))
+    want = {
+        (
+            target / pathlib.Path(s.rstrip("/")).name if into or target.is_dir() else target
+        ).relative_to(world)
+        for s in sources
+    }
+    assert landed == want, "%s landed %s; the port says %s" % (cmd, sorted(landed), sorted(want))
+
+
+def test_copy_destination_reads_no_copy_where_there_is_none():
+    """The other direction: `install -d` makes directories, a lone `cp` operand copies nothing, and a non-copier is not read."""
+    assert shellscan.copy_destination("install", ["-d", "a", "b"]) is None
+    assert shellscan.copy_destination("cp", ["a"]) is None
+    assert shellscan.copy_destination("cat", ["a", "b"]) is None

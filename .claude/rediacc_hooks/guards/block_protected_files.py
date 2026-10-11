@@ -15,6 +15,7 @@ PORT NOTE. `PROTECTED` is interpolated into the ERE by the bash, so the two path
 """
 
 import itertools
+import posixpath
 import re
 
 from rediacc_hooks import hookio, shellscan
@@ -26,6 +27,8 @@ ORDER = 3
 DEFECT = (r")[^;&|]*", r").*")
 
 PROTECTED = r"(\.claude/settings\.json|scripts/pre-commit-check\.sh)"
+# The same two files as paths, for the walked runs below. Dropping one turns its EDGE_CASES rows allowed (`a quoted path` names the first, `a for list holding the path` the second), which the golden reads as a change.
+PROTECTED_PATHS = (".claude/settings.json", "scripts/pre-commit-check.sh")
 
 # COMMAND POSITION ON EVERY ARM. The verb group used to be `(git restore|git checkout|(^|[{S};|&])rm[{S}])`, which anchored only the `rm` arm, and that to any whitespace: `echo the docs say never to run git restore .claude/settings.json in this repo` was refused, and so was `echo never rm .claude/settings.json here` (found by check:ci-guard-mention-anchoring, 2026-10-09).
 # Now the whole alternation sits behind one anchor, the line start or a separator, then an optional directory on the program (`/bin/rm`). `git` admits global flags before its verb the way block_worktree_add's GIT_AT_CMD does, so `git -C . restore` and `git  restore` are reached; both were ALLOWED before, because the verb was the literal `git restore`. Prefix commands
@@ -158,11 +161,28 @@ EDGE_CASES = [
         "a read loop removing another path",
         "echo .claude/settings.json | while read f; do rm /tmp/x; done",
     ),
-    # KNOWN GAP: a loop fed through `done` deletes the file and is allowed (see `_fed_read_loop`).
+    # A loop fed through `done` feeds its body (review e085085d.1): each refusal was allowed before, the first pinned as a KNOWN GAP.
     (
-        "a read loop fed through done is out of reach",
+        "a read loop fed through done <<<",
         'while read f; do rm "$f"; done <<< .claude/settings.json',
     ),
+    (
+        "a read loop fed through done < <(...)",
+        'while read f; do rm "$f"; done < <(echo .claude/settings.json)',
+    ),
+    ("a piped loop's body is fed", "echo .claude/settings.json | while true; do xargs rm; done"),
+    (
+        "a loop fed through done that only reads",
+        'while read f; do cat "$f"; done <<< .claude/settings.json',
+    ),
+    # The path in a shape the prose view drops (e085085d.1 sweep): each refusal was allowed before.
+    ("a quoted path", 'rm ".claude/settings.json"'),
+    ("a variable holding the path", 'f=.claude/settings.json; rm "$f"'),
+    ("a for list holding the path", 'for f in scripts/pre-commit-check.sh; do rm "$f"; done'),
+    ("a path relative to a cd", "cd scripts && rm pre-commit-check.sh"),
+    ("a recursive rm above the path", "rm -rf .claude"),
+    ("a recursive rm beside the path", "rm -rf .claude/tmp-scratch"),
+    ("a variable holding the path, read", 'f=.claude/settings.json; cat "$f"'),
     # A wrapper is a command the walk found, not a quoted word that spells one (#31ed6c5f): both were refused before.
     (
         "a quoted sh -c is an echo argument",
@@ -182,10 +202,69 @@ def run(ev):
     if cmd == "":
         return hookio.ALLOW
 
-    if hookio.grep_q(VERB_AND_PATH, scan) or fed_by_stdin(cmd):
+    try:
+        cwd = ev.default(("cwd",), str(hookio.repo_root()))
+    except RuntimeError:
+        cwd = ev.cwd
+    if hookio.grep_q(VERB_AND_PATH, scan) or fed_by_stdin(cmd) or names_by_run(cmd, cwd):
         ev.warn(MESSAGE)
         return hookio.DENY
     return hookio.ALLOW
+
+
+# THE TEXT VIEW DROPS WHAT BASH STILL HANDS THE COMMAND (review e085085d.1 sweep). VERB_AND_PATH reads `scan_target`, which removes every quoted span so that prose never reads as a command. A quoted path is not prose: `rm ".claude/settings.json"` and `git restore -- ".claude/settings.json"` were both allowed (rc 0, 2026-10-11), and so were the path in a variable (`f=...; rm "$f"`), in a
+# `for` list, in a quoted substitution (`rm "$(echo ...)"`), behind a `cd`, and with a doubled slash. So the walked runs are judged too: each operand of an `rm` or a destructive git verb, as bash hands it over (`argv` quote-removed, `xargv` with the walk's variables expanded, a `for` variable as every word of its list), is resolved against the directory the run executes in and normalised. A recursive `rm` of a
+# directory holding a protected file deletes it too. A substitution's output is not computed, so a protected path anywhere inside one counts, the direction this guard fails safe in. `git -C <dir>` resolves against that directory, so another checkout's copy still counts by its name, exactly as the text match always did.
+def _resolve(word, base):
+    return posixpath.normpath(word if word.startswith("/") else posixpath.join(base, word))
+
+
+def _is_protected(path):
+    return any(path == "/" + p or path.endswith("/" + p) for p in PROTECTED_PATHS)
+
+
+def _holds_protected(path, root):
+    """A directory a recursive rm empties: an ancestor of a protected file in this checkout."""
+    return any(posixpath.join(root, p).startswith(path.rstrip("/") + "/") for p in PROTECTED_PATHS)
+
+
+def _operand_words(run_):
+    """Every word an operand of `run_` could be: the quote-removed argv, the expanded argv where the walk could evaluate it, and each word of a `for` list a `$NAME` in it names."""
+    words = list(run_.argv)
+    words += [w for w in (run_.xargv or []) if not shellscan.unresolved(w)]
+    for name, values in run_.loop_vars.items():
+        ref = re.compile(r"\$\{?%s\b" % re.escape(name))
+        if any(ref.search(a) for a in run_.argv):
+            words += values
+    return words
+
+
+def names_by_run(cmd, cwd):
+    """True when a walked `rm` or destructive git verb names a protected file, or recursively removes a directory holding one."""
+    here_root = posixpath.normpath(str(cwd) if cwd else "/")
+    try:
+        root = posixpath.normpath(str(hookio.repo_root()))
+    except RuntimeError:
+        root = here_root
+    for run_ in shellscan.every_run(cmd):
+        destructive, git_verb = _destructive(run_)
+        if not destructive:
+            continue
+        here = run_.git_dir if git_verb else run_.cwd
+        base = _resolve(here, here_root) if here else here_root
+        # `rm -r` and `git rm -r` remove what a directory holds; a restore or checkout of a directory is block_destructive_git_restore's to judge.
+        recursive = (not git_verb or run_.git_sub == "rm") and any(
+            a == "--recursive" or re.match(r"^-[A-Za-z]*[rR]", a) for a in run_.argv
+        )
+        for word in _operand_words(run_):
+            if word.startswith("-") or word == "":
+                continue
+            if ("$(" in word or "`" in word) and re.search(PROTECTED, word):
+                return True
+            path = _resolve(word, base)
+            if _is_protected(path) or (recursive and _holds_protected(path, root)):
+                return True
+    return False
 
 
 # THE PATH CAN ARRIVE ON STDIN (#ec63ff8c). `echo .claude/settings.json | xargs rm` deletes the file, and no clause of it holds both the verb and the path, so it was allowed (rc 0, 2026-10-09). `shellscan` records, per command, the literal text arriving on its stdin (`_Run.feed`: the earlier pipeline stages' words, its own here-string or heredoc, and `find`'s words for a `find -exec` command) and the prefixes in front of it
@@ -209,10 +288,10 @@ def _destructive(run_):
 
 
 # A SHELL PAYLOAD INHERITS THE FEED (#32e75fa4, review 4aad4597.1), in both of the ways a shell hands it on. `echo .claude/settings.json | xargs sh -c 'rm "$0"'` deletes the file: xargs appends the fed words to `sh -c P` as P's positional parameters (`$0`, `$1`, `$@`; test_bash_semantics W19), and `-I{}` writes them into P itself. The fed run is the `sh`, the `rm` inside P has no feed
-# of its own, so it was allowed (rc 0, 2026-10-09). So when xargs or `find -exec` launches a shell's `-c` payload with a protected path in its feed, any rm or destructive git verb in it, at any depth, is refused. Whether the payload really names `$0` is not asked, the direction a guard fails safe in; one that only reads (`cat "$0"`) stays allowed.
+# of its own, so it was allowed (rc 0, 2026-10-09). So when xargs or `find -exec` launches a shell's `-c` payload with a protected path in its feed, any rm or destructive git verb in it, at any depth, is refused. Whether the payload really names `$0` is not asked, the direction a guard fails safe in, and asking it would be unsound: `xargs sh -c 'f=$0; rm "$f"'` and `xargs sh -c 'for f; do rm "$f"; done' _` delete the path with an rm that names no positional (review 5aa562c3.1). One that only reads (`cat "$0"`) stays allowed.
 # The second way is stdin itself: `echo .claude/settings.json | sh -c 'xargs rm'` gives the payload's `xargs` the shell's own stdin (allowed at rc 0 the same day). So every payload command is judged as if the shell's feed reached it, whatever its own pipeline puts in front of it (`cat | xargs rm` passes it through, and what a stage prints is not computed), the direction a guard fails safe in. A compound consumer (`| (xargs rm)`, `| { xargs rm; }`) is fed too, because shellscan hands a group's stdin to every command in it (#31ed6c5f); a read loop is `_fed_read_loop` below.
 def _takes_feed(run_):
-    """True when a protected path on this run's stdin becomes a destructive command's operands."""
+    """True when a protected path on this run's stdin can become a destructive command's operands: through xargs, `find -exec` or `--pathspec-from-file=-` on the command itself, or into a fed shell payload holding any destructive command, whether or not that command names `$0` (see the comment above: `f=$0; rm "$f"` and `for f; do rm "$f"; done` read the feed without naming a positional in the rm)."""
     operands_fed = any(v in run_.via for v in OPERAND_FEEDERS)
     if run_.name.rsplit("/", 1)[-1] in shellscan.SHELL_NAMES:
         mode, payload = shellscan._shell_payload(run_.argv)
@@ -227,7 +306,7 @@ def _takes_feed(run_):
 
 
 # A READ LOOP TURNS THE FEED INTO A VARIABLE (#31ed6c5f), and it is in reach: `echo .claude/settings.json | while read f; do rm "$f"; done` deletes the file, and was allowed (rc 0, 2026-10-09). The walk does not model the loop's body as a body (`do` and `done` are words in front of commands), so the rule is the over-reading one: a `read` that is a `while`/`until` condition, with a
-# protected path in its feed, makes every LATER destructive command that names one of its variables (`$f`, `${f}`, `$REPLY` when it names none, an `-a` array) a deletion of that path. Out of reach, and pinned by an allow row: a loop fed through `done` (`done <<< .claude/settings.json`, `done < <(...)`), whose redirect sits on a word the walk does not keep as a command.
+# protected path in its feed, makes every LATER destructive command that names one of its variables (`$f`, `${f}`, `$REPLY` when it names none, an `-a` array) a deletion of that path. A loop fed through `done` (`done <<< .claude/settings.json`, `done < <(...)`, a heredoc) is in reach since review e085085d.1: shellscan hands the `done` redirect to every command inside the loop (`_loop_word`).
 # `read`'s options that take a value: the rest of the bundle (`-n1`), or the next word when the letter ends it (`-rp prompt`). `-a`'s value is an array it assigns.
 _READ_VALUE_LETTERS = frozenset("adinNptu")
 

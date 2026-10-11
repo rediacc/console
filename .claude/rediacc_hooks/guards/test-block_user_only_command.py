@@ -198,6 +198,25 @@ SHELL_CASES = [
     ("cp of a flagged source onto the directory", "cp src/flagged.md .claude/commands/", True),
     ("cp -r of a directory with a flagged file", "cp -r srcdir .claude/skills/", True),
     ("mv of a flagged source", "mv src/flagged.md .claude/commands/new.md", True),
+    # The target-directory option names the destination and makes every operand a source (review cac47d16.1): each was allowed (rc 0) before.
+    ("cp -t into the command directory", "cp -t .claude/commands src/flagged.md", True),
+    ("cp --target-directory=", "cp --target-directory=.claude/commands src/flagged.md", True),
+    (
+        "an abbreviated --target with its own word",
+        "cp --target .claude/commands src/flagged.md",
+        True,
+    ),
+    ("a bundle ending in t", "cp -rt .claude/skills srcdir", True),
+    ("mv -t", "mv -t .claude/commands src/flagged.md", True),
+    ("install -m then -t", "install -m 644 -t .claude/commands src/flagged.md", True),
+    ("ln -t", "ln -t .claude/commands src/flagged.md", True),
+    ("a value option after the operands", "cp src/flagged.md .claude/commands/ -S .bak", True),
+    (
+        "rsync with an option after the operands",
+        "rsync src/flagged.md .claude/commands/ --exclude x",
+        True,
+    ),
+    ("xargs appends the destination", "echo .claude/commands/ | xargs cp src/flagged.md", True),
     (
         "python heredoc writing the key",
         "python3 - <<'EOF'\nimport pathlib\npathlib.Path('%s').write_text('---\\n%s: true\\n---\\n')\nEOF"
@@ -212,6 +231,9 @@ SHELL_CASES = [
     ("sed -i substituting the key away", "sed -i 's/^%s: true$//' %s" % (K, F), False),
     ("cp of a clean source", "cp src/clean.md %s" % C, False),
     ("cp of a command OUT of the directory", "cp %s /tmp/x.md" % F, False),
+    ("cp -t of a command OUT of the directory", "cp -t /tmp %s" % F, False),
+    ("cp -t of a clean source", "cp -t .claude/commands src/clean.md", False),
+    ("rsync -t keeps times; the last operand is the destination", "rsync -t %s /tmp/" % F, False),
     ("echo to the terminal", "echo '%s: true is banned'" % K, False),
     ("grep for the key", "grep -rn '%s' .claude/commands" % K, False),
     ("heredoc into a doc", "cat > docs/x.md <<'EOF'\n%sEOF" % FLAGGED, False),
@@ -227,6 +249,16 @@ SHELL_CASES = [
     ("append to the exception list", "echo '{}' >> %s" % LIST, True),
     ("sed -i on the exception list", "sed -i 's/listed/clean/' %s" % LIST, True),
     ("cp onto the exception list", "cp /tmp/x.json %s" % LIST, True),
+    (
+        "cp -t into the exception list's directory",
+        "cp -t .ci/config /tmp/model-invocation-exceptions.json",
+        True,
+    ),
+    (
+        "cp into the exception list's directory",
+        "cp /tmp/model-invocation-exceptions.json .ci/config/",
+        True,
+    ),
     (
         "python writing the exception list",
         "python3 -c \"open('%s','w').write('{}')\"" % LIST,
