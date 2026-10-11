@@ -117,8 +117,8 @@ def run(ev):
     # which repos the new predicate had just stopped protecting.
     #
     # Empty target means "this root, or unresolvable", so the guard keeps guarding by default; a resolvable target under the project directory keeps guarding too.
-    _target = shellscan.target_root(scan, shellscan.repo_root_env(), verb="add")
-    if _target != "" and not _is_inside(_target, shellscan.repo_root_env()):
+    _target = shellscan.target_root(scan, shellscan.repo_root_env(ev), verb="add")
+    if _target != "" and not _is_inside(_target, shellscan.repo_root_env(ev)):
         return hookio.ALLOW
 
     for pat in (BLANKET_ALL, BLANKET_DOT, BLANKET_ROOT):

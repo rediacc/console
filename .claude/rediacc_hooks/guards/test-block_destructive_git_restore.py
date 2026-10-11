@@ -32,6 +32,8 @@ RUN_TMP = runtmp.run_dir("guard-scope-")
 _FOREIGN_DIR = tempfile.mkdtemp(prefix="foreign-", dir=RUN_TMP)
 subprocess.run(["git", "init", "-q", _FOREIGN_DIR], check=True, capture_output=True)
 pathlib.Path(_FOREIGN_DIR, "a.txt").write_text("hi\n", encoding="utf-8")
+pathlib.Path(_FOREIGN_DIR, "sub").mkdir()
+_ROOT = str(pathlib.Path(__file__).resolve().parents[3])
 
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_destructive_git_restore"]
@@ -173,8 +175,25 @@ ALLOW = [
 ]
 
 
-def run(cmd: str) -> int:
-    payload = json.dumps({"tool_input": {"command": cmd}})
+# REVIEW 30573c81.2: the event's `cwd` is the directory bash runs the command in, so a relative `-C` resolves from it, as `_walked_refusal` already resolved it. Each row is (cwd, command, expected rc). From a submodule, `../..` IS this checkout and is refused (the root-relative reading allowed it); from a directory outside the project, a relative `-C` stays outside and is allowed (the root-relative reading refused `checkout -- .` there), while an absolute `-C` back into this checkout is still refused.
+CWD_CASES = [
+    (_ROOT + "/private/renet", "git -C ../.. reset --hard", 2),
+    (_ROOT + "/private/renet", "git -C ../.. checkout -- .", 2),
+    (_FOREIGN_DIR, "git -C sub checkout -- .", 0),
+    (_FOREIGN_DIR, "git -C sub reset --hard", 0),
+    (_FOREIGN_DIR, "git -C %s reset --hard" % _ROOT, 2),
+    # The ambiguous "" from an outside cwd keeps guarding unless every invocation is provably outside: one of two lands here.
+    (_FOREIGN_DIR, "git -C sub checkout -- . && git -C %s checkout -- ." % _ROOT, 2),
+    # An unexpanded variable names no directory that exists, so the cwd's "" cannot be trusted as foreign.
+    (_FOREIGN_DIR, 'cd "$X" && git restore .', 2),
+]
+
+
+def run(cmd: str, cwd: str | None = None) -> int:
+    event: dict[str, object] = {"tool_input": {"command": cmd}}
+    if cwd is not None:
+        event["cwd"] = cwd
+    payload = json.dumps(event)
     # check=False is explicit: this harness EXPECTS non-zero exits (a blocked
     # command is the hook working), so raising on them would invert the test.
     proc = subprocess.run(GUARD_ARGV, input=payload, capture_output=True, text=True, check=False)
@@ -185,6 +204,11 @@ def main() -> int:
     # Both directions in one pass: a command that must be BLOCKED (exit 2) and one that must be ALLOWED (exit 0). Keeping them as comprehensions rather than append-loops is what ruff's PERF401 asks for, and it keeps the two halves of the control visibly symmetric.
     failures = [f"MUST BLOCK but did not: {cmd!r}" for cmd in BLOCK if run(cmd) != 2]
     failures += [f"MUST ALLOW but blocked: {cmd!r}" for cmd in ALLOW if run(cmd) != 0]
+    failures += [
+        f"from cwd {cwd}: expected rc {want}: {cmd!r}"
+        for cwd, cmd, want in CWD_CASES
+        if run(cmd, cwd) != want
+    ]
 
     if failures:
         print(f"✗ block-destructive-git-restore: {len(failures)} control failure(s)")
@@ -193,8 +217,8 @@ def main() -> int:
         return 1
 
     print(
-        f"✓ block-destructive-git-restore: {len(BLOCK)} blocked, {len(ALLOW)} allowed "
-        "(both directions pinned)"
+        f"✓ block-destructive-git-restore: {len(BLOCK)} blocked, {len(ALLOW)} allowed, "
+        f"{len(CWD_CASES)} judged from another cwd (both directions pinned)"
     )
     return 0
 
