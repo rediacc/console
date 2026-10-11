@@ -45,12 +45,30 @@ atexit.register(shutil.rmtree, str(SCRATCH), True)
 KEPT = SCRATCH / "kept.py"
 KEPT_TEXT = 'import os  %s: F401\n\n\ndef f():\n    """doc"""\n    return os.sep\n' % NQ
 OUTSIDE = pathlib.Path(tempfile.gettempdir()) / "test-block-suppressions-outside.py"
+# Scripts run BY PATH (#f3f36655): untracked (the scratch directory is under the gitignored `.ci/cache`), one writing a marker in each language family, one writing none.
+MARKER_SCRIPT = SCRATCH / "marker_writer.py"
+MARKER_JS = SCRATCH / "marker_writer.js"
+CLEAN_SCRIPT = SCRATCH / "clean_writer.py"
+ABSENT_SCRIPT = SCRATCH / "absent.py"
+# A TRACKED script that carries markers in its own source and writes files: running it adds nothing the tree does not already hold.
+TRACKED_SCRIPT = REPO / ".claude" / "hooks" / "stop" / "worklist.py"
 
 
 def _world():
     SCRATCH.mkdir(parents=True, exist_ok=True)
     KEPT.write_text(KEPT_TEXT, encoding="utf-8")
     OUTSIDE.write_text("x = 1\n", encoding="utf-8")
+    MARKER_SCRIPT.write_text(
+        "import pathlib\npathlib.Path(%r).write_text('y = 1  %s: B010\\n')\n" % (str(KEPT), NQ),
+        encoding="utf-8",
+    )
+    MARKER_JS.write_text(
+        "require('fs').writeFileSync('/tmp/x.ts', '// %s\\nlet x = 1\\n')\n" % TSI,
+        encoding="utf-8",
+    )
+    CLEAN_SCRIPT.write_text(
+        "import pathlib\npathlib.Path(%r).write_text('y = 1\\n')\n" % str(OUTSIDE), encoding="utf-8"
+    )
 
 
 def _edit(path, old, new):
@@ -162,6 +180,18 @@ SHELL_CASES = [
     ),
     ("grep for markers", "grep -rn '%s' .ci" % NQ, False),
     ("echo to the terminal", "echo '%s: B010'" % NQ, False),
+    # A program read from a FILE is read like one read from a heredoc (#f3f36655): each refusal was allowed (rc 0) before.
+    ("a python script by path writing a marker", "python3 %s" % MARKER_SCRIPT, True),
+    ("a python script by path after options", "python3 -u -B %s --flag" % MARKER_SCRIPT, True),
+    ("a node script by path writing a marker", "node %s" % MARKER_JS, True),
+    ("a python script by path writing none", "python3 %s" % CLEAN_SCRIPT, False),
+    (
+        "a tracked script whose own source carries markers",
+        "python3 %s --list --open x" % TRACKED_SCRIPT,
+        False,
+    ),
+    ("a script that does not exist yet fails open", "python3 %s" % ABSENT_SCRIPT, False),
+    ("python -m names a module, not a file", "python3 -m %s" % MARKER_SCRIPT.stem, False),
 ]
 
 

@@ -270,11 +270,12 @@ _ANY = object()
 
 
 def _wild_path(pattern_text, base):
-    """`(regex, escaped prefix)` for a wildcarded word resolved onto `base`. The regex fullmatches every absolute path the word could name; the prefix is the literal path a `..` over a wildcard left (None when there was none, when a wildcard comes before it, or when the word starts with one, whose root is unknown)."""
+    """`(regex, escaped prefix, popped)` for a wildcarded word resolved onto `base`. The regex fullmatches every absolute path the word could name; the prefix is the literal path a `..` over a wildcard left (None when there was none, when a wildcard comes before it, or when the word starts with one, whose root is unknown); `popped` says a `..` popped a wildcard at all."""
     tokens: list = []
     if not pattern_text.startswith(("/", _WILD)):
         tokens = [seg for seg in base.split("/") if seg]
     escaped = None
+    popped = False
     for seg in pattern_text.split("/"):
         if seg in ("", "."):
             continue
@@ -285,6 +286,7 @@ def _wild_path(pattern_text, base):
             continue
         top = tokens.pop()
         if top is _ANY or (isinstance(top, str) and _WILD in top):
+            popped = True
             known = not pattern_text.startswith(_WILD)
             if (
                 known
@@ -299,7 +301,7 @@ def _wild_path(pattern_text, base):
             out += "(?:/.*)?"
         else:
             out += "/" + ".*".join(re.escape(piece) for piece in t.split(_WILD))
-    return re.compile(out or "/"), escaped
+    return re.compile(out or "/"), escaped, popped
 
 
 def _unjudgeable(word, base, root, recursive):
@@ -308,7 +310,7 @@ def _unjudgeable(word, base, root, recursive):
     if pattern_text is None:
         return False
     targets = [posixpath.join(root, p) for p in PROTECTED_PATHS]
-    pattern, escaped = _wild_path(pattern_text, base)
+    pattern, escaped, _popped = _wild_path(pattern_text, base)
     # A `..` over a wildcard under a literal prefix that holds a protected file can remove it, whatever the word spells (`rm -rf ./$(echo build)/..` in the project root).
     if (
         recursive
@@ -322,7 +324,7 @@ def _unjudgeable(word, base, root, recursive):
     if not literal & _SEGMENTS:
         return False
     # The same word on its own, for another checkout's copy, exactly as `_is_protected` counts one by its tail.
-    own, _ = _wild_path(pattern_text, "/")
+    own, _escaped, _popped = _wild_path(pattern_text, "/")
     tail = re.compile("(?:.*)" + own.pattern)
     if any(pattern.fullmatch(t) for t in targets) or any(
         tail.fullmatch("/" + p) for p in PROTECTED_PATHS
@@ -336,10 +338,67 @@ def _unjudgeable(word, base, root, recursive):
     return False
 
 
-def _names_protected_text(word):
-    """A protected path in a substitution's own text, each token normalised (`$(echo .claude/./settings.json)`)."""
+# A GLOB IS A PATTERN, NOT A NAME (review f12404e0.1). `rm .claude/settings.js*`, `rm .claude/*`, `rm -rf .cl*` and `rm "$(ls .claude/settings.j?on)"` delete the protected file, and no path they spell is one: each was allowed (rc 0, 2026-10-11). A word or substitution token holding `*`, `?` or `[` is matched against the protected set SEGMENT BY SEGMENT, as bash expands it: `*` and `?` never cross a `/`, and a
+# leading `.` is matched only by a literal dot (dotglob is off), so `rm *.log` and `rm -rf *` in a build directory stay allowed while `rm -rf *` in the project root, which takes `scripts/`, does not. It is matched where the word resolves (the run's directory) and, as `_is_protected` counts another checkout's copy, against the protected path's tail; a recursive rm matches a directory holding one too.
+_GLOB_CHARS = "*?["
+
+
+def _segment_regex(seg):
+    out = "(?!\\.)" if seg[:1] in ("*", "?", "[") else ""
+    k = 0
+    while k < len(seg):
+        ch = seg[k]
+        if ch == _WILD:
+            out += ".*"
+        elif ch == "*":
+            out += "[^/]*"
+        elif ch == "?":
+            out += "[^/]"
+        elif ch == "[" and "]" in seg[k + 2 :]:
+            end = seg.index("]", k + 2)
+            body = seg[k + 1 : end]
+            body = "^" + body[1:] if body[:1] in ("!", "^") else body
+            out += "[%s]" % body.replace("\\", "\\\\")
+            k = end
+        else:
+            out += re.escape(ch)
+        k += 1
+    return re.compile(out)
+
+
+def _segments_match(pattern, path):
+    return len(pattern) == len(path) and all(
+        _segment_regex(p).fullmatch(q) for p, q in zip(pattern, path, strict=True)
+    )
+
+
+def _glob_names_protected(token, base, root, recursive):
+    """True when a token holding a glob character can expand to a protected file (or, for a recursive rm, a directory holding one)."""
+    if not any(ch in token for ch in _GLOB_CHARS):
+        return False
+    text = _wildcarded(token) or token
+    if _WILD in text and "/../" in "/%s/" % text:
+        return False  # a `..` beside an unevaluated part is `_unjudgeable`'s
+    path = text if text.startswith("/") else posixpath.join(base, text)
+    segs = [seg for seg in posixpath.normpath(path).split("/") if seg]
+    # A trailing `/` expands to directories only (`rm -rf .claude/*/`), so it never names a protected FILE.
+    files = not text.endswith("/")
+    for p in PROTECTED_PATHS:
+        target = [seg for seg in posixpath.join(root, p).split("/") if seg]
+        tail = p.split("/")
+        if files and (_segments_match(segs, target) or _segments_match(segs[-len(tail) :], tail)):
+            return True
+        if recursive and any(_segments_match(segs, target[:k]) for k in range(1, len(target))):
+            return True
+    return False
+
+
+def _names_protected_text(word, base, root, recursive):
+    """A protected path in a substitution's own text, each token normalised (`$(echo .claude/./settings.json)`) or expanded as a glob (`$(ls .claude/settings.j?on)`)."""
     for token in re.split(r"[\s()`'\"$;|&<>]+", word):
         if token and _is_protected(posixpath.normpath("/" + token)):
+            return True
+        if token and _glob_names_protected(token, base, root, recursive):
             return True
     return False
 
@@ -375,12 +434,18 @@ def names_by_run(cmd, cwd):
         for word in _operand_words(run_):
             if word.startswith("-") or word == "":
                 continue
-            if ("$(" in word or "`" in word) and _names_protected_text(word):
+            if ("$(" in word or "`" in word) and _names_protected_text(word, base, root, recursive):
                 return True
             if _unjudgeable(word, base, root, recursive):
                 return True
-            # A word with an unevaluated part is `_unjudgeable`'s alone: `normpath` would pop the substitution's source text as one segment.
-            if _wildcarded(word) is not None:
+            if _glob_names_protected(word, base, root, recursive):
+                return True
+            # ONLY a word whose `..` pops a substitution skips the literal reading (review f12404e0.2): there `normpath` would pop the substitution's source text as if it were one segment. GNU rm 9.7 refuses an operand whose last component is `.` or `..` (measured: `rm -rf x/..`, `x/../`, `x/../.`, `./x/..` all skipped), and `_unjudgeable` judged every other shape; but git
+            # normalises the pathspec `x/..` to the run's directory, so a recursive `git rm` of such a word is refused when that directory holds a protected file.
+            pattern_text = _wildcarded(word)
+            if pattern_text is not None and _wild_path(pattern_text, base)[2]:
+                if git_verb and recursive and _holds_protected(base, root):
+                    return True
                 continue
             path = _resolve(word, base)
             if _is_protected(path) or (recursive and _holds_protected(path, root)):
