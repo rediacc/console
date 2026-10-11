@@ -431,7 +431,7 @@ def test_git_dates_reads_the_move_by_author_date_and_activity_by_committer_date(
     """A rebase rewrites committer dates and keeps author dates (2026-10-11: every `_done/` plan became an F6 finding on the first rebase). F6's half must be the move's author date; the backlog half stays the committer date."""
     rel = "agent/plans/_done/PLAN-a.md"
     (tmp_path / rel).parent.mkdir(parents=True)
-    # Hermetic: a GIT_DIR, GIT_WORK_TREE or GIT_INDEX_FILE inherited from a hook or wrapper would send these commits into the outer repository (review 42b03795.1).
+    # Hermetic: a GIT_DIR, GIT_WORK_TREE or GIT_INDEX_FILE inherited from a hook or wrapper would send these commits into the outer repository.
     env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
     for name in [k for k in os.environ if k.startswith("GIT_")]:
         monkeypatch.delenv(name)  # git_dates reads git through this process's environment
