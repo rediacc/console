@@ -1,21 +1,18 @@
-## SESSION d778be9d 2026-10-09T01:01:20Z
+## SESSION d778be9d 2026-10-11T13:17:11Z
 
-# STATE d778be9d (written 2026-10-09 ~01:20Z), branch 1008-1, no PR yet, nothing pushed
+# STATE d778be9d (branch 1008-1, PR-TASK 8ed364fe)
 
-## Where the push stands
-- All ci:quick reds of the 2026-10-09 full run are fixed or carried: python-types+plan-boxes adb12be02, actions 0cb2df6b0, pytest 1650ad7f1/b7406ed6b, deps 9e0ec1c0a (+account fdda31e), rubric-calibration 069f40902 -> corrected b35b968eb/40a9dee78/a4f5060fc (hash kept WITHOUT a full pass, stated; #455e5cef restores one).
-- Carries in .ci/config/carried-reds.json: check:ci-plan-implementation P-A1:0c9ea2c3e2ce (0c0c88f0b) and check:ci-renet by 13 govuln:<GO-ID> keys (dc4017e8c; renet df7ffd9 prints them; test f77130733).
-- Every per-commit review finding is settled; review records committed.
+## Operator orders
+- 2026-10-11 "let's disable the stop hook for now and wait/complete the remaining sub-agents. pause pr-babysit for now as well." -> stop_hook=off committed e469bc873; #6361fc5b paused (no rebase/push/PR until resumed).
 
-## Next action (the push sequence)
-1. Full `npm run ci:quick` (bg) on HEAD; read every FAIL. Fix anything new; confirm the carried gates emit exactly the carried keys.
-2. #e5bd01f3: push private/account and private/renet branch 1008-1 and open their PRs (same branch name, submodule-first).
-3. Push console 1008-1; `gh pr create --draft` with Plan: PLAN-retire-bash-oracles + PLAN-deferred-findings-block-merge and an Operational-Reason: naming the CI-only boxes (cd-errors-in-ci:70, k3s-137:103, M3) and tooling W7P5-a/c (#dccf10ab).
-4. Watch with ci-trace.py --wait; tick #5571c346 (M3), #de6e3d14, #fcd7316f, #2b786259, #9e7a546f and the cd-errors/k3s boxes; drop the P-A1 carry when green.
+## Landed this stretch (all verified, review findings marked)
+30573c818 w1; fae7c16a2 w1b + repo_root_env(ev) root fix; f12ea0c44 ci-runner/build_cli test reds; a8945e6fc + f6cd124f5 w3; 88ab93d6a foreign foreach refusal + review fixes; c093f0f3e w2 (highs cac47d16.1, e085085d.1); de0fadbc7 comment; f67331567 w3b usage-line sweep (#175470e9). All four highs closed.
 
-## Dated
-- After 2026-10-10T00:00Z (#d40141c3): go1.26.9 pins (.devcontainer/toolchain.env:45, .devcontainer/Dockerfile:13 + GO_SHA256s, private/renet/go.mod:3, .ci/scripts/private/license-mint/go.mod:6), go get golang.org/x/net@v0.60.0, drop the renet carry.
+## In flight
+- w2 a239d663cd52c1bfb round 2: c093f0f3.1 (renderer StopIteration), c093f0f3.2 (rm .claude/$(echo ...) bypass) -> $S/w2b.patch, base de0fadbc7.
+- w4 ad0f9f274a269c9cb: #0c331972 + #20a3802a (raw-text guards, npm parsing, judge findings) -> $S/w4.patch.
 
-## Follow-ups (queued, not blocking)
-- #455e5cef judge calibration variance, #2d6cfc66 settings_collapse STALE INDEX divergence, #dccf10ab W7P5-a/c, #d53494b0 anchoring gate, #8e8c0838 python -c worktree payloads, #bb6045bf kind: battery rename.
-- After merge: #3f17f69c #5c40caec #5f43e8c8 #cba857c9 #a5a1f981 #ab92320e #d606a877 and the POST-MERGE set.
+## Next action
+1. Land w2b then w4 as each arrives: git apply -3, verify (hook suite env -u CLAUDE_PROJECT_DIR -n 6, touched .ci tests, gates incl. -inline-suppressions), commit literal paths (>20 files needs an AST/byte proof line), review-mark, review-commit.
+2. Fix each landed commit's review findings the same session.
+3. Then stop and wait for the operator: pr-babysit stays paused (no /branch-rebase, push or PR) until they resume it.
