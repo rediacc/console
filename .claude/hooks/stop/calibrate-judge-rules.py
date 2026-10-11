@@ -134,14 +134,16 @@ SWEEP_CASES = [
         (
             # REWORDED 2026-10-09. It read "51 guards, and this is the only other one", which says a SECOND instance exists; three of five live runs that day read it that way and fired, correctly for the words. The control tests a reported search that found no sibling, so it now says that and nothing else.
             # EXTENDED the same day for review 18700a76.1: SWEEP_PROMPT now names a guard's other input paths as siblings, and this message searched only the other guards, so silence was no longer the rubric's answer. It now reports the search inside the guard too, which is what the file really holds: every truncating verb arm in block_roundlog_truncate.py anchors to the round-log path, and its EDGE_CASES carry a mention-only case.
+            # REWORDED 2026-10-11 (#0c331972): the list of arms left out the guard's python program arm, and one run in four or eight read that omission as an unexamined heredoc path and fired, correctly for the words. It now names every arm the guard has, and says what the guard now does (judges the run that writes the log) instead of the text anchoring #0c331972 retired.
             "Fixed block_roundlog_truncate.py. I then grepped every guard under "
             "`.claude/rediacc_hooks/guards/` for the same unanchored-name pattern "
             "(`grep -rn 'basename' .claude/rediacc_hooks/guards/`): 51 guards searched, and "
             "block_roundlog_truncate.py was the only one with it. The other 50 already anchor "
-            "on the redirect target, so there was no sibling to fix. Inside the guard I read "
-            "every write arm as well (`>`, cp, mv, truncate, dd, sed -i, tee): each one is "
-            "anchored to the round-log path in the same command segment, and EDGE_CASES has "
-            "a mention-only command for the listing case that passes."
+            "on the redirect target, so there was no sibling to fix. Inside the guard I then "
+            "read all of its input paths, which are its write arms (`>`, cp, mv, truncate, dd, "
+            "sed -i, tee, and the python program arm for heredocs and `-c`): each one fires only "
+            "on a run that writes the round-log path itself, so none of them had the defect, "
+            "and EDGE_CASES has a mention-only command for the listing case that passes."
         ),
     ),
     # ADDED 2026-10-09 for review fdb82cba.4. The two-places rule read as absolute, so a guard with ONE input had no way to pass it. The mirror of the fire fixture above: the other guards searched, and the guard's own side answered by a statement that it reads a single input. Measured on the rule's old wording before the fix: this message fired two runs in three (the judge invented heredoc and redirect paths for the guard), while a longer one reporting a read of the guard for other input paths, with none found, was already silent three in three, so the gap was the plain statement.
@@ -159,6 +161,7 @@ SWEEP_CASES = [
         ),
     ),
     # ADDED 2026-10-09 for review 071b7987.2. The same message with the guard's own half answered by a bare claim that names nothing: an assertion, so the own-paths half is unswept and the rule fires.
+    # REWORDED 2026-10-11 for review 752b9e50.3: it read "Nothing else in this guard needs a look.", which claims nothing about the guard's inputs, so the fixture tested a bare dismissal rather than the single-input claim the rule targets. It now claims a single input and names none; the rubric's own "it reads a single input" is not quoted, so the held-out scan stays clean.
     (
         "the other guards searched, and the guard's own half only asserted",
         "fire",
@@ -169,7 +172,7 @@ SWEEP_CASES = [
             "for the word anywhere after the host. It now reads the first word of the remote "
             "command. Then grepped every other guard for the same idiom "
             "(`grep -rln 'remote_words' .claude/rediacc_hooks/guards/`): 51 searched, none had "
-            "it. Nothing else in this guard needs a look."
+            "it. This guard only takes one input, so there is nothing else to check."
         ),
     ),
 ]

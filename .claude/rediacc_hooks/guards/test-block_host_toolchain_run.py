@@ -238,6 +238,15 @@ cases.append(
     (2, run("npx --yes ruff format file.py", REAL), "npx cannot run a pinned non-npm tool")
 )
 cases.append((2, run("npx -y shfmt -l .", REAL), "npx misuse, short flag form"))
+# #0c331972: the npx arm reads npm's own option grammar (shellscan._launches); it used to skip only -y/--yes, so both shapes below were allowed (rc 0, measured 2026-10-11 at 306285231).
+cases.append(
+    (2, run("npx --logl silent --yes ruff check", REAL), "npx misuse behind a value option")
+)
+cases.append((2, run("npm x -y ruff check", REAL), "npx misuse through the npm x alias"))
+cases.append(
+    (0, run("npx -c 'ruff check a.py'", REAL), "CONTROL: npx -c runs a shell, not a package")
+)
+cases.append((0, run("echo 'npm x -y ruff check'", REAL), "CONTROL: prose naming npm x ruff"))
 cases.append(
     (0, run("npx --yes tsx scripts/foo.ts", REAL), "CONTROL: npx running a real npm package")
 )

@@ -192,14 +192,24 @@ of the other, has not swept the class, so swept=false and `instruction` names
 the place it skipped. A message that covers BOTH has swept it. A place is
 covered by a reported search, or by a statement that it holds nothing to
 sweep that NAMES what makes it so: a guard said to read one input, with that
-input named (the field, the chain, the file:line), has no other paths of its
-own, and that statement covers its half. A bare "it reads a single input" with
-nothing named is an assertion, and covers nothing. This is about which places were looked in,
-never about the pattern: do not discount a reported search because you would
-have written a broader one.
+input named IN THAT SAME STATEMENT concretely enough to check (a payload
+field, a named argument or command part, a chain, a file:line), has no other
+paths of its own, and that statement covers its half. A bare "it reads a
+single input" that names nothing is an assertion, and covers nothing, even
+when the message mentions some input elsewhere: the claim has to say which
+input it means. This is about which places were looked in, never about the
+pattern: do not discount a reported search because you would have written a
+broader one.
 
 Set swept=true ONLY when evidence_kind is not `none`. An assertion with no
 quotable evidence is exactly the failure this object exists to catch.
+
+FOR A GUARD, swept=true NEEDS ONE QUOTE PER PLACE. Before setting it, find the
+words that cover the guard's OWN other input paths, separately from the words
+that cover the other guards. If there are none, or the only ones claim a
+single input without saying which, set swept=false and name the guard's own
+paths in `instruction`: a search of the other guards, however thorough, says
+nothing about the guard's own paths.
 
 (4) THIS IS NOT ONLY ABOUT CODE. Ask the same question of: a guard or hook
 fixed for one file (siblings: the other guards); a test fixed for one machine

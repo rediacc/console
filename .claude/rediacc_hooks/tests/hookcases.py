@@ -1080,6 +1080,22 @@ STATIC: list[Case] = [
         bash_json("echo find . -name x -exec npx ruff format {} +"),
         "host-toolchain CONTROL: prose naming a launched npx ruff",
     ),
+    # #0c331972: npm's own option grammar (shellscan._launches) instead of a hand-rolled `-y` skip, so both shapes below were allowed at 306285231 (rc 0, measured).
+    case(
+        "check 2 guards/block_host_toolchain_run.py",
+        bash_json("npx --logl silent --yes ruff check"),
+        "host-toolchain: npx ruff behind a value option",
+    ),
+    case(
+        "check 2 guards/block_host_toolchain_run.py",
+        bash_json("npm x -y ruff check"),
+        "host-toolchain: npx ruff through the npm x alias",
+    ),
+    case(
+        "check 0 guards/block_host_toolchain_run.py",
+        bash_json("echo 'npm x -y ruff check'"),
+        "host-toolchain CONTROL: prose naming npm x ruff",
+    ),
     case(
         "check 2 guards/block_self_matching_pgrep.py",
         bash_json(r"find . -maxdepth 0 -exec pkill -f sleep \;"),
@@ -1151,6 +1167,27 @@ STATIC: list[Case] = [
         "check 0 guards/block_unscoped_formatter_run.py",
         bash_json(r"find packages -name cli -execdir ruff format . \;"),
         "unscoped-formatter CONTROL: find -execdir's . is each match's directory",
+    ),
+    # #0c331972: the launched command comes from shellscan's npm parser. The two deny rows were allowed at 306285231 (rc 0, measured); npm consumes a flag written before `--`, so the third hands prettier no --write.
+    case(
+        "check 2 guards/block_unscoped_formatter_run.py",
+        bash_json("npm x -- prettier --write"),
+        "unscoped-formatter: npm x runs prettier --write with no path",
+    ),
+    case(
+        "check 2 guards/block_unscoped_formatter_run.py",
+        bash_json("npx --logl silent --yes prettier --write"),
+        "unscoped-formatter: a value option npx takes does not hide the tool",
+    ),
+    case(
+        "check 0 guards/block_unscoped_formatter_run.py",
+        bash_json("npm x prettier --write"),
+        "unscoped-formatter CONTROL: npm x eats a flag written before --",
+    ),
+    case(
+        "check 2 guards/block_unscoped_formatter_run.py",
+        bash_json("npx prettier --write $files"),
+        "unscoped-formatter: an unquoted variable npx hands on may vanish",
     ),
     case(
         "check 2 guards/block_suppressions_shell_write.py",
@@ -3423,6 +3460,54 @@ STATIC: list[Case] = [
         "check 0 guards/block_adhoc_sanctioned.py",
         EMPTY_INPUT,
         "adhoc: no command in the payload is not a violation",
+    ),
+    # #0c331972, 2026-10-11: three guards matched raw text, so a plain echo of the command they guard was refused (rc 2 at 306285231, each measured). They judge the runs bash would start now: every CONTROL row below was refused before, and every deny row is a real run of the same command. block_adhoc_sanctioned keeps its text match by operator ruling 2026-08-25 (#6a2c9652), so it has deny rows here and no mention control.
+    case(
+        "check 2 guards/block_adhoc_sanctioned.py",
+        bash_json("bash -c 'gh run watch 123'"),
+        "adhoc: a watch inside sh -c still runs",
+    ),
+    case(
+        "check 0 guards/block_bash_write_to_running_script.py",
+        bash_json("echo 'echo x > /tmp/rediacc-guard-bashwrite/bash-side-suite.sh'"),
+        "bash-write CONTROL: an echo quoting a redirect writes nothing",
+    ),
+    case(
+        "check 0 guards/block_binary_deploy.py",
+        bash_json("echo 'true; sudo cp renet /usr/local/bin/renet'"),
+        "binary-deploy CONTROL: a quoted separator is not a command position",
+    ),
+    case(
+        "check 2 guards/block_binary_deploy.py",
+        bash_json("sudo -u root cp renet /usr/local/bin/renet"),
+        "binary-deploy: sudo with an option still copies onto the binary",
+    ),
+    case(
+        "check 0 guards/block_binary_deploy.py",
+        bash_json("sudo cp /usr/local/bin/renet /tmp/renet.bak"),
+        "binary-deploy CONTROL: backing up the installed binary is a read",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("echo 'echo x | tee --output-error=warn agent/pr-babysit-0831-1.md'"),
+        "roundlog-truncate CONTROL: an echo quoting a truncating tee",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("echo x | tee --output-error=warn agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate: the same tee, run",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            ".claude/hooks/stop/worklist.py --roundlog 0831-1; mv agent/pr-babysit-0831-1.md /tmp/bak.md"
+        ),
+        "roundlog-truncate: the verb's name no longer exempts a mv on the same line",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("echo x >> agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate CONTROL: an append cannot truncate",
     ),
     # --- warn-hook-change.sh: warning only, ALWAYS exit 0 ------------------------ The operator chose warn over block for hook edits (2026-08-25) because a hard block would have fired six times that day on legitimate work. These pin that it can never block: a warn hook that can block is a block hook nobody reviewed.
     case(

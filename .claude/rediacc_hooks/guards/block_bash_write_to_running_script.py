@@ -13,6 +13,8 @@ so it still matches and still blocks.
 
 WRITE INTENT IS REQUIRED, not merely the filename. Every second command in this repo mentions a .sh path -- running it, grepping it, checking its processes. Blocking on the name alone would be the over-matching that gets a guard switched off, so this needs a write operator AND a live process.
 
+A WRITE IS SOMETHING THAT RUNS, NOT TEXT THAT SPELLS ONE (worklist #0c331972). The write patterns below were matched over the RAW command, so `echo 'echo x > <running>.sh'` -- a sentence quoting a redirect -- was refused as a write. The guard now asks the shell's own walk: the redirects bash performs (`shellscan.write_targets`), the write verbs it runs (`tee`, `sed -i`, `cp`/`mv` onto a destination, `shfmt -w`, `truncate`, `dd of=`, each read off its argv by `_verb_targets`, behind `sudo`, `xargs`, `sh -c` or `find -exec`), and the program texts it hands an interpreter (`block_worktree_add.interpreter_programs`: `python3 -c`, `python3 - <<PY`, `node -e`, `perl -e`, a here-string or a piped `cat`). Only a program text is still read with the patterns, because a python write names its target in ways no shell walk sees. An `echo` or a commit message quoting any of it is data and passes.
+
 `pattern_for` AND THE PGREP LOOP NOW LIVE IN `rediacc_hooks.runningscript`, shared with the Edit-tool sibling (PLAN-retire-bash-oracles A3: "unifying is a P6 change, once there is no twin left to diverge from" -- this is that change). Until then each guard carried its own copy of the same twenty lines, because the two BASH originals duplicated them too and a port whose job was fidelity
 did not get to unify what its twin kept apart; that duplication is exactly what produced the sibling drift their comments recorded (the path anchor reached the Edit-side guard on 2026-08-30, three days after this one got it on 2026-08-27).
 
@@ -30,12 +32,13 @@ import subprocess
 import tempfile
 
 from rediacc_hooks import hookio, proc, runningscript, shellscan
+from rediacc_hooks.guards import block_worktree_add as WT
 
 CHAIN = "pre-bash"
 ORDER = 15
 
 # AN ASCII ARROW IS NOT A REDIRECT, and this is the FIFTH round of the same
-# class. Measured 2026-09-01: writing a plain markdown file was refused because
+# class. Since #0c331972 the patterns read only interpreter program texts, so the witness is a python program printing an arrow (EDGE_CASES); a quoted shell sentence never reaches them at all. Measured 2026-09-01: writing a plain markdown file was refused because
 # its PROSE contained `check:ci-hook-worklist-suite -> .claude/hooks/stop/test-worklist-v5.sh`. The `->` scored as a redirect and the path after it as the target, so a document describing a script was treated as a command overwriting it. Widening the class back to "any character" restores that block exactly.
 DEFECT = ('NOT_ARROW = r"(^|[^->])"', 'NOT_ARROW = r"(^|[^ZZ])"')
 
@@ -102,6 +105,9 @@ SH_PATH = r"[A-Za-z0-9_.$/-]+\.sh"
 
 # A python/perl heredoc can name its target in ways no redirect grep will see, so fall back to the old broad scan whenever the command opens one. Broad and noisy beats silent here: this is the door the pre-edit guard cannot cover.
 PY_HEREDOC = r"write_text|open\(|<<[" + _S + r"]*.?(PY|EOPY|PYTHON)"
+
+# A copy or move inside a program names its destination as a call ARGUMENT, which `ASSIGN_TARGET` does not see, so such a program takes the precise-then-broad branch too.
+PY_COPY = r"shutil\.(copy|move)"
 
 # A python write target appears in a target POSITION: assigned to a name, or passed to open()/Path(). A mention inside prose does not.
 #
@@ -331,6 +337,31 @@ EDGE_CASES = [
         _PY % "p = 'other.sh'\nopen(p, 'w').write('x')"
         + '\ngrep -n "source\\|PATS=" other.sh; ls %s' % LIVE_SCRIPT,
     ),
+    # #0c331972: a quoted write is a sentence, and every write that runs is still one.
+    ("an echo quoting a redirect onto a running script", "echo 'echo x > %s'" % LIVE_SCRIPT),
+    ("a commit message quoting a copy onto it", "git commit -m 'cp a.sh %s' -- a.md" % LIVE_SCRIPT),
+    (
+        "a python program printing an arrow names no target",
+        "python3 -c \"print('see -> %s')\"" % LIVE_SCRIPT,
+    ),
+    ("tee onto a running script", "echo x | tee -a %s" % LIVE_SCRIPT),
+    ("sudo tee onto a running script", "echo x | sudo tee %s" % LIVE_SCRIPT),
+    ("sed -i on a running script", "sed -i 's/a/b/' %s" % LIVE_SCRIPT),
+    ("a copy into the running script's directory", "cp /tmp/x/bash-side-suite.sh %s/" % WORLD),
+    ("copying the running script AWAY is a read", "cp %s /tmp/backup.sh" % LIVE_SCRIPT),
+    ("a redirect inside sh -c", "sh -c 'echo x > %s'" % LIVE_SCRIPT),
+    ("a python -c write", "python3 -c \"open('%s', 'w').write('x')\"" % LIVE_SCRIPT),
+    ("a python here-string write", "python3 <<< \"open('%s', 'w').write('x')\"" % LIVE_SCRIPT),
+    (
+        "a heredoc piped to python",
+        "cat <<'PY' | python3 -\nopen('%s', 'w').write('x')\nPY" % LIVE_SCRIPT,
+    ),
+    (
+        "a data heredoc naming a write is data",
+        "cat > /tmp/notes.md <<'EOF'\nopen('%s', 'w')\nEOF" % LIVE_SCRIPT,
+    ),
+    ("truncate a running script", "truncate -s 0 %s" % LIVE_SCRIPT),
+    ("dd onto a running script", "dd if=/dev/null of=%s" % LIVE_SCRIPT),
 ]
 
 
@@ -345,11 +376,11 @@ def _pipe(pattern, text):
 
 
 def _targets(cmd):
-    """Every .sh path this command actually writes to, `sort -u` order."""
-    # Which .sh files does this command name at all?
+    """Every .sh path an interpreter program text writes to, `sort -u` order. Called only with a program `interpreter_programs` found, never with the command line itself."""
+    # Which .sh files does this program name at all?
     targets = "\n".join(_sort_u(hookio.grep_o(SH_PATH, _pipe(TARGET_SPAN, cmd))))
 
-    if not hookio.grep_q(PY_HEREDOC, cmd):
+    if not hookio.grep_q(PY_HEREDOC, cmd) and not hookio.grep_q(PY_COPY, cmd):
         return targets
 
     # PRECISE FIRST, BROAD ONLY IF THAT FINDS NOTHING.
@@ -376,20 +407,81 @@ def _targets(cmd):
     return targets
 
 
+# GNU cp/mv options that take the next word as their value; `-t DIR` names the destination directory.
+_COPY_VALUE_OPTS = frozenset(("-t", "--target-directory", "-S", "--suffix"))
+
+
+def _operands(args):
+    return [a for a in args if not (a.startswith("-") and len(a) > 1)]
+
+
+def _copy_destination(args):
+    """`cp`/`mv`'s destination and sources: the `-t` directory when given, else the last operand; a `.sh` source copied into a directory lands at that directory plus its basename."""
+    target = None
+    words = []
+    i = 0
+    while i < len(args):
+        word = args[i]
+        i += 1
+        if word == "--":
+            words.extend(args[i:])
+            break
+        if word.startswith("--target-directory="):
+            target = word.split("=", 1)[1]
+        elif word in _COPY_VALUE_OPTS:
+            if word in ("-t", "--target-directory") and i < len(args):
+                target = args[i]
+            i += 1
+        elif word.startswith("-t") and len(word) > 2:
+            target = word[2:]
+        elif not (word.startswith("-") and len(word) > 1):
+            words.append(word)
+    if target is None:
+        if len(words) < 2:
+            return []
+        target, words = words[-1], words[:-1]
+    if target.endswith(".sh"):
+        return [target]
+    return [target.rstrip("/") + "/" + w.rsplit("/", 1)[-1] for w in words if w.endswith(".sh")]
+
+
+def _verb_targets(run_):
+    """The `.sh` files one run's write verb writes, read off its argv: `tee`, `truncate`, `shfmt -w` and `sed -i` write their operands, `cp`/`mv` their destination, `dd` its `of=`. Anything else writes nothing here."""
+    base = run_.name.rsplit("/", 1)[-1]
+    args = list(run_.argv)
+    if base in ("tee", "truncate"):
+        found = _operands(args)
+    elif base == "shfmt":
+        found = _operands(args) if any(a in ("-w", "--write") for a in args) else []
+    elif base == "sed":
+        in_place = any(
+            a.startswith("--in-place")
+            or (not a.startswith("--") and a.startswith("-") and "i" in a[1:])
+            for a in args
+        )
+        found = _operands(args) if in_place else []
+    elif base in ("cp", "mv"):
+        found = _copy_destination(args)
+    elif base == "dd":
+        found = [a[3:] for a in args if a.startswith("of=")]
+    else:
+        found = []
+    return [t for t in found if t.endswith(".sh")]
+
+
 def run(ev):
     cmd = ev.raw("tool_input", "command")
     if cmd == "":
         return hookio.ALLOW
 
-    # The redirects bash really performs onto a `.sh` (see the Rule T note at NOT_ARROW).
-    real = [t for t in shellscan.write_targets(cmd) if t.endswith(".sh")]
-    intent = hookio.grep_q(WRITE_INTENT, cmd)
-    if not intent and not real:
-        return hookio.ALLOW
-
-    cands = _targets(cmd).split() if intent else []
-    cands += [t for t in dict.fromkeys(real) if t not in cands]
-    for cand in cands:
+    # The redirects bash really performs onto a `.sh` (see the Rule T note at NOT_ARROW), then the write verbs it runs, then what each interpreter program writes.
+    cands = [t for t in shellscan.write_targets(cmd) if t.endswith(".sh")]
+    for run_ in shellscan.every_run(cmd):
+        cands += _verb_targets(run_)
+    for _family, code in WT.interpreter_programs(cmd):
+        if hookio.grep_q(WRITE_INTENT, code):
+            cands += _targets(code).split()
+    for cand in dict.fromkeys(cands):
         if hookio.case_glob(cand, "*$*"):
             continue
         base = cand.rsplit("/", 1)[-1]
