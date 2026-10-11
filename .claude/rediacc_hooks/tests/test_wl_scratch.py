@@ -183,9 +183,10 @@ def test_write_deletes_only_the_deletable_and_never_follows_a_symlink(tmp_path):
     (outside / "precious").write_text("keep me")
     # A basetemp, so its plain file is pytest's to discard and the read-only removal path is what this exercises.
     old = scratch / "pytest-5"
-    old.mkdir(parents=True)
-    (old / "link").symlink_to(outside)
-    ro = old / "readonly"
+    case = old / "test_write0"
+    case.mkdir(parents=True)
+    (case / "link").symlink_to(outside)
+    ro = case / "readonly"
     ro.mkdir()
     (ro / "f").write_text("x")
     ro.chmod(0o500)
@@ -245,9 +246,10 @@ def test_the_cli_reads_the_store_s_live_lease(tmp_path):
         / wlfix.SID
         / "scratchpad"
     )
-    for name in ("leasedwork", "pytest-42"):
-        (scratch / name).mkdir(parents=True)
-        (scratch / name / "f").write_text("x")
+    # `pytest-42` in pytest's own shape (test_wl_scratch's basetemp-shape case): its file sits in a per-test directory.
+    for name, sub in (("leasedwork", "."), ("pytest-42", "test_cli0")):
+        (scratch / name / sub).mkdir(parents=True, exist_ok=True)
+        (scratch / name / sub / "f").write_text("x")
         backdate(scratch / name)
 
     added = fix.cli("--add", wlfix.ME, "(deadbeef)", "scratch prune fixture item")
@@ -291,8 +293,8 @@ def test_a_plain_file_outside_every_git_tree_keeps_its_dir(tmp_path):
     (scratch / "run2" / "result.txt").write_text("output\n")
     # A basetemp holding a fixture repo with a local-only commit: pytest owns it, so neither rule keeps it.
     base = scratch / "pytest-791"
-    base.mkdir()
-    fixture = clone_of(tmp_path, base, "fixture")
+    (base / "test_fixture0").mkdir(parents=True)
+    fixture = clone_of(tmp_path, base / "test_fixture0", "fixture")
     (fixture / "b.txt").write_text("b\n")
     git(fixture, "add", "b.txt")
     git(fixture, "commit", "-qm", "local only")
@@ -346,3 +348,66 @@ def test_ignored_output_does_not_keep_a_clone_and_untracked_source_does(tmp_path
         False,
         "plainclone has 1 uncommitted change(s) and no plainclone.patch",
     ), got
+
+
+def test_a_name_that_is_not_utf8_prints_escaped_and_never_crashes(tmp_path):
+    """REVIEW 30573c81.1: `os.scandir` hands back a non-UTF-8 name with surrogates, and the listing printed it raw, so under a UTF-8 locale `print` raised UnicodeEncodeError and the verb died with a traceback. Every name now reaches the text as a `\\xNN` escape, as a candidate's own name and inside a reason alike; driven through the real CLI on a strict UTF-8 stdout."""
+    fix = wlfix.Fixture(tmp_path / "hookfix")
+    fix.setup()
+    munged = re.sub(r"[^A-Za-z0-9]", "-", str(fix.proj))
+    scratch = (
+        pathlib.Path(fix.env["TMPDIR"])
+        / ("claude-%d" % os.getuid())
+        / munged
+        / wlfix.SID
+        / "scratchpad"
+    )
+    scratch.mkdir(parents=True)
+    raw = os.fsencode(scratch)
+    odd_dir = os.path.join(raw, b"odd\xffdir")
+    os.mkdir(odd_dir)
+    holder = scratch / "notes"
+    holder.mkdir()
+    with open(os.path.join(os.fsencode(holder), b"draft\xfe.md"), "wb") as fh:
+        fh.write(b"undelivered\n")
+    for child in (pathlib.Path(os.fsdecode(odd_dir)), holder):
+        backdate(child)
+    # A STRICT stream, as `PYTHONIOENCODING=utf-8` sets it: on a host whose only locales are C ones Python falls back to surrogateescape and leaks the raw bytes instead of raising, which is no better.
+    env = dict(fix.env, LC_ALL="C.UTF-8", PYTHONIOENCODING="utf-8")
+    listed = fix.cli("--prune-scratch", wlfix.ME, env=env)
+    assert listed.rc == 0, listed.err
+    assert "Traceback" not in listed.err, listed.err
+    assert re.search(r"DELETE\s+odd\\xffdir ", listed.out), listed.out
+    assert "notes holds 1 file(s) outside any git work tree (notes/draft\\xfe.md)" in listed.out, (
+        listed.out
+    )
+    wrote = fix.cli("--prune-scratch", wlfix.ME, "--write", env=env)
+    assert wrote.rc == 0, wrote.err
+    assert not os.path.exists(odd_dir)
+    assert holder.is_dir()
+
+
+def test_a_basetemp_name_is_exempt_only_in_the_shape_pytest_makes(tmp_path):
+    """REVIEW 30573c81.3: the `pytest-<digits>` exemption keyed on the NAME alone, so a clone stored under such a name, with a commit on no remote, read as a basetemp and `--write` deleted it. The exemption now also needs pytest's own top level: per-test directories ending in digits (`<name>0`, `popen-gw3` under xdist), `<name>current` symlinks, and nothing else (measured against the live scratchpad's basetemps)."""
+    scratch = tmp_path / "scratchpad"
+    scratch.mkdir()
+    # A clone that merely carries the name: `.git` and files at its top.
+    ahead = clone_of(tmp_path, scratch, "pytest-6")
+    (ahead / "b.txt").write_text("b\n")
+    git(ahead, "add", "b.txt")
+    git(ahead, "commit", "-qm", "local only")
+    # The real shape: a per-test directory holding a fixture repo with a local-only commit, its `current` link, and an xdist worker directory.
+    real = scratch / "pytest-7"
+    (real / "test_case0").mkdir(parents=True)
+    fixture = clone_of(tmp_path, real / "test_case0", "repo")
+    (fixture / "c.txt").write_text("c\n")
+    git(fixture, "add", "c.txt")
+    git(fixture, "commit", "-qm", "local only")
+    (real / "test_casecurrent").symlink_to(real / "test_case0")
+    (real / "popen-gw3").mkdir()
+    for child in scratch.iterdir():
+        backdate(child)
+    got = verdicts(scratch)
+    assert got["pytest-6"][0] is False, got
+    assert "has commits on no remote" in got["pytest-6"][1], got
+    assert got["pytest-7"] == (True, "idle, unleased, a pytest basetemp"), got

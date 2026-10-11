@@ -12,9 +12,9 @@ THE EXEMPTION IS NOT A PROMISE. git itself refuses a rebase while ANY tracked fi
 
 `git rebase --skip` IS REFUSED in this checkout on any tree, clean or not: it DROPS the commit being replayed, and /branch-rebase forbids it (its conflict steps). The refusal points to `git rebase --abort`, which returns to the pre-rebase tip.
 
-NOT REFUSED: `--continue`, `--abort`, `--quit` (they finish or undo a rebase already started), `git merge --ff-only` and `git pull --ff-only` (a fast-forward cannot conflict, and git refuses it on its own when a modified file is in the way; pr-merge step 7 runs `git pull --ff-only` on `main`), and any repository outside this checkout.
+NOT REFUSED: `--continue`, `--abort`, `--quit` (they finish or undo a rebase already started), `git merge --ff-only` and `git pull --ff-only` (a fast-forward cannot conflict, and git refuses it on its own when a modified file is in the way; pr-merge step 7 runs `git pull --ff-only` on `main`), and any repository outside this checkout, `--skip` included, whenever this checkout can be named.
 
-FAIL CLOSED: a status probe that fails, a command that moves git's idea of the work tree (`--git-dir`, `--work-tree`, `GIT_DIR=`, `GIT_WORK_TREE=` on the command line), and a project directory that cannot be named (`CLAUDE_PROJECT_DIR` unset and the hook outside every checkout) are refused, because the tree the guard would read is not known to be the tree the rebase would touch. Every other command is still allowed then: only a rebase, pull or merge that would start is judged.
+FAIL CLOSED: a status probe that fails, a command that moves git's idea of the work tree (`--git-dir`, `--work-tree`, `GIT_DIR=`, `GIT_WORK_TREE=` on the command line), and a project directory that cannot be named (`CLAUDE_PROJECT_DIR` unset and the hook outside every checkout) are refused, because the tree the guard would read is not known to be the tree the rebase would touch. With no project directory, "outside this checkout" cannot be decided either (`git -C /tmp ...` and `git -C <the checkout> ...` look alike to a guard that does not know where the checkout is), so then EVERY rebase, pull or merge that would start, and every `git rebase --skip`, is refused wherever it points (review 30573c81.4). Every other command is still allowed.
 """
 
 import functools
@@ -323,8 +323,8 @@ def run(ev):
     cmd = ev.field("tool_input", "command")
     if cmd == "":
         return hookio.ALLOW
-    # An unnamed root is not a pass (review 72e7ac97.1): `refusal` refuses a starting rebase, pull or merge as BLIND then, and lets every other command through.
-    root = shellscan.repo_root_env()
+    # An unnamed root is not a pass (review 72e7ac97.1): `refusal` refuses a starting rebase, pull or merge, and any `--skip`, as BLIND then, wherever it points, and lets every other command through.
+    root = shellscan.repo_root_env(ev)
     base = ev.field("cwd") or root
     found = refusal(cmd, root, base)
     if found is None:

@@ -11,7 +11,7 @@ WHICH DIRECTION IS EXPENSIVE. A wrong deletion destroys a writer's undelivered w
   - every git work tree in it (the directory itself, or up to two levels down) is clean and carries no commit missing from its remotes, OR its changes were delivered as `<scratchpad>/<name>.patch` written after the last change. A `git status` that fails is doubt, so it keeps;
   - no regular file sits outside every such work tree. Notes, logs and loose patches have no git status to vouch for them, so a directory with no work tree at all is kept unless it holds only directories and symlinks (review 7850c0c4.1: such a directory used to pass the git rule vacuously and be deleted).
 
-ONE EXEMPTION, BY NAME: a `pytest-<digits>` child (the shape `rediacc_ci.runtmp._BASETEMP` reads) is a pytest `--basetemp`, and pytest itself deletes a given basetemp at the start of its next run (`_pytest/tmpdir.py`, `rm_rf(basetemp)`), so nothing in it is anyone's work. Its fixture repositories are not probed either: they routinely carry commits on no remote. The idle, lease and process rules still apply to it.
+ONE EXEMPTION, BY NAME AND SHAPE: a `pytest-<digits>` child (the name `rediacc_ci.runtmp._BASETEMP` reads) whose top level is the one pytest makes (`basetemp_shaped`) is a pytest `--basetemp`, and pytest itself deletes a given basetemp at the start of its next run (`_pytest/tmpdir.py`, `rm_rf(basetemp)`), so nothing in it is anyone's work. Its fixture repositories are not probed either: they routinely carry commits on no remote. The idle, lease and process rules still apply to it.
 
 GITIGNORED FILES DO NOT KEEP A CLONE, BY DESIGN. Delivery is a `git diff` patch, which never carries an ignored path, so ignored content cannot be undelivered under this protocol; and every clone that ran a build or a test holds ignored output (`__pycache__`, `.pytest_cache`), so keeping on it would keep every clone and starve the /tmp this verb exists to free.
 """
@@ -34,6 +34,11 @@ GIT_DEPTH = 2
 BASETEMP = re.compile(r"^pytest-[0-9]+$")
 # How many loose files the refusal names before it stops listing.
 LOOSE_SHOWN = 3
+
+
+def printable(text):
+    """`text` with every undecodable byte as a `\\xNN` escape. A name from `os.scandir`/`os.listdir` that is not UTF-8 arrives with surrogates, and printing one raw raised UnicodeEncodeError on a strict stdout (or leaked the raw byte on a surrogateescape one), so every text this module hands out passes through here (review 30573c81.1)."""
+    return text.encode("utf-8", "surrogateescape").decode("utf-8", "backslashreplace")
 
 
 def scratchpad_for(root, me, session_id, tmp=None, uid=None):
@@ -124,6 +129,24 @@ def loose_files(path, trees):
             else:
                 out.append(entry.path)
     return sorted(out)
+
+
+def basetemp_shaped(path):
+    """Whether `path`'s top level is the one pytest builds under a basetemp: per-test directories ending in digits (`test_x0`, `<mktemp name>0`, `popen-gw3` under xdist) and `<name>current` symlinks, nothing else. A clone stored under a `pytest-<digits>` name carries `.git` and files at its top, so it fails this and is judged like any directory (review 30573c81.3). Unreadable is not the shape."""
+    try:
+        with os.scandir(path) as it:
+            entries = list(it)
+    except OSError:
+        return False
+    for entry in entries:
+        if entry.name == ".git":
+            return False
+        if entry.is_symlink():
+            if not entry.name.endswith("current"):
+                return False
+        elif not (entry.is_dir(follow_symlinks=False) and entry.name[-1:].isdigit()):
+            return False
+    return True
 
 
 def status_paths(raw):
@@ -261,7 +284,7 @@ def plan(scratch, older_min, leases, cwds, now=None):
             inside = [c for c in cwds if c == path or c.startswith(path + os.sep)]
             if inside:
                 why = "%d process(es) work inside it" % len(inside)
-        basetemp = bool(BASETEMP.match(entry.name))
+        basetemp = bool(BASETEMP.match(entry.name)) and basetemp_shaped(path)
         if not why and not basetemp:
             patch = os.path.join(scratch, entry.name + ".patch")
             trees = git_trees(path)
@@ -307,7 +330,7 @@ def _remove(path):
 def prune(scratch, write, older_min, leases, cwds=None, now=None):
     """(rc, text): the listing, and with `write` the deletion. Refuses anything not a direct, non-symlink child of `scratch`."""
     if not os.path.isdir(scratch):
-        return 0, "scratch: %s does not exist; nothing to prune" % scratch
+        return 0, printable("scratch: %s does not exist; nothing to prune" % scratch)
     real_scratch = os.path.realpath(scratch)
     rows = plan(scratch, older_min, leases, process_cwds() if cwds is None else cwds, now)
     lines = ["scratch: %s" % scratch]
@@ -330,7 +353,7 @@ def prune(scratch, write, older_min, leases, cwds=None, now=None):
     )
     if not write:
         lines.append(head + "; listing only, rerun with --write to delete")
-        return 0, "\n".join(lines)
+        return 0, printable("\n".join(lines))
     failed = []
     for name, path, _n in doomed:
         if os.path.islink(path) or os.path.dirname(os.path.realpath(path)) != real_scratch:
@@ -343,9 +366,9 @@ def prune(scratch, write, older_min, leases, cwds=None, now=None):
     if failed:
         lines.append(head + "; PARTIAL, could not delete:")
         lines.extend("  " + f for f in failed)
-        return 1, "\n".join(lines)
+        return 1, printable("\n".join(lines))
     lines.append(head + "; deleted %d, %s inodes freed" % (len(doomed), f"{gone:,}"))
-    return 0, "\n".join(lines)
+    return 0, printable("\n".join(lines))
 
 
 def parse_args(args):
@@ -377,6 +400,6 @@ def verb(root, me, session_id, args, items):
     scratch, why = scratchpad_for(root, me, session_id)
     if scratch is None:
         if why.startswith("no session directory"):
-            return 0, "scratch: %s; nothing to prune" % why
-        return 1, "refused: %s" % why
+            return 0, printable("scratch: %s; nothing to prune" % why)
+        return 1, printable("refused: %s" % why)
     return prune(scratch, write, older, lease_texts(items))

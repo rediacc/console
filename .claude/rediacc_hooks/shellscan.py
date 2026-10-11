@@ -625,16 +625,15 @@ def _git_stdout(args, want_rc=False):
     return proc.stdout.decode("utf-8", "surrogateescape")
 
 
-def repo_root_env():
-    """`CLAUDE_PROJECT_DIR`, the root every guard passes as `this_root`.
+def repo_root_env(ev):
+    """`CLAUDE_PROJECT_DIR` from the EVENT's environment, the root every guard passes as `this_root`.
 
     Not part of the bash lib -- each guard computes it itself -- but every caller of `target_root` needs the same answer, and a second spelling of it is exactly the drift `.ci/rediacc_ci/paths.py` was written to end.
+
+    THE EVENT'S ENVIRONMENT, NOT `os.environ`, because `ev.env` is what every other guard reads the variable through. Reading the process's own made a guard judged through `dispatch.run_one(..., env=...)` take a different root from the event it was given: a suite run with the variable unset (CI, and the local `env -u` recipe) named the runner's checkout instead of the fixture's, and block_destructive_git_restore's foreign-cwd rule then read the fixture's own `git clean -fd` as foreign and allowed it. A live hook sees no difference, since `Event` defaults to `os.environ`.
     """
     # The checkout's own toplevel stands in when the harness did not export the variable (a test, a hand run), so a scope test against "" cannot silently pass everything through.
-    return (
-        os.environ.get("CLAUDE_PROJECT_DIR")
-        or _git_stdout(["rev-parse", "--show-toplevel"]).strip()
-    )
+    return ev.env("CLAUDE_PROJECT_DIR") or _git_stdout(["rev-parse", "--show-toplevel"]).strip()
 
 
 # =============================================================================

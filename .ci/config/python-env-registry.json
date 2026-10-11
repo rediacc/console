@@ -2188,9 +2188,6 @@
     ".claude/rediacc_hooks/run_tests.py": [
       "PYTEST_BIN"
     ],
-    ".claude/rediacc_hooks/shellscan.py": [
-      "CLAUDE_PROJECT_DIR"
-    ],
     ".claude/rediacc_hooks/tests/hooklabels.py": [
       "HOOK_LABEL_DIR"
     ],

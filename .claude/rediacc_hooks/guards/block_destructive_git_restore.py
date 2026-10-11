@@ -883,6 +883,20 @@ def _walked_refusal(cmd, root, base, depth=0):
     return label, (NOTES[label] % detail if detail else NOTES[label]), wide
 
 
+def _all_foreign(cmd, root, base):
+    """Whether `cmd` runs at least one git invocation and every one, its own `init`/`clone` setup aside, acts outside this checkout when resolved from `base`."""
+    created = commit_policy.created_dirs(cmd, base)
+    runs = list(commit_policy.git_runs(cmd))
+    runs = [r for r in runs if r.git_sub not in ("init", "clone")] or runs
+    if not runs:
+        return False
+    for run in runs:
+        repo = commit_policy.scoped_repo(run, base, root, created)
+        if not repo or commit_policy.is_inside(repo, root):
+            return False
+    return True
+
+
 def _judge(cmd, root, base, depth=0):
     """`(label, note, wide)` when `cmd`, run from `base`, discards uncommitted work in this checkout, else None. The whole guard: the walked check, the scope test and the text patterns, in that order. A `foreach` payload comes back through here."""
     walked = _walked_refusal(cmd, root, base, depth)
@@ -906,6 +920,9 @@ def _judge(cmd, root, base, depth=0):
     # RESOLVED FROM `base`, THE DIRECTORY THE COMMAND RUNS IN, as `_walked_refusal` already does. For a `foreach` payload that is the submodule, and a relative `-C` there is relative to it: `git submodule foreach git -C ../.. reset --hard` resets THIS checkout from private/renet. Resolved from the root instead, `../..` landed outside the project and the guard stood down (review 9849764b.1). At the top level `base` is the event's cwd, which this harness keeps at the project root.
     _target = shellscan.target_root(scan, base or root)
     if _target != "" and not _is_inside(_target, root):
+        return None
+    # FROM A CWD OUTSIDE THE PROJECT, "" IS AMBIGUOUS (review 30573c81.2): `target_root` answers "" both for the cwd's own repository and for a directory it cannot resolve. Resolving from the cwd is right, since bash runs a relative `-C` there; so the guard stands down only when EVERY git invocation resolves outside this checkout through `scoped_repo`, the rule `commit_policy.foreign_only` applies elsewhere. An outside path that neither exists nor is created by the command (an unexpanded `cd "$X"`) resolves to "" there and keeps guarding.
+    if _target == "" and base and not _is_inside(base, root) and _all_foreign(cmd, root, base):
         return None
 
     blocked = ""
@@ -932,7 +949,7 @@ def run(ev):
     if cmd == "":
         return hookio.ALLOW
 
-    root = shellscan.repo_root_env()
+    root = shellscan.repo_root_env(ev)
     hit = _judge(cmd, root, ev.field("cwd") or root)
     if hit is None:
         return hookio.ALLOW

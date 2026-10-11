@@ -16,7 +16,7 @@ import os
 import pathlib
 import subprocess
 
-from rediacc_hooks import dispatch, shellscan
+from rediacc_hooks import dispatch, hookio, shellscan
 from rediacc_hooks.guards import block_unverified_push as PUSH
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
@@ -403,8 +403,16 @@ def test_rebase_guard_refuses_a_start_when_the_project_dir_cannot_be_named(tmp_p
         ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=False
     )
     assert probe.returncode != 0, "tmp_path sits in a checkout (%s)" % probe.stdout
-    assert shellscan.repo_root_env() == ""
-    for cmd in ("git rebase origin/main", "git pull", "git merge origin/main", "git rebase --skip"):
+    assert shellscan.repo_root_env(hookio.Event("{}")) == ""
+    # REVIEW 30573c81.4: with no checkout named, `-C /tmp` cannot be proven outside it, so a pointed `--skip` or start is refused too, as the docstring now says.
+    for cmd in (
+        "git rebase origin/main",
+        "git pull",
+        "git merge origin/main",
+        "git rebase --skip",
+        "git -C /tmp rebase --skip",
+        "git -C /tmp rebase origin/main",
+    ):
         rc, _out, err = _rebase_guard(cmd, tmp_path)
         assert rc == 2, (cmd, err)
         assert "the shared checkout is unknown" in err, (cmd, err)
