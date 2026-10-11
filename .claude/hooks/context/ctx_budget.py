@@ -38,6 +38,7 @@ import calendar
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -399,10 +400,39 @@ def read_event():
         return {}
 
 
+def project_of(start):
+    """The project a directory belongs to: the OUTERMOST git checkout holding it, or the directory itself, absolute, when it is in none. The stdlib twin of `rediacc_hooks.hookio.project_root`, kept here because importing the guard package costs every context hook the shell lexer; `test_project_dir_fallback` holds the two to one answer."""
+    here = os.path.abspath(start)
+
+    def git(where, *args):
+        try:
+            done = subprocess.run(
+                ["git", *args], cwd=where, capture_output=True, text=True, check=False
+            )
+        except OSError:
+            return ""
+        return done.stdout.strip() if done.returncode == 0 else ""
+
+    top = git(here, "rev-parse", "--show-toplevel")
+    if not top:
+        return here
+    for _depth in range(8):
+        outer = git(top, "rev-parse", "--show-superproject-working-tree")
+        if not outer:
+            break
+        top = outer
+    return top
+
+
 def project_dir(event):
+    """`CLAUDE_PROJECT_DIR`, else the project the event's `cwd` belongs to (`project_of`), else the checkout this file lives in.
+
+    The cwd's PROJECT, not the cwd (#f32d3604): a session whose shell stands in `.claude/` named `.claude/agent/<session>/STATE.md` as its state file when the variable was unset. A cwd in no checkout is its own project, which is what test-context-bands' fixture projects are.
+    """
+    cwd = event.get("cwd")
     return (
         os.environ.get("CLAUDE_PROJECT_DIR")
-        or event.get("cwd")
+        or (project_of(cwd) if cwd else None)
         or str(Path(__file__).resolve().parents[3])
     )
 

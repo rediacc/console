@@ -49,6 +49,7 @@ FAILS OPEN IN EVERY OTHER DIRECTION. No event, no path, an unreadable payload, a
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import pathlib
@@ -58,6 +59,16 @@ import sys
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE / "context"))
 sys.path.insert(0, str(HERE / "stop"))
+
+
+def _project_of(cwd):
+    """`ctx_budget.project_of(cwd)`, optional like every ctx_budget use below: without it the cwd is taken as given, which only misses the climb from a subdirectory."""
+    try:
+        budget = importlib.import_module("ctx_budget")
+    except ImportError:
+        return cwd
+    return budget.project_of(cwd)
+
 
 #: How many pushes one epoch gets, and how much of a slug's tokens must overlap
 #: before a new plan is refused as a duplicate. Both are tunable because both are
@@ -236,7 +247,11 @@ def main():
     if not raw_path:
         return 0
 
-    root = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or HERE.parents[1])
+    # The event cwd's PROJECT, not the cwd (#f32d3604): with the variable unset a session in `.claude/` read its plans under `.claude/agent` and let a near-duplicate plan through (rc 0 against rc 2 from the root). `ctx_budget.project_of` climbs to the outermost checkout.
+    cwd = event.get("cwd")
+    if cwd:
+        cwd = _project_of(cwd)
+    root = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR") or cwd or HERE.parents[1])
     try:
         rel = str(pathlib.Path(raw_path).resolve().relative_to(root.resolve()))
     except (ValueError, OSError):
