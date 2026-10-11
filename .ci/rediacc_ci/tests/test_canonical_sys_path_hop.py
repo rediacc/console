@@ -42,9 +42,16 @@ What replaces it is derived entirely from the corpus: every path this file alrea
 
 import ast
 import hashlib
+import os
 import pathlib
+import re
+import subprocess
+import sys
+
+import pytest
 
 from rediacc_ci import gitx, paths
+from rediacc_ci.tests.twin_names import usage_command
 
 # NO XDIST GROUP SINCE 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF15). The scan lists the working tree (`git ls-files --cached --others`), and on 2026-10-01 a `-n 16` run failed here on test_gate_shrink_only_composition.py's `quality/zz_composition_string_probe_port_*.py`, listed and gone before it was read, so this reader joined the real-tree group. Every such plant now lives in a scratch copy, so nothing in the suite plants into the listed tree, and the session tripwire (`test_tree_tripwire.py`) fails a run in which a test changes one.
 
@@ -480,3 +487,160 @@ def test_the_growth_check_fires_on_a_plant_and_not_on_the_baseline() -> None:
     assert "nothing_knows_this" in fresh[0], fresh
     # An EXEMPT file is excused, which is the direction that must NOT fire.
     assert grown({".ci/scripts/quality/_cipath.py": [(72, plant)]}) == []
+
+
+# --------------------------------------------------------------------------- The printed `python3 -m` line (worklist #175470e9).
+#
+# `PYTHONPATH=.ci` IS THE HOP FOR A COMMAND A READER TYPES. A module's usage line, `--help` prog, or "run X first" hint is copied from the repository root, where `rediacc_ci` is not importable: `python3 -m rediacc_ci.deploy.clone_d1` there dies with `No module named 'rediacc_ci'` (review finding 08928e86.2, measured). Every printed command therefore spells the hop, `PYTHONPATH=.ci python3 -m ...`.
+#
+# THE CORPUS is every non-docstring string constant under `.ci/rediacc_ci` (tests excluded: a test builds its own command lines), plus the docstring of every module whose code reads `__doc__`, because that docstring is printed as help (`release_state_validator`, `silent_failure_patterns`, `linode_cluster_validation`, ...). A docstring nothing prints is prose about the module and is not judged.
+
+PRINTED_ROOT = ".ci/rediacc_ci"
+BARE_M = re.compile(r"(?<!PYTHONPATH=\.ci )python3 -m (rediacc_ci(?:\.\w+)+)")
+RUNNABLE_M = re.compile(r"((?:[A-Z_]+=\S+ )*)PYTHONPATH=\.ci python3 -m (rediacc_ci(?:\.\w+)+)")
+
+#: (module path, a fragment of the string constant) -> why that `python3 -m` text is not a command printed for a reader to run.
+NOT_A_PRINTED_COMMAND = {
+    (
+        ".ci/rediacc_ci/ci/gate_ledger.py",
+        "backfill --export <dir>",
+    ): "the manifest's `generated_by` record of what wrote the export, data a reader parses, not a line printed to run",
+    (
+        ".ci/rediacc_ci/proxies/ensure_nfpm.py",
+        'PATH="$(python3 -m rediacc_ci.build.ensure_nfpm)',
+    ): "quotes the callers' own shell line, which runs where the workflow already exports PYTHONPATH",
+    (
+        ".ci/rediacc_ci/quality/toolchain_pins.py",
+        "via `python3 -m rediacc_ci.core.toolchain pairs`",
+    ): "names the workflow line the gate searches for, which must match the workflow text as written",
+    (
+        ".ci/rediacc_ci/quality/toolchain_pins.py",
+        'report >> "$GITHUB_ENV"',
+    ): "a selftest fixture fed to the gate's own regex",
+    (
+        ".ci/rediacc_ci/quality/rdc_native.py",
+        "exec python3 -m rediacc_ci.native",
+    ): "the generated `rdc` shim's body, a selftest fixture compared byte for byte",
+    (
+        ".ci/rediacc_ci/quality/dead_python.py",
+        "rediacc_ci.quality.orphan_mod",
+    ): "a selftest fixture naming a module that exists only in the gate's scratch tree",
+    (
+        ".ci/rediacc_ci/quality/dead_python.py",
+        "rediacc_ci.testrun.orphan_run",
+    ): "a selftest fixture naming a module that exists only in the gate's scratch tree",
+}
+
+
+def _exempt(rel: str, text: str) -> bool:
+    return any(r == rel and frag in text for r, frag in NOT_A_PRINTED_COMMAND)
+
+
+def _docstring_nodes(tree: ast.AST) -> set[int]:
+    out = set()
+    for node in ast.walk(tree):
+        body = getattr(node, "body", None)
+        if (
+            isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+            and body
+            and isinstance(body[0], ast.Expr)
+            and isinstance(body[0].value, ast.Constant)
+        ):
+            out.add(id(body[0].value))
+    return out
+
+
+def printed_texts(root: pathlib.Path) -> list[tuple[str, int, str]]:
+    """(module path, line, text) for every string this corpus counts as printed (see above)."""
+    out = []
+    for path in sorted((root / PRINTED_ROOT).rglob("*.py")):
+        rel = path.relative_to(root).as_posix()
+        if "/tests/" in rel:
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        docs = _docstring_nodes(tree)
+        prints_doc = any(isinstance(n, ast.Name) and n.id == "__doc__" for n in ast.walk(tree))
+        module_doc = (
+            tree.body[0].value if tree.body and isinstance(tree.body[0], ast.Expr) else None
+        )
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Constant) and isinstance(node.value, str)):
+                continue
+            if id(node) in docs and not (prints_doc and node is module_doc):
+                continue
+            out.append((rel, node.lineno, node.value))
+    return out
+
+
+def bare_commands(texts: list[tuple[str, int, str]]) -> list[str]:
+    """`path:line: python3 -m <module>` for every printed text spelling the command without the hop, exemptions aside."""
+    bad = []
+    for rel, line, text in texts:
+        if _exempt(rel, text):
+            continue
+        bad += ["%s:%d: %s" % (rel, line, m.group(0)) for m in BARE_M.finditer(text)]
+    return bad
+
+
+def runnable_commands(texts: list[tuple[str, int, str]]) -> list[tuple[str, str]]:
+    """(module path, the printed command up to its module) for every hop-spelled command, one per (path, module)."""
+    seen: dict[tuple[str, str], str] = {}
+    for rel, _line, text in texts:
+        if _exempt(rel, text):
+            continue
+        for m in RUNNABLE_M.finditer(text):
+            seen.setdefault((rel, m.group(2)), m.group(0))
+    return sorted((rel, command) for (rel, _module), command in seen.items())
+
+
+_ROOT = paths.repo_root()
+_TEXTS = printed_texts(_ROOT)
+_RUNNABLE = runnable_commands(_TEXTS)
+_FIND = "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec(sys.argv[1]) else 3)"
+
+
+def test_every_printed_python_m_command_spells_the_hop() -> None:
+    """The class pin: a new port that prints `python3 -m rediacc_ci.x` without `PYTHONPATH=.ci` is named here. Control first: the detector fires on a planted bare line and not on the hop spelling, and every exemption still matches a real string."""
+    planted = [
+        ("x.py", 1, "usage: python3 -m rediacc_ci.a.b <x>"),
+        ("x.py", 2, "usage: PYTHONPATH=.ci python3 -m rediacc_ci.a.b"),
+    ]
+    assert bare_commands(planted) == ["x.py:1: python3 -m rediacc_ci.a.b"]
+    stale = [
+        key
+        for key in NOT_A_PRINTED_COMMAND
+        if not any(r == key[0] and key[1] in t for r, _l, t in _TEXTS)
+    ]
+    assert stale == [], "these exemptions match no string any more: %s" % stale
+    assert len(_RUNNABLE) >= 40, (
+        "CONTROL: only %d printed commands found; the corpus is not being read" % len(_RUNNABLE)
+    )
+    assert bare_commands(_TEXTS) == []
+
+
+@pytest.mark.parametrize(
+    ("rel", "command"), _RUNNABLE, ids=["%s:%s" % (r, c.rsplit(" ", 1)[-1]) for r, c in _RUNNABLE]
+)
+def test_every_printed_python_m_command_runs_from_the_repository_root(
+    rel: str, command: str
+) -> None:
+    """Each printed command, split the way `twin_names.usage_command` splits a usage line, finds its module from the repository root under the environment it spells. The module is located, not run: running every printed command would start e2e suites and deploys. Control first: without its `PYTHONPATH=.ci` the same lookup fails."""
+    assigned, argv = usage_command("usage: " + command)
+    assert assigned.get("PYTHONPATH") == ".ci", command
+    assert argv[:2] == ["python3", "-m"], command
+    module = argv[2]
+    bare = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    probe = [sys.executable, "-c", _FIND, module]
+    control = subprocess.run(probe, cwd=_ROOT, env=bare, capture_output=True, check=False)
+    assert control.returncode != 0, (
+        "CONTROL: %s resolved with no PYTHONPATH; this case proves nothing" % module
+    )
+    got = subprocess.run(
+        probe, cwd=_ROOT, env={**bare, **assigned}, capture_output=True, text=True, check=False
+    )
+    assert got.returncode == 0, "%s prints `%s`, which cannot find %s from the root: %s" % (
+        rel,
+        command,
+        module,
+        got.stderr,
+    )

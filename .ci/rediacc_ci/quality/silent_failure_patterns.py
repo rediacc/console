@@ -18,7 +18,7 @@ with `set -eo pipefail`, that propagates through any pipe (`| wc -l`,
 
 The lint scans every .sh under .ci/scripts/, scripts/dev/ and scripts/ops/ that has `set -eo pipefail` (or `set -e ... pipefail`) and flags occurrences of `aws s3 ls`, `find ...`, `grep ...` piped into `wc -l` / `head` / `tail` / `awk` without a `|| true` / `|| echo ...` guard on the same logical pipeline.
 
-Exit 0 on no findings, 1 on any unguarded match. The shared helper `python3 -m rediacc_ci.core.common r2-count-objects` is the recommended fix.
+Exit 0 on no findings, 1 on any unguarded match. The shared helper `PYTHONPATH=.ci python3 -m rediacc_ci.core.common r2-count-objects` is the recommended fix.
 
 Whitelist: add `# silent-failure-ok: <reason>` on the line above the risky line if the unguarded pattern is intentional (e.g. an inner step that actually wants to fail the script on missing input).
 

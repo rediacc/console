@@ -33,7 +33,7 @@ SUITES: tuple[tuple[str, tuple[str, ...], str], ...] = (
         "@rediacc/e2e-tests unit tests failed",
     ),
 )
-USAGE = "usage: python3 -m rediacc_ci.testrun.unit"
+USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.unit"
 
 
 def _run(argv: tuple[str, ...]) -> int:

@@ -205,7 +205,10 @@ def redact_env(
 
 def main(argv: list[str]) -> int:
     if not argv:
-        print("usage: python3 -m rediacc_ci.core.secrets <verb> [NAME...]", file=sys.stderr)
+        print(
+            "usage: PYTHONPATH=.ci python3 -m rediacc_ci.core.secrets <verb> [NAME...]",
+            file=sys.stderr,
+        )
         return 2
     verb, names = argv[0], argv[1:]
 

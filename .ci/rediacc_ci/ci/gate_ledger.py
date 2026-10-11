@@ -2,10 +2,10 @@
 
 WHY IT EXISTS. Receipts rotate at 50 (`.ci/cache/receipts/`), `lane-durations.json` and `gate-costs.json` hold timing only, and nothing kept a cross-run pass/fail history. `rediacc_ci.ci.gate_model` derives clock gates, flakes, clusters and the run order from THIS file set, so a row that is wrong here is a scheduling decision that is wrong everywhere.
 
-    python3 -m rediacc_ci.ci.gate_ledger append   < rows.jsonl     long-lived; one row per line
-    python3 -m rediacc_ci.ci.gate_ledger backfill [--root R ...] [--export DIR [--gates-with-reds]]
-    python3 -m rediacc_ci.ci.gate_ledger fold-ci  [--repo O/R] [--limit N] [--no-logs]
-    python3 -m rediacc_ci.ci.gate_ledger status
+    PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_ledger append   < rows.jsonl     long-lived; one row per line
+    PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_ledger backfill [--root R ...] [--export DIR [--gates-with-reds]]
+    PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_ledger fold-ci  [--repo O/R] [--limit N] [--no-logs]
+    PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_ledger status
 
 LOCATION. `$REDIACC_GATE_LEDGER_DIR`, else `${XDG_STATE_HOME:-~/.local/state}/rediacc-gate-ledger/<origin-slug>/`. Per MACHINE and per origin, shared by every worktree, session and the push clone; state rather than cache, because history older than the receipt window cannot be rebuilt. OFF under `CI=true` unless the variable names a directory (a CI runner is disposable and its rows come in through `fold-ci`).
 

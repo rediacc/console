@@ -1,7 +1,7 @@
 """The LEARNED gate model: red classes, clock gates, clusters, change associations and upgrade companions, all derived from the outcome ledger plus `scripts/ci-runner/gates.lock.json` (PLAN-gate-scheduling-learned sections 2-4 and 6).
 
-    python3 -m rediacc_ci.ci.gate_model refresh [--force] [--owner <sid8>] [--no-ci] [--no-probe]
-    python3 -m rediacc_ci.ci.gate_model show
+    PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_model refresh [--force] [--owner <sid8>] [--no-ci] [--no-probe]
+    PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_model show
 
 NOTHING HERE IS A LIST OF GATES. The only hand-written inputs are the tunables below, each with its reason; a test (T9) plants a gate id into a copy of this file and must go red. Every class, cluster and association is recomputed from the rows on every refresh, so a gate that stops being clock-driven leaves the clock set on the next refresh without anyone editing anything.
 

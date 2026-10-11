@@ -14,7 +14,9 @@ import os
 import pathlib
 import sys
 
-USAGE = "usage: python3 -m rediacc_ci.ci.record_e2e_probe_outcome <file> <job-status>"
+USAGE = (
+    "usage: PYTHONPATH=.ci python3 -m rediacc_ci.ci.record_e2e_probe_outcome <file> <job-status>"
+)
 
 
 def outcome_for(job_status: str) -> str:

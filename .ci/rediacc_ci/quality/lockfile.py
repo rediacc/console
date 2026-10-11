@@ -459,7 +459,7 @@ def unwindowed_installs(rel: str, lines: list[tuple[int, str]]) -> list[str]:
             ):
                 out.append(
                     "%s:%d: `%s` resolves live with no --before; pass --before from "
-                    "`python3 -m rediacc_ci.core.release_age npm-before` (an NPM_BEFORE build-arg in a Dockerfile)"
+                    "`PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before` (an NPM_BEFORE build-arg in a Dockerfile)"
                     % (rel, number, " ".join(command.split()))
                 )
     return out

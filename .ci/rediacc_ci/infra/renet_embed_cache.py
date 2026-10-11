@@ -102,7 +102,9 @@ def write_verdict(renet_src: pathlib.Path) -> bool | None:
 
 def main(argv: list[str]) -> int:
     if argv != ["verdict"]:
-        sys.stderr.write("usage: python3 -m rediacc_ci.infra.renet_embed_cache verdict\n")
+        sys.stderr.write(
+            "usage: PYTHONPATH=.ci python3 -m rediacc_ci.infra.renet_embed_cache verdict\n"
+        )
         return 2
     renet_src = pathlib.Path(__file__).resolve().parents[3] / "private" / "renet"
     verdict = write_verdict(renet_src)

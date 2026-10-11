@@ -94,7 +94,7 @@ def api_json(
     return gh(["api", path], attempts=attempts, sleep=sleep, runner=runner).json()
 
 
-USAGE = "usage: python3 -m rediacc_ci.core.gh_retry <what> -- <gh args...>"
+USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.core.gh_retry <what> -- <gh args...>"
 
 
 def main(

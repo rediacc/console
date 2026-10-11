@@ -249,28 +249,28 @@ JSON_REQUIRED = {
 
 USAGE = """bws_env -- the `bws-env.sh` fetch, without the shell mutation.
 
-  python3 -m rediacc_ci.core.bws_env names [SPEC ...]
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env names [SPEC ...]
       Resolve, then print the sorted LOCAL names that came back with a NON-EMPTY
       value, one per line, on stdout. Diagnostics on stderr, exactly as the twin
       writes them. Exit 0 when every requested name resolved, 1 otherwise.
       A SPEC is `NAME` or `NAME > LOCAL_NAME`; the grammar is the one
       `.github/actions/bws-secrets` uses, parsed by the same rule.
 
-  python3 -m rediacc_ci.core.bws_env map
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env map
       The names the map knows, sorted. No store access.
 
-  python3 -m rediacc_ci.core.bws_env json NAME
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env json NAME
       NAME's value is a JSON object. Print the sorted KEYS it binds, one per
       line. Refuses a non-object, a key that is not a legal identifier, and a
       record missing any key JSON_REQUIRED demands for NAME.
 
-  python3 -m rediacc_ci.core.bws_env cache-to FILE SPEC [SPEC ...]
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env cache-to FILE SPEC [SPEC ...]
       Write `LOCAL=value` lines to FILE, mode 0644. Every LOCAL must be on the
       three-name CACHEABLE allowlist of PUBLIC keys, and an aliased store name
       must be one CACHE_STORE_NAMES pairs with it; anything else is refused
       and no file is written at all.
 
-  python3 -m rediacc_ci.core.bws_env rotation-notice RC
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env rotation-notice RC
       Classify ONE `bws` failure and print the rotation notice on stdout when
       the verdict is a rotation. RC is the exit code; the captured stderr
       arrives on STDIN, never on argv, and is matched against fixed markers and
@@ -279,25 +279,25 @@ USAGE = """bws_env -- the `bws-env.sh` fetch, without the shell mutation.
       This verb exists so `scripts/ops/bws-map-refresh.py` can reach the ONE
       classifier without a sys.path insert of its own.
 
-  python3 -m rediacc_ci.core.bws_env fingerprint
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env fingerprint
       16 hex digits of sha256 over the CLIENT ID half of BWS_ACCESS_TOKEN. The
       secret half never enters the digest, which is what makes the result
       publishable. Exit 1 when the variable is absent or is not a token shape.
 
-  python3 -m rediacc_ci.core.bws_env compare FILE [SPEC ...]
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env compare FILE [SPEC ...]
       For each SPEC (default: every name FILE assigns), compare FILE's value
       of LOCAL against the store's value of NAME, in process. Prints
       `LOCAL MATCH|MISMATCH|ABSENT|LOCAL-EMPTY`, never a value or a length.
       Exit 0 only when every line is MATCH.
 
-  python3 -m rediacc_ci.core.bws_env exec --profile P [--profile Q] -- CMD [ARG ...]
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile P [--profile Q] -- CMD [ARG ...]
       Bind the profiles' specs (from the `consumers` object of
       .ci/config/secret-supply.json) into CMD's environment and exec it. The
       shell wins; a profile already listed in REDIACC_BWS_PROFILES is skipped.
       Nothing is written to stdout or to disk. With no token, it proceeds only
       when every REQUIRED name is already in the environment.
 
-  python3 -m rediacc_ci.core.bws_env store-from-env SPEC [SPEC ...]
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env store-from-env SPEC [SPEC ...]
       For each `STORE > LOCAL` spec, write the environment's LOCAL value into
       the existing store entry STORE, then read it back with the same
       comparison `compare` makes. Prints names and MATCH/MISMATCH only.

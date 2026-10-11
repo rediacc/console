@@ -501,7 +501,10 @@ def main(argv: list[str]) -> int:
     `state` prints one word on stdout and always exits 0, for a caller that wants to branch in shell without a subshell full of pattern matching.
     """
     if not argv:
-        print("usage: python3 -m rediacc_ci.core.dockerx <verb> [args]", file=sys.stderr)
+        print(
+            "usage: PYTHONPATH=.ci python3 -m rediacc_ci.core.dockerx <verb> [args]",
+            file=sys.stderr,
+        )
         return 2
     verb, rest = argv[0], argv[1:]
     host = rest[0] if rest else None

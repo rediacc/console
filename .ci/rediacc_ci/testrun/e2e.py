@@ -30,7 +30,7 @@ SHARD_GREP_BUCKETS = {
 }
 
 USAGE = (
-    "usage: python3 -m rediacc_ci.testrun.e2e [--workers N] [--config FILE] [--filter|--grep PATTERN] [--grep-invert PATTERN] [--test FILE]... "
+    "usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e [--workers N] [--config FILE] [--filter|--grep PATTERN] [--grep-invert PATTERN] [--test FILE]... "
     "[--headed] [--debug] [--ui] [--fail-on-skip] [--shard-manifest PATH --shard I/N [--also A,B]]"
 )
 

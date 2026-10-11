@@ -106,11 +106,11 @@ VALID_LOG_SERVICES = ("web", "rustfs", "all")
 
 USAGE = """service -- rediacc_ci.core.service, every function of the retired `.ci/lib/service.sh`.
 
-  python3 -m rediacc_ci.core.service start [port] [--no-build]
-  python3 -m rediacc_ci.core.service stop
-  python3 -m rediacc_ci.core.service status
-  python3 -m rediacc_ci.core.service health
-  python3 -m rediacc_ci.core.service logs [web|rustfs|all]
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.service start [port] [--no-build]
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.service stop
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.service status
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.service health
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.service logs [web|rustfs|all]
 
 Each verb is the twin's function of the same name, byte for byte, colour included.
 `logs` attaches (`-f`) exactly as the twin does; an unknown service is refused.

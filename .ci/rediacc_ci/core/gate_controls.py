@@ -67,7 +67,7 @@ SEP = "\x1f"
 USAGE = """gate_controls -- the `gate-controls.sh` tally, driven from stdin.
 
   printf 'check\\x1flabel\\x1fgot\\x1fwant\\nfinish\\x1f1\\x1fsubject\\n' \\
-      | python3 -m rediacc_ci.core.gate_controls
+      | PYTHONPATH=.ci python3 -m rediacc_ci.core.gate_controls
 
 Program lines, separated by US (0x1f, NOT tab -- see the module docstring):
   check   <label> <got> <want>    one control

@@ -433,7 +433,7 @@ def _fail(message: str) -> int:
 def main(argv: list[str]) -> int:
     if not argv:
         print(
-            "usage: python3 -m rediacc_ci.core.platform <verb> [args]",
+            "usage: PYTHONPATH=.ci python3 -m rediacc_ci.core.platform <verb> [args]",
             file=sys.stderr,
         )
         return 2
