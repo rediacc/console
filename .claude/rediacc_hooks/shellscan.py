@@ -1905,6 +1905,7 @@ class _Run:
         "cwd",
         "env",
         "feed",
+        "feed_cwds",
         "feed_words",
         "git_dir",
         "git_sub",
@@ -1948,6 +1949,8 @@ class _Run:
         self.feed = None
         # THE WORDS xargs WOULD READ, EXACTLY, or None when they are not known (#5077391c). Only a literal producer is exact: the pipeline stage in front is an `echo` whose words carry no expansion, or the command reads its own here-string or heredoc with none. Any other producer (`find`, `git`, a group, a loop's feed) prints what this walk cannot compute, so its words are in `feed` alone, read in the fail-safe direction. Words holding a quote or a backslash are not exact either, because xargs reads quotes itself.
         self.feed_words = None
+        # WHERE THE PIPE'S PRODUCER RAN (review a165575f.1): the `cwd` of every command in the stage right in front, as `cwd` reads (None for the starting directory), or None when the feed came from no such stage. `(cd src; echo f*) | xargs ...` matches `f*` in `src`, which the consumer's own `cwd` does not say.
+        self.feed_cwds = None
         # The option words an `xargs` in front of this command was given, in order (`("-r",)`, `("-n", "1")`), or None when no xargs ran it. `-n`, `-L`, `-I`, `-d`, `-0` and the like change which words reach which invocation, so a reader placing the feed (`run_copies`) needs them.
         self.xargs = None
         # The prefix commands `_strip_prefixes` dropped in front of this command, in order (`("sudo", "xargs")`), plus `"find"` for a command a `find -exec` launched. A guard reads `"xargs" in run.via` to know the feed became arguments.
@@ -2517,6 +2520,14 @@ class _Walker:
                             if binding is not None:
                                 inner.loop_vars.setdefault(binding[0], binding[1])
                 spans.append((start, len(runs)))
+            # The producer's directories reach every command of the stage it feeds, read where its globs are matched (`run_copies`).
+            for pos in range(1, len(spans)):
+                producer = tuple(
+                    dict.fromkeys(r.cwd for r in runs[spans[pos - 1][0] : spans[pos - 1][1]])
+                )
+                for r in runs[spans[pos][0] : spans[pos][1]]:
+                    if r.feed_cwds is None and producer:
+                        r.feed_cwds = producer
             # `pgrep -f x | xargs kill`: a later stage that kills consumes every earlier stage's output as pids.
             for pos in range(1, len(spans)):
                 if any(_base(r.name) == "kill" for r in runs[spans[pos][0] : spans[pos][1]]):
@@ -3053,7 +3064,8 @@ _FED_EXPANSION_CAP = 64
 #   `{1...3}`, `{ab..c}` and `{1..a}` are literal.
 # GENERATED LAZILY AND CAPPED: every alternative is produced on demand and `_brace_alternatives` takes the first `_FED_EXPANSION_CAP` of the whole product, so `{1..9999999999}` or several ranges in one word cost at most that many words, never the full list.
 _RANGE = re.compile(r"(-?\d+)\.\.(-?\d+)(?:\.\.(-?\d+))?|([A-Za-z])\.\.([A-Za-z])(?:\.\.(-?\d+))?")
-_MAX_BRACE_DEPTH = 16
+# Deep enough for any word a command line holds (each level consumes one brace pair of the word), and far below the interpreter's recursion limit; the WORD cap below is what bounds the work (review a165575f.3).
+_MAX_BRACE_DEPTH = 256
 
 
 def _brace_range(body):
@@ -3120,11 +3132,30 @@ def _brace_words(word, start=0, depth=0):
         yield from _brace_words(head + part + tail, i, depth + 1)
 
 
-def _brace_alternatives(word):
-    """The first `_FED_EXPANSION_CAP` words bash's brace expansion makes of `word` (the word itself when it has none), empty words dropped as bash drops them (`{a,}x` -> ax x, `{,}` -> nothing)."""
+def _brace_expand(word):
+    """`(words, truncated)`: the first `_FED_EXPANSION_CAP` non-empty words bash's brace expansion makes of `word`, empty words dropped BEFORE the cap as bash drops them (`{a,}x` -> ax x, `{,}` -> nothing, review a165575f.4), and whether more words were left."""
     if "{" not in word:
-        return [word]
-    return [w for w in itertools.islice(_brace_words(word), _FED_EXPANSION_CAP) if w != ""]
+        return [word], False
+    nonempty = (w for w in _brace_words(word) if w != "")
+    got = list(itertools.islice(nonempty, _FED_EXPANSION_CAP + 1))
+    return got[:_FED_EXPANSION_CAP], len(got) > _FED_EXPANSION_CAP
+
+
+def _brace_alternatives(word):
+    """The first `_FED_EXPANSION_CAP` words bash's brace expansion makes of `word` (the word itself when it has none)."""
+    return _brace_expand(word)[0]
+
+
+def _brace_glob(word):
+    """`word` with every brace bash expands turned into `*`, a glob that matches every word those braces make: what the fail-safe reading falls back to when the cap leaves words unread (review a165575f.3)."""
+    out = word
+    for _ in range(_MAX_BRACE_DEPTH):
+        found = _first_brace(out)
+        if found is None:
+            break
+        i, close, _alternatives = found
+        out = out[:i] + "*" + out[close + 1 :]
+    return out
 
 
 # Bash's glob characters; a fed word holding one is a pattern bash matches against the directory the producer runs in.
@@ -3141,25 +3172,39 @@ def _glob_shape(pattern):
     return out.replace("*", "x").replace("?", "x")
 
 
-def _glob_forms(form, directory):
-    """What bash's pathname expansion makes of `form`: its matches on disk, read from `directory` for a relative pattern (review 8ae5b370.3). With the directory unknown (None), the pattern is kept and one name in its shape is added, so a guard reading names still sees a name of that shape."""
+def _glob_forms(form, directories, uncertain=False):
+    """What bash's pathname expansion makes of `form`: its matches on disk, an absolute pattern as written and a relative one in each of `directories` (review 8ae5b370.3). One name in the pattern's shape is added whenever the match is empty or the directory is `uncertain` (unknown, missing, unreadable: review a165575f.2), so a guard reading names still sees a name of that shape."""
     if not any(ch in form for ch in _GLOB_CHARS):
         return []
     if form.startswith("/"):
-        return sorted(glob.glob(form))[:_FED_EXPANSION_CAP]
+        found = sorted(glob.glob(form))
+    else:
+        found = sorted({m for d in directories for m in glob.glob(form, root_dir=d)})
+    found = found[:_FED_EXPANSION_CAP]
+    if uncertain or not found:
+        found.append(_glob_shape(form))
+    return found
+
+
+def _fed_candidates(words, directory=None, uncertain=None):
+    """Every word an unknown producer's text may stand for, for the fail-safe reading: each word itself, its brace alternatives (and, when the cap leaves some unread, the glob `_brace_glob` makes of the word), its tilde forms (a leading `~`, or one after `=` or `:`, as `os.path.expanduser` reads them for the user this hook runs as, who is the user bash runs as), and what a glob matches (`_glob_forms`).
+
+    `directory` is where the producer runs: an absolute path, a list of them, or None when unknown. `uncertain`, None by default, means "uncertain exactly when no directory is given". Adding words only widens what the fail-safe reading claims.
+    """
     if directory is None:
-        return [_glob_shape(form)]
-    return sorted(glob.glob(form, root_dir=directory))[:_FED_EXPANSION_CAP]
-
-
-def _fed_candidates(words, directory=None):
-    """Every word an unknown producer's text may stand for, for the fail-safe reading: each word itself, its brace alternatives, its tilde forms (a leading `~`, or one after `=` or `:`, as `os.path.expanduser` reads them for the user this hook runs as, who is the user bash runs as), and what a glob matches (`_glob_forms`; `directory` is where the producer runs, absolute, or None when unknown). Adding words only widens what the fail-safe reading claims."""
+        directories: list[str] = []
+    elif isinstance(directory, str):
+        directories = [directory]
+    else:
+        directories = list(directory)
+    if uncertain is None:
+        uncertain = not directories
     out: list[str] = []
-    # A producer that changes directory itself (`(cd x; ls) | xargs ...`) matches its globs somewhere this walk did not follow.
-    if "cd" in words or "pushd" in words:
-        directory = None
     for word in words:
-        for alt in _brace_alternatives(word):
+        alternatives, truncated = _brace_expand(word)
+        if truncated:
+            alternatives = [*alternatives, _brace_glob(word)]
+        for alt in alternatives:
             forms = [alt]
             for sep in ("=", ":"):
                 head, mark, rest = alt.partition(sep)
@@ -3168,24 +3213,50 @@ def _fed_candidates(words, directory=None):
             if alt.startswith("~"):
                 forms.append(os.path.expanduser(alt))
             for form in list(forms):
-                forms.extend(_glob_forms(form, directory))
+                forms.extend(_glob_forms(form, directories, uncertain))
             out.extend(f for f in forms if f not in out)
     return out
 
 
-def _run_directory(run, cwd):
-    """The absolute directory `run` executes in, from the hook's `cwd` and the `cd`s that persist to it, or None when `cwd` is not given or the `cd` target cannot be read (`cd "$D"`, `cd ~`, `cd -`)."""
+def _directory_of(cwd_value, cwd):
+    """`cwd_value` (a `_Run.cwd`) made absolute against the hook's `cwd`, or None when it cannot be read (`cd "$D"`, `cd ~`, `cd -`) or `cwd` is not given."""
     if cwd is None:
         return None
-    if run.cwd is None:
+    if cwd_value is None:
         return os.path.normpath(cwd)
     if (
-        run.cwd.startswith(("~", "-"))
-        or any(ch in run.cwd for ch in "$`")
-        or _UNRESOLVED in run.cwd
+        cwd_value.startswith(("~", "-"))
+        or any(ch in cwd_value for ch in "$`")
+        or _UNRESOLVED in cwd_value
     ):
         return None
-    return os.path.normpath(os.path.join(cwd, run.cwd))
+    return os.path.normpath(os.path.join(cwd, cwd_value))
+
+
+def _run_directory(run, cwd):
+    """The absolute directory `run` executes in, from the hook's `cwd` and the `cd`s that persist to it, or None when it cannot be read."""
+    return _directory_of(run.cwd, cwd)
+
+
+def _feed_directories(run, cwd):
+    """`(directories, uncertain)` where the producer feeding `run` matched its globs: each producer command's directory (`_Run.feed_cwds`), else the run's own.
+
+    A FAILED `cd` LEAVES THE SHELL WHERE IT WAS (review a165575f.2): `cd nosuch; echo f* | xargs cp a` runs the echo in the starting directory, while the walk's `cwd` says `nosuch`. A directory that is not on disk therefore adds the starting directory as a candidate too, and marks the reading uncertain, so the shape fallback stays.
+    """
+    values = run.feed_cwds or (run.cwd,)
+    directories: list[str] = []
+    uncertain = False
+    for value in values:
+        resolved = _directory_of(value, cwd)
+        if resolved is None:
+            uncertain = True
+            continue
+        if not os.path.isdir(resolved):
+            uncertain = True
+            resolved = os.path.normpath(cwd)
+        if resolved not in directories:
+            directories.append(resolved)
+    return directories, uncertain or not directories
 
 
 def run_copies(run, argv=None, cwd=None):
@@ -3208,7 +3279,10 @@ def run_copies(run, argv=None, cwd=None):
         return sources, [dest], into
     found = copy_destination(name, argv)
     # `cwd`, when a caller knows it, is where the hook's command starts: a relative glob in the feed is matched in the directory this run executes in.
-    fed = _fed_candidates(run.feed.split(), _run_directory(run, cwd)) if fed_by_xargs else []
+    fed = []
+    if fed_by_xargs:
+        directories, uncertain = _feed_directories(run, cwd)
+        fed = _fed_candidates(run.feed.split(), directories, uncertain)
     # FAIL-SAFE: with the words unknown, any fed word may be a source as well as the destination (`echo {b,d} | xargs cp a` runs `cp a b d`, which copies `b` into `d`).
     if found is None:
         return ([a for a in argv if not a.startswith("-")] + fed, fed, False) if fed else None
@@ -3223,7 +3297,9 @@ def run_copies(run, argv=None, cwd=None):
         if "{}" in dest:
             return sources, fed, into
         return [*sources, *fed], dests, into
-    return [*sources, dest, *fed], [d for d in dests if "{}" not in d] + fed, into
+    # `xargs -I {}`: a destination naming `{}` is that word with each fed word in its place (`xargs -I{} cp a src/{}`).
+    placed = [d.replace("{}", w) for d in dests if "{}" in d for w in fed]
+    return [*sources, dest, *fed], [d for d in dests if "{}" not in d] + fed + placed, into
 
 
 def copy_landings(run, cwd, names=COPIERS, argv=None):
@@ -3244,15 +3320,19 @@ def copy_landings(run, cwd, names=COPIERS, argv=None):
         return []
     sources, dests, into = copies
     base = cwd if run.cwd is None else os.path.join(cwd, run.cwd)
+    # A `cd` to a directory that is not there fails and leaves the shell where it started (review a165575f.2), so a relative destination lands under the starting directory as well.
+    bases = [base] if os.path.isdir(base) else [base, cwd]
     out: list[tuple[str, bool]] = []
-    for dest in dests:
-        dest_abs = os.path.normpath(os.path.join(base, dest))
-        if into or dest.endswith("/") or os.path.isdir(dest_abs):
-            out.extend(
-                (os.path.join(dest_abs, os.path.basename(src.rstrip("/"))), True) for src in sources
-            )
-        else:
-            out.append((dest_abs, False))
+    for base in bases:
+        for dest in dests:
+            dest_abs = os.path.normpath(os.path.join(base, dest))
+            if into or dest.endswith("/") or os.path.isdir(dest_abs):
+                out.extend(
+                    (os.path.join(dest_abs, os.path.basename(src.rstrip("/"))), True)
+                    for src in sources
+                )
+            elif (dest_abs, False) not in out:
+                out.append((dest_abs, False))
     return out
 
 
