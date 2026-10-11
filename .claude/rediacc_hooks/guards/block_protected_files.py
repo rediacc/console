@@ -264,29 +264,83 @@ def _wildcarded(word):
     return "".join(out) if wild else None
 
 
+# THE PATTERN IS NORMALISED AS bash's KERNEL WALK WOULD (review cd8ccb11.1). Matched as typed, `rm .claude/./$(echo settings.json)`, `rm .claude//$(...)`, `rm .claude/x/../$(...)` and `rm -rf "$D"/.claude/..` were allowed (rc 0, 2026-10-11): the pattern kept the `.`, the empty segment and the `..` that the target path does not have. So `_wild_path` resolves a wildcarded word segment by segment onto the directory it runs in: `.` and
+# an empty segment are dropped, and a `..` pops the literal segment before it. A `..` that pops a WILDCARD cannot be resolved, since the wildcard may hold any number of segments, so from there the path is "the literal prefix, or anything under it" (`ANY`). The other reading, `posixpath.normpath` over the raw word, popped the substitution's source text as if it were one segment, which refused `rm -rf "$(mktemp -d)"/..` as the project root.
+_ANY = object()
+
+
+def _wild_path(pattern_text, base):
+    """`(regex, escaped prefix)` for a wildcarded word resolved onto `base`. The regex fullmatches every absolute path the word could name; the prefix is the literal path a `..` over a wildcard left (None when there was none, when a wildcard comes before it, or when the word starts with one, whose root is unknown)."""
+    tokens: list = []
+    if not pattern_text.startswith(("/", _WILD)):
+        tokens = [seg for seg in base.split("/") if seg]
+    escaped = None
+    for seg in pattern_text.split("/"):
+        if seg in ("", "."):
+            continue
+        if seg != "..":
+            tokens.append(seg)
+            continue
+        if not tokens:
+            continue
+        top = tokens.pop()
+        if top is _ANY or (isinstance(top, str) and _WILD in top):
+            known = not pattern_text.startswith(_WILD)
+            if (
+                known
+                and escaped is None
+                and all(isinstance(t, str) and _WILD not in t for t in tokens)
+            ):
+                escaped = "/" + "/".join(tokens)
+            tokens.append(_ANY)
+    out = ""
+    for t in tokens:
+        if t is _ANY:
+            out += "(?:/.*)?"
+        else:
+            out += "/" + ".*".join(re.escape(piece) for piece in t.split(_WILD))
+    return re.compile(out or "/"), escaped
+
+
 def _unjudgeable(word, base, root, recursive):
     """True when `word` holds a part the walk cannot evaluate and could still name a protected file (or, for a recursive rm, a directory holding one)."""
     pattern_text = _wildcarded(word)
     if pattern_text is None:
         return False
-    literal = {seg for seg in re.split(r"[/%s]" % _WILD, pattern_text) if seg}
+    targets = [posixpath.join(root, p) for p in PROTECTED_PATHS]
+    pattern, escaped = _wild_path(pattern_text, base)
+    # A `..` over a wildcard under a literal prefix that holds a protected file can remove it, whatever the word spells (`rm -rf ./$(echo build)/..` in the project root).
+    if (
+        recursive
+        and escaped is not None
+        and any(t.startswith(escaped.rstrip("/") + "/") for t in targets)
+    ):
+        return True
+    literal = {
+        seg for seg in re.split(r"[/%s]" % _WILD, pattern_text) if seg not in ("", ".", "..")
+    }
     if not literal & _SEGMENTS:
         return False
-    absolute = pattern_text.startswith(("/", _WILD))
-    body = ".*".join(re.escape(piece) for piece in pattern_text.split(_WILD))
-    pattern = re.compile(body if absolute else re.escape(base.rstrip("/") + "/") + body)
-    suffix = re.compile("(?:.*/)?" + body)
-    targets = [posixpath.join(root, p) for p in PROTECTED_PATHS]
+    # The same word on its own, for another checkout's copy, exactly as `_is_protected` counts one by its tail.
+    own, _ = _wild_path(pattern_text, "/")
+    tail = re.compile("(?:.*)" + own.pattern)
     if any(pattern.fullmatch(t) for t in targets) or any(
-        suffix.fullmatch(p) for p in PROTECTED_PATHS
+        tail.fullmatch("/" + p) for p in PROTECTED_PATHS
     ):
         return True
     if recursive:
         ancestors = {posixpath.dirname(t) for t in targets}
         return any(
-            pattern.fullmatch(a.rstrip("/")) or suffix.fullmatch(posixpath.basename(a))
-            for a in ancestors
+            pattern.fullmatch(a) or tail.fullmatch("/" + posixpath.basename(a)) for a in ancestors
         )
+    return False
+
+
+def _names_protected_text(word):
+    """A protected path in a substitution's own text, each token normalised (`$(echo .claude/./settings.json)`)."""
+    for token in re.split(r"[\s()`'\"$;|&<>]+", word):
+        if token and _is_protected(posixpath.normpath("/" + token)):
+            return True
     return False
 
 
@@ -321,10 +375,13 @@ def names_by_run(cmd, cwd):
         for word in _operand_words(run_):
             if word.startswith("-") or word == "":
                 continue
-            if ("$(" in word or "`" in word) and re.search(PROTECTED, word):
+            if ("$(" in word or "`" in word) and _names_protected_text(word):
                 return True
             if _unjudgeable(word, base, root, recursive):
                 return True
+            # A word with an unevaluated part is `_unjudgeable`'s alone: `normpath` would pop the substitution's source text as one segment.
+            if _wildcarded(word) is not None:
+                continue
             path = _resolve(word, base)
             if _is_protected(path) or (recursive and _holds_protected(path, root)):
                 return True

@@ -905,6 +905,77 @@ STATIC: list[Case] = [
         bash_json('rm -rf "$S/w2clone"'),
         "protected-files CONTROL: a recursive rm of an unrelated directory under a variable",
     ),
+    # Review cd8ccb11.1-.2: a wildcarded operand is normalised segment by segment (`.` dropped, `//` collapsed, `..` popping a literal segment, a `..` popping a substitution reaching anything under the literal prefix). Each refusal but the literal row was allowed (rc 0) before, and the third control was refused.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/./$(echo settings.json)"),
+        "protected-files: a ./ segment before a substitution",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude//$(echo settings.json)"),
+        "protected-files: a doubled slash before a substitution",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/x/../$(echo settings.json)"),
+        "protected-files: a .. popping a literal segment before a substitution",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm $(echo .claude)/./settings.json"),
+        "protected-files: a ./ segment after a substitution",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm -rf "$D"/.claude/..'),
+        "protected-files: a recursive rm whose .. pops the protected directory under a variable",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm -rf .claude/$(echo x)/.."),
+        "protected-files: a recursive rm whose .. pops a substitution under the protected directory",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/$(echo x)/../settings.json"),
+        "protected-files: a .. popping a substitution back onto the protected file",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm "$(echo .claude/./settings.json)"'),
+        "protected-files: a substitution printing an unnormalised protected path",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm -rf .claude/x/.."),
+        "protected-files: a recursive rm of a literal path that normalises to the protected directory",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm "$(mktemp -d)"/../x.log'),
+        "protected-files CONTROL: a .. popping a substitution beside an unrelated file",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm -rf ./$(echo build)/.."),
+        "protected-files: a recursive rm whose .. pops a substitution back onto the project root",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm ./$(echo build)/out.txt"),
+        "protected-files CONTROL: a ./ substitution path with no protected segment",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm -rf "$(mktemp -d)"/..'),
+        "protected-files CONTROL: a recursive rm whose .. pops an unknown absolute substitution",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm .claude/./$(echo tmp)/x.log"),
+        "protected-files CONTROL: a ./ protected-directory path that cannot reach a protected file",
+    ),
     # A prefix command's option VALUE is not the command (cac47d16.1 sweep, shellscan._prefix_option): each refusal was allowed (rc 0) before, the value read as the command.
     case(
         "check 2 guards/block_protected_files.py",
