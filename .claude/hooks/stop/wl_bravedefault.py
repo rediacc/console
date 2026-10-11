@@ -192,6 +192,11 @@ question, and never one of the four operator-only acts above.
 
 Set applicable=false only when there is genuinely no `[?]` with a `DEFAULT:`
 in the list above, or when every one of them already commits to an action.
+A default commits to an action only when its own words name the act it will
+perform. One that waits, sits, stays put or keeps things as they are does
+not, whatever verbs it uses, and neither does one that hints the act will come
+after the wait without naming it ("first", "for now", "until then"). Such an
+item IS applicable: answer about it with changes_state false.
 """
 
 

@@ -15,9 +15,11 @@ WHAT IS DENIED, AND WHY NOT EVERYTHING. The failure is silent truncation, so the
 
 Appends are deliberately allowed: `>>` and `tee -a` cannot delete a history appendix, and appending to it is a normal, sanctioned thing to do. Reads are untouched. So is `worklist.py --roundlog` itself, which is the whole point of having somewhere to send people.
 
+JUDGED ON WHAT RUNS, NOT ON THE TEXT (worklist #0c331972). Every verb arm used to be a regex over the raw command, anchored to `(^|[;|&])`, so a separator or a `|` INSIDE a quoted sentence was a command position: `echo 'echo x | tee --output-error=warn agent/pr-babysit-0831-1.md'` was refused as a truncation. The arms now read the shell's own walk: the redirects bash performs with their operator (`>` truncates, `>>` appends), the verbs it runs (`tee`, `cp`, `mv`, `truncate`, `dd`, `sed -i`, each read off its argv, behind `sudo`, `xargs`, `sh -c` or `find -exec`), and the program texts it hands an interpreter (`block_worktree_add.interpreter_programs`). The `--roundlog` carve-out is gone with the text matching: the verb is a `worklist.py` run that writes nothing the walk can see, so it passes on its own, and the whole-line glob that exempted it also exempted `worklist.py --roundlog x; mv <log> /tmp/` (rc 0 at HEAD 306285231), a truncation riding on the verb's name.
+
 FAILS OPEN. This matches on a path shape plus a write verb; anything it does not recognise runs. A guard that blocked on suspicion would be routed around, and being routed around is worse than a named residual.
 
-NAMED RESIDUAL, not pretended away: a write whose path is ASSEMBLED at runtime (a variable holding the filename, a shell glob that expands to it) is invisible here, exactly as it is to every other command-text guard in this directory. The verb's own success line is the backstop for that case: it reports the bytes kept above and below STATUS, so a session that used the verb can SEE
+NAMED RESIDUAL, not pretended away: a write whose path is ASSEMBLED at runtime is partly invisible here. A verb's operand set by an earlier statement of the same command (`F=<log>; mv $F /tmp/`) is read as bash expands it; a REDIRECT onto such a variable (`> $F`), a value from the environment, and a shell glob that expands to the log are not, because the walk keeps a redirect target unexpanded. The verb's own success line is the backstop for that case: it reports the bytes kept above and below STATUS, so a session that used the verb can SEE
 the appendix survived, and a session that bypassed it has no such line to point at.
 
 =============================================================================
@@ -31,17 +33,25 @@ failing loudly, because it made the line look tested when the controls were pass
 as an array subscript to shellcheck (SC1087, an error not a warning), and here the bracket opens a character class in the regex rather than an index. Python has no such ambiguity, which is why the braces are gone and the reason is not.
 """
 
-from rediacc_hooks import hookio
+import re
+
+from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.guards import block_worktree_add as WT
 
 CHAIN = "pre-bash"
 ORDER = 31
 
-# The `--roundlog` carve-out. The verb IS the sanctioned path, and without this line the guard refuses the one command it spends its message telling people to use, which is the shape its own header calls "a guard that gets routed around".
-DEFECT = ('if hookio.case_glob(cmd, "*worklist.py*--roundlog*"):', "if False:")
+# THE APPEND EXEMPTION. `>>` cannot truncate, and appending to the history is the sanctioned way to add to it; planting `>>` among the truncating operators refuses every append, which is the over-block the module docstring says gets a guard routed around.
+DEFECT = (
+    'TRUNCATING_OPS = frozenset((">", ">|", "&>", ">&"))',
+    'TRUNCATING_OPS = frozenset((">", ">|", "&>", ">&", ">>"))',
+)
 
-# A round-log path. Anchored into every verb pattern below rather than tested separately, which is the 2026-08 finding this file records twice.
+# The redirect operators that open their target from byte zero. `>>`, `&>>` and `<>` keep what is there.
+TRUNCATING_OPS = frozenset((">", ">|", "&>", ">&"))
+
+# A round-log path. A target is a round log when its BASENAME is one and not a briefing (`_is_log`), which is the 2026-08 anchoring finding this file records twice carried to the walk: the verb and the path are one run, never two words on a line.
 RL = r"pr-babysit-[A-Za-z0-9._-]+\.md"
-SEG = r"[^;|&]*"
 BRIEFING = r"pr-babysit-[A-Za-z0-9._-]+-briefing\.md"
 
 MESSAGE = (
@@ -69,6 +79,29 @@ EDGE_CASES = [
         'echo "see --roundlog" > agent/pr-babysit-0831-1.md',
     ),
     ("a briefing has its own contract", "cat > agent/pr-babysit-0831-1-briefing.md"),
+    # #0c331972: text no shell runs is a sentence, and every write that runs is still one.
+    (
+        "an echo quoting a truncating tee",
+        "echo 'echo x | tee --output-error=warn agent/pr-babysit-0831-1.md'",
+    ),
+    (
+        "a commit message quoting a mv",
+        "git commit -m 'never mv agent/pr-babysit-0831-1.md' -- a.md",
+    ),
+    (
+        "the verb's own heredoc may name the log and a redirect",
+        ".claude/hooks/stop/worklist.py --roundlog 0831-1 <<'EOF'\nsee > agent/pr-babysit-0831-1.md\nEOF",
+    ),
+    ("a truncating redirect inside sh -c", "sh -c 'echo x > agent/pr-babysit-0831-1.md'"),
+    ("sudo tee truncates", "echo x | sudo tee agent/pr-babysit-0831-1.md"),
+    ("xargs truncate", "echo agent/pr-babysit-0831-1.md | xargs truncate -s 0"),
+    (
+        "a briefing beside a log write is no exemption",
+        "cat agent/pr-babysit-0831-1-briefing.md > agent/pr-babysit-0831-1.md",
+    ),
+    ("a verb operand set by an earlier statement", "F=agent/pr-babysit-0831-1.md; mv $F /tmp/"),
+    ("cp -t a backup directory is a read", "cp -t /backup agent/pr-babysit-0831-1.md"),
+    ("a here-string python write", "python3 <<< \"open('agent/pr-babysit-0831-1.md', 'w')\""),
     # Appends cannot truncate, so they pass.
     ("append redirection", "echo x >> agent/pr-babysit-0831-1.md"),
     ("tee -a", "echo x | tee -a agent/pr-babysit-0831-1.md"),
@@ -110,102 +143,116 @@ EDGE_CASES = [
 ]
 
 
+def _is_log(path):
+    """A round-log path, by its basename; a briefing has its own contract."""
+    base = path.rsplit("/", 1)[-1]
+    return re.fullmatch(RL, base) is not None and re.fullmatch(BRIEFING, base) is None
+
+
+def _copy_destination(args):
+    """`cp`'s destination: the `-t` directory when given, else the last operand. A directory destination is judged as the directory, with or without `-t`, which is how the arm always read `cp <log> /backup/`: copying INTO a directory never names the log as the file written."""
+    target = None
+    words = []
+    i = 0
+    while i < len(args):
+        word = args[i]
+        i += 1
+        if word == "--":
+            words.extend(args[i:])
+            break
+        if word.startswith("--target-directory="):
+            target = word.split("=", 1)[1]
+        elif word in ("-t", "--target-directory", "-S", "--suffix"):
+            if word in ("-t", "--target-directory") and i < len(args):
+                target = args[i]
+            i += 1
+        elif word.startswith("-t") and len(word) > 2:
+            target = word[2:]
+        elif not (word.startswith("-") and len(word) > 1):
+            words.append(word)
+    if target is not None:
+        return [target]
+    return words[-1:] if len(words) >= 2 else []
+
+
+def _appends(args):
+    """`tee -a`, `--append`, or a bundle holding `a` (`-ia`). `--output-error=warn` is not one: the arm was once fooled by the `a` in `warn`."""
+    return any(
+        a == "--append" or re.fullmatch(r"-[A-Za-z]*a[A-Za-z]*", a) is not None for a in args
+    )
+
+
+def _verb_truncates(run_):
+    """Does this run's verb replace a round log wholesale? `mv` and `truncate` on any operand, `cp` onto its destination, `dd of=`, `sed -i`, and `tee` without an append flag. xargs appends its input as operands, so the fed words count as operands."""
+    base = run_.name.rsplit("/", 1)[-1]
+    # The words as bash hands them over (`_Run.xargv`): `F=<log>; mv $F /tmp/` names the log through a variable an earlier statement set.
+    args = list(run_.argv if run_.xargv is None else run_.xargv)
+    operands = [a for a in args if not (a.startswith("-") and len(a) > 1)]
+    if "xargs" in run_.via and run_.feed:
+        operands += run_.feed.split()
+    if base in ("mv", "truncate"):
+        hits = operands
+    elif base == "cp":
+        hits = _copy_destination(args)
+    elif base == "dd":
+        hits = [a[3:] for a in args if a.startswith("of=")]
+    elif base == "sed":
+        in_place = any(
+            a.startswith("--in-place")
+            or (not a.startswith("--") and a.startswith("-") and "i" in a[1:])
+            for a in args
+        )
+        hits = operands if in_place else []
+    elif base == "tee":
+        hits = [] if _appends(args) else operands
+    else:
+        hits = []
+    return any(_is_log(h) for h in hits)
+
+
+def _program_truncates(code):
+    """Does an interpreter program write a round log, or write a target it never names?
+
+    THE PYTHON ARM MUST TEST THE TARGET, NOT JUST THE IDIOM. A heredoc editing an unrelated file whose CONTENT quotes a round-log path matched every time when this was an unconditional idiom test (measured 2026-08-27, refusing an edit to a scratchpad state-body file). So the write target is resolved the way python spells one -- assigned to a name, or handed to open()/Path() -- and every quoted path inside a copy/move call counts too, since only the destination truncates and telling the two apart by position across copy/copyfile/copy2/move/replace/rename is fragile. FAIL CLOSED when no target resolves: that unidentifiable shape is `p.write_text(s[:i] + new)`, which destroyed the round history on 2026-08-19.
+
+    shutil/os MOVE AND COPY COUNT AS WRITES. Measured 2026-08-27: shutil.copy and os.replace onto a round log both returned 0 from this guard, because the arm triggered only on write_text and open(...,"w"). Each of them overwrites the file completely.
+    """
+    if not hookio.grep_q_line(
+        r"write_text|open\([^)]*[\"']w|shutil\.(copy|copyfile|copy2|move)|os\.(replace|rename)",
+        code,
+    ):
+        return False
+    candidates = []
+    for match in hookio.grep_o(
+        r"(=|open\(|Path\()[" + hookio.BLANK + r"]*[\"'][^\"']+\.md", hookio._here_string(code)
+    ):
+        candidates.extend(hookio.grep_o(r"[A-Za-z0-9_./-]+\.md", match))
+    for match in hookio.grep_o(
+        r"(shutil\.(copy|copyfile|copy2|move)|os\.(replace|rename))\([^)]*",
+        hookio._here_string(code),
+    ):
+        candidates.extend(hookio.grep_o(r"[A-Za-z0-9_./-]+\.md", match))
+    return not candidates or any(_is_log(c) for c in candidates)
+
+
 def run(ev):
     cmd = ev.field("tool_input", "command")
 
-    # The verb is the sanctioned path; never block it.
-    #
-    # NARROWED 2026-09-06 TO FOLLOW THE TWIN, which was itself narrowed that day
-    # from `*--roundlog*` because a whole-command substring match is a bypass
-    # rather than an exemption. The twin's own measurement:
-    #
-    # echo "see --roundlog" > agent/pr-babysit-0831-1.md -> ALLOWED echo hi > agent/pr-babysit-0831-1.md -> BLOCKED
-    #
-    # Both truncate the same file; the first differs only by naming the flag inside a string it is writing, which is the easiest thing in the world to do by accident when the payload is prose ABOUT the round-log workflow. The exemption now requires the flag to be an ARGUMENT TO worklist.py, in that order, which is what actually makes a command the sanctioned path.
-    #
-    # THIS PORT LAGGED THE TWIN BY A DAY and the differential is what caught it, not review: the old wide carve-out was documented here as deliberate ("the port's job is to agree with its twin"), which was true when written and false the moment the twin moved.
-    if hookio.case_glob(cmd, "*worklist.py*--roundlog*"):
-        return hookio.ALLOW
-
-    # A round-log path must appear at all. Briefings have their own contract and are not this hook's business.
+    # A round-log path must appear at all, which is also what keeps the walk below off every command that cannot touch one.
     if not hookio.grep_q_line(RL, cmd):
         return hookio.ALLOW
-    if hookio.grep_q_line(BRIEFING, cmd):
-        return hookio.ALLOW
 
-    # Appends first: `>>` and `tee -a` cannot truncate, so if the only write shape present is an append, let it through. EVERY shell verb below is ANCHORED TO THE LOG: the verb, then the path, with no `;` `&&` `||` or `|` between them, so the two are genuinely one command.
-    #
-    # THE UNANCHORED FORM WAS A REAL DEFECT, caught in review and then reproduced twice against this very hook within minutes. `truncate` matched this script's OWN filename, so `ls .../block-roundlog-trunc*.sh` next to a round-log read was blocked; and a bare `cp`/`mv` matched a copy of unrelated files that merely shared a command line with a round-log READ. A guard that blocks
-    # `cat <log>` is not strict, it is broken, and its own header argues that a guard which blocks legitimate work teaches people to route around it.
-    truncating = False
-
-    # `>` that is not `>>` and not `2>&1`-style fd plumbing, aimed at the log.
-    if hookio.grep_q_line(hookio.rx(r"[^>&2]>[{B}]*[^>|&{B}]*") + RL, cmd):
-        truncating = True
-    # cp with the log as DESTINATION, i.e. the LAST argument of that segment. `cp <log> /backup/` names the log as a SOURCE, which is a pure read, and blocking it contradicted this file's own "reads are untouched" guarantee two paragraphs up. Backing the log up is the single most useful thing a session can do with it, and this refused it.
-    if hookio.grep_q_line(
-        hookio.rx(r"(^|[{B};|&])cp[{B}]") + SEG + RL + hookio.rx(r"[{B}]*($|[;|&])"),
-        cmd,
-    ):
-        truncating = True
-    # mv and truncate stay position-independent, and NOT by oversight: `mv <log> elsewhere` reads as a source too, but it REMOVES the log from its path, so unlike cp it is destructive in exactly the way this guard exists to catch.
-    if hookio.grep_q_line(hookio.rx(r"(^|[{B};|&])(mv|truncate)[{B}]") + SEG + RL, cmd):
-        truncating = True
-    if hookio.grep_q_line(hookio.rx(r"(^|[{B};|&])dd[{B}]") + SEG + r"of=" + SEG + RL, cmd):
-        truncating = True
-    # sed -i on the log, with any flags before the -i.
-    if hookio.grep_q_line(
-        hookio.rx(r"sed[{B}]+(-[^{B}]+[{B}]+)*-i") + SEG + RL,
-        cmd,
-    ):
-        truncating = True
-    # tee onto the log WITHOUT -a. See the module docstring for the two ways this
-    # was wrong: `-[^[:space:]]*a` matched `--output-error=warn`, and an unscoped
-    # test passed on a decoy append to an unrelated file.
-    tee_matches = hookio.grep_o(
-        hookio.rx(r"(^|[{B};|&])tee[{B}]") + SEG + RL,
-        hookio._here_string(cmd),
+    # The redirects bash performs, with their operator: `>` truncates, `>>` appends (`2>&1`-style descriptor plumbing names no file).
+    truncating = any(
+        op in TRUNCATING_OPS and _is_log(target) and not re.fullmatch(r"\d+|-", target)
+        for op, target in shellscan._analyse(cmd).writes
     )
-    if tee_matches:
-        tee_seg = tee_matches[-1]
-        if not hookio.grep_q_line(
-            hookio.rx(r"[{B}](--append|-[A-Za-z]*a[A-Za-z]*)([{B}]|$)"),
-            tee_seg,
-        ):
-            truncating = True
-
-    # An in-process write from python or node. NOT anchorable the way the shell verbs are: the 2026-08-19 incident was a heredoc where the path sat on a DIFFERENT LINE from the write call, so demanding both inside one shell segment would miss precisely the shape this hook exists for. NAMED RESIDUAL: a script that writes some OTHER file while merely mentioning a round-log path is
-    # still blocked here. That is the one over-block left standing, and it is deliberate: this is the exact shape that destroyed the appendix.
-    #
-    # THE PYTHON ARM MUST TEST THE TARGET, NOT JUST THE IDIOM.
-    #
-    # This used to be an unconditional `grep write_text|open(...,'w') && TRUNCATING=1`.
-    # Reaching here already means a round-log NAME appears somewhere in the command (the gate above), but a name is not a target: a heredoc editing an unrelated file whose CONTENT quotes a round-log path matched every time. Measured 2026-08-27, refusing an edit to a scratchpad state-body file that could not have touched a round log.
-    #
-    # So resolve the write target the way python actually spells one -- assigned to a name, or handed to open()/Path() -- and fire only when it IS a round log. FAIL CLOSED when no target can be resolved: that unidentifiable shape is precisely `p.write_text(s[:i] + new)`, which is what destroyed the round history on 2026-08-19 and is the reason this guard exists. shutil/os MOVE AND
-    # COPY COUNT AS WRITES. Measured 2026-08-27: shutil.copy and os.replace onto a round log both returned 0 from this guard, because the arm below triggered only on write_text and open(...,"w"). Each of them overwrites the file completely. The shell half has covered `cp` and `mv` onto a round log
-    # from the start; these are their python spelling, and their absence made the
-    # guard read as thorough while a one-line rename walked through it.
-    if hookio.grep_q_line(
-        r"write_text|open\([^)]*[\"']w|shutil\.(copy|copyfile|copy2|move)|os\.(replace|rename)",
-        cmd,
-    ):
-        # Candidates come from an assignment/open()/Path() position AND from every quoted path inside a copy/move call. A copy names a source and a destination and only the destination truncates, but telling them apart by position across copy/copyfile/copy2/move/replace/rename is fragile, and taking both is strictly safer: a call with a round log on either side is not something to
-        # wave through. Two innocent paths still pass, which is what stops this becoming a blanket refusal.
-        candidates = []
-        for match in hookio.grep_o(
-            r"(=|open\(|Path\()[" + hookio.BLANK + r"]*[\"'][^\"']+\.md", hookio._here_string(cmd)
-        ):
-            candidates.extend(hookio.grep_o(r"[A-Za-z0-9_./-]+\.md", match))
-        for match in hookio.grep_o(
-            r"(shutil\.(copy|copyfile|copy2|move)|os\.(replace|rename))\([^)]*",
-            hookio._here_string(cmd),
-        ):
-            candidates.extend(hookio.grep_o(r"[A-Za-z0-9_./-]+\.md", match))
-        # `| sort -u`: sorted AND deduplicated, then joined by newlines, and the command substitution around it drops the trailing newline.
-        pytarget = hookio._command_substitution(hookio._grep_out(sorted(set(candidates))))
-        if pytarget == "" or hookio.grep_q_line(RL, pytarget):
-            truncating = True
+    # The verbs it runs, behind any prefix, xargs, sh -c or find -exec.
+    truncating = truncating or any(_verb_truncates(r) for r in shellscan.every_run(cmd))
+    # An in-process write from python, node, perl or ruby. NOT anchorable the way the shell verbs are: the 2026-08-19 incident was a heredoc where the path sat on a DIFFERENT LINE from the write call. NAMED RESIDUAL: a program that writes an UNNAMED target while the command merely mentions a round-log path elsewhere is still refused; that is the one over-block left standing, and it is deliberate, because it is the exact shape that destroyed the appendix.
+    truncating = truncating or any(
+        _program_truncates(code) for _family, code in WT.interpreter_programs(cmd)
+    )
 
     if not truncating:
         return hookio.ALLOW

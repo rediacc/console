@@ -164,10 +164,6 @@ FRAGMENTS: dict[tuple[str, str], str] = {
         "BLOCKER: a `$name`/`${name}` expansion parser used by `.sub()` to substitute assigned values into the commit "
         "text before linting; it rewrites text and decides nothing itself."
     ),
-    ("block_roundlog_truncate.py", "SEG"): (
-        "BLOCKER: `[^;|&]*`, the in-clause gap concatenated between an inline verb pattern and the round-log path; it "
-        "matches any text and has no word, so only the composed patterns could be probed."
-    ),
     ("block_suppressions_shell_write.py", "_SED_SUB"): (
         "BLOCKER: parses a sed `s<d>pat<d>rep<d>` expression from argv of an in-place sed already aimed at a suppression "
         "file; the delimiter is any punctuation, so there is no literal word to mention."

@@ -27,9 +27,11 @@ MESSAGE = (
     "handles provisioning automatically."
 )
 
-# The renet binary specifically, however it gets there. ANCHORED TO COMMAND POSITION 2026-08-28, after check:ci-guard-mention-anchoring found this guard refusing an ordinary sentence. Matching the phrase ANYWHERE means a doc line, a worklist note or an `echo` explaining the rule is refused as if it were the rule being broken. This NARROWS PROSE ONLY: every control below still
-# blocks the real command, at line start and after a separator.
-SUDO_CP = hookio.rx(r"(^|[;&|(])[{B}]*sudo cp[^;&|]*/usr/local/bin/renet")
+# The renet binary specifically, however it gets there. JUDGED ON THE cp RUN, NOT THE TEXT (worklist #0c331972). The 2026-08-28 command-position anchor `(^|[;&|(])sudo cp` still read raw text, so a separator INSIDE a quoted sentence was a command position: `echo 'true; sudo cp renet /usr/local/bin/renet'` was refused as a deploy. A deploy is a `cp` that `sudo` runs (`_Run.via`, so `sudo -u root cp`, `xargs`, `sh -c` and `find -exec` all reach it) whose DESTINATION is the installed binary: the last operand, or the `-t`/`--target-directory` directory with a `renet` source. A cp that only READS the installed binary (`sudo cp /usr/local/bin/renet /tmp/bak`) is a backup, the cp twin of the scp download below.
+INSTALLED = "/usr/local/bin/renet"
+# GNU cp's options that take the next word as their value.
+CP_VALUE_OPTS = frozenset(("-t", "--target-directory", "-S", "--suffix"))
+
 
 # EVERY scp RUN, WHATEVER LAUNCHED IT (review a2d44aa4.1, #ecb59527). The guard once matched `scp` after any blank in the raw text, so a sentence naming scp was refused as an upload. Then it matched only at command position with the launchers listed by hand, which let `xargs scp bin/renet host:/p` and `find . -exec scp {} host:/p \;` through. It now asks shellscan for every run the shell would start (`every_run`: the prefix commands stripped, `xargs`, `find -exec`, `npx`, `sh -c` and command substitutions walked) and judges each one named scp by its destination. A sentence that names scp is an `echo` or `git` run, so it never reaches the test.
 
@@ -50,6 +52,15 @@ EDGE_CASES = [
         "prose naming the rule is not the rule being broken",
         "echo 'never sudo cp renet /usr/local/bin/renet'",
     ),
+    # #0c331972: a separator inside quotes is not a command position, and every real spelling still reaches the cp run.
+    ("a quoted separator is prose", "echo 'true; sudo cp renet /usr/local/bin/renet'"),
+    ("sudo with an option", "sudo -u root cp renet /usr/local/bin/renet"),
+    ("sudo cp inside sh -c", "sh -c 'sudo cp bin/renet /usr/local/bin/renet'"),
+    ("sudo cp into the directory", "sudo cp bin/renet /usr/local/bin/"),
+    ("sudo cp -t the directory", "sudo cp -t /usr/local/bin bin/renet"),
+    ("backing up the installed binary is a read", "sudo cp /usr/local/bin/renet /tmp/renet.bak"),
+    ("xargs feeds the source", "echo bin/renet | sudo xargs cp -t /usr/local/bin"),
+    ("sudo cp of another binary", "sudo cp bin/rdc /usr/local/bin/rdc"),
     ("scp in a later clause of a chain", "echo hi && scp bin/renet host:/tmp/renet"),
     # Command position, not a blank (#ecb59527). Every launcher a real upload can hide behind still reaches the host-spec test, and a sentence that merely names scp does not.
     ("sudo still reaches the upload", "sudo scp bin/renet root@10.0.0.1:/p"),
@@ -118,16 +129,60 @@ def _scp_operands(args):
     return operands
 
 
+def _cp_target(args):
+    """`(destination, sources, into a directory)` for a GNU cp argv: the `-t` directory when one is given, else the last operand."""
+    target = None
+    operands = []
+    i = 0
+    while i < len(args):
+        word = args[i]
+        i += 1
+        if word == "--":
+            operands.extend(args[i:])
+            break
+        if word.startswith("--target-directory="):
+            target = word.split("=", 1)[1]
+        elif word in CP_VALUE_OPTS:
+            if word in ("-t", "--target-directory") and i < len(args):
+                target = args[i]
+            i += 1
+        elif word.startswith("-t") and len(word) > 2:
+            target = word[2:]
+        elif not (word.startswith("-") and len(word) > 1):
+            operands.append(word)
+    if target is not None:
+        return target, operands, True
+    if len(operands) < 2:
+        return None, operands, False
+    return operands[-1], operands[:-1], False
+
+
+def _sudo_cp_deploy(run_):
+    """Is this a `sudo cp` whose destination is the installed renet binary, named as the file or as its directory with a `renet` source?"""
+    if run_.name.rsplit("/", 1)[-1] != "cp" or "sudo" not in run_.via:
+        return False
+    dest, sources, into_dir = _cp_target(run_.argv if run_.xargv is None else run_.xargv)
+    if dest is None:
+        return False
+    if not into_dir and dest.rstrip("/") == INSTALLED:
+        return True
+    if dest.rstrip("/") == INSTALLED.rsplit("/", 1)[0]:
+        # xargs appends its input as more sources (`echo bin/renet | sudo xargs cp -t <dir>`), so the fed words count as sources too.
+        if "xargs" in run_.via and run_.feed:
+            sources = [*sources, *run_.feed.split()]
+        return any(src.rstrip("/").rsplit("/", 1)[-1] == "renet" for src in sources)
+    return False
+
+
 def run(ev):
     cmd = ev.raw("tool_input", "command")
     if cmd == "":
         return hookio.ALLOW
 
-    if hookio.grep_q(SUDO_CP, cmd):
-        ev.warn(MESSAGE)
-        return hookio.DENY
-
     for run_ in shellscan.every_run(cmd):
+        if _sudo_cp_deploy(run_):
+            ev.warn(MESSAGE)
+            return hookio.DENY
         if run_.name.rsplit("/", 1)[-1] != "scp":
             continue
         args = run_.argv if run_.xargv is None else run_.xargv

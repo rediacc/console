@@ -1,15 +1,15 @@
 {
   "rubrics": {
     "BRAVE_PROMPT": {
-      "calibrated": "2026-10-09",
-      "note": "Re-measured 2026-10-09 (review 18700a76.4) with the text unchanged and the fixtures held out: the four fire fixtures were the measured defaults this prompt quotes as its examples, one of them with its question and answer, so each is now the same defect reworded. The 'default that acts' control read 'land it on the open PR', a commit and a push the prompt says a default never orders, and fired on one full run in four (-fix4g.log); it now names an uncommitted write. Three full runs over the final fixtures matched 18/18 (.ci/cache/calibrate-20261009-fix4h.log, -fix4i.log, -fix4j.log).",
-      "sha": "03ba09e5eb7343e2"
+      "calibrated": "2026-10-11",
+      "note": "Re-calibrated 2026-10-11 (#20a3802a). On the unchanged text the held-out fixtures missed one run in two (lead7a, lead7d), both as applicable=false: the rewordings dropped the rubric's own inaction verbs and gained words that read as an act after the wait ('for now', 'first'). The applicability clause now says a default commits only when its own words name the act, and that a wait hinting at a later act is applicable. Fixtures unchanged. Five consecutive full runs matched 20/20 (.ci/cache/calibrate-20261011-w4a..e.log).",
+      "sha": "2c151b76f282ed80"
     },
     "REGGATE_PROMPT": {
-      "calibrated": "2026-10-09",
-      "note": "Measured only through the sweep fixtures, which run in one prompt with SWEEP_PROMPT, so `rides` records the SWEEP_PROMPT text of the same runs and the gate refuses this pass once that text moves (review 18700a76.5). Re-measured with SWEEP_PROMPT bb6fe194c884ae4d: the 11 sweep fixtures matched in all four runs (.ci/cache/calibrate-20261009-lead7a..d.log).",
+      "calibrated": "2026-10-11",
+      "note": "Measured only through the sweep fixtures, which run in one prompt with SWEEP_PROMPT, so `rides` records the SWEEP_PROMPT text of the same runs and the gate refuses this pass once that text moves (review 18700a76.5). Re-measured 2026-10-11 with SWEEP_PROMPT 3ea7dd46e2cbab7d and its own text unchanged: the 11 sweep fixtures matched in all five runs (.ci/cache/calibrate-20261011-w4a..e.log).",
       "rides": {
-        "SWEEP_PROMPT": "bb6fe194c884ae4d"
+        "SWEEP_PROMPT": "3ea7dd46e2cbab7d"
       },
       "sha": "2b8cbd5b3ccdd640"
     },
@@ -19,12 +19,12 @@
       "sha": "3566612d3c625e41"
     },
     "SWEEP_PROMPT": {
-      "calibrated": "2026-10-09",
-      "note": "Re-calibrated 2026-10-09 (reviews 18700a76.1, fdb82cba.4, 071b7987.2). A guard has two places to sweep, its own other input paths and the other guards; a statement that the guard has no other path covers that half only when it NAMES the input, and fixtures pin both the named and the bare form. Four full runs (.ci/cache/calibrate-20261009-lead7a..d.log): all 11 sweep fixtures matched in every run; runs a and d each missed one BRAVE held-out fixture on an unchanged BRAVE_PROMPT, tracked as its own item. `rides` records REGGATE_PROMPT, which shares the prompt.",
+      "calibrated": "2026-10-11",
+      "note": "Re-calibrated 2026-10-11 (reviews 752b9e50.1-.3). The two-places paragraph is reflowed, a named input may be any concrete part, and the naming has to sit in the single-input statement itself. The bare-claim fire fixture now claims one input without naming it, and the judge fired on it about half the time (-w4pre1.log, -w4pre2.log), so a guard's swept=true now needs one quote per place. The round-log control names every arm the guard has. Five consecutive full runs matched 20/20 (.ci/cache/calibrate-20261011-w4a..e.log). `rides` records REGGATE_PROMPT, which shares the prompt.",
       "rides": {
         "REGGATE_PROMPT": "2b8cbd5b3ccdd640"
       },
-      "sha": "bb6fe194c884ae4d"
+      "sha": "3ea7dd46e2cbab7d"
     }
   }
 }
