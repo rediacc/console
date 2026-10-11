@@ -496,44 +496,55 @@ def test_the_growth_check_fires_on_a_plant_and_not_on_the_baseline() -> None:
 # THE CORPUS is every non-docstring string constant under `.ci/rediacc_ci` (tests excluded: a test builds its own command lines), plus the docstring of every module whose code reads `__doc__`, because that docstring is printed as help (`release_state_validator`, `silent_failure_patterns`, `linode_cluster_validation`, ...). A docstring nothing prints is prose about the module and is not judged.
 
 PRINTED_ROOT = ".ci/rediacc_ci"
-BARE_M = re.compile(r"(?<!PYTHONPATH=\.ci )python3 -m (rediacc_ci(?:\.\w+)+)")
-RUNNABLE_M = re.compile(r"((?:[A-Z_]+=\S+ )*)PYTHONPATH=\.ci python3 -m (rediacc_ci(?:\.\w+)+)")
+# EVERY INTERPRETER SPELLING, not only `python3` (review findings f6733156.1 and f6733156.3): `python`, `python3`, `python3.N`, each optionally behind a path (`/usr/bin/python3`, `.venv/bin/python`), and the package itself (`-m rediacc_ci`) as well as a dotted module. Each fails the same way from the repository root.
+INTERPRETER = r"(?:[\w.~/-]*/)?python(?:3(?:\.\d+)?)?"
+BARE_M = re.compile(r"(?<![\w./~-])(?<!PYTHONPATH=\.ci )%s -m (rediacc_ci(?:\.\w+)*)" % INTERPRETER)
+RUNNABLE_M = re.compile(
+    r"((?:[A-Z_]+=\S+ )*)PYTHONPATH=\.ci (%s) -m (rediacc_ci(?:\.\w+)*)" % INTERPRETER
+)
 
-#: (module path, a fragment of the string constant) -> why that `python3 -m` text is not a command printed for a reader to run.
-NOT_A_PRINTED_COMMAND = {
-    (
-        ".ci/rediacc_ci/ci/gate_ledger.py",
-        "backfill --export <dir>",
-    ): "the manifest's `generated_by` record of what wrote the export, data a reader parses, not a line printed to run",
-    (
-        ".ci/rediacc_ci/proxies/ensure_nfpm.py",
-        'PATH="$(python3 -m rediacc_ci.build.ensure_nfpm)',
-    ): "quotes the callers' own shell line, which runs where the workflow already exports PYTHONPATH",
+#: (module path, a fragment of the string constant) -> (how many bare commands the strings carrying that fragment hold, why they are not commands printed for a reader to run). THE COUNT IS PART OF THE KEY (review finding f6733156.2): a fragment alone exempted every string in the module that carried it, so a new bare line added inside one of those strings passed in silence. A count that moves either way is red.
+NOT_A_PRINTED_COMMAND: dict[tuple[str, str], tuple[int, str]] = {
+    (".ci/rediacc_ci/ci/gate_ledger.py", "backfill --export <dir>"): (
+        1,
+        "the manifest's `generated_by` record of what wrote the export, data a reader parses, not a line printed to run",
+    ),
+    (".ci/rediacc_ci/proxies/ensure_nfpm.py", 'PATH="$(python3 -m rediacc_ci.build.ensure_nfpm)'): (
+        1,
+        "quotes the callers' own shell line, which runs where the workflow already exports PYTHONPATH",
+    ),
     (
         ".ci/rediacc_ci/quality/toolchain_pins.py",
         "via `python3 -m rediacc_ci.core.toolchain pairs`",
-    ): "names the workflow line the gate searches for, which must match the workflow text as written",
-    (
-        ".ci/rediacc_ci/quality/toolchain_pins.py",
-        'report >> "$GITHUB_ENV"',
-    ): "a selftest fixture fed to the gate's own regex",
-    (
-        ".ci/rediacc_ci/quality/rdc_native.py",
-        "exec python3 -m rediacc_ci.native",
-    ): "the generated `rdc` shim's body, a selftest fixture compared byte for byte",
-    (
-        ".ci/rediacc_ci/quality/dead_python.py",
-        "rediacc_ci.quality.orphan_mod",
-    ): "a selftest fixture naming a module that exists only in the gate's scratch tree",
-    (
-        ".ci/rediacc_ci/quality/dead_python.py",
-        "rediacc_ci.testrun.orphan_run",
-    ): "a selftest fixture naming a module that exists only in the gate's scratch tree",
+    ): (
+        1,
+        "names the workflow line the gate searches for, which must match the workflow text as written",
+    ),
+    (".ci/rediacc_ci/quality/toolchain_pins.py", 'report >> "$GITHUB_ENV"'): (
+        1,
+        "a selftest fixture fed to the gate's own regex",
+    ),
+    (".ci/rediacc_ci/quality/rdc_native.py", "exec python3 -m rediacc_ci.native"): (
+        2,
+        "the generated `rdc` shim's body, a selftest fixture compared byte for byte",
+    ),
+    (".ci/rediacc_ci/quality/dead_python.py", "rediacc_ci.quality.orphan_mod"): (
+        0,
+        "a selftest fixture naming a module that exists only in the gate's scratch tree (already hop-spelled; kept out of the runnable cases)",
+    ),
+    (".ci/rediacc_ci/quality/dead_python.py", "rediacc_ci.testrun.orphan_run"): (
+        0,
+        "a selftest fixture naming a module that exists only in the gate's scratch tree (already hop-spelled; kept out of the runnable cases)",
+    ),
 }
 
 
-def _exempt(rel: str, text: str) -> bool:
-    return any(r == rel and frag in text for r, frag in NOT_A_PRINTED_COMMAND)
+def _exemption(rel: str, text: str, exemptions: dict) -> tuple[str, str] | None:
+    """The exemption key whose fragment this string carries, or None."""
+    for key in exemptions:
+        if key[0] == rel and key[1] in text:
+            return key
+    return None
 
 
 def _docstring_nodes(tree: ast.AST) -> set[int]:
@@ -572,13 +583,28 @@ def printed_texts(root: pathlib.Path) -> list[tuple[str, int, str]]:
     return out
 
 
-def bare_commands(texts: list[tuple[str, int, str]]) -> list[str]:
-    """`path:line: python3 -m <module>` for every printed text spelling the command without the hop, exemptions aside."""
+def bare_commands(texts: list[tuple[str, int, str]], exemptions: dict | None = None) -> list[str]:
+    """`path:line: <interpreter> -m <module>` for every printed text spelling the command without the hop, plus one line for every exemption whose bare count is not the declared one (a stale exemption included: it counts zero strings)."""
+    exemptions = NOT_A_PRINTED_COMMAND if exemptions is None else exemptions
     bad = []
+    counted = dict.fromkeys(exemptions, 0)
+    seen = dict.fromkeys(exemptions, False)
     for rel, line, text in texts:
-        if _exempt(rel, text):
-            continue
-        bad += ["%s:%d: %s" % (rel, line, m.group(0)) for m in BARE_M.finditer(text)]
+        key = _exemption(rel, text, exemptions)
+        found = ["%s:%d: %s" % (rel, line, m.group(0)) for m in BARE_M.finditer(text)]
+        if key is None:
+            bad += found
+        else:
+            seen[key] = True
+            counted[key] += len(found)
+    for key, (want, _why) in exemptions.items():
+        if not seen[key]:
+            bad.append("%s: exemption %r matches no string any more" % key)
+        elif counted[key] != want:
+            bad.append(
+                "%s: exemption %r covers %d bare command(s), declared %d"
+                % (key[0], key[1], counted[key], want)
+            )
     return bad
 
 
@@ -586,10 +612,10 @@ def runnable_commands(texts: list[tuple[str, int, str]]) -> list[tuple[str, str]
     """(module path, the printed command up to its module) for every hop-spelled command, one per (path, module)."""
     seen: dict[tuple[str, str], str] = {}
     for rel, _line, text in texts:
-        if _exempt(rel, text):
+        if _exemption(rel, text, NOT_A_PRINTED_COMMAND) is not None:
             continue
         for m in RUNNABLE_M.finditer(text):
-            seen.setdefault((rel, m.group(2)), m.group(0))
+            seen.setdefault((rel, m.group(3)), m.group(0))
     return sorted((rel, command) for (rel, _module), command in seen.items())
 
 
@@ -600,18 +626,38 @@ _FIND = "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec(sys.
 
 
 def test_every_printed_python_m_command_spells_the_hop() -> None:
-    """The class pin: a new port that prints `python3 -m rediacc_ci.x` without `PYTHONPATH=.ci` is named here. Control first: the detector fires on a planted bare line and not on the hop spelling, and every exemption still matches a real string."""
+    """The class pin: a new port that prints `python -m`, `python3 -m` or `python3.N -m rediacc_ci...` without `PYTHONPATH=.ci` is named here. Control first: the detector fires on every planted bare spelling and not on the hop spelling, and an exemption whose bare count moves, or that matches nothing, is red."""
     planted = [
         ("x.py", 1, "usage: python3 -m rediacc_ci.a.b <x>"),
         ("x.py", 2, "usage: PYTHONPATH=.ci python3 -m rediacc_ci.a.b"),
+        ("x.py", 3, "usage: PYTHONPATH=.ci python -m rediacc_ci.a.b"),
     ]
-    assert bare_commands(planted) == ["x.py:1: python3 -m rediacc_ci.a.b"]
-    stale = [
-        key
-        for key in NOT_A_PRINTED_COMMAND
-        if not any(r == key[0] and key[1] in t for r, _l, t in _TEXTS)
+    assert bare_commands(planted, {}) == ["x.py:1: python3 -m rediacc_ci.a.b"]
+    # f6733156.1 and .3: every interpreter spelling, behind a path or not, and the bare package.
+    for text, want in (
+        ("run: python -m rediacc_ci.a.b", "python -m rediacc_ci.a.b"),
+        ("run: python3.12 -m rediacc_ci.a.b", "python3.12 -m rediacc_ci.a.b"),
+        ("run: /usr/bin/python3 -m rediacc_ci.a.b", "/usr/bin/python3 -m rediacc_ci.a.b"),
+        ("run: .venv/bin/python -m rediacc_ci.a", ".venv/bin/python -m rediacc_ci.a"),
+        ("run `python3 -m rediacc_ci` first", "python3 -m rediacc_ci"),
+    ):
+        assert bare_commands([("x.py", 1, text)], {}) == ["x.py:1: %s" % want], text
+    for text in (
+        "run: cpython3 -m rediacc_ci.a",
+        "run: PYTHONPATH=.ci python3.12 -m rediacc_ci.a",
+        "python3 -m pytest",
+    ):
+        assert bare_commands([("x.py", 1, text)], {}) == [], text
+    # f6733156.2: an exemption is counted, so a new bare line inside an exempt string is red, and so is a stale one.
+    fixture = {("x.py", "FIXTURE"): (1, "a planted exemption")}
+    assert bare_commands([("x.py", 1, "FIXTURE python3 -m rediacc_ci.a")], fixture) == []
+    grown = bare_commands(
+        [("x.py", 1, "FIXTURE python3 -m rediacc_ci.a\nusage: python -m rediacc_ci.b")], fixture
+    )
+    assert grown == ["x.py: exemption 'FIXTURE' covers 2 bare command(s), declared 1"], grown
+    assert bare_commands([("x.py", 1, "nothing here")], fixture) == [
+        "x.py: exemption 'FIXTURE' matches no string any more"
     ]
-    assert stale == [], "these exemptions match no string any more: %s" % stale
     assert len(_RUNNABLE) >= 40, (
         "CONTROL: only %d printed commands found; the corpus is not being read" % len(_RUNNABLE)
     )
@@ -627,7 +673,7 @@ def test_every_printed_python_m_command_runs_from_the_repository_root(
     """Each printed command, split the way `twin_names.usage_command` splits a usage line, finds its module from the repository root under the environment it spells. The module is located, not run: running every printed command would start e2e suites and deploys. Control first: without its `PYTHONPATH=.ci` the same lookup fails."""
     assigned, argv = usage_command("usage: " + command)
     assert assigned.get("PYTHONPATH") == ".ci", command
-    assert argv[:2] == ["python3", "-m"], command
+    assert argv[1] == "-m", command
     module = argv[2]
     bare = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
     probe = [sys.executable, "-c", _FIND, module]
