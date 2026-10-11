@@ -43,6 +43,11 @@
         "P-A1:0c9ea2c3e2ce"
       ],
       "reason": "P-A1 lists open boxes that close only on this PR's own CI run or belong to another campaign: PLAN-cd-errors-in-ci:70 (a live run on a PR), PLAN-k3s-137-and-pr-conditions:103 (E2E K8s legs green on the branch head), PLAN-deferred-findings-block-merge M3 (Quality / Branch green on the pushed head), and PLAN-tooling-transformation W7P5-a/W7P5-c (per-path K=5 ledgers, PLAN-w7p5a-real-run-dispatch, worklist #dccf10ab). The PR body carries Operational-Reason: for CI; this carry is dropped once the first run ticks the CI-only boxes."
+    },
+    {
+      "gate": "check:ci-budget-freshness",
+      "findings": "*",
+      "reason": "lane-durations.json reports 'NO unit-duration artifacts in the last 10 sampled run(s)' for test-e2e-workers, test-account-e2e, test-renet-go, test-renet-integration, quality-pytest and ops-tutorials: the artifacts expired (3-day retention; their job logs now answer HTTP 410) because no CI run happened since 2026-10-08, and only a new run can upload them. gate-costs.json and the lane fixed costs were refreshed in 333d74fd2 and pass. The gate emits no ::finding:: keys, hence '*'. Drop this carry once this PR's first CI run has uploaded the unit-duration artifacts and `--refresh .ci/config/lane-durations.json` passes."
     }
   ]
 }
