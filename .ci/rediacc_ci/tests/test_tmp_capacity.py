@@ -222,10 +222,10 @@ def test_the_conftest_refuses_in_the_xdist_controller_before_any_worker(tmp_path
 
 
 def test_the_ci_runner_refuses_before_selecting_a_gate():
-    """THE OTHER WIRING CONTROL, through a real runner process. NOT A SKIP when tsx is missing: a skip counts as a pass, so the absent branch asserts the absence."""
-    if not (ROOT / "node_modules" / "tsx").exists():
-        assert not (ROOT / "node_modules" / ".bin" / "tsx").exists()
-        return
+    """THE OTHER WIRING CONTROL, through a real runner process. A missing tsx FAILS rather than returning: a test that returns early counts as a pass, and the wiring control would never have run (review ea950842.3). Every lane that runs this suite installs node_modules (setup-workspace in quality-pytest)."""
+    assert (ROOT / "node_modules" / "tsx").exists(), (
+        "node_modules/tsx is missing, so the ci-runner wiring control cannot run: npm ci, then rerun"
+    )
     env = dict(os.environ)
     env[T.FLOOR_ENV] = PLANT
     got = subprocess.run(

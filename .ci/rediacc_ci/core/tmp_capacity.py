@@ -55,9 +55,9 @@ WALK_BUDGET_S = 3.0
 TOP = 3
 
 FIX = (
-    "fix: delete finished scratch clones and pytest basetemps "
-    "(`python3 .claude/hooks/stop/worklist.py --prune-scratch <me>` lists the session scratchpad, `--write` deletes; "
-    "dead runs' basetemps sit under <tmp>/pytest-of-<user>), then rerun"
+    "fix: delete finished scratch clones (`python3 .claude/hooks/stop/worklist.py --prune-scratch <me>` lists the "
+    "session scratchpad, `--write` deletes) and finished pytest runs' basetemps, which that verb does not touch: "
+    "remove a pytest-<n> directory under <tmp>/pytest-of-<user> that no live process uses; then rerun"
 )
 
 
