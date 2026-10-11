@@ -10,7 +10,7 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
 
 ARG NODE_VERSION=24
-ARG GO_VERSION=1.26.6
+ARG GO_VERSION=1.26.9
 
 # EVERY NETWORK FETCH RETRIES, because one upstream hiccup must not kill a ten-minute
 # multi-arch build that gates every PR.
@@ -252,8 +252,8 @@ ARG TARGETARCH
 
 # Checksums from go.dev's own index: curl -s 'https://go.dev/dl/?mode=json&include=all'
 # | jq '.[]|select(.version=="go<V>")|.files[]|select(.os=="linux" and .kind=="archive")'
-ARG GO_SHA256_AMD64=708effb774be8237570d0add163225abbdfaf4fca28b2611df167beba4feef89
-ARG GO_SHA256_ARM64=d0507e9e9d7fe012aae570108cbd76c15de879e17130ab8cb90d4d7445cb1f2e
+ARG GO_SHA256_AMD64=42d158b4d8f7b61ac0a830567c940a86098fb7aac52e467a5ebec03ef5cc2f8d
+ARG GO_SHA256_ARM64=4a97373d49fcacdcf3694fea368a500b00ee3e963974f3e7514132717632f052
 # Downloaded to a file rather than streamed into tar: a stream cannot be verified
 # before it is extracted, which is the whole point of having a checksum.
 RUN case "$TARGETARCH" in \
