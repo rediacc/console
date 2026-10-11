@@ -76,7 +76,8 @@ def _regolden(stem, tmpdir, out_dir):
 def test_the_fixture_world_goldens_are_byte_identical_under_two_tmpdirs(tmp_path):
     """Each of `TMPDIR_STEMS` records the SAME golden bytes under two different TMPDIRs, and those bytes are the committed golden's. Before the fold, a second TMPDIR moved every key whose payload names the world; before the carry, a live PID moved the running-script records on every run."""
     outs = {}
-    for name in ("a", "b"):
+    # One foreign TMPDIR against the committed golden, which the default TMPDIR recorded, is already two TMPDIRs; a second foreign recording only doubled the cost (review a8945e6f.2).
+    for name in ("a",):
         tmpdir = tmp_path / ("tmp-" + name)
         tmpdir.mkdir()
         outs[name] = tmp_path / ("out-" + name)
@@ -86,7 +87,6 @@ def test_the_fixture_world_goldens_are_byte_identical_under_two_tmpdirs(tmp_path
             assert "(0 changed, 0 line(s) rewritten," in got.stdout, got.stdout
     for stem in TMPDIR_STEMS:
         a = (outs["a"] / ("%s.jsonl" % stem)).read_bytes()
-        assert a == (outs["b"] / ("%s.jsonl" % stem)).read_bytes(), stem
         assert a == goldenio.golden_path(stem).read_bytes(), stem
 
 
@@ -96,6 +96,10 @@ def test_the_fold_moves_only_the_fixture_world_prefix():
     assert goldenio.fold_temp_worlds(text, "/tmp") == text
     assert goldenio.fold_temp_worlds(text, "/srv/t") == (
         "/tmp/rediacc-guard-plans/agent/x.md and /tmp/rediacc-guard-plans/agent/x.md and /srv/t/other"
+    )
+    # A path that only ENDS in the root's spelling is another path, not the world (review a8945e6f.1).
+    assert goldenio.fold_temp_worlds("/home/u/t/rediacc-guard-x and /t/rediacc-guard-x", "/t") == (
+        "/home/u/t/rediacc-guard-x and /tmp/rediacc-guard-x"
     )
 
 

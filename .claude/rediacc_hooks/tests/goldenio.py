@@ -17,6 +17,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import subprocess
 import tempfile
 
@@ -46,7 +47,8 @@ def fold_temp_worlds(text, temp_root=None):
     prefix = os.path.join(temp_root or tempfile.gettempdir(), WORLD_PREFIX)
     if prefix == CANONICAL_WORLD_ROOT:
         return text
-    return text.replace(prefix, CANONICAL_WORLD_ROOT)
+    # Anchored at a path boundary (review a8945e6f.1): with TMPDIR=/t a bare replace also respelled `/home/u/t/rediacc-guard-`, an unrelated path that merely ends in the prefix.
+    return re.sub(r"(?<![\w./-])" + re.escape(prefix), lambda _m: CANONICAL_WORLD_ROOT, text)
 
 
 def normalize(text, work):

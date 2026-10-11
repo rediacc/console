@@ -868,8 +868,9 @@ def _walked_refusal(cmd, root, base, depth=0):
             hit = (label, {}) if label else None
         elif sub in ("submodule", "submodule--helper"):
             # Already a finished note: a foreach note carries the payload's own verdict.
+            # A foreign repository's `foreach` refusal is kept whether or not it is wide (review fae7c16a.1): its payload was judged by this whole guard from each directory it runs in, scope test included, so a refusal there is about THIS checkout, e.g. `git submodule foreach 'git -C <this checkout> reset --hard'`. A foreign `--force` update is about the foreign repository and stays out.
             got = _submodule_refusal(sub, args, repo, root, depth)
-            if got is not None and (not foreign or got[2]):
+            if got is not None and (not foreign or got[2] or got[0] == "git submodule foreach"):
                 hit, wide = (got[0], got[1]), wide or got[2]
         if hit is not None:
             found = (*hit, wide)
@@ -918,12 +919,14 @@ def _judge(cmd, root, base, depth=0):
     # Empty target means "this root, or unresolvable", so the guard keeps guarding by default; a resolvable target under the project directory keeps guarding too.
     #
     # RESOLVED FROM `base`, THE DIRECTORY THE COMMAND RUNS IN, as `_walked_refusal` already does. For a `foreach` payload that is the submodule, and a relative `-C` there is relative to it: `git submodule foreach git -C ../.. reset --hard` resets THIS checkout from private/renet. Resolved from the root instead, `../..` landed outside the project and the guard stood down (review 9849764b.1). At the top level `base` is the event's cwd, which this harness keeps at the project root.
+    #
+    # A STAND-DOWN YIELDS TO THE WALK (review fae7c16a.1). `_walked_refusal` resolves every invocation, a `foreach` payload's included, from its own directory, so a refusal it found is about this checkout whatever the top level's target is: `git submodule foreach 'git -C <this checkout> reset --hard'` from a foreign repository was allowed when both stand-downs below answered None.
     _target = shellscan.target_root(scan, base or root)
     if _target != "" and not _is_inside(_target, root):
-        return None
+        return walked
     # FROM A CWD OUTSIDE THE PROJECT, "" IS AMBIGUOUS (review 30573c81.2): `target_root` answers "" both for the cwd's own repository and for a directory it cannot resolve. Resolving from the cwd is right, since bash runs a relative `-C` there; so the guard stands down only when EVERY git invocation resolves outside this checkout through `scoped_repo`, the rule `commit_policy.foreign_only` applies elsewhere. An outside path that neither exists nor is created by the command (an unexpanded `cd "$X"`) resolves to "" there and keeps guarding.
     if _target == "" and base and not _is_inside(base, root) and _all_foreign(cmd, root, base):
-        return None
+        return walked
 
     blocked = ""
     if hookio.grep_q(RESTORE, scan):
