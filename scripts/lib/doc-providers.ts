@@ -1880,11 +1880,30 @@ const isJsonMember = (f: string): boolean =>
   (f.endsWith('.json') || f.endsWith('.jsonc')) &&
   JSON_HOMES.some(({ dir }) => (dir === '.' ? !f.includes('/') : path.dirname(f) === dir));
 
-/** Everything a namer contributes to this table: its token patterns, in order. */
+/**
+ * A PROGRAM THAT BINDS THE PATH TO A NAME OWNS IT; ONE THAT MERELY MENTIONS IT DOES NOT.
+ *
+ * `.ci/config/model-invocation-exceptions.json` was reported as hardcoded in the gate module
+ * `.ci/rediacc_ci/quality/model_invocable_commands.py`, which names the path only in its
+ * docstring and an error message, while `.claude/rediacc_hooks/model_invocation.py` binds it
+ * (`EXCEPTIONS_REL = "..."`) and is the one loader every reader goes through (review finding
+ * 77997287.4). By path alone `.ci/` sorts before `.claude/`. So within one test rank a code
+ * namer that ASSIGNS a quoted path to a name (`NAME = "x.json"`, `const x = 'x.json'`, a
+ * `NAME: str = ...` annotation included) outranks one that only writes the path down; with no
+ * binder, the first mention still answers, as before.
+ */
+const BINDING =
+  /^[ \t]*(?:export[ \t]+)?(?:(?:const|let|var|readonly)[ \t]+)?[A-Za-z_$][\w$.]*(?:[ \t]*:[^=\n]+)?[ \t]*=[ \t]*(['"`])([^'"`\n]*\.jsonc?)\1/gm;
+
+/** The token patterns of the paths a program binds to a name, in order (see `BINDING`). */
+const bindingTokens = (text: string): RegExp[] =>
+  jsonTokens([...text.matchAll(BINDING)].map((m) => m[2]).join('\n'));
+
+/** Everything a namer contributes to this table: its token patterns, then its binding patterns, in order. */
 const namerTokens = (text: string | null): string =>
   text === null
     ? ''
-    : jsonTokens(text)
+    : [...jsonTokens(text), ...bindingTokens(text).map((re) => new RegExp(`=${re.source}`))]
         .map((re) => re.source)
         .join('\n');
 
@@ -1900,7 +1919,7 @@ export const jsonInventoryProvider: Provider = {
     // so the cost is one pass over the tree rather than one per row.
     const { present } = presentFiles(root, lsFiles(root, '.'));
     const wiring: { file: string; tokens: RegExp[] }[] = [];
-    const code: { file: string; tokens: RegExp[] }[] = [];
+    const code: { file: string; tokens: RegExp[]; binds: RegExp[] }[] = [];
     for (const f of present) {
       if (!isNamerCandidate(f)) continue;
       const isWiring = WIRING_EXT.includes(path.extname(f)) || f.startsWith('.vscode/');
@@ -1912,7 +1931,8 @@ export const jsonInventoryProvider: Provider = {
       }
       const tokens = jsonTokens(text);
       if (tokens.length === 0) continue;
-      (isWiring ? wiring : code).push({ file: f, tokens });
+      if (isWiring) wiring.push({ file: f, tokens });
+      else code.push({ file: f, tokens, binds: bindingTokens(text) });
     }
     if (wiring.length === 0 || code.length === 0) {
       throw new Error(
@@ -1955,6 +1975,17 @@ export const jsonInventoryProvider: Provider = {
             }
           }
           if (namer !== '') break;
+        }
+        if (tier === 'code') {
+          // A binder of the same test rank outranks the first mention (see `BINDING`).
+          const rank = codeRank(namer);
+          const binder = code.find(
+            (cand) =>
+              cand.file !== rel &&
+              codeRank(cand.file) === rank &&
+              cand.binds.some((re) => re.test(rel))
+          );
+          if (binder !== undefined) namer = binder.file;
         }
         rows.push({
           key: rel,
