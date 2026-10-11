@@ -63,7 +63,10 @@ GIT_NONINTERACTIVE = {
 
 
 def run_git(args, cwd, timeout=TIMEOUT_S):
-    """(rc, stdout, stderr). Never raises on a non-zero git; callers decide."""
+    """(rc, stdout, stderr). Never raises on a non-zero git; callers decide.
+
+    `surrogateescape` because git prints paths as raw bytes: a strict decode raised UnicodeDecodeError on a file named with a non-UTF-8 byte, out of every caller, `dirty_paths` and block_rebase_over_foreign_dirt included (worklist #dbbed0b6). Undecodable bytes now round-trip as surrogates instead.
+    """
     env = dict(os.environ)
     env.update(GIT_NONINTERACTIVE)
     try:
@@ -72,6 +75,7 @@ def run_git(args, cwd, timeout=TIMEOUT_S):
             cwd=cwd,
             capture_output=True,
             text=True,
+            errors="surrogateescape",
             timeout=timeout,
             check=False,
             env=env,

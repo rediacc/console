@@ -8,7 +8,12 @@ WHICH DIRECTION IS EXPENSIVE. A wrong deletion destroys a writer's undelivered w
   - nothing under it changed for `--older-than` minutes (default 120, the longest lease a worklist item can carry);
   - no live lease in the store (any session's `[>]` item) names it in its worker, note or text;
   - no process has its working directory inside it;
-  - every git work tree in it (the directory itself, or up to two levels down) is clean and carries no commit missing from its remotes, OR its changes were delivered as `<scratchpad>/<name>.patch` written after the last change. A `git status` that fails is doubt, so it keeps.
+  - every git work tree in it (the directory itself, or up to two levels down) is clean and carries no commit missing from its remotes, OR its changes were delivered as `<scratchpad>/<name>.patch` written after the last change. A `git status` that fails is doubt, so it keeps;
+  - no regular file sits outside every such work tree. Notes, logs and loose patches have no git status to vouch for them, so a directory with no work tree at all is kept unless it holds only directories and symlinks (review 7850c0c4.1: such a directory used to pass the git rule vacuously and be deleted).
+
+ONE EXEMPTION, BY NAME: a `pytest-<digits>` child (the shape `rediacc_ci.runtmp._BASETEMP` reads) is a pytest `--basetemp`, and pytest itself deletes a given basetemp at the start of its next run (`_pytest/tmpdir.py`, `rm_rf(basetemp)`), so nothing in it is anyone's work. Its fixture repositories are not probed either: they routinely carry commits on no remote. The idle, lease and process rules still apply to it.
+
+GITIGNORED FILES DO NOT KEEP A CLONE, BY DESIGN. Delivery is a `git diff` patch, which never carries an ignored path, so ignored content cannot be undelivered under this protocol; and every clone that ran a build or a test holds ignored output (`__pycache__`, `.pytest_cache`), so keeping on it would keep every clone and starve the /tmp this verb exists to free.
 """
 
 from __future__ import annotations
@@ -25,6 +30,10 @@ DEFAULT_OLDER_MIN = 120
 USAGE = "usage: worklist.py --prune-scratch <me> [--write] [--older-than <minutes>]"
 # How deep under a candidate a git work tree is looked for. A clone is normally the candidate itself; one level of nesting (`run1/clone`) is common, two is the cap that keeps the probe cheap.
 GIT_DEPTH = 2
+# A pytest `--basetemp` directory; the same shape `rediacc_ci.runtmp._BASETEMP` reads.
+BASETEMP = re.compile(r"^pytest-[0-9]+$")
+# How many loose files the refusal names before it stops listing.
+LOOSE_SHOWN = 3
 
 
 def scratchpad_for(root, me, session_id, tmp=None, uid=None):
@@ -93,6 +102,46 @@ def git_trees(path, depth=GIT_DEPTH):
     return found
 
 
+def loose_files(path, trees):
+    """Every regular file under `path` that no work tree in `trees` contains, as paths. Symlinks are never followed and never counted: removing one cannot lose what it points at."""
+    skip = {os.path.normpath(t) for t in trees}
+    out = []
+    stack = [path]
+    while stack:
+        here = stack.pop()
+        if os.path.normpath(here) in skip:
+            continue
+        try:
+            with os.scandir(here) as it:
+                entries = list(it)
+        except OSError:
+            continue
+        for entry in entries:
+            if entry.is_symlink():
+                continue
+            if entry.is_dir(follow_symlinks=False):
+                stack.append(entry.path)
+            else:
+                out.append(entry.path)
+    return sorted(out)
+
+
+def status_paths(raw):
+    """The changed paths in `git status --porcelain=v1 -z` output, one per change. A rename or copy writes `XY new NUL old NUL`; its old path is consumed with it, not read as an entry of its own (review 7850c0c4.3)."""
+    fields = raw.split(b"\0")
+    out = []
+    i = 0
+    while i < len(fields):
+        entry = fields[i]
+        i += 1
+        if len(entry) < 4:
+            continue
+        out.append(os.fsdecode(entry[3:]))
+        if entry[:1] in (b"R", b"C") or entry[1:2] in (b"R", b"C"):
+            i += 1
+    return out
+
+
 def git_doubt(tree, patch, label=None):
     """Why the work tree `tree` must be kept, or "" when it is safe to delete. `patch` is the `<scratchpad>/<name>.patch` path that counts as delivery; `label` names the tree in the reason (default: its path)."""
 
@@ -120,12 +169,11 @@ def git_doubt(tree, patch, label=None):
             label or tree,
             unpushed.stdout.decode("utf-8", "replace").strip()[:12],
         )
-    entries = [e for e in status.stdout.split(b"\0") if e]
+    entries = status_paths(status.stdout)
     if not entries:
         return ""
     newest = 0.0
-    for entry in entries:
-        rel = os.fsdecode(entry[3:])
+    for rel in entries:
         try:
             newest = max(newest, os.lstat(os.path.join(tree, rel)).st_mtime)
         except OSError:
@@ -213,15 +261,30 @@ def plan(scratch, older_min, leases, cwds, now=None):
             inside = [c for c in cwds if c == path or c.startswith(path + os.sep)]
             if inside:
                 why = "%d process(es) work inside it" % len(inside)
-        if not why:
+        basetemp = bool(BASETEMP.match(entry.name))
+        if not why and not basetemp:
             patch = os.path.join(scratch, entry.name + ".patch")
-            for tree in git_trees(path):
+            trees = git_trees(path)
+            for tree in trees:
                 why = git_doubt(tree, patch, os.path.relpath(tree, scratch))
                 if why:
                     break
-        rows.append(
-            (entry.name, path, inodes, idle, not why, why or "idle, unleased, no undelivered work")
+            if not why:
+                loose = loose_files(path, trees)
+                if loose:
+                    shown = [os.path.relpath(f, scratch) for f in loose[:LOOSE_SHOWN]]
+                    why = "%s holds %d file(s) outside any git work tree (%s%s)" % (
+                        entry.name,
+                        len(loose),
+                        ", ".join(shown),
+                        ", ..." if len(loose) > LOOSE_SHOWN else "",
+                    )
+        fine = (
+            "idle, unleased, a pytest basetemp"
+            if basetemp
+            else "idle, unleased, no undelivered work"
         )
+        rows.append((entry.name, path, inodes, idle, not why, why or fine))
     return rows
 
 

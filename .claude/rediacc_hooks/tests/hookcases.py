@@ -1516,6 +1516,17 @@ STATIC: list[Case] = [
         bash_json("git rebase --abort"),
         "rebase-dirt #18c7e53c: --abort starts nothing",
     ),
+    # Worklist #dbbed0b6: `--skip` drops the commit being replayed, so it is refused on any tree; outside this checkout it is not this guard's business.
+    case(
+        "check 2 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("git rebase --skip"),
+        "rebase-dirt #dbbed0b6: --skip drops the replayed commit",
+    ),
+    case(
+        "check 0 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("git -C /tmp rebase --skip"),
+        "rebase-dirt #dbbed0b6 CONTROL: --skip outside this checkout",
+    ),
     case(
         "check 0 guards/block_rebase_over_foreign_dirt.py",
         bash_json("git pull --ff-only"),
@@ -2291,6 +2302,28 @@ STATIC: list[Case] = [
         "check 0 guards/block_destructive_git_restore.py",
         bash_json("git submodule foreach git status"),
         "destructive-git #a234b06e: a read-only foreach payload stays open",
+    ),
+    # Review 9849764b.1: a payload's `-C` is relative to the submodule it runs in, so `../..` from private/renet is this checkout.
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git -C private/renet submodule foreach 'git -C ../.. checkout -- .'"),
+        "destructive-git 9849764b.1: a foreach payload's relative -C resolves from the submodule",
+    ),
+    # Review 72e7ac97.2/.3: GIT_CONFIG_PARAMETERS is read per key, and an empty value is git's false.
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("""GIT_CONFIG_PARAMETERS="'rebase.autostash'='true'" git rebase origin/main"""),
+        "destructive-git 72e7ac97.2: GIT_CONFIG_PARAMETERS with autostash true",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("""GIT_CONFIG_PARAMETERS="'rebase.autostash'='false'" git rebase origin/main"""),
+        "destructive-git 72e7ac97.2 CONTROL: GIT_CONFIG_PARAMETERS with autostash false",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git -c rebase.autostash= rebase origin/main"),
+        "destructive-git 72e7ac97.3 CONTROL: an empty -c value is false",
     ),
     case(
         "check 2 guards/block_blanket_git_add.py",

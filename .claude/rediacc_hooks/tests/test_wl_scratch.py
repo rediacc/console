@@ -64,8 +64,8 @@ def verdicts(scratch: pathlib.Path, leases=(), cwds=()) -> dict[str, tuple[bool,
 
 def test_an_old_idle_dir_is_deleted_and_a_young_one_kept(tmp_path):
     scratch = tmp_path / "scratchpad"
-    (scratch / "old").mkdir(parents=True)
-    (scratch / "old" / "f").write_text("x")
+    # Directories only: a plain file would be doubt of its own (test_a_plain_file_outside_every_git_tree_keeps_its_dir), and this case is about the clock.
+    (scratch / "old" / "sub").mkdir(parents=True)
     (scratch / "young").mkdir()
     backdate(scratch / "old")
     (scratch / "young" / "f").write_text("x")
@@ -181,22 +181,24 @@ def test_write_deletes_only_the_deletable_and_never_follows_a_symlink(tmp_path):
     outside = tmp_path / "outside"
     outside.mkdir()
     (outside / "precious").write_text("keep me")
-    (scratch / "old").mkdir(parents=True)
-    (scratch / "old" / "link").symlink_to(outside)
-    ro = scratch / "old" / "readonly"
+    # A basetemp, so its plain file is pytest's to discard and the read-only removal path is what this exercises.
+    old = scratch / "pytest-5"
+    old.mkdir(parents=True)
+    (old / "link").symlink_to(outside)
+    ro = old / "readonly"
     ro.mkdir()
     (ro / "f").write_text("x")
     ro.chmod(0o500)
     (scratch / "leased").mkdir()
     # A symlink CHILD of the scratchpad is never a candidate, even to a deletable-looking tree.
     (scratch / "linkchild").symlink_to(outside)
-    backdate(scratch / "old")
+    backdate(old)
     backdate(scratch / "leased")
     rc, text = SC.prune(
         str(scratch), True, SC.DEFAULT_OLDER_MIN, [("cc33", "scratch leased")], cwds=[]
     )
     assert rc == 0, text
-    assert not (scratch / "old").exists(), text
+    assert not old.exists(), text
     assert (scratch / "leased").is_dir(), text
     assert (outside / "precious").read_text() == "keep me"
     assert (scratch / "linkchild").is_symlink()
@@ -243,7 +245,7 @@ def test_the_cli_reads_the_store_s_live_lease(tmp_path):
         / wlfix.SID
         / "scratchpad"
     )
-    for name in ("leasedwork", "finished"):
+    for name in ("leasedwork", "pytest-42"):
         (scratch / name).mkdir(parents=True)
         (scratch / name / "f").write_text("x")
         backdate(scratch / name)
@@ -262,14 +264,85 @@ def test_the_cli_reads_the_store_s_live_lease(tmp_path):
     assert re.search(r"KEEP\s+leasedwork .*named by live lease #%s" % item.group(1), listed.out), (
         listed.out
     )
-    assert re.search(r"DELETE\s+finished ", listed.out), listed.out
-    assert (scratch / "finished").is_dir()
+    assert re.search(r"DELETE\s+pytest-42 .*a pytest basetemp", listed.out), listed.out
+    assert (scratch / "pytest-42").is_dir()
 
     wrote = fix.cli("--prune-scratch", wlfix.ME, "--write")
     assert wrote.rc == 0, wrote.err
-    assert not (scratch / "finished").exists()
+    assert not (scratch / "pytest-42").exists()
     assert (scratch / "leasedwork").is_dir()
 
     bad = fix.cli("--prune-scratch", wlfix.ME, "--older-than", "soon")
     assert bad.rc == 2, bad.err
     assert "usage: worklist.py --prune-scratch" in bad.err, bad.err
+
+
+def test_a_plain_file_outside_every_git_tree_keeps_its_dir(tmp_path):
+    """REVIEW 7850c0c4.1: a candidate with no git work tree used to pass the git loop vacuously, so `--write` deleted notes and patches nobody had delivered. A plain file outside every work tree is now doubt; the one exemption is a `pytest-<digits>` basetemp, which pytest itself wipes at the start of its next run (`_pytest/tmpdir.py`, `rm_rf(basetemp)`)."""
+    scratch = tmp_path / "scratchpad"
+    (scratch / "notes").mkdir(parents=True)
+    (scratch / "notes" / "draft.md").write_text("undelivered\n")
+    # Directories and symlinks only: nothing a deletion could lose.
+    (scratch / "hollow" / "a" / "b").mkdir(parents=True)
+    (scratch / "hollow" / "link").symlink_to(tmp_path)
+    # A clean clone with a loose file BESIDE it: the clone's verdict must not cover the file.
+    (scratch / "run2").mkdir()
+    clone_of(tmp_path, scratch / "run2", "clone")
+    (scratch / "run2" / "result.txt").write_text("output\n")
+    # A basetemp holding a fixture repo with a local-only commit: pytest owns it, so neither rule keeps it.
+    base = scratch / "pytest-791"
+    base.mkdir()
+    fixture = clone_of(tmp_path, base, "fixture")
+    (fixture / "b.txt").write_text("b\n")
+    git(fixture, "add", "b.txt")
+    git(fixture, "commit", "-qm", "local only")
+    # One planted character away from the basetemp shape: an ordinary directory again.
+    (scratch / "pytest-x1").mkdir()
+    (scratch / "pytest-x1" / "f").write_text("x")
+    for child in scratch.iterdir():
+        backdate(child)
+    got = verdicts(scratch)
+    assert got["notes"] == (
+        False,
+        "notes holds 1 file(s) outside any git work tree (notes/draft.md)",
+    ), got
+    assert got["hollow"] == (True, "idle, unleased, no undelivered work"), got
+    assert got["run2"] == (
+        False,
+        "run2 holds 1 file(s) outside any git work tree (run2/result.txt)",
+    ), got
+    assert got["pytest-791"] == (True, "idle, unleased, a pytest basetemp"), got
+    assert got["pytest-x1"][0] is False, got
+
+
+def test_a_rename_is_one_change_not_two(tmp_path):
+    """REVIEW 7850c0c4.3: `git status -z` writes a rename as `R  new NUL old NUL`; the old path used to be parsed as an entry of its own, so the refusal overcounted."""
+    scratch = tmp_path / "scratchpad"
+    scratch.mkdir()
+    moved = clone_of(tmp_path, scratch, "movedclone")
+    git(moved, "mv", "a.txt", "b.txt")
+    backdate(moved)
+    got = verdicts(scratch)
+    assert got["movedclone"] == (
+        False,
+        "movedclone has 1 uncommitted change(s) and no movedclone.patch",
+    ), got
+
+
+def test_ignored_output_does_not_keep_a_clone_and_untracked_source_does(tmp_path):
+    """REVIEW 7850c0c4.2, kept by design: delivery is a `git diff` patch, which never carries an ignored path, so ignored output (a `__pycache__`, a build directory) is not undelivered work. The sibling one fact away, the same file NOT ignored, must keep."""
+    scratch = tmp_path / "scratchpad"
+    scratch.mkdir()
+    for name, ignore in (("ignoredclone", "build/\n"), ("plainclone", "other/\n")):
+        clone = clone_of(tmp_path, scratch, name)
+        # `info/exclude` ignores without a commit, so the clone stays level with its remote.
+        (clone / ".git" / "info" / "exclude").write_text(ignore)
+        (clone / "build").mkdir()
+        (clone / "build" / "out.bin").write_text("generated\n")
+        backdate(clone)
+    got = verdicts(scratch)
+    assert got["ignoredclone"] == (True, "idle, unleased, no undelivered work"), got
+    assert got["plainclone"] == (
+        False,
+        "plainclone has 1 uncommitted change(s) and no plainclone.patch",
+    ), got
