@@ -28,7 +28,6 @@ REVIEW_TEXT = "agent/reviews/"
 REVIEW_LITERAL = re.compile(r"['\"](?![A-Za-z][A-Za-z0-9+.-]*://)(?:[^'\"\s]*/)?agent/reviews/")
 REVIEW_WORD = re.compile(r"(\A|/)agent/reviews(/|\Z)")
 SANCTIONED = ("wl_review.py", "worklist.py")
-INPLACE = ("sed", "perl", "gsed")
 INTERPRETERS = ("python", "python3", "node", "perl", "ruby")
 # Code that opens a file for writing, replaces or removes one. `.open('w')` is pathlib's spelling, whose mode is the FIRST argument (e30f1ad1.1).
 WRITE_CODE = re.compile(
@@ -195,8 +194,9 @@ def _offending(cmd, depth=0, cwd=None):
         operands = _run_operands(run, argv)
         if name == "tee" and any(_is_review(a, run.cwd) for a in operands):
             return "tee into the review directory"
-        in_place = any(a == "-i" or a.startswith(("-i", "--in-place")) for a in argv)
-        if name in INPLACE and in_place and any(_is_review(a, run.cwd) for a in operands):
+        # In place is sed's or perl's own option parse (review 3f53e99e.2 sweep): `sed -Ei` and `perl -pi -e` are in place.
+        in_place = shellscan.in_place_edit(run) is not None
+        if in_place and any(_is_review(a, run.cwd) for a in operands):
             return "%s -i on a review file" % name
         # Where a copy lands is `shellscan.run_copies`' getopt reading, not the last operand (review cac47d16.1 sweep): `cp -t agent/reviews/x /tmp/a.md` left the source last.
         # `cwd` places a relative fed glob in the run's own directory (#e5b0540a); a command handed down by a program runs where that program does, unknown here, so it gets the shape reading.
@@ -210,6 +210,9 @@ def _offending(cmd, depth=0, cwd=None):
         if name.startswith(INTERPRETERS):
             # The program is `shellscan.interpreter_program`'s reading (#c4542b69): the `-c` value, the heredocs only when it reads its program from stdin (a `cat > x.py <<EOF` earlier in the line is a file being written, not code being run), or a script passed BY PATH, which was not read at all before (rc 0 against rc 2 for the same program as a heredoc).
             text, kind = shellscan.interpreter_program(run, cmd, cwd)
+            # A program this hook cannot read (review b922f15c.1, .4) is refused rather than run unread; the pre-filter already matched.
+            if kind == "unjudgeable":
+                return "%s code this hook cannot read (%s)" % (name, shellscan.UNJUDGEABLE_REASON)
             code = " ".join(argv)
             if kind in ("stdin", "file"):
                 code += "\n" + text

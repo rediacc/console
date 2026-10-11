@@ -1078,6 +1078,27 @@ STATIC: list[Case] = [
         bash_json("rm .claude/s[[:bogus:]]ttings.json"),
         "protected-files: an unknown POSIX class fails safe toward the protected file",
     ),
+    # Found on b922f15cb by this writer's own cleanup command: a `?` inside `${T:?}` was read as a glob, and a word whose root is unevaluated was resolved under the run's directory, so the documented safe idiom was refused from the project root. Both controls were refused (rc 2); the refusals stay refused.
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm -rf "${T:?}"'),
+        "protected-files CONTROL: the ${VAR:?} idiom is a parameter, not a glob",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm -rf "$(mktemp -d)"/*'),
+        "protected-files CONTROL: a glob under an unknown root",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm -rf "${T:?}"/.claude'),
+        "protected-files: a protected segment after a ${VAR:?} root",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm -rf ./*"),
+        "protected-files: a glob over the project root's own directories",
+    ),
     # A prefix command's option VALUE is not the command (cac47d16.1 sweep, shellscan._prefix_option): each refusal was allowed (rc 0) before, the value read as the command.
     case(
         "check 2 guards/block_protected_files.py",
@@ -1647,12 +1668,7 @@ STATIC: list[Case] = [
         bash_json("cp -t /tmp .claude/commands/handoff.md"),
         "user-only-command-shell-write CONTROL: cp -t copies a command OUT",
     ),
-    # #c4542b69: a script run BY PATH is read like a heredoc; the refusals need scratch scripts and live in test-block_user_only_command.py. These pin the allow paths: a TRACKED script whose own text names the key, the command directory and writes files, and a script that cannot be read, which fails open.
-    case(
-        "check 0 guards/block_user_only_command_shell_write.py",
-        bash_json("python3 .claude/rediacc_hooks/guards/test-block_user_only_command.py"),
-        "user-only-command-shell-write CONTROL: a tracked script the guard would refuse if it read it",
-    ),
+    # #c4542b69: a script run BY PATH is read like a heredoc; the refusals need scratch scripts and live in test-block_user_only_command.py, and so does the TRACKED-and-unchanged control, in a fixture git repo (review b922f15c.3: the only tracked script in this tree that the guard would refuse if read is its own harness, which is edited whenever the guard is, and an edited tracked script is read). This pins the other allow path: a script that cannot be read, which fails open.
     case(
         "check 0 guards/block_user_only_command_shell_write.py",
         bash_json("python3 /nonexistent/zz-commands-writer.py"),
@@ -3799,6 +3815,17 @@ STATIC: list[Case] = [
         "check 2 guards/block_roundlog_truncate.py",
         bash_json("echo x | tee --output-error=warn agent/pr-babysit-0831-1.md"),
         "roundlog-truncate: the same tee, run",
+    ),
+    # Review 3f53e99e.2 sweep: in place is sed's own option parse. The first refusal pins a bundle; the control was refused before, its `i` read inside an attached `-e` script.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("sed -Ei 's/a/b/' agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate: sed -Ei is in place",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("sed -es/i/x/ agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate CONTROL: an i inside an attached -e script is not in place",
     ),
     case(
         "check 2 guards/block_roundlog_truncate.py",

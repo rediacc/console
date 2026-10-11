@@ -241,12 +241,15 @@ def _resolve(root, file_path, cwd):
     if not file_path:
         return ""
     path = file_path if os.path.isabs(file_path) else os.path.join(cwd or str(root), file_path)
-    path = os.path.normpath(path)
-    try:
-        rel = os.path.relpath(path, str(root))
-    except ValueError:
-        return None
-    return None if rel.startswith("..") else path
+    # Where the edit LANDS (review 3f53e99e.1 sweep): a directory link outside the tree that points into it was judged outside and allowed. `realpath` resolves `.`, `..` and every symlink in the part of the path that exists. The path as typed still counts too, so a link inside the tree pointing out of it is judged as before; the landing path is preferred, since its name decides the language.
+    for candidate in (os.path.realpath(path), os.path.normpath(path)):
+        try:
+            rel = os.path.relpath(candidate, str(root))
+        except ValueError:
+            continue
+        if not rel.startswith(".."):
+            return candidate
+    return None
 
 
 def _read(path):
@@ -327,11 +330,12 @@ def run(ev):
         return hookio.ALLOW
 
     if file_path:
-        if file_path.endswith(".ipynb"):
+        # The language of the file the edit lands in: a `.txt` link to a Python file is Python.
+        if path.endswith(".ipynb"):
             language = "py"
         else:
             head = (new if "content" in tool else (_read(path) or new)).split("\n", 1)[0]
-            language = engine.language_for(file_path, head)
+            language = engine.language_for(path, head)
         if language is None:
             return hookio.ALLOW
         old_counts = engine.count_markers(old, language)

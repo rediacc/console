@@ -4707,9 +4707,14 @@ def gh_api_endpoint(parsed, repo=None):
 # --------------------------------------------------------------------------- the program an interpreter runs (worklist #c4542b69) ---------------------------------------------------------------------------
 #
 # A SCRIPT RUN BY PATH IS A PROGRAM, LIKE A HEREDOC (#f3f36655, #c4542b69). Three shell-write guards read an interpreter's program to judge what it writes, and each spelled "the program" its own way: the `-c` value, the heredoc bodies when it reads stdin, and (block_suppressions_shell_write only) a script passed by path. So `python3 scratch/edit.py` wrote a review file or a model-invocation key that
-# the same program through `python3 - <<EOF` was refused for (rc 0 against rc 2, 2026-10-11). `interpreter_program` is the one reading. A script TRACKED by the checkout holding it is not read: its text is reviewed code the CI gates already judge, and reading it would refuse every run of a tool that names the thing it guards (`worklist.py` carries 50 lint markers and writes files). A script that cannot be read at hook time
-# FAILS OPEN: one written earlier in the same command by a redirect or heredoc is judged as it is written, a missing one makes the interpreter fail, and the CI gates read the tree either way, while refusing every chained `make && python3 out.py` would teach routing around the guards. `interpreter_scripts` is the cheap form a guard's pre-filter reads: it starts the lexer only when an interpreter is named, and runs one `git ls-files` per script.
+# the same program through `python3 - <<EOF` was refused for (rc 0 against rc 2, 2026-10-11). `interpreter_program` is the one reading. A script TRACKED by the checkout holding it AND unchanged from HEAD is not read: its text is reviewed code the CI gates already judge, and reading it would refuse every run of a tool that names the thing it guards (`worklist.py` carries 50 lint markers and writes files); an edited tracked script is read (review b922f15c.3).
+# A script an earlier run of the SAME command writes is judged by what that run writes (`_written_scripts`, review b922f15c.1), and one written from a source this walk cannot read, or larger than `_SCRIPT_MAX`, is "unjudgeable", which each guard refuses once its pre-filter has matched (b922f15c.4). Only a script that does not exist at all FAILS OPEN: the interpreter fails on it, and the CI gates read the tree either way. `interpreter_scripts` is the cheap form a guard's pre-filter reads: it starts the lexer only when an interpreter is named, and runs one `git status` per script.
 INTERPRETER_NAMES = ("python", "node", "perl", "ruby", "deno", "bun", "tsx")
+# Why an "unjudgeable" program is refused, in the words each guard prints.
+UNJUDGEABLE_REASON = (
+    "the same command writes the script from a source this hook cannot read, or the script is "
+    "larger than the hook reads; write it in one step and run it in the next, or use a heredoc"
+)
 # THE INTERPRETER'S OWN OPTIONS, PARSED AS IT PARSES THEM (review 63ee61e3.1). The first reading looked for `-c`, `-e` or `-E` anywhere in the argv, so python's `-E` (ignore PYTHON* variables, a plain flag) read as perl's inline program and `python3 -E scratch.py` wrote its marker unread, a `-c` among the SCRIPT's own arguments read as the interpreter's, and `-X dev` handed `dev` over as the script. Each family below
 # is `(inline letters, module letters, letters taking a value, letters taking only an ATTACHED value, long options taking a value, long options that are the program)`, and the parse stops at the first operand, which is the script. Measured 2026-10-11 on Python 3.13, node v24.21.0 and perl 5.40.1: python `-E -I -B -u -q -s -P -OO` are flags, `-W`/`-X` take a value attached or as the next word; node takes the next word for every string option `node --help` lists with
 # `=...` (a V8 flag such as `--stack-size` needs `=`); perl's `-I`/`-M`/`-m` take the next word and `-0 -l -i -F -C -x -d -D` only an attached one. Ruby's table is from its documentation (no ruby on this host); deno, bun and tsx skip a leading `run` and otherwise read like node.
@@ -4802,7 +4807,8 @@ _PROGRAM_OPTIONS = {
     ),
 }
 _RUNNERS = ("deno", "bun", "tsx")
-_SCRIPT_MAX = 1 << 20
+# The largest script read whole (review b922f15c.4): a bigger one is UNJUDGEABLE, never skipped.
+_SCRIPT_MAX = 16 << 20
 
 
 def _program_parse(base, argv):
@@ -4853,33 +4859,95 @@ def _program_parse(base, argv):
     return "file", argv[k]
 
 
-def _script_file_text(path, run_cwd, cwd):
-    """The text of a script file an interpreter runs by path, or None when it cannot be read or the checkout holding it tracks it."""
+def _script_path(path, run_cwd, cwd):
     base = cwd or os.getcwd()
     if run_cwd is not None:
         base = os.path.join(base, run_cwd)
-    target = path if os.path.isabs(path) else os.path.normpath(os.path.join(base, path))
-    try:
-        if not os.path.isfile(target) or os.path.getsize(target) > _SCRIPT_MAX:
-            return None
-        tracked = subprocess.run(
-            ["git", "ls-files", "--error-unmatch", "--", os.path.basename(target)],
+    return path if os.path.isabs(path) else os.path.normpath(os.path.join(base, path))
+
+
+# Asked once per file per process: a chain runs every guard in one process and the user-only guard asks three times. Keyed by the file's mtime and size, so an edit is asked again; a commit that leaves the file untouched keeps the older answer, which only ever reads a script it could have skipped.
+_TRACKED_CACHE: dict = {}
+
+
+def _tracked_unchanged(target):
+    """True only when a checkout tracks `target` AND its working copy matches HEAD (review b922f15c.3): `git status --porcelain --ignored` prints nothing for exactly that file, and prints `??`, `!!`, ` M` or `M ` for an untracked, ignored, edited or staged one. Outside any checkout git fails, which is False."""
+    stat = os.stat(target)
+    key = (target, stat.st_mtime_ns, stat.st_size)
+    if key not in _TRACKED_CACHE:
+        done = subprocess.run(
+            ["git", "status", "--porcelain", "--ignored", "--", os.path.basename(target)],
             cwd=os.path.dirname(target) or ".",
             capture_output=True,
             check=False,
         )
-        if tracked.returncode == 0:
-            return None
+        _TRACKED_CACHE[key] = done.returncode == 0 and not done.stdout.strip()
+    return _TRACKED_CACHE[key]
+
+
+def _script_file_text(path, run_cwd, cwd):
+    """`(text, state)` for a script an interpreter runs by path: "read", "exempt" (tracked and unchanged), "missing" (no such file, or unreadable) or "unjudgeable" (larger than `_SCRIPT_MAX`)."""
+    target = _script_path(path, run_cwd, cwd)
+    try:
+        if not os.path.isfile(target):
+            return None, "missing"
+        if _tracked_unchanged(target):
+            return None, "exempt"
+        if os.path.getsize(target) > _SCRIPT_MAX:
+            return None, "unjudgeable"
         with open(target, encoding="utf-8", errors="replace") as handle:
-            return handle.read()
+            return handle.read(), "read"
     except OSError:
-        return None
+        return None, "missing"
+
+
+# A SCRIPT THE SAME COMMAND WRITES IS JUDGED BY WHAT IT WRITES (review b922f15c.1). `cat > /tmp/s.py <<'EOF' ... EOF; python3 /tmp/s.py` ran a program no guard read: the file did not exist when the hook ran, so the read found nothing and failed open, while the same program as a heredoc was refused. `_written_scripts` walks the runs BEFORE the interpreter and records each file they write: a redirect or `tee` from a writer
+# (`cat` with no file operand, `echo`, `printf`, `tee`) writes the run's feed (its heredoc, here-string or piped words) and its arguments, every write adding to the record; anything else written there (a copy, `sed -i`, `dd of=`, `cat other.py >`, any other command's output) is UNKNOWN, and a program read from an unknown write is "unjudgeable", which each guard refuses once its own pre-filter has matched the command.
+_TEXT_WRITERS = ("echo", "printf", "cat", "tee")
+
+
+def _written_scripts(cmd, until, cwd):
+    """`{absolute path: text or None}` for every file the runs of `cmd` before `until` write; None is a write whose content this walk cannot read."""
+    out: dict = {}
+
+    def record(path, run_cwd, text):
+        target = _script_path(path, run_cwd, cwd)
+        if text is None or (target in out and out[target] is None):
+            out[target] = None
+        else:
+            out[target] = (out.get(target) or "") + text + "\n"
+
+    for run in every_run(cmd):
+        if run is until:
+            break
+        base = run.name.rsplit("/", 1)[-1]
+        argv = list(run.argv)
+        known = base in _TEXT_WRITERS and not (
+            base == "cat" and any(not a.startswith("-") for a in argv)
+        )
+        text = "\n".join(f for f in [run.feed or "", " ".join(argv)] if f) if known else None
+        for target in run.writes:
+            record(target, run.cwd, text)
+        if base == "tee":
+            for target in [a for a in argv if not (a.startswith("-") and len(a) > 1)]:
+                record(target, run.cwd, text)
+        copies = run_copies(run)
+        for dest in copies[1] if copies is not None else []:
+            record(dest, run.cwd, None)
+        edit = in_place_edit(run)
+        for target in edit[1] if edit is not None else []:
+            record(target, run.cwd, None)
+        if base == "dd":
+            for a in argv:
+                if a.startswith("of="):
+                    record(a[3:], run.cwd, None)
+    return out
 
 
 def interpreter_program(run, cmd, cwd=None):
     """`(text, kind)` for the program an interpreter run executes, or `(None, None)`.
 
-    `kind` is "inline" (`-c`/`-e` and their spellings), "stdin" (every heredoc body of `cmd`, when the run reads its program from stdin: no operand, or `-`) or "file" (a script passed by path, read under the rules above). A module run (`python -m x`) and a script that cannot be read are `(None, None)`. `cwd` is the directory the command runs in; a run that `cd`'d is resolved from its own `run.cwd` under it.
+    `kind` is "inline" (`-c`/`-e` and their spellings), "stdin" (every heredoc body of `cmd`, when the run reads its program from stdin: no operand, or `-`), "file" (a script passed by path: what an earlier run of the same command wrote into it, else the file on disk, under the rules above) or "unjudgeable" (`(None, "unjudgeable")`: an earlier run wrote the script from a source this walk cannot read, or the file is larger than `_SCRIPT_MAX`). A module run (`python -m x`), a tracked and unchanged script, and one that does not exist are `(None, None)`. `cwd` is the directory the command runs in; a run that `cd`'d is resolved from its own `run.cwd` under it.
     """
     if not run.name.rsplit("/", 1)[-1].startswith(INTERPRETER_NAMES):
         return None, None
@@ -4896,8 +4964,16 @@ def interpreter_program(run, cmd, cwd=None):
             if doc.body_start is not None and doc.body_end is not None
         ]
         return "\n".join(bodies), "stdin"
-    text = _script_file_text(value, run.cwd, cwd)
-    return (text, "file") if text is not None else (None, None)
+    written = _written_scripts(cmd, run, cwd)
+    target = _script_path(value, run.cwd, cwd)
+    if target in written:
+        return (written[target], "file") if written[target] is not None else (None, "unjudgeable")
+    text, state = _script_file_text(value, run.cwd, cwd)
+    if state == "read":
+        return text, "file"
+    if state == "unjudgeable":
+        return None, "unjudgeable"
+    return None, None
 
 
 def interpreter_scripts(cmd, cwd=None):
@@ -4910,3 +4986,137 @@ def interpreter_scripts(cmd, cwd=None):
         if kind == "file":
             out.append(text)
     return out
+
+
+# --------------------------------------------------------------------------- is this sed or perl editing in place (review 3f53e99e.2) ---------------------------------------------------------------------------
+#
+# IN PLACE IS THE TOOL'S OWN OPTION PARSE, NOT A WORD TEST. Five guards asked "is this sed/perl in place" as `a == "-i" or a.startswith("-i")`, so the bundles both tools accept were read as not in place: `sed -Ei`, `sed -ni` and `perl -pi -e` rewrote the model-invocation key into a command file unrefused (2026-10-11). Two others read any `i` in a bundle, which also caught the `i` inside an attached `-e` script. `in_place_edit` reads the argv the way each tool does,
+# measured on GNU sed 4.9 and perl 5.40.1: sed's `i` takes the REST of its bundle as a backup suffix (`-ie` is in place with suffix `e`, and the next word is the script), `-e`/`-f`/`-l` take the rest or the next word, a long option resolves by unique prefix (`--in` is `--in-place`), and with no `-e`/`-f` the first operand is the script; perl's `-i` also takes the rest of its bundle, `-e`/`-E` take the rest or the next word and
+# switch parsing goes on after them, `-0`/`-l`/`-C` take digits and the bundle continues (`-l0pi` is in place), `-I`/`-M`/`-m` take the rest or the next word, `-D`/`-d`/`-F`/`-x` the rest, and without `-e` the first operand is the program file.
+_SED_LONG = {
+    "in-place": "o",
+    "expression": "r",
+    "file": "r",
+    "line-length": "r",
+    **dict.fromkeys(
+        [
+            "null-data",
+            "zero-terminated",
+            "separate",
+            "posix",
+            "debug",
+            "sandbox",
+            "regexp-extended",
+            "quiet",
+            "silent",
+            "unbuffered",
+            "follow-symlinks",
+            "binary",
+            "help",
+            "version",
+        ],
+        "n",
+    ),
+}
+
+
+def _sed_in_place(argv):
+    in_place = False
+    scripts: list[str] = []
+    script_files = False
+    operands: list[str] = []
+    k = 0
+    while k < len(argv):
+        arg = argv[k]
+        k += 1
+        if arg == "--":
+            operands.extend(argv[k:])
+            break
+        if arg.startswith("--"):
+            key, eq, value = arg[2:].partition("=")
+            hits = [n for n in _SED_LONG if n == key] or [n for n in _SED_LONG if n.startswith(key)]
+            name = hits[0] if len(hits) == 1 else key
+            if _SED_LONG.get(name) == "r" and not eq and k < len(argv):
+                value = argv[k]
+                k += 1
+            if name == "in-place":
+                in_place = True
+            elif name == "expression":
+                scripts.append(value)
+            elif name == "file":
+                script_files = True
+            continue
+        if arg.startswith("-") and len(arg) > 1:
+            for at, letter in enumerate(arg[1:], 1):
+                rest = arg[at + 1 :]
+                if letter == "i":
+                    in_place = True
+                    break
+                if letter in "efl":
+                    value = rest
+                    if not value and k < len(argv):
+                        value = argv[k]
+                        k += 1
+                    if letter == "e":
+                        scripts.append(value)
+                    elif letter == "f":
+                        script_files = True
+                    break
+            continue
+        operands.append(arg)
+    if not scripts and not script_files and operands:
+        scripts.append(operands.pop(0))
+    return in_place, scripts, operands
+
+
+def _perl_in_place(argv):
+    in_place = False
+    programs: list[str] = []
+    k = 0
+    while k < len(argv):
+        arg = argv[k]
+        if arg == "--":
+            k += 1
+            break
+        if not arg.startswith("-") or len(arg) == 1:
+            break
+        k += 1
+        at = 1
+        while at < len(arg):
+            letter = arg[at]
+            rest = arg[at + 1 :]
+            at += 1
+            if letter in "0lC":
+                while at < len(arg) and arg[at].isdigit():
+                    at += 1
+                continue
+            if letter == "i":
+                in_place = True
+                break
+            if letter in "eEIMm":
+                value = rest
+                if not value and k < len(argv):
+                    value = argv[k]
+                    k += 1
+                if letter in "eE":
+                    programs.append(value)
+                break
+            if letter in "DdFx":
+                break
+    operands = list(argv[k:])
+    if not programs and operands:
+        operands.pop(0)  # the program file
+    return in_place, programs, operands
+
+
+def in_place_edit(run):
+    """`(scripts, files)` for a sed or perl run that edits files IN PLACE, or None for any other run. `scripts` are the sed scripts or perl `-e` programs written on the command line; `files` the operands it rewrites."""
+    base = run.name.rsplit("/", 1)[-1]
+    argv = list(run.argv)
+    if base in ("sed", "gsed"):
+        in_place, scripts, files = _sed_in_place(argv)
+    elif base.startswith("perl"):
+        in_place, scripts, files = _perl_in_place(argv)
+    else:
+        return None
+    return (scripts, files) if in_place else None

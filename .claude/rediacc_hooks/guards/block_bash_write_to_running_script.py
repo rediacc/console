@@ -448,11 +448,8 @@ def _verb_targets(run_, cwd):
     elif base == "shfmt":
         found = _operands(run_) if any(a in ("-w", "--write") for a in args) else []
     elif base == "sed":
-        in_place = any(
-            a.startswith("--in-place")
-            or (not a.startswith("--") and a.startswith("-") and "i" in a[1:])
-            for a in args
-        )
+        # sed's own option parse (review 3f53e99e.2 sweep): an `i` inside an attached `-e` script is not in place.
+        in_place = shellscan.in_place_edit(run_) is not None
         found = _operands(run_) if in_place else []
     elif base in ("cp", "mv"):
         found = [path for path, _into in shellscan.copy_landings(run_, cwd, ("cp", "mv"))]

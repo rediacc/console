@@ -438,9 +438,10 @@ def _segments_match(pattern, path):
 
 def _glob_names_protected(token, base, root, recursive):
     """True when a token holding a glob character can expand to a protected file (or, for a recursive rm, a directory holding one)."""
-    if not any(ch in token for ch in _GLOB_CHARS):
-        return False
+    # The glob characters of the text bash globs, after its substitutions: the `?` of `${T:?}` is parameter syntax, and reading it as a glob refused the documented `rm -rf "${T:?}"` from the project root. A word starting with an unevaluated part has an unknown root (`_wild_path`), so it is not resolved under the run's directory: `rm -rf "$(mktemp -d)"/*` was refused that way. A protected segment after such a root is `_unjudgeable`'s.
     text = _wildcarded(token) or token
+    if not any(ch in text for ch in _GLOB_CHARS) or text.startswith(_WILD):
+        return False
     if _WILD in text and "/../" in "/%s/" % text:
         return False  # a `..` beside an unevaluated part is `_unjudgeable`'s
     path = text if text.startswith("/") else posixpath.join(base, text)
@@ -457,9 +458,33 @@ def _glob_names_protected(token, base, root, recursive):
     return False
 
 
+def _substitution_bodies(word):
+    """The text inside every `$(...)` and backtick span of `word`, nesting included, never the word's text around them."""
+    out: list[str] = []
+    k = 0
+    while k < len(word):
+        if word.startswith("$(", k):
+            depth, j = 0, k + 1
+            while j < len(word):
+                depth += word[j] == "("
+                depth -= word[j] == ")"
+                j += 1
+                if depth == 0:
+                    break
+            out.append(word[k + 2 : j - 1])
+            k = j
+        elif word[k] == "`":
+            end = word.find("`", k + 1)
+            out.append(word[k + 1 : end if end >= 0 else len(word)])
+            k = len(word) if end < 0 else end + 1
+        else:
+            k += 1
+    return out
+
+
 def _names_protected_text(word, base, root, recursive):
-    """A protected path in a substitution's own text, each token normalised (`$(echo .claude/./settings.json)`) or expanded as a glob (`$(ls .claude/settings.j?on)`)."""
-    for token in re.split(r"[\s()`'\"$;|&<>]+", word):
+    """A protected path in a substitution's own text, each token normalised (`$(echo .claude/./settings.json)`) or expanded as a glob (`$(ls .claude/settings.j?on)`). Only the text INSIDE the substitutions is read: the residue `/*` of `"$(mktemp -d)"/*` is not a glob over `/`."""
+    for token in re.split(r"[\s()`'\"$;|&<>]+", " ".join(_substitution_bodies(word))):
         if token and _is_protected(posixpath.normpath("/" + token)):
             return True
         if token and _glob_names_protected(token, base, root, recursive):

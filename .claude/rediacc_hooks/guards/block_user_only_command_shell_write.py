@@ -38,7 +38,6 @@ DEFECT = ("    if not word:\n        return False", "    if True:\n        retur
 _PREFILTER = re.compile(
     r"%s|commands|skills|model-invocation-exceptions" % model_invocation.KEY_WORDS, re.IGNORECASE
 )
-INPLACE = ("sed", "gsed", "perl")
 WRITERS = ("echo", "printf", "cat")
 INTERPRETERS = ("python", "node", "perl", "ruby", "deno", "bun", "tsx")
 WRITE_CODE = re.compile(
@@ -46,7 +45,10 @@ WRITE_CODE = re.compile(
     r"|appendFileSync|os\.replace|os\.rename|shutil\.(copy|move)"
 )
 # The first command or skill path an interpreter program names, for the message.
-_NAMED_PATH = re.compile(r"[^\s'\"]*\.claude/(?:commands|skills)[^\s'\"]*", re.IGNORECASE)
+# A match starts only at a word boundary: without the lookbehind every position of a long word was a start and the search was quadratic (2 MiB of `#` in a script read by path pinned the hook at 100% CPU, measured 3 s at 20,000 characters).
+_NAMED_PATH = re.compile(
+    r"(?<![^\s'\"])[^\s'\"]*\.claude/(?:commands|skills)[^\s'\"]*", re.IGNORECASE
+)
 _SED_SUB = re.compile(
     r"(?:^|[;\s{])s(?P<d>[^\w\s\\])(?P<pat>(?:\\.|(?!(?P=d)).)*)(?P=d)(?P<rep>(?:\\.|(?!(?P=d)).)*)(?P=d)"
 )
@@ -235,8 +237,9 @@ def _list_write(runs, analysis, cmd, cwd):
                 and model_invocation.is_exception_list(str(run.cwd).rstrip("/") + "/" + target)
             ):
                 return "a redirect into %s" % target
-        in_place = any(a == "-i" or a.startswith(("-i", "--in-place")) for a in argv)
-        if on_list and (name in ("tee", "truncate") or (name in INPLACE and in_place)):
+        # In place is sed's or perl's own option parse (review 3f53e99e.2): `sed -Ei`, `sed -ni` and `perl -pi -e` are in place.
+        in_place = shellscan.in_place_edit(run) is not None
+        if on_list and (name in ("tee", "truncate") or in_place):
             return "%s on %s" % (name, on_list[0])
         copies = shellscan.run_copies(run, None, cwd)
         if copies is not None:
@@ -252,7 +255,7 @@ def _list_write(runs, analysis, cmd, cwd):
         ):
             return "dd of= the exception list"
         if name.startswith(INTERPRETERS):
-            code, verdict = _program(run, cmd, cwd, _names_list)
+            code, verdict, _kind = _program(run, cmd, cwd, _names_list)
             writes = WRITE_CODE.search(code) if verdict is None else verdict
             if "model-invocation-exceptions" in code and writes:
                 return "a %s program writing the exception list" % name
@@ -274,9 +277,11 @@ def _program(run, cmd, cwd, holds):
     code = " ".join(run.argv)
     if kind in ("stdin", "file"):
         code += "\n" + text
-    if kind is None or not re.match(r"^python[0-9.]*$", run.name.rsplit("/", 1)[-1]):
-        return code, None
-    return code, shellscan.python_writes_to(text, holds)
+    if kind not in ("inline", "stdin", "file") or not re.match(
+        r"^python[0-9.]*$", run.name.rsplit("/", 1)[-1]
+    ):
+        return code, None, kind
+    return code, shellscan.python_writes_to(text, holds), kind
 
 
 def _offending(cmd, cwd):
@@ -321,10 +326,13 @@ def _offending(cmd, cwd):
                 why = redirect_refusal(target, run.cwd, appending)
                 if why:
                     return "flag", why
-        in_place = any(a == "-i" or a.startswith(("-i", "--in-place")) for a in argv)
+        # In place is sed's or perl's own option parse (review 3f53e99e.2): `sed -Ei`, `sed -ni` and `perl -pi -e` rewrote the key into a command file unrefused. Its scripts join the non-option words, so the scripts read can only grow.
+        edit = shellscan.in_place_edit(run)
         hits = [a for a in operands if _is_target(a, run.cwd)]
-        if name in INPLACE and in_place and hits:
-            exprs = [a for a in argv if not a.startswith("-") and not _is_target(a, run.cwd)]
+        if edit is not None and hits:
+            exprs = edit[0] + [
+                a for a in argv if not a.startswith("-") and not _is_target(a, run.cwd)
+            ]
             for expr in exprs:
                 added = "\n".join(m.group("rep") for m in _SED_SUB.finditer(expr))
                 if not _SED_SUB.search(expr):
@@ -362,7 +370,13 @@ def _offending(cmd, cwd):
                     )
         if name.startswith(INTERPRETERS):
             in_dir = _is_target(".", run.cwd)
-            code, verdict = _program(run, cmd, cwd, _names_dir)
+            code, verdict, kind = _program(run, cmd, cwd, _names_dir)
+            # A program this hook cannot read (review b922f15c.1, .4): the same command wrote the script from an unknown source, or it is too large to read. The pre-filter already matched, so it is refused rather than run unread.
+            if kind == "unjudgeable":
+                return "flag", "a %s program this hook cannot read (%s)" % (
+                    name,
+                    shellscan.UNJUDGEABLE_REASON,
+                )
             if in_dir:
                 verdict = None
             if verdict is None:

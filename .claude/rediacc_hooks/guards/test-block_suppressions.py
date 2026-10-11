@@ -47,9 +47,22 @@ KEPT_TEXT = 'import os  %s: F401\n\n\ndef f():\n    """doc"""\n    return os.sep
 OUTSIDE = pathlib.Path(tempfile.gettempdir()) / "test-block-suppressions-outside.py"
 # Scripts run BY PATH (#f3f36655): untracked (the scratch directory is under the gitignored `.ci/cache`), one writing a marker in each language family, one writing none.
 MARKER_SCRIPT = SCRATCH / "marker_writer.py"
+MARKER_PROGRAM = "import pathlib\npathlib.Path(%r).write_text('y = 1  %s: B010\\n')\n" % (
+    str(KEPT),
+    NQ,
+)
 MARKER_JS = SCRATCH / "marker_writer.js"
 CLEAN_SCRIPT = SCRATCH / "clean_writer.py"
 ABSENT_SCRIPT = SCRATCH / "absent.py"
+# Symlinks (review 3f53e99e.1 sweep): a directory link OUTSIDE the tree pointing at the scratch directory inside it, and a `.txt` link to a Python file.
+OUTSIDE_LINK = pathlib.Path(tempfile.mkdtemp(prefix="test-block-suppressions-link-")) / "into-repo"
+atexit.register(shutil.rmtree, str(OUTSIDE_LINK.parent), True)
+TXT_LINK = SCRATCH / "notes.txt"
+# Review b922f15c.1-.4 fixtures: a git repo outside the tree whose committed scripts write a marker (one edited after the commit), a script past the old 1 MiB cap, and one past the read budget whose NAME carries the marker token, which is what lets the pre-filter match.
+TRACK_REPO = pathlib.Path(tempfile.mkdtemp(prefix="test-block-suppressions-repo-"))
+atexit.register(shutil.rmtree, str(TRACK_REPO), True)
+PADDED = SCRATCH / "padded.py"
+HUGE = SCRATCH / ("huge_noq" + "a_tool.py")
 # A TRACKED script that carries markers in its own source and writes files: running it adds nothing the tree does not already hold.
 TRACKED_SCRIPT = REPO / ".claude" / "hooks" / "stop" / "worklist.py"
 
@@ -58,10 +71,7 @@ def _world():
     SCRATCH.mkdir(parents=True, exist_ok=True)
     KEPT.write_text(KEPT_TEXT, encoding="utf-8")
     OUTSIDE.write_text("x = 1\n", encoding="utf-8")
-    MARKER_SCRIPT.write_text(
-        "import pathlib\npathlib.Path(%r).write_text('y = 1  %s: B010\\n')\n" % (str(KEPT), NQ),
-        encoding="utf-8",
-    )
+    MARKER_SCRIPT.write_text(MARKER_PROGRAM, encoding="utf-8")
     MARKER_JS.write_text(
         "require('fs').writeFileSync('/tmp/x.ts', '// %s\\nlet x = 1\\n')\n" % TSI,
         encoding="utf-8",
@@ -69,6 +79,29 @@ def _world():
     CLEAN_SCRIPT.write_text(
         "import pathlib\npathlib.Path(%r).write_text('y = 1\\n')\n" % str(OUTSIDE), encoding="utf-8"
     )
+    if not OUTSIDE_LINK.is_symlink():
+        OUTSIDE_LINK.symlink_to(SCRATCH, target_is_directory=True)
+    if not TXT_LINK.is_symlink():
+        TXT_LINK.symlink_to(KEPT)
+    if not (TRACK_REPO / ".git").is_dir():
+        subprocess.run(["git", "init", "-q", str(TRACK_REPO)], check=True)
+        (TRACK_REPO / "unchanged.py").write_text(MARKER_PROGRAM, encoding="utf-8")
+        (TRACK_REPO / "edited.py").write_text("print('reviewed')\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(TRACK_REPO), "add", "."], check=True)
+        subprocess.run(
+            [
+                *("git", "-C", str(TRACK_REPO), "-c", "user.name=t", "-c", "user.email=t@t"),
+                "commit",
+                "-qm",
+                "x",
+            ],
+            check=True,
+        )
+        (TRACK_REPO / "edited.py").write_text(MARKER_PROGRAM, encoding="utf-8")
+    if not PADDED.is_file():
+        PADDED.write_text("#" * (2 << 20) + "\n" + MARKER_PROGRAM, encoding="utf-8")
+    if not HUGE.is_file():
+        HUGE.write_text("#" * (17 << 20) + "\n", encoding="utf-8")
 
 
 def _edit(path, old, new):
@@ -143,6 +176,17 @@ EDIT_CASES = [
         False,
     ),
     ("a file outside the repository", _edit(OUTSIDE, "x = 1", "x = 1  %s: B010" % NQ), False),
+    # Judged where the edit LANDS (review 3f53e99e.1 sweep): each refusal was allowed (rc 0) before.
+    (
+        "a directory link outside the tree into it",
+        _edit(OUTSIDE_LINK / KEPT.name, "return os.sep", "return os.sep  %s: B010" % NQ),
+        True,
+    ),
+    (
+        "a .txt link to a Python file",
+        _edit(TXT_LINK, "return os.sep", "return os.sep  %s: B010" % NQ),
+        True,
+    ),
     ("Markdown teaching the rule", _edit("docs/a.md", "x", "Never write `%s: B010`." % NQ), False),
     ("an ordinary edit", _edit("src/a.ts", "x", "y"), False),
 ]
@@ -157,6 +201,17 @@ SHELL_CASES = [
     (
         "sed -i adding one",
         "sed -i 's/return os.sep/return os.sep  %s: RET504/' %s" % (NQ, KEPT),
+        True,
+    ),
+    # In place is sed's and perl's own option parse (review 3f53e99e.2 sweep): each refusal was allowed (rc 0) before.
+    (
+        "sed -Ei adding one",
+        "sed -Ei 's/return os.sep/return os.sep  %s: RET504/' %s" % (NQ, KEPT),
+        True,
+    ),
+    (
+        "perl -pi -e adding one",
+        "perl -pi -e 's/return os.sep/return os.sep  %s: RET504/' %s" % (NQ, KEPT),
         True,
     ),
     (
@@ -192,6 +247,31 @@ SHELL_CASES = [
     ),
     ("a script that does not exist yet fails open", "python3 %s" % ABSENT_SCRIPT, False),
     ("python -m names a module, not a file", "python3 -m %s" % MARKER_SCRIPT.stem, False),
+    # Review b922f15c.1-.4: each refusal was allowed (rc 0) before.
+    (
+        "a script written and run in one command",
+        "cat > %s/later <<'EOF'\n%sEOF\npython3 %s/later" % (SCRATCH, MARKER_PROGRAM, SCRATCH),
+        True,
+    ),
+    (
+        "a script copied in and run, the command naming a marker",
+        "cp /tmp/nowhere.py %s/x_noq%s_tool.py && python3 %s/x_noq%s_tool.py"
+        % (SCRATCH, "a", SCRATCH, "a"),
+        True,
+    ),
+    (
+        "a script copied in and run, the command naming nothing",
+        "cp /tmp/nowhere.py %s/tool.py && python3 %s/tool.py" % (SCRATCH, SCRATCH),
+        False,
+    ),
+    ("a tracked script edited after its commit", "python3 %s" % (TRACK_REPO / "edited.py"), True),
+    (
+        "a tracked script unchanged since its commit",
+        "python3 %s" % (TRACK_REPO / "unchanged.py"),
+        False,
+    ),
+    ("a script past the old 1 MiB cap is read whole", "python3 %s" % PADDED, True),
+    ("a script past the read budget is unjudgeable", "python3 %s" % HUGE, True),
     # The interpreter's own options, parsed as it parses them (review 63ee61e3.1): each refusal was allowed (rc 0) before.
     ("python -E is a flag, not an inline program", "python3 -E %s" % MARKER_SCRIPT, True),
     ("python -I then the script", "python3 -I %s" % MARKER_SCRIPT, True),
