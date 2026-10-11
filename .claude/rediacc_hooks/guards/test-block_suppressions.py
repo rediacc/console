@@ -192,6 +192,13 @@ SHELL_CASES = [
     ),
     ("a script that does not exist yet fails open", "python3 %s" % ABSENT_SCRIPT, False),
     ("python -m names a module, not a file", "python3 -m %s" % MARKER_SCRIPT.stem, False),
+    # The interpreter's own options, parsed as it parses them (review 63ee61e3.1): each refusal was allowed (rc 0) before.
+    ("python -E is a flag, not an inline program", "python3 -E %s" % MARKER_SCRIPT, True),
+    ("python -I then the script", "python3 -I %s" % MARKER_SCRIPT, True),
+    ("python -X takes its own value", "python3 -X dev %s" % MARKER_SCRIPT, True),
+    ("a -c after the script is the script's argument", "python3 %s -c x" % MARKER_SCRIPT, True),
+    ("node -r takes its own value", "node -r %s %s" % (CLEAN_SCRIPT, MARKER_JS), True),
+    ("perl -E is perl's inline program", "perl -E 'print 1'", False),
 ]
 
 

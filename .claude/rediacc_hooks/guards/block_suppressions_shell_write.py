@@ -177,46 +177,6 @@ def _run_operands(run, argv):
     return ops
 
 
-# The interpreter options that put the program on the command line, so no operand is a script.
-_INLINE = ("-c", "-e", "-E", "-p", "--eval", "--print")
-# The largest script read; a bigger file is not a hand-written edit script.
-_SCRIPT_MAX = 1 << 20
-
-
-def _script_text(argv, run_cwd, cwd):
-    """The program text of a script an interpreter run executes BY PATH, or None: an inline program (`-c`, `-e`, stdin), a module (`-m`), a file it cannot read, or a file this checkout tracks (see the module docstring)."""
-    if any(a in _INLINE or (a[:2] in ("-c", "-e") and len(a) > 2) for a in argv) or "-m" in argv:
-        return None
-    ops = _operands(argv)
-    if not ops or ops[0] == "-":
-        return None
-    path = pathlib.Path(_abs(ops[0], run_cwd, cwd))
-    try:
-        if not path.is_file() or path.stat().st_size > _SCRIPT_MAX:
-            return None
-        tracked = hookio.git_out(
-            ["ls-files", "--error-unmatch", "--", path.name], cwd=str(path.parent), want_rc=True
-        )
-        if tracked is not None:
-            return None
-        return path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return None
-
-
-def _scripts(cmd, cwd):
-    """The program text of every script an interpreter in `cmd` runs by path (`_script_text`); the lexer runs only when an interpreter is named at all."""
-    if not re.search(r"python|node|perl|ruby|deno|bun|tsx", cmd):
-        return []
-    out = []
-    for run in shellscan.every_run(cmd):
-        if run.name.rsplit("/", 1)[-1].startswith(INTERPRETERS):
-            text = _script_text(list(run.argv), run.cwd, cwd)
-            if text is not None:
-                out.append(text)
-    return out
-
-
 def _render(engine, grew):
     return ", ".join(engine.render_marker(kind, code) for kind, code, _b, _a in grew)
 
@@ -277,8 +237,9 @@ def _offending(engine, cmd, cwd):
             code = " ".join(argv)
             if not ops or ops[0] == "-":
                 code += "\n" + "\n".join(bodies)
-            script = _script_text(argv, run.cwd, cwd)
-            if script is not None:
+            # A script by path is read like the heredoc above, under `shellscan.interpreter_program`'s rules (tracked exempt, unreadable fails open).
+            script, kind = shellscan.interpreter_program(run, cmd, cwd)
+            if kind == "file":
                 code += "\n" + script
             if WRITE_CODE.search(code):
                 grew = engine.growth(engine.count_any_language(""), engine.count_any_language(code))
@@ -297,7 +258,9 @@ def run(ev):
     # A script run by path names no marker in the command text (#f3f36655), so such a command is let through only when a script it runs names one; the scanner is loaded for nothing else.
     if not _PREFILTER.search(cmd) and not any(
         _PREFILTER.search(text)
-        for text in _scripts(cmd, ev.default(("cwd",), str(hookio.repo_root())))
+        for text in shellscan.interpreter_scripts(
+            cmd, ev.default(("cwd",), str(hookio.repo_root()))
+        )
     ):
         return hookio.ALLOW
     try:

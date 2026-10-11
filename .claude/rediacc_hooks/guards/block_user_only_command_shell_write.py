@@ -213,7 +213,7 @@ def _listed(target_abs):
     return (rel, exceptions) if rel in exceptions.entries else None
 
 
-def _list_write(runs, analysis, bodies):
+def _list_write(runs, analysis, cmd, cwd):
     """A short description of the first write to the exception list itself, or ""."""
     for _op, target in analysis.writes:
         if model_invocation.is_exception_list(target):
@@ -252,13 +252,10 @@ def _list_write(runs, analysis, bodies):
         ):
             return "dd of= the exception list"
         if name.startswith(INTERPRETERS):
-            code = " ".join(argv)
-            if not operands or operands[0] == "-":
-                code += "\n" + "\n".join(bodies)
-            if "model-invocation-exceptions" in code:
-                verdict = _python_writes(name, argv, operands, bodies, _names_list)
-                if WRITE_CODE.search(code) if verdict is None else verdict:
-                    return "a %s program writing the exception list" % name
+            code, verdict = _program(run, cmd, cwd, _names_list)
+            writes = WRITE_CODE.search(code) if verdict is None else verdict
+            if "model-invocation-exceptions" in code and writes:
+                return "a %s program writing the exception list" % name
     return ""
 
 
@@ -271,21 +268,15 @@ def _names_dir(value):
     return model_invocation.names_scope_dir(value)
 
 
-def _python_writes(name, argv, operands, bodies, holds):
-    """`shellscan.python_writes_to` over the program a python run executes (its `-c` value, or the heredocs when it reads its program from stdin); None for any other interpreter, a script file, or a program that does not parse."""
-    if not re.match(r"^python[0-9.]*$", name):
-        return None
-    program = None
-    for k, a in enumerate(argv):
-        if a == "-c":
-            program = argv[k + 1] if k + 1 < len(argv) else None
-            break
-        if a.startswith("-c") and len(a) > 2:
-            program = a[2:]
-            break
-    if program is None and (not operands or operands[0] == "-"):
-        program = "\n".join(bodies)
-    return None if program is None else shellscan.python_writes_to(program, holds)
+def _program(run, cmd, cwd, holds):
+    """`(code, verdict)` for an interpreter run. `code` is its argv joined plus the program `shellscan.interpreter_program` reads from stdin or from a script passed BY PATH (#c4542b69: a script by path was not read at all, so one writing the key or the list passed where the same heredoc was refused); `verdict` is `shellscan.python_writes_to` over a python program, None for any other interpreter or a program that does not parse."""
+    text, kind = shellscan.interpreter_program(run, cmd, cwd)
+    code = " ".join(run.argv)
+    if kind in ("stdin", "file"):
+        code += "\n" + text
+    if kind is None or not re.match(r"^python[0-9.]*$", run.name.rsplit("/", 1)[-1]):
+        return code, None
+    return code, shellscan.python_writes_to(text, holds)
 
 
 def _offending(cmd, cwd):
@@ -297,7 +288,7 @@ def _offending(cmd, cwd):
         if doc.body_start is not None and doc.body_end is not None
     ]
     runs = shellscan.every_run(cmd)
-    listed_write = _list_write(runs, analysis, bodies)
+    listed_write = _list_write(runs, analysis, cmd, cwd)
     if listed_write:
         return "list", listed_write
     written = "\n".join(
@@ -369,11 +360,10 @@ def _offending(cmd, cwd):
                         "; ".join(problems),
                     )
         if name.startswith(INTERPRETERS):
-            code = " ".join(argv)
-            if not operands or operands[0] == "-":
-                code += "\n" + "\n".join(bodies)
             in_dir = _is_target(".", run.cwd)
-            verdict = None if in_dir else _python_writes(name, argv, operands, bodies, _names_dir)
+            code, verdict = _program(run, cmd, cwd, _names_dir)
+            if in_dir:
+                verdict = None
             if verdict is None:
                 names_dir = _NAMED_PATH.search(code) is not None or in_dir
                 verdict = bool(names_dir and WRITE_CODE.search(code))
@@ -388,12 +378,17 @@ def _offending(cmd, cwd):
 
 def run(ev):
     cmd = ev.field("tool_input", "command")
-    if not cmd or not _PREFILTER.search(cmd):
+    if not cmd:
         return hookio.ALLOW
     try:
         cwd = ev.default(("cwd",), str(hookio.repo_root()))
     except RuntimeError:
         cwd = ev.cwd
+    # A script run by path names the key or the directory in its own text, not the command's (#c4542b69), so the pre-filter reads those scripts too; the lexer starts only when an interpreter is named.
+    if not _PREFILTER.search(cmd) and not any(
+        _PREFILTER.search(text) for text in shellscan.interpreter_scripts(cmd, cwd)
+    ):
+        return hookio.ALLOW
     found = _offending(cmd, cwd)
     if found is None:
         return hookio.ALLOW

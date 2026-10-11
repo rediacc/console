@@ -1042,6 +1042,42 @@ STATIC: list[Case] = [
         _j({"tool_input": {"command": 'git rm -r "$(echo x)/.."'}, "cwd": str(ROOT / ".claude")}),
         "protected-files: from .claude/, git rm -r normalises x/.. to the directory holding the protected file",
     ),
+    # Review 63ee61e3.2: a bracket class is matched the way bash expands it, never compiled from raw text, so no pattern can crash the guard. Measured on bash 5.3: an invalid range and an unknown POSIX class match nothing, `]` first is a member, an unterminated `[` is literal; an unknown class is still read as any character, toward refusing.
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm .claude/[z-a]"),
+        "protected-files CONTROL: an invalid range matches nothing, as bash expands it (it crashed the guard, rc 1)",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm .claude/settings.jso[!]"),
+        "protected-files CONTROL: an unterminated class is literal text (it crashed the guard, rc 1)",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm .claude/s[e-a]ttings.json"),
+        "protected-files CONTROL: an invalid range inside the protected name matches nothing",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/s[[:alpha:]]ttings.json"),
+        "protected-files: a POSIX class names the protected file",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/s[]e]ttings.json"),
+        "protected-files: a class whose first member is ] names the protected file",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/s[!a-d]ttings.json"),
+        "protected-files: a negated range names the protected file",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/s[[:bogus:]]ttings.json"),
+        "protected-files: an unknown POSIX class fails safe toward the protected file",
+    ),
     # A prefix command's option VALUE is not the command (cac47d16.1 sweep, shellscan._prefix_option): each refusal was allowed (rc 0) before, the value read as the command.
     case(
         "check 2 guards/block_protected_files.py",
@@ -1431,6 +1467,17 @@ STATIC: list[Case] = [
         ),
         "review-file-shell-write: a heredoc writing a review file through Path",
     ),
+    # #c4542b69: a script run BY PATH is read like a heredoc; the refusals need scratch scripts and live in test-block_review_file_edit.py. These pin the allow paths: a TRACKED script whose own text names a review path and writes files, and a script that cannot be read, which fails open.
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("python3 .claude/rediacc_hooks/tests/test_wl_loopspeed.py"),
+        "review-file-shell-write CONTROL: a tracked script the guard would refuse if it read it",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("python3 /nonexistent/zz-agent-reviews-writer.py"),
+        "review-file-shell-write CONTROL: a script that cannot be read fails open",
+    ),
     # Review c093f0f3.1: more auto-numbered fields than positionals (`*row`) rendered by raising StopIteration inside the guard. An unknown field renders as a placeholder.
     case(
         "check 2 guards/block_review_file_shell_write.py",
@@ -1599,6 +1646,17 @@ STATIC: list[Case] = [
         "check 0 guards/block_user_only_command_shell_write.py",
         bash_json("cp -t /tmp .claude/commands/handoff.md"),
         "user-only-command-shell-write CONTROL: cp -t copies a command OUT",
+    ),
+    # #c4542b69: a script run BY PATH is read like a heredoc; the refusals need scratch scripts and live in test-block_user_only_command.py. These pin the allow paths: a TRACKED script whose own text names the key, the command directory and writes files, and a script that cannot be read, which fails open.
+    case(
+        "check 0 guards/block_user_only_command_shell_write.py",
+        bash_json("python3 .claude/rediacc_hooks/guards/test-block_user_only_command.py"),
+        "user-only-command-shell-write CONTROL: a tracked script the guard would refuse if it read it",
+    ),
+    case(
+        "check 0 guards/block_user_only_command_shell_write.py",
+        bash_json("python3 /nonexistent/zz-commands-writer.py"),
+        "user-only-command-shell-write CONTROL: a script that cannot be read fails open",
     ),
     # A python program is judged by where it WRITES, not by the paths it names (coordinator finding 2026-10-11): the first two controls were refused as "a python3 program writing the exception list".
     case(

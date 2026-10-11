@@ -6,12 +6,15 @@ This file runs the Edit half; `test-block_review_file_shell_write.py` beside it 
     test-block_review_file_edit.py        run every Edit case through dispatch.py, then the DEFECT run
 """
 
+import atexit
 import importlib
 import importlib.util
 import json
 import pathlib
+import shutil
 import subprocess
 import sys
+import tempfile
 import typing
 
 HERE = pathlib.Path(__file__).resolve()
@@ -27,6 +30,13 @@ DISPATCH = str(HERE.parents[1] / "dispatch.py")
 R = "agent/reviews/0930-1/" + "a" * 40 + ".md"
 # The clean ledger (PLAN-clean-review-ledger): a clean verdict is a line of this file, protected exactly as a `.md` record is.
 L = "agent/reviews/0930-1/clean.jsonl"
+# Scripts run BY PATH (#c4542b69), untracked in the system temp directory: one writes a review record, one only reads it. Written before any case runs and removed at exit.
+_SCRIPTS = pathlib.Path(tempfile.mkdtemp(prefix="test-review-file-scripts-"))
+atexit.register(shutil.rmtree, str(_SCRIPTS), True)
+WRITER = _SCRIPTS / "writer.py"
+WRITER.write_text("import pathlib\npathlib.Path(%r).write_text('x')\n" % R, encoding="utf-8")
+READER = _SCRIPTS / "reader.py"
+READER.write_text("import pathlib\nprint(pathlib.Path(%r).read_text())\n" % R, encoding="utf-8")
 
 EDIT_CASES = [
     # (name, payload, refused?)
@@ -192,6 +202,22 @@ SHELL_CASES = [
     (
         "a star width before echoed text",
         "python3 - <<'EOF'\nimport os\nos.system('echo %%*s > /tmp/x' %% (3, '%s'))\nEOF" % R,
+        False,
+    ),  # A program read from a FILE is read like one from a heredoc (#c4542b69): each refusal was allowed (rc 0) before.
+    ("a python script by path writing a review file", "python3 %s" % WRITER, True),
+    (
+        "a python script by path after a cd",
+        "cd %s && python3 -u %s" % (WRITER.parent, WRITER.name),
+        True,
+    ),
+    ("a python script by path that only reads", "python3 %s" % READER, False),
+    # The interpreter's own options, parsed as it parses them (review 63ee61e3.1): each refusal was allowed (rc 0) before.
+    ("python -E then the script", "python3 -E %s" % WRITER, True),
+    ("python -W takes its own value", "python3 -W ignore %s" % WRITER, True),
+    ("a -c after the script is the script's argument", "python3 %s -c x" % WRITER, True),
+    (
+        "a script that cannot be read fails open",
+        "python3 %s" % (WRITER.parent / "absent-agent-reviews.py"),
         False,
     ),
 ]

@@ -170,7 +170,7 @@ def _run_operands(run, argv):
     return out
 
 
-def _offending(cmd, depth=0):
+def _offending(cmd, depth=0, cwd=None):
     """A short description of the first hand write to a review file in `cmd`, or "". `depth` counts the programs a shell command was handed down through (`os.system`, `subprocess.run`, `execSync`), so a command quoting itself cannot recurse forever.
 
     PAST THE CAP IT REFUSES. A command is only handed down when it names the review directory, so one nested deeper than MAX_DEPTH is a review path this guard stopped reading, and allowing it would let depth alone carry a write past the guard.
@@ -183,7 +183,6 @@ def _offending(cmd, depth=0):
     hits = [t for t in shellscan.write_targets(cmd) if _is_review(t)]
     if hits:
         return "redirect into %s" % hits[0]
-    analysis = shellscan._analyse(cmd)
     # THE LAUNCHED COMMANDS TOO (#503f0ba8): a `sed -i`, `cp` or interpreter that `find -exec` or `npx -c` starts writes the same review file, so the runs are `shellscan.every_run`.
     for run in shellscan.every_run(cmd):
         name = run.name.rsplit("/", 1)[-1]
@@ -208,12 +207,12 @@ def _offending(cmd, depth=0):
         if name == "dd" and any(a.startswith("of=") and _is_review(a[3:], run.cwd) for a in argv):
             return "dd of= a review file"
         if name.startswith(INTERPRETERS):
-            # A heredoc is this interpreter's code only when it reads its program from stdin (`python3 -`, a bare `python3`); a `cat > x.py <<EOF` earlier in the line is a file being written, not code being run.
-            reads_stdin = not operands or operands[0] == "-"
+            # The program is `shellscan.interpreter_program`'s reading (#c4542b69): the `-c` value, the heredocs only when it reads its program from stdin (a `cat > x.py <<EOF` earlier in the line is a file being written, not code being run), or a script passed BY PATH, which was not read at all before (rc 0 against rc 2 for the same program as a heredoc).
+            text, kind = shellscan.interpreter_program(run, cmd, cwd)
             code = " ".join(argv)
-            if reads_stdin:
-                code += "\n" + "\n".join(_heredoc_bodies(cmd, analysis))
-            program = _python_program(name, argv, reads_stdin, cmd, analysis)
+            if kind in ("stdin", "file"):
+                code += "\n" + text
+            program = text if kind is not None and re.match(r"^python[0-9.]*$", name) else None
             verdict = _python_writes_review(program, depth) if program is not None else None
             if verdict is None:
                 verdict = _code_writes_review(code, depth)
@@ -253,18 +252,6 @@ def _code_writes_review(code, depth=0):
 # PYTHON IS JUDGED BY ITS WRITE TARGETS (2026-10-09). The line-scoped reading below refused a heredoc that wrote only a scratchpad file, because a review path TEMPLATE flowed into the written content (`s = s.replace(..., 'agent/reviews/feat/%02d.md')` then `p.write_text(s)`): the name `s` was bound to a review literal, and a write named it. The content of a write is not where it lands.
 # So a Python program that parses is read with `ast`: each write call's TARGET expression (the path `open` opens for writing, the receiver of `write_text`/`write_bytes`/`unlink`/`touch`, the destination of `os.replace`/`os.rename`/`shutil.copy*`/`shutil.move`, the path `os.remove` deletes) is refused when it holds a review path string or a name bound to one, transitively. Strings anywhere else are data. Node, perl, ruby and Python that does not parse keep the line-scoped regex.
 _URL = re.compile(r"\A[A-Za-z][A-Za-z0-9+.-]*://")
-
-
-def _python_program(name, argv, reads_stdin, cmd, analysis):
-    """The Python program text a python run executes (`-c` value, or its stdin heredocs), or None for anything else."""
-    if not re.match(r"^python[0-9.]*$", name):
-        return None
-    for k, a in enumerate(argv):
-        if a == "-c":
-            return argv[k + 1] if k + 1 < len(argv) else None
-        if a.startswith("-c") and len(a) > 2:
-            return a[2:]
-    return "\n".join(_heredoc_bodies(cmd, analysis)) if reads_stdin else None
 
 
 def _is_review_string(value):
@@ -454,20 +441,18 @@ def _python_writes_review(program, depth=0):
     )
 
 
-def _heredoc_bodies(cmd, analysis):
-    """The text of every heredoc the lexer read; a body fed to an interpreter is code."""
-    return [
-        cmd[doc.body_start : doc.body_end]
-        for doc in analysis.heredocs
-        if doc.body_start is not None and doc.body_end is not None
-    ]
-
-
 def run(ev):
     cmd = ev.field("tool_input", "command")
-    if "reviews" not in cmd:
+    try:
+        cwd = ev.default(("cwd",), str(hookio.repo_root()))
+    except RuntimeError:
+        cwd = ev.cwd
+    # A script run by path names the directory in its own text, not the command's (#c4542b69), so the pre-filter reads those scripts too; the lexer starts only when an interpreter is named.
+    if "reviews" not in cmd and not any(
+        "reviews" in text for text in shellscan.interpreter_scripts(cmd, cwd)
+    ):
         return hookio.ALLOW
-    what = _offending(cmd)
+    what = _offending(cmd, cwd=cwd)
     if not what:
         return hookio.ALLOW
     ev.warn_raw(MESSAGE % what)

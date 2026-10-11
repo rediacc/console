@@ -65,6 +65,13 @@ def world(root: pathlib.Path) -> None:
         ("srcdir/a.md", FLAGGED),
         (LISTED, FLAGGED),
         (LIST, LIST_TEXT),
+        # Scripts run BY PATH (#c4542b69); the scratch tree is no git checkout, so none is tracked.
+        (
+            "tools/key_writer.py",
+            "import pathlib\npathlib.Path(%r).write_text('---\\n%s: true\\n---\\n')\n" % (C, K),
+        ),
+        ("tools/list_writer.py", "open(%r, 'w').write('{}')\n" % LIST),
+        ("tools/reader.py", "print(open(%r).read())\n" % LIST),
     ):
         path = root / rel
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -272,6 +279,14 @@ SHELL_CASES = [
     ("cp of a flagged source onto a LISTED file", "cp src/flagged.md %s" % LISTED, False),
     ("sed -i elsewhere in a LISTED file", "sed -i 's/Body/Text/' %s" % LISTED, False),
     ("reading the exception list", "cat %s" % LIST, False),
+    # A program read from a FILE is read like one from a heredoc (#c4542b69): each refusal was allowed (rc 0) before.
+    ("a script by path writing the key into a command", "python3 tools/key_writer.py", True),
+    ("a script by path writing the exception list", "python3 tools/list_writer.py", True),
+    ("a script by path that only reads the list", "python3 tools/reader.py", False),
+    # The interpreter's own options, parsed as it parses them (review 63ee61e3.1): each refusal was allowed (rc 0) before.
+    ("python -E then the script", "python3 -E tools/key_writer.py", True),
+    ("python -X takes its own value", "python3 -X dev tools/list_writer.py", True),
+    ("a script that cannot be read fails open", "python3 tools/absent-commands.py", False),
 ]
 
 
