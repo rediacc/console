@@ -43,7 +43,6 @@ _PREFILTER = re.compile(
     re.IGNORECASE,
 )
 INTERPRETERS = ("python", "node", "perl", "ruby", "deno", "bun", "tsx")
-INPLACE = ("sed", "gsed", "perl")
 WRITERS = ("echo", "printf", "cat")
 WRITE_CODE = re.compile(
     r"open\([^)]*,\s*(mode\s*=\s*)?['\"][^'\"]*[wax+]|write_text|write_bytes|\.write\(|writeFileSync"
@@ -215,13 +214,12 @@ def _offending(engine, cmd, cwd):
                 grew = engine.growth(old, new)
                 if grew:
                     return "%s into %s" % (_render(engine, grew), target)
-        in_place = any(a == "-i" or a.startswith(("-i", "--in-place")) for a in argv)
-        if (
-            name in INPLACE
-            and in_place
-            and any(engine.language_for(a) for a in _run_operands(run, argv))
-        ):
-            exprs = [a for a in argv if not a.startswith("-") and not engine.language_for(a)]
+        # In place is sed's or perl's own option parse (review 3f53e99e.2 sweep): `sed -Ei` and `perl -pi -e` are in place.
+        edit = shellscan.in_place_edit(run)
+        if edit is not None and any(engine.language_for(a) for a in _run_operands(run, argv)):
+            exprs = edit[0] + [
+                a for a in argv if not a.startswith("-") and not engine.language_for(a)
+            ]
             for expr in exprs:
                 pattern = "\n".join(m.group("pat") for m in _SED_SUB.finditer(expr))
                 added = "\n".join(m.group("rep") for m in _SED_SUB.finditer(expr))
@@ -239,6 +237,12 @@ def _offending(engine, cmd, cwd):
                 code += "\n" + "\n".join(bodies)
             # A script by path is read like the heredoc above, under `shellscan.interpreter_program`'s rules (tracked exempt, unreadable fails open).
             script, kind = shellscan.interpreter_program(run, cmd, cwd)
+            # A program this hook cannot read (review b922f15c.1, .4) is refused rather than run unread; the pre-filter already matched.
+            if kind == "unjudgeable":
+                return "a %s program this hook cannot read (%s)" % (
+                    name,
+                    shellscan.UNJUDGEABLE_REASON,
+                )
             if kind == "file":
                 code += "\n" + script
             if WRITE_CODE.search(code):

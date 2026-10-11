@@ -37,6 +37,26 @@ WRITER = _SCRIPTS / "writer.py"
 WRITER.write_text("import pathlib\npathlib.Path(%r).write_text('x')\n" % R, encoding="utf-8")
 READER = _SCRIPTS / "reader.py"
 READER.write_text("import pathlib\nprint(pathlib.Path(%r).read_text())\n" % R, encoding="utf-8")
+# A directory symlink whose target is a review directory (review 3f53e99e.1 sweep).
+(_SCRIPTS / "agent" / "reviews" / "0930-1").mkdir(parents=True)
+(_SCRIPTS / "rl").symlink_to(_SCRIPTS / "agent" / "reviews" / "0930-1", target_is_directory=True)
+# Review b922f15c.3: a TRACKED script is exempt only while it matches HEAD. Both scripts are committed writing a review file; one is then edited after the commit.
+_REPO = _SCRIPTS / "repo"
+_REPO.mkdir()
+subprocess.run(["git", "init", "-q", str(_REPO)], check=True)
+(_REPO / "unchanged.py").write_text(WRITER.read_text(), encoding="utf-8")
+(_REPO / "edited.py").write_text("print('reviewed')\n", encoding="utf-8")
+subprocess.run(["git", "-C", str(_REPO), "add", "."], check=True)
+subprocess.run(
+    ["git", "-C", str(_REPO), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"],
+    check=True,
+)
+(_REPO / "edited.py").write_text(WRITER.read_text(), encoding="utf-8")
+# Review b922f15c.4: size never switches the read off. Past the old 1 MiB cap it is read whole; past the budget it is unjudgeable.
+PADDED = _SCRIPTS / "padded.py"
+PADDED.write_text("#" * (2 << 20) + "\n" + WRITER.read_text(), encoding="utf-8")
+HUGE = _SCRIPTS / "huge-agent-reviews.py"
+HUGE.write_text("#" * (17 << 20) + "\n", encoding="utf-8")
 
 EDIT_CASES = [
     # (name, payload, refused?)
@@ -95,6 +115,22 @@ EDIT_CASES = [
         False,
     ),
     ("no path", {"tool_name": "Write", "tool_input": {"content": "x"}}, False),
+    # Judged where the write LANDS (review 3f53e99e.1 sweep): each refusal was allowed (rc 0) before, and the control was refused.
+    (
+        "a .. detour into the directory",
+        {"tool_name": "Write", "tool_input": {"file_path": "agent/x/../reviews/0930-1/a.md"}},
+        True,
+    ),
+    (
+        "a symlink into the directory",
+        {"tool_name": "Write", "tool_input": {"file_path": str(_SCRIPTS / "rl" / "a.md")}},
+        True,
+    ),
+    (
+        "a .. detour out of the directory",
+        {"tool_name": "Write", "tool_input": {"file_path": "agent/reviews/../notes/a.md"}},
+        False,
+    ),
 ]
 
 SHELL_CASES = [
@@ -107,6 +143,10 @@ SHELL_CASES = [
     ("cat heredoc", "cat > %s <<'EOF'\n# Review\nEOF" % R, True),
     ("tee", "echo x | tee %s" % R, True),
     ("sed -i", "sed -i 's/high/low/' %s" % R, True),
+    # In place is sed's and perl's own option parse (review 3f53e99e.2 sweep): each refusal was allowed (rc 0) before.
+    ("sed -Ei", "sed -Ei 's/high/low/' %s" % R, True),
+    ("perl -pi -e", "perl -pi -e 's/high/low/' %s" % R, True),
+    ("sed -E without -i prints, never writes", "sed -E 's/high/low/' %s" % R, False),
     ("cp onto the directory", "cp /tmp/x.md agent/reviews/0930-1/", True),
     ("mv onto a file", "mv /tmp/x.md %s" % R, True),
     ("truncate", "truncate -s 0 %s" % R, True),
@@ -220,6 +260,34 @@ SHELL_CASES = [
         "python3 %s" % (WRITER.parent / "absent-agent-reviews.py"),
         False,
     ),
+    # Review b922f15c.1-.4: each refusal was allowed (rc 0) before.
+    (
+        "a script written and run in one command",
+        "cat > %s/later.py <<'EOF'\n%sEOF\npython3 %s/later.py"
+        % (_SCRIPTS, WRITER.read_text(), _SCRIPTS),
+        True,
+    ),
+    (
+        "a script written and run in one command that only reads",
+        "cat > %s/later_reader.py <<'EOF'\n%sEOF\npython3 %s/later_reader.py"
+        % (_SCRIPTS, READER.read_text(), _SCRIPTS),
+        False,
+    ),
+    (
+        "a script copied in and run, the command naming the directory",
+        "cp /tmp/nowhere.py %s/agent-reviews-tool.py && python3 %s/agent-reviews-tool.py"
+        % (_SCRIPTS, _SCRIPTS),
+        True,
+    ),
+    (
+        "a script copied in and run, the command naming nothing",
+        "cp /tmp/nowhere.py %s/tool.py && python3 %s/tool.py" % (_SCRIPTS, _SCRIPTS),
+        False,
+    ),
+    ("a tracked script edited after its commit", "python3 %s" % (_REPO / "edited.py"), True),
+    ("a tracked script unchanged since its commit", "python3 %s" % (_REPO / "unchanged.py"), False),
+    ("a script past the old 1 MiB cap is read whole", "python3 %s" % PADDED, True),
+    ("a script past the read budget is unjudgeable", "python3 %s" % HUGE, True),
 ]
 
 

@@ -76,6 +76,42 @@ def world(root: pathlib.Path) -> None:
         path = root / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
+    # Review b922f15c.3-.4, built once: a git repo whose committed scripts write the key (one edited after the commit), a script past the old 1 MiB cap, and one past the read budget.
+    key_writer = (root / "tools" / "key_writer.py").read_text(encoding="utf-8")
+    repo = root / "repo"
+    if not (repo / ".git").is_dir():
+        repo.mkdir(exist_ok=True)
+        subprocess.run(["git", "init", "-q", str(repo)], check=True)
+        (repo / "unchanged.py").write_text(key_writer, encoding="utf-8")
+        (repo / "edited.py").write_text("print('reviewed')\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo),
+                "-c",
+                "user.name=t",
+                "-c",
+                "user.email=t@t",
+                "commit",
+                "-qm",
+                "x",
+            ],
+            check=True,
+        )
+        (repo / "edited.py").write_text(key_writer, encoding="utf-8")
+    padded = root / "tools" / "padded.py"
+    if not padded.is_file():
+        padded.write_text("#" * (2 << 20) + "\n" + key_writer, encoding="utf-8")
+    huge = root / "tools" / "huge-commands.py"
+    if not huge.is_file():
+        huge.write_text("#" * (17 << 20) + "\n", encoding="utf-8")
+    # A directory symlink inside the tree that lands in the command directory (review 3f53e99e.1).
+    (root / ".claude" / "x").mkdir(parents=True, exist_ok=True)
+    link = root / "cmdlink"
+    if not link.is_symlink():
+        link.symlink_to(root / ".claude" / "commands", target_is_directory=True)
 
 
 def _w(path, content):
@@ -149,6 +185,19 @@ EDIT_CASES = [
         False,
     ),
     ("Write of a clean command", _w(C, CLEAN), False),
+    # The path is judged where the write LANDS (review 3f53e99e.1): each refusal was allowed (rc 0) before.
+    (
+        "Write through a .. detour into the commands",
+        _w(".claude/x/../commands/new.md", FLAGGED),
+        True,
+    ),
+    ("Write through a ./ segment", _w("./.claude/./commands/new.md", FLAGGED), True),
+    ("Write through a symlink into the commands", _w("cmdlink/new.md", FLAGGED), True),
+    (
+        "Write through a .. detour out of the commands",
+        _w(".claude/commands/../x/new.md", FLAGGED),
+        False,
+    ),
     (
         "Write whose body only mentions the key",
         _w(C, CLEAN + "\nNever set `%s: true`.\n" % K),
@@ -201,6 +250,28 @@ SHELL_CASES = [
         True,
     ),
     ("sed -i appending the key", "sed -i '1a %s: true' %s" % (K, C), True),
+    # In place is sed's and perl's own option parse (review 3f53e99e.2): each refusal was allowed (rc 0) before.
+    (
+        "sed -Ei adding the key",
+        "sed -Ei 's/^description:/%s: true\\ndescription:/' %s" % (K, C),
+        True,
+    ),
+    ("sed -ni appending the key", "sed -ni '1a %s: true' %s" % (K, C), True),
+    (
+        "perl -pi -e adding the key",
+        "perl -pi -e 's/^description:/%s: true\\ndescription:/' %s" % (K, C),
+        True,
+    ),
+    (
+        "perl -0777 -pi -e adding the key",
+        "perl -0777 -pi -e 's/---/---\\n%s: true/' %s" % (K, C),
+        True,
+    ),
+    (
+        "sed -E without -i prints, never writes",
+        "sed -E 's/^description:/%s: true/' %s" % (K, C),
+        False,
+    ),
     ("cp of a flagged source", "cp src/flagged.md %s" % C, True),
     ("cp of a flagged source onto the directory", "cp src/flagged.md .claude/commands/", True),
     ("cp -r of a directory with a flagged file", "cp -r srcdir .claude/skills/", True),
@@ -287,6 +358,27 @@ SHELL_CASES = [
     ("python -E then the script", "python3 -E tools/key_writer.py", True),
     ("python -X takes its own value", "python3 -X dev tools/list_writer.py", True),
     ("a script that cannot be read fails open", "python3 tools/absent-commands.py", False),
+    # Review b922f15c.1-.4: each refusal was allowed (rc 0) before.
+    (
+        "a script written and run in one command",
+        "cat > tools/later.py <<'EOF'\nimport pathlib\npathlib.Path(%r).write_text('---\\n%s: true\\n---\\n')\nEOF\npython3 tools/later.py"
+        % (C, K),
+        True,
+    ),
+    (
+        "a script copied in and run, the command naming the directory",
+        "cp /tmp/nowhere.py tools/commands-tool.py && python3 tools/commands-tool.py",
+        True,
+    ),
+    (
+        "a script copied in and run, the command naming nothing",
+        "cp /tmp/nowhere.py tools/tool.py && python3 tools/tool.py",
+        False,
+    ),
+    ("a tracked script edited after its commit", "python3 repo/edited.py", True),
+    ("a tracked script unchanged since its commit", "python3 repo/unchanged.py", False),
+    ("a script past the old 1 MiB cap is read whole", "python3 tools/padded.py", True),
+    ("a script past the read budget is unjudgeable", "python3 tools/huge-commands.py", True),
 ]
 
 

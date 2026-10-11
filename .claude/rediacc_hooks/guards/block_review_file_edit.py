@@ -8,6 +8,7 @@ THE SHELL HALF is `block_review_file_shell_write` (pre-bash): redirections, `tee
 THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-block_review_file_edit.py` beside it and against its own DEFECT, never against a golden.
 """
 
+import os
 import re
 
 from rediacc_hooks import hookio
@@ -103,10 +104,16 @@ EDGE_CASES = [
 
 
 def run(ev):
-    path = ev.first(("tool_input", "file_path"), ("tool_input", "notebook_path"))
-    if not path or path == "null":
+    given = ev.first(("tool_input", "file_path"), ("tool_input", "notebook_path"))
+    if not given or given == "null":
         return hookio.ALLOW
+    # Judged where the write LANDS (review 3f53e99e.1 sweep): `agent/x/../reviews/...` and a directory symlink into the review directory were allowed as typed, and `agent/reviews/../notes/a.md` was refused. `realpath` resolves `.`, `..` and every symlink in the part of the path that exists.
+    try:
+        base = ev.default(("cwd",), str(hookio.repo_root()))
+    except RuntimeError:
+        base = ev.cwd
+    path = os.path.realpath(os.path.join(base, given))
     if REVIEW_PATH.search(path) is None:
         return hookio.ALLOW
-    ev.warn_raw(MESSAGE % (ev.field("tool_name") or "a write", path))
+    ev.warn_raw(MESSAGE % (ev.field("tool_name") or "a write", given))
     return hookio.DENY

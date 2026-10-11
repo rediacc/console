@@ -17,6 +17,7 @@ THE EXCEPTION LIST, from the operator's amendment of 2026-10-09, verbatim:
 THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-block_user_only_command.py` beside it and against its own DEFECT, never against a golden.
 """
 
+import os
 import pathlib
 
 from rediacc_hooks import hookio, model_invocation
@@ -201,6 +202,8 @@ def run(ev):
         except RuntimeError:
             base = pathlib.Path(ev.cwd)
         path = base / path
+    # Judged where the write LANDS (review 3f53e99e.1): `.claude/x/../commands/new.md` and a directory symlink into `.claude/commands` were out of scope as typed and allowed, while `.claude/commands/../x/new.md` was in scope and refused. `realpath` resolves `.`, `..` and every symlink in the part of the path that exists.
+    path = pathlib.Path(os.path.realpath(path))
     if model_invocation.is_exception_list(path.as_posix()):
         ev.warn_raw(
             LIST_MESSAGE
