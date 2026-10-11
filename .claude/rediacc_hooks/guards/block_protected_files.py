@@ -214,7 +214,7 @@ def run(ev):
 
 # THE TEXT VIEW DROPS WHAT BASH STILL HANDS THE COMMAND (review e085085d.1 sweep). VERB_AND_PATH reads `scan_target`, which removes every quoted span so that prose never reads as a command. A quoted path is not prose: `rm ".claude/settings.json"` and `git restore -- ".claude/settings.json"` were both allowed (rc 0, 2026-10-11), and so were the path in a variable (`f=...; rm "$f"`), in a
 # `for` list, in a quoted substitution (`rm "$(echo ...)"`), behind a `cd`, and with a doubled slash. So the walked runs are judged too: each operand of an `rm` or a destructive git verb, as bash hands it over (`argv` quote-removed, `xargv` with the walk's variables expanded, a `for` variable as every word of its list), is resolved against the directory the run executes in and normalised. A recursive `rm` of a
-# directory holding a protected file deletes it too. A substitution's output is not computed, so a protected path anywhere inside one counts, the direction this guard fails safe in. `git -C <dir>` resolves against that directory, so another checkout's copy still counts by its name, exactly as the text match always did.
+# directory holding a protected file deletes it too. A word the walk cannot evaluate is `_unjudgeable` below. `git -C <dir>` resolves against that directory, so another checkout's copy still counts by its name, exactly as the text match always did.
 def _resolve(word, base):
     return posixpath.normpath(word if word.startswith("/") else posixpath.join(base, word))
 
@@ -226,6 +226,68 @@ def _is_protected(path):
 def _holds_protected(path, root):
     """A directory a recursive rm empties: an ancestor of a protected file in this checkout."""
     return any(posixpath.join(root, p).startswith(path.rstrip("/") + "/") for p in PROTECTED_PATHS)
+
+
+# A WORD THE WALK CANNOT EVALUATE IS A WILDCARD (review c093f0f3.2). `rm .claude/$(echo settings.json)` and `rm $(echo .claude)/settings.json` delete the file, and the substitution's output is not computed, so neither normalised path names it; both were allowed (rc 0, 2026-10-11). Each `$(...)`, backtick span and `$NAME`/`${...}` the walk left unresolved is read as "any text", and the word is refused when a LITERAL
+# segment of it is a whole segment of a protected path (`.claude`, `settings.json`, `scripts`, `pre-commit-check.sh`) and the pattern can still match a protected file, or for a recursive rm a directory holding one. The segment test is what keeps `rm "$(mktemp)"`, `rm -rf "$(mktemp -d)/x"` and `rm "$X".json` allowed: a pattern made only of wildcards, or of text no protected path spells, judges nothing.
+_SEGMENTS = frozenset(seg for p in PROTECTED_PATHS for seg in p.split("/"))
+_WILD = "\x00"
+
+
+def _wildcarded(word):
+    """`word` with every part bash would compute at run time replaced by `_WILD`, or None when it has none."""
+    out: list[str] = []
+    wild = False
+    k = 0
+    while k < len(word):
+        if word.startswith("$(", k) or word.startswith("${", k):
+            close = ")" if word[k + 1] == "(" else "}"
+            depth, j = 0, k + 1
+            while j < len(word):
+                depth += word[j] == word[k + 1]
+                depth -= word[j] == close
+                j += 1
+                if depth == 0:
+                    break
+            out.append(_WILD)
+            wild, k = True, j
+        elif word[k] == "`":
+            end = word.find("`", k + 1)
+            out.append(_WILD)
+            wild, k = True, len(word) if end < 0 else end + 1
+        elif name := re.compile(r"\$[A-Za-z_][A-Za-z0-9_]*").match(word, k):
+            out.append(_WILD)
+            wild, k = True, name.end()
+        else:
+            out.append(word[k])
+            k += 1
+    return "".join(out) if wild else None
+
+
+def _unjudgeable(word, base, root, recursive):
+    """True when `word` holds a part the walk cannot evaluate and could still name a protected file (or, for a recursive rm, a directory holding one)."""
+    pattern_text = _wildcarded(word)
+    if pattern_text is None:
+        return False
+    literal = {seg for seg in re.split(r"[/%s]" % _WILD, pattern_text) if seg}
+    if not literal & _SEGMENTS:
+        return False
+    absolute = pattern_text.startswith(("/", _WILD))
+    body = ".*".join(re.escape(piece) for piece in pattern_text.split(_WILD))
+    pattern = re.compile(body if absolute else re.escape(base.rstrip("/") + "/") + body)
+    suffix = re.compile("(?:.*/)?" + body)
+    targets = [posixpath.join(root, p) for p in PROTECTED_PATHS]
+    if any(pattern.fullmatch(t) for t in targets) or any(
+        suffix.fullmatch(p) for p in PROTECTED_PATHS
+    ):
+        return True
+    if recursive:
+        ancestors = {posixpath.dirname(t) for t in targets}
+        return any(
+            pattern.fullmatch(a.rstrip("/")) or suffix.fullmatch(posixpath.basename(a))
+            for a in ancestors
+        )
+    return False
 
 
 def _operand_words(run_):
@@ -260,6 +322,8 @@ def names_by_run(cmd, cwd):
             if word.startswith("-") or word == "":
                 continue
             if ("$(" in word or "`" in word) and re.search(PROTECTED, word):
+                return True
+            if _unjudgeable(word, base, root, recursive):
                 return True
             path = _resolve(word, base)
             if _is_protected(path) or (recursive and _holds_protected(path, root)):

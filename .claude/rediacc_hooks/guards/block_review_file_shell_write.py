@@ -10,6 +10,7 @@ THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-
 """
 
 import ast
+import itertools
 import re
 import shlex
 
@@ -369,7 +370,8 @@ def _render(expr, bound, review_names, seen=frozenset()):
             else:
                 positional = []
                 named = _str_dict(expr.args[0], sub) if expr.args else {}
-            order = iter(range(len(positional) + 1))
+            # Unbounded: a template may hold more auto-numbered fields than the call spells positionals (`'{} {} {}'.format(*row)`), and each extra one is an unknown value, never a StopIteration out of `re.sub` (review c093f0f3.1).
+            order = itertools.count()
 
             def field(m):
                 if m.group(0) in ("{{", "}}"):
