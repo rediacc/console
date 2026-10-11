@@ -152,6 +152,48 @@ SHELL_CASES = [
         True,
     ),
     ("unrelated redirect", "echo x > /tmp/out.txt", False),
+    # A copy's destination is getopt's answer (review cac47d16.1 sweep): each refusal was allowed (rc 0) before.
+    ("cp -t into the directory", "cp -t agent/reviews/0930-1 /tmp/x.md", True),
+    ("mv --target-directory=", "mv --target-directory=agent/reviews/0930-1 /tmp/x.md", True),
+    ("a value option after the operands", "cp /tmp/x.md %s -S .bak" % R, True),
+    ("xargs appends the destination", "echo agent/reviews/0930-1/ | xargs cp /tmp/x.md", True),
+    ("cp -t out of the directory", "cp -t /tmp %s" % R, False),
+    # Every way Python fills a template (review 6dcf79c7.1-.2): each refusal was allowed (rc 0) before.
+    (
+        "str.format with a keyword field",
+        "python3 - <<'EOF'\nimport os\nos.system('echo x > {p}'.format(p='%s'))\nEOF" % R,
+        True,
+    ),
+    (
+        "str.format with numbered fields out of order",
+        "python3 - <<'EOF'\nimport os\nos.system('{1} > {0}'.format('%s', 'echo x'))\nEOF" % R,
+        True,
+    ),
+    (
+        "str.format_map over a dict",
+        "python3 - <<'EOF'\nimport os\nos.system('echo x > {p}'.format_map({'p': '%s'}))\nEOF" % R,
+        True,
+    ),
+    (
+        "a star width takes its own argument",
+        "python3 - <<'EOF'\nimport os\nos.system('echo x > %%*s' %% (0, '%s'))\nEOF" % R,
+        True,
+    ),
+    (
+        "a percent mapping key",
+        "python3 - <<'EOF'\nimport os\nos.system('echo x > %%(p)s' %% {'p': '%s'})\nEOF" % R,
+        True,
+    ),
+    (
+        "str.format putting the path in echoed text",
+        "python3 - <<'EOF'\nimport os\nos.system('echo {p} > /tmp/x'.format(p='%s'))\nEOF" % R,
+        False,
+    ),
+    (
+        "a star width before echoed text",
+        "python3 - <<'EOF'\nimport os\nos.system('echo %%*s > /tmp/x' %% (3, '%s'))\nEOF" % R,
+        False,
+    ),
 ]
 
 

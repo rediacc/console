@@ -38,7 +38,6 @@ DEFECT = ("    if not word:\n        return False", "    if True:\n        retur
 _PREFILTER = re.compile(
     r"%s|commands|skills|model-invocation-exceptions" % model_invocation.KEY_WORDS, re.IGNORECASE
 )
-COPIERS = ("cp", "mv", "install", "rsync", "ln")
 INPLACE = ("sed", "gsed", "perl")
 WRITERS = ("echo", "printf", "cat")
 INTERPRETERS = ("python", "node", "perl", "ruby", "deno", "bun", "tsx")
@@ -91,6 +90,7 @@ EDGE_CASES = [
     ),
     ("after cd", "cd .claude/commands && echo '%s: on' >> x.md" % _K),
     ("inside sh -c", "sh -c \"echo '%s: 1' >> %s\"" % (_K, _C)),
+    ("cp -t names where the copy lands", "cp -t .claude/skills .claude/commands/handoff.md"),
     # CONTROLS.
     ("sed -i deleting the key line", "sed -i '/^%s:/d' %s" % (_K, _C)),
     ("sed -i substituting the key away", "sed -i 's/^%s: true$//' %s" % (_K, _C)),
@@ -103,6 +103,7 @@ EDGE_CASES = [
     ),
     ("a command file without the key", "printf -- '---\\ndescription: x\\n---\\n' > %s" % _C),
     ("an unrelated redirect", "echo hello > /tmp/out.txt"),
+    ("cp -t copies a command out", "cp -t /tmp .claude/commands/handoff.md"),
     # The exception list itself.
     (
         "a redirect into the exception list",
@@ -138,14 +139,23 @@ def _run_operands(run, argv):
     return out
 
 
+def _lands(source, dest, into):
+    """Where `source` lands under `dest`: inside it when the copy names a directory, else `dest` itself (a directory on disk is `_landing`'s to tell)."""
+    return (
+        dest.rstrip("/") + "/" + os.path.basename(source.rstrip("/"))
+        if into or dest.endswith("/")
+        else dest
+    )
+
+
 def _abs(path, run_cwd, cwd):
     base = cwd if run_cwd is None else os.path.join(cwd, run_cwd)
     return path if os.path.isabs(path) else os.path.normpath(os.path.join(base, path))
 
 
-def _landing(source, dest_abs, dest_word):
-    """Where a copied source file lands: inside `dest` when it is a directory (or written as one), else `dest` itself."""
-    if os.path.isdir(dest_abs) or dest_word.endswith("/"):
+def _landing(source, dest_abs, dest_word, into=False):
+    """Where a copied source file lands: inside `dest` when it is a directory (or written as one, or named by a target-directory option), else `dest` itself."""
+    if into or os.path.isdir(dest_abs) or dest_word.endswith("/"):
         return os.path.join(dest_abs, os.path.basename(source.rstrip("/")))
     return dest_abs
 
@@ -209,12 +219,17 @@ def _list_write(runs, analysis, bodies):
             ):
                 return "a redirect into %s" % target
         in_place = any(a == "-i" or a.startswith(("-i", "--in-place")) for a in argv)
-        if on_list and (
-            name in ("tee", "truncate")
-            or (name in INPLACE and in_place)
-            or (name in COPIERS and operands and operands[-1] in on_list)
-        ):
+        if on_list and (name in ("tee", "truncate") or (name in INPLACE and in_place)):
             return "%s on %s" % (name, on_list[0])
+        copies = shellscan.run_copies(run)
+        if copies is not None:
+            sources, dests, into = copies
+            for dest in dests:
+                for landed in [dest] + [_lands(src, dest, into) for src in sources]:
+                    if any(
+                        model_invocation.is_exception_list(p) for p in (landed, prefix + landed)
+                    ):
+                        return "%s onto %s" % (name, landed)
         if name == "dd" and any(
             a.startswith("of=") and model_invocation.is_exception_list(a[3:]) for a in argv
         ):
@@ -223,9 +238,37 @@ def _list_write(runs, analysis, bodies):
             code = " ".join(argv)
             if not operands or operands[0] == "-":
                 code += "\n" + "\n".join(bodies)
-            if "model-invocation-exceptions" in code and WRITE_CODE.search(code):
-                return "a %s program writing the exception list" % name
+            if "model-invocation-exceptions" in code:
+                verdict = _python_writes(name, argv, operands, bodies, _names_list)
+                if WRITE_CODE.search(code) if verdict is None else verdict:
+                    return "a %s program writing the exception list" % name
     return ""
+
+
+# A PYTHON PROGRAM IS JUDGED BY WHERE IT WRITES (coordinator finding 2026-10-11): `shellscan.python_writes_to` reads its write targets, so a program that reads the exception list, or names it beside a write to a scratch file, is not writing it. Node, perl, ruby and Python that does not parse keep the text reading, and so does a program run INSIDE a command directory, which writes there by any relative path.
+def _names_list(value):
+    return "model-invocation-exceptions" in value
+
+
+def _names_dir(value):
+    return model_invocation.names_scope_dir(value)
+
+
+def _python_writes(name, argv, operands, bodies, holds):
+    """`shellscan.python_writes_to` over the program a python run executes (its `-c` value, or the heredocs when it reads its program from stdin); None for any other interpreter, a script file, or a program that does not parse."""
+    if not re.match(r"^python[0-9.]*$", name):
+        return None
+    program = None
+    for k, a in enumerate(argv):
+        if a == "-c":
+            program = argv[k + 1] if k + 1 < len(argv) else None
+            break
+        if a.startswith("-c") and len(a) > 2:
+            program = a[2:]
+            break
+    if program is None and (not operands or operands[0] == "-"):
+        program = "\n".join(bodies)
+    return None if program is None else shellscan.python_writes_to(program, holds)
 
 
 def _offending(cmd, cwd):
@@ -291,12 +334,15 @@ def _offending(cmd, cwd):
                         listed[0],
                     ),
                 )
-        if name in COPIERS and len(operands) >= 2 and _is_target(operands[-1], run.cwd):
-            dest_abs = _abs(operands[-1], run.cwd, cwd)
-            for source in operands[:-1]:
+        copies = shellscan.run_copies(run)
+        for dest in copies[1] if copies is not None else []:
+            if not _is_target(dest, run.cwd):
+                continue
+            dest_abs = _abs(dest, run.cwd, cwd)
+            for source in copies[0]:
                 source_abs = _abs(source, run.cwd, cwd)
                 landing, problems = _copy_problems(
-                    source_abs, _landing(source_abs, dest_abs, operands[-1])
+                    source_abs, _landing(source_abs, dest_abs, dest, copies[2])
                 )
                 if problems:
                     return "flag", "%s of %s onto %s: %s" % (
@@ -309,8 +355,12 @@ def _offending(cmd, cwd):
             code = " ".join(argv)
             if not operands or operands[0] == "-":
                 code += "\n" + "\n".join(bodies)
-            names_dir = _NAMED_PATH.search(code) is not None or _is_target(".", run.cwd)
-            if names_dir and WRITE_CODE.search(code) and model_invocation.flag_in_text(code):
+            in_dir = _is_target(".", run.cwd)
+            verdict = None if in_dir else _python_writes(name, argv, operands, bodies, _names_dir)
+            if verdict is None:
+                names_dir = _NAMED_PATH.search(code) is not None or in_dir
+                verdict = bool(names_dir and WRITE_CODE.search(code))
+            if verdict and model_invocation.flag_in_text(code):
                 named = _NAMED_PATH.search(code)
                 return "flag", "a %s program writing the key into %s" % (
                     name,

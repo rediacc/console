@@ -27,7 +27,6 @@ REVIEW_TEXT = "agent/reviews/"
 REVIEW_LITERAL = re.compile(r"['\"](?![A-Za-z][A-Za-z0-9+.-]*://)(?:[^'\"\s]*/)?agent/reviews/")
 REVIEW_WORD = re.compile(r"(\A|/)agent/reviews(/|\Z)")
 SANCTIONED = ("wl_review.py", "worklist.py")
-COPIERS = ("cp", "mv", "install", "rsync", "ln")
 INPLACE = ("sed", "perl", "gsed")
 INTERPRETERS = ("python", "python3", "node", "perl", "ruby")
 # Code that opens a file for writing, replaces or removes one. `.open('w')` is pathlib's spelling, whose mode is the FIRST argument (e30f1ad1.1).
@@ -67,6 +66,8 @@ EDGE_CASES = [
     ("sed -i", "sed -i 's/\\[high\\]/[low]/' %s" % R),
     ("cp onto the directory", "cp /tmp/x.md agent/reviews/0930-1/"),
     ("mv onto a review file", "mv /tmp/x.md %s" % R),
+    ("cp -t names the directory", "cp -t agent/reviews/0930-1 /tmp/x.md"),
+    ("a copy OUT through cp -t", "cp -t /tmp %s" % R),
     ("truncate", "truncate -s 0 %s" % R),
     ("python -c open for write", "python3 -c \"open('%s','w').write('x')\"" % R),
     (
@@ -186,7 +187,9 @@ def _offending(cmd, depth=0):
         in_place = any(a == "-i" or a.startswith(("-i", "--in-place")) for a in argv)
         if name in INPLACE and in_place and any(_is_review(a, run.cwd) for a in operands):
             return "%s -i on a review file" % name
-        if name in COPIERS and operands and _is_review(operands[-1], run.cwd):
+        # Where a copy lands is `shellscan.run_copies`' getopt reading, not the last operand (review cac47d16.1 sweep): `cp -t agent/reviews/x /tmp/a.md` left the source last.
+        copies = shellscan.run_copies(run)
+        if copies is not None and any(_is_review(d, run.cwd) for d in copies[1]):
             return "%s onto the review directory" % name
         if name == "truncate" and any(_is_review(a, run.cwd) for a in operands):
             return "truncate of a review file"
@@ -237,15 +240,6 @@ def _code_writes_review(code, depth=0):
 
 # PYTHON IS JUDGED BY ITS WRITE TARGETS (2026-10-09). The line-scoped reading below refused a heredoc that wrote only a scratchpad file, because a review path TEMPLATE flowed into the written content (`s = s.replace(..., 'agent/reviews/feat/%02d.md')` then `p.write_text(s)`): the name `s` was bound to a review literal, and a write named it. The content of a write is not where it lands.
 # So a Python program that parses is read with `ast`: each write call's TARGET expression (the path `open` opens for writing, the receiver of `write_text`/`write_bytes`/`unlink`/`touch`, the destination of `os.replace`/`os.rename`/`shutil.copy*`/`shutil.move`, the path `os.remove` deletes) is refused when it holds a review path string or a name bound to one, transitively. Strings anywhere else are data. Node, perl, ruby and Python that does not parse keep the line-scoped regex.
-_WRITE_MODE = re.compile(r"[wax+]")
-_RECEIVER_WRITES = frozenset(
-    ("write_text", "write_bytes", "unlink", "touch", "rmdir", "symlink_to", "hardlink_to")
-)
-_RECEIVER_MOVES = frozenset(("rename", "replace"))
-_DEST_CALLS = frozenset(
-    ("replace", "rename", "move", "copy", "copy2", "copyfile", "copytree", "link", "symlink")
-)
-_REMOVE_CALLS = frozenset(("remove", "unlink", "rmtree", "truncate"))
 _URL = re.compile(r"\A[A-Za-z][A-Za-z0-9+.-]*://")
 
 
@@ -265,136 +259,6 @@ def _is_review_string(value):
     return (
         isinstance(value, str) and not _URL.match(value) and REVIEW_WORD.search(value) is not None
     )
-
-
-def _imports(tree):
-    """Each imported local name -> what it names: `import subprocess as sp` gives `sp -> subprocess`, `from os import system` gives `system -> os.system`."""
-    names: dict[str, str] = {}
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for a in node.names:
-                if a.asname:
-                    names[a.asname] = a.name
-                else:
-                    head = a.name.split(".")[0]
-                    names[head] = head
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            for a in node.names:
-                names[a.asname or a.name] = "%s.%s" % (node.module, a.name)
-    return names
-
-
-def _qualified(func, imports):
-    """The dotted name a call's function spells after resolving import aliases (`sp.run` -> `subprocess.run`), or ""."""
-    parts = []
-    while isinstance(func, ast.Attribute):
-        parts.append(func.attr)
-        func = func.value
-    if not isinstance(func, ast.Name):
-        return ""
-    parts.append(imports.get(func.id, func.id))
-    return ".".join(reversed(parts))
-
-
-# `os.open`'s flags: anything but these read-only bits (a write flag, a variable, a number with a write bit) can write.
-_READ_FLAGS = frozenset(
-    (
-        "os",
-        "O_RDONLY",
-        "O_CLOEXEC",
-        "O_NOFOLLOW",
-        "O_DIRECTORY",
-        "O_NONBLOCK",
-        "O_NOCTTY",
-        "O_BINARY",
-        "O_PATH",
-        "O_NOATIME",
-        "O_LARGEFILE",
-    )
-)
-
-
-def _flags_can_write(expr):
-    for n in ast.walk(expr):
-        if isinstance(n, ast.Name) and n.id not in _READ_FLAGS:
-            return True
-        if isinstance(n, ast.Attribute) and n.attr not in _READ_FLAGS:
-            return True
-        if isinstance(n, ast.Constant) and isinstance(n.value, int) and n.value & 0o3:
-            return True
-    return False
-
-
-def _mode_can_write(mode):
-    """An `open` mode argument: absent is a read, a constant is read by its letters, and anything else (a variable, `*args`) is assumed to write."""
-    if mode is None:
-        return False
-    if isinstance(mode, ast.Constant):
-        return isinstance(mode.value, str) and _WRITE_MODE.search(mode.value) is not None
-    return True
-
-
-def _keyword(node, name):
-    return next((k.value for k in node.keywords if k.arg == name), None)
-
-
-def _write_targets(tree, imports=None):
-    """The target expressions of every write call in a Python tree.
-
-    `open` has three shapes (e30f1ad1.1): the builtin and a module function (`io.open`, `codecs.open`, `gzip.open`) take the path first and the mode second; `os.open` takes FLAGS second; and a method on a path object (`Path(p).open('w')`) takes the mode FIRST, the receiver being the target.
-    """
-    imports = _imports(tree) if imports is None else imports
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
-            continue
-        func = node.func
-        attr = (
-            func.attr
-            if isinstance(func, ast.Attribute)
-            else func.id
-            if isinstance(func, ast.Name)
-            else ""
-        )
-        if attr == "open":
-            qualified = _qualified(func, imports)
-            on_module = isinstance(func, ast.Name) or (
-                isinstance(func, ast.Attribute)
-                and isinstance(func.value, ast.Name)
-                and func.value.id in imports
-            )
-            if qualified == "os.open":
-                flags = node.args[1] if len(node.args) > 1 else _keyword(node, "flags")
-                path = node.args[0] if node.args else _keyword(node, "path")
-                if flags is not None and path is not None and _flags_can_write(flags):
-                    yield path
-            elif on_module:
-                mode = node.args[1] if len(node.args) > 1 else _keyword(node, "mode")
-                path = node.args[0] if node.args else _keyword(node, "file")
-                if path is not None and _mode_can_write(mode):
-                    yield path
-            elif isinstance(func, ast.Attribute):
-                mode = node.args[0] if node.args else _keyword(node, "mode")
-                if _mode_can_write(mode):
-                    yield func.value
-            continue
-        # `os.replace(a, b)` and `str.replace(old, new)` share a name: a module call counts only when `os` or `shutil` qualifies it, and the receiver form only with Path's single argument.
-        module = (
-            isinstance(func, ast.Attribute)
-            and isinstance(func.value, ast.Name)
-            and func.value.id in ("os", "shutil")
-        )
-        receiver_write = attr in _RECEIVER_WRITES or (
-            attr in _RECEIVER_MOVES and len(node.args) == 1
-        )
-        if isinstance(func, ast.Attribute) and not module and receiver_write:
-            yield func.value
-            yield from node.args[:1] if attr in _RECEIVER_MOVES else ()
-        if module and attr in _DEST_CALLS and len(node.args) > 1:
-            if attr in ("replace", "rename", "move"):
-                yield node.args[0]
-            yield node.args[1]
-        if module and attr in _REMOVE_CALLS and node.args:
-            yield node.args[0]
 
 
 # Calls that hand a command to a shell or start a program (e30f1ad1.2), by qualified name: the first argument (or `args=`/`cmd=`) is the command, a string for a shell and a list for an argv.
@@ -444,6 +308,17 @@ def _is_path_ctor(func):
     return isinstance(func, ast.Attribute) and func.attr in _PATH_CTORS
 
 
+def _str_dict(node, sub):
+    """`{key: rendered value}` for a dict literal's constant string keys; {} for anything else."""
+    if not isinstance(node, ast.Dict):
+        return {}
+    return {
+        k.value: sub(v)
+        for k, v in zip(node.keys, node.values, strict=True)
+        if isinstance(k, ast.Constant) and isinstance(k.value, str)
+    }
+
+
 def _render(expr, bound, review_names, seen=frozenset()):
     """The text a string expression evaluates to, as near as the ast spells it: constants, f-strings, `+`, `%` and `str.format`, `os.path.join`, `Path(...)` and `/`, and names bound once to such an expression."""
 
@@ -461,35 +336,54 @@ def _render(expr, bound, review_names, seen=frozenset()):
     if isinstance(expr, ast.BinOp) and isinstance(expr.op, ast.Div):
         return sub(expr.left).rstrip("/") + "/" + sub(expr.right)
     if isinstance(expr, ast.BinOp) and isinstance(expr.op, ast.Mod):
-        # Each conversion takes the next argument (or the mapping's value, unknown); `%%` stays a percent (review 071b7987.1 sibling).
+        # Each conversion takes the next argument, after one more for each `*` width or precision; `%(key)s` takes the mapping's value; `%%` stays a percent (review 071b7987.1 sibling, 6dcf79c7.2).
+        mapping = _str_dict(expr.right, sub)
         args = iter(
             [sub(e) for e in expr.right.elts]
             if isinstance(expr.right, ast.Tuple)
             else [sub(expr.right)]
         )
-        return _PERCENT_SPEC.sub(
-            lambda m: "%" if m.group(0) == "%%" else next(args, _UNKNOWN), sub(expr.left)
-        )
+
+        def conversion(m):
+            if m.group(0) == "%%":
+                return "%"
+            if m.group(1):
+                return mapping.get(m.group(1)[1:-1], _UNKNOWN)
+            for _star in range(m.group(0).count("*")):
+                next(args, None)
+            return next(args, _UNKNOWN)
+
+        return _PERCENT_SPEC.sub(conversion, sub(expr.left))
     if isinstance(expr, ast.Call):
         func = expr.func
         if (
             isinstance(func, ast.Attribute)
-            and func.attr == "format"
+            and func.attr in ("format", "format_map")
             and isinstance(func.value, ast.Constant)
             and isinstance(func.value.value, str)
         ):
-            args = iter([sub(a) for a in expr.args])
-            return _FORMAT_FIELD.sub(
-                lambda m: m.group(0)[0] if m.group(0) in ("{{", "}}") else next(args, _UNKNOWN),
-                func.value.value,
-            )
+            # A field names a positional by number or by order, or a keyword; `format_map` reads a dict (review 6dcf79c7.1). Attribute, index, conversion and spec (`{p.x}`, `{p[0]}`, `{p!r}`, `{p:>9}`) render the named value itself.
+            if func.attr == "format":
+                positional = [sub(a) for a in expr.args]
+                named = {k.arg: sub(k.value) for k in expr.keywords if k.arg is not None}
+            else:
+                positional = []
+                named = _str_dict(expr.args[0], sub) if expr.args else {}
+            order = iter(range(len(positional) + 1))
+
+            def field(m):
+                if m.group(0) in ("{{", "}}"):
+                    return m.group(0)[0]
+                key = re.split(r"[.\[!:]", m.group(0)[1:-1], maxsplit=1)[0]
+                if key == "" or key.isdigit():
+                    at = next(order) if key == "" else int(key)
+                    return positional[at] if at < len(positional) else _UNKNOWN
+                return named.get(key, _UNKNOWN)
+
+            return _FORMAT_FIELD.sub(field, func.value.value)
         if _is_path_join(func) or _is_path_ctor(func):
             return "/".join(sub(a).rstrip("/") for a in expr.args) if expr.args else _UNKNOWN
-        if (
-            isinstance(func, ast.Name)
-            and func.id in ("str", "os.fspath", "fspath")
-            and len(expr.args) == 1
-        ):
+        if isinstance(func, ast.Name) and func.id in ("str", "fspath") and len(expr.args) == 1:
             return sub(expr.args[0])
         if isinstance(func, ast.Attribute) and func.attr == "fspath" and len(expr.args) == 1:
             return sub(expr.args[0])
@@ -506,9 +400,13 @@ def _shell_commands(tree, imports, bound, review_names):
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
-        if _qualified(node.func, imports) not in _SHELL_CALLS:
+        if shellscan.python_qualified(node.func, imports) not in _SHELL_CALLS:
             continue
-        arg = node.args[0] if node.args else _keyword(node, "args") or _keyword(node, "cmd")
+        arg = (
+            node.args[0]
+            if node.args
+            else shellscan.python_keyword(node, "args") or shellscan.python_keyword(node, "cmd")
+        )
         if arg is None:
             continue
         if isinstance(arg, (ast.List, ast.Tuple)):
@@ -528,35 +426,14 @@ def _python_writes_review(program, depth=0):
         tree = ast.parse(program)
     except (SyntaxError, ValueError, RecursionError, MemoryError):
         return None
-    bound: dict[str, list[ast.AST]] = {}
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)) and node.value is not None:
-            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            for t in targets:
-                for n in ast.walk(t):
-                    if isinstance(n, ast.Name):
-                        bound.setdefault(n.id, []).append(node.value)
-        elif isinstance(node, ast.NamedExpr):
-            bound.setdefault(node.target.id, []).append(node.value)
-    review_names: set[str] = set()
+    bound = shellscan.python_bindings(tree)
+    review_names = shellscan.python_matching_names(bound, _is_review_string)
 
     def holds_review(expr):
-        for n in ast.walk(expr):
-            if isinstance(n, ast.Constant) and _is_review_string(n.value):
-                return True
-            if isinstance(n, ast.Name) and n.id in review_names:
-                return True
-        return False
+        return shellscan.python_holds(expr, _is_review_string, review_names)
 
-    changed = True
-    while changed:
-        changed = False
-        for name, values in bound.items():
-            if name not in review_names and any(holds_review(v) for v in values):
-                review_names.add(name)
-                changed = True
-    imports = _imports(tree)
-    if any(holds_review(t) for t in _write_targets(tree, imports)):
+    imports = shellscan.python_imports(tree)
+    if any(holds_review(t) for t in shellscan.python_write_targets(tree, imports)):
         return True
     return any(
         REVIEW_TEXT.rstrip("/") in c and _offending(c, depth + 1)

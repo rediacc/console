@@ -131,10 +131,6 @@ FRAGMENTS: dict[tuple[str, str], str] = {
         "BLOCKER: the end-of-clause tail (`$`, a separator or a redirect) concatenated after the anchored GIT_ADD prefix; "
         "only the composed BLANKET_* patterns are matchers, and they are anchored."
     ),
-    ("block_review_file_shell_write.py", "_WRITE_MODE"): (
-        "BLOCKER: a one-character class tested against the mode argument of an open() call found by ast in a Python "
-        "program; it reads a parsed string value, never the command text."
-    ),
     ("block_review_file_shell_write.py", "_PERCENT_SPEC"): (
         "BLOCKER: a printf conversion matched inside a `%` template string that ast found in a Python program, so the "
         "guard can substitute the argument; it rewrites a parsed string value and never reads the command text."
@@ -777,7 +773,10 @@ def probes_of(pats: list[str]) -> Probes:
         found, dropped = expand_marked(pat)
         out.dropped += dropped
         for inst, is_worded in found:
+            # A text one pattern spells as a word is a word, whichever pattern reached it first (review 5aa562c3.2).
             if inst in out.instances:
+                if is_worded:
+                    out.worded.add(inst)
                 continue
             if not is_worded and len(inst) < SHORT_INSTANCE:
                 out.fragments += 1
@@ -1149,8 +1148,8 @@ def fragment_controls(td: Path) -> None:
         "vanished": ((guard.name, "GONE"), "no matcher-shaped constant"),
         "anchored": ((guard.name, "PAT"), "anchored at command position"),
         "worded": (("short_mixed.py", "OTHER"), "renders a worded instance"),
-        # A name no other control uses: this file is live, and the trap registry reads a guard named in a live file as live, so reusing test_gate_trap_registry's dead-control name made that control read live.
-        "no guard": (("retired_guard_fixture.py", "OTHER"), "no longer exists"),
+        # Named after this run's temporary directory, so no tracked file can name it: the trap registry reads a guard named in a live file as live (668becd2.1).
+        "no guard": ((f"retired_{td.name}.py", "OTHER"), "no longer exists"),
         "short reason": ((guard.name, "OTHER"), "too short"),
         "no prefix": ((guard.name, "OTHER"), "must start with 'BLOCKER:'"),
     }
