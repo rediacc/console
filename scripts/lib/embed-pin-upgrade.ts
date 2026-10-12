@@ -352,3 +352,8 @@ export function sharedCloneDrift(dockerfile: string): string | null {
   }
   return null;
 }
+
+/** The freshness fixture's entry for `base`, or undefined. An OWN-property lookup: a base named like an Object.prototype key (`constructor`, `toString`) must read as absent, never as the inherited function. */
+export function fixtureEntry<T>(fixture: Record<string, T>, base: string): T | undefined {
+  return Object.hasOwn(fixture, base) ? fixture[base] : undefined;
+}

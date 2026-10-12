@@ -440,3 +440,90 @@ def test_upgrade_refuses_half_of_the_shared_snapshotter_clone(gate, tmp_path):
     lock = json.loads((renet / "embed-assets.lock.json").read_text(encoding="utf-8"))
     gate.assert_eq(lock, FIXTURE_LOCK, "lockfile untouched")
     gate.log_pass("half of the shared clone refuses, writes nothing and reports nothing as done")
+
+
+# ---- own-property lookups: a component named like an Object.prototype key is ABSENT -----
+#
+# Every table keyed by component name (the lockfile's components, SHA256_SOURCES, SOURCE_CONSTS, the freshness fixture) is read with `Object.hasOwn`. A bracket lookup returns the inherited function for `constructor`, `toString` and `__proto__`, which reads as a found entry. The cases below drive the exported helpers directly (a real source list never contains such a base, so the gate cannot reach them) and each fails when ITS lookup is reverted to a bracket.
+
+PROTO_NAMES = ("constructor", "toString", "__proto__")
+
+UPGRADE_PROBE = (
+    "import { upgradeComponent, fixtureEntry } from './scripts/lib/embed-pin-upgrade.ts';\n"
+    "(async () => {\n"
+    "const inp = JSON.parse(process.env.PROBE_INPUT);\n"
+    "const none = { commitOf: async () => { throw new Error('unexpected'); },"
+    " text: async () => { throw new Error('unexpected'); } };\n"
+    "if (inp.fixture !== undefined) {\n"
+    "  process.stdout.write(JSON.stringify({ hit: fixtureEntry(inp.fixture, inp.base) ?? null }));\n"
+    "} else {\n"
+    "  const r = await upgradeComponent({ dockerfile: inp.dockerfile, lock: inp.lock, consts: {} },"
+    " { base: inp.base, display: inp.base, pinned: '1.0.0', latest: '2.0.0', repo: 'o/r' }, none);\n"
+    "  process.stdout.write(JSON.stringify({ ok: r.ok, reason: r.ok ? '' : r.reason,"
+    " consts: r.ok ? r.files.consts : null }));\n"
+    "}\n"
+    "})();"
+)
+
+
+def probe(gate, payload: dict) -> dict:
+    npx = harness.require_tool("npx", "install node; the helpers are TypeScript read through tsx")
+    result = harness.run(
+        [npx, "tsx", "--eval", UPGRADE_PROBE],
+        cwd=paths.repo_root(),
+        env={"PROBE_INPUT": json.dumps(payload)},
+    )
+    gate.assert_exit(0, result, "the helper must return, not throw, for base %r" % payload["base"])
+    return json.loads(result.out.strip().splitlines()[-1])
+
+
+def probe_upgrade(gate, name: str, component: dict | None) -> dict:
+    components = {} if component is None else {name: component}
+    return probe(
+        gate,
+        {
+            "base": name,
+            "dockerfile": "ARG %s_VERSION=1.0.0\n" % name.upper(),
+            "lock": json.dumps({"components": components}),
+        },
+    )
+
+
+def test_hasown_lockfile_components_lookup(gate):
+    for name in PROTO_NAMES:
+        got = probe_upgrade(gate, name, None)
+        gate.assert_eq(got["ok"], False, "%s is not a lockfile component" % name)
+        gate.assert_contains(
+            got["reason"], "has no components.%s entry" % name, "reported as ABSENT, not found"
+        )
+    gate.log_pass("a prototype-named base is absent from the lockfile components")
+
+
+def test_hasown_sha256_sources_lookup(gate):
+    pinned = {"version": "1.0.0", "arches": {"amd64": {"sha256": "a" * 64}}}
+    for name in PROTO_NAMES:
+        got = probe_upgrade(gate, name, pinned)
+        gate.assert_eq(got["ok"], False, "%s has no published checksum source" % name)
+        gate.assert_contains(
+            got["reason"],
+            "sha256 pin cannot be resolved",
+            "no checksum source, not an inherited one",
+        )
+    gate.log_pass("a prototype-named base has no SHA256 source")
+
+
+def test_hasown_source_consts_lookup(gate):
+    for name in PROTO_NAMES:
+        got = probe_upgrade(gate, name, {"version": "1.0.0"})
+        gate.assert_eq(got["ok"], True, "%s has no Go constant sites, so the bump succeeds" % name)
+        gate.assert_eq(got["consts"], {}, "no Go file is touched for %s" % name)
+    gate.log_pass("a prototype-named base has no SOURCE_CONSTS sites")
+
+
+def test_hasown_fixture_lookup(gate):
+    for name in PROTO_NAMES:
+        got = probe(gate, {"base": name, "fixture": {}})
+        gate.assert_eq(got["hit"], None, "%s is not in the fixture" % name)
+    own = probe(gate, {"base": "k3s", "fixture": {"k3s": {"version": "9.9.9"}}})
+    gate.assert_eq(own["hit"], {"version": "9.9.9"}, "CONTROL: an own key is still found")
+    gate.log_pass("a prototype-named base is absent from the fixture, an own key is found")
