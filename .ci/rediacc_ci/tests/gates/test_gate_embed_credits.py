@@ -160,3 +160,16 @@ def test_rejects_commit_arg_with_no_lockfile_component(gate, tmp_path):
     gate.assert_exit(1, result, "a commit ARG with no lockfile component should fail")
     gate.assert_contains(result.combined, "ORPHANTOOL_COMMIT", "error names the orphan ARG")
     gate.log_pass("a commit ARG with no lockfile component is rejected")
+
+
+def test_rejects_commit_arg_named_like_an_object_property(gate, tmp_path):
+    """`base in components` is true for inherited Object.prototype keys, so `ARG CONSTRUCTOR_COMMIT=` slipped past the orphan check. Both names below are inherited properties and must be reported as orphans."""
+    require_submodule(gate)
+    text = DOCKERFILE.read_text(encoding="utf-8")
+    for name in ("CONSTRUCTOR", "TOSTRING"):
+        fixture = tmp_path / ("Dockerfile." + name)
+        fixture.write_text(text + "\nARG %s_COMMIT=%s\n" % (name, "2" * 40), encoding="utf-8")
+        result = run_gate(gate, env={"EMBED_CREDITS_DOCKERFILE": str(fixture)})
+        gate.assert_exit(1, result, "%s_COMMIT has no lockfile component and should fail" % name)
+        gate.assert_contains(result.combined, name + "_COMMIT", "error names the orphan ARG")
+    gate.log_pass("commit ARGs named like inherited object properties are rejected as orphans")

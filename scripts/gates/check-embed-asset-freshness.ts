@@ -184,7 +184,7 @@ function loadFixture(): Record<string, { version: string; publishedAt?: string }
 async function latestFor(src: Source): Promise<Latest> {
   const fixture = loadFixture();
   if (fixture) {
-    const hit = fixture[src.base];
+    const hit = Object.hasOwn(fixture, src.base) ? fixture[src.base] : undefined;
     if (!hit) throw new Error('not in fixture');
     return {
       version: hit.version,

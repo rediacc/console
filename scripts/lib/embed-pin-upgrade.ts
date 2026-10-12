@@ -211,7 +211,8 @@ export async function upgradeComponent(
   let comp: LockComponent | undefined;
   if (files.lock !== null) {
     lockObj = JSON.parse(files.lock);
-    comp = lockObj?.components?.[base];
+    const table = lockObj?.components;
+    comp = table && Object.hasOwn(table, base) ? table[base] : undefined;
     if (!comp) return fail(`embed-assets.lock.json has no components.${base} entry to move`);
   } else {
     return fail('embed-assets.lock.json is absent, so the lockfile pin cannot be moved');
@@ -267,7 +268,7 @@ export async function upgradeComponent(
     ...lockSha.map((p) => p.arch),
   ]);
   if (archesNeeded.size > 0) {
-    const source = SHA256_SOURCES[base];
+    const source = Object.hasOwn(SHA256_SOURCES, base) ? SHA256_SOURCES[base] : undefined;
     if (!source) {
       return fail(
         `its sha256 pin cannot be resolved: upstream publishes no checksum file this tool reads. Update the digest by hand against upstream's own signature or checksum, in the Dockerfile ARG and embed-assets.lock.json, then re-run`
@@ -316,7 +317,8 @@ export async function upgradeComponent(
 
   // ---- Go constants and goldens ---------------------------------------------------
   const consts = { ...files.consts };
-  for (const site of SOURCE_CONSTS[base] ?? []) {
+  const sites = Object.hasOwn(SOURCE_CONSTS, base) ? SOURCE_CONSTS[base] : [];
+  for (const site of sites) {
     const text = consts[site.file];
     if (text === undefined)
       return fail(`${site.file} is absent, so its pinned version cannot be moved`);
