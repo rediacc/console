@@ -3397,6 +3397,22 @@ STATIC: list[Case] = [
     #
     # THE PATHS HERE ARE LITERAL STRINGS with no filesystem behind them, which is what makes them dangerous during a move: when the tree went from .agent/<branch>/ to agent/<branch>/<session>/ (2026-08-14), every one of these cases would have kept passing against the OLD path while the guard stopped covering the new one, and the suite would have reported that as green. It moved
     # AGAIN on 2026-08-18, when the branch left the path and agent/<session>/STATE.md became the live shape, so the same hazard applies to these very lines: the live one-level shape is asserted FIRST, and the retired two-level shapes after it, because writing THERE is a session running stale instructions rather than a path nobody would ever try.
+    # #bc7d998c: the path is judged where the write LANDS. Both refusals were allowed (rc 0) before, the second because its typed `docs/agent/` prefix took the docs exclusion; the control was allowed before and stays allowed.
+    case(
+        "check 2 guards/block_agent_state_shape.py",
+        tool_json("Write", "agent/x/../deadbeef/STATE.md", "content", "tiny"),
+        "agent-state: a .. detour into a session's STATE.md",
+    ),
+    case(
+        "check 2 guards/block_agent_state_shape.py",
+        tool_json("Write", "docs/agent/../../agent/deadbeef/STATE.md", "content", "tiny"),
+        "agent-state: a docs/agent prefix that lands in agent/",
+    ),
+    case(
+        "check 0 guards/block_agent_state_shape.py",
+        tool_json("Write", "agent/deadbeef/../../docs/agent/x/STATE.md", "content", "tiny"),
+        "agent-state CONTROL: a .. detour that lands in docs/agent",
+    ),
     case(
         "check_out 2 guards/block_agent_state_shape.py",
         tool_json("Write", "/r/agent/deadbeef/STATE.md", "content", "tiny"),

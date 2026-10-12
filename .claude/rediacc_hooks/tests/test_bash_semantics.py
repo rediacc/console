@@ -2080,3 +2080,78 @@ def test_the_roundlog_automaton_is_read_from_rl(monkeypatch):
     edges, accept = G._log_automaton()
     assert accept == ("S", 4)
     assert ("S", 0) not in edges or edges[("S", 0)][0][0] == frozenset(".")
+
+
+# --------------------------------------------------------------------------- pr_selector's cut is linear (worklist #bc7d998c round) ---------------------------------------------------------------------------
+
+# `pr_selector` cut each record with `re.subn(".*gh pr <verb>[<SPACE>]*", "", record, count=1)`. A line naming no `gh pr <verb>` made that regex try every start position and backtrack from each to the line's end: 0.29 s at 20,000 characters and 36 s at 200,000 (measured 2026-10-11). `shellscan._cut_through_last` reads one pass per line; these tests pin that it answers exactly as the regex did and that the WORK is one line span per
+# line, whatever the line's length, rather than a wall clock.
+_CUT_CASES = [
+    "",
+    "gh pr merge 12",
+    "x gh pr merge 1 gh pr merge 2 tail",
+    "gh pr merge\t\v 7",
+    "no verb here",
+    "first line\ngh pr merge 3\ngh pr merge 4",
+    "gh pr merge\n  next line",
+    "gh pr mergeX",
+    "a\rgh pr merge\r 9",
+]
+
+
+@pytest.mark.parametrize("record", _CUT_CASES)
+@pytest.mark.parametrize("verb", ["merge", "ready"])
+def test_cut_through_last_answers_as_the_regex(record, verb):
+    old = re.compile(r".*gh pr " + verb + r"[" + shellscan.SPACE + r"]*").subn("", record, count=1)
+    assert shellscan._cut_through_last(record, "gh pr " + verb) == old
+
+
+def test_cut_through_last_answers_as_the_regex_on_a_seeded_sample():
+    pieces = ["gh pr merge", "gh pr ", "merge", " ", "\t", "\n", "\r", "\v", "x", "-", "t", "n"]
+    rng = __import__("random").Random(11)
+    for _ in range(5000):
+        record = "".join(rng.choice(pieces) for _ in range(rng.randint(0, 14)))
+        old = re.compile(r".*gh pr merge[" + shellscan.SPACE + r"]*").subn("", record, count=1)
+        assert shellscan._cut_through_last(record, "gh pr merge") == old, repr(record)
+
+
+def test_pr_selector_reads_each_line_once(monkeypatch):
+    """The work is one line span per line, never one attempt per character: a 200,000-character line is one span."""
+    spans = []
+    real = shellscan._line_spans
+
+    def counted(text):
+        for span in real(text):
+            spans.append(span)
+            yield span
+
+    monkeypatch.setattr(shellscan, "_line_spans", counted)
+    assert shellscan.pr_selector("x" * 200000, "merge") == ""
+    assert len(spans) == 1
+    spans.clear()
+    assert shellscan.pr_selector("y" * 100000 + " gh pr merge 42", "merge") == "42\n"
+    assert len(spans) == 1
+
+
+def test_pr_selector_never_scans_a_line_with_a_leading_dot_star(monkeypatch):
+    """The quadratic shape itself: an unanchored scan (`search`, `sub`, `subn`, `findall`, `finditer`) of a pattern opening with `.*` restarts at every position. The cut may use an anchored `match` at one position, never that."""
+    scans = []
+    real_compile = re.compile
+
+    class Recorded:
+        def __init__(self, compiled):
+            self._compiled = compiled
+
+        def __getattr__(self, name):
+            attr = getattr(self._compiled, name)
+            unanchored = name in ("search", "sub", "subn", "findall", "finditer")
+            if unanchored and self._compiled.pattern.startswith(".*"):
+                scans.append((name, self._compiled.pattern))
+            return attr
+
+    monkeypatch.setattr(
+        re, "compile", lambda pattern, flags=0: Recorded(real_compile(pattern, flags))
+    )
+    assert shellscan.pr_selector("x" * 2000 + " gh pr merge 42", "merge") == "42\n"
+    assert shellscan.pr_selector("x" * 2000, "merge") == ""
+    assert scans == []

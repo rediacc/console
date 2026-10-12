@@ -169,6 +169,10 @@ def _record_world(_unused):
     os.makedirs(os.path.join(WORLD, "agent"), exist_ok=True)
     for path, text in ((RECORD, RECORD_TEXT), (PLAIN, PLAIN_TEXT)):
         hookio.write_world_file(path, text)
+    # A directory symlink into the guarded tree (#bc7d998c): a write through it lands in the tree.
+    link = os.path.join(WORLD, "linked")
+    if not os.path.islink(link):
+        os.symlink(os.path.join(WORLD, "agent"), link)
     return WORLD
 
 
@@ -178,6 +182,27 @@ FIXTURES = {"record-world": _record_world}
 ENVS = [("records", {"REDIACC_RECORD_WORLD": "{FIXTURE:record-world}"}, {})]
 
 EDGE_CASES = [
+    # Judged where the write LANDS (#bc7d998c): each refusal was allowed before, and the message names both paths.
+    (
+        "a Write through a .. detour onto the record",
+        {
+            "tool_name": "Write",
+            "tool_input": {
+                "file_path": "%s/agent/x/../PLAN-a-compacted-record.md" % WORLD,
+                "content": "# rewritten\n",
+            },
+        },
+    ),
+    (
+        "a Write through a symlink onto the record",
+        {
+            "tool_name": "Write",
+            "tool_input": {
+                "file_path": "%s/linked/PLAN-a-compacted-record.md" % WORLD,
+                "content": "# rewritten\n",
+            },
+        },
+    ),
     (
         "a Write replaces the spine outright",
         {"tool_name": "Write", "tool_input": {"file_path": RECORD, "content": "# rewritten\n"}},
@@ -293,20 +318,40 @@ def _box_body_hit(file_text, fragments):
     return False
 
 
+# WHERE A WRITE LANDS (#bc7d998c, the 3f53e99e.1 sweep). The scope test read the path as TYPED, so `agent/x/../plans/PLAN-a.md`, `dir/zz-detour/../file` and a directory symlink into the guarded tree were out of scope and allowed (rc 0 against rc 2 for the same landing, 2026-10-11). `_landing` resolves `.`, `..` and every symlink in the part of the path that exists (`realpath`), from the event's `cwd`, else this checkout's root. The path judged is
+# relative to that root when it lands inside it, the form every pattern here was written for, and absolute otherwise; the file is read at the absolute landing. A message names what was typed, and where it lands when the two differ, so a refusal never names a path the write would not touch.
+def _landing(ev, typed):
+    """`(absolute, judged, shown)` for the typed path, or `(typed, typed, typed)` when there is none."""
+    if not typed or typed == "null":
+        return typed, typed, typed
+    try:
+        root = str(hookio.repo_root())
+        base = ev.default(("cwd",), root)
+    except RuntimeError:
+        root = base = ev.cwd
+    plain = os.path.normpath(os.path.join(base, typed))
+    landed = os.path.realpath(plain)
+    rel = os.path.relpath(landed, os.path.realpath(root))
+    judged = landed if rel == ".." or rel.startswith("../") else rel
+    shown = typed if landed == os.path.join(base, typed) else "%s (lands at %s)" % (typed, landed)
+    return landed, judged, shown
+
+
 def run(ev):
     if not hookio.have("jq"):
         return hookio.ALLOW
 
-    file_path = ev.first(("tool_input", "file_path"), ("tool_input", "notebook_path"))
-    if file_path == "":
+    typed = ev.first(("tool_input", "file_path"), ("tool_input", "notebook_path"))
+    if typed == "":
         return hookio.ALLOW
-    if not hookio.case_glob(file_path, *PLAN_GLOBS):
+    landed, judged, shown = _landing(ev, typed)
+    if not hookio.case_glob(judged, *PLAN_GLOBS):
         return hookio.ALLOW
-    if not os.path.isfile(file_path):
+    if not os.path.isfile(landed):
         return hookio.ALLOW
 
     try:
-        with open(file_path, encoding="utf-8", errors="surrogateescape") as handle:
+        with open(landed, encoding="utf-8", errors="surrogateescape") as handle:
             file_text = handle.read()
     except OSError:
         return hookio.ALLOW
@@ -360,5 +405,5 @@ def run(ev):
     if spine == "":
         return hookio.ALLOW
 
-    ev.warn_raw(MESSAGE % {"file": file_path, "spine": spine, "blob": blob})
+    ev.warn_raw(MESSAGE % {"file": shown, "spine": spine, "blob": blob})
     return hookio.DENY
