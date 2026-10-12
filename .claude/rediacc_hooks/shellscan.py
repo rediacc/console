@@ -4972,10 +4972,45 @@ def _expand_heredoc(body, shell):
     return None if unknown else out
 
 
+# The escapes `printf` reads in its format (and `echo -e` in its words), bash 5: `\\xHH`, `\\NNN` and `\\0NNN` octal, `\\uHHHH`, `\\UHHHHHHHH`, and the one-letter ones.
+_PRINTED_ESCAPE = re.compile(
+    r"\\(?:x([0-9A-Fa-f]{1,2})|(0[0-7]{0,3}|[0-7]{1,3})|u([0-9A-Fa-f]{1,4})|U([0-9A-Fa-f]{1,8})|([abefnrtv\\\"']))"
+)
+_ONE_LETTER = {
+    "a": "\a",
+    "b": "\b",
+    "e": "\x1b",
+    "f": "\f",
+    "n": "\n",
+    "r": "\r",
+    "t": "\t",
+    "v": "\v",
+}
+
+
+def printed_escapes(text):
+    """`text` with the backslash escapes a printing command turns into characters turned into them (review 13505e0b.1): `printf '\\x23 x'` prints `# x`, and read as typed the `#` was never there to judge. The text a guard judges is the decoded one, in place of the typed one. A word `printf` would print untouched (a `%s` argument, an `echo` without `-e`) is decoded too when it sits beside one that is; that reads a character the command would not print, the direction that refuses rather than allows."""
+
+    def one(m):
+        if m.group(1):
+            return chr(int(m.group(1), 16))
+        if m.group(2):
+            return chr(int(m.group(2), 8) & 0xFF)
+        code = m.group(3) or m.group(4)
+        if code:
+            value = int(code, 16)
+            return chr(value) if value < 0x110000 else m.group(0)
+        return _ONE_LETTER.get(m.group(5), m.group(5))
+
+    return _PRINTED_ESCAPE.sub(one, text) if "\\" in text else text
+
+
 def stdin_text(run, cmd):
     """What arrives on a run's stdin (`_Run.feed`), as bash hands it over, or None when any of it is unknown (review 7837d22e.1).
 
     A QUOTED heredoc's body is literal. An UNQUOTED one is expanded by bash, so it is expanded here with what the walk resolved (`_expand_heredoc`): `M=x; prog <<EOF` with a body line `$M` hands over `x`, where the raw body read `$M`. A `$` or a backtick anywhere else in the feed (a here-string, the words of the stage in front) is not expanded here and leaves the text unknown.
+
+    THE STAGE IN FRONT IS READ AS ITS WORDS, NOT ITS OUTPUT (`_Run.feed`): what a producer prints is not computed. One thing its words say about its output is read all the same: a backslash escape there is turned into the character a `printf` or an `echo -e` prints for it (`printed_escapes`, review 13505e0b.1), since `printf '\\x23 ...' | prog` hands over a `#` that the typed words never held. A heredoc's backslashes are bash's own and are left as `_expand_heredoc` gives them.
     """
     feed = run.feed or ""
     if "$" not in feed and "`" not in feed and "\\" not in feed:
@@ -4995,6 +5030,7 @@ def stdin_text(run, cmd):
         kept.append(text)
     if "$" in rest or "`" in rest:
         return None
+    rest = printed_escapes(rest)
     for k, text in enumerate(kept):
         rest = rest.replace("\x00%d\x00" % k, text, 1)
     return rest
@@ -5003,7 +5039,7 @@ def stdin_text(run, cmd):
 def writer_text(run, cmd):
     """The text a writer run (`echo`, `printf`, `tee`, or `cat` with no file operand) puts out, as bash hands it over, or None when it is not one, or when any of it is unexpanded (review fc3f376a.2).
 
-    Its words are read expanded (`xargv`: `F=x; echo "$F"` puts out `x`), never as typed: recorded verbatim, `echo "$F" > s.py` was the four characters `"$F"`, so the program it wrote ran unjudged. Its feed (a heredoc, a here-string, the words of the pipeline in front of it) is read as `stdin_text` gives it: a quoted heredoc literal, an unquoted one expanded with what the walk resolved, and unknown when a `$` or a backtick is left anywhere else. Anything the walk could not expand makes the whole text None, which a guard reads as unjudgeable.
+    Its words are read expanded (`xargv`: `F=x; echo "$F"` puts out `x`), never as typed: recorded verbatim, `echo "$F" > s.py` was the four characters `"$F"`, so the program it wrote ran unjudged. Its feed (a heredoc, a here-string, the words of the pipeline in front of it) is read as `stdin_text` gives it: a quoted heredoc literal, an unquoted one expanded with what the walk resolved, and unknown when a `$` or a backtick is left anywhere else. A `printf`'s own words, and an `echo -e`'s, are read with their backslash escapes printed (`printed_escapes`). Anything the walk could not expand makes the whole text None, which a guard reads as unjudgeable.
     """
     base = run.name.rsplit("/", 1)[-1]
     argv = list(run.argv)
@@ -5018,7 +5054,13 @@ def writer_text(run, cmd):
     feed = stdin_text(run, cmd)
     if feed is None:
         return None
-    return "\n".join(f for f in [feed, " ".join(words)] if f)
+    # What `printf` prints for an escape in its format, and `echo -e` for one in its words, is the character (review 13505e0b.1 sweep: `printf '\\x23 ...' >> a.py` was judged as the typed four characters).
+    own = " ".join(words)
+    if base == "printf" or (
+        base == "echo" and any(re.fullmatch(r"-[neE]*e[neE]*", w) for w in words)
+    ):
+        own = printed_escapes(own)
+    return "\n".join(f for f in [feed, own] if f)
 
 
 def _written_scripts(cmd, until, cwd):

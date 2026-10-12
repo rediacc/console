@@ -184,6 +184,50 @@ def test_the_inline_python_guard_judges_the_suffix_of_the_landing(tmp_path):
     )
 
 
+def _fed(cmd, name):
+    run = next(r for r in shellscan.every_run(cmd) if r.name == name)
+    return shellscan.stdin_text(run, cmd), shellscan.writer_text(run, cmd)
+
+
+def test_the_prose_guard_scopes_an_edit_by_where_it_lands(tmp_path):
+    """Review 0067b4c2.3 and 13505e0b.3: both directions of a link then `..`, through the guard's own path reading and scope test, against a scratch root so that no link is made in the checkout. `in scope` is the guard's whole reason to read the edit at all."""
+    module = guards.load("block_prose_style_edit")
+    engine = module._engine(hookio.repo_root())
+    globals_, _rules = engine.load_rules_file(hookio.repo_root())
+    root = _world(tmp_path, "docs")
+    # A link under `docs/` that leaves the ROOT, not only the directory: `_world`'s `esc` stays inside it, where a top-level markdown file is still this guard's.
+    (tmp_path / "elsewhere").mkdir()
+    (root / "docs" / "far").symlink_to(tmp_path / "elsewhere", target_is_directory=True)
+
+    def scoped(path):
+        return module._in_scope(engine, globals_, module._relative(root, str(path), str(root)))
+
+    assert scoped("docs/probe.md"), "the control on the control: a plain docs edit must be in scope"
+    assert not scoped(tmp_path / "probe.md")
+    assert os.path.realpath(root / "out" / "l" / ".." / "probe.md") == str(
+        root / "docs" / "probe.md"
+    )
+    assert scoped(str(root / "out" / "l") + "/../probe.md"), (
+        "an edit landing under docs was out of scope"
+    )
+    assert scoped("out/l/../probe.md")
+    assert os.path.realpath(root / "docs" / "far" / ".." / "probe.md") == str(tmp_path / "probe.md")
+    assert not scoped("docs/far/../probe.md"), "an edit landing outside the tree was in scope"
+
+
+def test_printed_escapes_are_the_characters_printf_prints():
+    """Review 13505e0b.1: each expectation is what bash 5's `printf` prints for the same format."""
+    assert shellscan.printed_escapes(r"\x23 a \043 b \u0023 c \\ \q") == "# a # b # c \\ \\q"
+    assert shellscan.printed_escapes("plain # text") == "plain # text"
+    assert _fed(r"printf '\x23 n' | cat", "cat")[0] == "printf # n"
+    assert _fed(r"printf '\x23 n\n' > /tmp/zz-landing-probe", "printf")[1] == "# n\n"
+    assert _fed(r"echo -e '\x23 n' > /tmp/zz-landing-probe", "echo")[1] == "-e # n"
+    # `echo` without `-e` prints the escape as typed.
+    assert _fed(r"echo '\x23 n' > /tmp/zz-landing-probe", "echo")[1] == r"\x23 n"
+    # A quoted heredoc is cat's input, and cat prints it untouched.
+    assert _fed("cat <<'EOF'\n\\x23 n\nEOF", "cat")[0] == "\\x23 n\n"
+
+
 def test_a_writer_with_no_expanded_argv_is_unknown_not_verbatim():
     """Review 094dea3b.6: `writer_text` never falls back to the typed words. Every walked run carries an expanded argv; one built without it is unknown."""
     cmd = "echo plain > /tmp/zz-landing-probe"
@@ -195,11 +239,6 @@ def test_a_writer_with_no_expanded_argv_is_unknown_not_verbatim():
         assert shellscan.writer_text(run, cmd) is None
     finally:
         shellscan._ANALYSIS_CACHE.clear()
-
-
-def _fed(cmd, name):
-    run = next(r for r in shellscan.every_run(cmd) if r.name == name)
-    return shellscan.stdin_text(run, cmd), shellscan.writer_text(run, cmd)
 
 
 def test_stdin_text_is_the_feed_as_bash_hands_it_over():

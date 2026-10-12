@@ -14,7 +14,6 @@ THE PATHS BELOW ARE RELATIVE AND DERIVED FROM THIS FILE. An absolute path under 
 
 import atexit
 import json
-import os
 import pathlib
 import shutil
 import subprocess
@@ -29,20 +28,11 @@ GUARD_ARGV = [sys.executable, DISPATCH, "block_prose_style_edit"]
 Y = "y" + "ou"
 EYE = "I"
 
-# A LINK, THEN `..` (review 0067b4c2.3): the kernel follows the link before it applies the `..`. `INWARD` sits outside the tree and points at a directory under `docs/`, so `INWARD/../probe.md` is typed outside and lands at `docs/probe.md`. `OUTWARD` sits under `docs/` and points outside, so `docs/<OUTWARD>/../probe.md` is typed inside and lands outside. Both are real links, made here and removed at exit.
+# A LINK, THEN `..` (review 0067b4c2.3): the kernel follows the link before it applies the `..`. `INWARD` sits outside the tree and points at a directory under `docs/`, so `INWARD/../probe.md` is typed outside and lands at `docs/probe.md`. NOTHING IS MADE INSIDE THE TREE (review 13505e0b.3: the other direction needs a link under `docs/`, which this harness used to create in the live checkout for as long as it ran). That direction is proved against a scratch root in `tests/test_landing.py::test_the_prose_guard_scopes_an_edit_by_where_it_lands`.
 _LINKS = pathlib.Path(tempfile.mkdtemp(prefix="test-block-prose-style-edit-"))
 atexit.register(shutil.rmtree, str(_LINKS), True)
 INWARD = _LINKS / "l"
 INWARD.symlink_to(REPO / "docs" / "agent-reference", target_is_directory=True)
-_OUTWARD_PREFIX = ".prose-style-edit-link-"
-# A run that was killed leaves its link in the tree, since `atexit` never ran; the next run removes any whose process is gone.
-for _stale in (REPO / "docs").glob(_OUTWARD_PREFIX + "*"):
-    _pid = _stale.name[len(_OUTWARD_PREFIX) :]
-    if _stale.is_symlink() and _pid.isdigit() and not pathlib.Path("/proc/%s" % _pid).exists():
-        _stale.unlink(missing_ok=True)
-OUTWARD = REPO / "docs" / (_OUTWARD_PREFIX + "%d" % os.getpid())
-OUTWARD.symlink_to(_LINKS, target_is_directory=True)
-atexit.register(OUTWARD.unlink, True)
 
 CASES = [
     # (name, tool_input, expect_blocked) ---- the block direction ------------------------------------------
@@ -50,14 +40,6 @@ CASES = [
         "a link into docs, then ..: the edit lands in the tree",
         {"file_path": "%s/../probe.md" % INWARD, "content": "Did %s run the tests?\n" % Y},
         True,
-    ),
-    (
-        "a link out of docs, then ..: the edit lands outside",
-        {
-            "file_path": "docs/%s/../probe.md" % OUTWARD.name,
-            "content": "Did %s run the tests?\n" % Y,
-        },
-        False,
     ),
     (
         "a markdown write addressing the reader",
