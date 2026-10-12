@@ -2749,13 +2749,17 @@ def find_finding(root, branch, finding_id):
 
 
 # Any path spelling, extension or not: `Dockerfile:83` and `Makefile:12` are files too, and the old pattern demanded a dot-extension, so evidence naming one was refused as citing nothing (2026-10-11). `_citation_ok` still requires the path to be a file holding that line, which is what keeps a clock time or a ratio from counting.
-CITE_PATH = re.compile(r"(?<![A-Za-z0-9_./-])([A-Za-z0-9_./-]*[A-Za-z_][A-Za-z0-9_./-]*):(\d+)")
+CITE_PATH = re.compile(r"(?<![A-Za-z0-9_./-])([A-Za-z0-9_./-]+):(\d+)")
 CITE_SHA = re.compile(r"\b([0-9a-f]{7,40})\b")
 
 
 def _citation_ok(repo, evidence):
+    root = pathlib.Path(repo).resolve()
     for m in CITE_PATH.finditer(evidence):
-        path = pathlib.Path(repo) / m.group(1)
+        # One run of path characters, so a long token cannot backtrack; the file test below is what decides. A citation is of THIS repository: an absolute path replaces the root in a pathlib join, and `..` climbs out of it, so the resolved file must sit inside the root (`/etc/hosts:1` cites nothing).
+        path = (root / m.group(1)).resolve()
+        if not path.is_relative_to(root):
+            continue
         with contextlib.suppress(OSError):
             if path.is_file() and int(m.group(2)) <= len(
                 path.read_text(encoding="utf-8", errors="replace").splitlines()
