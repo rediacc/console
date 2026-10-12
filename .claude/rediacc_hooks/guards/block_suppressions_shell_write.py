@@ -272,11 +272,19 @@ def _offending(engine, cmd, cwd):
                 code += "\n" + script
                 literals = _python_strings(script) if name.startswith("python") else None
                 marked = code if literals is None else " ".join(argv) + "\n" + literals
-                # What arrives on the script's stdin is text it can write out too (review 094dea3b.2: `python3 copy_stdin.py <<EOF` with a marker in the heredoc was not judged, before or after the by-path read).
-                if run.feed:
-                    code += "\n" + run.feed
-                    marked += "\n" + run.feed
             if WRITE_CODE.search(code):
+                # What arrives on the program's stdin is text it can write out too (review 094dea3b.2: `python3 copy_stdin.py <<EOF` with a marker in the heredoc was not judged). It is DATA, so it is read for markers and never for write calls (7837d22e.2: a stdin line holding `open(` made a script that writes nothing a writer), and it is read as bash hands it over (7837d22e.1: `M='<marker>'; python3 gen.py <<EOF` with a body line `$M`); a part the walk cannot expand makes it unknown, which is refused. A program read FROM stdin has no other stdin, and its heredoc is already in `code`.
+                if kind in ("file", "inline") and run.feed:
+                    fed = shellscan.stdin_text(run, cmd)
+                    if fed is None:
+                        return (
+                            "a %s program that writes files, fed text this hook cannot read (%s)"
+                            % (
+                                name,
+                                shellscan.UNJUDGEABLE_REASON,
+                            )
+                        )
+                    marked += "\n" + fed
                 grew = engine.growth(
                     engine.count_any_language(""), engine.count_any_language(marked)
                 )

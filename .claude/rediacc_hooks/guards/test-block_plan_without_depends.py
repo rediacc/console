@@ -150,6 +150,17 @@ def write(rel, content):
     return {"tool_name": "Write", "tool_input": {"file_path": fp(rel), "content": content}}
 
 
+def relative(rel, content):
+    """A Write whose path is RELATIVE to the payload's own cwd, the fixture tree; this process runs somewhere else."""
+    if pathlib.Path.cwd().resolve() == BASE.resolve():
+        raise RuntimeError("this process runs in the fixture tree; the row would prove nothing")
+    return {
+        "tool_name": "Write",
+        "cwd": str(BASE),
+        "tool_input": {"file_path": rel, "content": content},
+    }
+
+
 def edit(rel, old, new, replace_all=False):
     return {
         "tool_name": "Edit",
@@ -188,6 +199,17 @@ CASES = [
         True,
     ),
     ("a NUL in a path that is no plan", write("docs/n\x00.md", plan()), False),
+    # Review 3c0094e0.2: a RELATIVE NUL path is read against the payload's cwd, not this process's. The dependency exists only in the fixture tree, so the plan conforms there and dangles anywhere else.
+    (
+        "a relative NUL plan path, its dependency missing in the payload cwd",
+        relative("agent/plans/PLAN-n\x00.md", plan(dep="PLAN-nowhere.md")),
+        True,
+    ),
+    (
+        "a relative NUL plan path, its tree read from the payload cwd",
+        relative("agent/plans/PLAN-n\x00.md", plan(dep="PLAN-z.md")),
+        False,
+    ),
     ("a malformed value", write(NEW, plan(dep="agent/plans/PLAN-y.md")), True),
     ("a dangling token", write(NEW, plan(dep="PLAN-nowhere.md")), True),
     ("a _removed target", write(NEW, plan(dep="PLAN-rm.md")), True),

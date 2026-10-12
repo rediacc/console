@@ -146,7 +146,7 @@ def _worst(content):
 def run(ev):
     typed = ev.field("tool_input", "file_path")
     # Judged where the write LANDS (`hookio.landing`, review 9c6817f3.1-.4 sweep): a link into the guarded tree followed by `..` was judged by its typed text and allowed.
-    _landed, judged, file_path = hookio.landing(typed, ev.field("cwd") or None)
+    _landed, judged, shown = hookio.landing(typed, ev.field("cwd") or None)
     if not hookio.case_glob(judged, *WORKFLOW_GLOBS):
         return hookio.ALLOW
 
@@ -162,6 +162,6 @@ def run(ev):
     # Largest run: block logic-line count in the fragment.
     worst = _worst(content)
     if worst > MAX:
-        ev.warn(MESSAGE % (worst, file_path, MAX))
+        ev.warn(MESSAGE % (worst, shown, MAX))
         return hookio.DENY
     return hookio.ALLOW

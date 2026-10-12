@@ -65,6 +65,8 @@ def test_landing_never_raises_on_a_path_the_os_refuses(tmp_path):
     """Review 9c6817f3.5: `realpath` raises ValueError on an embedded NUL; such a path cannot be written either, so it is judged as typed."""
     got = _land("agent/plans/PLAN-a\x00.md", str(tmp_path), str(tmp_path))
     assert got.judged == "agent/plans/PLAN-a\x00.md"
+    # Review 3c0094e0.2: never left relative, or a caller reads the hook process's directory.
+    assert got.absolute == str(tmp_path / "agent/plans/PLAN-a\x00.md")
     assert _land("", str(tmp_path), str(tmp_path)).judged == ""
 
 
@@ -118,27 +120,68 @@ def test_a_link_then_dotdot_is_judged_where_the_kernel_writes(tmp_path, stem, gu
 
 def test_the_workflow_guard_judges_a_link_then_dotdot_where_it_lands(tmp_path):
     """Found by the extended sweep: block_inline_workflow_run matched its glob against the typed text. The payload is the guard's own first refused edge case, moved into a scratch world."""
-    module = guards.load("block_inline_workflow_run")
     env = {k: v for k, v in os.environ.items() if k != "CLAUDE_PROJECT_DIR"}
+    case = _refused_case("block_inline_workflow_run", env)
+    root = _world(tmp_path, ".github/workflows")
+
+    def answer(path):
+        spec = json.loads(json.dumps(case))
+        spec["tool_input"]["file_path"] = str(path)
+        spec["cwd"] = str(root)
+        rc, _out, err = dispatch.run_one("block_inline_workflow_run", json.dumps(spec), env=env)
+        return rc, err
+
+    assert answer(root / ".github" / "workflows" / "ci.yml")[0] == 2
+    inward = str(root / "out" / "l") + "/../ci.yml"
+    rc, err = answer(inward)
+    assert rc == 2
+    # Review 0067b4c2.3: the refusal names what was typed AND where it lands, never the landing alone.
+    assert inward in err
+    assert "lands at %s" % (root / ".github" / "workflows" / "ci.yml") in err
+    assert answer(str(root / ".github" / "workflows" / "esc") + "/../ci.yml")[0] == 0
+
+
+def _refused_case(stem, env):
+    """The guard's own first refused edge case; an empty answer would make the caller prove nothing."""
+    module = guards.load(stem)
     refused = [
         spec
         for _label, spec in module.EDGE_CASES
         if isinstance(spec, dict)
         and (spec.get("tool_input") or {}).get("file_path")
-        and dispatch.run_one("block_inline_workflow_run", json.dumps(spec), env=env)[0] == 2
+        and dispatch.run_one(stem, json.dumps(spec), env=env)[0] == 2
     ]
-    assert refused, "the guard refuses none of its own edge cases; this test would prove nothing"
-    root = _world(tmp_path, ".github/workflows")
+    assert refused, "%s refuses none of its own edge cases; this test would prove nothing" % stem
+    return refused[0]
 
-    def verdict(path):
-        spec = json.loads(json.dumps(refused[0]))
-        spec["tool_input"]["file_path"] = str(path)
-        spec["cwd"] = str(root)
-        return dispatch.run_one("block_inline_workflow_run", json.dumps(spec), env=env)[0]
 
-    assert verdict(root / ".github" / "workflows" / "ci.yml") == 2
-    assert verdict(str(root / "out" / "l") + "/../ci.yml") == 2
-    assert verdict(str(root / ".github" / "workflows" / "esc") + "/../ci.yml") == 0
+def test_the_inline_python_guard_judges_the_suffix_of_the_landing(tmp_path):
+    """Review 0067b4c2.1: the suffix that decides is the file's the edit lands in. A `.txt` link to a script is a script (allowed before the landing was read), and a `.ts` link to a text file is text."""
+    env = {
+        k: v
+        for k, v in os.environ.items()
+        if k not in ("CLAUDE_PROJECT_DIR", "REDIACC_ALLOW_INLINE_PYTHON")
+    }
+    case = _refused_case("block_inline_python", env)
+    (tmp_path / "real.ts").write_text("export {}\n", encoding="utf-8")
+    (tmp_path / "real.txt").write_text("notes\n", encoding="utf-8")
+    (tmp_path / "notes.txt").symlink_to(tmp_path / "real.ts")
+    (tmp_path / "alias.ts").symlink_to(tmp_path / "real.txt")
+
+    def verdict(name):
+        spec = json.loads(json.dumps(case))
+        spec["tool_input"]["file_path"] = str(tmp_path / name)
+        spec["cwd"] = str(tmp_path)
+        return dispatch.run_one("block_inline_python", json.dumps(spec), env=env)[0]
+
+    assert verdict("real.ts") == 2, "the control on the control: the direct edit must be refused"
+    assert verdict("real.txt") == 0
+    assert verdict("notes.txt") == 2, (
+        "an edit that lands in a script through a .txt link was allowed"
+    )
+    assert verdict("alias.ts") == 0, (
+        "an edit that lands in a text file through a .ts link was refused"
+    )
 
 
 def test_a_writer_with_no_expanded_argv_is_unknown_not_verbatim():
@@ -152,3 +195,24 @@ def test_a_writer_with_no_expanded_argv_is_unknown_not_verbatim():
         assert shellscan.writer_text(run, cmd) is None
     finally:
         shellscan._ANALYSIS_CACHE.clear()
+
+
+def _fed(cmd, name):
+    run = next(r for r in shellscan.every_run(cmd) if r.name == name)
+    return shellscan.stdin_text(run, cmd), shellscan.writer_text(run, cmd)
+
+
+def test_stdin_text_is_the_feed_as_bash_hands_it_over():
+    """Review 7837d22e.1: an unquoted heredoc is expanded with what the walk resolved, a quoted one is literal, and a part nobody can expand leaves the whole text unknown. Each expectation is what bash 5 prints for the same command."""
+    assert _fed("M=x; cat <<EOF\na $M ${M}b\nEOF", "cat") == ("a x xb\n", "a x xb\n")
+    assert _fed("M=x; cat <<'EOF'\na $M\nEOF", "cat")[0] == "a $M\n"
+    assert _fed("M=x; cat <<EOF\na \\$M \\\\ \\`\nEOF", "cat")[0] == "a $M \\ `\n"
+    assert _fed("cat <<EOF\none \\\ntwo\nEOF", "cat")[0] == "one two\n"
+    assert _fed("cat <<EOF\ncosts 5$ a go\nEOF", "cat")[0] == "costs 5$ a go\n"
+    # Unknown: a name only the session knows, a command substitution, a backtick, an operator expansion, a positional.
+    for body in ("$HOME_OF_NOBODY", "$(date)", "`date`", "${M:-x}", "$1"):
+        assert _fed("M=x; cat <<EOF\n%s\nEOF" % body, "cat") == (None, None), body
+    # A `$` outside a heredoc is not expanded here: a here-string and the words of the stage in front.
+    assert _fed('M=x; cat <<< "$M"', "cat")[0] is None
+    assert _fed('M=x; echo "$M" | cat', "cat")[0] is None
+    assert _fed("echo plain | cat", "cat")[0] == "echo plain"
