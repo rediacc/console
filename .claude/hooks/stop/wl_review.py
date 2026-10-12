@@ -2783,7 +2783,7 @@ def _cited_paths(evidence):
 
 
 def _lines_upto(handle, number, cap):
-    """(whether `handle` holds line `number` within its first `cap` characters, characters read). Read a chunk at a time and stop at the cited line, counting lines as `str.splitlines` does. Each chunk is split once on its own: only two facts cross a chunk boundary (a line is still open; the chunk ended in a `\r` whose `\n` may follow), so a long unterminated line costs one pass, not one per chunk."""
+    """(whether `handle` holds line `number` within its first `cap` characters, characters read). Read a chunk at a time and stop at the cited line, counting lines as `str.splitlines` does. Each chunk is split once on its own: only two facts cross a chunk boundary (a line is still open; the chunk ended in a carriage return whose line feed may follow), so a long unterminated line costs one pass, not one per chunk."""
     count = read = 0
     open_line = pending_cr = False
     while read < cap:
