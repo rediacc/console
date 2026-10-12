@@ -2450,6 +2450,28 @@ async function selftest(): Promise<number> {
       mergeDroppedVerified(whole, onlyRun('u', ['x'], 'ok')).merged === undefined,
       'CONTROL: an --only run at another tree must not merge'
     );
+    const step = (from: string, to: string): Advance => ({
+      from,
+      to,
+      paths: [],
+      gates: {},
+      finishedAt: '',
+    });
+    const advanced = { ...whole, advances: [step('t', 'u')] };
+    require_(
+      mergeDroppedVerified(advanced, onlyRun('u', ['x'], 'ok')).merged?.droppedVerified.x
+        ?.headTree === 'u',
+      'an --only run at the tree a record-only advance reached must merge'
+    );
+    require_(
+      mergeDroppedVerified(advanced, onlyRun('t', ['x'], 'ok')).merged === undefined,
+      'CONTROL: once the receipt advanced, an --only run at the tree it left must not merge'
+    );
+    require_(
+      mergeDroppedVerified({ ...whole, advances: [step('z', 'u')] }, onlyRun('u', ['x'], 'ok'))
+        .merged === undefined,
+      'CONTROL: an advance that does not start at the receipt tree reaches nothing'
+    );
     require_(
       mergeDroppedVerified(whole, onlyRun('', ['x'], 'ok')).merged === undefined,
       'CONTROL: an --only run whose HEAD moved (no tree) must not merge'
@@ -3101,9 +3123,13 @@ function mergeDroppedVerified(existing: unknown, run: OnlyRun): { merged?: Recei
   if (existing === null || typeof existing !== 'object') return { why: 'no receipt to merge into' };
   const prior = existing as Partial<Receipt>;
   if (prior.whole !== true) return { why: 'the receipt on disk is not a whole-lane receipt' };
-  if (run.tree === '' || prior.headTree !== run.tree)
+  // The tree the receipt vouches for NOW: its own, moved along each record-only advance that starts where the one before ended. Without this a receipt advanced past a `--review-commit` could never take a dropped gate's pass, and the push guard, which does read the chain, refused for good (2026-10-13).
+  let vouched = prior.headTree;
+  for (const step of Array.isArray(prior.advances) ? prior.advances : [])
+    if (step.from === vouched) vouched = step.to;
+  if (run.tree === '' || vouched !== run.tree)
     return {
-      why: `the receipt judged tree ${prior.headTree || '(none)'}, this run ${run.tree || '(none)'}`,
+      why: `the receipt judged tree ${vouched || '(none)'}, this run ${run.tree || '(none)'}`,
     };
   const dropped = new Set(
     (Array.isArray(prior.droppedTouched) ? prior.droppedTouched : []).map((d) => d.id)
