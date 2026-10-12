@@ -46,8 +46,15 @@
     },
     {
       "gate": "check:ci-budget-freshness",
-      "findings": "*",
-      "reason": "lane-durations.json reports 'NO unit-duration artifacts in the last 10 sampled run(s)' for test-e2e-workers, test-account-e2e, test-renet-go, test-renet-integration, quality-pytest and ops-tutorials: the artifacts expired (3-day retention; their job logs now answer HTTP 410) because no CI run happened since 2026-10-08, and only a new run can upload them. gate-costs.json and the lane fixed costs were refreshed in 333d74fd2 and pass. The gate emits no ::finding:: keys, hence '*'. Drop this carry once this PR's first CI run has uploaded the unit-duration artifacts and `--refresh .ci/config/lane-durations.json` passes."
+      "findings": [
+        "lane-durations:no-unit-artifacts:test-e2e-workers",
+        "lane-durations:no-unit-artifacts:test-account-e2e",
+        "lane-durations:no-unit-artifacts:test-renet-go",
+        "lane-durations:no-unit-artifacts:test-renet-integration",
+        "lane-durations:no-unit-artifacts:quality-pytest",
+        "lane-durations:no-unit-artifacts:ops-tutorials"
+      ],
+      "reason": "lane-durations.json reports 'NO unit-duration artifacts in the last 10 sampled run(s)' for these six lanes: the artifacts expired (3-day retention; their job logs now answer HTTP 410) because no CI run happened since 2026-10-08, and only a new run can upload them. Each lane is carried by its own key, so any other budget or cost finding of this gate is refused, and a lane whose artifacts return makes its key STALE, which the push guard refuses until it is removed here. Drop each key as this PR's CI runs upload that lane's unit-duration artifacts."
     }
   ]
 }

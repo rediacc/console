@@ -44,6 +44,7 @@ if TYPE_CHECKING:
 
 from rediacc_ci import paths
 from rediacc_ci.ci import budget_report
+from rediacc_ci.ci.freshness import Keyed, emit_findings, key_part
 from rediacc_ci.core import ghx
 
 GATE_COSTS_REL_PATH = ".ci/config/gate-costs.json"
@@ -331,24 +332,34 @@ def check_findings(
     base = committed.get("gates") or {}
     known = set(base) | set(committed.get("unmeasured") or {})
 
+    # EVERY FINDING IS KEYED (`freshness.Keyed`, review d21f5510.1): `gate-costs:<class>:<gate id>`, never a measured number.
     findings.extend(
-        "gate %r is in %s but not in the manifest (gates.lock.json); run --refresh."
-        % (g, GATE_COSTS_REL_PATH)
+        Keyed(
+            "gate-costs:not-in-manifest:%s" % key_part(g),
+            "gate %r is in %s but not in the manifest (gates.lock.json); run --refresh."
+            % (g, GATE_COSTS_REL_PATH),
+        )
         for g in sorted(known - lock_ids)
     )
     seen = set(fresh["gates"]) | set(fresh["unmeasured"])
     findings.extend(
-        "gate %r ran in the captures but is missing from %s; run --refresh."
-        % (g, GATE_COSTS_REL_PATH)
+        Keyed(
+            "gate-costs:missing-from-baseline:%s" % key_part(g),
+            "gate %r ran in the captures but is missing from %s; run --refresh."
+            % (g, GATE_COSTS_REL_PATH),
+        )
         for g in sorted((seen & lock_ids) - known - set(sampled))
     )
     findings.extend(
-        "gate %r has a baseline but no capture measured it (%s)."
-        % (
-            g,
-            "%s in the newest capture that ran it" % fresh["unmeasured"][g]
-            if g in fresh["unmeasured"]
-            else "absent from every capture, and every --quick capture runs it",
+        Keyed(
+            "gate-costs:unmeasured:%s" % key_part(g),
+            "gate %r has a baseline but no capture measured it (%s)."
+            % (
+                g,
+                "%s in the newest capture that ran it" % fresh["unmeasured"][g]
+                if g in fresh["unmeasured"]
+                else "absent from every capture, and every --quick capture runs it",
+            ),
         )
         for g in sorted(set(base) & lock_ids)
         if g not in fresh["gates"] and (g in fresh["unmeasured"] or g not in sampled)
@@ -357,8 +368,11 @@ def check_findings(
     base_cores = (committed.get("source") or {}).get("cores")
     if fresh["cores"] is not None and base_cores is not None and fresh["cores"] != base_cores:
         findings.append(
-            "runner cores changed: baseline %s, captures %s; `capped` no longer means the same thing, run --refresh."
-            % (base_cores, fresh["cores"])
+            Keyed(
+                "gate-costs:cores-changed",
+                "runner cores changed: baseline %s, captures %s; `capped` no longer means the same thing, run --refresh."
+                % (base_cores, fresh["cores"]),
+            )
         )
 
     for gid in sorted(set(base) & set(fresh["gates"])):
@@ -368,16 +382,22 @@ def check_findings(
         d = _drift(old.get("cpu_s"), new["cpu_s"])
         if d is not None and d > DRIFT_THRESHOLD:
             findings.append(
-                "gate %r cpu_s: committed %.3g drifts %.0f%% from measured %.3g (over the %.0f%% limit)."
-                % (gid, old.get("cpu_s"), d * 100, new["cpu_s"], DRIFT_THRESHOLD * 100)
+                Keyed(
+                    "gate-costs:drift:cpu_s:%s" % key_part(gid),
+                    "gate %r cpu_s: committed %.3g drifts %.0f%% from measured %.3g (over the %.0f%% limit)."
+                    % (gid, old.get("cpu_s"), d * 100, new["cpu_s"], DRIFT_THRESHOLD * 100),
+                )
             )
         if old.get("capped") or new["capped"]:
             continue
         d = _drift(old.get("eff_cores"), new["eff_cores"])
         if d is not None and d > DRIFT_THRESHOLD:
             findings.append(
-                "gate %r eff_cores: committed %.3g drifts %.0f%% from measured %.3g (over the %.0f%% limit)."
-                % (gid, old.get("eff_cores"), d * 100, new["eff_cores"], DRIFT_THRESHOLD * 100)
+                Keyed(
+                    "gate-costs:drift:eff_cores:%s" % key_part(gid),
+                    "gate %r eff_cores: committed %.3g drifts %.0f%% from measured %.3g (over the %.0f%% limit)."
+                    % (gid, old.get("eff_cores"), d * 100, new["eff_cores"], DRIFT_THRESHOLD * 100),
+                )
             )
     return findings
 
@@ -457,9 +477,10 @@ def refresh(
     return 0
 
 
-def _fail(lines: list[str]) -> int:
-    """Print a failing verdict to stderr. The report housekeeping posts is written by `rediacc_ci.ci.freshness --check --report-to`, its one writer, from this output."""
+def _fail(lines: list[str], findings: list[str]) -> int:
+    """Print a failing verdict to stderr, then one `::finding::<key>` line per finding (`freshness.emit_findings`, which refuses an unkeyed one). The report housekeeping posts is written by `rediacc_ci.ci.freshness --check --report-to`, its one writer, from this output."""
     sys.stderr.write("\n".join(lines) + "\n")
+    emit_findings(findings)
     return 1
 
 
@@ -482,19 +503,30 @@ def check(
     try:
         committed = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        return _fail(["gate_costs --check: %s does not parse: %s" % (path, exc)])
+        return _fail(
+            ["gate_costs --check: %s does not parse: %s" % (path, exc)],
+            [Keyed("gate-costs:unreadable", "does not parse")],
+        )
     if not isinstance(committed, dict):
-        return _fail(["gate_costs --check: %s is not a JSON object" % path])
+        return _fail(
+            ["gate_costs --check: %s is not a JSON object" % path],
+            [Keyed("gate-costs:unreadable", "not a JSON object")],
+        )
     entries = load_lock(root)
     lock_ids = {e["id"] for e in entries}
     sampled = sampled_gate_ids(entries)
     captures, sources, warnings = collect(repo)
-    findings = ["capture unreadable: %s" % w for w in warnings]
+    findings: list[str] = [
+        Keyed("gate-costs:capture-unreadable", "capture unreadable: %s" % w) for w in warnings
+    ]
     notes: dict[str, list[str]] = {"not_sampled": [], "pending": []}
     if not captures:
         findings.append(
-            "no %s* artifact in %s's recent runs: the nightly capture is not producing one."
-            % (ARTIFACT_PREFIX, CAPTURE_WORKFLOW)
+            Keyed(
+                "gate-costs:no-capture",
+                "no %s* artifact in %s's recent runs: the nightly capture is not producing one."
+                % (ARTIFACT_PREFIX, CAPTURE_WORKFLOW),
+            )
         )
     else:
         fresh = aggregate(captures)
@@ -503,7 +535,8 @@ def check(
     if findings:
         return _fail(
             ["Gate cost baseline check found %d issue(s):" % len(findings)]
-            + ["  - %s" % f for f in findings]
+            + ["  - %s" % f for f in findings],
+            findings,
         )
     print(
         "Gate cost baseline check: %d gate(s) from %d capture(s) (run %s), all within %.0f%% of %s; %d of %d registered gate(s) are diff-sampled (slow lane)."

@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.ci import freshness as fr
 from rediacc_ci.ci import gate_costs as gc
 from rediacc_ci.quality import workflows
 
@@ -603,3 +604,110 @@ def test_committed_baseline_header_is_what_the_generator_writes() -> None:
     """A header that differs from DEFAULT_COMMENT would be rewritten by the next --refresh."""
     committed = json.loads((paths.repo_root() / ".ci/config/gate-costs.json").read_text("utf-8"))
     assert committed["$comment"] == gc.DEFAULT_COMMENT
+
+
+# --------------------------------------------------------------------------- finding keys (review d21f5510.1) ---------------------------------------------------------------------------
+
+
+def _keys(text: str) -> list[str]:
+    return [
+        line[len("::finding::") :] for line in text.splitlines() if line.startswith("::finding::")
+    ]
+
+
+def _finding_keys(findings: list[str]) -> set[str]:
+    """Each finding's key; a finding that is not `Keyed` fails here, by name."""
+    for f in findings:
+        assert isinstance(f, fr.Keyed), "unkeyed finding: %r" % f
+    return {f.key for f in findings if isinstance(f, fr.Keyed)}
+
+
+def test_every_gate_cost_finding_class_carries_its_key():
+    """`check_findings`' six classes, each a `Keyed` string named `gate-costs:<class>:<gate id>`."""
+    committed = baseline_from(
+        [
+            capture(
+                [
+                    gate("drifts", 10000, 10000),
+                    gate("old", 10000, 10000),
+                    gate("quiet", 10000, 10000),
+                ]
+            )
+        ]
+    )
+    fresh = gc.aggregate(
+        [
+            capture(
+                [
+                    gate("drifts", 30000, 5000),
+                    gate("new", 10000, 10000),
+                    gate("quiet", None, 10, status="fail"),
+                ],
+                cores=8,
+            )
+        ]
+    )
+    findings = gc.check_findings(committed, fresh, {"drifts", "new", "quiet"})
+    keys = _finding_keys(findings)
+    assert keys >= {
+        "gate-costs:not-in-manifest:old",
+        "gate-costs:missing-from-baseline:new",
+        "gate-costs:unmeasured:quiet",
+        "gate-costs:cores-changed",
+        "gate-costs:drift:cpu_s:drifts",
+    }, keys
+    assert all(isinstance(f, fr.Keyed) for f in findings)
+
+
+def test_the_eff_cores_drift_is_keyed():
+    committed = baseline_from([capture([gate("g", 10000, 10000)], cores=8)])
+    fresh = gc.aggregate([capture([gate("g", 10000, 5000)], cores=8)])
+    assert _finding_keys(gc.check_findings(committed, fresh, {"g"})) == {
+        "gate-costs:drift:eff_cores:g"
+    }
+
+
+def test_a_red_gate_cost_check_prints_one_key_per_finding(tmp_path: Path, capsys):
+    write_lock(tmp_path, ["g"])
+    target = tmp_path / "gate-costs.json"
+    assert (
+        gc.refresh(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 10000, 10000)])]))
+        == 0
+    )
+    capsys.readouterr()
+    assert (
+        gc.check(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 12600, 12600)])]))
+        == 1
+    )
+    first = _keys(capsys.readouterr().err)
+    assert (
+        gc.check(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 19000, 19000)])]))
+        == 1
+    )
+    assert first == _keys(capsys.readouterr().err) == ["gate-costs:drift:cpu_s:g"], (
+        "the key does not move with the drift"
+    )
+    assert (
+        gc.check(target, "o/r", tmp_path, collect=lambda _repo: ([], [], ["run 9: bad zip"])) == 1
+    )
+    assert _keys(capsys.readouterr().err) == [
+        "gate-costs:capture-unreadable",
+        "gate-costs:no-capture",
+    ]
+    target.write_text("{not json", encoding="utf-8")
+    assert gc.check(target, "o/r", tmp_path, collect=_collect([])) == 1
+    assert _keys(capsys.readouterr().err) == ["gate-costs:unreadable"]
+
+
+def test_control_an_unkeyed_gate_cost_finding_class_is_refused(tmp_path: Path, monkeypatch):
+    write_lock(tmp_path, ["g"])
+    target = tmp_path / "gate-costs.json"
+    assert (
+        gc.refresh(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 10000, 10000)])]))
+        == 0
+    )
+    monkeypatch.setattr(
+        gc, "check_findings", lambda *_a, **_k: ["a new finding class nobody keyed"]
+    )
+    with pytest.raises(TypeError, match="unkeyed finding"):
+        gc.check(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 10000, 10000)])]))
