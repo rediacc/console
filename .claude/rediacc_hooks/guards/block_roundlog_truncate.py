@@ -807,6 +807,60 @@ EDGE_CASES = [
         "perl: a two-argument open of a file named w is a read",
         "perl -e 'open(FH, \"w\"); print <FH>' agent/pr-babysit-0831-1.md",
     ),
+    # Reviews 801bbb46.1/.2: a quote or a `#` that is not a string or a comment in the language must not blank what follows it. Every row was allowed at 801bbb462, the unlink or delete hidden behind the shape its label names (`_extent_unknown`).
+    (
+        "perl: the list separator variable is not a string opener",
+        'perl -e \'local $" = ","; my $c = \\&CORE::unlink; $c->($ARGV[0])\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "perl: a quote-like operator on a # delimiter is not a comment",
+        "perl -e 'my @x = qw#a#; my $c = \\&CORE::unlink; $c->($ARGV[0])' agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "perl: the postmatch variable is not a string opener",
+        "perl -e \"my \\$p = \\$'; my \\$c = \\\\&CORE::unlink; \\$c->(\\$ARGV[0]); print ''\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "perl: the old package separator is not a string opener",
+        "perl -e \"\\$main'x = 1; my \\$c = \\\\&CORE::unlink; \\$c->(\\$ARGV[0]); print ''\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "perl: a pattern holding a quote",
+        'perl -e \'print if /"/; my $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "perl: a heredoc body holding a quote",
+        'perl -e \'print <<EOT;\nA"\nEOT\nmy $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "ruby: a character literal is not a string opener",
+        'ruby -e \'x = ?"; File.send(:delete, ARGV[0]); y = ""\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "ruby: a percent literal holding a quote",
+        'ruby -e \'x = %(1"); File.send(:delete, ARGV[0]); y = ""\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "ruby: the loaded-features variable is not a string opener",
+        'ruby -e \'x = $"; File.send(:delete, ARGV[0]); y = ""\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "ruby: a pattern holding a quote",
+        'ruby -e \'x = ARGV[0].split(/"/); File.send(:delete, ARGV[0]); y = ""\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "node: a pattern holding a quote",
+        "node -e \"const t='a'.split(/'/); new Function(process.argv[1])(); const u=''\" agent/pr-babysit-0831-1.md",
+    ),
+    # Their controls: the plain reads stay followed.
+    (
+        "perl: a plain read of the handed log",
+        "perl -e 'open(my $f, \"<\", $ARGV[0]) or die; print <$f>' agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "ruby: a plain read of the handed log",
+        'ruby -e "puts File.read(ARGV[0])" agent/pr-babysit-0831-1.md',
+    ),
 ]
 
 
@@ -2061,11 +2115,43 @@ def _blanked(code, family, spans):
     return "".join(out), lost
 
 
+def _extent_unknown(code, family):
+    """Does `code` hold a construct whose EXTENT `_blanked` does not know?
+
+    `_blanked` reads three things: a quoted string, a comment, a slash-delimited pattern. Anywhere a quote or a `#` is NOT one of those, it would blank from there on and hide live code from the word check (reviews 801bbb46.1/.2: perl's `$"`, and `qw#a#`). So the shapes below are not taught to it, they are refused.
+    The shapes: a punctuation variable (`$"`, `$'`, `` $` ``, `$#`, `$#array`); a quote-like operator on a delimiter of its own (`q qq qw`, `m qr` off a slash, `s tr y` off the four the pattern reader takes, ruby's `%w %q %Q %r %i`); a heredoc; a ruby character literal; a data or pod section; perl's old `'` package separator; and a pattern or substitution that itself holds a quote, a backtick or a `#`.
+    """
+    quote = r"""["'`#]"""
+    shapes = [
+        # a slash where a pattern can stand, with a quote or `#` before the slash that closes it
+        r"(?:^|[(,=~!&|{;:?]|\b(?:if|unless|and|or|not|split|grep|while|return|when|until|match|scan|gsub|sub))\s*(?:m|qr)?/(?![*/])(?:\\.|[^/\n\\])*"
+        + quote,
+    ]
+    if family != "js":
+        shapes += [r"\$" + quote, r"<<[~-]?[\"'\w]", r"^__(?:END|DATA)__", r"^=[a-z]"]
+    if family == "perl":
+        shapes += [
+            r"(?<![\w$@%&>{])(?:q|qq|qw)\s*[^\w\s=,;)]",
+            r"(?<![\w$@%&>{])(?:m|qr)\s*[^\w\s/=,;)]",
+            r"(?<![\w$@%&>{])(?:s|tr|y)\s*[^\w\s/|!,=;)]",
+            r"\w'[A-Za-z_]",
+        ]
+        # a substitution on a delimiter the pattern reader takes, holding a quote or `#`
+        if any(
+            re.search(quote, m.group(0))
+            for m in re.finditer(r"\b(?:s|tr|y)([/|!,])(?:\\.|(?!\1).)*\1(?:\\.|(?!\1).)*\1", code)
+        ):
+            return True
+    if family == "ruby":
+        shapes += [r"%[wWqQrRiIsx]?[\[({<|!/]", r"\?" + quote]
+    return any(re.search(shape, code, re.MULTILINE) for shape in shapes)
+
+
 def _follow_words(code, family):
     """`(literals, lost)` for a node, perl or ruby program."""
     literals, unresolved, spans = _site_targets(code, family)
     text, lost = _blanked(code, family, spans)
-    lost = lost or unresolved
+    lost = lost or unresolved or _extent_unknown(code, family)
 
     def blank(pattern, keep=0):
         """Blank what `pattern` matches, keeping its first `keep` groups."""
