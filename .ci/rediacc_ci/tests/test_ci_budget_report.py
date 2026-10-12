@@ -2414,3 +2414,89 @@ def test_the_refresh_writes_main_push_only_jobs_without_touching_pr_numbers(monk
         root=tmp_path, list_artifacts=lambda *_a: [], download=lambda *_a: b""
     )
     assert computed["job_p90_minutes"] == {"Lint": 4.0, "Check Release State": 0.5}
+
+
+# --------------------------------------------------------------------------- finding keys (review d21f5510.1) ---------------------------------------------------------------------------
+
+
+def _keys(text: str) -> list[str]:
+    return [
+        line[len("::finding::") :] for line in text.splitlines() if line.startswith("::finding::")
+    ]
+
+
+def test_every_lane_duration_finding_class_emits_its_key(tmp_path, capsys):
+    """One finding of each class, and each prints `::finding::lane-durations:<class>:<subject>`: the lane, unit or job, never the count, the run id or the measured number."""
+    path = tmp_path / "lane-durations.json"
+    path.write_text(
+        json.dumps(
+            _committed(
+                jobs={"quality-code": 2.0},
+                units={"e2e:slow.spec.ts": 100_000.0},
+                job_max_seconds={"jobs": {"Validate Promotion": {"observed_max_seconds": 100}}},
+            )
+        )
+    )
+    compute = _fake_compute(
+        missing_artifact_lanes=["ops-tutorials", "test-renet-go"],
+        stale_sample=["run 1 is 28.2 day(s) old", "run 2 is 30.0 day(s) old"],
+        jobs={"quality-code": 13.0},
+        units={"e2e:slow.spec.ts": 400_000.0},
+        job_max_seconds={"Validate Promotion": {"observed_max_seconds": 400}},
+    )
+    assert br.check_lane_durations(path, limit=10, compute=compute) == 1
+    keys = _keys(capsys.readouterr().err)
+    assert set(keys) >= {
+        "lane-durations:no-unit-artifacts:ops-tutorials",
+        "lane-durations:no-unit-artifacts:test-renet-go",
+        "lane-durations:stale-sample",
+        "lane-durations:leg-over-budget:quality-code",
+        "lane-durations:drift:job:quality-code",
+        "lane-durations:drift:unit:e2e:slow.spec.ts",
+        "lane-durations:drift:job-max:Validate-Promotion",
+    }, keys
+    assert len(keys) == len(set(keys)), "one line per key: two stale runs are one finding class"
+    assert not any(ch.isdigit() for k in keys for ch in k.split(":")[1]), keys
+
+
+def test_a_lane_duration_key_does_not_move_with_the_numbers(tmp_path, capsys):
+    """The same missing lane over a different sample size, on another day, keeps its key."""
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(_committed()))
+    seen = []
+    for limit in (10, 25):
+        compute = _fake_compute(missing_artifact_lanes=["quality-pytest"])
+        assert br.check_lane_durations(path, limit=limit, compute=compute) == 1
+        seen.append(_keys(capsys.readouterr().err))
+    assert seen[0] == seen[1] == ["lane-durations:no-unit-artifacts:quality-pytest"]
+
+
+def test_a_green_lane_duration_check_emits_no_key(tmp_path, capsys):
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(_committed(jobs={"test-e2e-workers": 5.5})))
+    compute = _fake_compute(jobs={"test-e2e-workers": 5.5})
+    assert br.check_lane_durations(path, limit=10, compute=compute) == 0
+    captured = capsys.readouterr()
+    assert _keys(captured.err + captured.out) == []
+
+
+def test_an_unreadable_lane_durations_file_is_keyed(tmp_path, capsys):
+    path = tmp_path / "lane-durations.json"
+    path.write_text("{not json")
+    assert br.check_lane_durations(path, limit=10, compute=_fake_compute()) == 1
+    assert _keys(capsys.readouterr().err) == ["lane-durations:unreadable"]
+
+
+def test_control_an_unkeyed_lane_duration_finding_class_is_refused(tmp_path, monkeypatch):
+    """A NEW finding class added as a bare string would fail the gate with no key and sit unseen beside carried ones. Planted: the over-budget finder is made to add a plain string, and the check raises instead of printing it."""
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(_committed()))
+    real = br.unit_drift_findings
+
+    def unkeyed(*args, **kwargs):
+        findings, lanes = real(*args, **kwargs)
+        return [*findings, "a new finding class nobody keyed"], lanes
+
+    monkeypatch.setattr(br, "unit_drift_findings", unkeyed)
+    with pytest.raises(TypeError, match="unkeyed finding"):
+        br.check_lane_durations(path, limit=10, compute=_fake_compute())

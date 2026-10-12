@@ -107,6 +107,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
 
 from rediacc_ci import log, paths
+from rediacc_ci.ci.freshness import Keyed, emit_findings, key_part
 from rediacc_ci.core import gh_retry, ghx
 from rediacc_ci.testrun import e2e as e2e_run
 from rediacc_ci.well_known import GH_REPO
@@ -1678,14 +1679,14 @@ def unit_drift_findings(
         measured_sum[lane] = measured_sum.get(lane, 0.0) + ms
         f = _unit_spread_finding(unit_id, was, ms, stats_by_unit.get(unit_id) or {})
         if f:
-            findings.append(f)
+            findings.append(Keyed("lane-durations:drift:unit:%s" % key_part(unit_id), f))
     for lane in sorted(committed_sum):
         was, ms = committed_sum[lane], measured_sum[lane]
         if abs(ms - was) < MIN_UNIT_DRIFT_MS:
             continue
         d = drift_finding("lane %r summed unit p90" % lane, was, ms)
         if d:
-            findings.append(d)
+            findings.append(Keyed("lane-durations:drift:lane-sum:%s" % key_part(lane), d))
     return findings, len(committed_sum)
 
 
@@ -1916,26 +1917,35 @@ def check_lane_durations(
         committed = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         print("budget_report --check: %s does not parse: %s" % (path, exc), file=sys.stderr)
+        emit_findings([Keyed("lane-durations:unreadable", "does not parse")])
         return 1
     if not isinstance(committed, dict):
         print("budget_report --check: %s is not a JSON object" % path, file=sys.stderr)
+        emit_findings([Keyed("lane-durations:unreadable", "not a JSON object")])
         return 1
 
     computed = compute(repo, workflow, branch, limit)
+    # EVERY FINDING IS KEYED (`freshness.Keyed`, review d21f5510.1): `lane-durations:<class>:<lane, unit or job>`, never the count, the run id or the measured number, so the same finding keeps its key from run to run.
     findings: list[str] = [
-        "lane %r has NO unit-duration artifacts in the last %d sampled run(s)." % (lane, limit)
+        Keyed(
+            "lane-durations:no-unit-artifacts:%s" % key_part(lane),
+            "lane %r has NO unit-duration artifacts in the last %d sampled run(s)." % (lane, limit),
+        )
         for lane in computed["missing_artifact_lanes"]
     ]
-    findings.extend("stale sample: %s" % f for f in computed.get("stale_sample") or [])
+    findings.extend(
+        Keyed("lane-durations:stale-sample", "stale sample: %s" % f)
+        for f in computed.get("stale_sample") or []
+    )
 
     committed_jobs = committed.get("jobs") or {}
     for lane, minutes in sorted(computed["jobs"].items()):
         f = leg_over_budget_finding(lane, minutes)
         if f:
-            findings.append(f)
+            findings.append(Keyed("lane-durations:leg-over-budget:%s" % key_part(lane), f))
         d = drift_finding("job %r fixed cost" % lane, committed_jobs.get(lane), minutes)
         if d:
-            findings.append(d)
+            findings.append(Keyed("lane-durations:drift:job:%s" % key_part(lane), d))
 
     unit_findings, unit_lanes = unit_drift_findings(
         committed.get("units") or {}, computed["units"], computed.get("unit_stats")
@@ -1954,12 +1964,13 @@ def check_lane_durations(
             minutes,
         )
         if d:
-            findings.append(d)
+            findings.append(Keyed("lane-durations:drift:job-max:%s" % key_part(name), d))
 
     if findings:
         print("CI time budget check found %d issue(s):" % len(findings), file=sys.stderr)
         for f in findings:
             print("  - %s" % f, file=sys.stderr)
+        emit_findings(findings)
         return 1
     print(
         "CI time budget check: %d job lane(s), %d unit(s) in %d unit lane sum(s), %d headroom job(s) sampled "
