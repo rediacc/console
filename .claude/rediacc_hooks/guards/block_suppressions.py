@@ -241,8 +241,11 @@ def _resolve(root, file_path, cwd):
     if not file_path:
         return ""
     path = file_path if os.path.isabs(file_path) else os.path.join(cwd or str(root), file_path)
-    # Where the edit LANDS (review 3f53e99e.1 sweep): a directory link outside the tree that points into it was judged outside and allowed. `realpath` resolves `.`, `..` and every symlink in the part of the path that exists. The path as typed still counts too, so a link inside the tree pointing out of it is judged as before; the landing path is preferred, since its name decides the language.
-    for candidate in (os.path.realpath(path), os.path.normpath(path)):
+    # Where the edit LANDS (review 3f53e99e.1 sweep): a directory link outside the tree that points into it was judged outside and allowed. `hookio.landing` is the one reading every pre-edit guard shares (9c6817f3.8). The path as typed still counts when it holds no `..`, so a link inside the tree pointing out of it is judged as before; with a `..` the typed text is not where the kernel writes (`esc/../f` behind a link lands outside), so only the landing counts. The landing is preferred, since its name decides the language.
+    candidates = [hookio.landing(file_path, cwd or str(root), str(root))[0]]
+    if ".." not in path.split("/"):
+        candidates.append(os.path.normpath(path))
+    for candidate in candidates:
         try:
             rel = os.path.relpath(candidate, str(root))
         except ValueError:

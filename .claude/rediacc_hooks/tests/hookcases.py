@@ -1125,6 +1125,27 @@ STATIC: list[Case] = [
         bash_json('rm "$D"/.claude/notes*'),
         "protected-files CONTROL: a glob under an unknown root that no protected name matches",
     ),
+    # Review 094dea3b.4-.5: a glob glued to an unknown root with no slash was allowed (rc 0); a protected basename directly under an unknown root is refused on purpose, since the root may be `.claude`.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm "$D"settings*'),
+        "protected-files: a glob glued to an unknown root with no slash",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm "$D"/settings*'),
+        "protected-files: a protected basename glob directly under an unknown root",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm "$D"notes*'),
+        "protected-files CONTROL: a glued glob no protected name matches",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm -f "$D"*'),
+        "protected-files CONTROL: a bare glob glued to an unknown root",
+    ),
     # A prefix command's option VALUE is not the command (cac47d16.1 sweep, shellscan._prefix_option): each refusal was allowed (rc 0) before, the value read as the command.
     case(
         "check 2 guards/block_protected_files.py",

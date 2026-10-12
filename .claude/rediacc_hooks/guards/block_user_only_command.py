@@ -17,7 +17,6 @@ THE EXCEPTION LIST, from the operator's amendment of 2026-10-09, verbatim:
 THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-block_user_only_command.py` beside it and against its own DEFECT, never against a golden.
 """
 
-import os
 import pathlib
 
 from rediacc_hooks import hookio, model_invocation
@@ -195,15 +194,8 @@ def run(ev):
     file_path = ev.first(("tool_input", "file_path"), ("tool_input", "notebook_path"))
     if not file_path or file_path == "null":
         return hookio.ALLOW
-    path = pathlib.Path(file_path)
-    if not path.is_absolute():
-        try:
-            base = pathlib.Path(ev.default(("cwd",), str(hookio.repo_root())))
-        except RuntimeError:
-            base = pathlib.Path(ev.cwd)
-        path = base / path
-    # Judged where the write LANDS (review 3f53e99e.1): `.claude/x/../commands/new.md` and a directory symlink into `.claude/commands` were out of scope as typed and allowed, while `.claude/commands/../x/new.md` was in scope and refused. `realpath` resolves `.`, `..` and every symlink in the part of the path that exists.
-    path = pathlib.Path(os.path.realpath(path))
+    # Judged where the write LANDS (review 3f53e99e.1): `.claude/x/../commands/new.md` and a directory symlink into `.claude/commands` were out of scope as typed and allowed, while `.claude/commands/../x/new.md` was in scope and refused. `hookio.landing` is the one reading every pre-edit guard shares (9c6817f3.8).
+    path = pathlib.Path(hookio.landing(file_path, ev.field("cwd") or None)[0])
     if model_invocation.is_exception_list(path.as_posix()):
         ev.warn_raw(
             LIST_MESSAGE

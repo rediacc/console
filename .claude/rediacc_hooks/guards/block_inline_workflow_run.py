@@ -144,8 +144,10 @@ def _worst(content):
 
 
 def run(ev):
-    file_path = ev.field("tool_input", "file_path")
-    if not hookio.case_glob(file_path, *WORKFLOW_GLOBS):
+    typed = ev.field("tool_input", "file_path")
+    # Judged where the write LANDS (`hookio.landing`, review 9c6817f3.1-.4 sweep): a link into the guarded tree followed by `..` was judged by its typed text and allowed.
+    _landed, judged, file_path = hookio.landing(typed, ev.field("cwd") or None)
+    if not hookio.case_glob(judged, *WORKFLOW_GLOBS):
         return hookio.ALLOW
 
     content = ev.texts(
