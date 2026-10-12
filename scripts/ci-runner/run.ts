@@ -3130,7 +3130,7 @@ function mergeDroppedVerified(existing: unknown, run: OnlyRun): { merged?: Recei
   if (existing === null || typeof existing !== 'object') return { why: 'no receipt to merge into' };
   const prior = existing as Partial<Receipt>;
   if (prior.whole !== true) return { why: 'the receipt on disk is not a whole-lane receipt' };
-  // The tree the receipt vouches for now: its own, moved along each record-only advance. A step counts only when it starts where the one before ended, and the walk stops at the first that does not.
+  // The tree the receipt vouches for now: its own, moved along each record-only advance. A step counts only when it starts where the one before ended, and the walk stops at the first that does not. Without the walk a receipt advanced past a record-only commit could never take a dropped gate's pass, while the push guard, which reads the same chain, went on asking for it.
   let vouched = prior.headTree;
   for (const step of Array.isArray(prior.advances) ? prior.advances : []) {
     if (step.from !== vouched) break;
