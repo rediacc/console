@@ -51,6 +51,8 @@ WRITE_CODE = re.compile(
     r"|appendFileSync|os\.replace|os\.rename|shutil\.(copy|move)"
 )
 # A program that RUNS text it was handed (review 13505e0b.2): for one of these the stdin is program text as well as data.
+# THE RULE (648366c8.1): stdin is program text unless the source can be classified as not evaluating it. In Python, Perl and Ruby an evaluator is reached by a NAME, so a source naming none of `_RUNS_TEXT` is classified. In JavaScript it is not (`Function(...)`, `(0, eval)(...)`, `import('data:...')`, `x.constructor.constructor(...)` name nothing a list can hold), so no JavaScript program is classified and every one of `_UNCLASSIFIED` that is fed anything is read as running it.
+_UNCLASSIFIED = ("node", "deno", "bun", "tsx")
 _RUNS_TEXT = re.compile(
     r"\b(?:exec|eval|execfile|compile|instance_eval|class_eval|module_eval)\b|new\s+Function\b"
     r"|\brunIn(?:This|New)?Context\b|\brunpy\b|\bcode\.interact|\bInteractiveConsole\b"
@@ -283,7 +285,7 @@ def _offending(engine, cmd, cwd):
             program = code
             if kind in ("file", "inline") and run.feed:
                 fed = shellscan.stdin_text(run, cmd)
-                if _RUNS_TEXT.search(code):
+                if name.startswith(_UNCLASSIFIED) or _RUNS_TEXT.search(code):
                     if fed is None:
                         return (
                             "a %s program that runs its stdin, fed text this hook cannot read (%s)"
