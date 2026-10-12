@@ -15,7 +15,6 @@ The cure is one reader, `shellscan.gh_args`, which parses a walked gh argv the w
 
 from __future__ import annotations
 
-import datetime
 import importlib.util
 import json
 import os
@@ -25,6 +24,7 @@ import subprocess
 import pytest
 
 from rediacc_hooks import commit_policy, dispatch, shellscan
+from rediacc_hooks.tests import hookcases
 from rediacc_hooks.wellknown import GH_ORIGIN, GH_REPO, RENET_REPO
 
 FOOTER = "\U0001f916 " + "Generated " + "with [Claude Code](u)"
@@ -633,8 +633,8 @@ def test_the_walk_records_the_environment_a_gh_call_gets(cmd, repo):
 
 # --- the five residues of fad446748 (#9de9a8e9), each a long-form control beside the spelling it must equal ---
 
-# The machine's LOCAL today, as block_stale_pr_branch_date reads it; computed, so the cases are never a stale date by tomorrow.
-TODAY = datetime.datetime.now().strftime("%m%d")  # noqa: DTZ005 -- the guard's own clock
+# The machine's LOCAL today, as block_stale_pr_branch_date reads it. It is a token in the rows and is filled when the test RUNS (#0f87655f): a date frozen at collection is yesterday's for a run that crosses midnight.
+TODAY = hookcases.TODAY_MARK
 
 
 # Residue 1. The head a `gh pr create` names is read by `shellscan.gh_args`: `-dH x` names `x`, and `-t --head` titles a PR "--head" and names no head at all. The fixture's checkout is `0101-1`, stale on every day but one; `0229-7` is stale on every day but one other.
@@ -656,8 +656,9 @@ TODAY = datetime.datetime.now().strftime("%m%d")  # noqa: DTZ005 -- the guard's 
     ],
 )
 def test_stale_branch_date_reads_head_in_every_spelling(world, control, want, other):
-    if TODAY in ("0101", "0229"):
+    if hookcases.today_filled(TODAY) in ("0101", "0229"):
         pytest.skip("today is the fixture's own date")
+    control, other = hookcases.today_filled(control), hookcases.today_filled(other)
     rc, _ = judge(world, "block_stale_pr_branch_date", control)
     assert rc == want, "control %r answered rc=%d, not %d" % (control, rc, want)
     rc, _ = judge(world, "block_stale_pr_branch_date", other)

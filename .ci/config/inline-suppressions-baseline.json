@@ -1474,14 +1474,10 @@
    "noqa BLE001": 5,
    "noqa PLC0415": 10
   },
-  ".claude/rediacc_hooks/tests/hookcases.py": {
-   "noqa DTZ011": 1
-  },
   ".claude/rediacc_hooks/tests/regolden.py": {
    "noqa E402": 5
   },
   ".claude/rediacc_hooks/tests/test_gh_flag_spellings.py": {
-   "noqa DTZ005": 1,
    "noqa PLC0415": 4
   },
   ".claude/rediacc_hooks/tests/test_guard_chained_state.py": {
