@@ -21,8 +21,8 @@ ORDER = 7
 
 # Dropping the host-spec test restores the `^scp ` behaviour the 2026-08-27 change removed: every scp is a deploy again, downloads included. It is the one line that separates "uploading a binary" from "pulling a log back".
 DEFECT = (
-    "if unread_upload or hookio.grep_q(HOST_SPEC, dest):",
-    "if True:",
+    "return unread_upload or hookio.grep_q(HOST_SPEC, dest)",
+    "return True",
 )
 
 MESSAGE = (
@@ -107,6 +107,16 @@ EDGE_CASES = [
     ("timeout N still reaches the upload", "timeout 30 scp x h:/p"),
     # xargs appends its input last, so this copies FROM the host: a download.
     ("xargs-appended sources make a download", "echo bin/renet | xargs scp host:/d"),
+    # In replace mode xargs appends nothing: the fed word stands where the marker is, and scp's own last word stays the destination. Both uploads were allowed before, read as a copy into the fed word.
+    (
+        "a fed xargs -I still uploads",
+        "echo bin/renet | xargs -I{} scp {} host:/usr/local/bin/renet",
+    ),
+    ("a fed xargs --replace still uploads", "echo bin/renet | xargs --replace=X scp X host:/d"),
+    (
+        "a fed xargs -I download stays one",
+        "echo host:/var/log/renet.log | xargs -I{} scp {} ./logs/",
+    ),
     # Options are set aside the way getopt reads them (review f212d159.1).
     ("a trailing option does not hide the upload", "scp bin/renet host:/usr/local/bin/renet -q"),
     ("a value option before the operands", "scp -P 2222 -o BatchMode=yes bin/renet host:/p"),
@@ -164,6 +174,23 @@ def _sudo_copy_deploy(run_, cwd):
     )
 
 
+# xargs options that put the fed words in the command's own words in place of appending them: `-I R`, `-IR`, `-i`, `--replace`, and BSD's `-J R`.
+REPLACE_MODE = ("-I", "-i", "--replace", "-J")
+
+
+def _uploads(args):
+    """Whether scp given `args` sends a file to a host."""
+    operands = _scp_operands(args)
+    if len(operands) < 2:
+        return False
+    dest = operands[-1]
+    # A destination built at run time (`$(...)`, an unset variable) cannot be read here. It is an upload unless EVERY source names a host, which makes the copy a download into that local path; one local source can still be going up.
+    unread_upload = shellscan.unresolved(dest) and not all(
+        hookio.grep_q(HOST_SPEC, src) for src in operands[:-1]
+    )
+    return unread_upload or hookio.grep_q(HOST_SPEC, dest)
+
+
 def run(ev):
     cmd = ev.raw("tool_input", "command")
     if cmd == "":
@@ -177,18 +204,15 @@ def run(ev):
         if run_.name.rsplit("/", 1)[-1] != "scp":
             continue
         args = list(run_.argv if run_.xargv is None else run_.xargv)
-        # xargs appends its feed after scp's own words, so a fed word can be the destination (`echo host:/p | xargs scp bin/renet` uploads).
+        readings = [args]
         if run_.feed and "xargs" in run_.via:
-            args += run_.feed.split()
-        operands = _scp_operands(args)
-        if len(operands) < 2:
-            continue
-        dest = operands[-1]
-        # A destination built at run time (`$(...)`, an unset variable) cannot be read here. It is an upload unless EVERY source names a host, which makes the copy a download into that local path; one local source can still be going up (review f212d159.2, e69e9a3f.1, 70f58ef3.1).
-        unread_upload = shellscan.unresolved(dest) and not all(
-            hookio.grep_q(HOST_SPEC, src) for src in operands[:-1]
-        )
-        if unread_upload or hookio.grep_q(HOST_SPEC, dest):
+            # xargs appends its feed after scp's own words, so a fed word can be the destination (`echo host:/p | xargs scp bin/renet` uploads). In replace mode it appends nothing and puts each fed line where the marker stands, so scp's own last word stays the destination (`echo bin/renet | xargs -I{} scp {} host:/p` uploads); with the options unread, both readings are judged.
+            appended = args + run_.feed.split()
+            if run_.xargs is None:
+                readings = [args, appended]
+            elif not any(o.startswith(REPLACE_MODE) for o in run_.xargs):
+                readings = [appended]
+        if any(_uploads(reading) for reading in readings):
             ev.warn(MESSAGE)
             return hookio.DENY
     return hookio.ALLOW
