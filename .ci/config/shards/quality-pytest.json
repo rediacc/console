@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-11T17:10:35.014Z",
+  "generatedAt": "2026-10-12T16:34:06.145Z",
   "legs": [
     {
       "index": 1,
@@ -198,6 +198,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_hooks_delegates.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_fixtures.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_wiring.py",
+        "pytest:.claude/rediacc_hooks/tests/test_landing.py",
         "pytest:.claude/rediacc_hooks/tests/test_plan_gate.py",
         "pytest:.claude/rediacc_hooks/tests/test_pr_body_guards_repo_scope.py",
         "pytest:.claude/rediacc_hooks/tests/test_pr_body_reader.py",

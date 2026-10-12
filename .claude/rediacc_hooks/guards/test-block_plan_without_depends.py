@@ -134,6 +134,11 @@ def tree():
         p.write_text(text, encoding="utf-8")
     # A directory symlink into agent/plans (#bc7d998c): a write through it lands in the plan folder.
     (BASE / "linkedplans").symlink_to(BASE / "agent" / "plans", target_is_directory=True)
+    # A link then `..` (review 9c6817f3.1-.4 sweep): the kernel follows the link first. `out/l` points INTO the guarded directory, `esc` points OUT of it.
+    (BASE / "agent" / "plans" / "sub").mkdir()
+    (BASE / "out").mkdir()
+    (BASE / "out" / "l").symlink_to(BASE / "agent" / "plans" / "sub", target_is_directory=True)
+    (BASE / "agent" / "plans" / "esc").symlink_to(BASE / "out", target_is_directory=True)
     return BASE
 
 
@@ -170,6 +175,19 @@ CASES = [
     ),
     ("a Write without the field through a symlink", write("linkedplans/PLAN-new.md", plan()), True),
     ("a .. detour out of the plan folder", write("agent/plans/../PLAN-new.md", plan()), False),
+    # A link then `..` is judged where the kernel writes, and a NUL path writes nothing (review 9c6817f3.5: it raised, rc 1).
+    ("a link into the plan folder, then ..", write("out/l/../PLAN-new.md", plan()), True),
+    (
+        "a link out of the plan folder, then ..",
+        write("agent/plans/esc/../PLAN-new.md", plan()),
+        False,
+    ),
+    (
+        "a NUL in a plan-shaped path is judged by its text",
+        write("agent/plans/PLAN-n\x00.md", plan()),
+        True,
+    ),
+    ("a NUL in a path that is no plan", write("docs/n\x00.md", plan()), False),
     ("a malformed value", write(NEW, plan(dep="agent/plans/PLAN-y.md")), True),
     ("a dangling token", write(NEW, plan(dep="PLAN-nowhere.md")), True),
     ("a _removed target", write(NEW, plan(dep="PLAN-rm.md")), True),
