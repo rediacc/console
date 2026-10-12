@@ -12,6 +12,7 @@ THE ROWS. The IDs follow A0 section 3's tables, with one rename: A0 numbers the 
 from __future__ import annotations
 
 import ast
+import fnmatch
 import json
 import os
 import pathlib
@@ -24,6 +25,7 @@ from dataclasses import dataclass, field
 import pytest
 
 from rediacc_hooks import dispatch, guards, hookio, shellscan
+from rediacc_hooks.guards import block_roundlog_truncate as G
 
 HOOKS = pathlib.Path(__file__).resolve().parents[1]
 
@@ -2007,3 +2009,74 @@ def test_a_redirect_onto_a_glob_writes_the_one_file_it_matches(bash, tmp_path):
     )
     assert two.returncode != 0
     assert log.read_text(encoding="utf-8") == "x\n"
+
+
+def test_a_launched_run_reads_its_glob_by_shape_too(tmp_path):
+    """Review 9ed30a8a.1: a run `find -exec` starts is uncertain (the shape reading is added beside its disk matches), and one started ELSEWHERE (`-execdir`, each match's own directory) names no directory at all."""
+    (tmp_path / "src").mkdir()
+    here = r"find . -maxdepth 0 -exec sh -c 'echo f* | xargs cp a' \;"
+    there = r"find . -maxdepth 1 -execdir sh -c 'echo f* | xargs cp a' \;"
+    plain = "echo f* | xargs cp a"
+    for cmd, want_dirs, want_uncertain in (
+        (here, [str(tmp_path)], True),
+        (there, [], True),
+        (plain, [str(tmp_path)], False),
+    ):
+        copier = next(r for r in shellscan.every_run(cmd) if r.name == "cp")
+        assert shellscan._feed_directories(copier, str(tmp_path)) == (want_dirs, want_uncertain), (
+            cmd
+        )
+
+
+LOG_NAME_CORPUS = [
+    "pr-babysit-0831-1.md",
+    "pr-babysit-1008-1.md",
+    "pr-babysit-x.md",
+    "pr-babysit-a.b-c_d.md",
+    "pr-babysit-0831-1-briefing.md",
+    "pr-babysit-.md",
+    "pr-babysit-x.mdx",
+    "notes-1.md",
+    "x.md",
+    "pr-babysit-x.txt",
+]
+
+
+@pytest.mark.parametrize(
+    "glob_pattern",
+    [
+        "*.md",
+        "pr-*",
+        "p?-babysit-*",
+        "[p]r-babysit-x.md",
+        "pr-babysit-a*.md",
+        "pr-babysit-?.md",
+        "*-briefing.md",
+        "pr-babysit-*.m?",
+        "notes-*.md",
+        "*.txt",
+        "[!p]*.md",
+        "pr-babysit-.md",
+    ],
+)
+def test_the_roundlog_prefilter_meets_every_log_name_a_glob_can(glob_pattern):
+    """Review 9ed30a8a.3: `_glob_meets_log` is the intersection of the glob and the round-log pattern, read from `RL` itself. Sound against every name in a corpus (a name both match forces True), and exact on the negatives the corpus cannot show."""
+    witnessed = any(
+        fnmatch.fnmatchcase(name, glob_pattern) and re.fullmatch(G.RL, name)
+        for name in LOG_NAME_CORPUS
+    )
+    if witnessed:
+        assert G._glob_meets_log(glob_pattern), glob_pattern
+    if glob_pattern in ("notes-*.md", "*.txt", "[!p]*.md", "pr-babysit-.md"):
+        assert not G._glob_meets_log(glob_pattern), glob_pattern
+
+
+def test_the_roundlog_automaton_is_read_from_rl(monkeypatch):
+    """Review 9ed30a8a.3: a change to `RL` that leaves `<prefix>[<class>]+<suffix>` raises at once rather than leaving the prefilter testing an old pattern; one that keeps the shape is read."""
+    monkeypatch.setattr(G, "RL", r"round-log-(\d+)\.md")
+    with pytest.raises(RuntimeError):
+        G._log_automaton()
+    monkeypatch.setattr(G, "RL", r"rl-[0-9]+\.txt")
+    edges, accept = G._log_automaton()
+    assert accept == ("S", 4)
+    assert ("S", 0) not in edges or edges[("S", 0)][0][0] == frozenset(".")

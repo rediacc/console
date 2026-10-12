@@ -2067,20 +2067,6 @@
       "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
     },
     {
-      "id": "8cdd47bade337280",
-      "file": ".ci/scripts/quality/check_workflow_submodule_deps.py",
-      "code": "arg-type",
-      "count": 3,
-      "message": "Argument 1 to \"append\" of \"list\" has incompatible type \"tuple[str, str, bool]\"; expected \"tuple[str, str]\""
-    },
-    {
-      "id": "90e83e384703ba86",
-      "file": ".ci/scripts/quality/check_workflow_submodule_deps.py",
-      "code": "return-value",
-      "count": 1,
-      "message": "Incompatible return value type (got \"list[tuple[str, str]]\", expected \"list[tuple[str, str, bool]]\")"
-    },
-    {
       "id": "0e948028da8a4c6c",
       "file": ".ci/scripts/quality/check_workflow_submodule_deps.py",
       "code": "var-annotated",

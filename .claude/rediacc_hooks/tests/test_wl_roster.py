@@ -19,6 +19,8 @@ import subprocess
 import sys
 import time
 
+import pytest
+
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
@@ -1642,3 +1644,35 @@ def test_r10_a_continued_session_finds_its_task_streams_under_the_sibling_sessio
     assert alive[2] is not None, "the sibling session's stream was not found"
     assert alive[3] == 42, alive
     assert none[2] is None, none
+
+
+# #6378e10e: an in-place edit is read by `shellscan.in_place_edit`, so perl and gsed reach the fix-set as sed always did, and a sed or perl that edits nothing in place writes nothing. The hand-rolled sed reader (`_sed_files`) asked only of sed and counted any `i` in a single-dash word.
+WRITE_PATHS_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_roster as R
+print(json.dumps(sorted(R.bash_write_paths(sys.argv[2], sys.argv[3], sys.argv[3]))))
+"""
+
+IN_PLACE_CASES = [
+    ("perl -pi -e s/a/b/ docs/x.md", ["docs/x.md"]),
+    ("perl -i.bak -pe s/a/b/ docs/x.md", ["docs/x.md"]),
+    ("gsed -i s/a/b/ docs/x.md", ["docs/x.md"]),
+    ("sed -i -e s/a/b/ docs/x.md docs/y.md", ["docs/x.md", "docs/y.md"]),
+    ("sed -i s/a/b/ docs/x.md", ["docs/x.md"]),
+    ("perl -pe s/a/b/ docs/x.md", []),
+    ("sed -n p docs/x.md", []),
+    ("sed -es/i/x/ docs/x.md", []),
+]
+
+
+@pytest.mark.parametrize(("cmd", "want"), IN_PLACE_CASES)
+def test_r11_an_in_place_edit_is_read_by_the_guards_parse(tmp_path, cmd, want):
+    proc = subprocess.run(
+        [sys.executable, "-c", WRITE_PATHS_SNIPPET, str(wlfix.STOP_DIR), cmd, str(tmp_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    assert json.loads(proc.stdout) == want, cmd

@@ -42,6 +42,7 @@ import re
 import shlex
 
 import wl_common
+import wl_roster
 import wl_rules
 
 # The substring the prompt section carries, used by wl_judge.judge_schema_for to decide whether `class_sweep` is REQUIRED. Same contract as _REGGATE_MARKER: when the prompt asks for the object, the schema requires it, so the model cannot satisfy the schema by omitting the answer.
@@ -677,6 +678,18 @@ def names_destructive(text):
     return wl_rules.names_write(text)
 
 
+def _in_place_editor(search):
+    """The name of an in-place editor `search` runs (`sed`, `gsed`, `perl`), or "".
+
+    ASKED OF THE GUARDS' OWN PARSE (#6378e10e): every command the walk finds (`shellscan.every_run`, so one after a pipe, `xargs` or `find -exec` too) is put to `shellscan.in_place_edit`. The token test this replaces caught only a bare `-i` behind a leading `sed`/`perl`, so `sed -i.bak`, `sed --in-place`, `perl -pi`, `gsed -i` and `grep -l x f | xargs sed -i ...` all passed as a read-only sweep. The walk is the guards' own lexer, which reads any string without raising.
+    """
+    shellscan = wl_roster._shellscan()
+    for run in shellscan.every_run(search):
+        if shellscan.in_place_edit(run) is not None:
+            return run.name.rsplit("/", 1)[-1]
+    return ""
+
+
 def validate_search(search, root=None):
     """(ok, reason). `reason` is empty when ok, else why the command was dropped."""
     root = root or _repo_root()
@@ -704,8 +717,10 @@ def validate_search(search, root=None):
             ]
         if tok == "-delete":
             return False, "it passes -delete to find; a sweep only reads"
-        if tok == "-i" and tokens[0] in ("sed", "perl"):
-            return False, "it edits in place with `%s -i`; a sweep only reads" % tokens[0]
+
+    editor = _in_place_editor(search)
+    if editor:
+        return False, "it edits in place with `%s -i`; a sweep only reads" % editor
 
     for tok in tokens:
         if tok.startswith("-") or not _PATHY.match(tok):

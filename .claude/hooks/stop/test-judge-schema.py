@@ -317,6 +317,12 @@ for bad, want in [
     ("find .claude -name '*.py' -delete", "-delete"),
     ("sed -i 's/a/b/' .claude/hooks/stop/wl_core.py", "sed -i"),
     ("grep -rn foo .claude > /tmp/out", "redirects"),
+    # #6378e10e: every in-place spelling, read by the guards' own parse (shellscan.in_place_edit), not only a bare `-i` behind a leading sed or perl.
+    ("perl -pi -e 's/a/b/' .claude/hooks/stop/wl_core.py", "perl -i"),
+    ("sed -i.bak 's/a/b/' .claude/hooks/stop/wl_core.py", "sed -i"),
+    ("sed --in-place 's/a/b/' .claude/hooks/stop/wl_core.py", "sed -i"),
+    ("gsed -i 's/a/b/' .claude/hooks/stop/wl_core.py", "gsed -i"),
+    ("grep -l x .claude/hooks/ | xargs sed -i 's/a/b/'", "sed -i"),
 ]:
     ok, why = wl_classsweep.validate_search(bad)
     control("a sweep that WRITES is rejected: %s" % bad[:34], ok, False)
@@ -325,6 +331,16 @@ for bad, want in [
 control(
     "CONTROL: `git grep` is a sweep's own tool and passes",
     wl_classsweep.validate_search("git grep -n 'apply_order' .claude/hooks/")[0],
+    True,
+)
+control(
+    "CONTROL: a sed whose attached script holds an `i` reads, so it passes",
+    wl_classsweep.validate_search("sed -es/i/x/ .claude/hooks/stop/wl_core.py")[0],
+    True,
+)
+control(
+    "CONTROL: perl -pe prints and passes",
+    wl_classsweep.validate_search("perl -pe 's/a/b/' .claude/hooks/stop/wl_core.py")[0],
     True,
 )
 control(
