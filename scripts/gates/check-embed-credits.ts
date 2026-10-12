@@ -110,6 +110,14 @@ function main(): void {
       );
     }
   }
+  // Every Dockerfile commit ARG must belong to a lockfile component: an ARG whose base has none is never compared above and could drift unseen. The one reasoned alias, snapshotcontroller -> CSISNAPSHOTTER_COMMIT, runs the other way (a component without its own ARG) and is handled by `argBase`.
+  for (const [argBase, dockerCommit] of commitArgs) {
+    if (!(argBase in lock.components)) {
+      errors.push(
+        `Dockerfile ARG ${argBase.toUpperCase()}_COMMIT='${dockerCommit}' has no lockfile component '${argBase}', so it is never compared; add the component or delete the ARG`
+      );
+    }
+  }
   if (commitsChecked === 0) {
     errors.push(
       'no commit pin found in either the Dockerfile or the lockfile; the commit check is blind'

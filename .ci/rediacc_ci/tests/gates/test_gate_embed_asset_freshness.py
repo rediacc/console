@@ -198,6 +198,8 @@ NEW_SHA = "72f13ee46fb93c11a72ef91549e70158283c03af"
 ZOT_OLD = {"amd64": "a" * 64, "arm64": "b" * 64}
 ZOT_NEW = {"amd64": "c" * 64, "arm64": "d" * 64}
 RSYNC_SHA = "e" * 64
+SNAP_SHA = "f" * 40
+SNAP_NEW_SHA = "9" * 40
 ZOT_SUMS_URL = "https://github.com/project-zot/zot/releases/download/v2.2.0/checksums.sha256.txt"
 
 FIXTURE_DOCKERFILE = f"""FROM golang:1.26 AS csi-builder
@@ -210,6 +212,10 @@ ARG ZOT_SHA256_AMD64={ZOT_OLD["amd64"]}
 FROM ubuntu AS zot-arm64
 ARG ZOT_VERSION=2.1.22
 ARG ZOT_SHA256_ARM64={ZOT_OLD["arm64"]}
+FROM golang AS snapshotter
+ARG CSISNAPSHOTTER_VERSION=8.6.0
+ARG SNAPSHOTCONTROLLER_VERSION=8.6.0
+ARG CSISNAPSHOTTER_COMMIT={SNAP_SHA}
 FROM ubuntu AS rsync
 ARG RSYNC_VERSION=3.5.1
 ARG RSYNC_SHA256={RSYNC_SHA}
@@ -223,6 +229,18 @@ FIXTURE_LOCK = {
             "plannedMirrorUrl": "https://releases.example/external-provisioner-6.3.0.tar.gz",
             "source": {"kind": "git", "tag": "v6.3.0", "commit": OLD_SHA},
             "notes": "attribution text naming v6.3.0 stays verbatim",
+        },
+        "csisnapshotter": {
+            "version": "8.6.0",
+            "upstreamSourceUrl": "https://github.com/x/external-snapshotter/archive/v8.6.0/s-8.6.0.tar.gz",
+            "plannedMirrorUrl": "https://releases.example/s-8.6.0.tar.gz",
+            "source": {"kind": "git", "tag": "v8.6.0", "commit": SNAP_SHA},
+        },
+        "snapshotcontroller": {
+            "version": "8.6.0",
+            "upstreamSourceUrl": "https://github.com/x/external-snapshotter/archive/v8.6.0/s-8.6.0.tar.gz",
+            "plannedMirrorUrl": "https://releases.example/s-8.6.0.tar.gz",
+            "source": {"kind": "git", "tag": "v8.6.0", "commit": SNAP_SHA},
         },
         "zot": {
             "version": "2.1.22",
@@ -250,7 +268,13 @@ FIXTURE_LOCK = {
     }
 }
 
-FIXTURE_UNITS = 'const (\n\tProvisionerVersion        = "v6.3.0"\n)\n'
+FIXTURE_UNITS = (
+    "const (\n"
+    '\tProvisionerVersion        = "v6.3.0"\n'
+    '\tSnapshotterVersion        = "v8.6.0"\n'
+    '\tSnapshotControllerVersion = "v8.6.0"\n'
+    ")\n"
+)
 FIXTURE_GOLDEN = "[Unit]\nDescription=Rediacc CSI external-provisioner (v6.3.0, node-deployment)\n"
 UNITS = "pkg/kube/csidriver/units.go"
 GOLDEN = "pkg/kube/csidriver/testdata/rediacc-csi-provisioner.service"
@@ -381,3 +405,38 @@ def test_upgrade_refuses_a_pin_with_no_published_checksum(gate, tmp_path):
         "Dockerfile untouched",
     )
     gate.log_pass("a digest with no published source refuses instead of going stale")
+
+
+def test_upgrade_refuses_half_of_the_shared_snapshotter_clone(gate, tmp_path):
+    """snapshotter and snapshot-controller build from ONE clone guarded by ONE commit ARG. Moving only one of them leaves the clone unbuildable, so the run refuses, writes NOTHING (the resolvable csi-provisioner bump beside it included) and does not report any of it as done."""
+    require_submodule(gate)
+    renet = make_renet(tmp_path)
+    snap = "kubernetes-csi/external-snapshotter@v8.7.0"
+    result = run_upgrade(
+        gate,
+        tmp_path,
+        renet,
+        csiprovisioner=OLD_CSI,
+        csisnapshotter={"version": "8.7.0", "publishedAt": "2020-01-01T00:00:00Z"},
+        pins={
+            "commits": {
+                "kubernetes-csi/external-provisioner@v6.4.0": NEW_SHA,
+                snap: SNAP_NEW_SHA,
+            }
+        },
+    )
+    gate.assert_exit(1, result, "bumping only one of the shared-clone pair must refuse")
+    gate.assert_contains(result.combined, "bump them together", "the pair is named")
+    gate.assert_contains(result.combined, "Nothing written", "the discard is stated")
+    gate.assert_not_contains(result.combined, "\u2191", "no component is reported as upgraded")
+    gate.assert_eq(
+        (renet / "Dockerfile").read_text(encoding="utf-8"),
+        FIXTURE_DOCKERFILE,
+        "Dockerfile untouched",
+    )
+    gate.assert_eq(
+        (renet / UNITS).read_text(encoding="utf-8"), FIXTURE_UNITS, "Go constants untouched"
+    )
+    lock = json.loads((renet / "embed-assets.lock.json").read_text(encoding="utf-8"))
+    gate.assert_eq(lock, FIXTURE_LOCK, "lockfile untouched")
+    gate.log_pass("half of the shared clone refuses, writes nothing and reports nothing as done")

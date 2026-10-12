@@ -298,6 +298,7 @@ async function runUpgrade(stale: Finding[], dockerfile: string): Promise<number>
   }
   let files = before;
   const refused: string[] = [];
+  const moved: string[] = [];
   for (const f of stale) {
     const repo = SOURCES.find((s) => s.base === f.base)?.repo;
     const res = await upgradeComponent(
@@ -310,14 +311,20 @@ async function runUpgrade(stale: Finding[], dockerfile: string): Promise<number>
       continue;
     }
     files = res.files;
-    console.log(`${GREEN}↑ ${f.display}: ${f.pinned} -> ${f.latest}${NC}`);
-    for (const c of res.changes) console.log(`    ${c}`);
+    moved.push(
+      `${GREEN}↑ ${f.display}: ${f.pinned} -> ${f.latest}${NC}`,
+      ...res.changes.map((c) => `    ${c}`)
+    );
   }
   const drift = sharedCloneDrift(files.dockerfile);
   if (drift) {
     refused.push(drift);
     files = before;
+    // Every resolved component above is discarded with it, so none of them is reported as done.
+    moved.length = 0;
+    console.error(`${YELLOW}Nothing written: ${drift}${NC}`);
   }
+  for (const line of moved) console.log(line);
   if (files.dockerfile !== before.dockerfile) fs.writeFileSync(DOCKERFILE, files.dockerfile);
   if (files.lock !== null && files.lock !== before.lock) fs.writeFileSync(LOCKFILE, files.lock);
   for (const [rel, text] of Object.entries(files.consts)) {
